@@ -16,18 +16,30 @@
 
 - 2026-09-22T12:40:00Z — U4 は独自の基盤を持たないため質問を作らず要約で確認した; 前の単位の確認の指摘を踏まえ、traceability.json に U4 の NFR の ID をすべて載せ、「指標を作らない」ものにはしきい値を指標として書かず、ログと監査ログから数える見方として書いた。
 <!-- aidlc-wave-memory:u4-audit-log:2ca0dbb7c4d52fd52b5123e6e73ee49fcd1ee74d7dbe5c54d36bd3f0ff938bc7 -->
+
+- 2026-09-22T12:50:00Z — 依頼者の変更の依頼により、ボリュームの使用量のしきい値を、U1 の NFR1.9 の 180MB を根拠とし索引を含む U4 の見積もり（250MB 程度）を併記したうえで、ボリューム全体で 1年あたり 500MB とした。
+<!-- aidlc-wave-memory:u1-app-skeleton:b4d6b536a223b8a759c75956fa8988fe36ced7c27cb770ee14d830158fd8698e -->
+
+- 2026-09-22T12:50:00Z — 依頼者の変更の依頼により、「指標を作らない」値（ACCESS_DENIED の件数）を指標の表と警報から外し、監査ログから数える見方として分けて書いた。U2 のログインの失敗の割合も同じ形にそろえた。
+<!-- aidlc-wave-memory:u3-access-control:280358da9062d072340c2c538ab6f93dfc440d8fc86aac86ebd43d6ee00d9336 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
 
 - 2026-09-22T12:25:00Z — 確定回答 Q2 により、U1 の基盤の設計のコンテナの CPU の上限（2）を U2 の要件のために 4 に上書きした; U1 の文書は確認済みで書き換えないため、U2 の infrastructure-specification.md 4章に優先を明記し、Code Generation の計画で compose に反映する。
 <!-- aidlc-wave-memory:u2-authentication:992865570a8a1864d2d0512ff1158709986a8e8fb8ab4e9e9ee1cc5b65ec901d -->
+
+- 2026-09-22T12:50:00Z — 依頼者の変更の依頼（運用の見方）により、監査の書き込みが 200 ミリ秒を超えたときに WARN を1回出す振る舞いを加えた; 指標を作らない決まり（NFR10.5）の中で、運用の中の遅れに気づけるようにするため。U4 の NFR Design には無い振る舞いのため、Code Generation の計画で揃える。
+<!-- aidlc-wave-memory:u4-audit-log:c4f07739ce2e8a6ea3c42bab3112329b854e56987ea61d70748b90798c1d7a16 -->
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 
 
 - 2026-09-22T12:20:00Z — 1コマンドの検査を Gradle の1つのタスクにし（Q4）、npm と外部の道具も Gradle から PC の実行ファイルを呼ぶ形にした; Node.js を Gradle で自動で入れる仕組みは使わず、版の確認で失敗させる方を選んだ（道具を増やさないため）。
 <!-- aidlc-wave-memory:u1-app-skeleton:7444f4962eb78d62ce16cc8c60552166ade64815b8034bbaebecf1f785cd56f8 -->
+
+- 2026-09-22T12:50:00Z — コネクションプールの上限（10 本）は変えず、ログインと 403 を同時に流す組み合わせの試験で待ちを測ることにした; 各要求が接続を持つ時間が数十ミリ秒で、見積もりでは目標の内側に収まるため。
+<!-- aidlc-wave-memory:u4-audit-log:6b3b1ab5f3267c830c41367a2c218b581fff3107aa1ac3556c1f5466617bc1b4 -->
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
 

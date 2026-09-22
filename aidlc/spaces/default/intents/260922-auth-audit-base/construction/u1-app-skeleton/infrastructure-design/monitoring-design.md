@@ -15,7 +15,7 @@ U1 の `observability-design.md`（NFR Design）の方針を、当面の配備�
 | コネクションプールの待ち | `hikaricp.connections.pending`・`hikaricp.connections.acquire` | 待ちが 0 でない状態が 1 分続く | 接続の不足の兆し（U1 の `scalability-design.md`） |
 | JVM のメモリ | `jvm.memory.used`（heap） | 上限の 85% 超が 5 分続く | メモリの不足の兆し |
 | 起動の時間 | コンテナの起動の開始から health が UP まで | 30 秒超 | NFR1.4 |
-| ボリュームの使用量 | コンテナの外（`docker system df -v`） | 見積もり（1年 約 250MB）の2倍 | 監査ログの増え方の見直し（NFR1.9） |
+| ボリュームの使用量 | コンテナの外（`docker system df -v`） | 見積もりの2倍（監査ログは U1 の NFR1.9 の 1年 約 180MB（1日 500 件 × 1KB × 365 日）。索引を含めた大きさは U4 の見積もりで 250MB 程度のため、しきい値はボリューム全体で 1年あたり 500MB とする） | 監査ログの増え方の見直し（NFR1.9） |
 
 指標は、外部エクスポートを有効にしたときだけ OTLP で送る（Q3・Q5 の NFR Design の決定）。当面は、確認用の OTLP の受け手（`infrastructure-specification.md` 2章）の標準出力と、Performance Validation の測定で確かめる。
 

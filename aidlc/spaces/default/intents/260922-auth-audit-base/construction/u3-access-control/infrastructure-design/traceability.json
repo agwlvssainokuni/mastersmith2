@@ -21,7 +21,9 @@
     "NFR7.1",
     "NFR8.1",
     "NFR9.1",
-    "NFR9.2"
+    "NFR9.2",
+    "NFR3.6",
+    "NFR10.4"
   ],
   "coverage": [
     {
@@ -123,6 +125,16 @@
       "id": "NFR9.2",
       "status": "OK",
       "target": "cicd-pipeline.md 1章: 必須の認可のテストとパスの境界のテスト"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章・4章: 401／403／400 を U1 の共通の組み立ての仕組みとヘッダーで返す"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "monitoring-design.md 4章: フィルターの段階の応答にもトレースIDが付く"
     }
   ]
 }

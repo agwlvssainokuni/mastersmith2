@@ -3,6 +3,7 @@
 
 ## Interpretations
 <!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
+- 2026-09-22T12:50:00Z — 依頼者の変更の依頼により、「指標を作らない」値（ACCESS_DENIED の件数）を指標の表と警報から外し、監査ログから数える見方として分けて書いた。U2 のログインの失敗の割合も同じ形にそろえた。
 - 2026-09-22T12:32:00Z — U3 は独自の基盤を持たないため、質問を作らず、設計の要点を要約として依頼者に確認した; 監視の指標は U1 と重なるものを繰り返さず、U3 に固有のものだけを書いた（U2 の確認の指摘 R-02 を踏まえて）。
 
 ## Deviations

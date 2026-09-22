@@ -9,7 +9,7 @@ U2 は U1 の基盤（U1 の `infrastructure-design/infrastructure-specification
 | Facet | Choice | Rationale |
 |---|---|---|
 | 実行の形 | U1 と同じコンテナ・同じプロセス | ADR-008、U2 の `logical-components.md` |
-| 資源の大きさ（U1 の値の上書き） | コンテナの CPU の上限を 4 にする（U1 の設計の「CPU 2」を上書き）。メモリは U1 のとおり 1GB | 同時 10 件のログインの bcrypt（cost 12）の照合を1秒以内に収めるため（Q2、U2 の NFR1.1・NFR1.3、U2 の `performance-design.md` 1章） |
+| 資源の大きさ（U1 の値の上書き） | コンテナの CPU の上限を 4 にする（U1 の設計の「CPU 2」を上書き）。メモリは U1 のとおり 1GB | 同時 10 件のログインの bcrypt（cost 12）の照合を1秒以内に収めるため（Q2、U2 の NFR1.1・NFR1.3、U2 の `performance-design.md` 1章）。値は見積もり（CPU 1つで照合 約 0.25 秒と仮定）にもとづくもので、まだ測っていない。Performance Validation で同時 10 件のログインを測り、足りなければ CPU の上限か cost を見直す |
 | タイムゾーン（U1 の基盤に足す） | コンテナのタイムゾーンを `Asia/Tokyo` にする。compose の環境変数 `TZ` と、JVM のタイムゾーンの指定（`-Duser.timezone=Asia/Tokyo`）の両方で揃える | 使い終わったトークンの削除の時刻（日本時間 3 時 30 分）とログの時刻の表記を利用者の感覚に合わせる（Q1） |
 | 時刻の保存 | 有効期限・ロックの解除・監査ログの日時は、時点（UTC）として保存し、タイムゾーンで値を変えない。現在時刻は注入できる時計から得る | タイムゾーンを変えても判定が変わらないように（U2 の NFR9.4） |
 | 定期実行 | Spring の定期実行で1日1回、日本時間の 3 時 30 分（設定で変更可）。コンテナの外の定期実行の仕組みは使わない | U2 の `scalability-design.md` 2章 |

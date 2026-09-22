@@ -16,7 +16,12 @@
     "NFR6.3",
     "NFR9.3",
     "NFR9.4",
-    "NFR10.7"
+    "NFR10.7",
+    "NFR3.6",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2"
   ],
   "coverage": [
     {
@@ -93,6 +98,31 @@
       "id": "NFR10.7",
       "status": "OK",
       "target": "monitoring-design.md 1章: ログインの失敗の割合を監査ログから数える"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: TRACE を有効にしても秘密情報がログに出ないこと、5の段: 秘密情報を持つ型の伏せ字"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: ログイン画面の日英の文言"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: ログイン画面の vitest-axe"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段・2章: 同時の失敗（行の排他）のテスト、同時に始める合図"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段・2章: 同時の更新（条件付きの無効化）のテスト"
     }
   ]
 }
