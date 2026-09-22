@@ -1,0 +1,386 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-authentication",
+  "upstream_ids": [
+    "FR1",
+    "FR1.1",
+    "FR1.2",
+    "FR2",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR3",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR4.5",
+    "FR5",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR6",
+    "FR6.1",
+    "FR6.2",
+    "FR7",
+    "FR7.1",
+    "FR7.2",
+    "FR7.3",
+    "FR7.4",
+    "FR7.5",
+    "FR8",
+    "FR8.1",
+    "FR8.2",
+    "FR9",
+    "FR9.1",
+    "FR9.2",
+    "FR9.3",
+    "FR9.4",
+    "FR9.5",
+    "FR10",
+    "FR10.1",
+    "FR10.2",
+    "FR10.3",
+    "FR10.4"
+  ],
+  "coverage": [
+    {
+      "id": "FR1",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR1.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR1.1",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR1.2",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR2",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR2.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "BR8.1"
+    },
+    {
+      "id": "FR2.2",
+      "status": "N/A",
+      "target": "U3（u3-access-control）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR2.3",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "BR2.4, BR8.2"
+    },
+    {
+      "id": "FR3",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR3.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "BR1.1, BR1.5"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "BR1.2"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "BR1.3"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "BR1.4"
+    },
+    {
+      "id": "FR4",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR4.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "BR2.3, BR5.2"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "BR4.2"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "BR5.3"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "BR4.3, BR4.4"
+    },
+    {
+      "id": "FR4.5",
+      "status": "OK",
+      "target": "BR2.4, BR2.5"
+    },
+    {
+      "id": "FR5",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR5.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "BR5.4, BR5.6"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "BR5.3, BR5.5"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "BR8.4"
+    },
+    {
+      "id": "FR6",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR6.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "BR6.1, BR8.6"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "BR4.6"
+    },
+    {
+      "id": "FR7",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR7.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "BR3.1, BR3.2"
+    },
+    {
+      "id": "FR7.2",
+      "status": "OK",
+      "target": "BR3.3"
+    },
+    {
+      "id": "FR7.3",
+      "status": "OK",
+      "target": "BR3.4"
+    },
+    {
+      "id": "FR7.4",
+      "status": "OK",
+      "target": "BR3.6"
+    },
+    {
+      "id": "FR7.5",
+      "status": "OK",
+      "target": "BR3.7"
+    },
+    {
+      "id": "FR8",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR8.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR8.1",
+      "status": "N/A",
+      "target": "U3（u3-access-control）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR8.2",
+      "status": "N/A",
+      "target": "U3（u3-access-control）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR9",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR9.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR9.1",
+      "status": "N/A",
+      "target": "U4（u4-audit-log）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR9.2",
+      "status": "N/A",
+      "target": "U4（u4-audit-log）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR9.3",
+      "status": "N/A",
+      "target": "U4（u4-audit-log）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR9.4",
+      "status": "N/A",
+      "target": "U4（u4-audit-log）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR9.5",
+      "status": "N/A",
+      "target": "U4（u4-audit-log）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR10",
+      "status": "N/A",
+      "target": "要件の群見出し（下位の FR10.x ごとに対応付ける）"
+    },
+    {
+      "id": "FR10.1",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR10.2",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR10.3",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    },
+    {
+      "id": "FR10.4",
+      "status": "N/A",
+      "target": "U1（u1-app-skeleton）に割り当て。unit-of-work-story-map.md による"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR2.1",
+      "status": "N/A",
+      "target": "Functional Design Q11 の確定回答（メールアドレスの大文字・小文字）"
+    },
+    {
+      "id": "BR2.2",
+      "status": "N/A",
+      "target": "U1 の決まり 5.7（入力の検証）の適用"
+    },
+    {
+      "id": "BR2.6",
+      "status": "N/A",
+      "target": "FR9.1 の出来事の通知（記録は U4 に割り当て）"
+    },
+    {
+      "id": "BR3.5",
+      "status": "N/A",
+      "target": "Functional Design Q5 の確定回答（時間の区切りなし）"
+    },
+    {
+      "id": "BR3.8",
+      "status": "N/A",
+      "target": "FR7.1 を同時の試みでも確実に満たすための制約"
+    },
+    {
+      "id": "BR3.9",
+      "status": "N/A",
+      "target": "Domain Design（LoginAttemptState は利用者ごと）"
+    },
+    {
+      "id": "BR4.1",
+      "status": "N/A",
+      "target": "Functional Design Q8 の確定回答と NFR3（トークンの中身）"
+    },
+    {
+      "id": "BR4.5",
+      "status": "N/A",
+      "target": "Functional Design Q8 の確定回答（管理者フラグは DB から）"
+    },
+    {
+      "id": "BR5.1",
+      "status": "N/A",
+      "target": "NFR3（リフレッシュトークンの保存はハッシュだけ）"
+    },
+    {
+      "id": "BR5.7",
+      "status": "N/A",
+      "target": "Functional Design Q7 の確定回答（複数のブラウザからのログイン）"
+    },
+    {
+      "id": "BR5.8",
+      "status": "N/A",
+      "target": "Functional Design Q9 の確定回答（同時更新の対策なし）"
+    },
+    {
+      "id": "BR6.2",
+      "status": "N/A",
+      "target": "Functional Design Q7 の確定回答（ログアウトはそのブラウザだけ）"
+    },
+    {
+      "id": "BR7.1",
+      "status": "N/A",
+      "target": "FR9.1・FR9.2 の出来事の通知（記録は U4 に割り当て）"
+    },
+    {
+      "id": "BR7.2",
+      "status": "N/A",
+      "target": "NFR3（出来事に秘密情報を載せない）"
+    },
+    {
+      "id": "BR7.3",
+      "status": "N/A",
+      "target": "Domain Design ADR-004 と FR9.4（受け取る側の失敗で結果を変えない）"
+    },
+    {
+      "id": "BR8.3",
+      "status": "N/A",
+      "target": "NFR5（アクセストークンはメモリだけ）"
+    },
+    {
+      "id": "BR8.5",
+      "status": "N/A",
+      "target": "Domain Design の ApiClient の受け持ち（401 の更新と送り直し）"
+    },
+    {
+      "id": "BR8.7",
+      "status": "N/A",
+      "target": "U1 の決まり 7.3 の差し込み口への登録"
+    },
+    {
+      "id": "BR8.8",
+      "status": "N/A",
+      "target": "FR2.2 のログイン後の画面（FR2.2 自体は U3 に割り当て）"
+    },
+    {
+      "id": "BR9.1",
+      "status": "N/A",
+      "target": "U1 の決まり 5.14・BR5.16（問題の種類の定義）"
+    }
+  ]
+}

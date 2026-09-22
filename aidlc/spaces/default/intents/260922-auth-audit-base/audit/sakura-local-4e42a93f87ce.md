@@ -8275,3 +8275,132 @@
 **Tool**: Bash
 
 ---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:38:00Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:38:07Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T08:38:08Z
+**Event**: DECISION_RECORDED
+**Stage**: functional-design
+**Decision**: Q10: 作り直したリフレッシュトークンの有効期限 / Q11: メールアドレスの大文字・小文字
+**Options**: A,B
+**Unit**: u2-authentication
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T08:38:08Z
+**Event**: QUESTION_ANSWERED
+**Stage**: functional-design
+**Details**: Q10: A. 更新のたびに24時間 / Q11: A. 区別しない
+**Unit**: u2-authentication
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:38:53Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T08:38:53Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u2-authentication/functional-design/entities.md
+**Context**: construction > u2-authentication > functional-design > entities.md
+**Summary Authorization Id**: de62bf12c3eb1d88e7080be9c476ae646c90f7fddf13d13c54b02e89db6a0c8d
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:40:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T08:40:14Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u2-authentication/functional-design/rules.md
+**Context**: construction > u2-authentication > functional-design > rules.md
+**Summary Authorization Id**: de62bf12c3eb1d88e7080be9c476ae646c90f7fddf13d13c54b02e89db6a0c8d
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:41:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T08:41:01Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u2-authentication/functional-design/functional-spec.md
+**Context**: construction > u2-authentication > functional-design > functional-spec.md
+**Summary Authorization Id**: de62bf12c3eb1d88e7080be9c476ae646c90f7fddf13d13c54b02e89db6a0c8d
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:41:18Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T08:41:18Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u2-authentication/functional-design/frontend-components.md
+**Context**: construction > u2-authentication > functional-design > frontend-components.md
+**Summary Authorization Id**: de62bf12c3eb1d88e7080be9c476ae646c90f7fddf13d13c54b02e89db6a0c8d
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:41:32Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:43:56Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:44:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
