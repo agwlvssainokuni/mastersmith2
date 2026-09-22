@@ -1,0 +1,474 @@
+<!--
+  Copyright 2026 agwlvssainokuni
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MasterSmith 画面イメージ — auth-audit-foundation</title>
+    <style>
+      /*
+       * デザイントークン: make-you-chic-ui のプリミティブ／セマンティックトークン
+       * （ライトテーマ・ブランドカラー blue・ゴシック・文字サイズ md）の値を転記したもの。
+       */
+      :root {
+        --gray-100: #f3f4f6;
+        --gray-300: #d1d5db;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --gray-900: #111827;
+        --red-500: #dc2626;
+        --blue-500: #2563eb;
+        --blue-600: #1d4ed8;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-6: 24px;
+        --radius-sm: 4px;
+        --radius-md: 6px;
+        --radius-lg: 10px;
+        --font-family-active:
+          'Noto Sans JP', -apple-system, blinkmacsystemfont, 'Segoe UI', 'Hiragino Sans', meiryo,
+          sans-serif;
+        --font-size-sm: 13px;
+        --font-size-md: 14px;
+        --font-size-lg: 16px;
+        --font-size-xl: 20px;
+        --color-primary: var(--blue-500);
+        --color-primary-hover: var(--blue-600);
+        --color-danger: var(--red-500);
+        --color-danger-subtle: #fef2f2;
+        --color-text: var(--gray-700);
+        --color-text-muted: var(--gray-500);
+        --color-border: var(--gray-300);
+        --color-surface: #fff;
+        --color-surface-hover: var(--gray-100);
+        --color-bg: #fafafa;
+        --color-sidebar-bg: var(--gray-900);
+        --color-sidebar-text: var(--gray-100);
+        --sidebar-width: 220px;
+        --sidebar-width-collapsed: 64px;
+        --topbar-height: 56px;
+      }
+
+      body {
+        margin: 0;
+        padding: var(--space-6);
+        background: #e5e7eb;
+        color: var(--color-text);
+        font-family: var(--font-family-active);
+        font-size: var(--font-size-md);
+      }
+
+      h1.page-title {
+        font-size: var(--font-size-xl);
+        margin: 0 0 var(--space-2);
+      }
+
+      .note {
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+        margin: 0 0 var(--space-6);
+        line-height: 1.7;
+      }
+
+      .screen {
+        margin-bottom: 40px;
+      }
+
+      .screen-caption {
+        font-weight: 600;
+        margin: 0 0 var(--space-2);
+      }
+
+      .screen-caption small {
+        font-weight: 400;
+        color: var(--color-text-muted);
+        margin-left: var(--space-2);
+      }
+
+      /* 画面を並べて見せるための「ブラウザ枠」 */
+      .frame {
+        width: 960px;
+        height: 480px;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        background: var(--color-bg);
+        box-shadow: 0 4px 16px rgb(0 0 0 / 8%);
+      }
+
+      /* ---- Login（AppShell の外側に置く独立レイアウト） ---- */
+      .login-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        background: var(--color-bg);
+      }
+
+      .card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 360px;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+      }
+
+      .login-card h2 {
+        margin: 0;
+        font-size: var(--font-size-xl);
+      }
+
+      .login-card .product {
+        margin: 0;
+        color: var(--color-text-muted);
+        font-size: var(--font-size-sm);
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+
+      .form-field label {
+        font-size: var(--font-size-sm);
+        font-weight: 500;
+      }
+
+      .form-field label .req {
+        color: var(--color-danger);
+        margin-left: 2px;
+      }
+
+      .text-input {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--font-size-md);
+        color: var(--color-text);
+        background: #fff;
+      }
+
+      .text-input.placeholder {
+        color: var(--color-text-muted);
+      }
+
+      .btn {
+        display: inline-flex;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        padding: var(--space-2) var(--space-4);
+        font-size: var(--font-size-md);
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: var(--color-primary);
+        color: #fff;
+      }
+
+      .btn-block {
+        width: 100%;
+      }
+
+      .alert-danger {
+        border: 1px solid var(--color-danger);
+        background: var(--color-danger-subtle);
+        color: var(--color-danger);
+        border-radius: var(--radius-md);
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--font-size-sm);
+      }
+
+      /* ---- AppShell（Sidebar + Topbar + Content） ---- */
+      .app-shell {
+        display: grid;
+        grid-template:
+          'sidebar topbar' var(--topbar-height)
+          'sidebar content' 1fr
+          / var(--sidebar-width) 1fr;
+        height: 100%;
+        background: var(--color-bg);
+      }
+
+      .sidebar {
+        grid-area: sidebar;
+        background: var(--color-sidebar-bg);
+        padding: var(--space-4) var(--space-2);
+      }
+
+      .sidebar ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+
+      .sidebar a {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-3);
+        border-radius: var(--radius-md);
+        color: var(--color-sidebar-text);
+        text-decoration: none;
+        font-size: var(--font-size-sm);
+      }
+
+      .sidebar a.active {
+        background: rgb(255 255 255 / 10%);
+      }
+
+      .icon {
+        width: 18px;
+        text-align: center;
+        opacity: 0.85;
+      }
+
+      .topbar {
+        grid-area: topbar;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: 0 var(--space-4);
+        background: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
+        position: relative;
+      }
+
+      .collapse-button {
+        border: none;
+        background: none;
+        font-size: 18px;
+        padding: var(--space-1);
+        color: var(--color-text);
+      }
+
+      .app-name {
+        font-weight: 600;
+        font-size: var(--font-size-lg);
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--color-primary);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+      }
+
+      .dropdown {
+        position: absolute;
+        top: 48px;
+        right: var(--space-4);
+        width: 200px;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 12px rgb(0 0 0 / 12%);
+        padding: var(--space-1) 0;
+        z-index: 1;
+      }
+
+      .dropdown .who {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-muted);
+        border-bottom: 1px solid var(--color-border);
+      }
+
+      .dropdown .item {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--font-size-md);
+      }
+
+      .dropdown .item.hover {
+        background: var(--color-surface-hover);
+      }
+
+      .content {
+        grid-area: content;
+        padding: var(--space-4);
+      }
+
+      .content h2 {
+        margin: 0 0 var(--space-4);
+        font-size: var(--font-size-xl);
+      }
+
+      .placeholder-area {
+        border: 2px dashed var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        color: var(--color-text-muted);
+        text-align: center;
+        line-height: 1.8;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 0 var(--space-2);
+        border-radius: 999px;
+        background: #dbeafe;
+        color: var(--blue-600);
+        font-size: var(--font-size-sm);
+        margin-left: var(--space-2);
+      }
+    </style>
+  </head>
+  <body>
+    <h1 class="page-title">MasterSmith 画面イメージ（auth-audit-foundation）</h1>
+    <p class="note">
+      本Intentの最小限の画面（ログイン画面と、ログイン後の画面の枠）を、デザインシステム
+      make-you-chic-ui のアプリシェル（AppShell）の構造に沿って描いたラフな画面イメージです。<br />
+      AppShell は「左のサイドバー（ナビゲーション）」「上のトップバー（折り畳みボタン・任意の左寄せ領域・右端のユーザーメニュー）」「コンテンツ領域」の3領域で構成され、ログイン画面はAppShellの外側に独立したレイアウトとして置きます。<br />
+      配色はライトテーマ・ブランドカラー blue・ゴシック・文字サイズ標準の既定値です。
+    </p>
+
+    <!-- 画面1: ログイン -->
+    <section class="screen">
+      <p class="screen-caption">画面1: ログイン<small>AppShellの外。中央にカードを置く独立レイアウト</small></p>
+      <div class="frame">
+        <div class="login-page">
+          <div class="card login-card">
+            <div>
+              <h2>ログイン</h2>
+              <p class="product">MasterSmith</p>
+            </div>
+            <div class="form-field">
+              <label>ユーザーID<span class="req">*</span></label>
+              <div class="text-input placeholder">admin</div>
+            </div>
+            <div class="form-field">
+              <label>パスワード<span class="req">*</span></label>
+              <div class="text-input">••••••••</div>
+            </div>
+            <button class="btn btn-primary btn-block">ログイン</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 画面2: ログイン失敗・アカウントロック -->
+    <section class="screen">
+      <p class="screen-caption">画面2: ログイン失敗時<small>失敗が続いた場合はアカウントロックを知らせる</small></p>
+      <div class="frame">
+        <div class="login-page">
+          <div class="card login-card">
+            <div>
+              <h2>ログイン</h2>
+              <p class="product">MasterSmith</p>
+            </div>
+            <div class="alert-danger">
+              ログインに連続して失敗したため、アカウントがロックされています。
+            </div>
+            <div class="form-field">
+              <label>ユーザーID<span class="req">*</span></label>
+              <div class="text-input">user01</div>
+            </div>
+            <div class="form-field">
+              <label>パスワード<span class="req">*</span></label>
+              <div class="text-input placeholder">パスワード</div>
+            </div>
+            <button class="btn btn-primary btn-block">ログイン</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 画面3: ログイン後（一般ユーザー） -->
+    <section class="screen">
+      <p class="screen-caption">画面3: ログイン後の画面の枠（一般ユーザー）<small>管理者でないため「管理」メニューは表示しない</small></p>
+      <div class="frame">
+        <div class="app-shell">
+          <nav class="sidebar">
+            <ul>
+              <li><a class="active"><span class="icon">⌂</span>ホーム</a></li>
+            </ul>
+          </nav>
+          <header class="topbar">
+            <button class="collapse-button">☰</button>
+            <span class="app-name">MasterSmith</span>
+            <div class="spacer"></div>
+            <span class="avatar">U</span>
+          </header>
+          <main class="content">
+            <h2>ホーム</h2>
+            <div class="placeholder-area">
+              コンテンツ領域<br />
+              業務メニューとマスタ管理画面は後続Intent（I・J・K）で追加される
+            </div>
+          </main>
+        </div>
+      </div>
+    </section>
+
+    <!-- 画面4: ログイン後（管理者） + ユーザーメニュー -->
+    <section class="screen">
+      <p class="screen-caption">画面4: ログイン後の画面の枠（管理者）<small>「管理」メニューと管理者のみ入れる領域のプレースホルダ。右上のユーザーメニューからログアウト</small></p>
+      <div class="frame">
+        <div class="app-shell">
+          <nav class="sidebar">
+            <ul>
+              <li><a><span class="icon">⌂</span>ホーム</a></li>
+              <li><a class="active"><span class="icon">⚙</span>管理</a></li>
+            </ul>
+          </nav>
+          <header class="topbar">
+            <button class="collapse-button">☰</button>
+            <span class="app-name">MasterSmith</span>
+            <div class="spacer"></div>
+            <span class="avatar">A</span>
+            <div class="dropdown">
+              <div class="who">admin</div>
+              <div class="item hover">ログアウト</div>
+            </div>
+          </header>
+          <main class="content">
+            <h2>管理<span class="badge">管理者のみ</span></h2>
+            <div class="placeholder-area">
+              管理者のみ入れる領域（プレースホルダ）<br />
+              スキーマ読み込み・DSL適用・ユーザー登録・ロール／権限設定などの管理機能は後続Intent（D・E・F・G）で追加される
+            </div>
+          </main>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
