@@ -15,6 +15,7 @@
 <!-- This monorepo requires package-scoped branch names and a package owner -->
 <!-- review in addition to the team's normal merge policy. -->
 
+- ワークフロー計画で実現可能性の評価（Feasibility）をドメイン設計に吸収した場合は、ドメイン設計の中で実現可能性の判断（例: 組み込み H2 による単一インスタンス前提）も扱い、質問と ADR に記録する。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:domain-design:ee07c801eb0d3d87e282d50543ccbef44bacce0c9ef7a250387f1efe4dee204f -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
