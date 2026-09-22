@@ -6,45 +6,53 @@ U3 の決まり。出典は要件定義書の FR・NFR、`functional-design-ques
 rules:
   # ---- BR1 アクセスの決まり ----
   - id: BR1.1
-    statement: /api/admin/ の下の API は、すべて管理者のみとする
+    statement: /api/admin そのものと /api/admin/ の下の API は、すべて管理者のみとする
     category: authorization
-    applies_to: AccessRule
+    applies_to: アクセス制御の設定
     trigger: 要求
-    logic: IF パスが /api/admin/ の下 THEN requirement=ADMIN（個々の API での宣言に頼らない）
+    logic: IF パスが /api/admin または /api/admin/ の下 THEN 管理者のみ（個々の API での宣言に頼らない）
     violation: —
     source: FR8.1、Q1
   - id: BR1.2
-    statement: 公開する API は、ヘルスチェック、問題の種類の説明ページ、ログイン・トークンの更新・ログアウトだけとし、明示した一覧で持つ
+    statement: ログインなしで呼べる API は、問題の種類の説明ページ（/api/problems/ の下）、ログイン、トークンの更新、ログアウトだけとし、設定の中で明示した一覧で持つ
     category: authorization
-    applies_to: AccessRule
+    applies_to: アクセス制御の設定
     trigger: 要求
-    logic: 一覧に当たれば requirement=PUBLIC。一覧に /api/admin/ の下を含めない
+    logic: 一覧に当たれば公開。一覧に /api/admin/ の下を含めない。公開にする理由は、説明ページは誰でも読める説明文書であるため（U1 の決まり 5.12）、ログインはログインする前に呼ぶため、トークンの更新はアクセストークンではなく Cookie のリフレッシュトークンで認証するため（U2 の決まり 5.3）、ログアウトはアクセストークンの期限が切れていても呼べる必要があるため（U2 の決まり 6.1）
     violation: —
-    source: Q2、U1 の決まり 1.4・5.12、U2 の決まり 2.3・5.4・6.1
+    source: Q2、レビュー指摘 R-04
   - id: BR1.3
     statement: どの決まりにも当たらない /api/ の下の API は、ログインを求める（既定で拒否）
     category: authorization
-    applies_to: AccessRule
+    applies_to: アクセス制御の設定
     trigger: 要求
-    logic: requirement=AUTHENTICATED
+    logic: ログイン必須とする
     violation: —
     source: Q2
   - id: BR1.4
-    statement: 決まりは ADMIN、PUBLIC、AUTHENTICATED の順に判定し、最初に当たったものを使う
+    statement: 決まりは 管理者のみ（BR1.1）、公開（BR1.2）、ログイン必須（BR1.3）の順に判定し、最初に当たったものを使う
     category: authorization
-    applies_to: AccessRule
+    applies_to: アクセス制御の設定
     trigger: 要求
-    logic: priority の小さい順に判定する
+    logic: アクセス制御の設定に、この順で書く
     violation: —
     source: BR1.1〜BR1.3 の整合
   - id: BR1.5
-    statement: /api/ の外（画面の配信）は、ログインを求めない
+    statement: /api/ の外は、画面の配信とヘルスチェック（/actuator/health）だけをログインなしで応答する。Actuator のほかの機能は外部に公開しない
     category: authorization
-    applies_to: AccessRule
-    trigger: 画面のファイルの要求
-    logic: 画面の表示の制御は画面側（U1 の決まり 7.4・7.5）が行い、データは /api/ の下の API で守る
-    violation: —
-    source: 同じ配信元で画面を配る構成（チームの進め方）
+    applies_to: アクセス制御の設定
+    trigger: /api/ の外への要求
+    logic: 画面の表示の制御は画面側（U1 の決まり 7.4・7.5）が行い、データは /api/ の下の API で守る。Actuator は health だけを公開の対象にする（U1 の決まり 1.4）
+    violation: テストで、/actuator/health 以外の Actuator の機能に外部から届かないことを確かめる
+    source: 同じ配信元で画面を配る構成（チームの進め方）、レビュー指摘 R-03
+  - id: BR1.6
+    statement: パスの照合は、区切りの細工で判定を回り込まれない形で行う
+    category: authorization
+    applies_to: アクセス制御の設定
+    trigger: 要求
+    logic: エンコードされた「/」や「\」、「;」、「..」、連続した「//」などを含む正規化されていないパスの要求は、判定の前に拒否する（フレームワークの既定の防御を外さない）。大文字・小文字は区別する（/API/admin は /api/admin/ の下として扱わず、どの API にも当たらない）。/api/admin そのものと /api/admin/ の下は、どちらも管理者のみとする。末尾のスラッシュの有無で判定を変えない
+    violation: テストで、/api/admin、/api/admin/、/api/admin/..;/、エンコードされた区切りを含むパスなどが、管理者でない利用者に通らないことを確かめる
+    source: レビュー指摘 R-02
 
   # ---- BR2 判定 ----
   - id: BR2.1
@@ -100,43 +108,51 @@ rules:
   - id: BR3.1
     statement: 管理者のみの API で 403 を返したときは、理由 NOT_ADMIN のアクセス拒否の出来事を知らせる
     category: policy
-    applies_to: AccessDeniedEvent
+    applies_to: AdminAccessDeniedEvent
     trigger: BR2.2
-    logic: userId と enteredEmail（その利用者のメールアドレス）を添える
+    logic: enteredEmail（その利用者のメールアドレス）を添える
     violation: —
     source: FR9.1、Q3
   - id: BR3.2
-    statement: 管理者のみの API で 401 を返したときは、有効期限切れの場合を除き、理由 NOT_AUTHENTICATED のアクセス拒否の出来事を知らせる
+    statement: 管理者のみの API で 401 を返したときは、有効期限切れの場合を除き、401 の理由を添えてアクセス拒否の出来事を知らせる
     category: policy
-    applies_to: AccessDeniedEvent
+    applies_to: AdminAccessDeniedEvent
     trigger: BR2.1
-    logic: IF U2 の判定した 401 の理由が TOKEN_EXPIRED THEN 知らせない ELSE authenticationFailure にその理由を添えて知らせる
+    logic: IF U2 の判定した 401 の理由が TOKEN_EXPIRED THEN 知らせない ELSE failureReason にその理由（TOKEN_MISSING・TOKEN_MALFORMED・TOKEN_INVALID・USER_NOT_FOUND）を入れて知らせる
     violation: —
     source: Q3、Q5
   - id: BR3.3
     statement: 管理者のみの API 以外での 401 は、アクセス拒否の出来事として知らせない
     category: policy
-    applies_to: AccessDeniedEvent
+    applies_to: AdminAccessDeniedEvent
     trigger: 要求
     logic: 出来事を知らせるのは /api/admin/ の下だけ
     violation: —
     source: Q3（対象は管理画面へのアクセス拒否）
   - id: BR3.4
-    statement: 出来事には、日時・結果・理由・利用者（分かれば）・要求のメソッドとパス（クエリ文字列を除く）・接続元IP・User-Agent・トレースIDを載せ、秘密情報を載せない
+    statement: 出来事には、監査ログの記録項目にそろえて、日時・種類・結果・理由・メールアドレス（分かれば）・接続元IP・User-Agent・トレースIDを載せ、秘密情報を載せない
     category: constraint
-    applies_to: AccessDeniedEvent
+    applies_to: AdminAccessDeniedEvent
     trigger: 出来事の通知
     logic: 接続元IP は要求の接続元（転送元のヘッダーは、信頼する設定があるときだけ使う。U1 の決まり 5.10）
     violation: —
-    source: FR9.2、NFR3
+    source: FR9.2、NFR3、レビュー指摘 R-01
   - id: BR3.5
     statement: 出来事を知らせる側は受け取る側を知らず、受け取る側の失敗で 401／403 の応答を変えない。受け取りは要求と同じスレッドで行う
     category: constraint
-    applies_to: AccessDeniedEvent
+    applies_to: AdminAccessDeniedEvent
     trigger: 出来事の通知
     logic: 通知の後に受け取る側で起きた失敗は、応答に影響させない
     violation: —
     source: Domain Design ADR-004、FR9.4、U1 functional-spec.md 6.1
+  - id: BR3.6
+    statement: 403 はフレームワークのアクセス拒否の処理（AccessDeniedHandler）で、401 は認証の入口の処理（AuthenticationEntryPoint）で扱い、そこで出来事の要否を判断して知らせる。応答は U1 の共通の組み立ての仕組みで、ほかのエラー応答と同じ形（type・code・traceId）で返す
+    category: policy
+    applies_to: AdminAccessDeniedEvent
+    trigger: 401／403 の応答
+    logic: 401／403 はコントローラーより手前（フィルターの段階）で起きるため、コントローラーの例外をまとめる仕組みを通らない。2つの処理の中で、パスが管理者のみの API か（BR1.1・BR1.6）、401 の理由が TOKEN_EXPIRED でないか（BR3.2）を確かめ、条件に当たれば出来事を知らせる
+    violation: —
+    source: U1 の決まり 5.1、Functional Design の検討（依頼者との確認）
 
   # ---- BR4 確認用 API ----
   - id: BR4.1
@@ -188,7 +204,7 @@ rules:
     category: constraint
     applies_to: 問題の種類
     trigger: —
-    logic: U1 の共通の業務エラーの型で起こし、U1 が起動時に定義を集める
+    logic: U1 が起動時に定義を集める。403 の応答は BR3.6 の処理の中で、U1 の共通の組み立ての仕組みにこの問題の種類を渡して作る
     violation: U1 の決まり 5.14 のテストで検出する
     source: U1 の決まり 5.14・5.16
 ```
@@ -198,10 +214,11 @@ rules:
 | ID | 分類 | 決まり（要約） | 出典 |
 |---|---|---|---|
 | BR1.1 | authorization | /api/admin/ の下はすべて管理者のみ | FR8.1、Q1 |
-| BR1.2 | authorization | 公開する API は明示した一覧だけ | Q2 |
+| BR1.2 | authorization | 公開する API は明示した一覧だけ（理由つき） | Q2、R-04 |
 | BR1.3 | authorization | それ以外の /api/ はログイン必須（既定で拒否） | Q2 |
-| BR1.4 | authorization | ADMIN → PUBLIC → AUTHENTICATED の順に判定 | BR1.1〜1.3 |
-| BR1.5 | authorization | /api/ の外（画面の配信）はログイン不要 | 構成 |
+| BR1.4 | authorization | 管理者のみ → 公開 → ログイン必須の順に判定 | BR1.1〜1.3 |
+| BR1.5 | authorization | /api/ の外は画面の配信と /actuator/health だけ応答 | 構成、R-03 |
+| BR1.6 | authorization | パスの照合を細工で回り込まれない形で行う | R-02 |
 | BR2.1 | authorization | 管理者のみの API で未ログインは 401 | FR8.1 |
 | BR2.2 | authorization | 管理者でなければ 403 / ACCESS_DENIED | FR8.1 |
 | BR2.3 | authorization | 管理者は受け付ける | FR8.1 |
@@ -209,10 +226,11 @@ rules:
 | BR2.5 | authorization | 非管理者には存在しない管理 API も 403 | BR1.1 |
 | BR2.6 | authorization | 画面で隠すことを判定の代わりにしない | FR8.2 |
 | BR3.1 | policy | 403 でアクセス拒否（NOT_ADMIN）を知らせる | FR9.1、Q3 |
-| BR3.2 | policy | 期限切れ以外の 401 でアクセス拒否（NOT_AUTHENTICATED）を知らせる | Q3、Q5 |
+| BR3.2 | policy | 期限切れ以外の 401 でアクセス拒否（理由つき）を知らせる | Q3、Q5 |
 | BR3.3 | policy | 管理者のみの API 以外の 401 は知らせない | Q3 |
-| BR3.4 | constraint | 出来事の項目、秘密情報を載せない | FR9.2、NFR3 |
+| BR3.4 | constraint | 出来事の項目は監査ログの記録項目にそろえ、秘密情報を載せない | FR9.2、NFR3、R-01 |
 | BR3.5 | constraint | 受け取る側を知らず、その失敗で応答を変えない | ADR-004、FR9.4 |
+| BR3.6 | policy | 401／403 の処理で出来事を知らせ、応答は U1 の共通の形で返す | U1 の決まり 5.1 |
 | BR4.1 | policy | 確認用 API を /api/admin/ の下に置く | FR8.1 |
 | BR5.1 | policy | 管理者向け領域と「管理」を U1 の差し込み口で登録 | FR2.2 |
 | BR5.2 | authorization | 表示のたびに確認し、403 なら見つからない画面 | FR2.2、Q4 |

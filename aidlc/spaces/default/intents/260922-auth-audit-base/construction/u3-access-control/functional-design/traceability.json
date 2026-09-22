@@ -285,7 +285,7 @@
     {
       "id": "BR1.2",
       "status": "N/A",
-      "target": "Functional Design Q2 の確定回答（公開する API の一覧）"
+      "target": "Functional Design Q2 の確定回答（公開する API の一覧）とレビュー指摘 R-04（公開の理由）"
     },
     {
       "id": "BR1.3",
@@ -300,7 +300,12 @@
     {
       "id": "BR1.5",
       "status": "N/A",
-      "target": "同じ配信元で画面を配る構成（チームの進め方）"
+      "target": "同じ配信元で画面を配る構成（チームの進め方）とレビュー指摘 R-03（Actuator は health だけ）"
+    },
+    {
+      "id": "BR1.6",
+      "status": "N/A",
+      "target": "レビュー指摘 R-02（パスの照合で判定を回り込まれない）とチームの進め方（認可のサーバー側テスト）"
     },
     {
       "id": "BR2.4",
@@ -330,12 +335,17 @@
     {
       "id": "BR3.4",
       "status": "N/A",
-      "target": "FR9.2（記録は U4 に割り当て）と NFR3"
+      "target": "FR9.2（記録は U4 に割り当て）、NFR3、レビュー指摘 R-01（項目を監査ログの記録項目にそろえる）"
     },
     {
       "id": "BR3.5",
       "status": "N/A",
       "target": "Domain Design ADR-004 と FR9.4"
+    },
+    {
+      "id": "BR3.6",
+      "status": "N/A",
+      "target": "U1 の決まり 5.1（フィルターの段階の 401／403 も共通の形）と出来事を知らせる場所"
     },
     {
       "id": "BR6.1",

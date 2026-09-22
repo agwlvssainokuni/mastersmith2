@@ -208,7 +208,7 @@ rules:
     category: authorization
     applies_to: 認証が必要な API
     trigger: 要求
-    logic: トークンは Authorization ヘッダー（Bearer）で受け取る。拒否の理由（TOKEN_MISSING・TOKEN_MALFORMED・TOKEN_INVALID・TOKEN_EXPIRED・USER_NOT_FOUND）を、要求の処理の中で U3 が参照できるようにする（U3 がアクセス拒否の記録の要否に使う）。理由は応答には載せない
+    logic: トークンは Authorization ヘッダー（Bearer）で受け取る。拒否の理由（TOKEN_MISSING・TOKEN_MALFORMED・TOKEN_INVALID・TOKEN_EXPIRED・USER_NOT_FOUND）を、要求の処理の中で U3 が参照できるようにする（U3 がアクセス拒否の記録の要否に使う）。理由は応答には載せない。401 の応答は、認証の入口の処理で U1 の共通の組み立ての仕組み（U1 の決まり 5.1）を使って、ほかのエラー応答と同じ形で返す
     violation: 401 / AUTHENTICATION_REQUIRED
     source: FR4.4、U3 Functional Design Q5
   - id: BR4.5

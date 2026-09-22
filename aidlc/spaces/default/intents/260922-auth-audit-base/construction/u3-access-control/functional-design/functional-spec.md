@@ -8,15 +8,17 @@
 
 ### WF1 要求ごとのアクセスの判定
 
-1. 要求のパスが /api/ の外（画面の配信）なら、判定せずに通す（BR1.5）。
-2. アクセスの決まりを ADMIN、PUBLIC、AUTHENTICATED の順に当てはめ、最初に当たった利用条件を使う（BR1.1〜BR1.4）。
-3. PUBLIC なら通す。
-4. AUTHENTICATED なら、U2 の判定（U2 の決まり 4.4・4.5）で有効な利用者がいれば通す。いなければ 401 / `AUTHENTICATION_REQUIRED`。出来事は知らせない（BR3.3）。
-5. ADMIN なら、次の順に判定する。API が存在するかどうかは、この判定の後に調べる（BR2.5）。
-   - 有効な利用者がいない → 401 / `AUTHENTICATION_REQUIRED`（BR2.1）。U2 が判定した理由が TOKEN_EXPIRED でなければ、理由 NOT_AUTHENTICATED の出来事を知らせる（BR3.2）。
+1. 正規化されていないパス（エンコードされた区切り、「;」、「..」、「//」など）の要求は、判定の前に拒否する（BR1.6）。
+2. 要求のパスが /api/ の外なら、画面の配信と /actuator/health だけに応答する。Actuator のほかの機能は公開しない（BR1.5）。
+3. /api/ の下では、アクセス制御の設定に書いた順（管理者のみ、公開、ログイン必須）に当てはめ、最初に当たった利用条件を使う。大文字・小文字は区別し、末尾のスラッシュの有無で判定を変えない（BR1.1〜BR1.4、BR1.6）。
+4. 公開なら通す。
+5. ログイン必須なら、U2 の判定（U2 の決まり 4.4・4.5）で有効な利用者がいれば通す。いなければ 401 / `AUTHENTICATION_REQUIRED`。出来事は知らせない（BR3.3）。
+6. 管理者のみなら、次の順に判定する。API が存在するかどうかは、この判定の後に調べる（BR2.5）。
+   - 有効な利用者がいない → 401 / `AUTHENTICATION_REQUIRED`（BR2.1）。U2 が判定した理由が TOKEN_EXPIRED でなければ、その理由を添えて出来事を知らせる（BR3.2）。
    - 利用者はいるが、管理者でない（内部DBの値で判断、BR2.4） → 403 / `ACCESS_DENIED`（BR2.2）。理由 NOT_ADMIN の出来事を知らせる（BR3.1）。
    - 管理者 → 通す（BR2.3）。
-6. 出来事の受け取り側で失敗が起きても、応答は変えない（BR3.5）。
+7. 401 は認証の入口の処理（AuthenticationEntryPoint）、403 はアクセス拒否の処理（AccessDeniedHandler）で扱う。出来事の要否はそこで判断し、応答は U1 の共通の組み立ての仕組みで、ほかのエラー応答と同じ形（type・code・traceId）で返す（BR3.6）。
+8. 出来事の受け取り側で失敗が起きても、応答は変えない（BR3.5）。
 
 ### WF2 確認用 API
 
@@ -58,15 +60,15 @@ stateDiagram-v2
 
 ## 4. 関係図（entities.md から導いたもの）
 
-U3 のエンティティ（AccessRule、AccessDeniedEvent）は、互いに、またほかのエンティティと関係を持たない。AccessDeniedEvent の userId は U2 の User の利用者IDの値を写したもので、参照ではない。
+U3 のエンティティは AdminAccessDeniedEvent だけで、ほかのエンティティと関係を持たない。enteredEmail は U2 の User のメールアドレスの値を写したもので、参照ではない。
 
 ## 5. 決まりの一覧（rules.md から導いたもの）
 
 | 群 | 決まり | 対応する流れ |
 |---|---|---|
-| BR1 アクセスの決まり | BR1.1〜BR1.5 | WF1 |
+| BR1 アクセスの決まり | BR1.1〜BR1.6 | WF1 |
 | BR2 判定 | BR2.1〜BR2.6 | WF1 |
-| BR3 アクセス拒否の出来事 | BR3.1〜BR3.5 | WF1 |
+| BR3 アクセス拒否の出来事 | BR3.1〜BR3.6 | WF1 |
 | BR4 確認用 API | BR4.1 | WF2 |
 | BR5 画面 | BR5.1〜BR5.4 | WF3、WF4、ST1 |
 | BR6 問題の種類 | BR6.1 | WF1 |
@@ -77,12 +79,16 @@ U3 のエンティティ（AccessRule、AccessDeniedEvent）は、互いに、�
 |---|---|---|
 | 管理者でない利用者が確認用 API を呼ぶ | 403 / ACCESS_DENIED、NOT_ADMIN の出来事 | BR2.2、BR3.1 |
 | 管理者が確認用 API を呼ぶ | 成功 | BR2.3、BR4.1 |
-| トークン無しで確認用 API を呼ぶ | 401、NOT_AUTHENTICATED（TOKEN_MISSING）の出来事 | BR2.1、BR3.2 |
+| トークン無しで確認用 API を呼ぶ | 401、理由 TOKEN_MISSING の出来事 | BR2.1、BR3.2 |
 | 有効期限切れのトークンで確認用 API を呼ぶ | 401、出来事は知らせない | BR3.2 |
-| 署名を改ざんしたトークンで確認用 API を呼ぶ | 401、NOT_AUTHENTICATED（TOKEN_INVALID）の出来事 | BR3.2 |
+| 署名を改ざんしたトークンで確認用 API を呼ぶ | 401、理由 TOKEN_INVALID の出来事 | BR3.2 |
 | 管理者でない利用者が /api/admin/ の下の存在しない API を呼ぶ | 403（存在しないことを明かさない） | BR2.5 |
 | 管理者が /api/admin/ の下の存在しない API を呼ぶ | 404 / NOT_FOUND | BR2.5 |
 | トークン無しで管理者のみ以外の API を呼ぶ | 401、出来事は知らせない | BR3.3 |
+| 管理者でない利用者が /api/admin（末尾のスラッシュなし）を呼ぶ | 403 | BR1.6 |
+| /api/admin/..;/ やエンコードされた区切りを含むパス | 判定の前に拒否 | BR1.6 |
+| /API/admin/check のように大文字で呼ぶ | 管理者のみの API としては扱われず、どの API にも当たらない（ログイン必須の既定で判定され、存在しない API として扱われる） | BR1.6、BR1.3 |
+| /actuator/env など health 以外の Actuator | 外部に公開しない | BR1.5 |
 | 画面を介さずに管理者でない利用者が管理者のみの API を呼ぶ | 403（画面の表示に関係なく判定） | BR2.6 |
 | 管理者フラグが外された直後に管理者向け領域を開いたまま再表示 | 確認用 API が 403 → 「ページが見つかりません」 | BR5.2 |
 | 出来事の受け取り側（U4）で失敗 | 401／403 の応答は変わらない | BR3.5 |
@@ -95,4 +101,5 @@ U3 のエンティティ（AccessRule、AccessDeniedEvent）は、互いに、�
 | U1 | ACCESS_DENIED を U1 の共通の業務エラーの型で起こし、問題の種類を定義する（BR6.1） | U1 の Contract Design |
 | U2 | 要求ごとの AuthenticatedUser と、401 の理由（TOKEN_MISSING・TOKEN_MALFORMED・TOKEN_INVALID・TOKEN_EXPIRED・USER_NOT_FOUND）を受け取る（U2 の決まり 4.4・4.5） | U2 の Contract Design |
 | U2（画面） | API 呼び出しの共通部分と、ログイン状態の admin | U2 の Contract Design |
-| U4 | AccessDeniedEvent を知らせる。受け取りは同じスレッド | U3 の Contract Design |
+| U4 | AdminAccessDeniedEvent を知らせる（項目は監査ログの記録項目にそろえる）。受け取りは同じスレッド | U3 の Contract Design |
+| U1 | 401／403 の応答を、U1 の共通の組み立ての仕組みで返す（BR3.6） | U1 の Contract Design |

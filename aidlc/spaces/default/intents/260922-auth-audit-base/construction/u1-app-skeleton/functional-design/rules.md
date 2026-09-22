@@ -150,11 +150,11 @@ rules:
 
   # ---- BR5 共通のエラー応答 ----
   - id: BR5.1
-    statement: API のエラー応答は、すべて ErrorResponse の形（Problem Details＋code＋traceId）で返す
+    statement: API のエラー応答は、すべて ErrorResponse の形（Problem Details＋code＋traceId）で返す。コントローラーより手前（フィルターの段階）で起きる 401／403 も同じ形で返す
     category: policy
     applies_to: ErrorResponse
     trigger: API の処理でエラーが起きた
-    logic: 例外を1か所でまとめて ErrorResponse に変換する。個々の API で応答を組み立てない
+    logic: コントローラーの中の例外は1か所でまとめて ErrorResponse に変換する。個々の API で応答を組み立てない。フィルターの段階で起きる 401（認証の入口の処理）・403（アクセス拒否の処理）はその1か所を通らないため、U1 が用意する共通の組み立ての仕組み（問題の種類から type・code・title を、要求から traceId を埋める）を使って同じ形で返す
     violation: —
     source: TP（Code Style）
   - id: BR5.2
