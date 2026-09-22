@@ -7,7 +7,7 @@
 - **Scope**: auth-audit-foundation
 - **Start Date**: 2026-09-22T03:06:37Z
 - **State Version**: 8
-- **Active Agent**: aidlc-product-agent
+- **Active Agent**: aidlc-delivery-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**:
@@ -28,8 +28,8 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 22
-- **Completed**: 4
-- **In Progress**: scope-definition
+- **Completed**: 5
+- **In Progress**: approval-handoff
 
 ## Runtime State
 - **Revision Count**: 4
@@ -55,10 +55,10 @@
 - [x] intent-capture — EXECUTE
 - [ ] market-research — SKIP
 - [ ] feasibility — SKIP
-- [-] scope-definition — EXECUTE
+- [x] scope-definition — EXECUTE
 - [ ] team-formation — SKIP
 - [ ] rough-mockups — SKIP
-- [ ] approval-handoff — EXECUTE
+- [-] approval-handoff — EXECUTE
 
 ### INCEPTION PHASE
 - [ ] reverse-engineering — SKIP
@@ -92,12 +92,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: IDEATION
-- **Current Stage**: scope-definition
-- **Next Stage**: approval-handoff
+- **Current Stage**: approval-handoff
+- **Next Stage**: practices-discovery
 - **Status**: Running
-- **Last Updated**: 2026-09-22T03:50:57Z
+- **Last Updated**: 2026-09-22T04:05:17Z
 
 ## Session Resume Point
-- **Last Completed Stage**: intent-capture
-- **Next Action**: Execute Scope Definition
+- **Last Completed Stage**: scope-definition
+- **Next Action**: Execute Approval & Handoff
 - **Pending Artifacts**: none
