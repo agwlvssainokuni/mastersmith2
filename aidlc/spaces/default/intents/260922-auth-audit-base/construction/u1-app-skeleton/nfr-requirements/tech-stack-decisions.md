@@ -20,6 +20,7 @@ U1 はアプリの土台を受け持つため、アプリ全体で使う技術�
 | トレース | Micrometer Tracing（OpenTelemetry のブリッジ）、W3C Trace Context | 要件（FR10.3）。トレースIDの取得は U1 functional-spec.md 6.1 | FR10.3 |
 | 外部エクスポート | Actuator 経由の OTLP エクスポート（既定は無効） | 要件（FR10.4）の制約 | FR10.4 |
 | ヘルスチェック | Actuator の health（`/actuator/health`、DB の確認を含む） | U1 の決まり 1.1〜1.4、U3 の決まり 1.5 | FR1.1 |
+| メソッドの追跡 | Spring AOP（AspectJ の書き方）と CustomizableTraceInterceptor。Spring Boot 4 の AOP の starter の名前は Code Generation のときに確かめる | NFR10.12、Q9 | Q9 |
 | エラー応答 | Spring の ProblemDetail、`@RestControllerAdvice` と共通の組み立ての仕組み | U1 の決まり 5.1 | TP |
 
 ## フロントエンド

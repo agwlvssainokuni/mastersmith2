@@ -88,3 +88,14 @@ Does this all look correct before I generate the artifact?
 - X. Other (please specify)
 
 [Answer]: A. Spring Data JPA（Hibernate）。スキーマは Flyway が正本とし、Hibernate にはスキーマを作らせない
+
+## Q9. メソッドの呼び出しの追跡（TraceAspect）で、TRACE を有効にしたときにパスワードやトークンをログに出さない対策は、どうしますか？
+
+U1 の成果物の完了の後、依頼者から「メソッドの呼び出し・復帰・例外を TRACE でログに出す仕組み（TraceAspect。Spring の CustomizableTraceInterceptor に処理を任せるアスペクト）を組み込みたい」と依頼があったため追加した質問。この仕組みは引数と戻り値をそのまま文字列にして出すため、何もしないとパスワード・トークンがログに出て、project.md の Forbidden に反する。
+
+- A. 秘密情報を持つ型（ログインの要求、トークンの応答など）の文字列化で、その項目を伏せ字にする。伏せ忘れをテストで確かめる
+- B. 認証・利用者の機能のパッケージを追跡の対象から外す
+- C. A と B の両方
+- X. Other (please specify)
+
+[Answer]: A. 秘密情報を持つ型（ログインの要求、トークンの応答など）の文字列化で、その項目を伏せ字にする。伏せ忘れをテストで確かめる
