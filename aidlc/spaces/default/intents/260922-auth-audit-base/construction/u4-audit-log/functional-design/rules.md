@@ -60,9 +60,9 @@ rules:
     category: validation
     applies_to: AuditEvent
     trigger: 記録
-    logic: 長さを超える分を捨てる。それ以外の加工はしない
-    violation: —
-    source: Q2
+    logic: 長さは文字（Unicode のコードポイント）単位で数え、超える分を捨てる。サロゲートペアなど1文字を構成する単位の途中では切らない。それ以外の加工はしない
+    violation: テストで、絵文字などを含む長い値を切り詰めても、壊れた文字が残らず記録できることを確かめる
+    source: Q2、レビュー指摘 R-01
   - id: BR2.2
     statement: 記録する値は加工せずに保存し、表示や出力するときに無害化する
     category: constraint
@@ -94,7 +94,7 @@ rules:
     category: policy
     applies_to: AuditEvent
     trigger: 書き込みの失敗
-    logic: 失敗の例外は U4 の中で受け止め、出来事を知らせた側へ伝えない。ログには、記録しようとした全項目（メールアドレスを含む）をキーと値で載せる。再試行はしない
+    logic: 失敗の例外は U4 の中で受け止め、出来事を知らせた側へ伝えない。ログには、記録しようとした全項目（メールアドレスを含む）をキーと値で載せる。再試行はしない。元の操作の確定後、監査イベントを書き込む前にアプリが止まった場合、その1件は失われる。単一インスタンス・想定規模（Domain Design の ADR-008）では、このまれな欠落を受け入れる
     violation: テストで、書き込みに失敗してもログイン・ログアウト・アクセス拒否の応答が変わらず、ERROR のログが出ることを確かめる
     source: FR9.4、Q3
   - id: BR3.2
@@ -127,10 +127,10 @@ rules:
 | BR1.4 | policy | 取り消された操作の出来事は記録しない | Q1 |
 | BR1.5 | policy | 日時は出来事が起きた日時 | Q4 |
 | BR1.6 | policy | 存在しないメールアドレスでの失敗も記録 | FR9.2 |
-| BR2.1 | validation | メールアドレス 254、User-Agent 512 文字で切り詰め | Q2 |
+| BR2.1 | validation | メールアドレス 254、User-Agent 512 文字（コードポイント単位、文字を分断しない）で切り詰め | Q2、R-01 |
 | BR2.2 | constraint | 値は加工せず保存、出力時に無害化 | Q2 |
 | BR2.3 | constraint | 秘密情報を含めない | NFR3 |
 | BR2.4 | constraint | トレースIDをアプリのログと一致させる | FR10.2 |
-| BR3.1 | policy | 書き込み失敗でも操作は続け、ERROR で内容を1回出す | FR9.4、Q3 |
+| BR3.1 | policy | 書き込み失敗でも操作は続け、ERROR で内容を1回出す。確定後の停止による欠落は受け入れる | FR9.4、Q3、R-02 |
 | BR3.2 | constraint | アプリのログで代用しない | FR9.5 |
 | BR4.1 | constraint | 追記のみ、変更・削除なし、無期限 | FR9.3 |

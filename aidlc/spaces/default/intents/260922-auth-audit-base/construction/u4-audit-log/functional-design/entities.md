@@ -29,7 +29,7 @@ entities:
         type: string
         required: false
         max: 254
-        constraints: 入力された（または特定できた利用者の）メールアドレス。254 文字を超える分は切り詰める（Q2）。内容は加工せずに保存する。利用者を参照するものではない（存在しないメールアドレスも記録する）
+        constraints: 入力された（または特定できた利用者の）メールアドレス。254 文字（コードポイント単位）を超える分は、文字を分断しない位置で切り詰める（Q2）。内容は加工せずに保存する。利用者を参照するものではない（存在しないメールアドレスも記録する）
       - name: failureReason
         type: enum
         required: false
@@ -44,7 +44,7 @@ entities:
         type: string
         required: false
         max: 512
-        constraints: 512 文字を超える分は切り詰める（Q2）。内容は加工せずに保存する
+        constraints: 512 文字（コードポイント単位）を超える分は、文字を分断しない位置で切り詰める（Q2）。内容は加工せずに保存する
       - name: traceId
         type: string
         required: false
