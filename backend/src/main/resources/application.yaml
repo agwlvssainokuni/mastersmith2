@@ -1,0 +1,179 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# アプリの設定。秘密情報の値はここに書かず、環境変数の参照だけを置く。
+# 環境変数の一覧は README.md と .env.example を参照。
+
+mastersmith:
+  web:
+    # エラー応答の type の URL の元になるベースURL（例: https://example.com）。無ければ要求から組み立てる。
+    base-url: ${MASTERSMITH_WEB_BASE_URL:}
+    # 転送元のヘッダー（X-Forwarded-*・Forwarded）を信頼するか。プロキシの内側からだけ受け付ける配備でだけ true にする。
+    trust-forwarded-headers: ${MASTERSMITH_WEB_TRUST_FORWARDED_HEADERS:false}
+    # 要求の本文の大きさの上限
+    max-request-body-size: ${MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE:1MB}
+  health:
+    # ヘルスチェックの内部DBの確認の制限時間
+    db-timeout: ${MASTERSMITH_HEALTH_DB_TIMEOUT:2s}
+  observability:
+    export:
+      # 外部エクスポート（トレース・ログ・指標の OTLP の送信）をまとめて有効にするか。既定は無効。
+      enabled: ${MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED:false}
+      # OTLP の受け手（HTTP）のベースURL。信号ごとの上書きは management.* の設定で行う。
+      endpoint: ${MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT:http://localhost:4318}
+  trace:
+    # メソッドの呼び出しの追跡（TraceAspect）。対象のクラスのロガーを TRACE にしたときだけ出る。
+    # 値は Spring の CustomizableTraceInterceptor の同じ名前の設定に渡す。
+    # 対象のクラスの名前のロガーを使うか
+    use-dynamic-logger: ${MASTERSMITH_TRACE_USE_DYNAMIC_LOGGER:true}
+    # 代理のクラス（プロキシ）の名前を隠すか
+    hide-proxy-class-names: ${MASTERSMITH_TRACE_HIDE_PROXY_CLASS_NAMES:true}
+    # 例外のときにスタックトレースを出すか
+    log-exception-stack-trace: ${MASTERSMITH_TRACE_LOG_EXCEPTION_STACK_TRACE:true}
+    # 入る・出る・例外の文言（EXIT の後の空白2つは意図したもの）
+    enter-message: "${MASTERSMITH_TRACE_ENTER_MESSAGE:ENTER $[targetClassShortName]#$[methodName]($[arguments])}"
+    exit-message: "${MASTERSMITH_TRACE_EXIT_MESSAGE:EXIT  $[targetClassShortName]#$[methodName](): $[returnValue]}"
+    exception-message: "${MASTERSMITH_TRACE_EXCEPTION_MESSAGE:EXCEPTION $[targetClassShortName]#$[methodName](): $[exception]}"
+  security:
+    # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
+    content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+spring:
+  application:
+    name: mastersmith
+  autoconfigure:
+    # 利用者の仕組みは U2 が用意する。既定の利用者（生成したパスワードをログに出す）は作らない。
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  web:
+    resources:
+      # 画面の配信は WebConfig で行う（見つからない画面の URL に index.html を返すため）。
+      add-mappings: false
+  main:
+    banner-mode: off
+  lifecycle:
+    # 穏やかな停止の待ち時間の上限
+    timeout-per-shutdown-phase: 30s
+  # 内部DB。既定は組み込み・ファイル保存（作業ディレクトリの ./data/、コンテナでは /app/data）。
+  # H2 の TCP サーバーや複数のプロセスからの自動の接続（AUTO_SERVER）は使わない。
+  # 接続先は環境変数だけで切り替えられる。パスワードは環境変数で渡し、ここには書かない。
+  datasource:
+    url: ${MASTERSMITH_DB_URL:jdbc:h2:file:./data/mastersmith}
+    username: ${MASTERSMITH_DB_USERNAME:sa}
+    password: ${MASTERSMITH_DB_PASSWORD:}
+    hikari:
+      pool-name: mastersmith-db
+      maximum-pool-size: 10
+      # 接続を借りる待ちの上限（ミリ秒）
+      connection-timeout: 5000
+  jpa:
+    # 画面の描画まで DB の接続を持ち越さない。
+    open-in-view: false
+    hibernate:
+      # スキーマは Flyway が正本。Hibernate は作らず、検証だけ行う。
+      ddl-auto: validate
+    properties:
+      # 問い合わせの時間の上限（ミリ秒）
+      jakarta.persistence.query.timeout: 10000
+  flyway:
+    # 起動時にスキーマの変更を当てる。失敗したら起動を止める。
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  h2:
+    console:
+      # H2 のコンソールは開発時も含めて使わない。
+      enabled: false
+
+server:
+  port: 8080
+  shutdown: graceful
+  # 転送元のヘッダーは既定で使わない。信頼するときはアプリの設定（mastersmith.web.trust-forwarded-headers）で切り替える。
+  forward-headers-strategy: none
+  compression:
+    enabled: true
+    mime-types: text/html,text/css,text/javascript,application/javascript,application/json,application/problem+json
+  error:
+    include-exception: false
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Web に公開するのは health だけ。
+        include: health
+      # 窓口の一覧のページ（/actuator）も出さない。
+      discovery:
+        enabled: false
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      # 応答は状態だけにする（liveness・readiness のグループ名も出さない）。
+      probes:
+        enabled: false
+  health:
+    # 既定の DB の確認は使わず、制限時間付きの確認（TimeBoundedDbHealthIndicator）に置き換える。
+    db:
+      enabled: false
+    diskspace:
+      enabled: false
+    ssl:
+      enabled: false
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    sampling:
+      # 外部へ送るトレースの割合。トレースIDは率に関係なくすべての要求に割り当てる。
+      probability: ${MASTERSMITH_TRACING_SAMPLING_PROBABILITY:1.0}
+    propagation:
+      type: w3c
+    baggage:
+      enabled: false
+    export:
+      otlp:
+        enabled: ${mastersmith.observability.export.enabled}
+  logging:
+    export:
+      otlp:
+        enabled: ${mastersmith.observability.export.enabled}
+  otlp:
+    metrics:
+      export:
+        enabled: ${mastersmith.observability.export.enabled}
+        url: ${mastersmith.observability.export.endpoint}/v1/metrics
+        step: 60s
+        read-timeout: 10s
+  opentelemetry:
+    resource-attributes:
+      service.name: ${spring.application.name}
+    tracing:
+      export:
+        otlp:
+          endpoint: ${mastersmith.observability.export.endpoint}/v1/traces
+          timeout: 10s
+    logging:
+      export:
+        otlp:
+          endpoint: ${mastersmith.observability.export.endpoint}/v1/logs
+          timeout: 10s
+
+logging:
+  level:
+    root: INFO

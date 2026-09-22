@@ -1,0 +1,7 @@
+# ビルドの出力・依存関係・テストの出力
+dist/
+node_modules/
+coverage/
+playwright-report/
+test-results/
+package-lock.json

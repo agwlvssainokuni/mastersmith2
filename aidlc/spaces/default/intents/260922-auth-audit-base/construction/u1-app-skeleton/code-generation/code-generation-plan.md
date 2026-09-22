@@ -122,14 +122,14 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.1 プロジェクトの構成と本番の設定の骨組み
 
-- [ ] **Step 1 — リポジトリのルートとビルドの骨組み**
+- [x] **Step 1 — リポジトリのルートとビルドの骨組み**
   - Gradle Wrapper（Java 25 に対応する版）、`settings.gradle.kts`（ルートの名前、`backend` を含める）、ルートの `build.gradle.kts`（後の Step 19 で `verify` を置く場所）、`gradle/libs.versions.toml`（版の一覧）、依存関係の固定（`dependencyLocking` で全構成を固定し、`gradle.lockfile` をコミットする）。
   - `.editorconfig`（UTF-8、LF、Java 4 桁・120 文字、TS 2 桁・100 文字）、`.gitattributes`（`* text=auto eol=lf`、Gradle Wrapper の jar などは binary）。
   - `.gitignore` に追加: `.env`、`.env.*`、`!.env.example`、`*.pem`、`*.key`、`*.p12`、`*.jks`、`.gradle/`、`backend/build/`、`data/`、`frontend/coverage/`、Playwright の出力（`frontend/test-results/`・`frontend/playwright-report/`）。既存の AI-DLC の区画は変えない。
   - ライセンスヘッダーのひな形を1か所（例: `config/license-header.txt`）に置き、Spotless と画面側の検査スクリプトの両方が使う。
   - 対応: NFR3.2、NFR3.13、team.md Code Style（リポジトリ構成とビルド）
 
-- [ ] **Step 2 — バックエンドの本番の設定の骨組み**
+- [x] **Step 2 — バックエンドの本番の設定の骨組み**
   - `backend/build.gradle.kts`: Spring Boot 4 系、`war` と実行可能 WAR、Java 25 の toolchain、依存（Spring MVC、Spring Security、Actuator、Spring Data JPA、Flyway、H2、Micrometer Tracing の OpenTelemetry ブリッジ、OTLP の送信、OpenTelemetry の logback 用の出力、logstash-logback-encoder、AOP）、Spotless（palantir-java-format、`licenseHeader`、Kotlin DSL のヘッダー）。Lombok は入れない。
   - 起動クラス `cherry.mastersmith.MastersmithApplication`（WAR 用の `SpringBootServletInitializer` を含む）。
   - `backend/src/main/resources/application.yaml`: アプリ名、要求の本文の上限（`mastersmith.web.max-request-body-size`、既定 1MB）、ベースURL（`mastersmith.web.base-url`、既定なし）、転送元のヘッダーを信頼するか（`mastersmith.web.trust-forwarded-headers`、既定 false）、ヘルスの制限時間（`mastersmith.health.db-timeout`、既定 2s）、外部エクスポートの有効化と送り先（`mastersmith.observability.export.enabled`、既定 false、`...endpoint`）、サンプリング率（既定 1.0）、TraceAspect の出力形式（`mastersmith.trace.*`）、CSP の値（`mastersmith.security.content-security-policy`）。穏やかな停止（`server.shutdown=graceful`、待ち 30 秒）、gzip（HTML・JS・CSS・JSON）、Actuator は health だけを公開し内訳を出さない、H2 のコンソールを明示的に無効、ログのレベルの既定 INFO。
@@ -138,7 +138,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - `config` と `common` のパッケージの骨組み（中身は後の手順で書く）。
   - 対応: FR1.1、FR10.1、BR3.1、BR3.2、NFR1.6、NFR1.10、NFR1.11、NFR3.5、NFR3.6、NFR10.1、NFR10.2、NFR10.4
 
-- [ ] **Step 3 — フロントエンドの本番の設定の骨組み**
+- [x] **Step 3 — フロントエンドの本番の設定の骨組み**
   - `frontend/package.json`（`engines` で Node.js 24 を求める、名前付きのスクリプト: `format:check`・`lint`・`lint:css`・`typecheck`・`build`・`test`・`license:check`・`bundle:size`）と `package-lock.json`。依存: `react`・`react-dom`（19 系、`vendor/make-you-chic-ui` の peerDependencies に合わせる）、`react-router`、`i18next`、`react-i18next`、`make-you-chic-ui`（`file:../vendor/make-you-chic-ui/packages/make-you-chic-ui`、組み込みガイドの手順 A）、`@fontsource/noto-sans-jp`（組み込みガイドのとおり自己ホスティング。英語の表示のため latin のサブセットも読み込む）。
   - `frontend/vite.config.ts`: React の plugin、`resolve.dedupe: ['react', 'react-dom']`、開発サーバーのプロキシ（`/api` と `/actuator` を `http://localhost:8080` へ。元の Host を保ったまま転送し、BR5.10 のベースURLが要求の Host から組み立てられるようにする）、ビルドの出力を `dist`（ハッシュ付きのファイルは `assets/` の下）、`index.html` に埋め込みのスクリプトを置かない出力、初回読み込みの量を測るための manifest の出力。CORS の設定は置かない。
   - `frontend/tsconfig.json`（`strict` 系、`noUnusedLocals` など make-you-chic-ui と同じ値）、`.prettierrc.json`（セミコロンなし、シングルクォート、末尾カンマ all、100 文字、インデント2）、`.oxlintrc.json`（make-you-chic-ui の値を複製し、`react/no-danger`、`no-eval`、`no-implied-eval`、`no-new-func` などのセキュリティ系のルールを追加）、`eslint.config.js`（react-hooks の推奨ルールに加え、`export default` と `enum` を禁じる `no-restricted-syntax`）、`.stylelintrc.json`（stylelint-config-standard）。いずれも `vendor/` を参照せず `frontend/` に複製し、`vendor/` を対象から外す。
@@ -149,7 +149,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.2 テストの実行の枠組み
 
-- [ ] **Step 4 — テストの実行の枠組みを用意し、この単位のコマンドを記録する**
+- [x] **Step 4 — テストの実行の枠組みを用意し、この単位のコマンドを記録する**
   - バックエンド: JUnit 5、AssertJ、Spring Boot Test、jqwik、ArchUnit を入れる。テストは `backend/src/test/java` に置き、Gradle の `test` タスクは `*Test`（単体）だけ、新しい `integrationTest` タスクは `*IT`（Spring と組み込みの H2 を起動する結合テスト）だけを実行する（同じソースの組を使い、名前で分ける）。jqwik は失敗時の乱数の種をテストの出力に残す設定にする。
   - JaCoCo: `test` と `integrationTest` の実行記録を合わせて報告と下限の検証（行 80%・分岐 70%）を行うタスクを用意する。計測から外すのは起動クラスと設定値だけのクラスに限る。
   - フロントエンド: Vitest、Testing Library（jsdom）、user-event、vitest-axe、`@testing-library/jest-dom`、fast-check、`@vitest/coverage-v8` を入れる。`frontend/vitest.config.ts`（`vite.config.ts` と同じ `resolve.dedupe`、jsdom、`setupFiles`、`coverage.thresholds` に行 80・分岐 70、計測の対象は `src/**`、外すのは入口の `src/main.tsx` と型の宣言だけ、`e2e/` はテストの対象外）、`frontend/vitest.setup.ts`（vitest-axe と jest-dom の照合を登録）。`test` のスクリプトは make-you-chic-ui と同じく `NODE_OPTIONS=--no-experimental-webstorage` を付ける。
@@ -158,20 +158,20 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.3 データモデル・DB の振る舞い
 
-- [ ] **Step 5 — 内部DBの接続とスキーマの変更の仕組みを実装する**
+- [x] **Step 5 — 内部DBの接続とスキーマの変更の仕組みを実装する**
   - DataSource: 既定は組み込み・ファイル保存（`jdbc:h2:file:./data/mastersmith`。コンテナでは作業ディレクトリ `/app` の下の `/app/data`）。H2 の TCP サーバー・自動の複数プロセス接続は使わない。接続の URL・利用者・パスワードは設定（環境変数）だけで切り替えられる。
   - HikariCP: 最大 10 本、接続を借りる待ち 5 秒。JPA: `open-in-view` 無効、Hibernate はスキーマを作らず検証だけ（`ddl-auto=validate`）、問い合わせの上限 10 秒。
   - Flyway: 起動時に適用し、失敗したら起動を止める。場所は `backend/src/main/resources/db/migration`。単位ごとにファイルを分ける名前の決まり（例: `V1__u1_baseline.sql`、以降の単位は `V<番号>__<単位>_<内容>.sql`）を README に書く。U1 は業務の表を持たないため、U1 のファイルは表を作らない基準線（コメントだけ）とし、Flyway が H2 に当たることを確かめる目的で置く。
   - 対応: FR1.2、BR2.1、BR2.2、BR2.3、NFR1.7、NFR1.8、NFR3.7、NFR6.1、NFR9.1
 
-- [ ] **Step 6 — データモデル・DB の振る舞いのテストを書いて実行する**
+- [x] **Step 6 — データモデル・DB の振る舞いのテストを書いて実行する**
   - `DatabasePersistenceIT`（組み込みの H2 を一時ディレクトリのファイルで使う）: 既定の形がファイル保存であること、書き込んだデータがアプリの再起動（コンテキストの作り直し）の後も残ること（FR1.2 の受け入れ基準1）、接続設定だけで別の H2 に切り替わること（受け入れ基準2）、Flyway の基準線が適用されること、Hibernate の検証で起動できること、内部DBのパスワードを設定して起動してもログに値が出ないこと（BR2.3）。
   - 実行のコマンドは `unit-test-instructions.md` の「DB の振る舞い」。すべて通るまで次へ進まない。
   - 対応: FR1.2、BR2.1〜BR2.3、NFR6.1、NFR9.1
 
 ### 4.4 業務処理（バックエンドの domain・service と共通部品）
 
-- [ ] **Step 7 — 業務処理の層を実装する**
+- [x] **Step 7 — 業務処理の層を実装する**
   - 問題の種類（`common.error.domain`）: `ProblemType`（record。`code`・`slug`・`status`・`title`・`description`・`resolution`）、`LocalizedText`（record。`ja`・`en`）、`code` の形の検査（`^[A-Z][A-Z0-9_]*$`）と `slug` の導出（小文字にしアンダースコアをハイフンに）、状態コードの範囲（400〜599）、日英の両方が必須。後の単位が問題の種類の定義を置くための `ProblemTypeCatalog`（定義の一覧を返す Bean の型）と、共通の業務エラーの型 `BusinessException`（問題の種類と、利用者に見せてよい detail を持つ）。
   - U1 の問題の種類の定義 `CommonProblemTypes`: `VALIDATION_FAILED`（400）、`NOT_FOUND`（404）、`PAYLOAD_TOO_LARGE`（413）、`INTERNAL_ERROR`（500）。7章の P1 の決定（A）により `MALFORMED_REQUEST`（400）、`METHOD_NOT_ALLOWED`（405）、`NOT_ACCEPTABLE`（406）、`UNSUPPORTED_MEDIA_TYPE`（415）も加える。すべて日英の title・description・resolution を持つ（BR5.14）。
   - `ProblemTypeRegistry`（`common.error.service`）: 起動時にすべての `ProblemTypeCatalog` を集め、`code`・`slug` の重複があれば、重複した値を示して起動を失敗させる。`code`・`slug` から引く。
@@ -182,7 +182,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - 外へ送る記録の秘密情報の除去（`common.observability`）: 外部エクスポートの手前でスパンの例外の記録からメッセージとスタックトレースを取り除く `SanitizingSpanExporter`（送信の仕組みを包む）と、要求の URL の属性から問い合わせの部分（`?` 以降）を取り除く観測のフィルター。
   - 対応: BR1.1〜BR1.3、BR4.3、BR5.2、BR5.9（slug）、BR5.14、BR5.16、BR6.3、NFR1.2、NFR3.1、NFR3.4、NFR10.6、security-design 3章・5章
 
-- [ ] **Step 8 — 業務処理の層のテストを書いて実行する**
+- [x] **Step 8 — 業務処理の層のテストを書いて実行する**
   - 単体テスト（`*Test`）: `ProblemTypeTest`（jqwik で code から slug の導出の性質を確かめる）、`ProblemTypeRegistryTest`（U1 の定義がすべて日英を持つことを含む）、`AcceptLanguageResolverTest`（jqwik で任意の文字列でも例外にならず ja・en のどちらかを返す性質を含む）、`TimeBoundedDbHealthIndicatorTest`、`TraceIdProviderTest`、`SecurityExtensionValidatorTest`、`SanitizingSpanExporterTest`、`UrlQueryStrippingObservationFilterTest`。
   - `ProblemTypeDuplicateStartupIT`: code・slug が重複する定義を置いたときにアプリの起動が失敗すること（BR5.16）。
   - 時間の上限のテストは `sleep` を使わない。確認の問い合わせをラッチで止めた偽の DataSource と短い制限時間（例: 50 ミリ秒）で DOWN を確かめ、ラッチを外して後始末する。
@@ -191,7 +191,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.5 API・エンドポイント（エラー応答と説明ページ）
 
-- [ ] **Step 9 — 共通のエラー応答と問題の種類の説明ページを実装する**
+- [x] **Step 9 — 共通のエラー応答と問題の種類の説明ページを実装する**
   - `ProblemBaseUrlResolver`: 設定のベースURLがあればそれを、無ければ要求のスキーム・Host・ポートから組み立てる。転送元のヘッダーは、`mastersmith.web.trust-forwarded-headers=true` のときだけ Spring の `ForwardedHeaderFilter` を登録して反映する（既定では登録しない。U2・U3 の接続元IP も同じ方針に乗る）。
   - `ErrorResponseFactory`: `ProblemDetail` に `type`（ベースURL＋`/api/problems/`＋slug）、`title`（表示言語に応じた問題の種類の title）、`status`、`detail`（利用者に見せてよい説明だけ）、`instance`（要求のパス）、`code`、`traceId`（`TraceIdProvider` から。要求の処理中は常に割り当てられている）を入れる。`Content-Type` は `application/problem+json`。
   - `GlobalExceptionHandler`（`@RestControllerAdvice`、1か所）: 入力の検証の失敗 → 400 `VALIDATION_FAILED`、存在しない API（`NoResourceFoundException` など）→ 404 `NOT_FOUND`、`BusinessException` → その問題の種類、本文の上限超え → 413 `PAYLOAD_TOO_LARGE`、それ以外 → 500 `INTERNAL_ERROR`。フレームワークの標準の 4xx は 7章の P1 の決定（A: 状態コードを保ち専用の code を付ける）に従う。ログは変換する場所で1回だけ: 4xx は WARN（スタックトレースなし、`code`・`status` をキーと値で）、5xx は ERROR（スタックトレース付き）。応答に例外のメッセージとスタックトレースを載せない。
@@ -200,7 +200,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - `ProblemTypeHtmlRenderer`: 決まった形のひな形に、問題の種類の定義の値だけをすべて HTML としてエスケープして埋め込む。要求から受け取った値（slug を含む）は埋め込まない。`<html lang>` を表示言語にし、埋め込みのスタイル・スクリプトを持たない（CSP に合わせる）。
   - 対応: BR5.1〜BR5.16、BR6.3、NFR3.3、NFR3.8、NFR3.9、FR10.2（エラー応答のトレースID）
 
-- [ ] **Step 10 — エラー応答と説明ページのテストを書いて実行する**
+- [x] **Step 10 — エラー応答と説明ページのテストを書いて実行する**
   - 単体テスト: `ProblemBaseUrlResolverTest`、`ErrorResponseFactoryTest`、`GlobalExceptionHandlerTest`（Spring を起動しない MockMvc の standalone 構成）、`DefaultErrorResponseWriterTest`、`ProblemTypeHtmlRendererTest`（HTML の特殊文字を含む定義がエスケープされる）。
   - 結合テスト `ErrorResponseIT`: 存在しない API が 404 `NOT_FOUND`、入力の検証の失敗が 400 `VALIDATION_FAILED`、想定外の例外が 500 `INTERNAL_ERROR` で例外のメッセージが応答に無い、`BusinessException` がその問題の種類になる、`type` の URL が要求の Host から組み立てられ転送元のヘッダーが既定で無視される、設定のベースURLが優先される、`traceId` が載る、4xx は WARN でスタックトレースなし・5xx は ERROR でスタックトレース付きで1回だけログに出る、P1 の決定（A）の各例外の扱い。テスト用のコントローラーはテストのソースの中にだけ置く。
   - 結合テスト `ProblemTypePageIT`: 未ログインで見られる、JSON と HTML の切り替え、Accept-Language による日英の切り替えと既定の ja、未定義の slug は 404 `NOT_FOUND`、応答に要求の値が無い。
@@ -208,7 +208,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.6 API・エンドポイント（フィルターの連鎖、画面の配信、Actuator）
 
-- [ ] **Step 11 — フィルターの連鎖・配信・Actuator を実装する**
+- [x] **Step 11 — フィルターの連鎖・配信・Actuator を実装する**
   - `SecurityConfig`（`config`）: `SecurityFilterChain` を1つだけ定義する。状態を持たない（セッションを作らない）、フォームのログイン・Basic 認証・CSRF の仕組みは無効、要求の検査（正規化されていないパスの拒否）は既定のまま。ヘッダー: `Content-Security-Policy`（設定の固定値）、`X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`Referrer-Policy: same-origin`。Spring Security の既定のキャッシュの指定は外す。`Strict-Transport-Security` は付けない。
   - アクセスの決まりの並び: U1 の公開の決まり（`/actuator/health`、`/api/problems/**`）→ `SecurityRuleContributor` を `order` の小さい順に呼ぶ → `ApiDefaultAccess` による `/api/**` の既定（無ければ許可、あれば `requireAuthentication()` に従う）→ `/api/**` 以外（画面の配信）は許可。U2・U3 はヘッダー・セッション・CSRF の設定を変えない。
   - `RequestSizeLimitFilter`（連鎖の中、ヘッダーを書く処理の後）: `Content-Length` が上限を超えれば本文を読まずに 413、`Content-Length` が無い送り方では読んだ量を数えて上限を超えた時点で読むのをやめて 413。応答は `ErrorResponseWriter` で書く。
@@ -217,7 +217,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - Actuator: 公開は health だけ、内訳を出さない。既定の DB の確認は無効にし、Step 7 の `TimeBoundedDbHealthIndicator` を使う。指標は集めるが窓口は公開しない。
   - 対応: BR1.3、BR1.4、BR5.1、BR5.12、NFR1.1、NFR3.5〜NFR3.7、NFR3.10、NFR3.12、NFR10.8、NFR10.10、security-design 2章〜4章・6章、performance-design 5章
 
-- [ ] **Step 12 — フィルターの連鎖・配信・Actuator のテストを書いて実行する**
+- [x] **Step 12 — フィルターの連鎖・配信・Actuator のテストを書いて実行する**
   - 単体テスト: `RequestSizeLimitFilterTest`（上限ちょうどは受け付け、上限＋1バイトは 413。`Content-Length` あり・なしの両方）、`CacheControlFilterTest`。
   - 結合テスト `HealthEndpointIT`（ヘルスチェックの起動確認テスト）: 起動して未ログインで `/actuator/health` が 200・`{"status":"UP"}` だけ、内訳が無い、起動後に内部DBが応答しない状態（ヘルスの確認が使う接続を、問い合わせが止まる偽のものに差し替えたコンテキスト。起動時の Flyway は本物の H2 を使う）で制限時間内に 503・DOWN、そのときも画面の配信と説明ページは応答する。
   - 結合テスト `SecurityHeadersIT`: API・画面・説明ページ・health・エラー応答（413 を含む）のそれぞれに CSP などのヘッダーが付く、キャッシュの指定が表のとおり。
@@ -227,14 +227,14 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.7 API・エンドポイント（ログ・トレース・外部エクスポート）
 
-- [ ] **Step 13 — ログ・トレース・外部エクスポート・TraceAspect を実装する**
+- [x] **Step 13 — ログ・トレース・外部エクスポート・TraceAspect を実装する**
   - トレース: Micrometer Tracing（OpenTelemetry のブリッジ）と W3C Trace Context を使い、仕組み自体は常に有効にする。サンプリング率の既定は 100%（設定で変更可）。率はトレースの送信の割合だけに効き、トレースIDはすべての要求でログとエラー応答に載る。MDC の `traceId`・`spanId` は要求の終わりに取り除く。
   - 外部エクスポート: `mastersmith.observability.export.enabled`（既定 false）1つで、トレース・ログ・指標の OTLP の送信をまとめて切り替える。送り先は1つの設定で指定し、信号ごとに上書きできる。無効のときは送信の仕組みを作らない。有効のときは送信を要求と切り離し、上限付きの待ち行列から送る（送信1回の上限 10 秒、あふれたら捨てる、失敗は警告のログ）。ログの送信は、有効のときだけ OpenTelemetry の logback 用の出力を加える（標準出力はそのまま）。指標は送る間隔 60 秒、共通のタグにアプリ名、タグに利用者の ID・生の URL を使わない。Spring Boot 4 系の対応する設定の名前は使う版で確かめて対応づける。
   - `TraceAspect`（`common.observability`）: Spring の `CustomizableTraceInterceptor` に処理を任せる。対象は `cherry.mastersmith` の下の `web`・`service`・`domain`・`repository` の層の Bean（Spring Data の repository はインターフェースに宣言されたメソッド）。外すもの: Spring Security のフィルターとフィルター全般、`@Configuration` のクラス、起動クラス、追跡の仕組み自身。対象のクラスの名前のロガーを使い、TRACE のときだけ文字列を組み立てて出す。入る・出る・例外の文言とスタックトレースの有無は `mastersmith.trace.*` で変えられる。
   - テストの補助（`backend/src/test/java` の `cherry.mastersmith.common.testsupport`）: 標準出力の JSON のログを捕まえて項目を取り出し、指定した秘密の値が含まれないことを確かめる部品。U2 以降も使う（NFR3.15）。
   - 対応: FR10.1〜FR10.4、BR3.1〜BR3.5、BR4.1〜BR4.5、NFR3.1、NFR3.4、NFR3.11、NFR3.15、NFR10.1〜NFR10.7、NFR10.9、NFR10.11〜NFR10.14
 
-- [ ] **Step 14 — ログ・トレース・外部エクスポート・層の構造のテストを書いて実行する**
+- [x] **Step 14 — ログ・トレース・外部エクスポート・層の構造のテストを書いて実行する**
   - 単体テスト `JsonLogFormatTest`: 1件が改行を含まない1行の JSON、項目の名前（`timestamp`・`level`・`logger`・`thread`・`message`・`traceId`・`spanId`・`exception`・キーと値）、`timestamp` がタイムゾーン付き、改行を含む値が1行に収まる、MDC のほかの値が出ない。
   - 結合テスト `TracingAndLoggingIT`: 形の正しい `traceparent` 付きの要求でログとエラー応答のトレースIDがヘッダーの値と一致する、`traceparent` が無い要求でも新しいトレースIDがログとエラー応答で一致する、形の正しくない `traceparent`（桁数違い・16進数でない・すべて0）で要求が拒否されず新しいトレースになる、1要求の間のすべてのログに同じトレースIDが入る、サンプリング率 0 でもトレースIDが入る、ログにパスワード・トークンの値が出ない（テストの補助を使う）。
   - 結合テスト `ExternalExportIT`: 既定の設定で OTLP の送信の仕組みが作られず外部へ何も送らない、有効にして届かない送り先を指定しても要求が通常どおり応答する。

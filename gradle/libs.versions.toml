@@ -1,0 +1,60 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# 版の一覧。Spring Boot が管理する部品の版は Spring Boot の BOM に任せ、
+# それ以外の部品と Gradle のプラグインの版をここで固定する。
+# 実際に解決された版は backend/gradle.lockfile で固定する。
+
+[versions]
+java = "25"
+spring-boot = "4.1.1"
+spotless = "8.10.2"
+palantir-java-format = "2.98.0"
+spotbugs-gradle-plugin = "6.5.11"
+spotbugs-tool = "4.10.4"
+findsecbugs = "1.14.0"
+jacoco = "0.8.15"
+logstash-logback-encoder = "9.0"
+# OpenTelemetry の logback 用の出力。Spring Boot が管理する OpenTelemetry（現在 1.62.0）に合う版に固定する。
+# Spring Boot を上げるときは、Boot の OpenTelemetry の版に合わせてこの版も見直す（2.29 以降は api 1.63 以上を求める）。
+opentelemetry-instrumentation = "2.28.1-alpha"
+jqwik = "1.10.1"
+archunit = "1.5.0"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-aspectj = { module = "org.springframework.boot:spring-boot-starter-aspectj" }
+spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
+spring-boot-starter-tomcat-runtime = { module = "org.springframework.boot:spring-boot-starter-tomcat-runtime" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-boot-starter-security-test = { module = "org.springframework.boot:spring-boot-starter-security-test" }
+h2 = { module = "com.h2database:h2" }
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
+opentelemetry-logback-appender = { module = "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0", version.ref = "opentelemetry-instrumentation" }
+jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+findsecbugs-plugin = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "findsecbugs" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }
+spotbugs = { id = "com.github.spotbugs", version.ref = "spotbugs-gradle-plugin" }

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright 2026 agwlvssainokuni
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!--
+  アプリのログの設定。標準出力への出力を1つだけ置き、1行1件の JSON で同期して書く。
+  項目: timestamp（ISO 8601、タイムゾーン付き）、level、logger、thread、message、
+        traceId・spanId（MDC のうちこの2つだけ）、呼び出し側のキーと値、exception（あれば）。
+  呼び出し元の場所・ホスト名は出さない。ファイルへの出力は持たない。
+  外部エクスポートの送信（OpenTelemetry の logback 用の出力）は、有効にしたときだけアプリが加える。
+-->
+<configuration>
+  <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp>
+          <fieldName>timestamp</fieldName>
+          <pattern>yyyy-MM-dd'T'HH:mm:ss.SSSXXX</pattern>
+        </timestamp>
+        <logLevel>
+          <fieldName>level</fieldName>
+        </logLevel>
+        <loggerName>
+          <fieldName>logger</fieldName>
+        </loggerName>
+        <threadName>
+          <fieldName>thread</fieldName>
+        </threadName>
+        <message>
+          <fieldName>message</fieldName>
+        </message>
+        <mdc>
+          <includeMdcKeyName>traceId</includeMdcKeyName>
+          <includeMdcKeyName>spanId</includeMdcKeyName>
+        </mdc>
+        <keyValuePairs/>
+        <stackTrace>
+          <fieldName>exception</fieldName>
+        </stackTrace>
+      </providers>
+    </encoder>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="JSON_STDOUT"/>
+  </root>
+</configuration>
