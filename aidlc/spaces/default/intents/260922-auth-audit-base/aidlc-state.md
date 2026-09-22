@@ -35,6 +35,8 @@
 - **Revision Count**: 12
 
 - **Skeleton Stance**: off
+- **Active Unit**: u1-app-skeleton
+- **Unit State**: in-progress
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -96,7 +98,7 @@ Per unit: [TBD]
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-09-22T12:59:26Z
+- **Last Updated**: 2026-09-22T13:00:21Z
 
 ## Session Resume Point
 - **Last Completed Stage**: infrastructure-design
