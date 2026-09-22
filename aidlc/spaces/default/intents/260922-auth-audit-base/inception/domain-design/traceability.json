@@ -13,8 +13,8 @@
     "FR10.1", "FR10.2", "FR10.3", "FR10.4"
   ],
   "coverage": [
-    { "id": "FR1.1", "status": "OK", "target": "共通の仕組み（アプリの骨格）" },
-    { "id": "FR1.2", "status": "OK", "target": "共通の仕組み（アプリの骨格）/ H2（UserAccount・Authentication・AuditLog の外部依存）" },
+    { "id": "FR1.1", "status": "OK", "target": "共通の仕組み（アプリの骨格。部品ではない: ADR-005）" },
+    { "id": "FR1.2", "status": "OK", "target": "共通の仕組み（アプリの骨格。部品ではない: ADR-005）/ H2（UserAccount・Authentication・AuditLog の外部依存）" },
     { "id": "FR2.1", "status": "OK", "target": "AuthUi" },
     { "id": "FR2.2", "status": "OK", "target": "AppFrame / AdminArea" },
     { "id": "FR2.3", "status": "OK", "target": "AppFrame" },
@@ -45,9 +45,9 @@
     { "id": "FR9.3", "status": "OK", "target": "AuditLog" },
     { "id": "FR9.4", "status": "OK", "target": "AuditLog" },
     { "id": "FR9.5", "status": "OK", "target": "AuditLog" },
-    { "id": "FR10.1", "status": "OK", "target": "共通の仕組み（観測性）" },
-    { "id": "FR10.2", "status": "OK", "target": "共通の仕組み（観測性）" },
-    { "id": "FR10.3", "status": "OK", "target": "共通の仕組み（観測性）" },
-    { "id": "FR10.4", "status": "OK", "target": "共通の仕組み（観測性）" }
+    { "id": "FR10.1", "status": "OK", "target": "共通の仕組み（観測性。部品ではない: ADR-005）" },
+    { "id": "FR10.2", "status": "OK", "target": "共通の仕組み（観測性。部品ではない: ADR-005）" },
+    { "id": "FR10.3", "status": "OK", "target": "共通の仕組み（観測性。部品ではない: ADR-005）" },
+    { "id": "FR10.4", "status": "OK", "target": "共通の仕組み（観測性。部品ではない: ADR-005）" }
   ]
 }

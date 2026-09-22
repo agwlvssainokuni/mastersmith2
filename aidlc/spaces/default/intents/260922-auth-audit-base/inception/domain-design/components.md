@@ -106,7 +106,7 @@ components:
     summary: 認証・アクセス制御の出来事を受け取り、監査イベントとして内部DBに記録する
     behaviour: >
       ログイン成功・ログイン失敗・ログアウト・権限不足によるアクセス拒否の出来事を受け取り、日時・イベントの種類・結果・
-      入力されたユーザーID・失敗の理由・接続元IP・User-Agent・トレースIDを記録する。書き込みに失敗しても出来事を
+      入力されたユーザーID（メールアドレス。利用者として存在しなくても入力された値のまま）・失敗の理由・接続元IP・User-Agent・トレースIDを記録する。書き込みに失敗しても出来事を
       知らせた側の操作には影響させず、失敗と記録しようとした内容（秘密情報を除く）をアプリのログにエラーとして出す。
       記録を削除・変更する機能は持たない。パスワード・トークンは記録しない。
     responsibilities:
@@ -127,7 +127,7 @@ components:
     entities:
       - name: AuditEvent
         identifier: auditEventId
-        attributes: [auditEventId, occurredAt, eventType, result, enteredUserId, failureReason, sourceIp, userAgent, traceId]
+        attributes: [auditEventId, occurredAt, eventType, result, enteredEmail, failureReason, sourceIp, userAgent, traceId]
 
   # ---------------- 画面（フロントエンド） ----------------
   - name: AppFrame
@@ -261,7 +261,7 @@ graph LR
 | User | UserAccount | userId | userId, email, passwordHash, adminFlag, createdAt | — |
 | RefreshToken | Authentication | tokenId | tokenId, userId, tokenHash, issuedAt, expiresAt, revokedAt | User（UserAccount） |
 | LoginAttemptState | Authentication | userId | userId, consecutiveFailures, lockedUntil | User（UserAccount） |
-| AuditEvent | AuditLog | auditEventId | auditEventId, occurredAt, eventType, result, enteredUserId, failureReason, sourceIp, userAgent, traceId | —（入力されたユーザーIDは文字列として記録し、利用者を参照しない） |
+| AuditEvent | AuditLog | auditEventId | auditEventId, occurredAt, eventType, result, enteredEmail, failureReason, sourceIp, userAgent, traceId | —（enteredEmail はログイン時に入力されたメールアドレスの文字列で、User.userId への参照ではない。存在しないメールアドレスでの失敗も記録するため） |
 
 ## 外部の依存
 
