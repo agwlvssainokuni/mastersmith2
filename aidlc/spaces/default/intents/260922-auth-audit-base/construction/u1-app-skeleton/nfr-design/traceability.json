@@ -1,0 +1,296 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-app-skeleton",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR3.9",
+    "NFR3.10",
+    "NFR3.11",
+    "NFR3.12",
+    "NFR3.13",
+    "NFR3.14",
+    "NFR3.15",
+    "NFR6.1",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5",
+    "NFR10.6",
+    "NFR10.7",
+    "NFR10.8",
+    "NFR10.9",
+    "NFR10.10",
+    "NFR10.11",
+    "NFR10.12",
+    "NFR10.13",
+    "NFR10.14"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "performance-design.md 1章・2章: 組み込み H2 への確認の問い合わせ1回、共通の処理の予算内で 500ms 以内"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "performance-design.md 2章: 専用スレッド1本での確認と制限時間（既定2秒）での打ち切り、実行中なら DOWN"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design.md 1章: 共通の処理の予算 20ms と内訳、超えたときに疑う順番、Performance Validation で測る"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "performance-design.md 3章: 起動を遅くする処理を持ち込まない、UP までの時間を Build and Test で測る"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "performance-design.md 4章: 画面の部品の遅延読み込み、不要なコードの除去、圧縮後の合計を測る検査（超過は警告）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "performance-design.md 7章: 標準出力へ同期で書く（Q2）、呼び出し元の場所を求めない、TRACE の文字列は TRACE のときだけ"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "scalability-design.md 1章・performance-design.md 6章: コネクションプール最大 10 本、借りる待ち 5 秒、Tomcat の既定のスレッド"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "scalability-design.md 3章: 接続先を設定だけで切り替え、セッションとキャッシュを持たない"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "scalability-design.md 1章: 監査ログ 1年 約180MB の見積もりと見直しの目安"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "scalability-design.md 1章・observability-design.md 2章: 標準出力だけに出し、ログのファイルを持たない"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "reliability-design.md 3章: 穏やかな停止、待ち時間の上限 30 秒"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 5章: 出力先ごとに秘密情報を出さない仕組み（ログ・追跡・トレースの属性・指標・外部エクスポート・エラー応答）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design.md 5章・7章: 環境変数で受け取り、.env.example、Gitleaks を pre-commit と CI で実行"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 5章: エラー応答に例外のメッセージとスタックトレースを載せない"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "security-design.md 5章・observability-design.md 6章: 送るのはトレース・ログ・指標（Q3 で指標を追加）、秘密情報を載せない"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "security-design.md 4章: Actuator は health だけ公開、内訳なし、指標の窓口も公開しない"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "security-design.md 4章: H2 のコンソールを明示的に無効化、テストで確かめる"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "security-design.md 4章: H2 のネットワークの受け口を使わない、別サーバーの H2 はアプリからだけ届く場所に置く"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "security-design.md 6章: ベースURLの設定の固定値、転送元のヘッダーは信頼の設定があるときだけ（既定は無効）"
+    },
+    {
+      "id": "NFR3.9",
+      "status": "OK",
+      "target": "security-design.md 6章: 決まった形のひな形に定義の値だけを埋め込み、すべてエスケープ"
+    },
+    {
+      "id": "NFR3.10",
+      "status": "OK",
+      "target": "security-design.md 2章: Spring Security のヘッダーの設定で CSP・nosniff・Referrer-Policy・X-Frame-Options、API は no-store、ビルドした WAR で E2E"
+    },
+    {
+      "id": "NFR3.11",
+      "status": "OK",
+      "target": "security-design.md 6章: 1行1件の JSON、可変の値はキーと値"
+    },
+    {
+      "id": "NFR3.12",
+      "status": "OK",
+      "target": "security-design.md 6章: 連鎖の中の本文の大きさの確認（Content-Length と読んだ量）、413 / PAYLOAD_TOO_LARGE"
+    },
+    {
+      "id": "NFR3.13",
+      "status": "OK",
+      "target": "security-design.md 7章: バージョンカタログと依存関係の固定、package-lock.json と npm ci"
+    },
+    {
+      "id": "NFR3.14",
+      "status": "OK",
+      "target": "security-design.md 7章: SpotBugs＋FindSecBugs・OSV-Scanner・Gitleaks を1コマンドの検査と CI で、High 以上で失敗"
+    },
+    {
+      "id": "NFR3.15",
+      "status": "OK",
+      "target": "security-design.md 5章・observability-design.md 4章: 秘密情報を持つ型の文字列化の伏せ字、U1 はテストの補助を用意"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 組み込み・ファイル保存（./data/、コンテナでは /app/data のボリューム）"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "reliability-design.md 5章: i18next の日英の文言のファイル、鍵の集まりの一致をテスト"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "reliability-design.md 5章: U1 の画面の部品ごとに vitest-axe の検査1件"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "reliability-design.md 1章・4章: 起動時に Flyway を当て、失敗で停止、前進のみ・後方互換"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 停止した状態での ./data/ の複写、README に手順"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 配備ごとに health の UP とログイン画面の表示を確認、直前の版で戻す"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "reliability-design.md 5章: JaCoCo と @vitest/coverage-v8 の下限（行 80%・分岐 70%）と除外の範囲"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "reliability-design.md 5章: ルートの1つの入口で全検査を順に実行し、CI も同じ入口を呼ぶ"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "observability-design.md 2章: 標準出力への出力1つ、logstash-logback-encoder で1行1件の JSON"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design.md 2章: 項目の名前の表（timestamp・level・logger・thread・message・traceId・spanId・exception・キーと値）"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "observability-design.md 3章: トレースの仕組みが MDC に traceId・spanId を入れ、要求の終わりに取り除く"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "observability-design.md 2章: 既定 INFO、パッケージごとに変更、4xx は WARN・5xx は ERROR"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "observability-design.md 3章: W3C Trace Context の traceparent の引き継ぎと新規の開始"
+    },
+    {
+      "id": "NFR10.6",
+      "status": "OK",
+      "target": "observability-design.md 3章: トレースの仕組みは常に有効、サンプリング率の既定 100%（Q4）、0% でもトレースIDが入ることをテスト"
+    },
+    {
+      "id": "NFR10.7",
+      "status": "OK",
+      "target": "observability-design.md 6章: 1つの設定で有効・無効（既定は無効）、送り先を指定、無効時は送信の仕組みを作らない"
+    },
+    {
+      "id": "NFR10.8",
+      "status": "OK",
+      "target": "observability-design.md 5章・performance-design.md 2章: /actuator/health を健全性の指標とする"
+    },
+    {
+      "id": "NFR10.9",
+      "status": "OK",
+      "target": "observability-design.md 5章: http.server.requests の 5xx の割合と logback.events の ERROR の件数、有効時に OTLP で送る（Q3・Q5）"
+    },
+    {
+      "id": "NFR10.10",
+      "status": "OK",
+      "target": "reliability-design.md 1章: 内部DBの停止時も画面の配信と説明ページは応答、health は DOWN"
+    },
+    {
+      "id": "NFR10.11",
+      "status": "OK",
+      "target": "reliability-design.md 1章・2章: 非同期・上限付きの待ち行列、届かなくても要求を止めない"
+    },
+    {
+      "id": "NFR10.12",
+      "status": "OK",
+      "target": "observability-design.md 4章: CustomizableTraceInterceptor に任せる TraceAspect、クラスごとのロガー、TRACE のときだけ、形式は設定"
+    },
+    {
+      "id": "NFR10.13",
+      "status": "OK",
+      "target": "observability-design.md 4章: 4つの層を含め、フィルター・設定クラス・起動クラス・追跡の仕組み自身を除く"
+    },
+    {
+      "id": "NFR10.14",
+      "status": "OK",
+      "target": "observability-design.md 4章: 追跡のログは文字列の組み立て（BR3.5 の例外）"
+    }
+  ]
+}
