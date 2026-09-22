@@ -13,6 +13,9 @@
 
 - 2026-09-22T12:32:00Z — U3 は独自の基盤を持たないため、質問を作らず、設計の要点を要約として依頼者に確認した; 監視の指標は U1 と重なるものを繰り返さず、U3 に固有のものだけを書いた（U2 の確認の指摘 R-02 を踏まえて）。
 <!-- aidlc-wave-memory:u3-access-control:c0a1b47f83fb736f60d69dd1d1faa429fb818256e17c1450c9a5e98b7f843ae1 -->
+
+- 2026-09-22T12:40:00Z — U4 は独自の基盤を持たないため質問を作らず要約で確認した; 前の単位の確認の指摘を踏まえ、traceability.json に U4 の NFR の ID をすべて載せ、「指標を作らない」ものにはしきい値を指標として書かず、ログと監査ログから数える見方として書いた。
+<!-- aidlc-wave-memory:u4-audit-log:2ca0dbb7c4d52fd52b5123e6e73ee49fcd1ee74d7dbe5c54d36bd3f0ff938bc7 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 

@@ -1,0 +1,128 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-audit-log",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5",
+    "NFR9.1",
+    "NFR9.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・3章: 書き込みの時間 50ms を Performance Validation で測る"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 接続を一時的に2本、U1 のプールの中／monitoring-design.md 1章"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: 1件の記録の SQL が挿入1回だけ"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 容量の見積もり／monitoring-design.md 1章: 記録の量"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 発生の日時の索引を Flyway で作る"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 無期限、削除の処理を持たない"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: 記録とログに秘密情報が無いこと"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: ArchUnit の構造の検査"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章・3章: ボリュームの権限、バックアップの置き場所"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: 切り詰めの性質ベースのテスト"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: API を持たない／monitoring-design.md 4章: 見る画面を作らない"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: 直接の書き換えは受け入れた危険"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3章: 版を替える前の複写（穏やかな停止は U1）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: 書き込みの失敗で応答が変わらない"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: 2つの経路と取り消しで記録しないこと"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・2章: ERROR のログの確認と記録の補い"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段・monitoring-design.md 4章: トレースIDの一致"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "monitoring-design.md 1章: 独自の計器を作らずログの ERROR の件数で見る"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 必須の監査ログのテスト"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2章・cicd-pipeline.md 1章: 内部DBに記録しログで代用しない"
+    }
+  ]
+}
