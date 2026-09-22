@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
-// Vitest の共通の準備。jest-dom と vitest-axe の照合を登録し、テストごとに描画と差し替えを片付ける。
-import '@testing-library/jest-dom/vitest'
-import { afterEach, expect, vi } from 'vitest'
-import * as axeMatchers from 'vitest-axe/matchers'
-import { cleanup } from '@testing-library/react'
+// ホーム（ログイン後の最初の画面）（BR7.9）。本Intentでは見出しと短い説明だけを持つ。
+import { useMessages } from '../i18n/I18nProvider'
+import './Page.css'
 
-expect.extend(axeMatchers)
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
+/** ホームの画面 */
+export function HomePage() {
+  const t = useMessages()
+  return (
+    <section className="page" data-testid="home-page" aria-labelledby="home-page-heading">
+      <h1 id="home-page-heading" className="page-heading">
+        {t('home.heading')}
+      </h1>
+      <p className="page-description">{t('home.description')}</p>
+    </section>
+  )
+}

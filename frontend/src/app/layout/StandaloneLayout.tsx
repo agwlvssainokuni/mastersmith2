@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
-// Vitest の共通の準備。jest-dom と vitest-axe の照合を登録し、テストごとに描画と差し替えを片付ける。
-import '@testing-library/jest-dom/vitest'
-import { afterEach, expect, vi } from 'vitest'
-import * as axeMatchers from 'vitest-axe/matchers'
-import { cleanup } from '@testing-library/react'
+// アプリシェルの外の独立した配置（ログイン画面など）（BR7.7）。
+import type { ReactNode } from 'react'
+import './StandaloneLayout.css'
 
-expect.extend(axeMatchers)
+export interface StandaloneLayoutProps {
+  children: ReactNode
+}
 
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
+/** サイドバー・トップバーを持たず、子の画面を画面の中央に置く。 */
+export function StandaloneLayout({ children }: StandaloneLayoutProps) {
+  return (
+    <main className="standalone-layout" data-testid="standalone-layout">
+      {children}
+    </main>
+  )
+}

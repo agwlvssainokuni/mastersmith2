@@ -13,16 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
-// Vitest の共通の準備。jest-dom と vitest-axe の照合を登録し、テストごとに描画と差し替えを片付ける。
-import '@testing-library/jest-dom/vitest'
-import { afterEach, expect, vi } from 'vitest'
-import * as axeMatchers from 'vitest-axe/matchers'
-import { cleanup } from '@testing-library/react'
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 
-expect.extend(axeMatchers)
+.page-heading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
 
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
+.page-description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.page-link {
+  color: var(--color-primary);
+}
+
+.page-list {
+  margin: 0;
+  padding-left: var(--space-6);
+}

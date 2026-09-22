@@ -39,3 +39,28 @@ spotless {
         licenseHeader(licenseHeaderBlock, "(?! \\*|/\\*|$)")
     }
 }
+
+// ---- フロントエンド ----
+// npm は PC に入っている Node.js 24 の npm を呼ぶ。1コマンドの検査（verify）の組み立ては Step 19 で行う。
+
+val frontendDir = layout.projectDirectory.dir("frontend")
+
+tasks.register<Exec>("frontendBuild") {
+    description = "画面をビルドする（frontend/dist）。実行可能 WAR に同梱する。"
+    group = "build"
+    workingDir = frontendDir.asFile
+    commandLine("npm", "run", "build")
+    inputs.dir(frontendDir.dir("src"))
+    inputs.files(frontendDir.file("index.html"), frontendDir.file("package.json"), frontendDir.file("vite.config.ts"))
+    outputs.dir(frontendDir.dir("dist"))
+}
+
+tasks.register<Exec>("e2eTest") {
+    description =
+        "ビルドした WAR を起動し、Playwright で画面を確かめる（./gradlew verify と CI には入れない。計画の P2 の決定）。" +
+            "事前に npx playwright install chromium でブラウザを入れておく。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(":backend:bootWar")
+    workingDir = frontendDir.asFile
+    commandLine("npx", "playwright", "test", "e2e/u1-skeleton.e2e.ts")
+}

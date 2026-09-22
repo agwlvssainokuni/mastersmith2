@@ -13,16 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
-// Vitest の共通の準備。jest-dom と vitest-axe の照合を登録し、テストごとに描画と差し替えを片付ける。
-import '@testing-library/jest-dom/vitest'
-import { afterEach, expect, vi } from 'vitest'
-import * as axeMatchers from 'vitest-axe/matchers'
-import { cleanup } from '@testing-library/react'
-
-expect.extend(axeMatchers)
-
-afterEach(() => {
-  cleanup()
-  vi.restoreAllMocks()
-})
+// 各機能の登録用ファイル（決まった場所・名前: src/features/<featureId>/registration.ts）をすべて読み込む（BR7.1）。
+// 登録用ファイルは画面の起動に必要なため最初に読み込む（performance-design 4章）。登録が指す画面の部品は、
+// 各機能が遅延読み込み（React.lazy）にしてよい。
+export const registrationModules: Readonly<Record<string, unknown>> = import.meta.glob(
+  '../../features/*/registration.ts',
+  { eager: true },
+)

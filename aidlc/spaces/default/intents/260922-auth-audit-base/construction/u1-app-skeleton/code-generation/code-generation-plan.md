@@ -244,7 +244,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.8 画面（フロントエンド）
 
-- [ ] **Step 15 — 画面の判断の関数・登録の型・文言を実装する**
+- [x] **Step 15 — 画面の判断の関数・登録の型・文言を実装する**
   - 登録の型（`frontend/src/app/registry/types.ts`）: `FeatureRegistration`、`RouteRegistration`（`layout: 'SHELL' | 'STANDALONE'`、`access: 'PUBLIC' | 'LOGGED_IN' | 'ADMIN'`、`role?: 'LOGIN'`）、`SidebarItemRegistration`（`visibleWhen: 'LOGGED_IN' | 'ADMIN'`）、`UserMenuItemRegistration`、`LoginStateProvider`（`loggedIn`・`admin`・`displayName`）。7章の C2 の決定（A）により、機能ごとの文言（`messages`、任意）を加える。
   - `loadRegistrations`: `import.meta.glob` の結果（`frontend/src/features/*/registration.ts` の決まった場所・名前）を受け取り、登録の一覧にする。glob の呼び出しと変換を分け、変換はテストできる純粋な関数にする。
   - `validateRegistrations`: 画面の URL、サイドバーとユーザーメニューの項目の id、featureId の重複、ログイン状態の提供元・ログイン画面（role=LOGIN）の2つ以上、LOGIN の画面が STANDALONE・PUBLIC でない、サイドバーの項目の path が登録済みでない、を検出し、どの登録が問題かを示すエラーにする。
@@ -254,12 +254,12 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - サイドバーとユーザーメニューの項目を作る関数: 先頭に「ホーム」、続いて visibleWhen を満たす項目を order の順。ユーザーメニューは order の順。
   - 対応: FR2.3、BR6.1、BR6.2、BR7.1〜BR7.6、BR7.8、BR7.9、NFR7.1
 
-- [ ] **Step 16 — 判断の関数と文言のテストを書いて実行する**
+- [x] **Step 16 — 判断の関数と文言のテストを書いて実行する**
   - `resolveLanguage.test.ts`（fast-check で任意の言語の並びでも ja・en のどちらかを返す性質を含む）、`messages.test.ts`（ja と en の鍵の集まりが同じ、空の文言が無い）、`loadRegistrations.test.ts`、`validateRegistrations.test.ts`（fast-check で重複を含む登録の組が必ず拒否される性質を含む）、`decideRoute.test.ts`、`navigationItems.test.ts`。fast-check は失敗時の種（seed）を出力に残す。
   - 実行のコマンドは `unit-test-instructions.md` の「画面の判断の関数」。すべて通るまで次へ進まない。
   - 対応: 上の Step 15 と同じ
 
-- [ ] **Step 17 — 画面の部品を実装する**
+- [x] **Step 17 — 画面の部品を実装する**
   - `App`（`frontend/src/app/App.tsx`）: make-you-chic-ui の `ThemeProvider`・`ToastProvider`・`ModalStackProvider`、`I18nProvider`、`FeatureRegistryProvider`、`LoginStateGate`、React Router、`AppRouter` をつなぐ。登録の検査に失敗したら、画面の起動を止めて問題の登録を示す表示にする（BR7.2）。
   - `I18nProvider`: 表示言語を決め、`document.documentElement.lang` を合わせ、文言の鍵から文言を引く手段を提供する。
   - `LoginStateGate`: 提供元が登録されていれば問い合わせ、無ければ未ログイン（loggedIn=false、admin=false）。
@@ -270,7 +270,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - 後の単位の登録の置き場所 `frontend/src/features/`（U1 は登録を置かない。空のディレクトリを保つための説明のファイルを置く）。
   - 対応: FR2.3、BR6.1、BR6.2、BR7.1〜BR7.9、NFR1.5、NFR7.1、NFR8.1、project.md Decided（AppShell 構成）
 
-- [ ] **Step 18 — 画面の部品のテストを書いて実行する**
+- [x] **Step 18 — 画面の部品のテストを書いて実行する**
   - `I18nProvider.test.tsx`、`LoginStateGate.test.tsx`、`AppRouter.test.tsx`、`ShellLayout.test.tsx`、`StandaloneLayout.test.tsx`、`LoginLayout.test.tsx`、`HomePage.test.tsx`、`NotFoundPage.test.tsx`、`App.test.tsx`。画面の部品ごとに vitest-axe のアクセシビリティ検査を1件入れる（NFR8.1）。英語のブラウザ設定で英語、日本語でも英語でもない設定で日本語になること（FR2.3 の受け入れ基準）、U1 だけの状態で `/` を開くとログイン用レイアウトだけが出ること、未ログインで LOGGED_IN・ADMIN の画面を開くとログイン画面へ移ること、ログイン中の非管理者に ADMIN の画面を出さないこと、登録の重複で起動が止まること、を確かめる。ログイン状態の提供元はテストの中の偽の提供元で与える。
   - ビルドした WAR で CSP 違反が出ずに画面が表示されることを確かめる Playwright のテスト（`frontend/e2e/u1-skeleton.e2e.ts`）を書く。7章の P2 の決定（A）により、別の Gradle タスク `e2eTest` で実行し、`./gradlew verify` と CI には入れない。
   - 実行のコマンドは `unit-test-instructions.md` の「画面の部品」。すべて通るまで次へ進まない。
