@@ -2411,3 +2411,74 @@
 **Tool**: Bash
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:03:08Z
+**Event**: DECISION_RECORDED
+**Stage**: scope-definition
+**Decision**: Which learnings to keep (project.md Decided)?
+**Options**: c4 監査共通化は後続,c5 ログアウトの意味,Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:03:57Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:04:06Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:04:08Z
+**Event**: QUESTION_ANSWERED
+**Stage**: scope-definition
+**Details**: c4 監査の共通化は後続, c5 ログアウトの意味
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-22T04:04:08Z
+**Event**: RULE_LEARNED
+**Stage**: scope-definition
+**Candidate-ID**: c4
+**Content-Hash**: 1052d63284043bef45745f943b9ecbd4368ac39b0f51a2ffda8c8cfd4a919d7a
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Decided
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-22T04:04:08Z
+**Event**: RULE_LEARNED
+**Stage**: scope-definition
+**Candidate-ID**: c5
+**Content-Hash**: 6f6fc76572cdae83ee921248b14cd67754cd97f0866df35af930691d1f178539
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Decided
+**Source**: orchestrator
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:04:20Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:04:26Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
