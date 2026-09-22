@@ -1,0 +1,1 @@
+"MasterSmithマスタ管理アプリの最初のIntentとして、認証・認可基盤（ログイン、JWT発行/検証、管理者フラグによる管理画面アクセス制御）と監査ログ・構造化ログ基盤（内部DBへの監査ログ蓄積、SLF4J/logback構造化ログ、分散トレース、Actuator経由OTELエクスポート）を統合して開発する。要件は reference/master-mgmt-app-requirements.md のIntent B（5.7章, 7章）とIntent C（7章）に基づく。"
