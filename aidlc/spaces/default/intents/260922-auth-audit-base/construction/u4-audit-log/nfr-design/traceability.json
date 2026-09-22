@@ -1,0 +1,128 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-audit-log",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "performance-design.md 1章: 新しいトランザクションで追記1回、予算 約25ms"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "performance-design.md 2章・3章: 呼び出し元の予算との関係、接続2本と H2 の待ち合いをログインと403の負荷の試験で名指しで測る"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design.md 1章: 挿入1回だけ、DB の連番、SQL の回数をテスト"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "scalability-design.md 1章: 1日 約500件・1年 約180MB の見積もり、無期限"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "scalability-design.md 2章: 発生の日時の索引1つ"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "scalability-design.md 3章: 削除の処理を持たず後続Intentへ"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 1章: 項目に秘密情報を持たない、失敗の ERROR は固定の文で例外のメッセージを使わない"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design.md 2章: 追記と読み取りだけの保存の部品、ArchUnit の構造の検査、行を更新しない指定"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 2章: 実行者だけが読み書きできるボリューム（Infrastructure Design へ）"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "security-design.md 3章: 254・512 文字でコードポイント単位に切り詰め、JSON の値としてログに出す"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "security-design.md 3章: 見る画面・API は作らず、後続Intentで管理者のみ・表示時の無害化として引き継ぐ"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "security-design.md 2章・5章: ファイルの直接の書き換えは受け入れる危険"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "security-design.md 4章: 確定の後・書く前の停止による欠落は受け入れ、穏やかな停止で小さくする"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "reliability-design.md 2章: 例外を U4 の中で必ず捕まえ、ERROR を1回、呼び出し元へ伝えない、再試行しない"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "reliability-design.md 1章: 確定の後（AFTER_COMMIT）とその場の2つの経路、新しいトランザクション、取り消しは記録しない"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 必須の監査ログのテストの一覧"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "reliability-design.md 3章: 監査は内部DBの表だけ、アプリのログは失敗のときだけ"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "observability-design.md 1章: ERROR で1回、全項目をキーと値で"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "observability-design.md 2章: 出来事のトレースIDをそのまま記録、同じスレッド、一致のテスト"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "observability-design.md 3章: 失敗の ERROR の件数で見る、独自の指標は作らない"
+    }
+  ]
+}

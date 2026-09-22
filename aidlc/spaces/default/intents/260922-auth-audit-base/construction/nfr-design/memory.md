@@ -19,6 +19,9 @@
 
 - 2026-09-22T11:40:00Z — U3 の決まりの文の順（管理者のみ→公開→ログイン必須）と、U1 の差し込み口の並び（U1・U2 の公開が管理者のみより先）は、パスが重ならないため同じ結果になると解釈し、U1 の並びに合わせた。
 <!-- aidlc-wave-memory:u3-access-control:a6e8f0a6fefe634876c929c701f3fa2606187f91ebfa4ae7caf8b1453929cc55 -->
+
+- 2026-09-22T11:50:00Z — 新しく決める論点が無かったため、質問を作らず、設計の要点を要約として依頼者に確認した; 決まり 1.3・3.1 と NFR Requirements の Q1・Q2 で方針が決まっていたため。
+<!-- aidlc-wave-memory:u4-audit-log:94675a26f90e07c1e80efec83f3e7506203b679273df7b04b29b9994484ca3de -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -55,6 +58,9 @@
 
 - 2026-09-22T11:40:00Z — 401 の理由（TOKEN_EXPIRED かどうか）を U2 から U3 に渡す形を、U2 の設計が決めていなかったため U3 の設計で約束として書いた; Code Generation の計画で U2・U3 の両方に書く。
 <!-- aidlc-wave-memory:u3-access-control:c8da5617b7e6f8953a7c2d8d5c075e330cdb972eda3461907e8ed54efce9c23e -->
+
+- 2026-09-22T11:50:00Z — 確定の後の経路では DB の接続を一時的に2本使うことを受け入れ、負荷の試験で待ちを確かめることにした; 別スレッドに移すとトレースIDの一致と「確定の後に記録」の決まりを変えることになるため。
+<!-- aidlc-wave-memory:u4-audit-log:d2eea8fa5e918abf09eafe6914bbf0600f2beee5e80da5777b479c2f7de6657f -->
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
 
@@ -66,3 +72,6 @@
 
 - 2026-09-22T11:30:00Z — U1 の共通のエラー応答の変換は 4xx を WARN で1回出すため、ログインの失敗の 401 も毎回 WARN になる; 運用でうるさければ、認証の失敗だけ INFO にするかを Code Generation で確かめる。
 <!-- aidlc-wave-memory:u2-authentication:1177c33d15e35a5a57cd7f361a9d233b438196ebe1d8787376bb73c04e7a091c -->
+
+- 2026-09-22T11:50:00Z — U3 の設計（security-design.md 4章）はアクセス拒否の出来事に「要求のパス」を載せるとしているが、U4 の AuditEvent には要求のパスの項目が無い; 記録するかどうかを Code Generation の計画の確認で依頼者に確かめる（記録するなら U4 の Functional Design の項目の追加になる）。
+<!-- aidlc-wave-memory:u4-audit-log:1aaa5850926f5edcfcd1873920bc5df5c8fa9fca24857b81a718e411cac76bf1 -->
