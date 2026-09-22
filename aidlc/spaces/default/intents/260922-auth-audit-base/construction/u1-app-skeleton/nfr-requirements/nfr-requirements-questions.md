@@ -78,3 +78,13 @@ Does this all look correct before I generate the artifact?
 - Request changes
 
 [Answer]: Looks correct
+
+## Q8. 内部DBへのアクセスには、どの仕組みを使いますか？
+
+サマリー確認の後、成果物の確認の中で依頼者から「内部DBアクセスはJPAを使おう。」と指示があったため記録した質問。
+
+- A. Spring Data JPA（Hibernate）。スキーマは Flyway が正本とし、Hibernate にはスキーマを作らせない
+- B. Spring JDBC（JdbcClient）
+- X. Other (please specify)
+
+[Answer]: A. Spring Data JPA（Hibernate）。スキーマは Flyway が正本とし、Hibernate にはスキーマを作らせない
