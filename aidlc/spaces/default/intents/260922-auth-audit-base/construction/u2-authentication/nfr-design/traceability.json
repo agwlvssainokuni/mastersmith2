@@ -1,0 +1,284 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-authentication",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5",
+    "NFR10.6",
+    "NFR10.7"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "performance-design.md 1章: ログインの予算表、照合は排他の外（Q1）、照合は1回、起動時の cost の確かめ"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "performance-design.md 2章: 更新の予算（ハッシュの一意の索引、条件付きの無効化、約 40ms）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design.md 1章・security-design.md 2章: bcrypt cost 12、起動時に照合1回の時間を測り範囲外は WARN"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "performance-design.md 3章: HS256 の検証と主キーでの利用者の読み取り、キャッシュなし"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "performance-design.md 4章: 利用者ごとの行の排他、照合を排他の外に（Q1）、ダミーの記録は複数行と待たない指定"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "scalability-design.md 3章: 1台で同時ログイン 10 名、セッションを持たない"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "scalability-design.md 2章: 1日1回の定期実行、期限から 7 日、1,000 行ごとに分けて削除"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "scalability-design.md 1章: リフレッシュトークンの行の見積もりと索引"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "scalability-design.md 1章: ロックの状態は利用者1人に1行（利用者の作成時に作る）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "scalability-design.md 3章: 行の排他と条件付きの更新は DB で行い、アプリのメモリに頼らない"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 2章・performance-design.md 1章: bcrypt（cost は設定、既定 12）、起動時の時間の確かめ"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md 2章・reliability-design.md 4章: 12文字以上・72 バイト以内、初期管理者は作らずに WARN"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design.md 2章・6章: 72 バイト超えは照合の仕組みに渡さずダミーの照合で不一致、同じ 401"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 2章・5章: パスワードとハッシュを出力しない、ハッシュは UserAccount の外に出さない"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design.md 4章: HS256 だけを受け付ける検証、alg none・別の方式・改ざんの拒否"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 4章・reliability-design.md 4章: 環境変数の Base64 の鍵、32 バイト未満・無しで起動を止める"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "security-design.md 4章: 設定を変えて再起動、発行済みは 401 で画面が更新で取り直す"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "security-design.md 5章: トークン・鍵を出力しない、トークンを URL に載せない"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "security-design.md 5章: 秘密情報を持つ型の文字列化の伏せ字、TRACE を有効にしたテスト"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "security-design.md 6章: 理由によらず 401 / AUTHENTICATION_FAILED で同じ本文"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "security-design.md 6章・reliability-design.md 1章: 検索1回・照合1回・排他つきの読み取り1回・書き込み1回、SQL と照合の回数をテスト"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "security-design.md 6章・logical-components.md 2章: 画面の失敗の文言は1種類"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "security-design.md 7章: ロックの悪用と大量の試行は受け入れる危険として脅威の表に記録"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "security-design.md 5章・logical-components.md 2章: アクセストークンはメモリだけ"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "security-design.md 3章: 256 ビットの SecureRandom、保存は SHA-256 のハッシュ"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "security-design.md 3章: HttpOnly・Secure・SameSite=Strict・Path=/api/auth/session、削除は同じ名前と Path で Max-Age=0"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "security-design.md 3章: 更新・ログアウトは POST、Origin を自分の配信元と比べ不一致・無しは 403 / ORIGIN_NOT_ALLOWED"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "security-design.md 3章: 開発・CI・E2E は http://localhost"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "security-design.md 7章: 再利用の検知で他のトークンは無効にしない危険を受け入れる"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 何度再起動しても重複しない（一意の制約でも守る）、不正なら作らずに起動を続ける"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "reliability-design.md 4章: 鍵が無い・短いと起動を止め、ほかは既定値"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "reliability-design.md 4章: mastersmith.auth.* の設定のまとまり、既定値と範囲外の検証"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "reliability-design.md 5章: ログイン画面の文言を日英で用意し鍵の一致をテスト"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "reliability-design.md 5章: ログイン画面の部品ごとに vitest-axe の検査"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "reliability-design.md 1章: 排他の後の値で加算と判定、待ちの上限 3 秒、同時の失敗のテスト"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "reliability-design.md 2章: 無効でないことを条件とする更新1回、更新した行が 1 のときだけ成功"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "reliability-design.md 5章・security-design.md 8章: チームの進め方の認証のテストの一覧"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "reliability-design.md 5章: 注入できる時計、時刻のずれの許容 0"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "reliability-design.md 5章: ロックの判定と有効期限の判定を純粋な関数にし jqwik"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "reliability-design.md 3章: 出来事を知らせるだけ、U4 は確定の後に別のトランザクションで記録し失敗を受け止める"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design.md 2章: 出来事の項目と取り方（トレースIDは U1 の方法）"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "observability-design.md 1章: 作成は INFO、作らなかったときは理由と直し方つきの WARN、パスワードなし"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "observability-design.md 1章: ロックは INFO で利用者IDだけ"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "observability-design.md 1章: 検証の失敗は DEBUG で理由の区分だけ"
+    },
+    {
+      "id": "NFR10.6",
+      "status": "OK",
+      "target": "observability-design.md 1章: U1 の仕組みでトレースIDが付く"
+    },
+    {
+      "id": "NFR10.7",
+      "status": "OK",
+      "target": "observability-design.md 3章・4章: 失敗の割合は監査ログから数え、独自の指標は作らない"
+    }
+  ]
+}
