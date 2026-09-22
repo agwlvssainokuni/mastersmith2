@@ -18,7 +18,7 @@ rules:
     category: policy
     applies_to: ヘルスチェックの応答
     trigger: ヘルスチェックの要求
-    logic: IF 内部DBへの確認の問い合わせが失敗する、または決めた時間内に終わらない THEN status=DOWN、状態コード 503
+    logic: IF 内部DBへの確認の問い合わせが失敗する、または制限時間内に終わらない THEN status=DOWN、状態コード 503。制限時間は設定で変えられ、既定は2秒とする
     violation: —
     source: FR1.1、Q1
   - id: BR1.3
@@ -223,19 +223,19 @@ rules:
     violation: —
     source: Q8
   - id: BR5.10
-    statement: ベースURLは、既定では要求から組み立て（転送元のヘッダーを考慮する）、設定で固定値を与えたときはそれを使う
+    statement: ベースURLは、設定で固定値を与えたときはそれを使い、無ければ要求から組み立てる。転送元のヘッダー（X-Forwarded-* や Forwarded）は、信頼する設定を有効にしたときだけ使い、既定では無視する
     category: policy
     applies_to: ErrorResponse.type
     trigger: エラー応答
-    logic: IF 設定にベースURLがある THEN それを使う ELSE 要求のスキーム・ホスト・ポート（転送元のヘッダーがあればその値）から組み立てる
+    logic: IF 設定にベースURLがある THEN それを使う ELSE IF 転送元のヘッダーを信頼する設定が有効 THEN 転送元のヘッダーのスキーム・ホスト・ポートを使う ELSE 要求そのもののスキーム・Host・ポートを使う。転送元のヘッダーを信頼する設定は既定で無効
     violation: —
-    source: Q8
+    source: Q8、レビュー指摘 R-02（Host ヘッダーの偽装への備え）
   - id: BR5.11
     statement: type の URL へ GET すると、その問題の種類の説明（名前・状態コード・code・起きるとき・利用者がすべきこと）を返す。要求が HTML を求めれば HTML、それ以外は JSON で返し、言語は表示言語の決め方（BR6.1）に従う
     category: policy
     applies_to: ProblemType
     trigger: /api/problems/<slug> への GET
-    logic: IF slug が定義済み THEN 200 で説明を返す（Accept が HTML を優先すれば HTML、そうでなければ JSON）。言語は要求の希望言語から ja／en を決める
+    logic: IF slug が定義済み THEN 200 で説明を返す（Accept が HTML を優先すれば HTML、そうでなければ JSON）。言語は BR6.3 で決める
     violation: —
     source: Q9
   - id: BR5.12
@@ -262,6 +262,22 @@ rules:
     logic: code を追加するときは、同時に ProblemType（日英の title・description）を定義する
     violation: テストで、使われる code すべてに説明があることを確かめる
     source: Q8、Q9、BR6.2
+  - id: BR5.15
+    statement: 説明ページを HTML で返すときは、埋め込むすべての値を HTML としてエスケープする
+    category: constraint
+    applies_to: ProblemType
+    trigger: 説明ページの HTML 生成
+    logic: 名前・説明・利用者がすべきこと・code などの値は、必ずエスケープしてから埋め込む。要求から受け取った値（slug を含む）はページに埋め込まない
+    violation: テストで、HTML の特殊文字を含む定義がエスケープされて表示されることを確かめる
+    source: レビュー指摘 R-04、construction フェーズの入力のサニタイズの決まり
+  - id: BR5.16
+    statement: 後の単位は、U1 のファイルを書き換えずに、自分の想定内のエラーと問題の種類を加えられる
+    category: policy
+    applies_to: ErrorResponse、ProblemType
+    trigger: 後の単位が想定内のエラーを加える
+    logic: U1 は、問題の種類（状態コード・code・日英の説明）を持つ共通の業務エラーの型を用意する。後の単位は、その型のエラーを起こせば、共通の変換で ErrorResponse に変換される。問題の種類の定義は各機能が自分の場所に置き、U1 が起動時にすべて集める。code・slug が重複したら起動を失敗させる
+    violation: 起動のテストで重複を検出する
+    source: レビュー指摘 R-05、Units Generation の決定（後の単位は U1 のファイルを書き換えない）
   # ---- BR6 表示言語 ----
   - id: BR6.1
     statement: 表示言語はブラウザの言語設定で決め、日本語でも英語でもなければ日本語にする
@@ -280,6 +296,14 @@ rules:
     violation: テストで両言語の文言がそろっていることを確かめる
     source: FR2.3、NFR7
 
+  - id: BR6.3
+    statement: サーバーが言語を決めるとき（説明ページなど）は、要求の Accept-Language から決め、日本語でも英語でもなければ日本語にする
+    category: calculation
+    applies_to: DisplayLanguage
+    trigger: サーバーが言語つきの内容を返す
+    logic: Accept-Language の各言語を q 値の大きい順に並べ（q=0 は除く、q 値が同じなら書かれた順）、先頭の言語部分（ja-JP なら ja）が最初に ja または en に当たったものを使う。ヘッダーが無い、形式が正しくない、どれにも当たらない場合は ja
+    violation: —
+    source: レビュー指摘 R-03、FR2.3、NFR7
   # ---- BR7 画面の骨組みと差し込み口 ----
   - id: BR7.1
     statement: 骨組みは起動時に、各機能の決まった場所・名前の登録用ファイルをすべて自動で読み込み、4つの差し込み口に登録する
@@ -360,7 +384,7 @@ rules:
 | ID | 分類 | 決まり（要約） | 出典 |
 |---|---|---|---|
 | BR1.1 | policy | アプリ稼働＋DB接続で UP（200） | FR1.1、Q1 |
-| BR1.2 | policy | DB に接続できなければ DOWN（503） | FR1.1、Q1 |
+| BR1.2 | policy | DB に接続できない、または制限時間（既定2秒、設定で変更可）を超えたら DOWN（503） | FR1.1、Q1 |
 | BR1.3 | constraint | ヘルスの応答は状態だけ | Q1、NFR3 |
 | BR1.4 | authorization | ヘルスは未ログインで呼べる | FR1.1 |
 | BR2.1 | policy | 既定は組み込み・ファイル保存で再起動後も残る | FR1.2 |
@@ -385,13 +409,16 @@ rules:
 | BR5.7 | validation | 入力の検証失敗は 400 / VALIDATION_FAILED | TP |
 | BR5.8 | policy | 存在しない API は 404 / NOT_FOUND | BR5.1 |
 | BR5.9 | policy | type は説明ページの絶対 URL（ベースURL＋/api/problems/＋slug） | Q8 |
-| BR5.10 | policy | ベースURLは要求から組み立て、設定で固定可 | Q8 |
+| BR5.10 | policy | ベースURLは設定の固定値、無ければ要求から。転送元のヘッダーは信頼の設定があるときだけ使う | Q8、R-02 |
 | BR5.11 | policy | 説明ページは HTML／JSON を切り替え、日英で返す | Q9 |
 | BR5.12 | authorization | 説明ページは未ログインで見られ、要求の中身を載せない | Q9、NFR3 |
 | BR5.13 | validation | 未定義の slug は 404 / NOT_FOUND | Q9 |
 | BR5.14 | constraint | 使うすべての code に日英の説明を定義 | Q8、Q9 |
+| BR5.15 | constraint | 説明ページの HTML は値をすべてエスケープ | R-04 |
+| BR5.16 | policy | 後の単位は共通の業務エラーの型と問題の種類の定義で、U1 を変えずにエラーを加える | R-05 |
 | BR6.1 | calculation | 表示言語の決め方（既定は日本語） | FR2.3、NFR7 |
 | BR6.2 | constraint | 文言は鍵で扱い日英をそろえる | FR2.3、NFR7 |
+| BR6.3 | calculation | サーバー側は Accept-Language（q 値順）で言語を決め、既定は日本語 | R-03、FR2.3 |
 | BR7.1 | policy | 登録用ファイルの自動読み込み | Q5 |
 | BR7.2 | validation | 登録の重複で起動失敗 | BR7.1 |
 | BR7.3 | policy | 提供元が無ければ未ログイン | UG |

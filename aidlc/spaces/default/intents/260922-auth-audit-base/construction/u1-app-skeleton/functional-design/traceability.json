@@ -83,7 +83,7 @@
     {
       "id": "FR2.3",
       "status": "OK",
-      "target": "BR6.1, BR6.2"
+      "target": "BR6.1, BR6.2, BR6.3"
     },
     {
       "id": "FR2.4",
@@ -381,6 +381,16 @@
       "id": "BR5.14",
       "status": "N/A",
       "target": "Functional Design Q8・Q9 と BR6.2（すべての code に日英の説明）"
+    },
+    {
+      "id": "BR5.15",
+      "status": "N/A",
+      "target": "レビュー指摘 R-04（説明ページの HTML のエスケープ）"
+    },
+    {
+      "id": "BR5.16",
+      "status": "N/A",
+      "target": "レビュー指摘 R-05 と Units Generation の決定（後の単位は U1 を書き換えずにエラーを加える）"
     },
     {
       "id": "BR7.1",

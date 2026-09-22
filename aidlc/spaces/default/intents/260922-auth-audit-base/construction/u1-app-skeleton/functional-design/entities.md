@@ -48,7 +48,7 @@ entities:
         description: 応答の type と code は、1つの問題の種類から決まる
 
   - name: ProblemType
-    description: 問題の種類。エラー応答の code と type の元であり、type の URL を開いたときに返す説明の内容（Q8、Q9）。アプリに定義として持ち、内部DBには保存しない
+    description: 問題の種類。エラー応答の code と type の元であり、type の URL を開いたときに返す説明の内容（Q8、Q9）。各機能が自分の場所に定義を置き、U1 が起動時に集める（BR5.16）。内部DBには保存しない
     attributes:
       - name: code
         type: string
