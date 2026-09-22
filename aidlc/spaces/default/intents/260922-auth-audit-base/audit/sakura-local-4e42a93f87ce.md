@@ -3637,3 +3637,466 @@
 **Tool**: Bash
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T04:30:47Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:30:54Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:30:54Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: 29の質問にどのように回答しますか？
+**Options**: Guide me,I'll edit the file,Chat
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:31:52Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:31:58Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:31:59Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Guide me
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:31:59Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q1-Q4（進め方）
+**Options**: Q1:A,Q1:B,Q2:A,Q2:B,Q3:A,Q3:B,Q3:C,Q4:A,Q4:B,Q4:C
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:33:10Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:33:17Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:33:18Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q1:A develop / Q2:A squash / Q3:B ローカル検査 / Q4:C プッシュは自分で
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:33:23Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:33:24Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q5-Q8（公開区分・最初の土台・テスト）
+**Options**: Q5:A,Q5:B,Q5:C,Q6:A,Q6:B,Q7:A,Q7:B,Q8:A,Q8:B,Q8:C
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:34:47Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:34:55Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:34:56Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q5:A 公開 / Q6:B 作らない / Q7:A 一式（推奨） / Q8:A 実装の後
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:35:04Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:35:06Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q30・Q9-Q11（土台の確認・カバレッジ・DBテスト・E2E）
+**Options**: Q30:A,Q30:B,Q30:C,Q9:A,Q9:B,Q9:C,Q10:A,Q10:B,Q11:A,Q11:B
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:36:22Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:36:31Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:36:33Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q30:A 特別扱いなし、一式は最初のBoltに / Q9:A 行80%＋分岐70% / Q10:A 同じDBをコンテナで / Q11:A 入れる
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:36:37Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:36:37Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q12-Q15（性質ベースのテスト・テスト名の言語・配備先・CI）
+**Options**: Q12:A,Q12:B,Q13:A,Q13:B,Q14:A,Q14:B,Q15:A,Q15:B
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:37:53Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:38:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:38:02Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q12:A 使う / Q13:A 英語 / Q14:A ローカルのコンテナのみ / Q15:A GitHub Actions
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:38:02Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q16-Q19（版・配置・ビルドツール・パッケージ名）
+**Options**: Q16:A,Q16:B,Q17:A,Q17:B,Q18:A,Q18:B,Q18:C,Q19:A,Q19:B
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:43:18Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:43:37Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:43:39Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q16:A ハッシュ＋タグ / Q17:1. ただし、ビルドの成果物は実行可能WARとし、frontendのコンポーネント(dist配下)もWARにパッケージングする。開発時はdev serverのproxyを介してbackendのAPIを呼び出す。ビルド成果物は実行可能WARのAPIを呼び出す。つまり、SPAは配信元と同じサーバのAPIを呼び出す形とし、CORS設定なしでAPIを呼べる構成とする。 / Q18:A Gradle（Kotlin DSL） / Q19:B 別の名前
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:43:39Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Q31 Javaのルートパッケージ名
+**Options**: 自由記述
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T04:43:45Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a7f616022aff848e8
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:44:16Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:44:21Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:44:23Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: cherry.mastersmith
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:44:23Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q20-Q23（パッケージ構成・フォーマッタ・コメント言語・開発規約一式）
+**Options**: Q20:A,Q20:B,Q21:A,Q21:B,Q21:C,Q22:A,Q22:B,Q23:A,Q23:B
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:46:02Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:46:08Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:46:09Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q20:A 機能別 / Q21:A palantir-java-format / Q22:B 日本語 / Q23:A まとめて採用
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:46:10Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q24-Q26（セキュリティ検査・pre-commit・品質と配備の制約）
+**Options**: Q24:A,Q24:B,Q24:C,Q25:A,Q25:B,Q26:A-E(multi)
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:49:05Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:49:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:49:20Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q24:B 一部だけ採用 / Q25:A 入れる / Q26:A,B,C
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:49:20Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Q32・Q33（Q24の採用範囲の確認）
+**Options**: Q32:A-D(multi),Q33:A-D(multi)
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:50:39Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:50:44Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:50:46Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q32:A,B,C / Q33:A,D
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:50:46Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Practices Discovery Q27-Q29（秘密情報・サブモジュールと依存・CI運用の制約）
+**Options**: Q27:A-D(multi),Q28:A-D(multi),Q29:A-B(multi)
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:53:26Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:53:32Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:53:33Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q27:A,B,C / Q28:A,B,C / Q29:A
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:53:48Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:53:51Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/inception/practices-discovery/practices-discovery-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:54:10Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:54:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-09-22T04:54:16Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: practices-discovery
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/inception/practices-discovery/practices-discovery-questions.md
+**Questions SHA-256**: 5b353f888ea4ae3017ce581954e632ef929b2d9ad59485ea6cddba9727f8f1a7
+**Hash Scope**: confirmed-content-v1
+**Summary Authorization Id**: ea24e4dfa5bbf563e63aae542539a23019c262c90754ef4a14be697d557dff99
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:54:26Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:54:30Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
