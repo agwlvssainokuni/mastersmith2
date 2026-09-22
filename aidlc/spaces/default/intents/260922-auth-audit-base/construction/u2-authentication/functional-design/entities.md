@@ -51,7 +51,7 @@ entities:
         required: false
         constraints: ロック中だけ値を持つ。現在時刻がこの時刻より前ならロック中
     constraints:
-      - 存在しないメールアドレスに対しては作らない
+      - 存在しないメールアドレスに対しては作らない（読み書きの回数をそろえるためのダミーの記録は、利用者と結びつかない別の記録とする。BR2.7）
     relationships:
       - target: User
         cardinality: one-to-one
@@ -72,7 +72,7 @@ entities:
         type: secret
         required: true
         unique: true
-        constraints: 画面へ渡した値の一方向のハッシュ。値そのものは保存しない
+        constraints: 画面へ渡した値の一方向のハッシュ。値そのものは保存しない。値は推測できない乱数のため、パスワード用の遅いハッシュではなく速い暗号学的ハッシュを使う（方式は NFR の段階で決める）
       - name: issuedAt
         type: datetime
         required: true
@@ -148,6 +148,7 @@ entities:
         type: enum
         required: true
         allowed_values: [LOGIN_SUCCEEDED, LOGIN_FAILED, LOGGED_OUT]
+        constraints: 監査ログの「結果（成功／失敗）」（FR9.2）はこの値が兼ねる。LOGIN_SUCCEEDED と LOGGED_OUT は成功、LOGIN_FAILED は失敗
       - name: occurredAt
         type: datetime
         required: true

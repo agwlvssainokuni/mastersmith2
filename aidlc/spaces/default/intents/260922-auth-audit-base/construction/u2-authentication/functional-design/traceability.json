@@ -143,7 +143,7 @@
     {
       "id": "FR4.5",
       "status": "OK",
-      "target": "BR2.4, BR2.5"
+      "target": "BR2.4, BR2.5, BR2.7"
     },
     {
       "id": "FR5",

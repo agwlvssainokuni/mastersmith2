@@ -31,7 +31,7 @@ graph TD
 |---|---|---|---|---|
 | auth の登録用ファイル | U1 の差し込み口への登録。ログイン画面（role=LOGIN、STANDALONE、PUBLIC）、ユーザーメニューのログアウト、ログイン状態の提供元 | なし | なし | BR8.1、BR8.7 |
 | AuthSession | アクセストークン（メモリだけ）と CurrentUserView の保持。起動時の復元、ログイン・更新・ログアウト。ApiClient へトークンと更新の手段を登録する | なし | status（Restoring／LoggedIn／LoggedOut）、accessToken、currentUser | BR8.3、BR8.4、BR8.6 |
-| ApiClient | アクセストークンの付与。401 / AUTHENTICATION_REQUIRED で1回だけ更新（同時の 401 は1回にまとめる）と送り直し。更新の失敗で AuthSession に未ログインを知らせる。エラー応答を code で扱える形に変換 | 登録されたトークンの取得と更新の手段 | 更新中かどうか | BR8.5 |
+| ApiClient | アクセストークンの付与。401 / AUTHENTICATION_REQUIRED で1回だけ更新（同時の 401 は1回にまとめる）と送り直し。ログイン・トークンの更新・ログアウトの API の呼び出しは、この更新と送り直しの対象外（繰り返しを防ぐため明示的に外す）。更新の失敗で AuthSession に未ログインを知らせる。エラー応答を code で扱える形に変換 | 登録されたトークンの取得と更新の手段 | 更新中かどうか | BR8.5 |
 | LoginPage | U1 の LoginLayout の中に LoginForm を置く | なし | なし | BR8.1 |
 | LoginForm | メールアドレス・パスワードの入力欄とログインボタン。空の入力の検査、送信、失敗の表示 | なし | email、password、送信中、エラーの文言 | BR8.2、BR8.8 |
 | LogoutMenuItem | ユーザーメニューの「ログアウト」。選ぶと AuthSession のログアウトを呼ぶ | なし | なし | BR8.6 |

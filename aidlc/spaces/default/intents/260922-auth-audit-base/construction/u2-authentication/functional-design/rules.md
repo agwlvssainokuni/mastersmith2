@@ -87,6 +87,14 @@ rules:
     logic: 固定のダミーのハッシュに対して入力されたパスワードを照合し、結果は捨てる
     violation: —
     source: Q2、NFR4
+  - id: BR2.7
+    statement: ログインが失敗する3つの経路（存在しないメールアドレス・ロック中・パスワード誤り）では、内部DBへの読み取りと書き込みの種類と回数をそろえる
+    category: policy
+    applies_to: ログインの処理
+    trigger: ログインの失敗
+    logic: どの経路も「利用者の検索1回、ロックの状態の読み取り1回（同じ利用者について1つずつ行う形）、ロックの状態への書き込み1回、パスワードの照合1回」を行う。存在しないメールアドレスでは、利用者と結びつかないダミーの記録に対して同じ読み取りと書き込みを行う（ダミーの記録で利用者どうしの待ち合わせが起きない形にする）。ロック中では、値を変えない書き込みを1回行う。パスワード誤りでは、失敗回数の更新（BR3.1）がその書き込みにあたる
+    violation: テストで、3つの経路の内部DBへの読み取り・書き込みの回数が同じであることを確かめる（応答時間そのものは実行環境で揺れるため、テストでは比べない）
+    source: レビュー指摘 R-01、NFR4、team.md（ユーザーIDの存在を推測できないことのテスト）
   - id: BR2.6
     statement: ログインが成功したら、LOGIN_SUCCEEDED の出来事を知らせる。失敗したら、理由を添えて LOGIN_FAILED を知らせる
     category: policy
@@ -118,7 +126,7 @@ rules:
     category: authorization
     applies_to: LoginAttemptState
     trigger: ロック中のログインの試み
-    logic: IF 現在時刻 < lockedUntil THEN 失敗（BR2.4）、状態は変えない、ダミーの照合を行う（BR2.5）
+    logic: IF 現在時刻 < lockedUntil THEN 失敗（BR2.4）、状態の値は変えない（読み書きの回数は BR2.7 に従う）、ダミーの照合を行う（BR2.5）
     violation: —
     source: FR7.2、Q3
   - id: BR3.4
@@ -162,11 +170,11 @@ rules:
     violation: テストで同時の失敗が正しく数えられることを確かめる
     source: FR7.1 の確実な実現
   - id: BR3.9
-    statement: 存在しないメールアドレスに対しては、ロックの状態を作らない
+    statement: 存在しないメールアドレスに対しては、そのメールアドレスのロックの状態を作らない
     category: constraint
     applies_to: LoginAttemptState
     trigger: 存在しないメールアドレスでの失敗
-    logic: 状態を作らず、ダミーの照合（BR2.5）だけ行う
+    logic: そのメールアドレスの状態は作らず、ダミーの照合（BR2.5）と、ダミーの記録への読み書き（BR2.7）を行う
     violation: —
     source: Domain Design（LoginAttemptState は利用者ごと）
 
@@ -226,7 +234,7 @@ rules:
     category: constraint
     applies_to: RefreshToken
     trigger: リフレッシュトークンの発行
-    logic: 値は十分な長さの暗号学的な乱数。保存は tokenHash だけ
+    logic: 値は十分な長さの暗号学的な乱数。保存は tokenHash だけ。値がもともと推測できない乱数のため、tokenHash にはパスワード用の遅いハッシュではなく、速い暗号学的ハッシュ（例：SHA-256）を使う。具体的な方式は NFR の段階で、パスワードのハッシュ方式とは別に決める
     violation: —
     source: NFR3
   - id: BR5.2
@@ -234,7 +242,7 @@ rules:
     category: constraint
     applies_to: RefreshToken
     trigger: リフレッシュトークンの発行
-    logic: Cookie の path を認証の API に限定、Max-Age=有効期限
+    logic: Cookie の path を認証の API に限定、Max-Age=有効期限。Secure のため、TLS の終端が決まるまで（NFR・インフラの設計で決める）、開発・CI・E2E テストでの動作確認は http://localhost で行う。localhost 以外のホスト名や IP への http でのアクセスでは Cookie が送られず、ログインは働かない（当面の対象外）
     violation: —
     source: FR4.1、NFR5
   - id: BR5.3
@@ -368,7 +376,7 @@ rules:
     category: policy
     applies_to: API 呼び出しの共通部分
     trigger: API の応答が 401
-    logic: 同じタブで同時に複数の要求が 401 を受けても、更新は1回にまとめる。送り直しでまた 401 なら、ログイン画面へ移る
+    logic: 同じタブで同時に複数の要求が 401 を受けても、更新は1回にまとめる。送り直しでまた 401 なら、ログイン画面へ移る。ログイン・トークンの更新・ログアウトの API の呼び出しは、この「401 で更新して送り直す」処理の対象外とする（code の違いに頼らず、対象外であることを明示して繰り返しを防ぐ）
     violation: —
     source: Domain Design（ApiClient）、FR5.3
   - id: BR8.6
@@ -422,6 +430,7 @@ rules:
 | BR2.4 | authorization | 失敗は理由によらず 401 / AUTHENTICATION_FAILED で同一 | FR4.5、FR2.4 |
 | BR2.5 | policy | 存在しない・ロック中でもダミーの照合 | Q2 |
 | BR2.6 | policy | ログインの出来事を知らせる | FR9.1 |
+| BR2.7 | policy | 失敗の3経路で DB の読み書きの種類と回数をそろえる | R-01、NFR4 |
 | BR3.1 | calculation | 不一致で失敗回数＋1 | FR7.1 |
 | BR3.2 | policy | しきい値でロック（解除は30分後） | FR7.1、FR7.3 |
 | BR3.3 | authorization | ロック中は拒否し、状態を変えない | FR7.2、Q3 |
@@ -430,15 +439,15 @@ rules:
 | BR3.6 | calculation | 成功で失敗回数0 | FR7.4 |
 | BR3.7 | policy | しきい値と時間は設定で変更可 | FR7.5 |
 | BR3.8 | constraint | 同時の試みでも取りこぼさない | FR7.1 |
-| BR3.9 | constraint | 存在しないメールアドレスには状態を作らない | Domain Design |
+| BR3.9 | constraint | 存在しないメールアドレスの状態は作らない（ダミーの記録で読み書き） | Domain Design、BR2.7 |
 | BR4.1 | constraint | アクセストークンは利用者ID・発行時刻・期限だけ | Q8、NFR3 |
 | BR4.2 | validation | 有効期限5分（設定可）、期限ちょうどで無効 | FR4.2 |
 | BR4.3 | validation | 決めた署名方式だけで検証（none・別方式は無効） | FR4.4 |
 | BR4.4 | authorization | 無い・無効なら 401 / AUTHENTICATION_REQUIRED | FR4.4 |
 | BR4.5 | authorization | 要求ごとに DB から利用者と管理者フラグを読む | Q8 |
 | BR4.6 | policy | ログアウト後もアクセストークンは期限まで有効 | FR6.2 |
-| BR5.1 | constraint | リフレッシュトークンは乱数、保存はハッシュだけ | NFR3 |
-| BR5.2 | constraint | Cookie は HttpOnly・Secure・SameSite=Strict、送り先を限定 | FR4.1、NFR5 |
+| BR5.1 | constraint | リフレッシュトークンは乱数、保存は速いハッシュだけ | NFR3、R-04 |
+| BR5.2 | constraint | Cookie は HttpOnly・Secure・SameSite=Strict、送り先を限定。当面の動作確認は localhost | FR4.1、NFR5、R-02 |
 | BR5.3 | validation | 有効期限24時間（設定可）、期限ちょうどで無効 | FR4.3、FR5.2 |
 | BR5.4 | policy | 更新で古いものを無効にし、新しいもの（24時間）を渡す | FR5.1、Q10 |
 | BR5.5 | authorization | 無効な更新は 401 / REFRESH_FAILED、ほかは無効にしない | FR5.2、Q6 |
@@ -454,7 +463,7 @@ rules:
 | BR8.2 | validation | 空の入力は送らない、失敗の文言は1種類 | FR2.4 |
 | BR8.3 | constraint | アクセストークンはメモリだけ | NFR5 |
 | BR8.4 | policy | 画面を開いたら更新を1回試みてログイン状態を戻す | FR5.3 |
-| BR8.5 | policy | 401 で1回だけ更新・送り直し、失敗ならログイン画面へ | ApiClient |
+| BR8.5 | policy | 401 で1回だけ更新・送り直し（認証の API は対象外）、失敗ならログイン画面へ | ApiClient、R-03 |
 | BR8.6 | policy | ログアウトは API の結果によらず画面側を破棄 | FR6.1 |
 | BR8.7 | policy | ログイン状態の提供元とログアウトの項目を登録 | U1 の決まり 7.3 |
 | BR8.8 | policy | ログイン成功でホームへ | FR2.2 |
