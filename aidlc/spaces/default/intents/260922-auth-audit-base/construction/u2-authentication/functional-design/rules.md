@@ -26,9 +26,9 @@ rules:
     category: policy
     applies_to: User
     trigger: アプリの起動
-    logic: IF メールアドレスかパスワードが無い OR メールアドレスの形式が正しくない OR パスワードが12文字未満 THEN 作らない、WARN で理由と直し方を出す、起動は続ける
+    logic: IF メールアドレスかパスワードが無い OR メールアドレスの形式が正しくない OR パスワードが12文字未満 OR パスワードが UTF-8 で 72 バイトを超える THEN 作らない、WARN で理由と直し方を出す、起動は続ける（例外で起動を止めない）
     violation: —
-    source: FR3.3、Q1
+    source: FR3.3、Q1、NFR Requirements（U2）Q5
   - id: BR1.4
     statement: 初期管理者のパスワードの値は、作る場合も作らない場合もログに出さない
     category: constraint
@@ -63,6 +63,14 @@ rules:
     logic: IF メールアドレスまたはパスワードが無い・空 THEN 400 / VALIDATION_FAILED。長さの規則（12文字以上）は作成時の規則であり、ログインでは照合するだけ
     violation: —
     source: U1 の決まり 5.7、FR4.1
+  - id: BR2.8
+    statement: ログインで入力されたパスワードが UTF-8 で 72 バイトを超える場合は、照合の仕組みに渡さず、パスワード誤りと同じ失敗とする
+    category: validation
+    applies_to: ログインの処理
+    trigger: ログインの要求
+    logic: IF パスワードが 72 バイトを超える THEN 例外にしない。利用者がいてロック中でなければ、パスワードの不一致として扱う（失敗回数を増やす。BR3.1）。照合はダミーの照合（BR2.5）で代え、読み書きの回数は BR2.7 に従う。応答は BR2.4 の失敗と同じ
+    violation: —
+    source: NFR Requirements（U2）Q5、NFR2.3
   - id: BR2.3
     statement: 利用者がいて、ロック中でなく、パスワードが一致すればログインは成功し、アクセストークンと CurrentUserView を応答で返し、リフレッシュトークンを Cookie で渡す
     category: policy
@@ -431,6 +439,7 @@ rules:
 | BR2.5 | policy | 存在しない・ロック中でもダミーの照合 | Q2 |
 | BR2.6 | policy | ログインの出来事を知らせる | FR9.1 |
 | BR2.7 | policy | 失敗の3経路で DB の読み書きの種類と回数をそろえる | R-01、NFR4 |
+| BR2.8 | validation | 72 バイトを超えるパスワードは照合に渡さず、パスワード誤りと同じ失敗 | NFR2.3 |
 | BR3.1 | calculation | 不一致で失敗回数＋1 | FR7.1 |
 | BR3.2 | policy | しきい値でロック（解除は30分後） | FR7.1、FR7.3 |
 | BR3.3 | authorization | ロック中は拒否し、状態を変えない | FR7.2、Q3 |

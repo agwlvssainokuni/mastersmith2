@@ -298,6 +298,11 @@
       "target": "FR9.1 の出来事の通知（記録は U4 に割り当て）"
     },
     {
+      "id": "BR2.8",
+      "status": "N/A",
+      "target": "NFR Requirements（U2）Q5 と NFR2.3（bcrypt の 72 バイトの上限への対応）"
+    },
+    {
       "id": "BR3.5",
       "status": "N/A",
       "target": "Functional Design Q5 の確定回答（時間の区切りなし）"
