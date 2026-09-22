@@ -83,3 +83,23 @@ Does this all look correct before I generate the artifact?
 - Request changes
 
 [Answer]: Looks correct
+
+## Q8. エラー応答の `type`（RFC 9457 の問題の種類を示す URI）は、どの形にしますか？
+
+サマリー確認の後に、依頼者から「`type` に自サーバのベースURLにパスを足した URL を書き、その URL を開くと自サーバがエラーの説明を返す形にできないか」という検討の依頼があったため追加した質問。
+
+- A. 既定は要求のベースURL（転送元ヘッダーを考慮）に `/api/problems/<種類>` を足して組み立て、設定でベースURLを固定値にもできる。`<種類>` は `code` を小文字・ハイフン区切りにしたもの
+- B. ベースURLは必ず設定で与える（固定値のみ）
+- C. 相対 URI（`/api/problems/<種類>`）とし、ホストを含めない
+- X. Other (please specify)
+
+[Answer]: A. 既定は要求のベースURL（転送元ヘッダーを考慮）に `/api/problems/<種類>` を足して組み立て、設定でベースURLを固定値にもできる。`<種類>` は `code` を小文字・ハイフン区切りにしたもの
+
+## Q9. `type` の URL へ GET したとき、説明をどの形で返しますか？
+
+- A. 要求に応じて切り替える。ブラウザで開けば HTML、API として呼べば JSON（Accept ヘッダーで判断）。言語は日本語・英語
+- B. JSON のみ
+- C. HTML のみ
+- X. Other (please specify)
+
+[Answer]: A. 要求に応じて切り替える。ブラウザで開けば HTML、API として呼べば JSON（Accept ヘッダーで判断）。言語は日本語・英語
