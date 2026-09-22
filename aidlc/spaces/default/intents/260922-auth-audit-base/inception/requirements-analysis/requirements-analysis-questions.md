@@ -200,7 +200,7 @@ sessionStorage は、画面のスクリプトから読める保存領域です�
 - 監査ログ: 書き込みに失敗しても元の操作は続け、失敗と記録しようとした内容（秘密情報を除く）をアプリのログにエラーで出す。成功基準の「漏れなく記録」は正常時の意味とする。記録項目は日時・イベント種類・結果・入力されたユーザーIDに加え、失敗の理由・接続元IP・User-Agent・トレースID。本Intentでは削除の仕組みを作らない（無期限保存、期間は後で決める）
 - 規模と応答時間: 利用者最大50名、同時ログイン最大10名。ログインとトークン更新のAPIは、その負荷で95%の要求が1秒以内に応答
 - 表示言語: 本Intentから日本語・英語に対応し、ブラウザの言語設定で切り替える。どちらでもない場合は日本語で表示する（Q19）
-- ログ形式: 1行1件の JSON を標準出力に出す（開発時も同じ）
+- ログ形式: 1行1件の JSON を標準出力に出す（開発時も同じ）。分散トレースは W3C Trace Context（`traceparent` ヘッダー）で引き継ぐ（Q20）
 - ロック中の表示: ロック中も通常のログイン失敗と同じ表示にし、登録の有無を推測させない（画面イメージの画面2は通常の失敗表示に読み替える。ロックされたことは監査ログの失敗理由には記録する）
 
 Does this all look correct before I generate the requirements artifact?
@@ -223,3 +223,19 @@ Does this all look correct before I generate the requirements artifact?
 - X. Other (please specify)
 
 [Answer]: B. 日本語
+
+## Requested Changes Feedback
+
+重要指摘R-04（FR4.2/4.3の期限境界の受け入れ基準）を修正。トレース形式の前提化（R-05、軽微）を修正。
+
+[Answer]: 重要指摘R-04（FR4.2/4.3の期限境界の受け入れ基準）を修正。トレース形式の前提化（R-05、軽微）を修正。
+
+## Q20. （レビュー指摘R-05）分散トレースで、受け取った要求からトレースを引き継ぐときの形式はどうしますか？
+
+外部エクスポートは OTEL で行います（Scope Definition）。OTEL の標準の形式は W3C Trace Context（`traceparent` ヘッダー）です。
+
+- A. W3C Trace Context（`traceparent` ヘッダー）を使う
+- B. 受け取った要求からトレースは引き継がず、要求ごとに常に新しいトレースを始める
+- X. Other (please specify)
+
+[Answer]: A. W3C Trace Context（`traceparent` ヘッダー）を使う
