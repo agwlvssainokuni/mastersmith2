@@ -8675,3 +8675,110 @@
 **Tool**: Bash
 
 ---
+
+## Unit Completed
+**Timestamp**: 2026-09-22T08:52:34Z
+**Event**: UNIT_COMPLETED
+**Stage**: functional-design
+**Unit**: u2-authentication
+**Run floor**: STAGE_STARTED:2026-09-22T07:11:40Z#1
+**Mode**: wave
+**Wave memory entries**: 0
+**Artifact Fingerprint**: sha256:c7237de1d5fd02732c88bca779d6b2b4e75fc0b6d91eaa710f1af870633f26fb
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:52:56Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T08:52:57Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u3-access-control/functional-design/functional-design-questions.md
+**Context**: construction > u3-access-control > functional-design > functional-design-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:54:47Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:55:30Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:55:41Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T08:55:46Z
+**Event**: DECISION_RECORDED
+**Stage**: functional-design
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/construction/u3-access-control/functional-design/functional-design-questions.md
+**Unit**: u3-access-control
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:56:12Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:56:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-09-22T08:56:23Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: functional-design
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/construction/u3-access-control/functional-design/functional-design-questions.md
+**Questions SHA-256**: a58e473ee41c6d6f9b0984decb7071bdf21e1dd360570e0e9f0a1d003f018449
+**Hash Scope**: confirmed-content-v1
+**Unit**: u3-access-control
+**Summary Authorization Id**: 15a4063d9126c98504411deb9fb487dde7993da49752225a2658fe7d68e31345
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T08:57:48Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T08:57:52Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
