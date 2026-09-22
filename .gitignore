@@ -83,3 +83,6 @@ aidlc/diagnostics/
 # aidlc/spaces/*/intents/*/<phase>/<stage>/*.md (artifacts + diary).
 .claude/settings.local.json
 # END AI-DLC:gitignore
+
+# ユーザー提供の参考資料。Git管理対象外(reference_materials 参照)。
+reference/
