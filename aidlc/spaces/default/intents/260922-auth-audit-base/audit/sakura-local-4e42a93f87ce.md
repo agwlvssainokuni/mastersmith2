@@ -9182,3 +9182,420 @@
 **Tool**: Bash
 
 ---
+
+## Unit Completed
+**Timestamp**: 2026-09-22T09:12:31Z
+**Event**: UNIT_COMPLETED
+**Stage**: functional-design
+**Unit**: u1-app-skeleton
+**Run floor**: STAGE_STARTED:2026-09-22T07:11:40Z#1
+**Mode**: wave
+**Wave memory entries**: 0
+**Artifact Fingerprint**: sha256:79aea00078be14f7e2afc15ff318e52b8d08a3ca2c4f93740a57f45312a55bc3
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:12:40Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Unit Completed
+**Timestamp**: 2026-09-22T09:12:43Z
+**Event**: UNIT_COMPLETED
+**Stage**: functional-design
+**Unit**: u2-authentication
+**Run floor**: STAGE_STARTED:2026-09-22T07:11:40Z#1
+**Mode**: wave
+**Wave memory entries**: 0
+**Artifact Fingerprint**: sha256:008b63d4008e751c801fe6687fa52a75145458a15624920c5ffb07a885df2532
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:12:50Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-09-22T09:12:50Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: functional-design
+**Unit**: u1-app-skeleton
+**Checkpoint**: review-receipt
+**Changed**: (paths unavailable)
+**Recorded**: sha256:05756bac1e467f11085abeb3d38e1db189074e220f1b616167c06c841c7d66f1
+**Current**: sha256:79aea00078be14f7e2afc15ff318e52b8d08a3ca2c4f93740a57f45312a55bc3
+**Details**: functional-spec changed after it was reviewed. Continuing to the gate with the diff (Change Control: relaxed).
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-09-22T09:12:50Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: functional-design
+**Unit**: u2-authentication
+**Checkpoint**: review-receipt
+**Changed**: (paths unavailable)
+**Recorded**: sha256:ff6fef775d1e3c6867cf17f5a54c357c128abcdb3d10ec3cb8f797c5c6bb29b4
+**Current**: sha256:008b63d4008e751c801fe6687fa52a75145458a15624920c5ffb07a885df2532
+**Details**: functional-spec changed after it was reviewed. Continuing to the gate with the diff (Change Control: relaxed).
+
+---
+
+## Review Requested
+**Timestamp**: 2026-09-22T09:12:50Z
+**Event**: REVIEW_REQUESTED
+**Stage**: functional-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u3-access-control
+**Iteration**: 2
+**Artifact Fingerprint**: sha256:668ef1bfa1242020370fee98447e2ab52e58f7112464f406a63821a8a366c817
+**Request Id**: review:b19984b4412594cb2cd82c4a5054a75b
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:13:04Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:13:09Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a1eff44013870160c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:13:10Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:13:37Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a272827b410230d9a
+**Message**: Comparing AuditEvent fields in components.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:14:12Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:14:38Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aa1f2e5081c495660
+**Message**: Getting UTC timestamp for review
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:14:43Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T09:14:43Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/.aidlc-reviews/functional-design/units/u3-access-control/1845c792ae0fe820/2.review.md
+**Context**: .aidlc-reviews > functional-design > units > u3-access-control > 1845c792ae0fe820 > 2.review.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:14:54Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:14:56Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: a7e67a387dcb79d0e
+**Message**: Review complete — verdict READY, delivered via SubagentHandback.
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:15:01Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Error Logged
+**Timestamp**: 2026-09-22T09:15:03Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage functional-design --unit u3-access-control --reviewer aidlc-architecture-reviewer-agent --iteration 2 --verdict READY
+**Error**: Refusing REVIEW_COMPLETED for "functional-design": construction/u3-access-control/functional-design/functional-spec.md#R-01: invalid finding status "Resolved — `AdminAccessDeniedEvent` の属性（`eventType, occurredAt, result, failureReason, enteredEmail, sourceIp, userAgent, traceId`）は `components.md` の AuditEvent 属性（DB 発行の `auditEventId` を除く）と一致することを確認した。`failureReason` の許容値も U2 の 401 理由（`TOKEN_MISSING/TOKEN_MALFORMED/TOKEN_INVALID/USER_NOT_FOUND`。`TOKEN_EXPIRED` は出来事を作らない）と整合している".
+
+---
+
+## Error Logged
+**Timestamp**: 2026-09-22T09:15:04Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-state
+**Command**: aidlc-state engine state unit complete --wave --stage functional-design --unit u3-access-control
+**Error**: Refusing wave completion for unit "u3-access-control" of "functional-design": the engine does not currently expose that entry as build-complete, review-settled, and awaiting its completion receipt.
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:15:08Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:15:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Error Logged
+**Timestamp**: 2026-09-22T09:15:12Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage functional-design --unit u3-access-control --reviewer aidlc-architecture-reviewer-agent --iteration 2 --verdict READY
+**Error**: Refusing REVIEW_COMPLETED for "functional-design": construction/u3-access-control/functional-design/functional-spec.md#R-01: invalid finding status "Resolved — `AdminAccessDeniedEvent` の属性（`eventType, occurredAt, result, failureReason, enteredEmail, sourceIp, userAgent, traceId`）は `components.md` の AuditEvent 属性（DB 発行の `auditEventId` を除く）と一致することを確認した。`failureReason` の許容値も U2 の 401 理由（`TOKEN_MISSING/TOKEN_MALFORMED/TOKEN_INVALID/USER_NOT_FOUND`。`TOKEN_EXPIRED` は出来事を作らない）と整合している".
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:15:18Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:15:34Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a0c405f91d8406ea1
+**Message**: ok
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:15:43Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:15:45Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-09-22T09:15:46Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/.aidlc-reviews/functional-design/units/u3-access-control/1845c792ae0fe820/2.review.md
+**Context**: .aidlc-reviews > functional-design > units > u3-access-control > 1845c792ae0fe820 > 2.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:15:47Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: a7e67a387dcb79d0e
+**Message**: done
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:15:47Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ac940b770591a5c0e
+**Message**: ok
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:15:56Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-22T09:15:57Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: a7e67a387dcb79d0e
+**Message**: Report delivered.
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:16:02Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Review Completed
+**Timestamp**: 2026-09-22T09:16:04Z
+**Event**: REVIEW_COMPLETED
+**Stage**: functional-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u3-access-control
+**Iteration**: 2
+**Verdict**: READY
+**Request Fingerprint**: sha256:668ef1bfa1242020370fee98447e2ab52e58f7112464f406a63821a8a366c817
+**Artifact Fingerprint**: sha256:668ef1bfa1242020370fee98447e2ab52e58f7112464f406a63821a8a366c817
+**Request Id**: review:b19984b4412594cb2cd82c4a5054a75b
+**Review Record**: .aidlc-reviews/functional-design/units/u3-access-control/1845c792ae0fe820/2.json
+**Review Record Digest**: sha256:d73df19e4e8b4e9db84bc653bb2d42fd351c35d0227c9428693a22efa65c423d
+
+---
+
+## Unit Completed
+**Timestamp**: 2026-09-22T09:16:06Z
+**Event**: UNIT_COMPLETED
+**Stage**: functional-design
+**Unit**: u3-access-control
+**Run floor**: STAGE_STARTED:2026-09-22T07:11:40Z#1
+**Mode**: wave
+**Wave memory entries**: 0
+**Artifact Fingerprint**: sha256:668ef1bfa1242020370fee98447e2ab52e58f7112464f406a63821a8a366c817
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:16:09Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:16:31Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-22T09:16:31Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/u4-audit-log/functional-design/functional-design-questions.md
+**Context**: construction > u4-audit-log > functional-design > functional-design-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:17:48Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:17:59Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T09:18:11Z
+**Event**: DECISION_RECORDED
+**Stage**: functional-design
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/construction/u4-audit-log/functional-design/functional-design-questions.md
+**Unit**: u4-audit-log
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:18:25Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:18:30Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-09-22T09:18:38Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: functional-design
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260922-auth-audit-base/construction/u4-audit-log/functional-design/functional-design-questions.md
+**Questions SHA-256**: 481d8f4ac5cf4ce75e7dee55124f0422cad0025d9062e1fe33b3c718c1e33693
+**Hash Scope**: confirmed-content-v1
+**Unit**: u4-audit-log
+**Summary Authorization Id**: 98db4c718e8f992e2f39499422f4f937eafc6473d393cf762ab4295d17cc2e7d
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:19:03Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:19:06Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
