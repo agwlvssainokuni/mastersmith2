@@ -22,6 +22,9 @@
 
 - 2026-09-22T11:50:00Z — 新しく決める論点が無かったため、質問を作らず、設計の要点を要約として依頼者に確認した; 決まり 1.3・3.1 と NFR Requirements の Q1・Q2 で方針が決まっていたため。
 <!-- aidlc-wave-memory:u4-audit-log:94675a26f90e07c1e80efec83f3e7506203b679273df7b04b29b9994484ca3de -->
+
+- 2026-09-22T12:00:00Z — 依頼者の変更の依頼により、Spring Security の差し込み口を3つの型（追加の決まり・API の既定の扱い・フィルターの段階の応答の組み立て）と order の割り当てまで具体化し、security-design.md 3章を単位どうしの約束の記録とした; 共有の unit-of-work-dependency.md は書き換えず、Code Generation の計画でつなぎ目として書く。
+<!-- aidlc-wave-memory:u1-app-skeleton:06179b66b0390ab826a50ecf895928a74c170a54010e1cda4e72a7d6f759fda5 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -37,6 +40,9 @@
 
 - 2026-09-22T11:40:00Z — 確定回答 Q1 により、BR6.1 に無い code `REQUEST_REJECTED`（400）を加えた; 要求の検査の拒否もエラー応答の共通の形（U1 の決まり 5.1）にそろえるため。security-design.md 5章に明記。
 <!-- aidlc-wave-memory:u3-access-control:f096681c0050f4ff8fa41c692a257681727121f11141618b42ada522e46b3a38 -->
+
+- 2026-09-22T12:00:00Z — 依頼者の変更の依頼により、アクセス拒否の監査イベントに要求のパス（正規化済み、問い合わせなし、512 文字で切り詰め）を加えた; 承認済みの entities.md には無い項目のため、security-design.md 6章に違いを明記し、Code Generation の計画で揃える。
+<!-- aidlc-wave-memory:u4-audit-log:0a4f7dd8252637205a08a2a70576ad008d2f213007c2e904d3fe66f07f23cbe1 -->
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 

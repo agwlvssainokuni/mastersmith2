@@ -8,7 +8,7 @@ U4 の観測性の要件（`observability-requirements.md` の NFR10.3〜NFR10.5
 |---|---|
 | レベル | ERROR（1件の失敗につき1回） |
 | メッセージ | U4 が決めた固定の文（例: 監査イベントの記録に失敗した）。例外のメッセージは使わない（`security-design.md` 1章） |
-| キーと値 | `auditEventType`・`result`・`occurredAt`・`enteredEmail`・`failureReason`・`sourceIp`・`userAgent`・`auditTraceId` |
+| キーと値 | `auditEventType`・`result`・`occurredAt`・`enteredEmail`・`failureReason`・`sourceIp`・`userAgent`・`requestPath`（あれば）・`auditTraceId` |
 | 例外 | 型の名前とスタックトレース |
 | トレースID | U1 の仕組みで付く（要求のトレースID） |
 

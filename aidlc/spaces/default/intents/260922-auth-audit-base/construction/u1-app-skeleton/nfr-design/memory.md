@@ -3,6 +3,7 @@
 
 ## Interpretations
 <!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
+- 2026-09-22T12:00:00Z — 依頼者の変更の依頼により、Spring Security の差し込み口を3つの型（追加の決まり・API の既定の扱い・フィルターの段階の応答の組み立て）と order の割り当てまで具体化し、security-design.md 3章を単位どうしの約束の記録とした; 共有の unit-of-work-dependency.md は書き換えず、Code Generation の計画でつなぎ目として書く。
 - 2026-09-22T11:00:06Z — Contract Design を行わないワークフローのため、U2・U3 が Spring Security のフィルターの連鎖に決まりを足す差し込み口の形（公開の決まり→追加の決まり→API の既定の扱い→画面の配信の並び）を NFR Design の security-design.md で決めた; functional-spec.md は「U1 の Contract Design で決める」としていたが、その段階が無いため。名前と正確な形は Code Generation で決める。
 - 2026-09-22T11:00:06Z — NFR1.6（ログで要求を待たせない）は、確定回答 Q2（同期で標準出力へ書く）を、要件の確かめ方「標準出力への書き込み」に当たるものとして満たすと解釈した; 受け手が詰まったときに要求も待つ危険は受け入れた危険として設計書に書いた。
 

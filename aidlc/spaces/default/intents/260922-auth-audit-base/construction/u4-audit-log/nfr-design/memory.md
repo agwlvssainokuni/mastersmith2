@@ -7,6 +7,7 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-09-22T12:00:00Z — 依頼者の変更の依頼により、アクセス拒否の監査イベントに要求のパス（正規化済み、問い合わせなし、512 文字で切り詰め）を加えた; 承認済みの entities.md には無い項目のため、security-design.md 6章に違いを明記し、Code Generation の計画で揃える。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->

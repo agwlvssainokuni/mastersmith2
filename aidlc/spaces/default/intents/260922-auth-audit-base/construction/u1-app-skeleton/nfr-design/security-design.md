@@ -74,8 +74,34 @@ U1 の設定クラス（`config` パッケージ）が、フィルターの連�
 3. API の既定の扱い: 1・2 に当たらない `/api/**` の扱い。U1 だけの状態では「許可」とする。U3 が「ログイン必須」に切り替える部品を置く。この部品が2つ以上あれば起動を失敗させる。
 4. 画面の配信（`/api/**` 以外）: 認証を求めない。画面の表示の制御は画面側で行い、データはすべて API の側で守る（BR7.5）。
 
-- 差し込み口の名前と正確な形は Code Generation で決め、U2・U3 はそれに従う。Actuator の health 以外の窓口と H2 のコンソールは、アクセスの決まりではなく「そもそも用意しない」ことで閉じる（4章）。決まりの並びに頼らない。
+- Actuator の health 以外の窓口と H2 のコンソールは、アクセスの決まりではなく「そもそも用意しない」ことで閉じる（4章）。決まりの並びに頼らない。
+
+**差し込み口の形（単位どうしの約束）**: Contract Design を行わないため、本節を U1 が U2・U3 に提供する差し込み口の約束の記録とする（共有の `unit-of-work-dependency.md` の「単位どうしのつなぎ目」の表には載っていない。Code Generation の計画の確認で、この約束をつなぎ目として計画に書く）。差し込み口は次の3つの型で、U1 の `common` パッケージの `security` に置く。型の名前は設計上の仮の名前で、意味を変えない範囲で Code Generation で整えてよい。
+
+```java
+// 追加の決まり（U2・U3 が Bean として置く。0個以上）
+public interface SecurityRuleContributor extends Ordered {
+    void contribute(HttpSecurity http) throws Exception; // 決まり・検証・入口の処理を足す
+}
+// API の既定の扱い（U3 が置く。0個か1個。2個以上なら起動を失敗させる）
+public interface ApiDefaultAccess {
+    boolean requireAuthentication(); // true: ログイン必須、無ければ U1 は「許可」
+}
+// フィルターの段階の応答の組み立て（U1 が提供し、U2・U3 が使う）
+public interface ErrorResponseWriter {
+    void write(HttpServletRequest req, HttpServletResponse res, ProblemType type);
+}
+```
+
+| 約束 | 内容 |
+|---|---|
+| 呼ぶ順番 | U1 の公開の決まり → `SecurityRuleContributor` を `order` の小さい順 → `ApiDefaultAccess` による `/api/**` の既定 → 画面の配信の許可 |
+| order の割り当て | U2 は 100 台、U3 は 200 台を使う。同じ値が2つあれば起動を失敗させる |
+| 足してよいもの | アクセスの決まり、トークンの検証（OAuth2 Resource Server）、認証の入口の処理と拒否の処理、要求の検査の拒否の処理。ヘッダー・セッション・CSRF の設定は変えない（U1 だけが決める） |
+| 起動の検査 | U1 は起動時に、`ApiDefaultAccess` の数と `order` の重複を確かめる。テストで、U1 だけの状態・U2 と U3 がそろった状態の両方で決まりの並びを確かめる |
 - フィルターの段階で起きる 401・403 の応答は、U1 の共通の組み立ての仕組み（問題の種類から type・code・title を、要求から traceId を埋める）で ErrorResponse の形にする（BR5.1）。U3 の応答の処理はこれを使う。
+
+**上流の文書との違い**: `tech-stack-decisions.md` の「認証・認可」の行は「Spring Security（U2・U3 が使う）」と書いているが、確定回答 Q1 により、Spring Security を組み込んでフィルターの連鎖とヘッダーを用意するのは U1 である。U2・U3 は上の差し込み口で認証とアクセスの決まりを足す。承認済みの `tech-stack-decisions.md` はこの段階では書き換えず、本節の記述を正とする。
 
 ## 4. 公開する範囲（NFR3.5〜NFR3.7）
 
