@@ -1,0 +1,514 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-app-skeleton",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".dockerignore"
+    },
+    {
+      "path": ".editorconfig"
+    },
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": ".gitattributes"
+    },
+    {
+      "path": ".github/dependabot.yml"
+    },
+    {
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "path": ".gitignore"
+    },
+    {
+      "path": ".gitleaks.toml"
+    },
+    {
+      "path": ".pre-commit-config.yaml"
+    },
+    {
+      "path": "Dockerfile"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/config/spotbugs-exclude.xml"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/MastersmithApplication.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/BusinessException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/CommonProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/LocalizedText.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/ProblemType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/ProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/service/CommonProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/service/ProblemTypeRegistry.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/DefaultErrorResponseWriter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ErrorPathController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ErrorResponseFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/GlobalExceptionHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ProblemBaseUrlResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ProblemTypeController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ProblemTypeHtmlRenderer.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ProblemTypeResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/health/HealthProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/health/TimeBoundedDbHealthIndicator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/i18n/domain/AcceptLanguageResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/i18n/domain/DisplayLanguage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/ObservabilityProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/SanitizingSpanExporter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/TraceAspect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/TraceIdProvider.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/TraceProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/UrlQueryStrippingObservationFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/ApiDefaultAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/ErrorResponseWriter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/SecurityExtensionValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/SecurityRuleContributor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/CacheControlFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/MastersmithWebProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/RequestSizeLimitFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/ForwardedHeaderConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/ObservabilityConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/SecurityConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/SecurityHeaderProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/WebConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/package-info.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V1__u1_baseline.sql"
+    },
+    {
+      "path": "backend/src/main/resources/logback-spring.xml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/db/DatabasePersistenceIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/domain/ProblemTypeTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/service/ProblemTypeDuplicateStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/service/ProblemTypeRegistryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/DefaultErrorResponseWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ErrorPathControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ErrorResponseFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ErrorResponseIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/GlobalExceptionHandlerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ProblemBaseUrlResolverTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ProblemTypeHtmlRendererTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ProblemTypePageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/health/HealthEndpointIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/health/TimeBoundedDbHealthIndicatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/i18n/domain/AcceptLanguageResolverTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/ExternalExportIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/JsonLogFormatTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/SanitizingSpanExporterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/TraceAspectIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/TraceIdProviderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/TracingAndLoggingIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/UrlQueryStrippingObservationFilterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/security/SecurityExtensionValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/HttpTestClient.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/JsonLogRecords.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/LogEvents.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/TestFixtureEndpoints.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/TestSecurityExtensions.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/service/TraceTargetService.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/web/CacheControlFilterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/web/RequestSizeLimitFilterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/ExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/SecurityExtensionIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/SecurityHeadersIT.java"
+    },
+    {
+      "path": "backend/src/test/resources/archunit.properties"
+    },
+    {
+      "path": "backend/src/test/resources/junit-platform.properties"
+    },
+    {
+      "path": "backend/src/test/resources/static/assets/app-test.js"
+    },
+    {
+      "path": "backend/src/test/resources/static/index.html"
+    },
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "config/license-header.txt"
+    },
+    {
+      "path": "config/npm-build-tools.txt"
+    },
+    {
+      "path": "docker/otel-collector/config.yaml"
+    },
+    {
+      "path": "frontend/.npmrc"
+    },
+    {
+      "path": "frontend/.oxlintrc.json"
+    },
+    {
+      "path": "frontend/.prettierignore"
+    },
+    {
+      "path": "frontend/.prettierrc.json"
+    },
+    {
+      "path": "frontend/.stylelintrc.json"
+    },
+    {
+      "path": "frontend/e2e/u1-skeleton.e2e.ts"
+    },
+    {
+      "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/index.html"
+    },
+    {
+      "path": "frontend/package-lock.json"
+    },
+    {
+      "path": "frontend/package.json"
+    },
+    {
+      "path": "frontend/playwright.config.ts"
+    },
+    {
+      "path": "frontend/scripts/check-bundle-size.mjs"
+    },
+    {
+      "path": "frontend/scripts/check-license-header.mjs"
+    },
+    {
+      "path": "frontend/src/app/App.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/App.tsx"
+    },
+    {
+      "path": "frontend/src/app/i18n/I18nProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/i18n/I18nProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/i18n/i18n.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages.test.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/resolveLanguage.test.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/resolveLanguage.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/LoginLayout.css"
+    },
+    {
+      "path": "frontend/src/app/layout/LoginLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/LoginLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/StandaloneLayout.css"
+    },
+    {
+      "path": "frontend/src/app/layout/StandaloneLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/StandaloneLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.ts"
+    },
+    {
+      "path": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/HomePage.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/NotFoundPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/NotFoundPage.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/Page.css"
+    },
+    {
+      "path": "frontend/src/app/pages/StartupErrorPage.tsx"
+    },
+    {
+      "path": "frontend/src/app/registry/FeatureRegistryContext.tsx"
+    },
+    {
+      "path": "frontend/src/app/registry/loadRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/loadRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/registrationModules.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/types.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/decideRoute.test.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/decideRoute.ts"
+    },
+    {
+      "path": "frontend/src/app/testing/renderWithProviders.tsx"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/main.tsx"
+    },
+    {
+      "path": "frontend/src/types/vitest-axe-matchers.d.ts"
+    },
+    {
+      "path": "frontend/tsconfig.json"
+    },
+    {
+      "path": "frontend/vite.config.ts"
+    },
+    {
+      "path": "frontend/vitest.config.ts"
+    },
+    {
+      "path": "frontend/vitest.setup.ts"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.jar"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties"
+    },
+    {
+      "path": "gradlew"
+    },
+    {
+      "path": "gradlew.bat"
+    },
+    {
+      "path": "settings-gradle.lockfile"
+    },
+    {
+      "path": "settings.gradle.kts"
+    }
+  ]
+}

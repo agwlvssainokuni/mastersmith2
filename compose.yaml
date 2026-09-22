@@ -1,0 +1,76 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# 開発者の PC で、アプリをコンテナで動かす。
+#   起動: docker compose up -d --build （事前に ./gradlew :backend:bootWar で WAR を作る）
+#   外部エクスポートの確認: .env で MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true と
+#     MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://otel-collector:4318 を設定し、
+#     docker compose --profile observability up -d --build
+# 秘密情報は Git 管理外の .env から渡す（見本は .env.example）。
+name: mastersmith
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mastersmith:${MASTERSMITH_IMAGE_TAG:-local}
+    ports:
+      # 開発者の PC の localhost にだけ結び付ける。
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # タイムゾーンは Asia/Tokyo（Dockerfile の -Duser.timezone と合わせる。U2 の基盤の設計による U1 への追加）。
+      TZ: Asia/Tokyo
+    volumes:
+      - mastersmith-data:/app/data
+    healthcheck:
+      # イメージに curl・wget が無いため、bash だけで /actuator/health を呼び、200 なら健全とする。
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080
+          && printf 'GET /actuator/health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+          && head -n 1 <&3 | grep -q ' 200 '
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+      start_interval: 2s
+    # アプリの穏やかな停止の待ち（30 秒）より長くする。
+    stop_grace_period: 45s
+    # CPU の上限は 4（U2 の基盤の設計で U1 の「CPU 2」を上書き）。メモリは 1GB。
+    cpus: 4
+    mem_limit: 1g
+    # 異常で止まったときは再起動しない（開発者が原因を見る）。
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:0.161.0
+    profiles: [observability]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docker/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+
+volumes:
+  mastersmith-data:

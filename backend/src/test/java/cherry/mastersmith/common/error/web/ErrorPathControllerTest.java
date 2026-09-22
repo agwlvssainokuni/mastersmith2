@@ -84,6 +84,18 @@ class ErrorPathControllerTest {
     }
 
     @Test
+    @DisplayName("error dispatches of update methods return the same error response")
+    void updateMethods() {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/error");
+        request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 413);
+
+        ResponseEntity<ProblemDetail> response = controller.errorForUpdate(request);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(response.getBody().getProperties()).containsEntry("code", "PAYLOAD_TOO_LARGE");
+    }
+
+    @Test
     @DisplayName("missing status attribute is treated as 500")
     void missingStatus() {
         assertThat(error(null, null).getStatusCode().value()).isEqualTo(500);

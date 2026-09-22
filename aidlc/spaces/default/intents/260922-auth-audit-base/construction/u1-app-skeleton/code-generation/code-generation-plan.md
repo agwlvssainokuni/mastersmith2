@@ -278,7 +278,7 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
 
 ### 4.9 環境・ビルドの設定
 
-- [ ] **Step 19 — 1コマンドの検査 `./gradlew verify` を組み立てる**
+- [x] **Step 19 — 1コマンドの検査 `./gradlew verify` を組み立てる**
   - ルートの `verify` タスクが次の順に実行し、1つでも失敗したら後ろを実行しない: 1 フォーマット（Spotless の確認、Prettier の確認）→ 2 リンタ（oxlint、ESLint、Stylelint）→ 3 ライセンスヘッダー（Spotless の `licenseHeader`、`check-license-header.mjs`）→ 4 ビルド（Java のコンパイル、`tsc --noEmit`、Vite のビルド。make-you-chic-ui のビルドを先に行う）→ 5 単体テスト（`test`、Vitest）→ 6 結合テスト（`integrationTest`）→ 7 カバレッジの下限（JaCoCo、`@vitest/coverage-v8` の `thresholds`）→ 8 安全の検査（SpotBugs＋FindSecBugs、OSV-Scanner で Gradle の lockfile・`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json`、Gitleaks でリポジトリ全体）→ 9 成果物と量の確認（`dist` を同梱した実行可能 WAR、初回読み込みの JavaScript の圧縮後の合計を測り 500KB を超えたら警告だけ）。
   - 重大度 High 以上で失敗させ、それ未満は警告にする。フォーマッタ・リンタ・静的検査は `vendor/` を対象から外す。
   - npm は PC の Node.js 24 を Gradle から呼び、`npm ci` で入れる。Node.js の版が合わなければ失敗させる。Gitleaks・OSV-Scanner は PC の実行ファイルを呼び、見つからなければ入れ方を示して失敗させる（黙って飛ばさない）。
@@ -287,26 +287,26 @@ U1 は、アプリが起動し、内部DB（組み込みの H2）につながり
   - `.gitleaks.toml`（既定の規則を引き継ぐ）、`.pre-commit-config.yaml`（Gitleaks と、変更したファイルに対するフォーマットの確認。道具の版を固定）。pre-push のフックは置かない。
   - 対応: NFR1.5、NFR3.2、NFR3.13、NFR3.14、NFR9.4、NFR9.5、cicd-pipeline 2章・3章、team.md Code Style（静的解析とセキュリティ検査）
 
-- [ ] **Step 20 — コンテナで動かすための設定を書く**
+- [x] **Step 20 — コンテナで動かすための設定を書く**
   - `Dockerfile`（1段）: Eclipse Temurin の JRE 25（Ubuntu ベース、版の番号までタグで固定）。root 以外の専用の利用者（UID 10001）、作業ディレクトリ `/app`、`/app/data` をその利用者だけが読み書きできるようにする。Gradle で作った WAR をコピーし、イメージの中ではビルドしない。起動は `exec` 形式で、最大ヒープをコンテナのメモリの 75%、`-Duser.timezone=Asia/Tokyo`。
   - `compose.yaml`: `app`（番号 `127.0.0.1:8080:8080`、`.env` の読み込み、環境変数 `TZ=Asia/Tokyo`、名前付きボリュームを `/app/data`、ヘルスチェックは `/actuator/health` を 30 秒ごと・起動の猶予 40 秒、停止の猶予 45 秒、CPU の上限 4・メモリ 1GB、再起動しない、ログは json-file で 10MB × 3）と、profile `observability` のときだけ起動する `otel-collector`（版を固定。受け取ったものを標準出力に出すだけの設定ファイル `docker/otel-collector/config.yaml`）。ヘルスチェックに使う道具がイメージに無い場合は、入れるか代わりの確かめ方を選ぶ。
   - CPU の上限 4 とタイムゾーン `Asia/Tokyo`（`TZ` と `-Duser.timezone` の両方）は、U2 の `infrastructure-specification.md` 1章・4章による U1 の設計の上書き・追加であり、U1 の「CPU 2」より優先する。保存する時刻はタイムゾーンに依存しない時点（UTC）として扱う。
   - `.env.example`: Step 2 の環境変数の名前だけを置き、値は空。U2 の署名鍵・初期管理者の名前の欄も用意し、署名鍵の作り方をコメントで書く（値は書かない）。
   - 対応: NFR1.4、NFR1.11、NFR3.2、NFR3.7、NFR6.1、NFR9.2、NFR9.3、infrastructure-specification 1章〜4章、monitoring-design 4章
 
-- [ ] **Step 21 — CI と依存関係の更新の知らせを書く**
+- [x] **Step 21 — CI と依存関係の更新の知らせを書く**
   - `.github/workflows/ci.yml`: きっかけは `develop` へのプッシュ、`v*` のタグのプッシュ、手動の実行。ランナーは `ubuntu-latest`。サブモジュールを固定先のコミットで取得し、JDK 25（Temurin）・Node.js 24・Gitleaks・OSV-Scanner を版を固定して入れ、Gradle と npm のキャッシュを使う。`./gradlew verify` を実行する。WAR を名前にコミットのハッシュを入れて成果物として保存する（30 日）。権限は `contents: read`、タグのときだけ動くリリースのジョブは `contents: write` で GitHub のリリースに WAR を添付する。秘密情報は使わない。使う Actions は版を固定する。
   - `.github/dependabot.yml`: Gradle、npm（`frontend/`）、GitHub Actions、Docker（ベースイメージ）。
   - 対応: NFR3.13、NFR3.14、NFR9.5、cicd-pipeline 4章
 
-- [ ] **Step 22 — すべての検査を通し、コンテナで起動を確かめる**
+- [x] **Step 22 — すべての検査を通し、コンテナで起動を確かめる**
   - `./gradlew verify` をリポジトリのルートで実行し、すべての段（カバレッジの下限と安全の検査を含む）が通ることを確かめる。通らないときは原因を直す（下限や重大度の基準を下げない）。
   - `docker compose up` で起動し、コンテナのヘルスチェックが healthy になること、ブラウザで `http://localhost:8080/` を開くとログイン用レイアウトが表示されることを確かめる。起動から health が UP になるまでの時間を記録する（NFR1.4 の 30 秒）。`docker compose --profile observability up` で外部エクスポートを有効にしたとき、トレース・ログ・指標が受け手に届き秘密情報が載らないことを確かめる。
   - 対応: NFR1.4、NFR9.3、NFR9.5、FR10.4、Walking Skeleton の一式
 
 ### 4.10 文書とトレーサビリティ
 
-- [ ] **Step 23 — README とトレーサビリティの材料をそろえる**
+- [x] **Step 23 — README とトレーサビリティの材料をそろえる**
   - `README.md`（日本語）: 概要、前提の道具（JDK 25、Node.js 24、Python と pre-commit、Gitleaks、OSV-Scanner、Docker）と入れ方、サブモジュールの取得、`pre-commit install`、`./gradlew verify` の実行、開発時の起動（バックエンドと Vite の開発サーバー）、コンテナでの起動と確認と戻し方、環境変数の一覧、内部DBのバックアップと戻し方（アプリを止めて `/app/data` を複写する）、Flyway のファイルの名前の決まり、外部エクスポートの確かめ方（profile `observability`）、プロキシを置く配備でのベースURLと転送元のヘッダーの設定、U2・U3 が使う差し込み口の説明（6章）。
   - 公開する型・差し込み口の Javadoc と JSDoc（日本語）。
   - 本ステージの手順5で書く `code-summary.md`・`source-manifest.json`・`traceability.json` の材料（作った・変えたファイルの一覧、FR・BR・NFR ごとの実装とテストのファイル）をそろえる。

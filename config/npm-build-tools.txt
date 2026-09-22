@@ -1,0 +1,46 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# 画面の配る成果物（frontend/dist と、そこに入る make-you-chic-ui の dist）を作る道具の一覧。
+#
+# 依存関係の脆弱性の検査（./gradlew verify の 8 の段、OSV-Scanner）では、npm の devDependencies の脆弱性は
+# 原則として警告だけにする。ただし、ここに書いた道具は、配る JavaScript・CSS を生成・変換するため、
+# 脆弱性が成果物に入り込むおそれがある。そこで devDependencies でも重大度 High 以上なら統合を止める。
+#
+# 書き方: 1行に1つのパッケージ名。末尾の * は前方一致（例: @rolldown/* は @rolldown/ で始まるすべて）。
+# 道具を足したり入れ替えたりしたとき（Vite の版を上げたときなど）は、この一覧も見直す。
+
+# Vite と、その中で束ね・変換を行う部品
+vite
+rolldown
+@rolldown/*
+@oxc-project/*
+lightningcss
+lightningcss-*
+postcss
+picomatch
+tinyglobby
+fdir
+esbuild
+@esbuild/*
+rollup
+@rollup/*
+
+# React の変換
+@vitejs/plugin-react
+
+# 型の検査と、make-you-chic-ui の型の宣言の出力
+typescript
+vite-plugin-dts
+unplugin-dts

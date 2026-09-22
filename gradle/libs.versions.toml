@@ -19,6 +19,9 @@
 [versions]
 java = "25"
 spring-boot = "4.1.1"
+# 組み込みの Tomcat。Spring Boot 4.1.1 が管理する 11.0.24 に重大度 High 以上の脆弱性（GHSA-9xv2-5v5q-p794 ほか、
+# 11.0.25 で修正）があるため、同じ 11.0 系の最新の修正版に上げる。Spring Boot を上げるときに、この固定が要るか見直す。
+tomcat = "11.0.26"
 spotless = "8.10.2"
 palantir-java-format = "2.98.0"
 spotbugs-gradle-plugin = "6.5.11"

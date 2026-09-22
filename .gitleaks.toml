@@ -1,0 +1,30 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Gitleaks の設定。既定の規則をそのまま引き継ぐ。
+# 除外を足すときは、理由を書き、秘密情報でないことを確かめたものに限る。
+title = "mastersmith"
+
+[extend]
+useDefault = true
+
+# 誤検出の除外: AI-DLC の記録（aidlc/ の下の memory.md）に道具が書く目印のコメント
+# `<!-- aidlc-wave-memory:<単位>:<SHA-256 の16進数64桁> -->` は内容のハッシュ値であり、秘密情報ではない。
+# 対象を「aidlc/ の下の memory.md」かつ「検出された値が <単位>:<64桁の16進数> の形」の両方に当たるものだけに絞る。
+[[allowlists]]
+description = "AI-DLC の記録の目印のハッシュ値（秘密情報ではない）"
+condition = "AND"
+regexTarget = "match"
+regexes = ['''^[a-z0-9-]+:[0-9a-f]{64}\s*$''']
+paths = ['''^aidlc/spaces/[^/]+/intents/.+/memory\.md$''']

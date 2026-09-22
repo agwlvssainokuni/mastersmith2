@@ -7,6 +7,7 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-09-22T14:45:00Z — U1: 依頼者の判断により、フロントエンドの依存関係の脆弱性の検査を分けた。dependencies（推移依存を含む）は重大度 High 以上で統合を止め、devDependencies は警告だけとする。ただし悪意のあるパッケージ（OSV の MAL-）と、成果物を作る道具（Vite・Rollup・esbuild・TypeScript など）の High 以上は止める; team.md の「High 以上で止める」と承認済みの cicd-pipeline.md 8の段の読み替えにあたるため、学びとして team.md に残すかを承認の場で確かめる。
 - 2026-09-22T14:12:00Z — U1: Step 11 を Step 10 のテストより先に実装した（SecurityFilterChain が無いと既定のセキュリティが全要求にログインを求めるため）。ErrorPathController・ForwardedHeaderConfig・UserDetailsServiceAutoConfiguration の除外など、計画に無い安全側の部品と設定を足した。
 - 2026-09-22T14:12:00Z — U1: opentelemetry-logback-appender の最新版（2.31.1-alpha）が Spring Boot 4.1.1 の OpenTelemetry（1.62）と食い違い、外部エクスポートの有効時に失敗したため、依頼者の判断（A）で 2.28.1-alpha に固定した; Spring Boot を上げるときはこの部品の版も合わせて見直す。
 

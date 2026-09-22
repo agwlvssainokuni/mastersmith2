@@ -26,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -51,13 +52,33 @@ public class ErrorPathController implements ErrorController {
     }
 
     /**
-     * エラーの応答を返す。
+     * 読み取りのメソッド（GET・HEAD・OPTIONS）の要求のエラーの応答を返す。
      *
      * @param request エラーの転送（ERROR の dispatch）の要求
      * @return エラー応答
      */
-    @RequestMapping("${server.error.path:/error}")
+    @RequestMapping(
+            path = "${server.error.path:/error}",
+            method = {RequestMethod.GET, RequestMethod.HEAD, RequestMethod.OPTIONS})
     public ResponseEntity<ProblemDetail> error(HttpServletRequest request) {
+        return respond(request);
+    }
+
+    /**
+     * 更新のメソッド（POST・PUT・PATCH・DELETE）の要求のエラーの応答を返す。エラーの転送は元の要求のメソッドのまま届くため、
+     * 読み取りのメソッドと分けて受ける（どちらも状態は変えず、エラー応答を返すだけ）。
+     *
+     * @param request エラーの転送（ERROR の dispatch）の要求
+     * @return エラー応答
+     */
+    @RequestMapping(
+            path = "${server.error.path:/error}",
+            method = {RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH, RequestMethod.DELETE})
+    public ResponseEntity<ProblemDetail> errorForUpdate(HttpServletRequest request) {
+        return respond(request);
+    }
+
+    private ResponseEntity<ProblemDetail> respond(HttpServletRequest request) {
         Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         ProblemType type = toProblemType(status instanceof Integer code ? code : 500);
         Object error = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);

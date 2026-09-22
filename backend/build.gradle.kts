@@ -41,6 +41,16 @@ dependencyLocking {
     lockAllConfigurations()
 }
 
+// 組み込みの Tomcat の版を、脆弱性の修正を含む版にそろえる（gradle/libs.versions.toml の tomcat の説明を参照）。
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.apache.tomcat.embed") {
+            useVersion(libs.versions.tomcat.get())
+            because("Spring Boot が管理する Tomcat 11.0.24 の重大度 High 以上の脆弱性を避けるため")
+        }
+    }
+}
+
 dependencies {
     val bom = platform(libs.spring.boot.bom)
     implementation(bom)
