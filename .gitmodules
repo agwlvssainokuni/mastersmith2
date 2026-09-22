@@ -1,0 +1,3 @@
+[submodule "vendor/make-you-chic-ui"]
+	path = vendor/make-you-chic-ui
+	url = https://github.com/agwlvssainokuni/make-you-chic-ui
