@@ -16,6 +16,9 @@
 
 - 2026-09-22T11:30:00Z — Contract Design を行わないため、U2 の API のパス（/api/auth/login、/api/auth/session/refresh・logout）と Cookie の名前・Path を NFR Design で決めた; Cookie の送り先を更新とログアウトに限る要件（NFR5.3）を1つの Path で満たすため、2つの API を共通の下位のパスに置いた。
 <!-- aidlc-wave-memory:u2-authentication:694a67aa7cda53c21466d568a5bd031c8d80d98139883a4d693976e3afcd81ba -->
+
+- 2026-09-22T11:40:00Z — U3 の決まりの文の順（管理者のみ→公開→ログイン必須）と、U1 の差し込み口の並び（U1・U2 の公開が管理者のみより先）は、パスが重ならないため同じ結果になると解釈し、U1 の並びに合わせた。
+<!-- aidlc-wave-memory:u3-access-control:a6e8f0a6fefe634876c929c701f3fa2606187f91ebfa4ae7caf8b1453929cc55 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -28,6 +31,9 @@
 
 - 2026-09-22T11:30:00Z — Origin の不一致の 403 のために、決まり 9.1 に無い code `ORIGIN_NOT_ALLOWED` を加えた; U1 の決まり 5.14（使う code すべてに日英の説明）に合わせるため。
 <!-- aidlc-wave-memory:u2-authentication:c0dc544e04131b3541b8dde2d70e567ea3c0ba381be11cc7892e28ecbbd6850c -->
+
+- 2026-09-22T11:40:00Z — 確定回答 Q1 により、BR6.1 に無い code `REQUEST_REJECTED`（400）を加えた; 要求の検査の拒否もエラー応答の共通の形（U1 の決まり 5.1）にそろえるため。security-design.md 5章に明記。
+<!-- aidlc-wave-memory:u3-access-control:f096681c0050f4ff8fa41c692a257681727121f11141618b42ada522e46b3a38 -->
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 
@@ -43,6 +49,12 @@
 
 - 2026-09-22T11:30:00Z — アクセストークンの検証の時刻のずれの許容を既定の 60 秒から 0 にした; 決まり 4.2 の境界（5分ちょうどで無効）をテストで確かめられるようにするため。
 <!-- aidlc-wave-memory:u2-authentication:f85196aa3c343d163e92d4aeb929cb4b2c0dcd46b2b68006b748f99ff68d1443 -->
+
+- 2026-09-22T11:45:00Z — レビューの指摘により、401 の理由の受け渡しを「U2 の認証の失敗の例外の区分、例外が無ければ TOKEN_MISSING」と決めた; 要求の属性は Spring Security の失敗の経路で設定の漏れが起きやすく、例外なら入口の処理に必ず届くため。
+<!-- aidlc-wave-memory:u3-access-control:07ee330a9b6638fb2241e0f75ac6efda74ca6a5d17a65c59dd6606d4e9ebaf41 -->
+
+- 2026-09-22T11:40:00Z — 401 の理由（TOKEN_EXPIRED かどうか）を U2 から U3 に渡す形を、U2 の設計が決めていなかったため U3 の設計で約束として書いた; Code Generation の計画で U2・U3 の両方に書く。
+<!-- aidlc-wave-memory:u3-access-control:c8da5617b7e6f8953a7c2d8d5c075e330cdb972eda3461907e8ed54efce9c23e -->
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
 

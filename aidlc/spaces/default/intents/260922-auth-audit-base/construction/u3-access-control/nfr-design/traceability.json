@@ -1,0 +1,140 @@
+{
+  "stage": "nfr-design",
+  "unit": "u3-access-control",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR10.1",
+    "NFR9.1",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.2",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "performance-design.md 1章: 確認用 API の予算（成功 約70ms、403 約170ms）と Performance Validation での測定"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "performance-design.md 2章: U2 の AuthenticatedUser の値を使い DB を読まない、SQL の回数をテスト"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design.md 2章: 同じスレッドで U4 がその場で記録、U4 の 50ms の目標で 100ms 以内"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "scalability-design.md 1章: 起動時に組み立てる固定の決まり、メモリに利用者ごとの情報を持たない"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "scalability-design.md 2章: 1日数十件以内、U1 の監査ログの見積もりの内側"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 1章・3章: /api/admin と /api/admin/** は管理者のみ、未ログイン 401・非管理者 403・管理者 204"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design.md 1章: 公開は U1・U2 の一覧だけ、API の既定の扱いを U3 がログイン必須に切り替え"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 1章・2章: 要求の検査を外さず 400 / REQUEST_REJECTED（Q1）、大文字・小文字の区別、2つのパスの型"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "security-design.md 3章: API の有無を調べる前のフィルターの段階で判定し、非管理者には 403"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "security-design.md 3章: U2 が要求ごとに DB から読んだ値で判断"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "security-design.md 3章: 401／403 は U1 の共通の組み立ての仕組み、内部の情報を載せない"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "security-design.md 4章: 出来事の項目に秘密情報を持たない、転送元のヘッダーを既定で信頼しない"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "security-design.md 1章: /api/** の外は画面の配信と /actuator/health だけ"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "reliability-design.md 1章: 知らせるだけで U4 が受け止め、U3 も例外を捕まえて応答を変えない"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "reliability-design.md 2章: 確認中は中身を出さない、エラーは領域の中の文言で画面全体を止めない"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "reliability-design.md 3章: 文言を日英で用意し鍵の一致をテスト"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "reliability-design.md 2章・3章: 部品ごとの vitest-axe、確認中を支援技術に伝える"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "reliability-design.md 3章・security-design.md 7章: 401／403／204 とパスの境界のテスト"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design.md 1章: 知らせる場合と知らせない場合の表"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "observability-design.md 2章: 403 は WARN で code、メールアドレスを出さない、トレースIDは U1 の仕組み"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "observability-design.md 2章: フィルターの段階の応答もトレースの開始の後でトレースIDが付く"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "observability-design.md 3章: 独自の指標は作らず監査ログの ACCESS_DENIED の件数で見る"
+    }
+  ]
+}
