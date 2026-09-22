@@ -1,0 +1,128 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u3-access-control",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.5",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・3章: 確認用 API の応答時間 300ms"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 6の段: DB への問い合わせが増えないこと（SQL の回数）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "monitoring-design.md 3章: 拒否の記録で応答が遅れる時間 100ms"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 状態を持たず同じコンテナで動く"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "monitoring-design.md 1章: ACCESS_DENIED の件数の見積もりとしきい値"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 401／403／204 と画面を介さない呼び出しのテスト"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 公開の一覧に無い /api/ の下が 401"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: パスの境界のテスト／monitoring-design.md 1章: REQUEST_REJECTED の件数"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 存在しない管理 API の 403・404"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 管理者フラグを外した直後の 403"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: 転送元のヘッダーの信頼の設定（U1）"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: health 以外の Actuator に届かない"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 出来事の受け取りの失敗で応答が変わらない"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 出来事の有無のテスト"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "monitoring-design.md 4章: WARN にメールアドレスとパスを出さない"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "OK",
+      "target": "monitoring-design.md 1章: 監査ログから数える候補"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: 日英の文言の鍵の一致"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: 各部品の vitest-axe"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章 5の段: 確認中・エラーの状態の画面のテスト"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 必須の認可のテストとパスの境界のテスト"
+    }
+  ]
+}

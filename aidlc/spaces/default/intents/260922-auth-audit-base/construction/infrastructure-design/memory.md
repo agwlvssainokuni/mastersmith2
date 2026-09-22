@@ -10,6 +10,9 @@
 
 - 2026-09-22T12:25:00Z — コンテナのタイムゾーン（Asia/Tokyo）は全単位に効く設定だが、削除の時刻を持つ U2 の段で決めた; 保存する時刻は UTC の時点とし、判定がタイムゾーンで変わらないようにした。
 <!-- aidlc-wave-memory:u2-authentication:ee2a7541fb6e54060a7625f5c2330daff25c2f79c101c64f82fb5623d7e7607e -->
+
+- 2026-09-22T12:32:00Z — U3 は独自の基盤を持たないため、質問を作らず、設計の要点を要約として依頼者に確認した; 監視の指標は U1 と重なるものを繰り返さず、U3 に固有のものだけを書いた（U2 の確認の指摘 R-02 を踏まえて）。
+<!-- aidlc-wave-memory:u3-access-control:c0a1b47f83fb736f60d69dd1d1faa429fb818256e17c1450c9a5e98b7f843ae1 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -27,3 +30,6 @@
 
 - 2026-09-22T12:20:00Z — ヘルスチェックの起動の猶予 40 秒・コンテナの資源（メモリ 1GB・CPU 2）は見積もりで、Performance Validation で見直す。
 <!-- aidlc-wave-memory:u1-app-skeleton:52e2aea0387f742ddbd6c1d3e106e94906742958cb2c1f265038ae8563b173a2 -->
+
+- 2026-09-22T12:32:00Z — 管理者でない利用者の画面の確認は、本Intentでは利用者を作る機能が無いため配備の確認に入れられない; E2E で管理者でない利用者をテスト用に作る方法を Code Generation で決める。
+<!-- aidlc-wave-memory:u3-access-control:72076939fd611fb5d267337504d278eda8d2a0e91ad660b6a142fd0f276695ec -->
