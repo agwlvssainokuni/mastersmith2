@@ -2926,3 +2926,74 @@
 **Tool**: Bash
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-09-22T04:18:15Z
+**Event**: DECISION_RECORDED
+**Stage**: approval-handoff
+**Decision**: Which learnings to keep?
+**Options**: Tech Stack: make-you-chic-uiをサブモジュールで利用,Decided: 画面はAppShell構成でログイン画面は外,Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:18:46Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:18:54Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-22T04:18:56Z
+**Event**: QUESTION_ANSWERED
+**Stage**: approval-handoff
+**Details**: Tech Stack: make-you-chic-ui, Decided: 画面はAppShell構成
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-22T04:18:56Z
+**Event**: RULE_LEARNED
+**Stage**: approval-handoff
+**Candidate-ID**: user-note-tech-stack-mycui
+**Content-Hash**: 7a1d387f49e374e248043714bbcc0610684f5aed20a6ce859ddbffce95ae8cbc
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Tech Stack
+**Source**: user_addition
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-22T04:18:56Z
+**Event**: RULE_LEARNED
+**Stage**: approval-handoff
+**Candidate-ID**: user-note-appshell-layout
+**Content-Hash**: e0f5bda9a9313505b73c5d90ef95850833f5c172df5799b28890ef44ab51cad2
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Decided
+**Source**: user_addition
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T04:19:05Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T04:19:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
