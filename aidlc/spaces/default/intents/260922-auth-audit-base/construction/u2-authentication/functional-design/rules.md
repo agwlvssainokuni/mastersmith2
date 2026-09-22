@@ -208,9 +208,9 @@ rules:
     category: authorization
     applies_to: 認証が必要な API
     trigger: 要求
-    logic: トークンは Authorization ヘッダー（Bearer）で受け取る
+    logic: トークンは Authorization ヘッダー（Bearer）で受け取る。拒否の理由（TOKEN_MISSING・TOKEN_MALFORMED・TOKEN_INVALID・TOKEN_EXPIRED・USER_NOT_FOUND）を、要求の処理の中で U3 が参照できるようにする（U3 がアクセス拒否の記録の要否に使う）。理由は応答には載せない
     violation: 401 / AUTHENTICATION_REQUIRED
-    source: FR4.4
+    source: FR4.4、U3 Functional Design Q5
   - id: BR4.5
     statement: 有効なアクセストークンの要求では、利用者IDで内部DBから利用者を読み、AuthenticatedUser を作る。利用者がいなければ 401 とする。管理者フラグは内部DBの値を使う
     category: authorization
