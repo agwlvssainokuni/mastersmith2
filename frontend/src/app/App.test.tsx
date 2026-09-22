@@ -38,7 +38,8 @@ function ToastProbe() {
 
 describe('App', () => {
   it('starts with U1 alone and shows only the login layout', () => {
-    renderApp()
+    // U2 以降の登録に左右されずに U1 だけの状態を確かめるため、空の登録を渡す。
+    renderApp({})
     expect(screen.getByTestId('login-layout')).toBeInTheDocument()
     expect(screen.queryByTestId('app-shell')).not.toBeInTheDocument()
   })
@@ -77,7 +78,7 @@ describe('App', () => {
   })
 
   it('has no accessibility violations', async () => {
-    const { container } = renderApp()
+    const { container } = renderApp({})
     expect(await axe(container)).toHaveNoViolations()
   })
 })

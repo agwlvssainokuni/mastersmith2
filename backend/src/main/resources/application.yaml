@@ -45,6 +45,33 @@ mastersmith:
     enter-message: "${MASTERSMITH_TRACE_ENTER_MESSAGE:ENTER $[targetClassShortName]#$[methodName]($[arguments])}"
     exit-message: "${MASTERSMITH_TRACE_EXIT_MESSAGE:EXIT  $[targetClassShortName]#$[methodName](): $[returnValue]}"
     exception-message: "${MASTERSMITH_TRACE_EXCEPTION_MESSAGE:EXCEPTION $[targetClassShortName]#$[methodName](): $[exception]}"
+  auth:
+    # 認証（U2）。既定値は Java の設定の型（AuthProperties・PasswordProperties）の既定値と同じにする。
+    # アクセストークンの署名鍵（必須・秘密）。32 バイト以上の乱数を Base64 にした値（例: openssl rand -base64 32）。
+    # 値はここに書かず、環境変数で渡す。無い・短いと起動を止める。
+    signing-key: ${MASTERSMITH_AUTH_SIGNING_KEY:}
+    # アクセストークンの有効期限
+    access-token-ttl: ${MASTERSMITH_AUTH_ACCESS_TOKEN_TTL:5m}
+    # リフレッシュトークンの有効期限（Cookie の寿命も同じ）
+    refresh-token-ttl: ${MASTERSMITH_AUTH_REFRESH_TOKEN_TTL:24h}
+    lock:
+      # ロックするまでの連続失敗回数（1 以上）
+      threshold: ${MASTERSMITH_AUTH_LOCK_THRESHOLD:5}
+      # ロックの時間（正の値）
+      duration: ${MASTERSMITH_AUTH_LOCK_DURATION:30m}
+    password:
+      # パスワードのハッシュ（bcrypt）の cost（4〜31）
+      bcrypt-cost: ${MASTERSMITH_AUTH_PASSWORD_BCRYPT_COST:12}
+    initial-admin:
+      # 初期管理者のメールアドレスとパスワード（秘密。パスワードは 12 文字以上、UTF-8 で 72 バイト以内）。
+      # 値はここに書かず、環境変数で渡す。無い・正しくないときは作らずに警告し、起動は続ける。
+      email: ${MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL:}
+      password: ${MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD:}
+    refresh-token-cleanup:
+      # 無効・期限切れのリフレッシュトークンを、期限からどれだけ残してから消すか
+      retention: ${MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_RETENTION:7d}
+      # 削除を行う時刻（Spring の cron の形。秒 分 時 日 月 曜日。既定は毎日 3 時 30 分）
+      cron: "${MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_CRON:0 30 3 * * *}"
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

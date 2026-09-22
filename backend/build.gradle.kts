@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     implementation(libs.spring.boot.starter.aspectj)
     implementation(libs.spring.boot.starter.opentelemetry)
+    implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.logstash.logback.encoder)
     implementation(libs.opentelemetry.logback.appender)
     runtimeOnly(libs.h2)

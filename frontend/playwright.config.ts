@@ -19,6 +19,7 @@
 // - 事前に ./gradlew :backend:bootWar で backend/build/libs/mastersmith.war を作っておく。
 // - WAR は一時ディレクトリの内部DB（H2 のファイル）で、使っていない番号（既定 18081）で起動する。
 // - ブラウザは Chromium だけを使う（npx playwright install chromium）。
+import { randomBytes } from 'node:crypto'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -27,6 +28,14 @@ import { defineConfig, devices } from '@playwright/test'
 const port = Number(process.env.E2E_PORT ?? 18081)
 const warPath = path.resolve(import.meta.dirname, '../backend/build/libs/mastersmith.war')
 const dataDir = mkdtempSync(path.join(tmpdir(), 'mastersmith-e2e-'))
+
+// 署名鍵と初期管理者の値は、実行のたびに作ってアプリへ環境変数で渡す（リポジトリに値を置かない。U2 計画の D1）。
+// この設定のファイルはテストの実行の側でも読み込まれるため、作った値を環境変数に入れて両方で同じ値を使う。
+export const adminEmail = 'e2e-admin@example.com'
+process.env.E2E_ADMIN_PASSWORD ??= `e2e-${randomBytes(12).toString('hex')}`
+process.env.E2E_SIGNING_KEY ??= randomBytes(32).toString('base64')
+export const adminPassword = process.env.E2E_ADMIN_PASSWORD
+const signingKey = process.env.E2E_SIGNING_KEY
 
 export default defineConfig({
   testDir: './e2e',
@@ -49,6 +58,11 @@ export default defineConfig({
       `--server.port=${port}`,
       `--spring.datasource.url=jdbc:h2:file:${path.join(dataDir, 'mastersmith')}`,
     ].join(' '),
+    env: {
+      MASTERSMITH_AUTH_SIGNING_KEY: signingKey,
+      MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL: adminEmail,
+      MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD: adminPassword,
+    },
     url: `http://localhost:${port}/actuator/health`,
     timeout: 120_000,
     reuseExistingServer: false,

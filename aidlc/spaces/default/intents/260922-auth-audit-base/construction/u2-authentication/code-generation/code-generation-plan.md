@@ -111,7 +111,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.1 プロジェクトの構成と本番の設定の骨組み
 
-- [ ] **Step 1 — 依存関係、パッケージ、設定の型、時計**
+- [x] **Step 1 — 依存関係、パッケージ、設定の型、時計**
   - `gradle/libs.versions.toml` に `spring-boot-starter-oauth2-resource-server` を足し、`backend/build.gradle.kts` の依存の一覧に1行足す（7章の D1）。`./gradlew :backend:resolveAndLockAll --write-locks` で `backend/gradle.lockfile` を更新する。
   - パッケージの骨組み: `cherry.mastersmith.user.{web,service,domain,repository}`、`cherry.mastersmith.auth.{web,service,domain,repository}`（`user.web` は本 Intent では使わないため作らない）。各パッケージに日本語の `package-info.java`。
   - 設定の型（U1 と同じく `@ConfigurationPropertiesScan` で読み込む。値だけを持つ `record`、既定値は `@DefaultValue`、範囲は Bean Validation で起動時に検証し、範囲外なら起動を止める。秘密の項目は `toString` で `***`）:
@@ -125,7 +125,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.2 テストの実行の枠組み
 
-- [ ] **Step 2 — この単位のテストのコマンドを確かめ、U2 のテストの補助を置く**
+- [x] **Step 2 — この単位のテストのコマンドを確かめ、U2 のテストの補助を置く**
   - U1 が用意した枠組みをそのまま使う（新しい道具は入れない）。`unit-test-instructions.md` の 2.2 のコマンドで、U2 のパッケージに絞った実行が動くことを確かめる（この時点では U2 のテストは無い。常に通るだけのテストは書かない）。
   - テストの起動の補助（テストのソースの中だけ。新しいファイルで、U1 のファイルは変えない）:
     - `cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcessor` と `backend/src/test/resources/META-INF/spring.factories`: Spring を起動するすべてのテスト（U1 の `*IT` を含む）で、`mastersmith.auth.signing-key` が無ければ、実行のたびに作る 32 バイトの乱数（Base64）を入れる。鍵の値をリポジトリに置かない（7章の C6）。登録の鍵の名前は Spring Boot 4.1 で確かめる。
@@ -134,7 +134,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.3 データモデル・DB の振る舞い
 
-- [ ] **Step 3 — スキーマの変更とエンティティ**
+- [x] **Step 3 — スキーマの変更とエンティティ**
   - `backend/src/main/resources/db/migration/V2__u2_user_account.sql`: 表 `users`（`user_id BIGINT` の自動採番の主キー、`email VARCHAR(254)` の一意、`password_hash VARCHAR(100)`、`admin_flag BOOLEAN`、`created_at TIMESTAMP WITH TIME ZONE`）。
   - `V3__u2_authentication.sql`:
     - 表 `login_attempt_states`（`subject_id BIGINT` の主キー、`consecutive_failures INT`（0 以上の検査の制約）、`locked_until TIMESTAMP WITH TIME ZONE`（任意））。利用者の行は `subject_id`＝`user_id`、ダミーの記録（BR2.7・BR3.9）は利用者と結びつかない負の ID（-1〜-8 の 8 行）を同じ表にこのファイルで入れる。ダミーの行と同じ表にするため、`users` への外部キーは置かない（同じ SQL で読み書きし、回数と種類をそろえるため。7章の C7）。
@@ -143,13 +143,13 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - JPA のエンティティ: `cherry.mastersmith.user.domain.User`、`cherry.mastersmith.auth.domain.LoginAttemptState`、`cherry.mastersmith.auth.domain.RefreshToken`。時刻は `Instant`。`ddl-auto: validate`（U1 の設定）でスキーマと合うことを起動時に確かめる。
   - 対応: FR3.1、FR4.1、FR7.1、BR1.5、BR3.9、BR5.1、BR5.3、NFR1.8、NFR1.9、NFR5.2、scalability-design 1章
 
-- [ ] **Step 4 — データモデルのテスト（結合テスト、組み込みの H2）**
+- [x] **Step 4 — データモデルのテスト（結合テスト、組み込みの H2）**
   - `cherry.mastersmith.user.repository.UserSchemaIT`、`cherry.mastersmith.auth.repository.AuthSchemaIT`: スキーマの変更が当たり、エンティティがスキーマと合う（起動が通る）、メールアドレスの一意の制約、`token_hash` の一意の制約、`consecutive_failures` の 0 未満の拒否、ダミーの行が 8 行あり `users` の ID と重ならない、時刻が時点として保存され JVM のタイムゾーン（`Asia/Tokyo`）で値が変わらない。
   - `unit-test-instructions.md` の Step 4 のコマンドで実行し、すべて通す。
 
 ### 4.4 Repository・データアクセス
 
-- [ ] **Step 5 — repository**
+- [x] **Step 5 — repository**
   - `cherry.mastersmith.user.repository.UserRepository`: メールアドレス（小文字にそろえた値）で探す、ID で探す、保存。
   - `cherry.mastersmith.auth.repository.LoginAttemptStateRepository`:
     - 排他つきの読み取り（`PESSIMISTIC_WRITE`、`SELECT ... FOR UPDATE`）を `subject_id` で1回。待ちの上限は 3 秒（reliability-design 1章）。
@@ -159,7 +159,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - `cherry.mastersmith.auth.repository.RefreshTokenRepository`: ハッシュ（`byte[]`）で探す、保存、条件付きの無効化（`UPDATE ... SET revoked_at = ? WHERE token_id = ? AND revoked_at IS NULL`、更新した行の数を返す）、削除の対象（無効または期限切れで、期限から保存の日数を過ぎた行）を件数の上限（1,000）ごとに消す。
   - 対応: BR2.7、BR3.8、BR5.3、BR5.6、NFR1.5、NFR1.7、NFR9.1、NFR9.2、performance-design 4章
 
-- [ ] **Step 6 — repository のテスト（結合テスト）**
+- [x] **Step 6 — repository のテスト（結合テスト）**
   - `UserRepositoryIT`: 小文字の値で見つかる、無ければ空、ID で探せる。
   - `LoginAttemptStateRepositoryIT`: 排他つきの読み取りで、同じ行への2つ目の読み取りが1つ目の確定まで待つ（同時に始める合図 `CountDownLatch` で2つのスレッドをそろえる。時間の待ちに頼らない）、待ちの上限を超えたら例外（上限 3 秒が効く）、別の利用者の行は待たない、ダミーの行の読み取りどうしが待たない、明示の更新が値が同じでも1回の更新として発行される（`SqlStatementCounter`）、行の作成が2回目で何もしない。
   - `RefreshTokenRepositoryIT`: ハッシュで見つかる、条件付きの無効化が1回目は 1、2回目は 0、同時の2回の無効化で 1 になるのは1つだけ、削除が対象の行だけを消し件数の上限ごとに分かれる、有効な行・期限から保存の日数に満たない行は消さない。
@@ -167,7 +167,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.5 業務処理
 
-- [ ] **Step 7 — ドメインの決まり、秘密の値の型、問題の種類、出来事、UserAccount**
+- [x] **Step 7 — ドメインの決まり、秘密の値の型、問題の種類、出来事、UserAccount**
   - `auth.domain`・`user.domain` の DB を使わない純粋な関数（性質ベースのテストの対象）:
     - `EmailAddress.normalize`（前後の空白を除き `Locale.ROOT` で小文字にする。BR2.1）と形式の確認（初期管理者の設定の検査に使う）。
     - `PasswordPolicy`（12 文字以上（コードポイントで数える）、UTF-8 で 72 バイト以内。作成時の規則。ログインでは 72 バイトの確認だけに使う。BR1.3、BR2.8、NFR2.2）。
@@ -187,7 +187,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
     - `InitialAdminInitializer`: Flyway の後、要求の受け付けの前（`SmartInitializingSingleton` など、Web サーバーが待ち受けを始める前に動く形）に、設定を検査し、無い・不正なら作らずに WARN（`reason` に足りない・正しくない項目、直し方の文。パスワードの値は出さない）、既にいれば何もしない、いなければ管理者として作り INFO（`email`）。例外で起動を止めない（BR1.1〜BR1.5、NFR6.1、NFR10.3）。
   - 対応: FR3.1〜FR3.4、BR1.1〜BR1.5、BR2.1、BR2.5、BR2.8、BR3.1〜BR3.6、BR4.2、BR5.1、BR5.3、BR7.1、BR7.2、BR9.1、NFR2.1〜NFR2.3、NFR3.1、NFR3.6、NFR5.2、NFR10.3
 
-- [ ] **Step 8 — ドメインの決まりと UserAccount のテスト**
+- [x] **Step 8 — ドメインの決まりと UserAccount のテスト**
   - 単体テスト（`*Test`）:
     - `EmailAddressTest`（jqwik: 正規化は2回行っても同じ、前後の空白と大文字によらず同じ値。境界: 空白だけ、全角の空白を除かない（trim の範囲を明記））。
     - `PasswordPolicyTest`（11 文字・12 文字、72 バイト・73 バイト、多バイト文字での境界。jqwik: 72 バイト以内かの判定が UTF-8 のバイト数と一致する）。
@@ -203,7 +203,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - 結合テスト（`*IT`）: `InitialAdminIT`（2回起動しても1人だけ、保存したハッシュが bcrypt の形式で cost 12、設定が無くても起動する、大文字を含むメールアドレスが小文字で保存される、作成と同時にロックの状態の行ができる）。
   - `unit-test-instructions.md` の Step 8 のコマンドで実行し、すべて通す。
 
-- [ ] **Step 9 — Authentication の業務処理（鍵、トークン、ログイン、更新、ログアウト、削除の定期実行）**
+- [x] **Step 9 — Authentication の業務処理（鍵、トークン、ログイン、更新、ログアウト、削除の定期実行）**
   - `SigningKeyProvider`: `mastersmith.auth.signing-key` を Base64 から戻し、無い・戻せない・32 バイト未満なら起動を止める（例外のメッセージとログには設定の名前と必要な長さだけを載せ、値を載せない。NFR3.3、NFR6.2）。
   - `AccessTokenService`:
     - 発行: HS256 の JWT（`sub`＝利用者ID、`iat`、`exp`＝発行＋有効期限だけ。BR4.1）。Spring Security の `NimbusJwtEncoder` を使う。
@@ -222,7 +222,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - `auth.domain.ClientInfo`（接続元IP・User-Agent・トレースID を持つ record）を業務処理の引数に受け取る。要求からの取り出しは Step 11 の `web` で行う。
   - 対応: FR4.1〜FR4.5、FR5.1、FR5.2、FR6.1、FR6.2、FR7.1〜FR7.5、BR2.3〜BR2.7、BR3.1〜BR3.9、BR4.1〜BR4.3、BR4.6、BR5.1〜BR5.7、BR6.1、BR6.2、BR7.1〜BR7.3、NFR1.5、NFR1.7、NFR3.2〜NFR3.4、NFR4.1、NFR4.2、NFR9.1、NFR9.2、NFR10.1、NFR10.2、NFR10.4
 
-- [ ] **Step 10 — Authentication の業務処理のテスト**
+- [x] **Step 10 — Authentication の業務処理のテスト**
   - 単体テスト（`*Test`、`Clock` は固定の時計、repository・UserAccount はモック）:
     - `SigningKeyProviderTest`（32 バイトは使える、31 バイト・無い・Base64 でない値は失敗し、例外のメッセージに値が無い）。
     - `AccessTokenServiceTest`（発行した中身が `sub`・`iat`・`exp` だけ、4分59秒は有効・5分ちょうどは `TOKEN_EXPIRED`、署名の1文字の改ざん・別の鍵は `TOKEN_INVALID`、`alg: none`・HS512・RS256 は `TOKEN_INVALID`、形の崩れた値は `TOKEN_MALFORMED`）。
@@ -239,7 +239,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.6 API・エンドポイント
 
-- [ ] **Step 11 — 認証の API、Cookie、Origin の確認、フィルターの連鎖への決まり**
+- [x] **Step 11 — 認証の API、Cookie、Origin の確認、フィルターの連鎖への決まり**
   - `cherry.mastersmith.auth.web.AuthController`（パスは security-design 3章。形は 7章の C2）:
     - `POST /api/auth/login`: `LoginRequest(email, password)`（`@NotBlank`。空は U1 の変換で 400 / `VALIDATION_FAILED`。`toString` でパスワードを伏せる）→ 200 `TokenResponse(accessToken, expiresAt, user: CurrentUserResponse(email, admin))`（`toString` でトークンを伏せる）と、リフレッシュトークンの Cookie。
     - `POST /api/auth/session/refresh`: Origin の確認 → Cookie の値で更新 → 200 `TokenResponse` と新しい Cookie。失敗は 401 / `REFRESH_FAILED` と Cookie の削除。
@@ -255,7 +255,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - `TokenAuthenticationEntryPoint`: 401 / `AUTHENTICATION_REQUIRED` を U1 の `ErrorResponseWriter` で書き、区分（`TokenAuthenticationException` なら `reason()`、そうでなければ `TOKEN_MISSING`）を DEBUG で出す（トークンの値は出さない。NFR10.5）。U3 ができるまでの入口の受け持ちは 7章の D2 のとおり。
   - 対応: FR4.1、FR4.4、FR4.5、FR5.1、FR5.2、FR6.1、FR6.2、BR2.2〜BR2.4、BR4.3〜BR4.6、BR5.2、BR5.5、BR6.1、BR9.1、NFR3.5、NFR4.1、NFR5.3〜NFR5.5、NFR10.5、U3 の security-design 3章の約束
 
-- [ ] **Step 12 — API のテスト**
+- [x] **Step 12 — API のテスト**
   - 単体テスト（`*Test`）: `ClientInfoTest`（User-Agent を 512 文字で切る、無ければ無し、トレースIDが無ければ無し）、`OriginVerifierTest`（一致・不一致・無し・ポートの違い）、`RefreshCookiesTest`（属性と Path、削除が同じ名前・Path・`Max-Age=0`）、`TokenAuthenticationEntryPointTest`（401 / `AUTHENTICATION_REQUIRED`、区分の DEBUG、トークンの値が無い）。
   - 結合テスト（`*IT`。実際の番号で待ち受けるアプリに `HttpTestClient` で送る）:
     - `LoginApiIT`: 成功（200、本文の形、Cookie の属性と Path、アクセストークンで保護された API を呼べる）、空のメールアドレス・空のパスワードで 400 / `VALIDATION_FAILED`（応答にパスワードが無い）、いない・誤り・ロック中・73 バイトの4通りで状態コード・`code`・`type`・`title`・`detail` が同じ（`traceId`・`instance` を除く）、4通りの SQL の回数と種類・照合の回数が同じ（`SqlStatementCounter`・`CountingPasswordEncoder`）、しきい値−1 回ではロックされない・しきい値ちょうどでロック・ロック中は正しいパスワードでも 401・30 分後（`MutableClock`）に成功、成功で失敗回数が 0 に戻る。
@@ -270,7 +270,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.7 画面（フロントエンド）
 
-- [ ] **Step 13 — ApiClient、認証の API の呼び出し、AuthSession**
+- [x] **Step 13 — ApiClient、認証の API の呼び出し、AuthSession**
   - `frontend/src/shared/api-client/`（ApiClient。AuthUi に依存しない。ADR-007。U3 も使う。7章の C5）:
     - `apiClient.ts`: `registerAuthHandlers({ getAccessToken, refresh, onUnauthenticated })`、`apiFetch(path, init)`（同じオリジンの API を呼ぶ。アクセストークンがあれば `Authorization: Bearer` を付ける）。401 / `AUTHENTICATION_REQUIRED` を受けたら更新を1回だけ行い（同時の 401 は1つの更新にまとめる）、成功したら元の要求を1回だけ送り直す。送り直しでまた 401、または更新の失敗なら `onUnauthenticated` を呼ぶ。`/api/auth/login`・`/api/auth/session/refresh`・`/api/auth/session/logout` は明示的に対象外（トークンを付けず、更新と送り直しもしない。BR8.5）。
     - `apiError.ts`: エラー応答を `{ status, code }` の形にする（本文が Problem Details でなければ `code` なし）。通信の失敗は別の種類にする。
@@ -281,7 +281,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
     - `validateLoginInput.ts`: 空の入力の検査（純粋な関数。BR8.2）。
   - 対応: FR5.3、FR6.1、BR8.3〜BR8.7、NFR5.1、performance-design 5章
 
-- [ ] **Step 14 — ApiClient と AuthSession のテスト**
+- [x] **Step 14 — ApiClient と AuthSession のテスト**
   - `apiClient.test.ts`（`fetch` を `vi.fn` で置き換える）: トークンを付ける、認証の API には付けない、401 / `AUTHENTICATION_REQUIRED` で更新して1回送り直す、同時の3つの 401 で更新は1回、送り直しの 401 で `onUnauthenticated`、更新の失敗で `onUnauthenticated`、認証の API の 401 は更新しない、`AUTHENTICATION_REQUIRED` 以外の 401・403 は更新しない。fast-check: 同時の 401 の数によらず更新は1回。
   - `apiError.test.ts`: Problem Details・そうでない本文・通信の失敗の変換。
   - `authApi.test.ts`: パスとメソッド、`credentials`、成功と失敗の変換。
@@ -290,14 +290,14 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
   - `validateLoginInput.test.ts`（fast-check: 空白だけ・空は拒否、それ以外は受け付け。パスワードの長さは検査しない）。
   - `unit-test-instructions.md` の Step 14 のコマンドで実行し、すべて通す。
 
-- [ ] **Step 15 — ログイン画面、登録、文言**
+- [x] **Step 15 — ログイン画面、登録、文言**
   - `LoginPage.tsx`: U1 の `LoginLayout` の中に `LoginForm` を置く（BR8.1）。
   - `LoginForm.tsx`（make-you-chic-ui の `FormField`・`TextInput`・`Button`・`Alert`）: メールアドレス（`type="email"`、`autocomplete="username"`）、パスワード（`type="password"`、`autocomplete="current-password"`）、ログインボタン。空なら送らずに入力欄の近くに知らせる（`aria-invalid`・`aria-describedby`）。送信中はボタンを押せない。成功で AuthSession に反映してからホーム（`/`）へ移る。`AUTHENTICATION_FAILED` なら理由によらず1種類の文言（`role="alert"`）を出し、パスワード欄を空にする。それ以外のエラー・通信の失敗は一般的な文言（BR8.2、BR8.8、NFR4.3）。`data-testid`: `login-form-email-input`、`login-form-password-input`、`login-form-submit-button`、`login-form-error-alert` など。
   - `LoginForm.css`（素の CSS。make-you-chic-ui の CSS 変数を使う）。
   - `registration.ts`: `featureId: 'auth'`、画面 `/login`（`role: 'LOGIN'`、`layout: 'STANDALONE'`、`access: 'PUBLIC'`、画面の部品は遅延読み込み）、ユーザーメニューの項目「ログアウト」（`id: 'auth-logout'`、`action` で AuthSession のログアウト。ログイン画面への移動は U1 の振り分けが状態の変化で行う）、ログイン状態の提供元、文言（鍵は `auth.` で始め、日英をそろえる: 入力欄のラベル、ボタン、空の入力の文言、失敗の文言、一般的なエラー、ログアウト）。
   - 対応: FR2.1、FR2.4、FR6.1、BR8.1、BR8.2、BR8.6〜BR8.8、NFR7.1、NFR8.1
 
-- [ ] **Step 16 — ログイン画面と登録のテスト**
+- [x] **Step 16 — ログイン画面と登録のテスト**
   - `LoginForm.test.tsx`（user-event）: 空のメールアドレス・空のパスワードで送らずに文言が出る、成功で `/` へ移る、`AUTHENTICATION_FAILED` で1種類の文言とパスワード欄が空になる（ロック中の応答も同じ文言。team.md の「ロック時のメッセージ表示」）、通信の失敗で一般的な文言、送信中はボタンを押せない、英語の表示で英語の文言、vitest-axe で違反なし。
   - `LoginPage.test.tsx`: ログイン用レイアウトの中にフォームがある、vitest-axe で違反なし。
   - `registration.test.ts`: U1 の `validateRegistrations` を通る（role=LOGIN・STANDALONE・PUBLIC、文言の鍵が日英でそろう）、ログアウトの項目で AuthSession のログアウトが呼ばれトークンが破棄される。
@@ -305,13 +305,13 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.8 環境・ビルドの設定
 
-- [ ] **Step 17 — 環境変数の見本と README**
+- [x] **Step 17 — 環境変数の見本と README**
   - `.env.example`: U1 が置いた「U2（認証）で使う秘密情報」の節を確定した名前にする。`MASTERSMITH_AUTH_SIGNING_KEY=`（値は空。作り方 `openssl rand -base64 32` をコメントで）、`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL=`、`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD=`（12 文字以上、UTF-8 で 72 バイト以内）。任意の設定（有効期限・しきい値・cost・削除）は行ごとコメントのまま名前と既定値を書く。
   - `README.md` の節（U1 の節の構成は変えず、U2 の行と節を足す）: 環境変数の表に U2 の設定、コンテナでの初めての起動（署名鍵と初期管理者を `.env` に入れる、起動のログで「初期管理者を作成した」を確かめる）、署名鍵の交換（`.env` を替えて作り直す。発行済みのアクセストークンは 401 になり、画面は更新で取り直す）、配備の確認のスモークテスト（初期管理者でログインとログアウト）、開発・E2E は `http://localhost` で行う（`Secure` の Cookie のため）、後の単位が使う差し込み口の表に U2 が提供するもの（`AuthenticatedUser`、`TokenAuthenticationException`、`AuthenticationEvent`、ApiClient）を足す。
   - `compose.yaml` は変えない（CPU の上限 4 とタイムゾーン `Asia/Tokyo` は U1 で反映済み）。
   - 対応: NFR3.3、NFR3.4、NFR5.5、NFR6.3、cicd-pipeline（U2）3章、infrastructure-specification（U2）3章
 
-- [ ] **Step 18 — E2E と全体の検査**
+- [x] **Step 18 — E2E と全体の検査**
   - `frontend/playwright.config.ts` の起動のコマンドに、テストの実行のたびに作る署名鍵と初期管理者の値を環境変数で渡す（リポジトリに値を置かない）。`frontend/e2e/u1-skeleton.e2e.ts` の問題の集め方で、起動時のトークンの更新の 401（未ログインでは必ず起きる）によるブラウザの「資源の読み込みの失敗」の表示だけを除く（7章の D1）。
   - `frontend/e2e/u2-auth.e2e.ts`: 初期管理者でログイン → ホームが表示される → 再読み込みしてもログインしたまま（FR5.3）→ ユーザーメニューのログアウト → ログイン画面に戻る → 再読み込みしても未ログイン。誤ったパスワードで1種類の文言が出る。CSP の違反とスクリプトのエラーが無い（起動時の更新の 401 を除く）。管理画面に入れるかの確認は U3 で足す（7章の C9）。
   - `./gradlew verify`（0〜9 の段すべて。カバレッジの下限、SpotBugs の High 0 件、OSV-Scanner、Gitleaks を含む）と `./gradlew e2eTest` と `pre-commit run --all-files` がすべて通ることを確かめる。通らなければ、下限を下げずにテストを足すか、差を依頼者に示す。
@@ -320,7 +320,7 @@ U2 は、メールアドレスとパスワードでログインし、アクセ�
 
 ### 4.9 文書とトレーサビリティ
 
-- [ ] **Step 19 — まとめの記録**
+- [x] **Step 19 — まとめの記録**
   - `aidlc/spaces/default/intents/260922-auth-audit-base/construction/u2-authentication/code-generation/` に `code-summary.md`（作った・変えたファイル、判断、テストとカバレッジ、`./gradlew verify` の結果、計画からの逸脱、U3・U4 への申し送り。security-design 8章の2点を Functional Design との違いとして記録する）、`traceability.json`（FR・BR・NFR から実装とテストへの対応）、`source-manifest.json`（作った・変えた・消したアプリのソースのパスの一覧）を書く。
   - 対応: 全要件のトレーサビリティ
 

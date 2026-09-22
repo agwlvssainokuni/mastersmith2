@@ -21,9 +21,18 @@ async function collectProblems(page: Page): Promise<string[]> {
   const problems: string[] = []
   page.on('pageerror', (error) => problems.push(`pageerror: ${error.message}`))
   page.on('console', (message) => {
-    if (message.type() === 'error') {
-      problems.push(`console: ${message.text()}`)
+    if (message.type() !== 'error') {
+      return
     }
+    // 未ログインで画面を開くと、U2 のログイン状態の復元がトークンの更新を1回試みて 401 になる（BR8.4）。
+    // ブラウザはこれを「資源の読み込みの失敗」として表示するため、その1件だけを除く（U2 計画の D1）。
+    if (
+      message.location().url.includes('/api/auth/session/refresh') ||
+      message.text().includes('/api/auth/session/refresh')
+    ) {
+      return
+    }
+    problems.push(`console: ${message.text()}`)
   })
   await page.addInitScript(() => {
     document.addEventListener('securitypolicyviolation', (event) => {

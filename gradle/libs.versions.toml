@@ -45,6 +45,8 @@ spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-st
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-aspectj = { module = "org.springframework.boot:spring-boot-starter-aspectj" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
+# JWT（HS256）の発行と検証（U2）。JOSE の仕組み（Nimbus）を含む。版は Spring Boot の BOM に任せる。
+spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
 spring-boot-starter-tomcat-runtime = { module = "org.springframework.boot:spring-boot-starter-tomcat-runtime" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }

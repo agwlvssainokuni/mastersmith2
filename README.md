@@ -106,6 +106,8 @@ docker compose ps                # app が healthy になれば起動の完了
 ```
 
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面（U1 の段階ではログイン用レイアウト）が表示されることを確かめます。ヘルスチェックの応答が UP で、ログイン画面が表示されるまで、配備の完了とはみなしません。
+- 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。
+- 配備の確認（スモークテスト）: ログイン画面から初期管理者でログインし、ホームが表示されること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。
 - 止めるときは `docker compose down`（内部DBのデータはボリュームに残ります）。
 
@@ -157,11 +159,23 @@ docker compose start app
 | `MASTERSMITH_TRACE_ENTER_MESSAGE` | `ENTER $[targetClassShortName]#$[methodName]($[arguments])` | 追跡の入るときの文言 |
 | `MASTERSMITH_TRACE_EXIT_MESSAGE` | `EXIT  $[targetClassShortName]#$[methodName](): $[returnValue]` | 追跡の出るときの文言 |
 | `MASTERSMITH_TRACE_EXCEPTION_MESSAGE` | `EXCEPTION $[targetClassShortName]#$[methodName](): $[exception]` | 追跡の例外のときの文言 |
+| `MASTERSMITH_AUTH_SIGNING_KEY` | 空（必須） | アクセストークンの署名鍵（Base64、復元して 32 バイト以上。秘密情報。無い・短いと起動しない） |
+| `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL` | 空 | 初期管理者のメールアドレス（無い・不正なら作らずに警告） |
+| `MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` | 空 | 初期管理者のパスワード（秘密情報。12 文字以上、UTF-8 で 72 バイト以内） |
+| `MASTERSMITH_AUTH_ACCESS_TOKEN_TTL` | `5m` | アクセストークンの有効期限 |
+| `MASTERSMITH_AUTH_REFRESH_TOKEN_TTL` | `24h` | リフレッシュトークンの有効期限（Cookie の寿命も同じ） |
+| `MASTERSMITH_AUTH_LOCK_THRESHOLD` | `5` | ロックするまでの連続失敗回数（1 以上） |
+| `MASTERSMITH_AUTH_LOCK_DURATION` | `30m` | ロックの時間 |
+| `MASTERSMITH_AUTH_PASSWORD_BCRYPT_COST` | `12` | パスワードのハッシュ（bcrypt）の cost（4〜31） |
+| `MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_RETENTION` | `7d` | 無効・期限切れのリフレッシュトークンを、期限からどれだけ残してから消すか |
+| `MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_CRON` | `0 30 3 * * *` | 使い終わったリフレッシュトークンの削除を行う時刻 |
 
 - メソッドの呼び出しの追跡は、対象のクラスのロガーを TRACE にしたときだけ出ます（例: `LOGGING_LEVEL_CHERRY_MASTERSMITH_COMMON_ERROR=TRACE`）。
 - 信号ごとの送り先の上書きは Spring Boot の設定で行えます（例: `MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT`）。
 - ログのレベルは `LOGGING_LEVEL_<パッケージ>` で機能ごとに変えられます（既定は INFO）。
-- U2 の署名鍵・初期管理者の設定は、U2 で追加します（`.env.example` に説明があります）。
+- 認証（U2）の署名鍵は必須です。`openssl rand -base64 32` で作った値を `.env` の `MASTERSMITH_AUTH_SIGNING_KEY` に入れます。値が無い・短いとアプリは起動しません。
+- 署名鍵を替えるとき（鍵の交換）は、`.env` の値を替えてコンテナを作り直します。発行済みのアクセストークンは 401 になりますが、画面はトークンの更新で取り直すため、ログインし直しは要りません。
+- 開発と E2E は `http://localhost` で行います。リフレッシュトークンの Cookie は `Secure` のため、localhost 以外のホスト名や IP への `http` ではログインが働きません。
 
 ## 外部エクスポートの確かめ方
 
@@ -206,6 +220,11 @@ U1 のファイルは書き換えずに、次の型を使います。
 | 画面の差し込み口 | `frontend/src/features/<featureId>/registration.ts` に `FeatureRegistration`（`frontend/src/app/registry/types.ts`）を `registration` という名前でエクスポートする。画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元・文言（鍵は `<featureId>.` で始める）を登録できる。重複は画面の起動の失敗 | U2、U3 |
 | ログイン用レイアウト | `frontend/src/app/layout/LoginLayout.tsx`（role=LOGIN の画面が、入力欄とボタンを子として置く） | U2 |
 | スキーマの変更 | 上の「スキーマの変更（Flyway）」の決まり | U2、U4 |
+| 検証済みの利用者（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticatedUser`（`userId`・`email`・`admin`）。要求ごとに DB から読んだ値で、Spring Security の認証の結果の主体に置く | U3 |
+| トークンの認証の失敗（U2 が提供） | `cherry.mastersmith.auth.domain.TokenAuthenticationException`（`AuthenticationException` の子）と `TokenFailureReason`（`TOKEN_MALFORMED`・`TOKEN_INVALID`・`TOKEN_EXPIRED`・`USER_NOT_FOUND`）。トークンが無い要求は U2 の検証を通らず、Spring Security の「認証が足りない」の例外が届く | U3 |
+| 認証の出来事（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticationEvent` を U2 のトランザクションの中で知らせる。受け取りは `@TransactionalEventListener(phase = AFTER_COMMIT)` で確定の後に同じスレッドで行う | U4 |
+| 時計（U2 が提供） | `java.time.Clock` の Bean（UTC、`cherry.mastersmith.auth.service.AuthClockConfig`）。ほかの単位は別に定義せずこれを使う | U3、U4 |
+| API 呼び出しの共通部分（U2 が提供） | `frontend/src/shared/api-client/` の `apiFetch`・`apiRequest`（アクセストークンの付与、401 での更新と送り直し）と `{ status, code }` の形のエラー | U3（画面） |
 
 - 秘密情報を持つ型は、文字列化（`toString`）でその項目を伏せ字にしてください（メソッドの呼び出しの追跡が引数と戻り値を文字列にするため）。
 - 画面での表示の制御はサーバー側の権限の確認の代わりになりません。データは API の側で守ります。

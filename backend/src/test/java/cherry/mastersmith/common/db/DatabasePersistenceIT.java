@@ -121,8 +121,8 @@ class DatabasePersistenceIT {
             JdbcTemplate jdbc = new JdbcTemplate(context.getBean(DataSource.class));
             List<Map<String, Object>> rows = jdbc.queryForList(
                     "SELECT \"version\", \"success\" FROM \"flyway_schema_history\" WHERE \"version\" IS NOT NULL");
-            assertThat(rows).hasSize(1);
-            assertThat(rows.getFirst()).containsEntry("version", "1").containsEntry("success", true);
+            // 後の単位のスキーマの変更（V2 以降）も並ぶため、件数ではなく U1 の基準線が成功で入っていることを確かめる。
+            assertThat(rows).contains(Map.of("version", "1", "success", true));
             Integer failed = jdbc.queryForObject(
                     "SELECT COUNT(*) FROM \"flyway_schema_history\" WHERE NOT \"success\"", Integer.class);
             assertThat(failed).isZero();
