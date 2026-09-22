@@ -38,7 +38,8 @@ U1 はアプリの土台を受け持つため、アプリ全体で使う技術�
 
 | 分類 | 選定 | 出典 |
 |---|---|---|
-| バックエンドのテスト | JUnit 5、AssertJ、Spring Boot Test、jqwik（性質ベース）、Testcontainers（DB を使うテスト） | TP |
+| バックエンドのテスト | JUnit 5、AssertJ、Spring Boot Test、jqwik（性質ベース） | TP |
+| 内部DBを使うテスト | 本番と同じ組み込みの H2 を使う（テストごとにデータを用意して巻き戻す）。Testcontainers は本Intentでは使わず、後続Intent（D・E）で対象DBを扱うときに使う | 要件定義の制約（RQ1、RQ16）、レビュー指摘 R-01 |
 | フロントエンドのテスト | Vitest、Testing Library、user-event、vitest-axe、fast-check | TP |
 | E2E | Playwright（代表の流れ1〜2本、`http://localhost` で実行） | Q5、Q7 |
 | カバレッジ | JaCoCo、`@vitest/coverage-v8`（行 80%・分岐 70%） | TP、NFR9 |
@@ -53,6 +54,10 @@ U1 はアプリの土台を受け持つため、アプリ全体で使う技術�
 | CI | GitHub Actions | TP |
 | 当面の配備先 | 開発者の PC 上のコンテナ。H2 のファイルは `/app/data` をボリュームにする | TP、Q4 |
 | HTTPS | 配備先が決まるまで扱わない。開発・CI・E2E は `http://localhost` | Q7 |
+
+## 版の組み合わせの確認
+
+Java 25・Spring Boot 4 系・logstash-logback-encoder・Flyway（H2）は、いずれも最新の版の組み合わせである。最初の単位のビルドで、この組み合わせで起動できること、JSON のログが決めた項目で出ること、Flyway の変更が H2 に当たることを確かめる。合わない部品があった場合は、その部品を一つ前の版にする案と代わりの部品を使う案を示し、依頼者が決める（レビュー指摘 R-03）。
 
 ## 検討して採らなかったもの
 

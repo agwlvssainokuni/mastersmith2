@@ -37,7 +37,7 @@
     {
       "id": "NFR5",
       "status": "N/A",
-      "target": "画面側のトークンの保持は U2 の要件。U1 の画面はトークンを扱わない"
+      "target": "画面側のトークンの保持と、リフレッシュトークンの Cookie への CSRF 対策は U2 の要件。U1 の画面はトークンを扱わない（security-requirements.md「U2 の要件で扱うもの」）"
     },
     {
       "id": "NFR6",

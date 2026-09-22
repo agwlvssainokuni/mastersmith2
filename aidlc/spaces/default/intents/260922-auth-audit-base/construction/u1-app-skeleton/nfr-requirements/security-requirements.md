@@ -25,9 +25,13 @@ U1 が受け持つ土台（起動・内部DB・ログ・トレース・共通の
 |---|---|---|---|
 | NFR3.8 | エラー応答の `type` のベースURLは、設定の固定値か、要求そのものの Host から組み立てる。転送元のヘッダーは信頼する設定を有効にしたときだけ使う（既定は無効） | テストで、転送元のヘッダーが既定で無視されることを確かめる | U1 の決まり 5.10 |
 | NFR3.9 | 問題の種類の説明ページ（HTML）は、埋め込むすべての値をエスケープし、要求から受け取った値を埋め込まない | テストで確かめる | U1 の決まり 5.15 |
-| NFR3.10 | 画面とすべての応答に、セキュリティ関係のヘッダーを付ける: `Content-Security-Policy`（`default-src 'self'`、スクリプトは同じ配信元のものだけ、`frame-ancestors 'none'`）、`X-Content-Type-Options: nosniff`、`Referrer-Policy: same-origin`。キャッシュは、API の応答には `no-store` を付ける | テストで、応答のヘッダーを確かめる | 同じ配信元で画面を配る構成、NFR5（画面側のトークンの保護） |
+| NFR3.10 | 画面とすべての応答に、セキュリティ関係のヘッダーを付ける: `Content-Security-Policy`（`default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`）、`X-Content-Type-Options: nosniff`、`Referrer-Policy: same-origin`。キャッシュは、API の応答には `no-store` を付ける。デザインシステム（make-you-chic-ui）の部品が使う要素の style の指定は、画面の部品が DOM のプロパティとして設定するため `style-src 'self'` で妨げられない。外部のフォントや外部の画像は使わない | テストで応答のヘッダーを確かめる。あわせて、Playwright の E2E を CSP を有効にした本番の構成（ビルドした WAR）で動かし、ブラウザに CSP 違反が出ないことと、画面が表示されることを確かめる | 同じ配信元で画面を配る構成、NFR5（画面側のトークンの保護）、レビュー指摘 R-02 |
 | NFR3.11 | ログに出す値は、キーと値として JSON の値に入れ、改行などで記録を偽装できないようにする | テストで、改行を含む値が1行の JSON に収まることを確かめる | U1 の決まり 3.1・3.5、U4 の決まり 2.2 |
 | NFR3.12 | 要求の本文の大きさに上限を設け（既定 1MB）、超えた要求は 413 で拒否する | テストで確かめる | 大きすぎる要求で資源を使い果たさせないため |
+
+### U2 の要件で扱うもの
+
+リフレッシュトークンの Cookie（HttpOnly・Secure・SameSite=Strict、送り先を認証の API に限定）と、それを使う API への CSRF 対策は、U2 の要件（NFR5 の詳細）で扱う（レビュー指摘 R-04）。
 
 ## 4. 依存関係と検査
 
