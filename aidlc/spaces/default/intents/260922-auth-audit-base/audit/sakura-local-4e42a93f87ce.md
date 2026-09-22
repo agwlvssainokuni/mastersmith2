@@ -9870,3 +9870,85 @@
 **Tool**: Bash
 
 ---
+
+## Unit Completed
+**Timestamp**: 2026-09-22T09:25:43Z
+**Event**: UNIT_COMPLETED
+**Stage**: functional-design
+**Unit**: u4-audit-log
+**Run floor**: STAGE_STARTED:2026-09-22T07:11:40Z#1
+**Mode**: wave
+**Wave memory entries**: 0
+**Artifact Fingerprint**: sha256:c306112eb85358868319f8a407df40817e56f17cf2a4ab99afe50806392e5a1a
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:25:48Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:27:38Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:27:44Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-22T09:27:45Z
+**Event**: RULE_LEARNED
+**Stage**: functional-design
+**Candidate-ID**: u1
+**Content-Hash**: 5b233759b75786707968b69af9d5714d020655d16743c718d001c1fbf9b747db
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Code Style
+**Source**: user_addition
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-09-22T09:27:47Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: functional-design
+**Unit**: u4-audit-log
+**Checkpoint**: review-receipt
+**Changed**: (paths unavailable)
+**Recorded**: sha256:ca87640851e2604acb9041a46f2e1c03c36d3179d1d332c329696bcd4637d976
+**Current**: sha256:c306112eb85358868319f8a407df40817e56f17cf2a4ab99afe50806392e5a1a
+**Details**: functional-spec changed after it was reviewed. Continuing to the gate with the diff (Change Control: relaxed).
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-09-22T09:27:49Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: functional-design
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-22T09:28:34Z
+**Event**: HUMAN_TURN
+**Session**: 244f8b7a-45f1-46d0-be65-12f9f118fc38
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-22T09:28:40Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
