@@ -11,7 +11,7 @@
 | CV | `aidlc/spaces/default/intents/260922-auth-audit-base/ideation/approval-handoff/concept-visuals.html`（画面イメージ） |
 | TP | `aidlc/spaces/default/intents/260922-auth-audit-base/inception/practices-discovery/team-practices.md`（チームの進め方。`aidlc/spaces/default/memory/team.md` に反映済み） |
 | PM | `aidlc/spaces/default/memory/project.md`（DECIDED・Mandated・Forbidden） |
-| RQ1〜RQ19 | `aidlc/spaces/default/intents/260922-auth-audit-base/inception/requirements-analysis/requirements-analysis-questions.md` の確定回答 |
+| RQ1〜RQ20 | `aidlc/spaces/default/intents/260922-auth-audit-base/inception/requirements-analysis/requirements-analysis-questions.md` の確定回答 |
 
 ## 1. Intent の分析
 
@@ -72,7 +72,11 @@
 - **FR4.1** メールアドレスとパスワードでログインする。成功すると、アクセストークンを応答で返し、リフレッシュトークンを HttpOnly・Secure・SameSite の Cookie で渡す。
   - Given 登録済みで、ロックされていないアカウント / When 正しいメールアドレスとパスワードでログインする / Then アクセストークンが返り、リフレッシュトークンの Cookie が設定される
 - **FR4.2** アクセストークンの有効期限は ★5分とする。
+  - Given 発行から4分59秒経過したアクセストークン / When 認証が必要な API を呼ぶ / Then 受け付けられる
+  - Given 発行から5分経過したアクセストークン / When 認証が必要な API を呼ぶ / Then 401 が返る
 - **FR4.3** リフレッシュトークンの有効期限は ★24時間とする。
+  - Given 発行から23時間59分59秒経過した、未使用のリフレッシュトークン / When トークンを更新する / Then 新しいトークンが渡される
+  - Given 発行から24時間経過したリフレッシュトークン / When トークンを更新する / Then 401 が返る
 - **FR4.4** 認証が必要な API は、有効なアクセストークンが無い要求（トークンなし・期限切れ・署名の改ざん・署名方式の指定を悪用したものを含む）を拒否する（401）。
   - Given 有効期限を過ぎたアクセストークン / When 認証が必要な API を呼ぶ / Then 401 が返る
   - Given 署名を改ざんした、または署名方式を「なし」にしたアクセストークン / When 認証が必要な API を呼ぶ / Then 401 が返る
@@ -143,7 +147,7 @@
 
 ### FR10 構造化ログ・分散トレース・外部エクスポート
 
-出典: S10、RQ13、TP
+出典: S10、RQ13、RQ20、TP
 
 - **FR10.1** アプリのログは、1行1件の JSON で標準出力に出す（開発時も同じ）。
   - Given アプリが動いている / When ログが出る / Then 1行が1件の JSON として読める
@@ -190,7 +194,6 @@
 | A1 | 「初回起動時」は、設定で指定したメールアドレスのユーザーが内部DBにまだ無い起動を指す | FR3.1 と FR3.2（重複作成しない）を両立させるため |
 | A2 | パスワードは一方向のハッシュで保存し、平文では保存しない。ハッシュの方式は NFR の設計で決める | NFR3 でハッシュ値もログに出さないとしており、ハッシュで保存することが前提となるため（セキュリティ担当からの申し送り） |
 | A3 | 管理者フラグは、本Intentでは初期管理者にだけ設定される。他のユーザーの作成と管理者フラグの変更は後続Intent（G・F）で扱う | X1・X2 |
-| A4 | 分散トレースで引き継ぐトレースの情報の形式は、W3C Trace Context（`traceparent` ヘッダー）とする | S10 の外部エクスポートが OTEL であり、OTEL の標準の形式であるため（FR10.3 の受け入れ基準を検証できる形にするため） |
 
 ## 6. 範囲外
 
