@@ -1,0 +1,98 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-authentication",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR2.1",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR5.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR10.7"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: CPU の上限 4（Q2）／monitoring-design.md 1章: ログインの応答時間"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・3章: 更新の応答時間"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: CPU の上限 4 で cost 12 を保つ／monitoring-design.md 1章: 起動時の照合の時間"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: U1 と同じコンテナ1台"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 日本時間 3 時 30 分の定期実行／monitoring-design.md 1章: 削除のログ"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・2章: 照合の時間の範囲外の WARN"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: 署名鍵を .env から環境変数、.env.example に作り方"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章・cicd-pipeline.md 3章: .env を替えて作り直す"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: U1 と同じ 8080（http://localhost）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3章: 初めての配備で初期管理者の作成を確かめる"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: 鍵が無い・短いと起動しない"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: 設定を環境変数か application.yaml の既定値で"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1章: 必須の認証のテストを verify の単体・結合テストに"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 時点（UTC）で保存し注入できる時計／cicd-pipeline.md 1章"
+    },
+    {
+      "id": "NFR10.7",
+      "status": "OK",
+      "target": "monitoring-design.md 1章: ログインの失敗の割合を監査ログから数える"
+    }
+  ]
+}
