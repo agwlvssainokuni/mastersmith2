@@ -32,7 +32,7 @@
 - **In Progress**: intent-capture
 
 ## Runtime State
-- **Revision Count**: 0
+- **Revision Count**: 1
 
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -95,9 +95,9 @@ Per unit: [TBD]
 - **Current Stage**: intent-capture
 - **Next Stage**: scope-definition
 - **Status**: Running
-- **Last Updated**: 2026-09-22T03:09:52Z
+- **Last Updated**: 2026-09-22T03:32:24Z
 
 ## Session Resume Point
 - **Last Completed Stage**: state-init
-- **Next Action**: Execute intent-capture
+- **Next Action**: Execute Intent Capture & Framing
 - **Pending Artifacts**: none
