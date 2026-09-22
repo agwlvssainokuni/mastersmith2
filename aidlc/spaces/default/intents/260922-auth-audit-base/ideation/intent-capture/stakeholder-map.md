@@ -15,7 +15,9 @@
 
 ## Communication Requirements
 
-特になし（このAI-DLCセッション内でのやり取りのみ）[Q7]。
+| Requirement | Detail | Source |
+|---|---|---|
+| 定期報告のケイデンス | 特になし（このAI-DLCセッション内でのやり取りのみ） | [Q7] |
 
 ## Assumptions & Open Questions
 

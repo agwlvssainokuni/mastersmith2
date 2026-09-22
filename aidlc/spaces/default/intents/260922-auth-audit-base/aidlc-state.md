@@ -28,11 +28,11 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 22
-- **Completed**: 3
-- **In Progress**: intent-capture
+- **Completed**: 4
+- **In Progress**: scope-definition
 
 ## Runtime State
-- **Revision Count**: 1
+- **Revision Count**: 4
 
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -52,10 +52,10 @@
 - [x] state-init — EXECUTE
 
 ### IDEATION PHASE
-- [-] intent-capture — EXECUTE
+- [x] intent-capture — EXECUTE
 - [ ] market-research — SKIP
 - [ ] feasibility — SKIP
-- [ ] scope-definition — EXECUTE
+- [-] scope-definition — EXECUTE
 - [ ] team-formation — SKIP
 - [ ] rough-mockups — SKIP
 - [ ] approval-handoff — EXECUTE
@@ -92,12 +92,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: IDEATION
-- **Current Stage**: intent-capture
-- **Next Stage**: scope-definition
+- **Current Stage**: scope-definition
+- **Next Stage**: approval-handoff
 - **Status**: Running
-- **Last Updated**: 2026-09-22T03:32:24Z
+- **Last Updated**: 2026-09-22T03:50:57Z
 
 ## Session Resume Point
-- **Last Completed Stage**: state-init
-- **Next Action**: Execute Intent Capture & Framing
+- **Last Completed Stage**: intent-capture
+- **Next Action**: Execute Scope Definition
 - **Pending Artifacts**: none
