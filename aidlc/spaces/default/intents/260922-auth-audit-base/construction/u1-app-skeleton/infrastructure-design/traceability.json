@@ -1,0 +1,134 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-app-skeleton",
+  "upstream_ids": [
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.7",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR3.2",
+    "NFR3.5",
+    "NFR3.7",
+    "NFR3.13",
+    "NFR3.14",
+    "NFR6.1",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR10.7",
+    "NFR10.8",
+    "NFR10.9",
+    "NFR10.11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: コンテナのヘルスチェックの起動の猶予、資源の大きさ／monitoring-design.md 1章: 起動の時間"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2章 9の段: 初回の読み込みの JavaScript の量の確認（超過は警告）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2章: コネクションプール 最大 10 本／monitoring-design.md 1章: プールの待ちの指標"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 名前付きボリューム／monitoring-design.md 1章: ボリュームの使用量"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "monitoring-design.md 4章: 標準出力と json-file のドライバーの大きさの上限"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: exec 形式の起動と停止の猶予 45 秒"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3章: .env（Git 管理外）と .env.example、Gitleaks／cicd-pipeline.md 3章: pre-commit の Gitleaks"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: 公開する番号は 8080 だけ（アプリと Actuator が同じ）"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章・2章: H2 のネットワークの受け口を持たない"
+    },
+    {
+      "id": "NFR3.13",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2章・4章: npm ci と Gradle の版の固定、CI の道具の版の固定"
+    },
+    {
+      "id": "NFR3.14",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2章 8の段: SpotBugs＋FindSecBugs・OSV-Scanner・Gitleaks を High 以上で失敗、Dependabot"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: /app/data の名前付きボリューム"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 5章: スキーマは前進のみで直前の版に戻せる"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 5章: 版を替える前にボリュームを複写"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 5章: ヘルスチェックとログイン画面の表示で配備の完了、直前の版の WAR で戻す"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2章 7の段: JaCoCo と @vitest/coverage-v8 の下限"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2章・4章: ./gradlew verify を入口にし CI も同じ入口"
+    },
+    {
+      "id": "NFR10.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2章・3章: 外部エクスポートは設定で有効化、確認用の OTLP の受け手"
+    },
+    {
+      "id": "NFR10.8",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1章: コンテナのヘルスチェックに /actuator/health"
+    },
+    {
+      "id": "NFR10.9",
+      "status": "OK",
+      "target": "monitoring-design.md 1章・2章: 5xx の割合と ERROR の件数の指標と警報の候補"
+    },
+    {
+      "id": "NFR10.11",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2章: 受け手は任意の profile で、無くてもアプリは動く"
+    }
+  ]
+}
