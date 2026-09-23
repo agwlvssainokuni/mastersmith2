@@ -55,6 +55,8 @@
 - 配備先が決まるまでの手元の監視は、grafana/otel-lgtm を compose の profile で見たいときだけ起動し、ダッシュボードと警報の決まりはファイルでリポジトリに置く（画面からは変えない）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:observability-setup:542822cb3fe5db425d4384bbb06c49af318db761a9d0ab6afe21eb6c39a2fdc2 -->
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent の配備の手順（cd-config・deployment-strategy・rollback-runbook）を正として、今回の差（設定だけの変更、負荷の確かめを配備の前に置く、設定の戻し）だけを書いた。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:9945db55da8fa593cd367dda708feaaa4f82e1880b1162da5325289f9eff9fc5 -->
 - 戻し方は、設定の値だけの変更であることを生かし、まず .env で上限を 10 に戻す（作り直し不要、ただし F2 が戻る）を第一の手とし、直らなければ直前の版 7040876 へ戻す二段にした。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:b6451b7830168d2997b6cf63aeb3c07c3393e836c537a3c788f4f503389f356c -->
+- 配備の前の「未コミットの変更が無い」確認は、アプリのソースを対象とし、監査ログとこの段の記録のディレクトリ（ワークフローの記録）は外して判断した。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-execution:3d67f0638e47408d3b6b0958e7ff3bc42f3084cbe4562be73c13e52a103f5a8e -->
+- colima の VM が 2GiB のため、使い捨ての環境（1g）と配備したアプリ（1g）を同時に動かせず、負荷の確かめのあいだは前の版のアプリを止めた。確かめが通らなければ docker compose start で前の版をそのまま起動し直せるよう、up ではなく stop にした。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-execution:6523e4ea564581544d814a40c7e6bf64cf16bf00df416f91da0a332805720b87 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
