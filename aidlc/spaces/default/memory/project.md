@@ -97,6 +97,8 @@
 - NEVER パスワード（平文・ハッシュ値とも）・アクセストークン・リフレッシュトークン・署名鍵を、ログ・監査ログ・トレースの属性・外部へのエクスポート・エラー応答に含めない (affirmed 2026-09-22)
 - NEVER `.env` や鍵ファイルなど秘密情報を含む設定ファイルをコミットしない（見本は値を空にした `.env.example` として置く） (affirmed 2026-09-22)
 - NEVER `vendor/make-you-chic-ui` の中身をこのリポジトリから直接変更しない（変更は make-you-chic-ui のリポジトリ側で行う） (affirmed 2026-09-22)
+- NEVER 対象DB の接続情報（接続先・ユーザー名・パスワード・資格情報を含む JDBC の URL）を、生成した DSL・プレビューの応答・画面・ログ・監査ログ・エラー応答に含めず、画面・API・DSL から受け取らない（設定だけから受け取る） (affirmed 2026-09-23)
+- NEVER JDBC の例外や、YAML・JSON Schema の部品の例外のメッセージを、そのままエラー応答に含めない (affirmed 2026-09-23)
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -111,6 +113,8 @@
 - ALWAYS サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新前後のコミットハッシュを記録する (affirmed 2026-09-22)
 - ALWAYS 依存関係は lockfile で版を固定し、CI では lockfile どおりに入れる（`npm ci` など） (affirmed 2026-09-22)
 - ALWAYS 秘密情報の検出を、コミット前と CI の両方で実行する (affirmed 2026-09-22)
+- ALWAYS 対象DB の結合テストは、版を固定したイメージのコンテナで起動した実際の MySQL・MariaDB・PostgreSQL で行い、H2 などの別の DB やモックで代用しない (affirmed 2026-09-23)
+- ALWAYS 利用者が投入する DSL（YAML）は信頼できない入力として扱い、大きさ・入れ子の深さ・別名の数の上限を明示し、タグと任意の型の生成を拒否し、重複キーをエラーにする (affirmed 2026-09-23)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
@@ -136,3 +140,6 @@
 - 依頼者は全体の読み直し（Full rescan）を選んだが、記録上の範囲は実際に深く読んだものだけ（kind: partial、77パス・17部品）とした。コンテナ・負荷試験・監視の設定と README は今回の Intent に関わりが薄く流し読みにしたため、前回（colima-spec-up）より範囲が狭い（NARROWER）と判定された。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:reverse-engineering:66e0c533baba6b3eff4b377b85c707c50707b85055c58fad07e6ff83de0f921c -->
 - アーキテクトが開発者のスキャンにあったパッケージ間の依存を import の検索で確かめ直し、3点（audit は common.observability に依存しない、access は config に依存する、auth は common.observability に依存する）を訂正して記録した。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:reverse-engineering:95881d5d834a59c49e064f7deacbd71812e1eaa719b3a04a6fa52634b2a96e4c -->
 - 部品の名前を英数字の ID（auth・frontend-app-core など）にし、Scope of Analysis の components と component-inventory.md の見出しを文字どおり一致させた。照合は安定するが、前回の日本語・クラス名の部品名とは一致しなくなり、比較で部品が「失われた」と表示される。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:reverse-engineering:3a2dcce51a6e79ec9aff8f865d7208b35839ce466e60ba15c7c61da4b719846d -->
+- 再実行のため、支援役3名が挙げた約30の論点のうち、チームの進め方に当たるものだけを9問にし、「適用」の中身・接続設定の足し方・パッケージの切り方・E2E の2本目・検証エラーの形は要件・設計の段に回した。Q4 の「すべてのパッケージ」はバックエンド（JaCoCo のパッケージ単位）だけに当てると解釈した。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:practices-discovery:8fab6616a98835ce774a51cadf44f3041a595ddc845762f476c0138c4b88d8ff -->
+- Q3（コンテナが無ければ飛ばす）と Q4（すべてのパッケージに下限）の答えが team.md の「全検査を通してから統合」「除外を増やさない」と食い違いうるため、追加の質問 F1・F2 で確かめた。まとめの確認の場で依頼者が F2 を B（既存が下回れば新しいパッケージだけ）に変えた。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:practices-discovery:d0cee141fa53bfbe206d69de6a9ec345f3da8322a543253fd9fb2c769eee5fc1 -->
+- 統合で、面談で聞いていない初稿の行（対象DB の設定の型の伏せ字、401／403／200 のテスト、Flyway V5、Playwright）は基準から外し、evidence.md に記録した。基準は依頼者が確かめたことだけにし、今回の Intent だけに関わる事項は要件・設計で扱う。 (learned 2026-09-23) <!-- cid:260923-dsl-schema-loader:practices-discovery:de2e0b3c606110dc97885886e4265a0ecbcf3b7213d178b7f3b6625633dc6eaa -->

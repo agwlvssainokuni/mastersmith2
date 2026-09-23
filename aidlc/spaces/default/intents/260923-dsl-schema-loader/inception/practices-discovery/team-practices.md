@@ -1,9 +1,6 @@
-# Team-Level Rules
+# Team Practices
 
-> This team's affirmed practices and corrections. Loaded after `org.md` as
-> strict-additive guidance; contradictions with broader policy are rejected.
-> Populated by the practices-discovery affirmation gate. Edit at the gate,
-> not directly.
+> 主担当（aidlc-pipeline-deploy-agent）が、初稿・支援役3名（quality・developer・devsecops）の意見・依頼者の答え（`practices-discovery-questions.md` の Q1〜Q9、F1・F2、変更の依頼、まとめの確認）を統合した確定案。`aidlc/spaces/default/memory/team.md` の5節の本文を引き継ぎ、依頼者の答えで決まった点だけを足した・直した。承認されると、下の5節の中身が `team.md` の同じ5節を置き換える。根拠は `evidence.md`。
 
 ## Way of Working
 
@@ -67,10 +64,6 @@
   - 拒否の応答: Problem Details の形で返り、YAML・JSON Schema の部品の例外のメッセージを含まない
 
 - 内部DB（組み込みの H2）を使うテストは、コンテナではなく本番と同じ組み込みの H2 で行う。Testcontainers は、コンテナで動かす対象DB（後続 Intent D・E で扱う業務DB）のテストに使う。Walking Skeleton の「DB を使うテスト1件以上（本番と同じ種類の DB をコンテナで起動する）」も、内部DBについてはこの読み方とする。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:nfr-requirements:bb1f2f3e98692eeea477da5f229ae3fff34cb064a2feea6ef405a3b7c61b99b7 -->
-## Change Control
-
-<!-- Affirmed by the team. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
-
 ## Deployment
 
 - 当面の配備先は、開発者のPC上のコンテナでの起動・確認だけとする。クラウドなどの配備先は後で決める。配備先が決まったら、org.md の既定（統合時に検証環境へ自動配備、本番環境は手動承認のうえ配備）に沿って配備の流れを作る。本番配備の承認者は依頼者とする。
@@ -135,14 +128,3 @@
 - CodeQL などのより広い静的解析、起動したアプリへの動的検査（OWASP ZAP）、コンテナイメージの検査は採用しない。
 - 利用者が投入する DSL（YAML）は信頼できない入力として扱う。読み込みの大きさ・入れ子の深さ・別名（アンカー）の数に上限を置き、タグと任意の型の生成を拒否し、重複キーをエラーにし、JSON Schema の外部の `$ref` を取りに行かない。検証はサーバー側を正とし、画面での検証をサーバー側の検証の代わりにしない。上限の具体的な数値は設計の段で決める。確かめるテストは Testing Posture のとおり。
 - 新しい依存を足すときは、採用の前にライセンスを確かめる。Apache License 2.0 と異なるライセンスのものは、採用の理由を設計の記録（ADR など）に残す。
-## Forbidden
-
-<!-- Team-specific forbidden patterns -->
-
-## Mandated
-
-<!-- Team-specific mandates -->
-
-## Corrections
-
-<!-- Self-learning loop appends here. -->
