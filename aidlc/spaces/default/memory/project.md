@@ -37,6 +37,8 @@
 - 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:performance-validation:ab2f1782048387afc43d5ecfe6517fd2f601355f934e19d3f106f25a99a14fbb -->
 - 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:performance-validation:981941a9bbe608353df1979cdc3e9d9c4a10b9fa6cf276c92273fa3011ab4eae -->
 - 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:code-generation:9994efaff2db1d6b088324a65881cf41511f0df894e41b24fa6d0ff09f7f10c0 -->
+- Intent の流れに Performance Validation の段が無く、負荷の環境（使い捨ての環境）を手元で用意できるときは、k6 の試験と NMT の測定の持ち主を Build and Test とし、Unverified で引き継がずにその段で実行する。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:build-and-test:0b433994defeb0970a91e3befaf62e4fef958b5e241106072014bb819309de6a -->
+- 修正の前の設定（例: 上限 1g）も修正の後の環境（例: CPU 4 の VM）で流し（pre1g）、要件の前提（VM を上げても F3 が起きる）を実測で裏付ける。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:build-and-test:90f54d05e33c070ff54875bddded6c447c1c2d8e4d42aeb9de025f608fee1a3a -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->

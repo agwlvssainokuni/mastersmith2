@@ -45,7 +45,9 @@ docker compose up -d --wait
 - 前提: colima の VM は CPU 4・メモリ 6GiB（README の「コンテナの資源の上限」）。VM の大きさでは配備したアプリ（2g）と同時に動かせるが、CPU 4 を分け合うと測定の値に影響しうるため、手順 0 で配備したアプリを止める。
 - k6 も同じ VM の CPU を使う（上限の指定なし）。測った値には k6 の分が混ざりうる。
 - JVM の設定を変えて測るときは、`app.env` に `MASTERSMITH_JAVA_OPTIONS=<JVM の引数>`（空白で区切る）を足して起動し直す（`docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait`）。配備と同じイメージ・同じ口で渡る。
-- 修正の前の結果（2026-09-23）: `refresh` の場面は、CPU の上限 2・メモリ 1GB の設定で 30〜40 秒ほどでコンテナがメモリの上限で止まった（OOMKilled）。修正の後（VM を CPU 4・メモリ 6GiB、上限 CPU 4・メモリ 2g）の結果は、確かめが終わったらここに書く。
+- 修正の前の結果（2026-09-23）: `refresh` の場面は、CPU の上限 2・メモリ 1GB の設定で 30〜40 秒ほどでコンテナがメモリの上限で止まった（OOMKilled）。
+- 修正の後の結果（2026-09-23、VM は CPU 4・メモリ 6GiB、上限 CPU 4）: メモリの上限 2g では `refresh` を 60 秒・2回流しても止まらなかった（毎秒 約 11,000 件）。上限 1g のままでは、CPU 4 でも 20 秒以内に OOMKilled で止まった。ログインの p95 は成功 940 ms・失敗 926 ms（同時 10）。記録は `aidlc/spaces/default/intents/260923-colima-spec-up/construction/build-and-test/test-results.md`。
+- メモリの上限 1g では、JVM は G1 ではなく Serial の GC を選ぶ（コンテナのメモリ 1792MB 未満のときの JVM の既定）。2g では G1 になる。上限を変えると GC の方式も変わることに注意する。
 
 ## メモリの内訳を測る（Native Memory Tracking）
 
