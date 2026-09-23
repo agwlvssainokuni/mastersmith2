@@ -46,9 +46,10 @@ services:
       start_period: 40s
       start_interval: 2s
     stop_grace_period: 45s
-    # 配備と同じ上限（Performance Validation の Q3: この PC の実態の CPU 2 で測る）。
+    # 配備と同じ上限で測る。-f で指定するため .env は読まない。値はシェルの環境変数（export）で渡す（perf/README.md）。
+    # JVM の設定（MASTERSMITH_JAVA_OPTIONS）は、一時の環境ファイル（app.env）でコンテナに渡る。
     cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}
-    mem_limit: 1g
+    mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-1g}
     restart: "no"
 
 volumes:

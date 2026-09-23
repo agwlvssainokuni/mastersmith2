@@ -29,6 +29,13 @@ COPY backend/build/libs/mastersmith.war /app/mastersmith.war
 USER 10001:10001
 EXPOSE 8080
 
-# exec 形式で起動し、停止の合図（SIGTERM）を Java が直接受け取るようにする（穏やかな停止）。
-# 最大ヒープはコンテナのメモリの 75%。タイムゾーンは Asia/Tokyo（compose の TZ と合わせる）。
-ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-Duser.timezone=Asia/Tokyo", "-jar", "/app/mastersmith.war"]
+# 既定の JVM の引数: 最大ヒープはコンテナのメモリの上限の 75%。タイムゾーンは Asia/Tokyo（compose の TZ と合わせる）。
+# JVM の設定の口: 環境変数 MASTERSMITH_JAVA_OPTIONS の値を既定の引数の後ろに置く。JVM の -XX の指定は後に書いたものが効くため、
+#   割合などを上書きでき、ヒープ以外の上限（-XX:MaxMetaspaceSize・-Xss・-XX:MaxDirectMemorySize など）も足せる。
+#   値は空白で区切る（空白を含む値は扱わない）。set -f で * などのファイル名の展開を止める。渡さないときは今までと同じ引数になる。
+#   JVM 標準の JAVA_TOOL_OPTIONS・JDK_JAVA_OPTIONS は使わない（コマンド行の引数より前に読まれて既定の 75% に上書きされ、
+#   起動の時に「Picked up ...」の1行を標準エラーに出して1行1件の JSON のログの形を崩すため）。
+# docker run の引数（"$@"）も同じ位置に渡す（確かめのとき -XX:+PrintFlagsFinal -version を付けて、アプリを起動せずに値を読む。
+#   docker/check-container-limits.sh）。
+# exec で sh を java に置き換えて java をコンテナの PID 1 にし、停止の合図（SIGTERM）を Java が直接受け取るようにする（穏やかな停止）。
+ENTRYPOINT ["sh", "-c", "set -f; exec java -XX:MaxRAMPercentage=75.0 -Duser.timezone=Asia/Tokyo ${MASTERSMITH_JAVA_OPTIONS:-} \"$@\" -jar /app/mastersmith.war", "mastersmith"]

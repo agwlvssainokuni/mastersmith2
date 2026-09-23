@@ -57,6 +57,7 @@
 - 戻し方は、設定の値だけの変更であることを生かし、まず .env で上限を 10 に戻す（作り直し不要、ただし F2 が戻る）を第一の手とし、直らなければ直前の版 7040876 へ戻す二段にした。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:b6451b7830168d2997b6cf63aeb3c07c3393e836c537a3c788f4f503389f356c -->
 - 配備の前の「未コミットの変更が無い」確認は、アプリのソースを対象とし、監査ログとこの段の記録のディレクトリ（ワークフローの記録）は外して判断した。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-execution:3d67f0638e47408d3b6b0958e7ff3bc42f3084cbe4562be73c13e52a103f5a8e -->
 - colima の VM が 2GiB のため、使い捨ての環境（1g）と配備したアプリ（1g）を同時に動かせず、負荷の確かめのあいだは前の版のアプリを止めた。確かめが通らなければ docker compose start で前の版をそのまま起動し直せるよう、up ではなく stop にした。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-execution:6523e4ea564581544d814a40c7e6bf64cf16bf00df416f91da0a332805720b87 -->
+- JVM の設定の口に JAVA_TOOL_OPTIONS ではなく独自の MASTERSMITH_JAVA_OPTIONS を ENTRYPOINT の既定の引数の後ろに置く形を選んだ。標準の変数はコマンド行の 75% に負け、起動時の Picked up の1行で JSON のログを崩すため。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:code-generation:5bee00b6c6fc0ff963eca9371e14bc5dc3c8e19d69c2ccf04583df03488e0340 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -125,3 +126,5 @@
 - 今回の範囲に絞ったスキャンの対象を、コンテナ・JVM・負荷試験・README・接続プールの設定・LoginService とした。F3（メモリ）と F4（CPU とログイン）に直接関わる設定と手順だけを深く読み、ほかは流し読みの扱いにした。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:reverse-engineering:5e13085dcbd2dc454021b33a19064567921546b0997a4f88aee69c8c9bd0e578 -->
 - 全体の再スキャンではなく範囲を絞ったスキャンを依頼者が選んだ。前回の深い範囲（監査・接続）は再確認できないため流し読みに下げ、記録上の範囲は狭くなった（NARROWER）。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:reverse-engineering:5e7311e6bf785d2be64bd56c48e5a95eb8cb390053153f9278bd0428ec2ed393 -->
 - VM の拡張だけでは F3 が直らない（mem_limit 1g が固定）ことをコードの調査で示し、依頼の文言（VM の性能を上げて直す）より広い変更（上限と JVM の設定の口）を質問で選んでもらった。依頼の文言に合わせて VM だけにする案も選択肢に残した。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:requirements-analysis:1789e8a46d20c3bb00bfbefb0e82996ccffe53e875260ca780fb6e6df5a42be8 -->
+- 単位の分割が無い bugfix のため、VM の作り直し・F3 の内訳の測定・k6 の試験は Build and Test、.env の変更は Deployment Execution に回し、この段は設定・確かめのスクリプト・文書に限った。今の VM（2GiB）で配備したアプリを止めずに確かめられる範囲にするため。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:code-generation:766ebe01c2f2af7b9cc82dbb3507af461cd1806771c8ad9591050677b5170679 -->
+- レビューの依頼の後にレビュー役が git diff を実行し、作業フォルダが変わったと判定されて結果を記録できなかった。確認の回数も尽きたため、依頼者の Request Changes（traceability.json の R-01・R-02 の修正）を経て、git・ビルドを触らない指示で再レビューした。レビュー役には、git・gradlew・docker build を使わず Read だけで確かめるよう最初から指示する。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:code-generation:4658f175314924d35f961e4e63d652159b81dd720ba383241c3c06c29f73e0cf -->

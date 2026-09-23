@@ -18,7 +18,7 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 
 - Gradle は Wrapper（`./gradlew`）を使うため、別に入れる必要はありません。
 - `./gradlew verify` は、Node.js の版が 24 でない、または Gitleaks・OSV-Scanner が見つからないときは、入れ方を示して失敗します（検査を黙って飛ばしません）。
-- コンテナの CPU の上限は既定で 4 です。colima を使う場合は、VM に CPU を 4 つ以上割り当ててください（例: `colima start --cpu 4 --memory 4`）。VM の CPU を増やせないときは、`.env` の `MASTERSMITH_CONTAINER_CPUS` で上限を下げて起動できます（ログインの照合の時間の目標は 4 が前提です）。
+- コンテナの CPU の上限は既定で 4 です。colima を使う場合は、VM を CPU 4・メモリ 6GiB にしてください（`colima start --cpu 4 --memory 6`。確かめ方と、`.env` での上限の合わせ方は「コンテナの資源の上限」）。VM の CPU を増やせないときは、`.env` の `MASTERSMITH_CONTAINER_CPUS` で上限を下げて起動できます（ログインの照合の時間の目標は 4 が前提です）。
 - U1 のテストはコンテナの実行環境を必要としません（内部DBは組み込みの H2 を使います）。
 
 ## 取得と準備
@@ -156,6 +156,44 @@ docker compose start app
 
 コンテナの外で動かしている場合は、アプリを止めて `./data/`（`bootRun` なら `backend/data/`）を複写します。
 
+### コンテナの資源の上限（colima の VM・メモリ・JVM）
+
+colima の VM の大きさはリポジトリの外の設定のため、コミットでは固定できません。各自の PC で次のとおりにします。
+
+```bash
+# VM を CPU 4・メモリ 6GiB にする（VM を止めると、動いているコンテナも止まる）
+docker compose stop app
+colima stop
+colima start --cpu 4 --memory 6
+colima list                                              # CPUS が 4、MEMORY が 6GiB
+docker info --format '{{.NCPU}} {{.MemTotal}}'           # 4 と約 6GB（VM の OS の分だけ 6GiB より少し小さい）
+docker compose up -d --wait                              # app が healthy になるまで待つ
+```
+
+- VM の大きさの見積もり: 配備したアプリ（2GB）・負荷の試験の環境（2GB、`perf/README.md`）・手元の監視 `lgtm`（900MB）を合わせて約 4.9GB で、6GiB の内側に収まります。
+- VM を広げた PC では、`.env` でコンテナの上限を `MASTERSMITH_CONTAINER_CPUS=4`・`MASTERSMITH_CONTAINER_MEMORY=2g` にし、`docker compose up -d --wait` でコンテナを作り直します。上限は `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。
+- 照合に使える CPU は、コンテナの `cpus` と VM の CPU の数の小さい方で頭打ちになります。VM だけを広げても、`MASTERSMITH_CONTAINER_CPUS` が小さいままではログインは速くなりません。
+- JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 75% です。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を下げる（例: `-XX:MaxRAMPercentage=70.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 75% に上書きされ、起動の時に JSON でない行をログに出すため）。
+
+#### 既知の制約（メモリの上限 1g と高い負荷）
+
+- メモリの上限の既定は 1g のままです。1g では、最大ヒープ 768MB に対してヒープ以外に使えるのは約 256MB です。
+- CPU の上限 2・メモリの上限 1g で、トークンの更新を同時 10 件・考える時間なし（毎秒約 3,000 件）で流したところ、約 35 秒でコンテナがメモリの上限で止まりました（OOMKilled、2026-09-23 の負荷の試験）。`restart: "no"` のため、止まったままになります。
+- 同じくらいの負荷がかかりうるときは、`MASTERSMITH_CONTAINER_MEMORY` で上限を上げてください（VM を CPU 4・メモリ 6GiB にした PC では `2g`）。上限を上げると、最大ヒープも 75% の割合で増えます。2g での負荷の試験の結果は `perf/README.md` の末尾に記録します。メモリの内訳（ヒープとヒープ以外）の測り方も同じ文書にあります。
+- 止まったかどうかは `docker inspect mastersmith-app-1 --format '{{.State.OOMKilled}} {{.State.ExitCode}}'`（`true 137` なら上限で止まった）で確かめます。
+
+#### 設定の効き方の確かめ
+
+`Dockerfile`・compose を変えたときは、次のスクリプトで、メモリの上限の変数と JVM の設定の口が効くことを確かめます。JVM の `-version` だけを小さな上限（512MB）で動かすため、アプリは起動せず、秘密情報も要りません。配備したアプリを止めずに実行できます。
+
+```bash
+./gradlew :backend:bootWar && docker compose build app   # イメージ mastersmith:local を作る（配備したコンテナは作り直さない）
+./docker/check-container-limits.sh                        # 期待と違う点があれば、期待の値と実際の値を出して失敗する
+```
+
+- 確かめること: 両方の compose の `mem_limit`（変数なしで 1g、`MASTERSMITH_CONTAINER_MEMORY=768m` で 768m）、最大ヒープの割合（変数なし・空の値で 75%、`MASTERSMITH_JAVA_OPTIONS` で 60%）、ヒープ以外の上限（`-XX:MaxMetaspaceSize=128m`）、java がコンテナの PID 1 であること（停止の合図を直接受け取る）、タイムゾーンの引数が残ること。
+- 別のタグのイメージは `MASTERSMITH_IMAGE_TAG=<タグ> ./docker/check-container-limits.sh` で確かめます。前提は Docker（Compose v2）と、そのイメージがあることです。`.env` は読みません。
+
 ## 環境変数
 
 秘密情報は `.env`（Git 管理外）から環境変数で渡します。見本は `.env.example` です。値を空にした変数は「空の値」として渡るため、既定値を使う設定は `.env` に書かないでください。
@@ -163,6 +201,8 @@ docker compose start app
 | 環境変数 | 既定値 | 内容 |
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
+| `MASTERSMITH_CONTAINER_MEMORY` | `1g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`2g`・`1536m` の形）。1g のままでは高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」）。colima の VM を CPU 4・メモリ 6GiB にした PC では `2g` にする |
+| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 75%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
@@ -229,7 +269,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは変えられません。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
 - 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
 - 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。
-- 監視のコンテナのメモリの上限は 900MB です。colima の VM のメモリが 2GiB のときは余裕が少ないため、止まる・遅いときは VM のメモリを増やしてください（例: `colima stop` → `colima start --cpu 2 --memory 4`）。
+- 監視のコンテナのメモリの上限は 900MB です。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・負荷の試験の環境 2GB と合わせて約 4.9GB）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
 - 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。
 - 外部エクスポートを有効にすると、JVM が `sun.misc.Unsafe` の警告を標準エラーに数行出します（送信に使う protobuf の部品による。1行1件の JSON ではありません）。
 

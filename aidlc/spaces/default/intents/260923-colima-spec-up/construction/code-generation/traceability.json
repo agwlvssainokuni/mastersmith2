@@ -1,0 +1,41 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1", "FR1.2", "FR1.3",
+    "FR2.1", "FR2.2",
+    "FR3.1", "FR3.2", "FR3.3",
+    "FR4.1", "FR4.2",
+    "FR5.1", "FR5.2", "FR5.3", "FR5.4",
+    "FR6.1", "FR6.2", "FR6.3", "FR6.4", "FR6.5",
+    "FR7.1", "FR7.2",
+    "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"
+  ],
+  "coverage": [
+    { "id": "FR1.1", "status": "Deferred", "target": "build-and-test の段: 依頼者の確認のうえで colima の VM を CPU 4・メモリ 6GiB に作り直し、colima list・docker info で確かめる" },
+    { "id": "FR1.2", "status": "Deferred", "target": "build-and-test の段: VM の作り直しの前の依頼者の確認と、作り直した後の healthy の確認" },
+    { "id": "FR1.3", "status": "OK", "target": "README.md" },
+    { "id": "FR2.1", "status": "OK", "target": "compose.yaml" },
+    { "id": "FR2.2", "status": "Deferred", "target": "deployment-execution の段: 依頼者の確認のうえで、この PC の .env を MASTERSMITH_CONTAINER_MEMORY=2g・MASTERSMITH_CONTAINER_CPUS=4 にする（.env はこの段で開かない）" },
+    { "id": "FR3.1", "status": "OK", "target": "Dockerfile" },
+    { "id": "FR3.2", "status": "OK", "target": "Dockerfile" },
+    { "id": "FR3.3", "status": "OK", "target": "docker/perf/compose.yaml" },
+    { "id": "FR4.1", "status": "Deferred", "target": "build-and-test の段: 測定（1g と 2g）。測り方の手順は perf/README.md の「メモリの内訳を測る（Native Memory Tracking）」に用意した" },
+    { "id": "FR4.2", "status": "Deferred", "target": "build-and-test の段: FR4.1 の測定の結果による（アプリのコードに原因がありそうなら記録して依頼者に伝える）" },
+    { "id": "FR5.1", "status": "Deferred", "target": "build-and-test の段: 使い捨ての環境での k6 の負荷の試験（perf/README.md の手順）" },
+    { "id": "FR5.2", "status": "Deferred", "target": "build-and-test の段: ログインの p95 1 秒以内と refresh 60 秒で止まらないことの判定" },
+    { "id": "FR5.3", "status": "Deferred", "target": "build-and-test の段: 満たさないときは止めて依頼者に相談する" },
+    { "id": "FR5.4", "status": "Deferred", "target": "build-and-test の段: 結果を前回の値と並べて記録し、perf/README.md の末尾の注記を書き換える" },
+    { "id": "FR6.1", "status": "OK", "target": "README.md" },
+    { "id": "FR6.2", "status": "OK", "target": ".env.example" },
+    { "id": "FR6.3", "status": "OK", "target": "compose.yaml" },
+    { "id": "FR6.4", "status": "Deferred", "target": "一部は build-and-test の段: 前半（一時の app.env と export の CPU 2 固定を CPU 4・メモリ 2g にする）はこの段で perf/README.md に対応済み。後半（末尾の F3 の注記を FR5 の結果に合わせて書き換える）は、負荷の試験の結果が出る build-and-test の段で行う（今は「修正の前の結果」と明記して残している）" },
+    { "id": "FR6.5", "status": "OK", "target": "README.md" },
+    { "id": "FR7.1", "status": "OK", "target": "aidlc/spaces/default/intents/260923-colima-spec-up/construction/code-generation/code-summary.md" },
+    { "id": "FR7.2", "status": "OK", "target": "backend/src/main/java" },
+    { "id": "NFR1", "status": "Deferred", "target": "build-and-test の段: k6 でログインの p95 を測る（FR5）" },
+    { "id": "NFR2", "status": "Deferred", "target": "build-and-test の段: refresh を 60 秒流して上限 2g のコンテナが止まらないことを確かめる（FR5）" },
+    { "id": "NFR3", "status": "Deferred", "target": "build-and-test の段: VM を 6GiB にした後に、アプリ 2g・負荷の試験 2g・lgtm 900m が収まることを確かめる（見積もりは README.md に記載）" },
+    { "id": "NFR4", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "NFR5", "status": "OK", "target": "docker/check-container-limits.sh" }
+  ]
+}

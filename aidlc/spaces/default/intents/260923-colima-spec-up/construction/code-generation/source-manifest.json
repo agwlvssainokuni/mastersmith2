@@ -1,0 +1,13 @@
+{
+  "stage": "code-generation",
+  "version": 1,
+  "writes": [
+    { "path": "Dockerfile" },
+    { "path": "compose.yaml" },
+    { "path": "docker/perf/compose.yaml" },
+    { "path": "docker/check-container-limits.sh" },
+    { "path": "README.md" },
+    { "path": ".env.example" },
+    { "path": "perf/README.md" }
+  ]
+}
