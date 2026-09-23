@@ -338,8 +338,8 @@
     },
     {
       "id": "AuthTestTokens.tamper の不安定さ",
-      "status": "OPEN",
-      "target": "U2 のテストの補助の既存の不具合（D1 の範囲外のため直していない）。署名の最後の1文字は詰め物のビットを含むため、A→B の置き換えでは署名が壊れないことがある（1/16）。影響: AccessTokenServiceTest 2件・AccessTokenApiIT 1件。詳細と直し方の案は code-summary.md の「開いている問題」"
+      "status": "N/A",
+      "target": "解決済み。U3 の生成の後、依頼者の承認を得て AuthTestTokens.tamper(String) を「署名の最初の1文字を置き換える」形に直し、トークンのテストを5回続けて実行してすべて成功することを確かめた（backend/src/test/java/cherry/mastersmith/auth/testsupport/AuthTestTokens.java）。Build and Test でも 798 件すべて成功。要件に対応するものではないため N/A とする（旧: OPEN）"
     }
   ]
 }
