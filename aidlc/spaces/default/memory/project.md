@@ -36,6 +36,7 @@
 - 負荷の環境や配備先が決まらないと測れない目標（応答時間のパーセンタイル、運用の指標、ファイルの権限など）は、Build and Test で `Unverified` とし、持ち主の段（performance-validation・observability-setup・deployment-execution）を明記して引き継ぐ。目標を緩めて「満たした」ことにはしない。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:build-and-test:0bf5838d31cde7d0227a8b8a7218db87d70238e8b3c13aa06ca6b3864dd85c28 -->
 - 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:performance-validation:ab2f1782048387afc43d5ecfe6517fd2f601355f934e19d3f106f25a99a14fbb -->
 - 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:performance-validation:981941a9bbe608353df1979cdc3e9d9c4a10b9fa6cf276c92273fa3011ab4eae -->
+- 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:code-generation:9994efaff2db1d6b088324a65881cf41511f0df894e41b24fa6d0ff09f7f10c0 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -115,3 +116,4 @@
 - 要求1件で接続を2本使う経路（確定の後の監査の書き込みなど）があるときは、同時の数がコネクションプールの上限に達する場合を、設計の見積もりだけでなく必ず負荷の試験で確かめる。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:performance-validation:40555675680aff89713df315f029a4ce1e4f0ddda325781eaf44dd4680d05af4 -->
 - 最初のコード知識ベースのため全体を対象に調べたが、深く読んだのは F2 に関わる範囲（ログイン・ログアウト・監査・接続の設定・関係するテスト）だけなので、記録上の範囲は partial とした。画面側や共通部品は流し読みの扱い。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:reverse-engineering:b0cbc892459ac4ff65e23667cf74963257af00f488b36486f444afba9daba7d7 -->
 - 前の Intent では、監査を別スレッドに移すとトレースIDと「確定の後に記録」の決まりが変わるため、接続を2本使う形を受け入れていた。直し方を決めるときは、この決まりと既存の結合テスト（AuditAuthenticationEventsIT・AuditTraceIdIT・AuditRollbackIT・AuditWriteFailureIT）を守れるかで比べる。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:reverse-engineering:15498ffe61fe6ff56f34e8d23e9d51408e48990f74de543a12304ade5b25f156 -->
+- 待ち合わせの上限を計画の例 30 秒から 20 秒にした（上限 10・N=20 の試しで HTTP の要求の時間切れ 30 秒が先に来るため）。DataSourcePoolIT に「既定で 30 本を同時に借りられる」テストを1件足した。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:code-generation:fd57c64b6eb6841155789942a7e285a8bf7d706736c3c562d34150b2adf8d3da -->

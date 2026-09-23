@@ -1,0 +1,115 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4.1",
+    "FR4.2",
+    "FR5.1",
+    "FR6.1",
+    "FR6.2",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/DataSourcePoolIT.java"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR1.4",
+      "status": "N/A",
+      "target": "プログラム（backend/src/main/java）を変えない要件のため、対象のファイルは無い。Step 9 で git diff --stat -- backend/src/main/java が空であることを確かめた（code-summary.md に記録）"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260923-audit-pool-exhaustion/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/auth/web/ConcurrentLoginAuditIT.java"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/auth/web/ConcurrentLoginAuditIT.java"
+    },
+    {
+      "id": "FR3.3",
+      "status": "Deferred",
+      "target": "同じコミットにまとめるのは Step 11 のコミット（依頼者の承認の後に orchestrator が提案する）で行う。修正（application.yaml）と再現テスト（ConcurrentLoginAuditIT）はどちらも未コミットの変更として揃っている"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteBarrierConfig.java"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260923-audit-pool-exhaustion/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR6.1",
+      "status": "Deferred",
+      "target": "配備した後のスモークテストは deployment-execution の段で行う（計画の「要件との対応」）"
+    },
+    {
+      "id": "FR6.2",
+      "status": "Deferred",
+      "target": "使い捨ての環境での k6 の同時 10 件のログインは deployment-execution の段で行う（perf/README.md の手順）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/auth/web/ConcurrentLoginAuditIT.java"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "1g のコンテナでの起動・スモークテスト・k6 の確認は deployment-execution の段で行う"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": ".env.example"
+    }
+  ]
+}

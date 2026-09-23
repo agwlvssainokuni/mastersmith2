@@ -100,7 +100,10 @@ spring:
     password: ${MASTERSMITH_DB_PASSWORD:}
     hikari:
       pool-name: mastersmith-db
-      maximum-pool-size: 10
+      # 接続の数の上限。既定は 30 で、環境変数 MASTERSMITH_DB_MAXIMUM_POOL_SIZE で変えられる。
+      # ログインなどでは、確定の後の監査の記録が業務の接続（1本目）を持ったまま2本目を借りるため、
+      # 同時の要求の数がこの上限に達すると監査の記録が欠けうる（README の「監査ログ（U4）」の既知の制約）。
+      maximum-pool-size: ${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}
       # 接続を借りる待ちの上限（ミリ秒）
       connection-timeout: 5000
   jpa:

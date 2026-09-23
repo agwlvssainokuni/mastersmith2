@@ -1,0 +1,24 @@
+{
+  "stage": "code-generation",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteBarrierConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/ConcurrentLoginAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/DataSourcePoolIT.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    }
+  ]
+}
