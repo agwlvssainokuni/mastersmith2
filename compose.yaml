@@ -54,8 +54,9 @@ services:
       start_interval: 2s
     # アプリの穏やかな停止の待ち（30 秒）より長くする。
     stop_grace_period: 45s
-    # CPU の上限は 4（U2 の基盤の設計で U1 の「CPU 2」を上書き）。メモリは 1GB。
-    cpus: 4
+    # CPU の上限は既定で 4（U2 の基盤の設計で U1 の「CPU 2」を上書き）。メモリは 1GB。
+    # Docker の VM の CPU が 4 に満たない PC では、.env の MASTERSMITH_CONTAINER_CPUS で下げる（照合の時間の目標は 4 が前提）。
+    cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}
     mem_limit: 1g
     # 異常で止まったときは再起動しない（開発者が原因を見る）。
     restart: "no"

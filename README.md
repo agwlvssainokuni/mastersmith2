@@ -18,7 +18,7 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 
 - Gradle は Wrapper（`./gradlew`）を使うため、別に入れる必要はありません。
 - `./gradlew verify` は、Node.js の版が 24 でない、または Gitleaks・OSV-Scanner が見つからないときは、入れ方を示して失敗します（検査を黙って飛ばしません）。
-- コンテナの CPU の上限は 4 です。colima を使う場合は、VM に CPU を 4 つ以上割り当ててください（例: `colima start --cpu 4 --memory 4`）。
+- コンテナの CPU の上限は既定で 4 です。colima を使う場合は、VM に CPU を 4 つ以上割り当ててください（例: `colima start --cpu 4 --memory 4`）。VM の CPU を増やせないときは、`.env` の `MASTERSMITH_CONTAINER_CPUS` で上限を下げて起動できます（ログインの照合の時間の目標は 4 が前提です）。
 - U1 のテストはコンテナの実行環境を必要としません（内部DBは組み込みの H2 を使います）。
 
 ## 取得と準備
@@ -162,6 +162,7 @@ docker compose start app
 
 | 環境変数 | 既定値 | 内容 |
 |---|---|---|
+| `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
