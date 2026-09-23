@@ -1,0 +1,559 @@
+{
+  "stage": "functional-design",
+  "unit": "u5-dsl-admin-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.9",
+    "AC2.2.10",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.2.6",
+    "AC3.3.1",
+    "AC3.3.2",
+    "AC3.3.3",
+    "AC3.3.4",
+    "AC3.4.1",
+    "AC3.4.2",
+    "AC3.4.3",
+    "AC3.4.4",
+    "AC3.4.5",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.2.1",
+    "AC5.2.2",
+    "AC5.2.3",
+    "AC6.2.1",
+    "AC6.2.2",
+    "AC6.2.3",
+    "AC6.2.4",
+    "AC6.2.5",
+    "AC6.2.6"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "N/A",
+      "target": "生成の中身は U3・U1"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "N/A",
+      "target": "表示名の決め方は U3"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "N/A",
+      "target": "バリデーションの導き方は U3"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "N/A",
+      "target": "メニューの並べ方は U3"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "N/A",
+      "target": "検証は U2"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "4.2 の 1（置き換えの確認）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "4.2 の 6、BR5.5、BR6.2（画面の案内。区別した code は U4）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "4.2 の 6（TARGET_DB_UNAVAILABLE の案内。待ち時間は U1）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "N/A",
+      "target": "識別子の扱いは U1"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "N/A",
+      "target": "読み取り専用の接続は U1"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "BR2.2、4.2"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "BR2.2、4.2"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "4.2 の 1（取りやめで入力を残す）"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "4.2 の 2"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "BR2.3"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "BR5.1、BR5.3（行・列・場所の表示。誤りの中身は U2）"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "N/A",
+      "target": "意味の検証は U2（表示は BR5.1）"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "N/A",
+      "target": "意味の検証は U2（表示は BR5.1）"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "N/A",
+      "target": "意味の検証は U2（表示は BR5.1）"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "OK",
+      "target": "BR5.2（版の非対応の表示）"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "N/A",
+      "target": "項目の検証は U2"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "N/A",
+      "target": "返し方の決まりは U2"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "OK",
+      "target": "BR5.5（部品の例外の文言を出さない。応答は U2・U4）"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "OK",
+      "target": "4.2 の 5、BR5.4"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "frontend-components.md の 1.1（DslPreviewPanel・DslMenuTree）、BR5.9"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "BR5.6"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "BR5.7"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "BR5.7"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "BR5.7"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "frontend-components.md の 1.1（DslStatusPanel）、BR5.10、BR6.3"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "4.1"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "OK",
+      "target": "BR5.8"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "OK",
+      "target": "BR5.8"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "OK",
+      "target": "BR5.8"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "OK",
+      "target": "BR5.8（照合できなかった警告の表示。打ち切りは U4・U1）"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "N/A",
+      "target": "10 秒の目標は U4・U2（NFR）"
+    },
+    {
+      "id": "AC3.2.6",
+      "status": "N/A",
+      "target": "照合の読み取りは U1"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "4.4 の 1"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "N/A",
+      "target": "破棄の中身は U4"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "4.4 の 3"
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC3.4.1",
+      "status": "OK",
+      "target": "BR2.4、4.5"
+    },
+    {
+      "id": "AC3.4.2",
+      "status": "N/A",
+      "target": "識別の一致は U4・U2"
+    },
+    {
+      "id": "AC3.4.3",
+      "status": "OK",
+      "target": "4.5 の 2"
+    },
+    {
+      "id": "AC3.4.4",
+      "status": "N/A",
+      "target": "本文をそのまま返すのは U4"
+    },
+    {
+      "id": "AC3.4.5",
+      "status": "OK",
+      "target": "BR2.4（ファイル名は応答の指定に従う。形は U4 の BR6.2）"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "4.3 の 3"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "OK",
+      "target": "4.3 の 1"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "N/A",
+      "target": "置き換えの中身は U4"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "N/A",
+      "target": "提供口は U2・U4"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "N/A",
+      "target": "起動時の読み込みは U4"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "N/A",
+      "target": "提供口は U2・U4"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "N/A",
+      "target": "対象DB に書かないのは U4"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "N/A",
+      "target": "履歴の上限は U4"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "N/A",
+      "target": "同じ内容の適用は U4"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "4.3 の 4、BR2.5"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "4.3 の 4"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "N/A",
+      "target": "同時の適用は U4"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "N/A",
+      "target": "巻き戻しは U4"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "frontend-components.md の 1.1（DslHistoryTable）、BR6.3、BR7.3"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "frontend-components.md の 1.1（DslHistoryTable の empty）"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "4.2（戻し）→ 4.3（適用）"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "4.2 の 1"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "BR5.8"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "4.2 の 5"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "N/A",
+      "target": "監査は U4"
+    },
+    {
+      "id": "AC5.2.1",
+      "status": "OK",
+      "target": "BR2.4、4.5"
+    },
+    {
+      "id": "AC5.2.2",
+      "status": "OK",
+      "target": "4.5 の 2"
+    },
+    {
+      "id": "AC5.2.3",
+      "status": "OK",
+      "target": "BR2.4（ファイル名は U4 の BR6.2）"
+    },
+    {
+      "id": "AC6.2.1",
+      "status": "OK",
+      "target": "BR8.1"
+    },
+    {
+      "id": "AC6.2.2",
+      "status": "OK",
+      "target": "BR8.1"
+    },
+    {
+      "id": "AC6.2.3",
+      "status": "OK",
+      "target": "BR8.1"
+    },
+    {
+      "id": "AC6.2.4",
+      "status": "OK",
+      "target": "1節、BR1.2"
+    },
+    {
+      "id": "AC6.2.5",
+      "status": "OK",
+      "target": "6節、BR5.3、BR5.9"
+    },
+    {
+      "id": "AC6.2.6",
+      "status": "OK",
+      "target": "7節、BR7.4"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.1",
+      "status": "N/A",
+      "target": "登録の置き場の技術的な決まり（既存の登録の決まり）"
+    },
+    {
+      "id": "BR2.1",
+      "status": "N/A",
+      "target": "応答の型を C6 のとおりに持つ技術的な決まり"
+    },
+    {
+      "id": "BR2.6",
+      "status": "N/A",
+      "target": "ApiClient の拡張（誤りの一覧を画面に渡すための口。AC2.2.1・AC2.2.9 を支える）"
+    },
+    {
+      "id": "BR2.7",
+      "status": "N/A",
+      "target": "Problem Details でない応答への備え"
+    },
+    {
+      "id": "BR2.8",
+      "status": "N/A",
+      "target": "形の合わない誤りの応答への備え"
+    },
+    {
+      "id": "BR3.1",
+      "status": "N/A",
+      "target": "読めなかったときの表示（interaction-spec.md の error の状態）"
+    },
+    {
+      "id": "BR3.2",
+      "status": "N/A",
+      "target": "処理中の二重の送信の防止（interaction-spec.md の共通の決まり）"
+    },
+    {
+      "id": "BR3.3",
+      "status": "N/A",
+      "target": "古い応答で新しい表示を上書きしない技術的な決まり"
+    },
+    {
+      "id": "BR4.1",
+      "status": "N/A",
+      "target": "読み直しの決まり（interaction-spec.md の共通の決まり。AC4.2.1・AC4.2.2 を支える）"
+    },
+    {
+      "id": "BR4.2",
+      "status": "N/A",
+      "target": "定期的な読み直しをしない決まり"
+    },
+    {
+      "id": "BR6.1",
+      "status": "N/A",
+      "target": "文言の鍵の付け方（AC6.2.5 を支える）"
+    },
+    {
+      "id": "BR7.1",
+      "status": "N/A",
+      "target": "accessibility-checklist.md の点検の項目（AC6.2.6 を支える）"
+    },
+    {
+      "id": "BR7.2",
+      "status": "N/A",
+      "target": "読み上げの決まり（Refined Mockups の Q8: A）"
+    },
+    {
+      "id": "BR8.2",
+      "status": "N/A",
+      "target": "team.md の Testing Posture の決まり"
+    },
+    {
+      "id": "BR8.1a",
+      "status": "N/A",
+      "target": "BR8.1 のテストの置き場と書く Bolt の決まり（AC6.2.1〜AC6.2.3 を支える）"
+    }
+  ]
+}

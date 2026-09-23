@@ -1,0 +1,39 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-dsl-definition",
+  "upstream_ids": ["AC2.2.1", "AC2.2.2", "AC2.2.3", "AC2.2.4", "AC2.2.5", "AC2.2.6", "AC2.2.7", "AC2.2.8", "AC2.2.9", "AC2.2.10", "AC2.3.1", "AC2.3.2", "AC2.3.3", "AC2.3.4", "AC2.3.5", "AC2.3.6", "AC2.3.7", "AC2.3.8", "AC2.3.9", "AC2.3.10"],
+  "coverage": [
+    { "id": "AC2.2.1", "status": "OK", "target": "BR2.2, BR4.1" },
+    { "id": "AC2.2.2", "status": "OK", "target": "BR3.1, BR4.1" },
+    { "id": "AC2.2.3", "status": "OK", "target": "BR1.5" },
+    { "id": "AC2.2.4", "status": "OK", "target": "BR3.3" },
+    { "id": "AC2.2.5", "status": "OK", "target": "BR2.1" },
+    { "id": "AC2.2.6", "status": "OK", "target": "BR2.2" },
+    { "id": "AC2.2.7", "status": "OK", "target": "BR2.3" },
+    { "id": "AC2.2.8", "status": "OK", "target": "BR4.3" },
+    { "id": "AC2.2.9", "status": "N/A", "target": "画面の働き（入力を残す・フォーカス・読み上げ）。U5 が受け持つ" },
+    { "id": "AC2.2.10", "status": "N/A", "target": "受け付けなかった投入の監査。U4 が受け持つ" },
+    { "id": "AC2.3.1", "status": "OK", "target": "BR1.1" },
+    { "id": "AC2.3.2", "status": "OK", "target": "BR1.3" },
+    { "id": "AC2.3.3", "status": "OK", "target": "BR1.2" },
+    { "id": "AC2.3.4", "status": "OK", "target": "BR1.4" },
+    { "id": "AC2.3.5", "status": "OK", "target": "BR1.5" },
+    { "id": "AC2.3.6", "status": "OK", "target": "BR1.6, BR2.2" },
+    { "id": "AC2.3.7", "status": "OK", "target": "BR1.6" },
+    { "id": "AC2.3.8", "status": "OK", "target": "BR4.3" },
+    { "id": "AC2.3.9", "status": "N/A", "target": "投入以外の API の本文の上限（1MB のまま）。U4 が受け持つ" },
+    { "id": "AC2.3.10", "status": "N/A", "target": "受け付けなかった投入の監査。U4 が受け持つ" }
+  ],
+  "reverse": [
+    { "id": "BR3.2", "status": "N/A", "target": "メニューの形の技術的な決まり（FR1.2）" },
+    { "id": "BR3.4", "status": "N/A", "target": "一覧の並び順の技術的な決まり（FR1.3）" },
+    { "id": "BR3.5", "status": "N/A", "target": "部品と選択肢の整合の技術的な決まり（FR1.3）" },
+    { "id": "BR3.6", "status": "N/A", "target": "バリデーションの値の整合の技術的な決まり（FR1.3）" },
+    { "id": "BR3.7", "status": "N/A", "target": "意味の誤りをすべて返す技術的な決まり（FR4.3）" },
+    { "id": "BR4.2", "status": "N/A", "target": "別名の参照の位置の技術的な決まり（ADR-008）" },
+    { "id": "BR5.1", "status": "N/A", "target": "識別の求め方（AC3.4.2・AC6.3.1。U4 が主の単位）" },
+    { "id": "BR5.2", "status": "N/A", "target": "モデルへの変換（AC4.1.4。US4.1 は U4 が主の単位）" },
+    { "id": "BR5.3", "status": "N/A", "target": "一度に切り替わる差し替え（AC4.1.4・AC4.2.4。U4 が主の単位）" },
+    { "id": "BR5.4", "status": "N/A", "target": "適用中が無いときの提供口（AC4.1.6。U4 が主の単位）" }
+  ]
+}

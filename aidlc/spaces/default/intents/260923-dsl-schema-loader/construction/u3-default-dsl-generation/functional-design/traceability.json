@@ -1,0 +1,63 @@
+{
+  "stage": "functional-design",
+  "unit": "u3-default-dsl-generation",
+  "upstream_ids": [
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "BR1.2, BR1.3, BR1.5, BR4.1, BR5.2"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "BR2.2, BR2.3, BR2.4, BR2.5, BR4.1"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "N/A",
+      "target": "性能の目標で、機能設計の決まりではない。持ち主は NFR 要件（30 秒の目標の作りは NFR 設計、測るのは Build and Test）"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.1",
+      "status": "N/A",
+      "target": "対象DB を読めないときの結果（AC1.1.7。US1.1 は U4 が主の単位）"
+    },
+    {
+      "id": "BR1.4",
+      "status": "N/A",
+      "target": "テーブルの並びの技術的な決まり（FR3.4）"
+    },
+    {
+      "id": "BR2.1",
+      "status": "N/A",
+      "target": "DB 上の型の記録（ADR-005、AC3.2.3 の前提。US3.2 は U4 が主の単位）"
+    },
+    {
+      "id": "BR3.1",
+      "status": "N/A",
+      "target": "主キーの写し（FR3.2 の技術的な決まり）"
+    },
+    {
+      "id": "BR3.2",
+      "status": "N/A",
+      "target": "外部キーの選択肢（FR3.5 の技術的な決まり）"
+    },
+    {
+      "id": "BR5.1",
+      "status": "N/A",
+      "target": "同じ写しからは同じ本文（FR3.6・FR5.1 の技術的な決まり。生成し直しても違いに見かけの差を出さない）"
+    },
+    {
+      "id": "BR5.3",
+      "status": "N/A",
+      "target": "接続先を入れない（AC3.4.4・NFR4。U4 が主の単位）"
+    }
+  ]
+}

@@ -234,7 +234,10 @@ components:
                 menuTree: { type: array, items: { $ref: "#/components/schemas/MenuNode" } }
                 missingDisplayNames:
                   type: array
+                  maxItems: 100
+                  description: 先頭の100件まで（サーバーが絞る）
                   items: { type: object, properties: { path: { type: string }, language: { type: string, enum: [ja, en] } } }
+                missingDisplayNameTotal: { type: integer, minimum: 0, description: 表示名が埋まっていない場所の総数 }
             diff:
               type: object
               properties:
@@ -392,7 +395,7 @@ channels:
             occurredAt: { type: string, format: date-time, description: UTC }
             dslHash: { type: [string, "null"], description: 受け付けなかった投入で本文を読めなかったときは null }
             source: { type: [string, "null"], enum: [GENERATED, UPLOAD, PASTE, RESTORE, null] }
-            rejectionKind: { type: [string, "null"], description: "受け付けなかった投入の理由の種類（DslError の kind の代表、または TOO_LARGE）" }
+            rejectionKind: { type: [string, "null"], description: "受け付けなかった投入の理由の種類（DslError の kind の代表。大きさで読む前に止めたときは SIZE_LIMIT）" }
             traceId: { type: [string, "null"] }
 operations:
   publishDslOperation: { action: send, channel: { $ref: "#/channels/dslOperation" } }
@@ -449,4 +452,5 @@ rules:
 | 日付 | 内容 | 理由 |
 |---|---|---|
 | 2026-09-23 | `DSL_PREVIEW_NOT_FOUND` を 404 だけにし、適用でプレビューが無い場合を `DSL_PREVIEW_CHANGED`（409）にまとめた | レビューの指摘 R-01。既存の仕組みは1つの `code` に状態コードが1つで、同じ `code` の二重の登録は起動の失敗になる |
+| 2026-09-23 | C6 の要約に `missingDisplayNameTotal`（総数）と、`missingDisplayNames` の先頭100件の上限を足した。C7 の `rejectionKind` の大きさの理由を `TOO_LARGE` から `SIZE_LIMIT`（C4・C6 の誤りの種類と同じ名前）に直した | Functional Design の U4 のレビューの指摘 R-02・R-03。元は C6 に総数の項目が無く、C7 だけが `TOO_LARGE` という別の名前だった。依頼者の Request Changes による |
 | 2026-09-23 | 結果の型から応答への変換の経路（U4 の業務処理の層で業務の例外に変える）と、共通のエラー応答に追加の項目を載せる口（U4 に含む）を書き足した | レビューの指摘 R-02。既存の仕組みは業務の例外から共通の1か所で応答を作り、追加の項目を載せる口が無い |
