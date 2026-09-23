@@ -1,46 +1,90 @@
 # 依存関係（mastersmith2）
 
-## 外部の依存
+部品の版は `technology-stack.md`、部品ごとの責務は `component-inventory.md` を参照。ここでは、依存の向きと、依存を管理する決まりだけを書く。
 
-外部のライブラリ・イメージと版は `technology-stack.md` に記す。依存の固定の仕組み:
+## 外部への依存
 
-- Gradle: 依存の lockfile（`backend/gradle.lockfile`、`settings-gradle.lockfile`）と版の目録（`gradle/libs.versions.toml`）。Tomcat は 11.0.26 に強制。
-- npm: `frontend/package-lock.json`。CI では `npm ci`。
-- サブモジュール: `vendor/make-you-chic-ui`。固定先の更新は承認を得た専用のコミットで行う。
-- コンテナのイメージ: タグで版を固定（`eclipse-temurin:25.0.4_7-jre-noble`、`grafana/otel-lgtm:0.33.1`、`otel/opentelemetry-collector:0.161.0`、`grafana/k6:2.3.0`）。アプリのイメージは `mastersmith:${MASTERSMITH_IMAGE_TAG:-local}`。
-- 外部サービスへの実行時の依存は無い（DB は同じプロセスの組み込み H2。OTLP の送信は既定で無効）。
+### 実行時に接続するもの
 
-## ビルドと配備の依存
+| 相手 | 接続の仕方 | 既定 |
+|---|---|---|
+| 内部DB（H2、組み込み・ファイル保存） | Spring Boot の自動構成の `DataSource` 1つ（`spring.datasource.*`、HikariCP `mastersmith-db`） | 有効。`jdbc:h2:file:./data/mastersmith`（コンテナでは `/app/data`） |
+| OTLP の受け手（トレース・ログ・指標） | `mastersmith.observability.export.*` | 無効 |
 
-- `:backend:bootWar` → `:frontendBuild` → `vendorBuild` → `vendorInstall`（`frontend/dist` を WAR に同梱）。
-- `verify`（ルート `build.gradle.kts`）→ フォーマット → リンタ → ライセンスヘッダー → ビルド → 単体テスト → 結合テスト → カバレッジ → 安全の検査 → 成果物 の9段。CI（`.github/workflows/ci.yml`）も同じタスクを呼ぶ。
-- WAR（`backend/build/libs/mastersmith.war`）→ イメージ（`Dockerfile`。`.dockerignore` で WAR だけを送る）→ 配備（`compose.yaml`）と負荷の試験（`docker/perf/compose.yaml`）が同じイメージを使う。
-- イメージの作り直しが要るのは WAR か `Dockerfile`（JVM の引数を含む）を変えたとき。`compose.yaml` の上限（`cpus`・`mem_limit`）と `.env` の値は、作り直さずに `docker compose up -d` で反映できる。colima の VM の大きさは PC の上の操作（`colima stop` → `colima start --cpu … --memory …`）で、リポジトリには残らない。
+ほかの外部のシステム（対象DB を含む）への接続は無い。
 
-## 内部の依存（パッケージの間）
+### ビルド時・検査時に使うもの
+
+- Maven Central（Gradle の取得元はここだけ。`settings.gradle.kts` の `FAIL_ON_PROJECT_REPOS`）
+- npm のレジストリ（`frontend/package-lock.json`、`vendor/make-you-chic-ui/package-lock.json`）
+- Gitleaks・OSV-Scanner（手元では導入済みの道具、CI では版と SHA-256 で固定して取得）
+- `vendor/make-you-chic-ui`（Git サブモジュール。`vendorInstall`・`vendorBuild` で先にビルドし、`vendorUnchanged` で変更が無いことを確かめる）
+
+## 依存の管理の決まり
+
+- Gradle は全構成を lockfile で固定する（`backend/gradle.lockfile`・`settings-gradle.lockfile`）。更新は `:backend:resolveAndLockAll --write-locks`。
+- npm は lockfile どおりに入れる（CI は `npm ci`）。
+- OSV-Scanner の関門（`osvScan`）: Gradle は CVSS 7.0 以上で失敗。npm は実行時の依存（推移を含む）が High 以上で失敗、開発用は警告。ただし成果物を作る道具（`config/npm-build-tools.txt`）と `MAL-` で始まるものは開発用でも失敗。
+- Tomcat の版は `resolutionStrategy` で上書きしている（`backend/build.gradle.kts`）。
+- 新しい依存を足すときは、lockfile の更新と OSV の関門を通す必要がある。
+
+## 内部の依存（バックエンドのパッケージ間）
 
 ```mermaid
-flowchart LR
-    AUTH["auth"] --> USER["user"]
-    USER -. "UserCreatedEvent" .-> AUTH
-    AUTH -. "AuthenticationEvent" .-> AUDIT["audit"]
-    ACCESS["access"] -. "AdminAccessDeniedEvent" .-> AUDIT
-    AUTH --> COMMON["common"]
-    USER --> COMMON
-    ACCESS --> COMMON
-    AUDIT --> COMMON
-    CONFIG["config"] --> COMMON
+flowchart TD
+  config --> common_security["common.security"]
+  config --> common_web["common.web"]
+  config --> common_observability["common.observability"]
+  common_web --> common_security
+  common_error["common.error"] --> common_i18n["common.i18n"]
+  common_error --> common_observability
+  auth --> user
+  auth --> common_error
+  auth --> common_security
+  auth --> common_observability
+  access --> auth
+  access --> common_error
+  access --> common_security
+  access --> config
+  audit --> auth
+  audit --> access
 ```
 
-図の文字での説明: 直接の呼び出しは `auth` → `user`（照合・利用者の検索）と、各機能 → `common` だけ。`auth`・`access` から `audit` へは出来事だけでつながり、直接の呼び出しは無い（ArchUnit で確認）。`user` → `auth` も `UserCreatedEvent` だけ。
+文章による代替（`import` 文を grep で集めて確かめた）:
 
-## 実行時に共有する資源
+- `config` は `common.security`（差し込み口）、`common.web`（フィルター・設定の型）、`common.observability`（送るトレースの消毒）を使う。
+- `common` の中では、`common.error` が `common.i18n`（表示言語）と `common.observability`（トレースID）を使う。`common` から機能のパッケージへの依存は無い。
+- `auth` は `user`（`user.domain`・`user.service`。利用者の照合と検索）、`common.error`、`common.security`、`common.observability`（`ClientInfoResolver` がトレースIDを取る）を使う。
+- `access` は `auth`（`auth.domain` の主体 `AuthenticatedUser`、`auth.web` の `TokenAuthenticationEntryPoint`・`ClientInfoResolver`）、`common.error`・`common.security`、`config`（`AccessRequestRejectedHandler` が `SecurityHeaderProperties` を使う）を使う。
+- `audit` は `auth.domain`（`AuthenticationEvent`）と `access.domain`（`AdminAccessDeniedEvent`）の出来事の型にだけ依存する。トレースIDは出来事が運ぶ。`auth`・`access` から `audit` への依存は無い（出来事で疎結合）。
+- `user` はアプリの中のほかのパッケージを import しない。
 
-| 資源 | 共有するもの | 影響 |
+循環する依存は見当たらない。`access` は DB を読まない。
+
+### 内部DB の表の持ち主
+
+| 表 | 持ち主 | 作るスキーマ変更 |
 |---|---|---|
-| colima の VM の CPU（現状 2） | 配備したアプリ、使い捨ての環境のアプリ、k6、`lgtm`、`otel-collector` | コンテナの `cpus` は VM の CPU を超えられない。ログインの照合（bcrypt）の速さは使える CPU の数で決まる（F4）。負荷の試験では k6 と対象が取り合う |
-| colima の VM のメモリ（現状 2GiB） | 同上 | アプリ 1g ＋ 使い捨ての環境 1g、またはアプリ 1g ＋ `lgtm` 900m でほぼ埋まる。負荷の試験の間は配備したアプリを止める手順（`perf/README.md` 手順 0） |
-| アプリのコンテナのメモリ（1g 固定） | JVM のヒープ（最大 768MB）とヒープ以外（上限なし） | 合計が 1g を超えると OOMKilled（F3） |
-| HikariCP のプール `mastersmith-db`（上限 既定 30） | auth・user・audit の repository、`TimeBoundedDbHealthIndicator` | 1 要求が2本を同時に持つ経路があり、同時の数が上限に達すると監査の記録が欠けうる（F2） |
-| 要求のスレッド（Tomcat、既定 200） | すべての API | 監査は要求と同じスレッドで書く。スレッドが増えるほどヒープ以外（スタック）も増える |
-| 組み込み H2 のファイル（ボリューム `mastersmith-data`／`perf-data`） | アプリ1プロセスだけ | 単一インスタンスの前提 |
+| `users` | `user` | `V2__u2_user_account.sql` |
+| `login_attempt_states` | `auth` | `V3__u2_authentication.sql` |
+| `refresh_tokens` | `auth`（`users` への外部キー） | `V3__u2_authentication.sql` |
+| `audit_events` | `audit` | `V4__u4_audit_event.sql` |
+
+表ごとに書き込む部品は1つである。
+
+### トランザクションと接続の結び付き
+
+JPA の `EntityManagerFactory`・既定の `PlatformTransactionManager`・Flyway・`common.health` の確認は、どれも内部DB の1つの `DataSource` に結び付いている。`@Transactional`（名前の指定なし）と、`LoginService` に注入される `PlatformTransactionManager` も、この1つを指している。
+
+## 内部の依存（画面）
+
+- `features/*` → `app/registry`（登録の型）、`shared/api-client`（API の呼び出し）、`make-you-chic-ui`
+- `app/*` → `app/registry`、`make-you-chic-ui`、react-router、i18next
+- `features/auth` は `registerAuthHandlers` で、トークンの取得・更新の手段を `shared/api-client` に渡す。`shared/api-client` は `features/auth` を import しない。
+
+## ビルドのタスクの依存
+
+- `verify` → 段 0〜9（`mustRunAfter` で順に並ぶ）。段の中身は `code-quality-assessment.md` の「CI/CD と検査の関門」を参照。
+- `:backend:bootWar` → `:frontendBuild` → `vendorBuild`（`frontend/dist` を WAR の `WEB-INF/classes/static` に同梱。成果物は `mastersmith.war`）
+- `frontendTypecheck`・`frontendTest`・`frontendCoverage` → `vendorBuild`
+- `e2eTest` → `:backend:bootWar`（`verify` と CI には入れない）

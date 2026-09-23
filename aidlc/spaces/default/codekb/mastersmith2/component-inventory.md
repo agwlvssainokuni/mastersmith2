@@ -1,101 +1,165 @@
 # 部品の一覧（mastersmith2）
 
-健全性の評価: healthy（問題なし）／at-risk（条件しだいで問題が出る）／degraded（既知の不具合あり）。部品は見出しの名前で記す。今回（Intent `260923-colima-spec-up`）深く読んだ部品の見出しは、`reverse-engineering-timestamp.md` の Scope of Analysis の `components` と同じ名前である。前回（Intent `260923-audit-pool-exhaustion`）に深く読み、今回は再確認していない部品は、その次の節にまとめる。
+見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。状態の欄は、healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）で示す。「読みの深さ」は今回のスキャンでの扱いである。
 
-## 今回深く読んだ部品
+## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
 
-### LoginService
-- 場所: `backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java`
-- 責務: パスワードの照合（118 行、トランザクションと排他の外）→ `TransactionTemplate`（119 行）で行の排他・ロックの判定・失敗回数の更新・トークンの発行 → `AuthenticationEvent` の publish。
-- 依存: UserAccountService、LoginAttemptStateRepository、RefreshTokenRepository、`AccessTokenService`、`ApplicationEventPublisher`、`Clock`。
-- 資源: 照合1回（bcrypt cost 既定 12、約 278ms）が CPU の重い部分のすべて。同時の数が使える CPU の数を超えると、照合が順番待ちになり応答が伸びる。
-- 健全性: **at-risk**（F4。CPU 2 で同時 10 件の p95 が約 1.6 秒。接続の2本使い（F2）はプールの上限 30 で緩和済みだが形は残る）
+### app-bootstrap
 
-### mastersmith-db コネクションプール
-- 場所: `backend/src/main/resources/application.yaml` 101〜108 行（HikariCP、Spring Boot の自動設定）
-- 責務: 内部DB（組み込み H2）への接続のプール。上限 `${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}`、借りる待ち 5000ms。業務・監査・ヘルスチェックで共有。
-- 健全性: **at-risk**（同時の数が上限 30 に達すると F2 が再び起きうる。README の既知の制約。設定の一覧は `architecture.md` の「接続のプールの現在の設定」）
+- 場所: `MastersmithApplication.java`
+- 責務: 起動クラス。実行可能 WAR と外部のサーブレットコンテナの両方で起動できる（`SpringBootServletInitializer`）。`@ConfigurationPropertiesScan` で設定の型を集める。
+- 依存: Spring Boot
+- 状態: healthy ／ 読みの深さ: 深い
 
-### app コンテナ
-- 場所: `Dockerfile`、`compose.yaml` の `app`（24〜67 行）、`.dockerignore`
-- 責務: 実行可能 WAR を Temurin JRE 25 で動かす。専用の利用者 10001、`/app/data` をボリューム `mastersmith-data` に保存、`127.0.0.1:8080` に公開、ヘルスチェックは bash で `/actuator/health`。
-- 資源の設定: `cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}`、`mem_limit: 1g`（固定）、JVM は `-XX:MaxRAMPercentage=75.0`（最大ヒープ 768MB）だけ。`restart: "no"`。
-- 依存: colima の VM（CPU 2・メモリ 2GiB）、`.env`（任意）。
-- 健全性: **degraded**（F3。高い負荷でメモリの上限に達し OOMKilled。既定の `cpus` 4 は現状の VM の CPU 2 では起動できない値）
+### config
 
-### mastersmith-perf 負荷試験環境
-- 場所: `docker/perf/compose.yaml`、`perf/README.md`、`perf/k6/scenarios.js`
-- 責務: 配備と同じイメージ・同じ上限の使い捨ての環境（別のプロジェクト名・別のボリューム・`127.0.0.1:18080`）を作り、k6（`grafana/k6:2.3.0`、同じ VM の中のコンテナ）で6つの場面に同時 10・60 秒の負荷をかけ、p95 を出す。仮の署名鍵・仮の利用者はリポジトリの外の一時ファイル。
-- 依存: app コンテナのイメージ、H2 2.4.240 の jar（利用者の投入）、`htpasswd`、`openssl`。
-- 健全性: **at-risk**（手順が CPU 2 を固定で書き、VM が 2GiB のため配備したアプリを止めて行う。k6 と対象が同じ VM の CPU を分け合う。末尾の F3 の注記は直した後に更新が要る）
+- 場所: `config/`
+- 責務: Spring Security のフィルターの連鎖（1つ、状態なし、CSRF・フォームログインなし）、応答ヘッダー（CSP など）、SPA の配信と見つからない URL への `index.html`、転送元ヘッダーの扱い、OTLP の外部エクスポートの組み立て。
+- 依存: `common-security`・`common-web`・`common-observability`
+- 状態: healthy ／ 読みの深さ: 深い
 
-### lgtm 監視コンテナ
-- 場所: `compose.yaml` の `lgtm`（79〜103 行）、`docker/monitoring/`
-- 責務: `grafana/otel-lgtm:0.33.1` で OTLP の受け手・Prometheus・Loki・Tempo・Grafana を1つで動かし、ファイルで入れたダッシュボードと警報（15 件）で手元の監視をする。profile `monitoring`、`127.0.0.1:3000`、閲覧だけ。
-- 資源の設定: `mem_limit: 900m`（アプリ 1g と VM 約 2GiB の中で同居する前提のコメント）。
-- 関係する警報: `ms-heap`（ヒープの使用率 > 0.85 が 5 分）、`ms-login-p95`（ログインの p95 > 1000ms が 5 分）、`ms-app-absent`（指標が 5 分届かない）、`ms-pool-pending`（プールの待ち）。コンテナのメモリ・CPU の指標は無い。
-- 健全性: **at-risk**（VM 2GiB では余裕が少ない。README 232 行。ヒープ以外を含むメモリの上限への接近を捉えられない）
+### common-error
 
-### otel-collector コンテナ
-- 場所: `compose.yaml` の `otel-collector`（69〜74 行）、`docker/otel-collector/config.yaml`
-- 責務: 外部エクスポートの確認用の受け手。`otel/opentelemetry-collector:0.161.0`、profile `observability`、HTTP 4318 で受けて debug に出すだけ。
-- 資源の設定: 上限なし。
-- 健全性: healthy（常時は起動しない）
+- 場所: `common/error/{domain,service,web}`
+- 責務: Problem Details（`code`・`traceId` 付き）のエラー応答。`BusinessException`・`ProblemType`・`ProblemTypeCatalog`・`ProblemTypeRegistry`（起動時に重複を検査）・`GlobalExceptionHandler`（`@RestControllerAdvice` の1か所）・`DefaultErrorResponseWriter`・`ErrorPathController`・問題の種類の説明ページ。
+- 依存: `common-i18n`・`common-observability`
+- 状態: at-risk（複数の検証エラーを返す形が無い。`code-quality-assessment.md` の C-6） ／ 読みの深さ: 深い
 
-### SecurityConfig
-- 場所: `backend/src/main/java/cherry/mastersmith/config/SecurityConfig.java`
-- 責務: Spring Security のフィルターの連鎖（1つ、状態を持たない）と、U2・U3 が決まりを足す差し込み口。`/actuator/health`・`/api/problems/**` は認証なし。応答に CSP などのヘッダーを付ける。
-- 健全性: healthy（資源の設定は持たない）
+### common-security
 
-### WebConfig
-- 場所: `backend/src/main/java/cherry/mastersmith/config/WebConfig.java`
-- 責務: ビルドした SPA の配信。見つからない画面の URL は `/api/`・`/actuator/` の下でなければ `index.html` を返す。
-- 健全性: healthy
+- 場所: `common/security/`
+- 責務: セキュリティの差し込み口（`SecurityRuleContributor`・`ApiDefaultAccess`・`ErrorResponseWriter`）と、起動時の検査（`SecurityExtensionValidator`）。
+- 依存: Spring Security
+- 状態: healthy ／ 読みの深さ: 深い
 
-### ObservabilityConfig
-- 場所: `backend/src/main/java/cherry/mastersmith/config/ObservabilityConfig.java`
-- 責務: OTLP の送信（トレース・ログ・指標）の組み立て。`mastersmith.observability.export.enabled`（既定 false）1つで切り替え、送信は上限付きの待ち行列（あふれたら捨てる）から要求と切り離して行う。送信の失敗は警告のログだけ。
-- 健全性: healthy（待ち行列に上限があり、送信でメモリが際限なく増える形ではない）
+### common-web
 
-### ForwardedHeaderConfig
-- 場所: `backend/src/main/java/cherry/mastersmith/config/ForwardedHeaderConfig.java`
-- 責務: `mastersmith.web.trust-forwarded-headers=true` のときだけ `ForwardedHeaderFilter` を登録する。既定では転送元のヘッダーを使わない。
-- 健全性: healthy
+- 場所: `common/web/`
+- 責務: `CacheControlFilter`（`/api/**` は `no-store` など）、`RequestSizeLimitFilter`（本文の上限、既定 1MB）、`mastersmith.web.*` の設定の型。
+- 依存: `common-security`（`ErrorResponseWriter`）
+- 状態: at-risk（完成品の DSL の投入が 1MB を超えうる。C-7） ／ 読みの深さ: 深い
 
-### SecurityHeaderProperties
-- 場所: `backend/src/main/java/cherry/mastersmith/config/SecurityHeaderProperties.java`
-- 責務: `mastersmith.security.content-security-policy` の値を受ける `record`。
-- 健全性: healthy
+### common-health
 
-## 前回に深く読んだ部品（今回は再確認していない）
+- 場所: `common/health/`
+- 責務: 制限時間付きの内部DBの確認（`SELECT 1`、既定 2 秒）。Actuator の既定の DB の確認を置き換える。
+- 依存: 内部DB の `DataSource`
+- 状態: at-risk（対象DB を足したときに何を見るかが未定。C-9） ／ 読みの深さ: 深い
 
-内容は前回の記録（コミット `6afbf97` 時点）のまま残す。F2 の修正（プールの上限 30）以外に変わったかは確かめていない。
+### common-i18n
 
-| 部品 | 場所 | 責務 | 健全性（前回の評価と注記） |
-|---|---|---|---|
-| LogoutService | `backend/src/main/java/cherry/mastersmith/auth/service/LogoutService.java` | リフレッシュトークンの無効化と `LOGGED_OUT` の publish（`@Transactional` の中） | at-risk（F2 と同じ形の2本使い） |
-| TokenRefreshService | `backend/src/main/java/cherry/mastersmith/auth/service/TokenRefreshService.java` | リフレッシュトークンでアクセストークンを更新する（`@Transactional`、出来事なし） | healthy（接続は1本）。F3 が起きた `refresh` の場面の経路。メモリの伸びとの関係は未確認 |
-| AuthController | `backend/src/main/java/cherry/mastersmith/auth/web/AuthController.java` | `/api/auth` の3つの API の HTTP の受け渡し | healthy |
-| LoginAttemptStateRepository | `backend/src/main/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepository.java` | `login_attempt_states` の排他つきの読み取りと更新 | healthy |
-| RefreshTokenRepository | `backend/src/main/java/cherry/mastersmith/auth/repository/RefreshTokenRepository.java` | `refresh_tokens` の保存・検索・無効化 | healthy |
-| AuditEventListener | `backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java` | AFTER_COMMIT で同じスレッドで受け取り、追記する。失敗は ERROR 1件、200ms 超で WARN | at-risk（2本目の借用の起点。上限 30 で緩和） |
-| AuditEventRecorder | `backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java` | `REQUIRES_NEW` で1件追記する | at-risk（同上） |
-| AuditEventRepository | `backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java` | `audit_events` への追記だけ | healthy |
-| AuditConfig | `backend/src/main/java/cherry/mastersmith/audit/service/AuditConfig.java` | 監査の部品の設定（計時の差し替え口） | healthy |
-| UserAccountService | `backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java` | パスワードの照合（`verifyPassword`、トランザクションなし）、利用者の検索・作成。存在しない利用者でもダミーのハッシュで照合の時間をそろえる | healthy（照合の CPU 時間は LoginService の項を参照） |
-| UserRepository | `backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java` | `users` の読み書き | healthy |
-| AccessDeniedEventPublisher | `backend/src/main/java/cherry/mastersmith/access/service/AccessDeniedEventPublisher.java` | アクセス拒否の出来事をトランザクションの外で publish | healthy |
+- 場所: `common/i18n/domain/`
+- 責務: `Accept-Language` から表示言語（ja／en、既定 ja）を決める。
+- 依存: なし
+- 状態: healthy ／ 読みの深さ: 深い
 
-## 流し読みの部品（参考）
+### common-observability
 
-| 部品 | 場所 | 関係 |
-|---|---|---|
-| UserAccountConfig | `backend/src/main/java/cherry/mastersmith/user/service/` | `BCryptPasswordEncoder(properties.bcryptCost())` を作る（照合の cost の出どころ） |
-| TimeBoundedDbHealthIndicator | `backend/src/main/java/cherry/mastersmith/common/health/` | 同じプールから1本借りる。枯渇中は DOWN になりうる（at-risk） |
-| GlobalExceptionHandler ほか error | `backend/src/main/java/cherry/mastersmith/common/error/` | Problem Details の応答 |
-| TraceAspect ほか observability | `backend/src/main/java/cherry/mastersmith/common/observability/` | トレースIDの元 |
-| LoginAttemptStateInitializer | `backend/src/main/java/cherry/mastersmith/auth/service/` | `UserCreatedEvent` の受け取り（MANDATORY） |
-| InitialAdminInitializer | `backend/src/main/java/cherry/mastersmith/user/service/` | 起動時の初期管理者の作成 |
-| RefreshTokenCleanupJob | `backend/src/main/java/cherry/mastersmith/auth/service/` | 期限切れのリフレッシュトークンの掃除（定期） |
-| access の web の部品 | `backend/src/main/java/cherry/mastersmith/access/web/` | 認可と 401/403 |
-| SPA | `frontend/src/` | 画面 |
+- 場所: `common/observability/`
+- 責務: トレースIDの参照（`TraceIdProvider`）、送るトレースから例外のメッセージを除く（`SanitizingSpanExporter`）、URL の問い合わせを除く、メソッドの呼び出しの追跡（`TraceAspect`。`web`・`service`・`domain`・`repository` の層の Bean の引数と戻り値を TRACE のときだけ文字列にする）。
+- 依存: Micrometer Tracing・OpenTelemetry
+- 状態: healthy（新しい型にも `toString` の伏せ字が要る。C-9） ／ 読みの深さ: 深い
+
+### auth
+
+- 場所: `auth/{domain,service,repository,web}`
+- 責務: ログイン（ロックの判定、ダミーの行による存在の秘匿）、JWT（HS256）のアクセストークンの発行と検証、リフレッシュトークン（ハッシュだけを保存、Cookie で受け渡し、使うたびに作り直す）、ログアウト、使い終わったトークンの定期削除。`Clock` の Bean（UTC）を全体に提供する。Bearer の検証の決まり（order 110）を足す。
+- 依存: `user`・`common-error`・`common-security`・`common-observability`・内部DB（`login_attempt_states`・`refresh_tokens`）
+- 知らせる出来事: `AuthenticationEvent`（`LOGIN_SUCCEEDED`・`LOGIN_FAILED`・`LOGGED_OUT`）
+- 状態: healthy ／ 読みの深さ: 深い（`web`・`repository`・`LoginService` ほか中心のファイル。`service`・`domain` の残りは流し読み）
+
+### access
+
+- 場所: `access/{domain,service,web}`
+- 責務: `/api/admin`・`/api/admin/**` を管理者のみにする決まり（order 210）、`/api/**` の既定をログイン必須にする（`AdminApiDefaultAccess`）、401・403・400（正規化されていないパス）の処理、アクセス拒否の出来事の通知、確認用 API `GET /api/admin/check`。DB を読まない。
+- 依存: `auth`（`AuthenticatedUser`・`TokenAuthenticationEntryPoint`・`ClientInfoResolver`）、`common-security`・`common-error`・`config`（`SecurityHeaderProperties`）、`Clock` の Bean
+- 知らせる出来事: `AdminAccessDeniedEvent`
+- 状態: healthy ／ 読みの深さ: 深い
+
+### audit
+
+- 場所: `audit/{domain,service,repository}`
+- 責務: 認証の出来事とアクセス拒否の出来事を受け取り、確定の後に内部DBの `audit_events` へ別トランザクション（`REQUIRES_NEW`）で1件ずつ追記する。失敗は受け止めて ERROR を1件出す。追記と読み取りだけの repository。
+- 依存: `auth`（`AuthenticationEvent`）・`access`（`AdminAccessDeniedEvent`）・内部DB
+- 状態: at-risk（監査の種類が4種に固定され、操作対象の列が無い。C-8） ／ 読みの深さ: 深い（`service`・`repository`・`AuditEvent`・`AuditEventType`・`AuditEventFactory`。`domain` の残りは流し読み）
+
+### user
+
+- 場所: `user/{domain,service,repository}`
+- 責務: 利用者のエンティティ、メールアドレス・パスワードの決まり、bcrypt、パスワードの照合（利用者がいないときのダミーのハッシュ `DummyPasswordHash` がある）、初期管理者の自動作成（`SmartInitializingSingleton`）。
+- 依存: 内部DB（`users`）
+- 状態: healthy ／ 読みの深さ: 流し読み（クラスの宣言とトランザクション・出来事の位置だけ）
+
+## 画面（`frontend/src/`）
+
+### frontend-app-core
+
+- 場所: `main.tsx`・`app/App.tsx`・`app/routing/`・`app/navigation/`
+- 責務: 起動（登録の読み込みと検査の後に描画）、URL の振り分け（`decideRoute`。登録した URL と完全一致で1画面、ログインと権限で振り分ける）、サイドバーの項目の組み立て。
+- 依存: `frontend-registry`・`make-you-chic-ui`・react-router
+- 状態: at-risk（入れ子のルートや画面の中の段階の URL が無い。C-10） ／ 読みの深さ: 深い
+
+### frontend-registry
+
+- 場所: `app/registry/`
+- 責務: 機能の登録の型（`FeatureRegistration`）、`features/*/registration.ts` の自動の読み込み（`import.meta.glob`、eager）、重複や決まり違反の検査（起動を止める）。
+- 依存: なし
+- 状態: healthy ／ 読みの深さ: 深い
+
+### frontend-app-layout-i18n
+
+- 場所: `app/layout/`・`app/i18n/`・`app/login-state/`・`app/pages/`・`app/testing/`
+- 責務: レイアウト（AppShell の中 `ShellLayout`、外 `StandaloneLayout`・`LoginLayout`）、表示言語（i18next）、ログイン状態の受け取り、ホーム・「ページが見つかりません」・起動エラーの画面、テストの補助。
+- 依存: `frontend-registry`・`make-you-chic-ui`
+- 状態: healthy ／ 読みの深さ: 流し読み
+
+### frontend-api-client
+
+- 場所: `shared/api-client/`
+- 責務: 同じオリジンの API の呼び出し、アクセストークンの付与、401 / `AUTHENTICATION_REQUIRED` での更新1回と送り直し1回（同時の 401 は1つの更新にまとめる）、エラーを `ApiError { kind, status, code? }` にする。
+- 依存: なし（認証の手段は `registerAuthHandlers` で受け取る）
+- 状態: at-risk（エラーの `code` 以外の中身を画面に渡さない。項目ごとの検証エラーを見せるには拡張が要る。C-6） ／ 読みの深さ: 深い
+
+### frontend-feature-auth
+
+- 場所: `features/auth/`
+- 責務: ログイン画面（`/login`）、アクセストークンのメモリ保持（`authSession`）、ログイン状態の提供元、ログアウトのメニュー、入力の検証。
+- 依存: `frontend-api-client`・`frontend-registry`・`make-you-chic-ui`
+- 状態: healthy ／ 読みの深さ: 流し読み（`registration.ts`・`authSession.ts` だけ深い）
+
+### frontend-feature-admin
+
+- 場所: `features/admin/`
+- 責務: 管理者向け領域 `/admin`（SHELL・ADMIN、サイドバー「管理」order 200）。表示のたびに `GET /api/admin/check` を呼ぶ。中身は置き場（`AdminPlaceholder`）だけ。
+- 依存: `frontend-api-client`・`frontend-registry`・`make-you-chic-ui`
+- 状態: at-risk（DSL の画面を置く場所。置き方が未定。C-10） ／ 読みの深さ: 深い
+
+### make-you-chic-ui
+
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `5258c8bb987b0fa6ffd0ad7c4eadc7d4006da52d`）
+- 責務: デザインシステム。公開部品は ThemeProvider・Icon・Button・FormField・TextInput・Textarea・Select・Checkbox・Switch・RadioGroup・Avatar・Badge・Card・Modal・Toast・Alert・Tooltip・Tabs・Dropdown・AppShell・Table（`DefaultCellEditor` つき）。今の画面で使っているのは AppShell・Alert・Button・FormField・TextInput・Toast・Modal と各 Provider だけ。
+- 依存: React
+- 状態: at-risk（ファイルの選択・差分の表示・コードエディターの部品が無い。このリポジトリからは変更できない。C-10） ／ 読みの深さ: 流し読み（公開部品の一覧だけ）
+
+## ビルド・実行環境
+
+### build-and-verify
+
+- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/`・`config/`・`.github/`・`.pre-commit-config.yaml`・`.gitleaks.toml`
+- 責務: 1コマンドの検査 `./gradlew verify`（段 0〜9）、WAR の組み立て（`frontend/dist` の同梱）、lockfile による版の固定、CI（`develop` へのプッシュと `v*` のタグ）、コミット前の検査。
+- 依存: Gradle 9.7.1・npm（Node.js 24）・Gitleaks・OSV-Scanner
+- 状態: at-risk（Testcontainers とコンテナの実行環境の前提が無い。C-4） ／ 読みの深さ: 深い
+
+### container-runtime
+
+- 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`.dockerignore`
+- 責務: WAR をコピーするだけの1段のイメージ、`app` のサービス（`127.0.0.1:8080`、ボリューム `mastersmith-data`、ヘルスチェック、CPU の上限 既定 4、メモリの上限 既定 1g）、profile で起動する `otel-collector`・`lgtm`。
+- 依存: Docker（colima）
+- 状態: at-risk（対象DB のコンテナと接続の設定が無い。C-9） ／ 読みの深さ: 深い
+
+### perf-and-monitoring
+
+- 場所: `perf/`・`docker/`（`perf/compose.yaml`・`monitoring/`・`otel-collector/`・`check-container-limits.sh`）
+- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視（Grafana のダッシュボード・警報のファイル）、コンテナの上限の確認。
+- 依存: `container-runtime`
+- 状態: healthy ／ 読みの深さ: 流し読み（ファイルの存在と見出しだけ）

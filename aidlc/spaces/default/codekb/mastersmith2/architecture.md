@@ -1,225 +1,277 @@
 # アーキテクチャ（mastersmith2）
 
-## System Overview
+## Architecture Analysis
 
-1つの Spring Boot アプリ（実行可能 WAR）に、React の SPA のビルド結果を同梱して配信する。API と画面は同じオリジンで、内部DBは同じプロセスの中の組み込み H2（ファイル保存）である。DB の接続は HikariCP のプール `mastersmith-db`（既定の上限 30 本、環境変数 `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` で変更可）1つを、業務処理・監査の書き込み・ヘルスチェックのすべてが共有する。
+### System Overview
 
-配備先は当面、開発者の PC 上の colima の VM の中のコンテナである。同じ VM の中で、配備したアプリ（`compose.yaml`、プロジェクト名 `mastersmith`）、必要なときだけ起動する手元の監視（`lgtm`、profile `monitoring`）と OTLP の受け手（`otel-collector`、profile `observability`）、負荷の試験の使い捨ての環境（`docker/perf/compose.yaml`、プロジェクト名 `mastersmith-perf`）と k6 が、VM の CPU とメモリを分け合う。
+1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が、REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は、画面のビルド結果（`frontend/dist`）を同梱した実行可能 WAR（`mastersmith.war`）1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
 
-## Architectural Style
+データの置き場は、組み込みの H2（ファイル保存、コンテナでは `/app/data`）の内部DBの1つだけである。スキーマは Flyway が正本で、Hibernate は検証（`ddl-auto: validate`）だけを行う。外部のシステムへの接続は無い。例外は、既定で無効の OTLP の外部エクスポートだけである。
 
-機能ごとに分けたモジュラーモノリス（層つき）。根拠:
+### Architectural Style
 
-- パッケージは機能（`auth`・`user`・`access`・`audit`・`common`・`config`）ごとに分かれ、各機能の中を `web`・`service`・`domain`・`repository` の層に分けている。
-- 層と機能の境界は ArchUnit のテスト（`ArchitectureTest`・`AuthBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`）で確かめている。トランザクションの境界は `service` の層だけ、audit の `@Transactional` は `audit.service` だけ。
-- 機能の間は、同じプロセスの中のアプリの出来事（`ApplicationEventPublisher`）で疎につないでいる。`auth` と `access` は出来事を publish するだけで、`audit` を直接呼ばない。
-- 組み込み H2 のため、単一インスタンスが前提（前の Intent のドメイン設計の判断）。コンテナも1つで、横に増やして負荷を分ける形は取れない。資源が足りないときは、1つのコンテナ（と VM）を縦に大きくするしかない。
+**モジュール分けしたモノリス（層構造）**である。根拠は次のとおり。
 
-## Component Relationships
+- パッケージが機能ごと（`auth`・`access`・`audit`・`user`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層になっている（`code-structure.md`）。
+- 層の境界は `backend/src/test/java/cherry/mastersmith/ArchitectureTest.java`（ArchUnit）でテストとして確かめられている（web は repository を使わない、`@Transactional` は service の層だけ、コントローラーはエンティティを返さない、コンストラクター注入だけ）。
+- 機能の間は、直接の呼び出しより、差し込み口（Spring の Bean の一覧）とアプリの中の出来事（`ApplicationEventPublisher`）でつながっている。認証（`auth`）とアクセス制御（`access`）は、監査（`audit`）を知らない。
+- 状態を持たない（HTTP セッションを作らない）。認証は Bearer のアクセストークンで行い、リフレッシュトークンだけを内部DBに保存する。
 
-### アプリの中
+画面は SPA である。機能ごとの登録ファイル（`frontend/src/features/*/registration.ts`）を起動時に自動で読み込み、骨組み（`frontend/src/app/`）が画面・サイドバー・メニューを組み立てる。
+
+### Component Relationships
 
 ```mermaid
 flowchart LR
-    SPA["frontend SPA"] -->|"HTTP /api/auth/*"| AUTHWEB["auth.web AuthController"]
-    SPA -->|"HTTP /api/admin/check"| ACCWEB["access.web AdminCheckController"]
-    AUTHWEB --> LOGIN["auth.service LoginService"]
-    AUTHWEB --> REFRESH["auth.service TokenRefreshService"]
-    AUTHWEB --> LOGOUT["auth.service LogoutService"]
-    LOGIN --> USERSVC["user.service UserAccountService"]
-    LOGOUT --> USERSVC
-    LOGIN --> AUTHREPO["auth.repository"]
-    REFRESH --> AUTHREPO
-    LOGOUT --> AUTHREPO
-    USERSVC --> USERREPO["user.repository UserRepository"]
-    ACCWEB -.-> ACCPUB["access.service AccessDeniedEventPublisher"]
-    LOGIN -. "AuthenticationEvent" .-> LISTENER["audit.service AuditEventListener"]
-    LOGOUT -. "AuthenticationEvent" .-> LISTENER
-    ACCPUB -. "AdminAccessDeniedEvent" .-> LISTENER
-    LISTENER --> RECORDER["audit.service AuditEventRecorder REQUIRES_NEW"]
-    RECORDER --> AUDITREPO["audit.repository AuditEventRepository"]
-    AUTHREPO --> POOL[("HikariCP mastersmith-db max 30")]
-    USERREPO --> POOL
-    AUDITREPO --> POOL
-    HEALTH["common.health TimeBoundedDbHealthIndicator"] --> POOL
-    POOL --> H2[("H2 組み込み ファイル")]
+  subgraph FE["画面（frontend/src）"]
+    APP["frontend-app-core<br/>起動・振り分け"]
+    REG["frontend-registry<br/>機能の登録"]
+    APIC["frontend-api-client<br/>apiFetch / apiRequest"]
+    FAUTH["frontend-feature-auth"]
+    FADMIN["frontend-feature-admin"]
+    UI["make-you-chic-ui<br/>vendor"]
+  end
+  subgraph BE["バックエンド（cherry.mastersmith）"]
+    CFG["config<br/>SecurityConfig・WebConfig"]
+    SEC["common-security<br/>差し込み口"]
+    ERR["common-error<br/>Problem Details"]
+    WEBF["common-web<br/>フィルター"]
+    OBS["common-observability"]
+    HEALTH["common-health"]
+    AUTH["auth"]
+    ACCESS["access"]
+    AUDIT["audit"]
+    USER["user"]
+  end
+  DB[("内部DB H2<br/>users・refresh_tokens<br/>login_attempt_states・audit_events")]
+
+  APP --> REG
+  REG --> FAUTH
+  REG --> FADMIN
+  FAUTH --> APIC
+  FADMIN --> APIC
+  APP --> UI
+  FAUTH --> UI
+  APIC -- "HTTP /api/**" --> CFG
+  CFG --> SEC
+  CFG --> WEBF
+  AUTH -- "SecurityRuleContributor 110" --> SEC
+  ACCESS -- "SecurityRuleContributor 210 / ApiDefaultAccess" --> SEC
+  AUTH --> USER
+  AUTH -- "AuthenticationEvent" --> AUDIT
+  ACCESS -- "AdminAccessDeniedEvent" --> AUDIT
+  AUTH --> ERR
+  ACCESS --> ERR
+  AUTH --> DB
+  USER --> DB
+  AUDIT --> DB
+  HEALTH --> DB
+  ERR --> OBS
 ```
 
-図の文字での説明: 画面は `AuthController`（ログイン・更新・ログアウト）と `AdminCheckController` を呼ぶ。`LoginService` と `LogoutService` は `AuthenticationEvent` を、`AccessDeniedEventPublisher` は `AdminAccessDeniedEvent` を publish し、`AuditEventListener` が受け取って `AuditEventRecorder`（REQUIRES_NEW）経由で `AuditEventRepository` に追記する。すべての repository とヘルスチェックは同じプール `mastersmith-db`（既定 30 本）から接続を借り、その先は組み込み H2 である。
+文章による代替: 画面の骨組み（`frontend-app-core`）が登録（`frontend-registry`）を通して認証と管理者向け領域の機能を差し込む。各機能は共通の API 呼び出し（`frontend-api-client`）で同じオリジンの `/api/**` を呼ぶ。バックエンドでは、1つのフィルターの連鎖（`config` の `SecurityConfig`）に `auth`（order 110）と `access`（order 210）が差し込み口（`common-security`）を通して決まりを足す。`auth` は利用者（`user`）を読み、認証の出来事を知らせる。`access` はアクセス拒否の出来事を知らせる。`audit` はその両方を受け取って内部DBに追記する。エラー応答は `common-error` の1か所で作り、トレースIDを `common-observability` から添える。内部DBは H2 の1つだけで、`auth`・`user`・`audit`・`common-health` がこれを使う。
 
-### 実行環境（colima の VM の中）
+### Data Flow
 
-```mermaid
-flowchart TB
-    subgraph PC["開発者の PC"]
-        subgraph VM["colima の VM CPU 2 メモリ 2GiB 現状"]
-            APP["app mastersmith cpus MASTERSMITH_CONTAINER_CPUS 既定4 mem_limit 1g 固定"]
-            LGTM["lgtm grafana otel-lgtm mem_limit 900m profile monitoring"]
-            OTEL["otel-collector profile observability 上限なし"]
-            PERF["mastersmith-perf の app cpus 既定4 mem_limit 1g 固定"]
-            K6["k6 grafana k6 2.3.0 上限なし"]
-        end
-        BROWSER["ブラウザ 127.0.0.1:8080 と 3000"]
-    end
-    BROWSER --> APP
-    BROWSER --> LGTM
-    APP -. "OTLP 既定は無効" .-> LGTM
-    APP -. "OTLP 既定は無効" .-> OTEL
-    K6 -->|"HTTP mastersmith-perf_default"| PERF
-    APP --- DATA[("volume mastersmith-data")]
-    PERF --- PDATA[("volume perf-data")]
-```
+1. 画面の要求は `apiFetch` がアクセストークン（メモリに保持）を `Authorization: Bearer` に付けて送る。リフレッシュトークンは HttpOnly の Cookie で、認証の API にだけ使われる。
+2. サーブレットのフィルターの段階では、`RequestSizeLimitFilter`（本文の上限。既定 1MB、超えたら 413）、Spring Security の連鎖（Bearer の検証 → 認可）、`CacheControlFilter` を通る。
+3. コントローラー（`web` の層）が DTO（`record`）を業務処理（`service` の層）の命令に変える。トランザクションは `service` の層で始まり、`repository` の層（Spring Data JPA と、H2 に依存する一部の生 SQL）が内部DBを読み書きする。
+4. 業務エラーは `BusinessException` として投げられ、`GlobalExceptionHandler` が Problem Details（`code`・`traceId` 付き）に変える。フィルターの段階のエラーは `ErrorResponseWriter`（`DefaultErrorResponseWriter`）が同じ形で書く。
+5. 認証とアクセス拒否の出来事は、アプリの中の出来事として知らされ、確定の後に `audit` が別のトランザクション（`REQUIRES_NEW`）で `audit_events` に追記する。
 
-図の文字での説明: VM（現状 CPU 2・メモリ 2GiB）の中に、配備したアプリ `app`（CPU の上限は環境変数、メモリの上限は 1g の固定値）、監視の `lgtm`（900m）、受け手の `otel-collector`、負荷の試験の `mastersmith-perf` の `app`（配備と同じ上限）と k6 が同居する。k6 と `otel-collector` には上限が無い。アプリからの OTLP の送信は既定で無効で、`.env` で有効にしたときだけ `lgtm` か `otel-collector` へ送る。ブラウザからは `127.0.0.1` の 8080（アプリ）と 3000（Grafana）だけに届く。VM が 2GiB では、アプリ 1g と使い捨ての環境 1g を同時に動かせないため、負荷の試験の間は配備したアプリを止める手順になっている（`perf/README.md` の手順 0）。
+### Key Design Decisions
 
-## Data Flow
+コードとコメントから読み取れる、既存の設計の選択である（番号は元の設計書の ADR・BR への参照で、コード中の Javadoc にある）。
 
-- 要求 → `web`（入力検証と DTO の変換）→ `service`（トランザクションの境界。判定と書き込み）→ `repository`（Spring Data JPA ＋ Hibernate）→ HikariCP → H2。
-- 監査: `service` のトランザクションの中で出来事を publish → 確定の後（AFTER_COMMIT）に同じスレッドで `AuditEventListener` → `AuditEventRecorder` が新しいトランザクションで `audit_events` に INSERT 1回。トランザクションの外で publish された出来事（`ACCESS_DENIED`）は `fallbackExecution = true` によりその場で受け取る。
-- 応答のエラーは `GlobalExceptionHandler`（`@RestControllerAdvice`）で RFC 9457 Problem Details ＋ `code` に変換する。
-- 観測: トレースIDはすべての要求に割り当てる（`management.tracing.sampling.probability` 既定 1.0）。OTLP の送信（トレース・ログ・指標）は `mastersmith.observability.export.enabled`（既定 false）1つで切り替え、送信は上限付きの待ち行列から要求と切り離して行う（`backend/src/main/java/cherry/mastersmith/config/ObservabilityConfig.java` の Javadoc）。指標は 60 秒ごとに送る（`application.yaml` 191 行）。
-
-## Key Design Decisions
-
-| 決定 | 根拠と影響 |
-|---|---|
-| 監査は AFTER_COMMIT・同じスレッド・REQUIRES_NEW で追記する | 「確定の後に記録」「取り消されたら記録しない」「トレースIDの一致」を満たすため。元の接続を持ったまま2本目を借りる（F2 の原因）。直し方としてはプールの上限を 30 に上げることを選び、形は変えていない（`aidlc/spaces/default/memory/project.md` の Decided） |
-| 監査の失敗は受け止めて ERROR 1件、再試行しない | 操作を監査の失敗で止めない（BR3.1） |
-| `LoginService` はトランザクションを `TransactionTemplate` で明示する | パスワードの照合（CPU の重い処理）をトランザクションと行の排他の外に出し、排他の時間を短くするため。その代わり、ログインの応答時間は照合の CPU 時間でほぼ決まる（F4） |
-| パスワードのハッシュは bcrypt、cost 既定 12 | 照合1回 約 278ms（前の Intent の測定）。環境変数 `MASTERSMITH_AUTH_PASSWORD_BCRYPT_COST`（4〜31）で変えられる |
-| 内部DBは組み込み H2 1つ、プールは `mastersmith-db` 1つ | 単一インスタンスの前提。業務・監査・ヘルスチェックが同じプールを分け合う |
-| JPA の `open-in-view: false` | 画面の描画まで接続を持ち越さない。ただし spring-orm の既定の `DELAYED_ACQUISITION_AND_HOLD` により、トランザクションの後始末まで接続は返らない |
-| イメージは WAR をコピーするだけの1段 | ビルドはイメージの外（Gradle）で行う。`.dockerignore` で WAR 1つだけを送る。JVM の起動の引数は `Dockerfile` の `ENTRYPOINT` に直書き |
-| コンテナの CPU の上限は変数、メモリの上限は固定 | CPU は `${MASTERSMITH_CONTAINER_CPUS:-4}`（U2 の基盤の設計で U1 の 2 を 4 に上書き、照合の時間の目標は 4 が前提）。メモリは `mem_limit: 1g` を両方の compose に直書き |
-| JVM の最大ヒープはコンテナのメモリの 75% | `-XX:MaxRAMPercentage=75.0`。1g なら最大ヒープ 768MB。ヒープ以外の上限とスレッドの上限は決めていない |
-
-### 接続のプールの現在の設定
-
-| 項目 | 値 | 場所 |
+| 選択 | 内容 | 影響 |
 |---|---|---|
-| プールの名前 | `mastersmith-db` | `backend/src/main/resources/application.yaml` 102 行 |
-| 最大の接続数 `maximum-pool-size` | `${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}`（以前は固定の 10） | 同 106 行 |
-| 借りる待ちの上限 `connection-timeout` | `5000` ms（固定） | 同 108 行 |
-| 最小の待機数・寿命などのほかの Hikari の値 | 設定なし（HikariCP の既定） | — |
-| `open-in-view` | `false` | 同 111 行 |
-| 問い合わせの上限 `jakarta.persistence.query.timeout` | `10000` ms | 同 117 行 |
-| Tomcat のスレッドの上限 | 設定なし（既定の 200。README「既知の制約」） | — |
-| ヘルスチェックの DB の確認 | 同じプールから1本借りて `SELECT 1`。制限時間 `mastersmith.health.db-timeout`（既定 2s、同 28 行）を超えると DOWN | `common/health/TimeBoundedDbHealthIndicator.java`（前回の記録） |
+| フィルターの連鎖は1つ、機能が差し込む | `SecurityConfig` だけが連鎖を作り、機能は `SecurityRuleContributor` を order の順に足す。`/api/**` の既定（ログイン必須）は `ApiDefaultAccess` が1つだけ決める | 新しい API は既定でログインが必要。`/api/admin/**` に置けば管理者のみになる |
+| 監査は出来事で疎結合 | `auth`・`access` は `ApplicationEventPublisher` で知らせるだけで、`audit` を知らない | 監査の対象を増やすには、出来事の型と `AuditEventFactory`・`AuditEventListener` の網羅の `switch` を増やす |
+| 監査は確定の後、別トランザクション | `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)` と `REQUIRES_NEW` | ログインなどでは1要求で接続を2本使う（README の既知の制約。プールの上限は既定 30） |
+| エラー応答は Problem Details＋`code` | `ProblemType` を機能ごとの `ProblemTypeCatalog` で登録し、起動時に `ProblemTypeRegistry` が重複を検査する | 拡張の項目は `code`・`traceId` だけ。複数のエラーを1つの応答で返す形は無い |
+| 内部DB は組み込み H2 の1つ | Spring Boot の自動構成の `DataSource`・JPA・Flyway・ヘルスチェックがすべてこれに結び付いている | 2つ目の `DataSource`（対象DB）を足すと、自動構成の前提が変わる |
+| 時刻は注入する `Clock` | `AuthClockConfig` が UTC の `Clock` の Bean を全体に提供する | テストで時刻を差し替えられる |
+| メソッドの呼び出しの追跡 | `TraceAspect` が TRACE のときだけ引数と戻り値を文字列にする | 秘密情報を持つ型は `toString` で伏せ字にする決まりがある |
 
-### 実行環境の資源の構成（F3・F4 の材料）
+### Improvement Opportunities
 
-| 項目 | 値 | 場所 |
-|---|---|---|
-| colima の VM | CPU 2・メモリ 2GiB・aarch64（`colima list`。`docker info` は NCPU 2・MemTotal 約 1.9GiB） | PC の上の設定（リポジトリの外） |
-| アプリのコンテナの CPU の上限 | `${MASTERSMITH_CONTAINER_CPUS:-4}` | `compose.yaml` 59 行、`docker/perf/compose.yaml` 50 行 |
-| アプリのコンテナのメモリの上限 | `1g`（固定。変数なし） | `compose.yaml` 60 行、`docker/perf/compose.yaml` 51 行 |
-| JVM の最大ヒープ | コンテナのメモリの 75%（1g で 768MB） | `Dockerfile` 34 行 `ENTRYPOINT` |
-| ヒープ以外の上限（メタ領域・スレッドのスタック・直接バッファ等） | 指定なし | — |
-| `JAVA_TOOL_OPTIONS` | どこにも設定なし | `Dockerfile`・両 compose・`.env.example`・README |
-| 監視 `lgtm` のメモリの上限 | `900m`（コメント「VM 約 2GiB の中でアプリ 1GB と一緒に動かすため」） | `compose.yaml` 96〜97 行 |
-| `otel-collector`・k6 の上限 | 指定なし | `compose.yaml` 69〜74 行、`perf/README.md` |
-| 負荷の試験の CPU | 手順が `MASTERSMITH_CONTAINER_CPUS=2` を一時の `app.env` と `export` の両方に書く | `perf/README.md` 16・18 行 |
-| 負荷の形 | k6 `constant-vus`、既定 同時 10・60 秒、考える時間なし、p95 は人が判定（`thresholds` なし） | `perf/k6/scenarios.js` 18・31〜43 行 |
-| 前の測定（参考） | 通常の負荷でアプリのメモリ 353.8MiB（負荷中）・287.6MiB（配備後）。F3 では最大 1021MiB / 1GiB で OOMKilled（終了コード 137） | 前の Intent の記録（流し読み） |
+- 対象DB を扱う層（接続・メタデータの読み取り・書き込み）を、内部DB の層と分けて置く場所が、まだ決まっていない。内部DB の生 SQL は H2 の方言に依存しているため、書き方を流用できない。
+- 監査の仕組みは、認証とアクセス拒否に特化している（`project.md` の DECIDED により、共通化は業務データを扱う後続の Intent で検討することになっている）。
+- 画面の振り分けは、登録した URL と完全に一致する1画面の表示だけである。プレビュー→適用のような段階を持つ画面の URL の扱いは、機能の側で工夫が要る。
+
+詳しくは `code-quality-assessment.md` を参照。
 
 ## Interaction Diagrams
 
-### ログインの成功（接続の2本使いと、照合の CPU 時間）
+### 1. ログイン（`POST /api/auth/login`）
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant C as 画面
-    participant W as AuthController
-    participant L as LoginService
-    participant U as UserAccountService
-    participant TX as JpaTransactionManager
-    participant P as HikariCP mastersmith-db
-    participant A as AuditEventListener
-    participant R as AuditEventRecorder
-    C->>W: POST /api/auth/login
-    W->>L: login
-    L->>U: verifyPassword
-    U->>P: 接続を借りて利用者を読み、すぐ返す
-    Note over U: bcrypt cost 12 の照合 約278ms の CPU 時間 トランザクションと排他の外
-    L->>TX: TransactionTemplate.execute で開始
-    TX->>P: 接続1を借りる
-    L->>L: decide 行の排他 失敗回数の更新 トークン発行
-    L-)A: AuthenticationEvent LOGIN_SUCCEEDED を publish 確定まで保留
-    TX->>TX: commit 確定
-    TX->>A: afterCommit で同じスレッドのまま呼ぶ
-    A->>R: record
-    R->>P: 接続2を借りる 最大 5000ms 待つ
-    R->>P: INSERT INTO audit_events を1回 確定し接続2を返す
-    A-->>TX: 戻る 失敗なら受け止めて ERROR 1件
-    TX->>P: 後始末で EntityManager を閉じ接続1を返す
-    L-->>W: IssuedTokens
-    W-->>C: 200 トークン
+  autonumber
+  participant UI as 画面 LoginForm
+  participant C as AuthController
+  participant L as LoginService
+  participant U as UserAccountService
+  participant R as LoginAttemptStateRepository
+  participant T as RefreshTokenRepository
+  participant A as AccessTokenService
+  participant EV as ApplicationEventPublisher
+  participant AU as AuditEventListener
+  participant DB as 内部DB H2
+
+  UI->>C: POST /api/auth/login（email・password）
+  C->>L: login(LoginCommand, ClientInfo)
+  L->>U: verifyPassword（トランザクションの外で1回照合）
+  U->>DB: 利用者を検索
+  Note over L: TransactionTemplate で短いトランザクションを開始
+  L->>R: 利用者の行（いなければダミーの行）を排他つきで読む
+  L->>L: LockPolicy.decide（しきい値・ロック時間）
+  L->>R: 失敗回数とロック期限を更新
+  alt 成功
+    L->>A: アクセストークン（JWT HS256）を発行
+    L->>T: リフレッシュトークンのハッシュを保存
+    L->>EV: LOGIN_SUCCEEDED を知らせる
+  else 失敗（利用者なし・誤り・ロック中）
+    L->>EV: LOGIN_FAILED を知らせる
+  end
+  Note over L,DB: 確定（commit）
+  EV-->>AU: 確定の後に同じスレッドで受け取る
+  AU->>DB: REQUIRES_NEW で audit_events に追記（2本目の接続）
+  alt 成功
+    L-->>C: IssuedTokens
+    C-->>UI: 200 TokenResponse ＋ リフレッシュの Cookie
+  else 失敗
+    L-->>C: BusinessException AUTHENTICATION_FAILED
+    C-->>UI: 401 Problem Details（理由によらず同じ）
+  end
 ```
 
-文字での説明: (1) `LoginService.login`（`backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java` 117〜124 行）は、まず `userAccountService.verifyPassword` を1回呼ぶ（118 行）。照合は bcrypt（cost 既定 12、約 278ms）で CPU を使い、トランザクションと行の排他の外にある。(2) その後 `TransactionTemplate.execute`（119 行）で接続1を借り、`decide` の中で `LOGIN_SUCCEEDED` を publish する。(3) 確定の後、後始末の前の afterCommit で `AuditEventListener` が同じスレッドで呼ばれ、`AuditEventRecorder`（REQUIRES_NEW）が接続2を借りて INSERT 1回。(4) 後始末で接続1が返る。1 要求がこの区間で接続を2本同時に持つ（F2 の形。上限 30 で緩和）。
+文章による代替: パスワードの照合はトランザクションの外で1回だけ行う。その後、短いトランザクションで、ロックの状態の行（利用者がいなければダミーの行）を排他つきで読み、`LockPolicy` で判定して更新する。成功ならトークンを発行してリフレッシュトークンのハッシュを保存する。成功でも失敗でも、同じトランザクションの中で出来事を知らせる。受け取り側（`audit`）は確定の後に、新しいトランザクションで監査の行を追記する。失敗の応答は理由によらず 401 / `AUTHENTICATION_FAILED` である。
 
-### 同時 10 件のログインでの CPU の分け合い（F4）
+### 2. トークンの更新と、画面側の自動の送り直し
 
 ```mermaid
 sequenceDiagram
-    participant K as k6 同時10 考える時間なし
-    participant T as Tomcat の要求のスレッド 10本
-    participant CPU as コンテナの CPU cpus と VM の CPU の小さい方
-    K->>T: POST /api/auth/login を10件同時に送る
-    T->>CPU: 10件がそれぞれ bcrypt の照合 約278ms 分の CPU を求める
-    Note over CPU: CPU 2 なら同時に進むのは2件 1件あたり約 278 x 10 / 2 = 約1400ms
-    CPU-->>T: 照合が終わった順に短いトランザクションと監査へ進む
-    T-->>K: 200 p95 約1.6秒 目標1秒を超える
-    Note over K,CPU: k6 自身も同じ VM の CPU を使うため 測定値に取り合いが混ざりうる
+  autonumber
+  participant F as 機能の画面
+  participant AC as apiFetch
+  participant S as Spring Security 連鎖
+  participant C as AuthController
+  participant TR as TokenRefreshService
+  participant DB as 内部DB H2
+
+  F->>AC: apiRequest（/api/ の下の任意の API）
+  AC->>S: 要求 ＋ Authorization Bearer
+  S-->>AC: 401 AUTHENTICATION_REQUIRED（期限切れなど）
+  AC->>C: POST /api/auth/session/refresh（Cookie、同時の 401 は1回にまとめる）
+  C->>C: OriginVerifier で Origin を確認
+  C->>TR: refresh(RefreshTokenValue)
+  TR->>DB: ハッシュで検索し、無効・期限切れを確認
+  TR->>DB: revokeIfActive（条件付きで無効化、1行でなければ失敗）
+  TR->>DB: 新しいリフレッシュトークンを保存（同じトランザクション）
+  alt 成功
+    C-->>AC: 200 TokenResponse ＋ 新しい Cookie
+    AC->>S: 元の要求を1回だけ送り直す
+    S-->>AC: 応答
+    AC-->>F: 応答
+  else 失敗
+    C-->>AC: 401 REFRESH_FAILED ＋ Cookie の削除
+    AC-->>F: onUnauthenticated（未ログインへ）
+  end
 ```
 
-文字での説明: 照合は1件あたり約 278ms の CPU 時間を要し、同時 10 件を2つの CPU で分け合うと1件の待ちは約 1,400ms と見積もられ、実測の p95 は約 1.6 秒（F4）だった。使える CPU は「コンテナの `cpus`（`MASTERSMITH_CONTAINER_CPUS`）」と「VM の CPU の数」の小さい方で頭打ちになる。そのため VM の CPU を増やしても、`.env` の `MASTERSMITH_CONTAINER_CPUS` を上げなければ効かない（逆に、VM の CPU より大きい `cpus` は Docker が受け付けない）。k6 が同じ VM の中のコンテナで動くことも、測定値に影響しうる。CPU 4 での値は未測定。
+文章による代替: 画面の `apiFetch` は、401 で `code` が `AUTHENTICATION_REQUIRED` のときだけ、更新の API を1回呼ぶ。同時に起きた 401 は、1つの更新にまとめる。サーバーは Origin を確かめ、使ったリフレッシュトークンを条件付きで無効にし、同じトランザクションで新しいものを保存する。成功なら画面は元の要求を1回だけ送り直し、失敗なら未ログインとして扱う。更新は監査の対象ではない（出来事を知らせない）。
 
-### 高い負荷でのメモリの伸びとコンテナの停止（F3）
+### 3. 管理者向け API の認可（401・403・200）とアクセス拒否の監査
 
 ```mermaid
 sequenceDiagram
-    participant K as k6 refresh の場面
-    participant J as JVM ヒープ上限 768MB とヒープ以外 上限なし
-    participant CG as コンテナのメモリの上限 1g
-    participant D as Docker colima の VM
-    K->>J: トークンの更新を毎秒約3000件 約35秒
-    J->>J: 要求のスレッド 既定上限200 とヒープの使用が増える
-    J->>CG: ヒープ 最大768MB とヒープ以外の合計が伸びる
-    Note over CG: 最大 1021MiB に達する
-    CG-->>D: 上限を超え OOM killer がプロセスを止める
-    D-->>K: コンテナが終了コード137 OOMKilled で止まり 応答がなくなる
-    Note over J: ms-heap 警報はヒープの使用率だけを5分続けて見るため この急な停止を捉えにくい
+  autonumber
+  participant B as ブラウザ
+  participant RS as OAuth2 Resource Server（auth の決まり）
+  participant P as AccessTokenAuthenticationProvider
+  participant AZ as AdminAuthorizationManager
+  participant EP as AdminAuthenticationEntryPoint
+  participant DH as AdminAccessDeniedHandler
+  participant PUB as AccessDeniedEventPublisher
+  participant AU as AuditEventListener
+  participant CT as AdminCheckController
+  participant DB as 内部DB H2
+
+  B->>RS: GET /api/admin/check ＋ Bearer
+  alt トークンが無い・無効
+    RS->>EP: commence
+    EP->>PUB: AdminAccessDeniedEvent（期限切れ以外の理由のとき）
+    PUB-->>AU: その場で受け取る（トランザクションなし）
+    AU->>DB: REQUIRES_NEW で audit_events に追記
+    EP-->>B: 401 Problem Details
+  else トークンが有効
+    RS->>P: authenticate
+    P->>DB: 利用者を読み、AuthenticatedUser を作る（管理者の値は DB から）
+    RS->>AZ: authorize（主体の admin を見る）
+    alt 管理者でない
+      AZ->>DH: 拒否
+      DH->>PUB: AdminAccessDeniedEvent（NOT_ADMIN）
+      PUB-->>AU: その場で受け取る
+      AU->>DB: audit_events に追記
+      DH-->>B: 403 ACCESS_DENIED
+    else 管理者
+      AZ->>CT: 通す
+      CT-->>B: 204
+    end
+  end
 ```
 
-文字での説明: `refresh` の場面を毎秒約 3,000 件で約 35 秒流すと、コンテナが OOMKilled（終了コード 137、最大 1021MiB / 1GiB）で止まった（前の Intent の記録）。見立ては「最大ヒープ 768MB（1g の 75%）と、上限を決めていないヒープ以外（メタ領域・スレッドのスタック・コードキャッシュ・直接バッファ等）の合計が 1g を超える」。ヒープの割合は `Dockerfile` の `ENTRYPOINT`、メモリの上限は両 compose の固定値で決まるため、VM を大きくしてもこの2つを変えなければ同じ負荷で同じことが起きる見込み（未検証）。`refresh` の経路のコードは今回読んでおらず、メモリの伸びがコードに起因するかは未確認。`restart: "no"` のため止まったままになり、手元の監視では `ms-app-absent`（指標が 5 分届かない）が間接の検知になる。
+文章による代替: `/api/admin` と `/api/admin/**`（`AdminPaths`）は、`access` の決まり（order 210）で管理者のみになる。トークンが無い・無効なら 401 の入口（`AdminAuthenticationEntryPoint`）が、管理者のみのパスで理由が有効期限切れでないときに、アクセス拒否の出来事を知らせてから、`auth` の入口に応答の書き出しを任せる。トークンが有効なら、利用者を内部DBから読んで主体を作り、`AdminAuthorizationManager` が主体の管理者の値で判断する。管理者でなければ 403 の処理が出来事を知らせてから 403 を返す。出来事はトランザクションの外で知らされるため、`audit` は要求と同じスレッドで、応答を書く前にその場で追記する。
 
-### プールの枯渇（F2 の形。前回の記録）
+### 4. 監査の記録（共通の部分）
 
 ```mermaid
 sequenceDiagram
-    participant T as 要求のスレッド N件
-    participant P as HikariCP 上限N本
-    T->>P: N件がそれぞれ接続1を借りる 合計N本
-    T->>T: N件とも確定し afterCommit に入る
-    T->>P: N件とも接続2を求める
-    Note over P: 空きは0本 誰も接続1を返せない
-    P--xT: 5000ms 後に CannotCreateTransactionException
-    T->>T: AuditEventListener が受け止め ERROR 監査イベントの記録に失敗しました
-    T->>P: 後始末で接続1を返す
+  autonumber
+  participant SRC as 知らせる側（LoginService・LogoutService・access の 401/403 の処理）
+  participant L as AuditEventListener
+  participant F as AuditEventFactory
+  participant R as AuditEventRecorder
+  participant REPO as AuditEventRepository
+  participant DB as 内部DB H2
+  participant LOG as アプリのログ
+
+  SRC->>L: 出来事（AuthenticationEvent または AdminAccessDeniedEvent）
+  L->>F: from(event)（網羅の switch で AuditEvent を組み立てる）
+  L->>R: record（REQUIRES_NEW）
+  R->>REPO: save
+  REPO->>DB: INSERT audit_events
+  alt 200 ミリ秒を超えた
+    L->>LOG: WARN（種類と時間だけ）
+  end
+  alt 例外
+    L->>LOG: ERROR 1件（記録しようとした項目、例外の型）
+    Note over L: 呼び出し元へ伝えない。再試行しない
+  end
 ```
 
-文字での説明: 同時の成功のログインがプールの上限に達すると、全員が接続1を持ったまま接続2を待ち、5 秒後に監査の書き込みが失敗する。以前の上限 10 では同時 10 件で起きた。現在の上限は既定 30（README「既知の制約」）。同時の数を増やす試験をするときは、この上限にも近づく。
+文章による代替: 受け取り側は最優先の順で受け取り、組み立て・追記・確定のすべての失敗を受け止めて ERROR を1件出す。呼び出し元の操作は失敗させず、再試行もしない。成功したときは、監査の内容をアプリのログに出さない（二重の記録にしない）。
 
-## Improvement Opportunities
+### 5. ログアウト（`POST /api/auth/session/logout`）
 
-事実としての所見だけを挙げる。直し方の決定は要件と設計の段で行う。詳細は `code-quality-assessment.md` の TD-6〜TD-11。
+```mermaid
+sequenceDiagram
+  autonumber
+  participant UI as 画面
+  participant C as AuthController
+  participant LO as LogoutService
+  participant DB as 内部DB H2
+  participant AU as AuditEventListener
 
-- コンテナのメモリの上限が固定値で、VM の大きさと切り離されている（TD-6）。
-- JVM のヒープ以外の使用量とスレッドの数に上限が無い（TD-7）。
-- JVM の起動の引数を配備ごとに変える口が無い（TD-8）。
-- 設計の前提（CPU 4）と、この PC の実際（VM の CPU 2・メモリ 2GiB）、手順と文書の記述が食い違っている（TD-9）。
-- 負荷の発生元（k6）と対象が同じ VM の資源を分け合う（TD-10）。
-- コンテナ全体のメモリを見る監視が無い（TD-11）。
-- （前回から引き継ぎ）監査の書き込みが元の接続を持ったまま2本目を借りる形、ヘルスチェックが業務と同じプールを共有する点、Tomcat のスレッドの上限とプールの上限の関係が設定で明示されていない点。
+  UI->>C: POST /api/auth/session/logout（Cookie）
+  C->>C: Origin を確認
+  C->>LO: logout(RefreshTokenValue, ClientInfo)
+  LO->>DB: 検索し、有効なら revokeIfActive
+  LO-->>AU: LOGGED_OUT（有効なトークンを無効にしたときだけ。確定の後）
+  AU->>DB: audit_events に追記
+  C-->>UI: 204 ＋ Cookie の削除（トークンが無い・無効でも同じ）
+  UI->>UI: メモリのアクセストークンを破棄
+```
+
+文章による代替: ログアウトは、有効なリフレッシュトークンだけを無効にして `LOGGED_OUT` を知らせる。トークンが無い・無効でも応答は同じ 204 である。アクセストークンは失効させない（有効期限まで使える。既定 5 分）。

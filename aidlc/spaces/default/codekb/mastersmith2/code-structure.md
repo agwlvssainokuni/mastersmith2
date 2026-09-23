@@ -1,79 +1,114 @@
 # コードの構成（mastersmith2）
 
-## リポジトリの配置
+## リポジトリの最上位
 
-| 場所 | 種類 | 内容 |
+| パス | 分類 | 内容 |
 |---|---|---|
-| `backend/` | Gradle サブプロジェクト（Java 25） | Spring Boot のバックエンド（前回の記録で main 142 ファイル、test 127 ファイル） |
-| `frontend/` | npm パッケージ（TypeScript・React 19） | SPA（流し読み） |
-| `vendor/make-you-chic-ui/` | Git サブモジュール | デザインシステム。このリポジトリから変更しない |
-| `perf/` | k6 のシナリオと手順 | `perf/k6/scenarios.js`（6 場面、`constant-vus`）、`perf/README.md`（使い捨ての環境の手順） |
-| `docker/perf/` | 負荷の試験の使い捨ての環境 | `compose.yaml`（プロジェクト名 `mastersmith-perf`、ボリューム `perf-data`、`127.0.0.1:18080`） |
-| `docker/monitoring/` | 手元の監視の設定 | `provisioning/alerting/mastersmith.yaml`（警報）、`provisioning/dashboards/mastersmith.yaml`、`dashboards/mastersmith-overview.json` |
-| `docker/otel-collector/` | OTLP の受け手の設定 | `config.yaml`（受け口 HTTP 4318、出力は debug だけ） |
-| `config/` | 検査の設定 | `config/npm-build-tools.txt` など（流し読み） |
-| `.github/` | CI と依存の更新 | `workflows/ci.yml`、`dependabot.yml`（流し読み） |
-| ルート | ビルドと起動 | `build.gradle.kts`・`settings.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.dockerignore`・`.env.example`・`README.md` |
+| `backend/` | バックエンド | Gradle のサブプロジェクト。Java のソース・テスト・設定・Flyway のスキーマ変更 |
+| `frontend/` | 画面 | npm のプロジェクト（React＋TypeScript、Vite）。ルートの Gradle から `Exec` タスクで呼ぶ |
+| `vendor/make-you-chic-ui/` | 外部のデザインシステム | Git サブモジュール。このリポジトリからは変更しない |
+| `gradle/`・`settings.gradle.kts`・`build.gradle.kts` | ビルド | 版の一覧（`gradle/libs.versions.toml`）、Wrapper、ルートの検査の段（`verify`） |
+| `config/` | ビルドの設定 | ライセンスヘッダーのひな形、OSV の判定で開発用の依存でも止める道具の一覧 |
+| `.github/` | CI | `workflows/ci.yml`、`dependabot.yml` |
+| `Dockerfile`・`compose.yaml`・`.env.example`・`docker/` | コンテナ | アプリのコンテナ、profile で起動する監視、使い捨ての負荷試験の環境 |
+| `perf/` | 負荷の試験 | k6 の場面と手順（`perf/README.md`） |
+| `README.md` | 文書 | 前提の道具・検査・起動・戻し方・環境変数・差し込み口の一覧 |
+| `aidlc/` | ワークフローの記録 | AI-DLC の記録（アプリのソースではない） |
 
-ルートには管理外のファイルとして `.env` と内部DBのバックアップ `mastersmith-data-*.tgz` がある（前回の記録）。どちらも `.gitignore` で除外済みで、中身は読んでいない。コミットしないこと。
+## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
 
-## コンテナと起動の定義（今回深く読んだ範囲）
+機能ごとのパッケージの中を、`web`（HTTP の受け渡し）・`service`（業務処理とトランザクション）・`domain`（値・判定・エンティティ）・`repository`（DB アクセス）の層に分けている。
 
-| ファイル | 役割 | 要点 |
+```
+cherry.mastersmith
+├── MastersmithApplication          起動クラス（SpringBootServletInitializer、@ConfigurationPropertiesScan）
+├── config                          フィルターの連鎖・画面の配信・転送元ヘッダー・外部エクスポート・応答ヘッダーの設定
+├── common
+│   ├── error/{domain,service,web}  Problem Details、BusinessException、ProblemTypeRegistry、GlobalExceptionHandler
+│   ├── security                    SecurityRuleContributor・ApiDefaultAccess・ErrorResponseWriter と起動時の検査
+│   ├── web                         CacheControlFilter・RequestSizeLimitFilter・mastersmith.web.* の設定の型
+│   ├── health                      制限時間付きの内部DBの確認
+│   ├── i18n/domain                 Accept-Language から表示言語（ja／en）を決める
+│   └── observability               トレースIDの参照、送るトレースの消毒、URL の問い合わせの除去、TraceAspect
+├── auth/{domain,service,repository,web}   ログイン・トークン・ロック・ログアウト・定期削除（U2）
+├── access/{domain,service,web}            管理者のみの API のアクセス制御（U3）。repository は無い
+├── audit/{domain,service,repository}      監査ログの追記（U4）。web は無い
+└── user/{domain,service,repository}       利用者・パスワード・初期管理者（U2）。web は無い
+```
+
+各パッケージの責務と依存は `component-inventory.md` を参照。
+
+### ファイルの分類（バックエンド）
+
+| 分類 | 名前の決まり | 例 |
 |---|---|---|
-| `Dockerfile` | アプリのイメージ（1段） | `eclipse-temurin:25.0.4_7-jre-noble`（17 行）。専用の利用者 10001、`/app/data` は 700（20〜24 行）。WAR をコピーするだけ（27 行）。`ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-Duser.timezone=Asia/Tokyo", "-jar", "/app/mastersmith.war"]`（34 行） |
-| `.dockerignore` | ビルドの送り先の制限 | すべてを除外し、`backend/build/libs/mastersmith.war` だけを送る（16〜17 行） |
-| `compose.yaml` | 配備（プロジェクト名 `mastersmith`） | `app`: イメージ `mastersmith:${MASTERSMITH_IMAGE_TAG:-local}`、`127.0.0.1:8080`、`.env`（任意）、`TZ: Asia/Tokyo`、ヘルスチェックは bash で `/actuator/health`（30s 間隔）、`stop_grace_period: 45s`、`cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}`（59 行）、`mem_limit: 1g`（60 行）、`restart: "no"`、ログは json-file 10m×3。`otel-collector`（profile `observability`）、`lgtm`（profile `monitoring`、`127.0.0.1:3000`、`mem_limit: 900m`） |
-| `docker/perf/compose.yaml` | 負荷の試験の使い捨ての環境 | 配備と同じイメージ・同じ `cpus`（50 行）・`mem_limit: 1g`（51 行）。環境ファイルは `MASTERSMITH_PERF_ENV_FILE` で必須 |
-| `.env.example` | 環境変数の見本（値は空） | `MASTERSMITH_CONTAINER_CPUS`（20〜22 行、コメント「例: colima の既定の 2」）、`MASTERSMITH_DB_MAXIMUM_POOL_SIZE`（31 行）ほか。メモリや JVM の引数の変数は無い |
-| `perf/README.md` | 負荷の試験の手順 | 手順 0 で配備したアプリを止める。一時の `app.env` と `export` に `MASTERSMITH_CONTAINER_CPUS=2`（16・18 行）。末尾に F3 の注記（44 行） |
-| `perf/k6/scenarios.js` | k6 の台本 | 場面は `SCENARIO`（health・loginSuccess・loginFailure・refresh・adminCheck・forbidden）、`VUS` 既定 10、`DURATION` 既定 60s、`summaryTrendStats` に p95 |
-| `README.md` | 前提と手順 | colima の割り当ての例（21 行、232 行）、環境変数の表（165・169 行）、監査ログの既知の制約（281〜284 行） |
+| コントローラー | `XxxController`（`web`） | `AuthController`・`AdminCheckController`・`ProblemTypeController`・`ErrorPathController` |
+| 要求・応答の DTO | `XxxRequest`・`XxxResponse`（`record`、`web`） | `LoginRequest`・`TokenResponse`・`CurrentUserResponse`・`ProblemTypeResponse` |
+| 業務処理 | `XxxService`（`service`） | `LoginService`・`TokenRefreshService`・`LogoutService`・`UserAccountService` |
+| 設定の型 | `XxxProperties`（`record`、`@ConfigurationProperties`） | `AuthProperties`・`MastersmithWebProperties`・`HealthProperties` |
+| 問題の種類 | `XxxProblemTypes`（`domain`）＋`XxxProblemTypeCatalog`（`service`、Bean） | `AuthProblemTypes`＋`AuthProblemTypeCatalog` |
+| 出来事 | `XxxEvent`（`record`、`domain`） | `AuthenticationEvent`・`AdminAccessDeniedEvent` |
+| セキュリティの差し込み | `XxxSecurityContributor`（`web`） | `AuthSecurityContributor`（110）・`AdminSecurityContributor`（210） |
+| DB アクセス | `XxxRepository`（Spring Data JPA） | `RefreshTokenRepository`・`LoginAttemptStateRepository`・`AuditEventRepository`・`UserRepository` |
+| パッケージの説明 | `package-info.java` | 各パッケージにある |
 
-## バックエンドのパッケージ（ルート `cherry.mastersmith`）
+### 設定とスキーマ（`backend/src/main/resources/`）
 
-| パッケージ | 層 | 役割 |
+- `application.yaml`: アプリの設定。秘密情報は環境変数の参照（`${MASTERSMITH_...:}`）だけ。独自の設定は `mastersmith.web.*`・`mastersmith.health.*`・`mastersmith.observability.*`・`mastersmith.trace.*`・`mastersmith.auth.*`・`mastersmith.security.*`。`mastersmith.target-db.*` は無い。
+- `logback-spring.xml`: 1行1件の JSON のログ（logstash-logback-encoder）と、有効時だけの OTLP の送信。
+- `db/migration/`: Flyway。名前は `V<番号>__<単位>_<内容>.sql`、前進のみ。
+  - `V1__u1_baseline.sql`: 表を作らない基準線
+  - `V2__u2_user_account.sql`: `users`
+  - `V3__u2_authentication.sql`: `login_attempt_states`・`refresh_tokens`
+  - `V4__u4_audit_event.sql`: `audit_events`
+
+## テストの構成（`backend/src/test/`）
+
+- `src/test/java/cherry/mastersmith/` は本体と同じパッケージ構成（130 ファイル）。単体テストは `*Test`（Gradle の `test`）、Spring と H2 を起動する結合テストは `*IT`（Gradle の `integrationTest`）で、名前で分けて実行する。
+- `common/testsupport/`: `TestDatabase`（クラスごとの一時ディレクトリに H2 を作り、`@DynamicPropertySource` で登録）、`HttpTestClient`（`RANDOM_PORT` で起動した実際の Tomcat に HTTP を送る）ほか。
+- `src/test/resources/`: `archunit.properties`、`junit-platform.properties`（jqwik の記録を `build/jqwik-database` へ）、`META-INF/spring.factories`（テスト用の署名鍵を入れる `EnvironmentPostProcessor`）、`static/`（テスト用の画面ファイル）。
+
+## 画面の構成（`frontend/src/`）
+
+```
+frontend/src
+├── main.tsx                    起動（登録の読み込みと検査の後に描画）
+├── app/                        骨組み（U1）
+│   ├── App.tsx
+│   ├── registry/               FeatureRegistration の型・読み込み（import.meta.glob、eager）・検査
+│   ├── routing/                AppRouter・decideRoute（URL と登録の完全一致で1画面）
+│   ├── navigation/             サイドバーの項目の組み立て
+│   ├── layout/                 ShellLayout（AppShell の中）・StandaloneLayout・LoginLayout
+│   ├── i18n/                   i18next の設定
+│   ├── login-state/            ログイン状態の受け取り
+│   ├── pages/                  ホーム・ページが見つかりません・起動エラー
+│   └── testing/                テストの補助
+├── shared/api-client/          apiFetch・apiRequest・ApiError
+├── features/
+│   ├── auth/                   ログイン画面・トークンの保持・ログイン状態の提供元・ログアウトのメニュー（U2）
+│   └── admin/                  管理者向け領域 /admin の置き場（U3）
+└── types/                      vitest-axe の型
+```
+
+- 新しい機能は `features/<featureId>/registration.ts` を置くだけで読み込まれる（`frontend/src/features/README.md`）。
+- テストは対象と同じ場所の `*.test.ts(x)`（29 ファイル）。E2E は `frontend/e2e/*.e2e.ts`（Playwright、3 ファイル）。
+- `frontend/scripts/`: ライセンスヘッダーの検査（`check-license-header.mjs`）と初回読み込み量の確認（`check-bundle-size.mjs`）。
+
+### ファイルの分類（画面）
+
+| 分類 | 名前の決まり | 例 |
 |---|---|---|
-| `auth` | web / service / domain / repository | ログイン・トークンの更新・ログアウト・アカウントのロック（U2） |
-| `user` | service / domain / repository | 利用者、パスワードの照合、初期管理者（U2）。`UserAccountConfig` が `BCryptPasswordEncoder(properties.bcryptCost())` を作る（流し読み） |
-| `access` | web / service / domain | 管理者の API の認可、401/403、アクセス拒否の出来事（U3） |
-| `audit` | service / domain / repository（web なし） | 監査イベントの追記（U4） |
-| `common` | error / health / i18n / observability / security / web | 共通部品（U1）。Problem Details、ヘルスチェック、トレース |
-| `config` | — | Spring の設定。`SecurityConfig`（フィルターの連鎖1つ、状態を持たない）、`WebConfig`（SPA の配信）、`ObservabilityConfig`（OTLP の送信の組み立て）、`ForwardedHeaderConfig`（転送元のヘッダー、既定で使わない）、`SecurityHeaderProperties`（CSP）、`package-info.java`。資源（スレッド・メモリ・実行器）に関わる設定は無い |
+| 画面・部品 | PascalCase の `.tsx`、同じ場所に素の CSS | `LoginForm.tsx`・`LoginForm.css`・`AdminAreaPage.tsx` |
+| API の呼び出し | `xxxApi.ts` | `authApi.ts`・`adminApi.ts` |
+| 純粋な関数・状態 | camelCase の `.ts` | `validateLoginInput.ts`・`adminAreaStatus.ts`・`decideRoute.ts` |
+| 機能の登録 | `registration.ts` | `features/auth/registration.ts`・`features/admin/registration.ts` |
 
-層の決まり（ArchUnit で確認）: `web` は `repository` を直接呼ばない、トランザクションの境界は `service` だけ、エンティティを応答に返さず `record` の DTO を使う、コンストラクター注入のみ。
+## コードのパターン
 
-## 設定ファイル（`backend/src/main/resources/application.yaml`）
-
-- アプリの設定 `mastersmith.*`（18〜77 行）: ヘルスチェックの制限時間（28 行）、外部エクスポート（29〜34 行）、認証（48〜74 行。`bcrypt-cost` は 64 行）、CSP（77 行）。
-- `spring.*`: データソースと Hikari（97〜108 行）、JPA（109〜117 行）、Flyway（118〜122 行）、H2 コンソール無効。
-- `server.*`: ポート 8080、穏やかな停止、圧縮、エラーの詳細を出さない（128〜142 行）。`server.tomcat.*`（スレッドの上限など）の設定は無い。
-- `management.*`: 公開は health だけ（144〜167 行）、トレースの割合（174 行）、OTLP（179〜205 行）。
-- 秘密情報の値は書かず、環境変数の参照だけを置く（15〜16 行のコメント）。
-
-## 前回に深く読んだファイル（監査と接続。今回は再確認していない）
-
-| ファイル | 役割 |
-|---|---|
-| `backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java` | `login`（117〜124 行）で照合（118 行）の後に `TransactionTemplate.execute`（119 行）。`decide`（127 行〜）の中で `LOGIN_FAILED`／`LOGIN_SUCCEEDED` を publish。**今回再確認した** |
-| `backend/src/main/java/cherry/mastersmith/auth/service/LogoutService.java` | `@Transactional logout` の中で `LOGGED_OUT` を publish |
-| `backend/src/main/java/cherry/mastersmith/auth/service/TokenRefreshService.java` | `@Transactional refresh`。出来事は publish しない。F3 が起きた場面の経路だが、今回は読んでいない |
-| `backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java` | AFTER_COMMIT の受け取り、失敗の受け止め |
-| `backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java` | `REQUIRES_NEW` の追記 |
-| `backend/src/main/java/cherry/mastersmith/audit/service/AuditConfig.java` | 監査の部品の設定（遅い書き込みの計時の `LongSupplier` など） |
-| `backend/src/main/java/cherry/mastersmith/common/health/TimeBoundedDbHealthIndicator.java` | 同じプールで `SELECT 1` |
-| `backend/src/main/resources/db/migration/V1〜V4` | Flyway。表は `users`・`login_attempt_states`・`refresh_tokens`・`audit_events` |
-
-## テストの配置
-
-- `backend/src/test/java/cherry/mastersmith/` に対象と同じパッケージ構成。単体は `*Test`（`test` タスク）、Spring と組み込み H2 を起動する結合は `*IT`（`integrationTest` タスク）。件数は前回の記録（`code-quality-assessment.md`）を参照。今回は読んでいない。
-- 結合テストの DB は `common/testsupport/TestDatabase.register`（`@TempDir` の H2 ファイル）。
-- 画面は `frontend/src/**/*.test.ts(x)`、E2E は `frontend/e2e/`（Playwright、`verify` と CI の外）。
-- 性能は `perf/k6/scenarios.js`（`verify` と CI の外。開発者の PC で使い捨ての環境に対して行う）。
-
-## コードの型（パターン）
-
-- 機能の間は `ApplicationEventPublisher` の出来事でつなぎ、受け取り側は `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)`。
-- 時刻は注入した `Clock`、ログは SLF4J のキー・値 API、例外の応答は `@RestControllerAdvice` の1か所。
-- 設定値は `application.yaml` に `${環境変数:既定値}` の形で置き、コメントで理由を書く。コンテナの上限と JVM の引数は `compose.yaml`・`Dockerfile` 側にあり、`application.yaml` からは変えられない。
-- Lombok は使わない。全クラスに日本語の Javadoc があり、設計の文書の番号（BR・NFR）を参照している。
+- **差し込み口の Bean の一覧**: `List<SecurityRuleContributor>`・`List<ProblemTypeCatalog>` を受け取り、起動時に並べ・検査する（重複や決まり違反で起動を止める）。画面の登録も同じ考え方である。
+- **アプリの中の出来事**: 機能は `ApplicationEventPublisher` で知らせ、受け取り側（`audit`）が `@TransactionalEventListener` で受ける。
+- **明示のトランザクション**: `LoginService` は `PlatformTransactionManager` から `TransactionTemplate` を作り、照合をトランザクションの外に出している。ほかは `@Transactional`（service の層だけ）。
+- **値の型で秘密情報を包む**: `Password`・`AccessTokenValue`・`RefreshTokenValue` などは `toString` で伏せ字にする（`TraceAspect` やログへの漏えいを防ぐ）。
+- **注入する時計**: `Clock` の Bean を使い、テストでは差し替える。
+- **構造化ログ**: `LOGGER.atInfo().addKeyValue(...)` のキー・値の API。文字列の連結はしない。
+- **Javadoc の設計参照**: クラス・公開メソッドに日本語の Javadoc があり、元の設計書の番号（BR・NFR・ADR・WF）を参照している。
