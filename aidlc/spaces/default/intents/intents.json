@@ -19,5 +19,12 @@
     "dirName": "260923-colima-spec-up",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0cd70-33a2-7d77-8b92-d27d073d81ab",
+    "slug": "dsl-schema-loader",
+    "dirName": "260923-dsl-schema-loader",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]

@@ -1,0 +1,1 @@
+"MasterSmith のロードマップの Intent A（DSL スキーマ定義）・D（スキーマ読み込み・既定 DSL 生成）・E（DSL ローダー／インタープリタ＋プレビュー・適用の流れ）を1つの Intent として統合して開発する。DSL（YAML＋JSON Schema）のスキーマを定め、対象 DB（MySQL・MariaDB・PostgreSQL、mastersmith.target-db.* で接続）のメタデータから既定の DSL を管理画面の手動操作で生成・全上書きリセットし、生成した DSL と完成品の投入の両方を、読み込み・検証してプレビュー→適用の2段階で反映する。要件は reference/master-mgmt-app-requirements.md の 2.1〜2.9、3章、4章、9章の Intent A・D・E に基づく。"
