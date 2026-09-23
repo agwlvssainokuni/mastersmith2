@@ -98,22 +98,41 @@ cd frontend && npm run dev
 
 ## コンテナでの起動と確認
 
+配備は手で行い、コンテナに入れる WAR は手元で `./gradlew verify` を通して作ったものを使います。
+
 ```bash
-./gradlew verify                 # または ./gradlew :backend:bootWar（WAR を作る）
+git status --porcelain           # 何も表示されないこと（未コミットの変更があれば配備しない）
+git rev-parse --short HEAD       # 配備する版のコミットのハッシュを控える（戻すときに使う）
+./gradlew verify                 # 検査を通して WAR を作る（backend/build/libs/mastersmith.war）
 cp .env.example .env             # 初回だけ。値を入れる（.env はコミットしない）
+# 2回目以降は、ここで内部DBのデータを複写する（「内部DBのバックアップと戻し方」）
 docker compose up -d --build
-docker compose ps                # app が healthy になれば起動の完了
+docker compose ps                # app が healthy になれば起動の完了（最長で約 2 分）
 ```
 
-- ブラウザで `http://localhost:8080/` を開き、ログイン画面（U1 の段階ではログイン用レイアウト）が表示されることを確かめます。ヘルスチェックの応答が UP で、ログイン画面が表示されるまで、配備の完了とはみなしません。
+- 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
+- ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
 - 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。
-- 配備の確認（スモークテスト）: ログイン画面から初期管理者でログインし、ホームが表示されること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。
+- 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。
 - 止めるときは `docker compose down`（内部DBのデータはボリュームに残ります）。
 
 ### 戻し方
 
-直前の版の WAR（CI の成果物 `mastersmith-<コミットのハッシュ>`、またはリリースに添付した WAR）を `backend/build/libs/mastersmith.war` に置き、`docker compose up -d --build` でイメージを作り直して起動します。スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。版を替える前に、内部DBのデータを複写しておきます（次の節）。
+直前の版のコミット（前回の配備で控えたハッシュ）を別の場所に取り出して WAR を作り直し、`docker compose up -d --build` でイメージを作り直して起動します。
+
+```bash
+docker compose stop app
+# 内部DBのデータを複写する（次の節）
+git worktree add ../mastersmith-rollback <直前の版のハッシュ>
+(cd ../mastersmith-rollback && git submodule update --init && ./gradlew :backend:bootWar)
+cp ../mastersmith-rollback/backend/build/libs/mastersmith.war backend/build/libs/mastersmith.war
+docker compose up -d --build
+docker compose ps                # healthy になったら、上のスモークテストを行う
+git worktree remove ../mastersmith-rollback
+```
+
+スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたときだけ、配備の前に取ったバックアップを展開してデータも戻します（次の節。バックアップの後の記録は失われます）。
 
 ### 内部DBのバックアップと戻し方
 
