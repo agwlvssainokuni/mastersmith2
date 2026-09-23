@@ -53,6 +53,8 @@
 - 配備先が決まっていない間の配備の段（deployment-pipeline など）は、既にある Dockerfile・compose.yaml・README の手順を正として記録と整理を行い、決まっていない点だけを質問する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-pipeline:b1a86e0f41aa6e3459a2de7b1a258188647faeed5d2b769ede422dbd9702e886 -->
 - 配備先が開発者の PC 上のコンテナのときは、環境の段（environment-provisioning など）を Docker の実行環境・イメージ・ボリューム・.env・compose.yaml の設定と読み替え、設計の値を実際にコンテナを起動して1つずつ確かめる。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:environment-provisioning:ac6d4ef03ae6ae98e21f41ed4b710aff15e4e1f0e74529d462247e8e8c7a43a6 -->
 - 配備先が決まるまでの手元の監視は、grafana/otel-lgtm を compose の profile で見たいときだけ起動し、ダッシュボードと警報の決まりはファイルでリポジトリに置く（画面からは変えない）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:observability-setup:542822cb3fe5db425d4384bbb06c49af318db761a9d0ab6afe21eb6c39a2fdc2 -->
+- CI Pipeline・Infrastructure Design の段が無いため、前の Intent の配備の手順（cd-config・deployment-strategy・rollback-runbook）を正として、今回の差（設定だけの変更、負荷の確かめを配備の前に置く、設定の戻し）だけを書いた。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:9945db55da8fa593cd367dda708feaaa4f82e1880b1162da5325289f9eff9fc5 -->
+- 戻し方は、設定の値だけの変更であることを生かし、まず .env で上限を 10 に戻す（作り直し不要、ただし F2 が戻る）を第一の手とし、直らなければ直前の版 7040876 へ戻す二段にした。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:b6451b7830168d2997b6cf63aeb3c07c3393e836c537a3c788f4f503389f356c -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -117,3 +119,4 @@
 - 最初のコード知識ベースのため全体を対象に調べたが、深く読んだのは F2 に関わる範囲（ログイン・ログアウト・監査・接続の設定・関係するテスト）だけなので、記録上の範囲は partial とした。画面側や共通部品は流し読みの扱い。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:reverse-engineering:b0cbc892459ac4ff65e23667cf74963257af00f488b36486f444afba9daba7d7 -->
 - 前の Intent では、監査を別スレッドに移すとトレースIDと「確定の後に記録」の決まりが変わるため、接続を2本使う形を受け入れていた。直し方を決めるときは、この決まりと既存の結合テスト（AuditAuthenticationEventsIT・AuditTraceIdIT・AuditRollbackIT・AuditWriteFailureIT）を守れるかで比べる。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:reverse-engineering:15498ffe61fe6ff56f34e8d23e9d51408e48990f74de543a12304ade5b25f156 -->
 - 待ち合わせの上限を計画の例 30 秒から 20 秒にした（上限 10・N=20 の試しで HTTP の要求の時間切れ 30 秒が先に来るため）。DataSourcePoolIT に「既定で 30 本を同時に借りられる」テストを1件足した。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:code-generation:fd57c64b6eb6841155789942a7e285a8bf7d706736c3c562d34150b2adf8d3da -->
+- 要件 FR6.2 は「配備した後」に k6 で確かめるとしているが、依頼者の決定（Q2: A）で配備の前に行う。要件は書き換えず、cd-config.md 4節に差を明記した。 (learned 2026-09-23) <!-- cid:260923-audit-pool-exhaustion:deployment-pipeline:41777a07c42db043bcf8c7e0129e93c36b63ac4ace7b61ee9a825fc546cf8135 -->

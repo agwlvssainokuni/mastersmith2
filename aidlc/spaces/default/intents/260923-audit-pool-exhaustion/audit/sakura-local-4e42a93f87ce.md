@@ -3314,3 +3314,285 @@
 **Tool**: Bash
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-09-23T05:59:45Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: 質問3件の回答方法（Guide me / I'll edit the file / Chat）
+**Options**: Guide me,I'll edit the file,Chat
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T05:59:58Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:00:02Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-23T06:00:02Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Guide me
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-23T06:00:02Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: Q1 戻し方 / Q2 k6 の時点 / Q3 戻しの練習（1回目のまとまり）
+**Options**: A,B,X
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:01:09Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:01:22Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-23T06:01:23Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A. まず設定で戻す / Q2: A. 本番の配備の前 / Q3: B. 行わない
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-23T06:01:23Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: FQ1. 設定で戻すとき、上限をいくつに下げますか？
+**Options**: A. 20,B. 10,C. その都度決める
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:01:44Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:01:53Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-23T06:01:54Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: B. 10
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-23T06:01:55Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260923-audit-pool-exhaustion/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:02:13Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:02:18Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-09-23T06:02:20Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: deployment-pipeline
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260923-audit-pool-exhaustion/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Questions SHA-256**: 4c2210181ec2b4bc7c4c1693762a447b60952d2e0c6d9883367b99134967bae0
+**Hash Scope**: confirmed-content-v1
+**Summary Authorization Id**: 3b6ff968722ac4f594e8f6df31d21e5161ea183e0ef21c2c0ddc57d342acdabe
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:03:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-23T06:03:24Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: 今回の作業について、次回のために書き留めておきたいことはありますか？
+**Options**: Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:04:47Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:04:54Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-23T06:04:56Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Nothing to add
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T06:04:57Z
+**Event**: RULE_LEARNED
+**Stage**: deployment-pipeline
+**Candidate-ID**: c1
+**Content-Hash**: 9945db55da8fa593cd367dda708feaaa4f82e1880b1162da5325289f9eff9fc5
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Deployment
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T06:04:57Z
+**Event**: RULE_LEARNED
+**Stage**: deployment-pipeline
+**Candidate-ID**: c2
+**Content-Hash**: 41777a07c42db043bcf8c7e0129e93c36b63ac4ace7b61ee9a825fc546cf8135
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Corrections
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T06:04:57Z
+**Event**: RULE_LEARNED
+**Stage**: deployment-pipeline
+**Candidate-ID**: c3
+**Content-Hash**: b6451b7830168d2997b6cf63aeb3c07c3393e836c537a3c788f4f503389f356c
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Deployment
+**Source**: orchestrator
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-09-23T06:04:57Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-pipeline
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:05:06Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:05:09Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-09-23T06:05:10Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-pipeline
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-09-23T06:05:10Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-pipeline
+**Validation Basis**: {"graphContract":"sha256:df6962deab365ec2f79f186c672b0f382b3fff1ebf396ae0771425695c8f11eb","inputs":[{"artifact":"ci-config","contentHash":"sha256:2fcd935d09c2f1d545d49f1079ef374a38c4c073c98db41bcb91e68a16d11d7e","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:c135a36c9933db3d7c56bd5184b494600dafa38684d1e74ddf9723ed471b0016"},{"artifact":"cicd-pipeline","contentHash":"sha256:89d979c7cbcd3cbedaaa07dee2c4491ab90f354d0dba9873ae77ecfb1791d4dc","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:045ae8ad8c1040c94b35d4f00c4dc45747fca47da0c9af42f4e6459cb3341670"},{"artifact":"infrastructure-specification","contentHash":"sha256:d27cb3b843e5025d68b3cb597d0f7bdd9f61a94e21c00fed7b89b042d21145db","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:743c214a52aef5fef100aa98410433a10f983680bbe50efffb4664a5ff2472e8"},{"artifact":"quality-gates","contentHash":"sha256:77729deaf2d1bb4926e9121a1c75fcfffc21f5fbcc963ee9e8dd8601c5499572","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:d50cf0457192c8aaf53a6b25cefc95da9908bd2d26933a40b58c5bbd3dc69d6c"}],"outputs":[{"artifact":"cd-config","contentHash":"sha256:272038fbe6d2965def6fe8e8e40a16551688d3d832866df49945adcc04223816","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:8b21140e326c402efee5e846cd599356ab52e44499d842277030c60a0c31588a"},{"artifact":"deployment-pipeline-questions","contentHash":"sha256:9ff3443c945bbb8d5fe8e27c49afd335d364ee6ae4b499c2e5f5eff8ee1d3edc","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:17800efc78a460bd9f2ef0f731cf7f2abc288874c709b89817ed1569a4523c62"},{"artifact":"deployment-strategy","contentHash":"sha256:1e744d60496f53e420e12c5e2c0c2a2199aa7c73a4f5b08550d0b054cc2bb5b3","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:762078f3ce49c4440d91fcf4ceaf3860db3359b501576b90abaabe6ba2615957"},{"artifact":"rollback-runbook","contentHash":"sha256:dd4d72286dc45674e68adce67d7b24ea7ae65d04ff1bba77b333097833309c8d","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:6ec4ee91715a82f071d72b1b0d9e1343d8d7564c7f71bce57995a82c1bad06b2"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Pipeline approved by gate
+**Tokens In**: 48
+**Tokens Out**: 25413
+**Cache Read**: 12764501
+**Cache Write**: 60339
+**Cost USD**: 7.62
+**By Model**: opus-5=7.62
+**By Agent**: main=7.62
+**Tokens By Model**: opus-5=48/25.4k/12.8M/60.3k
+**Tokens By Agent**: main=48/25.4k/12.8M/60.3k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-09-23T06:05:10Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-execution
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T06:05:24Z
+**Event**: HUMAN_TURN
+**Session**: 7ef583eb-b6f8-4dca-94d8-a252b874298c
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T06:05:28Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
