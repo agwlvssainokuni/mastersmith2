@@ -3,28 +3,57 @@
 | 項目 | 値 |
 |---|---|
 | 実施日 | 2026-09-23 |
-| リポジトリ | mastersmith2（プロジェクトルート `./`） |
+| リポジトリ | mastersmith2（プロジェクトルート） |
 | ブランチ | `develop` |
-| コミット | `6afbf9798f5b2854c50dc7f4b3719f5ffc1db152` |
-| Intent | `260923-audit-pool-exhaustion`（同時10件のログインでコネクションプールが尽き、監査の書き込みが失敗する（F2）を直す） |
+| コミット | `aeeaf73e9971a48d502291b94c26df84ad306cc1`（アプリのソースに未コミットの変更なし。ワークフローの記録だけに変更あり） |
+| Intent | `260923-colima-spec-up`（高い負荷でアプリのコンテナがメモリの上限で止まる（F3）と、CPU 2 でログインが目標の 1 秒を超える（F4）を、colima の VM の性能を上げて直す） |
 | 深さ | Minimal |
-| 走査の広さ | 全体の再走査（既存の CodeKB なし） |
+| 走査の広さ | Focused scan（コンテナの資源・JVM・ログインの CPU 負荷・負荷の試験・監視に絞る） |
+| 既存の CodeKB | STALE（前回 Intent `260923-audit-pool-exhaustion`、コミット `6afbf97` で作成。その後 F2 の修正で分析済みのファイルが変わった） |
 | 走査の担当 | developer（走査）→ architect（統合と9つの成果物） |
 
 ## 範囲についての注記
 
-全体を走査したが、行番号まで深く読んだのは F2 に関わる範囲（ログインの流れ・監査の記録・トランザクションと接続の扱い・データソースの設定・関連するテスト・ビルドの設定）だけである。そのため Scope of Analysis は `kind: partial` とし、深く読んだ場所だけを `analyzed.paths` に、流し読みの場所を `shallow.paths` に記す。
+- 今回深く読んだのは、コンテナと起動の定義（`Dockerfile`・`compose.yaml`・`docker/`・`.dockerignore`・`.env.example`）、負荷の試験（`perf/`）、`README.md` の関係する節、`application.yaml`、`config/` パッケージ、`LoginService` である。`docker/monitoring/` のダッシュボードの JSON はパネルの題と式だけを読んだ。
+- 既存の CodeKB が STALE のため、前回の `analyzed.paths` は再確認できないものとして `shallow.paths` に下げた。前回の記述（監査と接続）は残し、今回確かめた値（プールの上限 30 など）だけを更新した。
+- この PC の実行環境は読み取りだけで確かめた（`colima list` で CPU 2・メモリ 2GiB・aarch64、`docker info` で NCPU 2・MemTotal 約 1.9GiB）。`.env` は開いていない。
+- 前の Intent の記録（性能の試験の結果・配備の記録）の F3・F4 とメモリの行は流し読みで参照した（ワークフローの記録のため、下の範囲には含めない）。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260923-audit-pool-exhaustion
-fingerprint: 12c042ca24fa775d4fde1375a013deb0a1b17091
+intent: 260923-colima-spec-up
+fingerprint: 6d54a0d29462ad3e6f28efa601ac4cb491aacb70
 analyzed:
   paths:
+    - Dockerfile
+    - compose.yaml
+    - docker/perf/compose.yaml
+    - docker/monitoring/
+    - docker/otel-collector/config.yaml
+    - perf/
+    - README.md
+    - .env.example
+    - .dockerignore
+    - backend/src/main/resources/application.yaml
+    - backend/src/main/java/cherry/mastersmith/config/
     - backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java
+  components:
+    - LoginService
+    - mastersmith-db コネクションプール
+    - app コンテナ
+    - mastersmith-perf 負荷試験環境
+    - lgtm 監視コンテナ
+    - otel-collector コンテナ
+    - SecurityConfig
+    - WebConfig
+    - ObservabilityConfig
+    - ForwardedHeaderConfig
+    - SecurityHeaderProperties
+shallow:
+  paths:
     - backend/src/main/java/cherry/mastersmith/auth/service/LogoutService.java
     - backend/src/main/java/cherry/mastersmith/auth/service/TokenRefreshService.java
     - backend/src/main/java/cherry/mastersmith/auth/web/AuthController.java
@@ -32,9 +61,9 @@ analyzed:
     - backend/src/main/java/cherry/mastersmith/auth/domain/AuthenticationEvent.java
     - backend/src/main/java/cherry/mastersmith/audit/
     - backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java
+    - backend/src/main/java/cherry/mastersmith/user/service/UserAccountConfig.java
     - backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java
     - backend/src/main/java/cherry/mastersmith/access/service/AccessDeniedEventPublisher.java
-    - backend/src/main/resources/application.yaml
     - backend/src/main/resources/db/migration/V4__u4_audit_event.sql
     - backend/build.gradle.kts
     - build.gradle.kts
@@ -45,34 +74,12 @@ analyzed:
     - backend/src/test/java/cherry/mastersmith/audit/
     - backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java
     - backend/src/test/resources/
-  components:
-    - LoginService
-    - LogoutService
-    - TokenRefreshService
-    - AuthController
-    - LoginAttemptStateRepository
-    - RefreshTokenRepository
-    - AuditEventListener
-    - AuditEventRecorder
-    - AuditEventRepository
-    - AuditConfig
-    - UserAccountService
-    - UserRepository
-    - AccessDeniedEventPublisher
-    - mastersmith-db コネクションプール
-shallow:
-  paths:
     - backend/src/main/java/cherry/mastersmith/
     - backend/src/test/java/cherry/mastersmith/
     - frontend/
     - .github/
-    - Dockerfile
-    - compose.yaml
-    - docker/
-    - perf/
     - config/
     - .pre-commit-config.yaml
     - .gitmodules
-    - README.md
     - vendor/make-you-chic-ui/
 ```
