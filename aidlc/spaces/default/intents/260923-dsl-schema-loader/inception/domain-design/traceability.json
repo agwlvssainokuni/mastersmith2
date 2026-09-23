@@ -1,0 +1,22 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US1.2", "US2.1", "US2.2", "US2.3", "US3.1", "US3.2", "US3.3", "US3.4", "US4.1", "US4.2", "US5.1", "US5.2", "US6.1", "US6.2", "US6.3"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "DefaultDslGeneration, TargetDatabase, DslLifecycle" },
+    { "id": "US1.2", "status": "OK", "target": "TargetDatabase, DefaultDslGeneration" },
+    { "id": "US2.1", "status": "OK", "target": "DslLifecycle, DslDefinition, DslAdminUi" },
+    { "id": "US2.2", "status": "OK", "target": "DslDefinition, DslAdminUi, ApiClient" },
+    { "id": "US2.3", "status": "OK", "target": "DslDefinition" },
+    { "id": "US3.1", "status": "OK", "target": "DslPreviewAnalysis, DslPreview" },
+    { "id": "US3.2", "status": "OK", "target": "DslPreviewAnalysis, TargetDatabase" },
+    { "id": "US3.3", "status": "OK", "target": "DslLifecycle, DslPreview" },
+    { "id": "US3.4", "status": "OK", "target": "DslLifecycle, DslPreview" },
+    { "id": "US4.1", "status": "OK", "target": "DslLifecycle, DslAppliedRevision, ActiveDslModel, DslModel" },
+    { "id": "US4.2", "status": "OK", "target": "DslLifecycle, DslPreview" },
+    { "id": "US5.1", "status": "OK", "target": "DslLifecycle, DslAppliedRevision" },
+    { "id": "US5.2", "status": "OK", "target": "DslLifecycle, DslAppliedRevision" },
+    { "id": "US6.1", "status": "OK", "target": "TargetDatabase" },
+    { "id": "US6.2", "status": "OK", "target": "AccessControl, DslAdminUi" },
+    { "id": "US6.3", "status": "OK", "target": "AuditLog, AuditEvent" }
+  ]
+}
