@@ -120,14 +120,14 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.1 プロジェクトの構成と本番の設定の骨組み
 
-- [ ] **Step 1 — パッケージの骨組み（依存関係・設定の追加なし）**
+- [x] **Step 1 — パッケージの骨組み（依存関係・設定の追加なし）**
   - パッケージの骨組み: `cherry.mastersmith.audit.{domain,repository,service}`。各パッケージに日本語の `package-info.java`。
   - 依存関係は足さない（`gradle/libs.versions.toml`・`backend/build.gradle.kts`・`backend/gradle.lockfile` を変えない）。環境変数・秘密情報・設定の型も足さない（`infrastructure-design/infrastructure-specification.md` 1章・2章）。`application.yaml` は変えない（遅れの WARN のしきい値は定数にする。7章の C5）。
   - 対応: `nfr-design/logical-components.md` 1章、`infrastructure-design/infrastructure-specification.md` 1章〜4章
 
 ### 4.2 テストの実行の枠組み
 
-- [ ] **Step 2 — この単位のテストのコマンドを確かめ、U4 のテストの補助を置く**
+- [x] **Step 2 — この単位のテストのコマンドを確かめ、U4 のテストの補助を置く**
   - U1〜U3 が用意した枠組みをそのまま使う（新しい道具は入れない）。`unit-test-instructions.md` の 2.2 のコマンドで、U4 のパッケージに絞った実行が動くことを確かめる（この時点では U4 のテストは無い。常に通るだけのテストは書かない）。
   - テストの補助（テストのソースの中だけ。`cherry.mastersmith.audit.testsupport`）:
     - `AuditRows`: `JdbcTemplate` で `audit_events` の行を読む（監査を見る API が無いため。7章の C8）。件数、最後の1件、日時の順の一覧を返す。
@@ -137,7 +137,7 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.3 データモデル・DB の振る舞い
 
-- [ ] **Step 3 — 監査イベントの表とエンティティ、切り詰め、出来事からの写し取り**
+- [x] **Step 3 — 監査イベントの表とエンティティ、切り詰め、出来事からの写し取り**
   - `backend/src/main/resources/db/migration/V4__u4_audit_event.sql`（U1 の申し送りの命名）: 表 `audit_events` を作る。列は `audit_event_id`（連番の主キー）・`occurred_at`・`event_type`・`result`・`entered_email`・`failure_reason`・`source_ip`・`user_agent`・`request_path`・`trace_id`。発生の日時に索引を1つだけ付ける（`ix_audit_events_occurred_at`）。前進のみ・後方互換（1つ前の版のアプリはこの表を使わずに動く）。列の長さは切り詰めの上限の2倍とする（7章の C3・C4）。
   - `audit.domain.AuditEvent`（JPA のエンティティ、表 `audit_events`）: 項目は `auditEventId`・`occurredAt`・`eventType`・`result`・`enteredEmail`・`failureReason`・`sourceIp`・`userAgent`・`requestPath`・`traceId`。作ったあとに変える手段（設定の操作）を持たず、Hibernate の `@Immutable` と各列の `updatable = false` で更新させない（NFR3.2、`nfr-design/security-design.md` 2章）。パスワード・トークン・ハッシュ値の項目を持たない（BR2.3）。`toString()` はメールアドレスを伏せる（U1 の申し送り。U3 の出来事と同じ考え方）。
   - `audit.domain.AuditEventType`（`LOGIN_SUCCEEDED`・`LOGIN_FAILED`・`LOGGED_OUT`・`ACCESS_DENIED`）、`audit.domain.AuditResult`（`SUCCESS`・`FAILURE`）、`audit.domain.AuditFailureReason`（`USER_NOT_FOUND`・`PASSWORD_MISMATCH`・`ACCOUNT_LOCKED`・`NOT_ADMIN`・`TOKEN_MISSING`・`TOKEN_MALFORMED`・`TOKEN_INVALID`）。
@@ -145,7 +145,7 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
   - `audit.domain.AuditEventFactory`（純粋な関数）: U2 の `AuthenticationEvent` と U3 の `AdminAccessDeniedEvent` から監査イベントを作る。種類から結果を決め（BR1.2）、日時は出来事の日時（BR1.5）、失敗の理由は U2 の `LoginFailureReason`・U3 の `AccessDeniedReason` から漏れなく写す（`switch` の網羅で、値が増えたらコンパイルで気づけるようにする）。メールアドレスは U3 の出来事では `enteredEmail()` で取る（`toString()` は伏せ字のため。U3 の申し送り）。要求のパスはアクセス拒否のときだけ入れ、認証の出来事では空にする（7章の D2）。U2 の出来事の `userId` は記録しない（`functional-design/entities.md`）。
   - 対応: FR9.1、FR9.2、BR1.2、BR1.5、BR1.6、BR2.1〜BR2.3、BR4.1、NFR1.5（拡張性）、NFR3.1・NFR3.2・NFR3.4
 
-- [ ] **Step 4 — 表とエンティティ、切り詰め、写し取りのテスト**
+- [x] **Step 4 — 表とエンティティ、切り詰め、写し取りのテスト**
   - 単体テスト（`*Test`）:
     - `AuditTextTest`（jqwik: 切り詰めの結果は必ず上限以下のコードポイント数、元の文字列の先頭と一致する、壊れたサロゲートペアを含まない、上限以下の値は変わらない。明示の例: 300 文字のメールアドレス、600 文字の要求のパス、512 文字目がサロゲートペアの途中になる User-Agent、null と空文字）。
     - `AuditEventFactoryTest`（4つの種類と結果の対応、失敗の理由の変換を U2・U3 の enum の全値で網羅、日時は出来事の日時、存在しないメールアドレスもそのまま、アクセス拒否では要求のパスが入り認証の出来事では空、長い値が切り詰められる、U3 の出来事から取るメールアドレスが伏せ字にならない）。
@@ -156,19 +156,19 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.4 Repository・データアクセス
 
-- [ ] **Step 5 — 監査イベントの保存の部品**
+- [x] **Step 5 — 監査イベントの保存の部品**
   - `audit.repository.AuditEventRepository`: Spring Data の既定の部品（`JpaRepository` など、削除をまとめて持つもの）は継承せず、最小の `Repository` から**追記と読み取りだけ**を宣言する（`save`、`findById`、日時の順の読み取り）。更新・削除の操作と更新の問い合わせを宣言しない（BR4.1、NFR3.2、`nfr-design/security-design.md` 2章）。
   - 追記は1件につき挿入1回だけで、ほかの表を読まない（NFR1.3）。主キーは DB の連番で、挿入の前に読み取りをしない（`nfr-design/performance-design.md` 1章）。
   - 対応: BR4.1、NFR1.3（性能）、NFR1.5（拡張性）、NFR3.2
 
-- [ ] **Step 6 — 保存の部品と構造の検査のテスト**
+- [x] **Step 6 — 保存の部品と構造の検査のテスト**
   - 結合テスト: `AuditEventRepositoryIT`（追記して読み戻す、複数件を日時の順に読む、1件の追記で発行される SQL が `insert audit_events` 1回だけ（U2 の `SqlStatementCounter`。NFR1.3）、保存した行が更新されないこと（同じエンティティを再び保存しても `update` が出ないこと））。
   - 単体テスト: `AuditBoundaryArchitectureTest`（ArchUnit。U2 の `AuthBoundaryArchitectureTest` と同じ置き方で `cherry.mastersmith.audit` に置く）: 監査の保存の部品に `delete`・`update`・`remove` で始まる操作が無い、`@Modifying` の問い合わせが無い、`audit` の外から `audit.repository` を使わない、トランザクションの指定が `audit.service` にだけある。
   - `unit-test-instructions.md` の Step 6 のコマンドで実行し、すべて通す。
 
 ### 4.5 業務処理（受け取りと記録）
 
-- [ ] **Step 7 — 出来事の受け取りと記録、失敗の受け止め、遅れの WARN**
+- [x] **Step 7 — 出来事の受け取りと記録、失敗の受け止め、遅れの WARN**
   - `audit.service.AuditEventRecorder`: `@Transactional(propagation = REQUIRES_NEW)` で監査イベントを1件追記するだけの部品（元のトランザクションに加わらない。`nfr-design/reliability-design.md` 1章）。
   - `audit.service.AuditEventListener`: 出来事を受け取り、監査イベントを組み立て、`AuditEventRecorder` を呼ぶ。
     - 認証の出来事: `@TransactionalEventListener(phase = AFTER_COMMIT)`（U2 の申し送り。取り消されたら呼ばれない＝記録しない。BR1.4）。
@@ -180,14 +180,14 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
   - `audit.service.AuditConfig`: 書き込みの時間の測り方（`LongSupplier`）の Bean を置く（テストで `@Primary` で差し替える）。設定の型・環境変数は足さない。
   - 対応: FR9.1、FR9.4、FR9.5、BR1.1〜BR1.6、BR3.1、BR3.2、NFR1.1・NFR1.2（性能）、NFR10.1・NFR10.2・NFR9.2（信頼性）、NFR10.3（観測性）
 
-- [ ] **Step 8 — 受け取りと記録のテスト（単体）**
+- [x] **Step 8 — 受け取りと記録のテスト（単体）**
   - `AuditEventListenerTest`（Mockito で保存の部品と時間の測り方を置き換える）: 認証の出来事で監査イベントが組み立てられて1回追記される、アクセス拒否の出来事でも同じ、追記が例外を投げても呼び出し元へ伝わらない（例外が外に出ない）、そのとき ERROR が1回だけ出て全項目のキーと値が載る、ERROR のメッセージが固定の文で例外のメッセージを使わない、ERROR とその他のログにパスワード・トークンの値が出ない、200 ミリ秒を超えたら遅れの WARN が1回、200 ミリ秒以下では WARN が出ない、成功のときに監査の内容をログに出さない。
   - `AuditEventRecorderTest`（新しいトランザクションの指定があること・保存を1回呼ぶことの確認。トランザクションの実際の振る舞いは Step 9 の結合テストで確かめる）。
   - `unit-test-instructions.md` の Step 8 のコマンドで実行し、すべて通す。
 
 ### 4.6 呼び出し元の境界から記録までの結合テスト（API・エンドポイントの段の代わり）
 
-- [ ] **Step 9 — 2つの経路の結合テスト**
+- [x] **Step 9 — 2つの経路の結合テスト**
   - `AuditAuthenticationEventsIT`（U2 の `AuthApi` でログイン・ログアウトを実行）: `LOGIN_SUCCEEDED`・`LOGIN_FAILED`・`LOGGED_OUT` のそれぞれで必須の項目がそろって1件記録される（日時・種類・結果・メールアドレス・失敗の理由・接続元IP・User-Agent・トレースID）、存在しないメールアドレスでのログインの失敗が入力されたメールアドレスと `USER_NOT_FOUND` で記録される（team.md の必須の監査ログのテスト）、ロック中の失敗が `ACCOUNT_LOCKED` で記録される、認証の出来事では要求のパスが空、記録は同じ要求のスレッドで行われる。
   - `AuditAccessDeniedIT`（U3 の `AdminTestUsers` で管理者でない利用者を作り 403、トークン無し・改ざん・利用者が DB にいない、の 401）: `ACCESS_DENIED` が理由ごとに記録される、403 ではメールアドレスが入り 401 では空、**要求のパスが正規化済みで問い合わせの部分なしで記録される**、有効期限切れの 401 では U3 が出来事を作らないため記録が無い、記録が応答の前に行われている（応答が返った時点で行が存在する）。
   - `AuditRollbackIT`: 元の操作の内部DBの更新が取り消された場合に記録が無いこと（BR1.4、NFR10.2（信頼性））。U2 の更新を失敗させる差し替えで再現する。
@@ -201,7 +201,7 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.7 既存の単位のテストの調整と回帰
 
-- [ ] **Step 10 — U2 の既存のテストの調整（D1）と全体の回帰**
+- [x] **Step 10 — U2 の既存のテストの調整（D1）と全体の回帰**
   - 7章の D1 で承認を得た範囲だけを変える。監査の追記が同じ要求のスレッドで1回増えることによる調整であり、品質の目標も本番の振る舞いも緩めない。
     - `backend/src/test/java/cherry/mastersmith/auth/web/LoginApiIT.java`: `failuresAreIndistinguishable` が期待する SQL の並びに、監査の追記（`insert audit_events`）を加える。**4つの失敗の経路で同じ並びであること**（利用者の存在を推測できないこと）の確認は保つ。
   - U1・U3 のテストは変えない見込みである（U3 の `AdminAccessIT` の SQL の回数の確認は管理者の 204 が対象で、成功のアクセスは記録しないため増えない）。変える必要が出たと分かったら、生成を止めて依頼者の判断を仰ぐ。
@@ -210,7 +210,7 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.8 環境・ビルドの設定
 
-- [ ] **Step 11 — 全体の検査と配備の確認、README**
+- [x] **Step 11 — 全体の検査と配備の確認、README**
   - `README.md` に U4 の節を足す（U1〜U3 の節の構成は変えない）: 監査ログは内部DBの `audit_events` に追記だけで記録すること、見る画面・API は本 Intent では作らないこと、確認の方法（アプリを止めてボリュームを複写し、複写したファイルを読み取りで開く。H2 のコンソールは使わない）、**ボリュームを消す操作（`docker compose down -v` など）をバックアップの前に行わない**こと、バックアップは U1 の手順で監査ログも守られること（`infrastructure-design/infrastructure-specification.md` 3章、`monitoring-design.md` 5章）。環境変数は増えない。
   - `./gradlew verify`（0〜9 の段すべて。カバレッジの下限、SpotBugs の High 0 件、OSV-Scanner、Gitleaks を含む）と `./gradlew e2eTest`（U1〜U3 の3本。U4 は E2E を増やさない。7章の C8）と `pre-commit run --all-files` がすべて通ることを確かめる。通らなければ、下限を下げずにテストを足すか、差を依頼者に示す。
   - `docker compose up -d --build` で起動し、ヘルスチェックと、初期管理者でのログイン → ログアウトの後に監査イベントが2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）記録されていることを、README の手順（止めて複写して読む）で確かめる（`infrastructure-design/cicd-pipeline.md` 3章）。
@@ -218,7 +218,7 @@ U4 は、U2 の認証の出来事（ログイン成功・ログイン失敗・�
 
 ### 4.9 文書とトレーサビリティ
 
-- [ ] **Step 12 — まとめの記録**
+- [x] **Step 12 — まとめの記録**
   - `aidlc/spaces/default/intents/260922-auth-audit-base/construction/u4-audit-log/code-generation/` に `code-summary.md`（作った・変えたファイル、判断、テストとカバレッジ、`./gradlew verify` の結果、計画からの逸脱、後続 Intent への申し送り（監査ログを見る画面・API を作るときは管理者のみ・表示で無害化、保存期間の決定、削除の処理を持たないこと）、7章の D2 で決めた Functional Design との違い）、`traceability.json`（FR・BR・NFR から実装とテストへの対応）、`source-manifest.json`（作った・変えた・消したアプリのソースのパスの一覧）を書く。
   - Deferred として記録するもの: NFR1.1・NFR1.2（書き込みの時間と待ち合い。Performance Validation で測る）、NFR10.5（運用で見る指標。配備先が決まったときに定める）、NFR3.3（ボリュームの権限。配備の手順で確かめる）。
   - 対応: 全要件のトレーサビリティ

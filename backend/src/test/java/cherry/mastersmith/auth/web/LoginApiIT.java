@@ -170,9 +170,14 @@ class LoginApiIT {
                 .containsEntry("code", "AUTHENTICATION_FAILED")
                 .containsEntry("statusCode", 401);
         assertThat(statements).allSatisfy(kinds -> assertThat(kinds).isEqualTo(statements.getFirst()));
+        // 4つの失敗の経路で並びが同じであること（利用者の存在を推測できないこと）を確かめる。
+        // 最後の insert audit_events は、確定の後に同じスレッドで行う U4 の監査の追記である。
         assertThat(statements.getFirst())
                 .containsExactly(
-                        "select users", "select login_attempt_states for update", "update login_attempt_states");
+                        "select users",
+                        "select login_attempt_states for update",
+                        "update login_attempt_states",
+                        "insert audit_events");
         assertThat(matches).containsExactly(1, 1, 1, 1);
     }
 

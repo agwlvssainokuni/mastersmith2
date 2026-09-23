@@ -35,8 +35,6 @@
 - **Revision Count**: 12
 
 - **Skeleton Stance**: off
-- **Active Unit**: u4-audit-log
-- **Unit State**: in-progress
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -98,7 +96,7 @@ Per unit: [TBD]
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-09-23T00:21:40Z
+- **Last Updated**: 2026-09-23T01:35:04Z
 
 ## Session Resume Point
 - **Last Completed Stage**: infrastructure-design

@@ -1,0 +1,115 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-audit-log",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditText.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V4__u4_audit_event.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/repository/AuditEventRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditEventRecorderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditNotInAppLogIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditRollbackIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditTraceIdIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteTimingIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditRows.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/FailingAuditEventRepositoryConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/SlowAuditWriteConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/LoginApiIT.java"
+    }
+  ]
+}

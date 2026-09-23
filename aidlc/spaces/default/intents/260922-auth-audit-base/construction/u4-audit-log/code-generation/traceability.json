@@ -1,0 +1,276 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-audit-log",
+  "upstream_ids": [
+    "FR9.1",
+    "FR9.2",
+    "FR9.3",
+    "FR9.4",
+    "FR9.5",
+    "FR10.2",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR3.1",
+    "BR3.2",
+    "BR4.1",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.9",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.11",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5"
+  ],
+  "coverage": [
+    {
+      "id": "FR9.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java, backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "FR9.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java, backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java, backend/src/main/resources/db/migration/V4__u4_audit_event.sql / backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java, backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java"
+    },
+    {
+      "id": "FR9.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java, backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java / backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java, backend/src/test/java/cherry/mastersmith/audit/repository/AuditEventRepositoryIT.java, backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventTest.java"
+    },
+    {
+      "id": "FR9.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "FR9.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditNotInAppLogIT.java"
+    },
+    {
+      "id": "FR10.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditTraceIdIT.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java（resultOf） / backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java（AFTER_COMMIT＋fallbackExecution）, backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java（REQUIRES_NEW） / backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java（同じスレッドの SQL の並び）, backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java（応答の前に行が存在）, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventRecorderTest.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditRollbackIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java / backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java（存在しないメールアドレス＋USER_NOT_FOUND）, backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditText.java / backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java（jqwik の性質4件＋境界4件）, backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditText.java（切り詰め以外の加工をしない） / backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java（改行・制御文字をそのまま）"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java（項目を持たない・toString で伏せる） / backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventTest.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditTraceIdIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java（成功時はログを出さない） / backend/src/test/java/cherry/mastersmith/audit/service/AuditNotInAppLogIT.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java, backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java（@Immutable） / backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java, backend/src/test/java/cherry/mastersmith/audit/repository/AuditEventRepositoryIT.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "DEFERRED",
+      "target": "Performance Validation の段で測る（1件の書き込みが同時 10 件で 95% が 50 ミリ秒以内）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "DEFERRED",
+      "target": "Performance Validation の段で測る（呼び出し元の予算への影響、コネクションプールの待ち）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java / backend/src/test/java/cherry/mastersmith/audit/repository/AuditEventRepositoryIT.java（insert audit_events 1回だけ）, backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "DEFERRED",
+      "target": "記録の量（1年 約 180〜250MB の見積もり）は運用の中で確かめる（monitoring-design.md 5章）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "backend/src/main/resources/db/migration/V4__u4_audit_event.sql（ix_audit_events_occurred_at） / backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java（削除の操作を持たない） / backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java。保存の期間の決定は後続 Intent（code-summary.md 8章）"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "U1 の見積もり（1日 約 500 件）に従い、監査イベントの表と索引を1つだけにした。実際の量の確認は運用（monitoring-design.md 5章）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java, backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java（固定の文、例外のメッセージを使わない） / backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/repository/AuditEventRepository.java, backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java / backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java, backend/src/test/java/cherry/mastersmith/audit/repository/AuditEventRepositoryIT.java"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "DEFERRED",
+      "target": "ボリュームの権限は U1 の配備の設計。配備の手順で確かめる（README の「監査ログの確かめ方」「消してはいけない操作」）"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditText.java / backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java, backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/ に web の層を作らない / backend/src/test/java/cherry/mastersmith/audit/AuditBoundaryArchitectureTest.java（auditHasNoWebLayer）。後続 Intent への引き継ぎは code-summary.md 8章"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "N/A",
+      "target": "受け入れる危険（OS の権限を持つ者によるファイルの直接の書き換えは検知できない）。README の「消してはいけない操作」に記載"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "N/A",
+      "target": "受け入れる危険（確定の後、書き込みの前の停止で1件が失われる）。code-summary.md 7章と README に記載"
+    },
+    {
+      "id": "NFR3.11",
+      "status": "OK",
+      "target": "U1 の JSON のログの仕組みをそのまま使う（改行で記録を偽装できない） / backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java（すべての行が JSON）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "team.md の必須の監査ログのテストを backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java, backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java に置いた"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditNotInAppLogIT.java"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java（2つの経路・2種類の失敗）, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditRollbackIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java（9つのキーと値＋exceptionType、メールアドレスを含む） / backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java, backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java / backend/src/test/java/cherry/mastersmith/audit/service/AuditTraceIdIT.java"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "DEFERRED",
+      "target": "運用で見る指標と警報は、配備先が決まったときに Operation の段で定める。当面は ERROR と遅れの WARN をログで見る（README の「監査ログ（U4）」）"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "AuditEvent.requestPath",
+      "status": "N/A",
+      "target": "承認済みの functional-design/entities.md の AuditEvent に無い項目。nfr-design/security-design.md 1章・6章と依頼者の決定 D2-A により、アクセスの拒否のときだけ記録する（backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java、backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java、backend/src/main/resources/db/migration/V4__u4_audit_event.sql、backend/src/test/java/cherry/mastersmith/audit/service/AuditAccessDeniedIT.java）。Functional Design の文書は書き換えていない"
+    },
+    {
+      "id": "AuditText.MAX_REQUEST_PATH_LENGTH",
+      "status": "N/A",
+      "target": "承認済みの rules.md BR2.1 はメールアドレス 254 と User-Agent 512 だけを挙げる。nfr-design/security-design.md 3章と決定 D2-A により、要求のパスも 512 コードポイントで切り詰める（backend/src/main/java/cherry/mastersmith/audit/domain/AuditText.java、backend/src/test/java/cherry/mastersmith/audit/domain/AuditTextTest.java）"
+    },
+    {
+      "id": "AuditEventListener の ERROR のメールアドレス",
+      "status": "N/A",
+      "target": "U2・U3 の「アプリのログにメールアドレスを出さない」方針に対する、U4 に限った例外。NFR10.3 と依頼者の決定 C6-A により、書き込みの失敗の ERROR にだけ記録しようとしたメールアドレスを載せる（backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java、backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java）"
+    },
+    {
+      "id": "AuditConfig の LongSupplier",
+      "status": "N/A",
+      "target": "設計書に部品として無い、書き込みの時間の測り方の Bean。計画の C5（差し替えで実時間に頼らずに遅れの WARN を確かめる）による（backend/src/main/java/cherry/mastersmith/audit/service/AuditConfig.java、backend/src/test/java/cherry/mastersmith/audit/testsupport/SlowAuditWriteConfig.java）"
+    }
+  ]
+}
