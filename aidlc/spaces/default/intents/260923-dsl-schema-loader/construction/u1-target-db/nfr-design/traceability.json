@@ -1,0 +1,146 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-target-db",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR7.6",
+    "NFR7.7",
+    "NFR12.1",
+    "NFR12.2",
+    "NFR12.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 1節（接続の待ち 3 秒。5 秒との差は 5節）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 2節（目的ごとの問い合わせの待ち 生成 20 秒・照合 5 秒、照合の全体 8 秒）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "security-design.md 2節（情報スキーマへ種類ごとに1回、計 4〜5 回）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "security-design.md 1節（設定の型だけが受け口、ArchUnit）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "security-design.md 1節（toString の伏せ字）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "security-design.md 3節（項目の名前だけの WARN）"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "security-design.md 3節（SQLState で見分け、文言を出さない）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "security-design.md 1節（資格情報を URL に入れない）"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "security-design.md 1節（readOnly、書き込みのコードを持たない）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "security-design.md 2節（識別子を組み込まない。要るときだけ一覧と引用符）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "security-design.md 2節（スキーマ名は PreparedStatement の値）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "security-design.md 2節（固定の問い合わせの文。SpotBugs の SQL_ の指摘で止める既存の関門）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "security-design.md 2節（固定の問い合わせで、名前に記号があっても文が変わらない）"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "security-design.md 1節・3節（設定が無い・不正でも Bean を作らず起動）"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "security-design.md 1節（最小 0、initializationFailTimeout -1）"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components.md 2節（ヘルスチェックは内部DB だけ）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "security-design.md 1節・logical-components.md 2節（既定の候補にしない）"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "security-design.md 1節（最大 5）"
+    },
+    {
+      "id": "NFR7.6",
+      "status": "OK",
+      "target": "security-design.md 1節（最小 0）"
+    },
+    {
+      "id": "NFR7.7",
+      "status": "OK",
+      "target": "security-design.md 1節（idleTimeout 60 秒）"
+    },
+    {
+      "id": "NFR12.1",
+      "status": "OK",
+      "target": "logical-components.md 3節（ドライバーは U1 だけ）。結合テストの実行の場は Build and Test"
+    },
+    {
+      "id": "NFR12.2",
+      "status": "OK",
+      "target": "Build and Test（テストごとのスキーマの作り方は NFR 要件のとおり）"
+    },
+    {
+      "id": "NFR12.3",
+      "status": "OK",
+      "target": "Build and Test（コンテナの実行環境が無いときの扱いは NFR 要件のとおり）"
+    }
+  ]
+}

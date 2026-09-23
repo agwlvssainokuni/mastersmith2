@@ -1,0 +1,92 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-dsl-definition",
+  "upstream_ids": [
+    "NFR1.4",
+    "NFR1.5",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR5.1",
+    "NFR5.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 1節・3節（1回の読み込み、JSON Schema は起動時に1回読んで使い回す）。Build and Test で測る"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "security-design.md 1節（上限の大きさでも段ごとの上限で止まる）。logical-components.md 2節（メモリは Build and Test）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 1節（バイト数で比べ、読まない）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md 1節（LoaderOptions の深さ 50）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design.md 1節（コレクションを指す別名 100）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "security-design.md 1節・2節（展開後の節の数 1,000,000 で打ち切り）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 1節（compose で型を作らず、タグを全拒否）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design.md 1節（重複キーを許さない）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 3節（fetchRemoteResources(false)、同梱の1つを起動時に読む）"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "security-design.md 3節（API に届いた本文をすべて検証）"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "security-design.md 1節（Jackson の YAML の読み込みを使わない、依存から外す）"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "security-design.md 4節（長さ 1,000、上限つきの実行器で 100 ミリ秒）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "security-design.md 1節・3節（部品の例外を誤りの種類へ写し、文言を使わない）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "security-design.md 3節（埋める値は場所と先頭 100 文字、知らない項目の値は埋めない）"
+    }
+  ]
+}

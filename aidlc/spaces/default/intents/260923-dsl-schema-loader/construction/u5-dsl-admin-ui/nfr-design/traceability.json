@@ -1,0 +1,68 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-dsl-admin-ui",
+  "upstream_ids": [
+    "NFR1.18",
+    "NFR1.19",
+    "NFR1.20",
+    "NFR1.21",
+    "NFR3.9",
+    "NFR3.10",
+    "NFR3.11",
+    "NFR5.6",
+    "NFR9.1",
+    "NFR10.1"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.18",
+      "status": "OK",
+      "target": "performance-design.md（今の状態とプレビューを同時に要求。照合を除く 3 秒・照合を含む 11 秒を E2E で測って記録）"
+    },
+    {
+      "id": "NFR1.19",
+      "status": "OK",
+      "target": "performance-design.md（開いた行・段だけを描く）"
+    },
+    {
+      "id": "NFR1.20",
+      "status": "OK",
+      "target": "performance-design.md（File.size で読む前に判定。送り方は機能設計の BR2.2 のまま）"
+    },
+    {
+      "id": "NFR1.21",
+      "status": "OK",
+      "target": "performance-design.md（先頭 100 件だけを描く）"
+    },
+    {
+      "id": "NFR3.9",
+      "status": "OK",
+      "target": "security-design.md（文字として描く、no-danger、テスト）"
+    },
+    {
+      "id": "NFR3.10",
+      "status": "OK",
+      "target": "security-design.md（ApiClient だけ、一時的な URL をすぐ捨てる）"
+    },
+    {
+      "id": "NFR3.11",
+      "status": "OK",
+      "target": "security-design.md（同じオリジンの固定のパス）"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "security-design.md（code から文言、DSL_BUSY の Alert）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "security-design.md（ja・en を対で、既存の登録の検査）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "security-design.md（vitest-axe、aria-expanded、読み上げの領域）"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "stage": "nfr-design",
+  "unit": "u3-default-dsl-generation",
+  "upstream_ids": [
+    "NFR1.6",
+    "NFR1.7",
+    "NFR2.5",
+    "NFR4.7",
+    "NFR4.8",
+    "NFR4.9",
+    "NFR9.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "security-design.md 5節（全体 30 秒、内訳を DEBUG のログと U4 の指標で測る）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 5節（組み立てと書き出し 5 秒、1回の書き出しでバイト列）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "security-design.md 1節（10MB を超えたら想定外の失敗、部分的な DSL を返さない）"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "security-design.md 2節（SnakeYAML の固定の DumperOptions、文字列の連結をしない、性質ベースのテスト）"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "security-design.md 3節（制御文字を取り除く、切り詰めない。機能設計との差は 6節）"
+    },
+    {
+      "id": "NFR4.9",
+      "status": "OK",
+      "target": "security-design.md 4節（写しだけを受け取り、ログに本文・接続先を出さない）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "security-design.md 2節・3節（表示名は機能設計の BR1.2 のとおり組み立てて文字列として書き出し、コメントの制御文字は3節のとおり取り除く）"
+    }
+  ]
+}
