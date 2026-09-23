@@ -5,5 +5,12 @@
     "dirName": "260922-auth-audit-base",
     "scope": "auth-audit-foundation",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0cc8a-c91a-7c8f-b1b9-dcde97263818",
+    "slug": "audit-pool-exhaustion",
+    "dirName": "260923-audit-pool-exhaustion",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
