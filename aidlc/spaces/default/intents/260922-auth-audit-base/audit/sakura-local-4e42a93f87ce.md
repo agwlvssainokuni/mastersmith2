@@ -32164,3 +32164,799 @@
 **Tool**: Bash
 
 ---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:48:04Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a4597349ade749add
+**Message**: 了解、続けて
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:48:07Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:48:16Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: abed186964b635ace
+**Message**: 了解、続けて
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:48:19Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:48:28Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a098a9321db9b6c9b
+**Message**: Reading unit-test-instructions.md files
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:48:29Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:49:00Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a9ca49dd04ee27eab
+**Message**: Extracting U2–U4 test commands from uti.txt
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:49:01Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:49:31Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ac5790918d419b9a7
+**Message**: Enumerating FR/NFR IDs from requirements.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:49:34Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:50:03Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a1063bbdecbad2e4d
+**Message**: Inspecting traceability.json ID namespaces
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:50:06Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:50:34Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a51d94b4d775d8afc
+**Message**: Listing deferred entries in code-generation traceability
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:50:39Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:51:05Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aacf224d69571b687
+**Message**: Inspecting README.md and .env.example
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:51:09Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:51:37Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aa82e57fdd7ff3a83
+**Message**: Checking verify2 log and jacoco config
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:51:44Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:52:08Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ad9cc87dc2e701b8d
+**Message**: Reading osv.json and SpotBugs counts
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:52:12Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:52:39Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a453850b42ede163f
+**Message**: Running per-unit tests via perunit.sh
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:53:11Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: af2369a4950d2380b
+**Message**: Drafting build-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:53:34Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T01:53:34Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/build-instructions.md
+**Context**: construction > build-and-test > build-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:53:39Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:53:42Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a3bd2d7b230f3e382
+**Message**: Checking per-unit test run logs
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:53:45Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:54:15Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a7217bd915f97a131
+**Message**: Inspecting u1-be.log coverage failure
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:55:09Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:55:18Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a4ee4dab5b269769c
+**Message**: Loading Monitor for perunit.out polling
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:55:21Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:55:49Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ac852d7e0a0a83168
+**Message**: Counting integrationTest results per IT class
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:56:33Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T01:56:33Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/integration-test-instructions.md
+**Context**: construction > build-and-test > integration-test-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:56:37Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:56:51Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a647efc9f205fb11a
+**Message**: Extracting per-unit frontend coverage summaries
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:57:32Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T01:57:32Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/performance-test-instructions.md
+**Context**: construction > build-and-test > performance-test-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:57:35Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:57:53Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a6165199150b1c273
+**Message**: Re-running corrected U1 coverage commands
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:59:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T01:59:00Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/security-test-instructions.md
+**Context**: construction > build-and-test > security-test-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:59:05Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:59:25Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a7d255a4a13f198aa
+**Message**: Fixing test class names in security-test-instructions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T01:59:28Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T01:59:57Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a9628df482876e8bf
+**Message**: Extracting coverage results from u1-fe-fix.log
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:00:05Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T02:00:05Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/memory.md
+**Context**: construction > build-and-test > memory.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:00:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:00:29Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a64a2ed9065e92b7f
+**Message**: Waiting on verify-final.log completion
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:00:46Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:01:00Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a2fea6fe68ea14ecd
+**Message**: Reading execution plan in aidlc-state.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:01:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:01:32Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a856e5579677ee3c8
+**Message**: Polling verify-final.log for completion
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:02:07Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:02:34Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a956aba1f0389efc8
+**Message**: Filling measured values into build-and-test-summary.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:02:49Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:03:07Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: abb47bc8d82d35926
+**Message**: Renaming Target Verification Matrix heading
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:03:12Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:03:38Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a55828badaa4cfd92
+**Message**: Identifying nested integration test classes
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:05:10Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-23T02:05:10Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:05:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:05:40Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a07d56a9b5cc322a1
+**Message**: Correcting SpotBugs counts in test-results.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:05:46Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:06:11Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aedee37543b73ef5d
+**Message**: Generating cross-unit coverage table
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:06:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:06:43Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a68a70975ef860519
+**Message**: Verifying traceability.json target paths exist
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:07:06Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:07:13Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:07:14Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a0b7c1b08de74913d
+**Message**: Writing cross-unit-traceability.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:07:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:07:45Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aad2004e3de39833e
+**Message**: Verifying verdict counts in build-and-test-summary.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-09-23T02:08:25Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-quality-agent
+**Agent ID**: a6895f765dead2015
+**Message**: Build and Test ステージの作業を完了し、報告を呼び出し元へ引き渡しました。
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:11:02Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:11:03Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:11:03Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:11:08Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-23T02:11:48Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: Unverified 17件は performance-validation・observability-setup・deployment-execution に引き継ぐ。U1 の unit-test-instructions 2.4 節から jacocoTestCoverageVerification を外し、フロントエンドに --coverage.include='src/app/**' を足した
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:12:38Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:12:52Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T02:12:54Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c4
+**Content-Hash**: 0cb06418ec91709472835a5f5f3278309672385a651295cb7d541197c7521196
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Testing Posture
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T02:12:54Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c3
+**Content-Hash**: 0bf5838d31cde7d0227a8b8a7218db87d70238e8b3c13aa06ca6b3864dd85c28
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Testing Posture
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-23T02:12:54Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c2
+**Content-Hash**: 1340b2bcd75ac79b135d0768a43f458838dd75a8266977a7f183ed9c9fba3820
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Way of Working
+**Source**: orchestrator
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:16:36Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:16:39Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-09-23T02:16:42Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: build-and-test
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:16:45Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-09-23T02:16:47Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-09-23T02:16:47Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:96b8f13dd5dc4ed374a013c67c59513754aa4e6f9c23c96a9953c7cb00d73f5c","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:a9c54b43de7b48ac8f3900c4d2d545238be0b2beab3429396d88e114a93d1413","instanceCount":4,"presentCount":4,"producer":"code-generation","required":true,"structureHash":"sha256:5b0011e4d0d980ed69d84faa170bcdb2a398893876725e7355f6f3b86a4f01da"},{"artifact":"code-summary","contentHash":"sha256:8387a1e6001c4dc651e07c46c8ba2013485a87b70737725c2931c7803d76f574","instanceCount":4,"presentCount":4,"producer":"code-generation","required":true,"structureHash":"sha256:df206e1032d309883a9a44af51bd08e8906738779a4686d17d2be4d43b9f4b7a"},{"artifact":"unit-test-instructions","contentHash":"sha256:eb11e38eb585588293da1896d6c3dc697768aee0f108c47dff65a527275edca6","instanceCount":4,"presentCount":4,"producer":"code-generation","required":true,"structureHash":"sha256:6855f83494affa08d4bff6477ca4b8010550bdc5085024e48303d8dc5192cb35"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:cf9f0ccf2f6147aa1ad2da58ea46654298c1a8cf50154bf1376ee77356a632c4","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:a80e20960c4bfb7583b0096704d14f23c9c9fe9f7ac31e8784bce4b55d5e78ba"},{"artifact":"build-instructions","contentHash":"sha256:a27bb1317142c43e737b8090cc2d8413d394a29c4664d964462e5362ce712bac","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:ea8cfa49bdc91c0c1e362384534f2557a7285e87ab8d247e88bf8ea1f5c68ef1"},{"artifact":"build-test-results","contentHash":"sha256:30aebac6d09c11cc40a8b4e7a18d50c06bd896fa94b1c5a994bab2716b9da441","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:4c4aba7f7019493980094919133fba180dbbd10d182d2920d7eb13a72f7264cc"},{"artifact":"cross-unit-traceability","contentHash":"sha256:a011f2c4a15aaadc7dc8816f9e1187b57f2f6968552006cb290e7ae835a1453f","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:8ed89af098e4146852b93d094a44c55c82ec1b695b33248a85674b501e9e1758"},{"artifact":"integration-test-instructions","contentHash":"sha256:2931552e28ed9227980af02d2b9ddcc54bc302f5d5e3e46e58f2bfc30ce4ba92","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:577dfc85bc1aa5da08a8c8a47e692c2237ba39f66c235d110cc554937ba2a77f"},{"artifact":"performance-test-instructions","contentHash":"sha256:cd20ec1d6b2b00755958126e8800d268eedd42ddf99218dcc12569ad35801a80","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:bee41ffc2189052e1b1572bb6fca55fc0fe461cee2244ded99060a206c447bd8"},{"artifact":"security-test-instructions","contentHash":"sha256:f2e73ca58d0348590c45b8536d034e31c92598b6ac64f4f5c06865ecf08cd8aa","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:6c086189f88291686014599323b5edf305b00fd90c444a75eadf93da27ef0950"}],"projectType":"greenfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 222
+**Tokens Out**: 43947
+**Cache Read**: 26252018
+**Cache Write**: 376978
+**Cost USD**: 16.94
+**By Model**: opus-5=16.94
+**By Agent**: main=7.00; aidlc-quality-agent=9.94
+**Tokens By Model**: opus-5=222/43.9k/26.3M/377k
+**Tokens By Agent**: main=60/14.7k/11.3M/96.2k; aidlc-quality-agent=162/29.3k/14.9M/280.7k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-09-23T02:16:47Z
+**Event**: STAGE_STARTED
+**Stage**: ci-pipeline
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-23T02:16:59Z
+**Event**: HUMAN_TURN
+**Session**: b0c483c1-47e3-4d16-bd11-3c8419596feb
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-23T02:17:02Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---

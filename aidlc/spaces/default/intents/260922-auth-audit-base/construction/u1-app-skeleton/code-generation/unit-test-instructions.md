@@ -56,16 +56,20 @@ make-you-chic-ui のビルドで作られるのは、サブモジュールの `.
 
 Gradle の `--tests` は、その直前に書いたタスクにだけ効く。
 
-### 2.4 U1 のテストをまとめて実行する（カバレッジの報告と下限の検証を含む）
+### 2.4 U1 のテストをまとめて実行する（カバレッジの報告）
 
 ```bash
 ./gradlew :backend:test --tests 'cherry.mastersmith.common.*' --tests 'cherry.mastersmith.config.*' --tests 'cherry.mastersmith.ArchitectureTest' \
   :backend:integrationTest --tests 'cherry.mastersmith.common.*' --tests 'cherry.mastersmith.config.*' \
-  :backend:jacocoTestReport :backend:jacocoTestCoverageVerification
-(cd frontend && NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/app --coverage)
+  :backend:jacocoTestReport
+(cd frontend && NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/app --coverage --coverage.include='src/app/**')
 ```
 
-報告は `backend/build/reports/jacoco/` と `frontend/coverage/` に出る。統合の前の関門としては、これとは別に `./gradlew verify`（全単位の全検査）を実行する（Build and Test と統合の前）。
+報告は `backend/build/reports/jacoco/` と `frontend/coverage/` に出る。
+
+下限（行 80%・分岐 70%）の検証は、ここでは行わない。下限は成果物全体に対して定義されており、U1 のテストだけを実行した状態で当てると、ほかの単位のクラスが1行も測られないために必ず失敗するためである（フロントエンドも同じ理由で `--coverage.include` で U1 の範囲に絞る）。下限の判定は `./gradlew verify`（全単位の全検査）が行う。統合の前の関門としては、これとは別に `./gradlew verify` を実行する（Build and Test と統合の前）。
+
+（この節は Build and Test の段で、書かれたままでは必ず失敗することが分かったため、依頼者の承認を得て U2〜U4 と同じ形に直した。）
 
 ## 3. テストの一覧（部品ごと）
 
