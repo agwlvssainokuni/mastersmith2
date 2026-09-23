@@ -49,6 +49,7 @@
 - CI が必要な検査を実行しているかの確認は、Build and Test が記録した検査の一覧（コマンド）と、CI の段との対応づけで判断する。意図して CI の外に置く検査（E2E など）は、その旨と代わりの実行の場を明記する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:5db3d4deb009c3eebf80febf187717a0b22554d957e7ac8e86ec6cf6c71727a4 -->
 - 配備先が決まっていない間の配備の段（deployment-pipeline など）は、既にある Dockerfile・compose.yaml・README の手順を正として記録と整理を行い、決まっていない点だけを質問する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-pipeline:b1a86e0f41aa6e3459a2de7b1a258188647faeed5d2b769ede422dbd9702e886 -->
 - 配備先が開発者の PC 上のコンテナのときは、環境の段（environment-provisioning など）を Docker の実行環境・イメージ・ボリューム・.env・compose.yaml の設定と読み替え、設計の値を実際にコンテナを起動して1つずつ確かめる。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:environment-provisioning:ac6d4ef03ae6ae98e21f41ed4b710aff15e4e1f0e74529d462247e8e8c7a43a6 -->
+- 配備先が決まるまでの手元の監視は、grafana/otel-lgtm を compose の profile で見たいときだけ起動し、ダッシュボードと警報の決まりはファイルでリポジトリに置く（画面からは変えない）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:observability-setup:542822cb3fe5db425d4384bbb06c49af318db761a9d0ab6afe21eb6c39a2fdc2 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -106,3 +107,5 @@
 - 環境に関わる段では、質問を作る前にその PC の実行環境（例: colima の CPU・メモリ、既存のイメージ・ボリューム・.env の有無）を読み取りだけで調べ、設計の値を満たせない点を質問にする。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:environment-provisioning:e1e4bbd98bd4bc930b9341961e8cb33bada2efe1658186645fc558cbd0525e9e -->
 - 手順書で予定した確認（例: 戻しの練習）を依頼者の判断でやめたときは、未確認のまま残る前提と、次に確かめる機会をその段の成果物に記録する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-execution:b34ddfa7ebe1fb62622536b635e15d834ec86cf9b982bd0eccce25802001053e -->
 - パスワードなど秘密情報が要る操作（例: 初期管理者でのログイン）は依頼者が行い、AI は監査イベントとログで裏付ける。個人に関する値は表示せず、値の有無だけを確かめる。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-execution:f8f1f6c69411467ee65e09363c7644e62aa7d351e1373c303c05319b3da7fbb4 -->
+- 警報やダッシュボードの式は、書く前に実際に起動して指標・ラベル・ログの項目の名前を確かめ、書いた後にすべての式を実行して正しいことを確かめる。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:observability-setup:29742d589973c4f5111245570e090fe1480ffcf5fdd38bc811adbe404efec989 -->
+- 確認のために送る要求が監査ログに残る（追記だけで消せない）ときは、送る前に依頼者に伝える。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:observability-setup:372ae4e79606cc709aee169b5d5dcc5f8702f2b408f108142e0b99820f40bc80 -->

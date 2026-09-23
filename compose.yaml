@@ -73,5 +73,35 @@ services:
     volumes:
       - ./docker/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
 
+  # 手元の監視（Observability Setup で追加）。見たいときだけ profile monitoring で起動する。
+  # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（README の「手元の監視」）。
+  # 受け手・指標（Prometheus）・ログ（Loki）・トレース（Tempo）・画面（Grafana）を1つにした、手元の確認向けのコンテナ。
+  lgtm:
+    image: grafana/otel-lgtm:0.33.1
+    profiles: [monitoring]
+    ports:
+      # Grafana の画面だけを開発者の PC の localhost に結び付ける。OTLP の受け口は PC に開かない。
+      - "127.0.0.1:3000:3000"
+    environment:
+      # 画面は見るだけ（ログインなしで閲覧、ログインの画面は出さない）。ダッシュボードと警報はファイルで入れる。
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_USERS_DEFAULT_LANGUAGE: ja-JP
+    volumes:
+      - mastersmith-monitoring:/data
+      - ./docker/monitoring/provisioning/dashboards/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/mastersmith.yaml:ro
+      - ./docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro
+      - ./docker/monitoring/dashboards:/otel-lgtm/mastersmith-dashboards:ro
+    # colima の VM（メモリ 約 2GiB）の中で、アプリ（上限 1GB）と一緒に動かすための上限。
+    mem_limit: 900m
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
 volumes:
   mastersmith-data:
+  mastersmith-monitoring:

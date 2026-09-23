@@ -212,6 +212,26 @@ docker compose logs -f otel-collector      # トレース・ログはすぐ、�
 
 外部へ送るトレースからは、例外のメッセージとスタックトレース、要求の URL の問い合わせの部分を取り除いています。
 
+## 手元の監視（Grafana）
+
+指標・ログ・トレースを手元で見るときだけ、`grafana/otel-lgtm`（OTLP の受け手と Prometheus・Loki・Tempo・Grafana を1つにしたコンテナ）を profile `monitoring` で起動します。既定の起動（`docker compose up`）には含まれません。
+
+```bash
+# .env に次の2行を書く（見終わったら消す。送り先が無い間は送信の失敗の警告がログに出るため）
+#   MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true
+#   MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318
+docker compose --profile monitoring up -d --wait
+# ブラウザで http://localhost:3000/ を開き、ダッシュボードの「MasterSmith」→「MasterSmith の概要」を見る
+docker compose --profile monitoring stop lgtm   # 見終わったら止め、.env の2行を消して docker compose up -d で起動し直す
+```
+
+- 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは変えられません。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
+- 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
+- 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。
+- 監視のコンテナのメモリの上限は 900MB です。colima の VM のメモリが 2GiB のときは余裕が少ないため、止まる・遅いときは VM のメモリを増やしてください（例: `colima stop` → `colima start --cpu 2 --memory 4`）。
+- 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。
+- 外部エクスポートを有効にすると、JVM が `sun.misc.Unsafe` の警告を標準エラーに数行出します（送信に使う protobuf の部品による。1行1件の JSON ではありません）。
+
 ## プロキシを置く配備
 
 - エラー応答の `type` の URL を固定するときは、`MASTERSMITH_WEB_BASE_URL` にベースURLを設定します。

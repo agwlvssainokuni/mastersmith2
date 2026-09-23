@@ -1,0 +1,542 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# 手元の監視（compose の profile monitoring）の警報の決まり。承認済みの監視の設計（U1〜U4 の monitoring-design.md）の候補から作る。
+# 知らせ先は置かない（Grafana の「警報」の一覧で見る）。生成元: aidlc の Observability Setup の記録（alarms.md）。
+apiVersion: 1
+groups:
+- orgId: 1
+  name: mastersmith
+  folder: MasterSmith
+  interval: 1m
+  rules:
+  - uid: ms-app-absent
+    title: アプリの停止（指標が届かない）
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 高
+      service: mastersmith
+    annotations:
+      summary: アプリから指標が 5 分届いていない。docker compose ps で状態を確かめる。手元の監視だけを起動しているときは、アプリの起動の有無を確かめる
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: absent(process_uptime_milliseconds{service_name="mastersmith"})
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: ms-5xx-ratio
+    title: 5xx の割合の増加
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: 5xx の割合が 5 分間 1% を超えた。ログの ERROR とトレースを確かめる
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: (sum(rate(http_server_requests_milliseconds_count{service_name="mastersmith",status=~"5.."}[5m])) or vector(0)) / sum(rate(http_server_requests_milliseconds_count{service_name="mastersmith"}[5m]))
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.01
+  - uid: ms-error-logs
+    title: ERROR のログの増加
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: ERROR のログが 5 分で 5 件を超えた
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: sum(increase(logback_events_total{service_name="mastersmith",level="error"}[5m]))
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 5
+  - uid: ms-audit-fail
+    title: 監査の書き込みの失敗
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: 監査イベントの記録に失敗した。ERROR のログの項目から記録を補うかを判断する（U4）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "監査イベントの記録に失敗しました" [1h]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: ms-login-p95
+    title: ログインの応答の遅れ
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: ログインの API の 95 パーセンタイルが 1 秒を超えた
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_server_requests_milliseconds_bucket{service_name="mastersmith",uri="/api/auth/login"}[5m])))
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 1000
+  - uid: ms-refresh-p95
+    title: トークンの更新の応答の遅れ
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: トークンの更新の API の 95 パーセンタイルが 1 秒を超えた
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_server_requests_milliseconds_bucket{service_name="mastersmith",uri="/api/auth/session/refresh"}[5m])))
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 1000
+  - uid: ms-check-p95
+    title: 確認用 API の遅れ
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 確認用 API の 95 パーセンタイルが 300 ミリ秒を超えた。監査の記録の時間と DB の待ちを確かめる
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_server_requests_milliseconds_bucket{service_name="mastersmith",uri="/api/admin/check"}[5m])))
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 300
+  - uid: ms-pool-pending
+    title: コネクションプールの待ち
+    condition: C
+    for: 1m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 接続を借りる待ちが 1 分続いた
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: max(hikaricp_connections_pending{service_name="mastersmith"})
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: ms-heap
+    title: JVM のメモリの不足の兆し
+    condition: C
+    for: 5m
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: ヒープの使用率が 5 分間 85% を超えた
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: sum(jvm_memory_used_bytes{service_name="mastersmith",area="heap"}) / sum(jvm_memory_max_bytes{service_name="mastersmith",area="heap"})
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.85
+  - uid: ms-forbidden
+    title: 管理画面への拒否の増加
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: 403 が 1 時間に 20 件を超えた。監査ログで利用者と接続元IPを確かめる（U3）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: sum(increase(http_server_requests_milliseconds_count{service_name="mastersmith",status="403"}[1h])) or vector(0)
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 20
+  - uid: ms-lock
+    title: ロックの多発
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: アカウントのロックが 1 時間に 5 件を超えた。監査ログで接続元IPを確かめる（U2）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "アカウントをロックしました" [1h]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 5
+  - uid: ms-rejected
+    title: 回り込みの試み
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: 正規化されていないパスの拒否が 1 時間に 10 件を超えた（U3）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "正規化されていないパスの要求を拒否しました" [1h]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 10
+  - uid: ms-origin
+    title: 送り元の不一致の多発
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 送り元の不一致の拒否が 1 時間に 10 件を超えた。CSRF の試みか、ベースURLの設定の誤り（U2）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 3600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "要求の送り元が自分の配信元と一致しないため拒否しました" [1h]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 10
+  - uid: ms-audit-slow
+    title: 監査の書き込みの遅れ
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 監査の書き込みの遅れの WARN が 1 日に 3 件以上出た。記録の量と DB の待ちを確かめる（U4）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "監査イベントの記録に時間がかかりました" [1d]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 2
+  - uid: ms-cleanup-fail
+    title: トークンの削除の失敗
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 使い終わったリフレッシュトークンの削除に失敗した。翌日に再び行われる（U2）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "使い終わったリフレッシュトークンの削除に失敗しました" [1d]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+  - uid: ms-bcrypt
+    title: 照合の時間の範囲外
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 低
+      service: mastersmith
+    annotations:
+      summary: 起動時の照合の時間が目安の外。cost か CPU の上限を見直す（U2）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 86400
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({service_name="mastersmith"} |= "パスワードの照合の時間が目安（100〜500 ミリ秒）の外です" [1d]))
+        instant: true
+        queryType: instant
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
