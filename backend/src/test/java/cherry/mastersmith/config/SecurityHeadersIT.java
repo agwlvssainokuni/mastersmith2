@@ -35,7 +35,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /** 応答のヘッダーの結合テスト（NFR3.10、security-design 2章、performance-design 5章）。 */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "mastersmith.test-fixture.public-api=true")
 class SecurityHeadersIT {
 
     private static final String CSP = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:;"

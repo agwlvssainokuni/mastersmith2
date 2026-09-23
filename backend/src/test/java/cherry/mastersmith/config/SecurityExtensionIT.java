@@ -56,13 +56,15 @@ class SecurityExtensionIT {
     int port;
 
     @Test
-    @DisplayName("with U1 alone every /api/** request is permitted")
-    void u1AlonePermitsApi() {
+    @DisplayName("with the ApiDefaultAccess of U3 in place every /api/** request requires login")
+    void apiRequiresLoginWithU3() {
         HttpTestClient client = new HttpTestClient(port);
 
-        assertThat(client.get("/api/test-fixture/number?value=1").statusCode()).isEqualTo(200);
-        assertThat(client.get("/api/test-fixture/business").statusCode()).isEqualTo(409);
-        assertThat(client.get("/api/no-such-api").statusCode()).isEqualTo(404);
+        // U3 が API の既定の扱いを「ログイン必須」にしたため、公開の一覧に無い /api/** はログインなしで 401 になる。
+        // 決まりを足さない状態（U1 だけ）の確認は、U3 の ApiDefaultAccessIT が受け持つ。
+        assertThat(client.get("/api/test-fixture/number?value=1").statusCode()).isEqualTo(401);
+        assertThat(client.get("/api/test-fixture/business").statusCode()).isEqualTo(401);
+        assertThat(client.get("/api/no-such-api").statusCode()).isEqualTo(401);
     }
 
     @Nested
@@ -91,28 +93,6 @@ class SecurityExtensionIT {
 
             assertThat(client.get("/actuator/health").statusCode()).isEqualTo(200);
             assertThat(client.get("/api/problems/not-found").statusCode()).isEqualTo(200);
-        }
-    }
-
-    @Nested
-    @TestPropertySource(properties = "mastersmith.test-fixture.api-default-access=true")
-    @DisplayName("with an ApiDefaultAccess that requires authentication")
-    class WithDefaultAccess {
-
-        @LocalServerPort
-        int nestedPort;
-
-        @Test
-        @DisplayName("/api/** requires login while health, problem pages and the screen stay public")
-        void apiRequiresLogin() {
-            HttpTestClient client = new HttpTestClient(nestedPort);
-
-            assertThat(client.get("/api/test-fixture/number?value=1").statusCode())
-                    .isEqualTo(401);
-            assertThat(client.get("/api/no-such-api").statusCode()).isEqualTo(401);
-            assertThat(client.get("/actuator/health").statusCode()).isEqualTo(200);
-            assertThat(client.get("/api/problems/not-found").statusCode()).isEqualTo(200);
-            assertThat(client.get("/").statusCode()).isEqualTo(200);
         }
     }
 

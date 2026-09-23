@@ -385,5 +385,5 @@ tasks.register<Exec>("e2eTest") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(":backend:bootWar")
     workingDir = frontendDir.asFile
-    commandLine("npx", "playwright", "test", "e2e/u1-skeleton.e2e.ts")
+    commandLine("npx", "playwright", "test", "e2e")
 }

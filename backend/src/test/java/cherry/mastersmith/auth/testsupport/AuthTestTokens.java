@@ -133,15 +133,20 @@ public final class AuthTestTokens {
     }
 
     /**
-     * トークンの署名（3つ目の部分）の最後の1文字を変える。
+     * トークンの署名（3つ目の部分）の最初の1文字を変える。
+     *
+     * <p>署名の最後の1文字は詰め物のビットを含むため、書き換えても復号すると同じ値になることがある
+     * （例: {@code A} と {@code B}）。その場合は改ざんにならず、テストが不安定になる。最初の1文字は
+     * 詰め物を含まないため、必ず署名の値が変わる。
      *
      * @param token トークン
      * @return 改ざんしたトークン
      */
     public static String tamper(String token) {
-        char last = token.charAt(token.length() - 1);
-        char replaced = last == 'A' ? 'B' : 'A';
-        return token.substring(0, token.length() - 1) + replaced;
+        int signatureStart = token.lastIndexOf('.') + 1;
+        char first = token.charAt(signatureStart);
+        char replaced = first == 'A' ? 'B' : 'A';
+        return token.substring(0, signatureStart) + replaced + token.substring(signatureStart + 1);
     }
 
     private static JWTClaimsSet claims(long userId, Instant issuedAt, Instant expiresAt) {

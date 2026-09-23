@@ -62,7 +62,7 @@ import org.springframework.test.context.TestPropertySource;
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "mastersmith.test-fixture.error-endpoints=true")
+        properties = {"mastersmith.test-fixture.error-endpoints=true", "mastersmith.test-fixture.public-api=true"})
 class ExternalExportIT {
 
     /** 受け手が受け取った要求（パスと本文）。 */

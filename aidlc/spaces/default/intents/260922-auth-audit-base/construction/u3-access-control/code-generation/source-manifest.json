@@ -1,0 +1,190 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-access-control",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AccessDeniedReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AccessEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AccessProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AccessResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AdminAccessDeniedEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AdminPaths.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/service/AccessDeniedEventPublisher.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/service/AccessProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AccessRequestRejectedHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AccessWebSecurityConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminAccessDeniedHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminApiDefaultAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminAuthenticationEntryPoint.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminAuthorizationManager.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminCheckController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminSecurityContributor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/package-info.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/domain/AccessDeniedReasonTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/domain/AccessProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/domain/AdminAccessDeniedEventTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/domain/AdminPathsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/service/AccessDeniedEventPublisherTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/service/AccessProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/testsupport/AdminAccessTestConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/testsupport/AdminTestUsers.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/testsupport/CapturedAccessDeniedEvents.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/testsupport/PublicApiTestRules.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AccessProblemTypesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AccessRequestRejectedHandlerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AccessSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessDeniedHandlerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AdminAuthenticationEntryPointTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AdminAuthorizationManagerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/ErrorResponseIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/ExternalExportIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/TracingAndLoggingIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/TestSecurityExtensions.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/ExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/SecurityExtensionIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/SecurityHeadersIT.java"
+    },
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "frontend/e2e/u3-admin-access.e2e.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminAreaPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminAreaPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminPlaceholder.css"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminPlaceholder.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminPlaceholder.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/adminApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/adminApi.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/adminAreaStatus.test.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/adminAreaStatus.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/registration.ts"
+    }
+  ]
+}

@@ -34,7 +34,9 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
 /** 公開する範囲と画面の配信の結合テスト（NFR3.5〜NFR3.7、NFR3.12、security-design 4章・6章）。 */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "mastersmith.test-fixture.public-api=true")
 class ExposureIT {
 
     private static final int LIMIT = 1024 * 1024;

@@ -82,7 +82,7 @@ cd frontend && npx playwright install chromium && cd ..   # 初回と Playwright
 ./gradlew e2eTest
 ```
 
-WAR をビルドし、一時ディレクトリの内部DBで起動して、ログイン用レイアウトが CSP 違反やスクリプトのエラーなしに表示されることを確かめます（番号は 18081。`E2E_PORT` で変えられます）。
+WAR をビルドし、一時ディレクトリの内部DBで起動して、`frontend/e2e/` のすべての確認（U1 の画面の骨格、U2 のログインとログアウト、U3 の代表の流れ「ログイン → 管理画面に入れるか → ログアウト」）を CSP 違反やスクリプトのエラーなしに通ることを確かめます（番号は 18081。`E2E_PORT` で変えられます）。
 
 ## 開発時の起動
 
@@ -205,6 +205,24 @@ docker compose logs -f otel-collector      # トレース・ログはすぐ、�
 - 前進のみとし、適用済みのファイルは書き換えません（書き換えると起動時の検証で起動が止まります）。1つ前の版のアプリが動く後方互換を保ちます。
 - Hibernate はスキーマを作らず、検証だけ行います。
 
+## API のアクセス制御（U3）
+
+`/api/` の下は**既定でログインが必要**です。ログインなしで呼べるのは、次の明示した一覧だけです。
+
+| パス | 置く単位 | 理由 |
+|---|---|---|
+| `/actuator/health` | U1 | 起動確認 |
+| `/api/problems/**` | U1 | 誰でも読める説明文書 |
+| `/api/auth/login` | U2 | ログインする前に呼ぶ |
+| `/api/auth/session/**` | U2 | 更新は Cookie で認証し、ログアウトは期限切れでも呼べる必要がある |
+
+- **管理者のみの範囲**: `/api/admin` そのものと `/api/admin/**` は管理者だけが使えます。未ログインは 401 / `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 / `ACCESS_DENIED` になります。存在しない管理 API も、管理者でない利用者には 403 になります（有無を明かさないため）。管理者かどうかは、要求ごとに内部DBから読んだ値で判断します。
+- 後の単位が管理者のみの API を足すときは、**`/api/admin/` の下に置いてください**（個々の API での宣言には頼りません）。それ以外の `/api/` の下は、置くだけでログインが必要になります。
+- **確認用 API**: `GET /api/admin/check` は、管理者なら 204（内容なし）を返します。画面の管理者向け領域が、表示のたびにこれを呼びます。
+- **正規化されていないパスの拒否**: エンコードされた区切り・`;`・`..`・連続した `//` などを含む要求は、判定の前に 400 / `REQUEST_REJECTED` で拒否します。応答はほかのエラーと同じ形（`type`・`code`・`traceId`）で、安全のためのヘッダーも付きます。拒否したパスはログに出しません。
+- **画面**: サイドバーの「管理」は管理者にだけ表示されますが、これは表示の切り替えにすぎません。判定は必ずサーバー側で行われます。
+- 環境変数は増えません。
+
 ## 後の単位（U2・U3・U4）が使う差し込み口
 
 U1 のファイルは書き換えずに、次の型を使います。
@@ -225,6 +243,8 @@ U1 のファイルは書き換えずに、次の型を使います。
 | 認証の出来事（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticationEvent` を U2 のトランザクションの中で知らせる。受け取りは `@TransactionalEventListener(phase = AFTER_COMMIT)` で確定の後に同じスレッドで行う | U4 |
 | 時計（U2 が提供） | `java.time.Clock` の Bean（UTC、`cherry.mastersmith.auth.service.AuthClockConfig`）。ほかの単位は別に定義せずこれを使う | U3、U4 |
 | API 呼び出しの共通部分（U2 が提供） | `frontend/src/shared/api-client/` の `apiFetch`・`apiRequest`（アクセストークンの付与、401 での更新と送り直し）と `{ status, code }` の形のエラー | U3（画面） |
+| アクセス拒否の出来事（U3 が提供） | `cherry.mastersmith.access.domain.AdminAccessDeniedEvent`（`eventType`＝`ACCESS_DENIED`・`occurredAt`・`result`＝`FAILURE`・`failureReason`・`enteredEmail`（分かるときだけ）・`sourceIp`・`userAgent`・`requestPath`・`traceId`）を `ApplicationEventPublisher` で知らせる。受け取りは `@EventListener` で**要求と同じスレッド・応答を書く前**に行う（内部DBの更新を伴わないため、U2 の認証の出来事と異なり確定の後ではない）。受け取り側の失敗で 401／403 の応答は変わらない | U4 |
+| 役割・権限の判定の置き場所（U3 が提供） | `cherry.mastersmith.access.web.AdminAuthorizationManager`。後続 Intent で役割・権限の判定を足すときはここに足す | 後続 Intent |
 
 - 秘密情報を持つ型は、文字列化（`toString`）でその項目を伏せ字にしてください（メソッドの呼び出しの追跡が引数と戻り値を文字列にするため）。
 - 画面での表示の制御はサーバー側の権限の確認の代わりになりません。データは API の側で守ります。

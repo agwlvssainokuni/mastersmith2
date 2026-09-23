@@ -113,7 +113,7 @@ U3 は、管理者だけが使える API と画面を、サーバー側の判定
 
 ### 4.1 プロジェクトの構成と本番の設定の骨組み
 
-- [ ] **Step 1 — パッケージの骨組み（依存関係・設定の追加なし）**
+- [x] **Step 1 — パッケージの骨組み（依存関係・設定の追加なし）**
   - パッケージの骨組み: `cherry.mastersmith.access.{domain,service,web}`。各パッケージに日本語の `package-info.java`。
   - 依存関係は足さない（`gradle/libs.versions.toml`・`backend/build.gradle.kts`・`backend/gradle.lockfile` を変えない）。環境変数・秘密情報・設定の型も足さない（`infrastructure-specification.md` 3章）。`application.yaml` は変えない。
   - 時計は U2 の `AuthClockConfig` の `Clock` の Bean を注入して使う（出来事の `occurredAt`）。U3 で `Clock` を定義しない。
@@ -121,7 +121,7 @@ U3 は、管理者だけが使える API と画面を、サーバー側の判定
 
 ### 4.2 テストの実行の枠組み
 
-- [ ] **Step 2 — この単位のテストのコマンドを確かめ、U3 のテストの補助を置く**
+- [x] **Step 2 — この単位のテストのコマンドを確かめ、U3 のテストの補助を置く**
   - U1・U2 が用意した枠組みをそのまま使う（新しい道具は入れない）。`unit-test-instructions.md` の 2.2 のコマンドで、U3 のパッケージに絞った実行が動くことを確かめる（この時点では U3 のテストは無い。常に通るだけのテストは書かない）。
   - テストの補助（テストのソースの中だけ。新しいファイル）:
     - `cherry.mastersmith.access.testsupport.PublicApiTestRules`: `mastersmith.test-fixture.public-api=true` を設定したテストだけで有効になる `SecurityRuleContributor`（order 250）。`/api/**` を許可し、U3 の既定の拒否が効く前の状態を再現する。U1 の既存の結合テスト（エラー応答・トレース・ヘッダーの確認）が、アクセス制御ではなく本来の対象を確かめ続けられるようにするためのもので、本番の設定では既定の拒否を切り替えられない（7章の C7）。
@@ -135,7 +135,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.4 業務処理（判定の決まり、出来事、問題の種類）
 
-- [ ] **Step 3 — `access.domain` と `access.service`**
+- [x] **Step 3 — `access.domain` と `access.service`**
   - `access.domain.AdminPaths`（純粋な関数。性質ベースのテストの対象）: 要求のパスが管理者のみの対象か（`/api/admin` そのもの、または `/api/admin/` の下）を返す。大文字・小文字を区別し、末尾のスラッシュの有無で判定を変えない（BR1.6）。フィルターの連鎖の決まり（Step 5）と、401・403 の処理の出来事の要否の判断（BR3.6）の**両方が同じ関数を使う**ことで、判定と記録のずれを防ぐ。
   - `access.domain.AccessDeniedReason`（`NOT_ADMIN`・`TOKEN_MISSING`・`TOKEN_MALFORMED`・`TOKEN_INVALID`・`USER_NOT_FOUND`）と、U2 の `TokenFailureReason` からの変換（`TOKEN_EXPIRED` は出来事にしないことを表すため、変換の結果を `Optional` で返す。BR3.2）。例外が `TokenAuthenticationException` でなければ `TOKEN_MISSING` とみなす（U2 の申し送り）。
   - `access.domain.AdminAccessDeniedEvent`（`eventType`（`ACCESS_DENIED`）・`occurredAt`・`result`（`FAILURE`）・`failureReason`・`enteredEmail`（分かるときだけ）・`sourceIp`・`userAgent`・`requestPath`（判定を通った正規化済みのパス。問い合わせの部分は除き、512 文字で切り詰める）・`traceId`）。秘密情報の項目を持たない（BR3.4、NFR3.7）。要求のパスは載せる（7章の D3 の3つ目）。U2 の `ClientInfo` から `sourceIp`・`userAgent`・`traceId` を受け取る形にする（7章の C5）。
@@ -143,7 +143,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
   - `access.service.AccessDeniedEventPublisher`: 出来事を `ApplicationEventPublisher` で知らせる。受け取り側（U4）を知らない（ADR-004、BR3.5）。通知で例外が戻った場合は捕まえて WARN を1回出し（例外の型だけ。メッセージは出さない）、呼び出し元に例外を伝えない（`reliability-design.md` 1章の「受け止めの二重の備え」）。例外を黙って捨てない。
   - 対応: BR1.6、BR3.1〜BR3.6、BR6.1、NFR3.3、NFR3.6、NFR3.7、NFR10.1（信頼性）、NFR10.2・NFR10.3（観測性）
 
-- [ ] **Step 4 — `access.domain`・`access.service` のテスト**
+- [x] **Step 4 — `access.domain`・`access.service` のテスト**
   - 単体テスト（`*Test`）:
     - `AdminPathsTest`（jqwik: `/api/admin/` の後ろに何が続いても真、`/api/admin` 以外で始まるパスは偽。明示の例: `/api/admin`・`/api/admin/`・`/api/admin/check`・`/api/admin/nothing` は真、`/API/admin/check`・`/api/administrators`・`/api/auth/login`・`/actuator/health` は偽）。
     - `AccessDeniedReasonTest`（`TOKEN_EXPIRED` は空を返す、ほかの4つの区分はそれぞれに対応する、例外が `TokenAuthenticationException` でなければ `TOKEN_MISSING`、U2 の `TokenFailureReason` の値をすべて網羅する）。
@@ -154,7 +154,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.5 API・エンドポイント（1）判定・401／403・確認用 API
 
-- [ ] **Step 5 — アクセスの決まり、401・403 の処理、確認用 API**
+- [x] **Step 5 — アクセスの決まり、401・403 の処理、確認用 API**
   - `access.web.AdminAuthorizationManager`: Spring Security の `AuthorizationManager` として、認証の結果の主体が `AuthenticatedUser` で `admin` が真のときだけ許可する（U2 の `AuthenticatedUserToken` は権限の一覧を持たないため、役割の文字列ではなく主体の値で判定する）。後続 Intent F で役割・権限の判定を足す場所がここになる（ADR-003）。
   - `access.web.AdminSecurityContributor`（`SecurityRuleContributor`、order 210。7章の C1）:
     - `/api/admin` と `/api/admin/**` に `AdminAuthorizationManager` を当てる（BR1.1、BR1.6）。
@@ -166,7 +166,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
   - 送り手の情報は U2 の `cherry.mastersmith.auth.web.ClientInfoResolver` で作る（7章の C5）。時刻は U2 の `Clock` の Bean。
   - 対応: FR8.1、FR8.2、BR1.1〜BR1.5、BR2.1〜BR2.6、BR3.1〜BR3.6、BR4.1、NFR1.2（性能）、NFR1.4（拡張性）、NFR3.1・NFR3.2・NFR3.4〜NFR3.8、NFR10.1（信頼性）、NFR10.2〜NFR10.4（観測性）
 
-- [ ] **Step 6 — 判定・401／403・確認用 API のテスト**
+- [x] **Step 6 — 判定・401／403・確認用 API のテスト**
   - 単体テスト（`*Test`）: `AdminAuthorizationManagerTest`（管理者は許可、管理者でない利用者は拒否、未認証・主体が `AuthenticatedUser` でないときは拒否）、`AdminAuthenticationEntryPointTest`（管理者のみのパスで期限切れ以外は出来事、期限切れは出来事なし、管理者のみ以外のパスは出来事なし、例外が `TokenAuthenticationException` でなければ `TOKEN_MISSING`、応答の書き出しを U2 の入口の処理に任せる、出来事の通知の例外で応答が変わらない）、`AdminAccessDeniedHandlerTest`（403 を U1 の書き手で書く、`NOT_ADMIN` の出来事とメールアドレス、WARN が `code` だけ、通知の例外を受け止める）。
   - 結合テスト（`*IT`。実際の番号で待ち受けるアプリに U1 の `HttpTestClient` で送る）:
     - `AdminAccessIT`: 未ログインで `/api/admin/check` が 401 / `AUTHENTICATION_REQUIRED`、管理者でない利用者が 403 / `ACCESS_DENIED`、管理者が 204（team.md の必須の認可のテスト）。画面を介さずに直接呼んでも同じ（BR2.6）。管理者でない利用者の `/api/admin/nothing` は 403、管理者は 404 / `NOT_FOUND`（BR2.5、NFR3.4）。管理者フラグを DB で外した直後の要求が 403（BR2.4、NFR3.5）。確認用 API の1要求で発行される SQL が U2 の利用者の読み取り1回だけ（`SqlStatementCounter`。NFR1.2）。応答の形が U1 の共通の形（`type`・`code`・`traceId`）で、内部の情報を含まない（NFR3.6）。
@@ -178,20 +178,20 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.6 API・エンドポイント（2）正規化されていないパスの拒否
 
-- [ ] **Step 7 — 要求の検査の拒否の処理**
+- [x] **Step 7 — 要求の検査の拒否の処理**
   - Spring Security の既定の要求の検査（エンコードされた区切り、`;`、`..`、`//` などを含むパスの拒否）は外さない（BR1.6、NFR3.3）。
   - `access.web.AccessRequestRejectedHandler`: 拒否を、U1 の `ErrorResponseWriter` で 400 / `REQUEST_REJECTED` の共通の形にする。拒否は U1 のヘッダーを書く処理より手前で起きるため、U1 の `SecurityHeaderProperties` の値を読んで同じヘッダー（CSP・`X-Content-Type-Options`・`X-Frame-Options`・`Referrer-Policy`）を付ける（値は U3 で書き直さない）。`Cache-Control: no-store` は U1 の `CacheControlFilter` が連鎖より前で付けるため、U3 では付けない。WARN は `code` とトレースIDだけを出し、**拒否したパスを出さない**（`nfr-design/security-design.md` 2章）。出来事は作らない（`observability-design.md` 1章）。
   - 仕組みの確かめ方は 7章の C4 のとおり（`WebSecurityCustomizer` で `RequestRejectedHandler` を差し込む形を Step 8 のテストで確かめ、効かない場合は代わりの形にする。どちらも満たせないときは生成を止めて案を示す）。
   - 対応: BR1.6、BR6.1、NFR3.3、NFR3.6、NFR10.3・NFR10.4（観測性）
 
-- [ ] **Step 8 — 拒否の処理のテスト**
+- [x] **Step 8 — 拒否の処理のテスト**
   - 単体テスト: `AccessRequestRejectedHandlerTest`（400 / `REQUEST_REJECTED` を U1 の書き手で書く、4つのヘッダーが U1 の設定の値で付く、WARN に `code` とトレースIDだけが出てパスが出ない、出来事を作らない）。
   - 結合テスト: `AdminPathBoundaryIT`（`/api/admin`・`/api/admin/` は管理者でない利用者に 403、`/api/admin/..;/` とエンコードされた区切りを含むパスは判定の前に 400 / `REQUEST_REJECTED` で、応答が共通の形（`type`・`code`・`traceId`）とヘッダーを持ち、同じトレースIDが WARN のログにも出る（`security-design.md` 2章の根拠の確認を兼ねる）、ログに拒否したパスが出ない、`/API/admin/check` はログイン中 404・未ログイン 401）。
   - `unit-test-instructions.md` の Step 8 のコマンドで実行し、すべて通す。
 
 ### 4.7 既存の単位のテストの調整と回帰
 
-- [ ] **Step 9 — U1 の既存のテストの調整（D1）と全体の回帰**
+- [x] **Step 9 — U1 の既存のテストの調整（D1）と全体の回帰**
   - 7章の D1 で承認を得た範囲だけを変える。`/api/**` の既定がログイン必須になったこと（NFR3.2）と、`ApiDefaultAccess` が1つまでであることによる調整である。品質の目標も本番の既定も緩めない。
     - `config/SecurityExtensionIT`: 「U1 だけなら `/api/**` はすべて通る」の確認を、U3 の既定が入った状態（ログインなしは 401）に改める。役の `ApiDefaultAccess` を使う入れ子の確認は、U3 の本物の `ApiDefaultAccess` と2つになって起動が失敗するため取り除き、同じ確認は Step 6 の `ApiDefaultAccessIT` が受け持つ。order 100・200 の役の決まりの確認と、order の重複・`ApiDefaultAccess` が2つ以上のときに起動が失敗する確認はそのまま残す（U3 は order 210 のため、役の 200 と重ならない）。
     - `common/testsupport/TestSecurityExtensions`: 使われなくなる役の `ApiDefaultAccess` の設定を取り除く。
@@ -202,7 +202,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.8 画面（フロントエンド）
 
-- [ ] **Step 10 — 管理者向け領域、登録、文言**
+- [x] **Step 10 — 管理者向け領域、登録、文言**
   - `frontend/src/features/admin/`（featureId `admin`。7章の C6）:
     - `adminApi.ts`: U2 の `frontend/src/shared/api-client/` の `apiRequest` で `GET /api/admin/check` を呼ぶ（トークンの付与・401 の更新と送り直しは ApiClient に任せる）。
     - `adminAreaStatus.ts`: 呼び出しの結果から表示の状態（`Checking`・`Shown`・`NotFound`・`Error`）を決める純粋な関数（403 は `NotFound`、そのほかの応答のエラーと通信の失敗は `Error`）。性質ベースのテストの対象。
@@ -212,7 +212,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
   - 画面の「管理」の表示・非表示は U1 の骨組みが U2 のログイン状態の `admin` で切り替える。これは表示の切り替えにすぎず、判定はサーバー側で行う（BR5.4、FR8.2）。
   - 対応: FR2.2、BR5.1〜BR5.4、NFR7.1、NFR8.1、NFR9.1（信頼性）
 
-- [ ] **Step 11 — 画面のテスト**
+- [x] **Step 11 — 画面のテスト**
   - `adminApi.test.ts`（`fetch` を `vi.fn` で置き換える）: パスとメソッド、204 の成功、403・5xx・通信の失敗の変換。
   - `adminAreaStatus.test.ts`（fast-check: 403 は必ず `NotFound`、それ以外の状態コードは `Error`、通信の失敗は `Error`）。
   - `AdminAreaPage.test.tsx`（user-event）: 確認中は中身を出さず確認中であることを伝える、204 で見出しと説明、403 で「ページが見つかりません」、5xx と通信の失敗で一般的な文言、表示のたびに呼び直す、英語の表示で英語の文言、vitest-axe で違反なし（確認中の状態も検査する）。
@@ -222,7 +222,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.9 環境・ビルドの設定
 
-- [ ] **Step 12 — E2E（代表の流れの完成）と全体の検査**
+- [x] **Step 12 — E2E（代表の流れの完成）と全体の検査**
   - `frontend/e2e/u3-admin-access.e2e.ts`: 初期管理者でログイン → サイドバーに「管理」が出る → 選ぶと管理者向け領域（見出しと説明）が表示される → ログアウト → ログイン画面に戻る。これでチームの代表の流れ「ログイン → 管理画面に入れるか → ログアウト」が完成する（team.md Testing Posture。U2 の C9 の申し送り）。CSP の違反とスクリプトのエラーが無いこと（U2 と同じく認証の API の 401 の表示だけを除く）。
   - ルートの `build.gradle.kts` の `e2eTest` の実行の対象を `e2e/` のすべてにする（7章の D1）。これにより U1・U2・U3 の E2E が1つのコマンドで動く。
   - `README.md` に U3 の節を足す（U1・U2 の節の構成は変えない）: `/api/` の下は既定でログインが必要で、公開する API は明示した一覧だけであること、管理者のみの範囲（`/api/admin`・`/api/admin/**`）、正規化されていないパスが 400 / `REQUEST_REJECTED` になること、後の単位が使う差し込み口の表に U3 が提供するもの（アクセス拒否の出来事）を足す。環境変数は増えない。
@@ -232,7 +232,7 @@ U3 は内部DBに表を持たず、データを保存しない。スキーマの
 
 ### 4.10 文書とトレーサビリティ
 
-- [ ] **Step 13 — まとめの記録**
+- [x] **Step 13 — まとめの記録**
   - `aidlc/spaces/default/intents/260922-auth-audit-base/construction/u3-access-control/code-generation/` に `code-summary.md`（作った・変えたファイル、判断、テストとカバレッジ、`./gradlew verify` の結果、計画からの逸脱、U4 への申し送り。`nfr-design/security-design.md` 5章の違いと、7章の D3 で決めた3点目を Functional Design との違いとして記録する）、`traceability.json`（FR・BR・NFR から実装とテストへの対応）、`source-manifest.json`（作った・変えた・消したアプリのソースのパスの一覧）を書く。
   - 対応: 全要件のトレーサビリティ
 

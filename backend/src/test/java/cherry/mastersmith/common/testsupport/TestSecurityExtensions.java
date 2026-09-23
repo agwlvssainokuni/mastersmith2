@@ -15,7 +15,6 @@
  */
 package cherry.mastersmith.common.testsupport;
 
-import cherry.mastersmith.common.security.ApiDefaultAccess;
 import cherry.mastersmith.common.security.SecurityRuleContributor;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -104,22 +103,6 @@ public final class TestSecurityExtensions {
                             authorize.requestMatchers("/api/test-fixture/**").denyAll());
                 }
             };
-        }
-    }
-
-    /** U3 の役の「API の既定の扱い」（ログイン必須）。 */
-    @Configuration(proxyBeanMethods = false)
-    @ConditionalOnBooleanProperty("mastersmith.test-fixture.api-default-access")
-    public static class DefaultAccess {
-
-        /**
-         * {@code /api/**} をログイン必須にする。
-         *
-         * @return API の既定の扱い
-         */
-        @Bean
-        public ApiDefaultAccess requireAuthenticationForApi() {
-            return () -> true;
         }
     }
 }

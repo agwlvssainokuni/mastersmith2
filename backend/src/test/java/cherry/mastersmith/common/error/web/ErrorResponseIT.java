@@ -41,7 +41,7 @@ import org.springframework.test.context.TestPropertySource;
 /** 共通のエラー応答の結合テスト（BR5.1〜BR5.10、BR5.16、計画の P1 の決定）。実際の番号で起動したアプリへ要求を送る。 */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "mastersmith.test-fixture.error-endpoints=true")
+        properties = {"mastersmith.test-fixture.error-endpoints=true", "mastersmith.test-fixture.public-api=true"})
 @ExtendWith(OutputCaptureExtension.class)
 class ErrorResponseIT {
 

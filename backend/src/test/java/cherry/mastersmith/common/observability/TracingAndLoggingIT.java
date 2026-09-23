@@ -49,7 +49,8 @@ import org.springframework.test.context.TestPropertySource;
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "logging.level.cherry.mastersmith.common.error=TRACE")
+        properties = {"logging.level.cherry.mastersmith.common.error=TRACE", "mastersmith.test-fixture.public-api=true"
+        })
 @ExtendWith(OutputCaptureExtension.class)
 class TracingAndLoggingIT {
 

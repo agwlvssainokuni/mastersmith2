@@ -1,0 +1,345 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-access-control",
+  "upstream_ids": [
+    "FR2.2",
+    "FR8.1",
+    "FR8.2",
+    "FR9.1",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR2.6",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR3.6",
+    "BR4.1",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR6.1",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR7.1",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR10.3",
+    "NFR10.4",
+    "NFR10.5"
+  ],
+  "coverage": [
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "frontend/src/features/admin/registration.test.ts, frontend/src/features/admin/AdminAreaPage.test.tsx, frontend/src/features/admin/AdminPlaceholder.test.tsx, frontend/e2e/u3-admin-access.e2e.ts"
+    },
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAuthorizationManagerTest.java"
+    },
+    {
+      "id": "FR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java（画面を介さない直接の呼び出し）, frontend/src/features/admin/registration.test.ts"
+    },
+    {
+      "id": "FR9.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java, backend/src/test/java/cherry/mastersmith/access/domain/AdminAccessDeniedEventTest.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java（health 以外の Actuator は 404、画面の配信は 200）"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/domain/AdminPathsTest.java, backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java（大文字のパスの扱いは code-summary.md の逸脱 1 を参照）"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAccessDeniedHandlerTest.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, frontend/e2e/u3-admin-access.e2e.ts"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java（管理者フラグを DB で外した直後の要求が 403）"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java（非管理者は 403、管理者は 404）"
+    },
+    {
+      "id": "BR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, frontend/src/features/admin/registration.test.ts"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAccessDeniedHandlerTest.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/domain/AccessDeniedReasonTest.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAuthenticationEntryPointTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAuthenticationEntryPointTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/domain/AdminAccessDeniedEventTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/service/AccessDeniedEventPublisherTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java（受け取り側の例外で応答が変わらない）"
+    },
+    {
+      "id": "BR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAuthenticationEntryPointTest.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAccessDeniedHandlerTest.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, frontend/e2e/u3-admin-access.e2e.ts"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "frontend/src/features/admin/registration.test.ts"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "frontend/src/features/admin/AdminAreaPage.test.tsx, frontend/src/features/admin/adminAreaStatus.test.ts"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "frontend/src/features/admin/AdminPlaceholder.test.tsx"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "frontend/src/features/admin/registration.test.ts（管理者でないログイン状態では項目が出ない）"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/domain/AccessProblemTypesTest.java, backend/src/test/java/cherry/mastersmith/access/service/AccessProblemTypeCatalogTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessProblemTypesIT.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "DEFERRED",
+      "target": "Performance Validation の段で測る（同時 10 件で 95% が 300 ms 以内）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java（確認用 API の1要求の SQL が select users の1回だけ）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "DEFERRED",
+      "target": "Performance Validation の段で測る（非管理者の 403 の 95 パーセンタイル）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAuthorizationManagerTest.java（状態を持たない判定。設計の確認は code-summary.md）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "出来事は 401・403 の1要求につき1件。backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java と backend/src/test/java/cherry/mastersmith/access/service/AccessDeniedEventPublisherTest.java"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAuthorizationManagerTest.java"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java, backend/src/test/java/cherry/mastersmith/config/SecurityExtensionIT.java"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java, backend/src/test/java/cherry/mastersmith/access/web/AccessRequestRejectedHandlerTest.java"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAuthorizationManagerTest.java"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java（応答に内部の情報が無い）, backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessSecretLeakIT.java, backend/src/test/java/cherry/mastersmith/access/domain/AdminAccessDeniedEventTest.java"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "frontend/src/features/admin/registration.test.ts, frontend/src/features/admin/AdminPlaceholder.test.tsx, frontend/src/features/admin/AdminAreaPage.test.tsx（日英）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "frontend/src/features/admin/AdminPlaceholder.test.tsx, frontend/src/features/admin/AdminAreaPage.test.tsx（vitest-axe。確認中の状態も）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "frontend/src/features/admin/AdminAreaPage.test.tsx（確認中・204・403・5xx・通信の失敗）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "必須の認可のテストと境界のテスト: backend/src/test/java/cherry/mastersmith/access/web/AdminAccessIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java, backend/src/test/java/cherry/mastersmith/access/web/ApiDefaultAccessIT.java"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java, backend/src/test/java/cherry/mastersmith/access/service/AccessDeniedEventPublisherTest.java"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "id": "NFR10.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AccessSecretLeakIT.java, backend/src/test/java/cherry/mastersmith/access/web/AdminAccessDeniedHandlerTest.java, backend/src/test/java/cherry/mastersmith/access/web/AccessRequestRejectedHandlerTest.java"
+    },
+    {
+      "id": "NFR10.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java（応答と WARN の同じトレースID）, backend/src/test/java/cherry/mastersmith/access/web/AccessSecretLeakIT.java（すべての行が JSON）"
+    },
+    {
+      "id": "NFR10.5",
+      "status": "DEFERRED",
+      "target": "拒否の件数は U4 の監査ログで見る。目標と警報は配備先が決まったときに Operation の段で定める"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "REQUEST_REJECTED",
+      "status": "N/A",
+      "target": "承認済みの rules.md BR6.1（ACCESS_DENIED だけ）に無い2つ目の問題の種類。nfr-design/security-design.md 2章（確定回答 Q1）により追加し、依頼者の決定 D3-A のとおり Functional Design は書き換えずに逸脱として記録した（backend/src/main/java/cherry/mastersmith/access/domain/AccessProblemTypes.java、backend/src/test/java/cherry/mastersmith/access/web/AccessProblemTypesIT.java）"
+    },
+    {
+      "id": "AdminAccessDeniedEvent.requestPath",
+      "status": "N/A",
+      "target": "承認済みの functional-design/entities.md の AdminAccessDeniedEvent に無い項目。nfr-design/security-design.md 4章と U4 の nfr-design/security-design.md 6章（NFR Design の承認の場での依頼者の決定）により追加し、D3-A のとおり逸脱として記録した（backend/src/main/java/cherry/mastersmith/access/domain/AdminAccessDeniedEvent.java、backend/src/test/java/cherry/mastersmith/access/domain/AdminAccessDeniedEventTest.java）"
+    },
+    {
+      "id": "WF1 手順1の拒否の応答",
+      "status": "N/A",
+      "target": "承認済みの functional-spec.md WF1 は応答の形を決めていない。nfr-design/security-design.md 2章のとおり共通の形の 400 と U1 のヘッダーにした（backend/src/main/java/cherry/mastersmith/access/web/AccessRequestRejectedHandler.java、backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java）"
+    },
+    {
+      "id": "/API/admin/check の期待",
+      "status": "N/A",
+      "target": "nfr-design/security-design.md 1章は「ログイン中 404・未ログイン 401」としているが、/API/... は /api/** に当たらないため U1 の決まり BR1.5（/api/ の外は画面の配信）により誰に対しても 200（index.html）になる。BR1.6 が求める安全の性質（管理 API に届かない）は満たしており、テストをその性質に合わせた（backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java）"
+    },
+    {
+      "id": "%2F を含むパスの 400",
+      "status": "N/A",
+      "target": "エンコードされた区切りは Spring Security の要求の検査より手前で Tomcat が拒否するため、U3 の共通の形の 400 / REQUEST_REJECTED にはならない（本文は Tomcat の既定）。判定より手前で拒否され管理 API に届かないことをテストで確かめた（backend/src/test/java/cherry/mastersmith/access/web/AdminPathBoundaryIT.java）"
+    },
+    {
+      "id": "拒否の WARN の traceId のキーと値",
+      "status": "N/A",
+      "target": "計画 Step 7 は「code とトレースIDを出す」としていたが、U1 のログの仕組みが同じ行に traceId を付けるため重複する。observability-design.md 2章の表のとおり code だけをキーと値で渡した（backend/src/main/java/cherry/mastersmith/access/web/AccessRequestRejectedHandler.java）"
+    },
+    {
+      "id": "AuthTestTokens.tamper の不安定さ",
+      "status": "OPEN",
+      "target": "U2 のテストの補助の既存の不具合（D1 の範囲外のため直していない）。署名の最後の1文字は詰め物のビットを含むため、A→B の置き換えでは署名が壊れないことがある（1/16）。影響: AccessTokenServiceTest 2件・AccessTokenApiIT 1件。詳細と直し方の案は code-summary.md の「開いている問題」"
+    }
+  ]
+}
