@@ -1,0 +1,80 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-dsl-definition",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11",
+    "NFR12"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.4, NFR1.5（U2 の受け持ちは読み込みと検証の部分。照合は U4、生成は U3）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4（投入の API の本文の上限は U4）"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.1, NFR3.2, NFR3.3, NFR3.4, NFR3.5, NFR3.6"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U2 は対象DB の接続情報を扱わない。DSL の知らない項目としての接続先は NFR5.2 で扱う"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.1, NFR5.2"
+    },
+    {
+      "id": "NFR6",
+      "status": "N/A",
+      "target": "U2 は SQL を組み立てない（識別子の扱いは U1）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "対象DB の可用性は U1 の受け持ち"
+    },
+    {
+      "id": "NFR8",
+      "status": "N/A",
+      "target": "適用の一度の切り替えは U4。U2 のモデルの差し替えが一度に切り替わること（BR5.3）は機能の決まり"
+    },
+    {
+      "id": "NFR9",
+      "status": "N/A",
+      "target": "誤りの文言の日英は文言の鍵で U4・U5 が表示する。表示名の日英は DSL の書式（機能設計）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "画面のアクセシビリティは U5 の受け持ち"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "カバレッジの下限は全単位に共通の team.md の決まり（パッケージ dsl にも当てる）"
+    },
+    {
+      "id": "NFR12",
+      "status": "N/A",
+      "target": "U2 は対象DB を使わない"
+    }
+  ]
+}

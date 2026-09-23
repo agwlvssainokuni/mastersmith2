@@ -1,0 +1,80 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u3-default-dsl-generation",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11",
+    "NFR12"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.6, NFR1.7（U3 の受け持ちは生成の全体の 30 秒と内訳）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.5（生成した DSL を上限の内に収める。上限を 10MB に上げる決定は tech-stack-decisions.md の3節）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U3 は投入された DSL を読まない（生成した DSL の検証は U2）"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.7, NFR4.8, NFR4.9"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "エラー応答は U4 の受け持ち。U3 の失敗は結果の型で返す（契約 C5）"
+    },
+    {
+      "id": "NFR6",
+      "status": "N/A",
+      "target": "U3 は SQL を組み立てない（U1 の受け持ち）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "対象DB の可用性は U1 の受け持ち"
+    },
+    {
+      "id": "NFR8",
+      "status": "N/A",
+      "target": "適用の一度の切り替えは U4 の受け持ち"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.2（表示名の ja・en の決め方。画面の文言は U5 の NFR9.1）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "画面のアクセシビリティは U5 の受け持ち"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "カバレッジの下限は全単位に共通の team.md の決まり"
+    },
+    {
+      "id": "NFR12",
+      "status": "N/A",
+      "target": "U3 は対象DB に触れない。3種類の DB での生成の確かめ（時間を含む）は U1 の結合テストの DB で Build and Test が行う"
+    }
+  ]
+}

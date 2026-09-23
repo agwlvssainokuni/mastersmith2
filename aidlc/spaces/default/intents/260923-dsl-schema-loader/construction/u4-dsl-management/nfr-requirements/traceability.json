@@ -1,0 +1,80 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-dsl-management",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11",
+    "NFR12"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.6, NFR1.8, NFR1.9, NFR1.10, NFR1.11, NFR1.12, NFR1.13, NFR1.14, NFR1.15, NFR1.16, NFR1.17（U4 の受け持ちは照合・API の時間、重い処理の同時の数、指標とログ。NFR1.6 は U3 の枝番を U4 の API として受ける。要件に同時の数・観測の NFR が無いため、性能の目標を守る仕組み（同時の数）と測る仕組み（指標・ログ）を NFR1 の枝番として置いた。枝番は単位の間で通しで振る）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.6"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.7, NFR3.8"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.10"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.3, NFR5.4, NFR5.5"
+    },
+    {
+      "id": "NFR6",
+      "status": "N/A",
+      "target": "U4 は SQL を組み立てない（識別子の扱いは U1）。内部DB への問い合わせは既存の JPA"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.8"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2, NFR8.3, NFR8.4, NFR8.5"
+    },
+    {
+      "id": "NFR9",
+      "status": "N/A",
+      "target": "誤りの文言を表示言語で返すことは NFR5.4 で扱う。画面の文言は U5"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "画面のアクセシビリティは U5 の受け持ち"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "カバレッジの下限は全単位に共通の team.md の決まり（パッケージ dslmanage にも当てる）"
+    },
+    {
+      "id": "NFR12",
+      "status": "N/A",
+      "target": "対象DB の結合テストの DB は U1 の NFR12.1〜NFR12.3 を使う（照合と生成の結合テストも同じ DB で行う）"
+    }
+  ]
+}

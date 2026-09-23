@@ -1,0 +1,80 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-target-db",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11",
+    "NFR12"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.1, NFR1.2, NFR1.3（U1 の受け持ちはメタデータの読み取りの部分。生成は U3、照合は U4）"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "DSL の大きさの上限は U2（読み込み）と U4（投入の API）の受け持ち"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "投入された DSL の扱いは U2 の受け持ち。U1 は DSL を受け取らない"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5, NFR4.6"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "エラー応答の形は U4 の受け持ち。U1 の結果に内部の文言を含めないことは NFR4.4 で扱う"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4, NFR7.5, NFR7.6, NFR7.7"
+    },
+    {
+      "id": "NFR8",
+      "status": "N/A",
+      "target": "適用の一度の切り替えは U4 の受け持ち"
+    },
+    {
+      "id": "NFR9",
+      "status": "N/A",
+      "target": "画面の文言と表示名の多言語は U3・U5 の受け持ち"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "画面のアクセシビリティは U5 の受け持ち"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "カバレッジの下限は全単位に共通の team.md の決まりで、単位ごとの要件にしない（パッケージ targetdb にも当てる）"
+    },
+    {
+      "id": "NFR12",
+      "status": "OK",
+      "target": "NFR12.1, NFR12.2, NFR12.3"
+    }
+  ]
+}
