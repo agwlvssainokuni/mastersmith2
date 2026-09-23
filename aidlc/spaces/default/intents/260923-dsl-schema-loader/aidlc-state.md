@@ -7,7 +7,7 @@
 - **Scope**: classic
 - **Start Date**: 2026-09-23T08:44:37Z
 - **State Version**: 8
-- **Active Agent**: aidlc-aws-platform-agent
+- **Active Agent**: aidlc-developer-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**: 2026-09-23T09:47:01Z
@@ -28,11 +28,11 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 26
-- **Completed**: 15
-- **In Progress**: infrastructure-design
+- **Completed**: 16
+- **In Progress**: code-generation
 
 ## Runtime State
-- **Revision Count**: 7
+- **Revision Count**: 8
 
 - **Unit Ownership**: solo
 - **Skeleton Stance**: off
@@ -78,8 +78,8 @@ Per unit: [TBD]
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
-- [-] infrastructure-design — EXECUTE
-- [ ] code-generation — EXECUTE
+- [x] infrastructure-design — EXECUTE
+- [-] code-generation — EXECUTE
 - [ ] build-and-test — EXECUTE
 - [ ] ci-pipeline — EXECUTE
 
@@ -94,12 +94,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: CONSTRUCTION
-- **Current Stage**: infrastructure-design
-- **Next Stage**: code-generation
+- **Current Stage**: code-generation
+- **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-09-23T17:14:49Z
+- **Last Updated**: 2026-09-23T23:51:44Z
 
 ## Session Resume Point
-- **Last Completed Stage**: nfr-design
-- **Next Action**: Execute Infrastructure Design
+- **Last Completed Stage**: infrastructure-design
+- **Next Action**: Execute Code Generation
 - **Pending Artifacts**: none

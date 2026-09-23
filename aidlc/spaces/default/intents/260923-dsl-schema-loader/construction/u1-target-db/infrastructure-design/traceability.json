@@ -1,0 +1,56 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-target-db",
+  "upstream_ids": [
+    "NFR12.1",
+    "NFR12.2",
+    "NFR12.3",
+    "NFR4.1",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR6.3",
+    "NFR7.4"
+  ],
+  "coverage": [
+    {
+      "id": "NFR12.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節・2節（./gradlew verify と CI で3種類を毎回、イメージの固定）"
+    },
+    {
+      "id": "NFR12.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（テストごとのスキーマ）"
+    },
+    {
+      "id": "NFR12.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（届かなければ警告して飛ばす、CI では失敗）・5節"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（MASTERSMITH_TARGET_DB_* の環境変数だけ）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（ユーザー名とパスワードは別の項目）"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（見本の DB は読み取りだけのアカウント）・5節"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（SpotBugs の SQL_ の関門）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "既存の検査（結合テストは Build and Test）"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u5-dsl-admin-ui",
+  "upstream_ids": [
+    "NFR1.18",
+    "NFR1.19",
+    "NFR1.20",
+    "NFR1.21",
+    "NFR3.9",
+    "NFR3.10",
+    "NFR3.11",
+    "NFR5.6",
+    "NFR9.1",
+    "NFR10.1"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.18",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（E2E で測って記録）"
+    },
+    {
+      "id": "NFR1.19",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節・3節"
+    },
+    {
+      "id": "NFR1.20",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節・3節"
+    },
+    {
+      "id": "NFR1.21",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節"
+    },
+    {
+      "id": "NFR3.9",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（react/no-danger と部品のテスト）"
+    },
+    {
+      "id": "NFR3.10",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節・4節"
+    },
+    {
+      "id": "NFR3.11",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節・2節"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（DSL_BUSY の Alert）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（日英の文言）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（vitest-axe）"
+    }
+  ]
+}

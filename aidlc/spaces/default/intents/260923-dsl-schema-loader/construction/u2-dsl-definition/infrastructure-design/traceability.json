@@ -1,0 +1,38 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-dsl-definition",
+  "upstream_ids": [
+    "NFR3.3",
+    "NFR3.5",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR3.6"
+  ],
+  "coverage": [
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（同梱の正本の1つ、外部を取りに行かない設定は U2 の NFR 設計）"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（jackson-dataformat-yaml を依存から外す）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（打ち切りの前提を Build and Test で実測）"
+    }
+  ]
+}

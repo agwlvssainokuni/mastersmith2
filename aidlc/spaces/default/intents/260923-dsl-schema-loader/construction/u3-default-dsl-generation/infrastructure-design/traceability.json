@@ -1,0 +1,38 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u3-default-dsl-generation",
+  "upstream_ids": [
+    "NFR1.6",
+    "NFR1.7",
+    "NFR2.5",
+    "NFR4.7",
+    "NFR4.8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（Build and Test で3種類それぞれ測る）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（内訳は DEBUG のログ）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（10MB を超えたら失敗の単体テスト）"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（性質ベースのテスト）"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（制御文字の除去の単体テスト）"
+    }
+  ]
+}

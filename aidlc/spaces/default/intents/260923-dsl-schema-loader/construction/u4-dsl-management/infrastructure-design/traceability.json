@@ -1,0 +1,98 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-dsl-management",
+  "upstream_ids": [
+    "NFR1.6",
+    "NFR1.8",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR1.13",
+    "NFR1.16",
+    "NFR1.17",
+    "NFR2.6",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.4",
+    "NFR8.5",
+    "NFR8.3",
+    "NFR5.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（Build and Test で測る）"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（コンテナのメモリ）"
+    },
+    {
+      "id": "NFR1.13",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（DSL_BUSY の結合テスト）"
+    },
+    {
+      "id": "NFR1.16",
+      "status": "OK",
+      "target": "monitoring-design.md 1節・2節"
+    },
+    {
+      "id": "NFR1.17",
+      "status": "OK",
+      "target": "monitoring-design.md 4節"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3節・4節（道ごとの上限）、cicd-pipeline.md 1節"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（V5）、cicd-pipeline.md 1節"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（同時の適用）"
+    },
+    {
+      "id": "NFR8.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（起動時の読み込み）"
+    },
+    {
+      "id": "NFR8.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 4節（監査の仕組み）、cicd-pipeline.md 1節"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（V5 のプレビューの表は固定の鍵の1行。MERGE で置き換える）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "monitoring-design.md 4節（想定内は WARN 以下、想定外は ERROR。本文・接続先を出さない）"
+    }
+  ]
+}
