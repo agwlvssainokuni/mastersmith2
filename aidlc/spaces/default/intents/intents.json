@@ -12,5 +12,12 @@
     "dirName": "260923-audit-pool-exhaustion",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0ccee-1c13-70f6-bcfd-f35f021b474a",
+    "slug": "colima-spec-up",
+    "dirName": "260923-colima-spec-up",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
