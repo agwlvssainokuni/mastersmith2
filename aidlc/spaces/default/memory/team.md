@@ -72,6 +72,7 @@
 - すべての配備に戻し方（直前の版の成果物での再配備）を用意する。DB スキーマの変更は前進のみとし、1つ前の版のアプリが動く後方互換を保つ。
 - 構造化ログの外部エクスポートは既定で無効とし、配備の設定で環境ごとに有効化を切り替える。
 
+- フロントエンドの依存関係の脆弱性は、実行時に使うもの（dependencies、推移依存を含む）は重大度 High 以上で統合を止める。開発時にだけ使うもの（devDependencies）は警告にとどめる。ただし、悪意のあるパッケージ（OSV の MAL- で始まるもの）と、成果物を作る道具（Vite・Rollup・esbuild・TypeScript など）の High 以上は止める。対象の道具の一覧は config/npm-build-tools.txt に置く。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:code-generation:28ae755ce1652f5d951107b80eaa36eae9ddbf6708f8f0f5b2fcbd0a6f540185 -->
 ## Code Style
 
 ### リポジトリ構成とビルド
