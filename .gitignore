@@ -96,6 +96,9 @@ reference/
 *.p12
 *.jks
 
+# 内部DBのバックアップ（README の手順で作る。メールアドレス・接続元IPなどを含むためコミットしない）
+mastersmith-data-*.tgz
+
 # Gradle
 .gradle/
 backend/build/
