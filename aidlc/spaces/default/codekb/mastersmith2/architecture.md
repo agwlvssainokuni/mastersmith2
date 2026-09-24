@@ -4,106 +4,116 @@
 
 ### System Overview
 
-1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が、REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は、画面のビルド結果（`frontend/dist`）を同梱した実行可能 WAR（`mastersmith.war`）1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
+1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果（`frontend/dist`）を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
 
-データの置き場は、組み込みの H2（ファイル保存、コンテナでは `/app/data`）の内部DBの1つだけである。スキーマは Flyway が正本で、Hibernate は検証（`ddl-auto: validate`）だけを行う。外部のシステムへの接続は無い。例外は、既定で無効の OTLP の外部エクスポートだけである。
+データの置き場は2種類ある。
+
+- 内部DB: 組み込みの H2（ファイル保存、コンテナでは `/app/data`）。利用者・トークン・ロックの状態・監査ログ・DSL のプレビューと適用の履歴を置く。スキーマは Flyway（V1〜V6）が正本で、Hibernate は検証だけを行う。
+- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ（`MASTERSMITH_TARGET_DB_*` の設定）。スキーマを読むだけで、書き込まない。
+
+外への送信は、既定で無効の OTLP の外部エクスポート（トレース・ログ・指標）だけである。
 
 ### Architectural Style
 
-**モジュール分けしたモノリス（層構造）**である。根拠は次のとおり。
+**モジュール分けしたモノリス（層構造）**である。
 
-- パッケージが機能ごと（`auth`・`access`・`audit`・`user`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層になっている（`code-structure.md`）。
-- 層の境界は `backend/src/test/java/cherry/mastersmith/ArchitectureTest.java`（ArchUnit）でテストとして確かめられている（web は repository を使わない、`@Transactional` は service の層だけ、コントローラーはエンティティを返さない、コンストラクター注入だけ）。
-- 機能の間は、直接の呼び出しより、差し込み口（Spring の Bean の一覧）とアプリの中の出来事（`ApplicationEventPublisher`）でつながっている。認証（`auth`）とアクセス制御（`access`）は、監査（`audit`）を知らない。
-- 状態を持たない（HTTP セッションを作らない）。認証は Bearer のアクセストークンで行い、リフレッシュトークンだけを内部DBに保存する。
+- パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` などの層になっている（`code-structure.md`）。
+- 層と機能の境界は ArchUnit のテスト（`ArchitectureTest` と `*BoundaryArchitectureTest`、8 クラス）で確かめている。
+- 機能の間は、差し込み口（Spring の Bean の一覧）とアプリの中の出来事（`ApplicationEventPublisher`）でつながる。`auth`・`access`・`dslmanage` は `audit` を知らない。
+- HTTP セッションを作らない。認証は Bearer のアクセストークンで行う。
 
-画面は SPA である。機能ごとの登録ファイル（`frontend/src/features/*/registration.ts`）を起動時に自動で読み込み、骨組み（`frontend/src/app/`）が画面・サイドバー・メニューを組み立てる。
+画面は SPA で、機能ごとの登録ファイル（`frontend/src/features/*/registration.ts`）を骨組み（`frontend/src/app/`）が読み込んで組み立てる。デザインシステム make-you-chic-ui を Git サブモジュールから `file:` 参照で取り込む。
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
-  subgraph FE["画面（frontend/src）"]
-    APP["frontend-app-core<br/>起動・振り分け"]
-    REG["frontend-registry<br/>機能の登録"]
-    APIC["frontend-api-client<br/>apiFetch / apiRequest"]
+  subgraph FE["画面 frontend/src"]
+    APPC["frontend-app-core"]
+    REG["frontend-registry"]
+    APIC["frontend-api-client"]
     FAUTH["frontend-feature-auth"]
-    FADMIN["frontend-feature-admin"]
-    UI["make-you-chic-ui<br/>vendor"]
+    FADM["frontend-feature-admin"]
+    FDSL["frontend-feature-dsl"]
+    MYC["make-you-chic-ui"]
   end
-  subgraph BE["バックエンド（cherry.mastersmith）"]
-    CFG["config<br/>SecurityConfig・WebConfig"]
-    SEC["common-security<br/>差し込み口"]
-    ERR["common-error<br/>Problem Details"]
-    WEBF["common-web<br/>フィルター"]
-    OBS["common-observability"]
-    HEALTH["common-health"]
+  subgraph BE["バックエンド cherry.mastersmith"]
+    CFG["config"]
+    COMMON["common-*"]
     AUTH["auth"]
     ACCESS["access"]
     AUDIT["audit"]
     USER["user"]
+    TDB["targetdb"]
+    DSL["dsl"]
+    DSLM["dslmanage"]
   end
-  DB[("内部DB H2<br/>users・refresh_tokens<br/>login_attempt_states・audit_events")]
+  H2[("内部DB H2")]
+  TGT[("対象DB")]
+  OTLP["OTLP の受け手（既定で無効）"]
 
-  APP --> REG
+  APPC --> REG
   REG --> FAUTH
-  REG --> FADMIN
+  REG --> FADM
+  REG --> FDSL
   FAUTH --> APIC
-  FADMIN --> APIC
-  APP --> UI
-  FAUTH --> UI
+  FADM --> APIC
+  FDSL --> APIC
+  FDSL --> MYC
+  APPC --> MYC
   APIC -- "HTTP /api/**" --> CFG
-  CFG --> SEC
-  CFG --> WEBF
-  AUTH -- "SecurityRuleContributor 110" --> SEC
-  ACCESS -- "SecurityRuleContributor 210 / ApiDefaultAccess" --> SEC
+  CFG --> COMMON
   AUTH --> USER
+  ACCESS --> AUTH
+  DSLM --> DSL
+  DSLM --> TDB
+  DSLM --> USER
+  DSLM --> AUTH
   AUTH -- "AuthenticationEvent" --> AUDIT
   ACCESS -- "AdminAccessDeniedEvent" --> AUDIT
-  AUTH --> ERR
-  ACCESS --> ERR
-  AUTH --> DB
-  USER --> DB
-  AUDIT --> DB
-  HEALTH --> DB
-  ERR --> OBS
+  DSLM -- "DslOperationEvent" --> AUDIT
+  AUTH --> H2
+  USER --> H2
+  AUDIT --> H2
+  DSLM --> H2
+  TDB --> TGT
+  CFG -. "有効時だけ" .-> OTLP
 ```
 
-文章による代替: 画面の骨組み（`frontend-app-core`）が登録（`frontend-registry`）を通して認証と管理者向け領域の機能を差し込む。各機能は共通の API 呼び出し（`frontend-api-client`）で同じオリジンの `/api/**` を呼ぶ。バックエンドでは、1つのフィルターの連鎖（`config` の `SecurityConfig`）に `auth`（order 110）と `access`（order 210）が差し込み口（`common-security`）を通して決まりを足す。`auth` は利用者（`user`）を読み、認証の出来事を知らせる。`access` はアクセス拒否の出来事を知らせる。`audit` はその両方を受け取って内部DBに追記する。エラー応答は `common-error` の1か所で作り、トレースIDを `common-observability` から添える。内部DBは H2 の1つだけで、`auth`・`user`・`audit`・`common-health` がこれを使う。
+文章による代替: 画面の骨組みが登録を通して認証・管理者向け領域・DSL の管理の3つの機能を差し込み、各機能は共通の API の呼び出しで同じオリジンの `/api/**` を呼ぶ。DSL の画面は make-you-chic-ui の `Modal`・`Alert` などを使う。バックエンドでは、`config` の1つのフィルターの連鎖に各機能が決まりを足す。`auth` は `user` で利用者を照合し、`access` は `auth` の主体を使う。`dslmanage` は `dsl`（読み込み・検証・適用中のモデル）と `targetdb`（対象DB のスキーマの読み取り）を使い、プレビューと履歴を内部DB に置く。`auth`・`access`・`dslmanage` は出来事を知らせ、`audit` が内部DB に追記する。`config` は外部エクスポートを有効にしたときだけ OTLP の受け手に送る。パッケージ間の依存の詳細は `dependencies.md`。
 
 ### Data Flow
 
-1. 画面の要求は `apiFetch` がアクセストークン（メモリに保持）を `Authorization: Bearer` に付けて送る。リフレッシュトークンは HttpOnly の Cookie で、認証の API にだけ使われる。
-2. サーブレットのフィルターの段階では、`RequestSizeLimitFilter`（本文の上限。既定 1MB、超えたら 413）、Spring Security の連鎖（Bearer の検証 → 認可）、`CacheControlFilter` を通る。
-3. コントローラー（`web` の層）が DTO（`record`）を業務処理（`service` の層）の命令に変える。トランザクションは `service` の層で始まり、`repository` の層（Spring Data JPA と、H2 に依存する一部の生 SQL）が内部DBを読み書きする。
-4. 業務エラーは `BusinessException` として投げられ、`GlobalExceptionHandler` が Problem Details（`code`・`traceId` 付き）に変える。フィルターの段階のエラーは `ErrorResponseWriter`（`DefaultErrorResponseWriter`）が同じ形で書く。
-5. 認証とアクセス拒否の出来事は、アプリの中の出来事として知らされ、確定の後に `audit` が別のトランザクション（`REQUIRES_NEW`）で `audit_events` に追記する。
+1. 画面の要求は `apiFetch` がアクセストークン（メモリに保持）を `Authorization: Bearer` に付けて送る。
+2. サーブレットのフィルター（本文の大きさの上限、Spring Security の連鎖、キャッシュの指定）を通り、コントローラー（`web`）が DTO を業務処理（`service`）の命令に変える。
+3. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。DSL の管理では、対象DB を読むあいだ内部DB の接続を持ち続けないよう、トランザクションの境界を `DslRecordStore` に置いている。
+4. 業務エラーは `BusinessException` として投げられ、`@RestControllerAdvice` の1か所で Problem Details（`code`・`traceId` 付き）に変わる。
+5. 監査の対象の出来事は、確定の後に `audit` が別のトランザクション（`REQUIRES_NEW`、2本目の接続）で `audit_events` に追記する。
+6. ログは標準出力に1行1件の JSON で出る（`logback-spring.xml`、キーと値は `<keyValuePairs/>` で項目になる）。外部エクスポートを有効にしたときだけ、ルートのロガーに OTLP の出力が足される（`ObservabilityConfig`）。
 
 ### Key Design Decisions
 
-コードとコメントから読み取れる、既存の設計の選択である（番号は元の設計書の ADR・BR への参照で、コード中の Javadoc にある）。
-
-| 選択 | 内容 | 影響 |
+| 選択 | 内容 | 影響（今回の7件との関わり） |
 |---|---|---|
-| フィルターの連鎖は1つ、機能が差し込む | `SecurityConfig` だけが連鎖を作り、機能は `SecurityRuleContributor` を order の順に足す。`/api/**` の既定（ログイン必須）は `ApiDefaultAccess` が1つだけ決める | 新しい API は既定でログインが必要。`/api/admin/**` に置けば管理者のみになる |
-| 監査は出来事で疎結合 | `auth`・`access` は `ApplicationEventPublisher` で知らせるだけで、`audit` を知らない | 監査の対象を増やすには、出来事の型と `AuditEventFactory`・`AuditEventListener` の網羅の `switch` を増やす |
-| 監査は確定の後、別トランザクション | `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)` と `REQUIRES_NEW` | ログインなどでは1要求で接続を2本使う（README の既知の制約。プールの上限は既定 30） |
-| エラー応答は Problem Details＋`code` | `ProblemType` を機能ごとの `ProblemTypeCatalog` で登録し、起動時に `ProblemTypeRegistry` が重複を検査する | 拡張の項目は `code`・`traceId` だけ。複数のエラーを1つの応答で返す形は無い |
-| 内部DB は組み込み H2 の1つ | Spring Boot の自動構成の `DataSource`・JPA・Flyway・ヘルスチェックがすべてこれに結び付いている | 2つ目の `DataSource`（対象DB）を足すと、自動構成の前提が変わる |
-| 時刻は注入する `Clock` | `AuthClockConfig` が UTC の `Clock` の Bean を全体に提供する | テストで時刻を差し替えられる |
-| メソッドの呼び出しの追跡 | `TraceAspect` が TRACE のときだけ引数と戻り値を文字列にする | 秘密情報を持つ型は `toString` で伏せ字にする決まりがある |
+| ログは標準出力の JSON が正、OTLP は有効時だけ足す | `OtlpLogAppenderInstaller` がルートのロガーに `OpenTelemetryAppender` を足す（`config/ObservabilityConfig.java` 67〜101 行） | 足す出力の設定は名前と文脈だけで、キーと値を属性として送る設定が無い（TD-1） |
+| ロックの状態は1表・行ごとの排他 | 利用者の行とダミーの行を同じ表に置き、排他つきで読む。行が無ければ `MERGE` で作って読み直す | 行が無い利用者の同時の初めてのログインで、主キーの重複になりうる（TD-2） |
+| 監査は確定の後・別トランザクション | `@TransactionalEventListener(AFTER_COMMIT)` と `REQUIRES_NEW` | 1要求で接続を2本使う（プールの上限 既定 30、README の既知の制約）。書き込みの失敗の ERROR に記録しようとした全項目を載せる（TD-1 の懸念） |
+| 適用中の DSL のモデルは `dsl` が保持、差し替えは `dslmanage` | 後続の機能が `dsl` だけに依存できる | 起動時の読み込み（`DslStartupLoader`）の順序に依存する |
+| 資源の上限は compose の既定と `.env` の上書き | CPU 既定 4、メモリ 既定 1g（`compose.yaml` 62〜63 行） | 10MB の DSL には 2g が要る（TD-5）。`app` は `.env` の全体を `env_file` で読む（TD-6） |
+| デザインシステムはサブモジュールで固定 | 変更は make-you-chic-ui 側で行い、固定先を更新して取り込む（`project.md` の Forbidden・Mandated） | 閉じるボタンの文言と `aria-describedby` の直しは固定先の更新で取り込む（TD-7） |
 
 ### Improvement Opportunities
 
-- 対象DB を扱う層（接続・メタデータの読み取り・書き込み）を、内部DB の層と分けて置く場所が、まだ決まっていない。内部DB の生 SQL は H2 の方言に依存しているため、書き方を流用できない。
-- 監査の仕組みは、認証とアクセス拒否に特化している（`project.md` の DECIDED により、共通化は業務データを扱う後続の Intent で検討することになっている）。
-- 画面の振り分けは、登録した URL と完全に一致する1画面の表示だけである。プレビュー→適用のような段階を持つ画面の URL の扱いは、機能の側で工夫が要る。
+- 外部へ送るログの中身（キーと値）を確かめるテストが無い。送る値の決まり（秘密情報に加え、メールアドレスなど個人に関する値）を決めてから送る必要がある。
+- ロックの状態の行の作成は、同時の作成への備え（重複の受け止めか、排他の取り方の変更）が要る。
+- コンテナの既定の値（メモリの上限）は、compose・負荷の試験の compose・`.env.example`・README・確かめのスクリプトの5か所に散っている。
+- 見本の対象DB のための秘密情報と、アプリの設定が同じ `.env` にある。
 
 詳しくは `code-quality-assessment.md` を参照。
 
 ## Interaction Diagrams
 
-### 1. ログイン（`POST /api/auth/login`）
+### 1. ログインとロックの状態の行（`POST /api/auth/login`）
 
 ```mermaid
 sequenceDiagram
@@ -113,165 +123,86 @@ sequenceDiagram
   participant L as LoginService
   participant U as UserAccountService
   participant R as LoginAttemptStateRepository
-  participant T as RefreshTokenRepository
-  participant A as AccessTokenService
-  participant EV as ApplicationEventPublisher
+  participant DB as 内部DB H2
   participant AU as AuditEventListener
-  participant DB as 内部DB H2
 
-  UI->>C: POST /api/auth/login（email・password）
-  C->>L: login(LoginCommand, ClientInfo)
-  L->>U: verifyPassword（トランザクションの外で1回照合）
-  U->>DB: 利用者を検索
-  Note over L: TransactionTemplate で短いトランザクションを開始
-  L->>R: 利用者の行（いなければダミーの行）を排他つきで読む
-  L->>L: LockPolicy.decide（しきい値・ロック時間）
-  L->>R: 失敗回数とロック期限を更新
-  alt 成功
-    L->>A: アクセストークン（JWT HS256）を発行
-    L->>T: リフレッシュトークンのハッシュを保存
-    L->>EV: LOGIN_SUCCEEDED を知らせる
-  else 失敗（利用者なし・誤り・ロック中）
-    L->>EV: LOGIN_FAILED を知らせる
-  end
-  Note over L,DB: 確定（commit）
-  EV-->>AU: 確定の後に同じスレッドで受け取る
-  AU->>DB: REQUIRES_NEW で audit_events に追記（2本目の接続）
-  alt 成功
-    L-->>C: IssuedTokens
-    C-->>UI: 200 TokenResponse ＋ リフレッシュの Cookie
-  else 失敗
-    L-->>C: BusinessException AUTHENTICATION_FAILED
-    C-->>UI: 401 Problem Details（理由によらず同じ）
-  end
-```
-
-文章による代替: パスワードの照合はトランザクションの外で1回だけ行う。その後、短いトランザクションで、ロックの状態の行（利用者がいなければダミーの行）を排他つきで読み、`LockPolicy` で判定して更新する。成功ならトークンを発行してリフレッシュトークンのハッシュを保存する。成功でも失敗でも、同じトランザクションの中で出来事を知らせる。受け取り側（`audit`）は確定の後に、新しいトランザクションで監査の行を追記する。失敗の応答は理由によらず 401 / `AUTHENTICATION_FAILED` である。
-
-### 2. トークンの更新と、画面側の自動の送り直し
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant F as 機能の画面
-  participant AC as apiFetch
-  participant S as Spring Security 連鎖
-  participant C as AuthController
-  participant TR as TokenRefreshService
-  participant DB as 内部DB H2
-
-  F->>AC: apiRequest（/api/ の下の任意の API）
-  AC->>S: 要求 ＋ Authorization Bearer
-  S-->>AC: 401 AUTHENTICATION_REQUIRED（期限切れなど）
-  AC->>C: POST /api/auth/session/refresh（Cookie、同時の 401 は1回にまとめる）
-  C->>C: OriginVerifier で Origin を確認
-  C->>TR: refresh(RefreshTokenValue)
-  TR->>DB: ハッシュで検索し、無効・期限切れを確認
-  TR->>DB: revokeIfActive（条件付きで無効化、1行でなければ失敗）
-  TR->>DB: 新しいリフレッシュトークンを保存（同じトランザクション）
-  alt 成功
-    C-->>AC: 200 TokenResponse ＋ 新しい Cookie
-    AC->>S: 元の要求を1回だけ送り直す
-    S-->>AC: 応答
-    AC-->>F: 応答
-  else 失敗
-    C-->>AC: 401 REFRESH_FAILED ＋ Cookie の削除
-    AC-->>F: onUnauthenticated（未ログインへ）
-  end
-```
-
-文章による代替: 画面の `apiFetch` は、401 で `code` が `AUTHENTICATION_REQUIRED` のときだけ、更新の API を1回呼ぶ。同時に起きた 401 は、1つの更新にまとめる。サーバーは Origin を確かめ、使ったリフレッシュトークンを条件付きで無効にし、同じトランザクションで新しいものを保存する。成功なら画面は元の要求を1回だけ送り直し、失敗なら未ログインとして扱う。更新は監査の対象ではない（出来事を知らせない）。
-
-### 3. 管理者向け API の認可（401・403・200）とアクセス拒否の監査
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant B as ブラウザ
-  participant RS as OAuth2 Resource Server（auth の決まり）
-  participant P as AccessTokenAuthenticationProvider
-  participant AZ as AdminAuthorizationManager
-  participant EP as AdminAuthenticationEntryPoint
-  participant DH as AdminAccessDeniedHandler
-  participant PUB as AccessDeniedEventPublisher
-  participant AU as AuditEventListener
-  participant CT as AdminCheckController
-  participant DB as 内部DB H2
-
-  B->>RS: GET /api/admin/check ＋ Bearer
-  alt トークンが無い・無効
-    RS->>EP: commence
-    EP->>PUB: AdminAccessDeniedEvent（期限切れ以外の理由のとき）
-    PUB-->>AU: その場で受け取る（トランザクションなし）
-    AU->>DB: REQUIRES_NEW で audit_events に追記
-    EP-->>B: 401 Problem Details
-  else トークンが有効
-    RS->>P: authenticate
-    P->>DB: 利用者を読み、AuthenticatedUser を作る（管理者の値は DB から）
-    RS->>AZ: authorize（主体の admin を見る）
-    alt 管理者でない
-      AZ->>DH: 拒否
-      DH->>PUB: AdminAccessDeniedEvent（NOT_ADMIN）
-      PUB-->>AU: その場で受け取る
-      AU->>DB: audit_events に追記
-      DH-->>B: 403 ACCESS_DENIED
-    else 管理者
-      AZ->>CT: 通す
-      CT-->>B: 204
+  UI->>C: POST /api/auth/login
+  C->>L: login(command, client)
+  L->>U: verifyPassword（トランザクションの外）
+  Note over L: transaction.execute で decide を実行
+  alt 利用者がいない
+    L->>R: lockDummyForUpdate（空いたダミーの行）
+  else 利用者がいる
+    L->>R: lockForUpdate(userId)
+    alt 行が無い
+      L->>R: createIfAbsent(userId)（MERGE）
+      Note over R,DB: 同時の2つの試みが両方とも行を見つけられないと、後の MERGE が主キーの重複になりうる
+      L->>R: lockForUpdate(userId)（読み直し）
     end
   end
+  L->>L: LockPolicy.decide
+  L->>R: update（失敗回数とロックの期限）
+  L-->>AU: LOGIN_SUCCEEDED または LOGIN_FAILED（確定の後に受け取る）
+  AU->>DB: REQUIRES_NEW で audit_events に追記
+  alt 成功
+    C-->>UI: 200 TokenResponse とリフレッシュの Cookie
+  else 失敗
+    C-->>UI: 401 AUTHENTICATION_FAILED
+  end
 ```
 
-文章による代替: `/api/admin` と `/api/admin/**`（`AdminPaths`）は、`access` の決まり（order 210）で管理者のみになる。トークンが無い・無効なら 401 の入口（`AdminAuthenticationEntryPoint`）が、管理者のみのパスで理由が有効期限切れでないときに、アクセス拒否の出来事を知らせてから、`auth` の入口に応答の書き出しを任せる。トークンが有効なら、利用者を内部DBから読んで主体を作り、`AdminAuthorizationManager` が主体の管理者の値で判断する。管理者でなければ 403 の処理が出来事を知らせてから 403 を返す。出来事はトランザクションの外で知らされるため、`audit` は要求と同じスレッドで、応答を書く前にその場で追記する。
+文章による代替: パスワードの照合はトランザクションの外で1回行う。その後の短いトランザクションで、利用者がいなければダミーの行を、いれば利用者の行を排他つきで読む。利用者の行が無いときは `MERGE` で作ってから読み直す。行が無い利用者が同時に2回ログインすると、どちらも行を見つけられずに `MERGE` を行い、後の方が主キーの重複となって想定外のエラー（500）になりうる（TD-2）。判定と更新の後、成功でも失敗でも出来事を知らせ、`audit` が確定の後に追記する。
 
-### 4. 監査の記録（共通の部分）
+### 2. DSL の投入・プレビュー・適用（`/api/admin/dsl/**`）
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant SRC as 知らせる側（LoginService・LogoutService・access の 401/403 の処理）
-  participant L as AuditEventListener
-  participant F as AuditEventFactory
-  participant R as AuditEventRecorder
-  participant REPO as AuditEventRepository
-  participant DB as 内部DB H2
-  participant LOG as アプリのログ
-
-  SRC->>L: 出来事（AuthenticationEvent または AdminAccessDeniedEvent）
-  L->>F: from(event)（網羅の switch で AuditEvent を組み立てる）
-  L->>R: record（REQUIRES_NEW）
-  R->>REPO: save
-  REPO->>DB: INSERT audit_events
-  alt 200 ミリ秒を超えた
-    L->>LOG: WARN（種類と時間だけ）
-  end
-  alt 例外
-    L->>LOG: ERROR 1件（記録しようとした項目、例外の型）
-    Note over L: 呼び出し元へ伝えない。再試行しない
-  end
-```
-
-文章による代替: 受け取り側は最優先の順で受け取り、組み立て・追記・確定のすべての失敗を受け止めて ERROR を1件出す。呼び出し元の操作は失敗させず、再試行もしない。成功したときは、監査の内容をアプリのログに出さない（二重の記録にしない）。
-
-### 5. ログアウト（`POST /api/auth/session/logout`）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant UI as 画面
-  participant C as AuthController
-  participant LO as LogoutService
+  participant P as DslAdminPage
+  participant C as DslAdminController
+  participant LC as DslLifecycle
+  participant RD as DslReader
+  participant ST as DslRecordStore
+  participant H as ActiveDslModelHolder
   participant DB as 内部DB H2
   participant AU as AuditEventListener
 
-  UI->>C: POST /api/auth/session/logout（Cookie）
-  C->>C: Origin を確認
-  C->>LO: logout(RefreshTokenValue, ClientInfo)
-  LO->>DB: 検索し、有効なら revokeIfActive
-  LO-->>AU: LOGGED_OUT（有効なトークンを無効にしたときだけ。確定の後）
+  P->>C: POST /api/admin/dsl/preview（application/yaml）
+  C->>LC: submit(bytes, source, context)
+  LC->>RD: read（安全な読み込み・JSON Schema・意味の検証）
+  alt 検証を通らない
+    LC-->>AU: DSL_SUBMISSION_REJECTED
+    C-->>P: Problem Details（誤りの一覧）
+  else 検証を通る
+    LC->>ST: placePreview
+    ST->>DB: dsl_previews を置き換え
+    LC-->>AU: DSL_SUBMITTED
+    C-->>P: PreviewResponse（違い・警告）
+  end
+  P->>P: DslConfirmDialog（Modal）で適用を確かめる
+  P->>C: POST /api/admin/dsl/apply（previewId）
+  C->>LC: apply(previewId, context)
+  LC->>ST: apply（トランザクション）
+  ST->>DB: dsl_applied_revisions へ写し、プレビューを消す
+  Note over LC: ここから先は確定の後
+  LC->>H: replace(model)
+  LC-->>AU: DSL_APPLIED
   AU->>DB: audit_events に追記
-  C-->>UI: 204 ＋ Cookie の削除（トークンが無い・無効でも同じ）
-  UI->>UI: メモリのアクセストークンを破棄
+  C-->>P: DslStatusResponse
 ```
 
-文章による代替: ログアウトは、有効なリフレッシュトークンだけを無効にして `LOGGED_OUT` を知らせる。トークンが無い・無効でも応答は同じ 204 である。アクセストークンは失効させない（有効期限まで使える。既定 5 分）。
+文章による代替: 画面は DSL のファイルを YAML のまま送る。`DslLifecycle` は `dsl` の読み込み口で検証し、通らなければ受け付けなかった投入を監査に知らせて誤りの一覧を返す。通ればプレビューを内部DB に置き、違いと警告を返す。画面は確かめの表示（make-you-chic-ui の `Modal`）で確認した後に適用を送る。適用は `DslRecordStore` のトランザクションで履歴へ写し、確定の後に適用中のモデルを差し替えて監査に知らせる。操作ごとに `DslOperationMetrics` がキーと値つきのログを出す（TD-1 で Loki から絞り込めない値）。この流れの中身は流し読みで確かめたものである。
+
+### 3. ログの出力の道（TD-1・TD-4）
+
+```mermaid
+flowchart LR
+  SRC["アプリのコード<br/>LOGGER.atInfo().addKeyValue(...)"] --> ROOT["ルートのロガー INFO"]
+  LIB["Hibernate などの部品のログ"] --> ROOT
+  ROOT --> JSON["標準出力の JSON<br/>logback-spring.xml<br/>keyValuePairs が項目になる"]
+  ROOT -. "export.enabled が true のときだけ" .-> OTEL["OpenTelemetryAppender<br/>ObservabilityConfig"]
+  OTEL --> COL["OTLP の受け手<br/>otel-collector または lgtm"]
+  COL --> LOKI["Loki<br/>本文の文字列だけで絞り込める"]
+```
+
+文章による代替: アプリのコードはキーと値の API でログを出し、部品（Hibernate など）のログと一緒にルートのロガー（INFO）へ入る。標準出力の JSON ではキーと値が項目になる。外部エクスポートを有効にしたときだけ OTLP の出力が足されるが、キーと値を属性として送る設定が無いため、Loki では本文の文字列でしか絞り込めない（TD-1）。ロガーごとの水準の指定は JDBC ドライバー3つだけで、`org.hibernate` の指定は無い（TD-4）。
