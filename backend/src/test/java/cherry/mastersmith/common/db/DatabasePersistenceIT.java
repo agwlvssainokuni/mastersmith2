@@ -66,7 +66,8 @@ class DatabasePersistenceIT {
 
         String url = environment.getProperty("spring.datasource.url");
 
-        assertThat(url).isEqualTo("jdbc:h2:file:./data/mastersmith");
+        // 停止時の詰め直し（DEFRAG_ALWAYS=TRUE）は Build and Test からの戻し Loop-back 1（U4-STORAGE）で足した。
+        assertThat(url).isEqualTo("jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE");
         assertThat(url).doesNotContainIgnoringCase("AUTO_SERVER").doesNotContainIgnoringCase("tcp");
         assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
         assertThat(environment.getProperty("spring.jpa.open-in-view")).isEqualTo("false");

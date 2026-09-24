@@ -88,6 +88,7 @@
     "NFR8.3",
     "NFR8.4",
     "NFR8.5",
+    "NFR12.3",
     "BR1.1",
     "BR1.2",
     "BR1.3",
@@ -550,6 +551,11 @@
       "id": "NFR8.5",
       "status": "OK",
       "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAuditWriteFailureIT.java"
+    },
+    {
+      "id": "NFR12.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java"
     },
     {
       "id": "BR1.1",

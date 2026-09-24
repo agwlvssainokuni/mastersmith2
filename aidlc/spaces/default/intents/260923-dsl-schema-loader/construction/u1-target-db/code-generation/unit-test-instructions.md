@@ -47,6 +47,14 @@ U1 のテストの道具・実行のしかた・カバレッジの目標・差�
 - CI（GitHub Actions は `CI=true` を設定する）: 飛ばさずに失敗する。
 - 飛ばした状態では統合しない。警告が出たら colima を起動して、同じコマンドをやり直す（team.md の Way of Working）。
 
+- Build and Test からの戻し（Loop-back 1、計画の Step 18）の確かめ: 届かない状態は Docker の接続先を存在しない場所に向けて作る（colima は止めない）。
+
+```bash
+DOCKER_HOST=unix:///nonexistent/docker.sock env -u CI ./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'
+```
+
+  期待: 失敗 0。対象DB のコンテナを使うテストは警告つきで SKIPPED になり、`BUILD SUCCESSFUL`。拡張の登録の順の構造の検査は `./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.testsupport.*'` で動く。
+
 ## 4. カバレッジの目標
 
 - 全体: 行 80% 以上・分岐 70% 以上（既存の `jacocoTestCoverageVerification`）。

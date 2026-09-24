@@ -160,6 +160,9 @@
       "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheckTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/MysqlFamilyTestDatabase.java"
     },
     {

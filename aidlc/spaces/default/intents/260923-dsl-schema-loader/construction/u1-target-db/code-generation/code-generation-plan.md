@@ -201,6 +201,21 @@ U1 のコード生成の計画を示す。作るものは、対象DB の接続�
 - [x] `./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.*'` と `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'` を実行して通し、最後に `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` ですべての段を通す
 - [x] `code-summary.md`・`source-manifest.json`・`traceability.json` を、見直しの後の中身に合わせて直す（`code-summary.md` にこの節の3つの差を載せる）
 
+
+## 8. Build and Test からの戻し（Loop-back 1）
+
+Build and Test で、コンテナの実行環境に届かない状態で対象DB の結合テストを実行したところ、決めたとおりに警告を出して飛ばされる（SKIPPED）一方で、`AbstractTargetSchemaReaderIT` の3クラス（と U4 の `DslTargetDbIT`）がクラスの後片付けで `initializationError` になり、`integrationTest` のタスクが失敗した（NFR12.3 が Not Met。`construction/build-and-test/test-results.md` の Loop-Back Log）。依頼者の選択は「Retry with fix」（「Code Generation に戻って両方直す」）。
+
+原因: `@ExtendWith({ContainerRuntimeCheck.class, OutputCaptureExtension.class})` の順のため、`ContainerRuntimeCheck.beforeAll` がテストを飛ばす例外を投げると `OutputCaptureExtension.beforeAll` が呼ばれず、逆の順で呼ばれる `afterAll` の `OutputCapture.pop` が空の待ち行列で `NoSuchElementException` を出す。
+
+### Step 18: 拡張の登録の順の直しと再現の確かめ
+
+- [x] `backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java` の登録を `@ExtendWith({OutputCaptureExtension.class, ContainerRuntimeCheck.class})` に入れ替え、なぜこの順でなければならないか（前処理は登録の順、後処理は逆の順に呼ばれ、ログの取り込みの開始より先に飛ばすと後片付けが失敗する）を日本語のコメントで書く。U4 の `DslTargetDbIT` は U4 の手順で直す
+- [x] 再現の確かめ（不具合を直すときは再現するテストを同じ変更に含める決まり）: 新しい依存を足さずに、ArchUnit（既存）で「`ContainerRuntimeCheck` と `OutputCaptureExtension` の両方を `@ExtendWith` で登録するテストのクラスは、`OutputCaptureExtension` を先に登録する」ことを確かめる構造の検査を `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/` に足す（直す前の順では失敗し、直した後は通ることを確かめる）。テストの説明文は英語
+- [x] コンテナの実行環境に届かない状態（Docker の接続先を存在しない場所に向け、`CI` を外す）で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'` を実行し、失敗 0・警告つきの SKIPPED になることを確かめて、出力の件数を `code-summary.md` に記録する。colima は止めない（配備したアプリも止まるため）
+- [x] 届く状態に戻して `./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.*'` と `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'` を通す
+- [x] `code-summary.md` に戻しの記録の節を足し、`source-manifest.json` と `traceability.json`（NFR12.3 の対象を足した確かめに向ける）を直す
+
 ## Testing Contract
 
 ```json
@@ -223,7 +238,7 @@ U1 のコード生成の計画を示す。作るものは、対象DB の接続�
     },
     {
       "layer": "project",
-      "text": "- テストの件数やカバレッジを報告するときは、`./gradlew verify` がテストのタスクを UP-TO-DATE で飛ばすことがあるため、`:backend:cleanTest :backend:cleanIntegrationTest` を付けて実行し直し、実測の数字だけを報告する。 (learned 2026-09-23) \n- 負荷の環境や配備先が決まらないと測れない目標（応答時間のパーセンタイル、運用の指標、ファイルの権限など）は、Build and Test で `Unverified` とし、持ち主の段（performance-validation・observability-setup・deployment-execution）を明記して引き継ぐ。目標を緩めて「満たした」ことにはしない。 (learned 2026-09-23) \n- 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) \n- 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) \n- 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) \n- Intent の流れに Performance Validation の段が無く、負荷の環境（使い捨ての環境）を手元で用意できるときは、k6 の試験と NMT の測定の持ち主を Build and Test とし、Unverified で引き継がずにその段で実行する。 (learned 2026-09-23) \n- 修正の前の設定（例: 上限 1g）も修正の後の環境（例: CPU 4 の VM）で流し（pre1g）、要件の前提（VM を上げても F3 が起きる）を実測で裏付ける。 (learned 2026-09-23)"
+      "text": "- テストの件数やカバレッジを報告するときは、`./gradlew verify` がテストのタスクを UP-TO-DATE で飛ばすことがあるため、`:backend:cleanTest :backend:cleanIntegrationTest` を付けて実行し直し、実測の数字だけを報告する。 (learned 2026-09-23) \n- 負荷の環境や配備先が決まらないと測れない目標（応答時間のパーセンタイル、運用の指標、ファイルの権限など）は、Build and Test で `Unverified` とし、持ち主の段（performance-validation・observability-setup・deployment-execution）を明記して引き継ぐ。目標を緩めて「満たした」ことにはしない。 (learned 2026-09-23) \n- 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) \n- 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) \n- 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) \n- Intent の流れに Performance Validation の段が無く、負荷の環境（使い捨ての環境）を手元で用意できるときは、k6 の試験と NMT の測定の持ち主を Build and Test とし、Unverified で引き継がずにその段で実行する。 (learned 2026-09-23) \n- 修正の前の設定（例: 上限 1g）も修正の後の環境（例: CPU 4 の VM）で流し（pre1g）、要件の前提（VM を上げても F3 が起きる）を実測で裏付ける。 (learned 2026-09-23) \n- パッケージごとのカバレッジの下限と SpotBugs の SQL_ の関門を U1 の計画に入れた。team.md の決まりだが今のビルドに無く、この Intent で最初に作る単位のため。U1 の設計の文書には無い作業。 (learned 2026-09-24) \n- U4 で既存の AuditSecretLeakIT の列の一覧に V6 の4列を足し、テストの JVM のヒープを 1g にした。前者は承認済みの V6 と必ず食い違うため、後者は構造の検査がクラスを持ち続け U3 の 10MB 超えのテストでヒープが尽きたため。どちらも計画に無い変更で、依頼者に確かめる。 (learned 2026-09-24) \n- 応答しない対象DB の TIMEOUT の確かめに、テストの中で開いた ServerSocket（受け付けて何も返さない）を使う。外の端末に頼らず確実に再現できる代わりに、本物の DB の遅延ではない。 (learned 2026-09-24) \n- パッケージごとのカバレッジの下限は新しいパッケージだけに当てた。実測で audit.service（行 77.2%）・common.health（行 79.2%）・auth.repository（分岐 50.0%）が単独で下回ったため（team.md の決まりどおり）。既存の 22 パッケージを一覧で外し、新しいパッケージは自動で対象になる。 (learned 2026-09-24)"
     }
   ],
   "obligations": {
@@ -267,8 +282,8 @@ U1 のコード生成の計画を示す。作るものは、対象DB の接続�
       "Documentation and traceability."
     ]
   },
-  "input_sha256": "sha256:2adf2e19e08e8d9f09279453393e762919beea4d6d9d5d13b89e72c1fffeed06",
-  "contract_sha256": "sha256:e0a9abee7ec1245e67d5b55b468219a36caaa126e29794fd62a14795c277380c"
+  "input_sha256": "sha256:246b734731604f4b9f4d77cecbeda1baf18157fdfe148f6c242e9cf2724ab8f9",
+  "contract_sha256": "sha256:fad83f4781d495b9c1188364b74cbb3df645f2324fe0ecc57c74ab31a9426958"
 }
 ```
 

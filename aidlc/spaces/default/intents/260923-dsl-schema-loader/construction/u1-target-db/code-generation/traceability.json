@@ -222,7 +222,7 @@
     {
       "id": "NFR12.3",
       "status": "OK",
-      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java"
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java"
     },
     {
       "id": "BR1.1",

@@ -43,6 +43,17 @@ U4 が手を入れる既存の部分のテスト（本文の上限・エラー�
 - 結合テストはコンテナの実行環境（colima）と、README の「対象DB」の節の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を前提にする。無いときは U1 と同じく対象DB のテストだけが警告つきで飛ぶ（CI では失敗）。飛ばした状態では統合しない。
 - テストの件数を報告するときは、`:backend:cleanTest` または `:backend:cleanIntegrationTest` を先に付けて実行し、実測の数字だけを報告する（project.md の Testing Posture）。
 
+Build and Test からの戻し（Loop-back 1、計画の Step 18〜20）の確かめ:
+
+```bash
+# 拡張の登録の順の構造の検査（U1 で足したもの。違反 0）
+./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.targetdb.testsupport.ExtensionOrderArchitectureTest'
+# コンテナの実行環境に届かない状態（colima は止めず、接続先を存在しない場所に向ける）。期待: 失敗 0・対象DB のテストは警告つきで SKIPPED
+DOCKER_HOST=unix:///nonexistent/docker.sock env -u CI ./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.dslmanage.*'
+# 内部DB の終了時の詰め直しの確かめ（組み込みの H2 の単体テスト）
+./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.config.*'
+```
+
 ## 3. カバレッジの目標
 
 - 全体: 行 80% 以上・分岐 70% 以上。

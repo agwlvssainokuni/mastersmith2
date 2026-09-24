@@ -130,8 +130,11 @@ spring:
   # 内部DB。既定は組み込み・ファイル保存（作業ディレクトリの ./data/、コンテナでは /app/data）。
   # H2 の TCP サーバーや複数のプロセスからの自動の接続（AUTO_SERVER）は使わない。
   # 接続先は環境変数だけで切り替えられる。パスワードは環境変数で渡し、ここには書かない。
+  # DEFRAG_ALWAYS=TRUE は、DB を閉じるとき（アプリの停止時）にファイルを詰め直す指定。DSL の本文（最大 10MB）の履歴は
+  # 上限を超えた古い行を消しても、H2 のファイルは閉じるときに詰め直さないと縮まず、投入と適用を重ねるたびに大きくなる
+  # （起動し直しても縮まない）。MASTERSMITH_DB_URL で接続先を上書きするときも、この指定を付ける（README を参照）。
   datasource:
-    url: ${MASTERSMITH_DB_URL:jdbc:h2:file:./data/mastersmith}
+    url: ${MASTERSMITH_DB_URL:jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE}
     username: ${MASTERSMITH_DB_USERNAME:sa}
     password: ${MASTERSMITH_DB_PASSWORD:}
     hikari:

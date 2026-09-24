@@ -239,3 +239,64 @@ B5 のテストの内訳:
 | NFR1.15 | `backend/src/main/java/cherry/mastersmith/dslmanage/web/DslHeavyOperationGate.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java` | 重い処理の途中でも今の状態の取得（軽い処理）が通る（`busy`）。適用の同時の実行は1件だけ成功する（`concurrentApply`） |
 | NFR5.5 | `backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java` | `DSL_BUSY` が 503 で返る（`busy`）。起動時に既存の code の重複の検査を通る |
 | BR8.2 | `backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java` | 起動時に既存の code の重複の検査を通ったうえで、各 code がそれぞれ1つの状態コードで返る |
+
+## 10. Build and Test からの戻し（Loop-back 1、計画の Step 18〜20、2026-09-24）
+
+Build and Test で2つの目標が Not Met になり、依頼者の選択「Retry with fix」で戻した（`construction/build-and-test/test-results.md` の Loop-Back Log）。
+
+### 10.1 原因と直したこと
+
+| 目標 | 原因 | 直したこと |
+|---|---|---|
+| NFR12.3（コンテナの実行環境に届かないとき、対象DB のテストは警告つきで飛ばす） | `DslTargetDbIT` の拡張の登録が `ContainerRuntimeCheck` → `OutputCaptureExtension` の順。JUnit 5 は後処理を逆の順に呼ぶため、テストを飛ばしたときにログの取り込みが始まらないまま後片付けの `OutputCapture.pop` が失敗し、クラスが `initializationError` になった（U1 と同じ原因） | 登録を `OutputCaptureExtension` → `ContainerRuntimeCheck` の順に入れ替え、U1 の `AbstractTargetSchemaReaderIT` と同じ理由のコメントを書いた |
+| U4-STORAGE（内部DB の保存量が最大約 210MB の内） | H2 のファイルは、DSL の本文の履歴の古い行を消しても、閉じるときに詰め直さないと縮まない。既定の接続先 `jdbc:h2:file:./data/mastersmith` は詰め直しを指定していなかった | 既定の接続先を `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` にし、理由を `application.yaml` のコメントに書いた。README の環境変数の表の `MASTERSMITH_DB_URL` の既定値と説明（上書きするときも付ける）、`.env.example` の説明を合わせた |
+
+### 10.2 変えた・足したファイル
+
+| ファイル | 変更 |
+|---|---|
+| `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java` | 拡張の登録の順とコメント |
+| `backend/src/main/resources/application.yaml` | 既定の接続先に `;DEFRAG_ALWAYS=TRUE`、理由のコメント |
+| `README.md` | 環境変数の表の `MASTERSMITH_DB_URL` の既定値と説明 |
+| `.env.example` | `MASTERSMITH_DB_URL` の説明（値は空のまま） |
+| `backend/src/test/java/cherry/mastersmith/config/H2DefragOnCloseTest.java`（新規） | 組み込みの H2 の詰め直しの再現と、既定の接続先の確かめ（単体 3 件） |
+| `backend/src/test/java/cherry/mastersmith/common/db/DatabasePersistenceIT.java` | 既定の接続先を文字どおり比べる期待値を新しい既定値に合わせた（`AUTO_SERVER`・`tcp` を含まない確かめは残した） |
+
+### 10.3 H2 の詰め直しの確かめ（`H2DefragOnCloseTest`、H2 2.4.240）
+
+アプリが動いている間と同じく1本の接続を開いたまま、履歴の表と同じ `BINARY LARGE OBJECT` の列に 1MB の本文（乱数、種は固定）を 24 回足しては、最新の 2 行だけを残して古い行を消す。閉じた後と、開き直して閉じた後（起動し直しに当たる）のファイルの大きさを比べた。3 回実行して毎回同じ値だった。
+
+| 接続先の指定 | 閉じた後 | 開き直して閉じた後 | 確かめ |
+|---|---|---|---|
+| なし | 17,850,368 バイト（約 17.0MB） | 17,854,464 バイト | 残る本文（2MB）の 4 倍より大きく、開き直しても縮まない |
+| `;DEFRAG_ALWAYS=TRUE` | 2,109,440 バイト（約 2.0MB） | 2,109,440 バイト | 残る本文（2MB）＋1MB より小さい |
+
+- `DEFRAG_ALWAYS` はこの版の H2 で効くことを実測で確かめた。
+- 計画の文言「付けないときは縮まない」について: 行を足して閉じ、別の接続で全部消して閉じる形では、付けないときも閉じるときの短い詰め直しで一部縮んだ（25,456,640 → 15,761,408 バイト）。このため、Build and Test で見た形（動いている間に足しては消す、起動し直しても縮まない）に合わせて確かめを組み、「消した行の場所が残り、開き直しても縮まない」ことを確かめた。
+- 実際の保存量（10MB の投入→適用を 21 回・40 回）、止めて起動し直した後の大きさ、動いている間の増え方、止めるのにかかる時間（`stop_grace_period: 45s` の内か）とデータの無事は、この段では測っていない。Build and Test で `perf/dsl-timing.sh --storage` を使って測り直す。動いている間は詰め直しが行われないため、動いている間の増え方（止めるまでの最大の大きさ）が約 210MB の内に収まるかは、この変更では確かめられていない。
+
+### 10.4 確かめのコマンドと結果（実測）
+
+| コマンド | 結果 |
+|---|---|
+| `./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.targetdb.testsupport.ExtensionOrderArchitectureTest'` | 3 件成功（失敗 0・飛ばし 0）。違反 0 |
+| `DOCKER_HOST=unix:///nonexistent/docker.sock env -u CI ./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.dslmanage.*'` | BUILD SUCCESSFUL（18 秒）。10 クラス 79 件、失敗 0・エラー 0・飛ばし 13（`DslTargetDbIT` 4 件、`DefaultDslGenerator{Mysql,Mariadb,Postgres}IT` 各 3 件）。飛ばした4クラスすべてに警告が出た。`initializationError` なし。colima は止めていない |
+| `./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.config.*'` | 3 件成功（`H2DefragOnCloseTest`） |
+| `./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.dslmanage.*' --tests 'cherry.mastersmith.config.*' --tests 'cherry.mastersmith.common.db.*'`（colima あり） | BUILD SUCCESSFUL（1 分 6 秒）。16 クラス 112 件、失敗 0・飛ばし 0 |
+| `./gradlew spotlessApply` のあと `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（colima あり、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`） | BUILD SUCCESSFUL（4 分 30 秒）。全段が通過。バックエンドの単体 716 件・結合 375 件（失敗 0・飛ばし 0）、画面 313 件。カバレッジは全体で行 98.1%（3884/3960）・分岐 94.1%（1349/1433）で、下限（全体と新しいパッケージごと）を満たした。計測の除外は足していない |
+
+単体・結合の件数が 8.3 節（709 件・344 件）より多いのは、この戻しの 3 件（`H2DefragOnCloseTest`）のほかに、U1 の戻し（`ExtensionOrderArchitectureTest`）と U5 のテストがその後に入ったため。
+
+### 10.5 記録の直し
+
+- `source-manifest.json`: `H2DefragOnCloseTest.java` と `DatabasePersistenceIT.java` を足した（ほかの変えたファイルは既に載っている）。
+- `traceability.json`: NFR12.3 の U4 の分を足した（対象は、`DslTargetDbIT` を含むすべてのテストのクラスの登録の順を確かめる `ExtensionOrderArchitectureTest`）。NFR12.3 は U1 の NFR 要件の ID で、U4 の上流の文書には無いが、計画 7節のとおり U4 の分として載せた。
+- 保存の量（U4 の `nfr-requirements/scalability-requirements.md` の「内部DB の保存量 最大約 210MB」）には U4 の文書で ID が付いていないため、`traceability.json` には足さず、この節に書いた（確かめのテストは `H2DefragOnCloseTest`、実際の量の測り直しは Build and Test）。
+
+### 10.6 計画からのずれ
+
+| ずれ | 扱い |
+|---|---|
+| 既存の `DatabasePersistenceIT` の期待値を直した（計画に無い） | 既定の接続先を文字どおり比べているため、既定値を変えると必ず食い違う。検査は緩めていない |
+| 「付けないときは縮まない」の確かめ方 | 10.3 節のとおり、Build and Test で見た形（動いている間に足しては消す）で確かめた |
+| Step 19 の最後の項目（実際の保存量の測り直し）は未チェックのまま | Build and Test の受け持ちで、この段では行っていない |

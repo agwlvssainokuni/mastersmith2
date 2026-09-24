@@ -172,3 +172,38 @@ U1 の変更の前の既存のパッケージ（基準の実行の JaCoCo の報
 - 契約 C1 との差: 契約 C1 の `TargetColumn.dbType` は `{typeName, length, precision, scale}` の4項目のままで、`columnType` は無い。承認済みの文書は書き換えず、差として扱う（U3 の `code-summary.md` の「承認済みの文書との差」にも記録済み）。9.1節の `length` を `Long` にした差と合わせて、C1 との差はこの2つ。
 - MySQL 8.4 は `tinyint(1) unsigned` の表示の幅を落として `tinyint unsigned` と返すため、MySQL では符号なしの `tinyint(1)` は数値になる（MariaDB では真偽値）。依頼者が承認の前に受け入れた（README に記載済み）。
 - `traceability.json` は変えていない。`columnType` は U3 の要件（BR2.2）を満たすための追加で、U1 の要件の ID の対応は変わらないため。
+
+## 11. Build and Test からの戻し（Loop-back 1、計画の Step 18）
+
+### 11.1 原因
+
+Build and Test で、コンテナの実行環境に届かない状態で対象DB の結合テストを実行したところ、決めたとおりに警告を出して飛ばされる（SKIPPED）一方で、`AbstractTargetSchemaReaderIT` を継ぐ3クラス（と U4 の `DslTargetDbIT`）がクラスの後片付けで `initializationError` になり、`integrationTest` のタスクが失敗した（NFR12.3 が Not Met）。
+
+登録が `@ExtendWith({ContainerRuntimeCheck.class, OutputCaptureExtension.class})` の順だったため、`ContainerRuntimeCheck.beforeAll` がテストを飛ばす例外を投げると `OutputCaptureExtension.beforeAll` が呼ばれない。JUnit 5 は後処理を登録の逆の順に呼ぶため、`afterAll` の `OutputCapture.pop` が空の待ち行列で `NoSuchElementException` を出していた。
+
+### 11.2 直したこと
+
+| ファイル | 変更 |
+|---|---|
+| `backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java` | 登録を `@ExtendWith({OutputCaptureExtension.class, ContainerRuntimeCheck.class})` に入れ替え、この順でなければならない理由（前処理は登録の順、後処理は逆の順。ログの取り込みの開始より先に飛ばすと後片付けが失敗する）を日本語のコメントで書いた |
+| `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java`（新規） | 再現の確かめの構造の検査（ArchUnit、既存の依存だけ）。`cherry.mastersmith` のテストのクラス全体を読み込み、`ContainerRuntimeCheck` と `OutputCaptureExtension` の両方を `@ExtendWith`（繰り返しの `@Extensions` を含む）で登録するクラスは `OutputCaptureExtension` を先に登録することを確かめる。違反は、クラスと登録の順の一覧で示す。規則が空振りしていないこと（両方を登録するクラスが見つかること）と、規則そのものが誤った順を見分けること（クラスの中の見本2つ。誤った順は違反、正しい順は通る）も確かめる。全体の検査から外すのは、この見本2つだけ（ほかのクラスを既知の違反として外すことはしない） |
+
+U4 の `DslTargetDbIT` は、計画どおり U4 の手順で直す（この単位では触れていない）。
+
+### 11.3 確かめの結果（2026-09-24、実測）
+
+| 確かめ | コマンド | 結果 |
+|---|---|---|
+| 直す前の順で検査が失敗する | `./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.targetdb.testsupport.ExtensionOrderArchitectureTest'`（登録を直す前） | 3件中1件失敗。違反2件: `cherry.mastersmith.targetdb.service.AbstractTargetSchemaReaderIT` と `cherry.mastersmith.dslmanage.web.DslTargetDbIT`（どちらも `[ContainerRuntimeCheck, OutputCaptureExtension]` の順） |
+| 直した後 | 同じコマンド（登録を直した後） | 3件中1件失敗。違反は `cherry.mastersmith.dslmanage.web.DslTargetDbIT` の1件だけになり、U1 のクラスは一覧から消えた。見本の2件のテストは成功 |
+| 届かない状態 | `DOCKER_HOST=unix:///nonexistent/docker.sock env -u CI ./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'` | `BUILD SUCCESSFUL`。8クラス 50 件のうち、成功 6 件（`TargetDbStartupIT` 5・`TargetDbSecretLeakIT` 1。内部DB の H2 だけを使う）、SKIPPED 44 件（`MysqlSchemaQueriesIT` 8・`MariadbSchemaQueriesIT` 9・`PostgresSchemaQueriesIT` 9・3つの `*TargetSchemaReaderIT` 各 6）、失敗 0・エラー 0、`initializationError` 0。飛ばした6クラスのそれぞれで、WARN のログ1件と標準エラーの「警告: コンテナの実行環境が無いため対象DB のテストを飛ばした。この状態では統合しない（colima を起動してやり直す）」1件が出た（テストの結果の XML で確かめた）。colima と配備したアプリ（`mastersmith-app-1`）は止めていない |
+| 届く状態の単体テスト | `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock ./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.targetdb.*'` | 10クラス 83 件のうち、成功 82 件・失敗 1 件（`ExtensionOrderArchitectureTest` の全体の検査。U4 の `DslTargetDbIT` の直しを待つ）・飛ばし 0。`BUILD FAILED` はこの1件による |
+| 届く状態の結合テスト | 同じ環境変数で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'` | `BUILD SUCCESSFUL`。8クラス 50 件すべて成功（失敗・飛ばし 0。3種類の DB のコンテナを使用） |
+| フォーマット | `./gradlew spotlessApply` の後に `./gradlew spotlessCheck` | 成功 |
+
+9.3節の件数（単体 79 件・結合 47 件）からの差: 単体は U3 で `TargetSchemaTest` に足した1件と、この節の構造の検査3件で 83 件、結合は U3 で `AbstractSchemaQueriesIT` に足した1件（3種類の DB で 3 件）で 50 件。
+
+### 11.4 残り（U4 待ち）
+
+- `ExtensionOrderArchitectureTest` の全体の検査は、U4 の `DslTargetDbIT` の登録の順が直るまで失敗する（違反はこの1クラスだけ）。そのため、今は U1 の単体テストのコマンドと `./gradlew verify` の単体テストの段が失敗する。U4 の Loop-back の手順で `DslTargetDbIT` を直したら、U1 の単体テストのコマンドを実行し直し、83 件すべての成功を確かめる。
+- 目標・検査は緩めていない。除外（カバレッジ・SpotBugs）は足していない。

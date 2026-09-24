@@ -193,6 +193,32 @@ U4 のコード生成の計画を示す。作るものは、管理者だけの D
 | 構造の検査 | 4 件 | — |
 | 戻しと適用中のダウンロード（B5） | 3〜5 件 | 5〜7 件 |
 
+
+## 7. Build and Test からの戻し（Loop-back 1）
+
+Build and Test で2つの目標が Not Met になり、依頼者の選択「Retry with fix」（「Code Generation に戻って両方直す」）で戻した（`construction/build-and-test/test-results.md` の Loop-Back Log）。
+
+1. NFR12.3: コンテナの実行環境に届かないとき、`DslTargetDbIT` がクラスの後片付けで `initializationError` になった。原因は `@ExtendWith({ContainerRuntimeCheck.class, OutputCaptureExtension.class})` の順（U1 と同じ）。U1 の Step 18 で足した構造の検査 `ExtensionOrderArchitectureTest` は、この `DslTargetDbIT` を違反として示している。
+2. U4-STORAGE: 10MB の DSL の投入→適用を重ねると、古い履歴が消えても内部DB（H2）のファイルが毎回約 10.3MB 増え（21 回で 282MB・40 回で 461MB。期待は最大約 210MB）、起動し直しても縮まない。H2 のファイルは `SHUTDOWN COMPACT`・`SHUTDOWN DEFRAG` を実行しないと小さくならず、接続先に `;DEFRAG_ALWAYS=TRUE` を足すと閉じるときに詰め直しが自動で行われる（依頼者の知見）。今の既定の接続先 `jdbc:h2:file:./data/mastersmith` は指定していない。
+
+### Step 18: 拡張の登録の順の直し（NFR12.3）
+
+- [x] `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java` の登録を `@ExtendWith({OutputCaptureExtension.class, ContainerRuntimeCheck.class})` に入れ替え、U1 と同じ理由のコメントを書く
+- [x] `./gradlew :backend:cleanTest :backend:test --tests 'cherry.mastersmith.targetdb.testsupport.ExtensionOrderArchitectureTest'` が通る（違反 0）ことを確かめる
+- [x] コンテナの実行環境に届かない状態（`DOCKER_HOST=unix:///nonexistent/docker.sock env -u CI`）で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.dslmanage.*'` を実行し、失敗 0・対象DB を使うテストが警告つきで SKIPPED になることを確かめる。colima は止めない
+
+### Step 19: 内部DB の終了時の詰め直し（U4-STORAGE）
+
+- [x] 内部DB の既定の接続先を `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` にする（`backend/src/main/resources/application.yaml`）。なぜ要るか（10MB の本文の履歴を消しても H2 のファイルは閉じるときに詰め直さないと縮まない）を日本語のコメントで書く。README の環境変数の表の `MASTERSMITH_DB_URL` の既定値と説明、`.env.example` の説明も合わせる。`MASTERSMITH_DB_URL` を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けることを README に書く
+- [x] 再現の確かめ（不具合を直すときは再現するテストを同じ変更に含める決まり）: 組み込みの H2 の単体テストを `backend/src/test/java/cherry/mastersmith/config/` に足す。一時ディレクトリの H2 のファイルに大きな行（合わせて数十 MB。テストの時間は数秒の内）を書いて消し、閉じた後のファイルの大きさを比べる。`;DEFRAG_ALWAYS=TRUE` を付けたときは閉じた後に縮み、付けないときは縮まないことを確かめる。あわせて、`application.yaml` の既定の接続先に `DEFRAG_ALWAYS=TRUE` が含まれることを確かめる。テストの説明文は英語
+- [x] `./gradlew :backend:test --tests 'cherry.mastersmith.config.*'` と、既存の内部DB を使う結合テスト（`./gradlew :backend:integrationTest --tests 'cherry.mastersmith.dslmanage.*' --tests 'cherry.mastersmith.config.*'`）を通す
+- [ ] 実際の保存量（10MB の投入→適用を 21 回・40 回）、止めて起動し直した後の大きさ、動いている間の増え方、止めるのにかかる時間（`stop_grace_period: 45s` の内か）とデータの無事は、Build and Test で `perf/dsl-timing.sh --storage` を使って測り直す（この段では測らない）
+
+### Step 20: 検査と記録
+
+- [x] `./gradlew spotlessApply` のあと `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段が通ることを確かめる
+- [x] `code-summary.md` に戻しの記録の節を足し、`source-manifest.json` と `traceability.json` を直す（NFR12.3 の U4 の分と、保存の量の確かめのテスト）
+
 ## Testing Contract
 
 ```json
@@ -215,7 +241,7 @@ U4 のコード生成の計画を示す。作るものは、管理者だけの D
     },
     {
       "layer": "project",
-      "text": "- テストの件数やカバレッジを報告するときは、`./gradlew verify` がテストのタスクを UP-TO-DATE で飛ばすことがあるため、`:backend:cleanTest :backend:cleanIntegrationTest` を付けて実行し直し、実測の数字だけを報告する。 (learned 2026-09-23) \n- 負荷の環境や配備先が決まらないと測れない目標（応答時間のパーセンタイル、運用の指標、ファイルの権限など）は、Build and Test で `Unverified` とし、持ち主の段（performance-validation・observability-setup・deployment-execution）を明記して引き継ぐ。目標を緩めて「満たした」ことにはしない。 (learned 2026-09-23) \n- 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) \n- 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) \n- 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) \n- Intent の流れに Performance Validation の段が無く、負荷の環境（使い捨ての環境）を手元で用意できるときは、k6 の試験と NMT の測定の持ち主を Build and Test とし、Unverified で引き継がずにその段で実行する。 (learned 2026-09-23) \n- 修正の前の設定（例: 上限 1g）も修正の後の環境（例: CPU 4 の VM）で流し（pre1g）、要件の前提（VM を上げても F3 が起きる）を実測で裏付ける。 (learned 2026-09-23)"
+      "text": "- テストの件数やカバレッジを報告するときは、`./gradlew verify` がテストのタスクを UP-TO-DATE で飛ばすことがあるため、`:backend:cleanTest :backend:cleanIntegrationTest` を付けて実行し直し、実測の数字だけを報告する。 (learned 2026-09-23) \n- 負荷の環境や配備先が決まらないと測れない目標（応答時間のパーセンタイル、運用の指標、ファイルの権限など）は、Build and Test で `Unverified` とし、持ち主の段（performance-validation・observability-setup・deployment-execution）を明記して引き継ぐ。目標を緩めて「満たした」ことにはしない。 (learned 2026-09-23) \n- 負荷の試験は、配備した環境とは別の使い捨ての環境（仮の署名鍵・仮の利用者、終わったら消す）で行い、本物のデータと監査ログを汚さない。手順は perf/README.md。 (learned 2026-09-23) \n- 負荷の試験で、アプリが止まる・極端に遅いなどの結果が出たときは、環境を起動し直して再現させ、原因をログと状態（OOMKilled など）で確かめてから記録する。 (learned 2026-09-23) \n- 同時の重なりを確実に作るため、本番のコードを変えずに、監査の書き込みの時間を測る LongSupplier（AuditEventListener で2本目を借りる直前に呼ばれる）をテストで差し替えて待ち合わせる方式にした。既存の LoginConcurrencyIT は 8 スレッドでプールの 10 に届かず、前回の失敗のログインで尽きなかった理由の1つと見られる。 (learned 2026-09-23) \n- Intent の流れに Performance Validation の段が無く、負荷の環境（使い捨ての環境）を手元で用意できるときは、k6 の試験と NMT の測定の持ち主を Build and Test とし、Unverified で引き継がずにその段で実行する。 (learned 2026-09-23) \n- 修正の前の設定（例: 上限 1g）も修正の後の環境（例: CPU 4 の VM）で流し（pre1g）、要件の前提（VM を上げても F3 が起きる）を実測で裏付ける。 (learned 2026-09-23) \n- パッケージごとのカバレッジの下限と SpotBugs の SQL_ の関門を U1 の計画に入れた。team.md の決まりだが今のビルドに無く、この Intent で最初に作る単位のため。U1 の設計の文書には無い作業。 (learned 2026-09-24) \n- U4 で既存の AuditSecretLeakIT の列の一覧に V6 の4列を足し、テストの JVM のヒープを 1g にした。前者は承認済みの V6 と必ず食い違うため、後者は構造の検査がクラスを持ち続け U3 の 10MB 超えのテストでヒープが尽きたため。どちらも計画に無い変更で、依頼者に確かめる。 (learned 2026-09-24) \n- 応答しない対象DB の TIMEOUT の確かめに、テストの中で開いた ServerSocket（受け付けて何も返さない）を使う。外の端末に頼らず確実に再現できる代わりに、本物の DB の遅延ではない。 (learned 2026-09-24) \n- パッケージごとのカバレッジの下限は新しいパッケージだけに当てた。実測で audit.service（行 77.2%）・common.health（行 79.2%）・auth.repository（分岐 50.0%）が単独で下回ったため（team.md の決まりどおり）。既存の 22 パッケージを一覧で外し、新しいパッケージは自動で対象になる。 (learned 2026-09-24)"
     }
   ],
   "obligations": {
@@ -259,8 +285,8 @@ U4 のコード生成の計画を示す。作るものは、管理者だけの D
       "Documentation and traceability."
     ]
   },
-  "input_sha256": "sha256:2adf2e19e08e8d9f09279453393e762919beea4d6d9d5d13b89e72c1fffeed06",
-  "contract_sha256": "sha256:e0a9abee7ec1245e67d5b55b468219a36caaa126e29794fd62a14795c277380c"
+  "input_sha256": "sha256:246b734731604f4b9f4d77cecbeda1baf18157fdfe148f6c242e9cf2724ab8f9",
+  "contract_sha256": "sha256:fad83f4781d495b9c1188364b74cbb3df645f2324fe0ecc57c74ab31a9426958"
 }
 ```
 

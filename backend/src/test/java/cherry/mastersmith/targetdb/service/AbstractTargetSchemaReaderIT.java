@@ -72,7 +72,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@ExtendWith({ContainerRuntimeCheck.class, OutputCaptureExtension.class})
+// 拡張の登録の順は、ログの取り込み（OutputCaptureExtension）を先、コンテナの実行環境の確かめ（ContainerRuntimeCheck）を後に
+// しなければならない。JUnit 5 は前処理を登録の順、後処理を逆の順に呼ぶため、確かめを先にすると、コンテナの実行環境に届かずに
+// テストを飛ばしたとき、ログの取り込みが始まらないまま後片付けの OutputCapture.pop が空の待ち行列で失敗し、飛ばしたはずのクラスが
+// initializationError になる（Build and Test からの戻し Loop-back 1）。順は ExtensionOrderArchitectureTest で確かめる。
+@ExtendWith({OutputCaptureExtension.class, ContainerRuntimeCheck.class})
 abstract class AbstractTargetSchemaReaderIT {
 
     private final TargetDbTestDatabase database = TargetDbTestDatabase.of(product());

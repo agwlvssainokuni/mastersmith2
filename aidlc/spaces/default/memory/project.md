@@ -66,6 +66,7 @@
 - JVM の設定の口に JAVA_TOOL_OPTIONS ではなく独自の MASTERSMITH_JAVA_OPTIONS を ENTRYPOINT の既定の引数の後ろに置く形を選んだ。標準の変数はコマンド行の 75% に負け、起動時の Picked up の1行で JSON のログを崩すため。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:code-generation:5bee00b6c6fc0ff963eca9371e14bc5dc3c8e19d69c2ccf04583df03488e0340 -->
 - 戻しで .env の元の値が要るときは、.env を開かずに、変更の前に .env をリポジトリの外（ホームの下）へ中身を表示せずに複写し、戻すときはその複写を戻す。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:deployment-pipeline:1d22caeb1205783cdbc97baa8745e5db11703baa067f63ffd6ad472f8ccc968e -->
 - Build and Test で、配備するものと同じソースのイメージを配備と同じ上限で負荷の試験済みのときは、依頼者の判断（Q1: A）で配備の前の k6 を省き、配備の後の healthy とスモークテストで確かめる。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:deployment-pipeline:7d388e8869c0f1041f0b6003ba34d70530499d4da273d77b23819e54cf862e1c -->
+- compose の app のサービスに対象DB の環境変数を足さず、.env.example に足すだけにした。app はすでに .env を env_file で読むため。基盤の設計（cicd-pipeline.md 3節）の書き方とは違う。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:9cee5b93f37740922dc363b3d0600e4250adfef1c03ada3ea807df5783ab181e -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -194,3 +195,4 @@
 - PostgreSQL の主キー・外部キーを pg_constraint から読むことにした。information_schema.table_constraints は SELECT だけの権限のアカウントに制約を返さず、読み取り専用のアカウントで成功させる基準（AC1.1.10）を満たせないため。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:08247e65231d8babdc7536a6166a39aebed1ad7ba069490e5977934cd284306f -->
 - U2 の Validation の値を数（number）と文字（text）の2つに分けた。YAML の値の型をそのまま保ち、後続の Intent が型を判定し直さずに済む代わりに、entities.md の value 1つの形とは違う。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:c77eb97fea82cb186ddddd31242869584b4dcda31c6e84952f9a5e952ab6b9d5 -->
 - U4 の適用はプレビューの行を INSERT ... SELECT の1文で履歴へ写す。10MB の本文を読み直さずに済む代わりに、H2 の SQL に依存する。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:80c597a572fc58d46352c537543a1f8e52e45582b47f16bc7ca6d9855b6c4689 -->
+- U2 の計画の前に、各設計の段の承認の場の決定（監査ログの Approve の文言）を洗い出した。U1 で決定 B を見落とした反省から。U2 に関わるのは決定 D（JSON Schema を許す設定は足さない）と、10MB への引き上げ。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:e5adf83437ab5ced96690000ea82c3620261c3a736d28f3a2a1f6cec6fce6c56 -->

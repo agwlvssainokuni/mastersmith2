@@ -210,7 +210,7 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `1g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`2g`・`1536m` の形）。1g のままでは高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」）。colima の VM を CPU 4・メモリ 6GiB にした PC では `2g` にする |
 | `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 75%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
-| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`） |
+| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
 | `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` | `30` | 内部DBの接続プールの接続の数の上限。同時の要求がこの数に達すると監査の記録が欠けうる（「監査ログ（U4）」の「既知の制約」を参照） |

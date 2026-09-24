@@ -199,10 +199,16 @@
       "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/common/db/DatabasePersistenceIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/common/error/web/BusinessExceptionPropertiesTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/common/web/RequestSizeLimitRoutesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/H2DefragOnCloseTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/dslmanage/DslManageBoundaryArchitectureTest.java"
