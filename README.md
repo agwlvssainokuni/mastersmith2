@@ -350,6 +350,34 @@ version: 1
 - YAML は 1.1 の暗黙の型で読みます。`yes`・`no`・`on`・`off` は真偽値になるため、文字として書くときは `"yes"` のように引用符で囲んでください。
 - 誤りは、YAML の行・列と DSL の中の場所（例 `tables.dept_mst.columns.dept_code.list.order`）と、文言の鍵（`dsl.` で始まる。一覧は `cherry.mastersmith.dsl.domain.DslMessageKeys`）で返します。誤りに埋める値は、項目の名前と、書いた値の先頭 100 文字だけです。
 
+## 既定の DSL の生成の決まり
+
+対象DB のスキーマ（テーブル・ビュー・カラム・主キー・外部キー・コメント）から、既定の DSL を作ります（部品は `cherry.mastersmith.dslmanage.generate`）。作った DSL は、投入した DSL と同じくサーバー側の検証（前の節）を通したものだけを返します。接続先・ユーザー名・パスワード・スキーマ名は DSL に書きません。
+
+- **表示名**: `ja` はテーブル・カラムのコメント、コメントが無ければ物理名。`en` はいつも物理名です。コメントの制御文字（改行・タブを除く）は取り除き、長さは切り詰めません。
+- **メニューと並び**: メニューは1階層で、テーブル（ビューを含む）ごとに1項目です。メニューと `tables` は、物理名を大文字・小文字を区別せずに比べた順（同じなら元の名前の順）に並べます。
+- **ビュー**: `view: true` で、主キー・外部キーを持ちません。
+- **DB 上の型**: `dbType` には DB が返した型の名前・長さ・精度・桁・NULL を許すかをそのまま書きます（型の名前は MySQL・MariaDB が `DATA_TYPE`、PostgreSQL が `udt_name`）。`longtext` のように長さが 2147483647 を超える型は、長さを `null` にします。
+- **バリデーション**: NOT NULL で既定値の無いカラムに `required`、長さのある文字列に `maxLength`（どちらも `origin: DB`）。数値の範囲・一意は作りません。
+- **外部キー**: 1つのカラムだけの外部キーは、フォーム部品を `select`、選択肢を参照先のテーブルとカラム（`REFERENCE`）にします。複数のカラムの外部キーは `foreignKeys` に写すだけです。参照先が読めない（写しに無い）外部キーは写しません。
+- **主キー**: 主キーのカラムの検索は `EQUALS`。一覧の既定の並べ替えは、主キーの最初のカラムの昇順です（そのカラムを一覧に出さないときは無し）。
+
+型の分類とフォーム部品の初期値は次のとおりです（型の名前は大文字・小文字を区別しません）。
+
+| 分類 | 型 | フォーム部品 | 検索 | 一覧 | 詳細 | 書式 |
+|---|---|---|---|---|---|---|
+| 短い文字列 | `char`・`varchar`（PostgreSQL の `bpchar` を含む）で長さ 255 以下 | text | 部分一致 | 表示・並べ替え可 | 表示 | 無し |
+| 長い文字列 | 長さ 256 以上・長さの無い `varchar`、`tinytext`・`text`・`mediumtext`・`longtext`・`clob` | textarea | 部分一致 | 表示しない | 表示 | 無し |
+| 数値 | `tinyint`・`smallint`・`mediumint`・`int`・`integer`・`bigint`・`decimal`・`numeric`・`float`・`double`・`real`、PostgreSQL の `int2`・`int4`・`int8`・`float4`・`float8` | number | 範囲 | 表示・並べ替え可 | 表示 | 桁区切り |
+| 真偽値 | `boolean`・`bool`、MySQL・MariaDB の `tinyint(1)`・`bit(1)` | checkbox | 選択肢 | 表示・並べ替え可 | 表示 | はい・いいえ |
+| 日付 | `date` | date | 範囲 | 表示・並べ替え可 | 表示 | 日付 |
+| 日時 | `datetime`・`timestamp`・`timestamptz` | datetime | 範囲 | 表示・並べ替え可 | 表示 | 日時 |
+| 時刻 | `time`・`timetz` | text | 完全一致 | 表示・並べ替え可 | 表示 | 時刻 |
+| 対応外 | 上のどれでもない型（`json`・`enum`・`year`・`uuid`・`bytea`、PostgreSQL の `bit` など） | text | 検索しない | 表示しない | 表示しない | 無し |
+
+- **`tinyint(1)` と `bit(1)`**: MySQL・MariaDB の `tinyint(1)` は、情報スキーマの `COLUMN_TYPE`（型の全体の表記）で見分けます。MySQL 8.4 は `tinyint(1) unsigned` の幅を落として `tinyint unsigned` と返すため、MySQL では符号なしの `tinyint(1)` は数値になります（MariaDB では真偽値）。`bit(1)` は精度 1 で見分けます。
+- **大きさ**: 作った DSL も上限の 10MB の内に収めます。超えるほど大きなスキーマでは生成を失敗にします（目安: 100 テーブル × 100 カラムでコメントが無いとき約 6.7MB。コメントの分だけ増えます）。その場合は、対象のスキーマを分けるなどの運用で対応してください。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。

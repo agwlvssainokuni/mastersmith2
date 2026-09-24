@@ -57,7 +57,7 @@ final class SchemaRows {
 
     /**
      * カラムの行（項目の並び: テーブル名、カラム名、定義の順、型の名前、長さ、精度、桁数、NULL を許すなら 1、既定値、
-     * コメント）。
+     * コメント、型の全体の表記（MySQL・MariaDB の {@code COLUMN_TYPE}。PostgreSQL は null））。
      *
      * @param table テーブル名
      * @param name カラム名
@@ -129,8 +129,8 @@ final class SchemaRows {
         List<ColumnRow> rows = new ArrayList<>();
         try (ResultSet rs = execute(statement, schemaName, queryTimeoutSeconds)) {
             while (rs.next()) {
-                TargetDbType type =
-                        new TargetDbType(rs.getString(4), nullableLong(rs, 5), nullableInt(rs, 6), nullableInt(rs, 7));
+                TargetDbType type = new TargetDbType(
+                        rs.getString(4), nullableLong(rs, 5), nullableInt(rs, 6), nullableInt(rs, 7), rs.getString(11));
                 rows.add(new ColumnRow(
                         rs.getString(1),
                         rs.getString(2),

@@ -1,0 +1,91 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-default-dsl-generation",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/TypeCategory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/TypeCategoryMapping.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslYamlWriter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DefaultDslResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DefaultDslGenerator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/TargetSchemaDslGenerator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetDbType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/MysqlSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/PostgresSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaRows.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/DslManageGenerateBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/GenerateTestSupport.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/TypeCategoryMappingTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslYamlWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslGenerationPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/TargetSchemaDslGeneratorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/AbstractDefaultDslGeneratorIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DefaultDslGeneratorMysqlIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DefaultDslGeneratorMariadbIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DefaultDslGeneratorPostgresIT.java"
+    },
+    {
+      "path": "backend/src/test/resources/cherry/mastersmith/dslmanage/generate/dept_mst.yaml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetSchemaTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

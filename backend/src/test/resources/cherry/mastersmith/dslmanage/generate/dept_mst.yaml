@@ -1,0 +1,93 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# 既定の DSL の生成の例（functional-spec.md の 3節の dept_mst）から期待する本文。この見出しのコメントと次の空行までは
+# テストが取り除き、その後ろを生成した本文とバイト単位で比べる。
+
+# generated from the target database schema by MasterSmith
+version: 1
+menus:
+  - label:
+      ja: 部署
+      en: dept_mst
+    table: dept_mst
+tables:
+  dept_mst:
+    label:
+      ja: 部署
+      en: dept_mst
+    view: false
+    primaryKey:
+      - dept_code
+    foreignKeys: []
+    columns:
+      dept_code:
+        label:
+          ja: 部署コード
+          en: dept_code
+        dbType:
+          name: varchar
+          length: 10
+          precision: null
+          scale: null
+          nullable: false
+        formPart: text
+        search:
+          enabled: true
+          operator: EQUALS
+          default: null
+          collapsed: false
+        list:
+          visible: true
+          order: 1
+          width: null
+          sortable: true
+          defaultSort: ASC
+          format: null
+        detail:
+          visible: true
+        validations:
+          - type: required
+            origin: DB
+          - type: maxLength
+            value: 10
+            origin: DB
+        options: null
+      note:
+        label:
+          ja: note
+          en: note
+        dbType:
+          name: text
+          length: null
+          precision: null
+          scale: null
+          nullable: true
+        formPart: textarea
+        search:
+          enabled: true
+          operator: CONTAINS
+          default: null
+          collapsed: false
+        list:
+          visible: false
+          order: null
+          width: null
+          sortable: false
+          defaultSort: null
+          format: null
+        detail:
+          visible: true
+        validations: []
+        options: null

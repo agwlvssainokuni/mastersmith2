@@ -16,6 +16,8 @@
 - 2026-09-24T02:15:27Z — 3つの JDBC ドライバー自身のログを OFF にした; MariaDB のドライバーが認証の失敗をユーザー名つきで WARN に出し、NFR4.4 に反したため。失敗は読み取りの口が原因の種類と SQLState だけで出す。
 - 2026-09-24T04:36:27Z — U2 で深さ・別名・タグを SnakeYAML の LoaderOptions ではなく Parser を包む部品で数えた; 2.6 の上限は位置を持たない例外で止まり、TagInspector は !custom・!!str を通すため。LoaderOptions にも同じ上限を置いて二重に守る。
 - 2026-09-24T04:36:27Z — AC2.2.3（同じテーブル・カラムの二重の定義）は意味の誤りではなく DUPLICATE_KEY になる; BR1.5 のとおり。受け入れ基準の文言とは違うため、承認の場で伝える。
+- 2026-09-24T05:29:10Z — U3 で longtext の長さ（4294967295）は DSL の dbType.length を null にし maxLength も作らない; U2 の JSON Schema と DbType の整数の範囲を超え、生成した DSL が検証を通らなくなるため。BR2.1・BR4.1 との差。
+- 2026-09-24T05:29:10Z — U3 で写しに無いテーブルを参照する外部キーは DSL に写さない; 写すと U2 の意味の検証（BR3.3）を通らず生成が失敗するため。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
@@ -27,4 +29,6 @@
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
 - 2026-09-24T02:15:27Z — U3 で tinyint(1)・bit(1) を BOOLEAN と見分けるには、U1 の写しの DATA_TYPE と精度だけでは足りない（tinyint・精度 3 になる）。U3 の計画で COLUMN_TYPE を足すかを決める。
+- 2026-09-24T05:29:10Z — 100 × 100 の既定の DSL は実際のブロックの形で約 6.7MB（試算は 5.3MB）。コメントが多いと 10MB に近づくため、Build and Test でコメントつきの大きさを測る。
+- 2026-09-24T05:29:10Z — MySQL 8.4 は tinyint(1) unsigned の COLUMN_TYPE を tinyint unsigned で返すため数値になる（MariaDB は真偽値）。DB の違いとして受け入れるか、承認の場で確かめる。
 

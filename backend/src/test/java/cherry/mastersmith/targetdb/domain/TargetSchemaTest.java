@@ -161,6 +161,22 @@ class TargetSchemaTest {
     }
 
     @Test
+    @DisplayName("the full column type of MySQL and MariaDB is kept as given and a blank one is treated as none")
+    void columnType() {
+        assertThat(new TargetDbType("tinyint", null, 3, 0, "tinyint(1)").columnType())
+                .isEqualTo("tinyint(1)");
+        assertThat(new TargetDbType("int", null, 10, 0, "int unsigned").columnType())
+                .as("付いている語もそのまま")
+                .isEqualTo("int unsigned");
+        assertThat(new TargetDbType("tinyint", null, 3, 0, "  ").columnType()).isNull();
+        assertThat(new TargetDbType("tinyint", null, 3, 0, "").columnType()).isNull();
+        assertThat(new TargetDbType("int4", null, 32, 0).columnType())
+                .as("表記の無い型（PostgreSQL）")
+                .isNull();
+        assertThat(new TargetDbType("int4", null, 32, 0)).isEqualTo(new TargetDbType("int4", null, 32, 0, null));
+    }
+
+    @Test
     @DisplayName("a schema without tables is a valid empty copy")
     void emptySchema() {
         assertThat(new TargetSchema(DatabaseProduct.MARIADB, "empty", List.of()).tables())

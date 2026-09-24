@@ -52,13 +52,18 @@ public final class PostgresSchemaQueries implements SchemaQueries {
              ORDER BY t.table_name
             """;
 
-    /** カラム（テーブル名、カラム名、定義の順、型の名前、長さ、精度、桁数、NULL を許すなら 1、既定値、コメント）。 */
+    /**
+     * カラム（テーブル名、カラム名、定義の順、型の名前、長さ、精度、桁数、NULL を許すなら 1、既定値、コメント、型の全体の表記）。
+     * 型の全体の表記は MySQL・MariaDB の {@code COLUMN_TYPE} に当たるもので、PostgreSQL では持たないため null を入れる
+     * （U3 のコード生成の Q1: A）。
+     */
     static final String COLUMNS_SQL = """
             SELECT col.table_name, col.column_name, col.ordinal_position, col.udt_name,
                    col.character_maximum_length, col.numeric_precision, col.numeric_scale,
                    CASE WHEN col.is_nullable = 'YES' THEN 1 ELSE 0 END,
                    col.column_default,
-                   pg_catalog.col_description(c.oid, CAST(col.ordinal_position AS integer))
+                   pg_catalog.col_description(c.oid, CAST(col.ordinal_position AS integer)),
+                   CAST(NULL AS varchar)
               FROM information_schema.columns col
               JOIN pg_catalog.pg_namespace n ON n.nspname = col.table_schema
               JOIN pg_catalog.pg_class c ON c.relnamespace = n.oid AND c.relname = col.table_name

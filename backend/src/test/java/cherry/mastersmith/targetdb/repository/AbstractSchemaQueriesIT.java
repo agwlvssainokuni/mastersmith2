@@ -291,6 +291,48 @@ abstract class AbstractSchemaQueriesIT {
     }
 
     @Test
+    @DisplayName("the full column type is read for MySQL and MariaDB and is absent for PostgreSQL")
+    void fullColumnType() throws SQLException {
+        TargetTable customer = readAsReader().table(CUSTOMER).orElseThrow();
+        TargetColumn name = customer.columns().get(1);
+
+        if (product() == DatabaseProduct.POSTGRESQL) {
+            assertThat(customer.columns())
+                    .extracting(column -> column.dbType().columnType())
+                    .as("PostgreSQL は型の全体の表記を持たない")
+                    .containsOnlyNulls();
+            TargetTable flags = readExtraSchema(
+                            "CREATE TABLE %s.flags (id INTEGER PRIMARY KEY, b BOOLEAN, bits BIT(1))")
+                    .table("flags")
+                    .orElseThrow();
+            assertThat(flags.columns().get(1).dbType().typeName()).isEqualTo("bool");
+            assertThat(flags.columns().get(1).dbType().columnType()).isNull();
+            assertThat(flags.columns().get(2).dbType().columnType()).isNull();
+            return;
+        }
+        assertThat(name.dbType().columnType()).isEqualTo("varchar(40)");
+        TargetTable flags = readExtraSchema("CREATE TABLE %s.flags (id INT PRIMARY KEY, flag TINYINT(1) NOT NULL,"
+                        + " uflag TINYINT(1) UNSIGNED NULL, small TINYINT NULL, bit1 BIT(1) NULL, bit8 BIT(8) NULL)")
+                .table("flags")
+                .orElseThrow();
+        TargetColumn flag = flags.columns().get(1);
+        assertThat(flag.dbType().typeName()).isEqualTo("tinyint");
+        assertThat(flag.dbType().precision()).as("精度からは見分けられない").isEqualTo(3);
+        assertThat(flag.dbType().columnType()).isEqualTo("tinyint(1)");
+        // MySQL 8.4 は表示の幅を tinyint(1)（符号あり）にだけ残し、unsigned の付いたものは幅を落とす。MariaDB は残す。
+        assertThat(flags.columns().get(2).dbType().columnType())
+                .isEqualTo(product() == DatabaseProduct.MYSQL ? "tinyint unsigned" : "tinyint(1) unsigned");
+        TargetColumn small = flags.columns().get(3);
+        assertThat(small.dbType().typeName()).isEqualTo("tinyint");
+        assertThat(small.dbType().columnType()).isNotNull().doesNotStartWith("tinyint(1)");
+        TargetColumn bit1 = flags.columns().get(4);
+        assertThat(bit1.dbType().typeName()).isEqualTo("bit");
+        assertThat(bit1.dbType().precision()).isEqualTo(1);
+        assertThat(bit1.dbType().columnType()).isEqualTo("bit(1)");
+        assertThat(flags.columns().get(5).dbType().precision()).isEqualTo(8);
+    }
+
+    @Test
     @DisplayName("a schema without tables is read as an empty copy")
     void emptySchema() throws SQLException {
         TargetSchema read = readAsAdmin(emptySchema);

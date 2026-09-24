@@ -50,12 +50,15 @@ public final class MysqlSchemaQueries implements SchemaQueries {
              ORDER BY TABLE_NAME
             """;
 
-    /** カラム（テーブル名、カラム名、定義の順、型の名前、長さ、精度、桁数、NULL を許すなら 1、既定値、コメント）。 */
+    /**
+     * カラム（テーブル名、カラム名、定義の順、型の名前、長さ、精度、桁数、NULL を許すなら 1、既定値、コメント、型の全体の表記）。
+     * 型の全体の表記（{@code COLUMN_TYPE}）は、{@code tinyint(1)} を見分けるために読む（U3 のコード生成の Q1: A）。
+     */
     static final String COLUMNS_SQL = """
             SELECT TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE,
                    CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE,
                    CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END,
-                   COLUMN_DEFAULT, COLUMN_COMMENT
+                   COLUMN_DEFAULT, COLUMN_COMMENT, COLUMN_TYPE
               FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = ?
              ORDER BY TABLE_NAME, ORDINAL_POSITION
