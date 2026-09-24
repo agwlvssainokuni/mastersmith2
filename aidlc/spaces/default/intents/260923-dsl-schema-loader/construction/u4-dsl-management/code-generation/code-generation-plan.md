@@ -153,20 +153,20 @@ U4 のコード生成の計画を示す。作るものは、管理者だけの D
 
 #### Step 15: 履歴からの戻しと適用中のダウンロード — 実装
 
-- [ ] `POST /history/{revisionId}/restore`（重い道。版が無ければ 404 `DSL_REVISION_NOT_FOUND`、今の U2 の検証を通らなければ 422 でプレビューは変わらず出来事を出さない、通れば出どころ RESTORE で置き、`DSL_SUBMITTED`（source RESTORE）、BR1.3）
-- [ ] `GET /applied/download`（適用中が無ければ 404 `DSL_APPLIED_NOT_FOUND`、ファイル名 `dsl-applied-<識別の先頭12文字>.yaml`、BR6.2）
-- [ ] 対応するストーリー: US5.1（AC5.1.1〜AC5.1.7）、US5.2（AC5.2.1〜AC5.2.3）
+- [x] `POST /history/{revisionId}/restore`（重い道。版が無ければ 404 `DSL_REVISION_NOT_FOUND`、今の U2 の検証を通らなければ 422 でプレビューは変わらず出来事を出さない、通れば出どころ RESTORE で置き、`DSL_SUBMITTED`（source RESTORE）、BR1.3）
+- [x] `GET /applied/download`（適用中が無ければ 404 `DSL_APPLIED_NOT_FOUND`、ファイル名 `dsl-applied-<識別の先頭12文字>.yaml`、BR6.2）
+- [x] 対応するストーリー: US5.1（AC5.1.1〜AC5.1.7）、US5.2（AC5.2.1〜AC5.2.3）
 
 #### Step 16: 履歴からの戻しと適用中のダウンロード — テスト
 
-- [ ] 単体と結合（戻しの 201・404・422、戻したプレビューの出どころと出来事、件数の上限で消えた版が 404、`DSL_BUSY`、適用中のダウンロードの本文とヘッダー、未認証 401・管理者でない 403）
-- [ ] 単位の単体・結合のコマンドを実行し、通す
+- [x] 単体と結合（戻しの 201・404・422、戻したプレビューの出どころと出来事、件数の上限で消えた版が 404、`DSL_BUSY`、適用中のダウンロードの本文とヘッダー、未認証 401・管理者でない 403）
+- [x] 単位の単体・結合のコマンドを実行し、通す
 
 #### Step 17: B5 の検査と記録
 
-- [ ] README の API の一覧に2本を足す
-- [ ] `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段が通ることを確かめる
-- [ ] `code-summary.md`・`source-manifest.json`・`traceability.json` を B5 の分まで足して仕上げる
+- [x] README の API の一覧に2本を足す
+- [x] `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段が通ることを確かめる
+- [x] `code-summary.md`・`source-manifest.json`・`traceability.json` を B5 の分まで足して仕上げる
 
 ## 5. ストーリーと手順の対応
 

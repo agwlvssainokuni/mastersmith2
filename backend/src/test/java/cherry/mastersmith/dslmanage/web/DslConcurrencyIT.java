@@ -185,8 +185,9 @@ class DslConcurrencyIT {
                 otherAdmin.submit(DslYaml.dsl().table("u", column("c")).bytes(), "PASTE");
         HttpResponse<String> show = otherAdmin.get("/preview");
         HttpResponse<String> generate = otherAdmin.generate();
+        HttpResponse<String> restore = otherAdmin.restore("44444444-4444-4444-4444-444444444444");
 
-        for (HttpResponse<String> response : List.of(submit, show, generate)) {
+        for (HttpResponse<String> response : List.of(submit, show, generate, restore)) {
             assertThat(response.statusCode()).isEqualTo(503);
             assertThat(DslApi.json(response)).containsEntry("code", "DSL_BUSY");
         }

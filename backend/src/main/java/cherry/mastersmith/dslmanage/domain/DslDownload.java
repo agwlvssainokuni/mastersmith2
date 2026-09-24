@@ -45,6 +45,16 @@ public record DslDownload(String fileName, DslContent<?> content) {
     }
 
     /**
+     * 適用中の DSL のダウンロードを作る（ファイル名は {@code dsl-applied-<識別の先頭12文字>.yaml}。プレビュー中のものと名前で区別できる）。
+     *
+     * @param content 適用中の版の本文と参照
+     * @return ダウンロード
+     */
+    public static DslDownload applied(DslContent<DslAppliedRef> content) {
+        return new DslDownload("dsl-applied-" + prefix(content.ref().dslHash()) + ".yaml", content);
+    }
+
+    /**
      * 識別の先頭12文字を返す（ログ・ファイル名に使う）。
      *
      * @param dslHash 識別（無ければ null）

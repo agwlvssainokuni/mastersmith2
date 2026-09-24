@@ -55,7 +55,7 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * DSL の管理の API の結合テスト（契約 C6。組み込みの H2、対象DB は設定しない）。投入・表示・破棄・ダウンロード・適用・履歴・本文の
- * 上限・監査・ログを、実際の番号で待ち受けるアプリへ HTTP で送って確かめる。
+ * 上限・監査・ログと、履歴からの戻し・適用中のダウンロード（B5）を、実際の番号で待ち受けるアプリへ HTTP で送って確かめる。
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -376,7 +376,8 @@ class DslAdminApiIT {
     }
 
     @Test
-    @DisplayName("applying the same content again still adds history, and the history keeps at most 20 revisions")
+    @DisplayName("applying the same content again still adds history, the history keeps at most 20 revisions, and a"
+            + " trimmed revision cannot be restored (404)")
     void historyLimit() {
         byte[] body = sample("h");
         for (int i = 0; i < 19; i++) {
@@ -400,6 +401,12 @@ class DslAdminApiIT {
         assertThat(stillTwenty.stream().filter(entry -> Boolean.TRUE.equals(entry.get("current"))))
                 .hasSize(1);
         assertThat(stillTwenty.getFirst()).containsEntry("current", true);
+        HttpResponse<String> trimmed = api.restore((String) nineteen.getLast().get("revisionId"));
+        assertThat(trimmed.statusCode()).isEqualTo(404);
+        assertThat(DslApi.json(trimmed)).containsEntry("code", "DSL_REVISION_NOT_FOUND");
+        assertThat(api.restore((String) stillTwenty.getLast().get("revisionId")).statusCode())
+                .as("残っている最も古い版は戻せる")
+                .isEqualTo(201);
     }
 
     @Test
@@ -426,6 +433,169 @@ class DslAdminApiIT {
             assertThat(warn.getThrowableProxy()).isNull();
             assertThat(operations.list().toString()).doesNotContain("code:").doesNotContain("version: 1");
         }
+    }
+
+    /** 履歴から、指定の識別の DSL を適用した版の識別を返す（新しいもの）。 */
+    private String revisionIdOf(String dslHash) {
+        return DslApi.jsonList(api.get("/history")).stream()
+                .filter(entry -> dslHash.equals(entry.get("dslHash")))
+                .map(entry -> (String) entry.get("revisionId"))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @Test
+    @DisplayName("restoring a revision two back replaces the existing preview with source RESTORE, is audited as a"
+            + " submission and applying it makes it the applied DSL")
+    void restoreAndApply() {
+        api.apply(api.submitOk(sample("a")));
+        api.apply(api.submitOk(sample("b")));
+        api.apply(api.submitOk(sample("c")));
+        String existing = api.submitOk(sample("d"));
+        String hashA = dslReader.hash(sample("a"));
+        List<Map<String, Object>> history = DslApi.jsonList(api.get("/history"));
+        int auditBefore = audit.dslRows().size();
+
+        HttpResponse<String> restored = api.restore(revisionIdOf(hashA));
+
+        assertThat(history)
+                .as("3回適用した履歴が新しい順に並ぶ")
+                .extracting(entry -> entry.get("dslHash"))
+                .containsExactly(dslReader.hash(sample("c")), dslReader.hash(sample("b")), hashA);
+        assertThat(restored.statusCode()).isEqualTo(201);
+        Map<String, Object> preview = DslApi.json(restored);
+        assertThat(preview)
+                .containsEntry("dslHash", hashA)
+                .containsEntry("source", "RESTORE")
+                .containsKeys("summary", "diff", "warnings");
+        assertThat(preview.get("previewId")).as("今のプレビューを置き換える").isNotEqualTo(existing);
+        assertThat(map(preview.get("by"))).containsEntry("email", admin.email());
+        assertThat(list(map(preview.get("diff")).get("tables")))
+                .extracting(table -> table.get("name") + " " + table.get("change"))
+                .contains("a ADDED", "c REMOVED");
+        assertThat(map(DslApi.json(api.get("/status")).get("preview"))).containsEntry("source", "RESTORE");
+        assertThat(audit.dslRows()).hasSize(auditBefore + 1);
+        DslAuditRows.Row row = audit.last();
+        assertThat(row.eventType()).isEqualTo("DSL_SUBMITTED");
+        assertThat(row.result()).isEqualTo("SUCCESS");
+        assertThat(row.dslSource()).isEqualTo("RESTORE");
+        assertThat(row.dslHash()).isEqualTo(hashA);
+        assertThat(row.actorUserId()).isEqualTo(admin.userId());
+        assertThat(row.rejectionKind()).isNull();
+
+        HttpResponse<String> applied = api.apply((String) preview.get("previewId"));
+
+        assertThat(applied.statusCode()).isEqualTo(200);
+        assertThat(map(DslApi.json(applied).get("applied")))
+                .containsEntry("dslHash", hashA)
+                .containsEntry("source", "RESTORE");
+        assertThat(activeDslModelProvider.current())
+                .isInstanceOfSatisfying(
+                        ActiveDsl.Present.class,
+                        present -> assertThat(present.model().tables()).containsOnlyKeys("a"));
+        assertThat(DslApi.jsonList(api.get("/history")).getFirst())
+                .containsEntry("dslHash", hashA)
+                .containsEntry("current", true);
+    }
+
+    @Test
+    @DisplayName("restoring an unknown revision is 404 DSL_REVISION_NOT_FOUND, a malformed id is 400, and neither"
+            + " changes the preview or the audit")
+    void restoreUnknown() {
+        String previewId = api.submitOk(sample("keep"));
+        int auditBefore = audit.count();
+
+        HttpResponse<String> unknown = api.restore("22222222-2222-2222-2222-222222222222");
+        HttpResponse<String> malformed = api.restore("not-a-uuid");
+
+        assertThat(unknown.statusCode()).isEqualTo(404);
+        assertThat(DslApi.json(unknown)).containsEntry("code", "DSL_REVISION_NOT_FOUND");
+        assertThat(malformed.statusCode()).isEqualTo(400);
+        assertThat(DslApi.json(malformed)).containsEntry("code", "VALIDATION_FAILED");
+        assertThat(DslApi.json(api.get("/preview"))).containsEntry("previewId", previewId);
+        assertThat(audit.count()).isEqualTo(auditBefore);
+    }
+
+    @Test
+    @DisplayName("a revision that fails the current validation is 422 DSL_INVALID with localized errors, keeps the"
+            + " preview and records no rejection")
+    void restoreNoLongerValid() {
+        String previewId = api.submitOk(sample("keep"));
+        byte[] old = "version: 2\ntables: {}\n".getBytes(StandardCharsets.UTF_8);
+        String revisionId = "33333333-3333-3333-3333-333333333333";
+        jdbc.update(
+                "INSERT INTO dsl_applied_revisions"
+                        + " (revision_id, yaml_bytes, dsl_hash, source, applied_by_user_id, applied_at)"
+                        + " VALUES (?, ?, ?, 'UPLOAD', ?, ?)",
+                java.util.UUID.fromString(revisionId),
+                old,
+                dslReader.hash(old),
+                admin.userId(),
+                java.time.OffsetDateTime.parse("2026-01-01T00:00:00Z"));
+        int auditBefore = audit.count();
+
+        HttpResponse<String> en = api.withLanguage("en").restore(revisionId);
+        HttpResponse<String> ja = api.restore(revisionId);
+
+        assertThat(en.statusCode()).isEqualTo(422);
+        Map<String, Object> problem = DslApi.json(en);
+        assertThat(problem).containsEntry("code", "DSL_INVALID").containsEntry("total", 1);
+        assertThat(list(problem.get("errors")))
+                .singleElement()
+                .satisfies(error -> assertThat(error).containsEntry("kind", "UNSUPPORTED_VERSION"));
+        assertThat(ja.statusCode()).isEqualTo(422);
+        assertThat(en.body()).isNotEqualTo(ja.body());
+        assertThat(en.body() + ja.body())
+                .doesNotContain("Exception")
+                .doesNotContain("snakeyaml")
+                .doesNotContain("networknt");
+        assertThat(DslApi.json(api.get("/preview"))).containsEntry("previewId", previewId);
+        assertThat(audit.count()).as("受け付けなかった投入の出来事を出さない").isEqualTo(auditBefore);
+    }
+
+    @Test
+    @DisplayName("the applied download is 404 DSL_APPLIED_NOT_FOUND before applying, then the stored bytes as an"
+            + " attachment named dsl-applied with the applied hash")
+    void downloadApplied() {
+        HttpResponse<byte[]> none = api.getBytes("/applied/download");
+        byte[] body = sample("app");
+        api.apply(api.submitOk(body));
+        String hash = dslReader.hash(body);
+        api.submitOk(sample("other"));
+
+        HttpResponse<byte[]> download = api.getBytes("/applied/download");
+
+        assertThat(none.statusCode()).isEqualTo(404);
+        assertThat(new String(none.body(), StandardCharsets.UTF_8)).contains("\"code\":\"DSL_APPLIED_NOT_FOUND\"");
+        assertThat(download.statusCode()).isEqualTo(200);
+        assertThat(download.headers().firstValue("Content-Type"))
+                .hasValueSatisfying(type -> assertThat(type).startsWith("application/yaml"));
+        assertThat(download.headers().firstValue("Content-Disposition"))
+                .hasValue("attachment; filename=\"dsl-applied-" + hash.substring(0, 12) + ".yaml\"");
+        assertThat(download.headers().firstValue("X-Content-Type-Options")).hasValue("nosniff");
+        assertThat(Arrays.equals(download.body(), body))
+                .as("プレビュー中のものではなく適用中のもの")
+                .isTrue();
+        assertThat(dslReader.hash(download.body()))
+                .isEqualTo(map(DslApi.json(api.get("/status")).get("applied")).get("dslHash"));
+        assertThat(new String(download.body(), StandardCharsets.UTF_8)).doesNotContain("jdbc");
+    }
+
+    @Test
+    @DisplayName("restore and the applied download return 401 without a token and 403 for a non-admin")
+    void restoreAndAppliedDownloadAccessControl() {
+        api.apply(api.submitOk(sample("t")));
+        String revisionId = revisionIdOf(dslReader.hash(sample("t")));
+        DslApi anonymous = new DslApi(port, null);
+        DslApi member = new DslApi(port, users.accessToken(users.createNonAdmin()));
+        int previewsBefore = jdbc.queryForObject("SELECT COUNT(*) FROM dsl_previews", Integer.class);
+
+        assertThat(anonymous.restore(revisionId).statusCode()).isEqualTo(401);
+        assertThat(anonymous.getBytes("/applied/download").statusCode()).isEqualTo(401);
+        assertThat(member.restore(revisionId).statusCode()).isEqualTo(403);
+        assertThat(member.getBytes("/applied/download").statusCode()).isEqualTo(403);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM dsl_previews", Integer.class))
+                .isEqualTo(previewsBefore);
     }
 
     @Test

@@ -576,6 +576,114 @@ class DslLifecycleTest {
         }
     }
 
+    private DslAppliedRef revision(byte[] body) {
+        DslAppliedRef ref = new DslAppliedRef(UUID.randomUUID(), READER.hash(body), DslSource.UPLOAD, ADMIN, NOW);
+        when(revisions.findContent(ref.revisionId())).thenReturn(Optional.of(new DslContent<>(ref, body)));
+        return ref;
+    }
+
+    @Test
+    @DisplayName(
+            "restore re-validates the revision, replaces the preview with source RESTORE and publishes DSL_SUBMITTED")
+    void restoreSucceeds() {
+        byte[] body = sample();
+        DslAppliedRef ref = revision(body);
+        when(previews.findRef())
+                .thenReturn(
+                        Optional.of(new DslPreviewRef(UUID.randomUUID(), "f".repeat(64), DslSource.PASTE, ADMIN, NOW)));
+
+        PreviewView view = lifecycle.restore(ref.revisionId(), context(DisplayLanguage.JA));
+
+        verify(previews).place(any(), eq(body), eq(ref.dslHash()), eq(DslSource.RESTORE), eq(ADMIN), eq(NOW));
+        assertThat(view.preview().source()).isEqualTo(DslSource.RESTORE);
+        assertThat(view.preview().dslHash()).isEqualTo(ref.dslHash());
+        assertThat(view.summary().tableCount()).isEqualTo(1);
+        assertThat(view.warnings())
+                .extracting(PreviewView.Warning::kind)
+                .as("戻したプレビューも照合する")
+                .containsExactly(PreviewView.WarningKind.TARGET_UNCONFIGURED);
+        assertThat(cache.get(view.preview().previewId())).isPresent();
+        assertThat(dslEvents()).singleElement().satisfies(event -> {
+            assertThat(event.type()).isEqualTo(DslOperationType.DSL_SUBMITTED);
+            assertThat(event.source()).isEqualTo(DslSource.RESTORE);
+            assertThat(event.dslHash()).isEqualTo(ref.dslHash());
+            assertThat(event.rejectionKind()).isNull();
+        });
+        assertThat(active.current()).as("適用中は変わらない").isInstanceOf(ActiveDsl.Absent.class);
+        assertThat(meterTags()).contains(Map.of("operation", "restore", "outcome", "success"));
+    }
+
+    @Test
+    @DisplayName("restoring an unknown revision is 404 DSL_REVISION_NOT_FOUND and changes nothing")
+    void restoreUnknownRevision() {
+        UUID unknown = UUID.randomUUID();
+        when(revisions.findContent(unknown)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> lifecycle.restore(unknown, context(DisplayLanguage.JA)))
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        e -> assertThat(e.getProblemType()).isEqualTo(DslProblemTypes.DSL_REVISION_NOT_FOUND));
+        verify(previews, never()).place(any(), any(), any(), any(), anyLong(), any());
+        assertThat(dslEvents()).isEmpty();
+        assertThat(meterTags()).contains(Map.of("operation", "restore", "outcome", "rejected"));
+    }
+
+    @Test
+    @DisplayName(
+            "a revision that no longer validates is 422 with localized errors, keeps the preview and publishes nothing")
+    void restoreNoLongerValid() {
+        byte[] body = "version: 2\nbody_marker: 1\n".getBytes(StandardCharsets.UTF_8);
+        DslAppliedRef ref = revision(body);
+
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
+                () -> lifecycle.restore(ref.revisionId(), context(DisplayLanguage.EN)));
+
+        assertThat(status(thrown)).isEqualTo(422);
+        BusinessException invalid = (BusinessException) thrown;
+        assertThat(invalid.getProblemType()).isEqualTo(DslProblemTypes.DSL_INVALID);
+        assertThat(invalid.getProperties()).containsEntry("total", 1);
+        @SuppressWarnings("unchecked")
+        List<DslErrorItem> errors = (List<DslErrorItem>) invalid.getProperties().get("errors");
+        assertThat(errors).singleElement().satisfies(error -> {
+            assertThat(error.kind()).isEqualTo(DslErrorKind.UNSUPPORTED_VERSION);
+            assertThat(error.message()).doesNotContain("Exception").doesNotContain("body_marker");
+        });
+        verify(previews, never()).place(any(), any(), any(), any(), anyLong(), any());
+        assertThat(dslEvents()).as("受け付けなかった投入の出来事も出さない").isEmpty();
+        assertThat(meterTags()).contains(Map.of("operation", "restore", "outcome", "rejected"));
+    }
+
+    @Test
+    @DisplayName("an unexpected failure while restoring propagates, is counted as failed and publishes nothing")
+    void restoreUnexpectedFailure() {
+        DslAppliedRef ref = revision(sample());
+        when(previews.place(any(), any(), any(), any(), anyLong(), any()))
+                .thenThrow(new IllegalStateException("内部DB の失敗"));
+
+        assertThatThrownBy(() -> lifecycle.restore(ref.revisionId(), context(DisplayLanguage.JA)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThat(dslEvents()).isEmpty();
+        assertThat(meterTags()).contains(Map.of("operation", "restore", "outcome", "failed"));
+    }
+
+    @Test
+    @DisplayName("the applied download is the current revision named dsl-applied, and without one it is 404")
+    void downloadApplied() {
+        assertThatThrownBy(() -> lifecycle.downloadApplied())
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        e -> assertThat(e.getProblemType()).isEqualTo(DslProblemTypes.DSL_APPLIED_NOT_FOUND));
+
+        byte[] body = sample();
+        DslAppliedRef ref = new DslAppliedRef(UUID.randomUUID(), READER.hash(body), DslSource.PASTE, ADMIN, NOW);
+        when(revisions.findCurrentContent()).thenReturn(Optional.of(new DslContent<>(ref, body)));
+
+        cherry.mastersmith.dslmanage.domain.DslDownload download = lifecycle.downloadApplied();
+
+        assertThat(download.fileName()).isEqualTo("dsl-applied-" + ref.dslHash().substring(0, 12) + ".yaml");
+        assertThat(download.content().yamlBytes()).isEqualTo(body);
+    }
+
     private List<Map<String, String>> meterTags() {
         return registry.getMeters().stream()
                 .map(Meter::getId)

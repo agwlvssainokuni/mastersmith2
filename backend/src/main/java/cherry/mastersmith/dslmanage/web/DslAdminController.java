@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -181,6 +182,35 @@ public class DslAdminController {
     @GetMapping(DslAdminPaths.HISTORY)
     public List<HistoryEntryResponse> history() {
         return lifecycle.history().stream().map(HistoryEntryResponse::from).toList();
+    }
+
+    /**
+     * 履歴の版をプレビューに戻す（BR1.3）。重い道。識別が UUID の形でなければ、ほかの API の入力と同じく 400
+     * {@code VALIDATION_FAILED}（共通の変換）。
+     *
+     * @param revisionId 戻す版の識別
+     * @param request 要求
+     * @param user 操作した管理者
+     * @return プレビューの中身（201）
+     */
+    @PostMapping(DslAdminPaths.HISTORY_RESTORE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @HeavyDslOperation(DslOperation.RESTORE)
+    public PreviewResponse restore(
+            @PathVariable UUID revisionId,
+            HttpServletRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user) {
+        return PreviewResponse.from(lifecycle.restore(revisionId, context(request, user)));
+    }
+
+    /**
+     * 適用中の DSL のダウンロード（BR6.2、NFR3.8）。保存した本文をそのまま、添付として返す。
+     *
+     * @return 本文
+     */
+    @GetMapping(DslAdminPaths.APPLIED_DOWNLOAD)
+    public ResponseEntity<byte[]> downloadApplied() {
+        return download(lifecycle.downloadApplied());
     }
 
     private DslRequestContext context(HttpServletRequest request, AuthenticatedUser user) {

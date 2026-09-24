@@ -1,6 +1,6 @@
-# Code Summary — U4 DSL の管理（u4-dsl-management）— B4
+# Code Summary — U4 DSL の管理（u4-dsl-management）— B4・B5
 
-承認済みの `code-generation-plan.md` の **B4（Must）の Step 1〜Step 14** を、test-after（層ごとに実装 → その層のテストを書いて実行 → 通ってから次の層）で行った結果を記録する。**B5（Should: 履歴からの戻し US5.1・適用中のダウンロード US5.2、Step 15〜17）はまだ行っていない。** B4 のコミットを依頼者が確かめた後の別の指示で進める。
+承認済みの `code-generation-plan.md` の **B4（Must）の Step 1〜Step 14** を、test-after（層ごとに実装 → その層のテストを書いて実行 → 通ってから次の層）で行った結果を記録する。B5（Should: 履歴からの戻し US5.1・適用中のダウンロード US5.2、Step 15〜17）は、B4 のコミット（`b7b2f4b`）の後の別の指示で行い、8節に記録する。1〜7節は B4 の時点の記録のまま残す（7節の「B5」の申し送りは 8節で片づけた）。
 
 ## 1. 作った・変えたファイル
 
@@ -144,3 +144,88 @@ team.md の「投入 DSL の必ず書くテスト」との対応（U4 の受け�
 - **Build and Test（監視）**: ダッシュボードの 3 つの式は使い捨ての監視のコンテナで実行して確かめた（名前 `mastersmith_dsl_operation_milliseconds_{bucket,count,sum}`、タグ `operation`・`outcome`・`service_name`）。ログの画面（Loki）で `dsl.operation` のキーで絞れることは確かめていない（monitoring-design.md 4節）。compose の profile `monitoring` での確かめと合わせて、Build and Test または Observability Setup で確かめること。
 - **Build and Test（テストの JVM）**: テストのヒープを 1g にした（5節）。CI（GitHub Actions）でも同じ設定で動く。
 - **B5（Step 15〜17）**: `DslProblemTypes` の `DSL_APPLIED_NOT_FOUND`・`DSL_REVISION_NOT_FOUND` は登録済み。`DslOperation.RESTORE`、`DslAppliedRevisionRepository.findContent`、`DslRecordStore.findRevisionContent` は用意してある。`DslDownload` の適用中のファイル名（`dsl-applied-...`）の作り方は B5 で足す。
+
+## 8. B5（Step 15〜17）
+
+承認済みの計画の **B5（Should）の Step 15〜Step 17** を、B4 と同じ test-after（業務処理・API の層ごとに実装 → その層のテストを書いて実行 → 通ってから次へ）で行った。
+
+### 8.1 変えたファイル
+
+新しいファイルは無い。変えたファイルはすべて B4 で `source-manifest.json` に載っているため、一覧（87 件）は変わらない。
+
+| ファイル | 変更 |
+|---|---|
+| `dslmanage/domain/DslDownload.java` | 適用中のダウンロード `applied(...)`（ファイル名 `dsl-applied-<識別の先頭12文字>.yaml`） |
+| `dslmanage/service/DslLifecycle.java` | `restore(revisionId, context)`（BR1.3）と `downloadApplied()`（BR6.2） |
+| `dslmanage/web/DslAdminPaths.java` | `HISTORY_RESTORE`（`/history/{revisionId}/restore`）・`APPLIED_DOWNLOAD`（`/applied/download`） |
+| `dslmanage/web/DslAdminController.java` | `POST /history/{revisionId}/restore`（201、重い道の印 `@HeavyDslOperation(RESTORE)`）・`GET /applied/download` |
+| `README.md` | API の一覧に2本、`code` の節の「B5 で足す」の記述を消した、重い処理に戻しを含めた、節「履歴からの戻し」、監査の節に戻しの扱い |
+| テスト | `DslLifecycleTest`（+5）・`DslManageDomainTest`（+1）・`DslAdminApiIT`（+5、既存の1件に確かめを追加）・`DslConcurrencyIT`（既存の1件に戻しを追加）・`DslTargetDbIT`（+1）、補助 `DslApi.restore` |
+
+U1・U2・U3 のコード、`common`・`config`・`audit` と `vendor/` は変えていない。新しい依存も足していない。
+
+### 8.2 主な判断
+
+| 判断 | 理由 |
+|---|---|
+| 戻しの版は B4 の `DslRecordStore.findRevisionContent`（読み取りのトランザクション）で読み、U2 の検証をトランザクションの外で行い、通ったときだけ B4 の置く処理（1文の MERGE と確定の後の出来事）を使う | 投入と同じ道にして、置き換え・previewId の振り直し・出来事の出し方をそろえるため（BR1.4・BR7.3）。内部DB の接続を長く持たない（B4 の判断と同じ） |
+| 戻しで検証を通らないときは 422 `DSL_INVALID`（投入と同じ誤りの先頭 100 件と総数、表示言語の文言）で、出来事を出さない。指標は `restore`・`rejected` | 機能設計 functional-spec.md 1節の注記（戻しの失敗は、外から投入した DSL ではない） |
+| 版が無い（件数の上限で消えた版を含む）ときの指標は `restore`・`rejected`、想定外の失敗は `restore`・`failed` | B4 の破棄の 404・投入の想定外の失敗と同じ区分 |
+| 識別が UUID の形でない戻しは 400 `VALIDATION_FAILED` | パスの変数を UUID で受け、共通の変換（型の不一致）に任せた。適用の `previewId` が UUID の形でないときの 400 と同じ扱い |
+| 適用中のダウンロードは、内部DB の履歴の最新（今の状態の `applied` と同じ版）を返す | 識別が今の状態に表示されるものと一致する（AC5.2.1）。起動時に最新の版を読めなかった（ERROR を出して適用中のモデルが「無い」）場合も、今の状態と同じくその版を返す |
+| 既にプレビューがあるときも、戻しは確かめずに置き換える | 置き換えてよいかの確かめ（AC5.1.4）は画面（U5）の受け持ち。サーバーは生成・投入と同じく置き換えるだけ（BR1.4） |
+| 結合テストは新しいクラスを作らず、既存の `DslAdminApiIT`・`DslConcurrencyIT`・`DslTargetDbIT` に足した | アプリの起動の回数（とテストの時間）を増やさないため。件数の上限で消えた版の 404 は、既存の履歴の上限のテスト（21 回の適用）の続きで確かめた |
+
+### 8.3 テストの件数とカバレッジ（実測）
+
+README の「対象DB」の節の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を設定し、colima が動いている状態で `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行した（2026-09-24、4 分 6 秒、BUILD SUCCESSFUL、全段が通過、失敗・飛ばし 0）。
+
+| 対象 | 単体テスト（`*Test`） | 結合テスト（`*IT`） |
+|---|---|---|
+| バックエンド全体 | 709 件（失敗 0・飛ばし 0） | 344 件（失敗 0・飛ばし 0） |
+| うち U4 | 76 件 | 39 件 |
+| 画面（Vitest） | 167 件 | — |
+
+B4 の記録（単体 703 件・結合 338 件）からの差は、単体 +6（`DslLifecycleTest` +5、`DslManageDomainTest` +1）、結合 +6（`DslAdminApiIT` +5、`DslTargetDbIT` +1）。
+
+B5 のテストの内訳:
+
+- 単体: 戻しの成功（出どころ RESTORE、`DSL_SUBMITTED`、照合の警告、適用中は変わらない、指標 `restore`・`success`）、版が無い 404、今の検証を通らない 422（出来事なし・置かない）、想定外の失敗（`failed`）、適用中のダウンロード（404 とファイル名・本文）、ファイル名がプレビュー中のものと区別できる
+- 結合（`DslAdminApiIT`）: 3回適用した履歴の新しい順と、2つ前の版の戻し（既にあるプレビューを置き換える、出どころ RESTORE、違い、監査 `DSL_SUBMITTED`・`RESTORE`・操作した人）と、その適用で適用中がその版になる。無い版 404・形の違う識別 400 で、プレビューと監査が変わらない。今の検証を通らない版（書式の版 2 を DB に直接入れた）が 422 で、英日の文言、部品の文言なし、プレビューが変わらず監査の行が増えない。適用中のダウンロードの 404 `DSL_APPLIED_NOT_FOUND`、200 の本文・`Content-Disposition`（`dsl-applied-...`）・`nosniff`・識別が今の状態と同じ（プレビューがあっても適用中のもの）。未認証 401・管理者でない 403（戻し・適用中のダウンロード）。件数の上限で消えた版が 404、残っている最も古い版は 201
+- 結合（`DslConcurrencyIT`）: 重い処理の最中の戻しも 503 `DSL_BUSY`（状態・監査が変わらない）
+- 結合（`DslTargetDbIT`、PostgreSQL のコンテナ）: 今の対象DB に無いカラムを持つ版を戻すと `COLUMN_MISSING` の警告が付き、応答に接続先が出ない（AC5.1.5）
+
+| カバレッジ（JaCoCo、単体と結合の合算） | 行 | 分岐 |
+|---|---|---|
+| 全体 | 98.1%（3884/3960） | 94.1%（1348/1433） |
+| `cherry.mastersmith.dslmanage.domain` | 100.0%（130/130） | 92.3%（24/26） |
+| `cherry.mastersmith.dslmanage.repository` | 100.0%（74/74） | 100.0%（4/4） |
+| `cherry.mastersmith.dslmanage.service` | 100.0%（506/506） | 98.5%（130/132） |
+| `cherry.mastersmith.dslmanage.web` | 100.0%（131/131） | 86.7%（26/30） |
+| `cherry.mastersmith.dslmanage.generate`（U3） | 99.3%（303/305） | 99.3%（144/145） |
+
+下限（行 80%・分岐 70%、全体と新しいパッケージごと）はすべて満たした。全体は B4 の記録（98.1%・94.1%）を下回っていない。計測の除外は足していない。テストのヒープ（1g）は変えていない。
+
+安全の検査: SpotBugs の統合を止める指摘（priority 1・`SQL_`）0 件（priority 2・3 は統合を止めない警告で、B4 との件数の比べはしていない）。Gitleaks は漏えい無し。OSV-Scanner は依存が変わらないため前回の結果のまま（UP-TO-DATE）。
+
+### 8.4 計画からのずれ
+
+| ずれ | 扱い |
+|---|---|
+| 既存の結合テスト2件に確かめを足した（`DslAdminApiIT` の履歴の上限のテストに「消えた版の戻しは 404」、`DslConcurrencyIT` の `DSL_BUSY` のテストに戻しの要求）。前者は説明文（`@DisplayName`）も合わせて直した | 同じ前提（21 回の適用・重い処理の最中）を作り直さずに確かめるため。既存の確かめは消していない |
+| `source-manifest.json` に足すものは無かった | B5 で変えたファイルはすべて B4 で載っている |
+
+### 8.5 承認済みの文書との差
+
+承認済みの文書は書き換えていない。6節の差に加えて次がある。
+
+| 項目 | 文書 | 承認済みの記述 | 実装 |
+|---|---|---|---|
+| 戻しの識別の形の誤り | 契約 C6 の `/history/{revisionId}/restore`（201・404・422） | 形の誤りの記述は無い | 400 `VALIDATION_FAILED`（共通の変換。適用の `previewId` と同じ） |
+| 戻しの `DSL_BUSY` | 契約 C6 | 無い | 503 `DSL_BUSY`（NFR 要件の決定。計画 2節で重い道） |
+
+### 8.6 U5・Build and Test への申し送り（B5 の分）
+
+- **U5（画面）**: 戻しは `POST /api/admin/dsl/history/{revisionId}/restore`（本文なし、201 でプレビューの中身。出どころ `RESTORE`）。既にプレビューがあるときの置き換えの確かめ（AC5.1.4）は画面で行う（サーバーは確かめずに置き換える）。422 は投入と同じ `errors`・`total`。適用中のダウンロードは `GET /api/admin/dsl/applied/download`（`dsl-applied-<識別の先頭12文字>.yaml`、無ければ 404 `DSL_APPLIED_NOT_FOUND`）。
+- **U5（一括のアクセス制御）**: 戻しと適用中のダウンロードも、C6 の API を並べた 401・403・200 の確かめに含める（U4 は代表だけを確かめた）。
+- **Build and Test**: 戻しは重い道（10MB の版の読み込み・検証・照合）。NFR1.8 の時間と NFR1.11（10MB のダウンロード 2 秒）の測定に、戻しと適用中のダウンロードも含めること。`traceability.json` の時間の目標（NFR1.6・NFR1.8・NFR1.10〜NFR1.12）は N/A のまま Build and Test に残した。

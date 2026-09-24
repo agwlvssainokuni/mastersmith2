@@ -383,53 +383,53 @@
     },
     {
       "id": "AC5.1.1",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.1.2",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.1.3",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.1.4",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.1.5",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
     },
     {
       "id": "AC5.1.6",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.1.7",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.2.1",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.2.2",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "AC5.2.3",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "NFR1.6",
@@ -563,8 +563,8 @@
     },
     {
       "id": "BR1.3",
-      "status": "N/A",
-      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻し（POST /history/{revisionId}/restore）は B4 では作らない"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "BR1.4",

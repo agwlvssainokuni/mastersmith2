@@ -253,6 +253,18 @@ public final class DslApi {
     }
 
     /**
+     * 履歴の版をプレビューに戻す（本文なし）。
+     *
+     * @param revisionId 戻す版の識別
+     * @return 応答
+     */
+    public HttpResponse<String> restore(String revisionId) {
+        return client.send(request("/history/" + revisionId + "/restore")
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build());
+    }
+
+    /**
      * JSON の本文で POST を送る。
      *
      * @param path {@code /api/admin/dsl} からのパス

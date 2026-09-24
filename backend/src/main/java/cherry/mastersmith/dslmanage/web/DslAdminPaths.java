@@ -39,5 +39,11 @@ public final class DslAdminPaths {
     /** 適用の履歴。 */
     public static final String HISTORY = ROOT + "/history";
 
+    /** 履歴の版をプレビューに戻す（パスの変数 {@code revisionId}）。 */
+    public static final String HISTORY_RESTORE = HISTORY + "/{revisionId}/restore";
+
+    /** 適用中のダウンロード。 */
+    public static final String APPLIED_DOWNLOAD = ROOT + "/applied/download";
+
     private DslAdminPaths() {}
 }

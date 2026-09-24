@@ -394,21 +394,24 @@ version: 1
 | `GET /api/admin/dsl/preview/download` | プレビュー中の DSL を、保存した本文のまま添付（`dsl-preview-<識別の先頭12文字>.yaml`）で返す | 200 | 404 `DSL_PREVIEW_NOT_FOUND` |
 | `POST /api/admin/dsl/apply` | 適用（本文 `{"previewId": "..."}`。見たプレビューを指定する）。対象DB には接続しない | 200 | 409 `DSL_PREVIEW_CHANGED`（プレビューが置き換わった・破棄された・同時の適用に負けた） |
 | `GET /api/admin/dsl/history` | 適用の履歴（新しい順、最大 `MASTERSMITH_DSL_HISTORY_LIMIT` 件、今適用中の版に `current: true`） | 200 | — |
+| `POST /api/admin/dsl/history/{revisionId}/restore` | 履歴の版をプレビューに戻す（今の検証にかけ直し、通れば出どころ `RESTORE` で今のプレビューを置き換え、照合の警告つきの中身を返す）。重い処理 | 201 | 404 `DSL_REVISION_NOT_FOUND`（件数の上限で消えた版を含む）、422 `DSL_INVALID`（今の検証を通らない。プレビューは変わらない）、400 `VALIDATION_FAILED`（識別が UUID の形でない）、503 `DSL_BUSY` |
+| `GET /api/admin/dsl/applied/download` | 適用中の DSL（今の状態の `applied` と同じ版）を、保存した本文のまま添付（`dsl-applied-<識別の先頭12文字>.yaml`）で返す | 200 | 404 `DSL_APPLIED_NOT_FOUND` |
 
-- **問題の種類（`code`）**: `DSL_INVALID`（422）・`DSL_TOO_LARGE`（413）・`DSL_PREVIEW_NOT_FOUND`（404）・`DSL_PREVIEW_CHANGED`（409）・`DSL_APPLIED_NOT_FOUND`（404）・`DSL_REVISION_NOT_FOUND`（404）・`TARGET_DB_UNCONFIGURED`（503）・`TARGET_DB_UNAVAILABLE`（503）・`DSL_BUSY`（503）。説明は `/api/problems/<code を小文字とハイフンにしたもの>` で見られます。履歴からの戻しと適用中のダウンロード（`DSL_APPLIED_NOT_FOUND`・`DSL_REVISION_NOT_FOUND` を返す API）は次の Bolt（B5）で足します。
+- **問題の種類（`code`）**: `DSL_INVALID`（422）・`DSL_TOO_LARGE`（413）・`DSL_PREVIEW_NOT_FOUND`（404）・`DSL_PREVIEW_CHANGED`（409）・`DSL_APPLIED_NOT_FOUND`（404）・`DSL_REVISION_NOT_FOUND`（404）・`TARGET_DB_UNCONFIGURED`（503）・`TARGET_DB_UNAVAILABLE`（503）・`DSL_BUSY`（503）。説明は `/api/problems/<code を小文字とハイフンにしたもの>` で見られます。
 - **誤りの文言**: 422 の `errors[].message` と照合の警告の `message` は、要求の `Accept-Language` の言語（日本語・英語、既定は日本語）です。YAML・JSON Schema の部品の例外の文言は入りません。
 - **本文の大きさの上限の置き場**: 本文の大きさは、ログイン（アクセストークンの確かめ）と認可の後に確かめます。本文を読むのはログインしていてその API を使える人の要求だけです。そのため、**ログインしていない大きな要求は 413 ではなく 401** になります。投入の API だけ上限が `MASTERSMITH_DSL_MAX_SUBMIT_SIZE`（既定 10MB、`DSL_TOO_LARGE`）で、ほかの API は今までどおり `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE`（既定 1MB、`PAYLOAD_TOO_LARGE`）です。`Content-Length` がある送り方では本文を読まずに断ります。
-- **重い処理は同時に1つ**: 生成・投入・プレビューの表示（と B5 の履歴からの戻し）は、アプリ全体で同時に1つだけ処理します。重なった要求は待たずに 503 `DSL_BUSY` で断り、状態を変えず、監査の出来事も出しません。少し待ってからやり直してください。照合は対象DB が応答しないと最悪 23〜28 秒かかり（「対象DB」の節）、その間ほかの重い処理は `DSL_BUSY` になります。
+- **重い処理は同時に1つ**: 生成・投入・プレビューの表示・履歴からの戻しは、アプリ全体で同時に1つだけ処理します。重なった要求は待たずに 503 `DSL_BUSY` で断り、状態を変えず、監査の出来事も出しません。少し待ってからやり直してください。照合は対象DB が応答しないと最悪 23〜28 秒かかり（「対象DB」の節）、その間ほかの重い処理は `DSL_BUSY` になります。
 - **適用**: 見たプレビューの識別（`previewId`）を指定します。1つのトランザクションで履歴への追加・プレビューの削除・上限を超えた古い履歴の削除を行い、確定の後にだけ適用中の DSL を切り替えて監査に記録します。適用中と同じ内容でも履歴に1件足します。
+- **履歴からの戻し**: 戻した版は投入の一種として扱い、監査に `DSL_SUBMITTED`（出どころ `RESTORE`）を記録します。今の検証を通らない版（書式の版が変わった など）は投入と同じ誤りの一覧の 422 になり、プレビューは変わらず、受け付けなかった投入の出来事（`DSL_SUBMISSION_REJECTED`）も記録しません。戻したプレビューを適用すると、履歴には出どころ `RESTORE` の新しい版として足されます。
 - **起動時**: 履歴の最新（適用した日時が最も新しい版）を適用中の DSL として読みます。今の検証を通らない（書式の版が変わった など）ときは、ERROR（`適用中の DSL を読めないため、適用中の DSL が無い状態で起動します`、識別の先頭 12 文字と誤りの種類だけ）を1件出し、適用中の DSL が無い状態で起動を続けます。
 - **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
 
 ### DSL の操作の監査
 
-生成・投入・受け付けなかった投入・適用・破棄を、監査の表 `audit_events` に1件ずつ記録します（種類 `DSL_GENERATED`・`DSL_SUBMITTED`・`DSL_SUBMISSION_REJECTED`・`DSL_APPLIED`・`DSL_PREVIEW_DISCARDED`）。
+生成・投入（履歴からの戻しを含む）・受け付けなかった投入・適用・破棄を、監査の表 `audit_events` に1件ずつ記録します（種類 `DSL_GENERATED`・`DSL_SUBMITTED`・`DSL_SUBMISSION_REJECTED`・`DSL_APPLIED`・`DSL_PREVIEW_DISCARDED`）。
 
 - 列（Flyway の V6 で足した、NULL を許す列）: 操作した管理者の利用者 ID `actor_user_id`、DSL の識別 `dsl_hash`、出どころ `dsl_source`（`GENERATED`・`UPLOAD`・`PASTE`・`RESTORE`）、受け付けなかった投入の理由の種類 `rejection_kind`（最初の誤りの種類、大きさで断ったときは `SIZE_LIMIT`。そのときは `dsl_hash` は空）。ほかに既存の日時・種類・結果・接続元IP・User-Agent・トレースIDを記録します。
-- DSL の本文と対象DB の接続先は記録しません。`DSL_BUSY` で断った要求と、巻き戻った適用は記録しません。
+- DSL の本文と対象DB の接続先は記録しません。`DSL_BUSY` で断った要求、巻き戻った適用、検証を通らなかった履歴からの戻しは記録しません。
 - 記録に失敗しても DSL の操作は成功し、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます（本文は載りません）。
 
 ### DSL の操作の指標とログ

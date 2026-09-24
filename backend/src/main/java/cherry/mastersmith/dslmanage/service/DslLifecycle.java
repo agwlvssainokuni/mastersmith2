@@ -50,7 +50,7 @@ import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.stereotype.Service;
 
 /**
- * DSL の管理の業務処理（U4）。生成・投入・プレビューの表示・破棄・適用・今の状態・履歴・ダウンロード。
+ * DSL の管理の業務処理（U4）。生成・投入・履歴からの戻し・プレビューの表示・破棄・適用・今の状態・履歴・ダウンロード。
  *
  * <p>内部DB の読み書きは {@link DslRecordStore} のトランザクションで行い、その確定の後にだけ、適用中のモデルの差し替え（U2）と
  * 監査の出来事（契約 C7）を行う（BR4.6、BR7.3）。巻き戻ったときは、どちらもしない。U1・U2・U3 の結果の型の想定内の失敗は、ここで
@@ -193,6 +193,52 @@ public class DslLifecycle {
     }
 
     /**
+     * 履歴の版を、今の U2 の検証にかけ直してからプレビューに置く（BR1.3）。対象DB との照合の警告つきのプレビューの中身を返す。
+     *
+     * <p>検証を通らないときは、投入と同じ誤りの一覧の 422 にし、プレビューは変えない。受け付けなかった投入の出来事は出さない（戻しの
+     * 操作そのものの失敗で、利用者が外から投入した DSL ではないため。functional-spec.md 1節の注記）。
+     *
+     * @param revisionId 戻す版の識別
+     * @param context 要求の文脈
+     * @return プレビューの中身
+     * @throws BusinessException 版が無い（件数の上限で消えたものを含む。404 {@code DSL_REVISION_NOT_FOUND}）、今の検証を通らない（422
+     *     {@code DSL_INVALID}。誤りの先頭100件と総数を持つ）。どちらもプレビューは変わらない
+     */
+    public PreviewView restore(UUID revisionId, DslRequestContext context) {
+        long start = metrics.start();
+        try {
+            Optional<DslContent<DslAppliedRef>> found = store.findRevisionContent(revisionId);
+            if (found.isEmpty()) {
+                metrics.record(DslOperation.RESTORE, DslOutcome.REJECTED, start, null, DslSource.RESTORE);
+                throw new BusinessException(DslProblemTypes.DSL_REVISION_NOT_FOUND);
+            }
+            byte[] yamlBytes = found.get().yamlBytes();
+            switch (dslReader.read(yamlBytes)) {
+                case DslReadResult.Invalid invalid -> {
+                    metrics.record(
+                            DslOperation.RESTORE,
+                            DslOutcome.REJECTED,
+                            start,
+                            found.get().ref().dslHash(),
+                            DslSource.RESTORE);
+                    throw invalid(invalid.errors(), context);
+                }
+                case DslReadResult.Valid valid -> {
+                    PreviewView view =
+                            place(yamlBytes, valid.model(), DslSource.RESTORE, DslOperationType.DSL_SUBMITTED, context);
+                    metrics.record(DslOperation.RESTORE, DslOutcome.SUCCESS, start, valid.dslHash(), DslSource.RESTORE);
+                    return view;
+                }
+            }
+        } catch (BusinessException e) {
+            throw e;
+        } catch (RuntimeException e) {
+            metrics.record(DslOperation.RESTORE, DslOutcome.FAILED, start, null, DslSource.RESTORE);
+            throw e;
+        }
+    }
+
+    /**
      * 要求の本文の大きさの上限で断った投入を記録する（受け付けなかった投入の出来事 {@code SIZE_LIMIT}、識別なし。BR7.4）。
      *
      * @param source 出どころ（要求から分からなければ null）
@@ -328,6 +374,17 @@ public class DslLifecycle {
      */
     public DslDownload downloadPreview() {
         return DslDownload.preview(store.findPreviewContent().orElseThrow(DslLifecycle::previewNotFound));
+    }
+
+    /**
+     * 適用中の DSL（履歴の最新。今の状態の {@code applied} と同じ版）をダウンロードする（BR6.2）。
+     *
+     * @return ダウンロード
+     * @throws BusinessException 適用中が無い（404 {@code DSL_APPLIED_NOT_FOUND}）
+     */
+    public DslDownload downloadApplied() {
+        return DslDownload.applied(store.findCurrentRevisionContent()
+                .orElseThrow(() -> new BusinessException(DslProblemTypes.DSL_APPLIED_NOT_FOUND)));
     }
 
     private PreviewView place(

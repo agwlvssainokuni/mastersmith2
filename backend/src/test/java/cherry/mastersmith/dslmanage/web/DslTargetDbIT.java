@@ -62,7 +62,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * 対象DB を使う DSL の管理の API の結合テスト（PostgreSQL のコンテナ。US1.1 は最初の1種類の DB で確かめる決まり）。
  *
  * <p>生成（201）と照合の警告、応答・ダウンロード・監査・ログに接続先が出ないこと、照合と適用で対象DB が変わらないこと、応答しない
- * 対象DB での生成の 503 と照合の警告（決定 B）、対象DB が使えなくてもほかの操作が使えること（NFR7.8）を確かめる。
+ * 対象DB での生成の 503 と照合の警告（決定 B）、対象DB が使えなくてもほかの操作が使えること（NFR7.8）、履歴から戻したプレビューの
+ * 照合の警告（AC5.1.5）を確かめる。
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -244,6 +245,35 @@ class DslTargetDbIT {
                         "TYPE_MISMATCH tables.Customer.columns.Name",
                         "COLUMN_MISSING tables.Customer.columns.ghost",
                         "TABLE_MISSING tables.absent_table");
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("restoring a revision with a column the target database lacks shows the mismatch warning")
+    void restoreWarnings() {
+        byte[] body = DslYaml.dsl()
+                .table(
+                        TargetDbFixture.CUSTOMER,
+                        column(TargetDbFixture.CUSTOMER_ID).type("int4", null, null, null),
+                        column("ghost"))
+                .bytes();
+        Map<String, Object> placed = DslApi.json(api.submit(body, "PASTE"));
+        assertThat(api.apply((String) placed.get("previewId")).statusCode()).isEqualTo(200);
+        api.submitOk(DslYaml.dsl().table("other", column("c")).bytes());
+        String revisionId = DslApi.jsonList(api.get("/history")).stream()
+                .filter(entry -> placed.get("dslHash").equals(entry.get("dslHash")))
+                .map(entry -> (String) entry.get("revisionId"))
+                .findFirst()
+                .orElseThrow();
+
+        HttpResponse<String> restored = api.restore(revisionId);
+
+        assertThat(restored.statusCode()).isEqualTo(201);
+        assertThat(DslApi.json(restored)).containsEntry("source", "RESTORE");
+        assertThat(list(DslApi.json(restored).get("warnings")))
+                .extracting(warning -> warning.get("kind") + " " + warning.get("path"))
+                .containsExactly("COLUMN_MISSING tables.Customer.columns.ghost");
+        assertNoConnectionInfo(restored.body(), database.port());
     }
 
     @Test

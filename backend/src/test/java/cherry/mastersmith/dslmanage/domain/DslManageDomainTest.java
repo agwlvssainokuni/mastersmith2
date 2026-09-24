@@ -77,6 +77,23 @@ class DslManageDomainTest {
     }
 
     @Test
+    @org.junit.jupiter.api.DisplayName(
+            "the applied download is named dsl-applied with the hash prefix, distinct from the preview name")
+    void appliedDownloadFileName() {
+        DslAppliedRef applied = new DslAppliedRef(UUID.randomUUID(), "a".repeat(64), DslSource.RESTORE, 1L, AT);
+        byte[] bytes = "version: 1\n".getBytes(StandardCharsets.UTF_8);
+
+        DslDownload download = DslDownload.applied(new DslContent<>(applied, bytes));
+
+        assertThat(download.fileName())
+                .isEqualTo("dsl-applied-aaaaaaaaaaaa.yaml")
+                .isNotEqualTo(
+                        DslDownload.preview(new DslContent<>(PREVIEW, bytes)).fileName());
+        assertThat(download.content().yamlBytes()).isEqualTo(bytes);
+        assertThatThrownBy(() -> new DslDownload(null, download.content())).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     @org.junit.jupiter.api.DisplayName("preview values reject inconsistent counts and unchanged columns")
     void previewValueRules() {
         List<MissingDisplayName> tooMany = Collections.nCopies(101, new MissingDisplayName("p", "ja"));
