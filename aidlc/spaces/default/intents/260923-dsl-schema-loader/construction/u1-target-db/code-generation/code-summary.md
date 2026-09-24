@@ -163,3 +163,12 @@ U1 の変更の前の既存のパッケージ（基準の実行の JaCoCo の報
 - SpotBugs（`backend/build/reports/spotbugs/main.xml`）: パターンの名前が `SQL_` で始まる指摘は 0 件のまま。`spotbugsGate` も通った。除外の設定は足していない。
 - カバレッジの下限（全体とパッケージごと）と除外は変えていない。数値の目標（接続 3 秒、問い合わせ 生成 20 秒・照合 5 秒、プール 最大 5・最小 0・60 秒）も変えていない。
 
+
+## 10. 申し送りの結論（2026-09-24、承認の前の見直し。依頼者の指示「A2 を直す」）
+
+8節の1つ目の申し送り（`tinyint(1)`・`bit(1)` の見分け方）は、U3 のコード生成で依頼者の決定（U3 の Q1: A）により、U1 の写しに `COLUMN_TYPE` を足すことで決着した。承認の前の改めてのレビュー（U1 の指摘 R-01）で、この結論が U1 の記録に反映されていないと分かったため、ここに書き足す。8節の本文は元のまま残す。
+
+- U3 が U1 のソースを変えた: `TargetDbType` に任意の項目 `columnType`（MySQL・MariaDB の `COLUMN_TYPE`、PostgreSQL は null）を足し、`MysqlSchemaQueries` の問い合わせに `COLUMN_TYPE` を、`PostgresSchemaQueries` に `CAST(NULL AS varchar)` を足し、`SchemaRows` で読むようにした。テストは `TargetSchemaTest` と `AbstractSchemaQueriesIT`（3種類の DB）に1件ずつ足した。変更の詳細と実測は U3 の `code-summary.md` にある。
+- 契約 C1 との差: 契約 C1 の `TargetColumn.dbType` は `{typeName, length, precision, scale}` の4項目のままで、`columnType` は無い。承認済みの文書は書き換えず、差として扱う（U3 の `code-summary.md` の「承認済みの文書との差」にも記録済み）。9.1節の `length` を `Long` にした差と合わせて、C1 との差はこの2つ。
+- MySQL 8.4 は `tinyint(1) unsigned` の表示の幅を落として `tinyint unsigned` と返すため、MySQL では符号なしの `tinyint(1)` は数値になる（MariaDB では真偽値）。依頼者が承認の前に受け入れた（README に記載済み）。
+- `traceability.json` は変えていない。`columnType` は U3 の要件（BR2.2）を満たすための追加で、U1 の要件の ID の対応は変わらないため。

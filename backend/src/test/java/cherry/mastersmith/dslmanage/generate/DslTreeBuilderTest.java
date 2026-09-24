@@ -348,6 +348,28 @@ class DslTreeBuilderTest {
     }
 
     @Test
+    @DisplayName("a primary key column of an unsupported type keeps search disabled instead of becoming EQUALS")
+    void unsupportedPrimaryKey() {
+        // BR2.4 の「主キーのカラムは EQUALS」は、検索できる分類の主キーに当てる（承認の前に依頼者が確かめた読み方）。
+        DslModel model = model(schema(table(
+                "doc",
+                null,
+                List.of("body"),
+                List.of(),
+                notNull("body", new TargetDbType("json", null, null, null, "json")),
+                nullable("title", VARCHAR_50))));
+
+        DslColumn body = model.tables().get("doc").columns().get("body");
+        assertThat(model.tables().get("doc").primaryKey()).containsExactly("body");
+        assertThat(body.search().enabled()).isFalse();
+        assertThat(body.search().operator()).isNull();
+        assertThat(body.list().visible()).isFalse();
+        assertThat(body.list().defaultSort()).isNull();
+        assertThat(model.tables().get("doc").columns().get("title").search().operator())
+                .isEqualTo(SearchOperator.CONTAINS);
+    }
+
+    @Test
     @DisplayName("names and comments with YAML symbols keep their values and never become tags or aliases")
     void yamlSymbols() {
         List<String> names = List.of(

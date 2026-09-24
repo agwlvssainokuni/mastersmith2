@@ -474,7 +474,7 @@
     {
       "id": "NFR1.15",
       "status": "OK",
-      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslHeavyOperationGate.java"
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
     },
     {
       "id": "NFR1.16",
@@ -519,7 +519,7 @@
     {
       "id": "NFR5.5",
       "status": "OK",
-      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java"
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
     },
     {
       "id": "NFR7.8",
@@ -699,7 +699,7 @@
     {
       "id": "BR8.2",
       "status": "OK",
-      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java"
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
     },
     {
       "id": "BR8.3",

@@ -229,3 +229,13 @@ B5 のテストの内訳:
 - **U5（画面）**: 戻しは `POST /api/admin/dsl/history/{revisionId}/restore`（本文なし、201 でプレビューの中身。出どころ `RESTORE`）。既にプレビューがあるときの置き換えの確かめ（AC5.1.4）は画面で行う（サーバーは確かめずに置き換える）。422 は投入と同じ `errors`・`total`。適用中のダウンロードは `GET /api/admin/dsl/applied/download`（`dsl-applied-<識別の先頭12文字>.yaml`、無ければ 404 `DSL_APPLIED_NOT_FOUND`）。
 - **U5（一括のアクセス制御）**: 戻しと適用中のダウンロードも、C6 の API を並べた 401・403・200 の確かめに含める（U4 は代表だけを確かめた）。
 - **Build and Test**: 戻しは重い道（10MB の版の読み込み・検証・照合）。NFR1.8 の時間と NFR1.11（10MB のダウンロード 2 秒）の測定に、戻しと適用中のダウンロードも含めること。`traceability.json` の時間の目標（NFR1.6・NFR1.8・NFR1.10〜NFR1.12）は N/A のまま Build and Test に残した。
+
+## 9. 承認の前の見直し（2026-09-24、依頼者の指示「A1 を直す」）
+
+承認の前の改めてのレビュー（指摘 R-01）で、`traceability.json` の3件だけが確かめたテストではなく本番のソースを指していると分かった。依頼者の指示で、確かめているテストへ張り替えた。コードとテストは変えていない。
+
+| ID | 元の `target` | 直した `target` | 張り替えた先で確かめていること |
+|---|---|---|---|
+| NFR1.15 | `backend/src/main/java/cherry/mastersmith/dslmanage/web/DslHeavyOperationGate.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java` | 重い処理の途中でも今の状態の取得（軽い処理）が通る（`busy`）。適用の同時の実行は1件だけ成功する（`concurrentApply`） |
+| NFR5.5 | `backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java` | `DSL_BUSY` が 503 で返る（`busy`）。起動時に既存の code の重複の検査を通る |
+| BR8.2 | `backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java` | `backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java` | 起動時に既存の code の重複の検査を通ったうえで、各 code がそれぞれ1つの状態コードで返る |

@@ -133,3 +133,10 @@ U3 の単体テストの内訳: `TypeCategoryMappingTest` 47（型の組み合�
 - **U4（AC3.4.4 など）**: 生成した DSL に接続先の文字列が無いことを、U4 の結合テストでも確かめること（NFR4.9）。
 - **Build and Test**: AC1.2.3・NFR1.6（100 × 100 で 30 秒以内、3種類の DB）と NFR1.7 の内訳を、`TargetSchemaDslGenerator` の DEBUG のログ（`readMillis`・`buildMillis`・`writeMillis`・`validateMillis`）で測ること。本文の大きさ（コメント無しで約 6.7MB）と、コメントがあるときに 10MB の内に収まるかも確かめること。
 - **MySQL の `tinyint(1) unsigned`**: MySQL 8.4 では見分けられず NUMBER になる（3節）。
+
+## 8. 承認の前の見直し（2026-09-24、依頼者の指示「B7 のテストを足す」）
+
+承認の前の改めてのレビュー（U3 の指摘 R-01）で、BR2.4 の「主キーのカラムは EQUALS」が UNSUPPORTED の主キーにも及ぶように読めるのに、実装は検索できる分類の主キーだけを EQUALS にしており、その境目のテストが無いと分かった。依頼者は今の動作（UNSUPPORTED の主キーは `enabled: false` のまま）を受け入れ、境目のテストを足すと決めた。実装は変えていない。
+
+- `backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java` に `unsupportedPrimaryKey`（`json` の主キーは検索が無効・演算子なし・一覧に出さず並べ替えの初期値なし、ほかのカラムは分類どおり）を1件足した。
+- 実行の結果（2026-09-24）: `DslTreeBuilderTest` は 13 件すべて成功（足した1件を含む）。全体の件数とカバレッジは Build and Test で測り直す。
