@@ -43,6 +43,9 @@
 - U4 で既存の AuditSecretLeakIT の列の一覧に V6 の4列を足し、テストの JVM のヒープを 1g にした。前者は承認済みの V6 と必ず食い違うため、後者は構造の検査がクラスを持ち続け U3 の 10MB 超えのテストでヒープが尽きたため。どちらも計画に無い変更で、依頼者に確かめる。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:2fc093e5a02d5ebb999fb83481a41710222b3f0a07fcf066eccd001329f4bac7 -->
 - 応答しない対象DB の TIMEOUT の確かめに、テストの中で開いた ServerSocket（受け付けて何も返さない）を使う。外の端末に頼らず確実に再現できる代わりに、本物の DB の遅延ではない。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:ed7ab1daca4fa077e39042a6faee655336c1911356dc58405498a185143f8e92 -->
 - パッケージごとのカバレッジの下限は新しいパッケージだけに当てた。実測で audit.service（行 77.2%）・common.health（行 79.2%）・auth.repository（分岐 50.0%）が単独で下回ったため（team.md の決まりどおり）。既存の 22 パッケージを一覧で外し、新しいパッケージは自動で対象になる。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:3e576ee8cb983e190e8b6b8fb776e790d8fe306cfdb35014e2d1c89322ed9dd7 -->
+- 負荷の試験で接続プールが尽きたかを確かめるときは、使い捨てのアプリにだけ MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics を渡して /actuator/metrics の hikaricp の値を読み、数秒ごとの使用中の数ではなく、待ちの時間切れの累計と借りるまでの待ちの最大で判断する（配備したアプリの公開の範囲は変えない）。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:6183459b552b1e347df4f86017641db5c56a4349202caff390c55c193c899525 -->
+- k6 などの長い試験は caffeinate -i を付けて流し、PC の自動のスリープで要求が止まって結果が崩れるのを防ぐ（バッテリー駆動のまま 414 秒スリープし、要求が 6分52秒止まった）。内部DB に SQL で直接入れた試験用の利用者はロックの状態の行が無いため、同時のログインを流す前に1人ずつログインさせて行を作る。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:f0c52a1398842c59feab5bedd7239515fc40d48a12f80d7e96034db103864add -->
+- 軽い API の性能は、投入を重ねて内部DB のファイルが膨らんだ状態（悪い側の条件）のまま測る。メモリの最大（memory.peak）を比べる試験の前は、アプリのコンテナを作り直して前の最大の値を消す。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:b9c43187ce6f38e701503c4be8cbbe11c162c17cd1cb8b6739f6f7ddffc4ca74 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
