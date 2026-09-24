@@ -1,0 +1,214 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-target-db",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbSettings.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbUsableCondition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/DatabaseProduct.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/DomainValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/ReadPurpose.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/SqlIdentifiers.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetColumn.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetDbType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetForeignKey.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetSchema.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetSchemaResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetTable.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/UnavailableReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/MysqlSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/PostgresSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaRows.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetSchemaReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/TargetSchemaReader.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/META-INF/third-party-licenses/mariadb-java-client-LGPL-2.1.txt"
+    },
+    {
+      "path": "backend/src/main/resources/META-INF/third-party-licenses/README.txt"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSettingsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/SqlIdentifiersTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetSchemaResultTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetSchemaTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/repository/MariadbSchemaQueriesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/repository/MysqlSchemaQueriesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/repository/PostgresSchemaQueriesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/MariadbTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/MysqlTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/PostgresTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/TargetSchemaReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/TargetDbBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheckTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/MysqlFamilyTestDatabase.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/PostgresTestDatabase.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/SilentServer.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java"
+    },
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "docker/targetdb/generate-large-schema.sh"
+    },
+    {
+      "path": "docker/targetdb/mariadb/01-sample-schema.sql"
+    },
+    {
+      "path": "docker/targetdb/mariadb/02-reader-account.sh"
+    },
+    {
+      "path": "docker/targetdb/mysql/01-sample-schema.sql"
+    },
+    {
+      "path": "docker/targetdb/mysql/02-reader-account.sh"
+    },
+    {
+      "path": "docker/targetdb/postgres/01-sample-schema.sql"
+    },
+    {
+      "path": "docker/targetdb/postgres/02-reader-account.sh"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

@@ -1,0 +1,308 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-target-db",
+  "upstream_ids": [
+    "AC6.1.1",
+    "AC6.1.2",
+    "AC6.1.3",
+    "AC6.1.4",
+    "AC6.1.5",
+    "AC1.1.1",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.2.1",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR7.6",
+    "NFR7.7",
+    "NFR12.1",
+    "NFR12.2",
+    "NFR12.3",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR1.7",
+    "BR1.8",
+    "BR1.9",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR2.6",
+    "BR2.7"
+  ],
+  "coverage": [
+    {
+      "id": "AC6.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "AC6.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "AC6.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "id": "AC6.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSecretLeakIT.java"
+    },
+    {
+      "id": "AC6.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetSchemaReader.java"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/TargetDbBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSecretLeakIT.java"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/domain/SqlIdentifiersTest.java"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaRows.java"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "id": "NFR7.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "id": "NFR7.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "id": "NFR12.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "id": "NFR12.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java"
+    },
+    {
+      "id": "NFR12.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbSettings.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSettingsTest.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbPropertiesTest.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/TargetDbBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "id": "BR1.8",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetSchemaReader.java"
+    },
+    {
+      "id": "BR1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/TargetSchemaReaderTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaQueries.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/domain/SqlIdentifiers.java"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetSchemaTest.java"
+    },
+    {
+      "id": "BR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/repository/AbstractSchemaQueriesIT.java"
+    },
+    {
+      "id": "BR2.7",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/repository/SchemaRows.java"
+    }
+  ]
+}

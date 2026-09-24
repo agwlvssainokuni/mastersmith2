@@ -70,6 +70,10 @@ dependencies {
     implementation(libs.logstash.logback.encoder)
     implementation(libs.opentelemetry.logback.appender)
     runtimeOnly(libs.h2)
+    // 対象DB（U1）の JDBC ドライバー。読み取り専用の接続で、スキーマのメタデータを読むだけに使う。
+    runtimeOnly(libs.mysql.connector.j)
+    runtimeOnly(libs.mariadb.java.client)
+    runtimeOnly(libs.postgresql)
     // 外部のサーブレットコンテナへ置く WAR としても使えるよう、組み込みの Tomcat は providedRuntime にする。
     providedRuntime(libs.spring.boot.starter.tomcat.runtime)
 
@@ -78,6 +82,10 @@ dependencies {
     testImplementation(libs.spring.boot.starter.security.test)
     testImplementation(libs.jqwik)
     testImplementation(libs.archunit.junit5)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.mysql)
+    testImplementation(libs.testcontainers.mariadb)
+    testImplementation(libs.testcontainers.postgresql)
     testRuntimeOnly(libs.junit.platform.launcher)
 
     spotbugsPlugins(libs.findsecbugs.plugin)
@@ -99,7 +107,8 @@ tasks.withType<Test>().configureEach {
     // 結合テストで Host ヘッダーを指定して、エラー応答の type の URL の組み立てを確かめるため。
     systemProperty("jdk.httpclient.allowRestrictedHeaders", "host")
     testLogging {
-        events("failed")
+        // 対象DB のテストがコンテナの実行環境の無さで飛ばされたとき、黙って飛ばさないよう SKIPPED も出す（NFR12.3）。
+        events("failed", "skipped")
         // jqwik・fast-check の失敗時の乱数の種を出力に残すため、失敗の詳細をすべて出す。
         exceptionFormat = TestExceptionFormat.FULL
         showStandardStreams = false
@@ -164,13 +173,59 @@ tasks.jacocoTestReport {
     }
 }
 
+/**
+ * パッケージごとの下限を当てない既存のパッケージ（全体の合計で判定する）。U1（Intent 260923-dsl-schema-loader の最初の Bolt）で
+ * 既存のパッケージを実測したところ、単独で下限を下回るもの（audit.service の行 77.2%、common.health の行 79.2%、
+ * auth.repository の分岐 50.0%）があったため、team.md の Testing Posture に従い、パッケージごとの下限は新しく作るパッケージ
+ * だけに当てる。この一覧は増やさない（新しく作るパッケージは、一覧に無いので自動で下限の対象になる）。
+ */
+val packagesJudgedByTotal = listOf(
+    "cherry.mastersmith.access.domain",
+    "cherry.mastersmith.access.service",
+    "cherry.mastersmith.access.web",
+    "cherry.mastersmith.audit.domain",
+    "cherry.mastersmith.audit.repository",
+    "cherry.mastersmith.audit.service",
+    "cherry.mastersmith.auth.domain",
+    "cherry.mastersmith.auth.repository",
+    "cherry.mastersmith.auth.service",
+    "cherry.mastersmith.auth.web",
+    "cherry.mastersmith.common.error.domain",
+    "cherry.mastersmith.common.error.service",
+    "cherry.mastersmith.common.error.web",
+    "cherry.mastersmith.common.health",
+    "cherry.mastersmith.common.i18n.domain",
+    "cherry.mastersmith.common.observability",
+    "cherry.mastersmith.common.security",
+    "cherry.mastersmith.common.web",
+    "cherry.mastersmith.config",
+    "cherry.mastersmith.user.domain",
+    "cherry.mastersmith.user.repository",
+    "cherry.mastersmith.user.service",
+)
+
 tasks.jacocoTestCoverageVerification {
-    description = "カバレッジの下限（行 80%・分岐 70%）を検証する。"
+    description = "カバレッジの下限（行 80%・分岐 70%）を、全体の合計と、新しく作るパッケージごとに検証する。"
     mustRunAfter(tasks.test, integrationTest, tasks.jacocoTestReport)
     executionData.setFrom(coverageExecutionData)
     classDirectories.setFrom(coverageClassDirectories)
     violationRules {
         rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.80".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "0.70".toBigDecimal()
+            }
+        }
+        // パッケージごとの下限（team.md の Testing Posture）。既存のパッケージは上の一覧で外し、全体の合計で判定する。
+        rule {
+            element = "PACKAGE"
+            excludes = packagesJudgedByTotal
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
@@ -219,7 +274,9 @@ tasks.named("spotbugsTest") {
 }
 
 tasks.register("spotbugsGate") {
-    description = "SpotBugs の報告を読み、重大度 High（priority 1）の指摘があれば失敗させる。それ未満は警告として表示する。"
+    description =
+        "SpotBugs の報告を読み、重大度 High（priority 1）の指摘と、SQL インジェクション系（パターン名が SQL_ で始まる）の指摘が" +
+            "あれば priority によらず失敗させる。それ以外は警告として表示する。"
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(tasks.named("spotbugsMain"))
     val report = layout.buildDirectory.file("reports/spotbugs/main.xml")
@@ -231,21 +288,30 @@ tasks.register("spotbugsGate") {
         val document = factory.newDocumentBuilder().parse(xml)
         val bugs = document.getElementsByTagName("BugInstance")
         var high = 0
+        var sql = 0
         for (i in 0 until bugs.length) {
             val bug = bugs.item(i) as org.w3c.dom.Element
             val priority = bug.getAttribute("priority")
             val type = bug.getAttribute("type")
             val sourceLine = bug.getElementsByTagName("SourceLine").item(0) as org.w3c.dom.Element?
             val where = sourceLine?.let { "${it.getAttribute("sourcepath")}:${it.getAttribute("start")}" } ?: "?"
-            if (priority == "1") {
-                high++
-                logger.error("SpotBugs [High] $type $where")
-            } else {
-                logger.warn("SpotBugs [warning, priority $priority] $type $where")
+            when {
+                // SQL インジェクション系は priority によらず止める（team.md の Code Style、U1 の NFR6.3）。
+                type.startsWith("SQL_") -> {
+                    sql++
+                    logger.error("SpotBugs [SQL, priority $priority] $type $where")
+                }
+                priority == "1" -> {
+                    high++
+                    logger.error("SpotBugs [High] $type $where")
+                }
+                else -> logger.warn("SpotBugs [warning, priority $priority] $type $where")
             }
         }
-        if (high > 0) {
-            throw GradleException("SpotBugs で重大度 High の指摘が $high 件あります（${xml.path}）。")
+        if (high > 0 || sql > 0) {
+            throw GradleException(
+                "SpotBugs で統合を止める指摘があります（重大度 High $high 件、SQL インジェクション系 $sql 件。${xml.path}）。",
+            )
         }
     }
 }

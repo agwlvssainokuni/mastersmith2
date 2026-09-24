@@ -13,13 +13,13 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 | Gitleaks | 8.30.1 | `brew install gitleaks` | 秘密情報の検出（`./gradlew verify`） |
 | OSV-Scanner | 2.6.0 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`） |
 | Python と pre-commit | pre-commit 4.x | `brew install pre-commit` | コミットの前の検査 |
-| Docker（Docker Desktop または colima） | Compose v2 | `brew install colima docker docker-compose` | コンテナで動かすとき |
+| Docker（Docker Desktop または colima） | Compose v2 | `brew install colima docker docker-compose` | コンテナで動かすとき、対象DB の結合テスト（`./gradlew verify`） |
 | Playwright の Chromium | `@playwright/test` と同じ版 | `cd frontend && npx playwright install chromium` | ビルドした WAR での画面の確認（`./gradlew e2eTest`） |
 
 - Gradle は Wrapper（`./gradlew`）を使うため、別に入れる必要はありません。
 - `./gradlew verify` は、Node.js の版が 24 でない、または Gitleaks・OSV-Scanner が見つからないときは、入れ方を示して失敗します（検査を黙って飛ばしません）。
 - コンテナの CPU の上限は既定で 4 です。colima を使う場合は、VM を CPU 4・メモリ 6GiB にしてください（`colima start --cpu 4 --memory 6`。確かめ方と、`.env` での上限の合わせ方は「コンテナの資源の上限」）。VM の CPU を増やせないときは、`.env` の `MASTERSMITH_CONTAINER_CPUS` で上限を下げて起動できます（ログインの照合の時間の目標は 4 が前提です）。
-- U1 のテストはコンテナの実行環境を必要としません（内部DBは組み込みの H2 を使います）。
+- `./gradlew verify` はコンテナの実行環境（colima）が動いていることを前提にします。対象DB（MySQL・MariaDB・PostgreSQL）の結合テストを、版を固定したイメージのコンテナ（Testcontainers）で毎回実行するためです。内部DB を使うテストは、これまでどおり組み込みの H2 で動きます。設定と、届かないときの扱いは「対象DB（利用者の業務データの DB）」を参照してください。
 
 ## 取得と準備
 
@@ -51,9 +51,9 @@ pre-commit install
 | 3 | ライセンスヘッダー（`verifyLicense`） | 画面のファイルのヘッダー（Java・Gradle の Kotlin DSL は 1 の段の Spotless が確かめる） |
 | 4 | ビルド（`verifyBuild`） | Java のコンパイル、`tsc --noEmit`、Vite のビルド |
 | 5 | 単体テスト（`verifyUnitTest`） | JUnit（`*Test`）、Vitest |
-| 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト（`*IT`） |
-| 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗 |
-| 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High で失敗）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
+| 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト、対象DB（MySQL・MariaDB・PostgreSQL）のコンテナを使うテスト（`*IT`） |
+| 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗。バックエンドは全体の合計に加えて、新しく作るパッケージ（`cherry.mastersmith.targetdb` 以後）ごとにも同じ下限を当てる（既存のパッケージは全体の合計で判定する。`backend/build.gradle.kts` の `packagesJudgedByTotal`） |
+| 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High と、SQL インジェクション系（パターン名が `SQL_` で始まる）の指摘は priority によらず失敗）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
 | 9 | 成果物と量の確認（`verifyArtifact`） | 画面を同梱した実行可能 WAR（`backend/build/libs/mastersmith.war`）、初回の読み込みの JavaScript の量（500KB を超えたら警告だけ） |
 
 各段だけを実行することもできます（例: `./gradlew verifyFormat`）。報告は `backend/build/reports/`（テスト・JaCoCo・SpotBugs）、`frontend/coverage/`、`build/reports/osv-scanner/osv.json` に出ます。
@@ -220,6 +220,20 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TRACE_ENTER_MESSAGE` | `ENTER $[targetClassShortName]#$[methodName]($[arguments])` | 追跡の入るときの文言 |
 | `MASTERSMITH_TRACE_EXIT_MESSAGE` | `EXIT  $[targetClassShortName]#$[methodName](): $[returnValue]` | 追跡の出るときの文言 |
 | `MASTERSMITH_TRACE_EXCEPTION_MESSAGE` | `EXCEPTION $[targetClassShortName]#$[methodName](): $[exception]` | 追跡の例外のときの文言 |
+| `MASTERSMITH_TARGET_DB_TYPE` | 空 | 対象DB の種類（`mysql`・`mariadb`・`postgresql`）。7つの項目（種類・ホスト・番号・DB の名前・スキーマ・ユーザー名・パスワード）がすべて空なら対象DB を使わない |
+| `MASTERSMITH_TARGET_DB_HOST` | 空 | 対象DB のホスト名（英数字と `.`・`-`・`_`、または `[...]` の IPv6） |
+| `MASTERSMITH_TARGET_DB_PORT` | 空 | 対象DB の番号（1〜65535） |
+| `MASTERSMITH_TARGET_DB_DATABASE` | 空 | 接続する DB の名前（MySQL・MariaDB はスキーマと同じ） |
+| `MASTERSMITH_TARGET_DB_SCHEMA` | 空 | 読み取るスキーマの名前 |
+| `MASTERSMITH_TARGET_DB_USERNAME` | 空 | 対象DB のユーザー名（読み取りの権限だけのアカウントを勧める） |
+| `MASTERSMITH_TARGET_DB_PASSWORD` | 空 | 対象DB のパスワード（秘密情報） |
+| `MASTERSMITH_TARGET_DB_CONNECT_TIMEOUT` | `3s` | 対象DB への接続の待ちの上限 |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_GENERATE` | `20s` | 既定の DSL の生成で、問い合わせ1回の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `5` | 対象DB の接続の数の上限（内部DB のプールとは別） |
+| `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上） |
+| `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` | 空 | 手元で試す対象DB（compose の profile `targetdb-*`）の管理者のパスワード（秘密情報。アプリは使わない） |
+| `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` | 空 | 手元で試す対象DB の読み取りだけのアカウント `mastersmith_reader` のパスワード（秘密情報） |
 | `MASTERSMITH_AUTH_SIGNING_KEY` | 空（必須） | アクセストークンの署名鍵（Base64、復元して 32 バイト以上。秘密情報。無い・短いと起動しない） |
 | `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL` | 空 | 初期管理者のメールアドレス（無い・不正なら作らずに警告） |
 | `MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` | 空 | 初期管理者のパスワード（秘密情報。12 文字以上、UTF-8 で 72 バイト以内） |
@@ -237,6 +251,77 @@ docker compose up -d --wait                              # app が healthy に�
 - 認証（U2）の署名鍵は必須です。`openssl rand -base64 32` で作った値を `.env` の `MASTERSMITH_AUTH_SIGNING_KEY` に入れます。値が無い・短いとアプリは起動しません。
 - 署名鍵を替えるとき（鍵の交換）は、`.env` の値を替えてコンテナを作り直します。発行済みのアクセストークンは 401 になりますが、画面はトークンの更新で取り直すため、ログインし直しは要りません。
 - 開発と E2E は `http://localhost` で行います。リフレッシュトークンの Cookie は `Secure` のため、localhost 以外のホスト名や IP への `http` ではログインが働きません。
+
+## 対象DB（利用者の業務データの DB）
+
+アプリは、利用者の業務データの DB（対象DB。MySQL・MariaDB・PostgreSQL）を、読み取り専用の接続で読みます（今は、設定したスキーマのテーブル・ビュー・カラム・キー・コメントのメタデータだけ）。接続先は環境変数 `MASTERSMITH_TARGET_DB_*`（「環境変数」の表）だけから受け取り、画面・API から受け取りません。
+
+- 7つの項目がすべて空なら対象DB を使わず、起動は続きます。一部だけ空・不正なら、問題のある項目の名前（例: `mastersmith.target-db.schema`）だけを WARN で1件出し、対象DB を使いません（値はログに出しません）。直したら再起動します。
+- 起動時には対象DB に接続しません。ヘルスチェックは内部DB だけで判断し、対象DB の状態は応答に含めません。
+- ログイン・監査ログ・Flyway は内部DB を使い続け、対象DB には表を作りません。
+- 待ちの上限は、接続の待ち（既定 3 秒）と、問い合わせ1回ごとの待ち（既定の DSL の生成 20 秒・照合 5 秒）だけです。読み取りの全体の上限はありません。読み取りは問い合わせ4回のため、応答しない対象DB では、照合でも最悪 接続 3 秒＋5 秒×4 回（約 23 秒）かかることがあります（照合の 10 秒の目標を超えることを許す決定です）。
+- 読めなかったときは、原因の種類（`TIMEOUT`・`CONNECTION_FAILED`）と SQLState だけを WARN で出します。接続先・ユーザー名・パスワード・ドライバーの例外の文言は出しません。
+- 3つのドライバー（MariaDB・PostgreSQL・MySQL）自身のログは、`backend/src/main/resources/application.yaml` の `logging.level` で止めています（`org.mariadb.jdbc`・`org.postgresql`・`com.mysql.cj` を `OFF`）。ドライバーのログは接続先・ユーザー名・例外の文言を含むことがあり、MariaDB のドライバーは認証の失敗をユーザー名つきで WARN に出すことを結合テストで確かめました。MySQL・PostgreSQL のドライバーも同じ扱いにそろえています。
+- 読めない原因を調べるときは、まず読み取りの口（`JdbcTargetSchemaReader`）の WARN の `reason` と `sqlState` で絞ります（`08` で始まる: 接続できない、`28` で始まる: 認証の失敗、`57014`: 問い合わせの打ち切り、`TIMEOUT` で SQLState が無い: 接続の待ちの間に応答が無い）。さらに調べるときは、同じネットワークから DB の付属のクライアント（`psql`・`mysql`・`mariadb`）で接続を試すか、対象DB の側のログを見てください。配備した環境でドライバーのログを有効にしないでください（接続情報がログに残ります）。
+- 対象DB のアカウントは、読み取りの権限だけにしてください（MySQL・MariaDB は `GRANT SELECT, SHOW VIEW ON <DB>.*`、PostgreSQL は `GRANT USAGE ON SCHEMA` と `GRANT SELECT ON ALL TABLES IN SCHEMA`）。アプリは接続を読み取り専用にし、書き込み・DDL を発行するコードを持ちませんが、アカウントの権限は調べません。
+
+### 対象DB の結合テストとコンテナの実行環境
+
+対象DB の結合テストは、版とダイジェストを固定したイメージ（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）の MySQL 8.4・MariaDB 11.8・PostgreSQL 18 を Testcontainers で起動して行います。`./gradlew verify` の中で3種類とも毎回実行します（CI も同じ）。
+
+Testcontainers は Docker の context を読まないため、colima を使う PC では、Docker の接続先を環境変数で渡してください（シェルの設定ファイルに書いておくと便利です）。
+
+```bash
+export DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"
+# 後片付けのコンテナ（Ryuk）が VM の中の Docker の接続口を使うため
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
+```
+
+- Docker に届かないとき、開発中（環境変数 `CI` が無い）は、対象DB のテストだけを中断（`SKIPPED`）にし、「コンテナの実行環境が無いため対象DB のテストを飛ばした。この状態では統合しない」という警告を出します。**この状態では統合しません。** `colima start` で起動し、上の環境変数を確かめてから `./gradlew verify` をやり直してください。
+- CI（GitHub Actions は `CI=true` を設定する）では、Docker に届かなければ飛ばさずに失敗します。
+- 単位のテストだけを実行するとき: `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.targetdb.*'`（1種類だけなら `'cherry.mastersmith.targetdb.*Postgres*'` など）。
+
+### 手元で試す対象DB（compose の profile）
+
+画面からスキーマの読み込みを試すときや、読み取りの時間を測るときは、見本の対象DB を compose の profile で1つずつ起動します。ポートは PC に開けず、アプリのコンテナから compose の中の名前で接続します。
+
+1. `.env` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` と `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` を入れる（空だと DB を作れません）。
+2. 起動する（初めての起動で、見本のスキーマと読み取りだけのアカウント `mastersmith_reader` を `docker/targetdb/<種類>/` の SQL と台本で作ります）。
+
+   ```bash
+   docker compose --profile targetdb-postgres up -d targetdb-postgres   # PostgreSQL（DB business・スキーマ sales）
+   docker compose --profile targetdb-mysql up -d targetdb-mysql         # MySQL（DB・スキーマ business）
+   docker compose --profile targetdb-mariadb up -d targetdb-mariadb     # MariaDB（DB・スキーマ business）
+   ```
+
+3. アプリに設定する（例: PostgreSQL）。`.env` に次を書き、`docker compose up -d app` でアプリのコンテナを作り直します。
+
+   ```text
+   MASTERSMITH_TARGET_DB_TYPE=postgresql
+   MASTERSMITH_TARGET_DB_HOST=targetdb-postgres
+   MASTERSMITH_TARGET_DB_PORT=5432
+   MASTERSMITH_TARGET_DB_DATABASE=business
+   MASTERSMITH_TARGET_DB_SCHEMA=sales
+   MASTERSMITH_TARGET_DB_USERNAME=mastersmith_reader
+   MASTERSMITH_TARGET_DB_PASSWORD=<MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD と同じ値>
+   ```
+
+   MySQL・MariaDB は `TYPE` を `mysql`・`mariadb`、`HOST` を `targetdb-mysql`・`targetdb-mariadb`、`PORT` を `3306`、`DATABASE` と `SCHEMA` を `business` にします。
+
+4. 読み取りの時間を測るための、テーブル 100 個 × カラム 100 個のスキーマ `large` を作るとき（アプリの `SCHEMA`（MySQL・MariaDB は `DATABASE` も）を `large` にする）:
+
+   ```bash
+   ./docker/targetdb/generate-large-schema.sh postgres \
+     | docker compose exec -T targetdb-postgres psql -v ON_ERROR_STOP=1 -U target_admin -d business
+   ./docker/targetdb/generate-large-schema.sh mysql \
+     | docker compose exec -T targetdb-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root'
+   ./docker/targetdb/generate-large-schema.sh mariadb \
+     | docker compose exec -T targetdb-mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root'
+   ```
+
+5. 止める・消す: `docker compose --profile targetdb-postgres stop targetdb-postgres`。データごと消すときは `docker compose --profile targetdb-postgres rm -sf targetdb-postgres` の後に `docker volume rm mastersmith_mastersmith-targetdb-postgres`（mysql・mariadb も同じ形）。
+
+メモリの上限は PostgreSQL・MariaDB が 512MB、MySQL が 768MB です。3つを同時に起動すると、colima の VM（6GiB）のうち約 2GB を使います。
 
 ## 外部エクスポートの確かめ方
 
@@ -372,3 +457,14 @@ U1 のファイルは書き換えずに、次の型を使います。
 ## ライセンス
 
 Apache License 2.0（`LICENSE`）。
+
+実行可能 WAR には、対象DB の JDBC ドライバーを、変更せずに独立した jar のまま同梱します（採用の理由は Intent 260923-dsl-schema-loader の U1 の技術選定の記録）。
+
+| 部品 | ライセンス | ライセンスの文書 |
+|---|---|---|
+| MySQL Connector/J（`com.mysql:mysql-connector-j`） | GPL v2 ＋ Universal FOSS Exception 1.0（Apache License 2.0 で公開するプロジェクトへの同梱を認める） | jar の中の `LICENSE` |
+| MariaDB Connector/J（`org.mariadb.jdbc:mariadb-java-client`） | LGPL 2.1 以降 | jar に含まれないため `backend/src/main/resources/META-INF/third-party-licenses/` に置き、WAR の `WEB-INF/classes/META-INF/third-party-licenses/` に入る |
+| PostgreSQL JDBC（`org.postgresql:postgresql`） | BSD 2-Clause | jar の中の `META-INF/LICENSE` |
+| Checker Framework qualifiers（`org.checkerframework:checker-qual`。PostgreSQL JDBC の依存） | MIT | jar の中の `META-INF/LICENSE.txt` |
+
+テストだけで使う Testcontainers（MIT）は配布物に含めません。

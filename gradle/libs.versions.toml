@@ -52,12 +52,21 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-boot-starter-security-test = { module = "org.springframework.boot:spring-boot-starter-security-test" }
 h2 = { module = "com.h2database:h2" }
+# 対象DB（U1）の JDBC ドライバー。版は Spring Boot の BOM に任せる。ライセンスは README の「ライセンス」を参照。
+mysql-connector-j = { module = "com.mysql:mysql-connector-j" }
+mariadb-java-client = { module = "org.mariadb.jdbc:mariadb-java-client" }
+postgresql = { module = "org.postgresql:postgresql" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 opentelemetry-logback-appender = { module = "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0", version.ref = "opentelemetry-instrumentation" }
 jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 findsecbugs-plugin = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "findsecbugs" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+# 対象DB の結合テストで、版を固定したイメージの DB をコンテナで起動する（U1）。版は Spring Boot の BOM に任せる。
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+testcontainers-mysql = { module = "org.testcontainers:testcontainers-mysql" }
+testcontainers-mariadb = { module = "org.testcontainers:testcontainers-mariadb" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

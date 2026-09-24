@@ -337,7 +337,7 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
             ),
         ),
         Triple("verifyUnitTest", "5 単体テスト（JUnit・Vitest）", listOf(backendProject.tasks.named("test"), frontendTest)),
-        Triple("verifyIntegrationTest", "6 結合テスト（組み込みの H2）", listOf(backendProject.tasks.named("integrationTest"))),
+        Triple("verifyIntegrationTest", "6 結合テスト（組み込みの H2 と対象DB のコンテナ）", listOf(backendProject.tasks.named("integrationTest"))),
         Triple(
             "verifyCoverage",
             "7 カバレッジの下限（JaCoCo・@vitest/coverage-v8、行 80%・分岐 70%）",

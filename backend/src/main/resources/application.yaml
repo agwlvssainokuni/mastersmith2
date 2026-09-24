@@ -72,6 +72,35 @@ mastersmith:
       retention: ${MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_RETENTION:7d}
       # 削除を行う時刻（Spring の cron の形。秒 分 時 日 月 曜日。既定は毎日 3 時 30 分）
       cron: "${MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_CRON:0 30 3 * * *}"
+  target-db:
+    # 対象DB（利用者の業務データの DB。U1）。接続先はこの設定（環境変数）だけから受け取る。
+    # 7つの項目がすべて空なら対象DB を使わない（起動は続く）。一部だけが空・不正なら、項目の名前だけを WARN で出して使わない。
+    # 値（接続先・ユーザー名・パスワード）はここに書かず、環境変数で渡す。アカウントは読み取りの権限だけにすることを勧める。
+    # DB の種類（mysql・mariadb・postgresql。大文字・小文字は問わない）
+    type: ${MASTERSMITH_TARGET_DB_TYPE:}
+    # 接続先のホスト名と番号（1〜65535）
+    host: ${MASTERSMITH_TARGET_DB_HOST:}
+    port: ${MASTERSMITH_TARGET_DB_PORT:}
+    # 接続する DB の名前
+    database: ${MASTERSMITH_TARGET_DB_DATABASE:}
+    # 読み取るスキーマの名前（MySQL・MariaDB では DB の名前と同じ）
+    schema: ${MASTERSMITH_TARGET_DB_SCHEMA:}
+    # 接続のユーザー名とパスワード（秘密）
+    username: ${MASTERSMITH_TARGET_DB_USERNAME:}
+    password: ${MASTERSMITH_TARGET_DB_PASSWORD:}
+    # 接続の待ちの上限（生成・照合とも）
+    connect-timeout: ${MASTERSMITH_TARGET_DB_CONNECT_TIMEOUT:3s}
+    query-timeout:
+      # 問い合わせ1回の待ちの上限（既定の DSL の生成）
+      generate: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_GENERATE:20s}
+      # 問い合わせ1回の待ちの上限（照合）。読み取りの全体の上限は置かない（決定 B）。応答しない対象DB では、
+      # 照合でも最悪 接続の待ち＋この値×4 回（既定で約 23 秒）かかりうる
+      compare: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE:5s}
+    pool:
+      # 対象DB の接続の数の上限（内部DB の接続とは別）
+      maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:5}
+      # 使っていない接続を閉じるまでの時間
+      idle-timeout: ${MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT:60s}
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
@@ -207,3 +236,14 @@ management:
 logging:
   level:
     root: INFO
+    # 対象DB（U1）の3つのドライバー（MariaDB・PostgreSQL・MySQL）自身のログは出さない。
+    # なぜ: ドライバーのログは接続先・ユーザー名・例外の文言を含むことがあり、ログ・外部へのエクスポートに接続情報を
+    #   出さない決まり（NFR4.4）を破るため。MariaDB のドライバーが認証の失敗をユーザー名つきで WARN に出すことを
+    #   結合テストで確かめた。MySQL・PostgreSQL のドライバーも接続先などを文言に含めうるため、同じ扱いにそろえる。
+    # 障害の調べ方: 読み取りの口（JdbcTargetSchemaReader）が出す WARN の purpose・reason（TIMEOUT・CONNECTION_FAILED）・
+    #   sqlState で原因を絞る（08 で始まる: 接続できない、28 で始まる: 認証の失敗、57014: 問い合わせの打ち切り）。
+    #   さらに調べるときは、同じネットワークから DB の付属のクライアント（psql・mysql・mariadb）で接続を試すか、
+    #   対象DB の側のログを見る。配備した環境でドライバーのログを有効にしない（接続情報がログに残るため）。
+    org.mariadb.jdbc: OFF
+    org.postgresql: OFF
+    com.mysql.cj: OFF

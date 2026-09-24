@@ -105,6 +105,55 @@ services:
         max-size: 10m
         max-file: "3"
 
+  # 手元で試す対象DB（U1）。画面からスキーマの読み込みを試すときや、Build and Test で時間を測るときに、1つずつ profile で起動する。
+  #   起動: docker compose --profile targetdb-postgres up -d targetdb-postgres （mysql・mariadb も同じ形）
+  # ポートは PC に開けない。アプリのコンテナから compose の中の名前（例 targetdb-postgres:5432）で接続する。
+  # 版は結合テストのイメージ（backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java）と同じ値にする。
+  # 管理者と読み取りのアカウントのパスワードは .env から渡す（MASTERSMITH_SAMPLE_TARGETDB_*。空なら DB の起動が失敗する）。
+  # 見本のスキーマと読み取りだけのアカウントは、初めて起動したときに docker/targetdb/<種類>/ の SQL と台本で作る。
+  targetdb-postgres:
+    image: postgres:18.6@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
+    profiles: [targetdb-postgres]
+    environment:
+      POSTGRES_DB: business
+      POSTGRES_USER: target_admin
+      POSTGRES_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
+      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    volumes:
+      - mastersmith-targetdb-postgres:/var/lib/postgresql
+      - ./docker/targetdb/postgres:/docker-entrypoint-initdb.d:ro
+    mem_limit: 512m
+    restart: "no"
+
+  targetdb-mysql:
+    image: mysql:8.4.11@sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d
+    profiles: [targetdb-mysql]
+    environment:
+      MYSQL_DATABASE: business
+      MYSQL_ROOT_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
+      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    volumes:
+      - mastersmith-targetdb-mysql:/var/lib/mysql
+      - ./docker/targetdb/mysql:/docker-entrypoint-initdb.d:ro
+    mem_limit: 768m
+    restart: "no"
+
+  targetdb-mariadb:
+    image: mariadb:11.8.9@sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68
+    profiles: [targetdb-mariadb]
+    environment:
+      MARIADB_DATABASE: business
+      MARIADB_ROOT_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
+      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    volumes:
+      - mastersmith-targetdb-mariadb:/var/lib/mysql
+      - ./docker/targetdb/mariadb:/docker-entrypoint-initdb.d:ro
+    mem_limit: 512m
+    restart: "no"
+
 volumes:
   mastersmith-data:
   mastersmith-monitoring:
+  mastersmith-targetdb-postgres:
+  mastersmith-targetdb-mysql:
+  mastersmith-targetdb-mariadb:
