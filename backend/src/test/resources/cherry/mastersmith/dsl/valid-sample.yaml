@@ -1,0 +1,137 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# DSL の正しい見本（テスト用）。メニューの N 階層、FIXED・REFERENCE・LOOKUP の選択肢、外部キー、ビュー、日本語の表示名を含む。
+version: 1
+menus:
+  - label: { ja: 基本マスタ, en: Basic masters }
+    icon: folder
+    items:
+      - label: { ja: 組織, en: Organization }
+        items:
+          - label: { ja: 部署, en: Departments }
+            table: dept_mst
+          - label: { ja: 社員, en: Employees }
+            table: emp_mst
+  - label: { ja: 社員の一覧, en: Employee list }
+    table: emp_view
+tables:
+  dept_mst:
+    label: { ja: 部署, en: dept_mst }
+    view: false
+    primaryKey: [dept_code]
+    foreignKeys: []
+    columns:
+      dept_code:
+        label: { ja: 部署コード, en: dept_code }
+        dbType: { name: VARCHAR, length: 10, precision: null, scale: null, nullable: false }
+        formPart: text
+        search: { enabled: true, operator: EQUALS, default: null, collapsed: false }
+        list: { visible: true, order: 1, width: null, sortable: true, defaultSort: ASC, format: null }
+        detail: { visible: true }
+        validations:
+          - { type: required, origin: DB }
+          - { type: maxLength, value: 10, origin: DB }
+          - { type: pattern, value: "^[A-Z0-9]+$", origin: MANUAL, message: { ja: 英大文字と数字, en: Upper case and digits } }
+        options: null
+      dept_name:
+        label: { ja: 部署名, en: dept_name }
+        dbType: { name: VARCHAR, length: 50, nullable: false }
+        formPart: text
+        search: { enabled: true, operator: CONTAINS, collapsed: false }
+        list: { visible: true, order: 2, sortable: true }
+        detail: { visible: true }
+        validations:
+          - { type: minLength, value: 1, origin: MANUAL }
+          - { type: maxLength, value: 50, origin: DB }
+      kind:
+        label: { ja: 区分, en: kind }
+        dbType: { name: CHAR, length: 1, nullable: false }
+        formPart: select
+        search: { enabled: true, operator: CHOICE, collapsed: true }
+        list: { visible: false, sortable: false }
+        detail: { visible: true }
+        validations: []
+        options:
+          source: FIXED
+          items:
+            - { value: "1", label: { ja: 本社, en: Head office } }
+            - { value: "2", label: { ja: 支社, en: Branch } }
+  emp_mst:
+    label: { ja: 社員, en: emp_mst }
+    view: false
+    primaryKey: [emp_no]
+    foreignKeys:
+      - { columns: [dept_code], referencedTable: dept_mst, referencedColumns: [dept_code] }
+    columns:
+      emp_no:
+        label: { ja: 社員番号, en: emp_no }
+        dbType: { name: INTEGER, precision: 10, scale: 0, nullable: false }
+        formPart: number
+        search: { enabled: true, operator: RANGE, collapsed: false }
+        list: { visible: true, order: 1, width: 120, sortable: true, defaultSort: DESC, format: NUMBER_GROUPED }
+        detail: { visible: true }
+        validations:
+          - { type: required, origin: DB }
+          - { type: min, value: 1, origin: MANUAL }
+          - { type: max, value: 99999, origin: MANUAL }
+          - { type: unique, origin: DB }
+      dept_code:
+        label: { ja: 部署, en: dept_code }
+        dbType: { name: VARCHAR, length: 10, nullable: false }
+        formPart: select
+        search: { enabled: false, collapsed: false }
+        list: { visible: true, order: 2, sortable: true }
+        detail: { visible: true }
+        validations: []
+        options: { source: REFERENCE, table: dept_mst, valueColumn: dept_code, labelColumn: dept_name }
+      boss_dept:
+        label: { ja: 上位の部署, en: boss_dept }
+        dbType: { name: VARCHAR, length: 10, nullable: true }
+        formPart: lookup
+        search: { enabled: false, collapsed: false }
+        list: { visible: false, sortable: false }
+        detail: { visible: true }
+        validations: []
+        options:
+          source: LOOKUP
+          table: dept_mst
+          valueColumn: dept_code
+          lookupSearch:
+            - { column: dept_name, operator: CONTAINS }
+          lookupList:
+            - { column: dept_code, order: 1 }
+            - { column: dept_name, order: 2 }
+      joined_on:
+        label: { ja: 入社日, en: "" }
+        dbType: { name: DATE, nullable: true }
+        formPart: date
+        search: { enabled: true, operator: RANGE, default: "2026-04-01", collapsed: true }
+        list: { visible: true, order: 3, sortable: true, format: DATE }
+        detail: { visible: true }
+        validations: []
+  emp_view:
+    label: { ja: 社員の一覧, en: emp_view }
+    view: true
+    primaryKey: []
+    foreignKeys: []
+    columns:
+      emp_no:
+        label: { ja: 社員番号, en: emp_no }
+        dbType: { name: INTEGER, nullable: false }
+        formPart: number
+        search: { enabled: false, collapsed: false }
+        list: { visible: true, order: 1, sortable: true }
+        detail: { visible: false }
+        validations: []

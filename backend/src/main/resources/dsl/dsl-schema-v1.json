@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "MasterSmith DSL（書式の版 1）",
+  "description": "MasterSmith の DSL（YAML）の書式。どの対応表も、ここに無い項目を許さない。版の値（version）はアプリが検証の前に確かめる（対応する版は 1）。",
+  "type": "object",
+  "required": ["version", "menus", "tables"],
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "description": "書式の版（必須）。",
+      "type": "integer"
+    },
+    "menus": {
+      "description": "最上位のメニュー（N 階層）。",
+      "type": "array",
+      "items": { "$ref": "#/$defs/menuItem" }
+    },
+    "tables": {
+      "description": "テーブル・ビュー。キーは物理名。",
+      "type": "object",
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": { "$ref": "#/$defs/table" }
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "positiveCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2147483647
+    },
+    "displayName": {
+      "description": "表示名。ja・en とも必須（空の文字列は未設定として扱う）。",
+      "type": "object",
+      "required": ["ja", "en"],
+      "additionalProperties": false,
+      "properties": {
+        "ja": { "type": "string" },
+        "en": { "type": "string" }
+      }
+    },
+    "searchOperator": {
+      "enum": ["EQUALS", "CONTAINS", "RANGE", "CHOICE", "IN"]
+    },
+    "menuItem": {
+      "description": "メニューの項目。テーブルに紐付く項目か、子を持つまとまり。",
+      "type": "object",
+      "required": ["label"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/displayName" },
+        "icon": { "type": ["string", "null"] },
+        "table": { "type": ["string", "null"], "minLength": 1 },
+        "items": {
+          "type": ["array", "null"],
+          "items": { "$ref": "#/$defs/menuItem" }
+        }
+      }
+    },
+    "table": {
+      "description": "テーブルまたはビュー1つ。",
+      "type": "object",
+      "required": ["label", "view", "primaryKey", "foreignKeys", "columns"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/displayName" },
+        "view": { "type": "boolean" },
+        "primaryKey": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/name" }
+        },
+        "foreignKeys": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/foreignKey" }
+        },
+        "columns": {
+          "description": "カラム。キーは物理名。1件以上。",
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "minLength": 1 },
+          "additionalProperties": { "$ref": "#/$defs/column" }
+        }
+      }
+    },
+    "foreignKey": {
+      "type": "object",
+      "required": ["columns", "referencedTable", "referencedColumns"],
+      "additionalProperties": false,
+      "properties": {
+        "columns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/name" }
+        },
+        "referencedTable": { "$ref": "#/$defs/name" },
+        "referencedColumns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/name" }
+        }
+      }
+    },
+    "column": {
+      "description": "カラム1つ。",
+      "type": "object",
+      "required": ["label", "dbType", "formPart", "search", "list", "detail", "validations"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/displayName" },
+        "dbType": { "$ref": "#/$defs/dbType" },
+        "formPart": {
+          "enum": [
+            "text",
+            "textarea",
+            "checkbox",
+            "switch",
+            "radio",
+            "select",
+            "date",
+            "datetime",
+            "number",
+            "password",
+            "lookup"
+          ]
+        },
+        "search": { "$ref": "#/$defs/search" },
+        "list": { "$ref": "#/$defs/list" },
+        "detail": { "$ref": "#/$defs/detail" },
+        "validations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/validation" }
+        },
+        "options": { "$ref": "#/$defs/options" }
+      }
+    },
+    "dbType": {
+      "type": "object",
+      "required": ["name", "nullable"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "#/$defs/name" },
+        "length": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "precision": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "scale": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
+        "nullable": { "type": "boolean" }
+      }
+    },
+    "search": {
+      "type": "object",
+      "required": ["enabled", "collapsed"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "operator": { "enum": ["EQUALS", "CONTAINS", "RANGE", "CHOICE", "IN", null] },
+        "default": { "type": ["string", "null"] },
+        "collapsed": { "type": "boolean" }
+      },
+      "if": { "properties": { "enabled": { "const": true } } },
+      "then": {
+        "required": ["operator"],
+        "properties": { "operator": { "$ref": "#/$defs/searchOperator" } }
+      }
+    },
+    "list": {
+      "type": "object",
+      "required": ["visible", "sortable"],
+      "additionalProperties": false,
+      "properties": {
+        "visible": { "type": "boolean" },
+        "order": { "type": ["integer", "null"], "minimum": 1, "maximum": 2147483647 },
+        "width": { "type": ["integer", "null"], "minimum": 1, "maximum": 2147483647 },
+        "sortable": { "type": "boolean" },
+        "defaultSort": { "enum": ["ASC", "DESC", null] },
+        "format": {
+          "enum": ["DATE", "DATETIME", "TIME", "NUMBER_GROUPED", "BOOLEAN_YES_NO", "BOOLEAN_ON_OFF", null]
+        }
+      },
+      "if": { "properties": { "visible": { "const": true } } },
+      "then": {
+        "required": ["order"],
+        "properties": { "order": { "$ref": "#/$defs/positiveCount" } }
+      }
+    },
+    "detail": {
+      "type": "object",
+      "required": ["visible"],
+      "additionalProperties": false,
+      "properties": {
+        "visible": { "type": "boolean" }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "required": ["type", "origin"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["required", "minLength", "maxLength", "min", "max", "pattern", "unique"] },
+        "value": { "type": ["integer", "number", "string"] },
+        "origin": { "enum": ["DB", "MANUAL"] },
+        "message": {
+          "type": ["object", "null"],
+          "required": ["ja", "en"],
+          "additionalProperties": false,
+          "properties": {
+            "ja": { "type": "string" },
+            "en": { "type": "string" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "enum": ["minLength", "maxLength"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "$ref": "#/$defs/count" } } }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["min", "max"] } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "number" } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "pattern" } } },
+          "then": { "required": ["value"], "properties": { "value": { "type": "string" } } }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["required", "unique"] } } },
+          "then": { "not": { "required": ["value"] } }
+        }
+      ]
+    },
+    "options": {
+      "description": "選択肢の出どころ（null は「無い」）。",
+      "type": ["object", "null"],
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "enum": ["FIXED", "REFERENCE", "LOOKUP"] },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "additionalProperties": false,
+            "properties": {
+              "value": { "type": "string" },
+              "label": { "$ref": "#/$defs/displayName" }
+            }
+          }
+        },
+        "table": { "$ref": "#/$defs/name" },
+        "valueColumn": { "$ref": "#/$defs/name" },
+        "labelColumn": { "$ref": "#/$defs/name" },
+        "lookupSearch": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["column", "operator"],
+            "additionalProperties": false,
+            "properties": {
+              "column": { "$ref": "#/$defs/name" },
+              "operator": { "$ref": "#/$defs/searchOperator" }
+            }
+          }
+        },
+        "lookupList": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["column", "order"],
+            "additionalProperties": false,
+            "properties": {
+              "column": { "$ref": "#/$defs/name" },
+              "order": { "$ref": "#/$defs/positiveCount" }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "source": { "const": "FIXED" } } },
+          "then": { "required": ["items"] }
+        },
+        {
+          "if": { "properties": { "source": { "const": "REFERENCE" } } },
+          "then": { "required": ["table", "valueColumn", "labelColumn"] }
+        },
+        {
+          "if": { "properties": { "source": { "const": "LOOKUP" } } },
+          "then": { "required": ["table", "valueColumn", "lookupSearch", "lookupList"] }
+        }
+      ]
+    }
+  }
+}

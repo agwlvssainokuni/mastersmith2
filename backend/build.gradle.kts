@@ -16,6 +16,7 @@
 import com.github.spotbugs.snom.Confidence
 import com.github.spotbugs.snom.Effort
 import com.github.spotbugs.snom.SpotBugsTask
+import java.util.zip.ZipFile
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 // バックエンド（Spring Boot）のビルド。成果物はフロントエンドのビルド結果を同梱した実行可能 WAR。
@@ -69,6 +70,13 @@ dependencies {
     implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.logstash.logback.encoder)
     implementation(libs.opentelemetry.logback.appender)
+    // DSL（U2）の YAML の安全な読み込みと JSON Schema の検証。networknt の推移依存の YAML の読み込み（Jackson の YAML と
+    // snakeyaml-engine）は、別名を展開しない・重複キーを上書きするため使わず、依存から外す（DslBoundaryArchitectureTest でも守る）。
+    implementation(libs.snakeyaml)
+    implementation(libs.networknt.json.schema.validator) {
+        exclude(group = "tools.jackson.dataformat", module = "jackson-dataformat-yaml")
+        exclude(group = "org.snakeyaml", module = "snakeyaml-engine")
+    }
     runtimeOnly(libs.h2)
     // 対象DB（U1）の JDBC ドライバー。読み取り専用の接続で、スキーマのメタデータを読むだけに使う。
     runtimeOnly(libs.mysql.connector.j)
@@ -329,6 +337,39 @@ tasks.bootWar {
     dependsOn(":frontendBuild")
     from(rootProject.layout.projectDirectory.dir("frontend/dist")) {
         into("WEB-INF/classes/static")
+    }
+}
+
+// ---- DSL の JSON Schema の公開（U2） ----
+// 正本は src/main/resources/dsl/dsl-schema-v1.json の1つ（検証もこれを読む）。画面の静的なファイルの置き場（static/dsl/）へ
+// ビルドで複写し、ログインなしの /dsl/dsl-schema-v1.json で配る。WAR には WEB-INF/classes/static/dsl/ として入る。
+
+val dslSchemaSource = layout.projectDirectory.file("src/main/resources/dsl/dsl-schema-v1.json")
+
+tasks.processResources {
+    from(dslSchemaSource) {
+        into("static/dsl")
+    }
+}
+
+tasks.register("verifyDslSchemaInWar") {
+    description = "実行可能 WAR の中の JSON Schema（検証用と公開用の2つ）が、正本と同じ内容であることを確かめる。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(tasks.bootWar)
+    val war = tasks.bootWar.flatMap { it.archiveFile }
+    inputs.file(war)
+    inputs.file(dslSchemaSource)
+    doLast {
+        val expected = dslSchemaSource.asFile.readBytes()
+        ZipFile(war.get().asFile).use { zip ->
+            for (entryName in listOf("WEB-INF/classes/dsl/dsl-schema-v1.json", "WEB-INF/classes/static/dsl/dsl-schema-v1.json")) {
+                val entry = zip.getEntry(entryName) ?: throw GradleException("WAR に $entryName がありません。")
+                val actual = zip.getInputStream(entry).use { it.readBytes() }
+                if (!actual.contentEquals(expected)) {
+                    throw GradleException("WAR の $entryName が正本（${dslSchemaSource.asFile.path}）と違います。")
+                }
+            }
+        }
     }
 }
 

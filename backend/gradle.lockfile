@@ -5,6 +5,7 @@
 biz.aQute.bnd:biz.aQute.bnd.annotation:7.1.0=compileClasspath,testCompileClasspath
 ch.qos.logback:logback-classic:1.5.38=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 ch.qos.logback:logback-core:1.5.38=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+com.ethlo.time:itu:1.14.0=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.fasterxml:classmate:1.7.3=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.github.docker-java:docker-java-api:3.7.1=testCompileClasspath,testRuntimeClasspath
@@ -22,6 +23,7 @@ com.h2database:h2:2.4.240=productionRuntimeClasspath,runtimeClasspath,testRuntim
 com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0=spotbugsPlugins
 com.jayway.jsonpath:json-path:2.10.0=testCompileClasspath,testRuntimeClasspath
 com.mysql:mysql-connector-j:9.7.0=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
+com.networknt:json-schema-validator:3.0.6=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.nimbusds:nimbus-jose-jwt:10.9.1=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
 com.squareup.okhttp3:okhttp-jvm:5.3.2=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 com.squareup.okhttp3:okhttp:5.3.2=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath

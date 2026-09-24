@@ -1,0 +1,235 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-dsl-definition",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ActiveDsl.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DbType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DetailSetting.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DisplayName.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslColumn.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslError.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslErrorKind.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslForeignKey.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslFormat.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslMenuItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslMessageKeys.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslModel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslReadResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslTable.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/FormPart.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ListFormat.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ListSetting.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/LookupListItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/LookupSearchItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ModelValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/OptionItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/OptionSource.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/OptionSourceKind.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/SearchOperator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/SearchSetting.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/SortDirection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/Validation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ValidationOrigin.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/ValidationType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/JsonPointers.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/LimitingParser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/PositionMap.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/SafeYamlParser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlDocument.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlParseResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlPosition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlTreeConverter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/ActiveDslModelHolder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/ActiveDslModelProvider.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/ActiveDslModelStore.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DefaultDslReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DslModelMapper.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DslReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/DslErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/DslSchemaValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/DslSemanticValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/PatternChecker.java"
+    },
+    {
+      "path": "backend/src/main/resources/dsl/dsl-schema-v1.json"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslModelTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslResultTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/DslBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/DslSchemaPublicationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/YamlTreeConverterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/ActiveDslModelStoreTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/DefaultDslReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/testsupport/CountingHttpServer.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/testsupport/DslSamples.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/DslSchemaValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/DslSemanticValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/PatternCheckerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/ValidationTestSupport.java"
+    },
+    {
+      "path": "backend/src/test/resources/cherry/mastersmith/dsl/valid-sample.yaml"
+    },
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "frontend/vite.config.ts"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

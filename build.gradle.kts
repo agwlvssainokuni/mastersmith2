@@ -354,8 +354,8 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyArtifact",
-            "9 成果物と量の確認（dist を同梱した実行可能 WAR、初回の読み込みの量）",
-            listOf(backendProject.tasks.named("bootWar"), frontendBundleSize),
+            "9 成果物と量の確認（dist を同梱した実行可能 WAR、WAR の中の DSL の JSON Schema と正本の一致、初回の読み込みの量）",
+            listOf(backendProject.tasks.named("bootWar"), backendProject.tasks.named("verifyDslSchemaInWar"), frontendBundleSize),
         ),
     )
 

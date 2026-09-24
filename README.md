@@ -90,7 +90,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 # バックエンド（http://localhost:8080、内部DBは ./backend/data/）
 ./gradlew :backend:bootRun
 
-# 画面の開発サーバー（http://localhost:5173。/api と /actuator はバックエンドへ転送する）
+# 画面の開発サーバー（http://localhost:5173。/api と /actuator と /dsl はバックエンドへ転送する）
 cd frontend && npm run dev
 ```
 
@@ -323,6 +323,33 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 メモリの上限は PostgreSQL・MariaDB が 512MB、MySQL が 768MB です。3つを同時に起動すると、colima の VM（6GiB）のうち約 2GB を使います。
 
+## DSL の書式（JSON Schema）と読み込みの上限
+
+DSL（YAML）の書式は JSON Schema（2020-12）で定めています。正本は `backend/src/main/resources/dsl/dsl-schema-v1.json` の1つで、アプリの検証もこれを読みます。ビルドのときに画面の静的なファイルの置き場へ複写し、ログインなしで次の URL から取れます（秘密は含みません）。
+
+- 起動したアプリ: `http://<ホスト>:8080/dsl/dsl-schema-v1.json`（画面の開発サーバーでは `http://localhost:5173/dsl/dsl-schema-v1.json`）
+- WAR の中の複写が正本と同じことは、`./gradlew verify` の 9 の段（`:backend:verifyDslSchemaInWar`）で確かめます。
+
+エディタで DSL を書くときは、YAML の言語サーバー（VS Code の YAML の拡張など）に JSON Schema を指定すると、項目の補完と誤りの表示が使えます。DSL の先頭に次の1行を書くか、エディタの設定で `*.yaml` に JSON Schema を結び付けてください。
+
+```yaml
+# yaml-language-server: $schema=http://localhost:8080/dsl/dsl-schema-v1.json
+version: 1
+```
+
+エディタの検証は補助です。正はサーバー側の検証で、画面や API で投入した DSL はすべてサーバー側で検証します。サーバー側では、エディタでは確かめられない次の決まりも確かめます。
+
+| 段 | 決まり |
+|---|---|
+| 大きさ | 本文が 10MB（10,485,760 バイト）を超えたら読みません |
+| 読み込み | 入れ子の深さは 50 まで。対応表・並びを指す別名（`*name`）は 100 個まで。別名を展開した後の節の数は 1,000,000 まで（別名の展開の爆発を止めます）。タグ（`!!str`・`!!java...`・`!custom` など）はすべて拒否します。1つの対応表の中の同じキーは誤りにします（後の値で上書きしません） |
+| 書式の版 | `version` は 1 だけ |
+| 構文 | JSON Schema に合うこと（書式に無い項目は誤り。接続先・ユーザー名・パスワードなどの項目も書けません） |
+| 意味 | メニュー・主キー・外部キー・選択肢の参照の先のテーブルとカラムがあること、一覧の並び順が重ならないこと、フォーム部品と選択肢の出どころが合うこと、`min` ≦ `max`・`minLength` ≦ `maxLength`、`pattern` が正しい正規表現で 1,000 文字まで（確かめは 1 件 100 ミリ秒まで） |
+
+- YAML は 1.1 の暗黙の型で読みます。`yes`・`no`・`on`・`off` は真偽値になるため、文字として書くときは `"yes"` のように引用符で囲んでください。
+- 誤りは、YAML の行・列と DSL の中の場所（例 `tables.dept_mst.columns.dept_code.list.order`）と、文言の鍵（`dsl.` で始まる。一覧は `cherry.mastersmith.dsl.domain.DslMessageKeys`）で返します。誤りに埋める値は、項目の名前と、書いた値の先頭 100 文字だけです。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。
@@ -466,5 +493,13 @@ Apache License 2.0（`LICENSE`）。
 | MariaDB Connector/J（`org.mariadb.jdbc:mariadb-java-client`） | LGPL 2.1 以降 | jar に含まれないため `backend/src/main/resources/META-INF/third-party-licenses/` に置き、WAR の `WEB-INF/classes/META-INF/third-party-licenses/` に入る |
 | PostgreSQL JDBC（`org.postgresql:postgresql`） | BSD 2-Clause | jar の中の `META-INF/LICENSE` |
 | Checker Framework qualifiers（`org.checkerframework:checker-qual`。PostgreSQL JDBC の依存） | MIT | jar の中の `META-INF/LICENSE.txt` |
+
+DSL の読み込み（U2）で使う次の部品は Apache License 2.0 で、このプロジェクトと同じライセンスです。
+
+| 部品 | ライセンス |
+|---|---|
+| SnakeYAML（`org.yaml:snakeyaml`） | Apache License 2.0 |
+| networknt JSON Schema Validator（`com.networknt:json-schema-validator`） | Apache License 2.0 |
+| ITU（`com.ethlo.time:itu`。networknt の依存） | Apache License 2.0 |
 
 テストだけで使う Testcontainers（MIT）は配布物に含めません。
