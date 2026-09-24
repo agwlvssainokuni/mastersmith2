@@ -96,8 +96,10 @@ services:
       - ./docker/monitoring/provisioning/dashboards/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/mastersmith.yaml:ro
       - ./docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro
       - ./docker/monitoring/dashboards:/otel-lgtm/mastersmith-dashboards:ro
-    # colima の VM（CPU 4・メモリ 6GiB）の中で、アプリ（上限 2GB）・負荷の試験の環境（上限 2GB）と一緒に動かすための上限。
-    mem_limit: 900m
+    # colima の VM（CPU 4・メモリ 6GiB）の中で、アプリ（上限 2GB）・見本の対象DB（512MB）と一緒に動かすための上限。
+    # 900m では DSL の行を含むダッシュボードを開いたときに Grafana がメモリの上限で止められた（2026-09-25）ため 1536m にした。
+    # 負荷の試験の環境（上限 2GB）と同時に動かすと VM の上限に近づくため、負荷の試験の間は止める（README の「手元の監視」）。
+    mem_limit: 1536m
     restart: "no"
     logging:
       driver: json-file

@@ -196,7 +196,7 @@ docker info --format '{{.NCPU}} {{.MemTotal}}'           # 4 と約 6GB（VM の
 docker compose up -d --wait                              # app が healthy になるまで待つ
 ```
 
-- VM の大きさの見積もり: 配備したアプリ（2GB）・負荷の試験の環境（2GB、`perf/README.md`）・手元の監視 `lgtm`（900MB）を合わせて約 4.9GB で、6GiB の内側に収まります。
+- VM の大きさの見積もり: 配備したアプリ（2GB）・見本の対象DB（512MB）・手元の監視 `lgtm`（1.5GB）を合わせて約 4GB で、6GiB の内側に収まります。負荷の試験の環境（2GB、`perf/README.md`）も同時に動かすと約 6GB で VM の上限に近づくため、負荷の試験の間は手元の監視を止めます。
 - VM を広げた PC では、`.env` でコンテナの上限を `MASTERSMITH_CONTAINER_CPUS=4`・`MASTERSMITH_CONTAINER_MEMORY=2g` にし、`docker compose up -d --wait` でコンテナを作り直します。上限は `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。
 - 照合に使える CPU は、コンテナの `cpus` と VM の CPU の数の小さい方で頭打ちになります。VM だけを広げても、`MASTERSMITH_CONTAINER_CPUS` が小さいままではログインは速くなりません。
 - JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 75% です。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を下げる（例: `-XX:MaxRAMPercentage=70.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 75% に上書きされ、起動の時に JSON でない行をログに出すため）。
@@ -434,6 +434,7 @@ version: 1
 - **起動時**: 履歴の最新（適用した日時が最も新しい版）を適用中の DSL として読みます。今の検証を通らない（書式の版が変わった など）ときは、ERROR（`適用中の DSL を読めないため、適用中の DSL が無い状態で起動します`、識別の先頭 12 文字と誤りの種類だけ）を1件出し、適用中の DSL が無い状態で起動を続けます。
 - **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
 - **既知の制約（動いている間の内部DB のファイルの大きさ）**: 上限を超えた古い履歴を消しても、アプリが動いている間は H2 がその場所を再利用せず、内部DB のファイルは投入と適用のたびに本文の大きさの分（10MB の DSL なら約 10.8MB）ずつ大きくなります（2026-09-25 の測定で、10MB の DSL の投入と適用を 21 回で約 278MB、40 回で約 483MB。頭打ちになりません）。アプリを止めると、接続先の `;DEFRAG_ALWAYS=TRUE`（「環境変数」の表の `MASTERSMITH_DB_URL`）でファイルが詰め直され、起動し直した後は小さくなります（同じ測定で約 16MB。試験の DSL は圧縮がよく効く内容のため、圧縮の効きにくい本文では残る履歴の大きさに近くなりえます。止めるのにかかった時間は約 1 秒）。大きな DSL の投入と適用を何度も重ねたときは、ディスクの空きを確かめ、`docker compose restart app` などでアプリを起動し直してください。依頼者が Build and Test で受け入れた制約です。
+  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble du -sh /data`。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、`docker compose --profile targetdb-postgres restart app` で起動し直します（止めるときに詰め直され、起動し直した後に小さくなります。止まっている間の要求は失敗します）。
 
 ### DSL の操作の監査
 
@@ -494,7 +495,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
 - DSL の操作（U4）の行の見方は「DSL の管理の API（U4）」の「DSL の操作の指標とログ」を参照してください。
 - 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。
-- 監視のコンテナのメモリの上限は 900MB です。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・負荷の試験の環境 2GB と合わせて約 4.9GB）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
+- 監視のコンテナのメモリの上限は 1.5GB（`1536m`）です。900MB では、DSL の行を含むダッシュボードを開いたときに Grafana がメモリの上限で止められました（コンテナは動き続け、画面だけが応答しなくなります）。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・見本の対象DB 512MB と合わせて約 4GB。負荷の試験の間は監視を止めます）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
 - 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。
 - 外部エクスポートを有効にすると、JVM が `sun.misc.Unsafe` の警告を標準エラーに数行出します（送信に使う protobuf の部品による。1行1件の JSON ではありません）。
 
