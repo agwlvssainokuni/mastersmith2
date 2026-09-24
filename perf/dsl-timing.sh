@@ -25,13 +25,15 @@
 # 追加の確かめ（どれも上の測定の後に行う。組み合わせてよい）:
 #   --lang     英語のロケールのブラウザーで、照合の警告と投入の誤りの message・画面の文言が英語か（perf/ui/dsl-ui-lang.mjs、U5-LANG-E2E）
 #   --pattern  重い正規表現を多数含む DSL の投入と、直後の普通の DSL の投入の時間（perf/make-pattern-dsl.mjs、U2-PATTERN-COMPILE）
-#   --storage  10MB の DSL の投入→適用を 21 回くり返し、H2 のファイルの大きさとコンテナのメモリを記録（U4-STORAGE。最後に行う）
+#   --storage  10MB の DSL の投入→適用を 21 回くり返し、H2 のファイルの大きさとコンテナのメモリを記録し、アプリを止めて
+#              起動し直した後の大きさ・止めた時間と終わり方・データの無事を記録（U4-STORAGE。最後に行う）
 # 環境変数:
 #   MASTERSMITH_IMAGE_TAG         使うイメージのタグ（既定 local）
 #   MASTERSMITH_CONTAINER_CPUS    アプリのコンテナの CPU の上限（既定 4）
 #   MASTERSMITH_CONTAINER_MEMORY  アプリのコンテナのメモリの上限（既定 2g。配備と同じ値。要件の条件は 1g）
 #   REPEAT                        生成・表示を繰り返す回数（既定 3）
 #   STORAGE_ROUNDS                --storage の投入→適用の回数（既定 21。履歴の上限 20 を1回超える）
+#   PERF_DB_URL                   内部DB の接続先（MASTERSMITH_DB_URL）を上書きする（比べるとき。例: jdbc:h2:file:/app/data/mastersmith）
 #   OUT_DIR                       結果の置き場（既定 build/perf-results/dsl-<日時>）
 #   KEEP=1                        終わっても使い捨ての環境を消さない（種類は1つだけ。後で down -v と一時ディレクトリの削除を手で行う）
 #
@@ -117,6 +119,10 @@ db_reader_password=$(rand)
     printf 'LOGGING_LEVEL_CHERRY_MASTERSMITH_DSLMANAGE_GENERATE=DEBUG\n'
     # GC の記録（エポックのミリ秒つき）を内部DB のボリュームに書き、操作ごとのヒープの最大を読む。
     printf 'MASTERSMITH_JAVA_OPTIONS=-Xlog:gc:file=/app/data/gc.log:timemillis\n'
+    # 内部DB の接続先を上書きして比べるとき（例: DEFRAG_ALWAYS なし）。資格情報を含まない H2 のファイルの URL だけを渡す。
+    if [ -n "${PERF_DB_URL:-}" ]; then
+      printf 'MASTERSMITH_DB_URL=%s\n' "${PERF_DB_URL}"
+    fi
   } > "${TMP}/app.env"
   {
     printf 'POSTGRES_PASSWORD=%s\nMYSQL_ROOT_PASSWORD=%s\nMARIADB_ROOT_PASSWORD=%s\n' \
@@ -136,7 +142,8 @@ log "結果の置き場: ${OUT_DIR}"
   echo "date=$(date '+%Y-%m-%dT%H:%M:%S%z')"
   echo "commit=$(git -C "${ROOT}" rev-parse --short HEAD)"
   echo "image=mastersmith:${MASTERSMITH_IMAGE_TAG} $(docker image inspect -f '{{.Id}}' "mastersmith:${MASTERSMITH_IMAGE_TAG}")"
-  echo "cpus=${MASTERSMITH_CONTAINER_CPUS} memory=${MASTERSMITH_CONTAINER_MEMORY} repeat=${REPEAT}"
+  echo "cpus=${MASTERSMITH_CONTAINER_CPUS} memory=${MASTERSMITH_CONTAINER_MEMORY} repeat=${REPEAT} storage_rounds=${STORAGE_ROUNDS}"
+  echo "db_url=${PERF_DB_URL:-（既定。application.yaml の MASTERSMITH_DB_URL の既定値）}"
   echo "colima=$(colima list 2> /dev/null | awk 'NR==2 {print "cpus=" $4 " memory=" $5}')"
 } > "${OUT_DIR}/env.txt"
 
@@ -290,7 +297,7 @@ run_kind() {
 
   # 3.11 保存の量（任意、U4-STORAGE）。10MB の DSL を、埋め草の先頭の行に回の番号を入れて（大きさは同じ）投入→適用を STORAGE_ROUNDS 回（既定 21）。
   # 回ごとに H2 のファイルの大きさ・コンテナのメモリ（今と最大）・履歴の件数を記録する。最後にプレビューも1件置き（最大の状態）、
-  # アプリを止めて起動し直した後（H2 が閉じるときに詰める）の大きさも記録する。
+  # アプリを止めて（compose stop）起動し直した後（DEFRAG_ALWAYS なら H2 が閉じるときに詰める）の大きさ・止めた時間・データの無事も記録する。
   if [ "${storage}" = 1 ]; then
     printf 'round\th2_mv_db_bytes\tdata_dir_kb\tmemory_current_bytes\tmemory_peak_bytes\tanon_bytes\tfile_bytes\thistory_count\tpreview\n' > "${KIND_DIR}/storage.tsv"
     storage_row() {
@@ -323,9 +330,58 @@ run_kind() {
     # 起動し直すと GC の記録と memory.peak が始めからになるため、先に取っておく。
     docker exec "${APP}" cat /app/data/gc.log > "${KIND_DIR}/gc-before-restart.log" 2> /dev/null || true
     docker exec "${APP}" cat /sys/fs/cgroup/memory.peak > "${KIND_DIR}/memory-peak-before-restart.txt" 2> /dev/null || true
-    compose restart app > /dev/null
+    docker exec "${APP}" cat /sys/fs/cgroup/memory.stat > "${KIND_DIR}/memory-stat-before-restart.txt" 2> /dev/null || true
+    # 止める前のデータ（適用中の DSL の SHA-256・履歴の版と件数・プレビューの previewId）を記録し、起動し直した後と比べる。
+    storage_snapshot() {
+      local label=$1
+      login
+      {
+        printf 'applied_sha256=%s\n' "$(curl -sS -f -H "@${TMP}/auth.header" "${API}/applied/download" | shasum -a 256 | cut -d' ' -f1)"
+        printf 'preview_sha256=%s\n' "$(curl -sS -f -H "@${TMP}/auth.header" "${API}/preview/download" | shasum -a 256 | cut -d' ' -f1)"
+        curl -sS -f -H "@${TMP}/auth.header" "${API}/status" | jq -r '"preview_id=\(.preview.previewId // "none")"'
+        curl -sS -f -H "@${TMP}/auth.header" "${API}/history" | jq -r '"history_count=\(length)", "history=\([.[] | "\(.revisionId):\(.dslHash)"] | join(","))", "history_current=\([.[] | select(.current) | .revisionId] | join(","))"'
+      } > "${KIND_DIR}/snapshot-${label}.txt"
+    }
+    storage_snapshot before-stop
+    # 止める（compose の stop_grace_period 45 秒の内に終わらなければ SIGKILL）。時間・終わり方（exit code・OOMKilled）・終了時のログを記録する。
+    # SIGTERM で正常に終わった JVM の exit code は 143、SIGKILL（猶予切れ・OOM）は 137 になる。
+    local stop_start stop_end
+    stop_start=$(now_ms)
+    compose stop app > /dev/null
+    stop_end=$(now_ms)
+    docker inspect "${APP}" --format 'ExitCode={{.State.ExitCode}} OOMKilled={{.State.OOMKilled}} Status={{.State.Status}} StartedAt={{.State.StartedAt}} FinishedAt={{.State.FinishedAt}}' > "${KIND_DIR}/stop-state.txt"
+    printf 'stop_seconds=%s.%03d\n' "$(((stop_end - stop_start) / 1000))" "$(((stop_end - stop_start) % 1000))" >> "${KIND_DIR}/stop-state.txt"
+    docker logs "${APP}" > "${KIND_DIR}/app-before-restart.log" 2>&1
+    # 止めている間の H2 のファイル（閉じた後の大きさ）。同じイメージを一時のコンテナで起動し、ボリュームを読むだけにする。
+    docker run --rm --entrypoint sh -v "${PROJECT}_perf-data:/d:ro" "mastersmith:${MASTERSMITH_IMAGE_TAG}" \
+      -c 'ls -l /d; du -sk /d' > "${KIND_DIR}/data-while-stopped.txt"
+    local start_start start_end
+    start_start=$(now_ms)
     compose up -d --wait app > /dev/null
+    start_end=$(now_ms)
+    printf 'start_to_healthy_seconds=%s.%03d\nhealth=%s\n' "$(((start_end - start_start) / 1000))" "$(((start_end - start_start) % 1000))" \
+      "$(docker inspect "${APP}" --format '{{.State.Health.Status}}')" >> "${KIND_DIR}/stop-state.txt"
     storage_row after-restart
+    storage_snapshot after-restart
+    if diff "${KIND_DIR}/snapshot-before-stop.txt" "${KIND_DIR}/snapshot-after-restart.txt" > /dev/null; then
+      echo 'data_intact=yes' >> "${KIND_DIR}/stop-state.txt"
+    else
+      echo 'data_intact=no' >> "${KIND_DIR}/stop-state.txt"
+    fi
+    # 履歴のすべての版を戻し、プレビューの本文の SHA-256 が履歴の dslHash と一致するかを確かめる（詰め直しで本文が壊れていないか）。
+    # 戻しはプレビューを置き換えるため、止める前後の比べの後に行う。
+    local rev hash got ok=0 total=0
+    login
+    curl -sS -f -H "@${TMP}/auth.header" "${API}/history" | jq -r '.[] | "\(.revisionId) \(.dslHash)"' > "${KIND_DIR}/history-after-restart.txt"
+    while read -r rev hash; do
+      total=$((total + 1))
+      login
+      curl -sS -o /dev/null -X POST -H "@${TMP}/auth.header" -H "Origin: ${BASE}" "${API}/history/${rev}/restore" || true
+      got=$(curl -sS -H "@${TMP}/auth.header" "${API}/preview/download" | shasum -a 256 | cut -d' ' -f1)
+      if [ "${got}" = "${hash}" ]; then ok=$((ok + 1)); else log "${KIND}: 版 ${rev} の本文が dslHash と一致しません"; fi
+    done < "${KIND_DIR}/history-after-restart.txt"
+    printf 'restore_all_match=%s/%s\n' "${ok}" "${total}" >> "${KIND_DIR}/stop-state.txt"
+    log "${KIND}: 止めて起動し直しました（$(tr '\n' ' ' < "${KIND_DIR}/stop-state.txt")）"
   fi
 
   # 4. 記録を集める（アプリのログ・GC の記録・コンテナの状態）。

@@ -1,9 +1,9 @@
 # ビルドとテストの要約（build-and-test-summary）
 
-Intent `260923-dsl-schema-loader`（dsl-schema-loader）の全5単位（U1 対象DB、U2 DSL の定義、U3 既定の DSL の生成、U4 DSL の管理、U5 DSL の管理画面）を通した、ビルド・テストの状態と、測るべき品質の目標（106 件）の検証の表。
+Intent `260923-dsl-schema-loader`（dsl-schema-loader）の全5単位（U1 対象DB、U2 DSL の定義、U3 既定の DSL の生成、U4 DSL の管理、U5 DSL の管理画面）を通した、ビルド・テストの状態と、測るべき品質の目標（107 件）の検証の表。Loop-back 1（Code Generation で直した後、コミット `8961cb2`）の結果で更新した。
 
 - Scope: classic、Depth: Standard、Test Strategy: **Standard**（`aidlc/spaces/default/intents/260923-dsl-schema-loader/aidlc-state.md`）
-- 実行した日: 2026-09-24
+- 実行した日: 2026-09-24（Loop-back 1 の後の実行も同じ日。今の判定はコミット `8961cb2` による）
 - 実行の環境: macOS（darwin 25.5.0）、JDK 25、Node.js 24、Gradle 9.7.1、colima の VM（CPU 4・メモリ 6GiB）
 - 依頼者の決定: `build-and-test-questions.md` の Q1〜Q9 と Consolidated Summary Confirmation（Looks correct）
 
@@ -11,21 +11,21 @@ Intent `260923-dsl-schema-loader`（dsl-schema-loader）の全5単位（U1 対�
 
 | 区分 | 結果 |
 |---|---|
-| 1コマンドの検査（`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`） | **成功**。1回目（`39f9aeb`）4分21秒、2回目（E2E と `perf/` の変更の後）4分14秒 |
-| バックエンドの単体テスト（`*Test`） | **710 件すべて成功**（失敗 0、飛ばし 0） |
+| 1コマンドの検査（`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`） | **成功**。Loop-back 1 の後（`8961cb2`）6分17秒。最初の実行は `39f9aeb` で 4分21秒、E2E と `perf/` の変更の後で 4分14秒 |
+| バックエンドの単体テスト（`*Test`） | **716 件すべて成功**（失敗 0、飛ばし 0。Loop-back 1 で `ExtensionOrderArchitectureTest` 3 件・`H2DefragOnCloseTest` 3 件を足した） |
 | バックエンドの結合テスト（`*IT`、対象DB 3種類を含む） | **375 件すべて成功**（失敗 0、飛ばし 0） |
 | 画面のテスト（Vitest） | **313 件すべて成功**（47 ファイル） |
 | E2E（Playwright、`./gradlew e2eTest`） | **6 件すべて成功**（4 ファイル、1 worker、010 → 040 の順、19.0 秒） |
 | バックエンドのカバレッジ | 行 **98.1%**（3884/3960）・分岐 **94.1%**（1349/1433）。新しいパッケージ 13 個もすべて下限以上（最低は `dslmanage.web` の分岐 86.7%） |
 | 画面のカバレッジ | 行 **97.86%**（961/982）・分岐 **93.6%**（585/625） |
-| 秘密情報の検出（Gitleaks） | 0 件（141 コミット・約 15.65MB） |
+| 秘密情報の検出（Gitleaks） | 0 件（143 コミット） |
 | Java の静的解析（SpotBugs＋FindSecBugs） | priority 1 は 0 件、`SQL_` は 0 件。priority 2・3 の警告のみ（統合は止めない） |
-| 依存関係の脆弱性（OSV-Scanner） | 統合を止めるもの 0 件（UP-TO-DATE。同じ lockfile での同日の結果） |
+| 依存関係の脆弱性（OSV-Scanner） | `./gradlew osvScan --rerun` で走査し直し、脆弱性 0（`backend/gradle.lockfile` 244・`frontend/package-lock.json` 395・`vendor/make-you-chic-ui/package-lock.json` 404 パッケージ） |
 | 初回の読み込みの JavaScript | 111.4 KB（gzip） |
 | colima の VM のメモリの使用量（`verify` の間） | 最大 約 1,424MiB（配備したアプリを動かしたまま） |
-| 性能（1回ずつの時間、上限 CPU 4・メモリ 2g） | 13 件（画面の時間と英語の表示を含む）を測り、12 件が Met、U4-STORAGE が **Not Met** |
-| コンテナの実行環境が無いときの動き（NFR12.3） | 警告と SKIPPED は出るが、4クラスが失敗になり **Not Met** |
-| Target Verification Matrix | **Met 91・Not Met 2・Unverified 13**（106 件） |
+| 性能（1回ずつの時間と保存の量、上限 CPU 4・メモリ 2g） | 14 件（画面の時間・英語の表示・保存の量の2行を含む）を測り、13 件が Met、U4-STORAGE-RUN（動いている間の H2 のファイルの大きさ）が **Not Met** |
+| コンテナの実行環境が無いときの動き（NFR12.3） | Loop-back 1 で直した。129 件・失敗 0・飛ばし 57（10 クラスすべてに警告）、BUILD SUCCESSFUL で **Met** |
+| Target Verification Matrix | **Met 93・Not Met 1・Unverified 13**（107 件。U4-STORAGE を2行に分けた） |
 
 ## 2. 作った手順書（テストの種類の一覧）
 
@@ -42,11 +42,11 @@ Intent `260923-dsl-schema-loader`（dsl-schema-loader）の全5単位（U1 対�
 
 ## 3. 単位ごとのカバレッジ
 
-C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。テストの件数は `test-results.md` 2.2。
+C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値（C12（`8961cb2`）は本番のコードが同じで、全体の値も同じ）。テストの件数は `test-results.md` 2.2。
 
 | 単位 | 範囲 | 行 | 分岐 | テスト（単体・結合・画面・E2E） |
 |---|---|---|---|---|
-| U1 対象DB | `targetdb.*`（4 パッケージ） | 98.5%（393/399） | 96.1%（174/181） | 80・50・—・— |
+| U1 対象DB | `targetdb.*`（4 パッケージ） | 98.5%（393/399） | 96.1%（174/181） | 83・50・—・— |
 | U2 DSL の定義 | `dsl.*`（4 パッケージ） | 98.6%（849/861） | 93.4%（396/424） | 89・2・—・— |
 | U3 既定の DSL の生成 | `dslmanage.generate` | 99.3%（303/305） | 100%（145/145） | 75・9・—・— |
 | U4 DSL の管理 | `dslmanage.domain`・`repository`・`service`・`web` | 100%（841/841） | 95.8%（184/192） | 62・39・—・— |
@@ -57,12 +57,12 @@ C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。
 
 ## Target Verification Matrix
 
-対象は、この段の Step 1 で集めた測るべき品質の目標 106 件（統合の関門と成果物 19、性能と資源 12、単位のテストで確かめる非機能 61、画面の時間と E2E 4、手での確認 7、後の段が持つもの 3）。判定は `Met`（満たす）・`Not Met`（満たさない）・`Unverified`（この段では確かめず、持ち主の段か人が持つ）の3つだけで、`Pending` は残さない。
+対象は、この段の Step 1 で集めた測るべき品質の目標 106 件に、Loop-back 1 で U4-STORAGE を「動いている間の最大」（U4-STORAGE-RUN）と「起動し直した後」（U4-STORAGE-RESTART）の2行に分けた 1 件を足した 107 件（統合の関門と成果物 19、性能と資源 13、単位のテストで確かめる非機能 61、画面の時間と E2E 4、手での確認 7、後の段が持つもの 3）。判定は `Met`（満たす）・`Not Met`（満たさない）・`Unverified`（この段では確かめず、持ち主の段か人が持つ）の3つだけで、`Pending` は残さない。
 
 表記:
 
 - Source の単位の文書は `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/` の下（例: `u1-target-db/nfr-requirements/tech-stack-decisions.md`）。`req` は `aidlc/spaces/default/intents/260923-dsl-schema-loader/inception/requirements-analysis/requirements.md` の 3章、`a11y` は `aidlc/spaces/default/intents/260923-dsl-schema-loader/inception/refined-mockups/accessibility-checklist.md`。`team.md`・`project.md` は `aidlc/spaces/default/memory/` の下。
-- Evidence の「C1・C2」は `test-results.md` 1節の2回の `verify`（どちらも成功）。性能の結果は `build/perf-results/` の下。
+- Evidence の「C1・C2」は `test-results.md` 1節の最初の2回の `verify`、「C12」は Loop-back 1 の後（`8961cb2`）の `verify` で、3回とも成功。単位のテストは C12 でも同じく成功している。性能の結果は `build/perf-results/` の下。
 
 ### A. 統合の関門と成果物（19 件）
 
@@ -72,25 +72,25 @@ C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。
 | G-LINT | team.md の Code Style・`u5-dsl-admin-ui/nfr-requirements/security-requirements.md` NFR3.9 | リンタの error 0 件（oxlint・ESLint・Stylelint、`react/no-danger` を含む） | error 0 件 | C1・C2 の `verifyLint` | build-and-test | Met |
 | G-LICENSE | team.md の Code Style・project.md の Mandated | すべてのソースに Apache License 2.0 のヘッダー（`/* ... */`、2026、agwlvssainokuni） | 違反 0 件 | C1・C2 の `verifyLicense` と `verifyFormat`（Spotless の licenseHeader） | build-and-test | Met |
 | G-BUILD | team.md の Deployment | Java のコンパイル・`tsc --noEmit`・Vite のビルドが成功 | 成功 | C1・C2 の `verifyBuild` | build-and-test | Met |
-| G-TEST | team.md・project.md の Testing Posture | 単体・結合・画面のテストがすべて成功（失敗 0・飛ばし 0） | 単体 710・結合 375・画面 313、失敗 0・飛ばし 0（2回とも同じ） | `backend/build/test-results/`・`test-results.md` 2.2 | build-and-test | Met |
+| G-TEST | team.md・project.md の Testing Posture | 単体・結合・画面のテストがすべて成功（失敗 0・飛ばし 0） | 単体 716・結合 375・画面 313、失敗 0・飛ばし 0（C12、`8961cb2`） | `backend/build/test-results/`・`test-results.md` 2.2 | build-and-test | Met |
 | NFR11-BE | req の NFR11・team.md の Testing Posture | バックエンド全体で行 80% 以上・分岐 70% 以上 | 行 98.1%（3884/3960）・分岐 94.1%（1349/1433） | `backend/build/reports/jacoco/test/jacocoTestReport.xml`・`test-results.md` 2.3 | build-and-test | Met |
 | NFR11-BE-PKG | team.md の Testing Posture・`u1-target-db/code-generation/code-summary.md` 4節 | 新しいパッケージ 13 個がそれぞれ行 80%・分岐 70% 以上。既存の 22 個は全体の合計で判定 | 13 個すべて以上（最低 `dslmanage.web` の分岐 86.7%）。既存で単独で下回るのは `auth.repository`（分岐 50.0%）・`common.health`（行 79.2%）で、全体の合計で判定（Q9: A） | 同上（`jacocoTestCoverageVerification` 成功） | build-and-test | Met |
 | NFR11-FE | req の NFR11・team.md の Testing Posture | 画面全体で行 80%・分岐 70% 以上 | 行 97.86%（961/982）・分岐 93.6%（585/625） | `frontend/coverage/`・`test-results.md` 2.3 | build-and-test | Met |
 | G-COV-EXCL | team.md の Testing Posture | カバレッジの除外が既存のもの（起動クラス・設定値だけのクラス・自動生成・`vendor/`）から増えていない | 増えていない。`backend/build.gradle.kts` の差は依存の除外と `packagesJudgedByTotal` だけ | `backend/build.gradle.kts`・`frontend/vitest.config.ts` | build-and-test | Met |
 | NFR6.3 | `u1-target-db/nfr-requirements/security-requirements.md` 2節・req の NFR6・team.md の Code Style | SpotBugs＋FindSecBugs の priority 1 の指摘 0 件、`SQL_` で始まる指摘 0 件 | priority 1 は 0 件・`SQL_` は 0 件（priority 2 が 66 件・priority 3 が 43 件は警告） | C1・C2 の `spotbugsGate`・`backend/build/reports/spotbugs/main.xml` | build-and-test | Met |
-| G-OSV | team.md の Code Style・Deployment・project.md の Mandated | 依存の脆弱性で統合を止めるもの 0 件（`vendor/make-you-chic-ui` の lockfile を含む） | 0 件（C1・C2 は UP-TO-DATE。同じ lockfile での 2026-09-24 13:34 の走査の結果） | `build/reports/osv-scanner/osv.json` | build-and-test | Met |
-| G-GITLEAKS | team.md の Code Style・project.md の Mandated | 秘密情報の検出 0 件 | 0 件（141 コミット・約 15.65MB） | C1・C2 の `gitleaksScan` | build-and-test | Met |
+| G-OSV | team.md の Code Style・Deployment・project.md の Mandated | 依存の脆弱性で統合を止めるもの 0 件（`vendor/make-you-chic-ui` の lockfile を含む） | `./gradlew osvScan --rerun` で走査し直し（UP-TO-DATE ではない）、3つの lockfile の 244・395・404 パッケージで脆弱性 0 | `build/reports/osv-scanner/osv.json`・`test-results.md` 2.4（C13） | build-and-test | Met |
+| G-GITLEAKS | team.md の Code Style・project.md の Mandated | 秘密情報の検出 0 件 | 0 件（143 コミット） | C12 の `gitleaksScan` | build-and-test | Met |
 | G-ARTIFACT | team.md の Deployment・`u2-dsl-definition/nfr-design/security-design.md` 6節 | `dist` を同梱した実行可能 WAR、WAR の中の JSON Schema が正本と一致、初回の読み込みの量が上限の内 | WAR ができ、`verifyDslSchemaInWar` 成功、111.4 KB（gzip、目安 500KB） | C1・C2 の `verifyArtifact`・`test-results.md` 2.5 | build-and-test | Met |
 | U1-LICENSE-DOCS | `u1-target-db/nfr-requirements/tech-stack-decisions.md` 1.1節・`u1-target-db/code-generation/code-summary.md` 6節 | WAR に第三者のライセンスの文書がある | MariaDB Connector/J の LGPL 2.1 の文書が `WEB-INF/classes/META-INF/third-party-licenses/` にある。MySQL Connector/J の jar に `LICENSE`、PostgreSQL JDBC の jar に `META-INF/LICENSE` | `backend/build/libs/mastersmith.war` の中身の一覧・`test-results.md` 2.5 | build-and-test | Met |
 | NFR12.1 | req の NFR12・`u1-target-db/nfr-requirements/tech-stack-decisions.md` 2節・project.md の Mandated | 版とダイジェストを固定した MySQL 8.4.11・MariaDB 11.8.9・PostgreSQL 18.6 のコンテナで `verify` の中で毎回実行し、飛ばし 0 件 | 3種類とも実行、結合テストの飛ばし 0 件（2回とも） | `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`・`backend/build/test-results/integrationTest/` | build-and-test | Met |
 | NFR12.2 | `u1-target-db/nfr-requirements/tech-stack-decisions.md` 2節・team.md の Testing Posture | 表を作るテストはクラスごとに名前の重ならないスキーマを作って消し、実行順に依存しない | 3種類の IT が `TargetDbTestDatabase` の仕組みで独立して成功（2回とも同じ結果） | `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java`・C1・C2 | build-and-test | Met |
-| NFR12.3 | `u1-target-db/nfr-requirements/tech-stack-decisions.md` 2節・team.md の Way of Working | コンテナの実行環境が無いときは警告を出して対象DB のテストだけ飛ばし、SKIPPED として出す | 警告と SKIPPED（26 件・9 件）は出たが、`MysqlTargetSchemaReaderIT`・`MariadbTargetSchemaReaderIT`・`PostgresTargetSchemaReaderIT`・`DslTargetDbIT` の4クラスが `initializationError`（`NoSuchElementException`）で失敗し、タスクが失敗した | `test-results.md` 2.8・3.1（C4・C5） | build-and-test | Not Met |
-| TP-TDB-PLACE | team.md の Testing Posture・`u1-target-db/nfr-requirements/tech-stack-decisions.md` NFR12.1 | `verify` の時間と VM のメモリを実測し、対象DB の結合テストの置き場を決める材料を出す | 4分21秒・4分14秒、VM のメモリ最大 約 1,424MiB（6GiB 中）。依頼者の決定で3種類とも `verify` の中で毎回（Q1: A） | `test-results.md` 2.7・`build-and-test-questions.md` Q1 | build-and-test | Met |
+| NFR12.3 | `u1-target-db/nfr-requirements/tech-stack-decisions.md` 2節・team.md の Way of Working | コンテナの実行環境が無いときは警告を出して対象DB のテストだけ飛ばし、SKIPPED として出す | Loop-back 1 で拡張の登録の順を直した後、Docker に届かない状態で 129 件・失敗 0・飛ばし 57、BUILD SUCCESSFUL（27 秒）。飛ばした 10 クラスすべての出力に警告がある。構造の検査 `ExtensionOrderArchitectureTest` が再発を防ぐ（違反 0）。直す前は4クラスが `initializationError` で失敗していた | `test-results.md` 2.8・3.1（C14）・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java` | build-and-test | Met |
+| TP-TDB-PLACE | team.md の Testing Posture・`u1-target-db/nfr-requirements/tech-stack-decisions.md` NFR12.1 | `verify` の時間と VM のメモリを実測し、対象DB の結合テストの置き場を決める材料を出す | 4分21秒・4分14秒・6分17秒（`8961cb2`）、VM のメモリ最大 約 1,424MiB（6GiB 中）。依頼者の決定で3種類とも `verify` の中で毎回（Q1: A） | `test-results.md` 2.7・`build-and-test-questions.md` Q1 | build-and-test | Met |
 | G-E2E | team.md の Testing Posture・README の E2E の節 | E2E が CSP 違反やスクリプトのエラーなしに通る | 4 ファイル・6 件すべて成功（1 worker、010 → 040、19.0 秒）。DSL の管理の流れ（040）を足した（Q5: B） | `./gradlew e2eTest` の出力・`test-results.md` 2.6 | build-and-test | Met |
 
-### B. 性能と資源（12 件）
+### B. 性能と資源（13 件）
 
-条件: 使い捨ての環境、上限 CPU 4・メモリ 2g（Q4: A。U4 の NFR1.12 の条件 1g との差は明記）、対象DB は 100 テーブル × 100 カラム。
+条件: 使い捨ての環境、上限 CPU 4・メモリ 2g（Q4: A。U4 の NFR1.12 の条件 1g との差は明記）、対象DB は 100 テーブル × 100 カラム。1回ずつの時間は `39f9aeb`、保存の量は `8961cb2` で測った。大きさの MB は 10^6 バイト（`summary.md` の表は 2^20 バイトで割った値）。
 
 | Target ID | Source | Expected | Actual | Evidence | Owning Stage | Verdict |
 |---|---|---|---|---|---|---|
@@ -104,7 +104,8 @@ C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。
 | NFR1.11 | `u4-dsl-management/nfr-requirements/performance-requirements.md` 1節・`u4-dsl-management/nfr-design/performance-design.md` 3節 | プレビュー中と適用中のダウンロードが 10MB でも 2 秒以内 | 0.032〜0.038 秒 | `build/perf-results/dsl-run1/summary.md` | build-and-test | Met |
 | NFR1.12 | `u4-dsl-management/nfr-requirements/performance-requirements.md` 2節・`u4-dsl-management/nfr-design/performance-design.md` 4節 | 10MB の DSL の処理が、1g のコンテナで、ログインと同時でも失敗しない | 未測定（Q2: B）。参考: 2g の1回ずつの測定で `memory.peak` 1,732〜1,869MB、OOMKilled なし。k6 の場面 `dslMixed` を足した | `perf/k6/scenarios.js`・`performance-test-instructions.md` 3節 | performance-validation | Unverified |
 | NFR2.5 | `u3-default-dsl-generation/nfr-requirements/security-requirements.md` 2節・`u3-default-dsl-generation/nfr-requirements/tech-stack-decisions.md` 3.4節 | 100 × 100 で生成した DSL が 10MB の内。上限を超える写しでは失敗し、部分的な DSL を返さない | 6,146,161〜6,383,161 バイト。失敗の道は `TargetSchemaDslGeneratorTest` が成功 | `build/perf-results/dsl-run1/summary.md`・`backend/src/test/java/cherry/mastersmith/dslmanage/generate/TargetSchemaDslGeneratorTest.java` | build-and-test | Met |
-| U4-STORAGE | `u3-default-dsl-generation/nfr-requirements/tech-stack-decisions.md` 3.4節・`u4-dsl-management/nfr-requirements/scalability-requirements.md` 1節 | プレビュー1件と履歴 20 件（すべて 10MB）の最大の状態で、H2 のファイルが最大約 210MB、コンテナのメモリの上限の内 | H2 のファイルは 56MB から1回に約 10.3MB 増えて 282MB（21 回＋プレビュー）。履歴 20 件の後も増え続け、起動し直しても縮まない（40 回で 461MB）。`memory.peak` は上限ちょうどの 2,048MB（`anon` 約 1,900MB）、OOMKilled なし | `build/perf-results/dsl-run4-extra/summary.md`・`build/perf-results/dsl-run5-storage40/summary.md`・`test-results.md` 3.2 | build-and-test | Not Met |
+| U4-STORAGE-RUN | `u3-default-dsl-generation/nfr-requirements/tech-stack-decisions.md` 3.4節・`u4-dsl-management/nfr-requirements/scalability-requirements.md` 1節 | 動いている間の最大の状態（プレビュー1件と履歴 20 件がすべて 10MB）で、H2 のファイルが最大約 210MB、コンテナのメモリの上限の内 | `8961cb2`（`DEFRAG_ALWAYS=TRUE`）でも、21 回で 267.4MB、プレビューを置いて 278.2MB（2回とも同じ）、40 回で 483.1MB。1回に約 10.78MB 増え、履歴 20 件の後も頭打ちなし。`memory.peak` は上限 2g に張り付く（ページキャッシュ込み）、`anon` の最大 1,959〜1,986MB（上限の約 92%）、OOMKilled なし | `build/perf-results/dsl-lb1-storage21-defrag/`・`dsl-lb1-storage21-defrag-2/`・`dsl-lb1-storage40-defrag/`・`test-results.md` 3.2 | build-and-test | Not Met |
+| U4-STORAGE-RESTART | 同上 | 止めて起動し直した後、H2 のファイルが生きているデータの量に戻り、データが無事 | `DEFRAG_ALWAYS=TRUE` で 15.9MB（21 回・40 回とも）。なしでは 278.2MB のまま。止めるのに 0.55〜1.00 秒、ExitCode 143（SIGTERM で正常終了）、OOMKilled なし、healthy まで約 8.7 秒。適用中の DSL・プレビューの SHA-256・履歴 20 件の版と `dslHash` が前後で一致、戻しで 20/20 一致。ただし試験の DSL は gzip で 10MB から 0.29MB に縮むデータで、圧縮の効かない本文では約 210MB＋α に近づくと推定（実測ではない） | `build/perf-results/dsl-lb1-storage21-defrag/`・`dsl-lb1-storage21-defrag-2/`・`dsl-lb1-storage40-defrag/`・`dsl-lb1-storage21-nodefrag/`・`test-results.md` 3.2 | build-and-test | Met |
 | U4-POOL | `u4-dsl-management/nfr-design/logical-components.md` 3節・`u4-dsl-management/code-generation/code-summary.md` 7節・project.md の Corrections | 適用などの操作で内部DB のプール（上限 30）をログインと共有しても尽きない | 未測定（Q2: B）。`dslMixed` の実行で Hikari の値を記録する手順を `perf/README.md` に書いた | `perf/README.md`・`performance-test-instructions.md` 3節 | performance-validation | Unverified |
 
 ### C. 単位のテストで確かめる非機能（61 件）
@@ -232,38 +233,45 @@ C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。
 
 | 判定 | 件数 | 内訳 |
 |---|---|---|
-| **Met** | **91** | 統合の関門と成果物 18、性能と資源 8、単位のテストで確かめる非機能 61、画面の時間と E2E 4 |
-| **Not Met** | **2** | NFR12.3（コンテナの実行環境が無いときに4クラスが失敗）、U4-STORAGE（H2 のファイルが増え続け、メモリが上限に張り付く） |
+| **Met** | **93** | 統合の関門と成果物 19、性能と資源 9、単位のテストで確かめる非機能 61、画面の時間と E2E 4 |
+| **Not Met** | **1** | U4-STORAGE-RUN（動いている間は H2 のファイルが増え続け、メモリが上限に張り付く） |
 | **Unverified** | **13** | performance-validation 3（NFR1.10・NFR1.12・U4-POOL）、observability-setup 1（OBS-DASH）、ci-pipeline 1（G-CI）、deployment-execution 1（U4-MIGRATION）、依頼者の手での確認 7（A11Y-*） |
-| 合計 | 106 | — |
+| 合計 | 107 | — |
 
 - `Unverified` のうち後の段が持つ6件は、実行の計画で **EXECUTE** の段（`performance-validation`・`observability-setup`・`ci-pipeline`・`deployment-execution`）が持つ（`aidlc-state.md`）。アクセシビリティの手での確認 7 件は持ち主の段が無く、依頼者が行う。
-- `Not Met` が 2 件あるため、この段は「すべて満たした」とはならない。直すか既知の制約として先へ進むかは依頼者の判断が要る（`test-results.md` 3.1・3.2）。
+- Loop-back 1 で NFR12.3 は Met になり、U4-STORAGE は起動し直した後（RESTART）が Met、動いている間（RUN）が Not Met のまま残った。`Not Met` が 1 件あるため、この段は「すべて満たした」とはならない。さらに直すか既知の制約として先へ進むかは依頼者の判断が要る（`test-results.md` 3.2）。
 
 ## 4. 準備の度合い
 
 | 区分 | 状態 | 根拠 |
 |---|---|---|
-| ビルドできる（build-ready） | **Yes** | `./gradlew verify` が2回とも通り、画面と JSON Schema を同梱した実行可能 WAR ができる |
-| テストできる（test-ready） | **No** | テストはすべて緑でコマンド1つずつで再現できるが、Not Met が2件ある。特に NFR12.3 は「コンテナの実行環境が無いときは警告を出して飛ばす」という統合の前の関門の決まりを満たしていない |
-| 配備できる（deployment-ready） | **No** | U4-STORAGE（内部DB のファイルが際限なく増え、メモリが上限に張り付く）が未解決。NFR1.12（1g のコンテナ）と U4-POOL が未確認 |
+| ビルドできる（build-ready） | **Yes** | `./gradlew verify` が `8961cb2` で通り、画面と JSON Schema を同梱した実行可能 WAR ができる |
+| テストできる（test-ready） | **No** | テストはすべて緑でコマンド1つずつで再現でき、コンテナの実行環境が無いときの動き（NFR12.3）も直ったが、U4-STORAGE-RUN が Not Met |
+| 配備できる（deployment-ready） | **No** | U4-STORAGE-RUN（動いている間は内部DB のファイルが増え続け、メモリが上限に張り付く）が未解決。NFR1.12（1g のコンテナ）と U4-POOL が未確認 |
 
 ## 5. 既知の制約と残り
 
-1. **NFR12.3 の不具合**（Not Met）: 4クラスの拡張の登録の順（`ContainerRuntimeCheck` → `OutputCaptureExtension`）のため、Docker に届かないときに中断が失敗に変わる。直す候補は登録の順を入れ替え、`EngineTestKit` で再現のテストを足すこと（テストのコードだけ、約 30 分、危険は低い）。
-2. **U4-STORAGE**（Not Met）: 10MB の DSL の投入→適用の1回ごとに H2 のファイルが約 10.3MB 増え、履歴 20 件の後も縮まない（21 回で 282MB、40 回で 461MB。期待は最大約 210MB）。コンテナの `memory.peak` は上限 2g に達した（OOMKilled なし）。原因は H2（MVStore）の空き領域の再利用・詰め直しと見ているが**未確認の仮説**。
+1. **NFR12.3**（Loop-back 1 で直した。Met）: 4クラスの拡張の登録の順（`ContainerRuntimeCheck` → `OutputCaptureExtension`）のため、Docker に届かないときに中断が失敗に変わっていた。順を入れ替え、構造の検査 `ExtensionOrderArchitectureTest` で再発を防ぐ。
+2. **U4-STORAGE-RUN**（Not Met）: 内部DB の既定の接続先に `DEFRAG_ALWAYS=TRUE` を足したことで、止めて起動し直した後は 15.9MB に戻る（U4-STORAGE-RESTART は Met）。しかし動いている間は、10MB の DSL の投入→適用の1回ごとに約 10.78MB 増え、履歴 20 件の後も頭打ちにならない（21 回＋プレビューで 278.2MB、40 回で 483.1MB。期待は最大約 210MB）。`memory.peak` は上限 2g に張り付き、`anon` は最大 1,959〜1,986MB（上限の約 92%）。止めない限り増え続けるため、動いている間の詰め直しか本文の持ち方の見直しが要る。また、試験の DSL はよく縮むデータで、圧縮の効かない本文では起動し直した後も約 210MB＋α に近づくと推定している（実測ではない）。
 3. **Performance Validation への引き継ぎ**: NFR1.10（95 パーセンタイル）、NFR1.12（1g のコンテナでの 10MB とログインの重ね）、U4-POOL（プールの余裕）。k6 の場面 `dslLight`・`dslCycle`・`dslMixed` と手順は `perf/README.md`。2g でもメモリが上限に近いため、1g の NFR1.12 は最初に確かめる。
 4. **古い記述との差**（目標は緩めていない）: 既定の DSL は約 5.3MB（試算）・約 6.7MB（U3 の記録）ではなく 6.15〜6.38MB（コメントあり）。U4 の要件の「生成は接続 5 秒」は実装では 3 秒。決定 B により照合は応答しない対象DB で最悪 23〜28 秒。
 5. **traceability.json の食い違い**: U1〜U3 の一部（NFR1.1・NFR1.2・NFR6.2・NFR6.3・NFR4.8・NFR9.2・NFR12.1〜NFR12.3）が本番のソースや設定を指している。Q7: A により直さず `cross-unit-traceability.md` に記録した。この表ではテストに読み替えて判定した。
 6. **アクセシビリティの手での確認 7 件**は依頼者が後で行う。未確認の前提は「部品ごとの自動の検査とキーボードの操作のテストが緑なら、流れ全体でも操作できる」ことで、次の機会は依頼者の手元での確認（リリースの前）。
 7. **監視・CI・移行の戻し**は後の段（observability-setup・ci-pipeline・deployment-execution）で確かめる。
-8. **OSV-Scanner** は2回とも UP-TO-DATE で、同じ lockfile の同日の走査結果（0 件）を使った。
+8. **E2E と1回ずつの時間**は最初の実行（`39f9aeb`）の結果で、`8961cb2` では流し直していない（本番の変更は内部DB の接続先だけ）。E2E は統合の前に流し直す。
 9. **SpotBugs の priority 2・3 の警告**（109 件）は統合を止めない基準の内だが、前の Intent から増えている。
 10. **E2E は CI の外**に置く（統合の前とリリースの前に手で実行）。040 は対象DB を設定しないため、照合の中身は結合テストが受け持つ。
+
+
+## 受け入れた失敗（依頼者の判断、2026-09-25）
+
+U4-STORAGE-RUN（動いている間の内部DB のファイルの最大）は Not Met のまま、依頼者が「Accept failure」を選んだ（Loop-backs used: 1/3）。README に既知の制約として記録した。詳細は `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/test-results.md` の 5節。直した後の WAR で E2E を流し直し、6 件すべて成功した。
 
 ## Sources
 
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/aidlc-state.md`（Scope・Depth・Test Strategy・実行の計画）
+- `build/perf-results/dsl-lb1-storage21-defrag/`・`build/perf-results/dsl-lb1-storage21-defrag-2/`・`build/perf-results/dsl-lb1-storage40-defrag/`・`build/perf-results/dsl-lb1-storage21-nodefrag/`（Loop-back 1 の後の保存の量）
+- `backend/src/main/resources/application.yaml`（`DEFRAG_ALWAYS=TRUE`）・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java`・`backend/src/test/java/cherry/mastersmith/config/H2DefragOnCloseTest.java`
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/build-and-test-questions.md`（Q1〜Q9 と Consolidated Summary Confirmation）
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/cross-unit-traceability.md`（要件の網羅、判定 Pass）
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/test-results.md`・`performance-test-instructions.md`・`security-test-instructions.md`・`integration-test-instructions.md`・`build-instructions.md`
@@ -277,6 +285,6 @@ C2 の JaCoCo の報告を、単位のパッケージごとに合わせた値。
 
 ## Assumptions & Open Questions
 
-- Not Met の2件（NFR12.3・U4-STORAGE）を、この段で直すか（在ステージの修正）、既知の制約として記録して先へ進むかは、依頼者の判断が要る。
-- U4-STORAGE の原因は未確認の仮説である。
+- U4-STORAGE-RUN の Not Met を、さらに直すか（動いている間の詰め直し・本文の持ち方の見直し）、既知の制約として記録して先へ進むかは、依頼者の判断が要る。
+- 圧縮の効かない本文での、起動し直した後の大きさ（約 210MB＋α の推定）は実測していない。
 - アクセシビリティの手での確認 7 件の持ち主の段は無い。依頼者がいつ行うかは決まっていない。

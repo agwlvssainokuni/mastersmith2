@@ -14,7 +14,8 @@ Test Strategy は **Standard**（`aidlc/spaces/default/intents/260923-dsl-schema
 | E2E | Playwright（Chromium） | `frontend/e2e/*.e2e.ts`（`frontend/playwright.config.ts`） | ビルドした WAR（一時ディレクトリの内部DB、番号 18081） |
 
 - 対象DB のコンテナのイメージは、版とダイジェストで固定する（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）。H2 やモックで代用しない（project.md の Mandated）。
-- 対象DB を使うテストのクラスは、`ContainerRuntimeCheck`（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java`）で、Docker に届くかを先に確かめる。届かないとき、開発中は警告を出して中断（SKIPPED）、CI では失敗にする（NFR12.3。ただし今は4クラスが中断ではなく失敗になる。`test-results.md` 3.1）。
+- 対象DB を使うテストのクラスは、`ContainerRuntimeCheck`（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java`）で、Docker に届くかを先に確かめる。届かないとき、開発中は警告を出して中断（SKIPPED）、CI では失敗にする（NFR12.3。Loop-back 1 で拡張の登録の順を直し、Docker に届かない状態で 129 件・失敗 0・飛ばし 57 を確かめた。`test-results.md` 2.8）。
+- `ContainerRuntimeCheck` と `OutputCaptureExtension` の両方を登録するクラスは、`OutputCaptureExtension` を先に登録する。構造の検査 `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ExtensionOrderArchitectureTest.java`（単体テストの側）が全テストのクラスを確かめる。
 - 表を作るテストは、テストのクラスごとに名前の重ならないスキーマ（MySQL・MariaDB ではデータベース）を作って終わったら消す（`TargetDbTestDatabase`・`MysqlFamilyTestDatabase`・`PostgresTestDatabase`、NFR12.2）。
 - テストの JVM のヒープは 1g（`backend/build.gradle.kts`）。
 

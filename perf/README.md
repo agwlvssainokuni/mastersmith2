@@ -123,11 +123,13 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 |---|---|---|---|
 | `--lang` | 英語のロケール（`en-US`）の Chromium で `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、続けて誤りを含む DSL を貼り付けて投入（422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
 | `--pattern` | 1,000 文字近くの重い正規表現（深い入れ子の繰り返し・`(a+)+` の並び・大きな繰り返しの回数・Unicode の文字の種類の積・遅延の繰り返しの選択）を `pattern` に 2,000 個持つ DSL と、同じ形で `pattern` の無い DSL を作り（`perf/make-pattern-dsl.mjs`）、普通 3 回 → 重い 3 回 → 重いものの直後に待たずに普通 → 普通 3 回の順に投入する | U2-PATTERN-COMPILE（重い投入が短く終わり、直後の普通の投入が遅れない。アプリのログに「正規表現の確かめを時間の上限で打ち切りました」「受け付けられませんでした」が出ない） | `timings.tsv` の `pattern-*`・`pattern-dsl.txt`・`app.log` |
-| `--storage` | 10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューも1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（cgroup の `memory.current`・`memory.peak`、`memory.stat` の `anon`（プロセスのメモリ）と `file`（ページキャッシュ。回収できる））、履歴の件数を記録し、最後にアプリを起動し直した後の大きさも記録する | U4-STORAGE | `storage.tsv`・`memory-peak-before-restart.txt` |
+| `--storage` | 10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューも1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（cgroup の `memory.current`・`memory.peak`、`memory.stat` の `anon`（プロセスのメモリ）と `file`（ページキャッシュ。回収できる））、履歴の件数を記録する。最後にアプリを `docker compose stop`（`stop_grace_period` 45 秒）で止め、止めるのにかかった秒数と終わり方（exit code。SIGTERM で正常に終われば 143、猶予切れや OOM の SIGKILL は 137）・止めている間の H2 のファイルの大きさ（同じイメージの一時のコンテナでボリュームを読むだけ）・起動から healthy までの秒数・起動し直した後の大きさを記録し、止める前と後のデータ（適用中の DSL とプレビューの DSL の SHA-256、プレビューの previewId、履歴の版・dslHash・件数）を比べる。その後、履歴のすべての版を戻して、プレビューの本文の SHA-256 が履歴の dslHash と一致する数を記録する（`restore_all_match`。詰め直しで本文が壊れていないか） | U4-STORAGE | `storage.tsv`・`memory-peak-before-restart.txt`・`memory-stat-before-restart.txt`・`stop-state.txt`・`data-while-stopped.txt`・`snapshot-before-stop.txt`・`snapshot-after-restart.txt`・`history-after-restart.txt`・`app-before-restart.log` |
 
 - `--lang` の画面は、開いたときにプレビューの表示（重い処理）を読みに行く。読み終わる前に投入すると 503 `DSL_BUSY` になるため、台本は最初の読み込みが終わるのを待ってから投入する。
 - `--storage` の `memory.current` はページキャッシュを含むため、H2 のファイルへの書き込みでコンテナの上限の近くまで上がることがある。止まるかどうかは `anon` と、最後の `state.txt`（OOMKilled）で見る。
 - `--storage` はアプリを起動し直すため、GC の記録（`gc.log`）は起動し直す前の分（`gc-before-restart.log`）と後の分をつないで残す。
+- `--storage` で内部DB の接続先を比べるときは、`PERF_DB_URL` で `MASTERSMITH_DB_URL` を上書きする（例: DEFRAG_ALWAYS なしの `PERF_DB_URL=jdbc:h2:file:/app/data/mastersmith`）。指定しなければ application.yaml の既定（DEFRAG_ALWAYS=TRUE）で動く。使った値は `env.txt` の `db_url` に残る。
+- `--storage` のアプリのログは、止める前の分を `app-before-restart.log`、起動し直した後の分を `app.log` に残す。止めるときの終わり方は `app-before-restart.log` の終わりの行（Hikari の shutdown など）と `stop-state.txt` の exit code で見る。
 
 ### k6 の DSL の場面（Performance Validation で使う）
 

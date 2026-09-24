@@ -33,7 +33,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 - 生成の内訳は、アプリのログの DEBUG（`readMillis`・`buildMillis`・`writeMillis`・`validateMillis`・`bytes`）で読む。ヒープは GC の記録、コンテナのメモリは cgroup の `memory.peak`・`memory.current`・`memory.stat` で読む。まとめは `perf/dsl-timing-report.mjs`。
 - 画面の時間は `perf/ui/dsl-ui-timing.mjs`（`--ui`）、英語の表示は `perf/ui/dsl-ui-lang.mjs`（`--lang`）。
 
-### 2.2 結果（2026-09-24、コミット 39f9aeb のアプリ、上限 CPU 4・メモリ 2g）
+### 2.2 結果（2026-09-24、上限 CPU 4・メモリ 2g。時間はコミット 39f9aeb、保存の量は Loop-back 1 の後の 8961cb2）
 
 | Target ID | 目標 | 実測 | 判定 | 結果の置き場 |
 |---|---|---|---|---|
@@ -49,10 +49,12 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 | NFR1.20 | 10MB のファイルを選んでから送り始めるまで 2 秒以内 | 553〜664ms | Met | 同上 |
 | U2-PATTERN-COMPILE | 1,000 文字の重い正規表現の組み立てが短く終わり、続く投入が遅れない | 重い DSL（`pattern` 2,000 個）の投入 0.34〜0.44 秒、直後の普通の投入 0.228 秒（前 0.22〜0.29 秒・後 0.21〜0.22 秒）。打ち切りと拒否のログ 0 件 | Met | `build/perf-results/dsl-run4-extra/summary.md` |
 | U5-LANG-E2E | 英語のロケールで、サーバーの `message` と画面の警告・誤りの一覧が英語 | `pass: true`（照合の警告と 422 の誤りの一覧の両方） | Met | `build/perf-results/dsl-run4-extra/postgres/ui-lang.json` |
-| U4-STORAGE | プレビュー1件と履歴 20 件（すべて 10MB）の最大の状態で、H2 のファイルが約 210MB の内、コンテナのメモリの上限の内 | H2 のファイルは 56MB から 1回に約 10.3MB ずつ増えて 282MB。履歴が 20 件に達した後も増え続け、起動し直しても縮まない（40 回で 461MB）。`memory.peak` は上限ちょうどの 2,048MB（`anon` 約 1,900MB）、OOMKilled なし | **Not Met** | `build/perf-results/dsl-run4-extra/summary.md`・`build/perf-results/dsl-run5-storage40/summary.md` |
+| U4-STORAGE-RUN | 動いている間の最大の状態（プレビュー1件と履歴 20 件がすべて 10MB）で、H2 のファイルが約 210MB の内、コンテナのメモリの上限の内 | `8961cb2`（`DEFRAG_ALWAYS=TRUE`）で、21 回 267.4MB、プレビューを置いて 278.2MB（2回とも同じ）、40 回 483.1MB。1回に約 10.78MB 増え、頭打ちなし。`memory.peak` は上限 2g に張り付き、`anon` の最大 1,959〜1,986MB、OOMKilled なし | **Not Met** | `build/perf-results/dsl-lb1-storage21-defrag/`・`dsl-lb1-storage21-defrag-2/`・`dsl-lb1-storage40-defrag/` |
+| U4-STORAGE-RESTART | 止めて起動し直した後、H2 のファイルが生きているデータの量に戻り、データが無事 | `DEFRAG_ALWAYS=TRUE` で 15.9MB（21 回・40 回とも）、なしでは 278.2MB のまま。止めるのに 0.55〜1.00 秒、ExitCode 143、healthy まで約 8.7 秒、データは前後で一致（戻し 20/20） | Met | 同上と `build/perf-results/dsl-lb1-storage21-nodefrag/` |
 
 - 資源（`dsl-run1`）: コンテナのメモリの最大（`memory.peak`）1,732〜1,869MB、確保したヒープの最大 1,324〜1,472MB、3種類とも OOMKilled なし。
-- U4-STORAGE は3回再現した（`dsl-run3-extra` で 21 回＋プレビューで 256MB、`dsl-run4-extra` で 282MB、`dsl-run5-storage40` で 40 回＋プレビューで 461MB）。原因は H2（MVStore）が空いた領域を再利用・詰め直ししないことと見ているが、**未確認の仮説**である。詳しくは `test-results.md` 3.2。
+- U4-STORAGE は、直す前（`39f9aeb`）に3回再現した（`dsl-run3-extra`・`dsl-run4-extra`・`dsl-run5-storage40`。起動し直しても縮まない）。Loop-back 1 で内部DB の既定の接続先に `DEFRAG_ALWAYS=TRUE` を足し（`8961cb2`）、2.4 の方法で測り直した。起動し直した後は縮むようになった（RESTART は Met）が、動いている間の増え方は変わらない（RUN は Not Met）。試験の 10MB の DSL は gzip で 0.29MB に縮むデータで、圧縮の効かない本文では起動し直した後も約 210MB＋α に近づくと推定している（実測ではない）。詳しくは `test-results.md` 3.2。
+- 大きさの MB は 10^6 バイト。`summary.md` の保存の量の表は 2^20 バイトで割った値（278.2MB は表の 265.3、483.1MB は 460.7、15.9MB は 15.2）。
 - `dsl-run3-extra` は英語の表示の確かめが台本の待ち（`locator.waitFor` の時間切れ）で `pass: false` になったため、台本を直して `dsl-run4-extra` でやり直した。判定には `dsl-run4-extra` を使った。
 - `dsl-run1`・`dsl-run2-ui` のイメージは `sha256:9794f400…`、`dsl-run3-extra` 以後は作り直した `sha256:8288782c…`。アプリのソースはどちらも 39f9aeb から変わっていない（未コミットの変更は E2E・`perf/`・README・`docker/perf/compose.yaml` だけ）。
 
@@ -67,6 +69,29 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 | U2 の検証（`validateMillis`） | 3 秒 | 832ms（MySQL の1回目） |
 | 保存と応答（全体から上の3つを引いた残り） | 2 秒 | 全体 2.64 秒のうち約 0.8 秒 |
 
+### 2.4 保存の量の測り方（U4-STORAGE、Loop-back 1 の後）
+
+```bash
+# 0. 測る版のイメージを作る（配備のタグ local は上書きしない）
+./gradlew :backend:bootWar && docker build -t mastersmith:perf-dsl-lb1 .
+
+# 1. 既定の接続先（DEFRAG_ALWAYS=TRUE）で、10MB の DSL の投入→適用を 21 回（既定）くり返し、最後にプレビューを置く
+MASTERSMITH_IMAGE_TAG=perf-dsl-lb1 ./perf/dsl-timing.sh --storage postgres
+
+# 2. 履歴 20 件を超えた後の増え方（40 回）
+STORAGE_ROUNDS=40 MASTERSMITH_IMAGE_TAG=perf-dsl-lb1 ./perf/dsl-timing.sh --storage postgres
+
+# 3. 比べるため、DEFRAG_ALWAYS なしの接続先で
+PERF_DB_URL=jdbc:h2:file:/app/data/mastersmith MASTERSMITH_IMAGE_TAG=perf-dsl-lb1 ./perf/dsl-timing.sh --storage postgres
+```
+
+- `--storage` は、10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューを1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（`memory.current`・`memory.peak`、`memory.stat` の `anon` と `file`）、履歴の件数を `storage.tsv` に記録する。
+- 最後にアプリを `docker compose stop`（`stop_grace_period` 45 秒）で止め、止めるのにかかった秒数と終わり方（SIGTERM で正常に終われば 143、猶予切れや OOM の SIGKILL は 137）を `stop-state.txt` に、止めている間のファイルの大きさを `data-while-stopped.txt` に、起動から healthy までの秒数と起動し直した後の大きさを記録する。
+- 止める前と後のデータ（適用中の DSL とプレビューの DSL の SHA-256、プレビューの識別、履歴の版・`dslHash`・件数）を `snapshot-before-stop.txt`・`snapshot-after-restart.txt` で比べ（`data_intact`）、履歴のすべての版を戻してプレビューの本文の SHA-256 が `dslHash` と一致する数（`restore_all_match`）を記録する（詰め直しで本文が壊れていないか）。
+- `PERF_DB_URL` は内部DB の接続先（`MASTERSMITH_DB_URL`）を上書きする。指定しなければ `application.yaml` の既定（`DEFRAG_ALWAYS=TRUE`）で動く。使った値は `env.txt` の `db_url` に残る。
+- `memory.current` はページキャッシュを含むため、H2 のファイルへの書き込みで上限の近くまで上がる。止まるかどうかは `anon` と `state.txt`（OOMKilled）で見る。
+- 手順の正本は `perf/README.md` の「追加の確かめ」（台本と手順は Loop-back 1 で直した）。
+
 ## 3. Performance Validation に引き継ぐもの
 
 | Target ID | 目標 | k6 の場面 | この段での状態 |
@@ -77,7 +102,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 
 - 台本: `perf/k6/scenarios.js` に `dslLight`・`dslCycle`・`dslMixed` を足した。`k6 inspect` で全場面を読み込めること、`dslLight`・`dslCycle` が使い捨ての環境で 10 秒ずつ動くことを確かめた（`build/perf-results/dsl-k6-smoke/`）。条件（履歴 20 件など）をそろえていないため、**目標の判定には使わない**。参考の値は `dslLight` の今の状態 p95 1.1ms・履歴 p95 1.07ms、`dslCycle` の適用 p95 4.71ms・破棄 p95 10.15ms（失敗 0）。
 - 流し方は `perf/README.md` の「k6 の DSL の場面」。`KEEP=1` で使い捨ての環境を残し、同じ一時ディレクトリの `ui.env` で `grafana/k6:2.3.0` を流す。`dslMixed` には試験用の利用者 10 名と `PERF_USER_PASSWORD` が要る。
-- NFR1.12 は、この段の 2g の測定でも 10MB の処理の間の `memory.peak` が 1,732〜1,869MB に達しており、1g では余裕が無い見込みが高い。U4-STORAGE の Not Met（メモリが上限に張り付く）と合わせて、Performance Validation で最初に確かめる。
+- NFR1.12 は、この段の 2g の測定でも 10MB の処理の間の `memory.peak` が 1,732〜1,869MB に達しており、1g では余裕が無い見込みが高い。U4-STORAGE-RUN の Not Met（動いている間はメモリが上限に張り付き、`anon` が上限の約 92%）と合わせて、Performance Validation で最初に確かめる。
 - 要求1件で接続を2本使う経路は、U4 の実装で出来事をトランザクションの外で出す形にして無くした（U4 の Code Generation の記録）が、project.md の決まり（2本使う経路は負荷の試験で確かめる）に当たるかを U4-POOL で確かめる。
 
 ## 4. 監視と時間の関係
@@ -96,6 +121,8 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 ## Sources
 
 - `perf/README.md`（「DSL の時間を測る」「追加の確かめ」「k6 の DSL の場面」）・`perf/dsl-timing.sh`・`perf/make-large-dsl.mjs`・`perf/make-pattern-dsl.mjs`・`perf/dsl-timing-report.mjs`・`perf/ui/`・`perf/k6/scenarios.js`
+- `build/perf-results/dsl-lb1-storage21-defrag/`・`build/perf-results/dsl-lb1-storage21-defrag-2/`・`build/perf-results/dsl-lb1-storage40-defrag/`・`build/perf-results/dsl-lb1-storage21-nodefrag/`（Loop-back 1 の後の保存の量）
+- `backend/src/main/resources/application.yaml`（内部DB の既定の接続先）
 - `build/perf-results/dsl-run1/summary.md`・`build/perf-results/dsl-run2-ui/`・`build/perf-results/dsl-run3-extra/`・`build/perf-results/dsl-run4-extra/summary.md`・`build/perf-results/dsl-run5-storage40/`・`build/perf-results/dsl-k6-smoke/`
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/build-and-test-questions.md`（Q2・Q3・Q4・Q8）
 - 目標の一覧の下書き（この段の Step 1 で作ったもの。リポジトリの外の一時ファイル）
@@ -104,5 +131,5 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 
 ## Assumptions & Open Questions
 
-- U4-STORAGE の原因（H2 の MVStore が空き領域を再利用・詰め直ししない）は仮説で、確かめていない。直し方（例: 履歴の削除の後の詰め直し、H2 の設定、履歴の保存の形の見直し）と、目標（約 210MB）をどう満たすかは依頼者の判断が要る（`test-results.md` 3.2）。
+- U4-STORAGE-RUN（動いている間の増え方）をさらに直すか（例: 適用の後の詰め直し、履歴の本文の持ち方の見直し）、既知の制約として記録して先へ進むかは依頼者の判断が要る（`test-results.md` 3.2）。圧縮の効かない本文での起動し直した後の大きさは実測していない。
 - 測定は各種類 1回ずつ（生成は 3回＋1回）で、ばらつきの幅は小さいが統計の判定ではない。

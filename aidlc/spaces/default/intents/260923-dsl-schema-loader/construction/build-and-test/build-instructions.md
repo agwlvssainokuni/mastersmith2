@@ -66,7 +66,7 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 ```
 
 - 対象DB のイメージは、版とダイジェストを固定したもの（MySQL 8.4.11・MariaDB 11.8.9・PostgreSQL 18.6。正本は `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）を使う。初回はイメージの取得に時間がかかる。
-- Docker に届かないとき、開発中（環境変数 `CI` が無い）は、警告を出して対象DB のテストだけを中断（SKIPPED）にする設計である。**この状態では統合しない**。ただし、今の実装では4つのテストのクラスが中断ではなく失敗になる（6節と `test-results.md` 3.1）。CI（`CI=true`）では Docker に届かなければ失敗させる。
+- Docker に届かないとき、開発中（環境変数 `CI` が無い）は、警告を出して対象DB のテストだけを中断（SKIPPED）にする設計である。**この状態では統合しない**。実測（`8961cb2`）では、Docker に届かない状態で対象DB のテストの 10 クラス（57 件）が SKIPPED になり、各クラスに警告が出て、タスクは成功した（`test-results.md` 2.8）。CI（`CI=true`）では Docker に届かなければ失敗させる。
 - 実測（2026-09-24）: `verify` の間の VM のメモリの使用量は最大 約 1,424MiB（配備したアプリを動かしたまま）で、6GiB の VM に余裕がある。
 
 ### 3.2 起動するときだけ要るもの
@@ -126,7 +126,7 @@ cp .env.example .env
 
 | 確かめること | 方法 | 期待 |
 |---|---|---|
-| 1コマンドの検査が通る | `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` | `BUILD SUCCESSFUL`（実測 4分14秒〜4分21秒） |
+| 1コマンドの検査が通る | `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` | `BUILD SUCCESSFUL`（実測 4分14秒〜6分17秒。`8961cb2` で 6分17秒） |
 | 対象DB のテストが飛ばされていない | `backend/build/test-results/integrationTest/` の報告 | 飛ばし 0 件（実測 結合 375 件・飛ばし 0） |
 | 成果物ができている | `ls -l backend/build/libs/mastersmith.war` | ファイルがある |
 | JSON Schema が WAR に入っている | `verifyArtifact` の `verifyDslSchemaInWar` | 成功（`WEB-INF/classes/static/dsl/dsl-schema-v1.json` が正本と一致） |
@@ -153,7 +153,8 @@ unzip -l backend/build/libs/mastersmith.war 'WEB-INF/classes/META-INF/third-part
 |---|---|---|
 | `checkToolchain` が失敗する | Node.js が 24 でない、Gitleaks・OSV-Scanner が無い | 出力に示された入れ方で用意する。検査を飛ばす設定は作らない |
 | 対象DB のテストが「コンテナの実行環境が無いため対象DB のテストを飛ばした」の警告で SKIPPED になる | colima が止まっている、`DOCKER_HOST` が無い・違う | `colima start` で起動し、3.1 の環境変数を確かめてから `verify` をやり直す。**飛ばした状態では統合しない** |
-| 同じ状態で `MysqlTargetSchemaReaderIT` などが `initializationError`（`NoSuchElementException`、`OutputCapture.pop`）で失敗する | 既知の不具合（NFR12.3 の Not Met）。拡張の登録の順のため、中断のときに `OutputCaptureExtension` の後片付けが失敗する | 上と同じく colima を起動してやり直す。直し方の候補は `test-results.md` 3.1 |
+| 新しいテストのクラスで `initializationError`（`NoSuchElementException`、`OutputCapture.pop`）が出る、または `ExtensionOrderArchitectureTest` が失敗する | `ContainerRuntimeCheck` を `OutputCaptureExtension` より先に登録した（Loop-back 1 で直した不具合と同じ形） | `@ExtendWith({OutputCaptureExtension.class, ContainerRuntimeCheck.class})` の順にする（`test-results.md` 3.1） |
+| 内部DB のファイル（`data/mastersmith.mv.db`）が大きいまま | 動いている間は、消した行の場所が詰め直されない。既定の接続先の `DEFRAG_ALWAYS=TRUE` で、止めるときに詰め直す | アプリを止めて起動し直す。`MASTERSMITH_DB_URL` で接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（README の環境変数の表） |
 | CI で対象DB のテストが失敗する | CI（`CI=true`）では Docker に届かなければ飛ばさずに失敗させる設計 | CI の実行環境に Docker があることを確かめる |
 | テストの件数が前回と同じまま・時間が極端に短い | テストのタスクが UP-TO-DATE で飛ばされた | `:backend:cleanTest :backend:cleanIntegrationTest` を付けてやり直す |
 | テストで `OutOfMemoryError` | テストの JVM のヒープの不足 | `backend/build.gradle.kts` の `maxHeapSize`（1g）を確かめる。下げない |
@@ -173,7 +174,7 @@ unzip -l backend/build/libs/mastersmith.war 'WEB-INF/classes/META-INF/third-part
 - `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java`
 - `aidlc/spaces/default/memory/team.md`（Way of Working、Testing Posture、Deployment、Code Style）・`aidlc/spaces/default/memory/project.md`（Way of Working、Testing Posture、Forbidden、Mandated）
 - `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/build-and-test-questions.md`（Q1: A）
-- `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/test-results.md`（実測の時間・VM のメモリ・NFR12.3 の失敗）
+- `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/test-results.md`（実測の時間・VM のメモリ・NFR12.3 の失敗と Loop-back 1 の後の結果）
 - `aidlc/spaces/default/intents/260922-auth-audit-base/construction/build-and-test/build-instructions.md`（書き方の見本）
 
 ## Assumptions & Open Questions
