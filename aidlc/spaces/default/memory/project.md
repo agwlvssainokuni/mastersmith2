@@ -46,6 +46,7 @@
 - 負荷の試験で接続プールが尽きたかを確かめるときは、使い捨てのアプリにだけ MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics を渡して /actuator/metrics の hikaricp の値を読み、数秒ごとの使用中の数ではなく、待ちの時間切れの累計と借りるまでの待ちの最大で判断する（配備したアプリの公開の範囲は変えない）。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:6183459b552b1e347df4f86017641db5c56a4349202caff390c55c193c899525 -->
 - k6 などの長い試験は caffeinate -i を付けて流し、PC の自動のスリープで要求が止まって結果が崩れるのを防ぐ（バッテリー駆動のまま 414 秒スリープし、要求が 6分52秒止まった）。内部DB に SQL で直接入れた試験用の利用者はロックの状態の行が無いため、同時のログインを流す前に1人ずつログインさせて行を作る。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:f0c52a1398842c59feab5bedd7239515fc40d48a12f80d7e96034db103864add -->
 - 軽い API の性能は、投入を重ねて内部DB のファイルが膨らんだ状態（悪い側の条件）のまま測る。メモリの最大（memory.peak）を比べる試験の前は、アプリのコンテナを作り直して前の最大の値を消す。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:b9c43187ce6f38e701503c4be8cbbe11c162c17cd1cb8b6739f6f7ddffc4ca74 -->
+- Performance Validation の段が無いため、2件目の直しの負荷の試験での確かめ（Q5: A）の持ち主を Build and Test とした（project.md の学びどおり）。 (learned 2026-09-24) <!-- cid:260924-followup-fixes:requirements-analysis:edd0566de8d745298681f86ffd92eaa003402622695282d848392f1b7c9214ac -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -204,3 +205,4 @@
 - 設定のずれを確かめるときは、compose の既定値と各 PC の .env の値を分けて見る（メモリの上限は compose の既定が 1g で、2g はこの PC の .env の値だった）。承認済みの記録と食い違ったときは、記録を書き換えず、ずれの記録に根拠とともに明記して依頼者に諮る。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:f7aed2210bbb992c5bb115494a313c935d143971bc23f6d98823b1d3881904e4 -->
 - 依頼者は Full rescan を選んだが、深さ Minimal のため開発担当が深く読んだのは7件に関わる約30ファイルとビルドの設定だけだった。記録上の範囲は kind: partial とし、./ を analyzed.paths に入れない（前回と同じ扱い）。 (learned 2026-09-24) <!-- cid:260924-followup-fixes:reverse-engineering:af16b38d0511d7ef16486d2d008c467505aec9676b09a5032695d58313d7af5f -->
 - 比べた結果は NARROWER。前回の深い範囲（common-*・access・frontend-app-core など12部品）は今回流し読みで、記録上の範囲から外れた。代わりに今回の7件に関わる30ファイル（config・auth・audit・container-runtime・perf-and-monitoring・build-and-verify・frontend-feature-dsl）を深く確かめた。 (learned 2026-09-24) <!-- cid:260924-followup-fixes:reverse-engineering:fde1a512f7d277c2d14c56ac3bb1bcb075512477ec44439955c0ac2678c78997 -->
+- 2件目・3件目・5件目は依頼の文と前の Intent の振り返りで直す向きが決まっていたため質問にせず、問いの冒頭に「決まっていること」として書いた。質問は判断が分かれる5点（Loki の個人に関する値・Hibernate の案内・環境変数の分け方・閉じるボタンの名前・負荷の試験の手順）に絞った。 (learned 2026-09-24) <!-- cid:260924-followup-fixes:requirements-analysis:55a20087759902237d785de5dc5f9356bba4a6045d7919dd73f74b72ae905ce1 -->
