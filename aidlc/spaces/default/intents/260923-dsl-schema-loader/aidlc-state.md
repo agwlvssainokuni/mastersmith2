@@ -7,7 +7,7 @@
 - **Scope**: classic
 - **Start Date**: 2026-09-23T08:44:37Z
 - **State Version**: 8
-- **Active Agent**: aidlc-pipeline-deploy-agent
+- **Active Agent**: aidlc-aws-platform-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**: 2026-09-23T09:47:01Z
@@ -28,11 +28,11 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 26
-- **Completed**: 19
-- **In Progress**: deployment-pipeline
+- **Completed**: 20
+- **In Progress**: environment-provisioning
 
 ## Runtime State
-- **Revision Count**: 9
+- **Revision Count**: 10
 
 - **Unit Ownership**: solo
 - **Skeleton Stance**: off
@@ -84,8 +84,8 @@ Per unit: [TBD]
 - [x] ci-pipeline — EXECUTE
 
 ### OPERATION PHASE
-- [-] deployment-pipeline — EXECUTE
-- [ ] environment-provisioning — EXECUTE
+- [x] deployment-pipeline — EXECUTE
+- [-] environment-provisioning — EXECUTE
 - [ ] deployment-execution — EXECUTE
 - [ ] observability-setup — EXECUTE
 - [ ] incident-response — EXECUTE
@@ -94,12 +94,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: OPERATION
-- **Current Stage**: deployment-pipeline
-- **Next Stage**: environment-provisioning
+- **Current Stage**: environment-provisioning
+- **Next Stage**: deployment-execution
 - **Status**: Running
-- **Last Updated**: 2026-09-24T15:46:01Z
+- **Last Updated**: 2026-09-24T16:03:18Z
 
 ## Session Resume Point
-- **Last Completed Stage**: ci-pipeline
-- **Next Action**: Execute Deployment Pipeline
+- **Last Completed Stage**: deployment-pipeline
+- **Next Action**: Execute Environment Provisioning
 - **Pending Artifacts**: none

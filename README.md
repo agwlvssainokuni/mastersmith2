@@ -112,53 +112,72 @@ git status --porcelain           # 何も表示されないこと（未コミッ
 git rev-parse --short HEAD       # 配備する版のコミットのハッシュを控える（戻すときに使う）
 ./gradlew verify                 # 検査を通して WAR を作る（backend/build/libs/mastersmith.war）
 cp .env.example .env             # 初回だけ。値を入れる（.env はコミットしない）
-# 2回目以降は、ここで内部DBのデータを複写する（「内部DBのバックアップと戻し方」）
-docker compose up -d --build
-docker compose ps                # app が healthy になれば起動の完了（最長で約 2 分）
+# 2回目以降は、ここで内部DBのデータを複写し（「内部DBのバックアップと戻し方」）、
+# いま動いている版のイメージに戻し用のタグを付ける（「戻し方」。例: docker tag mastersmith:local mastersmith:pre-dsl）
+docker compose --profile targetdb-postgres up -d --build   # アプリと見本の対象DB（PostgreSQL）を起動する
+docker compose --profile targetdb-postgres ps              # app が healthy、targetdb-postgres が Up になれば起動の完了（最長で約 2 分）
 ```
 
+- 配備したアプリには、見本の対象DB（PostgreSQL、compose の profile `targetdb-postgres`、DB `business`・スキーマ `sales`、読み取りだけのアカウント `mastersmith_reader`）をつなぎ、アプリと一緒に起動・停止します。そのため、起動・状態の確認・停止の `docker compose` のコマンドには `--profile targetdb-postgres` を付けます。
+- 初めて起動する前に、`.env` に次の9項目を入れておきます。値は各自で決め、コミットしません。
+  - `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`: 見本の DB の管理者と `mastersmith_reader` のパスワード。乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`.env` の `$` の展開などに左右されません）。
+  - `MASTERSMITH_TARGET_DB_*` の7項目: 「対象DB」の「手元で試す対象DB（compose の profile）」の手順 3 の PostgreSQL の値（ホストは `targetdb-postgres`、番号は `5432`）。`MASTERSMITH_TARGET_DB_PASSWORD` は `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` と同じ値にします。
+- 見本のスキーマと読み取りのアカウントは、見本の DB のボリュームが無い状態で初めて起動したときだけ作られます。起動の後に `docker compose logs targetdb-postgres` で初期化の誤りが無いことを確かめます。後から `.env` のパスワードを変えても見本の DB には効かないため、変えるときは見本の DB を作り直します（「手元で試す対象DB（compose の profile）」の手順 5 で消してから起動し直す）。
+- アプリは起動のときに対象DB に接続しません。見本の対象DB が止まっていてもアプリは起動を続け、スキーマの読み込み（既定の DSL の生成）と照合が「接続できない」になります。対象DB を使わないときは、`--profile targetdb-postgres` を付けずに起動し、`MASTERSMITH_TARGET_DB_*` を書きません（7項目がすべて空なら対象DB を使いません）。
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
 - 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。
 - 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
+- 見本の対象DB をつないだ配備では、スモークテストに次を足します: サイドバーの「DSL」で DSL の管理画面を開き、今の状態が表示されること。「スキーマを読み込む」で見本の DB から既定の DSL が作られ、プレビューに `sales` のテーブルとビューが並ぶこと（「未設定」「接続できない」にならないこと）。その操作の監査イベント `DSL_GENERATED` が記録されていること。スモークテストの操作は監査ログに残り、消せません。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。
-- 止めるときは `docker compose down`（内部DBのデータはボリュームに残ります）。
+- 止めるときは `docker compose --profile targetdb-postgres down`（アプリと見本の対象DB を一緒に止めます。内部DB と見本の対象DB のデータはボリュームに残ります）。
 
 ### 戻し方
 
-直前の版のコミット（前回の配備で控えたハッシュ）を別の場所に取り出して WAR を作り直し、`docker compose up -d --build` でイメージを作り直して起動します。
+配備の前に、いま動いているイメージに戻し用のタグ（例: `pre-dsl`）を付けて残しておき、問題が出たらそのイメージで起動し直します（イメージを作り直さない）。
 
 ```bash
-docker compose stop app
-# 内部DBのデータを複写する（次の節）
-git worktree add ../mastersmith-rollback <直前の版のハッシュ>
-(cd ../mastersmith-rollback && git submodule update --init && ./gradlew :backend:bootWar)
-cp ../mastersmith-rollback/backend/build/libs/mastersmith.war backend/build/libs/mastersmith.war
-docker compose up -d --build
-docker compose ps                # healthy になったら、上のスモークテストを行う
-git worktree remove ../mastersmith-rollback
+# 配備の前（新しい版を作る前）に、いま動いている版のイメージに戻し用のタグを付ける
+docker tag mastersmith:local mastersmith:pre-dsl
 ```
 
-スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたときだけ、配備の前に取ったバックアップを展開してデータも戻します（次の節。バックアップの後の記録は失われます）。
+戻すときは、次の順で行います。
+
+```bash
+docker image inspect mastersmith:pre-dsl --format '{{.Id}}'   # 戻し先のイメージがあること
+docker compose stop app                                       # 止めるときに H2 のファイルが詰め直される（約 1 秒）
+# 今の内部DBのデータを複写する（次の節。戻した後に調べるため）
+MASTERSMITH_IMAGE_TAG=pre-dsl docker compose up -d --no-build app   # 戻し先のイメージで起動する（作り直さない）
+MASTERSMITH_IMAGE_TAG=pre-dsl docker compose ps app                 # healthy になったら、上のスモークテストを行う
+```
+
+- `MASTERSMITH_IMAGE_TAG` は `compose.yaml` の `image: mastersmith:${MASTERSMITH_IMAGE_TAG:-local}` の口です。**戻している間は、アプリを起動・作り直す `docker compose` のコマンドに毎回 `MASTERSMITH_IMAGE_TAG=<戻し用のタグ>` を付けます。** 付けずに `docker compose up -d` を行うと、`mastersmith:local`（新しい版）で作り直されます。付け忘れを避けたいときは、`.env` に `MASTERSMITH_IMAGE_TAG=<戻し用のタグ>` の1行を足し、新しい版に戻すときに消します。
+- **`--no-build` を必ず付けます。** `--build` を付けると、今の WAR から作ったイメージに戻し用のタグが付き、戻し先のイメージが上書きされます。
+- 戻し用のタグのイメージが無いとき（消してしまったとき）は、直前の版のコミット（前回の配備で控えたハッシュ）を `git worktree add ../mastersmith-rollback <ハッシュ>` で取り出し、`(cd ../mastersmith-rollback && git submodule update --init && ./gradlew :backend:bootWar)` で WAR を作り、その WAR で `docker build -t mastersmith:<戻し用のタグ> .` を行ってから、上の手順で起動します。終わったら `git worktree remove ../mastersmith-rollback` で消します。
+- 見本の対象DB（`targetdb-postgres`）は戻しの対象外です。動かしたままでよく、古い版が `MASTERSMITH_TARGET_DB_*` を読まないときは使われません。
+
+スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたとき、移行（Flyway）が途中で失敗したときだけ、配備の前に取ったバックアップを展開してデータも戻します（次の節。バックアップの後の記録は失われます）。
 
 ### 内部DBのバックアップと戻し方
 
-アプリを止めてから、ボリュームのファイルを複写します。
+アプリを止めてから、ボリュームのファイルをリポジトリの外（ホームの下の `~/.mastersmith-backup/`、権限 700）に複写します。置き場を `mktemp -d` の一時ディレクトリにしません（colima の VM から見えず、複写が空振りします）。
 
 ```bash
 docker compose stop app
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$PWD":/backup eclipse-temurin:25.0.4_7-jre-noble \
+mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
-docker compose start app
+ls -l ~/.mastersmith-backup/     # ファイルができたこと（中身は開かない）
+docker compose start app         # 配備の途中なら起動せず、次の手順で新しい版を起動する
 ```
 
 戻すときは、アプリを止め、ボリュームの中身を消してからバックアップを展開します。
 
 ```bash
 docker compose stop app
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$PWD":/backup eclipse-temurin:25.0.4_7-jre-noble \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
   sh -c 'rm -rf /data/* && tar xzf /backup/<バックアップのファイル> -C /data && chown -R 10001:10001 /data'
-docker compose start app
+docker compose start app         # 止めたコンテナをそのまま起動する（作り直すときは戻し方の節の MASTERSMITH_IMAGE_TAG を付ける）
 ```
 
 コンテナの外で動かしている場合は、アプリを止めて `./data/`（`bootRun` なら `backend/data/`）を複写します。
@@ -294,6 +313,8 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 画面からスキーマの読み込みを試すときや、読み取りの時間を測るときは、見本の対象DB を compose の profile で1つずつ起動します。ポートは PC に開けず、アプリのコンテナから compose の中の名前で接続します。
 
+配備したアプリには、見本のうち PostgreSQL（`targetdb-postgres`）をつなぎ、アプリと一緒に起動・停止します（「コンテナでの起動と確認」の `docker compose --profile targetdb-postgres up -d --build` と `docker compose --profile targetdb-postgres down`）。下の手順 1・3 の `.env` の設定は、その配備でも同じです。手順 2・5 の見本の DB だけの起動・停止は、ほかの種類を試すときや、見本の DB だけを止める・作り直すときに使います。ほかの種類に切り替えるときは、手順 3 の値を替えてアプリのコンテナを作り直し、使わなくなった見本の DB は止めます。見本の DB が持つのは見本のスキーマと読み取りのアカウントだけで、手順 5 で消しても業務のデータや内部DB は失われません。
+
 1. `.env` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` と `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` を入れる（空だと DB を作れません）。
 2. 起動する（初めての起動で、見本のスキーマと読み取りだけのアカウント `mastersmith_reader` を `docker/targetdb/<種類>/` の SQL と台本で作ります）。
 
@@ -330,7 +351,7 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 5. 止める・消す: `docker compose --profile targetdb-postgres stop targetdb-postgres`。データごと消すときは `docker compose --profile targetdb-postgres rm -sf targetdb-postgres` の後に `docker volume rm mastersmith_mastersmith-targetdb-postgres`（mysql・mariadb も同じ形）。
 
-メモリの上限は PostgreSQL・MariaDB が 512MB、MySQL が 768MB です。3つを同時に起動すると、colima の VM（6GiB）のうち約 2GB を使います。
+メモリの上限は PostgreSQL・MariaDB が 512MB、MySQL が 768MB です。3つを同時に起動すると、colima の VM（6GiB）のうち約 2GB を使います。配備したアプリ（上限 2GB）と PostgreSQL の見本（512MB）を一緒に動かすと約 2.5GB です。
 
 ## DSL の書式（JSON Schema）と読み込みの上限
 
@@ -533,7 +554,8 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 
 ```bash
 docker compose stop app
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$PWD":/backup eclipse-temurin:25.0.4_7-jre-noble \
+mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 docker compose start app
 # 複写を展開し、H2 の道具で読み取り（ACCESS_MODE_DATA=r）で開いて audit_events を読む
