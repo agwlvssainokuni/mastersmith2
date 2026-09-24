@@ -41,6 +41,8 @@ export default defineConfig({
   testDir: './e2e',
   testMatch: '**/*.e2e.ts',
   fullyParallel: false,
+  // 1つの WAR と内部DBを全ファイルで共有し、040 が DSL を適用して状態を変えるため、番号の順（ファイル名の順）に1本ずつ実行する。
+  workers: 1,
   forbidOnly: true,
   retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],

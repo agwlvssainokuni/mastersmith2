@@ -17,6 +17,8 @@
 #   消す: docker compose -p mastersmith-perf -f docker/perf/compose.yaml down -v
 # 仮の署名鍵・仮の管理者は、リポジトリの外に作る一時の環境ファイル（MASTERSMITH_PERF_ENV_FILE で場所を渡す）から読む。
 # イメージは配備と同じ mastersmith:local を使う（事前に docker compose build で作っておく）。手順は perf/README.md。
+# DSL の時間を測るときは、対象DB（MySQL・MariaDB・PostgreSQL）を profile で1つずつ起動し、
+# アプリの接続先を一時の環境ファイル（MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE）で渡す。手順は perf/README.md の「DSL の時間を測る」。
 name: mastersmith-perf
 
 services:
@@ -26,6 +28,9 @@ services:
       - "127.0.0.1:18080:8080"
     env_file:
       - path: ${MASTERSMITH_PERF_ENV_FILE:?一時の環境ファイルの場所を MASTERSMITH_PERF_ENV_FILE で渡してください}
+        required: true
+      # 対象DB の接続先（MASTERSMITH_TARGET_DB_*）。渡さなければ /dev/null（空）で、対象DB を使わない。
+      - path: ${MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE:-/dev/null}
         required: true
     environment:
       TZ: Asia/Tokyo
@@ -52,5 +57,78 @@ services:
     mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-1g}
     restart: "no"
 
+  # DSL の時間を測るための対象DB。版は compose.yaml の targetdb-* と同じ固定のイメージにする（結合テストの TargetDbImages.java とも同じ）。
+  # 初めての起動で、docker/targetdb/<種類>/ の SQL と台本で見本のスキーマと読み取りだけのアカウント mastersmith_reader を作る。
+  # 100 × 100 のスキーマ large は、起動の後に docker/targetdb/generate-large-schema.sh で作る（perf/dsl-timing.sh が行う）。
+  # 管理者と読み取りのアカウントのパスワードは、リポジトリの外の一時の環境ファイル（MASTERSMITH_PERF_TARGETDB_ENV_FILE）から読む。
+  # ヘルスチェックは TCP で確かめる（初期化の間の仮の起動は TCP を受け付けないため、初期化の終わりを待てる）。
+  targetdb-postgres:
+    image: postgres:18.6@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
+    profiles: [targetdb-postgres]
+    env_file:
+      - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
+        required: true
+    environment:
+      POSTGRES_DB: business
+      POSTGRES_USER: target_admin
+    volumes:
+      - perf-targetdb-postgres:/var/lib/postgresql
+      - ../targetdb/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "target_admin", "-d", "business"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+      start_interval: 2s
+    mem_limit: 512m
+    restart: "no"
+
+  targetdb-mysql:
+    image: mysql:8.4.11@sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d
+    profiles: [targetdb-mysql]
+    env_file:
+      - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
+        required: true
+    environment:
+      MYSQL_DATABASE: business
+    volumes:
+      - perf-targetdb-mysql:/var/lib/mysql
+      - ../targetdb/mysql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # 認証に失敗しても応答があれば成功になる（パスワードを渡さない）。
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+      start_interval: 2s
+    mem_limit: 768m
+    restart: "no"
+
+  targetdb-mariadb:
+    image: mariadb:11.8.9@sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68
+    profiles: [targetdb-mariadb]
+    env_file:
+      - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
+        required: true
+    environment:
+      MARIADB_DATABASE: business
+    volumes:
+      - perf-targetdb-mariadb:/var/lib/mysql
+      - ../targetdb/mariadb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+      start_interval: 2s
+    mem_limit: 512m
+    restart: "no"
+
 volumes:
   perf-data:
+  perf-targetdb-postgres:
+  perf-targetdb-mysql:
+  perf-targetdb-mariadb:

@@ -16,7 +16,8 @@
 //
 // ビルドした WAR で、チームの代表の流れ「ログイン → 管理画面に入れるか → ログアウト」を確かめる
 // （FR2.2、FR8.1、BR4.1、BR5.1〜BR5.3。team.md Testing Posture）。
-// 管理者でない利用者の 403 は、E2E には初期管理者しかいないためサーバー側の結合テストで確かめる（計画の C8）。
+// 管理者でない利用者の 403 は、E2E には初期管理者しかいないためサーバー側の結合テストで確かめる（U3 計画の C8）。
+// 文中の U1〜U3 と「計画」は、前の Intent（260922-auth-audit-base）の単位の番号とその Code Generation の計画を指す。
 import { expect, test, type Page } from '@playwright/test'
 import { adminEmail, adminPassword } from '../playwright.config'
 
@@ -41,7 +42,7 @@ async function collectProblems(page: Page): Promise<string[]> {
   return problems
 }
 
-test.describe('U3 admin access on the built WAR', () => {
+test.describe('030 admin access on the built WAR', () => {
   test('logs in, opens the administration area from the sidebar and logs out', async ({ page }) => {
     const problems = await collectProblems(page)
 

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 // ビルドした WAR で、画面が CSP 違反なしに表示されることを確かめる（NFR3.10、security-design 9章）。
+// 文中の U1〜U3 と「計画」は、前の Intent（260922-auth-audit-base）の単位の番号とその Code Generation の計画を指す。
 import { expect, test, type Page } from '@playwright/test'
 
 /** 画面で起きた CSP 違反とスクリプトのエラーを集める。 */
@@ -42,7 +43,7 @@ async function collectProblems(page: Page): Promise<string[]> {
   return problems
 }
 
-test.describe('U1 skeleton on the built WAR', () => {
+test.describe('010 skeleton on the built WAR', () => {
   test('shows the login layout at / with a CSP header and without violations or script errors', async ({
     page,
   }) => {

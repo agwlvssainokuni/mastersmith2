@@ -15,7 +15,8 @@
  */
 //
 // ビルドした WAR で、初期管理者のログインからログアウトまでを確かめる（FR2.1、FR2.4、FR5.3、FR6.1、BR8.1〜BR8.8）。
-// 管理画面に入れるかの確認は U3 で足す（U2 計画の C9）。
+// 管理画面に入れるかの確認は U3 で足す（U2 計画の C9。030-admin-access.e2e.ts）。
+// 文中の U1〜U3 と「計画」は、前の Intent（260922-auth-audit-base）の単位の番号とその Code Generation の計画を指す。
 import { expect, test, type Page } from '@playwright/test'
 import { adminEmail, adminPassword } from '../playwright.config'
 
@@ -48,7 +49,7 @@ async function fillLogin(page: Page, email: string, password: string): Promise<v
   await page.getByTestId('login-form-submit-button').click()
 }
 
-test.describe('U2 authentication on the built WAR', () => {
+test.describe('020 authentication on the built WAR', () => {
   test('logs in as the initial administrator, keeps the session over a reload and logs out', async ({
     page,
   }) => {
