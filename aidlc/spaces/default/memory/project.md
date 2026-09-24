@@ -70,6 +70,8 @@
 - 戻しで .env の元の値が要るときは、.env を開かずに、変更の前に .env をリポジトリの外（ホームの下）へ中身を表示せずに複写し、戻すときはその複写を戻す。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:deployment-pipeline:1d22caeb1205783cdbc97baa8745e5db11703baa067f63ffd6ad472f8ccc968e -->
 - Build and Test で、配備するものと同じソースのイメージを配備と同じ上限で負荷の試験済みのときは、依頼者の判断（Q1: A）で配備の前の k6 を省き、配備の後の healthy とスモークテストで確かめる。 (learned 2026-09-23) <!-- cid:260923-colima-spec-up:deployment-pipeline:7d388e8869c0f1041f0b6003ba34d70530499d4da273d77b23819e54cf862e1c -->
 - compose の app のサービスに対象DB の環境変数を足さず、.env.example に足すだけにした。app はすでに .env を env_file で読むため。基盤の設計（cicd-pipeline.md 3節）の書き方とは違う。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:9cee5b93f37740922dc363b3d0600e4250adfef1c03ada3ea807df5783ab181e -->
+- 配備先が開発者の PC 上のコンテナの間の Feedback & Optimization では、費用（Cost Explorer・Trusted Advisor）を VM・コンテナの資源の上限と実測に、設定のずれ（AWS Config）を docker inspect・docker compose config・.env の項目の有無（値は見ない）と、記録した設計の値との1つずつの比べに読み替える。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:2092e4de75ef6ca51d922bf2ba8a0bd22190e5194288dfbedaee190202c22398 -->
+- 手元の監視を常に動かしていない間は、SLO の判定を Unverified とし、配備の直後・監視の確かめ・負荷の試験・振り返りの時点の値を基準の値として並べ、配備先が決まったときの測り方を書く。目標を緩めて満たしたことにはしない。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:fa7ca0460f9a1e1941002f1251ad0d8bece205d0aeef0076a63aaceb8a3b14b6 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -199,3 +201,4 @@
 - U2 の Validation の値を数（number）と文字（text）の2つに分けた。YAML の値の型をそのまま保ち、後続の Intent が型を判定し直さずに済む代わりに、entities.md の value 1つの形とは違う。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:c77eb97fea82cb186ddddd31242869584b4dcda31c6e84952f9a5e952ab6b9d5 -->
 - U4 の適用はプレビューの行を INSERT ... SELECT の1文で履歴へ写す。10MB の本文を読み直さずに済む代わりに、H2 の SQL に依存する。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:80c597a572fc58d46352c537543a1f8e52e45582b47f16bc7ca6d9855b6c4689 -->
 - U2 の計画の前に、各設計の段の承認の場の決定（監査ログの Approve の文言）を洗い出した。U1 で決定 B を見落とした反省から。U2 に関わるのは決定 D（JSON Schema を許す設定は足さない）と、10MB への引き上げ。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:e5adf83437ab5ced96690000ea82c3620261c3a736d28f3a2a1f6cec6fce6c56 -->
+- 設定のずれを確かめるときは、compose の既定値と各 PC の .env の値を分けて見る（メモリの上限は compose の既定が 1g で、2g はこの PC の .env の値だった）。承認済みの記録と食い違ったときは、記録を書き換えず、ずれの記録に根拠とともに明記して依頼者に諮る。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:f7aed2210bbb992c5bb115494a313c935d143971bc23f6d98823b1d3881904e4 -->
