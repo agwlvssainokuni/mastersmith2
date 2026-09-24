@@ -1,0 +1,181 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-dsl-admin-ui",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAccessControlIT.java"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslCommon.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslHash.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslHistoryTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslHistoryTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslMenuTree.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslMenuTree.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslMenuTree.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslSubmitForm.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslSubmitForm.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslSubmitForm.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslTabs.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslTabs.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslWarningList.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslWarningList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslWarningList.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/dslApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/dslApi.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/saveFile.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/saveFile.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/diffCounts.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/failureMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/format.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/format.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/loadState.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/submitInput.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/submitInput.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/testing/renderDsl.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/useDslAdmin.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/useDslText.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.download.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiError.problem.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiError.ts"
+    }
+  ]
+}

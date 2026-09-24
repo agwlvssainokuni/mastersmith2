@@ -1,0 +1,62 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+.dsl-diff {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dsl-diff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.dsl-diff-counts {
+  margin: 0;
+}
+
+.dsl-diff-name {
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+}
+
+.dsl-disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.dsl-disclosure:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.dsl-diff-plain-name {
+  padding-left: calc(14px + var(--space-1));
+}
+
+.dsl-diff-detail-row > td {
+  padding-left: var(--space-6);
+}

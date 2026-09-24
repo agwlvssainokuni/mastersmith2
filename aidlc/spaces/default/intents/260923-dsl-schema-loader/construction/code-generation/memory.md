@@ -7,6 +7,7 @@
 - 2026-09-24T00:04:43Z — 設定の型のポートと種類を文字列で受けることにした; 数・列挙で受けると不正な値で Spring の結び付けが起動を止め、BR1.3（不正でも起動を続ける）を守れないため。
 - 2026-09-24T02:58:19Z — U2 の計画の前に、各設計の段の承認の場の決定（監査ログの Approve の文言）を洗い出した; U1 で決定 B を見落とした反省から。U2 に関わるのは決定 D（JSON Schema を許す設定は足さない）と、10MB への引き上げ。
 - 2026-09-24T02:58:19Z — U2 の JSON Schema の複写を bootWar ではなく processResources の出力に対して行う計画にした; 結合テスト（クラスパスで起動）でも公開の道を確かめるため。WAR の中の置き場は基盤の設計と同じになる。
+- 2026-09-24T10:40:02Z — U5 の設計の「C6 の 11 本の API」を、契約 C6 と U4 の実装どおり 10 本として扱った; 設計の数え違いと判断し、10 本すべてを一括の確かめと dslApi で扱って差を記録した。
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
@@ -20,6 +21,7 @@
 - 2026-09-24T05:29:10Z — U3 で写しに無いテーブルを参照する外部キーは DSL に写さない; 写すと U2 の意味の検証（BR3.3）を通らず生成が失敗するため。
 - 2026-09-24T09:31:45Z — U4 のトランザクションの境界を DslLifecycle ではなく DslRecordStore（service）に置いた; 生成と照合で対象DB を読むあいだ内部DB の接続を持ち続けないため。確定の後だけ差し替えと出来事を行う。
 - 2026-09-24T09:31:45Z — U4 で既存の AuditSecretLeakIT の列の一覧に V6 の4列を足し、テストの JVM のヒープを 1g にした; 前者は承認済みの V6 と必ず食い違うため、後者は構造の検査がクラスを持ち続け U3 の 10MB 超えのテストでヒープが尽きたため。どちらも計画に無い変更で、依頼者に確かめる。
+- 2026-09-24T10:40:02Z — U5 の違いの表・誤りの一覧・履歴を make-you-chic-ui の Table ではなく見た目を合わせた素の table にした; Table に行の開閉が無く、ページ送りの文言が日本語に固定で英語の表示を満たせないため。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
@@ -34,4 +36,5 @@
 - 2026-09-24T02:15:27Z — U3 で tinyint(1)・bit(1) を BOOLEAN と見分けるには、U1 の写しの DATA_TYPE と精度だけでは足りない（tinyint・精度 3 になる）。U3 の計画で COLUMN_TYPE を足すかを決める。
 - 2026-09-24T05:29:10Z — 100 × 100 の既定の DSL は実際のブロックの形で約 6.7MB（試算は 5.3MB）。コメントが多いと 10MB に近づくため、Build and Test でコメントつきの大きさを測る。
 - 2026-09-24T05:29:10Z — MySQL 8.4 は tinyint(1) unsigned の COLUMN_TYPE を tinyint unsigned で返すため数値になる（MariaDB は真偽値）。DB の違いとして受け入れるか、承認の場で確かめる。
+- 2026-09-24T10:40:02Z — make-you-chic-ui の Modal・Alert の閉じるボタンの名前が「閉じる」に固定で英語の表示にならない。サブモジュールは変えられないため、make-you-chic-ui 側への追加を依頼者と相談する。
 

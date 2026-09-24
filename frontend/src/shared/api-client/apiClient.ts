@@ -19,7 +19,8 @@
 // - 401 / AUTHENTICATION_REQUIRED を受けたら更新を1回だけ行い（同時の 401 は1つの更新にまとめる）、
 //   成功したら元の要求を1回だけ送り直す。送り直しでまた 401、または更新の失敗なら onUnauthenticated を呼ぶ。
 // - 認証の API（ログイン・更新・ログアウト）は、トークンの付与も更新と送り直しも行わない。
-import { networkError, readErrorCode, type ApiError } from './apiError'
+// - ファイルの受け取り（apiDownload）も同じ道を通し、本文のバイト列と Content-Disposition を返す（DSL の管理画面の BR2.4）。
+import { networkError, readErrorCode, toApiError, type ApiError } from './apiError'
 
 /** ApiClient が使う、ログイン状態の側の手段 */
 export interface AuthHandlers {
@@ -123,12 +124,31 @@ export async function apiRequest(path: string, init: RequestInit = {}): Promise<
     throw networkError()
   }
   if (!response.ok) {
-    const code = await readErrorCode(response)
-    const error: ApiError =
-      code === undefined
-        ? { kind: 'response', status: response.status }
-        : { kind: 'response', status: response.status, code }
+    const error: ApiError = await toApiError(response)
     throw error
   }
   return response
+}
+
+/** ダウンロードで受け取った本文と、ファイル名の指定 */
+export interface ApiDownload {
+  /** 本文のバイト列 */
+  blob: Blob
+  /** 応答の `Content-Disposition`（無ければ null） */
+  contentDisposition: string | null
+}
+
+/**
+ * API からファイルを受け取る。アクセストークンの付与と 401 での更新は {@link apiRequest} と同じ。
+ * 応答が成功でなければ {@link ApiError} を投げる。トークンは URL に入れない。
+ */
+export async function apiDownload(path: string, init: RequestInit = {}): Promise<ApiDownload> {
+  const response = await apiRequest(path, init)
+  let blob: Blob
+  try {
+    blob = await response.blob()
+  } catch {
+    throw networkError()
+  }
+  return { blob, contentDisposition: response.headers.get('Content-Disposition') }
 }
