@@ -26,5 +26,12 @@
     "dirName": "260923-dsl-schema-loader",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0d590-e338-7f01-b233-af670a8b2dd9",
+    "slug": "followup-fixes",
+    "dirName": "260924-followup-fixes",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
