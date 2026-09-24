@@ -33,7 +33,10 @@ import org.hibernate.annotations.Immutable;
  * <p>追記だけの記録であり、作ったあとに値を変える手段を持たない。JPA でも更新させないため、{@link Immutable} と各列の
  * {@code updatable = false} を指定する（BR4.1、NFR3.2）。
  *
- * <p>パスワード・トークン・ハッシュ値・Authorization ヘッダーの項目を持たない（BR2.3、NFR3.1）。文字列化ではメールアドレスを
+ * <p>DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4、契約 C7）では、操作した管理者の利用者 ID・DSL の識別・出どころ・
+ * 受け付けなかった投入の理由の種類も記録する（V6 で足した NULL を許す列）。DSL の本文と対象DB の接続先は持たない。
+ *
+ * <p>パスワード・トークン・パスワードのハッシュ値・Authorization ヘッダーの項目を持たない（BR2.3、NFR3.1）。文字列化ではメールアドレスを
  * 伏せる（U1 のメソッドの呼び出しの追跡が引数・戻り値を文字列にするため）。
  */
 @Entity
@@ -76,6 +79,20 @@ public class AuditEvent {
     @Column(name = "trace_id", updatable = false, length = 64)
     private String traceId;
 
+    @Column(name = "actor_user_id", updatable = false)
+    private Long actorUserId;
+
+    // 列は dsl_hash。項目名に hash を使わないのは、パスワードのハッシュ値の項目を持たないことを項目名で確かめる既存のテスト
+    // （AuditEventTest）に合わせるため。値は DSL の本文の識別（SHA-256）で、秘密ではない。
+    @Column(name = "dsl_hash", updatable = false, length = 64)
+    private String dslDigest;
+
+    @Column(name = "dsl_source", updatable = false, length = 16)
+    private String dslSource;
+
+    @Column(name = "rejection_kind", updatable = false, length = 32)
+    private String rejectionKind;
+
     /** JPA が使う。 */
     protected AuditEvent() {}
 
@@ -111,6 +128,38 @@ public class AuditEvent {
         this.userAgent = userAgent;
         this.requestPath = requestPath;
         this.traceId = traceId;
+    }
+
+    /**
+     * DSL の操作の監査イベントを作る（Intent 260923-dsl-schema-loader の U4、契約 C7）。
+     *
+     * @param occurredAt 出来事が起きた日時
+     * @param eventType 種類
+     * @param result 結果
+     * @param sourceIp 接続元IP
+     * @param userAgent User-Agent（無ければ null）
+     * @param traceId トレースID（無ければ null）
+     * @param actorUserId 操作した管理者の利用者 ID
+     * @param dslHash DSL の識別（無ければ null）
+     * @param dslSource DSL の出どころ（無ければ null）
+     * @param rejectionKind 受け付けなかった投入の理由の種類（無ければ null）
+     */
+    public AuditEvent(
+            Instant occurredAt,
+            AuditEventType eventType,
+            AuditResult result,
+            String sourceIp,
+            String userAgent,
+            String traceId,
+            Long actorUserId,
+            String dslHash,
+            String dslSource,
+            String rejectionKind) {
+        this(occurredAt, eventType, result, null, null, sourceIp, userAgent, null, traceId);
+        this.actorUserId = actorUserId;
+        this.dslDigest = dslHash;
+        this.dslSource = dslSource;
+        this.rejectionKind = rejectionKind;
     }
 
     /**
@@ -203,6 +252,42 @@ public class AuditEvent {
         return traceId;
     }
 
+    /**
+     * 操作した管理者の利用者 ID を返す。
+     *
+     * @return 利用者 ID（DSL の操作のとき以外は null）
+     */
+    public Long getActorUserId() {
+        return actorUserId;
+    }
+
+    /**
+     * DSL の識別を返す。
+     *
+     * @return DSL の識別（無ければ null）
+     */
+    public String getDslHash() {
+        return dslDigest;
+    }
+
+    /**
+     * DSL の出どころを返す。
+     *
+     * @return 出どころ（無ければ null）
+     */
+    public String getDslSource() {
+        return dslSource;
+    }
+
+    /**
+     * 受け付けなかった投入の理由の種類を返す。
+     *
+     * @return 理由の種類（無ければ null）
+     */
+    public String getRejectionKind() {
+        return rejectionKind;
+    }
+
     /** メールアドレスを伏せて文字列にする（アプリのログにメールアドレスを出さないため）。 */
     @Override
     public String toString() {
@@ -216,6 +301,10 @@ public class AuditEvent {
                 + ", userAgent=" + userAgent
                 + ", requestPath=" + requestPath
                 + ", traceId=" + traceId
+                + ", actorUserId=" + actorUserId
+                + ", dslHash=" + dslDigest
+                + ", dslSource=" + dslSource
+                + ", rejectionKind=" + rejectionKind
                 + "]";
     }
 }

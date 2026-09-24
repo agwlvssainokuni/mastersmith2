@@ -22,6 +22,8 @@ import cherry.mastersmith.common.observability.TraceIdProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
+import java.util.Set;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,10 @@ public class ErrorResponseFactory {
 
     /** 説明ページの URL のパス。 */
     public static final String PROBLEMS_PATH = "/api/problems/";
+
+    /** 追加の項目で上書きさせない項目名（Problem Details の標準の項目と {@code code}・{@code traceId}）。 */
+    static final Set<String> RESERVED_PROPERTIES =
+            Set.of("type", "title", "status", "detail", "instance", "code", "traceId");
 
     private final ProblemBaseUrlResolver baseUrlResolver;
 
@@ -63,6 +69,22 @@ public class ErrorResponseFactory {
      * @return ErrorResponse
      */
     public ProblemDetail create(HttpServletRequest request, ProblemType type, String detail) {
+        return create(request, type, detail, Map.of());
+    }
+
+    /**
+     * 追加の項目を持つ ErrorResponse を組み立てる（Intent 260923-dsl-schema-loader の U4、BR8.1）。
+     *
+     * <p>追加の項目は、既存の項目名（{@link #RESERVED_PROPERTIES}）を上書きしない（その名前の項目は載せない）。
+     *
+     * @param request 要求
+     * @param type 問題の種類
+     * @param detail 利用者に見せてよい説明（無ければ null。問題の種類の説明を使う）
+     * @param properties 追加の項目（名前と値）
+     * @return ErrorResponse
+     */
+    public ProblemDetail create(
+            HttpServletRequest request, ProblemType type, String detail, Map<String, Object> properties) {
         DisplayLanguage language = AcceptLanguageResolver.resolve(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE));
         ProblemDetail problem = ProblemDetail.forStatus(type.status());
         problem.setType(URI.create(baseUrlResolver.resolve(request) + PROBLEMS_PATH + type.slug()));
@@ -75,6 +97,11 @@ public class ErrorResponseFactory {
         if (instance != null) {
             problem.setInstance(instance);
         }
+        properties.forEach((name, value) -> {
+            if (!RESERVED_PROPERTIES.contains(name)) {
+                problem.setProperty(name, value);
+            }
+        });
         problem.setProperty("code", type.code());
         traceIdProvider.currentTraceId().ifPresent(traceId -> problem.setProperty("traceId", traceId));
         return problem;

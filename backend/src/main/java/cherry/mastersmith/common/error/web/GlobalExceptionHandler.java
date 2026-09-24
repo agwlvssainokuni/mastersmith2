@@ -20,6 +20,7 @@ import cherry.mastersmith.common.error.domain.CommonProblemTypes;
 import cherry.mastersmith.common.error.domain.ProblemType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 /**
  * 例外をエラー応答へ変換する1か所（BR5.1、BR5.5〜BR5.8、BR5.16）。個々のコントローラーでエラー応答を組み立てない。
  *
- * <p>ログは変換するここで1回だけ出す。想定内（4xx）は WARN でスタックトレースなし、想定外（5xx）は ERROR でスタックトレース付き。
+ * <p>ログは変換するここで1回だけ出す。想定内（4xx と業務エラー）は WARN でスタックトレースなし、想定外（5xx）は ERROR でスタックトレース
+ * 付き。業務エラー（{@link BusinessException}）は、状態コードが 5xx（例: 対象DB に接続できない 503）でも想定内の失敗として WARN に
+ * する（Intent 260923-dsl-schema-loader の U4 の NFR5.3）。業務エラーの追加の項目は応答に載せる（BR8.1）。
  * 応答に例外のメッセージとスタックトレースを載せない。フレームワークの標準の 4xx は、状態コードを保って専用の code にする（計画の
  * P1 の決定）。変換の対象として決めていない例外は 500 / {@code INTERNAL_ERROR} にする。
  */
@@ -75,7 +78,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ProblemDetail> handleBusiness(BusinessException ex, HttpServletRequest request) {
-        return respond(ex, request, ex.getProblemType(), ex.getDetail(), null);
+        log(ex, ex.getProblemType(), true);
+        return build(request, ex.getProblemType(), ex.getDetail(), ex.getProperties(), null);
     }
 
     /**
@@ -193,8 +197,17 @@ public class GlobalExceptionHandler {
 
     private ResponseEntity<ProblemDetail> respond(
             Exception ex, HttpServletRequest request, ProblemType type, String detail, HttpHeaders headers) {
-        log(ex, type);
-        ProblemDetail body = factory.create(request, type, detail);
+        log(ex, type, false);
+        return build(request, type, detail, Map.of(), headers);
+    }
+
+    private ResponseEntity<ProblemDetail> build(
+            HttpServletRequest request,
+            ProblemType type,
+            String detail,
+            Map<String, Object> properties,
+            HttpHeaders headers) {
+        ProblemDetail body = factory.create(request, type, detail, properties);
         ResponseEntity.BodyBuilder builder =
                 ResponseEntity.status(type.status()).contentType(MediaType.APPLICATION_PROBLEM_JSON);
         if (headers != null) {
@@ -203,8 +216,8 @@ public class GlobalExceptionHandler {
         return builder.body(body);
     }
 
-    private static void log(Exception ex, ProblemType type) {
-        if (type.status() >= 500) {
+    private static void log(Exception ex, ProblemType type, boolean expected) {
+        if (!expected && type.status() >= 500) {
             LOGGER.atError()
                     .setCause(ex)
                     .addKeyValue("code", type.code())

@@ -161,7 +161,12 @@ class AuditSecretLeakIT {
                         "SOURCE_IP",
                         "USER_AGENT",
                         "REQUEST_PATH",
-                        "TRACE_ID");
+                        "TRACE_ID",
+                        // Intent 260923-dsl-schema-loader の U4 の V6 で足した、DSL の操作の列（契約 C7。本文・接続先は持たない）
+                        "ACTOR_USER_ID",
+                        "DSL_HASH",
+                        "DSL_SOURCE",
+                        "REJECTION_KIND");
     }
 
     @Test

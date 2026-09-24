@@ -1,0 +1,268 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-dsl-management",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/domain/BusinessException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ErrorResponseFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/GlobalExceptionHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/RequestBodyLimitRoute.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/RequestSizeLimitFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/RequestSizeRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/web/RequestSizeRejectionListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/config/SecurityConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslAppliedRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslAppliedRevisionRecord.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslContent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslDownload.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslErrorItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslOperationEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslOperationType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslPreviewRecord.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslPreviewRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslSource.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslStatus.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslUserRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/PreviewView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/repository/DslAppliedRevisionRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/repository/DslPreviewRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslDiffCalculator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslErrorMessages.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslLifecycle.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslManageProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslOperationMetrics.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslPreviewAnalysis.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslPreviewCache.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslReconciler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslRecordStore.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslRequestContext.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslStartupLoader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslSummaryCalculator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/ApplyRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslAdminPaths.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslHeavyOperationGate.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslRequestContextResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslResponses.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslSubmitRejectionListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslWebConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/HeavyDslOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V5__u4_dsl_management.sql"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V6__u4_dsl_audit_columns.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditDslEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditDslEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/BusinessExceptionPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/web/RequestSizeLimitRoutesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/DslManageBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/domain/DslManageDomainTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslManageRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslReconcilerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupLoaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslApi.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslAuditRows.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslManageTestHooks.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslYaml.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslYamlHashes.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/RecordingStatementInspector.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAuditWriteFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslSubmitRejectionListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "path": "docker/monitoring/dashboards/mastersmith-overview.json"
+    }
+  ]
+}

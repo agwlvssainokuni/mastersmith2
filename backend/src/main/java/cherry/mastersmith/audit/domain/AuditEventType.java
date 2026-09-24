@@ -15,7 +15,7 @@
  */
 package cherry.mastersmith.audit.domain;
 
-/** 監査イベントの種類（BR1.2、FR9.2）。 */
+/** 監査イベントの種類（BR1.2、FR9.2。DSL の操作は Intent 260923-dsl-schema-loader の U4、契約 C7）。 */
 public enum AuditEventType {
     /** ログインの成功。 */
     LOGIN_SUCCEEDED,
@@ -24,5 +24,15 @@ public enum AuditEventType {
     /** ログアウト。 */
     LOGGED_OUT,
     /** 管理者のみの API へのアクセスの拒否。 */
-    ACCESS_DENIED
+    ACCESS_DENIED,
+    /** スキーマの読み込みで既定の DSL をプレビューに置いた。 */
+    DSL_GENERATED,
+    /** DSL を投入した（アップロード・貼り付け・履歴からの戻し）。 */
+    DSL_SUBMITTED,
+    /** DSL の投入を受け付けなかった。 */
+    DSL_SUBMISSION_REJECTED,
+    /** DSL を適用した。 */
+    DSL_APPLIED,
+    /** DSL のプレビューを破棄した。 */
+    DSL_PREVIEW_DISCARDED
 }

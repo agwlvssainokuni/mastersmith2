@@ -19,6 +19,7 @@ import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
 import cherry.mastersmith.audit.domain.AuditEvent;
 import cherry.mastersmith.audit.domain.AuditEventFactory;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
+import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * U2 の認証の出来事と U3 のアクセス拒否の出来事を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）を受け取り、監査イベントを
+ * 1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -102,6 +104,21 @@ public class AuditEventListener {
     }
 
     /**
+     * DSL の操作の出来事を受け取り、監査イベントを追記する（Intent 260923-dsl-schema-loader の U4、契約 C7、BR7.1〜BR7.3）。
+     *
+     * <p>U4 は出来事を元の操作の確定の後に、トランザクションの外で知らせるため、要求と同じスレッドでその場で受け取る。巻き戻った操作の
+     * 出来事は知らされない。
+     *
+     * @param event DSL の操作の出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onDslOperationEvent(DslOperationEvent event) {
+        // 組み立てが失敗するのは出来事が無いときだけ（出来事の必須の項目は出来事の側で確かめている）ため、載せる項目は無い。
+        record(() -> AuditEventFactory.from(event), () -> fields(null, null, null, null, null, null, null, null, null));
+    }
+
+    /**
      * 監査イベントを組み立てて追記し、失敗を受け止める。
      *
      * @param builder 監査イベントの組み立て
@@ -141,7 +158,7 @@ public class AuditEventListener {
     }
 
     private static Map<String, Object> fields(AuditEvent auditEvent) {
-        return fields(
+        Map<String, Object> fields = fields(
                 auditEvent.getEventType(),
                 auditEvent.getResult(),
                 auditEvent.getOccurredAt(),
@@ -151,6 +168,25 @@ public class AuditEventListener {
                 auditEvent.getUserAgent(),
                 auditEvent.getRequestPath(),
                 auditEvent.getTraceId());
+        if (auditEvent.getActorUserId() != null) {
+            fields.putAll(dslFields(
+                    auditEvent.getActorUserId(),
+                    auditEvent.getDslHash(),
+                    auditEvent.getDslSource(),
+                    auditEvent.getRejectionKind()));
+        }
+        return fields;
+    }
+
+    /** DSL の操作の項目（本文と接続先は持たない）。 */
+    private static Map<String, Object> dslFields(
+            Object actorUserId, String dslHash, String dslSource, String rejectionKind) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("actorUserId", actorUserId);
+        fields.put("dslHash", dslHash);
+        fields.put("dslSource", dslSource);
+        fields.put("rejectionKind", rejectionKind);
+        return fields;
     }
 
     private static Map<String, Object> fields(AuthenticationEvent event) {

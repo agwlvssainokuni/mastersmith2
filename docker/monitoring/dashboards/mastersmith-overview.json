@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "editable": false,
   "time": {
     "from": "now-6h",
@@ -850,6 +850,144 @@
         "w": 8,
         "x": 16,
         "y": 43
+      }
+    },
+    {
+      "id": 23,
+      "type": "row",
+      "title": "DSL の操作（Intent 260923-dsl-schema-loader の U4）",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "panels": []
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "操作ごとの件数（1 時間）",
+      "description": "指標 mastersmith.dsl.operation の件数を操作（generate・submit・restore・apply・discard・compare）ごとに数える（NFR1.16）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (operation) (increase(mastersmith_dsl_operation_milliseconds_count{service_name=\"mastersmith\"}[1h]))",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 52
+      }
+    },
+    {
+      "id": 25,
+      "type": "timeseries",
+      "title": "結果ごとの件数（1 時間）",
+      "description": "結果（success・rejected・failed・busy）ごとの件数。rejected は検証・大きさ・プレビューの不一致、busy は重い処理の重なり（DSL_BUSY）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (outcome) (increase(mastersmith_dsl_operation_milliseconds_count{service_name=\"mastersmith\"}[1h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 52
+      }
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "操作ごとの時間（95 パーセンタイル）",
+      "description": "目標の線: 生成 30 秒（NFR1.6）・プレビューの表示と投入 10 秒（NFR1.8）・軽い操作 1 秒（NFR1.10）。compare はプレビューの表示の中の照合だけの時間",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(mastersmith_dsl_operation_milliseconds_bucket{service_name=\"mastersmith\"}[5m])))",
+          "legendFormat": "{{operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              },
+              {
+                "color": "orange",
+                "value": 10000
+              },
+              {
+                "color": "red",
+                "value": 30000
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 52
       }
     }
   ],

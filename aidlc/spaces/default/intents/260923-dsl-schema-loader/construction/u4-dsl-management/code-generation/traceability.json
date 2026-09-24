@@ -1,0 +1,710 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-dsl-management",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.11",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.6",
+    "AC2.2.8",
+    "AC2.2.10",
+    "AC2.3.1",
+    "AC2.3.9",
+    "AC2.3.10",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.6",
+    "AC3.3.2",
+    "AC3.3.3",
+    "AC3.3.4",
+    "AC3.4.1",
+    "AC3.4.2",
+    "AC3.4.3",
+    "AC3.4.4",
+    "AC3.4.5",
+    "AC4.1.1",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC6.3.1",
+    "AC6.3.2",
+    "AC6.3.3",
+    "AC6.3.4",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.2.1",
+    "AC5.2.2",
+    "AC5.2.3",
+    "NFR1.6",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR1.13",
+    "NFR1.14",
+    "NFR1.15",
+    "NFR1.16",
+    "NFR1.17",
+    "NFR2.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR4.10",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR7.8",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3",
+    "NFR8.4",
+    "NFR8.5",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR3.1",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR4.5",
+    "BR4.6",
+    "BR4.7",
+    "BR5.1",
+    "BR5.2",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.3.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC2.3.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC3.4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC3.4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "AC6.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC6.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "AC6.3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAuditWriteFailureIT.java"
+    },
+    {
+      "id": "AC6.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.2.1",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.2.2",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "AC5.2.3",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻しと適用中のダウンロードは B4 のコミットの確かめの後に作る"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "N/A",
+      "target": "Build and Test の受け持ち（時間・資源の測定。生成の全体 30 秒）。コード生成では測らない"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "N/A",
+      "target": "Build and Test の受け持ち（時間・資源の測定。プレビューの表示・投入 10 秒（想定の規模と 10MB））。コード生成では測らない"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "N/A",
+      "target": "Build and Test の受け持ち（時間・資源の測定。軽い API の 95% が 1 秒）。コード生成では測らない"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "N/A",
+      "target": "Build and Test の受け持ち（時間・資源の測定。10MB のダウンロード 2 秒）。コード生成では測らない"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "N/A",
+      "target": "Build and Test の受け持ち（時間・資源の測定。10MB の DSL を処理するときのヒープ）。コード生成では測らない"
+    },
+    {
+      "id": "NFR1.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "NFR1.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "NFR1.15",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslHeavyOperationGate.java"
+    },
+    {
+      "id": "NFR1.16",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "id": "NFR1.17",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "NFR4.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/BusinessExceptionPropertiesTest.java"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java"
+    },
+    {
+      "id": "NFR7.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslManageRepositoryIT.java"
+    },
+    {
+      "id": "NFR8.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "NFR8.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAuditWriteFailureIT.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "N/A",
+      "target": "B5（Step 15〜17）の受け持ち。履歴からの戻し（POST /history/{revisionId}/restore）は B4 では作らない"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslManageRepositoryIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/web/RequestSizeLimitRoutesTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslReconcilerTest.java"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslConcurrencyIT.java"
+    },
+    {
+      "id": "BR4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAuditWriteFailureIT.java"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/BusinessExceptionPropertiesTest.java"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslProblemTypes.java"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    }
+  ]
+}

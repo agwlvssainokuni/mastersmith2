@@ -210,7 +210,9 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_HEALTH_DB_TIMEOUT` | `2s` | ヘルスチェックの内部DBの確認の制限時間 |
 | `MASTERSMITH_WEB_BASE_URL` | なし | エラー応答の `type` の URL のベースURL（無ければ要求から組み立てる） |
 | `MASTERSMITH_WEB_TRUST_FORWARDED_HEADERS` | `false` | 転送元のヘッダー（`X-Forwarded-*`・`Forwarded`）を信頼するか |
-| `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE` | `1MB` | 要求の本文の大きさの上限 |
+| `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE` | `1MB` | 要求の本文の大きさの上限（DSL の投入の API を除く。ログインと認可の確かめの後に確かめる。「DSL の管理の API（U4）」を参照） |
+| `MASTERSMITH_DSL_MAX_SUBMIT_SIZE` | `10MB` | DSL の投入の API（`POST /api/admin/dsl/preview`）だけの要求の本文の上限（10,485,760 バイト） |
+| `MASTERSMITH_DSL_HISTORY_LIMIT` | `20` | DSL の適用の履歴の件数の上限（1 以上）。超えた分は古いものから消す |
 | `MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED` | `false` | 外部エクスポート（トレース・ログ・指標の OTLP の送信）を有効にするか |
 | `MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT` | `http://localhost:4318` | OTLP の受け手（HTTP）のベースURL |
 | `MASTERSMITH_TRACING_SAMPLING_PROBABILITY` | `1.0` | 外部へ送るトレースの割合（トレースIDは割合によらずすべての要求に付く） |
@@ -378,6 +380,43 @@ version: 1
 - **`tinyint(1)` と `bit(1)`**: MySQL・MariaDB の `tinyint(1)` は、情報スキーマの `COLUMN_TYPE`（型の全体の表記）で見分けます。MySQL 8.4 は `tinyint(1) unsigned` の幅を落として `tinyint unsigned` と返すため、MySQL では符号なしの `tinyint(1)` は数値になります（MariaDB では真偽値）。`bit(1)` は精度 1 で見分けます。
 - **大きさ**: 作った DSL も上限の 10MB の内に収めます。超えるほど大きなスキーマでは生成を失敗にします（目安: 100 テーブル × 100 カラムでコメントが無いとき約 6.7MB。コメントの分だけ増えます）。その場合は、対象のスキーマを分けるなどの運用で対応してください。
 
+## DSL の管理の API（U4）
+
+管理者だけが使う DSL の管理の API です（`/api/admin/dsl/` の下。ログインしていなければ 401、管理者でなければ 403 と `ACCESS_DENIED` の監査）。画面（U5）から使います。エラーは Problem Details（`code` つき）で返ります。
+
+| メソッドとパス | 内容 | 成功 | 主な失敗（`code`） |
+|---|---|---|---|
+| `GET /api/admin/dsl/status` | 今の状態（適用中の版とプレビュー。無ければ `null`） | 200 | — |
+| `GET /api/admin/dsl/preview` | プレビューの中身（要約・適用中との違い・対象DB との照合の警告）。重い処理 | 200 | 404 `DSL_PREVIEW_NOT_FOUND`、503 `DSL_BUSY` |
+| `POST /api/admin/dsl/preview?source=UPLOAD\|PASTE` | 投入（本文は `application/yaml`、10MB まで）。検証を通れば今のプレビューを置き換える。重い処理 | 201 | 413 `DSL_TOO_LARGE`、415 `UNSUPPORTED_MEDIA_TYPE`、422 `DSL_INVALID`（誤りの先頭 100 件 `errors` と総数 `total`）、503 `DSL_BUSY` |
+| `DELETE /api/admin/dsl/preview` | プレビューの破棄 | 204 | 404 `DSL_PREVIEW_NOT_FOUND` |
+| `POST /api/admin/dsl/preview/generate` | スキーマの読み込み（既定の DSL を作り、今のプレビューを置き換える）。重い処理 | 201 | 503 `TARGET_DB_UNCONFIGURED`・`TARGET_DB_UNAVAILABLE`・`DSL_BUSY` |
+| `GET /api/admin/dsl/preview/download` | プレビュー中の DSL を、保存した本文のまま添付（`dsl-preview-<識別の先頭12文字>.yaml`）で返す | 200 | 404 `DSL_PREVIEW_NOT_FOUND` |
+| `POST /api/admin/dsl/apply` | 適用（本文 `{"previewId": "..."}`。見たプレビューを指定する）。対象DB には接続しない | 200 | 409 `DSL_PREVIEW_CHANGED`（プレビューが置き換わった・破棄された・同時の適用に負けた） |
+| `GET /api/admin/dsl/history` | 適用の履歴（新しい順、最大 `MASTERSMITH_DSL_HISTORY_LIMIT` 件、今適用中の版に `current: true`） | 200 | — |
+
+- **問題の種類（`code`）**: `DSL_INVALID`（422）・`DSL_TOO_LARGE`（413）・`DSL_PREVIEW_NOT_FOUND`（404）・`DSL_PREVIEW_CHANGED`（409）・`DSL_APPLIED_NOT_FOUND`（404）・`DSL_REVISION_NOT_FOUND`（404）・`TARGET_DB_UNCONFIGURED`（503）・`TARGET_DB_UNAVAILABLE`（503）・`DSL_BUSY`（503）。説明は `/api/problems/<code を小文字とハイフンにしたもの>` で見られます。履歴からの戻しと適用中のダウンロード（`DSL_APPLIED_NOT_FOUND`・`DSL_REVISION_NOT_FOUND` を返す API）は次の Bolt（B5）で足します。
+- **誤りの文言**: 422 の `errors[].message` と照合の警告の `message` は、要求の `Accept-Language` の言語（日本語・英語、既定は日本語）です。YAML・JSON Schema の部品の例外の文言は入りません。
+- **本文の大きさの上限の置き場**: 本文の大きさは、ログイン（アクセストークンの確かめ）と認可の後に確かめます。本文を読むのはログインしていてその API を使える人の要求だけです。そのため、**ログインしていない大きな要求は 413 ではなく 401** になります。投入の API だけ上限が `MASTERSMITH_DSL_MAX_SUBMIT_SIZE`（既定 10MB、`DSL_TOO_LARGE`）で、ほかの API は今までどおり `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE`（既定 1MB、`PAYLOAD_TOO_LARGE`）です。`Content-Length` がある送り方では本文を読まずに断ります。
+- **重い処理は同時に1つ**: 生成・投入・プレビューの表示（と B5 の履歴からの戻し）は、アプリ全体で同時に1つだけ処理します。重なった要求は待たずに 503 `DSL_BUSY` で断り、状態を変えず、監査の出来事も出しません。少し待ってからやり直してください。照合は対象DB が応答しないと最悪 23〜28 秒かかり（「対象DB」の節）、その間ほかの重い処理は `DSL_BUSY` になります。
+- **適用**: 見たプレビューの識別（`previewId`）を指定します。1つのトランザクションで履歴への追加・プレビューの削除・上限を超えた古い履歴の削除を行い、確定の後にだけ適用中の DSL を切り替えて監査に記録します。適用中と同じ内容でも履歴に1件足します。
+- **起動時**: 履歴の最新（適用した日時が最も新しい版）を適用中の DSL として読みます。今の検証を通らない（書式の版が変わった など）ときは、ERROR（`適用中の DSL を読めないため、適用中の DSL が無い状態で起動します`、識別の先頭 12 文字と誤りの種類だけ）を1件出し、適用中の DSL が無い状態で起動を続けます。
+- **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
+
+### DSL の操作の監査
+
+生成・投入・受け付けなかった投入・適用・破棄を、監査の表 `audit_events` に1件ずつ記録します（種類 `DSL_GENERATED`・`DSL_SUBMITTED`・`DSL_SUBMISSION_REJECTED`・`DSL_APPLIED`・`DSL_PREVIEW_DISCARDED`）。
+
+- 列（Flyway の V6 で足した、NULL を許す列）: 操作した管理者の利用者 ID `actor_user_id`、DSL の識別 `dsl_hash`、出どころ `dsl_source`（`GENERATED`・`UPLOAD`・`PASTE`・`RESTORE`）、受け付けなかった投入の理由の種類 `rejection_kind`（最初の誤りの種類、大きさで断ったときは `SIZE_LIMIT`。そのときは `dsl_hash` は空）。ほかに既存の日時・種類・結果・接続元IP・User-Agent・トレースIDを記録します。
+- DSL の本文と対象DB の接続先は記録しません。`DSL_BUSY` で断った要求と、巻き戻った適用は記録しません。
+- 記録に失敗しても DSL の操作は成功し、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます（本文は載りません）。
+
+### DSL の操作の指標とログ
+
+- 指標 `mastersmith.dsl.operation`（Timer。Prometheus では `mastersmith_dsl_operation_milliseconds_*`）。タグは `operation`（`generate`・`submit`・`restore`・`apply`・`discard`・`compare`）と `outcome`（`success`・`rejected`・`failed`・`busy`）だけです。`compare` はプレビューの表示の中の照合だけの時間です。
+- 操作ごとに INFO（`DSL の操作を終えました`）を1件、キー `dsl.operation`・`dsl.outcome`・`dsl.durationMs`・`dsl.hash`（先頭 12 文字）・`dsl.source` で出します。想定内の失敗（413・409・422・503）は WARN でスタックトレースなし、想定外（500）は ERROR です。
+- 手元の監視のダッシュボード「MasterSmith の概要」の行「DSL の操作」に、操作ごとの件数・結果ごとの件数・操作ごとの時間の 95 パーセンタイル（目標の線 1 秒・10 秒・30 秒）があります。警報はありません。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。
@@ -408,6 +447,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 
 - 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは変えられません。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
 - 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
+- DSL の操作（U4）の行の見方は「DSL の管理の API（U4）」の「DSL の操作の指標とログ」を参照してください。
 - 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。
 - 監視のコンテナのメモリの上限は 900MB です。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・負荷の試験の環境 2GB と合わせて約 4.9GB）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
 - 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。

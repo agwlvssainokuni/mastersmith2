@@ -18,6 +18,8 @@
 - 2026-09-24T04:36:27Z — AC2.2.3（同じテーブル・カラムの二重の定義）は意味の誤りではなく DUPLICATE_KEY になる; BR1.5 のとおり。受け入れ基準の文言とは違うため、承認の場で伝える。
 - 2026-09-24T05:29:10Z — U3 で longtext の長さ（4294967295）は DSL の dbType.length を null にし maxLength も作らない; U2 の JSON Schema と DbType の整数の範囲を超え、生成した DSL が検証を通らなくなるため。BR2.1・BR4.1 との差。
 - 2026-09-24T05:29:10Z — U3 で写しに無いテーブルを参照する外部キーは DSL に写さない; 写すと U2 の意味の検証（BR3.3）を通らず生成が失敗するため。
+- 2026-09-24T09:31:45Z — U4 のトランザクションの境界を DslLifecycle ではなく DslRecordStore（service）に置いた; 生成と照合で対象DB を読むあいだ内部DB の接続を持ち続けないため。確定の後だけ差し替えと出来事を行う。
+- 2026-09-24T09:31:45Z — U4 で既存の AuditSecretLeakIT の列の一覧に V6 の4列を足し、テストの JVM のヒープを 1g にした; 前者は承認済みの V6 と必ず食い違うため、後者は構造の検査がクラスを持ち続け U3 の 10MB 超えのテストでヒープが尽きたため。どちらも計画に無い変更で、依頼者に確かめる。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
@@ -25,6 +27,7 @@
 - 2026-09-24T02:15:27Z — パッケージごとのカバレッジの下限は新しいパッケージだけに当てた; 実測で audit.service（行 77.2%）・common.health（行 79.2%）・auth.repository（分岐 50.0%）が単独で下回ったため（team.md の決まりどおり）。既存の 22 パッケージを一覧で外し、新しいパッケージは自動で対象になる。
 - 2026-09-24T02:15:27Z — PostgreSQL の主キー・外部キーを pg_constraint から読むことにした; information_schema.table_constraints は SELECT だけの権限のアカウントに制約を返さず、読み取り専用のアカウントで成功させる基準（AC1.1.10）を満たせないため。
 - 2026-09-24T04:36:27Z — U2 の Validation の値を数（number）と文字（text）の2つに分けた; YAML の値の型をそのまま保ち、後続の Intent が型を判定し直さずに済む代わりに、entities.md の value 1つの形とは違う。
+- 2026-09-24T09:31:45Z — U4 の適用はプレビューの行を INSERT ... SELECT の1文で履歴へ写す; 10MB の本文を読み直さずに済む代わりに、H2 の SQL に依存する。
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->

@@ -110,6 +110,10 @@ tasks.withType<JavaCompile>().configureEach {
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
+    // テストの JVM のヒープの上限（Gradle の既定は 512MB）。構造の検査（ArchUnit）の各クラスがアプリのクラスの読み込みの結果を
+    // 静的に持ち続けるため、クラスが増えると（Intent 260923-dsl-schema-loader の U4）、10MB を超える DSL を作る U3 のテストで
+    // ヒープが尽きた。テストの件数・カバレッジの下限は変えていない。
+    maxHeapSize = "1g"
     jvmArgs("-XX:+EnableDynamicAgentLoading", "-Xshare:off")
     systemProperty("user.timezone", "Asia/Tokyo")
     // 結合テストで Host ヘッダーを指定して、エラー応答の type の URL の組み立てを確かめるため。

@@ -101,6 +101,13 @@ mastersmith:
       maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:5}
       # 使っていない接続を閉じるまでの時間
       idle-timeout: ${MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT:60s}
+  dsl:
+    # DSL の管理（U4）。既定値は Java の設定の型（DslManageProperties）の既定値と同じにする。
+    # 投入の API（POST /api/admin/dsl/preview）だけの要求の本文の上限（既定 10MB = 10,485,760 バイト）。
+    # ほかの API は mastersmith.web.max-request-body-size（既定 1MB）のまま。
+    max-submit-size: ${MASTERSMITH_DSL_MAX_SUBMIT_SIZE:10MB}
+    # 適用の履歴の件数の上限（既定 20、1 以上）。超えた分は古いものから消す。
+    history-limit: ${MASTERSMITH_DSL_HISTORY_LIMIT:20}
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

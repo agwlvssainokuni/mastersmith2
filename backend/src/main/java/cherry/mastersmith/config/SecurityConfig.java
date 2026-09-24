@@ -20,7 +20,9 @@ import cherry.mastersmith.common.security.ErrorResponseWriter;
 import cherry.mastersmith.common.security.SecurityExtensionValidator;
 import cherry.mastersmith.common.security.SecurityRuleContributor;
 import cherry.mastersmith.common.web.MastersmithWebProperties;
+import cherry.mastersmith.common.web.RequestBodyLimitRoute;
 import cherry.mastersmith.common.web.RequestSizeLimitFilter;
+import cherry.mastersmith.common.web.RequestSizeRejectionListener;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
@@ -30,8 +32,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
-import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 
@@ -52,6 +54,11 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  * </ol>
  *
  * <p>ヘッダー・セッション・CSRF の設定は U1 だけが決め、U2・U3 は変えない。
+ *
+ * <p>要求の本文の大きさの確かめ（{@link RequestSizeLimitFilter}）は、認証（アクセストークンの検証）と認可（{@link AuthorizationFilter}）
+ * の後に置く（Intent 260923-dsl-schema-loader の U4 の NFR 設計の決定 A）。本文を読むのはログインしていてその道を使える人の要求
+ * だけになり、ログインしていない大きな要求は 413 ではなく 401 になる。道ごとの上限（{@link RequestBodyLimitRoute}）と、断ったことの
+ * 受け取り（{@link RequestSizeRejectionListener}）は各機能が Bean として置く。
  */
 @Configuration(proxyBeanMethods = false)
 public class SecurityConfig {
@@ -64,6 +71,8 @@ public class SecurityConfig {
      * @param defaultAccesses API の既定の扱い（U3、0個か1個）
      * @param headerProperties 応答のヘッダーの設定
      * @param webProperties Web の設定
+     * @param bodyLimitRoutes 本文の上限の道ごとの決まり（各機能）
+     * @param sizeRejectionListeners 本文の上限で断ったことの受け取り（各機能）
      * @param errorResponseWriter フィルターの段階のエラー応答の書き方
      * @return フィルターの連鎖
      * @throws Exception 設定に失敗したとき、または差し込み口の検査に失敗したとき
@@ -75,6 +84,8 @@ public class SecurityConfig {
             List<ApiDefaultAccess> defaultAccesses,
             SecurityHeaderProperties headerProperties,
             MastersmithWebProperties webProperties,
+            List<RequestBodyLimitRoute> bodyLimitRoutes,
+            List<RequestSizeRejectionListener> sizeRejectionListeners,
             ErrorResponseWriter errorResponseWriter)
             throws Exception {
         List<SecurityRuleContributor> sortedContributors = SecurityExtensionValidator.sortedContributors(contributors);
@@ -98,8 +109,11 @@ public class SecurityConfig {
                         exceptions.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .addFilterAfter(
                         new RequestSizeLimitFilter(
-                                webProperties.maxRequestBodySize().toBytes(), errorResponseWriter),
-                        HeaderWriterFilter.class);
+                                webProperties.maxRequestBodySize().toBytes(),
+                                bodyLimitRoutes,
+                                sizeRejectionListeners,
+                                errorResponseWriter),
+                        AuthorizationFilter.class);
 
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/actuator/health", "/api/problems/**")
