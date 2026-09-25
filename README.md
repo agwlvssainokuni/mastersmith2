@@ -238,13 +238,14 @@ docker compose up -d --wait                              # app が healthy に�
 - VM の大きさの見積もり: 配備したアプリ（2GB）・見本の対象DB（512MB）・手元の監視 `lgtm`（1.5GB）を合わせて約 4GB で、6GiB の内側に収まります。負荷の試験の環境（2GB、`perf/README.md`）も同時に動かすと約 6GB で VM の上限に近づくため、負荷の試験の間は手元の監視を止めます。
 - コンテナの上限の既定は CPU 4・メモリ 2g で、この VM の大きさが前提です。VM を広げた後は `docker compose up -d --wait` でコンテナを作り直し、上限を `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。VM がこれより小さい PC では、`.env` の `MASTERSMITH_CONTAINER_CPUS`・`MASTERSMITH_CONTAINER_MEMORY` で下げます（下の「既知の制約」）。
 - 照合に使える CPU は、コンテナの `cpus` と VM の CPU の数の小さい方で頭打ちになります。VM だけを広げても、`MASTERSMITH_CONTAINER_CPUS` が小さいままではログインは速くなりません。
-- JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 75% です。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を下げる（例: `-XX:MaxRAMPercentage=70.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 75% に上書きされ、起動の時に JSON でない行をログに出すため）。
+- JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 50% です（以前は 75%。10MB の DSL の投入とログインを重ねたときにメモリの上限に迫ったため下げました。下の「既知の制約」）。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を変える（例: `-XX:MaxRAMPercentage=40.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 50% に上書きされ、起動の時に JSON でない行をログに出すため）。
 
 #### 既知の制約（メモリの上限を下げるときと高い負荷）
 
-- メモリの上限の既定は 2g です（最大ヒープはその 75%）。2g では、`refresh` を毎秒約 11,000 件で流しても止まりませんでした（`perf/README.md`）。
-- VM が CPU 4・メモリ 6GiB に満たない PC では、`.env` の `MASTERSMITH_CONTAINER_MEMORY` で `1g` などに下げます。ただし 1g では、最大ヒープ 768MB に対してヒープ以外に使えるのは約 256MB で、高い負荷でメモリの上限で止まりえます。CPU の上限 2・メモリの上限 1g で、トークンの更新を同時 10 件・考える時間なし（毎秒約 3,000 件）で流したところ、約 35 秒でコンテナがメモリの上限で止まりました（OOMKilled、2026-09-23 の負荷の試験）。`restart: "no"` のため、止まったままになります。
-- 上限を変えると、最大ヒープも 75% の割合で変わり、1g では JVM の GC が G1 ではなく Serial になります。負荷の試験の結果とメモリの内訳（ヒープとヒープ以外）の測り方は `perf/README.md` にあります。
+- メモリの上限の既定は 2g です（最大ヒープはその 50%、1,024MiB）。2g では、`refresh` を毎秒約 11,000 件で流しても止まりませんでした（`perf/README.md`。最大ヒープが 75% だったときの結果）。
+- 最大ヒープが 75%（1,536MiB）だったときは、10MB の DSL の投入とログインを重ねる負荷（k6 の `dslMixed`）で、ヒープが最大まで広がり、プロセスのメモリが上限の約 93% に達して、コンテナのメモリの上限での回収（`memory.events` の `max`）が 1,500 回を超えました。50% では同じ条件で約 69%・0 回でした（Intent 260925-storage-memory-fixes の計画の前の測定。直した後の確かめは Build and Test）。割合を 75% に戻す（`MASTERSMITH_JAVA_OPTIONS=-XX:MaxRAMPercentage=75.0`）と、この状態に戻ります。
+- VM が CPU 4・メモリ 6GiB に満たない PC では、`.env` の `MASTERSMITH_CONTAINER_MEMORY` で `1g` などに下げます。ただし 1g では、高い負荷でメモリの上限で止まりえます。最大ヒープが 75%（768MB、ヒープ以外に使えるのは約 256MB）だったときに、CPU の上限 2・メモリの上限 1g で、トークンの更新を同時 10 件・考える時間なし（毎秒約 3,000 件）で流したところ、約 35 秒でコンテナがメモリの上限で止まりました（OOMKilled、2026-09-23 の負荷の試験）。`restart: "no"` のため、止まったままになります。
+- 上限を変えると、最大ヒープも 50% の割合で変わり、1g では JVM の GC が G1 ではなく Serial になります。負荷の試験の結果とメモリの内訳（ヒープとヒープ以外）の測り方は `perf/README.md` にあります。
 - 止まったかどうかは `docker inspect mastersmith-app-1 --format '{{.State.OOMKilled}} {{.State.ExitCode}}'`（`true 137` なら上限で止まった）で確かめます。
 
 #### 設定の効き方の確かめ
@@ -256,7 +257,7 @@ docker compose up -d --wait                              # app が healthy に�
 ./docker/check-container-limits.sh                        # 期待と違う点があれば、期待の値と実際の値を出して失敗する
 ```
 
-- 確かめること: 両方の compose の `mem_limit`（変数なしで 2g、`MASTERSMITH_CONTAINER_MEMORY=768m` で 768m）、最大ヒープの割合（変数なし・空の値で 75%、`MASTERSMITH_JAVA_OPTIONS` で 60%）、ヒープ以外の上限（`-XX:MaxMetaspaceSize=128m`）、java がコンテナの PID 1 であること（停止の合図を直接受け取る）、タイムゾーンの引数が残ること、`compose.yaml` の `app` が `.env` だけを読み `MASTERSMITH_SAMPLE_TARGETDB_*` を持たないことと、見本の対象DB の3つのサービスが `.env.targetdb` を読み `environment` にパスワードを持たないこと（名前だけを見て、値は展開も表示もしない）。
+- 確かめること: 両方の compose の `mem_limit`（変数なしで 2g、`MASTERSMITH_CONTAINER_MEMORY=768m` で 768m）、最大ヒープの割合（変数なし・空の値で 50%、`MASTERSMITH_JAVA_OPTIONS` で 60%）、ヒープ以外の上限（`-XX:MaxMetaspaceSize=128m`）、java がコンテナの PID 1 であること（停止の合図を直接受け取る）、タイムゾーンの引数が残ること、`compose.yaml` の `app` が `.env` だけを読み `MASTERSMITH_SAMPLE_TARGETDB_*` を持たないことと、見本の対象DB の3つのサービスが `.env.targetdb` を読み `environment` にパスワードを持たないこと（名前だけを見て、値は展開も表示もしない）。
 - 値が入った `.env` を読んだ状態でアプリのコンテナに `MASTERSMITH_SAMPLE_TARGETDB_*` が無いことは、「コンテナでの起動と確認」の移し替えの手順の最後のコマンドで確かめます。
 - 別のタグのイメージは `MASTERSMITH_IMAGE_TAG=<タグ> ./docker/check-container-limits.sh` で確かめます。前提は Docker（Compose v2）と、そのイメージがあることです。`.env` は読みません。
 
@@ -268,7 +269,7 @@ docker compose up -d --wait                              # app が healthy に�
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」） |
-| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 75%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
+| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |

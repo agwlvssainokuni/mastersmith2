@@ -19,7 +19,8 @@
 #   別のタグのイメージを確かめる: MASTERSMITH_IMAGE_TAG=<タグ> ./docker/check-container-limits.sh
 # 確かめること:
 #   1. compose.yaml・docker/perf/compose.yaml の app の mem_limit が、MASTERSMITH_CONTAINER_MEMORY なしで 2g、768m を渡すと 768m
-#   2. JVM の設定の口（MASTERSMITH_JAVA_OPTIONS）なしで、最大ヒープがコンテナのメモリの上限の 75%（空の値でも同じ）
+#   2. JVM の設定の口（MASTERSMITH_JAVA_OPTIONS）なしで、最大ヒープがコンテナのメモリの上限の 50%（空の値でも同じ。
+#      Intent 260925-storage-memory-fixes の FR2 で 75% から下げた）
 #   3. MASTERSMITH_JAVA_OPTIONS で渡した割合（60%）とヒープ以外の上限（MaxMetaspaceSize=128m）が効く
 #   4. java がコンテナの PID 1 で動き（停止の合図を直接受け取る）、-Duser.timezone=Asia/Tokyo が残る
 #   5. compose.yaml の app は .env だけを読み、environment に MASTERSMITH_SAMPLE_TARGETDB_* を持たない。見本の対象DB の
@@ -35,6 +36,8 @@ readonly IMAGE="mastersmith:${MASTERSMITH_IMAGE_TAG:-local}"
 # JVM を動かすときのコンテナのメモリの上限（小さくして、今の VM でも配備したアプリと並べて動かせるようにする）。
 readonly JVM_LIMIT=512m
 readonly JVM_LIMIT_BYTES=536870912
+# Dockerfile の既定の最大ヒープの割合（-XX:MaxRAMPercentage）。
+readonly DEFAULT_HEAP_PERCENT=50
 # 最大ヒープは GC の区切りに合わせて丸められるため、割合から計算した値との差をこの幅まで認める。
 readonly HEAP_TOLERANCE_BYTES=$((4 * 1024 * 1024))
 
@@ -165,11 +168,11 @@ if ! printf '%s' "${entrypoint}" | grep 'MASTERSMITH_JAVA_OPTIONS' > /dev/null; 
 else
     # 2. 既定の動作（変数なし・空の値）
     output=$(run_jvm)
-    check_heap_percent "変数なし" "${output}" 75
+    check_heap_percent "変数なし" "${output}" "${DEFAULT_HEAP_PERCENT}"
     check_launch "変数なし" "${output}"
 
     output=$(run_jvm -e MASTERSMITH_JAVA_OPTIONS=)
-    check_heap_percent "空の値" "${output}" 75
+    check_heap_percent "空の値" "${output}" "${DEFAULT_HEAP_PERCENT}"
 
     # 3. JVM の設定の口（割合とヒープ以外の上限）
     output=$(run_jvm -e 'MASTERSMITH_JAVA_OPTIONS=-XX:MaxRAMPercentage=60.0 -XX:MaxMetaspaceSize=128m')
