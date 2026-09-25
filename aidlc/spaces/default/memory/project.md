@@ -65,6 +65,7 @@
 - コミットはこまめに、ファイル変更のまとまりごと（回答確定時・成果物作成時・内容確認/承認時）に行う。コミットのタイミングは提案し、実行前に必ず人間の承認を得る。コミットメッセージは日本語で記述する。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:intent-capture:822f19c942c585b350586f2ad3ecf1660487d52354264177a5c424103985dc8a -->
 - 確定済みの成果物に記録の食い違いが見つかったら、隠さず判定の根拠とともに明記し、直すかどうかを依頼者に確かめる。直したときは、元の状態と直した理由を記録に残す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:fa9b684652e9547fdc00219e301a27d661ffac1f52f9749d17d7bdcac8f883ec -->
 - 計画の Step ごとのコミットの提案は、生成の担当ではなく、生成の後に依頼者の承認を得てまとめて C1〜C6 に分けて行う形にした。担当は依頼者に直接尋ねられないため。統合は計画どおり短命のブランチ fix/260924-followup-fixes から fast-forward（team.md の squash とは違う。サブモジュールの専用のコミットを残すため、計画の承認で受け入れられた）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:87c26f259ce9c6a4de73518651b6f0e868ab12453a73de73f50f5fe768dd262c -->
+- develop へ取り込む前に、この段の質問と確認の記録を依頼者の承認なしでコミットした（581b006）。依頼者に伝えて了承を得た。コミットは段の記録であっても、実行の前に必ず提案して承認を得る。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-execution:bfba46b7cf01ba6b124b43122d6b501702ed308cc28e7c0340aea762d39c0b8f -->
 ## Deployment
 
 <!-- Project-specific specialisation. -->
@@ -89,6 +90,7 @@
 - 配備の前の k6 と内部DB のバックアップは質問にせず、決まっていることとして書いた（k6 は project.md の決まりで Build and Test の結果を正とする。バックアップはスキーマの変更が無いため不要）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:0675c59d7ff8841998ab55a88372b2dff3d387b0d28e132210f8ab3d49e4d5db -->
 - 戻し方の前提（Q2: A）は、前の版のイメージを新しい .env と一時のボリュームで起動して健全になることで確かめた。配備した内部DB のデータでの起動は確かめていない（スキーマの変更が無いため）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-execution:96ee1f52a4e60ff3af1808774205c8491cd15a07a159f5eb7833321ea912b251 -->
 - 前の版のイメージは HikariCP の JMX を有効にしていないため、戻すと詰め直しの道具が使えなくなり最大ヒープも 75% に戻る。設定がイメージの中にあるためイメージだけで戻せる代わりに、戻したときの運用の差を戻しの手順に書いた。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-pipeline:7b476360b6c318ef99d4a013d925563cd9a28cf632612b083d7cfb448e8cf622 -->
+- 戻し先のイメージの確かめで、イメージに HEALTHCHECK が無く、起動の直後の running を健全と誤って判定しかけた。compose の健全性の確かめと同じ bash の /dev/tcp で /actuator/health の 200 を待つ形でやり直した。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-execution:b351b2a240157b9e52139413dc379757850591942093ec3c00802300883910da -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
