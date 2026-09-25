@@ -33,5 +33,12 @@
     "dirName": "260924-followup-fixes",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0d675-2f7d-7666-89ce-fac9f207febe",
+    "slug": "storage-memory-fixes",
+    "dirName": "260925-storage-memory-fixes",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
