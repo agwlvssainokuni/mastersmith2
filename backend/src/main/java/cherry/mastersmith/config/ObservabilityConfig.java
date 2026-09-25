@@ -17,9 +17,11 @@ package cherry.mastersmith.config;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import cherry.mastersmith.common.observability.SanitizingLogRecordExporter;
 import cherry.mastersmith.common.observability.SanitizingSpanExporter;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender;
+import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
@@ -58,6 +60,25 @@ public class ObservabilityConfig {
     }
 
     /**
+     * 外部へ送るログから個人に関する値（メールアドレス・送り元の IP・User-Agent）を伏せるよう、ログの送信の仕組みを包む
+     * （260924-followup-fixes の FR1.2）。送り出す直前の1か所で効くため、処理の部品の並びに頼らない。
+     *
+     * @return 送信の仕組みを包む後処理
+     */
+    @Bean
+    public static BeanPostProcessor sanitizingLogRecordExporterPostProcessor() {
+        return new BeanPostProcessor() {
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) {
+                if (bean instanceof LogRecordExporter exporter && !(bean instanceof SanitizingLogRecordExporter)) {
+                    return new SanitizingLogRecordExporter(exporter);
+                }
+                return bean;
+            }
+        };
+    }
+
+    /**
      * 外部エクスポートを有効にしたときだけ、ログを OTLP で送る出力（OpenTelemetry の logback 用の出力）を加える。
      * 標準出力への出力はそのまま残す。
      *
@@ -70,7 +91,10 @@ public class ObservabilityConfig {
         return new OtlpLogAppenderInstaller(openTelemetry);
     }
 
-    /** ログを OTLP で送る出力を、ルートのロガーに取り付ける（停止のときに外す）。 */
+    /**
+     * ログを OTLP で送る出力を、ルートのロガーに取り付ける（停止のときに外す）。ログのキーと値は、キーの名前そのもの
+     * （例: {@code dsl.operation}）の属性として送る（260924-followup-fixes の FR1.1）。
+     */
     public static class OtlpLogAppenderInstaller implements InitializingBean, DisposableBean {
 
         /** 取り付ける出力の名前。 */
@@ -95,6 +119,7 @@ public class ObservabilityConfig {
             appender = new OpenTelemetryAppender();
             appender.setName(APPENDER_NAME);
             appender.setContext(context);
+            appender.setCaptureKeyValuePairAttributes(true);
             appender.start();
             context.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(appender);
             OpenTelemetryAppender.install(openTelemetry);

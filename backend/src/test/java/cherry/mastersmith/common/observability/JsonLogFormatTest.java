@@ -146,8 +146,38 @@ class JsonLogFormatTest {
                 .log("改行を含む\n値");
 
         Map<String, Object> record = single();
-        assertThat(record).containsEntry("message", "改行を含む\n値");
+        assertThat(record).containsEntry("message", "改行を含む ⏎ 値");
         assertThat(record.get("input")).asString().contains("forged");
+    }
+
+    @Test
+    @DisplayName("line breaks in a message are replaced so the message stays on one line")
+    void messageLineBreaksReplaced() {
+        logger.info("接続の設定:\n\tURL\r\n\t名前\r終わり");
+        logger.info("改行なし");
+
+        List<Map<String, Object>> records = JsonLogRecords.parse(String.join("", lines));
+        assertThat(lines)
+                .allSatisfy(
+                        line -> assertThat(line.substring(0, line.length() - 1)).doesNotContain("\n", "\r"));
+        assertThat(records.get(0).get("message"))
+                .isEqualTo("接続の設定: ⏎ \tURL ⏎ \t名前 ⏎ 終わり")
+                .asString()
+                .doesNotContain("\n", "\r");
+        assertThat(records.get(1)).containsEntry("message", "改行なし");
+    }
+
+    @Test
+    @DisplayName("the stack trace field keeps its line breaks")
+    void stackTraceKeepsLineBreaks() {
+        logger.error("失敗\nしました", new IllegalStateException("失敗"));
+
+        Map<String, Object> record = single();
+        assertThat(record).containsEntry("message", "失敗 ⏎ しました");
+        assertThat(record.get("exception"))
+                .asString()
+                .contains("IllegalStateException")
+                .contains("\n\tat ");
     }
 
     @Test

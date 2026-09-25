@@ -16,7 +16,7 @@
 -->
 <!--
   アプリのログの設定。標準出力への出力を1つだけ置き、1行1件の JSON で同期して書く。
-  項目: timestamp（ISO 8601、タイムゾーン付き）、level、logger、thread、message、
+  項目: timestamp（ISO 8601、タイムゾーン付き）、level、logger、thread、message（改行は「 ⏎ 」に置き換える）、
         traceId・spanId（MDC のうちこの2つだけ）、呼び出し側のキーと値、exception（あれば）。
   呼び出し元の場所・ホスト名は出さない。ファイルへの出力は持たない。
   外部エクスポートの送信（OpenTelemetry の logback 用の出力）は、有効にしたときだけアプリが加える。
@@ -38,9 +38,10 @@
         <threadName>
           <fieldName>thread</fieldName>
         </threadName>
-        <message>
+        <!-- メッセージの中の改行は「 ⏎ 」に置き換えて、値に改行を残さない（1件を1行で読めるようにする）。 -->
+        <provider class="cherry.mastersmith.common.observability.SingleLineMessageJsonProvider">
           <fieldName>message</fieldName>
-        </message>
+        </provider>
         <mdc>
           <includeMdcKeyName>traceId</includeMdcKeyName>
           <includeMdcKeyName>spanId</includeMdcKeyName>
