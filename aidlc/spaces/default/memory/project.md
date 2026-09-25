@@ -128,6 +128,13 @@
 - NEVER `vendor/make-you-chic-ui` の中身をこのリポジトリから直接変更しない（変更は make-you-chic-ui のリポジトリ側で行う） (affirmed 2026-09-22)
 - NEVER 対象DB の接続情報（接続先・ユーザー名・パスワード・資格情報を含む JDBC の URL）を、生成した DSL・プレビューの応答・画面・ログ・監査ログ・エラー応答に含めず、画面・API・DSL から受け取らない（設定だけから受け取る） (affirmed 2026-09-23)
 - NEVER JDBC の例外や、YAML・JSON Schema の部品の例外のメッセージを、そのままエラー応答に含めない (affirmed 2026-09-23)
+- NEVER 配備先が決まるまで、実在の宛先や外部の SMTP へメールを送らない（手元でメールを見るときは、メールを受けて画面で見せるだけの受け手を compose の profile で起動する） (affirmed 2026-09-25)
+- NEVER 招待のトークン（招待の URL に含まれる値を含む）を、ログ・監査ログ・トレースの属性・エラー応答に含めない (affirmed 2026-09-25)
+- NEVER メールアドレスをアプリのログとエラー応答に含めず、メールの部品の例外のメッセージと SMTP の応答をそのままエラー応答に含めない (affirmed 2026-09-25)
+- NEVER メールの部品のデバッグ出力（`mail.debug`）を有効にしない (affirmed 2026-09-25)
+- NEVER メールの本文に差し込む利用者の値を、HTML としてエスケープしない差し込み（Mustache の `{{{ }}}`・`{{& }}`）で入れない（エスケープされる差し込みだけで入れる） (affirmed 2026-09-25)
+- NEVER 招待の URL を要求の Host ヘッダーから組み立てない（設定したベース URL だけから組み立てる） (affirmed 2026-09-25)
+- NEVER `vendor/java-mustache-processor` の中身をこのリポジトリから直接変更しない（変更は java-mustache-processor のリポジトリ側で行う） (affirmed 2026-09-25)
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -144,6 +151,8 @@
 - ALWAYS 秘密情報の検出を、コミット前と CI の両方で実行する (affirmed 2026-09-22)
 - ALWAYS 対象DB の結合テストは、版を固定したイメージのコンテナで起動した実際の MySQL・MariaDB・PostgreSQL で行い、H2 などの別の DB やモックで代用しない (affirmed 2026-09-23)
 - ALWAYS 利用者が投入する DSL（YAML）は信頼できない入力として扱い、大きさ・入れ子の深さ・別名の数の上限を明示し、タグと任意の型の生成を拒否し、重複キーをエラーにする (affirmed 2026-09-23)
+- ALWAYS SMTP の接続先と資格情報は環境変数（`.env`）だけから受け取り、接続先の設定が無ければメールを送らない (affirmed 2026-09-25)
+- ALWAYS 招待のトークンは内部DB にハッシュ値だけを保存し、1回だけ有効で有効期限を持たせる (affirmed 2026-09-25)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
@@ -238,3 +247,7 @@
 - 既存の知識ベースが STALE のため再利用の選択肢は出さず、依頼者は Full rescan を選んだ。スナップショットは ./ 全体（source git:f6133c3e…）。深く読んだ範囲だけを analyzed に記録する方針（前回までと同じ）で、今回の Intent G・H に関わるユーザー・認証・監査・管理画面・フロントエンドの骨組みを重点に読む。 (learned 2026-09-25) <!-- cid:260925-user-management:reverse-engineering:5a8548e943c8633cefd0aa9789bcd2e0f3f6c2714789e548319e6cef4671cfb8 -->
 - 依頼者は Full rescan を選んだが、深さ Standard で開発担当が深く読んだのは今回の Intent に関わる 89 パス・19 部品だけだった。記録上の範囲は kind: partial とし ./ を analyzed.paths に入れない（前回までと同じ扱い）。比較の結果は NARROWER で、前回の深い範囲（dsl・dslmanage・backend-test-support・perf-and-monitoring）は流し読みに下がった。 (learned 2026-09-25) <!-- cid:260925-user-management:reverse-engineering:46ef8970da9eb2c3776a1fe97a515394a7e2608d1be5494dd649e6cdfc630a85 -->
 - 今回の Intent に関わる所見 11 件に K-1〜K-11 の番号を付け、本文は持ち主の文書に1回だけ書き、business-overview.md には一覧だけを置いた。重複は無くなるが、読む人は所見の文書をたどる必要がある。 (learned 2026-09-25) <!-- cid:260925-user-management:reverse-engineering:d331d883f6bb64d9a73bed339866cecf6a0a78dc849bc15ce7f95b8fbe32519c -->
+- 再実行のため、リードの候補 P1〜P11 と支援役3名の追加（受け手の条件・E2E の実行の時点・SpotBugs の関門・Dependabot の受け方・記録の更新）のうち、チームの進め方に当たるものだけを 11 問にまとめた。利用者の状態・招待の期限・パスワード変更後のトークン・送信とトランザクションなどの機能の中身は要件・設計の段に回した。セキュリティ担当の確認で GitHub の既定のブランチは develop と分かり、Dependabot は向き先ではなく受け方だけを問うた。 (learned 2026-09-25) <!-- cid:260925-user-management:practices-discovery:7b6b8591e2830a41d4a2e80b2eca885a38e1e1c179f53495d736ccc48a18c9b3 -->
+- Q1（サブモジュール＋composite build）の答えが team.md・project.md の「lockfile で版を固定」「脆弱性検査の対象に含める」「取得元は Maven Central だけ」と食い違いうるため、追加の質問 F1（置き場と直接の変更の禁止）・F2（推移依存も lockfile と検査の対象にすることを条件にし最初の Bolt で確かめる）で確かめた。 (learned 2026-09-25) <!-- cid:260925-user-management:practices-discovery:5fd00432ffa9a4073386ee332ce2406b1377675c6f5d8039512052f2e1b17f13 -->
+- まとめの確認の前に出す決定の要約（review-brief summary）は道具が動かず（main が無いという誤り）出せなかったため、答えのまとめだけを示して確認した。 (learned 2026-09-25) <!-- cid:260925-user-management:practices-discovery:4a6236945b51767b44319f3d565a6049b8c3792098b33801f02216f31bf39aed -->
+- 「今回は招待から登録の完了までの E2E を1本足す」は今回の Intent だけの決定のため team.md に入れず evidence.md の要件・設計に回す論点に置いた。team.md は「Intent ごとに代表の流れを1本まで足す」の決まりだけにした。 (learned 2026-09-25) <!-- cid:260925-user-management:practices-discovery:8be32579f67998def12787c9a4a35168d12e9c9e3f4fcba4fb5efa9f7ff0de9b -->

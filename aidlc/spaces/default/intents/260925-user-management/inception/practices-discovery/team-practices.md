@@ -1,9 +1,6 @@
-# Team-Level Rules
+# Team Practices
 
-> This team's affirmed practices and corrections. Loaded after `org.md` as
-> strict-additive guidance; contradictions with broader policy are rejected.
-> Populated by the practices-discovery affirmation gate. Edit at the gate,
-> not directly.
+> 主担当（aidlc-pipeline-deploy-agent）の統合版（再実行、Intent `260925-user-management`）。`aidlc/spaces/default/memory/team.md` の5節を基準として引き継ぎ、面談の答え（Q1〜Q11・F1・F2、`practices-discovery-questions.md`）で変わる行だけを足した・置き換えた。それ以外の行と学びの行（`(learned ...)` と `cid` のコメント付き）は1文字も変えていない。依頼者が明言した固い制約は `discovered-rules.md`、根拠と面談の決定は `evidence.md`。承認されると、下の5節の中身が `team.md` の同じ5節を置き換える。
 
 ## Way of Working
 
@@ -81,10 +78,6 @@
 
 - 内部DB（組み込みの H2）を使うテストは、コンテナではなく本番と同じ組み込みの H2 で行う。Testcontainers は、コンテナで動かす対象DB（後続 Intent D・E で扱う業務DB）のテストに使う。Walking Skeleton の「DB を使うテスト1件以上（本番と同じ種類の DB をコンテナで起動する）」も、内部DBについてはこの読み方とする。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:nfr-requirements:bb1f2f3e98692eeea477da5f229ae3fff34cb064a2feea6ef405a3b7c61b99b7 -->
 
-## Change Control
-
-<!-- Affirmed by the team. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
-
 ## Deployment
 
 - 当面の配備先は、開発者のPC上のコンテナでの起動・確認だけとする。クラウドなどの配備先は後で決める。配備先が決まったら、org.md の既定（統合時に検証環境へ自動配備、本番環境は手動承認のうえ配備）に沿って配備の流れを作る。本番配備の承認者は依頼者とする。
@@ -157,14 +150,3 @@
 - 新しい依存を足すときは、採用の前にライセンスを確かめる。Apache License 2.0 と異なるライセンスのものは、採用の理由を設計の記録（ADR など）に残す。
 - Gradle の依存の取得元は Maven Central だけに固定する（`settings.gradle.kts` の `RepositoriesMode.FAIL_ON_PROJECT_REPOS`）。Maven Central に無い自前の Mustache エンジン java-mustache-processor（Apache License 2.0）は、Git サブモジュールとして `vendor/java-mustache-processor` に取り込み、Gradle の composite build で組む。サブモジュールで取り込む点は make-you-chic-ui と同じだが、make-you-chic-ui は npm の `file:` の依存であり、Gradle の composite build はこのリポジトリで初めての形である。中身はこのリポジトリから直接変更しない（`project.md` の Forbidden）。
 - java-mustache-processor の版は、サブモジュールの固定先のコミットで固定する。取り込んでも、取得元を Maven Central だけに固定する決まりは崩さない。部品の推移依存も lockfile（`backend/gradle.lockfile`）と依存関係の脆弱性検査（OSV-Scanner）の対象に含めることを条件とし、最初に取り込む Bolt で実際に載るかを確かめる。載らなければ、部品の依存を検査の対象に加える仕組みを足す。
-## Forbidden
-
-<!-- Team-specific forbidden patterns -->
-
-## Mandated
-
-<!-- Team-specific mandates -->
-
-## Corrections
-
-<!-- Self-learning loop appends here. -->
