@@ -18,11 +18,11 @@ AP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); UP=$(openssl rand -bas
 # コンテナの上限は配備と同じ値（CPU 4・メモリ 2g）。-f で指定する compose は .env を読まないため、シェルの環境変数で渡す
 export MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g
 
-# 2. 使い捨ての環境を起動し（初期管理者が作られる）、止めて試験用の利用者 10 名を入れる
+# 2. 使い捨ての環境を起動し（初期管理者が作られる）、止めて試験用の利用者 11 名を入れる（dslMixed が VUS + 1 名を使う。ほかの場面は 01〜10）
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml stop app
 HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
-SQL="INSERT INTO users (email, password_hash, admin_flag, created_at) VALUES $(for i in $(seq -w 1 10); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP)," "$i" "$HASH"; done | sed 's/,$//')"
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP)," "$i" "$HASH"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
   eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
@@ -106,7 +106,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --ui postgres
 
 前提と注意:
 
-- **コンテナの上限は配備と同じ CPU 4・メモリ 2g**（`MASTERSMITH_CONTAINER_MEMORY` の既定を 2g にしている）。U4 の NFR1.12 の条件は 1g のコンテナ（ヒープ 75%）で、配備の上限（2g）と違う。1g で測るときは `MASTERSMITH_CONTAINER_MEMORY=1g` を付けて流す（1g では JVM の GC が G1 ではなく Serial になる。前の節を参照）。
+- **コンテナの上限は配備と同じ CPU 4・メモリ 2g**（`MASTERSMITH_CONTAINER_MEMORY` の既定を 2g にしている）。U4 の NFR1.12 の条件は、前の Intent の Performance Validation の決定（1g では OOMKilled で止まった）により配備の既定 2g とした。比べるために 1g で測るときは `MASTERSMITH_CONTAINER_MEMORY=1g` を付けて流す（1g では JVM の GC が G1 ではなく Serial になる。前の節を参照）。
 - **配備したアプリ（プロジェクト `mastersmith`）は止めない**。colima の VM（CPU 4・メモリ 6GiB）には、配備したアプリ（上限 2g）と、使い捨てのアプリ（2g）・対象DB 1つ（最大 768MB）が同時に収まる。台本は対象DB を1種類ずつ起動し、測り終えたら消してから次の種類に進む。配備したアプリは待機中のため CPU の取り合いは小さいが、測った値には影響が混ざりうる。負荷の試験（k6）で CPU を使い切るときは、前の節の手順 0 のとおり配備したアプリを止める。
 - 使い捨ての環境だけに要求を送る（`127.0.0.1:18080`）。配備したアプリ・その内部DB・監査ログには触れない。
 - 途中で残したいときは `KEEP=1` を付ける（種類は1つだけ指定する）。終わったら、表示された一時ディレクトリの場所を使って片付ける（`docker compose -p mastersmith-perf -f docker/perf/compose.yaml --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb down -v` と一時ディレクトリの削除。`-f` の compose は `MASTERSMITH_PERF_ENV_FILE` が要るため、`MASTERSMITH_PERF_ENV_FILE=/dev/null` を付けて呼ぶ）。
@@ -139,7 +139,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 |---|---|---|
 | `dslLight` | 今の状態と履歴を同時 `VUS` で繰り返す | U4 の NFR1.10（今の状態・履歴の 95% が 1 秒以内）。閾値 `http_req_duration{name:dslStatus}`・`{name:dslHistory}` |
 | `dslCycle` | 投入 → 適用 → 投入 → 破棄 → 履歴を繰り返す。投入は重い処理（同時に1つ）のため `VUS=1` で使う | U4 の NFR1.10（適用・破棄の 95% が 1 秒以内）。閾値 `{name:dslApply}`・`{name:dslDiscard}` |
-| `dslMixed` | 10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 `VUS` 名のログインを重ねる | U4 の NFR1.12・U4-POOL（失敗しない。閾値は場面ごとの `checks` の率 1）。コンテナの上限 1g で流し、止まらないこと（OOMKilled）と NMT・Hikari の値を別に記録する |
+| `dslMixed` | 10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 `VUS` 名のログインを重ねる | U4 の NFR1.12・U4-POOL（失敗しない。閾値は場面ごとの `checks` の率 1）。コンテナの上限は配備の既定 2g で流し、止まらないこと（OOMKilled）と NMT・Hikari の値を別に記録する |
 
 ```bash
 # 例: 1種類だけ残して起動し（生成した DSL と 10MB の DSL が結果の置き場にできる）、同じ一時ディレクトリの ui.env（管理者のメールアドレスとパスワード）で k6 を流す
@@ -152,4 +152,6 @@ docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" -e SCE
 ```
 
 - `dslLight` は `DSL_FILE` が要らない（履歴 20 件と想定の規模のプレビュー・適用中の DSL を先に置いておく。NFR1.10 の条件）。
-- `dslMixed` は試験用の利用者 10 名（`perf-user01`〜`10`）と `PERF_USER_PASSWORD` が要る。前の節の手順 2（アプリを止めて内部DB に入れる）で入れ、`PERF_USER_PASSWORD` を `ui.env` に足してから流す。
+- `dslMixed` は試験用の利用者 11 名（`perf-user01`〜`11`）と `PERF_USER_PASSWORD` が要る。前の節の手順 2（アプリを止めて内部DB に入れる）で入れ、`PERF_USER_PASSWORD` を `ui.env` に足してから流す。ログインの VU は試験全体で重ならない番号（`exec.vu.idInTest`）で利用者を選び、番号は `VUS + 1` まで取りうるため、利用者は `VUS + 1` 名要る。`VUS` を変えるときは利用者を足し、`-e PERF_USER_COUNT=<入れた数>`（既定 11）を渡す（足りないと始める前に止まる）。
+- `dslMixed` の試験用の利用者は、ロックの状態の行が無いまま流す（先に1人ずつログインして行を作らない）。同じ利用者の初めてのログインが同時に来ても 500 にならないこと（Intent 260924-followup-fixes の FR2 の直し）の確かめを兼ねる。合格はログインの `checks` の率 1（500 が 0 件）。
+- 利用者が VU の間で重ならないことは、k6 の出力の `loginLoop-user vu=<番号> user=<利用者>` の行（VU ごとの最初の回に1行）で確かめる。行の数が `VUS` と同じで、利用者の重なりが 0 件であること（例: `grep -o 'loginLoop-user vu=[0-9]* user=[^ "]*' <k6 の出力> | sed 's/.* user=//' | sort | uniq -d` が何も出さない）。

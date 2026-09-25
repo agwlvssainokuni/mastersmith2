@@ -27,7 +27,10 @@
 //   dslLight      今の状態と履歴を同時 VUS で繰り返す（U4 の NFR1.10 の今の状態・履歴。重い処理の制限を受けない）
 //   dslCycle      投入 → 適用 → 投入 → 破棄 → 履歴を1人で繰り返す（U4 の NFR1.10 の適用・破棄。投入は重い処理のため VUS=1 で使う）
 //   dslMixed      10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 VUS 名のログインを重ねる
-//                 （U4 の NFR1.12・U4-POOL。コンテナの上限を 1g にして流し、止まらないこと・失敗が無いことを見る）
+//                 （U4 の NFR1.12・U4-POOL。コンテナの上限を配備の既定 2g にして流し、止まらないこと・失敗が無いことを見る）
+//                 ログインの VU は試験全体で重ならない番号（exec.vu.idInTest）で利用者を選ぶため、VU どうしで利用者が
+//                 重ならない。番号は VUS + 1 まで取りうるため、試験用の利用者が VUS + 1 名（PERF_USER_COUNT、既定 11）要る。
+//                 VU ごとの最初の回に「loginLoop-user vu=<番号> user=<試験用の利用者>」の1行を出す（重なりの確かめ用）。
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail } from 'k6'
@@ -39,6 +42,8 @@ const DURATION = __ENV.DURATION || '60s'
 const USER_PASSWORD = __ENV.PERF_USER_PASSWORD
 const ADMIN_EMAIL = __ENV.PERF_ADMIN_EMAIL
 const ADMIN_PASSWORD = __ENV.PERF_ADMIN_PASSWORD
+// 入れてある試験用の利用者の数（perf-user01 から。dslMixed では VUS + 1 名以上が要る）
+const PERF_USER_COUNT = Number(__ENV.PERF_USER_COUNT || 11)
 const REFRESH_COOKIE = 'mastersmith_refresh'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Origin: BASE }
 const DSL_API = `${BASE}/api/admin/dsl`
@@ -97,6 +102,13 @@ function tokenOf(res) {
 export function setup() {
   if (!SCENARIO) fail('SCENARIO を指定してください')
   if (DSL_SCENARIOS.includes(SCENARIO) && SCENARIO !== 'dslLight' && !DSL_BODY) fail('DSL_FILE を指定してください')
+  // dslMixed のログインの VU の番号は VUS + 1 まで取りうる（dslHeavy の VU が途中の番号を取るため）。
+  if (SCENARIO === 'dslMixed' && VUS + 1 > PERF_USER_COUNT) {
+    fail(
+      `dslMixed には試験用の利用者が VUS + 1 = ${VUS + 1} 名要ります（PERF_USER_COUNT=${PERF_USER_COUNT}）。` +
+        '利用者を足して PERF_USER_COUNT を合わせてください',
+    )
+  }
   const tokens = {}
   if (SCENARIO === 'adminCheck') tokens.admin = tokenOf(login(ADMIN_EMAIL, ADMIN_PASSWORD))
   if (SCENARIO === 'forbidden') tokens.user = tokenOf(login(userEmail(1), USER_PASSWORD))
@@ -158,9 +170,16 @@ export function dslHeavy() {
   check(preview, { 'preview 200': (r) => r.status === 200 })
 }
 
-// dslMixed の軽い側: 別々の利用者のログイン（loginSuccess と同じ）。
+// dslMixed の軽い側: 別々の利用者のログイン。利用者は試験全体で重ならない VU の番号だけで決め、番号を畳まない
+// （剰余で畳むと、dslHeavy の VU が途中の番号を取ったときに、ログインの VU どうしで利用者が重なる）。
 export function loginLoop() {
-  const res = login(userEmail(((exec.vu.idInTest - 1) % 10) + 1), USER_PASSWORD)
+  const user = userEmail(exec.vu.idInTest)
+  if (!vuState.loginUserLogged) {
+    // 試験用の利用者のメールアドレスだけを出す（秘密の値は含まない）。
+    console.log(`loginLoop-user vu=${exec.vu.idInTest} user=${user}`)
+    vuState.loginUserLogged = true
+  }
+  const res = login(user, USER_PASSWORD)
   check(res, { 'login 200': (r) => r.status === 200 })
 }
 
