@@ -111,7 +111,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --ui postgres
 - 使い捨ての環境だけに要求を送る（`127.0.0.1:18080`）。配備したアプリ・その内部DB・監査ログには触れない。
 - 途中で残したいときは `KEEP=1` を付ける（種類は1つだけ指定する）。終わったら、表示された一時ディレクトリの場所を使って片付ける（`docker compose -p mastersmith-perf -f docker/perf/compose.yaml --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb down -v` と一時ディレクトリの削除。`-f` の compose は `MASTERSMITH_PERF_ENV_FILE` が要るため、`MASTERSMITH_PERF_ENV_FILE=/dev/null` を付けて呼ぶ）。
 
-### 追加の確かめ（--lang・--pattern・--storage）
+### 追加の確かめ（--lang・--pattern・--storage・--compact）
 
 `perf/dsl-timing.sh` に次のオプションを付けると、上の測定の後に続けて行う（組み合わせてよい。PostgreSQL の1種類で足りる）。
 
@@ -124,6 +124,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage p
 | `--lang` | 英語のロケール（`en-US`）の Chromium で `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、続けて誤りを含む DSL を貼り付けて投入（422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
 | `--pattern` | 1,000 文字近くの重い正規表現（深い入れ子の繰り返し・`(a+)+` の並び・大きな繰り返しの回数・Unicode の文字の種類の積・遅延の繰り返しの選択）を `pattern` に 2,000 個持つ DSL と、同じ形で `pattern` の無い DSL を作り（`perf/make-pattern-dsl.mjs`）、普通 3 回 → 重い 3 回 → 重いものの直後に待たずに普通 → 普通 3 回の順に投入する | U2-PATTERN-COMPILE（重い投入が短く終わり、直後の普通の投入が遅れない。アプリのログに「正規表現の確かめを時間の上限で打ち切りました」「受け付けられませんでした」が出ない） | `timings.tsv` の `pattern-*`・`pattern-dsl.txt`・`app.log` |
 | `--storage` | 10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューも1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（cgroup の `memory.current`・`memory.peak`、`memory.stat` の `anon`（プロセスのメモリ）と `file`（ページキャッシュ。回収できる））、履歴の件数を記録する。最後にアプリを `docker compose stop`（`stop_grace_period` 45 秒）で止め、止めるのにかかった秒数と終わり方（exit code。SIGTERM で正常に終われば 143、猶予切れや OOM の SIGKILL は 137）・止めている間の H2 のファイルの大きさ（同じイメージの一時のコンテナでボリュームを読むだけ）・起動から healthy までの秒数・起動し直した後の大きさを記録し、止める前と後のデータ（適用中の DSL とプレビューの DSL の SHA-256、プレビューの previewId、履歴の版・dslHash・件数）を比べる。その後、履歴のすべての版を戻して、プレビューの本文の SHA-256 が履歴の dslHash と一致する数を記録する（`restore_all_match`。詰め直しで本文が壊れていないか） | U4-STORAGE | `storage.tsv`・`memory-peak-before-restart.txt`・`memory-stat-before-restart.txt`・`stop-state.txt`・`data-while-stopped.txt`・`snapshot-before-stop.txt`・`snapshot-after-restart.txt`・`history-after-restart.txt`・`app-before-restart.log` |
+| `--compact` | `--storage` と組み合わせる。最後のプレビューを置いた後、止める前に、アプリを止めずに内部DB を詰め直す道具（`docker/hikari-pool.sh compact --container mastersmith-perf-app-1`）を流す。道具の出力（接続の本数・前と後の大きさ・かかった時間）と終わりの値・道具全体の秒数を記録し、`storage.tsv` に `after-compact` の行を足し、詰め直しの前後のデータ（適用中の DSL とプレビューの DSL の SHA-256、previewId、履歴）を比べ、詰め直しの後の健全性を記録する。その後の `--storage` の止める・起動し直す・`restore_all_match` はそのまま続く（詰め直しの後の本文も確かめる） | FR1.4・NFR1（Intent 260925-storage-memory-fixes） | `compact.txt`・`snapshot-before-compact.txt`・`snapshot-after-compact.txt` |
 
 - `--lang` の画面は、開いたときにプレビューの表示（重い処理）を読みに行く。読み終わる前に投入すると 503 `DSL_BUSY` になるため、台本は最初の読み込みが終わるのを待ってから投入する。
 - `--storage` の `memory.current` はページキャッシュを含むため、H2 のファイルへの書き込みでコンテナの上限の近くまで上がることがある。止まるかどうかは `anon` と、最後の `state.txt`（OOMKilled）で見る。

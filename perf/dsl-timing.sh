@@ -27,10 +27,13 @@
 #   --pattern  重い正規表現を多数含む DSL の投入と、直後の普通の DSL の投入の時間（perf/make-pattern-dsl.mjs、U2-PATTERN-COMPILE）
 #   --storage  10MB の DSL の投入→適用を 21 回くり返し、H2 のファイルの大きさとコンテナのメモリを記録し、アプリを止めて
 #              起動し直した後の大きさ・止めた時間と終わり方・データの無事を記録（U4-STORAGE。最後に行う）
+#   --compact  --storage と組み合わせる。止める前に、アプリを止めずに内部DB を詰め直す道具（docker/hikari-pool.sh compact）を
+#              使い捨てのアプリに流し、前と後の大きさ・かかった時間・終わりの値・データの無事を compact.txt に記録し、storage.tsv に
+#              after-compact の行を足す（Intent 260925-storage-memory-fixes の FR1.4・NFR1）
 # 環境変数:
 #   MASTERSMITH_IMAGE_TAG         使うイメージのタグ（既定 local）
 #   MASTERSMITH_CONTAINER_CPUS    アプリのコンテナの CPU の上限（既定 4）
-#   MASTERSMITH_CONTAINER_MEMORY  アプリのコンテナのメモリの上限（既定 2g。配備と同じ値。要件の条件は 1g）
+#   MASTERSMITH_CONTAINER_MEMORY  アプリのコンテナのメモリの上限（既定 2g。配備と同じ値で、要件の条件も 2g）
 #   REPEAT                        生成・表示を繰り返す回数（既定 3）
 #   STORAGE_ROUNDS                --storage の投入→適用の回数（既定 21。履歴の上限 20 を1回超える）
 #   PERF_DB_URL                   内部DB の接続先（MASTERSMITH_DB_URL）を上書きする（比べるとき。例: jdbc:h2:file:/app/data/mastersmith）
@@ -61,17 +64,18 @@ log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
 now_ms() { perl -MTime::HiRes=time -e 'printf "%d", time * 1000'; }
 rand() { openssl rand -base64 24 | tr -d '/+=' | cut -c1-24; }
 
-ui=0 pattern=0 storage=0 lang=0
+ui=0 pattern=0 storage=0 lang=0 compact=0
 kinds=()
 for arg in "$@"; do
   case "${arg}" in
     --ui) ui=1 ;;
     --pattern) pattern=1 ;;
     --storage) storage=1 ;;
+    --compact) compact=1 ;;
     --lang) lang=1 ;;
     postgres | mysql | mariadb) kinds+=("${arg}") ;;
     *)
-      echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage] <postgres|mysql|mariadb>..." >&2
+      echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
       exit 1
       ;;
   esac
@@ -80,8 +84,12 @@ if [ "${KEEP:-0}" = 1 ] && ((${#kinds[@]} != 1)); then
   echo "KEEP=1 のときは対象DB の種類を1つだけ指定してください。" >&2
   exit 1
 fi
+if [ "${compact}" = 1 ] && [ "${storage}" != 1 ]; then
+  echo "--compact は --storage と組み合わせて指定してください。" >&2
+  exit 1
+fi
 if ((${#kinds[@]} == 0)); then
-  echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage] <postgres|mysql|mariadb>..." >&2
+  echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
   exit 1
 fi
 if [ -n "$(compose "${ALL_PROFILES[@]}" ps -aq 2> /dev/null)" ]; then
@@ -342,6 +350,29 @@ run_kind() {
         curl -sS -f -H "@${TMP}/auth.header" "${API}/history" | jq -r '"history_count=\(length)", "history=\([.[] | "\(.revisionId):\(.dslHash)"] | join(","))", "history_current=\([.[] | select(.current) | .revisionId] | join(","))"'
       } > "${KIND_DIR}/snapshot-${label}.txt"
     }
+    # 止める前に、アプリを止めずに詰め直す（--compact）。道具の出力（接続の本数・大きさ・時間）と終わりの値、詰め直しの前後のデータの
+    # 無事を compact.txt に記録する。道具は使い捨てのアプリ（${APP}）だけに流す（配備したアプリには流さない）。
+    if [ "${compact}" = 1 ]; then
+      storage_snapshot before-compact
+      local compact_start compact_end compact_status
+      compact_start=$(now_ms)
+      set +e
+      "${ROOT}/docker/hikari-pool.sh" compact --container "${APP}" > "${KIND_DIR}/compact.txt" 2>&1
+      compact_status=$?
+      set -e
+      compact_end=$(now_ms)
+      printf 'compact_exit=%s\ncompact_tool_seconds=%s.%03d\n' "${compact_status}" \
+        "$(((compact_end - compact_start) / 1000))" "$(((compact_end - compact_start) % 1000))" >> "${KIND_DIR}/compact.txt"
+      storage_row after-compact
+      storage_snapshot after-compact
+      if diff "${KIND_DIR}/snapshot-before-compact.txt" "${KIND_DIR}/snapshot-after-compact.txt" > /dev/null; then
+        echo 'compact_data_intact=yes' >> "${KIND_DIR}/compact.txt"
+      else
+        echo 'compact_data_intact=no' >> "${KIND_DIR}/compact.txt"
+      fi
+      docker inspect "${APP}" --format 'compact_after_health={{.State.Health.Status}}' >> "${KIND_DIR}/compact.txt"
+      log "${KIND}: 詰め直しました（$(grep -E '^(compact_|\[.*結果)' "${KIND_DIR}/compact.txt" | tr '\n' ' ')）"
+    fi
     storage_snapshot before-stop
     # 止める（compose の stop_grace_period 45 秒の内に終わらなければ SIGKILL）。時間・終わり方（exit code・OOMKilled）・終了時のログを記録する。
     # SIGTERM で正常に終わった JVM の exit code は 143、SIGKILL（猶予切れ・OOM）は 137 になる。
