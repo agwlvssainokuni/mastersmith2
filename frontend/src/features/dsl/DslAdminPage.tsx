@@ -131,7 +131,7 @@ export function DslAdminPage({ api = dslApi, save = saveFile, timeZone }: DslAdm
         timeZone={timeZone}
       />
       {state.alertKey !== null && (
-        <Alert variant="danger" onDismiss={state.dismissAlert}>
+        <Alert variant="danger" onDismiss={state.dismissAlert} dismissLabel={t('dsl.action.close')}>
           <span data-testid="dsl-alert">{t(state.alertKey)}</span>
         </Alert>
       )}

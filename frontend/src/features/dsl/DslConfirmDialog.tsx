@@ -18,6 +18,7 @@
 // 置き換え・適用・破棄の確認。make-you-chic-ui の Modal を使い、はじめのフォーカスは「やめる」に置く。
 // Escape と「やめる」で閉じて何も変えない。閉じるとフォーカスは開く前のボタンへ戻る（Modal のフォーカスの決まり）。
 // 取り消しにくい操作のため、背景のクリックでは閉じない（Modal は背景の押下でも閉じるため、その押下だけを無視する）。
+// 閉じるボタンの名前は表示の言語に合わせる。本文は Modal がダイアログの説明（aria-describedby）として結ぶ。
 import { Button, Modal } from 'make-you-chic-ui'
 import { useEffect, useRef } from 'react'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
@@ -105,7 +106,13 @@ export function DslConfirmDialog({
         : t('dsl.action.discard')
 
   return (
-    <Modal open title={title} onClose={handleClose} initialFocusRef={cancelRef}>
+    <Modal
+      open
+      title={title}
+      onClose={handleClose}
+      initialFocusRef={cancelRef}
+      closeLabel={t('dsl.action.close')}
+    >
       <div className="dsl-confirm" data-testid={`dsl-confirm-${confirm.kind}`}>
         {confirm.kind === 'replace' && (
           <>

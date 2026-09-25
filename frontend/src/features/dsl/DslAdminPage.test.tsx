@@ -536,6 +536,22 @@ describe('DslAdminPage', () => {
     expect(screen.queryByTestId('dsl-alert')).not.toBeInTheDocument()
   })
 
+  it('names the dismiss button of the alert Close in English', async () => {
+    const api = fakeApi({
+      generatePreview: vi.fn<DslApi['generatePreview']>(() => Promise.reject({ kind: 'network' })),
+    })
+    const { user } = renderPage(api, ['en-US'])
+    await shown()
+
+    await user.click(screen.getByTestId('dsl-read-schema-button'))
+    await user.click(screen.getByRole('button', { name: 'Replace' }))
+    expect(await screen.findByTestId('dsl-alert')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '閉じる' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByTestId('dsl-alert')).not.toBeInTheDocument()
+  })
+
   it('shows the not found screen when the server answers 403', async () => {
     const api = fakeApi({ getStatus: vi.fn(() => failure(403, { code: 'ACCESS_DENIED' })) })
     renderPage(api)

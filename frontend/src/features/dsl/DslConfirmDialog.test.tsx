@@ -175,6 +175,27 @@ describe('DslConfirmDialog', () => {
     expect(screen.getByRole('dialog')).toHaveTextContent('履歴の版を戻すと')
   })
 
+  it('names the close button in the display language', async () => {
+    const first = await openWith({ confirm: replace })
+    expect(
+      within(screen.getByRole('dialog')).getByRole('button', { name: '閉じる' }),
+    ).toBeInTheDocument()
+    first.unmount()
+
+    await openWith({ confirm: replace }, ['en-US'])
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('button', { name: '閉じる' })).not.toBeInTheDocument()
+  })
+
+  it('describes the dialog with its body text', async () => {
+    await openWith({ confirm: replace })
+
+    expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
+      expect.stringContaining('DSL を投入すると、今のプレビューは投入した DSL に置き換わります'),
+    )
+  })
+
   it('has no accessibility violations', async () => {
     await openWith({ confirm: replace })
 
