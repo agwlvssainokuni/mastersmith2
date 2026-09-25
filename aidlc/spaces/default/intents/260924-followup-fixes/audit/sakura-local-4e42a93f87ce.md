@@ -4116,3 +4116,344 @@
 **Tool**: Bash
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-09-25T02:16:41Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:16:41Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T02:16:42Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: 質問4件への答え方（Guide me / I'll edit the file / Chat）
+**Options**: Guide me,I'll edit the file,Chat
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:16:55Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:16:59Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T02:16:59Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Guide me
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T02:17:00Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: Q1〜Q4（develop への統合の時期、.env の移し替え、見本の対象DB の作り直し、戻し方）
+**Options**: A,B,X
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:18:29Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:18:41Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T02:18:44Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A, Q2: A, Q3: A, Q4: B
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T02:18:44Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: F1 戻すときに .env の複写を戻すか
+**Options**: A,B,X
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:19:10Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:19:19Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T02:19:22Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: F1: A
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T02:19:23Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:19:35Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:19:39Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-09-25T02:19:42Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: deployment-pipeline
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Questions SHA-256**: 54cabc57136a8049162124bfe468bb1dd4043f9a59258c55827c5c86d0885c90
+**Hash Scope**: confirmed-content-v1
+**Summary Authorization Id**: 9566c5ddb344476112a084cb1af0c34b0ab50a2caa921001afc11c2b54402652
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:20:07Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-25T02:20:07Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+**Summary Authorization Id**: 9566c5ddb344476112a084cb1af0c34b0ab50a2caa921001afc11c2b54402652
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:20:38Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-25T02:20:38Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/deployment-strategy.md
+**Context**: operation > deployment-pipeline > deployment-strategy.md
+**Summary Authorization Id**: 9566c5ddb344476112a084cb1af0c34b0ab50a2caa921001afc11c2b54402652
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:20:53Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Write
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-09-25T02:20:53Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/260924-followup-fixes/operation/deployment-pipeline/rollback-runbook.md
+**Context**: operation > deployment-pipeline > rollback-runbook.md
+**Summary Authorization Id**: 9566c5ddb344476112a084cb1af0c34b0ab50a2caa921001afc11c2b54402652
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:21:01Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T02:21:03Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: 振り返り: 残す学びの選択と、次回に向けて足すことの有無
+**Options**: Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:21:39Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:21:45Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T02:21:48Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: c1, c2 / Nothing to add
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-25T02:21:48Z
+**Event**: RULE_LEARNED
+**Stage**: deployment-pipeline
+**Candidate-ID**: c1
+**Content-Hash**: d3116be97e057542dbcb08021c0ad2975e9595d143eabdeabd4fe61cd0dcb1d1
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Deployment
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-25T02:21:48Z
+**Event**: RULE_LEARNED
+**Stage**: deployment-pipeline
+**Candidate-ID**: c2
+**Content-Hash**: 0675c59d7ff8841998ab55a88372b2dff3d387b0d28e132210f8ab3d49e4d5db
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Deployment
+**Source**: orchestrator
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-09-25T02:21:49Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-pipeline
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:21:58Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:22:01Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-09-25T02:22:03Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-pipeline
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-09-25T02:22:03Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-pipeline
+**Validation Basis**: {"graphContract":"sha256:df6962deab365ec2f79f186c672b0f382b3fff1ebf396ae0771425695c8f11eb","inputs":[{"artifact":"ci-config","contentHash":"sha256:e5aef5e2afcd6f198dab7ae59507704cb0f30dbd9c3b4a38e475b4eb1e9dab56","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:8d854415ac5519193c30a749ae45f9328264a3a14040f0030a5eecec47344edc"},{"artifact":"cicd-pipeline","contentHash":"sha256:6f99d95ac0dd3979bbd598a36827c12426b4df6195d01fc48d1ce23b7ca7bf58","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:bbbc9a2067cc03a33bd885270dea8586bad062710bfd4bc99ebf4075e72ab553"},{"artifact":"infrastructure-specification","contentHash":"sha256:65c178918bafe77af5a69cddf9009501cd4d2fae6ff8903c65f512f1257703fe","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:fe9cc9633eedd4bd0e2ce55d693914d50f712c4be31c5ffa79e6c7663d80b9bb"},{"artifact":"quality-gates","contentHash":"sha256:750be7a697e04d5d53fb92bf8bb2f01337c787e15e1fced47eb1e5d272612c18","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:077f2e1cfd19ebec7b979d4235f8974ef962f7b1e34c5e16a425be7ac46bf9d3"}],"outputs":[{"artifact":"cd-config","contentHash":"sha256:77785cb76698be04bee5fcca8318f36211ad927f2393c45c40761ddc14ddb888","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:2ef301cc361bcb3927734c2f7bb562943a8752a6199ab2d31fd2974d0d841ffe"},{"artifact":"deployment-pipeline-questions","contentHash":"sha256:5e4d3972b4452bec132f4f0d45c17aaeeeec5a0658a0192f17acc75a4064824e","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:af40357bd5a22a5c6724d64b1a72506fbc252f4508a94744de27fa658de5d0af"},{"artifact":"deployment-strategy","contentHash":"sha256:3a7849435e0a3e5dce915ac55a0b339749336e9e62975996ec34c67b736b66a9","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:d15018d46e64a16c40f76a0d52b722a1f093fff9eba50ff8ebd7cc57f035828a"},{"artifact":"rollback-runbook","contentHash":"sha256:9bbecb34b5ba8f4849da6629ecd2a97a191121fc51037f3dc89bb7b6e020f1ba","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:dd66b372c307a6cb49c03f34e00b6120aa9de28cec7a364300e3659aba4c2ca5"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Pipeline approved by gate
+**Tokens In**: 46
+**Tokens Out**: 25469
+**Cache Read**: 12869980
+**Cache Write**: 57666
+**Cost USD**: 7.65
+**By Model**: opus-5=7.65
+**By Agent**: main=7.65
+**Tokens By Model**: opus-5=46/25.5k/12.9M/57.7k
+**Tokens By Agent**: main=46/25.5k/12.9M/57.7k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-09-25T02:22:03Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-execution
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T02:22:16Z
+**Event**: HUMAN_TURN
+**Session**: 10244e33-4c3c-43e8-a82b-d8e41b0a55f4
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T02:22:23Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---

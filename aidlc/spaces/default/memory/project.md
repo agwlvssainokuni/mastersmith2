@@ -79,6 +79,8 @@
 - compose の app のサービスに対象DB の環境変数を足さず、.env.example に足すだけにした。app はすでに .env を env_file で読むため。基盤の設計（cicd-pipeline.md 3節）の書き方とは違う。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:code-generation:9cee5b93f37740922dc363b3d0600e4250adfef1c03ada3ea807df5783ab181e -->
 - 配備先が開発者の PC 上のコンテナの間の Feedback & Optimization では、費用（Cost Explorer・Trusted Advisor）を VM・コンテナの資源の上限と実測に、設定のずれ（AWS Config）を docker inspect・docker compose config・.env の項目の有無（値は見ない）と、記録した設計の値との1つずつの比べに読み替える。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:2092e4de75ef6ca51d922bf2ba8a0bd22190e5194288dfbedaee190202c22398 -->
 - 手元の監視を常に動かしていない間は、SLO の判定を Unverified とし、配備の直後・監視の確かめ・負荷の試験・振り返りの時点の値を基準の値として並べ、配備先が決まったときの測り方を書く。目標を緩めて満たしたことにはしない。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:fa7ca0460f9a1e1941002f1251ad0d8bece205d0aeef0076a63aaceb8a3b14b6 -->
+- Q2: A（AI が .env から2行を移す）と Q4: B（戻すときにイメージと .env を戻す）の組み合わせでは、戻すとアプリが再び見本の対象DB の管理者のパスワードを持つため、追加の質問 F1 で確かめ、戻すのはイメージだけにした。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:d3116be97e057542dbcb08021c0ad2975e9595d143eabdeabd4fe61cd0dcb1d1 -->
+- 配備の前の k6 と内部DB のバックアップは質問にせず、決まっていることとして書いた（k6 は project.md の決まりで Build and Test の結果を正とする。バックアップはスキーマの変更が無いため不要）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:0675c59d7ff8841998ab55a88372b2dff3d387b0d28e132210f8ab3d49e4d5db -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
