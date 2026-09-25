@@ -40,5 +40,12 @@
     "dirName": "260925-storage-memory-fixes",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0d843-ba84-791e-8d19-eaa08aa0960a",
+    "slug": "user-management",
+    "dirName": "260925-user-management",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]
