@@ -52,6 +52,7 @@
 - 1回目の verify で AccessTokenApiIT の 6 件が接続の失敗で落ちた。変更の経路に触れず、同じ時刻に Gradle の作業プロセスとの接続も時間切れだったため PC の負荷による一時的な失敗と見立て、段の中の直しの1回目としてコードを変えずに verify を流し直して通した。原因は確かめていない。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:build-and-test:89def63d81d3ea5433f37ddeb523b0e1717eb00818d68775428f4ef43df53854 -->
 - 依頼者の判断で、試験のイメージを mastersmith:local ではなく mastersmith:followup-fixes で作り、perf/README の手順（local を作り直す）から外れた。配備したアプリは k6 のあいだ止め、約 17 分後に同じコンテナで起動し直した。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:build-and-test:aee16284a3cef2c44d558369fb16a72cd2f17e98dda591a3b51e238a0b25909a -->
 - 試験の後にロックの状態の行の数を数える問い合わせの列の名前を誤り、使い捨ての環境を消した後で取り直せなかった。合格の条件（ログインの checks と 500 の件数）で判定した。消す前に確かめの結果を見てから片付けるべきだった。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:build-and-test:147c0e0eaef76c0e3a8476984863843c4ea89bb16c1e2f76e33ee0abf3050bbc -->
+- Q4（確かめられたときだけ直す）が team.md の「不安定なテストは原因を直すまで統合しない」と食い違いうるため、追加の質問 F3 で、再現できなければ不安定と確かめられていない扱いとして統合してよいことを確かめた。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:requirements-analysis:a23fdf740efe5d8068f7ef6f16866a3588ae6a67c46166049f9e197f23e934f3 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -219,3 +220,5 @@
 - 依頼者は Full rescan を選んだが、深さ Minimal のため開発担当が深く読んだのは4件に関わる約30ファイルだけだった。記録上の範囲は kind: partial とし、./ を analyzed.paths に入れない（前回・前々回と同じ扱い）。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:reverse-engineering:31e0dd4a4e60115c41309f55819446453d89ecad55c51679a6cfc32386ee8517 -->
 - アーキテクトへの依頼で、記録するコミットにスナップショットの source の識別（git:cb55a97…、コミットではない値）を渡してしまい、timestamp の表にそのまま書かれた。公開の前に develop の HEAD（4970f3b）に直した。記録するコミットは git rev-parse HEAD で取り、スナップショットの値と混ぜない。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:reverse-engineering:8e107e1dd133acfaee2024524120055096e196e62d89ce2556edc58d15fdfdb5 -->
 - 開発担当は原因の見立て（H2 が空いた場所を再利用しない理由、メモリの内訳、AccessTokenApiIT の原因）をすべて未検証の仮説として書いた。確かめた事実と仮説を分けることで、要件定義で測り方と切り分けを決める材料にする。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:reverse-engineering:3c819fd32cf1845bc669af3a7e068808eb07b60a739402dcba562cf3f0c8cce1 -->
+- Q1 の答え（A）に添えられた依頼者の補足（H2 は接続が生きている間は詰め直さない）を、直し方の前提として要件に書き、コード生成で実際に確かめることにした。補足は質問の選択肢に無い技術の方向づけで、表の形を変えない（Q2: B）答えとも合う。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:requirements-analysis:ad999a6b391342cc3a29ff64b2d3ee34bfc948e9ee8812982413eb148cca2056 -->
+- Q1（動いている間も頭打ち）と F1（管理者が操作したときだけ詰め直す）が食い違うため、追加の質問 F4 で目標を「操作の直後に戻る」に確かめ直した。あわせて入口（F5: API だけ）と監査（F6: 残す）も追加で確かめ、質問は 4 問＋追加 6 問になった。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:requirements-analysis:8ff983dd32b178546d4bdd8dbf4f158a8c9a21be9ef837819c16a2279072aa5f -->
