@@ -1,0 +1,13 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US2.1", "US2.2", "US3.1", "US3.2", "US4.1", "US5.1"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "Invitation, Mail, InvitationUi, AuditLog" },
+    { "id": "US2.1", "status": "OK", "target": "Invitation, InvitationUi" },
+    { "id": "US2.2", "status": "OK", "target": "Invitation, Mail, InvitationUi, AuditLog" },
+    { "id": "US3.1", "status": "OK", "target": "Mail, Invitation" },
+    { "id": "US3.2", "status": "OK", "target": "Invitation, UserAccount, RegistrationUi, AuthUi, AppFrame, AuditLog" },
+    { "id": "US4.1", "status": "OK", "target": "UserAccount, PreferencesUi, AppFrame, Authentication, ApiClient, InstanceAppearance" },
+    { "id": "US5.1", "status": "OK", "target": "UserAccount, PreferencesUi, AuditLog" }
+  ]
+}
