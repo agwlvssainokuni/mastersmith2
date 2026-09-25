@@ -4,205 +4,142 @@
 
 ### System Overview
 
-1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果（`frontend/dist`）を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
+1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。JVM は `-XX:MaxRAMPercentage=75.0` で起動し、コンテナのメモリの上限（既定 2g）の 75%（約 1.5GiB）が最大ヒープになる。
 
 データの置き場は2種類ある。
 
-- 内部DB: 組み込みの H2（ファイル保存、コンテナでは `/app/data`）。利用者・トークン・ロックの状態・監査ログ・DSL のプレビューと適用の履歴を置く。スキーマは Flyway（V1〜V6）が正本で、Hibernate は検証だけを行う。
-- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ（`MASTERSMITH_TARGET_DB_*` の設定）。スキーマを読むだけで、書き込まない。
-
-外への送信は、既定で無効の OTLP の外部エクスポート（トレース・ログ・指標）だけである。
+- 内部DB: 組み込みの H2 2.4.240（ファイル保存、コンテナでは `/app/data`、接続先 `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`）。利用者・トークン・ロックの状態・監査ログ・DSL のプレビューと適用の履歴を置く。スキーマは Flyway（V1〜V6）が正本。接続プールは HikariCP（上限 既定 30）。
+- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ。
 
 ### Architectural Style
 
-**モジュール分けしたモノリス（層構造）**である。
-
-- パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` などの層になっている（`code-structure.md`）。
-- 層と機能の境界は ArchUnit のテスト（`ArchitectureTest` と `*BoundaryArchitectureTest`、8 クラス）で確かめている。
-- 機能の間は、差し込み口（Spring の Bean の一覧）とアプリの中の出来事（`ApplicationEventPublisher`）でつながる。`auth`・`access`・`dslmanage` は `audit` を知らない。
-- HTTP セッションを作らない。認証は Bearer のアクセストークンで行う。
-
-画面は SPA で、機能ごとの登録ファイル（`frontend/src/features/*/registration.ts`）を骨組み（`frontend/src/app/`）が読み込んで組み立てる。デザインシステム make-you-chic-ui を Git サブモジュールから `file:` 参照で取り込む。
+**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` などの層になる（`code-structure.md`）。境界は ArchUnit のテストで確かめている。機能の間は差し込み口（Bean の一覧）とアプリの中の出来事でつながり、`audit` は出来事の型にだけ依存する。
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
   subgraph FE["画面 frontend/src"]
-    APPC["frontend-app-core"]
-    REG["frontend-registry"]
-    APIC["frontend-api-client"]
-    FAUTH["frontend-feature-auth"]
-    FADM["frontend-feature-admin"]
     FDSL["frontend-feature-dsl"]
-    MYC["make-you-chic-ui"]
+    FOTH["ほかの画面の部品"]
+    APIC["frontend-api-client"]
   end
   subgraph BE["バックエンド cherry.mastersmith"]
+    CW["common-web"]
     CFG["config"]
-    COMMON["common-*"]
     AUTH["auth"]
     ACCESS["access"]
-    AUDIT["audit"]
     USER["user"]
+    AUDIT["audit"]
     TDB["targetdb"]
     DSL["dsl"]
     DSLM["dslmanage"]
   end
   H2[("内部DB H2")]
   TGT[("対象DB")]
-  OTLP["OTLP の受け手（既定で無効）"]
 
-  APPC --> REG
-  REG --> FAUTH
-  REG --> FADM
-  REG --> FDSL
-  FAUTH --> APIC
-  FADM --> APIC
   FDSL --> APIC
-  FDSL --> MYC
-  APPC --> MYC
-  APIC -- "HTTP /api/**" --> CFG
-  CFG --> COMMON
+  FOTH --> APIC
+  APIC -- "HTTP /api/**" --> CW
+  CW --> CFG
+  CFG --> AUTH
+  CFG --> ACCESS
+  CFG --> DSLM
   AUTH --> USER
   ACCESS --> AUTH
   DSLM --> DSL
   DSLM --> TDB
   DSLM --> USER
-  DSLM --> AUTH
-  AUTH -- "AuthenticationEvent" --> AUDIT
-  ACCESS -- "AdminAccessDeniedEvent" --> AUDIT
-  DSLM -- "DslOperationEvent" --> AUDIT
+  AUTH -- "出来事" --> AUDIT
+  ACCESS -- "出来事" --> AUDIT
+  DSLM -- "出来事" --> AUDIT
   AUTH --> H2
   USER --> H2
   AUDIT --> H2
   DSLM --> H2
   TDB --> TGT
-  CFG -. "有効時だけ" .-> OTLP
 ```
 
-文章による代替: 画面の骨組みが登録を通して認証・管理者向け領域・DSL の管理の3つの機能を差し込み、各機能は共通の API の呼び出しで同じオリジンの `/api/**` を呼ぶ。DSL の画面は make-you-chic-ui の `Modal`・`Alert` などを使う。バックエンドでは、`config` の1つのフィルターの連鎖に各機能が決まりを足す。`auth` は `user` で利用者を照合し、`access` は `auth` の主体を使う。`dslmanage` は `dsl`（読み込み・検証・適用中のモデル）と `targetdb`（対象DB のスキーマの読み取り）を使い、プレビューと履歴を内部DB に置く。`auth`・`access`・`dslmanage` は出来事を知らせ、`audit` が内部DB に追記する。`config` は外部エクスポートを有効にしたときだけ OTLP の受け手に送る。パッケージ間の依存の詳細は `dependencies.md`。
+文章による代替: 画面の各機能は共通の API の呼び出し（`frontend-api-client`）で同じオリジンの `/api/**` を呼ぶ。要求はまず `common-web` のフィルター（本文の大きさの上限など）と `config` のセキュリティの連鎖を通り、各機能のコントローラーに届く。`auth` は `user` で利用者を照合し、`access` は `auth` の主体を使う。`dslmanage` は `dsl`（読み込み・検証・適用中のモデル）と `targetdb`（対象DB のスキーマの読み取り）を使い、プレビューと履歴を内部DB に置く。`auth`・`access`・`dslmanage` は出来事を知らせ、`audit` が確定の後に内部DB に追記する。パッケージ間の依存の詳細は `dependencies.md`。
 
 ### Data Flow
 
-1. 画面の要求は `apiFetch` がアクセストークン（メモリに保持）を `Authorization: Bearer` に付けて送る。
-2. サーブレットのフィルター（本文の大きさの上限、Spring Security の連鎖、キャッシュの指定）を通り、コントローラー（`web`）が DTO を業務処理（`service`）の命令に変える。
-3. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。DSL の管理では、対象DB を読むあいだ内部DB の接続を持ち続けないよう、トランザクションの境界を `DslRecordStore` に置いている。
-4. 業務エラーは `BusinessException` として投げられ、`@RestControllerAdvice` の1か所で Problem Details（`code`・`traceId` 付き）に変わる。
-5. 監査の対象の出来事は、確定の後に `audit` が別のトランザクション（`REQUIRES_NEW`、2本目の接続）で `audit_events` に追記する。
-6. ログは標準出力に1行1件の JSON で出る（`logback-spring.xml`、キーと値は `<keyValuePairs/>` で項目になる）。外部エクスポートを有効にしたときだけ、ルートのロガーに OTLP の出力が足される（`ObservabilityConfig`）。
+1. 画面の要求は `Authorization: Bearer` を付けて送られ、サーブレットのフィルター、Spring Security の連鎖を通ってコントローラー（`web`）に届く。
+2. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。DSL の管理では、対象DB を読むあいだ内部DB の接続を持ち続けないよう、トランザクションの境界を `DslRecordStore` に置く。
+3. 業務エラーは `@RestControllerAdvice` の1か所で Problem Details（`code`・`traceId` 付き）に変わる。
+4. 監査の対象の出来事は、確定の後に `audit` が別のトランザクション（2本目の接続）で追記する。
 
 ### Key Design Decisions
 
-| 選択 | 内容 | 影響（今回の7件との関わり） |
+| 選択 | 内容 | 影響（今回の4件との関わり） |
 |---|---|---|
-| ログは標準出力の JSON が正、OTLP は有効時だけ足す | `OtlpLogAppenderInstaller` がルートのロガーに `OpenTelemetryAppender` を足す（`config/ObservabilityConfig.java` 67〜101 行） | 足す出力の設定は名前と文脈だけで、キーと値を属性として送る設定が無い（TD-1） |
-| ロックの状態は1表・行ごとの排他 | 利用者の行とダミーの行を同じ表に置き、排他つきで読む。行が無ければ `MERGE` で作って読み直す | 行が無い利用者の同時の初めてのログインで、主キーの重複になりうる（TD-2） |
-| 監査は確定の後・別トランザクション | `@TransactionalEventListener(AFTER_COMMIT)` と `REQUIRES_NEW` | 1要求で接続を2本使う（プールの上限 既定 30、README の既知の制約）。書き込みの失敗の ERROR に記録しようとした全項目を載せる（TD-1 の懸念） |
-| 適用中の DSL のモデルは `dsl` が保持、差し替えは `dslmanage` | 後続の機能が `dsl` だけに依存できる | 起動時の読み込み（`DslStartupLoader`）の順序に依存する |
-| 資源の上限は compose の既定と `.env` の上書き | CPU 既定 4、メモリ 既定 1g（`compose.yaml` 62〜63 行） | 10MB の DSL には 2g が要る（TD-5）。`app` は `.env` の全体を `env_file` で読む（TD-6） |
-| デザインシステムはサブモジュールで固定 | 変更は make-you-chic-ui 側で行い、固定先を更新して取り込む（`project.md` の Forbidden・Mandated） | 閉じるボタンの文言と `aria-describedby` の直しは固定先の更新で取り込む（TD-7） |
+| DSL の本文をバイト列のまま BLOB に置く | `dsl_previews.yaml_bytes`・`dsl_applied_revisions.yaml_bytes`（`V5`） | 識別とダウンロードが一致する代わりに、投入と適用で本文を2回書く（TD-1） |
+| 適用はプレビューの行を `INSERT ... SELECT` で履歴へ写す | 10MB の本文をアプリに読み直さない（`DslAppliedRevisionRepository` の `COPY_SQL`） | DB の中で本文がもう1つ増える。H2 の SQL に依存する（TD-1） |
+| 内部DB の詰め直しは閉じるときだけ | `DEFRAG_ALWAYS=TRUE`（`application.yaml` 137 行） | 動いている間はファイルが縮まない（TD-1、README の既知の制約） |
+| 読み込みは節の木と位置の対応表を作る | `SafeYamlParser`（SnakeYAML の `Composer`）→ Jackson の木と `PositionMap` | 誤りの行と列を示せ、上限を検査できる代わりに、1回の投入で本文の数倍の形が同時に生きる（TD-2） |
+| モデルを2つ持ち続ける | 適用中（`ActiveDslModelStore`）とプレビュー（`DslPreviewCache`）、どちらも `AtomicReference` の1件 | 10MB の DSL なら両方が大きい（TD-2） |
+| 重い操作は同時に1つ | `DslHeavyOperationGate` | 投入の読み込みのメモリは同時に1つ分に抑えられるが、ログインなどほかの要求とは重なる（TD-2） |
+| 結合テストは1つの JVM で文脈をキャッシュ | `integrationTest` は最大ヒープ 1g、`RANDOM_PORT` の文脈がそれぞれ Tomcat と Hikari を持つ | 一時的な失敗の候補の1つ（TD-3） |
 
 ### Improvement Opportunities
 
-- 外部へ送るログの中身（キーと値）を確かめるテストが無い。送る値の決まり（秘密情報に加え、メールアドレスなど個人に関する値）を決めてから送る必要がある。
-- ロックの状態の行の作成は、同時の作成への備え（重複の受け止めか、排他の取り方の変更）が要る。
-- コンテナの既定の値（メモリの上限）は、compose・負荷の試験の compose・`.env.example`・README・確かめのスクリプトの5か所に散っている。
-- 見本の対象DB のための秘密情報と、アプリの設定が同じ `.env` にある。
+- 本文を1か所に置き、プレビューと履歴は識別で指す形にすれば、DB の中の複写が減る（未検証。後方互換の制約は `code-quality-assessment.md` の TD-1）。
+- 読み込みの途中の形（文字列・節の木・Jackson の木・位置の対応表）を同時に持つ時間を短くする余地がある。ただし上限の検査と誤りの位置を保つ必要がある。
+- `DslLifecycle`（462 行）は DSL の管理の操作をすべて持つ。
 
 詳しくは `code-quality-assessment.md` を参照。
 
 ## Interaction Diagrams
 
-### 1. ログインとロックの状態の行（`POST /api/auth/login`）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant UI as 画面 LoginForm
-  participant C as AuthController
-  participant L as LoginService
-  participant U as UserAccountService
-  participant R as LoginAttemptStateRepository
-  participant DB as 内部DB H2
-  participant AU as AuditEventListener
-
-  UI->>C: POST /api/auth/login
-  C->>L: login(command, client)
-  L->>U: verifyPassword（トランザクションの外）
-  Note over L: transaction.execute で decide を実行
-  alt 利用者がいない
-    L->>R: lockDummyForUpdate（空いたダミーの行）
-  else 利用者がいる
-    L->>R: lockForUpdate(userId)
-    alt 行が無い
-      L->>R: createIfAbsent(userId)（MERGE）
-      Note over R,DB: 同時の2つの試みが両方とも行を見つけられないと、後の MERGE が主キーの重複になりうる
-      L->>R: lockForUpdate(userId)（読み直し）
-    end
-  end
-  L->>L: LockPolicy.decide
-  L->>R: update（失敗回数とロックの期限）
-  L-->>AU: LOGIN_SUCCEEDED または LOGIN_FAILED（確定の後に受け取る）
-  AU->>DB: REQUIRES_NEW で audit_events に追記
-  alt 成功
-    C-->>UI: 200 TokenResponse とリフレッシュの Cookie
-  else 失敗
-    C-->>UI: 401 AUTHENTICATION_FAILED
-  end
-```
-
-文章による代替: パスワードの照合はトランザクションの外で1回行う。その後の短いトランザクションで、利用者がいなければダミーの行を、いれば利用者の行を排他つきで読む。利用者の行が無いときは `MERGE` で作ってから読み直す。行が無い利用者が同時に2回ログインすると、どちらも行を見つけられずに `MERGE` を行い、後の方が主キーの重複となって想定外のエラー（500）になりうる（TD-2）。判定と更新の後、成功でも失敗でも出来事を知らせ、`audit` が確定の後に追記する。
-
-### 2. DSL の投入・プレビュー・適用（`/api/admin/dsl/**`）
+### 1. DSL の投入と適用で本文が書かれる道（TD-1・TD-2）
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant P as DslAdminPage
+  participant F as RequestSizeLimitFilter
   participant C as DslAdminController
+  participant G as DslHeavyOperationGate
   participant LC as DslLifecycle
-  participant RD as DslReader
+  participant RD as DefaultDslReader
+  participant PC as DslPreviewCache
   participant ST as DslRecordStore
-  participant H as ActiveDslModelHolder
+  participant AM as ActiveDslModelStore
   participant DB as 内部DB H2
-  participant AU as AuditEventListener
 
-  P->>C: POST /api/admin/dsl/preview（application/yaml）
-  C->>LC: submit(bytes, source, context)
-  LC->>RD: read（安全な読み込み・JSON Schema・意味の検証）
-  alt 検証を通らない
-    LC-->>AU: DSL_SUBMISSION_REJECTED
-    C-->>P: Problem Details（誤りの一覧）
-  else 検証を通る
-    LC->>ST: placePreview
-    ST->>DB: dsl_previews を置き換え
-    LC-->>AU: DSL_SUBMITTED
-    C-->>P: PreviewResponse（違い・警告）
-  end
-  P->>P: DslConfirmDialog（Modal）で適用を確かめる
-  P->>C: POST /api/admin/dsl/apply（previewId）
-  C->>LC: apply(previewId, context)
-  LC->>ST: apply（トランザクション）
-  ST->>DB: dsl_applied_revisions へ写し、プレビューを消す
-  Note over LC: ここから先は確定の後
-  LC->>H: replace(model)
-  LC-->>AU: DSL_APPLIED
-  AU->>DB: audit_events に追記
-  C-->>P: DslStatusResponse
+  P->>F: POST /api/admin/dsl/preview（10MB まで）
+  F->>C: byte[] の本文
+  C->>G: 同時に1つの枠を取る
+  C->>LC: submit(bytes)
+  LC->>RD: read（文字列・節の木・Jackson の木・PositionMap）
+  RD-->>LC: DslModel
+  LC->>ST: placePreview
+  ST->>DB: MERGE で dsl_previews に本文を書く（1回目）
+  LC->>PC: put(previewId, model)
+  C-->>P: プレビュー（違い・警告）
+  P->>C: POST /api/admin/dsl/apply
+  C->>LC: apply(previewId)
+  LC->>ST: apply（1つのトランザクション）
+  ST->>DB: INSERT ... SELECT で履歴へ本文を写す（2回目）
+  ST->>DB: プレビューの行を消す
+  ST->>DB: 21 件目以降の古い履歴を消す
+  Note over DB: 消した本文の場所は、動いている間は再利用されない（README の既知の制約）
+  LC->>AM: 確定の後にモデルを差し替える
+  C-->>P: 適用後の状態
 ```
 
-文章による代替: 画面は DSL のファイルを YAML のまま送る。`DslLifecycle` は `dsl` の読み込み口で検証し、通らなければ受け付けなかった投入を監査に知らせて誤りの一覧を返す。通ればプレビューを内部DB に置き、違いと警告を返す。画面は確かめの表示（make-you-chic-ui の `Modal`）で確認した後に適用を送る。適用は `DslRecordStore` のトランザクションで履歴へ写し、確定の後に適用中のモデルを差し替えて監査に知らせる。操作ごとに `DslOperationMetrics` がキーと値つきのログを出す（TD-1 で Loki から絞り込めない値）。この流れの中身は流し読みで確かめたものである。
+文章による代替: 投入の本文は大きさの上限のフィルターを通ってコントローラーに `byte[]` で届き、重い操作の枠を取ってから `DslLifecycle` が読み込みと検証を行う。通れば `MERGE` でプレビューの行に本文を書き（1回目）、モデルをプレビューの置き場に持つ。適用では、1つのトランザクションでプレビューの本文を `INSERT ... SELECT` で履歴へ写し（2回目）、プレビューの行と古い履歴を消す。確定の後に適用中のモデルを差し替える。消した本文の場所が動いている間に再利用されないため、内部DB のファイルが伸び続ける（TD-1）。読み込みの途中の形は TD-2。
 
-### 3. ログの出力の道（TD-1・TD-4）
+### 2. 結合テストの HTTP の道（TD-3）
 
 ```mermaid
 flowchart LR
-  SRC["アプリのコード<br/>LOGGER.atInfo().addKeyValue(...)"] --> ROOT["ルートのロガー INFO"]
-  LIB["Hibernate などの部品のログ"] --> ROOT
-  ROOT --> JSON["標準出力の JSON<br/>logback-spring.xml<br/>keyValuePairs が項目になる"]
-  ROOT -. "export.enabled が true のときだけ" .-> OTEL["OpenTelemetryAppender<br/>ObservabilityConfig"]
-  OTEL --> COL["OTLP の受け手<br/>otel-collector または lgtm"]
-  COL --> LOKI["Loki<br/>本文の文字列だけで絞り込める"]
+  JVM["integrationTest の JVM 1つ<br/>最大ヒープ 1g"] --> CTX["キャッシュされた Spring の文脈<br/>RANDOM_PORT ごとに Tomcat と Hikari"]
+  IT["AccessTokenApiIT"] --> API["AuthApi<br/>BeforeEach ごとに新しい"]
+  API --> HC["HttpTestClient<br/>JDK HttpClient 既定の版<br/>接続 5 秒・要求 30 秒"]
+  HC -- "http://localhost:番号" --> TOM["Tomcat 全アドレスで待ち受け"]
+  CTX --> TOM
+  TC["Testcontainers のコンテナ<br/>colima が番号を転送"] -. "同じ loopback の番号の空間" .-> TOM
 ```
 
-文章による代替: アプリのコードはキーと値の API でログを出し、部品（Hibernate など）のログと一緒にルートのロガー（INFO）へ入る。標準出力の JSON ではキーと値が項目になる。外部エクスポートを有効にしたときだけ OTLP の出力が足されるが、キーと値を属性として送る設定が無いため、Loki では本文の文字列でしか絞り込めない（TD-1）。ロガーごとの水準の指定は JDBC ドライバー3つだけで、`org.hibernate` の指定は無い（TD-4）。
+文章による代替: 結合テストは1つの JVM（最大ヒープ 1g）で動き、Spring の文脈がキャッシュされて `RANDOM_PORT` ごとに組み込みの Tomcat と Hikari のプールを持ち続ける。`AccessTokenApiIT` は毎回新しい `AuthApi`（新しい JDK の `HttpClient`）で `http://localhost:<番号>` に送る。Tomcat は全アドレスで待ち受け、Testcontainers のコンテナの番号は colima が PC の loopback へ転送するため、番号の空間を共有する。失敗の原因の候補（負荷・番号の衝突・資源の使い過ぎ）はどれも未検証で、`code-quality-assessment.md` の TD-3 に書いた。

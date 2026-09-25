@@ -1,91 +1,99 @@
 # コードの品質の評価（mastersmith2）
 
-テストの件数はファイルを数えた値で、実行した結果ではない（今回のスキャンでは Gradle・npm・Docker を実行していない）。実測の件数とカバレッジは Build and Test で取る（`project.md` の Testing Posture）。
+確かめ方はファイルの読み取りだけで、Gradle・npm・Docker は実行していない。件数はファイルを数えた値である。
 
-## テストとカバレッジ
+## テスト
 
-| 対象 | 置き場 | 数（ファイル） | 道具 |
+| 対象 | 置き場 | ファイル数 | 道具 |
 |---|---|---|---|
-| バックエンドの単体テスト | `backend/src/test/java/` の `*Test` | 99 | JUnit 5・jqwik・ArchUnit（8 クラス） |
-| バックエンドの結合テスト | 同上の `*IT` | 68 | Spring Boot Test と組み込みの H2、対象DB は Testcontainers |
-| テストの補助 | 同上の残り | 全体で 208 | `TestDatabase`・`HttpTestClient`・`LogEvents` など |
-| 画面の単体テスト | `frontend/src/**/*.test.ts(x)` | 47 | Vitest＋Testing Library（jsdom）＋user-event＋vitest-axe＋fast-check |
-| E2E | `frontend/e2e/` | 4 | Playwright（`./gradlew e2eTest` だけ、`verify` と CI の外） |
-| 負荷の試験 | `perf/k6/scenarios.js` | — | k6（テストの関門の外） |
+| バックエンドの単体 | `backend/src/test/java/`（`*Test`） | 100 | JUnit 5・AssertJ・jqwik・ArchUnit |
+| バックエンドの結合 | 同上（`*IT`） | 69 | Spring Boot Test（`@SpringBootTest` 45 クラス、うち `RANDOM_PORT` 35、`@DirtiesContext` 0）・Testcontainers |
+| 画面 | `frontend/src/`（`*.test.ts(x)`） | 47 | Vitest・Testing Library・user-event・vitest-axe・fast-check |
+| E2E | `frontend/e2e/` | 4 | Playwright（`verify` と CI の外） |
 
-- カバレッジの下限は行 80%・分岐 70%。バックエンドは JaCoCo（`backend/build.gradle.kts` 155〜253 行）で全体の合計に加え、パッケージごとの下限を新しいパッケージだけに当てる（既存の 22 パッケージは一覧 `packagesJudgedByTotal` で外す）。画面は `frontend/vitest.config.ts` の `thresholds`。
-- ログの秘密情報の確かめは `*SecretLeakIT`（auth・access・audit・targetdb）と `common/testsupport/LogEvents` で、標準出力側のログの出来事が対象である。
+- カバレッジの下限: JaCoCo の全体（行 80%・分岐 70%）と、新しいパッケージだけのパッケージごとの下限（既存の 22 パッケージは一覧で外す）。画面は `@vitest/coverage-v8` の `thresholds`。
+- テストの JVM（`backend/build.gradle.kts` 111〜128 行）: すべての `Test` タスクで最大ヒープ `1g`、`-XX:+EnableDynamicAgentLoading -Xshare:off`。`integrationTest` は1つの JVM で、`maxParallelForks` の指定は無い。
+- 今回の4件に関わる既存のテスト: `config/H2DefragOnCloseTest`、`dslmanage/repository/DslManageRepositoryIT`、`dslmanage/web/DslAdminApiIT`・`DslConcurrencyIT`、`dslmanage/service/DslStartupIT`、`auth/web/AccessTokenApiIT`。
 
-### 今回の7件に関わる既存のテスト
+## 検査・CI・文書
 
-| 件 | テスト | 確かめていること・いないこと |
-|---|---|---|
-| TD-1 | `common/observability/ExternalExportIT` | `/v1/logs` が届くことは確かめるが、秘密の値が入らないことを確かめるのは `/v1/traces` だけ（192〜202 行付近）。送ったログのキーと値は確かめていない |
-| TD-2 | `auth/repository/LoginAttemptStateRepositoryIT`・`auth/service/LoginServiceTest`・`auth/service/LoginConcurrencyIT` | `createIfAbsent` の冪等は1スレッドだけ、行が無いときの作成は模擬だけ、同時の失敗は行がある利用者だけ。行が無い利用者の同時の初めてのログインのテストは無い |
-| TD-5 | `docker/check-container-limits.sh` | 変数なしでメモリの上限 1g（1073741824）を期待する（93 行） |
-| TD-7 | `frontend/src/features/dsl/DslAdminPage.test.tsx`・`DslConfirmDialog.test.tsx` | 535 行が `Alert` の閉じるボタンを名前「閉じる」で探す |
+- Java: Spotless（palantir-java-format、ライセンスヘッダー）、SpotBugs＋FindSecBugs（`SQL_` で始まる指摘は priority にかかわらず止める）、ArchUnit の層の検査。
+- 画面: Prettier・oxlint・ESLint・Stylelint・`tsc`、ライセンスヘッダーの検査スクリプト。
+- CI: `.github/workflows/ci.yml`（`develop` へのプッシュで `./gradlew verify`）、Dependabot、pre-commit（Gitleaks とフォーマット）。
+- 文書: `README.md`（既知の制約・戻し方を含む）と `perf/README.md`。Javadoc は日本語で決まりの番号と理由を書く形がそろう。TODO・FIXME・HACK は `backend/src`・`frontend/src` に 0 件。
 
-## リンタと静的解析
+## 技術的負債（今回の4件）
 
-| 対象 | 道具 | 関門 |
-|---|---|---|
-| Java | Spotless（palantir-java-format、ライセンスヘッダー） | 違反で失敗 |
-| Java | SpotBugs＋FindSecBugs（`spotbugsGate`、除外は `backend/config/spotbugs-exclude.xml`） | priority 1 と `SQL_` で失敗（`backend/build.gradle.kts` 288〜329 行） |
-| Java | ArchUnit（`ArchitectureTest`・`*BoundaryArchitectureTest`） | 層と機能の境界 |
-| 画面 | Prettier・oxlint・ESLint（react-hooks）・Stylelint・`scripts/check-license-header.mjs`・`tsc --noEmit` | 違反で失敗 |
-| 秘密情報 | Gitleaks（pre-commit と `verify`） | 検出で失敗 |
-| 依存関係 | OSV-Scanner・Dependabot | `dependencies.md` の決まり |
+各項目は「確かめた事実」と「未検証の仮説」を分けて書く。仮説は要件・設計の段で確かめる。
 
-`TODO`・`FIXME`・`HACK` は見当たらない。抑止は `DefaultErrorResponseWriter.java` の `@SuppressWarnings("unchecked")` と `frontend/src/types/vitest-axe-matchers.d.ts` の oxlint の1件だけ。
+### TD-1 動いている間、内部DB のファイルが伸び続ける（依頼の1件目）
 
-## CI/CD と検査の関門
+確かめた事実:
 
-`./gradlew verify`（`build.gradle.kts` 311〜379 行）が、ローカルの統合前の関門と CI の両方の入口である。段は 0 準備（サブモジュールのビルドと変更の無さの確認を含む）→ 1 フォーマット → 2 リンタ → 3 ライセンスヘッダー → 4 ビルド → 5 単体テスト → 6 結合テスト（組み込みの H2 と対象DB のコンテナ）→ 7 カバレッジ → 8 安全の検査 → 9 成果物。
+- 本文は `dsl_previews.yaml_bytes`・`dsl_applied_revisions.yaml_bytes` の `BINARY LARGE OBJECT` に置く（`V5__u4_dsl_management.sql`）。
+- 投入は固定の鍵の1行への `MERGE`（`DslPreviewRepository` の `PLACE_SQL`）で毎回新しい本文を書く。適用は `INSERT ... SELECT` でプレビューの本文を履歴へ写し（`DslAppliedRevisionRepository` の `COPY_SQL`）、同じトランザクションでプレビューの行を消し、21 件目以降の古い履歴を消す（`DslRecordStore.apply` 117〜130 行）。1回の投入と適用で本文が少なくとも2回書かれる。
+- 接続先は `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`（`application.yaml` 137 行）。詰め直しは閉じるときだけで、動いている間に詰め直す設定は無い。
+- `README.md` 452 行が既知の制約として記録している: 10MB の DSL の投入と適用で1回あたり約 10.8MB、21 回で約 278MB、40 回で約 483MB、頭打ちにならない。止めて起動し直すと約 16MB。
+- `V5` の説明の見積もり（プレビュー1件と履歴 20 件で最大約 210MB）は、保存する本文の論理的な大きさで、ファイルの大きさではない。
 
-- CI（`.github/workflows/ci.yml`）: `develop` へのプッシュと `v*` のタグで `verify` を動かす。サブモジュールは固定先で取得する。
-- 配備: `Dockerfile` と `compose.yaml` で開発者の PC に限る。
+未検証の仮説:
 
-## 文書
+- 動いている間に消した場所が再利用されない理由（H2 2.4.240 の MVStore が古いチャンクを保持する条件、詰め直しの条件、LOB の消し方）は、コードからは確かめられない。
+- 直し方の候補（どれも未検証）: 本文を1か所に置きプレビューと履歴は識別で指す表の形、本文の圧縮、本文を DB の外のファイルに置く、H2 の設定による動いている間の詰め直し。
 
-- `README.md`（約 600 行）: 道具・検査・起動・環境変数・対象DB・DSL・監視・監査・差し込み口。メモリの上限は 204〜208 行（既知の制約）と 230 行（環境変数の表、既定 1g）。監査の書き込みの失敗の ERROR に記録しようとした項目を載せることは 541 行に明記。
-- `perf/README.md`（2g で流す手順、18・109 行）、`frontend/src/features/README.md`。
-- Java は日本語の Javadoc、TypeScript はファイル先頭の説明が丁寧で、設計の番号（BR・NFR・ADR）を参照している。
+守る制約:
 
-## 技術的負債
+- 表の形を変えるときは V7 以降・前進のみ・1つ前の版のアプリが動く後方互換。1つ前の版は `yaml_bytes` の列を読むため、列を消す・中身の形（圧縮など）を変えると前の版のイメージに戻せなくなる（README の「戻し方」）。
+- 本文は受け取ったバイト列のまま保存し、識別（SHA-256）とダウンロードがバイト単位で一致する。適用は1つのトランザクションで履歴への追加・プレビューの削除・古い履歴の削除を行い、確定の後だけモデルの差し替えと監査の出来事を行う。
 
-今回の Intent の7件（番号は Intent の説明の番号と同じ）。場所と事実は開発担当のスキャンにより、`LoginService`・`LoginAttemptStateRepository`・`ObservabilityConfig`・`compose.yaml`・`perf/k6/scenarios.js`・`V3`・`logback-spring.xml`・`application.yaml` の該当行はアーキテクトが読み直して確かめた。
+### TD-2 10MB の DSL の投入とログインの重ねでメモリが上限に近づく（依頼の2件目）
 
-| ID | 所見 | 場所 | 影響 |
-|---|---|---|---|
-| TD-1 | OTLP のログの出力が、キーと値を属性として送る設定（`setCaptureKeyValuePairAttributes`）を呼んでいない。Loki では本文の文字列だけで絞り込める | `backend/src/main/java/cherry/mastersmith/config/ObservabilityConfig.java` 93〜101 行、出力の取り付けは有効時だけ（67〜71 行）。標準出力は `logback-spring.xml` 48 行の `<keyValuePairs/>` で項目になる | `dsl.operation` などで警報・ダッシュボードを絞れない（`docker/monitoring/provisioning/alerting/mastersmith.yaml` は本文の文字列だけで絞っている） |
-| TD-2 | ロックの状態の行が無い利用者の同時の初めてのログインで、両方が行を見つけられず `MERGE` を行うと、後の方が主キーの重複になりうる（500） | `auth/service/LoginService.java` 161〜168 行（`lockUserRow`）、`auth/repository/LoginAttemptStateRepository.java` 65〜73 行（`lockForUpdate`）・102〜110 行（`createIfAbsent`）、`V3__u2_authentication.sql` 21〜26 行 | 行は通常 `LoginAttemptStateInitializer` で利用者と同時に作るため、起きるのは SQL で直接入れた利用者（負荷の試験の利用者）など。`decide` は `transaction.execute` の中（119 行） |
-| TD-3 | `dslMixed` の `loginLoop` が `exec.vu.idInTest`（場面をまたいだ通しの番号）で利用者を選ぶため、`logins` 側の2つの VU が同じ `perf-userNN` になりうる | `perf/k6/scenarios.js` 49〜58 行・163 行 | 負荷の試験の結果が同じ利用者の重なりで崩れうる。単独の場面（`loginSuccess`・`refresh`）は重ならない |
-| TD-4 | 起動時の Hibernate の案内が改行を含む1件のログになる。ロガーごとの水準の指定が無い | `logback-spring.xml` 56〜58 行（ルート INFO と JSON の出力1つ）、`application.yaml` 246〜259 行（`org.hibernate` の指定なし） | 1行1件の JSON の読みやすさ。どのロガーの名前で出ているかは未確認 |
-| TD-5 | アプリのコンテナのメモリの上限の既定が 1g。10MB の DSL には 2g が要る | `compose.yaml` 63 行（説明 57〜61 行）、`docker/perf/compose.yaml` 57 行、`.env.example` 24〜26 行、README 204〜208・230 行、`docker/check-container-limits.sh` 20・93 行。一方 `perf/dsl-timing.sh` 55 行と `perf/README.md` 18・109 行は 2g、`compose.yaml` 99〜101 行の lgtm の説明は「アプリ（上限 2GB）」 | 既定と説明・確かめが食い違っている。既定を変えるときは5か所以上を合わせて直す |
-| TD-6 | `app` のコンテナが見本の対象DB の管理者のパスワードを環境変数で持つ | `compose.yaml` 32〜34 行（`env_file: .env`）、`.env.example` 72〜73 行、見本の対象DB の3サービス（122・135・148 行付近） | アプリが対象DB に使うのは `MASTERSMITH_TARGET_DB_*` だけで、管理者のパスワードは要らない。負荷の試験の環境は別の環境ファイルで分けている |
-| TD-7 | 今の make-you-chic-ui の checkout では、`Modal`・`Alert` の閉じるボタンが `aria-label="閉じる"` 固定で、`Modal` は `aria-labelledby` だけ（`aria-describedby` の口が無い） | `vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Modal/Modal.tsx` 23〜32・87〜88・97 行、`Alert.tsx` 69 行。使用箇所は `frontend/src/features/dsl/DslConfirmDialog.tsx` 108 行と `DslAdminPage.tsx` 134 行 | 英語の表示で閉じるボタンが日本語のまま、確かめの本文がダイアログの説明として結び付かない。直した版への固定先の更新が要る |
+確かめた事実:
 
-そのほかの兆し（今回の範囲の外、記録だけ）:
+- 1回の投入で同時に生きる形: 要求の本文の `byte[]`（`DslAdminController.submit` の `@RequestBody byte[]`）、`SafeYamlParser.decode` の文字列、SnakeYAML の `Composer` が作る文書全体の節の木（位置の `Mark` 付き）、Jackson の木と節ごとの JSON Pointer を鍵にした `PositionMap`、検証の途中のもの、`DslModel`。
+- `DslContent` は作るときと `yamlBytes()` のたびに本文を `clone()` する。リポジトリは Hibernate が読んだ配列から `DslContent` を作り、ダウンロードや戻しで `yamlBytes()` がもう一度複写する。
+- 大きなモデルを2つ持ち続ける: 適用中（`ActiveDslModelStore`）とプレビュー（`DslPreviewCache`）。どちらも `AtomicReference` の1件。
+- 重い操作は同時に1つ（`DslHeavyOperationGate`）だが、ログインなどほかの要求とは重なる。
+- JVM は `-XX:MaxRAMPercentage=75.0`（`Dockerfile` 41 行）で、コンテナの上限 既定 2g（`compose.yaml` 63 行・`docker/perf/compose.yaml` 57 行）なら最大ヒープは約 1.5GiB。
+- 前の Intent の測定（`dslMixed`）: `anon` 1,894MiB（上限の 93%）、`memory.events` の `max` 2,340 回。
 
-- 大きなファイル: `frontend/src/features/dsl/useDslAdmin.ts`（492 行）・`dslmanage/service/DslLifecycle.java`（462 行）・`frontend/src/features/dsl/messages.ts`（418 行）。
-- Dependabot がサブモジュールと vendor の npm を対象にしていない（脆弱性は OSV-Scanner が vendor の lockfile も検査する）。
-- 前の Intent で後に回した束 2（内部DB のファイルの伸び、10MB の DSL とログインの重ねでのメモリ）は未解決。
-- 1要求で接続を2本使う監査の形（プールの上限 既定 30）は README の既知の制約のまま。
+未検証の仮説:
 
-## この Intent に向けた懸念
+- `anon` の値は、ヒープが最大近くまで広がった分とヒープ以外の分の合計と読めるが、内訳は測っていない。
+- `memory.events` の `max` はコンテナの上限に当たって回収が起きた回数で、ページキャッシュ（H2 のファイルの書き込みで増える）の回収も含むため、プロセスのメモリが足りないことと同じとは限らない。
+- 内訳は GC のログ・NMT・ヒープの内訳で分けて確かめる必要がある。直す前と直した後は、前の Intent と同じ `dslMixed` の条件で、`perf/dsl-timing.sh` の `anon`・`file` を分けた記録の形で比べるのがよい。
 
-どう扱うかは要件と設計の段で決める（ここでは決めない）。
+守る制約:
 
-| ID | 懸念 | 事実と根拠 |
-|---|---|---|
-| C-1 | TD-1 でキーと値を送ると、個人に関する値が Loki に送られる | `audit/service/AuditEventListener.java` 151〜158 行: 監査の書き込みの失敗の ERROR に、記録しようとした全項目（入力されたメールアドレス・送り元の IP・User-Agent・要求のパスなど）を載せる。`user/service/InitialAdminInitializer.java` 82・88・91 行: 初期管理者のメールアドレスを INFO に載せる。`LoginService.java` 146 行: ロックした利用者の ID。パスワード・トークンの値を載せる呼び出しは見当たらない。`project.md` の Forbidden（パスワード・トークン・署名鍵を外部へのエクスポートに含めない）に加え、メールアドレスなどを送るかどうかの判断が要る。送ったログの中身を確かめるテストは無い |
-| C-2 | TD-5 の既定を変えるときに合わせて直す場所 | `compose.yaml` 63 行、`docker/perf/compose.yaml` 57 行、`.env.example` 24〜26 行、README 204〜208・230 行、`docker/check-container-limits.sh` 20・93 行（既定 1g を期待する確かめ）。colima の VM の大きさ（CPU 4・メモリ 6GiB の前提）とも関わる |
-| C-3 | TD-4 のロガーの名前が未確認 | 案内を出すロガーの名前は、読み取りだけのスキャンでは確かめていない。実際のログの `logger` の項目で確かめてから水準を決める必要がある |
-| C-4 | TD-7 のサブモジュールの固定先が未照合 | checkout のコミットは `5258c8bb987b0fa6ffd0ad7c4eadc7d4006da52d`（`.git/modules/vendor/make-you-chic-ui/HEAD`）で、親のリポジトリの gitlink とは照合していない。直した後の make-you-chic-ui のコミットも、このリポジトリからは確かめていない。更新は専用のコミットで前後のハッシュを記録する（`project.md` の Mandated） |
-| C-5 | 既存テストへの影響 | TD-7: `DslAdminPage.test.tsx` 535 行が閉じるボタンの名前「閉じる」に依存する。TD-2: 認証に関わるため、失敗の場合のテストと不具合を再現するテストを同じコミットに含める（`project.md` の Mandated）。TD-5: `check-container-limits.sh` の期待値。TD-1: `ExternalExportIT` に送ったログの中身の確かめを足すかどうか |
-| C-6 | TD-6 の直し方と既存の手順 | アプリに渡す環境変数を分けると、README の対象DB の手順と `.env.example` の説明に関わる。負荷の試験の環境は既に別の環境ファイルの形である |
+- DSL を信頼できない入力として扱う決まり（大きさ・深さ・別名の上限、タグの拒否、重複キー、位置つきの誤り）を弱めない。`LimitingParser` と `PositionMap` はこの決まりのためにある。
+- ログに本文を出さない。
 
-## 健全性のまとめ
+### TD-3 `AccessTokenApiIT` の一時的な失敗（依頼の3件目）
 
-- 層の境界・エラー応答・ログの形式・秘密情報の扱い・検査の関門は、決まりがコードとテストで確かめられている。
-- degraded: `auth`（TD-2）・`perf-and-monitoring`（TD-3）。at-risk: `config`・`common-observability`・`audit`・`user`（TD-1・TD-4）、`container-runtime`（TD-5・TD-6）、`frontend-feature-dsl`・`make-you-chic-ui`（TD-7）。一覧は `component-inventory.md`。
+確かめた事実:
+
+- テストは `RANDOM_PORT` で起動したアプリに `HttpTestClient`（JDK の `HttpClient`、版の指定なしで既定の HTTP/2 を試す、接続の待ち 5 秒・要求の待ち 30 秒、`http://localhost:<番号>`）で送る。`@BeforeEach` ごとに新しい `AuthApi`（新しい `HttpClient`）を作るため、テストをまたいだ古い接続の再利用は起きない。
+- 結合テストは1つの JVM（最大ヒープ 1g）で、Spring の文脈のキャッシュの上限は既定のまま。`RANDOM_PORT` の文脈はそれぞれ組み込みの Tomcat と Hikari のプール（上限 30、`minimum-idle` の指定なし）を持ち続ける。
+- 前の Intent の記録: 6 件すべてが 0.587 秒のうちに `Connection reset`・`header parser received no bytes` で落ち、同じ時刻に Gradle の作業プロセスとの接続も時間切れだった。クラスだけの再実行 3 回と verify の2回目は通った。
+
+未検証の仮説（原因の候補）:
+
+- (a) PC の負荷による一時的な失敗。
+- (b) 空いた番号の衝突: Tomcat は全アドレスで待ち受け、`localhost` への要求は 127.0.0.1 へ行く。colima が Testcontainers のコンテナの番号を PC の 127.0.0.1 に転送していると、同じ番号を先に特定のアドレスで取った相手に要求が届き、すぐに切られうる。
+- (c) 1つの JVM にキャッシュされた多くの文脈（Tomcat と Hikari のプール）による資源の使い過ぎ。
+- 1回目の実行のテストの報告（`backend/build/test-results/`）は、その後の実行で上書きされている見込みで、後から確かめる材料は残っていない可能性が高い。
+
+守る制約:
+
+- 原因が分からないまま「直した」とはできない（`team.md` の「不安定なテストは原因を直すまで統合しない」）。再現の手段と、再現できなかったときの扱いを要件の段で決める。
+
+### TD-4 `perf/dsl-timing.sh` の説明の食い違い（依頼の4件目）
+
+確かめた事実:
+
+- 33 行の説明が「（既定 2g。配備と同じ値。要件の条件は 1g）」のまま。既定の値（55 行 `MASTERSMITH_CONTAINER_MEMORY:-2g`）と `perf/README.md` 109 行はすでに 2g で、直すのは説明の文だけ。
+
+## その他の所見
+
+- `DslLifecycle` は 462 行で、DSL の管理の操作をすべて持つ（責務はそろっているが大きい）。
+- 警告の抑止は2か所（`common/observability/SanitizingLogRecordExporter.java`・`common/error/web/DefaultErrorResponseWriter.java`）。
