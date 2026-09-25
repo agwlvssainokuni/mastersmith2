@@ -81,6 +81,7 @@
 - 手元の監視を常に動かしていない間は、SLO の判定を Unverified とし、配備の直後・監視の確かめ・負荷の試験・振り返りの時点の値を基準の値として並べ、配備先が決まったときの測り方を書く。目標を緩めて満たしたことにはしない。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:feedback-optimization:fa7ca0460f9a1e1941002f1251ad0d8bece205d0aeef0076a63aaceb8a3b14b6 -->
 - Q2: A（AI が .env から2行を移す）と Q4: B（戻すときにイメージと .env を戻す）の組み合わせでは、戻すとアプリが再び見本の対象DB の管理者のパスワードを持つため、追加の質問 F1 で確かめ、戻すのはイメージだけにした。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:d3116be97e057542dbcb08021c0ad2975e9595d143eabdeabd4fe61cd0dcb1d1 -->
 - 配備の前の k6 と内部DB のバックアップは質問にせず、決まっていることとして書いた（k6 は project.md の決まりで Build and Test の結果を正とする。バックアップはスキーマの変更が無いため不要）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:0675c59d7ff8841998ab55a88372b2dff3d387b0d28e132210f8ab3d49e4d5db -->
+- 戻し方の前提（Q2: A）は、前の版のイメージを新しい .env と一時のボリュームで起動して健全になることで確かめた。配備した内部DB のデータでの起動は確かめていない（スキーマの変更が無いため）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-execution:96ee1f52a4e60ff3af1808774205c8491cd15a07a159f5eb7833321ea912b251 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
