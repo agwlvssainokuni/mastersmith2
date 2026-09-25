@@ -12,5 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# テストだけの起動の補助。Spring を起動するすべてのテストで、署名鍵が無ければ実行のたびに作る乱数の鍵を入れる（U2 計画の C6）。
-org.springframework.boot.EnvironmentPostProcessor=cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcessor
+# テストだけの起動の補助。Spring を起動するすべてのテストで、
+#   - 署名鍵が無ければ実行のたびに作る乱数の鍵を入れる（U2 計画の C6）
+#   - 内部DB の接続プールの MBean の登録を既定で無効にする（Intent 260925-storage-memory-fixes の計画 D8。同じ名前の登録の重なりを防ぐ）
+org.springframework.boot.EnvironmentPostProcessor=\
+cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcessor,\
+cherry.mastersmith.common.testsupport.TestHikariMbeansEnvironmentPostProcessor

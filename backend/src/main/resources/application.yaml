@@ -145,6 +145,17 @@ spring:
       maximum-pool-size: ${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}
       # 接続を借りる待ちの上限（ミリ秒）
       connection-timeout: 5000
+      # アプリを止めずに内部DB のファイルを詰め直すための、HikariCP の標準の JMX の操作（Intent 260925-storage-memory-fixes）。
+      # H2 は接続が1本でも開いている間は詰め直さないため、運用の道具（docker/hikari-pool.sh の compact）が、プールの MBean
+      # （com.zaxxer.hikari:type=Pool (mastersmith-db)。名前に上の pool-name が入る）の一時停止 → 接続の破棄 → 0 本を待つ → 再開
+      # を呼ぶ。最後の接続が閉じたときに、接続先の DEFRAG_ALWAYS=TRUE に従って H2 が詰め直す（この指定が無いと縮まない）。
+      # 一時停止の間に内部DB を使う要求は、再開まで待たされる（接続を借りる待ちの上限 5 秒は効かない）。手順は README の
+      # 「内部DBのファイルの詰め直し」を参照。
+      # JMX は外に公開しない（遠隔の接続 com.sun.management.jmxremote.* は有効にしない）。操作できるのは、この PC で Docker を
+      # 使え、同じ利用者の番号でアプリの JVM に attach できる人だけ。何もしなければ、今までと同じ動きになる。
+      register-mbeans: true
+      # 一時停止（suspendPool・resumePool）を許す。許すと、接続を借りるたびに小さな数を数える処理が1つ増える。
+      allow-pool-suspension: true
   jpa:
     # 画面の描画まで DB の接続を持ち越さない。
     open-in-view: false

@@ -197,6 +197,30 @@ docker compose start app         # 止めたコンテナをそのまま起動す
 
 コンテナの外で動かしている場合は、アプリを止めて `./data/`（`bootRun` なら `backend/data/`）を複写します。
 
+### 内部DBのファイルの詰め直し（アプリを止めずに）
+
+DSL の投入と適用を重ねると、アプリが動いている間は内部DB（組み込みの H2）のファイルが伸び続けます（「DSL の管理の API」の節の既知の制約）。H2 は接続が1本でも開いている間は詰め直さないため、運用の道具 `docker/hikari-pool.sh` で、HikariCP の接続プールの標準の JMX の操作（一時停止 → 接続の破棄 → 0 本を待つ → 再開）を呼びます。最後の接続が閉じたときに、接続先の `;DEFRAG_ALWAYS=TRUE` に従って H2 がファイルを詰め直します。アプリのプロセスは止めません。
+
+```bash
+./docker/hikari-pool.sh status     # 接続の本数と内部DB のファイルの大きさ（読み取りだけ）
+./docker/hikari-pool.sh compact    # 詰め直す（前と後の大きさ・かかった時間・結果を出す）
+./docker/hikari-pool.sh resume     # 再開だけ行う（下の「再開し忘れ・道具が途中で終わったとき」）
+```
+
+- **いつ行うか**: 目安として、ファイルが 300MB を超えたとき（`status` で見られます）に、利用の少ない時間に行います。自動では行いません。
+- **詰め直しの間の要求**: 一時停止の間、内部DB を使う要求（ログイン・トークンの更新・監査の記録・DSL の操作・健全性の確認）は、失敗せずに再開まで待たされます（接続を借りる待ちの上限 5 秒は効きません）。道具は一時停止から再開までを既定で 45 秒以内に抑えます。
+- **かかる時間の目安**: 借りている接続が無ければ、接続の破棄から詰め直しの終わりまで1秒未満〜数秒です（圧縮の効く 10MB の DSL を 21 件適用した状態で、229MiB → 15MiB が 1 秒未満。圧縮の効かない本文の約 210MB の詰め直しは、PC の上の試しで約 2 秒）。道具は詰め直しの終わりを「ファイルの大きさが 3 秒変わらない」ことで判断するため、一時停止は数秒〜十数秒になります（使い捨ての環境で 10MB の DSL を 21 回適用しプレビューを1件置いた状態から、270.4MiB → 15.2MiB、一時停止から再開まで 3.6 秒）。10MB の本文 21 件の悪い側の条件での時間は Build and Test で測ります。
+- **時間の上限と打ち切り**: 重い DSL の操作やログインの最中で接続が借りられていると、返されるまで待ちます。10 秒（`--zero-wait`）の内に 0 本にならなければ、詰め直さずに再開し、「詰め直しを確かめられませんでした」と出して 1 で終わります（何も壊しません。時間を置いてやり直します）。0 本になった後、ファイルが落ち着くまでの待ちは 30 秒（`--settle-wait`）、一時停止から再開までの全体は 45 秒（`--total-limit`）が上限で、超えそうなら再開を優先します。
+- **健全性**: 一時停止が約 30 秒を超えると、`/actuator/health` が 503 を返し続け、コンテナが unhealthy になります（再開で戻ります）。その間、アプリのログに `TimeBoundedDbHealthIndicator` の WARN が出ます。
+- **同時に1つ**: `compact` は同じコンテナに対して同時に1つだけ動きます（この PC の上のロック）。途中で失敗・中断（Ctrl-C）しても、再開を必ず試みます。
+- **再開し忘れ・道具が途中で終わったとき**: 一時停止のままだと、内部DB を使う要求がすべて待ち続け、処理のスレッドがたまります。`./docker/hikari-pool.sh resume` で再開し、だめなら `docker compose --profile targetdb-postgres restart app` で起動し直します（止めるときにも H2 が閉じて詰め直されます）。`compact` が強制終了されてロックが残ったときは、`resume` の後に表示されたロックのディレクトリを消します。JMX の操作を手で打たず、この道具を使ってください。
+- **詰め直しに失敗したとき**: 再開の後に内部DB を開けないと、要求が 500 になり、コンテナが unhealthy になります。`docker compose --profile targetdb-postgres restart app` で起動し直し、それでも開けないときは「内部DBのバックアップと戻し方」で直前のバックアップを展開します（バックアップの後の記録は失われます）。大きな詰め直しの前には、アプリを止めてよい時にバックアップを取ることを勧めます（バックアップはアプリを止めます）。
+- **ディスクの空き**: 詰め直しは、残す分の大きさの新しいファイルを書きます。空き（`colima ssh -- df -h /`）が残す分（最大約 210MB）より十分にあることを確かめます。
+- **接続先の指定**: `MASTERSMITH_DB_URL` で接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けます。付けないと、`compact` は接続を閉じて再開するだけで縮まず、道具が「大きさが減っていません」と出します。
+- **記録**: 詰め直しの操作は、監査ログにもアプリのログにも残りません（HikariCP の標準の機能だけで行うため）。前と後の大きさと時間は、道具の出力で見ます。
+- **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.4_7-jdk-noble`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
+- **使い捨ての環境で試す**: `--container mastersmith-perf-app-1` を付けます。`perf/dsl-timing.sh --storage --compact` は、投入と適用を重ねた後にこの道具を流し、前と後の大きさと時間を記録します（`perf/README.md`）。
+
 ### コンテナの資源の上限（colima の VM・メモリ・JVM）
 
 colima の VM の大きさはリポジトリの外の設定のため、コミットでは固定できません。各自の PC で次のとおりにします。
@@ -245,7 +269,7 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」） |
 | `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 75%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
-| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける |
+| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
 | `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` | `30` | 内部DBの接続プールの接続の数の上限。同時の要求がこの数に達すると監査の記録が欠けうる（「監査ログ（U4）」の「既知の制約」を参照） |
@@ -449,8 +473,8 @@ version: 1
 - **履歴からの戻し**: 戻した版は投入の一種として扱い、監査に `DSL_SUBMITTED`（出どころ `RESTORE`）を記録します。今の検証を通らない版（書式の版が変わった など）は投入と同じ誤りの一覧の 422 になり、プレビューは変わらず、受け付けなかった投入の出来事（`DSL_SUBMISSION_REJECTED`）も記録しません。戻したプレビューを適用すると、履歴には出どころ `RESTORE` の新しい版として足されます。
 - **起動時**: 履歴の最新（適用した日時が最も新しい版）を適用中の DSL として読みます。今の検証を通らない（書式の版が変わった など）ときは、ERROR（`適用中の DSL を読めないため、適用中の DSL が無い状態で起動します`、識別の先頭 12 文字と誤りの種類だけ）を1件出し、適用中の DSL が無い状態で起動を続けます。
 - **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
-- **既知の制約（動いている間の内部DB のファイルの大きさ）**: 上限を超えた古い履歴を消しても、アプリが動いている間は H2 がその場所を再利用せず、内部DB のファイルは投入と適用のたびに本文の大きさの分（10MB の DSL なら約 10.8MB）ずつ大きくなります（2026-09-25 の測定で、10MB の DSL の投入と適用を 21 回で約 278MB、40 回で約 483MB。頭打ちになりません）。アプリを止めると、接続先の `;DEFRAG_ALWAYS=TRUE`（「環境変数」の表の `MASTERSMITH_DB_URL`）でファイルが詰め直され、起動し直した後は小さくなります（同じ測定で約 16MB。試験の DSL は圧縮がよく効く内容のため、圧縮の効きにくい本文では残る履歴の大きさに近くなりえます。止めるのにかかった時間は約 1 秒）。大きな DSL の投入と適用を何度も重ねたときは、ディスクの空きを確かめ、`docker compose restart app` などでアプリを起動し直してください。依頼者が Build and Test で受け入れた制約です。
-  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble du -sh /data`。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、`docker compose --profile targetdb-postgres restart app` で起動し直します（止めるときに詰め直され、起動し直した後に小さくなります。止まっている間の要求は失敗します）。
+- **既知の制約（動いている間の内部DB のファイルの大きさ）**: 上限を超えた古い履歴を消しても、アプリが動いている間は H2 がその場所を再利用せず、内部DB のファイルは投入と適用のたびに本文の大きさの分（10MB の DSL なら約 10.8MB）ずつ大きくなります（2026-09-25 の測定で、10MB の DSL の投入と適用を 21 回で約 278MB、40 回で約 483MB。頭打ちになりません）。この伸びは受け入れ、**アプリを止めずに `./docker/hikari-pool.sh compact` で詰め直します**（「内部DBのファイルの詰め直し」の節。詰め直しの間の要求は再開まで待たされます）。アプリを止めたとき（`docker compose restart app` など）にも、接続先の `;DEFRAG_ALWAYS=TRUE`（「環境変数」の表の `MASTERSMITH_DB_URL`）でファイルが詰め直されます。
+  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `./docker/hikari-pool.sh status`（または `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble du -sh /data`）。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、利用の少ない時間に `./docker/hikari-pool.sh compact` で詰め直します。
 
 ### DSL の操作の監査
 
