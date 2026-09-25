@@ -47,12 +47,15 @@
 - k6 などの長い試験は caffeinate -i を付けて流し、PC の自動のスリープで要求が止まって結果が崩れるのを防ぐ（バッテリー駆動のまま 414 秒スリープし、要求が 6分52秒止まった）。内部DB に SQL で直接入れた試験用の利用者はロックの状態の行が無いため、同時のログインを流す前に1人ずつログインさせて行を作る。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:f0c52a1398842c59feab5bedd7239515fc40d48a12f80d7e96034db103864add -->
 - 軽い API の性能は、投入を重ねて内部DB のファイルが膨らんだ状態（悪い側の条件）のまま測る。メモリの最大（memory.peak）を比べる試験の前は、アプリのコンテナを作り直して前の最大の値を消す。 (learned 2026-09-24) <!-- cid:260923-dsl-schema-loader:performance-validation:b9c43187ce6f38e701503c4be8cbbe11c162c17cd1cb8b6739f6f7ddffc4ca74 -->
 - Performance Validation の段が無いため、2件目の直しの負荷の試験での確かめ（Q5: A）の持ち主を Build and Test とした（project.md の学びどおり）。 (learned 2026-09-24) <!-- cid:260924-followup-fixes:requirements-analysis:edd0566de8d745298681f86ffd92eaa003402622695282d848392f1b7c9214ac -->
+- colima の PC で ./gradlew verify を流すときは、README の DOCKER_HOST と TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE をシェルに渡さないと対象DB のテストが SKIPPED になり、パッケージごとのカバレッジの下限で失敗した。付けて流し直した結果を基準とした。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:0a4cb9ad3d6a5ebd80fe91acc5f4cc91f09a822150d200f9575eb6f2cedb4828 -->
+- unit-test-instructions.md の k6 inspect のコマンドは --include-system-env-vars が無いと場面の名前が undefined になり確かめにならなかった。承認済みの文書は変えず、実際には付けて流し、code-summary.md に差を記録した。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:068f5e9bd3cb7323b66538b382654b3f47845c2d93a731055ad7f42ea01b6fc8 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
 
 - コミットはこまめに、ファイル変更のまとまりごと（回答確定時・成果物作成時・内容確認/承認時）に行う。コミットのタイミングは提案し、実行前に必ず人間の承認を得る。コミットメッセージは日本語で記述する。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:intent-capture:822f19c942c585b350586f2ad3ecf1660487d52354264177a5c424103985dc8a -->
 - 確定済みの成果物に記録の食い違いが見つかったら、隠さず判定の根拠とともに明記し、直すかどうかを依頼者に確かめる。直したときは、元の状態と直した理由を記録に残す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:fa9b684652e9547fdc00219e301a27d661ffac1f52f9749d17d7bdcac8f883ec -->
+- 計画の Step ごとのコミットの提案は、生成の担当ではなく、生成の後に依頼者の承認を得てまとめて C1〜C6 に分けて行う形にした。担当は依頼者に直接尋ねられないため。統合は計画どおり短命のブランチ fix/260924-followup-fixes から fast-forward（team.md の squash とは違う。サブモジュールの専用のコミットを残すため、計画の承認で受け入れられた）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:87c26f259ce9c6a4de73518651b6f0e868ab12453a73de73f50f5fe768dd262c -->
 ## Deployment
 
 <!-- Project-specific specialisation. -->

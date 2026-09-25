@@ -158,47 +158,47 @@
 
 Testing Contract の方針は test-after で、テスト可能な層ごとに実装を書き、その層のテストを書いて実行し、すべて通ってから次の層へ進む。今回の層は、業務処理（FR2）→ 共通部品のログの出力（FR1・FR4。業務処理の層と同じ扱いの単体テストと結合テスト）→ 画面部品（FR7）→ 環境とビルドの設定（FR5・FR6・FR3）→ 文書と対応づけ、の順とする。データのモデル・DB アクセス・API の層には変更が無い（API の振る舞いは既存の結合テストで守る）。
 
-- [ ] Step 1: 変更の前の基準を取る（実行は承認の後の PART 2）。コンテナの実行環境（colima）が動いていることを確かめ、`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行して、単体・結合・画面のテストの件数、失敗の数、飛ばした数、カバレッジ（行・分岐、バックエンドと画面）を記録する（project.md の Testing Posture: 実測の数字だけを報告する）。あわせて、`unit-test-instructions.md` の、この Intent に絞ったコマンド（既にあるテストのクラスとファイルの分）が今のコードで動くことを確かめる（テストの実行の準備の確認）。
-- [ ] Step 2: 直す前の状態を記録する（読み取りだけ）。
+- [x] Step 1: 変更の前の基準を取る（実行は承認の後の PART 2）。コンテナの実行環境（colima）が動いていることを確かめ、`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行して、単体・結合・画面のテストの件数、失敗の数、飛ばした数、カバレッジ（行・分岐、バックエンドと画面）を記録する（project.md の Testing Posture: 実測の数字だけを報告する）。あわせて、`unit-test-instructions.md` の、この Intent に絞ったコマンド（既にあるテストのクラスとファイルの分）が今のコードで動くことを確かめる（テストの実行の準備の確認）。
+- [x] Step 2: 直す前の状態を記録する（読み取りだけ）。
   - 配備済みのアプリのログから、メッセージに改行を含む行のロガー名だけを取り出して記録する（`docker compose logs app --no-log-prefix` の出力から `"logger"` の項目だけを数える。メッセージの本文とキーと値は表示しない）（FR4、C-3）。
   - サブモジュールの gitlink（`git ls-tree HEAD vendor/make-you-chic-ui`）と、`vendor/make-you-chic-ui` で `5258c8b..edb1f94` の間のコミットと変わるファイルの一覧（`git -C vendor/make-you-chic-ui log --oneline` と `diff --stat`。取れなければ `fetch` してから）を記録する（FR7.1、C-4）。
   - 見本の対象DB の3つのイメージの本来の入口と `CMD`（`docker image inspect --format '{{json .Config.Entrypoint}} {{json .Config.Cmd}}'`）を記録する（FR6.2）。
-- [ ] Step 3: 業務処理の層を実装する（FR2.1、FR2.3）。`LoginService` を「直し方の要点」の FR2 のとおりに変える。重複の例外の実際の型を確かめ、受け止める型を決める。
-- [ ] Step 4: 業務処理の層のテストを書いて実行する（FR2.1、FR2.2）。
+- [x] Step 3: 業務処理の層を実装する（FR2.1、FR2.3）。`LoginService` を「直し方の要点」の FR2 のとおりに変える。重複の例外の実際の型を確かめ、受け止める型を決める。
+- [x] Step 4: 業務処理の層のテストを書いて実行する（FR2.1、FR2.2）。
   - `LoginServiceTest`: 行が無いときに別のトランザクションで作ってから判定し直す、作成が重複の例外でも「既にある」として判定する、行が無い利用者のパスワードの誤りが1回目の失敗として数えられる、作った後も行が無ければ失敗する。
   - `LoginConcurrencyIT`: 行を消した利用者に、正しいパスワードの同時のログイン（例: 10 本）を送り、内部の失敗が0件・行が1つ・監査の記録がログインの数と同じ（二重に記録しない）。同時の失敗 4 回は数えられてロックされない、5 回はロックされ、ロック中は正しいパスワードでも拒否される（ロックと失敗の場合。project.md の Mandated）。別のトランザクションが行を作りかけて確定していない間にログインを始め、ログインが待ちに入ったこと（スレッドの状態を期限つきで見張る。固定の時間の `sleep` に頼らない）を確かめてから確定させ、ログインが普段どおり成功する（待ち合わせでの再現）。
   - 不具合の再現の確かめ: テストが通った後、`LoginService.java` の変更だけを一時的に外して（例: `git stash push -- backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java`）、同時の初めてのログインのテストが失敗する（内部の失敗が出る）ことを確かめて記録し、変更を戻す。待ち合わせの形で再現しないとき（H2 が行の排他の読み取りで待つなど）は、同時の本数と回数を増やした形で再現させ、直す前の失敗の率を記録する。どちらでも再現しないときは、依頼者に報告して進め方を確かめる。
   - 既存の結合テストが通ることを確かめる: `LoginAttemptStateRepositoryIT`・`LoginApiIT`・`AuthSettingsIT`・`AuthSecretLeakIT`・`RefreshConcurrencyIT`・`AuditAuthenticationEventsIT`・`AuditTraceIdIT`・`AuditRollbackIT`・`AuditWriteFailureIT`・`AuditWriteTimingIT`（NFR6）。
   - コミットの提案 C1（「コミットの分け方」）。直しと再現のテストを同じコミットにする（project.md の Mandated）。
-- [ ] Step 5: 共通部品（ログの送り出し）を実装する（FR1.1〜FR1.3）。`ObservabilityConfig` の変更と `SanitizingLogRecordExporter` を書く。伏せるキーを main のコードでもう一度洗い出す。
-- [ ] Step 6: 共通部品（ログの送り出し）のテストを書いて実行する（FR1.1〜FR1.4）。
+- [x] Step 5: 共通部品（ログの送り出し）を実装する（FR1.1〜FR1.3）。`ObservabilityConfig` の変更と `SanitizingLogRecordExporter` を書く。伏せるキーを main のコードでもう一度洗い出す。
+- [x] Step 6: 共通部品（ログの送り出し）のテストを書いて実行する（FR1.1〜FR1.4）。
   - `SanitizingLogRecordExporterTest`: 4つのキーの値が `[REDACTED]` になりキーは残る、ほかの属性と本文・時刻・トレースの情報は変わらない、文字列以外の値も伏せる、`flush`・`shutdown` を元に渡す。
   - `OtlpLogExportIT`（送り出しを有効にし、テストの中で起動する受け手に送る。外部には接続しない）: キーと値（例: `dsl.operation`）が属性として届く。初期管理者の作成の INFO と、監査の書き込みの失敗の ERROR（`FailingAuditEventRepositoryConfig` で追記を失敗させ、実際に HTTP でログインする）で、メールアドレス・送り元の IP・User-Agent の元の値が届いたログに無く、キーと `[REDACTED]` はある。ログイン・トークンの更新・ログアウトを行い、使ったパスワード・アクセストークン・リフレッシュトークン・署名鍵の値が `/v1/logs` と `/v1/traces` のどちらにも無い。届いた本文は protobuf のため、文字列を UTF-8 のバイト列として探す（新しい依存は足さない）。
   - 標準出力は変わらないこと（FR1.3）: `JsonLogFormatTest`（この段の FR4 の追加の前の状態で）・`TracingAndLoggingIT`・`ExternalExportIT`・`*SecretLeakIT`・`AuditNotInAppLogIT` を変更なしで流して通す。
-- [ ] Step 7: 共通部品（標準出力のログの形）を実装する（FR4.1〜FR4.3）。`SingleLineMessageJsonProvider` を書き、`logback-spring.xml` の `<message>` を替える。
-- [ ] Step 8: 共通部品（標準出力のログの形）のテストを書いて実行する（FR4.1、FR4.3、NFR4）。
+- [x] Step 7: 共通部品（標準出力のログの形）を実装する（FR4.1〜FR4.3）。`SingleLineMessageJsonProvider` を書き、`logback-spring.xml` の `<message>` を替える。
+- [x] Step 8: 共通部品（標準出力のログの形）のテストを書いて実行する（FR4.1、FR4.3、NFR4）。
   - `JsonLogFormatTest`: LF・CRLF・CR を含むメッセージが1行に出て、`message` の値に改行が無く ` ⏎ ` で区切られる。例外つきのログで、`exception` の項目には改行が残る。既存の `single()` の確かめ（物理的に1行）も通る。
   - ログを読むほかのテスト（`TracingAndLoggingIT`・`*SecretLeakIT`・`AuditNotInAppLogIT`・`AuditWriteFailureIT`）を流して通す。
   - コミットの提案 C2（FR1・FR4）。
-- [ ] Step 9: サブモジュールの固定先を更新する（FR7.1）。`vendor/make-you-chic-ui` を `edb1f94` にし、`./gradlew vendorBuild` で作り直す。`vendor/make-you-chic-ui` の中のファイルは変えない（`./gradlew vendorUnchanged` で確かめる）。
-- [ ] Step 10: 固定先の更新だけの状態で、画面のテストを流す（`frontend` の全体の `npm run test:coverage` と、DSL の2つのテストのファイル）。既定の名前が `閉じる` のままのため、既存のテスト（`DslAdminPage.test.tsx` 535 行を含む）が変更なしで通ることを確かめる（FR7.4）。通ったら、コミットの提案 C3（固定先の更新だけの専用のコミット。メッセージに `5258c8bb987b0fa6ffd0ad7c4eadc7d4006da52d` → `edb1f943c0e66293494fa974605f34fcd7e258d7` を記録する）。
-- [ ] Step 11: 画面部品を実装する（FR7.2、FR7.3）。`messages.ts`・`DslConfirmDialog.tsx`・`DslAdminPage.tsx` を変える。
-- [ ] Step 12: 画面部品のテストを書いて実行する（FR7.2〜FR7.4、NFR5）。
+- [x] Step 9: サブモジュールの固定先を更新する（FR7.1）。`vendor/make-you-chic-ui` を `edb1f94` にし、`./gradlew vendorBuild` で作り直す。`vendor/make-you-chic-ui` の中のファイルは変えない（`./gradlew vendorUnchanged` で確かめる）。
+- [x] Step 10: 固定先の更新だけの状態で、画面のテストを流す（`frontend` の全体の `npm run test:coverage` と、DSL の2つのテストのファイル）。既定の名前が `閉じる` のままのため、既存のテスト（`DslAdminPage.test.tsx` 535 行を含む）が変更なしで通ることを確かめる（FR7.4）。通ったら、コミットの提案 C3（固定先の更新だけの専用のコミット。メッセージに `5258c8bb987b0fa6ffd0ad7c4eadc7d4006da52d` → `edb1f943c0e66293494fa974605f34fcd7e258d7` を記録する）。
+- [x] Step 11: 画面部品を実装する（FR7.2、FR7.3）。`messages.ts`・`DslConfirmDialog.tsx`・`DslAdminPage.tsx` を変える。
+- [x] Step 12: 画面部品のテストを書いて実行する（FR7.2〜FR7.4、NFR5）。
   - `DslConfirmDialog.test.tsx`: 日本語の表示で閉じるボタンの名前が `閉じる`、英語の表示で `Close`。ダイアログの説明（accessible description）に本文の文言が含まれる。既存の vitest-axe の検査が通る。
   - `DslAdminPage.test.tsx`: 英語の表示で、結果の知らせの閉じるボタンの名前が `Close` で、押すと知らせが消える。535 行の既存のテストはそのまま通る。既存の vitest-axe の検査が通る。
   - コミットの提案 C4（FR7 の画面）。
-- [ ] Step 13: 環境とビルドの設定を変える（FR5.1〜FR5.3、FR6.1〜FR6.4）。`compose.yaml`・`docker/perf/compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitignore`・`docker/check-container-limits.sh`・`docker/targetdb/*/02-reader-account.sh`・`docker/targetdb/generate-large-schema.sh` を「直し方の要点」のとおりに変える。
-- [ ] Step 14: 環境とビルドの設定を確かめる（FR5.2、FR6.1〜FR6.3）。
+- [x] Step 13: 環境とビルドの設定を変える（FR5.1〜FR5.3、FR6.1〜FR6.4）。`compose.yaml`・`docker/perf/compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitignore`・`docker/check-container-limits.sh`・`docker/targetdb/*/02-reader-account.sh`・`docker/targetdb/generate-large-schema.sh` を「直し方の要点」のとおりに変える。
+- [x] Step 14: 環境とビルドの設定を確かめる（FR5.2、FR6.1〜FR6.3）。
   - `./docker/check-container-limits.sh` を流し、すべて通る（変数なしで両方の compose が 2g、768m で 768m、JVM の確かめ、5 の環境変数の分け方）。直す前の `compose.yaml` で 5 の節が失敗することも確かめる（`git stash` で一時的に戻す）。
   - R-03 の基準 1・2・4 を実行する（3 はコミットの後、5 は Step 18、6 は参考の記録）。
   - 案 A の入口の包み方が動くことを確かめる: プロジェクトのルートに `.env.targetdb` が無いことを確かめたうえで、乱数（表示しない）を入れた一時の `.env.targetdb` を権限 600 で作り、別のプロジェクト名（例: `-p mastersmith-fr6check`）で見本の対象DB を1種類ずつ起動し、初期化のログに誤りが無く読み取りのアカウントが作られたことを確かめ、`down -v` で消す。3種類が終わったら一時の `.env.targetdb` を消す。`.env.targetdb` が既にあるときは触らずに依頼者に確かめる。配備したアプリと見本の対象DB（プロジェクト `mastersmith`）には触れない。
   - コミットの提案 C5（FR5・FR6）。
-- [ ] Step 15: 負荷の試験の台本と手順を変える（FR3.1、FR3.2、FR8.1）。`perf/k6/scenarios.js`・`perf/README.md` を変える。
-- [ ] Step 16: 台本を確かめる（FR3.1、FR3.2）。台本を読んで、R-01 の「台本を読んで」の基準を満たすことを確かめる。`docker run --rm -e SCENARIO=dslMixed -v "$PWD/perf/k6:/scripts:ro" grafana/k6:2.3.0 inspect /scripts/scenarios.js` で読み込めることと、`options.scenarios` が今と同じ（`dslHeavy` 1・`logins` `VUS`）ことを確かめる。ほかの場面（`loginSuccess`・`refresh` など）も `inspect` で読み込めることを確かめる。流す確かめ（R-01 の「流したときの記録」と FR8.2）は Build and Test の段で行う。
-- [ ] Step 17: 文書を直す（FR1.2、FR4.1、FR5.2、FR6.3、FR8.1）。README の該当の節と `perf/README.md` を直す（Step 13・15 で直した分を除く）。README の移す手順は、値を表示しないコマンドだけで書く。
+- [x] Step 15: 負荷の試験の台本と手順を変える（FR3.1、FR3.2、FR8.1）。`perf/k6/scenarios.js`・`perf/README.md` を変える。
+- [x] Step 16: 台本を確かめる（FR3.1、FR3.2）。台本を読んで、R-01 の「台本を読んで」の基準を満たすことを確かめる。`docker run --rm -e SCENARIO=dslMixed -v "$PWD/perf/k6:/scripts:ro" grafana/k6:2.3.0 inspect /scripts/scenarios.js` で読み込めることと、`options.scenarios` が今と同じ（`dslHeavy` 1・`logins` `VUS`）ことを確かめる。ほかの場面（`loginSuccess`・`refresh` など）も `inspect` で読み込めることを確かめる。流す確かめ（R-01 の「流したときの記録」と FR8.2）は Build and Test の段で行う。
+- [x] Step 17: 文書を直す（FR1.2、FR4.1、FR5.2、FR6.3、FR8.1）。README の該当の節と `perf/README.md` を直す（Step 13・15 で直した分を除く）。README の移す手順は、値を表示しないコマンドだけで書く。
   - コミットの提案 C6（FR3・FR8 と文書）。
-- [ ] Step 18: 統合の前の関門を通す（NFR2、NFR3、NFR6）。colima が動いていることを確かめ、`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべて通ることを確かめる。対象DB のテストが `SKIPPED` になっていないこと（コンテナの実行環境が無い警告が出ていないこと）、カバレッジの下限（行 80%・分岐 70%、全体の合計と新しいパッケージごと。この Intent では新しいパッケージは作らない）、ライセンスヘッダー（新しいファイルを含む）、Gitleaks、OSV-Scanner（サブモジュールの lockfile を含む）、SpotBugs が通ることを確かめる。テストの件数とカバレッジは実測の数字を記録する。あわせて、`git status` で `.env`・`.env.targetdb` がコミットの対象に入っていないことと、`vendor/make-you-chic-ui` の変更が gitlink だけであることを確かめる。R-03 の基準 3 をコミットの後に確かめる。
-- [ ] Step 19: 成果物を書く（段の定義の Step 5。PART 2 の後）。
+- [x] Step 18: 統合の前の関門を通す（NFR2、NFR3、NFR6）。colima が動いていることを確かめ、`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべて通ることを確かめる。対象DB のテストが `SKIPPED` になっていないこと（コンテナの実行環境が無い警告が出ていないこと）、カバレッジの下限（行 80%・分岐 70%、全体の合計と新しいパッケージごと。この Intent では新しいパッケージは作らない）、ライセンスヘッダー（新しいファイルを含む）、Gitleaks、OSV-Scanner（サブモジュールの lockfile を含む）、SpotBugs が通ることを確かめる。テストの件数とカバレッジは実測の数字を記録する。あわせて、`git status` で `.env`・`.env.targetdb` がコミットの対象に入っていないことと、`vendor/make-you-chic-ui` の変更が gitlink だけであることを確かめる。R-03 の基準 3 をコミットの後に確かめる。
+- [x] Step 19: 成果物を書く（段の定義の Step 5。PART 2 の後）。
   - `code-summary.md`: 変更したファイル、Step 1・2・4（再現）・14・16・18 の実測の結果、判断（FR2 の直し方、FR1 の伏せ方、FR4 の記号、FR6 の案 A）、計画との差、要件の前提との差（FR8.1 の手順が perf/README に無かったこと、project.md の学びが要らなくなったこと、`perf/README.md` 142 行と `scenarios.js` 30 行の 1g）。
   - `source-manifest.json`: この段で作った・変えたアプリのパスの一覧（`vendor/make-you-chic-ui` の gitlink を含む）。
   - `traceability.json`: 設計の段が無いため、FR・NFR の ID を直接持ち、`OK` の対象は実在するファイル1つにする。FR8.2 と FR3.1 の「流したときの記録」は `Deferred`（Build and Test）とする。
