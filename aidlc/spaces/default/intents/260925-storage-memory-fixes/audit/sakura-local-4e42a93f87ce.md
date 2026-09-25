@@ -3756,3 +3756,250 @@
 **Tool**: Bash
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T07:55:00Z
+**Event**: DECISION_RECORDED
+**Stage**: build-and-test
+**Decision**: 負荷の試験（dslMixed・refresh・--storage --compact 40 回）の間、配備したアプリを止めるか
+**Options**: 止める,止めない
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T07:55:31Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T07:55:39Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T07:55:40Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: 止める
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T07:55:46Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:01:26Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:01:27Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T08:01:32Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:18:07Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:18:07Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T08:18:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-09-25T08:25:34Z
+**Event**: DECISION_RECORDED
+**Stage**: build-and-test
+**Decision**: 学びの確認: 残す候補の選択（c1〜c3）と、次回のために足すことがあるか
+**Options**: c1,c2,c3,Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:34:12Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T08:34:18Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-09-25T08:34:20Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: Kept: c1, c2, c3; Nothing to add
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-25T08:34:20Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c1
+**Content-Hash**: 4e7373ea4a2eb5760ac5e59036d9abc6e57399692d9ed00090a62bc8e13b283f
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Testing Posture
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-25T08:34:20Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c2
+**Content-Hash**: 2e944db2a96ad1aaaef48adaaba593f5fdf096c086a8dc8d68cad5e392ecb12c
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Testing Posture
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-09-25T08:34:20Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c3
+**Content-Hash**: 472fb66d456296d5a7fe677840031cb6c59d5d85c3bf6b067bfe4b5603efc9c1
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Corrections
+**Source**: orchestrator
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-09-25T08:34:21Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: build-and-test
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:35:41Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T08:35:44Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:96b8f13dd5dc4ed374a013c67c59513754aa4e6f9c23c96a9953c7cb00d73f5c","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:d0cd71b8ece00b2d1f82888a006e3e76a837fadaba9cc055a908c7c4b0c10820","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:9a47e52abb3f3c7086dcaf3b387c4c5591a76d863cc20c18bb5409c6c3f6ec65"},{"artifact":"code-summary","contentHash":"sha256:09e795dc8cedc6e77b67cf251c468d83a62bdd9fc4b75fa5f3b8e7157b76a33d","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:7d12065711632e44f1dd2c46ad53f281138c9ecd20f016484b85da3b7c514c4d"},{"artifact":"unit-test-instructions","contentHash":"sha256:31488731f0779bf2a420fff344ac85b74057be3bea91814e1505b3068f306465","instanceCount":1,"presentCount":1,"producer":"code-generation","required":true,"structureHash":"sha256:de6f6aa87fa2799a960d101734d022a54d8b6996746adc9134efba49233bf387"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:4a4120ce400598991b0a37c46c2091b2ec7298aaa7ac16d5a39062374da4308a","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:a36c7ba98ba9b7aedcdf4e4a79453943c562f18c92240c1b204977dcbf0882d6"},{"artifact":"build-instructions","contentHash":"sha256:b8beb6968fe45909e41d0cb18c51a37c6f74bd7a473c7e8edc7baf635d2e6889","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:a8e3f099cccb4d193c77514c3cf47e0aeef52f6ac12aeb25300ec9e7d17e5b60"},{"artifact":"build-test-results","contentHash":"sha256:d8d7b4459d175bc608ce93a0cf5d65a23c996e852862ccfd4b2f88a651a2a12c","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:e9f908f459b06ff3d9880f64a131ec554b210030fe0c64ca7ccbc51e198dbe7d"},{"artifact":"cross-unit-traceability","contentHash":"sha256:195a0333a7494ab7b964ee2c741954b47ebed473a5c76bac43988f83856d0829","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:49050622cf93789fbffd319b00895e2a1224269a18ffda7a87c3718fb3cdcdb7"},{"artifact":"integration-test-instructions","contentHash":"sha256:3cde36614fc8244fc69c99c562f5323548b1566ce5f7cbb8887c76da127fb154","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:09ef77d29a91c5e6d37facc1e492f1b1be8aca6e7667a756165936c704b26045"},{"artifact":"performance-test-instructions","contentHash":"sha256:1aa9552c4e05ab22260634076b157f0b7b7ce9767ffa515999e54179fe2cbad4","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:53576efb31a9d076e48a9de77ea2dc199958d4b83b7fdb9537594dad1b11b0ec"},{"artifact":"security-test-instructions","contentHash":"sha256:0cc27fa411aae6b568c2cc234fb1320b9be9f23df208d2edbd441a3efabe0814","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:4e5d318eeb15822ff1bd196bf27f88e1df4d82e606d31c0075728f42ce4b7369"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 108
+**Tokens Out**: 49067
+**Cache Read**: 31520095
+**Cache Write**: 147960
+**Cost USD**: 18.47
+**By Model**: opus-5=18.47
+**By Agent**: main=18.47
+**Tokens By Model**: opus-5=108/49.1k/31.5M/148k
+**Tokens By Agent**: main=108/49.1k/31.5M/148k
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: PHASE_COMPLETED
+**From phase**: construction
+**To phase**: operation
+**Stages completed**: 7
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: construction → operation
+
+---
+
+## Phase Start
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: PHASE_STARTED
+**Phase**: operation
+**Scope**: bugfix
+
+---
+
+## Stage Start
+**Timestamp**: 2026-09-25T08:35:45Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-pipeline
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Human Turn
+**Timestamp**: 2026-09-25T08:35:56Z
+**Event**: HUMAN_TURN
+**Session**: 0bf4d3e0-4add-49bf-a3fd-4be43890e160
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-09-25T08:36:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
