@@ -54,7 +54,7 @@ services:
     # 配備と同じ上限で測る。-f で指定するため .env は読まない。値はシェルの環境変数（export）で渡す（perf/README.md）。
     # JVM の設定（MASTERSMITH_JAVA_OPTIONS）は、一時の環境ファイル（app.env）でコンテナに渡る。
     cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}
-    mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-1g}
+    mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-2g}
     restart: "no"
 
   # DSL の時間を測るための対象DB。版は compose.yaml の targetdb-* と同じ固定のイメージにする（結合テストの TargetDbImages.java とも同じ）。

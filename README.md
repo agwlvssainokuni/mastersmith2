@@ -112,6 +112,7 @@ git status --porcelain           # 何も表示されないこと（未コミッ
 git rev-parse --short HEAD       # 配備する版のコミットのハッシュを控える（戻すときに使う）
 ./gradlew verify                 # 検査を通して WAR を作る（backend/build/libs/mastersmith.war）
 cp .env.example .env             # 初回だけ。値を入れる（.env はコミットしない）
+(umask 077 && cp .env.targetdb.example .env.targetdb)   # 初回だけ。見本の対象DB の値を入れる（コミットしない）
 # 2回目以降は、ここで内部DBのデータを複写し（「内部DBのバックアップと戻し方」）、
 # いま動いている版のイメージに戻し用のタグを付ける（「戻し方」。例: docker tag mastersmith:local mastersmith:pre-dsl）
 docker compose --profile targetdb-postgres up -d --build   # アプリと見本の対象DB（PostgreSQL）を起動する
@@ -119,10 +120,24 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 ```
 
 - 配備したアプリには、見本の対象DB（PostgreSQL、compose の profile `targetdb-postgres`、DB `business`・スキーマ `sales`、読み取りだけのアカウント `mastersmith_reader`）をつなぎ、アプリと一緒に起動・停止します。そのため、起動・状態の確認・停止の `docker compose` のコマンドには `--profile targetdb-postgres` を付けます。
-- 初めて起動する前に、`.env` に次の9項目を入れておきます。値は各自で決め、コミットしません。
-  - `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`: 見本の DB の管理者と `mastersmith_reader` のパスワード。乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`.env` の `$` の展開などに左右されません）。
-  - `MASTERSMITH_TARGET_DB_*` の7項目: 「対象DB」の「手元で試す対象DB（compose の profile）」の手順 3 の PostgreSQL の値（ホストは `targetdb-postgres`、番号は `5432`）。`MASTERSMITH_TARGET_DB_PASSWORD` は `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` と同じ値にします。
-- 見本のスキーマと読み取りのアカウントは、見本の DB のボリュームが無い状態で初めて起動したときだけ作られます。起動の後に `docker compose logs targetdb-postgres` で初期化の誤りが無いことを確かめます。後から `.env` のパスワードを変えても見本の DB には効かないため、変えるときは見本の DB を作り直します（「手元で試す対象DB（compose の profile）」の手順 5 で消してから起動し直す）。
+- 初めて起動する前に、次の9項目を入れておきます。値は各自で決め、コミットしません。
+  - `.env.targetdb` の2項目 `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`: 見本の DB の管理者と `mastersmith_reader` のパスワード。乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`$` の展開などに左右されません）。見本の対象DB のコンテナだけが読み、アプリのコンテナには渡りません（アプリのコンテナは `.env` だけを読むため、見本の DB の管理者のパスワードを `.env` に置かない）。
+  - `.env` の `MASTERSMITH_TARGET_DB_*` の7項目: 「対象DB」の「手元で試す対象DB（compose の profile）」の手順 3 の PostgreSQL の値（ホストは `targetdb-postgres`、番号は `5432`）。`MASTERSMITH_TARGET_DB_PASSWORD` は `.env.targetdb` の `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` と同じ値にします。
+- 見本のスキーマと読み取りのアカウントは、見本の DB のボリュームが無い状態で初めて起動したときだけ作られます。起動の後に `docker compose logs targetdb-postgres` で初期化の誤りが無いことを確かめます。後から `.env.targetdb` のパスワードを変えても見本の DB には効かないため、変えるときは見本の DB を作り直します（「手元で試す対象DB（compose の profile）」の手順 5 で消してから起動し直す）。
+- これまで `.env` に `MASTERSMITH_SAMPLE_TARGETDB_*` の2項目を入れていたときは、次の手順で `.env.targetdb` に移します。どのコマンドも値を画面に出しません。値を変えずに移すだけなら、見本の DB のボリュームはそのまま使え、作り直しは要りません。
+
+  ```bash
+  test -e .env.targetdb && echo ".env.targetdb が既にあります。上書きせず、中身を確かめてから進めてください"
+  (umask 077 && cp .env "$HOME/.mastersmith-env-before-targetdb")          # 戻すときのために .env をリポジトリの外へ複写する
+  (umask 077 && grep '^MASTERSMITH_SAMPLE_TARGETDB_' .env > .env.targetdb)  # 2行を書き写す
+  grep -c '^MASTERSMITH_SAMPLE_TARGETDB_' .env.targetdb                      # 2 と出ること
+  (umask 077 && grep -v '^MASTERSMITH_SAMPLE_TARGETDB_' .env > .env.new && mv .env.new .env)   # .env から2行を消す
+  docker compose --profile targetdb-postgres up -d --force-recreate --wait   # アプリと見本の対象DB のコンテナを作り直す
+  docker inspect mastersmith-app-1 --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    | cut -d= -f1 | grep -c '^MASTERSMITH_SAMPLE_TARGETDB_'                  # 名前だけを数えて 0 と出ること
+  ```
+
+  問題が無ければ、複写した `$HOME/.mastersmith-env-before-targetdb` を消します。戻すときは、その複写を `.env` に戻して `.env.targetdb` を消し、この版より前の `compose.yaml` で起動し直します。
 - アプリは起動のときに対象DB に接続しません。見本の対象DB が止まっていてもアプリは起動を続け、スキーマの読み込み（既定の DSL の生成）と照合が「接続できない」になります。対象DB を使わないときは、`--profile targetdb-postgres` を付けずに起動し、`MASTERSMITH_TARGET_DB_*` を書きません（7項目がすべて空なら対象DB を使いません）。
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
@@ -197,37 +212,38 @@ docker compose up -d --wait                              # app が healthy に�
 ```
 
 - VM の大きさの見積もり: 配備したアプリ（2GB）・見本の対象DB（512MB）・手元の監視 `lgtm`（1.5GB）を合わせて約 4GB で、6GiB の内側に収まります。負荷の試験の環境（2GB、`perf/README.md`）も同時に動かすと約 6GB で VM の上限に近づくため、負荷の試験の間は手元の監視を止めます。
-- VM を広げた PC では、`.env` でコンテナの上限を `MASTERSMITH_CONTAINER_CPUS=4`・`MASTERSMITH_CONTAINER_MEMORY=2g` にし、`docker compose up -d --wait` でコンテナを作り直します。上限は `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。
+- コンテナの上限の既定は CPU 4・メモリ 2g で、この VM の大きさが前提です。VM を広げた後は `docker compose up -d --wait` でコンテナを作り直し、上限を `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。VM がこれより小さい PC では、`.env` の `MASTERSMITH_CONTAINER_CPUS`・`MASTERSMITH_CONTAINER_MEMORY` で下げます（下の「既知の制約」）。
 - 照合に使える CPU は、コンテナの `cpus` と VM の CPU の数の小さい方で頭打ちになります。VM だけを広げても、`MASTERSMITH_CONTAINER_CPUS` が小さいままではログインは速くなりません。
 - JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 75% です。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を下げる（例: `-XX:MaxRAMPercentage=70.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 75% に上書きされ、起動の時に JSON でない行をログに出すため）。
 
-#### 既知の制約（メモリの上限 1g と高い負荷）
+#### 既知の制約（メモリの上限を下げるときと高い負荷）
 
-- メモリの上限の既定は 1g のままです。1g では、最大ヒープ 768MB に対してヒープ以外に使えるのは約 256MB です。
-- CPU の上限 2・メモリの上限 1g で、トークンの更新を同時 10 件・考える時間なし（毎秒約 3,000 件）で流したところ、約 35 秒でコンテナがメモリの上限で止まりました（OOMKilled、2026-09-23 の負荷の試験）。`restart: "no"` のため、止まったままになります。
-- 同じくらいの負荷がかかりうるときは、`MASTERSMITH_CONTAINER_MEMORY` で上限を上げてください（VM を CPU 4・メモリ 6GiB にした PC では `2g`）。上限を上げると、最大ヒープも 75% の割合で増えます。2g での負荷の試験の結果は `perf/README.md` の末尾に記録します。メモリの内訳（ヒープとヒープ以外）の測り方も同じ文書にあります。
+- メモリの上限の既定は 2g です（最大ヒープはその 75%）。2g では、`refresh` を毎秒約 11,000 件で流しても止まりませんでした（`perf/README.md`）。
+- VM が CPU 4・メモリ 6GiB に満たない PC では、`.env` の `MASTERSMITH_CONTAINER_MEMORY` で `1g` などに下げます。ただし 1g では、最大ヒープ 768MB に対してヒープ以外に使えるのは約 256MB で、高い負荷でメモリの上限で止まりえます。CPU の上限 2・メモリの上限 1g で、トークンの更新を同時 10 件・考える時間なし（毎秒約 3,000 件）で流したところ、約 35 秒でコンテナがメモリの上限で止まりました（OOMKilled、2026-09-23 の負荷の試験）。`restart: "no"` のため、止まったままになります。
+- 上限を変えると、最大ヒープも 75% の割合で変わり、1g では JVM の GC が G1 ではなく Serial になります。負荷の試験の結果とメモリの内訳（ヒープとヒープ以外）の測り方は `perf/README.md` にあります。
 - 止まったかどうかは `docker inspect mastersmith-app-1 --format '{{.State.OOMKilled}} {{.State.ExitCode}}'`（`true 137` なら上限で止まった）で確かめます。
 
 #### 設定の効き方の確かめ
 
-`Dockerfile`・compose を変えたときは、次のスクリプトで、メモリの上限の変数と JVM の設定の口が効くことを確かめます。JVM の `-version` だけを小さな上限（512MB）で動かすため、アプリは起動せず、秘密情報も要りません。配備したアプリを止めずに実行できます。
+`Dockerfile`・compose を変えたときは、次のスクリプトで、メモリの上限の変数と JVM の設定の口が効くことと、環境変数の分け方（アプリは `.env`、見本の対象DB は `.env.targetdb`）を確かめます。JVM の `-version` だけを小さな上限（512MB）で動かすため、アプリは起動せず、秘密情報も要りません。配備したアプリを止めずに実行できます。
 
 ```bash
 ./gradlew :backend:bootWar && docker compose build app   # イメージ mastersmith:local を作る（配備したコンテナは作り直さない）
 ./docker/check-container-limits.sh                        # 期待と違う点があれば、期待の値と実際の値を出して失敗する
 ```
 
-- 確かめること: 両方の compose の `mem_limit`（変数なしで 1g、`MASTERSMITH_CONTAINER_MEMORY=768m` で 768m）、最大ヒープの割合（変数なし・空の値で 75%、`MASTERSMITH_JAVA_OPTIONS` で 60%）、ヒープ以外の上限（`-XX:MaxMetaspaceSize=128m`）、java がコンテナの PID 1 であること（停止の合図を直接受け取る）、タイムゾーンの引数が残ること。
+- 確かめること: 両方の compose の `mem_limit`（変数なしで 2g、`MASTERSMITH_CONTAINER_MEMORY=768m` で 768m）、最大ヒープの割合（変数なし・空の値で 75%、`MASTERSMITH_JAVA_OPTIONS` で 60%）、ヒープ以外の上限（`-XX:MaxMetaspaceSize=128m`）、java がコンテナの PID 1 であること（停止の合図を直接受け取る）、タイムゾーンの引数が残ること、`compose.yaml` の `app` が `.env` だけを読み `MASTERSMITH_SAMPLE_TARGETDB_*` を持たないことと、見本の対象DB の3つのサービスが `.env.targetdb` を読み `environment` にパスワードを持たないこと（名前だけを見て、値は展開も表示もしない）。
+- 値が入った `.env` を読んだ状態でアプリのコンテナに `MASTERSMITH_SAMPLE_TARGETDB_*` が無いことは、「コンテナでの起動と確認」の移し替えの手順の最後のコマンドで確かめます。
 - 別のタグのイメージは `MASTERSMITH_IMAGE_TAG=<タグ> ./docker/check-container-limits.sh` で確かめます。前提は Docker（Compose v2）と、そのイメージがあることです。`.env` は読みません。
 
 ## 環境変数
 
-秘密情報は `.env`（Git 管理外）から環境変数で渡します。見本は `.env.example` です。値を空にした変数は「空の値」として渡るため、既定値を使う設定は `.env` に書かないでください。
+秘密情報は `.env`（Git 管理外）から環境変数で渡します。見本は `.env.example` です。手元で試す対象DB（compose の profile `targetdb-*`）の2項目だけは `.env.targetdb`（Git 管理外。見本は `.env.targetdb.example`）に入れます。値を空にした変数は「空の値」として渡るため、既定値を使う設定は `.env` に書かないでください。
 
 | 環境変数 | 既定値 | 内容 |
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
-| `MASTERSMITH_CONTAINER_MEMORY` | `1g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`2g`・`1536m` の形）。1g のままでは高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」）。colima の VM を CPU 4・メモリ 6GiB にした PC では `2g` にする |
+| `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」） |
 | `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=70.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 75%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
@@ -260,8 +276,8 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `5` | 対象DB の接続の数の上限（内部DB のプールとは別） |
 | `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上） |
-| `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` | 空 | 手元で試す対象DB（compose の profile `targetdb-*`）の管理者のパスワード（秘密情報。アプリは使わない） |
-| `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` | 空 | 手元で試す対象DB の読み取りだけのアカウント `mastersmith_reader` のパスワード（秘密情報） |
+| `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` | 空 | 手元で試す対象DB（compose の profile `targetdb-*`）の管理者のパスワード（秘密情報。`.env` ではなく `.env.targetdb` に入れる。アプリには渡らない） |
+| `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` | 空 | 手元で試す対象DB の読み取りだけのアカウント `mastersmith_reader` のパスワード（秘密情報。`.env.targetdb` に入れる） |
 | `MASTERSMITH_AUTH_SIGNING_KEY` | 空（必須） | アクセストークンの署名鍵（Base64、復元して 32 バイト以上。秘密情報。無い・短いと起動しない） |
 | `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL` | 空 | 初期管理者のメールアドレス（無い・不正なら作らずに警告） |
 | `MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` | 空 | 初期管理者のパスワード（秘密情報。12 文字以上、UTF-8 で 72 バイト以内） |
@@ -313,9 +329,9 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 画面からスキーマの読み込みを試すときや、読み取りの時間を測るときは、見本の対象DB を compose の profile で1つずつ起動します。ポートは PC に開けず、アプリのコンテナから compose の中の名前で接続します。
 
-配備したアプリには、見本のうち PostgreSQL（`targetdb-postgres`）をつなぎ、アプリと一緒に起動・停止します（「コンテナでの起動と確認」の `docker compose --profile targetdb-postgres up -d --build` と `docker compose --profile targetdb-postgres down`）。下の手順 1・3 の `.env` の設定は、その配備でも同じです。手順 2・5 の見本の DB だけの起動・停止は、ほかの種類を試すときや、見本の DB だけを止める・作り直すときに使います。ほかの種類に切り替えるときは、手順 3 の値を替えてアプリのコンテナを作り直し、使わなくなった見本の DB は止めます。見本の DB が持つのは見本のスキーマと読み取りのアカウントだけで、手順 5 で消しても業務のデータや内部DB は失われません。
+配備したアプリには、見本のうち PostgreSQL（`targetdb-postgres`）をつなぎ、アプリと一緒に起動・停止します（「コンテナでの起動と確認」の `docker compose --profile targetdb-postgres up -d --build` と `docker compose --profile targetdb-postgres down`）。下の手順 1 の `.env.targetdb` と手順 3 の `.env` の設定は、その配備でも同じです。手順 2・5 の見本の DB だけの起動・停止は、ほかの種類を試すときや、見本の DB だけを止める・作り直すときに使います。ほかの種類に切り替えるときは、手順 3 の値を替えてアプリのコンテナを作り直し、使わなくなった見本の DB は止めます。見本の DB が持つのは見本のスキーマと読み取りのアカウントだけで、手順 5 で消しても業務のデータや内部DB は失われません。
 
-1. `.env` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` と `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` を入れる（空だと DB を作れません）。
+1. `.env.targetdb` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` と `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` を入れる（`(umask 077 && cp .env.targetdb.example .env.targetdb)` で作る。空だと DB を作れません）。見本の対象DB のコンテナは起動の入口で管理者のパスワードを各イメージの変数（`POSTGRES_PASSWORD`・`MYSQL_ROOT_PASSWORD`・`MARIADB_ROOT_PASSWORD`）に写すため、`docker compose exec` の中ではそれらの変数ではなく `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` を使います。
 2. 起動する（初めての起動で、見本のスキーマと読み取りだけのアカウント `mastersmith_reader` を `docker/targetdb/<種類>/` の SQL と台本で作ります）。
 
    ```bash
@@ -344,9 +360,9 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
    ./docker/targetdb/generate-large-schema.sh postgres \
      | docker compose exec -T targetdb-postgres psql -v ON_ERROR_STOP=1 -U target_admin -d business
    ./docker/targetdb/generate-large-schema.sh mysql \
-     | docker compose exec -T targetdb-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root'
+     | docker compose exec -T targetdb-mysql sh -c 'MYSQL_PWD="$MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD" mysql --user=root'
    ./docker/targetdb/generate-large-schema.sh mariadb \
-     | docker compose exec -T targetdb-mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root'
+     | docker compose exec -T targetdb-mariadb sh -c 'MYSQL_PWD="$MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD" mariadb --user=root'
    ```
 
 5. 止める・消す: `docker compose --profile targetdb-postgres stop targetdb-postgres`。データごと消すときは `docker compose --profile targetdb-postgres rm -sf targetdb-postgres` の後に `docker volume rm mastersmith_mastersmith-targetdb-postgres`（mysql・mariadb も同じ形）。

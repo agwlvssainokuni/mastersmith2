@@ -14,13 +14,16 @@
 # limitations under the License.
 
 # コンテナのメモリの上限と JVM の起動の設定が、環境変数どおりに効くことを確かめる（F3・F4 の修正の再発防止）。
+# あわせて、アプリのコンテナに見本の対象DB の値を渡さない環境変数の分け方を確かめる（260924-followup-fixes の FR6.2）。
 #   実行: ./docker/check-container-limits.sh （プロジェクトのルートで。事前に ./gradlew :backend:bootWar && docker compose build app）
 #   別のタグのイメージを確かめる: MASTERSMITH_IMAGE_TAG=<タグ> ./docker/check-container-limits.sh
 # 確かめること:
-#   1. compose.yaml・docker/perf/compose.yaml の app の mem_limit が、MASTERSMITH_CONTAINER_MEMORY なしで 1g、768m を渡すと 768m
+#   1. compose.yaml・docker/perf/compose.yaml の app の mem_limit が、MASTERSMITH_CONTAINER_MEMORY なしで 2g、768m を渡すと 768m
 #   2. JVM の設定の口（MASTERSMITH_JAVA_OPTIONS）なしで、最大ヒープがコンテナのメモリの上限の 75%（空の値でも同じ）
 #   3. MASTERSMITH_JAVA_OPTIONS で渡した割合（60%）とヒープ以外の上限（MaxMetaspaceSize=128m）が効く
 #   4. java がコンテナの PID 1 で動き（停止の合図を直接受け取る）、-Duser.timezone=Asia/Tokyo が残る
+#   5. compose.yaml の app は .env だけを読み、environment に MASTERSMITH_SAMPLE_TARGETDB_* を持たない。見本の対象DB の
+#      3つのサービスは .env.targetdb を読み、environment にパスワードを持たない（値は展開も表示もしない）
 # アプリは起動しない（JVM の -version だけを小さなメモリの上限で動かす）。そのため秘密情報は要らず、配備したアプリを止めずに実行できる。
 # .env は読まない（compose の変数の展開には空の一時ファイルを使い、env_file の中身は展開しない）。
 # 期待と違う点があれば、期待の値と実際の値を出して 1 で終わる。前提（Docker・イメージ）が無いときは 2 で終わる。
@@ -90,7 +93,7 @@ check_mem_limit() {
 }
 
 for compose_file in compose.yaml docker/perf/compose.yaml; do
-    check_mem_limit "${compose_file}" "" 1073741824
+    check_mem_limit "${compose_file}" "" 2147483648
     check_mem_limit "${compose_file}" 768m 805306368
 done
 
@@ -176,6 +179,59 @@ else
     # 4. 設定の口を使っても起動の形が変わらない
     check_launch "MASTERSMITH_JAVA_OPTIONS あり" "${output}"
 fi
+
+# ---- 5. 環境変数の分け方（compose.yaml）----
+
+# compose.yaml の1つのサービスの設定を展開する（.env は読まない。env_file の中身は展開しない）。展開した設定は表示しない。
+compose_service_config() {
+    docker compose --env-file "${EMPTY_ENV}" \
+        --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb \
+        -f compose.yaml config --no-env-resolution --format json "$1" || true
+}
+
+# 設定の env_file のパスのうち、ファイルの名前だけを並べる（例: .env）。
+env_file_names() {
+    # 見つからないときも失敗にせず空を返し、呼び出し元の確かめで失敗にする（set -e で途中で抜けないようにする）。
+    { printf '%s\n' "$1" | grep -o '"path": *"[^"]*"' | sed 's/.*\/\([^/"]*\)"$/\1/' | tr '\n' ' '; } || true
+}
+
+# 設定の environment の項目の名前だけを並べる（値は出さない）。
+environment_names() {
+    {
+        printf '%s\n' "$1" \
+            | awk '/^      "environment": \{/ { inside = 1; next } inside && /^      \}/ { inside = 0 } inside' \
+            | grep -o '^ *"[A-Za-z0-9_]*":' | tr -d ' ":' | tr '\n' ' '
+    } || true
+}
+
+config=$(compose_service_config app)
+files=$(env_file_names "${config}")
+if [ "${files}" = ".env " ]; then
+    pass "compose.yaml の app は .env だけを読む"
+else
+    fail "compose.yaml の app の env_file が .env だけでない（${files:-読み取れない}）"
+fi
+if [ -n "${config}" ] && ! printf '%s\n' "${config}" | grep 'MASTERSMITH_SAMPLE_TARGETDB_' > /dev/null; then
+    pass "compose.yaml の app の設定に MASTERSMITH_SAMPLE_TARGETDB_ で始まる名前が無い"
+else
+    fail "compose.yaml の app の設定に MASTERSMITH_SAMPLE_TARGETDB_ で始まる名前がある（または設定を読み取れない）"
+fi
+
+for service in targetdb-postgres targetdb-mysql targetdb-mariadb; do
+    config=$(compose_service_config "${service}")
+    files=$(env_file_names "${config}")
+    if [ "${files}" = ".env.targetdb " ]; then
+        pass "compose.yaml の ${service} は .env.targetdb を読む"
+    else
+        fail "compose.yaml の ${service} の env_file が .env.targetdb でない（${files:-読み取れない}）"
+    fi
+    names=$(environment_names "${config}")
+    if [ -n "${names}" ] && ! printf '%s' "${names}" | grep 'PASSWORD' > /dev/null; then
+        pass "compose.yaml の ${service} の environment にパスワードが無い（${names% }）"
+    else
+        fail "compose.yaml の ${service} の environment にパスワードがある（または読み取れない）: ${names:-（なし）}"
+    fi
+done
 
 if [ "${failures}" -gt 0 ]; then
     printf '%d 件が期待と違います（イメージ %s）。\n' "${failures}" "${IMAGE}"

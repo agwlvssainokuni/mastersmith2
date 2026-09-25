@@ -87,10 +87,11 @@ aidlc/diagnostics/
 # ユーザー提供の参考資料。Git管理対象外(reference_materials 参照)。
 reference/
 
-# 秘密情報を含む設定ファイル・鍵ファイル（見本の .env.example だけはコミットする）
+# 秘密情報を含む設定ファイル・鍵ファイル（見本の .env.example・.env.targetdb.example だけはコミットする）
 .env
 .env.*
 !.env.example
+!.env.targetdb.example
 *.pem
 *.key
 *.p12

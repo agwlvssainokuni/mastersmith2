@@ -17,7 +17,7 @@
 #   外部エクスポートの確認: .env で MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true と
 #     MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://otel-collector:4318 を設定し、
 #     docker compose --profile observability up -d --build
-# 秘密情報は Git 管理外の .env から渡す（見本は .env.example）。
+# 秘密情報は Git 管理外の .env から渡す（見本は .env.example）。手元で試す対象DB の値だけは .env.targetdb（見本は .env.targetdb.example）。
 name: mastersmith
 
 services:
@@ -55,12 +55,12 @@ services:
     # アプリの穏やかな停止の待ち（30 秒）より長くする。
     stop_grace_period: 45s
     # CPU の上限は既定で 4（U2 の基盤の設計で U1 の「CPU 2」を上書き。照合の時間の目標は 4 が前提）。
-    # メモリの上限は既定で 1g。高い負荷ではメモリの上限で止まりうるため（README の「コンテナの資源の上限」）、
-    # colima の VM を CPU 4・メモリ 6GiB にした PC では、.env で MASTERSMITH_CONTAINER_MEMORY=2g にする。
+    # メモリの上限は既定で 2g（1g では高い負荷でメモリの上限で止まりうるため。README の「コンテナの資源の上限」）。
+    # colima の VM が CPU 4・メモリ 6GiB に満たない PC では、.env の MASTERSMITH_CONTAINER_MEMORY で 1g などに下げる。
     # Docker の VM の CPU が 4 に満たない PC では、.env の MASTERSMITH_CONTAINER_CPUS で下げる。
     # JVM の設定（ヒープの割合など）は .env の MASTERSMITH_JAVA_OPTIONS で変える（Dockerfile の ENTRYPOINT）。
     cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}
-    mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-1g}
+    mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-2g}
     # 異常で止まったときは再起動しない（開発者が原因を見る）。
     restart: "no"
     logging:
@@ -111,16 +111,28 @@ services:
   #   起動: docker compose --profile targetdb-postgres up -d targetdb-postgres （mysql・mariadb も同じ形）
   # ポートは PC に開けない。アプリのコンテナから compose の中の名前（例 targetdb-postgres:5432）で接続する。
   # 版は結合テストのイメージ（backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java）と同じ値にする。
-  # 管理者と読み取りのアカウントのパスワードは .env から渡す（MASTERSMITH_SAMPLE_TARGETDB_*。空なら DB の起動が失敗する）。
+  # 管理者と読み取りのアカウントのパスワードは .env.targetdb から渡す（MASTERSMITH_SAMPLE_TARGETDB_*。見本は .env.targetdb.example。
+  # 空なら DB の起動が失敗する）。アプリのコンテナに見本の DB の管理者のパスワードを渡さないよう、.env とは分ける。
+  # compose の ${...} の展開は .env だけを読むため、起動の入口（entrypoint）を sh で包み、管理者のパスワードを各イメージの変数に
+  # 写してから、イメージ本来の入口（docker-entrypoint.sh）を呼ぶ（$$ は compose に展開させないための書き方）。
+  # entrypoint を上書きするとイメージの CMD も消えるため、command に本来の値を書く。イメージの版を上げるときは、
+  # docker image inspect で本来の Entrypoint と Cmd を確かめて合わせる。
   # 見本のスキーマと読み取りだけのアカウントは、初めて起動したときに docker/targetdb/<種類>/ の SQL と台本で作る。
   targetdb-postgres:
     image: postgres:18.6@sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae
     profiles: [targetdb-postgres]
+    env_file:
+      - path: .env.targetdb
+        required: false
     environment:
       POSTGRES_DB: business
       POSTGRES_USER: target_admin
-      POSTGRES_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
-      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    entrypoint:
+      - sh
+      - -c
+      - export POSTGRES_PASSWORD="$${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}"; exec docker-entrypoint.sh "$$@"
+      - docker-entrypoint.sh
+    command: [postgres]
     volumes:
       - mastersmith-targetdb-postgres:/var/lib/postgresql
       - ./docker/targetdb/postgres:/docker-entrypoint-initdb.d:ro
@@ -130,10 +142,17 @@ services:
   targetdb-mysql:
     image: mysql:8.4.11@sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d
     profiles: [targetdb-mysql]
+    env_file:
+      - path: .env.targetdb
+        required: false
     environment:
       MYSQL_DATABASE: business
-      MYSQL_ROOT_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
-      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    entrypoint:
+      - sh
+      - -c
+      - export MYSQL_ROOT_PASSWORD="$${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}"; exec docker-entrypoint.sh "$$@"
+      - docker-entrypoint.sh
+    command: [mysqld]
     volumes:
       - mastersmith-targetdb-mysql:/var/lib/mysql
       - ./docker/targetdb/mysql:/docker-entrypoint-initdb.d:ro
@@ -143,10 +162,17 @@ services:
   targetdb-mariadb:
     image: mariadb:11.8.9@sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68
     profiles: [targetdb-mariadb]
+    env_file:
+      - path: .env.targetdb
+        required: false
     environment:
       MARIADB_DATABASE: business
-      MARIADB_ROOT_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}
-      MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD: ${MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD:-}
+    entrypoint:
+      - sh
+      - -c
+      - export MARIADB_ROOT_PASSWORD="$${MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD:-}"; exec docker-entrypoint.sh "$$@"
+      - docker-entrypoint.sh
+    command: [mariadbd]
     volumes:
       - mastersmith-targetdb-mariadb:/var/lib/mysql
       - ./docker/targetdb/mariadb:/docker-entrypoint-initdb.d:ro

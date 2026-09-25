@@ -21,9 +21,11 @@
 #   ./docker/targetdb/generate-large-schema.sh postgres \
 #     | docker compose exec -T targetdb-postgres psql -v ON_ERROR_STOP=1 -U target_admin -d business
 #   ./docker/targetdb/generate-large-schema.sh mysql \
-#     | docker compose exec -T targetdb-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root'
+#     | docker compose exec -T targetdb-mysql sh -c 'MYSQL_PWD="$MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD" mysql --user=root'
 #   ./docker/targetdb/generate-large-schema.sh mariadb \
-#     | docker compose exec -T targetdb-mariadb sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root'
+#     | docker compose exec -T targetdb-mariadb sh -c 'MYSQL_PWD="$MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD" mariadb --user=root'
+# （管理者のパスワードは .env.targetdb からコンテナに渡る。MYSQL_ROOT_PASSWORD・MARIADB_ROOT_PASSWORD は起動の入口の中でだけ
+#   写すため、docker compose exec の環境には無い）
 # 表とカラムの数を変えるとき: ./docker/targetdb/generate-large-schema.sh postgres 50 20
 # アプリで読むときは MASTERSMITH_TARGET_DB_SCHEMA=large にする（MySQL・MariaDB は MASTERSMITH_TARGET_DB_DATABASE も large）。
 set -euo pipefail
