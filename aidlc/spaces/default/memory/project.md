@@ -88,6 +88,7 @@
 - Q2: A（AI が .env から2行を移す）と Q4: B（戻すときにイメージと .env を戻す）の組み合わせでは、戻すとアプリが再び見本の対象DB の管理者のパスワードを持つため、追加の質問 F1 で確かめ、戻すのはイメージだけにした。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:d3116be97e057542dbcb08021c0ad2975e9595d143eabdeabd4fe61cd0dcb1d1 -->
 - 配備の前の k6 と内部DB のバックアップは質問にせず、決まっていることとして書いた（k6 は project.md の決まりで Build and Test の結果を正とする。バックアップはスキーマの変更が無いため不要）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-pipeline:0675c59d7ff8841998ab55a88372b2dff3d387b0d28e132210f8ab3d49e4d5db -->
 - 戻し方の前提（Q2: A）は、前の版のイメージを新しい .env と一時のボリュームで起動して健全になることで確かめた。配備した内部DB のデータでの起動は確かめていない（スキーマの変更が無いため）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:deployment-execution:96ee1f52a4e60ff3af1808774205c8491cd15a07a159f5eb7833321ea912b251 -->
+- 前の版のイメージは HikariCP の JMX を有効にしていないため、戻すと詰め直しの道具が使えなくなり最大ヒープも 75% に戻る。設定がイメージの中にあるためイメージだけで戻せる代わりに、戻したときの運用の差を戻しの手順に書いた。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-pipeline:7b476360b6c318ef99d4a013d925563cd9a28cf632612b083d7cfb448e8cf622 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -231,3 +232,4 @@
 - 依頼者の決定（Q2: A、Q3）で、詰め直しの入口を承認済みの要件の管理者向け HTTP API（FR1.3）から JMX だけに変え、HikariCP の標準の機能で行うためアプリのログと監査ログ（FR1.6・FR1.7）は出さないことにした。要件の文書は書き換えず、差を計画とこの段の成果物に明記する（project.md の決まり）。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:code-generation:de414ea347467e3f61a6c94312bc88ffc5feab5d1a23a8bc5df9d93dd6325653 -->
 - 開発担当への依頼で Testing Contract の本文を差し込み忘れ（{CONTRACT} のまま）、すぐ後に追って本文のファイルの場所を伝えた。計画に貼られた本文が render の出力と一致するかを承認の前に確かめる。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:code-generation:bce3478ec9e3aa2f2de3f4b4749b7508b831b3be52560504e018428772be948f -->
 - traceability.json の Deferred（FR2.4・FR5.x）はこの段で確かめて Met だったが、コード生成の成果物は確定の後なので書き換えず、cross-unit-traceability.md に「この段で確かめた」と記録し、判定は不合格（条件つき）として承認の場で扱いを確かめる。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:build-and-test:472fb66d456296d5a7fe677840031cb6c59d5d85c3bf6b067bfe4b5603efc9c1 -->
+- 統合（fast-forward）・配備の前の k6 とバックアップを省くこと・イメージだけの戻しは、前の段と前の Intent の決まりで決まっているとして質問にせず、配備の後に詰め直しの道具を流すかだけを質問にした（Q1: A）。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-pipeline:5ea2c2ef96330799fa4cc999edda63873970382b0b2c851a09c9cbf8b1855014 -->
