@@ -1,0 +1,175 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR1.6",
+    "FR1.7",
+    "FR1.8",
+    "FR1.9",
+    "FR1.10",
+    "FR1.11",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4.1",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR1.3",
+      "status": "N/A",
+      "target": "作らない。依頼者の決定 Q2: A で入口は JMX（docker/hikari-pool.sh）だけとし、管理者向けの HTTP API と 401・403・200 のテストは作らない（code-summary.md の要件との差）"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR1.6",
+      "status": "N/A",
+      "target": "行わない。依頼者の決定 Q3 で HikariCP の標準の機能だけで行い、詰め直しの操作は監査ログ・アプリのログに残さない（前と後の大きさと時間は道具の出力で見る）"
+    },
+    {
+      "id": "FR1.7",
+      "status": "N/A",
+      "target": "変えない。依頼者の決定 Q3 により監査の決まりは今のまま。一時停止の間は監査の記録も失敗ではなく再開まで待つ（code-summary.md の要件との差）"
+    },
+    {
+      "id": "FR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR1.9",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR1.10",
+      "status": "OK",
+      "target": "docker/hikari-pool.sh"
+    },
+    {
+      "id": "FR1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260925-storage-memory-fixes/construction/code-generation/baseline-measurement.md"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260925-storage-memory-fixes/construction/code-generation/code-generation-plan.md"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "Dockerfile"
+    },
+    {
+      "id": "FR2.4",
+      "status": "Deferred",
+      "target": "Build and Test に引き継ぐ。直した後のイメージで dslMixed を流し、D1 の目標（anon 1,536MiB 以下かつ memory.events の max 0）を判定する"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260925-storage-memory-fixes/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/testsupport/LoopbackPortCollisionTest.java"
+    },
+    {
+      "id": "FR3.3",
+      "status": "N/A",
+      "target": "D7 で直したため、再現できなかったときの扱い（不安定と確かめられていない扱いで統合）は当たらない"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "perf/dsl-timing.sh"
+    },
+    {
+      "id": "FR5.1",
+      "status": "Deferred",
+      "target": "Build and Test に引き継ぐ（Performance Validation の段が無いため、k6 の dslMixed・dslCycle と perf/dsl-timing.sh の持ち主は Build and Test）"
+    },
+    {
+      "id": "FR5.2",
+      "status": "Deferred",
+      "target": "Build and Test に引き継ぐ（直す前の値は前の Intent の実測と baseline-measurement.md の 2.1 節を使う）"
+    },
+    {
+      "id": "FR5.3",
+      "status": "Deferred",
+      "target": "Build and Test に引き継ぐ（FR1.4 は perf/dsl-timing.sh の --storage --compact、STORAGE_ROUNDS=40 で、FR2.4 は dslMixed で確かめる）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "docker/jmx/HikariPoolControl.java"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "依頼者の決定 Q2: A でサーバー側の管理者の検査は無い。代わりに JMX を外に公開せず、この PC で Docker を使える人だけが操作できる（application.yaml と README.md の説明、code-summary.md の要件との差）"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260925-storage-memory-fixes/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260925-storage-memory-fixes/construction/code-generation/code-summary.md"
+    }
+  ]
+}

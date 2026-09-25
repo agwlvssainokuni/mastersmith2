@@ -1,0 +1,51 @@
+{
+  "stage": "code-generation",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/src/test/resources/META-INF/spring.factories"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/TestHikariMbeansEnvironmentPostProcessor.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/LoopbackPortCollisionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/HikariJmxSettingsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "path": "Dockerfile"
+    },
+    {
+      "path": "docker/check-container-limits.sh"
+    },
+    {
+      "path": "docker/hikari-pool.sh"
+    },
+    {
+      "path": "docker/jmx/HikariPoolControl.java"
+    },
+    {
+      "path": "perf/dsl-timing.sh"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": ".env.example"
+    }
+  ]
+}
