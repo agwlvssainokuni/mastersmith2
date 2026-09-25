@@ -118,6 +118,11 @@ tasks.withType<Test>().configureEach {
     systemProperty("user.timezone", "Asia/Tokyo")
     // 結合テストで Host ヘッダーを指定して、エラー応答の type の URL の組み立てを確かめるため。
     systemProperty("jdk.httpclient.allowRestrictedHeaders", "host")
+    // テストのアプリ（Tomcat の RANDOM_PORT）を IPv4 の全アドレスで待ち受けさせる（Intent 260925-storage-memory-fixes の FR3）。
+    // colima は Testcontainers のコンテナの番号を PC の IPv4 の全アドレスで転送するが、Java の既定（IPv6 の全アドレス）では macOS で
+    // 同じ番号を重ねて取れてしまい、localhost への要求がコンテナへ届いて切られる（AccessTokenApiIT の一時的な失敗と同じ文言）。
+    // IPv4 では重ねて取れない（LoopbackPortCollisionTest）。
+    systemProperty("java.net.preferIPv4Stack", "true")
     testLogging {
         // 対象DB のテストがコンテナの実行環境の無さで飛ばされたとき、黙って飛ばさないよう SKIPPED も出す（NFR12.3）。
         events("failed", "skipped")
