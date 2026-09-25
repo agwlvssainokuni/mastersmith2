@@ -16,16 +16,22 @@
 package cherry.mastersmith.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import cherry.mastersmith.auth.domain.AuthProblemTypes;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.auth.domain.AuthenticationEventType;
@@ -51,7 +57,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 
@@ -71,6 +80,8 @@ class LoginServiceTest {
 
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
 
+    private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+
     private LoginService service;
 
     @BeforeEach
@@ -78,7 +89,6 @@ class LoginServiceTest {
         String key = TestSigningKeyEnvironmentPostProcessor.randomKey(32);
         AuthProperties properties = SigningKeyProviderTest.properties(key);
         Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
-        PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
         when(transactionManager.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         service = new LoginService(
                 userAccountService,
@@ -238,15 +248,87 @@ class LoginServiceTest {
     }
 
     @Test
-    @DisplayName("a missing lock row is created and then read with a lock")
+    @DisplayName("a missing lock row is created in its own transaction and the login is decided again")
     void createsMissingRow() {
         givenVerification(USER, true);
         when(attempts.lockForUpdate(7))
                 .thenReturn(Optional.empty())
                 .thenReturn(Optional.of(new LoginAttemptState(7, 0, null)));
 
-        service.login(new LoginCommand("user@example.com", new Password("パスワード")), CLIENT);
+        IssuedTokens tokens = service.login(new LoginCommand("user@example.com", new Password("パスワード")), CLIENT);
+
+        assertThat(tokens.user()).isEqualTo(USER);
+        InOrder order = inOrder(transactionManager, attempts);
+        order.verify(transactionManager).getTransaction(any());
+        order.verify(attempts).lockForUpdate(7);
+        order.verify(transactionManager).commit(any());
+        order.verify(transactionManager).getTransaction(any());
+        order.verify(attempts).createIfAbsent(7);
+        order.verify(transactionManager).commit(any());
+        order.verify(transactionManager).getTransaction(any());
+        order.verify(attempts).lockForUpdate(7);
+        order.verify(attempts).update(7, 0, null);
+        order.verify(transactionManager).commit(any());
+        verify(attempts, times(1)).update(anyLong(), anyInt(), any());
+        assertThat(event().eventType()).isEqualTo(AuthenticationEventType.LOGIN_SUCCEEDED);
+    }
+
+    @Test
+    @DisplayName("a row created at the same time by another login is treated as existing")
+    void duplicateRowIsExisting() {
+        givenVerification(USER, true);
+        when(attempts.lockForUpdate(7))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(new LoginAttemptState(7, 0, null)));
+        doThrow(new DuplicateKeyException("重複")).when(attempts).createIfAbsent(7);
+
+        Logger logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(LoginService.class);
+        Level before = logger.getLevel();
+        logger.setLevel(Level.DEBUG);
+        try (LogEvents events = LogEvents.capture(LoginService.class)) {
+            IssuedTokens tokens = service.login(new LoginCommand("user@example.com", new Password("パスワード")), CLIENT);
+
+            assertThat(tokens.user()).isEqualTo(USER);
+            assertThat(events.list()).singleElement().satisfies(log -> {
+                assertThat(log.getLevel()).isEqualTo(Level.DEBUG);
+                assertThat(log.getKeyValuePairs().toString()).contains("userId");
+            });
+        } finally {
+            logger.setLevel(before);
+        }
+        verify(attempts).update(7, 0, null);
+        assertThat(event().eventType()).isEqualTo(AuthenticationEventType.LOGIN_SUCCEEDED);
+    }
+
+    @Test
+    @DisplayName("a wrong password for a user without a row counts as the first failure")
+    void missingRowFirstFailure() {
+        givenVerification(USER, false);
+        when(attempts.lockForUpdate(7))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(new LoginAttemptState(7, 0, null)));
+
+        assertThat(fail().getProblemType()).isEqualTo(AuthProblemTypes.AUTHENTICATION_FAILED);
 
         verify(attempts).createIfAbsent(7);
+        verify(attempts, times(1)).update(7, 1, null);
+        AuthenticationEvent event = event();
+        assertThat(event.eventType()).isEqualTo(AuthenticationEventType.LOGIN_FAILED);
+        assertThat(event.failureReason()).isEqualTo(LoginFailureReason.PASSWORD_MISMATCH);
+        verify(refreshTokens, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("a row still missing after creating it fails loudly")
+    void rowStillMissing() {
+        givenVerification(USER, true);
+        when(attempts.lockForUpdate(7)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.login(new LoginCommand("user@example.com", new Password("パスワード")), CLIENT))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(attempts).createIfAbsent(7);
+        verify(attempts, never()).update(anyLong(), anyInt(), any());
+        verifyNoInteractions(publisher, refreshTokens);
     }
 }

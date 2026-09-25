@@ -36,9 +36,11 @@ import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.service.UserSummary;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -53,6 +55,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li>同じトランザクションの中で出来事を知らせる（受け取り側は確定の後に記録する。BR7.3）
  *   <li>失敗は理由によらず {@code AUTHENTICATION_FAILED}（BR2.4）
  * </ol>
+ *
+ * <p>利用者のロックの状態の行が無いとき（初めてのログインなど）は、判定のトランザクションでは何も書かず、出来事も知らせずに終え、
+ * 別の短いトランザクションで行を作ってから判定をやり直す。同じ利用者の初めてのログインが同時に来て、行の作成が重複で失敗したときは
+ * 「既にある」として扱う（判定のトランザクションの中で重複を受け止めると、トランザクションが巻き戻し専用になり続けられないため）。
+ * トランザクションは順に行うため、同時に使う接続は1本のまま。
  */
 @Service
 public class LoginService {
@@ -116,23 +123,55 @@ public class LoginService {
      */
     public IssuedTokens login(LoginCommand command, ClientInfo client) {
         PasswordVerification verification = userAccountService.verifyPassword(command.email(), command.password());
-        IssuedTokens tokens = transaction.execute(status -> decide(verification, client));
-        if (tokens == null) {
+        Decision decision = transaction.execute(status -> decide(verification, client));
+        if (decision != null && decision.rowMissing()) {
+            long userId = verification.user().userId();
+            createRow(userId);
+            decision = transaction.execute(status -> decide(verification, client));
+            if (decision != null && decision.rowMissing()) {
+                throw new IllegalStateException("ロックの状態の行を作れませんでした: userId=" + userId);
+            }
+        }
+        if (decision == null || decision.tokens() == null) {
             throw new BusinessException(AuthProblemTypes.AUTHENTICATION_FAILED);
         }
-        return tokens;
+        return decision.tokens();
     }
 
-    /** 排他つきで状態を読み、判定し、書き込む。成功ならトークンを返し、失敗なら null を返す（トランザクションは確定する）。 */
-    private IssuedTokens decide(PasswordVerification verification, ClientInfo client) {
+    /**
+     * 利用者のロックの状態の行を、判定とは別の短いトランザクションで作る。同時の別のログインが先に作っていて重複になったときは、
+     * 「既にある」として進む。
+     */
+    private void createRow(long userId) {
+        try {
+            transaction.executeWithoutResult(status -> attemptRepository.createIfAbsent(userId));
+        } catch (DataIntegrityViolationException e) {
+            LOGGER.atDebug().addKeyValue("userId", userId).log("ロックの状態の行は同時の別のログインが先に作りました");
+        }
+    }
+
+    /**
+     * 排他つきで状態を読み、判定し、書き込む（トランザクションは確定する）。利用者の行が無ければ、何も書かず出来事も知らせずに
+     * {@link Decision#ROW_MISSING} を返す。
+     */
+    private Decision decide(PasswordVerification verification, ClientInfo client) {
         UserSummary user = verification.user();
-        LoginAttemptState row = user == null ? attemptRepository.lockDummyForUpdate() : lockUserRow(user.userId());
+        LoginAttemptState row;
+        if (user == null) {
+            row = attemptRepository.lockDummyForUpdate();
+        } else {
+            Optional<LoginAttemptState> found = attemptRepository.lockForUpdate(user.userId());
+            if (found.isEmpty()) {
+                return Decision.ROW_MISSING;
+            }
+            row = found.get();
+        }
         LockState current = new LockState(row.getConsecutiveFailures(), row.getLockedUntil());
         Instant now = clock.instant();
         if (user == null) {
             attemptRepository.update(row.getSubjectId(), current.consecutiveFailures(), current.lockedUntil());
             publishFailure(verification.email(), null, LoginFailureReason.USER_NOT_FOUND, now, client);
-            return null;
+            return Decision.FAILED;
         }
         LockDecision decision = LockPolicy.decide(
                 current,
@@ -150,21 +189,12 @@ public class LoginService {
                     ? LoginFailureReason.ACCOUNT_LOCKED
                     : LoginFailureReason.PASSWORD_MISMATCH;
             publishFailure(verification.email(), user.userId(), reason, now, client);
-            return null;
+            return Decision.FAILED;
         }
         IssuedTokens tokens = issueTokens(user, now);
         eventPublisher.publishEvent(AuthenticationEvent.of(
                 AuthenticationEventType.LOGIN_SUCCEEDED, now, verification.email(), user.userId(), null, client));
-        return tokens;
-    }
-
-    private LoginAttemptState lockUserRow(long userId) {
-        return attemptRepository.lockForUpdate(userId).orElseGet(() -> {
-            attemptRepository.createIfAbsent(userId);
-            return attemptRepository
-                    .lockForUpdate(userId)
-                    .orElseThrow(() -> new IllegalStateException("ロックの状態の行を作れませんでした"));
-        });
+        return new Decision(false, tokens);
     }
 
     private void publishFailure(String email, Long userId, LoginFailureReason reason, Instant now, ClientInfo client) {
@@ -185,5 +215,20 @@ public class LoginService {
         refreshTokenRepository.save(new RefreshToken(
                 user.userId(), RefreshTokenValues.hash(refreshToken), now, now.plus(properties.refreshTokenTtl())));
         return new IssuedTokens(accessToken, refreshToken, properties.refreshTokenTtl(), user);
+    }
+
+    /**
+     * 判定の1回の結果。
+     *
+     * @param rowMissing 利用者のロックの状態の行が無く、判定しなかったとき true
+     * @param tokens 成功のときに発行したトークン（失敗・行が無いときは null）
+     */
+    private record Decision(boolean rowMissing, IssuedTokens tokens) {
+
+        /** 利用者の行が無く、判定しなかった。 */
+        static final Decision ROW_MISSING = new Decision(true, null);
+
+        /** 判定して失敗した。 */
+        static final Decision FAILED = new Decision(false, null);
     }
 }
