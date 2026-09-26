@@ -14,7 +14,7 @@
 
 # アプリのコンテナ（1段）。Gradle で作った実行可能 WAR（./gradlew verify または :backend:bootWar）をコピーするだけで、
 # イメージの中ではビルドしない。ベースイメージは Eclipse Temurin の JRE 25（Ubuntu）で、版の番号までタグで固定する。
-FROM eclipse-temurin:25.0.4_7-jre-noble
+FROM eclipse-temurin:26.0.2_10-jre-noble
 
 # root 以外の専用の利用者で動かし、内部DBのファイルの置き場所（/app/data）はその利用者だけが読み書きできるようにする。
 RUN groupadd --system --gid 10001 mastersmith \
