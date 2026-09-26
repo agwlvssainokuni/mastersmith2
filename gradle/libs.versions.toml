@@ -31,7 +31,7 @@ jacoco = "0.8.15"
 logstash-logback-encoder = "9.0"
 # OpenTelemetry の logback 用の出力。Spring Boot が管理する OpenTelemetry（現在 1.62.0）に合う版に固定する。
 # Spring Boot を上げるときは、Boot の OpenTelemetry の版に合わせてこの版も見直す（2.29 以降は api 1.63 以上を求める）。
-opentelemetry-instrumentation = "2.28.1-alpha"
+opentelemetry-instrumentation = "2.31.1-alpha"
 jqwik = "1.10.1"
 archunit = "1.5.0"
 # DSL の YAML の読み込み（U2）。Spring Boot の推移依存と同じ版を、直接の依存として明示する。
