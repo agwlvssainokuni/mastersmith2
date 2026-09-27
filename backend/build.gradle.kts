@@ -273,6 +273,16 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
+    // メールのテンプレート（U1、BR2.5）。ヘッダーは Mustache のコメント `{{! ... }}` の形で、ヘッダーの後の最初の行
+    // （<!DOCTYPE）を区切りとする。本番の置き場（B1 では0件）とテスト用の置き場を対象にする。
+    format("mailTemplates") {
+        target(
+            "src/main/resources/mail/templates/*.html",
+            "src/test/resources/mail/test-templates/**/*.html",
+            "src/test/resources/mail/test-templates-invalid/**/*.html",
+        )
+        licenseHeader(rootProject.extra["mailTemplateLicenseHeader"] as String, "<!DOCTYPE")
+    }
 }
 
 // ---- 静的解析（SpotBugs + FindSecBugs） ----
@@ -298,8 +308,9 @@ tasks.named("spotbugsTest") {
 
 tasks.register("spotbugsGate") {
     description =
-        "SpotBugs の報告を読み、重大度 High（priority 1）の指摘と、SQL インジェクション系（パターン名が SQL_ で始まる）の指摘が" +
-            "あれば priority によらず失敗させる。それ以外は警告として表示する。"
+        "SpotBugs の報告を読み、重大度 High（priority 1）の指摘と、SQL インジェクション系（パターン名が SQL_ で始まる）・予測できる" +
+            "乱数（PREDICTABLE_RANDOM）・メールのヘッダーへの差し込み（SMTP_HEADER_INJECTION）の指摘があれば priority によらず" +
+            "失敗させる。それ以外は警告として表示する。"
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(tasks.named("spotbugsMain"))
     val report = layout.buildDirectory.file("reports/spotbugs/main.xml")
@@ -312,6 +323,9 @@ tasks.register("spotbugsGate") {
         val bugs = document.getElementsByTagName("BugInstance")
         var high = 0
         var sql = 0
+        var always = 0
+        // priority によらず止めるパターン（team.md の Code Style、Intent 260925-user-management の U1 の NFR2.8・NFR2.9）。
+        val alwaysFatal = setOf("PREDICTABLE_RANDOM", "SMTP_HEADER_INJECTION")
         for (i in 0 until bugs.length) {
             val bug = bugs.item(i) as org.w3c.dom.Element
             val priority = bug.getAttribute("priority")
@@ -324,6 +338,10 @@ tasks.register("spotbugsGate") {
                     sql++
                     logger.error("SpotBugs [SQL, priority $priority] $type $where")
                 }
+                type in alwaysFatal -> {
+                    always++
+                    logger.error("SpotBugs [$type, priority $priority] $where")
+                }
                 priority == "1" -> {
                     high++
                     logger.error("SpotBugs [High] $type $where")
@@ -331,9 +349,10 @@ tasks.register("spotbugsGate") {
                 else -> logger.warn("SpotBugs [warning, priority $priority] $type $where")
             }
         }
-        if (high > 0 || sql > 0) {
+        if (high > 0 || sql > 0 || always > 0) {
             throw GradleException(
-                "SpotBugs で統合を止める指摘があります（重大度 High $high 件、SQL インジェクション系 $sql 件。${xml.path}）。",
+                "SpotBugs で統合を止める指摘があります（重大度 High $high 件、SQL インジェクション系 $sql 件、" +
+                    "PREDICTABLE_RANDOM・SMTP_HEADER_INJECTION $always 件。${xml.path}）。",
             )
         }
     }

@@ -16,4 +16,16 @@
 -->
 <!-- SpotBugs の対象から外すもの。外す理由を必ず書く。 -->
 <FindBugsFilter>
+  <!--
+    PREDICTABLE_RANDOM の誤検知（Intent 260925-user-management の B1 で確かめた。team.md の Code Style、NFR2.9）。
+    LoginAttemptStateRepository.lockDummyForUpdate の ThreadLocalRandom は、存在しないメールアドレスのログインの試みで、
+    8 行のダミーの行がすべてほかの試みに排他を持たれているときに、待つ行を 1 つ選ぶためだけに使う。選んだ番号（-1〜-8）は
+    応答・ログ・DB の値に出ず、秘密・トークン・推測されて困る値の元にならない。予測できても、攻撃者は同じダミーの行を待たせる
+    ことしかできず、その行の待ちの上限（3 秒）と応答の時間の揃え方は変わらない。そのため、この1か所だけを外す。
+  -->
+  <Match>
+    <Class name="cherry.mastersmith.auth.repository.LoginAttemptStateRepository" />
+    <Method name="lockDummyForUpdate" />
+    <Bug pattern="PREDICTABLE_RANDOM" />
+  </Match>
 </FindBugsFilter>

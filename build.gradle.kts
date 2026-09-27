@@ -35,6 +35,19 @@ val licenseHeaderBlock: String =
 // backend のビルドからも同じヘッダーを使う。
 extra["licenseHeaderBlock"] = licenseHeaderBlock
 
+/**
+ * ライセンスヘッダーのひな形を、メールのテンプレート（Mustache）のコメント `{{! ... }}` の形にしたもの（U1、BR2.5）。
+ * HTML のコメントは送るメールに含まれ受け手に届くため使わない。Mustache のコメントは描いた本文に出ない。
+ */
+val mailTemplateLicenseHeader: String =
+    file("config/license-header.txt")
+        .readLines()
+        .joinToString(separator = "\n", prefix = "{{!\n", postfix = "\n}}") { line ->
+            if (line.isEmpty()) "" else "  $line"
+        }
+
+extra["mailTemplateLicenseHeader"] = mailTemplateLicenseHeader
+
 // verify で backend のタスクの順番を決めるため、backend を先に評価する。
 evaluationDependsOn(":backend")
 
@@ -120,6 +133,26 @@ val vendorUnchanged =
             val changes = output.toString(Charsets.UTF_8).trim()
             if (changes.isNotEmpty()) {
                 throw GradleException("vendor/make-you-chic-ui の追跡されるファイルが変わっています:\n$changes")
+            }
+        }
+    }
+
+val mustacheVendorDir = layout.projectDirectory.dir("vendor/java-mustache-processor")
+
+val mustacheVendorUnchanged =
+    tasks.register<Exec>("mustacheVendorUnchanged") {
+        description =
+            "java-mustache-processor（サブモジュール）の追跡されるファイルが変わっていないことを確かめる（project.md の Forbidden。" +
+                "Intent 260925-user-management の U1 の計画の P3）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(checkToolchain)
+        val output = ByteArrayOutputStream()
+        commandLine("git", "-C", mustacheVendorDir.asFile.path, "status", "--porcelain")
+        standardOutput = output
+        doLast {
+            val changes = output.toString(Charsets.UTF_8).trim()
+            if (changes.isNotEmpty()) {
+                throw GradleException("vendor/java-mustache-processor の追跡されるファイルが変わっています:\n$changes")
             }
         }
     }
@@ -312,8 +345,8 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
     listOf(
         Triple(
             "verifyPrepare",
-            "0 準備（道具の確認、make-you-chic-ui のビルド、依存関係の取得）",
-            listOf(checkToolchain, vendorInstall, vendorBuild, vendorUnchanged, frontendInstall),
+            "0 準備（道具の確認、make-you-chic-ui のビルド、サブモジュールを変えていないことの確認、依存関係の取得）",
+            listOf(checkToolchain, vendorInstall, vendorBuild, vendorUnchanged, mustacheVendorUnchanged, frontendInstall),
         ),
         Triple(
             "verifyFormat",
@@ -323,7 +356,8 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         Triple("verifyLint", "2 リンタ（oxlint・ESLint・Stylelint）", listOf(frontendLint, frontendLintCss)),
         Triple(
             "verifyLicense",
-            "3 ライセンスヘッダー（画面は check-license-header.mjs。Java と Gradle の Kotlin DSL は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）",
+            "3 ライセンスヘッダー（画面は check-license-header.mjs。Java と Gradle の Kotlin DSL とバックエンドのメールのテンプレート" +
+                "（Mustache のコメントの形）は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）",
             listOf(frontendLicenseCheck),
         ),
         Triple(
