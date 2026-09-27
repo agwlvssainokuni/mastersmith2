@@ -19,6 +19,8 @@
 // - 事前に ./gradlew :backend:bootWar で backend/build/libs/mastersmith.war を作っておく。
 // - WAR は一時ディレクトリの内部DB（H2 のファイル）で、使っていない番号（既定 18081）で起動する。
 // - ブラウザは Chromium だけを使う（npx playwright install chromium）。
+// - メールは手元の受け手 Mailpit（docker compose --profile mail up -d mailpit）へ送る。./gradlew e2eTest は始める前に Mailpit に
+//   届くかを確かめ、届かなければ起動の手順を示して失敗する（Intent 260925-user-management の U1、基盤の設計の Q1 A）。
 import { randomBytes } from 'node:crypto'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -64,6 +66,10 @@ export default defineConfig({
       MASTERSMITH_AUTH_SIGNING_KEY: signingKey,
       MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL: adminEmail,
       MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD: adminPassword,
+      // メールの送り先は手元の受け手 Mailpit だけ（暗号化なし・資格情報なし。実在の宛先・外部の SMTP へは送らない）。
+      SPRING_MAIL_HOST: 'localhost',
+      SPRING_MAIL_PORT: '1025',
+      MASTERSMITH_MAIL_FROM: 'e2e-noreply@example.com',
     },
     url: `http://localhost:${port}/actuator/health`,
     timeout: 120_000,

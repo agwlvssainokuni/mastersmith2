@@ -13,7 +13,10 @@
 # limitations under the License.
 
 # 依存関係の更新の知らせ（Dependabot）。vendor/make-you-chic-ui の更新は make-you-chic-ui のリポジトリ側で行い、
-# サブモジュールの固定先の更新は承認を得た専用のコミットで行う（ここでは対象にしない）。
+# サブモジュール（vendor/make-you-chic-ui・vendor/java-mustache-processor）の固定先の更新は承認を得た専用のコミットで行う
+# （ここでは対象にしない）。
+# 知らせのプルリクエストは GitHub の画面でマージしない。手元で版と lockfile をまとめて更新し、./gradlew verify を通してから develop に
+# 統合し、プルリクエストは閉じる（team.md の Way of Working）。
 version: 2
 updates:
   - package-ecosystem: gradle
@@ -31,6 +34,12 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  # compose.yaml のイメージ（手元でメールを見る受け手 Mailpit、手元の監視、見本の対象DB など。Intent 260925-user-management の U1）。
+  # 見本の対象DB のイメージを上げるときは、結合テストのイメージの定数（TargetDbImages）と一緒に上げる。
+  - package-ecosystem: docker-compose
     directory: /
     schedule:
       interval: weekly

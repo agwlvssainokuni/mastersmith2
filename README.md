@@ -33,7 +33,9 @@ git submodule update --init
 pre-commit install
 ```
 
-`vendor/make-you-chic-ui` の中身はこのリポジトリから変更しません。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
+サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
+
+どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
 ## 1コマンドの検査（統合の前の関門）
 
@@ -45,16 +47,18 @@ pre-commit install
 
 | 順 | 段（タスク） | 内容 |
 |---|---|---|
-| 0 | 準備（`verifyPrepare`） | 道具の確認、make-you-chic-ui の `npm ci`・ビルドと、サブモジュールの追跡されるファイルが変わっていないことの確認、画面の `npm ci` |
-| 1 | フォーマット（`verifyFormat`） | Spotless（palantir-java-format、ライセンスヘッダーを含む）、Prettier |
+| 0 | 準備（`verifyPrepare`） | 道具の確認、make-you-chic-ui の `npm ci`・ビルドと、2つのサブモジュール（make-you-chic-ui・java-mustache-processor）の追跡されるファイルが変わっていないことの確認、画面の `npm ci` |
+| 1 | フォーマット（`verifyFormat`） | Spotless（palantir-java-format、ライセンスヘッダーを含む。バックエンドのメールのテンプレートの Mustache のコメント `{{! ... }}` の形のライセンスヘッダーも確かめる）、Prettier |
 | 2 | リンタ（`verifyLint`） | oxlint、ESLint、Stylelint |
-| 3 | ライセンスヘッダー（`verifyLicense`） | 画面のファイルのヘッダー（Java・Gradle の Kotlin DSL は 1 の段の Spotless が確かめる） |
+| 3 | ライセンスヘッダー（`verifyLicense`） | 画面のファイルのヘッダー（Java・Gradle の Kotlin DSL・メールのテンプレートは 1 の段の Spotless が確かめる） |
 | 4 | ビルド（`verifyBuild`） | Java のコンパイル、`tsc --noEmit`、Vite のビルド |
 | 5 | 単体テスト（`verifyUnitTest`） | JUnit（`*Test`）、Vitest |
-| 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト、対象DB（MySQL・MariaDB・PostgreSQL）のコンテナを使うテスト（`*IT`） |
+| 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト、対象DB（MySQL・MariaDB・PostgreSQL）のコンテナを使うテスト、JVM の中で起動するテスト用の SMTP の受け手（SubEtha SMTP）でメールを実際に受けるテスト（`*IT`） |
 | 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗。バックエンドは全体の合計に加えて、新しく作るパッケージ（`cherry.mastersmith.targetdb` 以後）ごとにも同じ下限を当てる（既存のパッケージは全体の合計で判定する。`backend/build.gradle.kts` の `packagesJudgedByTotal`） |
-| 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High と、SQL インジェクション系（パターン名が `SQL_` で始まる）の指摘は priority によらず失敗）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
+| 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High と、SQL インジェクション系（パターン名が `SQL_` で始まる）・予測できる乱数（`PREDICTABLE_RANDOM`）・メールのヘッダーへの差し込み（`SMTP_HEADER_INJECTION`）の指摘は priority によらず失敗。誤検知は `backend/config/spotbugs-exclude.xml` に理由を書いて外す）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
 | 9 | 成果物と量の確認（`verifyArtifact`） | 画面を同梱した実行可能 WAR（`backend/build/libs/mastersmith.war`）、初回の読み込みの JavaScript の量（500KB を超えたら警告だけ） |
+
+メールのテスト（U1）はコンテナを使いません。テスト用の SMTP の受け手を JVM の中で起動し、TLS の証明書はテストの実行のたびに JDK の `keytool` で一時のディレクトリに作ります（リポジトリに置かない）。そのため、コンテナの実行環境が無くても飛ばされません（飛ばされうるのは対象DB のテストだけです）。
 
 各段だけを実行することもできます（例: `./gradlew verifyFormat`）。報告は `backend/build/reports/`（テスト・JaCoCo・SpotBugs）、`frontend/coverage/`、`build/reports/osv-scanner/osv.json` に出ます。
 
@@ -79,8 +83,11 @@ pre-commit install
 
 ```bash
 cd frontend && npx playwright install chromium && cd ..   # 初回と Playwright の更新のとき
+docker compose --profile mail up -d mailpit                # メールの受け手（Mailpit）を起動しておく
 ./gradlew e2eTest
 ```
+
+E2E の WAR はメールを手元の受け手 Mailpit（`127.0.0.1:1025`）へ送ります（「メール（U1）」）。`./gradlew e2eTest` は始める前に Mailpit の API（`http://127.0.0.1:8025/api/v1/info`）に届くかを確かめ、届かなければ起動の手順を示して失敗します（Mailpit の起動・停止はしません）。
 
 WAR をビルドし、一時ディレクトリの内部DBで起動して、`frontend/e2e/` のすべての確認を CSP 違反やスクリプトのエラーなしに通ることを確かめます（番号は 18081。`E2E_PORT` で変えられます）。1つの WAR と内部DBを共有するため、ファイル名の番号の順に1本ずつ実行します。
 
@@ -301,6 +308,14 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `5` | 対象DB の接続の数の上限（内部DB のプールとは別） |
 | `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上） |
+| `SPRING_MAIL_HOST` | なし | メールの SMTP の接続先（「メール（U1）」）。無ければメールを送らない。手元では `mailpit` |
+| `SPRING_MAIL_PORT` | 方式の標準 | SMTP の番号（1〜65535）。STARTTLS では 587 を書く。数でない値は起動が止まる |
+| `SPRING_MAIL_PROTOCOL` | `smtp` | `smtps` にすると接続の始めから暗号化する（SMTPS） |
+| `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE`・`SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED` | なし | 両方を `true` にすると STARTTLS（必須）。片方だけでは暗号化なしの扱い |
+| `SPRING_MAIL_USERNAME`・`SPRING_MAIL_PASSWORD` | なし | SMTP の資格情報（パスワードは秘密情報）。暗号化なしの設定と一緒に使うと送らない |
+| `SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT`・`..._TIMEOUT`・`..._WRITETIMEOUT` | `3000` | 接続・応答の待ち・書き込みの時間切れ（ミリ秒、1 以上の整数）。SMTPS では `MAIL_SMTPS_` の名前 |
+| `MASTERSMITH_MAIL_FROM` | なし | 差出人のメールアドレス（小文字・前後に空白の無い形）。無ければメールを送らない |
+| `MASTERSMITH_MAIL_FROM_NAME` | `MasterSmith` | 差出人の表示名 |
 | `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` | 空 | 手元で試す対象DB（compose の profile `targetdb-*`）の管理者のパスワード（秘密情報。`.env` ではなく `.env.targetdb` に入れる。アプリには渡らない） |
 | `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` | 空 | 手元で試す対象DB の読み取りだけのアカウント `mastersmith_reader` のパスワード（秘密情報。`.env.targetdb` に入れる） |
 | `MASTERSMITH_AUTH_SIGNING_KEY` | 空（必須） | アクセストークンの署名鍵（Base64、復元して 32 バイト以上。秘密情報。無い・短いと起動しない） |
@@ -320,6 +335,52 @@ docker compose up -d --wait                              # app が healthy に�
 - 認証（U2）の署名鍵は必須です。`openssl rand -base64 32` で作った値を `.env` の `MASTERSMITH_AUTH_SIGNING_KEY` に入れます。値が無い・短いとアプリは起動しません。
 - 署名鍵を替えるとき（鍵の交換）は、`.env` の値を替えてコンテナを作り直します。発行済みのアクセストークンは 401 になりますが、画面はトークンの更新で取り直すため、ログインし直しは要りません。
 - 開発と E2E は `http://localhost` で行います。リフレッシュトークンの Cookie は `Secure` のため、localhost 以外のホスト名や IP への `http` ではログインが働きません。
+
+## メール（U1）
+
+アプリは、テンプレートを描いた HTML のメールを SMTP で1回だけ送ります（招待のメールは後の単位 U3 が使う）。送信の部品は Spring Boot のメールの自動設定で作り、設定は環境変数（`.env`）だけから受け取ります（「環境変数」の表の `SPRING_MAIL_*`・`MASTERSMITH_MAIL_*`）。配備先が決まるまで、実在の宛先・外部の SMTP へは送りません。手元でメールを見るときは、下の Mailpit へ送ります。
+
+- 接続先（`SPRING_MAIL_HOST`）と差出人（`MASTERSMITH_MAIL_FROM`）の両方がそろい、設定に不正が無いときだけ送ります。何も設定しなければ送らず、警告も出しません（起動は続きます）。
+- 設定の一部が欠けている・不正なとき（接続先が空白だけ、差出人の欠け・形の誤り・改行、表示名の改行、資格情報の片方だけ、範囲の外のポート、知らない方式、時間切れが 1 以上の整数でない）は、問題のある項目の名前だけ（例: `spring.mail.username`）を WARN で1件出し、送りません（値はログに出しません）。直したら再起動します。数でないポートだけは、設定の結び付けで起動が止まります。
+- 起動のときに、設定の状態（`NOT_CONFIGURED`・`INVALID`・`CONFIGURED`）と暗号化の方式、準備したテンプレートの件数を INFO で1行ずつ出します（接続先・差出人・資格情報の値は出しません）。起動のときに SMTP へは接続せず、SMTP の状態はヘルスチェックに含めません。
+- 送信は1回だけで、自動でやり直しません。送信ごとに、テンプレートの識別・言語・失敗の種類（`CONNECTION_FAILED`・`TIMEOUT`・`REJECTED` など）・例外の型の名前だけをログに1件出します。宛先・差し込んだ値・件名・本文・SMTP の応答はログに出しません。メールの部品（`org.eclipse.angus`・`jakarta.mail`）のログは OFF です。原因を調べるときは失敗の種類と例外の型の名前で絞り、受け手の側のログを見ます。
+
+### 暗号化の方式の書き方
+
+| 方式 | 書き方 | ポート |
+|---|---|---|
+| なし（NONE） | 何も書かない。手元の受け手（Mailpit）向け。資格情報と一緒には使えない（送らない） | 既定 25（Mailpit は 1025） |
+| STARTTLS（必須） | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true` と `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED=true` の両方 | **587 を書く**（書かないと 25 になる） |
+| SMTPS | `SPRING_MAIL_PROTOCOL=smtps`（または `SPRING_MAIL_SSL_ENABLED=true`） | 既定 465 |
+
+- **`starttls.enable` だけの設定（`required` を付けない）に注意**: 受け手が STARTTLS を受け付けないと、メールが暗号化されずに平文で届き、本文の招待の URL（トークン）が守られません。アプリはこの組を暗号化なし（NONE）と扱い、資格情報があれば送りませんが、資格情報の無い設定では平文で送ります。配備先が決まったら、STARTTLS（必須）か SMTPS を使ってください。
+- TLS の相手の名前の確かめ（`checkserveridentity`）と TLS 1.2 以上は `application.yaml` で指定しています。証明書は JVM の既定の信頼できる一覧で確かめます。
+
+### 運用で設定しない値
+
+次の値は、秘密の漏れや暗号化の弱まりにつながるため、環境変数などで設定しないでください（アプリは既定の値を置いていますが、`spring.mail.properties.*` の口から上書きできてしまいます）。
+
+- `SPRING_MAIL_PROPERTIES_MAIL_DEBUG`（`mail.debug`。宛先・本文・資格情報が標準出力に出る）
+- `mail.smtp.ssl.trust`・`mail.smtps.ssl.trust`（証明書を無条件に信じる）
+- `mail.smtp.ssl.checkserveridentity`・`mail.smtps.ssl.checkserveridentity` の `false`（相手の名前を確かめない）
+- `mail.smtp.ssl.protocols`・`mail.smtps.ssl.protocols` に TLS 1.2 より古い版
+- STARTTLS の `mail.smtp.starttls.required` の `false`
+- `SPRING_MAIL_TEST_CONNECTION=true`（起動のときに SMTP へ接続し、つながらないと起動が止まる）
+- `MANAGEMENT_HEALTH_MAIL_ENABLED=true`（SMTP の状態がヘルスチェックを左右する）
+- メールの部品のロガーの水準（`LOGGING_LEVEL_ORG_ECLIPSE_ANGUS`・`LOGGING_LEVEL_JAKARTA_MAIL` を OFF から上げない）
+
+### 手元でメールを見る（Mailpit、compose の profile `mail`）
+
+```bash
+docker compose --profile mail up -d mailpit    # 起動（画面は http://127.0.0.1:8025）
+docker compose stop mailpit                    # 止める
+docker compose rm -f mailpit                   # 消す（受けたメールも消える）
+```
+
+- アプリのコンテナから送るときは、`.env` に `SPRING_MAIL_HOST=mailpit`・`SPRING_MAIL_PORT=1025`・`MASTERSMITH_MAIL_FROM`（暗号化なし・資格情報なし）を書いて、`docker compose up -d` で作り直します。PC の上で動かす WAR（E2E など）からは `localhost:1025` へ送ります。
+- 画面と API（8025）と SMTP（1025）は PC の localhost だけに開きます。Mailpit は受けたメールを外へ中継しません。
+- ボリュームを置かないため、コンテナを消すと受けたメールも消えます。Mailpit が持つメールは既定で最大 500 通で、超えると古いものから消えます（イメージ `axllent/mailpit:v1.31.2` の起動の引数 `--max` の既定の値。有効期間 `--max-age` は既定で無し）。
+- E2E（`./gradlew e2eTest`）の前に起動しておきます（「ビルドした WAR での画面の確認（E2E）」）。
 
 ## 対象DB（利用者の業務データの DB）
 
@@ -659,5 +720,17 @@ DSL の読み込み（U2）で使う次の部品は Apache License 2.0 で、こ
 | SnakeYAML（`org.yaml:snakeyaml`） | Apache License 2.0 |
 | networknt JSON Schema Validator（`com.networknt:json-schema-validator`） | Apache License 2.0 |
 | ITU（`com.ethlo.time:itu`。networknt の依存） | Apache License 2.0 |
+
+メールの描画と送信（Intent 260925-user-management の U1）で使う部品:
+
+| 部品 | ライセンス | 範囲 |
+|---|---|---|
+| Spring Boot のメールの部品（`spring-boot-starter-mail`・`spring-boot-mail`・`spring-context-support`） | Apache License 2.0 | WAR に同梱 |
+| Jakarta Mail API（`jakarta.mail:jakarta.mail-api`）・Angus Mail（`org.eclipse.angus:angus-mail`） | EPL 2.0・GPL2 w/ CPE・EDL 1.0 から選べる。このプロジェクトは **EDL 1.0**（BSD-3-Clause と同じ形の寛容なライセンス）を選ぶ | WAR に同梱（jar の中の `META-INF/LICENSE.md`） |
+| java-mustache-processor（`cherry.mustache:cherry-mustache-core`。サブモジュール `vendor/java-mustache-processor`） | Apache License 2.0 | WAR に同梱 |
+| SubEtha SMTP（`com.github.davidmoten:subethasmtp`）と依存の guava-mini・jsr305 | Apache License 2.0 | テストだけ（配布物に含めない） |
+| Mailpit（イメージ `axllent/mailpit`） | MIT | 手元の確かめだけに compose の profile で起動する別のコンテナ（アプリに組み込まない） |
+
+Jakarta Mail・Angus Mail は、Java で SMTP を送る標準の API とその実装で、Spring Boot のメールの自動設定が前提とし、実用になる代わりが無いため採用しました（部品は変えずにライブラリとして使う。既存の `jakarta.activation-api`・`angus-activation` も同じ Eclipse の部品）。
 
 テストだけで使う Testcontainers（MIT）は配布物に含めません。

@@ -107,6 +107,28 @@ services:
         max-size: 10m
         max-file: "3"
 
+  # 手元でメールを見る受け手（Intent 260925-user-management の U1、NFR11.1）。見たいときだけ profile mail で起動する。
+  #   起動: docker compose --profile mail up -d mailpit ／ 止める: docker compose stop mailpit ／ 消す: docker compose rm -f mailpit
+  # メールを受けて画面で見せるだけで、外へ中継しない（配備先が決まるまで実在の宛先・外部の SMTP へ送らない決まり）。
+  # アプリのコンテナからは .env の SPRING_MAIL_HOST=mailpit・SPRING_MAIL_PORT=1025（暗号化なし・資格情報なし）で送る。
+  # 画面と API（8025）と SMTP（1025）は開発者の PC の localhost にだけ結び付ける。SMTP も開くのは、PC の上で動かす E2E の WAR
+  # （./gradlew e2eTest）から送るため（基盤の設計の Q1 A）。認証の無い画面をほかの端末から見せない。
+  # ボリュームは置かない（コンテナを消すと受けたメールも消える。個人に関する値を残さない）。版はダイジェストで固定する。
+  mailpit:
+    image: axllent/mailpit:v1.31.2@sha256:74d609a42ec279aa63c6b4622a6fa9b5408d1ad5b1d76a1c4be40a265ce0863d
+    profiles: [mail]
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+    # アプリ（既定 2g）・手元の監視（1536m）と同時に colima の VM（6GiB）で動かすための上限。
+    mem_limit: 256m
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
   # 手元で試す対象DB（U1）。画面からスキーマの読み込みを試すときや、Build and Test で時間を測るときに、1つずつ profile で起動する。
   #   起動: docker compose --profile targetdb-postgres up -d targetdb-postgres （mysql・mariadb も同じ形）
   # ポートは PC に開けない。アプリのコンテナから compose の中の名前（例 targetdb-postgres:5432）で接続する。

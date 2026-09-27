@@ -412,12 +412,40 @@ tasks.register("verify") {
     dependsOn(stageTasks)
 }
 
+/** 手元でメールを見る受け手（Mailpit）の API の URL。E2E の前提の確かめに使う（Intent 260925-user-management の U1）。 */
+val mailpitInfoUrl = "http://127.0.0.1:8025/api/v1/info"
+
 tasks.register<Exec>("e2eTest") {
     description =
         "ビルドした WAR を起動し、Playwright で画面を確かめる（./gradlew verify と CI には入れない。計画の P2 の決定）。" +
-            "事前に npx playwright install chromium でブラウザを入れておく。"
+            "事前に npx playwright install chromium でブラウザを入れ、docker compose --profile mail up -d mailpit で" +
+            "メールの受け手（Mailpit）を起動しておく。"
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(":backend:bootWar")
+    doFirst {
+        // E2E はメールを手元の受け手（Mailpit）へ送る。届かなければ起動の手順を示して失敗させる（黙って飛ばさない。
+        // 基盤の設計の Q1 A）。e2eTest は Mailpit を起動・停止しない。
+        val reachable =
+            try {
+                val connection = java.net.URI(mailpitInfoUrl).toURL().openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 2000
+                connection.readTimeout = 2000
+                try {
+                    connection.responseCode == 200
+                } finally {
+                    connection.disconnect()
+                }
+            } catch (e: java.io.IOException) {
+                logger.info("Mailpit に届きません: ${e.javaClass.name}")
+                false
+            }
+        if (!reachable) {
+            throw GradleException(
+                "メールの受け手（Mailpit、$mailpitInfoUrl）に届きません。E2E の前に " +
+                    "docker compose --profile mail up -d mailpit で起動してください（README の「メール（U1）」）。",
+            )
+        }
+    }
     workingDir = frontendDir.asFile
     commandLine("npx", "playwright", "test", "e2e")
 }
