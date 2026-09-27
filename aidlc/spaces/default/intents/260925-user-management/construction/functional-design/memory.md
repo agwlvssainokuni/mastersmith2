@@ -109,6 +109,42 @@
 
 - 2026-09-27T01:02:05Z — 今のパスワードには規則（長さ・バイト数）を当てず、空だけを確かめることにした; 今のパスワードは規則ができる前のものでもよく、照合はサーバー（U2 の BR4.2）が行うため。Q2 A の「サーバーと同じ決まり」は U2 の BR4.1（currentPassword は有ること）と読んだ。
 <!-- aidlc-wave-memory:u7-preferences-ui:02a824e5d549b13cb9dfb3a600b08c1adfb6f50c4b8bf3e85ee2e9526890242e -->
+
+- 2026-09-27T00:00:00Z — 承認の場の Request Changes の R-02 で、GET 以外のメソッドの応答を既存の扱い（401・405）に任せると明記した; config/SecurityConfig と access/web/AdminApiDefaultAccess で /api/** がログイン必須、auth/web/TokenAuthenticationEntryPoint が 401 / AUTHENTICATION_REQUIRED、common/error/web/GlobalExceptionHandler が 405 / METHOD_NOT_ALLOWED と Allow を返すことをコードで確かめた。U8 は新しい応答・code を作らず、W3.3・8節・BR3.1・BR3.2 に書き、functional-spec.md の9節に直しの一覧を置いた。
+<!-- aidlc-wave-memory:u8-instance-appearance:59161d514afc62eb884047031ebbae6eb05192e2f53ed9add46a0a3e10ded549 -->
+
+- 2026-09-27T02:02:19Z — BR3.3 で空の文字列に加え空白だけの値も拒否すると決めた（R-01）; Q4 の動機は中身の無いリンクのメールを送信済みにしないことで、空白だけの registrationUrl も受け手から見て空と同じため。空白の判定は String.strip と同じ Character.isWhitespace とし、値そのものは削らずにそのまま描く。
+<!-- aidlc-wave-memory:u1-mail:a1eb9370c1c54fde9a826738adc72f86bb9d0b5c1a153ef600223f7dcc638cc1 -->
+
+- 2026-09-27T02:02:19Z — validityHours は U1 では他の差し込みと同じ文字列として扱い、正の整数かの確かめは U3 に置いた（U3 の R-02 に伴う変更）; U1 の一覧は名前の集合だけを持ち値の型を持たないため。U1 の守りは空・空白・改行の拒否までになる。
+<!-- aidlc-wave-memory:u1-mail:37010544ac234ce80d3e42bdbb17fdb976796fbb6ceff5fbc58fe390a5a44322 -->
+
+- 2026-09-27T02:02:19Z — AC3.1.4 のエスケープの確かめを、置き場のすべてのテンプレートの差し込む値すべて（registrationUrl・validityHours）と、テスト用のテンプレートでの仕組みの確かめの2つにした（R-03）; 招待のテンプレートは利用者の入れた値を差し込まないため。後のテンプレートが利用者の値を差し込めば (1) で自動で対象になる。
+<!-- aidlc-wave-memory:u1-mail:298316b19eaaf1cd69a9c87e0d3cfd169551c308e734029d4b5d3fff30a3ec4b -->
+
+- 2026-09-27T00:00:00Z — Request Changes R-02 の分け方に合わせて、依頼に名前の無い AC4.1.8・AC4.1.10 も Deferred にした; どちらも画面の表示（ユーザーメニューの名前、プリファレンスの画面の初期値）で確かめる基準で、u7-preferences-ui の設計が OK で受けているため。U2 はサーバーの部分（BR3.3・BR6.1・BR9.1・BR2.2）を受け持ち、OK から外れた BR は traceability.json の reverse に理由を書いた。
+<!-- aidlc-wave-memory:u2-user-preferences:ee4b04091e3ebe6b74500b9f810ba716c50f07bf33a4889055a1b9044649693e -->
+
+- 2026-09-27T00:00:00Z — Request Changes R-01 で、NFR4 の 403 は /api/me/ の3本には当てはまらないと読み、確かめるのは 401 と 200（パスワードの変更は 204）とした; 管理者の権限を要しない API で、CR4 も2つにしているため。要件の文書は書き換えず functional-spec.md 7節の D1 に差を書いた。
+<!-- aidlc-wave-memory:u2-user-preferences:f05d92f93bef1d414fe4bb75119bf8d364272b50e0444aa628b6f37c1aed3a00 -->
+
+- 2026-09-27T02:16:21Z — 承認の場の Request Changes で、N/A 30 件をすべて Deferred にした; 依頼者の決定（ほかの単位で確かめるものは Deferred、この単位に全く関わらないものだけ N/A）に沿って、各単位の traceability.json を読んで確かめたところ、30 件はどれも U2・U3・U5・U6・U7 のどれかが OK で持っていた。そのため N/A は 0 件になり、target には確かめる単位の名前と理由を書いた。
+<!-- aidlc-wave-memory:u4-display-foundation:5d8ddd43580514631246e89aa20f6017ddabf387c542efe78c40c10bf4b936e9 -->
+
+- 2026-09-27T02:16:21Z — make-you-chic-ui の更新（edb1f94 → 735ef04）で U4 が触れる API は変わっていないと判断した; 差分は Button・Dropdown・Modal・RadioGroup・Table だけで、ThemeProvider・useTheme・design-system-* の鍵・Alert は変わっていない。LoginLanguageSwitch は interaction-spec.md 6節のフォーカスと Enter・Space の決まりに合わせて Button の組のままとし、新しい RadioGroup（選択肢ごとの lang・legend）には切り替えなかった。
+<!-- aidlc-wave-memory:u4-display-foundation:61787a12819624393580e3ceb2999d11f3a5535a3c7798b2af0f7ecb74ed3186 -->
+
+- 2026-09-27T02:28:06Z — 承認の場の Request Changes で、網羅の記録の N/A 8 件をすべて Deferred にした; 行き先の単位の traceability.json を読み、AC3.2.8・AC3.2.12〜AC3.2.14 は u3-invitation が OK、CR1.1・CR1.5 は u4-display-foundation が OK、CR6.7・CR6.8 は u5-invitation-ui が OK で受けていたため。この単位に全く関わらないものは残らず、N/A は 0 件になった。
+<!-- aidlc-wave-memory:u6-registration-ui:4d2954d74681b71af4c33459498c59882e640e858a215cf6f8be70090e81d5a6 -->
+
+- 2026-09-27T02:28:06Z — 新しい版の Button の loading（aria-disabled でフォーカスを保つ）に合わせ、送信中は文字の入力の欄を disabled ではなく readOnly にし、ラジオは選んでも値を変えない形にした; disabled にするとフォーカスのあった要素が押せなくなった時点でフォーカスが本文へ移り、Button の変更の狙いと食い違うため。フックの側でも submitting の間の送信と選択を無視し、Enter キーでの二重の送信も防ぐ。
+<!-- aidlc-wave-memory:u6-registration-ui:24030a1cd18584c94290089cd3c203fb8af10e5ca2a97a1b89fa2618ead48762 -->
+
+- 2026-09-27T02:27:58Z — R-01 は 6.3 の表を正として W8 を合わせた; 表の「一般の失敗は読み直さない」は上の判断（01:05:00Z）どおりで、W8 の 5 だけが古い書き方だった。W8 の 4 を応答の種類ごとの箇条にして表と1対1にした。
+<!-- aidlc-wave-memory:u5-invitation-ui:467edb3867506f8bd26a180306abe3eab2f890b66e74b8f237dea80fe6946579 -->
+
+- 2026-09-27T02:27:58Z — 網羅の記録の CR6.9 も Deferred（U6・U7）にした; 依頼者の決定の「ほかの単位で確かめるものは Deferred」に当たり、パスワードの項目の決まりは U6・U7 が確かめるため。N/A は残らない。
+<!-- aidlc-wave-memory:u5-invitation-ui:7c61abd457dbc2b91d73d9a00ea80e577362a6244bdf7ae4917f7e42e83c0934 -->
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -145,6 +181,30 @@
 
 - 2026-09-27T01:02:05Z — 骨組み（AppFrame、持ち主は U4）の型・登録の検査・ShellLayout を U7 が変える設計にした; Q1 A の答えどおりだが unit-of-work.md の U7 の境界の外のため、functional-spec.md の 9節と 10節の (a) に明記し、承認の場で確かめる。
 <!-- aidlc-wave-memory:u7-preferences-ui:1afb7e3273133351d6237843581791e6795bd336b292b901c85af31b91c2ad18 -->
+
+- 2026-09-27T02:02:19Z — 変更の記録を functional-spec.md の 10節（上流との差）ではなく新しい 11節「承認の場の Request Changes（2026-09-27）による直し」に表でまとめた; 上流との差と、承認の場での直しを分けて読めるようにするため。U1 の R-02 は依頼者の判断で受け入れ、直していないことも同じ表に記録した。
+<!-- aidlc-wave-memory:u1-mail:590cc2c58a772441b52208a31372592729bd83c3139204e3ee83d7173cacecf0 -->
+
+- 2026-09-27T00:00:00Z — 契約 C8 の PASSWORD_CHANGED に無い target_user_id を記録する設計を保ち、契約は書き換えずに差（D2）を functional-spec.md 7節に書いた; 契約の持ち主はこの単位だが、承認前の段で契約の文書を直さない依頼（R-03）に従った。C8 への反映は6節で後の段へ渡した。
+<!-- aidlc-wave-memory:u2-user-preferences:3a5bdf531d48f869e0d26060ceba119bc5b721771b7c2fe5eaad8d021ad4cfdd -->
+
+- 2026-09-27T02:16:00Z — 承認の場の Request Changes（R-01）で、招待した管理者の表示を findDisplayName の氏名だけにし、メールアドレスへの切り替えを消した; 契約 C2 に利用者 ID からメールアドレスを引く操作が無いため。AC2.1.8 の「氏名が得られないときはメールアドレス」は、U2 で氏名が必須で既存の利用者の初期値がメールアドレスであることから氏名の表示で満たすと記録し、00:02:21Z の解釈（利用者の要約から引く）を置き換えた（rules.md の BR5.3、functional-spec.md の6節）。
+<!-- aidlc-wave-memory:u3-invitation:e76d56a4f7625e5942081479bef9f0be887be38d6d571a043d04d29413bb2a45 -->
+
+- 2026-09-27T02:16:00Z — 承認の場の Request Changes（R-02）で、有効期限の長さの時間の数を差し込み validityHours として招待メールに入れ、契約 C10 と設計の要点 23 の固定の文言「24 時間有効です」との差を functional-spec.md の6節に書いた; 契約の文書は書き換えていない。U1 の BR2.2・BR2.4・BR3.3（直し済み）にそろえ、正の整数かの確かめは U3 の BR1.6（時間の単位の正の整数に限り、不正は起動を止める）が持つ。これで 00:02:21Z の未解決の点（長さを変えると文面と食い違う）は解消した。
+<!-- aidlc-wave-memory:u3-invitation:f140dae5b142802f7494aa1bbb19e18e6c4b794ba75808ba52b0b727494a616f -->
+
+- 2026-09-27T02:28:06Z — 自前の RadioFieldset をやめ、make-you-chic-ui の新しい版（735ef04）の RadioGroup に legend と選択肢ごとの lang を渡す形に置き換えた; make-you-chic-ui 側に取り込まれたため design-system-mapping.md との差は無くなった。RadioGroup は aria-describedby を渡す口を持たず FormField に入れると label と legend が重なるため、言語の案内は legend の2行目に入れ（選ぶと画面の言語が変わることを選ぶ前に知らせる）、テーマと文字の大きさの案内は結び付けずに文字として置いた。固定先の更新はコード生成の B4 で行う。
+<!-- aidlc-wave-memory:u6-registration-ui:35e979a2d82e3cda1da033910760781e552a76a8e60c9fdb0949e3ae8fb79c4f -->
+
+- 2026-09-27T02:28:06Z — U6 R-01 を受け、完了の成功を Toast ではなくログインの画面の Alert（U4 の W9）で知らせる差を functional-spec.md の 10節と traceability.json の CR6.4 に記録した; 完了の直後に置き換えで画面を移るため、この画面の Toast は移動で消えるかログインの画面の案内と二重になる。失敗を role=alert で残す部分は CR6.4 のとおり。
+<!-- aidlc-wave-memory:u6-registration-ui:f13c888e343e2aab53e71f3fb34e4bd8bd1c7f28c553544185835a7f19ed00d0 -->
+
+- 2026-09-27T02:27:58Z — 承認の場の Request Changes で、取り消しの確かめを alertdialog に戻し 9節の (e) を消した; make-you-chic-ui の新しい Modal（735ef04）が role と closeOnBackdropClick を持つため。背景の押下の見張りの複写もやめた。
+<!-- aidlc-wave-memory:u5-invitation-ui:2c4b497bd359dda4002b41dd8958746d8ce25dec09bca02bb47cab5f161d4599 -->
+
+- 2026-09-27T02:27:58Z — 新しい Table に caption が無いため、表の名前は aria-label、フォーカスの行き先は見える見出し h2 に置き換えた; Table は行の class・包む要素の名前とフォーカスの口も持たないため、目立たせた行は :has() の CSS、横に動かす領域への到達は包む要素の中のボタンで満たす形にした（9節の j）。自前の tabIndex=0 の領域は、横に動く要素そのものではなくなるため置かない。
+<!-- aidlc-wave-memory:u5-invitation-ui:c0930d2fe2fb8c6dc0c2c70c50d5790160f3f658856c5ee9aefe429a41fe575d -->
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 
@@ -202,6 +262,21 @@
 
 - 2026-09-27T01:02:05Z — 送信の間は主な操作のボタンに加えて入力と「元に戻す」も変えられなくした; 送信中の選択が成功の応答で上書きされて失われるのを防ぐ代わりに、送信の間は選び直せない。
 <!-- aidlc-wave-memory:u7-preferences-ui:d07572f3e7ae732715292494c57cc7ee5ca3582b73a72803b7c2337e0af9b0c5 -->
+
+- 2026-09-27T02:16:00Z — 有効期限の長さを時間の単位（1 時間で割り切れる長さ）に限った; 差し込む値を正の整数の時間の数にするため、90 分などの割り切れない長さは起動を止める。細かい長さを選べなくなる代わりに、本文の時間の数と実際の有効期限が必ず一致する。en の文は「1 hours」になりうるが、既定は 24 で、文の形はコード生成でテンプレートを書くときに整える。
+<!-- aidlc-wave-memory:u3-invitation:67816f2fc168ce0a3b9018554aae4d9142da882f6e0c9847d379777bb44e1ce9 -->
+
+- 2026-09-27T02:16:21Z — 登録の完了の API（/api/registration/verify・/api/registration/complete）を ApiClient の公開の API のパスに足した（U4 R-01）; 既存のセキュリティの決まりは公開のパスでも付いたトークンを検証するため、ログインしたままのタブで開くと契約 C6 に無い 401 が起きうる。前の版で U6 に任せるとしていた未解決の点を、U4 が持つ一覧の問題としてこの単位で閉じた。判定はパスの完全一致のままとし、一覧の名前（AUTH_API_PATHS）の改め方はコード生成で決める。
+<!-- aidlc-wave-memory:u4-display-foundation:99bbdaf19eaa4f1fc95f1c6cfea586fc75637bd3d840c6c089a23d771336737f -->
+
+- 2026-09-27T02:16:21Z — 見た目の設定のハングの影響範囲を W2 の5と 7節に明記した（U4 R-02）; 待ちに上限を置かない Q2 A は変えず、1つの API の障害が全画面の最初の描画を止めうること、依頼者が受け入れたこと、今のセッションの復元と同じ待ち方であることを記録した。
+<!-- aidlc-wave-memory:u4-display-foundation:6deb2934eddf4e00787d8f126fdc104cbb57806e991e61276bdd078c7e72e41f -->
+
+- 2026-09-27T02:16:21Z — 既存の @fontsource/noto-sans-jp（OFL-1.1、5.3.0、推移依存なし）の採用の理由を functional-spec.md 9.3 に後から記録した; 前の Intent の最初の Bolt で足されたが記録が無く、team.md のライセンスの決まりに当たるため。採用そのものは変えていない。
+<!-- aidlc-wave-memory:u4-display-foundation:aee8c2ca8eeca22c83ecfca7068141ceef0416a57c6860cc679844d30770a9fb -->
+
+- 2026-09-27T02:27:58Z — 読み直しの間も Table を描いたまま data を空にし、ページ送りのボタンのフォーカスを保つ形にした; Table を外すと押したボタンが消えてフォーカスが失われるため。代わりに読み込み中もページ送りのボタンが押せ、重なりは D2 の最後の答えだけを使う形で受ける。Table のページ送りは 20 件以下でも出る。
+<!-- aidlc-wave-memory:u5-invitation-ui:790e87314b90d6cbeaba99485063ab6ce3df989a6fea882fc8cd8d93c9ed2112 -->
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
 
@@ -255,3 +330,24 @@
 
 - 2026-09-27T01:02:05Z — 見せ方の最中にトークンの更新の応答が来ると U4 が見せ方を捨て、フォームと画面の見た目が食い違う; 次の選択・元に戻す・保存で解けるためこの単位では追わず、コード生成で実際に起きるかを確かめる（10節の (f)）。
 <!-- aidlc-wave-memory:u7-preferences-ui:8d85e80b24e341b2dbbbd15190aeb8df2129cbb00410ce7dea766eec71302461 -->
+
+- 2026-09-27T02:28:06Z — U7 も RadioGroup に置き換えるため、案内の置き方（legend の中か、結び付けない文字か）を U6 とそろえるかを承認の場で確かめる; U7 の初めの版はテーマと文字の大きさの案内を aria-describedby で結び付ける形で、新しい RadioGroup にはその口が無い。Button の loading の変更が既存の画面のテスト（disabled を確かめるもの）に及ぶかは、固定先を更新する B4 で確かめる。
+<!-- aidlc-wave-memory:u6-registration-ui:999d0ddcfd1d64038556072658aed55f709c1e9a1d00a366e12a5dcd8ca4e2d2 -->
+
+- 2026-09-27T02:29:49Z — 承認の場の Request Changes で、traceability.json の来歴を U2 の直しの後の事実に合わせた; U2 は画面の表示で確かめる AC4.1.1・AC4.1.8・AC4.1.10 を U7 へ Deferred にし、U4 は AC4.1.1・AC4.1.10 を回している。AC4.1.8・AC4.1.10 にも受けた来歴を書き、10節の (e) の一覧も直した（R-01）。
+<!-- aidlc-wave-memory:u7-preferences-ui:12fdf28d6bc6713010d94018aa52a54a1bbd262cf69aa1e643b653301e3dde41 -->
+
+- 2026-09-27T02:29:49Z — U6 の共用の確かめの関数への依存を 10節の (d2) に明記した; 確定済みの unit-of-work-dependency.md（U7 は U2・U4 に依存）には無く書き換えないため。RadioFieldset をやめたので U6 への依存はこの関数だけで、同じ B5 で U6 を先に作る（R-02）。
+<!-- aidlc-wave-memory:u7-preferences-ui:46b55db332f729d98a7dce539fd7b263f98eb919075b19f705e98736eb314dad -->
+
+- 2026-09-27T02:29:49Z — 選択の部品を make-you-chic-ui の新しい版（735ef04）の RadioGroup に置き換え、案内の置き方を U6 にそろえた; RadioGroup は aria-describedby を外から受けないため、言語の案内は legend の中の2行目、テーマと文字の大きさの案内は結び付けない文字にした。interaction-spec.md の 7節との差は 10節の (b) に書き、固定先の更新はコード生成の B4 で行う。
+<!-- aidlc-wave-memory:u7-preferences-ui:abfbcf1d0c8d2942f695ae681cf8e3a3713b80e8ba1f2fbf99b2257c90c5bb07 -->
+
+- 2026-09-27T02:29:49Z — ユーザーメニューの移動を Dropdown の MenuItem の href と onClick（preventDefault して navigate）にした; path を骨組みに足すこと（Q1 A）は残し、ShellLayout が path から href と onClick を作る。サイドバーの項目と同じ作りで、リンクとして読み上げられる。
+<!-- aidlc-wave-memory:u7-preferences-ui:0390f3afbee30f33fe290bbadac2e37318adcadb5715de7d51b1817335ce05ba -->
+
+- 2026-09-27T02:29:49Z — 送信の後にフォーカスを戻す作りをやめ、Button の loading に任せた; 新しい版の Button は aria-disabled でフォーカスを保つため。文字の項目は readOnly、ラジオは disabled にせずフックが選択を受け付けない形（U6 と同じ）にし、項目の誤りのときのフォーカスの移動だけを残した。
+<!-- aidlc-wave-memory:u7-preferences-ui:da51a5c1ab9f35a55d34decce05a7357dacd9260b85b9784a5e03bcc3e353e2c -->
+
+- 2026-09-27T02:29:49Z — 網羅の記録の Deferred 10・N/A 3 を依頼者の決まりに照らし、形を変えずに残した; Deferred はストーリー US4.1・US5.1 の受け入れ基準でほかの単位が確かめるもの、N/A の CR6.5・CR6.7・CR6.8 は U7 の画面に当たる状態・操作・表示が無いものと判断した（U5 の CR6.9・U6 の CR6.7・CR6.8 の N/A と同じ扱い）。target に「この単位に全く関わらない」と理由を書き直した。
+<!-- aidlc-wave-memory:u7-preferences-ui:1ae96309544a6f0c03c231cb0987b474dbc2bd5571801a453db51ccff8dcb33e -->

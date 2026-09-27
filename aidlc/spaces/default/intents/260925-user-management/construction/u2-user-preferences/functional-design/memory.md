@@ -8,7 +8,11 @@
 - 2026-09-25T16:05:00Z — traceability の upstream_ids に US4.1・US5.1 の AC 22 件と、U2 が受け持つ共通の決まり CR1.1・CR3・CR4・CR5 を並べた; US3.2 の AC（AC3.2.9・AC3.2.11 など）は U3 が主の単位のため入れず、作成の決まり BR5.x は reverse に理由を書いた。
 - 2026-09-25T16:05:00Z — 言語の既定（Accept-Language が無い・当たらないときは ja）と、/api/me/ の 401 がアクセスの拒否として監査されないことをコードで確かめて書いた; AcceptLanguageResolver と AdminAuthenticationEntryPoint（管理者のみのパスだけ知らせる）による。
 
+- 2026-09-27T00:00:00Z — Request Changes R-02 の分け方に合わせて、依頼に名前の無い AC4.1.8・AC4.1.10 も Deferred にした; どちらも画面の表示（ユーザーメニューの名前、プリファレンスの画面の初期値）で確かめる基準で、u7-preferences-ui の設計が OK で受けているため。U2 はサーバーの部分（BR3.3・BR6.1・BR9.1・BR2.2）を受け持ち、OK から外れた BR は traceability.json の reverse に理由を書いた。
+- 2026-09-27T00:00:00Z — Request Changes R-01 で、NFR4 の 403 は /api/me/ の3本には当てはまらないと読み、確かめるのは 401 と 200（パスワードの変更は 204）とした; 管理者の権限を要しない API で、CR4 も2つにしているため。要件の文書は書き換えず functional-spec.md 7節の D1 に差を書いた。
+
 ## Deviations
+- 2026-09-27T00:00:00Z — 契約 C8 の PASSWORD_CHANGED に無い target_user_id を記録する設計を保ち、契約は書き換えずに差（D2）を functional-spec.md 7節に書いた; 契約の持ち主はこの単位だが、承認前の段で契約の文書を直さない依頼（R-03）に従った。C8 への反映は6節で後の段へ渡した。
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 - 2026-09-25T16:05:00Z — 確認済みの要点に無い決まり BR3.4（保存は自分の列だけを書き換え、相手の列を古い値で上書きしない）を足した; 既存の User は全列を持つエンティティで、プリファレンスの保存とパスワードの変更が同時に起きると、先に読んだ古いハッシュで新しいハッシュを上書きしうるため。要点 6 の「後勝ち」は同じ4列どうしに限ると読んだ。
 

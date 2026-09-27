@@ -4,7 +4,8 @@ U6 は、招待のリンクから開く、ログインなしの単独の登録�
 
 - 正本: この文書は、画面の流れ（W1〜W13）と画面の状態の移り変わりの正本である。U6 は画面の単位のため、保存するデータ（エンティティ）と `rules.md` を持たない。流れの中で守る決まりは 2節に D1〜D12 として1回だけ書く。部品の階層・props・state・フック・API との受け渡し・U4 の口の使い方は `frontend-components.md` に置く。
 - 出典: 質問と答え `functional-design-questions.md`（設計の要点 1〜20・決まっていること・Q1 A・Q2 B・Q3 A・Q4 B、まとめの確認は Looks correct）、契約 C6・C9（`aidlc/spaces/default/intents/260925-user-management/inception/contract-design/contract-summary.md`）、要件 FR4・FR7・FR10.3・NFR1・NFR3・NFR7・NFR8（`inception/requirements-analysis/requirements.md`）、ストーリー US3.2・E2E-1 と共通の決まり CR1・CR6（`inception/user-stories/stories.md`）、画面 S2（`inception/refined-mockups/` の `mockups.md` 5節・`interaction-spec.md` 5節・`design-system-mapping.md`・`accessibility-checklist.md`）、依存する単位の機能設計（`construction/u3-invitation/functional-design/` の BR3.5・BR7.1〜BR7.5、`construction/u4-display-foundation/functional-design/` の W8・W9・W12・D4・D13 と `frontend-components.md` の 3節、`construction/u2-user-preferences/functional-design/rules.md` の BR1.1〜BR1.4・BR4.1）。
-- 前提にする直し: U4 のレビューの R-01（登録の完了の API を ApiClient の公開の API のパスに足す）、U3 の R-01・R-02、U1 の R-01 は、質問の「決まっていること」のとおり直した後の形を前提にする。
+- 前提にする直し: U4 のレビューの R-01（登録の完了の API を ApiClient の公開の API のパスに足す）は、承認の場の Request Changes（2026-09-27）で直し済み（`construction/u4-display-foundation/functional-design/functional-spec.md` の D10）。U3 の R-01・R-02、U1 の R-01 は、質問の「決まっていること」のとおり直した後の形を前提にする。
+- make-you-chic-ui の版: 言語・テーマ・文字の大きさの選択は make-you-chic-ui の新しい版の RadioGroup（選択肢ごとの `lang`、`legend` による `fieldset`・`legend`）を使い、送信中のボタンは新しい版の Button の `loading`（`aria-disabled` でフォーカスを保つ）を使う。サブモジュールの固定先の更新（今の `edb1f94` から `origin/main` の `735ef04` へ）は、コード生成の B4 で専用のコミットとして行う（`team.md` の Way of Working、`project.md` の Mandated）。U6 を作る B5 はその後になる。
 - 受け持たないこと: 登録の完了の API とサーバーの検証・監査（U3）、利用者の作成（U2）、表示の設定を当てる仕組み・要求の言語・ログインの画面の案内（U4）。make-you-chic-ui（`vendor/make-you-chic-ui`）は変更しない（`project.md` の Forbidden）。
 
 ## 1. 用語
@@ -43,12 +44,12 @@ U6 は、招待のリンクから開く、ログインなしの単独の登録�
 | 状態 | 表示 | 入る時点 |
 |---|---|---|
 | `loggedIn` | ログイン中である旨の案内と「ログアウトして続ける」「ホームへ戻る」（W3） | 開いた時点でログイン中で、トークンがある |
-| `loggingOut` | 同じ案内で、「ログアウトして続ける」を押せなくし「ログアウトしています」と表示 | 「ログアウトして続ける」を押した |
+| `loggingOut` | 同じ案内で、「ログアウトして続ける」を Button の `loading`（押しても何もしない・フォーカスは保つ）にし「ログアウトしています」と表示 | 「ログアウトして続ける」を押した |
 | `verifying` | 文字つきの読み込み中の表示（`role="status"`、「リンクを確かめています」） | トークンがあり未ログイン。「もう一度読み込む」。ログアウトが済んだ |
 | `loadFailed` | 「読み込めませんでした。…」（`role="alert"`）と「もう一度読み込む」 | 確かめが 200・404 以外の応答か、通信の失敗 |
 | `unavailable` | 「このリンクは使えません。…」（`role="alert"`）と「ログインの画面へ」のリンク（W11） | トークンが無い・空。確かめの 404。完了の 404 |
 | `ready` | 初期値の入ったフォーム。失敗の知らせ（400・送れない）を持つことがある | 確かめの 200。送信が 400・通信の失敗・404 以外の応答で終わった |
-| `submitting` | フォームのまま「登録を完了する」を押せなくし「登録しています」、`aria-busy` | 画面の確かめを通って送信した |
+| `submitting` | フォームのまま「登録を完了する」を Button の `loading`（`aria-disabled`・`aria-busy`、押しても何もしない・フォーカスは保つ）にし「登録しています」 | 画面の確かめを通って送信した |
 | `completed` | 何も描かずにログインの画面へ移る | 完了の 204 |
 
 - 設計の要点 5 の `submitFailed` は、`ready` が失敗の知らせを持つ形で表す（入力できる点が `ready` と同じため）。
@@ -98,14 +99,14 @@ stateDiagram-v2
 
 1. トークンがあり、ログイン状態（`useLoginState()`）がログイン中なら、確かめを送らずに `loggedIn` にする（D4）。ログイン状態は骨組みのゲートが答えを出してから画面を描くため、開いた時点で決まっている。
 2. 表示: `role="alert"` ではなく情報の Alert で「ログインしたままです。登録を続けるには、ログアウトしてください。」を出し、「ログアウトして続ける」（primary）と「ホームへ戻る」（secondary）を置く。
-3. 「ログアウトして続ける」を押したら `loggingOut` にし、既存の AuthUi の `logout`（`frontend/src/features/auth/authSession.ts`）を呼ぶ。`logout` は API が失敗しても画面の側の破棄を必ず行い、例外を外へ出さない。
+3. 「ログアウトして続ける」を押したら `loggingOut` にし（ボタンは make-you-chic-ui の Button の `loading` にし、フォーカスはボタンに残る）、既存の AuthUi の `logout`（`frontend/src/features/auth/authSession.ts`）を呼ぶ。`logout` は API が失敗しても画面の側の破棄を必ず行い、例外を外へ出さない。
 4. ログイン状態が未ログインになったら（`logout` の完了、または更新の失敗などによる未ログインの知らせ）、メモリのトークンで `verifying` に移る。U4 の土台は Guest に移り、この時点では見せ方を置いていないため、画面はブラウザの保存の値で表示される。
 5. 「ホームへ戻る」を押したら `/` へ移る。トークンはメモリだけにあったため捨てられる（フラグメントは W2 で消えている）。登録するときはメールのリンクを開き直す。
 6. この流れのために、登録の完了の機能から AuthUi の `logout` を呼ぶ依存が1本増える（9節）。
 
 ### W4. リンクの確かめ
 
-1. `verifying` に入ったら、`POST /api/registration/verify` を本文 `{ token }` で送る（D3）。ApiClient は、このパスにトークンを付けず、401 での更新と送り直しもしない（U4 のレビューの R-01 の直しの後の公開の API のパス）。`Accept-Language` は U4 の ApiClient がその時点の画面の言語で付ける（U4 の W12）。
+1. `verifying` に入ったら、`POST /api/registration/verify` を本文 `{ token }` で送る（D3）。ApiClient は、このパスにトークンを付けず、401 での更新と送り直しもしない（U4 の D10 の公開の API のパス。U4 のレビューの R-01 の直しで入った）。`Accept-Language` は U4 の ApiClient がその時点の画面の言語で付ける（U4 の W12）。
 2. 応答ごとの動きは 5節の表のとおり。200 は W5、404 `REGISTRATION_LINK_INVALID` は W11、それ以外は `loadFailed`。
 3. `loadFailed` では、`role="alert"` の失敗の Alert で「読み込めませんでした。しばらくしてから、もう一度お試しください。」と「もう一度読み込む」ボタンを出す。押すと同じトークンで `verifying` に戻る（使えるリンクを捨てさせないため、D5）。後の段で公開の API の回数の制限が入ったときの拒否（NFR 要件の持ち主）もこの扱いに入る。
 4. 開発時の StrictMode で確かめが2回送られても害は無い（確かめは招待を消費しない）。古い要求の答えは捨て、最後に送った要求の答えだけで状態を移す。
@@ -121,7 +122,7 @@ stateDiagram-v2
    - 氏名（必須）: 案内「そのままでも登録できます」。
    - パスワード（必須）: 入力の前の案内「12 文字以上」（CR6.2）。`type="password"`、`autocomplete="new-password"`（CR6.9）。
    - パスワード（確かめ）: `type="password"`、`autocomplete="new-password"`。
-   - 表示の設定（見出し）: 言語・テーマ・文字の大きさの3つの `fieldset`・`legend`。言語の選択肢は U4 の `LANGUAGE_NAMES`（「日本語」「English」）で、選択肢の文字に `lang` 属性を付ける（CR6.6）。テーマ・文字の大きさの選択肢は U4 の骨組みの文言 `display.theme.*`・`display.fontSize.*`。言語の下に「選ぶとこの画面の言語が切り替わります」、文字の大きさの下に「テーマと文字の大きさは選ぶと画面に反映されます」を置く（`mockups.md` の S2）。
+   - 表示の設定（見出し）: 言語・テーマ・文字の大きさの3つを、make-you-chic-ui の RadioGroup に `legend` を渡して、それぞれ `fieldset`・`legend` で描く（まとまりの名前は `legend` の `registration.language.legend`・`registration.theme.legend`・`registration.fontSize.legend`、`design-system-mapping.md` の 1節のとおり）。言語の選択肢は U4 の `LANGUAGE_NAMES`（「日本語」「English」）を `label` にし、選択肢ごとの `lang`（`ja`・`en`）を渡して選択肢の文字に `lang` 属性を付ける（CR6.6）。テーマ・文字の大きさの選択肢は U4 の骨組みの文言 `display.theme.*`・`display.fontSize.*`（画面の言語で出すため `lang` は渡さない）。言語の案内「選ぶとこの画面の言語が切り替わります」は、選ぶ前に読まれるように言語の `legend` の中に2行目の小さな文字として入れる（選ぶと画面の言語が変わるため、まとまりに入った時点で知らせる）。「テーマと文字の大きさは選ぶと画面に反映されます」は文字の大きさのまとまりの下に文字として置く（`mockups.md` の S2。RadioGroup は `aria-describedby` を渡す口を持たないため結び付けはしない。テーマ・文字の大きさの反映は見た目だけで、読み上げの位置やフォーカスは変わらない）。
    - 「登録を完了する」（primary、区切りの中の主な操作は1つ）。
 5. フォームは見出し h1 で名前を付け（`aria-labelledby`）、ブラウザの標準の検証を使わない（`noValidate`）。見出しの順は h1 → 表示の設定の見出し（h2）。
 6. フォーカスは移さない（読み込み中の表示がフォームに置き換わるだけ）。Tab は上から順に進み、ラジオは矢印キーで選ぶ（`interaction-spec.md` の 5節）。
@@ -132,7 +133,7 @@ stateDiagram-v2
 2. テーマ `system` を選んで見せている間も、OS の配色の切り替えに追従する（U4 の D4・W11）。
 3. 「言語」を選んだら `setLanguage(lang)` で画面の言語を切り替える。文言・`<html lang>`・以降の要求の `Accept-Language` がそろい（CR1.2・CR1.3）、完了の要求の拒否の説明文（サーバー側）も選んだ言語になる。
 4. 画面に出ている誤り・知らせは文言の鍵で持つため、言語を切り替えると同じ描画で新しい言語の文言になる。
-5. 選んだ後もフォーカスは選んだラジオのまま。画面が変わったことは読み上げない（選んだ値が読まれるため、`interaction-spec.md` の 5節・`accessibility-checklist.md` の 2節）。`prefers-reduced-motion` のときの切り替えの動きの停止は make-you-chic-ui と U4 の扱いのまま。
+5. 選んだ後もフォーカスは選んだラジオのまま。RadioGroup は値を外から渡す形（`value`・`onChange`）で使い、言語を切り替えて文言が変わっても RadioGroup と選択肢の要素を作り直さない（`key` を言語で変えない。選択肢の `value` は変わらないため、同じ入力の要素が残りフォーカスが保たれる）。画面が変わったことは読み上げない（選んだ値が読まれるため、`interaction-spec.md` の 5節・`accessibility-checklist.md` の 2節）。`prefers-reduced-motion` のときの切り替えの動きの停止は make-you-chic-ui と U4 の扱いのまま。
 6. 氏名・パスワードの入力の間は確かめない（送信のときに確かめる、W7）。
 
 ### W7. 画面の側の入力の確かめ
@@ -149,7 +150,9 @@ stateDiagram-v2
 
 ### W8. 送信
 
-1. 画面の確かめを通ったら `submitting` にし、「登録を完了する」を押せなくし、文言を「登録しています」に変え、`aria-busy` を付ける（CR6.3、二重の送信を防ぐ）。入力の項目は変えられないままにする。
+1. 画面の確かめを通ったら `submitting` にし、「登録を完了する」（`type="submit"`）を make-you-chic-ui の Button の `loading` にし、文言を「登録しています」に変える（CR6.3、二重の送信を防ぐ）。新しい版の Button は `loading` の間 `disabled` ではなく `aria-disabled`・`aria-busy` を付け、押しても何もしない（クリックを取り消すため、フォームの送信も起きない）。フォーカスはボタンに残る（押した人のフォーカスが本文の先頭へ飛ばない）。
+   - 入力の項目は変えられないままにする。フォーカスを失わないように、文字の入力の欄は `disabled` ではなく `readOnly` にし、ラジオは押せる見た目のまま選んでも値を変えない（`submitting` の間は選択の操作を無視する）。`disabled` にすると、フォーカスのあった要素が押せなくなった時点でフォーカスが本文へ移るため。
+   - 送信の操作は `submitting` の間は何もしない（Enter キーでの送信を含め、Button の働きとは別にフック側でも二重の送信を防ぐ）。
 2. `POST /api/registration/complete` を契約 C6 の CompleteRequest の本文で送る: `token`（メモリの値）、`displayName`（入れたまま。前後の空白の除去はサーバーが行う）、`password`、`passwordConfirmation`、`language`・`theme`・`fontSize`（選んだ値）（D3）。
 3. `Accept-Language` は、その時点の画面の言語（選んだ言語）で U4 の ApiClient が付ける（CR1.2）。
 4. 応答ごとの動きは 5節の表のとおり。
@@ -160,7 +163,7 @@ stateDiagram-v2
    1. 選んだ3つ（言語・テーマ・文字の大きさ）を `saveBrowserDisplaySettings` で保存する。U4 は見せ方を捨て、ブラウザの保存の値を当てている値にする（AC3.2.18）。
    2. 招待のメールアドレスを `handOffToLogin` で渡す（URL に載せない、画面の中のメモリだけ、AC3.2.17、U4 の D13）。
    3. `/login` へ履歴を置き換えて移る（戻る操作で使い終えたリンクの画面に戻らないため）。
-2. 自動ではログインしない（FR4.7、AC3.2.5）。登録が終わった旨の案内（「登録が完了しました。設定したパスワードでログインしてください。」）と、メールアドレスの欄への値の持ち越しは、ログインの画面（U4 の W9）が行う。この画面は成功の Toast を出さない。
+2. 自動ではログインしない（FR4.7、AC3.2.5）。登録が終わった旨の案内（「登録が完了しました。設定したパスワードでログインしてください。」）と、メールアドレスの欄への値の持ち越しは、ログインの画面（U4 の W9）が行う。この画面は成功の Toast を出さない（共通の決まり CR6.4 の「成功は Toast」との差。10節）。
 3. ログインの画面は、保存した3つ（例: en・dark・lg）で表示される（AC3.2.18）。
 4. 移った後に部品が外れ、D12 の `clearPreview` が呼ばれるが、見せ方は (1) で捨てられているため何も変わらない。
 5. トークン・パスワードの値は部品とともに捨てられ、持ち続けない（設計の要点 17）。
@@ -209,7 +212,7 @@ stateDiagram-v2
 | 完了 | 400・404 で code が違う・無い、401・403・429・5xx・ほかの応答 | `ready` | フォームの上に登録できない知らせ | 残す |
 | 完了 | 通信の失敗 | `ready` | 同上 | 残す |
 
-- 確かめ・完了の API は公開の API のパスのため、401 でトークンの更新と送り直しは起きない（U4 の R-01 の直しの後の形）。401 はこの表の「ほかの応答」として扱う。
+- 確かめ・完了の API は公開の API のパスのため、401 でトークンの更新と送り直しは起きない（U4 の D10）。401 はこの表の「ほかの応答」として扱う。
 - 状態コードと code の組は契約 C6 のとおり。code の判定は ApiClient が作る `ApiError` の `status`・`code` だけで行う（既存の `frontend/src/shared/api-client/apiError.ts`）。
 
 ## 6. 入力の確かめの関数（`frontend/src/shared/validation/`、U7 と共用）
@@ -299,9 +302,26 @@ React・ブラウザの保存・`window` に触れない純粋な関数として
 | 差・前提 | 内容 | 扱い |
 |---|---|---|
 | 使えないリンクの文 | 画面イメージ（`mockups.md` の S2・`interaction-spec.md` の 5節）の「このリンクは使えません。招待した管理者に招待の送り直しを依頼してください。」ではなく、ストーリーの AC3.2.2 の趣旨の「このリンクは使えません。いちばん新しい招待メールのリンクを使うか、招待した管理者に招待の送り直しを依頼してください。」にし、「ログインの画面へ」のリンクを足す（Q4 B） | 承認済みの画面イメージは書き換えず、差をここに記録する（`project.md` の Way of Working） |
-| U4 の R-01 に頼ること | 確かめ・完了の API にトークンを付けず、401 で更新と送り直しをしないことは、U4 の ApiClient の公開の API のパスに `/api/registration/verify`・`/api/registration/complete` を足す直し（U4 の承認の場で行う予定）に頼る。この単位では ApiClient を変えない | U4 の変更の一部として U4 のテストで確かめる。U6 のテストでは、ログインしたままの流れ（W3）でもログアウトの後に確かめるため、トークンが付く経路は通らない |
+| 完了の成功の知らせ（CR6.4 との差） | 共通の決まり CR6.4 は「成功は Toast（`aria-live="polite"`）で知らせ、失敗は `role="alert"` で残す」とする。U6 は、完了の成功で Toast を出さず、移った先のログインの画面の Alert（U4 の W9、「登録が完了しました。設定したパスワードでログインしてください。」）で知らせる。完了の直後にこの画面を離れてログインの画面へ置き換えで移るため、この画面で Toast を出しても移動で消えるか、ログインの画面の案内と二重になる。次にすべきこと（ログイン）の案内をその画面に残すほうが見落とされにくい。失敗を `role="alert"` で残す部分は CR6.4 のとおり（W4・W10・W11） | W9 の2。U4 の W9 の案内の出し方（Alert）は U4 の設計のまま。承認済みのストーリーは書き換えず、差をここに記録する（`project.md` の Way of Working） |
+| U4 の R-01（直し済み） | 確かめ・完了の API にトークンを付けず、401 で更新と送り直しをしないことは、U4 の ApiClient の公開の API のパスに `/api/registration/verify`・`/api/registration/complete` を足す直しに頼る。この直しは U4 の承認の場の Request Changes（2026-09-27）で入った（`construction/u4-display-foundation/functional-design/functional-spec.md` の D10）。この単位では ApiClient を変えない | U4 の変更の一部として U4 のテストで確かめる。U6 のテストでは、ログインしたままの流れ（W3）でもログアウトの後に確かめるため、トークンが付く経路は通らない |
 | CR1 の確かめ方の読み替え | 画面はサーバーの `detail` を出さないため（D10）、ストーリーの CR1 の「エラーの説明文が en」は、画面の文言の言語と要求の `Accept-Language` で確かめ、サーバーの説明文の言語は U3・U4 で確かめる（Q3 の理由のとおり） | 9節 |
 | features/auth への依存 | ログインしたまま開いたときのログアウト（Q1 A）のため、`features/registration` から `features/auth/authSession.ts` の `logout` を呼ぶ依存が1本増える。機能どうしの依存は今まで無かった | 依存の向きは registration → auth の1本だけにする。auth は registration を知らない |
-| 言語・テーマ・文字の大きさの選択の部品 | `design-system-mapping.md` の 1節は RadioGroup を使うとしているが、make-you-chic-ui の RadioGroup・Radio は選択肢の名前を文字列だけで受け、選択肢の文字に `lang` 属性を付けられず（CR6.6）、`fieldset`・`legend` の名前付けも持たない。3つの軸とも、見た目を make-you-chic-ui の Radio に合わせた素の `fieldset`・`legend`・ラジオの組の部品を `frontend/src/shared/ui/` に作る（U7 も使う） | `frontend-components.md` の 3節。make-you-chic-ui は変えない |
+| 言語・テーマ・文字の大きさの選択の部品（差は無くなった） | `design-system-mapping.md` の 1節のとおり make-you-chic-ui の RadioGroup を使う。初めの版では、固定先 `edb1f94` の RadioGroup・Radio が選択肢の名前を文字列だけで受け `lang` を付けられず（CR6.6）、`fieldset`・`legend` の名前付けも持たないため、自前の RadioFieldset を `frontend/src/shared/ui/` に作る設計にしていた。make-you-chic-ui 側に取り込まれた（`origin/main` の `735ef04`。選択肢の `label` が ReactNode、選択肢ごとの `lang`、`legend` を渡すと `fieldset`・`legend` で描く）ため、自前の部品をやめた。残る差は、RadioGroup が `aria-describedby` を渡す口を持たないため、案内を `fieldset` に結び付けない点だけ（言語の案内は `legend` の中に入れ、テーマと文字の大きさの案内は文字として置く、W5 の4） | `frontend-components.md` の 6節。固定先の更新はコード生成の B4。make-you-chic-ui はこのリポジトリから変えない。U7 も同じく RadioGroup を使う |
 | ログインしたままトークンが無いとき | Q1 A の案内は、トークンがあるときだけ出す。トークンが無い・空なら、ログアウトを求めずに `unavailable` にする | W2 の3。確かめるものが無いのにセッションを終わらせないため |
 | フラグメントの消し方 | Q2 B の `history.replaceState` を、React Router の置き換えの移動で行う（履歴の項目を増やさず、ルーターの場所の情報と食い違わない） | W2 の2 |
+
+## 11. 変更の記録
+
+### 承認の場の Request Changes（2026-09-27）による直し
+
+| # | 直したこと | 元の状態 | 直した箇所 |
+|---|---|---|---|
+| 1 | U6 R-01（Minor）: 完了の成功を Toast ではなくログインの画面の Alert（U4 の W9）で知らせる差を、CR6.4 との差として記録した。`traceability.json` の CR6.4 に理由を書いた | W9 の2で「成功の Toast を出さない」と書くだけで、10節の表に差が無く、`traceability.json` の CR6.4 は無条件の OK だった | 10節の「完了の成功の知らせ（CR6.4 との差）」、W9 の2、`traceability.json` の CR6.4 |
+| 2 | 言語・テーマ・文字の大きさの選択を、自前の RadioFieldset から make-you-chic-ui の新しい版の RadioGroup（`legend`・選択肢ごとの `lang`・`label` は ReactNode）に置き換えた。まとまりの名前は `legend`、言語の選択肢に `lang`（CR6.6）、選んだ後のフォーカス（作り直さない）、文言の鍵（U4 の `LANGUAGE_NAMES`・`display.theme.*`・`display.fontSize.*`）を書いた。言語の案内は `legend` の中に入れた | `design-system-mapping.md` と違い、`frontend/src/shared/ui/RadioFieldset` を新しく作り U7 と共用する設計で、10節に差として記録していた | 冒頭の make-you-chic-ui の版、W5 の4、W6 の5、10節の「言語・テーマ・文字の大きさの選択の部品」、`frontend-components.md` の 1節・2節・5節・6節・8節・9節 |
+| 3 | 送信中の「登録を完了する」とログアウト中の「ログアウトして続ける」を、新しい版の Button の `loading`（`aria-disabled`・`aria-busy`、フォーカスを保つ）に合わせた。フォーカスを失わないように、送信中の文字の入力の欄を `readOnly` にし、ラジオは選んでも値を変えない形にした | 「押せなくする」「入力の項目は変えられない」とだけ書き、`disabled` か `aria-disabled` かを決めていなかった | 3節の表、W3 の3、W8 の1、`frontend-components.md` の 4.2節・5節・6節・8節、`traceability.json` の CR6.3 |
+| 4 | make-you-chic-ui のサブモジュールの固定先の更新（`edb1f94` から `735ef04`）を B4 で行う前提を書いた | 固定先の版に触れていなかった | 冒頭の make-you-chic-ui の版、10節、`frontend-components.md` の 9節 |
+| 5 | U4 の R-01 を「直し済み」（U4 の D10）の書き方にした | 「U4 の承認の場で行う予定」と書いていた | 冒頭の前提にする直し、W4 の1、5節の注、10節の「U4 の R-01（直し済み）」、`frontend-components.md` の 3節・9節 |
+| 6 | 網羅の記録を「ほかの単位で確かめる受け入れ基準は Deferred（行き先の単位と理由）、この単位に全く関わらないものだけ N/A」にそろえた。N/A の 8 件（AC3.2.8・AC3.2.12・AC3.2.13・AC3.2.14・CR1.1・CR1.5・CR6.7・CR6.8）は、行き先の単位の `traceability.json` で確かめる行（U3・U4・U5）があったため、すべて Deferred にした | 8 件を N/A にしていた | `traceability.json` |
+
+- 確かめの関数の置き場 `frontend/src/shared/validation/`（U7 と共用）は変えていない。
+- 承認済みの上流（ストーリー・画面イメージ・U4 の設計）は書き換えていない。

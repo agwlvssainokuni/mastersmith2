@@ -10,8 +10,12 @@
 - 2026-09-27T01:01:00Z — Q1 A の案内はトークンがあるときだけ出し、トークンが無い・空ならログアウトを求めずに「リンクが使えない」にした; 確かめるものが無いのにセッションを終わらせないため。答えの「リンクを確かめる前に」を、確かめる対象があるときと読んだ。
 - 2026-09-27T01:01:00Z — 完了の時点の 404 で「リンクが使えない」に移ったときは見せ方（選んだ言語・テーマ・文字の大きさ）をそのまま残し、離れるときに clearPreview で戻すことにした; 移った瞬間に言語が変わると読んでいた人が戸惑うため。
 - 2026-09-27T01:01:00Z — traceability の upstream_ids は US3.2 の AC3.2.1〜AC3.2.18 と、単位の対応表で U6 に結び付く CR1.1〜CR1.5・CR6・CR6.1〜CR6.9 の 33 件にした; U3 と U4 が U6 に Deferred にした AC3.2.1・AC3.2.16・AC3.2.17・AC3.2.18 はすべて OK で受けた。サーバーで確かめる AC は、画面の表示とつながるものを u3-invitation への Deferred、つながらないものを N/A とした。
+- 2026-09-27T02:28:06Z — 承認の場の Request Changes で、網羅の記録の N/A 8 件をすべて Deferred にした; 行き先の単位の traceability.json を読み、AC3.2.8・AC3.2.12〜AC3.2.14 は u3-invitation が OK、CR1.1・CR1.5 は u4-display-foundation が OK、CR6.7・CR6.8 は u5-invitation-ui が OK で受けていたため。この単位に全く関わらないものは残らず、N/A は 0 件になった。
+- 2026-09-27T02:28:06Z — 新しい版の Button の loading（aria-disabled でフォーカスを保つ）に合わせ、送信中は文字の入力の欄を disabled ではなく readOnly にし、ラジオは選んでも値を変えない形にした; disabled にするとフォーカスのあった要素が押せなくなった時点でフォーカスが本文へ移り、Button の変更の狙いと食い違うため。フックの側でも submitting の間の送信と選択を無視し、Enter キーでの二重の送信も防ぐ。
 
 ## Deviations
+- 2026-09-27T02:28:06Z — 自前の RadioFieldset をやめ、make-you-chic-ui の新しい版（735ef04）の RadioGroup に legend と選択肢ごとの lang を渡す形に置き換えた; make-you-chic-ui 側に取り込まれたため design-system-mapping.md との差は無くなった。RadioGroup は aria-describedby を渡す口を持たず FormField に入れると label と legend が重なるため、言語の案内は legend の2行目に入れ（選ぶと画面の言語が変わることを選ぶ前に知らせる）、テーマと文字の大きさの案内は結び付けずに文字として置いた。固定先の更新はコード生成の B4 で行う。
+- 2026-09-27T02:28:06Z — U6 R-01 を受け、完了の成功を Toast ではなくログインの画面の Alert（U4 の W9）で知らせる差を functional-spec.md の 10節と traceability.json の CR6.4 に記録した; 完了の直後に置き換えで画面を移るため、この画面の Toast は移動で消えるかログインの画面の案内と二重になる。失敗を role=alert で残す部分は CR6.4 のとおり。
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 - 2026-09-27T01:01:00Z — `design-system-mapping.md` の RadioGroup を使わず、`frontend/src/shared/ui/` に RadioFieldset を作る設計にした; make-you-chic-ui の RadioGroup・Radio は選択肢の名前を文字列だけで受け、選択肢の文字に `lang` 属性を付けられず（CR6.6）、fieldset・legend の名前付けも持たないため（`vendor/make-you-chic-ui` のコードで確かめた）。make-you-chic-ui は変えず、差を functional-spec.md の 10節に記録した。
 - 2026-09-27T01:01:00Z — 使えないリンクの文を画面イメージ（S2）ではなくストーリーの AC3.2.2 の趣旨にし「ログインの画面へ」のリンクを足した（Q4 B）; 承認済みの画面イメージは書き換えず、functional-spec.md の 10節に差を記録した。
@@ -27,4 +31,5 @@
 - 2026-09-27T00:43:17Z — 既存の VALIDATION_FAILED は誤りの項目の一覧を持たず、契約 C6 も形を決めていない; U3 の BR4.1 の「項目ごと」と応答の形がつながっていないため、画面の扱いを Q3 で確かめる。B を選ぶと U3 の承認済みの設計と共通の変換への追加が要る。
 - 2026-09-27T01:01:00Z — 確かめ・完了の API にトークンを付けないことは U4 の R-01 の直し（U4 の承認の場で行う予定）に頼る; この単位では ApiClient を変えないため、U4 の直しが入らないとログインしたままの経路以外でも期限切れのトークンが付きうる。U6 はログアウトの後に確かめる（W3）ため通常は通らないが、U4 の承認の結果を確かめる。
 - 2026-09-27T01:01:00Z — `frontend/src/shared/ui/` の RadioFieldset を U7 も使う前提にした; U7 の機能設計で同じ部品を使うかを確かめる（プリファレンスの言語の選択肢にも lang 属性が要る）。
+- 2026-09-27T02:28:06Z — U7 も RadioGroup に置き換えるため、案内の置き方（legend の中か、結び付けない文字か）を U6 とそろえるかを承認の場で確かめる; U7 の初めの版はテーマと文字の大きさの案内を aria-describedby で結び付ける形で、新しい RadioGroup にはその口が無い。Button の loading の変更が既存の画面のテスト（disabled を確かめるもの）に及ぶかは、固定先を更新する B4 で確かめる。
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->

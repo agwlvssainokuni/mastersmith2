@@ -63,7 +63,7 @@ entities:
       - { name: dslSource, type: string, required: false, max: 16, constraints: "既存（V6）。DSL の出来事だけ。この単位では使わない" }
       - { name: rejectionKind, type: string, required: false, max: 32, constraints: "既存（V6）。DSL の受け付けなかった投入の理由だけ。今回の出来事の失敗の理由には使わない（BR7.1）" }
       # --- 足す（V7、BR9.2。C8 の columns_added_by_U2）
-      - { name: targetUserId, type: long, required: false, references: "User.userId（参照の制約は置かない。追記だけの記録のため）", constraints: "対象の利用者。PASSWORD_CHANGED では本人。U3 は REGISTRATION_COMPLETED で使う" }
+      - { name: targetUserId, type: long, required: false, references: "User.userId（参照の制約は置かない。追記だけの記録のため）", constraints: "対象の利用者。PASSWORD_CHANGED では本人（契約 C8 の PASSWORD_CHANGED の項目には無く、差を functional-spec.md 7節に記録）。U3 は REGISTRATION_COMPLETED で使う" }
       - { name: targetInvitationId, type: long, required: false, constraints: "対象の招待。U2 は使わず、U3 の招待・登録の出来事が使う" }
     constraints:
       - "追記だけで、作った後に値を変えない・消さない（既存の決まり）"

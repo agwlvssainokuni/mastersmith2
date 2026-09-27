@@ -37,8 +37,8 @@ entities:
         type: timestamp
         required: true
         constraints: >-
-          有効期限（UTC）。作成・送り直しの時点の時計の値 ＋ 有効期限の長さ（★既定 24 時間、BR1.6）。有効は「今 < expiresAt」だけで、
-          時刻ちょうどは無効（BR3.3）
+          有効期限（UTC）。作成・送り直しの時点の時計の値 ＋ 有効期限の長さ（時間の単位の正の整数、★既定 24 時間、BR1.6）。有効は「今 < expiresAt」だけで、
+          時刻ちょうどは無効（BR3.3）。同じ長さの時間の数を招待メールの validityHours に差し込む（BR4.2）
       - name: sendResult
         type: enum
         required: true
@@ -109,7 +109,7 @@ value_types:
       - { name: enabled, type: boolean }
       - { name: unavailableReasons, type: "list of enum [BASE_URL_NOT_CONFIGURED, SMTP_NOT_CONFIGURED]", constraints: "enabled が false のときだけ1つ以上。並びは BASE_URL_NOT_CONFIGURED、SMTP_NOT_CONFIGURED の順" }
   - name: InvitationSummary
-    description: "一覧・招待・送り直しの応答に渡す招待の要約（C5 の Invitation）。invitationId・email・language・invitedBy・invitedAt・expiresAt・sendResult（SENT・FAILED）・expired。トークン・ハッシュ・URL を持たない（BR5.4）"
+    description: "一覧・招待・送り直しの応答に渡す招待の要約（C5 の Invitation）。invitationId・email・language・invitedBy・invitedAt・expiresAt・sendResult（SENT・FAILED）・expired。invitedBy は招待した管理者の氏名だけ（UserAccount の findDisplayName、C2）で、利用者の行が無ければ空の文字列とし、メールアドレスへは切り替えない（BR5.3）。トークン・ハッシュ・URL を持たない（BR5.4）"
   - name: InvitationPage
     description: "一覧の1ページ（C5 の InvitationPage）。items・page・size（20）・total・invitationEnabled・unavailableReasons"
   - name: InvitationView
@@ -128,4 +128,4 @@ value_types:
 | Invitation | 新しい表 | 招待先のメールアドレス（正規化済み）・言語・トークンのハッシュ（一意）・招待した管理者・招待した日時・有効期限・送信の結果（内部は PENDING・SENT・FAILED）・状態（PENDING・COMPLETED・CANCELLED・REPLACED）・終わった日時・作った利用者。期限切れは保存せず時計で決める。同じメールアドレスの PENDING は1件まで |
 | InvitationEvent | 新しい出来事（保存しない） | 招待・送り直し・取り消し・登録の完了・登録の失敗の5種類。AuditLog が確定の後に記録する |
 | AuditEvent | 既存の表（値だけ足す） | 出来事の種類5つと失敗の理由5つ（うち EMAIL_ALREADY_REGISTERED は Q4 A で足す）。列は U2 が足した対象の2列を使う |
-| InvitationToken・InvitationAvailability・InvitationSummary・InvitationPage・InvitationView・RegistrationInput・LinkRejection | 値の型 | トークンの値（保存しない）、招待を使える設定か、応答の形、登録の完了の入力、拒否の理由（監査だけに使う） |
+| InvitationToken・InvitationAvailability・InvitationSummary・InvitationPage・InvitationView・RegistrationInput・LinkRejection | 値の型 | トークンの値（保存しない）、招待を使える設定か、応答の形（招待した管理者は氏名だけ）、登録の完了の入力、拒否の理由（監査だけに使う） |

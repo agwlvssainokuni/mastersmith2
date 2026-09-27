@@ -56,7 +56,10 @@ U8 は、インスタンス全体の見た目の設定（ブランドカラー�
 
 1. 使えるアクセストークンが付いている → 既存の認証の仕組みでトークンが検証された後、W2 の3と同じ応答を返す。
 2. 期限切れ・改ざんなどの使えないトークンが付いている → 既存の認証の仕組みのとおり `401` になる。U8 と `auth` の作りは変えず、これを受け入れる（BR3.3、Q1 A）。画面の側がトークンを付けないため、通常の画面の流れでは起きない。
-3. `GET` 以外のメソッドで `/api/appearance` を呼ぶ → 公開の決まりの対象外で、`/api/` の下の既定の扱い（ログインが必要）になる（BR3.2）。
+3. `GET` 以外のメソッド（`POST`・`PUT`・`PATCH`・`DELETE` など）で `/api/appearance` を呼ぶ → 公開の決まりの対象外で、`/api/` の下の既定の扱い（ログインが必要）になる。U8 はこの場合の応答を新しく作らず、既存の扱いに任せる（BR3.2）。既存のコード（`config/SecurityConfig`・`access/web/AdminApiDefaultAccess`・`auth/web/AuthSecurityContributor`・`common/error/web/GlobalExceptionHandler`）で確かめた実際の扱いは次のとおり。
+   1. トークンが無い、または使えないトークン → 認証の段階で止まり、既存の入口の処理（`TokenAuthenticationEntryPoint`）が `401` / `AUTHENTICATION_REQUIRED` の Problem Details を返す。U8 の API には届かない。
+   2. 使えるアクセストークンが付いている → 認可を通って U8 の API に届くが、U8 は `GET` だけを受け付けるため、Spring が許されないメソッドとして扱い、共通のエラー応答（`GlobalExceptionHandler`）が `405` / `METHOD_NOT_ALLOWED` の Problem Details と、使えるメソッドを示す `Allow` の見出しを返す。
+   3. どちらも既存の共通の仕組みの応答で、U8 の `code` の一覧・例外・監査の出来事は足さない。CSRF の確かめは既存の設定で無効のため、`403` にはならない。
 
 ### 状態の移り変わり
 
@@ -102,5 +105,21 @@ CR2 の画面側の確かめ方（ログインの画面・登録の完了の画�
 
 ## 8. 想定内の失敗とエラー
 
-- 想定内の失敗は無い。設定の不備は起動時に既定へ置き換えるため、API が業務のエラーを返すことは無い。エラーの `code` の一覧は作らない。
-- 想定外の失敗は、既存の共通のエラー応答（Problem Details、内部の例外のメッセージを載せない）に任せる。
+- 想定内の業務の失敗は無い。設定の不備は起動時に既定へ置き換えるため、`GET /api/appearance` が業務のエラーを返すことは無い。U8 のエラーの `code` の一覧（`XxxProblemTypeCatalog`）は作らない。
+- `GET` 以外のメソッドで呼ばれた場合は、U8 の業務の失敗ではなく、既存の共通の仕組みの応答に任せる（W3.3、BR3.2）。未認証・使えないトークンなら `401` / `AUTHENTICATION_REQUIRED`、使えるトークン付きなら `405` / `METHOD_NOT_ALLOWED`（`Allow` の見出しつき）。U8 では新しい応答を作らない。
+- 使えないトークンを付けた `GET` の `401` も既存の扱いのまま受け入れる（W3.2、BR3.3）。
+- 想定外の失敗は、既存の共通のエラー応答（`500` / `INTERNAL_ERROR` の Problem Details、内部の例外のメッセージを載せない）に任せる。
+
+## 9. 変更の記録
+
+### 承認の場の Request Changes（2026-09-27）による直し
+
+| 指摘 | 直した箇所 | 直した内容 |
+|---|---|---|
+| R-02（Minor） | functional-spec.md の W3.3 | `GET` 以外のメソッドの応答を、既存のコードで確かめた実際の扱い（未認証・使えないトークンは `401` / `AUTHENTICATION_REQUIRED`、使えるトークン付きは `405` / `METHOD_NOT_ALLOWED` と `Allow` の見出し）として明記し、U8 では新しい応答を作らないと書いた |
+| R-02（Minor） | functional-spec.md の 8節 | 「想定内の失敗は無い」を業務の失敗に限ると書き分け、`GET` 以外のメソッドと使えないトークンの応答を既存の扱いに任せることを足した |
+| R-02（Minor） | rules.md の BR3.2 | ほかのメソッドの応答（`401`・`405`）を既存の扱いに任せ、U8 で新しい応答を作らないことを logic と violation に足した |
+| R-02（Minor） | rules.md の BR3.1 | violation に、`GET` 以外のメソッドの応答は BR3.2 のとおり既存の扱いに任せることを足した |
+| R-01（Minor） | 直さない | 依頼者が受け入れた。`SecurityRuleContributor` の Javadoc に U8 の順番の値の範囲を足す作業は、コード生成の計画で拾う |
+
+- 決まりの ID・群・traceability.json の対応づけは変えていない（BR3.1・BR3.2 の中身を足しただけ）。

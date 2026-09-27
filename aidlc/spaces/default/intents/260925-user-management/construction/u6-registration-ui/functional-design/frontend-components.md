@@ -14,8 +14,8 @@
 | 3 | `RegistrationUnavailable` | 同上 | `unavailable` の表示（警告の Alert と「ログインの画面へ」のリンク） |
 | 3 | `RegistrationLoggedInNotice` | 同上 | `loggedIn`・`loggingOut` の表示（情報の Alert と2つのボタン） |
 | 3 | `RegistrationForm` | 同上 | `ready`・`submitting` のフォーム |
-| 4 | `RadioFieldset` | `frontend/src/shared/ui/`（新しい） | 言語・テーマ・文字の大きさの `fieldset`・`legend`・ラジオの組（U7 も使う） |
-| 4 | FormField・TextInput・Button・Alert・Card | make-you-chic-ui | 変えない |
+| 4 | RadioGroup（`legend` を渡す形） | make-you-chic-ui（新しい版、B4 で固定先を更新） | 言語・テーマ・文字の大きさの `fieldset`・`legend`・ラジオの組。変えない |
+| 4 | FormField・TextInput・Button・Alert・Card | make-you-chic-ui | 変えない。Button は新しい版の `loading`（`aria-disabled`） |
 
 ```mermaid
 flowchart TD
@@ -26,7 +26,7 @@ flowchart TD
   PAGE --> NOTICE["RegistrationLoggedInNotice（ログイン中の案内）"]
   PAGE --> FORM["RegistrationForm（フォーム）"]
   FORM --> FIELDS["FormField と TextInput（メールアドレス・氏名・パスワード2つ）"]
-  FORM --> RADIO["RadioFieldset（言語・テーマ・文字の大きさ）"]
+  FORM --> RADIO["RadioGroup の legend 付き（言語・テーマ・文字の大きさ）"]
   HOOK -.->|"C6"| API["registrationApi（verify・complete）"]
   HOOK -.->|"C9"| DISPLAY["U4 の表示の設定の口"]
   HOOK -.->|"受け渡し"| HANDOFF["U4 の handOffToLogin"]
@@ -34,7 +34,7 @@ flowchart TD
   FORM -.->|"確かめ"| VALID["shared/validation"]
 ```
 
-<!-- Text fallback: 既存の StandaloneLayout の中に RegistrationPage を置く。RegistrationPage は状態を持つフック useRegistration を使い、状態に応じて RegistrationStatus（確かめ中・読み込めない）、RegistrationUnavailable（使えないリンク）、RegistrationLoggedInNotice（ログイン中の案内）、RegistrationForm（フォーム）のどれか1つを描く。RegistrationForm は make-you-chic-ui の FormField と TextInput でメールアドレス・氏名・パスワード2つを、shared/ui の RadioFieldset で言語・テーマ・文字の大きさを描く。useRegistration は registrationApi で契約 C6 の verify・complete を呼び、U4 の表示の設定の口（C9）と受け渡しの口 handOffToLogin を使う。ログイン中の案内は AuthUi の authSession の logout を呼ぶ。フォームの確かめは shared/validation の関数を使う。 -->
+<!-- Text fallback: 既存の StandaloneLayout の中に RegistrationPage を置く。RegistrationPage は状態を持つフック useRegistration を使い、状態に応じて RegistrationStatus（確かめ中・読み込めない）、RegistrationUnavailable（使えないリンク）、RegistrationLoggedInNotice（ログイン中の案内）、RegistrationForm（フォーム）のどれか1つを描く。RegistrationForm は make-you-chic-ui の FormField と TextInput でメールアドレス・氏名・パスワード2つを、make-you-chic-ui の RadioGroup（legend を渡して fieldset と legend で描く形）で言語・テーマ・文字の大きさを描く。useRegistration は registrationApi で契約 C6 の verify・complete を呼び、U4 の表示の設定の口（C9）と受け渡しの口 handOffToLogin を使う。ログイン中の案内は AuthUi の authSession の logout を呼ぶ。フォームの確かめは shared/validation の関数を使う。 -->
 
 ## 2. 置き場ごとのモジュール
 
@@ -48,11 +48,11 @@ flowchart TD
 | 同上 | `useRegistration.ts` | 状態を持つフック（4節） |
 | 同上 | `RegistrationPage.tsx`・`RegistrationStatus.tsx`・`RegistrationUnavailable.tsx`・`RegistrationLoggedInNotice.tsx`・`RegistrationForm.tsx` と同じ場所の CSS | 画面の部品（5節） |
 | `frontend/src/shared/validation/`（新しい） | 氏名・パスワードの確かめの関数と定数 | `functional-spec.md` の 6節。U7 と共用 |
-| `frontend/src/shared/ui/`（新しい） | `RadioFieldset.tsx` と同じ場所の CSS | 3つの軸のラジオの組（6節）。U7 と共用 |
 
 - エクスポートは名前付きだけ、`enum` を使わず文字列リテラルの union、CSS は部品と同じ場所の素の CSS（`team.md` の Code Style）。各ファイルの先頭に Apache License 2.0 のヘッダー（`/* ... */`、2026、agwlvssainokuni）。
-- `shared/` の2つは `app/` と `features/` を読み込まない（言語の名前などは使う側から props で渡す）。
-- 依存の向き: `features/registration` → `app/display-settings`・`app/login-handoff`・`app/i18n`・`app/login-state`（U4 の口と骨組み）、`shared/api-client`・`shared/validation`・`shared/ui`、`features/auth/authSession`（`logout` だけ、Q1 A）。ほかの機能から `features/registration` への依存は無い。
+- `shared/validation` は `app/` と `features/` を読み込まない。
+- 言語・テーマ・文字の大きさの選択は make-you-chic-ui の RadioGroup を使い（6節）、自前のラジオの部品（初めの版の `frontend/src/shared/ui/RadioFieldset`）は作らない。`frontend/src/shared/ui/` の置き場も作らない。
+- 依存の向き: `features/registration` → `app/display-settings`・`app/login-handoff`・`app/i18n`・`app/login-state`（U4 の口と骨組み）、`shared/api-client`・`shared/validation`、make-you-chic-ui、`features/auth/authSession`（`logout` だけ、Q1 A）。ほかの機能から `features/registration` への依存は無い。
 
 ## 3. API との受け渡し（契約 C6）
 
@@ -61,7 +61,7 @@ flowchart TD
 | `verifyRegistration(token)` | `POST /api/registration/verify`、`Content-Type: application/json`、本文 `{ token }` | `{ email, language }`（`language` は `'ja'` または `'en'`） | `apiRequest` が投げる `ApiError`（応答か通信の失敗）をそのまま投げる |
 | `completeRegistration(request)` | `POST /api/registration/complete`、本文は CompleteRequest（`token`・`displayName`・`password`・`passwordConfirmation`・`language`・`theme`・`fontSize`） | 無し（204） | 同上 |
 
-- パスは `registrationApi.ts` の定数（`REGISTRATION_VERIFY_PATH`・`REGISTRATION_COMPLETE_PATH`）に置く。U4 の R-01 の直しで ApiClient の公開の API のパスに同じ値が入る前提（`functional-spec.md` の 10節）。
+- パスは `registrationApi.ts` の定数（`REGISTRATION_VERIFY_PATH`・`REGISTRATION_COMPLETE_PATH`）に置く。ApiClient の公開の API のパスに同じ値が入っている（U4 の R-01 の直しで入った U4 の D10、`functional-spec.md` の 10節）。
 - トークンは本文だけに入れ、パス・問い合わせ・見出しに入れない（`functional-spec.md` の D3）。
 - `Accept-Language` は付けない（U4 の ApiClient が画面の言語で付ける。呼び出し側が指定すると上書きされないため、指定しない）。
 - 確かめの応答の `language` が `ja`・`en` でない、`email` が文字列でないときは、形の誤りとして `loadFailed` と同じ扱いにする（サーバーの契約の外れで画面を壊さない）。
@@ -97,6 +97,8 @@ flowchart TD
 | `selectFontSize(size)` | `values.fontSize` を変え、`setPreview(undefined, size)` | W6 |
 | `submit()` | 画面の確かめ → 誤りなら `problems` と `focusTarget`、通れば `submitting` にして完了の要求 → 応答で移す | W7・W8・W9・W10 |
 
+- `submitting` の間は、`submit()` と `selectLanguage`・`selectTheme`・`selectFontSize`・値を変える操作は何もしない（Button の `loading` とは別にフックでも二重の送信と値の変更を防ぐ、`functional-spec.md` の W8 の1）。
+
 ### 4.3 副作用
 
 | きっかけ | 副作用 |
@@ -115,27 +117,31 @@ flowchart TD
 | `RegistrationPage` | なし（画面の部品） | `useRegistration()`、`useMessages()` | Card の中にアプリ名（`app.name`）と h1（`registration.heading`、id を振ってフォームの名前に使う）を置き、`phase` で子を1つ描く。`completed` では何も描かない |
 | `RegistrationStatus` | `kind`（`'verifying'` または `'loadFailed'`）・`onReload` | — | `verifying` は `role="status"` の文字（`registration.verifying`）。`loadFailed` は失敗の Alert（`role="alert"`、`registration.loadFailed`）と secondary の Button「もう一度読み込む」 |
 | `RegistrationUnavailable` | なし | — | 警告の Alert（`role="alert"`、記号つき、`registration.unavailable`）と、React Router のリンク「ログインの画面へ」（`/login`）。リンクはボタンの見た目にしない（移動の操作のため） |
-| `RegistrationLoggedInNotice` | `loggingOut`（真偽）・`onLogout`・`onHome` | — | 情報の Alert（`registration.loggedIn.message`）、primary の Button（`loggingOut` の間は押せず `registration.loggedIn.loggingOut`、`aria-busy`）、secondary の Button「ホームへ戻る」 |
-| `RegistrationForm` | `headingId`・`email`・`values`・`problems`・`failure`・`submitting`・`focusTarget` と各操作 | 項目の要素への参照（フォーカスを移すため） | `form`（`aria-labelledby` に `headingId`、`noValidate`）。失敗の知らせはフォームの上の Alert（`role="alert"`）。項目は `functional-spec.md` の W5 の順と属性。描画の確定の後に `focusTarget` の要素へフォーカスを移す。`submitting` の間は項目と送信のボタンを押せない |
-| `RadioFieldset` | `name`・`legend`・`hint`（任意）・`options`（`value`・`label`・`lang`（任意）の並び）・`value`・`onChange`・`disabled`（任意） | — | 6節 |
+| `RegistrationLoggedInNotice` | `loggingOut`（真偽）・`onLogout`・`onHome` | — | 情報の Alert（`registration.loggedIn.message`）、primary の Button（`loggingOut` の間は `loading` で `aria-disabled`・`aria-busy`、押しても何もしない、フォーカスは保つ、文言は `registration.loggedIn.loggingOut`）、secondary の Button「ホームへ戻る」 |
+| `RegistrationForm` | `headingId`・`email`・`values`・`problems`・`failure`・`submitting`・`focusTarget` と各操作 | 項目の要素への参照（フォーカスを移すため） | `form`（`aria-labelledby` に `headingId`、`noValidate`）。失敗の知らせはフォームの上の Alert（`role="alert"`）。項目は `functional-spec.md` の W5 の順と属性。描画の確定の後に `focusTarget` の要素へフォーカスを移す。`submitting` の間は、送信の Button（`type="submit"`）を `loading` にし（文言は `registration.submitting`）、氏名・パスワードの欄を `readOnly` にし、RadioGroup は `disabled` にせず選んでも値を変えない（フォーカスを失わないため、`functional-spec.md` の W8 の1） |
 
 - メールアドレスの欄: TextInput に `readOnly`・`type="email"`・`autoComplete="username"`・`value` は招待のメールアドレス。`disabled` にしない（AC3.2.16）。
 - パスワードの2つの欄: TextInput に `type="password"`・`autoComplete="new-password"`（CR6.9）。パスワードの欄の FormField の案内（`helperText`）は `registration.password.hint`（CR6.2）。誤りがあるときは FormField が案内の代わりに誤りを出す。
 - 氏名の欄: FormField の案内は `registration.displayName.hint`、`required` の印。
-- 言語の `RadioFieldset`: `options` は U4 の `LANGUAGE_NAMES` から `ja`（「日本語」、`lang="ja"`）・`en`（「English」、`lang="en"`）、`hint` は `registration.language.hint`。
-- テーマの `RadioFieldset`: `system`・`light`・`dark` の順、文言は `display.theme.system`・`display.theme.light`・`display.theme.dark`。
-- 文字の大きさの `RadioFieldset`: `sm`・`md`・`lg` の順、文言は `display.fontSize.sm`・`display.fontSize.md`・`display.fontSize.lg`、`hint` は `registration.appearance.hint`。
-- 3つの `RadioFieldset` の前に h2「表示の設定」（`registration.display.heading`）を置く。
+- 言語・テーマ・文字の大きさの3つは、どれも make-you-chic-ui の RadioGroup に `legend` を渡して描く（6節）。
+- 3つの RadioGroup の前に h2「表示の設定」（`registration.display.heading`）を置く。
 
-## 6. 共用の部品 `RadioFieldset`（`frontend/src/shared/ui/`）
+## 6. make-you-chic-ui の RadioGroup の使い方
 
-| 項目 | 内容 |
-|---|---|
-| 理由 | make-you-chic-ui の RadioGroup・Radio は選択肢の名前を文字列だけで受け、選択肢の文字に `lang` 属性を付けられない（CR6.6）。RadioGroup は `fieldset`・`legend` の名前付けも持たない。make-you-chic-ui は変えない（`functional-spec.md` の 10節） |
-| 構造 | `fieldset` と `legend`、任意の案内（`legend` の後の段落。`fieldset` の `aria-describedby` で結び付ける）、選択肢ごとの `label`（中に `input type="radio"` と、`lang` があれば `lang` 属性を付けた文字）。同じ `name` でまとめ、矢印キーはブラウザの標準のラジオの動きに任せる |
-| 見た目 | make-you-chic-ui の Radio に合わせた素の CSS を部品と同じ場所に置く。make-you-chic-ui の内部のクラス名には頼らない。テーマ・文字の大きさの値は make-you-chic-ui が `<html>` に置く値で変わる CSS の変数を使う |
-| 動き | 選ぶと `onChange(value)` を呼ぶ。選んだ後もフォーカスは選んだラジオのまま（`accessibility-checklist.md` の 2節） |
-| 使う単位 | U6（3つの軸）、U7（プリファレンスの言語・テーマ・文字の大きさ） |
+make-you-chic-ui の新しい版（`origin/main` の `735ef04`。固定先の更新はコード生成の B4）の RadioGroup を使う。`options` の `label` は ReactNode、選択肢ごとに `lang`（BCP 47）を渡せ、`legend` を渡すと `role="radiogroup"` の `div` ではなく `fieldset`・`legend` で描く。自前の部品は作らない（`functional-spec.md` の 10節）。
+
+| まとまり | `name` | `legend` | `options`（並び・`label`・`lang`） | `value`・`onChange` |
+|---|---|---|---|---|
+| 言語 | `language` | `registration.language.legend` の文字と、2行目の小さな文字の案内 `registration.language.hint` | `ja`（`LANGUAGE_NAMES` の「日本語」、`lang: 'ja'`）・`en`（「English」、`lang: 'en'`） | `values.language`・`selectLanguage` |
+| テーマ | `theme` | `registration.theme.legend` | `system`・`light`・`dark`（`display.theme.system`・`display.theme.light`・`display.theme.dark`、`lang` は渡さない） | `values.theme`・`selectTheme` |
+| 文字の大きさ | `fontSize` | `registration.fontSize.legend` | `sm`・`md`・`lg`（`display.fontSize.sm`・`display.fontSize.md`・`display.fontSize.lg`、`lang` は渡さない） | `values.fontSize`・`selectFontSize` |
+
+- 言語の選択肢の文字は訳さない（`LANGUAGE_NAMES`）。選択肢ごとの `lang` で、読み上げがその言語で読む（CR6.6）。テーマ・文字の大きさの選択肢は画面の言語の文言のため `lang` を渡さない。
+- 案内: RadioGroup は `aria-describedby` を渡す口を持たない（FormField の中に置くと FormField の `label` と `legend` が重なるため、FormField には入れない）。そのため、言語の案内は、選ぶと画面の言語が変わることを選ぶ前に知らせるため `legend` の中に入れる（まとまりに入ったときに名前と一緒に読まれる）。テーマと文字の大きさの案内 `registration.appearance.hint` は、文字の大きさの RadioGroup の下に文字として置き、結び付けない（見た目だけが変わり、読み上げの位置は変わらないため）。
+- `legend` の2行目の見た目は部品と同じ場所の素の CSS で整える。make-you-chic-ui の内部のクラス名には頼らない（`legend` に渡す要素に自分のクラスを付ける）。
+- 値は外から渡す形（`value`・`onChange`）で使う。言語を切り替えて文言が変わっても RadioGroup に `key` を付け替えず作り直さないため、選んだラジオの入力の要素が残り、フォーカスは選んだラジオのまま（`accessibility-checklist.md` の 2節、`functional-spec.md` の W6 の5）。矢印キーはブラウザの標準のラジオの動き（同じ `name`）。
+- `disabled` は使わない。`submitting` の間は `onChange` で値を変えない（5節の `RegistrationForm`）。
+- U7 も同じく RadioGroup を使う（U7 の機能設計が持つ）。
 
 ## 7. U4 の口の使い方（契約 C9 と受け渡し）
 
@@ -175,14 +181,15 @@ U4 の `frontend-components.md` の 3.4節の約束のとおり使う。
 | 同上 | 画面の確かめの境界（11・12 コードポイント、72・73 バイト、絵文字 11・12 文字、空、不一致、氏名の 254・255 コードポイント、空白だけ）で、誤りは項目の下に文字で出て `aria-describedby`・`aria-invalid` で結び付き、最初の誤りの項目にフォーカスが移り、要求は送られず、入れた値は消えない。長すぎるときは「長すぎます（…）」 | AC3.2.4・AC3.2.9、CR6.1 |
 | 同上 | テーマを選ぶと画面のテーマだけが変わり、文字の大きさはブラウザの保存の値のまま（逆も同じ）。ブラウザの保存の値は変わらない。フォーカスは選んだラジオのまま | D7、W6 |
 | 同上 | 言語 en を選ぶと文言・`<html lang>` が en になり、出ていた誤りも en になり、次の完了の要求の `Accept-Language` が en。言語の選択肢は「日本語」「English」で `lang` 属性を持つ | CR1.2・CR1.3・CR6.6、W6、CR1 の確かめ方の読み替え |
-| 同上 | 送信の間は「登録しています」でボタンが押せず `aria-busy`、2回押しても要求は1回 | CR6.3、W8 |
+| 同上 | 送信の間は「登録しています」でボタンが `aria-disabled`・`aria-busy`、フォーカスはボタンに残る。2回押しても、Enter キーで送っても要求は1回。氏名・パスワードの欄は `readOnly`、ラジオを選んでも値と画面の見せ方が変わらない | CR6.3、W8 |
 | 同上 | 204 で、ブラウザの保存の値が選んだ en・dark・lg になり、ログインの画面（`/login`）へ移り、ログインの画面に登録が終わった旨の案内とメールアドレスが出て、URL にメールアドレスが無い。ログインの要求は送られない（自動でログインしない） | AC3.2.5・AC3.2.17・AC3.2.18、W9 |
 | 同上 | 400 で入力を確かめる知らせ（`role="alert"`）、値が残り、同じ画面から送り直して 204 で完了できる | AC3.2.10、Q3 A、W10 |
 | 同上 | 完了の 404 で使えないリンクの表示に移り、フォームと値が消える | AC3.2.11、W10 |
 | 同上 | 500 と通信の失敗で登録できない知らせ（`role="alert"`）、値が残る。サーバーの `detail` の文字が画面に出ない | CR6.4、D10、W10 |
 | 同上 | 完了せずに部品が外れると、画面の言語・テーマ・文字の大きさがブラウザの保存の値に戻る | D12、W12 |
-| `RadioFieldset` | `fieldset`・`legend` の名前、案内の結び付け、`lang` 属性、選ぶと `onChange`、矢印キーで選べる | CR6.6 |
-| アクセシビリティ（部品ごとに1件） | `RegistrationPage`（確かめ中・使えない・ログイン中の案内・読み込めないの各表示を含めて検査する形は生成で決める）・`RegistrationForm`・`RegistrationUnavailable`・`RegistrationLoggedInNotice`・`RegistrationStatus`・`RadioFieldset` | NFR7 |
+| 同上（RadioGroup の使い方） | 3つのまとまりが `fieldset`（`role="group"`）で、名前が `legend` の文字（言語は案内を含む）。言語の選択肢の文字が `lang="ja"`・`lang="en"`、テーマ・文字の大きさの選択肢に `lang` が無い。矢印キーで選べる。言語を切り替えた後もフォーカスが同じラジオに残る | CR6.6、W5・W6、6節 |
+| 同上（ログアウト中） | 「ログアウトして続ける」を押すと `aria-disabled`・`aria-busy` になり、フォーカスがボタンに残り、もう一度押してもログアウトの要求は1回 | CR6.3、W3 |
+| アクセシビリティ（部品ごとに1件） | `RegistrationPage`（確かめ中・使えない・ログイン中の案内・読み込めないの各表示を含めて検査する形は生成で決める）・`RegistrationForm`・`RegistrationUnavailable`・`RegistrationLoggedInNotice`・`RegistrationStatus` | NFR7 |
 | E2E-1 | `functional-spec.md` の W13 | E2E-1、NFR9 |
 
 - フロントエンドのカバレッジの下限（行 80%・分岐 70%）を守る（`team.md`）。
@@ -194,7 +201,7 @@ U4 の `frontend-components.md` の 3.4節の約束のとおり使う。
 |---|---|---|
 | 機能の登録の仕組み | 新しい機能 `registration` が1つ増える（自動で読み込まれる） | 仕組みは変えない |
 | `frontend/src/features/auth/authSession.ts` | `logout` を登録の完了の機能から呼ぶ依存が1本増える | `authSession.ts` は変えない |
-| ApiClient の公開の API のパス | 確かめ・完了のパスが入る | U4 の R-01 の直しで行う（この単位では変えない） |
+| ApiClient の公開の API のパス | 確かめ・完了のパスが入る | U4 の R-01 の直しで入った（U4 の D10）。この単位では変えない |
 | 骨組み・U4 の口 | 使うだけ | 変えない |
-| make-you-chic-ui | 変えない | 足りない部品は `frontend/src/shared/ui/` に作る |
+| make-you-chic-ui | 新しい版の RadioGroup（`legend`・選択肢ごとの `lang`）と Button（`loading` の `aria-disabled`）を使う | 中身は変えない。サブモジュールの固定先の更新（`edb1f94` から `735ef04`）はコード生成の B4 で専用のコミットとして行い、更新前後のコミットハッシュを記録する（`project.md` の Mandated）。U6 の B5 はその後。Button の `loading` の変更が既存の画面のテスト（`disabled` を確かめるもの）に及ぶかは B4 で確かめる |
 | `frontend/e2e/` | E2E-1 の1本が増える | `./gradlew e2eTest` で動かす。リンクの取り出し方は infrastructure-design |

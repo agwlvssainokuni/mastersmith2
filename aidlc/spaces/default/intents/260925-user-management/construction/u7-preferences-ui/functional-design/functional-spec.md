@@ -3,8 +3,8 @@
 U7 は、ログインした利用者が自分の氏名・言語・テーマ・文字の大きさを変えて保存し、自分のパスワードを変える画面の単位（種類 ui）である。画面は S4 プリファレンスと S5 パスワードの変更で、部品は PreferencesUi（`aidlc/spaces/default/intents/260925-user-management/inception/units-generation/unit-of-work.md`、`inception/domain-design/components.md`）。
 
 - 正本: この文書は、画面の流れ（W1〜W13）と画面の状態の移り変わりの正本である。U7 は画面の単位のため、保存するデータ（エンティティ）と `rules.md` を持たない。流れの中で守る決まりは 3節に D1〜D14 として1回だけ書く。部品の階層・props と state・フック・API との受け渡し・U4 の口の使い方は `frontend-components.md` に置く。
-- 出典: 質問と答え `functional-design-questions.md`（設計の要点 1〜16・決まっていること・Q1 A・Q2 A・Q3 A、まとめの確認は Looks correct）、契約 C4（受ける側、自分の設定の API）・C9（受ける側、表示の設定の口）（`aidlc/spaces/default/intents/260925-user-management/inception/contract-design/contract-summary.md`）、要件 FR5.1〜FR5.5・FR6.1〜FR6.3・FR10.2・NFR7・NFR8（`inception/requirements-analysis/requirements.md`）、ストーリー US4.1・US5.1 と共通の決まり CR1・CR6（`inception/user-stories/stories.md`）、画面 S4・S5 と `interaction-spec.md` の 1節・7〜9節・`design-system-mapping.md`（`inception/refined-mockups/`）、依存する単位 U2（`construction/u2-user-preferences/functional-design/`）と U4（`construction/u4-display-foundation/functional-design/`）の機能設計、並行して設計した U6 の決定（共用の確かめの関数 `frontend/src/shared/validation/` と共用の部品 `frontend/src/shared/ui/RadioFieldset`。U6 の質問ファイルの設計の要点 9・10 と、U6 の担当からの知らせ）、既存のコード `frontend/src/app/registry/`・`frontend/src/app/layout/ShellLayout.tsx`・`frontend/src/app/navigation/navigationItems.ts`・`frontend/src/features/auth/`・`frontend/src/shared/api-client/`。
-- 受け持たないこと: 自分の設定の API のふるまい・検証・監査（U2）、表示の設定を画面に当てる仕組み・ユーザーメニューの氏名の表示・`Accept-Language` の付与・OS の配色の追従（U4）、共用の確かめの関数と `RadioFieldset` の中身（U6 が作り、U7 は使う側）。make-you-chic-ui（`vendor/make-you-chic-ui`）は変更しない（`project.md` の Forbidden）。
+- 出典: 質問と答え `functional-design-questions.md`（設計の要点 1〜16・決まっていること・Q1 A・Q2 A・Q3 A、まとめの確認は Looks correct）、契約 C4（受ける側、自分の設定の API）・C9（受ける側、表示の設定の口）（`aidlc/spaces/default/intents/260925-user-management/inception/contract-design/contract-summary.md`）、要件 FR5.1〜FR5.5・FR6.1〜FR6.3・FR10.2・NFR7・NFR8（`inception/requirements-analysis/requirements.md`）、ストーリー US4.1・US5.1 と共通の決まり CR1・CR6（`inception/user-stories/stories.md`）、画面 S4・S5 と `interaction-spec.md` の 1節・7〜9節・`design-system-mapping.md`（`inception/refined-mockups/`）、依存する単位 U2（`construction/u2-user-preferences/functional-design/`）と U4（`construction/u4-display-foundation/functional-design/`）の機能設計、並行して設計した U6 の決定（共用の確かめの関数 `frontend/src/shared/validation/`。U6 の質問ファイルの設計の要点 9・10 と、U6 の担当からの知らせ）、make-you-chic-ui の新しい版（固定先 `edb1f94` → `origin/main` の `735ef04`。固定先の更新はコード生成の B4 で行う）の RadioGroup・Dropdown・Button、既存のコード `frontend/src/app/registry/`・`frontend/src/app/layout/ShellLayout.tsx`・`frontend/src/app/navigation/navigationItems.ts`・`frontend/src/features/auth/`・`frontend/src/shared/api-client/`。
+- 受け持たないこと: 自分の設定の API のふるまい・検証・監査（U2）、表示の設定を画面に当てる仕組み・ユーザーメニューの氏名の表示・`Accept-Language` の付与・OS の配色の追従（U4）、共用の確かめの関数の中身（U6 が作り、U7 は使う側）。make-you-chic-ui（`vendor/make-you-chic-ui`）は変更しない（`project.md` の Forbidden）。
 
 ## 1. 用語
 
@@ -26,9 +26,9 @@ U7 は、ログインした利用者が自分の氏名・言語・テーマ・�
 | `frontend/src/features/preferences/registration.ts`（新しい） | 機能の登録 | 画面 `/me/preferences`・`/me/password`（どちらも `layout: 'SHELL'`・`access: 'LOGGED_IN'`、遅延読み込み）、ユーザーメニューの2つの項目（`path` で移る、order 80・90）、文言。サイドバーの項目は足さない（入り口はユーザーメニューだけ、refined-mockups の Q2 B） |
 | `frontend/src/app/registry/types.ts`（既存を変える、Q1 A） | `UserMenuItemRegistration` | 任意の `path` を足し、`action` と `path` のどちらか一方だけを持つ形にする（9節） |
 | `frontend/src/app/registry/validateRegistrations.ts`（既存を変える、Q1 A） | 登録の検査 | ユーザーメニューの項目の「どちらも無い・両方ある」と「登録されていない URL」を誤りにする（9節） |
-| `frontend/src/app/layout/ShellLayout.tsx`（既存を変える、Q1 A） | アプリシェル | `path` を持つ項目を、サイドバーと同じく読み込み直しなしで移る（9節） |
-| `frontend/src/shared/validation/`（U6 が作る） | 氏名とパスワードの確かめの純粋な関数 | U7 は使うだけ（W11） |
-| `frontend/src/shared/ui/RadioFieldset`（U6 が作る） | `fieldset`・`legend` と選択肢ごとの `lang` 属性を持つラジオの組 | U7 は言語・テーマ・文字の大きさの選択に使うだけ |
+| `frontend/src/app/layout/ShellLayout.tsx`（既存を変える、Q1 A） | アプリシェル | `path` を持つ項目を、Dropdown の `MenuItem` の `href` と `onClick` にして、サイドバーと同じく読み込み直しなしで移る（9節） |
+| `frontend/src/shared/validation/`（U6 が作る） | 氏名とパスワードの確かめの純粋な関数 | U7 は使うだけ（W11）。U6 への依存は 10節の (d) |
+| make-you-chic-ui の RadioGroup（新しい版） | `legend` を渡すと `fieldset`・`legend` で描き、選択肢ごとに `lang` を付けられるラジオの組 | U7 は言語・テーマ・文字の大きさの選択に使う（D14、10節の (b)） |
 
 - 機能どうしの読み込みは作らない。`features/preferences` は `features/auth`・`features/registration` を読み込まない。共用の関数と部品は `shared/` から読む。
 - 表示の設定は U4 の口（契約 C9）だけで扱い、make-you-chic-ui の `useTheme` を直接呼ばない（U4 の 2節の決まり）。
@@ -47,12 +47,12 @@ U7 は、ログインした利用者が自分の氏名・言語・テーマ・�
 | D6 | 画面を離れるとき（画面の部品が外れるとき）は、プリファレンスの画面で `clearPreview` を呼ぶ。保存していない変更の確かめは出さない | 設計の要点 6、S4 の [assumption]（Refined Mockups の承認で受け入れ） |
 | D7 | 送る前に、サーバーと同じ決まりを画面でもすべて確かめ、誤りがあれば送らない。確かめの関数は `frontend/src/shared/validation/` の共用の関数だけを使い、画面に同じ決まりを別に書かない。確かめは送信のときだけ行い、入力の途中では行わない | Q2 A、設計の要点 12、U6 の設計の要点 9・10 |
 | D8 | サーバーが 400 `VALIDATION_FAILED` で項目ごとの誤りを返したら、同じ項目の下に出す（画面とサーバーの決まりがずれたときの受け皿）。項目の名前は C4 の項目名で対応づける | Q2 A、U2 の BR3.2・BR4.1 |
-| D9 | 項目の誤りは項目の下に文字で出し、`aria-describedby`・`aria-invalid` で結び付ける。誤りがあれば、画面の項目の並びで最初の誤りの項目にフォーカスを移す。入れた値（パスワードを含む）は消さない | CR6.1、AC5.1.7 |
-| D10 | 送信の間は主な操作のボタンを押せなくし、文言を「保存しています」「変更しています」にして `aria-busy` を付ける（make-you-chic-ui の Button の `loading`）。送信の間は入力と「元に戻す」も変えられなくする。送信が終わったら、成功と項目の誤りでない失敗のときはフォーカスを主な操作のボタンに戻す | CR6.3、AC4.1.12、設計の要点 8 |
+| D9 | 項目の誤りは項目の下に文字で出し、`aria-describedby`・`aria-invalid` で結び付ける（言語・テーマ・文字の大きさのまとまりは RadioGroup の `legend` の中に置く、W12 の 3・10節の (b)）。誤りがあれば、画面の項目の並びで最初の誤りの項目にフォーカスを移す。入れた値（パスワードを含む）は消さない | CR6.1、AC5.1.7 |
+| D10 | 送信の間は主な操作のボタンに make-you-chic-ui の Button の `loading` を渡す。Button が `aria-disabled`・`aria-busy` を付けて押しても動かなくし、フォーカスはボタンに残す。文言は「保存しています」「変更しています」にする。送信の間は値も変えられなくする（文字の項目は `readOnly` でフォーカスを保つ。ラジオの組は `disabled` にせず、フックが送信の間の選択を受け付けず値を変えない。「元に戻す」は `disabled`。U6 と同じ形）。送信が終わった後のフォーカスは、項目の誤りのとき（D9）だけ動かし、ほかは動かさない（Button の `loading` の間もフォーカスが外れないため） | CR6.3、AC4.1.12、設計の要点 8 |
 | D11 | 成功は Toast（`aria-live="polite"`）だけで知らせる。失敗は画面の知らせ（`role="alert"`）に残し、次の送信を始めたとき・「元に戻す」・「もう一度読み込む」で消す。Toast だけで失敗を知らせない | CR6.4 |
 | D12 | 保存の成功の Toast は、`applyUserPreferences` の後の描画（新しい言語に切り替わった後）で、その描画の文言で出す。言語を変えたときも新しい言語で出る | AC4.1.12、U4 の W10 の 5 |
 | D13 | 失敗の文言は、サーバーの `detail` を使わず、応答の `code` と項目の名前・理由から画面の文言の鍵を選ぶ。画面が文言を持たない場合は、操作ごとの一般の文言にする。応答の値をブラウザのコンソールや保存に出さない | NFR1、CR5、U5 の D4 と同じ考え方 |
-| D14 | 言語の選択肢は U4 の `LANGUAGE_NAMES`（「日本語」「English」、訳さず `lang` 属性を付ける）、テーマ・文字の大きさの選択肢は骨組みの文言 `display.theme.*`・`display.fontSize.*` を使う。選択は `RadioFieldset`（まとまりごとに `fieldset`・`legend`）で作る | CR6.6、U4 の D12・8節、U6 の決定 |
+| D14 | 言語の選択肢は U4 の `LANGUAGE_NAMES`（「日本語」「English」、訳さず `lang` 属性を付ける）、テーマ・文字の大きさの選択肢は骨組みの文言 `display.theme.*`・`display.fontSize.*` を使う。選択は make-you-chic-ui の RadioGroup に `legend` を渡して作り（まとまりごとに `fieldset`・`legend`）、言語の選択肢には `options` の `lang` を付ける | CR6.6、U4 の D12・8節、10節の (b) |
 
 ## 4. 画面の状態の移り変わり
 
@@ -112,7 +112,7 @@ stateDiagram-v2
 ### W1. ユーザーメニューから画面へ移る（Q1 A）
 
 1. ログインした利用者がトップバーのユーザーメニューを開くと、「プリファレンス」（order 80）・「パスワードの変更」（order 90）・既存の「ログアウト」（order 100）の順に並ぶ。管理者かどうかにかかわらず同じ項目が出る（FR10.2、AC5.1.9）。
-2. 「プリファレンス」を選ぶと `/me/preferences` へ、「パスワードの変更」を選ぶと `/me/password` へ、サイドバーと同じく読み込み直しなしで移る（ShellLayout が登録の `path` で React Router の移動を行う、9節）。セッションの復元と見た目の設定の読み取りはやり直さない。
+2. 「プリファレンス」を選ぶと `/me/preferences` へ、「パスワードの変更」を選ぶと `/me/password` へ、サイドバーと同じく読み込み直しなしで移る（ShellLayout が登録の `path` から Dropdown の項目の `href` と `onClick` を作り、`onClick` で既定の移動を止めて React Router の移動を行う、9節）。セッションの復元と見た目の設定の読み取りはやり直さない。
 3. URL を直接開いたときも同じ画面が出る。未ログインで開くと、既存の振り分けでログインの画面へ移る（`access: 'LOGGED_IN'`、既存の `decideRoute`）。
 4. どちらの画面もサイドバーの項目には足さない。サイドバーで目立たせる項目は無い（既存の振り分けのまま）。
 
@@ -131,7 +131,7 @@ stateDiagram-v2
 2. テーマ `system` の利用者は「OS に合わせる」を選んだ状態で出す（D3、AC4.1.1）。スキーマの変更の前からいる利用者は、U2 が入れた初期値（氏名はメールアドレス・ja・system・md）がそのまま出る（AC4.1.10）。
 3. 読んだ値のどれかが当たっている値と違えば、読んだ値で `applyUserPreferences` を呼ぶ（D2）。U4 が当たっている値・ユーザーメニューの氏名・画面の言語を置き換え、ブラウザにも保存する（U4 の D6 の (b)・D8）。ほかの PC で保存した後などは、開いた時点で言語やテーマが変わることがある。Toast は出さない。
 4. これで「元に戻す」（`clearPreview`）で戻る画面の値と、フォームの戻り先（今の設定）が同じになる。
-5. フォームの並びは、氏名（TextInput と FormField、必須の印）・言語・テーマ・文字の大きさ（`RadioFieldset`、D14）・「元に戻す」（secondary）・「保存する」（primary）。言語の案内「保存すると切り替わります」を言語のまとまりに、テーマと文字の大きさの案内「テーマと文字の大きさは選ぶと画面に反映されます」をテーマと文字の大きさの2つのまとまりに `aria-describedby` で結び付ける（`interaction-spec.md` の 7節）。
+5. フォームの並びは、氏名（TextInput と FormField、必須の印）・言語・テーマ・文字の大きさ（make-you-chic-ui の RadioGroup に `legend` を渡す、D14）・「元に戻す」（secondary）・「保存する」（primary）。言語の案内「保存すると切り替わります」は言語のまとまりに、テーマと文字の大きさの案内「テーマと文字の大きさは選ぶと画面に反映されます」はテーマと文字の大きさの2つのまとまりに結び付け、まとまりに入ったときに名前と一緒に読み上げられるようにする。RadioGroup は `aria-describedby` を外から受けないため、U6 と同じ置き方にする。言語の案内は言語の `legend`（`ReactNode`）の中の2行目に置き、まとまりに入ったときに名前と一緒に読み上げられるようにする。テーマと文字の大きさの案内は、2つのまとまりの前に1回だけ、まとまりに結び付けない見える文字として置く（`interaction-spec.md` の 7節の `aria-describedby` との差は 10節の (b)）。
 6. 最初のフォーカスは動かさない（画面の見出しからの読み上げの順のまま。既存の画面と同じ）。
 
 ### W4. テーマ・文字の大きさ・言語・氏名を変える（選んだ時点の見せ方）
@@ -166,9 +166,9 @@ stateDiagram-v2
 1. 200 で、応答が C4 の形なら成功とする。
    1. 応答の4つ（氏名は前後の空白を除いた値）で `applyUserPreferences` を呼ぶ。U4 が当たっている値と氏名を置き換え、見せ方を捨て、ブラウザにも保存する（U4 の D6 の (b)・D8）。言語を変えたときは同じ描画で文言・`<html lang>`・要求の言語が切り替わる（AC4.1.4）。ユーザーメニューの名前は保存した直後から新しい氏名になる（AC4.1.8）。
    2. 今の設定とフォームの値を応答の値に置き換え、項目の誤りを消して Ready にする（「元に戻す」は押せなくなる）。
-   3. 次の描画（新しい言語に切り替わった後）で、Toast「保存しました」をその描画の文言で出し、フォーカスを「保存する」に戻す（D10・D12、AC4.1.12）。「保存する」のボタンは言語が変わっても同じ部品のまま描き直し、フォーカスが失われないようにする。
+   3. 次の描画（新しい言語に切り替わった後）で、Toast「保存しました」をその描画の文言で出す（D12、AC4.1.12）。フォーカスは動かさない。「保存する」で送ったときは、Button の `loading` の間もフォーカスがボタンに残るため、保存の後もそのまま「保存する」にある（D10）。「保存する」のボタンと3つの RadioGroup は、言語が変わっても作り直さず（`key` を変えず）同じ要素のまま描き直し、フォーカスが失われないようにする（U6 と同じ）。
 2. 400 `VALIDATION_FAILED` なら、W12 のとおり項目の下に出し、最初の誤りの項目へフォーカスを移す。
-3. そのほかの失敗は、画面の知らせ「保存できませんでした。しばらくしてから、もう一度お試しください。」を出し、フォーカスを「保存する」に戻す。
+3. そのほかの失敗は、画面の知らせ「保存できませんでした。しばらくしてから、もう一度お試しください。」を出す。フォーカスは動かさない（D10）。
 4. 失敗のときは、入れた値と見せ方を残し、今の設定は変えない（`mockups.md` の S4 の状態の表）。
 5. 応答ごとの動きは 6.2 の表。
 
@@ -182,10 +182,10 @@ stateDiagram-v2
 
 ### W10. パスワードの変更の結果
 
-1. 204 なら成功とする。3つの項目を空に戻し、項目の誤りを消し、Toast「パスワードを変更しました」を出し、フォーカスを「変更する」に戻す。ログインしたままで、画面も移らない（AC5.1.8、FR6.3）。
+1. 204 なら成功とする。3つの項目を空に戻し、項目の誤りを消し、Toast「パスワードを変更しました」を出す。フォーカスは動かさない（送信を始めた要素に残る、D10）。ログインしたままで、画面も移らない（AC5.1.8、FR6.3）。
 2. 400 `PASSWORD_CURRENT_MISMATCH` なら、今のパスワードの項目に誤り「今のパスワードが正しくありません」を結び付けて出し、その項目へフォーカスを移す。3つの値はどれも消さない（AC5.1.7、CR6.1）。この応答は 400 のため ApiClient の 401 の更新の流れに乗らず、ログインしたままで、ログインの画面へ移らない（AC5.1.6）。
 3. 400 `VALIDATION_FAILED` なら、W12 のとおり項目の下に出す。
-4. そのほかの失敗は、画面の知らせ「パスワードを変更できませんでした。しばらくしてから、もう一度お試しください。」を出し、値を残し、フォーカスを「変更する」に戻す。
+4. そのほかの失敗は、画面の知らせ「パスワードを変更できませんでした。しばらくしてから、もう一度お試しください。」を出し、値を残す。フォーカスは動かさない（D10）。
 5. 送信中に画面を離れたときは、応答を捨てる。
 6. 応答ごとの動きは 6.3 の表。
 
@@ -206,7 +206,7 @@ stateDiagram-v2
 
 1. 400 `VALIDATION_FAILED` の応答の Problem Details から、項目ごとの誤り（項目の名前と理由の組、U2 の BR3.2・BR4.1）を読む。読み方は1か所（`frontend-components.md` の 2節の項目ごとの誤りの読み取り）にまとめる。
 2. 項目の名前は C4 の項目名（`displayName`・`language`・`theme`・`fontSize`・`currentPassword`・`newPassword`・`newPasswordConfirmation`）で、画面の項目に対応づける。
-3. 理由が W11 の理由と同じものは同じ文言で出し、画面が知らない理由は項目ごとの一般の文言（「入力を確かめてください」など、7節）で出す。サーバーの `detail` は使わない（D13）。
+3. 理由が W11 の理由と同じものは同じ文言で出し、画面が知らない理由は項目ごとの一般の文言（「入力を確かめてください」など、7節）で出す。サーバーの `detail` は使わない（D13）。言語・テーマ・文字の大きさの誤り（画面では起きず、サーバーが返したときだけ）は、RadioGroup が誤りの結び付け（`aria-describedby`・`aria-invalid`）を外から受けないため、そのまとまりの `legend` の中に名前の後の誤りの文字として置き、フォーカスはそのまとまりの選ばれている選択肢へ移す（10節の (b)）。
 4. 画面の項目に対応づけられる誤りが1つも無い（項目ごとの誤りが無い・知らない項目だけ）ときは、画面の知らせ「入力を確かめてください。」を出す。
 5. どの場合も入れた値は消さない。プリファレンスの画面では見せ方も残す。
 6. 項目ごとの誤りの形（Problem Details の追加の項目の名前と、理由の値の一覧）は U2 のコード生成で決まる。U7 のコード生成は、その形を確かめてから読み取りを書く（10節の (c)）。
@@ -233,22 +233,22 @@ stateDiagram-v2
 
 | 応答 | 動き | 流れ |
 |---|---|---|
-| 200・C4 の形 | `applyUserPreferences`、今の設定を応答の値に、次の描画で Toast「保存しました」、フォーカスは「保存する」 | W8 |
+| 200・C4 の形 | `applyUserPreferences`、今の設定を応答の値に、次の描画で Toast「保存しました」、フォーカスは動かさない | W8 |
 | 200・形の誤り | 画面の知らせ（保存できなかった旨）。内部DB は変わったかもしれないため、今の設定は変えず、次に開いたときの読み込みで内部DB の値が出る | W8 |
 | 400 `VALIDATION_FAILED`（項目ごとの誤りあり） | 項目の下に出し、最初の誤りの項目へフォーカス。値と見せ方は残す | W12 |
 | 400 `VALIDATION_FAILED`（対応づけられる誤りなし） | 画面の知らせ「入力を確かめてください。」 | W12 |
 | 401 | ApiClient が更新と送り直しを1回。更新もできなければ未ログインになりログインの画面へ移る（保存していない変更は失われる）。画面が残る間は画面の知らせ | W8 |
-| そのほかの 4xx・5xx・通信の失敗 | 画面の知らせ（保存できなかった旨）、フォーカスは「保存する」。値と見せ方は残す | W8 |
+| そのほかの 4xx・5xx・通信の失敗 | 画面の知らせ（保存できなかった旨）、フォーカスは動かさない。値と見せ方は残す | W8 |
 
 ### 6.3 パスワードの変更（`POST /api/me/password`）
 
 | 応答 | 動き | 流れ |
 |---|---|---|
-| 204 | 3つを空に戻し、Toast「パスワードを変更しました」、フォーカスは「変更する」。ログインしたまま | W10 |
+| 204 | 3つを空に戻し、Toast「パスワードを変更しました」、フォーカスは動かさない。ログインしたまま | W10 |
 | 400 `PASSWORD_CURRENT_MISMATCH` | 今のパスワードの項目に誤りを結び付け、そこへフォーカス。3つの値は残す。ログインしたまま | W10 |
 | 400 `VALIDATION_FAILED` | 項目の下に出す（対応づけられる誤りが無ければ画面の知らせ） | W12 |
 | 401 | アクセストークンの期限切れなどで、ApiClient が更新と送り直しを1回。更新もできなければ未ログインになりログインの画面へ移る（今のパスワードの誤りは 401 にならない、U2 の BR4.2） | W10 |
-| そのほかの 4xx・5xx・通信の失敗 | 画面の知らせ（変更できなかった旨）、値を残し、フォーカスは「変更する」 | W10 |
+| そのほかの 4xx・5xx・通信の失敗 | 画面の知らせ（変更できなかった旨）、値を残し、フォーカスは動かさない | W10 |
 
 ## 7. 文言
 
@@ -345,8 +345,10 @@ export type UserMenuItemRegistration =
 
 ### 9.3 `ShellLayout`（`frontend/src/app/layout/ShellLayout.tsx`）
 
-- ユーザーメニューの項目のうち `path` を持つものは、選んだときに React Router の移動（`navigate(path)`）で、読み込み直しなしで移る（サイドバーの項目と同じ）。`action` を持つものは今までどおり `action` を呼ぶ。
-- make-you-chic-ui の Dropdown の項目（`MenuItem`）は `label` と `onClick` だけのため、`onClick` の中で振り分ける。make-you-chic-ui は変えない。
+- make-you-chic-ui の新しい版の Dropdown の項目（`MenuItem`）は、`href` を持つと `<a href>` で描き、選んだときに `onClick(event)` を呼ぶ（`event.preventDefault()` で移動を引き受けられる）。ShellLayout は登録の項目から `MenuItem` を次のとおり作る。
+  - `path` を持つ項目: `href` に `path`、`onClick` に「`event.preventDefault()` してから `navigate(path)`」を渡す。読み込み直しなしで移り（サイドバーの項目の `href`・`onClick` と同じ作り）、リンクとして読み上げられ、URL が見える。
+  - `action` を持つ項目: 今までどおり `href` を渡さず、`onClick` で `action` を呼ぶ（`<button>` で描かれる）。
+- 項目を選んだ後にメニューを閉じてフォーカスをメニューの開き口に戻すのは Dropdown が行う。make-you-chic-ui は変えない（新しい版への固定先の更新はコード生成の B4 で行い、U7 の B5 はその後）。
 - `buildUserMenuItems`（`frontend/src/app/navigation/navigationItems.ts`）は変えない（登録をそのまま order の順に並べる）。
 - U4 が同じ `ShellLayout` に足す、ユーザーメニューの名前を氏名にする変更（U4 の `frontend-components.md` の 4節）と同じファイルに触れる。どちらも同じ Bolt（B5 は U7、U4 は B4）の中ではないため、U7 のコード生成は U4 の変更が入った後の `ShellLayout` に足す。
 
@@ -354,13 +356,14 @@ export type UserMenuItemRegistration =
 
 | # | 差・渡すこと | 扱い |
 |---|---|---|
-| (a) | 骨組み（AppFrame、持ち主は U4）の型・登録の検査・`ShellLayout` を U7 が変える。`unit-of-work.md` の U7 の境界（表示の設定を当てる仕組みは U4）と、U4 の「登録の仕組みを変えない」の外の変更 | Q1 A で依頼者が選んだ。承認の場で骨組みの変更として確かめる（9節）。安全な追加で、既存の登録と `features/auth` はそのまま |
-| (b) | 言語・テーマ・文字の大きさの選択を、`design-system-mapping.md` の 1節の make-you-chic-ui の RadioGroup・Radio ではなく、共用の部品 `frontend/src/shared/ui/RadioFieldset`（U6 が作る）で作る | make-you-chic-ui の RadioGroup は選択肢の名前を文字列でしか受けず、選択肢の文字に `lang` 属性を付けられない（CR6.6）。`role="radiogroup"` の `div` を描き、`fieldset`・`legend` の名前付けも無い（`interaction-spec.md` の 7節のまとまりごとの `fieldset`・`legend` を満たせない）。make-you-chic-ui は変えられないため、U6 の決定に合わせる。見た目は make-you-chic-ui の Radio に合わせる（U6 の設計） |
+| (a) | 骨組み（AppFrame、持ち主は U4）の型・登録の検査・`ShellLayout` を U7 が変える（`ShellLayout` は make-you-chic-ui の新しい版の Dropdown の `href`・`onClick` を使う、9.3）。`unit-of-work.md` の U7 の境界（表示の設定を当てる仕組みは U4）と、U4 の「登録の仕組みを変えない」の外の変更 | Q1 A で依頼者が選んだ。承認の場で骨組みの変更として確かめる（9節）。安全な追加で、既存の登録と `features/auth` はそのまま |
+| (b) | 言語・テーマ・文字の大きさの選択は、`design-system-mapping.md` の 1節のとおり make-you-chic-ui の RadioGroup で作る。ただし固定先の今の版（`edb1f94`）ではなく、選択肢の `label` を `ReactNode` で受け、選択肢ごとの `lang` と `legend`（渡すと `fieldset`・`legend` で描く）を持つ新しい版（`735ef04`）を使う。前の版の文書で置いた共用の部品 `RadioFieldset`（U6 が作る予定だった）はやめた。新しい版の RadioGroup は `aria-describedby`・`aria-invalid` を外から受けず（FormField の中でだけ結び付き、FormField の文脈は外に出ていない）、`interaction-spec.md` の 7節の案内の `aria-describedby` と、D9 の誤りの結び付けをそのままは満たせない | U6 の直しと同じ置き方にそろえた。言語の案内は言語の `legend` の中の2行目に置き、まとまりに入ったときに名前と一緒に読み上げられる。テーマと文字の大きさの案内は、2つのまとまりの前に1回だけ置く結び付けない文字とし、`aria-describedby` の結び付けは無い（読む順で案内の後に2つのまとまりが来る）。サーバーが返したときだけの選択の誤りは、そのまとまりの `legend` の中に名前の後の文字として置く（W3 の 5・W12 の 3。U6 の画面ではサーバーの選択の誤りの扱いが別に決まるため、ここは U7 の決定）。固定先の更新はコード生成の B4 で行う |
 | (c) | 項目ごとの誤り（400 `VALIDATION_FAILED`）の形は、契約 C4 に無く、今の共通のエラー応答の仕組み（`GlobalExceptionHandler`）も返していない。U2 が項目の名前と理由を付けると決め、形は U2 のコード生成で作る | U7 のコード生成の前に、U2 が作った形（Problem Details の追加の項目の名前・項目の名前・理由の値の一覧）を確かめ、W12 の読み取りと 7節の理由ごとの文言を合わせる。既存の DSL の `errors` の項目（投入の誤りの一覧）とは別の意味のため、名前が重なるときは U2 と U7 で区別の仕方を確かめる |
-| (d) | 共用の確かめの関数（`frontend/src/shared/validation/`）の名前・引数・返す理由の値は U6 の成果物で決まる。この文書は「誤りの理由を返し、文言を持たない純粋な関数」とだけ置き、理由の名前（空・長すぎ・使えない文字・短すぎ・一致しない）は仮の名前で書いた | U7 のコード生成で U6 の関数の形に合わせ、7節の文言の鍵との対応をそろえる。関数が文言を持つ形になった場合も、U7 は `preferences.` の鍵で出す（機能の文言は `<featureId>.` で始める既存の決まり）。U6 と U7 は同じ B5 で作る |
-| (e) | U2 の確認の持ち越し R-01（NFR4 の 403 の場面が無く、一般の利用者も 200）・R-03（C8 の PASSWORD_CHANGED の targetUserId）は画面の変更を生まない。R-02（表示に関わる AC の OK と Deferred の分け方）は、U2 が U7 に Deferred で回した AC4.1.11・AC4.1.12・AC5.1.7・AC5.1.8・AC5.1.9 と、U4 が回した AC4.1.1・AC4.1.11・AC4.1.12・CR6 を U7 の `traceability.json` で OK として受ける | R-01 は画面を `access: 'LOGGED_IN'` にすることと合う。R-03 は監査の中身で U2 のまま |
+| (d) | 共用の確かめの関数（`frontend/src/shared/validation/`）の名前・引数・返す理由の値は U6 の成果物で決まる。この文書は「誤りの理由を返し、文言を持たない純粋な関数」とだけ置き、理由の名前（空・長すぎ・使えない文字・短すぎ・一致しない）は仮の名前で書いた | U7 のコード生成で U6 の関数の形に合わせ、7節の文言の鍵との対応をそろえる。関数が文言を持つ形になった場合も、U7 は `preferences.` の鍵で出す（機能の文言は `<featureId>.` で始める既存の決まり） |
+| (d2) | U7 は U6（u6-registration-ui）が作る共用の確かめの関数 `frontend/src/shared/validation/` に頼る。この依存は、Inception の単位の依存の図（`inception/units-generation/unit-of-work-dependency.md`、U7 は U2・U4 に依存）に無い（確定済みのため書き換えない）。前の版で頼っていた共用の部品 `RadioFieldset` は (b) のとおりやめたため、U6 への依存はこの関数だけになった | U6 と U7 は同じ Bolt B5 で作る（Delivery Planning）。B5 のコード生成では U6 の共用の確かめの関数を U7 より先に作る。U6 の関数ができる前に U7 を作らない |
+| (e) | U2 の確認の持ち越し R-01（NFR4 の 403 の場面が無く、一般の利用者も 200）・R-03（C8 の PASSWORD_CHANGED の targetUserId）は画面の変更を生まない。R-02（表示に関わる AC の OK と Deferred の分け方）は、U2 の直しの後の `traceability.json` で U2 が U7 に Deferred で回した AC4.1.1・AC4.1.8・AC4.1.10・AC4.1.11・AC4.1.12・AC5.1.7・AC5.1.8・AC5.1.9 と、U4 が回した AC4.1.1・AC4.1.10・AC4.1.11・AC4.1.12・CR6（AC4.1.7 は U2 と U7 に回した）を、U7 の `traceability.json` で OK として受ける。AC4.1.8 は U4 も名前の表示（U4 の D8）を OK として持ち、U7 は保存の直後の表示を受け持つ | R-01 は画面を `access: 'LOGGED_IN'` にすることと合う。R-03 は監査の中身で U2 のまま |
 | (f) | 見せ方の最中にトークンの更新の応答が来ると、U4 が見せ方を捨てる（U4 の D2）ため、フォームのテーマ・文字の大きさと画面の見た目が食い違う（4.1） | 保存・「元に戻す」・次の選択で解けるため、この単位では追わない。気になる場合は U4 に「同じ利用者の更新では見せ方を残す」変更を相談する（コード生成で実際に起きるかを確かめる） |
-| (g) | make-you-chic-ui の Button は `loading` のあいだ `disabled` になり、ブラウザによってはフォーカスが外れる | D10 で送信の後にフォーカスを戻す。実際に外れるかと、戻し方が読み上げを乱さないかはコード生成で確かめる |
+| (g) | 前の版の文書では、make-you-chic-ui の Button が `loading` のあいだ `disabled` になりフォーカスが外れうるため、送信の後にフォーカスを主な操作のボタンに戻す作りにしていた。新しい版（`735ef04`）の Button は `loading` のあいだ `aria-disabled` にしてフォーカスを保つため、この作りをやめ、Button に任せた（D10） | 文字の項目で Enter を押して送ったときは、文字の項目を `readOnly` にしてフォーカスを保つ。ラジオの組は `disabled` にせず、フックが送信の間の選択を受け付けない形にし、ラジオで Enter を押して送れるブラウザでもフォーカスが外れないようにする（U6 と同じ形） |
 | (h) | 保存の送信中に画面を離れた後の成功の応答でも `applyUserPreferences` を呼ぶ（W6 の 3） | 質問の答えに無い細部として、内部DB と画面の値をそろえる側を選んだ。承認の場で確かめる |
 | (i) | 開いた時点のそろえ（W3 の 3）で言語やテーマが変わることを、利用者に知らせない | Q3 A の答えの範囲の細部として、知らせない側を選んだ（利用者の操作ではなく、内部DB の値に合わせるだけのため） |
 
@@ -379,3 +382,17 @@ export type UserMenuItemRegistration =
 | CR6.1〜CR6.4・CR6.6・CR6.9（画面の共通の決まり） | D9〜D11・D14、W2・W3・W7〜W10 |
 
 画面の単位のため、エンティティの関係図と `rules.md` の要約は無い（U7 はアプリが保存するデータを持たない）。
+
+## 12. 変更の記録
+
+### 承認の場の Request Changes（2026-09-27）による直し
+
+| # | 直した点 | 直した箇所 |
+|---|---|---|
+| 1 | U7 R-01: `traceability.json` の AC4.1.1 などの来歴を、U2 の直しの後の事実に合わせた。U2 は画面の表示で確かめる AC4.1.1・AC4.1.8・AC4.1.10 を U7 に Deferred で回し、U4 は AC4.1.1・AC4.1.10 を回している。AC4.1.8・AC4.1.10 にも受けた来歴を書いた | `traceability.json` の AC4.1.1・AC4.1.8・AC4.1.10、10節の (e) |
+| 2 | U7 R-02: U6 が作る共用の確かめの関数 `frontend/src/shared/validation/` への依存が、Inception の単位の依存の図に無いことを明記した（図は確定済みのため書き換えない）。同じ Bolt B5 で U6 が先に作る | 10節の (d2)、2節の表 |
+| 3 | 言語・テーマ・文字の大きさの選択を、共用の部品 `RadioFieldset` から make-you-chic-ui の新しい版の RadioGroup（`options` の `label` が `ReactNode`、選択肢ごとの `lang`、`legend` で `fieldset`・`legend`）に置き換えた。RadioGroup が `aria-describedby` を外から受けないため、U6 の直しにそろえ、言語の案内は `legend` の中の2行目、テーマと文字の大きさの案内は結び付けない文字として2つのまとまりの前に1回だけ置く。サーバーが返したときだけの選択の誤りは `legend` の中に置く。言語が変わっても RadioGroup を作り直さない | D14、2節の表、W3 の 5、W12 の 3、10節の (b)、`frontend-components.md` の 1節・2節・4節・8節 |
+| 4 | ユーザーメニューの項目で移る作りを、make-you-chic-ui の新しい版の Dropdown の `MenuItem` の `href`（`<a>` で描く）と `onClick`（`event.preventDefault()` してから `navigate`）にした。骨組みに `path` を足すこと（Q1 A、`UserMenuItemRegistration`・`validateRegistrations`）は変えず、ShellLayout が `path` から `href` と `onClick` を作る | W1 の 2、9.3、10節の (a)、2節の表、`frontend-components.md` の 1節・7節・8節 |
+| 5 | make-you-chic-ui の新しい版の Button は `loading` のあいだ `aria-disabled` でフォーカスを保つため、送信の後にフォーカスを主な操作のボタンに戻す作りをやめ、Button に任せた。項目の誤りのときに最初の誤りの項目へ移すのは残した。送信の間の文字の項目は `readOnly` にしてフォーカスを保ち、ラジオの組は `disabled` にせずフックが選択を受け付けない（U6 と同じ形） | D10、W8 の 1・3、W10 の 1・4、6.2・6.3 の表、10節の (g)、`frontend-components.md` の 3節・4節・7節 |
+| 6 | 網羅の記録を依頼者の決定（ほかの単位で確かめる受け入れ基準は Deferred、この単位に全く関わらないものだけ N/A）に照らして確かめた。Deferred の 10 件（U4 が5件・U2 が5件）は、U7 が受け持つストーリー US4.1・US5.1 の受け入れ基準でほかの単位が確かめるものとして決まりに合う。N/A の3件（CR6.5・CR6.7・CR6.8）は U7 の2つの画面に当たる状態・操作・表示が無く、この単位に全く関わらないものとして N/A のまま残し、その旨を target に書き直した | `traceability.json` の CR6.5・CR6.7・CR6.8・AC4.1.13 |
+| 7 | make-you-chic-ui の新しい版（固定先 `edb1f94` → `origin/main` の `735ef04`）を出典に加え、固定先の更新はコード生成の B4 で行う旨を書いた | 冒頭の出典、9.3 |

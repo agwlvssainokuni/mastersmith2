@@ -11,7 +11,7 @@
   ],
   "coverage": [
     { "id": "AC1.1.1", "status": "Deferred", "target": "u5-invitation-ui（招待の画面の言語の初期値は、画面が C3 で持つ管理者自身の言語を使う。サーバーの C2 findLanguage の利用は任意で、U3 の API は関わらない）" },
-    { "id": "AC1.1.2", "status": "OK", "target": "BR2.6, BR1.6, BR4.1, BR4.2, BR4.3" },
+    { "id": "AC1.1.2", "status": "OK", "target": "BR2.6, BR1.6, BR4.1, BR4.2, BR4.3（有効期限は時間の単位の正の整数の設定、既定 24 時間）" },
     { "id": "AC1.1.3", "status": "OK", "target": "BR1.1, BR1.2" },
     { "id": "AC1.1.4", "status": "OK", "target": "BR2.1, BR2.2, BR2.3" },
     { "id": "AC1.1.5", "status": "OK", "target": "BR4.5, BR4.3, BR9.4" },
@@ -30,7 +30,7 @@
     { "id": "AC2.1.5", "status": "OK", "target": "BR5.2" },
     { "id": "AC2.1.6", "status": "Deferred", "target": "u5-invitation-ui（ボタンの名前にその行のメールアドレスを含めるのは画面だけで確かめる）" },
     { "id": "AC2.1.7", "status": "OK", "target": "BR5.4, BR9.4" },
-    { "id": "AC2.1.8", "status": "OK", "target": "BR5.3" },
+    { "id": "AC2.1.8", "status": "OK", "target": "BR5.3（招待した管理者の欄は findDisplayName の氏名だけで、メールアドレスへは切り替えない。U2 で氏名は必須（1〜254 コードポイント）で、既存の利用者と初期管理者の氏名の初期値はメールアドレスのため、「氏名が得られないときはメールアドレス」は氏名の表示で満たす。利用者の行が無いときは空の文字列。承認の場の Request Changes（2026-09-27、R-01））" },
     { "id": "AC2.2.1", "status": "OK", "target": "BR6.1, BR3.2, BR7.5" },
     { "id": "AC2.2.2", "status": "OK", "target": "BR6.1" },
     { "id": "AC2.2.3", "status": "OK", "target": "BR4.3, BR6.1" },
@@ -44,7 +44,7 @@
     { "id": "AC2.2.11", "status": "Deferred", "target": "u5-invitation-ui（取り消しの確かめる表示と「やめる」を選んだときの動きは画面だけで確かめる。取り消しそのものはサーバーの BR6.2）" },
     { "id": "AC2.2.12", "status": "Deferred", "target": "u5-invitation-ui（Toast と送り直しの間のボタンの無効化は画面だけで確かめる。行の有効期限と送信の結果が新しい値になるのはサーバーの BR6.1 の応答）" },
     { "id": "AC2.2.13", "status": "OK", "target": "BR6.4, BR7.3" },
-    { "id": "AC3.1.2", "status": "OK", "target": "BR10.2, BR10.3, BR3.4" },
+    { "id": "AC3.1.2", "status": "OK", "target": "BR10.2, BR10.3, BR3.4, BR4.2, BR1.6（有効な期間の文は ja「このリンクは {{validityHours}} 時間有効です」・en は同じ意味の文で、時間の数は設定の有効期限の長さから作る validityHours を差し込む。既定の 24 時間で本文は「このリンクは 24 時間有効です」になり、48 時間の設定で本文に 48 が出ることもテストで確かめる。承認の場の Request Changes（2026-09-27、R-02））" },
     { "id": "AC3.1.3", "status": "OK", "target": "BR3.4, BR1.3" },
     { "id": "AC3.1.8", "status": "OK", "target": "BR10.2" },
     { "id": "AC3.1.9", "status": "OK", "target": "BR10.3" },
@@ -67,14 +67,14 @@
     { "id": "AC3.2.17", "status": "Deferred", "target": "u6-registration-ui（ログインの画面の登録が終わった旨の案内と、URL にメールアドレスを載せないことは画面だけで確かめる）" },
     { "id": "AC3.2.18", "status": "Deferred", "target": "u6-registration-ui（選んだ表示の設定をブラウザに保存しログインの画面に当てるのは画面だけで確かめる。保存する値はサーバーの BR7.3 で利用者にも保存される）" },
     { "id": "CR1.2", "status": "OK", "target": "BR9.3" },
-    { "id": "CR1.4", "status": "OK", "target": "BR4.2" },
+    { "id": "CR1.4", "status": "OK", "target": "BR4.2（送信の依頼の言語は招待の言語。差し込みは registrationUrl と validityHours の2つ）" },
     { "id": "CR3", "status": "OK", "target": "BR8.1, BR8.2, BR8.3, BR8.4, BR8.5, BR8.6" },
     { "id": "CR4", "status": "OK", "target": "BR9.1, BR9.2" },
     { "id": "CR5", "status": "OK", "target": "BR9.4, BR3.5, BR8.6" }
   ],
   "reverse": [
     { "id": "BR3.1", "status": "N/A", "target": "トークンの作り方とハッシュだけの保存の構造の決まり（FR1.5、NFR1、project.md の Mandated）。受け入れ基準は作ったトークンを使う側（AC2.2.1・AC3.2.2）で確かめる" },
-    { "id": "BR10.1", "status": "N/A", "target": "U1 のテンプレートの一覧に invitation を足す作りの決まり（C10、U1 の BR2.2）。テンプレートの描画・エスケープの受け入れ基準 AC3.1.1・AC3.1.4〜AC3.1.7・AC3.1.10 は主の単位が U1" },
+    { "id": "BR10.1", "status": "N/A", "target": "U1 のテンプレートの一覧に invitation（差し込みは registrationUrl・validityHours）を足す作りの決まり（C10、U1 の BR2.2）。テンプレートの描画・エスケープの受け入れ基準 AC3.1.1・AC3.1.4〜AC3.1.7・AC3.1.10 は主の単位が U1" },
     { "id": "BR11.1", "status": "N/A", "target": "保存期間を過ぎた招待の定期の削除（この段の答え Q1、要件の未解決の点）。受け入れ基準には無く、この段で決めた" },
     { "id": "BR11.2", "status": "N/A", "target": "定期の削除で消えた招待の扱い（この段の答え Q1）。受け入れ基準には無い" },
     { "id": "BR11.3", "status": "N/A", "target": "スキーマの変更の前進のみ・後方互換（NFR10）。後方互換の確かめは deployment-pipeline" }

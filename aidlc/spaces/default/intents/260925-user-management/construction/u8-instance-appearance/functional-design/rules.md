@@ -77,15 +77,15 @@ rules:
     applies_to: 見た目の設定の API（契約 C7）
     trigger: GET /api/appearance の要求
     logic: "IF GET /api/appearance が呼ばれる THEN 200 を返し、応答の本文は brandColor（blue・green・purple・orange のどれか）と fontFamily（sans・serif のどちらか）の2項目だけとし、どちらも常に値を持ち、常に小文字の名前で返す"
-    violation: 想定内の失敗は無い（エラーの code の一覧を作らない）。想定外の失敗は既存の共通のエラー応答（500）に任せる
+    violation: 想定内の業務の失敗は無い（エラーの code の一覧を作らない）。GET 以外のメソッドの応答は BR3.2 のとおり既存の扱い（401・405）に任せる。想定外の失敗は既存の共通のエラー応答（500）に任せる
     source: FR8.1、契約 C7、ADR-006、Q2 A
   - id: BR3.2
     statement: GET /api/appearance だけをログインなしで読めるようにし、ほかは既定の扱いのままとする
     category: authorization
     applies_to: 見た目の設定の API の公開の決まり
     trigger: /api/appearance への要求
-    logic: "IF 要求が GET /api/appearance で、トークンが付いていない THEN 認証を求めずに BR3.1 の応答を返す。IF 同じ道へのほかのメソッド THEN /api/ の下の既定の扱い（ログインが必要）のままとする。公開の決まりは差し込み口（SecurityRuleContributor）で足し、順番の値はほかの単位と重ならない値にする（重なりは既存の起動時の検査で起動が止まる）"
-    violation: 未認証の GET が 401 にならないこと、ほかのメソッドが公開にならないことをサーバー側のテストで確かめる
+    logic: "IF 要求が GET /api/appearance で、トークンが付いていない THEN 認証を求めずに BR3.1 の応答を返す。IF 同じ道へのほかのメソッド（POST・PUT・PATCH・DELETE など） THEN /api/ の下の既定の扱い（ログインが必要）のままとし、応答は既存の扱いに任せて U8 では新しい応答を作らない。既存の扱いは、トークンが無い・使えないなら既存の入口の処理が 401 / AUTHENTICATION_REQUIRED を返し、使えるトークン付きなら U8 が GET だけを受け付けるため共通のエラー応答（GlobalExceptionHandler）が 405 / METHOD_NOT_ALLOWED と Allow の見出しを返す。公開の決まりは差し込み口（SecurityRuleContributor）で足し、順番の値はほかの単位と重ならない値にする（重なりは既存の起動時の検査で起動が止まる）"
+    violation: 未認証の GET が 401 にならないこと、ほかのメソッドが公開にならないこと（未認証の POST が 401、使えるトークン付きの POST が 405 になり、U8 の code を足していないこと）をサーバー側のテストで確かめる
     source: FR8.1（ログインの前後を問わず全画面に当てる）、ADR-006、契約の共通の決まり（認可）
   - id: BR3.3
     statement: 使えないアクセストークンを付けた要求は、既存の扱い（401）のままとし、U8 の側では変えない
@@ -134,7 +134,7 @@ rules:
 | BR1.7 | 設定は任意の文字列として受け取り、この単位で判定する（受け取りで起動を止めない） | constraint | FR8.2 |
 | BR2.1 | 警告は WARN・スタックトレースなしで、項目の名前・既定の値・許される値だけを出す（設定された値は出さない） | policy | FR8.2 |
 | BR3.1 | GET /api/appearance は 200 と brandColor・fontFamily（小文字の名前）を返す | constraint | FR8.1、契約 C7 |
-| BR3.2 | GET /api/appearance だけをログインなしで公開し、ほかのメソッドは既定のまま | authorization | FR8.1、ADR-006 |
+| BR3.2 | GET /api/appearance だけをログインなしで公開し、ほかのメソッドは既定のまま（応答は既存の 401・405 に任せる） | authorization | FR8.1、ADR-006 |
 | BR3.3 | 使えないトークンを付けた要求の 401 は受け入れ、画面の側がトークンを付けない | policy | Q1 A |
 | BR3.4 | 応答は2項目だけで、秘密・個人に関する値を含めない | constraint | 契約 C7 |
 | BR3.5 | 読み取りは監査ログに残さない | policy | FR9.1 |

@@ -13,7 +13,7 @@ entities:
     persisted: false
     attributes:
       - { name: templateId, type: string, required: true, unique: "一覧の中で", constraints: "英小文字で始まり、英小文字・数字・ハイフンだけ（下線は使わない。ファイル名の区切りに使うため、BR2.1）" }
-      - { name: variableNames, type: set<string>, required: true, constraints: "差し込みの名前の集合。0件もありうる。名前は英字で始まり英数字だけ（例: registrationUrl）" }
+      - { name: variableNames, type: set<string>, required: true, constraints: "差し込みの名前の集合。0件もありうる。名前は英字で始まり英数字だけ（例: registrationUrl・validityHours）" }
     constraints:
       - "templateId ごとに、ja と en の両方の MailTemplate がある（無ければ起動を止める、BR2.3）"
       - "variableNames は、ja・en のどちらのテンプレートの中の差し込みの名前とも一致する（テストで確かめる、BR2.6）"
@@ -42,7 +42,7 @@ entities:
       - { name: templateId, type: string, required: true, constraints: "一覧に無ければ TEMPLATE_ERROR（BR3.4）" }
       - { name: language, type: enum, required: true, allowed: [ja, en], constraints: "ほかの値は INVALID_INPUT（BR3.4）" }
       - { name: to, type: string, required: true, constraints: "正規化済みのメールアドレス（前後の空白が無く小文字、254 文字まで、形式に合う）。改行を含まない（BR3.1・BR3.2）" }
-      - { name: variables, type: map<string, string>, required: true, constraints: "名前の集合が一覧の variableNames と一致する（欠け・余分とも不可）。値は null でなく、改行（CR・LF）を含まない（BR3.2・BR3.3）" }
+      - { name: variables, type: map<string, string>, required: true, constraints: "名前の集合が一覧の variableNames と一致する（欠け・余分とも不可）。値は null でなく、空の文字列でも前後の空白を除くと0文字になる文字列（空白だけ）でもなく、改行（CR・LF）を含まない（BR3.2・BR3.3）。値は変えずにそのまま描く。invitation では registrationUrl と validityHours の2つ（BR2.2）" }
     constraints:
       - "宛先は1人だけ"
     relationships:

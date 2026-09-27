@@ -31,7 +31,7 @@ U1 の振る舞い（手順と状態）の正本。値の形は `entities.md`、
    2. templateId が一覧に無い → FAILED（TEMPLATE_ERROR）（BR3.4）
    3. 宛先・差し込む値のどれかに CR か LF がある → FAILED（INVALID_INPUT）（BR3.2）
    4. 宛先が正規化済み・254 文字まで・形式に合う、のどれかを満たさない → FAILED（INVALID_INPUT）（BR3.1）
-   5. 差し込みの名前の集合が一覧と一致しない（欠け・余分）、または値が null → FAILED（INVALID_INPUT）（BR3.3）
+   5. 差し込みの名前の集合が一覧と一致しない（欠け・余分）、または値が null・空の文字列・空白だけ（前後の空白を除くと0文字） → FAILED（INVALID_INPUT）（BR3.3）
 3. **描く**: templateId と依頼の language のテンプレートだけで、差し込む値をエスケープして描く（BR2.4・BR4.1）。描く途中で失敗したら FAILED（TEMPLATE_ERROR）（BR4.4）。
 4. **件名と言語を確かめる**: 描いた本文の title 要素から件名を作る（文字参照を戻し、空白と改行を1つの空白にまとめ、前後の空白を除く）。title が無い・件名が空なら FAILED（TEMPLATE_ERROR）（BR4.2）。html 要素の lang 属性が依頼の language と違えば FAILED（TEMPLATE_ERROR）（BR4.3）。
 5. **組み立てる**: HTML だけ（text/html、UTF-8）のメールに、差出人（BR1.6）・宛先1人・件名を、規格どおりに符号化して入れる（BR5.1）。
@@ -73,7 +73,7 @@ erDiagram
 |---|---|
 | 設定 | 環境変数だけ（BR1.1）、接続先と差出人がそろって「設定がある」（BR1.2）、欠け・不正は項目名だけの WARN（BR1.3）、資格情報と暗号化 NONE は送らない（BR1.4）、暗号化の3方式と既定 NONE（BR1.5）、差出人と表示名（BR1.6）、isConfigured は真偽だけ（BR1.7）、mail.debug は無効に固定（BR1.8） |
 | テンプレート | 置き場 `mail/templates/<templateId>_<language>.html`（BR2.1）、一覧を U1 が持つ（BR2.2）、起動時に準備し欠けで止める（BR2.3）、エスケープされる差し込みだけ・属性は二重引用符（BR2.4）、ライセンスヘッダーは Mustache のコメント（BR2.5）、すべてを描くテストと名前の一致のテスト（BR2.6） |
-| 依頼の確かめ | 宛先の形（BR3.1）、改行の拒否（BR3.2）、差し込みの名前の完全一致（BR3.3）、言語と templateId（BR3.4） |
+| 依頼の確かめ | 宛先の形（BR3.1）、改行の拒否（BR3.2）、差し込みの名前の完全一致と空・空白だけの値の拒否（BR3.3）、言語と templateId（BR3.4） |
 | 描画 | 依頼の言語だけ（BR4.1）、件名は title の文面（BR4.2）、lang の一致（BR4.3）、描く途中の失敗は TEMPLATE_ERROR（BR4.4） |
 | 送信 | HTML だけ・UTF-8・ヘッダーの符号化（BR5.1）、1回だけ・時間切れ（BR5.2）、失敗の3種類と想定外だけ例外（BR5.3）、内部DB に触れない（BR5.4） |
 | 秘密と記録 | 結果は種類だけ（BR6.1）、ログは項目を絞って1回（BR6.2）、トレースの属性も絞る（BR6.3）、監査ログに書かない（BR6.4） |
@@ -88,6 +88,7 @@ erDiagram
 | テンプレートの ja か en が無い・壊れている・置き場の名前の誤り | 起動を止める |
 | 宛先・差し込む値に改行 | INVALID_INPUT。接続しない（メールは0通） |
 | 差し込みの名前の欠け・余分 | INVALID_INPUT。描かない |
+| 差し込む値が null・空の文字列・空白だけ（例: registrationUrl が空） | INVALID_INPUT。描かない（リンクの無いメールを送信済みにしない）。中身のある値は前後に空白があってもそのまま描く |
 | 一覧に無い templateId | TEMPLATE_ERROR。描かない |
 | 描いた本文に title が無い・件名が空・lang の食い違い | TEMPLATE_ERROR。送らない |
 | 受け手が接続を拒む・STARTTLS を受け付けない | CONNECTION_FAILED |
@@ -99,12 +100,25 @@ erDiagram
 
 ## 9. 呼び出し元（U3）との境界
 
-- U3 は、招待メールのテンプレート（`mail/templates/invitation_ja.html`・`invitation_en.html`）の中身と、一覧の行（invitation、差し込みは registrationUrl）を足す（BR2.1・BR2.2、契約 C10）。文面・リンクの置き方・招待の URL の組み立て（ベース URL だけから）は U3 の決まりである。
+- U3 は、招待メールのテンプレート（`mail/templates/invitation_ja.html`・`invitation_en.html`）の中身と、一覧の行（invitation、差し込みは registrationUrl と validityHours）を足す（BR2.1・BR2.2、契約 C10）。有効な期間の文は、ja が「このリンクは {{validityHours}} 時間有効です」、en が同じ意味の文で、エスケープされる差し込みで入れる。文面・リンクの置き方・招待の URL の組み立て（ベース URL だけから）・validityHours の値（設定の有効期限の長さから作る正の整数）は U3 の決まりである。
 - U3 は、招待の確定の後にトランザクションの外で send を呼び、結果の SENT・FAILED を招待の sendResult に記録する（ADR-009、契約 C5）。失敗の種類ごとの扱い（管理者への見せ方）は U3 が決める。
 - U1 のテストは、U1 のテスト用のテンプレートと JVM の中で起動するテスト用の SMTP の受け手で行う。BR2.4・BR2.6 のテンプレートの検査は置き場のすべてのテンプレートを数え上げるため、U3 が足した invitation のテンプレートも自動で対象になる。
+- 本文のエスケープの確かめ（AC3.1.4・team.md のメールのテスト）の対象: 招待のテンプレートは利用者の入れた値（招待先のメールアドレス・氏名）を差し込まない。そのため、(1) 置き場のすべてのテンプレートの差し込む値すべて（invitation では registrationUrl と validityHours）に `<`・`>`・`&`・`"`・`'` を含む値を入れて描くテストと、(2) U1 のテスト用のテンプレート（本文の文面・二重引用符で囲んだ属性の値・title に差し込む）で仕組みとしてのエスケープを確かめるテストで満たす（BR2.4）。後のテンプレートが利用者の値を差し込めば、(1) で自動で対象になる。
+- 差し込む値の確かめの境界（BR3.3）: null・`""`・半角の空白だけ・タブだけ・全角の空白だけは INVALID_INPUT でメールは0通、1文字の値と前後に空白のある中身のある値は受け付けて描く。registrationUrl と validityHours の両方で確かめる。
 
 ## 10. 上流との差
 
 - 契約 C1 の isConfigured の説明は「SMTP の接続先が設定されているか」だが、この段の答え（Q2: B・Q3: A）により、「接続先と差出人がそろい、資格情報と暗号化 NONE の組でなく、設定に不正が無いか」とした（BR1.2〜BR1.4・BR1.7）。形（真偽を返す）は変わらず、契約の持ち主は U1 のため、使う側（U3）の変更は要らない。
 - 契約 C1 は宛先を「既存の値の型 EmailAddress」としているが、既存の EmailAddress は利用者の部品（UserAccount）の中の決まりで、部品 Mail は他の部品に依存しない（`components.md` の depends_on が空）。そのため U1 は同じ決まりを自分の中に持ち（BR3.1）、宛先は正規化済みの文字列として受け取る。
 - 契約 C1 の MailSendResult の Sent・Failed は、`entities.md` では outcome（SENT・FAILED）と failureKind で表した。意味は同じ。
+
+## 11. 承認の場の Request Changes（2026-09-27）による直し
+
+単位ごとのレビュー（1回目、READY）の指摘と、U3 のレビューの指摘に伴う変更を、承認の場の Request Changes でまとめて直した。
+
+| 指摘 | 元の状態 | 直した点 | 直した場所 |
+|---|---|---|---|
+| U1 の R-01（Major） | BR3.3 と variables の制約は値が null のときだけ拒否し、空の文字列を通していた | 空の文字列と、前後の空白を除くと0文字になる値（空白だけ）も INVALID_INPUT で拒否する。空白だけも拒否するのは、Q4 の動機（欠けた値が空で描かれ、リンクの無いメールが送信済みになるのを防ぐ）に照らし、空白だけの registrationUrl も中身の無いリンクになり受け手から見て空と同じだから。値そのものは変えずに描く。テストの境界（null・空・半角の空白・タブ・全角の空白は拒否、1文字と前後に空白のある値は受け付ける）を足した | `rules.md` の BR3.3 と一覧、`entities.md` の MailRequest.variables、この文書の4節・7節・8節・9節 |
+| U3 の R-02 に伴う変更 | 招待のテンプレートの差し込みは registrationUrl だけで、「24 時間有効」はテンプレートの固定の文面だった | 差し込みを registrationUrl と validityHours（有効期限の長さの時間の数。U3 が設定から作る正の整数を文字列で渡す）の2つにし、文面は「このリンクは {{validityHours}} 時間有効です」（en は同じ意味の文）とエスケープされる差し込みで入れる。U1 は validityHours を他の差し込みと同じに扱い、正の整数かの確かめは U3 が持つ | `rules.md` の BR2.2 と一覧、`entities.md` の variableNames と variables、この文書の9節、`traceability.json` の AC3.1.2 |
+| U1 の R-03（Minor） | AC3.1.4 のエスケープの確かめを BR2.4 の汎用の仕組みだけで OK とし、AC が例示する利用者の値（メールアドレス）が招待のテンプレートに無いことを書いていなかった | 招待のテンプレートは利用者の入れた値を差し込まないことを明記し、確かめを (1) 置き場のすべてのテンプレートの差し込む値すべて（registrationUrl・validityHours）と (2) テスト用のテンプレートでの仕組みとしてのエスケープ（本文・二重引用符の属性・title）の2つとした | `rules.md` の BR2.4 と一覧、この文書の9節、`traceability.json` の AC3.1.4 |
+| U1 の R-02（Minor） | 宛先の決まり（BR3.1）を U1 の中に独自に持ち、既存の EmailAddress との食い違いを保つ手当てを書いていない | 依頼者の判断で受け入れ、直さない | — |

@@ -63,7 +63,7 @@ stateDiagram-v2
 1. ベース URL の設定を読む。無い・空白だけなら「使える値が無い」とし、警告は出さない。値があれば BR1.3 の形（http・https の絶対 URL、ホストあり、問い合わせ・#・利用者情報なし）を確かめ、合わなければ「使える値が無い」として、項目の名前だけの WARN を1件出す（値は出さない）。末尾の / は除いて持つ（BR1.3）。
 2. U1 の isConfigured（C1）を読む（U1 の設定の判定は U1 の BR1.2〜BR1.4 のとおり）。
 3. BR1.4 で InvitationAvailability（enabled と unavailableReasons）を決める。動いている間は変わらない。
-4. 有効期限の長さ・保存の日数・定期の削除の時刻を読み、不正なら起動を止める（BR1.6）。
+4. 有効期限の長さ・保存の日数・定期の削除の時刻を読み、不正なら起動を止める。有効期限の長さは時間の単位の正の整数に限り、0 以下・1 時間で割り切れない値・形の誤りで起動を止める。この時間の数を expiresAt の計算と招待メールの validityHours の両方に使う（BR1.6）。
 5. 登録の完了の2つの POST を公開にする決まりを差し込み口で足す（BR9.2）。どの場合も、ベース URL と SMTP の不足では起動を止めない。
 
 ### 2.2 招待（POST /api/admin/invitations、C5）
@@ -79,15 +79,15 @@ stateDiagram-v2
    5. 確定する。
 5. 確定の後に INVITATION_ISSUED を知らせる（AuditLog が記録、BR8.1）。
 6. 招待の URL をベース URL だけから組み立てる（BR3.4）。
-7. トランザクションの外で、内部DB の接続を持たずに U1 の send を1回呼ぶ（invitation・招待の言語・招待のメールアドレス・registrationUrl、BR4.1・BR4.2）。
+7. トランザクションの外で、内部DB の接続を持たずに U1 の send を1回呼ぶ（invitation・招待の言語・招待のメールアドレスと、差し込み registrationUrl・validityHours（設定の有効期限の長さの時間の数、既定 "24"）、BR4.1・BR4.2）。
 8. 別の短いトランザクションで、送ったトークンのハッシュを今も持つ行にだけ SENT か FAILED を書く（BR4.3）。
-9. 201 で招待の要約を返す（sendResult はこの送信の結果、expired は false、invitedBy は操作した管理者の氏名、BR5.3・BR5.4）。送信に失敗しても 201（BR4.5）。
+9. 201 で招待の要約を返す（sendResult はこの送信の結果、expired は false、invitedBy は操作した管理者の findDisplayName の氏名だけ、BR5.3・BR5.4）。送信に失敗しても 201（BR4.5）。
 
 ### 2.3 一覧（GET /api/admin/invitations?page=n、C5）
 
 1. 認可（BR9.1）。page が 1 未満・整数でなければ 400 VALIDATION_FAILED（BR5.2）。
 2. state が PENDING の招待を、invitedAt の降順・invitationId の降順に並べ、(page−1)×20 番目から 20 件を読む。total は対象の件数（BR5.1・BR5.2）。
-3. 各行の expired を時計で決め（BR3.3）、sendResult の PENDING を FAILED にし（BR4.4）、invitedBy を氏名（無ければメールアドレス）にする（BR5.3）。
+3. 各行の expired を時計で決め（BR3.3）、sendResult の PENDING を FAILED にし（BR4.4）、invitedBy を invitedByUserId の findDisplayName（C2）で得た氏名だけにする。利用者の行が無く空なら空の文字列とし、メールアドレスへは切り替えない（BR5.3）。
 4. invitationEnabled と unavailableReasons を付けて 200 で返す。トークン・ハッシュ・URL を含めない（BR5.4）。最後のページを超えたら items は空（BR5.2）。
 
 ### 2.4 送り直し（POST /api/admin/invitations/{invitationId}/resend、C5）
@@ -202,16 +202,16 @@ erDiagram
 
 | 群 | ID | 要点 |
 |---|---|---|
-| 入力と使える設定 | BR1.1〜BR1.6 | メールアドレスは改行を拒否し正規化・254 文字・形式、言語は ja・en、ベース URL は http・https の絶対 URL（不正は WARN で未設定扱い）、使える設定はベース URL と SMTP の両方、使えなければ招待と送り直しだけ 503、有効期限 24 時間と保存 90 日は設定 |
+| 入力と使える設定 | BR1.1〜BR1.6 | メールアドレスは改行を拒否し正規化・254 文字・形式、言語は ja・en、ベース URL は http・https の絶対 URL（不正は WARN で未設定扱い）、使える設定はベース URL と SMTP の両方、使えなければ招待と送り直しだけ 503、有効期限（時間の単位の正の整数、既定 24 時間）と保存 90 日は設定で不正は起動を止める |
 | 招待の作成 | BR2.1〜BR2.7 | 登録済み 409、期限内の招待中 409（invitationId・page）、page は位置 ÷ 20 の切り上げ、期限切れは REPLACED、PENDING は1件まで、新しい招待は PENDING・sendResult PENDING、取り消し・完了の後の再招待を許す |
 | トークンと URL | BR3.1〜BR3.5 | 乱数 32 バイト・SHA-256 のハッシュだけ、形の誤りは引かずに見つからない、有効は PENDING かつ 今 < 有効期限、URL はベース URL ＋ /register#token=、トークンはフラグメントと本文だけ |
-| 送信と結果 | BR4.1〜BR4.5 | 確定の後にトランザクションの外で1回、invitation・招待の言語・registrationUrl だけ、同じトークンの行にだけ結果を記録、内部は PENDING で API は FAILED、送信の失敗でも 201・200 |
-| 一覧 | BR5.1〜BR5.4 | PENDING だけ、新しい順に 20 件、送信の結果・期限切れ・招待した管理者、トークンと URL を含めない |
+| 送信と結果 | BR4.1〜BR4.5 | 確定の後にトランザクションの外で1回、invitation・招待の言語・registrationUrl と validityHours だけ、同じトークンの行にだけ結果を記録、内部は PENDING で API は FAILED、送信の失敗でも 201・200 |
+| 一覧 | BR5.1〜BR5.4 | PENDING だけ、新しい順に 20 件、送信の結果・期限切れ・招待した管理者（氏名だけ）、トークンと URL を含めない |
 | 送り直し・取り消し | BR6.1〜BR6.4 | 送り直しはトークン・有効期限・送信の結果だけ、取り消しは設定なしでも可、無い・終わったものは同じ 404、同時の操作は行の排他 |
 | リンクの確かめと登録の完了 | BR7.1〜BR7.7 | verify は消費も監査もしない、入力は DB の前に検証、1つのトランザクションで利用者の作成と完了、同じメールアドレスの利用者は巻き戻し、拒否は同じ 404、理由は監査だけ、招待中の人は認証の3経路で構造的に拒否 |
 | 監査 | BR8.1〜BR8.6 | 招待・送り直し・取り消しは SUCCESS、登録の完了、完了の要求の拒否だけ REGISTRATION_FAILED、種類5つ・理由5つ、書き込みの失敗で応答を変えない、秘密を入れない |
 | 認可・応答・秘密 | BR9.1〜BR9.4 | 管理の API は管理者だけ、verify・complete の POST だけ公開、code と状態コードの固定と要求の言語、ログ・トレース・エラー応答に秘密を出さない |
-| 招待メールのテンプレート | BR10.1〜BR10.3 | U1 の一覧に invitation、本文の文面（24 時間有効・日時と管理者の氏名なし）、行き先の分かるリンクと URL の文字 |
+| 招待メールのテンプレート | BR10.1〜BR10.3 | U1 の一覧に invitation（差し込みは registrationUrl・validityHours）、本文の文面（「このリンクは {{validityHours}} 時間有効です」・日時と管理者の氏名なし）、行き先の分かるリンクと URL の文字 |
 | 保存期間とスキーマ | BR11.1〜BR11.3 | 保存の日数を過ぎたものを定期に消す、消えた招待は存在しないと同じ、V8 以降の前進のみ |
 
 ## 6. 上流との差
@@ -224,6 +224,17 @@ erDiagram
 | 送信の結果の内部の値 PENDING | 契約 C5 の sendResult は SENT・FAILED の2つ（`contract-summary.md` の C5）、ADR-009 の悪い点「送信の途中でアプリが止まると送信の結果が残らない」 | Q2 C: 内部DB には送信中（PENDING）を持ち、確定の時点で PENDING、送信の結果で SENT か FAILED にする。API（C5）では PENDING を FAILED として返し、契約の値は変えない。途中で止まった招待は一覧に「送信に失敗」と出て送り直せる（BR4.3・BR4.4） | C5 と U5 の画面は変わらない。記録の上で「止まった」と「失敗した」を区別できる |
 | 招待の状態 REPLACED | 部品の一覧の Invitation の属性は state（値は未定）、AC2.2.6 は「期限切れの古い招待は無効になって一覧から消える」 | 期限切れのまま同じメールアドレスに新しく招待された招待を REPLACED として残す（監査の理由は INVITATION_EXPIRED）（BR2.4・BR7.6） | なし（内部の値） |
 | 終わった日時を1つの属性にまとめた | 設計の要点 1 は「登録の完了の記録（completedAt・completedUserId）と終わった日時（取り消し・置き換えの時点）を足す」 | 完了・取り消し・置き換えの時点を1つの endedAt にまとめ、完了の時点は state が COMPLETED の endedAt とした。completedUserId は残す（`entities.md`） | なし（保存期間の起点が1つで済む） |
+| 有効期限の時間の数を招待メールに差し込む | 契約 C10 の variables は registrationUrl だけで、content_rules は「このリンクは 24 時間有効です」の固定の文言（`contract-summary.md` の C10）。設計の要点 23 も「差し込みは registrationUrl だけ」「このリンクは 24 時間有効です」 | 承認の場の Request Changes（2026-09-27、R-02）: 差し込みを registrationUrl と validityHours の2つにし、文面を ja「このリンクは {{validityHours}} 時間有効です」・en は同じ意味の文にする。validityHours は設定の有効期限の長さ（時間の単位の正の整数、既定 24）を10進の文字列にした値で、既定では本文は契約・要点 23 と同じ「このリンクは 24 時間有効です」になる。日時を書かない・管理者の氏名を載せないは変えない（BR1.6・BR4.2・BR10.1・BR10.2） | U1（一覧の差し込みの名前に validityHours を足す。U1 の BR2.2・BR2.4・BR3.3 は直し済み）。契約 C10 の文書は書き換えない。AC3.1.2（24 時間有効）は既定の値で満たす |
+| 招待した管理者の表示を氏名だけにした | ストーリー AC2.1.8 は「氏名が得られないときは A のメールアドレスが表示される」（M9: A） | 承認の場の Request Changes（2026-09-27、R-01）: invitedBy は findDisplayName（C2）の氏名だけとし、利用者の行が無ければ空の文字列にする。U2 で氏名は必須（U2 の BR1.6）で、既存の利用者と初期管理者の氏名の初期値はメールアドレス（U2 の BR2.2）のため、AC2.1.8 は氏名の表示で満たす（BR5.3） | 契約 C2 は変えない（利用者 ID からメールアドレスを引く操作を足さない）。U5 の画面は invitedBy をそのまま表示する |
+
+### 6.1 承認の場の Request Changes（2026-09-27）による直し
+
+| 指摘 | 直した箇所 | 内容 |
+|---|---|---|
+| R-01（Critical）招待した管理者のメールアドレスへの切り替えが契約 C2 に無い操作を前提にしていた | `rules.md` の BR5.3（決まりと一覧の表）、`entities.md` の InvitationSummary、この文書の 2.2 の 9・2.3 の 3・5節・6節、`traceability.json` の AC2.1.8 | invitedBy を findDisplayName の氏名だけにし、空なら空の文字列。メールアドレスへの切り替え（利用者の要約から引く）を消した。AC2.1.8 のメールアドレスの表示は、氏名が必須で既存の利用者の初期値がメールアドレスであることから氏名の表示で満たすと記録した |
+| R-02（Major）有効期限の長さの設定とテンプレートの固定の文「24 時間有効です」が食い違いうる | `rules.md` の BR1.6・BR4.2・BR10.1・BR10.2（決まりと一覧の表）、`entities.md` の Invitation.expiresAt、この文書の 2.1 の 4・2.2 の 7・5節・6節・7節、`traceability.json` の AC1.1.2・AC3.1.2・CR1.4 | 有効期限の長さを時間の単位の正の整数に限り（0 以下・1 時間で割り切れない値・形の誤りは起動を止める）、その時間の数を validityHours として招待メールに差し込む。「長さを変えたらテンプレートも直す」を消した。48 時間の設定で本文に 48 が出ることを確かめるテストを足した。U1 の BR2.2・BR2.4・BR3.3 の名前と文面にそろえた |
+
+既存の差（Q4 A の EMAIL_ALREADY_REGISTERED、Q2 C の内部の PENDING、REPLACED、endedAt）は変えていない。
 
 ## 7. 後の段へ渡すこと
 
@@ -234,6 +245,6 @@ erDiagram
 | SMTP の時間切れの値と、招待・送り直し（5 秒）・ほかの API（1 秒）の応答時間の目標（要件の [assumption]） | nfr-requirements |
 | 登録の完了の公開の API（verify・complete）の回数の制限を設けるか（ADR-011、C6 の Open question） | nfr-requirements |
 | 設定の項目の名前（有効期限の長さ・保存の日数・定期の削除の時刻）、定期の削除の既定の時刻と件数の上限、差し込み口の順番の値 | code-generation |
-| 新しいパッケージ invitation のパッケージごとのカバレッジの下限、有効の判定（BR3.3）とトークンの形の確かめ（BR3.2）の性質ベースのテスト、既存の *SecretLeakIT と同じ形の漏えいの確かめ、監査の書き込みの失敗を出来事ごとに1件 | code-generation・build-and-test |
+| 新しいパッケージ invitation のパッケージごとのカバレッジの下限、有効の判定（BR3.3）とトークンの形の確かめ（BR3.2）の性質ベースのテスト、既存の *SecretLeakIT と同じ形の漏えいの確かめ、監査の書き込みの失敗を出来事ごとに1件、有効期限の長さの設定の境界（1 時間は通る、0・負・90 分・形の誤りは起動を止める）と、48 時間の設定で招待・送り直しの本文に「48 時間」が出て 24 が出ず expiresAt が ＋48 時間になることの確かめ（BR1.6・BR10.2） | code-generation・build-and-test |
 | 招待から登録の完了までの E2E の代表の流れ1本（E2E-1）と、E2E で招待メールのリンクを取り出す方法 | u6-registration-ui・infrastructure-design |
 | 招待の画面の言語の初期値（AC1.1.1）と、画面の表示・操作の受け入れ基準（traceability.json の Deferred） | u5-invitation-ui・u6-registration-ui |

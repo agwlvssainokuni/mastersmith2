@@ -30,16 +30,16 @@
     "CR5"
   ],
   "coverage": [
-    { "id": "AC4.1.1", "status": "OK", "target": "BR3.1, BR6.1" },
-    { "id": "AC4.1.2", "status": "OK", "target": "BR3.3, BR6.1" },
-    { "id": "AC4.1.3", "status": "Deferred", "target": "u4-display-foundation（テーマ system を OS の配色の設定で解決して表示するのは画面の土台。サーバーは system をそのまま保存し返す BR3.1）" },
-    { "id": "AC4.1.4", "status": "Deferred", "target": "u4-display-foundation（保存の時点で画面の文言と html の lang を切り替え、以降の要求の Accept-Language に利用者の言語を入れるのは画面の土台。ADR-005。サーバーは Accept-Language で説明文を選ぶ BR8.3。招待の画面の言語の初期値は u5-invitation-ui）" },
-    { "id": "AC4.1.5", "status": "Deferred", "target": "u4-display-foundation（ログインの後の最初の画面から利用者の設定を当て、前の利用者の値を見せないのは画面の土台。サーバーはログインの応答に設定を載せる BR6.1）" },
-    { "id": "AC4.1.6", "status": "Deferred", "target": "u4-display-foundation（ログインの前の画面にブラウザに最後に保存された値を当てるのは画面の土台で、サーバーは関わらない）" },
+    { "id": "AC4.1.1", "status": "Deferred", "target": "u7-preferences-ui（プリファレンスの画面に今の4つを出し、テーマ system を「system が選ばれた状態」で見せることは画面の表示で確かめるため、U7 の W1〜W3 が受ける。U2 はサーバーの部分だけを受け持ち、GET /api/me/preferences が保存された値を system のまま返すことを BR3.1 のテストで確かめる）" },
+    { "id": "AC4.1.2", "status": "Deferred", "target": "u4-display-foundation（保存の直後とブラウザの保存を消してからのログインで dark・lg で表示されることは画面の表示で確かめるため、U4 の W5・W10 が受ける。U2 はサーバーの部分だけを受け持ち、保存が内部DB に残ること BR3.3 と、ログインの応答に保存した値が載ること BR6.1 を確かめる）" },
+    { "id": "AC4.1.3", "status": "Deferred", "target": "u4-display-foundation（テーマ system を OS の配色の設定で解いて表示するのは画面の土台、U4 の W11。U2 はサーバーの部分だけを受け持ち、system を解かずにそのまま保存し返す BR3.1）" },
+    { "id": "AC4.1.4", "status": "Deferred", "target": "u4-display-foundation（保存の時点で画面の文言と html の lang を切り替え、以降の要求の Accept-Language に利用者の言語を入れるのは画面の土台、U4 の W10・W12。保存の直後の描画は U7 の W8、招待の画面の言語の初期値は u5-invitation-ui。U2 はサーバーの部分だけを受け持ち、Accept-Language で説明文を選ぶ BR8.3）" },
+    { "id": "AC4.1.5", "status": "Deferred", "target": "u4-display-foundation（ログインの後の最初の画面から利用者の設定を当て、前の利用者の値を見せないのは画面の土台、U4 の W5。U2 はサーバーの部分だけを受け持ち、ログインの応答に設定を載せる BR6.1）" },
+    { "id": "AC4.1.6", "status": "Deferred", "target": "u4-display-foundation（ログインの前の画面にブラウザに最後に保存された値を当てるのは画面の土台、U4 の W4・W6。サーバーは関わらない）" },
     { "id": "AC4.1.7", "status": "OK", "target": "BR1.1, BR1.2, BR1.3, BR1.4, BR2.1, BR3.2" },
-    { "id": "AC4.1.8", "status": "OK", "target": "BR3.3, BR6.1" },
-    { "id": "AC4.1.9", "status": "OK", "target": "BR6.1" },
-    { "id": "AC4.1.10", "status": "OK", "target": "BR9.1, BR2.2, BR3.1" },
+    { "id": "AC4.1.8", "status": "Deferred", "target": "u7-preferences-ui（保存の直後にユーザーメニューの名前が変わることは画面の表示で確かめるため、U7 の W8 が受ける。名前を出すのは U4 の D8、ログインし直した後の表示は U4 の W5。U2 はサーバーの部分だけを受け持ち、氏名の保存 BR3.3 とログインの応答の displayName BR6.1 を確かめる）" },
+    { "id": "AC4.1.9", "status": "Deferred", "target": "u4-display-foundation（画面を読み込み直したセッションの復元で利用者の設定と氏名を当てることは画面の表示で確かめるため、U4 の W2・W5 が受ける。U2 はサーバーの部分だけを受け持ち、トークンの更新の応答に4つを載せる BR6.1）" },
+    { "id": "AC4.1.10", "status": "Deferred", "target": "u7-preferences-ui（変更の後にプリファレンスの画面に初期値が表示されることは画面の表示で確かめるため、U7 の W3 が受ける。U2 はサーバーの部分だけを受け持ち、V7 で既存の利用者に氏名＝メールアドレス・ja・system・md を入れ BR9.1・BR2.2、GET がその値を返す BR3.1 を確かめる）" },
     { "id": "AC4.1.11", "status": "Deferred", "target": "u7-preferences-ui（選んだ時点で見せ、保存しなければ戻す動きは画面だけで確かめる）" },
     { "id": "AC4.1.12", "status": "Deferred", "target": "u7-preferences-ui（保存の成功の Toast とフォーカスは画面だけで確かめる）" },
     { "id": "AC4.1.13", "status": "OK", "target": "BR3.5" },
@@ -60,6 +60,9 @@
   "reverse": [
     { "id": "BR1.5", "status": "N/A", "target": "氏名を正規化しない技術的な決まり（設計の要点 4）。対応する受け入れ基準は無い" },
     { "id": "BR1.6", "status": "N/A", "target": "氏名の決まりを1つの関数にまとめる作りの決まり。保存では AC4.1.7、作成では U3 の AC3.2.9 がこの関数を通して確かめる" },
+    { "id": "BR2.2", "status": "N/A", "target": "既存の利用者と初期管理者の初期値の決まり。受け入れ基準 AC4.1.10 は画面の表示で確かめるため u7-preferences-ui へ Deferred とし、U2 はサーバーの部分（V7 の後の値）をこの決まりで確かめる" },
+    { "id": "BR3.1", "status": "N/A", "target": "取得の決まり。表示を問う AC4.1.1・AC4.1.3・AC4.1.10 は画面の単位へ Deferred とし、U2 はサーバーの部分（保存された値を system のまま返す）をこの決まりで確かめる" },
+    { "id": "BR3.3", "status": "N/A", "target": "保存の決まり。表示を問う AC4.1.2・AC4.1.8 は画面の単位へ Deferred とし、U2 はサーバーの部分（内部DB に4つが残る）をこの決まりで確かめる。AC4.1.7 の「4つのどれも変わらない」は BR3.2 で受ける" },
     { "id": "BR3.4", "status": "N/A", "target": "同時の書き込みで相手の列を古い値で上書きしない技術的な決まり（設計の要点 6、ADR-003・ADR-004）" },
     { "id": "BR4.4", "status": "N/A", "target": "今と同じパスワードへの変更を許す決定（Q4 A）。受け入れ基準には無く、この段で決めた" },
     { "id": "BR5.1", "status": "N/A", "target": "利用者の作成の前提の決まり（C2）。登録の完了の US3.2 は U3 が主の単位（AC3.2.4・AC3.2.9 は U3 が確かめる）" },
@@ -67,7 +70,9 @@
     { "id": "BR5.3", "status": "N/A", "target": "作成のトランザクションと UserCreatedEvent（C2、FR4.5）。US3.2 の AC3.2.5・AC3.2.7・AC3.2.13 は U3 が主の単位" },
     { "id": "BR5.4", "status": "N/A", "target": "初期管理者の自動作成の初期値（要件の前提 A3）。既存の利用者の初期値の確かめ AC4.1.10 は V7 の BR9.1 で受ける" },
     { "id": "BR5.5", "status": "N/A", "target": "U3 へ渡す読み取りの操作（C2）。招待の一覧の表示などは U3 と U5 の受け入れ基準" },
+    { "id": "BR6.1", "status": "N/A", "target": "ログインと更新の応答の決まり。表示を問う AC4.1.2・AC4.1.5・AC4.1.8・AC4.1.9 は画面の単位へ Deferred とし、U2 はサーバーの部分（応答の user に4つが載る）をこの決まりで確かめる" },
     { "id": "BR7.5", "status": "N/A", "target": "監査の列の長さに名前が収まる技術的な確かめ（C8 の未解決の点）" },
+    { "id": "BR9.1", "status": "N/A", "target": "V7 の利用者の表の変更。表示を問う AC4.1.10 は u7-preferences-ui へ Deferred とし、U2 はサーバーの部分（既存の行に初期値が入る）をこの決まりで確かめる" },
     { "id": "BR9.2", "status": "N/A", "target": "監査の表に対象の2列を足すスキーマの変更（C8、NFR10）。記録の中身は CR3 の BR7.1・BR7.2 で確かめる" }
   ]
 }

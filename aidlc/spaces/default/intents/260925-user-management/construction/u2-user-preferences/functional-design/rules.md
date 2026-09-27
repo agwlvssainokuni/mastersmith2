@@ -222,7 +222,7 @@ rules:
     category: policy
     applies_to: PasswordChangedEvent → AuditEvent
     trigger: BR4.2 の不一致、BR4.3 の成功
-    logic: "eventType PASSWORD_CHANGED、result は成功なら SUCCESS・不一致なら FAILURE、failureReason は FAILURE のとき CURRENT_PASSWORD_MISMATCH（SUCCESS では空）、actorUserId と targetUserId に本人、sourceIp・userAgent・traceId は既存の出来事と同じ取り方、occurredAt は時計の値。enteredEmail・requestPath・targetInvitationId・DSL の列は空。入力の誤り（BR4.1）とプリファレンスの保存（BR3.5）では記録しない"
+    logic: "eventType PASSWORD_CHANGED、result は成功なら SUCCESS・不一致なら FAILURE、failureReason は FAILURE のとき CURRENT_PASSWORD_MISMATCH（SUCCESS では空）、actorUserId と targetUserId に本人、sourceIp・userAgent・traceId は既存の出来事と同じ取り方、occurredAt は時計の値。enteredEmail・requestPath・targetInvitationId・DSL の列は空。入力の誤り（BR4.1）とプリファレンスの保存（BR3.5）では記録しない。契約 C8 の PASSWORD_CHANGED の項目は actor_user_id・result・failure_reason だけを挙げるが、この単位は target_user_id（本人と同じ値）も記録する。契約の文書は書き換えず、差を functional-spec.md の7節に記録し、後の段で C8 に反映する（承認の場の Request Changes R-03、2026-09-27）"
     violation: —
     source: FR9.1、C8、CR3
   - id: BR7.3
@@ -256,7 +256,7 @@ rules:
     category: authorization
     applies_to: GET・PUT /api/me/preferences、POST /api/me/password
     trigger: すべての要求
-    logic: "既存の /api/ の既定のログイン必須に乗る。IF アクセストークンが無い・無効 THEN 401 AUTHENTICATION_REQUIRED。ログインした利用者は管理者でなくても処理する。対象は認証された本人の利用者 ID だけで決め、URL・本文で利用者 ID やメールアドレスを受け取らない。/api/auth/ の下には置かない"
+    logic: "既存の /api/ の既定のログイン必須に乗る。IF アクセストークンが無い・無効 THEN 401 AUTHENTICATION_REQUIRED。ログインした利用者は管理者でなくても処理する。対象は認証された本人の利用者 ID だけで決め、URL・本文で利用者 ID やメールアドレスを受け取らない。/api/auth/ の下には置かない。管理者の権限を要しない API のため、管理者でないことによる 403 の場面は無い。要件 NFR4 の「401・403・200 を確かめる」は、この3本では 403 が当てはまらないと読み、サーバー側のテストで未認証の 401 と、管理者でないログインした利用者の 200（パスワードの変更は 204）を確かめる（CR4 の「プリファレンスの取得と保存・パスワードの変更: 未認証 401、ログインした利用者は成功」と同じ。承認の場の Request Changes R-01、2026-09-27）"
     violation: 401
     source: FR10.2、NFR4、CR4、契約の共通の決まり
   - id: BR8.2
@@ -314,5 +314,5 @@ rules:
 | 利用者の作成と読み取り | BR5.1〜BR5.5 | 値は決まりに合う前提、登録済みは EmailAlreadyUsed、呼び出し元のトランザクションと UserCreatedEvent、初期管理者も同じ操作で初期値、ハッシュを出さない |
 | 認証の応答 | BR6.1 | ログインと更新の user に displayName・language・theme・fontSize |
 | 監査 | BR7.1〜BR7.5 | 対象の2列だけを足す、PASSWORD_CHANGED の成功と失敗、確定の後に記録し失敗で操作を止めない、パスワードを入れない、名前は 32 に収まる |
-| 認可・応答・秘密 | BR8.1〜BR8.4 | /api/me/ はログインした本人だけ、PASSWORD_CURRENT_MISMATCH は 400、説明文は Accept-Language、パスワードとメールアドレスを出さない |
+| 認可・応答・秘密 | BR8.1〜BR8.4 | /api/me/ はログインした本人だけ（403 の場面は無く、確かめるのは 401 と 200）、PASSWORD_CURRENT_MISMATCH は 400、説明文は Accept-Language、パスワードとメールアドレスを出さない |
 | スキーマの変更 | BR9.1・BR9.2 | V7 で4列（既定の値と既存の行の初期値）と監査の2列、前進のみ・後方互換 |

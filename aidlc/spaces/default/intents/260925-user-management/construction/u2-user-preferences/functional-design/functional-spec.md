@@ -88,6 +88,7 @@
 | 場合 | 応答 | 内部DB | 監査 | 決まり |
 |---|---|---|---|---|
 | 未認証（3つの API） | 401 AUTHENTICATION_REQUIRED | 変わらない | 既存のアクセスの拒否の扱いのまま（/api/me/ は管理者だけの API ではないため ACCESS_DENIED は残らない） | BR8.1 |
+| 管理者でないログインした利用者（3つの API） | 403 の場面は無い（管理者の権限を要しないため、ほかの決まりに合えば 200、パスワードの変更は 204） | 操作のとおり | 操作のとおり | BR8.1（7節の差 D1） |
 | プリファレンスの誤り（1つ以上） | 400 VALIDATION_FAILED（項目ごと） | 変わらない | 残さない | BR3.2・BR3.5 |
 | パスワードの入力の誤り | 400 VALIDATION_FAILED（項目ごと） | 変わらない | 残さない | BR4.1 |
 | 今のパスワードの誤り | 400 PASSWORD_CURRENT_MISMATCH | 変わらない | FAILURE・CURRENT_PASSWORD_MISMATCH | BR4.2・BR7.2 |
@@ -141,7 +142,7 @@ erDiagram
 | 利用者の作成と読み取り | BR5.1〜BR5.5 | 決まりに合う前提、EmailAlreadyUsed、呼び出し元のトランザクションと UserCreatedEvent、初期管理者も同じ操作、ハッシュを出さない |
 | 認証の応答 | BR6.1 | ログインと更新の user に4つを足す |
 | 監査 | BR7.1〜BR7.5 | 対象の2列だけ、PASSWORD_CHANGED、確定の後・失敗で止めない、パスワードを入れない、32 に収まる |
-| 認可・応答・秘密 | BR8.1〜BR8.4 | ログインした本人だけ、PASSWORD_CURRENT_MISMATCH 400、Accept-Language、パスワードとメールアドレスを出さない |
+| 認可・応答・秘密 | BR8.1〜BR8.4 | ログインした本人だけ（403 の場面は無く、確かめるのは 401 と 200）、PASSWORD_CURRENT_MISMATCH 400、Accept-Language、パスワードとメールアドレスを出さない |
 | スキーマの変更 | BR9.1・BR9.2 | V7、既定の値と初期値、前進のみ・後方互換 |
 
 ## 6. 後の段へ渡すこと
@@ -153,3 +154,22 @@ erDiagram
 | V7 の後方互換（1つ前の版のアプリへ戻したときに起動し、初期管理者の作成が動かないこと）の確かめ方 | nfr-design・infrastructure-design |
 | 手を入れる既存のパッケージ（user.domain・user.repository・user.service・audit.domain・audit.repository・audit.service、応答を広げる auth.service・auth.web）を packagesJudgedByTotal の一覧から外し、パッケージごとの下限を満たすこと | code-generation・build-and-test |
 | 既存の AuditSecretLeakIT などの列の一覧に V7 の2列を足すこと（前の Intent の U4 と同じ扱い） | code-generation |
+| 契約 C8 の PASSWORD_CHANGED の項目に target_user_id を足すこと（7節の差 D2） | 契約を次に見直す段（遅くとも code-generation の計画で反映を確かめる） |
+
+## 7. 上流との差と変更の記録
+
+### 7.1 上流との差
+
+| ID | 上流 | 上流の記載 | この単位の設計 | 理由と扱い |
+|---|---|---|---|---|
+| D1 | 要件 NFR4（`inception/requirements-analysis/requirements.md`） | 「どれもサーバー側のテストで 401・403・200 を確かめる」 | GET・PUT /api/me/preferences と POST /api/me/password では 403 は当てはまらないと読み、確かめるのは未認証の 401 と、管理者でないログインした利用者の 200（パスワードの変更は 204）とする（BR8.1、3節） | この3本は管理者の権限を要しない API で、ログインした利用者なら管理者でなくても処理するため、403 を返す場面が無い。ストーリーの CR4 も「プリファレンスの取得と保存・パスワードの変更: 未認証 401、ログインした利用者は成功」と2つにしている。要件の文書は書き換えない |
+| D2 | 契約 C8（`inception/contract-design/contract-summary.md`、この単位が正を持つ） | PASSWORD_CHANGED の項目は actor_user_id・result・failure_reason だけ | target_user_id にも本人と同じ値を記録する（BR7.2、`entities.md` の AuditEvent・PasswordChangedEvent） | 対象の利用者の列を足すのはこの単位で、U3 の REGISTRATION_COMPLETED と同じく「対象」を列で引けるようにするため。契約の文書は書き換えず、後の段で C8 の PASSWORD_CHANGED に target_user_id を足す（6節） |
+| D3 | 受け入れ基準の受け持ち（`inception/units-generation/unit-of-work-story-map.md` の US4.1 は主が U2、関わる単位が U4・U7） | 表示に関わる受け入れ基準の単位ごとの受け持ちは決めていない | サーバーの応答・保存で満たせる受け入れ基準（AC4.1.7・AC4.1.13・AC5.1.1〜AC5.1.6）だけを U2 が OK で持ち、画面の表示で確かめる受け入れ基準は画面の単位へ Deferred とする。AC4.1.1・AC4.1.8・AC4.1.10 は u7-preferences-ui、AC4.1.2〜AC4.1.6・AC4.1.9 は u4-display-foundation（`traceability.json`） | 画面の単位の設計（`construction/u4-display-foundation/functional-design/traceability.json`・`construction/u7-preferences-ui/functional-design/traceability.json`）でそれぞれ OK として受けているため。U2 はそれらのサーバーの部分（BR2.2・BR3.1・BR3.3・BR6.1・BR8.3・BR9.1）を自分のテストで確かめ、`traceability.json` の reverse に理由を書いた |
+
+### 7.2 承認の場の Request Changes（2026-09-27）による直し
+
+| 指摘 | 直した箇所 | 直した内容 |
+|---|---|---|
+| R-01（NFR4 の 403） | `rules.md` の BR8.1 と決まりの一覧、この文書の3節の表・5節・7.1 の D1 | 403 は当てはまらないこと（管理者の権限を要しない API のため）と、確かめるのは 401 と 200 であることを明記した。決まりの中身（ログインした本人だけが使える）は変えていない |
+| R-02（表示の受け入れ基準の OK と Deferred の分け方） | `traceability.json` の coverage と reverse、この文書の7.1 の D3 | 元は AC4.1.1・AC4.1.2・AC4.1.8・AC4.1.9・AC4.1.10 を OK（サーバーの決まりで満たすと読んだ）とし、AC4.1.3〜AC4.1.6 を Deferred としていた。分け方を「サーバーの応答・保存で満たせる部分だけを U2 が OK で持ち、画面の表示で確かめる受け入れ基準は画面の単位へ Deferred」にそろえ、5件を理由つきで Deferred に変えた（AC4.1.1・AC4.1.8・AC4.1.10 は u7-preferences-ui、AC4.1.2・AC4.1.9 は u4-display-foundation）。OK の対象から外れた BR2.2・BR3.1・BR3.3・BR6.1・BR9.1 は reverse にサーバーの部分として受け持つ理由を書いた。決まりの中身は変えていない |
+| R-03（C8 と targetUserId） | `rules.md` の BR7.2、`entities.md` の AuditEvent の targetUserId、この文書の6節・7.1 の D2 | 契約 C8 との差（PASSWORD_CHANGED に target_user_id を足す）を明記し、契約への反映を後の段へ渡した。契約の文書は書き換えていない |

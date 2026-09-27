@@ -16,7 +16,8 @@ U5 は、管理者が招待中の人を一覧で確かめ、招待・送り直�
 | 招待を使える | 一覧の応答の `invitationEnabled` が真。偽のときの理由は `unavailableReasons`（`SMTP_NOT_CONFIGURED`・`BASE_URL_NOT_CONFIGURED`） |
 | 失敗の知らせ | 一覧の上に出す `role="alert"` の表示。画面に1つだけ置き、次の操作の結果で置き換える（D10） |
 | 目立たせた行 | 招待中の案内から移った行（W7）。枠の線と背景で示し、ページを変える・次の操作をするまで残す |
-| 行の処理中 | その行の送り直しの要求中。その行の「送り直す」「取り消す」だけを押せなくする |
+| 一覧の見出し | 表の上に置く見える見出し `h2`「招待中の人」（`tabIndex=-1`）。make-you-chic-ui の Table は `caption` を持てないため、`caption` の代わりにフォーカスの行き先とする。読み込み中・空・読めなかった間も出す |
+| 行の処理中 | その行の送り直しの要求中。その行の「送り直す」を `loading`（押しても何もしないがフォーカスは保つ）、「取り消す」を `disabled` にする |
 
 ## 2. 置き場と登録
 
@@ -44,10 +45,10 @@ U5 は、管理者が招待中の人を一覧で確かめ、招待・送り直�
 | D6 | 招待した日時と有効期限は、`shared/format` の `formatDateTime` で、ブラウザのタイムゾーンと画面の言語の書式（年と時差の略号つき。例 `2026-09-25 21:00 JST`・`Sep 25, 2026, 21:00 GMT+9`）で出す | 設計の要点 6、Q1 A、CR6.8 |
 | D7 | 招待した管理者は、応答の `invitedBy`（氏名）をそのまま出す。空の文字列のときは「（不明）」／「(Unknown)」と出す。画面でメールアドレスに切り替えない | 設計の要点 5、U3 の R-01（直した後の形） |
 | D8 | 招待の入力で画面が前もって確かめるのは、メールアドレスが空（空白だけを含む）でないことだけ。形式・長さ・改行はサーバー（U3 の BR1.1）の判定に任せ、入れた値を正規化せずにそのまま送る | 設計の要点 10、`frontend/src/features/auth/validateLoginInput.ts` の考え方 |
-| D9 | 送信の間はそのボタンを押せなくし、文字（「送信しています」など）と `aria-busy` で示す。招待の送信中は Modal を閉じない（「やめる」・閉じるボタン・Esc を受けない）。送り直しの処理中はその行の「送り直す」「取り消す」だけを押せなくし、ほかの行は押せるまま。取り消しの要求中は確かめの Modal のどちらのボタンも押せず、閉じない | 設計の要点 10・12・13、CR6.3、AC1.1.9、AC2.2.12 |
+| D9 | 送信の間はそのボタンを make-you-chic-ui の Button の `loading` にし、文字（「送信しています」など）で示す。`loading` のボタンは `aria-disabled`・`aria-busy` になり押しても何もしないが、フォーカスは保つ（押したボタンにフォーカスが残る）。招待の送信中は Modal を閉じない（「やめる」・閉じるボタン・Esc を受けない）。送り直しの処理中はその行の「送り直す」を `loading`、「取り消す」を `disabled` にし、ほかの行は押せるまま。取り消しの要求中は確かめの Modal の「取り消す」を `loading`、「やめる」を `disabled` にし、閉じない | 設計の要点 10・12・13、CR6.3、AC1.1.9、AC2.2.12 |
 | D10 | 成功は Toast（`aria-live="polite"`）だけで知らせる。失敗は一覧の上の失敗の知らせ（`role="alert"`、閉じるボタン付き）に残す。失敗の知らせは1つだけで、次の操作の結果（成功を含む）で置き換える・消す。Modal の中で扱う失敗（W6 の入力の誤りと Modal の中の知らせ）は Modal の中に出す | 設計の要点 14、CR6.4 |
 | D11 | 画面に出す・知らせる個人に関する値は、招待のメールアドレスと招待した管理者の氏名だけ。招待のトークン・招待の URL は扱わない（一覧・招待・送り直しの応答に無い、U3 の BR5.4）。応答の値をブラウザのコンソールや保存に出さない | 設計の要点 14、AC2.1.7、CR5 |
-| D12 | 招待の入力と取り消しの確かめの Modal は、背景のクリックで閉じない。取り消しの確かめのはじめのフォーカスは「やめる」。Esc と「やめる」で閉じ、閉じたら開く前のボタンへフォーカスを戻す（make-you-chic-ui の Modal の決まり） | 設計の要点 10・13、CR6.7、`mockups.md` の 3・4節 |
+| D12 | 招待の入力と取り消しの確かめの Modal は、make-you-chic-ui の Modal の `closeOnBackdropClick={false}` で背景のクリックで閉じない。取り消しの確かめは `role="alertdialog"` にする。閉じるボタンの名前は `closeLabel` に `invitation.action.close`（「閉じる」／「Close」）を渡す。取り消しの確かめのはじめのフォーカスは「やめる」。Esc と「やめる」で閉じ、閉じたら開く前のボタンへフォーカスを戻す（make-you-chic-ui の Modal の決まり） | 設計の要点 10・13、CR6.7、`mockups.md` の 3・4節、`interaction-spec.md` の 4節 |
 | D13 | 行の「送り直す」「取り消す」の見える文字はそのまま、読み上げの名前にその行のメールアドレスを含める（例「a@example.test への招待を送り直す」） | 設計の要点 15、AC2.1.6 |
 | D14 | 画面でメニューやボタンを隠すことは、サーバー側の管理者の判定の代わりにしない。401・403 はサーバーが判定し、画面はその結果を W1・6節のとおり示すだけ | CR4、`team.md` |
 
@@ -73,7 +74,8 @@ stateDiagram-v2
 
 <!-- Text fallback: 画面を開くと1ページ目の読み込み中になる。応答の items が1件以上なら表示（行あり）、total が 0 なら空、items が空で total が 1 以上なら（ページが最後を超えた）最後のページを読み直す。失敗（401 を除く）なら読めなかったになり、「もう一度読み込む」で読み込み中に戻る。表示と空からは、ページを変えるか操作の後の読み直しで読み込み中に戻る。 -->
 
-- 読み込み中は、前に表示していた行を残さず、表の位置に読み込み中の表示（文字つき、`role="status"`）を出す。ページ送りのボタンは押せない。
+- 読み込み中は、前に表示していた行を残さず、一覧の見出しの下に読み込み中の表示（文字つき、`role="status"`）を出す。最初の読み込み（まだ一覧の応答が無い）では Table を描かない。一度表示した後の読み直し（ページ送り・操作の後・もう一度読み込む）では、Table を描いたまま行を空（`data` を空）にし、`page` は読むページ、`totalCount` は最後に使った一覧の応答の値にする。Table のページ送りのボタンを同じ要素のまま残し、押したボタンのフォーカスを保つため（W2 の 3）。
+- 読み込み中も Table のページ送りのボタンは押せる（Table の外から押せなくする口が無い）。重ねて押したときは D2 のとおり最後に始めた読み直しの答えだけを使う。
 - 警告（D3）は読み込み中の間も、最後に使った一覧の応答の値のまま残す。最初の読み込みの間は応答が無いため警告は出さず、「招待する」は押せない。
 - 失敗の知らせ（D10）と目立たせた行は、一覧の状態とは別に持つ（4.3）。
 
@@ -123,15 +125,17 @@ stateDiagram-v2
    - 招待した日時・有効期限: D6。
    - 送信の結果・状態: D5（`sendResult` と `expired` の値だけで決め、画面の時計で `expiresAt` と比べない）。
    - 操作: 「送り直す」「取り消す」（D13 の名前）。期限切れの行も押せる（AC2.2.2・AC2.2.10）。
-5. 表は `caption`「招待中の人」と列見出し `th scope="col"` を持つ。狭い幅では表を包む領域を横に動かして見る。その領域はキーボードで届き（`tabIndex=0`）、名前（「招待中の人の表」）を持つ（設計の要点 16）。
+5. 表は make-you-chic-ui の Table で描く（素の `table` と自前のページ送りは作らない）。Table は `caption` を持てないため、表の名前は Table の `aria-label` に「招待中の人」を渡して付け、同じ文を見える見出し（一覧の見出し、`h2`、`tabIndex=-1`）として表の上に置く。列見出しは Table の `columns` の `header` で、`thead` の `th` になる（Table は `scope` を書かないが、`thead` の行の `th` は列の見出しとして読まれる）。文言は Table の `labels` に ja・en で渡す（7節の `invitation.table.*`・`invitation.action.prev`・`invitation.action.next`・`invitation.pager.status`）。
+   - 狭い幅では、Table が持つ包む要素（横にはみ出すと横に動かせる）で表を横に動かして見る。この包む要素はフォーカスを受けないが、各行の「取り消す」（いつも押せる、D3）と Table のページ送りのボタンが包む要素の中にあり、Tab でそこに届く。フォーカスがその中にあるときは矢印のキーで横に動かせ、フォーカスした要素は見える位置まで動く（設計の要点 16）。表を包む自前の領域（`tabIndex=0`・名前「招待中の人の表」）は置かない（9節の (j)）。
+   - 行ごとの操作のボタンと、目立たせた行の印（W7）、メールアドレスのセルのフォーカスの受け口は、Table の `columns` の `render` で描く。行の id は `getRowId` で `invitationId` を文字にしたもの。並べ替え・行の選択・行の開閉・セルの編集は使わない（`sortable`・`selectedRowIds`・`renderDetail`・`editable` を渡さない）。
 6. 招待が0件（`total` が 0）なら、表の代わりに「招待中の人はいません。『招待する』から招待できます。」を出す（AC2.1.4）。
 7. 開いたまま時間がたって期限を過ぎた行は、次に一覧を読むまで「期限内」のまま出る（Q3 A。送り直し・取り消しは期限切れでも行えるため操作は誤らない）。
 
 ### W2. ページ送り
 
-1. `total` が 20 より大きいときだけ、表の下にページ送りを出す。件数の範囲「21〜40 件目 / 全 43 件」、ページ「2 / 3」、「前へ」「次へ」のボタン（1ページ目で「前へ」、最後のページで「次へ」を押せない）。
+1. ページ送りは Table が表の下に持つもの（`page`・`pageSize` 20・`totalCount`・`onPageChange`）を使う。Table を描くとき（1件以上あるとき）はいつも出る。`total` が 20 以下のときも「1〜n 件目 / 全 n 件（1 / 1 ページ）」と、押せない「前へ」「次へ」が出る（9節の (j)）。状態の文は `labels.pageStatus` に 7節の `invitation.pager.status`（件数の範囲・全件数・ページ）を返す関数を渡す。件数の範囲は Table が渡すページと全件数から、ページの大きさ 20 で計算する（下の 4）。1ページ目で「前へ」、最後のページで「次へ」を Table が押せなくする。
 2. 「前へ」「次へ」で今のページを1つ変え、そのページの一覧を読む（D2）。目立たせた行と失敗の知らせは消す。
-3. 読み終わったら、件数の範囲を `aria-live="polite"` の領域で伝える。フォーカスは押したボタンのまま（押せなくなったら表の `caption` に移す）。
+3. 読み終わったら、件数の範囲を画面が持つ見えない `aria-live="polite"` の領域で伝える（Table の状態の文は `aria-live` を持たないため、Table の外に置く）。読み込み中も Table を描いたままにする（4.1）ため、フォーカスは押したボタンのまま残る。押したボタンが読んだ先のページで押せなくなった（「前へ」で1ページ目、「次へ」で最後のページに着いた）ときは、一覧の見出しに移す（押せなくなった要素からフォーカスが外れるため。どちらを押したかと読んだ先のページで決め、Table の中の要素を探さない）。
 4. 件数の範囲・ページの数・ページの補正（下の 5）は純粋な関数で決める（`frontend-components.md` の 2節）。
 5. 応答の `items` が空で `total` が 1 以上のとき（ほかの管理者の操作や取り消しで今のページが最後を超えた）は、最後のページ（`total` を 20 で割った切り上げ）を読み直す（U3 の BR5.2）。
 
@@ -154,7 +158,7 @@ stateDiagram-v2
 1. 「招待する」（Modal の中）を押す。
 2. メールアドレスが空（空白だけを含む）なら送らず、項目の下に「メールアドレスを入れてください。」を出し（`aria-invalid`・`aria-describedby`）、項目にフォーカスする（D8、CR6.1）。
 3. 空でなければ、入れた値と選んだ言語をそのまま C5 の招待（`POST /api/admin/invitations`）で送る。前の誤りと Modal の中の知らせを消す。
-4. 送信の間は「招待する」を押せなくして「送信しています」と `aria-busy` を示し、Modal を閉じない（D9、AC1.1.9）。
+4. 送信の間は「招待する」を Button の `loading` にして「送信しています」と示し（`aria-disabled`・`aria-busy`、フォーカスは「招待する」に残る）、Modal を閉じない（D9、AC1.1.9）。
 5. 応答で 6.2 のとおりに動く。
 
 ### W6. 招待の結果
@@ -169,26 +173,30 @@ stateDiagram-v2
 ### W7. 招待中の案内から一覧の行へ移る
 
 1. 409 `INVITATION_ALREADY_PENDING` の誤り「すでに招待中です。一覧から送り直してください。」の下に「一覧でこの招待を見る」を出す（画面の中の操作のため要素は button、見た目はリンク。9節の (f)）。
-2. 押すと Modal を閉じ、今のページを応答の `page` にして一覧を読み、応答の `invitationId` の行を目立たせる（枠の線と背景。色だけで示さない。ページを変える・次の操作まで残す）。
-3. 読み終わったら、その行の「送り直す」にフォーカスする。「送り直す」を押せない（W3）ときは、その行のメールアドレスのセル（`tabIndex=-1`）にフォーカスする。
-4. その行がそのページに無い（ほかの操作で位置が動いた）ときは、目立たせず、表の `caption` にフォーカスする。応答の `page` が最後を超えていたら W2 の 5 で最後のページを読み、そこで同じく探す（AC1.1.4・AC1.1.13）。
+2. 押すと Modal を閉じ、今のページを応答の `page` にして一覧を読み、応答の `invitationId` の行を目立たせる（枠の線と背景。色だけで示さない。ページを変える・次の操作まで残す）。Table は行ごとの class を渡す口を持たないため、メールアドレスの列の `render` で目立たせる印（`data-invitation-highlighted` を持つ要素）を描き、機能の CSS で、その印を含む行（CSS の `:has()`）に枠の線と背景を付ける。
+3. 読み終わったら、その行の「送り直す」にフォーカスする。「送り直す」を押せない（W3）ときは、その行のメールアドレスのセルの受け口（メールアドレスの列の `render` で描く `tabIndex=-1` の要素）にフォーカスする。
+4. その行がそのページに無い（ほかの操作で位置が動いた）ときは、目立たせず、一覧の見出しにフォーカスする。応答の `page` が最後を超えていたら W2 の 5 で最後のページを読み、そこで同じく探す（AC1.1.4・AC1.1.13）。
 
 ### W8. 送り直し
 
 1. 行の「送り直す」を押す。失敗の知らせと目立たせた行を消す。
-2. その行を行の処理中にし、その行の「送り直す」を「送信しています」と `aria-busy` に、「取り消す」も押せなくする。ほかの行の操作は押せるまま（D9、AC2.2.12）。
+2. その行を行の処理中にし、その行の「送り直す」を Button の `loading` にして「送信しています」と示し（フォーカスは「送り直す」に残る）、「取り消す」を `disabled` にする。ほかの行の操作は押せるまま（D9、AC2.2.12）。
 3. C5 の送り直し（`POST /api/admin/invitations/{invitationId}/resend`）を送る。
-4. 200 で SENT なら Toast「招待を送り直しました」。200 で FAILED なら失敗の知らせ「招待を送り直しましたが、メールを送れませんでした。もう一度送り直せます。」（AC2.2.8）。どちらも今のページを読み直し（行の有効期限と送信の結果が新しい値になる、AC2.2.3・AC2.2.12）、同じ行の「送り直す」にフォーカスを戻す（送り直しでは招待した日時が変わらず、行の位置は変わらない、U3 の BR6.1）。
-5. 404・503・そのほかの失敗は 6.3 のとおり。読み直しの後にその行が無ければ `caption` に、「送り直す」を押せなくなっていればその行のメールアドレスのセルにフォーカスする。
+4. 応答ごとの動きは 6.3 の表のとおり。
+   - 200（SENT・FAILED）: SENT なら Toast「招待を送り直しました」、FAILED なら失敗の知らせ「招待を送り直しましたが、メールを送れませんでした。もう一度送り直せます。」（AC2.2.8）。どちらも今のページを読み直し（行の有効期限と送信の結果が新しい値になる、AC2.2.3・AC2.2.12）、同じ行の「送り直す」にフォーカスを戻す（送り直しでは招待した日時が変わらず、行の位置は変わらない、U3 の BR6.1）。
+   - 404 `INVITATION_NOT_FOUND`: 見つからない旨の失敗の知らせを出し、今のページを読み直す。読み直しの後にその行が無ければ一覧の見出しにフォーカスする（AC2.2.7）。
+   - 503 `INVITATION_NOT_CONFIGURED`: 失敗の知らせに W3 の理由の文を出し、今のページを読み直す。読み直しの後は警告が出て「送り直す」が押せなくなるため、その行のメールアドレスのセルの受け口にフォーカスする（その行が無ければ一覧の見出し。AC2.2.9）。
+   - 403・そのほかの 4xx・5xx・通信の失敗: 失敗の知らせに一般の文言を出す。読み直さず、フォーカスは同じ行の「送り直す」のまま（`loading` の間もフォーカスを保っているため、処理中を解くだけでよい。D4）。
+5. 読み直しの後のフォーカスの行き先は、行の有無と「送り直す」を押せるかで決める（`frontend-components.md` の 3.3）。
 6. 行の処理中は、その行の応答が来たら（成功・失敗とも）解く。
 
 ### W9. 取り消し
 
 1. 行の「取り消す」を押す。失敗の知らせと目立たせた行を消す。
-2. S1-M2 を開く。見出し「招待を取り消しますか」、本文「a@example.test への招待を取り消します。取り消すと、招待メールのリンクは使えなくなります。」（本文は Modal がダイアログの説明として結ぶ）。はじめのフォーカスは「やめる」。背景のクリックで閉じない（D12、CR6.7）。
+2. S1-M2 を開く。見出し「招待を取り消しますか」、本文「a@example.test への招待を取り消します。取り消すと、招待メールのリンクは使えなくなります。」（本文は Modal がダイアログの説明として結ぶ）。役割は `role="alertdialog"`、はじめのフォーカスは「やめる」。`closeOnBackdropClick={false}` で背景のクリックで閉じない（D12、CR6.7）。
 3. 「やめる」・閉じるボタン・Esc で閉じ、招待は変わらない。フォーカスは元の「取り消す」に戻る（AC2.2.11）。
-4. 「取り消す」を押すと、C5 の取り消し（`POST /api/admin/invitations/{invitationId}/cancel`）を送る。要求中はどちらのボタンも押せず、「取り消す」を「取り消しています」と `aria-busy` にし、閉じない（D9）。
-5. 204 なら Modal を閉じ、Toast「招待を取り消しました」を出し、今のページを読み直す。行が無くなるため、フォーカスは表の `caption` に置き、一覧が空になったら空の表示の文（`tabIndex=-1`）に置く。今のページが最後を超えたら（そのページの最後の1件を取り消した）、W2 の 5 で最後のページを読む（AC2.2.4・AC2.2.10）。
+4. 「取り消す」を押すと、C5 の取り消し（`POST /api/admin/invitations/{invitationId}/cancel`）を送る。要求中は「取り消す」を Button の `loading` にして「取り消しています」と示し（フォーカスは「取り消す」に残る）、「やめる」を `disabled` にし、閉じない（D9）。
+5. 204 なら Modal を閉じ、Toast「招待を取り消しました」を出し、今のページを読み直す。行が無くなるため、フォーカスは一覧の見出しに置き、一覧が空になったら空の表示の文（`tabIndex=-1`）に置く。今のページが最後を超えたら（そのページの最後の1件を取り消した）、W2 の 5 で最後のページを読む（AC2.2.4・AC2.2.10）。
 6. 404 と、そのほかの失敗は 6.4 のとおり。
 
 ### W10. 結果の知らせ
@@ -231,17 +239,17 @@ stateDiagram-v2
 |---|---|---|
 | 200・SENT | Toast「招待を送り直しました」、今のページを読み直し、同じ行の「送り直す」にフォーカス | AC2.2.3・AC2.2.12 |
 | 200・FAILED | 失敗の知らせ「招待を送り直しましたが、メールを送れませんでした。もう一度送り直せます。」、今のページを読み直し、同じ行の「送り直す」にフォーカス | AC2.2.8 |
-| 404 `INVITATION_NOT_FOUND` | 失敗の知らせ「この招待は見つかりません。ほかの管理者が取り消したか、登録が完了した可能性があります。」、今のページを読み直す（行が無ければ `caption` にフォーカス） | AC2.2.7 |
-| 503 `INVITATION_NOT_CONFIGURED` | 失敗の知らせに W3 の理由の文、今のページを読み直す（警告が出て「送り直す」が押せなくなる。フォーカスはその行のメールアドレスのセル） | AC2.2.9 |
-| 403・そのほかの 4xx・5xx・通信の失敗 | 失敗の知らせに一般の文言。読み直さず、フォーカスは同じ行の「送り直す」 | D4 |
+| 404 `INVITATION_NOT_FOUND` | 失敗の知らせ「この招待は見つかりません。ほかの管理者が取り消したか、登録が完了した可能性があります。」、今のページを読み直す（行が無ければ一覧の見出しにフォーカス） | AC2.2.7 |
+| 503 `INVITATION_NOT_CONFIGURED` | 失敗の知らせに W3 の理由の文、今のページを読み直す（警告が出て「送り直す」が押せなくなる。フォーカスはその行のメールアドレスのセルの受け口、行が無ければ一覧の見出し） | AC2.2.9 |
+| 403・そのほかの 4xx・5xx・通信の失敗 | 失敗の知らせに一般の文言。読み直さず、フォーカスは同じ行の「送り直す」のまま（`loading` の間も保っている） | D4 |
 | 401 | 画面の文言を出さない | 既存の決まり |
 
 ### 6.4 取り消し（`POST /api/admin/invitations/{invitationId}/cancel`）
 
 | 応答 | 画面の動き | 出典 |
 |---|---|---|
-| 204 | Modal を閉じ、Toast「招待を取り消しました」、今のページを読み直す。フォーカスは `caption`（空になれば空の表示の文）。今のページが最後を超えたら最後のページを読む | AC2.2.4・AC2.2.10・AC2.2.11 |
-| 404 `INVITATION_NOT_FOUND` | Modal を閉じ、6.3 と同じ見つからない旨の失敗の知らせ、今のページを読み直す（フォーカスは `caption`） | AC2.2.7 |
+| 204 | Modal を閉じ、Toast「招待を取り消しました」、今のページを読み直す。フォーカスは一覧の見出し（空になれば空の表示の文）。今のページが最後を超えたら最後のページを読む | AC2.2.4・AC2.2.10・AC2.2.11 |
+| 404 `INVITATION_NOT_FOUND` | Modal を閉じ、6.3 と同じ見つからない旨の失敗の知らせ、今のページを読み直す（フォーカスは一覧の見出し） | AC2.2.7 |
 | 403・そのほかの 4xx・5xx・通信の失敗 | Modal を閉じ、失敗の知らせに一般の文言。読み直さず、フォーカスは元の「取り消す」 | D4 |
 | 401 | 画面の文言を出さない | 既存の決まり |
 
@@ -269,7 +277,6 @@ stateDiagram-v2
 | `invitation.action.next` | 次へ | Next |
 | `invitation.action.dismissAlert` | 知らせを閉じる | Dismiss the message |
 | `invitation.list.caption` | 招待中の人 | Pending invitations |
-| `invitation.list.region` | 招待中の人の表 | Table of pending invitations |
 | `invitation.list.loading` | 招待中の人を読み込んでいます | Loading pending invitations |
 | `invitation.list.empty` | 招待中の人はいません。『招待する』から招待できます。 | There are no pending invitations. Use "Invite" to invite someone. |
 | `invitation.list.failed` | 招待中の人を読み込めませんでした。 | Could not load the pending invitations. |
@@ -289,9 +296,12 @@ stateDiagram-v2
 | `invitation.row.resendName` | {{email}} への招待を送り直す | Resend the invitation to {{email}} |
 | `invitation.row.resendingName` | {{email}} への招待を送信しています | Sending the invitation to {{email}} |
 | `invitation.row.revokeName` | {{email}} への招待を取り消す | Revoke the invitation to {{email}} |
-| `invitation.pager.label` | ページ送り | Pagination |
 | `invitation.pager.range` | {{from}}〜{{to}} 件目 / 全 {{total}} 件 | {{from}}–{{to}} of {{total}} |
-| `invitation.pager.page` | {{page}} / {{pages}} | {{page}} / {{pages}} |
+| `invitation.pager.status` | {{from}}〜{{to}} 件目 / 全 {{total}} 件（{{page}} / {{pages}} ページ） | {{from}}–{{to}} of {{total}} (page {{page}} of {{pages}}) |
+| `invitation.table.emptyStatus` | 0 件 | 0 items |
+| `invitation.table.selectAllRows` | すべての行を選ぶ | Select all rows |
+| `invitation.table.selectRow` | この行を選ぶ | Select this row |
+| `invitation.table.toggleRowDetail` | 詳細 | Details |
 | `invitation.unavailable.title` | 招待を使えません | Invitations are unavailable |
 | `invitation.unavailable.SMTP_NOT_CONFIGURED` | 招待を使えません: メールの送り先が設定されていません。運用者に設定を依頼してください。 | Invitations are unavailable: the mail server is not configured. Ask the operator to configure it. |
 | `invitation.unavailable.BASE_URL_NOT_CONFIGURED` | 招待を使えません: 招待のリンクに使うアプリの URL が設定されていません。運用者に設定を依頼してください。 | Invitations are unavailable: the application URL for invitation links is not configured. Ask the operator to configure it. |
@@ -319,6 +329,8 @@ stateDiagram-v2
 | `invitation.errorGeneral.network` | サーバーにつながりませんでした。通信の状態を確かめてからやり直してください | The server could not be reached. Check your connection and try again |
 
 - 「取り消す」の英語は、Modal の「やめる」（Cancel）と取り違えないよう Revoke とする。
+- Table の `labels` には、7つの項目をすべて画面の言語で渡す（渡さない項目は make-you-chic-ui の日本語の既定の文言になり、英語の画面に日本語が混じるため）。`previousPage`・`nextPage` は `invitation.action.prev`・`invitation.action.next`、`pageStatus` は `invitation.pager.status` を返す関数、`emptyStatus`・`selectAllRows`・`selectRow`・`toggleRowDetail` は `invitation.table.*`。後の4つは、行の選択・行の開閉を使わず、0件のときは Table を描かない（W1 の 6）ため画面には出ないが、既定の文言が出ないように渡す。
+- Modal の閉じるボタンの名前は `closeLabel` に `invitation.action.close` を渡す（渡さないと make-you-chic-ui の既定の「閉じる」が英語の画面にも出るため）。
 - 一般の文言の3つは DSL の管理画面（`frontend/src/features/dsl/messages.ts`）と同じ文にする（機能どうしで読み込まないため、文言は複写する）。
 
 ## 8. テストの方針
@@ -336,13 +348,16 @@ stateDiagram-v2
 | 項目 | 上流の文書 | この設計 | 理由 |
 |---|---|---|---|
 | (a) 招待の成功の後 | ストーリーの AC1.1.8「成功の後もフォームが開いたまま（メールアドレスは空、言語はそのまま、フォーカスはメールアドレス）」 | Modal を閉じて Toast、1ページ目を読み直して一覧に1行加える。フォーカスは「招待する」 | Refined Mockups の承認の決定（R-01、`mockups.md` の 10節）。続けて招待するときはもう一度「招待する」を押す |
-| (b) 招待した管理者 | AC2.1.8・`mockups.md` の 2節・契約 C5 の `invitedBy` の説明「氏名が得られないときはメールアドレス」 | 氏名だけを出し、空なら「（不明）」（D7） | U3 の R-01 の直し（依頼者の決定）。U2 で氏名は必須のため、今は空にならない |
+| (b) 招待した管理者 | AC2.1.8・`mockups.md` の 2節・契約 C5 の `Invitation` の `invitedBy` の説明「招待した管理者の氏名（無ければメールアドレス）」 | 氏名だけを出し、空なら「（不明）」（D7）。契約 C5 の説明とも差がある（U3 は直した後の BR5.3 で氏名だけを返し、利用者の行が無ければ空の文字列にする。契約の文書は書き換えない） | U3 の R-01 の直し（依頼者の決定）。U2 で氏名は必須のため、今は空にならない |
 | (c) 期限内の表示 | `mockups.md` の 2節は期限切れの印だけ | 期限内の行にも「期限内」を文字で出す（D5） | AC2.1.2 は期限内・期限切れの両方を文字で示すことを求めるため |
 | (d) 日時の書式と置き場 | `mockups.md` の 2節は「09/25 21:00」の短い形 | 年と時差の略号つきの形。`formatDateTime` を `frontend/src/features/dsl/format.ts` から `frontend/src/shared/format/` へ移し、DSL と招待の2つの機能で使う（D6） | Q1 A。`shortHash`・`formatBytes` は DSL だけが使うため `features/dsl/format.ts` に残す。`shared` は `app` に依存しない（今の ApiClient と同じ）ため、移した関数の言語の引数は `'ja'` か `'en'` の文字列リテラルの union の型を自分で持つ（U4 の `DisplayLanguage` と同じ値）。DSL の3つの部品は読み込み先だけを変える |
-| (e) 取り消しの確かめの役割 | `interaction-spec.md` の 4節は `alertdialog` | make-you-chic-ui の Modal（役割は `dialog` に固定、`aria-modal`、見出しで名前、本文を `aria-describedby`）を使う | make-you-chic-ui を変更できない（`project.md` の Forbidden）。DSL の確かめ（`DslConfirmDialog`）と同じ作り。CR6.7 が求める動き（背景で閉じない・はじめのフォーカス・Esc・フォーカスを戻す）はすべて満たす |
 | (f) 「一覧でこの招待を見る」 | `mockups.md` の 3節は「リンク」 | 要素は button（見た目はリンク） | 画面の中の操作（Modal を閉じて一覧のページを変える）で、URL へ移らないため |
 | (g) 一覧の 403 | DSL の管理画面は 403 で「表示できない」の画面にする | 一覧の 403 は読めなかった旨と一般の 4xx の文言（W10） | 画面は骨組みの `access: 'ADMIN'` で管理者にだけ出るため、403 は使っている間に管理者でなくなった場合だけで、設計の要点 8 の失敗の表示にまとめた |
 | (h) 画面の状態のうち `interaction-spec.md` の Props | InvitationList の props は `page`・`invitationEnabled`・`onResend`・`onCancel` | 目立たせた行・行の処理中・フォーカスの口などを足す（`frontend-components.md` の 4節） | 設計の要点 7・12・16 の動きに要るため。画面の動きは変えない |
+| (i) 招待メールの有効期限の時間の数 | 契約 C10 は招待メールに「このリンクは 24 時間有効です」と時間の数を書く形 | 画面は有効期限の長さ（24 時間）を文言に持たず、メールの本文の時間の数は U3 が設定の値から `validityHours` として差し込む形に頼る（7節） | U3 の R-02 の直し（有効期限の長さの時間の数を U3 の BR1.6・BR4.2 でメールへ差し込む）。直した後の形を前提にし、画面は値を受け取らない |
+| (j) 一覧の表とページ送り | `design-system-mapping.md` の 2節は「素の `table` と文言を ja・en で持つページ送り」（make-you-chic-ui の Table の文言が日本語に固定のため）。`interaction-spec.md` の 2節は `caption`「招待中の人」と `th scope="col"`、`mockups.md` の 2節は 20 件ごとのページ送り | make-you-chic-ui の新しい Table（`labels` で ja・en）を使う。表の名前は `caption` の代わりに Table の `aria-label` と見える見出し `h2` で付ける。列見出しは `thead` の `th`（`scope` は書かれない）。ページ送りは Table のもので、1件以上あれば 20 件以下でも出る（押せない「前へ」「次へ」と「1 / 1 ページ」）。表を包む自前の領域（`tabIndex=0`）は置かず、Table の包む要素の中のボタンで Tab が届く形にする。目立たせた行は `:has()` の CSS で示す（W1 の 5・W2・W7） | make-you-chic-ui 側へ文言の `labels` が取り込まれ、上流の判断の理由（文言が日本語に固定）が無くなった（固定先の更新は B4、edb1f94 から 735ef04）。Table は `caption`・行ごとの class・包む要素の名前とフォーカスの口を持たないため、足りない点は Table の外側で足す |
+
+- (e) は消した（承認の場の Request Changes（2026-09-27）。make-you-chic-ui の新しい Modal が `role="alertdialog"` を持ち、`interaction-spec.md` の 4節と差が無くなったため。11節を参照）。
 
 ## 10. 上流との対応の要約
 
@@ -357,3 +372,17 @@ stateDiagram-v2
 | 契約 C5・C9 | 2節、6節、`frontend-components.md` の 5節 |
 
 画面の単位のため、エンティティの関係図と `rules.md` の要約は無い（U5 はアプリが保存するデータを持たない）。
+
+## 11. 変更の記録
+
+### 承認の場の Request Changes（2026-09-27）による直し
+
+| No. | 指摘・決定 | 直したこと | 置き場 |
+|---|---|---|---|
+| 1 | U5 R-01（Major）: W8 の 5 が 6.3 の表（403・そのほかの 4xx・5xx・通信の失敗は読み直さない）と食い違う | W8 の 4 を応答の種類ごとに書き直し、200・404・503 は読み直す、403・そのほかの 4xx・5xx・通信の失敗は読み直さずフォーカスを同じ行の「送り直す」に残す、と 6.3 の表に合わせた | W8、6.3 |
+| 2 | U5 R-02（Minor）: U3 R-02（有効期限の時間の数をメールへ差し込む）に頼っていることが 9節に無い | 9節に (i) を足した | 9節 (i)、7節 |
+| 3 | make-you-chic-ui の新しい Table に置き換える（固定先の更新はコード生成の B4、edb1f94 から 735ef04） | 素の `table` と自前のページ送り（`InvitationPager`）をやめ、Table の `labels` で ja・en の文言にした。`caption` は Table の `aria-label` と見える見出し `h2`（一覧の見出し）に、フォーカスの行き先の `caption` は一覧の見出しに置き換えた。件数の範囲の `aria-live` は Table の外の領域のまま。横に動かす領域は Table の包む要素とし、自前の `tabIndex=0` の領域と文言 `invitation.list.region` を消した。目立たせた行は `render` の印と `:has()` の CSS で示す。ページ送りは1件以上あれば 20 件以下でも出る。読み直しの間も Table を描いたままにしてページ送りのボタンのフォーカスを保つ。文言 `invitation.pager.label`・`invitation.pager.page` を消し、`invitation.pager.status`・`invitation.table.*` を足した | 用語、4.1、W1 の 5、W2、W7、6.3、6.4、7節、9節 (j) |
+| 4 | make-you-chic-ui の新しい Modal に置き換える | 背景の押下の見張り（DSL から複写する予定だった `useBackdropGuard`）をやめ、`closeOnBackdropClick={false}` にした。取り消しの確かめを `role="alertdialog"` にし、9節の (e) を消した。閉じるボタンの名前を `closeLabel` で ja・en にした | D12、W9、7節、9節 |
+| 5 | make-you-chic-ui の新しい Button の `loading`（`aria-disabled` でフォーカスを保つ）に合わせる | 招待の「招待する」、行の「送り直す」、取り消しの確かめの「取り消す」を送信の間 `loading` にし、フォーカスが押したボタンに残る形にした。送り直しの一般の失敗の後は、処理中を解くだけで同じ行の「送り直す」にフォーカスが残る | 用語、D9、W5、W8、W9 |
+| 6 | 網羅の記録を Deferred にそろえる | `traceability.json` の N/A 9 件（AC1.1.11〜AC1.1.13・AC2.1.3・AC2.2.1・AC2.2.5・AC2.2.6・AC2.2.13・CR6.9）を、確かめる単位（U3、CR6.9 は U6・U7）と理由を target に書いた Deferred にした | `traceability.json` |
+| 7 | U3 の最新の形（一覧の招待した管理者は氏名だけ） | 9節の (b) に、契約 C5 の `invitedBy` の説明「無ければメールアドレス」との差であることを明記した | 9節 (b) |

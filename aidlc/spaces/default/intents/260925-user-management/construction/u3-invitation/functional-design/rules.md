@@ -46,13 +46,13 @@ rules:
     violation: 503 INVITATION_NOT_CONFIGURED（unavailableReasons 付き）。テスト用の受け手が受けるメールは0通
     source: FR1.8、AC1.1.6、AC1.1.11、AC2.2.9、C5、要点 9・13
   - id: BR1.6
-    statement: 招待の有効期限の長さと、終わった招待の保存の日数は設定で変えられ、既定は 24 時間と 90 日とする
+    statement: 招待の有効期限の長さ（時間の単位の正の整数）と、終わった招待の保存の日数は設定で変えられ、既定は 24 時間と 90 日とする
     category: policy
     applies_to: 招待の設定
     trigger: アプリの起動
-    logic: "有効期限の長さ（★既定 24 時間）と保存の日数（★既定 90 日）と定期の削除の時刻を設定から読む。IF 値が無い THEN 既定を使う。IF 0 以下など不正 THEN 起動を止める（アプリに同梱する既定の値の誤りで、利用者の設定の不足とは違うため）。招待メールの本文の「24 時間有効です」の文はテンプレートの固定の文面で、長さの設定を変えたときはテンプレートも合わせて直す"
+    logic: "有効期限の長さ（★既定 24 時間）と保存の日数（★既定 90 日）と定期の削除の時刻を設定から読む。IF 値が無い THEN 既定を使う。有効期限の長さは時間の単位の正の整数（1 時間以上で、1 時間で割り切れる長さ）に限り、IF 0 以下・1 時間で割り切れない値（例: 90 分）・形の誤り THEN 起動を止める。保存の日数は正の整数の日に限り、IF 0 以下・形の誤り THEN 起動を止める（どちらもアプリに同梱する既定の値の誤り、または配備の設定の誤りで、利用者の設定の不足とは違うため）。有効期限の長さの時間の数は、作成・送り直しの expiresAt（BR2.6・BR6.1）と、招待メールに差し込む validityHours（BR4.2・BR10.2）の両方に同じ値で使う。そのため長さを変えてもテンプレートを直す必要は無く、本文の時間の数と実際の有効期限は食い違わない。起動の後に正の整数であることが決まるため、U1 へ渡す validityHours はいつも正の整数の10進の文字列になる（正の整数かの確かめは U3 が持つ、U1 の BR2.2）"
     violation: 起動の失敗（不正な値のとき）
-    source: FR1.5、Q1、要点 3
+    source: FR1.5、FR2.2、Q1、要点 3、U1 の BR2.2、承認の場の Request Changes（2026-09-27、R-02）
 
   # ---- BR2: 招待の作成 ----
   - id: BR2.1
@@ -164,13 +164,13 @@ rules:
     violation: —
     source: FR2.3、NFR5、ADR-009、C1、AC1.1.7、要点 8
   - id: BR4.2
-    statement: 送信の依頼は、テンプレート invitation・招待の言語・招待のメールアドレスと、差し込み registrationUrl だけで行う
+    statement: 送信の依頼は、テンプレート invitation・招待の言語・招待のメールアドレスと、差し込み registrationUrl・validityHours の2つだけで行う
     category: policy
     applies_to: U1 への送信の依頼（MailRequest）
     trigger: BR4.1 の送信
-    logic: "templateId は invitation、language は招待の language（招待した管理者の言語ではない）、to は招待の email、variables は registrationUrl（BR3.4）の1つだけとする。招待した管理者の氏名・メールアドレス・有効期限の日時は差し込まない（エスケープのテストの対象の利用者の値は registrationUrl だけ）"
+    logic: "templateId は invitation、language は招待の language（招待した管理者の言語ではない）、to は招待の email、variables は registrationUrl（BR3.4）と validityHours の2つだけとする。validityHours は BR1.6 の設定の有効期限の長さを時間の数にし、符号と先頭のゼロの無い10進の文字列にしたもの（既定では \"24\"）で、作成でも送り直しでも同じ値を渡す。U1 の BR3.3 のとおり、差し込みの名前の欠け・余分・空の値があれば描かれずに FAILED（INVALID_INPUT）になるため、2つとも必ず空でない値で渡す。招待した管理者の氏名・メールアドレス・有効期限の日時は差し込まない。差し込む値のうち利用者の入れた値は無い（registrationUrl はベース URL とトークン、validityHours は設定から作る）が、U1 の BR2.4 のエスケープのテストは差し込む値すべて（registrationUrl・validityHours）を対象にする"
     violation: —
-    source: FR2.1、FR7.3、CR1.4、AC3.1.4、C10、U1 の BR2.2・BR3.3、要点 23
+    source: FR2.1、FR2.2、FR7.3、CR1.4、AC3.1.2、AC3.1.4、C10、U1 の BR2.2・BR2.4・BR3.3、要点 23、承認の場の Request Changes（2026-09-27、R-02）
   - id: BR4.3
     statement: 送信の結果は別の短いトランザクションで、送ったトークンのハッシュを今も持つ行にだけ記録する
     category: constraint
@@ -214,13 +214,13 @@ rules:
     violation: 400 VALIDATION_FAILED（項目 page）
     source: FR3.1、AC2.1.5、C5、要点 11
   - id: BR5.3
-    statement: 一覧の各行は、送信の結果を SENT・FAILED で、期限切れかを時計で、招待した管理者を氏名（無ければメールアドレス）で示す
+    statement: 一覧の各行は、送信の結果を SENT・FAILED で、期限切れかを時計で、招待した管理者を氏名だけで示す
     category: calculation
     applies_to: InvitationSummary
     trigger: 一覧・招待・送り直しの応答
-    logic: "sendResult は BR4.4 のとおり（PENDING は FAILED）。expired は BR3.3 で期限切れなら true。invitedBy は UserAccount の findDisplayName（C2）で得た氏名とし、IF 得られない THEN その管理者の利用者の要約（U2 の BR5.5）のメールアドレスとする。IF 利用者の行そのものが無い THEN 空の文字列とする（今は利用者を消す操作が無いため起きない）。日時は ISO 8601 の UTC で渡す"
+    logic: "sendResult は BR4.4 のとおり（PENDING は FAILED）。expired は BR3.3 で期限切れなら true。invitedBy は UserAccount の findDisplayName（C2）で invitedByUserId から得た氏名だけとし、IF findDisplayName が空（利用者の行が無い）THEN 空の文字列とする（今は利用者を消す操作が無いため起きない）。メールアドレスへの切り替えはしない（C2 に利用者 ID からメールアドレスを引く操作は無く、契約 C2 は変えない）。AC2.1.8 の「氏名が得られないときはメールアドレス」は、U2 で氏名が必須（1〜254 コードポイント、U2 の BR1.6）で、既存の利用者と初期管理者の氏名の初期値がメールアドレスであるため（U2 の BR2.2）、氏名の表示で満たす（氏名を変えていない管理者は、氏名の欄にメールアドレスが出る）。日時は ISO 8601 の UTC で渡す"
     violation: —
-    source: "FR1.6、FR3.1、AC2.1.1、AC2.1.2、AC2.1.8、C2、C5、user-stories-questions.md の M9: A、要点 11"
+    source: "FR1.6、FR3.1、AC2.1.1、AC2.1.2、AC2.1.8、C2、C5、U2 の BR1.6・BR2.2・BR5.5、user-stories-questions.md の M9: A、要点 11、承認の場の Request Changes（2026-09-27、R-01）"
   - id: BR5.4
     statement: 一覧・招待・送り直しの応答に、招待のトークン・トークンのハッシュ・招待の URL を含めず、招待を使える設定かと理由を付ける
     category: constraint
@@ -408,21 +408,21 @@ rules:
 
   # ---- BR10: 招待メールのテンプレート ----
   - id: BR10.1
-    statement: U1 のテンプレートの一覧に invitation（差し込みは registrationUrl だけ）を足し、ja・en のテンプレートを置く
+    statement: U1 のテンプレートの一覧に invitation（差し込みは registrationUrl・validityHours の2つ）を足し、ja・en のテンプレートを置く
     category: policy
     applies_to: 招待メールのテンプレート
     trigger: テンプレートを足すとき
-    logic: "U1 の一覧に templateId invitation と差し込みの名前 registrationUrl を足し、mail/templates/invitation_ja.html と invitation_en.html を置く。U1 の決まり（エスケープされる差し込みだけ・属性の値は二重引用符・Mustache のコメントのライセンスヘッダー・title が件名・html の lang が言語）に従い、U1 のテンプレートのテストの対象に自動で入る"
+    logic: "U1 の一覧に templateId invitation と差し込みの名前 registrationUrl・validityHours を足し、mail/templates/invitation_ja.html と invitation_en.html を置く。差し込みはどちらもエスケープされる差し込み（二重の波かっこ）で書き、registrationUrl は href の値（二重引用符で囲む）と本文の文字に、validityHours は有効な期間の文（BR10.2）にだけ入れる。U1 の決まり（エスケープされる差し込みだけ・属性の値は二重引用符・Mustache のコメントのライセンスヘッダー・title が件名・html の lang が言語）に従い、U1 のテンプレートのテスト（差し込む値すべてのエスケープの確かめを含む、U1 の BR2.4）の対象に自動で入る"
     violation: U1 の起動時の検査・テストの失敗（U1 の BR2.3・BR2.6）
-    source: FR2.1、C10、U1 の BR2.1〜BR2.6・BR4.2・BR4.3、要点 23
+    source: FR2.1、C10、U1 の BR2.1〜BR2.6・BR4.2・BR4.3、要点 23、承認の場の Request Changes（2026-09-27、R-02）
   - id: BR10.2
-    statement: 招待メールの本文は、招待された旨・登録を終えるとログインできる旨・心当たりが無ければ何もしなくてよい旨と、リンクが 24 時間有効である旨を、招待の言語で載せ、有効期限の日時と招待した管理者の氏名は載せない
+    statement: 招待メールの本文は、招待された旨・登録を終えるとログインできる旨・心当たりが無ければ何もしなくてよい旨と、リンクが設定の時間（既定 24 時間）だけ有効である旨を、招待の言語で載せ、有効期限の日時と招待した管理者の氏名は載せない
     category: constraint
     applies_to: invitation_ja.html・invitation_en.html の本文
     trigger: テンプレートを書くとき、テスト用の受け手で受けたメールの確かめ
-    logic: "本文に次を載せる: MasterSmith から利用者として招待されたこと、リンクから登録を終えるとログインできること、心当たりが無ければ何もしなくてよいこと、ja は「このリンクは 24 時間有効です」・en は同じ意味の文。有効期限の日時と招待した管理者の氏名は載せない。テスト用の受け手で受けたメールの本文で確かめる"
+    logic: "本文に次を載せる: MasterSmith から利用者として招待されたこと、リンクから登録を終えるとログインできること、心当たりが無ければ何もしなくてよいこと、有効な期間の文。有効な期間の文は ja が「このリンクは {{validityHours}} 時間有効です」、en が同じ意味の文（例: This link is valid for {{validityHours}} hours.）で、時間の数は差し込み validityHours（BR4.2）だけから入れ、テンプレートに数を直接書かない。有効期限の日時と招待した管理者の氏名は載せない。テストでは、既定（24 時間）で受けたメールの本文に ja「このリンクは 24 時間有効です」・en の同じ意味の文が出ることと、有効期限の長さを既定と違う値（例: 48 時間）に設定して招待・送り直ししたとき、本文に ja「このリンクは 48 時間有効です」・en の同じ意味の文が出て 24 が出ないこと、expiresAt が invitedAt（送り直しでは送り直しの時点）＋ 48 時間であることを、テスト用の受け手で受けたメールと内部DB の値で確かめる"
     violation: テストの失敗（統合しない）
-    source: "FR2.2、AC3.1.2、AC3.1.8、C10、user-stories-questions.md の M1: C・M5: A、mockups.md の E1、要点 23"
+    source: "FR2.2、AC3.1.2、AC3.1.8、C10、user-stories-questions.md の M1: C・M5: A、mockups.md の E1、要点 23、U1 の BR2.2、承認の場の Request Changes（2026-09-27、R-02）"
   - id: BR10.3
     statement: 招待メールには、行き先の分かる文言のボタンの形のリンクと、URL の文字の両方を載せる
     category: constraint
@@ -468,7 +468,7 @@ rules:
 | BR1.3 | ベース URL は http・https の絶対 URL（問い合わせ・#・利用者情報なし）、不正は WARN で未設定扱い | 検証 | Q3、FR1.7、FR1.8 |
 | BR1.4 | 使える設定はベース URL と SMTP の両方、足りない理由を並べる | 検証 | FR1.8、C5 |
 | BR1.5 | 使えない設定では招待と送り直しだけ 503、ほかは動く | 制約 | FR1.8、AC1.1.6、AC2.2.9 |
-| BR1.6 | 有効期限 24 時間・保存 90 日は設定で変えられる | 方針 | FR1.5、Q1 |
+| BR1.6 | 有効期限（時間の単位の正の整数、既定 24 時間）・保存 90 日は設定で変えられ、不正は起動を止める。時間の数は expiresAt と validityHours に同じ値で使う | 方針 | FR1.5、FR2.2、Q1 |
 | BR2.1 | 登録済みは 409 INVITATION_EMAIL_REGISTERED | 制約 | FR1.4、AC1.1.4、AC1.1.10 |
 | BR2.2 | 期限内の招待中は 409 INVITATION_ALREADY_PENDING（invitationId・page） | 制約 | FR1.4、AC1.1.4 |
 | BR2.3 | page は一覧の位置 ÷ 20 の切り上げ | 計算 | AC1.1.4 |
@@ -482,13 +482,13 @@ rules:
 | BR3.4 | URL はベース URL ＋ /register#token= ＋ トークン、Host から作らない | 制約 | FR1.7、AC1.1.11、AC3.1.3 |
 | BR3.5 | トークンはフラグメントだけ、API は本文で受け取る | 制約 | AC3.2.15、C6 |
 | BR4.1 | 確定の後にトランザクションの外で1回送り、結果を待って応答 | 方針 | FR2.3、NFR5、ADR-009 |
-| BR4.2 | 依頼は invitation・招待の言語・registrationUrl だけ | 方針 | FR2.1、CR1.4、AC3.1.4 |
+| BR4.2 | 依頼は invitation・招待の言語・registrationUrl と validityHours（設定の時間の数の10進の文字列）だけ | 方針 | FR2.1、FR2.2、CR1.4、AC3.1.2、AC3.1.4 |
 | BR4.3 | 結果は別のトランザクションで、同じトークンの行にだけ記録 | 制約 | FR2.4、AC2.2.3 |
 | BR4.4 | 確定の時点で PENDING、API では PENDING を FAILED | 方針 | Q2 |
 | BR4.5 | 送信の失敗でも 201・200 と FAILED、宛先と SMTP の応答を出さない | 方針 | FR2.4、FR2.6、AC1.1.5、AC1.1.7、AC1.1.12、AC2.2.8 |
 | BR5.1 | 一覧は PENDING（期限切れを含む）だけ | 方針 | FR3.1、AC2.1.3 |
 | BR5.2 | 新しい順・20 件ずつ、最後を超えたら空 | 計算 | FR3.1、AC2.1.5 |
-| BR5.3 | 送信の結果・期限切れ・招待した管理者（氏名、無ければメールアドレス） | 計算 | AC2.1.1、AC2.1.2、AC2.1.8 |
+| BR5.3 | 送信の結果・期限切れ・招待した管理者（findDisplayName の氏名だけ、行が無ければ空の文字列） | 計算 | AC2.1.1、AC2.1.2、AC2.1.8 |
 | BR5.4 | 応答にトークン・ハッシュ・URL を含めず、使える設定かを付ける | 制約 | NFR1、AC2.1.7 |
 | BR6.1 | 送り直しはトークン・有効期限・送信の結果だけを置き換え | 方針 | FR3.2、AC2.2.1、AC2.2.2、AC2.2.8 |
 | BR6.2 | 取り消しは設定なしでも PENDING を CANCELLED | 方針 | FR3.3、AC2.2.4、AC2.2.10 |
@@ -511,8 +511,8 @@ rules:
 | BR9.2 | verify・complete の POST だけを差し込み口で公開 | 認可 | FR10.3、ADR-011 |
 | BR9.3 | code の一覧と状態コードの固定、説明文は要求の言語 | 方針 | C5、C6、CR1.2 |
 | BR9.4 | ログ・トレース・エラー応答にトークン・URL・メールアドレス・パスワードを出さない | 制約 | NFR1、NFR2、CR5 |
-| BR10.1 | U1 の一覧に invitation を足し ja・en を置く | 方針 | FR2.1、C10 |
-| BR10.2 | 本文の文面（招待・ログイン・心当たり・24 時間有効）、日時と管理者の氏名なし | 制約 | AC3.1.2、AC3.1.8 |
+| BR10.1 | U1 の一覧に invitation（差し込みは registrationUrl・validityHours）を足し ja・en を置く | 方針 | FR2.1、C10 |
+| BR10.2 | 本文の文面（招待・ログイン・心当たり・「このリンクは {{validityHours}} 時間有効です」）、日時と管理者の氏名なし、48 時間の設定で本文に 48 が出ることを確かめる | 制約 | FR2.2、AC3.1.2、AC3.1.8 |
 | BR10.3 | 行き先の分かるリンクと URL の文字 | 制約 | AC3.1.3、AC3.1.9 |
 | BR11.1 | 保存の日数を過ぎた終わった招待と期限切れの招待中を定期に消す | 方針 | Q1 |
 | BR11.2 | 消えた招待は存在しないと同じ、監査は残る | 方針 | Q1 |

@@ -126,6 +126,8 @@ flowchart TD
 | `LoginForm` | — | 既存の入力・誤り・送信中、受け渡しの値（最初の描画で1回だけ読む） | 受け渡しの値があれば、フォームの上に案内（`Alert`、成功の種類、文言 `auth.login.registered`）を出し、メールアドレスの欄の初期値にする。受け渡しの口から消すのは描画の確定の後（W9） |
 
 - `LoginLanguageSwitch` の見た目と動きは `interaction-spec.md` の6節（右上に固定、Tab で届き Enter・Space で切り替え、WCAG AA）。
+- `LoginLanguageSwitch` のボタンは make-you-chic-ui の Button で作る。更新後の版（固定先 origin/main 735ef04、固定先の更新はコード生成の B4）でも Button は button の属性をそのまま通すため、`aria-pressed`・`lang` を渡せる（Button の loading の変更は、この部品では loading を使わないため関係しない）。更新後の版の RadioGroup は選択肢ごとの `lang` と legend を持つようになり、`interaction-spec.md` はどちらも許すが、「Enter・Space で切り替え、切り替えた後も同じボタンにフォーカス」に合わせてボタンの組のままとする（`functional-spec.md` の 12節の5）。
+- 受け渡しの案内の Alert は make-you-chic-ui の Alert をそのまま使う（更新で変わっていない）。
 
 ## 5. AuthUi とログイン状態（契約 C3）
 
@@ -144,6 +146,7 @@ flowchart TD
 |---|---|---|---|
 | C3 | U2（`POST /api/auth/login`・`POST /api/auth/session/refresh`） | 既存の AuthUi の呼び出し。応答の `user` の項目が増える | `CurrentUser` を広げ、ログイン状態に通す（5節）。`theme` は `system` のまま受け、画面の側で解く |
 | C7 | U8（`GET /api/appearance`） | ApiClient の公開の API のパスとして、トークンを付けず、401 での更新と送り直しをしない | 起動時に1回（W3）。応答は `brandColor`・`fontFamily` の2項目で、許される値だけを当てる |
+| C6 | U3（`POST /api/registration/verify`・`POST /api/registration/complete`） | 呼ぶのは U6。ApiClient の公開の API のパスとして、トークンを付けず、401 での更新と送り直しをしない | U4 は呼ばない。ApiClient の公開の API のパスに2つを入れるだけ（D10、6.1） |
 | C9 | U5・U6・U7 | 画面の中の呼び出し（3節） | この単位が持ち主。項目の追加（`resolvedTheme`・`displayName`・`LANGUAGE_NAMES`）は安全な変更 |
 
 ### 6.1 ApiClient の変更
@@ -152,7 +155,8 @@ flowchart TD
 |---|---|
 | 言語の関数の登録 | `registerLanguageResolver(resolver)`。AppFrame が画面を開いたときに登録する。テストのための初期化（既存の `resetApiClient`）で消す |
 | `Accept-Language` の付与 | すべての要求に、登録した関数が返す言語を付ける。呼び出し側が指定したときは上書きしない。関数が無ければ付けない（D9） |
-| 公開の API のパス | 既存の認証の API のパス（ログイン・更新・ログアウト）に `/api/appearance` を加えた「トークンを付けず、更新と送り直しをしないパス」として扱う（D10）。判定は問い合わせの部分を見ない既存の形のまま |
+| 公開の API のパス | 既存の認証の API のパス（ログイン・更新・ログアウト）に、`/api/appearance`（C7）と `/api/registration/verify`・`/api/registration/complete`（C6）を加えた「トークンを付けず、更新と送り直しをしないパス」として扱う（D10）。判定は問い合わせの部分を見ない既存の形（パスの完全一致）のまま。今の一覧の名前（`AUTH_API_PATHS`・`isAuthApiPath`）は認証の API に限った名前のため、公開の API を含む名前に改めるか、公開の API の一覧を別に置いて判定でまとめるかはコード生成で決める |
+| `Accept-Language` と公開の API | 公開の API にも `Accept-Language` は付ける（D9）。登録の完了の API の誤りの説明文も画面の言語で返る |
 | 変えないこと | 401 と `AUTHENTICATION_REQUIRED` での更新を1回だけ行う流れ、同時の 401 をまとめる形、エラーの変換 |
 
 ## 7. テストで確かめる内容
@@ -163,7 +167,7 @@ flowchart TD
 |---|---|---|
 | 解き方の関数（性質ベース、fast-check） | 壊れた JSON・知らない値の項目は無いものになる、有効な値はそのまま、どの入力でも3つの軸が許される値になる。テーマの選択 `system` は OS の配色で解け、`light`・`dark` は OS によらない。画面の値は見せ方のある軸だけが置き換わる。失敗時の種を記録する | D1・D4・D7 |
 | ブラウザの保存 | 読み書きの例外で落ちない、言語だけの保存でほかの2つが変わらない・無い項目は無いまま、写しの鍵の書き直し | D5・D6・D7 |
-| `DisplaySettingsProvider` | 見た目の設定と復元の答えが出るまで描かない、見た目の設定の失敗で前の値のまま描き読み直さない、成功で `<html>` の `data-brand`・`data-font-family` が変わる | W2・W3、CR2 |
+| `DisplaySettingsProvider` | 見た目の設定と復元の答えが出るまで描かない（見た目の設定の応答が返らない間は、復元の答えが出ていても描かない。Q2 A で受け入れた動き）、見た目の設定の失敗で前の値のまま描き読み直さない、成功で `<html>` の `data-brand`・`data-font-family` が変わる | W2・W3、CR2、`functional-spec.md` の 7節 |
 | 同上 | ログインの前はブラウザの保存の値、無ければブラウザの言語設定と OS の配色で表示する | W4・W6、AC4.1.6 |
 | 同上 | 前の利用者の値（dark）がブラウザに残る状態で light の利用者がログインすると、ログインの後の最初の画面から light で、途中で dark が出ない | W5、AC4.1.5 |
 | 同上 | ブラウザの保存が light・md・ja で、利用者の設定が dark・lg・en のセッションの復元で、dark・lg・en で表示され、ユーザーメニューに氏名が出る | W5、AC4.1.9 |
@@ -173,7 +177,7 @@ flowchart TD
 | 同上 | `setPreview` は保存しない、`clearPreview` で戻る、ログイン状態が変わると見せ方が捨てられる | W10、D2・D6 |
 | 同上 | `saveBrowserDisplaySettings` の後、ログインの画面が保存した en・dark・lg で表示される | W8、AC3.2.18 |
 | 同上 | ほかのタブの make-you-chic-ui の鍵の変化を打ち消さない（`storage` の知らせで make-you-chic-ui の見た目が変わったまま） | 4.2、Q3 A |
-| ApiClient | 言語の関数の値が `Accept-Language` に付く（認証の API を含む）、呼び出し側の指定は上書きしない、`/api/appearance` にトークンが付かず 401 で更新しない | W12・W3、CR1.2、D10 |
+| ApiClient | 言語の関数の値が `Accept-Language` に付く（認証の API・公開の API を含む）、呼び出し側の指定は上書きしない。アクセストークンを持つ状態で `/api/appearance`・`/api/registration/verify`・`/api/registration/complete` を呼んでも `Authorization` が付かず、401（`AUTHENTICATION_REQUIRED`）の応答を受けても更新と送り直しをしない（更新の手段が呼ばれない）。問い合わせの付いたパスも同じに判定され、似た別のパス（例: `/api/registration/other`）は公開の API として扱わない | W12・W3、CR1.2、D10 |
 | `LoginLanguageSwitch` | 「日本語」「English」と `lang` 属性、選ぶと文言と `<html lang>` が変わりブラウザに言語だけが保存される、切り替えた後の誤ったパスワードのログインの要求が切り替えた言語を持つ、フォーカスが残る、アクセシビリティの検査 | W7、CR1.5・CR6.6 |
 | `LoginForm` | 受け渡しがあれば案内が出てメールアドレスの欄に値が入る、2回目の表示と読み込み直しでは出ない、URL にメールアドレスが載らない、アクセシビリティの検査 | W9、AC3.2.17 |
 | `ShellLayout` | ユーザーメニューの名前がメールアドレスではなく氏名 | W5、AC4.1.8 |
@@ -190,6 +194,6 @@ flowchart TD
 | `I18nProvider` の props | 言語が必須の props になる | 呼ぶのは `App` と `renderWithProviders` だけ |
 | `LoginState` と `normalizeLoginState` | 任意の項目が増える | 既存の提供元・偽の提供元はそのまま動く（W5 の6） |
 | `ShellLayout` | 名前の出どころが変わる | 氏名が無いときはログイン状態の `displayName` に戻る |
-| ApiClient | すべての要求に `Accept-Language` が付く | サーバーの決め方は変えない（ADR-005） |
+| ApiClient | すべての要求に `Accept-Language` が付く。公開の API のパス（トークンを付けないパス）が3つ増える | サーバーの決め方は変えない（ADR-005）。既存の認証の API の扱いと 401 の更新の流れは変えない |
 | `frontend/src/main.tsx` | Noto Serif JP の CSS を読み込む | `functional-spec.md` の9節 |
 | make-you-chic-ui | 変えない | 写しの鍵の書き直しと `setTheme` などの呼び出しだけで扱う |
