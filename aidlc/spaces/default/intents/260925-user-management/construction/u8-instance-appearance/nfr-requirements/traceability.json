@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u8-instance-appearance",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "U8 は招待のトークンを作らず、扱わない（見た目の設定の2つの名前だけを返す）"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "U8 はメールアドレス・メールの部品・SMTP を扱わない。応答とログに個人に関する値が出ないことは NFR4.5・NFR9.4 で確かめる"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U8 には登録の完了・ログインの拒否が無く、応答は誰に対しても同じ値のため、利用者・招待の有無を推測する余地が無い"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5, NFR4.6, NFR4.7, NFR4.8（NFR4 の一覧に GET /api/appearance は無いが、契約の共通の決まり（認可）の公開の範囲を NFR4 と同じくサーバー側のテストで確かめる）"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.1, NFR5.2（内部DB の接続を借りないことを、招待メールの送信から U8 の応答にも当てた）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6（NFR6.1 は Q1: A で足した目標。要件に拡張性・観測性の NFR が無いため、同時の要求の要件 NFR6.3・NFR6.4 と指標・トレース NFR6.5・NFR6.6 を NFR6 の枝番に寄せた）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "U8 には画面が無い（画面に当てるのは U4）"
+    },
+    {
+      "id": "NFR8",
+      "status": "N/A",
+      "target": "U8 は画面の文言・メールのテンプレートを持たず、新しいエラーの説明文も足さない（GET 以外のメソッドの 401・405 は既存の日英の説明文のまま）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8（要件に信頼性・観測性の NFR が無いため、FR8.2・FR9.1 由来の起動・応答・警告のログ・監査・健全性の要件を、確かめ方を決める NFR9 の枝番に寄せた）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U8 は内部DB の表・Flyway の移行を持たない（entities.md のエンティティは 0 件）"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "U8 はメールを送らず、手元のメールの受け手に関わらない"
+    }
+  ]
+}

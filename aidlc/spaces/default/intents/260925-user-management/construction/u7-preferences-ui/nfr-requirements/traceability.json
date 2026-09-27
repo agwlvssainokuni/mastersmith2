@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u7-preferences-ui",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "U7 は招待のトークンを作らず、受け取らず、表示しない（2つの画面はログインした利用者の自分の設定とパスワードの変更だけを扱う）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1（security-requirements.md の1節。画面に出す氏名（初期値はメールアドレス）をコンソール・ブラウザの保存・URL に出さない）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U7 は登録の完了とログインの拒否の応答を扱わない（今のパスワードの誤りはログインした利用者への 400 で、列挙の防止の対象の応答ではない。扱いは NFR9.3）"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U7 はサーバー側の認可を持たない（プリファレンスとパスワードの変更の API の 401・200 のサーバー側のテストは U2）。画面の側の扱いは NFR9.3・NFR9.4 に置き、サーバー側のテストの代わりにしない"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "U7 は内部DB の接続を使わない画面の単位で、メールも送らない"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6（performance-requirements.md の1節。NFR6.1〜NFR6.3 は Q1: A と共通の決定で足した画面の時間の目標。API の時間は U2 の NFR6.1〜NFR6.4）"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4, NFR7.5（tech-stack-decisions.md の2節。NFR7.3 は U4 の Playwright＋axe-core の検査に2つの画面を足すこと、NFR7.4 は共通の決定の幅 375px の検査）"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2（tech-stack-decisions.md の3節）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10（NFR9.1〜NFR9.4 は security-requirements.md の2節、NFR9.5〜NFR9.10 は tech-stack-decisions.md の4節。要件に画面の側のセキュリティと依存に当たる ID が無いため、確かめ方を決める NFR9 の枝番に寄せた）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U7 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータを持たない。初期値を入れるのは U2）"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "U7 はメールを送らず、手元のメールの受け手に関わらない"
+    }
+  ]
+}

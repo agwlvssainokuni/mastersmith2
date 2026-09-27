@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-invitation-ui",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.1（security-requirements.md の1節。画面は招待のトークン・URL を扱わず、応答に項目が加わっても表示に使わない）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1（security-requirements.md の1節。メールアドレスと氏名をブラウザの保存・URL・コンソールに出さない）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U5 は登録の完了とログインの拒否の応答に関わらない（管理者の招待の画面で、応答の同じさはサーバー側の U3 と既存の認証が受け持つ）"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U5 はサーバー側の認可を持たない（招待・一覧・送り直し・取り消しの 401・403・200 のサーバー側のテストは U3）。画面で隠すことを代わりにしない扱いは NFR9.2 に置く"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "U5 は内部DB の接続を使わない画面の単位で、メールも送らない（送信の間に接続を持たない作りは U3 の NFR5.1）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6（performance-requirements.md の1節。NFR6.1・NFR6.2 は Q2: B で足した画面の時間の目標。API の時間は U3 の NFR6.1・NFR6.3）"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4（tech-stack-decisions.md の3節。NFR7.4 は Q1: B で U4 の NFR7.3 に足した幅 375px の検査）"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2（tech-stack-decisions.md の4節）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9（NFR9.1〜NFR9.3 は security-requirements.md の2節、NFR9.4・NFR9.5 は tech-stack-decisions.md の2節、NFR9.6〜NFR9.9 は同じ文書の5節。要件に画面の側のセキュリティと依存に当たる ID が無いため、確かめ方を決める NFR9 の枝番に寄せた（U4・U8 の前例と同じ））"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U5 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータを持たない）"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "U5 はメールを送らず、手元のメールの受け手を見る手順に関わらない（手順は U1・U3。E2E の WAR への受け手の設定は infrastructure-design）"
+    }
+  ]
+}

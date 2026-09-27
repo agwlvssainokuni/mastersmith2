@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-display-foundation",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "U4 は招待のトークンを作らず、受け渡さない（登録の完了からログインの画面へ渡すのはメールアドレスだけ。NFR2.1）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1, NFR2.2（security-requirements.md の1節。メールアドレスを URL・ブラウザの保存に載せず、ブラウザの保存に個人に関する値とトークンを置かない）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U4 は登録の完了とログインの拒否の応答を作らない（応答の同じさはサーバー側の U3 と既存の認証が受け持つ。U4 はサーバーの説明文をそのまま出すだけ）"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U4 はサーバー側の認可を持たない（401・403・200 のサーバー側のテストは U3・U8 と既存の認証）。画面の側で公開の API にトークンを付けない扱いは NFR9.1 に置き、サーバー側のテストの代わりにしない"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "U4 は内部DB の接続を使わない画面の単位で、メールも送らない"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5（performance-requirements.md の1節。NFR6.1 は Q1: B で足した画面の時間の目標。API の時間は U2 の NFR6.5・U8 の NFR6.1）"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4, NFR7.5（tech-stack-decisions.md の3節。NFR7.3 は Q2: B の Playwright＋axe-core の検査）"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2（tech-stack-decisions.md の4節）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10, NFR9.11（NFR9.1〜NFR9.4 は security-requirements.md の2節、NFR9.5〜NFR9.7 は tech-stack-decisions.md の2節、NFR9.8〜NFR9.11 は同じ文書の5節。要件に画面の側のセキュリティと依存に当たる ID が無いため、確かめ方を決める NFR9 の枝番に寄せた）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U4 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータはブラウザの表示の設定だけ）"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "U4 はメールを送らず、手元のメールの受け手に関わらない"
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-mail",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.1, NFR1.2（security-requirements.md。U1 の受け持ちは差し込んだ値を U1 のログ・結果・トレースの属性に出さないこと。トークンの生成とハッシュの保存は U3）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4, NFR2.5, NFR2.6, NFR2.7, NFR2.8, NFR2.9（security-requirements.md）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "U1 は登録の完了とログインの API を持たない。列挙の防止は U3（登録の完了）と既存の Authentication の受け持ち"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U1 は API を持たないアプリの中の部品（library）で、認可の対象が無い。招待の API の認可は U3、プリファレンスの API は U2"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.1（tech-stack-decisions.md の2節。負荷の試験での接続プールの確かめは U3 と Build and Test）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5（tech-stack-decisions.md の2節。招待・送り直しの API の 95 パーセンタイル 5 秒そのものは U3）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "U1 は画面を持たない。画面のアクセシビリティは U4〜U7"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2, NFR8.3（tech-stack-decisions.md の3節。画面の文言とエラーの説明文は U3〜U7）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5（tech-stack-decisions.md の4節。E2E と招待・登録の完了の必須テストは U3・U5・U6）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U1 は内部DB に何も保存せず、スキーマを変えない（entities.md は保存するエンティティを持たない）"
+    },
+    {
+      "id": "NFR11",
+      "status": "OK",
+      "target": "NFR11.1, NFR11.2（tech-stack-decisions.md の5節）"
+    }
+  ]
+}

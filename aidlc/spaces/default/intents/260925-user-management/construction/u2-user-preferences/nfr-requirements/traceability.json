@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-user-preferences",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "N/A", "target": "招待のトークンは U3 u3-invitation の持ち物で、U2 はトークンを作らず・保存せず・受け取らない" },
+    { "id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4" },
+    { "id": "NFR3", "status": "N/A", "target": "列挙の防止は登録の完了（U3）とログイン（既存の Authentication）の拒否の決まり。U2 の3本の API はログインした本人だけが使い、ほかの利用者の有無を返す経路が無い（NFR4.3）。利用者の作成の EmailAlreadyUsed を同じ応答に変えるのは U3（契約 C2・C6）" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8, NFR6.9" },
+    { "id": "NFR7", "status": "N/A", "target": "画面のアクセシビリティは画面の単位（u4-display-foundation・u5〜u7）の要件。U2 は画面を持たない service の単位" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8" },
+    { "id": "NFR10", "status": "OK", "target": "NFR10.1, NFR10.2, NFR10.3, NFR10.4, NFR10.5" },
+    { "id": "NFR11", "status": "N/A", "target": "手元でメールを見る受け手は U1 u1-mail と U3 の招待メールの確かめの要件。U2 はメールを送らない" }
+  ]
+}

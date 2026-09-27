@@ -1,0 +1,74 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u6-registration-ui",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9",
+    "NFR10",
+    "NFR11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.5（security-requirements.md の1節。招待のトークンの画面の側の扱い: フラグメントからの取り出しと消去、メモリだけ、本文だけで送る、ブラウザの保存と console に出さない、リファラー、テストの値。トークンの作り方と保存はサーバー側の U3）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.1（security-requirements.md の1節。招待のメールアドレスを URL・ブラウザの保存・console に出さない）"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "NFR3.1（security-requirements.md の1節。404 は理由によらず同じ表示で、detail を出さない。応答の同じさそのものはサーバー側の U3）"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "U6 はサーバー側の認可を持たない（公開の範囲と 401・403・200 のサーバー側のテストは U3 の NFR4.2）。画面の側で公開の API にトークンを付けない扱いは U4 の NFR9.1 が持ち、U6 の呼び出しの形は NFR9.1 に置く。どれもサーバー側のテストの代わりにしない"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "U6 は内部DB の接続を使わない画面の単位で、メールも送らない（接続の使い方は U3 の持ち主）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.1, NFR6.2, NFR6.3（performance-requirements.md の1節。NFR6.1 は Q1: B で足した、リンクを開いてからフォームが出るまで 2 秒の画面の時間の目標。API の時間は U3 の NFR6.3・NFR6.4）"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4, NFR7.5（tech-stack-decisions.md の3節。NFR7.3 は U4 の実際のブラウザの検査に登録の完了の画面と幅 375px の6組を足し、NFR7.5 は Q2: B の要求の差し替え）"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.1, NFR8.2（tech-stack-decisions.md の4節）"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10, NFR9.11（NFR9.1〜NFR9.5 は security-requirements.md の2節、NFR9.6・NFR9.7 は tech-stack-decisions.md の2節、NFR9.8〜NFR9.11 は同じ文書の5節。NFR9.10 は E2E-1。要件に画面の側のセキュリティと依存に当たる ID が無いため、確かめ方を決める NFR9 の枝番に寄せた）"
+    },
+    {
+      "id": "NFR10",
+      "status": "N/A",
+      "target": "U6 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータを持たない）"
+    },
+    {
+      "id": "NFR11",
+      "status": "N/A",
+      "target": "U6 はメールを送らず、手元のメールの受け手を見る手順（U1・U3 の持ち主）に関わらない。E2E-1 が使う受け手の手段は infrastructure-design の持ち主で、NFR9.10 に書いた"
+    }
+  ]
+}

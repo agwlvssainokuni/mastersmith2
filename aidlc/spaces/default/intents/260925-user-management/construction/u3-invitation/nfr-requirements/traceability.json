@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u3-invitation",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.5, NFR1.6" },
+    { "id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2, NFR3.3" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8, NFR6.9, NFR6.10" },
+    { "id": "NFR7", "status": "N/A", "target": "画面のアクセシビリティは画面の単位（u4-display-foundation・u5〜u7）の要件。U3 は画面を持たない service の単位" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1, NFR8.2" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10, NFR9.11, NFR9.12, NFR9.13" },
+    { "id": "NFR10", "status": "OK", "target": "NFR10.1, NFR10.2, NFR10.3" },
+    { "id": "NFR11", "status": "N/A", "target": "手元でメールを見る受け手（Mailpit の compose の profile mail）は U1 u1-mail の要件（U1 の NFR11.1・NFR11.2）。U3 はその受け手を負荷の試験の受け手として使うだけで、performance-requirements.md の測り方の決まりに書いた" }
+  ]
+}
