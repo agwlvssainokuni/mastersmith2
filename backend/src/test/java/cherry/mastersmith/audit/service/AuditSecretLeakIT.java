@@ -166,7 +166,10 @@ class AuditSecretLeakIT {
                         "ACTOR_USER_ID",
                         "DSL_HASH",
                         "DSL_SOURCE",
-                        "REJECTION_KIND");
+                        "REJECTION_KIND",
+                        // Intent 260925-user-management の U2 の V7 で足した、対象の列（契約 C8。パスワード・トークンは持たない）
+                        "TARGET_USER_ID",
+                        "TARGET_INVITATION_ID");
     }
 
     @Test

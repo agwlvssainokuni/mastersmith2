@@ -23,8 +23,8 @@ import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +80,7 @@ class AuditNotInAppLogIT {
         api = new AuthApi(port);
         rows = new AuditRows(jdbc);
         email = "notinlog-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, false);
     }
 
     @Test

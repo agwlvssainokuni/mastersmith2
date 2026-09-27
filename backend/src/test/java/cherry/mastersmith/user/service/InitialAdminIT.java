@@ -49,7 +49,8 @@ class InitialAdminIT {
     }
 
     @Test
-    @DisplayName("two startups create exactly one lower-cased administrator with a cost-12 bcrypt hash and a lock row")
+    @DisplayName(
+            "two startups create one lower-cased administrator with a cost-12 hash, a lock row and the initial values")
     void createsOnce(CapturedOutput output) {
         Path dir = tempDir.resolve("admin");
         String password = "初期管理者-" + TestDatabase.randomSecret();
@@ -73,6 +74,12 @@ class InitialAdminIT {
                     .isZero();
             assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM users", Integer.class))
                     .isEqualTo(1);
+            // 初期値（BR2.2・BR5.4）: 氏名＝そろえたメールアドレス・ja・system・md
+            assertThat(jdbc.queryForMap("SELECT display_name, language, theme, font_size FROM users"))
+                    .containsEntry("DISPLAY_NAME", "admin@example.com")
+                    .containsEntry("LANGUAGE", "ja")
+                    .containsEntry("THEME", "system")
+                    .containsEntry("FONT_SIZE", "md");
         }
         assertThat(output.getOut()).contains("初期管理者を作成しました").contains("初期管理者は既にいるため");
         JsonLogRecords.assertContainsNoSecret(output.getAll(), password);

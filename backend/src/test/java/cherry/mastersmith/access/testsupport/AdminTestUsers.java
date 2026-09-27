@@ -16,8 +16,8 @@
 package cherry.mastersmith.access.testsupport;
 
 import cherry.mastersmith.auth.testsupport.AuthApi;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.util.UUID;
 
 /**
@@ -79,9 +79,7 @@ public final class AdminTestUsers {
 
     private TestUser create(boolean admin) {
         String email = (admin ? "admin-" : "member-") + UUID.randomUUID() + "@example.com";
-        long userId = userAccountService
-                .createUser(email, new Password(PASSWORD), admin)
-                .userId();
+        long userId = TestUserAccounts.create(userAccountService, email, PASSWORD, admin);
         return new TestUser(userId, email, admin);
     }
 }

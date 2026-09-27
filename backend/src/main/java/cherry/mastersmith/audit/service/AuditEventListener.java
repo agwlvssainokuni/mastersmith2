@@ -18,8 +18,10 @@ package cherry.mastersmith.audit.service;
 import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
 import cherry.mastersmith.audit.domain.AuditEvent;
 import cherry.mastersmith.audit.domain.AuditEventFactory;
+import cherry.mastersmith.audit.domain.AuditEventType;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
+import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -35,8 +37,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）を受け取り、監査イベントを
- * 1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
+ * 出来事（Intent 260925-user-management の U2）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -119,6 +121,22 @@ public class AuditEventListener {
     }
 
     /**
+     * パスワードの変更の出来事を受け取り、監査イベントを追記する（Intent 260925-user-management の U2、契約 C8、BR7.2・BR7.3）。
+     *
+     * <ul>
+     *   <li>成功は変更のトランザクションの中で知らされるため、確定の後に受け取る。巻き戻った変更の出来事は受け取らない
+     *   <li>今のパスワードの誤りはトランザクションの外で知らされるため、要求と同じスレッドでその場で受け取る
+     * </ul>
+     *
+     * @param event パスワードの変更の出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onPasswordChangedEvent(PasswordChangedEvent event) {
+        record(() -> AuditEventFactory.from(event), () -> fields(event));
+    }
+
+    /**
      * 監査イベントを組み立てて追記し、失敗を受け止める。
      *
      * @param builder 監査イベントの組み立て
@@ -157,6 +175,10 @@ public class AuditEventListener {
         builder.addKeyValue("exceptionType", e.getClass().getName()).setCause(e).log(FAILURE_MESSAGE);
     }
 
+    /**
+     * 記録しようとした監査イベントの項目を並べる。操作した人がいる出来事は、DSL の操作なら DSL の項目を、それ以外（パスワードの変更）
+     * なら操作した人だけを足す。対象（利用者・招待）を持つ出来事は対象の2項目を足す（既存の出来事の項目は変えない）。
+     */
     private static Map<String, Object> fields(AuditEvent auditEvent) {
         Map<String, Object> fields = fields(
                 auditEvent.getEventType(),
@@ -169,12 +191,58 @@ public class AuditEventListener {
                 auditEvent.getRequestPath(),
                 auditEvent.getTraceId());
         if (auditEvent.getActorUserId() != null) {
-            fields.putAll(dslFields(
-                    auditEvent.getActorUserId(),
-                    auditEvent.getDslHash(),
-                    auditEvent.getDslSource(),
-                    auditEvent.getRejectionKind()));
+            if (isDslOperation(auditEvent.getEventType())) {
+                fields.putAll(dslFields(
+                        auditEvent.getActorUserId(),
+                        auditEvent.getDslHash(),
+                        auditEvent.getDslSource(),
+                        auditEvent.getRejectionKind()));
+            } else {
+                fields.put("actorUserId", auditEvent.getActorUserId());
+            }
         }
+        if (auditEvent.getTargetUserId() != null || auditEvent.getTargetInvitationId() != null) {
+            fields.putAll(targetFields(auditEvent.getTargetUserId(), auditEvent.getTargetInvitationId()));
+        }
+        return fields;
+    }
+
+    /** DSL の操作の種類かを返す（網羅の {@code switch}。種類が増えたときにコンパイルで気づけるようにする）。 */
+    private static boolean isDslOperation(AuditEventType eventType) {
+        return switch (eventType) {
+            case DSL_GENERATED, DSL_SUBMITTED, DSL_SUBMISSION_REJECTED, DSL_APPLIED, DSL_PREVIEW_DISCARDED -> true;
+            case LOGIN_SUCCEEDED, LOGIN_FAILED, LOGGED_OUT, ACCESS_DENIED, PASSWORD_CHANGED -> false;
+        };
+    }
+
+    /** 対象の項目（Intent 260925-user-management の契約 C8）。 */
+    private static Map<String, Object> targetFields(Object targetUserId, Object targetInvitationId) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("targetUserId", targetUserId);
+        fields.put("targetInvitationId", targetInvitationId);
+        return fields;
+    }
+
+    /** パスワードの変更の出来事の項目（組み立てに失敗したときに載せる。パスワード・ハッシュ・メールアドレスは持たない）。 */
+    private static Map<String, Object> fields(PasswordChangedEvent event) {
+        if (event == null) {
+            Map<String, Object> fields = fields(null, null, null, null, null, null, null, null, null);
+            fields.put("actorUserId", null);
+            fields.putAll(targetFields(null, null));
+            return fields;
+        }
+        Map<String, Object> fields = fields(
+                AuditEventType.PASSWORD_CHANGED,
+                event.result(),
+                event.occurredAt(),
+                null,
+                event.failureReason(),
+                event.sourceIp(),
+                event.userAgent(),
+                null,
+                event.traceId());
+        fields.put("actorUserId", event.userId());
+        fields.putAll(targetFields(event.userId(), null));
         return fields;
     }
 

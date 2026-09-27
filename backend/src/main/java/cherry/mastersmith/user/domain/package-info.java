@@ -13,5 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** UserAccount のドメイン（利用者のエンティティ、メールアドレスとパスワードの決まり、秘密の値の型）。 */
+/**
+ * UserAccount のドメイン（利用者のエンティティ、メールアドレスとパスワードの決まり、秘密の値の型、氏名と表示の設定の値の決まり、
+ * 項目ごとの誤りの型、パスワードの変更の出来事、問題の種類）。
+ *
+ * <p>氏名と表示の設定の値の決まりは DB を使わない純粋な関数で、プリファレンスの保存と利用者の作成（後の単位の登録の完了を含む）が
+ * 同じ関数を使う。
+ */
 package cherry.mastersmith.user.domain;

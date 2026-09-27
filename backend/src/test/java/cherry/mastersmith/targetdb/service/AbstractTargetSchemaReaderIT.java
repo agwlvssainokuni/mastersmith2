@@ -34,8 +34,8 @@ import cherry.mastersmith.targetdb.domain.UnavailableReason;
 import cherry.mastersmith.targetdb.testsupport.ContainerRuntimeCheck;
 import cherry.mastersmith.targetdb.testsupport.SilentServer;
 import cherry.mastersmith.targetdb.testsupport.TargetDbTestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -244,7 +244,7 @@ abstract class AbstractTargetSchemaReaderIT {
     void nothingIsWrittenToTheTarget() throws SQLException {
         String email = "member-" + UUID.randomUUID() + "@example.com";
         String password = "テスト用パスワード-" + TestDatabase.randomSecret();
-        app.getBean(UserAccountService.class).createUser(email, new Password(password), false);
+        TestUserAccounts.create(app.getBean(UserAccountService.class), email, password, false);
         int port = Integer.parseInt(app.getEnvironment().getRequiredProperty("local.server.port"));
 
         assertThat(new AuthApi(port).login(email, password).statusCode()).isEqualTo(200);

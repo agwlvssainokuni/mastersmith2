@@ -22,8 +22,8 @@ import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -74,7 +74,7 @@ class TokenApiIT {
         api = new AuthApi(port);
         clock.set(AuthApiTestConfig.START);
         email = "token-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, false);
     }
 
     private String loginCookie() {

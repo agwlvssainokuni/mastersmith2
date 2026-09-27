@@ -16,14 +16,16 @@
 package cherry.mastersmith.user.service;
 
 import cherry.mastersmith.user.domain.EmailAddress;
+import cherry.mastersmith.user.domain.FontSize;
+import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.PasswordPolicy;
+import cherry.mastersmith.user.domain.Theme;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.SmartInitializingSingleton;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,6 +34,10 @@ import org.springframework.stereotype.Component;
  * <p>すべての部品を作った後（Flyway の適用の後）、Web サーバーが要求の受け付けを始める前に動く。設定が無い・正しくないときは
  * 作らずに WARN（足りない・正しくない項目と直し方）を出し、起動は続ける。既にいれば何もしない。パスワードの値はどのログにも
  * 出さない。
+ *
+ * <p>作るときは利用者の作成の操作（契約 C2）に、管理者・氏名＝そろえたメールアドレス・言語 ja・テーマ system・文字の大きさ md を渡し、
+ * 結果の型で判定する（BR5.4）。ログの項目（キー {@code email} を含む）は前の Intent のまま（依頼者の判断で据え置き。Intent
+ * 260925-user-management の U2 のコード生成の計画 9節の決定 3）。
  */
 @Component
 public class InitialAdminInitializer implements SmartInitializingSingleton {
@@ -82,9 +88,11 @@ public class InitialAdminInitializer implements SmartInitializingSingleton {
             LOGGER.atInfo().addKeyValue("email", email).log("初期管理者は既にいるため、作成しませんでした");
             return false;
         }
-        try {
-            userAccountService.createUser(email, new Password(password), true);
-        } catch (DataIntegrityViolationException e) {
+        // 初期値は氏名＝そろえたメールアドレス・ja・system・md（BR2.2・BR5.4）。
+        CreateUserResult result = userAccountService.createUser(
+                new NewUser(email, email, new Password(password), Language.JA, Theme.SYSTEM, FontSize.MD, true));
+        if (result instanceof CreateUserResult.EmailAlreadyUsed) {
+            // 同時の起動などで、確かめの後に別の作成が先に確定した場合。
             LOGGER.atInfo().addKeyValue("email", email).log("初期管理者は既にいるため、作成しませんでした");
             return false;
         }

@@ -23,8 +23,8 @@ import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.net.http.HttpRequest;
 import java.nio.file.Path;
 import java.util.List;
@@ -95,7 +95,7 @@ class AuditTraceIdIT {
         client = new HttpTestClient(port);
         rows = new AuditRows(jdbc);
         email = "trace-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, false);
     }
 
     /** traceparent を付けてログインする（U2 の補助はヘッダーを足せないため、要求を組み立てて送る）。 */

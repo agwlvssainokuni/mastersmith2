@@ -69,7 +69,9 @@ class LogoutServiceTest {
         token = new RefreshToken(7, RefreshTokenValues.hash(value), ISSUED, ISSUED.plus(Duration.ofHours(24)));
         ReflectionTestUtils.setField(token, "tokenId", 100L);
         when(repository.findByTokenHash(any())).thenReturn(Optional.of(token));
-        when(users.findById(7)).thenReturn(Optional.of(new UserSummary(7, "user@example.com", false)));
+        when(users.findById(7))
+                .thenReturn(
+                        Optional.of(new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md")));
     }
 
     @Test

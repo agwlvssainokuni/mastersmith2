@@ -133,6 +133,49 @@ class AuditSchemaIT {
     }
 
     @Test
+    @DisplayName("the V7 target columns are saved and read back, and stay empty for existing kinds of events")
+    void targetColumns() {
+        AuditEvent saved = persist(AuditEvent.withTarget(
+                Instant.parse("2026-09-27T01:00:00Z"),
+                AuditEventType.PASSWORD_CHANGED,
+                AuditResult.FAILURE,
+                AuditFailureReason.CURRENT_PASSWORD_MISMATCH,
+                "192.0.2.20",
+                "Mozilla/5.0",
+                "trace-0020",
+                21L,
+                21L,
+                null));
+        AuditEvent existing = persist(new AuditEvent(
+                Instant.parse("2026-09-27T01:00:01Z"),
+                AuditEventType.LOGIN_SUCCEEDED,
+                AuditResult.SUCCESS,
+                null,
+                null,
+                "192.0.2.21",
+                null,
+                null,
+                null));
+
+        AuditEvent found = find(saved.getAuditEventId());
+
+        assertThat(found.getEventType()).isEqualTo(AuditEventType.PASSWORD_CHANGED);
+        assertThat(found.getFailureReason()).isEqualTo(AuditFailureReason.CURRENT_PASSWORD_MISMATCH);
+        assertThat(found.getActorUserId()).isEqualTo(21L);
+        assertThat(found.getTargetUserId()).isEqualTo(21L);
+        assertThat(found.getTargetInvitationId()).isNull();
+        assertThat(find(existing.getAuditEventId()).getTargetUserId()).isNull();
+        assertThat(find(existing.getAuditEventId()).getTargetInvitationId()).isNull();
+        List<Map<String, Object>> columns = jdbc.queryForList("SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE"
+                + " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AUDIT_EVENTS'"
+                + " AND COLUMN_NAME IN ('TARGET_USER_ID', 'TARGET_INVITATION_ID')");
+        assertThat(columns)
+                .hasSize(2)
+                .allSatisfy(column ->
+                        assertThat(column).containsEntry("IS_NULLABLE", "YES").containsEntry("DATA_TYPE", "BIGINT"));
+    }
+
+    @Test
     @DisplayName("the required columns are rejected when missing")
     void requiredColumnsAreRejected() {
         assertThatThrownBy(() -> jdbc.update(

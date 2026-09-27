@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 /**
- * UserAccount（利用者と照合）。パスワードのハッシュはこのパッケージの外へ出さない（ADR-001）。
+ * UserAccount（利用者と照合、氏名と表示の設定、パスワードの変更）。パスワードのハッシュはこのパッケージの外へ出さない（ADR-001）。
  *
- * <p>ほかの機能は {@code user.service} の公開の操作（照合の結果と利用者の要約）だけを使う。このパッケージは {@code auth} を
- * 参照しない。
+ * <p>ほかの機能は {@code user.service} の公開の操作（照合の結果と利用者の要約、利用者の作成）だけを使う。このパッケージは
+ * {@code auth}・{@code audit} を参照しない。ログインした利用者の自分の設定の API は画面入出力の層 {@code user.web} に置く。
  */
 package cherry.mastersmith.user;

@@ -140,7 +140,9 @@ class DslLifecycleTest {
                 Clock.fixed(NOW, ZoneOffset.UTC),
                 new DslManageProperties(org.springframework.util.unit.DataSize.ofMegabytes(10), 20));
         when(target.readSchema(ReadPurpose.COMPARE)).thenReturn(TargetSchemaResult.unconfigured());
-        when(users.findById(ADMIN)).thenReturn(Optional.of(new UserSummary(ADMIN, "admin@example.com", true)));
+        when(users.findById(ADMIN))
+                .thenReturn(Optional.of(
+                        new UserSummary(ADMIN, "admin@example.com", true, "テスト 利用者", "ja", "system", "md")));
     }
 
     private static DslRequestContext context(DisplayLanguage language) {

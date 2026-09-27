@@ -45,7 +45,8 @@ class TokenRefreshServiceTest {
 
     private static final Instant ISSUED = Instant.parse("2026-09-22T00:00:00Z");
 
-    private static final UserSummary USER = new UserSummary(7, "user@example.com", true);
+    private static final UserSummary USER =
+            new UserSummary(7, "user@example.com", true, "テスト 利用者", "ja", "system", "md");
 
     private final RefreshTokenRepository repository = mock(RefreshTokenRepository.class);
 

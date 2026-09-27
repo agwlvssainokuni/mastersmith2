@@ -36,6 +36,9 @@ import org.hibernate.annotations.Immutable;
  * <p>DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4、契約 C7）では、操作した管理者の利用者 ID・DSL の識別・出どころ・
  * 受け付けなかった投入の理由の種類も記録する（V6 で足した NULL を許す列）。DSL の本文と対象DB の接続先は持たない。
  *
+ * <p>対象の利用者・対象の招待（V7 で足した NULL を許す列。Intent 260925-user-management の契約 C8）を持つ。パスワードの変更では
+ * 操作した人と対象の利用者の両方に本人を記録する。既存の出来事では空のまま。
+ *
  * <p>パスワード・トークン・パスワードのハッシュ値・Authorization ヘッダーの項目を持たない（BR2.3、NFR3.1）。文字列化ではメールアドレスを
  * 伏せる（U1 のメソッドの呼び出しの追跡が引数・戻り値を文字列にするため）。
  */
@@ -92,6 +95,12 @@ public class AuditEvent {
 
     @Column(name = "rejection_kind", updatable = false, length = 32)
     private String rejectionKind;
+
+    @Column(name = "target_user_id", updatable = false)
+    private Long targetUserId;
+
+    @Column(name = "target_invitation_id", updatable = false)
+    private Long targetInvitationId;
 
     /** JPA が使う。 */
     protected AuditEvent() {}
@@ -160,6 +169,41 @@ public class AuditEvent {
         this.dslDigest = dslHash;
         this.dslSource = dslSource;
         this.rejectionKind = rejectionKind;
+    }
+
+    /**
+     * 対象を持つ監査イベントを作る（Intent 260925-user-management の契約 C8。例: パスワードの変更）。メールアドレス・要求のパス・
+     * DSL の項目は空にする。
+     *
+     * @param occurredAt 出来事が起きた日時
+     * @param eventType 種類
+     * @param result 結果
+     * @param failureReason 失敗の理由（成功なら null）
+     * @param sourceIp 接続元IP
+     * @param userAgent User-Agent（無ければ null）
+     * @param traceId トレースID（無ければ null）
+     * @param actorUserId 操作した人の利用者 ID（無ければ null）
+     * @param targetUserId 対象の利用者 ID（無ければ null）
+     * @param targetInvitationId 対象の招待の ID（無ければ null）
+     * @return 監査イベント
+     */
+    public static AuditEvent withTarget(
+            Instant occurredAt,
+            AuditEventType eventType,
+            AuditResult result,
+            AuditFailureReason failureReason,
+            String sourceIp,
+            String userAgent,
+            String traceId,
+            Long actorUserId,
+            Long targetUserId,
+            Long targetInvitationId) {
+        AuditEvent event =
+                new AuditEvent(occurredAt, eventType, result, null, failureReason, sourceIp, userAgent, null, traceId);
+        event.actorUserId = actorUserId;
+        event.targetUserId = targetUserId;
+        event.targetInvitationId = targetInvitationId;
+        return event;
     }
 
     /**
@@ -255,7 +299,7 @@ public class AuditEvent {
     /**
      * 操作した管理者の利用者 ID を返す。
      *
-     * @return 利用者 ID（DSL の操作のとき以外は null）
+     * @return 利用者 ID（DSL の操作・パスワードの変更のとき以外は null）
      */
     public Long getActorUserId() {
         return actorUserId;
@@ -288,6 +332,24 @@ public class AuditEvent {
         return rejectionKind;
     }
 
+    /**
+     * 対象の利用者 ID を返す。
+     *
+     * @return 利用者 ID（対象の利用者を持つ出来事のとき以外は null）
+     */
+    public Long getTargetUserId() {
+        return targetUserId;
+    }
+
+    /**
+     * 対象の招待の ID を返す。
+     *
+     * @return 招待の ID（対象の招待を持つ出来事のとき以外は null）
+     */
+    public Long getTargetInvitationId() {
+        return targetInvitationId;
+    }
+
     /** メールアドレスを伏せて文字列にする（アプリのログにメールアドレスを出さないため）。 */
     @Override
     public String toString() {
@@ -305,6 +367,8 @@ public class AuditEvent {
                 + ", dslHash=" + dslDigest
                 + ", dslSource=" + dslSource
                 + ", rejectionKind=" + rejectionKind
+                + ", targetUserId=" + targetUserId
+                + ", targetInvitationId=" + targetInvitationId
                 + "]";
     }
 }

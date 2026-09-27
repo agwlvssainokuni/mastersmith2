@@ -24,8 +24,8 @@ import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcessor;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import com.sun.net.httpserver.HttpServer;
 import io.opentelemetry.sdk.logs.SdkLoggerProvider;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
@@ -204,7 +204,7 @@ class OtlpLogExportIT {
 
     private String newUser(String password) {
         String email = "otlp-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(password), false);
+        TestUserAccounts.create(userAccountService, email, password, false);
         return email;
     }
 

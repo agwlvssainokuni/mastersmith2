@@ -37,7 +37,7 @@ public record TokenResponse(String accessToken, Instant expiresAt, CurrentUserRe
         return new TokenResponse(
                 tokens.accessToken().value().value(),
                 tokens.accessToken().expiresAt(),
-                new CurrentUserResponse(tokens.user().email(), tokens.user().admin()));
+                CurrentUserResponse.from(tokens.user()));
     }
 
     /** アクセストークンを伏せて文字列にする。 */

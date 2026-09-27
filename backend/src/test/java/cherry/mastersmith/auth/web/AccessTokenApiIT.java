@@ -24,8 +24,8 @@ import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -93,9 +93,7 @@ class AccessTokenApiIT {
         api = new AuthApi(port);
         clock.set(AuthApiTestConfig.START);
         email = "access-" + UUID.randomUUID() + "@example.com";
-        userId = userAccountService
-                .createUser(email, new Password(PASSWORD), false)
-                .userId();
+        userId = TestUserAccounts.create(userAccountService, email, PASSWORD, false);
     }
 
     private String token() {

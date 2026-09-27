@@ -126,6 +126,17 @@ class AuditEventTest {
     }
 
     @Test
+    @DisplayName("every event type and failure reason fits into the 32-character columns")
+    void namesFitIntoTheColumns() {
+        assertThat(Arrays.stream(AuditEventType.values()).map(Enum::name))
+                .allSatisfy(name -> assertThat(name.length()).isLessThanOrEqualTo(32));
+        assertThat(Arrays.stream(AuditFailureReason.values()).map(Enum::name))
+                .allSatisfy(name -> assertThat(name.length()).isLessThanOrEqualTo(32));
+        assertThat(AuditEventType.valueOf("PASSWORD_CHANGED")).isNotNull();
+        assertThat(AuditFailureReason.valueOf("CURRENT_PASSWORD_MISMATCH")).isNotNull();
+    }
+
+    @Test
     @DisplayName("the entity exposes no password, token or setter")
     void noSecretFieldsAndNoSetters() {
         Method[] methods = AuditEvent.class.getDeclaredMethods();

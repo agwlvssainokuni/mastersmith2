@@ -16,6 +16,7 @@
 package cherry.mastersmith.user.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -29,6 +30,9 @@ import java.util.Objects;
  *
  * <p>パスワードのハッシュは {@code user} パッケージの中だけで読み、外へ出さない（ADR-001）。ほかの機能には
  * {@code user.service} の利用者の要約を渡す。文字列化は既定のまま（中身を出さない）。
+ *
+ * <p>氏名と表示の設定の4列（V7、ADR-003）を持つ。書き換えはエンティティの変更の検出では行わず、4列だけ・パスワードのハッシュだけを
+ * 書き換える更新の問い合わせ（{@code user.repository}）で行う（全列を書いて相手の列を古い値で上書きしないため。BR3.4）。
  */
 @Entity
 @Table(name = "users")
@@ -51,6 +55,21 @@ public class User {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "display_name", nullable = false, length = 508)
+    private String displayName;
+
+    @Convert(converter = LanguageConverter.class)
+    @Column(name = "language", nullable = false, length = 2)
+    private Language language;
+
+    @Convert(converter = ThemeConverter.class)
+    @Column(name = "theme", nullable = false, length = 6)
+    private Theme theme;
+
+    @Convert(converter = FontSizeConverter.class)
+    @Column(name = "font_size", nullable = false, length = 2)
+    private FontSize fontSize;
+
     /** JPA が使う。 */
     protected User() {}
 
@@ -61,12 +80,18 @@ public class User {
      * @param passwordHash パスワードのハッシュ
      * @param adminFlag 管理者か
      * @param createdAt 作成の日時
+     * @param preferences 氏名と表示の設定
      */
-    public User(String email, String passwordHash, boolean adminFlag, Instant createdAt) {
+    public User(String email, String passwordHash, boolean adminFlag, Instant createdAt, Preferences preferences) {
         this.email = Objects.requireNonNull(email, "email");
         this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash");
         this.adminFlag = adminFlag;
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+        Objects.requireNonNull(preferences, "preferences");
+        this.displayName = preferences.displayName();
+        this.language = preferences.language();
+        this.theme = preferences.theme();
+        this.fontSize = preferences.fontSize();
     }
 
     /**
@@ -112,5 +137,50 @@ public class User {
      */
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    /**
+     * 氏名を返す。
+     *
+     * @return 氏名（前後の空白を除いた値）
+     */
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    /**
+     * 言語を返す。
+     *
+     * @return 言語
+     */
+    public Language getLanguage() {
+        return language;
+    }
+
+    /**
+     * テーマを返す。
+     *
+     * @return テーマ
+     */
+    public Theme getTheme() {
+        return theme;
+    }
+
+    /**
+     * 文字の大きさを返す。
+     *
+     * @return 文字の大きさ
+     */
+    public FontSize getFontSize() {
+        return fontSize;
+    }
+
+    /**
+     * 氏名と表示の設定の4つの組を返す。
+     *
+     * @return 4つの組
+     */
+    public Preferences getPreferences() {
+        return new Preferences(displayName, language, theme, fontSize);
     }
 }

@@ -47,6 +47,13 @@ public class AuthenticatedUserToken extends AbstractAuthenticationToken {
         return null;
     }
 
+    /**
+     * 利用者 ID の10進の文字列を返す。
+     *
+     * <p>{@code user.web}（ログインした利用者の自分の設定の API、Intent 260925-user-management の U2）が、この値を本人の利用者 ID として
+     * 読む（{@code user} は {@code auth} に依存しないため、Spring Security の標準の {@code Authentication#getName()} を使う）。意味を
+     * 変えるときは、その読み取り（{@code MeRequestContextResolver}）もあわせて直す。
+     */
     @Override
     public String getName() {
         return Long.toString(user.userId());

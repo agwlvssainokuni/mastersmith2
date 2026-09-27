@@ -15,10 +15,32 @@
  */
 package cherry.mastersmith.auth.web;
 
+import cherry.mastersmith.user.service.UserSummary;
+
 /**
  * ログイン中の利用者（CurrentUserView）。{@code admin} は画面の表示の切り替えにだけ使う。
  *
+ * <p>氏名と表示の設定の4つを載せる（Intent 260925-user-management の契約 C3、BR6.1）。値は応答を作る時点の内部DB の値で、テーマ
+ * {@code system} は解決せずにそのまま返す。
+ *
  * @param email メールアドレス
  * @param admin 管理者か
+ * @param displayName 氏名
+ * @param language 言語（{@code ja}・{@code en}）
+ * @param theme テーマ（{@code light}・{@code dark}・{@code system}）
+ * @param fontSize 文字の大きさ（{@code sm}・{@code md}・{@code lg}）
  */
-public record CurrentUserResponse(String email, boolean admin) {}
+public record CurrentUserResponse(
+        String email, boolean admin, String displayName, String language, String theme, String fontSize) {
+
+    /**
+     * 利用者の要約から作る。
+     *
+     * @param user 利用者の要約
+     * @return ログイン中の利用者
+     */
+    public static CurrentUserResponse from(UserSummary user) {
+        return new CurrentUserResponse(
+                user.email(), user.admin(), user.displayName(), user.language(), user.theme(), user.fontSize());
+    }
+}

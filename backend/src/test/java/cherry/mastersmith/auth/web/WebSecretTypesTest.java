@@ -41,7 +41,7 @@ class WebSecretTypesTest {
         TokenResponse response = new TokenResponse(
                 "header.payload.signature",
                 Instant.parse("2026-09-22T00:05:00Z"),
-                new CurrentUserResponse("user@example.com", true));
+                new CurrentUserResponse("user@example.com", true, "利用者", "ja", "system", "md"));
 
         assertThat(response.toString())
                 .contains("accessToken=***")

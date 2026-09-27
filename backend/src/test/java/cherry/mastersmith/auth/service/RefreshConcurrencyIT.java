@@ -23,6 +23,7 @@ import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ class RefreshConcurrencyIT {
     @DisplayName("of two simultaneous refreshes with the same token exactly one succeeds")
     void onlyOneSucceeds() throws Exception {
         String email = "refresh-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password("正しいパスワード-1234"), false);
+        TestUserAccounts.create(userAccountService, email, "正しいパスワード-1234", false);
         RefreshTokenValue token = loginService
                 .login(new LoginCommand(email, new Password("正しいパスワード-1234")), new ClientInfo("127.0.0.1", "IT", null))
                 .refreshToken();

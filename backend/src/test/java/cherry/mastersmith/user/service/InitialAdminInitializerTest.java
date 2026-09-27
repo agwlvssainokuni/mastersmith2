@@ -17,9 +17,6 @@ package cherry.mastersmith.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,13 +25,15 @@ import static org.mockito.Mockito.when;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import cherry.mastersmith.common.testsupport.LogEvents;
-import cherry.mastersmith.user.domain.Password;
+import cherry.mastersmith.user.domain.FontSize;
+import cherry.mastersmith.user.domain.Language;
+import cherry.mastersmith.user.domain.Theme;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.mockito.ArgumentCaptor;
 
 class InitialAdminInitializerTest {
 
@@ -79,7 +78,7 @@ class InitialAdminInitializerTest {
                 assertThat(render(event)).doesNotContain(password);
             }
         });
-        verify(service, never()).createUser(anyString(), any(Password.class), anyBoolean());
+        verify(service, never()).createUser(any(NewUser.class));
     }
 
     @Test
@@ -91,19 +90,30 @@ class InitialAdminInitializerTest {
         List<ILoggingEvent> events = run("admin@example.com", PASSWORD, created);
 
         assertThat(created[0]).isFalse();
-        verify(service, never()).createUser(anyString(), any(Password.class), anyBoolean());
+        verify(service, never()).createUser(any(NewUser.class));
         assertThat(events).allSatisfy(event -> assertThat(render(event)).doesNotContain(PASSWORD));
     }
 
     @Test
-    @DisplayName("a missing administrator is created as admin with the lower-cased email and logged at INFO")
+    @DisplayName(
+            "a missing administrator is created as admin with the lower-cased email, the initial values, logged at INFO")
     void creates() {
+        when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.Created(1));
         boolean[] created = new boolean[1];
 
         List<ILoggingEvent> events = run(" Admin@Example.com ", PASSWORD, created);
 
         assertThat(created[0]).isTrue();
-        verify(service).createUser(eq("admin@example.com"), any(Password.class), eq(true));
+        ArgumentCaptor<NewUser> captor = ArgumentCaptor.forClass(NewUser.class);
+        verify(service).createUser(captor.capture());
+        NewUser newUser = captor.getValue();
+        assertThat(newUser.email()).isEqualTo("admin@example.com");
+        assertThat(newUser.displayName()).as("氏名の初期値はそろえたメールアドレス").isEqualTo("admin@example.com");
+        assertThat(newUser.password().value()).isEqualTo(PASSWORD);
+        assertThat(newUser.language()).isEqualTo(Language.JA);
+        assertThat(newUser.theme()).isEqualTo(Theme.SYSTEM);
+        assertThat(newUser.fontSize()).isEqualTo(FontSize.MD);
+        assertThat(newUser.admin()).isTrue();
         assertThat(events).singleElement().satisfies(event -> {
             assertThat(event.getLevel()).isEqualTo(Level.INFO);
             assertThat(render(event)).contains("admin@example.com").doesNotContain(PASSWORD);
@@ -113,12 +123,16 @@ class InitialAdminInitializerTest {
     @Test
     @DisplayName("a duplicate created concurrently is treated as already existing")
     void duplicate() {
-        when(service.createUser(anyString(), any(Password.class), anyBoolean()))
-                .thenThrow(new DataIntegrityViolationException("dup"));
+        when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.EmailAlreadyUsed());
         boolean[] created = new boolean[1];
 
-        run("admin@example.com", PASSWORD, created);
+        List<ILoggingEvent> events = run("admin@example.com", PASSWORD, created);
 
         assertThat(created[0]).isFalse();
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.INFO);
+            assertThat(event.getFormattedMessage()).isEqualTo("初期管理者は既にいるため、作成しませんでした");
+            assertThat(render(event)).doesNotContain(PASSWORD);
+        });
     }
 }

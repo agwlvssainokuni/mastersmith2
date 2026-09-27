@@ -36,5 +36,7 @@ public enum AuditFailureReason {
     /** アクセストークンの形式の誤り（401）。 */
     TOKEN_MALFORMED,
     /** アクセストークンの署名・方式の不一致（401）。 */
-    TOKEN_INVALID
+    TOKEN_INVALID,
+    /** パスワードの変更の今のパスワードの誤り（Intent 260925-user-management の U2、契約 C8）。 */
+    CURRENT_PASSWORD_MISMATCH
 }

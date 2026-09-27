@@ -38,6 +38,9 @@ import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.ClientInfo;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
 import cherry.mastersmith.common.testsupport.LogEvents;
+import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
+import cherry.mastersmith.user.domain.PasswordChangedEvent;
+import cherry.mastersmith.user.domain.RequestOrigin;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -268,6 +271,154 @@ class AuditEventListenerTest {
                             "requestPath",
                             "auditTraceId",
                             "exceptionType");
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    private static PasswordChangedEvent passwordChanged() {
+        return PasswordChangedEvent.succeeded(
+                21, OCCURRED_AT, new RequestOrigin("192.0.2.30", "Mozilla/5.0", "trace-0030"));
+    }
+
+    private static PasswordChangedEvent passwordMismatch() {
+        return PasswordChangedEvent.failed(
+                21,
+                PasswordChangeFailureReason.CURRENT_PASSWORD_MISMATCH,
+                OCCURRED_AT,
+                new RequestOrigin("192.0.2.30", "Mozilla/5.0", "trace-0030"));
+    }
+
+    @Test
+    @DisplayName("a password change event is appended exactly once with the user as actor and target")
+    void passwordChangedEventIsAppendedOnce() {
+        elapsedMillis(1);
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            listener().onPasswordChangedEvent(passwordMismatch());
+
+            assertThat(logs.list()).isEmpty();
+        }
+        AuditEvent recorded = captureRecorded();
+        assertThat(recorded.getEventType()).isEqualTo(AuditEventType.PASSWORD_CHANGED);
+        assertThat(recorded.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(recorded.getFailureReason()).isEqualTo(AuditFailureReason.CURRENT_PASSWORD_MISMATCH);
+        assertThat(recorded.getActorUserId()).isEqualTo(21L);
+        assertThat(recorded.getTargetUserId()).isEqualTo(21L);
+    }
+
+    @Test
+    @DisplayName("a failing append of a password change logs one error with the target fields and no email or password")
+    void passwordChangedFailureLogsTargets() {
+        String password = "正しいパスワード-1234";
+        elapsedMillis(1);
+        doThrow(new IllegalStateException(password)).when(recorder).record(any(AuditEvent.class));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onPasswordChangedEvent(passwordChanged()))
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list()).hasSize(1);
+            ILoggingEvent error = logs.list().getFirst();
+            assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(error.getMessage()).isEqualTo(AuditEventListener.FAILURE_MESSAGE);
+            Map<String, Object> fields = keyValues(error);
+            assertThat(fields)
+                    .containsEntry("auditEventType", "PASSWORD_CHANGED")
+                    .containsEntry("result", "SUCCESS")
+                    .containsEntry("actorUserId", "21")
+                    .containsEntry("targetUserId", "21")
+                    .containsEntry("targetInvitationId", "null")
+                    .containsEntry("enteredEmail", "null")
+                    .containsEntry("sourceIp", "192.0.2.30")
+                    .containsEntry("auditTraceId", "trace-0030")
+                    .doesNotContainKeys("dslHash", "dslSource", "rejectionKind");
+            assertThat(fields.keySet())
+                    .noneMatch(key -> key.toLowerCase(java.util.Locale.ROOT).contains("password"));
+            assertThat(error.getFormattedMessage() + " " + fields)
+                    .doesNotContain(password)
+                    .doesNotContain("@");
+        }
+        verify(recorder, times(1)).record(any(AuditEvent.class));
+    }
+
+    @Test
+    @DisplayName("a slow password change write logs one warning")
+    void slowPasswordChangedWriteIsWarned() {
+        elapsedMillis(AuditEventListener.SLOW_WRITE_THRESHOLD_MILLIS + 1);
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            listener().onPasswordChangedEvent(passwordChanged());
+
+            assertThat(logs.list()).singleElement().satisfies(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(keyValues(event)).containsEntry("auditEventType", "PASSWORD_CHANGED");
+            });
+        }
+    }
+
+    @Test
+    @DisplayName("a null password change event is contained and logs every key including the targets")
+    void nullPasswordChangedEventIsContained() {
+        elapsedMillis(1);
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onPasswordChangedEvent(null)).doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(keyValues(event))
+                        .containsKeys(
+                                "auditEventType", "actorUserId", "targetUserId", "targetInvitationId", "exceptionType");
+            });
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    @Test
+    @DisplayName("the error fields of the existing events carry no target keys")
+    void existingEventsCarryNoTargetKeys() {
+        elapsedMillis(1);
+        doThrow(new IllegalStateException("追記に失敗しました")).when(recorder).record(any(AuditEvent.class));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            listener().onAuthenticationEvent(loginFailed());
+
+            assertThat(keyValues(logs.list().getFirst()))
+                    .doesNotContainKeys("targetUserId", "targetInvitationId", "actorUserId");
+        }
+    }
+
+    @Test
+    @DisplayName("an event whose audit record cannot be built still logs the fields it carries")
+    void unbuildableEventsLogTheirFields() {
+        // 組み立ての部品が受け付けない形の出来事（必須の値が無い）を作り、組み立てに失敗した経路の項目の作り方を確かめる。
+        AuthenticationEvent authentication = mock(AuthenticationEvent.class);
+        when(authentication.enteredEmail()).thenReturn(EMAIL);
+        when(authentication.sourceIp()).thenReturn("192.0.2.40");
+        AdminAccessDeniedEvent denied = mock(AdminAccessDeniedEvent.class);
+        when(denied.requestPath()).thenReturn("/api/admin/check");
+        PasswordChangedEvent password = mock(PasswordChangedEvent.class);
+        when(password.userId()).thenReturn(21L);
+        when(password.sourceIp()).thenReturn("192.0.2.41");
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            listener().onAuthenticationEvent(authentication);
+            listener().onAdminAccessDeniedEvent(denied);
+            listener().onPasswordChangedEvent(password);
+
+            assertThat(logs.list())
+                    .hasSize(3)
+                    .allSatisfy(event -> assertThat(event.getLevel()).isEqualTo(Level.ERROR));
+            assertThat(keyValues(logs.list().get(0)))
+                    .containsEntry("enteredEmail", EMAIL)
+                    .containsEntry("sourceIp", "192.0.2.40");
+            assertThat(keyValues(logs.list().get(1))).containsEntry("requestPath", "/api/admin/check");
+            assertThat(keyValues(logs.list().get(2)))
+                    .containsEntry("auditEventType", "PASSWORD_CHANGED")
+                    .containsEntry("actorUserId", "21")
+                    .containsEntry("targetUserId", "21")
+                    .containsEntry("sourceIp", "192.0.2.41")
+                    .containsEntry("enteredEmail", "null");
         }
         verifyNoInteractions(recorder);
     }

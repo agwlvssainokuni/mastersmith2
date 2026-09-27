@@ -24,6 +24,9 @@ import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationType;
+import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
+import cherry.mastersmith.user.domain.PasswordChangeOutcome;
+import cherry.mastersmith.user.domain.PasswordChangedEvent;
 
 /**
  * 受け取った出来事から監査イベントを作る（BR1.1、BR1.2、BR1.5、BR2.1）。DB にも時計にも触れない純粋な関数である。
@@ -34,6 +37,8 @@ import cherry.mastersmith.dslmanage.domain.DslOperationType;
  *
  * <p>U2 の出来事の利用者IDは、監査ログの記録項目に含まれないため記録しない（{@code functional-design/entities.md}）。
  * U3 の出来事のメールアドレスは、文字列化が伏せ字になるため必ず {@link AdminAccessDeniedEvent#enteredEmail()} で取る。
+ *
+ * <p>パスワードの変更（Intent 260925-user-management の U2）の出来事は、操作した人と対象の利用者に本人を記録する。
  *
  * <p>種類と理由の写し取りは網羅の {@code switch} で書く。U2・U3 が値を増やしたときに、コンパイルで気づけるようにするため。
  */
@@ -103,6 +108,29 @@ public final class AuditEventFactory {
                 event.rejectionKind());
     }
 
+    /**
+     * パスワードの変更の出来事から監査イベントを作る（Intent 260925-user-management の U2、契約 C8、BR7.2）。
+     *
+     * <p>操作した人と対象の利用者の両方に本人を記録する（契約 C8 の PASSWORD_CHANGED の項目に対象の利用者を足した差は、U2 のコード生成の
+     * 記録に書く）。メールアドレス・要求のパス・対象の招待・DSL の項目は空。User-Agent は上限まで切り詰める。
+     *
+     * @param event パスワードの変更の出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(PasswordChangedEvent event) {
+        return AuditEvent.withTarget(
+                event.occurredAt(),
+                AuditEventType.PASSWORD_CHANGED,
+                resultOf(event.result()),
+                failureReasonOf(event.failureReason()),
+                event.sourceIp(),
+                AuditText.userAgent(event.userAgent()),
+                event.traceId(),
+                event.userId(),
+                event.userId(),
+                null);
+    }
+
     private static AuditEventType eventTypeOf(DslOperationType eventType) {
         return switch (eventType) {
             case DSL_GENERATED -> AuditEventType.DSL_GENERATED;
@@ -130,14 +158,26 @@ public final class AuditEventFactory {
     /**
      * 監査イベントの種類から結果を決める（BR1.2）。
      *
+     * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは
+     * 決められない（呼び出すと想定外の誤り）。
+     *
      * @param eventType 種類
      * @return 結果
+     * @throws IllegalArgumentException 種類から結果を決められないとき
      */
     public static AuditResult resultOf(AuditEventType eventType) {
         return switch (eventType) {
             case LOGIN_SUCCEEDED, LOGGED_OUT, DSL_GENERATED, DSL_SUBMITTED, DSL_APPLIED, DSL_PREVIEW_DISCARDED ->
                 AuditResult.SUCCESS;
             case LOGIN_FAILED, ACCESS_DENIED, DSL_SUBMISSION_REJECTED -> AuditResult.FAILURE;
+            case PASSWORD_CHANGED -> throw new IllegalArgumentException("PASSWORD_CHANGED の結果は種類から決められません（出来事が持つ）");
+        };
+    }
+
+    private static AuditResult resultOf(PasswordChangeOutcome result) {
+        return switch (result) {
+            case SUCCESS -> AuditResult.SUCCESS;
+            case FAILURE -> AuditResult.FAILURE;
         };
     }
 
@@ -155,6 +195,15 @@ public final class AuditEventFactory {
             case USER_NOT_FOUND -> AuditFailureReason.USER_NOT_FOUND;
             case PASSWORD_MISMATCH -> AuditFailureReason.PASSWORD_MISMATCH;
             case ACCOUNT_LOCKED -> AuditFailureReason.ACCOUNT_LOCKED;
+        };
+    }
+
+    private static AuditFailureReason failureReasonOf(PasswordChangeFailureReason reason) {
+        if (reason == null) {
+            return null;
+        }
+        return switch (reason) {
+            case CURRENT_PASSWORD_MISMATCH -> AuditFailureReason.CURRENT_PASSWORD_MISMATCH;
         };
     }
 

@@ -201,18 +201,18 @@ tasks.jacocoTestReport {
  * 既存のパッケージを実測したところ、単独で下限を下回るもの（audit.service の行 77.2%、common.health の行 79.2%、
  * auth.repository の分岐 50.0%）があったため、team.md の Testing Posture に従い、パッケージごとの下限は新しく作るパッケージ
  * だけに当てる。この一覧は増やさない（新しく作るパッケージは、一覧に無いので自動で下限の対象になる）。
+ *
+ * 手を入れた Bolt で、そのパッケージの下限を満たして一覧から外し、パッケージごとの下限の対象に戻す（一度外したものは戻さない）。
+ * Intent 260925-user-management の B2（U2）で audit.domain・audit.service・auth.service・auth.web・user.domain・
+ * user.repository・user.service を外した。
  */
 val packagesJudgedByTotal = listOf(
     "cherry.mastersmith.access.domain",
     "cherry.mastersmith.access.service",
     "cherry.mastersmith.access.web",
-    "cherry.mastersmith.audit.domain",
     "cherry.mastersmith.audit.repository",
-    "cherry.mastersmith.audit.service",
     "cherry.mastersmith.auth.domain",
     "cherry.mastersmith.auth.repository",
-    "cherry.mastersmith.auth.service",
-    "cherry.mastersmith.auth.web",
     "cherry.mastersmith.common.error.domain",
     "cherry.mastersmith.common.error.service",
     "cherry.mastersmith.common.error.web",
@@ -222,9 +222,6 @@ val packagesJudgedByTotal = listOf(
     "cherry.mastersmith.common.security",
     "cherry.mastersmith.common.web",
     "cherry.mastersmith.config",
-    "cherry.mastersmith.user.domain",
-    "cherry.mastersmith.user.repository",
-    "cherry.mastersmith.user.service",
 )
 
 tasks.jacocoTestCoverageVerification {

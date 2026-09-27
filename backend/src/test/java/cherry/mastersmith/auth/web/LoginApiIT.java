@@ -24,8 +24,8 @@ import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.auth.testsupport.SqlStatementCounter;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -91,7 +91,7 @@ class LoginApiIT {
         api = new AuthApi(port);
         clock.set(AuthApiTestConfig.START);
         email = "login-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), true);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, true);
         encoder.takeMatchCount();
     }
 
@@ -120,7 +120,21 @@ class LoginApiIT {
         assertThat(response.statusCode()).isEqualTo(200);
         Map<String, Object> body = HttpTestClient.json(response);
         assertThat(body).containsOnlyKeys("accessToken", "expiresAt", "user");
-        assertThat(body).extractingByKey("user").isEqualTo(Map.of("email", email, "admin", true));
+        assertThat(body)
+                .extractingByKey("user")
+                .isEqualTo(Map.of(
+                        "email",
+                        email,
+                        "admin",
+                        true,
+                        "displayName",
+                        TestUserAccounts.DISPLAY_NAME,
+                        "language",
+                        "ja",
+                        "theme",
+                        "system",
+                        "fontSize",
+                        "md"));
         assertThat(body.get("expiresAt").toString()).startsWith("2026-09-22T00:05:00");
         assertThat(response.body()).doesNotContain(PASSWORD);
         assertThat(AuthApi.setCookie(response))
@@ -152,7 +166,7 @@ class LoginApiIT {
         List<List<String>> statements = new ArrayList<>();
         List<Integer> matches = new ArrayList<>();
         String lockedEmail = "locked-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(lockedEmail, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, lockedEmail, PASSWORD, false);
         for (int i = 0; i < 5; i++) {
             api.login(lockedEmail, "まちがい");
         }

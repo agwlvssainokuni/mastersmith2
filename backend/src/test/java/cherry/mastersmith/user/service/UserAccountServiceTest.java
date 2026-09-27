@@ -16,6 +16,7 @@
 package cherry.mastersmith.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -23,21 +24,30 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import cherry.mastersmith.user.domain.FontSize;
+import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
+import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.lang.reflect.RecordComponent;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Optional;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -47,6 +57,8 @@ class UserAccountServiceTest {
     private static final Instant NOW = Instant.parse("2026-09-22T00:00:00Z");
 
     private static final String HASH = "$2a$04$storedhashstoredhashstoredhashstoredhashstoredhashst";
+
+    private static final String NEW_PASSWORD = "パスワードは十二文字以上";
 
     private final UserRepository repository = mock(UserRepository.class);
 
@@ -65,9 +77,27 @@ class UserAccountServiceTest {
     }
 
     private User user(long id) {
-        User user = new User("admin@example.com", HASH, true, NOW);
+        User user = new User(
+                "admin@example.com", HASH, true, NOW, new Preferences("管理者", Language.EN, Theme.DARK, FontSize.LG));
         ReflectionTestUtils.setField(user, "userId", id);
         return user;
+    }
+
+    private static UserSummary adminSummary(long id) {
+        return new UserSummary(id, "admin@example.com", true, "管理者", "en", "dark", "lg");
+    }
+
+    private static NewUser newUser(String email, String displayName) {
+        return new NewUser(
+                email, displayName, new Password(NEW_PASSWORD), Language.EN, Theme.LIGHT, FontSize.SM, false);
+    }
+
+    private void saveAssigns(long id) {
+        when(repository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "userId", id);
+            return saved;
+        });
     }
 
     @Test
@@ -80,7 +110,7 @@ class UserAccountServiceTest {
 
         assertThat(result.matched()).isTrue();
         assertThat(result.email()).isEqualTo("admin@example.com");
-        assertThat(result.userSummary()).contains(new UserSummary(7, "admin@example.com", true));
+        assertThat(result.userSummary()).contains(adminSummary(7));
     }
 
     @Test
@@ -122,39 +152,134 @@ class UserAccountServiceTest {
     }
 
     @Test
-    @DisplayName("the verification result and the user summary never carry the password hash")
-    void noHashInResults() {
+    @DisplayName("the summary carries the four display values and never the password hash")
+    void summaryFields() {
         assertThat(Arrays.stream(PasswordVerification.class.getRecordComponents())
                         .map(RecordComponent::getName))
                 .doesNotContain("passwordHash", "hash");
         assertThat(Arrays.stream(UserSummary.class.getRecordComponents()).map(RecordComponent::getName))
-                .containsExactly("userId", "email", "admin");
+                .containsExactly("userId", "email", "admin", "displayName", "language", "theme", "fontSize");
     }
 
     @Test
-    @DisplayName("creating a user stores the hash of the password and publishes UserCreatedEvent")
+    @DisplayName("the string forms of the summary and the new user never carry the email, the name or the password")
+    void stringFormsMaskSecrets() {
+        assertThat(adminSummary(7).toString())
+                .doesNotContain("admin@example.com")
+                .doesNotContain("管理者")
+                .contains("theme=dark");
+        assertThat(newUser("new@example.com", "新しい 利用者").toString())
+                .doesNotContain("new@example.com")
+                .doesNotContain("新しい 利用者")
+                .doesNotContain(NEW_PASSWORD);
+    }
+
+    @Test
+    @DisplayName(
+            "creating a user stores the hash, the stripped name and the values, and publishes UserCreatedEvent once")
     void createUser() {
-        when(encoder.encode("パスワードは十二文字以上")).thenReturn(HASH);
-        when(repository.saveAndFlush(any(User.class))).thenAnswer(invocation -> {
-            User saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "userId", 11L);
-            return saved;
-        });
+        when(encoder.encode(NEW_PASSWORD)).thenReturn(HASH);
+        when(repository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        saveAssigns(11L);
 
-        UserSummary summary = service.createUser(" New@Example.com", new Password("パスワードは十二文字以上"), false);
+        CreateUserResult result = service.createUser(newUser(" New@Example.com", "　新しい 利用者 "));
 
-        assertThat(summary).isEqualTo(new UserSummary(11, "new@example.com", false));
-        verify(publisher).publishEvent(new UserCreatedEvent(11));
+        assertThat(result).isEqualTo(new CreateUserResult.Created(11));
+        ArgumentCaptor<User> saved = ArgumentCaptor.forClass(User.class);
+        verify(repository).saveAndFlush(saved.capture());
+        assertThat(saved.getValue().getEmail()).isEqualTo("new@example.com");
+        assertThat(saved.getValue().getPasswordHash()).isEqualTo(HASH);
+        assertThat(saved.getValue().isAdminFlag()).isFalse();
+        assertThat(saved.getValue().getCreatedAt()).isEqualTo(NOW);
+        assertThat(saved.getValue().getPreferences())
+                .isEqualTo(new Preferences("新しい 利用者", Language.EN, Theme.LIGHT, FontSize.SM));
+        verify(publisher, times(1)).publishEvent(new UserCreatedEvent(11));
     }
 
     @Test
-    @DisplayName("findById returns the summary and empty for an unknown id")
+    @DisplayName("an already registered email returns EmailAlreadyUsed without hashing, saving or publishing")
+    void createUserWithRegisteredEmail() {
+        when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
+
+        CreateUserResult result = service.createUser(newUser("ADMIN@example.com", "別の人"));
+
+        assertThat(result).isEqualTo(new CreateUserResult.EmailAlreadyUsed());
+        verify(encoder, never()).encode(any());
+        verify(repository, never()).saveAndFlush(any());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName(
+            "a violation of the unique email constraint returns EmailAlreadyUsed and other violations are rethrown")
+    void createUserUniqueViolation() {
+        when(encoder.encode(NEW_PASSWORD)).thenReturn(HASH);
+        when(repository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(repository.saveAndFlush(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException(
+                        "dup",
+                        new ConstraintViolationException(
+                                "dup", new SQLException("dup"), "PUBLIC.UK_USERS_EMAIL_INDEX_4")))
+                .thenThrow(new DataIntegrityViolationException(
+                        "other", new ConstraintViolationException("other", new SQLException("x"), "CK_OTHER")))
+                .thenThrow(new DataIntegrityViolationException("no cause"));
+
+        assertThat(service.createUser(newUser("dup@example.com", "重なる人")))
+                .isEqualTo(new CreateUserResult.EmailAlreadyUsed());
+        assertThatThrownBy(() -> service.createUser(newUser("other@example.com", "ほかの人")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> service.createUser(newUser("plain@example.com", "ほかの人")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName("values that break the rules are refused as unexpected errors without creating or publishing")
+    void createUserRefusesInvalidValues() {
+        Password password = new Password(NEW_PASSWORD);
+        NewUser[] invalid = {
+            new NewUser("a@example.com", " ", password, Language.JA, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "a".repeat(255), password, Language.JA, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "名​前", password, Language.JA, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "名前", new Password("short"), Language.JA, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "名前", null, Language.JA, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "名前", password, null, Theme.SYSTEM, FontSize.MD, false),
+            new NewUser("a@example.com", "名前", password, Language.JA, null, FontSize.MD, false),
+            new NewUser("a@example.com", "名前", password, Language.JA, Theme.SYSTEM, null, false),
+            new NewUser("not-an-email", "名前", password, Language.JA, Theme.SYSTEM, FontSize.MD, false)
+        };
+
+        for (NewUser newUser : invalid) {
+            assertThatThrownBy(() -> service.createUser(newUser))
+                    .as(newUser.toString())
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageNotContaining("a@example.com")
+                    .hasMessageNotContaining(NEW_PASSWORD);
+        }
+        assertThatThrownBy(() -> service.createUser(null)).isInstanceOf(NullPointerException.class);
+        verifyNoInteractions(repository, publisher);
+    }
+
+    @Test
+    @DisplayName("findById returns the summary with the four values and empty for an unknown id")
     void findById() {
         when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
         when(repository.findById(8L)).thenReturn(Optional.empty());
 
-        assertThat(service.findById(7)).contains(new UserSummary(7, "admin@example.com", true));
+        assertThat(service.findById(7)).contains(adminSummary(7));
         assertThat(service.findById(8)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("findDisplayName and findLanguage return the stored values and empty for an unknown id")
+    void findDisplayNameAndLanguage() {
+        when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
+        when(repository.findById(8L)).thenReturn(Optional.empty());
+
+        assertThat(service.findDisplayName(7)).contains("管理者");
+        assertThat(service.findLanguage(7)).contains(Language.EN);
+        assertThat(service.findDisplayName(8)).isEmpty();
+        assertThat(service.findLanguage(8)).isEmpty();
     }
 
     @Test

@@ -24,6 +24,7 @@ import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
@@ -62,8 +63,8 @@ class AuthSettingsIT {
                 "--mastersmith.auth.access-token-ttl=2m")) {
             AuthProperties properties = context.getBean(AuthProperties.class);
             assertThat(properties.accessTokenTtl()).isEqualTo(Duration.ofMinutes(2));
-            context.getBean(UserAccountService.class)
-                    .createUser("settings@example.com", new Password("正しいパスワード-1234"), false);
+            TestUserAccounts.create(
+                    context.getBean(UserAccountService.class), "settings@example.com", "正しいパスワード-1234", false);
             LoginService login = context.getBean(LoginService.class);
             for (int i = 0; i < 3; i++) {
                 assertThatThrownBy(() -> login.login(

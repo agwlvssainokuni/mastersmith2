@@ -13,5 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** UserAccount の業務処理（照合、利用者の作成と読み取り、初期管理者の自動作成、設定）。 */
+/**
+ * UserAccount の業務処理（照合、利用者の作成と読み取り、初期管理者の自動作成、設定、プリファレンスの読み書きとパスワードの変更）。
+ *
+ * <p>トランザクションの境界はこの層にだけ置く。プリファレンスの保存とパスワードの変更は、DB を使わない検証を先に済ませ、
+ * bcrypt の計算の間は内部DB の接続を持たない。想定内の失敗は結果の型で返し、HTTP の状態は画面入出力の層 {@code user.web} が決める。
+ */
 package cherry.mastersmith.user.service;

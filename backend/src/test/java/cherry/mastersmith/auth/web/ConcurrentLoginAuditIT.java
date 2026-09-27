@@ -21,8 +21,8 @@ import cherry.mastersmith.audit.testsupport.AuditWriteBarrierConfig.AuditWriteBa
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -122,7 +122,7 @@ class ConcurrentLoginAuditIT {
         List<String> emails = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             String email = "concurrent-login-" + UUID.randomUUID() + "@example.com";
-            userAccountService.createUser(email, new Password(PASSWORD), false);
+            TestUserAccounts.create(userAccountService, email, PASSWORD, false);
             emails.add(email);
         }
         return emails;

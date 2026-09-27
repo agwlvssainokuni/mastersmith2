@@ -77,9 +77,10 @@ class LoginAttemptStateRepositoryIT {
     private long newSubject() {
         String email = "lock-" + UUID.randomUUID() + "@example.com";
         jdbc.update(
-                "INSERT INTO users (email, password_hash, admin_flag, created_at) VALUES (?, 'x', FALSE, ?)",
+                "INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES (?, 'x', FALSE, ?, ?)",
                 email,
-                OffsetDateTime.now());
+                OffsetDateTime.now(),
+                email);
         long id = jdbc.queryForObject("SELECT user_id FROM users WHERE email = ?", Long.class, email);
         tx.executeWithoutResult(status -> repository.createIfAbsent(id));
         return id;

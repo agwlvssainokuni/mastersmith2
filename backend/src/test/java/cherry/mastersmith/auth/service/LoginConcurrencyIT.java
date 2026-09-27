@@ -25,6 +25,7 @@ import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -98,7 +99,7 @@ class LoginConcurrencyIT {
 
     private String newUser() {
         String email = "concurrent-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, false);
         return email;
     }
 

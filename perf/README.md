@@ -19,10 +19,11 @@ AP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); UP=$(openssl rand -bas
 export MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g
 
 # 2. 使い捨ての環境を起動し（初期管理者が作られる）、止めて試験用の利用者 11 名を入れる（dslMixed が VUS + 1 名を使う。ほかの場面は 01〜10）
+#    V7 の後は氏名（display_name）が必須のため、メールアドレスと同じ値を入れる（言語・テーマ・文字の大きさは既定の値）
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml stop app
 HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
-SQL="INSERT INTO users (email, password_hash, admin_flag, created_at) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP)," "$i" "$HASH"; done | sed 's/,$//')"
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$HASH" "$i"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
   eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null

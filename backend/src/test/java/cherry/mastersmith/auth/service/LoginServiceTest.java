@@ -70,7 +70,8 @@ class LoginServiceTest {
 
     private static final ClientInfo CLIENT = new ClientInfo("192.0.2.1", "テスト用のブラウザ", "trace-1");
 
-    private static final UserSummary USER = new UserSummary(7, "user@example.com", false);
+    private static final UserSummary USER =
+            new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md");
 
     private final UserAccountService userAccountService = mock(UserAccountService.class);
 

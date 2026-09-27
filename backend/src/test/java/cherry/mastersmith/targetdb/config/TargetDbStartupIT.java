@@ -26,8 +26,8 @@ import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.targetdb.domain.ReadPurpose;
 import cherry.mastersmith.targetdb.domain.TargetSchemaResult;
 import cherry.mastersmith.targetdb.service.TargetSchemaReader;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import com.zaxxer.hikari.HikariDataSource;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -117,7 +117,7 @@ class TargetDbStartupIT {
 
             String email = "member-" + UUID.randomUUID() + "@example.com";
             String password = "テスト用パスワード-" + TestDatabase.randomSecret();
-            context.getBean(UserAccountService.class).createUser(email, new Password(password), false);
+            TestUserAccounts.create(context.getBean(UserAccountService.class), email, password, false);
             assertThat(new AuthApi(port(context)).login(email, password).statusCode())
                     .isEqualTo(200);
         }

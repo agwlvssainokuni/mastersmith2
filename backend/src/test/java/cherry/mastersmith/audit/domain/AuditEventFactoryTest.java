@@ -16,6 +16,7 @@
 package cherry.mastersmith.audit.domain;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.access.domain.AccessDeniedReason;
 import cherry.mastersmith.access.domain.AccessEventType;
@@ -25,6 +26,9 @@ import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.ClientInfo;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
+import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
+import cherry.mastersmith.user.domain.PasswordChangedEvent;
+import cherry.mastersmith.user.domain.RequestOrigin;
 import java.time.Instant;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -160,5 +164,76 @@ class AuditEventFactoryTest {
         // 出来事の文字列化は伏せ字だが、写し取りは値そのものを取る。
         assertThat(event.toString()).doesNotContain(longEmail.substring(0, 10));
         assertThat(audit.getEnteredEmail()).startsWith("あ");
+    }
+
+    @Test
+    @DisplayName("a password change success records PASSWORD_CHANGED with the user as both actor and target")
+    void passwordChangeSuccess() {
+        AuditEvent audit = AuditEventFactory.from(PasswordChangedEvent.succeeded(
+                21, OCCURRED_AT, new RequestOrigin("192.0.2.30", "Mozilla/5.0", "trace-0030")));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.PASSWORD_CHANGED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(audit.getFailureReason()).isNull();
+        assertThat(audit.getActorUserId()).isEqualTo(21L);
+        assertThat(audit.getTargetUserId()).isEqualTo(21L);
+        assertThat(audit.getOccurredAt()).isEqualTo(OCCURRED_AT);
+        assertThat(audit.getSourceIp()).isEqualTo("192.0.2.30");
+        assertThat(audit.getUserAgent()).isEqualTo("Mozilla/5.0");
+        assertThat(audit.getTraceId()).isEqualTo("trace-0030");
+        assertThat(audit.getEnteredEmail()).isNull();
+        assertThat(audit.getRequestPath()).isNull();
+        assertThat(audit.getTargetInvitationId()).isNull();
+        assertThat(audit.getDslHash()).isNull();
+        assertThat(audit.getDslSource()).isNull();
+        assertThat(audit.getRejectionKind()).isNull();
+    }
+
+    @Test
+    @DisplayName("a current-password mismatch records PASSWORD_CHANGED FAILURE with CURRENT_PASSWORD_MISMATCH")
+    void passwordChangeFailure() {
+        AuditEvent audit = AuditEventFactory.from(PasswordChangedEvent.failed(
+                21,
+                PasswordChangeFailureReason.CURRENT_PASSWORD_MISMATCH,
+                OCCURRED_AT,
+                new RequestOrigin("192.0.2.30", null, null)));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.PASSWORD_CHANGED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(audit.getFailureReason()).isEqualTo(AuditFailureReason.CURRENT_PASSWORD_MISMATCH);
+        assertThat(audit.getActorUserId()).isEqualTo(21L);
+        assertThat(audit.getTargetUserId()).isEqualTo(21L);
+        assertThat(audit.getUserAgent()).isNull();
+    }
+
+    @Test
+    @DisplayName("the existing kinds of events leave both target columns empty")
+    void existingEventsHaveNoTarget() {
+        AuditEvent login = AuditEventFactory.from(
+                authenticationEvent(AuthenticationEventType.LOGIN_SUCCEEDED, null, "user@example.com"));
+        AuditEvent denied = AuditEventFactory.from(
+                accessDeniedEvent(AccessDeniedReason.NOT_ADMIN, "member@example.com", "/api/admin/check"));
+
+        assertThat(login.getTargetUserId()).isNull();
+        assertThat(login.getTargetInvitationId()).isNull();
+        assertThat(denied.getTargetUserId()).isNull();
+        assertThat(denied.getTargetInvitationId()).isNull();
+    }
+
+    @Test
+    @DisplayName("the result of PASSWORD_CHANGED cannot be derived from the type alone")
+    void passwordChangedResultComesFromTheEvent() {
+        assertThatThrownBy(() -> AuditEventFactory.resultOf(AuditEventType.PASSWORD_CHANGED))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("a long User-Agent of a password change is truncated to 512 code points")
+    void passwordChangeUserAgentIsTruncated() {
+        AuditEvent audit = AuditEventFactory.from(PasswordChangedEvent.succeeded(
+                21, OCCURRED_AT, new RequestOrigin("192.0.2.30", "😀".repeat(400), null)));
+
+        assertThat(audit.getUserAgent().codePointCount(0, audit.getUserAgent().length()))
+                .isLessThanOrEqualTo(AuditText.MAX_USER_AGENT_LENGTH);
     }
 }

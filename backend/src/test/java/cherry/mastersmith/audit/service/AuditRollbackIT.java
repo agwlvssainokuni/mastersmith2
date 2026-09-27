@@ -22,8 +22,8 @@ import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -127,7 +127,7 @@ class AuditRollbackIT {
         rows = new AuditRows(jdbc);
         trigger.stopFailing();
         email = "rollback-" + UUID.randomUUID() + "@example.com";
-        userAccountService.createUser(email, new Password(PASSWORD), false);
+        TestUserAccounts.create(userAccountService, email, PASSWORD, false);
     }
 
     @Test

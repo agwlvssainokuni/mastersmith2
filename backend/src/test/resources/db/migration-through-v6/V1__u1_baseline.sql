@@ -1,0 +1,19 @@
+-- Copyright 2026 agwlvssainokuni
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+-- U1 の基準線。U1 は業務の表を持たないため、表は作らない。
+-- スキーマの変更の流れ（Flyway）が内部DB（H2）に当たることを確かめるために置く。
+--
+-- ファイルの名前の決まり: V<番号>__<単位>_<内容>.sql（例: V2__u2_user_account.sql）。
+-- 前進のみとし、適用済みのファイルは書き換えない（Flyway の検証で書き換えを検出して起動を止める）。
