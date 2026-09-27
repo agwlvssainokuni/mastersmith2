@@ -39,6 +39,12 @@ snakeyaml = "2.6"
 # DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
 # 固定する。Spring Boot を上げるときは、この版も合わせて見直す。
 networknt-json-schema-validator = "3.0.6"
+# メールのテンプレートの描画（Intent 260925-user-management の U1）。自前の Mustache のエンジン java-mustache-processor の版。
+# 実体は Git サブモジュール vendor/java-mustache-processor（タグ 0.1.0、コミット 8d44c36）を composite build で組んだもので置き換える
+# （settings.gradle.kts）。サブモジュールの固定先を更新するときは、この版も合わせて見直す。
+cherry-mustache = "0.1.0"
+# テスト用の SMTP の受け手（U1）。JVM の中で起動し、STARTTLS・SMTPS・認証・宛先の拒否を作れる。Apache License 2.0。
+subethasmtp = "7.2.2"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
@@ -63,6 +69,12 @@ mariadb-java-client = { module = "org.mariadb.jdbc:mariadb-java-client" }
 postgresql = { module = "org.postgresql:postgresql" }
 snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
 networknt-json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "networknt-json-schema-validator" }
+# メールの送信（U1）。Spring Boot のメールの自動設定（JavaMailSenderImpl）と Jakarta Mail・Angus Mail を含む。版は Spring Boot の BOM に任せる。
+# Jakarta Mail・Angus Mail のライセンスは README の「ライセンス」を参照（EDL 1.0 を選ぶ）。
+spring-boot-starter-mail = { module = "org.springframework.boot:spring-boot-starter-mail" }
+# メールのテンプレートの描画（U1）。composite build で vendor/java-mustache-processor の成果物に置き換わる。
+cherry-mustache-core = { module = "cherry.mustache:cherry-mustache-core", version.ref = "cherry-mustache" }
+subethasmtp = { module = "com.github.davidmoten:subethasmtp", version.ref = "subethasmtp" }
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback-encoder" }
 opentelemetry-logback-appender = { module = "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0", version.ref = "opentelemetry-instrumentation" }
 jqwik = { module = "net.jqwik:jqwik", version.ref = "jqwik" }

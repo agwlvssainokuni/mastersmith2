@@ -77,6 +77,10 @@ dependencies {
         exclude(group = "tools.jackson.dataformat", module = "jackson-dataformat-yaml")
         exclude(group = "org.snakeyaml", module = "snakeyaml-engine")
     }
+    // メールの描画と送信（Intent 260925-user-management の U1）。送信の部品は Spring Boot のメールの自動設定で作る。
+    // テンプレートの描画は自前の Mustache のエンジン（composite build。settings.gradle.kts を参照）。
+    implementation(libs.spring.boot.starter.mail)
+    implementation(libs.cherry.mustache.core)
     runtimeOnly(libs.h2)
     // 対象DB（U1）の JDBC ドライバー。読み取り専用の接続で、スキーマのメタデータを読むだけに使う。
     runtimeOnly(libs.mysql.connector.j)
@@ -94,6 +98,8 @@ dependencies {
     testImplementation(libs.testcontainers.mysql)
     testImplementation(libs.testcontainers.mariadb)
     testImplementation(libs.testcontainers.postgresql)
+    // メールの送信の結合テストで、JVM の中で起動するテスト用の SMTP の受け手（U1。コンテナは使わない）。
+    testImplementation(libs.subethasmtp)
     testRuntimeOnly(libs.junit.platform.launcher)
 
     spotbugsPlugins(libs.findsecbugs.plugin)
