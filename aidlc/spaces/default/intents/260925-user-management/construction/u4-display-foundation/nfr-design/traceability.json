@@ -1,0 +1,158 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-display-foundation",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR2.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10",
+    "NFR9.11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 2節: login-handoff のモジュールの変数1つだけにメールアドレスを1回だけ持ち、描画の確定の後に消す。URL・ブラウザの保存・history.state・console に載せない。LoginForm の画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md 1節: 読み書きは display-settings の1つのモジュールだけで、書く値は3つの軸だけから作る。例外を外へ出さず、項目ごとに検証する。保存の後にすべての鍵の値にトークン・メールアドレス・氏名が無いことを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design.md 3節: 050 の検査のファイルの中の測定のテスト。新しいコンテキストで5回、goto の直前から見出しが見えるまでをテストの側の時計で測り、注記と添付で残す。統合の関門にしない"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "performance-design.md 2節: 見た目の設定の読み取りを描画の外で1回だけ始め、LoginStateGate の復元と並べる。DisplaySettingsProvider は両方の答えで描く。上限・再試行・中断は置かない。2つの要求がともに始まることと StrictMode で1回であることを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "performance-design.md 4節: 既存の check-bundle-size.mjs（.js だけを gzip で数え、500KB を超えたら警告）で前後を記録する。axe-core は成果物に入れない"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "performance-design.md 5節・3.3: 入口で Noto Serif JP の8つの CSS を読み込み、font-display: swap、preload を足さない。sans のとき Serif のフォントのファイルへの要求が無いことを測定のテストで確かめる"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "performance-design.md 6節: フォントのファイルの種類ごとの合計・入口の CSS・dist の全体・WAR の大きさを、コード生成で前後を記録する。上限は置かない"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "logical-components.md 6節・security-design.md 6.3: 目標は WCAG 2.1 AA。実際のブラウザの検査の合否は WCAG 2.0・2.1 の A・AA のタグの規則だけ（Q2: A）。自動で見ない点は画面部品のテストと画面の段の決まりで補う"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "logical-components.md 6節: LoginLanguageSwitch・LoginForm・ShellLayout に vitest-axe の検査を1件ずつ入れ、違反 0 件"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components.md 5節・security-design.md 6節: 050 の新しいファイルで、組ごとに新しいコンテキスト、(a) 6組・(b) 8組・(c) 幅 375px の6組。U4 の鍵の初めのスクリプトと /api/appearance の答えの差し替えで切り替え、axe-core を page.evaluate で読み込み、違反 0 件と横のはみ出しが無いことを確かめる。既存の 010〜040 を変えず、ログインしない（R-01）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "logical-components.md 6節: 言語の選択肢は Button の組に lang と aria-pressed、切り替えの後もフォーカスを残し、html lang を画面の言語と同じ時点で変える"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "logical-components.md 5.5: B4 はログインの画面の最初の状態を (a)・(b)・(c) の 20 組で検査する（Q1: A で幅 375px を含め、R-02 を閉じる）。B5 で U5〜U7 の画面を同じ検査に足す"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "logical-components.md 6節: 足す文言の鍵を ja・en の両方に置き、鍵がそろい空でないことをテストで確かめる"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "logical-components.md 6節: 言語の名前は訳さない固定の値 LANGUAGE_NAMES として display-settings が持ち、U6・U7 も使う"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "security-design.md 3節: トークンを付けず 401 で更新しないパスを1つの一覧と1つの判定にまとめ、名前を改める（Q3: A、仮の名前 TOKENLESS_API_PATHS・isTokenlessApiPath）。問い合わせを除いた完全な一致で、ApiClient の単体テストで確かめる"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "security-design.md 4節: Accept-Language は登録された関数の ja・en だけを付け、付ける前にも比べる。呼び出し側の指定は上書きしない。言語を決める関数を性質ベースのテストで確かめる"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "security-design.md 4節: 見た目の設定の応答は項目ごとに C7 の値だけを setBrand・setFontFamily に渡し、HTML に差し込まない。許されない値・余計な項目・形の誤りで data-brand・data-font-family が変わらないことを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "security-design.md 5節・6節: アプリの CSP と vite の設定を変えず、埋め込みを足さない。axe-core は page.evaluate で検査のページだけに読み込み、bypassCSP と addScriptTag は使わない。CSP の違反が無いことを測定のテストで確かめる"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "security-design.md 7節: @fontsource/noto-serif-jp 5.3.0 を dependencies に足し、lockfile で固定する。High 以上で統合を止める対象。推移依存が無いことをコード生成で記録する"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "security-design.md 7節・6節: axe-core 4.13.0 を devDependencies に明示で足し、lockfile で1つの版にそろえる。frontend/src から読み込まず、dist に本体の文字列（Deque Systems）が無いことを確かめる"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "security-design.md 7節・logical-components.md 3節: make-you-chic-ui の固定先の更新は B4 の専用のコミットで、前後のハッシュを記録し、中身は変えない。統合は fast-forward でよい"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "logical-components.md 7節: フロントエンドのカバレッジの下限（行 80%・分岐 70%）を守り、除外を増やさない。e2e の下の検査と手伝いは既存どおり計測の対象外"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "logical-components.md 7節: fast-check を4つの純粋な関数に当て、3つの性質を確かめる。失敗時の種は fast-check の既定の報告で残す"
+    },
+    {
+      "id": "NFR9.10",
+      "status": "OK",
+      "target": "logical-components.md 7節: 既存の画面のテスト・認証のテスト・既存の E2E 010〜040 が通り続ける。renderWithProviders を答え済みの見た目の設定を渡せる形に広げる"
+    },
+    {
+      "id": "NFR9.11",
+      "status": "OK",
+      "target": "logical-components.md 5.1: 検査は流れではないため E2E の本数に数えない。050 の別のファイルに置き、組ごとの新しいコンテキストで前のテストの状態に頼らない。B5 のログインの後の画面は前提を自分で作る"
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "stage": "nfr-design",
+  "unit": "u7-preferences-ui",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 1節: 氏名はフックの状態だけに持ち、U7 はブラウザの保存・URL・console に触れない。保存は U4 の applyUserPreferences だけで3つの表示の設定だけ。読み込み・保存の成功と失敗の後の保存のすべての鍵と console の5つの関数を画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design.md 4節: U7 の検査のファイルの測りのテスト（Q1: A）。招待から作った利用者で、回ごとに新しいコンテキストでログインし、ユーザーメニューの項目を押してから保存する・変更するのボタンが見えるまでを2つの画面で5回ずつ、本物の応答で測り、注記と添付で記録。関門にしない。受け手の手段が無ければ飛ばして Unverified"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "performance-design.md 4.3: 同じ作った利用者で、テーマを交互に変えて保存するを押してから Toast が見えるまでを5回測り、注記と添付で記録。関門にしない"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "performance-design.md 4.2・4.3: 測りのテストが招待と登録の完了の API で作った利用者（初期管理者は変えない）で、前後のパスワードを交互に1回ずつ順に送り、変更するを押してから Toast が見えるまでを5回測る"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "performance-design.md 2節: 部品が付いたときに GET を1回だけ始め、読み込みの番号で最後の答えだけを使い、離れた後の答えを捨てる。パスワードの変更の画面は API を呼ばない。API の時間は U2 の目標"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "performance-design.md 3節: 送信中の印を useRef で持ち、要求の前に同じ呼び出しの中で立てる。Button の loading・readOnly・ラジオの選択を受け付けない表示。画面に時間切れ・再送・中断を置かない。偽の API で呼び出しが1回だけであることを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "performance-design.md 5節: 2つの画面を React.lazy で登録し、入口から静的に読み込まない。check-bundle-size.mjs で U7 の前後の値を記録する"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "logical-components.md 6節: WCAG 2.1 AA を目標に、実際のブラウザの検査は WCAG 2.0・2.1 の A・AA のタグの規則で合否を決め、自動で見ない点は画面部品のテストと機能設計の決まりで補う"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "logical-components.md 6節: PreferencesPage・PasswordChangePage に vitest-axe の検査を1件ずつ入れ、違反 0 件"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components.md 5.1〜5.5: 050 の後の番号の U7 の検査のファイルで、組 (a) 6組・(b) 8組を切り替え、axe の違反 0 件と横のはみ出しなしを確かめる。初期管理者でログインし GET /api/me/preferences の答えを差し替えて D2 の本物の道で組を当て（Q2: A）、最初の状態と画面の確かめの誤りの状態を検査する（Q3: A）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "logical-components.md 5.2: 組 (c) 幅 375px × 812px でテーマ2×文字の大きさ3の6組を、2つの画面・2つの状態で検査し、横のはみ出しなしと axe の違反 0 件を確かめる"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "logical-components.md 6節: RadioGroup の legend と選択肢の lang、案内の置き方、FormField の aria-describedby・aria-invalid と選択のまとまりの legend の中の誤り、最初の誤りの項目へのフォーカス、Toast と role=alert、言語が変わっても部品を作り直さない"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "logical-components.md 6節: preferences. で始まる鍵を ja・en の両方に置き、言語の名前は LANGUAGE_NAMES、テーマ・文字の大きさは骨組みの文言を使う。registration のテストと既存の登録の検査で鍵のそろいを確かめる"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "security-design.md 3.3・logical-components.md 6節: 共用の関数の理由とサーバーの理由を同じ union に寄せた1つの表のすべての鍵が ja・en にあることと、知らない理由が一般の文言になることを errorMessages.ts のテストで確かめる"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "security-design.md 2節: 3つのパスワードはフックの状態だけに持ち、type=password と autocomplete、フォームに method・action を置かず ApiClient で送る、204 で空に戻す、離れたら答えを捨てる。保存・URL に値が無いことを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "security-design.md 3節: detail を使わず code と fieldErrors の field・reason から文言の鍵を選ぶ。fieldErrors.ts は U2 の形だけを読み壊れた要素を捨てる。成功の応答の形を確かめ、応答の値を React の文字としてだけ描く（react/no-danger）"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "security-design.md 4節: 400 PASSWORD_CURRENT_MISMATCH（条件つきの更新の場合を含む）は 401 の更新に乗らずログイン状態を変えない。回数の制限を置かない。401 は既存の ApiClient に任せる。画面の確かめはサーバーの検証の代わりにしない"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "security-design.md 5節: action と path のどちらか一方の型、登録の検査で両方・無し・登録されていない path（絶対 URL と // の URL を含む）を止める。ShellLayout はサイドバーと同じ href と onClick。既存のログアウトと E2E の選び方はそのまま"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "logical-components.md 7節: フロントエンドのカバレッジの下限（行 80%・分岐 70%）を守り、除外を増やさない。e2e の下は既存の E2E と同じく計測の対象外で除外の設定は変えない"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "logical-components.md 7節: fieldErrors.ts に fast-check の性質ベースのテスト（例外を出さない、返す項目の名前は union の中だけで重ならない）。失敗時の seed・path を出力に残す"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "logical-components.md 7節: 画面の確かめの境界（11・12 コードポイント、72・73 バイト、絵文字 11・12 文字、確かめの不一致、今のパスワードに規則を当てない）と今のパスワードの誤りの表示を、共用の関数を差し替えずに PasswordChangePage の画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "logical-components.md 7節: 既存の画面のテスト・骨組みのテスト・既存の E2E（010〜040）と U4 の 050 を変えずに通す。流れの E2E を足さず、統合の前に e2eTest を手元で流す"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "logical-components.md 5.1・performance-design.md 4.1: 検査と測りは流れの E2E と別のファイルで、本数に数えない。前提は初期管理者と測りのテストが招待から作る利用者で、前のテストの状態に頼らない。番号・初期管理者の設定を変えない方針・共用の手伝いは B5 のコード生成の計画で U5・U6 とそろえる"
+    },
+    {
+      "id": "NFR9.10",
+      "status": "OK",
+      "target": "security-design.md 7節・logical-components.md 7節: 新しい依存を足さず、make-you-chic-ui の新しい版は B4 の固定先の更新の後に使う。B5 で U6 の共用の関数を先に作り、関数の名前と理由の union を計画の承認の前に突き合わせる（R-02）"
+    }
+  ]
+}

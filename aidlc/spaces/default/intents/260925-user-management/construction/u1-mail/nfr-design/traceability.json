@@ -1,0 +1,170 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-mail",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR5.1",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR11.1",
+    "NFR11.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 4.1・4.2: 出してよい項目の限定（ログは templateId・language・failureKind・exceptionType、未知の値は unknown）、描画と送信の内部を mail.template・mail.transport に置き TraceAspect の対象の外にする（Q1 A）、Observation のタグを4つに限る（logical-components.md 6節）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 4.4: MailRequest の toString は templateId・language だけ、二重の守りとして RenderedMail の toString も件名・本文を伏せる"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 4.1・4.3: 例外の物をロガーに渡さず型の名前だけ出す、設定の点検の WARN は項目の名前だけ、想定外の失敗は原因を付けない MailUnexpectedException に包む"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design.md 5節: application.yaml の logging.level で org.eclipse.angus・jakarta.mail を OFF（cherry.mustache は値を出さないため変えない）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design.md 5節: spring.mail.properties.mail.debug: false を明示し、既定のセッションが debug でないことを結合テストで確かめる（U1 の守りは足さない、F3 A）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "security-design.md 5節: README の運用で設定しない値の一覧・方式ごとの書き方・STARTTLS のポート 587・starttls.enable だけの平文の危険（R-01）。logical-components.md 10節で B1 の完了の条件"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "security-design.md 2.1・2.2: mail.config の @Bean で MailSettings を1回だけ作り、JavaMailSenderImpl を ObjectProvider で受ける。差出人は MastersmithMailProperties。空の既定の spring.mail.host を置かず .env.example はコメントの形"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "security-design.md 2.3・2.2 の7・9: 方式の分類の純粋な関数（SMTPS・STARTTLS（必須）・NONE）、知らない protocol と資格情報と NONE の組は Invalid"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "security-design.md 3節: spring.mail.properties に checkserveridentity と ssl.protocols（smtp・smtps）、本番で ssl.bundle を使わない、STARTTLS（必須）の失敗は CONNECTION_FAILED（logical-components.md 5.3）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "security-design.md 6節: 描く前の改行の拒否、件名のまとめ、起動時の差出人・表示名の改行の点検、MimeMessageHelper の符号化に任せ addHeader を使わない、SpotBugs の SMTP_HEADER_INJECTION の関門"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "security-design.md 6節: SpotBugs の関門に PREDICTABLE_RANDOM を足し既存の1件を確かめる（logical-components.md 10節の B1 の確かめ）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "logical-components.md 3節・5.1: mail に web・repository を置かず @Transactional を使わないことを MailBoundaryArchitectureTest で守る。トランザクションの外で呼ぶ順序は U3"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "logical-components.md 5.2: spring.mail.properties の mail.smtp.* と mail.smtps.* の接続・読み取り・書き込みの時間切れを 3000 ミリ秒"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "security-design.md 2.2 の8: 使う方式の時間切れの3つの鍵を起動時に点検し不正なら Invalid。環境変数の結び付きは logical-components.md 10節で B1 に確かめ、成り立たなければ依頼者に諮る（R-02）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "logical-components.md 5.2・5.3・5.6: JavaMailSender.send を1回だけ、自動の再試行と全体の上限なし、失敗の分類の表、既知の限界（遅れ続ける受け手・DNS）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "logical-components.md 5.4: management.health.mail.enabled: false、spring.mail.test-connection を設定しない、起動時に SMTP へ接続しない"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "logical-components.md 5.5・7節: 準備した Template を MailTemplateRegistry の変わらない表に持ち描画は差し込むだけ、キャッシュなし、同時の呼び出しを許す作り"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "logical-components.md 7節: 置き場の数え上げと一覧の照合、ja・en の準備、欠け・壊れ・名前の誤りで起動を止め原因の種類だけを出す、依頼の言語だけで描く"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "logical-components.md 7節: java-mustache-processor のタグ 0.1.0 をサブモジュールと includeBuild で組み、固定先の更新は専用のコミット、中身を変えない"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "logical-components.md 10節: 取り込みの5条件を B1 で確かめ、満たせなければ ADR-010 の切り替え（R-02）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "logical-components.md 8節: JVM の中の SubEtha SMTP 7.2.2 で ja・en の送信の成功を受けて宛先・件名・本文・lang・Content-Type を確かめる。テスト用のテンプレートと一覧の置き方"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "logical-components.md 8節・5.3: 閉じたポート・何も返さない ServerSocket・STARTTLS を受け付けない・認証と宛先の拒否の結合テストと、分類の表の単体テスト"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "logical-components.md 8節と security-design.md 7節・8節: エスケープ・描画・ヘッダーへの差し込み・送信の失敗・漏えいのテスト、テンプレートの検査に {{> と {{= を足す"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "logical-components.md 8節と security-design.md 8節: 設定の点検の表・方式の分類の表・既定の debug・ヘルスチェック・範囲の外のポート・時間切れの不正な値のテスト"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "logical-components.md 8節: mail の5つの下位パッケージをパッケージごとのカバレッジの下限の対象にし除外を足さない、cleanTest つきの verify で実測"
+    },
+    {
+      "id": "NFR11.1",
+      "status": "OK",
+      "target": "logical-components.md 9節: compose の profile mail の Mailpit、8025 は 127.0.0.1 だけ、1025 はホストに公開しない。招待のメールを画面で見る確かめは B3 に引き継ぐ（上流との差、11節）"
+    },
+    {
+      "id": "NFR11.2",
+      "status": "OK",
+      "target": "logical-components.md 9節: .env.example と README の見本の接続先は手元の受け手だけ、実在の宛先・外部の SMTP へ送らない"
+    }
+  ]
+}

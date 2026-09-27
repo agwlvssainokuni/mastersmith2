@@ -1,0 +1,176 @@
+{
+  "stage": "nfr-design",
+  "unit": "u6-registration-ui",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR2.1",
+    "NFR3.1",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10",
+    "NFR9.11"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 1.2・1.3: 最初の描画で router の場所の hash を registrationToken に渡して token だけを取り、無い・空なら API を呼ばず unavailable。描画の確定の後に replace の移動で1回だけ hash を消す。トークンは要求の本文だけに入れる。画面部品のテストと registrationToken の単体テストで確かめる"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 1.2・1.3: トークンはフックの状態だけに持ち、ブラウザの保存・history.state・文言・console に出さない。画面部品のテストで保存の全鍵・console の5つの関数の見張り・画面の文字を見る。E2E-1 の計測の5回で実際のブラウザの保存も見る（performance-design.md 2.1 の (c)、SD-D1）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design.md 2.1 の (a)・security-design.md 1.3: E2E-1 の流れと計測の5回のすべてで、フォームが出た後の page.url() に #token= が無いことを失敗の条件にする（PD-D1）。読み込み直しは画面部品のテスト"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 1.2・1.3: リファラーの手当ては足さず、Referrer-Policy と CSP を変えず、外部へのリンクと外部の読み込みを置かない。B5 のコード生成で差分が無いことを点検する"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "security-design.md 1.4: E2E-1 のトークンとパスワードは実行ごとの使い捨て。検査の見本のトークンは低いエントロピーの固定の値で Gitleaks に掛からない形。トレースと報告はコミットしない（.gitignore を確かめる）。初期管理者の設定は読むだけ"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 2節: メールアドレスは読み取り専用の欄と U4 の handOffToLogin（メモリだけ・1回）だけに持ち、saveBrowserDisplaySettings → handOffToLogin → /login の順。URL・保存・console に出さないことを完了の 204 の画面部品のテストで見る"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design.md 2節: 404 REGISTRATION_LINK_INVALID は理由によらず同じ表示で detail を読まない。振り分けは failureKind（状態コードと code だけ）の1か所。detail だけを変えた複数の 404 の画面部品のテストと failureKind の全行の単体テスト"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design.md 2節: E2E-1 の中で登録の完了の前に同じリンクを新しいコンテキストで5回開き、goto の直前からメールアドレスの欄が見えるまでをテストの側の時計で測り、注記と添付で残す。時間では失敗させない。2 秒を超えたら切り分けて相談する"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "performance-design.md 3節: 確かめ中は role=status、送信中は Button の loading（aria-busy）。待ちに上限・再試行・中断を置かない。StrictMode の2回の確かめは最後の答えだけで移す機能設計のまま。画面部品のテストで答えを返さない間の表示を見る"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "performance-design.md 3節: 機能の登録の遅延読み込みで入口と別の塊にし、shared/validation も入口に入れない。check-bundle-size.mjs の目安（gzip 500KB、警告だけ）のまま。B5 のコード生成で塊が別のファイルに出ることと大きさを記録する"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "logical-components.md 6節: WCAG 2.1 AA を、テーマ・文字の大きさ・ブランドカラーのどの組み合わせと狭い幅でも満たす。確かめは NFR7.2（vitest-axe）と NFR7.3（実際のブラウザの検査）"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "logical-components.md 6節: 5つの画面部品ごとに vitest-axe の検査を1件、違反 0 件。RegistrationPage の各表示の含め方はコード生成で決める（NFR 要件のまま）"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components.md 6節・5節、performance-design.md 4節: U4 の検査の作りで、ready と unavailable の2状態に (a) 6組・(b) 8組・(c) 幅 375px の6組を流し、WCAG 2.0・2.1 の A・AA のタグの規則で違反 0 件と横のはみ出しなしを確かめる。40 回、見込みで約 1〜2 分。ファイルの分け方と番号・共用の手伝いは B5 の計画で U5・U7 とそろえる"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "logical-components.md 6節: 言語の選択肢の lang、RadioGroup の fieldset・legend と矢印キー、切り替えの後のフォーカス、html lang、role=alert、項目の下の誤りと aria-describedby・aria-invalid、最初の誤りの項目へのフォーカス（画面の確かめ）、サーバーの 400 は知らせへのフォーカス（Q2 A）、aria-disabled・aria-busy。画面部品のテスト"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "security-design.md 5節: 組ごとの新しいコンテキストの中だけで POST /api/registration/verify を page.route で見本の 200 に差し替え、ほかの要求は本物の WAR へ送る。unavailable は本物のまま。ログインせず状態を変えない。見本は1つで型を付け、E2E-1 で本物の応答の項目の名前と型を毎回照合し、承認の場の R-02 を閉じる（Q1 A、SD-D3）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "logical-components.md 7節: registration. の鍵を ja・en でそろえ、app.name・U4 の display.*・LANGUAGE_NAMES を使う。画面部品のテストで鍵がそろい空でないこと、en でも「日本語」と出ることを見る"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "logical-components.md 7節: 確かめの 200 で招待の言語を当て、選んだ言語を画面と要求に当てる。招待の言語 en をブラウザの言語 ja で開いたときの文言・html lang・画面の確かめの誤り・Accept-Language を画面部品のテストで見る"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "security-design.md 3.1: registrationApi は ApiClient の apiRequest を通し、Authorization・Accept-Language を付けない。公開のパスの扱いは U4 の ApiClient の1つの一覧と判定（U4 の Q3 A）で、U6 は ApiClient を変えない。registrationApi の単体テストでパス・メソッド・本文・見出しを見る"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "security-design.md 3.2: 404・400 のほかの応答（429・503 など）と code の違う応答は、確かめでは loadFailed、完了では登録できない知らせ。failureKind の単体テストに 429・503 の行を入れる"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "security-design.md 4節・3.3: パスワードの欄の属性、送信の前の shared/validation の確かめ、判定はサーバーが正、値は欄と本文だけ。400 VALIDATION_FAILED は fieldErrors を読まずフォームの上の一般の知らせ（Q2 A、SD-D4）。境界の値の画面部品のテスト"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "security-design.md 4節: Button の loading とフックの両方で送信の間の操作を無視し、欄を readOnly、ラジオの選択を受け付けない。ログアウト中も同じ。2回押す・Enter・ラジオでも要求1回・本文の値が変わらないことを画面部品のテストで見る"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "security-design.md 4節、performance-design.md 2.1 の (b): CSP を変えず、埋め込みを足さず、HTML に差し込まない（react/no-danger）。検査でも CSP を緩めず bypassCSP を使わない。E2E-1 の計測の5回で CSP の違反を失敗の条件にする（PD-D2）。B5 のコード生成で CSP と index.html を点検する"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "security-design.md 6節: 新しい依存を足さない。差し替えは page.route、照合は Playwright と TypeScript の既存の機能。B5 のコード生成で package.json と lockfile に U6 の差分が無いことを確かめる"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "security-design.md 6節: make-you-chic-ui の新しい版（RadioGroup の legend・lang、Button の loading）に頼り、B4 の固定先の更新（edb1f94 → 735ef04）の後に B5 を進める。中身は変えない"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "logical-components.md 8節: フロントエンドのカバレッジの下限（行 80%・分岐 70%）を守り、除外を増やさない。frontend/e2e は既存どおり計測の対象外"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "logical-components.md 8節: shared/validation の関数に fast-check の性質ベースのテストを当て、境界の値を含め、失敗時の種を記録する"
+    },
+    {
+      "id": "NFR9.10",
+      "status": "OK",
+      "target": "logical-components.md 5節・8節: E2E-1 を frontend/e2e に1本足し e2eTest で動かす。管理者のログインと招待を自分で行い、重ならない example.com のアドレスを使う。流れの中で NFR6.1 の計測・2.1 の確かめ・応答の形の照合を行う。リンクの取り出し方と SMTP の設定の渡し方は infrastructure-design の持ち主"
+    },
+    {
+      "id": "NFR9.11",
+      "status": "OK",
+      "target": "logical-components.md 5.2・8節: 既存の画面のテストと 010〜040 のファイルと実行の順を変えず、新しいファイルは後の番号。アクセシビリティの検査は流れの本数に数えない"
+    }
+  ]
+}

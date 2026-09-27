@@ -1,0 +1,146 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-invitation-ui",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR2.1",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 1節: 応答の型は契約 C5 の決まった項目だけを持ち、列の render は項目を1つずつ読む（行を丸ごと広げない）。token・url を加えた応答でも表示に出ないことを InvitationList の画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design.md 2節: ブラウザの保存を使わず、今のページは画面の状態だけに持ち URL に載せず、console を呼ばない。保存のすべての鍵・location・console の5つの関数の見張りを InvitationAdminPage の画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design.md 4節: U5 の検査のファイルの測定のテスト。API で 21 件を置き、新しいコンテキストで5回、ログインの画面からログインした後にサイドバーの項目を押してから 20 行目が見えるまでを本物の一覧で測り、注記と添付で残す。関門にしない。招待を使える設定が無ければ飛ばして Unverified で Build and Test に引き継ぐ（Q2: A・Q3: A）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "performance-design.md 4.3: 同じ測定の各回で「次へ」を押してから2ページ目の最初の行が見えるまでを測り、1ページ目へ戻す。5回の値を記録し、関門にしない"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "performance-design.md 2節: 読み直しごとの番号で最後の答えだけを使い、離れた後の答えを捨てる。読み直しの間も Table とページ送りを残し、自動の読み直しをしない。重なり・離れた後・偽の時計を画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "performance-design.md 3節: 押したボタンを Button の loading にしフォーカスを保つ。招待の送信中と取り消しの要求中は Modal を閉じず、送り直しはその行の「取り消す」だけを押せなくする。画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "performance-design.md 3節・logical-components.md 3節: 画面の側に時間切れ・中断・再試行を置かず、受け手が遅れ続ける既知の限界の間は Modal が閉じられないことを失敗の範囲に記録する（確かめの対象にしない既知の限界）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "performance-design.md 5節: 画面を遅延読み込みの塊に入れ新しい依存を足さない。check-bundle-size.mjs で変更の前後と画面の塊の大きさをコード生成で記録する"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "logical-components.md 6.1: 状態を Badge の文字で示す、行のボタンの名前にメールアドレス、言語の名前に lang、Modal は背景で閉じず閉じたら元のボタンへ、取り消しは alertdialog で初めのフォーカスは「やめる」、目立たせた行は枠の線も（6.2）"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "logical-components.md 6.1: 5つの画面部品ごとに vitest-axe の検査を1件、違反 0 件"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components.md 5節: 050 の後の番号の新しいファイルで、(a) 6組と (b) 8組を、一覧（行あり）・警告・2つの Modal に当てる。状態は一覧の答えの page.route の見本で出し Modal は開くだけ（Q1: A）。コンテキストごとにログインの画面からログインしサイドバーから開く（Q3: A）。axe と横のはみ出しは U4 の共用の手伝い"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "logical-components.md 5.2・6.2: 幅 375px の (c) 6組を一覧（行あり）と2つの Modal に当てる。表は Table の包む要素の中だけで横に動き、行のボタンで領域に届くため scrollable-region-focusable が通る前提を検査で確かめる"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "logical-components.md 6.3: invitation.* の文言を ja・en で持ち既定は日本語、LANGUAGE_NAMES を訳さずに使う。鍵のそろいと en の文言を画面部品のテストと登録の検査で確かめる"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "logical-components.md 6.3: Table の labels の7項目と Modal の closeLabel を画面の言語で渡し、en の画面に日本語の既定の文言が無いことを画面部品のテストで確かめる"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "security-design.md 3節: 文言は failureMessage.ts で code と状態コードの種類から選び detail を使わない。400 は fieldErrors を読まず決まった文言。取り消しの 204 は本文を読まずに成功。追加の項目は型を確かめてから読む。React の文字として描き react/no-danger で埋め込みを止める"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "security-design.md 4節: 骨組みの access: 'ADMIN'・visibleWhen: 'ADMIN' のまま。401 は ApiClient、403 は一般の 4xx の文言。サーバー側の 401・403・成功（200・201・204、契約 C5）は U3 のテストで確かめ、画面の側で代えない"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "security-design.md 5節: CSP と index.html を変えず、埋め込みのスクリプト・スタイルを足さない。目立たせた行は :has() の機能の CSS。検査で CSP の違反を共用の手伝いで集めて記録する"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "security-design.md 7節: 新しい依存を足さず、package.json と lockfile に U5 の差分が無いことをコード生成で記録する"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "security-design.md 7節・logical-components.md 6.2: B4 の固定先の更新（735ef04）の後の版を使い、vendor を変えない。caption・行の class・横に動く領域の名前は Table の外側（見える h2・aria-label・:has() の印と CSS）で足す"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "logical-components.md 7節: フロントエンドのカバレッジの下限（行 80%・分岐 70%）を守り除外を増やさない。frontend/e2e の検査と手伝いは既存どおり計測の対象外"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "logical-components.md 7節: fast-check の性質ベースのテストを paging.ts（範囲・ページの数・補正）と inviteInput.ts に当て、失敗時の種を記録する"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "logical-components.md 7節: formatDateTime とテストを shared/format へ移し、DSL の3つの画面は読み込み先だけを変えて既存のテストが通る"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "logical-components.md 5.1・7節: 流れの E2E を足さず、検査と測定は本数に数えない。B5 で E2E-1・010〜040・050 が通ることを e2eTest で記録する。後のファイルは測定で置いた招待の件数に頼らない。ファイルの番号・初期管理者の設定・共用の手伝いは B5 の計画で U6・U7 とそろえる"
+    }
+  ]
+}
