@@ -34,6 +34,7 @@
 ## Runtime State
 - **Revision Count**: 3
 
+- **Skeleton Stance**: off
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -95,7 +96,7 @@ Per unit: [TBD]
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-09-25T15:33:11Z
+- **Last Updated**: 2026-09-27T01:16:31Z
 
 ## Session Resume Point
 - **Last Completed Stage**: delivery-planning

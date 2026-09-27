@@ -1,0 +1,42 @@
+{
+  "stage": "functional-design",
+  "unit": "u8-instance-appearance",
+  "upstream_ids": [
+    "FR8.1",
+    "FR8.2"
+  ],
+  "coverage": [
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "BR1.1, BR1.2, BR1.6, BR3.1, BR3.2"
+    },
+    {
+      "id": "FR8.2",
+      "status": "OK",
+      "target": "BR1.3, BR1.4, BR1.5, BR1.7, BR2.1"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR3.3",
+      "status": "N/A",
+      "target": "設計の質問 Q1 A による決まり（使えないトークンを付けた要求の 401 を受け入れ、画面の側がトークンを付けない）。FR8 の受け入れの条件ではない"
+    },
+    {
+      "id": "BR3.4",
+      "status": "N/A",
+      "target": "契約 C7 の制約（応答は2項目だけで秘密を含めない）。FR8 の受け入れの条件ではない"
+    },
+    {
+      "id": "BR3.5",
+      "status": "N/A",
+      "target": "FR9.1 の対象の一覧に無い操作を監査に残さないことの明記。FR8 の受け入れの条件ではない"
+    },
+    {
+      "id": "BR3.6",
+      "status": "N/A",
+      "target": "既存の共通の仕組み（/api/ の応答の no-store）を変えないことの明記。契約 C7 の未解決の点の受け持ちを U4 に置くための技術の決まり"
+    }
+  ]
+}
