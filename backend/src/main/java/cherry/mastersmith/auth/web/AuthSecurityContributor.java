@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AuthSecurityContributor implements SecurityRuleContributor {
 
-    /** この決まりの順番（U2 は 100 台。100 は U1 のテストの役の決まりが使う）。 */
+    /** この決まりの順番（auth は 100 台。x00・x50 の 100・150 はテストの決まりが使う）。 */
     public static final int ORDER = 110;
 
     private final AuthenticationManager authenticationManager;

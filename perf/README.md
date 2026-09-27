@@ -30,7 +30,7 @@ docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/buil
 rm build/h2-perf.jar; unset AP UP HASH SQL
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
-# 3. 場面ごとに流す（health / loginSuccess / loginFailure / refresh / adminCheck / forbidden）
+# 3. 場面ごとに流す（health / loginSuccess / loginFailure / refresh / adminCheck / forbidden / appearance）
 mkdir -p build/perf-results && chmod 777 build/perf-results
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=health -e DURATION=60s \
   -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
@@ -42,6 +42,7 @@ rm -rf "$D"
 docker compose up -d --wait
 ```
 
+- `appearance` の場面（Intent 260925-user-management の U8）は、トークンを付けない `GET /api/appearance` を同時 `VUS`（既定 10）で `DURATION` の間くり返し、全件が 200 で本文の項目がちょうど `brandColor`・`fontFamily` の2つであることを checks で確かめる。試験用の利用者とトークンは要らず、監査ログも増えない。目標は U8 の NFR6.1（95% が 300 ミリ秒以内）で、閾値は `http_req_duration{name:appearance}` の `p(95)<300`。軽い API の決まりどおり、内部DB のファイルが膨らんだ状態（悪い側の条件）のまま測る。
 - 監査の書き込みの時間を測るときは、`app.env` に `LOGGING_LEVEL_CHERRY_MASTERSMITH_AUDIT_SERVICE=TRACE` を足して起動し直し、`AuditEventListener` の `ENTER`・`EXIT` の時刻の差を集める。TRACE は応答時間を遅くするため、応答時間の判定の回とは分ける。
 - 前提: colima の VM は CPU 4・メモリ 6GiB（README の「コンテナの資源の上限」）。VM の大きさでは配備したアプリ（2g）と同時に動かせるが、CPU 4 を分け合うと測定の値に影響しうるため、手順 0 で配備したアプリを止める。
 - k6 も同じ VM の CPU を使う（上限の指定なし）。測った値には k6 の分が混ざりうる。

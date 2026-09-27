@@ -22,6 +22,7 @@
 //   refresh       トークンの更新（U2-NFR1.2）
 //   adminCheck    管理者の確認用 API（U3-NFR1.1 成功、U2-NFR1.4 の上限）
 //   forbidden     管理者でない利用者の確認用 API の 403（U3-NFR1.1 403、U3-NFR1.3、U4-NFR1.2）
+//   appearance    見た目の設定の API（トークンなしの GET /api/appearance。U8 の NFR6.1）
 // DSL の場面（Intent 260923-dsl-schema-loader の Performance Validation 用。手順は perf/README.md の「DSL の時間を測る」）。
 // 管理者のトークンは5分で切れるため、VU ごとに4分でログインし直す。DSL の本文は DSL_FILE（k6 のコンテナの中のパス）から読む。
 //   dslLight      今の状態と履歴を同時 VUS で繰り返す（U4 の NFR1.10 の今の状態・履歴。重い処理の制限を受けない）
@@ -63,6 +64,10 @@ function scenariosFor(name) {
 
 // U4 の NFR1.10（今の状態・履歴・破棄・適用の 95% が 1 秒以内）。重なりの失敗（dslMixed）は率で見る。
 function thresholdsFor(name) {
+  // Intent 260925-user-management の U8 の NFR6.1（トークンなしの GET /api/appearance の 95% が 300 ミリ秒以内）。
+  if (name === 'appearance') {
+    return { 'http_req_duration{name:appearance}': ['p(95)<300'] }
+  }
   if (name === 'dslLight') {
     return { 'http_req_duration{name:dslStatus}': ['p(95)<1000'], 'http_req_duration{name:dslHistory}': ['p(95)<1000'] }
   }
@@ -219,6 +224,17 @@ export default function (tokens) {
       tags: { name: 'forbidden' },
     })
     check(res, { '403': (r) => r.status === 403 })
+  } else if (SCENARIO === 'appearance') {
+    // トークンを付けない（画面の側も付けない。U8 の BR3.3）。試験用の利用者は要らず、監査ログも増えない。
+    const res = http.get(`${BASE}/api/appearance`, { tags: { name: 'appearance' } })
+    check(res, {
+      '200': (r) => r.status === 200,
+      'two items': (r) => {
+        if (r.status !== 200) return false
+        const keys = Object.keys(r.json()).sort()
+        return keys.length === 2 && keys[0] === 'brandColor' && keys[1] === 'fontFamily'
+      },
+    })
   } else if (SCENARIO === 'dslLight') {
     dslLight()
   } else if (SCENARIO === 'dslCycle') {

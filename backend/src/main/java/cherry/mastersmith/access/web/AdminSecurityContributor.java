@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AdminSecurityContributor implements SecurityRuleContributor {
 
-    /** この決まりの順番（U3 は 200 台。200 は U1 のテストの役の決まりが使う）。 */
+    /** この決まりの順番（access は 200 台。x00・x50 の 200・250 はテストの決まりが使う）。 */
     public static final int ORDER = 210;
 
     private final AdminAuthenticationEntryPoint authenticationEntryPoint;

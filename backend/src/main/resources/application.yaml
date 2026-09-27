@@ -116,6 +116,14 @@ mastersmith:
     from: ${MASTERSMITH_MAIL_FROM:}
     # 差出人の表示名。無ければ MasterSmith
     from-name: ${MASTERSMITH_MAIL_FROM_NAME:}
+  appearance:
+    # インスタンスの見た目の設定（Intent 260925-user-management の U8）。ログインなしの GET /api/appearance で画面へ渡す。
+    # 大文字・小文字と前後の空白は問わない。無い・空なら既定を使う（警告なし）。許されない値は既定を使い、起動時に項目ごとに
+    # WARN を1件出す（起動は止めない。設定された値はログに出さない）。変更はアプリの起動し直しで当たる。
+    # ブランドカラー: blue・green・purple・orange のどれか（既定 blue）
+    brand-color: ${MASTERSMITH_APPEARANCE_BRAND_COLOR:}
+    # フォントファミリー: sans・serif のどれか（既定 sans）
+    font-family: ${MASTERSMITH_APPEARANCE_FONT_FAMILY:}
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

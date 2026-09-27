@@ -48,7 +48,8 @@ import org.springframework.security.web.savedrequest.NullRequestCache;
  *
  * <ol>
  *   <li>U1 の公開の決まり: {@code /actuator/health}、{@code /api/problems/**} は認証を求めない
- *   <li>{@link SecurityRuleContributor} を order の小さい順（U2 は 100 台、U3 は 200 台）
+ *   <li>{@link SecurityRuleContributor} を order の小さい順（機能の名前で 100 台ずつ: auth は 100 台、access は 200 台、
+ *       invitation は 300 台、appearance は 400 台。x00・x50 はテストの決まりが使う）
  *   <li>{@link ApiDefaultAccess} による {@code /api/**} の既定（無ければ許可）
  *   <li>{@code /api/**} 以外（画面の配信）は許可
  * </ol>

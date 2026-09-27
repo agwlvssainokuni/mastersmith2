@@ -321,6 +321,8 @@ docker compose up -d --wait                              # app が healthy に�
 | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT`・`..._TIMEOUT`・`..._WRITETIMEOUT` | `3000` | 接続・応答の待ち・書き込みの時間切れ（ミリ秒、1 以上の整数）。SMTPS では `MAIL_SMTPS_` の名前 |
 | `MASTERSMITH_MAIL_FROM` | なし | 差出人のメールアドレス（小文字・前後に空白の無い形）。無ければメールを送らない |
 | `MASTERSMITH_MAIL_FROM_NAME` | `MasterSmith` | 差出人の表示名 |
+| `MASTERSMITH_APPEARANCE_BRAND_COLOR` | `blue` | インスタンスのブランドカラー（`blue`・`green`・`purple`・`orange`）。許されない値は既定を使い、起動時に警告を出す（「インスタンスの見た目の設定（U8）」） |
+| `MASTERSMITH_APPEARANCE_FONT_FAMILY` | `sans` | インスタンスのフォントファミリー（`sans`・`serif`）。許されない値は既定を使い、起動時に警告を出す |
 | `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` | 空 | 手元で試す対象DB（compose の profile `targetdb-*`）の管理者のパスワード（秘密情報。`.env` ではなく `.env.targetdb` に入れる。アプリには渡らない） |
 | `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` | 空 | 手元で試す対象DB の読み取りだけのアカウント `mastersmith_reader` のパスワード（秘密情報。`.env.targetdb` に入れる） |
 | `MASTERSMITH_AUTH_SIGNING_KEY` | 空（必須） | アクセストークンの署名鍵（Base64、復元して 32 バイト以上。秘密情報。無い・短いと起動しない） |
@@ -632,6 +634,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 | `/api/problems/**` | U1 | 誰でも読める説明文書 |
 | `/api/auth/login` | U2 | ログインする前に呼ぶ |
 | `/api/auth/session/**` | U2 | 更新は Cookie で認証し、ログアウトは期限切れでも呼べる必要がある |
+| `GET /api/appearance`（GET だけ） | U8（Intent 260925-user-management） | ログインの前の画面も見た目の設定を読む |
 
 - **管理者のみの範囲**: `/api/admin` そのものと `/api/admin/**` は管理者だけが使えます。未ログインは 401 / `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 / `ACCESS_DENIED` になります。存在しない管理 API も、管理者でない利用者には 403 になります（有無を明かさないため）。管理者かどうかは、要求ごとに内部DBから読んだ値で判断します。
 - 後の単位が管理者のみの API を足すときは、**`/api/admin/` の下に置いてください**（個々の API での宣言には頼りません）。それ以外の `/api/` の下は、置くだけでログインが必要になります。
@@ -731,13 +734,31 @@ Intent 260925-user-management の U2 で、ログインした利用者が自分�
 - **C4**: 400 / `VALIDATION_FAILED` に、項目ごとの誤り `fieldErrors` と上の `reason` の一覧を足しました（安全な項目の追加）。
 - **C8**: `PASSWORD_CHANGED` に、対象の利用者 `target_user_id`（本人と同じ値）を足しました。
 
+## インスタンスの見た目の設定（U8）
+
+Intent 260925-user-management の U8 で、インスタンス全体のブランドカラーとフォントファミリーを設定から読み、ログインなしで読める API で画面へ渡すようにしました（契約 C7）。画面に当てるのは U4 の受け持ちです。
+
+| 環境変数 | 許される値 | 既定 |
+|---|---|---|
+| `MASTERSMITH_APPEARANCE_BRAND_COLOR` | `blue`・`green`・`purple`・`orange` | `blue` |
+| `MASTERSMITH_APPEARANCE_FONT_FAMILY` | `sans`・`serif` | `sans` |
+
+- **値の読み方**: 大文字・小文字と前後の空白は問いません（例: ` Green ` は `green`）。無い・空・空白だけなら既定を使い、警告は出しません。
+- **許されない値**: 既定を使い、アプリの起動時に項目ごとに WARN（`見た目の設定に許されない値が指定されたため、既定の値を使います`）を1件出します。起動は止めません。ログのキーは `property`（項目の名前。例 `mastersmith.appearance.brand-color`）・`defaultValue`（使った既定の値）・`allowedValues`（許される値の一覧）で、**設定された値そのものは出しません**。警告は起動時の1回だけで、要求のたびには出ません。
+- **変更の当て方**: 値は起動時に1回だけ読みます。変えたら `.env` を直してアプリを起動し直します（`docker compose up -d`）。
+- **API**: `GET /api/appearance` は、ログインなしで 200 と `{ "brandColor": "<名前>", "fontFamily": "<名前>" }` を返します。値は常に上の表の小文字の名前で、2項目の外は載せません。内部DB を使わないため、接続プールが尽きたときも答えます。
+- **GET の外**: `GET` 以外のメソッドは公開していません。未ログイン・使えないトークンなら 401 / `AUTHENTICATION_REQUIRED`、使えるトークン付きなら 405 / `METHOD_NOT_ALLOWED`（`Allow` の見出しつき）です。`HEAD` も未ログインでは 401 です。使えないトークン（期限切れ・改ざん）を付けた `GET` も 401 になるため、画面はこの API にトークンを付けずに呼びます。
+- **監査**: 読み取りは監査ログに残しません。
+- **回数の制限**: 置いていません（返すのは秘密を含まない2つの名前だけ）。配備先が決まったときに前段で扱います。
+- **戻すとき**: 前の版のイメージに戻しても、`.env` の2項目を消す必要はありません（前の版は読みません）。
+
 ## 後の単位（U2・U3・U4）が使う差し込み口
 
 U1 のファイルは書き換えずに、次の型を使います。
 
 | 差し込み口 | 形 | 使う単位 |
 |---|---|---|
-| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は U2 が 100 台、U3 が 200 台。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3 |
+| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は単位の番号ではなく機能の名前で 100 台ずつ割り当てる（`auth` は 100 台で本番 110、`access` は 200 台で本番 210、`invitation` は 300 台、`appearance` は 400 台で本番 410。本番の決まりは x10、x00・x50 はテストの決まりが使う）。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3 |
 | API の既定の扱い | `cherry.mastersmith.common.security.ApiDefaultAccess` の Bean（0個か1個。2個以上は起動の失敗）。無ければ `/api/**` は許可、`requireAuthentication()` が true ならログイン必須 | U3 |
 | フィルターの段階のエラー応答 | `cherry.mastersmith.common.security.ErrorResponseWriter`。401・403 などを共通の ErrorResponse の形で書く | U2、U3 |
 | 想定内のエラー | `cherry.mastersmith.common.error.domain.BusinessException` を起こす。問題の種類（`ProblemType`、日英の説明つき）は自分のパッケージの `ProblemTypeCatalog` の Bean に置く（code・slug の重複は起動の失敗） | U2、U3、U4 |

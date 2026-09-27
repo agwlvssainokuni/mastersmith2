@@ -30,7 +30,8 @@ import org.springframework.stereotype.Component;
 /**
  * 401 の入口の処理（BR4.4、NFR10.5、計画の D2）。U1 の {@link ErrorResponseWriter} で 401 / {@code AUTHENTICATION_REQUIRED}
  * を書き、区分（{@link TokenAuthenticationException} ならその区分、そうでなければ {@code TOKEN_MISSING}）を DEBUG で出す。トーク
- * ンの値は出さない。U3 が order 200 台の決まりで置き換える。
+ * ンの値は出さない。access の決まり（order 210、{@code AdminSecurityContributor}）が入口の処理を置き換え、応答の書き出しは
+ * この処理に任せる。
  */
 @Component
 public class TokenAuthenticationEntryPoint implements AuthenticationEntryPoint {

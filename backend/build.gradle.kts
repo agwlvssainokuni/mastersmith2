@@ -205,11 +205,11 @@ tasks.jacocoTestReport {
  * 手を入れた Bolt で、そのパッケージの下限を満たして一覧から外し、パッケージごとの下限の対象に戻す（一度外したものは戻さない）。
  * Intent 260925-user-management の B2（U2）で audit.domain・audit.service・auth.service・auth.web・user.domain・
  * user.repository・user.service を外した。
+ * Intent 260925-user-management の U8 で common.security・config・access.web を外した（差し込み口の order の説明文の書き直し）。
  */
 val packagesJudgedByTotal = listOf(
     "cherry.mastersmith.access.domain",
     "cherry.mastersmith.access.service",
-    "cherry.mastersmith.access.web",
     "cherry.mastersmith.audit.repository",
     "cherry.mastersmith.auth.domain",
     "cherry.mastersmith.auth.repository",
@@ -219,9 +219,7 @@ val packagesJudgedByTotal = listOf(
     "cherry.mastersmith.common.health",
     "cherry.mastersmith.common.i18n.domain",
     "cherry.mastersmith.common.observability",
-    "cherry.mastersmith.common.security",
     "cherry.mastersmith.common.web",
-    "cherry.mastersmith.config",
 )
 
 tasks.jacocoTestCoverageVerification {
