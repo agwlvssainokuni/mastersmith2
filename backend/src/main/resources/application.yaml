@@ -108,6 +108,14 @@ mastersmith:
     max-submit-size: ${MASTERSMITH_DSL_MAX_SUBMIT_SIZE:10MB}
     # 適用の履歴の件数の上限（既定 20、1 以上）。超えた分は古いものから消す。
     history-limit: ${MASTERSMITH_DSL_HISTORY_LIMIT:20}
+  mail:
+    # メールの差出人（U1）。SMTP の接続先・ポート・資格情報・暗号化・時間切れは Spring Boot の spring.mail.* で受け取る
+    # （環境変数 SPRING_MAIL_*。値はここに書かず、.env だけから渡す。README の「メール（U1）」を参照）。
+    # 接続先（SPRING_MAIL_HOST）と差出人の両方がそろい、設定に不正が無いときだけメールを送る。無ければ送らない（起動は続く）。
+    # 差出人のメールアドレス（小文字・前後に空白の無い形）
+    from: ${MASTERSMITH_MAIL_FROM:}
+    # 差出人の表示名。無ければ MasterSmith
+    from-name: ${MASTERSMITH_MAIL_FROM_NAME:}
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
@@ -174,6 +182,29 @@ spring:
     console:
       # H2 のコンソールは開発時も含めて使わない。
       enabled: false
+  # メールの送信（U1）。送信の部品（JavaMailSenderImpl）は Spring Boot の自動設定が作る。
+  # 接続先（spring.mail.host）はここに置かない。空の既定の値を置くと、接続先が無くても自動設定が送信の部品を作ってしまうため
+  # （NFR2.5）。接続先・ポート・資格情報・暗号化の方式は環境変数（SPRING_MAIL_HOST など）だけから受け取る。
+  # 起動のときに SMTP へ接続を試す spring.mail.test-connection は置かない（接続できないと起動が止まるため。NFR6.4）。
+  mail:
+    properties:
+      # 接続・応答の待ち・書き込みの時間切れ（ミリ秒）。送信の待ちを 3 秒で打ち切り、招待の API の応答時間の目標に収める
+      # （NFR6.1）。環境変数（例: SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT）で変えられる。1 以上の整数でないときは
+      # 送らない（起動時の点検で「設定がない」にする。NFR6.2）。SMTPS（protocol が smtps）では mail.smtps.* を使う。
+      mail.smtp.connectiontimeout: 3000
+      mail.smtp.timeout: 3000
+      mail.smtp.writetimeout: 3000
+      mail.smtps.connectiontimeout: 3000
+      mail.smtps.timeout: 3000
+      mail.smtps.writetimeout: 3000
+      # メールの部品のデバッグ出力は使わない（宛先・本文・資格情報が標準出力に出るため。BR1.8、NFR2.3）。
+      mail.debug: false
+      # TLS の相手の名前の確かめと、使う TLS の版（1.2 以上）。spring.mail.ssl.verify-hostname は STARTTLS に効かないため、
+      # 部品の設定で明示する（NFR2.7）。証明書は JVM の既定の信頼できる一覧で確かめる。
+      mail.smtp.ssl.checkserveridentity: true
+      mail.smtp.ssl.protocols: TLSv1.3 TLSv1.2
+      mail.smtps.ssl.checkserveridentity: true
+      mail.smtps.ssl.protocols: TLSv1.3 TLSv1.2
 
 server:
   port: 8080
@@ -214,6 +245,10 @@ management:
     diskspace:
       enabled: false
     ssl:
+      enabled: false
+    # メールの送信の部品のヘルスチェック（SMTP に接続して確かめる）は使わない。SMTP の状態でアプリのヘルスチェックを
+    # 左右しないため（NFR6.4）。
+    mail:
       enabled: false
   metrics:
     tags:
@@ -268,3 +303,11 @@ logging:
     org.mariadb.jdbc: OFF
     org.postgresql: OFF
     com.mysql.cj: OFF
+    # メールの部品（Jakarta Mail の API と実装の Angus Mail）自身のログは出さない（U1、NFR2.2）。
+    # なぜ: 部品のログ（とデバッグ出力）は、宛先のメールアドレス・SMTP の応答・資格情報を含むことがあり、ログにメールアドレスと
+    #   SMTP の応答を出さない決まり（project.md の Forbidden）を破るため。
+    # 障害の調べ方: 送信ごとに U1（SmtpMailSender）が出す WARN の failureKind（CONNECTION_FAILED・TIMEOUT・REJECTED など）と
+    #   exceptionType（例外の型の名前）で原因を絞る。さらに調べるときは、SMTP の受け手の側のログを見るか、同じネットワークから
+    #   接続を試す。配備した環境で部品のログやデバッグ出力を有効にしない（宛先・資格情報がログに残るため）。
+    org.eclipse.angus: OFF
+    jakarta.mail: OFF
