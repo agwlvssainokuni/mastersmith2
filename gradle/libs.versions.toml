@@ -35,7 +35,7 @@ opentelemetry-instrumentation = "2.28.1-alpha"
 jqwik = "1.10.1"
 archunit = "1.5.0"
 # DSL の YAML の読み込み（U2）。Spring Boot の推移依存と同じ版を、直接の依存として明示する。
-snakeyaml = "2.6"
+snakeyaml = "2.7"
 # DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
 # 固定する。Spring Boot を上げるときは、この版も合わせて見直す。
 networknt-json-schema-validator = "3.0.6"
