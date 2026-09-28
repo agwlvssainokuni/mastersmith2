@@ -45,3 +45,27 @@ React・`window`・ブラウザの保存・`app/`・`features/` には触れな�
 
 誤りが無いときは `undefined` を返す。サーバーの 400 の `fieldErrors` の `reason`（`REQUIRED`・`TOO_SHORT`・`TOO_LONG`・
 `INVALID_CHARACTER`・`MISMATCH`）は、同じ名前の種類（`required` など）に寄せてから文言の鍵にすると、画面とサーバーで同じ文言になる。
+
+## ユーザーメニューの項目で画面へ移る（`path`、Intent 260925-user-management の U7）
+
+ユーザーメニューの項目（`userMenuItems`）は、選んだときに操作を行う `action`（例: ログアウト）か、登録済みの画面へ移る
+`path`（例: プリファレンス）の、どちらか一方だけを持つ（`UserMenuItemRegistration` は2つの形の union）。
+
+```ts
+userMenuItems: [
+  {
+    id: 'preferences-open',
+    labelKey: 'preferences.menu.preferences',
+    path: '/me/preferences',
+    order: 80,
+  },
+]
+```
+
+- 登録の検査（`validateRegistrations`）は、`action` と `path` のどちらも無い・両方ある項目と、`path` が登録済みの画面の URL
+  （ホームを含む）と完全に一致しない項目を問題にして、起動を止める。外の URL（`https:`・`javascript:`・`//` で始まる値など）は
+  必ずここで止まる。
+- `ShellLayout` は `path` の項目を、make-you-chic-ui の Dropdown の `href`（`<a>` で描かれ、リンクとして読み上げられる）と、
+  既定の移動を止めて移る `onClick` にする。サイドバーと同じく読み込み直しなしで移り、マウスでも Enter・Space でも同じ。
+  `action` の項目は今までどおり `<button>` で描かれる。
+- 項目は `order` の順に並ぶ（ログアウトは 100。プリファレンス 80・パスワードの変更 90）。

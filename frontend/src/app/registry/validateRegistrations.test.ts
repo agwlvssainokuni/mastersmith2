@@ -157,3 +157,108 @@ describe('validateRegistrations', () => {
     )
   })
 })
+
+describe('validateRegistrations for user menu items with a path (U7)', () => {
+  const routes = [route('/me/preferences'), route('/me/password')]
+
+  it('accepts path items, a path to home and the existing action items', () => {
+    expect(
+      problemsOf([
+        {
+          featureId: 'me',
+          routes,
+          userMenuItems: [
+            { id: 'prefs', labelKey: 'me.prefs', path: '/me/preferences', order: 80 },
+            { id: 'home', labelKey: 'me.home', path: '/', order: 85 },
+            { id: 'logout', labelKey: 'me.logout', action: () => {}, order: 100 },
+          ],
+        },
+      ]),
+    ).toEqual([])
+  })
+
+  it('rejects an item with neither action nor path, and an item with both', () => {
+    const problems = problemsOf([
+      {
+        featureId: 'me',
+        routes,
+        userMenuItems: [
+          { id: 'none', labelKey: 'me.none', order: 1 } as never,
+          {
+            id: 'both',
+            labelKey: 'me.both',
+            path: '/me/password',
+            action: () => {},
+            order: 2,
+          } as never,
+        ],
+      },
+    ])
+    expect(problems).toEqual([
+      'me: ユーザーメニューの項目 "none" は action と path のどちらか一方だけを持ってください',
+      'me: ユーザーメニューの項目 "both" は action と path のどちらか一方だけを持ってください',
+    ])
+  })
+
+  it('treats values of the wrong type from outside the types as one-of problems', () => {
+    const problems = problemsOf([
+      {
+        featureId: 'me',
+        routes,
+        userMenuItems: [
+          { id: 'bad-action', labelKey: 'x', action: 'logout', order: 1 } as never,
+          { id: 'bad-path', labelKey: 'x', path: 42, order: 2 } as never,
+          { id: 'fn-and-bad-path', labelKey: 'x', action: () => {}, path: 42, order: 3 } as never,
+        ],
+      },
+    ]).join('\n')
+    expect(problems).toMatch(/"bad-action" は action と path のどちらか一方だけ/)
+    expect(problems).toMatch(/"bad-path" は action と path のどちらか一方だけ/)
+    expect(problems).toMatch(/"fn-and-bad-path" は action と path のどちらか一方だけ/)
+  })
+
+  it('rejects a path that is not a registered screen, including external URLs', () => {
+    const paths = [
+      '/me/unknown',
+      '/me/preferences/',
+      'https://example.com/',
+      // 画面を持たないスクリプトの URL（リンタの no-script-url に当たらないよう組み立てる）
+      ['javascript', 'alert(1)'].join(':'),
+      '//example.com',
+    ]
+    const problems = problemsOf([
+      {
+        featureId: 'me',
+        routes,
+        userMenuItems: paths.map((path, index) => ({
+          id: `item-${index}`,
+          labelKey: 'me.x',
+          path,
+          order: index,
+        })),
+      },
+    ])
+    expect(problems).toEqual(
+      paths.map(
+        (path, index) =>
+          `me: ユーザーメニューの項目 "item-${index}" の URL "${path}" は登録されていません`,
+      ),
+    )
+  })
+
+  it('collects the user menu problems together with the other problems', () => {
+    const problems = problemsOf([
+      {
+        featureId: 'me',
+        routes: [route('/me/preferences'), route('/me/preferences')],
+        userMenuItems: [
+          { id: 'x', labelKey: 'me.x', path: '/nowhere', order: 1 },
+          { id: 'x', labelKey: 'me.x', action: () => {}, order: 2 },
+        ],
+      },
+    ]).join('\n')
+    expect(problems).toMatch(/画面の URL が重複/)
+    expect(problems).toMatch(/ユーザーメニューの項目の id が重複/)
+    expect(problems).toMatch(/"\/nowhere" は登録されていません/)
+  })
+})

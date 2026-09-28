@@ -15,7 +15,7 @@
  */
 // アプリシェルの中の配置（make-you-chic-ui の AppShell。サイドバー・トップバー・コンテンツ）（BR7.6）。
 import { AppShell, type AppShellNavItem, type MenuItem } from 'make-you-chic-ui'
-import type { MouseEvent, ReactNode } from 'react'
+import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useDisplaySettings } from '../display-settings/DisplaySettingsProvider'
 import { useMessages } from '../i18n/I18nProvider'
@@ -46,10 +46,24 @@ export function ShellLayout({ children }: ShellLayoutProps) {
       },
     }),
   )
-  const userMenuItems: MenuItem[] = buildUserMenuItems(registrations, loginState).map((item) => ({
-    label: t(item.labelKey),
-    onClick: item.action,
-  }))
+  // ユーザーメニューの項目は、path を持てば href（<a> で描かれ、リンクとして読み上げられる）と、既定の移動を止めて
+  // 読み込み直しなしで移る onClick にする（サイドバーと同じ作り。U7 の機能設計 9.3）。action の項目は今までどおり
+  // href を渡さず onClick で action を呼ぶ（<button> で描かれる）。
+  const userMenuItems: MenuItem[] = buildUserMenuItems(registrations, loginState).map((item) => {
+    const label = t(item.labelKey)
+    if (item.path !== undefined) {
+      const { path } = item
+      return {
+        label,
+        href: path,
+        onClick: (event: MouseEvent | KeyboardEvent) => {
+          event.preventDefault()
+          void navigate(path)
+        },
+      }
+    }
+    return { label, onClick: item.action }
+  })
   // ユーザーメニューの名前は氏名（保存の直後は保存の後の氏名。無ければログイン状態の氏名）（U4 の D8、AC4.1.8）。
   const name = displayName ?? loginState.displayName
   const user = name ? { name } : undefined

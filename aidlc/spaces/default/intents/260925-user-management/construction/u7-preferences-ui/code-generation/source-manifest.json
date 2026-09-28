@@ -1,0 +1,130 @@
+{
+  "stage": "code-generation",
+  "unit": "u7-preferences-ui",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "path": "frontend/e2e/support/preferencesFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/registeredUser.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/types.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/auth/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangeForm.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangeForm.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangePage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangePage.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.css"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesLoadFailure.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesLoadFailure.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.css"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/errorMessages.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/errorMessages.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/failure.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/fieldErrors.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/fieldErrors.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/formChecks.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/formChecks.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/preferencesApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/preferencesApi.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/testing/renderPreferences.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/usePreferencesForm.ts"
+    }
+  ]
+}

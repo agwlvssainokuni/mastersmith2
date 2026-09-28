@@ -66,6 +66,25 @@ describe('navigationItems', () => {
     ).toEqual(['profile', 'logout'])
   })
 
+  it('sorts path items and action items together by order', () => {
+    const mixed: FeatureRegistration[] = [
+      {
+        featureId: 'auth',
+        userMenuItems: [{ id: 'logout', labelKey: 'auth.logout', action: noop, order: 100 }],
+      },
+      {
+        featureId: 'me',
+        userMenuItems: [
+          { id: 'password', labelKey: 'me.password', path: '/me/password', order: 90 },
+          { id: 'prefs', labelKey: 'me.prefs', path: '/me/preferences', order: 80 },
+        ],
+      },
+    ]
+    const items = buildUserMenuItems(mixed, { loggedIn: true, admin: false })
+    expect(items.map((i) => i.id)).toEqual(['prefs', 'password', 'logout'])
+    expect(items.map((i) => i.path)).toEqual(['/me/preferences', '/me/password', undefined])
+  })
+
   it('shows no items when logged out', () => {
     const loggedOut = { loggedIn: false, admin: false }
     expect(buildSidebarEntries(registrations, loggedOut)).toEqual([])

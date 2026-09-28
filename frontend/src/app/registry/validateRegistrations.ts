@@ -130,10 +130,33 @@ export function validateRegistrations(
   }
 
   const userMenuItems = registrations.flatMap((r) =>
-    (r.userMenuItems ?? []).map((item) => ({ value: item.id, owner: r.featureId })),
+    (r.userMenuItems ?? []).map((item) => ({ item, owner: r.featureId })),
   )
-  for (const duplicate of collectDuplicates(userMenuItems)) {
+  for (const duplicate of collectDuplicates(
+    userMenuItems.map(({ item, owner }) => ({ value: item.id, owner })),
+  )) {
     problems.push(`ユーザーメニューの項目の id が重複しています: ${duplicate}`)
+  }
+  // ユーザーメニューの項目は action（関数）と path（文字列）のどちらか一方だけを持ち、path は登録済みの画面の URL と
+  // 完全に一致すること（U7 の機能設計 9.2、NFR9.4）。型の外から来た値（関数でない action・文字列でない path）も
+  // 「どちらか一方」の問題として扱う。完全な一致だけを許すため、外の URL（http:・javascript:・// など）は必ず止まる。
+  for (const { item, owner } of userMenuItems) {
+    const { action, path } = item as { action?: unknown; path?: unknown }
+    const hasAction = typeof action === 'function'
+    const hasPath = typeof path === 'string'
+    if (
+      hasAction === hasPath ||
+      (action !== undefined && !hasAction) ||
+      (path !== undefined && !hasPath)
+    ) {
+      problems.push(
+        `${owner}: ユーザーメニューの項目 "${item.id}" は action と path のどちらか一方だけを持ってください`,
+      )
+    } else if (hasPath && !routePaths.has(path)) {
+      problems.push(
+        `${owner}: ユーザーメニューの項目 "${item.id}" の URL "${path}" は登録されていません`,
+      )
+    }
   }
 
   for (const registration of registrations) {

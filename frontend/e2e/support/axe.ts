@@ -186,6 +186,108 @@ export const REGISTRATION_KNOWN_VIOLATIONS: Readonly<
 /** 登録の完了の画面の検査の状態 */
 export type RegistrationAxeState = 'ready' | 'unavailable'
 
+/**
+ * プリファレンスとパスワードの変更の画面（U7、080）の状態ごとの既知の違反の名前（green・orange の組の color-contrast の
+ * primary の Button だけ）。当たる名前は、080 の最初の実行の結果で確かめて書いた（U7 の計画の Step 16）。
+ * 一覧と一致しない（消えた・増えた）ときは失敗にする。make-you-chic-ui が直ったら、この一覧と README を見直す。
+ */
+export const PREFERENCES_KNOWN_VIOLATIONS: Readonly<
+  Record<PreferencesAxeState, readonly string[]>
+> = {
+  'preferences-ready': ['preferences-save-button'],
+  'preferences-invalid': ['preferences-save-button'],
+  'password-ready': ['preferences-password-submit-button'],
+  'password-invalid': ['preferences-password-submit-button'],
+}
+
+/** プリファレンスとパスワードの変更の画面の検査の状態 */
+export type PreferencesAxeState =
+  'preferences-ready' | 'preferences-invalid' | 'password-ready' | 'password-invalid'
+
+/**
+ * アプリシェルのトップバーのアバター（make-you-chic-ui の Avatar、data-testid="avatar"）の既知の違反が当たる組
+ * （ブランドカラーごとのテーマ）。Avatar の文字は --color-primary、背景は --color-primary-subtle で、例えば blue では
+ * 4.36:1 と WCAG AA の 4.5:1 に届かない。頭文字が2文字（2語の氏名）のときだけ当たる（1文字は axe が判定できない扱いにする）。
+ * 当たる組は 080 の実測で確かめて書いた（purple の light だけは当たらない）。Intent 260925-user-management の U7 の
+ * コード生成で依頼者が既知の制約として受け入れた（README の「画面の表示の設定（U4）」）。make-you-chic-ui が直ったら外す。
+ * 080 だけが使い、050〜070 の一覧と判定は変えない。
+ */
+export const AVATAR_KNOWN_COMBOS: Readonly<Record<string, readonly ('light' | 'dark')[]>> = {
+  blue: ['light', 'dark'],
+  green: ['light', 'dark'],
+  orange: ['light', 'dark'],
+  purple: ['dark'],
+}
+
+/** アバターの既知の違反の名前（splitKnownViolations の名前の形） */
+export const AVATAR_KNOWN_VIOLATION = 'color-contrast avatar'
+
+/**
+ * splitKnownViolations の結果に、アバターの既知の違反を足す。組（ブランドカラーとテーマ）が AVATAR_KNOWN_COMBOS に
+ * あるときだけ、想定外の側の「color-contrast avatar」を既知の側へ移し、既知の違反の一覧にも足す（当たらなければ
+ * 一覧と一致しないため失敗になる）。組の外のアバターの違反と、アバターの外の違反は想定外のまま。
+ */
+export function withAvatarKnownViolation(
+  split: { known: string[]; unexpected: string[]; expectedKnown: string[] },
+  brandColor: string,
+  theme: 'light' | 'dark',
+): { known: string[]; unexpected: string[]; expectedKnown: string[] } {
+  if (!(AVATAR_KNOWN_COMBOS[brandColor] ?? []).includes(theme)) {
+    return split
+  }
+  const avatar = split.unexpected.filter((label) => label === AVATAR_KNOWN_VIOLATION)
+  return {
+    known: [...split.known, ...avatar].sort(),
+    unexpected: split.unexpected.filter((label) => label !== AVATAR_KNOWN_VIOLATION),
+    expectedKnown: [...split.expectedKnown, AVATAR_KNOWN_VIOLATION].sort(),
+  }
+}
+
+/** FormField の誤りの文字の既知の違反が当たる検査の状態（U7、080） */
+export const FORM_FIELD_ERROR_KNOWN_STATES: readonly PreferencesAxeState[] = [
+  'preferences-invalid',
+  'password-invalid',
+]
+
+/**
+ * ページの中の make-you-chic-ui の FormField の誤りの文字（.mycui-form-field-error-text）の axe の選択子（#id）を集める。
+ * 誤りの文字は data-testid を持たず、id は描画ごとに作られるため、検査の直前に集めて名前の代わりに使う。
+ */
+export async function formFieldErrorTargets(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    [...document.querySelectorAll('.mycui-form-field-error-text')]
+      .map((element) => element.id)
+      .filter((id) => id !== '')
+      .map((id) => `#${CSS.escape(id)}`),
+  )
+}
+
+/**
+ * splitKnownViolations の結果に、dark の組の FormField の誤りの文字の既知の違反を足す。make-you-chic-ui の dark の
+ * --color-danger（#dc2626）は背景 #0b0f19 に対して 3.96:1 で、WCAG AA の 4.5:1 に届かない（Intent 260925-user-management の
+ * U7 のコード生成で依頼者が既知の制約として受け入れた。README の「画面の表示の設定（U4）」）。
+ * 既知にするのは、テーマが dark で、状態が FORM_FIELD_ERROR_KNOWN_STATES のときの、errorTargets（誤りの文字）の
+ * color-contrast だけ。当たるはずの誤りの文字が当たらなければ一覧と一致しないため失敗になる。light の組・ほかの状態・
+ * ほかの要素の違反は想定外のまま。make-you-chic-ui が直ったら外す。050〜070 の一覧と判定は変えない。
+ */
+export function withFormFieldErrorKnownViolation(
+  split: { known: string[]; unexpected: string[]; expectedKnown: string[] },
+  theme: 'light' | 'dark',
+  state: PreferencesAxeState,
+  errorTargets: readonly string[],
+): { known: string[]; unexpected: string[]; expectedKnown: string[] } {
+  if (theme !== 'dark' || !FORM_FIELD_ERROR_KNOWN_STATES.includes(state)) {
+    return split
+  }
+  const labels = errorTargets.map((target) => `color-contrast ${target}`)
+  const isErrorText = (label: string) => labels.includes(label)
+  return {
+    known: [...split.known, ...split.unexpected.filter(isErrorText)].sort(),
+    unexpected: split.unexpected.filter((label) => !isErrorText(label)),
+    expectedKnown: [...split.expectedKnown, ...labels].sort(),
+  }
+}
+
 /** 流れるべき規則のうち、結果に無いものを返す。 */
 export function missingRequiredRules(summary: AxeSummary): string[] {
   return REQUIRED_RULES.filter((rule) => !summary.ruleIds.includes(rule))

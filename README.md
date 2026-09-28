@@ -102,6 +102,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `050-display-accessibility.e2e.ts` | ログインの画面の表示の設定の 20 組（テーマ × 文字の大きさ、ブランドカラー × テーマ、幅 375px のテーマ × 文字の大きさ）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、最初の画面が出るまでの時間の測定（5 回）。ログインはしない |
 | `060-invitation-accessibility.e2e.ts` | 招待の管理の画面の表示の設定の 20 組ごとのアクセシビリティの検査（一覧・警告・招待の入力の Modal・取り消しの確かめの Modal。axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、一覧と次のページが出るまでの時間の測定（5 回）。初期管理者でログインする |
 | `070-registration-accessibility.e2e.ts` | 登録の完了の画面の表示の設定の 20 組 × 2 つの状態（フォーム・使えないリンク）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し。ログインしない。確かめの API だけを見本に差し替え、完了の要求は送らない |
+| `080-preferences-accessibility.e2e.ts` | プリファレンスとパスワードの変更の画面の表示の設定の 20 組 × 2 画面 × 2 つの状態（最初・画面の確かめの誤り）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、画面を開く・保存・パスワードの変更の時間の測定（5 回ずつ）。初期管理者でログインし、ユーザーメニューから移る |
 | `090-invitation-registration-flow.e2e.ts` | この Intent の代表の流れ「管理者でログイン → 招待 → Mailpit からリンクを取り出す → 登録の完了 → 新しい利用者でログイン → 管理画面に入れない → ログアウト」と、リンクを開いてからフォームが出るまでの時間の測定（5 回） |
 
 050 について（Intent 260925-user-management の U4）:
@@ -115,7 +116,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 組ごとに、ログインの画面から初期管理者でログインし、サイドバーの「利用者の招待」から開きます。一覧の API（`GET /api/admin/invitations?page=…`）の答えだけを見本（`frontend/e2e/support/invitationFixtures.ts`）に差し替えます。招待の入力と取り消しの確かめの Modal は開くだけで、要求は送りません。
-- ログインの後は利用者の設定が当たるため、組のテーマと文字の大きさは、ログイン（`POST /api/auth/login`）と復元（`POST /api/auth/session/refresh`）の本物の応答の `user.theme`・`user.fontSize` の2項目だけを書き換えて当てます（`frontend/e2e/support/loginPreferences.ts`）。サーバーの状態（利用者の設定）は変えません。後の単位（U6・U7）の検査も同じ当て方を使います。
+- ログインの後は利用者の設定が当たるため、組のテーマと文字の大きさは、ログイン（`POST /api/auth/login`）と復元（`POST /api/auth/session/refresh`）の本物の応答の `user.theme`・`user.fontSize` の2項目だけを書き換えて当てます（`frontend/e2e/support/loginPreferences.ts`）。サーバーの状態（利用者の設定）は変えません。U6 の 070 はログインの前の画面のため U4 の鍵で当て、U7 の 080 はプリファレンスの答え（`GET /api/me/preferences`）の差し替えで当てます（どちらも `loginPreferences.ts` は使いません）。
 - 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は記録だけで、失敗にはしません。CSP の違反、画面の問題、本物の一覧の応答と見本の形の違いは失敗にします。測定は招待の API で招待を 21 件置くため、1 回の実行で Mailpit に 21 通のメールが届きます（Mailpit は消しません）。招待を使える設定が無い WAR では、測定を飛ばして理由を注記に残します（E2E の WAR には SMTP とベース URL が渡るため、念のための備え）。
 - green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `INVITATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います（一覧の「招待する」、招待の入力の「招待する」）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。
 - 060 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/060-invitation-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
@@ -127,6 +128,16 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - フォームの状態は、確かめの API（`POST /api/registration/verify`）の答えだけを見本（`frontend/e2e/support/registrationFixtures.ts` の `VERIFY_SAMPLE`、どの招待にも当たらないトークン `a11y-sample-token`）に差し替えて出します。使えないリンクの状態は、差し替えずにフラグメントの無い `/register` を開いて出します。完了の要求は送らず、サーバーの状態（内部DB・監査・招待）を変えません。
 - green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `REGISTRATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います（フォームの「登録を完了する」。使えないリンクの状態は無し）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
 - 070 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/070-registration-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動。070 はメールを送りませんが、E2E の WAR はメールを Mailpit へ送る設定で起動します）。
+
+080 について（Intent 260925-user-management の U7）:
+
+- 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
+- 組ごとに、ログインの画面から初期管理者でログインし、ユーザーメニューの「プリファレンス」「パスワードの変更」から開きます。プリファレンスの画面は開いた時点に内部DB の値へ画面をそろえるため、組のテーマと文字の大きさは、`GET /api/me/preferences` の答えだけを見本（`frontend/e2e/support/preferencesFixtures.ts`、氏名は `検査 太郎`）に差し替え、そのそろえ（本物の `applyUserPreferences`）で当てます。ブランドカラーは 050 と同じく `/api/appearance` の差し替えです。`loginPreferences.ts` は使いません。
+- 画面の確かめの誤りの状態は、氏名を空にして「保存する」、3つを空のまま「変更する」で出します。検査では `PUT`・`POST /api/me/…` を送りません（送られていれば失敗）。
+- 既知の違反は、状態ごとの名前の一覧（`frontend/e2e/support/axe.ts` の `PREFERENCES_KNOWN_VIOLATIONS`、green・orange の組の「保存する」「変更する」）と、トップバーのアバター（`AVATAR_KNOWN_COMBOS`）・dark の組の誤りの文字（`withFormFieldErrorKnownViolation`）です（「画面の表示の設定（U4）」の既知の制約）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
+- 測定は、招待の API で招待を1件置き、Mailpit のメールからリンクを取り出し、登録の完了の API で利用者を1人作って行います（`frontend/e2e/support/registeredUser.ts`、宛先は実行ごとに重ならない `u7-perf-…@example.com`）。1 回の実行で Mailpit に1通届き、新しい利用者と、招待・パスワードの変更の監査が一時の内部DB に残ります。Mailpit の API は読むだけです。
+- 時間（目標は開く 2 秒・保存 1.5 秒・パスワードの変更 2.5 秒）は記録だけで、失敗にはしません。本物の `GET /api/me/preferences` の応答と見本の形の違い、CSP の違反、画面の問題は失敗にします。招待を使える設定が無い・Mailpit に届かない WAR では、測定を飛ばして理由を注記に残します（念のための備え）。
+- 080 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/080-preferences-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 090 について（Intent 260925-user-management の U6、E2E-1）:
 
@@ -863,6 +874,20 @@ Intent 260925-user-management の U6 で、招待された人が招待メール�
 - **契約との差**: 登録の完了の 400 の `fieldErrors`（U3 の「契約との差」の C6）は読まず、「入力を確かめてください。…」の知らせだけを出します。
 - **既知の制約**: ブランドカラーが `green`・`orange` のとき、この画面の「登録を完了する」のボタンもコントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
 
+## プリファレンスとパスワードの変更の画面（U7）
+
+Intent 260925-user-management の U7 で、ログインした利用者が自分の氏名・言語・テーマ・文字の大きさを変える画面と、自分のパスワードを変える画面を `frontend/src/features/preferences/` に足しました（API は「利用者のプリファレンスとパスワードの変更（U2）」）。
+
+- **開き方**: トップバーのユーザーメニューの「プリファレンス」「パスワードの変更」（ログアウトより上）、または `/me/preferences`・`/me/password`。ログインが要り、未ログインで開くとログインの画面へ移ります。サイドバーには出しません。ユーザーメニューから読み込み直しなしで移ります（「後の単位（U2・U3・U4）が使う差し込み口」の画面の差し込み口）。
+- **開いた時点の値**: 開くたびに内部DB の値を読みます。読んだ値が画面に当たっている値と違えば（ほかの PC で保存した後など）、内部DB の値に画面をそろえるため、開いた時点で言語やテーマが変わることがあります（知らせは出しません）。テーマ `system` の利用者には「OS に合わせる」が選ばれた状態で出ます。読めないときは「プリファレンスを読み込めませんでした。」と「もう一度読み込む」を出します。
+- **選んだ時点の見せ方**: テーマと文字の大きさは選んだ時点で画面に当たります（保存はまだ）。言語は保存すると切り替わります。「元に戻す」か、保存せずに画面を離れると、元の見た目に戻ります（保存していない変更の確かめは出しません）。
+- **保存の後**: ユーザーメニューの名前・画面の言語・見た目がすぐに保存した値になり、Toast「保存しました」（新しい言語の文言）を出します。氏名の前後の空白はサーバーが除いた値で表示します。
+- **パスワードの変更**: 今のパスワード・新しいパスワード・確かめの3つで変えます。変えてもログインしたままで、ほかの端末もログインしたままです。今のパスワードが違うときは、その項目に「今のパスワードが正しくありません」を出します（ログアウトはしません）。成功すると3つの項目を空にして Toast「パスワードを変更しました」を出します。
+- **入力の確かめ**: 送る前に、共用の関数（`frontend/src/shared/validation/`）でサーバーと同じ決まりを確かめます（今のパスワードは空だけを見ます）。判定はサーバーが正で、サーバーの 400 の項目ごとの誤り（`fieldErrors`）は同じ項目の下に同じ文言で出します。対応づけられない誤りは「入力を確かめてください。」、ほかの失敗は「保存できませんでした。…」などの知らせです。サーバーの説明文（`detail`）は画面に出しません。
+- **見せ方の最中のトークンの更新**: テーマか文字の大きさを選んで見せている間にトークンの更新（ログイン状態の更新）が起きると、画面は当たっている値に戻り、フォームの選択は選んだ値のまま残ります（食い違い）。次の選択・「元に戻す」・保存で解けます（U4 の決まりのまま、依頼者の決定で追いません。コード生成の単体テストで確かめました）。
+- **秘密と個人情報**: 氏名とパスワードは画面のメモリだけに持ち、ブラウザの保存・URL・コンソールに出しません（ブラウザに保存するのは U4 の3つの表示の設定だけ）。
+- **既知の制約**: ブランドカラーが `green`・`orange` のときの「保存する」「変更する」、2語の氏名のときのトップバーのアバター、ダークのテーマの項目の誤りの文字は、コントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
+
 ## インスタンスの見た目の設定（U8）
 
 Intent 260925-user-management の U8 で、インスタンス全体のブランドカラーとフォントファミリーを設定から読み、ログインなしで読める API で画面へ渡すようにしました（契約 C7）。画面に当てるのは U4 の受け持ちです。
@@ -911,7 +936,13 @@ make-you-chic-ui の primary のボタンは、ブランドカラーの 500 の�
 - 招待の管理の画面（U5）では、一覧の「招待する」と、招待の入力の Modal の「招待する」が当たります。060 の検査は、画面の状態ごとの名前の一覧（`INVITATION_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
 - 登録の完了の画面（U6）では、フォームの「登録を完了する」が当たります（使えないリンクの表示には primary のボタンがありません）。070 の検査は、画面の状態ごとの名前の一覧（`REGISTRATION_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
 - AA を満たしたいときは、`MASTERSMITH_APPEARANCE_BRAND_COLOR` に `blue` か `purple` を選びます。
-- 050・060・070 の検査はこの違反だけを既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。
+- プリファレンスとパスワードの変更の画面（U7）では、「保存する」「変更する」が当たります。080 の検査は、画面の状態ごとの名前の一覧（`PREFERENCES_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
+- 050〜080 の検査はこの違反を既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。080 は、下の2つ（アバターと誤りの文字）も既知の違反として扱います。
+
+make-you-chic-ui のほかの部品にも、コントラストが AA に届かないものがあります（Intent 260925-user-management の U7 のコード生成の 080 で見つかり、依頼者の判断で既知の制約として受け入れました。make-you-chic-ui が直ったら、080 の一覧から外し、この README を見直します）。
+
+- **トップバーのアバター**: make-you-chic-ui の Avatar は、頭文字の文字を `--color-primary`、背景を `--color-primary-subtle` で描きます。例えば `blue` のライトで 4.36:1（ダークでは 2.55:1）です。氏名が2語で頭文字が2文字になると当たり（頭文字が1文字のときは axe が判定できない扱いにします）、アプリのどの画面のトップバーでも起きます。`purple` のライトでは当たりません。080 は、当たる組の一覧（`frontend/e2e/support/axe.ts` の `AVATAR_KNOWN_COMBOS`）で扱います。
+- **ダークのテーマの項目の誤りの文字**: make-you-chic-ui の FormField の誤りの文字は、ダークのテーマで `--color-danger`（`#dc2626`）を背景 `#0b0f19` に描き、3.96:1 です（ライトでは当たりません）。ログインの画面・登録の完了の画面（U6）・U7 の2つの画面など、項目の誤りを出すすべての画面で起きます。U7 の選択のまとまりの誤り（`.preferences-choice-error`、サーバーが返したときだけ出ます）も同じ色です。080 は、ダークの組の誤りの状態の誤りの文字だけを既知の違反として扱います（`withFormFieldErrorKnownViolation`）。050〜070 は誤りを出した状態を検査していません。
 
 ### 契約との差
 
@@ -930,7 +961,7 @@ U1 のファイルは書き換えずに、次の型を使います。
 | 要求中のトレースID | `cherry.mastersmith.common.observability.TraceIdProvider`（無ければ空） | U4 |
 | ログに秘密情報が出ないことのテストの補助 | `backend/src/test/java` の `cherry.mastersmith.common.testsupport`（`JsonLogRecords` など） | U2 以降 |
 | 表示の設定の口（U4 が提供。契約 C9） | `frontend/src/app/display-settings/` の `useDisplaySettings`・`saveBrowserDisplaySettings`・`LANGUAGE_NAMES`、`frontend/src/app/login-handoff/` の `handOffToLogin`。機能の画面は make-you-chic-ui の `useTheme` と localStorage を直接触らない | U5・U6・U7（画面） |
-| 画面の差し込み口 | `frontend/src/features/<featureId>/registration.ts` に `FeatureRegistration`（`frontend/src/app/registry/types.ts`）を `registration` という名前でエクスポートする。画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元・文言（鍵は `<featureId>.` で始める）を登録できる。重複は画面の起動の失敗 | U2、U3 |
+| 画面の差し込み口 | `frontend/src/features/<featureId>/registration.ts` に `FeatureRegistration`（`frontend/src/app/registry/types.ts`）を `registration` という名前でエクスポートする。画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元・文言（鍵は `<featureId>.` で始める）を登録できる。ユーザーメニューの項目は `action`（操作）か `path`（登録済みの画面の URL、読み込み直しなしで移る）のどちらか一方を持つ（`frontend/src/features/README.md`）。重複は画面の起動の失敗 | U2、U3、U7 |
 | ログイン用レイアウト | `frontend/src/app/layout/LoginLayout.tsx`（role=LOGIN の画面が、入力欄とボタンを子として置く） | U2 |
 | スキーマの変更 | 上の「スキーマの変更（Flyway）」の決まり | U2、U4 |
 | 検証済みの利用者（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticatedUser`（`userId`・`email`・`admin`）。要求ごとに DB から読んだ値で、Spring Security の認証の結果の主体に置く | U3 |

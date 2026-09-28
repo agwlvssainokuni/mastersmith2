@@ -91,7 +91,11 @@ describe('auth registration', () => {
     const logoutRequest = vi.spyOn(authApi, 'requestLogout').mockResolvedValue()
     await login('user@example.com', 'パスワード')
 
-    registration.userMenuItems?.[0].action()
+    const logoutItem = registration.userMenuItems?.[0]
+    if (logoutItem?.action === undefined) {
+      throw new Error('the logout item has no action')
+    }
+    logoutItem.action()
     await vi.waitFor(() => expect(getAuthSnapshot().status).toBe('LoggedOut'))
 
     expect(logoutRequest).toHaveBeenCalledTimes(1)

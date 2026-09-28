@@ -1,0 +1,356 @@
+{
+  "stage": "code-generation",
+  "unit": "u7-preferences-ui",
+  "upstream_ids": [
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC4.1.13",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "CR1.1",
+    "CR1.4",
+    "CR6",
+    "CR6.1",
+    "CR6.2",
+    "CR6.3",
+    "CR6.4",
+    "CR6.5",
+    "CR6.6",
+    "CR6.7",
+    "CR6.8",
+    "CR6.9",
+    "NFR2.1",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10"
+  ],
+  "coverage": [
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "Deferred",
+      "target": "u4-display-foundation（保存の直後とブラウザの保存を消してからのログインで dark・lg が当たるのは画面の土台、U4 の W5・W10。U7 は保存の流れ W7・W8 で applyUserPreferences を呼ぶだけ。内部DB の保存は U2）"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "Deferred",
+      "target": "u4-display-foundation（テーマ system を OS の配色で解き追従するのは画面の土台、U4 の W11。U7 は system を選んだ状態で見せ方を置くだけ、W4）"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "u4-display-foundation（ログインの後の最初の画面から利用者の設定を当てるのは画面の土台、U4 の W5）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "u4-display-foundation（ログインの前の画面にブラウザに最後に保存された値を当てるのは画面の土台、U4 の W4・W6）"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/formChecks.ts"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "Deferred",
+      "target": "u4-display-foundation（画面を読み込み直したセッションの復元で利用者の設定と氏名を当てるのは画面の土台、U4 の W2・W5）"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "AC4.1.13",
+      "status": "Deferred",
+      "target": "u2-user-preferences（氏名とプリファレンスの保存を監査しないことはサーバーで確かめる、U2 の BR3.5。U7 は保存の流れ W7・W8 で PUT を送るだけ）"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "Deferred",
+      "target": "u2-user-preferences（新しいパスワードでログインでき前のパスワードでできないのはサーバー、U2 の BR4.3。画面は W9・W10 で送り結果を出すだけ）"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "Deferred",
+      "target": "u2-user-preferences（誤った今のパスワードを 400 系で拒否しパスワードを変えないのはサーバー、U2 の BR4.2・BR8.2。画面の表示は AC5.1.7 の W10）"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/formChecks.ts"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "Deferred",
+      "target": "u2-user-preferences（パスワードの変更の後もどの端末のリフレッシュトークンも使えるのはサーバー、U2 の BR4.5）"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "Deferred",
+      "target": "u2-user-preferences（変更の前に発行したアクセストークンを有効期限まで使えるのはサーバー、U2 の BR4.5）"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "id": "CR1.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/messages.ts"
+    },
+    {
+      "id": "CR1.4",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/messages.ts"
+    },
+    {
+      "id": "CR6",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "CR6.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "CR6.2",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PasswordChangeForm.tsx"
+    },
+    {
+      "id": "CR6.3",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "CR6.4",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "CR6.5",
+      "status": "N/A",
+      "target": "この単位に全く関わらない。U7 の2つの画面には期限切れ・送信の失敗などの状態の表示が無く、確かめる対象が無い（状態の表示を持つ画面は U5 の招待の一覧と U6 の使えないリンクで、それぞれの単位が確かめる）"
+    },
+    {
+      "id": "CR6.6",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "CR6.7",
+      "status": "N/A",
+      "target": "この単位に全く関わらない。U7 の2つの画面には取り消せない操作が無く、確かめる表示も無い（保存していない変更の確かめも出さない、S4 の [assumption]。取り消せない操作の確かめは U5 の招待の取り消しで U5 が確かめる）"
+    },
+    {
+      "id": "CR6.8",
+      "status": "N/A",
+      "target": "この単位に全く関わらない。U7 の2つの画面には日時の表示が無い（招待した日時と有効期限は U5 が確かめる）"
+    },
+    {
+      "id": "CR6.9",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PasswordChangeForm.tsx"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/registration.ts"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/messages.ts"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/errorMessages.ts"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/fieldErrors.ts"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/preferencesApi.ts"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/fieldErrors.test.ts"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PasswordChangePage.test.tsx"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR9.10",
+      "status": "OK",
+      "target": "frontend/e2e/support/axe.ts"
+    }
+  ]
+}

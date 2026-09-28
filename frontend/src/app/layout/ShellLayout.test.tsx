@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { act, screen, within } from '@testing-library/react'
+import { act, cleanup, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -191,5 +191,85 @@ describe('ShellLayout', () => {
     await screen.findByRole('button', { name: /山田 花子/ })
     expect(await axe(container)).toHaveNoViolations()
     resetDisplayTestState()
+  })
+
+  describe('user menu items with a path (U7)', () => {
+    function pathRegistrations(logout: () => void): FeatureRegistration[] {
+      return [
+        {
+          featureId: 'me',
+          routes: [
+            { path: '/me/preferences', screen: () => null, layout: 'SHELL', access: 'LOGGED_IN' },
+          ],
+          userMenuItems: [
+            { id: 'prefs', labelKey: 'me.prefs', path: '/me/preferences', order: 80 },
+            { id: 'logout', labelKey: 'me.logout', action: logout, order: 100 },
+          ],
+          messages: {
+            ja: { 'me.prefs': 'プリファレンス', 'me.logout': 'ログアウト' },
+            en: { 'me.prefs': 'Preferences', 'me.logout': 'Log out' },
+          },
+        },
+      ]
+    }
+
+    async function openMenu(logout: () => void = vi.fn()) {
+      const user = userEvent.setup()
+      renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
+        registrations: pathRegistrations(logout),
+        provider: fakeProvider({ loggedIn: true, admin: false, displayName: '山田 花子' }),
+      })
+      await user.click(await screen.findByRole('button', { name: /山田 花子/ }))
+      return user
+    }
+
+    it('renders a path item as a link menu item and moves without reloading on a click', async () => {
+      const user = await openMenu()
+      const item = await screen.findByRole('menuitem', { name: 'プリファレンス' })
+      expect(item.tagName).toBe('A')
+      expect(item).toHaveAttribute('href', '/me/preferences')
+      const clicks: boolean[] = []
+      document.addEventListener('click', (event) => clicks.push(event.defaultPrevented), {
+        once: true,
+      })
+      await user.click(item)
+      expect(clicks).toEqual([true])
+      expect(screen.getByTestId('location')).toHaveTextContent('/me/preferences')
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    })
+
+    it('moves with Enter and with Space from the keyboard', async () => {
+      for (const key of ['{Enter}', ' ']) {
+        const user = await openMenu()
+        const item = await screen.findByRole('menuitem', { name: 'プリファレンス' })
+        item.focus()
+        await user.keyboard(key)
+        expect(screen.getByTestId('location')).toHaveTextContent('/me/preferences')
+        cleanup()
+      }
+    })
+
+    it('keeps the logout item as a button that runs its action', async () => {
+      const logout = vi.fn()
+      const user = await openMenu(logout)
+      const item = await screen.findByRole('menuitem', { name: 'ログアウト' })
+      expect(item.tagName).toBe('BUTTON')
+      expect(item).not.toHaveAttribute('href')
+      await user.click(item)
+      expect(logout).toHaveBeenCalledTimes(1)
+      expect(screen.getByTestId('location')).toHaveTextContent('/')
+    })
+
+    it('has no accessibility violations with the menu open', async () => {
+      await openMenu()
+      await screen.findByRole('menuitem', { name: 'プリファレンス' })
+      // メニューは make-you-chic-ui が body の直下に描く（ランドマークの外）ため、best-practice の region の規則に当たる。
+      // 実際のブラウザの検査（080）と同じ WCAG 2.0・2.1 の A・AA の規則で確かめる。
+      expect(
+        await axe(document.body, {
+          runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+        }),
+      ).toHaveNoViolations()
+    })
   })
 })

@@ -53,14 +53,30 @@ export interface SidebarItemRegistration {
   visibleWhen: VisibleWhen
 }
 
-/** 差し込み口3「ユーザーメニューの項目の登録」。 */
-export interface UserMenuItemRegistration {
+/** ユーザーメニューの項目の共通の部分。 */
+interface UserMenuItemBase {
   id: string
   labelKey: string
-  /** 選んだときに行う操作（例: ログアウト） */
-  action: () => void
   order: number
 }
+
+/**
+ * 差し込み口3「ユーザーメニューの項目の登録」。選んだときに操作を行う項目（`action`、例: ログアウト）か、
+ * 登録済みの画面へ読み込み直しなしで移る項目（`path`、例: プリファレンス）のどちらか一方だけを持つ
+ * （Intent 260925-user-management の U7 の機能設計 9.1）。どちらも無い・両方ある・登録されていない `path` は
+ * 登録の検査が起動を止める（validateRegistrations）。
+ */
+export type UserMenuItemRegistration =
+  | (UserMenuItemBase & {
+      /** 選んだときに行う操作（例: ログアウト） */
+      action: () => void
+      path?: never
+    })
+  | (UserMenuItemBase & {
+      /** 移る先の登録済みの画面の URL（ホームを含む。外の URL は使えない） */
+      path: string
+      action?: never
+    })
 
 /** ログイン状態。loggedIn が false のときは admin も常に false。 */
 export interface LoginState {
