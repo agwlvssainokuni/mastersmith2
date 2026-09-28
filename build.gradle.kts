@@ -192,6 +192,9 @@ val frontendBuild =
         group = "build"
         dependsOn(vendorBuild)
         inputs.dir(frontendDir.dir("src"))
+        // make-you-chic-ui の成果物（file: の依存で画面に同梱される）。固定先を変えると作り直す
+        // （Intent 260925-user-management の B4 で、固定先の更新の後も UP-TO-DATE になる抜けを直した）。
+        inputs.dir(vendorDir.dir("packages/make-you-chic-ui/dist"))
         inputs.files(
             frontendDir.file("index.html"),
             frontendDir.file("package.json"),
