@@ -17,6 +17,7 @@
 // 後の単位（U2・U3）は frontend/src/features/<featureId>/registration.ts に
 // `export const registration: FeatureRegistration = { ... }` を名前付きで置く。U1 のファイルは書き換えない。
 import type { ComponentType } from 'react'
+import type { PartialDisplaySettings } from '../display-settings/displaySettingsTypes'
 
 /** 画面を置く場所。SHELL はアプリシェルの中、STANDALONE はアプリシェルの外（ログイン画面など）。 */
 export type LayoutKind = 'SHELL' | 'STANDALONE'
@@ -65,8 +66,13 @@ export interface UserMenuItemRegistration {
 export interface LoginState {
   loggedIn: boolean
   admin: boolean
-  /** ユーザーメニューに表示する名前 */
+  /** ユーザーメニューに表示する氏名 */
   displayName?: string
+  /**
+   * ログインした利用者の表示の設定（任意。契約 C3 の language・theme・fontSize）。
+   * 無ければ表示の設定の土台はブラウザの保存の値を当てる。値の検証は表示の設定の土台が行う。
+   */
+  preferences?: PartialDisplaySettings
 }
 
 /** 差し込み口4「ログイン状態の提供元の登録」（全機能を通じて最大1つ）。 */

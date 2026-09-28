@@ -29,4 +29,10 @@ export const en: Record<MessageKey, string> = {
   'startupError.heading': 'The application could not start',
   'startupError.description':
     'There is a problem with the feature registrations. Please check the following.',
+  'display.theme.system': 'Match OS',
+  'display.theme.light': 'Light',
+  'display.theme.dark': 'Dark',
+  'display.fontSize.sm': 'Small',
+  'display.fontSize.md': 'Medium',
+  'display.fontSize.lg': 'Large',
 }

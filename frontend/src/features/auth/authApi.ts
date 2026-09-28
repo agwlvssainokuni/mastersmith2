@@ -16,12 +16,23 @@
 //
 // 認証の API の呼び出し（WF2、WF4、WF5）。ApiClient を通して同じオリジンの API を呼ぶ。
 // リフレッシュトークンは Cookie でやり取りするため、画面では扱わない（BR8.3）。
+import type {
+  DisplayLanguage,
+  FontSize,
+  ThemeChoice,
+} from '../../app/display-settings/displaySettingsTypes'
 import { apiRequest } from '../../shared/api-client/apiClient'
 
-/** ログイン中の利用者（CurrentUserView） */
+/** ログイン中の利用者（CurrentUserView、契約 C3） */
 export interface CurrentUser {
   email: string
   admin: boolean
+  /** 氏名（ユーザーメニューに出す） */
+  displayName: string
+  /** 表示の設定（値の検証は表示の設定の土台が行う） */
+  language: DisplayLanguage
+  theme: ThemeChoice
+  fontSize: FontSize
 }
 
 /** ログインと更新の応答 */

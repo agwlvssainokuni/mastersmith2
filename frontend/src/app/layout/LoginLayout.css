@@ -26,6 +26,12 @@
   box-sizing: border-box;
 }
 
+.login-layout-top-right {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .login-layout-app-name {
   margin: 0;
   color: var(--color-text-muted);

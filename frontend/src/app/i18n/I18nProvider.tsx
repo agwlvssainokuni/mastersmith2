@@ -13,39 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// 表示言語を決め、文言の鍵から文言を引く手段を提供する（WF6、BR6.1、BR6.2）。
-import { useEffect, useMemo, type ReactNode } from 'react'
+// 文言の鍵から文言を引く手段を提供する（WF6、BR6.2）。表示言語は外（表示の設定の土台）から受け取る（U4 の D14）。
+// ブラウザの言語設定の読み取りと <html lang> の切り替えは、表示の設定の土台（DisplaySettingsProvider）が受け持つ。
+import { useMemo, type ReactNode } from 'react'
 import { I18nextProvider, useTranslation } from 'react-i18next'
 import type { FeatureMessages } from '../registry/types'
 import { createI18n } from './i18n'
-import { resolveLanguage, type DisplayLanguage } from './resolveLanguage'
+import type { DisplayLanguage } from './resolveLanguage'
 
 export interface I18nProviderProps {
+  /** 表示言語（表示の設定の土台が決めた画面の言語） */
+  language: DisplayLanguage
   /** 各機能の登録の文言 */
   featureMessages?: readonly FeatureMessages[]
   children: ReactNode
 }
 
-/** ブラウザの希望言語を優先順に返す。 */
-function browserLanguages(): readonly string[] {
-  if (typeof navigator === 'undefined') {
-    return []
-  }
-  if (navigator.languages && navigator.languages.length > 0) {
-    return navigator.languages
-  }
-  return navigator.language ? [navigator.language] : []
-}
-
-/** 表示言語と文言を提供する。`<html lang>` も表示言語に合わせる。 */
-export function I18nProvider({ featureMessages = [], children }: I18nProviderProps) {
-  const language = resolveLanguage(browserLanguages())
+/** 受けた表示言語の文言を提供する。言語が変わったら、同じ描画で文言が変わる。 */
+export function I18nProvider({ language, featureMessages = [], children }: I18nProviderProps) {
   const i18n = useMemo(() => createI18n(language, featureMessages), [language, featureMessages])
-
-  useEffect(() => {
-    document.documentElement.lang = language
-  }, [language])
-
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 }
 

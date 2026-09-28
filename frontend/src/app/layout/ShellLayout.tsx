@@ -17,6 +17,7 @@
 import { AppShell, type AppShellNavItem, type MenuItem } from 'make-you-chic-ui'
 import type { MouseEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { useDisplaySettings } from '../display-settings/DisplaySettingsProvider'
 import { useMessages } from '../i18n/I18nProvider'
 import { useLoginState } from '../login-state/LoginStateGate'
 import { buildSidebarEntries, buildUserMenuItems } from '../navigation/navigationItems'
@@ -26,10 +27,11 @@ export interface ShellLayoutProps {
   children: ReactNode
 }
 
-/** サイドバーにホームと条件を満たす項目、トップバーにユーザーの表示名とユーザーメニューを置く。 */
+/** サイドバーにホームと条件を満たす項目、トップバーにユーザーの氏名とユーザーメニューを置く。 */
 export function ShellLayout({ children }: ShellLayoutProps) {
   const registrations = useFeatureRegistry()
   const loginState = useLoginState()
+  const { displayName } = useDisplaySettings()
   const t = useMessages()
   const navigate = useNavigate()
 
@@ -48,7 +50,9 @@ export function ShellLayout({ children }: ShellLayoutProps) {
     label: t(item.labelKey),
     onClick: item.action,
   }))
-  const user = loginState.displayName ? { name: loginState.displayName } : undefined
+  // ユーザーメニューの名前は氏名（保存の直後は保存の後の氏名。無ければログイン状態の氏名）（U4 の D8、AC4.1.8）。
+  const name = displayName ?? loginState.displayName
+  const user = name ? { name } : undefined
 
   return (
     <AppShell navItems={navItems} user={user} userMenuItems={userMenuItems}>

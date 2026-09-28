@@ -60,6 +60,8 @@ export const registration: FeatureRegistration = {
       'auth.login.failed': 'メールアドレスまたはパスワードが正しくありません',
       'auth.login.error': 'ログインできませんでした。しばらくしてから、もう一度お試しください',
       'auth.menu.logout': 'ログアウト',
+      'auth.login.registered': '登録が完了しました。設定したパスワードでログインしてください。',
+      'auth.language.label': '表示の言語',
     },
     en: {
       'auth.login.email': 'Email address',
@@ -70,6 +72,8 @@ export const registration: FeatureRegistration = {
       'auth.login.failed': 'The email address or the password is not correct',
       'auth.login.error': 'The login failed. Please try again later',
       'auth.menu.logout': 'Log out',
+      'auth.login.registered': 'Registration is complete. Log in with the password you set.',
+      'auth.language.label': 'Display language',
     },
   },
 }

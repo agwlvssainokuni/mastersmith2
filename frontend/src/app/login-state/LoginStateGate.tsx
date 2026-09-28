@@ -22,11 +22,23 @@ export const LOGGED_OUT: LoginState = { loggedIn: false, admin: false }
 
 const LoginStateContext = createContext<LoginState>(LOGGED_OUT)
 
-/** 提供元の値を整える。loggedIn が false なら admin は常に false。 */
+/**
+ * 提供元の値を整える。loggedIn が false なら admin は常に false で、氏名と表示の設定も落とす。
+ * ログイン中なら氏名と表示の設定（preferences。あれば）を通す。
+ */
 export function normalizeLoginState(state: LoginState): LoginState {
-  return state.loggedIn
-    ? { loggedIn: true, admin: state.admin, displayName: state.displayName }
-    : LOGGED_OUT
+  if (!state.loggedIn) {
+    return LOGGED_OUT
+  }
+  const normalized: LoginState = {
+    loggedIn: true,
+    admin: state.admin,
+    displayName: state.displayName,
+  }
+  if (state.preferences !== undefined) {
+    normalized.preferences = state.preferences
+  }
+  return normalized
 }
 
 export interface LoginStateGateProps {

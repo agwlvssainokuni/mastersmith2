@@ -15,6 +15,7 @@
  */
 //
 // U1 の差し込み口「ログイン状態の提供元」（BR8.7）。最初の復元の結果を待って返し、状態の変化を知らせる。
+// ログイン中は、契約 C3 の氏名と表示の設定をログイン状態に通す（表示の設定の土台が使う。U4 の部品 5節）。
 import type { LoginState, LoginStateProvider } from '../../app/registry/types'
 import { getAuthSnapshot, subscribe, whenRestored } from './authSession'
 
@@ -24,7 +25,9 @@ export function toLoginState(): LoginState {
   if (snapshot.status !== 'LoggedIn' || snapshot.user === null) {
     return { loggedIn: false, admin: false }
   }
-  return { loggedIn: true, admin: snapshot.user.admin, displayName: snapshot.user.email }
+  const { admin, displayName, language, theme, fontSize } = snapshot.user
+  // ユーザーメニューには氏名を出す（メールアドレスではない。ストーリーの M7）。
+  return { loggedIn: true, admin, displayName, preferences: { language, theme, fontSize } }
 }
 
 /** U1 に登録するログイン状態の提供元。 */

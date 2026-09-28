@@ -16,10 +16,13 @@
 //
 // ログインのフォーム（WF7、BR8.2、BR8.8、NFR4.3、NFR8.1）。make-you-chic-ui の部品を使い、
 // 空の入力は送らずに入力欄の近くに知らせる。サーバーの AUTHENTICATION_FAILED は理由によらず1種類の文言にする。
+// 登録の完了から移ってきたときは、受け渡しの値を最初の描画で1回だけ読み、登録が終わった旨の案内を出して
+// メールアドレスの欄に入れておく（U4 の W9・D13、AC3.2.17）。
 import { Alert, Button, FormField, TextInput } from 'make-you-chic-ui'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { useMessages } from '../../app/i18n/I18nProvider'
+import { clearLoginHandoff, takeLoginHandoff } from '../../app/login-handoff/loginHandoff'
 import type { ApiError } from '../../shared/api-client/apiError'
 import { login } from './authSession'
 import './LoginForm.css'
@@ -42,11 +45,19 @@ export function failureMessageKey(error: unknown): string {
 export function LoginForm() {
   const t = useMessages()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [handoff] = useState(takeLoginHandoff)
+  const [email, setEmail] = useState(handoff?.email ?? '')
   const [password, setPassword] = useState('')
   const [problems, setProblems] = useState<LoginInputProblems>({})
   const [failure, setFailure] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+
+  // 受け渡しの口から消すのは描画の確定の後（StrictMode の二重の描画でも失われない。W9 の3）。
+  useEffect(() => {
+    if (handoff !== null) {
+      clearLoginHandoff()
+    }
+  }, [handoff])
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -75,6 +86,11 @@ export function LoginForm() {
       noValidate
       data-testid="login-form"
     >
+      {handoff !== null && (
+        <div data-testid="login-form-registered-alert">
+          <Alert variant="success">{t('auth.login.registered')}</Alert>
+        </div>
+      )}
       {failure && (
         <div data-testid="login-form-error-alert">
           <Alert variant="danger">

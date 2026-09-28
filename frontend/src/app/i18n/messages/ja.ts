@@ -25,6 +25,12 @@ export const ja = {
   'nav.home': 'ホーム',
   'startupError.heading': '画面を起動できませんでした',
   'startupError.description': '機能の登録に問題があります。次の内容を確認してください。',
+  'display.theme.system': 'OS に合わせる',
+  'display.theme.light': 'ライト',
+  'display.theme.dark': 'ダーク',
+  'display.fontSize.sm': '小',
+  'display.fontSize.md': '標準',
+  'display.fontSize.lg': '大',
 } as const satisfies Record<string, string>
 
 /** 骨組みの文言の鍵 */

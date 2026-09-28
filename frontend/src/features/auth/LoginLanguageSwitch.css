@@ -13,17 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-//
-// ログイン画面（BR8.1）。U1 のログイン用レイアウトの中にログインのフォームを置き、右上に言語の切り替えを置く（U4 の W7）。
-import { LoginLayout } from '../../app/layout/LoginLayout'
-import { LoginForm } from './LoginForm'
-import { LoginLanguageSwitch } from './LoginLanguageSwitch'
-
-/** ログイン画面 */
-export function LoginPage() {
-  return (
-    <LoginLayout topRight={<LoginLanguageSwitch />}>
-      <LoginForm />
-    </LoginLayout>
-  )
+.auth-language-switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
