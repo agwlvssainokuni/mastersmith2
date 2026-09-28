@@ -954,7 +954,7 @@ U1 のファイルは書き換えずに、次の型を使います。
 
 | 差し込み口 | 形 | 使う単位 |
 |---|---|---|
-| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は単位の番号ではなく機能の名前で 100 台ずつ割り当てる（`auth` は 100 台で本番 110、`access` は 200 台で本番 210、`invitation` は 300 台で本番 310、`appearance` は 400 台で本番 410。本番の決まりは x10、x00・x50 はテストの決まりが使う）。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3 |
+| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は単位の番号ではなく機能の名前で 100 台ずつ割り当てる（`auth` は 100 台で本番 110、`access` は 200 台で本番 210、`invitation` は 300 台で本番 310、`appearance` は 400 台で本番 410。本番の決まりは x10、x00・x50 はテストの決まりが使う）。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3、user-management の U8（`appearance`） |
 | API の既定の扱い | `cherry.mastersmith.common.security.ApiDefaultAccess` の Bean（0個か1個。2個以上は起動の失敗）。無ければ `/api/**` は許可、`requireAuthentication()` が true ならログイン必須 | U3 |
 | フィルターの段階のエラー応答 | `cherry.mastersmith.common.security.ErrorResponseWriter`。401・403 などを共通の ErrorResponse の形で書く | U2、U3 |
 | 想定内のエラー | `cherry.mastersmith.common.error.domain.BusinessException` を起こす。問題の種類（`ProblemType`、日英の説明つき）は自分のパッケージの `ProblemTypeCatalog` の Bean に置く（code・slug の重複は起動の失敗） | U2、U3、U4 |

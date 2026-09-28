@@ -31,6 +31,7 @@ rm build/h2-perf.jar; unset AP UP HASH SQL
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
 # 3. 場面ごとに流す（health / loginSuccess / loginFailure / refresh / adminCheck / forbidden / appearance）
+#    U2・U3 の場面は、下の節「利用者の設定と招待の場面」の手順（Mailpit と利用者の追加）で流す
 mkdir -p build/perf-results && chmod 777 build/perf-results
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=health -e DURATION=60s \
   -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
@@ -158,3 +159,83 @@ docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" -e SCE
 - `dslMixed` は試験用の利用者 11 名（`perf-user01`〜`11`）と `PERF_USER_PASSWORD` が要る。前の節の手順 2（アプリを止めて内部DB に入れる）で入れ、`PERF_USER_PASSWORD` を `ui.env` に足してから流す。ログインの VU は試験全体で重ならない番号（`exec.vu.idInTest`）で利用者を選び、番号は `VUS + 1` まで取りうるため、利用者は `VUS + 1` 名要る。`VUS` を変えるときは利用者を足し、`-e PERF_USER_COUNT=<入れた数>`（既定 11）を渡す（足りないと始める前に止まる）。
 - `dslMixed` の試験用の利用者は、ロックの状態の行が無いまま流す（先に1人ずつログインして行を作らない）。同じ利用者の初めてのログインが同時に来ても 500 にならないこと（Intent 260924-followup-fixes の FR2 の直し）の確かめを兼ねる。合格はログインの `checks` の率 1（500 が 0 件）。
 - 利用者が VU の間で重ならないことは、k6 の出力の `loginLoop-user vu=<番号> user=<利用者>` の行（VU ごとの最初の回に1行）で確かめる。行の数が `VUS` と同じで、利用者の重なりが 0 件であること（例: `grep -o 'loginLoop-user vu=[0-9]* user=[^ "]*' <k6 の出力> | sed 's/.* user=//' | sort | uniq -d` が何も出さない）。
+
+## 利用者の設定と招待の場面（Intent 260925-user-management の U2・U3）
+
+`perf/k6/scenarios.js` の U2（自分の設定・パスワードの変更）と U3（招待と登録の完了）の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/260925-user-management/construction/` の `u2-user-preferences/nfr-requirements/performance-requirements.md`（表の U2-）と `u3-invitation/nfr-requirements/performance-requirements.md`（表の U3-）。どれも同時 `VUS`（既定 10）で、場面ごとに p95 を判定する（1つの場面の遅さをほかの場面で薄めない）。閾値は出典の値のままで、緩めない。あわせて場面ごとに `checks` の率 1 を閾値に置く（状態コードの誤りを混ぜた p95 で合格にしない）。Build and Test では台本と手順を用意し、`k6 inspect` で読み込めることだけを確かめた。測定は performance-validation で行う。
+
+| 場面 | すること | 目標（閾値） | 用意 |
+|---|---|---|---|
+| `preferencesGet` | `GET /api/me/preferences`（200） | U2-NFR6.1（`{name:preferencesGet}` の p95 1 秒） | `perf-user01`〜`10` を VU ごとに当てる |
+| `preferencesSave` | `PUT /api/me/preferences` の成功（200。テーマを回ごとに変える） | U2-NFR6.2（p95 1 秒） | 同上 |
+| `preferencesInvalid` | 同じ API の入力の誤り（言語 `xx`、400 `VALIDATION_FAILED`） | U2-NFR6.2（p95 1 秒） | 同上 |
+| `passwordChange` | `POST /api/me/password` の成功（204） | U2-NFR6.3（p95 **2 秒**） | 専用の `perf-pw01`〜`10` を VU ごとに1人（`VUS` 名以上。`PERF_PW_USER_COUNT`、既定 10）。変更の前後のパスワード（`PERF_USER_PASSWORD` と、その後ろに `-alt` を足した値）を交互に使う |
+| `passwordMismatch` | 今のパスワードの誤り（400 `PASSWORD_CURRENT_MISMATCH`。監査に1件ずつ残る） | U2-NFR6.4（p95 1 秒） | `perf-user01`〜`10` |
+| `passwordInvalid` | 入力の誤り（新しいパスワードが短く確かめと違う、400 `VALIDATION_FAILED`） | U2-NFR6.4（p95 1 秒） | 同上 |
+| `invite` | `POST /api/admin/invitations`（201、送信の結果 `SENT`） | U3-NFR6.1（p95 **5 秒**） | 回ごとに違う宛先（`perf-inv<VU>-<実行の識別>-<回>@example.com`）で、409 を混ぜない |
+| `invitationResend` | 送り直し（200、`SENT`） | U3-NFR6.1（p95 **5 秒**） | setup が `VUS` 件の招待を出し、VU ごとに1件を送り直す |
+| `invitationList` | 一覧の1ページ目と最後のページ（200） | U3-NFR6.3（`{name:invitationListFirst}`・`{name:invitationListLast}` の p95 1 秒） | setup が招待中を `LIST_PENDING_MIN`（既定 45）件以上にする（20 件より多く） |
+| `invitationCancel` | 取り消し（204） | U3-NFR6.3（p95 1 秒） | setup が `ITERATIONS`（既定 100）件の招待を出し、全 VU で1回ずつ取り消す（回数で終わる。`DURATION` は使わない） |
+| `registrationVerify` | リンクの確かめ（有効なトークン 200、形の誤り・見つからないトークン 404） | U3-NFR6.3（3つの name ごとに p95 1 秒） | setup が `VUS` 件の招待を出し、Mailpit で受けたメールからトークンを取り出す（確かめは招待を消費しない） |
+| `registrationComplete` | 登録の完了の成功（204） | U3-NFR6.4（p95 1 秒） | setup が `ITERATIONS` 件の招待を出し、Mailpit で受けたメールからトークンを取り出す。全 VU で1回ずつ使い切る（回数で終わる） |
+| `registrationInvalid` | 登録の完了の入力の誤り（400 `VALIDATION_FAILED`。内部DB を引かない） | U3-NFR6.5（p95 1 秒） | なし |
+| `registrationRejected` | 登録の完了のリンクの拒否（見つからない・形の誤り、404 `REGISTRATION_LINK_INVALID`。監査に1件ずつ残る） | U3-NFR6.5（2つの name ごとに p95 1 秒） | なし |
+
+- BR7.4 の経路（完了の時点で同じメールアドレスの利用者がいる拒否）は場面に入れない（U3 の NFR 設計の4節、Unverified）。
+- 既存のログイン・トークンの更新の目標（U2-NFR6.5）は、既存の `loginSuccess`・`refresh` を流し直して確かめる。
+- トークンの取り出し: setup が管理者として招待の API で招待を出し（全件が 201 で送信の結果が `SENT` でなければ止める）、使い捨ての環境の Mailpit の API（`MAILPIT_URL`、既定 `http://mailpit:8025`。PC にポートを公開していないため、k6 はコンテナの名前で届く）で宛先が完全に一致するメールを探し、本文のリンク（`/register#token=…`）からトークンを取り出す。トークン・リンク・本文は、ログ・`console.log`・止めるときの文言・結果の出力に出さない（出すのは件数だけ）。
+
+```bash
+# 0・1. 上の「手順」の 0・1 と同じ（配備したアプリを止め、WAR とイメージを用意し、一時の環境ファイルを作る）
+
+# 1'. app.env にメールの受け手・差出人・ベース URL の行を足す（秘密ではない値）。ベース URL を k6 の BASE_URL と同じにし、
+#     k6 が付ける Origin のまま既存のログイン・更新の場面が 403 にならないようにする
+( umask 077
+  printf 'SPRING_MAIL_HOST=mailpit\nSPRING_MAIL_PORT=1025\nMASTERSMITH_MAIL_FROM=perf-noreply@example.com\nMASTERSMITH_WEB_BASE_URL=http://app:8080\n' >> "$D/app.env" )
+# 接続の待ちも見るとき（performance-validation の U2-NFR5.2・U3-NFR5.3）は、使い捨てのアプリにだけ次の行を足す
+# ( umask 077; printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
+
+# 2'. 上の手順 2 の代わりに行う。profile mail で Mailpit ごと起動し、アプリを止めて、試験用の利用者 11 名
+#     （perf-user01〜11）とパスワードの変更の専用の利用者 10 名（perf-pw01〜10）を入れる（氏名は必須のためメールアドレスと同じ値）。
+#     zsh ではコマンドを変数に入れても単語に分かれないため、関数にする
+perfc() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml --profile mail "$@"; }
+docker info --format '{{.NCPU}} CPU / {{.MemTotal}} bytes'   # VM の余裕を読み取りで確かめる（アプリ 2g・Mailpit 256m・k6）
+perfc up -d --wait
+perfc stop app
+HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(
+  { for i in $(seq -w 1 11); do echo "perf-user$i"; done; for i in $(seq -w 1 10); do echo "perf-pw$i"; done; } |
+  while read -r u; do printf "('%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, '%s@example.test')," "$u" "$HASH" "$u"; done | sed 's/,$//')"
+cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+  eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+rm build/h2-perf.jar; unset AP UP HASH SQL
+perfc up -d --wait
+
+# 3'. 場面ごとに流す（caffeinate -i で PC のスリープを防ぐ）。k6 は同じネットワークの中から app と mailpit に届く
+mkdir -p build/perf-results && chmod 777 build/perf-results
+for s in preferencesGet preferencesSave preferencesInvalid passwordChange passwordMismatch passwordInvalid \
+  invite invitationResend invitationList invitationCancel registrationVerify registrationComplete registrationInvalid registrationRejected; do
+  caffeinate -i docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
+done
+
+# 4'. 秘密が出ていないことを件数で確かめる（どれも 0 であること）。ログはファイルに残さず、数だけを見る
+docker logs mastersmith-perf-app-1 2>&1 | grep -c '/register#token='
+docker logs mastersmith-perf-app-1 2>&1 | grep -c '@example.com'
+grep -l 'register#token=' build/perf-results/*.json | wc -l
+
+# 5'. 片付け（確かめの結果を見てから行う。監査の件数を数えるときは、アプリを止めて H2 の道具で読んでから消す）
+perfc down -v
+rm -rf "$D"
+docker compose up -d --wait
+```
+
+- 監査の件数（performance-validation の U2-NFR5.2・U3-NFR5.3。流した成功の件数と `PASSWORD_CHANGED`・`INVITATION_ISSUED`・`REGISTRATION_COMPLETED` の成功の件数の突き合わせ）は、`perfc stop app` の後に手順 2' と同じ H2 の道具で `SELECT event_type, result, COUNT(*) FROM audit_events GROUP BY event_type, result` を読む（読み取りだけ）。数え終わるまで `down -v` をしない。
+- `passwordChange` の前後のパスワード: VU の最初の回に、入れたときのパスワードでログインし、入れなければ後ろに `-alt` を足した値でログインする（前の実行が後ろの値で終わっていることがあるため）。そのときはログインの失敗が1件、監査に残る。以後は変更が 204 になるたびに今のパスワードを入れ替え、4分ごとのログインし直しも今のパスワードで行う。
+- `passwordChange` の利用者は `perf-pw01`〜だけで、ほかの場面では使わない（同じ利用者を同時に変えると条件つきの更新で 400 が混ざるため。U2 の NFR 設計の7節）。`VUS` を増やすときは利用者を足し、`-e PERF_PW_USER_COUNT=<入れた数>` を渡す（足りないと始める前に止まる）。
+- `invitationCancel`・`registrationComplete` の回数は `-e ITERATIONS=<回数>`（既定 100）で変える。setup は同じ数の招待を同時 `VUS` 件ずつ出すため、回数が多いほど setup が長くなる（上限 10 分）。
+- 招待・送り直し・setup の招待は、招待中の行と Mailpit のメールを増やす。Mailpit はボリュームを持たず、`down -v` で消える（既定で古いメールから 500 通を超えた分を消す。setup は招待の直後に読むため影響しない）。
+- k6・Mailpit はアプリと同じ VM の CPU とメモリを分け合うため、測った値にその分が混ざりうる。結果に明記する。
+- `@example.com` は招待の宛先（予約されたドメイン）、`@example.test` は試験用の利用者と仮の管理者。アプリのログにはメールアドレスを出さない決まりのため、手順 4' の件数はどれも 0 になるはず。
