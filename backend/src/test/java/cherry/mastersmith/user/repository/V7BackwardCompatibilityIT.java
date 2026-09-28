@@ -46,8 +46,11 @@ class V7BackwardCompatibilityIT {
 
     @BeforeEach
     void migrateToV7() {
-        MigrateResult result =
-                V7MigrationIT.flyway(tempDir, V7MigrationIT.CURRENT).migrate();
+        // V8 以降（Intent 260925-user-management の U3）が足されても V7 の後の状態で確かめるため、版を 7 までに止める。
+        MigrateResult result = V7MigrationIT.configure(tempDir, V7MigrationIT.CURRENT)
+                .target("7")
+                .load()
+                .migrate();
         assertThat(result.targetSchemaVersion).isEqualTo("7");
         jdbc = V7MigrationIT.jdbc(tempDir);
     }

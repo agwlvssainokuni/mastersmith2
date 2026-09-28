@@ -38,6 +38,12 @@ import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.ClientInfo;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
 import cherry.mastersmith.common.testsupport.LogEvents;
+import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
+import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
+import cherry.mastersmith.invitation.domain.InvitationResentEvent;
+import cherry.mastersmith.invitation.domain.LinkRejection;
+import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
+import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
@@ -419,6 +425,118 @@ class AuditEventListenerTest {
                     .containsEntry("targetUserId", "21")
                     .containsEntry("sourceIp", "192.0.2.41")
                     .containsEntry("enteredEmail", "null");
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    private static final RequestOrigin INVITE_ORIGIN = new RequestOrigin("192.0.2.50", "Agent/2", "trace-0050");
+
+    @Test
+    @DisplayName("each of the five invitation events is appended exactly once with its type")
+    void invitationEventsAreAppended() {
+        when(nanoTime.getAsLong()).thenReturn(0L);
+        AuditEventListener listener = listener();
+
+        listener.onInvitationIssuedEvent(InvitationIssuedEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+        listener.onInvitationResentEvent(InvitationResentEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+        listener.onInvitationCancelledEvent(InvitationCancelledEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+        listener.onRegistrationCompletedEvent(RegistrationCompletedEvent.of(5, 31, OCCURRED_AT, INVITE_ORIGIN));
+        listener.onRegistrationFailedEvent(
+                RegistrationFailedEvent.of(5L, LinkRejection.INVITATION_EXPIRED, OCCURRED_AT, INVITE_ORIGIN));
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(recorder, times(5)).record(captor.capture());
+        assertThat(captor.getAllValues())
+                .extracting(AuditEvent::getEventType)
+                .containsExactly(
+                        AuditEventType.INVITATION_ISSUED,
+                        AuditEventType.INVITATION_RESENT,
+                        AuditEventType.INVITATION_CANCELLED,
+                        AuditEventType.REGISTRATION_COMPLETED,
+                        AuditEventType.REGISTRATION_FAILED);
+        assertThat(captor.getAllValues())
+                .allSatisfy(audit -> assertThat(audit.getTargetInvitationId()).isEqualTo(5L));
+    }
+
+    @Test
+    @DisplayName("a failing append of an invitation event logs one error with the actor and the targets only")
+    void invitationFailureLogsTargets() {
+        elapsedMillis(1);
+        doThrow(new IllegalStateException("追記に失敗しました")).when(recorder).record(any(AuditEvent.class));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener()
+                            .onInvitationIssuedEvent(InvitationIssuedEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN)))
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(error -> {
+                assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(keyValues(error))
+                        .containsEntry("auditEventType", "INVITATION_ISSUED")
+                        .containsEntry("result", "SUCCESS")
+                        .containsEntry("actorUserId", "9")
+                        .containsEntry("targetUserId", "null")
+                        .containsEntry("targetInvitationId", "5")
+                        .containsEntry("enteredEmail", "null")
+                        .doesNotContainKeys("dslHash", "dslSource", "rejectionKind");
+                assertThat(error.getFormattedMessage() + keyValues(error))
+                        .doesNotContain("@")
+                        .doesNotContain("token");
+            });
+        }
+    }
+
+    @Test
+    @DisplayName("a failing append of a failed registration logs the reason and the found invitation")
+    void registrationFailureLogsReason() {
+        elapsedMillis(1);
+        doThrow(new IllegalStateException("追記に失敗しました")).when(recorder).record(any(AuditEvent.class));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            listener()
+                    .onRegistrationFailedEvent(RegistrationFailedEvent.of(
+                            5L, LinkRejection.EMAIL_ALREADY_REGISTERED, OCCURRED_AT, INVITE_ORIGIN));
+            listener().onRegistrationCompletedEvent(RegistrationCompletedEvent.of(6, 31, OCCURRED_AT, INVITE_ORIGIN));
+
+            assertThat(logs.list()).hasSize(2);
+            assertThat(keyValues(logs.list().get(0)))
+                    .containsEntry("auditEventType", "REGISTRATION_FAILED")
+                    .containsEntry("result", "FAILURE")
+                    .containsEntry("failureReason", "EMAIL_ALREADY_REGISTERED")
+                    .containsEntry("targetInvitationId", "5")
+                    .doesNotContainKey("actorUserId");
+            assertThat(keyValues(logs.list().get(1)))
+                    .containsEntry("auditEventType", "REGISTRATION_COMPLETED")
+                    .containsEntry("targetUserId", "31")
+                    .containsEntry("targetInvitationId", "6");
+        }
+    }
+
+    @Test
+    @DisplayName("null invitation events are contained and logged with the type and no target")
+    void nullInvitationEventsAreContained() {
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            AuditEventListener listener = listener();
+            assertThatCode(() -> {
+                        listener.onInvitationIssuedEvent(null);
+                        listener.onInvitationResentEvent(null);
+                        listener.onInvitationCancelledEvent(null);
+                        listener.onRegistrationCompletedEvent(null);
+                        listener.onRegistrationFailedEvent(null);
+                    })
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list())
+                    .hasSize(5)
+                    .allSatisfy(error -> assertThat(keyValues(error)).containsEntry("targetInvitationId", "null"));
+            assertThat(logs.list())
+                    .extracting(error -> keyValues(error).get("auditEventType"))
+                    .containsExactly(
+                            "INVITATION_ISSUED",
+                            "INVITATION_RESENT",
+                            "INVITATION_CANCELLED",
+                            "REGISTRATION_COMPLETED",
+                            "REGISTRATION_FAILED");
         }
         verifyNoInteractions(recorder);
     }

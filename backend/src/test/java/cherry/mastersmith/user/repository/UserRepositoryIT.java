@@ -22,6 +22,7 @@ import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.PasswordHash;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
 import java.nio.file.Path;
@@ -199,5 +200,26 @@ class UserRepositoryIT {
 
         assertThat(read).isEqualTo(CHANGED);
         assertThat(hash).isEqualTo("$2a$04$new4");
+    }
+
+    @Test
+    @DisplayName("the redacted lookup tells whether the normalized email exists (U3 decision 3)")
+    void existsByRedactedEmail() {
+        String email = "redacted-" + UUID.randomUUID() + "@example.com";
+        save(email, false);
+
+        assertThat(repository.existsByRedactedEmail(new RedactedText(email))).isTrue();
+        assertThat(repository.existsByRedactedEmail(new RedactedText("nobody-" + UUID.randomUUID() + "@example.com")))
+                .isFalse();
+    }
+
+    @Test
+    @DisplayName("the redacted lookup is case sensitive like findByEmail (callers pass the normalized value)")
+    void existsByRedactedEmailIsCaseSensitive() {
+        String email = "redacted-case-" + UUID.randomUUID() + "@example.com";
+        save(email, false);
+
+        assertThat(repository.existsByRedactedEmail(new RedactedText(email.toUpperCase(java.util.Locale.ROOT))))
+                .isFalse();
     }
 }

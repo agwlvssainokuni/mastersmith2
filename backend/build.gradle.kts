@@ -121,6 +121,10 @@ tasks.withType<Test>().configureEach {
     // ヒープが尽きた。テストの件数・カバレッジの下限は変えていない。
     maxHeapSize = "1g"
     jvmArgs("-XX:+EnableDynamicAgentLoading", "-Xshare:off")
+    // 内部DB（H2 2.4.240）の閉じるときの全体の詰め直しのスレッドを 1 本に固定する（本番の Dockerfile の ENTRYPOINT と同じ）。
+    // 並べて行う（CPU の数 / 4 本）と H2 の中の競合に当たり、assert が有効なテストの JVM では詰め直しが中断されてファイルが縮まない
+    // （H2CompactionByPoolSuspensionIT が CPU 8 の PC で落ちた）。assert は切らない。H2 を上げるときは、この指定が要るかを見直す。
+    systemProperty("h2.compactThreads", "1")
     systemProperty("user.timezone", "Asia/Tokyo")
     // 結合テストで Host ヘッダーを指定して、エラー応答の type の URL の組み立てを確かめるため。
     systemProperty("jdk.httpclient.allowRestrictedHeaders", "host")

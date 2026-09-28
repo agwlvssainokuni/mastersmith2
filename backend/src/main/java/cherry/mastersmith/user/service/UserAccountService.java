@@ -21,6 +21,7 @@ import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.PasswordPolicy;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.time.Clock;
@@ -126,14 +127,32 @@ public class UserAccountService {
     }
 
     /**
+     * メールアドレスの利用者がいるかを返す（契約 C2。招待と登録の完了の経路が使う。U3 の計画の決定 3）。
+     *
+     * <p>メールアドレスは文字列にすると伏せる型で受け渡す（メソッドの呼び出しの追跡の TRACE に出さないため）。既存の
+     * {@link #existsByEmail(String)}（初期管理者が使う）は据え置く。
+     *
+     * @param email メールアドレス（そろえる前の値でよい）
+     * @return いれば true
+     */
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(RedactedText email) {
+        Objects.requireNonNull(email, "email");
+        return userRepository.existsByRedactedEmail(new RedactedText(EmailAddress.normalize(email.value())));
+    }
+
+    /**
      * 氏名を ID で読む（契約 C2。招待の一覧の「招待した管理者」の表示に使う）。
+     *
+     * <p>氏名（既存の利用者の初期値はメールアドレス）は文字列にすると伏せる型で返す（U3 の計画の決定 3。契約 C2 の
+     * {@code Optional<String>} との差は U3 のコード生成の記録に書く）。
      *
      * @param userId 利用者ID
      * @return 氏名（いなければ空）
      */
     @Transactional(readOnly = true)
-    public Optional<String> findDisplayName(long userId) {
-        return userRepository.findById(userId).map(User::getDisplayName);
+    public Optional<RedactedText> findDisplayName(long userId) {
+        return userRepository.findById(userId).map(user -> new RedactedText(user.getDisplayName()));
     }
 
     /**
@@ -171,7 +190,7 @@ public class UserAccountService {
     public CreateUserResult createUser(NewUser newUser) {
         Preferences preferences = requireAcceptable(newUser);
         String email = EmailAddress.normalize(newUser.email());
-        if (userRepository.findByEmail(email).isPresent()) {
+        if (userRepository.existsByRedactedEmail(new RedactedText(email))) {
             return emailAlreadyUsed();
         }
         User user = new User(

@@ -24,9 +24,16 @@ import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationType;
+import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
+import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
+import cherry.mastersmith.invitation.domain.InvitationResentEvent;
+import cherry.mastersmith.invitation.domain.LinkRejection;
+import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
+import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangeOutcome;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
+import java.time.Instant;
 
 /**
  * 受け取った出来事から監査イベントを作る（BR1.1、BR1.2、BR1.5、BR2.1）。DB にも時計にも触れない純粋な関数である。
@@ -39,6 +46,10 @@ import cherry.mastersmith.user.domain.PasswordChangedEvent;
  * U3 の出来事のメールアドレスは、文字列化が伏せ字になるため必ず {@link AdminAccessDeniedEvent#enteredEmail()} で取る。
  *
  * <p>パスワードの変更（Intent 260925-user-management の U2）の出来事は、操作した人と対象の利用者に本人を記録する。
+ *
+ * <p>招待と登録（Intent 260925-user-management の U3）の出来事は、招待の管理は操作した管理者と対象の招待、登録の完了は対象の招待と
+ * 作った利用者、登録の失敗は対象の招待（見つかったときだけ）と理由を記録する。メールアドレス・トークンは出来事が持たないため、記録にも
+ * 入らない（U3 の BR8.1〜BR8.3・BR8.6）。
  *
  * <p>種類と理由の写し取りは網羅の {@code switch} で書く。U2・U3 が値を増やしたときに、コンパイルで気づけるようにするため。
  */
@@ -131,6 +142,128 @@ public final class AuditEventFactory {
                 null);
     }
 
+    /**
+     * 招待したことの出来事から監査イベントを作る（U3 の BR8.1）。
+     *
+     * @param event 出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(InvitationIssuedEvent event) {
+        return invitationAdmin(
+                AuditEventType.INVITATION_ISSUED,
+                event.invitationId(),
+                event.actorUserId(),
+                event.occurredAt(),
+                event.sourceIp(),
+                event.userAgent(),
+                event.traceId());
+    }
+
+    /**
+     * 招待を送り直したことの出来事から監査イベントを作る（U3 の BR8.1）。
+     *
+     * @param event 出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(InvitationResentEvent event) {
+        return invitationAdmin(
+                AuditEventType.INVITATION_RESENT,
+                event.invitationId(),
+                event.actorUserId(),
+                event.occurredAt(),
+                event.sourceIp(),
+                event.userAgent(),
+                event.traceId());
+    }
+
+    /**
+     * 招待を取り消したことの出来事から監査イベントを作る（U3 の BR8.1）。
+     *
+     * @param event 出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(InvitationCancelledEvent event) {
+        return invitationAdmin(
+                AuditEventType.INVITATION_CANCELLED,
+                event.invitationId(),
+                event.actorUserId(),
+                event.occurredAt(),
+                event.sourceIp(),
+                event.userAgent(),
+                event.traceId());
+    }
+
+    /**
+     * 登録を完了したことの出来事から監査イベントを作る（U3 の BR8.2。操作した人は空）。
+     *
+     * @param event 出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(RegistrationCompletedEvent event) {
+        return AuditEvent.withTarget(
+                event.occurredAt(),
+                AuditEventType.REGISTRATION_COMPLETED,
+                resultOf(AuditEventType.REGISTRATION_COMPLETED),
+                null,
+                event.sourceIp(),
+                AuditText.userAgent(event.userAgent()),
+                event.traceId(),
+                null,
+                event.userId(),
+                event.invitationId());
+    }
+
+    /**
+     * 登録の完了の要求のリンクの拒否の出来事から監査イベントを作る（U3 の BR8.3。操作した人は空、対象の招待は見つかったときだけ）。
+     *
+     * @param event 出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(RegistrationFailedEvent event) {
+        return AuditEvent.withTarget(
+                event.occurredAt(),
+                AuditEventType.REGISTRATION_FAILED,
+                resultOf(AuditEventType.REGISTRATION_FAILED),
+                failureReasonOf(event.reason()),
+                event.sourceIp(),
+                AuditText.userAgent(event.userAgent()),
+                event.traceId(),
+                null,
+                null,
+                event.invitationId());
+    }
+
+    private static AuditEvent invitationAdmin(
+            AuditEventType eventType,
+            long invitationId,
+            long actorUserId,
+            Instant occurredAt,
+            String sourceIp,
+            String userAgent,
+            String traceId) {
+        return AuditEvent.withTarget(
+                occurredAt,
+                eventType,
+                resultOf(eventType),
+                null,
+                sourceIp,
+                AuditText.userAgent(userAgent),
+                traceId,
+                actorUserId,
+                null,
+                invitationId);
+    }
+
+    private static AuditFailureReason failureReasonOf(LinkRejection reason) {
+        return switch (reason) {
+            case INVITATION_EXPIRED -> AuditFailureReason.INVITATION_EXPIRED;
+            case INVITATION_ALREADY_USED -> AuditFailureReason.INVITATION_ALREADY_USED;
+            case INVITATION_CANCELLED -> AuditFailureReason.INVITATION_CANCELLED;
+            case INVITATION_NOT_FOUND -> AuditFailureReason.INVITATION_NOT_FOUND;
+            case EMAIL_ALREADY_REGISTERED -> AuditFailureReason.EMAIL_ALREADY_REGISTERED;
+        };
+    }
+
     private static AuditEventType eventTypeOf(DslOperationType eventType) {
         return switch (eventType) {
             case DSL_GENERATED -> AuditEventType.DSL_GENERATED;
@@ -167,9 +300,17 @@ public final class AuditEventFactory {
      */
     public static AuditResult resultOf(AuditEventType eventType) {
         return switch (eventType) {
-            case LOGIN_SUCCEEDED, LOGGED_OUT, DSL_GENERATED, DSL_SUBMITTED, DSL_APPLIED, DSL_PREVIEW_DISCARDED ->
-                AuditResult.SUCCESS;
-            case LOGIN_FAILED, ACCESS_DENIED, DSL_SUBMISSION_REJECTED -> AuditResult.FAILURE;
+            case LOGIN_SUCCEEDED,
+                    LOGGED_OUT,
+                    DSL_GENERATED,
+                    DSL_SUBMITTED,
+                    DSL_APPLIED,
+                    DSL_PREVIEW_DISCARDED,
+                    INVITATION_ISSUED,
+                    INVITATION_RESENT,
+                    INVITATION_CANCELLED,
+                    REGISTRATION_COMPLETED -> AuditResult.SUCCESS;
+            case LOGIN_FAILED, ACCESS_DENIED, DSL_SUBMISSION_REJECTED, REGISTRATION_FAILED -> AuditResult.FAILURE;
             case PASSWORD_CHANGED -> throw new IllegalArgumentException("PASSWORD_CHANGED の結果は種類から決められません（出来事が持つ）");
         };
     }

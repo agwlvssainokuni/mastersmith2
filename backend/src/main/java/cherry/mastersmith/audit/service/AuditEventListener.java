@@ -21,6 +21,11 @@ import cherry.mastersmith.audit.domain.AuditEventFactory;
 import cherry.mastersmith.audit.domain.AuditEventType;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
+import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
+import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
+import cherry.mastersmith.invitation.domain.InvitationResentEvent;
+import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
+import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -38,7 +43,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
- * 出来事（Intent 260925-user-management の U2）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）を受け取り、監査イベントを1件ずつ追記する
+ * （BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -137,6 +143,83 @@ public class AuditEventListener {
     }
 
     /**
+     * 招待したことの出来事を受け取り、監査イベントを追記する（Intent 260925-user-management の U3、契約 C8、BR8.1・BR8.5）。招待の
+     * トランザクションの中で知らされるため、確定の後に受け取る。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onInvitationIssuedEvent(InvitationIssuedEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> invitationFields(AuditEventType.INVITATION_ISSUED, event == null ? null : event.invitationId()));
+    }
+
+    /**
+     * 招待を送り直したことの出来事を受け取り、監査イベントを追記する（U3、BR8.1・BR8.5）。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onInvitationResentEvent(InvitationResentEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> invitationFields(AuditEventType.INVITATION_RESENT, event == null ? null : event.invitationId()));
+    }
+
+    /**
+     * 招待を取り消したことの出来事を受け取り、監査イベントを追記する（U3、BR8.1・BR8.5）。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onInvitationCancelledEvent(InvitationCancelledEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> invitationFields(
+                        AuditEventType.INVITATION_CANCELLED, event == null ? null : event.invitationId()));
+    }
+
+    /**
+     * 登録を完了したことの出来事を受け取り、監査イベントを追記する（U3、BR8.2・BR8.5）。巻き戻った完了の出来事は受け取らない。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onRegistrationCompletedEvent(RegistrationCompletedEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> invitationFields(
+                        AuditEventType.REGISTRATION_COMPLETED, event == null ? null : event.invitationId()));
+    }
+
+    /**
+     * 登録の完了の要求のリンクの拒否の出来事を受け取り、監査イベントを追記する（U3、BR8.3・BR8.5）。トランザクションの外で知らされる
+     * ため、要求と同じスレッドでその場で受け取る。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onRegistrationFailedEvent(RegistrationFailedEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> invitationFields(
+                        AuditEventType.REGISTRATION_FAILED, event == null ? null : event.invitationId()));
+    }
+
+    /** 招待と登録の出来事の組み立てに失敗したときに載せる項目（メールアドレス・トークンは持たない）。 */
+    private static Map<String, Object> invitationFields(AuditEventType eventType, Long invitationId) {
+        Map<String, Object> fields = fields(eventType, null, null, null, null, null, null, null, null);
+        fields.putAll(targetFields(null, invitationId));
+        return fields;
+    }
+
+    /**
      * 監査イベントを組み立てて追記し、失敗を受け止める。
      *
      * @param builder 監査イベントの組み立て
@@ -211,7 +294,16 @@ public class AuditEventListener {
     private static boolean isDslOperation(AuditEventType eventType) {
         return switch (eventType) {
             case DSL_GENERATED, DSL_SUBMITTED, DSL_SUBMISSION_REJECTED, DSL_APPLIED, DSL_PREVIEW_DISCARDED -> true;
-            case LOGIN_SUCCEEDED, LOGIN_FAILED, LOGGED_OUT, ACCESS_DENIED, PASSWORD_CHANGED -> false;
+            case LOGIN_SUCCEEDED,
+                    LOGIN_FAILED,
+                    LOGGED_OUT,
+                    ACCESS_DENIED,
+                    PASSWORD_CHANGED,
+                    INVITATION_ISSUED,
+                    INVITATION_RESENT,
+                    INVITATION_CANCELLED,
+                    REGISTRATION_COMPLETED,
+                    REGISTRATION_FAILED -> false;
         };
     }
 

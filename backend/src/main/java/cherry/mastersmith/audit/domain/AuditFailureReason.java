@@ -38,5 +38,15 @@ public enum AuditFailureReason {
     /** アクセストークンの署名・方式の不一致（401）。 */
     TOKEN_INVALID,
     /** パスワードの変更の今のパスワードの誤り（Intent 260925-user-management の U2、契約 C8）。 */
-    CURRENT_PASSWORD_MISMATCH
+    CURRENT_PASSWORD_MISMATCH,
+    /** 招待の期限切れ・置き換え済み（Intent 260925-user-management の U3、契約 C8）。 */
+    INVITATION_EXPIRED,
+    /** 登録を完了した招待の再使用（U3）。 */
+    INVITATION_ALREADY_USED,
+    /** 取り消した招待（U3）。 */
+    INVITATION_CANCELLED,
+    /** 見つからない招待（存在しない・改ざん・形の誤り・送り直しで古くなった・定期の削除で消えた。U3）。 */
+    INVITATION_NOT_FOUND,
+    /** 登録の完了の時点で同じメールアドレスの利用者がいる（U3、契約 C8 に足した値）。 */
+    EMAIL_ALREADY_REGISTERED
 }

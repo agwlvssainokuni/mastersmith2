@@ -41,5 +41,9 @@ EXPOSE 8080
 #   起動の時に「Picked up ...」の1行を標準エラーに出して1行1件の JSON のログの形を崩すため）。
 # docker run の引数（"$@"）も同じ位置に渡す（確かめのとき -XX:+PrintFlagsFinal -version を付けて、アプリを起動せずに値を読む。
 #   docker/check-container-limits.sh）。
+# -Dh2.compactThreads=1（Intent 260925-user-management の U3）: 内部DB（H2 2.4.240）が閉じるとき（DEFRAG_ALWAYS）の全体の詰め直しは、
+#   表ごとの写しを CPU の数 / 4 本のスレッドで並べて行う。2本以上で並べると H2 の中の競合に当たり、詰め直しが中断されてファイルが
+#   縮まないことがある（CPU 8 の PC のテストで再現。H2CompactionByPoolSuspensionIT）。CPU の数によらず同じ動きにするため 1 本に
+#   固定する（今の配備の CPU 4 でも 1 本で、速さは変わらない）。H2 を上げるときは、この指定が要るかを見直す。
 # exec で sh を java に置き換えて java をコンテナの PID 1 にし、停止の合図（SIGTERM）を Java が直接受け取るようにする（穏やかな停止）。
-ENTRYPOINT ["sh", "-c", "set -f; exec java -XX:MaxRAMPercentage=50.0 -Duser.timezone=Asia/Tokyo ${MASTERSMITH_JAVA_OPTIONS:-} \"$@\" -jar /app/mastersmith.war", "mastersmith"]
+ENTRYPOINT ["sh", "-c", "set -f; exec java -XX:MaxRAMPercentage=50.0 -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1 ${MASTERSMITH_JAVA_OPTIONS:-} \"$@\" -jar /app/mastersmith.war", "mastersmith"]

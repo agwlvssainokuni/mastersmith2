@@ -31,6 +31,7 @@ import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserRepository;
@@ -179,7 +180,8 @@ class UserAccountServiceTest {
             "creating a user stores the hash, the stripped name and the values, and publishes UserCreatedEvent once")
     void createUser() {
         when(encoder.encode(NEW_PASSWORD)).thenReturn(HASH);
-        when(repository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+        when(repository.existsByRedactedEmail(new RedactedText("new@example.com")))
+                .thenReturn(false);
         saveAssigns(11L);
 
         CreateUserResult result = service.createUser(newUser(" New@Example.com", "　新しい 利用者 "));
@@ -199,7 +201,8 @@ class UserAccountServiceTest {
     @Test
     @DisplayName("an already registered email returns EmailAlreadyUsed without hashing, saving or publishing")
     void createUserWithRegisteredEmail() {
-        when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
+        when(repository.existsByRedactedEmail(new RedactedText("admin@example.com")))
+                .thenReturn(true);
 
         CreateUserResult result = service.createUser(newUser("ADMIN@example.com", "別の人"));
 
@@ -214,7 +217,7 @@ class UserAccountServiceTest {
             "a violation of the unique email constraint returns EmailAlreadyUsed and other violations are rethrown")
     void createUserUniqueViolation() {
         when(encoder.encode(NEW_PASSWORD)).thenReturn(HASH);
-        when(repository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(repository.existsByRedactedEmail(any())).thenReturn(false);
         when(repository.saveAndFlush(any(User.class)))
                 .thenThrow(new DataIntegrityViolationException(
                         "dup",
@@ -276,7 +279,8 @@ class UserAccountServiceTest {
         when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
         when(repository.findById(8L)).thenReturn(Optional.empty());
 
-        assertThat(service.findDisplayName(7)).contains("管理者");
+        assertThat(service.findDisplayName(7)).contains(new RedactedText("管理者"));
+        assertThat(service.findDisplayName(7).toString()).doesNotContain("管理者");
         assertThat(service.findLanguage(7)).contains(Language.EN);
         assertThat(service.findDisplayName(8)).isEmpty();
         assertThat(service.findLanguage(8)).isEmpty();
@@ -289,5 +293,18 @@ class UserAccountServiceTest {
 
         assertThat(service.existsByEmail(" ADMIN@example.com")).isTrue();
         assertThat(service.existsByEmail("other@example.com")).isFalse();
+    }
+
+    @Test
+    @DisplayName("existsByEmail with a redacted value normalizes the email and asks the redacted lookup")
+    void existsByRedactedEmail() {
+        when(repository.existsByRedactedEmail(new RedactedText("admin@example.com")))
+                .thenReturn(true);
+
+        assertThat(service.existsByEmail(new RedactedText(" ADMIN@example.com")))
+                .isTrue();
+        assertThat(service.existsByEmail(new RedactedText("other@example.com"))).isFalse();
+        assertThatThrownBy(() -> service.existsByEmail((RedactedText) null)).isInstanceOf(NullPointerException.class);
+        verify(repository, never()).findByEmail(anyString());
     }
 }

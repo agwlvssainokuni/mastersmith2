@@ -40,8 +40,8 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 /**
  * すべてのテンプレートの検査（BR2.4・BR2.6、AC3.1.4〜AC3.1.6、security-design.md の 7節、team.md のメールの必須のテスト）。
  *
- * <p>本番の一覧と置き場（{@code mail/templates/}）とテスト用の一覧と置き場を数え上げて調べる。B1 では本番の置き場は0件だが、
- * B3 で U3 が招待のテンプレート（invitation）と一覧の行を足すと、自動でこの検査の対象になる。
+ * <p>本番の一覧と置き場（{@code mail/templates/}）とテスト用の一覧と置き場を数え上げて調べる。B1 では本番の置き場は0件だった。
+ * B3 で U3 が招待のテンプレート（invitation）と一覧の行を足し、自動でこの検査の対象になった。
  */
 class MailTemplateLintTest {
 
@@ -88,14 +88,14 @@ class MailTemplateLintTest {
     }
 
     @Test
-    @DisplayName("every file in each location belongs to its catalog and the production location is empty in B1")
+    @DisplayName("every file in each location belongs to its catalog (the production location has the invitation)")
     void filesMatchTheCatalogs() throws IOException {
         for (Catalog catalog : CATALOGS) {
             Resource[] files;
             try {
                 files = RESOLVER.getResources(catalog.location() + "*.html");
             } catch (java.io.FileNotFoundException e) {
-                // 置き場のディレクトリが無い（B1 の本番の置き場）は0件として扱う。
+                // 置き場のディレクトリが無いときは0件として扱う（B1 の本番の置き場がそうだった）。
                 files = new Resource[0];
             }
             assertThat(files).hasSize(catalog.definitions().size() * MailTemplateRegistry.LANGUAGES.size());

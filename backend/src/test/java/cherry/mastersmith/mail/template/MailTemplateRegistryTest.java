@@ -121,9 +121,21 @@ class MailTemplateRegistryTest {
         assertThat(MailTemplateRegistry.prepare(List.of(), "classpath:mail/no-such-dir/", resolver)
                         .preparedTemplateNames())
                 .isEmpty();
-        assertThat(MailTemplateRegistry.prepare(MailTemplateCatalog.DEFINITIONS, MailTemplateCatalog.LOCATION, resolver)
+        assertThat(MailTemplateRegistry.prepare(List.of(), "classpath:mail/", resolver)
                         .preparedTemplateNames())
                 .isEmpty();
+    }
+
+    @Test
+    @DisplayName("the production catalog prepares the invitation template in ja and en (added in B3)")
+    void productionCatalog() {
+        MailTemplateRegistry registry = MailTemplateRegistry.prepare(
+                MailTemplateCatalog.DEFINITIONS,
+                MailTemplateCatalog.LOCATION,
+                new PathMatchingResourcePatternResolver());
+
+        assertThat(registry.preparedTemplateNames()).containsExactly("invitation_en", "invitation_ja");
+        assertThat(registry.variableNames("invitation")).contains(Set.of("registrationUrl", "validityHours"));
     }
 
     @Test

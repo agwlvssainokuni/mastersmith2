@@ -57,6 +57,9 @@ export default defineConfig({
   webServer: {
     command: [
       'java',
+      // 内部DB（H2 2.4.240）の閉じるときの詰め直しのスレッドを 1 本に固定する（本番の Dockerfile と同じ。並べると H2 の中の
+      // 競合で詰め直しが中断されることがある）。H2 を上げるときは、この指定が要るかを見直す。
+      '-Dh2.compactThreads=1',
       '-jar',
       JSON.stringify(warPath),
       `--server.port=${port}`,
@@ -70,6 +73,8 @@ export default defineConfig({
       SPRING_MAIL_HOST: 'localhost',
       SPRING_MAIL_PORT: '1025',
       MASTERSMITH_MAIL_FROM: 'e2e-noreply@example.com',
+      // 招待のリンクの元（U3）。Origin の確かめとエラー応答の type にも使われるため、E2E が開く URL と同じにする。
+      MASTERSMITH_WEB_BASE_URL: `http://localhost:${port}`,
     },
     url: `http://localhost:${port}/actuator/health`,
     timeout: 120_000,

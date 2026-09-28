@@ -26,10 +26,17 @@ import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.ClientInfo;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
+import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
+import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
+import cherry.mastersmith.invitation.domain.InvitationResentEvent;
+import cherry.mastersmith.invitation.domain.LinkRejection;
+import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
+import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -235,5 +242,97 @@ class AuditEventFactoryTest {
 
         assertThat(audit.getUserAgent().codePointCount(0, audit.getUserAgent().length()))
                 .isLessThanOrEqualTo(AuditText.MAX_USER_AGENT_LENGTH);
+    }
+
+    private static final RequestOrigin INVITE_ORIGIN = new RequestOrigin("192.0.2.40", "Agent/1", "trace-0040");
+
+    @Test
+    @DisplayName("invitation admin events record the admin as actor and the invitation as target with SUCCESS")
+    void invitationAdminEvents() {
+        AuditEvent issued = AuditEventFactory.from(InvitationIssuedEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+        AuditEvent resent = AuditEventFactory.from(InvitationResentEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+        AuditEvent cancelled = AuditEventFactory.from(InvitationCancelledEvent.of(5, 9, OCCURRED_AT, INVITE_ORIGIN));
+
+        assertThat(List.of(issued, resent, cancelled))
+                .extracting(AuditEvent::getEventType)
+                .containsExactly(
+                        AuditEventType.INVITATION_ISSUED,
+                        AuditEventType.INVITATION_RESENT,
+                        AuditEventType.INVITATION_CANCELLED);
+        for (AuditEvent audit : List.of(issued, resent, cancelled)) {
+            assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+            assertThat(audit.getActorUserId()).isEqualTo(9L);
+            assertThat(audit.getTargetInvitationId()).isEqualTo(5L);
+            assertThat(audit.getTargetUserId()).isNull();
+            assertThat(audit.getFailureReason()).isNull();
+            assertThat(audit.getEnteredEmail()).isNull();
+            assertThat(audit.getSourceIp()).isEqualTo("192.0.2.40");
+            assertThat(audit.getUserAgent()).isEqualTo("Agent/1");
+            assertThat(audit.getTraceId()).isEqualTo("trace-0040");
+            assertThat(audit.getOccurredAt()).isEqualTo(OCCURRED_AT);
+        }
+    }
+
+    @Test
+    @DisplayName("a completed registration records no actor, the invitation and the created user")
+    void registrationCompleted() {
+        AuditEvent audit = AuditEventFactory.from(RegistrationCompletedEvent.of(5, 31, OCCURRED_AT, INVITE_ORIGIN));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.REGISTRATION_COMPLETED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(audit.getActorUserId()).isNull();
+        assertThat(audit.getTargetInvitationId()).isEqualTo(5L);
+        assertThat(audit.getTargetUserId()).isEqualTo(31L);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "INVITATION_EXPIRED, INVITATION_EXPIRED",
+        "INVITATION_ALREADY_USED, INVITATION_ALREADY_USED",
+        "INVITATION_CANCELLED, INVITATION_CANCELLED",
+        "EMAIL_ALREADY_REGISTERED, EMAIL_ALREADY_REGISTERED"
+    })
+    @DisplayName("a failed registration records FAILURE, the reason and the found invitation")
+    void registrationFailed(LinkRejection reason, AuditFailureReason expected) {
+        AuditEvent audit = AuditEventFactory.from(RegistrationFailedEvent.of(5L, reason, OCCURRED_AT, INVITE_ORIGIN));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.REGISTRATION_FAILED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(audit.getFailureReason()).isEqualTo(expected);
+        assertThat(audit.getTargetInvitationId()).isEqualTo(5L);
+        assertThat(audit.getActorUserId()).isNull();
+        assertThat(audit.getTargetUserId()).isNull();
+    }
+
+    @Test
+    @DisplayName("a failed registration for an unknown token has no target invitation")
+    void registrationFailedNotFound() {
+        AuditEvent audit = AuditEventFactory.from(
+                RegistrationFailedEvent.of(null, LinkRejection.INVITATION_NOT_FOUND, OCCURRED_AT, INVITE_ORIGIN));
+
+        assertThat(audit.getFailureReason()).isEqualTo(AuditFailureReason.INVITATION_NOT_FOUND);
+        assertThat(audit.getTargetInvitationId()).isNull();
+    }
+
+    @Test
+    @DisplayName("the result of the invitation types is decided by the type")
+    void invitationTypeResults() {
+        assertThat(AuditEventFactory.resultOf(AuditEventType.INVITATION_ISSUED)).isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.resultOf(AuditEventType.INVITATION_RESENT)).isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.resultOf(AuditEventType.INVITATION_CANCELLED))
+                .isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.resultOf(AuditEventType.REGISTRATION_COMPLETED))
+                .isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.resultOf(AuditEventType.REGISTRATION_FAILED))
+                .isEqualTo(AuditResult.FAILURE);
+    }
+
+    @Test
+    @DisplayName("a long user agent of an invitation event is truncated")
+    void invitationUserAgentIsTruncated() {
+        AuditEvent audit = AuditEventFactory.from(
+                InvitationIssuedEvent.of(5, 9, OCCURRED_AT, new RequestOrigin("192.0.2.40", "a".repeat(512), null)));
+
+        assertThat(audit.getUserAgent()).hasSizeLessThanOrEqualTo(512);
     }
 }

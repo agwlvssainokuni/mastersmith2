@@ -16,21 +16,23 @@
 package cherry.mastersmith.mail.template;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 本番のテンプレートの一覧（BR2.2）。テンプレートを足す単位が、ここに行を足し、置き場
  * {@code backend/src/main/resources/mail/templates/} に ja・en のファイル（{@code <templateId>_<language>.html}）を置く。
  *
- * <p>U1 の Bolt（B1）では空。招待（{@code invitation}、差し込みは {@code registrationUrl}・{@code validityHours}）は U3 の Bolt（B3）
- * で足す（契約 C10）。
+ * <p>U1 の Bolt（B1）では空だった。U3 の Bolt（B3）で招待（{@code invitation}、差し込みは {@code registrationUrl}・
+ * {@code validityHours}）を足した（契約 C10、U3 の BR10.1）。
  */
 public final class MailTemplateCatalog {
 
     /** 本番のテンプレートの置き場（クラスパスの上）。 */
     public static final String LOCATION = "classpath:mail/templates/";
 
-    /** 本番のテンプレートの一覧（B1 では空）。 */
-    public static final List<MailTemplateDefinition> DEFINITIONS = List.of();
+    /** 本番のテンプレートの一覧。 */
+    public static final List<MailTemplateDefinition> DEFINITIONS =
+            List.of(new MailTemplateDefinition("invitation", Set.of("registrationUrl", "validityHours")));
 
     private MailTemplateCatalog() {}
 }

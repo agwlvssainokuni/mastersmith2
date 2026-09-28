@@ -124,6 +124,19 @@ mastersmith:
     brand-color: ${MASTERSMITH_APPEARANCE_BRAND_COLOR:}
     # フォントファミリー: sans・serif のどれか（既定 sans）
     font-family: ${MASTERSMITH_APPEARANCE_FONT_FAMILY:}
+  invitation:
+    # 招待と登録の完了（Intent 260925-user-management の U3）。既定値は Java の設定の型（InvitationProperties）の既定値と同じにする。
+    # 招待のリンクのベースURL は mastersmith.web.base-url（MASTERSMITH_WEB_BASE_URL）を使う（新しい項目を足さない）。
+    # ベースURL とメールの送信の設定の両方がそろうときだけ招待を使える（足りなければ招待と送り直しだけを 503 で断る。起動は続く）。
+    # 招待の有効期限の長さ。1 時間以上で、1 時間で割り切れる長さ（例: 24h・48h）。0 以下・割り切れない値（例: 90m）は起動を止める。
+    # 同じ時間の数を招待メールの「このリンクは N 時間有効です」に差し込む。長くしすぎない（リンクが漏れたときに使える期間が延びる）。
+    validity: ${MASTERSMITH_INVITATION_VALIDITY:24h}
+    # 終わった招待（完了・取り消し・置き換え）は終わった日時から、期限切れの招待中は有効期限から、この長さを過ぎたら消す。
+    # 1 日以上で、1 日で割り切れる長さ（例: 90d）。0 以下・割り切れない値は起動を止める。監査の記録は消さない。
+    retention: ${MASTERSMITH_INVITATION_RETENTION:90d}
+    cleanup:
+      # 削除を行う時刻（Spring の cron の形。秒 分 時 日 月 曜日。既定は毎日 3 時 45 分。リフレッシュトークンの削除と重ねない）
+      cron: "${MASTERSMITH_INVITATION_CLEANUP_CRON:0 45 3 * * *}"
   security:
     # 応答に付ける Content-Security-Policy。画面の構成が変わったときに見直す。
     content-security-policy: "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

@@ -17,6 +17,7 @@ package cherry.mastersmith.user.repository;
 
 import cherry.mastersmith.user.domain.PasswordHash;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.User;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,6 +41,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return 利用者（いなければ空）
      */
     Optional<User> findByEmail(String email);
+
+    /**
+     * メールアドレスの利用者がいるかを返す（Intent 260925-user-management の U3 の計画の決定 3）。
+     *
+     * <p>メールアドレスは文字列にすると伏せる型で受ける（メソッドの呼び出しの追跡が引数を文字列にするため）。招待と登録の完了の経路は
+     * この口を使い、既存のログインと初期管理者の経路の {@link #findByEmail(String)} は据え置く。
+     *
+     * @param email 前後の空白を除き小文字にそろえたメールアドレス
+     * @return いれば true
+     */
+    @Query("select count(u) > 0 from User u where u.email = :#{#email.value()}")
+    boolean existsByRedactedEmail(@Param("email") RedactedText email);
 
     /**
      * 本人の氏名と表示の設定の4列だけを書き換える（BR3.3・BR3.4）。

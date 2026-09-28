@@ -147,7 +147,7 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
   問題が無ければ、複写した `$HOME/.mastersmith-env-before-targetdb` を消します。戻すときは、その複写を `.env` に戻して `.env.targetdb` を消し、この版より前の `compose.yaml` で起動し直します。
 - アプリは起動のときに対象DB に接続しません。見本の対象DB が止まっていてもアプリは起動を続け、スキーマの読み込み（既定の DSL の生成）と照合が「接続できない」になります。対象DB を使わないときは、`--profile targetdb-postgres` を付けずに起動し、`MASTERSMITH_TARGET_DB_*` を書きません（7項目がすべて空なら対象DB を使いません）。
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
-- ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
+- ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。`.env` に `MASTERSMITH_WEB_BASE_URL`（招待を使うときに入れる。例 `http://localhost:8080`）を入れた環境では、その値と同じ URL で開きます。`http://127.0.0.1:8080/` で開くと、ログイン・更新・ログアウトの Origin の確かめが合わず 403 / `ORIGIN_NOT_ALLOWED` になり、警報 `ms-origin` の拒否の数が増えます。招待メールを見るときは、受け手（Mailpit）を `docker compose --profile mail up -d mailpit` で起動します（「手元でメールを見る」）。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
 - 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。
 - 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
 - 見本の対象DB をつないだ配備では、スモークテストに次を足します: サイドバーの「DSL」で DSL の管理画面を開き、今の状態が表示されること。「スキーマを読み込む」で見本の DB から既定の DSL が作られ、プレビューに `sales` のテーブルとビューが並ぶこと（「未設定」「接続できない」にならないこと）。その操作の監査イベント `DSL_GENERATED` が記録されていること。スモークテストの操作は監査ログに残り、消せません。
@@ -179,6 +179,11 @@ MASTERSMITH_IMAGE_TAG=pre-dsl docker compose ps app                 # healthy �
 - 見本の対象DB（`targetdb-postgres`）は戻しの対象外です。動かしたままでよく、古い版が `MASTERSMITH_TARGET_DB_*` を読まないときは使われません。
 
 スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたとき、移行（Flyway）が途中で失敗したときだけ、配備の前に取ったバックアップを展開してデータも戻します（次の節。バックアップの後の記録は失われます）。
+
+V8（招待の表、下の「招待と登録の完了（U3）」）を当てた後に1つ前の版へ戻すときは、次の点に気を付けます。
+
+- 1つ前の版は招待の表を読み書きしません。戻した後に今の版へ戻し直すと、招待の表は戻す前の状態のまま使われ、戻している間に有効期限を過ぎた招待は期限切れになります（管理者が一覧から送り直す）。
+- 1つ前の版も `MASTERSMITH_WEB_BASE_URL` を読むため、Origin の確かめは同じ値に固定されたままです（同じ `http://localhost:8080` で開けば動きます）。戻しの練習で別の番号（例 `http://localhost:18080`）で開くときは、配備の `.env` の複写の末尾に `MASTERSMITH_WEB_BASE_URL=http://localhost:18080` を足してから起動します（同じ項目が2行あると後の行が効きます）。
 
 V7（利用者のプリファレンスとパスワードの変更、下の「利用者のプリファレンスとパスワードの変更（U2）」）を当てた後に1つ前の版へ戻すときは、次の2点に気を付けます。戻しの練習の手順は配備の段（deployment-pipeline）で書き起こします。
 
@@ -212,6 +217,8 @@ docker compose start app         # 止めたコンテナをそのまま起動す
 ### 内部DBのファイルの詰め直し（アプリを止めずに）
 
 DSL の投入と適用を重ねると、アプリが動いている間は内部DB（組み込みの H2）のファイルが伸び続けます（「DSL の管理の API」の節の既知の制約）。H2 は接続が1本でも開いている間は詰め直さないため、運用の道具 `docker/hikari-pool.sh` で、HikariCP の接続プールの標準の JMX の操作（一時停止 → 接続の破棄 → 0 本を待つ → 再開）を呼びます。最後の接続が閉じたときに、接続先の `;DEFRAG_ALWAYS=TRUE` に従って H2 がファイルを詰め直します。アプリのプロセスは止めません。
+
+詰め直しのスレッドは 1 本に固定しています（イメージの既定の JVM の引数 `-Dh2.compactThreads=1`。テストの JVM と E2E の WAR の起動も同じ）。H2 2.4.240 は閉じるときの全体の詰め直しを CPU の数 / 4 本のスレッドで並べて行いますが、2本以上では H2 の中の競合に当たり、詰め直しが中断されてファイルが縮まないことがあるためです（Intent 260925-user-management の U3 で、CPU 8 の PC の結合テスト `H2CompactionByPoolSuspensionIT` で見つけた）。CPU の数によらず同じ動きになり、今の配備（CPU 4）では元から 1 本のため速さは変わりません。`MASTERSMITH_JAVA_OPTIONS` で上書きしないでください。H2 を上げるときは、この指定が要るかを見直します。この引数より前の版のイメージに戻したときは、CPU 4 の配備では元から 1 本のため動きは変わりません。
 
 ```bash
 ./docker/hikari-pool.sh status     # 接続の本数と内部DB のファイルの大きさ（読み取りだけ）
@@ -281,13 +288,16 @@ docker compose up -d --wait                              # app が healthy に�
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」） |
-| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、タイムゾーン Asia/Tokyo）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
+| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、タイムゾーン Asia/Tokyo、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
 | `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` | `30` | 内部DBの接続プールの接続の数の上限。同時の要求がこの数に達すると監査の記録が欠けうる（「監査ログ（U4）」の「既知の制約」を参照） |
 | `MASTERSMITH_HEALTH_DB_TIMEOUT` | `2s` | ヘルスチェックの内部DBの確認の制限時間 |
-| `MASTERSMITH_WEB_BASE_URL` | なし | エラー応答の `type` の URL のベースURL（無ければ要求から組み立てる） |
+| `MASTERSMITH_WEB_BASE_URL` | なし | ベースURL（例 `http://localhost:8080`）。3つに使う: 招待のリンクの元（U3。無い・形が正しくないと招待と送り直しだけが 503）、ログイン・更新・ログアウトの Origin の確かめ（入れると Origin がこの値に固定される）、エラー応答の `type` の URL（無ければ要求から組み立てる）。http か https の絶対 URL で、問い合わせ・`#`・利用者情報を含めない |
+| `MASTERSMITH_INVITATION_VALIDITY` | `24h` | 招待の有効期限の長さ。1 時間以上で 1 時間で割り切れる長さ（`48h` など。`90m` は起動を止める）。招待メールの「このリンクは N 時間有効です」に同じ時間の数が入る。**長くしすぎない**（上限は置いていない。リンクが漏れたときに使える期間が延びる） |
+| `MASTERSMITH_INVITATION_RETENTION` | `90d` | 終わった招待（完了・取り消し・置き換え）は終わった日時から、期限切れの招待中は有効期限から、この長さを過ぎたら定期の削除で消す。1 日以上で 1 日で割り切れる長さ。監査の記録は消さない |
+| `MASTERSMITH_INVITATION_CLEANUP_CRON` | `0 45 3 * * *` | 招待の定期の削除の時刻（Spring の cron。リフレッシュトークンの削除の 3 時 30 分と重ねない） |
 | `MASTERSMITH_WEB_TRUST_FORWARDED_HEADERS` | `false` | 転送元のヘッダー（`X-Forwarded-*`・`Forwarded`）を信頼するか |
 | `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE` | `1MB` | 要求の本文の大きさの上限（DSL の投入の API を除く。ログインと認可の確かめの後に確かめる。「DSL の管理の API（U4）」を参照） |
 | `MASTERSMITH_DSL_MAX_SUBMIT_SIZE` | `10MB` | DSL の投入の API（`POST /api/admin/dsl/preview`）だけの要求の本文の上限（10,485,760 バイト） |
@@ -623,6 +633,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 前進のみとし、適用済みのファイルは書き換えません（書き換えると起動時の検証で起動が止まります）。1つ前の版のアプリが動く後方互換を保ちます。
 - Hibernate はスキーマを作らず、検証だけ行います。
 - V7（`V7__u2_user_preferences.sql`、Intent 260925-user-management の U2）: `users` に `display_name`（必須、既定の値なし。既存の利用者にはメールアドレスを入れる）・`language`（既定 `ja`）・`theme`（既定 `system`）・`font_size`（既定 `md`）を、`audit_events` に `target_user_id`・`target_invitation_id`（空を許す）を足します。前進のみで、1つ前の版のアプリが動く後方互換を保ちます。確かめは2段です。(1) 自動の結合テスト（`V7MigrationIT`・`V7BackwardCompatibilityIT`）で、V6 までしか知らない Flyway が V7 の後の内部DB で失敗しないこと、既存の利用者の初期値、1つ前の版の追記の形の既知の限界を確かめます。(2) 1つ前の版を V7 の後の内部DB の複写で起動する確かめ（Hibernate の検証が足した列を許すことを含む）は、配備の段の戻しの練習で行います。
+- V8（`V8__u3_invitation.sql`、Intent 260925-user-management の U3）: 招待の表 `invitations` を新しく足します（既存の表は変えない）。同じメールアドレスの招待中を1件に限るため、状態が `PENDING` のときだけメールアドレスになる生成列 `pending_email` に一意の制約を付けます。トークンはハッシュ（SHA-256）だけを保存します。確かめは2段です。(1) 自動の結合テスト（`V8MigrationIT`・`V8BackwardCompatibilityIT`）で、生成列と一意の制約のふるまい、V7 までしか知らない Flyway が V8 の後の内部DB で失敗しないことを確かめます。(2) 1つ前の版を V7・V8 の後の内部DB の複写で起動する確かめは、配備の段の戻しの練習で行います。
 
 ## API のアクセス制御（U3）
 
@@ -635,6 +646,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 | `/api/auth/login` | U2 | ログインする前に呼ぶ |
 | `/api/auth/session/**` | U2 | 更新は Cookie で認証し、ログアウトは期限切れでも呼べる必要がある |
 | `GET /api/appearance`（GET だけ） | U8（Intent 260925-user-management） | ログインの前の画面も見た目の設定を読む |
+| `POST /api/registration/verify`・`POST /api/registration/complete`（POST だけ） | U3（Intent 260925-user-management） | 招待された人がログインの前にリンクを確かめ、登録を完了する |
 
 - **管理者のみの範囲**: `/api/admin` そのものと `/api/admin/**` は管理者だけが使えます。未ログインは 401 / `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 / `ACCESS_DENIED` になります。存在しない管理 API も、管理者でない利用者には 403 になります（有無を明かさないため）。管理者かどうかは、要求ごとに内部DBから読んだ値で判断します。
 - 後の単位が管理者のみの API を足すときは、**`/api/admin/` の下に置いてください**（個々の API での宣言には頼りません）。それ以外の `/api/` の下は、置くだけでログインが必要になります。
@@ -642,6 +654,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - **正規化されていないパスの拒否**: エンコードされた区切り・`;`・`..`・連続した `//` などを含む要求は、判定の前に 400 / `REQUEST_REJECTED` で拒否します。応答はほかのエラーと同じ形（`type`・`code`・`traceId`）で、安全のためのヘッダーも付きます。拒否したパスはログに出しません。
 - **画面**: サイドバーの「管理」は管理者にだけ表示されますが、これは表示の切り替えにすぎません。判定は必ずサーバー側で行われます。
 - 環境変数は増えません。
+- **登録の完了の公開の API（U3）**: 差し込み口（order 310）で上の2つの POST だけを公開します。`/api/registration/` のほかの道・ほかのメソッドはログインが必要です。公開の道でも、壊れた・期限切れのアクセストークンを付けると 401 になります（画面はトークンを付けずに呼ぶ）。**回数の制限は置いていません**（受け入れた危険 R1）。誤ったトークンで完了を呼ぶたびに監査に `REGISTRATION_FAILED` が1行増えます。急な増えに自動で気づく仕組みは無いため、「監査ログの確かめ方」の数える問い合わせで見つけます。
 
 ## 監査ログ（U4）
 
@@ -651,6 +664,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - **監査ログを見る画面・API は、この Intent では作りません。** 当面の確認は、開発者が内部DBを読み取りで開いて行います。
 - 記録する項目は、発生の日時・種類（`LOGIN_SUCCEEDED`・`LOGIN_FAILED`・`LOGGED_OUT`・`ACCESS_DENIED`）・結果・入力されたメールアドレス・失敗の理由・接続元IP・User-Agent・要求のパス（アクセスの拒否のときだけ）・トレースIDです。パスワード・トークン・ハッシュ値は記録しません。
 - パスワードの変更（Intent 260925-user-management の U2）も記録します。種類は `PASSWORD_CHANGED` で、成功（結果 `SUCCESS`）と今のパスワードの誤り（結果 `FAILURE`、失敗の理由 `CURRENT_PASSWORD_MISMATCH`）を1件ずつ記録します。操作した人（`actor_user_id`）と対象の利用者（`target_user_id`）に本人の利用者 ID が入ります。入力の誤りと、氏名・表示の設定の保存は記録しません。
+- 招待と登録の完了（Intent 260925-user-management の U3）も記録します。種類は `INVITATION_ISSUED`・`INVITATION_RESENT`・`INVITATION_CANCELLED`（操作した管理者 `actor_user_id` と対象の招待 `target_invitation_id`、結果 `SUCCESS`）、`REGISTRATION_COMPLETED`（操作した人は空、対象の招待と作った利用者 `target_user_id`）、`REGISTRATION_FAILED`（結果 `FAILURE`、失敗の理由 `INVITATION_EXPIRED`・`INVITATION_ALREADY_USED`・`INVITATION_CANCELLED`・`INVITATION_NOT_FOUND`・`EMAIL_ALREADY_REGISTERED`、対象の招待は見つかったときだけ）です。拒否（400・404・409・503）・送信の失敗・リンクの確かめ・入力の誤り・期限切れの置き換えは記録しません。トークン・招待の URL・メールアドレスは記録しません。
 - 対象の列（V7）: `target_user_id`（対象の利用者）・`target_invitation_id`（対象の招待。招待と登録の完了の出来事で使います）。どちらも空を許し、それ以前の種類の記録では空のままです。
 - 監査イベントの `trace_id` は、同じ要求のアプリのログの `traceId` と一致します。1つの要求を追うときは、この値でログを絞り込みます。
 - 記録に失敗しても、ログイン・ログアウト・401／403 の応答は変わりません。失敗したときは、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます。**この ERROR には、記録しようとした項目（メールアドレスを含む）がキーと値で載ります**。後から手で記録を補えるようにするためで、U4 に限った扱いです。パスワード・トークンは載りません。外部エクスポートで外へ送るときは、メールアドレス・接続元IP・User-Agent の値を `[REDACTED]` に置き換えます（「外部エクスポートの確かめ方」）。元の値は標準出力のログで見ます。
@@ -676,6 +690,17 @@ docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-bac
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 docker compose start app
 # 複写を展開し、H2 の道具で読み取り（ACCESS_MODE_DATA=r）で開いて audit_events を読む
+```
+
+誤ったトークンの登録の完了の増え（U3 の残る危険 R1）は、開いた複写で次の形で数えます（時間の幅は見たい期間に合わせる）。とくに `INVITATION_NOT_FOUND` が1つの送り元から多いときは総当たりの疑いとします。
+
+```sql
+SELECT failure_reason, source_ip, COUNT(*) AS failures
+  FROM audit_events
+ WHERE event_type = 'REGISTRATION_FAILED'
+   AND occurred_at >= TIMESTAMP WITH TIME ZONE '2026-01-01 00:00:00+00:00'
+ GROUP BY failure_reason, source_ip
+ ORDER BY failures DESC;
 ```
 
 複写したファイルにもメールアドレスと接続元IPが残ります。実行の利用者と管理する者だけが読める場所に置いてください。
@@ -734,6 +759,39 @@ Intent 260925-user-management の U2 で、ログインした利用者が自分�
 - **C4**: 400 / `VALIDATION_FAILED` に、項目ごとの誤り `fieldErrors` と上の `reason` の一覧を足しました（安全な項目の追加）。
 - **C8**: `PASSWORD_CHANGED` に、対象の利用者 `target_user_id`（本人と同じ値）を足しました。
 
+## 招待と登録の完了（U3）
+
+Intent 260925-user-management の U3 で、管理者が利用者をメールで招待し、招待された人がリンクから登録を完了する API を足しました（契約 C5・C6・C10）。画面は後の単位（U5・U6）の受け持ちです。
+
+| API | 認可 | 成功 | 主な失敗 |
+|---|---|---|---|
+| `POST /api/admin/invitations`（`email`・`language`） | 管理者だけ（401・403） | 201 と招待 | 400 `VALIDATION_FAILED`・409 `INVITATION_EMAIL_REGISTERED`・409 `INVITATION_ALREADY_PENDING`（`invitationId`・`page`）・503 `INVITATION_NOT_CONFIGURED`（`unavailableReasons`） |
+| `GET /api/admin/invitations?page=` | 管理者だけ | 200 と1ページ（20 件、招待した日時の新しい順、`invitationEnabled`・`unavailableReasons`） | 400 `VALIDATION_FAILED`（page が 1 以上の整数でない） |
+| `POST /api/admin/invitations/{invitationId}/resend` | 管理者だけ | 200 と招待（新しいトークンと有効期限） | 404 `INVITATION_NOT_FOUND`・503 `INVITATION_NOT_CONFIGURED` |
+| `POST /api/admin/invitations/{invitationId}/cancel` | 管理者だけ | 204（設定によらず取り消せる） | 404 `INVITATION_NOT_FOUND` |
+| `POST /api/registration/verify`（`token`） | ログインなし | 200 と `email`・`language` | 404 `REGISTRATION_LINK_INVALID` |
+| `POST /api/registration/complete`（`token`・`displayName`・`password`・`passwordConfirmation`・`language`・`theme`・`fontSize`） | ログインなし | 204（自動ではログインしない） | 400 `VALIDATION_FAILED`・404 `REGISTRATION_LINK_INVALID` |
+
+- **招待を使える設定**: `MASTERSMITH_WEB_BASE_URL` とメールの送信の設定（`SPRING_MAIL_HOST`・`MASTERSMITH_MAIL_FROM`）の両方がそろうときだけ使えます。足りないと招待と送り直しだけが 503 で、理由 `BASE_URL_NOT_CONFIGURED`・`SMTP_NOT_CONFIGURED` の順に並びます。起動時に INFO（`招待を使える設定かを点検しました`）が1件出ます。ベースURL の形が正しくないときは、項目の名前だけの WARN が1件出ます（値は出しません）。
+- **招待の URL**: `MASTERSMITH_WEB_BASE_URL` ＋ `/register#token=` ＋ トークン。要求の Host ヘッダーからは組み立てません。トークンは URL のフラグメントにだけ載り、API は要求の本文でだけ受け取ります。
+- **項目ごとの誤り**: 400 には `fieldErrors: [{field, reason}]` が載ります（`reason` は `REQUIRED`・`TOO_SHORT`・`TOO_LONG`・`INVALID_CHARACTER`・`INVALID_VALUE`・`MISMATCH`）。入れた値は載せません。一覧の page の誤りには載りません。
+- **sendResult**: 送信の結果は `SENT`・`FAILED` の2つで返します。内部では確定の時点で `PENDING`（送信中・結果不明）とし、送信の途中でアプリが止まると `PENDING` のまま残りますが、API では `FAILED` として返します（一覧から送り直せる）。送信に失敗しても招待は作られ、招待は 201・送り直しは 200 で `FAILED` を返します。失敗のときはアプリのログに U1 の WARN と U3 の INFO（`invitationId`・`operation`・`failureKind`）が1件ずつ出ます。
+- **リンクの拒否**: 期限切れ・使用済み・取り消し済み・置き換え済み・存在しない・改ざん・同じメールアドレスの利用者がいる、のどれでも同じ 404 の本文です。理由は監査の `failure_reason` にだけ残ります。
+- **同じメールアドレス**: 期限内の招待中があれば 409（その招待の ID と一覧のページ）、期限切れなら新しい招待で置き換えます（古いリンクは使えなくなる）。
+- **回数の制限**: 置いていません（R1。「API のアクセス制御（U3）」）。
+- **秘密と個人情報**: トークン・招待の URL・メールアドレスは、アプリのログ・監査ログ・トレースの属性・エラー応答に出しません（管理者だけが見る正常の応答の `email`・`invitedBy` は除く）。内部DB にはトークンのハッシュだけを保存します。
+- **定期の削除**: 毎日 `MASTERSMITH_INVITATION_CLEANUP_CRON` の時刻に、保存の長さを過ぎた招待を消し、消した件数を INFO で出します。失敗は ERROR で、次の回に任せます。
+
+### 契約との差
+
+契約の文書（`aidlc/spaces/default/intents/260925-user-management/inception/contract-design/contract-summary.md`）は書き換えず、実装との差をここに記録します（依頼者の決定）。後の単位（U5・U6）は、この形を正として読みます。
+
+- **C2**: U3 が通る経路の口を、文字列にすると値を伏せる型 `RedactedText` で受け渡す形にしました（`existsByEmail(RedactedText)` を足し、`findDisplayName` の戻り値を `Optional<RedactedText>` にした）。既存の `existsByEmail(String)`（初期管理者）とログインの経路は据え置きです。
+- **C5**: `invitedBy` は招待した管理者の氏名だけで、利用者の行が無ければ空の文字列です（メールアドレスへは切り替えません）。招待の 400 に `fieldErrors` を足しました。送り直しの有効期限は「24 時間」ではなく `MASTERSMITH_INVITATION_VALIDITY` の長さです。
+- **C6**: 登録の完了の 400 に `fieldErrors` を足しました。
+- **C8**: `REGISTRATION_FAILED` の失敗の理由に `EMAIL_ALREADY_REGISTERED` を足しました。
+- **C10**: 差し込みに `validityHours` を足し、本文の有効な期間の文を「このリンクは {{validityHours}} 時間有効です」（英語は「This link is valid for {{validityHours}} hours.」）にしました。
+
 ## インスタンスの見た目の設定（U8）
 
 Intent 260925-user-management の U8 で、インスタンス全体のブランドカラーとフォントファミリーを設定から読み、ログインなしで読める API で画面へ渡すようにしました（契約 C7）。画面に当てるのは U4 の受け持ちです。
@@ -758,7 +816,7 @@ U1 のファイルは書き換えずに、次の型を使います。
 
 | 差し込み口 | 形 | 使う単位 |
 |---|---|---|
-| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は単位の番号ではなく機能の名前で 100 台ずつ割り当てる（`auth` は 100 台で本番 110、`access` は 200 台で本番 210、`invitation` は 300 台、`appearance` は 400 台で本番 410。本番の決まりは x10、x00・x50 はテストの決まりが使う）。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3 |
+| 追加のアクセスの決まり | `cherry.mastersmith.common.security.SecurityRuleContributor`（`Ordered`）の Bean。order は単位の番号ではなく機能の名前で 100 台ずつ割り当てる（`auth` は 100 台で本番 110、`access` は 200 台で本番 210、`invitation` は 300 台で本番 310、`appearance` は 400 台で本番 410。本番の決まりは x10、x00・x50 はテストの決まりが使う）。同じ order が2つあると起動が失敗する。足してよいのはアクセスの決まり、トークンの検証、認証の入口と拒否の処理、要求の検査の拒否の処理で、ヘッダー・セッション・CSRF の設定は変えない | U2、U3 |
 | API の既定の扱い | `cherry.mastersmith.common.security.ApiDefaultAccess` の Bean（0個か1個。2個以上は起動の失敗）。無ければ `/api/**` は許可、`requireAuthentication()` が true ならログイン必須 | U3 |
 | フィルターの段階のエラー応答 | `cherry.mastersmith.common.security.ErrorResponseWriter`。401・403 などを共通の ErrorResponse の形で書く | U2、U3 |
 | 想定内のエラー | `cherry.mastersmith.common.error.domain.BusinessException` を起こす。問題の種類（`ProblemType`、日英の説明つき）は自分のパッケージの `ProblemTypeCatalog` の Bean に置く（code・slug の重複は起動の失敗） | U2、U3、U4 |

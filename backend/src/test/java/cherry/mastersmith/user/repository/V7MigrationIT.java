@@ -23,6 +23,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Map;
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.output.MigrateResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,11 +62,21 @@ class V7MigrationIT {
     }
 
     static Flyway flyway(Path dir, String location) {
+        return configure(dir, location).load();
+    }
+
+    /**
+     * 移行の設定を作る（版の上限を足すときに使う）。
+     *
+     * @param dir 内部DB の置き場
+     * @param location 移行の置き場
+     * @return 移行の設定
+     */
+    static FluentConfiguration configure(Path dir, String location) {
         return Flyway.configure()
                 .dataSource(url(dir), "sa", "")
                 .locations(location)
-                .validateOnMigrate(true)
-                .load();
+                .validateOnMigrate(true);
     }
 
     static JdbcTemplate jdbc(Path dir) {
@@ -105,7 +116,8 @@ class V7MigrationIT {
         jdbc.update("INSERT INTO audit_events (occurred_at, event_type, result, source_ip)"
                 + " VALUES (CURRENT_TIMESTAMP, 'LOGIN_SUCCEEDED', 'SUCCESS', '192.0.2.1')");
 
-        MigrateResult result = flyway(tempDir, CURRENT).migrate();
+        // V8 以降（Intent 260925-user-management の U3）が足されても V7 だけを当てて確かめるため、版を 7 までに止める。
+        MigrateResult result = configure(tempDir, CURRENT).target("7").load().migrate();
 
         assertThat(result.migrationsExecuted).isEqualTo(1);
         assertThat(result.targetSchemaVersion).isEqualTo("7");
