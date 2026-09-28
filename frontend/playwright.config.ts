@@ -21,6 +21,10 @@
 // - ブラウザは Chromium だけを使う（npx playwright install chromium）。
 // - メールは手元の受け手 Mailpit（docker compose --profile mail up -d mailpit）へ送る。./gradlew e2eTest は始める前に Mailpit に
 //   届くかを確かめ、届かなければ起動の手順を示して失敗する（Intent 260925-user-management の U1、基盤の設計の Q1 A）。
+// - 結果は list・html に加えて json（test-results/e2e-results.json）にも書く。050 の組ごとの成否・違反の件数と、
+//   最初の画面の時間を Build and Test が写す（Intent 260925-user-management の U4、基盤の設計の Q2 A）。
+//   結果のファイルはコミット・共有しない。json の報告の後に、仮の資格情報が json に含まれないことを確かめる報告の部品を並べ、
+//   含まれていれば実行を失敗にする（playwright-secret-check-reporter.ts）。
 import { randomBytes } from 'node:crypto'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -33,11 +37,23 @@ const dataDir = mkdtempSync(path.join(tmpdir(), 'mastersmith-e2e-'))
 
 // 署名鍵と初期管理者の値は、実行のたびに作ってアプリへ環境変数で渡す（リポジトリに値を置かない。U2 計画の D1）。
 // この設定のファイルはテストの実行の側でも読み込まれるため、作った値を環境変数に入れて両方で同じ値を使う。
+// 値は webServer.env に置かず、このプロセスの環境変数に置く（WAR の起動はこのプロセスの環境変数を引き継ぐ）。
+// webServer.env は json の結果の config にそのまま書かれるため（Intent 260925-user-management の U4、依頼者の決定）。
 export const adminEmail = 'e2e-admin@example.com'
 process.env.E2E_ADMIN_PASSWORD ??= `e2e-${randomBytes(12).toString('hex')}`
 process.env.E2E_SIGNING_KEY ??= randomBytes(32).toString('base64')
 export const adminPassword = process.env.E2E_ADMIN_PASSWORD
-const signingKey = process.env.E2E_SIGNING_KEY
+process.env.MASTERSMITH_AUTH_SIGNING_KEY = process.env.E2E_SIGNING_KEY
+process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL = adminEmail
+process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD = adminPassword
+
+/** json の結果に含まれてはならない値の環境変数の名前 */
+const SECRET_ENV_NAMES = [
+  'MASTERSMITH_AUTH_SIGNING_KEY',
+  'MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL',
+  'MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD',
+]
+const jsonResultsFile = 'test-results/e2e-results.json'
 
 export default defineConfig({
   testDir: './e2e',
@@ -47,7 +63,15 @@ export default defineConfig({
   workers: 1,
   forbidOnly: true,
   retries: 0,
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    ['json', { outputFile: jsonResultsFile }],
+    [
+      './playwright-secret-check-reporter.ts',
+      { outputFile: jsonResultsFile, envNames: SECRET_ENV_NAMES },
+    ],
+  ],
   use: {
     baseURL: `http://localhost:${port}`,
     locale: 'ja-JP',
@@ -66,9 +90,6 @@ export default defineConfig({
       `--spring.datasource.url=jdbc:h2:file:${path.join(dataDir, 'mastersmith')}`,
     ].join(' '),
     env: {
-      MASTERSMITH_AUTH_SIGNING_KEY: signingKey,
-      MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL: adminEmail,
-      MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD: adminPassword,
       // メールの送り先は手元の受け手 Mailpit だけ（暗号化なし・資格情報なし。実在の宛先・外部の SMTP へは送らない）。
       SPRING_MAIL_HOST: 'localhost',
       SPRING_MAIL_PORT: '1025',
