@@ -119,12 +119,19 @@ export const KNOWN_VIOLATIONS: readonly {
   },
 ]
 
-/** 違反を、既知の違反と、それ以外（失敗にするもの）に分ける。 */
+/**
+ * 違反を、既知の違反と、それ以外（失敗にするもの）に分ける。
+ * knownTestIds を渡すと、KNOWN_VIOLATIONS の組と規則のまま、名前の一覧だけをその画面の状態の一覧に置き換える
+ * （B5 の画面は状態ごとに当たる primary の Button が違うため。U5 の計画の9節の決定 4）。省略すると今の一覧のまま（050）。
+ */
 export function splitKnownViolations(
   summary: AxeSummary,
   brandColor: string,
+  knownTestIds?: readonly string[],
 ): { known: string[]; unexpected: string[]; expectedKnown: string[] } {
-  const rules = KNOWN_VIOLATIONS.filter((known) => known.brandColors.includes(brandColor))
+  const rules = KNOWN_VIOLATIONS.map((known) =>
+    knownTestIds === undefined ? known : { ...known, testIds: knownTestIds },
+  ).filter((known) => known.brandColors.includes(brandColor))
   const known: string[] = []
   const unexpected: string[] = []
   for (const violation of summary.violations) {
@@ -147,6 +154,22 @@ export function splitKnownViolations(
   const expectedKnown = rules.flatMap((rule) => rule.testIds.map((id) => `${rule.rule} ${id}`))
   return { known: known.sort(), unexpected, expectedKnown: expectedKnown.sort() }
 }
+
+/**
+ * 招待の管理の画面（U5、060）の状態ごとの既知の違反の名前（green・orange の組の color-contrast の primary の Button だけ）。
+ * 当たる名前は、060 の最初の実行の結果で確かめて書いた（U5 の計画の Step 16、9節の決定 4）。
+ * 一覧と一致しない（消えた・増えた）ときは失敗にする。make-you-chic-ui が直ったら、この一覧と README を見直す。
+ */
+export const INVITATION_KNOWN_VIOLATIONS: Readonly<Record<InvitationAxeState, readonly string[]>> =
+  {
+    list: ['invitation-invite-button'],
+    inviteDialog: ['invitation-invite-submit'],
+    revokeDialog: [],
+    unavailable: [],
+  }
+
+/** 招待の管理の画面の検査の状態 */
+export type InvitationAxeState = 'list' | 'inviteDialog' | 'revokeDialog' | 'unavailable'
 
 /** 流れるべき規則のうち、結果に無いものを返す。 */
 export function missingRequiredRules(summary: AxeSummary): string[] {

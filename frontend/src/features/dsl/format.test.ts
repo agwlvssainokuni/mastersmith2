@@ -14,27 +14,14 @@
  * limitations under the License.
  */
 //
-// 表示の書式のテスト（BR5.10・BR6.3）。時差と表示言語を固定して確かめる。
+// 表示の書式のテスト（BR5.10・BR6.3）。日時の書式のテストは src/shared/format/formatDateTime.test.ts へ移した。
 import { describe, expect, it } from 'vitest'
-import { formatBytes, formatDateTime, shortHash } from './format'
+import { formatBytes, shortHash } from './format'
 
 describe('format', () => {
   it('shortens an ID to its first 12 characters', () => {
     expect(shortHash('3f9a1c0123456789abcdef')).toBe('3f9a1c012345')
     expect(shortHash('abc')).toBe('abc')
-  })
-
-  it('shows a UTC date in the given time zone with its abbreviation in Japanese', () => {
-    expect(formatDateTime('2026-09-24T01:15:00Z', 'ja', 'Asia/Tokyo')).toBe('2026-09-24 10:15 JST')
-    expect(formatDateTime('2026-09-24T01:15:00Z', 'ja', 'UTC')).toBe('2026-09-24 01:15 UTC')
-  })
-
-  it('shows a UTC date in the English format', () => {
-    expect(formatDateTime('2026-09-20T07:40:00Z', 'en', 'UTC')).toBe('Sep 20, 2026, 07:40 UTC')
-  })
-
-  it('returns a value that is not a date as it is', () => {
-    expect(formatDateTime('not a date', 'ja', 'UTC')).toBe('not a date')
   })
 
   it('formats the size of a file', () => {

@@ -100,6 +100,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `030-admin-access.e2e.ts` | 代表の流れ「ログイン → 管理画面に入れるか → ログアウト」 |
 | `040-dsl-admin.e2e.ts` | DSL の管理「ログイン → DSL の管理 → 貼り付けで投入 → プレビュー → 適用 → 今の状態が適用中 → ログアウト」（対象DB は設定しないため、照合は「接続先が設定されていません」の警告になる） |
 | `050-display-accessibility.e2e.ts` | ログインの画面の表示の設定の 20 組（テーマ × 文字の大きさ、ブランドカラー × テーマ、幅 375px のテーマ × 文字の大きさ）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、最初の画面が出るまでの時間の測定（5 回）。ログインはしない |
+| `060-invitation-accessibility.e2e.ts` | 招待の管理の画面の表示の設定の 20 組ごとのアクセシビリティの検査（一覧・警告・招待の入力の Modal・取り消しの確かめの Modal。axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、一覧と次のページが出るまでの時間の測定（5 回）。初期管理者でログインする |
 
 050 について（Intent 260925-user-management の U4）:
 
@@ -107,6 +108,17 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 最初の画面の時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）は記録だけで、失敗にはしません。CSP の違反と、見た目の設定が `sans` のときの Noto Serif JP のフォントの読み込みは失敗にします。
 - green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `KNOWN_VIOLATIONS` に名前と対象を指定して扱います。ほかの違反は失敗にします。既知の違反が消えたときも失敗にするため、make-you-chic-ui が直ったら一覧とこの README を見直します。
 - 050 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/050-display-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+
+060 について（Intent 260925-user-management の U5）:
+
+- 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
+- 組ごとに、ログインの画面から初期管理者でログインし、サイドバーの「利用者の招待」から開きます。一覧の API（`GET /api/admin/invitations?page=…`）の答えだけを見本（`frontend/e2e/support/invitationFixtures.ts`）に差し替えます。招待の入力と取り消しの確かめの Modal は開くだけで、要求は送りません。
+- ログインの後は利用者の設定が当たるため、組のテーマと文字の大きさは、ログイン（`POST /api/auth/login`）と復元（`POST /api/auth/session/refresh`）の本物の応答の `user.theme`・`user.fontSize` の2項目だけを書き換えて当てます（`frontend/e2e/support/loginPreferences.ts`）。サーバーの状態（利用者の設定）は変えません。後の単位（U6・U7）の検査も同じ当て方を使います。
+- 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は記録だけで、失敗にはしません。CSP の違反、画面の問題、本物の一覧の応答と見本の形の違いは失敗にします。測定は招待の API で招待を 21 件置くため、1 回の実行で Mailpit に 21 通のメールが届きます（Mailpit は消しません）。招待を使える設定が無い WAR では、測定を飛ばして理由を注記に残します（E2E の WAR には SMTP とベース URL が渡るため、念のための備え）。
+- green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `INVITATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います（一覧の「招待する」、招待の入力の「招待する」）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。
+- 060 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/060-invitation-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+
+E2E は Mailpit に届いたメールを消しません。`./gradlew e2eTest` の後に片付けるときは、「手元でメールを見る」の2行（`docker compose stop mailpit` と `docker compose rm -f mailpit`）で止めて消します（後の単位の E2E もこの書き方に従います）。
 
 結果は `frontend/test-results/e2e-results.json`（json の報告）と `frontend/playwright-report/` に出ます。どちらもコミット・共有しません。実行ごとに作る仮の署名鍵・初期管理者のメールアドレス・仮のパスワードは、`webServer.env` ではなく Playwright のプロセスの環境変数で WAR に渡し、json の結果に含まれないことを `frontend/playwright-secret-check-reporter.ts` が確かめます（含まれていれば実行を失敗にし、値は表示しません）。失敗したときのトレース（`trace: 'retain-on-failure'`）には仮の資格情報が含まれうるため、共有しません。
 
@@ -804,6 +816,18 @@ Intent 260925-user-management の U3 で、管理者が利用者をメールで�
 - **C8**: `REGISTRATION_FAILED` の失敗の理由に `EMAIL_ALREADY_REGISTERED` を足しました。
 - **C10**: 差し込みに `validityHours` を足し、本文の有効な期間の文を「このリンクは {{validityHours}} 時間有効です」（英語は「This link is valid for {{validityHours}} hours.」）にしました。
 
+## 招待の管理の画面（U5）
+
+Intent 260925-user-management の U5 で、管理者が招待中の人を一覧で確かめ、招待・送り直し・取り消しを行う画面を `frontend/src/features/invitation/` に足しました（API は「招待と登録の完了（U3）」）。
+
+- **開き方**: サイドバーの「利用者の招待」、または `/admin/invitations`。サイドバーの項目と画面は管理者にだけ出しますが、判定はサーバー側（401・403）で行います。
+- **一覧**: 20 件ごとで、サーバーの順（招待した日時の新しい順）のまま出します。今のページは画面の中だけに持ち、URL には載せません（開くたびに1ページ目）。自動の読み直しはしません。開いたまま有効期限を過ぎた行は、次に一覧を読むまで「期限内」のまま出ます（送り直し・取り消しは期限切れでも行えます）。送信の結果と状態は文字（「送信済み」「送信に失敗」「期限内」「期限切れ」）で示します。
+- **招待・送り直し・取り消し**: 送信の間はボタンが「送信しています」になり、招待の入力の Modal は閉じません。画面の側に時間切れを置いていないため、メールの受け手が応答の手前で遅れ続けると、待ちはサーバーの SMTP の時間切れまで続きます（既知の限界）。成功は Toast で、失敗は一覧の上の知らせ（1つだけ）で示します。招待を使える設定（SMTP・ベース URL）が無いときは警告を出し、「招待する」と「送り直す」を押せなくします（「取り消す」は押せます）。
+- **狭い幅の表**: 表は make-you-chic-ui の Table の包む要素の中で横に動きます。Tab で行のボタンに届くと、その要素を見える位置まで動かします。矢印のキーでの手動の横の移動はありません。
+- **日時の書式**: `formatDateTime` を `frontend/src/features/dsl/format.ts` から `frontend/src/shared/format/formatDateTime.ts` へ移し、DSL と招待の2つの画面で使います。
+- **契約との差**: 招待した管理者は、U3 の「契約との差」の C5 の `invitedBy` のとおり氏名だけを出し、空なら「（不明）」と出します。
+- **既知の制約**: ブランドカラーが `green`・`orange` のとき、この画面の primary のボタンもコントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
+
 ## インスタンスの見た目の設定（U8）
 
 Intent 260925-user-management の U8 で、インスタンス全体のブランドカラーとフォントファミリーを設定から読み、ログインなしで読める API で画面へ渡すようにしました（契約 C7）。画面に当てるのは U4 の受け持ちです。
@@ -849,8 +873,9 @@ make-you-chic-ui の primary のボタンは、ブランドカラーの 500 の�
 
 - 原因は make-you-chic-ui の primary の色で、このリポジトリからは直しません（`vendor/` は変更しない）。依頼者の判断で既知の制約として受け入れました。
 - ログインの画面では、選択中の言語のボタンとログインのボタンが当たります（ほかの画面の primary のボタンも同じ）。
+- 招待の管理の画面（U5）では、一覧の「招待する」と、招待の入力の Modal の「招待する」が当たります。060 の検査は、画面の状態ごとの名前の一覧（`INVITATION_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
 - AA を満たしたいときは、`MASTERSMITH_APPEARANCE_BRAND_COLOR` に `blue` か `purple` を選びます。
-- 050 の検査はこの違反だけを既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。
+- 050・060 の検査はこの違反だけを既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。
 
 ### 契約との差
 

@@ -1,0 +1,61 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 招待の入力と取り消しの確かめの Modal の中の配置。make-you-chic-ui のトークンだけを使う。 */
+.invitation-invite {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.invitation-invite-language {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.invitation-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.invitation-link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.invitation-link-button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.invitation-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.invitation-dialog-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

@@ -24,7 +24,7 @@ import { useEffect, useRef } from 'react'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { PreviewRef } from './api/types'
 import type { ChangeCounts } from './diffCounts'
-import { formatDateTime } from './format'
+import { formatDateTime } from '../../shared/format/formatDateTime'
 import { useDslText } from './useDslText'
 import './DslConfirmDialog.css'
 
