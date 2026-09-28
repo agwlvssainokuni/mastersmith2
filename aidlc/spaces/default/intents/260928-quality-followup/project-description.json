@@ -1,0 +1,1 @@
+"コントラストの Not Met（make-you-chic-ui の固定先を 7865c28・310e1ec に更新）、CI の2つの時間切れ、http.server.requests と mastersmith.mail.send の p95 のバケット（p95 の警報3件を働かせる）、Dependabot の開いた知らせの取り込みを直す。あわせて alarms.md・log-queries.md・runbooks.md の RB-17 の誤りを README と手順書で正す。"

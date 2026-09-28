@@ -47,5 +47,12 @@
     "dirName": "260925-user-management",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0e910-c3c3-7e7b-8510-781eb9f63a9a",
+    "slug": "quality-followup",
+    "dirName": "260928-quality-followup",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

@@ -1,86 +1,62 @@
 # 技術の構成（mastersmith2）
 
-## 版の出どころ
-
-バックエンドは `gradle/libs.versions.toml` と `backend/gradle.lockfile`、画面は `frontend/package.json` の宣言（範囲の指定。実際の版は `frontend/package-lock.json`、今回は開いていない）、実行環境は `Dockerfile` と `.github/workflows/ci.yml` から読んだ。
+版は lockfile（`backend/gradle.lockfile`・`frontend/package-lock.json`）と `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`Dockerfile`・`compose.yaml`・`.github/workflows/ci.yml` から `grep` で抜いた値である（2026-09-29、コミット `e68f54d`）。画面の版の一部は `package.json` の範囲（`^`）で、lockfile の実際の値は流し読みで確かめていない。更新の知らせ（Dependabot）と固定の決まりがぶつかる部品は K-7（`dependencies.md`）。
 
 ## 言語と実行環境
 
-| 対象 | 版 | 備考 |
+| 分類 | 技術 | 版 |
 |---|---|---|
-| Java | 25 | toolchain。コンテナは `eclipse-temurin:25.0.4_7-jre-noble`、CI は temurin 25 |
-| Node.js | 24 | CI（`ci.yml`）。画面のビルドと検査 |
-| TypeScript | ^6.0.3 | `strict` 系 |
-| Gradle | Wrapper、Kotlin DSL | lockfile で固定、取得元は Maven Central だけ |
+| バックエンドの言語 | Java（Temurin） | 25（`libs.versions.toml` の `java`、CI も JDK 25） |
+| 画面の言語 | TypeScript | 6.0.3 |
+| 画面の実行・ビルド | Node.js（CI） | 24 |
+| ビルド | Gradle（Kotlin DSL）＋ npm | Gradle 9.7.1 |
+| 実行のイメージ | `eclipse-temurin` | `25.0.4_7-jre-noble`（`Dockerfile`） |
 
 ## バックエンド
 
-| 部品 | 版 | 用途 |
-|---|---|---|
-| Spring Boot | 4.1.1 | webmvc・security・oauth2-resource-server・actuator・data-jpa・flyway・validation・aspectj・opentelemetry |
-| Spring Framework | 7.0.9 | lockfile |
-| Spring Security | 7.1.1 | 認証と認可（JWT のリソースサーバーの仕組みでトークンを認証） |
-| Hibernate ORM | 7.4.5.Final | JPA（`ddl-auto: validate`） |
-| Flyway | 12.4.0 | 内部DB のスキーマ変更（V1〜V6、前進のみ） |
-| H2 | 2.4.240 | 内部DB（組み込み・ファイル） |
-| HikariCP | 7.0.2 | 内部DB の接続プール（上限 既定 30） |
-| Nimbus JOSE JWT | 10.9.1 | JWT（HS256）の発行と検証 |
-| Tomcat（組み込み） | 11.0.26 | Boot の管理の版から脆弱性の回避で引き上げ（`libs.versions.toml`） |
-| Jackson | 3.1.5（`tools.jackson`） | JSON |
-| logstash-logback-encoder | 9.0 | 1行1件の JSON のログ |
-| opentelemetry-logback-appender | 2.28.1-alpha | ログの外部エクスポート（既定で無効）。版は固定（`project.md` の Tech Stack） |
-| SnakeYAML | 2.6 | DSL の安全な読み込み |
-| networknt json-schema-validator | 3.0.6 | DSL の JSON Schema の検証 |
-| MySQL・MariaDB・PostgreSQL の JDBC ドライバー | Boot の管理 | 対象DB の読み取り |
+| 分類 | 部品 | 版 | 備考 |
+|---|---|---|---|
+| 土台 | Spring Boot（MVC・Security・OAuth2 Resource Server・Actuator・Data JPA・Flyway・Validation・AspectJ・OpenTelemetry） | 4.1.1 | |
+| 観測 | Micrometer（core・observation・registry-otlp） | 1.17.1 | 指標の分布の設定は無い（K-6） |
+| 観測 | OpenTelemetry API ／ opentelemetry-logback-appender | 1.62.0 ／ 2.28.1-alpha | appender は `project.md` の Tech Stack で固定 |
+| 内部DB | H2 ／ HikariCP ／ Flyway | 2.4.240 ／ 7.0.2 ／ 12.4.0 | `-Dh2.compactThreads=1` を Dockerfile・テストの JVM・E2E でそろえる（`project.md` の Tech Stack） |
+| 対象DB のドライバー | mysql-connector-j ／ mariadb-java-client ／ postgresql | 9.7.0 ／ 3.5.10 ／ 42.7.13 | |
+| DSL | SnakeYAML ／ networknt json-schema-validator | 2.6 ／ 3.0.6 | networknt は Jackson を引き上げないため 3.0.6（`project.md` の Corrections） |
+| メール | jakarta.mail-api ／ angus-mail ／ cherry-mustache-core（`vendor/java-mustache-processor`） | 2.1.5 ／ 2.0.5 ／ 0.1.0 | |
+| ログ | logstash-logback-encoder | 9.0 | |
 
-### テストと品質の道具
+## バックエンドのテストと検査
 
-| 部品 | 版 | 用途 |
-|---|---|---|
-| JUnit Jupiter | 6.0.3（lockfile） | 単体と結合のテスト |
-| Spring Boot Test・Spring Security Test | Boot の管理 | 結合テスト |
-| jqwik | 1.10.1 | 性質ベースのテスト |
-| ArchUnit | 1.5.0 | 層と機能の境界 |
-| Testcontainers | 2.0.5（lockfile） | 対象DB の結合テスト |
-| Spotless ＋ palantir-java-format | 8.10.2 ＋ 2.98.0 | フォーマットとライセンスヘッダー |
-| SpotBugs ＋ FindSecBugs | 4.10.4 ＋ 1.14.0 | 静的解析 |
-| JaCoCo | 0.8.15 | カバレッジ（全体とパッケージごと） |
+| 部品 | 版 |
+|---|---|
+| JUnit Jupiter ／ Awaitility ／ jqwik ／ ArchUnit | 6.0.3 ／ 4.3.0 ／ 1.10.1 ／ 1.5.0 |
+| Testcontainers | 2.0.5 |
+| SubEthaSMTP（JVM の中のテスト用の SMTP の受け手） | 7.2.2 |
+| JaCoCo | 0.8.15 |
+| Spotless ／ palantir-java-format | 8.10.2 ／ 2.98.0 |
+| SpotBugs ／ FindSecBugs | 4.10.4 ／ 1.14.0 |
 
 ## 画面
 
-| 部品 | 版（宣言） | 用途 |
+| 分類 | 部品 | 版 |
 |---|---|---|
-| React・react-dom | ^19.2.8 | 画面 |
-| react-router | ^8.3.0 | URL の振り分け |
-| i18next・react-i18next | ^26.4.2・^17.0.15 | 日英の文言 |
-| @fontsource/noto-sans-jp | ^5.3.0 | フォント（自己ホスティング。CSP は `font-src 'self'`） |
-| make-you-chic-ui | `file:../vendor/make-you-chic-ui/packages/make-you-chic-ui`（サブモジュール、固定先 `edb1f943c0e66293494fa974605f34fcd7e258d7`） | デザインシステム |
-| Vite・@vitejs/plugin-react | ^8.2.1・^6.0.5 | ビルド |
-| Vitest・@vitest/coverage-v8 | ^4.1.11 | テストとカバレッジ |
-| Testing Library・user-event・jsdom・vitest-axe・fast-check | ^16.3.3・^14.6.7・^30.1.1・^0.1.0・^4.10.2 | 画面のテスト・アクセシビリティ・性質ベース |
-| Playwright | ^1.63.0 | E2E（`verify` と CI の外） |
-| Prettier・oxlint・ESLint・Stylelint | ^3.9.6・^1.78.0・^10.8.1・^17.14.1 | フォーマッタとリンタ |
+| 土台 | React ／ react-router ／ i18next | 19.3.0 ／ ^8.3.0 ／ ^26.4.2 |
+| デザインシステム | make-you-chic-ui（`vendor/make-you-chic-ui`、`file:` の依存） | 固定先 `735ef04`（版の文字列は `0.0.0`、K-1） |
+| ビルド | Vite | 8.3.0 |
+| テスト | Vitest ／ `@vitest/coverage-v8` ／ jsdom ／ user-event ／ vitest-axe ／ fast-check | 4.1.11 ／ ^4.1.11 ／ 30.1.1 ／ 14.6.7 ／ — ／ — |
+| E2E | `@playwright/test` ／ axe-core | 1.63.0 ／ 4.13.0 |
+| 検査 | Prettier ／ oxlint ／ ESLint ／ Stylelint | 3.9.8 ／ — ／ — ／ — |
 
-## 実行環境・検査・CI
+「—」は今回版を抜いていないもの。
 
-| 道具 | 用途 |
-|---|---|
-| Docker（colima）・Compose | 開発者の PC でのコンテナ |
-| Gitleaks・OSV-Scanner | 秘密情報の検出・依存関係の脆弱性（`verify` から呼ぶ。CI では版と SHA-256 を固定して入れる） |
-| GitHub Actions・Dependabot・pre-commit | CI、更新の通知、コミット前の検査 |
-| k6・grafana/otel-lgtm | 負荷の試験・手元の監視（流し読み） |
+## 検査の外部の道具とコンテナのイメージ
 
-## 無いもの（K-3）
+| 分類 | 部品 | 版 |
+|---|---|---|
+| 秘密情報の検出 | Gitleaks | 8.30.1（`ci.yml` で版と SHA-256 を固定） |
+| 依存の脆弱性 | OSV-Scanner | 2.6.0（同上） |
+| 手元の監視 | `grafana/otel-lgtm` ／ `otel/opentelemetry-collector` | 0.33.1 ／ 0.161.0 |
+| メールの受け手 | `axllent/mailpit` | v1.31.2 |
+| 見本の対象DB（テストは `TargetDbImages` の digest と同じ） | `mysql` ／ `mariadb` ／ `postgres` | 8.4.11 ／ 11.8.9 ／ 18.6 |
 
-確かめた事実:
-
-- **メール送信の仕組みは無い。** `spring-boot-starter-mail`・`jakarta.mail`・SMTP の設定・メールの受け手のコンテナ（mailpit など）は、`libs.versions.toml`・`backend/gradle.lockfile`・`application.yaml`・`compose.yaml`・`.env.example`・README のどこにも無い（`git ls-files` の全体を `mustache`・`jakarta.mail`・`starter-mail`・`smtp`・`mailpit` で検索し、`aidlc/`・`.claude/` の外で該当なし）。
-- **Mustache のエンジン（java-mustache-processor を含む）は依存に無い。** lockfile にも `mustache`・`mail` の行は無い。
-- 依存の取得元は Maven Central だけに固定されている（`settings.gradle.kts` の `RepositoriesMode.FAIL_ON_PROJECT_REPOS` と `mavenCentral()`）。依存の追加には `resolveAndLockAll --write-locks` による lockfile の書き直しが要る。
-
-帰結（仮説と決まり）:
-
-- java-mustache-processor を使うには Maven Central に公開されている必要がある。公開されているか・ライセンス・推移依存は確かめていない。
-- 新しい依存は、採用の前にライセンスを確かめ、Apache License 2.0 と異なれば ADR に理由を残す（`team.md` の Code Style）。推移依存で既存の部品（Jackson など）の版を引き上げないかを依存の木で確かめる（`project.md` の Corrections）。
-- 開発者の PC 上のコンテナだけの配備（`team.md` の Deployment）では、実際の SMTP の送り先が無い。手元の確かめには、メールを受けて見せるだけのコンテナを compose の profile で足す形が考えられる（仮説）。
-- HTML のメールの本文は画面の CSP（`application.yaml` の `mastersmith.security.content-security-policy`）の対象外で、メールの利用者の環境で表示される。テンプレートへの値の差し込みは HTML のエスケープが要る（仮説。Mustache の `{{ }}` がエスケープするかはエンジンによる）。
+コンテナのイメージは `compose.yaml` でいずれも digest 付きで固定している。

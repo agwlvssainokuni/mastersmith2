@@ -4,26 +4,15 @@
 
 ### System Overview
 
-1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。JVM は `-XX:MaxRAMPercentage=50.0` で起動し（`Dockerfile` 45 行）、コンテナのメモリの上限（既定 2g、`compose.yaml` 63 行）の半分が最大ヒープになる。
+1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。JVM は `-XX:MaxRAMPercentage=50.0 -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1` で起動する（`Dockerfile` 49 行）。
 
-データの置き場は2種類ある。
-
-- 内部DB: 組み込みの H2（ファイル保存、コンテナでは `/app/data`、接続先 `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`）。利用者・リフレッシュトークン・ロックの状態・監査ログ・DSL のプレビューと適用の履歴を置く。スキーマは Flyway（V1〜V6）が正本で、Hibernate は検証だけ（`ddl-auto: validate`）。接続プールは HikariCP（上限 既定 30、借りる待ち 5 秒）。1インスタンスだけで動く前提である。
-- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ（`targetdb`、今回は流し読み）。
-
-外へ出ていく接続は、対象DB と、既定で無効の OTLP の送り先だけである。メールの送り先（SMTP）は無い（K-3、`technology-stack.md`）。
+- 内部DB: 組み込みの H2（ファイル保存、`DEFRAG_ALWAYS=TRUE`）。利用者・トークン・ロックの状態・監査ログ・DSL・招待を置く。スキーマは Flyway（V1〜V8）が正本。接続プールは HikariCP（MBean を登録し、運用の道具 `docker/hikari-pool.sh` から一時停止と破棄を行う）。1インスタンスだけで動く前提である。
+- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ。
+- 外へ出る接続: 対象DB、SMTP（手元では Mailpit）、既定で無効の OTLP の送り先（指標・トレース・ログ）。
 
 ### Architectural Style
 
-**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層になる（`code-structure.md`）。境界は ArchUnit のテストで確かめている（`code-quality-assessment.md`）。
-
-機能の間のつなぎ方は3つある（確かめた事実）。
-
-- 直接の呼び出し: `auth` → `user.service`（照合と読み取り）、`access` → `auth`（検証済みの主体）など。向きは `dependencies.md`。
-- 差し込み口（Bean の一覧）: `SecurityRuleContributor`（order 付き）・`ApiDefaultAccess`・`ProblemTypeCatalog`・`RequestBodyLimitRoute`。`config/SecurityConfig.java` が一覧を集めて組み立てる。
-- アプリの中の出来事: `user` の `UserCreatedEvent` を `auth` が受けてロックの状態の行を作る。`auth`・`access`・`dslmanage` の出来事を `audit` が受けて記録する。
-
-画面は機能ごとの `features/<id>/registration.ts` を自動で読み込み、URL・サイドバー・ユーザーメニュー・ログイン状態の提供元・文言を差し込む（`frontend-registry`）。
+**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。境界は ArchUnit のテストで確かめている（前回の記録。今回は読み直していない）。機能の間は、直接の呼び出し・差し込み口（`SecurityRuleContributor` などの Bean）・アプリの中の出来事（監査は出来事を受けて記録）でつなぐ。向きは `dependencies.md`。
 
 ### Component Relationships
 
@@ -31,223 +20,203 @@
 flowchart LR
   subgraph FE["画面 frontend/src"]
     CORE["frontend-app-core"]
-    REG["frontend-registry"]
-    LAY["frontend-app-layout-i18n"]
-    FAUTH["frontend-feature-auth"]
-    FADM["frontend-feature-admin"]
+    DISP["frontend-app-display-settings"]
+    FINV["frontend-feature-invitation"]
+    FREG["frontend-feature-registration"]
+    FPREF["frontend-feature-preferences"]
     FDSL["frontend-feature-dsl"]
     APIC["frontend-api-client"]
     MYC["make-you-chic-ui"]
   end
   subgraph BE["バックエンド cherry.mastersmith"]
-    CFG["config"]
-    CSEC["common-security"]
-    CERR["common-error"]
     AUTH["auth"]
-    ACCESS["access"]
     USER["user"]
+    INV["invitation"]
+    MAIL["mail"]
+    APP["appearance"]
     AUDIT["audit"]
     DSLM["dslmanage"]
-    DSL["dsl"]
-    TDB["targetdb"]
+  end
+  subgraph OPS["手元の監視 compose の profile"]
+    LGTM["perf-and-monitoring（otel-lgtm）"]
   end
   H2[("内部DB H2")]
-  TGT[("対象DB")]
+  SMTP[("SMTP Mailpit")]
 
-  CORE --> REG
-  CORE --> LAY
+  CORE --> DISP
   CORE --> MYC
-  REG --> FAUTH
-  REG --> FADM
-  REG --> FDSL
-  FAUTH --> APIC
-  FADM --> APIC
+  FINV --> APIC
+  FREG --> APIC
+  FPREF --> APIC
   FDSL --> APIC
-  APIC -- "HTTP /api/**" --> CFG
-  CFG --> CSEC
-  CSEC --> AUTH
-  CSEC --> ACCESS
+  DISP --> APIC
+  APIC -- "HTTP /api/**" --> AUTH
   AUTH --> USER
-  ACCESS --> AUTH
-  DSLM --> DSL
-  DSLM --> TDB
-  DSLM --> USER
-  USER -- "UserCreatedEvent" --> AUTH
+  INV --> USER
+  INV --> MAIL
+  MAIL --> SMTP
+  INV -- "出来事" --> AUDIT
+  USER -- "出来事" --> AUDIT
   AUTH -- "出来事" --> AUDIT
-  ACCESS -- "出来事" --> AUDIT
   DSLM -- "出来事" --> AUDIT
-  AUTH --> CERR
-  ACCESS --> CERR
-  DSLM --> CERR
   USER --> H2
-  AUTH --> H2
+  INV --> H2
   AUDIT --> H2
   DSLM --> H2
-  TDB --> TGT
+  BE -- "OTLP 指標（既定で無効）" --> LGTM
 ```
 
-<!-- Text fallback: 画面の骨組み（frontend-app-core）が登録（frontend-registry）・レイアウトと表示言語・make-you-chic-ui を組み合わせ、登録から auth・admin・dsl の各画面を読み込む。各画面は frontend-api-client を通して同じオリジンの /api/** を呼ぶ。バックエンドでは config がセキュリティの連鎖を組み立て、common-security の差し込み口を通して auth（トークンの認証）と access（管理者の判定）の決まりを当てる。auth は user で利用者を照合し、access は auth の検証済みの主体を使う。dslmanage は dsl・targetdb・user を使う。user は利用者の作成を出来事で知らせ、auth がロックの状態の行を作る。auth・access・dslmanage の出来事を audit が受けて内部DB に記録する。想定内のエラーは common-error の仕組みで Problem Details になる。 -->
+<!-- Text fallback: 画面の骨組み（frontend-app-core）が見た目の設定（frontend-app-display-settings）と make-you-chic-ui を組み合わせ、招待・登録・プリファレンス・DSL の各画面は frontend-api-client を通して同じオリジンの /api/** を呼ぶ。バックエンドでは auth がトークンを認証し user を使う。invitation は user と mail を使い、mail が SMTP（手元では Mailpit）へ送る。invitation・user・auth・dslmanage の出来事を audit が受けて内部DB に記録する。アプリ全体の指標は、外部エクスポートを有効にしたときだけ OTLP で手元の監視（otel-lgtm）へ送られる。 -->
 
-図は主な流れだけを描いた。パッケージ間の import の向きは `dependencies.md`、部品ごとの責務は `component-inventory.md` にある。
+図は今回の Intent に関わる流れを中心に描いた。`access`・`common-*`・`config`・`dsl`・`targetdb`・画面の登録の仕組みなどは省いた（一覧は `component-inventory.md`）。
 
 ### Data Flow
 
-1. 画面の要求は `Authorization: Bearer <アクセストークン>` を付けて送られる（リフレッシュトークンは `HttpOnly`・`Secure`・`SameSite=Strict`、Path `/api/auth/session` の Cookie）。
-2. Spring Security の連鎖（`config/SecurityConfig.java`）: ヘッダーの設定 → トークンの認証（`auth`）→ アクセスの判定（公開の一覧 → 差し込み口の決まりを order 順 → `/api/**` はログイン必須 → それ以外は公開）→ 本文の大きさの上限（`RequestSizeLimitFilter`、判定の後）→ コントローラー（`web`）。
-3. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。
-4. 業務エラーは `BusinessException` と `ProblemType` で表し、`@RestControllerAdvice`（`common/error/web/GlobalExceptionHandler.java`）の1か所で Problem Details（`code`・`traceId` 付き、説明文は `Accept-Language` で日英）に変わる。フィルターの段階の 401・403 は `ErrorResponseWriter` が同じ形で書く。
-5. 監査の対象の出来事は、確定の後に `audit` が別のトランザクション（`REQUIRES_NEW`、2本目の接続）で `audit_events` に追記する。
+1. 画面の要求は `Authorization: Bearer` を付けて送られ、Spring Security の連鎖（認証 → アクセスの判定 → 本文の大きさの上限）を経てコントローラーに届く（前回の記録。今回は読み直していない）。
+2. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。業務エラーは `@RestControllerAdvice` の1か所で Problem Details（`code` 付き）になる。
+3. 監査の対象の出来事は、確定の後に `audit` が2本目の接続で `audit_events` に追記する。
+4. 観測: Spring MVC の観測が要求ごとに `http.server.requests` を、`SmtpMailSender` が `mastersmith.mail.send` を、`DslOperationMetrics` が `mastersmith.dsl.operation` を作る。外部エクスポートを有効にすると、OTLP で 60 秒ごと（`management.otlp.metrics.export.step`）に送る（流れは Interaction Diagrams 1）。
 
 ### Key Design Decisions
 
 | 選択 | 内容（確かめた場所） | 今回の Intent との関わり |
 |---|---|---|
-| 状態を持たないトークンの認証 | セッションは STATELESS、CSRF は無効、アクセストークンは Authorization ヘッダーだけから読む（`SecurityConfig`・`AuthSecurityContributor`） | 登録の完了やパスワードの変更の API も同じ仕組みに乗る（K-6） |
-| 要求ごとに利用者を内部DB から読む | `AccessTokenAuthenticationProvider` がトークンの利用者を `findById` で読み、管理者かどうかもその値で決める | 利用者の状態（招待中・無効など）を足すなら、ここで見る余地がある（K-2） |
-| アクセストークンを失効させない | 失効の一覧を持たず、有効期限を短く（既定 5 分）する（`project.md` の DECIDED） | パスワードの変更の後も、発行済みのアクセストークンは期限まで使える（K-8） |
-| 利用者の作成を出来事で auth に知らせる | `UserCreatedEvent` を `LoginAttemptStateInitializer` が `Propagation.MANDATORY` で受ける | 新しい登録の経路も `UserAccountService.createUser` を通せばロックの行ができる |
-| 監査は確定の後に同じスレッドで2本目の接続 | `AuditEventListener`（`AFTER_COMMIT`、`fallbackExecution = true`）→ `AuditEventRecorder`（`REQUIRES_NEW`） | 監査に失敗しても元の操作は成功のまま。同時の数がプールの上限に近いと記録が欠けうる（README の既知の制約）。K-10 |
-| 差し込み口で機能を足す | バックエンドは `SecurityRuleContributor` などの Bean、画面は `registration.ts` | 新しい機能を既存のファイルを大きく変えずに足せる |
-| 画面の設定はデザインシステムに任せる | `App.tsx` が `ThemeProvider` を引数なしで置き、値は localStorage | 利用者ごとの保存とインスタンスの固定の値には、渡す道が要る（K-4） |
+| 観測は Spring Boot の既定に任せ、分布の設定を置かない | `application.yaml` の `management` に `metrics.distribution` が無い。`MeterFilter` などのコードも無い。DSL の指標だけコードで `publishPercentileHistogram()` を付ける | K-6 |
+| 手元の監視は見たいときだけ起動 | otel-lgtm と警報・ダッシュボードのファイルを compose の profile で読む（`docker/monitoring/`）。`docker/otel-collector` は受けた値を debug に出すだけ | 警報の式の確かめは起動して行う（`project.md` の Corrections） |
+| デザインシステムはサブモジュールで固定 | `vendor/make-you-chic-ui` を固定先のコミットで使い、中身は変えない（`project.md` の Forbidden） | K-1 |
+| 詰め直しはプールの一時停止で行う | HikariCP の MBean で一時停止・破棄し、接続が 0 本になって H2 が閉じるときに詰め直す（`H2CompactionByPoolSuspensionIT` が同じ順で確かめる） | K-4 |
+| E2E とブラウザのアクセシビリティの検査は CI の外 | `./gradlew e2eTest`（Playwright）は `verify` に含まれない（`team.md` の Testing Posture） | K-2 |
 
 ### Improvement Opportunities
 
-- 監査の出来事の種類ごとに `audit` の中を変える形は、出来事が増えるほど `audit` の変更が増える（K-7）。共通の出来事の形にするかは、`project.md` の DECIDED のとおり後続の Intent で検討することになっている。
-- 利用者の状態の確かめをログインとトークンの認証の2か所に書くと、片方の漏れが起きうる。確かめを `user` の1つの操作に寄せる形が考えられる（仮説。K-2）。
-- 外への送信（メール）を入れると、今は無い「外の相手を待つ処理」が業務の流れに入る。トランザクションの外で送る形が考えられる（仮説。K-10）。
+- 指標の分布の設定を `application.yaml` に置けば、警報とダッシュボードの式を変えずに p95 が値を持つと見られる（仮説。K-6）。系列の数が増えるため、バケットの範囲を絞るかを決める必要がある。
+- テストの中の固定の待ちの上限（10 秒・5 秒）は、CI の runner の速さに左右される。原因の切り分けの材料（失敗したときのプールとスレッドの状態）を残す作りが無い（K-4・K-5）。
 
 ## Interaction Diagrams
 
-### 1. ログイン（K-2 を含む）
+### 1. 要求の指標から p95 の警報まで（K-6）
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant P as LoginPage
-  participant AC as AuthController
-  participant LS as LoginService
-  participant UA as UserAccountService
-  participant LR as LoginAttemptStateRepository
-  participant RT as RefreshTokenRepository
-  participant AL as AuditEventListener
-  participant DB as 内部DB H2
+  participant C as 画面
+  participant MVC as Spring MVC の観測
+  participant REG as MeterRegistry OTLP
+  participant L as otel-lgtm Prometheus
+  participant G as Grafana の警報 ms-login-p95
 
-  P->>AC: POST /api/auth/login（email・password）
-  AC->>LS: login（LoginCommand・ClientInfo）
-  LS->>UA: verifyPassword（email・Password）
-  UA->>DB: users を email で読む
-  UA-->>LS: PasswordVerification（利用者の有無・照合の結果）
-  LS->>LR: lockForUpdate（利用者の行、無ければダミーの行）
-  LS->>LS: LockPolicy.decide（しきい値 5・30 分）
-  LS->>LR: 失敗回数とロックの期限を更新
-  alt 成功
-    LS->>RT: リフレッシュトークンのハッシュを保存
-    LS-->>AC: IssuedTokens（JWT と Cookie の値）
-    AC-->>P: 200 TokenResponse と Set-Cookie
-  else 失敗（存在しない・誤り・ロック中）
-    AC-->>P: 401 AUTHENTICATION_FAILED（理由によらず同じ）
-  end
-  Note over LS,AL: 確定の後、AuthenticationEvent を AuditEventListener が受け、2本目の接続で audit_events に追記する
+  C->>MVC: POST /api/auth/login
+  MVC->>REG: http.server.requests の Timer に記録（uri・method・status など）
+  Note over REG: 分布の設定が無いため、送るのは件数と合計と最大だけ
+  REG->>L: 60 秒ごとに OTLP で送る（外部エクスポートが有効なときだけ）
+  G->>L: histogram_quantile(0.95, http_server_requests_milliseconds_bucket)
+  L-->>G: 上限が +Inf のバケットだけで値が出ない
+  Note over G: noDataState OK のため鳴らない（しきい値 1000 ms・for 5m は働かない）
 ```
 
-<!-- Text fallback: 画面がメールアドレスとパスワードを送る。LoginService は UserAccountService で照合し、ロックの状態の行を行ロックで読み（存在しない利用者はダミーの行）、LockPolicy で成功・失敗・ロックを決めて行を更新する。成功ならリフレッシュトークンのハッシュを保存し、アクセストークンと Cookie を返す。失敗は理由によらず 401 AUTHENTICATION_FAILED。確定の後に監査の記録が別の接続で追記される。 -->
+<!-- Text fallback: 画面の要求を Spring MVC の観測が http.server.requests の Timer に記録する。分布の設定が無いため、登録先は件数・合計・最大だけを持つ。外部エクスポートを有効にすると 60 秒ごとに OTLP で otel-lgtm へ送られる。Grafana の警報 ms-login-p95 は http_server_requests_milliseconds_bucket に histogram_quantile(0.95) を当てるが、+Inf 以外のバケットが無いため値が出ず、noDataState OK のため鳴らない。ms-refresh-p95・ms-check-p95 も同じ。 -->
 
-K-2（確かめた事実）: `LoginService.decide` は、利用者の有無・パスワードの照合の結果・ロックの状態だけで判断し、利用者の状態を見ない。`users` に状態の列が無いため（K-1）、今は見る対象も無い。招待中の利用者を同じ表に置く場合、ログインで拒否する確かめが今の流れには無い（推測: 状態の確かめを足す場所は `verifyPassword` の結果か `decide` のどちらか）。
+K-6（確かめた事実）:
 
-### 2. トークンの更新とログアウト
+- 警報 `ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`（`docker/monitoring/provisioning/alerting/mastersmith.yaml` 153〜248 行）とダッシュボードの3つのパネルは `http_server_requests_milliseconds_bucket` に `histogram_quantile(0.95, …)` を当てる。3つとも `noDataState: OK`、しきい値は 1000。
+- `application.yaml` にヒストグラムの設定（`management.metrics.distribution`）が無く、`backend/src/main/java` に `MeterFilter`・`MeterRegistryCustomizer` も無い（アーキテクトが検索で確かめた）。`publishPercentileHistogram()` を付けるのは `dslmanage/service/DslOperationMetrics.java` だけ。
+- `mastersmith.mail.send` は `SmtpMailSender` の `Observation`（低い基数のタグは `mail.template`・`mail.language`・`mail.outcome`・`mail.failure.kind`）で、分布の設定が無いのは同じ。招待と登録・メールの送信の 95 パーセンタイルのパネルは、代わりにトレースから作る `traces_spanmetrics_latency_bucket` を使う（README の「手元の監視（Grafana）」が既知の欠けとして書く）。
+- 手元の監視の受け手は otel-lgtm（`compose.yaml` の `lgtm`）。`docker/otel-collector/config.yaml` は受けた値を debug に出すだけで、Prometheus には渡さない。
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant C as frontend-api-client
-  participant AC as AuthController
-  participant OV as OriginVerifier
-  participant TR as TokenRefreshService
-  participant LO as LogoutService
-  participant RT as RefreshTokenRepository
-  participant UA as UserAccountService
+K-6（見立て、未検証）:
 
-  C->>AC: 業務の API が 401 AUTHENTICATION_REQUIRED
-  C->>AC: POST /api/auth/session/refresh（Cookie）
-  AC->>OV: Origin が自分の配信元と一致するか
-  AC->>TR: refresh（Cookie の値）
-  TR->>RT: ハッシュで探す・無効や期限切れなら失敗
-  TR->>RT: revokeIfActive（1件だけ無効にする）
-  TR->>UA: findById（利用者がいなければ失敗）
-  TR-->>AC: 新しいアクセストークンとリフレッシュトークン
-  AC-->>C: 200 と新しい Set-Cookie（失敗なら Cookie を消して 401 REFRESH_FAILED）
-  C->>C: 元の要求を1回だけ送り直す
-  Note over C,AC: ログアウトは POST /api/auth/session/logout。LogoutService がそのリフレッシュトークン1件だけを無効にし、LOGGED_OUT を知らせて 204
-```
+- 最小の直しは `management.metrics.distribution.percentiles-histogram` に `http.server.requests` と `mastersmith.mail.send` を置く形と見られる（名前の前方一致で当たる）。Micrometer の既定のバケットは数十個あり、`uri`・`method`・`status`・`outcome`・`exception` の組み合わせで系列が大きく増えうる。範囲（`minimum-expected-value`・`maximum-expected-value`）か `slo` で絞るかは設計で決める。
+- OTLP の登録先がヒストグラムを明示のバケットで送るか指数で送るか、Prometheus での名前が `_milliseconds_bucket` のままかは、起動して確かめる必要がある。
+- 設定だけで済めば `packagesJudgedByTotal` のパッケージ（`common.observability` など）に手を入れずに済む。コードで足すなら K-10 の作業が付く。
 
-<!-- Text fallback: 画面の API の呼び出しは 401 AUTHENTICATION_REQUIRED を受けると更新を1回だけ行う（同時の 401 は1つにまとめる）。更新は Origin の一致を確かめ、Cookie のリフレッシュトークンをハッシュで探し、有効ならその1件を無効にして、利用者がいれば新しいトークンの組を返す。失敗なら Cookie を消して 401。成功なら元の要求を1回だけ送り直す。ログアウトはそのリフレッシュトークン1件だけを無効にし、監査の出来事を知らせて 204 を返す。 -->
-
-確かめた事実: 更新でも利用者の状態は見ず、`findById` で利用者がいれば通る。無効にするのは使ったトークン1件だけで、利用者のほかのリフレッシュトークンには触れない（K-8、`component-inventory.md` の `auth`）。更新には監査の出来事が無い。
-
-### 3. 管理者の API の要求（認証と認可）
+### 2. 登録の完了の拒否と監査（K-8）
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant C as frontend-api-client
-  participant SC as SecurityFilterChain
-  participant AP as AccessTokenAuthenticationProvider
-  participant UA as UserAccountService
-  participant AM as AdminAuthorizationManager
-  participant CT as コントローラー（例 AdminCheckController）
-  participant AD as AdminAccessDeniedHandler
-  participant AL as AuditEventListener
-
-  C->>SC: GET /api/admin/check（Bearer）
-  SC->>AP: トークンの検証（HS256・期限）
-  AP->>UA: findById（トークンの利用者）
-  UA-->>AP: UserSummary（email・admin）
-  AP-->>SC: AuthenticatedUser（userId・email・admin）
-  SC->>AM: /api/admin/** の判定（ログイン済みかつ admin）
-  alt 管理者
-    SC->>CT: 呼び出し
-    CT-->>C: 204
-  else 管理者でない
-    SC->>AD: 拒否
-    AD-->>C: 403 ACCESS_DENIED
-    AD->>AL: AdminAccessDeniedEvent（同じスレッド・応答の前）
-  end
-  Note over SC,C: トークンが無い・不正・期限切れ・利用者がいないときは 401
-```
-
-<!-- Text fallback: 管理者の API の要求は Bearer のトークンを付けて届く。AccessTokenAuthenticationProvider が署名と期限を確かめ、トークンの利用者を内部DB から読んで検証済みの主体を作る。AdminAuthorizationManager が /api/admin/** について、ログイン済みで admin であるかを確かめる。管理者ならコントローラーが呼ばれ、管理者でなければ 403 ACCESS_DENIED を返し、アクセス拒否の出来事を監査に知らせる。トークンが無いか不正なら 401。 -->
-
-K-2 の続き（確かめた事実）: トークンの認証も `findById` で利用者がいれば通り、状態を見ない。
-
-### 4. 監査の記録（K-10 を含む）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant S as 業務の service（例 LoginService）
-  participant TX as トランザクション（1本目の接続）
+  participant P as 登録の画面
+  participant RC as RegistrationController
+  participant RS as RegistrationService
   participant EP as ApplicationEventPublisher
   participant AL as AuditEventListener
-  participant AF as AuditEventFactory
-  participant AR as AuditEventRecorder
   participant DB as 内部DB H2
 
-  S->>TX: 開始
-  S->>DB: 業務の更新
-  S->>EP: publishEvent（AuthenticationEvent など）
-  S->>TX: 確定
-  TX->>AL: AFTER_COMMIT で呼ぶ（同じスレッド）
-  AL->>AF: 出来事の型ごとに AuditEvent を組み立てる
-  AL->>AR: record
-  AR->>DB: REQUIRES_NEW（2本目の接続）で audit_events に INSERT
-  alt 記録の失敗
-    AL->>AL: ERROR のログを1回（元の操作の結果は変えない）
+  P->>RC: POST /api/registration/complete（token・氏名・パスワード・プリファレンス）
+  RC->>RS: complete
+  RS->>RS: 入力の検証（誤りは CompleteResult.Invalid）
+  RS->>RS: InvitationToken.parse
+  alt 形の誤ったトークン
+    RS->>RS: Outcome.Refused（招待なし・INVITATION_NOT_FOUND）
+  else 形は正しい
+    RS->>DB: トランザクションの中で招待を照合（照合できなければ Refused）
   end
+  RS->>EP: RegistrationFailedEvent（拒否のとき）
+  EP->>AL: 受け取り
+  AL->>DB: audit_events に REGISTRATION_FAILED を追記
+  RC-->>P: 404 REGISTRATION_LINK_INVALID
 ```
 
-<!-- Text fallback: 業務の service はトランザクションの中で内部DB を更新し、出来事を知らせてから確定する。確定の後、同じスレッドで AuditEventListener が呼ばれ、AuditEventFactory が出来事の型ごとに監査の行を組み立て、AuditEventRecorder が REQUIRES_NEW の新しいトランザクション（2本目の接続）で audit_events に追記する。記録に失敗しても元の操作の結果は変わらず、ERROR のログが1回出る。 -->
+<!-- Text fallback: 登録の画面がトークンと入力を送る。RegistrationService は入力を検証し、トークンの形を確かめる。形が誤っていれば招待なし（INVITATION_NOT_FOUND）の拒否とし、形が正しければトランザクションの中で招待を照合する（照合の中身は今回読んでいない）。拒否のときは RegistrationFailedEvent を出し、audit が REGISTRATION_FAILED を監査ログに追記する。画面には 404 REGISTRATION_LINK_INVALID が返る。 -->
 
-K-10（事実と仮説）:
+確かめた事実: `RegistrationService.complete`（152〜159 行）は、形の誤ったトークンでも `RegistrationFailedEvent` を出す。`AuditEventListener` はこの出来事を受け（208 行）、`AuditEventType` に `REGISTRATION_FAILED` がある。拒否の応答は 404 `REGISTRATION_LINK_INVALID`（`InvitationProblemTypes`）で、5xx の割合の警報には当たらない。K-8 の本文は `api-documentation.md`。
 
-- 事実: 監査の記録は、確定の後に業務の接続を持ったまま2本目の接続を借りる（README の「既知の制約（同時の要求と接続プール）」、プールの上限 既定 30、借りる待ち 5 秒）。
-- 仮説: 招待メールの送信（SMTP の待ち）を業務のトランザクションの中や、この確定の後の流れの中で行うと、送信の間も内部DB の接続を持ち続けうる。`project.md` の Corrections の「要求1件で接続を2本使う経路は、負荷の試験で確かめる」が当てはまる。送信の失敗を登録の結果にどう反映するか（登録を取り消すか、送り直せるようにするか）も、今の仕組みには前例が無い。
+### 3. プールの一時停止による詰め直しのテスト（K-4）
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant T as H2CompactionByPoolSuspensionIT
+  participant APP as アプリ全体（SpringApplicationBuilder）
+  participant POOL as HikariPool MBean
+  participant JOB as 定期の処理（RefreshTokenCleanupJob・InvitationCleanupJob）
+  participant H2 as H2 のファイル
+
+  T->>APP: 起動（DEFRAG_ALWAYS・MBean の登録を有効）
+  T->>APP: DSL の投入と適用をくり返してファイルを伸ばす
+  T->>H2: CHECKPOINT SYNC（縮まないことを確かめる）
+  T->>POOL: suspendPool
+  T->>POOL: softEvictConnections
+  loop 最大 10 秒（ZERO_CONNECTIONS_WAIT）
+    T->>POOL: getTotalConnections が 0 か
+  end
+  Note over POOL,JOB: 同じ文脈に cron の定期の処理がいる（今回のテストの時間に動くかは未確認）
+  POOL->>H2: 最後の接続を閉じると詰め直し（compactThreads=1）
+  loop 最大 30 秒（SHRINK_WAIT）
+    T->>H2: ファイルの大きさが上限以下か
+  end
+  T->>POOL: resumePool
+```
+
+<!-- Text fallback: テストはアプリ全体を起動し、DSL の投入と適用をくり返して H2 のファイルを伸ばす。CHECKPOINT SYNC で縮まないことを確かめた後、プールの MBean で一時停止と破棄を行い、接続が 0 本になるまで最大 10 秒待つ。最後の接続が閉じると H2 が詰め直し、ファイルが上限以下になるまで最大 30 秒待ってから再開する。同じ文脈に cron で動く定期の処理が2つある。 -->
+
+K-4（確かめた事実）:
+
+- CI での失敗の箇所は 196 行の `await().atMost(ZERO_CONNECTIONS_WAIT).until(() -> pool.getTotalConnections() == 0)`（前の Intent の記録）。`ZERO_CONNECTIONS_WAIT` は 10 秒で、運用の道具の既定に合わせた固定値（112 行）。同じ定数を 235・251・264 行でも使う。
+- テストの JVM は `-Dh2.compactThreads=1`・`maxHeapSize = "1g"`・`-Djava.net.preferIPv4Stack=true`（`backend/build.gradle.kts` 116〜143 行）。
+- 前の Intent の記録では、原因は確かめておらず、手元の `verify` では通っていた。
+
+K-4（仮説、どれも未検証。開発担当の見立て）:
+
+- (a) 一時停止の直前に動いていた HikariCP の接続の補充が、破棄の後に接続を1本足し、0 本にならない。
+- (b) 同じ文脈の定期の処理や起動の後の処理が接続を借りていて、返すのが遅れた（破棄の印を付けられた接続は、返されるまで数に残る）。
+- (c) CI の runner が遅く、最後の接続を閉じるときの H2 の処理が 10 秒を超えた。
+- 直し方を決める前に、失敗したときの `getTotalConnections`・`getActiveConnections`・`getIdleConnections`・`getThreadsAwaitingConnection` とスレッドの状態を出す診断を足して再現を試みることが勧められている。上限を延ばすだけにする場合は、`team.md` の「不安定なテストは原因を直すまで統合しない」と `project.md` の学び（再現できなければ不安定と確かめられていない扱い）との関係を要件で決める必要がある。
+
+### 4. 検査の流れと E2E の置き場（K-2・K-5）
+
+```mermaid
+flowchart TD
+  DEV["手元 ./gradlew verify"] --> PREP["verifyPrepare（vendorInstall・vendorBuild・vendorUnchanged）"]
+  CI["CI ci.yml develop へのプッシュ"] --> PREP
+  PREP --> FMT["verifyFormat・verifyLint・verifyLicense・verifyBuild"]
+  FMT --> UT["verifyUnitTest（backend test・Vitest 既定 5 秒）"]
+  UT --> IT["verifyIntegrationTest（backend integrationTest）"]
+  IT --> COV["verifyCoverage（JaCoCo・coverage-v8）"]
+  COV --> SEC["verifySecurity（SpotBugs・OSV-Scanner・Gitleaks）"]
+  SEC --> ART["verifyArtifact（bootWar ほか）"]
+  E2E["./gradlew e2eTest（Playwright・axe）"] -. "verify と CI の外。手元で統合の前とリリースの前" .-> DEV
+```
+
+<!-- Text fallback: 手元の ./gradlew verify と CI（develop へのプッシュ）は同じ段を順に通る。準備（サブモジュールの準備と変更なしの確かめ）、フォーマット・リンタ・ライセンス・ビルド、単体テスト（Vitest は既定の 5 秒）、結合テスト、カバレッジ、セキュリティ、成果物。E2E（Playwright と axe のコントラストの検査）は verify と CI の外にあり、手元で統合の前とリリースの前に流す。 -->
+
+確かめた事実: 段は `build.gradle.kts` 340〜416 行で `mustRunAfter` で並ぶ。CI は `./gradlew verify` を1回、`timeout-minutes: 60` で流す。コントラストの確かめ（axe）は E2E にだけあるため、K-1 の更新は CI だけでは確かめられない（K-2）。
