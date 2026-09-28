@@ -96,6 +96,7 @@
 - 前の版のイメージは HikariCP の JMX を有効にしていないため、戻すと詰め直しの道具が使えなくなり最大ヒープも 75% に戻る。設定がイメージの中にあるためイメージだけで戻せる代わりに、戻したときの運用の差を戻しの手順に書いた。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-pipeline:7b476360b6c318ef99d4a013d925563cd9a28cf632612b083d7cfb448e8cf622 -->
 - 戻し先のイメージの確かめで、イメージに HEALTHCHECK が無く、起動の直後の running を健全と誤って判定しかけた。compose の健全性の確かめと同じ bash の /dev/tcp で /actuator/health の 200 を待つ形でやり直した。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-execution:b351b2a240157b9e52139413dc379757850591942093ec3c00802300883910da -->
 - Dependabot の gradle の実行の failure は、composite build のサブモジュールの中の依存を更新できないことが原因だった。サブモジュールを Gradle の composite build で組むときは、dependabot.yml の gradle の設定に exclude-paths（vendor/**）を置く。 (learned 2026-09-28) <!-- cid:260925-user-management:ci-pipeline:a81bd5114a167f19a8fe787b4e3f9db0ff11a7b9388be4a58e649c196cc68179 -->
+- 配備の前の k6 は、Build and Test で負荷をかけていないが、依頼者の決定（Q2: B）で流さず performance-validation に任せた。project.md の「試験済みのときだけ省く」との差を cd-config.md に記録し、問題が出たら第一の手で戻す。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-pipeline:e3388eb8eac0b2209d9017acb9d9a5d24c296447465a28d12d88c7613c3c7d11 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -292,3 +293,4 @@
 - 同じ段で複数の単位が同じ論点（例: E2E が Mailpit に置くメールの片付け）を扱うときは、先の単位の答えを後の単位の質問の選択肢と推奨に反映する。user-management の Infrastructure Design で U5 と U6 の推奨が分かれ、依頼者が U5 にそろえる答えを選んだ。 (learned 2026-09-27) <!-- cid:260925-user-management:infrastructure-design:b63e9c0ada94a0453553ae05021af46ce75b66812890478b1eb6a3c7bea4faa3 -->
 - コード生成の段の承認の場で、各単位の code-summary.md の「依頼者に確かめたいこと」（U1・U5・U6・U7・U8）を並べずに Approve を得てしまったため、依頼者の指示で Build and Test の質問（Q3〜Q8）にまとめて確かめた。承認の場の前に、全単位の code-summary.md の「依頼者に確かめたいこと」「承認の場で確かめる」の節を洗い出して並べる。 (learned 2026-09-28) <!-- cid:260925-user-management:build-and-test:fd93eb86fba1f832b56e5858c7bf6402b442195105fcedbffd919854dd2bc7ad -->
 - Dependabot alerts が無効で脆弱性の知らせが届いていないと分かったが、依頼者の決定（Q2: B）で無効のままとし、脆弱性の関門は OSV-Scanner だけとした。team.md の「High 以上の知らせは次の Bolt の前に取り込む」との差を quality-gates.md に記録した。 (learned 2026-09-28) <!-- cid:260925-user-management:ci-pipeline:5c1d2aab5671020a49bfc3ac56249098cc598c2de3f9bfeedb1bac9fee0187b0 -->
+- 質問 Q4 の C（プリファレンスの保存）に「監査が残る」と書いたが、AuditEventType にプリファレンスの保存の種類は無く、監査には残らなかった。deployment-strategy.md の S8 に誤りを明記した。確かめの項目に監査の種類を書く前に、AuditEventType の定義で確かめる。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-pipeline:38c337f0c1a69f2a0cbbff09240b34763460ffb53bd4b50183e82785a83f149b -->
