@@ -133,7 +133,21 @@ class InvitationSendFailureIT {
             assertFailure(dir, rejecting.port(), rejecting::connections, "REJECTED", output);
             assertThat(rejecting.connections()).isEqualTo(2);
             assertThat(rejecting.messages()).isEmpty();
-            assertThat(output.getOut()).doesNotContain("553").doesNotContain("550 ");
+            // SMTP の応答の形（3桁の番号と空白・ハイフン）が、U3・U1 とメールの部品のログに出ていない。出力の全体の文字列で
+            // "553" を探すと、同じ出力に混ざる無関係のログ（例: 無作為の番号 127.0.0.1:55366）にたまたま当たるため、
+            // B1 の MailSecretLeakIT と同じくロガーを絞って応答の形で確かめる（Intent 260925-user-management の B4 で直した）。
+            assertThat(JsonLogRecords.parse(output.getOut()).stream()
+                            .filter(record -> {
+                                String logger = String.valueOf(record.get("logger"));
+                                return logger.startsWith("cherry.mastersmith.invitation")
+                                        || logger.startsWith("cherry.mastersmith.mail")
+                                        || logger.startsWith("org.springframework.mail")
+                                        || logger.startsWith("jakarta.mail")
+                                        || logger.startsWith("org.eclipse.angus");
+                            })
+                            .map(Object::toString))
+                    .isNotEmpty()
+                    .noneMatch(text -> text.matches("(?s).*(?<![0-9a-fA-F])5[0-9]{2}[ -].*"));
         }
     }
 }
