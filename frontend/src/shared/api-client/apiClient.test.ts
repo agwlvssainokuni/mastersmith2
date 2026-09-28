@@ -17,7 +17,14 @@
 // ApiClient のテスト（BR8.5）。fetch を差し替えて、トークンの付与と 401 での更新・送り直しを確かめる。
 import fc from 'fast-check'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { apiFetch, apiRequest, registerAuthHandlers, resetApiClient } from './apiClient'
+import {
+  apiDownload,
+  apiFetch,
+  apiRequest,
+  registerAuthHandlers,
+  registerLanguageResolver,
+  resetApiClient,
+} from './apiClient'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -169,5 +176,120 @@ describe('apiClient', () => {
       }),
       { numRuns: 5 },
     )
+  })
+})
+
+function languageOf(call: number): string | null {
+  const init = fetchMock.mock.calls[call][1] as RequestInit
+  return new Headers(init.headers).get('Accept-Language')
+}
+
+const PUBLIC_PATHS = ['/api/appearance', '/api/registration/verify', '/api/registration/complete']
+
+describe('apiClient tokenless public paths', () => {
+  it('never sends the token to the public APIs even with an access token', async () => {
+    fetchMock.mockResolvedValue(ok())
+
+    for (const path of PUBLIC_PATHS) {
+      await apiFetch(path, { method: path === '/api/appearance' ? 'GET' : 'POST' })
+    }
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect([headerOf(0), headerOf(1), headerOf(2)]).toEqual([null, null, null])
+  })
+
+  it('does not refresh or retry the public APIs on AUTHENTICATION_REQUIRED', async () => {
+    fetchMock.mockResolvedValue(unauthorized())
+
+    for (const path of PUBLIC_PATHS) {
+      const response = await apiFetch(path)
+      expect(response.status).toBe(401)
+    }
+
+    expect(refresh).not.toHaveBeenCalled()
+    expect(onUnauthenticated).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('judges a public path with a query string the same way', async () => {
+    fetchMock.mockResolvedValue(ok())
+
+    await apiFetch('/api/appearance?x=1')
+    await apiFetch('/api/registration/verify?lang=en')
+
+    expect(headerOf(0)).toBeNull()
+    expect(headerOf(1)).toBeNull()
+  })
+
+  it('sends the token to similar but different paths', async () => {
+    fetchMock.mockResolvedValue(ok())
+    const similar = [
+      '/api/registration/other',
+      '/api/appearance/x',
+      '/api/appearances',
+      '/api/Appearance',
+      '/api/appearance/',
+    ]
+
+    for (const path of similar) {
+      await apiFetch(path)
+    }
+
+    similar.forEach((_path, index) => expect(headerOf(index)).toBe('Bearer access-token'))
+  })
+})
+
+describe('apiClient Accept-Language', () => {
+  it('adds the language of the resolver to every kind of request', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(
+        new Response('x', { status: 200, headers: { 'Content-Disposition': 'attachment' } }),
+      ),
+    )
+    registerLanguageResolver(() => 'en')
+
+    await apiFetch('/api/auth/login', { method: 'POST' })
+    await apiFetch('/api/appearance')
+    await apiFetch('/api/items')
+    await apiDownload('/api/admin/dsl/applied/download')
+
+    expect([languageOf(0), languageOf(1), languageOf(2), languageOf(3)]).toEqual([
+      'en',
+      'en',
+      'en',
+      'en',
+    ])
+  })
+
+  it('does not overwrite an Accept-Language given by the caller', async () => {
+    fetchMock.mockResolvedValue(ok())
+    registerLanguageResolver(() => 'en')
+
+    await apiFetch('/api/items', { headers: { 'Accept-Language': 'ja' } })
+
+    expect(languageOf(0)).toBe('ja')
+  })
+
+  it('adds nothing without a resolver or for a value out of the allowed list', async () => {
+    fetchMock.mockResolvedValue(ok())
+
+    await apiFetch('/api/items')
+    registerLanguageResolver(() => 'fr\r\nX-Injected: 1' as never)
+    await apiFetch('/api/items')
+
+    expect(languageOf(0)).toBeNull()
+    expect(languageOf(1)).toBeNull()
+  })
+
+  it('forgets the resolver on resetApiClient', async () => {
+    fetchMock.mockResolvedValue(ok())
+    registerLanguageResolver(() => 'ja')
+    await apiFetch('/api/items')
+
+    resetApiClient()
+    await apiFetch('/api/items')
+
+    expect(languageOf(0)).toBe('ja')
+    expect(languageOf(1)).toBeNull()
   })
 })

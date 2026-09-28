@@ -51,6 +51,19 @@ describe('LoginLayout', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 
+  it('places what is given at the top right, and nothing when nothing is given', () => {
+    const { unmount } = renderWithProviders(
+      <LoginLayout topRight={<span data-testid="top-right-probe">切り替え</span>} />,
+    )
+    expect(screen.getByTestId('login-layout-top-right')).toContainElement(
+      screen.getByTestId('top-right-probe'),
+    )
+    unmount()
+
+    renderWithProviders(<LoginLayout />)
+    expect(screen.queryByTestId('login-layout-top-right')).not.toBeInTheDocument()
+  })
+
   it('has no accessibility violations', async () => {
     const { container } = renderWithProviders(
       <StandaloneLayout>

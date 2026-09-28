@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { useLayoutEffect } from 'react'
+import {
+  useDisplaySettings,
+  type DisplaySettingsValue,
+} from '../display-settings/DisplaySettingsProvider'
 import type { FeatureRegistration } from '../registry/types'
-import { fakeProvider, renderWithProviders } from '../testing/renderWithProviders'
+import {
+  fakeProvider,
+  renderWithProviders,
+  resetDisplayTestState,
+} from '../testing/renderWithProviders'
 import { ShellLayout } from './ShellLayout'
 
 function registrations(logout: () => void): FeatureRegistration[] {
@@ -114,5 +123,73 @@ describe('ShellLayout', () => {
     })
     await screen.findByTestId('shell-content')
     expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('shows the name of the user, not the email address, in the user menu', async () => {
+    renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
+      registrations: registrations(() => {}),
+      provider: fakeProvider({
+        loggedIn: true,
+        admin: false,
+        displayName: '山田 花子',
+        preferences: { language: 'ja', theme: 'light', fontSize: 'md' },
+      }),
+    })
+    expect(await screen.findByRole('button', { name: /山田 花子/ })).toBeInTheDocument()
+    expect(screen.queryByText(/hanako@example\.com/)).not.toBeInTheDocument()
+  })
+
+  it('shows the new name right after the preferences are saved', async () => {
+    const captured: { value?: DisplaySettingsValue } = {}
+    function Capture() {
+      const settings = useDisplaySettings()
+      useLayoutEffect(() => {
+        captured.value = settings
+      })
+      return null
+    }
+    renderWithProviders(
+      <ShellLayout>
+        <Capture />
+        {content}
+      </ShellLayout>,
+      {
+        registrations: registrations(() => {}),
+        provider: fakeProvider({
+          loggedIn: true,
+          admin: false,
+          displayName: '山田 花子',
+          preferences: { language: 'ja', theme: 'light', fontSize: 'md' },
+        }),
+      },
+    )
+    await screen.findByRole('button', { name: /山田 花子/ })
+
+    act(() =>
+      captured.value?.applyUserPreferences({
+        displayName: '佐藤 花子',
+        language: 'ja',
+        theme: 'light',
+        fontSize: 'md',
+      }),
+    )
+
+    expect(screen.getByRole('button', { name: /佐藤 花子/ })).toBeInTheDocument()
+    resetDisplayTestState()
+  })
+
+  it('has no accessibility violations while showing the name', async () => {
+    const { container } = renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
+      registrations: registrations(() => {}),
+      provider: fakeProvider({
+        loggedIn: true,
+        admin: false,
+        displayName: '山田 花子',
+        preferences: { language: 'en', theme: 'dark', fontSize: 'lg' },
+      }),
+    })
+    await screen.findByRole('button', { name: /山田 花子/ })
+    expect(await axe(container)).toHaveNoViolations()
+    resetDisplayTestState()
   })
 })

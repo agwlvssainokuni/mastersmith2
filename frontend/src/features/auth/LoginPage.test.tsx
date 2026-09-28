@@ -50,6 +50,14 @@ describe('LoginPage', () => {
     expect(screen.getByTestId('login-layout-app-name')).toHaveTextContent('MasterSmith')
   })
 
+  it('puts the language switch at the top right of the login screen', () => {
+    render()
+
+    expect(screen.getByTestId('login-layout-top-right')).toContainElement(
+      screen.getByTestId('login-language-switch'),
+    )
+  })
+
   it('has no accessibility violations', async () => {
     const { container } = render()
 

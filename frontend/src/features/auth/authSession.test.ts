@@ -34,7 +34,14 @@ import * as authApi from './authApi'
 const tokens: TokenResult = {
   accessToken: 'access-token',
   expiresAt: '2026-09-22T00:05:00Z',
-  user: { email: 'user@example.com', admin: true },
+  user: {
+    email: 'user@example.com',
+    admin: true,
+    displayName: '利用者 一郎',
+    language: 'ja' as const,
+    theme: 'system' as const,
+    fontSize: 'md' as const,
+  },
 }
 
 beforeEach(() => {

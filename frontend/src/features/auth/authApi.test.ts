@@ -29,7 +29,14 @@ import {
 const tokenResult = {
   accessToken: 'access-token',
   expiresAt: '2026-09-22T00:05:00Z',
-  user: { email: 'user@example.com', admin: false },
+  user: {
+    email: 'user@example.com',
+    admin: false,
+    displayName: '利用者 一郎',
+    language: 'ja' as const,
+    theme: 'system' as const,
+    fontSize: 'md' as const,
+  },
 }
 
 let fetchMock: ReturnType<typeof vi.fn>

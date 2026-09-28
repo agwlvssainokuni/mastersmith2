@@ -17,7 +17,7 @@ import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { LoginState, LoginStateProvider } from '../registry/types'
-import { LoginStateGate, useLoginState } from './LoginStateGate'
+import { LoginStateGate, normalizeLoginState, useLoginState } from './LoginStateGate'
 
 function Probe() {
   const state = useLoginState()
@@ -99,6 +99,48 @@ describe('LoginStateGate', () => {
 
     unmount()
     expect(listeners.size).toBe(0)
+  })
+
+  it('passes the display settings only while logged in', async () => {
+    const preferences = { language: 'en', theme: 'dark', fontSize: 'lg' } as const
+    function PreferencesProbe() {
+      const state = useLoginState()
+      return <p data-testid="preferences">{JSON.stringify(state.preferences ?? null)}</p>
+    }
+    render(
+      <LoginStateGate
+        provider={{
+          getLoginState: () => ({
+            loggedIn: true,
+            admin: false,
+            displayName: '山田 花子',
+            preferences,
+          }),
+        }}
+      >
+        <PreferencesProbe />
+      </LoginStateGate>,
+    )
+    expect(await screen.findByTestId('preferences')).toHaveTextContent(JSON.stringify(preferences))
+  })
+
+  it('drops the display settings and the name when logged out', () => {
+    expect(
+      normalizeLoginState({
+        loggedIn: false,
+        admin: true,
+        displayName: '山田 花子',
+        preferences: { language: 'en' },
+      }),
+    ).toEqual({ loggedIn: false, admin: false })
+  })
+
+  it('keeps a provider without display settings working as before', () => {
+    expect(normalizeLoginState({ loggedIn: true, admin: true, displayName: '管理者' })).toEqual({
+      loggedIn: true,
+      admin: true,
+      displayName: '管理者',
+    })
   })
 
   it('has no accessibility violations', async () => {

@@ -27,7 +27,14 @@ import { registration } from './registration'
 const tokens = {
   accessToken: 'access-token',
   expiresAt: '2026-09-22T00:05:00Z',
-  user: { email: 'user@example.com', admin: false },
+  user: {
+    email: 'user@example.com',
+    admin: false,
+    displayName: '利用者 一郎',
+    language: 'ja' as const,
+    theme: 'system' as const,
+    fontSize: 'md' as const,
+  },
 }
 
 beforeEach(() => {
@@ -64,6 +71,19 @@ describe('auth registration', () => {
 
     expect(ja).toEqual(en)
     expect(ja.every((key) => key.startsWith('auth.'))).toBe(true)
+  })
+
+  it('has the notice and the language switch texts in both languages, not empty', () => {
+    for (const key of ['auth.login.registered', 'auth.language.label']) {
+      expect(registration.messages?.ja[key]?.trim()).toBeTruthy()
+      expect(registration.messages?.en[key]?.trim()).toBeTruthy()
+    }
+    for (const text of [
+      ...Object.values(registration.messages?.ja ?? {}),
+      ...Object.values(registration.messages?.en ?? {}),
+    ]) {
+      expect(text.trim()).not.toBe('')
+    }
   })
 
   it('logs out and drops the token from the user menu item', async () => {

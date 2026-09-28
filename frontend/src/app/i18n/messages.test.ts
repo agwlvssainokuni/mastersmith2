@@ -38,6 +38,12 @@ describe('messages', () => {
       'notFound.heading',
       'notFound.homeLink',
       'nav.home',
+      'display.theme.system',
+      'display.theme.light',
+      'display.theme.dark',
+      'display.fontSize.sm',
+      'display.fontSize.md',
+      'display.fontSize.lg',
     ]) {
       expect(baseMessageKeys.has(key)).toBe(true)
     }

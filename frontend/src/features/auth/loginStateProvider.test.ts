@@ -24,8 +24,17 @@ import { loginStateProvider, toLoginState } from './loginStateProvider'
 const tokens = {
   accessToken: 'access-token',
   expiresAt: '2026-09-22T00:05:00Z',
-  user: { email: 'admin@example.com', admin: true },
+  user: {
+    email: 'admin@example.com',
+    admin: true,
+    displayName: '山田 花子',
+    language: 'en' as const,
+    theme: 'dark' as const,
+    fontSize: 'lg' as const,
+  },
 }
+
+const preferences = { language: 'en', theme: 'dark', fontSize: 'lg' }
 
 beforeEach(() => {
   resetAuthSession()
@@ -45,7 +54,12 @@ describe('loginStateProvider', () => {
     const pending = loginStateProvider.getLoginState()
     resolveRefresh(tokens)
 
-    expect(await pending).toEqual({ loggedIn: true, admin: true, displayName: 'admin@example.com' })
+    expect(await pending).toEqual({
+      loggedIn: true,
+      admin: true,
+      displayName: '山田 花子',
+      preferences,
+    })
   })
 
   it('answers not logged in when the restore fails', async () => {
@@ -58,12 +72,29 @@ describe('loginStateProvider', () => {
     expect(toLoginState()).toEqual({ loggedIn: false, admin: false })
   })
 
-  it('uses the email address as the display name', async () => {
+  it('uses the name, not the email address, as the display name', async () => {
     vi.spyOn(authApi, 'requestLogin').mockResolvedValue(tokens)
 
     await login('admin@example.com', 'パスワード')
 
-    expect(toLoginState().displayName).toBe('admin@example.com')
+    expect(toLoginState().displayName).toBe('山田 花子')
+  })
+
+  it('passes the three display settings of the user after login', async () => {
+    vi.spyOn(authApi, 'requestLogin').mockResolvedValue(tokens)
+
+    await login('admin@example.com', 'パスワード')
+
+    expect(toLoginState().preferences).toEqual(preferences)
+  })
+
+  it('has no display settings while nobody is logged in', async () => {
+    vi.spyOn(authApi, 'requestRefresh').mockRejectedValue({ kind: 'response', status: 401 })
+
+    const state = await loginStateProvider.getLoginState()
+
+    expect(state.preferences).toBeUndefined()
+    expect(state.displayName).toBeUndefined()
   })
 
   it('publishes the same subscribe function as the session', () => {

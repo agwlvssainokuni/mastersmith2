@@ -19,14 +19,15 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { App } from './App'
+import { resolvedAppearance } from './display-settings/appearanceLoad'
 import type { FeatureRegistration } from './registry/types'
-import { stubBrowserLanguages } from './testing/renderWithProviders'
+import { resetDisplayTestState, stubBrowserLanguages } from './testing/renderWithProviders'
 
 function renderApp(modules?: Record<string, unknown>, route = '/') {
   stubBrowserLanguages(['ja-JP'])
   return render(
     <MemoryRouter initialEntries={[route]}>
-      <App modules={modules} />
+      <App modules={modules} appearance={resolvedAppearance()} />
     </MemoryRouter>,
   )
 }
@@ -75,6 +76,19 @@ describe('App', () => {
     }
     renderApp({ 'features/probe/registration.ts': { registration } }, '/probe')
     expect(await screen.findByTestId('toast-probe')).toHaveTextContent('function')
+  })
+
+  it('applies the display settings to the startup error page as well', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    resetDisplayTestState()
+    localStorage.setItem('mastersmith.display-settings', '{"language":"en","theme":"dark"}')
+    renderApp({ 'features/broken/registration.ts': {} })
+    expect(screen.getByTestId('startup-error-page')).toHaveTextContent(
+      'The application could not start',
+    )
+    expect(document.documentElement.lang).toBe('en')
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+    resetDisplayTestState()
   })
 
   it('has no accessibility violations', async () => {
