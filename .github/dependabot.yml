@@ -24,6 +24,11 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # composite build で組むサブモジュール（vendor/java-mustache-processor）の中のビルドの依存は、このリポジトリからは
+    # 更新できない（中身を直接変更しない）。対象に入れると更新できずに Dependabot の実行が失敗になるため外す。
+    # サブモジュールの依存の更新は java-mustache-processor のリポジトリ側で行う（Intent 260925-user-management の CI Pipeline の Q1）。
+    exclude-paths:
+      - "vendor/**"
   - package-ecosystem: npm
     directory: /frontend
     schedule:
