@@ -35,6 +35,8 @@ pre-commit install
 
 サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
 
+make-you-chic-ui の固定先は `735ef04`（Intent 260925-user-management の B4 で `edb1f94` から更新。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）です。
+
 どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
 ## 1コマンドの検査（統合の前の関門）
@@ -97,6 +99,16 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `020-auth.e2e.ts` | 初期管理者のログインとログアウト、誤ったパスワードの表示 |
 | `030-admin-access.e2e.ts` | 代表の流れ「ログイン → 管理画面に入れるか → ログアウト」 |
 | `040-dsl-admin.e2e.ts` | DSL の管理「ログイン → DSL の管理 → 貼り付けで投入 → プレビュー → 適用 → 今の状態が適用中 → ログアウト」（対象DB は設定しないため、照合は「接続先が設定されていません」の警告になる） |
+| `050-display-accessibility.e2e.ts` | ログインの画面の表示の設定の 20 組（テーマ × 文字の大きさ、ブランドカラー × テーマ、幅 375px のテーマ × 文字の大きさ）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、最初の画面が出るまでの時間の測定（5 回）。ログインはしない |
+
+050 について（Intent 260925-user-management の U4）:
+
+- 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
+- 最初の画面の時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）は記録だけで、失敗にはしません。CSP の違反と、見た目の設定が `sans` のときの Noto Serif JP のフォントの読み込みは失敗にします。
+- green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `KNOWN_VIOLATIONS` に名前と対象を指定して扱います。ほかの違反は失敗にします。既知の違反が消えたときも失敗にするため、make-you-chic-ui が直ったら一覧とこの README を見直します。
+- 050 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/050-display-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+
+結果は `frontend/test-results/e2e-results.json`（json の報告）と `frontend/playwright-report/` に出ます。どちらもコミット・共有しません。実行ごとに作る仮の署名鍵・初期管理者のメールアドレス・仮のパスワードは、`webServer.env` ではなく Playwright のプロセスの環境変数で WAR に渡し、json の結果に含まれないことを `frontend/playwright-secret-check-reporter.ts` が確かめます（含まれていれば実行を失敗にし、値は表示しません）。失敗したときのトレース（`trace: 'retain-on-failure'`）には仮の資格情報が含まれうるため、共有しません。
 
 ## 開発時の起動
 
@@ -809,6 +821,40 @@ Intent 260925-user-management の U8 で、インスタンス全体のブラン�
 - **監査**: 読み取りは監査ログに残しません。
 - **回数の制限**: 置いていません（返すのは秘密を含まない2つの名前だけ）。配備先が決まったときに前段で扱います。
 - **戻すとき**: 前の版のイメージに戻しても、`.env` の2項目を消す必要はありません（前の版は読みません）。
+- **コントラストの既知の制約**: `green`・`orange` を選ぶと、primary のボタンの文字のコントラストが WCAG AA に届きません（「画面の表示の設定（U4）」の「既知の制約」）。AA を満たしたいときは `blue`・`purple` を選びます。
+
+## 画面の表示の設定（U4）
+
+Intent 260925-user-management の U4 で、すべての画面に表示の設定（言語・テーマ・文字の大きさ）とインスタンスの見た目の設定（U8）を当てる土台を `frontend/src/app/display-settings/` に置きました。
+
+- **3つの軸と当て方**: 言語（`ja`・`en`）・テーマ（`light`・`dark`・`system`）・文字の大きさ（`sm`・`md`・`lg`）。ログインの前は、そのブラウザに最後に保存された値（無い軸は、言語がブラウザの言語設定、テーマが `system`、文字の大きさが `md`）。ログインの後は利用者の設定（ログイン・セッションの復元・トークンの更新の応答の値）で、同じブラウザに残った前の利用者の値は使いません。テーマ `system` は OS の配色に追従します（開いたままの切り替えにも）。
+- **ブラウザに残す値**: localStorage の `mastersmith.display-settings`（`language`・`theme`・`fontSize` の3つだけ）と、make-you-chic-ui の鍵（`design-system-*`。U4 の鍵の写しとして、画面を描く前に書き直す）だけです。トークン・メールアドレス・氏名は残しません。保存するのは、ログインで利用者の設定を受けたとき、プリファレンスの保存、登録の完了、ログインの画面の言語の切り替え（言語だけ）のときで、ログアウトでは消しません。
+- **見た目の設定の読み方**: 画面を開いたときに1回だけ `GET /api/appearance` をセッションの復元と並べて読み、両方の答えが出るまで画面を描きません。読み取りに失敗したら前に当てた値（無ければ `blue`・`sans`）で描き、読み直しません。待ちに上限を置いていないため、この API の応答が返らない（ハング）と、ログインの画面を含むすべての画面の最初の描画が止まります（依頼者が受け入れた決定。今のセッションの復元と同じ待ち方）。
+- **ログインの画面の言語の切り替え**: ログインの画面の右上に「日本語」「English」のボタンの組を置きます。選ぶと画面の言語が切り替わり、ブラウザの保存の値の言語だけを書き換えます。
+- **登録の完了からの受け渡し**: 登録の完了の画面から、メールアドレスを画面の中のメモリだけで1回だけログインの画面へ渡し、案内とメールアドレスの初期値を出します（URL・ブラウザの保存に載せない）。
+- **要求の言語**: すべての要求（認証の API・公開の API を含む）に、画面の言語を `Accept-Language`（`ja`・`en` だけ）として付けます。呼び出し側が指定したときは上書きしません。
+- **トークンを付けないパス**: `frontend/src/shared/api-client/apiClient.ts` の `TOKENLESS_API_PATHS` の6つ（認証の API の `/api/auth/login`・`/api/auth/session/refresh`・`/api/auth/session/logout`、公開の API の `/api/appearance`・`/api/registration/verify`・`/api/registration/complete`）。問い合わせの部分を除いた完全な一致で判定し、401 でも更新と送り直しをしません。
+- **機能の画面からの使い方**: `useDisplaySettings()`（`language`・`theme`・`fontSize`・`resolvedTheme`・`displayName`・`setPreview`・`clearPreview`・`applyUserPreferences`・`setLanguage`）、`saveBrowserDisplaySettings`・`saveBrowserLanguage`、`LANGUAGE_NAMES`、文言の鍵 `display.theme.*`・`display.fontSize.*`（`frontend/src/features/README.md`）。
+
+### 既知の制約（ブランドカラーのコントラスト）
+
+make-you-chic-ui の primary のボタンは、ブランドカラーの 500 の色（`--color-primary`）の背景に白い文字で描かれます。ブランドカラーが `green`・`orange` のとき、この組み合わせは WCAG AA の 4.5:1 に届きません（テーマの light・dark とも）。
+
+| ブランドカラー | 背景の色 | 白い文字とのコントラスト比 | WCAG AA（4.5:1） |
+|---|---|---|---|
+| `blue` | `#2563eb` | 5.17:1 | 満たす |
+| `purple` | `#9333ea` | 5.38:1 | 満たす |
+| `green` | `#16a34a` | 3.30:1 | 満たさない |
+| `orange` | `#ea580c` | 3.56:1 | 満たさない |
+
+- 原因は make-you-chic-ui の primary の色で、このリポジトリからは直しません（`vendor/` は変更しない）。依頼者の判断で既知の制約として受け入れました。
+- ログインの画面では、選択中の言語のボタンとログインのボタンが当たります（ほかの画面の primary のボタンも同じ）。
+- AA を満たしたいときは、`MASTERSMITH_APPEARANCE_BRAND_COLOR` に `blue` か `purple` を選びます。
+- 050 の検査はこの違反だけを既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。
+
+### 契約との差
+
+契約 C9（表示の設定の口）の形は `useDisplaySettings` の7つと `saveBrowserDisplaySettings` で、置き場は「`frontend/src/app/` の側で U4 が決める」でした。機能設計のとおり、`resolvedTheme`・`displayName`・`LANGUAGE_NAMES`・`saveBrowserLanguage`（ログインの画面の言語の切り替えのための U4 の中の口）を足し、置き場を `frontend/src/app/display-settings/` にしました（項目の追加は契約の決まりで安全な変更）。契約の文書は書き換えていません。
 
 ## 後の単位（U2・U3・U4）が使う差し込み口
 
@@ -822,6 +868,7 @@ U1 のファイルは書き換えずに、次の型を使います。
 | 想定内のエラー | `cherry.mastersmith.common.error.domain.BusinessException` を起こす。問題の種類（`ProblemType`、日英の説明つき）は自分のパッケージの `ProblemTypeCatalog` の Bean に置く（code・slug の重複は起動の失敗） | U2、U3、U4 |
 | 要求中のトレースID | `cherry.mastersmith.common.observability.TraceIdProvider`（無ければ空） | U4 |
 | ログに秘密情報が出ないことのテストの補助 | `backend/src/test/java` の `cherry.mastersmith.common.testsupport`（`JsonLogRecords` など） | U2 以降 |
+| 表示の設定の口（U4 が提供。契約 C9） | `frontend/src/app/display-settings/` の `useDisplaySettings`・`saveBrowserDisplaySettings`・`LANGUAGE_NAMES`、`frontend/src/app/login-handoff/` の `handOffToLogin`。機能の画面は make-you-chic-ui の `useTheme` と localStorage を直接触らない | U5・U6・U7（画面） |
 | 画面の差し込み口 | `frontend/src/features/<featureId>/registration.ts` に `FeatureRegistration`（`frontend/src/app/registry/types.ts`）を `registration` という名前でエクスポートする。画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元・文言（鍵は `<featureId>.` で始める）を登録できる。重複は画面の起動の失敗 | U2、U3 |
 | ログイン用レイアウト | `frontend/src/app/layout/LoginLayout.tsx`（role=LOGIN の画面が、入力欄とボタンを子として置く） | U2 |
 | スキーマの変更 | 上の「スキーマの変更（Flyway）」の決まり | U2、U4 |
@@ -870,3 +917,13 @@ DSL の読み込み（U2）で使う次の部品は Apache License 2.0 で、こ
 Jakarta Mail・Angus Mail は、Java で SMTP を送る標準の API とその実装で、Spring Boot のメールの自動設定が前提とし、実用になる代わりが無いため採用しました（部品は変えずにライブラリとして使う。既存の `jakarta.activation-api`・`angus-activation` も同じ Eclipse の部品）。
 
 テストだけで使う Testcontainers（MIT）は配布物に含めません。
+
+画面のフォントと検査の道具（Intent 260925-user-management の U4 ほか）:
+
+| 部品 | ライセンス | 範囲 |
+|---|---|---|
+| Noto Sans JP（`@fontsource/noto-sans-jp`） | SIL Open Font License 1.1 | 画面の既定のフォント。`dist`・WAR に同梱（改変しない） |
+| Noto Serif JP（`@fontsource/noto-serif-jp`） | SIL Open Font License 1.1 | 見た目の設定が `serif` のときの明朝体。`dist`・WAR に同梱（改変しない。`sans` のときは読まれない） |
+| axe-core（`axe-core`） | Mozilla Public License 2.0 | 開発時の検査だけ（vitest-axe と `frontend/e2e/050-display-accessibility.e2e.ts`）。改変せず、画面の成果物に入らない |
+
+フォントの採用の理由は Intent 260925-user-management の U4 の機能設計（9節）、axe-core は同じ U4 の NFR 要件の技術選定の記録にあります。
