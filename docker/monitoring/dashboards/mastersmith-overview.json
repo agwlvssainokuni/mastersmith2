@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "editable": false,
   "time": {
     "from": "now-6h",
@@ -988,6 +988,270 @@
         "w": 8,
         "x": 16,
         "y": 52
+      }
+    },
+    {
+      "id": 27,
+      "type": "row",
+      "title": "招待と登録（Intent 260925-user-management の U3）",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 60
+      },
+      "panels": []
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "API ごとの要求の数（1 時間）",
+      "description": "招待・送り直し・一覧・取り消し（/api/admin/invitations）と、リンクの確かめ・登録の完了（/api/registration/）の6本の API の要求の数",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (method, uri) (increase(http_server_requests_milliseconds_count{service_name=\"mastersmith\",uri=~\"/api/admin/invitations.*|/api/registration/.*\"}[1h]))",
+          "legendFormat": "{{method}} {{uri}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 61
+      }
+    },
+    {
+      "id": 29,
+      "type": "timeseries",
+      "title": "API ごとの時間（95 パーセンタイル）",
+      "description": "トレースから lgtm が作る時間の指標（traces_spanmetrics_latency）で測る。アプリの指標 http.server.requests はバケットを持たず p95 を出せないため（Observability Setup の確かめ、次の Intent で直す）。境目は 2 倍刻みで粗い。目標の線: 招待と送り直しは SMTP の送信を含めて 5 秒（U3 の NFR6.1）、ほかは 1 秒（U3 の NFR6.3〜NFR6.5）。目標の判定は同時 10 件の k6（performance-validation）で行い、この線は目安",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, span_name) (rate(traces_spanmetrics_latency_bucket{service=\"mastersmith\",span_kind=\"SPAN_KIND_SERVER\",span_name=~\"http (get|post) /api/(admin/invitations|registration/).*\"}[5m])))",
+          "legendFormat": "{{span_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 61
+      }
+    },
+    {
+      "id": 30,
+      "type": "timeseries",
+      "title": "API ごとの 5xx の件数（1 時間）",
+      "description": "招待と登録の6本の API の 5xx。全体の割合は警報 ms-5xx-ratio で見る（この行に警報は足していない）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (method, uri) (increase(http_server_requests_milliseconds_count{service_name=\"mastersmith\",uri=~\"/api/admin/invitations.*|/api/registration/.*\",status=~\"5..\"}[1h])) or on() vector(0)",
+          "legendFormat": "{{method}} {{uri}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 61
+      }
+    },
+    {
+      "id": 31,
+      "type": "row",
+      "title": "メールの送信（Intent 260925-user-management の U1）",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 69
+      },
+      "panels": []
+    },
+    {
+      "id": 32,
+      "type": "timeseries",
+      "title": "送信の数（1 時間）",
+      "description": "指標 mastersmith.mail.send の件数を、テンプレート・言語・結果（sent・failed）ごとに数える",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (mail_template, mail_language, mail_outcome) (increase(mastersmith_mail_send_milliseconds_count{service_name=\"mastersmith\"}[1h]))",
+          "legendFormat": "{{mail_template}} {{mail_language}} {{mail_outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 70
+      }
+    },
+    {
+      "id": 33,
+      "type": "timeseries",
+      "title": "失敗の種類ごとの数（1 時間）",
+      "description": "送信の失敗（mail_outcome=\"failed\"）を種類（mail_failure_kind）ごとに数える。受け手が止まっている・名前が引けないときも timeout になる（Observability Setup の確かめ）。警報は足していない",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (mail_failure_kind) (increase(mastersmith_mail_send_milliseconds_count{service_name=\"mastersmith\",mail_outcome=\"failed\"}[1h])) or on() vector(0)",
+          "legendFormat": "{{mail_failure_kind}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 70
+      }
+    },
+    {
+      "id": 34,
+      "type": "timeseries",
+      "title": "送信の時間（95 パーセンタイル）",
+      "description": "トレースから lgtm が作る時間の指標（スパン mastersmith.mail.send）で測る。指標 mastersmith.mail.send はバケットを持たず p95 を出せないため（Observability Setup の確かめ）。スパンは送信の失敗でも状態が OK のため、結果では分けない。境目は 2 倍刻みで粗い。目標の線は SMTP の時間切れの 3 秒（U1 の NFR6.1）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"mastersmith\",span_name=\"mastersmith.mail.send\"}[5m])))",
+          "legendFormat": "送信"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 3
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 70
       }
     }
   ],

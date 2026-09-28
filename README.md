@@ -659,15 +659,19 @@ docker compose logs -f otel-collector      # トレース・ログはすぐ、�
 指標・ログ・トレースを手元で見るときだけ、`grafana/otel-lgtm`（OTLP の受け手と Prometheus・Loki・Tempo・Grafana を1つにしたコンテナ）を profile `monitoring` で起動します。既定の起動（`docker compose up`）には含まれません。
 
 ```bash
-# .env に次の2行を書く（見終わったら消す。送り先が無い間は送信の失敗の警告がログに出るため）
-#   MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true
-#   MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318
-docker compose --profile monitoring up -d --wait
+# .env に次の2行を置き、見るときだけ行頭の「# 」を外して有効にする（見終わったらコメントに戻す。
+# 送り先が無い間に有効のままだと、送信の失敗の警告がログに出るため）
+#   # MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true
+#   # MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318
+docker compose --profile monitoring up -d --wait   # 2行を有効にした後。アプリも作り直されて送り始める
 # ブラウザで http://localhost:3000/ を開き、ダッシュボードの「MasterSmith」→「MasterSmith の概要」を見る
-docker compose --profile monitoring stop lgtm   # 見終わったら止め、.env の2行を消して docker compose up -d で起動し直す
+docker compose --profile monitoring stop lgtm   # 見終わったら止め、.env の2行をコメントに戻して docker compose up -d で起動し直す
 ```
 
-- 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは変えられません。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
+- 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは保存できません（画面で一時的にいじることはできますが、読み込み直すと元に戻ります）。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
+- 左のメニューの「Explore」で、ログ（データソース Loki、例 `{service_name="mastersmith"} |= "メールを送信できませんでした"`）・指標（Prometheus）・トレース（Tempo）を自由に問い合わせられます（`GF_USERS_VIEWERS_CAN_EDIT`）。
+- 招待と登録（U3）・メールの送信（U1）の行があります。時間（95 パーセンタイル）のパネルは、トレースから作る時間の指標（`traces_spanmetrics_latency`、境目が 2 倍刻みで粗い）で描いています。アプリの指標 `http.server.requests` と `mastersmith.mail.send` はバケットを持たないため 95 パーセンタイルを出せず、前からあるログイン・トークンの更新・確認用 API の 95 パーセンタイルのパネルと警報（`ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`）は値を出しません（既知の欠け。次の Intent でアプリの設定で直す）。
+- 新しく現れた数の系列は、最初の 1 件が「1 時間の件数」に数えられません（Prometheus の `increase` が、最初の値の前を知らないため）。件数が少ないときは実際より少なく見えます。
 - 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
 - DSL の操作（U4）の行の見方は「DSL の管理の API（U4）」の「DSL の操作の指標とログ」を参照してください。
 - 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。

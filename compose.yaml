@@ -89,6 +89,9 @@ services:
       # 画面は見るだけ（ログインなしで閲覧、ログインの画面は出さない）。ダッシュボードと警報はファイルで入れる。
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Viewer のままで Explore（自由な問い合わせ）を使えるようにする。ダッシュボードは画面で一時的にいじれるが保存はできない
+      # （ダッシュボードと警報はファイルで入れる決まりは崩れない。Intent 260925-user-management の Observability Setup）。
+      GF_USERS_VIEWERS_CAN_EDIT: "true"
       GF_AUTH_DISABLE_LOGIN_FORM: "true"
       GF_USERS_DEFAULT_LANGUAGE: ja-JP
     volumes:

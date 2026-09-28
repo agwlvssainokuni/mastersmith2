@@ -98,6 +98,7 @@
 - Dependabot の gradle の実行の failure は、composite build のサブモジュールの中の依存を更新できないことが原因だった。サブモジュールを Gradle の composite build で組むときは、dependabot.yml の gradle の設定に exclude-paths（vendor/**）を置く。 (learned 2026-09-28) <!-- cid:260925-user-management:ci-pipeline:a81bd5114a167f19a8fe787b4e3f9db0ff11a7b9388be4a58e649c196cc68179 -->
 - 配備の前の k6 は、Build and Test で負荷をかけていないが、依頼者の決定（Q2: B）で流さず performance-validation に任せた。project.md の「試験済みのときだけ省く」との差を cd-config.md に記録し、問題が出たら第一の手で戻す。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-pipeline:e3388eb8eac0b2209d9017acb9d9a5d24c296447465a28d12d88c7613c3c7d11 -->
 - 監査の記録の確かめと、戻しの練習に使う配備の後のバックアップを、1回のアプリの停止（約7秒）でまとめて取った。複写を ACCESS_MODE_DATA=r で開き、配備の時刻以降の audit_events を種類ごとに数えた。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-execution:24f52a52039f2a2011da4af8f8139eeb43cc91790cea4ee31265ff367be4e82c -->
+- 監視の式の数の値を確かめるときは、要求を指標の送信の周期（1 分）を複数またいでくり返し送る。新しく現れた系列の最初の 1 件は Prometheus の increase に数えられず、1回ずつの送信では値が 0 や小さく見えるため（user-management の Observability Setup）。 (learned 2026-09-28) <!-- cid:260925-user-management:observability-setup:860b82779b14c87bb683e204de61eb69eb49d2ab52fbe0d7561895ef5658fa20 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -296,3 +297,4 @@
 - Dependabot alerts が無効で脆弱性の知らせが届いていないと分かったが、依頼者の決定（Q2: B）で無効のままとし、脆弱性の関門は OSV-Scanner だけとした。team.md の「High 以上の知らせは次の Bolt の前に取り込む」との差を quality-gates.md に記録した。 (learned 2026-09-28) <!-- cid:260925-user-management:ci-pipeline:5c1d2aab5671020a49bfc3ac56249098cc598c2de3f9bfeedb1bac9fee0187b0 -->
 - 質問 Q4 の C（プリファレンスの保存）に「監査が残る」と書いたが、AuditEventType にプリファレンスの保存の種類は無く、監査には残らなかった。deployment-strategy.md の S8 に誤りを明記した。確かめの項目に監査の種類を書く前に、AuditEventType の定義で確かめる。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-pipeline:38c337f0c1a69f2a0cbbff09240b34763460ffb53bd4b50183e82785a83f149b -->
 - 初期管理者の既存の INFO のログにメールアドレスが出ることを知らずに、起動のログの確かめの出力に値を一度表示した。起動のログを確かめるときは、値を出さずに、ロガーと項目の名前と件数だけを出す形で見る。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-execution:50e1179ba481d34273f2896914fdc43155e5354df9225c346df006d0c368aa2f -->
+- 95 パーセンタイルの式を書く前に、その指標に +Inf 以外のバケット（le）があるかを確かめる。式が NaN を返すときは、要求が無いためと決めつけず、要求を送ってから式を流し直す（user-management の Observability Setup で、http.server.requests と mastersmith.mail.send にバケットが無く、ログインなどの p95 の警報3件が前から鳴らない状態だったと分かった。前の Intent は NaN を要求が無いためと誤って記録していた）。 (learned 2026-09-28) <!-- cid:260925-user-management:observability-setup:4962fa019abf98a8a9434901947eb969b172ef85029c5b9eb698a9a8746259fe -->
