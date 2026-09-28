@@ -38,7 +38,7 @@ archunit = "1.5.0"
 snakeyaml = "2.6"
 # DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
 # 固定する。Spring Boot を上げるときは、この版も合わせて見直す。
-networknt-json-schema-validator = "3.0.6"
+networknt-json-schema-validator = "3.0.7"
 # メールのテンプレートの描画（Intent 260925-user-management の U1）。自前の Mustache のエンジン java-mustache-processor の版。
 # 実体は Git サブモジュール vendor/java-mustache-processor（タグ 0.1.0、コミット 8d44c36）を composite build で組んだもので置き換える
 # （settings.gradle.kts）。サブモジュールの固定先を更新するときは、この版も合わせて見直す。
