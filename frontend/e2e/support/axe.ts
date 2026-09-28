@@ -171,6 +171,21 @@ export const INVITATION_KNOWN_VIOLATIONS: Readonly<Record<InvitationAxeState, re
 /** 招待の管理の画面の検査の状態 */
 export type InvitationAxeState = 'list' | 'inviteDialog' | 'revokeDialog' | 'unavailable'
 
+/**
+ * 登録の完了の画面（U6、070）の状態ごとの既知の違反の名前（green・orange の組の color-contrast の primary の Button だけ）。
+ * 当たる名前は、070 の最初の実行の結果で確かめて書いた（U6 の計画の Step 16）。
+ * 一覧と一致しない（消えた・増えた）ときは失敗にする。make-you-chic-ui が直ったら、この一覧と README を見直す。
+ */
+export const REGISTRATION_KNOWN_VIOLATIONS: Readonly<
+  Record<RegistrationAxeState, readonly string[]>
+> = {
+  ready: ['registration-submit-button'],
+  unavailable: [],
+}
+
+/** 登録の完了の画面の検査の状態 */
+export type RegistrationAxeState = 'ready' | 'unavailable'
+
 /** 流れるべき規則のうち、結果に無いものを返す。 */
 export function missingRequiredRules(summary: AxeSummary): string[] {
   return REQUIRED_RULES.filter((rule) => !summary.ruleIds.includes(rule))

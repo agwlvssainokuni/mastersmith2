@@ -1,0 +1,61 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 登録の完了のフォームの配置。1列に積み、ラジオの選択肢は横に並べて折り返す。make-you-chic-ui のトークンだけを使う。 */
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.registration-failure:focus {
+  outline: none;
+}
+
+.registration-failure:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.registration-display-heading {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-size-lg);
+}
+
+.registration-radio-group {
+  flex-flow: row wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.registration-legend {
+  display: flex;
+  flex-direction: column;
+}
+
+.registration-legend-hint,
+.registration-hint {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+}
+
+.registration-hint {
+  margin: var(--space-1) 0 0;
+}
+
+.registration-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}

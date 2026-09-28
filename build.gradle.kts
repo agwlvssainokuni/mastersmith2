@@ -416,6 +416,7 @@ tasks.register("verify") {
 }
 
 /** 手元でメールを見る受け手（Mailpit）の API の URL。E2E の前提の確かめに使う（Intent 260925-user-management の U1）。 */
+// 同じ場所を E2E の側の定数 MAILPIT_API_URL（frontend/e2e/support/mailpit.ts）も持つ。変えるときは両方をそろえる（U6）。
 val mailpitInfoUrl = "http://127.0.0.1:8025/api/v1/info"
 
 tasks.register<Exec>("e2eTest") {

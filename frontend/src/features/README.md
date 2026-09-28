@@ -27,3 +27,21 @@ make-you-chic-ui の `useTheme` と localStorage を直接触らない。
 - `LANGUAGE_NAMES`（`displaySettingsTypes.ts`）: 言語の選択肢の名前（訳さない）と `lang` 属性に使う
 - 文言の鍵 `display.theme.*`・`display.fontSize.*`: テーマ・文字の大きさの選択肢
 - 登録の完了からログインの画面へのメールアドレスの受け渡しは `src/app/login-handoff/` の `handOffToLogin`
+
+## 入力の確かめの関数（`src/shared/validation/`、Intent 260925-user-management の U6・U7）
+
+氏名とパスワードの画面の側の確かめは、サーバーと同じ決まり（U2 の BR1.1〜BR1.4・BR4.1、U3 の BR7.2）の純粋な関数を
+`src/shared/validation/` から名前付きで読む（`index.ts` は置かない）。関数は誤りの種類（文字列リテラルの union）だけを返し、
+文言は機能ごとに持つ（例: `registration.password.tooShort`）。判定はサーバーが正で、画面の確かめはその代わりにしない。
+React・`window`・ブラウザの保存・`app/`・`features/` には触れない。U6（登録の完了）と U7（パスワードの変更・プリファレンス）が使う。
+
+| ファイル                 | 関数・定数                                                                                               | 返す誤りの種類                                                                                                                                             |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validateDisplayName.ts` | `validateDisplayName(value)`                                                                             | `DisplayNameProblem` = `'required'`・`'tooLong'`・`'invalidCharacter'`（前後の White_Space を除いた後に、空 → 254 コードポイント超 → Cc・Cf を含む、の順） |
+| `validatePassword.ts`    | `validateNewPassword(password)`                                                                          | `NewPasswordProblem` = `'required'`・`'tooShort'`（12 コードポイント未満）・`'tooLong'`（UTF-8 で 72 バイト超）                                            |
+| `validatePassword.ts`    | `validatePasswordConfirmation(password, confirmation)`                                                   | `PasswordConfirmationProblem` = `'required'`・`'mismatch'`（文字の並びの完全な一致。正規化・前後の空白の除去をしない）                                     |
+| `codePoints.ts`          | `countCodePoints`・`utf8ByteLength`・`trimDisplayName`（と `isWhiteSpaceCodePoint`）                     | —（コードポイントの数、TextEncoder と同じバイト数、前後の Unicode の White_Space だけを除く。JavaScript の `trim` は使わない）                             |
+| `limits.ts`              | `DISPLAY_NAME_MAX_CODE_POINTS`（254）・`PASSWORD_MIN_CODE_POINTS`（12）・`PASSWORD_MAX_UTF8_BYTES`（72） | —                                                                                                                                                          |
+
+誤りが無いときは `undefined` を返す。サーバーの 400 の `fieldErrors` の `reason`（`REQUIRED`・`TOO_SHORT`・`TOO_LONG`・
+`INVALID_CHARACTER`・`MISMATCH`）は、同じ名前の種類（`required` など）に寄せてから文言の鍵にすると、画面とサーバーで同じ文言になる。
