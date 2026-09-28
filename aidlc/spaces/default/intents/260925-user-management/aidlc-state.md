@@ -7,7 +7,7 @@
 - **Scope**: classic
 - **Start Date**: 2026-09-25T11:11:52Z
 - **State Version**: 8
-- **Active Agent**: aidlc-developer-agent
+- **Active Agent**: aidlc-quality-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**: 2026-09-25T12:55:24Z
@@ -28,8 +28,8 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 26
-- **Completed**: 16
-- **In Progress**: code-generation
+- **Completed**: 17
+- **In Progress**: build-and-test
 
 ## Runtime State
 - **Revision Count**: 4
@@ -78,8 +78,8 @@ Per unit: [TBD]
 - [x] nfr-requirements — EXECUTE
 - [x] nfr-design — EXECUTE
 - [x] infrastructure-design — EXECUTE
-- [-] code-generation — EXECUTE
-- [ ] build-and-test — EXECUTE
+- [x] code-generation — EXECUTE
+- [-] build-and-test — EXECUTE
 - [ ] ci-pipeline — EXECUTE
 
 ### OPERATION PHASE
@@ -93,12 +93,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: CONSTRUCTION
-- **Current Stage**: code-generation
-- **Next Stage**: build-and-test
+- **Current Stage**: build-and-test
+- **Next Stage**: ci-pipeline
 - **Status**: Running
-- **Last Updated**: 2026-09-28T08:00:26Z
+- **Last Updated**: 2026-09-28T13:37:11Z
 
 ## Session Resume Point
-- **Last Completed Stage**: infrastructure-design
-- **Next Action**: Execute Code Generation
+- **Last Completed Stage**: code-generation
+- **Next Action**: Execute Build and Test
 - **Pending Artifacts**: none

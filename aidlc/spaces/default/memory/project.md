@@ -58,6 +58,8 @@
 - AccessTokenApiIT は、同じ例外の文言を仕組み（colima の IPv4 の転送と Java の IPv6 の待ち受けの番号の重なり）ごと再現できたことを原因の確認とみなし、依頼者の決定（D7）でテストの JVM に preferIPv4Stack を付けて直した。実際の1回目がこれで起きたかは確かめられず、今回の繰り返しでは重なりは起きなかった。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:code-generation:6bdd5f35b23343f9b0a99488e0933b8c9fdc8da1eb2b961a69c6005ec1c34f8b -->
 - Test Strategy は Minimal だが、要件 FR5 と計画の「Build and Test に引き継ぐこと」のため、結合・性能・セキュリティの手順書も作り、この段で dslMixed・--storage --compact（40 回）・詰め直しの最中のログイン・refresh・dslCycle を流した。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:build-and-test:4e7373ea4a2eb5760ac5e59036d9abc6e57399692d9ed00090a62bc8e13b283f -->
 - 計画の dslCycle を最初の台本に入れ忘れ、配備したアプリをもう一度（約 4 分）止めて流した。負荷の試験の台本を書く前に、計画の「Build and Test に引き継ぐこと」の項目を一つずつ台本の手順と突き合わせる。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:build-and-test:2e944db2a96ad1aaaef48adaaba593f5fdf096c086a8dc8d68cad5e392ecb12c -->
+- 実際のブラウザのアクセシビリティの検査（axe）は、誤りを出した状態と、現実に近いデータ（2語の氏名など）で、ブランドカラーとテーマのすべての組について行う。user-management の U7 の 080 で初めて、make-you-chic-ui の Avatar（頭文字が2文字のとき）と dark の FormField の誤りの文字のコントラスト不足が出た（050〜070 は誤りの状態を見ず、氏名が1語だったため出なかった）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:bf749cf9922de8af8d667e42afabe703fc4bc49c92098bc0d879bd50e2f3dbc1 -->
+- Playwright の webServer.env に置いた値は json の報告に残る。E2E の仮の資格情報はプロセスの環境変数で渡し、報告の部品の確かめと json の文字列の検索で、パスワード・トークン・メールアドレスが入っていないことを確かめる（user-management の U4 で見つかった）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:845e43d6bf69636e99e5fcf955d927fc2684a8ffdebe4823d0a322e9a12251e2 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -103,6 +105,7 @@
 
 - フロントエンドはデザインシステム make-you-chic-ui（React + TypeScript）を使用する。Gitサブモジュールとして `vendor/make-you-chic-ui` に取り込み、組み込み手順は同リポジトリの `docs/integration-guide.md` に従う (learned 2026-09-22) <!-- cid:260922-auth-audit-base:approval-handoff:7a1d387f49e374e248043714bbcc0610684f5aed20a6ce859ddbffce95ae8cbc -->
 - opentelemetry-logback-appender は 2.28.1-alpha に固定する（Spring Boot 4.1.1 が持つ OpenTelemetry 1.62 と、より新しい版が食い違い、外部エクスポートの有効時に失敗するため）。Spring Boot を上げるときは、この部品の版も合わせて見直す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:code-generation:a65f53c1e0eafca70f00ce4b9dc6098dc082c5fb53eb56087ea054ce665295c9 -->
+- H2 2.4.240 の複数スレッドの詰め直しの競合（JVM の assert で検出）を避けるため、-Dh2.compactThreads=1 を Dockerfile・テストの JVM・E2E の起動でそろえる。H2 を上げるときは、この設定の要否を見直す（user-management の U3）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:6e45dd4524a1ab9eab84a737f001fc25ad31a28d2c9b96a50c12b5ce4442c49b -->
 ## Decided
 
 <!-- Decisions made in earlier stages that should not be re-asked. -->
