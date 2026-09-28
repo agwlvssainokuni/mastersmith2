@@ -62,6 +62,8 @@
 - Playwright の webServer.env に置いた値は json の報告に残る。E2E の仮の資格情報はプロセスの環境変数で渡し、報告の部品の確かめと json の文字列の検索で、パスワード・トークン・メールアドレスが入っていないことを確かめる（user-management の U4 で見つかった）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:845e43d6bf69636e99e5fcf955d927fc2684a8ffdebe4823d0a322e9a12251e2 -->
 - CI（66fe981）の verify が2回とも別々のテストの時間切れ（H2CompactionByPoolSuspensionIT の接続の待ち 10 秒、InvitationAdminPage.test.tsx の既定 5 秒）で失敗し、U4〜U7 の NFR7.1 が Not Met だったが、依頼者の決定「次のintentでコントラストと一緒に直す。このintentではこのまま進める。」で受け入れた失敗とした。team.md の「CI が失敗したら次に進む前に直す」と食い違うため test-results.md 8.1 に差を記録した。 (learned 2026-09-28) <!-- cid:260925-user-management:build-and-test:aee2af984df7cb21b8d840c26f03b782b992d105a285fecb05faf733dfaf5d4a -->
 - k6 の登録の完了と取り消しの場面は、決定の文言（招待を VU の数だけ）ではなく既定 100 回・招待 100 件とした。トークンは1回しか使えず 10 件では p95 の意味が薄いため、U3 の NFR6.4 の「流す回数以上の招待を用意する」に合わせた。承認の場で確かめる。 (learned 2026-09-28) <!-- cid:260925-user-management:build-and-test:4f4a4aeff6c74ddf0daa8593ed0e55ccb17e68424be48d121310bc9f0bd21a69 -->
+- caffeinate -i は場面ごとではなく、試験の台本全体を包む形で付ける。場面ごとに起こし直すと切れ目で守りが外れ、PC が眠る（user-management の Performance Validation で 92 秒眠り、要求が 1 分 29 秒遅れた）。遅れが出たときは pmset -g log でスリープを確かめる。 (learned 2026-09-28) <!-- cid:260925-user-management:performance-validation:0007cd62a1517fa64c6643b7bfaef0c5115640aa8a369dc1f700682f131b25b4 -->
+- 応答しないメールの受け手は、Mailpit を docker pause で一時停止して作る（接続は受け付け、何も返さない）。コンテナを止めると接続の失敗になり、時間切れの確かめにならない（user-management の Performance Validation）。 (learned 2026-09-28) <!-- cid:260925-user-management:performance-validation:0ab7ba7e09b5c371df3611ba3a4fbb257134eef98307d4ea68256e5399dae71d -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
