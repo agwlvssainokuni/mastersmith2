@@ -212,7 +212,7 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 - アプリは起動のときに対象DB に接続しません。見本の対象DB が止まっていてもアプリは起動を続け、スキーマの読み込み（既定の DSL の生成）と照合が「接続できない」になります。対象DB を使わないときは、`--profile targetdb-postgres` を付けずに起動し、`MASTERSMITH_TARGET_DB_*` を書きません（7項目がすべて空なら対象DB を使いません）。
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。`.env` に `MASTERSMITH_WEB_BASE_URL`（招待を使うときに入れる。例 `http://localhost:8080`）を入れた環境では、その値と同じ URL で開きます。`http://127.0.0.1:8080/` で開くと、ログイン・更新・ログアウトの Origin の確かめが合わず 403 / `ORIGIN_NOT_ALLOWED` になり、警報 `ms-origin` の拒否の数が増えます。招待メールを見るときは、受け手（Mailpit）を `docker compose --profile mail up -d mailpit` で起動します（「手元でメールを見る」）。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
-- 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。
+- 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。この INFO にはメールアドレスそのものは載らず、キー `maskedEmail` に伏せ字（先頭の1文字＋`***`＋`@`＋ドメイン、例 `a***@example.com`）だけが載ります（Intent 260929-log-deps-cleanup）。
 - 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
 - 見本の対象DB をつないだ配備では、スモークテストに次を足します: サイドバーの「DSL」で DSL の管理画面を開き、今の状態が表示されること。「スキーマを読み込む」で見本の DB から既定の DSL が作られ、プレビューに `sales` のテーブルとビューが並ぶこと（「未設定」「接続できない」にならないこと）。その操作の監査イベント `DSL_GENERATED` が記録されていること。スモークテストの操作は監査ログに残り、消せません。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。メッセージ（`message`）の中の改行は「 ⏎ 」（前後に空白を置いた U+23CE）に置き換えて出すため、Hibernate の起動の案内（ロガー `org.hibernate.orm.connections.pooling`）のような複数行のメッセージも1件が1行に収まります。スタックトレース（`exception`）の改行はそのままです。
@@ -661,7 +661,7 @@ docker compose logs -f otel-collector      # トレース・ログはすぐ、�
 
 外部へ送るトレースからは、例外のメッセージとスタックトレース、要求の URL の問い合わせの部分を取り除いています。
 
-外部へ送るログには、ログのキーと値（例: `dsl.operation`・`userId`・`code`）が、キーの名前そのものの属性として付きます。手元の監視（Loki）ではこの属性で絞り込めます。ただし、個人に関する値を持つ4つのキー `email`・`enteredEmail`・`sourceIp`・`userAgent` は、キーを残して値を `[REDACTED]` に置き換えてから送ります（送り出す直前に置き換えるため、標準出力のログ（`docker compose logs app`）では元の値のままです）。ログの本文（メッセージ）と例外の属性は置き換えません。
+外部へ送るログには、ログのキーと値（例: `dsl.operation`・`userId`・`code`）が、キーの名前そのものの属性として付きます。手元の監視（Loki）ではこの属性で絞り込めます。ただし、個人に関する値を持つ4つのキー `email`・`enteredEmail`・`sourceIp`・`userAgent` は、キーを残して値を `[REDACTED]` に置き換えてから送ります（送り出す直前に置き換えるため、標準出力のログ（`docker compose logs app`）では元の値のままです）。ログの本文（メッセージ）と例外の属性は置き換えません。初期管理者の作成のログのキー `maskedEmail` は、値がはじめから伏せ字（例 `a***@example.com`）のため置き換える対象にしておらず、外部エクスポートでも伏せ字の値がそのまま送られます（Intent 260929-log-deps-cleanup）。
 
 ## 手元の監視（Grafana）
 

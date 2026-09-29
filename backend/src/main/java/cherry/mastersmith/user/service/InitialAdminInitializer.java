@@ -36,8 +36,12 @@ import org.springframework.stereotype.Component;
  * 出さない。
  *
  * <p>作るときは利用者の作成の操作（契約 C2）に、管理者・氏名＝そろえたメールアドレス・言語 ja・テーマ system・文字の大きさ md を渡し、
- * 結果の型で判定する（BR5.4）。ログの項目（キー {@code email} を含む）は前の Intent のまま（依頼者の判断で据え置き。Intent
- * 260925-user-management の U2 のコード生成の計画 9節の決定 3）。
+ * 結果の型で判定する（BR5.4）。
+ *
+ * <p>INFO のログには、キー {@code maskedEmail} に伏せ字（先頭の1文字＋{@code ***}＋{@code @}＋ドメイン、
+ * {@link EmailAddress#mask(String)}）だけを載せ、メールアドレスそのものは載せない。{@code maskedEmail} は外部エクスポートの
+ * 伏せる対象のキーではないため、外部エクスポートでは伏せ字がそのまま送られる（Intent 260929-log-deps-cleanup の FR1、
+ * {@code project.md} の Forbidden）。
  */
 @Component
 public class InitialAdminInitializer implements SmartInitializingSingleton {
@@ -85,7 +89,7 @@ public class InitialAdminInitializer implements SmartInitializingSingleton {
             return false;
         }
         if (userAccountService.existsByEmail(email)) {
-            LOGGER.atInfo().addKeyValue("email", email).log("初期管理者は既にいるため、作成しませんでした");
+            LOGGER.atInfo().addKeyValue("maskedEmail", EmailAddress.mask(email)).log("初期管理者は既にいるため、作成しませんでした");
             return false;
         }
         // 初期値は氏名＝そろえたメールアドレス・ja・system・md（BR2.2・BR5.4）。
@@ -93,10 +97,10 @@ public class InitialAdminInitializer implements SmartInitializingSingleton {
                 new NewUser(email, email, new Password(password), Language.JA, Theme.SYSTEM, FontSize.MD, true));
         if (result instanceof CreateUserResult.EmailAlreadyUsed) {
             // 同時の起動などで、確かめの後に別の作成が先に確定した場合。
-            LOGGER.atInfo().addKeyValue("email", email).log("初期管理者は既にいるため、作成しませんでした");
+            LOGGER.atInfo().addKeyValue("maskedEmail", EmailAddress.mask(email)).log("初期管理者は既にいるため、作成しませんでした");
             return false;
         }
-        LOGGER.atInfo().addKeyValue("email", email).log("初期管理者を作成しました");
+        LOGGER.atInfo().addKeyValue("maskedEmail", EmailAddress.mask(email)).log("初期管理者を作成しました");
         return true;
     }
 

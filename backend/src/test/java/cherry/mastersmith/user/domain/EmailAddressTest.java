@@ -23,6 +23,8 @@ import net.jqwik.api.Property;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class EmailAddressTest {
@@ -78,5 +80,61 @@ class EmailAddressTest {
         assertThat(EmailAddress.isValid("管理者@example.co.jp")).isTrue();
         assertThat(EmailAddress.isValid(null)).isFalse();
         assertThat(EmailAddress.isValid("a".repeat(250) + "@b.jp")).isFalse();
+    }
+
+    // 伏せ字の期待値は計算で作らず、文字どおりに書く（実装と同じ誤りを持ち込まないため）。
+    @ParameterizedTest(name = "[{index}] {0} -> {1}")
+    @DisplayName("mask keeps only the first character of the local part and the domain")
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "admin@example.com|a***@example.com",
+                // ローカル部が1文字のときは、先頭の1文字でローカル部が全部見える（R-03 を受け入れた今の形の固定）
+                "a@example.com|a***@example.com",
+                // 先頭がサロゲートペアの文字は、コードポイントで1文字として扱う
+                "𠮷田@example.jp|𠮷***@example.jp",
+                // 最後の @ で分ける
+                "a@b@example.com|a***@example.com",
+                "no-at-sign|***",
+                "@example.com|***"
+            })
+    void masks(String email, String expected) {
+        assertThat(EmailAddress.mask(email)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @DisplayName("mask returns null for null and empty values")
+    @NullAndEmptySource
+    void masksNullAndEmpty(String email) {
+        assertThat(EmailAddress.mask(email)).isNull();
+    }
+
+    @Property
+    @Label("the masked value never contains the local part and keeps only its first character and the domain")
+    void maskHidesLocalPart(@ForAll("localParts") String local, @ForAll("domains") String domain) {
+        String masked = EmailAddress.mask(local + "@" + domain);
+
+        // ドメインの側にローカル部と同じ文字の並びが偶然あり得るため、@ より前の部分で確かめる。
+        assertThat(masked.substring(0, masked.lastIndexOf('@'))).doesNotContain(local);
+        assertThat(masked).startsWith(local.substring(0, 1)).endsWith("***@" + domain);
+        assertThat(masked).isEqualTo(local.charAt(0) + "***@" + domain);
+    }
+
+    @net.jqwik.api.Provide
+    net.jqwik.api.Arbitrary<String> localParts() {
+        return net.jqwik.api.Arbitraries.strings()
+                .alpha()
+                .numeric()
+                .ofMinLength(2)
+                .ofMaxLength(30);
+    }
+
+    @net.jqwik.api.Provide
+    net.jqwik.api.Arbitrary<String> domains() {
+        return net.jqwik.api.Arbitraries.strings()
+                .withCharRange('a', 'z')
+                .ofMinLength(1)
+                .ofMaxLength(20)
+                .map(label -> label + ".example");
     }
 }

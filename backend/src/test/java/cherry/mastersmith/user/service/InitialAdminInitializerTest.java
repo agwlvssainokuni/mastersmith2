@@ -29,11 +29,14 @@ import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Theme;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.event.KeyValuePair;
 
 class InitialAdminInitializerTest {
 
@@ -43,6 +46,27 @@ class InitialAdminInitializerTest {
 
     private static String render(ILoggingEvent event) {
         return event.getFormattedMessage() + " " + event.getKeyValuePairs();
+    }
+
+    /** ログのキー・値をキーの名前で引けるようにする。 */
+    private static Map<String, Object> keyValues(ILoggingEvent event) {
+        List<KeyValuePair> pairs = event.getKeyValuePairs() == null ? List.of() : event.getKeyValuePairs();
+        return pairs.stream().collect(Collectors.toMap(pair -> pair.key, pair -> String.valueOf(pair.value)));
+    }
+
+    /**
+     * INFO のログにメールアドレスそのもの（そろえた値・設定の値）が無く、キー {@code email} が無く、キー {@code maskedEmail}
+     * に伏せ字だけが載ることを確かめる（Intent 260929-log-deps-cleanup の FR1.1）。
+     */
+    private static void assertMaskedEmailOnly(ILoggingEvent event, String... rawEmails) {
+        assertThat(event.getLevel()).isEqualTo(Level.INFO);
+        for (String raw : rawEmails) {
+            assertThat(render(event)).as("メールアドレスそのものがログに出ていない").doesNotContain(raw);
+        }
+        assertThat(keyValues(event))
+                .as("キー maskedEmail に伏せ字だけが載り、キー email が無い")
+                .doesNotContainKey("email")
+                .containsEntry("maskedEmail", "a***@example.com");
     }
 
     private List<ILoggingEvent> run(String email, String password, boolean[] created) {
@@ -82,7 +106,7 @@ class InitialAdminInitializerTest {
     }
 
     @Test
-    @DisplayName("an existing administrator is left untouched")
+    @DisplayName("an existing administrator is left untouched, logged at INFO with the masked email only")
     void existing() {
         when(service.existsByEmail("admin@example.com")).thenReturn(true);
         boolean[] created = new boolean[1];
@@ -92,11 +116,15 @@ class InitialAdminInitializerTest {
         assertThat(created[0]).isFalse();
         verify(service, never()).createUser(any(NewUser.class));
         assertThat(events).allSatisfy(event -> assertThat(render(event)).doesNotContain(PASSWORD));
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.getFormattedMessage()).isEqualTo("初期管理者は既にいるため、作成しませんでした");
+            assertMaskedEmailOnly(event, "admin@example.com");
+        });
     }
 
     @Test
-    @DisplayName(
-            "a missing administrator is created as admin with the lower-cased email, the initial values, logged at INFO")
+    @DisplayName("a missing administrator is created as admin with the lower-cased email and the initial values,"
+            + " logged at INFO with the masked email only")
     void creates() {
         when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.Created(1));
         boolean[] created = new boolean[1];
@@ -115,13 +143,15 @@ class InitialAdminInitializerTest {
         assertThat(newUser.fontSize()).isEqualTo(FontSize.MD);
         assertThat(newUser.admin()).isTrue();
         assertThat(events).singleElement().satisfies(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
-            assertThat(render(event)).contains("admin@example.com").doesNotContain(PASSWORD);
+            assertThat(event.getFormattedMessage()).isEqualTo("初期管理者を作成しました");
+            assertThat(render(event)).doesNotContain(PASSWORD);
+            assertMaskedEmailOnly(event, "admin@example.com", "Admin@Example.com");
         });
     }
 
     @Test
-    @DisplayName("a duplicate created concurrently is treated as already existing")
+    @DisplayName(
+            "a duplicate created concurrently is treated as already existing, logged at INFO with the masked email only")
     void duplicate() {
         when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.EmailAlreadyUsed());
         boolean[] created = new boolean[1];
@@ -130,9 +160,9 @@ class InitialAdminInitializerTest {
 
         assertThat(created[0]).isFalse();
         assertThat(events).singleElement().satisfies(event -> {
-            assertThat(event.getLevel()).isEqualTo(Level.INFO);
             assertThat(event.getFormattedMessage()).isEqualTo("初期管理者は既にいるため、作成しませんでした");
             assertThat(render(event)).doesNotContain(PASSWORD);
+            assertMaskedEmailOnly(event, "admin@example.com");
         });
     }
 }

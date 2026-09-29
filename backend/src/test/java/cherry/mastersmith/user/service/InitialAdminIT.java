@@ -21,6 +21,7 @@ import cherry.mastersmith.MastersmithApplication;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.DisplayName;
@@ -50,7 +51,8 @@ class InitialAdminIT {
 
     @Test
     @DisplayName(
-            "two startups create one lower-cased administrator with a cost-12 hash, a lock row and the initial values")
+            "two startups create one lower-cased administrator with a cost-12 hash, a lock row and the initial values,"
+                    + " logging only the masked email")
     void createsOnce(CapturedOutput output) {
         Path dir = tempDir.resolve("admin");
         String password = "初期管理者-" + TestDatabase.randomSecret();
@@ -83,6 +85,20 @@ class InitialAdminIT {
         }
         assertThat(output.getOut()).contains("初期管理者を作成しました").contains("初期管理者は既にいるため");
         JsonLogRecords.assertContainsNoSecret(output.getAll(), password);
+        // メールアドレスそのもの（そろえた値・設定の値）はどのログにも出ない（Intent 260929-log-deps-cleanup の FR1.1・NFR1）
+        JsonLogRecords.assertContainsNoSecret(output.getAll(), "admin@example.com", "Admin@Example.COM");
+        // 作成（1回目）と既にいる（2回目）の INFO は、キー maskedEmail に伏せ字だけを持ち、キー email を持たない
+        List<Map<String, Object>> records = JsonLogRecords.parse(output.getAll()).stream()
+                .filter(record -> InitialAdminInitializer.class.getName().equals(record.get("logger")))
+                .toList();
+        assertThat(records)
+                .extracting(record -> record.get("message"))
+                .containsExactly("初期管理者を作成しました", "初期管理者は既にいるため、作成しませんでした");
+        assertThat(records)
+                .allSatisfy(record -> assertThat(record)
+                        .containsEntry("level", "INFO")
+                        .containsEntry("maskedEmail", "a***@example.com")
+                        .doesNotContainKey("email"));
     }
 
     @Test

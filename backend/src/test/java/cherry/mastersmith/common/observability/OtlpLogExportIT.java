@@ -68,8 +68,18 @@ import org.springframework.test.context.DynamicPropertySource;
 @Import(FailingAuditEventRepositoryConfig.class)
 class OtlpLogExportIT {
 
-    /** 伏せるキー。 */
-    private static final List<String> MASKED_KEYS = List.of("email", "enteredEmail", "sourceIp", "userAgent");
+    /**
+     * 伏せるキーのうち、送るログに出るもの。キー {@code email} も伏せる対象（{@link SanitizingLogRecordExporter}）だが、
+     * 載せていた初期管理者の作成の INFO はキー {@code maskedEmail} に替わったため、今は出ない（Intent 260929-log-deps-cleanup の
+     * FR1）。キー {@code email} は、送るログに出ないことを確かめる。
+     */
+    private static final List<String> MASKED_KEYS = List.of("enteredEmail", "sourceIp", "userAgent");
+
+    /** 初期管理者の作成の INFO が伏せ字を載せるキー。外部エクスポートでも伏せずにそのまま送る（伏せる対象のキーではない）。 */
+    private static final String MASKED_EMAIL_KEY = "maskedEmail";
+
+    /** {@link #ADMIN_EMAIL} をそろえた値の伏せ字（先頭の1文字＋{@code ***}＋{@code @}＋ドメイン）。計算で作らず文字どおり書く。 */
+    private static final String ADMIN_MASKED_EMAIL = "o***@example.com";
 
     /** 受け手が受け取った要求（パスと本文）。 */
     record Received(String path, byte[] body) {}
@@ -239,16 +249,33 @@ class OtlpLogExportIT {
         flush();
 
         byte[] logs = received("/v1/logs");
-        // 初期管理者の作成の INFO（起動のとき）と、監査の書き込みの失敗の ERROR の両方で、キーは残り値は伏せられる。
+        // 監査の書き込みの失敗の ERROR で、キーは残り値は伏せられる。
         for (String key : MASKED_KEYS) {
             assertThat(count(logs, stringAttribute(key, SanitizingLogRecordExporter.MASK)))
                     .as(key)
                     .isPositive()
                     .isEqualTo(count(logs, anyAttribute(key)));
         }
+        // キー email を載せるログは無い（初期管理者の作成の INFO はキー maskedEmail に替わった）。
+        assertThat(count(logs, anyAttribute("email"))).as("email").isZero();
         assertThat(contains(logs, ADMIN_EMAIL)).isFalse();
         assertThat(contains(logs, email)).isFalse();
         assertThat(contains(logs, userAgent)).isFalse();
+    }
+
+    @Test
+    @DisplayName("the initial admin masked email is exported as the masked value, not redacted and not the address")
+    void maskedEmailExportedAsIs() {
+        flush();
+
+        byte[] logs = received("/v1/logs");
+        // 初期管理者の作成の INFO（起動のとき）のキー maskedEmail は、伏せ字の値のまま送られる。
+        assertThat(count(logs, stringAttribute(MASKED_EMAIL_KEY, ADMIN_MASKED_EMAIL)))
+                .isPositive()
+                .isEqualTo(count(logs, anyAttribute(MASKED_EMAIL_KEY)));
+        assertThat(count(logs, stringAttribute(MASKED_EMAIL_KEY, SanitizingLogRecordExporter.MASK)))
+                .isZero();
+        assertThat(contains(logs, ADMIN_EMAIL)).isFalse();
     }
 
     @Test
