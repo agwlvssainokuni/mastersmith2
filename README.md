@@ -104,12 +104,13 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `070-registration-accessibility.e2e.ts` | 登録の完了の画面の表示の設定の 20 組 × 2 つの状態（フォーム・使えないリンク）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し。ログインしない。確かめの API だけを見本に差し替え、完了の要求は送らない |
 | `080-preferences-accessibility.e2e.ts` | プリファレンスとパスワードの変更の画面の表示の設定の 20 組 × 2 画面 × 2 つの状態（最初・画面の確かめの誤り）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、画面を開く・保存・パスワードの変更の時間の測定（5 回ずつ）。初期管理者でログインし、ユーザーメニューから移る |
 | `090-invitation-registration-flow.e2e.ts` | この Intent の代表の流れ「管理者でログイン → 招待 → Mailpit からリンクを取り出す → 登録の完了 → 新しい利用者でログイン → 管理画面に入れない → ログアウト」と、リンクを開いてからフォームが出るまでの時間の測定（5 回） |
+| `100-app-text-contrast.e2e.ts` | アプリ独自の CSS の文字（プリファレンスの画面の選択のまとまりの誤り `.preferences-choice-error`、DSL の管理の画面の JSON Schema のリンク `.dsl-link`、見つからない画面の「ホームへ」のリンク `.page-link`）の表示の設定の 20 組ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。文字のコントラストを含む）。初期管理者でログインする |
 
 050 について（Intent 260925-user-management の U4）:
 
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 最初の画面の時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）は記録だけで、失敗にはしません。CSP の違反と、見た目の設定が `sans` のときの Noto Serif JP のフォントの読み込みは失敗にします。
-- green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `KNOWN_VIOLATIONS` に名前と対象を指定して扱います。ほかの違反は失敗にします。既知の違反が消えたときも失敗にするため、make-you-chic-ui が直ったら一覧とこの README を見直します。
+- 既知の違反は `frontend/e2e/support/axe.ts` の `KNOWN_VIOLATIONS` に名前と対象を指定して扱います。green・orange の組の primary のボタンのコントラスト不足は、make-you-chic-ui の固定先を `310e1ec` に上げて当たらなくなったため（Intent 260928-quality-followup）、一覧は空で、どの違反も失敗にします。一覧に載せた既知の違反が消えたときも失敗にするため、一覧を変えたときはこの README も見直します。
 - 050 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/050-display-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 060 について（Intent 260925-user-management の U5）:
@@ -118,7 +119,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 組ごとに、ログインの画面から初期管理者でログインし、サイドバーの「利用者の招待」から開きます。一覧の API（`GET /api/admin/invitations?page=…`）の答えだけを見本（`frontend/e2e/support/invitationFixtures.ts`）に差し替えます。招待の入力と取り消しの確かめの Modal は開くだけで、要求は送りません。
 - ログインの後は利用者の設定が当たるため、組のテーマと文字の大きさは、ログイン（`POST /api/auth/login`）と復元（`POST /api/auth/session/refresh`）の本物の応答の `user.theme`・`user.fontSize` の2項目だけを書き換えて当てます（`frontend/e2e/support/loginPreferences.ts`）。サーバーの状態（利用者の設定）は変えません。U6 の 070 はログインの前の画面のため U4 の鍵で当て、U7 の 080 はプリファレンスの答え（`GET /api/me/preferences`）の差し替えで当てます（どちらも `loginPreferences.ts` は使いません）。
 - 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は記録だけで、失敗にはしません。CSP の違反、画面の問題、本物の一覧の応答と見本の形の違いは失敗にします。測定は招待の API で招待を 21 件置くため、1 回の実行で Mailpit に 21 通のメールが届きます（Mailpit は消しません）。招待を使える設定が無い WAR では、測定を飛ばして理由を注記に残します（E2E の WAR には SMTP とベース URL が渡るため、念のための備え）。
-- green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `INVITATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います（一覧の「招待する」、招待の入力の「招待する」）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。
+- 既知の違反は `frontend/e2e/support/axe.ts` の `INVITATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います。以前の既知の違反（green・orange の組の一覧の「招待する」、招待の入力の「招待する」）は make-you-chic-ui の `310e1ec` で当たらなくなり、どの状態も空です。ほかの違反と、一覧と一致しない既知の違反は失敗にします。
 - 060 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/060-invitation-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 070 について（Intent 260925-user-management の U6）:
@@ -126,7 +127,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 登録の完了の画面はログインの前の画面のため、組のテーマと文字の大きさは 050 と同じく、読み込みの前に U4 の鍵（`mastersmith.display-settings`）へ置いて当てます（`loginPreferences.ts` は使いません）。
 - フォームの状態は、確かめの API（`POST /api/registration/verify`）の答えだけを見本（`frontend/e2e/support/registrationFixtures.ts` の `VERIFY_SAMPLE`、どの招待にも当たらないトークン `a11y-sample-token`）に差し替えて出します。使えないリンクの状態は、差し替えずにフラグメントの無い `/register` を開いて出します。完了の要求は送らず、サーバーの状態（内部DB・監査・招待）を変えません。
-- green・orange の組の primary のボタンのコントラスト不足は、既知の制約（「画面の表示の設定（U4）」）として `frontend/e2e/support/axe.ts` の `REGISTRATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います（フォームの「登録を完了する」。使えないリンクの状態は無し）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
+- 既知の違反は `frontend/e2e/support/axe.ts` の `REGISTRATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います。以前の既知の違反（green・orange の組のフォームの「登録を完了する」）は make-you-chic-ui の `310e1ec` で当たらなくなり、どの状態も空です。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
 - 070 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/070-registration-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動。070 はメールを送りませんが、E2E の WAR はメールを Mailpit へ送る設定で起動します）。
 
 080 について（Intent 260925-user-management の U7）:
@@ -134,7 +135,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 組ごとに、ログインの画面から初期管理者でログインし、ユーザーメニューの「プリファレンス」「パスワードの変更」から開きます。プリファレンスの画面は開いた時点に内部DB の値へ画面をそろえるため、組のテーマと文字の大きさは、`GET /api/me/preferences` の答えだけを見本（`frontend/e2e/support/preferencesFixtures.ts`、氏名は `検査 太郎`）に差し替え、そのそろえ（本物の `applyUserPreferences`）で当てます。ブランドカラーは 050 と同じく `/api/appearance` の差し替えです。`loginPreferences.ts` は使いません。
 - 画面の確かめの誤りの状態は、氏名を空にして「保存する」、3つを空のまま「変更する」で出します。検査では `PUT`・`POST /api/me/…` を送りません（送られていれば失敗）。
-- 既知の違反は、状態ごとの名前の一覧（`frontend/e2e/support/axe.ts` の `PREFERENCES_KNOWN_VIOLATIONS`、green・orange の組の「保存する」「変更する」）と、トップバーのアバター（`AVATAR_KNOWN_COMBOS`）・dark の組の誤りの文字（`withFormFieldErrorKnownViolation`）です（「画面の表示の設定（U4）」の既知の制約）。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
+- 既知の違反は、状態ごとの名前の一覧（`frontend/e2e/support/axe.ts` の `PREFERENCES_KNOWN_VIOLATIONS`）で扱います。以前の既知の違反（green・orange の組の「保存する」「変更する」、2語の氏名のトップバーのアバター、dark の組の誤りの文字）は make-you-chic-ui の `310e1ec` で当たらなくなったため、一覧は空にし、アバターと誤りの文字の専用の扱いは外しました。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
 - 測定は、招待の API で招待を1件置き、Mailpit のメールからリンクを取り出し、登録の完了の API で利用者を1人作って行います（`frontend/e2e/support/registeredUser.ts`、宛先は実行ごとに重ならない `u7-perf-…@example.com`）。1 回の実行で Mailpit に1通届き、新しい利用者と、招待・パスワードの変更の監査が一時の内部DB に残ります。Mailpit の API は読むだけです。
 - 時間（目標は開く 2 秒・保存 1.5 秒・パスワードの変更 2.5 秒）は記録だけで、失敗にはしません。本物の `GET /api/me/preferences` の応答と見本の形の違い、CSP の違反、画面の問題は失敗にします。招待を使える設定が無い・Mailpit に届かない WAR では、測定を飛ばして理由を注記に残します（念のための備え）。
 - 080 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/080-preferences-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
@@ -148,6 +149,14 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 本物の確かめの応答の項目の名前と型が見本（`VERIFY_SAMPLE`）と同じことを毎回確かめます（値は比べません）。
 - 090 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/090-invitation-registration-flow.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 - HTML の報告（`frontend/playwright-report/`）と失敗のときのトレースには、090 で開いた使い捨てのトークンを含むリンクが載ります（E2E の一時の内部DB の中の値）。共有しません。json の結果・注記・添付・`test.step` の題には、リンク・トークン・宛先・パスワードを入れません。
+
+100 について（Intent 260928-quality-followup の FR2）:
+
+- 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
+- 組ごとに初期管理者でログインし、ユーザーメニューの「プリファレンス」を開いて組を当て（080 と同じく `GET /api/me/preferences` の答えを見本に差し替える）、その後は読み込み直さずに画面の中で移ります（サイドバーの「DSL」の「投入」のタブ、見つからない画面 `/e2e-app-text-contrast-not-found`）。ログインの状態は利用者の保存した設定を持ち、読み込み直すとそれに戻るためです。
+- 選択のまとまりの誤りは、`PUT /api/me/preferences` だけを 400 `VALIDATION_FAILED` の見本（`frontend/e2e/support/preferencesFixtures.ts` の `preferencesValidationProblem`、テーマの項目の誤り）に差し替えて出します。保存・投入の要求はサーバーへ送りません（送られていれば失敗）。対象の要素が出ていることを確かめてから検査し、押した後はマウスを要素の外へ移して、hover でない状態の色を検査します。あわせて、プリファレンスの画面の「保存する」（primary のボタン）にマウスを重ね、背景が hover の色に変わったことを確かめてから検査します（依頼者の決定 G2: C。要求は送りません）。
+- 既知の違反は、make-you-chic-ui の部品の2つです（「画面の表示の設定（U4）」の既知の制約）。DSL の管理の画面の選ばれたタブ（Tabs。green・orange の light、blue・purple の dark）と、「保存する」にマウスを重ねた状態（primary のボタンの hover。green・orange の light・dark）です。100 の中の `STATE_KNOWN_VIOLATIONS` に、当たる組と状態と要素を指定して扱い、一覧どおりに当たらなければ（当たらなくなったときも）失敗にします。
+- 100 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/100-app-text-contrast.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 E2E は Mailpit に届いたメールを消しません。`./gradlew e2eTest` の後に片付けるときは、「手元でメールを見る」の2行（`docker compose stop mailpit` と `docker compose rm -f mailpit`）で止めて消します（後の単位の E2E もこの書き方に従います）。
 
@@ -670,7 +679,9 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 
 - 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは保存できません（画面で一時的にいじることはできますが、読み込み直すと元に戻ります）。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
 - 左のメニューの「Explore」で、ログ（データソース Loki、例 `{service_name="mastersmith"} |= "メールを送信できませんでした"`）・指標（Prometheus）・トレース（Tempo）を自由に問い合わせられます（`GF_USERS_VIEWERS_CAN_EDIT`）。
-- 招待と登録（U3）・メールの送信（U1）の行があります。時間（95 パーセンタイル）のパネルは、トレースから作る時間の指標（`traces_spanmetrics_latency`、境目が 2 倍刻みで粗い）で描いています。アプリの指標 `http.server.requests` と `mastersmith.mail.send` はバケットを持たないため 95 パーセンタイルを出せず、前からあるログイン・トークンの更新・確認用 API の 95 パーセンタイルのパネルと警報（`ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`）は値を出しません（既知の欠け。次の Intent でアプリの設定で直す）。
+- アプリの指標 `http.server.requests` と `mastersmith.mail.send` は、決めた境界だけのバケットを持ちます（`application.yaml` の `management.metrics.distribution.slo`。Intent 260928-quality-followup）。境界は `http.server.requests` が 100・250・500・1000・2000・5000 ms（警報のしきい値 1000 ms を含む）、`mastersmith.mail.send` が 100・250・500・1000・2000・5000・10000 ms（送信の時間切れを含む）で、ほかに `+Inf` だけです。Prometheus での名前は `http_server_requests_milliseconds_bucket`・`mastersmith_mail_send_milliseconds_bucket` です。同じ境界のバケットは、処理中の数を表す `http_server_requests_active_milliseconds_bucket`・`mastersmith_mail_send_active_milliseconds_bucket` にも付きます（設定の名前が前方一致のため）。
+- ログイン・トークンの更新・確認用 API の 95 パーセンタイルのパネルと警報（`ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`）は、このバケットで値を出します。95 パーセンタイルは境界の間を按分した見積もりで、境界の刻みより細かい値は出ません。
+- メールの送信（U1）の行の「送信の時間（95 パーセンタイル）」は `mastersmith.mail.send` のバケットで描いています（送信の成功と失敗を合わせる。目標の線 3 秒は境界の 2000 と 5000 の間）。招待と登録（U3）の行の API ごとの時間のパネルは、トレースから作る時間の指標（`traces_spanmetrics_latency`、境目が 2 倍刻みで粗い）のままです。
 - 新しく現れた数の系列は、最初の 1 件が「1 時間の件数」に数えられません（Prometheus の `increase` が、最初の値の前を知らないため）。件数が少ないときは実際より少なく見えます。
 - 警報は外へは知らせません。Grafana の「Alerting」→「Alert rules」（フォルダー MasterSmith）で状態を見ます。
 - DSL の操作（U4）の行の見方は「DSL の管理の API（U4）」の「DSL の操作の指標とログ」を参照してください。
@@ -678,6 +689,40 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 監視のコンテナのメモリの上限は 1.5GB（`1536m`）です。900MB では、DSL の行を含むダッシュボードを開いたときに Grafana がメモリの上限で止められました（コンテナは動き続け、画面だけが応答しなくなります）。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・見本の対象DB 512MB と合わせて約 4GB。負荷の試験の間は監視を止めます）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
 - 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。
 - 外部エクスポートを有効にすると、JVM が `sun.misc.Unsafe` の警告を標準エラーに数行出します（送信に使う protobuf の部品による。1行1件の JSON ではありません）。
+
+## 警報と対応の手順
+
+手元の監視の警報（`docker/monitoring/provisioning/alerting/mastersmith.yaml`）が拾うもの・拾わないものと、気づいたときに見る場所です。下の記述は、ソースと結合テスト（`RegistrationApiIT`・`InvitationAuditIT`）で確かめた動きです（Intent 260928-quality-followup）。
+
+### 応答の遅れの警報（95 パーセンタイル）
+
+| 警報 | 対象の API | 鳴る条件 |
+|---|---|---|
+| `ms-login-p95` | `POST /api/auth/login` | 95 パーセンタイルが 1000 ms を超えた状態が 5 分続く |
+| `ms-refresh-p95` | `POST /api/auth/session/refresh` | 95 パーセンタイルが 1000 ms を超えた状態が 5 分続く |
+| `ms-check-p95` | `GET /api/admin/check` | 95 パーセンタイルが 300 ms を超えた状態が 5 分続く |
+
+- 値は `http.server.requests` のバケット（100・250・500・1000・2000・5000 ms）から、直近 5 分の割合で見積もります（「手元の監視（Grafana）」）。境界の間は按分の見積もりのため、境界の刻みより細かい値は出ません。要求が無い間は値が出ません（NaN）。値が出ないときは、要求を送ってから見直してください。
+- 鳴ったときは、ダッシュボード「MasterSmith の概要」の「応答時間（95 パーセンタイル）」の行で対象の API の推移を見て、「資源」の行（コネクションプールの待ち・JVM のヒープの使用率）と、Explore のトレース（Tempo）で遅い要求の内訳を確かめます。`ms-check-p95` は監査の記録の時間と DB の待ちも確かめます。
+
+### 登録の完了の拒否（`POST /api/registration/complete`）
+
+- 期限切れ・使用済み・取り消し済み・置き換え済み・存在しない・改ざん・同じメールアドレスの利用者がいる、のどれで拒否されても、形の誤ったトークン（長さ・使えない文字）を含めて、監査に `REGISTRATION_FAILED`（結果 `FAILURE`、理由は `failure_reason`）が残ります。
+- 応答は 404 `REGISTRATION_LINK_INVALID` で、アプリのログには WARN（`要求をエラー応答に変換しました`、`code`・`status`）が1件出ます。4xx のため `ms-5xx-ratio` には当たらず、ERROR ではないため `ms-error-logs` にも当たりません。
+- 入力の誤り（400 `VALIDATION_FAILED`）は監査に残りません。
+- 気づく方法: 監査ログの `REGISTRATION_FAILED` を数えます（「監査ログの確かめ方」）。ログでは、Explore の Loki の `{service_name="mastersmith"} |= "要求をエラー応答に変換しました"` の結果を、項目 `code` の値（`REGISTRATION_LINK_INVALID`）で見分けます（`code` は文言ではなく項目のため、文言の絞り込み `|=` には当たりません）。
+
+### リンクの確かめの拒否（`POST /api/registration/verify`）
+
+- 登録の画面を開いたときのリンクの確かめで拒否されても、**監査には残りません**（出来事を出さないため）。応答は同じ 404 `REGISTRATION_LINK_INVALID` で、ログは上と同じ WARN が1件です。どの警報にも当たりません。
+- 気づく方法: 上と同じ Loki の問い合わせです。登録の完了の拒否と同じ WARN のためログだけでは見分けられず、見分けるときは Explore のトレース（Tempo）で API の経路（`/api/registration/verify`）を見ます。監査に残らないため、監査ログからは数えられません。
+
+### 招待メールの送信の失敗
+
+- 送信に失敗しても招待は作られ、招待（`POST /api/admin/invitations`）は 201、送り直し（`POST /api/admin/invitations/{invitationId}/resend`）は 200 で、応答の `sendResult` が `FAILED` になります。5xx ではないため `ms-5xx-ratio` に当たりません。
+- ログは WARN（`メールを送信できませんでした`、`templateId`・`language`・`failureKind`）と INFO（`招待メールを送れませんでした。一覧から送り直せます`、`invitationId`・`operation`・`failureKind`）が1件ずつで、ERROR は出ないため `ms-error-logs` にも当たりません。
+- 監査には送信の失敗の種類はありません（招待そのものは `INVITATION_ISSUED`・`INVITATION_RESENT` として残ります）。
+- 気づく方法: 招待の管理の画面の送信の結果の表示、Explore の Loki の `{service_name="mastersmith"} |= "メールを送信できませんでした"`、ダッシュボードの「メールの送信」の行の「失敗の種類ごとの数（1 時間）」。直ったら、招待の管理の画面から送り直します。
 
 ## プロキシを置く配備
 
@@ -861,7 +906,7 @@ Intent 260925-user-management の U5 で、管理者が招待中の人を一覧�
 - **狭い幅の表**: 表は make-you-chic-ui の Table の包む要素の中で横に動きます。Tab で行のボタンに届くと、その要素を見える位置まで動かします。矢印のキーでの手動の横の移動はありません。
 - **日時の書式**: `formatDateTime` を `frontend/src/features/dsl/format.ts` から `frontend/src/shared/format/formatDateTime.ts` へ移し、DSL と招待の2つの画面で使います。
 - **契約との差**: 招待した管理者は、U3 の「契約との差」の C5 の `invitedBy` のとおり氏名だけを出し、空なら「（不明）」と出します。
-- **既知の制約**: ブランドカラーが `green`・`orange` のとき、この画面の primary のボタンもコントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
+- **コントラスト**: 以前の既知の制約（ブランドカラーが `green`・`orange` のときの primary のボタン）は、make-you-chic-ui の固定先を `310e1ec` に上げて解消しました（「画面の表示の設定（U4）」の「既知の制約」）。
 
 ## 登録の完了の画面（U6）
 
@@ -876,7 +921,7 @@ Intent 260925-user-management の U6 で、招待された人が招待メール�
 - **完了の後**: 自動ではログインしません。ログインの画面へ移り、「登録が完了しました。設定したパスワードでログインしてください。」と、メールアドレスの欄に招待のメールアドレスを出します（メールアドレスは画面の中のメモリだけで渡し、URL に載せません）。成功の Toast は出しません。
 - **入力の確かめ**: 送る前に、サーバーと同じ決まり（氏名は前後の空白を除いて 1〜254 文字で改行・タブ・見えない文字を含まない、パスワードは 12 文字以上で UTF-8 の 72 バイトまで、確かめが一致）を画面でも確かめます。判定はサーバーが正です。確かめの関数は `frontend/src/shared/validation/` に置き、U7（パスワードの変更・プリファレンス）と共用します（`frontend/src/features/README.md`）。
 - **契約との差**: 登録の完了の 400 の `fieldErrors`（U3 の「契約との差」の C6）は読まず、「入力を確かめてください。…」の知らせだけを出します。
-- **既知の制約**: ブランドカラーが `green`・`orange` のとき、この画面の「登録を完了する」のボタンもコントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
+- **コントラスト**: 以前の既知の制約（ブランドカラーが `green`・`orange` のときの「登録を完了する」のボタン）は、make-you-chic-ui の固定先を `310e1ec` に上げて解消しました（「画面の表示の設定（U4）」の「既知の制約」）。
 
 ## プリファレンスとパスワードの変更の画面（U7）
 
@@ -890,7 +935,7 @@ Intent 260925-user-management の U7 で、ログインした利用者が自分�
 - **入力の確かめ**: 送る前に、共用の関数（`frontend/src/shared/validation/`）でサーバーと同じ決まりを確かめます（今のパスワードは空だけを見ます）。判定はサーバーが正で、サーバーの 400 の項目ごとの誤り（`fieldErrors`）は同じ項目の下に同じ文言で出します。対応づけられない誤りは「入力を確かめてください。」、ほかの失敗は「保存できませんでした。…」などの知らせです。サーバーの説明文（`detail`）は画面に出しません。
 - **見せ方の最中のトークンの更新**: テーマか文字の大きさを選んで見せている間にトークンの更新（ログイン状態の更新）が起きると、画面は当たっている値に戻り、フォームの選択は選んだ値のまま残ります（食い違い）。次の選択・「元に戻す」・保存で解けます（U4 の決まりのまま、依頼者の決定で追いません。コード生成の単体テストで確かめました）。
 - **秘密と個人情報**: 氏名とパスワードは画面のメモリだけに持ち、ブラウザの保存・URL・コンソールに出しません（ブラウザに保存するのは U4 の3つの表示の設定だけ）。
-- **既知の制約**: ブランドカラーが `green`・`orange` のときの「保存する」「変更する」、2語の氏名のときのトップバーのアバター、ダークのテーマの項目の誤りの文字は、コントラストが足りません（「画面の表示の設定（U4）」の既知の制約）。
+- **コントラスト**: 以前の既知の制約（ブランドカラーが `green`・`orange` のときの「保存する」「変更する」、2語の氏名のときのトップバーのアバター、ダークのテーマの項目の誤りの文字）は、make-you-chic-ui の固定先を `310e1ec` に上げて解消しました。サーバーが返した選択のまとまりの誤り（`.preferences-choice-error`）も、文字用の色 `--color-danger-text` に直しました（「画面の表示の設定（U4）」の「既知の制約」）。
 
 ## インスタンスの見た目の設定（U8）
 
@@ -909,7 +954,7 @@ Intent 260925-user-management の U8 で、インスタンス全体のブラン�
 - **監査**: 読み取りは監査ログに残しません。
 - **回数の制限**: 置いていません（返すのは秘密を含まない2つの名前だけ）。配備先が決まったときに前段で扱います。
 - **戻すとき**: 前の版のイメージに戻しても、`.env` の2項目を消す必要はありません（前の版は読みません）。
-- **コントラストの既知の制約**: `green`・`orange` を選ぶと、primary のボタンの文字のコントラストが WCAG AA に届きません（「画面の表示の設定（U4）」の「既知の制約」）。AA を満たしたいときは `blue`・`purple` を選びます。
+- **コントラスト**: primary のボタンの文字は、make-you-chic-ui の `310e1ec` から4つのどのブランドカラーでも WCAG AA を満たします（`green`・`orange` は濃い文字）。残る既知の制約は、DSL の管理の画面の選ばれたタブ（`green`・`orange` のライト、`blue`・`purple` のダーク）と、primary のボタンにマウスを重ねたとき（`green`・`orange`）です（「画面の表示の設定（U4）」の「既知の制約」）。
 
 ## 画面の表示の設定（U4）
 
@@ -926,27 +971,26 @@ Intent 260925-user-management の U4 で、すべての画面に表示の設定�
 
 ### 既知の制約（ブランドカラーのコントラスト）
 
-make-you-chic-ui の primary のボタンは、ブランドカラーの 500 の色（`--color-primary`）の背景に白い文字で描かれます。ブランドカラーが `green`・`orange` のとき、この組み合わせは WCAG AA の 4.5:1 に届きません（テーマの light・dark とも）。
+Intent 260925-user-management では、make-you-chic-ui の primary のボタン（ブランドカラーの 500 の色の背景に白い文字）が `green`・`orange` で WCAG AA の 4.5:1 に届かず、あわせてトップバーのアバター（2語の氏名の頭文字）とダークのテーマの項目の誤りの文字も届かないことを、依頼者の判断で既知の制約として受け入れていました。Intent 260928-quality-followup で make-you-chic-ui の固定先を `735ef04` から `310e1ec` に上げ、これらは解消しました（050〜080 の実測で、20 組・すべての状態で当たらない）。
 
-| ブランドカラー | 背景の色 | 白い文字とのコントラスト比 | WCAG AA（4.5:1） |
-|---|---|---|---|
-| `blue` | `#2563eb` | 5.17:1 | 満たす |
-| `purple` | `#9333ea` | 5.38:1 | 満たす |
-| `green` | `#16a34a` | 3.30:1 | 満たさない |
-| `orange` | `#ea580c` | 3.56:1 | 満たさない |
+make-you-chic-ui の `310e1ec` は、文字の色を背景に合わせて出し分けます。primary のボタンの文字は次のとおりです（計算の値）。
 
-- 原因は make-you-chic-ui の primary の色で、このリポジトリからは直しません（`vendor/` は変更しない）。依頼者の判断で既知の制約として受け入れました。
-- ログインの画面では、選択中の言語のボタンとログインのボタンが当たります（ほかの画面の primary のボタンも同じ）。
-- 招待の管理の画面（U5）では、一覧の「招待する」と、招待の入力の Modal の「招待する」が当たります。060 の検査は、画面の状態ごとの名前の一覧（`INVITATION_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
-- 登録の完了の画面（U6）では、フォームの「登録を完了する」が当たります（使えないリンクの表示には primary のボタンがありません）。070 の検査は、画面の状態ごとの名前の一覧（`REGISTRATION_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
-- AA を満たしたいときは、`MASTERSMITH_APPEARANCE_BRAND_COLOR` に `blue` か `purple` を選びます。
-- プリファレンスとパスワードの変更の画面（U7）では、「保存する」「変更する」が当たります。080 の検査は、画面の状態ごとの名前の一覧（`PREFERENCES_KNOWN_VIOLATIONS`）でこれを既知の違反として扱います。
-- 050〜080 の検査はこの違反を既知の違反として扱います（「ビルドした WAR での画面の確認（E2E）」）。080 は、下の2つ（アバターと誤りの文字）も既知の違反として扱います。
+| ブランドカラー | 背景の色 | 文字の色 | コントラスト比 | WCAG AA（4.5:1） |
+|---|---|---|---|---|
+| `blue` | `#2563eb` | 白 `#fff` | 5.17:1 | 満たす |
+| `purple` | `#9333ea` | 白 `#fff` | 5.38:1 | 満たす |
+| `green` | `#16a34a` | 濃い灰 `#111827` | 5.38:1 | 満たす |
+| `orange` | `#ea580c` | 濃い灰 `#111827` | 4.98:1 | 満たす |
 
-make-you-chic-ui のほかの部品にも、コントラストが AA に届かないものがあります（Intent 260925-user-management の U7 のコード生成の 080 で見つかり、依頼者の判断で既知の制約として受け入れました。make-you-chic-ui が直ったら、080 の一覧から外し、この README を見直します）。
+- アバターの頭文字は `--color-primary-subtle-text`（ライトは brand-700、ダークは brand-400）、項目の誤りの文字は `--color-danger-text`（ライトは `#dc2626`、ダークは `#f87171`。ダークの背景 `#0b0f19` に対して 6.92:1）になりました。
+- アプリ独自の CSS の文字も、同じ文字用の色に直しました（100 の検査で 20 組を確かめます）。
+  - U7 の選択のまとまりの誤り（`.preferences-choice-error`、サーバーが返したときだけ出ます）: `--color-danger-text`。
+  - DSL の管理の画面の JSON Schema のリンク（`.dsl-link`）と、見つからない画面の「ホームへ」のリンク（`.page-link`）: `--color-primary-subtle-text`（計算で、ライトは 6.83:1 以上、ダークは 5.56:1 以上）。
 
-- **トップバーのアバター**: make-you-chic-ui の Avatar は、頭文字の文字を `--color-primary`、背景を `--color-primary-subtle` で描きます。例えば `blue` のライトで 4.36:1（ダークでは 2.55:1）です。氏名が2語で頭文字が2文字になると当たり（頭文字が1文字のときは axe が判定できない扱いにします）、アプリのどの画面のトップバーでも起きます。`purple` のライトでは当たりません。080 は、当たる組の一覧（`frontend/e2e/support/axe.ts` の `AVATAR_KNOWN_COMBOS`）で扱います。
-- **ダークのテーマの項目の誤りの文字**: make-you-chic-ui の FormField の誤りの文字は、ダークのテーマで `--color-danger`（`#dc2626`）を背景 `#0b0f19` に描き、3.96:1 です（ライトでは当たりません）。ログインの画面・登録の完了の画面（U6）・U7 の2つの画面など、項目の誤りを出すすべての画面で起きます。U7 の選択のまとまりの誤り（`.preferences-choice-error`、サーバーが返したときだけ出ます）も同じ色です。080 は、ダークの組の誤りの状態の誤りの文字だけを既知の違反として扱います（`withFormFieldErrorKnownViolation`）。050〜070 は誤りを出した状態を検査していません。
+残る既知の制約（Intent 260928-quality-followup の 100 で見つかった。make-you-chic-ui の部品のため、このリポジトリからは直しません。`vendor/` は変更しない。依頼者の判断で、2つとも既知の制約として受け入れました。make-you-chic-ui のリポジトリ側への直しの依頼は、次の Intent の候補です）:
+
+- **DSL の管理の画面の選ばれたタブ**: make-you-chic-ui の Tabs は、選ばれたタブの文字を `--color-primary`（ブランドカラーの 500 の色）で描きます。`green`・`orange` のライト（背景 `#fafafa` に対して計算で 3.16:1・3.41:1）と、`blue`・`purple` のダーク（背景 `#0b0f19` に対して計算で 3.71:1・3.56:1）で WCAG AA に届きません（ほかの組は 4.5:1 以上）。Tabs を使うほかの画面でも同じです。100 は、その組の「投入」のタブだけを既知の違反として扱います（`STATE_KNOWN_VIOLATIONS`）。
+- **primary のボタンの hover**: make-you-chic-ui の Button は、primary のボタンにマウスを重ねたとき、背景を `--color-primary-hover`（ブランドカラーの 600 の色）に替え、文字は `--color-primary-text` のままです。`green`・`orange` では濃い文字 `#111827` とのコントラストが計算で 3.54:1・3.43:1 で、WCAG AA に届きません（ライト・ダークとも。`blue`・`purple` は白の文字で届きます）。primary のボタンを使うすべての画面で同じです。100 は、プリファレンスの画面の「保存する」にマウスを重ねた状態を検査し、`green`・`orange` の4組（ライト・ダーク）だけを既知の違反として扱います（`STATE_KNOWN_VIOLATIONS`。実測で確かめた組）。050〜090 は hover でない状態を検査します。
 
 ### 契約との差
 
