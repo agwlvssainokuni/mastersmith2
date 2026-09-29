@@ -24,12 +24,13 @@
 //   開いた時点のそろえで当てる。ブランドカラーは prepareCombo で /api/appearance を差し替える）。ログインの状態は利用者の
 //   保存した設定を持ち、読み込み直すとそれに戻るため、先にプリファレンスの画面を開き、その後はページを読み込み直さずに
 //   画面の中で移る（見つからない画面へは履歴の書き換えで移る）。
-// - make-you-chic-ui の部品の既知の違反（310e1ec の直しの外。このリポジトリから直せない。依頼者の決定 G2: C で既知の制約として
-//   受け入れた）は、その組・その状態・その要素だけを既知の違反として扱う（STATE_KNOWN_VIOLATIONS）。当たらなくなったら失敗にして
-//   気づけるようにする。make-you-chic-ui が直したら外す。
-//   - DSL の管理の画面のタブ（Tabs の選ばれたタブ、文字は --color-primary）。
-//   - primary の Button にマウスを重ねた状態（hover の背景 --color-primary-hover に文字 --color-primary-text）。プリファレンスの
-//     画面の「保存する」で代表させる。
+// - make-you-chic-ui の部品の既知の違反（このリポジトリから直せないもの）は、その組・その状態・その要素だけを既知の違反として
+//   扱う仕組み（STATE_KNOWN_VIOLATIONS）を持つ。一覧と違う違反が出たとき（一覧に無い違反が出た、または一覧の違反が当たらなく
+//   なった）は失敗にして気づけるようにする。
+//   - 一覧は空。Intent 260928-quality-followup で受け入れた2件（DSL の管理の画面の Tabs の選ばれたタブの文字、primary の Button
+//     にマウスを重ねた状態の文字）は、make-you-chic-ui の 077f5b4（a34d611 と 077f5b4 の直し）で2件とも解消した（Intent
+//     260929-log-deps-cleanup の FR3。固定先を上げた後に 100 で実測し、2件とも当たらなくなったことを確かめた）。
+//   - 状態 primary-button-hover は、既知の違反が無くなった後も、プリファレンスの画面の「保存する」で hover の文字を確かめ続ける。
 // - 選択のまとまりの誤りは、PUT /api/me/preferences だけを 400 VALIDATION_FAILED の見本（support/preferencesFixtures.ts）に
 //   差し替えて出す。サーバーの状態を変える要求（保存・投入）は送らない（ログインの要求だけは送る）。
 // - 初期管理者でログインする。test.step の題・注記・添付・失敗の知らせに、メールアドレス・パスワード・トークンを入れない。
@@ -52,7 +53,7 @@ const PREFERENCES_ITEM = 'プリファレンス'
 /** 表示の設定のテーマ */
 type Theme = 'light' | 'dark'
 
-/** make-you-chic-ui の部品の、状態ごとの既知の違反（依頼者の決定 G2: C で受け入れた制約） */
+/** make-you-chic-ui の部品の、状態ごとの既知の違反（このリポジトリから直せない制約） */
 interface StateKnownViolation {
   /** 当たる組（ブランドカラーごとのテーマ） */
   combos: Readonly<Record<string, readonly Theme[]>>
@@ -63,24 +64,13 @@ interface StateKnownViolation {
 }
 
 /**
- * make-you-chic-ui の部品の既知の違反。当たる組は 100 の実測で確かめて書いた。
- * - Tabs の選ばれたタブ（DSL の管理の画面の「投入」のタブ）: 文字は --color-primary（brand-500）で、計算で light は背景 #fafafa に
- *   対して green 3.16:1・orange 3.41:1、dark は背景 #0b0f19 に対して blue 3.71:1・purple 3.56:1（ほかの組は届く）。
- * - primary の Button の hover（プリファレンスの画面の「保存する」）: 背景 --color-primary-hover（brand-600）に文字 gray-900 で、
- *   計算で green 3.54:1・orange 3.43:1（テーマに依らない。blue・purple は白の文字で届く）。
+ * make-you-chic-ui の部品の既知の違反。当たる組は 100 の実測で確かめて書く。今は空。
+ * - 以前の2件（Tabs の選ばれたタブの文字が --color-primary、primary の Button の hover の文字が gray-900 で、一部の組で 4.5:1 に
+ *   届かなかった）は、make-you-chic-ui の 077f5b4 で解消した（選ばれたタブは --color-primary-emphasis-text、hover の文字は
+ *   --color-primary-hover-text＝白）。固定先を上げた後の 100 の実測で、2件とも当たらず、ほかの違反も出なかった。
+ * - 新しく既知の制約を受け入れるときは、その組・状態・要素だけを載せ、README の既知の制約に書く。make-you-chic-ui が直したら外す。
  */
-const STATE_KNOWN_VIOLATIONS: readonly StateKnownViolation[] = [
-  {
-    combos: { green: ['light'], orange: ['light'], blue: ['dark'], purple: ['dark'] },
-    state: 'dsl-schema-link',
-    label: 'color-contrast tab-1',
-  },
-  {
-    combos: { green: ['light', 'dark'], orange: ['light', 'dark'] },
-    state: 'primary-button-hover',
-    label: 'color-contrast preferences-save-button',
-  },
-]
+const STATE_KNOWN_VIOLATIONS: readonly StateKnownViolation[] = []
 
 /** 検査の状態（アプリ独自の CSS の文字が出る場面） */
 type ContrastState =

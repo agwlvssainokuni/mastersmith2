@@ -35,7 +35,7 @@ pre-commit install
 
 サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
 
-make-you-chic-ui の固定先は `735ef04`（Intent 260925-user-management の B4 で `edb1f94` から更新。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）です。
+make-you-chic-ui の固定先は `077f5b4` です。経緯: `edb1f94` → `735ef04`（Intent 260925-user-management の B4。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）→ `310e1ec`（Intent 260928-quality-followup。文字の色を背景に合わせて出し分ける直し）→ `077f5b4`（Intent 260929-log-deps-cleanup。Tabs の選ばれたタブの文字と、primary のボタンの hover の文字のコントラストの直し）。
 
 どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
@@ -155,7 +155,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 組ごとに初期管理者でログインし、ユーザーメニューの「プリファレンス」を開いて組を当て（080 と同じく `GET /api/me/preferences` の答えを見本に差し替える）、その後は読み込み直さずに画面の中で移ります（サイドバーの「DSL」の「投入」のタブ、見つからない画面 `/e2e-app-text-contrast-not-found`）。ログインの状態は利用者の保存した設定を持ち、読み込み直すとそれに戻るためです。
 - 選択のまとまりの誤りは、`PUT /api/me/preferences` だけを 400 `VALIDATION_FAILED` の見本（`frontend/e2e/support/preferencesFixtures.ts` の `preferencesValidationProblem`、テーマの項目の誤り）に差し替えて出します。保存・投入の要求はサーバーへ送りません（送られていれば失敗）。対象の要素が出ていることを確かめてから検査し、押した後はマウスを要素の外へ移して、hover でない状態の色を検査します。あわせて、プリファレンスの画面の「保存する」（primary のボタン）にマウスを重ね、背景が hover の色に変わったことを確かめてから検査します（依頼者の決定 G2: C。要求は送りません）。
-- 既知の違反は、make-you-chic-ui の部品の2つです（「画面の表示の設定（U4）」の既知の制約）。DSL の管理の画面の選ばれたタブ（Tabs。green・orange の light、blue・purple の dark）と、「保存する」にマウスを重ねた状態（primary のボタンの hover。green・orange の light・dark）です。100 の中の `STATE_KNOWN_VIOLATIONS` に、当たる組と状態と要素を指定して扱い、一覧どおりに当たらなければ（当たらなくなったときも）失敗にします。
+- 既知の違反はありません。以前の既知の違反（DSL の管理の画面の選ばれたタブと、「保存する」にマウスを重ねた状態の primary のボタンの hover）は、make-you-chic-ui の固定先を `077f5b4` に上げて当たらなくなりました（Intent 260929-log-deps-cleanup。「画面の表示の設定（U4）」の既知の制約）。100 の中の `STATE_KNOWN_VIOLATIONS` は空で、どの違反も失敗にします。一覧に組と状態と要素を指定して載せた既知の違反が一覧どおりに当たらなければ（当たらなくなったときも）失敗にする仕組みは残しています。
 - 100 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/100-app-text-contrast.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 E2E は Mailpit に届いたメールを消しません。`./gradlew e2eTest` の後に片付けるときは、「手元でメールを見る」の2行（`docker compose stop mailpit` と `docker compose rm -f mailpit`）で止めて消します（後の単位の E2E もこの書き方に従います）。
@@ -954,7 +954,7 @@ Intent 260925-user-management の U8 で、インスタンス全体のブラン�
 - **監査**: 読み取りは監査ログに残しません。
 - **回数の制限**: 置いていません（返すのは秘密を含まない2つの名前だけ）。配備先が決まったときに前段で扱います。
 - **戻すとき**: 前の版のイメージに戻しても、`.env` の2項目を消す必要はありません（前の版は読みません）。
-- **コントラスト**: primary のボタンの文字は、make-you-chic-ui の `310e1ec` から4つのどのブランドカラーでも WCAG AA を満たします（`green`・`orange` は濃い文字）。残る既知の制約は、DSL の管理の画面の選ばれたタブ（`green`・`orange` のライト、`blue`・`purple` のダーク）と、primary のボタンにマウスを重ねたとき（`green`・`orange`）です（「画面の表示の設定（U4）」の「既知の制約」）。
+- **コントラスト**: primary のボタンの文字は、make-you-chic-ui の `310e1ec` から4つのどのブランドカラーでも WCAG AA を満たします（`green`・`orange` は濃い文字）。以前に残っていた既知の制約（DSL の管理の画面の選ばれたタブと、primary のボタンにマウスを重ねたとき）は、make-you-chic-ui の固定先を `077f5b4` に上げて解消しました（Intent 260929-log-deps-cleanup。「画面の表示の設定（U4）」の「既知の制約」）。
 
 ## 画面の表示の設定（U4）
 
@@ -973,7 +973,7 @@ Intent 260925-user-management の U4 で、すべての画面に表示の設定�
 
 Intent 260925-user-management では、make-you-chic-ui の primary のボタン（ブランドカラーの 500 の色の背景に白い文字）が `green`・`orange` で WCAG AA の 4.5:1 に届かず、あわせてトップバーのアバター（2語の氏名の頭文字）とダークのテーマの項目の誤りの文字も届かないことを、依頼者の判断で既知の制約として受け入れていました。Intent 260928-quality-followup で make-you-chic-ui の固定先を `735ef04` から `310e1ec` に上げ、これらは解消しました（050〜080 の実測で、20 組・すべての状態で当たらない）。
 
-make-you-chic-ui の `310e1ec` は、文字の色を背景に合わせて出し分けます。primary のボタンの文字は次のとおりです（計算の値）。
+make-you-chic-ui の `310e1ec` 以降は、文字の色を背景に合わせて出し分けます（`077f5b4` からは、primary のボタンの hover・active の文字と、選ばれたタブの文字も出し分けます。下の「解消した既知の制約」）。primary のボタンの文字（hover でない状態）は次のとおりです（計算の値）。
 
 | ブランドカラー | 背景の色 | 文字の色 | コントラスト比 | WCAG AA（4.5:1） |
 |---|---|---|---|---|
@@ -987,10 +987,21 @@ make-you-chic-ui の `310e1ec` は、文字の色を背景に合わせて出し�
   - U7 の選択のまとまりの誤り（`.preferences-choice-error`、サーバーが返したときだけ出ます）: `--color-danger-text`。
   - DSL の管理の画面の JSON Schema のリンク（`.dsl-link`）と、見つからない画面の「ホームへ」のリンク（`.page-link`）: `--color-primary-subtle-text`（計算で、ライトは 6.83:1 以上、ダークは 5.56:1 以上）。
 
-残る既知の制約（Intent 260928-quality-followup の 100 で見つかった。make-you-chic-ui の部品のため、このリポジトリからは直しません。`vendor/` は変更しない。依頼者の判断で、2つとも既知の制約として受け入れました。make-you-chic-ui のリポジトリ側への直しの依頼は、次の Intent の候補です）:
+解消した既知の制約（Intent 260928-quality-followup の 100 で見つかり、依頼者の判断で既知の制約として受け入れていた2つ。make-you-chic-ui のリポジトリ側で直され、Intent 260929-log-deps-cleanup で固定先を `310e1ec` から `077f5b4` に上げて解消しました。100 の実測で、20 組・すべての状態で当たりません）:
 
-- **DSL の管理の画面の選ばれたタブ**: make-you-chic-ui の Tabs は、選ばれたタブの文字を `--color-primary`（ブランドカラーの 500 の色）で描きます。`green`・`orange` のライト（背景 `#fafafa` に対して計算で 3.16:1・3.41:1）と、`blue`・`purple` のダーク（背景 `#0b0f19` に対して計算で 3.71:1・3.56:1）で WCAG AA に届きません（ほかの組は 4.5:1 以上）。Tabs を使うほかの画面でも同じです。100 は、その組の「投入」のタブだけを既知の違反として扱います（`STATE_KNOWN_VIOLATIONS`）。
-- **primary のボタンの hover**: make-you-chic-ui の Button は、primary のボタンにマウスを重ねたとき、背景を `--color-primary-hover`（ブランドカラーの 600 の色）に替え、文字は `--color-primary-text` のままです。`green`・`orange` では濃い文字 `#111827` とのコントラストが計算で 3.54:1・3.43:1 で、WCAG AA に届きません（ライト・ダークとも。`blue`・`purple` は白の文字で届きます）。primary のボタンを使うすべての画面で同じです。100 は、プリファレンスの画面の「保存する」にマウスを重ねた状態を検査し、`green`・`orange` の4組（ライト・ダーク）だけを既知の違反として扱います（`STATE_KNOWN_VIOLATIONS`。実測で確かめた組）。050〜090 は hover でない状態を検査します。
+- **DSL の管理の画面の選ばれたタブ**: 以前は、make-you-chic-ui の Tabs が選ばれたタブの文字を `--color-primary`（ブランドカラーの 500 の色）で描き、`green`・`orange` のライト（背景 `#fafafa` に対して計算で 3.16:1・3.41:1）と、`blue`・`purple` のダーク（背景 `#0b0f19` に対して計算で 3.71:1・3.56:1）で WCAG AA に届きませんでした。`077f5b4` からは文字を `--color-primary-emphasis-text`（ライトは brand-700、ダークは brand-400）で描きます。下線は `--color-primary` のままです（文字ではないため、文字のコントラストの対象外）。
+- **primary のボタンの hover**: 以前は、make-you-chic-ui の Button が primary のボタンにマウスを重ねたとき、背景を `--color-primary-hover`（ブランドカラーの 600 の色）に替え、文字は `--color-primary-text` のままで、`green`・`orange` では濃い文字 `#111827` とのコントラストが計算で 3.54:1・3.43:1 でした。`077f5b4` からは、hover・active の文字を `--color-primary-hover-text`（白 `#fff`。テーマとブランドカラーに依らない）で描きます。100 は、プリファレンスの画面の「保存する」にマウスを重ねた状態を検査します。050〜090 は hover でない状態を検査します。
+
+`077f5b4` での値は次のとおりです（計算の値。WCAG 2.x の相対輝度の式で、`vendor/make-you-chic-ui` の `tokens.css`・`semantic.css` の色から計算）。
+
+| ブランドカラー | 選ばれたタブの文字（ライト、背景 `#fafafa`） | 選ばれたタブの文字（ダーク、背景 `#0b0f19`） | primary のボタンの hover（背景 brand-600 に白の文字） |
+|---|---|---|---|
+| `blue` | `#1e40af` 8.36:1 | `#60a5fa` 7.53:1 | `#1d4ed8` 6.70:1 |
+| `purple` | `#6b21a8` 8.35:1 | `#c084fc` 7.25:1 | `#7e22ce` 6.98:1 |
+| `green` | `#166534` 6.83:1 | `#4ade80` 10.99:1 | `#15803d` 5.02:1 |
+| `orange` | `#9a3412` 7.00:1 | `#fb923c` 8.46:1 | `#c2410c` 5.18:1 |
+
+- すべての組で WCAG AA（4.5:1）を満たします。primary のボタンの active（背景 brand-700 に白の文字）は、blue 8.72:1・purple 8.72:1・green 7.13:1・orange 7.31:1 です。
 
 ### 契約との差
 
