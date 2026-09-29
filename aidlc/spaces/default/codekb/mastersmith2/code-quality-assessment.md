@@ -1,82 +1,79 @@
 # コードの質の評価（mastersmith2）
 
-件数はファイルを数えた値・`grep` で数えた値で、テストを実行した値ではない（Gradle・npm は実行していない）。この文書に本文を書いた所見は K-3・K-5・K-9・K-10 で、ほかは持ち主の文書を参照する。
+件数はファイルを数えた値・`grep` で数えた値で、テストを実行した値ではない（Gradle・npm は実行していない）。この文書に本文を書いた所見は K-10（前回からの続き）と K-16 で、ほかは持ち主の文書を参照する（一覧は `business-overview.md`）。
 
 ## テスト
 
-| 対象 | 置き場と数 | 道具 |
+| 対象 | 置き場と数（前回 `e68f54d` に数えた値） | 道具 |
 |---|---|---|
-| バックエンドの単体 | `backend/src/test/java/`、`*Test` 151 ファイル（タスク `test`） | JUnit Jupiter・AssertJ・jqwik・ArchUnit |
-| バックエンドの結合 | 同上、`*IT` 108 ファイル（タスク `integrationTest`）。補助を含め 317 ファイル、テストの注釈は 1,332 個 | Spring Boot Test・Awaitility・Testcontainers・SubEthaSMTP |
-| 画面 | `frontend/src/**/*.test.ts(x)` 91 ファイル、`it(`・`test(` 702 個 | Vitest・Testing Library・user-event・vitest-axe・fast-check |
-| E2E | `frontend/e2e/*.e2e.ts` 9 ファイル、`test(` 32 個。`verify` と CI の外 | Playwright・axe-core |
+| バックエンドの単体 | `backend/src/test/java/`、`*Test` 151 ファイル（タスク `test`） | JUnit Jupiter・AssertJ・Mockito・jqwik・ArchUnit |
+| バックエンドの結合 | 同上、`*IT` 108 ファイル（タスク `integrationTest`）。その後 `HistogramBucketsIT` などが足された | Spring Boot Test（`OutputCaptureExtension`）・Awaitility・Testcontainers・SubEthaSMTP |
+| 画面 | `frontend/src/**/*.test.ts(x)` 91 ファイル | Vitest・Testing Library・user-event・vitest-axe・fast-check |
+| E2E | `frontend/e2e/*.e2e.ts` 10 ファイル（今回数えた。100 が前回の後に足された）。`verify` と CI の外 | Playwright・axe-core |
 
-前の Intent の記録では、CI の実行で結合テスト 562 件・画面のテスト 732 件だった（実行の値。ここでは確かめていない）。
+前の Intent の Build and Test の記録では、統合の後の `develop` で `verify`・E2E 110 件・CI が通った（コミット `b445b6b` の件名による。ここでは確かめていない）。
 
-### CI の2つの時間切れ
+### ログの確かめの向き（K-11 の関連）
 
-- `H2CompactionByPoolSuspensionIT` の 10 秒の待ち（K-4）: 本文と仮説は `architecture.md` の Interaction Diagrams 3。
-- `InvitationAdminPage.test.tsx` の1件（K-5）: 本文は下。
-- どちらも前の Intent（`260925-user-management`）で「次の Intent で直す」と受け入れた失敗で、`team.md` の「CI が失敗したら次の Bolt に進む前に原因を直す」「不安定なテストは原因を直すまで統合しない」との差が記録されている。
+- ログに秘密が出ないことの確かめは、`LogEvents`（ログの出来事の取り込み）と `JsonLogRecords.assertContainsNoSecret`（標準出力の JSON）の2つの形がある。`*SecretLeakIT` の7つが後者の形を使う（名前だけ確かめた）。
+- `InitialAdminInitializerTest` は、決まり（アプリのログにメールアドレスを出さない）と逆に「含まれること」を確かめている。本文は `component-inventory.md` の `user`（K-11）。
 
-### K-5 `InvitationAdminPage.test.tsx` の1件が Vitest の既定の 5 秒で動く
+### 前回の CI の2つの時間切れ（前回の K-4・K-5）
 
-確かめた事実:
-
-- 「keeps addresses and names out of storage, the URL and the console in every flow」（749 行）は `it` に上限の指定が無い。`frontend/vitest.config.ts`・`vitest.setup.ts` にも `testTimeout` が無く、`frontend/src` に個別の上限の指定も無い。Vitest の既定の 5 秒で動く。
-- 1つのテストで、招待 3 回（36 文字のメールアドレスを `user.type`）・送り直し 2 回・取り消し 2 回とページ送りを順に行う。
-- 前の Intent の記録では、1回目の CI で 4,583 ms で通り、2回目で 5 秒を超えた。手元の `verify` では通っていた。
-
-見立て（未検証）: 1つのテストの操作が多く（`user.type` は1文字ごとに描画する）、CI の runner で 5 秒すれすれになる。直し方の候補は、そのテストだけ上限を延ばす・入力を `user.paste` などに変える・流れを複数のテストに分ける。ほかの画面のテストにも 5 秒に近いものがあるかは、実行の時間を測らないと分からない。
+前回（`e68f54d`）の時点では、`H2CompactionByPoolSuspensionIT` の 10 秒の待ち（K-4）と `InvitationAdminPage.test.tsx` の1件が Vitest の既定の 5 秒で動くこと（K-5）が CI の失敗の原因だった。`b20bf1e`（上限を延ばし、失敗時の診断と不安定なテストの直しを足す）で扱われた（件名による。延ばした値と診断の形は今回確かめていない）。前回の見立て（`user.type` の1文字ごとの描画が 5 秒すれすれ、など）は `architecture.md` の Interaction Diagrams 3 と前回の記録に残る。
 
 ## カバレッジ
 
-- バックエンド: JaCoCo で全体の合計とパッケージごとに行 80%・分岐 70%（`backend/build.gradle.kts` 229〜262 行）。既存の一部のパッケージは `packagesJudgedByTotal` の一覧で全体の合計だけで判定する（K-10）。
-- 画面: `vitest.config.ts` の `thresholds`（行 80・分岐 70）。
+- バックエンド: JaCoCo で全体の合計とパッケージごとに行 80%・分岐 70%（`backend/build.gradle.kts` 236〜270 行）。既存の一部のパッケージは `packagesJudgedByTotal` の一覧で全体の合計だけで判定する（K-10）。
+- 画面: `vitest.config.ts` の `thresholds`（行 80・分岐 70、前回の記録）。
 - 計測から外すのは起動クラス・設定値だけのクラス・自動生成・`vendor/` に限る（`team.md` の Testing Posture）。
 
-### K-10 `team.md` の `packagesJudgedByTotal` の記述が今のビルドより古い
+### K-10 `team.md` の `packagesJudgedByTotal` の記述が今のビルドより古い（前回からの続き）
 
-確かめた事実: `team.md` の Testing Posture は一覧を「`user.domain`・`user.repository`・`user.service` を含む 22 パッケージ」と書くが、`backend/build.gradle.kts` の今の一覧は **12 個**（`access.domain`・`access.service`・`audit.repository`・`auth.domain`・`auth.repository`・`common.error.domain`・`common.error.service`・`common.error.web`・`common.health`・`common.i18n.domain`・`common.observability`・`common.web`）。コードの注記どおり、user-management の B2・U8 で `user.*` を含む 10 個が外れた。
+確かめた事実（アーキテクトが `backend/build.gradle.kts` 221〜234 行で確かめ直した）: `team.md` の Testing Posture は一覧を「`user.domain`・`user.repository`・`user.service` を含む 22 パッケージ」と書くが、今の一覧は **12 個**（`access.domain`・`access.service`・`audit.repository`・`auth.domain`・`auth.repository`・`common.error.domain`・`common.error.service`・`common.error.web`・`common.health`・`common.i18n.domain`・`common.observability`・`common.web`）。210〜220 行の説明どおり、Intent `260925-user-management` の B2 で `user.*` を含む7つ、U8 で3つが外れた（`user.service` はコミット `9a9a633` で外れた）。前回（`260928-quality-followup`）の後も `team.md` は直っていない。
 
-帰結: 今回の変更がこの一覧のパッケージ（K-6 の直しをコードで行うなら `common.observability` など）に触れると、`team.md` によりテストを足してそのパッケージの下限を満たし、一覧から外す作業が付く。`team.md` の記述の直しは、ワークフローの学びの手順（依頼者の承認）で扱う。
+帰結:
+
+- 今回の依頼の「team.md も修正する」の対象の候補である（どこを直すかは要件で決める。この記述のほかに、Dependabot の受け方などの決まりを変えるかも含む）。`team.md` は「Edit at the gate, not directly」の決まりのため、直し方（practices の関門か、学びの手順か）も要件で決める。
+- K-11 の直しで手を入れる `user.service` は既にパッケージごとの下限の対象で、一覧から外す作業は付かない。
 
 ## 検査と CI
 
-- 形と静的検査: Spotless＋palantir-java-format（Java・Kotlin DSL・メールのテンプレートのライセンスヘッダー）、Prettier・oxlint・ESLint・Stylelint（`frontend/`）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`）、Gitleaks（pre-commit と CI）、OSV-Scanner。
-- CI: `.github/workflows/ci.yml` は `./gradlew verify` を1回、`timeout-minutes: 60`。サブモジュールは固定先を取得し、WAR を成果物として保存する。E2E（ブラウザの axe のコントラストの検査を含む）は CI の外（K-2、`component-inventory.md` の `frontend-e2e`）。
-- 観測: p95 の警報3件がバケットの無い指標を問い合わせており、値を持たない（K-6、`architecture.md` の Interaction Diagrams 1）。
+- 形と静的検査: Spotless（Gradle のプラグイン 8.10.2）＋palantir-java-format（Java・Kotlin DSL・メールのテンプレートのライセンスヘッダー）、Prettier・oxlint・ESLint（`@typescript-eslint/parser`）・Stylelint（`frontend/`）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`）、Gitleaks（pre-commit と CI）、OSV-Scanner。
+- CI: `.github/workflows/ci.yml` は `develop` へのプッシュ・タグ `v*`・手動で動き、`permissions: contents: read`、Actions はコミットのハッシュで固定。verify の仕事は checkout（`submodules: true`）→ setup-java（temurin 25）→ setup-node（24、npm のキャッシュは `frontend/package-lock.json` と `vendor/make-you-chic-ui/package-lock.json`）→ setup-gradle → Gitleaks・OSV-Scanner を SHA-256 を確かめて入れる → `./gradlew verify` → WAR を成果物として保存。release の仕事はタグのときだけ WAR を GitHub のリリースに添付する。E2E は CI の外（K-13）。
+- 更新の知らせ: Dependabot の ignore と開いた知らせは K-14（`dependencies.md`）。
+- 観測: p95 の警報3件は境界のバケットで値を持つが、`ms-check-p95` のしきい値が境界に無い（K-15、`architecture.md` の Interaction Diagrams 1）。
 
 ## 画面の質
 
-### K-3 make-you-chic-ui の直しが及ばない、アプリ自身の CSS の文字の色
+### 前回の K-3 アプリ自身の CSS の文字の色
 
-確かめた事実:
-
-- `frontend/src/features/preferences/PreferencesForm.css` 47 行の `.preferences-choice-error` は `color: var(--color-danger)`。README 948 行も「同じ色」と書く。make-you-chic-ui の直し（K-1）は FormField の誤りの文字を `--color-danger-text`（dark は `--red-400`）に切り替えるが、この独自のクラスには及ばない。
-- `frontend/src/features/dsl/DslSubmitForm.css` 27 行の `.dsl-link` と `frontend/src/app/pages/Page.css` 33 行の `.page-link` は `color: var(--color-primary)`（文字の色に塗りの色を使う）。`.page-link` は `frontend/src` のどの `.tsx` にも使われていない（`grep`）。
-
-見立て（未検証）: dark のテーマで `.preferences-choice-error` は FormField の直す前と同じコントラスト不足になりうる。サーバーが誤りを返したときだけ出るため、E2E の 080 で検査されていない可能性がある（K-2）。`.dsl-link` は E2E の axe の対象の画面に入っていない。直すなら K-1 で足された文字用のトークン（`--color-danger-text` など）に切り替える形が考えられる。`.page-link` は使われていないため、消すか残すかを決める。
+前回（`e68f54d`）の時点では、`PreferencesForm.css` の `.preferences-choice-error`（`--color-danger`）、`DslSubmitForm.css` の `.dsl-link` と使われていない `Page.css` の `.page-link`（`--color-primary`）が、make-you-chic-ui の文字用のトークンの直しの外にあった。`79a0395`（E2E の既知の違反の一覧とアプリ独自の CSS を直す）で3つの CSS が変わった（件名と変わったファイルによる。中身は今回確かめていない）。今回の make-you-chic-ui の更新（K-12）で足される `--color-primary-emphasis-text`・`--color-primary-hover-text` をアプリの CSS が使うかは、確かめていない。
 
 ## 文書
 
-- `README.md`（約 950 行）は起動・環境変数・監視・監査・招待・既知の制約・戻し方まで持つ。コードのコメントは日本語で、決定の出どころ（Intent・単位・決定の番号）を丁寧に書いている。
-- README の「既知の制約（ブランドカラーのコントラスト）」と E2E の一覧の説明は、K-1 の更新で古くなる（K-2）。
-- 承認済みの運用の記録に、コードと合わない記述がある（K-8、`api-documentation.md`）。
+- `README.md`（1,069 行）は起動・環境変数・E2E・監視・警報と対応の手順・監査・招待・既知の制約・戻し方まで持つ。コードのコメントは日本語で、決定の出どころ（Intent・単位・決定の番号）を丁寧に書いている。
+- 前回の K-9（運用の手順書の置き場が無い）は、`7c2fea4` で README に「警報と対応の手順」の節（692 行〜）が足されて扱われた。前回の K-8（承認済みの運用の記録の誤り）も同じコミットの README の直しで扱われた（件名による、`api-documentation.md`）。
 
-### K-9 運用の手順書・警報の説明・ログの問い合わせがリポジトリの中（`aidlc/` の外）に無い
+### K-16 README の古い記述と、固定先を上げた後に書き直す節
 
-確かめた事実: `runbooks.md`・`alarms.md`・`log-queries.md` は `aidlc/spaces/default/intents/*/operation/` の Intent の記録の中にだけあり、リポジトリのアプリの側（`aidlc/` の外）には無い。README は運用の一部（監視・監査・戻し方）を持つが、警報ごとの説明と手順書は持たない。
+確かめた事実（開発担当が行を示した。アーキテクトは固定先だけを `git submodule status` で確かめ直した）:
 
-帰結（決める点）: K-8 の「README と手順書で正す」の手順書の置き場（README の節・この Intent の運用の記録・新しい文書のどれか）を要件で決める必要がある。承認済みの前の Intent の記録は書き換えず、差を明記する（`project.md` の Way of Working・Change Control）。
+- 38 行「make-you-chic-ui の固定先は `735ef04`」は、今の固定先 `310e1ec` と食い違う（前の Intent の更新漏れ）。
+- 今回外す E2E の既知の違反（K-13）を説明する節: 158 行（100 の説明）・957 行（DSL の管理の画面のコントラスト）・990〜993 行（「残る既知の制約」の2件）。
+- `310e1ec` の解消を説明する節（固定先を上げた後に書き直す候補）: 113・122・130・138・909・924・938・974〜988 行。976〜988 行の表は green・orange の primary の Button の文字が濃い色という前提で、`077f5b4` で hover の文字が白になると前提が変わる（K-12 の見立て）。
+- ms-check-p95 の 300 ms（K-15）: 682〜683 行（境界と刻みの説明）・699〜706 行（警報と対応の手順の表）。
+- 初期管理者の起動の確かめ（K-11）: 215 行が「初期管理者を作成しました」の INFO を確かめる手順に使う。664 行は標準出力のログは伏せない（外部エクスポートだけ伏せる）と説明する。774 行は監査の書き込みの失敗の ERROR がメールアドレスをキーと値で載せると書く（コードは確かめていない）。
+
+帰結: 固定先の更新・既知の違反の削除・しきい値の直し・ログの直しのそれぞれで、README の上の行を同じ変更で直す必要がある。38 行の食い違いは今回の固定先の更新でまとめて直せる。
 
 ## 技術的負債の一覧
 
 | 項目 | 所見 | 重さ |
 |---|---|---|
-| コントラストの Not Met と E2E の既知の違反の一覧 | K-1・K-2・K-3 | 高（依頼の対象） |
-| CI の2つの時間切れ | K-4・K-5 | 高（CI が赤いまま） |
-| p95 の警報3件が働かない | K-6 | 高（監視の穴） |
-| Dependabot の作業ブランチ 15 本と固定の決まりとの衝突 | K-7 | 中 |
-| 運用の記録の誤りと、手順書の置き場が無いこと | K-8・K-9 | 中 |
+| 初期管理者の作成のログがメールアドレスを出し、テストが逆向きに確かめる | K-11 | 高（`project.md` の Forbidden に反する） |
+| make-you-chic-ui の固定先と E2E の 100 の既知の違反 | K-12・K-13 | 中（依頼の対象。確かめは手元の E2E だけ） |
+| Dependabot の開いた知らせ4件と npm の ignore が無いこと | K-14 | 中 |
+| `ms-check-p95` のしきい値が境界に無い | K-15 | 中（判定が粗い） |
 | `team.md` の記述の古さ | K-10 | 低（記録の食い違い） |
+| README の固定先の記述の古さと、書き直しの対象の節 | K-16 | 低 |

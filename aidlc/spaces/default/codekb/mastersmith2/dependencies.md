@@ -1,6 +1,6 @@
 # 依存関係（mastersmith2）
 
-部品の版は `technology-stack.md`、部品ごとの責務は `component-inventory.md` に書き、ここでは依存の向き・管理の決まりと K-7 の本文を書く。
+部品の版は `technology-stack.md`、部品ごとの責務は `component-inventory.md` に書き、ここでは依存の向き・管理の決まりと K-14 の本文を書く。
 
 ## 外部への依存
 
@@ -16,38 +16,70 @@
 ### ビルド時・検査時に使うもの
 
 - Maven Central（Gradle の依存の唯一の取得元。ビルドのプラグインは Gradle Plugin Portal）、npm のレジストリ
-- Git サブモジュール `vendor/make-you-chic-ui`（npm の `file:`、`vendorBuild` で先にビルド）と `vendor/java-mustache-processor`（Gradle の composite build）
-- Gitleaks・OSV-Scanner（版と SHA-256 を固定）。OSV-Scanner の対象は `backend/gradle.lockfile`・`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json` の3つ（`build.gradle.kts` 228〜229 行）
+- Git サブモジュール `vendor/make-you-chic-ui`（npm の `file:`、`vendorBuild` で先にビルド）と `vendor/java-mustache-processor`（Gradle の composite build）。定義は `.gitmodules`
+- Gitleaks・OSV-Scanner（版と SHA-256 を固定）。OSV-Scanner の対象は `backend/gradle.lockfile`・`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json` の3つ（前回の記録）
 - コンテナの実行環境（Testcontainers による対象DB の結合テスト、イメージは `TargetDbImages` の digest）
 
 ## 依存の管理の決まり
 
-- Gradle は lockfile で固定、npm は `npm ci`（`package-lock.json`）。CI も lockfile どおりに入れる。
+- Gradle の依存は lockfile で固定、npm は `npm ci`（`package-lock.json`）。CI も lockfile どおりに入れる。Gradle のプラグイン（spotless など）は lockfile に載らず、`gradle/libs.versions.toml` の版の1行で決まる。
 - 新しい依存は、採用の前にライセンスと、推移依存で既存の部品の版を引き上げないかを確かめる（`team.md` の Code Style、`project.md` の Corrections）。
-- 画面の実行時の依存の脆弱性は High 以上で統合を止め、開発時だけの依存は `config/npm-build-tools.txt` の道具（Vite・TypeScript など）だけ止める（`team.md` の Deployment）。
-- Dependabot のプルリクエストは GitHub の画面でマージせず、手元で版と lockfile をまとめて更新し `./gradlew verify` を通してから `develop` に統合して閉じる（`team.md` の Way of Working）。`dependabot.yml` の gradle は `exclude-paths: vendor/**`、npm は `/frontend` だけ、ほかに github-actions・docker・docker-compose。Dependabot alerts は無効のままで、脆弱性の関門は OSV-Scanner だけ（前の Intent の決定）。
+- 画面の依存の脆弱性の判定（`build.gradle.kts` 226〜340 行）: lockfile の `dev`・`devOptional` の印で実行時と開発時を分け、実行時は High 以上で失敗、開発時は警告だけ。ただし `config/npm-build-tools.txt` の道具と `MAL-` は失敗（`team.md` の Deployment）。
+- Dependabot のプルリクエストは GitHub の画面でマージせず、手元で版と lockfile をまとめて更新し `./gradlew verify` を通してから `develop` に統合して閉じる（`team.md` の Way of Working）。Dependabot alerts は無効のままで、脆弱性の関門は OSV-Scanner だけ（前の Intent の決定）。
 
-## K-7 Dependabot の作業ブランチと、既存の決まりとぶつかる更新
+## K-14 Dependabot の開いたプルリクエストと ignore の今の形
 
-確かめた事実（`git branch -r` の手元の追跡の参照。最後の取得は `origin/develop` と同じ時点。GitHub 上でプルリクエストが開いているかは確かめていない。前の Intent の記録では開いたプルリクエストは 11 件）: `origin/dependabot/*` が 15 本ある。一部は古い `develop`（`0d72ab8`・`fd44e79`・`37a3a4f`）から作られている。
+### 確かめた事実
 
-| 種類 | 更新 | 既存の決まりとの関係 |
-|---|---|---|
-| gradle | `networknt-json-schema-validator` 3.0.6→3.0.7 | ぶつかる。3.0.7 は Jackson を Spring Boot の版から引き上げるため 3.0.6 を選んだ経緯（`project.md` の Corrections） |
-| gradle | `archunit` 1.5.0→1.5.1・`snakeyaml` 2.6→2.7 | 決まりとはぶつからない（小さな更新） |
-| gradle | `opentelemetry-logback-appender` 2.28.1-alpha→2.31.1-alpha（lockfile の8行も変わる） | ぶつかる。`project.md` の Tech Stack で 2.28.1-alpha に固定（Spring Boot 4.1.1 の OpenTelemetry 1.62 と食い違うため） |
-| gradle | Gradle wrapper 9.7.1→9.8.0 | `gradlew`・`gradlew.bat` の中身も変わる |
-| npm | `prettier` 3.9.8→3.9.9・`vite` 8.3.0→8.3.1 | `vite` は `config/npm-build-tools.txt` の対象 |
-| npm | `typescript` ^6.0.3→^7.0.2・`vitest` と `@vitest/coverage-v8` ^4.1.11→^5.0.2 | 大きな版の更新。`typescript` は `config/npm-build-tools.txt` の対象 |
-| docker | `eclipse-temurin` 25.0.4_7→26.0.2_10 | ぶつかる。`libs.versions.toml` の `java = "25"` と CI の JDK 25 と版が分かれる |
-| docker-compose | `grafana/otel-lgtm` 0.33.1→0.34.0 | 手元の監視だけ |
-| docker-compose | `mysql` 8.4.11→26.7.0・`mariadb` 11.8.9→13.0.2・`postgres` 18.6 の digest | `TargetDbImages` の digest の定数（34・40・47 行）と一緒に上げる決まり（`dependabot.yml` のコメント）。`mysql`・`mariadb` は大きな版の飛びで、対象DB の読み取り（`information_schema` など）の互換は確かめていない |
+`.github/dependabot.yml` の今の ignore（ほかの ecosystem の設定は下の表）:
 
-帰結（決める点）: どれを取り込み、どれを閉じる・見送るかは要件で決める。取り込むものは `team.md` の受け方（手元でまとめて更新して `verify`）に従い、固定の決まりとぶつかるものは決まりを変えるか見送るかを明示する。
+| ecosystem | 対象 | ignore | 説明のコメント |
+|---|---|---|---|
+| gradle（`/`、`exclude-paths: vendor/**`） | `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0` | すべての版 | Spring Boot を上げるときに外す |
+| gradle | `com.networknt:json-schema-validator` | すべての版 | Spring Boot の管理の Jackson が 3.2 系以上になったときに外す |
+| gradle | `tools.jackson:jackson-bom` | `semver-major`・`semver-minor` だけ（48〜49 行） | 3.1 系のパッチだけを知らせる（42〜44 行）。Spring Boot を上げるときに見直す |
+| npm（`/frontend`） | — | 無い | typescript・typescript-eslint・@types/node の扱いは書かれていない |
+| docker（`/`） | `eclipse-temurin` | `semver-major` | JDK をビルド・CI とそろえて上げるときに外す |
+| github-actions・docker-compose | — | 無い | |
+
+開いているプルリクエスト（開発担当の `gh pr list`、2026-09-28〜29 に作成）:
+
+| 番号 | 更新 | 版の置き場 | 既存の決まりとの関係 |
+|---|---|---|---|
+| #20 | `tools.jackson:jackson-bom` 3.1.6 → 3.1.7 | `gradle/libs.versions.toml` 28 行 `jackson`、`backend/gradle.lockfile` 254〜256 行（`jackson-core`・`jackson-databind`・`jackson-bom`） | 今の ignore はパッチを知らせる。依頼は「すべての版で ignore」 |
+| #19 | `com.diffplug.spotless` 8.10.2 → 8.10.3 | `gradle/libs.versions.toml` 29 行だけ（適用は `build.gradle.kts` 24 行・`backend/build.gradle.kts` 29 行） | lockfile に載らないため、更新は toml の1行 |
+| #18 | `@types/node` 26.6.2 → 26.6.3（`/frontend`） | `frontend/package.json` の devDependencies `^26.2.0` と `frontend/package-lock.json` | 範囲の中のパッチ。`config/npm-build-tools.txt` には無い |
+| #5 | `typescript` 6.0.3 → 7.0.2（`/frontend`） | `frontend/package.json` の `^6.0.3` と lock | `config/npm-build-tools.txt` の対象。下の peer の範囲の外 |
+
+TypeScript と typescript-eslint の関係:
+
+- プロジェクトは `typescript-eslint`（まとめのパッケージ）ではなく `@typescript-eslint/parser` だけを直接持つ（`^8.67.0`、lock の解決は 8.70.1）。typescript-eslint のプルリクエストは開いていない。
+- `@typescript-eslint/parser`・`project-service`・`tsconfig-utils`・`typescript-estree` の peer は `typescript >=4.8.4 <6.1.0`（6.1 以上を受け付けない）。
+- `typescript` の lock の項目には `dev: true` が付かない（i18next・react-i18next の peer `^5 || ^6 || ^7` から届くため）。OSV の判定では実行時の扱いになり、あわせて `config/npm-build-tools.txt` にも載る。
+- `@types/node` を求めるのは root と、vite の peer（`^20.19.0 || >=22.12.0`）・vitest の peer（`^22.0.0 || >=24.0.0`）。
+
+Jackson の宣言: 直接宣言するのは `tools.jackson:jackson-bom` だけで、ほかの Jackson の部品は Spring Boot の BOM が管理する（`backend/gradle.lockfile` 9 行の `com.fasterxml.jackson.core:jackson-annotations` は 2.21）。
+
+### 見立て（未検証）
+
+- TypeScript 7.0.2（#5）を取り込むと `@typescript-eslint/*` の peer の範囲を外れ、`npm ci` の peer の検査または ESLint の実行が失敗しうる（開発担当の仮説。確かめは Construction）。
+- Jackson を「すべての版で ignore」にするには、48〜49 行の `update-types` を外し 42〜44 行の説明を書き換えれば足りる見込み（対象の名前は `tools.jackson:jackson-bom` の1つ）。
+- TypeScript 7 を ignore にしても、6 系に High の脆弱性が出れば OSV の判定で統合が止まる（`typescript` は実行時の扱いかつ道具の一覧にある）。
+- `@types/node` の大きな版（26）と実行の Node（24）のずれの影響は、後の段で判断する。
+
+### 帰結（決める点）
+
+- 取り込む: #19（spotless、toml の1行）・#18（@types/node、package.json と lock）。`team.md` の受け方（手元でまとめて更新して `verify`）に従い、プルリクエストは閉じる。
+- ignore の形: Jackson は `update-types` を外して全版にする。TypeScript 7 の ignore を `typescript` だけにするか、`@typescript-eslint/*` も含めるか、どの `update-types`（major だけか）にするかは要件で決める。npm の ignore はこれが最初になる。
+- #20（Jackson 3.1.7）・#5（TypeScript 7）のプルリクエストを閉じるかどうかも要件で決める。
+
+## 前回の K-7（Dependabot の作業ブランチと固定の決まり）
+
+前回（`e68f54d`）の時点で `origin/dependabot/*` が 15 本あり、固定の決まりとぶつかる更新（networknt 3.0.7・opentelemetry-logback-appender・`eclipse-temurin` 26 など）があった。`de75b81`（Dependabot の知らせを取り込み、Jackson の脆弱性を直す）で扱われ、ぶつかるものは上の表の ignore になった（`dependabot.yml` のコメントによる。個々のブランチの行方は今回確かめていない）。
 
 ## 内部の依存（バックエンドのパッケージ間）
 
-各パッケージの `import cherry.mastersmith.*` を検索して確かめた（アーキテクト、2026-09-29）。数は import の行の数。
+この節は前回（`e68f54d`）に各パッケージの `import cherry.mastersmith.*` を検索して確かめたもので、今回は数え直していない。数は import の行の数。
 
 ```mermaid
 flowchart TD
@@ -76,11 +108,10 @@ flowchart TD
 
 <!-- Text fallback: config は common を使う。auth は user（service 13 行・domain 2 行）と common を使う。access は auth・common・config を使う。user は common（error と observability）を使う。invitation は user（domain 35 行・service 4 行）・mail（domain と service）・common を使う。appearance は common.security だけを使う。audit は出来事の型のために invitation・user・auth・access・dslmanage の domain を使う。dslmanage は dsl・targetdb・user・auth・common を使う。mail・dsl・targetdb はアプリの中のほかのパッケージを import しない。循環する依存は無い。 -->
 
-- 前回の記録（`c438dc0`）からの変化: `user` が `common.error`・`common.observability` を使うようになった（前回は import なし）。`invitation`・`mail`・`appearance` が増え、`audit` の依存先に `invitation.domain`・`user.domain` が加わった（出来事を足すたびに `audit` の依存先が増える形は変わらない）。
 - `mail` はアプリの中のほかのパッケージを import しない。`invitation` から `audit` への知らせは出来事で行う。
 - ArchUnit の境界テストはこの向きを確かめる作りだが、今回は読み直していない。
 
-### `common` の中の依存（今回の検索で分かった範囲）
+### `common` の中の依存（前回の検索で分かった範囲）
 
 | 使う側 | 使う相手 |
 |---|---|
@@ -91,8 +122,6 @@ flowchart TD
 | `invitation` | `common.error`・`common.security`・`common.web`・`common.observability` |
 | `appearance` | `common.security` |
 | `dslmanage` | `common.error`・`common.i18n`・`common.web` |
-
-`common` の中どうしの依存は今回は数え直していない（前回の記録を参照）。
 
 ## 画面の依存
 
@@ -110,11 +139,11 @@ flowchart TD
   disp --> myc
 ```
 
-<!-- Text fallback: main.tsx が App.tsx を起動し、App.tsx は make-you-chic-ui・見た目の設定（display-settings）・登録・振り分けを組み合わせる。登録は各機能（auth・admin・dsl・invitation・registration・preferences）の registration.ts を読み込み、各機能は共通の API の呼び出しと make-you-chic-ui の部品を使う。見た目の設定も API の呼び出しと make-you-chic-ui の ThemeProvider を使う。画面の import は今回数え直しておらず、前回の記録とファイルの一覧による。 -->
+<!-- Text fallback: main.tsx が App.tsx を起動し、App.tsx は make-you-chic-ui・見た目の設定（display-settings）・登録・振り分けを組み合わせる。登録は各機能（auth・admin・dsl・invitation・registration・preferences）の registration.ts を読み込み、各機能は共通の API の呼び出しと make-you-chic-ui の部品を使う。見た目の設定も API の呼び出しと make-you-chic-ui の ThemeProvider を使う。画面の import は前回までの記録とファイルの一覧による。 -->
 
 ## ビルドのタスクの依存
 
 - `verify` の段の並びは `architecture.md` の Interaction Diagrams 4。
 - `frontend` → `make-you-chic-ui`（`vendorBuild` が作る `dist` を読む）。`backend` → `java-mustache-processor`（composite build）。
-- `vendorUnchanged`・`mustacheVendorUnchanged` はサブモジュールの中の `git status --porcelain` が空であることを確かめる（固定先の変更は止めない）。
+- `vendorUnchanged`・`mustacheVendorUnchanged` はサブモジュールの中の `git status --porcelain` が空であることを確かめる（固定先の変更は止めない。前回の記録）。
 - `backend:bootWar` は画面の `dist` を同梱する。イメージは WAR をコピーするだけ（`Dockerfile`）。

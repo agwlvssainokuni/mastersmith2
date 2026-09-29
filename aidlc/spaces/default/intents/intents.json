@@ -54,5 +54,12 @@
     "dirName": "260928-quality-followup",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0ed6f-b91d-779c-90e0-a8114602f00c",
+    "slug": "log-deps-cleanup",
+    "dirName": "260929-log-deps-cleanup",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

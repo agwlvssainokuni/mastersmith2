@@ -1,0 +1,1 @@
+"初期管理者の作成のログからメールアドレスを外し、make-you-chic-ui の固定先を 077f5b4 に更新して E2E の既知の違反を外し、Dependabot の spotless と @types/node を取り込み、Jackson をすべての版で ignore にし、TypeScript 7 と typescript-eslint の ignore を決め、ms-check-p95 の境界を直す。team.mdも修正する。"
