@@ -29,6 +29,24 @@ updates:
     # サブモジュールの依存の更新は java-mustache-processor のリポジトリ側で行う（Intent 260925-user-management の CI Pipeline の Q1）。
     exclude-paths:
       - "vendor/**"
+    # 見送る更新（Intent 260928-quality-followup の FR5.4、F2: C・Q1: A）。
+    # opentelemetry-logback-appender は 2.28.1-alpha に固定している（Spring Boot 4.1.1 の OpenTelemetry 1.62 と、より新しい版が
+    # 食い違い、外部エクスポートを有効にしたときに失敗するため。project.md の Tech Stack）。外部エクスポートが既定で無効の
+    # ./gradlew verify ではこの失敗が現れず確かめられないため、すべての更新を知らせない。
+    # 外す時期: Spring Boot を上げるとき（この部品の版も合わせて見直し、外部エクスポートを有効にして確かめる）。
+    #
+    # networknt-json-schema-validator は 3.0.6 に固定している。3.0.7 以降はアプリ全体の Jackson を 3.2 系に引き上げ、Spring Boot の
+    # 管理の 3.1 系から外れるため（project.md の学び、Intent 260928-quality-followup の G4: A）。すべての更新を知らせない。
+    # 外す時期: Spring Boot を上げて、Spring Boot の管理の Jackson が 3.2 系以上になったとき。
+    #
+    # Jackson の BOM（tools.jackson:jackson-bom）は、脆弱性の直しのために Spring Boot の管理の 3.1 系のままパッチの版だけを
+    # 上書きしている（Intent 260928-quality-followup の G4: A）。3.2 系以上への更新は知らせず、3.1 系のパッチの更新だけを知らせる。
+    # 外す時期: Spring Boot を上げるとき（この上書きの要否を合わせて見直す）。
+    ignore:
+      - dependency-name: "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0"
+      - dependency-name: "com.networknt:json-schema-validator"
+      - dependency-name: "tools.jackson:jackson-bom"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
@@ -42,6 +60,14 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # 見送る更新（Intent 260928-quality-followup の FR5.4、F2: C・Q1: A）。
+    # 実行のイメージ（Dockerfile の eclipse-temurin）の JDK の大きな版は、ビルドと CI の JDK（gradle/libs.versions.toml の
+    # java = "25"、.github/workflows/ci.yml の java-version）とそろえる。./gradlew verify はイメージを作らず確かめられないため、
+    # 大きな版の更新だけを知らせない（25 の中の小さな更新は知らせる）。
+    # 外す時期: JDK をビルド・CI とそろえて上げるとき。
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
   # compose.yaml のイメージ（手元でメールを見る受け手 Mailpit、手元の監視、見本の対象DB など。Intent 260925-user-management の U1）。
   # 見本の対象DB のイメージを上げるときは、結合テストのイメージの定数（TargetDbImages）と一緒に上げる。
   - package-ecosystem: docker-compose

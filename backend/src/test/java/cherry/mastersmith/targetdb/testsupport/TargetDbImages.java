@@ -21,31 +21,38 @@ import org.testcontainers.utility.DockerImageName;
  * 対象DB の結合テストのイメージの版とダイジェスト（NFR12.1。1か所の定数）。
  *
  * <p>compose.yaml の手元で試す対象DB（profile {@code targetdb-*}）も同じ値を使う（{@code <版>@<ダイジェスト>}）。版を上げる
- * ときは、両方を同じ値に直し、全検査を通してから統合する。ダイジェストは複数の CPU（amd64・arm64）をまとめた一覧のもの。
+ * ときは、両方を同じ値に直し、全検査を通してから統合する。負荷の試験の使い捨ての環境（docker/perf/compose.yaml）も同じ値に
+ * そろえる。ダイジェストは複数の CPU（amd64・arm64）をまとめた一覧のもの。
  *
  * <p>Testcontainers には、ダイジェストだけで指定する（版とダイジェストを両方書くと、版をイメージの名前の一部と読むため）。
  */
 public final class TargetDbImages {
 
-    /** MySQL の版（長く支援される版 8.4 の系列）。 */
-    public static final String MYSQL_VERSION = "8.4.11";
+    /**
+     * MySQL の版（26.7 の系列）。長く支援される版（8.4 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
+     * 上げた（Intent 260928-quality-followup の FR5.2）。
+     */
+    public static final String MYSQL_VERSION = "26.7.0";
 
     /** MySQL のイメージのダイジェスト。 */
-    public static final String MYSQL_DIGEST = "sha256:0744ee5ef89ce6ccfa13de3e579fe6b9e27f93dd70da9c06d2c908b1b193fb8d";
+    public static final String MYSQL_DIGEST = "sha256:ade067ae2fb15eeb6143e81185afe22573e3b3addc58aaf90c41999fa6883991";
 
-    /** MariaDB の版（長く支援される版 11.8 の系列）。 */
-    public static final String MARIADB_VERSION = "11.8.9";
+    /**
+     * MariaDB の版（13.0 の系列）。長く支援される版（11.8 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
+     * 上げた（Intent 260928-quality-followup の FR5.2）。
+     */
+    public static final String MARIADB_VERSION = "13.0.2";
 
     /** MariaDB のイメージのダイジェスト。 */
     public static final String MARIADB_DIGEST =
-            "sha256:79d59758afc91b89b120b0a8904d637f5a3b3e1c4900f29b740d6d46c72fef68";
+            "sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d";
 
     /** PostgreSQL の版（18 の系列）。 */
     public static final String POSTGRES_VERSION = "18.6";
 
     /** PostgreSQL のイメージのダイジェスト。 */
     public static final String POSTGRES_DIGEST =
-            "sha256:86c951e05bf56c93d95d397747fb8820ac76cc3bedb78f43abd83eedbe3666ae";
+            "sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722";
 
     private TargetDbImages() {}
 

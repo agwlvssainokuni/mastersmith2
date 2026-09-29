@@ -58,6 +58,13 @@ dependencies {
     providedRuntime(bom)
     testImplementation(bom)
     testRuntimeOnly(bom)
+    // Jackson の版を、Spring Boot の管理の 3.1.5 から同じ 3.1 系の修正版に上げる（gradle/libs.versions.toml の jackson の説明を参照）。
+    // Spring Boot の BOM と同じく、Jackson の部品の版を Jackson の BOM でまとめてそろえる（高い方の版が選ばれる）。
+    val jacksonBom = platform(libs.jackson.bom)
+    implementation(jacksonBom)
+    providedRuntime(jacksonBom)
+    testImplementation(jacksonBom)
+    testRuntimeOnly(jacksonBom)
 
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.security)
