@@ -1,0 +1,176 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR5.4",
+    "FR5.5",
+    "FR6.1",
+    "FR6.2",
+    "FR6.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "frontend/e2e/050-display-accessibility.e2e.ts"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/PreferencesForm.css"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "frontend/src/features/dsl/DslSubmitForm.css"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "frontend/src/app/pages/Page.css"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    },
+    {
+      "id": "FR3.3",
+      "status": "Deferred",
+      "target": "Build and Test: 診断の実装は H2CompactionByPoolSuspensionIT.java と InvitationAdminPage.test.tsx にあるが、わざと時間切れにして診断が失敗の知らせとログに出ることの1回の確かめ（コードに残さない）は Build and Test が持ち主（計画の 7節）"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260928-quality-followup/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "docker/monitoring/provisioning/alerting/mastersmith.yaml"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "docker/monitoring/dashboards/mastersmith-overview.json"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "compose.yaml"
+    },
+    {
+      "id": "FR5.4",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR5.5",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260928-quality-followup/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/260928-quality-followup/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "FR6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/RegistrationApiIT.java"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "frontend/e2e/100-app-text-contrast.e2e.ts"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "Build and Test: 依頼者の git push の後の CI の ./gradlew verify が通ることを1回以上確かめる（CI は統合の後に動くため、この段では確かめられない。計画の 7節）"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/observability/HistogramBucketsIT.java"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/config/ExposureIT.java"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "build.gradle.kts"
+    }
+  ]
+}

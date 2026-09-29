@@ -1,0 +1,100 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    {
+      "path": ".github/dependabot.yml"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/HistogramBucketsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "docker/monitoring/dashboards/mastersmith-overview.json"
+    },
+    {
+      "path": "docker/perf/compose.yaml"
+    },
+    {
+      "path": "frontend/e2e/050-display-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/060-invitation-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/070-registration-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/100-app-text-contrast.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "path": "frontend/e2e/support/preferencesFixtures.ts"
+    },
+    {
+      "path": "frontend/package-lock.json"
+    },
+    {
+      "path": "frontend/package.json"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplaySettingsProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/Page.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslSubmitForm.css"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.css"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.jar"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties"
+    },
+    {
+      "path": "gradlew.bat"
+    },
+    {
+      "path": "settings-gradle.lockfile"
+    },
+    {
+      "path": "vendor/make-you-chic-ui"
+    }
+  ]
+}
