@@ -19,7 +19,9 @@
 // （src/features/preferences/preferencesApi.ts の Preferences）を付ける。本物の応答と項目の名前・型が一致することを、
 // 080 の測りで毎回確かめる（hasPreferencesShape。値は比べない。project.md の Corrections）。
 // 氏名は固定のテストの値だけで、実在の個人に関する値を使わない。
-import type { Preferences } from '../../src/features/preferences/preferencesApi'
+import type { ReadFieldError } from '../../src/features/preferences/fieldErrors'
+import type { Preferences, PreferencesField } from '../../src/features/preferences/preferencesApi'
+import type { ProblemDetails } from '../../src/shared/api-client/apiError'
 
 /** 差し替えの答えの氏名（固定のテストの値） */
 export const SAMPLE_DISPLAY_NAME = '検査 太郎'
@@ -53,4 +55,29 @@ export function hasPreferencesShape(body: unknown): boolean {
     THEMES.includes(String(record.theme)) &&
     FONT_SIZES.includes(String(record.fontSize))
   )
+}
+
+/**
+ * PUT /api/me/preferences の 400 VALIDATION_FAILED の見本（Intent 260928-quality-followup の 100 が、選択のまとまりの誤りを
+ * 画面に出すために使う）。形はバックエンドの MeController（業務エラーの code と、項目ごとの `fieldErrors: [{ field, reason }]`）
+ * と、画面の側の読み方（fieldErrors.ts の readFieldErrors）に合わせる。reason はバックエンドの FieldErrorReason の名前。
+ * detail・traceId などの値は画面が読まないため入れない。入れた値（氏名など）は載せない。
+ */
+export interface PreferencesValidationProblem extends ProblemDetails {
+  status: 400
+  code: 'VALIDATION_FAILED'
+  fieldErrors: readonly ReadFieldError<PreferencesField>[]
+}
+
+/** 1つの項目の誤りを持つ 400 VALIDATION_FAILED の見本 */
+export function preferencesValidationProblem(
+  field: PreferencesField,
+  reason: string,
+): PreferencesValidationProblem {
+  return {
+    title: '入力の検証に失敗しました',
+    status: 400,
+    code: 'VALIDATION_FAILED',
+    fieldErrors: [{ field, reason }],
+  }
 }

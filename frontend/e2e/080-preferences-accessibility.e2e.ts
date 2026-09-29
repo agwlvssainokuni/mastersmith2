@@ -23,11 +23,9 @@
 //   ブランドカラーは U4 の prepareCombo で /api/appearance を差し替える。PUT・POST は差し替えず、送らない（送れば失敗）。
 // - 状態は、プリファレンスの最初・画面の確かめの誤り（氏名を空にして保存）、パスワードの変更の最初・画面の確かめの誤り
 //   （3つを空のまま変更）の4つ（NFR 設計の Q3 A）。
-// - green・orange の組の primary の Button のコントラスト不足は、U4 の既知の制約として、状態ごとの名前の一覧
-//   （support/axe.ts の PREFERENCES_KNOWN_VIOLATIONS）で扱う。トップバーのアバターのコントラスト不足（2語の氏名の頭文字）は、
-//   依頼者が受け入れた既知の制約として、当たる組の一覧（AVATAR_KNOWN_COMBOS）で扱う。dark の組の誤りの状態の FormField の
-//   誤りの文字のコントラスト不足も、依頼者が受け入れた既知の制約として扱う（withFormFieldErrorKnownViolation）。
-//   ほかの違反は失敗にする。
+// - 既知の違反は、状態ごとの名前の一覧（support/axe.ts の PREFERENCES_KNOWN_VIOLATIONS）で扱う。make-you-chic-ui の固定先を
+//   310e1ec に上げて（Intent 260928-quality-followup の FR1）、primary の Button・トップバーのアバター（2語の氏名の頭文字）・
+//   dark の組の FormField の誤りの文字のコントラスト不足が当たらなくなったため、一覧は空で、どの違反も失敗にする。
 // - 測りのテスト1件は何も差し替えず、招待から作った利用者（support/registeredUser.ts）で、開く（2画面×5回）・保存（5回）・
 //   パスワードの変更（5回）の時間を記録する。時間では失敗させない。本物の GET /api/me/preferences の応答と見本の形の違い、
 //   CSP の違反・画面の問題は失敗にする。招待を使えない・Mailpit に届かないときは理由を注記に残して飛ばす（念のための道）。
@@ -42,9 +40,6 @@ import {
   runAxe,
   splitKnownViolations,
   type PreferencesAxeState,
-  withAvatarKnownViolation,
-  withFormFieldErrorKnownViolation,
-  formFieldErrorTargets,
 } from './support/axe'
 import {
   DISPLAY_COMBOS,
@@ -110,17 +105,11 @@ async function checkState(
   combo: DisplayCombo,
   state: PreferencesAxeState,
 ): Promise<void> {
-  const errorTargets = await formFieldErrorTargets(page)
   const summary = await runAxe(page)
-  const { known, unexpected, expectedKnown } = withFormFieldErrorKnownViolation(
-    withAvatarKnownViolation(
-      splitKnownViolations(summary, combo.brandColor, PREFERENCES_KNOWN_VIOLATIONS[state]),
-      combo.brandColor,
-      combo.theme,
-    ),
-    combo.theme,
-    state,
-    errorTargets,
+  const { known, unexpected, expectedKnown } = splitKnownViolations(
+    summary,
+    combo.brandColor,
+    PREFERENCES_KNOWN_VIOLATIONS[state],
   )
   const overflow = await measureHorizontalOverflow(page)
   const record = {
@@ -142,7 +131,7 @@ async function checkState(
   expect(unexpected, `${combo.name} ${state}: ${unexpected.join(' / ')}`).toEqual([])
   expect(
     known,
-    `${combo.name} ${state}: 既知の違反が一覧と違います（make-you-chic-ui が直したなら PREFERENCES_KNOWN_VIOLATIONS・AVATAR_KNOWN_COMBOS・FormField の誤りの文字の扱いと README を見直す）`,
+    `${combo.name} ${state}: 既知の違反が一覧と違います（PREFERENCES_KNOWN_VIOLATIONS と README を見直す）`,
   ).toEqual(expectedKnown)
   expect(overflow.overflows, describeOverflow(`${combo.name} ${state}`, overflow)).toBe(false)
 }

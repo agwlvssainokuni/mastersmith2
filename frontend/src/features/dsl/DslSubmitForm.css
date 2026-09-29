@@ -23,8 +23,9 @@
   margin: 0;
 }
 
+/* リンクの文字は文字用の色（light は brand-700、dark は brand-400）。--color-primary は WCAG AA に届かない組がある（FR2.2） */
 .dsl-link {
-  color: var(--color-primary);
+  color: var(--color-primary-subtle-text);
 }
 
 .dsl-submit-fields {

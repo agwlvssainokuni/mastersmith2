@@ -20,8 +20,9 @@
 // - 組ごとに1つのテストで、ページは Playwright がテストごとに作る新しいコンテキストのもの（状態を持ち越さない）。
 // - 最初の画面の時間は記録だけで失敗させない（統合の関門にしない）。CSP の違反と、sans のときの Noto Serif JP の読み込みは
 //   不安定ではないため失敗させる。
-// - green・orange の組の primary の Button のコントラスト不足は、依頼者が受け入れた既知の違反として、名前と対象を指定して扱う
-//   （support/axe.ts の KNOWN_VIOLATIONS）。既知の違反が消えたときも気づけるよう、あることを確かめる。
+// - 既知の違反は、名前と対象を指定して扱う（support/axe.ts の KNOWN_VIOLATIONS）。make-you-chic-ui の固定先を 310e1ec に上げて
+//   （Intent 260928-quality-followup の FR1）、green・orange の組の primary の Button のコントラスト不足が当たらなくなったため、
+//   一覧は空で、どの違反も失敗にする。一覧に載せた既知の違反が消えたときも気づけるよう、一覧どおりにあることを確かめる。
 import { expect, test } from '@playwright/test'
 import { hasSampleShape } from './support/appearanceFixture'
 import { missingRequiredRules, runAxe, splitKnownViolations } from './support/axe'
@@ -64,7 +65,7 @@ test.describe('050 display settings accessibility on the built WAR', () => {
       expect(unexpected, `${combo.name}: ${unexpected.join(' / ')}`).toEqual([])
       expect(
         known,
-        `${combo.name}: 既知の違反が一覧と違います（make-you-chic-ui が直したなら KNOWN_VIOLATIONS と README を見直す）`,
+        `${combo.name}: 既知の違反が一覧と違います（KNOWN_VIOLATIONS と README を見直す）`,
       ).toEqual(expectedKnown)
       expect(overflow.overflows, describeOverflow(combo.name, overflow)).toBe(false)
     })

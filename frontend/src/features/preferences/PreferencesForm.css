@@ -43,8 +43,9 @@
   margin: 0;
 }
 
+/* 誤りの文字は文字用の色（dark では red-400）。--color-danger は dark の背景に対して WCAG AA に届かない（FR2.1） */
 .preferences-choice-error {
-  color: var(--color-danger);
+  color: var(--color-danger-text);
   font-size: var(--font-size-sm);
   font-weight: normal;
 }

@@ -22,8 +22,9 @@
 // - 状態は2つ: ready（確かめの API POST /api/registration/verify だけを見本 VERIFY_SAMPLE の 200 に差し替えて出すフォーム）と、
 //   unavailable（差し替えずにフラグメントの無い /register を開いたときの使えないリンクの表示）。
 //   完了の要求は送らない。サーバーの状態（内部DB・監査・招待）を変えない。
-// - green・orange の組の primary の Button のコントラスト不足は、U4 の既知の制約として、状態ごとの名前の一覧
-//   （support/axe.ts の REGISTRATION_KNOWN_VIOLATIONS）で扱う。ほかの違反は失敗にする。
+// - 既知の違反は、状態ごとの名前の一覧（support/axe.ts の REGISTRATION_KNOWN_VIOLATIONS）で扱う。make-you-chic-ui の固定先を 310e1ec に
+//   上げて（Intent 260928-quality-followup の FR1）、green・orange の組の primary の Button のコントラスト不足が当たらなく
+//   なったため、一覧は空で、どの違反も失敗にする。
 // - CSP の違反・画面の問題は各組で失敗にする。
 // - test.step の題・注記・添付に、見本のトークンと見本のメールアドレスの値を入れない。
 // - 既存の 010〜060 は変えない。
@@ -111,7 +112,7 @@ async function checkState(
   expect(unexpected, `${combo.name} ${state}: ${unexpected.join(' / ')}`).toEqual([])
   expect(
     known,
-    `${combo.name} ${state}: 既知の違反が一覧と違います（make-you-chic-ui が直したなら REGISTRATION_KNOWN_VIOLATIONS と README を見直す）`,
+    `${combo.name} ${state}: 既知の違反が一覧と違います（REGISTRATION_KNOWN_VIOLATIONS と README を見直す）`,
   ).toEqual(expectedKnown)
   expect(overflow.overflows, describeOverflow(`${combo.name} ${state}`, overflow)).toBe(false)
 }

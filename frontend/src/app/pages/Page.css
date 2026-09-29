@@ -29,8 +29,9 @@
   color: var(--color-text-muted);
 }
 
+/* 見つからない画面の「ホームへ」のリンク。.dsl-link と同じ文字用の色（FR2.3、計画の Q3: A） */
 .page-link {
-  color: var(--color-primary);
+  color: var(--color-primary-subtle-text);
 }
 
 .page-list {

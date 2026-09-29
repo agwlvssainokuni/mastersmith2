@@ -26,8 +26,9 @@
 //   サーバーの状態は変えない。NFR 設計の security-design.md 6節の「一覧の API だけ」より差し替えの範囲が広い）。
 // - (c) の組では、Tab でフォーカスした行の「取り消す」が表示の幅の中に入ることを確かめる（矢印のキーは使わない。
 //   機能設計の承認の場の U5 R-01）。
-// - green・orange の組の primary の Button のコントラスト不足は、U4 の既知の制約として、状態ごとの名前の一覧
-//   （support/axe.ts の INVITATION_KNOWN_VIOLATIONS）で扱う。ほかの違反は失敗にする。
+// - 既知の違反は、状態ごとの名前の一覧（support/axe.ts の INVITATION_KNOWN_VIOLATIONS）で扱う。make-you-chic-ui の固定先を 310e1ec に
+//   上げて（Intent 260928-quality-followup の FR1）、green・orange の組の primary の Button のコントラスト不足が当たらなく
+//   なったため、一覧は空で、どの違反も失敗にする。
 // - 画面の時間は記録だけで失敗させない（統合の関門にしない）。CSP の違反・画面の問題・本物の応答と見本の形の違いは失敗にする。
 // - test.step の題・注記・添付に、アクセストークン・パスワード・初期管理者と測定の招待のメールアドレスを入れない。
 // - 既存の 010〜050 は変えない。
@@ -141,7 +142,7 @@ async function checkState(
   expect(unexpected, `${combo.name} ${state}: ${unexpected.join(' / ')}`).toEqual([])
   expect(
     known,
-    `${combo.name} ${state}: 既知の違反が一覧と違います（make-you-chic-ui が直したなら INVITATION_KNOWN_VIOLATIONS と README を見直す）`,
+    `${combo.name} ${state}: 既知の違反が一覧と違います（INVITATION_KNOWN_VIOLATIONS と README を見直す）`,
   ).toEqual(expectedKnown)
   expect(overflow.overflows, describeOverflow(`${combo.name} ${state}`, overflow)).toBe(false)
 }
