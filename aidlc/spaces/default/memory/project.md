@@ -109,6 +109,7 @@
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（260925-user-management）の配備の手順を正として今回の差だけを書いた。スキーマの変更と .env の変更が無いため、バックアップと戻しの練習は行わず、戻しはイメージだけにした。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-pipeline:4bebc09a40d64e45e852e27c94b3d470f1f2969494fcb4d59ae4c51ad642acb0 -->
 - スモークテストの S5 は、ブランドカラーが画面ではなく設定ファイルで決める項目だったため行えなかった。手順書を書く前に、画面で変えられる項目か設定で変える項目かをソースと README で確かめる。S6 は破棄の代わりに適用され、依頼者の決定でそのまま使った。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:a6d3f2015f632a115e8b2fcc0732a085d5632864246f37eb3e33ded7a61e0b69 -->
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（260928-quality-followup）の配備の手順を正として今回の差だけを書いた。スキーマと .env の変更が無いため戻しはイメージだけ、k6 とバックアップは行わない。スモークテストの起動のログの確かめは、初期管理者の INFO のキー maskedEmail の有無と、.env の初期管理者のメールアドレスの値の件数（値は表示しない）で FR1 を裏付ける形にした。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:deployment-pipeline:e7dfa1d7054db603e47b4ec5d4d8e47d631c58c27eff7c9b39508240edbd0b40 -->
+- FR1 の裏付けは、起動のログを JSON として読み、初期管理者の INFO のキー（maskedEmail の有無・email の無し）と、.env の初期管理者のメールアドレスの値のログの中の件数（値は表示しない）だけで行った。監査の確かめは README の手順（アプリを止めて複写し読み取りで開く）で、配備の後のバックアップを兼ねた。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:deployment-execution:68998c2af550c2c4215a6f01e4c66e49757cf30c3caa753cca33ce1d290629b3 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
