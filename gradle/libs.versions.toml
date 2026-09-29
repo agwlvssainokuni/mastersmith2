@@ -26,7 +26,7 @@ tomcat = "11.0.26"
 # Jackson の BOM を同じ 3.1 系の修正版で読み込み、Spring Boot の管理の版を上書きする（backend/build.gradle.kts）。
 # Spring Boot を上げるときに、この上書きが要るか見直す。
 jackson = "3.1.6"
-spotless = "8.10.2"
+spotless = "8.10.3"
 palantir-java-format = "2.98.0"
 spotbugs-gradle-plugin = "6.5.11"
 spotbugs-tool = "4.10.4"
