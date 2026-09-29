@@ -307,8 +307,13 @@ describe('PreferencesPage preview (W4〜W6・AC4.1.11)', () => {
     await user.click(await menuButton(/検査 太郎/))
     await user.click(await screen.findByRole('menuitem', { name: 'パスワードの変更' }))
     await screen.findByTestId('preferences-password-page')
-    expect(html()).not.toHaveAttribute('data-theme')
-    expect(html()).toHaveAttribute('data-font-size', 'md')
+    // 見せ方の取りやめは、画面が外れるときの描画の後の効果（useEffect の片付け）で行い、その後の描き直しで <html> に
+    // 当たる。パスワードの変更の画面が見えた直後は、負荷が高いとその効果がまだ流れていないため、当たるのを待って確かめる
+    // （CI で1回落ちた）。
+    await waitFor(() => {
+      expect(html()).not.toHaveAttribute('data-theme')
+      expect(html()).toHaveAttribute('data-font-size', 'md')
+    })
   })
 })
 

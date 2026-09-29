@@ -631,7 +631,10 @@ describe('RegistrationPage leaving', () => {
     await user.click(screen.getByRole('button', { name: 'Complete registration' }))
     await user.click(await screen.findByRole('link', { name: 'Go to the login page' }))
     await screen.findByTestId('login-form')
-    expect(html()).toEqual({ lang: 'ja', theme: null, fontSize: 'md' })
+    // 見せ方の取りやめは、画面が外れるときの描画の後の効果（useEffect の片付け）で行い、その後の描き直しで <html> に
+    // 当たる。ログインの画面が見えた直後は、負荷が高いとその効果がまだ流れていないため、当たるのを待って確かめる
+    // （PreferencesPage.test.tsx で CI が1回落ちたのと同じ形）。
+    await waitFor(() => expect(html()).toEqual({ lang: 'ja', theme: null, fontSize: 'md' }))
     expect(storedDisplaySettings()).toEqual({ language: 'ja', theme: 'light', fontSize: 'md' })
   })
 

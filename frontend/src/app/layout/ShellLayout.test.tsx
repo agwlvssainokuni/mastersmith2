@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { act, cleanup, screen, within } from '@testing-library/react'
+import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
-import { useLayoutEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import {
   useDisplaySettings,
   type DisplaySettingsValue,
@@ -140,11 +140,15 @@ describe('ShellLayout', () => {
   })
 
   it('shows the new name right after the preferences are saved', async () => {
-    const captured: { value?: DisplaySettingsValue } = {}
+    const captured: { value?: DisplaySettingsValue; effectsFlushed?: boolean } = {}
     function Capture() {
       const settings = useDisplaySettings()
       useLayoutEffect(() => {
         captured.value = settings
+      })
+      // 描画の後の効果（useEffect）が流れたことの印。
+      useEffect(() => {
+        captured.effectsFlushed = true
       })
       return null
     }
@@ -164,6 +168,12 @@ describe('ShellLayout', () => {
       },
     )
     await screen.findByRole('button', { name: /山田 花子/ })
+    // 保存の前に、氏名が出た描画の後の効果が流れ終わるのを待つ。LoginStateGate は提供元の答えを待ってから中身を描くため、
+    // DisplaySettingsProvider は氏名と同じ描画で作られ、表示の設定の保存先の購読（useSyncExternalStore）を描画の後の効果で
+    // 始める。負荷が高いと氏名が見えた直後にはまだ購読が始まっておらず、そこで同期の act で保存しても描き直されない
+    // （CI で1回落ちた。DisplaySettingsProvider.test.tsx の waitForEffects と同じ理由と待ち方）。Capture の useEffect は
+    // 同じ描画の効果としてまとめて流れるため、これが流れたことで購読が始まったとみなす。
+    await waitFor(() => expect(captured.effectsFlushed).toBe(true))
 
     act(() =>
       captured.value?.applyUserPreferences({
