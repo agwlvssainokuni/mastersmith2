@@ -80,7 +80,7 @@
       "title": "仮の目標の一覧",
       "options": {
         "mode": "markdown",
-        "content": "| SLI | 仮の目標 |\n|---|---|\n| 稼働（30 日） | 99.5% |\n| ログインの API の 95 パーセンタイル | 1 秒以内 |\n| トークンの更新の API の 95 パーセンタイル | 1 秒以内 |\n| 確認用 API の 95 パーセンタイル | 300 ミリ秒以内 |\n| 監査イベント1件の書き込み（95 パーセンタイル） | 50 ミリ秒以内（Performance Validation で測る。指標は無い） |"
+        "content": "| SLI | 仮の目標 |\n|---|---|\n| 稼働（30 日） | 99.5% |\n| ログインの API の 95 パーセンタイル | 1 秒以内 |\n| トークンの更新の API の 95 パーセンタイル | 1 秒以内 |\n| 確認用 API の 95 パーセンタイル | 500 ミリ秒以内 |\n| 監査イベント1件の書き込み（95 パーセンタイル） | 50 ミリ秒以内（Performance Validation で測る。指標は無い） |"
       },
       "gridPos": {
         "h": 6,
@@ -365,7 +365,7 @@
       "id": 11,
       "type": "timeseries",
       "title": "確認用 API（/api/admin/check）",
-      "description": "目標 300 ミリ秒（U3 の NFR1.1）",
+      "description": "目標 500 ミリ秒（U3 の NFR1.1 の 300 ミリ秒を、Intent 260929-log-deps-cleanup で http.server.requests のバケットの境界の 500 ミリ秒に緩めた）",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -392,7 +392,7 @@
               },
               {
                 "color": "red",
-                "value": 300
+                "value": 500
               }
             ]
           },

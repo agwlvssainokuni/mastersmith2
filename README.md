@@ -679,7 +679,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 
 - 画面はログインなしの閲覧だけです（`127.0.0.1` にだけ結び付けています）。ダッシュボードと警報の決まりは `docker/monitoring/` のファイルで入れているため、画面からは保存できません（画面で一時的にいじることはできますが、読み込み直すと元に戻ります）。変えるときはファイルを直して `docker compose --profile monitoring up -d --force-recreate lgtm` で読み込み直します。
 - 左のメニューの「Explore」で、ログ（データソース Loki、例 `{service_name="mastersmith"} |= "メールを送信できませんでした"`）・指標（Prometheus）・トレース（Tempo）を自由に問い合わせられます（`GF_USERS_VIEWERS_CAN_EDIT`）。
-- アプリの指標 `http.server.requests` と `mastersmith.mail.send` は、決めた境界だけのバケットを持ちます（`application.yaml` の `management.metrics.distribution.slo`。Intent 260928-quality-followup）。境界は `http.server.requests` が 100・250・500・1000・2000・5000 ms（警報のしきい値 1000 ms を含む）、`mastersmith.mail.send` が 100・250・500・1000・2000・5000・10000 ms（送信の時間切れを含む）で、ほかに `+Inf` だけです。Prometheus での名前は `http_server_requests_milliseconds_bucket`・`mastersmith_mail_send_milliseconds_bucket` です。同じ境界のバケットは、処理中の数を表す `http_server_requests_active_milliseconds_bucket`・`mastersmith_mail_send_active_milliseconds_bucket` にも付きます（設定の名前が前方一致のため）。
+- アプリの指標 `http.server.requests` と `mastersmith.mail.send` は、決めた境界だけのバケットを持ちます（`application.yaml` の `management.metrics.distribution.slo`。Intent 260928-quality-followup）。境界は `http.server.requests` が 100・250・500・1000・2000・5000 ms（警報のしきい値 500 ms・1000 ms を含む）、`mastersmith.mail.send` が 100・250・500・1000・2000・5000・10000 ms（送信の時間切れを含む）で、ほかに `+Inf` だけです。Prometheus での名前は `http_server_requests_milliseconds_bucket`・`mastersmith_mail_send_milliseconds_bucket` です。同じ境界のバケットは、処理中の数を表す `http_server_requests_active_milliseconds_bucket`・`mastersmith_mail_send_active_milliseconds_bucket` にも付きます（設定の名前が前方一致のため）。
 - ログイン・トークンの更新・確認用 API の 95 パーセンタイルのパネルと警報（`ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`）は、このバケットで値を出します。95 パーセンタイルは境界の間を按分した見積もりで、境界の刻みより細かい値は出ません。
 - メールの送信（U1）の行の「送信の時間（95 パーセンタイル）」は `mastersmith.mail.send` のバケットで描いています（送信の成功と失敗を合わせる。目標の線 3 秒は境界の 2000 と 5000 の間）。招待と登録（U3）の行の API ごとの時間のパネルは、トレースから作る時間の指標（`traces_spanmetrics_latency`、境目が 2 倍刻みで粗い）のままです。
 - 新しく現れた数の系列は、最初の 1 件が「1 時間の件数」に数えられません（Prometheus の `increase` が、最初の値の前を知らないため）。件数が少ないときは実際より少なく見えます。
@@ -700,7 +700,9 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 |---|---|---|
 | `ms-login-p95` | `POST /api/auth/login` | 95 パーセンタイルが 1000 ms を超えた状態が 5 分続く |
 | `ms-refresh-p95` | `POST /api/auth/session/refresh` | 95 パーセンタイルが 1000 ms を超えた状態が 5 分続く |
-| `ms-check-p95` | `GET /api/admin/check` | 95 パーセンタイルが 300 ms を超えた状態が 5 分続く |
+| `ms-check-p95` | `GET /api/admin/check` | 95 パーセンタイルが 500 ms を超えた状態が 5 分続く |
+
+確認用 API の目標は、以前の 300 ms から 500 ms に緩めました。300 ms はバケットの境界に無く、境界の間の按分の見積もりでしか判定できなかったため、境界にある 500 ms にそろえました（Intent 260929-log-deps-cleanup の FR5）。
 
 - 値は `http.server.requests` のバケット（100・250・500・1000・2000・5000 ms）から、直近 5 分の割合で見積もります（「手元の監視（Grafana）」）。境界の間は按分の見積もりのため、境界の刻みより細かい値は出ません。要求が無い間は値が出ません（NaN）。値が出ないときは、要求を送ってから見直してください。
 - 鳴ったときは、ダッシュボード「MasterSmith の概要」の「応答時間（95 パーセンタイル）」の行で対象の API の推移を見て、「資源」の行（コネクションプールの待ち・JVM のヒープの使用率）と、Explore のトレース（Tempo）で遅い要求の内訳を確かめます。`ms-check-p95` は監査の記録の時間と DB の待ちも確かめます。

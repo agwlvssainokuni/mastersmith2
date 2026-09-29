@@ -224,7 +224,7 @@ groups:
       severity: 低
       service: mastersmith
     annotations:
-      summary: 確認用 API の 95 パーセンタイルが 300 ミリ秒を超えた。監査の記録の時間と DB の待ちを確かめる
+      summary: 確認用 API の 95 パーセンタイルが 500 ミリ秒を超えた。監査の記録の時間と DB の待ちを確かめる
     data:
     - refId: A
       relativeTimeRange:
@@ -245,7 +245,7 @@ groups:
         - evaluator:
             type: gt
             params:
-            - 300
+            - 500
   - uid: ms-pool-pending
     title: コネクションプールの待ち
     condition: C

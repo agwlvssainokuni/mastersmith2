@@ -279,7 +279,7 @@ management:
       # （Intent 260928-quality-followup の FR4.1・FR4.2）。既定のバケット（percentiles-histogram、数十個）は使わず、
       # 系列の数を境界の数と +Inf だけに絞る（NFR3）。
       slo:
-        # 警報のしきい値 1000 ms を境界に含める。
+        # 警報のしきい値 500 ms（確認用 API、Intent 260929-log-deps-cleanup）・1000 ms を境界に含める。
         http.server.requests: 100ms,250ms,500ms,1000ms,2000ms,5000ms
         # メールの送信は、送信の時間切れを含む 10000 ms までにする。
         mastersmith.mail.send: 100ms,250ms,500ms,1000ms,2000ms,5000ms,10000ms
