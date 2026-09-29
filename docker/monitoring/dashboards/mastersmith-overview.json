@@ -1040,7 +1040,7 @@
       "id": 29,
       "type": "timeseries",
       "title": "API ごとの時間（95 パーセンタイル）",
-      "description": "トレースから lgtm が作る時間の指標（traces_spanmetrics_latency）で測る。アプリの指標 http.server.requests はバケットを持たず p95 を出せないため（Observability Setup の確かめ、次の Intent で直す）。境目は 2 倍刻みで粗い。目標の線: 招待と送り直しは SMTP の送信を含めて 5 秒（U3 の NFR6.1）、ほかは 1 秒（U3 の NFR6.3〜NFR6.5）。目標の判定は同時 10 件の k6（performance-validation）で行い、この線は目安",
+      "description": "トレースから lgtm が作る時間の指標（traces_spanmetrics_latency）で測る。アプリの指標 http.server.requests にもバケット（100〜5000 ms）が付いたが、このパネルはトレースの値のままにしている（Intent 260928-quality-followup の計画の Q2 の決定。替えるのは要件の外）。境目は 2 倍刻みで粗い。目標の線: 招待と送り直しは SMTP の送信を含めて 5 秒（U3 の NFR6.1）、ほかは 1 秒（U3 の NFR6.3〜NFR6.5）。目標の判定は同時 10 件の k6（performance-validation）で行い、この線は目安",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1207,7 +1207,7 @@
       "id": 34,
       "type": "timeseries",
       "title": "送信の時間（95 パーセンタイル）",
-      "description": "トレースから lgtm が作る時間の指標（スパン mastersmith.mail.send）で測る。指標 mastersmith.mail.send はバケットを持たず p95 を出せないため（Observability Setup の確かめ）。スパンは送信の失敗でも状態が OK のため、結果では分けない。境目は 2 倍刻みで粗い。目標の線は SMTP の時間切れの 3 秒（U1 の NFR6.1）",
+      "description": "アプリの指標 mastersmith.mail.send の決めた境界のバケット（100・250・500・1000・2000・5000・10000 ms。Intent 260928-quality-followup の FR4.2）で測る。送信の成功と失敗を合わせる。3 秒は境界の 2000 と 5000 の間のため、その間の値は按分の見積もり。目標の線は SMTP の時間切れの 3 秒（U1 の NFR6.1）",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1219,13 +1219,13 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service=\"mastersmith\",span_name=\"mastersmith.mail.send\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(mastersmith_mail_send_milliseconds_bucket{service_name=\"mastersmith\"}[5m])))",
           "legendFormat": "送信"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "s",
+          "unit": "ms",
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -1235,7 +1235,7 @@
               },
               {
                 "color": "red",
-                "value": 3
+                "value": 3000
               }
             ]
           },

@@ -274,6 +274,15 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+    distribution:
+      # 95 パーセンタイルの警報とダッシュボード（docker/monitoring/）のため、決めた境界だけのバケットを出す
+      # （Intent 260928-quality-followup の FR4.1・FR4.2）。既定のバケット（percentiles-histogram、数十個）は使わず、
+      # 系列の数を境界の数と +Inf だけに絞る（NFR3）。
+      slo:
+        # 警報のしきい値 1000 ms を境界に含める。
+        http.server.requests: 100ms,250ms,500ms,1000ms,2000ms,5000ms
+        # メールの送信は、送信の時間切れを含む 10000 ms までにする。
+        mastersmith.mail.send: 100ms,250ms,500ms,1000ms,2000ms,5000ms,10000ms
   tracing:
     sampling:
       # 外部へ送るトレースの割合。トレースIDは率に関係なくすべての要求に割り当てる。
