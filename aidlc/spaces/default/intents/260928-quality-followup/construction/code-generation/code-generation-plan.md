@@ -300,10 +300,10 @@ methodology は test-after。順序は contract の `plan_profile.steps` に従�
   - `source-manifest.json`: 作った・変えた・消したアプリのパスをすべて並べる（`vendor/make-you-chic-ui` のサブモジュールの固定先を含む）。
   - `traceability.json`: FR1.1〜FR6.3・NFR1〜NFR6 を並べ、`OK` の対象は実在するファイルにする。Build and Test で確かめるもの（FR3.3 の診断が出ること、O3 の警報が鳴ること、NFR2 の CI）は `Deferred` と持ち主の段を書く。
 
-- [ ] **Step 27: コミットの提案**（5節）
+- [x] **Step 27: コミットの提案**（5節）
   - 生成の担当はコミットしない。生成の後に、5節の分け方で依頼者の承認を得てまとめて行う。各コミットの前に pre-commit（Gitleaks・フォーマット）が通ることを確かめる。
 
-- [ ] **Step 28: 統合の準備**（5節）
+- [x] **Step 28: 統合の準備**（5節）
   - Step 25 が通った状態で、依頼者の承認を得て `fix/260928-quality-followup` から `develop` へ fast-forward で統合する。`git push` は依頼者が行う。統合の後の CI の結果の確かめは Build and Test に引き継ぐ（NFR2）。
 
 ## 5. コミットの分け方と統合の形
