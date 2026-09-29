@@ -19,7 +19,7 @@
 // API の関数を差し替え、答えを返さない約束で止めて途中の表示を見る。時差を固定する。
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi, type Mock } from 'vitest'
+import { afterEach, describe, expect, it, onTestFailed, vi, type Mock } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { ApiError } from '../../shared/api-client/apiError'
 import type { InvitationApi } from './api/invitationApi'
@@ -27,6 +27,9 @@ import type { Invitation, InvitationPage } from './api/types'
 import { InvitationAdminPage } from './InvitationAdminPage'
 import { invitationOf, pageOf, rowsOf, sampleRows, unavailablePageOf } from './testing/fixtures'
 import { renderInvitation } from './testing/renderInvitation'
+
+/** 漏えいの確かめの1件（すべての流れを操作する）だけの上限。設定全体の既定は 5 秒のまま（FR3.2）。 */
+const LEAK_CHECK_TIMEOUT_MS = 15_000
 
 interface Deferred<T> {
   promise: Promise<T>
@@ -746,82 +749,104 @@ describe('InvitationAdminPage language, privacy and accessibility', () => {
     expect(screen.getByRole('button', { name: 'Dismiss the message' })).toBeInTheDocument()
   })
 
-  it('keeps addresses and names out of storage, the URL and the console in every flow', async () => {
-    const user = userEvent.setup()
-    const leakEmail = 'invitation-leak-check@example.test'
-    const leakName = '招待確認用の氏名'
-    const methods = ['log', 'info', 'warn', 'error', 'debug'] as const
-    const spies = methods.map((method) => vi.spyOn(console, method))
-    localStorage.clear()
-    sessionStorage.clear()
-    const leakRow = invitationOf({ invitationId: 11, email: leakEmail, invitedBy: leakName })
-    const fake = fakeApi(pageOf({ items: [leakRow, ...rowsOf(19, 100)], total: 21 }))
-    fake.create
-      .mockResolvedValueOnce(invitationOf({ invitationId: 50, email: leakEmail }))
-      .mockRejectedValueOnce(
-        apiError(409, 'INVITATION_ALREADY_PENDING', { invitationId: 11, page: 1 }),
-      )
-      .mockRejectedValueOnce(NETWORK)
-    fake.resend
-      .mockResolvedValueOnce(
-        invitationOf({ invitationId: 11, email: leakEmail, sendResult: 'FAILED' }),
-      )
-      .mockRejectedValueOnce(NETWORK)
-    fake.cancel.mockRejectedValueOnce(NETWORK).mockResolvedValueOnce(undefined)
-    const href = window.location.href
-    renderPage(fake)
-    await rowsShown()
-    const location = screen.getByTestId('location').textContent
+  // この1件だけ上限を 15 秒にする（設定全体の既定の 5 秒は変えない）。すべての流れ（ページ送り・招待3回・送り直し2回・
+  // 取り消し2回）を1件で操作するため時間がかかり、CI で既定の 5 秒を超えて失敗した（Intent 260928-quality-followup の
+  // FR3.2）。原因は確かめておらず（要件の F1: B）、失敗したときにかかった時間を出す（FR3.3）。
+  it(
+    'keeps addresses and names out of storage, the URL and the console in every flow',
+    async () => {
+      const startedAt = performance.now()
+      onTestFailed(() => {
+        // このテストは console の各メソッドが呼ばれないことを確かめるため、console ではなく標準エラーへ直接書く。
+        // 出すのはテストの名前と時間だけで、メールアドレス・氏名は出さない（NFR5）。
+        const elapsedMs = Math.round(performance.now() - startedAt)
+        process.stderr.write(
+          `[diagnostic] "keeps addresses and names out of storage, the URL and the console in every flow" failed after ${elapsedMs} ms (timeout ${LEAK_CHECK_TIMEOUT_MS} ms)\n`,
+        )
+      })
+      const user = userEvent.setup()
+      const leakEmail = 'invitation-leak-check@example.test'
+      const leakName = '招待確認用の氏名'
+      const methods = ['log', 'info', 'warn', 'error', 'debug'] as const
+      const spies = methods.map((method) => vi.spyOn(console, method))
+      localStorage.clear()
+      sessionStorage.clear()
+      const leakRow = invitationOf({ invitationId: 11, email: leakEmail, invitedBy: leakName })
+      const fake = fakeApi(pageOf({ items: [leakRow, ...rowsOf(19, 100)], total: 21 }))
+      fake.create
+        .mockResolvedValueOnce(invitationOf({ invitationId: 50, email: leakEmail }))
+        .mockRejectedValueOnce(
+          apiError(409, 'INVITATION_ALREADY_PENDING', { invitationId: 11, page: 1 }),
+        )
+        .mockRejectedValueOnce(NETWORK)
+      fake.resend
+        .mockResolvedValueOnce(
+          invitationOf({ invitationId: 11, email: leakEmail, sendResult: 'FAILED' }),
+        )
+        .mockRejectedValueOnce(NETWORK)
+      fake.cancel.mockRejectedValueOnce(NETWORK).mockResolvedValueOnce(undefined)
+      const href = window.location.href
+      renderPage(fake)
+      await rowsShown()
+      const location = screen.getByTestId('location').textContent
 
-    await user.click(screen.getByRole('button', { name: '次へ' }))
-    await user.click(screen.getByRole('button', { name: '前へ' }))
-    await screen.findByText(leakEmail)
-    for (let i = 0; i < 3; i++) {
-      await user.click(screen.getByRole('button', { name: '招待する' }))
-      await user.type(screen.getByLabelText('メールアドレス（必須）'), leakEmail)
-      await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '招待する' }))
-      await waitFor(() =>
-        expect(within(document.body).queryByRole('button', { name: '送信しています' })).toBeNull(),
-      )
-      if (screen.queryByRole('dialog')) {
-        await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'やめる' }))
+      await user.click(screen.getByRole('button', { name: '次へ' }))
+      await user.click(screen.getByRole('button', { name: '前へ' }))
+      await screen.findByText(leakEmail)
+      for (let i = 0; i < 3; i++) {
+        await user.click(screen.getByRole('button', { name: '招待する' }))
+        await user.type(screen.getByLabelText('メールアドレス（必須）'), leakEmail)
+        await user.click(
+          within(screen.getByRole('dialog')).getByRole('button', { name: '招待する' }),
+        )
+        await waitFor(() =>
+          expect(
+            within(document.body).queryByRole('button', { name: '送信しています' }),
+          ).toBeNull(),
+        )
+        if (screen.queryByRole('dialog')) {
+          await user.click(
+            within(screen.getByRole('dialog')).getByRole('button', { name: 'やめる' }),
+          )
+        }
+        await rowsShown()
       }
-      await rowsShown()
-    }
-    for (let i = 0; i < 2; i++) {
-      await user.click(
-        await screen.findByRole('button', { name: `${leakEmail} への招待を送り直す` }),
-      )
-      await waitFor(() => expect(screen.getByTestId('invitation-failure-alert')).toBeVisible())
-    }
-    for (let i = 0; i < 2; i++) {
-      await rowsShown()
-      await user.click(screen.getByRole('button', { name: `${leakEmail} への招待を取り消す` }))
-      await user.click(
-        within(screen.getByRole('alertdialog')).getByRole('button', { name: '取り消す' }),
-      )
-      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
-    }
+      for (let i = 0; i < 2; i++) {
+        await user.click(
+          await screen.findByRole('button', { name: `${leakEmail} への招待を送り直す` }),
+        )
+        await waitFor(() => expect(screen.getByTestId('invitation-failure-alert')).toBeVisible())
+      }
+      for (let i = 0; i < 2; i++) {
+        await rowsShown()
+        await user.click(screen.getByRole('button', { name: `${leakEmail} への招待を取り消す` }))
+        await user.click(
+          within(screen.getByRole('alertdialog')).getByRole('button', { name: '取り消す' }),
+        )
+        await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+      }
 
-    const stored = [localStorage, sessionStorage].flatMap((storage) =>
-      Array.from({ length: storage.length }, (_, index) => {
-        const key = storage.key(index) ?? ''
-        return `${key}=${storage.getItem(key) ?? ''}`
-      }),
-    )
-    for (const entry of stored) {
-      expect(entry).not.toContain(leakEmail)
-      expect(entry).not.toContain(leakName)
-    }
-    expect(window.location.href).toBe(href)
-    expect(screen.getByTestId('location').textContent).toBe(location)
-    for (const [index, spy] of spies.entries()) {
-      const args = JSON.stringify(spy.mock.calls)
-      expect(args, `console.${methods[index]} got an address or a name`).not.toContain(leakEmail)
-      expect(args, `console.${methods[index]} got an address or a name`).not.toContain(leakName)
-      expect(spy, `console.${methods[index]} was called`).not.toHaveBeenCalled()
-    }
-  })
+      const stored = [localStorage, sessionStorage].flatMap((storage) =>
+        Array.from({ length: storage.length }, (_, index) => {
+          const key = storage.key(index) ?? ''
+          return `${key}=${storage.getItem(key) ?? ''}`
+        }),
+      )
+      for (const entry of stored) {
+        expect(entry).not.toContain(leakEmail)
+        expect(entry).not.toContain(leakName)
+      }
+      expect(window.location.href).toBe(href)
+      expect(screen.getByTestId('location').textContent).toBe(location)
+      for (const [index, spy] of spies.entries()) {
+        const args = JSON.stringify(spy.mock.calls)
+        expect(args, `console.${methods[index]} got an address or a name`).not.toContain(leakEmail)
+        expect(args, `console.${methods[index]} got an address or a name`).not.toContain(leakName)
+        expect(spy, `console.${methods[index]} was called`).not.toHaveBeenCalled()
+      }
+    },
+    LEAK_CHECK_TIMEOUT_MS,
+  )
 
   it('has no accessibility violations with rows', async () => {
     const fake = fakeApi()

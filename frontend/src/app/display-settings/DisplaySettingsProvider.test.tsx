@@ -45,13 +45,17 @@ const EMAIL = 'display-leak-check@example.com'
 const NAME = '表示確認用の氏名'
 const TOKEN = 'test-access-token-for-display'
 
-const captured: { value?: DisplaySettingsValue } = {}
+const captured: { value?: DisplaySettingsValue; effectsFlushed?: boolean } = {}
 
 function Probe() {
   const settings = useDisplaySettings()
   const t = useMessages()
   useLayoutEffect(() => {
     captured.value = settings
+  })
+  // 描画の後の効果（useEffect）が流れたことの印（waitForEffects を参照）。
+  useEffect(() => {
+    captured.effectsFlushed = true
   })
   return (
     <main>
@@ -61,6 +65,18 @@ function Probe() {
       </p>
     </main>
   )
+}
+
+/**
+ * 画面が出た後に、その描画の後の効果（useEffect）が流れ終わるのを待つ。
+ * ログイン状態の提供元を渡すと、LoginStateGate は答えを待ってから中身を描くため、DisplaySettingsProvider は Probe と同じ
+ * 描画で作られ、表示の設定の保存先の購読（useSyncExternalStore）を描画の後の効果で始める。Probe が見えた直後は、負荷が
+ * 高いとその効果がまだ流れておらず、そこで同期の act で設定を変えても描き直されない（Intent 260928-quality-followup の
+ * G5 で、負荷をかけて再現し、保存先の値は変わっていて画面が遅れて追い付くことを確かめた）。Probe の useEffect は同じ描画の
+ * 効果としてまとめて流れるため、これが流れたことで購読が始まったとみなす。
+ */
+async function waitForEffects(): Promise<void> {
+  await waitFor(() => expect(captured.effectsFlushed).toBe(true))
 }
 
 /** ログイン状態を後から変えられる偽の提供元 */
@@ -121,6 +137,7 @@ function allStoredValues(): string {
 beforeEach(() => {
   resetDisplayTestState()
   captured.value = undefined
+  captured.effectsFlushed = undefined
 })
 
 afterEach(() => {
@@ -274,6 +291,7 @@ describe('DisplaySettingsProvider before and after login', () => {
     const login = controllableProvider({ loggedIn: false, admin: false })
     renderWithProviders(<Probe />, { provider: login.provider })
     await screen.findByTestId('probe')
+    await waitForEffects()
     localStorage.clear()
 
     await login.set(user({ language: 'en', theme: 'system', fontSize: 'lg' }))
@@ -312,6 +330,7 @@ describe('DisplaySettingsProvider functions of contract C9', () => {
     const login = controllableProvider(user({ language: 'ja', theme: 'light', fontSize: 'md' }))
     renderWithProviders(<Probe />, { provider: login.provider })
     expect(await screen.findByTestId('probe-text')).toHaveTextContent('ホーム')
+    await waitForEffects()
 
     act(() =>
       captured.value?.applyUserPreferences({
@@ -338,6 +357,7 @@ describe('DisplaySettingsProvider functions of contract C9', () => {
     const login = controllableProvider({ loggedIn: false, admin: false })
     renderWithProviders(<Probe />, { provider: login.provider })
     await screen.findByTestId('probe')
+    await waitForEffects()
 
     act(() => captured.value?.setPreview('dark', 'lg'))
     act(() => captured.value?.setPreview(undefined, 'sm'))
@@ -369,6 +389,7 @@ describe('DisplaySettingsProvider functions of contract C9', () => {
     const login = controllableProvider({ loggedIn: false, admin: false })
     renderWithProviders(<Probe />, { provider: login.provider })
     await screen.findByTestId('probe')
+    await waitForEffects()
 
     act(() => captured.value?.setPreview('light'))
     act(() => saveBrowserDisplaySettings({ language: 'en', theme: 'dark', fontSize: 'lg' }))
@@ -404,6 +425,7 @@ describe('DisplaySettingsProvider functions of contract C9', () => {
     const login = controllableProvider({ loggedIn: false, admin: false })
     renderWithProviders(<Probe />, { provider: login.provider })
     await screen.findByTestId('probe')
+    await waitForEffects()
 
     saveBrowserLanguage('en')
     act(() => saveBrowserDisplaySettings({ language: 'ja', theme: 'dark', fontSize: 'sm' }))

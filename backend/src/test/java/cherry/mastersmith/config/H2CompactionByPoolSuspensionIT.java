@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -51,6 +52,7 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 import javax.sql.DataSource;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -108,8 +110,15 @@ class H2CompactionByPoolSuspensionIT {
      */
     private static final long COMPACTED_LIMIT_BYTES = LIVE_BYTES + LIVE_BYTES / 5 + 4 * MIB;
 
-    /** 待ちの上限（0 本になるまで・詰め直しが終わるまで・再開の後の処理）。道具の既定（10 秒・30 秒）に合わせる。 */
-    private static final Duration ZERO_CONNECTIONS_WAIT = Duration.ofSeconds(10);
+    /**
+     * 接続の数が決めた数になるまで（0 本になるまで など）と、一時停止の待ちに入るまでの待ちの上限。
+     *
+     * <p>運用の道具（{@code docker/hikari-pool.sh} の {@code --zero-wait}）の既定は 10 秒で、道具の既定は変えない。テストの上限だけを
+     * 30 秒にするのは、CI（GitHub Actions）で 10 秒の待ちが時間切れになって失敗したため（Intent 260928-quality-followup の FR3.1）。
+     * 原因は確かめておらず（要件の F1: B）、上限を延ばしたうえで、時間切れのときにプールの接続の数を失敗の知らせに入れる
+     * （{@link #awaitPool}。FR3.3）。4 か所の待ちはどれも CI の速さに左右される同じ種類の待ちのため、すべてこの値を使う。
+     */
+    private static final Duration ZERO_CONNECTIONS_WAIT = Duration.ofSeconds(30);
 
     private static final Duration SHRINK_WAIT = Duration.ofSeconds(30);
 
@@ -193,7 +202,7 @@ class H2CompactionByPoolSuspensionIT {
         // 運用の道具と同じ順の、HikariCP の標準の操作だけ。
         pool.suspendPool();
         pool.softEvictConnections();
-        await().atMost(ZERO_CONNECTIONS_WAIT).until(() -> pool.getTotalConnections() == 0);
+        awaitPool("all connections closed after suspend and evict", () -> pool.getTotalConnections() == 0);
         await().atMost(SHRINK_WAIT).until(() -> Files.size(dbFile) <= COMPACTED_LIMIT_BYTES);
         long compacted = Files.size(dbFile);
         pool.resumePool();
@@ -248,8 +257,9 @@ class H2CompactionByPoolSuspensionIT {
             pool.softEvictConnections();
 
             // 待機中の接続は閉じ、借りている1本だけが残る。
-            await().atMost(ZERO_CONNECTIONS_WAIT)
-                    .until(() -> pool.getIdleConnections() == 0 && pool.getTotalConnections() == 1);
+            awaitPool(
+                    "only the borrowed connection remains",
+                    () -> pool.getIdleConnections() == 0 && pool.getTotalConnections() == 1);
             assertThat(pool.getActiveConnections()).isEqualTo(1);
             try (Statement statement = borrowed.createStatement();
                     ResultSet result = statement.executeQuery("SELECT 1")) {
@@ -261,9 +271,40 @@ class H2CompactionByPoolSuspensionIT {
         }
 
         // 返した時に閉じ、0 本になる（道具が 0 本を待つ前提）。
-        await().atMost(ZERO_CONNECTIONS_WAIT).until(() -> pool.getTotalConnections() == 0);
+        awaitPool("the returned connection is closed", () -> pool.getTotalConnections() == 0);
         pool.resumePool();
         assertThat(recordStore.findCurrentRevision()).isEmpty();
+    }
+
+    /**
+     * プールの接続の数についての条件を {@link #ZERO_CONNECTIONS_WAIT} まで待つ。
+     *
+     * <p>時間切れのときは、プールの全体・使用中・空きの接続の数と、接続を待っているスレッドの数を ERROR のログに出し、同じ値を
+     * 文言に入れた {@link AssertionError}（元の例外を原因に付ける）を投げ直す。CI では試験の標準出力が見えないため、失敗の知らせ
+     * そのものにも値を入れる（FR3.3）。出すのは数だけで、接続先・利用者・SQL・スレッドの名前は出さない（NFR5）。
+     */
+    private static void awaitPool(String expectation, Callable<Boolean> condition) {
+        try {
+            await().atMost(ZERO_CONNECTIONS_WAIT).until(condition);
+        } catch (ConditionTimeoutException e) {
+            int total = pool.getTotalConnections();
+            int active = pool.getActiveConnections();
+            int idle = pool.getIdleConnections();
+            int awaiting = pool.getThreadsAwaitingConnection();
+            LOGGER.atError()
+                    .addKeyValue("pool.expectation", expectation)
+                    .addKeyValue("pool.waitMillis", ZERO_CONNECTIONS_WAIT.toMillis())
+                    .addKeyValue("pool.totalConnections", total)
+                    .addKeyValue("pool.activeConnections", active)
+                    .addKeyValue("pool.idleConnections", idle)
+                    .addKeyValue("pool.threadsAwaitingConnection", awaiting)
+                    .log("プールの接続の数の待ちが時間切れになりました");
+            throw new AssertionError(
+                    String.format(
+                            "pool condition not met within %d ms (%s): total=%d, active=%d, idle=%d, threadsAwaiting=%d",
+                            ZERO_CONNECTIONS_WAIT.toMillis(), expectation, total, active, idle, awaiting),
+                    e);
+        }
     }
 
     /** 投入（プレビューを置く）と適用を重ね、最後にプレビューを1件置く。残る本文の識別を返す。 */
