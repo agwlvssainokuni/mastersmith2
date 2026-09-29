@@ -40,18 +40,30 @@ updates:
     # 外す時期: Spring Boot を上げて、Spring Boot の管理の Jackson が 3.2 系以上になったとき。
     #
     # Jackson の BOM（tools.jackson:jackson-bom）は、脆弱性の直しのために Spring Boot の管理の 3.1 系のままパッチの版だけを
-    # 上書きしている（Intent 260928-quality-followup の G4: A）。3.2 系以上への更新は知らせず、3.1 系のパッチの更新だけを知らせる。
+    # 上書きしている（Intent 260928-quality-followup の G4: A）。パッチの更新も含め、すべての版の更新を知らせない
+    # （Intent 260929-log-deps-cleanup の FR4.4、依頼者の決定）。
+    # 知らせを受けない代わりに、脆弱性の直しが要る版には OSV-Scanner の関門（./gradlew verify の osvScan）で気づく。この関門が
+    # 働くのは、手元の ./gradlew verify と CI の実行のときだけで、Dependabot のように新しい脆弱性の公表の時点では知らせない。
+    # team.md の Way of Working の「重大度 High 以上の知らせは次の Bolt に入る前に取り込む」とは、Jackson については
+    # Dependabot の知らせではなく次の verify・CI の OSV-Scanner で気づく形になる点が異なる（要件のレビューの R-02 を受け入れた扱い）。
     # 外す時期: Spring Boot を上げるとき（この上書きの要否を合わせて見直す）。
     ignore:
       - dependency-name: "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0"
       - dependency-name: "com.networknt:json-schema-validator"
       - dependency-name: "tools.jackson:jackson-bom"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
     open-pull-requests-limit: 10
+    # 見送る更新（Intent 260929-log-deps-cleanup の FR4.3）。
+    # typescript の大きな版の更新だけを知らせない。@typescript-eslint/* の peer が typescript の >=4.8.4 <6.1.0 で、7 系を
+    # 取り込むと型の検査と ESLint が壊れうるため。@typescript-eslint/* 自体の更新は知らせる（ignore に入れない）。
+    # 6 系の中の小さな更新は知らせる。
+    # 外す時期: @typescript-eslint/* が TypeScript 7 を受け付けたとき。
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
