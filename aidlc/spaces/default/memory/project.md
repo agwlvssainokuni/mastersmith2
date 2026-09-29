@@ -75,6 +75,7 @@
 - 確定済みの成果物に記録の食い違いが見つかったら、隠さず判定の根拠とともに明記し、直すかどうかを依頼者に確かめる。直したときは、元の状態と直した理由を記録に残す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:fa9b684652e9547fdc00219e301a27d661ffac1f52f9749d17d7bdcac8f883ec -->
 - 計画の Step ごとのコミットの提案は、生成の担当ではなく、生成の後に依頼者の承認を得てまとめて C1〜C6 に分けて行う形にした。担当は依頼者に直接尋ねられないため。統合は計画どおり短命のブランチ fix/260924-followup-fixes から fast-forward（team.md の squash とは違う。サブモジュールの専用のコミットを残すため、計画の承認で受け入れられた）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:87c26f259ce9c6a4de73518651b6f0e868ab12453a73de73f50f5fe768dd262c -->
 - develop へ取り込む前に、この段の質問と確認の記録を依頼者の承認なしでコミットした（581b006）。依頼者に伝えて了承を得た。コミットは段の記録であっても、実行の前に必ず提案して承認を得る。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-execution:bfba46b7cf01ba6b124b43122d6b501702ed308cc28e7c0340aea762d39c0b8f -->
+- 前の段の記録を承認なしでコミットしてしまい、依頼者の了承を得た。段の承認と記録のコミットは別の承認として、必ずコミットの前に提案する。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:309234a070e87e27f11791c756861ffbb9fe4e3a7d2751a8ce1639e6976f6146 -->
 ## Deployment
 
 <!-- Project-specific specialisation. -->
@@ -105,6 +106,7 @@
 - 監査の記録の確かめと、戻しの練習に使う配備の後のバックアップを、1回のアプリの停止（約7秒）でまとめて取った。複写を ACCESS_MODE_DATA=r で開き、配備の時刻以降の audit_events を種類ごとに数えた。 (learned 2026-09-28) <!-- cid:260925-user-management:deployment-execution:24f52a52039f2a2011da4af8f8139eeb43cc91790cea4ee31265ff367be4e82c -->
 - 監視の式の数の値を確かめるときは、要求を指標の送信の周期（1 分）を複数またいでくり返し送る。新しく現れた系列の最初の 1 件は Prometheus の increase に数えられず、1回ずつの送信では値が 0 や小さく見えるため（user-management の Observability Setup）。 (learned 2026-09-28) <!-- cid:260925-user-management:observability-setup:860b82779b14c87bb683e204de61eb69eb49d2ab52fbe0d7561895ef5658fa20 -->
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（260925-user-management）の配備の手順を正として今回の差だけを書いた。スキーマの変更と .env の変更が無いため、バックアップと戻しの練習は行わず、戻しはイメージだけにした。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-pipeline:4bebc09a40d64e45e852e27c94b3d470f1f2969494fcb4d59ae4c51ad642acb0 -->
+- スモークテストの S5 は、ブランドカラーが画面ではなく設定ファイルで決める項目だったため行えなかった。手順書を書く前に、画面で変えられる項目か設定で変える項目かをソースと README で確かめる。S6 は破棄の代わりに適用され、依頼者の決定でそのまま使った。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:a6d3f2015f632a115e8b2fcc0732a085d5632864246f37eb3e33ded7a61e0b69 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
