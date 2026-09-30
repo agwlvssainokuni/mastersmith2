@@ -15,12 +15,27 @@
  */
 //
 // Vitest の共通の準備。jest-dom と vitest-axe の照合を登録し、テストごとに描画と差し替えを片付ける。
+//
+// axe の規則のうち、描いた後の CSS を要る color-contrast（色のコントラスト、canvas で文字の形を見る）と
+// link-in-text-block（擬似要素の CSS を見る）は、jsdom（css: false）では判定できず「未確定」になるうえ、
+// jsdom の未実装の警告（HTMLCanvasElement の getContext・擬似要素つきの getComputedStyle）を出すため、
+// ここで止める。コントラストは実際のブラウザの E2E（e2e/100-app-text-contrast.e2e.ts）で確かめる。
 import '@testing-library/jest-dom/vitest'
 import { afterEach, expect, vi } from 'vitest'
+import { configureAxe } from 'vitest-axe'
 import * as axeMatchers from 'vitest-axe/matchers'
 import { cleanup } from '@testing-library/react'
 
 expect.extend(axeMatchers)
+
+configureAxe({
+  globalOptions: {
+    rules: [
+      { id: 'color-contrast', enabled: false },
+      { id: 'link-in-text-block', enabled: false },
+    ],
+  },
+})
 
 afterEach(() => {
   cleanup()

@@ -275,9 +275,14 @@ describe('ShellLayout', () => {
       await screen.findByRole('menuitem', { name: 'プリファレンス' })
       // メニューは make-you-chic-ui が body の直下に描く（ランドマークの外）ため、best-practice の region の規則に当たる。
       // 実際のブラウザの検査（080）と同じ WCAG 2.0・2.1 の A・AA の規則で確かめる。
+      // タグの指定は vitest.setup.ts で止めた CSS の要る規則を有効に戻すため、ここでも止める。
       expect(
         await axe(document.body, {
           runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
+          rules: {
+            'color-contrast': { enabled: false },
+            'link-in-text-block': { enabled: false },
+          },
         }),
       ).toHaveNoViolations()
     })
