@@ -61,5 +61,12 @@
     "dirName": "260929-log-deps-cleanup",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0f1d6-07a3-728d-a252-fdd8da3aae48",
+    "slug": "user-admin",
+    "dirName": "260930-user-admin",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]
