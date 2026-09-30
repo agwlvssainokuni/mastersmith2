@@ -7,7 +7,7 @@
 - **Scope**: classic
 - **Start Date**: 2026-09-30T10:22:10Z
 - **State Version**: 8
-- **Active Agent**: aidlc-developer-agent
+- **Active Agent**: aidlc-pipeline-deploy-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**:
@@ -28,14 +28,12 @@
 
 ## Execution Plan Summary
 - **Total Stages**: 26
-- **Completed**: 3
-- **In Progress**: reverse-engineering
+- **Completed**: 4
+- **In Progress**: practices-discovery
 
 ## Runtime State
 - **Revision Count**: 0
 
-- **Parked**: 2026-09-30T14:09:09Z
-- **Parked At Stage**: reverse-engineering
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -63,8 +61,8 @@
 - [ ] approval-handoff — SKIP
 
 ### INCEPTION PHASE
-- [-] reverse-engineering — EXECUTE
-- [ ] practices-discovery — EXECUTE
+- [x] reverse-engineering — EXECUTE
+- [-] practices-discovery — EXECUTE
 - [ ] requirements-analysis — EXECUTE
 - [ ] user-stories — EXECUTE
 - [ ] refined-mockups — EXECUTE
@@ -94,12 +92,12 @@ Per unit: [TBD]
 
 ## Current Status
 - **Lifecycle Phase**: INCEPTION
-- **Current Stage**: reverse-engineering
-- **Next Stage**: practices-discovery
+- **Current Stage**: practices-discovery
+- **Next Stage**: requirements-analysis
 - **Status**: Running
-- **Last Updated**: 2026-09-30T14:09:09Z
+- **Last Updated**: 2026-09-30T15:31:08Z
 
 ## Session Resume Point
-- **Last Completed Stage**: state-init
-- **Next Action**: Execute reverse-engineering
+- **Last Completed Stage**: reverse-engineering
+- **Next Action**: Execute Practices Discovery
 - **Pending Artifacts**: none
