@@ -158,6 +158,8 @@
 - NEVER メールの本文に差し込む利用者の値を、HTML としてエスケープしない差し込み（Mustache の `{{{ }}}`・`{{& }}`）で入れない（エスケープされる差し込みだけで入れる） (affirmed 2026-09-25)
 - NEVER 招待の URL を要求の Host ヘッダーから組み立てない（設定したベース URL だけから組み立てる） (affirmed 2026-09-25)
 - NEVER `vendor/java-mustache-processor` の中身をこのリポジトリから直接変更しない（変更は java-mustache-processor のリポジトリ側で行う） (affirmed 2026-09-25)
+- NEVER 最後の有効な管理者を無くす操作（管理者の印を外す・利用を止める）を受け付けない (affirmed 2026-09-30)
+- NEVER API の応答（成功の応答を含む）に、パスワードのハッシュ値・招待のトークンのハッシュ値・ロックの判定の内部の値を含めない (affirmed 2026-09-30)
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -176,6 +178,8 @@
 - ALWAYS 利用者が投入する DSL（YAML）は信頼できない入力として扱い、大きさ・入れ子の深さ・別名の数の上限を明示し、タグと任意の型の生成を拒否し、重複キーをエラーにする (affirmed 2026-09-23)
 - ALWAYS SMTP の接続先と資格情報は環境変数（`.env`）だけから受け取り、接続先の設定が無ければメールを送らない (affirmed 2026-09-25)
 - ALWAYS 招待のトークンは内部DB にハッシュ値だけを保存し、1回だけ有効で有効期限を持たせる (affirmed 2026-09-25)
+- ALWAYS 利用者の状態（停止・管理者の印）の判定は、ログインの照合・トークンの更新・アクセストークンの認証のすべてでサーバー側で行い、画面で操作を隠すことを代わりにしない (affirmed 2026-09-30)
+- ALWAYS 利用者の権限・状態を変える管理の操作（管理者の印の付け外し・利用停止と再開・ロックの解除）は、操作した人・対象の利用者・結果を監査に残す（拒否した操作を含めるかは要件で決める） (affirmed 2026-09-30)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
@@ -339,3 +343,5 @@
 - 答え方の選び方（Guide me など）を尋ねずに、4問をそのまま選択肢で尋ねた。問いが少なく、前の段まで依頼者が毎回選択肢で答えていたため。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:build-and-test:e3039bac0cabf49de2a7ba29bd918969d28e275aae546031b3f7a84069cfb64b -->
 - CI でだけ落ちる不安定なテストの直しで、開発担当に負荷をかけた再現の確かめまで頼んだところ、確かめに約1時間半かかり、依頼者の指示で止めた。直しは約35分で終わっていた。確かめは、書式・型・直したファイルの単独の数回・全体1回・verify・CI の範囲に絞り、長い再現の試みは頼む前に時間の上限を決める。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:build-and-test:fbb1b6477b964995de4caecb89e30876507a5d43c4c0181919c4d5b46820cdfd -->
 - 知識ベースが STALE（前回の Intent の後に 22 パスが変更）のため再利用の選択肢は出さず、依頼者は Full rescan を選んだ。深さ Standard で、開発担当は全体を把握したうえで今回の Intent（利用者の一覧・管理者の印・利用停止・ロックの解除）に関わる 11 部品を深く読んだため、記録上の範囲は kind: partial とし ./ を analyzed.paths に入れない（前回までと同じ扱い）。 (learned 2026-09-30) <!-- cid:260930-user-admin:reverse-engineering:1a0839d16a43df15fb0fff86f263a6a95e1831071fba1ec01101874cf114864b -->
+- 再実行のため、リードの候補 P1〜P10 と支援役3名の追加（品質 Q-1〜Q-6、開発 C1〜C7・PD-1〜PD-7、セキュリティ X1〜X4・Q-S1〜Q-S6）のうち、チームの進め方に当たるものだけを 13 問にまとめた。処理の置き場・移行ファイルの名前・行の排他の既定（PD-1・PD-4〜PD-7）と ★の値は要件・設計の段に回した。 (learned 2026-09-30) <!-- cid:260930-user-admin:practices-discovery:7bda82174f4168dd43f7bccedd2c938c5f183141efc885c65b3f7bda3b088b07 -->
+- 決定の要約を出す道具（review-brief summary）が今回も動かず（main(argv) を持たないという誤り）、答えのまとめだけを示して確認した。複数選択で5つの選択肢を持つ Q2 は、選択肢の数の上限のため2つの問いに分けて尋ねた。 (learned 2026-09-30) <!-- cid:260930-user-admin:practices-discovery:66aeea40f94ff437b61e246a949b1a23e71674f10bbad034571407498a058039 -->
