@@ -1,42 +1,48 @@
 # API（mastersmith2）
 
-同じオリジンで配信する SPA から呼ぶ前提である（CORS の設定は無い）。深さ Minimal のため、警報の式と運用の記録に関わる API だけを書いた。ほかの API（DSL の管理・プリファレンス・パスワードの変更・見た目の設定・問題の種類の説明など）は数えていない。今回の Intent は API の中身を読んでおらず、下の表の実装の列は前回（`e68f54d`）の記録である。
+同じオリジンで配信する SPA から呼ぶ前提である（CORS の設定は無い）。REST（JSON、Spring MVC）で、認証は `Authorization: Bearer <アクセストークン>`。セッションと CSRF の仕組みは無い（`config/SecurityConfig.java`）。`/api/**` の既定はログインが必要（`access/web/AdminApiDefaultAccess.java`）、`/api/admin` と `/api/admin/**` は管理者だけ（`access/domain/AdminPaths.java`）。エラーは RFC 9457 Problem Details に安定した `code` を足した形（`common/error`、1つの code に1つの状態コード）。
 
-## 警報と運用の記録に関わる外部の API（HTTP）
+パスは `backend/src/main/java/cherry/mastersmith/` を省いて書く。
 
-| メソッド・パス | 実装 | アクセス | 関わり |
+## 外部の API（HTTP）
+
+| メソッド・パス | 実装 | アクセス | 読みの深さ |
 |---|---|---|---|
-| `POST /api/auth/login` | `auth/web/AuthController` | 公開 | 警報 `ms-login-p95`（しきい値 1000 ms）の対象 |
-| `POST /api/auth/session/refresh` | 同上 | 公開・Origin の一致 | 警報 `ms-refresh-p95`（しきい値 1000 ms）の対象 |
-| `GET /api/admin/check` | `access/web/AdminCheckController` | 管理者のみ | 警報 `ms-check-p95`（しきい値 300 ms、境界に無い。K-15）の対象 |
-| `POST /api/admin/invitations` | `invitation/web/InvitationAdminController` | 管理者のみ | 送信が失敗しても 201 で `sendResult: FAILED` を返す（前回の K-8） |
-| `POST /api/admin/invitations/{invitationId}/resend` | 同上 | 管理者のみ | 送信が失敗しても 200 で `sendResult: FAILED` を返す（前回の K-8） |
-| `POST /api/registration/verify`・`POST /api/registration/complete` | `invitation/web/RegistrationController` | 公開（差し込み口 order 310 で2つの POST だけ） | 拒否は 404 `REGISTRATION_LINK_INVALID`。完了の拒否は監査に `REGISTRATION_FAILED` が残る（前回の K-8） |
-| `GET /actuator/health` | Actuator（Web に公開するのは health だけ、詳細なし） | 公開 | 変わらない。指標の窓口（`/actuator/metrics`）は公開していない |
+| `POST /api/auth/login` | `auth/web/AuthController.java` | 公開 | 深い。失敗は理由によらず 401 `AUTHENTICATION_FAILED`（K-1） |
+| `POST /api/auth/session/refresh` | 同上 | 公開・Cookie のリフレッシュトークン・Origin の確かめ | 深い。失敗は `REFRESH_FAILED` |
+| `POST /api/auth/session/logout` | 同上 | 同上 | 深い |
+| `GET /api/admin/check` | `access/web/AdminCheckController.java` | 管理者だけ | 深い。204。画面の管理の入口が使う |
+| `GET /api/me/preferences`・`PUT /api/me/preferences`・`POST /api/me/password` | `user/web/MeController.java` | ログイン | 流し読み（名前だけ） |
+| `POST /api/admin/invitations`・`GET /api/admin/invitations?page=`・`POST /api/admin/invitations/{invitationId}/resend`・`POST /api/admin/invitations/{invitationId}/cancel` | `invitation/web/InvitationAdminController.java` | 管理者だけ | 深い（K-5 の見本） |
+| `POST /api/registration/verify`・`POST /api/registration/complete` | `invitation/web/RegistrationController.java` | 公開（差し込み口 order 310） | 流し読み |
+| `/api/admin/dsl` の下の 10 本（状態・プレビュー・投入・破棄・生成・ダウンロード・適用・履歴・戻し・適用済みのダウンロード） | `dslmanage/web/DslAdminController.java` | 管理者だけ | 流し読み |
+| `GET /api/appearance` | `appearance/web/AppearanceController.java` | 公開 | 流し読み |
+| `GET /api/problems/{slug}` | `common/error/web/ProblemTypeController.java` | 公開 | 流し読み |
+| `GET /dsl/dsl-schema-v1.json`・`GET /actuator/health`・SPA の配信 | 静的・Actuator | 公開 | 流し読み |
 
-## 指標（Micrometer → OTLP）
+**利用者の管理の API は無い。** 利用者の一覧・管理者の印の変更・利用停止・ロックの解除のどれも、controller・service・repository のどの層にも無い。`user/repository/UserRepository.java` の問い合わせは `findByEmail`（43 行）・`existsByRedactedEmail`（55 行）・`updatePreferences`（70 行）・`updatePasswordHashIfUnchanged`（85 行）と `JpaRepository` の標準の操作だけで、`users` の索引は主キーとメールアドレスの一意の制約だけ（V2）。
 
-| 名前 | 作る場所 | 分布（バケット） | 使う側 |
-|---|---|---|---|
-| `http.server.requests` | Spring MVC の観測（Spring Boot の既定） | `slo` の境界 100・250・500・1000・2000・5000 ms と `+Inf`（`346c719` で足された） | 警報 `ms-5xx-ratio`・`ms-forbidden`（件数）、`ms-login-p95`・`ms-refresh-p95`・`ms-check-p95`（バケット） |
-| `mastersmith.mail.send` | `mail/service/SmtpMailSender`（`Observation`） | `slo` の境界（上と同じものと 10000 ms） | ダッシュボードの送信の行 |
-| `mastersmith.dsl.operation` | `dslmanage/service/DslOperationMetrics` | あり（`publishPercentileHistogram()`） | ダッシュボードの DSL の行 |
+## アプリの中の口（部品の間の契約）
 
-送信は `management.otlp.metrics.export`（`step: 60s`、既定は無効）。流れと K-15 の本文は `architecture.md` の Interaction Diagrams 1。
-
-## 起動時の処理（API ではないがログの出口）
-
-| 処理 | 実装 | 出すもの |
+| 口 | 場所 | 内容 |
 |---|---|---|
-| 初期管理者の作成 | `user/service/InitialAdminInitializer` | INFO のログ3か所（キー `email` の値を含む）、設定が無い・正しくないときの WARN（値なし）。K-11 の本文は `component-inventory.md` の `user` |
+| `UserAccountService` | `user/service/UserAccountService.java` | `verifyPassword`・`findById`・`existsByEmail`（文字列と `RedactedText`）・`findDisplayName`・`findLanguage`・`createUser`。戻り値の `UserSummary` は `toString` でメールアドレスと氏名を伏せる（K-8）。`auth`・`invitation`・`dslmanage` が使う |
+| 出来事 `UserCreatedEvent` | `user/service/UserCreatedEvent.java` → `auth/service/LoginAttemptStateInitializer.java` | 同じトランザクション（`Propagation.MANDATORY`）でロックの状態の行を作る。`user` から `auth` への逆向きの知らせの前例（K-3） |
+| 監査の出来事 | `AuthenticationEvent`・`AdminAccessDeniedEvent`・`PasswordChangedEvent`・招待と登録の出来事・`DslOperationEvent` → `audit/service/AuditEventListener.java` | 確定の後に記録（`architecture.md` の Interaction Diagrams 3、K-6） |
+| 安全の決まりの差し込み口 `SecurityRuleContributor` | `common/security`、各機能の `web` | order は機能ごとに 100 台（auth 110・access 210・invitation 310・appearance 410。x00・x50 はテストの決まり） |
 
-## 前回の K-8 承認済みの運用の記録の誤り
+## K-5 一覧・ページ送り・操作・結果の型の前例（`invitation` の管理の API）
 
-この節は前回（`e68f54d`）の記録で、今回は読み直していない。K-8 は `7c2fea4`（README の画面・監視・既知の制約を直し「警報と対応の手順」の節を足す）で扱われた（件名による）。
+確かめた事実:
 
-前の Intent（`260925-user-management`）の運用の記録（`alarms.md`・`log-queries.md`・`runbooks.md` の RB-17）に、コードと合わない記述があった。
+- 一覧: `GET /api/admin/invitations?page=`。`page` は文字列で受け、数でなければ業務処理が `ListResult.InvalidPage` を返し、controller が 400 `VALIDATION_FAILED` にする（`invitation/web/InvitationAdminController.java` 108〜112 行）。1ページは 20 件（`invitation/domain/InvitationPaging.java` の `PAGE_SIZE`、DB を使わない純粋な関数）。応答は `InvitationPageResponse`（`items`・`page`・`size`・`total`・`unavailableReasons` ほか）。
+- 操作: `POST /api/admin/invitations/{invitationId}/resend`・`/cancel` の形（動詞の下位パス）。業務処理は sealed interface の結果の型（`InviteResult`・`ListResult`・`ResendResult`・`CancelResult`）を返し、controller が網羅の `switch` で応答か `BusinessException` に変える（例 `CancelResult.Cancelled` → 204、`CancelResult.NotFound` → `INVITATION_NOT_FOUND`、141〜145 行）。
+- 操作した管理者の ID と送り手の情報は `invitation/web/InvitationRequestContextResolver.java` で読み、業務処理に渡す（`service.resend(actor, context.origin(request), invitationId)`）。
+- 安全の決まり: `/api/admin/**` は `access` の決まりで管理者だけになるため、招待の管理の API は決まりを足していない。`invitation/web/InvitationSecurityContributor.java` が足すのは公開の2本（登録の完了）だけ。
+- 一覧の「招待した管理者の氏名」は、ページの行ごとに `UserAccountService.findDisplayName` を利用者 ID ごとに1回呼ぶ（`invitation/service/InvitationService.java` 269・286 行）。
 
-- **登録の完了の拒否は監査に残る。** 形の誤ったトークンでも `RegistrationService.complete` が `RegistrationFailedEvent` を出し、`audit` が `REGISTRATION_FAILED` を記録する（`architecture.md` の Interaction Diagrams 2）。「形の誤ったトークンの拒否は監査に残らない」という記述は、登録の完了については誤り。リンクの確かめ（`/verify`）の拒否が監査に残るかは、読んでいない。
-- **招待メールの送信の失敗は、既存の警報に当たらない。** 招待は 201・送り直しは 200（`sendResult: FAILED`）で返り、ログは WARN と INFO。5xx の割合（`ms-5xx-ratio`）と ERROR のログ（`ms-error-logs`）の式はどちらも拾わない。
+見立て（未検証）:
 
-帰結: 誤りのある文書は承認済みの記録のため書き換えず、README の側で正しい形にそろえる（`project.md` の Way of Working）。
+- 利用者の管理の API は、同じ形（`/api/admin/<資源>?page=` の一覧、`/{id}/<動詞>` の操作、結果の型と網羅の `switch`、機能ごとの ProblemType の一覧）で `/api/admin/**` に乗せれば、安全の決まりを足さずに済む。
+- 利用者の一覧で、利用者（`user` の表）とロックの状態（`auth` の表）を別々に読むと、1ページ 20 件で読みが増える。件数が少ない前提なら問題になりにくいが、どちらの部品が合わせるかは境界の決まり（K-3、`dependencies.md`）で絞られる。
+- 一覧・件数・状態の絞り込みの問い合わせは `UserRepository` に足すことになる。

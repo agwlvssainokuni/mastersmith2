@@ -1,79 +1,75 @@
 # コードの質の評価（mastersmith2）
 
-件数はファイルを数えた値・`grep` で数えた値で、テストを実行した値ではない（Gradle・npm は実行していない）。この文書に本文を書いた所見は K-10（前回からの続き）と K-16 で、ほかは持ち主の文書を参照する（一覧は `business-overview.md`）。
+件数はファイルを数えた値・検索で数えた値で、テストを実行した値ではない（Gradle・npm・Docker は実行していない）。この文書に本文を書いた所見は K-7 で、ほかは持ち主の文書を参照する（一覧は `business-overview.md`）。パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く。
 
 ## テスト
 
-| 対象 | 置き場と数（前回 `e68f54d` に数えた値） | 道具 |
+| 対象 | 置き場と数（2026-09-30 にファイルを数えた値） | 道具 |
 |---|---|---|
-| バックエンドの単体 | `backend/src/test/java/`、`*Test` 151 ファイル（タスク `test`） | JUnit Jupiter・AssertJ・Mockito・jqwik・ArchUnit |
-| バックエンドの結合 | 同上、`*IT` 108 ファイル（タスク `integrationTest`）。その後 `HistogramBucketsIT` などが足された | Spring Boot Test（`OutputCaptureExtension`）・Awaitility・Testcontainers・SubEthaSMTP |
+| バックエンドの単体 | `backend/src/test/java/`、`*Test` 151 ファイル（タスク `test`） | JUnit Jupiter・AssertJ・jqwik・ArchUnit |
+| バックエンドの結合 | 同上、`*IT` 109 ファイル（タスク `integrationTest`）。内部DB は組み込みの H2 | Spring Boot Test・Testcontainers（対象DB だけ）・SubEthaSMTP |
 | 画面 | `frontend/src/**/*.test.ts(x)` 91 ファイル | Vitest・Testing Library・user-event・vitest-axe・fast-check |
-| E2E | `frontend/e2e/*.e2e.ts` 10 ファイル（今回数えた。100 が前回の後に足された）。`verify` と CI の外 | Playwright・axe-core |
+| E2E | `frontend/e2e/*.e2e.ts` 10 ファイル。`verify` と CI の外 | Playwright・axe-core |
 
-前の Intent の Build and Test の記録では、統合の後の `develop` で `verify`・E2E 110 件・CI が通った（コミット `b445b6b` の件名による。ここでは確かめていない）。
+### 今回の Intent に関わる既存のテスト（ファイル名で確かめた）
 
-### ログの確かめの向き（K-11 の関連）
+| 機能 | テスト | 補助 |
+|---|---|---|
+| `user` | `UserAccountServiceTest`・`UserCreationIT`・`UserRepositoryIT`・`UserSchemaIT`・`V7MigrationIT`・`V7BackwardCompatibilityIT`・`InitialAdminInitializerTest`・`InitialAdminIT`・`MePasswordApiIT`・`MePreferencesApiIT`・`MeSecretLeakIT` | `user/testsupport/TestUserAccounts`・`MeApi`・`TestPasswordChangeBarrier` |
+| `auth` | `LockPolicyTest`・`LoginServiceTest`・`LoginConcurrencyIT`・`LoginAttemptStateRepositoryIT`・`RefreshTokenRepositoryIT`・`TokenRefreshServiceTest`・`RefreshConcurrencyIT`・`AccessTokenApiIT`・`LoginApiIT`・`TokenApiIT`・`AuthEventsIT`・`AuthSecretLeakIT`・`AuthBoundaryArchitectureTest` | `auth/testsupport/MutableClock`・`AuthApi`・`AuthTestTokens`・`CapturedAuthenticationEvents` |
+| `access` | `AdminAccessIT`（401・403・200）・`AdminPathBoundaryIT`・`ApiDefaultAccessIT`・`AccessDeniedEventsIT`・`AccessSecretLeakIT` | `access/testsupport/AdminTestUsers`・`PublicApiTestRules` |
+| `audit` | `AuditEventFactoryTest`・`AuditEventListenerTest`・`AuditAuthenticationEventsIT`・`AuditRollbackIT`・`AuditWriteFailureIT`・`AuditTraceIdIT`・`AuditSecretLeakIT`・`PasswordChangedAuditIT`・`AuditBoundaryArchitectureTest` | `audit/testsupport/AuditRows` |
+| `invitation` | `InvitationAdminApiIT`・`InvitationAuditIT`・`InvitationConcurrencyIT`・`InvitationPagingTest`・`InvitedPersonAuthenticationIT`・`InvitationSecretLeakIT`・`InvitationBoundaryArchitectureTest` | — |
+| 全体 | `ArchitectureTest` | `common/testsupport/`（`LogEvents`・`JsonLogRecords`・`HttpTestClient`・`TestDatabase` ほか） |
 
-- ログに秘密が出ないことの確かめは、`LogEvents`（ログの出来事の取り込み）と `JsonLogRecords.assertContainsNoSecret`（標準出力の JSON）の2つの形がある。`*SecretLeakIT` の7つが後者の形を使う（名前だけ確かめた）。
-- `InitialAdminInitializerTest` は、決まり（アプリのログにメールアドレスを出さない）と逆に「含まれること」を確かめている。本文は `component-inventory.md` の `user`（K-11）。
-
-### 前回の CI の2つの時間切れ（前回の K-4・K-5）
-
-前回（`e68f54d`）の時点では、`H2CompactionByPoolSuspensionIT` の 10 秒の待ち（K-4）と `InvitationAdminPage.test.tsx` の1件が Vitest の既定の 5 秒で動くこと（K-5）が CI の失敗の原因だった。`b20bf1e`（上限を延ばし、失敗時の診断と不安定なテストの直しを足す）で扱われた（件名による。延ばした値と診断の形は今回確かめていない）。前回の見立て（`user.type` の1文字ごとの描画が 5 秒すれすれ、など）は `architecture.md` の Interaction Diagrams 3 と前回の記録に残る。
+`team.md` の Testing Posture が認証・認可・監査に求めるテスト（401・403・200、ロックの境界、監査の必須項目、秘密の漏えい）は、上の既存のテストの形（`AdminAccessIT`・`LockPolicyTest`・`AuditRows`・`*SecretLeakIT`）に足せる見込み。時刻は `auth/testsupport/MutableClock` で動かせる（ロックの解除時刻の境界、K-2）。
 
 ## カバレッジ
 
-- バックエンド: JaCoCo で全体の合計とパッケージごとに行 80%・分岐 70%（`backend/build.gradle.kts` 236〜270 行）。既存の一部のパッケージは `packagesJudgedByTotal` の一覧で全体の合計だけで判定する（K-10）。
-- 画面: `vitest.config.ts` の `thresholds`（行 80・分岐 70、前回の記録）。
+- バックエンド: JaCoCo。単体と結合を合わせた全体で行 80%・分岐 70%、加えてパッケージごとに同じ下限（`backend/build.gradle.kts` 236〜270 行）。
+- 画面: `frontend/vitest.config.ts` の `coverage.thresholds`（`lines: 80`・`branches: 70`）。除外は `src/main.tsx`・`*.d.ts`・テスト自身。
 - 計測から外すのは起動クラス・設定値だけのクラス・自動生成・`vendor/` に限る（`team.md` の Testing Posture）。
 
-### K-10 `team.md` の `packagesJudgedByTotal` の記述が今のビルドより古い（前回からの続き）
+### K-7 触るとカバレッジの下限を満たす作業が付くパッケージ
 
-確かめた事実（アーキテクトが `backend/build.gradle.kts` 221〜234 行で確かめ直した）: `team.md` の Testing Posture は一覧を「`user.domain`・`user.repository`・`user.service` を含む 22 パッケージ」と書くが、今の一覧は **12 個**（`access.domain`・`access.service`・`audit.repository`・`auth.domain`・`auth.repository`・`common.error.domain`・`common.error.service`・`common.error.web`・`common.health`・`common.i18n.domain`・`common.observability`・`common.web`）。210〜220 行の説明どおり、Intent `260925-user-management` の B2 で `user.*` を含む7つ、U8 で3つが外れた（`user.service` はコミット `9a9a633` で外れた）。前回（`260928-quality-followup`）の後も `team.md` は直っていない。
+確かめた事実（アーキテクトが `backend/build.gradle.kts` 209〜234 行で確かめ直した）:
 
-帰結:
+- `packagesJudgedByTotal`（パッケージごとの下限から外し、全体の合計で判定する既存のパッケージ）は 12 個: `access.domain`・`access.service`・`audit.repository`・`auth.domain`・`auth.repository`・`common.error.domain`・`common.error.service`・`common.error.web`・`common.health`・`common.i18n.domain`・`common.observability`・`common.web`。`team.md` の記述（12 パッケージ）と一致する。
+- 一覧を作った時点の実測で `auth.repository` は単独で分岐 50.0% だった（同ファイル 210〜212 行の注記。今の値は測っていない）。
+- `user.*`・`invitation.*`・`auth.service`・`auth.web`・`access.web`・`audit.domain`・`audit.service`・`config`・`common.security` は既にパッケージごとの下限の対象。新しく作るパッケージは一覧に無いので自動で対象になる。
+- `team.md` の Testing Posture により、一覧のパッケージに手を入れる Bolt では、テストを足してそのパッケージの下限（行 80%・分岐 70%）を満たし、一覧から外す。カバレッジは `:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` で実測して記録する。一覧を増やす変更はしない。
 
-- 今回の依頼の「team.md も修正する」の対象の候補である（どこを直すかは要件で決める。この記述のほかに、Dependabot の受け方などの決まりを変えるかも含む）。`team.md` は「Edit at the gate, not directly」の決まりのため、直し方（practices の関門か、学びの手順か）も要件で決める。
-- K-11 の直しで手を入れる `user.service` は既にパッケージごとの下限の対象で、一覧から外す作業は付かない。
+見立て（未検証）:
+
+- 利用停止（K-1）とロックの解除（K-2）は `auth.domain`（`LoginFailureReason`・`TokenFailureReason`）・`auth.repository`（ロックの解除、リフレッシュトークンをまとめて無効にする問い合わせ）・`access.domain`（`AccessDeniedReason`）に及びうる。監査の記録を変えるなら `audit.repository` もありうる。とくに `auth.repository` は分岐の不足が大きかったため、手を入れる Bolt の作業が重くなりうる。
+- どのパッケージに手が入るかは設計（K-3 の置き場）で決まる。コード生成の計画で、手を入れる一覧のパッケージを洗い出す必要がある。
 
 ## 検査と CI
 
-- 形と静的検査: Spotless（Gradle のプラグイン 8.10.2）＋palantir-java-format（Java・Kotlin DSL・メールのテンプレートのライセンスヘッダー）、Prettier・oxlint・ESLint（`@typescript-eslint/parser`）・Stylelint（`frontend/`）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`）、Gitleaks（pre-commit と CI）、OSV-Scanner。
-- CI: `.github/workflows/ci.yml` は `develop` へのプッシュ・タグ `v*`・手動で動き、`permissions: contents: read`、Actions はコミットのハッシュで固定。verify の仕事は checkout（`submodules: true`）→ setup-java（temurin 25）→ setup-node（24、npm のキャッシュは `frontend/package-lock.json` と `vendor/make-you-chic-ui/package-lock.json`）→ setup-gradle → Gitleaks・OSV-Scanner を SHA-256 を確かめて入れる → `./gradlew verify` → WAR を成果物として保存。release の仕事はタグのときだけ WAR を GitHub のリリースに添付する。E2E は CI の外（K-13）。
-- 更新の知らせ: Dependabot の ignore と開いた知らせは K-14（`dependencies.md`）。
-- 観測: p95 の警報3件は境界のバケットで値を持つが、`ms-check-p95` のしきい値が境界に無い（K-15、`architecture.md` の Interaction Diagrams 1）。
-
-## 画面の質
-
-### 前回の K-3 アプリ自身の CSS の文字の色
-
-前回（`e68f54d`）の時点では、`PreferencesForm.css` の `.preferences-choice-error`（`--color-danger`）、`DslSubmitForm.css` の `.dsl-link` と使われていない `Page.css` の `.page-link`（`--color-primary`）が、make-you-chic-ui の文字用のトークンの直しの外にあった。`79a0395`（E2E の既知の違反の一覧とアプリ独自の CSS を直す）で3つの CSS が変わった（件名と変わったファイルによる。中身は今回確かめていない）。今回の make-you-chic-ui の更新（K-12）で足される `--color-primary-emphasis-text`・`--color-primary-hover-text` をアプリの CSS が使うかは、確かめていない。
+- 形と静的検査: Spotless（palantir-java-format、インデント4・1行120文字、`/* */` のライセンスヘッダー）、SpotBugs ＋ FindSecBugs と関門 `spotbugsGate`（priority 1 と、`SQL_` で始まるもの・`PREDICTABLE_RANDOM`・`SMTP_HEADER_INJECTION` は priority によらず失敗。`backend/build.gradle.kts` 295〜368 行）、ArchUnit の構造の検査（全体の `ArchitectureTest` と機能ごとの `*BoundaryArchitectureTest` 9 本、K-3）。
+- 画面: Prettier・oxlint（correctness を error）・ESLint（react-hooks）・Stylelint・`tsc --noEmit`・ライセンスヘッダーの検査（`frontend/scripts/check-license-header.mjs`）・バンドルの大きさ（`scripts/check-bundle-size.mjs`）。
+- 秘密情報: Gitleaks（`.gitleaks.toml`、pre-commit と `verify`）。依存: OSV-Scanner（`verify` の `osvScan`）と Dependabot。
+- SpotBugs の除外は理由つきの1件だけ（`backend/config/spotbugs-exclude.xml`: `LoginAttemptStateRepository.lockDummyForUpdate` の `PREDICTABLE_RANDOM`）。
+- CI: `.github/workflows/ci.yml` の1本。`develop` へのプッシュ・タグ `v*`・手動で `./gradlew verify` を流し、WAR を成果物として保存する（タグのときはリリースに添付）。Actions はコミットのハッシュで固定。E2E は CI の外（`team.md`）。
 
 ## 文書
 
-- `README.md`（1,069 行）は起動・環境変数・E2E・監視・警報と対応の手順・監査・招待・既知の制約・戻し方まで持つ。コードのコメントは日本語で、決定の出どころ（Intent・単位・決定の番号）を丁寧に書いている。
-- 前回の K-9（運用の手順書の置き場が無い）は、`7c2fea4` で README に「警報と対応の手順」の節（692 行〜）が足されて扱われた。前回の K-8（承認済みの運用の記録の誤り）も同じコミットの README の直しで扱われた（件名による、`api-documentation.md`）。
-
-### K-16 README の古い記述と、固定先を上げた後に書き直す節
-
-確かめた事実（開発担当が行を示した。アーキテクトは固定先だけを `git submodule status` で確かめ直した）:
-
-- 38 行「make-you-chic-ui の固定先は `735ef04`」は、今の固定先 `310e1ec` と食い違う（前の Intent の更新漏れ）。
-- 今回外す E2E の既知の違反（K-13）を説明する節: 158 行（100 の説明）・957 行（DSL の管理の画面のコントラスト）・990〜993 行（「残る既知の制約」の2件）。
-- `310e1ec` の解消を説明する節（固定先を上げた後に書き直す候補）: 113・122・130・138・909・924・938・974〜988 行。976〜988 行の表は green・orange の primary の Button の文字が濃い色という前提で、`077f5b4` で hover の文字が白になると前提が変わる（K-12 の見立て）。
-- ms-check-p95 の 300 ms（K-15）: 682〜683 行（境界と刻みの説明）・699〜706 行（警報と対応の手順の表）。
-- 初期管理者の起動の確かめ（K-11）: 215 行が「初期管理者を作成しました」の INFO を確かめる手順に使う。664 行は標準出力のログは伏せない（外部エクスポートだけ伏せる）と説明する。774 行は監査の書き込みの失敗の ERROR がメールアドレスをキーと値で載せると書く（コードは確かめていない）。
-
-帰結: 固定先の更新・既知の違反の削除・しきい値の直し・ログの直しのそれぞれで、README の上の行を同じ変更で直す必要がある。38 行の食い違いは今回の固定先の更新でまとめて直せる。
+- `README.md`（1,082 行）: 取得と準備、1コマンドの検査、E2E、起動、戻し方、環境変数（ロックのしきい値 `MASTERSMITH_AUTH_LOCK_THRESHOLD` 既定 5・時間 `MASTERSMITH_AUTH_LOCK_DURATION` 既定 30m、407〜408 行）、API のアクセス制御、監査ログ、各機能の節、ライセンス。利用者の管理（一覧・停止・解除）の節は無い。
+- コードのコメント: Javadoc・JSDoc は日本語で、設計の文書の番号（BR・NFR・契約 C・ADR）と決定の経緯を丁寧に書く。`TODO`・`FIXME`・`HACK` は本体（`backend/src/main`・`frontend/src`）に 0 件（開発担当の検索）。
+- `frontend/src/features/README.md`: 機能の登録・表示の設定・入力の確かめの関数・ユーザーメニューの使い方。
 
 ## 技術的負債の一覧
 
-| 項目 | 所見 | 重さ |
-|---|---|---|
-| 初期管理者の作成のログがメールアドレスを出し、テストが逆向きに確かめる | K-11 | 高（`project.md` の Forbidden に反する） |
-| make-you-chic-ui の固定先と E2E の 100 の既知の違反 | K-12・K-13 | 中（依頼の対象。確かめは手元の E2E だけ） |
-| Dependabot の開いた知らせ4件と npm の ignore が無いこと | K-14 | 中 |
-| `ms-check-p95` のしきい値が境界に無い | K-15 | 中（判定が粗い） |
-| `team.md` の記述の古さ | K-10 | 低（記録の食い違い） |
-| README の固定先の記述の古さと、書き直しの対象の節 | K-16 | 低 |
+| 項目 | 内容（場所） | 所見 | 重さ |
+|---|---|---|---|
+| 利用者の状態を見る場所が3つに分かれる | ログインの照合・トークンの更新・アクセストークンの認証がどれも「いるか」だけを見る | K-1（`architecture.md`） | 高（今回の Intent で必ず当たる） |
+| 最後の管理者を守る仕組みが無い | 印を外す・停止する操作を止める口が無く、初期管理者の自動作成も回復の道にならない | K-4（`architecture.md`） | 高（要件で決める） |
+| ロックの状態の行の無い利用者がありうる | 表 `login_attempt_states` は外部キーを持たず、行は作成の知らせか初めてのログインで作られる | K-2（`component-inventory.md` の `auth`） | 中 |
+| 監査が機能を足すたびに大きくなる | `audit/service/AuditEventListener.java` 406 行・`audit/domain/AuditEvent.java` 374 行・`audit/domain/AuditEventFactory.java` 363 行が、機能ごとの出来事の受け取りと写し取りを1か所に積む。網羅の `switch` で足し漏れはコンパイルで気づける | K-6（`component-inventory.md` の `audit`） | 中 |
+| リフレッシュトークンをまとめて無効にする問い合わせが無い | `auth/repository/RefreshTokenRepository.java` は1件ずつの `revokeIfActive` と期限切れの削除だけ。パスワードの変更（`user/service/UserPreferencesService.java`）もほかの端末のリフレッシュトークンを無効にしない（`PasswordChangedEvent` を受けるのは `audit` だけ、開発担当の検索） | K-1 の関連 | 中 |
+| カバレッジの作業が付くパッケージ | `packagesJudgedByTotal` の 12 個 | K-7（この文書） | 中 |
+| 要求の文脈の読み取りの複製 | `user/web/MeRequestContextResolver.java`（111 行）・`invitation/web/InvitationRequestContextResolver.java`（98 行）が同じ形（`Authentication#getName()` を数として読む、送り手の情報を作る、401 の問題の種類を起動時に引く）。`dslmanage/web/DslRequestContextResolver.java` もある（アーキテクトがファイル名で確かめた。中身は読んでいない）。`invitation` は `auth` に依存できない境界のため複製している | K-3 の関連 | 低〜中（足すと4つ目） |
+| 画面の管理の機能の大きめの hook | `frontend/src/features/invitation/useInvitationAdmin.ts` 472 行・`frontend/src/features/dsl/useDslAdmin.ts` 492 行。同じ型の画面を足すと状態の管理を複製しやすい（見立て） | K-9 の関連 | 低 |
+| 画面の管理者の印が古いまま残る | `frontend/src/features/auth/authSession.ts` のモジュールの変数 | K-4 | 低（サーバー側の判定は正しい） |
+| 単一インスタンス前提 | 内部DB が組み込みの H2、ロックの判定は行の排他と待ちの上限 3 秒 | 前の Intent からの既知の決定 | 低（今の配備先では問題にならない） |
+| 抑止の注記 | `@SuppressWarnings` が本体に2件（`common/observability/SanitizingLogRecordExporter.java` 141 行の `deprecation`、`common/error/web/DefaultErrorResponseWriter.java` 79 行の `unchecked`）、`oxlint-disable` が1件（`frontend/src/types/vitest-axe-matchers.d.ts` 23 行）。どれも理由が明らか | — | 低 |
