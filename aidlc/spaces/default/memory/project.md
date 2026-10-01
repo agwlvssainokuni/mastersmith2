@@ -22,6 +22,7 @@
 - 要件の網羅を確かめるときは、要件定義の FR・NFR から、機能設計の BR と NFR 要件の枝番を経て、Code Generation の traceability.json へ至る2段の連鎖でたどる（traceability.json は要件の ID を直接持たず、単位ごとの ID で持つため）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:build-and-test:1340b2bcd75ac79b135d0768a43f458838dd75a8266977a7f183ed9c9fba3820 -->
 - 確認のための要約と、実装または承認済みの設計が食い違ったときは、実装と承認済みの設計を正として記録し、要約との差を成果物に明記する（要約に合わせて実装を変えない）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:14248c7b19e31f384aae87bfe2bc4ccc4a1b979bdd77d36d0ee3452b0e6da01d -->
 - 確定済みの設計と違う決定を依頼者がしたときは、設計の文書は書き換えず、差をその段の成果物に明記し、README などの手順を決定に合わせて直す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-pipeline:b511560ca6ee8edac9468a296692cea2d0ce2afd343dedd46d09e1691cc7ea6f -->
+- 大きい単位を複数の Bolt に分けるときは、設計の段は1つの単位として通し、コード生成の計画で Bolt ごとに分ける（user-admin の U3 を前半 B3・後半 B4 に分けた）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:eeb51d6f303964784162df4356b33c9ff6143b628c976443564ba5121ae3d810 -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -68,6 +69,7 @@
 - 診断の確かめで、上限 1 ミリ秒は Awaitility の問い合わせの間隔（100 ミリ秒）より短く設定の誤りで弾かれ、150 ミリ秒では手元で接続がすぐ 0 本になり時間切れにならなかった。上限 500 ミリ秒と、待ちの条件を一時的に満たせない形（== -1）にして時間切れを起こした。確かめた後に git checkout で戻した。 (learned 2026-09-29) <!-- cid:260928-quality-followup:build-and-test:5536c064124d2edf2f91994849b66b6c22c4d26b39de0eccd19a8d706a9934ad -->
 - 警報が鳴ることは、しきい値を 50 ms に下げた警報の決まりの写しを使い捨ての環境に読み込ませて確かめた（Q1: A）。本当に遅い応答を作るより早く PC の負荷も小さいが、しきい値の値そのもので鳴ることは確かめていない。途中で ms-check-p95 のしきい値が 1000 ms ではなく 300 ms（バケットの境界に無い）と分かり、要件の前提 A3 と食い違った。 (learned 2026-09-29) <!-- cid:260928-quality-followup:build-and-test:0c83bcb55fc573a0313f384eb67e6c8bfd7f63330c09f894f1d8f17a17d62ca1 -->
 - 表示の設定を画面の操作の直後に同期で確かめるテストが、負荷の高い CI で2件（ShellLayout・PreferencesPage）落ちた。描画の後の効果（useEffect）で反映される値は waitFor で待って確かめる。同じ形の RegistrationPage も合わせて直した。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:build-and-test:410b2f525cbea40423751fb97c82bb527df2ad4b1f2864d4888b7ab32fe771f4 -->
+- Delivery Planning でのカバレッジの実測は、./gradlew verify 全体ではなく :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport で行い、jacocoTestReport.xml から手を入れる見込みのパッケージの値を読む（user-admin で約 5 分）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:e35925faac38449777eadec784bc2546fb19d593b9a634f5af273fef22f9b364 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
