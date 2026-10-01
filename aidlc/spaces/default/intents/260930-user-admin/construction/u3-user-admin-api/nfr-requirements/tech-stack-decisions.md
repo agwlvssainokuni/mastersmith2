@@ -11,11 +11,11 @@ U3 は新しい依存を足しません。既存の技術（コードの知識�
 | トランザクション | Spring の `@Transactional`（業務処理の層だけ）と、上限切れのときの明示の巻き戻し（`setRollbackOnly`） | 5つの操作を1つのトランザクションで確定させ、BUSY を 500 にせず 409 で返す | NFR4.3・NFR9.5 |
 | 行の排他 | Spring Data JPA の `PESSIMISTIC_WRITE` と `jakarta.persistence.lock.timeout`（3000 ミリ秒、既存の `LoginAttemptStateRepository`・`InvitationRepository` と同じ値） | 最後の有効な管理者の保護と、失敗回数を戻す操作とログインの判定の重なりを、DB の行の排他で守る（アプリのメモリに状態を持たない） | NFR4.1〜NFR4.5・NFR5.6 |
 | DB アクセス | Spring Data JPA・Hibernate（`ddl-auto: validate`）、名前つきの引数の問い合わせ、伏せ字の型を SpEL の中で文字列にする形（既存の `updatePreferences` が前例） | 検索の文字と氏名を repository の口まで伏せ字の型で渡し、文字列をつなげて問い合わせを作らない | NFR3.1・NFR9.1・NFR5.2 |
-| 内部DB | 組み込みの H2（表と列の変更なし） | 既存の内部DB。テストも同じ組み込みの H2 で行う（`team.md` の Testing Posture） | NFR4.5・NFR6.2 |
+| 内部DB | 組み込みの H2（既定は表と列の変更なし）、移行は既存の Flyway | 既存の内部DB。テストも同じ組み込みの H2 で行う（`team.md` の Testing Posture）。索引を足すと決めたときは V10 以降の前進のみの移行にする。H2 は関数を使った索引を持てない（`performance-requirements.md` の NFR10.1・NFR10.2） | NFR4.5・NFR6.2・NFR10.1・NFR10.2 |
 | 監査 | 既存の AuditLog（`AuditEventListener` の AFTER_COMMIT・`AuditEventRecorder` の `REQUIRES_NEW`） | 5つの種類と4つの理由の列挙の値、出来事の受け取りと写しを足すだけにする（ADR-006） | NFR9.3・NFR9.4・NFR6.2 |
 | 時計 | 既存の注入した `Clock` | ロックの判定（ロック中か・解除の予定の時刻）を今の時刻で判定し、テストで動かせるようにする | NFR4.2・NFR9.7 |
 | 観測 | 既存の Micrometer（`http.server.requests`）・SLF4J の構造化ログ・Micrometer Tracing | 新しい指標と警報を足さない | NFR5.9・NFR5.10・NFR3.4 |
-| 負荷の試験 | 既存の k6（`perf/k6/scenarios.js`） | 場面を足すだけにする | NFR5.1〜NFR5.7・NFR6.2 |
+| 負荷の試験 | 既存の k6（`perf/k6/scenarios.js`） | 場面を足すだけにする | NFR5.1〜NFR5.7・NFR6.2・NFR6.3 |
 
 ## 構造とテストの要件
 
