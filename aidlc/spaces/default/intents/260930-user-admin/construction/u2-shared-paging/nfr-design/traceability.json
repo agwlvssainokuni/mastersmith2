@@ -1,0 +1,38 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-shared-paging",
+  "upstream_ids": [
+    "NFR3.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10",
+    "NFR9.11",
+    "NFR11.1"
+  ],
+  "coverage": [
+    { "id": "NFR3.1", "status": "OK", "target": "security-design.md 4.1（口は整数と列挙だけ、伏せ字と SecretLeakIT は足さない）・4.2（TRACE に出うるのは呼び出し元の controller と業務処理の引数だけ）・4.3（Q1 A で受け入れた残る危険、根拠3つ）・10節の R3" },
+    { "id": "NFR5.1", "status": "OK", "target": "security-design.md 6節（数回の整数の計算、内部DB の問い合わせを増やさない、新しい目標と k6 の場面を足さない、invitationList で Performance Validation が確かめる）、logical-components.md 4節" },
+    { "id": "NFR5.2", "status": "OK", "target": "security-design.md 6節（新しい指標・警報・ログを足さない、Paging の中でログを出さない、警報の決まりを変えない）" },
+    { "id": "NFR9.1", "status": "OK", "target": "security-design.md 2節（parsePage の1か所で検証、空なら件数を数えず監査なしで 400、UiPaging はサーバーの検証の代わりにしない）・9節" },
+    { "id": "NFR9.2", "status": "OK", "target": "security-design.md 3節（offsetOf は long、空にする判定と PageRequest の位置を同じ page と PAGE_SIZE から導く、招待と U3 の結合テスト）・9節" },
+    { "id": "NFR9.3", "status": "OK", "target": "security-design.md 2節（既存の VALIDATION_FAILED と @RestControllerAdvice、新しい code を足さない、例外のメッセージを載せない）・9節" },
+    { "id": "NFR9.4", "status": "OK", "target": "security-design.md 7節（SpotBugs ＋ FindSecBugs・oxlint・ESLint・Gitleaks・OSV-Scanner を除外を足さずに通す）" },
+    { "id": "NFR9.5", "status": "OK", "target": "security-design.md 7節・9節、logical-components.md 3節・5節（招待のテストは参照先と import だけを変え、移すテストは事例をすべて残す）" },
+    { "id": "NFR9.6", "status": "OK", "target": "security-design.md 7節（jqwik tries 500・fast-check 既定 100 回、FS の 6節の性質を足す）、logical-components.md 5節" },
+    { "id": "NFR9.7", "status": "OK", "target": "security-design.md 7節（seed の再現の仕方、既存の設定を変えない、移すテストの先頭に再現の仕方を書く）" },
+    { "id": "NFR9.8", "status": "OK", "target": "security-design.md 7節・10節の R1（invitation.domain を実測し切り替えの後に測り直す、除外を増やさない）、logical-components.md 6節" },
+    { "id": "NFR9.9", "status": "OK", "target": "security-design.md 5節・7節（common.paging は自動で下限の対象、packagesJudgedByTotal を変えない、package-info.java を置かない）" },
+    { "id": "NFR9.10", "status": "OK", "target": "security-design.md 7節（画面は全体の合計で判定、src/shared/paging を計測から外さない）" },
+    { "id": "NFR9.11", "status": "OK", "target": "security-design.md 7節（新しい依存を足さず lockfile を変えない、テストの置き場と名前）、logical-components.md 5節" },
+    { "id": "NFR11.1", "status": "OK", "target": "security-design.md 5節（common.paging は JDK だけに依存し Spring の部品にしない、境界テストを書き換えない、画面は src/shared/paging から使う）、logical-components.md 2節" }
+  ]
+}

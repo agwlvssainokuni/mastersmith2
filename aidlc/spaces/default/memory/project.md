@@ -23,6 +23,7 @@
 - 確認のための要約と、実装または承認済みの設計が食い違ったときは、実装と承認済みの設計を正として記録し、要約との差を成果物に明記する（要約に合わせて実装を変えない）。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:ci-pipeline:14248c7b19e31f384aae87bfe2bc4ccc4a1b979bdd77d36d0ee3452b0e6da01d -->
 - 確定済みの設計と違う決定を依頼者がしたときは、設計の文書は書き換えず、差をその段の成果物に明記し、README などの手順を決定に合わせて直す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-pipeline:b511560ca6ee8edac9468a296692cea2d0ce2afd343dedd46d09e1691cc7ea6f -->
 - 大きい単位を複数の Bolt に分けるときは、設計の段は1つの単位として通し、コード生成の計画で Bolt ごとに分ける（user-admin の U3 を前半 B3・後半 B4 に分けた）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:eeb51d6f303964784162df4356b33c9ff6143b628c976443564ba5121ae3d810 -->
+- 担当を同時に多く動かすと利用の上限に達しうる（user-admin の NFR 設計で5人が同時に止まった）。止まったときは単位の作業を unit pause で一時停止にし、次にすることを記録してから、上限が戻った後に作り直す。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:e6f09109975092bcc3a8e3da4a0571366205a163cebf2105400f08f123dc1875 -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -363,3 +364,5 @@
 - 画面の設計で make-you-chic-ui の部品（Dropdown・Table・Modal）に頼る動き（押せなくする・開いたままにする など）を書く前に、部品のソースでその口があるかを確かめる。user-admin の U5 で、読み直しの間に行の操作とページ送りを押せなくする口が無いとレビューで分かった。 (learned 2026-10-01) <!-- cid:260930-user-admin:functional-design:676f0f8e5604db00368a6f88945404b226dbb92e999c27e89b13f1622f9669fc -->
 - 個人に関する値（検索の文字・メールアドレス・氏名）は、controller から repository の口まで、すべての経路で伏せ字の型のまま渡し、どこで文字列にするかを設計に書く（TraceAspect は web・service・domain・repository の引数を TRACE に出すため。user-admin の U3 のレビュー R-01）。 (learned 2026-10-01) <!-- cid:260930-user-admin:functional-design:df885c57419eb068599170a64e158fc6005525e747770909e5dddf029e43b7cc -->
 - 同じ段で複数の単位の質問の案を並べて作るときは、E2E のファイルの番号・確かめる組・枝番の寄せ方を、依頼者に尋ねる前に単位の間でそろえる（user-admin の NFR 要件で U4 と U5 の E2E の番号と組が食い違った）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-requirements:d152826c56f687c3bc9888dc08356cacf497abf74db6785271b9d13e12669a8a -->
+- DB や部品の振る舞いに頼る設計の前提（排他の後の数え・行を取る順・外部キーの待ち・上限切れの後の巻き戻しなど）は、NFR 設計で、リポジトリの外の捨ての試しのコードで先に確かめる。結果の要点（版・設定・数値・設計への意味）は成果物に写す（user-admin の U3 で既存の漏えいも見つかった）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:bbe069386439abcbfc76c0f9fbcb3ee27c6e658587c52c2765375b7878180e67 -->
+- 排他の上限切れなどの例外の連なり（H2 の MVStoreException の文）には、排他されていた行の全部の列の値が入りうる。例外は TraceAspect の対象の層（web・service・domain・repository）の外へ出さず、受けた所でクラスの名前だけをログに出す（user-admin の NFR 設計の試し）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:a26239d23d82547de51abf2ed64c5c1ff3cbb1be1bfaca66ffd6cdd43fd2b683 -->

@@ -76,7 +76,7 @@
 Per unit: [TBD]
 - [x] functional-design — EXECUTE
 - [x] nfr-requirements — EXECUTE
-- [-] nfr-design — EXECUTE
+- [?] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
 - [ ] code-generation — EXECUTE
 - [ ] build-and-test — EXECUTE
@@ -96,7 +96,7 @@ Per unit: [TBD]
 - **Current Stage**: nfr-design
 - **Next Stage**: infrastructure-design
 - **Status**: Running
-- **Last Updated**: 2026-10-01T13:09:49Z
+- **Last Updated**: 2026-10-01T16:38:00Z
 
 ## Session Resume Point
 - **Last Completed Stage**: nfr-requirements
