@@ -1,0 +1,42 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-user-suspension",
+  "upstream_ids": [
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.2.6",
+    "AC3.2.7",
+    "AC3.2.8",
+    "AC3.2.9",
+    "AC3.2.10"
+  ],
+  "coverage": [
+    { "id": "AC3.2.1", "status": "OK", "target": "BR4.1, BR1.3, BR6.1" },
+    { "id": "AC3.2.2", "status": "OK", "target": "BR3.1, BR5.1, BR1.3, BR6.1" },
+    { "id": "AC3.2.3", "status": "OK", "target": "BR2.1, BR2.3, BR2.4, BR1.3, BR6.1" },
+    { "id": "AC3.2.4", "status": "OK", "target": "BR6.2, BR3.3, BR5.4" },
+    { "id": "AC3.2.5", "status": "OK", "target": "BR4.4, BR4.2, BR4.1" },
+    { "id": "AC3.2.6", "status": "OK", "target": "BR6.4" },
+    { "id": "AC3.2.7", "status": "OK", "target": "BR4.3, BR4.1" },
+    { "id": "AC3.2.8", "status": "OK", "target": "BR2.1, BR2.2, BR2.5" },
+    { "id": "AC3.2.9", "status": "OK", "target": "BR6.3, BR3.1, BR4.1" },
+    { "id": "AC3.2.10", "status": "OK", "target": "BR6.3, BR2.4" }
+  ],
+  "reverse": [
+    { "id": "BR1.1", "status": "N/A", "target": "停止の状態の値と既定（FR3.1・C1）。止める・解く操作の受け入れ基準 AC3.1.x は U3 が主の単位で、U1 は状態の持ち方を受け持つ" },
+    { "id": "BR1.2", "status": "N/A", "target": "スキーマの変更 V9 の前進のみ・後方互換（NFR10）。受け入れ基準ではなく技術の決まり" },
+    { "id": "BR1.4", "status": "N/A", "target": "C1 の isSuspended の口。呼ぶのは U3 で、その受け入れ基準 AC3.1.x は U3 が主の単位" },
+    { "id": "BR1.5", "status": "N/A", "target": "C1 の setSuspended の口。止める・解く操作の受け入れ基準 AC3.1.x は U3 が主の単位。U1 のテストはこの口で停止の状態を入れて AC3.2.x を確かめる" },
+    { "id": "BR1.6", "status": "N/A", "target": "停止の状態を変えられる口を C1 に限る決まり（FR8.3・team.md の要求の改ざん）。管理の API の外からの改ざんの受け入れ基準は U3 が主の単位" },
+    { "id": "BR2.6", "status": "N/A", "target": "ログにメールアドレスとパスワードを出さない横断の決まり（PM の Forbidden・NFR3）" },
+    { "id": "BR3.2", "status": "N/A", "target": "トークンの更新で停止中だったことを監査に残さない契約の決まり（C7 の not_recorded）" },
+    { "id": "BR5.2", "status": "N/A", "target": "まとめての無効化を呼び出し元のトランザクションに限る契約の決まり（C1 の MANDATORY）。止める操作と同じ確定に入ることは U3 の AC3.1.1 で確かめる" },
+    { "id": "BR5.3", "status": "N/A", "target": "まとめての無効化の監査とログの扱い（C1・C6・PM の Forbidden）" },
+    { "id": "BR5.5", "status": "N/A", "target": "止める操作とトークンの更新の重なりの隙を塞がない依頼者の決定（M8 B）。受け入れ基準には入れない決定" },
+    { "id": "BR7.1", "status": "N/A", "target": "user が auth を知らない構造の決まり（NFR11）。ArchUnit の境界テストで確かめる" },
+    { "id": "BR7.2", "status": "N/A", "target": "区分と理由の名前が監査の列の長さに収まる技術の確かめ（C7）" }
+  ]
+}

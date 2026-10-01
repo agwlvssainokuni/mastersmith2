@@ -74,7 +74,7 @@
 
 ### CONSTRUCTION PHASE
 Per unit: [TBD]
-- [-] functional-design — EXECUTE
+- [?] functional-design — EXECUTE
 - [ ] nfr-requirements — EXECUTE
 - [ ] nfr-design — EXECUTE
 - [ ] infrastructure-design — EXECUTE
@@ -96,7 +96,7 @@ Per unit: [TBD]
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-10-01T10:59:48Z
+- **Last Updated**: 2026-10-01T11:49:13Z
 
 ## Session Resume Point
 - **Last Completed Stage**: delivery-planning

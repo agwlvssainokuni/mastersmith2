@@ -1,0 +1,123 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-shared-paging",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "BR1.1、BR2.1、BR2.2、BR3.3（ページ送りの部分: 1ページ 20 件、応答の page・size・total、画面のページの数と「n〜m 件目」。並び・行の項目・画面を開く流れは u3-user-admin-api と u5-user-admin-ui が持つ）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（ロックの判定の時刻の境界と表示はページ送りに関わらず、US1.1 の主の単位が受ける）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（応答のロックの項目と含めない値はページ送りに関わらず、US1.1 の主の単位が受ける）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（検索は U3 の受け持ち。検索の結果が 21 件で2ページ・全体の件数が検索の結果の件数になる部分は、U3 が U2 の Paging と呼び出し元の決まり（rules.md の BR3 の群）を使って満たす）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "BR1.2、BR3.1、BR3.2（ページの番号の部分: 1 未満・整数でない・空・桁あふれは 400 VALIDATION_FAILED で監査なし、最後のページより後は 200 の全体の件数つきの空の一覧。検索の文字の上限とログに出さないことは u3-user-admin-api が持つ）"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（TRACE のログと応答の漏えいは管理の API の受け持ち。U2 の Paging は個人に関する値を扱わない）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "BR1.1、BR1.3、BR2.1、BR2.2、BR3.4（20 件で1ページ・21 件で2ページで2ページ目は1件。一覧に出す利用者の範囲（停止中・初期管理者を含み招待中を除く）は u3-user-admin-api が持つ）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込み中の表示は画面の状態の受け持ち）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込みの失敗の表示は画面の状態の受け持ち）"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（検索の結果が無いときの表示と、検索の文字を保ったページ送りは画面の受け持ち。ページ送りの計算は U2 の UiPaging を使う）"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（検索の入力欄の上限は画面の受け持ち）"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（画面部品のアクセシビリティの検査は画面の受け持ち。UiPaging は画面の部品を持たない）"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（一覧の API の認可 401・403・200 と監査は管理の API の受け持ち）"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.4",
+      "status": "N/A",
+      "target": "位置が載るページを求める既存の口（招待の、同じメールアドレスの招待中の招待があるときの応答に使う）。C2 のとおり移すが、US1.1 の受け入れ基準には当たらない。招待の既存のテストで確かめる"
+    },
+    {
+      "id": "BR1.5",
+      "status": "N/A",
+      "target": "純粋な関数・口を変えない・InvitationPaging を消す・依存の向きの作りの決まり（C2、ADR-004）。性質ベースのテストと境界の検査で確かめ、対応する受け入れ基準は無い"
+    },
+    {
+      "id": "BR1.6",
+      "status": "N/A",
+      "target": "説明文を管理の一覧に共通の書き方に直す決まり（設計の要点 8）。振る舞いを変えず、対応する受け入れ基準は無い"
+    },
+    {
+      "id": "BR2.3",
+      "status": "N/A",
+      "target": "空のページを読んだ画面が最後のページへ移る計算（C5 の correctedPage と behaviour）。招待の画面の今の振る舞いと U5 の画面イメージ S5 で使い、US1.1 の受け入れ基準には直接当たらない"
+    },
+    {
+      "id": "BR2.4",
+      "status": "N/A",
+      "target": "ページ送りのボタンが押せなくなるかの計算（C5 の pagerButtonDisabledAfter）。フォーカスの移し先は使う側の画面の決まりで、US1.1 の受け入れ基準には直接当たらない"
+    },
+    {
+      "id": "BR2.5",
+      "status": "N/A",
+      "target": "画面の部品に触れない純粋な関数・export を変えない・文言は移さない前提の作りの決まり（C5、ADR-004）。対応する受け入れ基準は無い"
+    },
+    {
+      "id": "BR3.5",
+      "status": "N/A",
+      "target": "呼び出し元がページ送りの計算を自分で持たない作りの決まり（ADR-004）。招待の既存のテストが通ったままであることで確かめ、対応する受け入れ基準は無い"
+    }
+  ]
+}
