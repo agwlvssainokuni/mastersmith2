@@ -1,0 +1,13 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US2.1", "US2.2", "US3.1", "US3.2", "US4.1", "US5.1"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "UserAdministration, UserAccount, Authentication, Paging, UserAdminUi, UiPaging" },
+    { "id": "US2.1", "status": "OK", "target": "UserAdministration, UserAccount, AuditLog, UserAdminUi" },
+    { "id": "US2.2", "status": "OK", "target": "AppFrame, ApiClient, AccessControl, AdminArea, DslAdminUi, InvitationUi, UserAdminUi" },
+    { "id": "US3.1", "status": "OK", "target": "UserAdministration, UserAccount, Authentication, AuditLog, UserAdminUi" },
+    { "id": "US3.2", "status": "OK", "target": "Authentication, UserAccount, AuditLog, Invitation" },
+    { "id": "US4.1", "status": "OK", "target": "UserAdministration, Authentication, AuditLog, UserAdminUi" },
+    { "id": "US5.1", "status": "OK", "target": "UserAdministration, UserAccount, AppFrame, UserAdminUi" }
+  ]
+}
