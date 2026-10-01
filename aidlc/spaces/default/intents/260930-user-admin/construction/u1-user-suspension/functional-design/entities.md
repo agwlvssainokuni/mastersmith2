@@ -32,6 +32,7 @@ entities:
     constraints:
       - "suspended は3つの入口（ログインの照合・トークンの更新・アクセストークンの認証）がすべて同じ利用者の要約から読む（BR1.3）"
       - "setSuspended は suspended の列だけを書き換え、ほかの列を読み直した値で上書きしない（BR1.5）"
+      - "C1 の口 isSuspended・setSuspended は既存の UserAccountService（user.service）に置く。setSuspended の更新は書いた後の読み取りが古い値を返さない形にする（BR1.4・BR1.5）"
       - "停止の状態を変えても、ロックの状態・管理者の印・氏名と表示の設定は変わらない（BR1.5・BR2.2）"
     relationships:
       - "User 1 ← * RefreshToken（既存。止めるときに BR5.1 でまとめて無効にする）"
@@ -107,7 +108,9 @@ value_types:
       USER_SUSPENDED は TOKEN_EXPIRED と同じく「理由なし（記録しない）」にする（Q3 A、BR4.2）
     allowed: [NOT_ADMIN, TOKEN_MISSING, TOKEN_MALFORMED, TOKEN_INVALID, USER_NOT_FOUND]
   - name: RevokeAllResult
-    description: "C1 の revokeAllRefreshTokens の結果。無効にした件数（0 以上の整数）だけを持つ（BR5.1）"
+    description: >-
+      C1 の revokeAllRefreshTokens の結果（新しい record、auth.service に置く）。無効にした件数（0 以上の整数）だけを持つ（BR5.1）。
+      口は auth.service に新しく作る RefreshTokenRevocationService の revokeAllRefreshTokens(long userId)（MANDATORY、BR5.2）
     attributes:
       - { name: revoked, type: int, constraints: "0 以上。0 でも成功" }
 ```
@@ -123,4 +126,4 @@ value_types:
 | UserSummary | 値の型（既存を広げる） | suspended を足し、3つの入口が同じ値を読む。応答には載せない |
 | LoginFailureReason・TokenFailureReason | 値の型（既存を広げる） | ACCOUNT_SUSPENDED・USER_SUSPENDED を足す |
 | AccessDeniedReason | 値の型（既存、値は足さない） | USER_SUSPENDED からの変換を「記録しない」にする1行を足す |
-| RevokeAllResult | 値の型（新しい） | まとめての無効化の件数 |
+| RevokeAllResult | 値の型（新しい、auth.service） | まとめての無効化の件数（RefreshTokenRevocationService の戻り値） |

@@ -14,19 +14,19 @@ main.tsx（BrowserRouter）
                └─ FeatureRegistryProvider
                   └─ AdminForbiddenProvider（新しい。権限が無い URL を持つ）
                      └─ AppRouter（decideRoute に ADMIN_FORBIDDEN を足す）
-                        ├─ SCREEN（SHELL）: ShellLayout
+                        ├─ SCREEN（SHELL）: Routes → Route（登録の path）→ ShellLayout
                         │    ├─ 権限が無い URL のとき: AdminForbiddenView（新しい）
                         │    └─ それ以外: 登録された画面
                         │         ├─ AdminAreaPage（features/admin）
                         │         ├─ DslAdminPage（features/dsl、useDslAdmin）
                         │         ├─ InvitationAdminPage（features/invitation、useInvitationAdmin）
                         │         └─ UserAdminPage（U5 が足す）
-                        ├─ ADMIN_FORBIDDEN: ShellLayout → AdminForbiddenView
+                        ├─ ADMIN_FORBIDDEN: Routes → Route（登録の path）→ ShellLayout → AdminForbiddenView
                         ├─ HOME・NOT_FOUND: ShellLayout → HomePage・NotFoundPage（今のまま）
                         └─ REDIRECT_TO_LOGIN・LOGIN_LAYOUT（今のまま）
 ```
 
-文字の代替: `AdminForbiddenProvider` は `FeatureRegistryProvider` の内側、`AppRouter` の外側に置く（登録と今の URL を読むため。ルーターは `App` の外側にある）。ShellLayout は、今の URL が権限が無い URL のとき、子の画面の代わりに `AdminForbiddenView` を描く。振り分けが `ADMIN_FORBIDDEN` を返したときも、ShellLayout の中に `AdminForbiddenView` を描く。テストの補助 `renderWithProviders` も同じ位置に `AdminForbiddenProvider` を置く。
+文字の代替: `AdminForbiddenProvider` は `FeatureRegistryProvider` の内側、`AppRouter` の外側に置く（登録と今の URL を読むため。ルーターは `App` の外側にある）。ShellLayout は、今の URL が権限が無い URL のとき、子の画面の代わりに `AdminForbiddenView` を描く。振り分けが `ADMIN_FORBIDDEN` を返したときは、SCREEN（SHELL）と同じ形の木（`Routes` → 登録の path の `Route` → `ShellLayout`）の中に `AdminForbiddenView` を描く。木の形と、ShellLayout の子の位置にある部品の種類（`AdminForbiddenView`）が同じため、ForbiddenByApi から ForbiddenByRoute へ移っても ShellLayout・AppShell・AdminForbiddenView は作り直されない（`functional-spec.md` 4節、R-05）。テストの補助 `renderWithProviders` も同じ位置に `AdminForbiddenProvider` を置く。
 
 ## 2. 置き場ごとのモジュール
 
@@ -47,6 +47,8 @@ main.tsx（BrowserRouter）
 | `frontend/src/features/admin/AdminAreaPage.tsx`・`adminAreaStatus.ts` | 変える | 403 の扱いの置き換え（6.2） |
 | `frontend/src/features/dsl/useDslAdmin.ts`・`DslAdminPage.tsx` | 変える | 403 の扱いの置き換え（6.2） |
 | `frontend/src/features/invitation/useInvitationAdmin.ts` | 変える | 403 の扱いの置き換え（6.2） |
+| `frontend/src/features/dsl/testing/renderDsl.tsx`・`features/invitation/testing/renderInvitation.tsx` | 変える（テストの補助） | 画面を ShellLayout の中に描く選択（例: 引数 `options.withShell`、既定は今のまま描く）と、ログイン状態の提供元（`renderWithProviders` の `provider`）を渡す口を足す（7節） |
+| `frontend/src/features/admin/AdminAreaPage.test.tsx` の描き方（`render`） | 変える（テスト） | 画面を ShellLayout の中に描き、管理者のログイン状態の提供元を渡す（7節） |
 
 - 新しいファイルの先頭には Apache License 2.0 のヘッダー（`/* ... */`、2026、agwlvssainokuni）を置く。エクスポートは名前付きだけにする（`team.md` の Code Style）。
 - `src/app/admin-forbidden/` は `features/*` を読まない。`features/*` は `src/app/admin-forbidden/` と `src/app/display-settings/` の口だけを読む。
@@ -84,18 +86,51 @@ export function refreshSessionOnce(): Promise<boolean>
 export function useAdminForbidden(): (error: unknown, apiPath: string) => boolean
 ```
 
-- 返す関数は、その部品が描かれた時点の URL のパス（`useLocation`）を覚える。呼ばれたら次を行う。
+- 返す関数は、その部品が描かれた時点の URL のパス（`useLocation`、以下「画面の URL」）を持つ。呼ばれたら次を行う。
   1. `isAdminForbidden(apiPath, error)` が false なら、何もせず false を返す。
-  2. true なら、覚えた URL を Provider に知らせ、true を返す。
-- Provider は知らせを受けたら、知らせの URL が今の URL と同じときだけ、権限が無い URL として覚える（D4）。権限が無い URL を新しく覚えたとき（または URL が今と違って覚えなかったとき）は `refreshSessionOnce` を1回呼ぶ。今覚えている URL と同じ知らせが重ねて届いたときは呼ばない（D7）。読み直しの結果は待たない。
+  2. true なら、画面の URL を Provider の `report` に知らせ、true を返す。
+- 画面の URL は描画の時点の値でよい（画面が外れた後に届いた 403 では、外れる前の URL が正しい値である）。比べる相手の「今の URL」は、Provider が ref で持つ最新の値を `report` の中で読む（D4、R-02）。
+
+Provider の仕組み（R-02）:
+
+| 項目 | 決まり |
+|---|---|
+| 状態 | 権限が無い URL（`forbidden`、パスか無し）を `useState` で持つ。同じ値を ref（`forbiddenRef`）にも写し、`report` の中の判定に使う |
+| 捨て方 | 前の描画で見たパス（`seenPath`、`useState`）と今のパスが違えば、その描画の中で `forbidden` を無しにする（React の「前の描画の値と比べて状態を直す」形）。`useEffect` で捨てる形は取らない（古い S6 が一度描かれ、A → B → A で残りうるため） |
+| 出すかの判定 | ShellLayout が読む値は「`forbidden` が今のパスと同じときだけそのパス、ほかは無し」として描画の中で求める。捨て方と二重に守る |
+| 今の URL | `currentPathRef` に入れ、`useLayoutEffect` でパスが変わるたびに新しくする。`forbiddenRef` も同じ時点で、パスが違えば無しにする |
+| `report` | 依存を持たない `useCallback` で作り、Provider が生きている間は同じ関数のまま。中で `currentPathRef`・`forbiddenRef`・`inFlightRef` だけを読む |
+| 知らせの扱い | 画面の URL が `currentPathRef` と同じなら: `forbiddenRef` が既にその URL なら何もしない（重なった 403）。違えば `forbidden` をその URL にし、読み直しを呼ぶ。画面の URL が今と違えば（W5）: 覚えずに、読み直しを呼ぶ |
+| 読み直しの回数 | `inFlightRef` に骨組みが呼んだ読み直しの約束を持ち、終わるまでは新しく呼ばない。終われば（成功・失敗とも）無しに戻す。結果は待たない |
+| context | 状態用（ShellLayout が読む「ここが権限が無い URL か」）と関数用（`report`）の2つに分ける。状態が変わっても `report` の context の値は変わらず、`useAdminForbidden` が返す関数も変わらない |
+
+```text
+// AdminForbiddenProvider の中（説明用）
+const { pathname } = useLocation()
+const [forbidden, setForbidden] = useState<string | null>(null)
+const [seenPath, setSeenPath] = useState(pathname)
+if (seenPath !== pathname) { setSeenPath(pathname); setForbidden(null) } // 描画の中で捨てる
+useLayoutEffect(() => { currentPathRef.current = pathname; if (forbiddenRef.current !== pathname) forbiddenRef.current = null }, [pathname])
+const report = useCallback((screenPath: string) => {
+  const here = screenPath === currentPathRef.current
+  if (here && forbiddenRef.current === screenPath) return // 重なった 403
+  if (here) { forbiddenRef.current = screenPath; setForbidden(screenPath) }
+  if (inFlightRef.current === null) {
+    inFlightRef.current = refreshSessionOnce().finally(() => { inFlightRef.current = null })
+  }
+}, [])
+const forbiddenHere = forbidden === pathname
+```
+
 - Provider の外で呼ぶと例外にする（`functional-spec.md` 6節）。
-- 返す関数は、描画のたびに作り直さない（`useCallback` で、URL が変わったときだけ作り直す）。各画面の `useCallback` の依存に入れても、読み込みが繰り返されない。
+- `useAdminForbidden` が返す関数は `useCallback` で、依存は `report`（いつも同じ）と画面の URL だけとする。画面の URL が変わらない限り同じ関数のため、各画面の `useCallback`・`useEffect` の依存に入れても読み込みが繰り返されない。
 
 ### 3.4 表示 `AdminForbiddenView`（`src/app/admin-forbidden/AdminForbiddenView.tsx`）
 
 - Props は持たない。見出しは今の URL と登録から `forbiddenHeadingKey` で決める（D11）。
 - 描くもの: `section`（`aria-labelledby` で見出しを指す、`data-testid="admin-forbidden-view"`）の中に、`h1`（`tabIndex={-1}`）と、make-you-chic-ui の `Alert`（`variant="info"`、`role="status"` で読み上げられる）。Alert の本文に文言 `adminForbidden.message` と、ホームの URL へのリンク（react-router の `Link`、文言 `adminForbidden.homeLink`）を置く。
-- 描いた直後（`useEffect`）に見出しへフォーカスを移す（D12）。振り分けの判断が変わって描き直されたとき（4節の ForbiddenByApi → ForbiddenByRoute）も、同じ見出しへ移る。
+- Alert の `role`: make-you-chic-ui の `Alert.tsx`（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Alert/Alert.tsx`）は、`variant` が `danger`・`warning` のとき `role="alert"`、それ以外（`info` を含む）のとき `role="status"` を付ける。この段でソースを読んで確かめた（R-05）。テストでも S6 の Alert が `role="status"` であることを確かめる（7節）。読み上げは、見出しへのフォーカスで見出しが読まれ、Alert は穏やかな知らせ（status）として後に続く。Alert を `alert` にして割り込ませる形は取らない。
+- 描いた直後（`useEffect`、部品が作られたときだけ）に見出しへフォーカスを移す（D12）。ForbiddenByApi から ForbiddenByRoute へ移るときは、振り分けが同じ形の木を描くため部品は作り直されず、フォーカスの移し直しは起きない（1節、R-05）。
 - 「ホームへ戻る」を Alert の `action`（ボタン）ではなくリンクにするのは、移る先の URL を持つ操作のため（今の `NotFoundPage` の「ホームへ」と同じ作り）。
 
 ### 3.5 見出しの関数 `forbiddenHeadingKey`（`src/app/admin-forbidden/forbiddenHeading.ts`）
@@ -117,6 +152,17 @@ export function useApplyOwnProfile(): (profile: { displayName: string; language:
 
 - `useDisplaySettings()` の新しい項目 `applyOwnProfile` を返す。ログインしていないときは何もしない関数になる（D13）。
 - `applyOwnProfile` は、`displaySettingsStore.ts` の `applyOwnProfileFor(binding, profile, current)` を呼ぶ。`binding` は今のログイン状態、`current` はそのとき当てている値（見せ方を除く）のテーマと文字の大きさ。
+- `current` の取り方（R-01）: `DisplaySettingsProvider` の中で、画面の値を決めるのと同じ入力に `preview: null` を渡して `decideScreenSettings` を呼び、その結果の `theme`・`fontSize` を使う。土台はログインの後は `savedUser`（今のログイン状態に結び付いたもの）か `userPreferences` で、`stored` ではない（`chooseBase` のとおり。無い軸は既定の値）。Provider の値の `theme`・`fontSize`（見せ方を含む、画面に今見えている値）は使わない。
+
+```text
+// DisplaySettingsProvider の中（説明用）
+const applied = decideScreenSettings({ ...input, preview: null, prefersDark: false })
+const applyOwnProfile = (profile: OwnProfile) => {
+  if (!loginState.loggedIn) return
+  applyOwnProfileFor(loginState, profile, { theme: applied.theme, fontSize: applied.fontSize })
+}
+```
+
 - `applyOwnProfileFor` は次を行う（Q4 A、D13・D14）。
   - 保存の後の利用者の設定（`savedUser`）を、`binding` に結び付けた「氏名＝渡した氏名・言語＝渡した言語・テーマと文字の大きさ＝`current` の値」にする。
   - ブラウザの保存は言語だけを書き換える（今の `writeStoredLanguage`）。テーマと文字の大きさの保存の値は触らない。
@@ -137,11 +183,11 @@ export function useApplyOwnProfile(): (profile: { displayName: string; language:
 
 | 部品・モジュール | props | state・持つ値 | 備考 |
 |---|---|---|---|
-| `AdminForbiddenProvider` | `children` | 権限が無い URL（パスの文字列か無し） | 今の URL が変わったら捨てる（D5）。値は `{ forbiddenPath, report }` を context で渡す |
+| `AdminForbiddenProvider` | `children` | 権限が無い URL（パスの文字列か無し）、前の描画で見たパス、ref（今の URL・権限が無い URL・読み直しの約束） | 今の URL が変わったら、その描画の中で捨てる（D5）。状態用の context（ここが権限が無い URL か）と関数用の context（`report`、いつも同じ）を分けて渡す（3.3） |
 | `AdminForbiddenView` | なし | なし（見出しへの ref だけ） | `useLocation`・`useFeatureRegistry`・`useMessages` を読む |
 | `ShellLayout` | `children`（今のまま） | なし | 今の URL が権限が無い URL のとき、`children` の代わりに `AdminForbiddenView` を描く。サイドバー・上の帯・ユーザーメニューは今のまま |
-| `AppRouter` | なし | なし | `ADMIN_FORBIDDEN` のとき `ShellLayout` の中に `AdminForbiddenView` |
-| `decideRoute` | — | — | `RouteDecision` に `{ kind: 'ADMIN_FORBIDDEN' }` を足す。`access: 'ADMIN'` の画面で、ログインしていて管理者でないときに返す（今の `NOT_FOUND` の代わり）。ログインしていないときは今までどおりログインの画面へ |
+| `AppRouter` | なし | なし | `ADMIN_FORBIDDEN` のとき、SCREEN（SHELL）と同じ形（`Routes` → `Route path={route.path}` → `ShellLayout`）の中に `AdminForbiddenView` を描く。ShellLayout を作り直さないため（1節、R-05）。今の管理の画面はすべて SHELL のため、STANDALONE の管理の画面は考えない |
+| `decideRoute` | — | — | `RouteDecision` に `{ kind: 'ADMIN_FORBIDDEN', route }`（合った登録の画面）を足す。`route` は AppRouter が同じ形の木を描くために使う。`access: 'ADMIN'` の画面で、ログインしていて管理者でないときに返す（今の `NOT_FOUND` の代わり）。ログインしていないときは今までどおりログインの画面へ |
 | `DisplaySettingsProvider` | 今のまま | 今のまま | 値に `applyOwnProfile` を足す |
 | `AdminAreaPage` | 今のまま | 状態 `AdminAreaStatus` に `Forbidden` を足し、`NotFound` をなくす | `Forbidden` のときは何も描かない（ShellLayout が S6 に置き換えているため） |
 | `useDslAdmin`・`DslAdminPage` | 今のまま | `forbidden` の状態をなくす | `DslAdminPage` の「ページが見つかりません」の分かれ道をなくす |
@@ -208,19 +254,20 @@ export function statusFromError(
 
 ## 7. テストで確かめる内容
 
-テストの説明文は英語で書く。403 は偽物の API・偽物の `fetch` で作る。画面のテストは `renderWithProviders` で、画面を `ShellLayout` の中に描いて S6 を確かめる。
+テストの説明文は英語で書く。403 は、DSL の管理・招待の管理では画面に渡す偽物の API（ApiClient を通らない）、管理の入口では偽物の `fetch`（ApiClient を通る）で作る（`functional-spec.md` 8節）。画面のテストは `renderWithProviders`（DSL・招待は描画の補助 `renderDsl`・`renderInvitation` を通して）で、画面を `ShellLayout` の中に描いて S6 を確かめる。
 
 | テストのファイル | 新しい・書き換え | 確かめる内容 |
 |---|---|---|
 | `shared/api-client/adminForbidden.test.ts` | 新しい | 3つの条件がそろうときだけ true（`/api/admin/` の下・403・`ACCESS_DENIED`）。`/api/me/…` の 403、`/api/administrator` のような接頭辞だけ似たパス、code の無い・違う 403、401・404・409・500、通信の失敗、`null`・文字列などの知らない値は false で例外を出さない。性質ベースのテスト（fast-check、種を記録）でパス・状態・code の組を網羅する |
 | `shared/api-client/apiClient.test.ts` | 足す | `refreshSessionOnce` が登録された更新を呼ぶ。401 の更新と同時に呼んでも更新は1回。登録が無ければ false |
-| `app/admin-forbidden/AdminForbiddenProvider.test.tsx` | 新しい | `report` が true のとき今の URL が S6 になり、更新が1回呼ばれる。同じ URL で重ねても更新は1回。false の失敗では何も変わらない。渡した部品の URL と今の URL が違うと S6 にならず、更新は呼ばれる。URL が変わると S6 が消える。Provider の外で呼ぶと例外 |
-| `app/admin-forbidden/AdminForbiddenView.test.tsx` | 新しい | ja・en の文言。見出しへフォーカスが移る（`waitFor`）。「ホームへ戻る」でホームへ移る。アクセシビリティの検査（vitest-axe）1件 |
+| `app/admin-forbidden/AdminForbiddenProvider.test.tsx` | 新しい | `report` が true のとき今の URL が S6 になり、更新が1回呼ばれる。同じ URL で重ねても更新は1回。false の失敗では何も変わらない。URL が変わると S6 が消える。Provider の外で呼ぶと例外。あわせて R-02 の3点を確かめる: (1) A で S6 → B へ移る → ブラウザの戻る（`MemoryRouter` の `navigate(-1)`）で A に戻ると、A は S6 ではなく画面の中身になる。B へ移った直後の最初の描画でも S6 が描かれない (2) 画面が外れた後（A から B へ移った後）に、A で作った関数へ 403 を渡すと、B は S6 にならず、更新は呼ばれる (3) 権限が無い URL を覚える前と後で、`report` と `useAdminForbidden` が返す関数が同じもの（同一）であり、それを依存に入れた `useEffect` が繰り返されない。読み直しが終わる前に結び付かない 403 が重なっても、更新は1回 |
+| `app/admin-forbidden/AdminForbiddenView.test.tsx` | 新しい | ja・en の文言。Alert が `role="status"` である（R-05）。見出しへフォーカスが移る（`waitFor`）。「ホームへ戻る」でホームへ移る。アクセシビリティの検査（vitest-axe）1件 |
 | `app/admin-forbidden/forbiddenHeading.test.ts` | 新しい | 登録された項目の鍵を返す（`visibleWhen: 'ADMIN'` の項目も、管理者でないログイン状態で探せる）。無ければ共通の鍵。性質ベースのテスト（登録に無い URL はいつも共通の鍵） |
-| `app/layout/ShellLayout.test.tsx` | 足す | 権限が無い URL のとき子の代わりに S6。サイドバーと上の帯は残る。読み直しで印が外れると管理のメニューが消える（`waitFor`） |
-| `app/routing/decideRoute.test.ts`・`AppRouter.test.tsx` | 書き換え | ログインしていて管理者でない利用者の `ADMIN` の画面は `ADMIN_FORBIDDEN`（S6）。ログインしていなければログインの画面へ。登録に無い URL は今までどおり `NOT_FOUND` |
-| `app/display-settings/displaySettingsStore.test.ts`・`DisplaySettingsProvider.test.tsx` | 足す | `applyOwnProfile` で氏名と言語が変わり、テーマと文字の大きさ（ほかのタブで変わった保存の値を含む）が変わらない。ブラウザの保存は言語だけが変わる。`Accept-Language` が新しい言語になる。ログインしていないときは何もしない。ja・en 以外の言語では言語を変えない。次のログイン状態でサーバーの値に戻る |
-| `features/admin/AdminAreaPage.test.tsx` | 書き換え（2件） | 確かめの API の 403・`ACCESS_DENIED` で S6（「ページが見つかりません」ではない）。表示のたびに確かめをやり直すテストも S6 で確かめる |
+| `app/layout/ShellLayout.test.tsx` | 足す | 権限が無い URL のとき子の代わりに S6。サイドバーと上の帯は残る。AC2.2.2 のきっかけごとに、ログイン状態の提供元が管理者でない新しい状態を知らせると管理のメニューが消える（`waitFor`）: 403 の後の読み直し（偽物の更新）、トークンの更新の応答、ログインし直しの応答（R-06） |
+| `app/routing/decideRoute.test.ts`・`AppRouter.test.tsx` | 書き換え・足す | ログインしていて管理者でない利用者の `ADMIN` の画面は `ADMIN_FORBIDDEN`（S6）。ログインしていなければログインの画面へ。登録に無い URL は今までどおり `NOT_FOUND`。画面の読み直し（起動の時の更新で印が外れた状態から描き始める）で、管理のメニューが無く管理の画面が S6 になる（AC2.2.2、R-06）。ForbiddenByApi（画面が 403 を受けた）から ForbiddenByRoute（読み直しで印が外れた）へ移っても、S6 の見出しの要素が同じもの（作り直されていない）で、フォーカスが見出しに残り、サイドバーの開閉の状態が変わらない（R-05） |
+| `app/display-settings/displaySettingsStore.test.ts`・`DisplaySettingsProvider.test.tsx` | 足す | `applyOwnProfile` で氏名と言語が変わり、テーマと文字の大きさ（ほかのタブで変わった保存の値を含む）が変わらない。テーマを見せ方で試しに当てた状態（`setPreview`）で `applyOwnProfile` を呼ぶと、`savedUser` のテーマは見せ方の前の当てている値のままで、見せ方は残る。その後に見せ方を捨てると、画面のテーマが当てている値に戻る（試しのテーマが保存されない、R-01）。ブラウザの保存は言語だけが変わる。`Accept-Language` が新しい言語になる。ログインしていないときは何もしない。ja・en 以外の言語では言語を変えない。次のログイン状態でサーバーの値に戻る |
+| `features/admin/AdminAreaPage.test.tsx` | 書き換え（描き方と2件） | テストの中の `render` を、画面を ShellLayout の中に描き、管理者のログイン状態の提供元（`provider`）を渡す形に直す（R-03）。403 は今までどおり偽物の `fetch` で ApiClient を通して作る。確かめの API の 403・`ACCESS_DENIED` で S6（「ページが見つかりません」ではない）。表示のたびに確かめをやり直すテストも S6 で確かめる |
+| `features/dsl/testing/renderDsl.tsx`・`features/invitation/testing/renderInvitation.tsx` | 書き換え（テストの補助） | ShellLayout の中に描く選択と、ログイン状態の提供元を渡す口を足す（R-03）。既定は今のまま（ShellLayout なし）とし、部品だけを描く今の多くのテスト（`DslPreviewPanel.test` など）は変えない。画面のテスト（`DslAdminPage.test`・`InvitationAdminPage.test`）だけが ShellLayout の中に描く。403 は今までどおり画面に渡す偽物の API（ApiClient を通らない）で作る |
 | `features/admin/adminAreaStatus.test.ts` | 書き換え（4件） | `report` が true なら `Forbidden`、false なら `Error`。性質ベースのテストは「`ACCESS_DENIED` 以外の 403 も `Error`」に直す |
 | `features/dsl/DslAdminPage.test.tsx` | 書き換え（1件）・足す | 状態の読み込みの 403 で S6。確かめの表示を開いた状態で操作が 403 になると、確かめの表示が閉じて S6 になる。code の無い 403 は今の誤りの扱い |
 | `features/invitation/InvitationAdminPage.test.tsx` | 書き換え（3か所） | 一覧・入力の表示・送り直しの 403・`ACCESS_DENIED` で S6（一般の文言ではない）。入力の表示は閉じる |

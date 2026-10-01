@@ -123,3 +123,14 @@ flowchart LR
 |---|---|---|---|---|
 | D1 | `aidlc/spaces/default/intents/260930-user-admin/inception/units-generation/unit-of-work.md` の U2 の境界 | Paging が「1ページ 20 件、ページの番号の検証、最後のページより後は空の一覧」を持つ | 「最後のページより後は空の一覧」は Paging の口にせず、呼び出し元が守る決まり BR3.2 とした（呼び出し元が offsetOf の結果と全体の件数で判定する）。Paging の口は C2 の4つだけ | 単位の分け方の後のレビュー（Contract Design の R-03）で直した契約 C2 が、この扱いを「呼び出し元が offsetOf で読んだ結果」とし、口を足さないと決めたため（C2 の behaviour）。後で決めた契約に従う。振る舞い（拒否せず全体の件数つきの空の一覧）は U2 の境界の書き方と同じで、置き場だけが違う。`unit-of-work.md` は書き換えない |
 | D2 | `aidlc/spaces/default/intents/260930-user-admin/inception/units-generation/unit-of-work-story-map.md` の US1.1（U3 が主、U2・U5 が従） | U2 はページ送りの計算を受け持つ（受け入れ基準の単位ごとの受け持ちは文で書かれている） | US1.1 の受け入れ基準 13 件のうち、ページ送りの部分を持つ AC1.1.1・AC1.1.5・AC1.1.7 を OK とし、残りの 10 件は主の単位（サーバーの AC1.1.2〜AC1.1.4・AC1.1.6・AC1.1.13 は u3-user-admin-api、画面の AC1.1.8〜AC1.1.12 は u5-user-admin-ui）へ Deferred とした（`traceability.json`） | 一覧・検索・応答の項目・画面の状態は U3・U5 の受け持ちのため。AC1.1.1・AC1.1.5・AC1.1.7 も、並び・行の項目・検索の文字の検証・画面の表示の部分は U3・U5 が持ち、U2 が OK で持つのはページ送りの計算の部分だけである |
+
+## 承認の場の決定（Request Changes、2026-10-01）
+
+Functional Design の承認の場で、依頼者はレビュー（指摘 R-01〜R-04、判定は READY）を受けて Request Changes を選び、次のとおり決めた。
+
+| 指摘 | 決定 | 扱い | 反映先 |
+|---|---|---|---|
+| R-01（AC1.1.1・AC1.1.5・AC1.1.7 の OK が U2 で満たし済みと読まれうる） | 直す | 3件の target の冒頭に「部分（ページ送りの部分だけ）」と明記した。U2 が受け持つのはページ送りの計算だけで、残りは U3（u3-user-admin-api）が主の単位として持つ。status は OK のまま | この単位の `traceability.json` |
+| R-02（最後のページより後を空の一覧にする決まり BR3.2 を守らせる仕組みが U2 に無い） | 申し送る | U3 のコード生成の計画で、利用者の一覧の API に「最後のページより後」と「全体 0 件」の応答の結合テストを足す | U3 の code-generation（計画） |
+| R-03（切り替えの後の実測と置き場の判断が残る） | 申し送る | コード生成の計画で `invitation.domain` のパッケージごとのカバレッジを測り直して記録する。新しい `common.paging` に `package-info.java` を置くかは、既存の `common` の下位パッケージの慣習に合わせて判断する | U2 の code-generation（計画） |
+| R-04（upstream_ids の 13 件が U2 の対象を広く見せる） | このままでよい | 13 件の列挙は網羅の確認のためで、U2 が直接受け持つのは AC1.1.1・AC1.1.5・AC1.1.7 のページ送りの部分だけである。文書は変えない | なし |

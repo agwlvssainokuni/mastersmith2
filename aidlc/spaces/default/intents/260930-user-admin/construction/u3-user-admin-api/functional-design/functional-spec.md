@@ -41,8 +41,9 @@ U3 は種類 service の単位で、`/api/admin/users` の下に7つの API（�
 | 失敗回数 n（1 以上）・解除の予定なし | 偽 | 無し | 真 | 0・無しに書く |
 | 解除の予定 t・now < t | 真 | t | 真 | 0・無しに書く（ロックが解ける） |
 | 解除の予定 t・now ≧ t（t ちょうどを含む） | 偽 | 無し | 真 | 0・無しに書く（M2 B） |
+| 失敗回数 0・解除の予定 t（既存の LockPolicy の性質が崩れた行） | now < t なら真、now ≧ t なら偽 | now < t なら t | 真 | 0・無しに書く（R-05 の守り） |
 
-判定は BR1.7、戻す操作は BR4.5。
+判定は BR1.7、戻す操作は BR4.5。戻せる（resettable）は「失敗回数が 1 以上、または解除の予定の時刻がある」で、最後の行は既存のコードでは生じないが、生じてもロック中の利用者を戻せないままにしない（R-05）。
 
 ## 2. 手順
 
@@ -53,8 +54,8 @@ U3 は種類 service の単位で、`/api/admin/users` の下に7つの API（�
 3. 操作した人の利用者 ID を要求の文脈から読む（BR2.8）。
 4. page を Paging の parsePage で検証する。空なら 400 VALIDATION_FAILED（BR1.1）。
 5. SearchText の前後の空白を除き、254 コードポイントを超えれば 400 VALIDATION_FAILED（q・TOO_LONG）。除いた後が空なら検索なし（BR1.4）。
-6. 読み取りだけのトランザクションを始める（BR1.6）。
-7. 条件に当たる全体の件数を数える（BR1.5）。
+6. 読み取りだけのトランザクションを始める（BR1.6）。業務処理から UserAccount（C8 findAdminPage）へは SearchText のまま渡す。
+7. 検索ありなら、SearchText から検索のパターン（Locale.ROOT の小文字化とエスケープ、RedactedText）を作り、UserRepository の問い合わせの口へこの型のまま渡す。文字列にするのは問い合わせの SpEL の中だけ（BR1.5・BR7.4、R-01・R-07）。条件に当たる全体の件数を数える（BR1.5）。
 8. 読み始めの位置（Paging の offsetOf）が全体の件数以上なら、行を読まずに空の items で 10 へ（BR1.1）。
 9. 20 件までの行を、登録した日時の古い順・利用者 ID の順に読み（BR1.1）、その利用者 ID のロックの判定の結果を1回の問い合わせで読む（BR1.7）。
 10. 行ごとに AdminUser を作り、self を決める（BR1.8）。200 で AdminUserPage を返す。監査は出さない（BR1.9）。
@@ -67,7 +68,7 @@ U3 は種類 service の単位で、`/api/admin/users` の下に7つの API（�
 2. userId を整数として結び付ける。読めなければ 400 VALIDATION_FAILED（監査なし、BR2.7）。
 3. 操作した人の利用者 ID と送り手の情報を要求の文脈から読む（BR2.8）。
 4. 業務処理のトランザクションを始める（BR4.6）。
-5. 行を排他する（操作ごとに違う、2.3〜2.7）。上限切れは Busy で巻き戻し、409 USER_ADMIN_BUSY（監査なし、BR3.5）。
+5. 行を排他する（操作ごとに違う、2.3〜2.7）。上限切れは、排他の口がメソッドの本体の中で例外を受けて Busy を返し、業務処理がトランザクションに巻き戻しの印を明示的に付け（setRollbackOnly）、それより後に DB に触れずに巻き戻して 409 USER_ADMIN_BUSY（監査なし、BR3.5）。巻き戻しの印が付いたまま確定を試みて 500 にすることはない（R-02）。
 6. 待ち合わせの口を通る（本番は何もしない、BR3.6）。
 7. 事実の組（OperationFacts）を作り、拒否の判定の関数で理由を決める（BR2.1・BR2.2）。理由があれば 9 へ。
 8. 操作した人を確かめ直す（BR2.5）。外れていれば、理由 NOT_ADMIN として 9 へ（応答は 403 ACCESS_DENIED、BR2.6）。
@@ -125,16 +126,16 @@ decide(operation, facts):
 1. 対象の利用者の行を排他なしで読み、いなければ 対象がいない（BR3.4・BR2.7）。負の ID もここで止まり、ダミーの行に触れない。
 2. 1段目: 対象のロックの状態の行を排他つきで読む（ログインの判定と同じ行、BR3.4・BR4.5）。上限切れは BUSY（このときだけ、対象がいないかの判定の後に BUSY が来る）。
 3. 待ち合わせの口（ロックの状態の行を排他した直後、BR3.6）。
-4. 判定: 行が無い・失敗回数 0 → 変えるものが無い。自分自身・対象が停止中は当てない。
+4. 判定: 行が無い、または失敗回数 0 かつ解除の予定の時刻が無い → 変えるものが無い（R-05）。自分自身・対象が停止中は当てない。
 5. 操作した人の行を排他なしで読み直す（BR2.5）。
 6. 2段目: 失敗回数 0・解除の予定の時刻 無し を明示の更新1回で書く。行を作らない（BR4.5）。監査 LOGIN_FAILURES_RESET・SUCCESS。
 
 ### 2.8 氏名と言語の変更（PUT /{userId}/profile）
 
 1. 認可（BR7.1）。userId の形の誤りは 400（BR2.7）。
-2. 本文は displayName と language だけを読み、知らない項目を無視する（BR5.4）。
+2. 本文は displayName と language だけを読み、知らない項目を無視する（BR5.4）。controller は ProfileRequest から ProfileCommand を作り、業務処理と UserAccount（C8 updateProfile）へこの型のまま渡す（BR5.2、R-01）。
 3. 既存のプリファレンスと同じ規則で検証する。誤りは 400 VALIDATION_FAILED（項目の名前と理由だけ、BR5.1）。
-4. 氏名（前後の空白を除いた値）と言語の2つの列だけを更新する。行の排他はしない（BR5.2）。
+4. 検証を通った値から ProfileUpdate を作り、UserRepository の更新の口へこの型のまま渡す（文字列にするのは問い合わせの SpEL の中だけ、既存の updatePreferences と同じ形）。氏名（前後の空白を除いた値）と言語の2つの列だけを更新する。行の排他はしない（BR5.2）。
 5. 更新した行が 0 なら 404 USER_NOT_FOUND、それ以外は 204（同じ値でも成功）。
 6. 操作した人の確かめ直しはしない。監査は出さない（BR5.3）。
 
@@ -202,7 +203,7 @@ API の1件ずつの操作では最後の有効な管理者の拒否は起きな
 | 停止中の利用者の印を付ける・外す | 409 USER_ADMIN_TARGET_SUSPENDED | 変わらない | FAILURE・TARGET_SUSPENDED | BR2.2 |
 | すでにそうなっている・戻せない | 409 USER_ADMIN_NO_CHANGE | 変わらない（ロックの状態の行も作らない） | FAILURE・NO_CHANGE | BR2.2・BR4.5 |
 | 有効な管理者が 0 人になる | 409 USER_ADMIN_LAST_ADMIN | 変わらない | FAILURE・LAST_ACTIVE_ADMIN | BR3.2 |
-| 排他の待ちの上限切れ | 409 USER_ADMIN_BUSY | 巻き戻す | 残さない | BR3.5 |
+| 排他の待ちの上限切れ | 409 USER_ADMIN_BUSY（500 にしない） | 業務処理が巻き戻しの印を明示的に付けて巻き戻す | 残さない | BR3.5 |
 | 排他を待つ間に操作した人の印が外れた・止められた | 403 ACCESS_DENIED | 変わらない | FAILURE・NOT_ADMIN | BR2.5・BR2.6 |
 | 監査の書き込みの失敗 | 元の応答のまま | 元の判定のとおり | 記録されない（アプリのログに ERROR） | BR6.3 |
 | 氏名が空・長すぎる・制御文字、言語が ja・en でない | 400 VALIDATION_FAILED（項目の名前と理由） | 変わらない | 残さない | BR5.1 |
@@ -249,11 +250,11 @@ erDiagram
 
 | 群 | ID | 要点 |
 |---|---|---|
-| 一覧と検索 | BR1.1〜BR1.9 | 古い順・ID 順・20 件、最後のページより後は空の 200、停止中と初期管理者を含む、q は SearchText で受け包むだけ、前後の空白を除き 254 まで・空は全件、部分一致・大文字小文字を区別しない・特殊文字は文字どおり、同じ読み取りのトランザクション、ロックは3つの結果だけ、11 の項目と self、監査なし |
+| 一覧と検索 | BR1.1〜BR1.9 | 古い順・ID 順・20 件、最後のページより後は空の 200、停止中と初期管理者を含む、q は SearchText で受け包むだけ、前後の空白を除き 254 まで・空は全件、部分一致・Locale.ROOT で大文字小文字を区別しない・特殊文字は文字どおり・パターンは repository の口まで伏せ字の型、同じ読み取りのトランザクション、ロックは3つの結果だけ（戻せるかは失敗回数 1 以上か解除の予定あり）、11 の項目と self、監査なし |
 | 拒否の判定 | BR2.1〜BR2.8 | 判定の順と最初の理由1つ、操作ごとの当てはまり、code の写し、拒否は書き込みなしで確定、判定の後に操作した人を確かめ直す、外れたら 403 と NOT_ADMIN の監査、ID の形の誤りと対象がいない、操作した人は認証の主体から |
-| 排他と最後の管理者 | BR3.1〜BR3.6 | 管理者の行と対象の行を ID 順に排他、有効な管理者の数え方、停止を解くは対象の行だけ、失敗回数はロックの状態の行だけ、上限切れは BUSY で監査なし、待ち合わせの口 |
+| 排他と最後の管理者 | BR3.1〜BR3.6 | 管理者の行と対象の行を ID 順に排他（集合が古くても成り立つ根拠、固定の1行への切り替え先）、有効な管理者の数え方、停止を解くは対象の行だけ、失敗回数はロックの状態の行だけ、上限切れは明示の巻き戻しで BUSY・監査なし、待ち合わせの口（止める時間は 3000 ミリ秒より短く） |
 | 5つの操作の実行 | BR4.1〜BR4.6 | 印はトークンに触れない、止めるはトークンを無効にしロックを変えない、解くはトークンを戻さない、失敗回数は2段で戻し行を作らない、1つのトランザクションで 204 |
-| 氏名と言語 | BR5.1〜BR5.4 | プリファレンスと同じ検証、2つの列を後勝ち・同じ値も成功・いなければ 404、監査なし、知らない項目は無視 |
+| 氏名と言語 | BR5.1〜BR5.4 | プリファレンスと同じ検証、2つの列を後勝ち・同じ値も成功・いなければ 404（氏名は repository の口まで伏せ字の型）、監査なし、知らない項目は無視 |
 | 監査 | BR6.1〜BR6.4 | 種類5つ・理由6つ、残す項目と残さない値、確定の後に記録、残さない場合 |
 | 認可・改ざん・漏えい・構造 | BR7.1〜BR7.6 | 401・403・2xx、管理の API の外から変えられない、書き換えの口は useradmin だけ、伏せ字の型、応答に含めない値、境界テスト |
 
@@ -283,14 +284,17 @@ erDiagram
 
 | 論点 | 持ち主の段 |
 |---|---|
-| 検索の小文字にそろえる範囲（ASCII だけか Unicode か）と、users.created_at の索引の要否（一覧の並びと件数の性能） | nfr-requirements・nfr-design |
-| 管理者の行と対象の行の排他で、待った後の問い合わせが確定済みの変更（印が外れた行・新しく付いた行）を数えに含めるか（H2 の排他つきの読み取りの振る舞い） | nfr-design |
-| 既存のロックの状態の行の排他の上限切れの例外を受けて Busy に変えた後、トランザクションが巻き戻しの印で確定できない場合の扱い | nfr-design |
+| 検索の小文字にそろえる範囲（ASCII だけか Unicode か）と、users.created_at の索引の要否（一覧の並びと件数の性能）。検索の文字は Java の側で Locale.ROOT で小文字にする（BR1.5、R-07）。氏名の列を DB の側で小文字にする場合は、Locale.ROOT の小文字化と同じ結果になることを確かめに含める | nfr-requirements・nfr-design |
+| 管理者の行と対象の行の排他で、待った後の問い合わせが確定済みの変更（印が外れた行・新しく付いた行）を数えに含めるか（H2 の排他つきの読み取りの振る舞い）と、BR3.1 の「集合が古くても保護が成り立つ根拠」が H2 と Hibernate の上で成り立つか。通らなかったときは BR3.1 の切り替え先（固定の1行を排他して、印・停止を変える操作を1つずつ通す）に切り替える（R-02） | nfr-design |
+| 排他の上限切れの例外を Busy に変えた後の巻き戻し。BR3.5 のとおり、業務処理が巻き戻しの印を明示的に付けて巻き戻すことで 500（UnexpectedRollbackException）にならないことを確かめる（R-02） | nfr-design |
 | 止める操作のトークンの無効化と、同じ利用者のログインのトークンの追記が、利用者の行の外部キーで待つかの確かめ（待っても向きは一方だけ） | nfr-design |
-| 排他の待ちの上限 3000 ミリ秒（上限切れの応答は約 3 秒で NFR5 の 1 秒を超える）を変えるか | nfr-requirements・nfr-design |
+| 排他の待ちの上限 3000 ミリ秒（上限切れの応答は約 3 秒で NFR5 の 1 秒を超える）を変えるか。変えない場合は、上限切れ（409 USER_ADMIN_BUSY）のときだけ応答の 1 秒を超える例外として扱う（承認の場の申し送り） | nfr-requirements・nfr-design |
 | 7つの API の応答時間（1ページ 20 件・ロックの判定の結果の読み出しを含む）と、操作の監査で接続を2本使う経路の同時の数 | nfr-requirements・performance の確かめ |
 | ロックの状態の行を排他した直後の待ち合わせの口をログインの判定に足すこと（auth.service の LoginService に手が入る） | code-generation |
 | 既存の漏えいのテストの列の一覧に、足す監査の種類・理由で確かめる項目があるかの確かめ | code-generation |
+| 計画の入力として、契約 C8（承認済みで書き換えない）より、この文書の 9節の D6〜D9・D13 を優先すること（R-06） | code-generation |
+| 最後のページより後の page と、全体が 0 件のときの一覧の結合テスト（U2 のレビューの R-02 からの申し送り） | code-generation |
+| 待ち合わせの口で止めている間に、2つ目の操作が排他の待ちに入ったことを確かめる方法（BR3.6、R-03） | code-generation |
 | 画面が理由ごとの文言・自分の行の押せない表示・確かめの表示を出すこと（AC2.1.8・AC2.1.9・AC2.1.13 など） | U5 の functional-design |
 | 403 ACCESS_DENIED を受けた画面の共通の扱い（確かめ直しの 403 を含む） | U4 の functional-design |
 
@@ -298,13 +302,15 @@ erDiagram
 
 承認済みの上流の文書は書き換えず、この段の決定で上流と違う形・上流で決まっていなかった点を書く（PM の決まり）。
 
+契約 C8（`aidlc/spaces/default/intents/260930-user-admin/inception/contract-design/contract-summary.md`）は承認済みのため書き換えない。そのため、コード生成では、C8 の口の形（resetLoginFailures の1口、lockUserRow の用途、UserAccount の口の一覧、UserAdminSummary の型、findAdminPage と updateProfile の入力の型）について、この節の D6〜D9 と D13 を C8 より優先する（R-06）。
+
 | ID | 上流 | 上流の記載 | この単位の設計 | 理由と扱い |
 |---|---|---|---|---|
 | D1 | ADR-001（`aidlc/spaces/default/intents/260930-user-admin/inception/domain-design/decisions.md`） | `useradmin` は `user`・`auth` の service の口と値の型だけを使う | `useradmin.web` から `access.domain`（AccessProblemTypes）への依存を1本足し、UserAdminBoundaryArchitectureTest に書く（BR7.6） | Q6 A。確かめ直しで外れた操作に既存の 403 ACCESS_DENIED を返すため。共通の code は機能の側で重ねて定義しない決まり（TP の Code Style）に従う。`access.domain` の本体は変えないため、カバレッジの作業は付かない |
 | D2 | 契約 C6（`aidlc/spaces/default/intents/260930-user-admin/inception/contract-design/contract-summary.md`）と Open questions | 排他の待ちの上限切れ（USER_ADMIN_BUSY）を監査に残すかは機能設計・NFR 設計で決める | 監査に残さない（C6 の not_recorded に確定、BR3.5・BR6.4） | Q7 A（R-04）。FR7.2 の範囲のままで要件との差を作らない。アプリのログの WARN の code で気づける。契約の文書は書き換えない |
 | D3 | 契約 C3 の q の説明 | SearchText の置き場（`common` か `useradmin.domain` か）は U3 の機能設計で決める | `user.domain` の RedactedText の隣に置き、長さの検証もそこに置く（BR1.3・BR1.4） | Q1 A。C8 の findAdminPage は `user` にあり、`user` は `useradmin` に依存できないため、契約の候補の `useradmin.domain` には置けない。C8 の形は変えない |
 | D4 | `components.md` の UserAdministration の behaviour | 確かめ直しで有効でなければ「最後の有効な管理者の保護と同じく業務の誤りとして拒否する」 | 403 ACCESS_DENIED を返し、その操作の失敗として理由 NOT_ADMIN で監査に残す（BR2.6） | C8（Contract Design）が「ACCESS_DENIED と同じ扱い」とし、Q6 A で細部を決めた。業務の誤り（409 LAST_ADMIN）にすると、印を失った管理者に「最後の管理者」と誤った理由を示すため |
-| D5 | ADR-007 の項目1と `components.md` | 管理者の行を排他した後、操作者の確かめ直しを「有効な管理者を数える前」に行う。範囲は印の操作と止めるの3つ | 確かめ直しは業務の理由の判定をすべて通った後・書き換えの直前に置き、範囲を5つの操作に広げる（BR2.5）。停止を解く・失敗回数を戻すは操作した人の行を排他なしで読み直す | Q5 A。数える前に置くと、AC2.1.6・AC2.1.12 の負けた側が 403 になり、ストーリーの理由（最後の有効な管理者）と食い違う。範囲を広げるのは、外された直後の管理者が権限や利用を戻す操作を通す隙を塞ぐため |
+| D5 | ADR-007 の項目1と `components.md` | 管理者の行を排他した後、操作者の確かめ直しを「有効な管理者を数える前」に行う。範囲は印の操作と止めるの3つ | 確かめ直しは業務の理由の判定をすべて通った後・書き換えの直前に置き、範囲を5つの操作に広げる（BR2.5）。停止を解く・失敗回数を戻すは操作した人の行を排他なしで読み直す | Q5 A。数える前に置くと、AC2.1.6・AC2.1.12 の負けた側が 403 になり、ストーリーの理由（最後の有効な管理者）と食い違う。範囲を広げるのは、外された直後の管理者が権限や利用を戻す操作を通す隙を、排他の待ちの間について狭めるため（確かめ直しは排他なしで読むため、読んだ直後に別の操作が確定する短い隙は残る。有効な管理者を減らす操作ではないため、不変条件は壊れない。R-04） |
 | D6 | 契約 C8 の resetLoginFailures | 1つの口で、行を排他し、戻せるかを判定し、書く。結果は Reset・NothingToReset・Busy | 2段の口に分ける。1段目は行を排他して Ready・NothingToReset・Busy を返し、2段目は同じトランザクションで 0・無しを書く（BR4.5、entities.md の LoginFailureResetPreparation） | Q5 A の確かめ直しの位置（変えるものが無いの判定の後、書く前）を守るため。C8 は「口の名前と結果の型の細部は U3 の機能設計で決めてよい」としている。入出力の値の種類・排他・Busy で返すこと・行を作らないこと・内部の値を渡さないことは変えない |
 | D7 | 契約 C8 の lockUserRow の説明と C3 の BUSY の位置 | lockUserRow は「停止を解く・失敗回数を戻すなど」が使う。BUSY は行の排他を取れなかった時点で判定の前に止まる | lockUserRow を使うのは停止を解くだけ。失敗回数を戻すは利用者の行を排他せず、対象の有無を排他なしで読むため、BUSY は「対象がいない」の判定の後に起きうる（BR3.4・BR3.5） | Q4 A（R-07）。どの操作も利用者の行とロックの状態の行を同時に排他しないことで、取る順の決まりを無くし、ログインとの行き詰まりを防ぐ |
 | D8 | 契約 C8 | UserAccount の口は findAdminPage・lockAdminRowsInIdOrder・lockUserRow・setAdmin・updateProfile | 排他なしで1人の要約を読む口（例 findAdminSummary）を UserAccount に足す。失敗回数を戻す操作の対象の有無と、停止を解く・失敗回数を戻すの確かめ直しに使う | D5・D7 の結果、排他せずに読む場面ができたため。入出力は利用者 ID と UserAdminSummary（ハッシュ値なし、伏せ字の文字列）で、C8 の決まりの範囲 |
@@ -312,3 +318,38 @@ erDiagram
 | D10 | 契約 C3 の Forbidden の応答 | 403 ACCESS_DENIED は「管理者でない。監査に『アクセスの拒否』として残る」 | 認可の入口の 403 はそのまま。加えて、業務処理の確かめ直しの 403 ACCESS_DENIED があり、こちらはアクセスの拒否ではなく、その操作の失敗（NOT_ADMIN）として残る（BR2.6） | D4 と同じ（Q6 A）。応答の code は同じため、画面（U4）の扱いは変わらない |
 | D11 | U1 の機能設計の差 D3（`aidlc/spaces/default/intents/260930-user-admin/construction/u1-user-suspension/functional-design/functional-spec.md` 8節） | isSuspended・setSuspended は存在しない利用者 ID で呼ぶと想定外の誤り。U3 の機能設計で確かめる | U3 は止める・停止を解くで、行の排他（BR3.1・BR3.3）で対象がいると確かめてから setSuspended を呼ぶ。いない ID では呼ばない（BR4.3・BR4.4）。isSuspended は使わない（排他の口の要約に停止の状態が載るため） | 確かめた。差は生じない |
 | D12 | ストーリーの監査の読み方 | 業務の理由で拒否した操作は、業務のトランザクションが巻き戻っても失敗の監査の行が残る（AuditRollbackIT の形） | 業務の拒否ではトランザクションを巻き戻さず、書き込みなしで確定させ、確定の後に失敗の行を記録する（BR2.4・BR6.3） | 要点 5。結果（失敗の行が残る）は同じ。巻き戻すのは BUSY と想定外の誤りだけで、BUSY は監査に残さない（D2） |
+| D13 | 契約 C8 の findAdminPage と updateProfile | findAdminPage は q を SearchText で受ける。updateProfile の入力は displayName・language を string とする | findAdminPage は SearchText で受け、UserRepository の口には SearchText から作った伏せ字のパターン（RedactedText）を渡す。updateProfile は ProfileCommand（氏名を伏せる record）で受け、UserRepository の口は検証済みの ProfileUpdate（氏名を伏せる record）で受ける。どの層の引数にも String で渡さない（BR1.5・BR5.2・BR7.4） | 承認の場の決定（R-01）。TraceAspect が web・service・domain・repository の引数を TRACE で文字列にするため。既存の updatePreferences が Preferences で受ける形を前例にした。入出力の値の種類（検索の文字・氏名・言語）は変えない |
+
+## 承認の場の決定（Request Changes、2026-10-01）
+
+機能設計の承認の場で、依頼者が Request Changes を選んだ。レビュー（判定 READY、指摘 R-01〜R-07）を受けた決定を、直したこと・受け入れたこと・申し送りに分けて書く。
+
+### 直したこと
+
+| 指摘 | 重さ | 決定 | 直した箇所 |
+|---|---|---|---|
+| R-01 | Major | 検索の文字と氏名を、controller から UserRepository の口まで、すべての経路で伏せ字の型のまま渡す。文字列にするのは、伏せ字の型の record の中と、Spring Data の問い合わせの SpEL の中だけとする。既存の updatePreferences が Preferences で受ける形を前例にする | rules.md の BR1.3・BR1.5・BR5.2・BR7.4、entities.md の SearchText・ProfileCommand・ProfileUpdate、この文書の 2.1・2.8・D13 |
+| R-02 | Major | 最後の有効な管理者の保護について3つを書く。(1) 排他の待ちの上限切れのときは、業務処理が巻き戻しの印を明示的に付けて巻き戻し、巻き戻しの印が付いたまま確定して 500 にならないこと。(2) 排他した行の集合が古くても保護が成り立つ根拠。(3) NFR 設計の確かめが通らなかったときの切り替え先（固定の1行を排他して、操作を1つずつ通す） | rules.md の BR3.1・BR3.5、この文書の 2.2・4節・8.2 |
+| R-03 | Minor | 待ち合わせの口で止める時間は、排他の待ちの上限 3000 ミリ秒より短くする | rules.md の BR3.6、この文書の 8.2 |
+| R-04 | Minor | 差の記録 D5 の「隙を塞ぐ」を「隙を狭める」に直す | この文書の 9節の D5、traceability.json の BR2.6 の説明 |
+| R-05 | Minor | 戻せるか（resettable）の判定に、解除の予定の時刻があるときも含める | rules.md の BR1.7・BR4.5、entities.md の LoginAttemptState・LockView・LoginFailureResetPreparation、この文書の 1.3・2.7 |
+| R-06 | Minor | 契約 C8 は書き換えないため、コード生成では 9節の D6〜D9（と D13）を C8 より優先する | この文書の 9節の冒頭と 8.2 |
+| R-07 | Minor | 検索の文字の小文字化を Locale.ROOT でそろえる（メールアドレスの保存と同じ） | rules.md の BR1.5、entities.md の SearchText、この文書の 2.1・8.2 |
+
+### 受け入れたこと（書き手が確かめたいとした点）
+
+| 項目 | 内容 | 扱い |
+|---|---|---|
+| D6 | 契約 C8 の失敗回数を戻す口を、行を排他して判定する1段目と、書く2段目に分けた | 受け入れる。C8 は書き換えず、この文書の 9節を優先する（R-06） |
+| D8 | UserAccount に排他しない読み取りの口（例 findAdminSummary）を足した | 受け入れる |
+| BR3.6 | 待ち合わせの口を、失敗回数を戻す操作に加えてログインの判定にも置く（auth.service の LoginService に手が入る） | 受け入れる |
+| BR1.4 | page と q が両方誤りのときは、page の誤りを返す | 受け入れる |
+| BR2.7 | 氏名と言語の変更で、入力の誤り（400）を「対象がいない」（404）より先に返す | 受け入れる |
+| D1 | `useradmin.web` から `access.domain`（AccessProblemTypes）への依存を1本足す | 受け入れる。UserAdminBoundaryArchitectureTest に書く |
+
+### 申し送り
+
+| 先 | 内容 |
+|---|---|
+| NFR 設計 | 8.2 節の5点（検索の小文字化の範囲と索引、待った後の数えと BR3.1 の根拠、上限切れの後の巻き戻し、トークンの無効化と外部キーの待ち、排他の待ちの上限）をそのまま渡す。排他の待ちの上限 3000 ミリ秒は、上限切れ（409 USER_ADMIN_BUSY）のときだけ応答の 1 秒を超える例外として扱う。BR3.1 の確かめが通らなかったときは、固定の1行への切り替え先に移る |
+| コード生成の計画 | B3・B4 の分け方（8.1 節）。最後のページより後の page と、全体が 0 件のときの一覧の結合テスト（U2 のレビューの R-02 からの申し送り）。C8 より 9節の D6〜D9・D13 を優先すること（R-06）。待ち合わせの口で止めている間に2つ目の操作が排他の待ちに入ったことの確かめ方（R-03） |

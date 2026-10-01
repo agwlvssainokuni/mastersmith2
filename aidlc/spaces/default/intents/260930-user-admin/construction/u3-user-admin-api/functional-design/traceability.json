@@ -15,7 +15,7 @@
     { "id": "AC1.1.3", "status": "OK", "target": "BR1.7, BR1.8, BR7.5" },
     { "id": "AC1.1.4", "status": "OK", "target": "BR1.4, BR1.5, BR1.6, BR1.1" },
     { "id": "AC1.1.5", "status": "OK", "target": "BR1.1, BR1.4, BR1.9" },
-    { "id": "AC1.1.6", "status": "OK", "target": "BR7.4, BR7.5, BR1.3" },
+    { "id": "AC1.1.6", "status": "OK", "target": "BR7.4, BR7.5, BR1.3, BR1.5" },
     { "id": "AC1.1.7", "status": "OK", "target": "BR1.1, BR1.2" },
     { "id": "AC1.1.8", "status": "Deferred", "target": "u5-user-admin-ui（読み込み中の表示と支援技術への伝え方は画面の状態のため U5 が受け持つ。U3 は一覧の API だけを受け持つ）" },
     { "id": "AC1.1.9", "status": "Deferred", "target": "u5-user-admin-ui（読み込みの失敗の表示ともう一度読み込む操作は画面のため U5 が受け持つ）" },
@@ -71,7 +71,7 @@
     { "id": "AC4.1.10", "status": "OK", "target": "BR4.5, BR1.7" },
     { "id": "AC4.1.11", "status": "OK", "target": "BR3.5" },
     { "id": "AC4.1.12", "status": "OK", "target": "BR7.1, BR6.4" },
-    { "id": "AC5.1.1", "status": "OK", "target": "BR5.2, BR5.3" },
+    { "id": "AC5.1.1", "status": "OK", "target": "BR5.2, BR5.3, BR7.4" },
     { "id": "AC5.1.2", "status": "Deferred", "target": "u5-user-admin-ui（B の画面の言語の切り替えは画面のため U5（反映の口は U4）が受け持つ。U3 は言語を保存する BR5.2）" },
     { "id": "AC5.1.3", "status": "Deferred", "target": "u5-user-admin-ui（自分の画面への言語と氏名の反映は U5（口は U4）が受け持つ。U3 は自分自身の変更を BR5.2 で許す）" },
     { "id": "AC5.1.4", "status": "OK", "target": "BR5.1, BR5.3" },
@@ -81,7 +81,7 @@
     { "id": "AC5.1.8", "status": "OK", "target": "BR7.1" }
   ],
   "reverse": [
-    { "id": "BR2.6", "status": "N/A", "target": "操作した人の確かめ直しで外れていたときの応答と監査（Q6 A）。受け入れ基準に無い同時の隙を塞ぐ設計の決まりで、C8 と functional-spec.md 9節の D4・D10 に基づく" },
+    { "id": "BR2.6", "status": "N/A", "target": "操作した人の確かめ直しで外れていたときの応答と監査（Q6 A）。受け入れ基準に無い同時の隙を狭める設計の決まり（R-04）で、C8 と functional-spec.md 9節の D4・D10 に基づく" },
     { "id": "BR7.6", "status": "N/A", "target": "パッケージ useradmin の依存の向きの構造の決まり（ADR-001・NFR11・Q6 A）。ArchUnit の境界テストで確かめる" }
   ]
 }

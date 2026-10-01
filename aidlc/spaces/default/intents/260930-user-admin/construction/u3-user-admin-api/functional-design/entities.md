@@ -41,7 +41,7 @@ entities:
       - { name: lockedUntil, type: timestamp, required: false, constraints: "既存。今の時刻 < lockedUntil のときだけロック中（BR1.7）。失敗回数を戻す操作で無しにする（BR4.5）" }
     constraints:
       - "失敗回数を戻す操作は、行が無い利用者に行を作らない（BR4.5）"
-      - "既存の決まり（LockPolicy）では lockedUntil が入る行は失敗回数がしきい値以上（1 以上）で、「ロック中なのに戻せない」組は生じない"
+      - "既存の決まり（LockPolicy）では lockedUntil が入る行は失敗回数がしきい値以上（1 以上）になる。ただし U3 はこの性質に頼らず、戻せるか（resettable）を「失敗回数が 1 以上、または lockedUntil がある」と決め、性質が崩れた行でも「ロック中なのに戻せない」組を生じさせない（BR1.7・BR4.5、R-05）"
 
   - name: AuditEvent
     description: >-
@@ -87,8 +87,11 @@ value_types:
     operations:
       - "前後の空白（Unicode の White_Space。半角・全角とも、氏名と同じ範囲）を除いた値を返す（BR1.4）"
       - "除いた後のコードポイントの数が 254 を超えるかを返す（BR1.4）"
+      - "検索のパターンを返す: 除いた後の値を Locale.ROOT で小文字にし、\\ と % と _ をエスケープし、前後に % を付けた値を RedactedText で返す（BR1.5、R-01・R-07）。戻り値も String にしない"
     constraints:
       - "文字列にすると値を伏せる（例 ***）。等しさと並べ替えに値を使っても、ログやトレースに値が出る形にしない"
+      - "record とし、変換（小文字化・エスケープ）を record の中で行う（TraceAspect は record を対象にしないため、変換の途中の値がログに出ない）"
+      - "controller・業務処理・UserAccount・UserRepository の口は、この型か、ここから作った RedactedText のパターンを受け、String を受けない（BR7.4）"
   - name: UserAdminSummary
     description: >-
       UserAccount が useradmin へ渡す利用者の要約（user.service に置く）。パスワードのハッシュ値は持たない。文字列にすると
@@ -113,7 +116,7 @@ value_types:
     attributes:
       - { name: locked, type: boolean, constraints: "解除の予定の時刻があり、今の時刻 < 解除の予定の時刻" }
       - { name: lockedUntil, type: timestamp, required: false, constraints: "locked が true のときだけ値を持つ" }
-      - { name: resettable, type: boolean, constraints: "表の失敗回数が 1 以上（解除の予定の時刻を過ぎた利用者を含む、M2 B）。行が無ければ false" }
+      - { name: resettable, type: boolean, constraints: "表の失敗回数が 1 以上、または解除の予定の時刻がある（解除の予定の時刻を過ぎた利用者を含む、M2 B。後者は R-05 の守り）。行が無ければ false" }
     constraints:
       - "行の無い利用者は (false, 無し, false)（BR1.7）"
   - name: AdminUser
@@ -174,7 +177,7 @@ value_types:
       （BR4.5、functional-spec.md 8節の差 D6）
     variants:
       - { name: Ready, attributes: [] }
-      - { name: NothingToReset, attributes: [], constraints: "行が無い・失敗回数が 0" }
+      - { name: NothingToReset, attributes: [], constraints: "行が無い、または失敗回数が 0 かつ解除の予定の時刻が無い（BR4.5、R-05）" }
       - { name: Busy, attributes: [], constraints: "行の排他の待ちの上限切れ" }
   - name: OperationResult
     description: "業務処理（useradmin.service）が5つの操作で返す結果。controller が場合を尽くして応答に変える（BR2.3）"
@@ -190,6 +193,24 @@ value_types:
     attributes:
       - { name: displayName, type: string, required: true, constraints: "検証は自分のプリファレンスと同じ（BR5.1）" }
       - { name: language, type: string, required: true, constraints: "ja か en（小文字の完全な一致、BR5.1）" }
+  - name: ProfileCommand
+    description: >-
+      氏名と言語の変更の入力（user.service の record。C8 updateProfile の入力）。useradmin.web が ProfileRequest から作り、業務処理と
+      UserAccount へこの型のまま渡す。既存の PreferencesCommand と同じ形（BR5.2、R-01）
+    attributes:
+      - { name: displayName, type: string, constraints: "要求の生の値（検証の前）" }
+      - { name: language, type: string, constraints: "要求の生の値（検証の前）" }
+    constraints:
+      - "文字列にすると氏名を伏せる（言語は出してよい）"
+  - name: ProfileUpdate
+    description: >-
+      検証を通った氏名と言語の組（user.domain の record）。UserAccount が BR5.1 の検証の後に作り、UserRepository の更新の口が
+      この型で受ける。既存の Preferences と同じ形（BR5.2、R-01）
+    attributes:
+      - { name: displayName, type: string, constraints: "前後の空白を除いた値。作れるのは決まりに合う値だけ" }
+      - { name: language, type: "Language（既存）" }
+    constraints:
+      - "文字列にすると氏名を伏せる。問い合わせでは SpEL（例 :#{#profile.displayName()}）で取り出し、String の引数にしない"
   - name: ProfileUpdateResult
     description: "C8 updateProfile の結果（user.service）"
     variants:
@@ -222,7 +243,8 @@ value_types:
 | User | 既存の表（形は変えない） | 管理者の印・停止・氏名・言語を C8 と C1 の口で書き換える。登録した日時の古い順に一覧・検索する。印のある行と対象の行を利用者 ID の順に排他する |
 | LoginAttemptState | 既存の表（形は変えない） | 一覧のためにページの行を排他なしで読む。失敗回数を戻す操作でこの行だけを排他し、0 と解除の予定の時刻なしに書く。行を作らない |
 | AuditEvent | 既存の表（列は変えない） | 種類5つ・理由4つを足し、既存の USER_NOT_FOUND・NOT_ADMIN を使う。対象は要求の利用者 ID のまま |
-| SearchText | 値（新しい、user.domain） | 検索の文字を伏せ字のまま受け渡す。前後の空白を除き、254 コードポイントまで |
+| SearchText | 値（新しい、user.domain） | 検索の文字を伏せ字のまま受け渡す。前後の空白を除き、254 コードポイントまで。Locale.ROOT の小文字化とエスケープをした検索のパターンを RedactedText で返す |
+| ProfileCommand・ProfileUpdate | 値（新しい、user.service・user.domain） | 氏名と言語の変更の入力と、検証を通った組。どちらも氏名を伏せ字のまま repository の口まで渡す |
 | UserAdminSummary・UserAdminSlice | 値（新しい、user.service） | 一覧と排他の口が返す利用者の要約。ハッシュ値を持たず、伏せ字で文字列になる |
 | LockView | 値（新しい、auth.domain） | ロック中か・解除の予定の時刻・戻せるかの3つだけ |
 | AdminUser・AdminUserPage・ProfileRequest | 値（新しい、useradmin.web） | 画面との受け渡し（C3）。応答に含めない値を持たない |

@@ -18,20 +18,20 @@
     "AC5.1.8"
   ],
   "coverage": [
-    { "id": "AC2.2.1", "status": "OK", "target": "functional-spec.md D2・D3・D12、W1（文言は画面イメージ 9節の D1 のまま、10節の G8）。frontend-components.md 3.3・3.4・4節・5.1" },
-    { "id": "AC2.2.2", "status": "OK", "target": "functional-spec.md D7・D8・D9、W3、4節。frontend-components.md 3.2・3.3・5.1" },
-    { "id": "AC2.2.3", "status": "OK", "target": "functional-spec.md D1・D9・D10、W4・W6。frontend-components.md 6.1" },
-    { "id": "AC2.2.4", "status": "OK", "target": "functional-spec.md D2・D3・D6、W7。frontend-components.md 6.2・7節" },
-    { "id": "AC2.2.5", "status": "OK", "target": "functional-spec.md D6、W2（Q2 A、10節の G1）。frontend-components.md 4節の decideRoute" },
-    { "id": "AC2.2.6", "status": "Deferred", "target": "u3-user-admin-api（管理の API の 403 と監査の「アクセスの拒否」は今のサーバーの動作のままで、U4 は変えない。サーバー側のテストは U3。functional-spec.md 8節）" },
+    { "id": "AC2.2.1", "status": "OK", "target": "要件 FR2.3・FR8.2・NFR7・NFR8。functional-spec.md D2・D3・D12、W1（文言は画面イメージ 9節の D1 のまま、10節の G8）。frontend-components.md 3.3・3.4（Alert の role=\"status\"、R-05）・4節・5.1・7節" },
+    { "id": "AC2.2.2", "status": "OK", "target": "要件 FR2.2・FR2.3。functional-spec.md D7・D8・D9、W3、4節、8節（403 以外のきっかけは今の仕組みのまま）。frontend-components.md 3.2・3.3（読み直しの回数、R-02）・5.1。きっかけごとの確かめは frontend-components.md 7節の ShellLayout.test（403 の後の読み直し・トークンの更新・ログインし直し）と AppRouter.test（画面の読み直し）（R-06）" },
+    { "id": "AC2.2.3", "status": "OK", "target": "要件 FR2.3・FR8.2。functional-spec.md D1・D9・D10、W4・W6。frontend-components.md 6.1" },
+    { "id": "AC2.2.4", "status": "OK", "target": "要件 FR2.3・FR8.2。functional-spec.md D2・D3・D4・D5・D6、W7。frontend-components.md 3.3・6.2・7節（描画の補助と AdminAreaPage.test の描き方の書き換え、R-03）" },
+    { "id": "AC2.2.5", "status": "OK", "target": "要件 FR2.3・FR8.1・FR8.2。functional-spec.md D6、W2（Q2 A、10節の G1）。frontend-components.md 1節・4節の decideRoute と AppRouter（同じ形の木、R-05）" },
+    { "id": "AC2.2.6", "status": "Deferred", "target": "u3-user-admin-api（要件 FR8.2。管理の API の 403 と監査の「アクセスの拒否」は今のサーバーの動作のままで、U4 は変えない。サーバー側のテストは U3。functional-spec.md 8節）" },
     { "id": "AC5.1.1", "status": "Deferred", "target": "u3-user-admin-api（氏名の変更の API と監査に残さないことは U3 が受け持つ）" },
-    { "id": "AC5.1.2", "status": "Deferred", "target": "u5-user-admin-ui・u3-user-admin-api（ほかの利用者の言語の保存は U3、画面の操作は U5。読み直し・ログイン・更新で言語が当たるのは今の表示の設定の土台の仕組みのままで、U4 は変えない）" },
-    { "id": "AC5.1.3", "status": "OK", "target": "functional-spec.md D13・D14、W8。frontend-components.md 3.6・3.7・5.3（口は U4、呼ぶのは U5）" },
+    { "id": "AC5.1.2", "status": "Deferred", "target": "u5-user-admin-ui・u3-user-admin-api（要件 FR6.3。ほかの利用者の言語の保存は U3、画面の操作は U5。読み直し・ログイン・更新で言語が当たるのは今の表示の設定の土台の仕組みのままで、U4 は変えない）" },
+    { "id": "AC5.1.3", "status": "OK", "target": "要件 FR6.3・NFR8。functional-spec.md D13（当てている値は preview を除いて求める、R-01）・D14、W8。frontend-components.md 3.6・3.7・5.3・7節（試しのテーマが保存されない確かめ）（口は U4、呼ぶのは U5）" },
     { "id": "AC5.1.4", "status": "Deferred", "target": "u3-user-admin-api（氏名と言語の検証と上限は U3 が受け持つ）" },
     { "id": "AC5.1.5", "status": "Deferred", "target": "u3-user-admin-api（対象の利用者がいない拒否と同じ値の保存は U3 が受け持つ）" },
     { "id": "AC5.1.6", "status": "Deferred", "target": "u3-user-admin-api（要求の本文の知らない項目の無視は U3 が受け持つ）" },
     { "id": "AC5.1.7", "status": "Deferred", "target": "u5-user-admin-ui（氏名と言語の入力の表示は U5 が受け持つ。入力の表示の中の 403 は U4 の口で S6 になる）" },
-    { "id": "AC5.1.8", "status": "Deferred", "target": "u3-user-admin-api（401・403・200 の認可は U3 のサーバー側のテストが受け持つ）" }
+    { "id": "AC5.1.8", "status": "Deferred", "target": "u3-user-admin-api（要件 FR8.2。401・403・200 の認可は U3 のサーバー側のテストが受け持つ）" }
   ],
   "reverse": []
 }

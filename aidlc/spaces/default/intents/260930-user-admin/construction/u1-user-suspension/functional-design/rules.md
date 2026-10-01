@@ -18,9 +18,9 @@ rules:
     category: constraint
     applies_to: 内部DB のスキーマの変更 V9
     trigger: 起動時のスキーマの変更の適用
-    logic: "users に suspended（真偽、必須、既定 false）を足す1つの変更にする。既存の行は既定の false（有効）になる。適用済みの V1〜V8 は書き換えない。1つ前の版のアプリは列を知らずに動き、利用者の作成でも既定の値で入るため後方互換を保てる。ただし1つ前の版へ戻した間は停止が効かない（戻し方の手順に書く。持ち主は基盤の設計・配備の段）"
+    logic: "users に suspended（真偽、必須、既定 false）を足す1つの変更にする。既存の行は既定の false（有効）になる。適用済みの V1〜V8 は書き換えない。1つ前の版のアプリは列を知らずに動き、利用者の作成でも既定の値で入るため後方互換を保てる。ただし1つ前の版のイメージへ戻した間は停止が効かない（1つ前の版は停止を見ないため、停止中の利用者もログインで新しいトークンを取れる。止めたときに無効にしたリフレッシュトークンは無効のまま）。戻すのは問題が起きたときの短い間で、配備先は手元の PC だけのため、依頼者の決定でこの制約を受け入れる（承認の場の決定 R-02）。前の版に戻す前に停止中の利用者を確かめる手順を deployment-pipeline の戻し方の手順に書く。V9 は前進のみのため、戻すときも列は残り、前の版のイメージで動かす選択肢は残る"
     violation: 起動の失敗（スキーマの変更の失敗は既存の Flyway の扱い）
-    source: NFR10、ADR-002、team.md の Deployment、要点 2
+    source: NFR10、ADR-002、team.md の Deployment、要点 2、承認の場の決定 R-02
   - id: BR1.3
     statement: 3つの入口が読む利用者の要約に停止の状態を含め、どの入口も同じ値で判定する
     category: constraint
@@ -32,19 +32,19 @@ rules:
   - id: BR1.4
     statement: isSuspended は、利用者 ID から今の停止の状態を返す
     category: policy
-    applies_to: C1 の UserAccount.isSuspended
+    applies_to: C1 の UserAccount.isSuspended（`cherry.mastersmith.user.service.UserAccountService#isSuspended(long userId)`、戻り値 boolean）
     trigger: U3 などの呼び出し
-    logic: "その時点で内部DB にある値を返す。IF 利用者がいない THEN 想定外の誤り（呼び出し元は先に利用者の有無を確かめる。U3 は行の排他の口で有無を確かめてから使う）"
-    violation: 想定外の誤り（呼び出し元のトランザクションは巻き戻る）
-    source: C1、要点 4
+    logic: "置き場は既存の UserAccountService（user.service）とし、トランザクションの属性は読み取りだけ（`@Transactional(readOnly = true)`、伝わり方は既定の REQUIRED。呼び出し元のトランザクションがあれば入る）。その時点で内部DB にある値を返す。同じトランザクションの中で setSuspended で書いた後に呼んでも、書いた後の値を返す（古い値を返さない）。そのため setSuspended の更新の問い合わせは、実行の前に未反映の変更を内部DB へ書き出し（flushAutomatically）、実行の後に永続化の文脈を空にする（clearAutomatically）。後の isSuspended・findById・U3 の要約の読み取りは、文脈に残った古いエンティティではなく内部DB から読み直す。既存の updatePreferences・RefreshTokenRepository.revokeIfActive と同じ形にする。確かめは、同じトランザクションで止める・解くを書いてから isSuspended と findById の要約の suspended を読む結合テスト（書く前に findById でエンティティを文脈に読み込んでおく場合を含む）で行う（承認の場の決定 R-05）。IF 利用者がいない THEN 想定外の誤り（IllegalStateException。呼び出し元は先に利用者の有無を確かめる。U3 は行の排他の口で有無を確かめてから使う）"
+    violation: 想定外の誤り（IllegalStateException。呼び出し元のトランザクションは巻き戻る）
+    source: C1、要点 4、承認の場の決定 R-01・R-05
   - id: BR1.5
     statement: setSuspended は呼び出し元のトランザクションに入り、拒否の判定をせずに停止の列だけを書き換える
     category: constraint
-    applies_to: C1 の UserAccount.setSuspended
+    applies_to: C1 の UserAccount.setSuspended（`cherry.mastersmith.user.service.UserAccountService#setSuspended(long userId, boolean suspended)`、戻り値 void）
     trigger: U3 の止める・解く処理からの呼び出し
-    logic: "呼び出し元のトランザクションに参加する（無ければ想定外の誤り）。拒否の判定（自分自身・最後の管理者・変えるものが無い など）はしない（判定は U3 の UserAdministration）。suspended だけを書き換え、ほかの列（管理者の印・氏名・表示の設定・パスワード）を読み直した値で上書きしない。ロックの状態・リフレッシュトークンには触れない（無効化は呼び出し元が BR5.1 を別に呼ぶ）。監査の出来事は出さない（止める・解く監査は U3、C6）。IF 利用者がいない THEN 想定外の誤り"
+    logic: "置き場は既存の UserAccountService（user.service）で、トランザクションの属性は `@Transactional(propagation = Propagation.MANDATORY)` とし、呼び出し元のトランザクションに参加する（無ければ想定外の誤り IllegalTransactionStateException）。書き換えは UserRepository に足す列を絞った更新の問い合わせ（`@Modifying(clearAutomatically = true, flushAutomatically = true)`、users の suspended だけを SET し、更新した行の数を返す）で行い、書いた後の読み取りが古い値を返さないことは BR1.4 のとおり。更新した行の数が 0 なら利用者がいないとして想定外の誤り（IllegalStateException）。拒否の判定（自分自身・最後の管理者・変えるものが無い など）はしない（判定は U3 の UserAdministration）。suspended だけを書き換え、ほかの列（管理者の印・氏名・表示の設定・パスワード）を読み直した値で上書きしない。ロックの状態・リフレッシュトークンには触れない（無効化は呼び出し元が BR5.1 を別に呼ぶ）。監査の出来事は出さない（止める・解く監査は U3、C6）。引数は利用者 ID と真偽だけで、TRACE のログに出ても個人に関する値は出ない"
     violation: 想定外の誤り（呼び出し元のトランザクションは巻き戻る）
-    source: C1、ADR-003、要点 4
+    source: C1、ADR-003、要点 4、承認の場の決定 R-01
   - id: BR1.6
     statement: 停止の状態を変えられるのは C1 の setSuspended だけで、利用者自身の API の要求からは変えられない
     category: authorization
@@ -168,17 +168,17 @@ rules:
   - id: BR5.1
     statement: 利用者のまだ無効にしていないリフレッシュトークンをすべて、今の時刻で無効にし、無効にした件数を返す
     category: calculation
-    applies_to: C1 の Authentication.revokeAllRefreshTokens
+    applies_to: C1 の Authentication.revokeAllRefreshTokens（`cherry.mastersmith.auth.service.RefreshTokenRevocationService#revokeAllRefreshTokens(long userId)`、戻り値 `RevokeAllResult`）
     trigger: U3 の止める処理からの呼び出し
-    logic: "利用者 ID の行のうち revokedAt が空のものすべてに、注入した時計の今の時刻を入れる1回の更新を行う。期限切れの行も対象に含める（害が無く、条件が単純になる）。revokedAt が入っている行は書き換えない。無効にした件数（0 以上）を返し、0 件でも成功とする。利用者がいない ID でも 0 件で成功する"
+    logic: "置き場は auth.service に新しく作る RefreshTokenRevocationService とする（user は auth を知らないため user には置かない、BR7.1。useradmin から auth への向きは ADR-001・C8 と同じ）。結果は auth.service に置く record `RevokeAllResult(int revoked)` で返す。更新は RefreshTokenRepository に足す問い合わせ（`@Modifying(clearAutomatically = true, flushAutomatically = true)`、user_id が一致し revoked_at が空の行に今の時刻を入れ、更新した行の数を返す）で行う。利用者 ID の行のうち revokedAt が空のものすべてに、注入した時計の今の時刻を入れる1回の更新を行う。期限切れの行も対象に含める（害が無く、条件が単純になる）。revokedAt が入っている行は書き換えない。無効にした件数（0 以上）を返し、0 件でも成功とする。利用者がいない ID でも 0 件で成功する"
     violation: —
-    source: FR3.3、ADR-003、C1、ADR-007 の項目2、要点 8
+    source: FR3.3、ADR-003、C1、ADR-007 の項目2、要点 8、承認の場の決定 R-01
   - id: BR5.2
     statement: まとめての無効化は、呼び出し元のトランザクションの中でだけ動く
     category: constraint
     applies_to: C1 の Authentication.revokeAllRefreshTokens
     trigger: 呼び出し
-    logic: "呼び出し元のトランザクションに参加し、止める操作と同じ確定に入る。呼び出し元が巻き戻れば無効化も巻き戻る。IF トランザクションの外から呼ばれる THEN 想定外の誤り（自分で新しく始めない）"
+    logic: "トランザクションの属性は `@Transactional(propagation = Propagation.MANDATORY)` とし、呼び出し元のトランザクションに参加し、止める操作と同じ確定に入る。呼び出し元が巻き戻れば無効化も巻き戻る。IF トランザクションの外から呼ばれる THEN 想定外の誤り（IllegalTransactionStateException。自分で新しく始めない）"
     violation: 想定外の誤り
     source: C1（MANDATORY）、ADR-003
   - id: BR5.3
@@ -198,13 +198,13 @@ rules:
     violation: —
     source: FR3.3、C1、AC3.2.4
   - id: BR5.5
-    statement: 止める操作とトークンの更新が同時に重なったときの隙は塞がない
+    statement: 止める操作とトークンの更新・ログインの照合が同時に重なったときの隙は塞がない
     category: policy
-    applies_to: まとめての無効化とトークンの更新
-    trigger: 止める処理の確定の前に、同じ利用者のトークンの更新が新しいリフレッシュトークンを作ったとき
-    logic: "その新しいリフレッシュトークンは無効化を逃れて残りうる。停止中は BR3.1 で拒否されるため停止の間は害が無いが、停止を解いた後は使えうる。依頼者の決定として受け入れ、排他を足さない"
+    applies_to: まとめての無効化とトークンの更新・ログインの照合
+    trigger: 止める処理の確定の前に、同じ利用者のトークンの更新が新しいリフレッシュトークンを作ったとき。または、同じ利用者のログインの照合（トランザクションの外で停止の状態を読む手順）の後、判定の前に止める処理が確定したとき
+    logic: "トークンの更新の経路: その新しいリフレッシュトークンは無効化を逃れて残りうる。ログインの経路: ログインの停止の判定は照合のときに読んだ利用者の要約の suspended を使う（判定のトランザクションで排他して読むのはロックの状態の行で、users の行ではない）ため、照合の後・判定の前に止める処理が確定すると、そのログインは通り、無効化の後に新しいリフレッシュトークンが作られて残りうる。どちらの経路も、停止中は次の要求で BR4.1（アクセストークン）と BR3.1（リフレッシュトークン）により拒否されるため停止の間は害が無いが、停止を解いた後はそのリフレッシュトークンが使えうる。ログインの経路はパスワードを知る本人に限られ、停止を解けば同じログインができる。依頼者の決定として、M8 B と同じ種類の隙として両方の経路を受け入れ、排他も判定のトランザクションでの読み直しも足さない（読み直すと読み取りが増え、BR1.3 と BR2.3 の回数の一致を崩すため。承認の場の決定 R-03）"
     violation: —
-    source: M8 B、ADR-003、C1
+    source: M8 B、ADR-003、C1、承認の場の決定 R-03
 
   # --- BR6 列挙の防止と、停止を解いた後
   - id: BR6.1
@@ -236,7 +236,7 @@ rules:
     category: policy
     applies_to: 招待の登録済みの確かめ
     trigger: 停止中の利用者のメールアドレスへの招待
-    logic: "停止中でも利用者の行は残るため、今の招待の確かめ（メールアドレスの利用者がいれば登録済みとして拒否）のまま拒否される。停止の状態で招待の確かめを変えない"
+    logic: "停止中でも利用者の行は残るため、今の招待の確かめ（メールアドレスの利用者がいれば登録済みとして拒否）のまま拒否される。停止の状態で招待の確かめを変えない。U1 に新しい決まりは無いため、確かめは既存の動きの回帰テスト（停止中の利用者のメールアドレスへの招待が今の登録済みの拒否になること）を1件、U1 のコード生成の計画に入れて行う（承認の場の決定 R-04）"
     violation: 今の招待の登録済みの拒否のまま
     source: FR3.9、要件の前提 A1、AC3.2.6
 
@@ -263,10 +263,10 @@ rules:
 
 | 群 | ID | 要点 |
 |---|---|---|
-| 停止の状態 | BR1.1〜BR1.6 | 真偽で既定は有効・理由は持たない、V9 で前進のみ・後方互換、3つの入口は同じ要約の値を読む、isSuspended と setSuspended（呼び出し元のトランザクション・判定しない・停止の列だけ）、変えられるのは C1 の口だけ |
+| 停止の状態 | BR1.1〜BR1.6 | 真偽で既定は有効・理由は持たない、V9 で前進のみ・後方互換（前の版へ戻した間は停止が効かない制約を受け入れる）、3つの入口は同じ要約の値を読む、isSuspended と setSuspended は UserAccountService に置く（読み取りだけ・MANDATORY・判定しない・停止の列だけ・書いた後の読み取りは書いた値を返す）、変えられるのは C1 の口だけ |
 | ログインの照合 | BR2.1〜BR2.6 | ロックの判定より前に停止を確かめる、本人の行を読んだ値のまま書き戻す、照合1回・排他つきの読み取り1回・更新1回・出来事1件、401 AUTHENTICATION_FAILED、監査は LOGIN_FAILED・ACCOUNT_SUSPENDED、ログにメールアドレスを出さない |
 | トークンの更新 | BR3.1〜BR3.3 | 利用者を読んだ直後に確かめ 401 REFRESH_FAILED で巻き戻す（出されたトークンは変えない）、監査しない、止める前のトークンは解いた後も拒否 |
 | アクセストークンの認証 | BR4.1〜BR4.4 | 区分 USER_SUSPENDED で 401 AUTHENTICATION_REQUIRED、管理の API の監査に残さない、失効の仕組みは持たず解いた後は期限まで使える、停止中の管理者は業務に届かない |
-| まとめての無効化 | BR5.1〜BR5.5 | 未無効の行すべてを今の時刻で無効にし件数を返す、呼び出し元のトランザクションだけ、監査しない、解いても戻さない、同時の重なりの隙は塞がない |
+| まとめての無効化 | BR5.1〜BR5.5 | auth.service の RefreshTokenRevocationService が未無効の行すべてを今の時刻で無効にし RevokeAllResult で件数を返す、呼び出し元のトランザクションだけ（MANDATORY）、監査しない、解いても戻さない、トークンの更新とログインの照合との同時の重なりの隙は塞がない |
 | 列挙の防止と解いた後 | BR6.1〜BR6.4 | 入口ごとにほかの失敗と同じ応答、解いた直後から受け付ける、画面は変えない、メールアドレスは登録済みのまま |
 | 構造と名前 | BR7.1・BR7.2 | user は auth を知らない、名前は 32 文字に収まる |
