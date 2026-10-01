@@ -99,6 +99,7 @@ expect(name.includes(user.email) && name.includes(REGISTERED_DISPLAY_NAME), '操
 - 作るときに権限 600 で作り、書いた後にも 600 に直します（umask に左右されないため）。
 - Playwright は実行の始めに `test-results/` を消すため、前の実行の値は残りません。報告の部品は探し終えたらこのファイルを消します。途中で止めた実行で残ったファイルは、次の実行の始めに消えます。
 - 110 を飛ばした（前提が無い）実行では、ファイルは作られません。報告の部品は環境変数の値と値の形だけで探します。
+- **`runTag` の長さ（承認の場の R-06）**: 110 は `runTag` を「時刻の16進」と「`randomBytes(8)` の16進（16 文字の乱数）」をつないで作ります（例 11 文字＋16 文字）。乱数の部分を 16 文字以上と決め、短い値が無関係なバイト列や json の値と偶然一致して、理由の分からない失敗になることを防ぎます。報告の部品は、値のファイルの `runTag` が 24 文字以上のときだけ単独の値として探し、それより短いときは宛先の形（`u7-perf-<runTag>@`）の中でだけ探します（短いことは種類と件数だけで警告します）。`runTag` は検索の欄に入れるため、`u7-perf-<runTag>@example.com` を含めて検索の上限（254 文字）に収まることをコード生成で確かめます。`createRegisteredUser` は変えません（`runTag` は 110 が作って渡す）。
 
 ### 3.5 報告の部品の探し方（要点 9）
 
@@ -115,10 +116,11 @@ expect(name.includes(user.email) && name.includes(REGISTERED_DISPLAY_NAME), '操
 | U の氏名 | 「計測 花子」（そのまま・URL の形・`\u` の形） |
 
 4. **探す先**: json の報告と、`test-results/` の下のすべてのファイル（`trace.zip`・`error-context.md`・添付を含む。値のファイル自身は除く）。ファイルはバイト列として読み、値の UTF-8 のバイト列を探します。形は ASCII の正規表現で探します。
+4a. **json の報告の中の base64 を復号する（承認の場の R-01）**: Playwright 1.63 の json の報告は、`testInfo.attach` に `body` で渡した添付を base64 にして `attachments[].body` に書き、バイト列の標準出力・標準エラー（`stdout`・`stderr` の `buffer`）も base64 で書きます。そのため、文字列として探すだけでは添付の中の値を見つけられません。報告の部品は json の報告を JSON として読み、すべての試験の結果（入れ子の `suites` をたどる）の `attachments[].body` と `stdout[].buffer`・`stderr[].buffer` を復号し、復号したバイト列を 2 の形と 3 の値の形で探します。復号したものの中身が zip なら 5 と同じく展開します。JSON として読めない、または base64 を復号できないときは、7 と同じく黙って通さず失敗にします。出力のファイルの種類は「json の報告の添付」として数えます。path で渡した添付は `test-results/` の下の `attachments/` に写されるため、4 のファイルの走査で探されます。
 5. **zip を読む**: 拡張子が `.zip` のファイルは、中央の目録を読み、各ファイルを `node:zlib` の `inflateRawSync`（圧縮なしの項目はそのまま）で展開して読みます。新しい依存を足しません。
 6. **前の html の報告**: `playwright-report/` が残っていれば、前の実行の報告として探します。`index.html` に埋め込まれた base64 の zip を取り出して 5 と同じく展開し、`data/` の下のファイルとあわせて値の形と今の値で探します。見つかれば失敗にし、消す手順（`frontend/playwright-report/` を消す）を示します。見つからなくても、もう作らない報告のため消すよう警告を出します。初期管理者のメールアドレスは実行ごとに変わらない値のため、前の実行の html の報告が残っていれば見つかって失敗になる見込みで、コード生成（B5）の最初の実行で一度消すことになります。
 7. **開けないもの**: 読めない・展開できない（壊れた zip、知らない圧縮の方式、取り出せない base64）ファイルがあれば、黙って通さず失敗にします。
-8. **出力**: 値は表示しません。値の種類（`signingKey`・`adminEmail`・`adminPassword`・`email`・`password`・`displayName`・`runTag`）と、ファイルの種類（json の報告・trace・失敗の画面の写し・そのほか・前の html の報告）ごとの件数だけを出します。
+8. **出力**: 値は表示しません。値の種類（`signingKey`・`adminEmail`・`adminPassword`・`email`・`password`・`displayName`・`runTag`）と、ファイルの種類（json の報告・json の報告の添付・trace・失敗の画面の写し・そのほか・前の html の報告）ごとの件数だけを出します。
 9. **片付け**: 値のファイルを最後に消します（見つかったかどうかと関係なく、`finally` で消す）。
 10. **trace を有効にした実行**: `E2E_TRACE` が `off` でないときは、「trace を有効にした実行のため、合否に使わず、見た後に `test-results/` を消す」旨を最初に出します（3.7）。
 
@@ -135,7 +137,7 @@ expect(name.includes(user.email) && name.includes(REGISTERED_DISPLAY_NAME), '操
 | 一覧の行の数 | 表の行の数 | 数だけ |
 
 - 記録は、テストの終わり（`test.afterEach`）で `testInfo.status` が期待と違うときだけ添付します。成功したテストには残しません。
-- 記録の中身も報告の部品の探す先に入るため、手伝いの誤りで値が混ざれば部品が見つけます。
+- 記録は `body` の添付として json の報告に base64 で書かれます。報告の部品は 3.5 の 4a で json の添付を復号して探すため、手伝いの誤りで値が混ざれば部品が見つけます（承認の場の R-01）。性能の添付 `user-admin-screen-ms`（`performance-design.md` 5.4）も同じです。
 - Playwright が失敗のときに書く `error-context.md`（誤りの文と画面の ARIA の写し）は止めません（Q3 A）。110 の失敗では写しに U の氏名・メールアドレスが入るため、報告の部品が見つけて失敗になります。このときは、写しを読んで原因を確かめた後に `frontend/test-results/` を消します（`README.md` に手順を書く、コード生成）。流れの失敗で実行はもともと失敗しているため、合否は変わりません。
 - それでも原因が分からないときは、3.7 の手順で手元だけ trace を有効にして流し直します。
 
@@ -150,7 +152,7 @@ expect(name.includes(user.email) && name.includes(REGISTERED_DISPLAY_NAME), '操
 
 ### 3.8 確かめ方（コード生成 B5・Build and Test）
 
-- わざと値を入れた報告で部品が失敗することを、種類ごとに確かめて記録します。(1) json の報告の注記に U の氏名、(2) `test-results/` の下の zip（圧縮あり）の中のファイルに U のパスワードの URL の形、(3) `error-context.md` に U のメールアドレス、(4) 値のファイルを書かずに値の形だけで見つかること、(5) 壊れた zip で失敗すること、(6) 残した `playwright-report/` で失敗すること。確かめに使った報告は消します。
+- わざと値を入れた報告で部品が失敗することを、種類ごとに確かめて記録します。(1) json の報告の注記に U の氏名、(2) `test-results/` の下の zip（圧縮あり）の中のファイルに U のパスワードの URL の形、(3) `error-context.md` に U のメールアドレス、(4) 値のファイルを書かずに値の形だけで見つかること、(5) 壊れた zip で失敗すること、(6) 残した `playwright-report/` で失敗すること、(7) json の報告の添付の `body`（base64）に U のメールアドレスを入れた json の1件で失敗すること（承認の場の R-01）、(8) 値のファイルの `runTag` が 24 文字より短いときに単独では探さず警告すること（R-06）。確かめに使った報告は消します。
 - 値のファイルが探し終えた後に無いこと、作ったときの権限が 600 であることを確かめます。
 - Build and Test で `./gradlew e2eTest` を流した後に、部品の結果（確かめた種類の数、見つかった件数 0）を記録します。
 
@@ -158,15 +160,18 @@ expect(name.includes(user.email) && name.includes(REGISTERED_DISPLAY_NAME), '操
 
 ### 4.1 口の形
 
-新しい手伝いのファイル1つに、`page.route` の口を1つだけ置き、`/api/admin/` で始まる道の要求をすべて受けます。
+新しい手伝いのファイル1つに、`page.route` の口を1つだけ置き、管理の API の道の形に当たる要求をすべて受けます。口は **page ごとに張ります**（`context.route` は使いません）。120 の各テストは1つの page だけを開き、別のページ・ポップアップを開きません。画面は Service Worker を登録しません（`frontend/src` に登録のコードが無い）。
+
+道の形の判定（承認の場の R-02）は、前方一致の文字の比べだけにしません。アプリのオリジン（`baseURL`）と同じオリジンの要求について、パスを正規化（続くスラッシュを1つにまとめ、`%` の符号を一度だけ戻す）した後に、`/api/admin` ちょうど、または `/api/admin/` で始まるものを受けます。
 
 ```text
 // 差し替えの口の考え方（説明用）
-await page.route(url => url.pathname.startsWith('/api/admin/'), async route => {
-  const req = route.request(); const key = routeKey(req.method(), req.url())   // 道の ID は {id}
+await page.route(url => sameOrigin(url) && isAdminPath(normalize(url.pathname)), async route => {
+  const req = route.request(); seen.count++                                    // 口が受けた件数
+  const key = routeKey(req.method(), req.url())                               // 道の ID は {id}
   if (mocks.has(key)) return route.fulfill(mocks.get(key))                    // (1) 見本で返す
   if (req.method() === 'GET' && mode.passThroughGet) return route.continue()  // (2) 本物へ通す GET
-  if (req.method() === 'GET') return route.fulfill(notMocked())               // 見本の無い GET（検査のモード）
+  if (req.method() === 'GET') return route.fulfill(notMocked())               // 見本の無い GET
   blocked.push({ method: req.method(), path: templatePath(req.url()) })       // (3) 記録して
   return route.abort()                                                        //     打ち切る
 })
@@ -185,13 +190,14 @@ await page.route(url => url.pathname.startsWith('/api/admin/'), async route => {
 
 - 記録は `{ method, path }` だけです。道の中の利用者 ID は `{id}` に置き換え、問い合わせの部分は記録しません。
 - 各テストの終わりに、記録が 0 件であることを確かめます。失敗の知らせには、メソッドと道の型だけを出します。
-- 口は `page.goto` より前に張ります（既存の `watchPage` と同じ順）。ログイン（`/api/auth/` の下）は口の外で、本物へ通ります。
+- **口が働いていることの確かめ（承認の場の R-02）**: 各テストの終わりに、0 件の確かめより先に、口が受けた管理の API の要求の件数（`seen.count`）が 1 以上であることを確かめます。どのテストも一覧の GET を少なくとも1回送るため、口が張られていない・判定が一致しないときはここで失敗し、「0 件」が空の合格になりません。後の改修で口が外れても毎回の実行で気づきます。
+- 口は `page.goto` より前に張ります（既存の `watchPage` と同じ順。ログインの `loginAsAdmin` も `page.goto('/')` から始まるため、ログインより前に張る。承認の場の R-04）。ログイン（`/api/auth/` の下）は道の形に当たらないため口を素通りし、本物へ通ります。ログインの間に管理の API の要求は出ません。
 - Playwright の `request` の口（APIRequestContext）の要求は `page.route` に乗りません。そのため 120 は `/api/admin/` の下の書き換えを `request` の口から送りません。読むだけの要求も 120 では送りません（見本と画面の状態だけで足りるため）。
 - 既存の `support/pageProblems.ts` の `requests` は URL だけでメソッドが分からず、差し替えた要求も数えるため、この確かめに使いません。既存の `support/` のファイルは変えません。
 
 ### 4.3 確かめ方
 
-コード生成で、わざと POST を送る小さな確かめ（画面の操作の見本を一時的に外す形）を一度流し、記録されて失敗になることを確かめて記録します。確かめの後は元に戻し、コミットに含めません。
+コード生成で、わざと POST を送る小さな確かめ（画面の操作の見本を一時的に外す形）を一度流し、記録されて失敗になることを確かめて記録します。あわせて、口を張らない形と、二重のスラッシュ（`//api/admin/...`）の道で送る形を一度ずつ流し、前者は「受けた件数 1 以上」で、後者は記録で失敗になることを確かめます（承認の場の R-02）。確かめの後は元に戻し、コミットに含めません。毎回の実行での口の生存は 4.2 の件数の確かめが受け持ちます。
 
 ## 5. 見本と本物の照らし合わせ（NFR9.9、要点 12）
 
@@ -252,7 +258,7 @@ await page.route(url => url.pathname.startsWith('/api/admin/'), async route => {
 | NFR3.2 | `failureMessage.test.ts`・`UserAdminPage.test.tsx`・`EditProfileDialog.test.tsx`（6.2） | コード生成 |
 | NFR3.3 | `api/userAdminApi.test.ts`・`UserTable.test.tsx`（6.3） | コード生成 |
 | NFR3.4 | わざと値を入れた報告の確かめ（3.8）、`./gradlew e2eTest` の後の部品の結果 | コード生成（B5）・Build and Test |
-| NFR3.5 | 120 の各テストの終わりの 0 件の確かめ、わざと POST を送る確かめ（4.3） | コード生成（B5）・Build and Test |
+| NFR3.5 | 120 の各テストの終わりの「口が受けた件数 1 以上」と 0 件の確かめ、わざと POST を送る・口を張らない・二重のスラッシュの確かめ（4.2・4.3） | コード生成（B5）・Build and Test |
 | NFR9.1 | `./gradlew verify` のリンタと型検査、`application.yaml` の差分なし、120 の `cspViolations` | コード生成・Build and Test |
 | NFR9.2〜NFR9.4 | `package.json` の差分なし、固定先の更新の前後のハッシュ、2つのコミットごとの `npm ci`・`./gradlew e2eTest`、`./gradlew verify`（OSV-Scanner） | コード生成（B5）・Build and Test |
 | NFR9.9 | 見本の型の検査（`tsc`）、110 の中の一覧・409・400 の照らし合わせ | コード生成（B5）・Build and Test |
@@ -280,3 +286,36 @@ await page.route(url => url.pathname.startsWith('/api/admin/'), async route => {
 | 5 | 値の形の表に `@` の URL の形と氏名の3つの形を足す | NS の NFR3.4 の仕組みの案 | 作る値の形（`u7-perf-` の宛先、`e2e-u7-pw-` のパスワード、氏名「計測 花子」）でも探す | 形での探し方にも URL の形と `\u` の形を当てた（3.5 の 3）。要点 9 のとおりで、追加 |
 | 6 | 検査のモードで見本の無い GET を本物へ通さない | NS の NFR3.5 | 本物へ通してよいのは `/api/admin/` の下では GET だけ | 検査のモードでは見本の無い GET も決まった失敗で返し、本物へ通さない（4.1）。NFR3.5 より狭い（守りを強める）形で、要件の「GET 以外は 0 件」の確かめは変えない。測りのモードの一覧の GET は本物へ通す |
 | 7 | 設定のファイルの説明と `README.md` の手順を直す | 既存の `frontend/playwright.config.ts` の冒頭の説明・`README.md` | 「結果は list・html に加えて json」 | html を外し trace の既定を変えるため、説明と手順（3.6・3.7）をコード生成で直す。設計の文書の差ではなく、作る側の申し送り |
+| 8 | `runTag` の乱数の部分を 16 文字以上にする（承認の場の R-06） | 機能設計 FS の 110 の流れ（`runTag` は時刻と乱数の16進） | 桁数を決めていない | 乱数の部分を `randomBytes(8)` の16進（16 文字）と決め、24 文字以上のときだけ単独で探す（3.4）。機能設計の形の中で桁数を決めた追加で、食い違いではない |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+前回のレビュー（Iteration 1、READY、Major 1・Minor 5）の指摘について、依頼者が次のとおり決めました。
+
+### 直したこと
+
+| ID | 重さ | 直した中身 | 直した所 |
+|---|---|---|---|
+| R-01 | Major | json の報告は `body` の添付と標準出力のバイト列を base64 で書くため、報告の部品が json を JSON として読み、`attachments[].body` と `stdout`・`stderr` の `buffer` を復号して探す形にした。診断と測りの添付を path のファイルにする案は選ばなかった。理由は、復号して探す形なら、誰がどの手伝いで `body` の添付を足しても探し漏れが起きず、手伝いが path で添付するという約束に頼らずに済むため（path の添付は今のファイルの走査でも探される）。読めない・復号できないときは失敗にする。3.8 に、添付の body に値を入れた json の1件を足した | 3.5 の 4a・8、3.6、3.8 の (7) |
+| R-02 | Minor | 各テストの終わりに、口が受けた管理の API の要求が 1 件以上であることを確かめる。判定を前方一致だけにせず、同じオリジンで正規化したパスが `/api/admin` ちょうどか `/api/admin/` で始まる形に絞った。口は page ごとに張ると明記した。口を張らない形と二重のスラッシュの形の確かめを 4.3 に足した | 4.1・4.2・4.3・10節 |
+| R-03 | Minor | 送信中に通信が止まったときの抜け出し方（画面の再読み込み）を残る危険として書いた。`loadingRef`・`submittingRef` が失敗・例外・離脱の後に戻り、次の操作が通ることのテストを足した | `performance-design.md` 3.2・3.3・3.4 |
+| R-04 | Minor | 口を張る順を2つの文書で `page.goto` より前（ログインより前）にそろえた | 4.2、`performance-design.md` 5.2 |
+| R-05 | Minor | 「次へ」の時間は見本の応答での描画の時間で、API の時間を含まないことを、添付の中身と Build and Test の記録に明記する形にした | `performance-design.md` 5.3・5.4 |
+| R-06 | Minor | `runTag` の乱数の部分を 16 文字以上と決め、24 文字以上のときだけ単独の値として探す。短いときは宛先の形の中だけで探し、警告する | 3.4、3.8 の (8)、12節の 8 |
+
+### 受け入れて記録したこと（前回の書き手の4点）
+
+| # | 中身 | 扱い |
+|---|---|---|
+| 1 | 前の実行の html の報告（`frontend/playwright-report/`）が残っていると、B5 の最初の実行で報告の部品が一度失敗する | 受け入れる。初期管理者のメールアドレスが残っているため見つかる見込みで、消す手順を部品が示す（3.5 の 6）。コード生成の B5 で一度消し、その結果を記録する |
+| 2 | 110・120 の trace を固定の `'off'` ではなく関数 `e2eTraceMode()` で切り替える | 受け入れる。既定の実行では `off` で NFR3.4 (c) を満たし、違いは手元で `E2E_TRACE` を付けた実行だけに現れる（3.2、12節の 3） |
+| 3 | 120 の検査のモードでは、見本の無い GET も本物へ通さない | 受け入れる。NFR3.5 より狭い（守りを強める）形で、「GET 以外は 0 件」の確かめは変えない（4.1、12節の 6） |
+| 4 | 画面の時間（NFR5.1）に差し替えの口の上乗せを含める | 受け入れる。上乗せを差し引かずに含んだ値として記録し、Build and Test の記録に書く（`performance-design.md` 5.5） |
+
+### 申し送り
+
+| 先 | 中身 |
+|---|---|
+| コード生成の計画（B5） | 報告の部品の json の復号（3.5 の 4a）と 3.8 の (7)・(8) の確かめ。`runTag` の作り方と検索の上限への収まり（3.4）。口の件数の確かめと道の形の判定、4.3 の3つの確かめ。`loadingRef`・`submittingRef` の戻りのテスト（`performance-design.md` 3.3）。前の html の報告を一度消した結果の記録 |
+| Build and Test | `user-admin-screen-ms` を写すときに、`nextPage` は見本の応答での描画の時間で API の時間を含まないこと、`list` は差し替えの口の上乗せを含むことを書く |
+| 承認の場（済み） | 送信中に通信が止まったときに画面の中の抜け出しの手が無く、再読み込みで抜けること（`performance-design.md` 3.4）は、残る危険として記録した |

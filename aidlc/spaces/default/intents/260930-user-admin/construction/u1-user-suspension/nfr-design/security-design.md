@@ -44,6 +44,7 @@ LockDecision decision = LockPolicy.decide(/* 今までどおり */);
 - `attemptRepository.update` は今と同じ明示の更新の問い合わせのため、同じ値でも更新の文が1回出る（エンティティの変更の検出に頼らない）。そのため、停止中の読み書きは「照合1回・排他つきの読み取り1回・更新1回・出来事1件」になり、パスワードの誤りとそろう（NFR2.2、FS の 2.1 の表）。
 - 本人の行が無いときの「何も書かずに終える → 別の短いトランザクションで行を作る → やり直す」流れは停止の判定より前にあるため、停止中とパスワードの誤りは同じ回数のままになる。
 - 停止はロックより前に判定するため、停止中かつロック中の利用者の理由は `ACCOUNT_SUSPENDED` になる（FS の 3節）。
+- 停止中のログインの試みは、失敗回数に数えない（読んだ値のまま書き戻すため、回数は増えずロックも掛からない。FS の 3節）。停止を解いた直後は、止める前の回数から続く。この振る舞いはテストの名前にも入れて確かめる（例: `suspended login attempts do not increase the failure count`）。承認の場の決定 R-06。
 - 応答は、失敗のすべてと同じ 401 AUTHENTICATION_FAILED（既存の変換のまま）。
 - 判定に使う `suspended` は、トランザクションの外の照合で読んだ要約の値で、判定のトランザクションで読み直さない（受け入れた隙、3節）。
 
@@ -111,15 +112,25 @@ int updateSuspended(@Param("userId") long userId, @Param("suspended") boolean su
 
 | 出るところ | 出してよいもの | 出さないもの |
 |---|---|---|
-| 停止中のログインの出来事（LOGIN_FAILED・ACCOUNT_SUSPENDED）と監査の行 | 利用者 ID・理由・送り手の情報・トレースID。監査の行の入れたメールアドレスの列（`entered_email`）は、パスワードの誤りと同じく既存の形のまま入る（BR2.5、12節の S-8） | パスワード（平文・ハッシュ）・トークンの値。出来事の文字列化（TRACE・ログ）でのメールアドレス。新しい項目は足さない |
+| 停止中のログインの出来事（LOGIN_FAILED・ACCOUNT_SUSPENDED）と監査の行 | 利用者 ID・理由・送り手の情報・トレースID。監査の行の入れたメールアドレスの列（`entered_email`）は、パスワードの誤りと同じく既存の形のまま入る（BR2.5、12節の S-8） | パスワード（平文・ハッシュ）・トークンの値。出来事の文字列化（TRACE・ログ）でのメールアドレス（5.1 で `AuthenticationEvent` の `toString` を上書きして伏せる）。新しい項目は足さない |
 | 3つの入口のアプリのログ | 既存の変換の境界の WARN（code だけ） | メールアドレス・パスワード・トークンの値・停止を示す値 |
 | まとめての無効化のログ | DEBUG で利用者 ID と件数だけ | トークンの値・ハッシュ |
 | TRACE のログ（`TraceAspect`） | C1 の口の引数と戻り値（利用者 ID・真偽・件数）、`UserSummary` の真偽 | `UserSummary` のメールアドレス・氏名（今の `toString` で伏せる） |
 | エラー応答 | 既存の Problem Details | 停止を示す値・内部の例外のメッセージ |
 
 - C1 の口は、個人に関する値を受け渡さない型だけにする（利用者 ID・真偽・`RevokeAllResult`）。伏せ字の型は要らない（NFR3.2）。
-- 確かめ: 既存の `*SecretLeakIT` の形で、TRACE を有効にして停止中のログイン・更新・アクセストークンの認証・まとめての無効化を通し、ログと応答に値が無いことを見る。
+- 確かめ: 既存の `*SecretLeakIT` の形で、TRACE を有効にして停止中のログイン・更新・アクセストークンの認証・まとめての無効化を通し、ログと応答に値が無いことを見る。確かめる値は、パスワード（平文・ハッシュ）・トークンの値と、出来事の文字列化でのメールアドレス（5.1）とする。
 - 既存の漏えいのテストの列の一覧には V9 の列を足さない。列を閉じた一覧で確かめるのは `AuditSecretLeakIT` の監査の表だけで、V9 は利用者の表を変えるため当たらない。コード生成の計画を書くときに、`INFORMATION_SCHEMA.COLUMNS` を読むテストを名前で検索し直す（NR の R-02）。
+
+### 5.1 既存の `AuthenticationEvent` の文字列化の直し（承認の場の決定、レビューの R-01）
+
+今の `auth.domain.AuthenticationEvent` は `toString` を上書きしていない record で、`enteredEmail` がそのまま文字列に出ます。`TraceAspect` は `..service..` の下を対象にするため、`audit.service.AuditEventListener#onAuthenticationEvent(AuthenticationEvent)` の引数として、TRACE を有効にするとメールアドレスがアプリのログに出る見込みです（レビューで読みだけで確かめた）。停止中のログインに限らず、既存のログインの失敗と成功のすべてに当たる既存の漏えいで、依頼者の決定でこの Intent の B1 で直します。
+
+- `AuthenticationEvent` に `toString` の上書きを足し、`enteredEmail` を `***` に伏せる（`UserSummary` と同じ形）。ほかの項目（種類・日時・利用者 ID・理由・送り手の情報・トレースID）は今のまま出す。`auth.domain` は `user.domain` に依存させないため、`EmailAddress.mask` は使わず固定の `***` とする。
+- record の項目・`of`・監査の行への写し（`AuditEventFactory#from`）は変えない。監査の行の `entered_email` には今までどおり値が入る（12節の S-8、R-03 の受け入れ）。
+- 確かめ: TRACE を有効にした漏えいのテストで、ログインの成功・パスワードの誤り・停止中のログインを通し、入れたメールアドレスが `AuditEventListener#onAuthenticationEvent` の TRACE の行に出ないことを見る。既存の `AuthSecretLeakIT` を広げる（`logging.level.cherry.mastersmith.audit=TRACE` を足し、`ENTER AuditEventListener#onAuthenticationEvent` の行が出ていることと、その行にメールアドレスが無いことを確かめる）か、新しいテストを足すかは、コード生成の計画で決める。あわせて `AuthenticationEvent#toString` の単体テスト（伏せ字になる・ほかの項目は出る）を1件足す。
+- 確かめの範囲: 確かめるのは `AuthenticationEvent` の文字列化の行だけとする。`auth` には、ほかにもメールアドレスを持ち `toString` を上書きしていない record（`auth.service.LoginCommand`・`auth.domain.AuthenticatedUser`・`auth.web.CurrentUserResponse`）があり、TRACE のログ全体からメールアドレスが無いことを確かめると、これらで落ちる見込みである。これらはこの決定の外で、扱いを承認の場への申し送りとする（末尾の「承認の場の決定」の節）。
+- `auth.domain` に手を入れることは 9.2 の見込みと同じで、一覧から外すパッケージは変わらない。
 
 ## 6. 監査と信頼性（NFR6.1・NFR6.2）
 
@@ -150,7 +161,9 @@ int updateSuspended(@Param("userId") long userId, @Param("suspended") boolean su
 
 - 確かめは、起動時の Flyway の `validate-on-migrate` と Hibernate の `ddl-auto: validate`（`backend/src/main/resources/application.yaml` の今の設定）と、エンティティでの停止の状態の読み書き（true・false を書いて読み戻せる）だけで行う。
 - 列の定義（BOOLEAN・必須・既定 FALSE）を `INFORMATION_SCHEMA` で確かめるテストは足さない（Q1 B）。「既存の利用者は false になる」ことは、8.1 の1文の書き方をコードのレビューで確かめる。
-- 移行や戻しを想定した自動のテスト（V1〜V8 の複写、1つ前の版の Flyway、前の版の追記の形）は作らない。戻しの練習（1つ前の版のイメージを V9 の後の内部DB で起動する確かめ）も行わない（Q4 A）。どちらも NFR 要件の承認の場の依頼者の決定（マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは不要）による。差は 12節の S-1・S-2。
+- 移行や戻しを想定した自動のテスト（V1〜V8 の複写、1つ前の版の Flyway、前の版の追記の形）は作らない。戻しの練習（1つ前の版のイメージを V9 の後の内部DB で起動する確かめ）も行わない（Q4 A）。どちらも NFR 要件の承認の場の依頼者の決定（マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは不要）による。差は 12節の S-1・S-2・S-9。
+- このため、NFR10.1 の「既存の利用者が false になる」と NFR10.2 の2段の確かめは、依頼者の決定で確かめない（`traceability.json` では `Deferred`）。起動時の検証（`validate-on-migrate`・`ddl-auto: validate`）は列の有無と型を見るが、必須かどうかと既定の値は見ないため、この裏付けにはならない。
+- 事後の裏付け: 配備の後に、deployment-execution のスモークテストで「既存の初期管理者でログインでき、利用者の読み取り（`/api/me` など）が通る」ことを、V9 の後の確認として記録する。持ち主は deployment-execution（手順は deployment-pipeline の手順書に書く）。テストは足さない。V9 の前から居る利用者の `suspended` が false で読めていることの、お金のかからない裏付けとする（承認の場の決定 R-02）。
 
 ### 8.3 V7・V8 の移行のテストの片付け（要点 11・12、Q2 A・Q3 A）
 
@@ -161,10 +174,10 @@ B1 の作業ブランチの中で、V9 を足す前の最初の手順として�
 | `user/repository/V7MigrationIT.java`・`V7BackwardCompatibilityIT.java`（テスト） | 消す | 依頼者の決定。移す業務の確かめは無い（列の必須と既定の値は `UserSchemaIT` が確かめ済み） |
 | `invitation/repository/V8MigrationIT.java`・`V8BackwardCompatibilityIT.java`（テスト） | 消す | 依頼者の決定。今の移行のすべてを当てて版 8 を期待するため、V9 を足すと落ちる |
 | `backend/src/test/resources/db/migration-through-v6`・`migration-through-v7` | 消す | 消すテストだけが使う複写 |
-| `V8MigrationIT` の (a)・(c) | 移さない | `InvitationSchemaIT` の `stateChangesAndUniqueness` が確かめ済み |
+| `V8MigrationIT` の (a)・(c) | (c) は移さない。(a) は `InvitationSchemaIT` の `stateChangesAndUniqueness` の一意の違反の確かめに、SQLState が 23505 であることと制約の名前 `UK_INVITATIONS_PENDING_EMAIL` を含むことの確かめを足す | `stateChangesAndUniqueness` は今は例外の型だけで確かめており、消す側の (a) より弱いため、弱まらないように足す（承認の場の決定 R-05） |
 | `V8MigrationIT` の (b)（終わった状態の行は同じメールアドレスを重ねてよく `pending_email` が空、知らない状態の値は CHECK の制約で拒否） | `InvitationSchemaIT` に1件足す | Q2 A。JDBC の追記だけで書ける |
 | `V8MigrationIT` の (d)（同時の挿入の待ちと一意の違反） | 移さない。`InvitationConcurrencyIT` が業務の層で確かめているとみなし、対応をコード生成の計画に書く | Q2 A。同じ決まりの確かめを重ねない |
-| `V8MigrationIT` の待ちの確かめの手伝い（`INFORMATION_SCHEMA.SESSIONS` で待ちに入ったことを上限の時間つきで見る） | `auth/testsupport` に移し、`LoginAttemptStateRepositoryIT` の新しいテストで使う | 9.2 の `auth.repository` の分岐で使うため。消す前に移す |
+| `V8MigrationIT` の待ちの確かめの手伝い（`INFORMATION_SCHEMA.SESSIONS` で待ちに入ったことを上限の時間つきで見る） | `auth/testsupport` に移し、`LoginAttemptStateRepositoryIT` の新しいテストで使う。移すときに、今の作り（実行中の文が `INSERT INTO invitations%` のセッションを数える、接続先は `url(tempDir)` に固定）を書き直し、絞り込みの表の名前（文の絞り込み）・接続の URL・上限の時間を引数にする | 9.2 の `auth.repository` の分岐で `login_attempt_states` の `SELECT ... FOR UPDATE` の待ちに使うため。消す前に移す。待ちに入ったことの確かめは、`lockDummyForUpdate` の待ちの上限（3 秒）より前に終わる順序にする（承認の場の決定 R-04） |
 | `README.md` の V7・V8 の説明 | 自動の結合テストの名前を消したことに合わせて直し、V9 の行を足す（移行のテストを作らないこと、戻している間は停止が効かないこと） | 要点 13、NFR10.3 |
 
 消すのはテストだけで `src/main` は変わらないため、`packagesJudgedByTotal` の扱いには関わりません。`invitation.*`・`user.repository` は一覧の外で、消した後も下限を満たすことを B1 の実測で確かめます。
@@ -205,6 +218,8 @@ B1 の作業ブランチの中で、V9 を足す前の最初の手順として�
 | `USER_SUSPENDED` は管理の API の監査に残らない、変換は区分を尽くす | 結合テストと列挙を尽くす単体テスト | NFR2.3 |
 | 利用者自身の API から停止を変えられない | 結合テスト | NFR1.4 |
 | ログと応答に値が出ない | `*SecretLeakIT` の形（TRACE を有効） | NFR3.1・NFR3.2 |
+| 出来事の文字列化で入れたメールアドレスが伏せられる（`AuthenticationEvent#toString` の単体テストと、`AuditEventListener#onAuthenticationEvent` の TRACE の行を見る漏えいのテスト） | 単体テストと `*SecretLeakIT` の形（5.1） | NFR3.1 |
+| 停止中のログインの試みは失敗回数に数えない | `LoginService` のテスト（2.2） | NFR1.1・NFR9.1 |
 | C1 の口の MANDATORY・巻き戻し・存在しない利用者 ID・書いた後の読み取り | 結合テスト | NFR11.2・NFR9.2 |
 | 停止中の利用者のメールアドレスへの招待が登録済みの拒否のまま | 回帰の結合テスト1件 | NFR9.2 |
 | まとめての無効化の件数（未無効 100 件・無効の行とほかの利用者の行は変わらない・0 件） | 結合テスト | NFR5.3 |
@@ -220,7 +235,7 @@ NR の R1〜R3 はそのまま受け継ぎます。この段の決定で、R4 �
 | R1 | 止める確定と同時の更新・ログインが作ったトークンが残り、解いた後に使えうる | NR のとおり（機能設計の承認の場の決定 R-03） | NR のとおり |
 | R2 | 1つ前の版に戻している間は停止が効かない | NR のとおり（同 R-02） | NR のとおり |
 | R3 | 停止中とパスワードの誤りの応答時間のわずかな違いは測っていない | NR のとおり（Q1 A） | NR のとおり |
-| R4 | V9 の既存の行が false になること、1つ前の版のイメージが V9 の後の内部DB で動くことを、自動のテストでも戻しの練習でも確かめない（8.2・8.4） | 依頼者の決定（マスタ管理の機能本体がまだ無い）。列の追加は前進のみで既存の列を変えず、H2 は既定の値つきの必須の列を足すと既存の行に既定の値を入れる。起動時の検証で列の有無と型は確かめる | 実際に前の版へ戻す必要が出たとき、または配備先が決まったとき。戻すときは deployment-pipeline の手順で停止中の利用者を確かめる |
+| R4 | V9 の既存の行が false になること、1つ前の版のイメージが V9 の後の内部DB で動くことを、自動のテストでも戻しの練習でも確かめない（8.2・8.4） | 依頼者の決定（マスタ管理の機能本体がまだ無い）。列の追加は前進のみで既存の列を変えず、H2 は既定の値つきの必須の列を足すと既存の行に既定の値を入れる。起動時の検証は列の有無と型だけを見て、必須かどうかと既定の値は見ないため、裏付けにはならない。`team.md` の Deployment の「1つ前の版のアプリが動く後方互換を保つ」も確かめないまま残る（12節の S-9） | 事後の裏付けとして、配備の後の deployment-execution のスモークテストで、既存の初期管理者でログインでき利用者の読み取りが通ることを記録する（8.2）。1つ前の版が動くことは、実際に前の版へ戻す必要が出たとき、または配備先が決まったときまで確かめない。戻すときは deployment-pipeline の手順で停止中の利用者を確かめる |
 
 ## 12. 上流との差
 
@@ -228,11 +243,33 @@ NR の R1〜R3 はそのまま受け継ぎます。この段の決定で、R4 �
 
 | ID | 上流 | 上流の記載 | この段の設計 | 理由と扱い |
 |---|---|---|---|---|
-| S-1 | NR の NFR10.2 | 確かめは2段: (1) V8 と同じ形の自動の結合テスト（V1〜V8 だけを知る Flyway の検証、列を知らない追記、既存の列を変えないこと）、(2) 配備の段の戻しの練習 | 2段とも行わない。(1) は作らず、(2) も行わない（8.2） | Q1 B・Q4 A。NFR 要件の承認の場の依頼者の決定（戻す場合を想定したテストは不要、マスタ管理の機能本体がまだ無いため）に沿う。(1) との差は B1 のコード生成の計画にも書く。未確認の前提は R4 |
-| S-2 | NR の NFR10.1 | アプリが起動し既存の利用者が false になることを結合テストで確かめる | 起動時の検証とエンティティの読み書きだけで確かめ、既存の行が false になることはテストでは確かめず、V9 の1文のレビューで確かめる | Q1 B。列の定義を `INFORMATION_SCHEMA` で確かめる案（Q1 A）は選ばれなかった |
+| S-1 | NR の NFR10.2 | 確かめは2段: (1) V8 と同じ形の自動の結合テスト（V1〜V8 だけを知る Flyway の検証、列を知らない追記、既存の列を変えないこと）、(2) 配備の段の戻しの練習 | 2段とも行わない。(1) は作らず、(2) も行わない（8.2） | Q1 B・Q4 A。NFR 要件の承認の場の依頼者の決定（戻す場合を想定したテストは不要、マスタ管理の機能本体がまだ無いため）に沿う。(1) との差は B1 のコード生成の計画にも書く。未確認の前提は R4。`team.md` の後方互換の決まりとの差は S-9。`traceability.json` では `Deferred` |
+| S-2 | NR の NFR10.1 | アプリが起動し既存の利用者が false になることを結合テストで確かめる | 起動時の検証とエンティティの読み書きだけで確かめ、既存の行が false になることはテストでは確かめず、V9 の1文のレビューで確かめる | Q1 B。列の定義を `INFORMATION_SCHEMA` で確かめる案（Q1 A）は選ばれなかった。起動時の検証は既定の値を見ないため、既存の行が false になることは確かめない扱い（`traceability.json` では `Deferred`）。事後の裏付けは deployment-execution のスモークテスト（8.2） |
 | S-3 | NR の承認の場の申し送り | 既存の V8 のテスト2つを版 8 に止める直しを、コード生成の計画の影響の範囲に入れる | 版を止めず、V7・V8 の移行と後方互換のテスト4つと複写の置き場を消す。業務の確かめの (b) だけを `InvitationSchemaIT` へ移す（8.3） | NFR 要件の承認の場の依頼者の決定と Q2 A・Q3 A。消すことで版を止める直しは要らなくなる |
 | S-4 | NR の承認の場の申し送り | V9 の後方互換の自動の結合テストの名前・置き場・写しの置き方は nfr-design、戻しの練習の手順は infrastructure-design で決める | テストを作らないため名前・置き場・写しは決めない。戻しの練習も行わないため、infrastructure-design に渡す手順は無い。戻しの手順そのもの（停止中の利用者の確かめを含む）だけが deployment-pipeline に残る | S-1 と同じ |
 | S-5 | Delivery Planning の B1（`aidlc/spaces/default/intents/260930-user-admin/inception/delivery-planning/bolt-plan.md`） | B1 は U1 の作業 | B1 の最初の手順に、V7・V8 のテストと複写の削除、待ちの確かめの手伝いの `auth/testsupport` への移し、`InvitationSchemaIT` への1件の追加、README の直しが入る | Q3 A。V9 で落ちるテストと同じ Bolt で片付けるため。量はコード生成の計画で見積もる |
 | S-6 | FS の 7節 | 「V9 の後方互換の確かめ方」の持ち主は nfr-design・infrastructure-design | この段で「確かめない」と決めて閉じる | S-1 と同じ |
 | S-7 | 機能設計のレビューの R-06（承認の場で申し送り） | C1 の口が呼び出し元の永続化の文脈を空にすることの扱いが書かれていない | U3 への約束として `logical-components.md` の 3節に書く。U1 の側は同じトランザクションで書いて読む結合テストで確かめ、U3 の側の確かめは U3 のコード生成の計画に置く | 申し送りのとおり。契約 C1 の文書は書き換えない |
-| S-8 | NR の NFR3.1 | 停止中のログインの出来事に、メールアドレスなどの値を出さない | 監査の行の `entered_email` の列には、既存のログインの失敗（パスワードの誤り・ロック中・存在しないメールアドレス）と同じく入れたメールアドレスが入る。出さないのは、アプリのログ・トレースの属性・エラー応答と、出来事の文字列化での値とした | 機能設計の BR2.5（入れたメールアドレスは既存のログインの失敗と同じ扱い）と `entities.md` の enteredEmail、今の `AuditEventFactory#from(AuthenticationEvent)` に合わせた読み。監査の行は内部DB の記録で、PM の Forbidden（アプリのログとエラー応答）の外にある。停止中だけ列を空にすると、パスワードの誤りと記録の形が変わる。読み方は承認の場で確かめる |
+| S-8 | NR の NFR3.1 | 停止中のログインの出来事に、メールアドレスなどの値を出さない | 監査の行の `entered_email` の列には、既存のログインの失敗（パスワードの誤り・ロック中・存在しないメールアドレス）と同じく入れたメールアドレスが入る。出さないのは、アプリのログ・トレースの属性・エラー応答と、出来事の文字列化での値とした | 機能設計の BR2.5（入れたメールアドレスは既存のログインの失敗と同じ扱い）と `entities.md` の enteredEmail、今の `AuditEventFactory#from(AuthenticationEvent)` に合わせた読み。監査の行は内部DB の記録で、PM の Forbidden（アプリのログとエラー応答）の外にある。停止中だけ列を空にすると、パスワードの誤りと記録の形が変わる。承認の場で依頼者がこの読み（`project.md` の既知の例外の読み方と同じ）を受け入れた（R-03）。出来事の文字列化での値は 5.1 で伏せる |
+| S-9 | TM の Deployment | DB スキーマの変更は前進のみとし、1つ前の版のアプリが動く後方互換を保つ | V9 は前進のみの列の追加で、後方互換は設計の上では保つ見込みだが、1つ前の版が動くことを確かめない（8.2・8.4） | Q1 B・Q4 A の依頼者の決定。決まりを緩めるのではなく、確かめを置かないことを差として記録する。未確認の前提は R4。事後の裏付けは deployment-execution のスモークテスト（既存の初期管理者のログインと利用者の読み取り） |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+この段の承認の場で、依頼者が Request Changes を選び、前回のレビュー（R-01〜R-06）と既存のコードの漏えいについて次のとおり決めました。
+
+| 対象 | 決定 | この文書での扱い |
+|---|---|---|
+| R-01（Major）・既存のコードの漏えい ① | 直す。この Intent の B1 で、既存の `AuthenticationEvent` にメールアドレスを伏せる `toString` を足し、TRACE を有効にした漏えいのテストで確かめる | 5.1 を足し、5節の表と確かめ、10節の表に反映。`logical-components.md` の 1節・6節・7節、`traceability.json` の NFR3.1 に結んだ |
+| R-02（Major） | 直す。NFR10.1・NFR10.2 を、依頼者の決定で確かめないと分かる書き方にする | 8.2 に確かめない旨と事後の裏付け（deployment-execution のスモークテスト）を足し、11節の R4 と 12節の S-1・S-2 を直し、`team.md` の後方互換の決まりとの差を S-9 に足した。`traceability.json` の NFR10.1・NFR10.2 は `Deferred` |
+| R-03（Minor） | 受け入れて記録する。監査の `entered_email` は既存のログインの失敗と同じく入れる（`project.md` の既知の例外の読み方と同じ） | 12節の S-8 に受け入れを書いた。コード生成の計画に、停止中だけ列を空にしないことを書く |
+| R-04（Minor） | 直す。待ちの確かめの手伝いを移すときに、絞り込みの表の名前・接続の URL・上限の時間を引数にする | 8.3 の表に書いた。待ちの確かめは `lockDummyForUpdate` の上限（3 秒）より前に終える |
+| R-05（Minor） | 直す。(a) の確かめが弱まらないよう、`InvitationSchemaIT` の確かめに SQLState 23505 と制約の名前を足す | 8.3 の表に書いた |
+| R-06（Minor） | 直す。停止中のログインの試みを失敗回数に数えないことを書く | 2.2 に書き、10節の表に足した |
+
+申し送り:
+
+| 申し送り先 | 内容 |
+|---|---|
+| 承認の場（依頼者） | 5.1 の確かめの範囲の外に、メールアドレスを持ち `toString` を上書きしていない既存の record（`auth.service.LoginCommand`・`auth.domain.AuthenticatedUser`・`auth.web.CurrentUserResponse`）がある。TRACE で文字列に出る見込みだが、今回の決定（①）の外のため、直すかどうかを依頼者に確かめる |
+| B1 のコード生成の計画 | 5.1 の漏えいのテストを `AuthSecretLeakIT` を広げる形にするか新しく足すかを決める。R-03・R-04・R-05 の作業を手順に入れる |
+| deployment-pipeline・deployment-execution | V9 の後の確認として、既存の初期管理者のログインと利用者の読み取りをスモークテストで記録する（8.2、R4、S-9） |

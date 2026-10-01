@@ -45,7 +45,7 @@ U3 のセキュリティの設計です。承認済みの `construction/u3-user-
 
 - 排他の口が返す値（AdminRowsLock・UserRowLock）と、待ち合わせの口の引数は、利用者 ID と区分だけ。
 - 業務のログを出すときは利用者 ID と区分だけをキーと値で出す。
-- 確かめ: TRACE を有効にした `UserAdminSecretLeakIT` で、7つの API（一覧は q を付けた要求を含む）と、5つの操作の上限切れ（7節）を呼び、アプリのログ・監査の行・応答にメールアドレス・氏名・検索の文字・パスワードのハッシュ値が出ないことを確かめる（既存の `*SecretLeakIT` と同じ形）。どの層の引数にも String で渡していないことはレビューで確かめる。
+- 確かめ: `UserAdminSecretLeakIT` で、TRACE を有効にした場合と既定のログのレベル（INFO）の場合の両方で、7つの API（一覧は q を付けた要求を含む）と、5つの操作の上限切れ（7節）を呼び、アプリのログ・監査の行・応答にメールアドレス・氏名・検索の文字・パスワードのハッシュ値が出ないことを確かめる（既存の `*SecretLeakIT` と同じ形）。どの層の引数にも String で渡していないことはレビューで確かめる。
 
 ## 5. 応答に含めない値とエラー応答（NFR3.2・NFR3.3、BR1.7・BR7.5）
 
@@ -96,9 +96,9 @@ U3 のセキュリティの設計です。承認済みの `construction/u3-user-
 | 経路 | 危険 | 設計 |
 |---|---|---|
 | 排他の口で Busy に変える所のログ | 例外そのもの（cause とスタックトレース）を SLF4J に渡すと、連なりの文が出る | 例外のクラスの名前だけをキーと値で出す（`observability-design.md` 3節）。例外そのものは渡さない |
-| `TraceAspect`（TRACE のとき） | `repository` の層のメソッドから例外が出ると、`TraceAspect` が例外の文字列とスタックトレース（`mastersmith.trace.log-exception-stack-trace` の既定は true）を出す | 上限切れを、問い合わせを実行する `repository` のメソッドの本体の中で受け、例外をメソッドの外へ出さない（`reliability-design.md` 5.2、差 ND-1） |
-| `GlobalExceptionHandler` | 想定外の誤りは ERROR でスタックトレース付き | 上限切れは Busy に変えて `BusinessException`（原因をつながない）で返すため、ここを通らない |
-| Hibernate の `SqlExceptionHelper` | WARN で誤りの番号・SQLState・`?` のままの SQL の文を出す | 値は出ない（確かめ 4）。そのまま |
+| `TraceAspect`（TRACE のとき） | `repository` の層のメソッドから例外が出ると、`TraceAspect` が例外の文字列とスタックトレース（`mastersmith.trace.log-exception-stack-trace` の既定は true）を出す | 上限切れを、問い合わせを実行する `repository` のメソッドの本体の中で受け、例外をメソッドの外へ出さない（`reliability-design.md` 5.2、差 ND-1）。既存の経路も同じ形に直す（7.2） |
+| `GlobalExceptionHandler`（既定の INFO でも出る） | 想定外の誤りは ERROR でスタックトレース付き（原因の連なりを含む）。ログのレベルを変えなくても、連なりの最後の文が出る | U3 の上限切れは Busy に変えて `BusinessException`（原因をつながない）で返すため、ここを通らない。既存の経路は、repository の中で値を含まない例外に置き換えて投げる（7.2） |
+| Hibernate の `SqlExceptionHelper` | WARN で誤りの番号・SQLState・`?` のままの SQL の文を出す | 値は出ない（確かめ 4）。そのまま。この前提は 7.3 で確かめ続ける |
 
 ```text
 // repository の層の形（説明のための擬似コード）
@@ -106,18 +106,55 @@ LockAttempt lockAdminRows(long targetUserId) {   // 戻り値は ID の一覧か
     try {
         return LockAttempt.locked(query.setLockMode(PESSIMISTIC_WRITE)
                 .setHint("jakarta.persistence.lock.timeout", 3000).getResultList());
-    } catch (LockTimeoutException | PessimisticLockException e) {
-        LOGGER.atWarn().setMessage("行の排他を取れなかった")
-              .addKeyValue("lockKind", "ADMIN_ROWS")
-              .addKeyValue("exceptionClass", e.getClass().getName())
-              .log();                       // e そのもの（cause・スタックトレース）は渡さない
+    } catch (PersistenceException e) {
+        if (!RowLockFailures.isLockFailure(e)) {
+            throw e;                                  // 排他の失敗でないものは今までどおり
+        }
+        RowLockFailures.warn(LOGGER, "ADMIN_ROWS", e); // 種類とクラスの名前だけ。e は渡さない
         return LockAttempt.busy();
     }
 }
 ```
 
-- 確かめ: TRACE を有効にした `UserAdminSecretLeakIT` で、5つの操作のそれぞれの上限切れ（別の接続で行を持ち続ける）を起こし、アプリのログに排他されていた行のメールアドレス・氏名・パスワードのハッシュ値・失敗回数が出ないことを確かめる（B4）。
-- U3 の範囲の外の残る危険は 11節の R4。
+- 確かめ: `UserAdminSecretLeakIT` で、TRACE を有効にした場合と既定のログのレベル（INFO）の場合の両方で、5つの操作のそれぞれの上限切れ（別の接続で行を持ち続ける）を起こし、アプリのログに排他されていた行のメールアドレス・氏名・パスワードのハッシュ値・失敗回数と `MVStoreException` の文が出ないことを確かめる（B4）。
+
+### 7.1 受ける例外の範囲（上限切れと行き詰まり）
+
+- 排他の問い合わせのメソッドは `jakarta.persistence.PersistenceException` を受け、小さな判定の部品（例 `RowLockFailures`。置き場は 7.2 の例外と同じ新しいパッケージ、例 `common.persistence`）で排他の失敗かを見分ける。
+- 排他の失敗とみなす条件（どれか1つ）: (1) 型が JPA の `LockTimeoutException`・`PessimisticLockException`・`QueryTimeoutException`。(2) 原因の連なりに `SQLException` があり、誤りの番号が 50200（上限切れ）か 40001（行き詰まり）、または SQLState が HYT00・40001。
+- 理由: 50200 が JPA の `LockTimeoutException` になることは試しのコードで確かめた（`reliability-design.md` 1.6）。40001 は、Hibernate の `H2Dialect` が `LockAcquisitionException` にし、`ExceptionConverterImpl` が JPA の `PessimisticLockException` に写す見込みで、試してはいない。型の写し方が Hibernate の版で変わっても受けられるよう、誤りの番号でも見分ける。
+- 排他の失敗でない例外は、今までどおりそのまま外へ出す（想定外の誤り）。
+- 確かめ（B4）: 判定の部品の単体テストで、(1) の各型、原因に 50200・40001・HYT00 を持つ例外を排他の失敗とし、ほかの番号（例 23505）を排他の失敗としないこと。EntityManager の問い合わせを差し替えた repository の単体テストで、各例外のときに Busy（U3 の口）か値を含まない例外（7.2 の口）になり、例外そのものがメソッドの外へ出ないこと。行き詰まりを実際に起こす結合テストは必須にしない（`reliability-design.md` 4節のとおり起きない作りで、判定を型と番号の両方で行うため）。
+
+### 7.2 既存の経路の直し（R4、この Intent の B4 で直す）
+
+コードを読んで、`backend/src/main` の行の排他の問い合わせ（`PESSIMISTIC_WRITE`・`@Lock`）をすべて洗い出しました。U3 が足すものを除くと、上限切れの例外が repository の外へ出るのは次の4つです。
+
+| # | 問い合わせ | 今の形 | 呼ぶ所 | 例外の文に入りうる行の値 |
+|---|---|---|---|---|
+| E1 | `LoginAttemptStateRepository#lockForUpdate` | EntityManager を直接使う。上限 3000 | `LoginService` の判定（実在の利用者）。同じクラスの `lockDummyForUpdate` の代わりの道（ダミーの行がすべて排他されているとき） | 失敗回数・解除の予定の時刻 |
+| E2 | `InvitationRepository#findByEmailAndStateForUpdate`（`findPendingByEmailForUpdate` から） | Spring Data の `@Lock`。上限 3000 | `InvitationService` の招待 | メールアドレス・招待のトークンのハッシュ値・言語・日時など |
+| E3 | `InvitationRepository#findByIdForUpdate` | 同上 | `InvitationService` の送り直し・取り消し | 同上 |
+| E4 | `InvitationRepository#findByTokenHashForUpdate` | 同上 | `RegistrationService` の登録の完了 | 同上 |
+
+- 対象の外: `lockDummyForUpdate` の最初の問い合わせ（SKIP LOCKED で待たず、上限切れにならない）。ダミーの行は個人に関する値を持たないが、代わりの道は E1 を通るため E1 の直しに含まれる。
+- 今のまま既定の INFO で起きること: 上限切れは想定外の誤り（500）になり、`GlobalExceptionHandler` が ERROR でスタックトレース付き（原因の連なりを含む）を出す。招待の行ならメールアドレスと招待のトークンのハッシュ値がアプリのログに出て、`project.md` の Forbidden（メールアドレスをアプリのログに含めない）に既定の設定のまま触れる。招待のトークンのハッシュ値も、応答に含めないと決めている値で、ログに出すべきでない。TRACE のときは `TraceAspect` も同じ連なりを出す。
+
+直す形（ND-1 と同じく、repository のメソッドの本体の中で受ける）:
+
+- E1: `lockForUpdate` の本体の中で 7.1 の判定で受け、排他の失敗なら WARN（排他の種類 `LOGIN_ATTEMPT_ROW` とクラスの名前）を出してから、値を含まず原因をつながない例外（例 `RowLockUnavailableException`。決まった文だけを持つ）を投げる。U3 が足す `tryLockForUpdate` は、同じ問い合わせと判定を共有して Busy を返す。
+- E2〜E4: Spring Data の `@Lock` の問い合わせは例外が代理の外へ出るため、メソッドの中で受けられない。3つの排他の問い合わせを EntityManager を直接使う実装に移し、E1 と同じく受けて値を含まない例外を投げる。候補は Spring Data の独自の断片（例 `InvitationLockQueries` とその実装を `InvitationRepository` に合わせる形）で、`InvitationService`・`RegistrationService` の呼び方と流れは変えない。メールアドレスは今と同じく伏せる値の型（`InvitationEmail`）で受け、文字列はメソッドの本体の中でだけ取り出す。断片か別の repository のクラスかは、コード生成の計画で決める。
+- 応答は今の振る舞いを保つ: 投げる例外は想定外の誤りのまま `GlobalExceptionHandler` が 500 INTERNAL_ERROR にする。トランザクションは今と同じく例外で巻き戻り、排他の前に監査の出来事を出す経路は無いため監査も今と同じ。新しい例外は `DataIntegrityViolationException` の系統にせず、`InvitationService` の同時の招待の捕まえ直しに当たらないようにする。409 などに変えない。
+- 変わるのはログだけ（差 SD-6）: (1) repository の WARN が1行増える。(2) `GlobalExceptionHandler` の ERROR のスタックトレースが、元の例外の連なりではなく値を含まない例外のものになる（元の例外のクラスの名前は WARN で分かる）。(3) TRACE の `TraceAspect` の出力も値を含まない例外になる。
+- 作業の範囲: B4 で行う。`invitation.repository`・`invitation.service` はすでにパッケージごとの下限の対象、`auth.repository` は B1 で `packagesJudgedByTotal` から外れる計画。判定の部品と例外を置く新しいパッケージは自動で下限の対象になる。既存の `InvitationBoundaryArchitectureTest`・`AuthBoundaryArchitectureTest` は `common` への依存を禁じていないことを読んで確かめた（コード生成の計画で確かめ直す）。
+- 不具合の直しのため、再現するテストを直しと同じコミットに含める（`project.md` の Mandated）。
+- 確かめ（B4）: 別の接続で行を持ち続けて上限切れを起こし、ログイン（実在の利用者）・招待・送り直し・取り消し・登録の完了のそれぞれで、(a) 応答が今までどおり 500 INTERNAL_ERROR、(b) TRACE を有効にした場合と既定のログのレベル（INFO）の場合の両方で、アプリのログに排他されていた行の値（メールアドレス・招待のトークンのハッシュ値・見分けやすい値で入れた解除の予定の時刻）と `MVStoreException` の文が出ない、(c) WARN に排他の種類とクラスの名前が出る、を確かめる。置き場は既存の `AuthSecretLeakIT`・`InvitationSecretLeakIT` にテストを足す形を候補とする。ダミーの行がすべて排他されているときのログインを入れるかは、コード生成の計画で決める。
+
+### 7.3 試しの前提を確かめ続ける
+
+- 前提: 行の値は、例外の連なりの最後の `MVStoreException` の文にだけ入り、Hibernate の `SqlExceptionHelper` の WARN（誤りの番号・SQLState・`?` のままの SQL）には入らない。この前提は、試しのコード（H2 2.4.240・Hibernate 7.4.5.Final の1つの設定）での観察に頼っている。
+- `UserAdminSecretLeakIT`（4節・7節）と 7.2 のテストを、TRACE を有効にした場合と既定のログのレベル（INFO）の場合の両方で流し、ログに値が出ないことを本番のテストとして確かめ続ける。
+- H2 や Hibernate を上げるときは、この前提（値が入る場所、例外の型の写し方、7.1 の判定）を見直す（11節の R6）。
 
 ## 8. code と説明文（NFR8.1、BR2.3）
 
@@ -141,7 +178,9 @@ LockAttempt lockAdminRows(long targetUserId) {   // 戻り値は ID の一覧か
 | 管理者の印の変更 | 付けた直後・外した直後の次の要求で 200・403 が切り替わる。自分の印を外すは 409 | B4 |
 | 確かめ直し | 待つ間に印が外れた・止められた操作した人は 403 と NOT_ADMIN | B4 |
 | 要求の改ざん | 氏名と言語・`/api/me`・`/api/me/preferences` の本文で印・停止・失敗回数が変わらない | B3・B4 |
-| 利用者の管理の漏えい（`UserAdminSecretLeakIT`） | TRACE で7つの API と q 付きの一覧、5つの操作の上限切れ。ログ・監査・応答に値が出ない | B3・B4 |
+| 利用者の管理の漏えい（`UserAdminSecretLeakIT`） | TRACE と既定のレベル（INFO）の両方で、7つの API と q 付きの一覧、5つの操作の上限切れ。ログ・監査・応答に値が出ない | B3・B4 |
+| 既存の経路の上限切れの漏えい（7.2） | TRACE と既定のレベル（INFO）の両方で、ログイン・招待・送り直し・取り消し・登録の完了の上限切れ。500 のままで、ログに行の値と `MVStoreException` の文が出ない | B4 |
+| 排他の失敗の判定（7.1） | 型と誤りの番号で上限切れと行き詰まりを見分け、例外がメソッドの外へ出ない（単体テスト） | B4 |
 | 入力と検索 | 6.1・6.2 の境界と文字どおりの一致 | B3 |
 
 どの Bolt に置くかはコード生成の計画で決めます。テストの説明文は英語、テストデータのメールアドレスは予約のドメイン（`example.com` など）だけです。
@@ -153,8 +192,9 @@ LockAttempt lockAdminRows(long targetUserId) {   // 戻り値は ID の一覧か
 | R1 | 管理の API に要求の回数の制限が無い | NFR 要件の R1 のとおり（管理者だけが呼ぶ社内向け、アクセストークンは既定 5 分、すべて監査に残る、最後の管理者は無くせない） | 社外に公開する配備先が決まったとき、利用者の規模が増えたとき |
 | R2 | 停止を解く・失敗回数を戻すの確かめ直しは排他なしで読むため、読んだ直後に別の操作が確定する短い隙が残る | 有効な管理者を減らす操作ではなく、不変条件は壊れない（FS の D5、NFR 要件の R2） | 権限の種類を増やすとき |
 | R3 | 管理者による氏名と言語の変更は監査に残らない | 要件の決定（BR5.3、NFR 要件の R3） | 氏名を業務の識別に使うようになったとき |
-| R4 | 既存のログイン・招待・登録の完了は、排他の待ちの上限切れを想定外の誤り（500）として扱う。そのとき `GlobalExceptionHandler` が ERROR でスタックトレース付きのログを出し、TRACE のときは `TraceAspect` も例外とスタックトレースを出す。例外の連なりの最後の文に、排他されていた行の値（招待の行ならメールアドレスと招待のトークンのハッシュ値、ロックの状態の行なら失敗回数と解除の予定の時刻）が入りうる | U3 の範囲の外（U3 は既存の3つの経路の上限切れの扱いを変えない）。上限切れは同じ行への同時の操作が 3 秒を超えて重なったときだけ起き、想定の規模ではまれ。扱い（後続の Intent で直すか、この Intent に入れるか、受け入れるか）は承認の場で依頼者が決める | 承認の場 |
-| R5 | 検索の既知の差（`İ` と `ß`、6.2） | まれな文字で、BR1.5 の最低限（ASCII）は満たす。Locale に左右されない利点を取った（Q3 A） | 氏名に該当の文字が多い利用者が増えたとき、別の DB へ移すとき |
+| R4 | 既存のログイン・招待・送り直し・取り消し・登録の完了（7.2 の E1〜E4）は、排他の待ちの上限切れを想定外の誤り（500）として扱う。そのとき、ログのレベルを変えなくても既定の INFO のまま、`GlobalExceptionHandler` が ERROR でスタックトレース付き（原因の連なりを含む）を出す。連なりの最後の文に、排他されていた行の値（招待の行ならメールアドレスと招待のトークンのハッシュ値、ロックの状態の行なら失敗回数と解除の予定の時刻）が入り、`project.md` の Forbidden（メールアドレスをアプリのログに含めない）に触れる。TRACE のときは `TraceAspect` も同じ連なりを出す | 受け入れない。依頼者の決定で、この Intent の B4 で ND-1 と同じ形（repository のメソッドの中で受け、値を含まない例外に置き換える）に直す。応答（500）は変えない。確かめは TRACE と既定のレベルの両方の漏えいのテスト（7.2） | 直した後は 7.3 の前提の見直し（R6）に移る |
+| R5 | 検索の既知の差（`İ` と `ß`、6.2） | まれな文字で、BR1.5 の最低限（ASCII）は満たす。Locale に左右されない利点を取った（Q3 A）。承認の場で受け入れた | 氏名に該当の文字が多い利用者が増えたとき、別の DB へ移すとき |
+| R6 | 行の値が H2 の `MVStoreException` の文にだけ入り、Hibernate の `SqlExceptionHelper` の WARN には入らない、という前提は、試しのコードの1つの設定（H2 2.4.240・Hibernate 7.4.5.Final）での観察に頼る。40001 の例外の型の写し方は試していない | `UserAdminSecretLeakIT` と 7.2 のテストが TRACE と既定のレベルの両方で確かめ続ける。判定は型と誤りの番号の両方で行う（7.1） | H2 か Hibernate を上げるとき（7.3 の前提を見直す） |
 
 ## 12. 上流との差
 
@@ -163,4 +203,35 @@ LockAttempt lockAdminRows(long targetUserId) {   // 戻り値は ID の一覧か
 | SD-1 | BR1.5 | 氏名の列を DB の側で小文字にする場合も、Locale.ROOT の小文字化と同じ結果になることを確かめる | DB の側は小文字にせず `ilike` で比べる。結果は `İ` と `ß` で Locale.ROOT の小文字化と分かれうる（既知の差、R5） | Q3 A。試しのコードで差の範囲を確かめた（6.2） |
 | SD-2 | BR3.5 | 上限切れの例外は `user.service`・`auth.service` の口の本体の中で受ける | `repository` の層の本体の中で受ける | `reliability-design.md` 11節の ND-1。`TraceAspect` の TRACE で行の値を出さないため |
 | SD-3 | NFR3.1 の確かめ方 | `UserAdminSecretLeakIT` で7つの API と q 付きの一覧を確かめる | 5つの操作の上限切れの場合を足す | 確かめ 4 で行の値が例外に入ると分かったため |
-| SD-4 | Q3 A | Spring Data の問い合わせの解析が `ilike` を受け付けることは Q1 の試しか B3 の最初で確かめる | 試しは JDBC で行ったため、B3 の最初で確かめる。受け付けないときは native の問い合わせに切り替える | 試しの範囲の記録（6.2） |
+| SD-4 | Q3 A | Spring Data の問い合わせの解析が `ilike` を受け付けることは Q1 の試しか B3 の最初で確かめる | 試しは JDBC で行ったため、B3 の最初で確かめる。受け付けないときは native の問い合わせに切り替える | 試しの範囲の記録（6.2）。承認の場で B3 の最初の手順として申し送った |
+| SD-5 | `team.md` の Code Style（例外のログは変換する境界で1回だけ） | 1つの例外のログは1か所で1回 | 排他の失敗の1件で、repository の WARN（排他の種類とクラスの名前）と、変換の境界のログ（U3 の BUSY は WARN の code、既存の経路は ERROR）の2行が出る | repository は例外を値を含まない形に変える1つ目の境界、変換の境界は応答に変える2つ目の境界で、どちらにも出さないと元の例外のクラスの名前が失われる（例外そのものはつながないため）。2行は同じトレースID で結び付く。承認の場で、決まりとの差として受け入れた |
+| SD-6 | U3 の範囲（NFR 要件の security と reliability） | U3 は既存のログイン・招待・登録の完了の上限切れの扱いを変えない（旧 R4） | 既存の4つの問い合わせ（7.2 の E1〜E4）を repository の中で受ける形に直し、ログだけを変える。応答・巻き戻し・監査は変えない | 承認の場の依頼者の決定（R-01 Major）。B4 の作業が増える（`invitation.repository` の排他の問い合わせの移し替え、判定の部品と例外、漏えいのテスト） |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+前回のレビュー（R-01〜R-04）を受けた依頼者の決定と、この単位の成果物への反映です。
+
+### 直したこと
+
+| 指摘 | 依頼者の決定 | 直した場所と中身 |
+|---|---|---|
+| R-01（Major） | 既存の漏えいをこの Intent の B4 で直す。行の値を含む例外を repository の外へ出さず、クラスの名前だけをログに出す。応答は今の振る舞いを保つ。R4 を既定の INFO でも出る点を明記して書き直す。対象の問い合わせをコードで洗い出す | 7.2 を足した（読んで洗い出した E1〜E4、直す形、応答は 500 のまま、変わるのはログだけ、TRACE と既定のレベルの両方の漏えいのテスト）。7節の表、10節、11節の R4、12節の SD-6。`reliability-design.md` 5.2・10節・ND-1、`observability-design.md` 3節、`logical-components.md` 1・4・6・7節、`traceability.json` |
+| R-02（Minor） | 本番の業務処理が Busy のときに巻き戻しの印を付けることを単体テストで直接確かめる | `reliability-design.md` 5.3 の表に単体テストの行を足し、結合テストの行の目的を口の側の確かめに書き直した。表の後の説明に、保険としての目的を書いた |
+| R-03（Minor） | 受ける例外の型を広げる。WARN が2行出る点は Code Style との差として書く | 7.1 を足した（`PersistenceException` を受け、型と誤りの番号 50200・40001 と SQLState で見分ける判定、単体テスト）。7節の擬似コード。12節の SD-5、`observability-design.md` 3節、`reliability-design.md` 4節・5.1・ND-3 |
+| R-04（Minor） | 行の値が H2 の内部の文にだけ入る前提を、`UserAdminSecretLeakIT` が TRACE と既定のレベルの両方で確かめると書く。H2 や Hibernate を上げるときに見直す | 7.3 と 11節の R6 を足した。4節・7節の確かめ、`reliability-design.md` 1.6・5.3 |
+
+### 受け入れたこと
+
+| 事項 | 内容 |
+|---|---|
+| ND-1 | 上限切れを `repository` のメソッドの中で受ける（承認済みの BR3.5 の書き方との差。機能設計は書き換えない） |
+| R5 | 検索の既知の差（`İ`・`ß`、6.2） |
+| BUSY のときのログ2行 | repository の WARN と変換の境界の WARN（SD-5。既存の経路の上限切れでも WARN と ERROR の2行になる） |
+
+### 申し送り
+
+| 事項 | 先 |
+|---|---|
+| SD-4（Spring Data の問い合わせで `ilike` と SpEL の引数が使えるか） | B3 のコード生成の最初の手順 |
+| 7.2 の直し（E1〜E4。招待の排他の問い合わせを断片にするか別のクラスにするか、判定の部品と例外の名前と置き場、境界テストの確かめ、ダミーの行のログインのテストを入れるか、再現のテストを同じコミットに入れること） | B4 のコード生成の計画 |
+| 7.1 の判定の単体テストと、5.3 の本番の業務処理の単体テスト | B4 のコード生成の計画 |

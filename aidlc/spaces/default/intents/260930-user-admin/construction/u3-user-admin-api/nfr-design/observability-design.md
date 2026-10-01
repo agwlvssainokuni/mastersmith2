@@ -30,16 +30,17 @@ U3 の観測の設計です。承認済みの `construction/u3-user-admin-api/nf
 | 場面 | レベル | キーと値 | 出す場所 |
 |---|---|---|---|
 | 409 USER_ADMIN_BUSY | WARN | code（既存の変換の境界の形） | `GlobalExceptionHandler`（既存。スタックトレースなし） |
-| 排他を取れなかった（上限切れ・行き詰まり） | WARN | 排他の種類（例 `ADMIN_ROWS`・`USER_ROW`・`LOGIN_ATTEMPT_ROW`）と例外のクラスの名前（`exceptionClass`） | 問い合わせを実行する `repository` のメソッド（`reliability-design.md` 5.2）。例外そのもの（cause とスタックトレース）は渡さない |
+| 排他を取れなかった（上限切れ・行き詰まり） | WARN | 排他の種類（例 `ADMIN_ROWS`・`USER_ROW`・`LOGIN_ATTEMPT_ROW`・招待の行）と例外のクラスの名前（`exceptionClass`） | 問い合わせを実行する `repository` のメソッド（`reliability-design.md` 5.2、既存の経路は `security-design.md` 7.2）。例外そのもの（cause とスタックトレース）は渡さない |
+| 既存のログイン・招待・送り直し・取り消し・登録の完了の上限切れ | 上の WARN と ERROR（スタックトレース付き） | ERROR は値を含まない例外（例 `RowLockUnavailableException`）のもの。元の例外の連なりは出ない | repository の WARN と `GlobalExceptionHandler`（既存。応答は今までどおり 500） |
 | ほかの 4xx（404・409・403・400） | WARN 以下 | code | `GlobalExceptionHandler`（既存） |
 | 想定外の誤り（500） | ERROR（スタックトレース付き） | 既存の形 | `GlobalExceptionHandler`（既存） |
 | 監査の書き込みの失敗 | ERROR | 既存の形（メールアドレス・氏名を含めない） | 既存の `AuditEventRecorder` の周り |
 | 成功・業務の拒否 | 新しいログを出さない | ― | 監査ログで見る（監査をアプリのログで代用しない） |
 
-- BUSY のときは、排他の口の WARN（例外のクラスの名前）と、変換の境界の WARN（code）の2行が出る。どちらも、それぞれの例外を変換する境界で1回だけ出す決まり（`team.md` の Code Style）に沿う。2行は同じトレースID で結び付く。
-- 排他の口の WARN を例外のクラスの名前だけにするのは、例外の連なりに排他されていた行の値が入るため（`security-design.md` 7節）。上限切れ（試しのコードで `jakarta.persistence.LockTimeoutException` と確かめた）と行き詰まり（`PessimisticLockException` の系統の見込み。型はコード生成で確かめる）は、クラスの名前で見分けられる。
+- BUSY のときは、排他の口の WARN（例外のクラスの名前）と、変換の境界の WARN（code）の2行が出る。既存の経路の上限切れも、repository の WARN と変換の境界の ERROR の2行になる。1つの失敗にログが2行出る点は、`team.md` の Code Style の「例外のログは変換する境界で1回だけ」と形の上で食い違うため、決まりとの差として `security-design.md` 12節の SD-5 に書き、承認の場で受け入れた。2行は同じトレースID で結び付く。
+- 排他の口の WARN を例外のクラスの名前だけにするのは、例外の連なりに排他されていた行の値が入るため（`security-design.md` 7節）。上限切れ（試しのコードで `jakarta.persistence.LockTimeoutException` と確かめた）と行き詰まり（`PessimisticLockException` の系統の見込み）は、クラスの名前で見分けられる。行き詰まりの型は試していないため、受ける範囲は型と誤りの番号の両方で見分ける判定による（`security-design.md` 7.1）。
 - どのログにも検索の文字・メールアドレス・氏名・トークン・ハッシュ値・失敗回数を出さない。業務のログは利用者 ID と区分だけ（BR7.4）。
-- 確かめ: 既存のログの形のテストと、TRACE を有効にした `UserAdminSecretLeakIT`（上限切れの場合を含む）で確かめる。
+- 確かめ: 既存のログの形のテストと、`UserAdminSecretLeakIT`（上限切れの場合を含む）と既存の経路の漏えいのテスト（`security-design.md` 7.2）を、TRACE を有効にした場合と既定のログのレベル（INFO）の場合の両方で流して確かめる。
 
 ## 4. 監査ログ（NFR9.3、BR6.1〜BR6.4、C6）
 

@@ -15,6 +15,7 @@ U1 の論理的な部品の一覧と、NFR の作りがどこに当たるかで�
 | RefreshTokenRevocationService・RevokeAllResult | `auth.service` | 新しい | `revokeAllRefreshTokens`（MANDATORY）、件数を返す、DEBUG のログ | 同 4.2（NFR5.3・NFR3.2・NFR11.2） |
 | RefreshTokenRepository | `auth.repository` | 手を入れる | 利用者 ID で引く未無効の行のまとめての無効化の更新 | 同 4.2（NFR5.3・NFR9.4） |
 | LoginFailureReason・TokenFailureReason | `auth.domain` | 手を入れる | `ACCOUNT_SUSPENDED`・`USER_SUSPENDED` を足す | 同 2.2・2.4 |
+| AuthenticationEvent | `auth.domain` | 手を入れる（既存の漏えいの直し） | `toString` を上書きし、`enteredEmail` を `***` に伏せる。項目と監査の行への写しは変えない | 同 5.1（NFR3.1、承認の場の決定 R-01） |
 | AccessTokenAuthenticationProvider | `auth.web` | 手を入れる | 利用者を読んだ直後に停止を判定し、`USER_SUSPENDED` で失敗にする | 同 2.4（NFR1.1・NFR2.3） |
 | AccessDeniedReason | `access.domain` | 手を入れる | 変換に `USER_SUSPENDED -> Optional.empty()` を足す | 同 2.4（NFR2.3） |
 | AuditFailureReason・AuditEventFactory | `audit.domain` | 手を入れる | `ACCOUNT_SUSPENDED` と変換の1行 | 同 6節（NFR6.1） |
@@ -83,13 +84,14 @@ C1 の形は契約 `aidlc/spaces/default/intents/260930-user-admin/inception/con
 
 B1 の作業ブランチの中の順序は次のとおりです。手順の細部とテストの名前は、コード生成の計画で決めます。
 
-1. `invitation/repository/V8MigrationIT.java` の待ちの確かめの手伝い（`INFORMATION_SCHEMA.SESSIONS` を上限の時間つきで見る）を `backend/src/test/java/cherry/mastersmith/auth/testsupport` に移す。
-2. `InvitationSchemaIT` に、`V8MigrationIT` の (b) の確かめを1件足す。(d) は `InvitationConcurrencyIT` が業務の層で確かめているとみなし、その対応を計画に書く。
+1. `invitation/repository/V8MigrationIT.java` の待ちの確かめの手伝い（`INFORMATION_SCHEMA.SESSIONS` を上限の時間つきで見る）を `backend/src/test/java/cherry/mastersmith/auth/testsupport` に移す。移すときに、絞り込みの表の名前（実行中の文の絞り込み、今は `INSERT INTO invitations%` に固定）・接続の URL（今は `url(tempDir)` に固定）・上限の時間を引数にする（承認の場の決定 R-04）。
+2. `InvitationSchemaIT` に、`V8MigrationIT` の (b) の確かめを1件足す。`stateChangesAndUniqueness` の一意の違反の確かめに、SQLState 23505 と制約の名前 `UK_INVITATIONS_PENDING_EMAIL` の確かめを足す（(a) を弱めない。承認の場の決定 R-05）。(d) は `InvitationConcurrencyIT` が業務の層で確かめているとみなし、その対応を計画に書く。
 3. `user/repository/V7MigrationIT.java`・`V7BackwardCompatibilityIT.java`、`invitation/repository/V8MigrationIT.java`・`V8BackwardCompatibilityIT.java`、`backend/src/test/resources/db/migration-through-v6`・`migration-through-v7` を消す。
 4. V9 とエンティティ、3つの入口、C1 の口、監査の理由を、層ごとに実装とテストで進める（`team.md` の Testing Posture の Ordering）。
-5. `LoginAttemptStateRepositoryIT` に、ダミーの行8つをすべて排他した状態を作るテストを足す（1 の手伝いを使う）。
-6. `README.md` の V7・V8 の説明を直し、V9 の行を足す。
-7. `:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` でパッケージごとのカバレッジを実測し、実際に `src/main` を変えたパッケージを `packagesJudgedByTotal` から外す。
+5. `LoginAttemptStateRepositoryIT` に、ダミーの行8つをすべて排他した状態を作るテストを足す（1 の手伝いを `login_attempt_states` の絞り込みで使い、待ちの確かめを `lockDummyForUpdate` の上限 3 秒より前に終える）。
+6. `AuthenticationEvent` に `toString` の上書きを足し、単体テストと、TRACE を有効にした漏えいのテスト（`AuditEventListener#onAuthenticationEvent` の行に入れたメールアドレスが無い）を書く。既存の `AuthSecretLeakIT` を広げるか新しく足すかは計画で決める（`security-design.md` 5.1）。
+7. `README.md` の V7・V8 の説明を直し、V9 の行を足す。
+8. `:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` でパッケージごとのカバレッジを実測し、実際に `src/main` を変えたパッケージを `packagesJudgedByTotal` から外す。
 
 テストの手伝いの置き場: 回数の確かめは既存の `auth/testsupport` の `CountingPasswordEncoder`・`SqlStatementCounter`、時刻は `MutableClock`。新しい手伝いを足すときも `<機能>/testsupport` に置きます。
 
@@ -104,7 +106,11 @@ B1 の作業ブランチの中の順序は次のとおりです。手順の細�
 | 既存の ArchUnit の境界テストが変更なしで通る | `ArchitectureTest`・機能ごとの境界テスト |
 | 消したテストの後も `invitation.*`・`user.repository` がパッケージごとの下限を満たす | JaCoCo の実測 |
 | 外したパッケージ（見込みは `auth.domain`・`auth.repository`・`access.domain`）が下限を満たす | JaCoCo の実測 |
+| 出来事の文字列化で入れたメールアドレスが伏せられる | `AuthenticationEvent#toString` の単体テストと、TRACE を有効にした漏えいのテスト |
+| 停止中のログインの試みが失敗回数に数えられない | `LoginService` のテスト |
+| (a) の一意の違反の確かめが弱まらない | `InvitationSchemaIT` で SQLState 23505 と制約の名前を確かめる |
+| V9 の前から居る利用者が使える（事後の裏付け） | 配備の後の deployment-execution のスモークテストで、既存の初期管理者のログインと利用者の読み取りを記録する（B1 では確かめない） |
 
 ## 8. 上流との差
 
-この単位の上流との差は `security-design.md` の 12節（S-1〜S-8）にまとめました。部品の形（C1 の口の名前・引数・戻り値・属性）は契約 C1 と機能設計の 2.5・2.6 から変えていません。
+この単位の上流との差は `security-design.md` の 12節（S-1〜S-9）にまとめました。承認の場の決定（Request Changes、2026-10-02）は同じ文書の末尾の節にあります。部品の形（C1 の口の名前・引数・戻り値・属性）は契約 C1 と機能設計の 2.5・2.6 から変えていません。

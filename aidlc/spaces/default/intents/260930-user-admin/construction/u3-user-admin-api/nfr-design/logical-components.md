@@ -21,7 +21,9 @@ U3 の論理的な部品の一覧と、NFR の作りがどこに当たるかで�
 | Authentication の口（lockViewsOf・失敗回数を戻す2段）と LoginFailureResetPreparation | `auth.service` | 手を入れる | C8 の口。1段目の結果を Ready・NothingToReset・Busy に写す | `reliability-design.md` 3節（NFR4.2） |
 | 例 LoginAttemptBarrier・NoOp の既定の部品、LoginService | `auth.service` | 新しい・手を入れる | ロックの状態の行を排他した直後の待ち合わせの口。LoginService の実在の利用者の行の排他の直後から呼ぶ | `reliability-design.md` 6節（NFR4.2） |
 | LockView | `auth.domain` | 新しい | ロック中か・解除の予定の時刻・戻せるかの3つ | `security-design.md` 5節（NFR3.2） |
-| LoginAttemptStateRepository | `auth.repository` | 手を入れる | `subjectId in (:ids)` の読み取り、上限切れを中で受ける排他のメソッド（例 `tryLockForUpdate`）、0・無しの明示の更新。既存の `lockForUpdate` は変えない | `reliability-design.md` 3・5.2節 |
+| LoginAttemptStateRepository | `auth.repository` | 手を入れる | `subjectId in (:ids)` の読み取り、上限切れを中で受けて Busy を返す排他のメソッド（例 `tryLockForUpdate`）、0・無しの明示の更新。既存の `lockForUpdate` も上限切れを中で受け、値を含まない例外に置き換えて投げる（応答は 500 のまま） | `reliability-design.md` 3・5.2節、`security-design.md` 7.2 |
+| InvitationRepository と排他の問い合わせの断片（例 `InvitationLockQueries` とその実装） | `invitation.repository` | 手を入れる・新しい | 3つの排他の問い合わせを Spring Data の `@Lock` から EntityManager を直接使う実装に移し、上限切れを中で受けて値を含まない例外に置き換える。呼び出し元の service の呼び方は変えない | `security-design.md` 7.2（承認の場の決定） |
+| 例 RowLockFailures・RowLockUnavailableException | 新しいパッケージ（例 `common.persistence`） | 新しい | 型と誤りの番号で排他の失敗を見分ける判定と、種類とクラスの名前だけの WARN。値を含まず原因をつながない例外 | `security-design.md` 7.1・7.2 |
 | AuditEventType・AuditFailureReason・AuditEventListener・AuditEvent・AuditEventFactory | `audit.domain`・`audit.service` | 手を入れる | 種類5つと理由4つ、出来事の受け取りと写し | `observability-design.md` 4節（NFR9.3・NFR9.4・NFR10.1） |
 
 手を入れない部品: `common.security`（SecurityFilterChain と `/api/admin/` の判定）、`common.error.web.GlobalExceptionHandler`、`common.observability.TraceAspect`、`access.domain`（使うだけ）、既存の警報の決まり、`compose.yaml`・Dockerfile・`.env.example`。新しい依存・指標・警報・移行は足しません。
@@ -79,7 +81,7 @@ flowchart TB
 
 | 起きること | 及ぶ範囲 | 及ばない範囲 |
 |---|---|---|
-| 排他の待ちの上限切れ | その操作だけが 409 で巻き戻る | ほかの操作・ログイン（ログインの判定の上限切れの扱いは変えない） |
+| 排他の待ちの上限切れ | その操作だけが 409 で巻き戻る | ほかの操作・ログイン（ログイン・招待・登録の完了の上限切れの応答は 500 のままで、ログだけを値を含まない形にする。`security-design.md` 7.2） |
 | 印の操作が重なる | 後の操作が前の確定を待つ（1つずつ通る） | 停止を解く（対象が違えば）・失敗回数を戻す・一覧・氏名と言語 |
 | 失敗回数を戻す操作とログインが重なる | 同じ利用者のログインの判定が待つ | ほかの利用者 |
 | 止める操作とトークンの更新が重なる | 止める操作がトークンの行を待つ（一方向） | ログインのトークンの追記（外部キーで待たない） |
@@ -104,7 +106,7 @@ flowchart TB
 | 項目 | 設計 |
 |---|---|
 | 境界テスト | `UserAdminBoundaryArchitectureTest` に、`useradmin` が使ってよい先（`user`・`auth` の service の口と値の型、`useradmin.web` から `access.domain` の1本、`audit` へは出来事だけ）と、書き換えの口の呼び出し元を `useradmin.service` に限ることを書く。既存の `ArchitectureTest` と機能ごとの境界テストは書き換えない。排他の問い合わせを EntityManager で `user.repository` に置く形が既存の層の決まりに合うことも、既存の境界テストが変更なしで通ることで確かめる |
-| カバレッジ | `useradmin` の新しいパッケージは自動でパッケージごとの下限（行 80%・分岐 70%）の対象。`auth.domain`・`auth.repository` は B1 で一覧から外れる計画のため、U3 でも下限を満たし続ける。`auth.service`・`user` の各パッケージ・`audit.domain`・`audit.service` はすでに対象。実測は `:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` |
+| カバレッジ | `useradmin` の新しいパッケージは自動でパッケージごとの下限（行 80%・分岐 70%）の対象。`auth.domain`・`auth.repository` は B1 で一覧から外れる計画のため、U3 でも下限を満たし続ける。`auth.service`・`user` の各パッケージ・`audit.domain`・`audit.service`・`invitation.repository`・`invitation.service` はすでに対象。判定の部品と例外を置く新しいパッケージ（例 `common.persistence`）は自動で対象。実測は `:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` |
 | 性質ベースのテスト | jqwik を拒否の判定の関数と LockView の判定に当て、失敗時の乱数の種を記録する |
 | テストの手伝い | `useradmin/testsupport`（待ち合わせの口のテストの部品）・`auth/testsupport`（ロックの状態の行の口、既存の `SqlStatementCounter`・`MutableClock`、U1 が移す排他の待ちの確かめの手伝い） |
 
@@ -116,9 +118,11 @@ flowchart TB
 | B3 | 一覧の問い合わせの回数と空のページ | `SqlStatementCounter` |
 | B4 | 待った後の数え・同時の重なり（確かめ 1 の本番版） | `reliability-design.md` 2.2 の表 |
 | B4 | ログインのトークンの追記が止める操作を待たない（確かめ 3 の本番版） | 止める操作を待ち合わせで止めている間にログインが通る結合テスト |
-| B4 | 上限切れの 409・巻き戻し・上限切れの前の書き込みが残らない・TRACE でログに値が出ない（確かめ 4 の本番版） | `reliability-design.md` 5.3 の表 |
+| B4 | 上限切れの 409・巻き戻し・本番の業務処理が印を付ける（単体テスト）・上限切れの前の書き込みが残らない・TRACE と既定のレベルの両方でログに値が出ない（確かめ 4 の本番版） | `reliability-design.md` 5.3 の表 |
+| B4 | 排他の失敗の判定（型と誤りの番号、行き詰まりを含む） | `security-design.md` 7.1 の単体テスト |
+| B4 | 既存のログイン・招待・送り直し・取り消し・登録の完了の上限切れの直し | `security-design.md` 7.2 の確かめ（500 のまま、TRACE と既定のレベルの両方でログに値が出ない）。再現するテストを直しと同じコミットに入れる |
 | B4 | 既存の漏えいのテストの列の一覧と監査の新しい値 | 既存の `*SecretLeakIT` が変更なしで通るか、足す項目があるかを計画で確かめる |
 
 ## 8. 上流との差
 
-この単位の上流との差は、`reliability-design.md` 11節（ND-1〜ND-4）、`security-design.md` 12節（SD-1〜SD-4）、`performance-design.md` 8節（PD-1・PD-2）にまとめました。部品の形のうち、排他の問い合わせを EntityManager を直接使う `repository` のクラスに置く点（ND-1）が、承認済みの機能設計の BR3.5 の書き方と違います。C8・C1 の口の名前・入出力・トランザクションの属性は、機能設計の 9節の D6〜D9・D13 のとおりで変えていません。
+この単位の上流との差は、`reliability-design.md` 11節（ND-1〜ND-4）、`security-design.md` 12節（SD-1〜SD-6）、`performance-design.md` 8節（PD-1・PD-2）にまとめました。部品の形のうち、排他の問い合わせを EntityManager を直接使う `repository` のクラスに置く点（ND-1）が、承認済みの機能設計の BR3.5 の書き方と違います。C8・C1 の口の名前・入出力・トランザクションの属性は、機能設計の 9節の D6〜D9・D13 のとおりで変えていません。
