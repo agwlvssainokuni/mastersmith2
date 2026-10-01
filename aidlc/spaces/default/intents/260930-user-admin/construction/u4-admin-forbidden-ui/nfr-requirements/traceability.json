@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-admin-forbidden-ui",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.5（security-requirements.md の1節。画面の表示はサーバーの判定の代わりにせず、サーバー側の 401・403・200 と監査は U3 が確かめる）" },
+    { "id": "NFR2", "status": "N/A", "target": "列挙の防止は、停止中の利用者のログイン・更新・アクセストークンの認証の応答と時間の話で、サーバー側の U1 の持ち物（U1 の NFR2.1〜NFR2.3）。U4 は認証の応答を作らず、401 の扱いも変えない（security-requirements.md の NFR1.4）" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2（security-requirements.md の2節。S6 に原因・detail・利用者の値を出さず、コンソールとブラウザの保存に氏名・トークン・メールアドレスを出さない。E2E 130 の報告に資格情報を入れない）" },
+    { "id": "NFR4", "status": "N/A", "target": "同時の操作の要件（最後の有効な管理者の保護 FR4.3、失敗回数の取り消しとログインの判定 FR5.4）はサーバー側の U3 の持ち物。U4 に関わる重なり（403 の重なり・401 の更新との重なり）は読み直しの回数の要件として performance-requirements.md の NFR9.2 に置いた" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1（performance-requirements.md の1節。読み直しは既存のトークンの更新の API を使い、その既存の目標 p95 1 秒をそのまま当てる。画面の時間の数値の目標は Q2: A で置かない（NFR9.3））" },
+    { "id": "NFR6", "status": "N/A", "target": "U4 は内部DB の接続を使わない画面の単位で、バックエンドのコードを変えない。読み直しで使う更新の API の接続の使い方は U1 の NFR6 の持ち物" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3（tech-stack-decisions.md の2節。NFR7.3 は Q1: B で足した実際のブラウザの検査 frontend/e2e/130-admin-forbidden-accessibility.e2e.ts、既存の 20 組）" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1, NFR8.2（tech-stack-decisions.md の3節。S6 の文言の ja・en と、自分の言語の反映は ja・en だけ）" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10, NFR9.11, NFR9.12（NFR9.1〜NFR9.4 は performance-requirements.md の画面の側の性能、NFR9.5 は security-requirements.md の静的検査と CSP、NFR9.6〜NFR9.12 は tech-stack-decisions.md の依存・テスト・境界。上流に当たる ID が無い画面の側の要件を、テストと検査の関門で確かめる NFR9 の枝番に寄せた）" },
+    { "id": "NFR10", "status": "N/A", "target": "U4 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータを持たない）" },
+    { "id": "NFR11", "status": "N/A", "target": "NFR11 はバックエンドの user が auth を知らない境界（ArchUnit）の決まりで、U4 はバックエンドを変えない。画面の側の境界は tech-stack-decisions.md の NFR9.12 に置いた" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u3-user-admin-api",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.5" },
+    { "id": "NFR2", "status": "N/A", "target": "列挙の防止は停止中の利用者のログイン・トークンの更新・アクセストークンの認証の入口の要件で、U1 u1-user-suspension の持ち物（U1 の NFR2.1〜NFR2.3）。U3 の7つの API は管理者だけが呼び、一覧で利用者を見られるため、404 USER_NOT_FOUND から利用者の有無を推測されても新しい危険にならない" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2, NFR3.3, NFR3.4" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4, NFR5.5, NFR5.6, NFR5.7, NFR5.8, NFR5.9, NFR5.10, NFR5.11" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2" },
+    { "id": "NFR7", "status": "N/A", "target": "画面のアクセシビリティは画面の単位（U4 u4-admin-forbidden-ui・U5 u5-user-admin-ui）の要件。U3 は画面を持たない service の単位" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8" },
+    { "id": "NFR10", "status": "N/A", "target": "U3 は表と列を変えない（機能設計の7節）。停止の列は U1 の V9 で、監査の種類と理由は既存の列（32 文字まで）に列挙の値を足すだけのため、Flyway の移行と後方互換の要件が無い" },
+    { "id": "NFR11", "status": "OK", "target": "NFR11.1, NFR11.2" }
+  ]
+}

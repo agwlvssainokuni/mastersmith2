@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-user-suspension",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.5" },
+    { "id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2" },
+    { "id": "NFR4", "status": "N/A", "target": "同時の操作の要件（最後の有効な管理者の保護 FR4.3、失敗回数の取り消しとログインの判定 FR5.4）は U3 u3-user-admin-api の持ち物。U1 に関わる同時の重なりは、止める確定と同時の更新・ログインの照合が作ったトークンが残る隙だけで、受け入れた隙として NFR1.5 に記録した" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4, NFR5.5" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2" },
+    { "id": "NFR7", "status": "N/A", "target": "画面のアクセシビリティは画面の単位（U4 u4-admin-forbidden-ui・U5 u5-user-admin-ui）の要件。U1 は画面を持たない library の単位で、停止中の 401 は今のログインの切れと同じに扱われ画面を変えない（BR6.3）" },
+    { "id": "NFR8", "status": "N/A", "target": "U1 は新しいエラーの code と説明文を足さない。停止中の拒否は既存の AUTHENTICATION_FAILED・REFRESH_FAILED・AUTHENTICATION_REQUIRED をそのまま使い（BR6.1）、ja・en の説明は既存のまま。画面の文言は U4・U5 の持ち物" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6" },
+    { "id": "NFR10", "status": "OK", "target": "NFR10.1, NFR10.2, NFR10.3" },
+    { "id": "NFR11", "status": "OK", "target": "NFR11.1, NFR11.2" }
+  ]
+}

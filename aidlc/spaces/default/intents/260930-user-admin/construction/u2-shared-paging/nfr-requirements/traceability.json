@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u2-shared-paging",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "N/A", "target": "認証の一貫性（利用停止・管理者の印の判定）は U1 u1-user-suspension と U3 u3-user-admin-api の持ち物。U2 は認証の入口に触れず、ページ送りの整数の計算だけを持つ" },
+    { "id": "NFR2", "status": "N/A", "target": "列挙の防止は停止中の利用者の拒否の応答の要件で、U1 の持ち物。U2 は利用者を扱わず、page の誤りは既存の VALIDATION_FAILED（NFR9.3）で利用者の存在に関わらない" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1" },
+    { "id": "NFR4", "status": "N/A", "target": "同時の操作（最後の有効な管理者の保護・失敗回数の取り消し）は U3 の持ち物。U2 は状態を持たない純粋な関数で、同時の重なりが起きない" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2" },
+    { "id": "NFR6", "status": "N/A", "target": "U2 は内部DB に接続せず、接続の使い方は数える1回と読む1回を行う呼び出し元（招待・U3）の持ち物。新しく接続を2本使う経路を足さない" },
+    { "id": "NFR7", "status": "N/A", "target": "U2 は画面部品を持たず、UiPaging は計算だけ。ページ送りの部品の表示とフォーカスの扱いのアクセシビリティは、使う側の画面（招待の画面と U5 u5-user-admin-ui）の持ち物" },
+    { "id": "NFR8", "status": "N/A", "target": "U2 は新しいエラーの code と説明文を足さず（既存の VALIDATION_FAILED を使い回す）、画面の文言（訳の鍵）も移さない前提（BR2.5）。移すかはコード生成の計画で決める" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9, NFR9.10, NFR9.11" },
+    { "id": "NFR10", "status": "N/A", "target": "U2 は保存するデータを持たず、スキーマの変更が無い" },
+    { "id": "NFR11", "status": "OK", "target": "NFR11.1" }
+  ]
+}

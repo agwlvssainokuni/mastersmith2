@@ -1,0 +1,18 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-user-admin-ui",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2（security-requirements.md の1節。画面の押せない形はサーバーの判定の代わりにしない、403 は U4 の共通の扱い・401 は ApiClient に任せる。サーバー側の判定とテストは U3・U1）" },
+    { "id": "NFR2", "status": "N/A", "target": "停止中の拒否の応答と応答時間をほかの認証の失敗とそろえるのはサーバー側の U1 の持ち物。U5 は管理者の画面で、認証の入口の応答に関わらない" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2, NFR3.3, NFR3.4（security-requirements.md の2節。個人に関する値と検索の文字を画面の外に出さない、失敗の文言は code から選ぶ、決めた項目だけを読む、E2E の報告に資格情報と宛先を入れない）" },
+    { "id": "NFR4", "status": "N/A", "target": "最後の管理者の保護と、失敗回数の取り消しとログインの判定の同時の重なりの守りはサーバー側の U3 の持ち物。画面の二重の送信の守りは NFR5.5 に置き、同時の重なりの守りの代わりにしない" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4, NFR5.5, NFR5.6（performance-requirements.md の1節。NFR5.1・NFR5.2 は Q2: B の画面の時間の目標、NFR5.3 は API の時間を U3 の NFR5.1・NFR5.3〜NFR5.6 に任せることの記録）" },
+    { "id": "NFR6", "status": "N/A", "target": "U5 は内部DB の接続を使わない画面の単位。操作1件で接続を2本使う経路と接続プールの上限はサーバー側の U3・U1 の持ち物" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3（tech-stack-decisions.md の3節。NFR7.3 は Q1: A で足した 120 の実際のブラウザの検査で、U4 の 130 と同じ 20 組）" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1, NFR8.2, NFR8.3（tech-stack-decisions.md の4節）" },
+    { "id": "NFR9", "status": "OK", "target": "NFR9.1, NFR9.2, NFR9.3, NFR9.4, NFR9.5, NFR9.6, NFR9.7, NFR9.8, NFR9.9（NFR9.1 は security-requirements.md の3節、NFR9.2〜NFR9.4 は tech-stack-decisions.md の2節、NFR9.5〜NFR9.9 は同じ文書の5節。要件に画面の側の静的検査・CSP・依存に当たる ID が無いため、確かめ方を決める NFR9 の枝番に寄せた（U4 の前例と同じ））" },
+    { "id": "NFR10", "status": "N/A", "target": "U5 は内部DB の表・Flyway の移行を持たない（画面の単位で、保存するデータを持たない）" },
+    { "id": "NFR11", "status": "N/A", "target": "user と auth の境界（ArchUnit の境界テスト）はバックエンドの構造の決まりで、U5 はバックエンドのコードを持たない。フロントエンドの機能どうしの境界（features/useradmin は他の機能を読み込まない）は機能設計 2節で決まっている" }
+  ]
+}
