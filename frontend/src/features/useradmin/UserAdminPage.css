@@ -1,0 +1,64 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 利用者の管理の画面の配置（mockups.md の S1）。make-you-chic-ui のトークン（CSS の変数）だけを使う。 */
+.useradmin-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.useradmin-heading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.useradmin-load-error {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.useradmin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.useradmin-list-heading {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.useradmin-status,
+.useradmin-empty {
+  margin: 0;
+}
+
+.useradmin-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.useradmin-skeleton-row {
+  display: block;
+  height: var(--space-6);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-hover);
+}
