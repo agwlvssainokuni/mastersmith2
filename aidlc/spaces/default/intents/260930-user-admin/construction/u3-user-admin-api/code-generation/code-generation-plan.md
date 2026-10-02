@@ -254,7 +254,7 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 | 今の手元の `verify`（clean を付けたもの）の時間 | 6 分 17 秒（B2 の関門）、6 分 20 秒（B1 の関門） | `u4-admin-forbidden-ui/code-generation/generation-notes.md`・`u1-user-suspension/code-generation/code-summary.md` |
 | B3 の基準値 | Step 1 で実測（時間・テストの件数）。あわせて `develop` の最新の CI の実行の時間を `gh run list` の読み取りで記録する | Step 1 |
 | B4 の増加の見込み | 上限切れを起こす結合テストは1件ごとに約 3 秒待つ。U3 の5つの操作（5件）、漏えいの確かめ（5つの操作と E1〜E4 の経路と書き込みの問い合わせを TRACE と INFO の両方。1つの文脈の中でログのレベルを切り替える形で約 20 件）で、約 25 件 × 約 3 秒 ＝ 約 1 分 15 秒。書き込みの問い合わせの待ちの上限（H2 の既定の値）は試していないため Step 25 で実測する。新しい Spring の文脈（結合テストのクラス）の起動の分を加え、手元の `verify` は約 9〜11 分の見込み | 見積もり（未測定） |
-| 許容（案） | 手元の `verify` が B3 の基準値から 5 分以内の増加、かつ CI の実行が 30 分（制限時間 60 分の半分）以内。超えたら、待つ時間を短くするために排他の待ちの上限を変えることはせず（NFR4.4）、テストのまとめ方（文脈の共有など）を見直すか依頼者に諮る | 9節の Q-C |
+| 許容 | 手元の `verify` が B3 の基準値から 5 分以内の増加、かつ CI の実行が 30 分（制限時間 60 分の半分）以内。超えたら、待つ時間を短くするために排他の待ちの上限を変えることはせず（NFR4.4）、止めて依頼者に諮る（テストのまとめ方（文脈の共有など）の見直しを案として示す） | 9節の Q-C の決定（A） |
 
 ## 5. 手順
 
@@ -746,51 +746,62 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 | D-4 | 失敗回数を戻す2段目（`logical-components.md` 1節の `LoginAttemptStateRepository`「0・無しの明示の更新」） | 0・無しの明示の更新 | 新しいメソッドを足さず、既存の `update(id, 0, null)`（明示の更新1回）を使う | 同じ問い合わせが既にあり、行を作らない |
 | D-5 | README に足すこと（`infrastructure-specification.md` 9節） | 監査ログ・既知の制約の2節に足す、API のアクセス制御は変えない | 加えて「利用者の管理の API（Intent 260930-user-admin の U3）」の節を足す（B3 で一覧と氏名・言語、B4 で5つの操作） | 招待（U3）・プリファレンス（U2）と同じく機能ごとの節を持つ README の形にそろえる |
 | D-6 | 書き込みの問い合わせの上限切れの起こし方（`infrastructure-specification.md` 6.2 の確かめ） | 例: 管理の操作が行を持つ間のパスワードの変更 | 別の接続で行を `FOR UPDATE` で持ち続けて起こす（表示の設定の保存とトークンの更新の2つの経路）。管理の操作で持つ形は使わない | 管理の操作の待ち合わせの口は書き換えの前にあり、どの行をいつ持つかを確実に作れるのは別の接続のため。中央の手当ては経路によらない |
-| D-7 | テストの手伝いの置き場 | `useradmin/testsupport`・`auth/testsupport`（`logical-components.md` 6節） | `useradmin` のテストは `auth/testsupport` の `H2SessionWaits`・`MutableClock`・`SqlStatementCounter`・`TestUserSuspension`・`AuthApi` をそのまま使う（`useradmin` は本体でも `auth` に依存してよいため）。別の接続で行を持つ手伝いの置き場は Step 25 で決める（9節の Q-A の続き） | U1 は機能の間をまたがないため手伝いをまとめなかった（U1 の Q-A）。U3 は本体の依存の向き（`useradmin` → `auth`）と同じ向きの使い方になる |
+| D-7 | テストの手伝いの置き場 | `useradmin/testsupport`・`auth/testsupport`（`logical-components.md` 6節） | `useradmin` のテストは `auth/testsupport` の `H2SessionWaits`・`MutableClock`・`SqlStatementCounter`・`TestUserSuspension`・`AuthApi` をそのまま使う（`useradmin` は本体でも `auth` に依存してよいため）。別の接続で行を持つ手伝いの置き場は Step 25 で決める（4.4） | U1 は機能の間をまたがないため手伝いをまとめなかった（U1 の Q-A）。U3 は本体の依存の向き（`useradmin` → `auth`）と同じ向きの使い方になる |
 | D-8 | 部品の名前（`logical-components.md` の「例」） | 例として示した名前 | 4節のとおり決めた: `LockAdministrationService`（C8 の Authentication の口）、`UserRowLockRepository`、`common.persistence` の `RowLockFailures`・`RowLockUnavailableException`・`RowLockAttempt`、`InvitationLockQueries`（断片）、`LockFailureSafeTraceInterceptor`、`UserAdminBarrier`・`LoginAttemptBarrier`、`UserAdminAuditFailure` | 設計が名前の決定を計画に任せた |
 | D-9 | 監査の結合テストの置き場 | （設計に無い） | `audit/service` に置く（`audit/testsupport` の手伝いを機能の間をまたがずに使うため） | テストの手伝いの置き場の決まり |
 | D-10 | ログのレベルの切り替え | TRACE と INFO の両方で確かめる | 1つの Spring の文脈の中で `LoggingSystem` でロガーのレベルを切り替える。切り替えが追跡に効かないときは2つのクラスに分け、差を記録する | 文脈の数を増やさず `verify` の時間を抑える（4.6） |
 
-## 9. 依頼者に確かめたいこと（推奨つき）
+## 9. 依頼者の決定
 
-計画の承認の前に、次の論点の答えをもらいたい。答えに合わせて各 Step と8節を直してから Plan Approval に進む。
+計画の承認の前に諮った論点について、依頼者が次のとおり決めた。計画の各 Step と8節はこの決定に合わせてある。
 
 **Q-A 一覧の投影の型をどこに置くか**（8節の D-1、承認済みの設計との差）
 
-- A（推奨）: `user.repository` に投影の record `UserAdminRow` を置き、`UserAccountService` で `UserAdminSummary` に写す。パッケージの依存が循環しない
-- B: 設計のとおり、repository の問い合わせで `UserAdminSummary` を直接作る。`user.repository` → `user.service` の依存が生まれる
-- C: `UserAdminSummary` を `user.domain` に移して repository から作る（entities.md の置き場 `user.service` と違う）
+- 依頼者の答え: **A**
+- 決定: `user.repository` に投影の record `UserAdminRow`（`toString` で伏せる）を置き、`UserAccountService` で `UserAdminSummary` に写す。パッケージの依存は循環しない（4.1、Step 3・6・8）
+- 選ばなかった案: B（設計のとおり repository の問い合わせで `UserAdminSummary` を直接作る。`user.repository` → `user.service` の依存が生まれる）、C（`UserAdminSummary` を `user.domain` に移す）
 
 **Q-B B3 の終わりの記録の形**
 
-- A（推奨）: B3 の終わりに `code-summary.md`・`source-manifest.json`・`traceability.json` の B3 までの版を書き（B4 で受け持つ受け入れ基準は `Deferred`、持ち主 B4）、B4 の終わりに仕上げる。B3 の統合のコミットと記録が対応する
-- B: B3 の終わりは `generation-notes.md` だけを書き、まとめの3つは B4 の終わりに1回で書く
+- 依頼者の答え: **A**
+- 決定: B3 の終わりに `code-summary.md`・`source-manifest.json`・`traceability.json` の B3 までの版を書き（B4 で受け持つ受け入れ基準は `Deferred`、持ち主 B4）、B4 の終わりに仕上げる（Step 16・43）
+- 選ばなかった案: B（B3 の終わりは `generation-notes.md` だけにする）
 
 **Q-C B4 の verify の時間の許容**（基盤の設計の R-02、4.6）
 
-- A（推奨）: 手元の `verify` が B3 の基準から 5 分以内の増加、かつ CI の実行が 30 分以内。超えたら止めて諮る
-- B: 許容を決めず、実測を記録するだけにする（CI が 60 分の制限に届いたときに考える）
-- C: ほかの値を指定する
+- 依頼者の答え: **A**
+- 決定: 手元の `verify` が B3 の基準から 5 分以内の増加、かつ CI の実行が 30 分以内。超えたら止めて依頼者に諮る（Step 41）
+- 選ばなかった案: B（実測を記録するだけ）、C（ほかの値）
 
 **Q-D 負荷の試験の台本と手順書**（8節の D-2）
 
-- A（推奨）: 依頼のとおり B4 で書き、`k6 inspect` で読み込みまで確かめる。Build and Test は流し直して確かめる
-- B: 基盤の設計（`cicd-pipeline.md` 4節）のとおり Build and Test で書く（B4 からは外す）
+- 依頼者の答え: **A**
+- 決定: B4 で書き、`k6 inspect` で読み込みまで確かめる。Build and Test は流し直して確かめる（Step 39）
+- 選ばなかった案: B（基盤の設計のとおり Build and Test で書く）
 
-**Q-E 検索の既知の差（`İ`・`ß`、R5）をテストに固定するか**（`security-design.md` 6.2 が計画に任せた）
+**Q-E 検索の既知の差（`İ`・`ß`、R5）をテストに固定するか**
 
-- A（推奨）: 決めた側の動作として1件ずつ結合テストに固定する（H2 や比べ方を変えたときに気づける）
-- B: 固定しない（README に既知の差として書くだけ）
+- 依頼者の答え: **A**
+- 決定: 決めた側の動作として1件ずつ結合テストに固定する（Step 7）
+- 選ばなかった案: B（固定せず README に書くだけ）
 
 **Q-F 既存の経路の漏えいの直しの「再現」の確かめ方**（`project.md` の Mandated）
 
-- A: テストの確かめ（行の値と `MVStoreException` の文が無い、上限切れの WARN が出る）が直しの前の振る舞いを捉えていることを、コードの読み合わせで確かめるだけにする
-- B（推奨）: テストが通った後に、直しの本体だけを一時的に元に戻してテストが落ちることを確かめ、落ちた件数と出た値の種類だけを記録してから戻す（値そのものは記録しない。前の Intent で確かめのために一時的に変えて `git checkout` で戻した前例がある）
+- 依頼者の答え: **B**
+- 決定: テストが通った後に、直しの本体だけを一時的に元に戻してテストが落ちることを確かめ、落ちた件数と出た値の種類だけを記録してから戻す。値そのものは記録しない（Step 25）
+- 選ばなかった案: A（コードの読み合わせで確かめるだけ）
 
-**Q-G ダミーの行がすべて排他されたときのログイン（E1 の代わりの道）を漏えいのテストに入れるか**（`security-design.md` 7.2 が計画に任せた）
+**Q-G ダミーの行がすべて排他されたときのログイン（E1 の代わりの道）を漏えいのテストに入れるか**
 
-- A（推奨）: 入れる。別の接続でダミーの行の8つをすべて持ち、存在しないメールアドレスでログインして 500 とログに値が無いことを確かめる（約 3 秒）
-- B: 入れない（E1 の実在の利用者の経路で同じ直しを確かめたとみなす）
+- 依頼者の答え: **A**
+- 決定: 入れる。別の接続でダミーの行の8つをすべて持ち、存在しないメールアドレスでログインして 500 とログに値が無いことを確かめる（Step 25）
+- 選ばなかった案: B（入れない）
+
+**Q-H 一意の制約の違反の例外の文に値が入りうる件**（計画を書く中で気づいた、未検証の既存の危険）
+
+- 中身: H2 の一意の制約の違反（誤りの番号 23505）の例外の文には、重なった値（例: メールアドレス）が入りうる。その例外が repository の層のメソッドの外へ出ると、TRACE のときに `TraceAspect` がその文を出しうる（例: 利用者の作成・招待の追記で一意の制約に当たったとき）。値が実際に入るか・どの経路で出るかは確かめていない
+- 依頼者の決定: **今回は直さず、記録して後の Intent へ回す（残る危険）**。この計画の Step は足さない。B4 の中央の手当て（Step 23）は排他の失敗の連なりだけを対象にし、一意の制約の違反の例外は対象にしない
+- 記録の先: 「Build and Test に引き継ぐこと」の表と、`code-summary.md` の残る危険
 
 ## Testing Contract
 
@@ -877,4 +888,5 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 | スモークテスト | 監査に残る要求（5つの操作）は送る前に依頼者に伝える。初期管理者だけでは最後の管理者の拒否（`LAST_ACTIVE_ADMIN`）を見せられない（自分自身の操作は先に `SELF_OPERATION`） | deployment-pipeline |
 | SLO | 判定は Unverified（NFR5.11） | observability-setup・performance-validation |
 | 画面 | AC1.1.8〜AC1.1.12・AC2.1.8・AC2.1.9・AC2.1.13・AC3.1.7・AC3.1.8・AC3.1.11・AC4.1.9・AC5.1.2・AC5.1.3・AC5.1.7、8KB を超える要求の HTML の 400 の画面の扱い | B5（U5） |
+| 一意の制約の違反の例外の文（残る危険、9節の Q-H） | H2 の一意の制約の違反（23505）の例外の文に重なった値（メールアドレスなど）が入りうり、repository の外へ出ると TRACE の `TraceAspect` が出しうる（未検証）。今回は直さない | 後の Intent |
 | `ms-pool-pending` の式の見直し | 時間切れの累計を見る式への見直し（NFR5.10 の申し送り） | 配備先が決まったとき |
