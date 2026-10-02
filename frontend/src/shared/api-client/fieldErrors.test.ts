@@ -19,7 +19,11 @@
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { readFieldErrors } from './fieldErrors'
-import { PASSWORD_FIELDS, PREFERENCES_FIELDS } from './formChecks'
+
+// 読む項目の一覧はテストの中に持つ（共通の置き場のテストが機能のフォルダーを読み込まないため）。
+// 値はプリファレンスの画面の2つのフォーム（formChecks.ts）と同じ項目の名前。
+const PREFERENCES_FIELDS = ['displayName', 'language', 'theme', 'fontSize'] as const
+const PASSWORD_FIELDS = ['currentPassword', 'newPassword', 'newPasswordConfirmation'] as const
 
 const DETAIL_MARKER = 'server-detail-marker'
 

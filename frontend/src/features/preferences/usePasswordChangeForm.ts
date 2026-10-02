@@ -32,7 +32,7 @@ import {
   toFieldReason,
 } from './errorMessages'
 import { badRequestCode, isApiResponseError } from './failure'
-import { readFieldErrors } from './fieldErrors'
+import { readFieldErrors } from '../../shared/api-client/fieldErrors'
 import { checkPasswordChangeForm, PASSWORD_FIELDS } from './formChecks'
 import type { FocusRequest } from './PreferencesForm'
 import { changePassword, type PasswordChangeInput, type PasswordField } from './preferencesApi'

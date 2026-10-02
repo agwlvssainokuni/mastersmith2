@@ -19,7 +19,7 @@
 // （src/features/preferences/preferencesApi.ts の Preferences）を付ける。本物の応答と項目の名前・型が一致することを、
 // 080 の測りで毎回確かめる（hasPreferencesShape。値は比べない。project.md の Corrections）。
 // 氏名は固定のテストの値だけで、実在の個人に関する値を使わない。
-import type { ReadFieldError } from '../../src/features/preferences/fieldErrors'
+import type { ReadFieldError } from '../../src/shared/api-client/fieldErrors'
 import type { Preferences, PreferencesField } from '../../src/features/preferences/preferencesApi'
 import type { ProblemDetails } from '../../src/shared/api-client/apiError'
 

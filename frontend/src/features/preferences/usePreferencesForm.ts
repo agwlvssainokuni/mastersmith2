@@ -35,7 +35,7 @@ import type {
 import { useMessages } from '../../app/i18n/I18nProvider'
 import { fieldMessageKey, FORM_INVALID_KEY, SAVE_FAILED_KEY, toFieldReason } from './errorMessages'
 import { badRequestCode, isApiResponseError } from './failure'
-import { readFieldErrors } from './fieldErrors'
+import { readFieldErrors } from '../../shared/api-client/fieldErrors'
 import { checkPreferencesForm, PREFERENCES_FIELDS } from './formChecks'
 import type { FocusRequest, PreferencesFocusTarget } from './PreferencesForm'
 import {

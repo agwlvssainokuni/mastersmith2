@@ -18,7 +18,8 @@
 // security-design.md の 3.2、NFR9.2・NFR9.6）。U2 が決めた形 `fieldErrors: [{ field, reason }]` だけを知る1か所。
 // 壊れた入力でも例外を出さず、読めなければ空の一覧を返す。reason は文字列のまま返し、ここでは解釈しない（3.3 で寄せる）。
 // detail・traceId などのほかの値は写さない。React・window・API・ブラウザの保存に触れない。
-import type { ProblemDetails } from '../../shared/api-client/apiError'
+// プリファレンスと利用者の管理の2つの機能が使うため、features/preferences から共通の置き場へ移した（U5 の FS 10節の (f)）。
+import type { ProblemDetails } from './apiError'
 
 /** 読み取った項目ごとの誤り */
 export interface ReadFieldError<F extends string> {
