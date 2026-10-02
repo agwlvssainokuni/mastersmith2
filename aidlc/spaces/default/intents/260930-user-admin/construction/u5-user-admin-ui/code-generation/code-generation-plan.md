@@ -197,122 +197,122 @@ U5 は画面（ui）の単位で、管理者が利用者の一覧で状態（管
 
 ### Step 1: 作業の場と変更の前の基準
 
-- [ ] 依頼者の承認を得て、`develop`（先頭 `21a2fdd`）から `feature/260930-user-admin-b5` を作る。`git rev-parse --abbrev-ref HEAD`・`git rev-parse HEAD` と、アプリのソースに未コミットの変更が無いこと（`git status` が `aidlc/` の下だけ）を記録する
-- [ ] 依頼者の承認を得て、記録だけのコミット R1（3.3）を作る。`git show --stat` で `aidlc/` の外のファイルが入っていないことを確かめ、ハッシュを記録する
-- [ ] B4 の統合の後の CI の結果を確かめる（依頼者の push の後に `gh run list --branch develop --limit 3` で読むだけ）。失敗していれば `team.md` の「不安定なテストと CI の失敗」で扱い、次へ進む前に依頼者に諮る。まだ push されていなければ、そのことを記録して進めてよいかを諮る
-- [ ] Dependabot の開いている知らせを `gh pr list --state open` で確かめる。重大度 High 以上があれば、次の Bolt（B5）に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）
-- [ ] `frontend/playwright-report/`・`frontend/test-results/` が手元に無いことを確かめる。あれば中を開かずに消し、消したこと（ファイルとディレクトリの件数）と共有していないことを記録する
-- [ ] 基準をとる: 画面のテストの件数とカバレッジは B2 の関門の実測を基準とする（4.6）。`git diff --stat 1de9ef6 21a2fdd -- frontend` が空であることを記録する。初回の JavaScript の大きさを `./gradlew frontendBundleSize` で測り、(1) の値として記録する
-- [ ] 影響の洗い出し（U4 の N-16 の反省）: 次を検索し、U5 の変更（サイドバーの項目「利用者の管理」の追加・固定先の更新・報告の設定の変更）で期待が変わる既存のテストと E2E を一覧にして記録する。`frontend/src` のテストで登録・サイドバーの項目の数や並びを数えるもの（`registrationModules`・`loadRegistrations`・`sidebarItems`・`order:`）、`frontend/e2e` でサイドバーのリンクの数・名前の一覧を確かめるもの（`getByRole('link'`・`toHaveCount`）、`app-shell` の中の `dropdown-trigger` を押すもの（`openUserMenuItem` と 080 の 232 行目。利用者の管理の画面の上で使うと行の「操作」と重なる）、`Dropdown` の項目の押下で閉じることに頼るもの、`html` の報告・`trace` に頼るもの。期待を変える必要があるものが見つかったときは、計画との差として記録し、直すかを依頼者に諮る（既存の E2E は変えない決まりのため、勝手に直さない）
-- [ ] 対応: B5 の共通の完了の条件、`gate-decisions.md` の U5 R-02、NFR5.6、`team.md` の Way of Working
+- [x] 依頼者の承認を得て、`develop`（先頭 `21a2fdd`）から `feature/260930-user-admin-b5` を作る。`git rev-parse --abbrev-ref HEAD`・`git rev-parse HEAD` と、アプリのソースに未コミットの変更が無いこと（`git status` が `aidlc/` の下だけ）を記録する
+- [x] 依頼者の承認を得て、記録だけのコミット R1（3.3）を作る。`git show --stat` で `aidlc/` の外のファイルが入っていないことを確かめ、ハッシュを記録する
+- [x] B4 の統合の後の CI の結果を確かめる（依頼者の push の後に `gh run list --branch develop --limit 3` で読むだけ）。失敗していれば `team.md` の「不安定なテストと CI の失敗」で扱い、次へ進む前に依頼者に諮る。まだ push されていなければ、そのことを記録して進めてよいかを諮る
+- [x] Dependabot の開いている知らせを `gh pr list --state open` で確かめる。重大度 High 以上があれば、次の Bolt（B5）に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）
+- [x] `frontend/playwright-report/`・`frontend/test-results/` が手元に無いことを確かめる。あれば中を開かずに消し、消したこと（ファイルとディレクトリの件数）と共有していないことを記録する
+- [x] 基準をとる: 画面のテストの件数とカバレッジは B2 の関門の実測を基準とする（4.6）。`git diff --stat 1de9ef6 21a2fdd -- frontend` が空であることを記録する。初回の JavaScript の大きさを `./gradlew frontendBundleSize` で測り、(1) の値として記録する
+- [x] 影響の洗い出し（U4 の N-16 の反省）: 次を検索し、U5 の変更（サイドバーの項目「利用者の管理」の追加・固定先の更新・報告の設定の変更）で期待が変わる既存のテストと E2E を一覧にして記録する。`frontend/src` のテストで登録・サイドバーの項目の数や並びを数えるもの（`registrationModules`・`loadRegistrations`・`sidebarItems`・`order:`）、`frontend/e2e` でサイドバーのリンクの数・名前の一覧を確かめるもの（`getByRole('link'`・`toHaveCount`）、`app-shell` の中の `dropdown-trigger` を押すもの（`openUserMenuItem` と 080 の 232 行目。利用者の管理の画面の上で使うと行の「操作」と重なる）、`Dropdown` の項目の押下で閉じることに頼るもの、`html` の報告・`trace` に頼るもの。期待を変える必要があるものが見つかったときは、計画との差として記録し、直すかを依頼者に諮る（既存の E2E は変えない決まりのため、勝手に直さない）
+- [x] 対応: B5 の共通の完了の条件、`gate-decisions.md` の U5 R-02、NFR5.6、`team.md` の Way of Working
 
 ### Step 2: テストの実行の準備（最初のテストより前）
 
-- [ ] `unit-test-instructions.md` 2.1 のコマンドで、U5 が移す・影響を受ける既存の画面のテスト（プリファレンス・ShellLayout のユーザーメニュー・招待の画面）が作業ブランチの上で通ること、Vitest・fast-check・vitest-axe が動くこと、Playwright が E2E のファイルを読めること（`--list`）を確かめる。件数を記録する
-- [ ] まだ作っていないテストを名指しすると「テストのファイルが無い」で失敗するのは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` に書いてある
-- [ ] 対応: Testing Contract の `runner_step`、NFR9.7
+- [x] `unit-test-instructions.md` 2.1 のコマンドで、U5 が移す・影響を受ける既存の画面のテスト（プリファレンス・ShellLayout のユーザーメニュー・招待の画面）が作業ブランチの上で通ること、Vitest・fast-check・vitest-axe が動くこと、Playwright が E2E のファイルを読めること（`--list`）を確かめる。件数を記録する
+- [x] まだ作っていないテストを名指しすると「テストのファイルが無い」で失敗するのは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` に書いてある
+- [x] 対応: Testing Contract の `runner_step`、NFR9.7
 
 ### Step 3: `frontend/.npmrc` の `ignore-scripts=true`（9節の Q-A の決定 A で固定先より先）
 
-- [ ] `frontend/.npmrc` に `ignore-scripts=true` を足す（`engine-strict=true` は残す、説明のコメントを1行）。ほかのファイルは変えない（回1 はここで止まり、オーケストレーターが承認を得て C1 をコミットする）
-- [ ] C1 のコミットの後に、`(cd frontend && npm ci)`・colima の設定と `caffeinate -i` を付けた `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`・Mailpit を確かめて `caffeinate -i ./gradlew e2eTest`（010〜100・130）を流す。`npm ci` でスクリプトを動かさない警告・誤りが出ないこと、`vendorInstall`・`vendorBuild`（`vendor/make-you-chic-ui` の中のインストールには `.npmrc` が効かない）・`frontendInstall`・画面のビルド・Playwright（ブラウザは `npx playwright install chromium` で入れ済み、インストール時のスクリプトに頼らない）が通ることを記録する
-- [ ] E2E の後、`frontend/test-results/e2e-results.json` の `stats`（成功・失敗・飛ばした・不安定・時間）とファイルごとの件数と結果だけを読んで記録し、`frontend/playwright-report/`・`frontend/test-results/` を中を開かずに消す。消したこと（ファイルとディレクトリの件数）と共有していないことを記録する（`gate-decisions.md` の U5 R-02）
-- [ ] 失敗したら、原因が `ignore-scripts=true` か（スクリプトを要する依存があるか）を確かめ、直さずに止めて依頼者に諮る（`.npmrc` を外すか、依存の扱いを変えるか）
-- [ ] 対応: NFR9.4、CP 3節・4.3・4.4、`team.md` の Code Style（npm のパッケージのスクリプトを動かさない）
+- [x] `frontend/.npmrc` に `ignore-scripts=true` を足す（`engine-strict=true` は残す、説明のコメントを1行）。ほかのファイルは変えない（回1 はここで止まり、オーケストレーターが承認を得て C1 をコミットする）
+- [x] C1 のコミットの後に、`(cd frontend && npm ci)`・colima の設定と `caffeinate -i` を付けた `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`・Mailpit を確かめて `caffeinate -i ./gradlew e2eTest`（010〜100・130）を流す。`npm ci` でスクリプトを動かさない警告・誤りが出ないこと、`vendorInstall`・`vendorBuild`（`vendor/make-you-chic-ui` の中のインストールには `.npmrc` が効かない）・`frontendInstall`・画面のビルド・Playwright（ブラウザは `npx playwright install chromium` で入れ済み、インストール時のスクリプトに頼らない）が通ることを記録する
+- [x] E2E の後、`frontend/test-results/e2e-results.json` の `stats`（成功・失敗・飛ばした・不安定・時間）とファイルごとの件数と結果だけを読んで記録し、`frontend/playwright-report/`・`frontend/test-results/` を中を開かずに消す。消したこと（ファイルとディレクトリの件数）と共有していないことを記録する（`gate-decisions.md` の U5 R-02）
+- [x] 失敗したら、原因が `ignore-scripts=true` か（スクリプトを要する依存があるか）を確かめ、直さずに止めて依頼者に諮る（`.npmrc` を外すか、依存の扱いを変えるか）
+- [x] 対応: NFR9.4、CP 3節・4.3・4.4、`team.md` の Code Style（npm のパッケージのスクリプトを動かさない）
 
 ### Step 4: make-you-chic-ui の固定先の更新と FC 2.5 の確かめ
 
-- [ ] `git -C vendor/make-you-chic-ui fetch` の後に `git -C vendor/make-you-chic-ui checkout 34814887433c61a4eb51d3572362d6eb41edae30` で固定先を上げる。ルートの `git diff` が gitlink の1行だけであること、サブモジュールの中身を変えていないこと（`git -C vendor/make-you-chic-ui status --porcelain` が空）を確かめる。`077f5b4..3481488` の差分のファイルが `docs/integration-guide.md` と `Dropdown` の4ファイルだけであることを記録する
-- [ ] UserRowActions を書く前に、FC 2.5 の表を部品のソースとテスト（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Dropdown/Dropdown.tsx`・`Dropdown.test.tsx`・`Dropdown.css`・`Button.tsx`）で確かめ、行ごとの結果を記録する（計画の前の確かめは 8節の D-3）。「依頼者に戻す差」が出たら、直さずに止めて依頼者に報告する（回2 はここで止まり、オーケストレーターが承認を得て C2 をコミットする）
-- [ ] C2 のコミットの後に、`(cd frontend && npm ci)` と、`Dropdown` を使う既存の画面のテスト（`unit-test-instructions.md` 2.2）を流し、続けて Mailpit を確かめて `caffeinate -i ./gradlew e2eTest`（010〜100・130）を流す。`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json` の差の有無を記録する
-- [ ] E2E の後は Step 3 と同じく、json の `stats` とファイルごとの結果だけを記録してから `frontend/playwright-report/`・`frontend/test-results/` を消し、消したことと共有していないことを記録する
-- [ ] `./gradlew frontendBundleSize` で初回の JavaScript の大きさ (2) を測って記録する
-- [ ] 対応: NFR9.3、FC 2.4・2.5、CP 3節・4.4、`project.md` の Forbidden・Mandated（専用のコミットと前後のハッシュ）
+- [x] `git -C vendor/make-you-chic-ui fetch` の後に `git -C vendor/make-you-chic-ui checkout 34814887433c61a4eb51d3572362d6eb41edae30` で固定先を上げる。ルートの `git diff` が gitlink の1行だけであること、サブモジュールの中身を変えていないこと（`git -C vendor/make-you-chic-ui status --porcelain` が空）を確かめる。`077f5b4..3481488` の差分のファイルが `docs/integration-guide.md` と `Dropdown` の4ファイルだけであることを記録する
+- [x] UserRowActions を書く前に、FC 2.5 の表を部品のソースとテスト（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Dropdown/Dropdown.tsx`・`Dropdown.test.tsx`・`Dropdown.css`・`Button.tsx`）で確かめ、行ごとの結果を記録する（計画の前の確かめは 8節の D-3）。「依頼者に戻す差」が出たら、直さずに止めて依頼者に報告する（回2 はここで止まり、オーケストレーターが承認を得て C2 をコミットする）
+- [x] C2 のコミットの後に、`(cd frontend && npm ci)` と、`Dropdown` を使う既存の画面のテスト（`unit-test-instructions.md` 2.2）を流し、続けて Mailpit を確かめて `caffeinate -i ./gradlew e2eTest`（010〜100・130）を流す。`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json` の差の有無を記録する
+- [x] E2E の後は Step 3 と同じく、json の `stats` とファイルごとの結果だけを記録してから `frontend/playwright-report/`・`frontend/test-results/` を消し、消したことと共有していないことを記録する
+- [x] `./gradlew frontendBundleSize` で初回の JavaScript の大きさ (2) を測って記録する
+- [x] 対応: NFR9.3、FC 2.4・2.5、CP 3節・4.4、`project.md` の Forbidden・Mandated（専用のコミットと前後のハッシュ）
 
 ### Step 5: 共通への移し（`fieldErrors`）— 実装
 
-- [ ] `git mv frontend/src/features/preferences/fieldErrors.ts frontend/src/shared/api-client/fieldErrors.ts` で移す。口（`readFieldErrors`・`ReadFieldError`）とふるまいは変えず、先頭の説明文に移した理由を1行足す
-- [ ] `usePreferencesForm.ts`・`usePasswordChangeForm.ts` の読み込み先を直す。`grep -rn "fieldErrors'" frontend/src` で古い読み込みが残っていないことを確かめる
-- [ ] 対応: FS 2節・10節の (f)、FC 2.2・9節、NFR9.7
+- [x] `git mv frontend/src/features/preferences/fieldErrors.ts frontend/src/shared/api-client/fieldErrors.ts` で移す。口（`readFieldErrors`・`ReadFieldError`）とふるまいは変えず、先頭の説明文に移した理由を1行足す
+- [x] `usePreferencesForm.ts`・`usePasswordChangeForm.ts` の読み込み先を直す。`grep -rn "fieldErrors'" frontend/src` で古い読み込みが残っていないことを確かめる
+- [x] 対応: FS 2節・10節の (f)、FC 2.2・9節、NFR9.7
 
 ### Step 6: 共通への移し — テスト
 
-- [ ] `git mv` で `fieldErrors.test.ts` を `src/shared/api-client/` へ移し、読み込みの1行だけを直す（件数を変えない）
-- [ ] `unit-test-instructions.md` 2.3 のコマンドで、移したテストとプリファレンスのすべてのテストが変更なしで通ることを確かめ、件数を記録する
-- [ ] 対応: NFR9.7
+- [x] `git mv` で `fieldErrors.test.ts` を `src/shared/api-client/` へ移し、読み込みの1行だけを直す（件数を変えない）
+- [x] `unit-test-instructions.md` 2.3 のコマンドで、移したテストとプリファレンスのすべてのテストが変更なしで通ることを確かめ、件数を記録する
+- [x] 対応: NFR9.7
 
 ### Step 7: 純粋な関数と文言 — 実装
 
-- [ ] `useradmin/rowActions.ts`・`searchInput.ts`・`profileInput.ts`・`lockedUntil.ts`・`failureMessage.ts`・`focusTarget.ts` を 4.2 のとおり作る。名前つきの export だけ、`enum` を使わず文字列の union（code の一覧は定数の配列から型を作る）
-- [ ] `useradmin/messages.ts`（FS 7節の全文を ja・en の対で、鍵は `useradmin.`）と `useradmin/useUserAdminText.ts` を作る。en の見出しと効き目の文は ja と同じ中身にする
-- [ ] 新しいファイルの先頭に `/* ... */` の Apache License 2.0 のヘッダー（2026、agwlvssainokuni）を置き、日本語の説明文に D・W・FC の番号を書く
-- [ ] 対応: D5・D6・D8・D15・D16・D18、W4・W11・W12、FC 2.1・4.1・5.2・7節、NFR1.1・NFR3.2・NFR8.1・NFR8.3
+- [x] `useradmin/rowActions.ts`・`searchInput.ts`・`profileInput.ts`・`lockedUntil.ts`・`failureMessage.ts`・`focusTarget.ts` を 4.2 のとおり作る。名前つきの export だけ、`enum` を使わず文字列の union（code の一覧は定数の配列から型を作る）
+- [x] `useradmin/messages.ts`（FS 7節の全文を ja・en の対で、鍵は `useradmin.`）と `useradmin/useUserAdminText.ts` を作る。en の見出しと効き目の文は ja と同じ中身にする
+- [x] 新しいファイルの先頭に `/* ... */` の Apache License 2.0 のヘッダー（2026、agwlvssainokuni）を置き、日本語の説明文に D・W・FC の番号を書く
+- [x] 対応: D5・D6・D8・D15・D16・D18、W4・W11・W12、FC 2.1・4.1・5.2・7節、NFR1.1・NFR3.2・NFR8.1・NFR8.3
 
 ### Step 8: 純粋な関数と文言 — テスト
 
-- [ ] `rowActions.test.ts`（16 通りの全組と W4 の 6 の性質、fast-check）・`searchInput.test.ts`（境界と性質）・`profileInput.test.ts`・`lockedUntil.test.ts`（時間帯と今の時刻を引数で固定、ja・en）・`failureMessage.test.ts`・`focusTarget.test.ts` を作る（`unit-test-instructions.md` 3節）
-- [ ] 性質ベースのテストの先頭に、失敗の種の再現の仕方を書く（`unit-test-instructions.md` 5節）
-- [ ] `unit-test-instructions.md` 2.4 のコマンドで流す
-- [ ] 対応: D5・D6・D8・D15・D16・D18、NFR1.1・NFR3.2・NFR8.3・NFR9.6
+- [x] `rowActions.test.ts`（16 通りの全組と W4 の 6 の性質、fast-check）・`searchInput.test.ts`（境界と性質）・`profileInput.test.ts`・`lockedUntil.test.ts`（時間帯と今の時刻を引数で固定、ja・en）・`failureMessage.test.ts`・`focusTarget.test.ts` を作る（`unit-test-instructions.md` 3節）
+- [x] 性質ベースのテストの先頭に、失敗の種の再現の仕方を書く（`unit-test-instructions.md` 5節）
+- [x] `unit-test-instructions.md` 2.4 のコマンドで流す
+- [x] 対応: D5・D6・D8・D15・D16・D18、NFR1.1・NFR3.2・NFR8.3・NFR9.6
 
 ### Step 9: API の受け渡し — 実装
 
-- [ ] `useradmin/api/types.ts` と `useradmin/api/userAdminApi.ts` を 4.2 のとおり作る。型を C3 と U3 の実装（`AdminUser` の 11 項目と `self`、`AdminUserPage` の `items`・`page`・`size`・`total`、`ProfileRequest` の2項目）に合わせる
-- [ ] `useAdminForbidden` に渡すパスも、要求と同じパスを作る関数から作る（`USER_ADMIN_API_ROOT` と `userAdminOperationPath`）
-- [ ] 対応: C3、FC 5節、D8・D20、NFR3.1・NFR3.3・NFR5.3
+- [x] `useradmin/api/types.ts` と `useradmin/api/userAdminApi.ts` を 4.2 のとおり作る。型を C3 と U3 の実装（`AdminUser` の 11 項目と `self`、`AdminUserPage` の `items`・`page`・`size`・`total`、`ProfileRequest` の2項目）に合わせる
+- [x] `useAdminForbidden` に渡すパスも、要求と同じパスを作る関数から作る（`USER_ADMIN_API_ROOT` と `userAdminOperationPath`）
+- [x] 対応: C3、FC 5節、D8・D20、NFR3.1・NFR3.3・NFR5.3
 
 ### Step 10: API の受け渡し — テスト
 
-- [ ] `useradmin/api/userAdminApi.test.ts` を作る（偽物の `fetch` で ApiClient を通す。`unit-test-instructions.md` 3節）。パスと `q` の付け方（空なら付けない、特殊文字の符号化）、5つの操作の道と本文なし、氏名と言語の本文は2項目だけ、余計な項目（`passwordHash`・`failedAttempts`・`refreshToken`）を捨てる、`lockedUntil` が `null`・無い・文字列、形の違う本文は通信の失敗、失敗の応答は `ApiError` のまま
-- [ ] `unit-test-instructions.md` 2.5 のコマンドで流す
-- [ ] 対応: NFR3.3・NFR5.3、AC5.1.6（画面の側）
+- [x] `useradmin/api/userAdminApi.test.ts` を作る（偽物の `fetch` で ApiClient を通す。`unit-test-instructions.md` 3節）。パスと `q` の付け方（空なら付けない、特殊文字の符号化）、5つの操作の道と本文なし、氏名と言語の本文は2項目だけ、余計な項目（`passwordHash`・`failedAttempts`・`refreshToken`）を捨てる、`lockedUntil` が `null`・無い・文字列、形の違う本文は通信の失敗、失敗の応答は `ApiError` のまま
+- [x] `unit-test-instructions.md` 2.5 のコマンドで流す
+- [x] 対応: NFR3.3・NFR5.3、AC5.1.6（画面の側）
 
 ### Step 11: 画面の部品 — 実装
 
-- [ ] `UserSearchBox`・`UserTable`・`UserRowActions`・`ConfirmActionDialog`・`EditProfileDialog` と CSS を 4.2 と FC 4節のとおり作る。見た目は部品と同じ場所の素の CSS で付け、要素の `style` 属性で差し込まない。HTML を直接埋め込まない（NFR9.1）
-- [ ] `UserRowActions` は Step 4 で確かめた `Dropdown` の形（押せない項目は `onClick` を呼ばずメニューは開いたまま、`aria-disabled`、`description` を `aria-describedby`）に合わせる。busy の間に `onClick` が届いても `onSelect` を呼ばない
-- [ ] `useradmin/testing/fixtures.ts`・`renderUserAdmin.tsx` を作る
-- [ ] 対応: D6・D7・D13・D14・D16・D18・D19、W2〜W5・W7・W12、FC 4節、NFR1.1・NFR5.5・NFR7.1・NFR8.2・NFR9.1、AC1.1.10〜AC1.1.12・AC2.1.8・AC2.1.9・AC3.1.7・AC3.1.8・AC4.1.9・AC5.1.7
+- [x] `UserSearchBox`・`UserTable`・`UserRowActions`・`ConfirmActionDialog`・`EditProfileDialog` と CSS を 4.2 と FC 4節のとおり作る。見た目は部品と同じ場所の素の CSS で付け、要素の `style` 属性で差し込まない。HTML を直接埋め込まない（NFR9.1）
+- [x] `UserRowActions` は Step 4 で確かめた `Dropdown` の形（押せない項目は `onClick` を呼ばずメニューは開いたまま、`aria-disabled`、`description` を `aria-describedby`）に合わせる。busy の間に `onClick` が届いても `onSelect` を呼ばない
+- [x] `useradmin/testing/fixtures.ts`・`renderUserAdmin.tsx` を作る
+- [x] 対応: D6・D7・D13・D14・D16・D18・D19、W2〜W5・W7・W12、FC 4節、NFR1.1・NFR5.5・NFR7.1・NFR8.2・NFR9.1、AC1.1.10〜AC1.1.12・AC2.1.8・AC2.1.9・AC3.1.7・AC3.1.8・AC4.1.9・AC5.1.7
 
 ### Step 12: 画面の部品 — テスト
 
-- [ ] `UserSearchBox.test.tsx`・`UserTable.test.tsx`・`UserRowActions.test.tsx`・`ConfirmActionDialog.test.tsx`・`EditProfileDialog.test.tsx` を作る（FC 8節、`unit-test-instructions.md` 3節）。部品ごとに vitest-axe を1件以上（誤りの状態・2語の氏名・長いメールアドレスを含む見本）
-- [ ] 描画の後に反映される値は `waitFor` で待つ。テストの時間の上限は原因を確かめずに延ばさない
-- [ ] `unit-test-instructions.md` 2.6 のコマンドで流す
-- [ ] 対応: D6・D7・D13・D14・D19、NFR1.1・NFR3.2・NFR3.3・NFR5.5・NFR7.1・NFR7.2・NFR8.2・NFR9.7
+- [x] `UserSearchBox.test.tsx`・`UserTable.test.tsx`・`UserRowActions.test.tsx`・`ConfirmActionDialog.test.tsx`・`EditProfileDialog.test.tsx` を作る（FC 8節、`unit-test-instructions.md` 3節）。部品ごとに vitest-axe を1件以上（誤りの状態・2語の氏名・長いメールアドレスを含む見本）
+- [x] 描画の後に反映される値は `waitFor` で待つ。テストの時間の上限は原因を確かめずに延ばさない
+- [x] `unit-test-instructions.md` 2.6 のコマンドで流す
+- [x] 対応: D6・D7・D13・D14・D19、NFR1.1・NFR3.2・NFR3.3・NFR5.5・NFR7.1・NFR7.2・NFR8.2・NFR9.7
 
 ### Step 13: 画面の組み立て（フック・画面・登録）— 実装
 
-- [ ] `useradmin/useUserAdmin.ts`・`UserAdminPage.tsx`・`.css`・`registration.ts` を 4.2 と FC 3節・6節のとおり作る
-- [ ] 失敗の扱いは `handleFailure` の1か所に集める（401 → `useAdminForbidden` → 場面ごと）。API を呼ぶ道はすべてここを通す。古い読み直しの答え（失敗を含む）は捨て、`useAdminForbidden` にも渡さない（8節の D-6）
-- [ ] 操作の後の読み直しの空のページは `correctedPage` で最後のページへ、1回の読み込みにつき1回まで（D10）
-- [ ] 対応: D1〜D4・D9〜D14・D17・D20、W1〜W12、FC 3節・6節、C4・C5、NFR1.2・NFR3.1・NFR5.4・NFR5.5・NFR5.6・NFR8.3、AC1.1.8〜AC1.1.10・AC2.1.13・AC3.1.11・AC4.1.10・AC5.1.2・AC5.1.3
+- [x] `useradmin/useUserAdmin.ts`・`UserAdminPage.tsx`・`.css`・`registration.ts` を 4.2 と FC 3節・6節のとおり作る
+- [x] 失敗の扱いは `handleFailure` の1か所に集める（401 → `useAdminForbidden` → 場面ごと）。API を呼ぶ道はすべてここを通す。古い読み直しの答え（失敗を含む）は捨て、`useAdminForbidden` にも渡さない（8節の D-6）
+- [x] 操作の後の読み直しの空のページは `correctedPage` で最後のページへ、1回の読み込みにつき1回まで（D10）
+- [x] 対応: D1〜D4・D9〜D14・D17・D20、W1〜W12、FC 3節・6節、C4・C5、NFR1.2・NFR3.1・NFR5.4・NFR5.5・NFR5.6・NFR8.3、AC1.1.8〜AC1.1.10・AC2.1.13・AC3.1.11・AC4.1.10・AC5.1.2・AC5.1.3
 
 ### Step 14: 画面の組み立て — テスト
 
-- [ ] `UserAdminPage.test.tsx` と `registration.test.tsx` を作る（FC 8節、`unit-test-instructions.md` 3節）。U4 のレビューの R-04（古い読み込みの 403 を捨てた後に最新の要求の 403 で S6 が出る）と、PD 3.3 の参照の戻り（(a)〜(d)）を含める
-- [ ] `unit-test-instructions.md` 2.7 のコマンドで、`useradmin` のすべてと、登録が増えたことで影響を受けうる骨組みのテスト（`src/app`）と既存の機能のテストを流す
-- [ ] 失敗したときは、既存のテストを書き換えず本体を直す。既存のテストの期待を変える必要があると分かったときは止めて依頼者に諮る
-- [ ] 対応: D1〜D4・D9〜D14・D17・D20、R-01〜R-06、NFR1.2・NFR3.1・NFR3.2・NFR5.4・NFR5.5・NFR7.2・NFR8.1・NFR8.3、AC1.1.8〜AC1.1.12・AC2.1.13・AC3.1.11・AC4.1.10・AC5.1.2・AC5.1.3・AC5.1.7、U4 の R-04
+- [x] `UserAdminPage.test.tsx` と `registration.test.tsx` を作る（FC 8節、`unit-test-instructions.md` 3節）。U4 のレビューの R-04（古い読み込みの 403 を捨てた後に最新の要求の 403 で S6 が出る）と、PD 3.3 の参照の戻り（(a)〜(d)）を含める
+- [x] `unit-test-instructions.md` 2.7 のコマンドで、`useradmin` のすべてと、登録が増えたことで影響を受けうる骨組みのテスト（`src/app`）と既存の機能のテストを流す
+- [x] 失敗したときは、既存のテストを書き換えず本体を直す。既存のテストの期待を変える必要があると分かったときは止めて依頼者に諮る
+- [x] 対応: D1〜D4・D9〜D14・D17・D20、R-01〜R-06、NFR1.2・NFR3.1・NFR3.2・NFR5.4・NFR5.5・NFR7.2・NFR8.1・NFR8.3、AC1.1.8〜AC1.1.12・AC2.1.13・AC3.1.11・AC4.1.10・AC5.1.2・AC5.1.3・AC5.1.7、U4 の R-04
 
 ### Step 15: E2E の土台（設定・報告の部品・手伝い）— 実装
 
-- [ ] `frontend/e2e/support/traceMode.ts`・`secretValues.ts`・`userAdminRun.ts`・`userAdminFixtures.ts`・`adminApiRoute.ts`・`userAdminDiagnostics.ts` を 4.4 のとおり作る。既存の `support/` のファイルは変えない
-- [ ] `frontend/playwright.config.ts` を直す（4.4）。資格情報は今のままプロセスの環境変数で渡し、`webServer.env` に置かない
-- [ ] `frontend/playwright-secret-check-reporter.ts` を SD 3.5 のとおり広げる（`node:fs`・`node:zlib`・`node:path` だけ。値は表示しない）。探す先・値のファイル・前の html の報告の場所は設定から受け、使い捨ての台本からも呼べる形にする（8節の D-9）
-- [ ] 対応: NFR3.4・NFR3.5・NFR9.2・NFR9.9、SD 3節・4節・5節、U4 の申し送り
+- [x] `frontend/e2e/support/traceMode.ts`・`secretValues.ts`・`userAdminRun.ts`・`userAdminFixtures.ts`・`adminApiRoute.ts`・`userAdminDiagnostics.ts` を 4.4 のとおり作る。既存の `support/` のファイルは変えない
+- [x] `frontend/playwright.config.ts` を直す（4.4）。資格情報は今のままプロセスの環境変数で渡し、`webServer.env` に置かない
+- [x] `frontend/playwright-secret-check-reporter.ts` を SD 3.5 のとおり広げる（`node:fs`・`node:zlib`・`node:path` だけ。値は表示しない）。探す先・値のファイル・前の html の報告の場所は設定から受け、使い捨ての台本からも呼べる形にする（8節の D-9）
+- [x] 対応: NFR3.4・NFR3.5・NFR9.2・NFR9.9、SD 3節・4節・5節、U4 の申し送り
 
 ### Step 16: E2E の土台 — 確かめ（わざと値を入れた確かめ）
 
-- [ ] SD 3.8 の (1)〜(8) を、リポジトリの外（ホームの下、権限 700 の一時の場所）に置く使い捨ての台本で、報告の部品を作った報告のファイルに向けて呼んで確かめる（8節の D-9。作業フォルダのファイルを書き換えない）。(1) json の報告の注記に U の氏名、(2) `test-results/` の下の zip（圧縮あり）の中のファイルに U のパスワードの URL の形、(3) `error-context.md` に U のメールアドレス、(4) 値のファイルを書かずに値の形だけで見つかる、(5) 壊れた zip で失敗、(6) 残した `playwright-report/`（`index.html` の base64 の zip に値）で失敗、(7) json の報告の添付の `body`（base64）に U のメールアドレス、(8) 値のファイルの `runTag` が 24 文字より短いときに単独では探さず警告。あわせて、値の無い報告で通ること、値のファイルが探し終えた後に無いこと、`recordSecretValues` が作ったファイルの権限が 600 であることを確かめる。台本の値は架空のもの（`example.com` の宛先、`e2e-u7-pw-` の形のパスワード、氏名「計測 花子」）で、終わったら一時の場所ごと消す
-- [ ] 確かめた種類ごとの結果（失敗・警告・通過）を、値を出さずに記録する
-- [ ] `E2E_TRACE=bogus` で設定の読み込みが誤りになり、無指定で `off` になることを `npx playwright test --list` で確かめる（`--list` はアプリを起動しない）
-- [ ] 確かめの後に `git status` と `git diff` で、作業フォルダに確かめの変更・一時のファイルが残っていないことを確かめて記録する（基盤の設計の R-03）
-- [ ] 対応: NFR3.4、SD 3.8、CP 4.5、`gate-decisions.md` の U5 R-03 と2回目の申し送り
+- [x] SD 3.8 の (1)〜(8) を、リポジトリの外（ホームの下、権限 700 の一時の場所）に置く使い捨ての台本で、報告の部品を作った報告のファイルに向けて呼んで確かめる（8節の D-9。作業フォルダのファイルを書き換えない）。(1) json の報告の注記に U の氏名、(2) `test-results/` の下の zip（圧縮あり）の中のファイルに U のパスワードの URL の形、(3) `error-context.md` に U のメールアドレス、(4) 値のファイルを書かずに値の形だけで見つかる、(5) 壊れた zip で失敗、(6) 残した `playwright-report/`（`index.html` の base64 の zip に値）で失敗、(7) json の報告の添付の `body`（base64）に U のメールアドレス、(8) 値のファイルの `runTag` が 24 文字より短いときに単独では探さず警告。あわせて、値の無い報告で通ること、値のファイルが探し終えた後に無いこと、`recordSecretValues` が作ったファイルの権限が 600 であることを確かめる。台本の値は架空のもの（`example.com` の宛先、`e2e-u7-pw-` の形のパスワード、氏名「計測 花子」）で、終わったら一時の場所ごと消す
+- [x] 確かめた種類ごとの結果（失敗・警告・通過）を、値を出さずに記録する
+- [x] `E2E_TRACE=bogus` で設定の読み込みが誤りになり、無指定で `off` になることを `npx playwright test --list` で確かめる（`--list` はアプリを起動しない）
+- [x] 確かめの後に `git status` と `git diff` で、作業フォルダに確かめの変更・一時のファイルが残っていないことを確かめて記録する（基盤の設計の R-03）
+- [x] 対応: NFR3.4、SD 3.8、CP 4.5、`gate-decisions.md` の U5 R-03 と2回目の申し送り
 
 ### Step 17: E2E 110・120 と README — 実装
 
-- [ ] `frontend/e2e/110-user-admin-flow.e2e.ts` を作る。`test.use({ trace: e2eTraceMode() })`。順は次のとおり（FS 9節に、NFR9.9 の照らし合わせと U4 のレビューの R-02 を足した）:
+- [x] `frontend/e2e/110-user-admin-flow.e2e.ts` を作る。`test.use({ trace: e2eTraceMode() })`。順は次のとおり（FS 9節に、NFR9.9 の照らし合わせと U4 のレビューの R-02 を足した）:
 
 | 順 | すること |
 |---|---|
@@ -327,8 +327,8 @@ U5 は画面（ui）の単位で、管理者が利用者の一覧で状態（管
 | 9 | U4 のレビューの R-02（画面と本物のサーバーを通した 403）: 9節の Q-B の決定の形で、管理者でない U の画面から本物の管理の API の 403 `ACCESS_DENIED` を受け、S6（`admin-forbidden-view`）が出て、管理のメニュー（「利用者の管理」のリンク）が消えることを確かめる。初期管理者・サーバーの U の状態は変えない |
 | 10 | 後片付け: コンテキストを閉じる。U は消さない。初期管理者の印・停止・ロックは触らない。管理者の画面の `watchPage` の CSP の違反が 0 件 |
 
-- [ ] 110 の `test.afterEach` で `userAdminDiagnostics` の記録を、失敗のときだけ添付する。`test.step` の題は英語で、値を入れない
-- [ ] `frontend/e2e/120-user-admin-accessibility.e2e.ts` を作る。`test.use({ trace: e2eTraceMode() })`。`DISPLAY_COMBOS` の組ごとに1つのテスト（20 件）と、測りのテスト1件:
+- [x] 110 の `test.afterEach` で `userAdminDiagnostics` の記録を、失敗のときだけ添付する。`test.step` の題は英語で、値を入れない
+- [x] `frontend/e2e/120-user-admin-accessibility.e2e.ts` を作る。`test.use({ trace: e2eTraceMode() })`。`DISPLAY_COMBOS` の組ごとに1つのテスト（20 件）と、測りのテスト1件:
 
 | 順 | すること（組ごとのテスト） |
 |---|---|
@@ -344,43 +344,43 @@ U5 は画面（ui）の単位で、管理者が利用者の一覧で状態（管
 | 3 | 口を測り後半のモード（2ページ分の見本）に切り替え、「次へ」を押す直前と2ページ目の最初の行が見えた時点の差を 5 回（測るたびに「前へ」で戻す） |
 | 4 | 添付 `user-admin-screen-ms`（PD 5.4 の形、`apiTimeIncluded`・`note` は決まった文）と注記に数だけを残す。時間はテストの成否にしない。`expectNoBlockedWrites` を確かめる |
 
-- [ ] 110・120 の先頭の説明文（日本語）に、流れの本数に数えるのは 110 だけ・初期管理者を変えない・差し替えの範囲・報告に値を入れない・trace の扱い・既存の `support/` を変えないことを書く
-- [ ] `README.md` を 4.4 のとおり直す
-- [ ] 対応: E2E-M9、NFR3.4・NFR3.5・NFR5.1・NFR5.2・NFR7.3・NFR9.1・NFR9.8・NFR9.9、AC3.2.9・AC3.2.10（画面の流れ）、U4 のレビューの R-02、機能設計の R-08、CP 4.1・4.6
+- [x] 110・120 の先頭の説明文（日本語）に、流れの本数に数えるのは 110 だけ・初期管理者を変えない・差し替えの範囲・報告に値を入れない・trace の扱い・既存の `support/` を変えないことを書く
+- [x] `README.md` を 4.4 のとおり直す
+- [x] 対応: E2E-M9、NFR3.4・NFR3.5・NFR5.1・NFR5.2・NFR7.3・NFR9.1・NFR9.8・NFR9.9、AC3.2.9・AC3.2.10（画面の流れ）、U4 のレビューの R-02、機能設計の R-08、CP 4.1・4.6
 
 ### Step 18: E2E 110・120 の実行と差し替えの口の確かめ
 
-- [ ] `./gradlew :backend:bootWar` と Mailpit を確かめた後に、`caffeinate -i` で包んで `(cd frontend && npx playwright test e2e/110-user-admin-flow.e2e.ts e2e/120-user-admin-accessibility.e2e.ts)` を流し、通るまで直す（README の 050〜130 と同じ形。合否の確定は Step 22 の `./gradlew e2eTest` の全体）。110 で飛ばした注記が出ていないこと、報告の部品が通ったことを確かめる。結果を記録してから `frontend/test-results/` を消す（`playwright-report/` は作られないことを確かめる）
-- [ ] SD 4.3 の3つの確かめ（わざと POST を送る形・口を張らない形・二重のスラッシュの道）を、追跡しない一時の E2E のファイル（例 `frontend/e2e/990-route-guard-check.e2e.ts`）に書き、`expectNoBlockedWrites` が失敗すること（前2つは「受けた件数」か「打ち切りの記録」で、二重のスラッシュは記録で）を確かめる形で流す。結果を記録した後にそのファイルを消す。既存のファイルは書き換えない
-- [ ] 確かめの後に `git status` と `git diff` で、一時のファイルと確かめの変更が残っていないことを確かめて記録する（基盤の設計の R-03）
-- [ ] 失敗したら `team.md` の「不安定なテストと CI の失敗」で扱う。時間の上限を原因を確かめずに延ばさない
-- [ ] 対応: NFR3.4・NFR3.5・NFR7.3・NFR9.8・NFR9.9、SD 4.3、CP 4.5
+- [x] `./gradlew :backend:bootWar` と Mailpit を確かめた後に、`caffeinate -i` で包んで `(cd frontend && npx playwright test e2e/110-user-admin-flow.e2e.ts e2e/120-user-admin-accessibility.e2e.ts)` を流し、通るまで直す（README の 050〜130 と同じ形。合否の確定は Step 22 の `./gradlew e2eTest` の全体）。110 で飛ばした注記が出ていないこと、報告の部品が通ったことを確かめる。結果を記録してから `frontend/test-results/` を消す（`playwright-report/` は作られないことを確かめる）
+- [x] SD 4.3 の3つの確かめ（わざと POST を送る形・口を張らない形・二重のスラッシュの道）を、追跡しない一時の E2E のファイル（例 `frontend/e2e/990-route-guard-check.e2e.ts`）に書き、`expectNoBlockedWrites` が失敗すること（前2つは「受けた件数」か「打ち切りの記録」で、二重のスラッシュは記録で）を確かめる形で流す。結果を記録した後にそのファイルを消す。既存のファイルは書き換えない
+- [x] 確かめの後に `git status` と `git diff` で、一時のファイルと確かめの変更が残っていないことを確かめて記録する（基盤の設計の R-03）
+- [x] 失敗したら `team.md` の「不安定なテストと CI の失敗」で扱う。時間の上限を原因を確かめずに延ばさない
+- [x] 対応: NFR3.4・NFR3.5・NFR7.3・NFR9.8・NFR9.9、SD 4.3、CP 4.5
 
 ### Step 19: 画面の静的検査と構造の確かめ
 
-- [ ] `unit-test-instructions.md` 2.8 のコマンドで、型の検査（`npm run typecheck`、`e2e` と見本の型を含む）、変えたフォルダーとファイルに絞った書式（Prettier）・リンタ（oxlint・ESLint、セキュリティ系の決まりを含む）・CSS のリンタ（Stylelint）・ライセンスヘッダーの検査を通す。除外を足さない（NFR9.1）
-- [ ] `npx playwright test --list` で 110 が 1 件、120 が 21 件、全体が 13 ファイル・152 件と出ることを確かめる
-- [ ] 画面の側の境界: `features/useradmin` が `features/` のほかの機能を読まないこと（`grep -rn "features/\(invitation\|preferences\|admin\|dsl\|auth\|registration\)" frontend/src/features/useradmin` が空）、`src/shared` と `src/app` に `features/useradmin` への読み込みが無いことを確かめて記録する。E2E が画面のコードを読むのは型（`import type`）だけであることを確かめる
-- [ ] 4.5 の差分が無いことを確かめて記録する
-- [ ] Step 1 の影響の洗い出しを、実装の後にもう一度行い、結果を記録する
-- [ ] 対応: NFR1.1・NFR9.1・NFR9.2・NFR9.3、CP 2節・8節
+- [x] `unit-test-instructions.md` 2.8 のコマンドで、型の検査（`npm run typecheck`、`e2e` と見本の型を含む）、変えたフォルダーとファイルに絞った書式（Prettier）・リンタ（oxlint・ESLint、セキュリティ系の決まりを含む）・CSS のリンタ（Stylelint）・ライセンスヘッダーの検査を通す。除外を足さない（NFR9.1）
+- [x] `npx playwright test --list` で 110 が 1 件、120 が 21 件、全体が 13 ファイル・152 件と出ることを確かめる
+- [x] 画面の側の境界: `features/useradmin` が `features/` のほかの機能を読まないこと（`grep -rn "features/\(invitation\|preferences\|admin\|dsl\|auth\|registration\)" frontend/src/features/useradmin` が空）、`src/shared` と `src/app` に `features/useradmin` への読み込みが無いことを確かめて記録する。E2E が画面のコードを読むのは型（`import type`）だけであることを確かめる
+- [x] 4.5 の差分が無いことを確かめて記録する
+- [x] Step 1 の影響の洗い出しを、実装の後にもう一度行い、結果を記録する
+- [x] 対応: NFR1.1・NFR9.1・NFR9.2・NFR9.3、CP 2節・8節
 
 ### Step 20: コードのレビューでの確かめ（申し送りと NFR の確かめ）
 
 各項目の確かめた方法と結果を `generation-notes.md` に書き、`code-summary.md` に写す。
 
-- [ ] **失敗の入口の1か所（NFR1.2、SD 2.2）**: `useradmin` で API を呼ぶ道がすべて `handleFailure` を通り、`403`・`ACCESS_DENIED` を自分で見ていないことを検索で確かめる
-- [ ] **画面の外に出さない（NFR3.1、SD 6.1）**: `useradmin` に `console`・`localStorage`・`sessionStorage`・`history.`・`location.` の使用が無いことを検索で確かめる
-- [ ] **文言と項目（NFR3.2・NFR3.3）**: `detail`・`title` を読んでいないこと、`dangerouslySetInnerHTML` と要素の `style` 属性が無いこと、一覧の本文を写して返していることを確かめる
-- [ ] **参照の戻り（PD 3.2）**: `loadingRef`・`submittingRef` を立てた関数がすべて `finally` で戻していることを確かめる
-- [ ] **自動の読み直しが無い（NFR5.4）**: `setInterval` が無く、`setTimeout` は 5 秒の表示だけであることを確かめる
-- [ ] **報告と資格情報（NFR3.4、SD 3.3）**: 110・120 と新しい手伝いの `test.step` の題・注記・添付・`expect` の説明文・locator の名前に値が入っていないこと、`webServer.env` を触っていないこと、120 が `request` の口で `/api/admin/` の下へ書き換えを送っていないことを確かめる
-- [ ] **8KB を超える要求（U2 の申し送り、9節の Q-C）**: 決定の形が実装とテストのとおりであることを確かめる
-- [ ] 対応: NFR1.2・NFR3.1〜NFR3.4・NFR5.4・NFR5.5・NFR9.1、SD 12節
+- [x] **失敗の入口の1か所（NFR1.2、SD 2.2）**: `useradmin` で API を呼ぶ道がすべて `handleFailure` を通り、`403`・`ACCESS_DENIED` を自分で見ていないことを検索で確かめる
+- [x] **画面の外に出さない（NFR3.1、SD 6.1）**: `useradmin` に `console`・`localStorage`・`sessionStorage`・`history.`・`location.` の使用が無いことを検索で確かめる
+- [x] **文言と項目（NFR3.2・NFR3.3）**: `detail`・`title` を読んでいないこと、`dangerouslySetInnerHTML` と要素の `style` 属性が無いこと、一覧の本文を写して返していることを確かめる
+- [x] **参照の戻り（PD 3.2）**: `loadingRef`・`submittingRef` を立てた関数がすべて `finally` で戻していることを確かめる
+- [x] **自動の読み直しが無い（NFR5.4）**: `setInterval` が無く、`setTimeout` は 5 秒の表示だけであることを確かめる
+- [x] **報告と資格情報（NFR3.4、SD 3.3）**: 110・120 と新しい手伝いの `test.step` の題・注記・添付・`expect` の説明文・locator の名前に値が入っていないこと、`webServer.env` を触っていないこと、120 が `request` の口で `/api/admin/` の下へ書き換えを送っていないことを確かめる
+- [x] **8KB を超える要求（U2 の申し送り、9節の Q-C）**: 決定の形が実装とテストのとおりであることを確かめる
+- [x] 対応: NFR1.2・NFR3.1〜NFR3.4・NFR5.4・NFR5.5・NFR9.1、SD 12節
 
 ### Step 21: 記録とコミットの提案（U5）
 
-- [ ] `code-summary.md`（作ったもの・移したもの・変えたもの、名指しのテストの件数、Step 3・4・16・18〜20 の確かめの結果、FC 2.5 の表の結果、初回の大きさの (1)・(2)、計画・承認済みの文書との差、依頼者に確かめたいこと、承認の場で確かめること）、`source-manifest.json`（U5 で作った・移した・変えたアプリのソース・テスト・E2E・設定・README のパスすべて。`frontend/.npmrc` とサブモジュールの gitlink を含め、記録は入れない）、`traceability.json`（6節の対応。U5 が OK とする AC と D1〜D20・NFR の ID に実装とテストのファイル、U3・U4・U1 へ Deferred の AC はそのまま、NFR5.1・NFR5.2 は Deferred で「記録のみ・本番での判定は Unverified（持ち主の段）」、E2E-M9 は 110）を作る
+- [x] `code-summary.md`（作ったもの・移したもの・変えたもの、名指しのテストの件数、Step 3・4・16・18〜20 の確かめの結果、FC 2.5 の表の結果、初回の大きさの (1)・(2)、計画・承認済みの文書との差、依頼者に確かめたいこと、承認の場で確かめること）、`source-manifest.json`（U5 で作った・移した・変えたアプリのソース・テスト・E2E・設定・README のパスすべて。`frontend/.npmrc` とサブモジュールの gitlink を含め、記録は入れない）、`traceability.json`（6節の対応。U5 が OK とする AC と D1〜D20・NFR の ID に実装とテストのファイル、U3・U4・U1 へ Deferred の AC はそのまま、NFR5.1・NFR5.2 は Deferred で「記録のみ・本番での判定は Unverified（持ち主の段）」、E2E-M9 は 110）を作る
 - [ ] 承認の場の前に、`code-summary.md` の「依頼者に確かめたいこと」「承認の場で確かめること」の節を洗い出して並べる（`project.md` の学び）
 - [ ] 3.3 の C3〜C6 の区切りで、コミットの内容とメッセージの案を依頼者に示す（生成の担当はコミットしない）
 - [ ] 承認を得てコミットした後、`git status` でアプリのソースに未コミットの変更が無いこと、C3〜C6 に `aidlc/` の下が入っていないことを `git show --stat` で確かめ、ハッシュを記録する

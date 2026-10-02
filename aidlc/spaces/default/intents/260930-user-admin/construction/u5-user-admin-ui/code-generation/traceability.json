@@ -1,0 +1,705 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-user-admin-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.1.14",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.2.9",
+    "AC3.2.10",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7",
+    "D8",
+    "D9",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20",
+    "E2E-M9"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（一覧の並び・20 件・応答の項目と全体の件数はサーバーの判定で、U3 が確かめる。画面は応答の順のまま列と印の文字で出し、ページの状態を示す: functional-spec.md W1・W2、D1・D19）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（ロック中の境界の判定は注入した時計を使うサーバーの判定で、U3 が確かめる。画面は応答の locked・lockedUntil をそのまま出す: functional-spec.md W1、D4・D18）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（応答に含めるロックの3つの値と含めない値はサーバーの判定で、U3 が確かめる。画面は resettable を行の操作の項目にだけ使う: functional-spec.md W4）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（大文字と小文字・特殊文字・上限ちょうどの一致の判定はサーバーで、U3 が確かめる。画面は前後の空白を除いた値を q で送る: functional-spec.md W3、D15）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（ページの番号と検索の文字の拒否・監査に残さない・ログに出さないのはサーバーで、U3 が確かめる。画面は 400 を検索の入力欄の下に出し一覧を変えない: functional-spec.md W3 の 5・6.1）"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（TRACE のログと応答の漏えいの防止はサーバーで、U3 が確かめる。画面は応答の値を console・保存・URL に出さない: functional-spec.md D20）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（20 人・21 人のページの数、停止中・初期管理者を含み招待中を含まないのはサーバーで、U3 が確かめる。画面のページ送りは functional-spec.md W2、D1）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserSearchBox.test.tsx"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（一覧の API の 401・403・200 と 403 の監査はサーバーで、U3 が確かめる。画面の 403 の扱いは functional-spec.md W9）"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（印を付けた後の次の要求の 200 と監査はサーバーで、U3 が確かめる。画面は成功の Toast と読み直し: functional-spec.md W6）"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（印を外した後の次の要求の 403 と監査はサーバーで、U3 が確かめる。画面は成功の Toast と読み直し: functional-spec.md W6）"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（自分自身への印の操作の拒否はサーバーで、U3 が確かめる。画面は自分の行の「印を外す」を押せない形にし、拒否されたら USER_ADMIN_SELF_OPERATION の文言: functional-spec.md W4・W6、D6）"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（変えるものが無い拒否と監査はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_ADMIN_NO_CHANGE）"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（対象がいない拒否と監査、ID の形の誤りはサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_NOT_FOUND）"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（同時の印の外しの重なりと最後の管理者の保護はサーバーで、U3 が確かめる。負けた側の画面は functional-spec.md W6 の USER_ADMIN_LAST_ADMIN・W9）"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（管理の API の外の要求の改ざんの防止はサーバーで、U3 が確かめる。この画面は管理の API の外を呼ばない）"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/ConfirmActionDialog.test.tsx"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（停止中の利用者への印の操作の拒否と監査はサーバーで、U3 が確かめる。画面は停止中の行に印の項目を出さず、拒否されたら USER_ADMIN_TARGET_SUSPENDED の文言: functional-spec.md W4 の 3・7.5）"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（業務処理の層を直接呼ぶ最後の管理者の保護の確かめで、U3 が確かめる。画面に当たる部分は無い）"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（違う種類の操作の重なりと最後の管理者の保護はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_ADMIN_LAST_ADMIN）"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.14",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（印の API の 401・403・200 と監査はサーバーで、U3 が確かめる。画面の 401・403 の扱いは functional-spec.md W9・W10）"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui（403 の共通の表示と開いていた表示を閉じる仕組みは AppFrame で、U4 が確かめる。利用者の管理の画面は 403 を useAdminForbidden に渡す: functional-spec.md W9、D11）"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui（ログインの状態の読み直しと管理のメニューを消すのは U4。利用者の管理の画面は W9 の 1・2 で共通の扱いに渡すだけ）"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui（管理の API の外の画面が今までどおり使えることは U4 と既存の画面で確かめる。この画面は関わらない）"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui（管理の入口・DSL・招待の画面の置き換えは U4。利用者の管理の画面も同じ共通の扱いを使う: functional-spec.md W9）"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui（管理者でない人の振り分けで S6 を出し一覧を出さないのは U4 の Q2 A。利用者の管理の画面は一覧の要求を送らない: functional-spec.md W9 の 4）"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "Deferred",
+      "target": "u4-admin-forbidden-ui・u3-user-admin-api（403 の監査の「アクセスの拒否」はサーバーの既存の動作で、U4 の記録と U3 のテストで確かめる。画面に当たる部分は無い）"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（止める操作とリフレッシュトークンの無効化と監査はサーバーで、U3 が確かめる。画面の一覧の [利用停止] の表示は functional-spec.md W1・W6）"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（停止を解く操作と監査、止める前のトークンの扱いはサーバーで、U3 が確かめる。画面の [有効] の表示は functional-spec.md W1・W6）"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（自分自身を止める拒否と監査はサーバーで、U3 が確かめる。画面は自分の行の「利用を止める」を押せない形にする: functional-spec.md W4、D6）"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（すでに停止中・停止していない利用者への拒否と監査はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_ADMIN_NO_CHANGE）"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（互いに止める重なりと最後の管理者の保護はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_ADMIN_LAST_ADMIN）"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（対象がいない拒否と監査はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_NOT_FOUND）"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/ConfirmActionDialog.test.tsx"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（業務処理の層を直接呼ぶ最後の管理者の保護の確かめで、U3 が確かめる。画面に当たる部分は無い）"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（止めても失敗回数とロックの状態を変えないのはサーバーで、U3 が確かめる。画面は [利用停止] と [ロック中] を両方出す: functional-spec.md W1、D19）"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（止める・解くの API の 401・403・200 と監査はサーバーで、U3 が確かめる。画面の 401・403 の扱いは functional-spec.md W9・W10）"
+    },
+    {
+      "id": "AC3.2.9",
+      "status": "Deferred",
+      "target": "u1-user-suspension（主。サーバーの拒否は U1 が確かめる）。U5 は画面の流れを frontend/e2e/110-user-admin-flow.e2e.ts（計画 Step 17 の順7）で確かめた"
+    },
+    {
+      "id": "AC3.2.10",
+      "status": "Deferred",
+      "target": "u1-user-suspension（主。サーバーの拒否は U1 が確かめる）。U5 は画面の流れを frontend/e2e/110-user-admin-flow.e2e.ts（計画 Step 17 の順7）で確かめた"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（失敗回数を 0 に戻す操作・直後のログイン・監査・resettable が偽になるのはサーバーで、U3 が確かめる。画面は読み直しで [ロック中] と項目が消える: functional-spec.md W4・W6）"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（戻した後のしきい値の境界はサーバーで、U3 が確かめる。画面に当たる部分は無い）"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（ロック中でない利用者の回数の取り消しはサーバーで、U3 が確かめる。画面は resettable が真なら項目を出す: functional-spec.md W4）"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（戻せない利用者の拒否と監査、行を作らないのはサーバーで、U3 が確かめる。画面は resettable が偽なら項目を出さない: functional-spec.md W4 の表と 6 の性質）"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（取り消しとログインの重なりはサーバーで、U3 が確かめる。画面に当たる部分は無い）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（対象がいない拒否と監査はサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_NOT_FOUND）"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（自分自身の失敗回数の取り消しを許すのはサーバーで、U3 が確かめる。画面は自分の行でもロックの解除を押せる形で出す: functional-spec.md W4 の表）"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（停止中の利用者の取り消しを受け付けるのはサーバーで、U3 が確かめる。画面は停止中の行にもロックの解除を出す: functional-spec.md W4 の 3）"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/ConfirmActionDialog.test.tsx"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（待ちの上限切れの USER_ADMIN_BUSY と状態を変えないのはサーバーで、U3 が確かめる。画面の文言は functional-spec.md 7.5 の USER_ADMIN_BUSY）"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（失敗回数の API の 401・403・200 と監査はサーバーで、U3 が確かめる。画面の 401・403 の扱いは functional-spec.md W9・W10）"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（氏名の変更と監査に残さないのはサーバーで、U3 が確かめる。画面は保存の後の読み直しで直した氏名を出す: functional-spec.md W7 の 5）"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（氏名と言語の検証と拒否はサーバーで、U3 が確かめる。画面は保存の前に同じ規則で確かめ、サーバーの 400 も入力欄の下に出す: functional-spec.md W7 の 3・6、D16）"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（対象がいない拒否と同じ値での成功はサーバーで、U3 が確かめる。画面の 404 は functional-spec.md 4.3 の not-found と W7 の 7）"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（知らない項目を無視し氏名と言語だけを変えるのはサーバーで、U3 が確かめる。画面は2つの項目だけを送る: functional-spec.md W7 の 2・4、6.3）"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/EditProfileDialog.test.tsx"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（氏名と言語の API の 401・403・200 はサーバーで、U3 が確かめる。画面の 401・403 の扱いは functional-spec.md W9・W10）"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/rowActions.test.ts"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/failureMessage.test.ts"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/api/userAdminApi.test.ts"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "frontend/playwright-secret-check-reporter.ts"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "frontend/e2e/support/adminApiRoute.ts"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "Deferred",
+      "target": "performance-validation・observability-setup・feedback-optimization（記録のみ・本番での判定は Unverified。120 の測りで user-admin-screen-ms を記録する: frontend/e2e/120-user-admin-accessibility.e2e.ts）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "Deferred",
+      "target": "performance-validation・observability-setup・feedback-optimization（記録のみ・本番での判定は Unverified。120 の測りで user-admin-screen-ms を記録する: frontend/e2e/120-user-admin-accessibility.e2e.ts）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/api/userAdminApi.test.ts"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "frontend/scripts/check-bundle-size.mjs"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/registration.test.tsx"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserTable.test.tsx"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "frontend/playwright-secret-check-reporter.ts"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "frontend/.npmrc"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/rowActions.test.ts"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "frontend/src/shared/api-client/fieldErrors.test.ts"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "frontend/e2e/support/userAdminFixtures.ts"
+    },
+    {
+      "id": "D1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D3",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D4",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserTable.test.tsx"
+    },
+    {
+      "id": "D5",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/rowActions.test.ts"
+    },
+    {
+      "id": "D6",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "id": "D7",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/ConfirmActionDialog.test.tsx"
+    },
+    {
+      "id": "D8",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/failureMessage.test.ts"
+    },
+    {
+      "id": "D9",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D10",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D11",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D12",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D13",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D14",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D15",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/searchInput.test.ts"
+    },
+    {
+      "id": "D16",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/profileInput.test.ts"
+    },
+    {
+      "id": "D17",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "D18",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/lockedUntil.test.ts"
+    },
+    {
+      "id": "D19",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserTable.test.tsx"
+    },
+    {
+      "id": "D20",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "id": "E2E-M9",
+      "status": "OK",
+      "target": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    }
+  ],
+  "reverse": []
+}
