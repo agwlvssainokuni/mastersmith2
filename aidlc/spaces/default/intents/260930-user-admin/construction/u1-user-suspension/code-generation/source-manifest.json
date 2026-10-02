@@ -1,0 +1,205 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-user-suspension",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".idea/.gitignore"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/domain/AccessDeniedReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/domain/AuthenticatedUser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/domain/AuthenticationEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/domain/LoginFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/domain/TokenFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/repository/RefreshTokenRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LoginCommand.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/RefreshTokenRevocationService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/RevokeAllResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/TokenRefreshService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/web/AccessTokenAuthenticationProvider.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/web/CurrentUserResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/web/LoginRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/User.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminInitializer.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/PasswordVerification.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserSummary.java"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V9__u1_user_suspension.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/domain/AccessDeniedReasonTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/web/AccessDeniedEventsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditAuthenticationEventsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditWriteFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/domain/SecretTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/domain/TokenAuthenticationExceptionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/repository/RefreshTokenRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/LoginCommandTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/LoginServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/LogoutServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/RefreshTokenRevocationServiceIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/RefreshTokenRevocationServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/TokenRefreshServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/testsupport/H2SessionWaits.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/testsupport/TestUserSuspension.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/AccessTokenApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/AccessTokenAuthenticationProviderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/AuthSuspensionSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/LoginApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/SuspendedUserAuthenticationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/WebSecretTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/repository/InvitationSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/repository/V8BackwardCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/repository/V8MigrationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/V7BackwardCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/V7MigrationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminInitializerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAccountServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserSuspensionIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePasswordApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePreferencesApiIT.java"
+    },
+    {
+      "path": "backend/src/test/resources/db/migration-through-v6/"
+    },
+    {
+      "path": "backend/src/test/resources/db/migration-through-v7/"
+    }
+  ]
+}

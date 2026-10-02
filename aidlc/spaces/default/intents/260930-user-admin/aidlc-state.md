@@ -35,8 +35,6 @@
 - **Revision Count**: 8
 
 - **Unit Ownership**: solo
-- **Active Unit**: u1-user-suspension
-- **Unit State**: in-progress
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -98,7 +96,7 @@ Per unit: [TBD]
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-10-02T00:29:03Z
+- **Last Updated**: 2026-10-02T06:14:45Z
 
 ## Session Resume Point
 - **Last Completed Stage**: infrastructure-design

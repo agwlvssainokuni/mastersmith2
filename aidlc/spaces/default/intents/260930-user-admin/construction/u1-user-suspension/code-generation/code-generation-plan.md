@@ -134,154 +134,154 @@ U1 のコード生成の計画を示す。Bolt は B1 利用停止の土台（`i
 
 ### Step 1: 作業の場の用意と、変更の前の基準（ブランチの作成は依頼者の承認を得てから）
 
-- [ ] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
-- [ ] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b1` を作る
-- [ ] いま手元に残っている `frontend/playwright-report/`・`frontend/test-results/` を消し、消したこと（中身の種類と件数だけ）と、共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定。どちらも `.gitignore` の対象で、コミットに影響しない）
-- [ ] Dependabot の開いている知らせ（`origin` の `dependabot/*` のブランチ）の一覧を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B1 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
-- [ ] 変更の前の基準をとる: colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、テストの件数（単体・結合、失敗・飛ばした）と、全体と次のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する: `auth.domain`・`auth.repository`・`auth.service`・`auth.web`・`access.domain`・`audit.domain`・`user.domain`・`user.repository`・`user.service`・`invitation.repository`・`invitation.service`・`invitation.web`（brownfield の Test Baseline、`project.md` の学び）
-- [ ] `INFORMATION_SCHEMA.COLUMNS` を読むテストを名前で検索し直し、2.1 の結果（`users` の列を閉じた一覧で確かめるテストが無い）が変わっていないことを確かめる（NFR3.1、NFR 要件の R-02）
-- [ ] 対応: B1 の共通の完了の条件、`gate-decisions.md`、NFR3.1
+- [x] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
+- [x] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b1` を作る
+- [x] いま手元に残っている `frontend/playwright-report/`・`frontend/test-results/` を消し、消したこと（中身の種類と件数だけ）と、共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定。どちらも `.gitignore` の対象で、コミットに影響しない）
+- [x] Dependabot の開いている知らせ（`origin` の `dependabot/*` のブランチ）の一覧を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B1 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
+- [x] 変更の前の基準をとる: colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、テストの件数（単体・結合、失敗・飛ばした）と、全体と次のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する: `auth.domain`・`auth.repository`・`auth.service`・`auth.web`・`access.domain`・`audit.domain`・`user.domain`・`user.repository`・`user.service`・`invitation.repository`・`invitation.service`・`invitation.web`（brownfield の Test Baseline、`project.md` の学び）
+- [x] `INFORMATION_SCHEMA.COLUMNS` を読むテストを名前で検索し直し、2.1 の結果（`users` の列を閉じた一覧で確かめるテストが無い）が変わっていないことを確かめる（NFR3.1、NFR 要件の R-02）
+- [x] 対応: B1 の共通の完了の条件、`gate-decisions.md`、NFR3.1
 
 ### Step 2: テストの実行の準備（最初のテストより前）
 
-- [ ] `unit-test-instructions.md` の「最初のテストより前の確かめ」のコマンドで、既存の単体テストと結合テストの道具が、作業ブランチの上で動くことを確かめる:
+- [x] `unit-test-instructions.md` の「最初のテストより前の確かめ」のコマンドで、既存の単体テストと結合テストの道具が、作業ブランチの上で動くことを確かめる:
   - `./gradlew :backend:test --tests 'cherry.mastersmith.access.domain.AccessDeniedReasonTest'`
   - `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.auth.repository.LoginAttemptStateRepositoryIT'`
-- [ ] 新しいテストのクラス（Step 4 以後に作るもの）は、作るまで `--tests` に名指しすると Gradle の「一致するテストが無い」で失敗する。これは想定どおりで、作った Step から通ることを `unit-test-instructions.md` の記述と合わせる
-- [ ] 対応: Testing Contract の `runner_step`、NFR9.6
+- [x] 新しいテストのクラス（Step 4 以後に作るもの）は、作るまで `--tests` に名指しすると Gradle の「一致するテストが無い」で失敗する。これは想定どおりで、作った Step から通ることを `unit-test-instructions.md` の記述と合わせる
+- [x] 対応: Testing Contract の `runner_step`、NFR9.6
 
 ### Step 3: 待ちの確かめの手伝いを `auth/testsupport` へ移す（片付けの順 1）
 
-- [ ] `invitation/repository/V8MigrationIT#awaitBlocked` の待ちの確かめを、`auth/testsupport/H2SessionWaits` に移す。今の作り（文の絞り込みが `INSERT INTO invitations%` に固定、接続が `url(tempDir)` に固定、上限が 20 秒に固定）を書き直し、次を引数にする（NFR 設計の R-04）:
+- [x] `invitation/repository/V8MigrationIT#awaitBlocked` の待ちの確かめを、`auth/testsupport/H2SessionWaits` に移す。今の作り（文の絞り込みが `INSERT INTO invitations%` に固定、接続が `url(tempDir)` に固定、上限が 20 秒に固定）を書き直し、次を引数にする（NFR 設計の R-04）:
   - 接続の URL（`TestDatabase.url(dir)` の値）
   - 実行中の文の絞り込み（`LIKE` の型。大文字・小文字をそろえて比べる）
   - 上限の時間（`Duration`）
   - 待っている側が先に終わったら失敗にするための判定（例: `Future#isDone`）
-- [ ] 上限の時間を過ぎたら、何を待っていたか（絞り込みの文字だけ）を書いた `AssertionError` で失敗にする。実時刻の `sleep` に頼らず、`Thread.onSpinWait` で見回す（今の形のまま）
-- [ ] `invitation/testsupport/TestInvitationBarrier#waitingForLock` とはまとめない（9節の Q-A の決定 A）。`TestInvitationBarrier` を変えず、まとめない理由と、`V8MigrationIT` を消した後は待ちの確かめが2か所（`auth/testsupport/H2SessionWaits`・`invitation/testsupport/TestInvitationBarrier`）になることを `code-summary.md` に記録する
-- [ ] この時点では `V8MigrationIT` を消さない（移した手伝いを使う Step 4 が通るまで残す。順を逆にすると移す前に手伝いが消える、`cicd-pipeline.md` 4節）
-- [ ] 対応: NFR9.6、`logical-components.md` 6節の 1、基盤の設計の R-02
+- [x] 上限の時間を過ぎたら、何を待っていたか（絞り込みの文字だけ）を書いた `AssertionError` で失敗にする。実時刻の `sleep` に頼らず、`Thread.onSpinWait` で見回す（今の形のまま）
+- [x] `invitation/testsupport/TestInvitationBarrier#waitingForLock` とはまとめない（9節の Q-A の決定 A）。`TestInvitationBarrier` を変えず、まとめない理由と、`V8MigrationIT` を消した後は待ちの確かめが2か所（`auth/testsupport/H2SessionWaits`・`invitation/testsupport/TestInvitationBarrier`）になることを `code-summary.md` に記録する
+- [x] この時点では `V8MigrationIT` を消さない（移した手伝いを使う Step 4 が通るまで残す。順を逆にすると移す前に手伝いが消える、`cicd-pipeline.md` 4節）
+- [x] 対応: NFR9.6、`logical-components.md` 6節の 1、基盤の設計の R-02
 
 ### Step 4: ダミーの行8つを排他したときの `lockDummyForUpdate` の結合テスト（片付けの順 2）
 
-- [ ] `auth/repository/LoginAttemptStateRepositoryIT` にテストを1件足す（`auth.repository` の足りない分岐「空いたダミーの行が無い」側、NFR9.5）:
+- [x] `auth/repository/LoginAttemptStateRepositoryIT` にテストを1件足す（`auth.repository` の足りない分岐「空いたダミーの行が無い」側、NFR9.5）:
   1. 別のスレッドのトランザクションで、ダミーの行8つ（`subject_id` が −1〜−8）をすべて `lockForUpdate` で排他し、合図を出して確定を待たせる
   2. もう1つのスレッドで `lockDummyForUpdate` を呼ぶ（`SKIP LOCKED` で空になり、乱数で選んだ行の排他を待つ）
   3. `H2SessionWaits` で、`login_attempt_states` の `for update` の文が実行中になったことを確かめる。上限の時間は `lockDummyForUpdate` の待ちの上限（3 秒）より短くし（例 2 秒）、確かめを 3 秒より前に終える（NFR 設計の R-04）
   4. 排他を持つ側を確定し、`lockDummyForUpdate` がダミーの行（`subject_id` が負）を1つ返すことを確かめる
-- [ ] 説明文は英語（例: `when every dummy row is held, a random dummy row is waited for and returned`）。`sleep` に頼らない
-- [ ] `unit-test-instructions.md` の `LoginAttemptStateRepositoryIT` のコマンドで流し、通ることを確かめる。上の手順で確かめが 3 秒に間に合わず不安定になるときは、原因（待ちに入るまでの時間）を確かめてから直す。上限の時間を延ばして済ませない（`team.md` の Testing Posture）
-- [ ] 対応: NFR9.5、`security-design.md` 9.2、`cicd-pipeline.md` 4節の 2
+- [x] 説明文は英語（例: `when every dummy row is held, a random dummy row is waited for and returned`）。`sleep` に頼らない
+- [x] `unit-test-instructions.md` の `LoginAttemptStateRepositoryIT` のコマンドで流し、通ることを確かめる。上の手順で確かめが 3 秒に間に合わず不安定になるときは、原因（待ちに入るまでの時間）を確かめてから直す。上限の時間を延ばして済ませない（`team.md` の Testing Posture）
+- [x] 対応: NFR9.5、`security-design.md` 9.2、`cicd-pipeline.md` 4節の 2
 
 ### Step 5: `InvitationSchemaIT` へ確かめを移す（片付けの順 3）
 
-- [ ] `stateChangesAndUniqueness` の2件目の招待中の追記の確かめ（今は例外の型だけ）に、原因の連なりの SQLState が `23505` であることと、文言が制約の名前 `UK_INVITATIONS_PENDING_EMAIL` を含むことの確かめを足す（`V8MigrationIT` の (a) を弱めない、NFR 設計の R-05）
-- [ ] `V8MigrationIT` の (b) を1件足す: 招待中でない状態（`CANCELLED`・`REPLACED`・`COMPLETED`）の行は同じメールアドレスで重ねて追記でき、`pending_email` が空で、続けて同じメールアドレスの `PENDING` を1件追記できる。知らない状態の値（例 `EXPIRED`）は CHECK の制約（SQLState `23513`）で拒否される。今の `InvitationSchemaIT` の JDBC の形（Spring を起動したテストの内部DB）で書く（Q2 A）
-- [ ] `V8MigrationIT` の (c) は `stateChangesAndUniqueness`（取り消した後に同じメールアドレスで招待中を作れる）が確かめ済みのため移さない。(d)（同時の追記の待ちと一意の違反）は移さず、`invitation/service/InvitationConcurrencyIT` の `two simultaneous invitations to the same email create one, the other is AlreadyPending with its id` が業務の層で確かめているとみなす。この対応を `code-summary.md` に表で記録する（Q2 A）
-- [ ] `unit-test-instructions.md` の `InvitationSchemaIT` のコマンドで流す
-- [ ] 対応: NFR 設計の Q2 A・R-05、`cicd-pipeline.md` 4節の 3
+- [x] `stateChangesAndUniqueness` の2件目の招待中の追記の確かめ（今は例外の型だけ）に、原因の連なりの SQLState が `23505` であることと、文言が制約の名前 `UK_INVITATIONS_PENDING_EMAIL` を含むことの確かめを足す（`V8MigrationIT` の (a) を弱めない、NFR 設計の R-05）
+- [x] `V8MigrationIT` の (b) を1件足す: 招待中でない状態（`CANCELLED`・`REPLACED`・`COMPLETED`）の行は同じメールアドレスで重ねて追記でき、`pending_email` が空で、続けて同じメールアドレスの `PENDING` を1件追記できる。知らない状態の値（例 `EXPIRED`）は CHECK の制約（SQLState `23513`）で拒否される。今の `InvitationSchemaIT` の JDBC の形（Spring を起動したテストの内部DB）で書く（Q2 A）
+- [x] `V8MigrationIT` の (c) は `stateChangesAndUniqueness`（取り消した後に同じメールアドレスで招待中を作れる）が確かめ済みのため移さない。(d)（同時の追記の待ちと一意の違反）は移さず、`invitation/service/InvitationConcurrencyIT` の `two simultaneous invitations to the same email create one, the other is AlreadyPending with its id` が業務の層で確かめているとみなす。この対応を `code-summary.md` に表で記録する（Q2 A）
+- [x] `unit-test-instructions.md` の `InvitationSchemaIT` のコマンドで流す
+- [x] 対応: NFR 設計の Q2 A・R-05、`cicd-pipeline.md` 4節の 3
 
 ### Step 6: V7・V8 のテストと複写の置き場を消し、参照が残っていないことを確かめる（片付けの順 4・5）
 
-- [ ] 消す: `user/repository/V7MigrationIT.java`・`V7BackwardCompatibilityIT.java`、`invitation/repository/V8MigrationIT.java`・`V8BackwardCompatibilityIT.java`（Q3 A、`security-design.md` 8.3）
-- [ ] 消す: `backend/src/test/resources/db/migration-through-v6/`・`migration-through-v7/`（消すテストだけが使う複写）
-- [ ] 参照の確かめ: 消したクラスの名前・`migration-through-v6`・`migration-through-v7` が、`backend/`・`build.gradle.kts`・`settings.gradle.kts`・`.gitleaks.toml`・`backend/config/`・`.github/` に残っていないことを検索で確かめる。`README.md` の参照は Step 21 で直す（`cicd-pipeline.md` 4節の表）。ワークフローの記録（`aidlc/` の下）の過去の Intent の記述は直さない
-- [ ] `unit-test-instructions.md` の片付けの確かめのコマンド（`user.repository`・`invitation.repository` の結合テスト）で流し、消した後も通ることを確かめる
-- [ ] 対応: NFR 設計の Q3 A、`cicd-pipeline.md` 4節の 4・5
+- [x] 消す: `user/repository/V7MigrationIT.java`・`V7BackwardCompatibilityIT.java`、`invitation/repository/V8MigrationIT.java`・`V8BackwardCompatibilityIT.java`（Q3 A、`security-design.md` 8.3）
+- [x] 消す: `backend/src/test/resources/db/migration-through-v6/`・`migration-through-v7/`（消すテストだけが使う複写）
+- [x] 参照の確かめ: 消したクラスの名前・`migration-through-v6`・`migration-through-v7` が、`backend/`・`build.gradle.kts`・`settings.gradle.kts`・`.gitleaks.toml`・`backend/config/`・`.github/` に残っていないことを検索で確かめる。`README.md` の参照は Step 21 で直す（`cicd-pipeline.md` 4節の表）。ワークフローの記録（`aidlc/` の下）の過去の Intent の記述は直さない
+- [x] `unit-test-instructions.md` の片付けの確かめのコマンド（`user.repository`・`invitation.repository` の結合テスト）で流し、消した後も通ることを確かめる
+- [x] 対応: NFR 設計の Q3 A、`cicd-pipeline.md` 4節の 4・5
 
 ### Step 7: 片付けの区切りの確かめ
 
-- [ ] Step 3〜6 の変更がテストのソースと資源だけで、`src/main` を変えていないことを `git diff --stat` で確かめる（`packagesJudgedByTotal` の扱いに関わらない、`cicd-pipeline.md` 4節）
-- [ ] C1 の区切りの内容をここで固め、生成の後のコミットの提案（Step 25）に使う
+- [x] Step 3〜6 の変更がテストのソースと資源だけで、`src/main` を変えていないことを `git diff --stat` で確かめる（`packagesJudgedByTotal` の扱いに関わらない、`cicd-pipeline.md` 4節）
+- [x] C1 の区切りの内容をここで固め、生成の後のコミットの提案（Step 25）に使う
 
 ### Step 8: ドメインの層の前の確かめ
 
-- [ ] 次の Step で区分を足すと、区分の数や `switch` を前提にした既存のテストが変わることを、影響の範囲として確かめる: `auth/domain/TokenAuthenticationExceptionTest`（`fourReasons` が `hasSize(4)`）、`access/domain/AccessDeniedReasonTest`（`everyTokenFailureReasonIsCovered` は `TOKEN_EXPIRED` 以外に理由があると期待）、`auth/web/TokenAuthenticationEntryPointTest`・`auth/domain/TokenAuthenticationExceptionTest` の `@EnumSource(TokenFailureReason.class)`、`audit/domain/AuditEventFactoryTest` の `@EnumSource(LoginFailureReason.class)`
-- [ ] 対応: 8節の D-8
+- [x] 次の Step で区分を足すと、区分の数や `switch` を前提にした既存のテストが変わることを、影響の範囲として確かめる: `auth/domain/TokenAuthenticationExceptionTest`（`fourReasons` が `hasSize(4)`）、`access/domain/AccessDeniedReasonTest`（`everyTokenFailureReasonIsCovered` は `TOKEN_EXPIRED` 以外に理由があると期待）、`auth/web/TokenAuthenticationEntryPointTest`・`auth/domain/TokenAuthenticationExceptionTest` の `@EnumSource(TokenFailureReason.class)`、`audit/domain/AuditEventFactoryTest` の `@EnumSource(LoginFailureReason.class)`
+- [x] 対応: 8節の D-8
 
 ### Step 9: ドメイン — 実装
 
-- [ ] `auth.domain.LoginFailureReason` に `ACCOUNT_SUSPENDED`（17 文字、説明は「利用停止中」）を足す（C7、BR2.5・BR7.2）
-- [ ] `auth.domain.TokenFailureReason` に `USER_SUSPENDED`（14 文字、説明は「利用者が利用停止中」）を足す（Q3 A、BR4.1・BR7.2）
-- [ ] `access.domain.AccessDeniedReason#of(TokenFailureReason)` の `switch` に `case USER_SUSPENDED -> Optional.empty();` を足し、Javadoc に「有効期限切れと同じく出来事にしない（契約 C7 の not_recorded）」を書く（BR4.2、`security-design.md` 2.4）
-- [ ] `audit.domain.AuditFailureReason` に `ACCOUNT_SUSPENDED` を足し、`audit.domain.AuditEventFactory` の `LoginFailureReason` の変換に1行足す（`security-design.md` 6節。2.2 の読み方のとおり、コンパイルのためこの Step で行う）
-- [ ] `auth.domain.AuthenticationEvent` に `toString` を足す: `enteredEmail` は値の有無に関わらず `***` と出し（`UserSummary` の伏せ方と同じ）、種類・日時・利用者 ID・理由・送り手の情報・トレースID は今のまま出す。`EmailAddress.mask` は使わない（`auth.domain` を `user.domain` に依存させない、`security-design.md` 5.1）
-- [ ] `auth.domain.AuthenticatedUser` に `toString` を足す: `email` を `***` にし、`userId`・`admin` を出す（NFR 設計の承認の場の決定）
-- [ ] 対応: BR2.5・BR4.1・BR4.2・BR7.2、NFR2.3・NFR3.1、C7
+- [x] `auth.domain.LoginFailureReason` に `ACCOUNT_SUSPENDED`（17 文字、説明は「利用停止中」）を足す（C7、BR2.5・BR7.2）
+- [x] `auth.domain.TokenFailureReason` に `USER_SUSPENDED`（14 文字、説明は「利用者が利用停止中」）を足す（Q3 A、BR4.1・BR7.2）
+- [x] `access.domain.AccessDeniedReason#of(TokenFailureReason)` の `switch` に `case USER_SUSPENDED -> Optional.empty();` を足し、Javadoc に「有効期限切れと同じく出来事にしない（契約 C7 の not_recorded）」を書く（BR4.2、`security-design.md` 2.4）
+- [x] `audit.domain.AuditFailureReason` に `ACCOUNT_SUSPENDED` を足し、`audit.domain.AuditEventFactory` の `LoginFailureReason` の変換に1行足す（`security-design.md` 6節。2.2 の読み方のとおり、コンパイルのためこの Step で行う）
+- [x] `auth.domain.AuthenticationEvent` に `toString` を足す: `enteredEmail` は値の有無に関わらず `***` と出し（`UserSummary` の伏せ方と同じ）、種類・日時・利用者 ID・理由・送り手の情報・トレースID は今のまま出す。`EmailAddress.mask` は使わない（`auth.domain` を `user.domain` に依存させない、`security-design.md` 5.1）
+- [x] `auth.domain.AuthenticatedUser` に `toString` を足す: `email` を `***` にし、`userId`・`admin` を出す（NFR 設計の承認の場の決定）
+- [x] 対応: BR2.5・BR4.1・BR4.2・BR7.2、NFR2.3・NFR3.1、C7
 
 ### Step 10: ドメイン — テスト（単体）
 
-- [ ] `auth/domain/TokenAuthenticationExceptionTest`: 区分の数のテストを 5 にし（説明文も `five reasons are defined`）、`USER_SUSPENDED` が `invalid_token` の誤りになることを `@EnumSource` で含める
-- [ ] `access/domain/AccessDeniedReasonTest`: `USER_SUSPENDED` が理由なし（空）になるテストを足し、`everyTokenFailureReasonIsCovered` の期待を「`TOKEN_EXPIRED`・`USER_SUSPENDED` は空、ほかは同じ名前の理由」に直す。変換が区分を尽くすことは `@EnumSource` のまま確かめる（NFR2.3）
-- [ ] `audit/domain/AuditEventFactoryTest`: `ACCOUNT_SUSPENDED` の LOGIN_FAILED が、結果 FAILURE・理由 `ACCOUNT_SUSPENDED`・操作した人に利用者 ID・入れたメールアドレスが入った監査の行になることを1件足す（既存の `everyLoginFailureReasonIsCopied` も新しい値を含む）
-- [ ] `auth/domain/SecretTypesTest`: `AuthenticationEvent#toString` が入れたメールアドレスを含まず `***` を含み、ほかの項目（種類・理由・送り手の IP・トレースID）を含むこと、`AuthenticatedUser#toString` がメールアドレスを含まず利用者 ID と管理者の印を含むことを足す（テストのメールアドレスは `example.com`）
-- [ ] `unit-test-instructions.md` のドメインの層のコマンドで流し、通ることを確かめる
-- [ ] 対応: NFR2.3・NFR3.1、BR4.2・BR7.2
+- [x] `auth/domain/TokenAuthenticationExceptionTest`: 区分の数のテストを 5 にし（説明文も `five reasons are defined`）、`USER_SUSPENDED` が `invalid_token` の誤りになることを `@EnumSource` で含める
+- [x] `access/domain/AccessDeniedReasonTest`: `USER_SUSPENDED` が理由なし（空）になるテストを足し、`everyTokenFailureReasonIsCovered` の期待を「`TOKEN_EXPIRED`・`USER_SUSPENDED` は空、ほかは同じ名前の理由」に直す。変換が区分を尽くすことは `@EnumSource` のまま確かめる（NFR2.3）
+- [x] `audit/domain/AuditEventFactoryTest`: `ACCOUNT_SUSPENDED` の LOGIN_FAILED が、結果 FAILURE・理由 `ACCOUNT_SUSPENDED`・操作した人に利用者 ID・入れたメールアドレスが入った監査の行になることを1件足す（既存の `everyLoginFailureReasonIsCopied` も新しい値を含む）
+- [x] `auth/domain/SecretTypesTest`: `AuthenticationEvent#toString` が入れたメールアドレスを含まず `***` を含み、ほかの項目（種類・理由・送り手の IP・トレースID）を含むこと、`AuthenticatedUser#toString` がメールアドレスを含まず利用者 ID と管理者の印を含むことを足す（テストのメールアドレスは `example.com`）
+- [x] `unit-test-instructions.md` のドメインの層のコマンドで流し、通ることを確かめる
+- [x] 対応: NFR2.3・NFR3.1、BR4.2・BR7.2
 
 ### Step 11: スキーマ（V9）と DB アクセス — 実装
 
-- [ ] `backend/src/main/resources/db/migration/V9__u1_user_suspension.sql` を作る。先頭のライセンスヘッダーは既存の V1〜V8 と同じ SQL のコメントの形、本文は `ALTER TABLE users ADD COLUMN suspended BOOLEAN DEFAULT FALSE NOT NULL;` の1文だけ（`security-design.md` 8.1、BR1.2、NFR10.1）。V1〜V8 は書き換えない
-- [ ] `user.domain.User` に `@Column(name = "suspended", nullable = false) private boolean suspended;`（作るときは false）と `isSuspended()` を足す。書き換えのメソッドは作らない（NFR1.4）。Javadoc に「書き換えは `user.repository` の停止の列だけの更新の問い合わせで行う」と書く
-- [ ] `user.repository.UserRepository` に `updateSuspended` を足す: `@Modifying(clearAutomatically = true, flushAutomatically = true)`、`@Query("UPDATE User u SET u.suspended = :suspended WHERE u.userId = :userId")`、更新した行の数を返す（`security-design.md` 4.1、BR1.4・BR1.5、NFR9.4）
-- [ ] `auth.repository.RefreshTokenRepository` に `revokeAllActiveByUserId` を足す: `@Modifying(clearAutomatically = true, flushAutomatically = true)`、`update RefreshToken t set t.revokedAt = :revokedAt where t.userId = :userId and t.revokedAt is null`、更新した行の数を返す（期限切れも含む、BR5.1、NFR5.3・NFR9.4）
-- [ ] 問い合わせはどれも名前つきの引数で、文字列をつなげない（SpotBugs の `SQL_` の関門）
-- [ ] 既存の V8 までの結合テストで `users` に JDBC で追記している箇所（`suspended` を書かない）が、既定の値で動くことを Step 12 の実行で確かめる（列を知らない追記の形の、ついでの確かめ。後方互換の自動のテストの代わりにはしない）
-- [ ] 対応: BR1.1・BR1.2・BR1.4・BR1.5・BR5.1、NFR1.4・NFR5.3・NFR9.4・NFR10.1
+- [x] `backend/src/main/resources/db/migration/V9__u1_user_suspension.sql` を作る。先頭のライセンスヘッダーは既存の V1〜V8 と同じ SQL のコメントの形、本文は `ALTER TABLE users ADD COLUMN suspended BOOLEAN DEFAULT FALSE NOT NULL;` の1文だけ（`security-design.md` 8.1、BR1.2、NFR10.1）。V1〜V8 は書き換えない
+- [x] `user.domain.User` に `@Column(name = "suspended", nullable = false) private boolean suspended;`（作るときは false）と `isSuspended()` を足す。書き換えのメソッドは作らない（NFR1.4）。Javadoc に「書き換えは `user.repository` の停止の列だけの更新の問い合わせで行う」と書く
+- [x] `user.repository.UserRepository` に `updateSuspended` を足す: `@Modifying(clearAutomatically = true, flushAutomatically = true)`、`@Query("UPDATE User u SET u.suspended = :suspended WHERE u.userId = :userId")`、更新した行の数を返す（`security-design.md` 4.1、BR1.4・BR1.5、NFR9.4）
+- [x] `auth.repository.RefreshTokenRepository` に `revokeAllActiveByUserId` を足す: `@Modifying(clearAutomatically = true, flushAutomatically = true)`、`update RefreshToken t set t.revokedAt = :revokedAt where t.userId = :userId and t.revokedAt is null`、更新した行の数を返す（期限切れも含む、BR5.1、NFR5.3・NFR9.4）
+- [x] 問い合わせはどれも名前つきの引数で、文字列をつなげない（SpotBugs の `SQL_` の関門）
+- [x] 既存の V8 までの結合テストで `users` に JDBC で追記している箇所（`suspended` を書かない）が、既定の値で動くことを Step 12 の実行で確かめる（列を知らない追記の形の、ついでの確かめ。後方互換の自動のテストの代わりにはしない）
+- [x] 対応: BR1.1・BR1.2・BR1.4・BR1.5・BR5.1、NFR1.4・NFR5.3・NFR9.4・NFR10.1
 
 ### Step 12: スキーマと DB アクセス — テスト（結合）
 
-- [ ] `user/repository/UserSchemaIT`: エンティティで `suspended` の既定（作った直後は false）を読み戻せること、更新の問い合わせで true・false を書いて読み戻せることを足す（Q1 B。起動時の `validate-on-migrate` と `ddl-auto: validate` は、このクラスの Spring の起動で同時に確かめる）。`INFORMATION_SCHEMA` で列の定義を確かめるテストは足さない（Q1 B）
-- [ ] `user/repository/UserRepositoryIT`: `updateSuspended` が `suspended` だけを書き換え、管理者の印・氏名と表示の設定の4列・パスワードのハッシュを変えないこと、いない利用者 ID で 0 を返すこと、同じトランザクションで先に `findById` で読み込んだ後に更新しても、後の `findById` が書いた値を返すこと（文脈を空にする）を足す
-- [ ] `auth/repository/RefreshTokenRepositoryIT`: `revokeAllActiveByUserId` で、対象の利用者の未無効の行（期限切れを含む）がすべて指定の時刻で無効になり件数が返ること、無効の行の `revokedAt` とほかの利用者の行が変わらないこと、未無効の行が無いとき 0 を返すことを足す。件数は未無効 100 件・無効の行と、ほかの利用者の行を混ぜた形で確かめ、時間は比べない（NFR5.3、Q2 A）
-- [ ] `unit-test-instructions.md` の DB アクセスの層のコマンドで流す
-- [ ] 対応: NFR5.3・NFR10.1（起動と読み書きの範囲だけ）・NFR11.2、BR1.4・BR1.5・BR5.1
+- [x] `user/repository/UserSchemaIT`: エンティティで `suspended` の既定（作った直後は false）を読み戻せること、更新の問い合わせで true・false を書いて読み戻せることを足す（Q1 B。起動時の `validate-on-migrate` と `ddl-auto: validate` は、このクラスの Spring の起動で同時に確かめる）。`INFORMATION_SCHEMA` で列の定義を確かめるテストは足さない（Q1 B）
+- [x] `user/repository/UserRepositoryIT`: `updateSuspended` が `suspended` だけを書き換え、管理者の印・氏名と表示の設定の4列・パスワードのハッシュを変えないこと、いない利用者 ID で 0 を返すこと、同じトランザクションで先に `findById` で読み込んだ後に更新しても、後の `findById` が書いた値を返すこと（文脈を空にする）を足す
+- [x] `auth/repository/RefreshTokenRepositoryIT`: `revokeAllActiveByUserId` で、対象の利用者の未無効の行（期限切れを含む）がすべて指定の時刻で無効になり件数が返ること、無効の行の `revokedAt` とほかの利用者の行が変わらないこと、未無効の行が無いとき 0 を返すことを足す。件数は未無効 100 件・無効の行と、ほかの利用者の行を混ぜた形で確かめ、時間は比べない（NFR5.3、Q2 A）
+- [x] `unit-test-instructions.md` の DB アクセスの層のコマンドで流す
+- [x] 対応: NFR5.3・NFR10.1（起動と読み書きの範囲だけ）・NFR11.2、BR1.4・BR1.5・BR5.1
 
 ### Step 13: 業務処理 — 実装
 
-- [ ] `user.service.UserSummary` の最後に `boolean suspended` を足し、`toString` に `suspended=` を出す。Javadoc の `@param` を足す（BR1.3、`security-design.md` 2.1）
-- [ ] `user.service.UserAccountService`:
+- [x] `user.service.UserSummary` の最後に `boolean suspended` を足し、`toString` に `suspended=` を出す。Javadoc の `@param` を足す（BR1.3、`security-design.md` 2.1）
+- [x] `user.service.UserAccountService`:
   - `toSummary` が `user.isSuspended()` を写す（読み取りの回数は変えない、NFR5.1）
   - `isSuspended(long userId)`: `@Transactional(readOnly = true)`、`findById` の結果の `isSuspended()`、いなければ `IllegalStateException`（文言に利用者 ID だけ）
   - `setSuspended(long userId, boolean suspended)`: `@Transactional(propagation = Propagation.MANDATORY)`、`updateSuspended` が 0 なら `IllegalStateException`。拒否の判定・監査・トークンの無効化はしない（BR1.5）。Javadoc に C1 の約束（呼ぶ前に読み込んだエンティティは切り離される、`logical-components.md` 3節）を書く
-- [ ] `auth.service.RevokeAllResult`（record、`int revoked`、0 以上を生成時に確かめる）と `auth.service.RefreshTokenRevocationService` を作る: `revokeAllRefreshTokens(long userId)` は `@Transactional(propagation = Propagation.MANDATORY)`、注入した `Clock` の今の時刻で `revokeAllActiveByUserId` を1回呼び、DEBUG のログに `userId`・`revoked` をキーと値で出し、`RevokeAllResult` を返す。監査の出来事は出さない（BR5.1〜BR5.3、NFR3.2）
-- [ ] `auth.service.LoginService#decide`: 本人の行を `lockForUpdate` で読んだ直後、`LockPolicy.decide` の前に、`user.suspended()` が true なら `attemptRepository.update(user.userId(), current.consecutiveFailures(), current.lockedUntil())` を1回、`publishFailure(verification.email(), user.userId(), LoginFailureReason.ACCOUNT_SUSPENDED, now, client)` を1件行い、`Decision.FAILED` を返す（`security-design.md` 2.2、BR2.1〜BR2.5）。行が無いときの「作ってやり直す」流れは今のまま停止の判定より前にある。判定のトランザクションで `users` を読み直さない（BR5.5、R-03）。停止で拒否したことのアプリのログは足さない（8節の D-9）。クラスの Javadoc の手順に停止の判定を足す
-- [ ] `auth.service.TokenRefreshService#refresh`: `findById` の直後に `user.suspended()` が true なら `failed()` を投げる（例外で `revokeIfActive` も巻き戻る、監査は出さない。BR3.1・BR3.2）。Javadoc の `@throws` に停止中を足す
-- [ ] `auth.service.LoginCommand` に `toString` を足し、`email` を `***` にする（パスワードは `Password` の伏せ字のまま）
-- [ ] `user.service.PasswordVerification` に `toString` を足し、`email` を `***` にする（`user` は `UserSummary` の伏せた文字列化のまま、`matched` は出す）（9節の Q-C B）。`UserAccountService#verifyPassword(String, Password)`・`#existsByEmail(String)` の `String` の引数は変えない（後の Intent へ）
-- [ ] `UserSummary` の引数が増えるため、テストで `new UserSummary(...)` を使う5か所（`auth/service/LoginServiceTest`・`LogoutServiceTest`・`TokenRefreshServiceTest`、`user/service/UserAccountServiceTest`、`dslmanage/service/DslLifecycleTest`）に `false` を足す
-- [ ] 対応: BR1.3〜BR1.5・BR2.1〜BR2.6・BR3.1・BR3.2・BR5.1〜BR5.3、NFR1.1・NFR2.2・NFR3.1・NFR3.2・NFR5.1・NFR11.2、C1
+- [x] `auth.service.RevokeAllResult`（record、`int revoked`、0 以上を生成時に確かめる）と `auth.service.RefreshTokenRevocationService` を作る: `revokeAllRefreshTokens(long userId)` は `@Transactional(propagation = Propagation.MANDATORY)`、注入した `Clock` の今の時刻で `revokeAllActiveByUserId` を1回呼び、DEBUG のログに `userId`・`revoked` をキーと値で出し、`RevokeAllResult` を返す。監査の出来事は出さない（BR5.1〜BR5.3、NFR3.2）
+- [x] `auth.service.LoginService#decide`: 本人の行を `lockForUpdate` で読んだ直後、`LockPolicy.decide` の前に、`user.suspended()` が true なら `attemptRepository.update(user.userId(), current.consecutiveFailures(), current.lockedUntil())` を1回、`publishFailure(verification.email(), user.userId(), LoginFailureReason.ACCOUNT_SUSPENDED, now, client)` を1件行い、`Decision.FAILED` を返す（`security-design.md` 2.2、BR2.1〜BR2.5）。行が無いときの「作ってやり直す」流れは今のまま停止の判定より前にある。判定のトランザクションで `users` を読み直さない（BR5.5、R-03）。停止で拒否したことのアプリのログは足さない（8節の D-9）。クラスの Javadoc の手順に停止の判定を足す
+- [x] `auth.service.TokenRefreshService#refresh`: `findById` の直後に `user.suspended()` が true なら `failed()` を投げる（例外で `revokeIfActive` も巻き戻る、監査は出さない。BR3.1・BR3.2）。Javadoc の `@throws` に停止中を足す
+- [x] `auth.service.LoginCommand` に `toString` を足し、`email` を `***` にする（パスワードは `Password` の伏せ字のまま）
+- [x] `user.service.PasswordVerification` に `toString` を足し、`email` を `***` にする（`user` は `UserSummary` の伏せた文字列化のまま、`matched` は出す）（9節の Q-C B）。`UserAccountService#verifyPassword(String, Password)`・`#existsByEmail(String)` の `String` の引数は変えない（後の Intent へ）
+- [x] `UserSummary` の引数が増えるため、テストで `new UserSummary(...)` を使う5か所（`auth/service/LoginServiceTest`・`LogoutServiceTest`・`TokenRefreshServiceTest`、`user/service/UserAccountServiceTest`、`dslmanage/service/DslLifecycleTest`）に `false` を足す
+- [x] 対応: BR1.3〜BR1.5・BR2.1〜BR2.6・BR3.1・BR3.2・BR5.1〜BR5.3、NFR1.1・NFR2.2・NFR3.1・NFR3.2・NFR5.1・NFR11.2、C1
 
 ### Step 14: 業務処理 — テスト（単体・結合）
 
-- [ ] `auth/testsupport/TestUserSuspension` を作る: `suspend(userId)`（同じトランザクションで `setSuspended(true)` と `revokeAllRefreshTokens`、U3 の止める操作と同じ組）と `resume(userId)`（`setSuspended(false)` だけ）を `TransactionTemplate` で呼ぶ。テストの中で停止の状態を入れる口はこれだけにし、JDBC で `users` を直接書き換えない
-- [ ] `user/service/UserAccountServiceTest`: `findById` と `verifyPassword` の要約に `suspended` が写ること（true・false）、`isSuspended` が値を返しいなければ `IllegalStateException`、`setSuspended` が 0 行で `IllegalStateException`、`UserSummary#toString` が真偽を出しメールアドレスと氏名を出さないこと、`PasswordVerification#toString` がメールアドレスと氏名を含まず `***` と照合の結果を含むこと（利用者がいない・いるの両方）を足す（9節の Q-C B）
-- [ ] `user/service/UserSuspensionIT`（新しい。Spring と組み込みの H2）: トランザクションの外から `setSuspended` を呼ぶと `IllegalTransactionStateException`、呼び出し元を巻き戻すと停止の状態が戻ること、同じトランザクションで (1) `findById` で読み込み、(2) `setSuspended(true)` の後に `isSuspended` と `findById` の要約の `suspended` が true、(3) `setSuspended(false)` の後にどちらも false（R-05）、いない利用者 ID の `setSuspended`・`isSuspended` が `IllegalStateException` で呼び出し元が巻き戻ること、止めても管理者の印・氏名と表示の設定・ロックの状態の行が変わらないこと（BR1.5）
-- [ ] `auth/service/RefreshTokenRevocationServiceTest`（単体）: 注入した時計の時刻で無効にすること、件数を `RevokeAllResult` で返すこと（0 件も成功）、DEBUG のログのキーが `userId`・`revoked` だけでトークンの値・ハッシュが無いこと（`LogEvents`）、`RevokeAllResult` が負の数を拒むこと
-- [ ] `auth/service/RefreshTokenRevocationServiceIT`（新しい）: トランザクションの外から呼ぶと `IllegalTransactionStateException`、`setSuspended(true)` と同じトランザクションで呼んで巻き戻すと停止の状態とトークンの無効化の両方が戻ること、確定すると両方が残ること、停止を解いても無効にした行は戻らないこと（BR5.4）
-- [ ] `auth/service/LoginServiceTest`: 停止中の4つの場合（正しいパスワード・誤ったパスワード・ロック中・本人の行が無い）で、`update` が読んだ値のまま1回（行が無いときは作ってやり直した後に1回）、出来事が `LOGIN_FAILED`・`ACCOUNT_SUSPENDED`・利用者 ID の1件、例外が `AUTHENTICATION_FAILED`、トークンの発行とリフレッシュトークンの保存が無いことを確かめる。停止中かつロック中の理由が `ACCOUNT_SUSPENDED` になること。説明文に `suspended login attempts do not increase the failure count` を入れたテストで、失敗回数 n（しきい値未満）が n のまま書かれ、しきい値−1 の状態でもロックが掛からないことを確かめる（NFR 設計の R-06、AC3.2.8）。停止を解いた後（`suspended` が false の要約）は、止める前の回数から今までどおり数えること
-- [ ] `auth/service/TokenRefreshServiceTest`: 停止中の利用者のトークンで `REFRESH_FAILED` になり、`issueTokens` が呼ばれないこと（巻き戻しは結合テストで確かめる）
-- [ ] `auth/service/LoginCommandTest`（新しい）: `toString` がメールアドレスとパスワードを含まないこと
-- [ ] `unit-test-instructions.md` の業務処理の層のコマンドで流す
-- [ ] 対応: NFR1.1・NFR1.3・NFR2.2・NFR3.1・NFR3.2・NFR9.2・NFR9.3・NFR11.2、BR1.4・BR1.5・BR2.1〜BR2.5・BR3.1・BR5.1〜BR5.4、AC3.2.3・AC3.2.8
+- [x] `auth/testsupport/TestUserSuspension` を作る: `suspend(userId)`（同じトランザクションで `setSuspended(true)` と `revokeAllRefreshTokens`、U3 の止める操作と同じ組）と `resume(userId)`（`setSuspended(false)` だけ）を `TransactionTemplate` で呼ぶ。テストの中で停止の状態を入れる口はこれだけにし、JDBC で `users` を直接書き換えない
+- [x] `user/service/UserAccountServiceTest`: `findById` と `verifyPassword` の要約に `suspended` が写ること（true・false）、`isSuspended` が値を返しいなければ `IllegalStateException`、`setSuspended` が 0 行で `IllegalStateException`、`UserSummary#toString` が真偽を出しメールアドレスと氏名を出さないこと、`PasswordVerification#toString` がメールアドレスと氏名を含まず `***` と照合の結果を含むこと（利用者がいない・いるの両方）を足す（9節の Q-C B）
+- [x] `user/service/UserSuspensionIT`（新しい。Spring と組み込みの H2）: トランザクションの外から `setSuspended` を呼ぶと `IllegalTransactionStateException`、呼び出し元を巻き戻すと停止の状態が戻ること、同じトランザクションで (1) `findById` で読み込み、(2) `setSuspended(true)` の後に `isSuspended` と `findById` の要約の `suspended` が true、(3) `setSuspended(false)` の後にどちらも false（R-05）、いない利用者 ID の `setSuspended`・`isSuspended` が `IllegalStateException` で呼び出し元が巻き戻ること、止めても管理者の印・氏名と表示の設定・ロックの状態の行が変わらないこと（BR1.5）
+- [x] `auth/service/RefreshTokenRevocationServiceTest`（単体）: 注入した時計の時刻で無効にすること、件数を `RevokeAllResult` で返すこと（0 件も成功）、DEBUG のログのキーが `userId`・`revoked` だけでトークンの値・ハッシュが無いこと（`LogEvents`）、`RevokeAllResult` が負の数を拒むこと
+- [x] `auth/service/RefreshTokenRevocationServiceIT`（新しい）: トランザクションの外から呼ぶと `IllegalTransactionStateException`、`setSuspended(true)` と同じトランザクションで呼んで巻き戻すと停止の状態とトークンの無効化の両方が戻ること、確定すると両方が残ること、停止を解いても無効にした行は戻らないこと（BR5.4）
+- [x] `auth/service/LoginServiceTest`: 停止中の4つの場合（正しいパスワード・誤ったパスワード・ロック中・本人の行が無い）で、`update` が読んだ値のまま1回（行が無いときは作ってやり直した後に1回）、出来事が `LOGIN_FAILED`・`ACCOUNT_SUSPENDED`・利用者 ID の1件、例外が `AUTHENTICATION_FAILED`、トークンの発行とリフレッシュトークンの保存が無いことを確かめる。停止中かつロック中の理由が `ACCOUNT_SUSPENDED` になること。説明文に `suspended login attempts do not increase the failure count` を入れたテストで、失敗回数 n（しきい値未満）が n のまま書かれ、しきい値−1 の状態でもロックが掛からないことを確かめる（NFR 設計の R-06、AC3.2.8）。停止を解いた後（`suspended` が false の要約）は、止める前の回数から今までどおり数えること
+- [x] `auth/service/TokenRefreshServiceTest`: 停止中の利用者のトークンで `REFRESH_FAILED` になり、`issueTokens` が呼ばれないこと（巻き戻しは結合テストで確かめる）
+- [x] `auth/service/LoginCommandTest`（新しい）: `toString` がメールアドレスとパスワードを含まないこと
+- [x] `unit-test-instructions.md` の業務処理の層のコマンドで流す
+- [x] 対応: NFR1.1・NFR1.3・NFR2.2・NFR3.1・NFR3.2・NFR9.2・NFR9.3・NFR11.2、BR1.4・BR1.5・BR2.1〜BR2.5・BR3.1・BR5.1〜BR5.4、AC3.2.3・AC3.2.8
 
 ### Step 15: 認証の3つの入口（web）— 実装
 
-- [ ] `auth.web.AccessTokenAuthenticationProvider#authenticate`: `findById` の直後に `user.suspended()` が true なら `TokenAuthenticationException(TokenFailureReason.USER_SUSPENDED)` を投げる。入口（`TokenAuthenticationEntryPoint`）と応答（401 `AUTHENTICATION_REQUIRED`）は変えない（BR4.1・BR6.1）
-- [ ] `auth.web.CurrentUserResponse` に `toString` を足し、`email`・`displayName` を `***` にする（`admin` と表示の設定は出す。JSON の応答は変えない）
-- [ ] `auth.web.LoginRequest` の今の `toString`（`LoginRequest[email=<値>, password=***]`）を、`email` も `***` にする形に直す。JSON の受け取りと入力の検証は変えない（9節の Q-C B）
-- [ ] ログインとトークンの更新の入口（`AuthController`）は変えない（判定は Step 13 の業務処理にある）
-- [ ] 対応: BR4.1・BR4.4・BR6.1、NFR1.1・NFR2.1・NFR3.1
+- [x] `auth.web.AccessTokenAuthenticationProvider#authenticate`: `findById` の直後に `user.suspended()` が true なら `TokenAuthenticationException(TokenFailureReason.USER_SUSPENDED)` を投げる。入口（`TokenAuthenticationEntryPoint`）と応答（401 `AUTHENTICATION_REQUIRED`）は変えない（BR4.1・BR6.1）
+- [x] `auth.web.CurrentUserResponse` に `toString` を足し、`email`・`displayName` を `***` にする（`admin` と表示の設定は出す。JSON の応答は変えない）
+- [x] `auth.web.LoginRequest` の今の `toString`（`LoginRequest[email=<値>, password=***]`）を、`email` も `***` にする形に直す。JSON の受け取りと入力の検証は変えない（9節の Q-C B）
+- [x] ログインとトークンの更新の入口（`AuthController`）は変えない（判定は Step 13 の業務処理にある）
+- [x] 対応: BR4.1・BR4.4・BR6.1、NFR1.1・NFR2.1・NFR3.1
 
 ### Step 16: 認証の3つの入口 — テスト（単体）
 
-- [ ] `auth/web/AccessTokenAuthenticationProviderTest`（新しい。`AccessTokenService` と `UserAccountService` を Mockito で差し替える）: 有効な利用者は `AuthenticatedUser` の主体になる、停止中は区分 `USER_SUSPENDED`、いない利用者は `USER_NOT_FOUND`、`supports` が Bearer だけを受ける、停止の判定のために `findById` を1回しか呼ばない
-- [ ] `auth/web/WebSecretTypesTest`: 既存の `the login request hides the password but keeps the email` の確かめを、`LoginRequest#toString` がパスワードとメールアドレスの両方を含まず `***` を含む形に直し、説明文も合わせる（例 `the login request hides the password and the email`。9節の Q-C B、8節の D-8）。`CurrentUserResponse#toString` がメールアドレスと氏名を含まず、`TokenResponse#toString`（中に `CurrentUserResponse` を持つ）も含まないことを足す
-- [ ] `unit-test-instructions.md` の入口の層の単体のコマンドで流す
-- [ ] 対応: NFR1.1・NFR3.1、BR4.1
+- [x] `auth/web/AccessTokenAuthenticationProviderTest`（新しい。`AccessTokenService` と `UserAccountService` を Mockito で差し替える）: 有効な利用者は `AuthenticatedUser` の主体になる、停止中は区分 `USER_SUSPENDED`、いない利用者は `USER_NOT_FOUND`、`supports` が Bearer だけを受ける、停止の判定のために `findById` を1回しか呼ばない
+- [x] `auth/web/WebSecretTypesTest`: 既存の `the login request hides the password but keeps the email` の確かめを、`LoginRequest#toString` がパスワードとメールアドレスの両方を含まず `***` を含む形に直し、説明文も合わせる（例 `the login request hides the password and the email`。9節の Q-C B、8節の D-8）。`CurrentUserResponse#toString` がメールアドレスと氏名を含まず、`TokenResponse#toString`（中に `CurrentUserResponse` を持つ）も含まないことを足す
+- [x] `unit-test-instructions.md` の入口の層の単体のコマンドで流す
+- [x] 対応: NFR1.1・NFR3.1、BR4.1
 
 ### Step 17: 認証の3つの入口 — テスト（結合）
 
-- [ ] `auth/web/SuspendedUserAuthenticationIT`（新しい。`@SpringBootTest(webEnvironment = RANDOM_PORT)`、`AuthApiTestConfig` の `MutableClock`・`CountingPasswordEncoder`、`TestUserSuspension`）。テストの利用者はテストごとに `example.com` のメールアドレスで作り、前のテストの状態に頼らない:
+- [x] `auth/web/SuspendedUserAuthenticationIT`（新しい。`@SpringBootTest(webEnvironment = RANDOM_PORT)`、`AuthApiTestConfig` の `MutableClock`・`CountingPasswordEncoder`、`TestUserSuspension`）。テストの利用者はテストごとに `example.com` のメールアドレスで作り、前のテストの状態に頼らない:
   - 入口ごとの拒否（NFR1.1、AC3.2.1〜AC3.2.3）: 止めた後、止める前のアクセストークンで保護された窓口 → 401 `AUTHENTICATION_REQUIRED`、止める前のリフレッシュトークン → 401 `REFRESH_FAILED`、正しいパスワード・誤ったパスワード・ロック中（停止の前にしきい値まで失敗させた利用者）のログイン → 401 `AUTHENTICATION_FAILED` でトークンと Cookie が無い
   - 応答の同じさ（NFR2.1、BR6.1）: 入口ごとに、停止中とほかの失敗（ログインはパスワードの誤り、更新は無効にしたトークン、アクセストークンは改ざんしたトークン）の状態コード・code・本文の項目（`traceId` などの毎回変わる値を除く）が同じこと、本文に `SUSPENDED` を含まないこと
   - 停止の間の更新の巻き戻し（BR3.1、M8 B の隙を作る形）: `TestUserSuspension` を使わずに `setSuspended(true)` だけを確定させた利用者の、まだ有効なリフレッシュトークンでの更新が 401 で、そのトークンの `revoked_at` が空のまま（巻き戻った）
@@ -289,79 +289,79 @@ U1 のコード生成の計画を示す。Bolt は B1 利用停止の土台（`i
   - 止める前のアクセストークンの時刻の例（NFR1.3、AC3.2.7、FS の 2.4）: `MutableClock` で t0 にログイン、t0＋1 分に止め、t0＋1 分〜t0＋2 分は 401、t0＋2 分に解き、t0＋5 分の1ミリ秒前は受け付け、t0＋5 分ちょうどは 401。`sleep` と実時刻に頼らない
   - 停止中の管理者（NFR2.3、AC3.2.5、BR4.4）: 管理者を作って止め、止める前のアクセストークンで管理の API（既存の `/api/admin/` の下の確かめの窓口と招待の一覧）を呼ぶと 401 で、対象の状態が変わらず、監査の表に業務の行もアクセスの拒否の行も増えない
   - 問い合わせの回数（NFR5.1）: `SqlStatementCounter` で、停止中・有効のアクセストークンの要求がどちらも `select users` を1回だけ出すこと、停止中の更新が有効な更新と同じ数の `select users` で止まること
-- [ ] `auth/web/LoginApiIT` に1件足す（NFR2.2、AC3.2.3）: 停止中の3つの場合（正しいパスワード・誤ったパスワード・ロック中）と本人の行が無い停止中の利用者のログインが、パスワードの誤りと同じ応答、同じ文の並び（`select users`・`select login_attempt_states for update`・`update login_attempt_states`・`insert audit_events`。行が無い場合は行を作る文を含めてパスワードの誤り（行なし）と同じ並び）、同じ照合の回数（1回）であること。既存の `failuresAreIndistinguishable` は変えない
-- [ ] `auth/web/AccessTokenApiIT` に1件足す: 停止中の利用者のトークンが 401 で、入口の DEBUG の区分が `USER_SUSPENDED` であること
-- [ ] `access/web/AccessDeniedEventsIT` に1件足す: 停止中の利用者の有効なトークンで管理の窓口を呼ぶと 401 で、アクセスの拒否の出来事が出ないこと（有効期限切れと同じ、NFR2.3、C7）
-- [ ] `user/web/MePreferencesApiIT` と `user/web/MePasswordApiIT` に1件ずつ足す（NFR1.4、BR1.6、`team.md` の要求の改ざん）: 本文に `"suspended": true`（とあわせて `"admin": true`）を足して送っても、停止の状態と管理者の印が変わらず、次のアクセストークンの要求が通ること。停止中の利用者が `"suspended": false` を足して送っても、401 のまま状態が変わらないこと
-- [ ] `invitation/web/InvitationAdminApiIT` に1件足す（AC3.2.6、BR6.4、R-04）: 停止中の利用者のメールアドレスへの招待が、今と同じ 409 `INVITATION_EMAIL_REGISTERED` で、招待の行とメールが作られないこと
-- [ ] `unit-test-instructions.md` の入口の層の結合のコマンドで流す
-- [ ] 対応: NFR1.1〜NFR1.4・NFR2.1〜NFR2.3・NFR5.1・NFR9.1〜NFR9.3、BR1.6・BR3.1・BR3.3・BR4.1〜BR4.4・BR6.1・BR6.2・BR6.4、AC3.2.1〜AC3.2.8
+- [x] `auth/web/LoginApiIT` に1件足す（NFR2.2、AC3.2.3）: 停止中の3つの場合（正しいパスワード・誤ったパスワード・ロック中）と本人の行が無い停止中の利用者のログインが、パスワードの誤りと同じ応答、同じ文の並び（`select users`・`select login_attempt_states for update`・`update login_attempt_states`・`insert audit_events`。行が無い場合は行を作る文を含めてパスワードの誤り（行なし）と同じ並び）、同じ照合の回数（1回）であること。既存の `failuresAreIndistinguishable` は変えない
+- [x] `auth/web/AccessTokenApiIT` に1件足す: 停止中の利用者のトークンが 401 で、入口の DEBUG の区分が `USER_SUSPENDED` であること
+- [x] `access/web/AccessDeniedEventsIT` に1件足す: 停止中の利用者の有効なトークンで管理の窓口を呼ぶと 401 で、アクセスの拒否の出来事が出ないこと（有効期限切れと同じ、NFR2.3、C7）
+- [x] `user/web/MePreferencesApiIT` と `user/web/MePasswordApiIT` に1件ずつ足す（NFR1.4、BR1.6、`team.md` の要求の改ざん）: 本文に `"suspended": true`（とあわせて `"admin": true`）を足して送っても、停止の状態と管理者の印が変わらず、次のアクセストークンの要求が通ること。停止中の利用者が `"suspended": false` を足して送っても、401 のまま状態が変わらないこと
+- [x] `invitation/web/InvitationAdminApiIT` に1件足す（AC3.2.6、BR6.4、R-04）: 停止中の利用者のメールアドレスへの招待が、今と同じ 409 `INVITATION_EMAIL_REGISTERED` で、招待の行とメールが作られないこと
+- [x] `unit-test-instructions.md` の入口の層の結合のコマンドで流す
+- [x] 対応: NFR1.1〜NFR1.4・NFR2.1〜NFR2.3・NFR5.1・NFR9.1〜NFR9.3、BR1.6・BR3.1・BR3.3・BR4.1〜BR4.4・BR6.1・BR6.2・BR6.4、AC3.2.1〜AC3.2.8
 
 ### Step 18: AC3.2.6 の回帰テストの記録
 
-- [ ] AC3.2.6 の回帰テスト1件（機能設計の R-04）が `InvitationAdminApiIT` にあり、既存の招待の確かめ（登録済みの拒否）を変えていないことを `code-summary.md` に記録する
-- [ ] 対応: AC3.2.6、BR6.4
+- [x] AC3.2.6 の回帰テスト1件（機能設計の R-04）が `InvitationAdminApiIT` にあり、既存の招待の確かめ（登録済みの拒否）を変えていないことを `code-summary.md` に記録する
+- [x] 対応: AC3.2.6、BR6.4
 
 ### Step 19: 監査 — テスト（結合）
 
-- [ ] `audit/service/AuditAuthenticationEventsIT` に1件足す（BR2.5、AC3.2.8、C7、NFR6.1）: 停止中の利用者の正しいパスワード・誤ったパスワードのログインが、それぞれ `LOGIN_FAILED`・結果 `FAILURE`・理由 `ACCOUNT_SUSPENDED`・操作した人に本人の利用者 ID・入れたメールアドレス（パスワードの誤りと同じ形で入る。停止中だけ空にしない、NFR 設計の R-03）・送り手の情報・トレースID の1行で残り、要求のスレッドで1回の insert であること
-- [ ] 停止中の更新とアクセストークンの認証は監査の行を作らないこと（C7 の not_recorded、BR3.2・BR4.2）を同じクラスか `SuspendedUserAuthenticationIT` で確かめる（行の数が増えない）
-- [ ] `audit/service/AuditWriteFailureIT` に1件足す（NFR6.2）: 監査の書き込みの失敗（`APPEND_FAILURE`・`CONNECTION_FAILURE`）でも、停止中のログインの応答（401 `AUTHENTICATION_FAILED`）が変わらないこと
-- [ ] `unit-test-instructions.md` の監査の層のコマンドで流す
-- [ ] 対応: NFR6.1・NFR6.2、BR2.5・BR3.2・BR4.2、C7
+- [x] `audit/service/AuditAuthenticationEventsIT` に1件足す（BR2.5、AC3.2.8、C7、NFR6.1）: 停止中の利用者の正しいパスワード・誤ったパスワードのログインが、それぞれ `LOGIN_FAILED`・結果 `FAILURE`・理由 `ACCOUNT_SUSPENDED`・操作した人に本人の利用者 ID・入れたメールアドレス（パスワードの誤りと同じ形で入る。停止中だけ空にしない、NFR 設計の R-03）・送り手の情報・トレースID の1行で残り、要求のスレッドで1回の insert であること
+- [x] 停止中の更新とアクセストークンの認証は監査の行を作らないこと（C7 の not_recorded、BR3.2・BR4.2）を同じクラスか `SuspendedUserAuthenticationIT` で確かめる（行の数が増えない）
+- [x] `audit/service/AuditWriteFailureIT` に1件足す（NFR6.2）: 監査の書き込みの失敗（`APPEND_FAILURE`・`CONNECTION_FAILURE`）でも、停止中のログインの応答（401 `AUTHENTICATION_FAILED`）が変わらないこと
+- [x] `unit-test-instructions.md` の監査の層のコマンドで流す
+- [x] 対応: NFR6.1・NFR6.2、BR2.5・BR3.2・BR4.2、C7
 
 ### Step 20: 漏えいのテスト（TRACE を有効にした結合テスト）
 
-- [ ] `auth/web/AuthSuspensionSecretLeakIT`（新しい。既存の `AuthSecretLeakIT` と同じく `SpringApplicationBuilder` で起動し、`OutputCaptureExtension` で出力を捕まえる。9節の Q-B の決定 A）。`--logging.level.cherry.mastersmith.auth=TRACE`・`user=TRACE`・`audit=TRACE`・`dslmanage=TRACE` を渡し、アプリの既定のログのレベル（`application.yaml`）は変えない:
+- [x] `auth/web/AuthSuspensionSecretLeakIT`（新しい。既存の `AuthSecretLeakIT` と同じく `SpringApplicationBuilder` で起動し、`OutputCaptureExtension` で出力を捕まえる。9節の Q-B の決定 A）。`--logging.level.cherry.mastersmith.auth=TRACE`・`user=TRACE`・`audit=TRACE`・`dslmanage=TRACE` を渡し、アプリの既定のログのレベル（`application.yaml`）は変えない:
   - 流す操作: ログインの成功・パスワードの誤り・停止中のログイン（正しいパスワード）・トークンの更新・停止中の更新・停止中のアクセストークンの要求・まとめての無効化（`TestUserSuspension#suspend`）・管理者のトークンでの DSL のプレビューの読み取り（`DslAdminController` の引数の `AuthenticatedUser`）
   - 確かめ1（値が無い）: 出力全体に、パスワード（平文）・パスワードのハッシュ・アクセストークン・リフレッシュトークンの値・署名鍵が無いこと（`JsonLogRecords.assertContainsNoSecret`）、すべての行が JSON であること
   - 確かめ2（伏せ字）: 次の TRACE の行が出ていて、その行にテストの利用者のメールアドレス（と氏名）が無いこと: `ENTER LoginService#login`（`LoginCommand`）・`ENTER AuditEventListener#onAuthenticationEvent`（`AuthenticationEvent`）・`EXIT AuthController#login` と `EXIT AuthController#refresh`（`TokenResponse` の中の `CurrentUserResponse`）・`ENTER DslAdminController#preview`（`AuthenticatedUser`）・`ENTER RefreshTokenRevocationService#revokeAllRefreshTokens`・`EXIT` の `RevokeAllResult`、加えて9節の Q-C B の2つ: `ENTER AuthController#login`（`LoginRequest`）・`EXIT UserAccountService#verifyPassword`（戻り値の `PasswordVerification`）。行の文字は実際に出る形を Step の中で確かめてから書く。`ENTER UserAccountService#verifyPassword` の行は `String` の引数でメールアドレスを出すため（後の Intent に回した残る漏えい）、確かめの対象に入れない
   - 確かめ3（無効化のログ）: まとめての無効化の DEBUG の行のキーが `userId`・`revoked` だけで、トークンの値・ハッシュが無いこと（NFR3.2）
   - 確かめ4（応答）: 停止中の3つの入口の応答の本文に、メールアドレス・トークンの値・`SUSPENDED` が無いこと
-- [ ] メールアドレスが出力全体に無いことは確かめない。9節の Q-C B の決定で後の Intent に回した2つ（`UserAccountService#verifyPassword(String, Password)`・`#existsByEmail(String)` の `String` の引数）が TRACE にメールアドレスを出すため（8節の D-10）。この2つが出る行の件数を記録し、`code-summary.md` に残る漏えいとして書く
-- [ ] 既存の `AuthSecretLeakIT` は変えない
-- [ ] `unit-test-instructions.md` の漏えいのテストのコマンドで流す
-- [ ] 対応: NFR3.1・NFR3.2、BR2.6・BR5.3、`security-design.md` 5節・5.1、NFR 設計の承認の場の決定、9節の Q-C B
+- [x] メールアドレスが出力全体に無いことは確かめない。9節の Q-C B の決定で後の Intent に回した2つ（`UserAccountService#verifyPassword(String, Password)`・`#existsByEmail(String)` の `String` の引数）が TRACE にメールアドレスを出すため（8節の D-10）。この2つが出る行の件数を記録し、`code-summary.md` に残る漏えいとして書く
+- [x] 既存の `AuthSecretLeakIT` は変えない
+- [x] `unit-test-instructions.md` の漏えいのテストのコマンドで流す
+- [x] 対応: NFR3.1・NFR3.2、BR2.6・BR5.3、`security-design.md` 5節・5.1、NFR 設計の承認の場の決定、9節の Q-C B
 
 ### Step 21: 構造の検査と文書
 
-- [ ] 構造の検査: `ArchitectureTest` と機能ごとの境界テスト（`AuthBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`・`InvitationBoundaryArchitectureTest` ほか、`unit-test-instructions.md` の構造の検査のコマンド）を、変更なしで流して通ることを確かめる。ArchUnit のテストは変えない。通らないときは本体の置き場を直し、テストを緩める必要が出たら生成を止めて依頼者に諮る（NFR11.1、`team.md` の Code Style）
-- [ ] `docker/monitoring/provisioning/alerting/mastersmith.yaml` に差が無いことを `git diff` で確かめる（NFR5.5）
-- [ ] `README.md` の「スキーマの変更（Flyway）」の V7・V8 の行の「(1) 自動の結合テスト（…）」を、Intent 260930-user-admin の B1 で消したことと理由（依頼者の決定。マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは置かない）に置き換え、(2) の戻しの練習の記述は過去の配備で行ったこととして残す（`cicd-pipeline.md` 7節）
-- [ ] 同じ節に V9 の行を足す: `V9__u1_user_suspension.sql`（Intent 260930-user-admin の U1）が `users.suspended`（既定 FALSE・必須、既存の利用者は有効）を足す前進のみの変更であること、移行のテストと戻しの練習を置かないこと、1つ前の版に戻している間は停止が効かないこと（停止中の利用者も3つの入口を通れる。止めたときに無効にしたリフレッシュトークンは無効のまま）、戻す前に停止中の利用者を確かめる手順は配備の段で決めること（NFR10.3、R2）
-- [ ] `README.md` の既存の記述を変更に合わせて直す（8節の D-7）: 後続の単位の提供口の表の `TokenFailureReason` の値に `USER_SUSPENDED`（応答と監査には出ない区分）を足し、`AuthenticatedUser` の行に「文字列化でメールアドレスを伏せる」を足す。監査の節（ログインの失敗の理由）に `ACCOUNT_SUSPENDED` を足す。戻しの節（V7・V8 の注意の並び）への V9 の注意の追記は deployment-pipeline の持ち物のため、この Bolt では行わない（`cicd-pipeline.md` 6節）
-- [ ] `.idea/.gitignore` に `/dataSources.xml` の1行を足す（`/dataSources/` と `/dataSources.local.xml` はすでにある。ルートの `.gitignore` は変えない、`cicd-pipeline.md` 7節）
-- [ ] 対応: NFR5.5・NFR10.3・NFR11.1、UQ2 A、B1 の完了の条件
+- [x] 構造の検査: `ArchitectureTest` と機能ごとの境界テスト（`AuthBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`・`InvitationBoundaryArchitectureTest` ほか、`unit-test-instructions.md` の構造の検査のコマンド）を、変更なしで流して通ることを確かめる。ArchUnit のテストは変えない。通らないときは本体の置き場を直し、テストを緩める必要が出たら生成を止めて依頼者に諮る（NFR11.1、`team.md` の Code Style）
+- [x] `docker/monitoring/provisioning/alerting/mastersmith.yaml` に差が無いことを `git diff` で確かめる（NFR5.5）
+- [x] `README.md` の「スキーマの変更（Flyway）」の V7・V8 の行の「(1) 自動の結合テスト（…）」を、Intent 260930-user-admin の B1 で消したことと理由（依頼者の決定。マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは置かない）に置き換え、(2) の戻しの練習の記述は過去の配備で行ったこととして残す（`cicd-pipeline.md` 7節）
+- [x] 同じ節に V9 の行を足す: `V9__u1_user_suspension.sql`（Intent 260930-user-admin の U1）が `users.suspended`（既定 FALSE・必須、既存の利用者は有効）を足す前進のみの変更であること、移行のテストと戻しの練習を置かないこと、1つ前の版に戻している間は停止が効かないこと（停止中の利用者も3つの入口を通れる。止めたときに無効にしたリフレッシュトークンは無効のまま）、戻す前に停止中の利用者を確かめる手順は配備の段で決めること（NFR10.3、R2）
+- [x] `README.md` の既存の記述を変更に合わせて直す（8節の D-7）: 後続の単位の提供口の表の `TokenFailureReason` の値に `USER_SUSPENDED`（応答と監査には出ない区分）を足し、`AuthenticatedUser` の行に「文字列化でメールアドレスを伏せる」を足す。監査の節（ログインの失敗の理由）に `ACCOUNT_SUSPENDED` を足す。戻しの節（V7・V8 の注意の並び）への V9 の注意の追記は deployment-pipeline の持ち物のため、この Bolt では行わない（`cicd-pipeline.md` 6節）
+- [x] `.idea/.gitignore` に `/dataSources.xml` の1行を足す（`/dataSources/` と `/dataSources.local.xml` はすでにある。ルートの `.gitignore` は変えない、`cicd-pipeline.md` 7節）
+- [x] 対応: NFR5.5・NFR10.3・NFR11.1、UQ2 A、B1 の完了の条件
 
 ### Step 22: カバレッジの一覧（`packagesJudgedByTotal`）
 
-- [ ] `git diff --name-only develop -- backend/src/main` で、実際に `src/main` を変えたパッケージの一覧を作り、`packagesJudgedByTotal` と突き合わせる（「手を入れる」は説明文だけの直しを含む、`team.md` の Testing Posture）。見込みは `auth.domain`・`auth.repository`・`access.domain` の3つ。ほかに一覧のパッケージに手が入っていたら、同じくテストを足して外す
-- [ ] `backend/build.gradle.kts` の `packagesJudgedByTotal` から外す対象を消し、上の説明文に「Intent 260930-user-admin の B1（U1）で auth.domain・auth.repository・access.domain を外した」を足す。一覧に足さない。計測の除外（`coverageExclusions`）を増やさない
-- [ ] 対応: NFR9.5、`team.md` の Testing Posture、`cicd-pipeline.md` 5節
+- [x] `git diff --name-only develop -- backend/src/main` で、実際に `src/main` を変えたパッケージの一覧を作り、`packagesJudgedByTotal` と突き合わせる（「手を入れる」は説明文だけの直しを含む、`team.md` の Testing Posture）。見込みは `auth.domain`・`auth.repository`・`access.domain` の3つ。ほかに一覧のパッケージに手が入っていたら、同じくテストを足して外す
+- [x] `backend/build.gradle.kts` の `packagesJudgedByTotal` から外す対象を消し、上の説明文に「Intent 260930-user-admin の B1（U1）で auth.domain・auth.repository・access.domain を外した」を足す。一覧に足さない。計測の除外（`coverageExclusions`）を増やさない
+- [x] 対応: NFR9.5、`team.md` の Testing Posture、`cicd-pipeline.md` 5節
 
 ### Step 23: 1コマンドの検査（統合の前の関門）
 
-- [ ] colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段（フォーマット・リンタ・ライセンスヘッダー・ビルド・単体・結合・カバレッジ・安全の検査・成果物）が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
-- [ ] テストの件数（単体・結合）と、全体と Step 1 と同じパッケージの行・分岐のカバレッジを実測の数字で記録し、Step 1 の基準と比べる（既存のテストが失敗していない。消した4つのテストの分だけ結合テストの件数が減ることを数で説明する）
-- [ ] 外した `auth.domain`・`auth.repository`・`access.domain` と、一覧の外の `auth.service`（`RefreshTokenRevocationService` を含む）・`auth.web`・`user.*`・`audit.domain`・`invitation.*` が、それぞれ行 80%・分岐 70% を満たすことを確かめる。下回ったらテストを足す。下限・除外は変えない（`team.md` の Testing Posture、Testing Contract）
-- [ ] SpotBugs ＋ FindSecBugs の関門を除外を足さずに通ること（`backend/config/spotbugs-exclude.xml` に差が無い）、Gitleaks・OSV-Scanner が通ることを確かめる（NFR9.4）
-- [ ] `backend/gradle.lockfile`・`frontend/package-lock.json` に差が無いことを確かめる。差が出たら理由と差を記録する（`cicd-pipeline.md` 8節）
-- [ ] 失敗が一時的に見えるときは、`team.md` の「不安定なテストと CI の失敗」の決まりで扱う（手元で再現したら原因を直す）
-- [ ] 対応: B1 の共通の完了の条件、NFR9.4・NFR9.5、`project.md` の Mandated（統合の前の確認）
+- [x] colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段（フォーマット・リンタ・ライセンスヘッダー・ビルド・単体・結合・カバレッジ・安全の検査・成果物）が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
+- [x] テストの件数（単体・結合）と、全体と Step 1 と同じパッケージの行・分岐のカバレッジを実測の数字で記録し、Step 1 の基準と比べる（既存のテストが失敗していない。消した4つのテストの分だけ結合テストの件数が減ることを数で説明する）
+- [x] 外した `auth.domain`・`auth.repository`・`access.domain` と、一覧の外の `auth.service`（`RefreshTokenRevocationService` を含む）・`auth.web`・`user.*`・`audit.domain`・`invitation.*` が、それぞれ行 80%・分岐 70% を満たすことを確かめる。下回ったらテストを足す。下限・除外は変えない（`team.md` の Testing Posture、Testing Contract）
+- [x] SpotBugs ＋ FindSecBugs の関門を除外を足さずに通ること（`backend/config/spotbugs-exclude.xml` に差が無い）、Gitleaks・OSV-Scanner が通ることを確かめる（NFR9.4）
+- [x] `backend/gradle.lockfile`・`frontend/package-lock.json` に差が無いことを確かめる。差が出たら理由と差を記録する（`cicd-pipeline.md` 8節）
+- [x] 失敗が一時的に見えるときは、`team.md` の「不安定なテストと CI の失敗」の決まりで扱う（手元で再現したら原因を直す）
+- [x] 対応: B1 の共通の完了の条件、NFR9.4・NFR9.5、`project.md` の Mandated（統合の前の確認）
 
 ### Step 24: E2E（統合の前に手元で）
 
-- [ ] `docker compose --profile mail up -d mailpit` で Mailpit を起動してから、`./gradlew e2eTest` を実行する（`cicd-pipeline.md` 3節。U1 は E2E の流れを足さない。B1 は認証に関わるため、統合の前に流す）
-- [ ] `frontend/test-results/e2e-results.json` から、件数（成功・失敗・飛ばした）とファイルごとの結果を `code-summary.md` に記録してから、`frontend/playwright-report/`・`frontend/test-results/` を消す。消したことと、報告を共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
-- [ ] 失敗したら原因を直してから Step 23 からやり直す。Mailpit は見終わったら止める
-- [ ] 対応: B1 の共通の完了の条件、`gate-decisions.md`
+- [x] `docker compose --profile mail up -d mailpit` で Mailpit を起動してから、`./gradlew e2eTest` を実行する（`cicd-pipeline.md` 3節。U1 は E2E の流れを足さない。B1 は認証に関わるため、統合の前に流す）
+- [x] `frontend/test-results/e2e-results.json` から、件数（成功・失敗・飛ばした）とファイルごとの結果を `code-summary.md` に記録してから、`frontend/playwright-report/`・`frontend/test-results/` を消す。消したことと、報告を共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
+- [x] 失敗したら原因を直してから Step 23 からやり直す。Mailpit は見終わったら止める
+- [x] 対応: B1 の共通の完了の条件、`gate-decisions.md`
 
 ### Step 25: 記録、コミットの提案、統合の提案
 
-- [ ] `code-summary.md`（作ったもの・消したもの、Step 1 と Step 23 の実測、外したパッケージと値、(d) の対応、待ちの確かめの2か所、E2E の結果と報告を消したこと、上流との差、9節の依頼者の決定と、後の Intent に回した残る漏えい2つ）、`source-manifest.json`（作った・変えた・消したアプリのソースとテストのパスすべて）、`traceability.json` を作る（コード生成の段の手順）
-- [ ] 3節の C1〜C6 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る（生成の担当はコミットしない）
-- [ ] 依頼者の承認を得て、`develop` へ squash の1コミットで統合する（件名と本文に「移行のテストの片付けを含む」）。統合の後、依頼者の承認を得て作業ブランチを消す。プッシュは依頼者が行う
-- [ ] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
+- [x] `code-summary.md`（作ったもの・消したもの、Step 1 と Step 23 の実測、外したパッケージと値、(d) の対応、待ちの確かめの2か所、E2E の結果と報告を消したこと、上流との差、9節の依頼者の決定と、後の Intent に回した残る漏えい2つ）、`source-manifest.json`（作った・変えた・消したアプリのソースとテストのパスすべて）、`traceability.json` を作る（コード生成の段の手順）
+- [x] 3節の C1〜C6 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る（生成の担当はコミットしない）
+- [x] 依頼者の承認を得て、`develop` へ squash の1コミットで統合する（件名と本文に「移行のテストの片付けを含む」）。統合の後、依頼者の承認を得て作業ブランチを消す。プッシュは依頼者が行う
+- [x] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
 
 ## 6. ストーリー・要件と手順の対応
 
