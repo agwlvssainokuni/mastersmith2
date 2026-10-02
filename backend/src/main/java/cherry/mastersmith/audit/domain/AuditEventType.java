@@ -17,7 +17,8 @@ package cherry.mastersmith.audit.domain;
 
 /**
  * 監査イベントの種類（BR1.2、FR9.2。DSL の操作は Intent 260923-dsl-schema-loader の U4、契約 C7。パスワードの変更は Intent
- * 260925-user-management の U2、招待と登録は同じ Intent の U3、契約 C8）。
+ * 260925-user-management の U2、招待と登録は同じ Intent の U3、契約 C8。利用者の管理の操作は Intent 260930-user-admin の U3、
+ * 契約 C6）。
  */
 public enum AuditEventType {
     /** ログインの成功。 */
@@ -49,5 +50,15 @@ public enum AuditEventType {
     /** 招待から登録を完了した（U3）。 */
     REGISTRATION_COMPLETED,
     /** 登録の完了の要求のリンクを拒否した（U3。リンクの確かめの失敗・入力の誤りは記録しない）。 */
-    REGISTRATION_FAILED
+    REGISTRATION_FAILED,
+    /** 管理者の印を付けた（Intent 260930-user-admin の U3、契約 C6。成功と失敗は結果で分ける）。 */
+    USER_ADMIN_GRANTED,
+    /** 管理者の印を外した（Intent 260930-user-admin の U3）。 */
+    USER_ADMIN_REVOKED,
+    /** 利用を止めた（Intent 260930-user-admin の U3）。 */
+    USER_SUSPENDED,
+    /** 停止を解いた（Intent 260930-user-admin の U3）。 */
+    USER_RESUMED,
+    /** ログインの失敗回数を戻した（Intent 260930-user-admin の U3）。 */
+    LOGIN_FAILURES_RESET
 }

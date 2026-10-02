@@ -18,6 +18,7 @@ package cherry.mastersmith.common.error.web;
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.common.persistence.RowLockFailures;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
@@ -52,6 +53,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * する（Intent 260923-dsl-schema-loader の U4 の NFR5.3）。業務エラーの追加の項目は応答に載せる（BR8.1）。
  * 応答に例外のメッセージとスタックトレースを載せない。フレームワークの標準の 4xx は、状態コードを保って専用の code にする（計画の
  * P1 の決定）。変換の対象として決めていない例外は 500 / {@code INTERNAL_ERROR} にする。
+ *
+ * <p>想定外の誤りのうち、行の排他の失敗（待ちの上限切れ・行き詰まり）の連なりを持つ例外は、原因をつながず（スタックトレースを出さず）、
+ * 例外のクラスの名前（{@code exceptionClass}）だけを ERROR に載せる。連なりの最後の文に排他されていた行の値が入りうるため（Intent
+ * 260930-user-admin の U3、I-D1）。応答（500 {@code INTERNAL_ERROR}）と ERROR の件数（1件）は変えない。
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -217,7 +222,13 @@ public class GlobalExceptionHandler {
     }
 
     private static void log(Exception ex, ProblemType type, boolean expected) {
-        if (!expected && type.status() >= 500) {
+        if (!expected && type.status() >= 500 && RowLockFailures.isLockFailure(ex)) {
+            LOGGER.atError()
+                    .addKeyValue("code", type.code())
+                    .addKeyValue("status", type.status())
+                    .addKeyValue("exceptionClass", ex.getClass().getName())
+                    .log("想定外のエラーが起きました");
+        } else if (!expected && type.status() >= 500) {
             LOGGER.atError()
                     .setCause(ex)
                     .addKeyValue("code", type.code())

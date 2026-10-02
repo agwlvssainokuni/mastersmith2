@@ -219,16 +219,16 @@ tasks.jacocoTestReport {
  * Intent 260925-user-management の U8 で common.security・config・access.web を外した（差し込み口の order の説明文の書き直し）。
  * Intent 260930-user-admin の B1（U1）で auth.domain・auth.repository・access.domain を外した（利用停止の区分・伏せ字・まとめての
  * 無効化）。
+ * Intent 260930-user-admin の B4（U3）で common.error.web・common.observability を外した（行の排他の失敗の連なりを、追跡と想定外の
+ * 誤りのログでクラスの名前だけにする中央の手当て）。
  */
 val packagesJudgedByTotal = listOf(
     "cherry.mastersmith.access.service",
     "cherry.mastersmith.audit.repository",
     "cherry.mastersmith.common.error.domain",
     "cherry.mastersmith.common.error.service",
-    "cherry.mastersmith.common.error.web",
     "cherry.mastersmith.common.health",
     "cherry.mastersmith.common.i18n.domain",
-    "cherry.mastersmith.common.observability",
     "cherry.mastersmith.common.web",
 )
 

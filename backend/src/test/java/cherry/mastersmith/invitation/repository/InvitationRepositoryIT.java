@@ -18,6 +18,8 @@ package cherry.mastersmith.invitation.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.common.paging.Paging;
+import cherry.mastersmith.common.persistence.RowLockUnavailableException;
+import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.invitation.domain.Invitation;
 import cherry.mastersmith.invitation.domain.InvitationEmail;
@@ -32,7 +34,9 @@ import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -218,5 +222,42 @@ class InvitationRepositoryIT {
         assertThat(repository.findById(justAfter.getInvitationId())).isPresent();
         assertThat(repository.findById(resent.getInvitationId())).isPresent();
         assertThat(repository.findById(ended.getInvitationId())).isPresent();
+    }
+
+    @Test
+    @DisplayName(
+            "each locked read fails with the value-free exception in about 3 s while another connection holds the row (U3)")
+    void lockedReadsTimeOutWithValueFreeException() throws Exception {
+        Invitation saved = save("held-row@example.com", T0, Duration.ofHours(24), 7);
+        InvitationEmail email = new InvitationEmail("held-row@example.com");
+        List<Consumer<InvitationRepository>> reads = List.of(
+                r -> r.findPendingByEmailForUpdate(email),
+                r -> r.findByIdForUpdate(saved.getInvitationId()),
+                r -> r.findByTokenHashForUpdate(hash(7)));
+
+        try (RowLockHolder holder = RowLockHolder.hold(
+                TestDatabase.url(tempDir),
+                "SELECT invitation_id FROM invitations WHERE invitation_id = ? FOR UPDATE",
+                saved.getInvitationId())) {
+            assertThat(holder.lockedRows()).isEqualTo(1);
+            for (Consumer<InvitationRepository> read : reads) {
+                long start = System.nanoTime();
+                Throwable failure = null;
+                try {
+                    tx.executeWithoutResult(status -> read.accept(repository));
+                } catch (RuntimeException e) {
+                    failure = e;
+                }
+                long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+                assertThat(failure)
+                        .isInstanceOf(RowLockUnavailableException.class)
+                        .hasNoCause();
+                assertThat(elapsedMillis).isBetween(2500L, 9000L);
+            }
+        }
+        // 放した後は今までどおり排他つきで読める。
+        tx.executeWithoutResult(status -> assertThat(repository.findByIdForUpdate(saved.getInvitationId()))
+                .isPresent());
     }
 }

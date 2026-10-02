@@ -120,6 +120,13 @@ class RegistrationConcurrencyIT {
         return future.get(TestInvitationBarrier.TIMEOUT_SECONDS, TimeUnit.SECONDS);
     }
 
+    /** 先の操作を続けた時点で、後の操作が行の排他の待ちに入っていた（まだ終わっていなかった）ことを確かめる。 */
+    private void assertLaterWasWaiting() {
+        assertThat(barrier.secondDoneAtRelease())
+                .as("the later operation was waiting for the row lock when the first one continued")
+                .isFalse();
+    }
+
     @Test
     @DisplayName("two completions of the same invitation create one user and the later one is ALREADY_USED")
     void twoCompletions() throws Exception {
@@ -127,6 +134,7 @@ class RegistrationConcurrencyIT {
         CompletableFuture<CompleteResult> later = barrier.whileLocked(() -> complete(invited.token()));
 
         assertThat(complete(invited.token())).isEqualTo(new CompleteResult.Completed());
+        assertLaterWasWaiting();
 
         assertThat(await(later)).isEqualTo(new CompleteResult.Rejected());
         assertThat(users(invited.email())).isEqualTo(1);
@@ -141,6 +149,7 @@ class RegistrationConcurrencyIT {
 
         assertThat(invitations.cancel(invited.admin(), ORIGIN, invited.invitationId()))
                 .isEqualTo(new CancelResult.Cancelled());
+        assertLaterWasWaiting();
 
         assertThat(await(later)).isEqualTo(new CompleteResult.Rejected());
         assertThat(users(invited.email())).isZero();
@@ -155,6 +164,7 @@ class RegistrationConcurrencyIT {
 
         assertThat(invitations.resend(invited.admin(), ORIGIN, invited.invitationId()))
                 .isInstanceOf(ResendResult.Resent.class);
+        assertLaterWasWaiting();
 
         assertThat(await(later)).isEqualTo(new CompleteResult.Rejected());
         assertThat(users(invited.email())).isZero();
@@ -169,12 +179,14 @@ class RegistrationConcurrencyIT {
         CompletableFuture<CancelResult> cancel =
                 barrier.whileLocked(() -> invitations.cancel(first.admin(), ORIGIN, first.invitationId()));
         assertThat(complete(first.token())).isEqualTo(new CompleteResult.Completed());
+        assertLaterWasWaiting();
         assertThat(await(cancel)).isEqualTo(new CancelResult.NotFound());
 
         Invited second = invite();
         CompletableFuture<ResendResult> resend =
                 barrier.whileLocked(() -> invitations.resend(second.admin(), ORIGIN, second.invitationId()));
         assertThat(complete(second.token())).isEqualTo(new CompleteResult.Completed());
+        assertLaterWasWaiting();
         assertThat(await(resend)).isEqualTo(new ResendResult.NotFound());
         assertThat(users(first.email()) + users(second.email())).isEqualTo(2);
     }

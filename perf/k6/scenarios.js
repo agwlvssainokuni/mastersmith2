@@ -53,6 +53,21 @@
 //   registrationInvalid   登録の完了の入力の誤り（400 VALIDATION_FAILED。NFR6.5 の p95 1 秒）
 //   registrationRejected  登録の完了のリンクの拒否（見つからない・形の誤り、404 REGISTRATION_LINK_INVALID。NFR6.5 の p95 1 秒）
 // U2・U3 の場面は、閾値に加えて checks の率 1（状態コードの誤りを混ぜた p95 で合格にしない）を置く。
+// 利用者の管理の場面（Intent 260930-user-admin の U3。手順は perf/README.md の「利用者の管理の場面」）。ID は
+// construction/u3-user-admin-api/nfr-requirements/ の performance-requirements.md（NFR5）と reliability-requirements.md（NFR6）。
+// どの場面も閾値は p95 1000 ms と checks の率 1（緩めない）。操作する管理者は perf-uaop01〜（VU ごとに1人。どの操作の対象にもしない）、
+// 対象は VU ごとに分け、初期管理者は操作する人にも対象にもしない（NFR5.4 の受け入れの条件）。
+//   userAdminList          一覧（GET /api/admin/users、200 と total）。LIST_CASE で a（検索なしの1ページ目）・b（検索なしの最後の
+//                          ページ）・c（多く当たる検索）・d（ほとんど当たらない検索）を選ぶ（NFR5.1。試験用の利用者 1,000 名）
+//   userAdminProfile       氏名と言語の変更（PUT /{userId}/profile、204）と入力の誤り（400）。VU ごとに perf-uapf<VU>（NFR5.3）
+//   userAdminOps           5つの操作を組で状態を戻しながらくり返す（印を付ける → 外す → 止める → 解く → ログインを1回失敗させて
+//                          戻す。どれも 204）。VU ごとに perf-uat<VU>。操作ごとに p95 を判定し、準備のログインの失敗は数えない
+//                          （NFR5.4・NFR5.6）。回ごとの回数は UA_ROUNDS（既定 ITERATIONS / VUS の切り上げ。操作ごとに 100 回以上）
+//   userAdminSuspendWorst  止める操作の悪い側（未無効 100 件・無効 1,000 件のリフレッシュトークンを持つ perf-uasw-<VU>-<回>）を
+//                          止めて解く（NFR5.5。回ごとに別の対象を使う）
+//   userAdminPool          奇数の VU が5つの操作の1回分、偶数の VU が一覧（a）を同時にくり返す（NFR6.2。接続プールは hikaricp の
+//                          値で判断する）。上限 10 の場面（NFR6.3）は、使い捨てのアプリの上限を 10 にして userAdminOps を
+//                          VUS=5（A）と VUS=10（B）で流す
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -108,7 +123,44 @@ const USER_THRESHOLDS = {
   registrationComplete: { registrationComplete: 1000 },
   registrationInvalid: { registrationInvalid: 1000 },
   registrationRejected: { registrationRejectedNotFound: 1000, registrationRejectedMalformed: 1000 },
+  userAdminList: { userAdminList: 1000 },
+  userAdminProfile: { userAdminProfile: 1000, userAdminProfileInvalid: 1000 },
+  userAdminOps: {
+    userAdminGrant: 1000,
+    userAdminRevoke: 1000,
+    userAdminSuspend: 1000,
+    userAdminResume: 1000,
+    userAdminReset: 1000,
+  },
+  userAdminSuspendWorst: { userAdminSuspendWorst: 1000 },
+  userAdminPool: {},
 }
+// 利用者の管理の場面（Intent 260930-user-admin の U3）
+const USER_ADMIN_API = `${BASE}/api/admin/users`
+const USER_ADMIN_SCENARIOS = [
+  'userAdminList',
+  'userAdminProfile',
+  'userAdminOps',
+  'userAdminSuspendWorst',
+  'userAdminPool',
+]
+// VU ごとに回数で終わる場面（組で状態を戻しながらくり返す・回ごとに別の対象を使う）
+const USER_ADMIN_ROUND_SCENARIOS = ['userAdminOps', 'userAdminSuspendWorst']
+// 1つの VU の回数（既定は、操作ごとの要求が全体で ITERATIONS 回以上になる回数）
+const UA_ROUNDS = Number(__ENV.UA_ROUNDS || Math.ceil(ITERATIONS / VUS))
+// 入れてある操作する管理者・対象の数（perf-uaop01〜・perf-uat01〜・perf-uapf01〜。VUS 以上が要る）
+const PERF_UA_COUNT = Number(__ENV.PERF_UA_COUNT || 10)
+// 一覧の場面の区分（a〜d）と、区分ごとの問い合わせ
+const LIST_CASE = __ENV.LIST_CASE || 'a'
+const LIST_QUERIES = {
+  a: '',
+  b: '?page=50',
+  c: '?q=perf-ua-',
+  d: '?q=zz-no-such-user',
+}
+// 区分ごとの total の下限と上限（1,000 名を入れた状態。d は 0 件）
+const LIST_TOTALS = { a: [1000, Infinity], b: [1000, Infinity], c: [1000, Infinity], d: [0, 0] }
+const UA_WRONG_PASSWORD = 'perf-wrong-password-123'
 // 用意した招待を1回ずつ使い切る場面（回数で終わる）
 const ONE_SHOT_SCENARIOS = ['invitationCancel', 'registrationComplete']
 // setup で招待を用意する場面
@@ -125,6 +177,11 @@ function scenariosFor(name) {
     return {
       dslHeavy: { executor: 'constant-vus', vus: 1, duration: DURATION, exec: 'dslHeavy' },
       logins: { executor: 'constant-vus', vus: VUS, duration: DURATION, exec: 'loginLoop' },
+    }
+  }
+  if (USER_ADMIN_ROUND_SCENARIOS.includes(name)) {
+    return {
+      [name]: { executor: 'per-vu-iterations', vus: VUS, iterations: UA_ROUNDS, maxDuration: '30m' },
     }
   }
   if (ONE_SHOT_SCENARIOS.includes(name)) {
@@ -182,6 +239,8 @@ export const options = {
 // 招待の用意（取り消し・登録の完了では ITERATIONS 件）とメールの読み取りに時間がかかるため、
 // 招待を用意する場面だけ setup の時間の上限を既定の 60 秒から延ばす（ほかの場面は既定のまま）。
 if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// 利用者の管理の場面は、setup で対象の利用者 ID を一覧の API で引く（止める悪い側は対象が VUS × UA_ROUNDS 名）
+if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -224,6 +283,7 @@ export function setup() {
     tokens.runId = Date.now().toString(36)
   }
   if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) setupInvitations(tokens)
+  if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) setupUserAdmin(tokens)
   return tokens
 }
 
@@ -683,6 +743,156 @@ function registrationRejected() {
   check(malformed, isLinkInvalid)
 }
 
+// ---- 利用者の管理（Intent 260930-user-admin の U3） ----
+
+function two(n) {
+  return String(n).padStart(2, '0')
+}
+
+function uaOperatorEmail(vu) {
+  return `perf-uaop${two(vu)}@example.test`
+}
+
+function uaTargetEmail(vu) {
+  return `perf-uat${two(vu)}@example.test`
+}
+
+function uaProfileEmail(vu) {
+  return `perf-uapf${two(vu)}@example.test`
+}
+
+function uaWorstEmail(vu, round) {
+  return `perf-uasw-${two(vu)}-${two(round)}@example.test`
+}
+
+// 検索の文字に当たる利用者の、メールアドレスから利用者 ID への対応を一覧の API で引く（setup の中だけ。ページを最後まで読む）
+function idsBySearch(headers, prefix) {
+  const ids = {}
+  for (let page = 1; ; page++) {
+    const res = http.get(`${USER_ADMIN_API}?q=${encodeURIComponent(prefix)}&page=${page}`, {
+      headers,
+      tags: { name: 'userAdminSetup' },
+    })
+    if (res.status !== 200) fail(`利用者の一覧を読めませんでした: ${res.status}`)
+    const items = res.json('items')
+    for (const item of items) ids[item.email] = item.userId
+    if (page * PAGE_SIZE >= res.json('total') || items.length === 0) return ids
+  }
+}
+
+// 利用者の管理の場面の用意。操作する管理者・対象の数を確かめ、対象の利用者 ID を引く（ID だけを返し、値は出力しない）。
+function setupUserAdmin(data) {
+  if (VUS > PERF_UA_COUNT) {
+    fail(
+      `利用者の管理の場面には操作する管理者と対象が VUS = ${VUS} 名ずつ要ります（PERF_UA_COUNT=${PERF_UA_COUNT}）。` +
+        '利用者を足して PERF_UA_COUNT を合わせてください',
+    )
+  }
+  if (SCENARIO === 'userAdminList') {
+    if (LIST_QUERIES[LIST_CASE] === undefined) fail(`知らない LIST_CASE です: ${LIST_CASE}`)
+    return
+  }
+  const headers = { Authorization: `Bearer ${tokenOf(login(uaOperatorEmail(1), USER_PASSWORD))}` }
+  const ids =
+    SCENARIO === 'userAdminProfile'
+      ? idsBySearch(headers, 'perf-uapf')
+      : SCENARIO === 'userAdminSuspendWorst'
+        ? idsBySearch(headers, 'perf-uasw-')
+        : idsBySearch(headers, 'perf-uat')
+  const need = []
+  for (let vu = 1; vu <= VUS; vu++) {
+    if (SCENARIO === 'userAdminProfile') need.push(uaProfileEmail(vu))
+    else if (SCENARIO === 'userAdminSuspendWorst') {
+      for (let round = 1; round <= UA_ROUNDS; round++) need.push(uaWorstEmail(vu, round))
+    } else need.push(uaTargetEmail(vu))
+  }
+  const missing = need.filter((email) => !ids[email])
+  if (missing.length > 0) fail(`対象の利用者が ${missing.length} 名足りません（perf/README.md の手順で入れてください）`)
+  data.userAdminIds = {}
+  for (const email of need) data.userAdminIds[email] = ids[email]
+}
+
+// VU ごとの操作する管理者のアクセストークン（4分でログインし直す）
+function uaOperatorAuth() {
+  const now = Date.now()
+  if (!vuState.uaToken || now - vuState.uaTokenAt > 240_000) {
+    vuState.uaToken = tokenOf(login(uaOperatorEmail(exec.vu.idInTest), USER_PASSWORD))
+    vuState.uaTokenAt = now
+  }
+  return { Authorization: `Bearer ${vuState.uaToken}`, Origin: BASE }
+}
+
+function uaOperate(userId, action, name) {
+  const res = http.post(`${USER_ADMIN_API}/${userId}/${action}`, null, {
+    headers: uaOperatorAuth(),
+    tags: { name },
+  })
+  check(res, { [`${name} 204`]: (r) => r.status === 204 })
+  return res
+}
+
+function userAdminList() {
+  const res = http.get(`${USER_ADMIN_API}${LIST_QUERIES[LIST_CASE]}`, {
+    headers: uaOperatorAuth(),
+    tags: { name: 'userAdminList', listCase: LIST_CASE },
+  })
+  const [min, max] = LIST_TOTALS[LIST_CASE]
+  check(res, {
+    'list 200': (r) => r.status === 200,
+    'list total': (r) => r.status === 200 && r.json('total') >= min && r.json('total') <= max,
+  })
+}
+
+function userAdminProfile(data) {
+  const vu = exec.vu.idInTest
+  const userId = data.userAdminIds[uaProfileEmail(vu)]
+  const language = exec.vu.iterationInScenario % 2 === 0 ? 'ja' : 'en'
+  const ok = jsonPut(
+    `${USER_ADMIN_API}/${userId}/profile`,
+    { displayName: `perf profile ${two(vu)}`, language },
+    uaOperatorAuth(),
+    'userAdminProfile',
+  )
+  check(ok, { 'profile 204': (r) => r.status === 204 })
+  const invalid = jsonPut(
+    `${USER_ADMIN_API}/${userId}/profile`,
+    { displayName: ' ', language: 'xx' },
+    uaOperatorAuth(),
+    'userAdminProfileInvalid',
+  )
+  check(invalid, { 'profile 400': (r) => r.status === 400 && codeOf(r) === 'VALIDATION_FAILED' })
+}
+
+// 5つの操作の1回分。印を付けて外す・止めて解く・ログインを1回失敗させて（準備。判定に数えない）失敗回数を戻す。
+function userAdminOpsRound(data) {
+  const email = uaTargetEmail(exec.vu.idInTest)
+  const userId = data.userAdminIds[email]
+  uaOperate(userId, 'grant-admin', 'userAdminGrant')
+  uaOperate(userId, 'revoke-admin', 'userAdminRevoke')
+  uaOperate(userId, 'suspend', 'userAdminSuspend')
+  uaOperate(userId, 'resume', 'userAdminResume')
+  http.post(`${BASE}/api/auth/login`, JSON.stringify({ email, password: UA_WRONG_PASSWORD }), {
+    headers: JSON_HEADERS,
+    tags: { name: 'userAdminPrepLogin' },
+  })
+  uaOperate(userId, 'reset-login-failures', 'userAdminReset')
+}
+
+function userAdminOps(data) {
+  userAdminOpsRound(data)
+}
+
+function userAdminSuspendWorst(data) {
+  const userId = data.userAdminIds[uaWorstEmail(exec.vu.idInTest, exec.vu.iterationInScenario + 1)]
+  uaOperate(userId, 'suspend', 'userAdminSuspendWorst')
+  uaOperate(userId, 'resume', 'userAdminResume')
+}
+
+function userAdminPool(data) {
+  if (exec.vu.idInTest % 2 === 1) userAdminOpsRound(data)
+  else userAdminList()
+}
+
 // U2・U3 の場面の名前と処理
 const USER_SCENARIOS = {
   preferencesGet,
@@ -699,6 +909,11 @@ const USER_SCENARIOS = {
   registrationComplete,
   registrationInvalid,
   registrationRejected,
+  userAdminList,
+  userAdminProfile,
+  userAdminOps,
+  userAdminSuspendWorst,
+  userAdminPool,
 }
 
 export default function (tokens) {

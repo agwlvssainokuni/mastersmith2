@@ -16,13 +16,19 @@
 package cherry.mastersmith.auth.repository;
 
 import cherry.mastersmith.auth.domain.LoginAttemptState;
+import cherry.mastersmith.common.persistence.RowLockAttempt;
+import cherry.mastersmith.common.persistence.RowLockFailures;
+import cherry.mastersmith.common.persistence.RowLockUnavailableException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -31,6 +37,10 @@ import org.springframework.stereotype.Repository;
  * <p>読み取りは行の排他つき（{@code SELECT ... FOR UPDATE}）で、待ちの上限は 3 秒。書き込みは JPA の変更の検出に頼らず、
  * 明示の更新の問い合わせを1回行う（値が変わらない場合も1回）。存在しないメールアドレスの試みは、ダミーの行のうちほかの試みが
  * 排他を持っていない行を、待たずに（{@code SKIP LOCKED}）排他つきで読む。
+ *
+ * <p>排他の待ちの上限切れ・行き詰まりは、問い合わせを実行するこのクラスのメソッドの本体の中で受け、例外をそのまま外へ出さない
+ * （Intent 260930-user-admin の U3、{@code security-design.md} 7.2 の E1）。例外の連なりの文に排他されていた行の値（失敗回数・解除の
+ * 予定の時刻）が入りうるため、WARN には排他の種類と例外のクラスの名前だけを出し、値を含まない例外か結果（Busy）に置き換える。
  */
 @Repository
 public class LoginAttemptStateRepository {
@@ -40,6 +50,11 @@ public class LoginAttemptStateRepository {
 
     /** ダミーの行の数（ID は -1〜-8）。 */
     static final int DUMMY_ROWS = 8;
+
+    /** 排他の種類（ログの {@code lockKind}）。 */
+    static final String LOCK_KIND = "LOGIN_ATTEMPT_ROW";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoginAttemptStateRepository.class);
 
     private static final String LOCK_TIMEOUT_HINT = "jakarta.persistence.lock.timeout";
 
@@ -60,17 +75,44 @@ public class LoginAttemptStateRepository {
     /**
      * 利用者の行を排他つきで読む（待ちの上限 3 秒）。
      *
+     * <p>排他を取れなかった（待ちの上限切れ・行き詰まり）ときは、WARN（排他の種類とクラスの名前）を出してから、値を含まない
+     * {@link RowLockUnavailableException} を投げる（想定外の誤り）。排他の失敗でない例外はそのまま投げる。
+     *
      * @param subjectId 利用者ID
      * @return 状態（行が無ければ空）
+     * @throws RowLockUnavailableException 排他を取れなかったとき
      */
     public Optional<LoginAttemptState> lockForUpdate(long subjectId) {
-        List<LoginAttemptState> rows = entityManager
-                .createQuery("select s from LoginAttemptState s where s.subjectId = :id", LoginAttemptState.class)
-                .setParameter("id", subjectId)
-                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
-                .setHint(LOCK_TIMEOUT_HINT, LOCK_TIMEOUT_MILLIS)
-                .getResultList();
-        return rows.stream().findFirst();
+        return switch (tryLockForUpdate(subjectId)) {
+            case RowLockAttempt.Acquired<Optional<LoginAttemptState>> acquired -> acquired.value();
+            case RowLockAttempt.Busy<Optional<LoginAttemptState>> busy ->
+                throw new RowLockUnavailableException(LOCK_KIND);
+        };
+    }
+
+    /**
+     * 利用者の行を排他つきで読み、排他を取れなかった（待ちの上限切れ・行き詰まり）ときは例外ではなく結果（Busy）で返す（Intent
+     * 260930-user-admin の U3、失敗回数を戻す操作の1段目）。問い合わせと判定は {@link #lockForUpdate(long)} と同じ。
+     *
+     * @param subjectId 利用者ID
+     * @return 取れたら状態（行が無ければ空）、取れなければ Busy
+     */
+    public RowLockAttempt<Optional<LoginAttemptState>> tryLockForUpdate(long subjectId) {
+        try {
+            List<LoginAttemptState> rows = entityManager
+                    .createQuery("select s from LoginAttemptState s where s.subjectId = :id", LoginAttemptState.class)
+                    .setParameter("id", subjectId)
+                    .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                    .setHint(LOCK_TIMEOUT_HINT, LOCK_TIMEOUT_MILLIS)
+                    .getResultList();
+            return RowLockAttempt.acquired(rows.stream().findFirst());
+        } catch (PersistenceException e) {
+            if (!RowLockFailures.isLockFailure(e)) {
+                throw e;
+            }
+            RowLockFailures.warn(LOGGER, LOCK_KIND, e);
+            return RowLockAttempt.busy();
+        }
     }
 
     /**

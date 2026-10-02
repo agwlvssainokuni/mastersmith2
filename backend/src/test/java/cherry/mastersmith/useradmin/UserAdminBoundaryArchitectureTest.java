@@ -22,14 +22,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
  * U3（利用者の管理、Intent 260930-user-admin）の境界の構造の検査（BR7.6、NFR11.1、team.md の Code Style）。既存の機能ごとの境界テストと
  * 同じ置き方で、U3 のパッケージの下に置く。既存の全体の決まり（ArchitectureTest）とほかの機能の境界テストは変えない。
+ *
+ * <p>B4（Intent 260930-user-admin の U3 後半）で、状態の書き換えの口を呼ぶのは {@code useradmin.service} だけであること（BR7.3・
+ * NFR11.2）と、{@code audit} から {@code useradmin} への依存は {@code useradmin.domain} だけであることを足した。
  */
 class UserAdminBoundaryArchitectureTest {
 
@@ -42,6 +48,18 @@ class UserAdminBoundaryArchitectureTest {
     /** JPA のエンティティ。 */
     private static final DescribedPredicate<JavaClass> ENTITY = DescribedPredicate.describe(
             "JPA entities", javaClass -> javaClass.isAnnotatedWith("jakarta.persistence.Entity"));
+
+    /** 状態を書き換える口（持ち主のクラスの名前と、メソッドの名前）。BR7.3・NFR11.2。 */
+    private static final Map<String, List<String>> WRITE_PORTS = Map.of(
+            "cherry.mastersmith.user.service.UserAccountService", List.of("setAdmin", "setSuspended"),
+            "cherry.mastersmith.auth.service.RefreshTokenRevocationService", List.of("revokeAllRefreshTokens"),
+            "cherry.mastersmith.auth.service.LockAdministrationService",
+                    List.of("completeFailureReset", "prepareFailureReset"));
+
+    private static boolean isWritePort(JavaMethodCall call) {
+        List<String> names = WRITE_PORTS.get(call.getTargetOwner().getName());
+        return names != null && names.contains(call.getName());
+    }
 
     private static boolean dependsOnPackage(String fromPrefix, String targetPackage) {
         return CLASSES.stream()
@@ -167,5 +185,54 @@ class UserAdminBoundaryArchitectureTest {
                 .dependOnClassesThat()
                 .haveFullyQualifiedName("org.springframework.transaction.support.TransactionTemplate")
                 .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("only useradmin.service calls the ports that change the admin flag, suspension, tokens or failures")
+    void writePortsOnlyFromUserAdminService() {
+        List<JavaMethodCall> calls = CLASSES.stream()
+                .flatMap(javaClass -> javaClass.getMethodCallsFromSelf().stream())
+                .filter(UserAdminBoundaryArchitectureTest::isWritePort)
+                .toList();
+
+        assertThat(calls)
+                .as("持ち主のクラスの中と useradmin.service の外から書き換えの口を呼ばない")
+                .allSatisfy(call -> assertThat(call.getOriginOwner()
+                                        .getName()
+                                        .equals(call.getTargetOwner().getName())
+                                || call.getOriginOwner()
+                                        .getPackageName()
+                                        .equals("cherry.mastersmith.useradmin.service"))
+                        .as(call.getDescription())
+                        .isTrue());
+        assertThat(calls)
+                .as("規則が呼び出しを見分けている（5つの口はどれも useradmin.service から呼ばれている）")
+                .filteredOn(
+                        call -> call.getOriginOwner().getPackageName().equals("cherry.mastersmith.useradmin.service"))
+                .extracting(JavaMethodCall::getName)
+                .contains(
+                        "setAdmin",
+                        "setSuspended",
+                        "revokeAllRefreshTokens",
+                        "completeFailureReset",
+                        "prepareFailureReset");
+    }
+
+    @Test
+    @DisplayName("audit depends on useradmin only through useradmin.domain")
+    void auditUsesOnlyUserAdminDomain() {
+        noClasses()
+                .that()
+                .resideInAPackage("cherry.mastersmith.audit..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage("cherry.mastersmith.useradmin.service..", "cherry.mastersmith.useradmin.web..")
+                .check(CLASSES);
+        assertThat(dependsOnPackage("cherry.mastersmith.audit", "cherry.mastersmith.useradmin.domain"))
+                .as("規則が依存を見分けている（audit は useradmin.domain の出来事を受ける）")
+                .isTrue();
+        assertThat(dependsOnPackage("cherry.mastersmith.useradmin.web", "cherry.mastersmith.access.domain"))
+                .as("useradmin.web は access.domain の AccessProblemTypes を実際に使っている")
+                .isTrue();
     }
 }

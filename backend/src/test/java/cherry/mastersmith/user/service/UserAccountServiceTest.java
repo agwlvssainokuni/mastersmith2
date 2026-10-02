@@ -18,8 +18,10 @@ package cherry.mastersmith.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -27,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import cherry.mastersmith.common.persistence.RowLockAttempt;
 import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.FieldErrorReason;
 import cherry.mastersmith.user.domain.FontSize;
@@ -40,6 +43,7 @@ import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
+import cherry.mastersmith.user.repository.UserRowLockRepository;
 import java.lang.reflect.RecordComponent;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -48,11 +52,13 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
@@ -70,6 +76,8 @@ class UserAccountServiceTest {
 
     private final UserRepository repository = mock(UserRepository.class);
 
+    private final UserRowLockRepository rowLocks = mock(UserRowLockRepository.class);
+
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
 
     private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
@@ -81,7 +89,8 @@ class UserAccountServiceTest {
     @BeforeEach
     void setUp() {
         dummy = new DummyPasswordHash(new BCryptPasswordEncoder(4), new PasswordProperties(4));
-        service = new UserAccountService(repository, encoder, dummy, publisher, Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new UserAccountService(
+                repository, rowLocks, encoder, dummy, publisher, Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     private User user(long id) {
@@ -541,5 +550,101 @@ class UserAccountServiceTest {
                 .doesNotContain("漏れ確認")
                 .contains("language=ja");
         assertThat(adminRow(4).toString()).doesNotContain("row@example.com").doesNotContain("一覧 太郎");
+    }
+
+    // --- B4: 排他の口・印の書き換え（Intent 260930-user-admin の U3、契約 C8、BR3.1・BR3.3・BR4.1・BR4.2）
+
+    private static UserAdminRow adminRow(long id, boolean admin, boolean suspended) {
+        return new UserAdminRow(id, "row" + id + "@example.com", "行 " + id, Language.JA, admin, suspended, NOW);
+    }
+
+    @Test
+    @DisplayName("a busy admin-rows lock is passed on as Busy and nothing else is read")
+    void lockAdminRowsBusy() {
+        when(rowLocks.lockAdminRowsAndTarget(9L)).thenReturn(RowLockAttempt.busy());
+
+        assertThat(service.lockAdminRowsInIdOrder(9L)).isEqualTo(new AdminRowsLock.Busy());
+        verify(repository, never()).findAdminRow(anyLong());
+        verify(repository, never()).findActiveAdminIds();
+    }
+
+    @Test
+    @DisplayName("after the admin rows are locked the target summary and the active admins are read by other queries")
+    void lockAdminRowsAcquired() {
+        when(rowLocks.lockAdminRowsAndTarget(9L)).thenReturn(RowLockAttempt.acquired(List.of(1L, 9L)));
+        when(repository.findAdminRow(9L)).thenReturn(Optional.of(adminRow(9L, true, false)));
+        when(repository.findActiveAdminIds()).thenReturn(List.of(1L, 9L));
+
+        AdminRowsLock lock = service.lockAdminRowsInIdOrder(9L);
+
+        assertThat(lock).isInstanceOfSatisfying(AdminRowsLock.Locked.class, locked -> {
+            assertThat(locked.target())
+                    .get()
+                    .extracting(UserAdminSummary::userId)
+                    .isEqualTo(9L);
+            assertThat(locked.activeAdminIds()).containsExactlyInAnyOrder(1L, 9L);
+        });
+        InOrder order = inOrder(rowLocks, repository);
+        order.verify(rowLocks).lockAdminRowsAndTarget(9L);
+        order.verify(repository).findAdminRow(9L);
+        order.verify(repository).findActiveAdminIds();
+    }
+
+    @Test
+    @DisplayName("an admin-rows lock for a missing target holds no target summary")
+    void lockAdminRowsMissingTarget() {
+        when(rowLocks.lockAdminRowsAndTarget(9L)).thenReturn(RowLockAttempt.acquired(List.of(1L)));
+        when(repository.findAdminRow(9L)).thenReturn(Optional.empty());
+        when(repository.findActiveAdminIds()).thenReturn(List.of(1L));
+
+        assertThat(service.lockAdminRowsInIdOrder(9L))
+                .isEqualTo(new AdminRowsLock.Locked(Optional.empty(), Set.of(1L)));
+    }
+
+    @Test
+    @DisplayName("the user row lock reads the summary only when the user exists and passes Busy on")
+    void lockUserRow() {
+        when(rowLocks.lockUserRow(9L))
+                .thenReturn(RowLockAttempt.acquired(true), RowLockAttempt.acquired(false), RowLockAttempt.busy());
+        when(repository.findAdminRow(9L)).thenReturn(Optional.of(adminRow(9L, false, true)));
+
+        assertThat(service.lockUserRow(9L))
+                .isInstanceOfSatisfying(
+                        UserRowLock.Locked.class,
+                        locked -> assertThat(locked.target())
+                                .get()
+                                .extracting(UserAdminSummary::suspended)
+                                .isEqualTo(true));
+        assertThat(service.lockUserRow(9L)).isEqualTo(new UserRowLock.Locked(Optional.empty()));
+        assertThat(service.lockUserRow(9L)).isEqualTo(new UserRowLock.Busy());
+        verify(repository, times(1)).findAdminRow(9L);
+    }
+
+    @Test
+    @DisplayName("the summary without a lock comes from the projection and is empty for an unknown user")
+    void findAdminSummary() {
+        when(repository.findAdminRow(9L)).thenReturn(Optional.of(adminRow(9L, true, false)));
+        when(repository.findAdminRow(10L)).thenReturn(Optional.empty());
+
+        assertThat(service.findAdminSummary(9L)).get().satisfies(summary -> {
+            assertThat(summary.admin()).isTrue();
+            assertThat(summary.toString()).doesNotContain("row9@example.com");
+        });
+        assertThat(service.findAdminSummary(10L)).isEmpty();
+        verifyNoInteractions(rowLocks);
+    }
+
+    @Test
+    @DisplayName("setAdmin writes only the flag and fails loudly when no row was updated")
+    void setAdmin() {
+        when(repository.updateAdminFlag(9L, true)).thenReturn(1);
+        when(repository.updateAdminFlag(10L, false)).thenReturn(0);
+
+        service.setAdmin(9L, true);
+
+        verify(repository).updateAdminFlag(9L, true);
+        assertThatThrownBy(() -> service.setAdmin(10L, false))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("利用者がいません: userId=10");
     }
 }

@@ -27,10 +27,12 @@ import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -261,5 +263,90 @@ class UserAdminQueriesIT {
 
         assertThat(unknown).isZero();
         assertThat(same).isEqualTo(1);
+    }
+
+    private User saveFlagged(boolean admin) {
+        return repository.save(new User(
+                "flag-" + UUID.randomUUID() + "@example.com",
+                "$2a$04$hash",
+                admin,
+                BASE,
+                new Preferences("印 試験", Language.EN, Theme.LIGHT, FontSize.SM)));
+    }
+
+    @Test
+    @DisplayName("active admin ids are the admins who are not suspended, including locked ones, in id order (B4)")
+    void activeAdminIds() {
+        User active = saveFlagged(true);
+        User locked = saveFlagged(true);
+        User suspended = saveFlagged(true);
+        User member = saveFlagged(false);
+        tx.executeWithoutResult(status -> repository.updateSuspended(suspended.getUserId(), true));
+        jdbc.update(
+                "MERGE INTO login_attempt_states (subject_id, consecutive_failures, locked_until) KEY (subject_id)"
+                        + " VALUES (?, 5, ?)",
+                locked.getUserId(),
+                Timestamp.from(Instant.parse("2999-01-01T00:00:00Z")));
+
+        List<Long> ids = repository.findActiveAdminIds();
+
+        assertThat(ids).isSorted().contains(active.getUserId(), locked.getUserId());
+        assertThat(ids).doesNotContain(suspended.getUserId(), member.getUserId());
+    }
+
+    @Test
+    @DisplayName("the admin row projection of one user has no password hash and is empty for an unknown id (B4)")
+    void findAdminRow() {
+        User user = saveFlagged(true);
+        SqlStatementCounter.start();
+        Optional<UserAdminRow> row = repository.findAdminRow(user.getUserId());
+        SqlStatementCounter.stop();
+
+        assertThat(row).get().satisfies(found -> {
+            assertThat(found.userId()).isEqualTo(user.getUserId());
+            assertThat(found.admin()).isTrue();
+            assertThat(found.suspended()).isFalse();
+            assertThat(found.language()).isEqualTo(Language.EN);
+        });
+        assertThat(SqlStatementCounter.recorded())
+                .allSatisfy(recorded ->
+                        assertThat(recorded.sql().toLowerCase(Locale.ROOT)).doesNotContain("password_hash"));
+        assertThat(repository.findAdminRow(Long.MAX_VALUE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("updating the admin flag changes only that column and a later read returns the new value (B4)")
+    void updateAdminFlag() {
+        User user = saveFlagged(false);
+        Map<String, Object> before = jdbc.queryForMap(
+                "SELECT email, password_hash, suspended, display_name, language, theme, font_size FROM users"
+                        + " WHERE user_id = ?",
+                user.getUserId());
+
+        Integer granted = tx.execute(status -> {
+            int count = repository.updateAdminFlag(user.getUserId(), true);
+            assertThat(repository.findAdminRow(user.getUserId()))
+                    .get()
+                    .extracting(UserAdminRow::admin)
+                    .isEqualTo(true);
+            return count;
+        });
+        Integer unknown = tx.execute(status -> repository.updateAdminFlag(Long.MAX_VALUE, true));
+
+        assertThat(granted).isEqualTo(1);
+        assertThat(unknown).isZero();
+        assertThat(jdbc.queryForObject(
+                        "SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, user.getUserId()))
+                .isTrue();
+        assertThat(jdbc.queryForMap(
+                        "SELECT email, password_hash, suspended, display_name, language, theme, font_size FROM users"
+                                + " WHERE user_id = ?",
+                        user.getUserId()))
+                .isEqualTo(before);
+        tx.executeWithoutResult(status -> repository.updateAdminFlag(user.getUserId(), false));
+        assertThat(repository.findAdminRow(user.getUserId()))
+                .get()
+                .extracting(UserAdminRow::admin)
+                .isEqualTo(false);
     }
 }

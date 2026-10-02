@@ -27,6 +27,7 @@ import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
 import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -43,8 +44,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
- * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）を受け取り、監査イベントを1件ずつ追記する
- * （BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）、利用者の管理の操作の出来事（Intent
+ * 260930-user-admin の U3）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -212,6 +213,43 @@ public class AuditEventListener {
                         AuditEventType.REGISTRATION_FAILED, event == null ? null : event.invitationId()));
     }
 
+    /**
+     * 利用者の管理の操作の出来事を受け取り、監査イベントを追記する（Intent 260930-user-admin の U3、契約 C6、BR6.1〜BR6.3）。
+     *
+     * <p>成功も業務の拒否も、業務処理のトランザクションの中で知らされ、確定の後に受け取る（拒否は書き込みなしで確定する）。巻き戻った
+     * 操作の出来事は受け取らない。書き込みの失敗は応答を変えず、ERROR を1回出す。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onUserAdminAuditEvent(UserAdminAuditEvent event) {
+        record(() -> AuditEventFactory.from(event), () -> fields(event));
+    }
+
+    /** 利用者の管理の操作の出来事の項目（組み立てに失敗したときに載せる。メールアドレス・氏名は持たない）。 */
+    private static Map<String, Object> fields(UserAdminAuditEvent event) {
+        if (event == null) {
+            Map<String, Object> fields = fields(null, null, null, null, null, null, null, null, null);
+            fields.put("actorUserId", null);
+            fields.putAll(targetFields(null, null));
+            return fields;
+        }
+        Map<String, Object> fields = fields(
+                event.operation(),
+                event.succeeded(),
+                event.occurredAt(),
+                null,
+                event.failure(),
+                event.sourceIp(),
+                event.userAgent(),
+                null,
+                event.traceId());
+        fields.put("actorUserId", event.actorUserId());
+        fields.putAll(targetFields(event.targetUserId(), null));
+        return fields;
+    }
+
     /** 招待と登録の出来事の組み立てに失敗したときに載せる項目（メールアドレス・トークンは持たない）。 */
     private static Map<String, Object> invitationFields(AuditEventType eventType, Long invitationId) {
         Map<String, Object> fields = fields(eventType, null, null, null, null, null, null, null, null);
@@ -303,7 +341,12 @@ public class AuditEventListener {
                     INVITATION_RESENT,
                     INVITATION_CANCELLED,
                     REGISTRATION_COMPLETED,
-                    REGISTRATION_FAILED -> false;
+                    REGISTRATION_FAILED,
+                    USER_ADMIN_GRANTED,
+                    USER_ADMIN_REVOKED,
+                    USER_SUSPENDED,
+                    USER_RESUMED,
+                    LOGIN_FAILURES_RESET -> false;
         };
     }
 

@@ -239,3 +239,115 @@ docker compose up -d --wait
 - 招待・送り直し・setup の招待は、招待中の行と Mailpit のメールを増やす。Mailpit はボリュームを持たず、`down -v` で消える（既定で古いメールから 500 通を超えた分を消す。setup は招待の直後に読むため影響しない）。
 - k6・Mailpit はアプリと同じ VM の CPU とメモリを分け合うため、測った値にその分が混ざりうる。結果に明記する。
 - `@example.com` は招待の宛先（予約されたドメイン）、`@example.test` は試験用の利用者と仮の管理者。アプリのログにはメールアドレスを出さない決まりのため、手順 4' の件数はどれも 0 になるはず。
+
+## 利用者の管理の場面（Intent 260930-user-admin の U3）
+
+`perf/k6/scenarios.js` の利用者の管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/260930-user-admin/construction/u3-user-admin-api/nfr-requirements/` の `performance-requirements.md`（NFR5.1〜NFR5.7）と `reliability-requirements.md`（NFR6.2・NFR6.3）。どの場面も閾値は出典のまま（p95 1000 ms と `checks` の率 1）で、緩めない。正とする値は k6 の値（クライアント側）で、サーバー側の `http_server_requests` の p95 は参考として並べる。Build and Test では台本と手順を用意し、`k6 inspect`（`--include-system-env-vars` を付ける）で読み込めることと場面の名前だけを確かめる。測定は performance-validation で行う。
+
+| 場面 | すること | 目標（閾値） | 用意 |
+|---|---|---|---|
+| `userAdminList` | 一覧（`GET /api/admin/users`、200 と `total`）。`LIST_CASE` で区分を選ぶ: `a` 検索なしの1ページ目、`b` 検索なしの最後のページ（`page=50`）、`c` 多く当たる検索（`q=perf-ua-`、1,000 件）、`d` ほとんど当たらない検索（`q=zz-no-such-user`、0 件） | NFR5.1（区分ごとに `{name:userAdminList}` の p95 1 秒、`checks` の率 1） | 試験用の利用者 1,000 名（`perf-ua-0001`〜`1000`）。区分ごとに流して判定する |
+| `userAdminProfile` | 氏名と言語の変更の成功（204。言語を回ごとに変える）と入力の誤り（400 `VALIDATION_FAILED`） | NFR5.3（`{name:userAdminProfile}`・`{name:userAdminProfileInvalid}` の p95 1 秒） | VU ごとに `perf-uapf<VU>` |
+| `userAdminOps` | 5つの操作を組で状態を戻しながらくり返す（印を付ける → 外す → 止める → 解く → ログインを1回失敗させて → 失敗回数を戻す。どれも 204） | NFR5.4・NFR5.6（操作ごとに `{name:userAdminGrant}`・`Revoke`・`Suspend`・`Resume`・`Reset` の p95 1 秒、`checks`（204）の率 1。409 `USER_ADMIN_BUSY`・`USER_ADMIN_NO_CHANGE` と 5xx が 0 件） | 操作する管理者 `perf-uaop<VU>`、対象 `perf-uat<VU>`（VU ごとに分ける）。1つの VU の回数は `UA_ROUNDS`（既定は 100 ÷ `VUS` の切り上げ。操作ごとに 100 回以上） |
+| `userAdminSuspendWorst` | 未無効 100 件・無効 1,000 件のリフレッシュトークンを持つ対象を止めて解く（回ごとに別の対象） | NFR5.5（`{name:userAdminSuspendWorst}` の p95 1 秒、`checks` の率 1） | 対象 `perf-uasw-<VU>-<回>`（`VUS` × `UA_ROUNDS` 名、既定 100 名）とトークンの行 |
+| `userAdminPool` | 奇数の VU が5つの操作の1回分、偶数の VU が一覧（`a`）を同時にくり返す | NFR6.2（`checks` の率 1。接続プールは hikaricp の値で判断する） | `userAdminOps` と `userAdminList` と同じ |
+
+- **受け入れの条件（NFR5.4）**: 操作する管理者（`perf-uaop<VU>`）はどの操作の対象にもしない。初期管理者（`perf-admin@example.test`）は操作する人にも対象にもしない。対象は VU ごとに分け、2つの VU が同じ利用者を対象にしない。台本は VU の番号でこれを守る（`VUS` は `PERF_UA_COUNT`（既定 10）以下。超えると始める前に止まる）。
+- **準備のログインの失敗**（`{name:userAdminPrepLogin}`、401）は、失敗回数を戻す組で失敗回数を 1 以上にするためのもので、`checks` にも p95 の判定にも数えない。監査に `LOGIN_FAILED` が1件ずつ残る（5つの操作の件数には数えない）。
+- **対象の利用者 ID**: setup が `perf-uaop01` で一覧の API を検索して引く（ID だけを持ち、値は出力しない）。足りないと始める前に止まる。
+- **止める悪い側のくり返し**: 止めるとトークンがすべて無効になるため、回ごとに別の対象を使う。流し直すときは、環境を作り直して（手順 5'' と 2''）入れ直す。
+- **接続プール（NFR6.2・NFR6.3）**: 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics` の `hikaricp.connections.timeout`（待ちの時間切れの累計）と `hikaricp.connections.acquire`（借りるまでの待ちの最大）で判断する。数秒ごとの使用中の数では判断しない。NFR6.2 は上限 30（既定）で `userAdminPool` を流し、時間切れの累計 0・500 が 0 件・流した5つの操作の成功の件数と監査の `SUCCESS` の件数の一致を見る。NFR6.3 は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10` にして `userAdminOps` を (A) `VUS=5`（見積もり 10 本で上限ちょうど。時間切れの累計 0・件数が一致）と (B) `VUS=10`（見積もり 20 本で上限の2倍。2本目の待ちが出る）で流す。(B) は待ちを起こす場面のため、欠けた監査と ERROR の件数を記録し、p95 と件数の一致に数えない。(A)・(B) の後は上限を既定に戻して起動し直すか、環境を作り直す。配備したアプリの公開の範囲と上限は変えない。
+- 長い試験は `caffeinate -i` で台本の全体を包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。
+- k6 はアプリと同じ VM の CPU を分け合うため、測った値にその分が混ざりうる。結果に明記する。
+- 目標に届かないときは目標を緩めず、原因をログと状態で確かめて依頼者に相談する。一覧が NFR5.1 に届かなければ、`users (created_at, user_id)` の索引を足す直しを諮る。
+
+```bash
+# 0・1. 上の「手順」の 0・1 と同じ（配備したアプリを止め、WAR とイメージを用意し、一時の環境ファイルを作る）。
+#       U3 はメールを送らないため Mailpit（profile mail）は起動しない
+# 1''. 接続プールを見る場面（userAdminPool・上限 10 の場面）では、使い捨てのアプリにだけ次の行を足す
+( umask 077; printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
+
+# 2''. 使い捨ての環境を起動し、止めて、試験用の利用者とトークンの行を入れる（メールアドレスは予約のドメインだけ）。
+#      perf-ua-0001〜1000（一覧）、perf-uaop01〜10（操作する管理者）、perf-uat01〜10（5つの操作の対象）、
+#      perf-uapf01〜10（氏名と言語の対象）、perf-uasw-01-01〜10-10（止める悪い側の対象。1人に未無効 100 件・無効 1,000 件）
+perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
+docker info --format '{{.NCPU}} CPU / {{.MemTotal}} bytes'   # VM の余裕を読み取りで確かめる（アプリ 2g・k6）
+perfu up -d --wait
+perfu stop app
+HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-ua-' || LPAD(CAST(X AS VARCHAR), 4, '0') || '@example.test', '$HASH', FALSE,
+    DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-ua-' || LPAD(CAST(X AS VARCHAR), 4, '0') FROM SYSTEM_RANGE(1, 1000);
+INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-' || K || LPAD(CAST(X AS VARCHAR), 2, '0') || '@example.test', '$HASH', K = 'uaop', CURRENT_TIMESTAMP,
+    'perf-' || K || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10), (VALUES 'uaop', 'uat', 'uapf') V(K);
+INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-uasw-' || LPAD(CAST(A.X AS VARCHAR), 2, '0') || '-' || LPAD(CAST(B.X AS VARCHAR), 2, '0') || '@example.test',
+    '$HASH', FALSE, CURRENT_TIMESTAMP, 'perf-uasw' FROM SYSTEM_RANGE(1, 10) A, SYSTEM_RANGE(1, 10) B;
+INSERT INTO refresh_tokens (user_id, token_hash, issued_at, expires_at, revoked_at)
+  SELECT u.user_id, HASH('SHA-256', STRINGTOUTF8(u.email || '-' || r.X)), CURRENT_TIMESTAMP, DATEADD('DAY', 30, CURRENT_TIMESTAMP),
+    CASE WHEN r.X <= 100 THEN NULL ELSE CURRENT_TIMESTAMP END FROM users u, SYSTEM_RANGE(1, 1100) r WHERE u.email LIKE 'perf-uasw-%'"
+cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+  eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+rm build/h2-perf.jar; unset AP UP HASH SQL
+perfu up -d --wait
+
+# 3''. 場面ごとに流す。台本の全体を caffeinate -i で包む（場面ごとに起こし直さない）
+mkdir -p build/perf-results && chmod 777 build/perf-results
+cat > "$D/ua-run.sh" <<'EOS'
+D="$1"
+k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
+}
+metrics() {   # 接続プールの値（待ちの時間切れの累計・借りるまでの待ちの最大）を記録する
+  for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
+    curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/$1-$m.json"
+  done
+}
+for c in a b c d; do k6run userAdminList-$c -e SCENARIO=userAdminList -e LIST_CASE=$c -e DURATION=60s; done
+k6run userAdminProfile -e SCENARIO=userAdminProfile -e DURATION=60s
+k6run userAdminOps -e SCENARIO=userAdminOps
+k6run userAdminSuspendWorst -e SCENARIO=userAdminSuspendWorst
+metrics before-pool
+k6run userAdminPool -e SCENARIO=userAdminPool -e DURATION=60s
+metrics after-pool
+EOS
+caffeinate -i zsh "$D/ua-run.sh" "$D"
+
+# 3'''. 上限 10 の場面（NFR6.3）。使い捨てのアプリの上限を 10 にして起動し直し、(A) VUS=5 と (B) VUS=10 で 5つの操作を流す
+( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10\n' >> "$D/app.env" )
+perfu up -d --wait --force-recreate app
+cat > "$D/ua-pool10.sh" <<'EOS'
+D="$1"
+for v in 5 10; do
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=userAdminOps -e VUS=$v \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    run --quiet --summary-export=/out/userAdminOps-pool10-vus$v.json /scripts/scenarios.js
+  for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
+    curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/pool10-vus$v-$m.json"
+  done
+done
+EOS
+caffeinate -i zsh "$D/ua-pool10.sh" "$D"
+docker logs mastersmith-perf-app-1 2>&1 | grep -c '監査イベントの記録に失敗しました'   # (B) の欠けた監査の件数と突き合わせる
+
+# 4''. 秘密が出ていないことを件数で確かめる（どれも 0 であること）。ログはファイルに残さず、数だけを見る
+#      （初期管理者の起動のログには伏せ字のメールアドレスが出るため、試験用の利用者の名前の部分で数える）
+docker logs mastersmith-perf-app-1 2>&1 | grep -c 'perf-ua'
+docker logs mastersmith-perf-app-1 2>&1 | grep -c 'MVStoreException'
+
+# 5''. 監査の件数を数えてから片付ける（アプリを止め、手順 2'' と同じ H2 の道具で読み取りだけ。数え終わるまで down -v をしない）
+#      SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type IN ('USER_ADMIN_GRANTED',
+#        'USER_ADMIN_REVOKED', 'USER_SUSPENDED', 'USER_RESUMED', 'LOGIN_FAILURES_RESET') GROUP BY event_type, result, failure_reason
+perfu stop app
+perfu down -v
+rm -rf "$D"
+docker compose up -d --wait
+```
+
+- 監査の件数の突き合わせ（NFR6.2）: 流した5つの操作の成功の件数（k6 の結果の `checks` の成功の数。操作ごとの `{name:...}` の `http_reqs` の数）と、5つの種類の `SUCCESS` の件数が一致することを見る。(B) の欠けた件数は、アプリのログの `監査イベントの記録に失敗しました` の件数と、待ちの時間切れの累計に合うかを記録する。
+- 監査の件数を数えるときは、上限 10 の場面の分も同じ内部DB に入る。場面ごとに分けて数えたいときは、場面の前後で件数を読む（アプリを止めて読み、起動し直す）。

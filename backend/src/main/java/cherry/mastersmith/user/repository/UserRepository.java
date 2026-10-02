@@ -160,4 +160,38 @@ public interface UserRepository extends JpaRepository<User, Long> {
             + " or u.displayName ilike :#{#pattern.value()} escape '\\'"
             + " order by u.createdAt, u.userId")
     List<UserAdminRow> findAdminRowsBySearch(@Param("pattern") RedactedText pattern, Pageable pageable);
+
+    /**
+     * 1人の利用者の要約の投影を読む（Intent 260930-user-admin の U3、契約 C8 の lockAdminRowsInIdOrder・lockUserRow・findAdminSummary、
+     * BR3.1・BR2.5）。排他しない。パスワードのハッシュの列を読まない。
+     *
+     * @param userId 利用者 ID
+     * @return 要約の投影（いなければ空）
+     */
+    @Query("select new cherry.mastersmith.user.repository.UserAdminRow(u.userId, u.email, u.displayName, u.language,"
+            + " u.adminFlag, u.suspended, u.createdAt) from User u where u.userId = :userId")
+    Optional<UserAdminRow> findAdminRow(@Param("userId") long userId);
+
+    /**
+     * 有効な管理者（印を持ち停止していない利用者。ロック中も含む）の利用者 ID を、昇順に読む（Intent 260930-user-admin の U3、BR3.1・
+     * BR3.2）。排他しない。管理者の行の排他の後に、別の問い合わせとして呼ぶ（待つ間に確定した変更を含めて数えるため）。
+     *
+     * @return 有効な管理者の利用者 ID（昇順）
+     */
+    @Query("select u.userId from User u where u.adminFlag = true and u.suspended = false order by u.userId")
+    List<Long> findActiveAdminIds();
+
+    /**
+     * 管理者の印の列だけを書き換える（Intent 260930-user-admin の U3、契約 C8 の setAdmin、BR4.1・BR4.2）。
+     *
+     * <p>ほかの列（停止の状態・氏名と表示の設定・パスワードのハッシュ）は書かない。書く前に持続化の文脈を書き出し、書いた後に文脈を空に
+     * する（停止の列の更新と同じ形）。拒否の判定はしない。
+     *
+     * @param userId 利用者 ID
+     * @param admin 印を付けるなら true、外すなら false
+     * @return 書き換えた行の数（利用者がいなければ 0）
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE User u SET u.adminFlag = :admin WHERE u.userId = :userId")
+    int updateAdminFlag(@Param("userId") long userId, @Param("admin") boolean admin);
 }

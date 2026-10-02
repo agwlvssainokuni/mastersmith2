@@ -87,6 +87,8 @@ class LoginServiceTest {
 
     private final PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
 
+    private final LoginAttemptBarrier barrier = mock(LoginAttemptBarrier.class);
+
     private LoginService service;
 
     @BeforeEach
@@ -103,7 +105,8 @@ class LoginServiceTest {
                 publisher,
                 properties,
                 clock,
-                transactionManager);
+                transactionManager,
+                barrier);
     }
 
     private void givenVerification(UserSummary user, boolean matched) {
@@ -430,5 +433,35 @@ class LoginServiceTest {
 
         verify(attempts).update(7, 5, NOW.plus(Duration.ofMinutes(30)));
         assertThat(event().failureReason()).isEqualTo(LoginFailureReason.PASSWORD_MISMATCH);
+    }
+
+    @Test
+    @DisplayName("the waiting point is passed once right after locking a real user's row (U3 B4, BR3.6)")
+    void barrierAfterRealUserLock() {
+        givenVerification(USER, false);
+        givenState(1, null);
+
+        fail();
+
+        InOrder order = inOrder(attempts, barrier);
+        order.verify(attempts).lockForUpdate(7);
+        order.verify(barrier).afterLock(7);
+        order.verify(attempts).update(7, 2, null);
+        verify(barrier, times(1)).afterLock(anyLong());
+    }
+
+    @Test
+    @DisplayName("the waiting point is not passed for a dummy row or a missing row (U3 B4)")
+    void noBarrierForDummyOrMissingRow() {
+        givenVerification(null, false);
+        when(attempts.lockDummyForUpdate()).thenReturn(new LoginAttemptState(-2, 0, null));
+        fail();
+
+        givenVerification(USER, true);
+        when(attempts.lockForUpdate(7)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.login(new LoginCommand("user@example.com", new Password("パスワード")), CLIENT))
+                .isInstanceOf(IllegalStateException.class);
+
+        verifyNoInteractions(barrier);
     }
 }

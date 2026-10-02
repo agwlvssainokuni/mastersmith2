@@ -20,7 +20,8 @@ package cherry.mastersmith.audit.domain;
  *
  * <p>U2 の {@code LoginFailureReason} と U3 の {@code AccessDeniedReason} の値を、監査ログの区分としてまとめたもの。
  * {@link #USER_NOT_FOUND} は、ログインの失敗（入力されたメールアドレスの利用者がいない）とアクセスの拒否（アクセストークンの
- * 利用者が DB にいない）の両方で使う。
+ * 利用者が DB にいない）の両方で使う。利用者の管理の操作（Intent 260930-user-admin の U3）でも、対象の利用者がいないときに
+ * {@link #USER_NOT_FOUND}、操作した人の確かめ直しで外れていたときに {@link #NOT_ADMIN} を使う。
  */
 public enum AuditFailureReason {
     /** 利用者がいない。 */
@@ -50,5 +51,13 @@ public enum AuditFailureReason {
     /** 見つからない招待（存在しない・改ざん・形の誤り・送り直しで古くなった・定期の削除で消えた。U3）。 */
     INVITATION_NOT_FOUND,
     /** 登録の完了の時点で同じメールアドレスの利用者がいる（U3、契約 C8 に足した値）。 */
-    EMAIL_ALREADY_REGISTERED
+    EMAIL_ALREADY_REGISTERED,
+    /** 管理の操作の対象が操作した人自身（Intent 260930-user-admin の U3、契約 C6）。 */
+    SELF_OPERATION,
+    /** 管理の操作の対象が停止中（Intent 260930-user-admin の U3）。 */
+    TARGET_SUSPENDED,
+    /** 管理の操作で変えるものが無い（Intent 260930-user-admin の U3）。 */
+    NO_CHANGE,
+    /** 管理の操作で有効な管理者が 0 人になる（Intent 260930-user-admin の U3）。 */
+    LAST_ACTIVE_ADMIN
 }

@@ -28,6 +28,10 @@ import cherry.mastersmith.user.service.UserAccountService;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -51,6 +55,8 @@ public final class UserAdminFixtures {
 
     private final TestUserSuspension suspension;
 
+    private final TransactionTemplate transaction;
+
     private final AuthApi auth;
 
     /**
@@ -70,8 +76,8 @@ public final class UserAdminFixtures {
             int port) {
         this.userAccountService = userAccountService;
         this.jdbc = jdbc;
-        this.suspension = new TestUserSuspension(
-                new TransactionTemplate(transactionManager), userAccountService, revocationService);
+        this.transaction = new TransactionTemplate(transactionManager);
+        this.suspension = new TestUserSuspension(transaction, userAccountService, revocationService);
         this.auth = new AuthApi(port);
     }
 
@@ -134,5 +140,67 @@ public final class UserAdminFixtures {
                 userId,
                 failures,
                 lockedUntil == null ? null : OffsetDateTime.ofInstant(lockedUntil, ZoneOffset.UTC));
+    }
+
+    /**
+     * ロックの状態の行を消す（B4。利用者を作ると行が作られるため、行が無い利用者の確かめに使う。{@code users} は書き換えない）。
+     *
+     * @param userId 利用者 ID
+     */
+    public void removeLockState(long userId) {
+        jdbc.update("DELETE FROM login_attempt_states WHERE subject_id = ?", userId);
+    }
+
+    /**
+     * 内部DB にいるすべての管理者の印を外す（B4。最後の有効な管理者の数えを、テストで作った管理者だけにするため）。契約 C8 の
+     * {@code setAdmin} を使い、{@code users} を JDBC で書き換えない。
+     */
+    public void demoteAllAdmins() {
+        List<Long> admins = jdbc.queryForList("SELECT user_id FROM users WHERE admin_flag = TRUE", Long.class);
+        transaction.executeWithoutResult(status -> admins.forEach(id -> userAccountService.setAdmin(id, false)));
+    }
+
+    /**
+     * 有効な管理者（印あり・停止中でない）の利用者 ID を返す（B4）。
+     *
+     * @return 利用者 ID の集合
+     */
+    public Set<Long> activeAdminIds() {
+        return Set.copyOf(jdbc.queryForList(
+                "SELECT user_id FROM users WHERE admin_flag = TRUE AND suspended = FALSE", Long.class));
+    }
+
+    /**
+     * 利用者の行の状態の列（管理者の印・停止・氏名・言語）を返す（B4。列の名前は大文字）。
+     *
+     * @param userId 利用者 ID
+     * @return 列の名前と値
+     */
+    public Map<String, Object> userColumns(long userId) {
+        return jdbc.queryForMap(
+                "SELECT admin_flag, suspended, display_name, language FROM users WHERE user_id = ?", userId);
+    }
+
+    /**
+     * 利用者のまだ無効でないリフレッシュトークンの数を返す（B4）。
+     *
+     * @param userId 利用者 ID
+     * @return 数
+     */
+    public int activeRefreshTokens(long userId) {
+        return Objects.requireNonNull(jdbc.queryForObject(
+                "SELECT COUNT(*) FROM refresh_tokens WHERE user_id = ? AND revoked_at IS NULL", Integer.class, userId));
+    }
+
+    /**
+     * 利用者のロックの状態の行（失敗回数と解除の予定の時刻）を返す（B4。列の名前は大文字。行が無ければ空）。
+     *
+     * @param userId 利用者 ID
+     * @return 列の名前と値
+     */
+    public Map<String, Object> lockColumns(long userId) {
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT consecutive_failures, locked_until FROM login_attempt_states WHERE subject_id = ?", userId);
+        return rows.isEmpty() ? Map.of() : rows.getFirst();
     }
 }

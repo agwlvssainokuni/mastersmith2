@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import cherry.mastersmith.auth.domain.LoginAttemptState;
 import cherry.mastersmith.auth.testsupport.H2SessionWaits;
 import cherry.mastersmith.auth.testsupport.SqlStatementCounter;
+import cherry.mastersmith.common.persistence.RowLockAttempt;
+import cherry.mastersmith.common.persistence.RowLockUnavailableException;
+import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -40,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -149,7 +151,8 @@ class LoginAttemptStateRepositoryIT {
         release.countDown();
         first.get(30, TimeUnit.SECONDS);
 
-        assertThat(failure).isInstanceOf(DataAccessException.class);
+        // U3 の E1 の直しの後は、値を含まない例外（原因なし）に置き換わる。
+        assertThat(failure).isInstanceOf(RowLockUnavailableException.class).hasNoCause();
         assertThat(elapsedMillis).isBetween(2500L, 9000L);
     }
 
@@ -308,5 +311,72 @@ class LoginAttemptStateRepositoryIT {
         assertThat(statements).isEmpty();
         assertThat(rows).extracting(LoginAttemptState::getSubjectId).containsExactly(subject);
         assertThat(rows).allSatisfy(row -> assertThat(row.getSubjectId()).isPositive());
+    }
+
+    private static final String HOLD_ROW =
+            "SELECT subject_id FROM login_attempt_states WHERE subject_id = ? FOR UPDATE";
+
+    @Test
+    @DisplayName(
+            "a row held by another connection makes lockForUpdate fail with the value-free exception in about 3 s (U3)")
+    void heldByAnotherConnectionThrowsValueFreeException() throws Exception {
+        long subject = newSubject();
+        try (RowLockHolder holder = RowLockHolder.hold(TestDatabase.url(tempDir), HOLD_ROW, subject)) {
+            assertThat(holder.lockedRows()).isEqualTo(1);
+
+            long start = System.nanoTime();
+            Throwable failure =
+                    catchFailure(() -> tx.executeWithoutResult(status -> repository.lockForUpdate(subject)));
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+            assertThat(failure)
+                    .isInstanceOf(RowLockUnavailableException.class)
+                    .hasNoCause()
+                    .hasMessage("行の排他を取れませんでした（待ちの上限切れ・行き詰まり）");
+            assertThat(elapsedMillis).isBetween(2500L, 9000L);
+        }
+    }
+
+    @Test
+    @DisplayName("a row held by another connection makes tryLockForUpdate return Busy in about 3 s (U3)")
+    void heldByAnotherConnectionReturnsBusy() throws Exception {
+        long subject = newSubject();
+        try (RowLockHolder holder = RowLockHolder.hold(TestDatabase.url(tempDir), HOLD_ROW, subject)) {
+            long start = System.nanoTime();
+            RowLockAttempt<Optional<LoginAttemptState>> attempt =
+                    tx.execute(status -> repository.tryLockForUpdate(subject));
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+
+            assertThat(attempt).isInstanceOf(RowLockAttempt.Busy.class);
+            assertThat(elapsedMillis).isBetween(2500L, 9000L);
+        }
+    }
+
+    @Test
+    @DisplayName("tryLockForUpdate acquires a free row and reads a missing row as acquired and empty (U3)")
+    void tryLockForUpdateAcquires() {
+        long subject = newSubject();
+
+        RowLockAttempt<Optional<LoginAttemptState>> held = tx.execute(status -> repository.tryLockForUpdate(subject));
+        RowLockAttempt<Optional<LoginAttemptState>> missing =
+                tx.execute(status -> repository.tryLockForUpdate(Long.MAX_VALUE));
+
+        assertThat(held)
+                .isInstanceOfSatisfying(
+                        RowLockAttempt.Acquired.class,
+                        acquired -> assertThat(((Optional<?>) acquired.value()))
+                                .get()
+                                .extracting(row -> ((LoginAttemptState) row).getSubjectId())
+                                .isEqualTo(subject));
+        assertThat(missing).isEqualTo(RowLockAttempt.acquired(Optional.empty()));
+    }
+
+    private static Throwable catchFailure(Runnable action) {
+        try {
+            action.run();
+            return null;
+        } catch (RuntimeException e) {
+            return e;
+        }
     }
 }

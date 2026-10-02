@@ -87,6 +87,8 @@ public class LoginService {
 
     private final TransactionTemplate transaction;
 
+    private final LoginAttemptBarrier barrier;
+
     /**
      * ログインの処理を作る。
      *
@@ -98,6 +100,7 @@ public class LoginService {
      * @param properties 認証の設定
      * @param clock 時計
      * @param transactionManager トランザクションの管理
+     * @param barrier ロックの状態の行を排他した直後の待ち合わせの口（本番は何もしない。Intent 260930-user-admin の U3、BR3.6）
      */
     public LoginService(
             UserAccountService userAccountService,
@@ -107,7 +110,8 @@ public class LoginService {
             ApplicationEventPublisher eventPublisher,
             AuthProperties properties,
             Clock clock,
-            PlatformTransactionManager transactionManager) {
+            PlatformTransactionManager transactionManager,
+            LoginAttemptBarrier barrier) {
         this.userAccountService = userAccountService;
         this.attemptRepository = attemptRepository;
         this.refreshTokenRepository = refreshTokenRepository;
@@ -116,6 +120,7 @@ public class LoginService {
         this.properties = properties;
         this.clock = clock;
         this.transaction = new TransactionTemplate(transactionManager);
+        this.barrier = barrier;
     }
 
     /**
@@ -170,6 +175,8 @@ public class LoginService {
             if (found.isEmpty()) {
                 return Decision.ROW_MISSING;
             }
+            // 実在の利用者の行を排他した直後の待ち合わせの口（本番は何もしない。ダミーの行・行が無いときは呼ばない。BR3.6）。
+            barrier.afterLock(user.userId());
             row = found.get();
         }
         LockState current = new LockState(row.getConsecutiveFailures(), row.getLockedUntil());

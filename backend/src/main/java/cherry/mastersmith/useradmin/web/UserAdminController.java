@@ -15,17 +15,22 @@
  */
 package cherry.mastersmith.useradmin.web;
 
+import cherry.mastersmith.access.domain.AccessProblemTypes;
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
+import cherry.mastersmith.user.domain.RequestOrigin;
 import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.service.ProfileUpdateResult;
 import cherry.mastersmith.useradmin.domain.UserAdminProblemTypes;
+import cherry.mastersmith.useradmin.service.OperationResult;
 import cherry.mastersmith.useradmin.service.UserAdminListResult;
 import cherry.mastersmith.useradmin.service.UserAdminService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,11 +44,14 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>{@code GET /api/admin/users?page=&q=}: 200 と1ページ（page は文字列、q は伏せ字の型 {@link SearchText} で受ける。BR1.3）
  *   <li>{@code PUT /api/admin/users/{userId}/profile}: 204（本文なし）
+ *   <li>{@code POST /api/admin/users/{userId}/grant-admin}・{@code revoke-admin}・{@code suspend}・{@code resume}・
+ *       {@code reset-login-failures}: 204（本文なし。B4 で足した5つの操作）
  * </ul>
  *
  * <p>業務処理の結果の型を場合を尽くす {@code switch} で応答か業務エラーにし、応答は共通の変換（{@code @RestControllerAdvice} の1か所）で
- * 作る: 400 VALIDATION_FAILED（page の誤りは項目なし、q と氏名・言語の誤りは {@code fieldErrors}）、404 USER_NOT_FOUND。
- * {@code userId} が整数でないときは既存の型の誤りの扱いで 400 になる（BR2.7）。
+ * 作る: 400 VALIDATION_FAILED（page の誤りは項目なし、q と氏名・言語の誤りは {@code fieldErrors}）、404 USER_NOT_FOUND、5つの操作の
+ * 業務の拒否は理由の code（409）、操作した人の確かめ直しで外れたときは 403 ACCESS_DENIED、行の排他の待ちの上限切れは 409
+ * USER_ADMIN_BUSY（原因をつながない）。{@code userId} が整数でないときは既存の型の誤りの扱いで 400 になる（BR2.7）。
  */
 @RestController
 @RequestMapping(UserAdminController.PATH)
@@ -99,6 +107,91 @@ public class UserAdminController {
             case ProfileUpdateResult.Updated _ -> ResponseEntity.noContent().build();
             case ProfileUpdateResult.Invalid invalid -> throw UserAdminFieldErrors.validationFailed(invalid.errors());
             case ProfileUpdateResult.NotFound _ -> throw new BusinessException(UserAdminProblemTypes.USER_NOT_FOUND);
+        };
+    }
+
+    /**
+     * 管理者の印を付ける（BR4.1）。
+     *
+     * @param userId 対象の利用者 ID
+     * @param request 要求
+     * @return 204
+     */
+    @PostMapping(path = "/{userId}/grant-admin")
+    public ResponseEntity<Void> grantAdmin(@PathVariable("userId") long userId, HttpServletRequest request) {
+        long actor = context.currentUserId();
+        return respond(service.grantAdmin(actor, origin(request), userId));
+    }
+
+    /**
+     * 管理者の印を外す（BR4.2）。
+     *
+     * @param userId 対象の利用者 ID
+     * @param request 要求
+     * @return 204
+     */
+    @PostMapping(path = "/{userId}/revoke-admin")
+    public ResponseEntity<Void> revokeAdmin(@PathVariable("userId") long userId, HttpServletRequest request) {
+        long actor = context.currentUserId();
+        return respond(service.revokeAdmin(actor, origin(request), userId));
+    }
+
+    /**
+     * 利用を止める（BR4.3）。
+     *
+     * @param userId 対象の利用者 ID
+     * @param request 要求
+     * @return 204
+     */
+    @PostMapping(path = "/{userId}/suspend")
+    public ResponseEntity<Void> suspend(@PathVariable("userId") long userId, HttpServletRequest request) {
+        long actor = context.currentUserId();
+        return respond(service.suspend(actor, origin(request), userId));
+    }
+
+    /**
+     * 停止を解く（BR4.4）。
+     *
+     * @param userId 対象の利用者 ID
+     * @param request 要求
+     * @return 204
+     */
+    @PostMapping(path = "/{userId}/resume")
+    public ResponseEntity<Void> resume(@PathVariable("userId") long userId, HttpServletRequest request) {
+        long actor = context.currentUserId();
+        return respond(service.resume(actor, origin(request), userId));
+    }
+
+    /**
+     * ログインの失敗回数を戻す（BR4.5）。
+     *
+     * @param userId 対象の利用者 ID
+     * @param request 要求
+     * @return 204
+     */
+    @PostMapping(path = "/{userId}/reset-login-failures")
+    public ResponseEntity<Void> resetLoginFailures(@PathVariable("userId") long userId, HttpServletRequest request) {
+        long actor = context.currentUserId();
+        return respond(service.resetLoginFailures(actor, origin(request), userId));
+    }
+
+    private RequestOrigin origin(HttpServletRequest request) {
+        return context.origin(request);
+    }
+
+    /**
+     * 5つの操作の結果を応答か業務エラーにする（BR2.3・BR2.6・BR3.5）。
+     *
+     * @param result 業務処理の結果
+     * @return 204
+     */
+    private static ResponseEntity<Void> respond(OperationResult result) {
+        return switch (result) {
+            case OperationResult.Done _ -> ResponseEntity.noContent().build();
+            case OperationResult.Rejected rejected ->
+                throw new BusinessException(UserAdminProblemTypes.of(rejected.reason()));
+            case OperationResult.OperatorNotAdmin _ -> throw new BusinessException(AccessProblemTypes.ACCESS_DENIED);
+            case OperationResult.Busy _ -> throw new BusinessException(UserAdminProblemTypes.BUSY);
         };
     }
 }

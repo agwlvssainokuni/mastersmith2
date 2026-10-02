@@ -33,6 +33,9 @@ import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangeOutcome;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
+import cherry.mastersmith.useradmin.domain.AdminOperation;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditFailure;
 import java.time.Instant;
 
 /**
@@ -50,6 +53,10 @@ import java.time.Instant;
  * <p>招待と登録（Intent 260925-user-management の U3）の出来事は、招待の管理は操作した管理者と対象の招待、登録の完了は対象の招待と
  * 作った利用者、登録の失敗は対象の招待（見つかったときだけ）と理由を記録する。メールアドレス・トークンは出来事が持たないため、記録にも
  * 入らない（U3 の BR8.1〜BR8.3・BR8.6）。
+ *
+ * <p>利用者の管理の操作（Intent 260930-user-admin の U3、契約 C6）の出来事は、操作した管理者と要求の利用者 ID（いない ID のまま）、
+ * 成否と理由を記録する。メールアドレス（{@code enteredEmail}）は空で、氏名・検索の文字・失敗回数・トークンは出来事が持たないため、
+ * 記録にも入らない（BR6.2）。
  *
  * <p>種類と理由の写し取りは網羅の {@code switch} で書く。U2・U3 が値を増やしたときに、コンパイルで気づけるようにするため。
  */
@@ -233,6 +240,29 @@ public final class AuditEventFactory {
                 event.invitationId());
     }
 
+    /**
+     * 利用者の管理の操作の出来事から監査イベントを作る（Intent 260930-user-admin の U3、契約 C6、BR6.1・BR6.2）。
+     *
+     * <p>成功も失敗も操作ごとの同じ種類で、結果は出来事が持つ。操作した人に操作した管理者、対象の利用者に要求の利用者 ID（いない ID の
+     * まま）を記録する。メールアドレス・要求のパス・対象の招待・DSL の項目は空。User-Agent は上限まで切り詰める。
+     *
+     * @param event 利用者の管理の操作の出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(UserAdminAuditEvent event) {
+        return AuditEvent.withTarget(
+                event.occurredAt(),
+                eventTypeOf(event.operation()),
+                event.succeeded() ? AuditResult.SUCCESS : AuditResult.FAILURE,
+                failureReasonOf(event.failure()),
+                event.sourceIp(),
+                AuditText.userAgent(event.userAgent()),
+                event.traceId(),
+                event.actorUserId(),
+                event.targetUserId(),
+                null);
+    }
+
     private static AuditEvent invitationAdmin(
             AuditEventType eventType,
             long invitationId,
@@ -264,6 +294,30 @@ public final class AuditEventFactory {
         };
     }
 
+    private static AuditEventType eventTypeOf(AdminOperation operation) {
+        return switch (operation) {
+            case GRANT_ADMIN -> AuditEventType.USER_ADMIN_GRANTED;
+            case REVOKE_ADMIN -> AuditEventType.USER_ADMIN_REVOKED;
+            case SUSPEND -> AuditEventType.USER_SUSPENDED;
+            case RESUME -> AuditEventType.USER_RESUMED;
+            case RESET_LOGIN_FAILURES -> AuditEventType.LOGIN_FAILURES_RESET;
+        };
+    }
+
+    private static AuditFailureReason failureReasonOf(UserAdminAuditFailure failure) {
+        if (failure == null) {
+            return null;
+        }
+        return switch (failure) {
+            case USER_NOT_FOUND -> AuditFailureReason.USER_NOT_FOUND;
+            case SELF_OPERATION -> AuditFailureReason.SELF_OPERATION;
+            case TARGET_SUSPENDED -> AuditFailureReason.TARGET_SUSPENDED;
+            case NO_CHANGE -> AuditFailureReason.NO_CHANGE;
+            case LAST_ACTIVE_ADMIN -> AuditFailureReason.LAST_ACTIVE_ADMIN;
+            case NOT_ADMIN -> AuditFailureReason.NOT_ADMIN;
+        };
+    }
+
     private static AuditEventType eventTypeOf(DslOperationType eventType) {
         return switch (eventType) {
             case DSL_GENERATED -> AuditEventType.DSL_GENERATED;
@@ -291,8 +345,8 @@ public final class AuditEventFactory {
     /**
      * 監査イベントの種類から結果を決める（BR1.2）。
      *
-     * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは
-     * 決められない（呼び出すと想定外の誤り）。
+     * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）と利用者の管理の操作の5つの種類は成功も失敗も同じ種類で、結果は
+     * 出来事が持つため、種類からは決められない（呼び出すと想定外の誤り）。
      *
      * @param eventType 種類
      * @return 結果
@@ -311,7 +365,12 @@ public final class AuditEventFactory {
                     INVITATION_CANCELLED,
                     REGISTRATION_COMPLETED -> AuditResult.SUCCESS;
             case LOGIN_FAILED, ACCESS_DENIED, DSL_SUBMISSION_REJECTED, REGISTRATION_FAILED -> AuditResult.FAILURE;
-            case PASSWORD_CHANGED -> throw new IllegalArgumentException("PASSWORD_CHANGED の結果は種類から決められません（出来事が持つ）");
+            case PASSWORD_CHANGED,
+                    USER_ADMIN_GRANTED,
+                    USER_ADMIN_REVOKED,
+                    USER_SUSPENDED,
+                    USER_RESUMED,
+                    LOGIN_FAILURES_RESET -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
         };
     }
 

@@ -15,6 +15,7 @@
  */
 package cherry.mastersmith.user.service;
 
+import cherry.mastersmith.common.persistence.RowLockAttempt;
 import cherry.mastersmith.user.domain.DisplayName;
 import cherry.mastersmith.user.domain.EmailAddress;
 import cherry.mastersmith.user.domain.FieldError;
@@ -29,11 +30,13 @@ import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
+import cherry.mastersmith.user.repository.UserRowLockRepository;
 import java.time.Clock;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -56,6 +59,8 @@ public class UserAccountService {
 
     private final UserRepository userRepository;
 
+    private final UserRowLockRepository rowLocks;
+
     private final PasswordEncoder passwordEncoder;
 
     private final DummyPasswordHash dummyPasswordHash;
@@ -68,6 +73,7 @@ public class UserAccountService {
      * 業務処理を作る。
      *
      * @param userRepository 利用者の DB アクセス
+     * @param rowLocks 利用者の行の排他の DB アクセス
      * @param passwordEncoder パスワードのハッシュの仕組み
      * @param dummyPasswordHash ダミーのハッシュ
      * @param eventPublisher 出来事の知らせ
@@ -75,11 +81,13 @@ public class UserAccountService {
      */
     public UserAccountService(
             UserRepository userRepository,
+            UserRowLockRepository rowLocks,
             PasswordEncoder passwordEncoder,
             DummyPasswordHash dummyPasswordHash,
             ApplicationEventPublisher eventPublisher,
             Clock clock) {
         this.userRepository = userRepository;
+        this.rowLocks = rowLocks;
         this.passwordEncoder = passwordEncoder;
         this.dummyPasswordHash = dummyPasswordHash;
         this.eventPublisher = eventPublisher;
@@ -217,6 +225,79 @@ public class UserAccountService {
             return new ProfileUpdateResult.NotFound();
         }
         return new ProfileUpdateResult.Updated();
+    }
+
+    /**
+     * 管理者の印を持つすべての行と対象の行を利用者 ID の昇順に排他し、排他の後の対象の要約と有効な管理者の集合を返す（Intent
+     * 260930-user-admin の U3、契約 C8 の lockAdminRowsInIdOrder、BR3.1・BR3.5。印を付ける・外す・止めるが使う）。
+     *
+     * <p>呼び出し元のトランザクションの中でだけ呼べる（無ければ {@code IllegalTransactionStateException}）。対象の要約と有効な管理者の
+     * 集合は、排他とは別の問い合わせで投影として読む（待つ間に確定した変更を含めて数える。{@code reliability-design.md} 1.3・2.1）。
+     * 排他を取れなかったときは例外ではなく {@link AdminRowsLock.Busy} を返し、その後に DB を読まない。巻き戻しの印は付けない（呼び出し元が
+     * 付ける。BR3.5）。
+     *
+     * @param targetUserId 対象の利用者 ID
+     * @return 排他の結果
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AdminRowsLock lockAdminRowsInIdOrder(long targetUserId) {
+        return switch (rowLocks.lockAdminRowsAndTarget(targetUserId)) {
+            case RowLockAttempt.Acquired<List<Long>> acquired ->
+                new AdminRowsLock.Locked(findAdminRow(targetUserId), Set.copyOf(userRepository.findActiveAdminIds()));
+            case RowLockAttempt.Busy<List<Long>> busy -> new AdminRowsLock.Busy();
+        };
+    }
+
+    /**
+     * 対象の利用者の行だけを排他し、排他の後の対象の要約を返す（Intent 260930-user-admin の U3、契約 C8 の lockUserRow、BR3.3・BR3.5。
+     * 停止を解く操作だけが使う）。
+     *
+     * <p>呼び出し元のトランザクションの中でだけ呼べる。排他を取れなかったときは {@link UserRowLock.Busy} を返し、その後に DB を読まない。
+     *
+     * @param userId 対象の利用者 ID
+     * @return 排他の結果
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UserRowLock lockUserRow(long userId) {
+        return switch (rowLocks.lockUserRow(userId)) {
+            case RowLockAttempt.Acquired<Boolean> acquired ->
+                new UserRowLock.Locked(acquired.value() ? findAdminRow(userId) : Optional.empty());
+            case RowLockAttempt.Busy<Boolean> busy -> new UserRowLock.Busy();
+        };
+    }
+
+    /**
+     * 1人の利用者の要約を排他なしで読む（Intent 260930-user-admin の U3、FS の D8。失敗回数を戻す操作の対象の有無と、停止を解く・
+     * 失敗回数を戻すの操作した人の確かめ直しに使う）。呼び出し元のトランザクションが有ればそれに入る。
+     *
+     * @param userId 利用者 ID
+     * @return 要約（いなければ空。ハッシュ値を持たない）
+     */
+    @Transactional(readOnly = true)
+    public Optional<UserAdminSummary> findAdminSummary(long userId) {
+        return findAdminRow(userId);
+    }
+
+    /**
+     * 管理者の印を書き換える（Intent 260930-user-admin の U3、契約 C8 の setAdmin、BR4.1・BR4.2）。印の列だけを書く。
+     *
+     * <p>呼び出し元のトランザクションの中でだけ呼べる（無ければ {@code IllegalTransactionStateException}）。拒否の判定（最後の管理者の
+     * 保護など）・監査・トークンの無効化はしない（呼び出し元の受け持ち。印を変えてもトークンは無効にしない）。書く前に持続化の文脈を
+     * 書き出し、書いた後に文脈を空にする（{@link #setSuspended(long, boolean)} と同じ約束）。
+     *
+     * @param userId 利用者 ID
+     * @param admin 印を付けるなら true、外すなら false
+     * @throws IllegalStateException 利用者がいないとき（例外のメッセージには利用者 ID だけを載せる）
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void setAdmin(long userId, boolean admin) {
+        if (userRepository.updateAdminFlag(userId, admin) == 0) {
+            throw new IllegalStateException("利用者がいません: userId=" + userId);
+        }
+    }
+
+    private Optional<UserAdminSummary> findAdminRow(long userId) {
+        return userRepository.findAdminRow(userId).map(UserAccountService::toAdminSummary);
     }
 
     /**

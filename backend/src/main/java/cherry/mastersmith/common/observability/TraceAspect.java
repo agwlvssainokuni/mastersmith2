@@ -75,11 +75,14 @@ public class TraceAspect extends AbstractPointcutAdvisor {
     /**
      * 設定を当てた追跡の処理を作る。
      *
+     * <p>行の排他の失敗（待ちの上限切れ・行き詰まり）の例外の連なりを出さない {@link LockFailureSafeTraceInterceptor} を使う（Intent
+     * 260930-user-admin の U3、I-D1）。設定の項目と既定値は変えない。
+     *
      * @param properties 追跡の設定
      * @return 追跡の処理
      */
     static CustomizableTraceInterceptor createInterceptor(TraceProperties properties) {
-        CustomizableTraceInterceptor traceInterceptor = new CustomizableTraceInterceptor();
+        CustomizableTraceInterceptor traceInterceptor = new LockFailureSafeTraceInterceptor();
         traceInterceptor.setUseDynamicLogger(properties.useDynamicLogger());
         traceInterceptor.setHideProxyClassNames(properties.hideProxyClassNames());
         traceInterceptor.setLogExceptionStackTrace(properties.logExceptionStackTrace());

@@ -35,10 +35,12 @@ import cherry.mastersmith.common.web.MastersmithWebProperties;
 import io.micrometer.tracing.Tracer;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.sql.SQLException;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -54,6 +56,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** 例外の変換の1か所を、Spring を起動しない MockMvc で確かめる。 */
 class GlobalExceptionHandlerTest {
+
+    /** 排他されていた行の値に見立てた、出力の中で見分けやすい文字。 */
+    private static final String ROW_VALUE = "row-value-7f3a@example.com";
 
     private static final ProblemType CONFLICT = new ProblemType(
             "ITEM_CONFLICT",
@@ -89,6 +94,13 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/api/boom")
         String boom() {
             throw new IllegalStateException("内部の情報 secret-value-123");
+        }
+
+        @GetMapping("/api/lock-timeout")
+        String lockTimeout() {
+            throw new CannotAcquireLockException(
+                    "could not obtain lock " + ROW_VALUE,
+                    new RuntimeException(ROW_VALUE, new SQLException(ROW_VALUE, "HYT00", 50200)));
         }
 
         @GetMapping("/api/missing")
@@ -204,6 +216,41 @@ class GlobalExceptionHandlerTest {
             assertThat(logged.getFirst().getThrowableProxy()).isNotNull();
             assertThat(logged.getFirst().getThrowableProxy().getClassName())
                     .isEqualTo(IllegalStateException.class.getName());
+        }
+    }
+
+    @Test
+    @DisplayName("a lock failure chain stays 500 INTERNAL_ERROR and is logged once at ERROR without the cause (U3)")
+    void lockFailureLoggedWithoutCause() throws Exception {
+        try (LogEvents events = LogEvents.capture(GlobalExceptionHandler.class)) {
+            ResultActions result = perform(get("/api/lock-timeout"));
+
+            expectProblem(result, 500, "INTERNAL_ERROR");
+            assertThat(result.andReturn().getResponse().getContentAsString()).doesNotContain(ROW_VALUE);
+            List<ILoggingEvent> logged = events.list();
+            assertThat(logged).hasSize(1);
+            ILoggingEvent event = logged.getFirst();
+            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(event.getThrowableProxy()).isNull();
+            assertThat(event.getFormattedMessage()).doesNotContain(ROW_VALUE);
+            assertThat(event.getKeyValuePairs())
+                    .extracting(pair -> pair.key + "=" + pair.value)
+                    .containsExactly(
+                            "code=INTERNAL_ERROR",
+                            "status=500",
+                            "exceptionClass=" + CannotAcquireLockException.class.getName());
+        }
+    }
+
+    @Test
+    @DisplayName("other unexpected exceptions keep the cause and get no exceptionClass key (U3)")
+    void otherServerErrorsKeepTheCause() throws Exception {
+        try (LogEvents events = LogEvents.capture(GlobalExceptionHandler.class)) {
+            perform(get("/api/boom"));
+
+            ILoggingEvent event = events.list().getFirst();
+            assertThat(event.getThrowableProxy()).isNotNull();
+            assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key).containsExactly("code", "status");
         }
     }
 }

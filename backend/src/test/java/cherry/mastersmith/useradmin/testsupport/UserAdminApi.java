@@ -114,6 +114,35 @@ public final class UserAdminApi {
     }
 
     /**
+     * 5つの操作のどれかを送る（B4。本文なしの POST）。
+     *
+     * @param accessToken アクセストークン（無ければ null）
+     * @param userId 対象の利用者 ID（道に入れる文字列）
+     * @param action 操作の道の最後（{@code grant-admin}・{@code revoke-admin}・{@code suspend}・{@code resume}・
+     *     {@code reset-login-failures}）
+     * @param headers 足すヘッダー
+     * @return 応答
+     */
+    public HttpResponse<String> operate(String accessToken, String userId, String action, String... headers) {
+        return client.send(builder(PATH + "/" + userId + "/" + action, accessToken, headers)
+                .POST(HttpRequest.BodyPublishers.noBody())
+                .build());
+    }
+
+    /**
+     * 5つの操作のどれかを送る（B4。対象を利用者 ID の数で渡す）。
+     *
+     * @param accessToken アクセストークン（無ければ null）
+     * @param userId 対象の利用者 ID
+     * @param action 操作の道の最後
+     * @param headers 足すヘッダー
+     * @return 応答
+     */
+    public HttpResponse<String> operate(String accessToken, long userId, String action, String... headers) {
+        return operate(accessToken, String.valueOf(userId), action, headers);
+    }
+
+    /**
      * 本文を JSON の文字列にする。
      *
      * @param body 本文

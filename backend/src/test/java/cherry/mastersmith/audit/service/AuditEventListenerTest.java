@@ -47,6 +47,9 @@ import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
+import cherry.mastersmith.useradmin.domain.AdminOperation;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditFailure;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -537,6 +540,89 @@ class AuditEventListenerTest {
                             "INVITATION_CANCELLED",
                             "REGISTRATION_COMPLETED",
                             "REGISTRATION_FAILED");
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    @Test
+    @DisplayName("a user admin event is appended exactly once with the actor, the target and the reason (U3 B4)")
+    void userAdminEventIsAppendedOnce() {
+        elapsedMillis(1);
+        UserAdminAuditEvent event = UserAdminAuditEvent.failed(
+                AdminOperation.SUSPEND,
+                3,
+                44,
+                UserAdminAuditFailure.LAST_ACTIVE_ADMIN,
+                OCCURRED_AT,
+                new RequestOrigin("192.0.2.60", "Agent/60", "trace-0060"));
+
+        listener().onUserAdminAuditEvent(event);
+
+        AuditEvent recorded = captureRecorded();
+        assertThat(recorded.getEventType()).isEqualTo(AuditEventType.USER_SUSPENDED);
+        assertThat(recorded.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(recorded.getFailureReason()).isEqualTo(AuditFailureReason.LAST_ACTIVE_ADMIN);
+        assertThat(recorded.getActorUserId()).isEqualTo(3L);
+        assertThat(recorded.getTargetUserId()).isEqualTo(44L);
+        assertThat(recorded.getEnteredEmail()).isNull();
+    }
+
+    @Test
+    @DisplayName(
+            "a failing append of a user admin event is contained and logs the actor and target without email (U3 B4)")
+    void userAdminEventFailureIsContained() {
+        elapsedMillis(1);
+        doThrow(new IllegalStateException("追記に失敗しました")).when(recorder).record(any(AuditEvent.class));
+        UserAdminAuditEvent event = UserAdminAuditEvent.succeeded(
+                AdminOperation.GRANT_ADMIN, 3, 44, OCCURRED_AT, new RequestOrigin("192.0.2.60", null, null));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onUserAdminAuditEvent(event)).doesNotThrowAnyException();
+            assertThatCode(() -> listener().onUserAdminAuditEvent(null)).doesNotThrowAnyException();
+
+            assertThat(logs.list())
+                    .hasSize(2)
+                    .allSatisfy(logged -> assertThat(logged.getLevel()).isEqualTo(Level.ERROR));
+            Map<String, Object> fields = keyValues(logs.list().getFirst());
+            assertThat(fields)
+                    .containsEntry("auditEventType", "USER_ADMIN_GRANTED")
+                    .containsEntry("actorUserId", "3")
+                    .containsEntry("targetUserId", "44")
+                    .containsEntry("enteredEmail", "null");
+            assertThat(keyValues(logs.list().get(1))).containsEntry("actorUserId", "null");
+        }
+    }
+
+    @Test
+    @DisplayName("a user admin event whose audit record cannot be built logs the actor and target it carries (U3 B4)")
+    void unbuildableUserAdminEventLogsItsFields() {
+        // 組み立ての部品が受け付けない形の出来事（操作の区分が無い）を作り、組み立てに失敗した経路の項目の作り方を確かめる
+        // （コード生成のレビューの R-03。出来事の側の確かめで本番では起きない経路）。
+        UserAdminAuditEvent event = mock(UserAdminAuditEvent.class);
+        when(event.actorUserId()).thenReturn(3L);
+        when(event.targetUserId()).thenReturn(44L);
+        when(event.failure()).thenReturn(UserAdminAuditFailure.NOT_ADMIN);
+        when(event.occurredAt()).thenReturn(OCCURRED_AT);
+        when(event.sourceIp()).thenReturn("192.0.2.61");
+        when(event.userAgent()).thenReturn("Agent/61");
+        when(event.traceId()).thenReturn("trace-0061");
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onUserAdminAuditEvent(event)).doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(error -> {
+                assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(error.getMessage()).isEqualTo(AuditEventListener.FAILURE_MESSAGE);
+                assertThat(keyValues(error))
+                        .containsEntry("actorUserId", "3")
+                        .containsEntry("targetUserId", "44")
+                        .containsEntry("targetInvitationId", "null")
+                        .containsEntry("failureReason", "NOT_ADMIN")
+                        .containsEntry("sourceIp", "192.0.2.61")
+                        .containsEntry("auditTraceId", "trace-0061")
+                        .containsEntry("enteredEmail", "null")
+                        .doesNotContainKeys("dslHash", "dslSource", "rejectionKind");
+            });
         }
         verifyNoInteractions(recorder);
     }

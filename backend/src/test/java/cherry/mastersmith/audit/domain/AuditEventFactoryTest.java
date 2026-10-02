@@ -35,6 +35,9 @@ import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
+import cherry.mastersmith.useradmin.domain.AdminOperation;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
+import cherry.mastersmith.useradmin.domain.UserAdminAuditFailure;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -351,5 +354,96 @@ class AuditEventFactoryTest {
                 InvitationIssuedEvent.of(5, 9, OCCURRED_AT, new RequestOrigin("192.0.2.40", "a".repeat(512), null)));
 
         assertThat(audit.getUserAgent()).hasSizeLessThanOrEqualTo(512);
+    }
+
+    private static final RequestOrigin ADMIN_ORIGIN = new RequestOrigin("192.0.2.50", "Agent/50", "trace-0050");
+
+    @ParameterizedTest
+    @CsvSource({
+        "GRANT_ADMIN,USER_ADMIN_GRANTED",
+        "REVOKE_ADMIN,USER_ADMIN_REVOKED",
+        "SUSPEND,USER_SUSPENDED",
+        "RESUME,USER_RESUMED",
+        "RESET_LOGIN_FAILURES,LOGIN_FAILURES_RESET"
+    })
+    @DisplayName("a successful user admin operation records its type, SUCCESS, the actor and the target")
+    void userAdminSuccess(AdminOperation operation, AuditEventType expected) {
+        AuditEvent audit =
+                AuditEventFactory.from(UserAdminAuditEvent.succeeded(operation, 3, 77, OCCURRED_AT, ADMIN_ORIGIN));
+
+        assertThat(audit.getEventType()).isEqualTo(expected);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(audit.getFailureReason()).isNull();
+        assertThat(audit.getActorUserId()).isEqualTo(3L);
+        assertThat(audit.getTargetUserId()).isEqualTo(77L);
+        assertThat(audit.getTargetInvitationId()).isNull();
+        assertThat(audit.getEnteredEmail()).isNull();
+        assertThat(audit.getRequestPath()).isNull();
+        assertThat(audit.getDslHash()).isNull();
+        assertThat(audit.getOccurredAt()).isEqualTo(OCCURRED_AT);
+        assertThat(audit.getSourceIp()).isEqualTo("192.0.2.50");
+        assertThat(audit.getUserAgent()).isEqualTo("Agent/50");
+        assertThat(audit.getTraceId()).isEqualTo("trace-0050");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "USER_NOT_FOUND,USER_NOT_FOUND",
+        "SELF_OPERATION,SELF_OPERATION",
+        "TARGET_SUSPENDED,TARGET_SUSPENDED",
+        "NO_CHANGE,NO_CHANGE",
+        "LAST_ACTIVE_ADMIN,LAST_ACTIVE_ADMIN",
+        "NOT_ADMIN,NOT_ADMIN"
+    })
+    @DisplayName("a rejected user admin operation records FAILURE and the mapped reason")
+    void userAdminFailure(UserAdminAuditFailure failure, AuditFailureReason expected) {
+        AuditEvent audit = AuditEventFactory.from(
+                UserAdminAuditEvent.failed(AdminOperation.REVOKE_ADMIN, 3, 77, failure, OCCURRED_AT, ADMIN_ORIGIN));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.USER_ADMIN_REVOKED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(audit.getFailureReason()).isEqualTo(expected);
+        assertThat(audit.getEnteredEmail()).isNull();
+    }
+
+    @Test
+    @DisplayName("the target is the requested user id even when no such user exists")
+    void userAdminMissingTarget() {
+        AuditEvent audit = AuditEventFactory.from(UserAdminAuditEvent.failed(
+                AdminOperation.RESET_LOGIN_FAILURES,
+                3,
+                987_654,
+                UserAdminAuditFailure.USER_NOT_FOUND,
+                OCCURRED_AT,
+                ADMIN_ORIGIN));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.LOGIN_FAILURES_RESET);
+        assertThat(audit.getTargetUserId()).isEqualTo(987_654L);
+        assertThat(audit.getFailureReason()).isEqualTo(AuditFailureReason.USER_NOT_FOUND);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = AuditEventType.class,
+            names = {
+                "USER_ADMIN_GRANTED",
+                "USER_ADMIN_REVOKED",
+                "USER_SUSPENDED",
+                "USER_RESUMED",
+                "LOGIN_FAILURES_RESET"
+            })
+    @DisplayName("the result of the user admin types cannot be derived from the type alone")
+    void userAdminResultComesFromTheEvent(AuditEventType eventType) {
+        assertThatThrownBy(() -> AuditEventFactory.resultOf(eventType)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("a long user agent of a user admin event is truncated")
+    void userAdminUserAgentIsTruncated() {
+        AuditEvent audit = AuditEventFactory.from(UserAdminAuditEvent.succeeded(
+                AdminOperation.RESUME, 3, 4, OCCURRED_AT, new RequestOrigin("192.0.2.50", "😀".repeat(400), null)));
+
+        assertThat(audit.getUserAgent().codePointCount(0, audit.getUserAgent().length()))
+                .isLessThanOrEqualTo(AuditText.MAX_USER_AGENT_LENGTH);
     }
 }

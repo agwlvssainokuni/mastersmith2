@@ -19,17 +19,14 @@ import cherry.mastersmith.invitation.domain.Invitation;
 import cherry.mastersmith.invitation.domain.InvitationEmail;
 import cherry.mastersmith.invitation.domain.InvitationState;
 import cherry.mastersmith.invitation.domain.SendResult;
-import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
+import cherry.mastersmith.invitation.lock.InvitationLockQueries;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 /**
@@ -37,32 +34,17 @@ import org.springframework.data.repository.query.Param;
  * {@link JpaRepository} の操作を使い、業務処理のトランザクションの中で呼ぶ。
  *
  * <ul>
- *   <li>行の排他の読み取りは {@code PESSIMISTIC_WRITE}、待ちの上限 3 秒（既存の {@code LoginAttemptStateRepository} と同じ）。待ちの
- *       時間切れは想定外の誤り（既存の 500 の扱い）
+ *   <li>行の排他の読み取りは独自の断片 {@link InvitationLockQueries} に置く（{@code PESSIMISTIC_WRITE}、待ちの上限 3 秒。Intent
+ *       260930-user-admin の U3 で Spring Data の {@code @Lock} から移した）。待ちの時間切れは想定外の誤り（既存の 500 の扱い）で、
+ *       例外の連なりを外へ出さず値を含まない例外に置き換える
  *   <li>メールアドレスは文字列にすると伏せる値の型で受け、SpEL で取り出す（メソッドの呼び出しの追跡が引数を文字列にするため）
  *   <li>問い合わせは名前つきの引数だけで組み立て、文字列の連結を使わない（NFR9.3）
  * </ul>
  */
-public interface InvitationRepository extends JpaRepository<Invitation, Long> {
+public interface InvitationRepository extends JpaRepository<Invitation, Long>, InvitationLockQueries {
 
     /** 1回の削除の件数の上限。 */
     int DELETE_BATCH_SIZE = 1000;
-
-    /** 行の排他の待ちの上限（ミリ秒）。 */
-    String LOCK_TIMEOUT_MILLIS = "3000";
-
-    /**
-     * 同じメールアドレスの招待中を行の排他つきで読む（BR2.2・BR2.4）。
-     *
-     * @param email 正規化したメールアドレス
-     * @param state 招待中（{@link InvitationState#PENDING}）
-     * @return 招待中の招待（無ければ空。常に1件まで）
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = LOCK_TIMEOUT_MILLIS))
-    @Query("select i from Invitation i where i.email = :#{#email.value()} and i.state = :state")
-    Optional<Invitation> findByEmailAndStateForUpdate(
-            @Param("email") InvitationEmail email, @Param("state") InvitationState state);
 
     /**
      * 同じメールアドレスの招待中を行の排他つきで読む。
@@ -84,28 +66,6 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     @Query("select i from Invitation i where i.email = :#{#email.value()} and i.state = :state")
     Optional<Invitation> findByEmailAndState(
             @Param("email") InvitationEmail email, @Param("state") InvitationState state);
-
-    /**
-     * 招待を ID で行の排他つきで読む（送り直し・取り消し。BR6.4）。
-     *
-     * @param invitationId 招待の ID
-     * @return 招待（無ければ空）
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = LOCK_TIMEOUT_MILLIS))
-    @Query("select i from Invitation i where i.invitationId = :invitationId")
-    Optional<Invitation> findByIdForUpdate(@Param("invitationId") long invitationId);
-
-    /**
-     * 招待をトークンのハッシュで行の排他つきで読む（登録の完了。BR6.4・BR7.3）。
-     *
-     * @param tokenHash トークンのハッシュ
-     * @return 招待（無ければ空）
-     */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = LOCK_TIMEOUT_MILLIS))
-    @Query("select i from Invitation i where i.tokenHash = :tokenHash")
-    Optional<Invitation> findByTokenHashForUpdate(@Param("tokenHash") byte[] tokenHash);
 
     /**
      * 招待をトークンのハッシュで読む（リンクの確かめ。BR7.1）。

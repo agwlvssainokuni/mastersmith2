@@ -39,8 +39,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * <ul>
  *   <li>{@link #insertTogether(int)}: 次の招待の追記の直前で、指定した数の要求がそろうまで待たせる（同時の招待）
  *   <li>{@link #whileLocked(Callable)}: 次に行の排他を得た直後に、渡した操作を別のスレッドで始め、その操作が行の排他の待ちに入る
- *       （H2 のセッションの一覧で排他の読み取りの文が実行中になる）か終わるまで待ってから、元の操作を続ける
+ *       （H2 のセッションの一覧で、自分以外のセッションの排他の読み取りの文が実行中になる）か終わるまで待ってから、元の操作を続ける。
+ *       続けた時点で別の操作が待ちに入っていたかは {@link #secondDoneAtRelease()} で確かめる
  * </ul>
+ *
+ * <p>セッションの一覧の絞り込みは引数で渡し、自分のセッションを除く（Intent 260930-user-admin の B4 で直した）。直す前は絞り込みを
+ * 文の中に書いていたため、一覧を読む問い合わせ自身の文が絞り込みに当たり、別の操作が待ちに入る前でも常に真になっていた。
  */
 public class TestInvitationBarrier implements InvitationBarrier {
 
@@ -56,6 +60,8 @@ public class TestInvitationBarrier implements InvitationBarrier {
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
     private final JdbcTemplate jdbc;
+
+    private volatile Boolean secondDoneAtRelease;
 
     /**
      * 作る。
@@ -85,6 +91,7 @@ public class TestInvitationBarrier implements InvitationBarrier {
     @SuppressWarnings("unchecked")
     public <T> CompletableFuture<T> whileLocked(Callable<T> action) {
         CompletableFuture<T> result = new CompletableFuture<>();
+        secondDoneAtRelease = null;
         lockedAction.set(() -> {
             try {
                 result.complete(action.call());
@@ -96,10 +103,20 @@ public class TestInvitationBarrier implements InvitationBarrier {
         return result;
     }
 
+    /**
+     * 元の操作を続けた時点で、別の操作がもう終わっていたかを返す（待ちに入っていたことの確かめに使う）。
+     *
+     * @return 終わっていたら真、待ちに入っていたら偽、待ち合わせが起きていなければ null
+     */
+    public Boolean secondDoneAtRelease() {
+        return secondDoneAtRelease;
+    }
+
     /** 待ち合わせの設定を消す。 */
     public void reset() {
         insertBarrier.set(null);
         lockedAction.set(null);
+        secondDoneAtRelease = null;
     }
 
     @Override
@@ -130,7 +147,12 @@ public class TestInvitationBarrier implements InvitationBarrier {
         lockedFuture.set(future);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(TIMEOUT_SECONDS);
         while (System.nanoTime() < deadline) {
-            if (future.isDone() || waitingForLock()) {
+            if (future.isDone()) {
+                secondDoneAtRelease = true;
+                return;
+            }
+            if (waitingForLock()) {
+                secondDoneAtRelease = false;
                 return;
             }
             Thread.onSpinWait();
@@ -139,10 +161,12 @@ public class TestInvitationBarrier implements InvitationBarrier {
     }
 
     private boolean waitingForLock() {
+        // 絞り込みは引数で渡す（文の中に書くと、この問い合わせ自身の文が絞り込みに当たってしまうため）。自分のセッションは除く。
         Integer count = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SESSIONS WHERE LOWER(EXECUTING_STATEMENT) LIKE"
-                        + " '%from invitations%for update%'",
-                Integer.class);
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SESSIONS WHERE LOWER(EXECUTING_STATEMENT) LIKE ?"
+                        + " AND SESSION_ID <> SESSION_ID()",
+                Integer.class,
+                "%from invitations%for update%");
         return count != null && count > 0;
     }
 
