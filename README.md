@@ -105,6 +105,8 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `080-preferences-accessibility.e2e.ts` | プリファレンスとパスワードの変更の画面の表示の設定の 20 組 × 2 画面 × 2 つの状態（最初・画面の確かめの誤り）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、画面を開く・保存・パスワードの変更の時間の測定（5 回ずつ）。初期管理者でログインし、ユーザーメニューから移る |
 | `090-invitation-registration-flow.e2e.ts` | この Intent の代表の流れ「管理者でログイン → 招待 → Mailpit からリンクを取り出す → 登録の完了 → 新しい利用者でログイン → 管理画面に入れない → ログアウト」と、リンクを開いてからフォームが出るまでの時間の測定（5 回） |
 | `100-app-text-contrast.e2e.ts` | アプリ独自の CSS の文字（プリファレンスの画面の選択のまとまりの誤り `.preferences-choice-error`、DSL の管理の画面の JSON Schema のリンク `.dsl-link`、見つからない画面の「ホームへ」のリンク `.page-link`）の表示の設定の 20 組ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。文字のコントラストを含む）。初期管理者でログインする |
+| `110-user-admin-flow.e2e.ts` | Intent 260930-user-admin の代表の流れ「管理者でログイン → 利用者の管理で流れの中で作った利用者 U を検索 → U をロック → ロックを解除（失敗回数を戻す）して U が入れる → 本物の 409・400 と見本の形の照らし合わせ → U の利用を止めて U が使えない → 停止を解いて U が入れる → 管理者でない U の画面で本物の 403 から『権限が無い』の表示」 |
+| `120-user-admin-accessibility.e2e.ts` | 利用者の管理の画面の表示の設定の 20 組 × 12 回の検査（11 の状態で、押せない項目はホバーとキーボードのフォーカスを分けて検査する。一覧・自分の行のメニュー・押せない項目にホバーとキーボードのフォーカス・確かめの Modal・業務の失敗の知らせ・成功の Toast・氏名と言語の入力の Modal とその誤り・検索の上限の誤り・検索に当たらない・読み込みの失敗）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。文字のコントラストを含む）と横のはみ出し、一覧と次のページが出るまでの時間の測定（5 回）。初期管理者でログインし、管理の API は見本に差し替える |
 | `130-admin-forbidden-accessibility.e2e.ts` | 管理の画面の「権限が無い」の表示（S6）の表示の設定の 20 組ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。文字のコントラストを含む）と横のはみ出し、「ホームへ戻る」でホームへ移れること。初期管理者でログインし、管理の入口の確かめの API だけを 403 に差し替える |
 
 050 について（Intent 260925-user-management の U4）:
@@ -149,7 +151,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - リンクを開いてからフォームが出るまでの時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）を5回測り、値と目標以内の回数を注記と添付に残します。時間では失敗させません。同じ5回で、アドレス欄に `#token=` が残らないこと・CSP の違反が無いこと・ブラウザの保存にトークンが無いことは失敗の条件です。
 - 本物の確かめの応答の項目の名前と型が見本（`VERIFY_SAMPLE`）と同じことを毎回確かめます（値は比べません）。
 - 090 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/090-invitation-registration-flow.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
-- HTML の報告（`frontend/playwright-report/`）と失敗のときのトレースには、090 で開いた使い捨てのトークンを含むリンクが載ります（E2E の一時の内部DB の中の値）。共有しません。json の結果・注記・添付・`test.step` の題には、リンク・トークン・宛先・パスワードを入れません。
+- HTML の報告は作らず、トレースは既定で残しません（Intent 260930-user-admin の U5。下の「結果と報告」）。手元でトレースを有効にした実行のトレースには、090 で開いた使い捨てのトークンを含むリンクが載ります（E2E の一時の内部DB の中の値）。共有しません。json の結果・注記・添付・`test.step` の題には、リンク・トークン・宛先・パスワードを入れません。
 
 100 について（Intent 260928-quality-followup の FR2）:
 
@@ -158,6 +160,26 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 選択のまとまりの誤りは、`PUT /api/me/preferences` だけを 400 `VALIDATION_FAILED` の見本（`frontend/e2e/support/preferencesFixtures.ts` の `preferencesValidationProblem`、テーマの項目の誤り）に差し替えて出します。保存・投入の要求はサーバーへ送りません（送られていれば失敗）。対象の要素が出ていることを確かめてから検査し、押した後はマウスを要素の外へ移して、hover でない状態の色を検査します。あわせて、プリファレンスの画面の「保存する」（primary のボタン）にマウスを重ね、背景が hover の色に変わったことを確かめてから検査します（依頼者の決定 G2: C。要求は送りません）。
 - 既知の違反はありません。以前の既知の違反（DSL の管理の画面の選ばれたタブと、「保存する」にマウスを重ねた状態の primary のボタンの hover）は、make-you-chic-ui の固定先を `077f5b4` に上げて当たらなくなりました（Intent 260929-log-deps-cleanup。「画面の表示の設定（U4）」の既知の制約）。100 の中の `STATE_KNOWN_VIOLATIONS` は空で、どの違反も失敗にします。一覧に組と状態と要素を指定して載せた既知の違反が一覧どおりに当たらなければ（当たらなくなったときも）失敗にする仕組みは残しています。
 - 100 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/100-app-text-contrast.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+
+110 について（Intent 260930-user-admin の U5、E2E-M9）:
+
+- この Intent の代表の流れの E2E で、流れの本数に数えるのは 110 だけです（120・130 は数えません）。前のファイルが作った状態に頼らず、利用者 U を招待と登録の完了の API で自分で作ります（`frontend/e2e/support/registeredUser.ts`。宛先は実行ごとに重ならない `u7-perf-<runTag>@example.com`、`runTag` は時刻と 16 文字の乱数の16進）。状態を変えるのは U だけで、初期管理者の印・停止・ロックは変えません。U は消しません（利用者を消す仕組みは無く、宛先は実行ごとに重なりません）。
+- 1 回の実行で招待を1件置き、Mailpit に1通届き、U と、招待・登録の完了・ログインの成功と失敗・失敗回数を戻す操作（変えるものが無い拒否の1件を含む）・利用停止と再開・アクセスの拒否の監査が一時の内部DB に残ります。
+- ロックは U の宛先と誤ったパスワードでログインの API を 5 回（既定のしきい値。`webServer` はしきい値の設定を渡していません）呼んで作ります。
+- 何も差し替えません。例外は最後の確かめだけで、管理者でない U の新しいページのログインの応答の `user.admin` だけを真に書き換え（復元・更新の応答は書き換えない）、サイドバーの「利用者の管理」から本物の一覧の API の 403 `ACCESS_DENIED` を受けて「権限が無い」の表示が出て、ログインの状態の読み直しで「利用者の管理」のリンクが消えることを確かめます。サーバーの状態は変えません。
+- 本物の一覧・409（`USER_ADMIN_NO_CHANGE`）・400（`VALIDATION_FAILED`）の応答の項目の名前と型が、120 の見本（`frontend/e2e/support/userAdminFixtures.ts`）と同じことを毎回確かめます（値は比べません。違いは項目の名前だけで知らせます）。
+- 招待を使える設定が無い・Mailpit に届かない WAR では、理由の種類だけを注記（`skip-reason`）に残して飛ばします（念のための備え）。統合とリリースの前の実行では、110 に `skip-reason` の注記が無いことを確かめます。
+- U の宛先・パスワード・氏名と `runTag` は、作った直後に値のファイル（`frontend/test-results/e2e-secret-values.json`、権限 600）に書き、報告の部品が探し終えたら消します（下の「結果と報告」）。`test.step` の題・注記・添付には入れません。
+- 110 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/110-user-admin-flow.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+
+120 について（Intent 260930-user-admin の U5）:
+
+- 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
+- 組ごとに、ログインの画面から初期管理者でログインし、サイドバーの「利用者の管理」から開きます。組のテーマと文字の大きさは 060 と同じくログインと復元の本物の応答を書き換えて当てます（`loginPreferences.ts`）。
+- 管理の API（`/api/admin` ちょうどと `/api/admin/` の下）は、ページごとに1つの差し替えの口（`frontend/e2e/support/adminApiRoute.ts`）で受けます。一覧の GET と止める操作の POST は見本（`frontend/e2e/support/userAdminFixtures.ts`。2語の氏名・長いメールアドレス・ロック中・利用停止・管理者・「あなた」の行）で返し、見本の無い GET は本物へ通さず通信の失敗で返し、GET 以外で見本の無い要求は打ち切って記録します。組の終わりに、口が受けた件数が 1 以上で、打ち切った要求が 0 件であることを確かめます（内部DB と Mailpit に書きません）。
+- 差し替えた失敗（409・通信の失敗）に Chrome が出す「Failed to load resource:」の表示は、位置の URL が管理の API の道のものだけを 120 の中で数えて引きます（共有の `support/pageProblems.ts` は変えません）。CSP の違反とほかの問題は失敗にします。既知の違反はありません。
+- 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は、既定の1組（light・md・blue・既定の幅）だけで5回ずつ測り、注記と添付 `user-admin-screen-ms` に記録するだけで、失敗にはしません（本番での判定は配備先が決まった後）。一覧は本物の一覧の API を差し替えの口を通して読む時間（口の上乗せを含む）、次のページは見本の応答での描画の時間（API の時間を含まない）です。
+- 120 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/120-user-admin-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
 
 130 について（Intent 260930-user-admin の U4）:
 
@@ -171,7 +193,25 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 
 E2E は Mailpit に届いたメールを消しません。`./gradlew e2eTest` の後に片付けるときは、「手元でメールを見る」の2行（`docker compose stop mailpit` と `docker compose rm -f mailpit`）で止めて消します（後の単位の E2E もこの書き方に従います）。
 
-結果は `frontend/test-results/e2e-results.json`（json の報告）と `frontend/playwright-report/` に出ます。どちらもコミット・共有しません。実行ごとに作る仮の署名鍵・初期管理者のメールアドレス・仮のパスワードは、`webServer.env` ではなく Playwright のプロセスの環境変数で WAR に渡し、json の結果に含まれないことを `frontend/playwright-secret-check-reporter.ts` が確かめます（含まれていれば実行を失敗にし、値は表示しません）。失敗したときのトレース（`trace: 'retain-on-failure'`）には仮の資格情報が含まれうるため、共有しません。
+### 結果と報告
+
+- 結果は `frontend/test-results/e2e-results.json`（json の報告）だけに出ます。HTML の報告（`frontend/playwright-report/`）は作りません（HTML の報告は入力の手順の題に入れた値を書くため。Intent 260930-user-admin の U5）。json の報告と `frontend/test-results/` はコミット・共有しません。
+- トレースは既定で残しません（`E2E_TRACE` が無いときは `off`）。`E2E_TRACE` に `off`・`on`・`retain-on-failure` の外の値を置くと、設定の読み込みで止まります。
+- 実行ごとに作る仮の署名鍵・初期管理者のメールアドレス・仮のパスワードは、`webServer.env` ではなく Playwright のプロセスの環境変数で WAR に渡します。報告の部品（`frontend/playwright-secret-check-reporter.ts`）が、実行の終わりに、これらの値と、110 が作る利用者の値（値のファイル）と値の形（`u7-perf-…@example.com`・`e2e-u7-pw-…`・氏名「計測 花子」）を、json の報告（添付と標準出力の base64 は復号して）・`frontend/test-results/` の下のすべてのファイル（zip は展開して）・前の `frontend/playwright-report/` から探します。見つかったとき、読めない・展開できないファイルがあるときは実行を失敗にします（値は表示せず、値とファイルの種類ごとの件数だけを出します）。
+- 前の版で作られた `frontend/playwright-report/` が残っていれば、報告の部品が探して警告（値があれば失敗）を出します。中を開かずに消してください。
+
+```bash
+rm -rf frontend/playwright-report
+```
+
+- 失敗したときの画面の写し（`frontend/test-results/` の下の `error-context.md`）は止めていません。110 などが失敗すると、写しに入った利用者の氏名・メールアドレス（初期管理者のメールアドレスを含む）を報告の部品が見つけて失敗の知らせを出します。もともと失敗した実行のため合否は変わりません。写しを読んで原因を確かめた後に、`frontend/test-results/` を消してください（共有しません）。110・120 は、失敗したときだけ値を伏せた手がかり（通った手順の題・要求のメソッドと道の型と状態コード・画面の問題の件数・画面の道・行の数）を添付 `user-admin-diagnostics` に残します。
+- それでも原因が分からないときだけ、手元でトレースを有効にして流し直します。この実行は報告の部品がトレースの中の値を見つけて失敗になりうるため、合否には使いません。統合とリリースの前の確かめは `E2E_TRACE` を付けない実行で行います。
+
+```bash
+E2E_TRACE=retain-on-failure ./gradlew e2eTest      # 調べたいファイルだけなら (cd frontend && E2E_TRACE=retain-on-failure npx playwright test e2e/110-user-admin-flow.e2e.ts)
+(cd frontend && npx playwright show-trace test-results/<テストのディレクトリ>/trace.zip)
+rm -rf frontend/test-results                       # 見た後に消す（共有しない）
+```
 
 ## 開発時の起動
 
