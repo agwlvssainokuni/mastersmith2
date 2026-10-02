@@ -1,0 +1,169 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-user-admin-api",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/domain/LockView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LockAdministrationService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/ProfileUpdate.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/ProfileValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/SearchText.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserAdminRow.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/ProfileCommand.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/ProfileUpdateResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAdminSlice.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAdminSummary.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminEntry.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminListResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminPage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/AdminUser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/AdminUserPage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/ProfileRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/SearchTextConverter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminRequestContextResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminWebConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/domain/LockViewTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/LockAdministrationServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/testsupport/SqlStatementCounter.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/ProfileValidationTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/SearchTextTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAccountServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAdminAccountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/testsupport/UserAdminApi.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/testsupport/UserAdminFixtures.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/SearchTextConverterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminRequestContextResolverTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminWebTypesTest.java"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

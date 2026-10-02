@@ -266,91 +266,91 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 
 ### Step 1: 作業の場の用意と、変更の前の基準（ブランチの作成は依頼者の承認を得てから）
 
-- [ ] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
-- [ ] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b3` を作り、記録のコミット R1 を作る（3.2）
-- [ ] `frontend/playwright-report/`・`frontend/test-results/` が残っていないことを確かめる。残っていれば中を開かずに消し、消したこと（種類と件数だけ）と共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
-- [ ] Dependabot の開いている知らせ（`origin` の `dependabot/*` のブランチ）を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B3 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
-- [ ] 変更の前の基準をとる: colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、かかった時間、テストの件数（単体・結合・画面、失敗・飛ばした）、全体と 4.5 の表のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する（brownfield の Test Baseline、4.6）
-- [ ] `gh run list --branch develop --limit 3`（読み取り）で最新の CI の実行の時間を記録する（4.6）
-- [ ] 対応: B3 の共通の完了の条件、基盤の設計の R-02、`gate-decisions.md`
+- [x] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
+- [x] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b3` を作り、記録のコミット R1 を作る（3.2）
+- [x] `frontend/playwright-report/`・`frontend/test-results/` が残っていないことを確かめる。残っていれば中を開かずに消し、消したこと（種類と件数だけ）と共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
+- [x] Dependabot の開いている知らせ（`origin` の `dependabot/*` のブランチ）を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B3 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
+- [x] 変更の前の基準をとる: colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、かかった時間、テストの件数（単体・結合・画面、失敗・飛ばした）、全体と 4.5 の表のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する（brownfield の Test Baseline、4.6）
+- [x] `gh run list --branch develop --limit 3`（読み取り）で最新の CI の実行の時間を記録する（4.6）
+- [x] 対応: B3 の共通の完了の条件、基盤の設計の R-02、`gate-decisions.md`
 
 ### Step 2: テストの実行の準備（最初のテストより前）
 
-- [ ] `unit-test-instructions.md` の 2.1 のコマンドで、既存の単体テストと結合テストの道具が作業ブランチの上で動くことを確かめる（`UserAccountServiceTest`・`UserRepositoryIT`）
-- [ ] まだ作っていない新しいテストのクラスを `--tests` に名指しすると Gradle の「一致するテストが無い」で失敗する。これは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` と合わせる
-- [ ] U3 のテストは組み込みの H2 だけを使うため、Step ごとの実行に colima の設定は要らない（対象DB のテストを含む `verify` だけが要る）
-- [ ] 対応: Testing Contract の `runner_step`
+- [x] `unit-test-instructions.md` の 2.1 のコマンドで、既存の単体テストと結合テストの道具が作業ブランチの上で動くことを確かめる（`UserAccountServiceTest`・`UserRepositoryIT`）
+- [x] まだ作っていない新しいテストのクラスを `--tests` に名指しすると Gradle の「一致するテストが無い」で失敗する。これは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` と合わせる
+- [x] U3 のテストは組み込みの H2 だけを使うため、Step ごとの実行に colima の設定は要らない（対象DB のテストを含む `verify` だけが要る）
+- [x] 対応: Testing Contract の `runner_step`
 
 ### Step 3: 一覧の検索の問い合わせの確かめ（SD-4、B3 の最初の手順）
 
-- [ ] `UserRepository` に、検索ありの件数 `countBySearch(RedactedText pattern)` と行 `findAdminRowsBySearch(RedactedText pattern, Pageable)` を、HQL の `ilike :#{#pattern.value()} escape '\'`（メールアドレスと氏名の OR）で書く。投影の `UserAdminRow`（4.1）もこの Step で作る
-- [ ] `UserAdminQueriesIT` の最初のテストで、アプリの起動（Spring Data が `@Query` を解析する）と、`RedactedText` のパターン（`%taro%` など、テストの中で作る）で件数と行が返ることを確かめる
-- [ ] 受け付けないとき（起動で問い合わせの解析が失敗する、`ilike`・`escape` か SpEL の引数が使えない）は、同じ形の `ILIKE ... ESCAPE '\'` を使う native の問い合わせ（名前つきの引数と SpEL のまま、`nativeQuery = true`）に切り替え、差を `generation-notes.md` に書く（`security-design.md` 6.2）
-- [ ] H2 の方言で `ILIKE` に写ったことを、`spring.jpa.show-sql` を使わずに `SqlStatementCounter` の記録した SQL の文で確かめる（値は `?` のまま）
-- [ ] 対応: SD-4、BR1.5、NFR9.1、NFR3.1
+- [x] `UserRepository` に、検索ありの件数 `countBySearch(RedactedText pattern)` と行 `findAdminRowsBySearch(RedactedText pattern, Pageable)` を、HQL の `ilike :#{#pattern.value()} escape '\'`（メールアドレスと氏名の OR）で書く。投影の `UserAdminRow`（4.1）もこの Step で作る
+- [x] `UserAdminQueriesIT` の最初のテストで、アプリの起動（Spring Data が `@Query` を解析する）と、`RedactedText` のパターン（`%taro%` など、テストの中で作る）で件数と行が返ることを確かめる
+- [x] 受け付けないとき（起動で問い合わせの解析が失敗する、`ilike`・`escape` か SpEL の引数が使えない）は、同じ形の `ILIKE ... ESCAPE '\'` を使う native の問い合わせ（名前つきの引数と SpEL のまま、`nativeQuery = true`）に切り替え、差を `generation-notes.md` に書く（`security-design.md` 6.2）
+- [x] H2 の方言で `ILIKE` に写ったことを、`spring.jpa.show-sql` を使わずに `SqlStatementCounter` の記録した SQL の文で確かめる（値は `?` のまま）
+- [x] 対応: SD-4、BR1.5、NFR9.1、NFR3.1
 
 ### Step 4: ドメイン — 実装
 
-- [ ] `user.domain.SearchText`・`ProfileUpdate`・`ProfileValidation`（4.1）。`SearchText` の空白の範囲は `DisplayName.strip` と同じ Unicode の White_Space、小文字化は `Locale.ROOT`、エスケープの文字は `\`。どれも `String` を返す公開のメソッドを持たない（`likePattern()` は `RedactedText`）
-- [ ] `auth.domain.LockView` と判定の関数（4.1）。境界は既存の `LockPolicy` と同じ（解除の予定の時刻ちょうどはロック中でない）
-- [ ] `useradmin.domain.UserAdminProblemTypes`（`USER_NOT_FOUND` 404 と `all()`）。説明文に対象の利用者のメールアドレス・氏名・ID を載せない
-- [ ] 対応: BR1.3・BR1.4・BR1.5・BR1.7・BR5.1・BR5.2・BR2.3、NFR3.1・NFR3.2・NFR8.1・NFR9.1、R-05・R-07
+- [x] `user.domain.SearchText`・`ProfileUpdate`・`ProfileValidation`（4.1）。`SearchText` の空白の範囲は `DisplayName.strip` と同じ Unicode の White_Space、小文字化は `Locale.ROOT`、エスケープの文字は `\`。どれも `String` を返す公開のメソッドを持たない（`likePattern()` は `RedactedText`）
+- [x] `auth.domain.LockView` と判定の関数（4.1）。境界は既存の `LockPolicy` と同じ（解除の予定の時刻ちょうどはロック中でない）
+- [x] `useradmin.domain.UserAdminProblemTypes`（`USER_NOT_FOUND` 404 と `all()`）。説明文に対象の利用者のメールアドレス・氏名・ID を載せない
+- [x] 対応: BR1.3・BR1.4・BR1.5・BR1.7・BR5.1・BR5.2・BR2.3、NFR3.1・NFR3.2・NFR8.1・NFR9.1、R-05・R-07
 
 ### Step 5: ドメイン — テスト（単体）
 
-- [ ] `SearchTextTest`: 前後の半角・全角の空白を除く、内側の空白を残す、空白だけは空、254 コードポイントは受け付け 255 は長すぎる（サロゲートペアを含めてコードポイントで数える）、`%`・`_`・`\` のエスケープ、小文字化は `Locale.ROOT`（トルコ語の Locale を既定にしても同じ結果）、`toString` に値が出ない。性質ベースのテスト（jqwik）: どんな入力でもパターンの前後を除いた中にエスケープされていない `%`・`_` が無い、パターンを元に戻すと除いた後の小文字の値になる
-- [ ] `ProfileValidationTest`: 氏名の REQUIRED・TOO_LONG（254／255）・INVALID_CHARACTER、言語の `ja`・`en` 以外（`JA`・`fr`・null）、両方の誤りの順、`ProfileUpdate` の `toString` に氏名が出ない
-- [ ] `LockViewTest`: 行が無い、失敗回数 0・解除の予定なし、失敗回数 n・解除の予定なし、now < t、now = t（ロック中でない・戻せる）、now > t、失敗回数 0・解除の予定 t（R-05 の守り）。性質ベースのテスト: `locked` なら `lockedUntil` があり `resettable`、`locked` でなければ `lockedUntil` が無い、`resettable` は「失敗回数 ≥ 1 か解除の予定あり」と同じ
-- [ ] `UserAdminProblemTypesTest`: code・状態コード 404・ja と en の説明文があり、説明文に利用者の値の置き場所が無い
-- [ ] 対応: NFR9.8（性質ベースのテスト、失敗時の種は `junit-platform.properties` の既存の設定で報告に出る）、NFR9.7
+- [x] `SearchTextTest`: 前後の半角・全角の空白を除く、内側の空白を残す、空白だけは空、254 コードポイントは受け付け 255 は長すぎる（サロゲートペアを含めてコードポイントで数える）、`%`・`_`・`\` のエスケープ、小文字化は `Locale.ROOT`（トルコ語の Locale を既定にしても同じ結果）、`toString` に値が出ない。性質ベースのテスト（jqwik）: どんな入力でもパターンの前後を除いた中にエスケープされていない `%`・`_` が無い、パターンを元に戻すと除いた後の小文字の値になる
+- [x] `ProfileValidationTest`: 氏名の REQUIRED・TOO_LONG（254／255）・INVALID_CHARACTER、言語の `ja`・`en` 以外（`JA`・`fr`・null）、両方の誤りの順、`ProfileUpdate` の `toString` に氏名が出ない
+- [x] `LockViewTest`: 行が無い、失敗回数 0・解除の予定なし、失敗回数 n・解除の予定なし、now < t、now = t（ロック中でない・戻せる）、now > t、失敗回数 0・解除の予定 t（R-05 の守り）。性質ベースのテスト: `locked` なら `lockedUntil` があり `resettable`、`locked` でなければ `lockedUntil` が無い、`resettable` は「失敗回数 ≥ 1 か解除の予定あり」と同じ
+- [x] `UserAdminProblemTypesTest`: code・状態コード 404・ja と en の説明文があり、説明文に利用者の値の置き場所が無い
+- [x] 対応: NFR9.8（性質ベースのテスト、失敗時の種は `junit-platform.properties` の既存の設定で報告に出る）、NFR9.7
 
 ### Step 6: DB アクセス — 実装
 
-- [ ] `UserRepository` の検索なしの行 `findAdminRows(Pageable)`（並び `order by u.createdAt, u.userId`）と `updateProfile(long, ProfileUpdate)`（`UPDATE User u SET u.displayName = :#{#profile.displayName()}, u.language = :#{#profile.language()} WHERE u.userId = :userId`）。Step 3 の2つと合わせて、どの問い合わせも `String` の引数を持たない（利用者 ID・`Pageable`・`RedactedText`・`ProfileUpdate` だけ）
-- [ ] `LoginAttemptStateRepository#findBySubjectIds(Collection<Long>)`（排他なし、`select s from LoginAttemptState s where s.subjectId in :ids`）
-- [ ] 対応: BR1.1・BR1.2・BR1.6・BR1.7・BR5.2、NFR5.2、NFR3.1
+- [x] `UserRepository` の検索なしの行 `findAdminRows(Pageable)`（並び `order by u.createdAt, u.userId`）と `updateProfile(long, ProfileUpdate)`（`UPDATE User u SET u.displayName = :#{#profile.displayName()}, u.language = :#{#profile.language()} WHERE u.userId = :userId`）。Step 3 の2つと合わせて、どの問い合わせも `String` の引数を持たない（利用者 ID・`Pageable`・`RedactedText`・`ProfileUpdate` だけ）
+- [x] `LoginAttemptStateRepository#findBySubjectIds(Collection<Long>)`（排他なし、`select s from LoginAttemptState s where s.subjectId in :ids`）
+- [x] 対応: BR1.1・BR1.2・BR1.6・BR1.7・BR5.2、NFR5.2、NFR3.1
 
 ### Step 7: DB アクセス — テスト（結合）
 
-- [ ] `UserAdminQueriesIT`（`unit-test-instructions.md` の 2.3）:
+- [x] `UserAdminQueriesIT`（`unit-test-instructions.md` の 2.3）:
   - 並び: 登録した日時の古い順、同じ日時は利用者 ID の小さい順（入れた順と日時の向きをずらしたデータ）
   - ページ: 20 件ずつ、最後のページの件数、`Pageable` の位置
   - 検索: メールアドレスか氏名の部分一致、ASCII の英字・全角の英字・アクセントつきの欧文字で大文字と小文字を区別しない、`%`・`_`・`\` が文字どおり（`100% off_sale\x` だけに当たり `100X offXsale` に当たらない）、件数が行と同じ条件
   - 既知の差（R5、9節の Q-E）: `İ` を含む検索は `İ` を含む氏名に当たらない、`ß` と `SS` は別、を決めた側の動作として1件ずつ固定する
   - 読む列: 記録した SQL の文に `password_hash` が入らない
   - `updateProfile`: 氏名と言語の2列だけが変わり、テーマ・文字の大きさ・メールアドレス・印・停止・パスワードのハッシュは変わらない。いない ID は 0 行。同じ値でも 1 行
-- [ ] `LoginAttemptStateRepositoryIT` に、`findBySubjectIds` が指定した ID の行だけを排他なしで返し（別の接続が行を排他していても待たない）、ダミーの行を返さないことを足す
-- [ ] 対応: BR1.1・BR1.5・BR1.7・BR5.2、NFR5.2・NFR9.1、R5
+- [x] `LoginAttemptStateRepositoryIT` に、`findBySubjectIds` が指定した ID の行だけを排他なしで返し（別の接続が行を排他していても待たない）、ダミーの行を返さないことを足す
+- [x] 対応: BR1.1・BR1.5・BR1.7・BR5.2、NFR5.2・NFR9.1、R5
 
 ### Step 8: 業務処理 — 実装
 
-- [ ] `user.service` の `UserAdminSummary`・`UserAdminSlice`・`ProfileCommand`・`ProfileUpdateResult` と `UserAccountService#findAdminPage`・`#updateProfile`（4.1）。投影の `UserAdminRow` を `UserAdminSummary` に写す
-- [ ] `auth.service.LockAdministrationService#lockViewsOf`（読み取りだけのトランザクションに入る。行が無い ID は `(false, null, false)`）
-- [ ] `useradmin.service.UserAdminService#list`・`#updateProfile`、`UserAdminListResult`・`UserAdminPage`・`UserAdminEntry`・`UserAdminProblemTypeCatalog`。一覧は読み取りだけの `TransactionTemplate` の中で `findAdminPage` と `lockViewsOf` を読む（BR1.6）。判定の順は page → q（BR1.4、どちらも誤りなら page）。氏名と言語は `TransactionTemplate` の中で `updateProfile` を呼ぶ（入力の誤りは DB に触れずに返る）
-- [ ] 業務のログは出さない（`observability-design.md` 3節）
-- [ ] 対応: BR1.1〜BR1.9・BR2.8・BR5.1〜BR5.4・BR7.4、C2・C8（D9・D13）
+- [x] `user.service` の `UserAdminSummary`・`UserAdminSlice`・`ProfileCommand`・`ProfileUpdateResult` と `UserAccountService#findAdminPage`・`#updateProfile`（4.1）。投影の `UserAdminRow` を `UserAdminSummary` に写す
+- [x] `auth.service.LockAdministrationService#lockViewsOf`（読み取りだけのトランザクションに入る。行が無い ID は `(false, null, false)`）
+- [x] `useradmin.service.UserAdminService#list`・`#updateProfile`、`UserAdminListResult`・`UserAdminPage`・`UserAdminEntry`・`UserAdminProblemTypeCatalog`。一覧は読み取りだけの `TransactionTemplate` の中で `findAdminPage` と `lockViewsOf` を読む（BR1.6）。判定の順は page → q（BR1.4、どちらも誤りなら page）。氏名と言語は `TransactionTemplate` の中で `updateProfile` を呼ぶ（入力の誤りは DB に触れずに返る）
+- [x] 業務のログは出さない（`observability-design.md` 3節）
+- [x] 対応: BR1.1〜BR1.9・BR2.8・BR5.1〜BR5.4・BR7.4、C2・C8（D9・D13）
 
 ### Step 9: 業務処理 — テスト（単体・結合）
 
-- [ ] `UserAccountServiceTest` に足す: `findAdminPage` が検索なし・空白だけ・検索ありで問い合わせを選ぶ、読み始めの位置が件数以上なら行を読まない、`updateProfile` の誤りは DB に触れない・0 行は `NotFound`・`ProfileUpdate` の値（前後の空白を除いた氏名）、要約と結果の `toString` に値が出ない
-- [ ] `LockAdministrationServiceTest`: 時計の now で判定する、行の無い ID、空の ID の集まりで問い合わせない
-- [ ] `UserAdminServiceTest`（B3 の分）: page の誤り、q が長すぎる（`q`・`TOO_LONG`）、両方の誤りは page、空白だけの q は検索なし、self の判定、氏名と言語の結果の写し、監査の出来事を出さない
-- [ ] `UserAdminProblemTypeCatalogTest`: `UserAdminProblemTypes.all()` を返す
-- [ ] `UserAdminAccountIT`（`user.service` の結合）: 一覧の1回の読み取りで件数と行がそろう、`updateProfile` が呼び出し元のトランザクションの外では使えない（MANDATORY）
-- [ ] 対応: BR1.4・BR1.6・BR1.8・BR5.1〜BR5.3、NFR9.7
+- [x] `UserAccountServiceTest` に足す: `findAdminPage` が検索なし・空白だけ・検索ありで問い合わせを選ぶ、読み始めの位置が件数以上なら行を読まない、`updateProfile` の誤りは DB に触れない・0 行は `NotFound`・`ProfileUpdate` の値（前後の空白を除いた氏名）、要約と結果の `toString` に値が出ない
+- [x] `LockAdministrationServiceTest`: 時計の now で判定する、行の無い ID、空の ID の集まりで問い合わせない
+- [x] `UserAdminServiceTest`（B3 の分）: page の誤り、q が長すぎる（`q`・`TOO_LONG`）、両方の誤りは page、空白だけの q は検索なし、self の判定、氏名と言語の結果の写し、監査の出来事を出さない
+- [x] `UserAdminProblemTypeCatalogTest`: `UserAdminProblemTypes.all()` を返す
+- [x] `UserAdminAccountIT`（`user.service` の結合）: 一覧の1回の読み取りで件数と行がそろう、`updateProfile` が呼び出し元のトランザクションの外では使えない（MANDATORY）
+- [x] 対応: BR1.4・BR1.6・BR1.8・BR5.1〜BR5.3、NFR9.7
 
 ### Step 10: web — 実装
 
-- [ ] `useradmin.web` の `UserAdminController`（GET 一覧・PUT 氏名と言語）・`AdminUser`・`AdminUserPage`・`ProfileRequest`・`SearchTextConverter`・`UserAdminWebConfig`・`UserAdminRequestContextResolver`・`UserAdminFieldErrors`（4.1）
-- [ ] 一覧: `InvalidPage` は 400 `VALIDATION_FAILED`（項目なし、招待の一覧と同じ）、`Invalid` は 400 `VALIDATION_FAILED`（`fieldErrors` に `q`・`TOO_LONG`、値は載せない）。応答の日時は ISO 8601 の UTC。ロック中でないときの `lockedUntil` は null か項目なし
-- [ ] 氏名と言語: 204（本文なし）、`Invalid` は 400 `VALIDATION_FAILED`（`fieldErrors`）、`NotFound` は 404 `USER_NOT_FOUND`。`userId` が整数でないときは既存の `TypeMismatchException` の 400
-- [ ] 新しい公開の決まり（`SecurityRuleContributor`）は足さない。既存の `/api/admin/**` の管理者の判定に乗る
-- [ ] 対応: BR1.3・BR1.8・BR2.7・BR2.8・BR5.4・BR7.1・BR7.5、NFR1.1・NFR3.3・NFR8.1、C3
+- [x] `useradmin.web` の `UserAdminController`（GET 一覧・PUT 氏名と言語）・`AdminUser`・`AdminUserPage`・`ProfileRequest`・`SearchTextConverter`・`UserAdminWebConfig`・`UserAdminRequestContextResolver`・`UserAdminFieldErrors`（4.1）
+- [x] 一覧: `InvalidPage` は 400 `VALIDATION_FAILED`（項目なし、招待の一覧と同じ）、`Invalid` は 400 `VALIDATION_FAILED`（`fieldErrors` に `q`・`TOO_LONG`、値は載せない）。応答の日時は ISO 8601 の UTC。ロック中でないときの `lockedUntil` は null か項目なし
+- [x] 氏名と言語: 204（本文なし）、`Invalid` は 400 `VALIDATION_FAILED`（`fieldErrors`）、`NotFound` は 404 `USER_NOT_FOUND`。`userId` が整数でないときは既存の `TypeMismatchException` の 400
+- [x] 新しい公開の決まり（`SecurityRuleContributor`）は足さない。既存の `/api/admin/**` の管理者の判定に乗る
+- [x] 対応: BR1.3・BR1.8・BR2.7・BR2.8・BR5.4・BR7.1・BR7.5、NFR1.1・NFR3.3・NFR8.1、C3
 
 ### Step 11: web — テスト（単体・結合）
 
-- [ ] 単体: `SearchTextConverterTest`（包むだけ、空文字・空白・長い値でも例外を出さない）、`UserAdminWebTypesTest`（`AdminUser`・`AdminUserPage`・`ProfileRequest` の `toString` にメールアドレス・氏名が出ない）、`UserAdminRequestContextResolverTest`（匿名・数でない主体は 401）
-- [ ] `UserAdminListApiIT`:
+- [x] 単体: `SearchTextConverterTest`（包むだけ、空文字・空白・長い値でも例外を出さない）、`UserAdminWebTypesTest`（`AdminUser`・`AdminUserPage`・`ProfileRequest` の `toString` にメールアドレス・氏名が出ない）、`UserAdminRequestContextResolverTest`（匿名・数でない主体は 401）
+- [x] `UserAdminListApiIT`:
   - 200 の項目が 11 個と self だけ（`additionalProperties: false` の形。ハッシュ値・失敗回数・ダミーの行の印が無い）、size 20・total・page
   - 並びと 20 件、停止中の利用者と初期管理者を含む、self は自分の行だけ真
   - ロックの表示（`MutableClock`）: ロック中・解除の予定ちょうど（ロック中でない・戻せる）・解除の予定を過ぎた・行が無い・失敗回数 1 で解除の予定なし
@@ -358,43 +358,43 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
   - page の 0・数でない・空・10 桁は 400、q の 254 コードポイントは 200・255 は 400（`q`・`TOO_LONG`、応答に q の値が無い）、空白だけの q は全件、page と q がどちらも誤りなら page の 400
   - 要求の行が 8KB を超える（page が 9,000 文字の数字）と Tomcat が `text/html` の 400 を返し、アプリに届かない（U2 の申し送り。応答の形を記録する）
   - 認可: 未認証 401 `AUTHENTICATION_REQUIRED`、管理者でない 403 `ACCESS_DENIED`（U4 の申し送り）、管理者 200、停止中の管理者 401（NFR1.3）。どれも監査の管理の操作の行が増えない（403 は既存のアクセスの拒否だけ、q を付けた要求でも監査のパスに q が入らない）
-- [ ] `UserAdminListQueryCountIT`（`SqlStatementCounter`）: 20 件のページで内部DB への問い合わせが3回（件数・行・ロックの状態）、最後のページより後で1回（件数だけ）、行の数で増えない（NFR5.2）
-- [ ] `UserAdminProfileApiIT`: 204 で氏名と言語だけが変わる、自分自身も変えられる、同じ値でも 204、入力の誤り（氏名の空・255・制御文字、言語 `JA`・`fr`）は 400 で `fieldErrors` の項目と理由だけ、対象がいない 404 `USER_NOT_FOUND`（ja・en の説明文、`Accept-Language: en`）、入力の誤りと対象がいないが重なると 400、`userId` が数でないと 400、本文に `admin`・`suspended`・`email`・`theme`・失敗回数の項目を入れても氏名と言語だけが変わる（BR5.4・要求の改ざん）、未認証 401・管理者でない 403 `ACCESS_DENIED`・停止中の管理者 401、どれも監査に残らない
-- [ ] 対応: AC1.1.1〜AC1.1.7・AC1.1.13・AC5.1.1・AC5.1.4〜AC5.1.6・AC5.1.8、NFR1.1・NFR1.3・NFR1.5・NFR3.2・NFR3.3・NFR5.2・NFR8.1・NFR9.1・NFR9.7
+- [x] `UserAdminListQueryCountIT`（`SqlStatementCounter`）: 20 件のページで内部DB への問い合わせが3回（件数・行・ロックの状態）、最後のページより後で1回（件数だけ）、行の数で増えない（NFR5.2）
+- [x] `UserAdminProfileApiIT`: 204 で氏名と言語だけが変わる、自分自身も変えられる、同じ値でも 204、入力の誤り（氏名の空・255・制御文字、言語 `JA`・`fr`）は 400 で `fieldErrors` の項目と理由だけ、対象がいない 404 `USER_NOT_FOUND`（ja・en の説明文、`Accept-Language: en`）、入力の誤りと対象がいないが重なると 400、`userId` が数でないと 400、本文に `admin`・`suspended`・`email`・`theme`・失敗回数の項目を入れても氏名と言語だけが変わる（BR5.4・要求の改ざん）、未認証 401・管理者でない 403 `ACCESS_DENIED`・停止中の管理者 401、どれも監査に残らない
+- [x] 対応: AC1.1.1〜AC1.1.7・AC1.1.13・AC5.1.1・AC5.1.4〜AC5.1.6・AC5.1.8、NFR1.1・NFR1.3・NFR1.5・NFR3.2・NFR3.3・NFR5.2・NFR8.1・NFR9.1・NFR9.7
 
 ### Step 12: 漏えいのテスト（TRACE と INFO）
 
-- [ ] `UserAdminSecretLeakIT`（B3 の分）: 1つの Spring の文脈の中で、`cherry.mastersmith` のロガーを TRACE にした場合と既定の INFO の場合の両方で（Spring Boot の `LoggingSystem` でテストの中で切り替え、終わったら戻す。切り替えが追跡に効かないときは2つのクラスに分け、差を記録する）、q を付けた一覧と氏名と言語の変更を呼び、出力（標準出力と標準エラー）のどの行にも、利用者のメールアドレス・氏名・検索の文字・変更した氏名・パスワードのハッシュ値が出ないことを確かめる。TRACE の場合は、`UserAdminController#list`・`UserAdminService#list`・`UserAccountService#findAdminPage`・`UserRepository#findAdminRowsBySearch`・`#updateProfile` の ENTER・EXIT の行が出て `***` を含むことも確かめる（追跡が効いていることの確かめ）
-- [ ] 応答の本文と監査の行（増えないこと）にハッシュ値・トークン・失敗回数が無い
-- [ ] 対応: AC1.1.6、NFR3.1〜NFR3.4、BR7.4・BR7.5、`team.md` の「利用者の管理の漏えい」
+- [x] `UserAdminSecretLeakIT`（B3 の分）: 1つの Spring の文脈の中で、`cherry.mastersmith` のロガーを TRACE にした場合と既定の INFO の場合の両方で（Spring Boot の `LoggingSystem` でテストの中で切り替え、終わったら戻す。切り替えが追跡に効かないときは2つのクラスに分け、差を記録する）、q を付けた一覧と氏名と言語の変更を呼び、出力（標準出力と標準エラー）のどの行にも、利用者のメールアドレス・氏名・検索の文字・変更した氏名・パスワードのハッシュ値が出ないことを確かめる。TRACE の場合は、`UserAdminController#list`・`UserAdminService#list`・`UserAccountService#findAdminPage`・`UserRepository#findAdminRowsBySearch`・`#updateProfile` の ENTER・EXIT の行が出て `***` を含むことも確かめる（追跡が効いていることの確かめ）
+- [x] 応答の本文と監査の行（増えないこと）にハッシュ値・トークン・失敗回数が無い
+- [x] 対応: AC1.1.6、NFR3.1〜NFR3.4、BR7.4・BR7.5、`team.md` の「利用者の管理の漏えい」
 
 ### Step 13: 構造の検査
 
-- [ ] `UserAdminBoundaryArchitectureTest`（B3 の版）:
+- [x] `UserAdminBoundaryArchitectureTest`（B3 の版）:
   - `useradmin` は `user.repository`・`user.web`・`auth.repository`・`auth.web`・`invitation`・`dsl`・`dslmanage`・`targetdb`・`mail`・`appearance`・`audit` に依存しない
   - `useradmin` は JPA のエンティティ（`@Entity`）に依存しない（U1 R-03 の守り (a)）
   - `access` に依存してよいのは `useradmin.web` だけで、`access.domain.AccessProblemTypes` だけ（B3 では使わないが規則を置く）
   - `user` は `auth` に依存しない（既存の `AuthBoundaryArchitectureTest` が確かめていることを、`useradmin` の足した口の後も変えずに通す）
-- [ ] 既存の `ArchitectureTest` と機能ごとの境界テストを変えずに流して通す
-- [ ] 対応: BR7.6、NFR11.1、`team.md` の Code Style
+- [x] 既存の `ArchitectureTest` と機能ごとの境界テストを変えずに流して通す
+- [x] 対応: BR7.6、NFR11.1、`team.md` の Code Style
 
 ### Step 14: 文書とレビューでの確かめ（B3）
 
-- [ ] `README.md` に「利用者の管理の API（Intent 260930-user-admin の U3）」の節を足す（4.1、8節の D-5）
-- [ ] 伏せ字の経路（`security-design.md` 4節）: `useradmin`・`user`・`auth` の足した口のどの層のメソッドの引数・戻り値にも、検索の文字・メールアドレス・氏名を `String` で渡していないことを `git diff` の検索で確かめて記録する
-- [ ] page の文字列（U2 の残る危険 R3）: page の文字列が出うるのは `UserAdminController#list`・`UserAdminService#list` の引数だけであることを確かめて記録する
-- [ ] **E2E を流す条件（基盤の設計の R-03）**: `git diff --name-only develop` が次のどれかに当たれば Step 15 で E2E を流す: `frontend/` の下、`auth.web`、`auth.service.LoginService`・`TokenRefreshService`・`LogoutService`、`access.web`、`common.security`、`config`、`LoginAttemptStateRepository`・`RefreshTokenRepository`・`UserRepository` の既存のメソッドの本文、`common.observability`・`common.error`。当たらなければ「流さない」と根拠（ファイルの一覧）を記録する
-- [ ] `packagesJudgedByTotal`: `git diff --name-only develop -- backend/src/main` を 4.5 の一覧と突き合わせ、一覧のパッケージに手が入っていないことを確かめる（入っていたらテストを足して外す）
-- [ ] 対応: BR7.4、NFR3.1、`team.md` の Testing Posture、`cicd-pipeline.md` 5節
+- [x] `README.md` に「利用者の管理の API（Intent 260930-user-admin の U3）」の節を足す（4.1、8節の D-5）
+- [x] 伏せ字の経路（`security-design.md` 4節）: `useradmin`・`user`・`auth` の足した口のどの層のメソッドの引数・戻り値にも、検索の文字・メールアドレス・氏名を `String` で渡していないことを `git diff` の検索で確かめて記録する
+- [x] page の文字列（U2 の残る危険 R3）: page の文字列が出うるのは `UserAdminController#list`・`UserAdminService#list` の引数だけであることを確かめて記録する
+- [x] **E2E を流す条件（基盤の設計の R-03）**: `git diff --name-only develop` が次のどれかに当たれば Step 15 で E2E を流す: `frontend/` の下、`auth.web`、`auth.service.LoginService`・`TokenRefreshService`・`LogoutService`、`access.web`、`common.security`、`config`、`LoginAttemptStateRepository`・`RefreshTokenRepository`・`UserRepository` の既存のメソッドの本文、`common.observability`・`common.error`。当たらなければ「流さない」と根拠（ファイルの一覧）を記録する
+- [x] `packagesJudgedByTotal`: `git diff --name-only develop -- backend/src/main` を 4.5 の一覧と突き合わせ、一覧のパッケージに手が入っていないことを確かめる（入っていたらテストを足して外す）
+- [x] 対応: BR7.4、NFR3.1、`team.md` の Testing Posture、`cicd-pipeline.md` 5節
 
 ### Step 15: 1コマンドの検査（B3 の統合の前の関門）
 
-- [ ] colima の設定を渡し `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
-- [ ] かかった時間・テストの件数・全体と 4.5 のパッケージの行・分岐を実測の数字で記録し、Step 1 の基準と比べる。新しい `useradmin` の各パッケージが下限を満たす。下回ったらテストを足す。下限・除外は変えない
-- [ ] `./gradlew osvScan --rerun-tasks` を通す。SpotBugs ＋ FindSecBugs・Gitleaks を除外を足さずに通す（`backend/config/spotbugs-exclude.xml`・`.gitleaks.toml` に差が無い）。`backend/gradle.lockfile`・`frontend/package-lock.json` に差が無い
-- [ ] Step 14 の条件に当たったときだけ E2E（Step 42 と同じ手順）を流し、json から結果を記録してから報告を消す（`gate-decisions.md` の U5 の B3 の申し送り）
-- [ ] 失敗が一時的に見えるときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う
-- [ ] 対応: B3 の共通の完了の条件、`project.md` の Mandated（統合の前の確認）
+- [x] colima の設定を渡し `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
+- [x] かかった時間・テストの件数・全体と 4.5 のパッケージの行・分岐を実測の数字で記録し、Step 1 の基準と比べる。新しい `useradmin` の各パッケージが下限を満たす。下回ったらテストを足す。下限・除外は変えない
+- [x] `./gradlew osvScan --rerun-tasks` を通す。SpotBugs ＋ FindSecBugs・Gitleaks を除外を足さずに通す（`backend/config/spotbugs-exclude.xml`・`.gitleaks.toml` に差が無い）。`backend/gradle.lockfile`・`frontend/package-lock.json` に差が無い
+- [x] Step 14 の条件に当たったときだけ E2E（Step 42 と同じ手順）を流し、json から結果を記録してから報告を消す（`gate-decisions.md` の U5 の B3 の申し送り）
+- [x] 失敗が一時的に見えるときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う
+- [x] 対応: B3 の共通の完了の条件、`project.md` の Mandated（統合の前の確認）
 
 ### Step 16: 記録、コミットの提案、統合（B3）
 

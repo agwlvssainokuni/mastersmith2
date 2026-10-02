@@ -1,0 +1,926 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-user-admin-api",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.1.14",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.2.6",
+    "AC3.2.7",
+    "AC3.2.8",
+    "AC3.2.9",
+    "AC3.2.10",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR1.7",
+    "BR1.8",
+    "BR1.9",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR2.6",
+    "BR2.7",
+    "BR2.8",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR3.6",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR4.5",
+    "BR4.6",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR6.4",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR7.5",
+    "BR7.6",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR5.7",
+    "NFR5.8",
+    "NFR5.9",
+    "NFR5.10",
+    "NFR5.11",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR8.1",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR11.1",
+    "NFR11.2"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（rowShape・orderingAndPaging・wholeList）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（lockView）・backend/src/test/java/cherry/mastersmith/auth/domain/LockViewTest.java"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（rowShape・lockView）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（orderingAndPaging）・backend/src/test/java/cherry/mastersmith/user/domain/SearchTextTest.java"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（inputErrors・emptyPages・oversizedRequestLine）・backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminServiceTest.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java（TRACE と INFO）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminWebTypesTest.java"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（wholeList）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込み中の表示と支援技術への伝え方は画面の状態のため U5 が受け持つ。U3 は一覧の API だけを受け持つ）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込みの失敗の表示ともう一度読み込む操作は画面のため U5 が受け持つ）"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（当たる利用者がいない旨・検索を消す操作・1ページ目へ戻すことは画面のため U5 が受け持つ。U3 は検索の結果の 0 件と total を BR1.1・BR1.5 で返す）"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（入力欄の制限は画面のため U5 が受け持つ。サーバー側の拒否は U3 の BR1.4 で残す）"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（画面部品のアクセシビリティ・テーマ・文字の大きさ・英語の表示は U5 が受け持つ。新しいエラーの説明文の ja・en は U3 の BR2.3 の UserAdminProblemTypes が持つ）"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（authorization）"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 34（B3 は氏名と言語の本文の改ざんを UserAdminProfileApiIT で確かめた）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（確かめの表示と「やめる」は画面のため U5 が受け持つ。要求を送らなければ U3 は何もしない）"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（自分の行の押せない表示と理由は画面のため U5 が受け持つ。U3 は応答の self を BR1.8 で返し、サーバー側の拒否を BR2.2 で残す）"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（理由ごとの文言と一覧の読み直しは画面のため U5 が受け持つ。U3 は理由ごとの code を BR2.3 で返す）"
+    },
+    {
+      "id": "AC2.1.14",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（確かめの表示と「やめる」は画面のため U5 が受け持つ）"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（自分の行の押せない表示は画面のため U5 が受け持つ。サーバー側の拒否は U3 の BR2.2）"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（状態の文字の印と操作の切り替えは画面のため U5 が受け持つ。U3 は suspended を BR1.8 で返す）"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "Deferred",
+      "target": "u1-user-suspension（アクセストークンの認証の入口での停止の判定は U1 が主に受け持つ。U3 は止める操作 BR4.3 を結合の確かめに出す）"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "Deferred",
+      "target": "u1-user-suspension（トークンの更新の入口での拒否は U1。止めるときのまとめての無効化は U3 の BR4.3 が C1 の口を呼ぶ）"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中のログインの応答と読み書きの回数は U1 が受け持つ）"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止を解いた後の3つの入口は U1。停止を解く操作は U3 の BR4.4）"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中の管理者が業務に届かないことは U1 の入口の判定。U3 の認可は BR7.1 のまま）"
+    },
+    {
+      "id": "AC3.2.6",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中の利用者のメールアドレスへの招待の拒否は U1 が受け持つ）"
+    },
+    {
+      "id": "AC3.2.7",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止を解いた後の止める前のアクセストークンの扱いは U1 が受け持つ）"
+    },
+    {
+      "id": "AC3.2.8",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中のログインの失敗回数と監査の理由 ACCOUNT_SUSPENDED は U1 が受け持つ）"
+    },
+    {
+      "id": "AC3.2.9",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中の画面の 401 の扱いは U1 が受け持ち、画面の流れは U5 の E2E で確かめる）"
+    },
+    {
+      "id": "AC3.2.10",
+      "status": "Deferred",
+      "target": "u1-user-suspension（停止中のログインの画面の文言は U1 が受け持つ）"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（確かめの表示と「やめる」は画面のため U5 が受け持つ）"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（updatesNameAndLanguage）"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（B の画面の言語の切り替えは画面のため U5（反映の口は U4）が受け持つ。U3 は言語を保存する BR5.2）"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（自分の画面への言語と氏名の反映は U5（口は U4）が受け持つ。U3 は自分自身の変更を BR5.2 で許す）"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（inputErrors）・backend/src/test/java/cherry/mastersmith/user/domain/ProfileValidationTest.java"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（unknownUser・selfAndSameValues）"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（ignoresExtraFields）"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（入力の表示・初期値・誤りの位置は画面のため U5 が受け持つ。U3 は項目ごとの誤りを BR5.1 で返す）"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（authorization）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java・backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（wholeList）"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/SearchTextConverterTest.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/domain/SearchTextTest.java・backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（inputErrors）"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java・backend/src/test/java/cherry/mastersmith/user/domain/SearchTextTest.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/UserAdminAccountIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListQueryCountIT.java"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/auth/domain/LockViewTest.java・backend/src/test/java/cherry/mastersmith/auth/service/LockAdministrationServiceTest.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（lockView）"
+    },
+    {
+      "id": "BR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（rowShape・wholeList）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminWebTypesTest.java"
+    },
+    {
+      "id": "BR1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（authorization）・backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminServiceTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 26・27。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 26・27。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 26・33。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30・32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30・32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30・34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR2.7",
+      "status": "OK",
+      "target": "部分（氏名と言語の userId）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（unknownUser）。5つの操作の userId は B4（Step 34）"
+    },
+    {
+      "id": "BR2.8",
+      "status": "OK",
+      "target": "部分（一覧の self）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（wholeList）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminRequestContextResolverTest.java。5つの操作は B4（Step 30・33）"
+    },
+    {
+      "id": "BR3.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR3.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR3.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR3.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR3.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR3.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR4.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/domain/ProfileValidationTest.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（inputErrors）"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java（updateProfile）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（どのテストも監査の行が増えない）"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（ignoresExtraFields）"
+    },
+    {
+      "id": "BR6.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 26・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR6.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 26・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR6.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR6.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 34・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "部分（一覧と氏名・言語の2つの API）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（authorization）。5つの操作は B4（Step 34）"
+    },
+    {
+      "id": "BR7.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR7.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 37。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "部分（一覧と氏名・言語）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminWebTypesTest.java。5つの操作は B4（Step 36）"
+    },
+    {
+      "id": "BR7.5",
+      "status": "OK",
+      "target": "部分（一覧と氏名・言語）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（rowShape）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（unknownUser）。5つの操作は B4（Step 34）"
+    },
+    {
+      "id": "BR7.6",
+      "status": "OK",
+      "target": "部分（B3 の版）: backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java。B4 で audit からの依存の規則を足す（Step 37）"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "部分（一覧と氏名・言語）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（authorization）。5つの操作は B4"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 32・34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（停止中の管理者 401）。5つの操作は B4"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 30〜34。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "部分（氏名と言語の本文）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（ignoresExtraFields）。管理の API の外からの改ざんは B4（UserAdminMassAssignmentIT、Step 34）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "部分（一覧と氏名・言語の経路）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java・generation-notes.md の Step 14 の確かめ。5つの操作は B4"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（rowShape）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（inputErrors）・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（inputErrors）。BUSY は B4"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java（INFO で個人に関する値が出ない）。BUSY のログは B4"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 28〜32・40。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListQueryCountIT.java・backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java（doesNotReadPasswordHash）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.7",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.8",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.9",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 40（確かめは observability-setup）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.10",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 40（確かめは observability-setup）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR5.11",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 40（確かめは observability-setup）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 38・39。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 39（測定は performance-validation）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "部分（USER_NOT_FOUND）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（unknownUser）・backend/src/test/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypesTest.java。409 の5つは B4"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java（inputErrors）・backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java（unknownUser）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "部分: B3 の関門（Step 15）の verify で SpotBugs・Gitleaks・OSV-Scanner を除外を足さずに通した（generation-notes.md）。B4 の関門は Step 41"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 32・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 32・35。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "部分: B3 の関門（Step 15）の verify の実測（useradmin.web・useradmin.service・useradmin.domain が下限を満たす。generation-notes.md）。B4 は Step 41"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "部分（管理の API の認可・要求の改ざん・利用者の管理の漏えいの B3 の分）: backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java・backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java。残りは B4"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/auth/domain/LockViewTest.java・backend/src/test/java/cherry/mastersmith/user/domain/SearchTextTest.java（性質ベース）。拒否の判定は B4（Step 27）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 40（移行なし）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "Deferred",
+      "target": "B4（u3-user-admin-api の後半、計画の Step 40（移行なし）。B3 の時点の途中の版、依頼者の決定 Q-B A）"
+    },
+    {
+      "id": "NFR11.1",
+      "status": "OK",
+      "target": "部分（B3 の版）: backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR11.2",
+      "status": "OK",
+      "target": "部分: backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java（user は auth を知らない）。書き換える口の呼び出し元の規則は B4（Step 37）"
+    }
+  ]
+}
