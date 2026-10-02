@@ -28,3 +28,14 @@ condition = "AND"
 regexTarget = "match"
 regexes = ['''^[a-z0-9-]+:[0-9a-f]{64}\s*$''']
 paths = ['''^aidlc/spaces/[^/]+/intents/.+/memory\.md$''']
+
+# 誤検出の除外: AI-DLC の監査ログ（aidlc/ の下の audit/ の .md）に道具が書くレビューの記録の場所
+# `.aidlc-reviews > <段> > units > <単位> > <16進数16桁> > 1.review.md` の16進数16桁は、レビューの依頼ごとの
+# フォルダの識別子であり、秘密情報ではない（generic-api-key に当たった）。
+# 対象を「aidlc/ の下の audit/ の .md」かつ「検出された値が <単位> > <16桁の16進数> の形」の両方に当たるものだけに絞る。
+[[allowlists]]
+description = "AI-DLC の監査ログのレビューの記録のフォルダの識別子（秘密情報ではない）"
+condition = "AND"
+regexTarget = "match"
+regexes = ['''^[a-z0-9-]+ > [0-9a-f]{16}\s*$''']
+paths = ['''^aidlc/spaces/[^/]+/intents/[^/]+/audit/[^/]+\.md$''']
