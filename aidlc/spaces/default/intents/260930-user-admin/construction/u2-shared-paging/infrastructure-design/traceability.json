@@ -1,0 +1,38 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-shared-paging",
+  "upstream_ids": [
+    "NFR3.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10",
+    "NFR9.11",
+    "NFR11.1"
+  ],
+  "coverage": [
+    { "id": "NFR3.1", "status": "OK", "target": "cicd-pipeline.md 7節（口は整数と列挙だけ、伏せ字と SecretLeakIT は足さない、TRACE に出うるのは呼び出し元の引数だけで残る危険 R3）・8節（A-01 要求の行の上限・A-02 ログの行の偽造はコード生成の計画で扱う）・1節（CI に秘密を渡さない）" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md 2節の補足（新しい性能の目標と k6 の場面を足さない、招待の一覧は既存の k6 の場面 invitationList で Performance Validation が確かめる）・1節（verify の時間にほとんど効かない）" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline.md 2節の補足（新しい指標・警報・ログを足さない、docker/monitoring/provisioning/alerting/mastersmith.yaml を変えない）・8節 (v)" },
+    { "id": "NFR9.1", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の PagingTest と jqwik の性質、段 6 の招待の一覧の 400 VALIDATION_FAILED の既存の結合テスト）・7節（検証はサーバーの parsePage の1か所）" },
+    { "id": "NFR9.2", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の offsetOf の桁あふれと 1 未満の例外の事例と jqwik の性質、段 6 の最後のページとその次の空の 200 の既存の結合テスト）" },
+    { "id": "NFR9.3", "status": "OK", "target": "cicd-pipeline.md 2節（段 6 の既存の結合テストで VALIDATION_FAILED の Problem Details を確かめる）・7節（新しい code を足さない）" },
+    { "id": "NFR9.4", "status": "OK", "target": "cicd-pipeline.md 2節（段 1 フォーマット・段 2 リンタ・段 3 ライセンスヘッダー・段 8 の SpotBugs ＋ FindSecBugs・OSV-Scanner・Gitleaks を除外を足さずに通す）・7節" },
+    { "id": "NFR9.5", "status": "OK", "target": "cicd-pipeline.md 2節（段 4 で古い参照が残らない、段 5・6 で招待の既存のテストを参照先と import の変更だけで通す）・4節（E2E の 060・090 を変更なしで通す）・8節 (i)(ii)(iv)" },
+    { "id": "NFR9.6", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の jqwik tries = 500・fast-check 既定 100 回）" },
+    { "id": "NFR9.7", "status": "OK", "target": "cicd-pipeline.md 2節の補足（乱数の種は既存のテストの出力の設定で CI の記録に残る、移すテストの先頭に再現の仕方を書く）" },
+    { "id": "NFR9.8", "status": "OK", "target": "cicd-pipeline.md 3節（invitation.domain を実測して記録、A-04・R1、除外を増やさずテストを足す、packagesJudgedByTotal を変えない）・8節 (iii)" },
+    { "id": "NFR9.9", "status": "OK", "target": "cicd-pipeline.md 3節（common.paging は新しいパッケージとして自動で backend/build.gradle.kts の jacocoTestCoverageVerification のパッケージごとの下限の対象、package-info.java を置かない）" },
+    { "id": "NFR9.10", "status": "OK", "target": "cicd-pipeline.md 3節（frontend/vitest.config.ts の thresholds の全体の合計で判定、src/shared/paging を計測から外さない）" },
+    { "id": "NFR9.11", "status": "OK", "target": "cicd-pipeline.md 1節・6節（gradle/libs.versions.toml・backend/gradle.lockfile・frontend/package.json・frontend/package-lock.json を変えない）・2節（段 8 の OSV-Scanner の対象が変わらない）・8節 (v)" },
+    { "id": "NFR11.1", "status": "OK", "target": "cicd-pipeline.md 2節（段 2 の ESLint で export default・enum の禁止、段 4 のビルド、段 5 の既存の ArchitectureTest・InvitationBoundaryArchitectureTest を書き換えずに通す）" }
+  ]
+}
