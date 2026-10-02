@@ -36,7 +36,12 @@ import type {
 import { failureMessageKey, failureStatus, generalFailureKey, knownCode } from './failureMessage'
 import type { FocusTarget } from './focusTarget'
 import { isBlankEmail } from './inviteInput'
-import { correctedPage, pageRange, pagerButtonDisabledAfter, type PagerDirection } from './paging'
+import {
+  correctedPage,
+  pageRange,
+  pagerButtonDisabledAfter,
+  type PagerDirection,
+} from '../../shared/paging/paging'
 import type { InvitationText } from './useInvitationText'
 
 /** 一覧の読み込みの状態 */

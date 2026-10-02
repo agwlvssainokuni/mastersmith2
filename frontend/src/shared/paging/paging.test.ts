@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 //
-// ページの計算のテスト（D1・W2、NFR9.7）。境目の値と、fast-check の性質ベースのテスト（失敗時は seed と path が出力に出る）。
+// 管理の一覧のページ送りの計算のテスト（BR2.1〜BR2.4、NFR9.6・NFR9.7）。境目の値と、fast-check の性質ベースのテスト。
+// 失敗したときの再現の仕方: fast-check は失敗の報告に seed と path を出すため、その fc.assert(property) を
+// fc.assert(property, { seed: <seed>, path: '<path>' }) に一時的に替えて流す（原因を直した後に元に戻す）。
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { correctedPage, PAGE_SIZE, pageCount, pageRange, pagerButtonDisabledAfter } from './paging'
@@ -76,6 +78,73 @@ describe('paging', () => {
           const corrected = correctedPage(pageCount(total) + beyond, total, 0)
           expect(corrected).toBeGreaterThanOrEqual(1)
           expect(corrected).toBeLessThanOrEqual(pageCount(total))
+        },
+      ),
+    )
+  })
+
+  it('joins the ranges of neighboring pages without gaps and sums them up to the total', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 100_000 }), (total) => {
+        let sum = 0
+        let previousTo = 0
+        for (let page = 1; page <= pageCount(total); page += 1) {
+          const { from, to } = pageRange(page, total)
+          expect(from).toBe(previousTo + 1)
+          sum += to - from + 1
+          previousTo = to
+        }
+        expect(sum).toBe(total)
+      }),
+    )
+  })
+
+  it('counts just enough pages to hold the total', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 100_000 }), (total) => {
+        const count = pageCount(total)
+        expect((count - 1) * PAGE_SIZE).toBeLessThan(total)
+        expect(total).toBeLessThanOrEqual(count * PAGE_SIZE)
+      }),
+    )
+  })
+
+  // 期待の値は pageCount の式を使わず、最後のページ（last）と最後のページの件数（1〜20）から全件数を組み立てて決める。
+  const totalWithLastPage = fc
+    .record({
+      last: fc.integer({ min: 1, max: 5_000 }),
+      rowsOnLast: fc.integer({ min: 1, max: PAGE_SIZE }),
+    })
+    .map(({ last, rowsOnLast }) => ({ last, total: (last - 1) * PAGE_SIZE + rowsOnLast }))
+
+  it('keeps the next button enabled before the last page and disables it on and after the last page', () => {
+    fc.assert(
+      fc.property(
+        totalWithLastPage,
+        fc.integer({ min: 1, max: 1_000 }),
+        ({ last, total }, beyond) => {
+          expect(pagerButtonDisabledAfter('next', last, total)).toBe(true)
+          expect(pagerButtonDisabledAfter('next', last + beyond, total)).toBe(true)
+          if (last >= 2) {
+            expect(pagerButtonDisabledAfter('next', last - 1, total)).toBe(false)
+            expect(pagerButtonDisabledAfter('next', 1, total)).toBe(false)
+          }
+        },
+      ),
+    )
+  })
+
+  it('corrects an empty page past the end to the last page, but not when the page has a row', () => {
+    fc.assert(
+      fc.property(
+        totalWithLastPage,
+        fc.integer({ min: 1, max: 1_000 }),
+        fc.integer({ min: 1, max: PAGE_SIZE }),
+        ({ last, total }, beyond, itemCount) => {
+          expect(correctedPage(last + beyond, total, 0)).toBe(last)
+          expect(correctedPage(last + beyond, total, itemCount)).toBeUndefined()
+          expect(correctedPage(last, total, 0)).toBeUndefined()
+          expect(correctedPage(last, total, itemCount)).toBeUndefined()
         },
       ),
     )

@@ -13,28 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package cherry.mastersmith.invitation.domain;
+package cherry.mastersmith.common.paging;
 
 import java.util.OptionalInt;
 import java.util.regex.Pattern;
 
 /**
- * 招待の一覧のページの計算（BR2.3・BR5.2、NFR9.7）。DB を使わない純粋な関数。1ページは 20 件。
+ * 管理の一覧（招待の一覧・利用者の一覧）のページ送りの計算（BR1.1〜BR1.5）。DB・時刻・設定・ほかの機能に依存しない純粋な関数。1ページは 20 件。
  */
-public final class InvitationPaging {
+public final class Paging {
 
-    /** 1ページの件数（契約 C5 の size）。 */
+    /**
+     * 1ページの件数（契約 C2 の PAGE_SIZE、BR1.1）。応答の size にもこの値を入れる。
+     *
+     * <p>画面の {@code frontend/src/shared/paging/paging.ts} の {@code PAGE_SIZE} と同じ値にする（変えるときは両方を同じ変更で直す）。
+     */
     public static final int PAGE_SIZE = 20;
 
     private static final Pattern DIGITS = Pattern.compile("[0-9]{1,9}");
 
-    private InvitationPaging() {}
+    private Paging() {}
 
     /**
-     * 一覧の要求の page を読む。
+     * 一覧の要求の page を読む（BR1.2）。
      *
      * @param raw 問い合わせの値（無ければ null）
-     * @return 1 以上の整数なら page（無ければ 1）。1 未満・整数でない・空は空
+     * @return 1 以上の整数なら page（無ければ 1）。1 未満・整数でない・空は空。数字は 1〜9 桁だけを受け、10 桁以上
+     *     （{@code "9999999999"} や先頭に 0 を重ねた 10 桁以上の数字など）も空
      */
     public static OptionalInt parsePage(String raw) {
         if (raw == null) {
@@ -48,11 +53,13 @@ public final class InvitationPaging {
     }
 
     /**
-     * 一覧の並びでの位置（1 から数える）から、その招待が載るページを返す（位置 ÷ 20 の切り上げ）。
+     * 一覧の並びでの位置（1 から数える）から、その行が載るページを返す（位置 ÷ 20 の切り上げ、BR1.4）。
      *
      * @param position 位置（1 以上）
      * @return ページ
      * @throws IllegalArgumentException 位置が 1 未満のとき
+     * @throws ArithmeticException ページが int の範囲を超えるとき（{@code Math.toIntExact} による。位置が
+     *     {@code (long) Integer.MAX_VALUE * 20} を超えるとき）
      */
     public static int pageOf(long position) {
         if (position < 1) {
@@ -62,7 +69,7 @@ public final class InvitationPaging {
     }
 
     /**
-     * ページの読み始めの位置（0 から数える）を返す。
+     * ページの読み始めの位置（0 から数える）を返す（BR1.3）。
      *
      * @param page ページ（1 以上）
      * @return 読み始めの位置

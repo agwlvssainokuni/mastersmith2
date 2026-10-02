@@ -17,10 +17,10 @@ package cherry.mastersmith.invitation.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.common.paging.Paging;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.invitation.domain.Invitation;
 import cherry.mastersmith.invitation.domain.InvitationEmail;
-import cherry.mastersmith.invitation.domain.InvitationPaging;
 import cherry.mastersmith.invitation.domain.InvitationState;
 import cherry.mastersmith.invitation.domain.SendResult;
 import cherry.mastersmith.user.domain.Language;
@@ -137,10 +137,8 @@ class InvitationRepositoryIT {
         Invitation ended = save("ended@example.com", T0.plusSeconds(100), Duration.ofHours(1));
         end(ended.getInvitationId(), "COMPLETED", T0);
 
-        List<Invitation> first =
-                repository.findPage(InvitationState.PENDING, PageRequest.of(0, InvitationPaging.PAGE_SIZE));
-        List<Invitation> second =
-                repository.findPage(InvitationState.PENDING, PageRequest.of(1, InvitationPaging.PAGE_SIZE));
+        List<Invitation> first = repository.findPage(InvitationState.PENDING, PageRequest.of(0, Paging.PAGE_SIZE));
+        List<Invitation> second = repository.findPage(InvitationState.PENDING, PageRequest.of(1, Paging.PAGE_SIZE));
 
         assertThat(repository.countByState(InvitationState.PENDING)).isEqualTo(21);
         assertThat(first).hasSize(20);

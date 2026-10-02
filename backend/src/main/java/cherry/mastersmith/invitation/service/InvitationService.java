@@ -15,12 +15,12 @@
  */
 package cherry.mastersmith.invitation.service;
 
+import cherry.mastersmith.common.paging.Paging;
 import cherry.mastersmith.invitation.domain.Invitation;
 import cherry.mastersmith.invitation.domain.InvitationAvailability;
 import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
 import cherry.mastersmith.invitation.domain.InvitationEmail;
 import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
-import cherry.mastersmith.invitation.domain.InvitationPaging;
 import cherry.mastersmith.invitation.domain.InvitationRequestValidation;
 import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.InvitationState;
@@ -213,7 +213,7 @@ public class InvitationService {
     private Issue.Pending pendingOf(Invitation invitation) {
         long before = repository.countBefore(
                 InvitationState.PENDING, invitation.getInvitedAt(), invitation.getInvitationId());
-        return new Issue.Pending(invitation.getInvitationId(), InvitationPaging.pageOf(before + 1));
+        return new Issue.Pending(invitation.getInvitationId(), Paging.pageOf(before + 1));
     }
 
     /** 同じメールアドレスの招待中の一意の制約に当たった誤りかを返す。 */
@@ -250,7 +250,7 @@ public class InvitationService {
      * @return 結果
      */
     public ListResult list(String rawPage) {
-        OptionalInt parsed = InvitationPaging.parsePage(rawPage);
+        OptionalInt parsed = Paging.parsePage(rawPage);
         if (parsed.isEmpty()) {
             return new ListResult.InvalidPage();
         }
@@ -261,9 +261,9 @@ public class InvitationService {
 
     private InvitationPage readPage(int page) {
         long total = repository.countByState(InvitationState.PENDING);
-        List<Invitation> rows = InvitationPaging.offsetOf(page) >= total
+        List<Invitation> rows = Paging.offsetOf(page) >= total
                 ? List.of()
-                : repository.findPage(InvitationState.PENDING, PageRequest.of(page - 1, InvitationPaging.PAGE_SIZE));
+                : repository.findPage(InvitationState.PENDING, PageRequest.of(page - 1, Paging.PAGE_SIZE));
         Map<Long, String> names = new HashMap<>();
         for (Invitation row : rows) {
             names.computeIfAbsent(row.getInvitedByUserId(), this::displayName);
@@ -274,12 +274,7 @@ public class InvitationService {
                 .toList();
         InvitationAvailability availability = settings.availability();
         return new InvitationPage(
-                items,
-                page,
-                InvitationPaging.PAGE_SIZE,
-                total,
-                availability.enabled(),
-                availability.unavailableReasons());
+                items, page, Paging.PAGE_SIZE, total, availability.enabled(), availability.unavailableReasons());
     }
 
     /** 招待した管理者の氏名だけを返す。利用者の行が無ければ空の文字列（メールアドレスへ切り替えない。BR5.3）。 */
