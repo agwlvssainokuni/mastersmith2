@@ -35,7 +35,7 @@
     { "id": "NFR1.4", "status": "N/A", "target": "401 とログアウトの扱いを変えないことは ApiClient の作りで、基盤の資源や設定を要さない。ApiClient を変えない範囲は infrastructure-specification.md 2節、確かめは cicd-pipeline.md 2節 段5 の apiClient.test.ts" },
     { "id": "NFR1.5", "status": "N/A", "target": "画面の側の印をトークンの応答からだけ入れることは画面の作りで、基盤の資源や設定を要さない。共有するログイン状態の境界は infrastructure-specification.md 4節、確かめは cicd-pipeline.md 2節 段5" },
     { "id": "NFR3.1", "status": "OK", "target": "infrastructure-specification.md 1節 ブラウザの保存と URL（言語だけを保存し氏名を保存しない）・5節 画面に出す値とブラウザのコンソールと保存、monitoring-design.md 4節 画面のログ（console を呼ばない）" },
-    { "id": "NFR3.2", "status": "OK", "target": "infrastructure-specification.md 5節 E2E の資格情報と報告、cicd-pipeline.md 4.1 差し替え（GET /api/admin/check の1本だけ、GET 以外の要求 0 件）・5節（playwright.config.ts を変えず環境変数で渡す、playwright-secret-check-reporter.ts、2語の氏名の値を数える、html と trace は B5 まで既存の状態で共有しない）・9節" },
+    { "id": "NFR3.2", "status": "OK", "target": "infrastructure-specification.md 5節 E2E の資格情報と報告、cicd-pipeline.md 4.1 差し替え（GET /api/admin/check の1本だけ、GET 以外の要求 0 件）・5節（playwright.config.ts を変えず環境変数で渡す、playwright-secret-check-reporter.ts、2語の氏名の値を数える、html と trace は B5 まで既存の状態で共有せず、B2 の e2eTest の後に結果を記録してから playwright-report と test-results を消す）・9節" },
     { "id": "NFR5.1", "status": "OK", "target": "infrastructure-specification.md 2節 トークンの更新の API（refreshSessionOnce で既存の更新のまとめに乗る、新しい経路を作らない）、monitoring-design.md 1節・2節 ms-refresh-p95・3節（既存の目標 p95 1 秒、U4 のために測り直さない）" },
     { "id": "NFR7.1", "status": "N/A", "target": "S6 の role=\"status\"・見出しへのフォーカス・リンクのキーボード操作は画面部品の作りで、基盤の資源や設定を要さない。確かめは cicd-pipeline.md 2節 段5 の部品のテストと 4.1 の 130" },
     { "id": "NFR7.2", "status": "OK", "target": "cicd-pipeline.md 2節 段5: AdminForbiddenView.test.tsx の vitest-axe の検査1件が verify の単体テストの段で動く" },

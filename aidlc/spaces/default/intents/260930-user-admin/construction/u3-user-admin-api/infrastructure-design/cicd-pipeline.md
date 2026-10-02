@@ -18,7 +18,7 @@ U3 の検査の流れ（1コマンドの検査と CI）、カバレッジの作�
 | 8 安全の検査 | SpotBugs ＋ FindSecBugs（priority 1、`SQL_`・`PREDICTABLE_RANDOM`・`SMTP_HEADER_INJECTION` は priority にかかわらず）・OSV-Scanner・Gitleaks は既存のまま。問い合わせは名前つきの引数と SpEL だけ | 既存の基準。`backend/config/spotbugs-exclude.xml` に除外を足さない（NFR9.2） |
 | 9 成果物 | 既存の `bootWar`（コミットのハッシュで見分ける） | WAR が作れない |
 
-- 結合テストの時間: B4 の上限切れのテストは、1件ごとに排他の待ちの上限（約 3 秒）を待つ。5つの操作・既存の E1〜E4 の経路・書き込みの問い合わせを TRACE と INFO の両方で起こすため、結合テストの時間が延びる。B4 の前後の `verify` の時間を記録し、CI の制限時間 60 分に余裕があることを確かめる。待つ時間を短くするために排他の待ちの上限を変えない（NFR4.4）。
+- 結合テストの時間: B4 の上限切れのテストは、1件ごとに排他の待ちの上限（約 3 秒）を待つ。5つの操作・既存の E1〜E4 の経路・書き込みの問い合わせを TRACE と INFO の両方で起こすため、結合テストの時間が延びる。B4 の前後の `verify` の時間を記録し、CI の制限時間 60 分に余裕があることを確かめる。今の時間の基準値と増加の許容は B3・B4 の計画で決める（承認の場の決定 R-02）。待つ時間を短くするために排他の待ちの上限を変えない（NFR4.4）。
 - CI に秘密を渡さない。テストデータのメールアドレスは予約のドメイン（`example.com` など）だけ。
 
 ## 2. カバレッジ（NFR9.6）
@@ -79,7 +79,7 @@ U3 の検査の流れ（1コマンドの検査と CI）、カバレッジの作�
 | 項目 | 設計 | 出典 |
 |---|---|---|
 | U3 の流れ | 足さない。この Intent の代表の流れ1本は B5（U5） | `team.md` の Testing Posture、`bolt-plan.md` の B5 |
-| B3 | E2E を流さず、`./gradlew verify` だけで統合する。新しい管理の API と検索の文字の型の変換を足すだけで、画面と認証の経路に手を入れない | Q1 A |
+| B3 | E2E を流さず、`./gradlew verify` だけで統合する。新しい管理の API と検索の文字の型の変換を足すだけで、画面と認証の経路に手を入れない。B3 の計画で変更の範囲がこの経路に触れないことを確かめ、触れたら統合の前に E2E を流す条件を書く（承認の場の決定 R-03） | Q1 A |
 | B4 | 統合の前に `./gradlew e2eTest`（010〜100）を手元で流し、通ったことを記録する。B4 はログインの判定（`LoginService` の待ち合わせの口）、ロックの状態の行の排他（E1）、招待・送り直し・取り消し・登録の完了の排他の問い合わせ（E2〜E4）、すべての要求が通る `TraceAspect` と `GlobalExceptionHandler` に手を入れ、既存の `020-auth`（ログイン）と `090-invitation-registration-flow`（招待から登録の完了まで）がこの経路を通るため | Q1 A |
 | B4 の前提 | 事前に `npx playwright install chromium` でブラウザを入れ、`docker compose --profile mail up -d mailpit` で Mailpit を起動する（`e2eTest` は `http://127.0.0.1:8025/api/v1/info` に届かなければ起動の手順を示して失敗する）。`caffeinate -i` で全体を包む | `build.gradle.kts` の `e2eTest`、`project.md` の Testing Posture |
 | 秘密 | 既存の `frontend/playwright.config.ts` のとおり、仮の資格情報はプロセスの環境変数で渡し、報告に残らないことを既存の確かめの部品が見る。Mailpit が受けたメールは見終えたら止めて消す | `project.md` の Testing Posture |
@@ -95,11 +95,11 @@ U3 の検査の流れ（1コマンドの検査と CI）、カバレッジの作�
 | 5 | B4 の作業ブランチで U3 の後半を作る。既存の経路の上限切れの漏えいの直しは、再現するテストを直しと同じコミットに含める（`project.md` の Mandated） | — | code-generation |
 | 6 | 統合の前に `./gradlew verify`（2節の実測、`common.observability`・`common.error.web` を一覧から外した後の値を含む）と `./gradlew e2eTest`（5節）を通す | 全検査と E2E の合格 | code-generation・build-and-test |
 | 7 | 3・4 と同じく squash の1コミットで統合し、CI で再確認する | 依頼者の承認・CI の合格 | — |
-| 8 | この Intent のすべての Bolt の後に、手元のコンテナへ手で配備する。U3 は表・`.env`・設定を変えない（バックアップと戻しの練習の要否は U1 の V9 の持ち物として決める） | 未コミットの変更が無い（アプリのソース） | deployment-pipeline・deployment-execution |
+| 8 | この Intent のすべての Bolt の後に、手元のコンテナへ手で配備する。U3 は表・`.env`・設定を変えない（V9 のバックアップと戻しの練習は U1 の段で置かないと決まっている）。戻しの手順に、戻す前に停止中の利用者を確かめる手順を必ず入れる（下の注） | 未コミットの変更が無い（アプリのソース） | deployment-pipeline・deployment-execution |
 | 9 | ヘルスチェックが UP、スモークテストが通るまで配備の完了としない。U3 の確かめに何を入れるかは、`infrastructure-specification.md` 8節の事実（監査に残る要求・データを変える要求）をもとに deployment-pipeline で決める。監査に残る要求を送る前は依頼者に伝える | healthy とスモークテスト | deployment-pipeline・deployment-execution |
 
 - 配備の方式は既存のとおり1台の置き換え（青緑・カナリアは無い）。成果物の版はコミットのハッシュで見分ける（`team.md` の Deployment）。
-- 戻し方は、U3 から見ると直前の版のイメージへ戻すだけ（`infrastructure-specification.md` 5節）。
+- 戻し方は、U3 から見ると直前の版のイメージへ戻すだけ（`infrastructure-specification.md` 5節）。ただし戻し先のこの Intent の前の版は停止の判定を持たず、戻している間は停止中の利用者がログインの照合・トークンの更新・アクセストークンの認証を通れる。戻す前に停止中の利用者がいるかを件数で確かめ、いれば扱いを依頼者に確かめる手順を deployment-pipeline で必ず決める（U1 の承認の場の決定 R-03 と同じ条件）。前の版が監査の新しい値の行を読まないことはソースで確かめた（同 5.1）。
 
 ## 7. 秘密情報と CI/CD
 
@@ -115,3 +115,17 @@ U3 の検査の流れ（1コマンドの検査と CI）、カバレッジの作�
 | C-D1 | `inception/delivery-planning/bolt-plan.md` の「すべての Bolt に共通の完了の条件」 | 統合の前に E2E を流すのは画面・認証に関わる B1・B2・B5 | B4 も統合の前に `./gradlew e2eTest`（010〜100）を流して記録する。B3 は流さない（5節） | Q1 A。Bolt の計画の後に決まった機能設計と NFR 設計で、B4 が認証の経路に手を入れることになったため。Bolt の計画は書き換えない |
 | C-D2 | Delivery Planning の B4 の見積もり、NFR9.6 | `common.observability`・`common.error.web` の作業は無い | B4 で2つのパッケージを一覧から外し、パッケージごとの下限を満たす（2節） | Q2 A（`infrastructure-specification.md` 10節の I-D1・I-D2）。今の値は B4 の計画で実測する |
 | C-D3 | NFR 設計 `security-design.md` 10節の確かめのテストの一覧 | 上限切れの漏えいのテストは U3 の5つの操作と既存の E1〜E4 | 書き込みの問い合わせの上限切れの漏えいのテスト（TRACE と INFO の両方）を B4 に足す（1節） | Q2 A。どの書き込みの問い合わせを対象にするかは B4 の計画で決める |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+この段の1回目のレビュー（Verdict READY、Major 1件・Minor 3件）を受けて、依頼者が承認の場で決めたことです。
+
+| ID | 扱い | 内容 | 反映した所・渡す先 |
+|---|---|---|---|
+| R-01（Major） | 直した | 5節の戻し方の誤り（「1つ前の版も停止の列を読む」）を直した。戻し先はこの Intent の前の版のイメージで V9 の停止の列を知らないため、戻している間は停止中の利用者がログインの照合・トークンの更新・アクセストークンの認証を通れる（`project.md` の Mandated が効かない）。戻す前に停止中の利用者がいるかを件数で確かめ、いれば扱いを依頼者に確かめる手順を deployment-pipeline で必ず決める。U1 の「V9 の後方互換と戻しの練習を置かない」の受け入れ（U1 の承認の場の決定 R-03）と同じ条件。前の版の本番のコードは監査の行を読まない（`AuditEventRepository` を呼ぶのは `save` だけ）ことをソースで確かめた | `infrastructure-specification.md` 4節・5節・5.1・8節・10節 I-D4、この文書 6節、`traceability.json` の NFR10.1。deployment-pipeline へ渡す |
+| R-02（Minor） | 申し送る | 今の `verify` の時間の基準値を測り、B4 の結合テストの増加の許容（CI の制限時間 60 分に対してどこまでか）を決める | B3・B4 のコード生成の計画 |
+| R-03（Minor） | 申し送る | B3 の変更が画面・認証の経路に触れないことを確かめる項目を置き、触れたら統合の前に `./gradlew e2eTest` を流す条件を書く | B3 のコード生成の計画 |
+| R-04（Minor） | 申し送る | 監視の `uri` ラベルの実際の値と `le` のバケットを確かめる（`monitoring-design.md` 8節の確認項目を段の入口の条件として保つ） | observability-setup |
+| 書き手の点 1 | 受け入れ | NFR 設計の2回目のレビューの R-02（E2〜E4 を移した後も断片のメソッドの名前・引数・戻り値を変えず、`InvitationService` の既存の単体テストの差し替えを壊さない）を B4 の計画の条件にする | B4 のコード生成の計画 |
+| 書き手の点 2 | 受け入れ | 初期管理者だけでは最後の管理者の拒否（LAST_ACTIVE_ADMIN）を見せられない（自分自身の操作は先に SELF_OPERATION で拒否される）事実を渡す | deployment-pipeline（`infrastructure-specification.md` 8節） |
+| 書き手の点 3 | 受け入れ | B4 の `verify` の時間（上限切れのテストで延びる分）は B4 の計画で見積もる | B4 のコード生成の計画（R-02 と合わせる） |

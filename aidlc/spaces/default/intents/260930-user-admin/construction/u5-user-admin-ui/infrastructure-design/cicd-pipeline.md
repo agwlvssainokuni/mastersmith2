@@ -45,7 +45,7 @@ CI が失敗したときは、次の Bolt に進む前に `team.md` の Testing 
 | 新しい依存 | 実行時・開発時とも足さない。axe-core・fast-check・Playwright は既存のものを使い、報告の部品の zip の読み込みは `node:zlib`・`node:fs` だけで書く。コード生成で `frontend/package.json` に差分が無いこと、`frontend/package-lock.json` の差分が make-you-chic-ui の版の分だけであることを確かめて記録する（NFR9.2） |
 | make-you-chic-ui の固定先 | `077f5b4` から `3481488` 以降へ上げる。取り込む具体のコミットは B5 のコード生成の計画で決め、計画の承認の前に部品の口（`frontend-components.md` 2.4・2.5）があることを確かめる。上げた直後（`UserRowActions` を書く前）に 2.5 の表を部品のソースとテストで確かめ、「依頼者に戻す差」が出たら依頼者に報告する。中身は変えない（NFR9.3、`project.md` の Forbidden） |
 | 固定先の更新のコミット | 承認を得た専用のコミットで行い、更新前後のハッシュを記録する（`project.md` の Mandated）。コミットの後に `npm ci` と `./gradlew e2eTest` を流す |
-| `frontend/.npmrc` | `ignore-scripts=true` を足し、`engine-strict=true` は残す。固定先の更新と別のコミットにし、コミットの後に `npm ci`・`./gradlew verify`・`./gradlew e2eTest` を流す（失敗の原因を切り分けるため、NFR9.4） |
+| `frontend/.npmrc` | `ignore-scripts=true` を足し、`engine-strict=true` は残す。固定先の更新と別のコミットにし、コミットの後に `npm ci`・`./gradlew verify`・`./gradlew e2eTest` を流す（失敗の原因を切り分けるため、NFR9.4）。`ignore-scripts=true` の影響を確かめる順（`.npmrc` のコミットを固定先の更新より前の早い時点に置くか）は、B5 のコード生成の計画で決める（承認の場の決定 R-03） |
 | `ignore-scripts=true` の効く範囲 | `frontend/` の中のインストールだけ。`verifyPrepare` の `vendorInstall`（`vendor/make-you-chic-ui` の中の `npm ci`）には効かず、今までの手順のまま通ることだけを確かめる。`npx playwright install chromium` はインストールのスクリプトではないため影響しない |
 | lockfile と脆弱性 | 依存は lockfile どおりに入れる（`project.md` の Mandated）。make-you-chic-ui の lockfile は OSV-Scanner の対象のまま |
 
@@ -81,15 +81,16 @@ reporter: [['list'], ['json', { outputFile: jsonResultsFile }], ['./playwright-s
 use: { ..., trace: traceMode },
 ```
 
-### 4.3 B5 までの E2E の報告の扱い（Q1: A）
+### 4.3 B5 までの E2E の報告の扱い（Q1: A、承認の場の決定 R-02）
 
-設定の直しは B5 で行い、先取りしません。B2・B4 の統合の前の `./gradlew e2eTest` では、次の順で扱います（`infrastructure-specification.md` 3.1）。
+設定の直しは B5 で行い、先取りしません。依頼者の決定（R-02）により、B1・B2・B4 の統合の前の `./gradlew e2eTest` と、B5 の中で `playwright.config.ts` を直す前の `./gradlew e2eTest` のすべてを、次の順で扱います（`infrastructure-specification.md` 3.1）。
 
+0. B1 の始め（最初の `e2eTest` より前）に、いま手元に残っている `frontend/playwright-report/` と `frontend/test-results/` を消し、消したことを B1 のコード生成の記録に書く。
 1. 結果を json の報告（`frontend/test-results/e2e-results.json`）から、その Bolt のコード生成の記録に写す。
 2. 写した後に `frontend/playwright-report/` と `frontend/test-results/` を消す。
 3. 消したことと、報告を共有していないことを、その Bolt のコード生成の記録に書く。
 
-B5 が B4 の後すぐに始まらないときも、この扱いのまま進めます。B5 の最初の実行で前の html の報告が残っていないため部品の失敗は起きにくくなり、前の報告で失敗することは `security-design.md` 3.8 の (6)（わざと残した報告）で確かめます。
+B5 が B4 の後すぐに始まらないときも、この扱いのまま進めます。B5 の最初の実行の時点で前の html の報告が残っていない前提になり、前の報告で失敗することは `security-design.md` 3.8 の (6)（わざと残した報告）で確かめます。
 
 ### 4.4 B5 の中で流す時点と前提
 
@@ -102,12 +103,20 @@ B5 が B4 の後すぐに始まらないときも、この扱いのまま進め�
 
 - 前提: Mailpit を `docker compose --profile mail up -d mailpit` で起動しておく（`e2eTest` は始める前に届くかを確かめ、届かなければ失敗する）。ブラウザは `npx playwright install chromium`。
 - 長い実行は `caffeinate -i` で台本の全体を包む（`project.md` の Testing Posture の学び）。
-- 固定先の更新と `.npmrc` のコミットの後の実行が、`playwright.config.ts` の直しより前になるときは、その実行も html と trace を作るため、4.3 と同じく結果を写した後に報告を消して記録する。直しをどの順に置くかはコード生成の計画で決める（7節の確かめたいこと）。
+- 固定先の更新と `.npmrc` のコミットの後の実行が、`playwright.config.ts` の直しより前になるときは、その実行も html と trace を作るため、4.3 と同じく結果を写した後に報告を消して記録する（承認の場の決定 R-02 で決まった）。直しをどの順に置くかはコード生成の計画で決める。
 - 不安定なときは `team.md` の Testing Posture「不安定なテストと CI の失敗」の決まりで扱う。時間の上限を原因を確かめずに延ばさない。
 
 ### 4.5 報告の部品とわざと値を入れた確かめ（コード生成 B5）
 
 `security-design.md` 3.8 のとおり、次を種類ごとに確かめて記録し、確かめに使った報告は消します。(1) json の報告の注記に U の氏名、(2) `test-results/` の下の zip（圧縮あり）の中に U のパスワードの URL の形、(3) `error-context.md` に U のメールアドレス、(4) 値のファイルを書かずに値の形だけで見つかること、(5) 壊れた zip で失敗すること、(6) 残した `playwright-report/` で失敗すること、(7) json の報告の添付の `body`（base64）に U のメールアドレス、(8) `runTag` が 24 文字より短いときに単独では探さず警告すること。あわせて、値のファイルが探し終えた後に無いこと、作ったときの権限が 600 であることを確かめます。120 の差し替えの口は、わざと POST を送る形・口を張らない形・二重のスラッシュの形を一度ずつ流して失敗になることを確かめ、元に戻してコミットに含めません（`security-design.md` 4.3）。
+
+戻し忘れを防ぐため、わざと値を入れた確かめ（(1)〜(8)）と差し替えの口の3つの確かめ、画面の守りの確かめ（わざと壊して失敗を見る形のもの）では、次を守ります（承認の場の決定 R-03）。
+
+| 順 | すること |
+|---|---|
+| 1 | 確かめの前に、作業中の変更をコミットしておくか、確かめの変更だけが差分になる状態にする |
+| 2 | 確かめの後に元へ戻す |
+| 3 | コミットの前に `git diff`（と `git status`）で、確かめのために入れた変更が残っていないことを確かめ、確かめたことをその Bolt のコード生成の記録に書く |
 
 ### 4.6 README の直し（B5 のコード生成）
 
@@ -130,8 +139,8 @@ B5 が B4 の後すぐに始まらないときも、この扱いのまま進め�
 | 2 | 固定先の更新を専用のコミットにし、前後のハッシュを記録する。`.npmrc` は別のコミットにする。それぞれの後に 4.4 の検査を流す。画面の作業のコミットの分け方はコード生成の計画で決める | `project.md` の Mandated、NFR9.3・NFR9.4 |
 | 3 | 統合の前に `./gradlew verify`（コンテナの実行環境あり、対象DB のテストを飛ばさない）と手元の `./gradlew e2eTest` を通す | `team.md` の Way of Working・Testing Posture |
 | 4 | 短命のブランチから `develop` へ fast-forward で統合する（squash でない。固定先の更新を専用のコミットとして残すため） | `team.md` の Way of Working、`bolt-plan.md` の B5 |
-| 5 | 依頼者が `develop` を push する前に、取り込む make-you-chic-ui のコミットがそのリポジトリの公開の側にあることを確かめる（CI の取得で失敗しないため）。push は依頼者が行う | `.github/workflows/ci.yml`、`team.md` の Way of Working |
-| 6 | push の後の CI が通ったことを記録する | `bolt-plan.md` の共通の完了の条件 |
+| 5 | 依頼者が `develop` を push する前に、取り込む make-you-chic-ui のコミットがそのリポジトリの公開の側にあることを確かめる（CI の取得で失敗しないため）。確かめ方は、make-you-chic-ui の作業フォルダで `git fetch` の後に `git branch -r --contains <コミット>` を実行して公開の側の分岐が出ること、または GitHub の画面でそのコミットを開けること。確かめた方法と結果を B5 のコード生成の記録に書く。push は依頼者が行う | `.github/workflows/ci.yml`、`team.md` の Way of Working、承認の場の決定 R-04 |
+| 6 | push の後の CI が通ったことを記録する。CI のサブモジュールの取得が失敗したときは、make-you-chic-ui 側のコミットを先に公開の側へ push してから、失敗した CI を再実行する | `bolt-plan.md` の共通の完了の条件、承認の場の決定 R-04 |
 | 7 | WAR を作り、イメージを作り直して `docker compose up -d`。イメージの作り方・`compose.yaml`・`.env`・ボリューム・JVM の設定は変えない | `team.md` の Deployment |
 | 8 | ヘルスチェックとスモークテストで確かめる。U5 の分は、管理者でログインしてサイドバーの「利用者の管理」から一覧が開けること。5つの操作と氏名・言語の変更は監査に残り利用者の状態を変えるため、スモークテストに入れるかは deployment-pipeline の段で決め、行うときは先に依頼者に伝える | `team.md` の Deployment、`project.md` の Corrections |
 
@@ -170,8 +179,10 @@ B5 が B4 の後すぐに始まらないときも、この扱いのまま進め�
 | `./gradlew e2eTest` で 010〜100・130・110・120 が通ったこと、110 で飛ばした注記が出ていないこと、120 の組と状態ごとの結果 | コード生成・Build and Test |
 | 報告の部品の結果（見つかった件数 0）と、4.5 のわざと値を入れた確かめ（(1)〜(8)）と差し替えの口の3つの確かめ | コード生成（B5）・Build and Test（部品の結果） |
 | B5 の最初の実行で前の html の報告を見つけたかと、消した結果 | コード生成（B5） |
-| `user-admin-screen-ms` の値（`list` と `nextPage`、1回目と 2〜5 回目、`nextPage` は API の時間を含まないこと、`list` は差し替えの口の上乗せを含むこと） | コード生成（B5）・Build and Test |
-| B2・B4 の `e2eTest` の後に報告を消したことと共有していないこと（4.3） | B2・B4 のコード生成 |
+| `user-admin-screen-ms` の値（`list` と `nextPage`、1回目と 2〜5 回目、`nextPage` は API の時間を含まないこと、`list` は差し替えの口の上乗せを含むこと）。記録のみで成否にせず、本番での判定は `Unverified`（持ち主は performance-validation・observability-setup・feedback-optimization、承認の場の決定 R-01） | コード生成（B5）・Build and Test |
+| B1 の始めに今ある報告を消したこと、B1・B2・B4 と B5 の中の設定を直す前の `e2eTest` の後に報告を消したことと共有していないこと（4.3） | B1・B2・B4・B5 のコード生成 |
+| わざと値を入れた確かめと画面の守りの確かめを戻し、コミットの前に `git diff` で残っていないことを確かめたこと（4.5） | コード生成（B5 ほか確かめを行う Bolt） |
+| push の前に make-you-chic-ui のコミットが公開の側にあることを確かめた方法と結果（5節の 5） | コード生成（B5） |
 | push の後の CI の結果 | Build and Test |
 
 ## 9. 上流との差
@@ -181,14 +192,26 @@ B5 が B4 の後すぐに始まらないときも、この扱いのまま進め�
 | 対象 | 承認済みの形 | この段の設計 | 理由 |
 |---|---|---|---|
 | B5 までの E2E の報告 | NFR 設計は設定の直しを B5 に置く。U4 の基盤の設計は「先取りしない」 | 先取りせず、B2・B4 では結果を写した後に報告を消して記録する（4.3） | Q1: A。U4 のレビューの R-03 への答え。B2・B4 の手順の追加で、食い違いではない |
-| 固定先の更新と `.npmrc` の後の E2E の報告 | NFR 設計は2つのコミットの後に `e2eTest` を流すことだけを書く | 設定の直しより前に流すときは 4.3 と同じく報告を消す（4.4） | Q1: A の考え方を B5 の中の同じ状況に当てた追加。食い違いではない |
+| 固定先の更新と `.npmrc` の後の E2E の報告 | NFR 設計は2つのコミットの後に `e2eTest` を流すことだけを書く | 設定の直しより前に流すときは 4.3 と同じく報告を消す（4.4） | Q1: A の考え方を B5 の中の同じ状況に当てた追加。承認の場の決定 R-02 で確定。食い違いではない |
+| B1 の E2E の報告 | 上流に記述が無い（Q1 A は B2・B4 だけ） | B1 の始めに今ある報告を消し、B1 の実行の後も 4.3 のとおり扱う | 承認の場の決定 R-02。手順の追加で、食い違いではない |
 | push の前の確かめ | 上流に記述が無い | 取り込む make-you-chic-ui のコミットが公開の側にあることを push の前に確かめる（5節の 5） | CI の `submodules: true` の取得で埋めた追加 |
 | スモークテスト | 上流に記述が無い | 一覧が開けることを U5 の分とし、操作を入れるかは deployment-pipeline の段で決める（5節の 8） | `team.md` の Deployment（配備のたびのスモークテスト）。操作は監査に残るため段で決める |
 | 承認済みの設計の文書 | — | 食い違う点は無い。NFR 設計の承認の場の申し送り（json の復号と 3.8 の (7)・(8)、`runTag` の作り方と検索の上限、口の件数の確かめと 4.3 の3つの確かめ、`loadingRef`・`submittingRef` の戻りのテスト、前の html の報告を消した結果）はコード生成の計画で扱う | NFR Design の承認の場の決定のとおり |
 
-### 承認の場で確かめたいこと
+### 承認の場で確かめたいこと（承認の場で決まった）
 
-| # | 中身 |
-|---|---|
-| 1 | Q1 A は B2・B4 を挙げた。`bolt-plan.md` の共通の完了の条件では B1 も統合の前に `./gradlew e2eTest` を流すため、B1 の実行の後も同じく結果を写した後に報告を消して記録するか（B2 の実行の後に消せば B1 の残りも消えるが、B1 から B2 までの間は残る） |
-| 2 | B5 の中で、固定先の更新と `.npmrc` のコミットの後の `e2eTest` が `playwright.config.ts` の直しより前になるとき、4.3 と同じ扱いにすること（4.4）でよいか。直しを先に置く順にするかはコード生成の計画で決める |
+| # | 中身 | 決まったこと |
+|---|---|---|
+| 1 | Q1 A は B2・B4 を挙げた。`bolt-plan.md` の共通の完了の条件では B1 も統合の前に `./gradlew e2eTest` を流すため、B1 の実行の後も同じく結果を写した後に報告を消して記録するか | 依頼者の決定（R-02）で、B1 の実行の後も同じ扱いにし、いま手元に残っている報告は B1 の始めに消す（4.3） |
+| 2 | B5 の中で、固定先の更新と `.npmrc` のコミットの後の `e2eTest` が `playwright.config.ts` の直しより前になるとき、4.3 と同じ扱いにすること（4.4）でよいか | 依頼者の決定（R-02）で、同じ扱いにする。直しを先に置く順にするかはコード生成の計画で決める |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+Infrastructure Design の承認の場で、依頼者がレビューの指摘（R-01〜R-04）を直すことを選びました。直したことと申し送りは次のとおりです。
+
+| 指摘 | 重さ | 依頼者の決定 | 直したこと | 申し送り |
+|---|---|---|---|---|
+| R-01 NFR5.1・NFR5.2 を OK とする読み方 | Major | 直す。記録だけ（成否にしない）で、`nextPage` は見本の応答で API の時間を含まないことが分かる書き方にする | `traceability.json` の NFR5.1・NFR5.2 を `Deferred` にし、target に「記録のみ・本番での判定は Unverified（持ち主の段）」と書いた。`monitoring-design.md` の冒頭・1節・3節・5節と、この文書の 8節を合わせた | 本番での判定は performance-validation・observability-setup・feedback-optimization。目標（2 秒・1.5 秒）は緩めない |
+| R-02 B1 の実行の後と今ある E2E の報告の扱い | Major | 直す。B1・B2・B4 と、B5 の中で `playwright.config.ts` を直す前の E2E の実行の後は、json から結果を写してから `frontend/playwright-report/` と `frontend/test-results/` を消し、消したことと共有していないことを記録する。今ある報告は B1 の始めに消す | `infrastructure-specification.md` 3.1・6節・7節と、この文書の 4.3・4.4・8節・9節を B1 を含む形に直した。前回の書き手の確かめたいこと2点（B1 の扱い・B5 の中の順）を、決まったこととして9節に書いた | B1・B2・B4・B5 のコード生成の計画に、消す手順と記録を入れる。B5 の中の設定の直しの順はコード生成の計画で決める |
+| R-03 確かめの戻し忘れと `ignore-scripts=true` の影響の順 | Minor | 直す | 4.5 に、確かめの変更を元へ戻し、コミットの前に `git diff` と `git status` で残っていないことを確かめて記録する手順を足した。3節の `.npmrc` の行に、影響を確かめる順はコード生成の計画で決めると書いた | B5 のコード生成の計画で `.npmrc` のコミットを早めに置くかを決める |
+| R-04 公開の側にあることの確かめ方と CI の取得の失敗 | Minor | 直す | 5節の 5 に確かめ方（make-you-chic-ui の作業フォルダで `git branch -r --contains <コミット>`、または GitHub の画面でコミットを開く）と記録を、5節の 6 に失敗したときの手当て（make-you-chic-ui 側を先に push してから CI を再実行する）を書いた | push は依頼者が行う。確かめの結果は B5 のコード生成の記録に書く |

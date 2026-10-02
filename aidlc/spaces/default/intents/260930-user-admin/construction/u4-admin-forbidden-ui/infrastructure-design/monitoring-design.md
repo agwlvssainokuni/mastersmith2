@@ -12,7 +12,7 @@ U4 は新しい指標を足しません。次の既存の指標で U4 の動き�
 
 | Metric | Source | Threshold | Why it matters |
 |---|---|---|---|
-| 403 の件数（`http_server_requests_milliseconds_count`、`status="403"`） | 既存の Spring MVC の観測。ダッシュボードの「403 の件数（1 時間）」 | 1 時間に 20 件を超えたら警報 `ms-forbidden`（既存） | 画面が S6 に置き換わるきっかけ（管理の API の 403）の件数。印を外された利用者の操作や、管理者でない人の試みが見える |
+| 403 の件数（`http_server_requests_milliseconds_count`、`status="403"`） | 既存の Spring MVC の観測。ダッシュボードの「403 の件数（1 時間）」 | 1 時間に 20 件を超えたら警報 `ms-forbidden`（既存） | 画面が S6 に置き換わるきっかけ（管理の API の 403）を含む件数。印を外された利用者の操作や、管理者でない人の試みが見える。ただし式は `status="403"` のすべての要求を数えるため、管理者のみのパス以外の 403 も含む（手元の E2E の実要求の 403 も入る） |
 | トークンの更新の API の時間（`http_server_requests_milliseconds_bucket`、`uri="/api/auth/session/refresh"`） | 既存の観測。ダッシュボードの「トークンの更新の API」 | p95 1 秒（既存の警報 `ms-refresh-p95`、境界 1000ms はバケットにある） | 403 の後の読み直しの時間そのもの（NFR5.1）。管理のメニューが消えるまでの待ちはこの時間で決まる |
 | トークンの更新の API の要求の数 | 同上（ダッシュボードの「要求の数（1 分あたり）」） | 置かない | U4 が増やすのは 403 を受けた URL ごとに1回だけで、負荷の見積もりは変わらない（`performance-design.md` 3.2） |
 | 初回の JavaScript の大きさ | 既存の `frontendBundleSize`（`./gradlew verify` の段 9） | gzip で 500KB を超えたら警告だけ（NFR9.4） | U4 は骨組みの部品のため初回の読み込みに入る。前後の値をコード生成で記録する |
@@ -25,7 +25,8 @@ U4 は新しい指標を足しません。次の既存の指標で U4 の動き�
 | `ms-refresh-p95`「トークンの更新の応答の遅れ」（既存、変えない） | 更新の API の p95 が 1 秒を超えた状態が 5 分続いた | 低 | 同上 |
 | U4 だけの警報 | 足さない | — | — |
 
-- `ms-forbidden` が鳴ったときは、警報の説明（`summary`）のとおり監査ログで利用者と接続元 IP を確かめます。S6 を見た利用者の数は、監査の「アクセスの拒否」の行（4節）で数えます。
+- `ms-forbidden` が鳴ったときは、警報の説明（`summary`）のとおり監査ログで利用者と接続元 IP を確かめます。監査の「アクセスの拒否」の行（4節）の数は、管理者のみの API の 403 の回数の目安です。S6 を見た利用者の数ではありません。ForbiddenByRoute の S6 は API を呼ばないため行が残らず、1つの画面が複数の管理の API を呼べば1人で複数行になります。
+- `ms-forbidden`・ダッシュボードの「403 の件数（1 時間）」・`AdminAccessDeniedHandler` の WARN（`code=ACCESS_DENIED`）は、管理者のみのパス以外も含む `status="403"` のすべてを数えます（式としきい値は変えません）。
 - 更新の API が目標を超えたときも、目標を緩めて「満たした」ことにはしません（`project.md` の Testing Posture）。
 
 ## 3. SLIs / SLOs
@@ -43,7 +44,7 @@ U4 は新しい指標を足しません。次の既存の指標で U4 の動き�
 | 項目 | 扱い |
 |---|---|
 | 画面のログ | U4 の部品と関数は `console` を呼ばない。画面部品のテストで5つの関数（`log`・`info`・`warn`・`error`・`debug`）が呼ばれないことを確かめる（NFR3.1）。画面のログの送り先は作らない |
-| サーバーのログ | 既存の `AdminAccessDeniedHandler` が 403 ごとに WARN を1行出す（キーと値は `code=ACCESS_DENIED` だけで、メールアドレス・パス・トークンを出さない）。U4 は足さない |
+| サーバーのログ | 既存の `AdminAccessDeniedHandler` が 403 ごとに WARN を1行出す（キーと値は `code=ACCESS_DENIED` だけで、メールアドレス・パス・トークンを出さない）。この WARN は管理者のみのパス以外の 403 にも出る。U4 は足さない |
 | 監査 | 既存の「アクセスの拒否」の出来事（`AdminAccessDeniedEvent`、`eventType`＝`ACCESS_DENIED`・`result`＝`FAILURE`・`requestPath`・`traceId` など）が、管理者のみのパスの 403 ごとに残る。U4 は監査を書かない |
 | トレース | 既存の Micrometer Tracing のまま。403 の WARN と監査の行は `traceId` で結び付く。U4 は画面の側にトレースを足さない |
 | ダッシュボード | U4 だけのパネルは足さない。「403 の件数（1 時間）」と「トークンの更新の API」の既存のパネルで見る |

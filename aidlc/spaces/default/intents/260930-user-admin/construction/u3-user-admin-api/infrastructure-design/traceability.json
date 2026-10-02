@@ -5,7 +5,7 @@
   "coverage": [
     { "id": "NFR1.1", "status": "OK", "target": "infrastructure-specification.md 1節 Networking topology と 2節 アクセス制御（既存の /api/admin/** の管理者の決まり、公開の道を足さない）、cicd-pipeline.md 1節 段 6（7つの API の 401・403・200）" },
     { "id": "NFR1.2", "status": "N/A", "target": "要求ごとに内部DB の今の値で判定するアプリの中の作りで、基盤の資源を要しない。確かめは ./gradlew verify の結合テスト（cicd-pipeline.md 1節 段 6）" },
-    { "id": "NFR1.3", "status": "OK", "target": "infrastructure-specification.md 2節 アクセス制御（U1 のアクセストークンの認証の入口で停止中は 401）、cicd-pipeline.md 1節 段 6" },
+    { "id": "NFR1.3", "status": "OK", "target": "infrastructure-specification.md 2節 アクセス制御（U1 のアクセストークンの認証の入口で停止中は 401）・5節（前の版へ戻している間はこの判定が効かないため、戻す前の確かめを deployment-pipeline で決める、承認の場の決定 R-01）、cicd-pipeline.md 1節 段 6" },
     { "id": "NFR1.4", "status": "N/A", "target": "確かめ直しはアプリの中の作りで基盤の資源を要しない。確かめは verify の待ち合わせの結合テスト（cicd-pipeline.md 1節 段 6）。数の多い 403 は monitoring-design.md 2節 ms-forbidden" },
     { "id": "NFR1.5", "status": "N/A", "target": "一括代入の防止は DTO の作りで基盤の資源を要しない。確かめは verify の結合テスト（cicd-pipeline.md 1節 段 6）" },
     { "id": "NFR3.1", "status": "OK", "target": "infrastructure-specification.md 7節（伏せ字の型、排他されていた行の値）・6節、monitoring-design.md 4節（出してはいけない値）、cicd-pipeline.md 1節 段 6（UserAdminSecretLeakIT を TRACE と INFO で）" },
@@ -40,7 +40,7 @@
     { "id": "NFR9.6", "status": "OK", "target": "cicd-pipeline.md 2節（useradmin と common.persistence の候補は自動で対象、common.observability・common.error.web は B4 で一覧から外す、clean を付けた実測）・8節 C-D2、infrastructure-specification.md 10節 I-D2" },
     { "id": "NFR9.7", "status": "OK", "target": "cicd-pipeline.md 1節 段 5・段 6（必須テストの置き場の段と、コンテナを使わず飛ばさないこと）" },
     { "id": "NFR9.8", "status": "OK", "target": "cicd-pipeline.md 1節 段 5（jqwik、失敗時の種を記録）" },
-    { "id": "NFR10.1", "status": "OK", "target": "infrastructure-specification.md 4節（表と列を変えず移行を足さない、値は 32 文字以内、1つ前の版との後方互換）・5節（戻しはイメージだけ）" },
+    { "id": "NFR10.1", "status": "OK", "target": "infrastructure-specification.md 4節（表と列を変えず移行を足さない、値は 32 文字以内、1つ前の版との後方互換）・5節（戻しはイメージだけ。戻し先の前の版は停止の判定を持たないため、戻す前に停止中の利用者を確かめる手順を deployment-pipeline で決める、承認の場の決定 R-01）・5.1（前の版の本番のコードは監査の行を読まないことをソースで確かめた）・10節 I-D4、cicd-pipeline.md 6節の注と「承認の場の決定」" },
     { "id": "NFR10.2", "status": "OK", "target": "infrastructure-specification.md 4節（索引を足さないため当てはまらない、足すときは V10 以降・前進のみ・後方互換）、cicd-pipeline.md 4.2 の後の注" },
     { "id": "NFR11.1", "status": "OK", "target": "infrastructure-specification.md 2.1（useradmin は user・auth の service の口だけを使う、UserAdminBoundaryArchitectureTest）、cicd-pipeline.md 1節 段 5" },
     { "id": "NFR11.2", "status": "OK", "target": "infrastructure-specification.md 2.1 users の表（書き換えの口の呼び出し元は useradmin.service だけ）、cicd-pipeline.md 1節 段 5（境界テスト）" }

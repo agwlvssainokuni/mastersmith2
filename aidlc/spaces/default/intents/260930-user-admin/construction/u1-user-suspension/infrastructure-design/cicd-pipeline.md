@@ -156,3 +156,14 @@ V9 を足す前の最初の手順として、次の順に行います（`securit
 | NFR 要件の承認の場の申し送り（NFR10.2） | 戻しの練習（1つ前の版のイメージを V9 の後の内部DB で起動する手順）は infrastructure-design で決める | 手順を作らない（6節） | NFR 設計の Q4 A と承認の場の決定 R-02 で戻しの練習を行わないと決めたため（`security-design.md` 12節 S-4）。`traceability.json` の NFR10.2 は NFR 設計と同じく `Deferred` |
 | `functional-spec.md` 7節 | 「V9 の後方互換の確かめ方」の持ち主は nfr-design・infrastructure-design | NFR 設計で「確かめない」と閉じたものを受け、この段も手順を置かない | `security-design.md` 12節 S-6 |
 | `team.md` の Deployment（1つ前の版が動く後方互換） | 保つ | 設計の上では保つ見込みだが、確かめを置かない | `security-design.md` 12節 S-9、11節 R4。事後の裏付けは deployment-execution のスモークテスト |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+依頼者は、この段の承認の場で Request Changes を選んだ。U1 の文書の中身は直さず、次の扱いを記録する。
+
+| 指摘 | 扱い | 中身 |
+|---|---|---|
+| R-03（V9 の後方互換と戻しの練習を置かない決定は、`team.md` の Deployment より確かめの水準が下がる） | 受け入れ（条件つき） | 1つ前の版（この Intent の前の版のイメージ）は V9 の停止の列を知らないため、戻すと起動はするが、停止中の利用者がログインの照合・トークンの更新・アクセストークンの認証の3つの入口を通れる（`project.md` の Mandated の「利用者の状態の判定はサーバー側で行う」が戻している間は効かない）。受け入れの条件として、戻す前に停止中の利用者がいるかを確かめ、いれば扱いを依頼者に確かめる手順を、deployment-pipeline の段で必ず決める（U3 の基盤の設計のレビュー R-01 と同じ条件） |
+| R-01（`LoginCommand`・`AuthenticatedUser`・`CurrentUserResponse` の伏せ字のテストと、`auth.service`・`auth.web` のパッケージごとの下限） | B1 のコード生成の計画へ申し送る | NFR 設計の承認の場で B1 に加わった直しのテストと、`packagesJudgedByTotal` の一覧に無いパッケージの下限の扱いを計画に書く |
+| R-02（待ちの確かめの手伝いが `invitation/testsupport` の `TestInvitationBarrier` にもある） | B1 のコード生成の計画へ申し送る | 移した後に3か所にならないよう、1つにまとめられるかを計画で確かめる |
+| E2E の報告の扱い（U5 の基盤の設計の Q1 A・レビュー R-02 の決定） | 決定に従う | B1 の統合の前の `./gradlew e2eTest` の後も、json の報告から結果を記録してから `frontend/playwright-report/` と `frontend/test-results/` を消し、消したことと共有していないことを B1 のコード生成の記録に書く。いま手元に残っている報告は B1 の始めに消す |

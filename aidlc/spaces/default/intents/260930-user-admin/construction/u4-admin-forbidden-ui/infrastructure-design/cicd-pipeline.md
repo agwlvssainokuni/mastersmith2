@@ -93,7 +93,7 @@ CI が失敗したときは、次の Bolt に進む前に `team.md` の Testing 
 | 設定 | `frontend/playwright.config.ts` は U4 では変えない。資格情報（仮の署名鍵・初期管理者のメールアドレス・仮のパスワード）は既にプロセスの環境変数で渡しており、`webServer.env` に置かない |
 | json の報告の確かめ | 既存の `frontend/playwright-secret-check-reporter.ts`（`SECRET_ENV_NAMES` の値が `test-results/e2e-results.json` に含まれれば実行を失敗にし、値は表示しない）がそのまま受け持つ。130 はアクセストークンをテストのコードで取り出さないため、トークンが報告に入る経路を作らない（NFR3.2） |
 | 2語の氏名 | 値を注記・添付・標準出力に入れない。`e2eTest` の後に、値が json の報告に含まれないことを、値を表示しない形で件数を数えて記録する |
-| html の報告とトレース | B2 の時点では既存の設定のまま html の報告（`frontend/playwright-report/`）と失敗のときのトレース（`trace: 'retain-on-failure'`）が残り、ログインの手伝いが入れる仮の資格情報が載りうる。これは 010〜100 と同じ既存の状態で、README の「共有しない」の決まりで扱う。B5 で U5 が設定の1か所を直し（html を外し、trace の既定を `off`）、130 にも効く。U4 は先取りしない |
+| html の報告とトレース | B2 の時点では既存の設定のまま html の報告（`frontend/playwright-report/`）と失敗のときのトレース（`trace: 'retain-on-failure'`）が残り、ログインの手伝いが入れる仮の資格情報が載りうる。これは 010〜100 と同じ既存の状態で、README の「共有しない」の決まりで扱う。B5 で U5 が設定の1か所を直し（html を外し、trace の既定を `off`）、130 にも効く。U4 は設定を先取りしない。その代わり、B2 で 130 を含む `./gradlew e2eTest` を流した後は、json の報告から結果を記録してから `frontend/playwright-report/` と `frontend/test-results/` を消し、消したことと共有していないことを B2 のコード生成の記録に書く（依頼者の決定、U5 の Q1 A と U5 R-02 の決定。B1・B4 と B5 の中の設定を直す前の実行も同じ。いま手元に残っている報告は B1 の始めに消す） |
 | 置き場 | `frontend/test-results/`・`frontend/playwright-report/` は既存どおり管理外。`.gitignore` は変えない。コミット・共有しない |
 | Build and Test への写し | 組ごとの成否・違反の件数・規則の名前・はみ出しの有無・Avatar の文字の数・除いたコンソールの表示の件数だけを写す |
 
@@ -139,6 +139,7 @@ CI が失敗したときは、次の Bolt に進む前に `team.md` の Testing 
 | 初回の JavaScript の大きさの前後の値（gzip） | コード生成 |
 | `./gradlew e2eTest` で 010〜100 と 130 が通ったこと、130 の組ごとの結果、Avatar の文字が2文字だったこと | コード生成・Build and Test |
 | 報告の部品が通ったこと、2語の氏名の値が json の報告に含まれないこと（値は表示しない形で数える） | コード生成・Build and Test |
+| B2 の `e2eTest` の後に `frontend/playwright-report/`・`frontend/test-results/` を消したことと、共有していないこと（5節） | コード生成 |
 
 ## 10. 上流との差
 
@@ -150,3 +151,14 @@ CI が失敗したときは、次の Bolt に進む前に `team.md` の Testing 
 | html の報告とトレース | U4 の NFR 設計は報告の部品の確かめだけを書く | B5 までは html と trace に仮の資格情報が載りうる既存の状態で、共有しない決まりで扱い、B5 の U5 の直しが 130 にも効くことを書いた | 要点 5 のとおり。食い違いではない |
 | スモークテスト | 上流に記述が無い | S6 の確かめを入れるかを deployment-pipeline の段に回した | `team.md` の Deployment（配備のたびのスモークテスト）。管理者でない利用者が要り、監査に残るため、段で決める |
 | 承認済みの設計の文書 | — | 食い違う点は無い。R-01・R-02 はコード生成の計画で扱う（4.3） | NFR Design の承認の場の決定のとおり |
+
+## 承認の場の決定（Request Changes、2026-10-02）
+
+Infrastructure Design の承認の場で、依頼者が Request Changes を選び、前回のレビュー（READY、Minor 3件）の指摘を次のとおり扱いました。
+
+| 指摘・論点 | 依頼者の決定 | 直した箇所 |
+|---|---|---|
+| R-01 監査の行で S6 を見た利用者の数を数えるという書き方 | 直す。監査の「アクセスの拒否」の行は管理者のみの API の 403 の回数の目安と言い換える（ForbiddenByRoute は残らず、1つの画面が複数の API を呼べば1人で複数行） | `monitoring-design.md` 2節 |
+| R-02 403 の件数の範囲が実際より狭い書き方 | 直す。警報 `ms-forbidden`・403 のパネル・`code=ACCESS_DENIED` の WARN は、管理者のみのパス以外も含む `status="403"` のすべてを数えると書き足す。式としきい値は変えない | `monitoring-design.md` 1節・2節・4節 |
+| R-03 B2 から B5 までの E2E の html の報告とトレース | 受け入れて扱いを決めた（U5 の Q1 A と U5 R-02 の決定）。B1・B2・B4 と B5 の中の設定を直す前の E2E の後は、json の報告から結果を記録してから `frontend/playwright-report/` と `frontend/test-results/` を消し、消したことと共有していないことをその Bolt のコード生成の記録に書く。いま手元に残っている報告は B1 の始めに消す。設定の先取りはしない | 本書 5節（B2 の 130 の実行）・9節 |
+| スモークテストの S6 の扱い | 申し送り。S6 の確かめを入れるか（管理者でない利用者が要り、監査に残る）は deployment-pipeline の段で決める | 本書 6節の5・10節（記述は変えない） |
