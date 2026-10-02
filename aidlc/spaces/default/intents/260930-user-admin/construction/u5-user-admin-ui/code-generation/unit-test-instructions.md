@@ -265,7 +265,7 @@ E2E（`./gradlew e2eTest` の中、`verify` と CI の外）:
 - **make-you-chic-ui の部品は差し替えない**: `Table`・`Dropdown`・`Modal`・`Button`・`Toast` は固定先を上げた本物を使う。
 - **時計**: 5 秒の表示と自動の読み直しが無いことは Vitest の偽の時計（`vi.useFakeTimers()`）を進めて確かめ、確かめた後に `vi.useRealTimers()` で戻す。解除の予定の時刻の書式は、今の時刻と時間帯を引数で渡す。実時刻と `sleep` に頼らない。描画の後に反映される値は `waitFor` で待つ。テストの時間の上限は原因を確かめずに延ばさない。
 - **コンソール**: `vi.spyOn(console, 'log' | 'info' | 'warn' | 'error' | 'debug')` で呼ばれないことを確かめ、テストの後に戻す。
-- **E2E 110**: 何も差し替えない（本物の WAR・Mailpit・一時の内部DB）。例外は計画 9節の Q-B の答えが A のときの、U のページのログインの応答の `user.admin` の書き換え1つだけ（サーバーの状態を変えない）。
+- **E2E 110**: 何も差し替えない（本物の WAR・Mailpit・一時の内部DB）。例外は計画 9節の Q-B の決定 A（計画 8節の D-14）による、順9 の U のページのログインの応答の `user.admin` の書き換え1つだけ（サーバーの状態を変えない）。
 - **E2E 120**: `/api/admin` ちょうどか `/api/admin/` の下の要求を、page ごとの1つの差し替えの口（`support/adminApiRoute.ts`）で受ける。検査のモードでは一覧の GET・操作の POST・保存の PUT を見本で返し、見本の無い GET は決まった失敗で返し、GET 以外は打ち切って記録する。測りのモードの前半だけ一覧の GET を本物へ通す。ログインと表示の設定の組は `routeLoginPreferences`（変えない）で当てる。`request` の口で `/api/admin/` の下へ書き換えを送らない。
 
 ## 7. テストのデータ
