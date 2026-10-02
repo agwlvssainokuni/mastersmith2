@@ -4,6 +4,18 @@
   "version": 1,
   "writes": [
     {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/auth/domain/LockView.java"
     },
     {
@@ -11,6 +23,51 @@
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/auth/service/LockAdministrationService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LoginAttemptBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LoginFailureResetPreparation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/LoginService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/NoOpLoginAttemptBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/GlobalExceptionHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/LockFailureSafeTraceInterceptor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/observability/TraceAspect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/persistence/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/persistence/RowLockAttempt.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/persistence/RowLockFailures.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/persistence/RowLockUnavailableException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/lock/InvitationLockQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/lock/InvitationLockQueriesImpl.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/lock/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/repository/InvitationRepository.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/user/domain/ProfileUpdate.java"
@@ -28,6 +85,12 @@
       "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRowLockRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/AdminRowsLock.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/user/service/ProfileCommand.java"
     },
     {
@@ -43,7 +106,28 @@
       "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAdminSummary.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserRowLock.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/AdminOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/OperationFacts.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/RejectionPolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/RejectionReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/UserAdminAuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/UserAdminAuditFailure.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypes.java"
@@ -52,7 +136,16 @@
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/package-info.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/NoOpUserAdminBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/OperationResult.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminBarrier.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/service/UserAdminEntry.java"
@@ -97,16 +190,73 @@
       "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminWebConfig.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/UserAdminAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/UserAdminAuditWriteFailureIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/auth/domain/LockViewTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepositoryIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/repository/LoginAttemptStateRepositoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/FailureResetPortIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/auth/service/LockAdministrationServiceTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/LoginServiceTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/auth/testsupport/SqlStatementCounter.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/testsupport/TestLoginAttemptBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/AuthLockTimeoutLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/GlobalExceptionHandlerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/observability/LockFailureSafeTraceInterceptorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/persistence/RowLockFailuresTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/persistence/RowLockUnavailableExceptionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/RowLockHolder.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/lock/InvitationLockQueriesImplTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/repository/InvitationRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/service/RegistrationConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/testsupport/TestInvitationBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationLockTimeoutLeakIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/user/domain/ProfileValidationTest.java"
@@ -118,19 +268,55 @@
       "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserAdminQueriesIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserRowLockRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserRowLockRepositoryTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAccountServiceTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAdminAccountIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAdminLockPortsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePreferencesLockTimeoutLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/domain/RejectionPolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/domain/UserAdminAuditEventTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/ResetLoginConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/SuspendWhileLoginIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminOperationsIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminProblemTypeCatalogTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/testsupport/RecordingTransactionManager.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/testsupport/TestUserAdminBarrier.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/testsupport/UserAdminApi.java"
@@ -145,10 +331,19 @@
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/SearchTextConverterTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminBusyApiIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminMassAssignmentIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminOperationsApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminProfileApiIT.java"
@@ -157,10 +352,22 @@
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminRequestContextResolverTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminResetLoginFailuresApiIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminSecretLeakIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminWebTypesTest.java"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/README.md"
     },
     {
       "path": "README.md"

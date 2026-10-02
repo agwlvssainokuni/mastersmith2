@@ -398,11 +398,11 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 
 ### Step 16: 記録、コミットの提案、統合（B3）
 
-- [ ] `generation-notes.md`（B3 の節）、`code-summary.md`・`source-manifest.json`・`traceability.json` の B3 までの版（B4 で受け持つ受け入れ基準は `Deferred`、持ち主 B4。9節の Q-B）を作る。記録のコミット R2 を提案する
-- [ ] 3.3 の C1〜C3 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る（生成の担当はコミットしない）
-- [ ] 関門の記録を書き、R3 を提案する。依頼者の承認を得て 3.2 の手順で `develop` へ squash の1コミットで統合し、記録のコミットを作り、作業ブランチを消す。プッシュは依頼者が行う
-- [ ] 依頼者のプッシュの後、CI の `verify` が通ることを確かめる。通るまで B4 に入らない
-- [ ] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
+- [x] `generation-notes.md`（B3 の節）、`code-summary.md`・`source-manifest.json`・`traceability.json` の B3 までの版（B4 で受け持つ受け入れ基準は `Deferred`、持ち主 B4。9節の Q-B）を作る。記録のコミット R2 を提案する
+- [x] 3.3 の C1〜C3 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る（生成の担当はコミットしない）
+- [x] 関門の記録を書き、R3 を提案する。依頼者の承認を得て 3.2 の手順で `develop` へ squash の1コミットで統合し、記録のコミットを作り、作業ブランチを消す。プッシュは依頼者が行う
+- [x] 依頼者のプッシュの後、CI の `verify` が通ることを確かめる。通るまで B4 に入らない
+- [x] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
 
 ---
 
@@ -410,225 +410,225 @@ B3 を `develop` に統合し、CI を確かめてから B4 を始める（3節�
 
 ### Step 17: 作業の場の用意と、変更の前の基準（ブランチの作成は依頼者の承認を得てから）
 
-- [ ] B3 の統合と CI の合格を確かめ、`develop` の先頭のハッシュを記録する。アプリのソースに未コミットの変更が無いことを確かめる
-- [ ] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b4` を作る
-- [ ] 報告のディレクトリが残っていないこと、Dependabot の知らせを Step 1 と同じく確かめる
-- [ ] 基準: B3 の Step 15 の実測（時間・件数・カバレッジ）を B4 の基準とする。`develop` が B3 の統合から変わっていれば、Step 1 と同じ形で実測し直す
-- [ ] 対応: B4 の共通の完了の条件、基盤の設計の R-02
+- [x] B3 の統合と CI の合格を確かめ、`develop` の先頭のハッシュを記録する。アプリのソースに未コミットの変更が無いことを確かめる
+- [x] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b4` を作る
+- [x] 報告のディレクトリが残っていないこと、Dependabot の知らせを Step 1 と同じく確かめる
+- [x] 基準: B3 の Step 15 の実測（時間・件数・カバレッジ）を B4 の基準とする。`develop` が B3 の統合から変わっていれば、Step 1 と同じ形で実測し直す
+- [x] 対応: B4 の共通の完了の条件、基盤の設計の R-02
 
 ### Step 18: テストの実行の準備（最初のテストより前）
 
-- [ ] `unit-test-instructions.md` の 2.10 のコマンドで、B4 で手を入れる既存のテスト（`GlobalExceptionHandlerTest`・`InvitationRepositoryIT`・`InvitationServiceTest`）が作業ブランチの上で通ることを確かめる
-- [ ] 対応: Testing Contract の `runner_step`
+- [x] `unit-test-instructions.md` の 2.10 のコマンドで、B4 で手を入れる既存のテスト（`GlobalExceptionHandlerTest`・`InvitationRepositoryIT`・`InvitationServiceTest`）が作業ブランチの上で通ることを確かめる
+- [x] 対応: Testing Contract の `runner_step`
 
 ### Step 19: 排他の失敗の判定の部品 — 実装（`common.persistence`）
 
-- [ ] `RowLockFailures`・`RowLockUnavailableException`・`RowLockAttempt`（4.3）。判定は型と誤りの番号の両方で行い、原因の連なりを最後までたどる（`security-design.md` 7.1）
-- [ ] WARN のキーは `lockKind`・`exceptionClass` だけ。メッセージは決まった文
-- [ ] 対応: `security-design.md` 7.1、ND-3、SD-5、NFR3.1・NFR3.4
+- [x] `RowLockFailures`・`RowLockUnavailableException`・`RowLockAttempt`（4.3）。判定は型と誤りの番号の両方で行い、原因の連なりを最後までたどる（`security-design.md` 7.1）
+- [x] WARN のキーは `lockKind`・`exceptionClass` だけ。メッセージは決まった文
+- [x] 対応: `security-design.md` 7.1、ND-3、SD-5、NFR3.1・NFR3.4
 
 ### Step 20: 排他の失敗の判定の部品 — テスト（単体）
 
-- [ ] `RowLockFailuresTest`: JPA の3つの型、原因に誤りの番号 50200・40001 や SQLState HYT00・40001 を持つ `SQLException` の連なり（Spring の `CannotAcquireLockException` に包まれたものを含む）を排他の失敗とし、ほかの番号（23505 など）・連なりに `SQLException` が無いもの・null を排他の失敗としない。`warn` が例外の文と原因をログに渡さない（ログの出来事に throwable が無く、キーが2つ）
-- [ ] `RowLockUnavailableExceptionTest`: 原因が無い、文が決まっている、`DataIntegrityViolationException` の系統でない
-- [ ] 対応: `security-design.md` 7.1 の確かめ
+- [x] `RowLockFailuresTest`: JPA の3つの型、原因に誤りの番号 50200・40001 や SQLState HYT00・40001 を持つ `SQLException` の連なり（Spring の `CannotAcquireLockException` に包まれたものを含む）を排他の失敗とし、ほかの番号（23505 など）・連なりに `SQLException` が無いもの・null を排他の失敗としない。`warn` が例外の文と原因をログに渡さない（ログの出来事に throwable が無く、キーが2つ）
+- [x] `RowLockUnavailableExceptionTest`: 原因が無い、文が決まっている、`DataIntegrityViolationException` の系統でない
+- [x] 対応: `security-design.md` 7.1 の確かめ
 
 ### Step 21: 既存の排他の読み取り E1〜E4 の直し — 実装（DB アクセス）
 
-- [ ] E1: `LoginAttemptStateRepository#lockForUpdate` を 4.3 のとおり直す。`lockDummyForUpdate` の代わりの道は `lockForUpdate` を通るため、同じ直しに含まれる。この Step で `tryLockForUpdate` も足す（同じ問い合わせと判定を共有する）
-- [ ] E2〜E4: `invitation.repository.InvitationLockQueries` と `InvitationLockQueriesImpl`（Spring Data の独自の断片、名前は `Impl` の後置の既定）を作り、3つのメソッドを今と同じ名前・引数・戻り値で移す。メールアドレスは今と同じ `InvitationEmail` で受け、文字列は本体の中でだけ取り出す。`InvitationRepository` から3つの `@Lock`・`@QueryHints`・`@Query` の宣言を消し、断片を継ぐ。`InvitationService`・`RegistrationService` と既存の単体テストは変えない
-- [ ] 排他の失敗でない例外は今までどおりそのまま投げる。応答は今までどおり 500 `INTERNAL_ERROR`（`GlobalExceptionHandler` の想定外の誤り）、巻き戻し・監査も今と同じ
-- [ ] 対応: `security-design.md` 7.2（SD-6）、NFR 設計の2回目のレビューの R-02
+- [x] E1: `LoginAttemptStateRepository#lockForUpdate` を 4.3 のとおり直す。`lockDummyForUpdate` の代わりの道は `lockForUpdate` を通るため、同じ直しに含まれる。この Step で `tryLockForUpdate` も足す（同じ問い合わせと判定を共有する）
+- [x] E2〜E4: `invitation.repository.InvitationLockQueries` と `InvitationLockQueriesImpl`（Spring Data の独自の断片、名前は `Impl` の後置の既定）を作り、3つのメソッドを今と同じ名前・引数・戻り値で移す。メールアドレスは今と同じ `InvitationEmail` で受け、文字列は本体の中でだけ取り出す。`InvitationRepository` から3つの `@Lock`・`@QueryHints`・`@Query` の宣言を消し、断片を継ぐ。`InvitationService`・`RegistrationService` と既存の単体テストは変えない
+- [x] 排他の失敗でない例外は今までどおりそのまま投げる。応答は今までどおり 500 `INTERNAL_ERROR`（`GlobalExceptionHandler` の想定外の誤り）、巻き戻し・監査も今と同じ
+- [x] 対応: `security-design.md` 7.2（SD-6）、NFR 設計の2回目のレビューの R-02
 
 ### Step 22: 既存の排他の読み取りの直し — テスト（単体・結合）
 
-- [ ] `LoginAttemptStateRepositoryTest`（EntityManager と問い合わせを差し替えた単体）: 上限切れの各型で `lockForUpdate` は `RowLockUnavailableException`・`tryLockForUpdate` は `Busy`、例外がメソッドの外へそのまま出ない、ほかの例外はそのまま出る
-- [ ] `LoginAttemptStateRepositoryIT` に足す: 別の接続で行を持ち続けて `lockForUpdate` が約 3 秒で `RowLockUnavailableException`、`tryLockForUpdate` が `Busy`、行が無ければ空、持たれていなければ得る
-- [ ] `InvitationLockQueriesImplTest`（単体）: 3つのメソッドで同じ確かめ
-- [ ] `InvitationRepositoryIT` に足す: 3つのメソッドが今までどおり排他つきで読める（招待中・ID・トークンのハッシュ）、別の接続で行を持ち続けると約 3 秒で `RowLockUnavailableException`
-- [ ] 既存の `InvitationServiceTest`・`RegistrationServiceTest`・`InvitationConcurrencyIT`・`RegistrationConcurrencyIT` を変えずに流して通す
-- [ ] 対応: `security-design.md` 7.1・7.2 の確かめ、NFR9.6
+- [x] `LoginAttemptStateRepositoryTest`（EntityManager と問い合わせを差し替えた単体）: 上限切れの各型で `lockForUpdate` は `RowLockUnavailableException`・`tryLockForUpdate` は `Busy`、例外がメソッドの外へそのまま出ない、ほかの例外はそのまま出る
+- [x] `LoginAttemptStateRepositoryIT` に足す: 別の接続で行を持ち続けて `lockForUpdate` が約 3 秒で `RowLockUnavailableException`、`tryLockForUpdate` が `Busy`、行が無ければ空、持たれていなければ得る
+- [x] `InvitationLockQueriesImplTest`（単体）: 3つのメソッドで同じ確かめ
+- [x] `InvitationRepositoryIT` に足す: 3つのメソッドが今までどおり排他つきで読める（招待中・ID・トークンのハッシュ）、別の接続で行を持ち続けると約 3 秒で `RowLockUnavailableException`
+- [x] 既存の `InvitationServiceTest`・`RegistrationServiceTest`・`InvitationConcurrencyIT`・`RegistrationConcurrencyIT` を変えずに流して通す
+- [x] 対応: `security-design.md` 7.1・7.2 の確かめ、NFR9.6
 
 ### Step 23: 書き込みの問い合わせの上限切れの中央の手当て — 実装
 
-- [ ] `common.observability.LockFailureSafeTraceInterceptor` と `TraceAspect#createInterceptor` の切り替え（4.3）。Spring の `CustomizableTraceInterceptor` の保護されたメソッド（例外の文言の置き換えと書き出し）を上書きする。上書きできる口が版で違うときは、呼び出しを包んで受け直す形にし、差を記録する
-- [ ] `GlobalExceptionHandler#log` の直し（4.3）
-- [ ] 設定の項目（`mastersmith.trace.*`・`logging.level`・`logback-spring.xml`）と既定値は変えない。`MASTERSMITH_TRACE_LOG_EXCEPTION_STACK_TRACE` が true のままでも、排他の失敗の連なりの文が出ない
-- [ ] 対象は「排他の失敗の連なりを持つ例外」すべてで、書き込みの問い合わせ（`UserRepository` の `updatePreferences`・`updatePasswordHashIfUnchanged`、`RefreshTokenRepository` の `@Modifying` の2本、`InvitationRepository` の `@Modifying`、`LoginAttemptStateRepository` の `update`・`createIfAbsent`）を個別に直さない（I-D1）
-- [ ] 対応: `infrastructure-specification.md` 6.2・10節の I-D1、`monitoring-design.md` 4節の M-D2、NFR3.1・NFR3.4
+- [x] `common.observability.LockFailureSafeTraceInterceptor` と `TraceAspect#createInterceptor` の切り替え（4.3）。Spring の `CustomizableTraceInterceptor` の保護されたメソッド（例外の文言の置き換えと書き出し）を上書きする。上書きできる口が版で違うときは、呼び出しを包んで受け直す形にし、差を記録する
+- [x] `GlobalExceptionHandler#log` の直し（4.3）
+- [x] 設定の項目（`mastersmith.trace.*`・`logging.level`・`logback-spring.xml`）と既定値は変えない。`MASTERSMITH_TRACE_LOG_EXCEPTION_STACK_TRACE` が true のままでも、排他の失敗の連なりの文が出ない
+- [x] 対象は「排他の失敗の連なりを持つ例外」すべてで、書き込みの問い合わせ（`UserRepository` の `updatePreferences`・`updatePasswordHashIfUnchanged`、`RefreshTokenRepository` の `@Modifying` の2本、`InvitationRepository` の `@Modifying`、`LoginAttemptStateRepository` の `update`・`createIfAbsent`）を個別に直さない（I-D1）
+- [x] 対応: `infrastructure-specification.md` 6.2・10節の I-D1、`monitoring-design.md` 4節の M-D2、NFR3.1・NFR3.4
 
 ### Step 24: 中央の手当て — テスト（単体）
 
-- [ ] `LockFailureSafeTraceInterceptorTest`: 排他の失敗の連なりの例外では EXCEPTION の行がクラスの名前だけで、元の例外の文・原因の文（値に見立てた見分けやすい文字）・スタックトレースの原因が出ない。ほかの例外は今までどおり（例外の文とスタックトレース）。ENTER・EXIT は変わらない
-- [ ] `GlobalExceptionHandlerTest` に足す: 排他の失敗の連なりの例外は 500 `INTERNAL_ERROR` のままで、ERROR が1件、原因が無く `exceptionClass` がある。ほかの想定外の例外は今までどおり原因つき
-- [ ] 既存の `TraceAspectIT`・`ErrorResponseIT` を変えずに流して通す
-- [ ] 対応: NFR3.4、I-D1
+- [x] `LockFailureSafeTraceInterceptorTest`: 排他の失敗の連なりの例外では EXCEPTION の行がクラスの名前だけで、元の例外の文・原因の文（値に見立てた見分けやすい文字）・スタックトレースの原因が出ない。ほかの例外は今までどおり（例外の文とスタックトレース）。ENTER・EXIT は変わらない
+- [x] `GlobalExceptionHandlerTest` に足す: 排他の失敗の連なりの例外は 500 `INTERNAL_ERROR` のままで、ERROR が1件、原因が無く `exceptionClass` がある。ほかの想定外の例外は今までどおり原因つき
+- [x] 既存の `TraceAspectIT`・`ErrorResponseIT` を変えずに流して通す
+- [x] 対応: NFR3.4、I-D1
 
 ### Step 25: 既存の経路の上限切れの漏えいの結合テストと再現の確かめ
 
-- [ ] 別の接続で行を持ち続ける手伝い（`RowLockHolder`）で上限切れを起こし、1つの Spring の文脈の中で TRACE と既定の INFO の両方（Step 12 と同じ切り替え）で、次を確かめる。どれも (a) 応答が今までどおり、(b) 出力のどの行にも、排他されていた行の値（見分けやすい値で入れたメールアドレス・氏名・招待のトークンのハッシュ値の16進・解除の予定の時刻）と `MVStoreException` の文が無い、(c) WARN に排他の種類とクラスの名前が出る（読み取りの排他の経路）・ERROR が1件で原因が無い
+- [x] 別の接続で行を持ち続ける手伝い（`RowLockHolder`）で上限切れを起こし、1つの Spring の文脈の中で TRACE と既定の INFO の両方（Step 12 と同じ切り替え）で、次を確かめる。どれも (a) 応答が今までどおり、(b) 出力のどの行にも、排他されていた行の値（見分けやすい値で入れたメールアドレス・氏名・招待のトークンのハッシュ値の16進・解除の予定の時刻）と `MVStoreException` の文が無い、(c) WARN に排他の種類とクラスの名前が出る（読み取りの排他の経路）・ERROR が1件で原因が無い
   - `AuthLockTimeoutLeakIT`: 実在の利用者のログイン（E1、500）、ダミーの行の8つをすべて別の接続で持ったときの存在しないメールアドレスのログイン（代わりの道、500。9節の Q-G）、トークンの更新の書き込み（リフレッシュトークンの行を持ったとき、500）
   - `InvitationLockTimeoutLeakIT`: 招待（E2）、送り直しと取り消し（E3）、登録の完了（E4）。どれも 500
   - `MePreferencesLockTimeoutLeakIT`: 表示の設定の保存の書き込み（利用者の行を持ったとき、500）
-- [ ] 書き込みの問い合わせの待ちの上限（H2 の既定の値）は試していないため、待った時間を実測して記録する（4.6）。待ちに入ったことは `H2SessionWaits` で確かめる
-- [ ] Hibernate の `SqlExceptionHelper` の WARN・ERROR の行に値が入らないこと（`security-design.md` 7.3 の前提）を同じテストの出力の全体の確かめで確かめる。書き込みの問い合わせで値が入ると分かったら、止めて依頼者に諮る
-- [ ] **再現の確かめ（9節の Q-F）**: テストが通った後、直しの本体（Step 21・23 の `src/main` の変更）だけを一時的に元に戻した状態で、この Step のテストが落ちる（値か `MVStoreException` の文が出る）ことを確かめ、落ちた件数と出た値の種類だけを記録してから、直しを戻し、`git diff` で戻したことを確かめる。値そのものは記録しない
-- [ ] 対応: `security-design.md` 7.2・7.3・10節、`infrastructure-specification.md` 6.2、`project.md` の Mandated（不具合を再現するテストを同じコミットに）・Forbidden
+- [x] 書き込みの問い合わせの待ちの上限（H2 の既定の値）は試していないため、待った時間を実測して記録する（4.6）。待ちに入ったことは `H2SessionWaits` で確かめる
+- [x] Hibernate の `SqlExceptionHelper` の WARN・ERROR の行に値が入らないこと（`security-design.md` 7.3 の前提）を同じテストの出力の全体の確かめで確かめる。書き込みの問い合わせで値が入ると分かったら、止めて依頼者に諮る
+- [x] **再現の確かめ（9節の Q-F）**: テストが通った後、直しの本体（Step 21・23 の `src/main` の変更）だけを一時的に元に戻した状態で、この Step のテストが落ちる（値か `MVStoreException` の文が出る）ことを確かめ、落ちた件数と出た値の種類だけを記録してから、直しを戻し、`git diff` で戻したことを確かめる。値そのものは記録しない
+- [x] 対応: `security-design.md` 7.2・7.3・10節、`infrastructure-specification.md` 6.2、`project.md` の Mandated（不具合を再現するテストを同じコミットに）・Forbidden
 
 ### Step 26: ドメイン — 実装（拒否の判定と監査）
 
-- [ ] `useradmin.domain` の `AdminOperation`・`RejectionReason`（判定の順の並び）・`OperationFacts`（真偽だけ）・`RejectionPolicy#decide`（FS の 2.2 の擬似コードのとおり、操作ごとに当たる理由だけを順に調べ、最初の1つ）・`UserAdminAuditFailure`・`UserAdminAuditEvent`・`UserAdminProblemTypes` の 409 の5つ（4.3）
-- [ ] `audit.domain` の `AuditEventType`（5つ）・`AuditFailureReason`（4つ）・`AuditEventFactory#from(UserAdminAuditEvent)`（場合を尽くす `switch`）。名前はどれも 32 文字以内（最長 `LOGIN_FAILURES_RESET` 20 文字、`LAST_ACTIVE_ADMIN` 17 文字）
-- [ ] 対応: BR2.1〜BR2.3・BR6.1・BR6.2、C6、NFR9.3・NFR10.1・NFR8.1
+- [x] `useradmin.domain` の `AdminOperation`・`RejectionReason`（判定の順の並び）・`OperationFacts`（真偽だけ）・`RejectionPolicy#decide`（FS の 2.2 の擬似コードのとおり、操作ごとに当たる理由だけを順に調べ、最初の1つ）・`UserAdminAuditFailure`・`UserAdminAuditEvent`・`UserAdminProblemTypes` の 409 の5つ（4.3）
+- [x] `audit.domain` の `AuditEventType`（5つ）・`AuditFailureReason`（4つ）・`AuditEventFactory#from(UserAdminAuditEvent)`（場合を尽くす `switch`）。名前はどれも 32 文字以内（最長 `LOGIN_FAILURES_RESET` 20 文字、`LAST_ACTIVE_ADMIN` 17 文字）
+- [x] 対応: BR2.1〜BR2.3・BR6.1・BR6.2、C6、NFR9.3・NFR10.1・NFR8.1
 
 ### Step 27: ドメイン — テスト（単体）
 
-- [ ] `RejectionPolicyTest`: 操作ごとの理由の当てはまり（失敗回数を戻すは自分自身・対象が停止中を当てない、止めるは対象が停止中を当てない、印を付ける・停止を解くは最後の管理者を当てない）、理由が重なるときの順、どれにも当たらないとき。性質ベースのテスト（jqwik）: 返す理由はその操作に当たりうる理由に限る、返した理由より前の理由の条件はどれも偽、事実がどれにも当たらなければ拒否しない
-- [ ] `UserAdminAuditEventTest`: `toString` に個人に関する値の項目が無い
-- [ ] `UserAdminProblemTypesTest`: 6つの code と状態コード、ja・en の説明文
-- [ ] `AuditEventFactoryTest` に足す: 5つの操作の成功と6つの理由の写し、`enteredEmail` が空、対象は要求の利用者 ID のまま（いない ID も）
-- [ ] 既存の `AuditEventTest#namesFitIntoTheColumns` を変えずに流して通す
-- [ ] 対応: NFR9.8・NFR9.3・NFR10.1
+- [x] `RejectionPolicyTest`: 操作ごとの理由の当てはまり（失敗回数を戻すは自分自身・対象が停止中を当てない、止めるは対象が停止中を当てない、印を付ける・停止を解くは最後の管理者を当てない）、理由が重なるときの順、どれにも当たらないとき。性質ベースのテスト（jqwik）: 返す理由はその操作に当たりうる理由に限る、返した理由より前の理由の条件はどれも偽、事実がどれにも当たらなければ拒否しない
+- [x] `UserAdminAuditEventTest`: `toString` に個人に関する値の項目が無い
+- [x] `UserAdminProblemTypesTest`: 6つの code と状態コード、ja・en の説明文
+- [x] `AuditEventFactoryTest` に足す: 5つの操作の成功と6つの理由の写し、`enteredEmail` が空、対象は要求の利用者 ID のまま（いない ID も）
+- [x] 既存の `AuditEventTest#namesFitIntoTheColumns` を変えずに流して通す
+- [x] 対応: NFR9.8・NFR9.3・NFR10.1
 
 ### Step 28: DB アクセス — 実装（排他と印）
 
-- [ ] `user.repository.UserRowLockRepository`（4.3）。排他の問い合わせは ID だけを読み、エンティティを持続の文脈に載せない
-- [ ] `UserRepository#findAdminRow`・`#findActiveAdminIds`・`#updateAdminFlag`（4.3）
-- [ ] 失敗回数を戻す1段目の `LoginAttemptStateRepository#tryLockForUpdate` は Step 21 で作った。2段目は既存の `update(id, 0, null)` を使う（8節の D-4）
-- [ ] 対応: BR3.1・BR3.3〜BR3.5・BR4.1・BR4.2・BR4.5、ND-1、NFR4.3
+- [x] `user.repository.UserRowLockRepository`（4.3）。排他の問い合わせは ID だけを読み、エンティティを持続の文脈に載せない
+- [x] `UserRepository#findAdminRow`・`#findActiveAdminIds`・`#updateAdminFlag`（4.3）
+- [x] 失敗回数を戻す1段目の `LoginAttemptStateRepository#tryLockForUpdate` は Step 21 で作った。2段目は既存の `update(id, 0, null)` を使う（8節の D-4）
+- [x] 対応: BR3.1・BR3.3〜BR3.5・BR4.1・BR4.2・BR4.5、ND-1、NFR4.3
 
 ### Step 29: DB アクセス — テスト（単体・結合）
 
-- [ ] `UserRowLockRepositoryTest`（EntityManager を差し替えた単体）: 上限切れの各型で `Busy` と WARN、例外がメソッドの外へ出ない、ほかの例外はそのまま出る
-- [ ] `UserRowLockRepositoryIT`: 管理者の行と対象の行を利用者 ID の昇順に排他する（入れた順と登録した日時の向きをずらしたデータで、別の接続が途中の行を持つとそれより大きい ID はまだ排他されていない。`reliability-design.md` 1.4 の本番版）、停止中の管理者の行も含む、対象がいなくても管理者の行を排他する、別の接続が行を持つと約 3 秒（3000 ミリ秒以上）で `Busy`、`lockUserRow` は対象の行だけ。問い合わせの実行計画が主キーの走査のまま（`PRIMARY_KEY` と `index sorted`）であることを `EXPLAIN` で1件確かめる（`reliability-design.md` 4節）
-- [ ] `UserAdminQueriesIT` に足す: `findActiveAdminIds` は印あり・停止なし（ロック中を含む）、`findAdminRow`、`updateAdminFlag` は印の列だけを変え、書いた後の読み取りが新しい値を返す
-- [ ] 対応: NFR4.3・NFR4.5、`reliability-design.md` 2.1・4節
+- [x] `UserRowLockRepositoryTest`（EntityManager を差し替えた単体）: 上限切れの各型で `Busy` と WARN、例外がメソッドの外へ出ない、ほかの例外はそのまま出る
+- [x] `UserRowLockRepositoryIT`: 管理者の行と対象の行を利用者 ID の昇順に排他する（入れた順と登録した日時の向きをずらしたデータで、別の接続が途中の行を持つとそれより大きい ID はまだ排他されていない。`reliability-design.md` 1.4 の本番版）、停止中の管理者の行も含む、対象がいなくても管理者の行を排他する、別の接続が行を持つと約 3 秒（3000 ミリ秒以上）で `Busy`、`lockUserRow` は対象の行だけ。問い合わせの実行計画が主キーの走査のまま（`PRIMARY_KEY` と `index sorted`）であることを `EXPLAIN` で1件確かめる（`reliability-design.md` 4節）
+- [x] `UserAdminQueriesIT` に足す: `findActiveAdminIds` は印あり・停止なし（ロック中を含む）、`findAdminRow`、`updateAdminFlag` は印の列だけを変え、書いた後の読み取りが新しい値を返す
+- [x] 対応: NFR4.3・NFR4.5、`reliability-design.md` 2.1・4節
 
 ### Step 30: 業務処理 — 実装（5つの操作）
 
-- [ ] `user.service` の `AdminRowsLock`・`UserRowLock` と `UserAccountService` の4つの口（4.3）。`lockAdminRowsInIdOrder` は排他の後に `findAdminRow` と `findActiveAdminIds` を別の問い合わせで読む（待つ間に確定した変更を含める）
-- [ ] `auth.service` の `LoginFailureResetPreparation`・`LockAdministrationService#prepareFailureReset`・`#completeFailureReset`、`LoginAttemptBarrier`・`NoOpLoginAttemptBarrier`、`LoginService` の待ち合わせの口の呼び出し（実在の利用者の行の排他の直後だけ）
-- [ ] `useradmin.service` の `OperationResult`・`UserAdminBarrier`・`NoOpUserAdminBarrier` と `UserAdminService` の5つの操作（FS の 2.2〜2.7）:
+- [x] `user.service` の `AdminRowsLock`・`UserRowLock` と `UserAccountService` の4つの口（4.3）。`lockAdminRowsInIdOrder` は排他の後に `findAdminRow` と `findActiveAdminIds` を別の問い合わせで読む（待つ間に確定した変更を含める）
+- [x] `auth.service` の `LoginFailureResetPreparation`・`LockAdministrationService#prepareFailureReset`・`#completeFailureReset`、`LoginAttemptBarrier`・`NoOpLoginAttemptBarrier`、`LoginService` の待ち合わせの口の呼び出し（実在の利用者の行の排他の直後だけ）
+- [x] `useradmin.service` の `OperationResult`・`UserAdminBarrier`・`NoOpUserAdminBarrier` と `UserAdminService` の5つの操作（FS の 2.2〜2.7）:
   - 印を付ける・外す・止める: 管理者の行と対象の行の排他 → Busy なら `setRollbackOnly()` → 待ち合わせの口 → 事実の組（`leavesNoActiveAdmin` は対象を除いた有効な管理者が空か）→ `RejectionPolicy#decide` → 確かめ直し（排他の後の集合に操作した人が入るか）→ 書き換え（`setAdmin`、止めるは `setSuspended(対象, true)` と `revokeAllRefreshTokens(対象)`）→ 監査の出来事
   - 停止を解く: 対象の行だけの排他 → 判定 → `findAdminSummary(操作した人)` で確かめ直し → `setSuspended(対象, false)`
   - 失敗回数を戻す: `findAdminSummary(対象)`（いなければ対象がいない）→ `prepareFailureReset` → 判定（戻せない）→ `findAdminSummary(操作した人)` で確かめ直し → `completeFailureReset`
   - 拒否（業務の理由・確かめ直し）は書き込みをせずに確定させ、失敗の監査の出来事を出す。Busy は監査を出さない
   - 排他の前に書き込みが無いこと（`reliability-design.md` 5.3 の終わり）を流れで確かめて `generation-notes.md` に書く
-- [ ] `audit.service.AuditEventListener#onUserAdminAuditEvent`
-- [ ] **U1 R-03**: `useradmin.service` は排他の結果・要約を投影の値だけで持ち、C1 の口を呼んだ後に、先に読んだ値で何かを書かない（監査の出来事は ID と区分だけ）
-- [ ] 対応: BR2.1〜BR2.6・BR3.1〜BR3.6・BR4.1〜BR4.6・BR6.1〜BR6.3・BR7.3、C1・C6・C8（D5〜D8・D11）、NFR1.4・NFR4.1〜NFR4.4・NFR9.4・NFR9.5
+- [x] `audit.service.AuditEventListener#onUserAdminAuditEvent`
+- [x] **U1 R-03**: `useradmin.service` は排他の結果・要約を投影の値だけで持ち、C1 の口を呼んだ後に、先に読んだ値で何かを書かない（監査の出来事は ID と区分だけ）
+- [x] 対応: BR2.1〜BR2.6・BR3.1〜BR3.6・BR4.1〜BR4.6・BR6.1〜BR6.3・BR7.3、C1・C6・C8（D5〜D8・D11）、NFR1.4・NFR4.1〜NFR4.4・NFR9.4・NFR9.5
 
 ### Step 31: 業務処理 — テスト（単体）
 
-- [ ] `UserAdminServiceTest` に足す（C8・C1 の口と待ち合わせの口を差し替え、`useradmin/testsupport/RecordingTransactionManager` を `TransactionTemplate` に渡す）:
+- [x] `UserAdminServiceTest` に足す（C8・C1 の口と待ち合わせの口を差し替え、`useradmin/testsupport/RecordingTransactionManager` を `TransactionTemplate` に渡す）:
   - 5つの操作のそれぞれで、口が Busy を返すと `setRollbackOnly()` が1回呼ばれ、その後に待ち合わせの口・判定・確かめ直し・書き換えの口・監査の出来事を呼ばず、結果が `Busy`（`reliability-design.md` 5.3 の2行目、R-02）
   - 判定の順の各理由で書き換えの口を呼ばず、失敗の出来事を1件出す（理由つき）
   - 確かめ直しで外れていたら `OperatorNotAdmin` と `NOT_ADMIN` の出来事、書き換えない
   - 成功で書き換えの口を正しい引数で呼び、成功の出来事を1件出す。止めるは `setSuspended` の後に `revokeAllRefreshTokens` を呼ぶ
   - 失敗回数を戻す: 対象がいない（1段目を呼ばない、負の ID も）、1段目が `NothingToReset`、`Busy`
-- [ ] `UserAccountServiceTest` に足す: `setAdmin` の 0 行は `IllegalStateException`、`lockAdminRowsInIdOrder` が repository の `Busy` を写す・`Acquired` の後に要約と集合を読む
-- [ ] `LockAdministrationServiceTest` に足す: 1段目の `Ready`・`NothingToReset`（行が無い・失敗回数 0 で解除の予定なし）・`Busy`、`Ready` の判定は失敗回数 0 でも解除の予定があれば（R-05）、排他の直後に待ち合わせの口を呼ぶ
-- [ ] `LoginServiceTest` に足す: 実在の利用者の行の排他の直後に待ち合わせの口を1回呼ぶ、ダミーの行と行が無い場合は呼ばない
-- [ ] `AuditEventListenerTest` に足す: 出来事を記録の部品へ渡す
-- [ ] 対応: NFR4.3（R-02）・NFR1.4・NFR9.3
+- [x] `UserAccountServiceTest` に足す: `setAdmin` の 0 行は `IllegalStateException`、`lockAdminRowsInIdOrder` が repository の `Busy` を写す・`Acquired` の後に要約と集合を読む
+- [x] `LockAdministrationServiceTest` に足す: 1段目の `Ready`・`NothingToReset`（行が無い・失敗回数 0 で解除の予定なし）・`Busy`、`Ready` の判定は失敗回数 0 でも解除の予定があれば（R-05）、排他の直後に待ち合わせの口を呼ぶ
+- [x] `LoginServiceTest` に足す: 実在の利用者の行の排他の直後に待ち合わせの口を1回呼ぶ、ダミーの行と行が無い場合は呼ばない
+- [x] `AuditEventListenerTest` に足す: 出来事を記録の部品へ渡す
+- [x] 対応: NFR4.3（R-02）・NFR1.4・NFR9.3
 
 ### Step 32: 業務処理 — テスト（結合）
 
-- [ ] `UserAdminOperationsIT`（業務処理の層を直接呼ぶ。FS の 2.10、FR4.4）: 操作した人がロック中の管理者なら受け付ける、停止中の管理者なら `LAST_ACTIVE_ADMIN` で拒否し状態が変わらない（印を外す・止めるの両方、AC2.1.11・AC3.1.9）。止める操作の途中（`revokeAllRefreshTokens` で例外を起こす差し替え）で失敗させると、停止とトークンの両方が戻る（NFR9.5）。**U1 R-03**: 止める操作の後に、印・氏名・言語が変わらず、停止とトークンの無効化が確定している
-- [ ] `UserAdminConcurrencyIT`（待ち合わせ。`TestUserAdminBarrier` で1つ目を数える直前で止め、2つ目が排他の待ちに入ったことを `H2SessionWaits` で確かめてから進める。止める時間の上限は 3000 ミリ秒より短い）:
+- [x] `UserAdminOperationsIT`（業務処理の層を直接呼ぶ。FS の 2.10、FR4.4）: 操作した人がロック中の管理者なら受け付ける、停止中の管理者なら `LAST_ACTIVE_ADMIN` で拒否し状態が変わらない（印を外す・止めるの両方、AC2.1.11・AC3.1.9）。止める操作の途中（`revokeAllRefreshTokens` で例外を起こす差し替え）で失敗させると、停止とトークンの両方が戻る（NFR9.5）。**U1 R-03**: 止める操作の後に、印・氏名・言語が変わらず、停止とトークンの無効化が確定している
+- [x] `UserAdminConcurrencyIT`（待ち合わせ。`TestUserAdminBarrier` で1つ目を数える直前で止め、2つ目が排他の待ちに入ったことを `H2SessionWaits` で確かめてから進める。止める時間の上限は 3000 ミリ秒より短い）:
   - 互いの印を外す（AC2.1.6）・一方が外し他方が止める（AC2.1.12）・互いに止める（AC3.1.5）: 有効な管理者がちょうど1人、監査が成功1行と失敗1行（`LAST_ACTIVE_ADMIN`）
   - 待つ間に新しく印が付いた行が数えに入る（確かめ 1b の本番版）: 1つ目が C に印を付ける間に、2つ目（業務処理を直接呼ぶ、操作した人 C）が唯一の元の管理者の印を外すと、C を数えて受け付ける
   - 待つ間に操作した人の印が外れた（印の操作）・停止を解く・失敗回数を戻すの確かめ直し: 403 にあたる `OperatorNotAdmin`、監査 `NOT_ADMIN`、状態が変わらない（NFR1.4）
-- [ ] `ResetLoginConcurrencyIT`（AC4.1.5、`TestLoginAttemptBarrier`、`MutableClock`）: 失敗回数がしきい値−1 の利用者で、戻す側が先に排他を取る場合（ログインは待ち、0 から数えて失敗回数 1・ロックなし）と、ログインが先の場合（ロックの後に戻して 0・ロックなし）。どちらも 5xx にならない
-- [ ] `SuspendWhileLoginIT`（確かめ 3 の本番版）: 止める操作を待ち合わせの口で止めている間に、同じ利用者のログインのトークンの追記が待たずに通る。その後の止める操作の確定でトークンはまとめて無効になる（ログインで出たものの扱いは M8 B の隙として、決めた側の動作を記録する）
-- [ ] `UserAdminLockPortsIT`（`reliability-design.md` 5.3 の3行目）: テストの中の `TransactionTemplate` で先に1行を書き換えてから `lockAdminRowsInIdOrder`・`lockUserRow` を呼び、別の接続が行を持つため Busy を受けて `setRollbackOnly()` で返すと、書き換えが残らず例外も出ない
-- [ ] `FailureResetPortIT`: 同じ形で `prepareFailureReset` の Busy。`completeFailureReset` は行を作らない
-- [ ] 対応: NFR4.1〜NFR4.5・NFR1.4・NFR9.5、FR4.3・FR4.4・FR5.4、`team.md` の「最後の管理者の保護」「ロックの解除」、`reliability-design.md` 2.2・5.3
+- [x] `ResetLoginConcurrencyIT`（AC4.1.5、`TestLoginAttemptBarrier`、`MutableClock`）: 失敗回数がしきい値−1 の利用者で、戻す側が先に排他を取る場合（ログインは待ち、0 から数えて失敗回数 1・ロックなし）と、ログインが先の場合（ロックの後に戻して 0・ロックなし）。どちらも 5xx にならない
+- [x] `SuspendWhileLoginIT`（確かめ 3 の本番版）: 止める操作を待ち合わせの口で止めている間に、同じ利用者のログインのトークンの追記が待たずに通る。その後の止める操作の確定でトークンはまとめて無効になる（ログインで出たものの扱いは M8 B の隙として、決めた側の動作を記録する）
+- [x] `UserAdminLockPortsIT`（`reliability-design.md` 5.3 の3行目）: テストの中の `TransactionTemplate` で先に1行を書き換えてから `lockAdminRowsInIdOrder`・`lockUserRow` を呼び、別の接続が行を持つため Busy を受けて `setRollbackOnly()` で返すと、書き換えが残らず例外も出ない
+- [x] `FailureResetPortIT`: 同じ形で `prepareFailureReset` の Busy。`completeFailureReset` は行を作らない
+- [x] 対応: NFR4.1〜NFR4.5・NFR1.4・NFR9.5、FR4.3・FR4.4・FR5.4、`team.md` の「最後の管理者の保護」「ロックの解除」、`reliability-design.md` 2.2・5.3
 
 ### Step 33: web — 実装（5つの操作）
 
-- [ ] `UserAdminController` に5つの POST を足す（4.3）。`OperationResult` を場合を尽くす `switch` で、`Done` は 204、`Rejected` は理由の code（`USER_NOT_FOUND` 404・ほかは 409）、`OperatorNotAdmin` は 403 `ACCESS_DENIED`（`AccessProblemTypes.ACCESS_DENIED`）、`Busy` は 409 `USER_ADMIN_BUSY`（新しく作る `BusinessException`、原因をつながない）
-- [ ] 対応: BR2.3・BR2.6・BR2.7・BR4.6・BR7.1、C3、NFR3.3・NFR8.1
+- [x] `UserAdminController` に5つの POST を足す（4.3）。`OperationResult` を場合を尽くす `switch` で、`Done` は 204、`Rejected` は理由の code（`USER_NOT_FOUND` 404・ほかは 409）、`OperatorNotAdmin` は 403 `ACCESS_DENIED`（`AccessProblemTypes.ACCESS_DENIED`）、`Busy` は 409 `USER_ADMIN_BUSY`（新しく作る `BusinessException`、原因をつながない）
+- [x] 対応: BR2.3・BR2.6・BR2.7・BR4.6・BR7.1、C3、NFR3.3・NFR8.1
 
 ### Step 34: web — テスト（結合）
 
-- [ ] `UserAdminOperationsApiIT`:
+- [x] `UserAdminOperationsApiIT`:
   - 5つの操作の成功 204 と、3節の表の各 code（自分自身・対象が停止中・変えるものが無い・対象がいない 404・userId が数でない 400）、ja・en の説明文、本文に利用者の値が無い
   - 認可: 5つの操作のそれぞれで未認証 401・管理者でない 403 `ACCESS_DENIED`・管理者 204・停止中の管理者 401。401・403 で状態と管理の操作の監査が変わらない（NFR1.1・NFR1.3）
   - 管理者の印の変更（NFR1.2）: 印を付けた直後の次の要求で対象の管理の API が 200、外した直後の次の要求で 403。外す前に出したアクセストークンでも外した後は 403。トークンは無効にならない（ログインし直さずに `/api/me` は使える）。自分の印を外すと 409 `USER_ADMIN_SELF_OPERATION`
   - 止める: 対象のリフレッシュトークンがすべて使えなくなり（401 `REFRESH_FAILED`）、停止を解いても戻らない
-- [ ] `UserAdminResetLoginFailuresApiIT`（`MutableClock`、しきい値は設定の既定 5）: ロック中の利用者を戻した直後に正しいパスワードでログインできる、戻した後はしきい値−1 回の失敗でロックされずしきい値ちょうどでロックされる、解除の予定を過ぎた利用者も戻せる、ロックの状態の行が無い利用者は 409 `USER_ADMIN_NO_CHANGE` で行が作られない、自分自身と停止中の利用者にも許し停止は変わらない
-- [ ] `UserAdminBusyApiIT`（AC4.1.11）: 5つの操作のそれぞれで、別の接続で行を持ち続けると 409 `USER_ADMIN_BUSY`（500 にならない）、かかった時間が 3000 ミリ秒以上、状態が変わらない、監査の行が増えない、応答に待った行や対象の値が無い
-- [ ] `UserAdminMassAssignmentIT`（要求の改ざん、NFR1.5・AC2.1.7）: `PUT /api/me/preferences`・`POST /api/me/password` の本文に `admin`・`suspended`・失敗回数の項目を入れても、自分の印・停止・失敗回数が変わらない（`/api/me/preferences` は今までどおり 200）
-- [ ] 対応: AC2.1.1〜AC2.1.5・AC2.1.7・AC2.1.10・AC2.1.14・AC3.1.1〜AC3.1.4・AC3.1.6・AC3.1.10・AC3.1.12・AC4.1.1〜AC4.1.4・AC4.1.6〜AC4.1.8・AC4.1.10〜AC4.1.12、NFR1.1〜NFR1.5・NFR3.3・NFR8.1、`team.md` の「管理者の印の変更」「ロックの解除」「管理の API の認可」「要求の改ざん」、U4 の申し送り
+- [x] `UserAdminResetLoginFailuresApiIT`（`MutableClock`、しきい値は設定の既定 5）: ロック中の利用者を戻した直後に正しいパスワードでログインできる、戻した後はしきい値−1 回の失敗でロックされずしきい値ちょうどでロックされる、解除の予定を過ぎた利用者も戻せる、ロックの状態の行が無い利用者は 409 `USER_ADMIN_NO_CHANGE` で行が作られない、自分自身と停止中の利用者にも許し停止は変わらない
+- [x] `UserAdminBusyApiIT`（AC4.1.11）: 5つの操作のそれぞれで、別の接続で行を持ち続けると 409 `USER_ADMIN_BUSY`（500 にならない）、かかった時間が 3000 ミリ秒以上、状態が変わらない、監査の行が増えない、応答に待った行や対象の値が無い
+- [x] `UserAdminMassAssignmentIT`（要求の改ざん、NFR1.5・AC2.1.7）: `PUT /api/me/preferences`・`POST /api/me/password` の本文に `admin`・`suspended`・失敗回数の項目を入れても、自分の印・停止・失敗回数が変わらない（`/api/me/preferences` は今までどおり 200）
+- [x] 対応: AC2.1.1〜AC2.1.5・AC2.1.7・AC2.1.10・AC2.1.14・AC3.1.1〜AC3.1.4・AC3.1.6・AC3.1.10・AC3.1.12・AC4.1.1〜AC4.1.4・AC4.1.6〜AC4.1.8・AC4.1.10〜AC4.1.12、NFR1.1〜NFR1.5・NFR3.3・NFR8.1、`team.md` の「管理者の印の変更」「ロックの解除」「管理の API の認可」「要求の改ざん」、U4 の申し送り
 
 ### Step 35: 監査 — テスト（結合）
 
-- [ ] `UserAdminAuditIT`（`audit/testsupport/AuditRows`）: 5つの操作の成功と、各理由の失敗（`USER_NOT_FOUND`・`SELF_OPERATION`・`TARGET_SUSPENDED`・`NO_CHANGE`・`LAST_ACTIVE_ADMIN`・`NOT_ADMIN`）の行の項目（種類・結果・理由・操作した人・要求の利用者 ID（いない ID のまま）・送り手の IP・User-Agent・トレースID・日時）、`entered_email` が空。残さない場合（一覧・氏名と言語・BUSY・入力の誤り・401・認可の入口の 403 は既存のアクセスの拒否だけ）に行が増えない。トレースID がアプリのログと一致する
-- [ ] `UserAdminAuditWriteFailureIT`（`audit/testsupport/FailingAuditEventRepositoryConfig`、既存の `AuditWriteFailureIT` と同じ形）: 監査の書き込みが失敗しても、成功の 204・拒否の 409 と状態は変わらず、アプリのログに ERROR（メールアドレス・氏名を含まない）
-- [ ] 既存の `AuditSecretLeakIT`（列の一覧）を変えずに流して通す
-- [ ] 対応: AC2.1.3〜AC2.1.5・AC3.1.4・AC3.1.6・AC4.1.6、NFR9.3・NFR9.4、BR6.1〜BR6.4、`team.md` の「管理の操作の監査」、`project.md` の Mandated
+- [x] `UserAdminAuditIT`（`audit/testsupport/AuditRows`）: 5つの操作の成功と、各理由の失敗（`USER_NOT_FOUND`・`SELF_OPERATION`・`TARGET_SUSPENDED`・`NO_CHANGE`・`LAST_ACTIVE_ADMIN`・`NOT_ADMIN`）の行の項目（種類・結果・理由・操作した人・要求の利用者 ID（いない ID のまま）・送り手の IP・User-Agent・トレースID・日時）、`entered_email` が空。残さない場合（一覧・氏名と言語・BUSY・入力の誤り・401・認可の入口の 403 は既存のアクセスの拒否だけ）に行が増えない。トレースID がアプリのログと一致する
+- [x] `UserAdminAuditWriteFailureIT`（`audit/testsupport/FailingAuditEventRepositoryConfig`、既存の `AuditWriteFailureIT` と同じ形）: 監査の書き込みが失敗しても、成功の 204・拒否の 409 と状態は変わらず、アプリのログに ERROR（メールアドレス・氏名を含まない）
+- [x] 既存の `AuditSecretLeakIT`（列の一覧）を変えずに流して通す
+- [x] 対応: AC2.1.3〜AC2.1.5・AC3.1.4・AC3.1.6・AC4.1.6、NFR9.3・NFR9.4、BR6.1〜BR6.4、`team.md` の「管理の操作の監査」、`project.md` の Mandated
 
 ### Step 36: 漏えいのテスト（B4 の分）
 
-- [ ] `UserAdminSecretLeakIT` に足す（Step 12 と同じく TRACE と INFO の両方）: 5つの操作（成功と拒否）、5つの操作のそれぞれの上限切れ（別の接続で行を持ち続ける）。出力のどの行にも、利用者のメールアドレス・氏名・パスワードのハッシュ値・失敗回数・排他されていた行の値・`MVStoreException` の文が無い。上限切れの WARN が2行（排他の種類とクラスの名前、code）で同じトレースID（SD-5）。応答と監査の行にハッシュ値・トークン・失敗回数が無い
-- [ ] 対応: NFR3.1〜NFR3.4、`security-design.md` 4節・7節・7.3、`team.md` の「利用者の管理の漏えい」
+- [x] `UserAdminSecretLeakIT` に足す（Step 12 と同じく TRACE と INFO の両方）: 5つの操作（成功と拒否）、5つの操作のそれぞれの上限切れ（別の接続で行を持ち続ける）。出力のどの行にも、利用者のメールアドレス・氏名・パスワードのハッシュ値・失敗回数・排他されていた行の値・`MVStoreException` の文が無い。上限切れの WARN が2行（排他の種類とクラスの名前、code）で同じトレースID（SD-5）。応答と監査の行にハッシュ値・トークン・失敗回数が無い
+- [x] 対応: NFR3.1〜NFR3.4、`security-design.md` 4節・7節・7.3、`team.md` の「利用者の管理の漏えい」
 
 ### Step 37: 構造の検査（B4）
 
-- [ ] `UserAdminBoundaryArchitectureTest` に足す:
+- [x] `UserAdminBoundaryArchitectureTest` に足す:
   - 書き換えの口（`UserAccountService#setAdmin`・`#setSuspended`、`RefreshTokenRevocationService#revokeAllRefreshTokens`、`LockAdministrationService#completeFailureReset`・`#prepareFailureReset`）を呼ぶのは `useradmin.service` だけ（それぞれの持ち主のクラスを除く。NFR11.2・BR7.3）
   - `useradmin` の外で `useradmin` に依存してよいのは `audit` だけで、`useradmin.domain` だけ
   - `useradmin.web` から `access` への依存は `AccessProblemTypes` だけ
   - 排他の問い合わせを EntityManager で `user.repository` に置く形が既存の層の決まりに合うことを、既存の `ArchitectureTest` が変更なしで通ることで確かめる
-- [ ] 既存の `ArchitectureTest`・`AuthBoundaryArchitectureTest`・`InvitationBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest` などを変えずに流して通す（`common.persistence` への依存を禁じていないことを含む）
-- [ ] 対応: BR7.3・BR7.6、NFR11.1・NFR11.2、U1 R-03 の守り (a)
+- [x] 既存の `ArchitectureTest`・`AuthBoundaryArchitectureTest`・`InvitationBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest` などを変えずに流して通す（`common.persistence` への依存を禁じていないことを含む）
+- [x] 対応: BR7.3・BR7.6、NFR11.1・NFR11.2、U1 R-03 の守り (a)
 
 ### Step 38: カバレッジの一覧と文書
 
-- [ ] `git diff --name-only develop -- backend/src/main` で実際に手を入れたパッケージを一覧と突き合わせる。見込みは `common.observability`・`common.error.web` の2つ。`backend/build.gradle.kts` の `packagesJudgedByTotal` から消し、説明文に「Intent 260930-user-admin の B4（U3）で common.error.web・common.observability を外した」を足す。ほかに当たれば同じく外す。一覧に足さない。除外を増やさない
-- [ ] `README.md` の3つの節（4.3）を書く。監査の種類と理由の名前は Step 26 の定義で確かめてから書く（`project.md` の学び）
-- [ ] 対応: NFR9.6、I-D2、`infrastructure-specification.md` 9節
+- [x] `git diff --name-only develop -- backend/src/main` で実際に手を入れたパッケージを一覧と突き合わせる。見込みは `common.observability`・`common.error.web` の2つ。`backend/build.gradle.kts` の `packagesJudgedByTotal` から消し、説明文に「Intent 260930-user-admin の B4（U3）で common.error.web・common.observability を外した」を足す。ほかに当たれば同じく外す。一覧に足さない。除外を増やさない
+- [x] `README.md` の3つの節（4.3）を書く。監査の種類と理由の名前は Step 26 の定義で確かめてから書く（`project.md` の学び）
+- [x] 対応: NFR9.6、I-D2、`infrastructure-specification.md` 9節
 
 ### Step 39: 負荷の試験の台本と手順書（流すのは performance-validation）
 
-- [ ] `perf/k6/scenarios.js` に場面を足す（名前の案: `userAdminList`（`LIST_CASE` で a〜d）・`userAdminProfile`・`userAdminOps`（操作ごとの tag で p95 と `checks` を閾値に置く）・`userAdminSuspendWorst`・`userAdminPool`）。閾値は `http_req_duration` の p95 1000 ms と `checks` の率 1（緩めない）。5つの操作の台本は、操作する管理者を対象にしない・初期管理者を操作する人にも対象にもしない・対象は VU ごとに分ける・組で状態を戻しながらくり返す（NFR5.4 の受け入れの条件）。失敗回数を戻す組の準備のログインの失敗は判定と回数に数えない
-- [ ] `perf/README.md` に「利用者の管理の場面（Intent 260930-user-admin の U3）」の節を足す: 試験用の利用者 1,000 名・管理者・対象・未無効 100 件と無効 1,000 件のリフレッシュトークンを SQL で入れる手順（メールアドレスは予約のドメインだけ）、接続プールの場面（`MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics`、上限 10 の場面は `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10`）、hikaricp の時間切れの累計と待ちの最大で判断すること、監査の件数を数えてから片付けること、`caffeinate -i` で台本の全体を包むこと
-- [ ] 書く前に `performance-requirements.md` の NFR5.1〜NFR5.7・`reliability-requirements.md` の NFR6.2・NFR6.3・`cicd-pipeline.md` 4節の表の項目を1つずつ台本の手順と突き合わせ、対応を `generation-notes.md` に書く（`project.md` の学び）
-- [ ] `k6 inspect --include-system-env-vars`（`grafana/k6:2.3.0` のコンテナ、`perf/README.md` の既存の形）で、足した場面ごとに読み込めることと場面の名前が出ることを確かめる（測定はしない）
-- [ ] 対応: NFR5.1〜NFR5.7・NFR6.2・NFR6.3、`cicd-pipeline.md` 4節、8節の D-2
+- [x] `perf/k6/scenarios.js` に場面を足す（名前の案: `userAdminList`（`LIST_CASE` で a〜d）・`userAdminProfile`・`userAdminOps`（操作ごとの tag で p95 と `checks` を閾値に置く）・`userAdminSuspendWorst`・`userAdminPool`）。閾値は `http_req_duration` の p95 1000 ms と `checks` の率 1（緩めない）。5つの操作の台本は、操作する管理者を対象にしない・初期管理者を操作する人にも対象にもしない・対象は VU ごとに分ける・組で状態を戻しながらくり返す（NFR5.4 の受け入れの条件）。失敗回数を戻す組の準備のログインの失敗は判定と回数に数えない
+- [x] `perf/README.md` に「利用者の管理の場面（Intent 260930-user-admin の U3）」の節を足す: 試験用の利用者 1,000 名・管理者・対象・未無効 100 件と無効 1,000 件のリフレッシュトークンを SQL で入れる手順（メールアドレスは予約のドメインだけ）、接続プールの場面（`MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics`、上限 10 の場面は `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10`）、hikaricp の時間切れの累計と待ちの最大で判断すること、監査の件数を数えてから片付けること、`caffeinate -i` で台本の全体を包むこと
+- [x] 書く前に `performance-requirements.md` の NFR5.1〜NFR5.7・`reliability-requirements.md` の NFR6.2・NFR6.3・`cicd-pipeline.md` 4節の表の項目を1つずつ台本の手順と突き合わせ、対応を `generation-notes.md` に書く（`project.md` の学び）
+- [x] `k6 inspect --include-system-env-vars`（`grafana/k6:2.3.0` のコンテナ、`perf/README.md` の既存の形）で、足した場面ごとに読み込めることと場面の名前が出ることを確かめる（測定はしない）
+- [x] 対応: NFR5.1〜NFR5.7・NFR6.2・NFR6.3、`cicd-pipeline.md` 4節、8節の D-2
 
 ### Step 40: コードのレビューでの確かめ（B4）
 
-- [ ] 伏せ字の経路: B4 で足した口のどの層の引数・戻り値にも個人に関する値を `String` で渡していない
-- [ ] **U1 R-03**: `useradmin` に JPA のエンティティを持つ変数・項目が無く、C1 の口の後に先に読んだ値で書く処理が無い（境界テストと読み合わせ）
-- [ ] 5つの操作の流れで排他の前に書き込みが無い（Step 30）
-- [ ] 排他の待ちの上限は 3000 ミリ秒の既存の定数にそろい、テストの待ち合わせで止める時間の上限は 3000 ミリ秒より短い（NFR4.4、R-03）
-- [ ] 監査の種類と理由の名前が 32 文字以内（NFR10.1）。移行のファイルを足していない（NFR10.2 は当たらない）
-- [ ] `backend/config/spotbugs-exclude.xml`・`.gitleaks.toml` に差が無い。問い合わせは名前つきの引数と SpEL だけ（NFR9.2）
-- [ ] 既存の警報の決まり（`docker/monitoring/provisioning/alerting/mastersmith.yaml`）が変わっていない（NFR5.10）
-- [ ] 対応: NFR3.1・NFR4.4・NFR5.10・NFR9.2・NFR10.1、U1 R-03 の守り (d)
+- [x] 伏せ字の経路: B4 で足した口のどの層の引数・戻り値にも個人に関する値を `String` で渡していない
+- [x] **U1 R-03**: `useradmin` に JPA のエンティティを持つ変数・項目が無く、C1 の口の後に先に読んだ値で書く処理が無い（境界テストと読み合わせ）
+- [x] 5つの操作の流れで排他の前に書き込みが無い（Step 30）
+- [x] 排他の待ちの上限は 3000 ミリ秒の既存の定数にそろい、テストの待ち合わせで止める時間の上限は 3000 ミリ秒より短い（NFR4.4、R-03）
+- [x] 監査の種類と理由の名前が 32 文字以内（NFR10.1）。移行のファイルを足していない（NFR10.2 は当たらない）
+- [x] `backend/config/spotbugs-exclude.xml`・`.gitleaks.toml` に差が無い。問い合わせは名前つきの引数と SpEL だけ（NFR9.2）
+- [x] 既存の警報の決まり（`docker/monitoring/provisioning/alerting/mastersmith.yaml`）が変わっていない（NFR5.10）
+- [x] 対応: NFR3.1・NFR4.4・NFR5.10・NFR9.2・NFR10.1、U1 R-03 の守り (d)
 
 ### Step 41: 1コマンドの検査（B4 の統合の前の関門）
 
-- [ ] colima の設定を渡し `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を通す。対象DB のテストが SKIPPED になっていない
-- [ ] かかった時間・テストの件数・全体と 4.5 のパッケージ（外した `common.observability`・`common.error.web` と新しい `common.persistence`・`useradmin.*` を含む）の行・分岐を実測の数字で記録し、Step 17 の基準と比べる。下回ったらテストを足す。下限・除外は変えない
-- [ ] 時間の増加を 4.6 の許容と比べ、CI の 60 分に対する見込みを記録する。許容を超えたら止めて依頼者に諮る（9節の Q-C）
-- [ ] `./gradlew osvScan --rerun-tasks` を通す。SpotBugs・Gitleaks を除外を足さずに通す。lockfile に差が無い
-- [ ] 失敗が一時的に見えるときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う
-- [ ] 対応: B4 の共通の完了の条件、基盤の設計の R-02、`project.md` の Mandated
+- [x] colima の設定を渡し `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を通す。対象DB のテストが SKIPPED になっていない
+- [x] かかった時間・テストの件数・全体と 4.5 のパッケージ（外した `common.observability`・`common.error.web` と新しい `common.persistence`・`useradmin.*` を含む）の行・分岐を実測の数字で記録し、Step 17 の基準と比べる。下回ったらテストを足す。下限・除外は変えない
+- [x] 時間の増加を 4.6 の許容と比べ、CI の 60 分に対する見込みを記録する。許容を超えたら止めて依頼者に諮る（9節の Q-C）
+- [x] `./gradlew osvScan --rerun-tasks` を通す。SpotBugs・Gitleaks を除外を足さずに通す。lockfile に差が無い
+- [x] 失敗が一時的に見えるときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う
+- [x] 対応: B4 の共通の完了の条件、基盤の設計の R-02、`project.md` の Mandated
 
 ### Step 42: E2E（B4 の統合の前に手元で）
 
-- [ ] 事前に `docker compose --profile mail up -d mailpit` で Mailpit を起動し（`/api/v1/info` が 200）、`npx playwright install chromium` が済んでいることを確かめる。報告のディレクトリが無いことを確かめる
-- [ ] `caffeinate -i ./gradlew e2eTest` を流す（いまある 010〜130 のすべて。U3 は E2E の流れを足さない）
-- [ ] `frontend/test-results/e2e-results.json` の `stats` とファイルごとの結果を記録してから、`frontend/playwright-report/`・`frontend/test-results/` を中を開かずに消し、消したことと共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
-- [ ] 失敗したら原因を直してから Step 41 からやり直す。Mailpit は見終わったら止める（もとから動いていたときはそのまま）
-- [ ] 対応: Q1 A（I-D3）、`cicd-pipeline.md` 5節
+- [x] 事前に `docker compose --profile mail up -d mailpit` で Mailpit を起動し（`/api/v1/info` が 200）、`npx playwright install chromium` が済んでいることを確かめる。報告のディレクトリが無いことを確かめる
+- [x] `caffeinate -i ./gradlew e2eTest` を流す（いまある 010〜130 のすべて。U3 は E2E の流れを足さない）
+- [x] `frontend/test-results/e2e-results.json` の `stats` とファイルごとの結果を記録してから、`frontend/playwright-report/`・`frontend/test-results/` を中を開かずに消し、消したことと共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定）
+- [x] 失敗したら原因を直してから Step 41 からやり直す。Mailpit は見終わったら止める（もとから動いていたときはそのまま）
+- [x] 対応: Q1 A（I-D3）、`cicd-pipeline.md` 5節
 
 ### Step 43: 記録、コミットの提案、統合（B4）
 
-- [ ] `generation-notes.md`（B4 の節）、`code-summary.md`（作ったもの・変えたもの、Step 1・15・17・41 の実測、外したパッケージと値、時間と CI の見込み、E2E の結果と報告を消したこと、再現の確かめ、上流との差、依頼者の決定、承認の場で確かめること）、`source-manifest.json`（B3・B4 で作った・変えたアプリのソースとテストのパスすべて）、`traceability.json`（U3 の受け入れ基準・決まり・NFR）を仕上げる。記録のコミット R4 を提案する
+- [x] `generation-notes.md`（B4 の節）、`code-summary.md`（作ったもの・変えたもの、Step 1・15・17・41 の実測、外したパッケージと値、時間と CI の見込み、E2E の結果と報告を消したこと、再現の確かめ、上流との差、依頼者の決定、承認の場で確かめること）、`source-manifest.json`（B3・B4 で作った・変えたアプリのソースとテストのパスすべて）、`traceability.json`（U3 の受け入れ基準・決まり・NFR）を仕上げる。記録のコミット R4 を提案する
 - [ ] 3.3 の C4〜C8 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る
 - [ ] 関門の記録を書き、R5 を提案する。依頼者の承認を得て 3.2 の手順で `develop` へ squash の1コミットで統合し、記録のコミットを作り、作業ブランチを消す。プッシュは依頼者が行う
 - [ ] 依頼者のプッシュの後、CI の `verify` が通ることと、その時間を確かめる
