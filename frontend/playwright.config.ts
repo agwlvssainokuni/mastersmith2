@@ -21,15 +21,22 @@
 // - ブラウザは Chromium だけを使う（npx playwright install chromium）。
 // - メールは手元の受け手 Mailpit（docker compose --profile mail up -d mailpit）へ送る。./gradlew e2eTest は始める前に Mailpit に
 //   届くかを確かめ、届かなければ起動の手順を示して失敗する（Intent 260925-user-management の U1、基盤の設計の Q1 A）。
-// - 結果は list・html に加えて json（test-results/e2e-results.json）にも書く。050 の組ごとの成否・違反の件数と、
-//   最初の画面の時間を Build and Test が写す（Intent 260925-user-management の U4、基盤の設計の Q2 A）。
-//   結果のファイルはコミット・共有しない。json の報告の後に、仮の資格情報が json に含まれないことを確かめる報告の部品を並べ、
-//   含まれていれば実行を失敗にする（playwright-secret-check-reporter.ts）。
+// - 結果は list と json（test-results/e2e-results.json）に書く。html の報告は作らない（Intent 260930-user-admin の U5、
+//   security-design.md 3.2。html の報告は fill の手順の題に入れた値を書くため）。050 などの組ごとの成否・違反の件数と、
+//   画面の時間を Build and Test が json から写す（Intent 260925-user-management の U4、基盤の設計の Q2 A）。
+//   結果のファイルはコミット・共有しない。
+// - trace の既定は off（e2e/support/traceMode.ts）。手元で調べるときだけ E2E_TRACE=on か retain-on-failure で有効にし、
+//   その実行は合否に使わず、見た後に test-results/ を消す。決まった3つの外の値は、この設定の読み込みで誤りにして止める。
+// - json の報告の後に、報告に残してはならない値（仮の資格情報・110 が作る利用者の値と形）が json の報告・test-results/ の下・
+//   前の playwright-report/ に含まれないことを確かめる報告の部品を並べ、含まれていれば実行を失敗にする
+//   （playwright-secret-check-reporter.ts、security-design.md 3.5）。
 import { randomBytes } from 'node:crypto'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
+import { SECRET_VALUES_FILE } from './e2e/support/secretValues'
+import { traceModeFromEnv } from './e2e/support/traceMode'
 
 const port = Number(process.env.E2E_PORT ?? 18081)
 const warPath = path.resolve(import.meta.dirname, '../backend/build/libs/mastersmith.war')
@@ -47,13 +54,16 @@ process.env.MASTERSMITH_AUTH_SIGNING_KEY = process.env.E2E_SIGNING_KEY
 process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL = adminEmail
 process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD = adminPassword
 
-/** json の結果に含まれてはならない値の環境変数の名前 */
+/** 報告に含まれてはならない値の環境変数の名前と、その種類の名前（値は表示しない） */
 const SECRET_ENV_NAMES = [
-  'MASTERSMITH_AUTH_SIGNING_KEY',
-  'MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL',
-  'MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD',
+  { name: 'MASTERSMITH_AUTH_SIGNING_KEY', kind: 'signingKey' },
+  { name: 'MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL', kind: 'adminEmail' },
+  { name: 'MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD', kind: 'adminPassword' },
 ]
-const jsonResultsFile = 'test-results/e2e-results.json'
+const resultsDir = 'test-results'
+const jsonResultsFile = `${resultsDir}/e2e-results.json`
+/** trace の設定（既定は off。決まった3つの外の値なら、ここで誤りにして止める） */
+const traceMode = traceModeFromEnv()
 
 export default defineConfig({
   testDir: './e2e',
@@ -63,19 +73,26 @@ export default defineConfig({
   workers: 1,
   forbidOnly: true,
   retries: 0,
+  outputDir: resultsDir,
   reporter: [
     ['list'],
-    ['html', { open: 'never' }],
     ['json', { outputFile: jsonResultsFile }],
     [
       './playwright-secret-check-reporter.ts',
-      { outputFile: jsonResultsFile, envNames: SECRET_ENV_NAMES },
+      {
+        outputFile: jsonResultsFile,
+        envNames: SECRET_ENV_NAMES,
+        resultsDir,
+        secretValuesFile: SECRET_VALUES_FILE,
+        previousHtmlReportDir: 'playwright-report',
+        traceMode,
+      },
     ],
   ],
   use: {
     baseURL: `http://localhost:${port}`,
     locale: 'ja-JP',
-    trace: 'retain-on-failure',
+    trace: traceMode,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
