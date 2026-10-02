@@ -31,6 +31,7 @@ import cherry.mastersmith.auth.domain.RefreshTokenValues;
 import cherry.mastersmith.auth.repository.LoginAttemptStateRepository;
 import cherry.mastersmith.auth.repository.RefreshTokenRepository;
 import cherry.mastersmith.common.error.domain.BusinessException;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.service.PasswordVerification;
 import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.service.UserSummary;
@@ -52,6 +53,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li>利用者の検索1回と照合1回（トランザクションと排他の外）
  *   <li>1回の短いトランザクションで、利用者の行（いなければダミーの行）を排他つきで読み、判定し、明示の更新を1回行う。成功なら
  *       トークンを発行し、リフレッシュトークンを保存する（ログインのたびに新しい行。BR5.7）
+ *   <li>利用停止中の利用者は、排他つきで読んだ直後・ロックの判定の前に、パスワードの正誤とロックの状態にかかわらず失敗とする。
+ *       ロックの状態は読んだ値のまま書き（失敗回数に数えない）、理由 {@code ACCOUNT_SUSPENDED} の出来事を1件知らせる（Intent
+ *       260930-user-admin の U1、BR2.1〜BR2.5）。停止の状態は照合のときに読んだ利用者の要約の値で判定し、このトランザクションで
+ *       読み直さない
  *   <li>同じトランザクションの中で出来事を知らせる（受け取り側は確定の後に記録する。BR7.3）
  *   <li>失敗は理由によらず {@code AUTHENTICATION_FAILED}（BR2.4）
  * </ol>
@@ -122,7 +127,8 @@ public class LoginService {
      * @throws BusinessException 失敗のとき（理由によらず {@code AUTHENTICATION_FAILED}）
      */
     public IssuedTokens login(LoginCommand command, ClientInfo client) {
-        PasswordVerification verification = userAccountService.verifyPassword(command.email(), command.password());
+        PasswordVerification verification =
+                userAccountService.verifyPassword(new RedactedText(command.email()), command.password());
         Decision decision = transaction.execute(status -> decide(verification, client));
         if (decision != null && decision.rowMissing()) {
             long userId = verification.user().userId();
@@ -171,6 +177,12 @@ public class LoginService {
         if (user == null) {
             attemptRepository.update(row.getSubjectId(), current.consecutiveFailures(), current.lockedUntil());
             publishFailure(verification.email(), null, LoginFailureReason.USER_NOT_FOUND, now, client);
+            return Decision.FAILED;
+        }
+        if (user.suspended()) {
+            // 停止中はロックの判定より前に失敗とし、失敗回数とロックの期限を読んだ値のまま書く（BR2.2・BR2.3）。
+            attemptRepository.update(user.userId(), current.consecutiveFailures(), current.lockedUntil());
+            publishFailure(verification.email(), user.userId(), LoginFailureReason.ACCOUNT_SUSPENDED, now, client);
             return Decision.FAILED;
         }
         LockDecision decision = LockPolicy.decide(

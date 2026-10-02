@@ -28,5 +28,7 @@ public enum TokenFailureReason {
     /** 有効期限切れ。 */
     TOKEN_EXPIRED,
     /** 利用者が DB にいない。 */
-    USER_NOT_FOUND
+    USER_NOT_FOUND,
+    /** 利用者が利用停止中（Intent 260930-user-admin の U1。アクセス拒否の出来事にはしない）。 */
+    USER_SUSPENDED
 }

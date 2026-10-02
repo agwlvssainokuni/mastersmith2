@@ -43,4 +43,13 @@ public record CurrentUserResponse(
         return new CurrentUserResponse(
                 user.email(), user.admin(), user.displayName(), user.language(), user.theme(), user.fontSize());
     }
+
+    /**
+     * メールアドレスと氏名を伏せて文字列にする（メソッドの呼び出しの追跡が戻り値を文字列にするため）。JSON の応答の項目は変わらない。
+     */
+    @Override
+    public String toString() {
+        return "CurrentUserResponse[email=***, admin=" + admin + ", displayName=***, language=" + language + ", theme="
+                + theme + ", fontSize=" + fontSize + "]";
+    }
 }

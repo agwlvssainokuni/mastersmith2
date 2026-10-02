@@ -96,6 +96,23 @@ class AuditEventFactoryTest {
         assertThat(audit.getFailureReason().name()).isEqualTo(reason.name());
     }
 
+    @Test
+    @DisplayName("a suspended login maps to a LOGIN_FAILED row with ACCOUNT_SUSPENDED and the entered email")
+    void suspendedLogin() {
+        AuditEvent audit = AuditEventFactory.from(authenticationEvent(
+                AuthenticationEventType.LOGIN_FAILED, LoginFailureReason.ACCOUNT_SUSPENDED, "suspended@example.com"));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.LOGIN_FAILED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(audit.getFailureReason()).isEqualTo(AuditFailureReason.ACCOUNT_SUSPENDED);
+        // 既存のログインの失敗と同じく、入れたメールアドレスを記録し、利用者IDは記録しない（写し取りは変えない）。
+        assertThat(audit.getEnteredEmail()).isEqualTo("suspended@example.com");
+        assertThat(audit.getActorUserId()).isNull();
+        assertThat(audit.getTargetUserId()).isNull();
+        assertThat(audit.getSourceIp()).isEqualTo("192.0.2.10");
+        assertThat(audit.getTraceId()).isEqualTo("trace-0001");
+    }
+
     @ParameterizedTest
     @EnumSource(AccessDeniedReason.class)
     @DisplayName("every access denied reason is copied into the audit event")

@@ -37,6 +37,20 @@ class AccessDeniedReasonTest {
     }
 
     @Test
+    @DisplayName("a suspended user produces no reason so that no event is published")
+    void suspendedProducesNoReason() {
+        assertThat(AccessDeniedReason.of(TokenFailureReason.USER_SUSPENDED)).isEmpty();
+        assertThat(AccessDeniedReason.of(new TokenAuthenticationException(TokenFailureReason.USER_SUSPENDED)))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("no access denied reason is added for a suspended user")
+    void noReasonForSuspension() {
+        assertThat(AccessDeniedReason.values()).extracting(Enum::name).doesNotContain("USER_SUSPENDED");
+    }
+
+    @Test
     @DisplayName("the other token failures map to the matching reason")
     void otherFailuresMap() {
         assertThat(AccessDeniedReason.of(TokenFailureReason.TOKEN_MALFORMED))
@@ -52,7 +66,7 @@ class AccessDeniedReasonTest {
     void everyTokenFailureReasonIsCovered(TokenFailureReason reason) {
         Optional<AccessDeniedReason> converted = AccessDeniedReason.of(reason);
 
-        if (reason == TokenFailureReason.TOKEN_EXPIRED) {
+        if (reason == TokenFailureReason.TOKEN_EXPIRED || reason == TokenFailureReason.USER_SUSPENDED) {
             assertThat(converted).isEmpty();
         } else {
             assertThat(converted).isPresent();

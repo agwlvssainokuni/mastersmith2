@@ -15,19 +15,17 @@
  */
 package cherry.mastersmith.auth.service;
 
-import cherry.mastersmith.user.domain.Password;
-
 /**
- * ログインの入力（パスワードは文字列化で伏せる型）。
+ * リフレッシュトークンのまとめての無効化の結果（契約 C1、Intent 260930-user-admin の U1）。
  *
- * @param email 入力されたメールアドレス
- * @param password 入力されたパスワード
+ * @param revoked 無効にした行の数（0 以上。未無効の行が無ければ 0）
  */
-public record LoginCommand(String email, Password password) {
+public record RevokeAllResult(int revoked) {
 
-    /** メールアドレスを伏せて文字列にする（パスワードは {@link Password} の伏せた文字列化のまま）。 */
-    @Override
-    public String toString() {
-        return "LoginCommand[email=***, password=" + password + "]";
+    /** 無効にした行の数が 0 以上であることを確かめる。 */
+    public RevokeAllResult {
+        if (revoked < 0) {
+            throw new IllegalArgumentException("無効にした行の数は 0 以上です: " + revoked);
+        }
     }
 }

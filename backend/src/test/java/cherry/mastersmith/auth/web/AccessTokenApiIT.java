@@ -17,10 +17,12 @@ package cherry.mastersmith.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.AuthTestTokens;
 import cherry.mastersmith.auth.testsupport.MutableClock;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.common.testsupport.TestDatabase;
@@ -45,6 +47,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** アクセストークンの検証の結合テスト（FR4.2〜FR4.5、BR4.2〜BR4.5、NFR3.2、NFR10.5）。 */
 @SpringBootTest(
@@ -81,6 +85,12 @@ class AccessTokenApiIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private AuthApi api;
 
@@ -180,5 +190,20 @@ class AccessTokenApiIT {
 
         Map<String, Object> body = HttpTestClient.json(api.me(accessToken));
         assertThat(body).containsEntry("admin", true);
+    }
+
+    @Test
+    @DisplayName(
+            "a token of a suspended user is 401 with the reason USER_SUSPENDED and opens the API again after resume")
+    void suspendedUser() {
+        String accessToken = token();
+        TestUserSuspension suspension = new TestUserSuspension(
+                new TransactionTemplate(transactionManager), userAccountService, revocationService);
+        suspension.suspend(userId);
+
+        assertThat(reasonOf(accessToken, 401)).contains("USER_SUSPENDED");
+
+        suspension.resume(userId);
+        assertThat(api.me(accessToken).statusCode()).isEqualTo(200);
     }
 }

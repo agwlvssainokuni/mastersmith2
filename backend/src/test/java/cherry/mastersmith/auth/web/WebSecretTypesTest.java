@@ -24,29 +24,51 @@ import org.junit.jupiter.api.Test;
 class WebSecretTypesTest {
 
     @Test
-    @DisplayName("the login request hides the password but keeps the email")
+    @DisplayName("the login request hides the password and the email")
     void loginRequest() {
         LoginRequest request = new LoginRequest("user@example.com", "ひみつのパスワード1");
 
         assertThat(request.toString())
-                .contains("user@example.com")
+                .contains("email=***")
                 .contains("password=***")
+                .doesNotContain("user@example.com")
                 .doesNotContain("ひみつ");
+        assertThat(request.email()).isEqualTo("user@example.com");
         assertThat(request.password()).isEqualTo("ひみつのパスワード1");
     }
 
     @Test
-    @DisplayName("the token response hides the access token")
+    @DisplayName("the token response hides the access token and the current user's email and name")
     void tokenResponse() {
         TokenResponse response = new TokenResponse(
                 "header.payload.signature",
                 Instant.parse("2026-09-22T00:05:00Z"),
-                new CurrentUserResponse("user@example.com", true, "利用者", "ja", "system", "md"));
+                new CurrentUserResponse("user@example.com", true, "テスト 利用者", "ja", "system", "md"));
 
         assertThat(response.toString())
                 .contains("accessToken=***")
                 .doesNotContain("header.payload.signature")
-                .contains("user@example.com");
+                .doesNotContain("user@example.com")
+                .doesNotContain("テスト 利用者")
+                .contains("CurrentUserResponse[email=***");
         assertThat(response.accessToken()).isEqualTo("header.payload.signature");
+    }
+
+    @Test
+    @DisplayName("the current user response hides the email and the display name but keeps the other fields")
+    void currentUserResponse() {
+        CurrentUserResponse response = new CurrentUserResponse("user@example.com", true, "テスト 利用者", "en", "dark", "lg");
+
+        assertThat(response.toString())
+                .contains("email=***")
+                .contains("displayName=***")
+                .contains("admin=true")
+                .contains("language=en")
+                .contains("theme=dark")
+                .contains("fontSize=lg")
+                .doesNotContain("user@example.com")
+                .doesNotContain("テスト 利用者");
+        assertThat(response.email()).isEqualTo("user@example.com");
+        assertThat(response.displayName()).isEqualTo("テスト 利用者");
     }
 }

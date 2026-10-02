@@ -22,4 +22,11 @@ package cherry.mastersmith.auth.domain;
  * @param email メールアドレス
  * @param admin 管理者か（DB の値）
  */
-public record AuthenticatedUser(long userId, String email, boolean admin) {}
+public record AuthenticatedUser(long userId, String email, boolean admin) {
+
+    /** メールアドレスを伏せて文字列にする（メソッドの呼び出しの追跡が引数と戻り値を文字列にするため）。 */
+    @Override
+    public String toString() {
+        return "AuthenticatedUser[userId=" + userId + ", email=***, admin=" + admin + "]";
+    }
+}

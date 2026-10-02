@@ -32,6 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * トークンの更新（WF4、BR5.3〜BR5.6）。使ったリフレッシュトークンを条件付きで無効にし、新しいリフレッシュトークン（今の時刻から
  * 有効期限を数える）とアクセストークンを発行する。無効化と新しい行の保存は同じトランザクション。ほかのトークンは無効にしない。
+ *
+ * <p>利用停止中の利用者のトークンは、ほかの失敗と同じ {@code REFRESH_FAILED} で拒否する。例外で巻き戻るため、使ったトークンの
+ * 無効化も残らない。監査の出来事は出さない（Intent 260930-user-admin の U1、BR3.1・BR3.2）。
  */
 @Service
 public class TokenRefreshService {
@@ -68,7 +71,7 @@ public class TokenRefreshService {
      *
      * @param value Cookie で届いたリフレッシュトークンの値（無ければ null）
      * @return 新しいトークンと利用者の要約
-     * @throws BusinessException 無い・存在しない・使用済み・期限切れ・同時の更新に負けたとき（理由によらず
+     * @throws BusinessException 無い・存在しない・使用済み・期限切れ・同時の更新に負けた・利用者が利用停止中のとき（理由によらず
      *     {@code REFRESH_FAILED}）
      */
     @Transactional
@@ -87,6 +90,9 @@ public class TokenRefreshService {
             throw failed();
         }
         UserSummary user = userAccountService.findById(token.getUserId()).orElseThrow(TokenRefreshService::failed);
+        if (user.suspended()) {
+            throw failed();
+        }
         return loginService.issueTokens(user, now);
     }
 

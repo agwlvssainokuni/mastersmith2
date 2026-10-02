@@ -98,7 +98,25 @@ class RefreshTokenRepositoryIT {
     }
 
     private RefreshToken save(byte[] hash, Instant expiresAt) {
-        return repository.save(new RefreshToken(userId, hash, expiresAt.minus(Duration.ofHours(24)), expiresAt));
+        return save(userId, hash, expiresAt);
+    }
+
+    private RefreshToken save(long owner, byte[] hash, Instant expiresAt) {
+        return repository.save(new RefreshToken(owner, hash, expiresAt.minus(Duration.ofHours(24)), expiresAt));
+    }
+
+    private long createUser() {
+        String email = "token-other-" + UUID.randomUUID() + "@example.com";
+        jdbc.update(
+                "INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES (?, 'x', FALSE, ?, ?)",
+                email,
+                OffsetDateTime.now(),
+                email);
+        return jdbc.queryForObject("SELECT user_id FROM users WHERE email = ?", Long.class, email);
+    }
+
+    private Instant revokedAt(long tokenId) {
+        return repository.findById(tokenId).orElseThrow().getRevokedAt();
     }
 
     @Test
@@ -174,5 +192,68 @@ class RefreshTokenRepositoryIT {
     @DisplayName("the batch limit constant is one thousand rows")
     void batchLimit() {
         assertThat(RefreshTokenRepository.DELETE_BATCH_SIZE).isEqualTo(1000);
+    }
+
+    @Test
+    @DisplayName(
+            "revoking all active tokens of a user revokes every active row including expired ones at the given time")
+    void revokeAllActiveByUser() {
+        List<Long> active = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            // 期限切れの行（NOW より前）と期限内の行を混ぜる。
+            Instant expiresAt = i % 2 == 0 ? NOW.minus(Duration.ofHours(1 + i)) : NOW.plus(Duration.ofHours(1 + i));
+            active.add(save(randomHash(), expiresAt).getTokenId());
+        }
+        Instant revokedRow = NOW.minus(Duration.ofDays(1));
+        List<Long> revoked = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            long tokenId = save(randomHash(), NOW.plus(Duration.ofHours(24))).getTokenId();
+            tx.execute(status -> repository.revokeIfActive(tokenId, revokedRow));
+            revoked.add(tokenId);
+        }
+        long other = createUser();
+        long otherToken =
+                save(other, randomHash(), NOW.plus(Duration.ofHours(24))).getTokenId();
+        Instant at = NOW.plusSeconds(30);
+
+        Integer rows = tx.execute(status -> repository.revokeAllActiveByUserId(userId, at));
+
+        assertThat(rows).isEqualTo(100);
+        assertThat(active).allSatisfy(tokenId -> assertThat(revokedAt(tokenId)).isEqualTo(at));
+        assertThat(revoked).allSatisfy(tokenId -> assertThat(revokedAt(tokenId)).isEqualTo(revokedRow));
+        assertThat(revokedAt(otherToken)).isNull();
+    }
+
+    @Test
+    @DisplayName("revoking all active tokens of a user with no active row updates nothing and returns zero")
+    void revokeAllActiveWithoutActiveRows() {
+        long tokenId = save(randomHash(), NOW.plus(Duration.ofHours(24))).getTokenId();
+        tx.execute(status -> repository.revokeIfActive(tokenId, NOW));
+        long other = createUser();
+        long otherToken =
+                save(other, randomHash(), NOW.plus(Duration.ofHours(24))).getTokenId();
+
+        Integer rows = tx.execute(status -> repository.revokeAllActiveByUserId(userId, NOW.plusSeconds(60)));
+        Integer none = tx.execute(status -> repository.revokeAllActiveByUserId(Long.MAX_VALUE, NOW.plusSeconds(60)));
+
+        assertThat(rows).isZero();
+        assertThat(none).isZero();
+        assertThat(revokedAt(tokenId)).isEqualTo(NOW);
+        assertThat(revokedAt(otherToken)).isNull();
+    }
+
+    @Test
+    @DisplayName("a second revoke-all after a new token revokes only the new token")
+    void revokeAllTwice() {
+        long first = save(randomHash(), NOW.plus(Duration.ofHours(24))).getTokenId();
+        Integer firstRows = tx.execute(status -> repository.revokeAllActiveByUserId(userId, NOW));
+        long second = save(randomHash(), NOW.plus(Duration.ofHours(48))).getTokenId();
+
+        Integer secondRows = tx.execute(status -> repository.revokeAllActiveByUserId(userId, NOW.plusSeconds(5)));
+
+        assertThat(firstRows).isEqualTo(1);
+        assertThat(secondRows).isEqualTo(1);
+        assertThat(revokedAt(first)).isEqualTo(NOW);
+        assertThat(revokedAt(second)).isEqualTo(NOW.plusSeconds(5));
     }
 }

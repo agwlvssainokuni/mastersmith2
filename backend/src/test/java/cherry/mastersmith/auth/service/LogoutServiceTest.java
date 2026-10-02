@@ -70,8 +70,8 @@ class LogoutServiceTest {
         ReflectionTestUtils.setField(token, "tokenId", 100L);
         when(repository.findByTokenHash(any())).thenReturn(Optional.of(token));
         when(users.findById(7))
-                .thenReturn(
-                        Optional.of(new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md")));
+                .thenReturn(Optional.of(
+                        new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md", false)));
     }
 
     @Test

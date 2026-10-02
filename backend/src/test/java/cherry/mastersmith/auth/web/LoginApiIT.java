@@ -17,11 +17,13 @@ package cherry.mastersmith.auth.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.CountingPasswordEncoder;
 import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.auth.testsupport.SqlStatementCounter;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.service.UserAccountService;
@@ -45,6 +47,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** ログインの API の結合テスト（FR4.1、FR4.5、FR7.1〜FR7.5、BR2.2〜BR2.8、BR3.1〜BR3.6、NFR4.1、NFR4.2）。 */
 @SpringBootTest(
@@ -81,6 +85,12 @@ class LoginApiIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private AuthApi api;
 
@@ -208,6 +218,61 @@ class LoginApiIT {
         assertThat(byThread).hasSize(1);
         statements.add(byThread.values().iterator().next());
         matches.add(encoder.takeMatchCount());
+    }
+
+    @Test
+    @DisplayName("suspended logins look exactly like a wrong password: same response, statements and password checks")
+    void suspendedLoginsAreIndistinguishable() {
+        TestUserSuspension suspension = new TestUserSuspension(
+                new TransactionTemplate(transactionManager), userAccountService, revocationService);
+        String suspendedEmail = "suspended-" + UUID.randomUUID() + "@example.com";
+        suspension.suspend(TestUserAccounts.create(userAccountService, suspendedEmail, PASSWORD, false));
+        String lockedEmail = "suspended-locked-" + UUID.randomUUID() + "@example.com";
+        long lockedId = TestUserAccounts.create(userAccountService, lockedEmail, PASSWORD, false);
+        for (int i = 0; i < 5; i++) {
+            api.login(lockedEmail, "まちがい");
+        }
+        suspension.suspend(lockedId);
+        String noRowEmail = "suspended-norow-" + UUID.randomUUID() + "@example.com";
+        long noRowId = TestUserAccounts.create(userAccountService, noRowEmail, PASSWORD, false);
+        jdbc.update("DELETE FROM login_attempt_states WHERE subject_id = ?", noRowId);
+        suspension.suspend(noRowId);
+        String wrongNoRowEmail = "wrong-norow-" + UUID.randomUUID() + "@example.com";
+        long wrongNoRowId = TestUserAccounts.create(userAccountService, wrongNoRowEmail, PASSWORD, false);
+        jdbc.update("DELETE FROM login_attempt_states WHERE subject_id = ?", wrongNoRowId);
+        encoder.takeMatchCount();
+
+        List<Map<String, Object>> bodies = new ArrayList<>();
+        List<List<String>> statements = new ArrayList<>();
+        List<Integer> matches = new ArrayList<>();
+        record(bodies, statements, matches, email, "まちがったパスワード");
+        record(bodies, statements, matches, suspendedEmail, PASSWORD);
+        record(bodies, statements, matches, suspendedEmail, "まちがったパスワード");
+        record(bodies, statements, matches, lockedEmail, PASSWORD);
+        List<Map<String, Object>> noRowBodies = new ArrayList<>();
+        List<List<String>> noRowStatements = new ArrayList<>();
+        List<Integer> noRowMatches = new ArrayList<>();
+        record(noRowBodies, noRowStatements, noRowMatches, wrongNoRowEmail, "まちがったパスワード");
+        record(noRowBodies, noRowStatements, noRowMatches, noRowEmail, PASSWORD);
+
+        assertThat(bodies).allSatisfy(body -> assertThat(body).isEqualTo(bodies.getFirst()));
+        assertThat(noRowBodies).allSatisfy(body -> assertThat(body).isEqualTo(bodies.getFirst()));
+        assertThat(bodies.getFirst())
+                .containsEntry("code", "AUTHENTICATION_FAILED")
+                .containsEntry("statusCode", 401);
+        assertThat(bodies.toString()).doesNotContain("SUSPENDED");
+        assertThat(statements).allSatisfy(kinds -> assertThat(kinds).isEqualTo(statements.getFirst()));
+        assertThat(statements.getFirst())
+                .containsExactly(
+                        "select users",
+                        "select login_attempt_states for update",
+                        "update login_attempt_states",
+                        "insert audit_events");
+        // 行が無い場合は、行を作ってやり直す文を含めて、パスワードの誤り（行なし）と同じ並びになる。
+        assertThat(noRowStatements.getLast()).isEqualTo(noRowStatements.getFirst());
+        assertThat(noRowStatements.getFirst()).contains("update login_attempt_states", "insert audit_events");
+        assertThat(matches).containsExactly(1, 1, 1, 1);
+        assertThat(noRowMatches).containsExactly(1, 1);
     }
 
     @Test

@@ -29,6 +29,8 @@ public enum AuditFailureReason {
     PASSWORD_MISMATCH,
     /** ロック中。 */
     ACCOUNT_LOCKED,
+    /** 利用停止中のログイン（Intent 260930-user-admin の U1、契約 C7）。 */
+    ACCOUNT_SUSPENDED,
     /** 管理者でない利用者の要求（403）。 */
     NOT_ADMIN,
     /** アクセストークンが無い要求（401）。 */

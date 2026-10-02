@@ -46,7 +46,7 @@ class TokenRefreshServiceTest {
     private static final Instant ISSUED = Instant.parse("2026-09-22T00:00:00Z");
 
     private static final UserSummary USER =
-            new UserSummary(7, "user@example.com", true, "テスト 利用者", "ja", "system", "md");
+            new UserSummary(7, "user@example.com", true, "テスト 利用者", "ja", "system", "md", false);
 
     private final RefreshTokenRepository repository = mock(RefreshTokenRepository.class);
 
@@ -132,5 +132,27 @@ class TokenRefreshServiceTest {
     @DisplayName("a missing cookie value fails")
     void missing() {
         assertThatThrownBy(() -> service.refresh(null)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("a token of a suspended user fails with REFRESH_FAILED and issues no tokens")
+    void suspendedUser() {
+        when(repository.revokeIfActive(anyLong(), any())).thenReturn(1);
+        when(users.findById(7))
+                .thenReturn(Optional.of(
+                        new UserSummary(7, "user@example.com", true, "テスト 利用者", "ja", "system", "md", true)));
+
+        assertFails();
+        verify(loginService, never()).issueTokens(any(), any());
+    }
+
+    @Test
+    @DisplayName("a token of a deleted user fails with REFRESH_FAILED and issues no tokens")
+    void missingUser() {
+        when(repository.revokeIfActive(anyLong(), any())).thenReturn(1);
+        when(users.findById(7)).thenReturn(Optional.empty());
+
+        assertFails();
+        verify(loginService, never()).issueTokens(any(), any());
     }
 }

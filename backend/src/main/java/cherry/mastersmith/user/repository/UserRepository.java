@@ -45,8 +45,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     /**
      * メールアドレスの利用者がいるかを返す（Intent 260925-user-management の U3 の計画の決定 3）。
      *
-     * <p>メールアドレスは文字列にすると伏せる型で受ける（メソッドの呼び出しの追跡が引数を文字列にするため）。招待と登録の完了の経路は
-     * この口を使い、既存のログインと初期管理者の経路の {@link #findByEmail(String)} は据え置く。
+     * <p>メールアドレスは文字列にすると伏せる型で受ける（メソッドの呼び出しの追跡が引数を文字列にするため）。招待・登録の完了・初期管理者の
+     * 作成の経路はこの口を使う（初期管理者は Intent 260930-user-admin の B1 で移した）。ログインの照合は {@link #findByEmail(String)} を使う。
      *
      * @param email 前後の空白を除き小文字にそろえたメールアドレス
      * @return いれば true
@@ -86,4 +86,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("userId") long userId,
             @Param("readHash") PasswordHash readHash,
             @Param("newHash") PasswordHash newHash);
+
+    /**
+     * 停止の状態の列だけを書き換える（Intent 260930-user-admin の U1、BR1.4・BR1.5）。
+     *
+     * <p>ほかの列（管理者の印・氏名と表示の設定・パスワードのハッシュ）は書かない。書く前に持続化の文脈を書き出し、書いた後に文脈を
+     * 空にする（同じトランザクションで先に読み込んだエンティティから古い値を読まないため。NFR9.4）。拒否の判定はしない。
+     *
+     * @param userId 利用者 ID
+     * @param suspended 停止するなら true、解くなら false
+     * @return 書き換えた行の数（利用者がいなければ 0）
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE User u SET u.suspended = :suspended WHERE u.userId = :userId")
+    int updateSuspended(@Param("userId") long userId, @Param("suspended") boolean suspended);
 }

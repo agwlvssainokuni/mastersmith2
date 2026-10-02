@@ -24,6 +24,7 @@ import org.springframework.security.core.AuthenticationException;
  * アクセス拒否の理由（BR3.1、BR3.2）。監査ログの記録項目（U4）の理由にそろえる。
  *
  * <p>有効期限切れ（U2 の {@link TokenFailureReason#TOKEN_EXPIRED}）は、通常の利用で起きるため出来事にしない（BR3.2）。
+ * 利用停止中（{@link TokenFailureReason#USER_SUSPENDED}）も、有効期限切れと同じく出来事にしない（契約 C7 の not_recorded）。
  * そのため、U2 の区分からの変換は「出来事にしない」を表せる {@link Optional} で返す。
  */
 public enum AccessDeniedReason {
@@ -42,7 +43,7 @@ public enum AccessDeniedReason {
      * U2 のアクセストークンの失敗の区分を、アクセス拒否の理由に変える。
      *
      * @param reason U2 の失敗の区分
-     * @return アクセス拒否の理由。有効期限切れ（出来事にしない）なら空
+     * @return アクセス拒否の理由。有効期限切れ・利用停止中（出来事にしない）なら空
      */
     public static Optional<AccessDeniedReason> of(TokenFailureReason reason) {
         return switch (reason) {
@@ -50,6 +51,8 @@ public enum AccessDeniedReason {
             case TOKEN_INVALID -> Optional.of(TOKEN_INVALID);
             case USER_NOT_FOUND -> Optional.of(USER_NOT_FOUND);
             case TOKEN_EXPIRED -> Optional.empty();
+            // 有効期限切れと同じく出来事にしない（契約 C7 の not_recorded）。
+            case USER_SUSPENDED -> Optional.empty();
         };
     }
 

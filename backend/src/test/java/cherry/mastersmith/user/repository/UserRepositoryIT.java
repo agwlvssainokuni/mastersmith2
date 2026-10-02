@@ -67,7 +67,7 @@ class UserRepositoryIT {
 
     private Map<String, Object> row(long userId) {
         return jdbc.queryForMap(
-                "SELECT email, password_hash, admin_flag, created_at, display_name, language, theme, font_size"
+                "SELECT email, password_hash, admin_flag, created_at, display_name, language, theme, font_size, suspended"
                         + " FROM users WHERE user_id = ?",
                 userId);
     }
@@ -135,7 +135,7 @@ class UserRepositoryIT {
                 .containsEntry("LANGUAGE", "en")
                 .containsEntry("THEME", "dark")
                 .containsEntry("FONT_SIZE", "lg");
-        for (String column : new String[] {"EMAIL", "PASSWORD_HASH", "ADMIN_FLAG"}) {
+        for (String column : new String[] {"EMAIL", "PASSWORD_HASH", "ADMIN_FLAG", "SUSPENDED"}) {
             assertThat(after.get(column)).as(column).isEqualTo(before.get(column));
         }
         assertThat(((OffsetDateTime) after.get("CREATED_AT")).toInstant())
@@ -200,6 +200,64 @@ class UserRepositoryIT {
 
         assertThat(read).isEqualTo(CHANGED);
         assertThat(hash).isEqualTo("$2a$04$new4");
+    }
+
+    @Test
+    @DisplayName("updating the suspension rewrites only the suspended column")
+    void updateSuspendedTouchesOnlyTheSuspendedColumn() {
+        String email = "suspend-" + UUID.randomUUID() + "@example.com";
+        long id = save(email, true).getUserId();
+        tx.execute(status -> repository.updatePreferences(id, CHANGED));
+        Map<String, Object> before = row(id);
+
+        Integer suspended = tx.execute(status -> repository.updateSuspended(id, true));
+        Map<String, Object> afterSuspend = row(id);
+        Integer resumed = tx.execute(status -> repository.updateSuspended(id, false));
+        Map<String, Object> afterResume = row(id);
+
+        assertThat(suspended).isEqualTo(1);
+        assertThat(resumed).isEqualTo(1);
+        assertThat(before).containsEntry("SUSPENDED", false);
+        assertThat(afterSuspend).containsEntry("SUSPENDED", true);
+        assertThat(afterResume).containsEntry("SUSPENDED", false);
+        for (String column :
+                new String[] {"EMAIL", "PASSWORD_HASH", "ADMIN_FLAG", "DISPLAY_NAME", "LANGUAGE", "THEME", "FONT_SIZE"
+                }) {
+            assertThat(afterSuspend.get(column)).as(column).isEqualTo(before.get(column));
+            assertThat(afterResume.get(column)).as(column).isEqualTo(before.get(column));
+        }
+        assertThat(((OffsetDateTime) afterSuspend.get("CREATED_AT")).toInstant())
+                .isEqualTo(((OffsetDateTime) before.get("CREATED_AT")).toInstant());
+    }
+
+    @Test
+    @DisplayName("updating the suspension of an unknown user changes nothing and returns zero")
+    void updateSuspendedOfUnknownUser() {
+        long other = save("other-" + UUID.randomUUID() + "@example.com", false).getUserId();
+
+        Integer rows = tx.execute(status -> repository.updateSuspended(Long.MAX_VALUE, true));
+
+        assertThat(rows).isZero();
+        assertThat(row(other)).containsEntry("SUSPENDED", false);
+    }
+
+    @Test
+    @DisplayName("reading by id after the suspension update in the same transaction sees the written value")
+    void readAfterUpdateSuspendedSeesNewValue() {
+        long id =
+                save("suspend-ctx-" + UUID.randomUUID() + "@example.com", false).getUserId();
+
+        boolean[] read = tx.execute(status -> {
+            User loaded = repository.findById(id).orElseThrow();
+            boolean beforeUpdate = loaded.isSuspended();
+            repository.updateSuspended(id, true);
+            boolean afterSuspend = repository.findById(id).orElseThrow().isSuspended();
+            repository.updateSuspended(id, false);
+            boolean afterResume = repository.findById(id).orElseThrow().isSuspended();
+            return new boolean[] {beforeUpdate, afterSuspend, afterResume};
+        });
+
+        assertThat(read).containsExactly(false, true, false);
     }
 
     @Test

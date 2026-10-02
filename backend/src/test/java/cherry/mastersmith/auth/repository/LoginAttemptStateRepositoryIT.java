@@ -18,9 +18,11 @@ package cherry.mastersmith.auth.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.auth.domain.LoginAttemptState;
+import cherry.mastersmith.auth.testsupport.H2SessionWaits;
 import cherry.mastersmith.auth.testsupport.SqlStatementCounter;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -191,6 +193,34 @@ class LoginAttemptStateRepositoryIT {
         assertThat(firstId).isNegative();
         assertThat(secondId).isNegative().isNotEqualTo(firstId);
         assertThat(elapsedMillis).isLessThan(2500L);
+    }
+
+    @Test
+    @DisplayName("when every dummy row is held, a random dummy row is waited for and returned")
+    void allDummyRowsHeld() throws Exception {
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Future<?> holder = executor.submit(() -> tx.executeWithoutResult(status -> {
+            for (long id = -1; id >= -LoginAttemptStateRepository.DUMMY_ROWS; id--) {
+                repository.lockForUpdate(id).orElseThrow();
+            }
+            locked.countDown();
+            await(release);
+        }));
+        await(locked);
+
+        Future<Long> waiter = executor.submit(
+                () -> tx.execute(status -> repository.lockDummyForUpdate().getSubjectId()));
+        // 空いたダミーの行が無いため、乱数で選んだ行の排他を待つ。待ちの上限（3 秒）より前に確かめを終える。
+        H2SessionWaits.awaitExecuting(
+                TestDatabase.url(tempDir),
+                "%from login_attempt_states%subject_id=?%for update%",
+                Duration.ofSeconds(2),
+                waiter::isDone);
+        release.countDown();
+        holder.get(30, TimeUnit.SECONDS);
+
+        assertThat(waiter.get(30, TimeUnit.SECONDS)).isBetween((long) -LoginAttemptStateRepository.DUMMY_ROWS, -1L);
     }
 
     @Test

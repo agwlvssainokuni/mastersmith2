@@ -45,6 +45,7 @@ import cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcesso
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.user.domain.Password;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.service.PasswordVerification;
 import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.service.UserSummary;
@@ -71,7 +72,10 @@ class LoginServiceTest {
     private static final ClientInfo CLIENT = new ClientInfo("192.0.2.1", "テスト用のブラウザ", "trace-1");
 
     private static final UserSummary USER =
-            new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md");
+            new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md", false);
+
+    private static final UserSummary SUSPENDED =
+            new UserSummary(7, "user@example.com", false, "テスト 利用者", "ja", "system", "md", true);
 
     private final UserAccountService userAccountService = mock(UserAccountService.class);
 
@@ -103,7 +107,7 @@ class LoginServiceTest {
     }
 
     private void givenVerification(UserSummary user, boolean matched) {
-        when(userAccountService.verifyPassword(eq("user@example.com"), any(Password.class)))
+        when(userAccountService.verifyPassword(eq(new RedactedText("user@example.com")), any(Password.class)))
                 .thenReturn(new PasswordVerification("user@example.com", user, matched));
     }
 
@@ -331,5 +335,100 @@ class LoginServiceTest {
         verify(attempts).createIfAbsent(7);
         verify(attempts, never()).update(anyLong(), anyInt(), any());
         verifyNoInteractions(publisher, refreshTokens);
+    }
+
+    /** 停止中の失敗に共通の確かめ（出来事は理由 ACCOUNT_SUSPENDED の1件、トークンは発行も保存もしない）。 */
+    private void assertSuspendedFailure(BusinessException failure) {
+        assertThat(failure.getProblemType()).isEqualTo(AuthProblemTypes.AUTHENTICATION_FAILED);
+        AuthenticationEvent event = event();
+        assertThat(event.eventType()).isEqualTo(AuthenticationEventType.LOGIN_FAILED);
+        assertThat(event.failureReason()).isEqualTo(LoginFailureReason.ACCOUNT_SUSPENDED);
+        assertThat(event.userId()).isEqualTo(7L);
+        assertThat(event.enteredEmail()).isEqualTo("user@example.com");
+        verify(refreshTokens, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("a suspended user with the correct password is rejected and the read values are written once")
+    void suspendedWithCorrectPassword() {
+        givenVerification(SUSPENDED, true);
+        givenState(2, null);
+
+        assertSuspendedFailure(fail());
+
+        verify(attempts, times(1)).update(anyLong(), anyInt(), any());
+        verify(attempts).update(7, 2, null);
+    }
+
+    @Test
+    @DisplayName("a suspended user with a wrong password is rejected with ACCOUNT_SUSPENDED, not PASSWORD_MISMATCH")
+    void suspendedWithWrongPassword() {
+        givenVerification(SUSPENDED, false);
+        givenState(0, null);
+
+        assertSuspendedFailure(fail());
+
+        verify(attempts, times(1)).update(anyLong(), anyInt(), any());
+        verify(attempts).update(7, 0, null);
+    }
+
+    @Test
+    @DisplayName("a suspended and locked user is rejected with ACCOUNT_SUSPENDED and the lock is kept as read")
+    void suspendedAndLocked() {
+        givenVerification(SUSPENDED, true);
+        Instant until = NOW.plusSeconds(60);
+        givenState(5, until);
+
+        assertSuspendedFailure(fail());
+
+        verify(attempts, times(1)).update(anyLong(), anyInt(), any());
+        verify(attempts).update(7, 5, until);
+    }
+
+    @Test
+    @DisplayName("a suspended user without a lock row gets the row created and is then rejected with one write")
+    void suspendedWithoutRow() {
+        givenVerification(SUSPENDED, true);
+        when(attempts.lockForUpdate(7))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(new LoginAttemptState(7, 0, null)));
+
+        assertSuspendedFailure(fail());
+
+        InOrder order = inOrder(attempts);
+        order.verify(attempts).lockForUpdate(7);
+        order.verify(attempts).createIfAbsent(7);
+        order.verify(attempts).lockForUpdate(7);
+        order.verify(attempts).update(7, 0, null);
+        verify(attempts, times(1)).update(anyLong(), anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("suspended login attempts do not increase the failure count even one below the threshold")
+    void suspendedLoginAttemptsDoNotIncreaseTheFailureCount() {
+        givenVerification(SUSPENDED, false);
+        // しきい値（5）−1 の状態で誤ったパスワードを送っても、数えずロックもしない。
+        givenState(4, null);
+
+        try (LogEvents events = LogEvents.capture(LoginService.class)) {
+            assertSuspendedFailure(fail());
+            // ロックのログも、停止で拒否したことのログも出さない。
+            assertThat(events.list()).isEmpty();
+        }
+
+        verify(attempts).update(7, 4, null);
+        verify(attempts, never()).update(eq(7L), eq(5), any());
+    }
+
+    @Test
+    @DisplayName("after the suspension is lifted the failures are counted on from the value before the suspension")
+    void countsOnAfterResume() {
+        givenVerification(USER, false);
+        givenState(4, null);
+
+        assertThat(fail().getProblemType()).isEqualTo(AuthProblemTypes.AUTHENTICATION_FAILED);
+
+        verify(attempts).update(7, 5, NOW.plus(Duration.ofMinutes(30)));
+        assertThat(event().failureReason()).isEqualTo(LoginFailureReason.PASSWORD_MISMATCH);
     }
 }

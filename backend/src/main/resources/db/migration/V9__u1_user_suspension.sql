@@ -12,8 +12,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
--- U1 の基準線。U1 は業務の表を持たないため、表は作らない。
--- スキーマの変更の流れ（Flyway）が内部DB（H2）に当たることを確かめるために置く。
---
--- ファイルの名前の決まり: V<番号>__<単位>_<内容>.sql（例: V2__u2_user_account.sql）。
--- 前進のみとし、適用済みのファイルは書き換えない（Flyway の検証で書き換えを検出して起動を止める）。
+-- Intent 260930-user-admin の U1（利用停止の状態と3つの入口）。前進のみ（BR1.2、NFR10.1）。
+-- 適用済みの V1〜V8 は書き換えない。users に停止の状態の列を足し、既存の行は既定の false（停止していない）になる。
+-- 書き換えは停止の列だけの更新の問い合わせ（user.repository）で行う。
+
+ALTER TABLE users ADD COLUMN suspended BOOLEAN DEFAULT FALSE NOT NULL;

@@ -21,14 +21,14 @@ import jakarta.validation.constraints.NotBlank;
  * ログインの要求（{@code POST /api/auth/login}）。空は 400 / {@code VALIDATION_FAILED}（BR2.2）。長さなどの形式はログインでは
  * 検査しない。
  *
- * @param email メールアドレス
+ * @param email メールアドレス（文字列化で伏せる）
  * @param password パスワード（文字列化で伏せる）
  */
 public record LoginRequest(@NotBlank String email, @NotBlank String password) {
 
-    /** パスワードを伏せて文字列にする。 */
+    /** メールアドレスとパスワードを伏せて文字列にする（メソッドの呼び出しの追跡が引数を文字列にするため）。 */
     @Override
     public String toString() {
-        return "LoginRequest[email=" + email + ", password=***]";
+        return "LoginRequest[email=***, password=***]";
     }
 }

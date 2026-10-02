@@ -18,10 +18,12 @@ package cherry.mastersmith.audit.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.audit.testsupport.AuditRows;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.auth.testsupport.SqlStatementCounter;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.testsupport.TestUserAccounts;
@@ -40,6 +42,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** 認証の出来事から監査イベントまでの結合テスト（FR9.1、FR9.2、BR1.1〜BR1.3、BR1.5、BR1.6、NFR1.3、NFR9.1）。 */
 @SpringBootTest(
@@ -73,6 +77,12 @@ class AuditAuthenticationEventsIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private AuthApi api;
 
@@ -140,6 +150,53 @@ class AuditAuthenticationEventsIT {
 
         assertThat(rows.count()).isEqualTo(before + 1);
         assertThat(rows.last().failureReason()).isEqualTo("ACCOUNT_LOCKED");
+    }
+
+    @Test
+    @DisplayName("logins of a suspended user record LOGIN_FAILED with ACCOUNT_SUSPENDED in the same shape as a wrong"
+            + " password, one insert on the request thread each")
+    void suspendedLoginsAreRecorded() {
+        String suspendedEmail = "audit-suspended-" + UUID.randomUUID() + "@example.com";
+        long suspendedId = TestUserAccounts.create(userAccountService, suspendedEmail, PASSWORD, false);
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(suspendedId);
+
+        for (String password : new String[] {PASSWORD, "まちがい"}) {
+            int before = rows.count();
+            SqlStatementCounter.start();
+            assertThat(api.login(suspendedEmail, password).statusCode()).isEqualTo(401);
+            Map<String, List<String>> byThread = SqlStatementCounter.stop();
+
+            assertThat(rows.count()).isEqualTo(before + 1);
+            AuditRows.AuditRow row = rows.last();
+            assertThat(row.eventType()).isEqualTo("LOGIN_FAILED");
+            assertThat(row.result()).isEqualTo("FAILURE");
+            assertThat(row.failureReason()).isEqualTo("ACCOUNT_SUSPENDED");
+            assertThat(row.occurredAt()).isEqualTo(AuthApiTestConfig.START);
+            assertThat(row.enteredEmail()).as("停止中だけ空にしない（NFR 設計の R-03）").isEqualTo(suspendedEmail);
+            assertThat(row.sourceIp()).isNotBlank();
+            assertThat(row.userAgent()).isNotNull();
+            assertThat(row.traceId()).isNotBlank();
+            assertThat(row.requestPath()).isNull();
+            // 操作した人と対象の利用者は、既存のログインの失敗と同じく空（AuditEventFactory を変えない。依頼者の決定 G-1）。
+            assertThat(jdbc.queryForMap(
+                            "SELECT actor_user_id, target_user_id FROM audit_events WHERE audit_event_id = ?",
+                            row.auditEventId()))
+                    .containsEntry("ACTOR_USER_ID", null)
+                    .containsEntry("TARGET_USER_ID", null);
+            assertThat(byThread).as("記録は要求と同じスレッドで行う").hasSize(1);
+            assertThat(byThread.values().iterator().next())
+                    .filteredOn(kind -> kind.contains("audit_events"))
+                    .containsExactly("insert audit_events");
+        }
+
+        // パスワードの誤り（停止していない利用者）の行と、理由のほかは同じ形になる。
+        assertThat(api.login(email, "まちがい").statusCode()).isEqualTo(401);
+        assertThat(jdbc.queryForMap(
+                        "SELECT actor_user_id, target_user_id FROM audit_events WHERE audit_event_id = ?",
+                        rows.last().auditEventId()))
+                .containsEntry("ACTOR_USER_ID", null)
+                .containsEntry("TARGET_USER_ID", null);
     }
 
     @Test

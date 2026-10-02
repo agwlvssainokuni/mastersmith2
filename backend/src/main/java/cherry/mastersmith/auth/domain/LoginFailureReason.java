@@ -22,5 +22,7 @@ public enum LoginFailureReason {
     /** パスワードの誤り。 */
     PASSWORD_MISMATCH,
     /** ロック中。 */
-    ACCOUNT_LOCKED
+    ACCOUNT_LOCKED,
+    /** 利用停止中（パスワードの正誤・ロックの状態にかかわらずこの理由。契約 C7）。 */
+    ACCOUNT_SUSPENDED
 }

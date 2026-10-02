@@ -29,14 +29,22 @@ package cherry.mastersmith.user.service;
  * @param language 言語（{@code ja}・{@code en}）
  * @param theme テーマ（{@code light}・{@code dark}・{@code system}）
  * @param fontSize 文字の大きさ（{@code sm}・{@code md}・{@code lg}）
+ * @param suspended 利用停止中か（Intent 260930-user-admin の U1、BR1.3。認証の3つの入口が判定に使う）
  */
 public record UserSummary(
-        long userId, String email, boolean admin, String displayName, String language, String theme, String fontSize) {
+        long userId,
+        String email,
+        boolean admin,
+        String displayName,
+        String language,
+        String theme,
+        String fontSize,
+        boolean suspended) {
 
     /** メールアドレスと氏名を伏せて文字列にする。 */
     @Override
     public String toString() {
         return "UserSummary[userId=" + userId + ", email=***, admin=" + admin + ", displayName=***, language="
-                + language + ", theme=" + theme + ", fontSize=" + fontSize + "]";
+                + language + ", theme=" + theme + ", fontSize=" + fontSize + ", suspended=" + suspended + "]";
     }
 }

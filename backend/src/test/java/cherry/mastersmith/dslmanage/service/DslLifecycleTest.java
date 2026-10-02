@@ -142,7 +142,7 @@ class DslLifecycleTest {
         when(target.readSchema(ReadPurpose.COMPARE)).thenReturn(TargetSchemaResult.unconfigured());
         when(users.findById(ADMIN))
                 .thenReturn(Optional.of(
-                        new UserSummary(ADMIN, "admin@example.com", true, "テスト 利用者", "ja", "system", "md")));
+                        new UserSummary(ADMIN, "admin@example.com", true, "テスト 利用者", "ja", "system", "md", false)));
     }
 
     private static DslRequestContext context(DisplayLanguage language) {

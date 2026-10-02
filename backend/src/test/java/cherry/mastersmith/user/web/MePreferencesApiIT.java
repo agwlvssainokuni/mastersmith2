@@ -18,9 +18,11 @@ package cherry.mastersmith.user.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.access.testsupport.AdminTestUsers;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.AuthTestTokens;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.service.UserAccountService;
@@ -44,6 +46,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -70,6 +74,12 @@ class MePreferencesApiIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     @Autowired
     PasswordEncoder passwordEncoder;
@@ -286,5 +296,65 @@ class MePreferencesApiIT {
 
         assertAuthenticationRequired(me.getPreferences(token));
         assertAuthenticationRequired(me.putPreferences(token, "消えた人", "ja", "system", "md"));
+    }
+
+    private boolean suspended(long userId) {
+        return Boolean.TRUE.equals(
+                jdbc.queryForObject("SELECT suspended FROM users WHERE user_id = ?", Boolean.class, userId));
+    }
+
+    private boolean admin(long userId) {
+        return Boolean.TRUE.equals(
+                jdbc.queryForObject("SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, userId));
+    }
+
+    @Test
+    @DisplayName(
+            "suspended and admin in the body are ignored: the state does not change and the next request still passes")
+    void suspensionAndAdminCannotBeSetThroughPreferences() {
+        AdminTestUsers.TestUser member = users.createNonAdmin();
+        String token = users.accessToken(member);
+        String json = JsonMapper.builder()
+                .build()
+                .writeValueAsString(Map.of(
+                        "displayName", "一括代入しない",
+                        "language", "ja",
+                        "theme", "system",
+                        "fontSize", "md",
+                        "suspended", true,
+                        "admin", true));
+
+        HttpResponse<String> response = me.putPreferencesRaw(token, json);
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).doesNotContain("suspended");
+        assertThat(suspended(member.userId())).isFalse();
+        assertThat(admin(member.userId())).isFalse();
+        assertThat(row(member.userId())).containsEntry("DISPLAY_NAME", "一括代入しない");
+        assertThat(me.getPreferences(token).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("a suspended user sending suspended false stays 401 and stays suspended")
+    void suspendedUserCannotResumeThroughPreferences() {
+        AdminTestUsers.TestUser member = users.createNonAdmin();
+        String token = users.accessToken(member);
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(member.userId());
+        Map<String, Object> before = row(member.userId());
+        String json = JsonMapper.builder()
+                .build()
+                .writeValueAsString(Map.of(
+                        "displayName", "解けない",
+                        "language", "en",
+                        "theme", "dark",
+                        "fontSize", "lg",
+                        "suspended", false));
+
+        assertAuthenticationRequired(me.putPreferencesRaw(token, json));
+
+        assertThat(suspended(member.userId())).isTrue();
+        assertThat(row(member.userId())).isEqualTo(before);
+        assertAuthenticationRequired(me.getPreferences(token));
     }
 }

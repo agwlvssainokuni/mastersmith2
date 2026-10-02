@@ -18,18 +18,22 @@ package cherry.mastersmith.user.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.access.testsupport.AdminTestUsers;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.MutableClock;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.domain.UserProblemTypes;
 import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.testsupport.MeApi;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +49,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * パスワードの変更の API（契約 C4 の POST {@code /api/me/password}、BR4.1〜BR4.5、BR8.2・BR8.3、NFR4.2・NFR4.5・NFR8.1、
@@ -72,6 +79,12 @@ class MePasswordApiIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     @Autowired
     MutableClock clock;
@@ -295,5 +308,65 @@ class MePasswordApiIT {
         assertThat(me.changePassword(users.accessToken(admin), AdminTestUsers.PASSWORD, NEW_PASSWORD, NEW_PASSWORD)
                         .statusCode())
                 .isEqualTo(204);
+    }
+
+    private boolean suspended(long userId) {
+        return Boolean.TRUE.equals(
+                jdbc.queryForObject("SELECT suspended FROM users WHERE user_id = ?", Boolean.class, userId));
+    }
+
+    private boolean admin(long userId) {
+        return Boolean.TRUE.equals(
+                jdbc.queryForObject("SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, userId));
+    }
+
+    /** パスワードの変更に、項目を足した本文をそのまま送る。 */
+    private HttpResponse<String> changePasswordWith(String token, Map<String, Object> extra) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("currentPassword", AdminTestUsers.PASSWORD);
+        body.put("newPassword", NEW_PASSWORD);
+        body.put("newPasswordConfirmation", NEW_PASSWORD);
+        body.putAll(extra);
+        HttpTestClient client = new HttpTestClient(port);
+        return client.send(client.request(MeApi.PASSWORD)
+                .header("Authorization", "Bearer " + token)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(
+                        JsonMapper.builder().build().writeValueAsString(body)))
+                .build());
+    }
+
+    @Test
+    @DisplayName(
+            "suspended and admin in the body are ignored: the state does not change and the next request still passes")
+    void suspensionAndAdminCannotBeSetThroughPasswordChange() {
+        AdminTestUsers.TestUser member = users.createNonAdmin();
+        String token = users.accessToken(member);
+
+        HttpResponse<String> response = changePasswordWith(token, Map.of("suspended", true, "admin", true));
+
+        assertThat(response.statusCode()).isEqualTo(204);
+        assertThat(suspended(member.userId())).isFalse();
+        assertThat(admin(member.userId())).isFalse();
+        assertThat(me.getPreferences(token).statusCode()).isEqualTo(200);
+        assertThat(auth.login(member.email(), NEW_PASSWORD).statusCode()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("a suspended user sending suspended false stays 401, keeps the password and stays suspended")
+    void suspendedUserCannotResumeThroughPasswordChange() {
+        AdminTestUsers.TestUser member = users.createNonAdmin();
+        String token = users.accessToken(member);
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(member.userId());
+        String hashBefore = hash(member.userId());
+
+        HttpResponse<String> response = changePasswordWith(token, Map.of("suspended", false));
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(HttpTestClient.json(response)).containsEntry("code", "AUTHENTICATION_REQUIRED");
+        assertThat(suspended(member.userId())).isTrue();
+        assertThat(hash(member.userId())).isEqualTo(hashBefore);
+        assertThat(me.getPreferences(token).statusCode()).isEqualTo(401);
     }
 }

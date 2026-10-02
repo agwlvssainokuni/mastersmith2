@@ -33,6 +33,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -84,12 +85,16 @@ public class UserAccountService {
      * <p>利用者がいない、またはパスワードが UTF-8 で 72 バイトを超えるときは、ダミーのハッシュで照合して不一致とする（BR2.8。
      * 72 バイトを超える入力は照合の仕組みに渡さない）。トランザクションと排他の外で呼ぶ。
      *
-     * @param email 入力されたメールアドレス
+     * <p>メールアドレスは文字列にすると伏せる型で受け渡す（メソッドの呼び出しの追跡の TRACE に出さないため。Intent 260930-user-admin の
+     * B1 のレビュー R-01 を受けた依頼者の決定）。
+     *
+     * @param email 入力されたメールアドレス（そろえる前の値でよい）
      * @param password 入力されたパスワード
      * @return 照合の結果（ハッシュを含まない）
      */
-    public PasswordVerification verifyPassword(String email, Password password) {
-        String normalized = EmailAddress.normalize(email);
+    public PasswordVerification verifyPassword(RedactedText email, Password password) {
+        Objects.requireNonNull(email, "email");
+        String normalized = EmailAddress.normalize(email.value());
         Optional<User> user = userRepository.findByEmail(normalized);
         boolean fits = PasswordPolicy.fitsMaxBytes(password.value());
         boolean matched;
@@ -116,21 +121,45 @@ public class UserAccountService {
     }
 
     /**
-     * メールアドレスの利用者がいるかを返す。
+     * 利用停止中かを返す（契約 C1、Intent 260930-user-admin の U1）。読み取りだけを行う。
      *
-     * @param email メールアドレス（そろえる前の値でよい）
-     * @return いれば true
+     * @param userId 利用者ID
+     * @return 利用停止中なら true
+     * @throws IllegalStateException 利用者がいないとき（例外のメッセージには利用者 ID だけを載せる）
      */
     @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        return userRepository.findByEmail(EmailAddress.normalize(email)).isPresent();
+    public boolean isSuspended(long userId) {
+        return userRepository
+                .findById(userId)
+                .map(User::isSuspended)
+                .orElseThrow(() -> new IllegalStateException("利用者がいません: userId=" + userId));
     }
 
     /**
-     * メールアドレスの利用者がいるかを返す（契約 C2。招待と登録の完了の経路が使う。U3 の計画の決定 3）。
+     * 停止の状態を書き換える（契約 C1、Intent 260930-user-admin の U1、BR1.4・BR1.5）。停止の列だけを書く。
      *
-     * <p>メールアドレスは文字列にすると伏せる型で受け渡す（メソッドの呼び出しの追跡の TRACE に出さないため）。既存の
-     * {@link #existsByEmail(String)}（初期管理者が使う）は据え置く。
+     * <p>呼び出し元のトランザクションの中でだけ呼べる（無ければ {@code IllegalTransactionStateException}）。拒否の判定（最後の
+     * 管理者の保護など）・監査・リフレッシュトークンの無効化はしない（呼び出し元の受け持ち）。
+     *
+     * <p><strong>呼び出し元の約束</strong>: 書いた後に持続化の文脈を空にするため、呼ぶ前に同じトランザクションで読み込んだ
+     * エンティティは切り離される。呼んだ後に状態を知りたいときは、読み直す（{@link #findById(long)}・{@link #isSuspended(long)}）。
+     *
+     * @param userId 利用者ID
+     * @param suspended 停止するなら true、解くなら false
+     * @throws IllegalStateException 利用者がいないとき（例外のメッセージには利用者 ID だけを載せる）
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void setSuspended(long userId, boolean suspended) {
+        if (userRepository.updateSuspended(userId, suspended) == 0) {
+            throw new IllegalStateException("利用者がいません: userId=" + userId);
+        }
+    }
+
+    /**
+     * メールアドレスの利用者がいるかを返す（契約 C2。招待・登録の完了・初期管理者の作成の経路が使う。U3 の計画の決定 3）。
+     *
+     * <p>メールアドレスは文字列にすると伏せる型で受け渡す（メソッドの呼び出しの追跡の TRACE に出さないため）。文字列で受ける口は
+     * Intent 260930-user-admin の B1 で消した（レビュー R-01 を受けた依頼者の決定）。
      *
      * @param email メールアドレス（そろえる前の値でよい）
      * @return いれば true
@@ -260,6 +289,7 @@ public class UserAccountService {
                 user.getDisplayName(),
                 user.getLanguage().value(),
                 user.getTheme().value(),
-                user.getFontSize().value());
+                user.getFontSize().value(),
+                user.isSuspended());
     }
 }

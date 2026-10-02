@@ -53,8 +53,20 @@ class TokenAuthenticationExceptionTest {
     }
 
     @Test
-    @DisplayName("four reasons are defined")
-    void fourReasons() {
-        assertThat(TokenFailureReason.values()).hasSize(4);
+    @DisplayName("a suspended user is reported with the invalid_token code and its own reason")
+    void suspendedUserError() {
+        TokenAuthenticationException exception = new TokenAuthenticationException(TokenFailureReason.USER_SUSPENDED);
+
+        assertThat(exception.getError().getErrorCode()).isEqualTo("invalid_token");
+        assertThat(exception.getError().getDescription()).isEqualTo("USER_SUSPENDED");
+    }
+
+    @Test
+    @DisplayName("five reasons are defined")
+    void fiveReasons() {
+        assertThat(TokenFailureReason.values())
+                .extracting(Enum::name)
+                .containsExactly(
+                        "TOKEN_MALFORMED", "TOKEN_INVALID", "TOKEN_EXPIRED", "USER_NOT_FOUND", "USER_SUSPENDED");
     }
 }

@@ -244,6 +244,8 @@ MASTERSMITH_IMAGE_TAG=pre-dsl docker compose ps app                 # healthy �
 
 スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたとき、移行（Flyway）が途中で失敗したときだけ、配備の前に取ったバックアップを展開してデータも戻します（次の節。バックアップの後の記録は失われます）。
 
+V9（利用停止の列 `users.suspended`、下の「スキーマの変更（Flyway）」）を当てた後に1つ前の版へ戻すときは、**戻している間は利用停止が効かなくなる**（1つ前の版は停止の列を読まないため、停止中の利用者もログイン・トークンの更新・アクセストークンの認証の3つの入口で受け付けられる）ことに気を付けます。戻す前に停止中の利用者を確かめ、いたときの扱い（戻さない・戻した後に止め直す など）を含む手順は、配備の段（deployment-pipeline）で決めます。
+
 V8（招待の表、下の「招待と登録の完了（U3）」）を当てた後に1つ前の版へ戻すときは、次の点に気を付けます。
 
 - 1つ前の版は招待の表を読み書きしません。戻した後に今の版へ戻し直すと、招待の表は戻す前の状態のまま使われ、戻している間に有効期限を過ぎた招待は期限切れになります（管理者が一覧から送り直す）。
@@ -738,8 +740,9 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - ファイルの名前: `V<番号>__<単位>_<内容>.sql`（例: `V2__u2_user_account.sql`）。単位ごとにファイルを分けます。
 - 前進のみとし、適用済みのファイルは書き換えません（書き換えると起動時の検証で起動が止まります）。1つ前の版のアプリが動く後方互換を保ちます。
 - Hibernate はスキーマを作らず、検証だけ行います。
-- V7（`V7__u2_user_preferences.sql`、Intent 260925-user-management の U2）: `users` に `display_name`（必須、既定の値なし。既存の利用者にはメールアドレスを入れる）・`language`（既定 `ja`）・`theme`（既定 `system`）・`font_size`（既定 `md`）を、`audit_events` に `target_user_id`・`target_invitation_id`（空を許す）を足します。前進のみで、1つ前の版のアプリが動く後方互換を保ちます。確かめは2段です。(1) 自動の結合テスト（`V7MigrationIT`・`V7BackwardCompatibilityIT`）で、V6 までしか知らない Flyway が V7 の後の内部DB で失敗しないこと、既存の利用者の初期値、1つ前の版の追記の形の既知の限界を確かめます。(2) 1つ前の版を V7 の後の内部DB の複写で起動する確かめ（Hibernate の検証が足した列を許すことを含む）は、配備の段の戻しの練習で行います。
-- V8（`V8__u3_invitation.sql`、Intent 260925-user-management の U3）: 招待の表 `invitations` を新しく足します（既存の表は変えない）。同じメールアドレスの招待中を1件に限るため、状態が `PENDING` のときだけメールアドレスになる生成列 `pending_email` に一意の制約を付けます。トークンはハッシュ（SHA-256）だけを保存します。確かめは2段です。(1) 自動の結合テスト（`V8MigrationIT`・`V8BackwardCompatibilityIT`）で、生成列と一意の制約のふるまい、V7 までしか知らない Flyway が V8 の後の内部DB で失敗しないことを確かめます。(2) 1つ前の版を V7・V8 の後の内部DB の複写で起動する確かめは、配備の段の戻しの練習で行います。
+- V7（`V7__u2_user_preferences.sql`、Intent 260925-user-management の U2）: `users` に `display_name`（必須、既定の値なし。既存の利用者にはメールアドレスを入れる）・`language`（既定 `ja`）・`theme`（既定 `system`）・`font_size`（既定 `md`）を、`audit_events` に `target_user_id`・`target_invitation_id`（空を許す）を足します。前進のみで、1つ前の版のアプリが動く後方互換を保ちます。確かめは2段でした。(1) の自動の結合テスト（V6 までしか知らない Flyway が V7 の後の内部DB で失敗しないこと、既存の利用者の初期値、1つ前の版の追記の形の既知の限界）は、Intent 260930-user-admin の B1 で消しました（依頼者の決定。マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは置かない）。(2) 1つ前の版を V7 の後の内部DB の複写で起動する確かめ（Hibernate の検証が足した列を許すことを含む）は、過去の配備の段の戻しの練習で行いました。
+- V8（`V8__u3_invitation.sql`、Intent 260925-user-management の U3）: 招待の表 `invitations` を新しく足します（既存の表は変えない）。同じメールアドレスの招待中を1件に限るため、状態が `PENDING` のときだけメールアドレスになる生成列 `pending_email` に一意の制約を付けます。トークンはハッシュ（SHA-256）だけを保存します。確かめは2段でした。(1) の自動の結合テスト（生成列と一意の制約のふるまい、V7 までしか知らない Flyway が V8 の後の内部DB で失敗しないこと）は、Intent 260930-user-admin の B1 で消しました（理由は V7 と同じ）。生成列と一意の制約のふるまいの確かめは `InvitationSchemaIT` に移し、同時の招待の確かめは `InvitationConcurrencyIT` が受け持ちます。(2) 1つ前の版を V7・V8 の後の内部DB の複写で起動する確かめは、過去の配備の段の戻しの練習で行いました。
+- V9（`V9__u1_user_suspension.sql`、Intent 260930-user-admin の U1）: `users` に `suspended`（既定 `FALSE`・必須。既存の利用者は有効のまま）を足す前進のみの変更です。移行の自動のテストと戻しの練習は置きません（依頼者の決定）。確かめは、起動時の Flyway と Hibernate の検証と、利用停止の状態の読み書きの結合テストだけです。**1つ前の版に戻している間は、利用停止が効きません**（1つ前の版は `suspended` を読まないため、停止中の利用者もログイン・トークンの更新・アクセストークンの認証の3つの入口を通れます。止めたときに無効にしたリフレッシュトークンは無効のままです）。戻す前に停止中の利用者がいるかを確かめる手順は、配備の段で決めます。
 
 ## API のアクセス制御（U3）
 
@@ -769,6 +772,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - **追記だけ**です。アプリは監査イベントを変える・消す処理を持ちません。保存の期間は無期限で、古い記録を消す仕組みもありません（保存の期間と古い記録の扱いは後続 Intent で決めます）。
 - **監査ログを見る画面・API は、この Intent では作りません。** 当面の確認は、開発者が内部DBを読み取りで開いて行います。
 - 記録する項目は、発生の日時・種類（`LOGIN_SUCCEEDED`・`LOGIN_FAILED`・`LOGGED_OUT`・`ACCESS_DENIED`）・結果・入力されたメールアドレス・失敗の理由・接続元IP・User-Agent・要求のパス（アクセスの拒否のときだけ）・トレースIDです。パスワード・トークン・ハッシュ値は記録しません。
+- 利用停止中の利用者のログイン（Intent 260930-user-admin の U1）は、パスワードの正誤とロックの状態にかかわらず `LOGIN_FAILED`（結果 `FAILURE`、失敗の理由 `ACCOUNT_SUSPENDED`）を1件記録します。入力されたメールアドレスはほかのログインの失敗と同じく入り、操作した人と対象の利用者はほかのログインの失敗と同じく空です。停止中の利用者のトークンの更新とアクセストークンの認証は記録しません。停止中のログインの試みは失敗回数に数えません。
 - パスワードの変更（Intent 260925-user-management の U2）も記録します。種類は `PASSWORD_CHANGED` で、成功（結果 `SUCCESS`）と今のパスワードの誤り（結果 `FAILURE`、失敗の理由 `CURRENT_PASSWORD_MISMATCH`）を1件ずつ記録します。操作した人（`actor_user_id`）と対象の利用者（`target_user_id`）に本人の利用者 ID が入ります。入力の誤りと、氏名・表示の設定の保存は記録しません。
 - 招待と登録の完了（Intent 260925-user-management の U3）も記録します。種類は `INVITATION_ISSUED`・`INVITATION_RESENT`・`INVITATION_CANCELLED`（操作した管理者 `actor_user_id` と対象の招待 `target_invitation_id`、結果 `SUCCESS`）、`REGISTRATION_COMPLETED`（操作した人は空、対象の招待と作った利用者 `target_user_id`）、`REGISTRATION_FAILED`（結果 `FAILURE`、失敗の理由 `INVITATION_EXPIRED`・`INVITATION_ALREADY_USED`・`INVITATION_CANCELLED`・`INVITATION_NOT_FOUND`・`EMAIL_ALREADY_REGISTERED`、対象の招待は見つかったときだけ）です。拒否（400・404・409・503）・送信の失敗・リンクの確かめ・入力の誤り・期限切れの置き換えは記録しません。トークン・招待の URL・メールアドレスは記録しません。
 - 対象の列（V7）: `target_user_id`（対象の利用者）・`target_invitation_id`（対象の招待。招待と登録の完了の出来事で使います）。どちらも空を許し、それ以前の種類の記録では空のままです。
@@ -892,7 +896,7 @@ Intent 260925-user-management の U3 で、管理者が利用者をメールで�
 
 契約の文書（`aidlc/spaces/default/intents/260925-user-management/inception/contract-design/contract-summary.md`）は書き換えず、実装との差をここに記録します（依頼者の決定）。後の単位（U5・U6）は、この形を正として読みます。
 
-- **C2**: U3 が通る経路の口を、文字列にすると値を伏せる型 `RedactedText` で受け渡す形にしました（`existsByEmail(RedactedText)` を足し、`findDisplayName` の戻り値を `Optional<RedactedText>` にした）。既存の `existsByEmail(String)`（初期管理者）とログインの経路は据え置きです。
+- **C2**: U3 が通る経路の口を、文字列にすると値を伏せる型 `RedactedText` で受け渡す形にしました（`existsByEmail(RedactedText)` を足し、`findDisplayName` の戻り値を `Optional<RedactedText>` にした）。このとき据え置いた `existsByEmail(String)`（初期管理者）とログインの照合の `verifyPassword(String, …)` は、Intent 260930-user-admin の B1 で `RedactedText` で受ける形にそろえました（`existsByEmail(String)` は消した）。
 - **C5**: `invitedBy` は招待した管理者の氏名だけで、利用者の行が無ければ空の文字列です（メールアドレスへは切り替えません）。招待の 400 に `fieldErrors` を足しました。送り直しの有効期限は「24 時間」ではなく `MASTERSMITH_INVITATION_VALIDITY` の長さです。
 - **C6**: 登録の完了の 400 に `fieldErrors` を足しました。
 - **C8**: `REGISTRATION_FAILED` の失敗の理由に `EMAIL_ALREADY_REGISTERED` を足しました。
@@ -1025,8 +1029,8 @@ U1 のファイルは書き換えずに、次の型を使います。
 | 画面の差し込み口 | `frontend/src/features/<featureId>/registration.ts` に `FeatureRegistration`（`frontend/src/app/registry/types.ts`）を `registration` という名前でエクスポートする。画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元・文言（鍵は `<featureId>.` で始める）を登録できる。ユーザーメニューの項目は `action`（操作）か `path`（登録済みの画面の URL、読み込み直しなしで移る）のどちらか一方を持つ（`frontend/src/features/README.md`）。重複は画面の起動の失敗 | U2、U3、U7 |
 | ログイン用レイアウト | `frontend/src/app/layout/LoginLayout.tsx`（role=LOGIN の画面が、入力欄とボタンを子として置く） | U2 |
 | スキーマの変更 | 上の「スキーマの変更（Flyway）」の決まり | U2、U4 |
-| 検証済みの利用者（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticatedUser`（`userId`・`email`・`admin`）。要求ごとに DB から読んだ値で、Spring Security の認証の結果の主体に置く | U3 |
-| トークンの認証の失敗（U2 が提供） | `cherry.mastersmith.auth.domain.TokenAuthenticationException`（`AuthenticationException` の子）と `TokenFailureReason`（`TOKEN_MALFORMED`・`TOKEN_INVALID`・`TOKEN_EXPIRED`・`USER_NOT_FOUND`）。トークンが無い要求は U2 の検証を通らず、Spring Security の「認証が足りない」の例外が届く | U3 |
+| 検証済みの利用者（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticatedUser`（`userId`・`email`・`admin`）。要求ごとに DB から読んだ値で、Spring Security の認証の結果の主体に置く。文字列化ではメールアドレスを伏せる（Intent 260930-user-admin の U1） | U3 |
+| トークンの認証の失敗（U2 が提供） | `cherry.mastersmith.auth.domain.TokenAuthenticationException`（`AuthenticationException` の子）と `TokenFailureReason`（`TOKEN_MALFORMED`・`TOKEN_INVALID`・`TOKEN_EXPIRED`・`USER_NOT_FOUND`・`USER_SUSPENDED`）。`USER_SUSPENDED`（利用停止中の利用者、Intent 260930-user-admin の U1）は入口の DEBUG のログにだけ出る区分で、応答はほかの失敗と同じ 401 になり、有効期限切れと同じくアクセスの拒否の出来事にも監査にも出ない。トークンが無い要求は U2 の検証を通らず、Spring Security の「認証が足りない」の例外が届く | U3 |
 | 認証の出来事（U2 が提供） | `cherry.mastersmith.auth.domain.AuthenticationEvent` を U2 のトランザクションの中で知らせる。受け取りは `@TransactionalEventListener(phase = AFTER_COMMIT)` で確定の後に同じスレッドで行う | U4 |
 | 時計（U2 が提供） | `java.time.Clock` の Bean（UTC、`cherry.mastersmith.auth.service.AuthClockConfig`）。ほかの単位は別に定義せずこれを使う | U3、U4 |
 | API 呼び出しの共通部分（U2 が提供） | `frontend/src/shared/api-client/` の `apiFetch`・`apiRequest`（アクセストークンの付与、401 での更新と送り直し）と `{ status, code }` の形のエラー | U3（画面） |

@@ -27,6 +27,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.Theme;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +109,7 @@ class InitialAdminInitializerTest {
     @Test
     @DisplayName("an existing administrator is left untouched, logged at INFO with the masked email only")
     void existing() {
-        when(service.existsByEmail("admin@example.com")).thenReturn(true);
+        when(service.existsByEmail(new RedactedText("admin@example.com"))).thenReturn(true);
         boolean[] created = new boolean[1];
 
         List<ILoggingEvent> events = run("admin@example.com", PASSWORD, created);

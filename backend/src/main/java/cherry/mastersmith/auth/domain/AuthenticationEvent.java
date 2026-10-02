@@ -70,4 +70,17 @@ public record AuthenticationEvent(
                 client.userAgent(),
                 client.traceId());
     }
+
+    /**
+     * 入力されたメールアドレスを伏せて文字列にする（メソッドの呼び出しの追跡が業務処理の引数を文字列にするため）。
+     *
+     * <p>{@code auth.domain} を {@code user.domain} に依存させないため、値の有無にかかわらず固定の {@code ***} にする。
+     */
+    @Override
+    public String toString() {
+        return "AuthenticationEvent[eventType=" + eventType + ", occurredAt=" + occurredAt
+                + ", enteredEmail=***, userId="
+                + userId + ", failureReason=" + failureReason + ", sourceIp=" + sourceIp + ", userAgent=" + userAgent
+                + ", traceId=" + traceId + "]";
+    }
 }

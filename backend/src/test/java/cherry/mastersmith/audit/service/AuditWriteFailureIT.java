@@ -25,7 +25,9 @@ import cherry.mastersmith.access.web.AdminCheckController;
 import cherry.mastersmith.audit.testsupport.FailingAuditEventRepositoryConfig;
 import cherry.mastersmith.audit.testsupport.FailingAuditEventRepositoryConfig.FailingAuditEventRepository;
 import cherry.mastersmith.audit.testsupport.FailingAuditEventRepositoryConfig.Mode;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.common.testsupport.TestDatabase;
@@ -48,6 +50,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** 監査の書き込みの失敗が元の操作に影響しないことの結合テスト（FR9.4、BR3.1、NFR10.1、NFR10.3）。 */
 @SpringBootTest(
@@ -72,6 +76,12 @@ class AuditWriteFailureIT {
 
     @Autowired
     FailingAuditEventRepository repository;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private HttpTestClient client;
 
@@ -127,6 +137,27 @@ class AuditWriteFailureIT {
         assertThat(comparable(api.login(user.email(), "まちがい"))).isEqualTo(failedBefore);
         String cookieAfter = AuthApi.cookieValue(api.login(user.email(), AdminTestUsers.PASSWORD));
         assertThat(comparable(api.logout(cookieAfter, api.origin()))).isEqualTo(logoutBefore);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = Mode.class,
+            names = {"APPEND_FAILURE", "CONNECTION_FAILURE"})
+    @DisplayName("a failing audit write does not change the 401 of a suspended user's login")
+    void suspendedLoginResponseIsUnchanged(Mode mode) {
+        AdminTestUsers.TestUser user = users.createNonAdmin();
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(user.userId());
+        HttpResponse<String> before = api.login(user.email(), AdminTestUsers.PASSWORD);
+        assertThat(before.statusCode()).isEqualTo(401);
+        assertThat(HttpTestClient.json(before)).containsEntry("code", "AUTHENTICATION_FAILED");
+        repository.takeSaveCalls();
+
+        repository.mode(mode);
+
+        assertThat(comparable(api.login(user.email(), AdminTestUsers.PASSWORD))).isEqualTo(comparable(before));
+        assertThat(comparable(api.login(user.email(), "まちがい"))).isEqualTo(comparable(before));
+        assertThat(repository.takeSaveCalls()).as("書き込みを試みて失敗した（再試行しない）").isEqualTo(2);
     }
 
     @ParameterizedTest

@@ -33,6 +33,9 @@ import java.util.Objects;
  *
  * <p>氏名と表示の設定の4列（V7、ADR-003）を持つ。書き換えはエンティティの変更の検出では行わず、4列だけ・パスワードのハッシュだけを
  * 書き換える更新の問い合わせ（{@code user.repository}）で行う（全列を書いて相手の列を古い値で上書きしないため。BR3.4）。
+ *
+ * <p>停止の状態（V9、Intent 260930-user-admin の U1）を持つ。作るときは停止していない（false）。外から書き換えるメソッドは持たず、
+ * 書き換えは {@code user.repository} の停止の列だけの更新の問い合わせで行う（NFR1.4）。
  */
 @Entity
 @Table(name = "users")
@@ -70,6 +73,9 @@ public class User {
     @Column(name = "font_size", nullable = false, length = 2)
     private FontSize fontSize;
 
+    @Column(name = "suspended", nullable = false)
+    private boolean suspended;
+
     /** JPA が使う。 */
     protected User() {}
 
@@ -92,6 +98,7 @@ public class User {
         this.language = preferences.language();
         this.theme = preferences.theme();
         this.fontSize = preferences.fontSize();
+        this.suspended = false;
     }
 
     /**
@@ -173,6 +180,15 @@ public class User {
      */
     public FontSize getFontSize() {
         return fontSize;
+    }
+
+    /**
+     * 利用停止中かを返す。書き換えは {@code user.repository} の停止の列だけの更新の問い合わせで行う。
+     *
+     * @return 利用停止中なら true
+     */
+    public boolean isSuspended() {
+        return suspended;
     }
 
     /**

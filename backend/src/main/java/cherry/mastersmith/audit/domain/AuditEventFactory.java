@@ -336,6 +336,7 @@ public final class AuditEventFactory {
             case USER_NOT_FOUND -> AuditFailureReason.USER_NOT_FOUND;
             case PASSWORD_MISMATCH -> AuditFailureReason.PASSWORD_MISMATCH;
             case ACCOUNT_LOCKED -> AuditFailureReason.ACCOUNT_LOCKED;
+            case ACCOUNT_SUSPENDED -> AuditFailureReason.ACCOUNT_SUSPENDED;
         };
     }
 

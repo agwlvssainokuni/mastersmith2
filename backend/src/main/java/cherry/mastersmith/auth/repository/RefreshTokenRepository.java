@@ -50,6 +50,19 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     int revokeIfActive(@Param("tokenId") long tokenId, @Param("revokedAt") Instant revokedAt);
 
     /**
+     * 利用者のまだ無効でない行をすべて無効にする（Intent 260930-user-admin の U1、BR5.1）。期限切れの行も含む。
+     *
+     * <p>既に無効の行の無効にした日時は変えない。ほかの利用者の行は書かない。
+     *
+     * @param userId 利用者 ID
+     * @param revokedAt 無効にする日時
+     * @return 無効にした行の数（未無効の行が無ければ 0）
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update RefreshToken t set t.revokedAt = :revokedAt where t.userId = :userId and t.revokedAt is null")
+    int revokeAllActiveByUserId(@Param("userId") long userId, @Param("revokedAt") Instant revokedAt);
+
+    /**
      * 有効期限が指定の日時より前の行（無効・期限切れで、保存の日数を過ぎた行）を、件数の上限までまとめて消す。
      *
      * @param cutoff この日時より前に期限を迎えた行を消す

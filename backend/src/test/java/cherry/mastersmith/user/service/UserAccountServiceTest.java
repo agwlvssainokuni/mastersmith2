@@ -84,8 +84,14 @@ class UserAccountServiceTest {
         return user;
     }
 
+    private User suspendedUser(long id) {
+        User user = user(id);
+        ReflectionTestUtils.setField(user, "suspended", true);
+        return user;
+    }
+
     private static UserSummary adminSummary(long id) {
-        return new UserSummary(id, "admin@example.com", true, "管理者", "en", "dark", "lg");
+        return new UserSummary(id, "admin@example.com", true, "管理者", "en", "dark", "lg", false);
     }
 
     private static NewUser newUser(String email, String displayName) {
@@ -107,7 +113,8 @@ class UserAccountServiceTest {
         when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
         when(encoder.matches("正しいパスワード1234", HASH)).thenReturn(true);
 
-        PasswordVerification result = service.verifyPassword("  Admin@Example.com ", new Password("正しいパスワード1234"));
+        PasswordVerification result =
+                service.verifyPassword(new RedactedText("  Admin@Example.com "), new Password("正しいパスワード1234"));
 
         assertThat(result.matched()).isTrue();
         assertThat(result.email()).isEqualTo("admin@example.com");
@@ -119,7 +126,8 @@ class UserAccountServiceTest {
     void mismatch() {
         when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
 
-        PasswordVerification result = service.verifyPassword("admin@example.com", new Password("まちがい"));
+        PasswordVerification result =
+                service.verifyPassword(new RedactedText("admin@example.com"), new Password("まちがい"));
 
         assertThat(result.matched()).isFalse();
         assertThat(result.userSummary()).isPresent();
@@ -131,7 +139,8 @@ class UserAccountServiceTest {
     void unknownUser() {
         when(repository.findByEmail(anyString())).thenReturn(Optional.empty());
 
-        PasswordVerification result = service.verifyPassword("nobody@example.com", new Password("なにか"));
+        PasswordVerification result =
+                service.verifyPassword(new RedactedText("nobody@example.com"), new Password("なにか"));
 
         assertThat(result.matched()).isFalse();
         assertThat(result.userSummary()).isEmpty();
@@ -145,7 +154,8 @@ class UserAccountServiceTest {
         when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
         String tooLong = "あ".repeat(24) + "a";
 
-        PasswordVerification result = service.verifyPassword("admin@example.com", new Password(tooLong));
+        PasswordVerification result =
+                service.verifyPassword(new RedactedText("admin@example.com"), new Password(tooLong));
 
         assertThat(result.matched()).isFalse();
         verify(encoder, never()).matches(eq(tooLong), anyString());
@@ -159,7 +169,8 @@ class UserAccountServiceTest {
                         .map(RecordComponent::getName))
                 .doesNotContain("passwordHash", "hash");
         assertThat(Arrays.stream(UserSummary.class.getRecordComponents()).map(RecordComponent::getName))
-                .containsExactly("userId", "email", "admin", "displayName", "language", "theme", "fontSize");
+                .containsExactly(
+                        "userId", "email", "admin", "displayName", "language", "theme", "fontSize", "suspended");
     }
 
     @Test
@@ -287,12 +298,27 @@ class UserAccountServiceTest {
     }
 
     @Test
-    @DisplayName("existsByEmail normalizes the email before the lookup")
-    void existsByEmail() {
-        when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(user(7)));
+    @DisplayName("verifyPassword rejects a null email before any lookup or password check")
+    void verifyPasswordRejectsNullEmail() {
+        assertThatThrownBy(() -> service.verifyPassword(null, new Password("なにか")))
+                .isInstanceOf(NullPointerException.class);
+        verify(repository, never()).findByEmail(anyString());
+        verify(encoder, never()).matches(anyString(), anyString());
+    }
 
-        assertThat(service.existsByEmail(" ADMIN@example.com")).isTrue();
-        assertThat(service.existsByEmail("other@example.com")).isFalse();
+    @Test
+    @DisplayName(
+            "the email lookups of the public operations take the email only as a redacted value, never as a String")
+    void emailLookupsTakeNoString() {
+        for (String name : new String[] {"verifyPassword", "existsByEmail"}) {
+            assertThat(Arrays.stream(UserAccountService.class.getMethods())
+                            .filter(method -> method.getName().equals(name))
+                            .toList())
+                    .as("public %s", name)
+                    .isNotEmpty()
+                    .allSatisfy(
+                            method -> assertThat(method.getParameterTypes()[0]).isEqualTo(RedactedText.class));
+        }
     }
 
     @Test
@@ -306,5 +332,92 @@ class UserAccountServiceTest {
         assertThat(service.existsByEmail(new RedactedText("other@example.com"))).isFalse();
         assertThatThrownBy(() -> service.existsByEmail((RedactedText) null)).isInstanceOf(NullPointerException.class);
         verify(repository, never()).findByEmail(anyString());
+    }
+
+    @Test
+    @DisplayName("the summaries of findById and verifyPassword carry the suspension as true and false")
+    void summaryCarriesSuspension() {
+        when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
+        when(repository.findById(9L)).thenReturn(Optional.of(suspendedUser(9)));
+        when(repository.findByEmail("admin@example.com")).thenReturn(Optional.of(suspendedUser(9)));
+        when(encoder.matches("正しいパスワード1234", HASH)).thenReturn(true);
+
+        assertThat(service.findById(7))
+                .hasValueSatisfying(summary -> assertThat(summary.suspended()).isFalse());
+        assertThat(service.findById(9))
+                .hasValueSatisfying(summary -> assertThat(summary.suspended()).isTrue());
+        PasswordVerification verification =
+                service.verifyPassword(new RedactedText("admin@example.com"), new Password("正しいパスワード1234"));
+        // 停止中でも照合は今までどおり行い、停止の判定は呼び出し元（ログインの照合）が要約の値で行う。
+        assertThat(verification.matched()).isTrue();
+        assertThat(verification.user().suspended()).isTrue();
+        verify(repository, times(1)).findByEmail("admin@example.com");
+    }
+
+    @Test
+    @DisplayName("isSuspended returns the stored value and fails for an unknown user with only the id in the message")
+    void isSuspended() {
+        when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
+        when(repository.findById(9L)).thenReturn(Optional.of(suspendedUser(9)));
+        when(repository.findById(8L)).thenReturn(Optional.empty());
+
+        assertThat(service.isSuspended(7)).isFalse();
+        assertThat(service.isSuspended(9)).isTrue();
+        assertThatThrownBy(() -> service.isSuspended(8))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("userId=8")
+                .hasMessageNotContaining("admin@example.com");
+    }
+
+    @Test
+    @DisplayName("setSuspended writes only through the suspension update and fails when no row is updated")
+    void setSuspended() {
+        when(repository.updateSuspended(7L, true)).thenReturn(1);
+        when(repository.updateSuspended(7L, false)).thenReturn(1);
+        when(repository.updateSuspended(8L, true)).thenReturn(0);
+
+        service.setSuspended(7, true);
+        service.setSuspended(7, false);
+
+        verify(repository).updateSuspended(7L, true);
+        verify(repository).updateSuspended(7L, false);
+        assertThatThrownBy(() -> service.setSuspended(8, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("userId=8");
+        verify(repository, never()).save(any(User.class));
+        verify(repository, never()).saveAndFlush(any(User.class));
+        verifyNoInteractions(publisher, encoder);
+    }
+
+    @Test
+    @DisplayName("the string form of the summary shows the suspension but not the email or the name")
+    void summaryStringShowsSuspension() {
+        UserSummary suspended = new UserSummary(9, "suspended@example.com", false, "停止 中", "ja", "system", "md", true);
+
+        assertThat(suspended.toString())
+                .contains("suspended=true")
+                .contains("userId=9")
+                .doesNotContain("suspended@example.com")
+                .doesNotContain("停止 中");
+        assertThat(adminSummary(7).toString()).contains("suspended=false");
+    }
+
+    @Test
+    @DisplayName("the string form of a password verification hides the email and the name but shows the result")
+    void passwordVerificationStringHidesEmail() {
+        PasswordVerification found = new PasswordVerification("admin@example.com", adminSummary(7), true);
+        PasswordVerification unknown = new PasswordVerification("nobody@example.com", null, false);
+
+        assertThat(found.toString())
+                .doesNotContain("admin@example.com")
+                .doesNotContain("管理者")
+                .contains("email=***")
+                .contains("matched=true")
+                .contains("userId=7");
+        assertThat(unknown.toString())
+                .doesNotContain("nobody@example.com")
+                .contains("email=***")
+                .contains("user=null")
+                .contains("matched=false");
     }
 }

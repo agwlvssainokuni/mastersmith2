@@ -28,6 +28,7 @@ import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import jakarta.persistence.EntityManager;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HexFormat;
@@ -75,6 +76,27 @@ class InvitationSchemaIT {
     private long admin() {
         return TestUserAccounts.create(
                 userAccountService, "admin-" + UUID.randomUUID() + "@example.com", "テスト用パスワード-0000", true);
+    }
+
+    /** 招待を JDBC で1行追記する（トークンのハッシュは連番から作る）。 */
+    private void insert(long adminId, String email, String state, int seq) {
+        jdbc.update(
+                "INSERT INTO invitations (email, language, token_hash, invited_by_user_id, invited_at, expires_at,"
+                        + " send_result, state) VALUES (?, 'ja', ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'PENDING', ?)",
+                email,
+                HexFormat.of().parseHex("%064x".formatted(seq)),
+                adminId,
+                state);
+    }
+
+    /** 原因の連なりのうち、最初の {@link SQLException} を返す（無ければ null）。 */
+    private static SQLException sqlException(Throwable e) {
+        for (Throwable cause = e; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sql) {
+                return sql;
+            }
+        }
+        return null;
     }
 
     private Invitation persist(String email, long adminId, int seq) {
@@ -134,7 +156,14 @@ class InvitationSchemaIT {
 
         // EntityManager を直に使うため、DB アクセスの層の例外の読み替えを通らない（層の中では一意の違反の例外になる）。
         assertThatThrownBy(() -> persist(email, adminId, 3))
-                .isInstanceOfAny(DataIntegrityViolationException.class, ConstraintViolationException.class);
+                .isInstanceOfAny(DataIntegrityViolationException.class, ConstraintViolationException.class)
+                .satisfies(e -> {
+                    // SQLException は Iterable でもあるため、assertThat に直に渡さず項目を確かめる。
+                    SQLException sql = sqlException(e);
+                    assertThat((Object) sql).as("原因の連なりの SQLException").isNotNull();
+                    assertThat(sql.getSQLState()).isEqualTo("23505");
+                    assertThat(sql.getMessage()).contains("UK_INVITATIONS_PENDING_EMAIL");
+                });
 
         tx.executeWithoutResult(status ->
                 entityManager.find(Invitation.class, first.getInvitationId()).cancel(NOW.plusSeconds(1)));
@@ -150,5 +179,35 @@ class InvitationSchemaIT {
         assertThat(completed.getState()).isEqualTo(InvitationState.COMPLETED);
         assertThat(completed.getCompletedUserId()).isEqualTo(adminId);
         assertThatThrownBy(() -> completed.cancel(NOW)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName(
+            "rows that are not PENDING may share the email, have no pending email, and an unknown state is rejected")
+    void endedRowsMayRepeat() {
+        long adminId = admin();
+        String email = "ended-" + UUID.randomUUID() + "@example.com";
+
+        insert(adminId, email, "CANCELLED", 101);
+        insert(adminId, email, "REPLACED", 102);
+        insert(adminId, email, "COMPLETED", 103);
+        insert(adminId, email, "PENDING", 104);
+
+        assertThat(jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM invitations WHERE email = ? AND pending_email IS NULL",
+                        Integer.class,
+                        email))
+                .isEqualTo(3);
+        assertThat(jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM invitations WHERE pending_email = ?", Integer.class, email))
+                .isEqualTo(1);
+        String other = "unknown-state-" + UUID.randomUUID() + "@example.com";
+        assertThatThrownBy(() -> insert(adminId, other, "EXPIRED", 105)).satisfies(e -> {
+            SQLException sql = sqlException(e);
+            assertThat((Object) sql).as("原因の連なりの SQLException").isNotNull();
+            assertThat(sql.getSQLState()).isEqualTo("23513");
+        });
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM invitations WHERE email = ?", Integer.class, other))
+                .isZero();
     }
 }

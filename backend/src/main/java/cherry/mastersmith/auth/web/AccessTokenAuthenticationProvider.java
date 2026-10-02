@@ -30,6 +30,10 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
  * Bearer のアクセストークンの検証（WF3、BR4.3〜BR4.5）。{@link AccessTokenService} で検証し、利用者を DB から読んで
  * {@link AuthenticatedUser}（管理者は DB の値）を主体とする認証の結果を作る。利用者がいなければ {@code USER_NOT_FOUND}。
  *
+ * <p>利用停止中の利用者は {@code USER_SUSPENDED} で拒否する（Intent 260930-user-admin の U1、BR4.1）。停止の判定は、管理者の印と
+ * 同じ1回の利用者の読み取りの結果で行い、読み取りを増やさない（NFR5.1）。応答は入口（{@link TokenAuthenticationEntryPoint}）の
+ * ほかの失敗と同じ 401 で、停止中であることは応答に出ない（BR6.1）。
+ *
  * <p>Bean にせず {@link AuthSecurityContributor} の中で作る（メソッドの呼び出しの追跡がトークンを含む引数を文字列にしないため）。
  */
 public class AccessTokenAuthenticationProvider implements AuthenticationProvider {
@@ -57,6 +61,9 @@ public class AccessTokenAuthenticationProvider implements AuthenticationProvider
         UserSummary user = userAccountService
                 .findById(userId)
                 .orElseThrow(() -> new TokenAuthenticationException(TokenFailureReason.USER_NOT_FOUND));
+        if (user.suspended()) {
+            throw new TokenAuthenticationException(TokenFailureReason.USER_SUSPENDED);
+        }
         return new AuthenticatedUserToken(new AuthenticatedUser(user.userId(), user.email(), user.admin()));
     }
 

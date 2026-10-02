@@ -18,8 +18,10 @@ package cherry.mastersmith.invitation.web;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.access.testsupport.AdminTestUsers;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.auth.testsupport.MutableClock;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.invitation.domain.InvitationProblemTypes;
 import cherry.mastersmith.invitation.testsupport.InvitationApi;
@@ -48,6 +50,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 招待の管理の API（契約 C5、BR1.1〜BR1.5・BR2.1〜BR2.7・BR4.4・BR5.1〜BR5.4・BR6.1〜BR6.3・BR9.1・BR9.3、NFR4.1・NFR8.1）の結合テスト。
@@ -83,6 +87,12 @@ class InvitationAdminApiIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private InvitationApi api;
 
@@ -253,6 +263,29 @@ class InvitationAdminApiIT {
         assertThat(items(api.list(admin, "?page=2")))
                 .singleElement()
                 .satisfies(item -> assertThat(item).containsEntry("invitationId", (int) targetId));
+    }
+
+    @Test
+    @DisplayName(
+            "the email of a suspended user is still 409 INVITATION_EMAIL_REGISTERED with no row and no mail (AC3.2.6)")
+    void suspendedUserEmailIsRegistered() {
+        String suspendedEmail = email();
+        long suspendedId = TestUserAccounts.create(userAccountService, suspendedEmail, AdminTestUsers.PASSWORD, false);
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(suspendedId);
+        int mails = RECEIVER.messages().size();
+        int rows = count("SELECT COUNT(*) FROM invitations");
+
+        HttpResponse<String> response = api.invite(admin, suspendedEmail, "ja");
+
+        assertThat(response.statusCode()).isEqualTo(409);
+        assertThat(json(response))
+                .containsEntry("code", "INVITATION_EMAIL_REGISTERED")
+                .doesNotContainKey("invitationId");
+        assertThat(response.body()).doesNotContain(suspendedEmail).doesNotContain("SUSPENDED");
+        assertThat(count("SELECT COUNT(*) FROM invitations")).isEqualTo(rows);
+        assertThat(RECEIVER.messages()).hasSize(mails);
+        assertThat(userAccountService.isSuspended(suspendedId)).isTrue();
     }
 
     @Test

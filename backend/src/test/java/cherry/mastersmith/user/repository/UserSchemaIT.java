@@ -66,6 +66,9 @@ class UserSchemaIT {
     @Autowired
     EntityManager entityManager;
 
+    @Autowired
+    UserRepository repository;
+
     private static String uniqueEmail() {
         return "user-" + UUID.randomUUID() + "@example.com";
     }
@@ -201,6 +204,48 @@ class UserSchemaIT {
 
         assertThatThrownBy(() -> tx.execute(status -> entityManager.find(User.class, id)))
                 .hasRootCauseInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("the V9 migration is applied and a new user entity reads back as not suspended")
+    void suspendedDefaultsToFalse() {
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT \"version\", \"success\" FROM \"flyway_schema_history\" WHERE \"version\" = '9'");
+        assertThat(rows).hasSize(1).allSatisfy(row -> assertThat(row).containsEntry("success", true));
+        User saved = persist(uniqueEmail(), Instant.parse("2026-10-02T00:00:00Z"));
+
+        User found = tx.execute(status -> entityManager.find(User.class, saved.getUserId()));
+
+        assertThat(saved.isSuspended()).isFalse();
+        assertThat(found.isSuspended()).isFalse();
+        // 停止の列を知らない形の追記（V9 の前の形）でも、既定の false が入る。
+        String email = uniqueEmail();
+        jdbc.update(
+                "INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES (?, 'h', FALSE, ?, ?)",
+                email,
+                OffsetDateTime.now(),
+                email);
+        Long id = jdbc.queryForObject("SELECT user_id FROM users WHERE email = ?", Long.class, email);
+        Boolean storedWithoutColumn =
+                tx.execute(status -> entityManager.find(User.class, id).isSuspended());
+        assertThat(storedWithoutColumn).isFalse();
+    }
+
+    @Test
+    @DisplayName("the suspended column is written by the update query and read back by the entity as true and false")
+    void suspendedIsWrittenAndReadBack() {
+        User saved = persist(uniqueEmail(), Instant.parse("2026-10-02T00:00:00Z"));
+        long id = saved.getUserId();
+
+        tx.execute(status -> repository.updateSuspended(id, true));
+        boolean afterSuspend =
+                tx.execute(status -> entityManager.find(User.class, id).isSuspended());
+        tx.execute(status -> repository.updateSuspended(id, false));
+        boolean afterResume =
+                tx.execute(status -> entityManager.find(User.class, id).isSuspended());
+
+        assertThat(afterSuspend).isTrue();
+        assertThat(afterResume).isFalse();
     }
 
     @Test

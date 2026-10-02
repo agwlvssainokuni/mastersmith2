@@ -34,4 +34,13 @@ public record PasswordVerification(String email, UserSummary user, boolean match
     public Optional<UserSummary> userSummary() {
         return Optional.ofNullable(user);
     }
+
+    /**
+     * メールアドレスを伏せて文字列にする（メソッドの呼び出しの追跡が業務処理の戻り値を文字列にするため）。利用者の要約は、その伏せた
+     * 文字列化のまま出す。
+     */
+    @Override
+    public String toString() {
+        return "PasswordVerification[email=***, user=" + user + ", matched=" + matched + "]";
+    }
 }

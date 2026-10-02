@@ -24,8 +24,10 @@ import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
 import cherry.mastersmith.access.testsupport.AdminAccessTestConfig;
 import cherry.mastersmith.access.testsupport.AdminTestUsers;
 import cherry.mastersmith.access.testsupport.CapturedAccessDeniedEvents;
+import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthTestTokens;
 import cherry.mastersmith.auth.testsupport.MutableClock;
+import cherry.mastersmith.auth.testsupport.TestUserSuspension;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.user.service.UserAccountService;
@@ -44,6 +46,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /** アクセス拒否の出来事の結合テスト（FR9.1、BR3.1〜BR3.6、NFR10.1、NFR10.2）。 */
 @SpringBootTest(
@@ -74,6 +78,12 @@ class AccessDeniedEventsIT {
 
     @Autowired
     CapturedAccessDeniedEvents captured;
+
+    @Autowired
+    RefreshTokenRevocationService revocationService;
+
+    @Autowired
+    PlatformTransactionManager transactionManager;
 
     private HttpTestClient client;
 
@@ -194,6 +204,23 @@ class AccessDeniedEventsIT {
 
         assertThat(call(AdminCheckController.PATH, token).statusCode()).isEqualTo(401);
 
+        assertThat(events()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a valid token of a suspended administrator is 401 and produces no event, like an expired token")
+    void suspendedUserProducesNoEvent() {
+        AdminTestUsers.TestUser admin = users.createAdmin();
+        String token = users.accessToken(admin);
+        assertThat(call(AdminCheckController.PATH, token).statusCode()).isEqualTo(204);
+        new TestUserSuspension(new TransactionTemplate(transactionManager), userAccountService, revocationService)
+                .suspend(admin.userId());
+        captured.clear();
+
+        HttpResponse<String> response = call(AdminCheckController.PATH, token);
+
+        assertThat(response.statusCode()).isEqualTo(401);
+        assertThat(HttpTestClient.json(response)).containsEntry("code", "AUTHENTICATION_REQUIRED");
         assertThat(events()).isEmpty();
     }
 

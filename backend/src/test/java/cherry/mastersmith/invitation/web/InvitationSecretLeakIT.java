@@ -58,8 +58,8 @@ import org.springframework.test.context.DynamicPropertySource;
  * NFR1.5・NFR2.1・NFR2.2、team.md のトークンと URL の漏えい、計画の決定 3）。
  *
  * <p>{@code cherry.mastersmith} のロガーを TRACE にしてメソッドの呼び出しの追跡を有効にし、招待・送り直し・リンクの確かめ・完了の成功と
- * 拒否・送信の失敗の間に出たログ・監査の行（全列）・エラー応答を確かめる。前準備のログイン（既存のログインの経路と初期管理者の
- * {@code existsByEmail(String)} は据え置き）は範囲の外。値は ASCII の乱数にして JSON の書き方に左右されずに探せるようにする。
+ * 拒否・送信の失敗の間に出たログ・監査の行（全列）・エラー応答を確かめる。前準備のログインと初期管理者の作成は範囲の外（どちらの
+ * メールアドレスの TRACE の確かめも、Intent 260930-user-admin の B1 の {@code AuthSuspensionSecretLeakIT} が受け持つ）。値は ASCII の乱数にして JSON の書き方に左右されずに探せるようにする。
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,

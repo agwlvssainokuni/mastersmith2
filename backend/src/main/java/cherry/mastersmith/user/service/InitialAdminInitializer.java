@@ -20,6 +20,7 @@ import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.PasswordPolicy;
+import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.Theme;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +89,7 @@ public class InitialAdminInitializer implements SmartInitializingSingleton {
                     .log("初期管理者を作成しませんでした");
             return false;
         }
-        if (userAccountService.existsByEmail(email)) {
+        if (userAccountService.existsByEmail(new RedactedText(email))) {
             LOGGER.atInfo().addKeyValue("maskedEmail", EmailAddress.mask(email)).log("初期管理者は既にいるため、作成しませんでした");
             return false;
         }
