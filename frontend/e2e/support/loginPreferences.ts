@@ -22,6 +22,10 @@
 // - 応答の Cookie（リフレッシュトークン）は本物の応答のまま返す。書き換えはこのページの中だけで効く。
 // - 失敗の応答や、形が違う応答（user が無い）は書き換えずにそのまま返す。
 // - 応答の値を注記・添付・標準出力に出さない。U6・U7 の検査（070・080）も同じ当て方を使う。
+// - 省略できる displayName を渡したときだけ user.displayName も書き換える（Intent 260930-user-admin の U4 の 130 が、上の帯の
+//   Avatar の頭文字を2文字にする架空の2語の氏名を当てるために使う。NFR 設計の logical-components.md 6.2）。同じ要求に
+//   差し替えを重ねると先に応答した1つしか効かないため、組の値と氏名を1つの差し替えで当てる。値が undefined の項目は
+//   重ねないため、渡さない呼び出し（060）の動作は今までと同じで、displayName: undefined を渡しても今の氏名を消さない。
 import type { Page } from '@playwright/test'
 import type { FontSize } from '../../src/app/display-settings/displaySettingsTypes'
 
@@ -29,6 +33,8 @@ import type { FontSize } from '../../src/app/display-settings/displaySettingsTyp
 export interface LoginPreferences {
   theme: 'light' | 'dark'
   fontSize: FontSize
+  /** 渡したときだけ user.displayName を書き換える（130 だけが渡す） */
+  displayName?: string
 }
 
 /** 書き換える API のパス */
@@ -43,6 +49,10 @@ export async function routeLoginPreferences(
   preferences: LoginPreferences,
 ): Promise<{ rewritten: number }> {
   const counter = { rewritten: 0 }
+  // 値が undefined の項目は重ねない（渡さない呼び出しの動作を今と同じに保つ）。
+  const overrides = Object.fromEntries(
+    Object.entries(preferences).filter(([, value]) => value !== undefined),
+  )
   await page.route(
     (url) => (LOGIN_RESPONSE_PATHS as readonly string[]).includes(url.pathname),
     async (route) => {
@@ -66,7 +76,7 @@ export async function routeLoginPreferences(
       }
       const rewritten = {
         ...(body as Record<string, unknown>),
-        user: { ...(user as Record<string, unknown>), ...preferences },
+        user: { ...(user as Record<string, unknown>), ...overrides },
       }
       counter.rewritten += 1
       return route.fulfill({ response, json: rewritten })

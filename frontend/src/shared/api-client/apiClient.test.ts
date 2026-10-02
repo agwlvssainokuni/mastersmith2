@@ -22,6 +22,7 @@ import {
   apiFetch,
   apiRequest,
   registerAuthHandlers,
+  refreshSessionOnce,
   registerLanguageResolver,
   resetApiClient,
 } from './apiClient'
@@ -176,6 +177,55 @@ describe('apiClient', () => {
       }),
       { numRuns: 5 },
     )
+  })
+})
+
+describe('apiClient refreshSessionOnce', () => {
+  it('calls the registered refresh once and returns its result', async () => {
+    refresh.mockResolvedValueOnce(true)
+    await expect(refreshSessionOnce()).resolves.toBe(true)
+    refresh.mockResolvedValueOnce(false)
+    await expect(refreshSessionOnce()).resolves.toBe(false)
+
+    expect(refresh).toHaveBeenCalledTimes(2)
+    expect(onUnauthenticated).not.toHaveBeenCalled()
+  })
+
+  it('shares the refresh with a simultaneous 401 refresh', async () => {
+    let resolveRefresh: (value: boolean) => void = () => {}
+    refresh.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveRefresh = resolve
+        }),
+    )
+    fetchMock.mockResolvedValueOnce(unauthorized()).mockResolvedValueOnce(ok())
+
+    const request = apiFetch('/api/items')
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(1))
+    const reread = refreshSessionOnce()
+    resolveRefresh(true)
+
+    await expect(reread).resolves.toBe(true)
+    expect((await request).status).toBe(200)
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns false without registered handlers', async () => {
+    resetApiClient()
+
+    await expect(refreshSessionOnce()).resolves.toBe(false)
+    expect(refresh).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('never sends a request by itself', async () => {
+    refresh.mockResolvedValue(true)
+
+    await refreshSessionOnce()
+    await refreshSessionOnce()
+
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

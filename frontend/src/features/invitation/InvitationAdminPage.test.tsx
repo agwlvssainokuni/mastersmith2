@@ -17,14 +17,18 @@
 // 招待の管理の画面のテスト（useInvitationAdmin を通す。frontend-components.md の 7節、functional-spec.md の 4〜6節、
 // performance-design.md の 2.2、security-design.md の 2.2・3.5・4節、NFR2.1・NFR6.3・NFR6.4・NFR7.2・NFR8.1・NFR9.1・NFR9.2）。
 // API の関数を差し替え、答えを返さない約束で止めて途中の表示を見る。時差を固定する。
+// 権限が無い（403・ACCESS_DENIED）の確かめだけは、画面を骨組みの ShellLayout の中に本物の登録と管理者の提供元で描き、
+// S6 に置き換わることを確かめる（U4 の FC 6.2・R-03、AC2.2.1・AC2.2.4）。code の無い 403 は今までどおり一般の文言。
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, onTestFailed, vi, type Mock } from 'vitest'
 import { axe } from 'vitest-axe'
+import { fakeProvider } from '../../app/testing/renderWithProviders'
 import type { ApiError } from '../../shared/api-client/apiError'
 import type { InvitationApi } from './api/invitationApi'
 import type { Invitation, InvitationPage } from './api/types'
 import { InvitationAdminPage } from './InvitationAdminPage'
+import { registration } from './registration'
 import { invitationOf, pageOf, rowsOf, sampleRows, unavailablePageOf } from './testing/fixtures'
 import { renderInvitation } from './testing/renderInvitation'
 
@@ -98,6 +102,28 @@ function fakeApi(firstPage: InvitationPage = pageOf()): FakeApi {
 
 function renderPage(fake: FakeApi, languages: readonly string[] = ['ja-JP']) {
   return renderInvitation(<InvitationAdminPage api={fake.api} timeZone="Asia/Tokyo" />, languages)
+}
+
+/** 画面を ShellLayout の中に、本物の登録と管理者のログイン状態で描く（S6 の確かめ用、U4 の R-03）。 */
+function renderInShell(fake: FakeApi) {
+  return renderInvitation(<InvitationAdminPage api={fake.api} timeZone="Asia/Tokyo" />, undefined, {
+    withShell: true,
+    provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
+    registrations: [registration],
+  })
+}
+
+/** S6 に置き換わり、招待の画面の中身・誤りの表示・確かめと入力の表示が残っていないこと */
+async function expectForbiddenView(): Promise<void> {
+  expect(await screen.findByTestId('admin-forbidden-view')).toBeInTheDocument()
+  expect(screen.getByTestId('admin-forbidden-heading')).toHaveTextContent('利用者の招待')
+  expect(screen.queryByRole('table', { name: '招待中の人' })).toBeNull()
+  expect(screen.queryByTestId('invitation-list-failed')).toBeNull()
+  expect(screen.queryByTestId('invitation-failure-alert')).toBeNull()
+  expect(screen.queryByTestId('invitation-invite-dialog-alert')).toBeNull()
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(screen.queryByRole('alertdialog')).toBeNull()
+  expect(document.body.textContent).not.toContain('server-detail-marker')
 }
 
 async function rowsShown(): Promise<void> {
@@ -217,7 +243,7 @@ describe('InvitationAdminPage loading', () => {
   it('shows the failed list with the general message, cannot invite, and loads again', async () => {
     const user = userEvent.setup()
     const fake = fakeApi()
-    fake.list.mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+    fake.list.mockRejectedValueOnce(apiError(403))
     renderPage(fake)
     const failed = await screen.findByTestId('invitation-list-failed')
     expect(failed).toHaveTextContent('招待中の人を読み込めませんでした。')
@@ -407,7 +433,7 @@ describe('InvitationAdminPage inviting', () => {
     const user = userEvent.setup()
     const fake = fakeApi()
     fake.create
-      .mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+      .mockRejectedValueOnce(apiError(403))
       .mockRejectedValueOnce(apiError(422))
       .mockRejectedValueOnce(apiError(500, 'INTERNAL_ERROR'))
       .mockRejectedValueOnce(NETWORK)
@@ -507,7 +533,7 @@ describe('InvitationAdminPage resending and revoking', () => {
     const user = userEvent.setup()
     const fake = fakeApi()
     fake.resend
-      .mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+      .mockRejectedValueOnce(apiError(403))
       .mockRejectedValueOnce(apiError(502))
       .mockRejectedValueOnce(NETWORK)
     renderPage(fake)
@@ -729,6 +755,46 @@ describe('InvitationAdminPage unauthenticated and leaving', () => {
       expect(fake.list).toHaveBeenCalledTimes(1)
     }
     expect(error).not.toHaveBeenCalled()
+  })
+})
+
+describe('InvitationAdminPage admin forbidden (U4)', () => {
+  it('shows the forbidden view when the list answers 403 ACCESS_DENIED', async () => {
+    const fake = fakeApi()
+    fake.list.mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+    renderInShell(fake)
+
+    await expectForbiddenView()
+    expect(fake.list).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes the invite dialog and shows the forbidden view when inviting answers 403', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi()
+    fake.create.mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+    renderInShell(fake)
+    await rowsShown()
+    await user.click(screen.getByRole('button', { name: '招待する' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(screen.getByLabelText('メールアドレス（必須）'), 'new@example.test')
+    await user.click(within(dialog).getByRole('button', { name: '招待する' }))
+
+    await expectForbiddenView()
+    expect(fake.create).toHaveBeenCalledTimes(1)
+    expect(fake.list).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the forbidden view without reloading when resending answers 403', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi()
+    fake.resend.mockRejectedValueOnce(apiError(403, 'ACCESS_DENIED'))
+    renderInShell(fake)
+    await rowsShown()
+    await user.click(screen.getByRole('button', { name: 'hanako@example.test への招待を送り直す' }))
+
+    await expectForbiddenView()
+    expect(fake.resend).toHaveBeenCalledTimes(1)
+    expect(fake.list).toHaveBeenCalledTimes(1)
   })
 })
 

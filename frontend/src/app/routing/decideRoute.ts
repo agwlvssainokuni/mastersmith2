@@ -30,6 +30,11 @@ export type RouteDecision =
   | { kind: 'LOGIN_LAYOUT' }
   /** 「ページが見つかりません」をアプリシェルの中に表示する */
   | { kind: 'NOT_FOUND' }
+  /**
+   * ログインしていて管理者でない利用者が ADMIN の画面を開いた。登録の画面と同じ形の木の中に、
+   * 画面の部品の代わりに権限が無いときの表示（S6）を出す（U4 の D6）。画面の部品は作らない
+   */
+  | { kind: 'ADMIN_FORBIDDEN'; route: RouteRegistration }
 
 function toLogin(routes: readonly RouteRegistration[]): RouteDecision {
   const login = routes.find((route) => route.role === 'LOGIN')
@@ -74,6 +79,7 @@ export function decideRoute(
       if (admin) {
         return { kind: 'SCREEN', route }
       }
-      return loggedIn ? { kind: 'NOT_FOUND' } : toLogin(routes)
+      // 管理者でない利用者には「ページが見つかりません」ではなく S6 を出す（U4 の D6、FS の G1）。
+      return loggedIn ? { kind: 'ADMIN_FORBIDDEN', route } : toLogin(routes)
   }
 }

@@ -49,6 +49,19 @@ describe('messages', () => {
     }
   })
 
+  it('contains the admin forbidden view texts in Japanese and English', () => {
+    for (const key of [
+      'adminForbidden.message',
+      'adminForbidden.homeLink',
+      'adminForbidden.heading',
+    ] as const) {
+      expect(ja[key].trim()).not.toBe('')
+      expect(en[key].trim()).not.toBe('')
+    }
+    expect(createI18n('ja').t('adminForbidden.message')).toBe('この画面を使う権限がありません')
+    expect(createI18n('en').t('adminForbidden.homeLink')).toBe('Back to home')
+  })
+
   it('resolves flat keys containing dots and feature messages in both languages', () => {
     const feature = { ja: { 'users.title': '利用者' }, en: { 'users.title': 'Users' } }
     expect(createI18n('ja', [feature]).t('users.title')).toBe('利用者')

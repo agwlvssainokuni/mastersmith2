@@ -15,6 +15,7 @@
  */
 // 表示の設定の土台のテスト（部品 7節、W2〜W12、D2〜D8・D11・D14、AC3.2.18・AC4.1.2〜AC4.1.6・AC4.1.8・AC4.1.9、
 // NFR2.2・NFR6.2・NFR9.3・NFR9.10）。make-you-chic-ui は差し替えず、<html> の属性と保存の鍵で確かめる。
+// U4 の自分の氏名と言語の反映（useApplyOwnProfile、D13・D14、R-01、SD 4.2・4.3、NFR1.5・NFR3.1・NFR8.2）も確かめる。
 import { act, render, screen, waitFor } from '@testing-library/react'
 import { StrictMode, useEffect, useLayoutEffect } from 'react'
 import { MemoryRouter } from 'react-router'
@@ -39,6 +40,7 @@ import {
 import { DISPLAY_SETTINGS_KEY } from './browserStorage'
 import { useDisplaySettings, type DisplaySettingsValue } from './DisplaySettingsProvider'
 import { saveBrowserDisplaySettings, saveBrowserLanguage } from './displaySettingsStore'
+import { useApplyOwnProfile, type ApplyOwnProfileInput } from './useApplyOwnProfile'
 import { installFakeColorScheme } from './testing/fakeColorScheme'
 
 const EMAIL = 'display-leak-check@example.com'
@@ -476,5 +478,164 @@ describe('DisplaySettingsProvider functions of contract C9', () => {
   it('refuses to be used outside the provider', () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     expect(() => render(<Probe />)).toThrow(/DisplaySettingsProvider/)
+  })
+})
+
+describe('DisplaySettingsProvider applyOwnProfile (U4)', () => {
+  const OWN_NAME = '自分の新しい氏名'
+
+  const own: {
+    apply?: (profile: ApplyOwnProfileInput) => void
+    seen: ((profile: ApplyOwnProfileInput) => void)[]
+    admin?: boolean
+  } = { seen: [] }
+
+  /** useApplyOwnProfile が返す関数と、ログイン状態の印を描画の確定ごとに記録する */
+  function OwnProbe() {
+    const apply = useApplyOwnProfile()
+    const login = useLoginState()
+    useLayoutEffect(() => {
+      own.apply = apply
+      own.seen.push(apply)
+      own.admin = login.admin
+    })
+    return null
+  }
+
+  async function renderOwn(provider: LoginStateProvider) {
+    own.apply = undefined
+    own.seen = []
+    own.admin = undefined
+    renderWithProviders(
+      <>
+        <Probe />
+        <OwnProbe />
+      </>,
+      { provider },
+    )
+    await screen.findByTestId('probe')
+    await waitForEffects()
+  }
+
+  function admin(preferences: LoginState['preferences']): LoginState {
+    return { loggedIn: true, admin: true, displayName: NAME, preferences }
+  }
+
+  it('applies the name and the language at once: text, lang and request language', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'dark', fontSize: 'lg' }))
+    await renderOwn(login.provider)
+    expect(screen.getByTestId('probe')).toHaveTextContent(`ja/dark/lg/dark/${NAME}`)
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`en/dark/lg/dark/${OWN_NAME}`),
+    )
+    expect(screen.getByTestId('probe-text')).toHaveTextContent('Home')
+    await waitFor(() => expect(document.documentElement.lang).toBe('en'))
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    await apiFetch('/api/items')
+    const init = fetchMock.mock.calls[0][1] as RequestInit
+    expect(new Headers(init.headers).get('Accept-Language')).toBe('en')
+  })
+
+  it('keeps the theme and the font size, also a stored value changed in another tab', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'sm' }))
+    await renderOwn(login.provider)
+    // ほかのタブで保存の値のテーマと文字の大きさが変わった。
+    localStorage.setItem(DISPLAY_SETTINGS_KEY, '{"language":"ja","theme":"dark","fontSize":"lg"}')
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`en/light/sm/light/${OWN_NAME}`),
+    )
+    expect(htmlTheme()).toBeNull()
+    expect(document.documentElement.getAttribute('data-font-size')).toBe('sm')
+    expect(storedJson()).toEqual({ language: 'en', theme: 'dark', fontSize: 'lg' })
+  })
+
+  it('does not save a theme tried as a preview and keeps the preview until it is cleared', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'md' }))
+    await renderOwn(login.provider)
+    act(() => captured.value?.setPreview('dark'))
+    expect(screen.getByTestId('probe')).toHaveTextContent(`ja/dark/md/dark/${NAME}`)
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`en/dark/md/dark/${OWN_NAME}`),
+    )
+
+    act(() => captured.value?.clearPreview())
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`en/light/md/light/${OWN_NAME}`),
+    )
+  })
+
+  it('does nothing while logged out', async () => {
+    localStorage.setItem(DISPLAY_SETTINGS_KEY, '{"language":"ja","theme":"light","fontSize":"md"}')
+    const login = controllableProvider({ loggedIn: false, admin: false })
+    await renderOwn(login.provider)
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+
+    expect(screen.getByTestId('probe')).toHaveTextContent('ja/light/md/light/-')
+    expect(document.documentElement.lang).toBe('ja')
+    expect(storedJson()).toEqual({ language: 'ja', theme: 'light', fontSize: 'md' })
+  })
+
+  it('never changes the admin flag of the login state', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'md' }))
+    await renderOwn(login.provider)
+    expect(own.admin).toBe(true)
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent(OWN_NAME))
+    expect(own.admin).toBe(true)
+  })
+
+  it('binds to the newest login state when the function taken earlier is called after a refresh', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'md' }))
+    await renderOwn(login.provider)
+    const takenAtRender = own.apply
+
+    // 保存の応答を待つ間にトークンの更新が入り、新しいログイン状態が知らされた。
+    await login.set(admin({ language: 'ja', theme: 'dark', fontSize: 'lg' }))
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`ja/dark/lg/dark/${NAME}`),
+    )
+
+    act(() => takenAtRender?.({ displayName: OWN_NAME, language: 'en' }))
+
+    await waitFor(() =>
+      expect(screen.getByTestId('probe')).toHaveTextContent(`en/dark/lg/dark/${OWN_NAME}`),
+    )
+  })
+
+  it('returns the same function while the login state, the theme and the language change', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'md' }))
+    await renderOwn(login.provider)
+
+    await login.set(admin({ language: 'en', theme: 'dark', fontSize: 'lg' }))
+    act(() => captured.value?.setPreview('light'))
+    act(() => captured.value?.setLanguage('ja'))
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent(OWN_NAME))
+
+    expect(own.seen.length).toBeGreaterThan(1)
+    expect(new Set(own.seen).size).toBe(1)
+  })
+
+  it('keeps the name out of every browser storage key', async () => {
+    const login = controllableProvider(admin({ language: 'ja', theme: 'light', fontSize: 'md' }))
+    await renderOwn(login.provider)
+
+    act(() => own.apply?.({ displayName: OWN_NAME, language: 'en' }))
+    await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent(OWN_NAME))
+
+    expect(Object.keys(storedJson()).sort()).toEqual(['fontSize', 'language', 'theme'])
+    expect(allStoredValues()).not.toContain(OWN_NAME)
   })
 })

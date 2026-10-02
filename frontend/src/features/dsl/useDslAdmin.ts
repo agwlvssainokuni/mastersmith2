@@ -21,8 +21,9 @@
 // - 定期的な自動の読み直しはしない。
 import { useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
 import type { DslApi } from './api/dslApi'
-import { readErrorReport } from './api/dslApi'
+import { DSL_API_ROOT, readErrorReport } from './api/dslApi'
 import type {
   DslErrorReport,
   DslFile,
@@ -36,7 +37,7 @@ import type { EmptyReason } from './DslPreviewPanel'
 import type { DslTab } from './DslTabs'
 import { countColumnChanges, countTableChanges } from './diffCounts'
 import { NOT_COMPARED_KINDS } from './DslWarningList'
-import { failureMessageKey, failureStatus, knownCode } from './failureMessage'
+import { failureMessageKey, knownCode } from './failureMessage'
 import type { LoadState } from './loadState'
 import { EMPTY_SUBMIT_INPUT, type SubmitInput, type SubmitPayload } from './submitInput'
 import type { DslText } from './useDslText'
@@ -52,12 +53,10 @@ interface PendingConfirm {
   run: () => void
 }
 
-/** 権限不足の状態コード（既存の管理者向け領域と同じく、表示できない旨を出す） */
-const FORBIDDEN = 403
-
 /** 画面の状態と操作 */
 export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslText) {
   const toast = useToast()
+  const reportForbidden = useAdminForbidden()
   const [status, setStatus] = useState<DslStatus | null>(null)
   const [statusLoad, setStatusLoad] = useState<LoadState>('loading')
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -74,7 +73,6 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
   const [emptyReason, setEmptyReason] = useState<EmptyReason>('none')
   const [replacedByOther, setReplacedByOther] = useState(false)
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null)
-  const [forbidden, setForbidden] = useState(false)
   const [liveMessage, setLiveMessage] = useState('')
 
   const mounted = useRef(true)
@@ -93,14 +91,14 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     }
   }, [])
 
-  /** 失敗が権限不足なら、画面を「表示できない」にする。 */
-  const checkForbidden = useCallback((error: unknown): boolean => {
-    if (failureStatus(error) === FORBIDDEN) {
-      setForbidden(true)
-      return true
-    }
-    return false
-  }, [])
+  /**
+   * 失敗が「権限が無い」（403・ACCESS_DENIED）なら骨組みへ渡して true を返す（U4 の FC 6.2）。骨組みの ShellLayout が
+   * この画面を S6 に置き換えるため、呼び出し元は誤りの表示も読み直しもせずに終える。判定は骨組みの関数に任せる。
+   */
+  const checkForbidden = useCallback(
+    (error: unknown): boolean => reportForbidden(error, DSL_API_ROOT),
+    [reportForbidden],
+  )
 
   const loadStatus = useCallback((): Promise<DslStatus | null> => {
     statusSeq.current += 1
@@ -448,7 +446,6 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     emptyReason,
     replacedByOther,
     confirm: confirm?.dialog ?? null,
-    forbidden,
     liveMessage,
     previewHeadingRef,
     setSubmitInput,

@@ -17,14 +17,19 @@
 // DSL の管理画面の流れのテスト（BR3.1〜BR3.3・BR4.1・BR4.2・BR5.5・BR7.1・BR7.2、NFR1.18・NFR5.6・NFR9.1・NFR10.1、
 // AC1.1.6〜AC1.1.8・AC2.1.3・AC2.2.9・AC3.1.7・AC3.3.1・AC3.3.3・AC4.1.1・AC4.1.2・AC4.2.1・AC4.2.2・AC5.1.4・AC5.1.6・AC6.2.4）。
 // dslApi の関数を差し替え（vi.fn）、成功・422・409・404・503（設定が無い・接続できない・DSL_BUSY）・通信の失敗を返す。
+// 権限が無い（403・ACCESS_DENIED）の確かめだけは、画面を骨組みの ShellLayout の中に本物の登録と管理者の提供元で描き、
+// S6 に置き換わることを確かめる（U4 の FC 6.2・R-03、AC2.2.1・AC2.2.4）。偽物の API は ApiClient を通らず、
+// 更新も登録していないため、読み直しは何もしない（FS 8節）。
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { fakeProvider } from '../../app/testing/renderWithProviders'
 import { toApiError } from '../../shared/api-client/apiError'
 import type { DslApi } from './api/dslApi'
 import type { DslFile, DslStatus, Preview } from './api/types'
 import { DslAdminPage } from './DslAdminPage'
+import { registration } from './registration'
 import { errorItems, historyOf, previewOf, previewRef, statusOf } from './testing/fixtures'
 import { renderDsl } from './testing/renderDsl'
 
@@ -86,6 +91,33 @@ function renderPage(api = fakeApi(), languages?: readonly string[]) {
     languages,
   )
   return { api, save, user, ...rendered }
+}
+
+/** 画面を ShellLayout の中に、本物の登録と管理者のログイン状態で描く（S6 の確かめ用、U4 の R-03）。 */
+function renderInShell(api = fakeApi()) {
+  const save = vi.fn<(file: DslFile) => void>()
+  const user = userEvent.setup()
+  const rendered = renderDsl(
+    <DslAdminPage api={api} save={save} timeZone="Asia/Tokyo" />,
+    undefined,
+    {
+      withShell: true,
+      provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
+      registrations: [registration],
+    },
+  )
+  return { api, save, user, ...rendered }
+}
+
+/** S6 に置き換わり、DSL の画面の中身が残っていないこと */
+async function expectForbiddenView(): Promise<void> {
+  expect(await screen.findByTestId('admin-forbidden-view')).toBeInTheDocument()
+  expect(screen.getByTestId('admin-forbidden-heading')).toHaveTextContent('DSL')
+  expect(screen.queryByTestId('dsl-admin-page')).not.toBeInTheDocument()
+  expect(screen.queryByTestId('dsl-tabs')).not.toBeInTheDocument()
+  expect(screen.queryByTestId('dsl-alert')).not.toBeInTheDocument()
+  expect(screen.queryByTestId('not-found-page')).not.toBeInTheDocument()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 }
 
 async function shown(): Promise<void> {
@@ -552,12 +584,40 @@ describe('DslAdminPage', () => {
     expect(screen.queryByTestId('dsl-alert')).not.toBeInTheDocument()
   })
 
-  it('shows the not found screen when the server answers 403', async () => {
+  it('shows the forbidden view when the server answers 403 ACCESS_DENIED', async () => {
     const api = fakeApi({ getStatus: vi.fn(() => failure(403, { code: 'ACCESS_DENIED' })) })
-    renderPage(api)
+    renderInShell(api)
 
-    expect(await screen.findByTestId('not-found-page')).toBeInTheDocument()
-    expect(screen.queryByTestId('dsl-tabs')).not.toBeInTheDocument()
+    await expectForbiddenView()
+    expect(api.getStatus).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes the open confirmation and shows the forbidden view when an operation answers 403', async () => {
+    const api = fakeApi({
+      applyPreview: vi.fn<DslApi['applyPreview']>(() => failure(403, { code: 'ACCESS_DENIED' })),
+    })
+    const { user } = renderInShell(api)
+    await shown()
+
+    await user.click(screen.getByTestId('dsl-preview-apply'))
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: '適用する' }))
+
+    await expectForbiddenView()
+    expect(api.applyPreview).toHaveBeenCalledTimes(1)
+    // 権限が無いときは状態とプレビューを読み直さない（今の扱いのまま）。
+    expect(api.getStatus).toHaveBeenCalledTimes(1)
+    expect(api.getPreview).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps the usual failure handling for a 403 without ACCESS_DENIED', async () => {
+    const api = fakeApi({ getStatus: vi.fn(() => failure(403)) })
+    renderInShell(api)
+
+    expect(await screen.findByTestId('dsl-status-error')).toBeInTheDocument()
+    expect(screen.getByTestId('dsl-admin-page')).toBeInTheDocument()
+    expect(screen.queryByTestId('admin-forbidden-view')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('not-found-page')).not.toBeInTheDocument()
   })
 
   it('offers to load again when the status or the preview cannot be read', async () => {

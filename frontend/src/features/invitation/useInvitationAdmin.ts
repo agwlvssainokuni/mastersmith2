@@ -21,11 +21,19 @@
 // - 読み直しごとに番号を増やし、最後に始めた読み直しの答えだけを使う。画面を離れた後の答えは捨てる（古い要求は止めない）。
 // - 応答の items が空で total が 1 以上なら、最後のページを読み直す。
 // - 成功は Toast だけで知らせ、失敗の知らせは1つだけ持ち、次の操作の開始・結果で置き換える・消す。
-// - 401 は ApiClient とログイン状態に任せ、画面の文言を出さない。403 は一般の 4xx の文言で示す。
+// - 401 は ApiClient とログイン状態に任せ、画面の文言を出さない。権限が無い（403・ACCESS_DENIED）ときは失敗を骨組みの
+//   useAdminForbidden に渡して何もせず終え、ShellLayout がこの画面を S6 に置き換える（U4 の FC 6.2）。そのほかの 403
+//   （code の無い・違うもの）は一般の 4xx の文言で示す。
 // - 応答の値をコンソール・ブラウザの保存に出さない。
 import { useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { readPendingProblem, readUnavailableReasons, type InvitationApi } from './api/invitationApi'
+import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
+import {
+  INVITATION_API_ROOT,
+  readPendingProblem,
+  readUnavailableReasons,
+  type InvitationApi,
+} from './api/invitationApi'
 import type {
   Invitation,
   InvitationLanguage,
@@ -108,6 +116,7 @@ export function useInvitationAdmin(
   language: InvitationLanguage,
 ) {
   const toast = useToast()
+  const reportForbidden = useAdminForbidden()
   const [page, setPage] = useState(1)
   const [list, setList] = useState<InvitationPage | null>(null)
   const [loadState, setLoadState] = useState<InvitationLoadState>('loading')
@@ -124,6 +133,12 @@ export function useInvitationAdmin(
   const mounted = useRef(true)
   const loadSeq = useRef(0)
   const text = useRef(t)
+
+  /** 失敗が「権限が無い」なら骨組みへ渡して true を返す（呼び出し元は何もせず終える、U4 の FC 6.2）。 */
+  const isForbidden = useCallback(
+    (error: unknown): boolean => reportForbidden(error, INVITATION_API_ROOT),
+    [reportForbidden],
+  )
 
   // 文言を引く関数は、応答を受けた後（描画の外）で使うため、最新のものを参照に置く。
   useEffect(() => {
@@ -179,7 +194,7 @@ export function useInvitationAdmin(
             }
           },
           (error: unknown) => {
-            if (!isLatest() || isUnauthorized(error)) {
+            if (!isLatest() || isUnauthorized(error) || isForbidden(error)) {
               return
             }
             setLoadState('failed')
@@ -192,7 +207,7 @@ export function useInvitationAdmin(
       }
       run(target)
     },
-    [api],
+    [api, isForbidden],
   )
 
   // 画面を開いたら1ページ目を読む（今のページは画面の中だけに持ち、開くたびに1ページ目から始める）。
@@ -282,6 +297,9 @@ export function useInvitationAdmin(
       },
       (error: unknown) => {
         if (!mounted.current) {
+          return
+        }
+        if (isForbidden(error)) {
           return
         }
         const code = knownCode(error)
@@ -377,7 +395,7 @@ export function useInvitationAdmin(
           return
         }
         setResending(invitationId, false)
-        if (isUnauthorized(error)) {
+        if (isUnauthorized(error) || isForbidden(error)) {
           return
         }
         const code = knownCode(error)
@@ -428,7 +446,7 @@ export function useInvitationAdmin(
           return
         }
         setCancelBusy(false)
-        if (isUnauthorized(error)) {
+        if (isUnauthorized(error) || isForbidden(error)) {
           return
         }
         setCancelTarget(null)

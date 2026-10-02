@@ -230,11 +230,16 @@ test.describe('090 invitation to registration flow (E2E-1) on the built WAR', ()
             `${name} のリンク`,
           ).toHaveCount(0)
         }
+        // 管理者でない利用者が管理の画面を開くと、権限が無いときの表示（S6）になる（U4 の D6）。
         for (const path of ['/admin/invitations', '/admin']) {
           await page.goto(path)
           await expect(
-            page.getByTestId('not-found-page'),
-            `${path} は見つからない表示`,
+            page.getByTestId('admin-forbidden-view'),
+            `${path} は権限が無いときの表示`,
+          ).toBeVisible()
+          await expect(
+            page.getByTestId('admin-forbidden-heading'),
+            `${path} の権限が無いときの見出し`,
           ).toBeVisible()
         }
       })

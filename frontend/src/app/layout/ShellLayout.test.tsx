@@ -22,7 +22,9 @@ import {
   useDisplaySettings,
   type DisplaySettingsValue,
 } from '../display-settings/DisplaySettingsProvider'
-import type { FeatureRegistration } from '../registry/types'
+import { registerAuthHandlers } from '../../shared/api-client/apiClient'
+import { useAdminForbidden } from '../admin-forbidden/AdminForbiddenProvider'
+import type { FeatureRegistration, LoginState, LoginStateProvider } from '../registry/types'
 import {
   fakeProvider,
   renderWithProviders,
@@ -285,6 +287,136 @@ describe('ShellLayout', () => {
           },
         }),
       ).toHaveNoViolations()
+    })
+  })
+
+  describe('admin forbidden (U4)', () => {
+    /** 押すと管理の API の 403 を骨組みに渡す子 */
+    function Reporter() {
+      const report = useAdminForbidden()
+      return (
+        <button
+          type="button"
+          data-testid="report-403"
+          onClick={() =>
+            report({ kind: 'response', status: 403, code: 'ACCESS_DENIED' }, '/api/admin/check')
+          }
+        >
+          中身
+        </button>
+      )
+    }
+
+    /** 状態を差し替えて知らせる偽物の提供元 */
+    function switchableProvider(initial: LoginState): {
+      provider: LoginStateProvider
+      set: (next: LoginState) => void
+    } {
+      let state = initial
+      const listeners = new Set<() => void>()
+      return {
+        provider: {
+          getLoginState: () => state,
+          subscribe: (listener) => {
+            listeners.add(listener)
+            return () => {
+              listeners.delete(listener)
+            }
+          },
+        },
+        set: (next) => {
+          state = next
+          for (const listener of listeners) {
+            listener()
+          }
+        },
+      }
+    }
+
+    const ADMIN: LoginState = { loggedIn: true, admin: true, displayName: '管理者' }
+    const MEMBER: LoginState = { loggedIn: true, admin: false, displayName: '管理者' }
+
+    async function renderReporter(provider: LoginStateProvider) {
+      const user = userEvent.setup()
+      renderWithProviders(
+        <ShellLayout>
+          <Reporter />
+        </ShellLayout>,
+        { route: '/admin', registrations: registrations(() => {}), provider },
+      )
+      expect(await screen.findByTestId('sidebar-nav-/admin')).toBeInTheDocument()
+      return user
+    }
+
+    it('replaces the content with the forbidden view and keeps the sidebar and the top bar', async () => {
+      const user = await renderReporter(fakeProvider(ADMIN))
+      await user.click(screen.getByTestId('report-403'))
+
+      expect(await screen.findByTestId('admin-forbidden-view')).toBeInTheDocument()
+      expect(screen.queryByTestId('report-403')).not.toBeInTheDocument()
+      expect(screen.getByRole('navigation')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /管理者/ })).toBeInTheDocument()
+      resetDisplayTestState()
+    })
+
+    it('hides the admin menu after the reread that follows a 403', async () => {
+      const login = switchableProvider(ADMIN)
+      const refresh = vi.fn(() => {
+        login.set(MEMBER)
+        return Promise.resolve(true)
+      })
+      registerAuthHandlers({ getAccessToken: () => null, refresh, onUnauthenticated: () => {} })
+      const user = await renderReporter(login.provider)
+
+      await user.click(screen.getByTestId('report-403'))
+
+      await waitFor(() =>
+        expect(screen.queryByTestId('sidebar-nav-/admin')).not.toBeInTheDocument(),
+      )
+      expect(refresh).toHaveBeenCalledTimes(1)
+      expect(screen.getByTestId('admin-forbidden-view')).toBeInTheDocument()
+      resetDisplayTestState()
+    })
+
+    it('hides the admin menu when a token refresh answers that the user is no longer an admin', async () => {
+      const login = switchableProvider(ADMIN)
+      await renderReporter(login.provider)
+
+      act(() => login.set(MEMBER))
+
+      await waitFor(() =>
+        expect(screen.queryByTestId('sidebar-nav-/admin')).not.toBeInTheDocument(),
+      )
+      expect(screen.getByTestId('sidebar-nav-/reports')).toBeInTheDocument()
+      resetDisplayTestState()
+    })
+
+    it('hides the admin menu when the user signs in again without the admin flag', async () => {
+      const login = switchableProvider(ADMIN)
+      await renderReporter(login.provider)
+
+      act(() => login.set({ loggedIn: false, admin: false }))
+      await waitFor(() =>
+        expect(screen.queryByTestId('sidebar-nav-/reports')).not.toBeInTheDocument(),
+      )
+      act(() => login.set(MEMBER))
+
+      expect(await screen.findByTestId('sidebar-nav-/reports')).toBeInTheDocument()
+      expect(screen.queryByTestId('sidebar-nav-/admin')).not.toBeInTheDocument()
+      resetDisplayTestState()
+    })
+
+    it('leaves the forbidden view by moving to a screen outside the admin area', async () => {
+      const user = await renderReporter(fakeProvider(ADMIN))
+      await user.click(screen.getByTestId('report-403'))
+      await screen.findByTestId('admin-forbidden-view')
+
+      await user.click(screen.getByTestId('sidebar-nav-/reports'))
+
+      expect(screen.getByTestId('location')).toHaveTextContent('/reports')
+      expect(screen.queryByTestId('admin-forbidden-view')).not.toBeInTheDocument()
+      expect(screen.getByTestId('report-403')).toBeInTheDocument()
+      resetDisplayTestState()
     })
   })
 })

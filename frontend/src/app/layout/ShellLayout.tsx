@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 // アプリシェルの中の配置（make-you-chic-ui の AppShell。サイドバー・トップバー・コンテンツ）（BR7.6）。
+// 今の URL が権限が無い URL のときは、コンテンツの領域の子の代わりに S6 を描く。サイドバー・トップバー・ユーザーメニューは
+// そのまま（U4 の D3）。
 import { AppShell, type AppShellNavItem, type MenuItem } from 'make-you-chic-ui'
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { useIsAdminForbiddenHere } from '../admin-forbidden/AdminForbiddenProvider'
+import { AdminForbiddenView } from '../admin-forbidden/AdminForbiddenView'
 import { useDisplaySettings } from '../display-settings/DisplaySettingsProvider'
 import { useMessages } from '../i18n/I18nProvider'
 import { useLoginState } from '../login-state/LoginStateGate'
@@ -34,6 +38,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
   const { displayName } = useDisplaySettings()
   const t = useMessages()
   const navigate = useNavigate()
+  const forbiddenHere = useIsAdminForbiddenHere()
 
   const navItems: AppShellNavItem[] = buildSidebarEntries(registrations, loginState).map(
     (entry) => ({
@@ -70,7 +75,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
 
   return (
     <AppShell navItems={navItems} user={user} userMenuItems={userMenuItems}>
-      {children}
+      {forbiddenHere ? <AdminForbiddenView /> : children}
     </AppShell>
   )
 }

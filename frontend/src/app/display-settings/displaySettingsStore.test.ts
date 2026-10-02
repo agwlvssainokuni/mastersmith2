@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// 表示の設定の置き場のテスト（部品 3.2・3.3、D2・D6・D8、W7・W8・W12）。
+// 表示の設定の置き場のテスト（部品 3.2・3.3、D2・D6・D8、W7・W8・W12。U4 の applyOwnProfileFor は D13・D14・R-01）。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { apiFetch, resetApiClient } from '../../shared/api-client/apiClient'
 import { stubBrowserLanguages } from '../testing/renderWithProviders'
 import { DISPLAY_SETTINGS_KEY } from './browserStorage'
 import {
+  applyOwnProfileFor,
   applyUserPreferencesFor,
   clearPreview,
   currentScreenLanguage,
@@ -157,5 +158,83 @@ describe('displaySettingsStore', () => {
     await apiFetch('/api/appearance')
     const init = fetchMock.mock.calls[0][1] as RequestInit
     expect(new Headers(init.headers).get('Accept-Language')).toBe('ja')
+  })
+})
+
+describe('displaySettingsStore applyOwnProfileFor (U4)', () => {
+  const applied = { language: 'ja', theme: 'light', fontSize: 'md' } as const
+
+  it('binds the new name and language with the applied theme and font size', () => {
+    const listener = vi.fn()
+    const unsubscribe = subscribeDisplaySettings(listener)
+
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'en' }, applied)
+
+    expect(getDisplaySettingsSnapshot().savedUser).toEqual({
+      binding: userA,
+      value: { displayName: '山田 花子', language: 'en', theme: 'light', fontSize: 'md' },
+    })
+    expect(listener).toHaveBeenCalled()
+    unsubscribe()
+  })
+
+  it('writes only the language to the browser storage and keeps the stored theme and font size', () => {
+    saveBrowserDisplaySettings({ language: 'ja', theme: 'dark', fontSize: 'lg' })
+    // ほかのタブで保存の値の文字の大きさが変わった（この置き場はまだ知らない）。
+    localStorage.setItem(DISPLAY_SETTINGS_KEY, '{"language":"ja","theme":"dark","fontSize":"sm"}')
+
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'en' }, applied)
+
+    expect(stored()).toEqual({ language: 'en', theme: 'dark', fontSize: 'sm' })
+    expect(getDisplaySettingsSnapshot().stored).toEqual({
+      language: 'en',
+      theme: 'dark',
+      fontSize: 'sm',
+    })
+    expect(getDisplaySettingsSnapshot().savedUser?.value).toMatchObject({
+      theme: 'light',
+      fontSize: 'md',
+    })
+  })
+
+  it('drops only the language preview and keeps the theme and font size preview', () => {
+    setPreviewFor(userA, 'dark', 'lg')
+    setLanguagePreviewFor(userA, 'ja')
+
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'en' }, applied)
+    expect(getDisplaySettingsSnapshot().preview).toEqual({
+      binding: userA,
+      value: { theme: 'dark', fontSize: 'lg' },
+    })
+
+    clearPreview()
+    setLanguagePreviewFor(userA, 'ja')
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'en' }, applied)
+    expect(getDisplaySettingsSnapshot().preview).toBeNull()
+  })
+
+  it('keeps the language and the storage for a language other than ja and en, and applies the name', () => {
+    saveBrowserDisplaySettings({ language: 'ja', theme: 'dark', fontSize: 'lg' })
+    setLanguagePreviewFor(userA, 'en')
+
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'fr' as never }, applied)
+
+    expect(getDisplaySettingsSnapshot().savedUser?.value).toEqual({
+      displayName: '山田 花子',
+      language: 'ja',
+      theme: 'light',
+      fontSize: 'md',
+    })
+    expect(stored()).toEqual({ language: 'ja', theme: 'dark', fontSize: 'lg' })
+    expect(getDisplaySettingsSnapshot().preview?.value).toEqual({ language: 'en' })
+  })
+
+  it('is dropped on the next login state so that the server values come back', () => {
+    applyOwnProfileFor(userA, { displayName: '山田 花子', language: 'en' }, applied)
+
+    discardStaleBindings(userA)
+    expect(getDisplaySettingsSnapshot().savedUser).not.toBeNull()
+    discardStaleBindings({ loggedIn: true })
+    expect(getDisplaySettingsSnapshot().savedUser).toBeNull()
   })
 })

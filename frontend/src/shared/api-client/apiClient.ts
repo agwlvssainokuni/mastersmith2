@@ -23,6 +23,7 @@
 // - すべての要求に、登録された関数が返す画面の言語を Accept-Language として付ける（D9、ADR-005）。
 //   呼び出し側が明示した Accept-Language は上書きしない。関数が無ければ付けない。
 // - ファイルの受け取り（apiDownload）も同じ道を通し、本文のバイト列と Content-Disposition を返す（DSL の管理画面の BR2.4）。
+// - 登録済みのトークンの更新を外から1回呼べる refreshSessionOnce を出す（管理の画面の 403 の後の読み直し、U4 の D7・FC 3.2）。
 import { networkError, readErrorCode, toApiError, type ApiError } from './apiError'
 
 /** ApiClient が使う、ログイン状態の側の手段 */
@@ -95,6 +96,14 @@ async function refreshOnce(): Promise<boolean> {
     pendingRefresh = null
   })
   return pendingRefresh
+}
+
+/**
+ * 登録済みのトークンの更新を1回呼ぶ（U4 の D7、FC 3.2）。同時の更新（401 の更新を含む）は1回にまとめる。
+ * 登録が無ければ何もせず false を返す。新しい要求の経路は作らない（更新は登録された手段だけが行う）。
+ */
+export function refreshSessionOnce(): Promise<boolean> {
+  return refreshOnce()
 }
 
 /** 要求を送る（アクセストークンがあれば付ける。画面の言語を Accept-Language として付ける）。 */

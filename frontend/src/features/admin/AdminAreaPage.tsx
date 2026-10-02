@@ -15,12 +15,13 @@
  */
 //
 // 管理者向け領域（BR5.2、NFR9.1）。表示するたびに確認用 API を呼び、確認が終わるまで中身を表示しない。
-// 403 は「ページが見つかりません」（U1 の NotFoundPage）、そのほかの失敗は一般的なエラーの文言を領域の中に出す。
-// 結果はメモリに残さず、表示のたびにやり直す。
+// 権限が無い（403・ACCESS_DENIED）ときは失敗を骨組みの useAdminForbidden に渡し、ShellLayout が
+// コンテンツの領域を S6 に置き換えるため、ここでは何も描かない（U4 の FC 6.2）。そのほかの失敗は
+// 一般的なエラーの文言を領域の中に出す。結果はメモリに残さず、表示のたびにやり直す。
 import { Alert } from 'make-you-chic-ui'
 import { useEffect, useState } from 'react'
+import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
 import { useMessages } from '../../app/i18n/I18nProvider'
-import { NotFoundPage } from '../../app/pages/NotFoundPage'
 import { requestAdminCheck } from './adminApi'
 import { statusFromError, type AdminAreaStatus } from './adminAreaStatus'
 import { AdminPlaceholder } from './AdminPlaceholder'
@@ -29,6 +30,7 @@ import { AdminPlaceholder } from './AdminPlaceholder'
 export function AdminAreaPage() {
   const t = useMessages()
   const [status, setStatus] = useState<AdminAreaStatus>('Checking')
+  const reportForbidden = useAdminForbidden()
 
   useEffect(() => {
     // 表示のたびに（この部品が作られるたびに）確認をやり直す。初めの状態は Checking のため、ここでは設定し直さない。
@@ -41,13 +43,15 @@ export function AdminAreaPage() {
       })
       .catch((error: unknown) => {
         if (active) {
-          setStatus(statusFromError(error))
+          setStatus(statusFromError(error, reportForbidden))
         }
       })
     return () => {
       active = false
     }
-  }, [])
+    // 確認は表示のたびに1回だけ行う。reportForbidden は画面の URL が変わらない限り同じ関数のため、
+    // 依存に入れても確認を繰り返さない（FC 3.3）。
+  }, [reportForbidden])
 
   if (status === 'Checking') {
     return (
@@ -58,12 +62,9 @@ export function AdminAreaPage() {
       </div>
     )
   }
-  if (status === 'NotFound') {
-    return (
-      <div data-testid="admin-area-page" aria-busy="false">
-        <NotFoundPage />
-      </div>
-    )
+  if (status === 'Forbidden') {
+    // ShellLayout が S6 に置き換えている（この部品はすぐに外れる）。
+    return null
   }
   if (status === 'Error') {
     return (

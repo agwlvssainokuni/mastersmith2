@@ -15,10 +15,12 @@
  */
 // 画面の起動（WF5）。登録の読み込みと検査、ログイン状態、表示の設定、表示言語、URL ごとの振り分けをつなぐ。
 // ログイン状態を受けてから表示の設定を決め、その言語で文言を引くため、並びは
-// ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider とする（U4 の部品 1節）。
+// ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider →
+// AdminForbiddenProvider（管理の画面の 403 の共通の扱い。Intent 260930-user-admin の U4）とする（U4 の部品 1節）。
 // React Router のルーター（BrowserRouter など）は、呼び出し側（main.tsx・テスト）が外側に置く。
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'
 import { useMemo, type ReactNode } from 'react'
+import { AdminForbiddenProvider } from './admin-forbidden/AdminForbiddenProvider'
 import { startAppearanceLoad, type AppearanceResult } from './display-settings/appearanceLoad'
 import {
   DisplaySettingsProvider,
@@ -108,7 +110,9 @@ export function App({
               <LocalizedContent featureMessages={featureMessages}>
                 {result.ok ? (
                   <FeatureRegistryProvider registrations={result.registrations}>
-                    <AppRouter />
+                    <AdminForbiddenProvider>
+                      <AppRouter />
+                    </AdminForbiddenProvider>
                   </FeatureRegistryProvider>
                 ) : (
                   <StandaloneLayout>

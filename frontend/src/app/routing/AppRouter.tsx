@@ -15,7 +15,10 @@
  */
 // URL ごとの振り分け（WF7）。decideRoute の判断に従い、SHELL の画面はアプリシェルの中、STANDALONE の画面はアプリシェルの外に置く。
 // 登録された画面は、その URL の形（`/users/:id` など）の Route の中で表示し、画面が URL の引数を読めるようにする。
+// ADMIN_FORBIDDEN は、SCREEN（SHELL）と同じ形の木（Routes → Route → ShellLayout）の中に S6 を描く。管理の画面の 403
+// による S6（ShellLayout が子を置き換える）から移っても、ShellLayout・AppShell・S6 が作り直されないため（U4 の R-05）。
 import { Navigate, Route, Routes, useLocation } from 'react-router'
+import { AdminForbiddenView } from '../admin-forbidden/AdminForbiddenView'
 import { LoginLayout } from '../layout/LoginLayout'
 import { ShellLayout } from '../layout/ShellLayout'
 import { StandaloneLayout } from '../layout/StandaloneLayout'
@@ -52,6 +55,19 @@ export function AppRouter() {
         <StandaloneLayout>
           <LoginLayout />
         </StandaloneLayout>
+      )
+    case 'ADMIN_FORBIDDEN':
+      return (
+        <Routes>
+          <Route
+            path={decision.route.path}
+            element={
+              <ShellLayout>
+                <AdminForbiddenView />
+              </ShellLayout>
+            }
+          />
+        </Routes>
       )
     case 'SCREEN': {
       const { route } = decision

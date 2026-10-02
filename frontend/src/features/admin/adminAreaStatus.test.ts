@@ -14,31 +14,58 @@
  * limitations under the License.
  */
 //
-// 表示の状態を決める純粋な関数のテスト（性質ベースのテストを含む）。
+// 表示の状態を決める純粋な関数のテスト（性質ベースのテストを含む）。「権限が無い」の判定は本物の
+// isAdminForbidden を通す（骨組みの useAdminForbidden と同じ判定。差し替えない、unit-test-instructions.md 6節）。
+// 性質ベースのテストが失敗したときは、報告の seed と path を fc.assert(property, { seed, path }) に一時的に渡し、
+// このファイルを名指しして再現する（直した後に元に戻す）。
 import fc from 'fast-check'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { isAdminForbidden } from '../../shared/api-client/adminForbidden'
+import { ADMIN_CHECK_PATH } from './adminApi'
 import { statusFromError } from './adminAreaStatus'
 
+/** 本物の判定を通し、渡されたパスを記録する偽の report */
+function realReport() {
+  return vi.fn((error: unknown, apiPath: string) => isAdminForbidden(apiPath, error))
+}
+
 describe('adminAreaStatus', () => {
-  it('maps 403 to the not found screen', () => {
-    expect(statusFromError({ kind: 'response', status: 403, code: 'ACCESS_DENIED' })).toBe(
-      'NotFound',
+  it('maps a 403 ACCESS_DENIED to the forbidden state and passes the check path', () => {
+    const report = realReport()
+
+    expect(statusFromError({ kind: 'response', status: 403, code: 'ACCESS_DENIED' }, report)).toBe(
+      'Forbidden',
+    )
+    expect(report).toHaveBeenCalledTimes(1)
+    expect(report).toHaveBeenCalledWith(
+      { kind: 'response', status: 403, code: 'ACCESS_DENIED' },
+      ADMIN_CHECK_PATH,
     )
   })
 
   it('maps a server failure to the generic error', () => {
-    expect(statusFromError({ kind: 'response', status: 500, code: 'INTERNAL_ERROR' })).toBe('Error')
+    expect(
+      statusFromError({ kind: 'response', status: 500, code: 'INTERNAL_ERROR' }, realReport()),
+    ).toBe('Error')
   })
 
   it('maps a network failure to the generic error', () => {
-    expect(statusFromError({ kind: 'network' })).toBe('Error')
+    expect(statusFromError({ kind: 'network' }, realReport())).toBe('Error')
   })
 
-  it('always maps 403 to the not found screen whatever the code is', () => {
+  it('maps every 403 without ACCESS_DENIED to the generic error', () => {
     fc.assert(
-      fc.property(fc.option(fc.string(), { nil: undefined }), (code) => {
-        expect(statusFromError({ kind: 'response', status: 403, code })).toBe('NotFound')
-      }),
+      fc.property(
+        fc.option(
+          fc.string().filter((code) => code !== 'ACCESS_DENIED'),
+          { nil: undefined },
+        ),
+        (code) => {
+          expect(statusFromError({ kind: 'response', status: 403, code }, realReport())).toBe(
+            'Error',
+          )
+        },
+      ),
     )
   })
 
@@ -47,7 +74,9 @@ describe('adminAreaStatus', () => {
       fc.property(
         fc.integer({ min: 100, max: 599 }).filter((status) => status !== 403),
         (status) => {
-          expect(statusFromError({ kind: 'response', status })).toBe('Error')
+          expect(
+            statusFromError({ kind: 'response', status, code: 'ACCESS_DENIED' }, realReport()),
+          ).toBe('Error')
         },
       ),
     )
@@ -56,10 +85,10 @@ describe('adminAreaStatus', () => {
   it('maps an unknown value to the generic error rather than failing', () => {
     fc.assert(
       fc.property(fc.anything(), (value) => {
-        expect(['Error', 'NotFound']).toContain(statusFromError(value))
+        expect(['Error', 'Forbidden']).toContain(statusFromError(value, realReport()))
       }),
     )
-    expect(statusFromError(undefined)).toBe('Error')
-    expect(statusFromError(null)).toBe('Error')
+    expect(statusFromError(undefined, realReport())).toBe('Error')
+    expect(statusFromError(null, realReport())).toBe('Error')
   })
 })

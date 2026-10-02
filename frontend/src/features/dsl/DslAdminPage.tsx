@@ -16,10 +16,10 @@
 //
 // DSL の管理画面（frontend-components.md の 1.1・2節、functional-spec.md の 4〜7節、mockups.md、interaction-spec.md）。
 // 今の状態を上部に常に示し、プレビュー・投入・履歴のタブ、確かめる表示、画面の中の失敗の知らせ、読み上げの領域を持つ。
-// 状態と操作は useDslAdmin が持ち、この部品は子の部品に値と操作を渡す。管理者でない（403）ときは、既存の管理者向け
-// 領域と同じく「ページが見つかりません」を示す。判定はサーバー側（401・403）で行う（BR1.2・BR8.2）。
+// 状態と操作は useDslAdmin が持ち、この部品は子の部品に値と操作を渡す。権限が無い（403・ACCESS_DENIED）ときは
+// useDslAdmin が失敗を骨組みへ渡し、ShellLayout がこの画面を S6 に置き換える（U4 の FC 6.2）。判定はサーバー側
+// （401・403）で行う（BR1.2・BR8.2）。
 import { Alert } from 'make-you-chic-ui'
-import { NotFoundPage } from '../../app/pages/NotFoundPage'
 import { dslApi, type DslApi } from './api/dslApi'
 import { saveFile } from './api/saveFile'
 import type { DslFile } from './api/types'
@@ -49,14 +49,6 @@ export function DslAdminPage({ api = dslApi, save = saveFile, timeZone }: DslAdm
   const t = useDslText()
   const state = useDslAdmin(api, save, t)
   const busy = state.busy !== null
-
-  if (state.forbidden) {
-    return (
-      <div data-testid="dsl-admin-page">
-        <NotFoundPage />
-      </div>
-    )
-  }
 
   const panels = {
     preview: (

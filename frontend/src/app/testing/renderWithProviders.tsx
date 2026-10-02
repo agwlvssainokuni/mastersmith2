@@ -15,7 +15,8 @@
  */
 // 画面の部品のテストの補助（テストからだけ使う。アプリの画面からは読み込まない）。
 // ブラウザの希望言語・画面の URL・登録・ログイン状態の提供元を与えて、部品を骨組みの Provider の中に描画する。
-// 並びは App と同じ ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider。
+// 並びは App と同じ ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider →
+// AdminForbiddenProvider。
 // 見た目の設定は既定で答え済み（当てる値なし）の約束を渡すため、/api/appearance の要求を用意せずに描ける（NFR9.10）。
 import { render, type RenderResult } from '@testing-library/react'
 import { ThemeProvider } from 'make-you-chic-ui'
@@ -23,6 +24,7 @@ import type { ReactElement, ReactNode } from 'react'
 import { MemoryRouter, useLocation } from 'react-router'
 import { vi } from 'vitest'
 import { resetApiClient } from '../../shared/api-client/apiClient'
+import { AdminForbiddenProvider } from '../admin-forbidden/AdminForbiddenProvider'
 import {
   resetAppearanceLoad,
   resolvedAppearance,
@@ -133,8 +135,10 @@ export function renderWithProviders(ui: ReactElement, options: RenderOptions = {
               featureMessages={registrations.flatMap((r) => (r.messages ? [r.messages] : []))}
             >
               <FeatureRegistryProvider registrations={registrations}>
-                {ui}
-                <LocationProbe />
+                <AdminForbiddenProvider>
+                  {ui}
+                  <LocationProbe />
+                </AdminForbiddenProvider>
               </FeatureRegistryProvider>
             </LocalizedContent>
           </DisplaySettingsProvider>

@@ -25,6 +25,9 @@ export const en: Record<MessageKey, string> = {
   'notFound.description':
     'The page you are looking for does not exist or you are not allowed to view it.',
   'notFound.homeLink': 'Go to home',
+  'adminForbidden.heading': 'Administration',
+  'adminForbidden.message': 'You do not have permission to use this page.',
+  'adminForbidden.homeLink': 'Back to home',
   'nav.home': 'Home',
   'startupError.heading': 'The application could not start',
   'startupError.description':

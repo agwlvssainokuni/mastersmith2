@@ -169,6 +169,56 @@ export function applyUserPreferencesFor(binding: unknown, prefs: UserDisplaySett
   })
 }
 
+/** 自分の氏名と言語の反映で渡す値（契約 C4 の useApplyOwnProfile） */
+export interface OwnProfile {
+  displayName: string
+  language: DisplayLanguage
+}
+
+/**
+ * 管理者が自分自身の氏名・言語を変えたとき、その値を今の画面に当てる（U4 の D13・D14、FC 3.6、NFR8.2）。
+ * - 保存の後の利用者の設定を、`binding`（今のログイン状態）に結び付けた「氏名＝渡した氏名・言語＝渡した言語・
+ *   テーマと文字の大きさ＝`current`（見せ方を除いた当てている値）」にする（機能設計の承認の場の R-01）。
+ * - ブラウザの保存は言語だけを書き換える。テーマと文字の大きさの保存の値は触らない。
+ * - 言語の見せ方が残っていれば言語の分だけ捨て、テーマと文字の大きさの見せ方は残す。
+ * - 言語が ja・en でなければ言語は変えず（`current` の言語のまま）、氏名だけを当てる。
+ * 次のログイン状態になれば、ほかの結び付きと同じく捨てられ、サーバーの値に戻る（discardStaleBindings）。
+ */
+export function applyOwnProfileFor(
+  binding: unknown,
+  profile: OwnProfile,
+  current: DisplaySettings,
+): void {
+  const languageChanged = isDisplayLanguage(profile.language)
+  const language = languageChanged ? profile.language : current.language
+  const before = getDisplaySettingsSnapshot()
+  let nextPreview = before.preview
+  let nextStored = before.stored
+  if (languageChanged) {
+    // 保存は読み直した今の値の言語だけを置き換える（ほかのタブで変わったテーマと文字の大きさの保存の値はそのまま）。
+    nextStored = writeStoredLanguage(language)
+    if (before.preview && before.preview.value.language !== undefined) {
+      const rest: PartialDisplaySettings = { ...before.preview.value }
+      delete rest.language
+      nextPreview =
+        Object.keys(rest).length > 0 ? { binding: before.preview.binding, value: rest } : null
+    }
+  }
+  setState({
+    stored: nextStored,
+    preview: nextPreview,
+    savedUser: {
+      binding,
+      value: {
+        language,
+        theme: current.theme,
+        fontSize: current.fontSize,
+        displayName: profile.displayName,
+      },
+    },
+  })
+}
+
 /** ログイン状態の利用者の設定をブラウザに保存する（ログインの成功・復元・更新の応答。D6 の (a)）。 */
 export function rememberUserSettings(prefs: PartialDisplaySettings): void {
   const settings = completeSettings(prefs)

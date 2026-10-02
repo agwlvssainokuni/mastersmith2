@@ -18,6 +18,8 @@
 // - 画面の値は描画の中で決める（ログイン状態が変わった描画で、そのまま言語の文言が切り替わる）。
 // - 描画の確定の直後（useLayoutEffect）に、make-you-chic-ui・<html lang>・要求の言語へ反映する。
 // 機能（features/*）は表示の設定をこの口だけで扱い、make-you-chic-ui の useTheme と localStorage を直接触らない。
+// - 自分の氏名と言語の反映（applyOwnProfile、U4 の D13・D14）は、呼ばれた時点の最新のログイン状態と、そのログイン状態で
+//   求めた当てている値（見せ方を除く）を ref から読む（U4 の SD 4.2、S-1、機能設計の承認の場の R-01）。
 import { useTheme } from 'make-you-chic-ui'
 import {
   createContext,
@@ -31,10 +33,12 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from 'react'
+import type { LoginState } from '../registry/types'
 import { useLoginState } from '../login-state/LoginStateGate'
 import { peekAppearance, type AppearanceResult } from './appearanceLoad'
 import { getPrefersDark, subscribePrefersDark } from './colorScheme'
 import {
+  applyOwnProfileFor,
   applyUserPreferencesFor,
   browserLanguages,
   clearPreview,
@@ -46,9 +50,11 @@ import {
   setLanguagePreviewFor,
   setPreviewFor,
   subscribeDisplaySettings,
+  type OwnProfile,
 } from './displaySettingsStore'
 import type {
   DisplayLanguage,
+  DisplaySettings,
   FontSize,
   ResolvedTheme,
   ThemeChoice,
@@ -80,6 +86,11 @@ export interface DisplaySettingsValue {
   applyUserPreferences: (prefs: UserDisplaySettings) => void
   /** 言語の見せ方を置く（保存しない） */
   setLanguage: (language: DisplayLanguage) => void
+  /**
+   * 自分の氏名と言語を今の画面に当てる（ログインの後だけ有効。テーマと文字の大きさは変えない。U4 の D13・D14、契約 C4）。
+   * Provider が生きている間は同じ関数で、呼ばれた時点の最新のログイン状態に結び付ける。
+   */
+  applyOwnProfile: (profile: OwnProfile) => void
 }
 
 const DisplaySettingsContext = createContext<DisplaySettingsValue | null>(null)
@@ -156,6 +167,8 @@ export function DisplaySettingsProvider({ appearance, children }: DisplaySetting
   const prefersDark = usePrefersDark(followsOs)
   const settings = decideScreenSettings({ ...input, prefersDark })
   const { language, theme, fontSize, resolvedTheme } = settings
+  // 見せ方を除いた当てている値（自分の氏名と言語の反映で保存するテーマと文字の大きさ。R-01）。
+  const applied = decideScreenSettings({ ...input, preview: null, prefersDark: false })
   let displayName: string | undefined
   if (loginState.loggedIn) {
     displayName =
@@ -170,6 +183,26 @@ export function DisplaySettingsProvider({ appearance, children }: DisplaySetting
   if (lastPassed.current === null) {
     lastPassed.current = { theme: shownTheme, fontSize: shownFontSize }
   }
+
+  // 自分の氏名と言語の反映が読む、最新のログイン状態と当てている値。描画の確定ごとに新しくし、描画の中では書かない（SD 4.2）。
+  const latestRef = useRef<{ loginState: LoginState; current: DisplaySettings }>({
+    loginState,
+    current: { language: applied.language, theme: applied.theme, fontSize: applied.fontSize },
+  })
+  useLayoutEffect(() => {
+    latestRef.current = {
+      loginState,
+      current: { language: applied.language, theme: applied.theme, fontSize: applied.fontSize },
+    }
+  })
+  // 依存を持たない（Provider が生きている間は同じ関数。値の useMemo の依存を増やさない、SD 4.2）。
+  const applyOwnProfile = useCallback((profile: OwnProfile) => {
+    const { loginState: now, current } = latestRef.current
+    if (!now.loggedIn) {
+      return
+    }
+    applyOwnProfileFor(now, profile, current)
+  }, [])
 
   // ログイン状態が新しくなったら、古いログイン状態に結び付いた見せ方を捨て、利用者の設定をブラウザに保存する（D2・D6 の (a)）。
   useLayoutEffect(() => {
@@ -229,8 +262,9 @@ export function DisplaySettingsProvider({ appearance, children }: DisplaySetting
         }
       },
       setLanguage: (nextLanguage) => setLanguagePreviewFor(loginState, nextLanguage),
+      applyOwnProfile,
     }),
-    [language, theme, fontSize, resolvedTheme, displayName, loginState],
+    [language, theme, fontSize, resolvedTheme, displayName, loginState, applyOwnProfile],
   )
 
   if (appearanceResult === undefined) {

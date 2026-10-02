@@ -95,12 +95,28 @@ describe('decideRoute', () => {
     })
   })
 
-  it('shows not found to logged-in non-admins opening an ADMIN screen and shows it to admins', () => {
-    expect(decideRoute('/admin/users', withoutLogin, member)).toEqual({ kind: 'NOT_FOUND' })
+  it('shows the forbidden view to logged-in non-admins opening an ADMIN screen and shows it to admins', () => {
+    expect(decideRoute('/admin/users', withoutLogin, member)).toEqual({
+      kind: 'ADMIN_FORBIDDEN',
+      route: adminRoute,
+    })
     expect(decideRoute('/admin/users', withoutLogin, admin)).toEqual({
       kind: 'SCREEN',
       route: adminRoute,
     })
+  })
+
+  it('still sends logged-out users opening an ADMIN screen to the login screen', () => {
+    expect(decideRoute('/admin/users', withLogin, loggedOut)).toEqual({
+      kind: 'REDIRECT_TO_LOGIN',
+      to: '/login',
+    })
+    expect(decideRoute('/admin/users', withoutLogin, loggedOut)).toEqual({ kind: 'LOGIN_LAYOUT' })
+  })
+
+  it('keeps not found for unregistered URLs under the admin area', () => {
+    expect(decideRoute('/admin/no-such-page', withLogin, member)).toEqual({ kind: 'NOT_FOUND' })
+    expect(decideRoute('/admin/no-such-page', withLogin, admin)).toEqual({ kind: 'NOT_FOUND' })
   })
 
   it('treats admin=true without login as logged out', () => {

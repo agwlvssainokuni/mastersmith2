@@ -51,7 +51,11 @@ describe('failureMessage', () => {
   })
 
   it('uses the general client message for an unknown code or no code on a 4xx', () => {
-    expect(failureMessageKey(response(403, 'ACCESS_DENIED'))).toBe('invitation.errorGeneral.client')
+    // ACCESS_DENIED の 403 は骨組みが S6 に置き換え、ここへは届かない（U4 の FC 6.2）。code の違う 403 は一般の文言。
+    expect(failureMessageKey(response(403, 'ORIGIN_NOT_ALLOWED'))).toBe(
+      'invitation.errorGeneral.client',
+    )
+    expect(failureMessageKey(response(403))).toBe('invitation.errorGeneral.client')
     expect(failureMessageKey(response(409))).toBe('invitation.errorGeneral.client')
   })
 
