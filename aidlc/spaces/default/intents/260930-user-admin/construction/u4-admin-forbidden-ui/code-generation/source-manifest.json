@@ -1,0 +1,136 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-admin-forbidden-ui",
+  "version": 1,
+  "writes": [
+    {
+      "path": "frontend/e2e/090-invitation-registration-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/130-admin-forbidden-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/loginPreferences.ts"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenView.css"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenView.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenView.tsx"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/forbiddenHeading.test.ts"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/forbiddenHeading.ts"
+    },
+    {
+      "path": "frontend/src/app/App.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplaySettingsProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplaySettingsProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/displaySettingsStore.test.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/displaySettingsStore.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/useApplyOwnProfile.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages.test.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/decideRoute.test.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/decideRoute.ts"
+    },
+    {
+      "path": "frontend/src/app/testing/renderWithProviders.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminAreaPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/AdminAreaPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/adminAreaStatus.test.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/adminAreaStatus.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/testing/renderDsl.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/useDslAdmin.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/failureMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/testing/renderInvitation.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/useInvitationAdmin.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/adminForbidden.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/adminForbidden.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.ts"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

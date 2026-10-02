@@ -1,0 +1,43 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-shared-paging",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/paging/Paging.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/domain/InvitationPaging.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/service/InvitationService.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/domain/InvitationPagingTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/repository/InvitationRepositoryIT.java"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationList.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/paging.test.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/paging.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/useInvitationAdmin.ts"
+    },
+    {
+      "path": "frontend/src/shared/paging/paging.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/paging/paging.ts"
+    }
+  ]
+}

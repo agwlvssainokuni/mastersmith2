@@ -1,0 +1,272 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-shared-paging",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "NFR3.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR9.4",
+    "NFR9.5",
+    "NFR9.6",
+    "NFR9.7",
+    "NFR9.8",
+    "NFR9.9",
+    "NFR9.10",
+    "NFR9.11",
+    "NFR11.1"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（ロックの判定の時刻の境界と表示はページ送りに関わらず、US1.1 の主の単位が受ける）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（応答のロックの項目と含めない値はページ送りに関わらず、US1.1 の主の単位が受ける）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（検索と、検索の結果の件数を total にすることは U3 が Paging と BR3 の群を使って満たす）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（TRACE のログと応答の漏えいは管理の API の受け持ち。Paging は個人に関する値を扱わない）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込み中の表示は画面の状態の受け持ち）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（読み込みの失敗の表示は画面の状態の受け持ち）"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（検索の結果が無いときの表示と、検索の文字を保ったページ送りは画面の受け持ち。計算は UiPaging を使う）"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（検索の入力欄の上限は画面の受け持ち）"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "Deferred",
+      "target": "u5-user-admin-ui（画面部品のアクセシビリティの検査は画面の受け持ち。UiPaging は画面の部品を持たない）"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "u3-user-admin-api（一覧の API の認可 401・403・200 と監査は管理の API の受け持ち）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/common/paging/Paging.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/common/paging/Paging.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "frontend/src/shared/paging/paging.test.ts"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "frontend/src/shared/paging/paging.test.ts"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "frontend/src/shared/paging/paging.test.ts"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "frontend/src/shared/paging/paging.test.ts"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "frontend/src/shared/paging/paging.ts"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/invitation/service/InvitationService.java"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/common/paging/Paging.java"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/invitation/service/InvitationService.java"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "docker/monitoring/provisioning/alerting/mastersmith.yaml"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "NFR9.4",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR9.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitationAdminApiIT.java"
+    },
+    {
+      "id": "NFR9.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "NFR9.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java"
+    },
+    {
+      "id": "NFR9.8",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR9.9",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR9.10",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    },
+    {
+      "id": "NFR9.11",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml"
+    },
+    {
+      "id": "NFR11.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/InvitationBoundaryArchitectureTest.java"
+    }
+  ]
+}

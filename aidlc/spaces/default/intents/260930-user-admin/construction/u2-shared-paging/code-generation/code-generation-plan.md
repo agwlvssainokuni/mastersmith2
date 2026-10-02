@@ -139,139 +139,139 @@ U2 は library の単位で、招待の一覧のページ送りの計算（サ�
 
 ### Step 1: 作業の場の用意と、変更の前の基準（ブランチの作成は依頼者の承認を得てから）
 
-- [ ] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
-- [ ] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b2` を作る
-- [ ] `frontend/playwright-report/`・`frontend/test-results/` が手元に残っていないことを確かめる。残っていれば、中を開かずに消し、消したこと（中身の種類と件数だけ）と共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定。どちらも `.gitignore` の対象）
-- [ ] Dependabot の開いている知らせ（`gh pr list --state open` と `origin` の `dependabot/*` のブランチ）の一覧を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B2 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
-- [ ] 変更の前の基準をとる: colima が動いていることを `colima status` で確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、テストの件数（バックエンドの単体・結合、フロントエンド、失敗・飛ばした）と、全体と次のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する: `invitation.domain`（クラス `InvitationPaging` の値と、それを除いた値も）・`invitation.service`・`invitation.web`・`invitation.repository`。フロントエンドの全体の値も記録する（brownfield の Test Baseline、`project.md` の学び）
-- [ ] 基準の検査が U2 と関わらない理由（新しく公表された脆弱性で `osvScan` が止まる・`gitleaksScan` の指摘など）で失敗したときは、ここで止めて依頼者に諮る（B1 の Step 1 と同じ扱い。直しは別のブランチで行うかを依頼者が決める）
-- [ ] 対応: B2 の共通の完了の条件、`gate-decisions.md`、NFR9.8（A-04）
+- [x] `develop` の先頭のハッシュを `git rev-parse HEAD` で記録する。アプリのソースに未コミットの変更が無いことを `git status` で確かめる（ワークフローの記録は外して判断する、`project.md` の学び）
+- [x] 依頼者の承認を得て、`develop` から `feature/260930-user-admin-b2` を作る
+- [x] `frontend/playwright-report/`・`frontend/test-results/` が手元に残っていないことを確かめる。残っていれば、中を開かずに消し、消したこと（中身の種類と件数だけ）と共有していないことを記録する（`gate-decisions.md` の U5 R-02 の決定。どちらも `.gitignore` の対象）
+- [x] Dependabot の開いている知らせ（`gh pr list --state open` と `origin` の `dependabot/*` のブランチ）の一覧を読み取りだけで確かめ、重大度 High 以上の脆弱性の直しがあれば B2 に入る前に取り込むかを依頼者に諮る（`team.md` の Way of Working）。無ければ記録だけ
+- [x] 変更の前の基準をとる: colima が動いていることを `colima status` で確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、テストの件数（バックエンドの単体・結合、フロントエンド、失敗・飛ばした）と、全体と次のパッケージの行・分岐のカバレッジを `backend/build/reports/jacoco/test/jacocoTestReport.xml` から記録する: `invitation.domain`（クラス `InvitationPaging` の値と、それを除いた値も）・`invitation.service`・`invitation.web`・`invitation.repository`。フロントエンドの全体の値も記録する（brownfield の Test Baseline、`project.md` の学び）
+- [x] 基準の検査が U2 と関わらない理由（新しく公表された脆弱性で `osvScan` が止まる・`gitleaksScan` の指摘など）で失敗したときは、ここで止めて依頼者に諮る（B1 の Step 1 と同じ扱い。直しは別のブランチで行うかを依頼者が決める）
+- [x] 対応: B2 の共通の完了の条件、`gate-decisions.md`、NFR9.8（A-04）
 
 ### Step 2: テストの実行の準備（最初のテストより前）
 
-- [ ] `unit-test-instructions.md` の「最初のテストより前の確かめ」のコマンドで、既存の単体テスト（JUnit・jqwik）・結合テスト・画面のテスト（Vitest・fast-check）の道具が、作業ブランチの上で動くことを確かめる:
+- [x] `unit-test-instructions.md` の「最初のテストより前の確かめ」のコマンドで、既存の単体テスト（JUnit・jqwik）・結合テスト・画面のテスト（Vitest・fast-check）の道具が、作業ブランチの上で動くことを確かめる:
   - `./gradlew :backend:test --tests 'cherry.mastersmith.invitation.domain.InvitationPagingTest'`
   - `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.invitation.repository.InvitationRepositoryIT'`
   - `(cd frontend && NODE_OPTIONS=--no-experimental-webstorage npx vitest run src/features/invitation/paging.test.ts)`
-- [ ] 新しいテスト（`common.paging.PagingTest`・`src/shared/paging/paging.test.ts`）は、作るまで名指しすると「一致するテストが無い」で失敗する。これは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` の記述と合わせる
-- [ ] 対応: Testing Contract の `runner_step`、NFR9.6
+- [x] 新しいテスト（`common.paging.PagingTest`・`src/shared/paging/paging.test.ts`）は、作るまで名指しすると「一致するテストが無い」で失敗する。これは想定どおりで、作った Step からコマンドが通ることを `unit-test-instructions.md` の記述と合わせる
+- [x] 対応: Testing Contract の `runner_step`、NFR9.6
 
 ### Step 3: サーバーのページ送り（ドメイン）— 実装
 
-- [ ] `backend/src/main/java/cherry/mastersmith/common/paging/Paging.java` を作る。`InvitationPaging` の本体（定数・コンパイル済みの `Pattern`・private のコンストラクター・3つのメソッド）を、名前・引数の型・結果の型・例外の種類と文言の形を変えずに移す（BR1.5、C2）
-- [ ] 説明文を直す（BR1.6）: クラスの説明を「管理の一覧（招待の一覧・利用者の一覧）のページ送りの計算。DB・時刻・設定・ほかの機能に依存しない純粋な関数。1ページは 20 件」の形にし、招待の段の決まりの番号（BR2.3・BR5.2・NFR9.7）を U2 の番号（BR1.1〜BR1.5）に替える。`pageOf` の説明の「その招待が載るページ」を「その行が載るページ」に直す。振る舞いの説明（受ける値・返す値・例外）は変えない
-- [ ] `PAGE_SIZE` の説明文に「画面の `frontend/src/shared/paging/paging.ts` の `PAGE_SIZE` と同じ値にする（変えるときは両方を同じ変更で直す）」を書く（A-03、9節の Q-C の決定）
-- [ ] 先頭に `/* ... */` の Apache License 2.0 のヘッダー（2026、agwlvssainokuni）を置く。`package-info.java` は置かない（NFR9.9）。Spring の注釈を付けない
-- [ ] この時点では `InvitationPaging` を残す（使い手を Step 5 で切り替えてから消す。各 Step の終わりでコンパイルを通すため）
-- [ ] 対応: BR1.1〜BR1.6、C2、NFR9.1・NFR9.2・NFR9.9・NFR11.1、A-03
+- [x] `backend/src/main/java/cherry/mastersmith/common/paging/Paging.java` を作る。`InvitationPaging` の本体（定数・コンパイル済みの `Pattern`・private のコンストラクター・3つのメソッド）を、名前・引数の型・結果の型・例外の種類と文言の形を変えずに移す（BR1.5、C2）
+- [x] 説明文を直す（BR1.6）: クラスの説明を「管理の一覧（招待の一覧・利用者の一覧）のページ送りの計算。DB・時刻・設定・ほかの機能に依存しない純粋な関数。1ページは 20 件」の形にし、招待の段の決まりの番号（BR2.3・BR5.2・NFR9.7）を U2 の番号（BR1.1〜BR1.5）に替える。`pageOf` の説明の「その招待が載るページ」を「その行が載るページ」に直す。振る舞いの説明（受ける値・返す値・例外）は変えない
+- [x] `PAGE_SIZE` の説明文に「画面の `frontend/src/shared/paging/paging.ts` の `PAGE_SIZE` と同じ値にする（変えるときは両方を同じ変更で直す）」を書く（A-03、9節の Q-C の決定）
+- [x] 先頭に `/* ... */` の Apache License 2.0 のヘッダー（2026、agwlvssainokuni）を置く。`package-info.java` は置かない（NFR9.9）。Spring の注釈を付けない
+- [x] この時点では `InvitationPaging` を残す（使い手を Step 5 で切り替えてから消す。各 Step の終わりでコンパイルを通すため）
+- [x] 対応: BR1.1〜BR1.6、C2、NFR9.1・NFR9.2・NFR9.9・NFR11.1、A-03
 
 ### Step 4: サーバーのページ送り — テスト（単体・性質）
 
-- [ ] `backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java` を作り、`InvitationPagingTest` の事例をすべて、`@DisplayName`・`@Label`・`@Property(tries = 500)` の宣言を変えずに移す（参照先を `Paging` に替えるだけ）。移した後に `invitation/domain/InvitationPagingTest.java` を消す
-- [ ] jqwik の性質を3つ足す（FS 6節、どれも `@Property(tries = 500)`、説明文は英語）:
+- [x] `backend/src/test/java/cherry/mastersmith/common/paging/PagingTest.java` を作り、`InvitationPagingTest` の事例をすべて、`@DisplayName`・`@Label`・`@Property(tries = 500)` の宣言を変えずに移す（参照先を `Paging` に替えるだけ）。移した後に `invitation/domain/InvitationPagingTest.java` を消す
+- [x] jqwik の性質を3つ足す（FS 6節、どれも `@Property(tries = 500)`、説明文は英語）:
   - 1〜999,999,999 の整数 n で、`parsePage(Integer.toString(n))` が n になる
   - 数字以外の文字を1つ以上含む文字列・10 文字以上の数字の文字列・`"0"` は、`parsePage` が空になる（生成の仕方: 数字の列に数字以外の文字を差し込む、`@StringLength(min = 10)` の数字だけの列、`"0"` と先頭が 0 の列のうち値が 0 のもの）
   - 1〜`Integer.MAX_VALUE - 1` の page で、`offsetOf(page + 1) - offsetOf(page)` が 20、`pageOf(offsetOf(page) + 1)` が page に戻る
-- [ ] `PAGE_SIZE` が 20 であることの確かめを1件足す（説明文 `the page size is 20, the same value as PAGE_SIZE of the screen`。A-03、9節の Q-C の決定）
-- [ ] クラスの説明文（日本語）に、失敗のときの種の再現の仕方を書く: jqwik は失敗の報告の `seed` を `@Property(seed = "...")` に与えて再現する。失敗した例の記録は `build/jqwik-database`（リポジトリに残さない、`backend/src/test/resources/junit-platform.properties`）。Gradle のテストの出力は失敗の詳細をすべて出す設定のため、CI の記録にも種が残る（NFR9.7）
-- [ ] テストのデータは整数と page の文字列だけで、個人に関する値を置かない
-- [ ] `unit-test-instructions.md` 2.2 のコマンドで流す
-- [ ] 対応: BR1.1〜BR1.5、NFR9.1・NFR9.2・NFR9.6・NFR9.7、AC1.1.5・AC1.1.7（ページ送りの部分）、A-03
+- [x] `PAGE_SIZE` が 20 であることの確かめを1件足す（説明文 `the page size is 20, the same value as PAGE_SIZE of the screen`。A-03、9節の Q-C の決定）
+- [x] クラスの説明文（日本語）に、失敗のときの種の再現の仕方を書く: jqwik は失敗の報告の `seed` を `@Property(seed = "...")` に与えて再現する。失敗した例の記録は `build/jqwik-database`（リポジトリに残さない、`backend/src/test/resources/junit-platform.properties`）。Gradle のテストの出力は失敗の詳細をすべて出す設定のため、CI の記録にも種が残る（NFR9.7）
+- [x] テストのデータは整数と page の文字列だけで、個人に関する値を置かない
+- [x] `unit-test-instructions.md` 2.2 のコマンドで流す
+- [x] 対応: BR1.1〜BR1.5、NFR9.1・NFR9.2・NFR9.6・NFR9.7、AC1.1.5・AC1.1.7（ページ送りの部分）、A-03
 
 ### Step 5: 招待のサーバーの呼び出し側の置き換え — 実装
 
-- [ ] `invitation/service/InvitationService.java` の import を `cherry.mastersmith.common.paging.Paging` に替え、`InvitationPaging.pageOf`（招待中の重なりのページ）・`parsePage`（一覧の検証）・`offsetOf`（空にする判定）・`PAGE_SIZE`（読み取りの大きさと応答の size）の参照を `Paging` に替える。ほかの行は変えない（BR3.1〜BR3.5、NFR9.2 の「同じ page と PAGE_SIZE から導く」形のまま）
-- [ ] `invitation/repository/InvitationRepositoryIT.java` の import と `InvitationPaging.PAGE_SIZE` の2か所を `Paging.PAGE_SIZE` に替える（テストの中身は変えない）
-- [ ] `invitation/domain/InvitationPaging.java` を消す
-- [ ] `backend/src` で `InvitationPaging` を検索し、参照が残っていないことを確かめる
-- [ ] 対応: BR3.1〜BR3.5、BR1.5（`InvitationPaging` を残さない）、NFR9.5、R2（招待の側の形）
+- [x] `invitation/service/InvitationService.java` の import を `cherry.mastersmith.common.paging.Paging` に替え、`InvitationPaging.pageOf`（招待中の重なりのページ）・`parsePage`（一覧の検証）・`offsetOf`（空にする判定）・`PAGE_SIZE`（読み取りの大きさと応答の size）の参照を `Paging` に替える。ほかの行は変えない（BR3.1〜BR3.5、NFR9.2 の「同じ page と PAGE_SIZE から導く」形のまま）
+- [x] `invitation/repository/InvitationRepositoryIT.java` の import と `InvitationPaging.PAGE_SIZE` の2か所を `Paging.PAGE_SIZE` に替える（テストの中身は変えない）
+- [x] `invitation/domain/InvitationPaging.java` を消す
+- [x] `backend/src` で `InvitationPaging` を検索し、参照が残っていないことを確かめる
+- [x] 対応: BR3.1〜BR3.5、BR1.5（`InvitationPaging` を残さない）、NFR9.5、R2（招待の側の形）
 
 ### Step 6: 招待のサーバー — テスト（既存の単体・結合を変えずに流す）
 
-- [ ] `unit-test-instructions.md` 2.3 のコマンドで、`PagingTest` と招待の既存の単体テスト・結合テスト（`cherry.mastersmith.invitation.*`）を流し、すべて通ることを確かめる。とくに次が変更なしで通ること:
+- [x] `unit-test-instructions.md` 2.3 のコマンドで、`PagingTest` と招待の既存の単体テスト・結合テスト（`cherry.mastersmith.invitation.*`）を流し、すべて通ることを確かめる。とくに次が変更なしで通ること:
   - `InvitationAdminApiIT` の `the list orders newest first by id, pages by 20, empties beyond the last page and rejects bad pages`（20 件・2ページ目が1件・3ページ目が全体の件数つきの空の 200・`0`・`-1`・`1.5`・`abc`・空が 400 `VALIDATION_FAILED`）と、`size` 20 の確かめ、招待中の重なりの `page` 2 の確かめ（BR1.4）
   - `InvitationServiceTest` の一覧（`InvalidPage`・最後のページより後の空）、`InvitationAuditIT` の招待中の重なりのページ
   - `InvitationRepositoryIT`（参照先だけを変えたもの）
-- [ ] 失敗したときは、テストではなく `Paging` か `InvitationService` の写し間違いを直す（テストを書き換えない。NFR9.5）
-- [ ] 対応: BR1.2〜BR1.4・BR3.1〜BR3.4、NFR9.1〜NFR9.3・NFR9.5、AC1.1.5・AC1.1.7（ページ送りの部分）、NFR 要件の R-04
+- [x] 失敗したときは、テストではなく `Paging` か `InvitationService` の写し間違いを直す（テストを書き換えない。NFR9.5）
+- [x] 対応: BR1.2〜BR1.4・BR3.1〜BR3.4、NFR9.1〜NFR9.3・NFR9.5、AC1.1.5・AC1.1.7（ページ送りの部分）、NFR 要件の R-04
 
 ### Step 7: 画面のページ送り — 実装
 
-- [ ] `frontend/src/shared/paging/paging.ts` を作る。`features/invitation/paging.ts` のすべての export を、名前・引数・結果・処理を変えずに移す（BR2.1〜BR2.5、C5）
-- [ ] 先頭の説明のコメントを直す: 招待の段の参照（`functional-spec.md` の D1・W2、`frontend-components.md` の 2節）を、管理の一覧（招待の一覧・利用者の一覧）に共通の書き方と U2 の決まりの番号（BR2.1〜BR2.5）に替える。関数の JSDoc の「招待」に限った言い方（例「全 43 件」の例は残す）を共通の言い方に直し、振る舞いの説明は変えない。`correctedPage`・`pagerButtonDisabledAfter` の「W2 の 5」「W2 の 3」の参照を BR2.3・BR2.4 に替える
-- [ ] `PAGE_SIZE` の JSDoc に「サーバーの `cherry.mastersmith.common.paging.Paging.PAGE_SIZE` と同じ値にする（変えるときは両方を同じ変更で直す）」を書く（A-03、9節の Q-C の決定）
-- [ ] 先頭に `/* ... */` の Apache License 2.0 のヘッダーを置く。名前つきの export だけで、`export default`・`enum` を使わない
-- [ ] この時点では `features/invitation/paging.ts` を残す（Step 9 で使い手を切り替えてから消す）
-- [ ] 対応: BR2.1〜BR2.5、C5、NFR11.1、A-03
+- [x] `frontend/src/shared/paging/paging.ts` を作る。`features/invitation/paging.ts` のすべての export を、名前・引数・結果・処理を変えずに移す（BR2.1〜BR2.5、C5）
+- [x] 先頭の説明のコメントを直す: 招待の段の参照（`functional-spec.md` の D1・W2、`frontend-components.md` の 2節）を、管理の一覧（招待の一覧・利用者の一覧）に共通の書き方と U2 の決まりの番号（BR2.1〜BR2.5）に替える。関数の JSDoc の「招待」に限った言い方（例「全 43 件」の例は残す）を共通の言い方に直し、振る舞いの説明は変えない。`correctedPage`・`pagerButtonDisabledAfter` の「W2 の 5」「W2 の 3」の参照を BR2.3・BR2.4 に替える
+- [x] `PAGE_SIZE` の JSDoc に「サーバーの `cherry.mastersmith.common.paging.Paging.PAGE_SIZE` と同じ値にする（変えるときは両方を同じ変更で直す）」を書く（A-03、9節の Q-C の決定）
+- [x] 先頭に `/* ... */` の Apache License 2.0 のヘッダーを置く。名前つきの export だけで、`export default`・`enum` を使わない
+- [x] この時点では `features/invitation/paging.ts` を残す（Step 9 で使い手を切り替えてから消す）
+- [x] 対応: BR2.1〜BR2.5、C5、NFR11.1、A-03
 
 ### Step 8: 画面のページ送り — テスト（単体・性質）
 
-- [ ] `frontend/src/shared/paging/paging.test.ts` を作り、`features/invitation/paging.test.ts` の事例（`describe('paging', …)` の7件）を、`it` の説明文と期待の値を変えずに移す（import の場所だけ `./paging` のまま新しい置き場から読む）。移した後に `features/invitation/paging.test.ts` を消す
-- [ ] fast-check の性質を4つ足す（FS 6節、既定の回数 100 回、説明文は英語）:
+- [x] `frontend/src/shared/paging/paging.test.ts` を作り、`features/invitation/paging.test.ts` の事例（`describe('paging', …)` の7件）を、`it` の説明文と期待の値を変えずに移す（import の場所だけ `./paging` のまま新しい置き場から読む）。移した後に `features/invitation/paging.test.ts` を消す
+- [x] fast-check の性質を4つ足す（FS 6節、既定の回数 100 回、説明文は英語）:
   - 隣り合うページの範囲が隙間なくつながり（次の from が前の to + 1）、すべてのページの件数の和が total になる（total は 1〜100,000）
   - `pageCount(total)` を c とすると、total が 1 以上なら `(c - 1) * 20 < total <= c * 20`
   - 「次へ」が押せなくなるのは page が `pageCount(total)` 以上のときだけ（`pagerButtonDisabledAfter('next', page, total)` が `page >= pageCount(total)` と一致する）
   - 行が1件以上あれば `correctedPage` は補正しない（undefined）
-- [ ] 既存の `expect(PAGE_SIZE).toBe(20)` は残す（A-03 の画面の側の固定）
-- [ ] 先頭の説明のコメントに、失敗のときの再現の仕方を書く: fast-check は失敗の報告に `seed` と `path` を出すため、`fc.assert(property, { seed, path })` の第2引数に与えて再現する（NFR9.7）
-- [ ] 先頭に Apache License 2.0 のヘッダーを置く。テストのデータは整数だけ
-- [ ] `unit-test-instructions.md` 2.4 のコマンドで流す
-- [ ] 対応: BR2.1〜BR2.4、NFR9.6・NFR9.7、AC1.1.1・AC1.1.7（ページ送りの部分）、A-03
+- [x] 既存の `expect(PAGE_SIZE).toBe(20)` は残す（A-03 の画面の側の固定）
+- [x] 先頭の説明のコメントに、失敗のときの再現の仕方を書く: fast-check は失敗の報告に `seed` と `path` を出すため、`fc.assert(property, { seed, path })` の第2引数に与えて再現する（NFR9.7）
+- [x] 先頭に Apache License 2.0 のヘッダーを置く。テストのデータは整数だけ
+- [x] `unit-test-instructions.md` 2.4 のコマンドで流す
+- [x] 対応: BR2.1〜BR2.4、NFR9.6・NFR9.7、AC1.1.1・AC1.1.7（ページ送りの部分）、A-03
 
 ### Step 9: 招待の画面の置き換え — 実装
 
-- [ ] `frontend/src/features/invitation/InvitationList.tsx` の `import { PAGE_SIZE, pageRange, type PagerDirection } from './paging'` を `'../../shared/paging/paging'` から読む形に替える。ほかは変えない
-- [ ] `frontend/src/features/invitation/useInvitationAdmin.ts` の `import { correctedPage, pageRange, pagerButtonDisabledAfter, type PagerDirection } from './paging'` を同じく替える。ほかは変えない
-- [ ] `frontend/src/features/invitation/paging.ts` を消す
-- [ ] `frontend/src` と `frontend/e2e` で `features/invitation/paging` と `from './paging'`（招待のフォルダーの中）を検索し、古い参照が残っていないことを確かめる
-- [ ] 画面の文言（`invitation.pager.status`・`invitation.action.prev`・`invitation.action.next` などの訳の鍵）は移さない（9節の Q-D の決定、BR2.5 の前提）
-- [ ] 対応: BR3.5、BR2.5、NFR9.5・NFR11.1
+- [x] `frontend/src/features/invitation/InvitationList.tsx` の `import { PAGE_SIZE, pageRange, type PagerDirection } from './paging'` を `'../../shared/paging/paging'` から読む形に替える。ほかは変えない
+- [x] `frontend/src/features/invitation/useInvitationAdmin.ts` の `import { correctedPage, pageRange, pagerButtonDisabledAfter, type PagerDirection } from './paging'` を同じく替える。ほかは変えない
+- [x] `frontend/src/features/invitation/paging.ts` を消す
+- [x] `frontend/src` と `frontend/e2e` で `features/invitation/paging` と `from './paging'`（招待のフォルダーの中）を検索し、古い参照が残っていないことを確かめる
+- [x] 画面の文言（`invitation.pager.status`・`invitation.action.prev`・`invitation.action.next` などの訳の鍵）は移さない（9節の Q-D の決定、BR2.5 の前提）
+- [x] 対応: BR3.5、BR2.5、NFR9.5・NFR11.1
 
 ### Step 10: 招待の画面 — テスト（既存の画面のテストを変えずに流す）と画面の静的検査
 
-- [ ] `unit-test-instructions.md` 2.5 のコマンドで、`src/shared/paging` と `src/features/invitation` の画面のテストを流し、すべて通ることを確かめる。とくに、ページ送りを操作する既存のテスト（`InvitationList.test.tsx` の `names the table, reaches its buttons with Tab, and shows the pager status and its edges`、`InvitationAdminPage.test.tsx` の `moves between pages and focuses the heading when the pressed button becomes disabled`・`focuses the heading when the pending row is gone, and corrects a page past the end` ほか）が変更なしで通ること
-- [ ] 型の検査（`npm run typecheck`）と、変えたフォルダーに絞った書式・リンタの検査（Prettier・oxlint・ESLint、`unit-test-instructions.md` 2.5）を通す
-- [ ] 失敗したときは、テストではなく `shared/paging/paging.ts` の写し間違いや import を直す（テストを書き換えない。NFR9.5）。描画の後に反映される値の確かめが時間で揺れたときは、上限を延ばさずに原因を確かめる（`team.md` の Testing Posture）
-- [ ] 対応: BR2.1〜BR2.5・BR3.5、NFR9.4・NFR9.5・NFR11.1
+- [x] `unit-test-instructions.md` 2.5 のコマンドで、`src/shared/paging` と `src/features/invitation` の画面のテストを流し、すべて通ることを確かめる。とくに、ページ送りを操作する既存のテスト（`InvitationList.test.tsx` の `names the table, reaches its buttons with Tab, and shows the pager status and its edges`、`InvitationAdminPage.test.tsx` の `moves between pages and focuses the heading when the pressed button becomes disabled`・`focuses the heading when the pending row is gone, and corrects a page past the end` ほか）が変更なしで通ること
+- [x] 型の検査（`npm run typecheck`）と、変えたフォルダーに絞った書式・リンタの検査（Prettier・oxlint・ESLint、`unit-test-instructions.md` 2.5）を通す
+- [x] 失敗したときは、テストではなく `shared/paging/paging.ts` の写し間違いや import を直す（テストを書き換えない。NFR9.5）。描画の後に反映される値の確かめが時間で揺れたときは、上限を延ばさずに原因を確かめる（`team.md` の Testing Posture）
+- [x] 対応: BR2.1〜BR2.5・BR3.5、NFR9.4・NFR9.5・NFR11.1
 
 ### Step 11: 構造の検査と古い参照の確かめ
 
-- [ ] `unit-test-instructions.md` 2.6 のコマンドで、`ArchitectureTest` と機能ごとの境界テスト（`*BoundaryArchitectureTest`、とくに `InvitationBoundaryArchitectureTest`）を変更なしで流して通ることを確かめる。`InvitationBoundaryArchitectureTest` の決まり（`auth`・`audit`・`dsl` などへの依存の禁止）は `common` への依存を禁じておらず、`invitation` から `common.paging` への向きは許されている。通らないときは本体の置き場を直し、テストを緩める必要が出たら生成を止めて依頼者に諮る（`team.md` の Code Style、NFR11.1）
-- [ ] `common.paging` がどの機能（`invitation`・`user`・`auth` など）にも依存しないことを、`Paging.java` の import が JDK だけであることで確かめる
-- [ ] `git diff --stat develop` と検索で、`InvitationPaging`・`features/invitation/paging` への参照がアプリのソースとテストに残っていないことを確かめる（`cicd-pipeline.md` 8節 (i)）。記録のディレクトリとコードの知識ベース（`aidlc/spaces/default/codekb/`）の記述は、この段では書き換えない
-- [ ] 対応: NFR11.1、BR1.5・BR2.5、`cicd-pipeline.md` 8節 (i)
+- [x] `unit-test-instructions.md` 2.6 のコマンドで、`ArchitectureTest` と機能ごとの境界テスト（`*BoundaryArchitectureTest`、とくに `InvitationBoundaryArchitectureTest`）を変更なしで流して通ることを確かめる。`InvitationBoundaryArchitectureTest` の決まり（`auth`・`audit`・`dsl` などへの依存の禁止）は `common` への依存を禁じておらず、`invitation` から `common.paging` への向きは許されている。通らないときは本体の置き場を直し、テストを緩める必要が出たら生成を止めて依頼者に諮る（`team.md` の Code Style、NFR11.1）
+- [x] `common.paging` がどの機能（`invitation`・`user`・`auth` など）にも依存しないことを、`Paging.java` の import が JDK だけであることで確かめる
+- [x] `git diff --stat develop` と検索で、`InvitationPaging`・`features/invitation/paging` への参照がアプリのソースとテストに残っていないことを確かめる（`cicd-pipeline.md` 8節 (i)）。記録のディレクトリとコードの知識ベース（`aidlc/spaces/default/codekb/`）の記述は、この段では書き換えない
+- [x] 対応: NFR11.1、BR1.5・BR2.5、`cicd-pipeline.md` 8節 (i)
 
 ### Step 12: コードのレビューでの確かめ（申し送りの A-01〜A-03・NFR の確かめ）
 
 各項目の確かめた方法と結果を `generation-notes.md` に書き、`code-summary.md` に写す。
 
-- [ ] **NFR9.5（招待のテストの中身）**: `git diff develop -M -- backend/src/test frontend/src/features/invitation` で、招待のテストの差が import の行と `PAGE_SIZE` の参照先だけであること、`InvitationPagingTest` → `PagingTest` と `paging.test.ts` の移動の差が、参照先・説明文・足した確かめだけであることを確かめる（`cicd-pipeline.md` 8節 (ii)）
-- [ ] **口の型（NFR3.1、C2・C5）**: `Paging` の4つの口と UiPaging の7つの export の名前・引数・結果・例外が移す前と同じであることを、移す前のファイル（`git show develop:<パス>`）と並べて確かめる
-- [ ] **TRACE に出うる範囲（NFR3.1、NFR 要件の R-02、R3）**: `Paging` が Spring の部品でなく（注釈が無い）、`common.observability.TraceAspect.EXPRESSION` の対象（`web`・`service`・`domain`・`repository` の層の Spring の部品）に当たらないこと、page の文字列が TRACE に出うるのは `InvitationAdminController#list(String)` と `InvitationService#list(String)` の引数だけで、ほかのログ・トレースの属性・エラー応答に出していないことを、ソースの検索で確かめる
-- [ ] **A-01（要求の行の上限）**: 9節の Q-B の決定（A）のとおり、次で確かめて記録する:
+- [x] **NFR9.5（招待のテストの中身）**: `git diff develop -M -- backend/src/test frontend/src/features/invitation` で、招待のテストの差が import の行と `PAGE_SIZE` の参照先だけであること、`InvitationPagingTest` → `PagingTest` と `paging.test.ts` の移動の差が、参照先・説明文・足した確かめだけであることを確かめる（`cicd-pipeline.md` 8節 (ii)）
+- [x] **口の型（NFR3.1、C2・C5）**: `Paging` の4つの口と UiPaging の7つの export の名前・引数・結果・例外が移す前と同じであることを、移す前のファイル（`git show develop:<パス>`）と並べて確かめる
+- [x] **TRACE に出うる範囲（NFR3.1、NFR 要件の R-02、R3）**: `Paging` が Spring の部品でなく（注釈が無い）、`common.observability.TraceAspect.EXPRESSION` の対象（`web`・`service`・`domain`・`repository` の層の Spring の部品）に当たらないこと、page の文字列が TRACE に出うるのは `InvitationAdminController#list(String)` と `InvitationService#list(String)` の引数だけで、ほかのログ・トレースの属性・エラー応答に出していないことを、ソースの検索で確かめる
+- [x] **A-01（要求の行の上限）**: 9節の Q-B の決定（A）のとおり、次で確かめて記録する:
   - `backend/src/main/resources/application.yaml` が `server.max-http-request-header-size` を変えていないことと、使っている Spring Boot の版の既定の値（`ServerProperties` の既定）を、依存の部品の中身（読み取りだけ）で確かめる
   - 一時の結合テスト（例 `backend/src/test/java/cherry/mastersmith/invitation/web/RequestLineLimitProbeIT.java`。既存の招待のテストは変えない）で、管理者のアクセストークンつきで page に 8KB を超える文字列（例 9,000 文字の数字）を付けた一覧の要求と、上限より短い長い文字列（例 7,000 文字）の要求を送り、前者がアプリに届かず組み込みのサーバーで拒否されること（状態コードを記録する）と、後者が 400 `VALIDATION_FAILED` になることを確かめる。流した後にそのファイルを消し、`git status` で残っていないことを確かめる（`source-manifest.json` には載せない）
   - 結果が設計の見込み（8KB が要求の行にも効く）と違ったときは、根拠1（page の文字列は個人に関する値・秘密ではない）・根拠2（TRACE は既定で無効）だけで受け入れ（Q1 A）が成り立つことを `code-summary.md` に書き、承認の場で依頼者に伝える。設計の文書は書き換えない
-- [ ] **A-02（ログの行の偽造）**: TRACE の行の page の文字列は `message` の項目に入る。`backend/src/main/resources/logback-spring.xml` の1行1件の JSON の出力で、`common.observability.SingleLineMessageJsonProvider` が改行の並び（CRLF・CR・LF）を「 ⏎ 」に置き換え、ほかの制御文字は JSON の文字列としてエスケープされることを、既存の `JsonLogFormatTest`（`values containing line breaks stay on one line and cannot forge another record`・`line breaks in a message are replaced so the message stays on one line`）を流して確かめ、記録する。コードは変えない。外部エクスポート（既定で無効）は1行の形に頼らないことも記録する
-- [ ] **A-03（`PAGE_SIZE` の一致）**: 9節の Q-C の決定（A）のとおり、サーバーの側は `PagingTest` の固定（Step 4）と既存の `InvitationAdminApiIT`・`InvitationServiceTest` の `size` 20 の確かめ、画面の側は `paging.test.ts` の `PAGE_SIZE` 20 の確かめで、片方だけの値の変更がその側のテストで止まることと、両方の説明文が互いの場所を示していることを確かめる。E2E の 060 の実データの1件は 20 行目の表示（`rows.nth(19)`）で間接に確かめる（Step 15）
-- [ ] **NFR5.1（問い合わせの回数）**: `InvitationService#list`・`readPage` の差が参照先の名前だけで、数える1回と読む1回が変わらないことを差分で確かめる
-- [ ] **NFR5.2・NFR9.11・カバレッジの設定（変えないもの）**: `git diff --stat develop -- docker/monitoring gradle/libs.versions.toml backend/gradle.lockfile frontend/package.json frontend/package-lock.json backend/build.gradle.kts backend/config/spotbugs-exclude.xml frontend/vitest.config.ts .gitleaks.toml` が空であることを確かめる（`cicd-pipeline.md` 8節 (v)）
-- [ ] 対応: NFR3.1・NFR5.1・NFR5.2・NFR9.5・NFR9.11、A-01〜A-03、NFR 要件の R-02、R3・R4
+- [x] **A-02（ログの行の偽造）**: TRACE の行の page の文字列は `message` の項目に入る。`backend/src/main/resources/logback-spring.xml` の1行1件の JSON の出力で、`common.observability.SingleLineMessageJsonProvider` が改行の並び（CRLF・CR・LF）を「 ⏎ 」に置き換え、ほかの制御文字は JSON の文字列としてエスケープされることを、既存の `JsonLogFormatTest`（`values containing line breaks stay on one line and cannot forge another record`・`line breaks in a message are replaced so the message stays on one line`）を流して確かめ、記録する。コードは変えない。外部エクスポート（既定で無効）は1行の形に頼らないことも記録する
+- [x] **A-03（`PAGE_SIZE` の一致）**: 9節の Q-C の決定（A）のとおり、サーバーの側は `PagingTest` の固定（Step 4）と既存の `InvitationAdminApiIT`・`InvitationServiceTest` の `size` 20 の確かめ、画面の側は `paging.test.ts` の `PAGE_SIZE` 20 の確かめで、片方だけの値の変更がその側のテストで止まることと、両方の説明文が互いの場所を示していることを確かめる。E2E の 060 の実データの1件は 20 行目の表示（`rows.nth(19)`）で間接に確かめる（Step 15）
+- [x] **NFR5.1（問い合わせの回数）**: `InvitationService#list`・`readPage` の差が参照先の名前だけで、数える1回と読む1回が変わらないことを差分で確かめる
+- [x] **NFR5.2・NFR9.11・カバレッジの設定（変えないもの）**: `git diff --stat develop -- docker/monitoring gradle/libs.versions.toml backend/gradle.lockfile frontend/package.json frontend/package-lock.json backend/build.gradle.kts backend/config/spotbugs-exclude.xml frontend/vitest.config.ts .gitleaks.toml` が空であることを確かめる（`cicd-pipeline.md` 8節 (v)）
+- [x] 対応: NFR3.1・NFR5.1・NFR5.2・NFR9.5・NFR9.11、A-01〜A-03、NFR 要件の R-02、R3・R4
 
 ### Step 13: U2 の1コマンドの検査（単位ごとの squash の条件とカバレッジの実測）
 
-- [ ] U4 の変更がまだ無いこと（作業フォルダの変更が U2 の分だけであること）を `git status` で確かめる
-- [ ] colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段（フォーマット・リンタ・ライセンスヘッダー・ビルド・単体・結合・カバレッジ・安全の検査・成果物）が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
-- [ ] テストの件数（バックエンドの単体・結合、フロントエンド）と、全体と Step 1 と同じパッケージ（`invitation.domain`・`invitation.service`・`invitation.web`・`invitation.repository`）と `common.paging` の行・分岐のカバレッジを実測の数字で記録し、Step 1 の基準と 4.3 の見込みと比べる。件数の差（`PagingTest` の足した性質3つと固定の1件、`paging.test.ts` の足した性質4つ）を数で説明する
-- [ ] `invitation.domain` と `common.paging` がそれぞれ行 80%・分岐 70% を満たすことを確かめる。下回ったら、計測の除外を増やさず、同じパッケージのほかのクラスのテストを足す（残る危険 R1、NFR9.8・NFR9.9）。下限・除外・`packagesJudgedByTotal` は変えない（Testing Contract）。画面の全体の合計が下限を満たすことを確かめる（NFR9.10）
-- [ ] SpotBugs ＋ FindSecBugs・Gitleaks を除外を足さずに通すことを確かめる（NFR9.4）。`osvScan` が UP-TO-DATE だったときは、この時点では流し直さない（lockfile を変えないため。B2 の関門の Step 15 で `--rerun-tasks` で流す）
-- [ ] 失敗が一時的に見えるときは、`team.md` の「不安定なテストと CI の失敗」の決まりで扱う（手元で再現したら原因を直す）
-- [ ] この verify が通ったことを、単位ごとの squash の条件（3節）の確かめとして記録する
-- [ ] 対応: NFR9.4・NFR9.8〜NFR9.10、A-04、基盤の設計の R-02・R-03、`project.md` の Mandated（統合の前の確認）
+- [x] U4 の変更がまだ無いこと（作業フォルダの変更が U2 の分だけであること）を `git status` で確かめる
+- [x] colima が動いていることを確かめ、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を実行し、すべての段（フォーマット・リンタ・ライセンスヘッダー・ビルド・単体・結合・カバレッジ・安全の検査・成果物）が通ることを確かめる。対象DB のテストが SKIPPED になっていないことを確かめる（`project.md` の学び）
+- [x] テストの件数（バックエンドの単体・結合、フロントエンド）と、全体と Step 1 と同じパッケージ（`invitation.domain`・`invitation.service`・`invitation.web`・`invitation.repository`）と `common.paging` の行・分岐のカバレッジを実測の数字で記録し、Step 1 の基準と 4.3 の見込みと比べる。件数の差（`PagingTest` の足した性質3つと固定の1件、`paging.test.ts` の足した性質4つ）を数で説明する
+- [x] `invitation.domain` と `common.paging` がそれぞれ行 80%・分岐 70% を満たすことを確かめる。下回ったら、計測の除外を増やさず、同じパッケージのほかのクラスのテストを足す（残る危険 R1、NFR9.8・NFR9.9）。下限・除外・`packagesJudgedByTotal` は変えない（Testing Contract）。画面の全体の合計が下限を満たすことを確かめる（NFR9.10）
+- [x] SpotBugs ＋ FindSecBugs・Gitleaks を除外を足さずに通すことを確かめる（NFR9.4）。`osvScan` が UP-TO-DATE だったときは、この時点では流し直さない（lockfile を変えないため。B2 の関門の Step 15 で `--rerun-tasks` で流す）
+- [x] 失敗が一時的に見えるときは、`team.md` の「不安定なテストと CI の失敗」の決まりで扱う（手元で再現したら原因を直す）
+- [x] この verify が通ったことを、単位ごとの squash の条件（3節）の確かめとして記録する
+- [x] 対応: NFR9.4・NFR9.8〜NFR9.10、A-04、基盤の設計の R-02・R-03、`project.md` の Mandated（統合の前の確認）
 
 ### Step 14: 記録とコミットの提案（U2）
 
-- [ ] `code-summary.md`（作ったもの・変えたもの・消したもの、Step 1 と Step 13 の実測と 4.3 の見込みとの比べ、Step 12 の確かめの結果（A-01〜A-03・TRACE の範囲・テストの差）、計画・承認済みの文書との差、承認の場で確かめること）、`source-manifest.json`（作った・変えた・消したアプリのソースとテストのパスすべて。一時の確かめのファイルは消したため載せない）、`traceability.json`（AC1.1.1・AC1.1.5・AC1.1.7 を「部分」で OK、残りの 10 件を u3-user-admin-api・u5-user-admin-ui へ Deferred、BR1.1〜BR3.5 と NFR3.1・NFR5.1・NFR5.2・NFR9.1〜NFR9.11・NFR11.1 の実装とテストのファイル）を作る（コード生成の段の手順）
+- [x] `code-summary.md`（作ったもの・変えたもの・消したもの、Step 1 と Step 13 の実測と 4.3 の見込みとの比べ、Step 12 の確かめの結果（A-01〜A-03・TRACE の範囲・テストの差）、計画・承認済みの文書との差、承認の場で確かめること）、`source-manifest.json`（作った・変えた・消したアプリのソースとテストのパスすべて。一時の確かめのファイルは消したため載せない）、`traceability.json`（AC1.1.1・AC1.1.5・AC1.1.7 を「部分」で OK、残りの 10 件を u3-user-admin-api・u5-user-admin-ui へ Deferred、BR1.1〜BR3.5 と NFR3.1・NFR5.1・NFR5.2・NFR9.1〜NFR9.11・NFR11.1 の実装とテストのファイル）を作る（コード生成の段の手順）
 - [ ] 3節の C1・C2 の区切りで、コミットの内容とメッセージの案を依頼者に示して承認を得る（生成の担当はコミットしない）
 - [ ] 承認を得てコミットした後、`git status` で U2 のアプリのソースに未コミットの変更が無いことを確かめ、U2 の最後のコミットのハッシュを `code-summary.md` に記録する（単位ごとの squash の条件、3節）。U4 の作業はこの後に始める
 - [ ] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
