@@ -27,13 +27,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import cherry.mastersmith.user.domain.FieldError;
+import cherry.mastersmith.user.domain.FieldErrorReason;
 import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.ProfileUpdate;
 import cherry.mastersmith.user.domain.RedactedText;
+import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.domain.User;
+import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.lang.reflect.RecordComponent;
 import java.sql.SQLException;
@@ -41,6 +46,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -419,5 +426,120 @@ class UserAccountServiceTest {
                 .contains("email=***")
                 .contains("user=null")
                 .contains("matched=false");
+    }
+
+    private static UserAdminRow adminRow(long id) {
+        return new UserAdminRow(id, "row@example.com", "一覧 太郎", Language.JA, false, false, NOW);
+    }
+
+    @Test
+    @DisplayName("without a search the admin page counts all users and reads the unfiltered rows (U3)")
+    void adminPageWithoutSearch() {
+        when(repository.count()).thenReturn(21L);
+        when(repository.findAdminRows(any(Pageable.class))).thenReturn(List.of(adminRow(3)));
+
+        UserAdminSlice slice = service.findAdminPage(null, 20, 20);
+
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        verify(repository).findAdminRows(pageable.capture());
+        assertThat(pageable.getValue().getOffset()).isEqualTo(20);
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(20);
+        assertThat(slice.total()).isEqualTo(21);
+        assertThat(slice.items())
+                .containsExactly(new UserAdminSummary(3, "row@example.com", "一覧 太郎", Language.JA, false, false, NOW));
+        verify(repository, never()).countBySearch(any());
+    }
+
+    @Test
+    @DisplayName("a blank search is treated as no search (U3)")
+    void adminPageBlankSearch() {
+        when(repository.count()).thenReturn(1L);
+        when(repository.findAdminRows(any(Pageable.class))).thenReturn(List.of(adminRow(1)));
+
+        service.findAdminPage(new SearchText(" \u3000"), 0, 20);
+
+        verify(repository, never()).countBySearch(any());
+        verify(repository, never()).findAdminRowsBySearch(any(), any());
+    }
+
+    @Test
+    @DisplayName("a search passes the redacted pattern to both the count and the rows (U3)")
+    void adminPageWithSearch() {
+        when(repository.countBySearch(any())).thenReturn(1L);
+        when(repository.findAdminRowsBySearch(any(), any(Pageable.class))).thenReturn(List.of(adminRow(5)));
+
+        UserAdminSlice slice = service.findAdminPage(new SearchText(" Taro_1 "), 0, 20);
+
+        ArgumentCaptor<RedactedText> pattern = ArgumentCaptor.forClass(RedactedText.class);
+        verify(repository).countBySearch(pattern.capture());
+        verify(repository).findAdminRowsBySearch(eq(pattern.getValue()), any(Pageable.class));
+        assertThat(pattern.getValue().value()).isEqualTo("%taro\\_1%");
+        assertThat(slice.items()).hasSize(1);
+        verify(repository, never()).count();
+    }
+
+    @Test
+    @DisplayName("an offset at or beyond the total reads no rows (U3)")
+    void adminPageBeyondTotal() {
+        when(repository.count()).thenReturn(20L);
+
+        UserAdminSlice slice = service.findAdminPage(null, 20, 20);
+
+        assertThat(slice.items()).isEmpty();
+        assertThat(slice.total()).isEqualTo(20);
+        verify(repository, never()).findAdminRows(any());
+    }
+
+    @Test
+    @DisplayName("an offset that is not a multiple of the page size is rejected (U3)")
+    void adminPageRejectsOddOffset() {
+        assertThatThrownBy(() -> service.findAdminPage(null, 5, 20)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.findAdminPage(null, 0, 0)).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("an invalid profile is returned without touching the database (U3)")
+    void updateProfileInvalid() {
+        ProfileUpdateResult result = service.updateProfile(7, new ProfileCommand(" ", "fr"));
+
+        assertThat(result)
+                .isEqualTo(new ProfileUpdateResult.Invalid(List.of(
+                        new FieldError("displayName", FieldErrorReason.REQUIRED),
+                        new FieldError("language", FieldErrorReason.INVALID_VALUE))));
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    @DisplayName("a valid profile writes the stripped name and the language, and zero rows means not found (U3)")
+    void updateProfileWritesStrippedValue() {
+        when(repository.updateProfile(eq(7L), any())).thenReturn(1);
+        when(repository.updateProfile(eq(8L), any())).thenReturn(0);
+
+        ProfileUpdateResult updated = service.updateProfile(7, new ProfileCommand(" 新しい 氏名\u3000", "en"));
+        ProfileUpdateResult missing = service.updateProfile(8, new ProfileCommand("だれか", "ja"));
+
+        verify(repository).updateProfile(7L, new ProfileUpdate("新しい 氏名", Language.EN));
+        assertThat(updated).isEqualTo(new ProfileUpdateResult.Updated());
+        assertThat(missing).isEqualTo(new ProfileUpdateResult.NotFound());
+    }
+
+    @Test
+    @DisplayName("the admin summary, the slice and the profile command hide emails and names in their strings (U3)")
+    void adminTypesHideValues() {
+        UserAdminSummary summary =
+                new UserAdminSummary(3, "leak-check@example.com", "漏れ確認 花子", Language.JA, true, false, NOW);
+
+        assertThat(summary.toString())
+                .doesNotContain("leak-check")
+                .doesNotContain("漏れ確認")
+                .contains("userId=3");
+        assertThat(new UserAdminSlice(List.of(summary), 1).toString())
+                .doesNotContain("leak-check")
+                .doesNotContain("漏れ確認");
+        assertThat(new ProfileCommand("漏れ確認 花子", "ja").toString())
+                .doesNotContain("漏れ確認")
+                .contains("language=ja");
+        assertThat(adminRow(4).toString()).doesNotContain("row@example.com").doesNotContain("一覧 太郎");
     }
 }

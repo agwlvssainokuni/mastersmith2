@@ -19,6 +19,7 @@ import cherry.mastersmith.auth.domain.LoginAttemptState;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -92,6 +93,24 @@ public class LoginAttemptStateRepository {
         }
         long id = -1L - ThreadLocalRandom.current().nextInt(DUMMY_ROWS);
         return lockForUpdate(id).orElseThrow(() -> new IllegalStateException("ダミーの行がありません: " + id));
+    }
+
+    /**
+     * 指定した利用者の行を、排他なしの1回の問い合わせで読む（Intent 260930-user-admin の U3、利用者の一覧のロックの判定。BR1.7）。
+     *
+     * <p>呼び出し元は正の利用者 ID だけを渡す（ダミーの行を読まない）。行の無い利用者は結果に含まれない。
+     *
+     * @param subjectIds 利用者 ID（空なら問い合わせない）
+     * @return 行（順は決めない）
+     */
+    public List<LoginAttemptState> findBySubjectIds(Collection<Long> subjectIds) {
+        if (subjectIds.isEmpty()) {
+            return List.of();
+        }
+        return entityManager
+                .createQuery("select s from LoginAttemptState s where s.subjectId in :ids", LoginAttemptState.class)
+                .setParameter("ids", subjectIds)
+                .getResultList();
     }
 
     /**

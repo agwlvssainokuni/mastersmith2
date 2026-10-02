@@ -266,4 +266,47 @@ class LoginAttemptStateRepositoryIT {
 
         assertThat(missing).isEmpty();
     }
+
+    @Test
+    @DisplayName("rows of the given users are read without a lock and without waiting for a held row (U3)")
+    void findBySubjectIdsDoesNotWait() throws Exception {
+        long held = newSubject();
+        long other = newSubject();
+        long withoutRow = newSubject();
+        jdbc.update("DELETE FROM login_attempt_states WHERE subject_id = ?", withoutRow);
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        Future<?> first = holdLock(held, 2, locked, release);
+        await(locked);
+
+        long start = System.nanoTime();
+        SqlStatementCounter.start();
+        List<LoginAttemptState> rows =
+                tx.execute(status -> repository.findBySubjectIds(List.of(held, other, withoutRow)));
+        Map<String, List<String>> statements = SqlStatementCounter.stop();
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        release.countDown();
+        first.get(30, TimeUnit.SECONDS);
+
+        assertThat(rows).extracting(LoginAttemptState::getSubjectId).containsExactlyInAnyOrder(held, other);
+        assertThat(elapsedMillis).isLessThan(2500L);
+        assertThat(statements.values().stream().flatMap(List::stream).toList())
+                .containsExactly("select login_attempt_states");
+    }
+
+    @Test
+    @DisplayName("dummy rows are never returned and an empty id list issues no query (U3)")
+    void findBySubjectIdsSkipsDummyAndEmpty() {
+        long subject = newSubject();
+
+        SqlStatementCounter.start();
+        List<LoginAttemptState> none = tx.execute(status -> repository.findBySubjectIds(List.of()));
+        Map<String, List<String>> statements = SqlStatementCounter.stop();
+        List<LoginAttemptState> rows = tx.execute(status -> repository.findBySubjectIds(List.of(subject)));
+
+        assertThat(none).isEmpty();
+        assertThat(statements).isEmpty();
+        assertThat(rows).extracting(LoginAttemptState::getSubjectId).containsExactly(subject);
+        assertThat(rows).allSatisfy(row -> assertThat(row.getSubjectId()).isPositive());
+    }
 }

@@ -76,6 +76,15 @@ public class SqlStatementCounter implements StatementInspector {
     }
 
     /**
+     * 記録した SQL をそのまま返す（Intent 260930-user-admin の U3 で足した。問い合わせの文の形を確かめるため。値は {@code ?} のまま）。
+     *
+     * @return 記録した SQL（発行の順）
+     */
+    public static List<Recorded> recorded() {
+        return List.copyOf(RECORDED);
+    }
+
+    /**
      * SQL を「種類」（最初の語と対象の表、排他の指定の有無）にまとめる。
      *
      * @param sql SQL

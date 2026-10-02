@@ -17,20 +17,27 @@ package cherry.mastersmith.user.service;
 
 import cherry.mastersmith.user.domain.DisplayName;
 import cherry.mastersmith.user.domain.EmailAddress;
+import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.PasswordPolicy;
 import cherry.mastersmith.user.domain.Preferences;
+import cherry.mastersmith.user.domain.ProfileUpdate;
+import cherry.mastersmith.user.domain.ProfileValidation;
 import cherry.mastersmith.user.domain.RedactedText;
+import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.domain.User;
+import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.time.Clock;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -153,6 +160,63 @@ public class UserAccountService {
         if (userRepository.updateSuspended(userId, suspended) == 0) {
             throw new IllegalStateException("利用者がいません: userId=" + userId);
         }
+    }
+
+    /**
+     * 利用者の一覧の1ページを読む（Intent 260930-user-admin の U3、契約 C8 の findAdminPage、BR1.1・BR1.2・BR1.5・BR1.6）。
+     *
+     * <p>呼び出し元の読み取りだけのトランザクションに入り（無ければ新しく始める）、全体の件数と行を同じトランザクションで読む。検索の
+     * 文字は伏せる型のまま受け、問い合わせには伏せる型のパターンを渡す（BR7.4）。読み始めの位置が全体の件数以上なら行を読まない。
+     * 長さの検証は呼び出し元が先に行う（BR1.4）。
+     *
+     * @param search 検索の文字（null か、前後の空白を除いて空なら検索なし）
+     * @param offset 読み始めの位置（0 以上、{@code limit} の倍数。共通のページ送りの読み始めの位置）
+     * @param limit 1ページの件数（1 以上）
+     * @return 1ページの要約と全体の件数
+     * @throws IllegalArgumentException 位置か件数が決まりに合わないとき
+     */
+    @Transactional(readOnly = true)
+    public UserAdminSlice findAdminPage(SearchText search, long offset, int limit) {
+        if (limit < 1 || offset < 0 || offset % limit != 0) {
+            throw new IllegalArgumentException("読み始めの位置と件数が決まりに合いません: offset=" + offset + ", limit=" + limit);
+        }
+        boolean searching = search != null && !search.isBlank();
+        RedactedText pattern = searching ? search.likePattern() : null;
+        long total = searching ? userRepository.countBySearch(pattern) : userRepository.count();
+        if (offset >= total) {
+            return new UserAdminSlice(List.of(), total);
+        }
+        PageRequest pageable = PageRequest.of(Math.toIntExact(offset / limit), limit);
+        List<UserAdminRow> rows = searching
+                ? userRepository.findAdminRowsBySearch(pattern, pageable)
+                : userRepository.findAdminRows(pageable);
+        return new UserAdminSlice(
+                rows.stream().map(UserAccountService::toAdminSummary).toList(), total);
+    }
+
+    /**
+     * 管理者による氏名と言語の変更（Intent 260930-user-admin の U3、契約 C8 の updateProfile、BR5.1・BR5.2）。
+     *
+     * <p>呼び出し元のトランザクションの中でだけ呼べる（無ければ {@code IllegalTransactionStateException}）。先に検証し、誤りなら内部DB に
+     * 触れずに返す。氏名と言語の2列だけを書き換え、行の排他・監査はしない。書いた後に持続化の文脈を空にするため、呼ぶ前に読み込んだ
+     * エンティティは切り離される。
+     *
+     * @param userId 対象の利用者 ID
+     * @param command 氏名と言語（検証の前の値）
+     * @return 結果
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ProfileUpdateResult updateProfile(long userId, ProfileCommand command) {
+        Objects.requireNonNull(command, "command");
+        List<FieldError> errors = ProfileValidation.validate(command.displayName(), command.language());
+        if (!errors.isEmpty()) {
+            return new ProfileUpdateResult.Invalid(errors);
+        }
+        ProfileUpdate update = ProfileValidation.toProfileUpdate(command.displayName(), command.language());
+        if (userRepository.updateProfile(userId, update) == 0) {
+            return new ProfileUpdateResult.NotFound();
+        }
+        return new ProfileUpdateResult.Updated();
     }
 
     /**
@@ -291,5 +355,16 @@ public class UserAccountService {
                 user.getTheme().value(),
                 user.getFontSize().value(),
                 user.isSuspended());
+    }
+
+    private static UserAdminSummary toAdminSummary(UserAdminRow row) {
+        return new UserAdminSummary(
+                row.userId(),
+                row.email(),
+                row.displayName(),
+                row.language(),
+                row.admin(),
+                row.suspended(),
+                row.registeredAt());
     }
 }
