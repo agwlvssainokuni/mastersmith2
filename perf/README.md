@@ -5,9 +5,11 @@
 ## 手順
 
 ```bash
-# 0. 配備したアプリを止め（CPU を取り合って測定の値がぶれないため）、WAR とイメージを用意する
+# 0. 配備したアプリを止め（CPU を取り合って測定の値がぶれないため）、WAR とイメージを用意する。
+#    イメージは Intent ごとの別のタグで作る（docker compose build app は配備したアプリのタグ local を上書きし、
+#    後の docker compose up で配備したアプリが試験の版に作り直されるため）。タグは手順 1 の MASTERSMITH_IMAGE_TAG で渡す
 docker compose stop app
-./gradlew :backend:bootWar && docker compose build app
+./gradlew :backend:bootWar && docker build -t mastersmith:<Intent の名前> .   # 例: mastersmith:user-admin-followup
 
 # 1. リポジトリの外に一時の環境ファイルを作る（値は乱数。表示しない）
 D=$(mktemp -d) && chmod 700 "$D"
@@ -16,7 +18,8 @@ AP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); UP=$(openssl rand -bas
   printf 'MASTERSMITH_AUTH_SIGNING_KEY=%s\nMASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL=perf-admin@example.test\nMASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD=%s\n' "$(openssl rand -base64 32)" "$AP" > "$D/app.env"
   printf 'PERF_ADMIN_EMAIL=perf-admin@example.test\nPERF_ADMIN_PASSWORD=%s\nPERF_USER_PASSWORD=%s\n' "$AP" "$UP" > "$D/k6.env" )
 # コンテナの上限は配備と同じ値（CPU 4・メモリ 2g）。-f で指定する compose は .env を読まないため、シェルの環境変数で渡す
-export MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g
+export MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g \
+  MASTERSMITH_IMAGE_TAG=<Intent の名前>   # 手順 0 で作ったタグ（docker/perf/compose.yaml の既定は local）
 
 # 2. 使い捨ての環境を起動し（初期管理者が作られる）、止めて試験用の利用者 11 名を入れる（dslMixed が VUS + 1 名を使う。ほかの場面は 01〜10）
 #    V7 の後は氏名（display_name）が必須のため、メールアドレスと同じ値を入れる（言語・テーマ・文字の大きさは既定の値）
@@ -269,8 +272,11 @@ docker compose up -d --wait
 ( umask 077; printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
 
 # 2''. 使い捨ての環境を起動し、止めて、試験用の利用者とトークンの行を入れる（メールアドレスは予約のドメインだけ）。
-#      perf-ua-0001〜1000（一覧）、perf-uaop01〜10（操作する管理者）、perf-uat01〜10（5つの操作の対象）、
-#      perf-uapf01〜10（氏名と言語の対象）、perf-uasw-01-01〜10-10（止める悪い側の対象。1人に未無効 100 件・無効 1,000 件）
+#      perf-ua-0001〜1000（一覧）、perf-uaop01〜20（操作する管理者）、perf-uat01〜20（5つの操作の対象）、
+#      perf-uapf01〜20（氏名と言語の対象）、perf-uasw-01-01〜10-10（止める悪い側の対象。1人に未無効 100 件・無効 1,000 件）
+#      uaop・uat・uapf を 20 名ずつ入れるのは、下の「接続プールの上限を下げて流す」が VUS=12（流し直しは VUS=20）で流すため。
+#      台本は VUS が PERF_UA_COUNT（既定 10）を超えると始める前に止まるため、その場面では k6 に -e PERF_UA_COUNT=20 を渡す。
+#      ほかの場面（VUS 10 以下）は既定の PERF_UA_COUNT=10 のままでよい（01〜10 だけを使う）
 perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
 docker info --format '{{.NCPU}} CPU / {{.MemTotal}} bytes'   # VM の余裕を読み取りで確かめる（アプリ 2g・k6）
 perfu up -d --wait
@@ -281,7 +287,7 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
     DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-ua-' || LPAD(CAST(X AS VARCHAR), 4, '0') FROM SYSTEM_RANGE(1, 1000);
 INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   SELECT 'perf-' || K || LPAD(CAST(X AS VARCHAR), 2, '0') || '@example.test', '$HASH', K = 'uaop', CURRENT_TIMESTAMP,
-    'perf-' || K || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10), (VALUES 'uaop', 'uat', 'uapf') V(K);
+    'perf-' || K || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 20), (VALUES 'uaop', 'uat', 'uapf') V(K);
 INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   SELECT 'perf-uasw-' || LPAD(CAST(A.X AS VARCHAR), 2, '0') || '-' || LPAD(CAST(B.X AS VARCHAR), 2, '0') || '@example.test',
     '$HASH', FALSE, CURRENT_TIMESTAMP, 'perf-uasw' FROM SYSTEM_RANGE(1, 10) A, SYSTEM_RANGE(1, 10) B;
@@ -338,9 +344,29 @@ docker logs mastersmith-perf-app-1 2>&1 | grep -c '監査イベントの記録�
 
 # 3''''. 接続プールの上限を下げて流す（下の節「接続プールの上限を下げて流す」。上限 4・userAdminPoolLimit・VUS=12・5 分）
 
-# 4''. 秘密が出ていないことを件数で確かめる（どれも 0 であること）。ログはファイルに残さず、数だけを見る
+# 4''. 秘密が出ていないことを件数で確かめる（下の既知の例外を除き、どれも 0 であること）。ログはファイルに残さず、数だけを見る
 #      （初期管理者の起動のログには伏せ字のメールアドレスが出るため、試験用の利用者の名前の部分で数える）
+#      監査の記録に失敗した場面（接続の待ちの時間切れなど）では、`監査イベントの記録に失敗しました` の ERROR のキー enteredEmail に
+#      メールアドレスそのものが載る（手で記録を補うための既知の例外。aidlc/spaces/default/memory/project.md の決定）。そのため
+#      perf-ua の件数は「その ERROR で enteredEmail に perf-ua を持つ行の数」と一致し、それ以外の行では 0 であることを見る
 docker logs mastersmith-perf-app-1 2>&1 | grep -c 'perf-ua'
+docker logs mastersmith-perf-app-1 2>/dev/null | python3 -c '
+import json, sys
+known = other = 0
+for line in sys.stdin:
+    if "perf-ua" not in line:
+        continue
+    try:
+        r = json.loads(line)
+    except ValueError:
+        other += 1
+        continue
+    hits = [k for k, v in r.items() if isinstance(v, str) and "perf-ua" in v]
+    if r.get("message") == "監査イベントの記録に失敗しました" and hits == ["enteredEmail"]:
+        known += 1
+    else:
+        other += 1
+print("既知の例外 enteredEmail", known, "それ以外（0 であること）", other)'
 docker logs mastersmith-perf-app-1 2>&1 | grep -c 'MVStoreException'
 
 # 5''. 監査の件数を数えてから片付ける（アプリを止め、手順 2'' と同じ H2 の道具で読み取りだけ。数え終わるまで down -v をしない）
@@ -362,12 +388,17 @@ docker compose up -d --wait
 - **なぜ届くか**: 操作1件は1本目の接続を持ったまま、確定の後の監査の記録で2本目を借りる。同時の操作が上限（4）以上になると全員が2本目を待ち、`connection-timeout`（5 秒）で時間切れになる。同時 12 は上限の3倍。5 分は、`ms-pool-pending`（1 分ごとの値で `for: 1m`）が指標の送信の時点を2回以上またぐため。
 - **警報の決まりは変えない**: 手元の監視（`grafana/otel-lgtm`）に、リポジトリの `docker/monitoring/provisioning/alerting/mastersmith.yaml` をそのまま読み込ませる（写しを作ってしきい値を変えることはしない）。外部エクスポートは使い捨てのアプリにだけ有効にする。
 - **VM のメモリ**: アプリ（上限 2g）・手元の監視（1536m）・k6 を同じ VM で動かす。始める前に `docker info` と `docker stats --no-stream` で余裕を読み取りで確かめ、足りなければ配備したアプリを止める（止める前に依頼者に伝え、`docker compose stop app` で止めて、終わったら `docker compose start app` で戻す）。
-- **警報の状態**は、試験の始めから終わりの後 5 分までを 30 秒ごとに Grafana の `api/prometheus/grafana/api/v1/rules` で読み、題ごとの `state` を記録する。
-- **BUSY の数え方**: 409 `USER_ADMIN_BUSY` が出たときは、L3（`要求をエラー応答に変換しました` で `code` が `USER_ADMIN_BUSY` の行）の `traceId` ごとに、同じ `traceId` の L4（`行の排他を取れませんでした` の WARN）が1件ずつあり、件数が一致することを見る（Loki の L3・L4 の問い合わせでも、アプリの標準出力の JSON でもよい。下は標準出力で数える例で、値は出さず件数だけを出す）。
-- 片付けの前に、結果（指標・警報の状態・L3/L4 の件数）を確かめて記録してから消す。
+- **警報の状態**は、試験の始めから終わりの後 5 分までを 30 秒ごとに Grafana の `api/prometheus/grafana/api/v1/rules` で読み、題ごとの `state` を記録する。この API の題の `state` は `inactive`・`pending`・`firing` の3つで、`Alerting` という値は返らない（`Alerting`・`Normal` は題の下の警報の実体 `alerts[].state` の名前）。**題の `state` が `firing` になったことを「`Alerting` になった」と読む**。台本は、題の `state` に加えて実体の `state` と `activeAt` も記録する。
+- **待ちの最大（(a) の判定）**: `hikaricp.connections.acquire` の `MAX` は直近の時間の窓（数分）の最大で、時間が経つと下がる（Intent 261003-user-admin-followup の T1 では、k6 の終わりに 5,049.8 ms、終わりの後 5 分に 0.22 ms）。終わりの後の値だけでは判定できないため、台本は試験の間 30 秒ごとに `timeout`・`acquire`・`pending` を記録し（`limit-metrics-timeline.txt`）、k6 の終わりの直後の値（`limit-end-*.json`）も残す。(a) は、`timeout` の `COUNT`（累計。下がらない）の k6 の前からの増分が 1 以上、または 30 秒ごとの記録と k6 の終わりの値の中の `acquire` の `MAX` の最大が 1,000 ms 以上（`baseUnit` を見てミリ秒にそろえる。外部エクスポートを有効にしたこの場面では `milliseconds`）で判定する。
+- **利用者の数**: `VUS=12` は台本の既定の `PERF_UA_COUNT`（10）を超えるため、手順 2'' で `perf-uaop`・`perf-uat` を 20 名ずつ入れ、k6 に `-e PERF_UA_COUNT=20` を渡す（流し直しの `VUS=20` も同じ）。渡さないと setup で止まる。
+- **BUSY の数え方**: 409 `USER_ADMIN_BUSY` が出たときは、L3（`要求をエラー応答に変換しました` で `code` が `USER_ADMIN_BUSY` の行）の `traceId` ごとに、同じ `traceId` の L4（`行の排他を取れませんでした` の WARN）がちょうど1件ずつあり、件数が一致することを見る（Loki の L3・L4 の問い合わせでも、アプリの標準出力の JSON でもよい。下は標準出力で数える例で、値は出さず件数だけを出す）。BUSY が 0 件のときは判定できない（`Unverified`）。
+- **鳴らなかったとき**: 決まりは変えない。まず条件（待ちの数・時間切れ・ERROR の件数・監査の失敗の行）が起きたかを指標とログで確かめる。起きたのに鳴らなければ警報の側の不具合として記録する。起きなかったときだけ、上限 2・`VUS=20`・`DURATION=8m` で1回流し直す（台本の引数を変える）。
+- 配備したアプリのイメージ（タグ `local`）は上書きしない（手順 0 のとおり、Intent ごとのタグで作り `MASTERSMITH_IMAGE_TAG` で渡す）。
+- 片付けの前に、結果（指標・警報の状態・L3/L4 の件数・監査の件数）を確かめて記録してから消す。
 
 ```bash
-# 前提: 上の手順 0・1・1''・2'' を済ませ、使い捨ての環境（mastersmith-perf）が動いていること（ネットワーク mastersmith-perf_default ができている）。
+# 前提: 上の手順 0・1・1''・2'' を済ませ（2'' は uaop・uat を 20 名ずつ）、使い捨ての環境（mastersmith-perf）が動いていること
+#       （ネットワーク mastersmith-perf_default ができている。シェルに MASTERSMITH_PERF_ENV_FILE と MASTERSMITH_IMAGE_TAG が渡っている）。
 # a. 使い捨てのアプリにだけ、上限 4 と外部エクスポート（送り先は下の手元の監視）を足す（秘密ではない値）
 ( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=4\nMASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true\nMASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318\n' >> "$D/app.env" )
 
@@ -380,41 +411,72 @@ docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --
   grafana/otel-lgtm:0.34.0
 until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
 perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
+curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VALUE が 4 であること
+# 警報の決まりが読み込まれ（題がすべて inactive）、指標が Prometheus に届いていること（値が返るまで待つ）
+until curl -s -G http://127.0.0.1:13000/api/datasources/proxy/uid/prometheus/api/v1/query \
+  --data-urlencode 'query=max(hikaricp_connections_pending{service_name="mastersmith"})' | grep -q '"value"'; do sleep 5; done
 
-# c. 台本の全体を caffeinate -i で包み、k6（5 分）を流しながら、警報を 30 秒ごとに読む（終わった後も 5 分読む）
+# c. 台本の全体を caffeinate -i で包み、k6（5 分）を流しながら、警報・接続プールの値・メモリを 30 秒ごとに読む（終わった後も 5 分読む）。
+#    引数は 結果の名前・VUS・DURATION（流し直しは limit2 20 8m のように渡す）。時刻は UTC で書く
 cat > "$D/ua-limit.sh" <<'EOS'
-D="$1"
+D="$1"; TAG="$2"; VUSN="$3"; DUR="$4"; R=build/perf-results
 for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
-  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/limit-before-$m.json"
+  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "$R/$TAG-before-$m.json"
 done
+echo "k6 start $(date -u +%FT%TZ)" > "$R/$TAG-times.txt"
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" \
-  -e SCENARIO=userAdminPoolLimit -e VUS=12 -e DURATION=5m \
+  -e SCENARIO=userAdminPoolLimit -e VUS=$VUSN -e DURATION=$DUR -e PERF_UA_COUNT=20 \
   -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
-  run --quiet --summary-export=/out/userAdminPoolLimit.json /scripts/scenarios.js &
+  run --quiet --summary-export=/out/$TAG.json /scripts/scenarios.js > "$R/$TAG-k6.log" 2>&1 &
 K6=$!
-watch_alerts() {   # 3件の警報の状態を、時刻と題と state だけで1行ずつ書く
+watch() {   # 3件の警報（題の state と実体の state・activeAt）、接続プールの値、コンテナのメモリを1回ずつ書く
   curl -s http://127.0.0.1:13000/api/prometheus/grafana/api/v1/rules | python3 -c '
 import json, sys, time
 names = {"コネクションプールの待ち", "監査の書き込みの失敗", "ERROR のログの増加"}
-now = time.strftime("%H:%M:%S")
+now = time.strftime("%H:%M:%SZ", time.gmtime())
 for group in json.load(sys.stdin)["data"]["groups"]:
     for rule in group["rules"]:
         if rule["name"] in names:
-            print(now, rule["name"], rule["state"])' >> build/perf-results/limit-alerts.txt
+            print(now, rule["state"], rule["name"], [(a.get("state"), a.get("activeAt")) for a in rule.get("alerts", [])])' >> "$R/$TAG-alerts.txt"
+  T=$(date -u +%H:%M:%SZ)
+  for m in hikaricp.connections.timeout hikaricp.connections.acquire hikaricp.connections.pending; do
+    curl -s "http://127.0.0.1:18080/actuator/metrics/$m" | python3 -c 'import json, sys
+d = json.load(sys.stdin); print(sys.argv[1], d["name"], d.get("baseUnit", "-"), {x["statistic"]: x["value"] for x in d["measurements"]})' "$T" >> "$R/$TAG-metrics-timeline.txt"
+  done
+  docker stats --no-stream --format "$T {{.Name}} {{.MemUsage}}" >> "$R/$TAG-mem.txt"
 }
-while kill -0 $K6 2> /dev/null; do watch_alerts; sleep 30; done
-for i in $(seq 1 10); do watch_alerts; sleep 30; done   # 終わった後の 5 分
-for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # acquire は baseUnit を見て読む
-  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/limit-after-$m.json"
+while kill -0 $K6 2> /dev/null; do watch; sleep 30; done
+wait $K6; echo "k6 exit $? $(date -u +%FT%TZ)" >> "$R/$TAG-times.txt"
+for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # k6 の終わりの直後の値（acquire の MAX はまだ下がっていない）
+  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "$R/$TAG-end-$m.json"
 done
+for i in $(seq 1 10); do watch; sleep 30; done   # 終わった後の 5 分
+for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # 参考（acquire の MAX は下がっている）
+  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "$R/$TAG-after-$m.json"
+done
+echo "watch end $(date -u +%FT%TZ)" >> "$R/$TAG-times.txt"
 EOS
-caffeinate -i zsh "$D/ua-limit.sh" "$D"
-grep -c 'Alerting' build/perf-results/limit-alerts.txt   # 題ごとの内訳は sort | uniq -c で見る
+mkdir -p build/perf-results && chmod 777 build/perf-results
+caffeinate -i zsh "$D/ua-limit.sh" "$D" limit 12 5m
+# (b): 題ごとに firing になった回数（3件とも 1 以上であること）。Alerting では数えない（題の state に出ないため）
+awk '$2 == "firing"' build/perf-results/limit-alerts.txt | sed 's/ \[.*//' | cut -d' ' -f3- | sort | uniq -c
+# (a): 時間切れの累計の増分と、acquire の MAX の最大（ミリ秒。baseUnit が seconds のときは 1,000 倍する）
+grep ' hikaricp.connections.timeout ' build/perf-results/limit-metrics-timeline.txt | tail -1
+python3 -c '
+import ast, json
+mx = 0.0
+for line in open("build/perf-results/limit-metrics-timeline.txt"):
+    t, name, unit, rest = line.split(" ", 3)
+    if name == "hikaricp.connections.acquire":
+        mx = max(mx, ast.literal_eval(rest)["MAX"] * (1000 if unit == "seconds" else 1))
+d = json.load(open("build/perf-results/limit-end-hikaricp.connections.acquire.json"))
+end = {x["statistic"]: x["value"] for x in d["measurements"]}["MAX"] * (1000 if d.get("baseUnit") == "seconds" else 1)
+print("acquire MAX の最大（ms）", max(mx, end))'
 
-# d. BUSY の L3 と L4 を traceId で突き合わせる（件数だけを出す）
+# d. BUSY の L3 と L4 を traceId で突き合わせる（件数だけを出す。L3 のすべてが L4 をちょうど1件持つこと）
 docker logs mastersmith-perf-app-1 2>/dev/null | python3 -c '
-import json, sys
-l3, l4 = [], set()
+import collections, json, sys
+l3, l4 = [], collections.Counter()
 for line in sys.stdin:
     try:
         r = json.loads(line)
@@ -423,9 +485,11 @@ for line in sys.stdin:
     if r.get("message") == "要求をエラー応答に変換しました" and r.get("code") == "USER_ADMIN_BUSY":
         l3.append(r.get("traceId"))
     elif r.get("message") == "行の排他を取れませんでした":
-        l4.add(r.get("traceId"))
-print("L3", len(l3), "L4 と結び付いた L3", sum(1 for t in l3 if t in l4))'
+        l4[r.get("traceId")] += 1
+print("L3", len(l3), "L4", sum(l4.values()), "L4 をちょうど1件持つ L3", sum(1 for t in l3 if l4.get(t) == 1),
+      "L3 の無い L4", sum(1 for t in l4 if t not in set(l3)))'
 
 # e. 結果を確かめて記録してから、手元の監視を消し、上の手順 4''・5'' で片付ける（app.env の3行は環境ごと消える）
+#    5'' の最後の docker compose up -d --wait は配備したアプリを起動し直すもので、試験のタグのイメージは使わない
 docker rm -f mastersmith-perf-lgtm
 ```
