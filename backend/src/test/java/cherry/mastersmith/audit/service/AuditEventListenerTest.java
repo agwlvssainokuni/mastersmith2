@@ -51,6 +51,7 @@ import cherry.mastersmith.useradmin.domain.AdminOperation;
 import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
 import cherry.mastersmith.useradmin.domain.UserAdminAuditFailure;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
@@ -94,6 +95,16 @@ class AuditEventListenerTest {
 
     private static AdminAccessDeniedEvent accessDenied() {
         return AdminAccessDeniedEvent.of(OCCURRED_AT, AccessDeniedReason.NOT_ADMIN, EMAIL, "/api/admin/check", CLIENT);
+    }
+
+    /** 文字列にせずに値のまま並べる（列挙の型まで確かめるため。値は null でもよい）。 */
+    private static Map<String, Object> rawKeyValues(ILoggingEvent event) {
+        Map<String, Object> values = new HashMap<>();
+        List<KeyValuePair> pairs = event.getKeyValuePairs();
+        if (pairs != null) {
+            pairs.forEach(pair -> values.put(pair.key, pair.value));
+        }
+        return values;
     }
 
     private static Map<String, Object> keyValues(ILoggingEvent event) {
@@ -622,6 +633,64 @@ class AuditEventListenerTest {
                         .containsEntry("auditTraceId", "trace-0061")
                         .containsEntry("enteredEmail", "null")
                         .doesNotContainKeys("dslHash", "dslSource", "rejectionKind");
+            });
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    @Test
+    @DisplayName("unbuildable failed user-admin event logs audit event type, result and failure reason as audit values")
+    void unbuildableFailedUserAdminEventLogsAuditValues() {
+        // 組み立ての部品が受け付けない形の出来事（日時が無い）で組み立てを失敗させ、操作の区分を持つ出来事の ERROR の項目が、
+        // 組み立てに成功したときと同じ値の形（監査の種類・結果・理由）になることを確かめる。
+        UserAdminAuditEvent event = mock(UserAdminAuditEvent.class);
+        when(event.operation()).thenReturn(AdminOperation.SUSPEND);
+        when(event.succeeded()).thenReturn(false);
+        when(event.failure()).thenReturn(UserAdminAuditFailure.LAST_ACTIVE_ADMIN);
+        when(event.actorUserId()).thenReturn(3L);
+        when(event.targetUserId()).thenReturn(44L);
+        when(event.sourceIp()).thenReturn("192.0.2.62");
+        when(event.userAgent()).thenReturn("Agent/62");
+        when(event.traceId()).thenReturn("trace-0062");
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onUserAdminAuditEvent(event)).doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(error -> {
+                assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(error.getMessage()).isEqualTo(AuditEventListener.FAILURE_MESSAGE);
+                Map<String, Object> values = rawKeyValues(error);
+                assertThat(values.get("auditEventType")).isEqualTo(AuditEventType.USER_SUSPENDED);
+                assertThat(values.get("result")).isEqualTo(AuditResult.FAILURE);
+                assertThat(values.get("failureReason")).isEqualTo(AuditFailureReason.LAST_ACTIVE_ADMIN);
+                assertThat(values)
+                        .containsEntry("actorUserId", 3L)
+                        .containsEntry("targetUserId", 44L)
+                        .containsEntry("enteredEmail", null)
+                        .doesNotContainKeys("dslHash", "dslSource", "rejectionKind");
+            });
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    @Test
+    @DisplayName("unbuildable succeeded user-admin event logs audit event type and SUCCESS without failure reason")
+    void unbuildableSucceededUserAdminEventLogsAuditValues() {
+        UserAdminAuditEvent event = mock(UserAdminAuditEvent.class);
+        when(event.operation()).thenReturn(AdminOperation.RESET_LOGIN_FAILURES);
+        when(event.succeeded()).thenReturn(true);
+        when(event.actorUserId()).thenReturn(3L);
+        when(event.targetUserId()).thenReturn(45L);
+        when(event.sourceIp()).thenReturn("192.0.2.63");
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener().onUserAdminAuditEvent(event)).doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(error -> {
+                Map<String, Object> values = rawKeyValues(error);
+                assertThat(values.get("auditEventType")).isEqualTo(AuditEventType.LOGIN_FAILURES_RESET);
+                assertThat(values.get("result")).isEqualTo(AuditResult.SUCCESS);
+                assertThat(values).containsEntry("failureReason", null);
             });
         }
         verifyNoInteractions(recorder);

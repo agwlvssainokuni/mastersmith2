@@ -19,6 +19,7 @@ import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
 import cherry.mastersmith.audit.domain.AuditEvent;
 import cherry.mastersmith.audit.domain.AuditEventFactory;
 import cherry.mastersmith.audit.domain.AuditEventType;
+import cherry.mastersmith.audit.domain.AuditResult;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
@@ -227,7 +228,11 @@ public class AuditEventListener {
         record(() -> AuditEventFactory.from(event), () -> fields(event));
     }
 
-    /** 利用者の管理の操作の出来事の項目（組み立てに失敗したときに載せる。メールアドレス・氏名は持たない）。 */
+    /**
+     * 利用者の管理の操作の出来事の項目（組み立てに失敗したときに載せる。メールアドレス・氏名は持たない）。監査の種類・結果・失敗の理由は、
+     * 組み立てに成功したときの {@link #fields(AuditEvent)} と同じ値の形（{@link AuditEventType}・{@link AuditResult}・
+     * {@code AuditFailureReason}）に、{@link AuditEventFactory} と同じ対応で写す。
+     */
     private static Map<String, Object> fields(UserAdminAuditEvent event) {
         if (event == null) {
             Map<String, Object> fields = fields(null, null, null, null, null, null, null, null, null);
@@ -236,11 +241,11 @@ public class AuditEventListener {
             return fields;
         }
         Map<String, Object> fields = fields(
-                event.operation(),
-                event.succeeded(),
+                AuditEventFactory.userAdminEventTypeOf(event.operation()),
+                event.succeeded() ? AuditResult.SUCCESS : AuditResult.FAILURE,
                 event.occurredAt(),
                 null,
-                event.failure(),
+                AuditEventFactory.userAdminFailureReasonOf(event.failure()),
                 event.sourceIp(),
                 event.userAgent(),
                 null,

@@ -252,9 +252,9 @@ public final class AuditEventFactory {
     public static AuditEvent from(UserAdminAuditEvent event) {
         return AuditEvent.withTarget(
                 event.occurredAt(),
-                eventTypeOf(event.operation()),
+                userAdminEventTypeOf(event.operation()),
                 event.succeeded() ? AuditResult.SUCCESS : AuditResult.FAILURE,
-                failureReasonOf(event.failure()),
+                userAdminFailureReasonOf(event.failure()),
                 event.sourceIp(),
                 AuditText.userAgent(event.userAgent()),
                 event.traceId(),
@@ -294,7 +294,17 @@ public final class AuditEventFactory {
         };
     }
 
-    private static AuditEventType eventTypeOf(AdminOperation operation) {
+    /**
+     * 利用者の管理の操作の区分を監査の種類に写す。監査イベントの組み立てに失敗したときの ERROR の項目でも、組み立てに成功したときと
+     * 同じ値の形にするために使う。
+     *
+     * @param operation 操作の区分（null でもよい）
+     * @return 監査の種類（操作の区分が null のときは null）
+     */
+    public static AuditEventType userAdminEventTypeOf(AdminOperation operation) {
+        if (operation == null) {
+            return null;
+        }
         return switch (operation) {
             case GRANT_ADMIN -> AuditEventType.USER_ADMIN_GRANTED;
             case REVOKE_ADMIN -> AuditEventType.USER_ADMIN_REVOKED;
@@ -304,7 +314,14 @@ public final class AuditEventFactory {
         };
     }
 
-    private static AuditFailureReason failureReasonOf(UserAdminAuditFailure failure) {
+    /**
+     * 利用者の管理の操作の失敗の理由を監査の失敗の理由に写す。監査イベントの組み立てに失敗したときの ERROR の項目でも、組み立てに
+     * 成功したときと同じ値の形にするために使う。
+     *
+     * @param failure 失敗の理由（null でもよい）
+     * @return 監査の失敗の理由（失敗の理由が null のときは null）
+     */
+    public static AuditFailureReason userAdminFailureReasonOf(UserAdminAuditFailure failure) {
         if (failure == null) {
             return null;
         }
