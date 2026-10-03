@@ -99,11 +99,13 @@ N/A の3件は U3 の条件つきの要件（索引か列を足すと決めた�
 
 依頼者が承認の前に確かめる項目です。
 
-- [ ] 5 単位の `traceability.json` がそろい、GAP・ORPHAN が 0 件であること（2節）
-- [ ] `cross-unit-traceability.md` の判定（未網羅 0 件、条件つき4件と、テストのソースで判定した3件）を受け入れること（3節）
-- [ ] CI が Build and Test の検査を同じ `./gradlew verify` で実行し、E2E・k6 を CI の外に置く扱いを受け入れること（4節、`quality-gates.md` の4節・5節）
-- [ ] Not Met 1 件（U5-NFR7.1、N-19）と Unverified 22 件を、承認済みの持ち越しとして Operation へ進めること（5節・6節）
-- [ ] `.gitleaks.toml` の記述の差（Build and Test の記録の「Intent の間で変わっていない」と `f299400`）の扱い（`ci-config.md` の Assumptions & Open Questions）。依頼者の決定（2026-10-03）: 承認済みの Build and Test の記録は書き換えず、`ci-config.md` に差と根拠を残す
+- [x] 5 単位の `traceability.json` がそろい、GAP・ORPHAN が 0 件であること（2節）
+- [x] `cross-unit-traceability.md` の判定（未網羅 0 件、条件つき4件と、テストのソースで判定した3件）を受け入れること（3節）
+- [x] CI が Build and Test の検査を同じ `./gradlew verify` で実行し、E2E・k6 を CI の外に置く扱いを受け入れること（4節、`quality-gates.md` の4節・5節）
+- [x] Not Met 1 件（U5-NFR7.1、N-19）と Unverified 22 件を、承認済みの持ち越しとして Operation へ進めること（5節・6節）
+- [x] `.gitleaks.toml` の記述の差（Build and Test の記録の「Intent の間で変わっていない」と `f299400`）の扱い（`ci-config.md` の Assumptions & Open Questions）。依頼者の決定（2026-10-03）: 承認済みの Build and Test の記録は書き換えず、`ci-config.md` に差と根拠を残す
+
+依頼者が CI Pipeline の承認の場で、この5項目を含めて Approve した（2026-10-03）。
 
 ## Sources
 
