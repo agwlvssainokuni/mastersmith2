@@ -341,3 +341,13 @@ logging:
     #   接続を試す。配備した環境で部品のログやデバッグ出力を有効にしない（宛先・資格情報がログに残るため）。
     org.eclipse.angus: OFF
     jakarta.mail: OFF
+    # Hibernate が SQL の失敗を受けたときに自分で出すログ（org.hibernate.orm.jdbc.error）は出さない（261003-user-admin-followup の FR8.2）。
+    # なぜ: 一意の制約の違反（利用者のメールアドレス uk_users_email・招待中のメールアドレス uk_invitations_pending_email）では、
+    #   H2 の違反の文に重なった値（メールアドレス）が入り、Hibernate がアプリへ例外を渡す前にそのまま WARN に出す。
+    #   メールアドレスをアプリのログに出さない決まり（project.md の Forbidden）を破るため。違反はアプリが業務の結果の型
+    #   （EmailAlreadyUsed・招待中の勝った側）で受けるため、このログが無くても業務の扱いは変わらない。
+    # 障害の調べ方: 受ける所の業務の結果の型と、想定外の誤りのときは GlobalExceptionHandler の ERROR の例外のクラスの名前で
+    #   原因を絞る（一意の制約の違反は DataIntegrityViolationException・ConstraintViolationException、SQLState は 23505）。
+    #   さらに調べるときは、内部DB の複写を読み取りで開いて制約と行を確かめる。配備した環境でこのロガーを有効にしない
+    #   （違反の文に重なった値が入り、ログに残るため）。
+    org.hibernate.orm.jdbc.error: OFF

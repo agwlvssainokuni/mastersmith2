@@ -57,6 +57,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * <p>想定外の誤りのうち、行の排他の失敗（待ちの上限切れ・行き詰まり）の連なりを持つ例外は、原因をつながず（スタックトレースを出さず）、
  * 例外のクラスの名前（{@code exceptionClass}）だけを ERROR に載せる。連なりの最後の文に排他されていた行の値が入りうるため（Intent
  * 260930-user-admin の U3、I-D1）。応答（500 {@code INTERNAL_ERROR}）と ERROR の件数（1件）は変えない。
+ *
+ * <p>一意の制約の違反の連なり（{@link UniqueViolations}）を持つ想定外の例外も、同じ形でクラスの名前だけを出す。違反の文に重なった値
+ * （メールアドレスなど）が入るため（Intent 261003-user-admin-followup の FR8.2）。
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -222,7 +225,9 @@ public class GlobalExceptionHandler {
     }
 
     private static void log(Exception ex, ProblemType type, boolean expected) {
-        if (!expected && type.status() >= 500 && RowLockFailures.isLockFailure(ex)) {
+        if (!expected
+                && type.status() >= 500
+                && (RowLockFailures.isLockFailure(ex) || UniqueViolations.isUniqueViolation(ex))) {
             LOGGER.atError()
                     .addKeyValue("code", type.code())
                     .addKeyValue("status", type.status())

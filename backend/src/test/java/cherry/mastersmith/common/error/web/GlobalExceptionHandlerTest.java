@@ -37,10 +37,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.sql.SQLException;
 import java.util.List;
+import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -101,6 +105,34 @@ class GlobalExceptionHandlerTest {
             throw new CannotAcquireLockException(
                     "could not obtain lock " + ROW_VALUE,
                     new RuntimeException(ROW_VALUE, new SQLException(ROW_VALUE, "HYT00", 50200)));
+        }
+
+        @GetMapping("/api/unique-violation/spring")
+        String uniqueViolationSpring() {
+            throw new DataIntegrityViolationException(
+                    "could not execute statement " + ROW_VALUE,
+                    new ConstraintViolationException(
+                            ROW_VALUE, new SQLException(ROW_VALUE, "23505", 23505), "PUBLIC.UK_USERS_EMAIL"));
+        }
+
+        @GetMapping("/api/unique-violation/hibernate")
+        String uniqueViolationHibernate() {
+            throw new IllegalStateException(
+                    "招待の作成に失敗しました " + ROW_VALUE,
+                    new ConstraintViolationException(
+                            ROW_VALUE,
+                            new SQLException(ROW_VALUE, "23505", 23505),
+                            "PUBLIC.UK_INVITATIONS_PENDING_EMAIL"));
+        }
+
+        @GetMapping("/api/unique-violation/sql-state")
+        String uniqueViolationSqlState() {
+            throw new IllegalStateException(ROW_VALUE, new SQLException(ROW_VALUE, "23505", 23505));
+        }
+
+        @GetMapping("/api/other-sql-error")
+        String otherSqlError() {
+            throw new IllegalStateException("内部の情報", new SQLException("内部の情報", "42000", 42000));
         }
 
         @GetMapping("/api/missing")
@@ -247,6 +279,46 @@ class GlobalExceptionHandlerTest {
     void otherServerErrorsKeepTheCause() throws Exception {
         try (LogEvents events = LogEvents.capture(GlobalExceptionHandler.class)) {
             perform(get("/api/boom"));
+
+            ILoggingEvent event = events.list().getFirst();
+            assertThat(event.getThrowableProxy()).isNotNull();
+            assertThat(event.getKeyValuePairs()).extracting(pair -> pair.key).containsExactly("code", "status");
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "/api/unique-violation/spring, org.springframework.dao.DataIntegrityViolationException",
+        "/api/unique-violation/hibernate, java.lang.IllegalStateException",
+        "/api/unique-violation/sql-state, java.lang.IllegalStateException"
+    })
+    @DisplayName(
+            "a unique-violation chain stays 500 INTERNAL_ERROR and is logged once at ERROR with the class name only (FR8.2)")
+    void uniqueViolationLoggedWithoutCause(String path, String exceptionClass) throws Exception {
+        try (LogEvents events = LogEvents.capture(GlobalExceptionHandler.class)) {
+            ResultActions result = perform(get(path));
+
+            expectProblem(result, 500, "INTERNAL_ERROR");
+            assertThat(result.andReturn().getResponse().getContentAsString())
+                    .doesNotContain(ROW_VALUE)
+                    .doesNotContain("UK_");
+            List<ILoggingEvent> logged = events.list();
+            assertThat(logged).hasSize(1);
+            ILoggingEvent event = logged.getFirst();
+            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(event.getThrowableProxy()).isNull();
+            assertThat(event.getFormattedMessage()).doesNotContain(ROW_VALUE).doesNotContain("UK_");
+            assertThat(event.getKeyValuePairs())
+                    .extracting(pair -> pair.key + "=" + pair.value)
+                    .containsExactly("code=INTERNAL_ERROR", "status=500", "exceptionClass=" + exceptionClass);
+        }
+    }
+
+    @Test
+    @DisplayName("an SQL error that is not a unique violation keeps the cause (FR8.2)")
+    void otherSqlErrorKeepsTheCause() throws Exception {
+        try (LogEvents events = LogEvents.capture(GlobalExceptionHandler.class)) {
+            expectProblem(perform(get("/api/other-sql-error")), 500, "INTERNAL_ERROR");
 
             ILoggingEvent event = events.list().getFirst();
             assertThat(event.getThrowableProxy()).isNotNull();
