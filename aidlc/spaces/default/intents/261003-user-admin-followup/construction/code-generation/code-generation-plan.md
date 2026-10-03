@@ -47,30 +47,30 @@ Testing Contract（4節の前の `## Testing Contract`）の `plan_profile.steps
 
 ### 2.1 準備（構成と依存）
 
-- [ ] **Step 1**（準備。FR1.1・NFR3）: 段を始める前の片付けと作業ブランチ。
+- [x] **Step 1**（準備。FR1.1・NFR3）: 段を始める前の片付けと作業ブランチ。
   - git の対象外の E2E の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば消す（project.md の学び 2026-10-03。段の途中では消さない）。
   - この計画の記録（`aidlc/` の下）のコミットは、オーケストレーターが依頼者に提案して承認を得てから行う。
   - `develop` から短命のブランチ `fix/261003-user-admin-followup` を作る（team.md の Way of Working。worktree は使わない）。
-- [ ] **Step 2**（FR1.1）: make-you-chic-ui の固定先を上げる（専用のコミット C1 の中身）。
+- [x] **Step 2**（FR1.1）: make-you-chic-ui の固定先を上げる（専用のコミット C1 の中身）。
   - `git -C vendor/make-you-chic-ui checkout e82b651c53ac6e048066fcc049e49386c0eb282e` の後に `git add vendor/make-you-chic-ui`。
   - `git ls-files -s vendor/make-you-chic-ui` で固定先が `e82b651c…` になったこと、`git diff --cached --stat` がサブモジュールの1行だけであることを確かめる。
   - 前後のハッシュ（`3d9521aa54b1d6277de473f9e935a496fb56ac1b` → `e82b651c53ac6e048066fcc049e49386c0eb282e`）を code-summary.md に記録する（project.md の Mandated）。
   - `./gradlew vendorBuild frontendInstall` で `packages/make-you-chic-ui/dist` を作り直す。e82b651 は `package.json` を変えないため、`frontend/package-lock.json` は変わらない見込み。変わったときは止めて、オーケストレーターに知らせる。
   - このコミットにはほかのファイルを入れない。
-- [ ] **Step 3**（テストの実行の準備。Testing Contract の `runner_step`）: `unit-test-instructions.md` の範囲を絞ったコマンドが今のまま動くことを、変更の前に1回流して確かめる。
+- [x] **Step 3**（テストの実行の準備。Testing Contract の `runner_step`）: `unit-test-instructions.md` の範囲を絞ったコマンドが今のまま動くことを、変更の前に1回流して確かめる。
   - 画面: `unit-test-instructions.md` の 2節の Vitest のコマンド（useradmin の3ファイル）。
   - バックエンド: `MailConfigurationIT` と `UserAdminOperationsApiIT` の結合テストのコマンド。
   - 結果（件数・成否）を code-summary.md に記録する。
 
 ### 2.2 業務処理の層（バックエンド。S1・FR8）
 
-- [ ] **Step 4**（FR8.2・NFR2）: 計画の承認の場で決めた直し方（6節の案 A・B・C）を入れる。
+- [x] **Step 4**（FR8.2・NFR2）: 計画の承認の場で決めた直し方（6節の案 A・B・C）を入れる。
   - 案 A（C も同じ）: `application.yaml` の `logging.level` に `org.hibernate.orm.jdbc.error: OFF` を足す。
     - 既存の JDBC ドライバー・メールの部品の行と同じ形で、「なぜ」（一意の制約の違反の文に重なった値が入り、メールアドレスをアプリのログに出さない決まりに反する）と「障害の調べ方」（受ける所の業務の結果の型・想定外の誤りの ERROR の例外のクラスの名前、`23505` の SQLState）をコメントに書く。
     - テストは同じ `application.yaml` を読むため、テストの設定には足さない。
   - 案 B（C も同じ）: `GlobalExceptionHandler` の想定外の誤り（5xx）の ERROR で、例外の連なりに一意の制約の違反（`DataIntegrityViolationException` と Hibernate の `ConstraintViolationException`）があれば、行の排他の失敗（`RowLockFailures.isLockFailure`）と同じ形で、例外の文と原因の連なりを付けず、クラスの名前だけを出す。応答は今までどおり 500 `INTERNAL_ERROR`。
   - 業務処理の層（`UserAccountService`・`InvitationService`）の受け方は変えない。
-- [ ] **Step 5**（FR8.1・FR8.3・NFR2・NFR5）: 漏えいの確かめのテストを書き、流す。
+- [x] **Step 5**（FR8.1・FR8.3・NFR2・NFR5）: 漏えいの確かめのテストを書き、流す。
   - `UserUniqueViolationSecretLeakIT`（`user/service`）: `UserCreationIT` と同じ待ち合わせ（パスワードのハッシュの計算で `CyclicBarrier`）で、同じメールアドレスの作成を2つ重ね、`Created` と `EmailAlreadyUsed` が1つずつになることを確かめる。
   - `InvitationUniqueViolationSecretLeakIT`（`invitation/service`）: `InvitationConcurrencyIT` と同じ待ち合わせ（`TestInvitationBarrier`）で、同じメールアドレスの招待を2つ重ねる。
   - 確かめる出力（どちらのテストも、既定の INFO と、`cherry.mastersmith` のロガーを TRACE にした場合の両方。既存の `*LeakIT` の形）:
@@ -83,11 +83,11 @@ Testing Contract（4節の前の `## Testing Contract`）の `plan_profile.steps
 
 ### 2.3 API の層のテスト（テストだけの変更。T2・T3）
 
-- [ ] **Step 6**（FR5.1）: `UserAdminOperationsApiIT` に、管理者の印を外した直後の要求の 403 と、印を外した操作の監査の行を、1つのテストで続けて確かめるテストを足す。
+- [x] **Step 6**（FR5.1）: `UserAdminOperationsApiIT` に、管理者の印を外した直後の要求の 403 と、印を外した操作の監査の行を、1つのテストで続けて確かめるテストを足す。
   - 流れ: 印を付けた利用者でログイン → 管理者がその利用者の印を外す（204）→ その利用者のトークンで `GET /api/admin/users` が 403 `ACCESS_DENIED` → 監査の行を読む。
   - 監査の行の読み方は `UserAdminListApiIT` の前例（`ORDER BY audit_event_id OFFSET ? ROWS`）に合わせる。印を外した操作の行（操作した人・対象の利用者・結果）と、続く 403 の行（`ACCESS_DENIED NOT_ADMIN <path>`）を順に確かめる。
   - 本体のコードは変えない。既存の `flagChangeTakesEffectOnTheNextRequest` は残す。
-- [ ] **Step 7**（FR6.1・FR6.2）: `MailConfigurationIT` の確かめを絞る。
+- [x] **Step 7**（FR6.1・FR6.2）: `MailConfigurationIT` の確かめを絞る。
   - 起動の前に `output.getOut()` の長さとテストのスレッドの名前を覚え、`configRecords` はその後の出力から、`thread` がテストのスレッドで、`logger` が `MailConfig` の行だけを読む。
   - JSON として読めない行（ほかのスレッドの出力が混ざった行）は飛ばす。補助は `MailConfigurationIT` の中に置き、共通の `JsonLogRecords` は変えない。
   - 秘密の値の確かめ（`getAll()` に値が無いこと）は、範囲を絞らずに残す（無いことの確かめは広い方が強いため）。
@@ -95,9 +95,9 @@ Testing Contract（4節の前の `## Testing Contract`）の `plan_profile.steps
 
 ### 2.4 画面の層（FR3・FR1・FR2）
 
-- [ ] **Step 8**（FR3.1）: `EditProfileDialog.tsx` の `RadioGroup` に `disabled={submitting}` を渡す（氏名の欄の `readOnly` と同じ扱い。make-you-chic-ui の `RadioGroup` は固定先 3d9521a・e82b651 のどちらでも `disabled` を受ける）。
-- [ ] **Step 9**（FR3.2・NFR5）: `EditProfileDialog.test.tsx` に、送信中は言語の2つの選択肢が押せないこと（`disabled` で、押しても `onChangeLanguage` が呼ばれない）と、送信が終わった状態（`open`・`failed`）では押せることのテストを足す。直しを一時的に外して落ちることを1回確かめ、戻す。
-- [ ] **Step 10**（FR1.2）: 閉じた後のフォーカスの戻り先を渡す。
+- [x] **Step 8**（FR3.1）: `EditProfileDialog.tsx` の `RadioGroup` に `disabled={submitting}` を渡す（氏名の欄の `readOnly` と同じ扱い。make-you-chic-ui の `RadioGroup` は固定先 3d9521a・e82b651 のどちらでも `disabled` を受ける）。
+- [x] **Step 9**（FR3.2・NFR5）: `EditProfileDialog.test.tsx` に、送信中は言語の2つの選択肢が押せないこと（`disabled` で、押しても `onChangeLanguage` が呼ばれない）と、送信が終わった状態（`open`・`failed`）では押せることのテストを足す。直しを一時的に外して落ちることを1回確かめ、戻す。
+- [x] **Step 10**（FR1.2）: 閉じた後のフォーカスの戻り先を渡す。
   - `ConfirmActionDialog`・`EditProfileDialog` に省略できる props `finalFocusRef?: RefObject<HTMLElement | null>` を足し、`Modal` へそのまま渡す。
   - `UserAdminPage.tsx` に `useRef<HTMLElement | null>(null)` を1つ持つ（描画ごとに作り直さない。`useFocusTrap` の後始末は、効果を張った時点の関数で `finalFocusRef.current` を読むため）。
   - 行の「操作」から表示を開く `onSelect` で、`actionRefs.current.get(userId)?.querySelector('button')` を `.current` に入れてから `state.selectAction` を呼ぶ。2つの表示へ同じ ref を渡す。
@@ -106,52 +106,52 @@ Testing Contract（4節の前の `## Testing Contract`）の `plan_profile.steps
     - 確かめの表示（`ConfirmActionDialog`）: やめる・Escape・閉じるボタン・成功・操作の失敗のどれでも閉じる。成功と失敗では、さらに一覧の読み直しの後に `focusTarget`（行）の効果が行の「操作」へフォーカスを当てる。行き先はどちらも同じ行の「操作」。
     - 氏名・言語の入力（`EditProfileDialog`）: やめる・Escape・閉じるボタン・成功で閉じる。保存の失敗（`failed`・`notFound`・入力の誤り）では閉じずに表示に残る（フォーカスは表示の中）。その後にやめる・Escape・閉じるボタンで閉じたときに行の「操作」へ戻る。
     - 401・403 の共通の扱い（`handledCommonly`）で閉じたときは、画面がログイン・権限が無い画面へ移るため、行の「操作」は無い。FR1.2 の対象の外とし、code-summary.md に書く。
-- [ ] **Step 11**（FR1.2）: 画面部品のテスト。
+- [x] **Step 11**（FR1.2）: 画面部品のテスト。
   - `ConfirmActionDialog.test.tsx`・`EditProfileDialog.test.tsx`: `finalFocusRef` に渡した要素へ、やめる・Escape で閉じた後にフォーカスが移ることを `waitFor` で確かめる（jsdom は `inert` でフォーカスを止めないため、ここでは受け渡しの確かめに留まる。body に落ちる不具合の再現は E2E が受け持つ）。
   - `UserAdminPage.test.tsx`: 既存の「やめた後に行の『操作』へ戻る」テスト（600〜618 行付近）が通ることを確かめ、Escape で閉じた場合を1件足す。
   - 既存のアクセシビリティ検査（vitest-axe）を残す。
-- [ ] **Step 12**（FR2.1）: `UserRowActions.tsx` の `Dropdown` に `placement="bottom-end"` を渡す。jsdom は矩形を持たないため、画面部品のテストは足さず、E2E 120（Step 14）を回帰のテストにする（不具合を再現する最も狭い段）。
-- [ ] **Step 13**（FR2.2）: `frontend/e2e/support/overflow.ts` に、渡した要素（開いたメニュー）の `getBoundingClientRect()` の左端が 0 以上、右端が `window.innerWidth` 以下、下端が `window.innerHeight` 以下であるかを測る関数を足す。今の `scrollWidth` の判定は残す。
-- [ ] **Step 14**（FR1.3・FR2.2・NFR1・NFR5）: E2E 110・120 を直す。
+- [x] **Step 12**（FR2.1）: `UserRowActions.tsx` の `Dropdown` に `placement="bottom-end"` を渡す。jsdom は矩形を持たないため、画面部品のテストは足さず、E2E 120（Step 14）を回帰のテストにする（不具合を再現する最も狭い段）。
+- [x] **Step 13**（FR2.2）: `frontend/e2e/support/overflow.ts` に、渡した要素（開いたメニュー）の `getBoundingClientRect()` の左端が 0 以上、右端が `window.innerWidth` 以下、下端が `window.innerHeight` 以下であるかを測る関数を足す。今の `scrollWidth` の判定は残す。
+- [x] **Step 14**（FR1.3・FR2.2・NFR1・NFR5）: E2E 110・120 を直す。
   - 110 の `confirmAction` と 120 の `expectBackgroundInteractive` の3か所で、`body > [inert]` が 0 件になるのを待つ形をやめ、閉じた後に対象の行の「操作」のボタンが `toBeFocused` であることを確かめる形に替える。
   - 120 の確かめの表示（利用を止める）と氏名・言語の入力で、やめるに加えて Escape と閉じるボタンで閉じる場合を確かめる。
   - 120 に「管理者の印を付ける」の確かめの表示を開いて Escape で閉じる確かめを足す（状態を変えない操作。AC2.1.8 の閉じた後のフォーカスを覆うため）。
   - 120 のメニューを開いた状態（`02-self-menu-open`・`11-disabled-item-hover`・`11-disabled-item-focus`）で、Step 13 の関数でメニューの矩形が viewport の中にあることを確かめる。狭い幅（120 の組の viewport）と広い幅の両方で、表の右端の行の「操作」を開いて確かめる。
   - 再現の確かめ: Step 12 の直しを一時的に外して 120 を流し、矩形の確かめが落ちることを1回確かめ、直しを戻す（落ちないときは、その幅でははみ出さないことを記録し、オーケストレーターに知らせる）。
   - FR1 の再現（固定先 3d9521a で新しいフォーカスの確かめが落ちること）の確かめは行わない（4節の依頼者に確かめたいこと D3）。
-- [ ] **Step 15**（FR1.4・NFR5）: 利用者の管理の画面の外の `Modal` を確かめる。
+- [x] **Step 15**（FR1.4・NFR5）: 利用者の管理の画面の外の `Modal` を確かめる。
   - 対象は `frontend/src` で `<Modal` を使う画面のすべて（計画の段で洗い出した。`App.tsx` は `ModalStackProvider` だけ）: 招待の画面の `InviteDialog`（開く元は「招待する」のボタン）・`CancelConfirmDialog`（行の「取り消す」）、DSL の管理の画面の `DslConfirmDialog`（置き換え・適用・破棄のボタン）。
   - 確かめは E2E で行う（手元のブラウザでは記録が残らないため）。060 の `invite dialog`・`revoke confirmation dialog` の手順で、やめるで閉じた後に開いた元のボタンが `toBeFocused` であることを足す。040 では、確かめの表示を一度「やめる」で閉じて開いた元（「適用する」のボタン）へ戻ることを確かめてから、今の適用の手順を続ける。
   - 成功で閉じる場合（招待の作成・取り消し・適用）は、開いた元が描き直しで消える・押せなくなるため、今の画面の決まり（各画面のフォーカスの効果）に任せ、この Step では確かめない。
   - 戻らない画面があったときは、その画面で開いた元のボタンを指す ref を `finalFocusRef` に渡して直し、同じフォルダの画面部品のテストに受け渡しのテストを1件足す。直した画面の E2E の確かめが、その画面の回帰のテストになる（NFR5 の対象に含める。R-03）。結果（画面ごとの戻る・戻らない・直したか）を code-summary.md に表で書く。
-- [ ] **Step 16**（NFR3）: 画面の検査を、変えたファイルについて流す。
+- [x] **Step 16**（NFR3）: 画面の検査を、変えたファイルについて流す。
   - `unit-test-instructions.md` の 2節の Vitest のコマンド（変えた画面のテストのファイル）。
   - `npm run typecheck`・`npm run lint`・`npm run format:check`・`npm run license:check`（`frontend/` で。どれも設定どおりの範囲）。
   - 通らなければ直してから次へ進む。
 
 ### 2.5 環境と台本（負荷の試験。T1・T4）
 
-- [ ] **Step 17**（FR4.1）: `perf/k6/scenarios.js` に場面 `userAdminPoolLimit` を足す。
+- [x] **Step 17**（FR4.1）: `perf/k6/scenarios.js` に場面 `userAdminPoolLimit` を足す。
   - 各 VU は自分の対象（`perf-uat<VU>`）に、印を付ける → 外す → 止める → 解くの4つをくり返す（どれも 204 で状態が戻る。準備のログインの失敗と失敗回数を戻す操作は入れない）。
   - 実行の形は `constant-vus`（`VUS`・`DURATION` で決める。手順の既定は 7 節）。準備（`setupUserAdmin`）は今の `userAdminOps` と同じ利用者を使う。
   - この場面は接続の時間切れ（500）を起こす目的のため、`p(95)` と `checks` の閾値を置かない。状態コードごとの件数（204・409・500）を `checks` ではなく数え分けのタグで出す。
   - 既存の `userAdminOps`・`userAdminPool` は変えない（前の Intent の (A) の記録と比べられるように残す）。
   - 確かめ: `grafana/k6:2.3.0` の `k6 inspect --include-system-env-vars`（`-e SCENARIO=userAdminPoolLimit`）で読み込めて、場面の名前が出ること（project.md の学び 2026-09-25）。負荷はこの段では流さない。
-- [ ] **Step 18**（FR4.3・FR7.1）: `perf/README.md` を直す。
+- [x] **Step 18**（FR4.3・FR7.1）: `perf/README.md` を直す。
   - 上限 10 の節（321〜337 行付近）の後に、上限を下げる場面の手順（`app.env` に `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=4`、`SCENARIO=userAdminPoolLimit`・`VUS=12`・`DURATION=5m`、`caffeinate -i` で台本の全体を包む、外部エクスポートと手元の監視を有効にして警報を 30 秒ごとに読む、BUSY の L3・L4 の数え方）を書く。
   - 接続プールの段落（259 行付近）と手順（307・330 行付近）に、`hikaricp.connections.acquire` の値は `/actuator/metrics` の応答の `baseUnit`（`seconds`・`milliseconds`）を見て読むこと（外部エクスポートの有無で単位が変わる）を書く。
-- [ ] **Step 19**（NFR3・NFR4）: 統合の前の全体の検査。
+- [x] **Step 19**（NFR3・NFR4）: 統合の前の全体の検査。
   - colima を動かし、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す（対象DB のテストが SKIPPED にならないこと。project.md の学び 2026-09-25）。
   - 通ったときのバックエンドの全体とパッケージごとの値（変えたパッケージ）と、フロントエンドの全体の値を code-summary.md に記録する。
   - 落ちたときは、team.md の「不安定なテストと CI の失敗」の決まりに従う（手元で再現すれば直すまで進まない）。
-- [ ] **Step 20**（NFR3・FR1・FR2）: E2E を手元で流す（画面に関わる変更のため、統合の前。team.md）。
+- [x] **Step 20**（NFR3・FR1・FR2）: E2E を手元で流す（画面に関わる変更のため、統合の前。team.md）。
   - `docker compose --profile mail up -d mailpit` の後に `./gradlew e2eTest`（全ファイル）。
   - 110・120 のフォーカスと矩形の確かめ、040・060 のフォーカスの確かめが通ることを確かめ、結果（件数・成否）を code-summary.md に記録する。json の報告の秘密の値の確かめ（報告の部品）が通ることも確かめる。
   - E2E の生成物（`frontend/test-results`）はこの段の中では消さない（project.md の学び 2026-10-03）。
 
 ### 2.6 文書と記録
 
-- [ ] **Step 21**（記録）: `code-summary.md`・`traceability.json`・`source-manifest.json` を書く。
+- [x] **Step 21**（記録）: `code-summary.md`・`traceability.json`・`source-manifest.json` を書く。
   - `code-summary.md` には、計画との差、S1 の確かめの結果、固定先の前後のハッシュ、FR1.4 の画面ごとの結果、カバレッジの実測、「依頼者に確かめたいこと」の節を置く（project.md の学び 2026-09-28）。
   - `source-manifest.json` には、この段で作った・変えた・消したアプリのファイル（サブモジュールの固定先を含む）をすべて並べる。
 - [ ] **Step 22**（コミットと統合。生成の担当はコミットしない）: 生成の後に、オーケストレーターが次のコミットを依頼者に提案し、承認を得てから行う（project.md の Change Control）。メッセージは日本語。

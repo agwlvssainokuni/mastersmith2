@@ -1,0 +1,88 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/GlobalExceptionHandler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/UniqueViolations.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/GlobalExceptionHandlerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/service/InvitationUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/mail/config/MailConfigurationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminOperationsApiIT.java"
+    },
+    {
+      "path": "frontend/e2e/040-dsl-admin.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/060-invitation-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/overflow.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/useInvitationAdmin.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/ConfirmActionDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/ConfirmActionDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/EditProfileDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/EditProfileDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/shared/modal/afterModalClosed.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/modal/afterModalClosed.ts"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "vendor/make-you-chic-ui"
+    }
+  ]
+}

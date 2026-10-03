@@ -1,0 +1,152 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR3.1",
+    "FR3.2",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR5.1",
+    "FR6.1",
+    "FR6.2",
+    "FR7.1",
+    "FR8.1",
+    "FR8.2",
+    "FR8.3",
+    "FR9.1",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserAdminPage.tsx"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "frontend/e2e/060-invitation-accessibility.e2e.ts"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.tsx"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "frontend/e2e/support/overflow.ts"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/EditProfileDialog.tsx"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/EditProfileDialog.test.tsx"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "FR4.2",
+      "status": "Deferred",
+      "target": "Build and Test: 使い捨ての環境で上限 4・userAdminPoolLimit・VUS 12・5 分の負荷をかけ、(a) 接続の待ち・(b) 警報3件・(c) BUSY の L3/L4 を確かめる（計画 7.1 節、依頼者の決定 D2: A）"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminOperationsApiIT.java"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/mail/config/MailConfigurationIT.java"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/mail/config/MailConfigurationIT.java"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/UserUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "id": "FR8.2",
+      "status": "OK",
+      "target": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "id": "FR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/invitation/service/InvitationUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "id": "FR9.1",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution: 統合した版を開発者の PC 上のコンテナ（compose のプロジェクト mastersmith）へ配備する（前の Intent の手順を正とし、今回の差だけを書く）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/common/error/web/UniqueViolations.java"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "build.gradle.kts"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/GlobalExceptionHandlerTest.java"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    }
+  ]
+}
