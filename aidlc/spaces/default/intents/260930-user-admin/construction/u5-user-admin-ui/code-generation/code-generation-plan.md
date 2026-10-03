@@ -402,17 +402,17 @@ U5 は画面（ui）の単位で、管理者が利用者の一覧で状態（管
 - [x] 記録した後に `frontend/test-results/` を中を開かずに消し（`playwright-report/` は作られないことを確かめる）、消したこと（件数）と共有していないことを記録する
 - [x] Mailpit は、この Step で起動したときは見終わったら止める。もとから動いていたときは止めない
 - [x] verify・`osvScan`・E2E のどれかが失敗したら、`team.md` の「不安定なテストと CI の失敗」で扱い、原因を直してから、この Step の verify からやり直す
-- [ ] 依頼者の承認を得て、関門の記録を記録だけのコミット R3 にする
-- [ ] 対応: B5 の共通の完了の条件、CP 2節・4.4・8節、`project.md` の Mandated（統合の前の確認）、NFR3.4・NFR5.1・NFR5.2・NFR5.6・NFR7.3・NFR9.3・NFR9.5・NFR9.8
+- [x] 依頼者の承認を得て、関門の記録を記録だけのコミット R3 にする
+- [x] 対応: B5 の共通の完了の条件、CP 2節・4.4・8節、`project.md` の Mandated（統合の前の確認）、NFR3.4・NFR5.1・NFR5.2・NFR5.6・NFR7.3・NFR9.3・NFR9.5・NFR9.8
 
 ### Step 23: 統合（fast-forward）
 
-- [ ] `develop` が `21a2fdd` から動いていないことを確かめる（動いていれば 3.4 のとおり依頼者に諮る）
-- [ ] 依頼者の承認を得て、`git switch develop` → `git merge --ff-only feature/260930-user-admin-b5` で統合する。`develop` の先頭が作業ブランチの先頭と同じハッシュになったこと、C1・C2・C3〜C6・R1〜R3 が区切りのまま入ったことを `git log --oneline 21a2fdd..develop` で確かめて記録する
-- [ ] push の前の確かめ（基盤の設計の R-04）: リポジトリの外の make-you-chic-ui の作業フォルダで `git fetch` の後に `git branch -r --contains 34814887433c61a4eb51d3572362d6eb41edae30` を実行して公開の側の分岐（`origin/main`）が出ること、または GitHub の画面でそのコミットを開けることを確かめ、方法と結果を記録する。無ければ push の前に依頼者に知らせる
-- [ ] 依頼者の承認を得て作業ブランチを消す。統合の後の記録（統合のハッシュ・ブランチを消したこと・公開の側の確かめ）を、依頼者の承認を得て `develop` の上の記録のコミット R4 にする
-- [ ] push は依頼者が行う。push の後の CI の結果は Build and Test で記録する。CI のサブモジュールの取得が失敗したときは、make-you-chic-ui 側のコミットを先に公開の側へ push してから CI を再実行する（CP 5節の 6）
-- [ ] 対応: `team.md` の Way of Working（fast-forward・push は依頼者）、`bolt-plan.md` の B5、CP 5節
+- [x] `develop` が `21a2fdd` から動いていないことを確かめる（動いていれば 3.4 のとおり依頼者に諮る）
+- [x] 依頼者の承認を得て、`git switch develop` → `git merge --ff-only feature/260930-user-admin-b5` で統合する。`develop` の先頭が作業ブランチの先頭と同じハッシュになったこと、C1・C2・C3〜C6・R1〜R3 が区切りのまま入ったことを `git log --oneline 21a2fdd..develop` で確かめて記録する
+- [x] push の前の確かめ（基盤の設計の R-04）: リポジトリの外の make-you-chic-ui の作業フォルダで `git fetch` の後に `git branch -r --contains 34814887433c61a4eb51d3572362d6eb41edae30` を実行して公開の側の分岐（`origin/main`）が出ること、または GitHub の画面でそのコミットを開けることを確かめ、方法と結果を記録する。無ければ push の前に依頼者に知らせる
+- [x] 依頼者の承認を得て作業ブランチを消す。統合の後の記録（統合のハッシュ・ブランチを消したこと・公開の側の確かめ）を、依頼者の承認を得て `develop` の上の記録のコミット R4 にする
+- [x] push は依頼者が行う。push の後の CI の結果は Build and Test で記録する。CI のサブモジュールの取得が失敗したときは、make-you-chic-ui 側のコミットを先に公開の側へ push してから CI を再実行する（CP 5節の 6）
+- [x] 対応: `team.md` の Way of Working（fast-forward・push は依頼者）、`bolt-plan.md` の B5、CP 5節
 
 ## 6. ストーリー・要件と手順の対応
 

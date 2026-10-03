@@ -640,3 +640,11 @@ C2′ は `vendor/make-you-chic-ui` の gitlink だけを上げるコミット�
 - N-19 は後の Intent へ回す。AC2.1.8・AC3.1.7・AC4.1.9・AC5.1.7 は、実際のブラウザでは閉じた後のフォーカスが行の「操作」に戻らず body に移るため、「条件つき（N-19、後の Intent）」のまま残る。後の Intent で、make-you-chic-ui の直った版へ固定先を上げる専用のコミットと、E2E 110 の `confirmAction`・120 の `expectBackgroundInteractive` を「閉じた後にフォーカスが行の『操作』に戻る」ことを確かめる形に替える作業（R-01・R-02）を行う。
 - 上の「C2′ の後に流し直すもの」は、その後の Intent で固定先を上げるときの確かめの手順として使う。
 - 計画の Step 22 の確かめの結果は、計画の書き方（`code-summary.md` に記録）と違い、この `generation-notes.md` に記録した（`code-summary.md` はレビューの後のため書き換えない）。
+
+## Step 23: 統合（fast-forward）
+
+- `develop` は計画の時点の `21a2fdd` から、記録だけのコミット 37a5566・5624d86・3f6ae9b（計画・計画の決定・計画の承認）だけ進んでいた。作業ブランチは `3f6ae9b` から作ったため、そのまま fast-forward できた（3.4 の諮りは不要）。
+- 依頼者の承認を得て、`git switch develop` → `git merge --ff-only feature/260930-user-admin-b5` で統合した。`develop` の先頭は作業ブランチの先頭と同じ `afd69c3`。`git log --oneline 3f6ae9b..develop` で、C1 17af97d・C2 364e9d6・C3 519a69b・C4 afa7cb2・C5 2e86a4f・C6 3e9d12a・R2 81d2423・R3 afd69c3 が区切りのまま入ったことを確かめた（R1 は計画の承認の記録 3f6ae9b として `develop` の上にある）。
+- push の前の確かめ（基盤の設計の R-04）: `vendor/make-you-chic-ui` で `git fetch` の後に `git ls-remote origin main` を実行し、取り込む `3d9521aa54b1d6277de473f9e935a496fb56ac1b` が公開の側の `main` の先頭であることを確かめた（計画が書いた `3481488` は、その祖先として含まれる）。
+- 依頼者の承認を得て、作業ブランチ `feature/260930-user-admin-b5` を消した。この記録を `develop` の上の記録のコミット R4 にする。
+- push は依頼者が行う。push の後の CI の結果は Build and Test で記録する。
