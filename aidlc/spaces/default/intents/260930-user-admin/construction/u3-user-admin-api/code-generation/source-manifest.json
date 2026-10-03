@@ -371,6 +371,15 @@
     },
     {
       "path": "README.md"
+    },
+    {
+      "path": ".gitleaks.toml"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "backend/gradle.lockfile"
     }
   ]
 }

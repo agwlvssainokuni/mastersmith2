@@ -51,3 +51,12 @@ B5 の統合の前の関門（`afd69c3` の前の `81d2423`、C2′ の前）: c
 - R-02（網羅の記録の欠け3つ）と R-03（最新の実測を1か所へ）。
 - 各単位の `code-summary.md` の「Build and Test に引き継ぐこと」の表（U3 の 9節など）。
 - 性能・観測・配備の持ち主の段へ回したもの（NFR5.x の Unverified、スモークテスト、戻しの条件）は各単位の記録のとおり。
+
+## 6. 承認の場を開くまでの経過（f82f186 の後、2026-10-03）
+
+- 承認の場を開く操作が「この段のコードの作業が見えない（REQUIRED_SOURCE_WORK_MISSING）」で断られた。理由は、`develop` の先頭に記録だけのコミット（R2・R3・R4・f82f186）が続き、`aidlc/` の外のコードが最新のコミットにも未コミットの変更にも無かったため。段のレビュー（2回目）は許されず、Request Changes は「recovery-question choice was not Request Changes」で5回断られた（原因は分かっていない。製品の不具合として報告）。
+- 依頼者の決定「U3を直す」で、4節の持ち越しの「U3 監査の組み立ての失敗のログ」を後の Intent へ回さず、いま直した（短命のブランチ `fix/260930-user-admin-audit-fields` から squash で `b126bdc`。再現のテスト2件。clean 付きの verify（単体 1508・結合 689、行 98.9%・分岐 94.8%）と osvScan（失敗 0・警告 16）を通した）。4節の表の該当の行は、これで解いた。
+- 続けて、後の Bolt で自分のファイルが変わった U1・U4 と、どの単位の一覧にも載っていないパスがあるとして断られた。U1・U4 の2回目のレビュー（READY）、U3 の一覧に `.gitleaks.toml`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`（B1 の前の Jackson 3.1.7 と Gitleaks の除外、f299400）を足して2回目のレビュー（READY）、U5 の一覧に移した元の `fieldErrors` の2つと make-you-chic-ui の中の4つを足して2回目のレビュー（READY）を行った。
+- 残った4つ（`frontend/playwright-report/index.html`・`frontend/test-results/.last-run.json`・`frontend/test-results/e2e-results.json`・`.idea/workspace.xml`）は、段の始めからあった git の対象外のファイル（前の Intent の E2E の報告を決まりどおり消したもの・IDE が書き換えたもの）で、一覧に載せられず（git の対象外は記録に使えない）、戻しもできない。依頼者の明示の承認を得て、承認の場を開く操作1回にだけ `AIDLC_SKIP_SOURCE_FRESHNESS=1` を付けた。ほかに一覧に載らない変更が無いことは、その直前の断りの一覧（この4つだけ）で確かめた。
+- 2回目のレビューの Minor（記録の件数・経緯の追記、U5 の言語の欄の送信中の防ぎ、project.md の Jackson 3.1.6 の記述）は、Build and Test と学びで扱う。
+- 記録の欠け: B5 の squash の手順（`git restore --source=HEAD -- aidlc/`）で、f82f186 の後に監査ログ `audit/sakura-local-4e42a93f87ce.md` に追記されていた分（承認の場の断り・Request Changes の断り・そのときの問いと答えの記録）を消してしまい、戻せなかった。この節の内容が、その間に起きたことの記録の代わりである。

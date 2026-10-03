@@ -81,6 +81,8 @@
 - 計画の Step ごとのコミットの提案は、生成の担当ではなく、生成の後に依頼者の承認を得てまとめて C1〜C6 に分けて行う形にした。担当は依頼者に直接尋ねられないため。統合は計画どおり短命のブランチ fix/260924-followup-fixes から fast-forward（team.md の squash とは違う。サブモジュールの専用のコミットを残すため、計画の承認で受け入れられた）。 (learned 2026-09-25) <!-- cid:260924-followup-fixes:code-generation:87c26f259ce9c6a4de73518651b6f0e868ab12453a73de73f50f5fe768dd262c -->
 - develop へ取り込む前に、この段の質問と確認の記録を依頼者の承認なしでコミットした（581b006）。依頼者に伝えて了承を得た。コミットは段の記録であっても、実行の前に必ず提案して承認を得る。 (learned 2026-09-25) <!-- cid:260925-storage-memory-fixes:deployment-execution:bfba46b7cf01ba6b124b43122d6b501702ed308cc28e7c0340aea762d39c0b8f -->
 - 前の段の記録を承認なしでコミットしてしまい、依頼者の了承を得た。段の承認と記録のコミットは別の承認として、必ずコミットの前に提案する。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:309234a070e87e27f11791c756861ffbb9fe4e3a7d2751a8ce1639e6976f6146 -->
+- コード生成の段の承認の場は、最後のコードのコミットの後、記録だけのコミット（aidlc/ の下だけ）を積む前に開く。user-admin で R2・R3・R4 と承認の場の記録のコミットが先頭に続き、aidlc/ の外のコードの作業が見えないとして承認の場が断られた（REQUIRED_SOURCE_WORK_MISSING）。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:82a48423a89edaac5d5346295acd928c13c5ebc6b48abe2741f6c6f687196578 -->
+- squash の統合の前に、監査ログを含む aidlc/ の未コミットの変更をコミットしておく。user-admin の U3 の小さな直しの統合で git restore --source=HEAD -- aidlc/ を使い、未コミットの監査ログの追記（承認の場の断りと問いと答えの記録）を消して戻せなかった。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:6134b387e5869328fae2d8bafc2131cf7bf2251f06efa3069d5c9bc4c620406e -->
 ## Deployment
 
 <!-- Project-specific specialisation. -->
@@ -130,6 +132,7 @@
 - Jackson の High（GHSA-q4xh-88c3-wmh7）は変更の前の develop でも OSV-Scanner を止めていた。networknt 3.0.7 を取り込むと 3.2 系に上がるため、3.0.6 に戻して Spring Boot の 3.1 系のまま 3.1.6 に上げる形（G4: A）にした。Spring Boot の BOM の版のプロパティで上書きする口が無く、Jackson の BOM を platform で読む形になった。 (learned 2026-09-29) <!-- cid:260928-quality-followup:code-generation:048ed0cead6ebbc806d232e24e1ef834a59dbff4d954455d02d8d510bda79173 -->
 - 対象DB のコンテナの版は長く支援される版に限らず、verify（対象DB の結合テスト）を通った最新の版を使う（quality-followup で mysql 26.7・mariadb 13.0 に上げた）。compose.yaml・docker/perf/compose.yaml・TargetDbImages の digest を一緒に上げる。 (learned 2026-09-29) <!-- cid:260928-quality-followup:code-generation:c720e9319af164201f7a46bcde302cd8f962359ad94dcfaf9752c3de5d76a917 -->
 - Jackson は Spring Boot の管理の系列（3.1）のまま、脆弱性の直しのためにパッチの版だけを Jackson の BOM（platform）で上書きする（quality-followup で 3.1.6）。Spring Boot を上げるときは、この上書きの要否を見直す。 (learned 2026-09-29) <!-- cid:260928-quality-followup:code-generation:beb1aa38dcbea8d87e4f9b199c8b4254f9c7744993c2f54bd86984a9c1586d8d -->
+- Jackson の上書きは 3.1.7 とする（user-admin の B1 の前に、High の脆弱性 4 件を解くため 3.1.6 から上げた。Spring Boot の管理の系列 3.1 のまま、Jackson の BOM を platform で読む形は同じ）。Spring Boot を上げるときは、この上書きの要否を見直す。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:7230d7ba8d3a9a1dcd450f2fa37c323a71091a36a61422a5c44eaa74245fe919 -->
 ## Decided
 
 <!-- Decisions made in earlier stages that should not be re-asked. -->
@@ -368,3 +371,4 @@
 - 排他の上限切れなどの例外の連なり（H2 の MVStoreException の文）には、排他されていた行の全部の列の値が入りうる。例外は TraceAspect の対象の層（web・service・domain・repository）の外へ出さず、受けた所でクラスの名前だけをログに出す（user-admin の NFR 設計の試し）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:a26239d23d82547de51abf2ed64c5c1ff3cbb1be1bfaca66ffd6cdd43fd2b683 -->
 - 例外の漏えいの経路を洗い出すときは、行の排他の読み取り（FOR UPDATE・@Lock）だけでなく、書き込みの問い合わせ（@Modifying）も対象にする。新しい排他は、既存の書き込みが待たされる経路も生む（user-admin の NFR 設計の U3 の再レビュー R-01）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:1afa286a4a42a028afacf444969a47c76bad996abd117eb99ef864c40d2f5184 -->
 - 承認の場で依頼者が決めたこと（指摘の扱いの選択など）は、承認の操作の理由だけでなく、その段の成果物の「承認の場の決定」の節にも書く。user-admin の NFR 設計で、U3 R-01 のまとめた手当ての決定が承認の理由にしか書かれず、承認済みの文書と監査の記録に残らなかった（Infrastructure Design の U3 の Q2 で、上流との差として記録した）。 (learned 2026-10-01) <!-- cid:260930-user-admin:infrastructure-design:71c7249af67f2e226c4b69659cae40fc7fcdd4fd214b30014c8956e892a067f6 -->
+- コード生成の段を始める前に、E2E の報告（frontend/playwright-report・frontend/test-results）など git の対象外の生成物を消しておく。段の途中で消すと、単位の一覧に載せられず（git の対象外は記録に使えない）戻せもしないため、承認の場が止まる（user-admin）。止まったときは、依頼者の明示の承認を得て、承認の場を開く操作1回だけに AIDLC_SKIP_SOURCE_FRESHNESS=1 を付け、理由を承認の場の記録に残す。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:21659e40190cd9e5d67365d3f65d605492bc5461b39ef29de45a13c8ef572514 -->
