@@ -48,6 +48,9 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * メールの設定と起動の結合テスト（BR1.2〜BR1.4・BR1.8、NFR2.2・NFR2.3・NFR2.5・NFR6.2・NFR6.4・NFR9.4、計画の 9節の決定 3）。
@@ -59,6 +62,8 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 class MailConfigurationIT {
 
     private static final String CONFIG_LOGGER = MailConfig.class.getName();
+
+    private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     @TempDir
     Path tempDir;
@@ -80,17 +85,45 @@ class MailConfigurationIT {
         }
     }
 
-    private static List<Map<String, Object>> configRecords(CapturedOutput output, String level) {
-        return JsonLogRecords.parse(output.getOut()).stream()
-                .filter(record -> CONFIG_LOGGER.equals(record.get("logger")))
-                .filter(record -> level.equals(record.get("level")))
-                .filter(record -> !record.containsKey("count"))
-                .toList();
+    /** 起動の前に覚えておく、出力の位置とテストのスレッドの名前（確かめる行の範囲を絞るため。FR6.1）。 */
+    private record Mark(int offset, String thread) {
+
+        static Mark of(CapturedOutput output) {
+            return new Mark(output.getOut().length(), Thread.currentThread().getName());
+        }
+    }
+
+    /**
+     * 起動の後にテストのスレッドが出した {@link MailConfig} のロガーの行だけを読む。ほかのスレッド（前のテストの後始末など）の出力が
+     * 混ざって JSON として読めない行は飛ばす。
+     */
+    private static List<Map<String, Object>> configRecords(CapturedOutput output, Mark mark, String level) {
+        List<Map<String, Object>> records = new ArrayList<>();
+        for (String line : output.getOut().substring(mark.offset()).split("\n", -1)) {
+            String trimmed = line.strip();
+            if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+                continue;
+            }
+            Map<String, Object> record;
+            try {
+                record = MAPPER.readValue(trimmed, new TypeReference<Map<String, Object>>() {});
+            } catch (JacksonException e) {
+                continue;
+            }
+            if (mark.thread().equals(record.get("thread"))
+                    && CONFIG_LOGGER.equals(record.get("logger"))
+                    && level.equals(record.get("level"))
+                    && !record.containsKey("count")) {
+                records.add(record);
+            }
+        }
+        return records;
     }
 
     @Test
     @DisplayName("without any mail setting the application starts, creates no sender and logs no warning")
     void startsWithoutSetting(CapturedOutput output) {
+        Mark mark = Mark.of(output);
         try (SmtpTestServer receiver = SmtpTestServer.builder().start();
                 ConfigurableApplicationContext context = start(tempDir, Map.of())) {
             assertThat(context.getBean(MailSettings.class)).isInstanceOf(MailSettings.NotConfigured.class);
@@ -104,8 +137,8 @@ class MailConfigurationIT {
             assertThat(receiver.connections()).isZero();
             assertThat(receiver.messages()).isEmpty();
         }
-        assertThat(configRecords(output, "WARN")).isEmpty();
-        assertThat(configRecords(output, "INFO"))
+        assertThat(configRecords(output, mark, "WARN")).isEmpty();
+        assertThat(configRecords(output, mark, "INFO"))
                 .singleElement()
                 .satisfies(record -> assertThat(record)
                         .containsEntry("state", "NOT_CONFIGURED")
@@ -166,10 +199,11 @@ class MailConfigurationIT {
     @MethodSource("invalidSettings")
     @DisplayName("an invalid mail setting keeps the application running with exactly one warning of item names only")
     void invalidSettingWarnsOnce(String label, Map<String, String> settings, String item, CapturedOutput output) {
+        Mark mark = Mark.of(output);
         try (ConfigurableApplicationContext context = start(tempDir, settings)) {
             assertThat(context.getBean(MailSettings.class)).isInstanceOf(MailSettings.Invalid.class);
         }
-        assertThat(configRecords(output, "WARN"))
+        assertThat(configRecords(output, mark, "WARN"))
                 .singleElement()
                 .satisfies(record -> assertThat(record).containsEntry("items", item));
         List<String> values = settings.entrySet().stream()
@@ -185,6 +219,7 @@ class MailConfigurationIT {
     @DisplayName("a usable setting does not connect at startup, keeps health UP and uses the safe defaults")
     void usableSettingUsesSafeDefaults(CapturedOutput output) throws IOException {
         int port = closedPort();
+        Mark mark = Mark.of(output);
         try (ConfigurableApplicationContext context = start(
                 tempDir,
                 Map.of(
@@ -218,8 +253,8 @@ class MailConfigurationIT {
                         .isEqualTo(Level.OFF);
             }
         }
-        assertThat(configRecords(output, "WARN")).isEmpty();
-        assertThat(configRecords(output, "INFO"))
+        assertThat(configRecords(output, mark, "WARN")).isEmpty();
+        assertThat(configRecords(output, mark, "INFO"))
                 .singleElement()
                 .satisfies(record ->
                         assertThat(record).containsEntry("state", "CONFIGURED").containsEntry("encryption", "NONE"));

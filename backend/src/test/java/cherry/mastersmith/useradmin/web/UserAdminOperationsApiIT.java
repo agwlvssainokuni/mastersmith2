@@ -287,6 +287,36 @@ class UserAdminOperationsApiIT {
     }
 
     @Test
+    @DisplayName(
+            "right after revoking, the next admin request of that user is 403 and both are audited in order (FR5.1)")
+    void revokeThenForbiddenIsAudited() {
+        String targetEmail = email("revoked");
+        long target = fixtures.create(targetEmail, "降格 太郎", true);
+        String token = fixtures.login(targetEmail);
+        assertThat(api.list(token, "").statusCode()).as("印がある間は管理の API を使える").isEqualTo(200);
+        Integer before = jdbc.queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class);
+
+        assertThat(api.operate(admin, target, "revoke-admin").statusCode()).isEqualTo(204);
+        assertCode(api.list(token, ""), 403, "ACCESS_DENIED");
+
+        List<Map<String, Object>> added = jdbc.queryForList(
+                "SELECT event_type, result, failure_reason, actor_user_id, target_user_id, request_path"
+                        + " FROM audit_events ORDER BY audit_event_id OFFSET ? ROWS",
+                before);
+        assertThat(added).as("印を外した操作の行と、続く 403 の行だけが順に残る").hasSize(2);
+        assertThat(added.get(0))
+                .containsEntry("EVENT_TYPE", "USER_ADMIN_REVOKED")
+                .containsEntry("RESULT", "SUCCESS")
+                .containsEntry("FAILURE_REASON", null)
+                .containsEntry("ACTOR_USER_ID", adminId)
+                .containsEntry("TARGET_USER_ID", target);
+        assertThat(added.get(1).get("EVENT_TYPE") + " " + added.get(1).get("FAILURE_REASON") + " "
+                        + added.get(1).get("REQUEST_PATH"))
+                .isEqualTo("ACCESS_DENIED NOT_ADMIN " + UserAdminApi.PATH);
+        assertThat(added.get(1)).containsEntry("RESULT", "FAILURE");
+    }
+
+    @Test
     @DisplayName("suspending revokes every refresh token of the user and resuming does not bring them back")
     void suspendRevokesRefreshTokens() {
         String targetEmail = email("suspended");
