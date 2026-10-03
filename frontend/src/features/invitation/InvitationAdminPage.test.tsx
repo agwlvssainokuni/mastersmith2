@@ -135,6 +135,24 @@ function heading(): HTMLElement {
   return screen.getByRole('heading', { level: 2, name: '招待中の人' })
 }
 
+/**
+ * 一覧の読み直しが始まった時点で、表示（Modal）が閉じ終わっていたか（背景に inert が無く、dialog・alertdialog が無い）を
+ * 1回ずつ記録する。読み直しの答えは pages の順に返す（G1。答えを遅らせず、始まった時点の様子だけを見る）。
+ */
+function recordListStartsAfterClose(fake: FakeApi, pages: InvitationPage[]): boolean[] {
+  const closedAtStart: boolean[] = []
+  const queue = [...pages]
+  fake.list.mockImplementation(() => {
+    closedAtStart.push(
+      document.querySelector('body > [inert]') === null &&
+        screen.queryByRole('dialog') === null &&
+        screen.queryByRole('alertdialog') === null,
+    )
+    return Promise.resolve(queue.shift() ?? pageOf())
+  })
+  return closedAtStart
+}
+
 function failureAlert(): HTMLElement {
   return screen.getByTestId('invitation-failure-alert')
 }
@@ -389,6 +407,29 @@ describe('InvitationAdminPage inviting', () => {
     )
   })
 
+  it('reads the page of the pending row only after the dialog has finished closing (G1)', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi()
+    const pendingRow = invitationOf({ invitationId: 42, email: 'pending@example.test' })
+    fake.create.mockRejectedValueOnce(
+      apiError(409, 'INVITATION_ALREADY_PENDING', { invitationId: 42, page: 1 }),
+    )
+    renderPage(fake)
+    const dialog = await openInvite(user)
+    const closedAtStart = recordListStartsAfterClose(fake, [
+      pageOf({ items: [...sampleRows(), pendingRow], total: 4 }),
+    ])
+    await user.type(screen.getByLabelText('メールアドレス（必須）'), 'pending@example.test')
+    await user.click(within(dialog).getByRole('button', { name: '招待する' }))
+    await user.click(await screen.findByRole('button', { name: '一覧でこの招待を見る' }))
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'pending@example.test への招待を送り直す' }),
+      ).toHaveFocus(),
+    )
+    expect(closedAtStart).toEqual([true])
+  })
+
   it('focuses the heading when the pending row is gone, and corrects a page past the end', async () => {
     const user = userEvent.setup()
     const fake = fakeApi()
@@ -622,8 +663,38 @@ describe('InvitationAdminPage resending and revoking', () => {
     )
     await waitFor(() => expect(failureAlert()).toHaveTextContent('サーバーで問題が起きました'))
     expect(screen.queryByRole('alertdialog')).toBeNull()
-    expect(screen.getByRole('button', { name: revokeTaro })).toHaveFocus()
+    // Modal のフォーカスの戻しは、閉じた後の描画の効果（背景の inert を外した後）で行われるため、待って確かめる
+    // （make-you-chic-ui e82b651。team.md の「描画の後に反映される値は waitFor で待つ」）。
+    await waitFor(() => expect(screen.getByRole('button', { name: revokeTaro })).toHaveFocus())
     expect(fake.list).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads only after the confirmation has finished closing, after a success and a 404 (G1)', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi()
+    fake.cancel.mockResolvedValueOnce().mockRejectedValueOnce(apiError(404, 'INVITATION_NOT_FOUND'))
+    renderPage(fake)
+    await rowsShown()
+    // 1件目を取り消した後は残りの2件を返す。2回目（404）の後も同じ2件を返す（開いた元の行が残る形）。
+    const remaining = sampleRows().slice(1)
+    const closedAtStart = recordListStartsAfterClose(fake, [
+      pageOf({ items: remaining, total: 2 }),
+      pageOf({ items: remaining, total: 2 }),
+    ])
+    await user.click(screen.getByRole('button', { name: 'hanako@example.test への招待を取り消す' }))
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '取り消す' }),
+    )
+    expect(await screen.findByText('招待を取り消しました')).toBeInTheDocument()
+    await waitFor(() => expect(heading()).toHaveFocus())
+
+    await user.click(screen.getByRole('button', { name: 'taro@example.test への招待を取り消す' }))
+    await user.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', { name: '取り消す' }),
+    )
+    await waitFor(() => expect(failureAlert()).toHaveTextContent('この招待は見つかりません。'))
+    await waitFor(() => expect(heading()).toHaveFocus())
+    expect(closedAtStart).toEqual([true, true])
   })
 
   it('closes the confirmation without revoking and returns focus to the row', async () => {

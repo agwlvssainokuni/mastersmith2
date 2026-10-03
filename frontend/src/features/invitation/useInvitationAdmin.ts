@@ -25,6 +25,9 @@
 //   useAdminForbidden に渡して何もせず終え、ShellLayout がこの画面を S6 に置き換える（U4 の FC 6.2）。そのほかの 403
 //   （code の無い・違うもの）は一般の 4xx の文言で示す。
 // - 応答の値をコンソール・ブラウザの保存に出さない。
+// - 表示（Modal）を閉じてからフォーカスを動かす経路（取り消しの成功・404、招待中の行へ移る）は、Modal が閉じ終わった後
+//   （背景の inert が外れ、Modal のフォーカスの戻しが済んだ後）に一覧を読み直す。閉じると同時に読み直すと、読み直しの後に
+//   当てたフォーカスを Modal の戻しが上書きしうるため（Intent 261003-user-admin-followup の G1）。
 import { useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
@@ -50,6 +53,7 @@ import {
   pagerButtonDisabledAfter,
   type PagerDirection,
 } from '../../shared/paging/paging'
+import { runAfterModalClosed } from '../../shared/modal/afterModalClosed'
 import type { InvitationText } from './useInvitationText'
 
 /** 一覧の読み込みの状態 */
@@ -133,6 +137,8 @@ export function useInvitationAdmin(
   const mounted = useRef(true)
   const loadSeq = useRef(0)
   const text = useRef(t)
+  /** Modal が閉じ終わるのを待っている処理をやめる関数（待っていなければ null） */
+  const cancelAfterClose = useRef<(() => void) | null>(null)
 
   /** 失敗が「権限が無い」なら骨組みへ渡して true を返す（呼び出し元は何もせず終える、U4 の FC 6.2）。 */
   const isForbidden = useCallback(
@@ -149,8 +155,21 @@ export function useInvitationAdmin(
     mounted.current = true
     return () => {
       mounted.current = false
+      cancelAfterClose.current?.()
+      cancelAfterClose.current = null
     }
   }, [])
+
+  /** 表示を閉じる状態の更新と同じ時点で呼び、Modal が閉じ終わった後に action を始める（G1）。 */
+  function afterDialogClosed(action: () => void): void {
+    cancelAfterClose.current?.()
+    cancelAfterClose.current = runAfterModalClosed(() => {
+      cancelAfterClose.current = null
+      if (mounted.current) {
+        action()
+      }
+    })
+  }
 
   /** 一覧の1ページを読む。最後に始めた読み直しの答えだけを使う。 */
   const load = useCallback(
@@ -351,10 +370,12 @@ export function useInvitationAdmin(
     setInvite(null)
     setFailure(null)
     setHighlightedId(pending.invitationId)
-    load(pending.page, {
-      focus: { kind: 'resend', invitationId: pending.invitationId },
-      highlight: pending.invitationId,
-    })
+    afterDialogClosed(() =>
+      load(pending.page, {
+        focus: { kind: 'resend', invitationId: pending.invitationId },
+        highlight: pending.invitationId,
+      }),
+    )
   }
 
   function setResending(invitationId: number, on: boolean): void {
@@ -439,7 +460,7 @@ export function useInvitationAdmin(
         setCancelTarget(null)
         setFailure(null)
         toast.show({ message: text.current('invitation.toast.revoked'), variant: 'success' })
-        load(page, { focus: { kind: 'heading' } })
+        afterDialogClosed(() => load(page, { focus: { kind: 'heading' } }))
       },
       (error: unknown) => {
         if (!mounted.current) {
@@ -452,7 +473,7 @@ export function useInvitationAdmin(
         setCancelTarget(null)
         setFailure(message(failureMessageKey(error)))
         if (knownCode(error) === 'INVITATION_NOT_FOUND') {
-          load(page, { focus: { kind: 'heading' } })
+          afterDialogClosed(() => load(page, { focus: { kind: 'heading' } }))
         }
       },
     )
