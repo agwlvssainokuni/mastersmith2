@@ -21,7 +21,7 @@
 // 送信中は Escape・[×]・「やめる」で閉じず、両方のボタンを押せない（実行は Button の loading で「処理中」、フォーカスを保つ）。
 // 送信から 5 秒を過ぎたら「時間がかかっています」を出す。「印を外す」「止める」は危険の見た目。
 import { Button, Modal } from 'make-you-chic-ui'
-import { useRef } from 'react'
+import { useRef, type RefObject } from 'react'
 import type { ConfirmState } from './useUserAdmin'
 import { useUserAdminText } from './useUserAdminText'
 import './EditProfileDialog.css'
@@ -33,6 +33,11 @@ export interface ConfirmActionDialogProps {
   slow: boolean
   onConfirm: () => void
   onCancel: () => void
+  /**
+   * 閉じた後にフォーカスを戻す先（行の「操作」のボタンなど）。Dropdown の項目から開くと、開く前にフォーカスのあった
+   * 項目はメニューごと消えるため、Modal の既定の戻し先が無くなり body に落ちる。開いた元を指す ref を渡す（FR1.2）。
+   */
+  finalFocusRef?: RefObject<HTMLElement | null>
 }
 
 /** 危険の見た目にする操作 */
@@ -44,6 +49,7 @@ export function ConfirmActionDialog({
   slow,
   onConfirm,
   onCancel,
+  finalFocusRef,
 }: ConfirmActionDialogProps) {
   const t = useUserAdminText()
   const cancelRef = useRef<HTMLButtonElement>(null)
@@ -67,6 +73,7 @@ export function ConfirmActionDialog({
       title={t(`useradmin.confirm.${action}.title`)}
       onClose={handleClose}
       initialFocusRef={cancelRef}
+      finalFocusRef={finalFocusRef}
       closeLabel={t('useradmin.action.close')}
       closeOnBackdropClick={false}
     >

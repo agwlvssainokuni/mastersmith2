@@ -22,7 +22,7 @@
 // 欄へフォーカスを移す。not-found では「保存」を押せない。failed では入力を残し、もう一度保存できる。
 // 送信中は Escape・[×]・「やめる」で閉じず、「保存」は Button の loading で「処理中」。5 秒を過ぎたら「時間がかかっています」。
 import { Alert, Button, FormField, Modal, RadioGroup, TextInput } from 'make-you-chic-ui'
-import { useEffect, useRef, type FormEvent } from 'react'
+import { useEffect, useRef, type FormEvent, type RefObject } from 'react'
 import { LANGUAGE_NAMES } from '../../app/display-settings/displaySettingsTypes'
 import { USER_LANGUAGES, type UserLanguage } from './api/types'
 import type { EditState } from './useUserAdmin'
@@ -38,6 +38,11 @@ export interface EditProfileDialogProps {
   onChangeLanguage: (value: UserLanguage) => void
   onSave: () => void
   onCancel: () => void
+  /**
+   * 閉じた後にフォーカスを戻す先（行の「操作」のボタンなど）。Dropdown の項目から開くと、開く前にフォーカスのあった
+   * 項目はメニューごと消えるため、Modal の既定の戻し先が無くなり body に落ちる。開いた元を指す ref を渡す（FR1.2）。
+   */
+  finalFocusRef?: RefObject<HTMLElement | null>
 }
 
 function isUserLanguage(value: string): value is UserLanguage {
@@ -52,6 +57,7 @@ export function EditProfileDialog({
   onChangeLanguage,
   onSave,
   onCancel,
+  finalFocusRef,
 }: EditProfileDialogProps) {
   const t = useUserAdminText()
   const nameRef = useRef<HTMLInputElement>(null)
@@ -102,6 +108,7 @@ export function EditProfileDialog({
       title={t('useradmin.edit.title')}
       onClose={handleClose}
       initialFocusRef={nameRef}
+      finalFocusRef={finalFocusRef}
       closeLabel={t('useradmin.action.close')}
       closeOnBackdropClick={false}
     >
@@ -147,6 +154,8 @@ export function EditProfileDialog({
               lang: value,
             }))}
             value={state.language}
+            // 送信中は言語を選べなくする（氏名の欄の readOnly と同じ扱い。FR3.1）。
+            disabled={submitting}
             onChange={(value) => {
               if (isUserLanguage(value)) {
                 onChangeLanguage(value)

@@ -23,6 +23,7 @@
 //   aria-describedby で結ぶ（名前は項目名だけ）。押せない項目を押しても onClick は呼ばれず、メニューは開いたまま（固定先 3d9521a で確かめた形、
 //   generation-notes.md の回2 の FC 2.5 の表）。守りとして、busy の間に項目の選択が届いても onSelect を呼ばない。
 // - 画面で押せない形にするのは表示だけで、サーバーの拒否（U3）の代わりにしない。
+// - メニューは placement="bottom-end" で trigger の右端にそろえる（表の右端の列で画面の右へはみ出さないため。FR2.1）。
 import { Button, Dropdown, type MenuItem } from 'make-you-chic-ui'
 import type { AdminUser } from './api/types'
 import { rowActions, type RowActionKind } from './rowActions'
@@ -75,6 +76,8 @@ export function UserRowActions({ user, busy, onSelect, containerRef }: UserRowAc
           </Button>
         }
         items={items}
+        // 「操作」は表の右端の列に置くため、メニューの右端を trigger の右端にそろえ、画面の右へはみ出さないようにする（FR2.1）。
+        placement="bottom-end"
       />
     </span>
   )

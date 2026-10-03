@@ -65,6 +65,10 @@ export function UserAdminPage({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const retryRef = useRef<HTMLButtonElement>(null)
   const actionRefs = useRef(new Map<number, HTMLSpanElement>())
+  // 確かめ・入力の表示を閉じた後にフォーカスを戻す先（開いた元の行の「操作」のボタン）。描画ごとに作り直さない ref を
+  // 1つ持ち、表示を開くときに中身を入れる（Modal は閉じた時点で .current を読む）。Dropdown は trigger の ref を
+  // 置き換えるため、trigger の Button に ref を付ける形は使わない（FR1.2・K-17）。
+  const dialogReturnRef = useRef<HTMLElement | null>(null)
   const { view, list, focusTarget, consumeFocus } = state
 
   useEffect(() => {
@@ -192,7 +196,11 @@ export function UserAdminPage({
               <UserRowActions
                 user={row}
                 busy={listBusy || state.busyUserId === row.userId}
-                onSelect={(action) => state.selectAction(row, action)}
+                onSelect={(action) => {
+                  dialogReturnRef.current =
+                    actionRefs.current.get(row.userId)?.querySelector('button') ?? null
+                  state.selectAction(row, action)
+                }}
                 containerRef={registerActions(row.userId)}
               />
             )}
@@ -204,6 +212,7 @@ export function UserAdminPage({
         slow={state.slow}
         onConfirm={() => void state.confirmAction()}
         onCancel={state.closeConfirm}
+        finalFocusRef={dialogReturnRef}
       />
       <EditProfileDialog
         state={state.edit}
@@ -212,6 +221,7 @@ export function UserAdminPage({
         onChangeLanguage={state.changeEditLanguage}
         onSave={() => void state.saveEdit()}
         onCancel={state.closeEdit}
+        finalFocusRef={dialogReturnRef}
       />
     </div>
   )

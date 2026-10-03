@@ -16,8 +16,9 @@
 //
 // 確かめの表示のテスト（functional-spec.md の 4.2・W5・D7・D13・D14・7.3、frontend-components.md の 8節、
 // AC2.1.8・AC3.1.7・AC4.1.9、NFR7.2・NFR8.2）。
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useRef, useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { ConfirmActionDialog } from './ConfirmActionDialog'
@@ -43,6 +44,26 @@ function renderDialog(
     { languages: options.languages },
   )
   return { ...view, onConfirm, onCancel }
+}
+
+/** 閉じると状態を null にし、開いた元の代わりのボタンを finalFocusRef で渡す試しの部品（FR1.2） */
+function ClosableHarness() {
+  const [open, setOpen] = useState(true)
+  const returnRef = useRef<HTMLButtonElement>(null)
+  return (
+    <>
+      <button type="button" ref={returnRef}>
+        戻り先
+      </button>
+      <ConfirmActionDialog
+        state={open ? { action: 'suspend', user: TARGET, submitting: false } : null}
+        slow={false}
+        onConfirm={() => {}}
+        onCancel={() => setOpen(false)}
+        finalFocusRef={returnRef}
+      />
+    </>
+  )
 }
 
 const EXPECTED: Record<ConfirmActionKind, { title: string; effect: string; submit: string }> = {
@@ -123,6 +144,25 @@ describe('ConfirmActionDialog', () => {
     expect(onCancel).toHaveBeenCalledTimes(2)
     expect(onConfirm).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ['the cancel button', 'cancel'],
+    ['Escape', 'escape'],
+  ] as const)(
+    'moves the focus to the element given as finalFocusRef after closing with %s (FR1.2)',
+    async (_label, how) => {
+      const user = userEvent.setup()
+      renderUserAdmin(<ClosableHarness />)
+      expect(screen.getByRole('button', { name: 'やめる' })).toHaveFocus()
+      if (how === 'cancel') {
+        await user.click(screen.getByRole('button', { name: 'やめる' }))
+      } else {
+        await user.keyboard('{Escape}')
+      }
+      await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+      await waitFor(() => expect(screen.getByRole('button', { name: '戻り先' })).toHaveFocus())
+    },
+  )
 
   it('confirms with the action button', async () => {
     const user = userEvent.setup()

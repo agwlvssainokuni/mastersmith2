@@ -18,7 +18,7 @@
 // NFR7.2）。入力の状態は外から渡し、操作の呼び出しを確かめる（保存の流れそのものは UserAdminPage.test.tsx）。
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { EditProfileDialog } from './EditProfileDialog'
@@ -51,6 +51,8 @@ interface HarnessProps {
   slow?: boolean
   onSave?: () => void
   onCancel?: () => void
+  /** 言語を選んだとき（状態の更新の前に呼ぶ） */
+  onChangeLanguage?: (value: EditState['language']) => void
   /** 保存のときに出す誤り（画面の確かめの代わり） */
   errorOnSave?: Partial<EditState>
 }
@@ -60,6 +62,7 @@ function Harness({
   slow = false,
   onSave,
   onCancel,
+  onChangeLanguage,
   errorOnSave,
 }: HarnessProps) {
   const [state, setState] = useState<EditState>(initial)
@@ -68,7 +71,10 @@ function Harness({
       state={state}
       slow={slow}
       onChangeName={(value) => setState((s) => ({ ...s, displayName: value }))}
-      onChangeLanguage={(value) => setState((s) => ({ ...s, language: value }))}
+      onChangeLanguage={(value) => {
+        onChangeLanguage?.(value)
+        setState((s) => ({ ...s, language: value }))
+      }}
       onSave={() => {
         onSave?.()
         if (errorOnSave !== undefined) {
@@ -77,6 +83,28 @@ function Harness({
       }}
       onCancel={onCancel ?? (() => {})}
     />
+  )
+}
+
+/** 閉じると状態を null にし、開いた元の代わりのボタンを finalFocusRef で渡す試しの部品（FR1.2） */
+function ClosableHarness() {
+  const [state, setState] = useState<EditState | null>(stateOf())
+  const returnRef = useRef<HTMLButtonElement>(null)
+  return (
+    <>
+      <button type="button" ref={returnRef}>
+        戻り先
+      </button>
+      <EditProfileDialog
+        state={state}
+        slow={false}
+        onChangeName={() => {}}
+        onChangeLanguage={() => {}}
+        onSave={() => {}}
+        onCancel={() => setState(null)}
+        finalFocusRef={returnRef}
+      />
+    </>
   )
 }
 
@@ -197,6 +225,37 @@ describe('EditProfileDialog', () => {
     expect(nameInput()).not.toHaveAttribute('readonly')
   })
 
+  it('makes the language choices unselectable while submitting (FR3.1)', async () => {
+    const user = userEvent.setup()
+    const onChangeLanguage = vi.fn()
+    renderUserAdmin(
+      <Harness initial={stateOf({ status: 'submitting' })} onChangeLanguage={onChangeLanguage} />,
+    )
+    const japanese = screen.getByRole('radio', { name: '日本語' })
+    const english = screen.getByRole('radio', { name: 'English' })
+    expect(japanese).toBeDisabled()
+    expect(english).toBeDisabled()
+    await user.click(japanese)
+    expect(onChangeLanguage).not.toHaveBeenCalled()
+    expect(english).toBeChecked()
+    expect(japanese).not.toBeChecked()
+  })
+
+  it.each(['open', 'failed'] as const)(
+    'keeps the language selectable when the status is %s (FR3.1)',
+    async (status) => {
+      const user = userEvent.setup()
+      const onChangeLanguage = vi.fn()
+      renderUserAdmin(<Harness initial={stateOf({ status })} onChangeLanguage={onChangeLanguage} />)
+      const japanese = screen.getByRole('radio', { name: '日本語' })
+      expect(japanese).toBeEnabled()
+      expect(screen.getByRole('radio', { name: 'English' })).toBeEnabled()
+      await user.click(japanese)
+      expect(onChangeLanguage).toHaveBeenCalledWith('ja')
+      expect(japanese).toBeChecked()
+    },
+  )
+
   it('cancels with the cancel button and Escape but not with a backdrop click', async () => {
     const user = userEvent.setup()
     const onCancel = vi.fn()
@@ -207,6 +266,25 @@ describe('EditProfileDialog', () => {
     await user.keyboard('{Escape}')
     expect(onCancel).toHaveBeenCalledTimes(2)
   })
+
+  it.each([
+    ['the cancel button', 'cancel'],
+    ['Escape', 'escape'],
+  ] as const)(
+    'moves the focus to the element given as finalFocusRef after closing with %s (FR1.2)',
+    async (_label, how) => {
+      const user = userEvent.setup()
+      renderUserAdmin(<ClosableHarness />)
+      expect(nameInput()).toHaveFocus()
+      if (how === 'cancel') {
+        await user.click(screen.getByRole('button', { name: 'やめる' }))
+      } else {
+        await user.keyboard('{Escape}')
+      }
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+      await waitFor(() => expect(screen.getByRole('button', { name: '戻り先' })).toHaveFocus())
+    },
+  )
 
   it('has no accessibility violations with the current values and with errors', async () => {
     const { unmount } = renderUserAdmin(<Harness />)

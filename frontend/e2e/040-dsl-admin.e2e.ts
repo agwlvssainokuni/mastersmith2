@@ -127,9 +127,19 @@ test.describe('040 DSL administration on the built WAR', () => {
     await expect(page.getByTestId('dsl-status-preview')).toContainText('貼り付け')
     await expect(page.getByTestId('dsl-status-preview')).toContainText(adminEmail)
 
-    // 適用する。確かめる表示の「適用する」で確定する。
-    await page.getByTestId('dsl-preview-apply').click()
+    // 確かめる表示を一度「やめる」で閉じ、開いた元の「適用する」へフォーカスが戻ることを確かめる
+    // （Intent 261003-user-admin-followup の FR1.4）。
+    const applyButton = page.getByTestId('dsl-preview-apply')
     const confirm = page.getByTestId('dsl-confirm-apply')
+    await applyButton.click()
+    await expect(confirm).toBeVisible()
+    await expect(page.getByTestId('dsl-confirm-cancel')).toBeFocused()
+    await page.getByTestId('dsl-confirm-cancel').click()
+    await expect(confirm).toBeHidden()
+    await expect(applyButton).toBeFocused()
+
+    // 適用する。確かめる表示の「適用する」で確定する。
+    await applyButton.click()
     await expect(confirm).toBeVisible()
     await expect(page.getByTestId('dsl-confirm-diff')).toContainText(
       'テーブル 増えた 1・減った 0・変わった 0',

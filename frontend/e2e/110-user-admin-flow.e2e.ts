@@ -31,6 +31,7 @@
 // - ロックのしきい値は既定の 5 回（playwright.config.ts の webServer はしきい値の設定 MASTERSMITH_AUTH_LOCK_THRESHOLD を
 //   渡していない）。解除の予定の時刻の文言の形には固定しない（機能設計の R-08）。
 // - 既存の 010〜100・130 と support/ の既存のファイルは変えない。
+// - Intent 261003-user-admin-followup: 確かめの表示を閉じた後に、行の「操作」へフォーカスが戻ることを確かめる（FR1.3）。
 import { randomBytes } from 'node:crypto'
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test'
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
@@ -121,15 +122,20 @@ async function chooseRowAction(page: Page, userId: number, item: string): Promis
   await page.getByRole('menuitem', { name: item, exact: true }).click()
 }
 
-/** 確かめの表示でフォーカスが「やめる」にあることを確かめ、実行のボタンを押す。 */
-async function confirmAction(page: Page, title: string): Promise<void> {
+/**
+ * 確かめの表示でフォーカスが「やめる」にあることを確かめ、実行のボタンを押す。閉じた後に、開いた元の行の「操作」の
+ * ボタンへフォーカスが戻ることを確かめる（FR1.3。body に落ちる不具合の回帰の確かめ。フォーカスが戻るのは背景の inert が
+ * 外れた後のため、inert が外れるのを待つ形をやめ、この確かめで次の操作の前の待ちを兼ねる）。
+ */
+async function confirmAction(page: Page, title: string, userId: number): Promise<void> {
   const dialog = page.getByRole('alertdialog', { name: title })
   await expect(dialog).toBeVisible()
   await expect(dialog.getByTestId('useradmin-confirm-cancel')).toBeFocused()
   await dialog.getByTestId('useradmin-confirm-submit').click()
   await expect(dialog).toBeHidden()
-  // make-you-chic-ui の ModalStack は閉じた後の描画で背景の inert を外すため、外れるまで待ってから次の操作をする。
-  await expect(page.locator('body > [inert]')).toHaveCount(0)
+  await expect(
+    page.getByTestId(`useradmin-row-actions-${userId}`).getByRole('button', { name: /の操作$/ }),
+  ).toBeFocused()
 }
 
 /** 成功の Toast（氏名に続く決まった文で探す） */
@@ -240,7 +246,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
 
       await diagnostics.step('reset the login failures and let the user sign in', async () => {
         await chooseRowAction(page, userId, 'ロックを解除（失敗回数を戻す）')
-        await confirmAction(page, 'ロックを解除しますか？')
+        await confirmAction(page, 'ロックを解除しますか？', userId)
         await expect(successToast(page, 'さんのロックを解除しました')).toBeVisible()
         const row = tableRows(page).first()
         await expect(row.getByText('ロック中')).toHaveCount(0)
@@ -289,7 +295,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
 
       await diagnostics.step('suspend the user and the user cannot continue', async () => {
         await chooseRowAction(page, userId, '利用を止める')
-        await confirmAction(page, '利用を止めますか？')
+        await confirmAction(page, '利用を止めますか？', userId)
         await expect(successToast(page, 'さんの利用を止めました')).toBeVisible()
         const row = tableRows(page).first()
         await expect(row.getByRole('cell').nth(3)).toHaveText('利用停止')
@@ -318,7 +324,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
 
       await diagnostics.step('resume the user and the user can sign in again', async () => {
         await chooseRowAction(page, userId, '停止を解く')
-        await confirmAction(page, '停止を解きますか？')
+        await confirmAction(page, '停止を解きますか？', userId)
         await expect(successToast(page, 'さんの停止を解きました')).toBeVisible()
         await expect(tableRows(page).first().getByRole('cell').nth(3)).toHaveText('有効')
         await loginWithForm(userPage, user.email, user.password)

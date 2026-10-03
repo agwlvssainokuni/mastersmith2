@@ -618,6 +618,20 @@ describe('UserAdminPage operation results', () => {
     expect(fake.list).toHaveBeenCalledTimes(1)
   })
 
+  it('returns the focus to the row after closing the confirm opened from the row with Escape (FR1.2)', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi(pageOf({ items: [TARGET] }))
+    renderPage(fake)
+    await rowsShown()
+    await choose(user, TARGET, '利用を止める')
+    expect(screen.getByRole('button', { name: 'やめる' })).toHaveFocus()
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+    await waitFor(() => expect(actionsButton(TARGET)).toHaveFocus())
+    expect(fake.suspend).not.toHaveBeenCalled()
+    expect(fake.list).toHaveBeenCalledTimes(1)
+  })
+
   it('focuses the heading when the row is no longer on the page after the reload', async () => {
     const user = userEvent.setup()
     const fake = fakeApi(pageOf({ items: [TARGET, userOf({ userId: 12 })] }))

@@ -32,6 +32,8 @@
 // - 画面の時間は記録だけで失敗させない（統合の関門にしない）。CSP の違反・画面の問題・本物の応答と見本の形の違いは失敗にする。
 // - test.step の題・注記・添付に、アクセストークン・パスワード・初期管理者と測定の招待のメールアドレスを入れない。
 // - 既存の 010〜050 は変えない。
+// - Intent 261003-user-admin-followup の FR1.4: 招待の入力と取り消しの確かめを「やめる」で閉じた後に、開いた元のボタンへ
+//   フォーカスが戻ることを確かめる（流れは足さない）。
 import { expect, test, type Page } from '@playwright/test'
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
 import { routeLoginPreferences } from './support/loginPreferences'
@@ -192,6 +194,8 @@ test.describe('060 invitation screen accessibility on the built WAR', () => {
         await checkState(page, combo, 'inviteDialog')
         await page.getByTestId('invitation-invite-cancel').click()
         await expect(page.getByTestId('invitation-invite-dialog')).toBeHidden()
+        // 閉じた後に開いた元の「招待する」へフォーカスが戻る（Intent 261003-user-admin-followup の FR1.4）。
+        await expect(page.getByTestId('invitation-invite-button')).toBeFocused()
       })
 
       await test.step('revoke confirmation dialog', async () => {
@@ -200,6 +204,8 @@ test.describe('060 invitation screen accessibility on the built WAR', () => {
         await checkState(page, combo, 'revokeDialog')
         await page.getByTestId('invitation-revoke-cancel').click()
         await expect(page.getByTestId('invitation-revoke-dialog')).toBeHidden()
+        // 閉じた後に開いた元の行の「取り消す」へフォーカスが戻る（Intent 261003-user-admin-followup の FR1.4）。
+        await expect(firstRevoke).toBeFocused()
       })
 
       if (!combo.viewport) {
