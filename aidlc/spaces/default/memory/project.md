@@ -72,6 +72,7 @@
 - 表示の設定を画面の操作の直後に同期で確かめるテストが、負荷の高い CI で2件（ShellLayout・PreferencesPage）落ちた。描画の後の効果（useEffect）で反映される値は waitFor で待って確かめる。同じ形の RegistrationPage も合わせて直した。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:build-and-test:410b2f525cbea40423751fb97c82bb527df2ad4b1f2864d4888b7ab32fe771f4 -->
 - Delivery Planning でのカバレッジの実測は、./gradlew verify 全体ではなく :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport で行い、jacocoTestReport.xml から手を入れる見込みのパッケージの値を読む（user-admin で約 5 分）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:e35925faac38449777eadec784bc2546fb19d593b9a634f5af273fef22f9b364 -->
 - 接続プールの見積もりを確かめる負荷の試験には、上限に届く形（プールの上限を下げた場面など）を含める。上限に届かない負荷では、見積もりが誤っていても合格する（user-admin の U3 の NFR 要件のレビュー R-02）。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-requirements:081ae35e2df4baab72ba31d62c38f71f2901d47862327a22c2a35cf3f79e93ff -->
+- 画面のはみ出しの確かめ（E2E・axe）では、画面全体の横のスクロールだけでなく、開いたメニュー・ポップアップなど画面に固定で置く部品が画面の中に収まることも確かめる。表の右端に置く make-you-chic-ui の Dropdown は placement に bottom-end を指定する（user-admin の配備の後のスモークテストで、行の「操作」のメニューが右へはみ出していたのを E2E 120 が拾えなかった）。 (learned 2026-10-03) <!-- cid:260930-user-admin:deployment-execution:b5e3f019a0c5b8d77ffeefffb93397257a20b3d09a272885ed5d89cf991b043c -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -116,6 +117,7 @@
 - スモークテストの S5 は、ブランドカラーが画面ではなく設定ファイルで決める項目だったため行えなかった。手順書を書く前に、画面で変えられる項目か設定で変える項目かをソースと README で確かめる。S6 は破棄の代わりに適用され、依頼者の決定でそのまま使った。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:a6d3f2015f632a115e8b2fcc0732a085d5632864246f37eb3e33ded7a61e0b69 -->
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（260928-quality-followup）の配備の手順を正として今回の差だけを書いた。スキーマと .env の変更が無いため戻しはイメージだけ、k6 とバックアップは行わない。スモークテストの起動のログの確かめは、初期管理者の INFO のキー maskedEmail の有無と、.env の初期管理者のメールアドレスの値の件数（値は表示しない）で FR1 を裏付ける形にした。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:deployment-pipeline:e7dfa1d7054db603e47b4ec5d4d8e47d631c58c27eff7c9b39508240edbd0b40 -->
 - FR1 の裏付けは、起動のログを JSON として読み、初期管理者の INFO のキー（maskedEmail の有無・email の無し）と、.env の初期管理者のメールアドレスの値のログの中の件数（値は表示しない）だけで行った。監査の確かめは README の手順（アプリを止めて複写し読み取りで開く）で、配備の後のバックアップを兼ねた。 (learned 2026-09-29) <!-- cid:260929-log-deps-cleanup:deployment-execution:68998c2af550c2c4215a6f01e4c66e49757cf30c3caa753cca33ce1d290629b3 -->
+- スモークテストで依頼者が画面を触るときは、監査に残る操作（管理の操作・ログインの失敗など）をしたかをその場で聞き、監査の確かめの期待の件数を合わせてから数える（user-admin の Deployment Execution で、予定に無い管理の操作5件が後から分かった）。 (learned 2026-10-03) <!-- cid:260930-user-admin:deployment-execution:a6b5314a8bb3ea13178a7390437f0c52c9be17b009fb95f3c359cd5c5debd54f -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
