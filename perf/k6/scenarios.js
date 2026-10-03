@@ -68,9 +68,16 @@
 //   userAdminPool          奇数の VU が5つの操作の1回分、偶数の VU が一覧（a）を同時にくり返す（NFR6.2。接続プールは hikaricp の
 //                          値で判断する）。上限 10 の場面（NFR6.3）は、使い捨てのアプリの上限を 10 にして userAdminOps を
 //                          VUS=5（A）と VUS=10（B）で流す
+// 接続プールの上限に届かせる場面（Intent 261003-user-admin-followup の FR4.1。手順は perf/README.md の「接続プールの上限を
+// 下げて流す」）。
+//   userAdminPoolLimit     VU ごとに perf-uat<VU> へ、印を付ける → 外す → 止める → 解くの4つをくり返す（どれも 204 で状態が戻る。
+//                          準備のログインの失敗と失敗回数を戻す操作は入れない）。constant-vus（VUS・DURATION）。接続の時間切れ
+//                          （500）を起こすための場面のため、p95 と checks の閾値を置かず、状態コードの件数を数え分けの値
+//                          （userAdminPoolLimit_204・_409・_500・_other）で出す。既存の userAdminOps・userAdminPool は変えない
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
+import { Counter } from 'k6/metrics'
 
 const BASE = __ENV.BASE_URL || 'http://app:8080'
 const SCENARIO = __ENV.SCENARIO
@@ -143,7 +150,15 @@ const USER_ADMIN_SCENARIOS = [
   'userAdminOps',
   'userAdminSuspendWorst',
   'userAdminPool',
+  'userAdminPoolLimit',
 ]
+// 接続プールの上限の場面（FR4.1）で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
+const POOL_LIMIT_COUNTS = {
+  204: new Counter('userAdminPoolLimit_204'),
+  409: new Counter('userAdminPoolLimit_409'),
+  500: new Counter('userAdminPoolLimit_500'),
+  other: new Counter('userAdminPoolLimit_other'),
+}
 // VU ごとに回数で終わる場面（組で状態を戻しながらくり返す・回ごとに別の対象を使う）
 const USER_ADMIN_ROUND_SCENARIOS = ['userAdminOps', 'userAdminSuspendWorst']
 // 1つの VU の回数（既定は、操作ごとの要求が全体で ITERATIONS 回以上になる回数）
@@ -893,6 +908,27 @@ function userAdminPool(data) {
   else userAdminList()
 }
 
+// 接続プールの上限の場面（FR4.1）の1つの操作。checks は使わず、状態コードごとの件数を数える（500 を起こすのが目的のため）。
+// 操作する管理者のログインし直し（uaOperatorAuth、4分ごと）が失敗したときは、その回を打ち切り、次の回でやり直す。
+function uaOperateCounted(userId, action, name) {
+  const res = http.post(`${USER_ADMIN_API}/${userId}/${action}`, null, {
+    headers: uaOperatorAuth(),
+    tags: { name },
+  })
+  const counter = POOL_LIMIT_COUNTS[res.status] ?? POOL_LIMIT_COUNTS.other
+  counter.add(1, { name })
+  return res
+}
+
+// 印を付ける → 外す → 止める → 解く（どれも 204 で状態が戻る）。準備のログインを含めない（同時の数を上限に届かせるため）。
+function userAdminPoolLimit(data) {
+  const userId = data.userAdminIds[uaTargetEmail(exec.vu.idInTest)]
+  uaOperateCounted(userId, 'grant-admin', 'userAdminPoolLimitGrant')
+  uaOperateCounted(userId, 'revoke-admin', 'userAdminPoolLimitRevoke')
+  uaOperateCounted(userId, 'suspend', 'userAdminPoolLimitSuspend')
+  uaOperateCounted(userId, 'resume', 'userAdminPoolLimitResume')
+}
+
 // U2・U3 の場面の名前と処理
 const USER_SCENARIOS = {
   preferencesGet,
@@ -914,6 +950,7 @@ const USER_SCENARIOS = {
   userAdminOps,
   userAdminSuspendWorst,
   userAdminPool,
+  userAdminPoolLimit,
 }
 
 export default function (tokens) {

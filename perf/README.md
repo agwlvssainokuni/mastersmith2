@@ -251,12 +251,13 @@ docker compose up -d --wait
 | `userAdminOps` | 5つの操作を組で状態を戻しながらくり返す（印を付ける → 外す → 止める → 解く → ログインを1回失敗させて → 失敗回数を戻す。どれも 204） | NFR5.4・NFR5.6（操作ごとに `{name:userAdminGrant}`・`Revoke`・`Suspend`・`Resume`・`Reset` の p95 1 秒、`checks`（204）の率 1。409 `USER_ADMIN_BUSY`・`USER_ADMIN_NO_CHANGE` と 5xx が 0 件） | 操作する管理者 `perf-uaop<VU>`、対象 `perf-uat<VU>`（VU ごとに分ける）。1つの VU の回数は `UA_ROUNDS`（既定は 100 ÷ `VUS` の切り上げ。操作ごとに 100 回以上） |
 | `userAdminSuspendWorst` | 未無効 100 件・無効 1,000 件のリフレッシュトークンを持つ対象を止めて解く（回ごとに別の対象） | NFR5.5（`{name:userAdminSuspendWorst}` の p95 1 秒、`checks` の率 1） | 対象 `perf-uasw-<VU>-<回>`（`VUS` × `UA_ROUNDS` 名、既定 100 名）とトークンの行 |
 | `userAdminPool` | 奇数の VU が5つの操作の1回分、偶数の VU が一覧（`a`）を同時にくり返す | NFR6.2（`checks` の率 1。接続プールは hikaricp の値で判断する） | `userAdminOps` と `userAdminList` と同じ |
+| `userAdminPoolLimit` | 印を付ける → 外す → 止める → 解くの4つをくり返す（どれも 204 で状態が戻る。準備のログインの失敗と失敗回数を戻す操作は入れない）。`constant-vus`（`VUS`・`DURATION`） | 閾値なし（接続の時間切れを起こすための場面。Intent 261003-user-admin-followup の FR4。状態コードの件数を `userAdminPoolLimit_204`・`_409`・`_500`・`_other` で出す） | 対象 `perf-uat<VU>`（`userAdminOps` と同じ）。手順は下の「接続プールの上限を下げて流す」 |
 
 - **受け入れの条件（NFR5.4）**: 操作する管理者（`perf-uaop<VU>`）はどの操作の対象にもしない。初期管理者（`perf-admin@example.test`）は操作する人にも対象にもしない。対象は VU ごとに分け、2つの VU が同じ利用者を対象にしない。台本は VU の番号でこれを守る（`VUS` は `PERF_UA_COUNT`（既定 10）以下。超えると始める前に止まる）。
 - **準備のログインの失敗**（`{name:userAdminPrepLogin}`、401）は、失敗回数を戻す組で失敗回数を 1 以上にするためのもので、`checks` にも p95 の判定にも数えない。監査に `LOGIN_FAILED` が1件ずつ残る（5つの操作の件数には数えない）。
 - **対象の利用者 ID**: setup が `perf-uaop01` で一覧の API を検索して引く（ID だけを持ち、値は出力しない）。足りないと始める前に止まる。
 - **止める悪い側のくり返し**: 止めるとトークンがすべて無効になるため、回ごとに別の対象を使う。流し直すときは、環境を作り直して（手順 5'' と 2''）入れ直す。
-- **接続プール（NFR6.2・NFR6.3）**: 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics` の `hikaricp.connections.timeout`（待ちの時間切れの累計）と `hikaricp.connections.acquire`（借りるまでの待ちの最大）で判断する。数秒ごとの使用中の数では判断しない。NFR6.2 は上限 30（既定）で `userAdminPool` を流し、時間切れの累計 0・500 が 0 件・流した5つの操作の成功の件数と監査の `SUCCESS` の件数の一致を見る。NFR6.3 は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10` にして `userAdminOps` を (A) `VUS=5`（見積もり 10 本で上限ちょうど。時間切れの累計 0・件数が一致）と (B) `VUS=10`（見積もり 20 本で上限の2倍。2本目の待ちが出る）で流す。(B) は待ちを起こす場面のため、欠けた監査と ERROR の件数を記録し、p95 と件数の一致に数えない。(A)・(B) の後は上限を既定に戻して起動し直すか、環境を作り直す。配備したアプリの公開の範囲と上限は変えない。
+- **接続プール（NFR6.2・NFR6.3）**: 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics` の `hikaricp.connections.timeout`（待ちの時間切れの累計）と `hikaricp.connections.acquire`（借りるまでの待ちの最大）で判断する。数秒ごとの使用中の数では判断しない。NFR6.2 は上限 30（既定）で `userAdminPool` を流し、時間切れの累計 0・500 が 0 件・流した5つの操作の成功の件数と監査の `SUCCESS` の件数の一致を見る。`hikaricp.connections.acquire` の値は、応答の `baseUnit` を見て読む（外部エクスポートを無効にしたときは `seconds`、有効にしたときは `milliseconds` になる。同じ数が単位で 1,000 倍違って見えるため、ミリ秒にそろえてから比べる）。NFR6.3 は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10` にして `userAdminOps` を (A) `VUS=5`（見積もり 10 本で上限ちょうど。時間切れの累計 0・件数が一致）と (B) `VUS=10`（見積もり 20 本で上限の2倍。2本目の待ちが出る）で流す。(B) は待ちを起こす場面のため、欠けた監査と ERROR の件数を記録し、p95 と件数の一致に数えない。(A)・(B) の後は上限を既定に戻して起動し直すか、環境を作り直す。配備したアプリの公開の範囲と上限は変えない。
 - 長い試験は `caffeinate -i` で台本の全体を包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。
 - k6 はアプリと同じ VM の CPU を分け合うため、測った値にその分が混ざりうる。結果に明記する。
 - 目標に届かないときは目標を緩めず、原因をログと状態で確かめて依頼者に相談する。一覧が NFR5.1 に届かなければ、`users (created_at, user_id)` の索引を足す直しを諮る。
@@ -303,7 +304,7 @@ k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
-metrics() {   # 接続プールの値（待ちの時間切れの累計・借りるまでの待ちの最大）を記録する
+metrics() {   # 接続プールの値（待ちの時間切れの累計・借りるまでの待ちの最大）を記録する。acquire は baseUnit を見て読む
   for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
     curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/$1-$m.json"
   done
@@ -327,13 +328,15 @@ for v in 5 10; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=userAdminOps -e VUS=$v \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
     run --quiet --summary-export=/out/userAdminOps-pool10-vus$v.json /scripts/scenarios.js
-  for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
+  for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # acquire は baseUnit を見て読む
     curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/pool10-vus$v-$m.json"
   done
 done
 EOS
 caffeinate -i zsh "$D/ua-pool10.sh" "$D"
 docker logs mastersmith-perf-app-1 2>&1 | grep -c '監査イベントの記録に失敗しました'   # (B) の欠けた監査の件数と突き合わせる
+
+# 3''''. 接続プールの上限を下げて流す（下の節「接続プールの上限を下げて流す」。上限 4・userAdminPoolLimit・VUS=12・5 分）
 
 # 4''. 秘密が出ていないことを件数で確かめる（どれも 0 であること）。ログはファイルに残さず、数だけを見る
 #      （初期管理者の起動のログには伏せ字のメールアドレスが出るため、試験用の利用者の名前の部分で数える）
@@ -351,3 +354,78 @@ docker compose up -d --wait
 
 - 監査の件数の突き合わせ（NFR6.2）: 流した5つの操作の成功の件数（k6 の結果の `checks` の成功の数。操作ごとの `{name:...}` の `http_reqs` の数）と、5つの種類の `SUCCESS` の件数が一致することを見る。(B) の欠けた件数は、アプリのログの `監査イベントの記録に失敗しました` の件数と、待ちの時間切れの累計に合うかを記録する。
 - 監査の件数を数えるときは、上限 10 の場面の分も同じ内部DB に入る。場面ごとに分けて数えたいときは、場面の前後で件数を読む（アプリを止めて読み、起動し直す）。
+
+### 接続プールの上限を下げて流す（Intent 261003-user-admin-followup の FR4）
+
+上の上限 10 の場面（`userAdminOps`）は準備のログインを含み、同時の操作の数が上限に届きにくかった（前の Intent の (A)）。この場面は、使い捨てのアプリの上限を **4** に下げ、準備のログインを含まない `userAdminPoolLimit` を **`VUS=12`・`DURATION=5m`** で流して、接続の待ちの時間切れと、手元の監視の警報3件（`ms-pool-pending`・`ms-audit-fail`・`ms-error-logs`）が鳴ることを確かめる。合否の基準は Intent の code-generation-plan.md の 7.1 節（Build and Test が判定する）。
+
+- **なぜ届くか**: 操作1件は1本目の接続を持ったまま、確定の後の監査の記録で2本目を借りる。同時の操作が上限（4）以上になると全員が2本目を待ち、`connection-timeout`（5 秒）で時間切れになる。同時 12 は上限の3倍。5 分は、`ms-pool-pending`（1 分ごとの値で `for: 1m`）が指標の送信の時点を2回以上またぐため。
+- **警報の決まりは変えない**: 手元の監視（`grafana/otel-lgtm`）に、リポジトリの `docker/monitoring/provisioning/alerting/mastersmith.yaml` をそのまま読み込ませる（写しを作ってしきい値を変えることはしない）。外部エクスポートは使い捨てのアプリにだけ有効にする。
+- **VM のメモリ**: アプリ（上限 2g）・手元の監視（1536m）・k6 を同じ VM で動かす。始める前に `docker info` と `docker stats --no-stream` で余裕を読み取りで確かめ、足りなければ配備したアプリを止める（止める前に依頼者に伝え、`docker compose stop app` で止めて、終わったら `docker compose start app` で戻す）。
+- **警報の状態**は、試験の始めから終わりの後 5 分までを 30 秒ごとに Grafana の `api/prometheus/grafana/api/v1/rules` で読み、題ごとの `state` を記録する。
+- **BUSY の数え方**: 409 `USER_ADMIN_BUSY` が出たときは、L3（`要求をエラー応答に変換しました` で `code` が `USER_ADMIN_BUSY` の行）の `traceId` ごとに、同じ `traceId` の L4（`行の排他を取れませんでした` の WARN）が1件ずつあり、件数が一致することを見る（Loki の L3・L4 の問い合わせでも、アプリの標準出力の JSON でもよい。下は標準出力で数える例で、値は出さず件数だけを出す）。
+- 片付けの前に、結果（指標・警報の状態・L3/L4 の件数）を確かめて記録してから消す。
+
+```bash
+# 前提: 上の手順 0・1・1''・2'' を済ませ、使い捨ての環境（mastersmith-perf）が動いていること（ネットワーク mastersmith-perf_default ができている）。
+# a. 使い捨てのアプリにだけ、上限 4 と外部エクスポート（送り先は下の手元の監視）を足す（秘密ではない値）
+( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=4\nMASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true\nMASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318\n' >> "$D/app.env" )
+
+# b. 手元の監視を、使い捨ての環境のネットワークに名前 lgtm で起動する（警報の決まりはリポジトリのファイルをそのまま読み込む。
+#    画面は 127.0.0.1:13000 だけに結び付け、配備した環境の手元の監視（3000）と重ねない。ボリュームは置かない）
+docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --network-alias lgtm \
+  -p 127.0.0.1:13000:3000 --memory 1536m \
+  -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_AUTH_DISABLE_LOGIN_FORM=true \
+  -v "$PWD/docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro" \
+  grafana/otel-lgtm:0.34.0
+until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
+perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
+
+# c. 台本の全体を caffeinate -i で包み、k6（5 分）を流しながら、警報を 30 秒ごとに読む（終わった後も 5 分読む）
+cat > "$D/ua-limit.sh" <<'EOS'
+D="$1"
+for m in hikaricp.connections.timeout hikaricp.connections.acquire; do
+  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/limit-before-$m.json"
+done
+docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" \
+  -e SCENARIO=userAdminPoolLimit -e VUS=12 -e DURATION=5m \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+  run --quiet --summary-export=/out/userAdminPoolLimit.json /scripts/scenarios.js &
+K6=$!
+watch_alerts() {   # 3件の警報の状態を、時刻と題と state だけで1行ずつ書く
+  curl -s http://127.0.0.1:13000/api/prometheus/grafana/api/v1/rules | python3 -c '
+import json, sys, time
+names = {"コネクションプールの待ち", "監査の書き込みの失敗", "ERROR のログの増加"}
+now = time.strftime("%H:%M:%S")
+for group in json.load(sys.stdin)["data"]["groups"]:
+    for rule in group["rules"]:
+        if rule["name"] in names:
+            print(now, rule["name"], rule["state"])' >> build/perf-results/limit-alerts.txt
+}
+while kill -0 $K6 2> /dev/null; do watch_alerts; sleep 30; done
+for i in $(seq 1 10); do watch_alerts; sleep 30; done   # 終わった後の 5 分
+for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # acquire は baseUnit を見て読む
+  curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/limit-after-$m.json"
+done
+EOS
+caffeinate -i zsh "$D/ua-limit.sh" "$D"
+grep -c 'Alerting' build/perf-results/limit-alerts.txt   # 題ごとの内訳は sort | uniq -c で見る
+
+# d. BUSY の L3 と L4 を traceId で突き合わせる（件数だけを出す）
+docker logs mastersmith-perf-app-1 2>/dev/null | python3 -c '
+import json, sys
+l3, l4 = [], set()
+for line in sys.stdin:
+    try:
+        r = json.loads(line)
+    except ValueError:
+        continue
+    if r.get("message") == "要求をエラー応答に変換しました" and r.get("code") == "USER_ADMIN_BUSY":
+        l3.append(r.get("traceId"))
+    elif r.get("message") == "行の排他を取れませんでした":
+        l4.add(r.get("traceId"))
+print("L3", len(l3), "L4 と結び付いた L3", sum(1 for t in l3 if t in l4))'
+
+# e. 結果を確かめて記録してから、手元の監視を消し、上の手順 4''・5'' で片付ける（app.env の3行は環境ごと消える）
+docker rm -f mastersmith-perf-lgtm
+```
