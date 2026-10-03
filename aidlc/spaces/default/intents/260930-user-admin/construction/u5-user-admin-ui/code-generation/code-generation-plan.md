@@ -382,26 +382,26 @@ U5 は画面（ui）の単位で、管理者が利用者の一覧で状態（管
 
 - [x] `code-summary.md`（作ったもの・移したもの・変えたもの、名指しのテストの件数、Step 3・4・16・18〜20 の確かめの結果、FC 2.5 の表の結果、初回の大きさの (1)・(2)、計画・承認済みの文書との差、依頼者に確かめたいこと、承認の場で確かめること）、`source-manifest.json`（U5 で作った・移した・変えたアプリのソース・テスト・E2E・設定・README のパスすべて。`frontend/.npmrc` とサブモジュールの gitlink を含め、記録は入れない）、`traceability.json`（6節の対応。U5 が OK とする AC と D1〜D20・NFR の ID に実装とテストのファイル、U3・U4・U1 へ Deferred の AC はそのまま、NFR5.1・NFR5.2 は Deferred で「記録のみ・本番での判定は Unverified（持ち主の段）」、E2E-M9 は 110）を作る
 - [ ] 承認の場の前に、`code-summary.md` の「依頼者に確かめたいこと」「承認の場で確かめること」の節を洗い出して並べる（`project.md` の学び）
-- [ ] 3.3 の C3〜C6 の区切りで、コミットの内容とメッセージの案を依頼者に示す（生成の担当はコミットしない）
-- [ ] 承認を得てコミットした後、`git status` でアプリのソースに未コミットの変更が無いこと、C3〜C6 に `aidlc/` の下が入っていないことを `git show --stat` で確かめ、ハッシュを記録する
-- [ ] 依頼者の承認を得て、記録だけのコミット R2 を作る
+- [x] 3.3 の C3〜C6 の区切りで、コミットの内容とメッセージの案を依頼者に示す（生成の担当はコミットしない）
+- [x] 承認を得てコミットした後、`git status` でアプリのソースに未コミットの変更が無いこと、C3〜C6 に `aidlc/` の下が入っていないことを `git show --stat` で確かめ、ハッシュを記録する
+- [x] 依頼者の承認を得て、記録だけのコミット R2 を作る
 - [ ] 対応: 段の記録、`project.md` の Change Control、`team.md` の Way of Working
 
 ### Step 22: 統合の前の関門（B5）
 
-- [ ] colima が動いていることを確かめ、`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を通す。対象DB のテストが SKIPPED になっていないことを確かめる。テストの件数（バックエンドの単体・結合、画面のファイルと件数）、カバレッジ（バックエンドの全体、画面の全体と U5 で作った・変えたファイルの行・分岐。`frontend/coverage/coverage-summary.json` から）、初回の JavaScript の大きさ (3) を記録する
-- [ ] `caffeinate -i ./gradlew osvScan --rerun-tasks` を流し、走査したパッケージの数（`vendor/make-you-chic-ui/package-lock.json` を含む）、失敗の条件に当たるもの 0 件、警告の件数を記録する
-- [ ] Mailpit が動いているかを確かめ（`docker compose ps`、`http://127.0.0.1:8025/api/v1/info` が 200）、動いていなければ `docker compose --profile mail up -d mailpit` で起動する。`.env` は開かない。`frontend/playwright-report/` が残っていないことを確かめる（残っていれば、報告の部品が見つけるかを記録してから消す、NFR 設計の受け入れた1点目）
-- [ ] `caffeinate -i ./gradlew e2eTest` を実行する（010〜130 と 110・120。期待は 13 ファイル・152 件）
-- [ ] `frontend/test-results/e2e-results.json` から次を `code-summary.md`（B5 の記録）に記録する。読むのは `stats` とテストごとの題・状態・注記と、添付 `user-admin-screen-ms`（base64 を復号した数だけ）で、ほかの中身は開かない:
+- [x] colima が動いていることを確かめ、`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡して `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を通す。対象DB のテストが SKIPPED になっていないことを確かめる。テストの件数（バックエンドの単体・結合、画面のファイルと件数）、カバレッジ（バックエンドの全体、画面の全体と U5 で作った・変えたファイルの行・分岐。`frontend/coverage/coverage-summary.json` から）、初回の JavaScript の大きさ (3) を記録する
+- [x] `caffeinate -i ./gradlew osvScan --rerun-tasks` を流し、走査したパッケージの数（`vendor/make-you-chic-ui/package-lock.json` を含む）、失敗の条件に当たるもの 0 件、警告の件数を記録する
+- [x] Mailpit が動いているかを確かめ（`docker compose ps`、`http://127.0.0.1:8025/api/v1/info` が 200）、動いていなければ `docker compose --profile mail up -d mailpit` で起動する。`.env` は開かない。`frontend/playwright-report/` が残っていないことを確かめる（残っていれば、報告の部品が見つけるかを記録してから消す、NFR 設計の受け入れた1点目）
+- [x] `caffeinate -i ./gradlew e2eTest` を実行する（010〜130 と 110・120。期待は 13 ファイル・152 件）
+- [x] `frontend/test-results/e2e-results.json` から次を `code-summary.md`（B5 の記録）に記録する。読むのは `stats` とテストごとの題・状態・注記と、添付 `user-admin-screen-ms`（base64 を復号した数だけ）で、ほかの中身は開かない:
   - 件数（`stats`）と、ファイルごとの件数と結果
   - 110 の結果と、飛ばした注記（`skip-reason`）が無いこと
   - 120 の組と状態ごとの結果（違反の件数と規則の名前・はみ出し・除いたコンソールの表示の件数・CSP の違反・打ち切りの記録 0 件）と、120 の全体の時間
   - `user-admin-screen-ms` の値（`list` と `nextPage`、1回目と 2〜5 回目と最大、`withinTarget`。`nextPage` は見本の応答での描画の時間で API の時間を含まないこと、`list` は差し替えの口の上乗せを含むこと。記録のみで成否にせず、本番での判定は `Unverified`）
   - 報告の部品の結果（探した値の種類の数、探したファイルの種類ごとの件数、見つかった件数 0）と、値のファイルが残っていないこと
-- [ ] 記録した後に `frontend/test-results/` を中を開かずに消し（`playwright-report/` は作られないことを確かめる）、消したこと（件数）と共有していないことを記録する
-- [ ] Mailpit は、この Step で起動したときは見終わったら止める。もとから動いていたときは止めない
-- [ ] verify・`osvScan`・E2E のどれかが失敗したら、`team.md` の「不安定なテストと CI の失敗」で扱い、原因を直してから、この Step の verify からやり直す
+- [x] 記録した後に `frontend/test-results/` を中を開かずに消し（`playwright-report/` は作られないことを確かめる）、消したこと（件数）と共有していないことを記録する
+- [x] Mailpit は、この Step で起動したときは見終わったら止める。もとから動いていたときは止めない
+- [x] verify・`osvScan`・E2E のどれかが失敗したら、`team.md` の「不安定なテストと CI の失敗」で扱い、原因を直してから、この Step の verify からやり直す
 - [ ] 依頼者の承認を得て、関門の記録を記録だけのコミット R3 にする
 - [ ] 対応: B5 の共通の完了の条件、CP 2節・4.4・8節、`project.md` の Mandated（統合の前の確認）、NFR3.4・NFR5.1・NFR5.2・NFR5.6・NFR7.3・NFR9.3・NFR9.5・NFR9.8
 

@@ -585,3 +585,58 @@ U5（B5）で作った・移した・変えたファイル（記録は除く）:
 | 報告の片付け | `frontend/playwright-report/` は作られない。記録した後に `frontend/test-results/` を中を開かずに消した（ファイル 2・ディレクトリ 2）。共有していない |
 
 - `git add`・コミットはしていない。この節で変えたアプリのファイル: `frontend/e2e/110-user-admin-flow.e2e.ts`・`frontend/e2e/120-user-admin-accessibility.e2e.ts`（説明文）・`frontend/src/features/useradmin/EditProfileDialog.tsx`・`EditProfileDialog.test.tsx`・`README.md`。どれも `source-manifest.json` に入っている。
+
+## Step 22（C2′ の前）— 2026-10-03
+
+対象は作業ブランチ `feature/260930-user-admin-b5` の先頭 `81d2423`（C1 `17af97d`・C2 `364e9d6`・C3 `519a69b`・C4 `afa7cb2`・C5 `2e86a4f`・C6 `3e9d12a`・R2 `81d2423`）。サブモジュール `vendor/make-you-chic-ui` は `3d9521aa54b1d6277de473f9e935a496fb56ac1b`、中の `git status --porcelain` は空。作業フォルダの未コミットの変更は監査ログ（`aidlc/` の下）だけ。
+
+**この節の結果は C2′（make-you-chic-ui の N-19 の直しを取り込む固定先の更新）の前の関門の結果である。** make-you-chic-ui の N-19 の直しはまだ公開の側に入っていない（`origin/main` は `3d9521a` のまま）。そのため `code-generation-plan.md` の Step 22 のチェックは付けず、この記録だけにした（C2′ の後の確かめを終えてから付ける）。`code-summary.md` はレビューの後のため書き換えていない。
+
+### 関門の結果
+
+| 項目 | 結果 |
+|---|---|
+| 前提 | colima が動いている（`colima status`）。`DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock"`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock` をシェルに渡した。`frontend/test-results/`・`frontend/playwright-report/` は始める前に無かった |
+| `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` | **BUILD SUCCESSFUL**（9 分 2 秒、08:38〜08:47） |
+| バックエンドの件数（JUnit の XML から） | 単体 173 クラス・**1506 件**、結合 136 クラス・**689 件**。失敗・誤り・飛ばしたもの 0（対象DB のテストは SKIPPED になっていない。`DslTargetDbIT`・`TargetDbStartupIT` などは 08:46 に実行された） |
+| バックエンドのカバレッジ（`jacocoTestReport.xml` の全体） | 行 **98.90%**（6276/6346）・分岐 **94.83%**（2331/2458）。Step 3 の基準と同じ（U5 はバックエンドを変えていない） |
+| 画面のテスト | **109 ファイル・955 件**すべて成功 |
+| 画面のカバレッジ（`frontend/coverage/coverage-summary.json` の全体） | 行 **97.42%**（2881/2957）・分岐 **92.85%**（1870/2014）。下限（行 80%・分岐 70%）を満たす。B2 の基準 行 97.61%・分岐 93.01% からの下がりは 0.19・0.16 ポイント |
+| `useradmin` の下の合計（`testing/` を含む） | 行 96.49%（467/484）・分岐 92.17%（365/396） |
+| SpotBugs の関門・Gitleaks | 通過（SpotBugs は警告だけ） |
+| 初回の JavaScript の大きさ (3) | **125.5 KB（gzip）**（`assets/index-*.js` 108.8 KB・`assets/useTranslation-*.js` 16.7 KB）。`verify` の中の `frontendBundleSize` の値。(1) 122.7 KB・(2) 122.8 KB からの増えは 2.7 KB（U5 の登録と共通へ移した部品の分と見込む。画面そのものは `lazy`。内訳は確かめていない）。回4 の参考の値（作業フォルダ）と同じ。目安 500 KB の内 |
+| `caffeinate -i ./gradlew osvScan --rerun-tasks` | **BUILD SUCCESSFUL**（08:47〜08:48）。走査したパッケージ: `backend/gradle.lockfile` 252・`frontend/package-lock.json` 382・`vendor/make-you-chic-ui/package-lock.json` 404（走査の外の手元のパッケージ 3）。**失敗の条件に当たるもの 0 件、警告 16 件**（すべて npm の開発用: `braces@3.0.3` が frontend と vendor に各1、vendor の `brace-expansion@5.0.9` 3・`undici@8.10.0` 11） |
+| Mailpit | `mastersmith-mailpit-1` がもとから動いていた（healthy、`/api/v1/info` は 200）。起動していないため止めない |
+| `caffeinate -i ./gradlew e2eTest` | **BUILD SUCCESSFUL**（6 分 13 秒、08:48〜08:54）。Playwright は 152 passed（6.2 分） |
+| json の `stats` | expected **152**・skipped 0・unexpected 0・flaky 0・duration 約 371.6 秒 |
+| ファイルごと（すべて expected） | 010: 2・020: 2・030: 1・040: 1・050: 21・060: 21・070: 20・080: 21・090: 1・100: 20・110: 1・120: 21・130: 20（**13 ファイル・152 件**） |
+| 110 | expected（約 7.0 秒）。`skip-reason` の注記なし。注記 `user-admin-flow` は lockAttempts 5・管理者の画面の問題 0・CSP の違反 0 |
+| 120 の組ごと（20 件） | すべて expected。20 組×12 回＝**240 回の検査で axe の違反 0**（違反の規則なし）・はみ出し 0、12 の状態すべてを検査した。注記 `user-admin-problems` はどの組も routeSeen 9・blocked（GET 以外の打ち切り）0・failedReplies 2（409 と通信の失敗）・除いたコンソールの表示 2・残りの問題 0・CSP の違反 0。120 の全体の時間は 21 件の合計で約 137.4 秒 |
+| 120 の測り（`user-admin-screen-ms`、base64 を復号した数だけ） | list は first 98・rest [103, 63, 48, 46]・max 103 ミリ秒・withinTarget true（目標 2000、apiTimeIncluded true、口の上乗せを含む）。nextPage は first 65・rest [57, 79, 80, 60]・max 80 ミリ秒・withinTarget true（目標 1500、apiTimeIncluded false、見本の応答での描画の時間で API の時間を含まない）。記録のみで成否にしない。本番での判定は `Unverified` |
+| 報告の部品 | 「E2E の報告に残してはならない値は含まれていません（値の種類 7・確かめたファイル: json の報告 1・json の報告の添付 299・trace 0・失敗の画面の写し 0・そのほか 0・前の html の報告 0・見つかった件数 0）」。値のファイルは `test-results/` の中にあり、下のとおり消した |
+| html の報告 | `frontend/playwright-report/` は作られなかった |
+| 報告を消したこと | 記録した後に `frontend/test-results/` を中を開かずに消した（ファイル 2・ディレクトリ 106（根を含む））。共有していない。json から読んだのは `stats`・テストの題・状態・時間・注記と添付 `user-admin-screen-ms` だけ |
+| 失敗と再実行 | 失敗なし。再実行していない |
+
+- 作業フォルダ: 関門の後の `git status --short` は監査ログの1行だけ（関門の実行で追跡するファイルは変わらなかった）。手元の一時のログ（ホームの下）は消した。`git add`・コミットはしていない。Step 23 には進んでいない。
+
+### C2′ の後に流し直すもの
+
+C2′ は `vendor/make-you-chic-ui` の gitlink だけを上げるコミット（N-19 の直しを含む版へ）と、それに伴う E2E の書き換え（110 の `confirmAction`・120 の `expectBackgroundInteractive` を「閉じた後にフォーカスが行の『操作』に戻る」ことを確かめる形へ。R-01・R-02）を前提とする。バックエンドのソース・lockfile は変わらないため、バックエンドの単体・結合テストとカバレッジ（上の 1506 件・689 件・行 98.90%・分岐 94.83%）は流し直さない前提とする。流し直すのは次のとおり。
+
+1. 固定先の確かめ: サブモジュールの中の `git status --porcelain` が空、更新前後のハッシュ（`3d9521a` → 新しいハッシュ）を記録、取り込むコミットが make-you-chic-ui の公開の側にあるか（`git branch -r --contains`）を記録する。
+2. 依存: `(cd frontend && npm ci)` と、`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json` の差の有無。
+3. vendor のビルド: `./gradlew vendorBuild --rerun-tasks`（`vendorInstall`・`vendorBuild`・`vendorUnchanged` を含む）。`dist` に直しが入ったことを確かめる。
+4. 画面の静的検査とテスト: 型・Prettier・oxlint・ESLint・Stylelint・ライセンスヘッダー（書き換えた E2E のファイルを含む）、画面のテストの全体とカバレッジ（上の 109 ファイル・955 件・行 97.42%・分岐 92.85% と比べる）。実際には、`verify` の画面の段をまとめて流す形として `./gradlew verify` の流し直しを勧める（バックエンドのテストは UP-TO-DATE で飛ぶことがあるが、C2′ で変わらないため扱いは上の結果のまま。`:backend:cleanTest` は付けない）。Gitleaks も新しいコミットを含めて流れる。
+5. 初回の JavaScript の大きさ (4): `frontendBundleSize`（上の 125.5 KB と比べる）。
+6. `./gradlew osvScan --rerun-tasks`: vendor の lockfile が変われば必須。変わらなくても、走査の数と警告の件数（上の 252・382・404、失敗 0・警告 16）を比べて記録する。
+7. E2E の全体: `caffeinate -i ./gradlew e2eTest`（13 ファイル・152 件。件数が変わるなら理由を記録）。特に 110・120 で閉じた後のフォーカスの確かめが通ること（AC2.1.8・AC3.1.7・AC4.1.9・AC5.1.7 の条件を外す根拠）、120 の axe・はみ出し・CSP、報告の部品、`test-results/` を消すこと。make-you-chic-ui の部品はほかの画面でも使うため、010〜100・130 も同じ実行で流し直す。
+8. E2E の書き換えの後に、`frontend/` の外や `backend/` に変更が出たときは、この前提を外し、Step 22 の全体（`:backend:cleanTest :backend:cleanIntegrationTest verify`・`osvScan`・`e2eTest`）を流し直す。
+
+## 依頼者の決定: N-19 の直しを待たずに統合する（2026-10-03）
+
+- make-you-chic-ui の N-19 の直し（`make-you-chic-ui-request-3.md`）は、Step 22 の後の時点でまだ公開の側に無かった（`git ls-remote origin main` の先頭は `3d9521aa54b1d6277de473f9e935a496fb56ac1b` のまま）。
+- 依頼者の決定「先に統合する」で、C2′ を待たずに、今の作業ブランチ（固定先 `3d9521a`）のまま `develop` へ fast-forward で統合する。Step 22 の結果（上の「Step 22（C2′ の前）」）を統合の前の関門の結果とする。
+- N-19 は後の Intent へ回す。AC2.1.8・AC3.1.7・AC4.1.9・AC5.1.7 は、実際のブラウザでは閉じた後のフォーカスが行の「操作」に戻らず body に移るため、「条件つき（N-19、後の Intent）」のまま残る。後の Intent で、make-you-chic-ui の直った版へ固定先を上げる専用のコミットと、E2E 110 の `confirmAction`・120 の `expectBackgroundInteractive` を「閉じた後にフォーカスが行の『操作』に戻る」ことを確かめる形に替える作業（R-01・R-02）を行う。
+- 上の「C2′ の後に流し直すもの」は、その後の Intent で固定先を上げるときの確かめの手順として使う。
+- 計画の Step 22 の確かめの結果は、計画の書き方（`code-summary.md` に記録）と違い、この `generation-notes.md` に記録した（`code-summary.md` はレビューの後のため書き換えない）。
