@@ -68,5 +68,12 @@
     "dirName": "260930-user-admin",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a10257-10c6-77f5-ab3f-0180524a0177",
+    "slug": "user-admin-followup",
+    "dirName": "261003-user-admin-followup",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

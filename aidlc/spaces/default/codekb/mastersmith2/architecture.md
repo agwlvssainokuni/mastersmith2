@@ -6,7 +6,7 @@
 
 1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす（`Dockerfile`・`compose.yaml` は今回イメージの行だけを流し読みした）。
 
-- 内部DB: 組み込みの H2。利用者（`users`）・ロックの状態（`login_attempt_states`）・リフレッシュトークン（`refresh_tokens`）・監査ログ（`audit_events`）・DSL・招待（`invitations`）を置く。スキーマは Flyway（`backend/src/main/resources/db/migration/` の V1〜V8、前進のみ）が正本。1インスタンスだけで動く前提で、ロックの判定は行の排他（`SELECT ... FOR UPDATE`、待ちの上限 3 秒）に頼る（`auth/repository/LoginAttemptStateRepository.java` 30 行の注記）。
+- 内部DB: 組み込みの H2。利用者（`users`）・ロックの状態（`login_attempt_states`）・リフレッシュトークン（`refresh_tokens`）・監査ログ（`audit_events`）・DSL・招待（`invitations`）を置く。スキーマは Flyway（`backend/src/main/resources/db/migration/` の V1〜V9、前進のみ。V9 `V9__u1_user_suspension.sql` は Intent `260930-user-admin` で足された。中身は今回読んでいない）が正本。1インスタンスだけで動く前提で、ロックの判定は行の排他（`SELECT ... FOR UPDATE`、待ちの上限 3 秒）に頼る（`auth/repository/LoginAttemptStateRepository.java` 30 行の注記）。
 - 起動時に、設定の値から初期管理者を1人だけ作る（`user/service/InitialAdminInitializer.java`。同じメールアドレスの利用者がいれば作らない）。
 - 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ（今回は流し読み）。
 - 外へ出る接続: 対象DB、SMTP（手元では Mailpit）、既定で無効の OTLP の送り先。
@@ -31,6 +31,7 @@ flowchart LR
     FAUTH["frontend-feature-auth"]
     FADM["frontend-feature-admin"]
     FINV["frontend-feature-invitation"]
+    FUA["frontend-feature-useradmin"]
     APIC["frontend-api-client"]
     MYC["make-you-chic-ui"]
   end
@@ -40,6 +41,7 @@ flowchart LR
     ACC["access"]
     USER["user"]
     INV["invitation"]
+    UA["useradmin"]
     MAIL["mail"]
     AUDIT["audit"]
     DSLM["dslmanage"]
@@ -50,6 +52,9 @@ flowchart LR
   REG --> FAUTH
   REG --> FADM
   REG --> FINV
+  REG --> FUA
+  FUA --> APIC
+  FUA --> MYC
   FADM --> APIC
   FINV --> APIC
   FAUTH --> APIC
@@ -63,6 +68,11 @@ flowchart LR
   INV --> MAIL
   MAIL --> SMTP
   DSLM -- "service の口" --> USER
+  UA -- "service の口と domain" --> USER
+  UA -- "auth.domain・auth.service" --> AUTH
+  UA -- "access.domain" --> ACC
+  UA -- "出来事" --> AUDIT
+  UA --> H2
   USER -- "UserCreatedEvent" --> AUTH
   AUTH -- "出来事" --> AUDIT
   ACC -- "出来事" --> AUDIT
@@ -76,9 +86,9 @@ flowchart LR
   DSLM --> H2
 ```
 
-<!-- Text fallback: 画面では、登録の仕組み（frontend-registry）がログイン・管理の入口・招待の管理の各機能を読み込み、各機能は frontend-api-client を通して同じオリジンの /api/** を呼ぶ。招待の管理の画面は make-you-chic-ui の部品を使う。バックエンドでは、config の SecurityConfig が要求を受け、auth が Bearer のアクセストークンを認証し、access が /api/admin/** を管理者だけに絞る。auth は user の service の口を使い、access は auth の domain と web を使う。invitation は user（service の口と domain）と mail を使い、mail が SMTP へ送る。dslmanage も user の service の口を使う。user の UserCreatedEvent を auth が受けてロックの状態の行を作る。auth・access・user・invitation・dslmanage の出来事を audit が受けて内部DB に記録する。user・auth・invitation・audit・dslmanage が内部DB を読み書きする。 -->
+<!-- Text fallback: 画面では、登録の仕組み（frontend-registry）がログイン・管理の入口・招待の管理の各機能を読み込み、各機能は frontend-api-client を通して同じオリジンの /api/** を呼ぶ。招待の管理の画面は make-you-chic-ui の部品を使う。バックエンドでは、config の SecurityConfig が要求を受け、auth が Bearer のアクセストークンを認証し、access が /api/admin/** を管理者だけに絞る。auth は user の service の口を使い、access は auth の domain と web を使う。invitation は user（service の口と domain）と mail を使い、mail が SMTP へ送る。dslmanage も user の service の口を使う。利用者の管理の画面（frontend-feature-useradmin、登録の仕組みが読み込む）は frontend-api-client と make-you-chic-ui を使い、バックエンドの useradmin は user（service の口と domain）・auth（domain と service）・access の domain を使い、出来事を audit に知らせ、内部DB を読み書きする。user の UserCreatedEvent を auth が受けてロックの状態の行を作る。auth・access・user・invitation・dslmanage の出来事を audit が受けて内部DB に記録する。user・auth・invitation・audit・dslmanage が内部DB を読み書きする。 -->
 
-図は今回の Intent に関わる流れを中心に描いた。`appearance`・`common`・`dsl`・`targetdb`・画面のほかの機能は省いた（一覧は `component-inventory.md`）。**利用者の管理の部品は図のどこにも無い**。どこに置くかは K-3（`dependencies.md`）の境界の決まりで絞られる。
+図は利用者と管理の流れを中心に描いた。`appearance`・`common`・`dsl`・`targetdb`・画面のほかの機能は省いた（一覧は `component-inventory.md`）。前回（`31b980b`）の図には利用者の管理の部品が無かった。今回（`47541e3`）、Intent `260930-user-admin` で作られた `useradmin` と `frontend-feature-useradmin` を足した。`useradmin` の向きは今回 import の検索で確かめた（`dependencies.md`）。
 
 ### Data Flow
 
@@ -107,8 +117,12 @@ flowchart LR
 - 監査の出来事の受け取りと写し取りが `audit` の3ファイルに積み上がる（`code-quality-assessment.md` の技術的負債）。管理の操作を足すたびに3ファイルと境界の検査を直すことになる。
 - 管理の要求の文脈（操作した管理者の ID・送り手の情報）の読み取りが機能ごとに複製されている（`user/web/MeRequestContextResolver.java`・`invitation/web/InvitationRequestContextResolver.java`・`dslmanage/web/DslRequestContextResolver.java` の3つ。開発担当は前の2つを挙げ、アーキテクトがファイル名の検索で3つ目を確かめた。3つ目の中身は読んでいない）。利用者の管理を足すと4つ目になりやすい（`code-quality-assessment.md`）。
 - 管理者の印を外す・停止する操作に対し、最後の管理者を守る仕組みが無い（K-4）。
+- （2026-10-04 追記）一意の制約の違反の例外の文が、既定のログの水準でアプリのログに出うる経路がある（K-24、Interaction Diagrams 6）。`logging.level` で Hibernate の SQL の誤りのロガーの水準を決めていない。
+- （2026-10-04 追記）Modal を閉じた後のフォーカスの戻しが make-you-chic-ui の固定先の不具合に頼っており、単体テスト（jsdom）では見えず E2E も確かめていない（K-17・K-18、Interaction Diagrams 5）。
 
 ## Interaction Diagrams
+
+図 1〜4 は前回（Intent `260930-user-admin` の始め、コミット `31b980b`、利用者の管理を作る前）の記録で、今回は確かめ直していない。図 1・2 の「状態を見ていない」「最後の管理者を守る仕組みが無い」はその時点の事実で、その後の Intent で利用停止（V9）と管理の操作が足された。図 5・6 は今回（`47541e3`）の所見 K-17・K-24 のもの。
 
 ### 1. 認証の3つの入口と、利用停止を見る場所（K-1）
 
@@ -246,3 +260,68 @@ flowchart TD
 <!-- Text fallback: 手元の ./gradlew verify と CI（develop へのプッシュ・タグ v*・手動）は同じ検査を通る。画面の段（サブモジュールの準備とビルド、型検査・リンタ・テスト・ビルド）、backend の検査と単体テスト・結合テスト、カバレッジ（JaCoCo の全体とパッケージごと、画面の coverage-v8）、SpotBugs の関門、Gitleaks と OSV-Scanner。E2E（Playwright と axe）は verify と CI の外にあり、画面・認証に関わる変更の統合の前とリリースの前に手元で流す。 -->
 
 段の厳密な並びは今回確かめていない（開発担当は `build.gradle.kts` のタスクの登録と `dependsOn` を検索しただけ）。カバレッジの下限と `packagesJudgedByTotal` の作業は K-7（`code-quality-assessment.md`）。
+
+### 5. Modal を閉じた後のフォーカスの戻し（K-17）
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as 利用者
+  participant DD as Dropdown 行の操作
+  participant PG as UserAdminPage と useUserAdmin
+  participant M as Modal 確かめか入力
+  participant MS as ModalStackContext
+  participant B as ブラウザ
+
+  U->>DD: 項目を選ぶ
+  DD->>PG: item.onClick で状態を設定する
+  DD->>DD: close(true) で trigger へフォーカスを戻す
+  PG->>M: 状態があるので描く
+  M->>MS: 開く。背景に inert を付ける
+  alt やめる・閉じる
+    U->>M: やめる
+    PG->>M: 状態を null にして外す
+    Note over M,B: 固定先 3d9521a では useFocusTrap の後始末が inert を外す前に戻すため、ブラウザでは body に落ちる
+    MS->>B: inert を外す
+    Note over MS,B: e82b651 では inert を外した後に finalFocusRef か開く前の要素へ戻す
+  else 成功
+    PG->>PG: reload で一覧を読み直す
+    PG->>M: 状態を null にして外す
+    PG->>B: 読み直しの後の効果で actionRefs の行の操作の button へ当てる
+  end
+```
+
+<!-- Text fallback: 利用者が行の「操作」の Dropdown で項目を選ぶと、Dropdown は item.onClick で画面（UserAdminPage と useUserAdmin）に状態を設定させた後、close(true) で trigger へフォーカスを戻す。状態があると確かめの表示か入力の Modal が描かれ、ModalStackContext が背景に inert を付ける。やめる・閉じる場合は、画面が状態を null にして Modal ごと外す。固定先 3d9521a では useFocusTrap の後始末が inert を外す前にフォーカスを戻すため、実際のブラウザでは body に落ちる。e82b651 では inert を外した後に finalFocusRef か開く前の要素へ戻す。成功の場合は、画面が一覧を読み直し、Modal を外し、読み直しの後の効果で actionRefs から行の「操作」の button へフォーカスを当てる。 -->
+
+確かめた事実と見立ての本文は `component-inventory.md` の `frontend-feature-useradmin`（K-17）と `make-you-chic-ui`。図の固定先ごとの順（後始末と inert を外す効果の前後）は、開発担当が `useFocusTrap.ts`・`Modal.tsx`・`ModalStackContext.tsx` の差を読んだ結果と `e82b651` のコミットの文による（ブラウザで確かめてはいない）。成功の場合の2つの戻し（Modal と画面の効果）のどちらが後になるかは見立てで、E2E で確かめる（K-18）。
+
+### 6. 一意の制約の違反の例外がログに出うる経路（K-24）
+
+```mermaid
+flowchart TD
+  INS["saveAndFlush の INSERT"] --> H2E["H2 の 23505 の例外。文に重なった値を含む見立て"]
+  H2E --> HB["Hibernate の SqlExceptionHelper の変換"]
+  HB -. "経路1 既定の WARN と ERROR の見立て。logging.level で水準を決めていない" .-> LOG[("アプリのログ")]
+  HB --> DIVE["DataIntegrityViolationException"]
+  DIVE --> REPO["repository の呼び出し"]
+  REPO -. "経路2 TraceAspect の TRACE の EXCEPTION と原因の連なり。継承したメソッドが対象かは未確認" .-> LOG
+  REPO --> SVC{"service で受けるか"}
+  SVC -- "UK_USERS_EMAIL・UK_INVITATIONS_PENDING_EMAIL の1回目" --> RES["結果の型にする"]
+  SVC -- "ほかの制約・招待の2回目" --> GEH["GlobalExceptionHandler の 500 INTERNAL_ERROR"]
+  GEH -. "経路3 ERROR を原因の連なり付きで出す。応答には載せない" .-> LOG
+```
+
+<!-- Text fallback: 一意の制約に当たる saveAndFlush の INSERT は H2 の 23505 の例外になり、その文は重なった値（メールアドレスなど）を含む見立てである。Hibernate の SqlExceptionHelper が JDBC の例外を変換するとき、既定で WARN と ERROR を出す見立てで、logging.level でその水準を決めていない（経路1。TRACE を有効にしなくても出うる、最も確かめたい点）。変換された DataIntegrityViolationException は repository の呼び出しを通り、TraceAspect の TRACE が例外の文と原因の連なりを出しうる（経路2。Spring Data の継承したメソッドが対象かは確かめていない）。service が UK_USERS_EMAIL と UK_INVITATIONS_PENDING_EMAIL の1回目の違反を受けると結果の型にし、ほかの制約と招待の2回目の IllegalStateException は GlobalExceptionHandler で 500 INTERNAL_ERROR になり、ERROR が原因の連なり付きで出る（経路3）。応答には例外の文を載せない。 -->
+
+K-24 確かめた事実（2026-10-04）:
+
+- 一意の制約（`backend/src/main/resources/db/migration/`）: `uk_users_email`（V2）・`uk_refresh_tokens_token_hash`（V3）・`uk_dsl_previews_preview_id`・`uk_dsl_applied_revisions_revision_id`（V5）・`uk_invitations_token_hash`・`uk_invitations_pending_email`（V8）。
+- 受け方: 利用者の作成は `user/service/UserAccountService.java` の `createUser`、招待は `invitation/service/InvitationService.java` の `issueWithOneRetry`（`component-inventory.md` の `user`・`invitation`）。ログインのロックの状態の行は `auth/service/LoginService.java` の `createRow` が `MERGE` で作り、`DataIntegrityViolationException` を DEBUG（`userId` だけ）で受ける。`useradmin` は一意の制約のある列に書かない。
+- `TraceAspect`・`LockFailureSafeTraceInterceptor`・`GlobalExceptionHandler` の扱いは `component-inventory.md` の `common-observability`・`common-error`（流し読み）。
+- `application.yaml` の `logging.level` は JDBC ドライバー3つとメールの部品を OFF にしているが、Hibernate（`org.hibernate.engine.jdbc.spi.SqlExceptionHelper` など）の水準は決めていない（root は INFO。流し読み）。
+- 監査（`audit_events`）・トレースの属性に例外の文が入る経路は、今回読んだ範囲には無い。
+
+K-24（見立て、未検証）:
+
+- 経路1が当たると、TRACE を有効にしなくても、アプリが受けて結果の型にする場合（同時の利用者の作成・同時の招待）でも、重なったメールアドレスがアプリのログに出る。`project.md` の Forbidden（メールアドレスをアプリのログに含めない）に当たるため、最初に確かめる。
+- 確かめ方の候補: 同時の作成か、テストから直接の重なった INSERT で `uk_users_email`・`uk_invitations_pending_email` に当て、INFO と TRACE の両方で出力に重なった値が無いことを `*SecretLeakIT` の形で確かめる。直し方（Hibernate のロガーの水準、`TraceAspect` の伏せる対象を一意の違反に広げる など）は設計で決める。`common` に手が入ると、`packagesJudgedByTotal` に残る `common.error.domain`・`common.error.service`・`common.web` に当たる場合に K-7 の作業が付く（`code-quality-assessment.md`）。

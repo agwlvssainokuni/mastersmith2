@@ -14,13 +14,14 @@
 | `GET /api/admin/check` | `access/web/AdminCheckController.java` | 管理者だけ | 深い。204。画面の管理の入口が使う |
 | `GET /api/me/preferences`・`PUT /api/me/preferences`・`POST /api/me/password` | `user/web/MeController.java` | ログイン | 流し読み（名前だけ） |
 | `POST /api/admin/invitations`・`GET /api/admin/invitations?page=`・`POST /api/admin/invitations/{invitationId}/resend`・`POST /api/admin/invitations/{invitationId}/cancel` | `invitation/web/InvitationAdminController.java` | 管理者だけ | 深い（K-5 の見本） |
+| `GET /api/admin/users`・`PUT /api/admin/users/{userId}/profile`・`POST /api/admin/users/{userId}/grant-admin`・`/revoke-admin`・`/suspend`・`/resume`・`/reset-login-failures` | `useradmin/web/UserAdminController.java` | 管理者だけ | 2026-10-04 にマッピングの注釈を検索で確かめた（Intent `260930-user-admin` で作られた）。一覧の問い合わせの引数と応答の項目は今回読んでいない。K-21 のテストは一覧と `revoke-admin` を呼ぶ |
 | `POST /api/registration/verify`・`POST /api/registration/complete` | `invitation/web/RegistrationController.java` | 公開（差し込み口 order 310） | 流し読み |
 | `/api/admin/dsl` の下の 10 本（状態・プレビュー・投入・破棄・生成・ダウンロード・適用・履歴・戻し・適用済みのダウンロード） | `dslmanage/web/DslAdminController.java` | 管理者だけ | 流し読み |
 | `GET /api/appearance` | `appearance/web/AppearanceController.java` | 公開 | 流し読み |
 | `GET /api/problems/{slug}` | `common/error/web/ProblemTypeController.java` | 公開 | 流し読み |
 | `GET /dsl/dsl-schema-v1.json`・`GET /actuator/health`・SPA の配信 | 静的・Actuator | 公開 | 流し読み |
 
-**利用者の管理の API は無い。** 利用者の一覧・管理者の印の変更・利用停止・ロックの解除のどれも、controller・service・repository のどの層にも無い。`user/repository/UserRepository.java` の問い合わせは `findByEmail`（43 行）・`existsByRedactedEmail`（55 行）・`updatePreferences`（70 行）・`updatePasswordHashIfUnchanged`（85 行）と `JpaRepository` の標準の操作だけで、`users` の索引は主キーとメールアドレスの一意の制約だけ（V2）。
+前回（2026-09-30、`31b980b`）の記録: **利用者の管理の API は無い。** 利用者の一覧・管理者の印の変更・利用停止・ロックの解除のどれも、controller・service・repository のどの層にも無い。その後 Intent `260930-user-admin` で上の表の `useradmin` の API が作られた（今回 2026-10-04 に存在を確かめた。下の `UserRepository` の問い合わせの記述は前回のまま）。`user/repository/UserRepository.java` の問い合わせは `findByEmail`（43 行）・`existsByRedactedEmail`（55 行）・`updatePreferences`（70 行）・`updatePasswordHashIfUnchanged`（85 行）と `JpaRepository` の標準の操作だけで、`users` の索引は主キーとメールアドレスの一意の制約だけ（V2）。
 
 ## アプリの中の口（部品の間の契約）
 
@@ -29,9 +30,12 @@
 | `UserAccountService` | `user/service/UserAccountService.java` | `verifyPassword`・`findById`・`existsByEmail`（文字列と `RedactedText`）・`findDisplayName`・`findLanguage`・`createUser`。戻り値の `UserSummary` は `toString` でメールアドレスと氏名を伏せる（K-8）。`auth`・`invitation`・`dslmanage` が使う |
 | 出来事 `UserCreatedEvent` | `user/service/UserCreatedEvent.java` → `auth/service/LoginAttemptStateInitializer.java` | 同じトランザクション（`Propagation.MANDATORY`）でロックの状態の行を作る。`user` から `auth` への逆向きの知らせの前例（K-3） |
 | 監査の出来事 | `AuthenticationEvent`・`AdminAccessDeniedEvent`・`PasswordChangedEvent`・招待と登録の出来事・`DslOperationEvent` → `audit/service/AuditEventListener.java` | 確定の後に記録（`architecture.md` の Interaction Diagrams 3、K-6） |
+| 監査の出来事（利用者の管理） | `useradmin/domain/UserAdminAuditEvent.java` → `audit/service/AuditEventListener.java`・`audit/domain/AuditEventFactory.java` | 2026-10-04 に import の検索で確かめた。種類の名前は読んでいない |
 | 安全の決まりの差し込み口 `SecurityRuleContributor` | `common/security`、各機能の `web` | order は機能ごとに 100 台（auth 110・access 210・invitation 310・appearance 410。x00・x50 はテストの決まり） |
 
 ## K-5 一覧・ページ送り・操作・結果の型の前例（`invitation` の管理の API）
+
+前回の記録で、今回は確かめ直していない。下の見立ては、その後 `useradmin` で同じ形（`/api/admin/users` の一覧、`/{userId}/<動詞>` の操作、結果の型）として作られた。
 
 確かめた事実:
 

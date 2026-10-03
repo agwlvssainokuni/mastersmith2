@@ -27,7 +27,7 @@
 
 ## 内部の依存（バックエンドのパッケージ間）
 
-アーキテクトが 2026-09-30 に各パッケージの `import cherry.mastersmith.*` を検索して数え直した（数は import の行の数）。前回の記録と向きも数も変わっていない。
+アーキテクトが 2026-09-30 に各パッケージの `import cherry.mastersmith.*` を検索して数え直した（数は import の行の数）。2026-10-04 には `useradmin` の import と、`useradmin` を import する側だけを数え直して図に足した（ほかの数は 2026-09-30 のまま）。
 
 ```mermaid
 flowchart TD
@@ -52,9 +52,14 @@ flowchart TD
   dslmanage -- "user.service 2" --> user
   dslmanage -- "auth.domain 4・auth.web 1" --> auth
   dslmanage --> common
+  useradmin -- "user.domain 11・user.service 11" --> user
+  useradmin -- "auth.domain 3・auth.service 3" --> auth
+  useradmin -- "access.domain 1" --> access
+  useradmin -- "common.error 11・observability・paging・persistence" --> common
+  audit -- "useradmin.domain" --> useradmin
 ```
 
-<!-- Text fallback: config は common を使う。auth は user（service 13 行・domain 2 行）と common を使う。access は auth（domain 5 行・web 3 行）・common・config を使う。user は common だけを使う。invitation は user（domain 35 行・service 4 行）・mail（domain と service）・common を使う。appearance は common だけを使う。audit は出来事の型のために invitation・user・auth・access・dslmanage の domain を使う。dslmanage は dsl・targetdb・user（service）・auth・common を使う。mail・dsl・targetdb・common はアプリの中のほかのパッケージを import しない。循環する依存は無い。 -->
+<!-- Text fallback: config は common を使う。auth は user（service 13 行・domain 2 行）と common を使う。access は auth（domain 5 行・web 3 行）・common・config を使う。user は common だけを使う。invitation は user（domain 35 行・service 4 行）・mail（domain と service）・common を使う。appearance は common だけを使う。audit は出来事の型のために invitation・user・auth・access・dslmanage の domain を使う。dslmanage は dsl・targetdb・user（service）・auth・common を使う。useradmin（2026-10-04 に足した）は user（domain 11 行・service 11 行）・auth（domain 3 行・service 3 行）・access の domain・common（error・observability・paging・persistence）を使い、audit が出来事の型のために useradmin の domain を使う。mail・dsl・targetdb・common はアプリの中のほかのパッケージを import しない。循環する依存は無い（useradmin を import するのは自分と audit だけ）。 -->
 
 ### `common` の中の依存
 
@@ -67,8 +72,11 @@ flowchart TD
 | `invitation` | `common.error`・`common.security`・`common.web`・`common.observability` |
 | `appearance` | `common.security` |
 | `dslmanage` | `common.error`・`common.i18n`・`common.web` |
+| `useradmin` | `common.error`・`common.observability`・`common.paging`・`common.persistence`（2026-10-04） |
 
 ## K-3 境界の決まり: `user` は `auth` を知らない
+
+前回（2026-09-30）の記録。その後の Intent `260930-user-admin` は、置き場の候補の 2（新しい機能のパッケージ `useradmin`）を選び、境界の検査 `backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java` を足した（ファイルの存在だけを確かめた）。
 
 確かめた事実（決まりの名前と対象を読んだ。テストは実行していない）:
 
@@ -102,17 +110,17 @@ flowchart TD
   app --> disp["app/display-settings"]
   app --> registry["app/registry"]
   app --> routing["app/routing・layout・i18n"]
-  registry --> features["features の auth・admin・dsl・invitation・registration・preferences の registration.ts"]
+  registry --> features["features の auth・admin・dsl・invitation・registration・preferences・useradmin の registration.ts"]
   features --> apic["shared/api-client"]
   features --> myc
   disp --> apic
   disp --> myc
 ```
 
-<!-- Text fallback: main.tsx が App.tsx を起動し、App.tsx は make-you-chic-ui・見た目の設定（display-settings）・登録・振り分けを組み合わせる。登録は各機能（auth・admin・dsl・invitation・registration・preferences）の registration.ts を読み込み、各機能は共通の API の呼び出しと make-you-chic-ui の部品を使う。見た目の設定も API の呼び出しと make-you-chic-ui を使う。画面の import は開発担当の検索とファイルの一覧による。 -->
+<!-- Text fallback: main.tsx が App.tsx を起動し、App.tsx は make-you-chic-ui・見た目の設定（display-settings）・登録・振り分けを組み合わせる。登録は各機能（auth・admin・dsl・invitation・registration・preferences・useradmin）の registration.ts を読み込み、各機能は共通の API の呼び出しと make-you-chic-ui の部品を使う。見た目の設定も API の呼び出しと make-you-chic-ui を使う。画面の import は開発担当の検索とファイルの一覧による。 -->
 
 ## ビルドのタスクの依存
 
 - `verify` の中身は `architecture.md` の Interaction Diagrams 4。`e2eTest` は `:backend:bootWar` に依存し、`verify` の外。
-- `frontend` → `make-you-chic-ui`（`vendorBuild` が作る `dist` を読む）。`backend` → `java-mustache-processor`（composite build で `cherry.mastersmith:cherry-mustache-core` を置き換える）。
+- `frontend` → `make-you-chic-ui`（`vendorBuild` が作る `dist` を読む）。固定先は `3d9521a`（2026-10-04）。K-17 の直しで `e82b651` に上げる見込みで、その更新は専用のコミットになる（`team.md` の Way of Working）。`backend` → `java-mustache-processor`（composite build で `cherry.mastersmith:cherry-mustache-core` を置き換える）。
 - `:backend:bootWar` → `:frontendBuild`（WAR に `dist` を同梱）。

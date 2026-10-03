@@ -4,57 +4,90 @@
 
 | 項目 | 値 |
 |---|---|
-| 実施日 | 2026-09-30 |
-| Intent | `260930-user-admin`（scope classic、深さ Standard。利用者の管理の画面: 一覧・管理者の印・利用停止・ロックの解除） |
+| 実施日 | 2026-10-04 |
+| Intent | `261003-user-admin-followup`（scope bugfix、深さ Minimal。前の Intent `260930-user-admin` の振り返りの第1の束 K1〜K3・T1〜T4・S1 の直し） |
 | 対象 | mastersmith2（プロジェクトルート、単一リポジトリ） |
-| 記録するコミット | `31b980b1205b9dc3884565eacbbe7c9b8eb3ed90`（`develop` の HEAD、`git rev-parse HEAD` で取得）。スキャンの前に取ったスナップショットの source の値（`git:8dca…`）はコミットではない値で、この値とは別のもの |
-| サブモジュール `vendor/make-you-chic-ui` の固定先 | `077f5b48ce84cd020ecec2d925836a085f9d9e11` |
-| サブモジュール `vendor/java-mustache-processor` の固定先 | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（`0.1.0`） |
-| 走査の広さ・深さ | 全体の読み直し（Full rescan、スナップショットの paths は `./`）・Standard。既存の知識ベースは STALE で、9 文書を丸ごと置き換える |
-| 手順 | 開発担当のコードスキャン（`inception/reverse-engineering/developer-scan.md`）→ アーキテクトによる統合（この9つの成果物） |
+| 記録するコミット | `47541e3b5a7035892ffee81d9b93a174166abb86`（`develop` の HEAD、`git rev-parse HEAD` で取得）。スキャンの前に取ったスナップショットの source の値とは別のもの |
+| サブモジュール `vendor/make-you-chic-ui` の固定先 | `3d9521aa54b1d6277de473f9e935a496fb56ac1b`（`git ls-files -s` で確かめた。上流の `e82b651` は手元に取得済みで未固定） |
+| サブモジュール `vendor/java-mustache-processor` の固定先 | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（`0.1.0`、変わっていない） |
+| 走査の広さ・深さ | 範囲を絞った走査（Focused scan）・Minimal。スナップショットの paths は `frontend/src/features/useradmin/`・`frontend/e2e/`・`frontend/playwright.config.ts`・`backend/src/main/java/cherry/mastersmith/useradmin/`・`backend/src/test/java/cherry/mastersmith/useradmin/`・`backend/src/main/java/cherry/mastersmith/{audit,user,invitation}/`・`backend/src/test/java/cherry/mastersmith/mail/config/`・`perf/`・`docker/monitoring/`。既存の知識ベースの判定は UNVERIFIED |
+| 手順 | 開発担当のコードスキャン（`inception/reverse-engineering/developer-scan.md`）→ アーキテクトによる統合（既存の9文書を読み、今回の範囲の節を足し・直し、範囲の外の文は残した） |
 
 ## 確かめ方
 
-- ファイルの読み取りと、読み取りの git（`git rev-parse`・`git log`・`git submodule status`）だけで確かめた。Gradle・npm・Docker は実行していない。`.env`・鍵ファイル・Git 管理外の参考資料は開いていない。個人に関する値は本文に写していない。
-- アーキテクトが自分で確かめ直したもの: 記録するコミットとサブモジュールの固定先、バックエンドのパッケージ間の `import` の数（`dependencies.md`、前回と同じ）、`LockPolicy` の判定（K-2）、失敗の理由の列挙（`LoginFailureReason`・`TokenFailureReason`・`AccessDeniedReason.of`・`AuditEventType`・`AuditFailureReason`、K-1・K-6）、移行 V2・V3・V4・V7 の列と外部キー（K-1）、認証の3つの入口のコード（`AccessTokenAuthenticationProvider`・`TokenRefreshService`・`LoginService.decide`・`UserAccountService.verifyPassword`）、`AdminAuthorizationManager`（K-4）、`packagesJudgedByTotal` と注記（K-7）、境界の検査の決まりの名前（K-3）、`TraceAspect` の対象の指定（K-8）、監査の記録のトランザクションの形、差し込み口の order、招待の管理の controller と結果の型（K-5）、画面の登録の order、主な部品の版（`libs.versions.toml`・Wrapper・`frontend/package.json`）、ファイルの数。
-- 開発担当の記録との差: `refresh_tokens` と `invitations` の外部キーは V3・V8 の `ALTER TABLE` で足されていることを確かめた（開発担当の記録どおり）。要求の文脈の読み取りの複製は、開発担当の挙げた2つのほかに `dslmanage/web/DslRequestContextResolver.java` があることをファイル名の検索で見つけた（中身は読んでいない。`code-quality-assessment.md`）。`appearance` の差し込み口の order は 410 と確かめた。
-- 事実と見立て（仮説）は各所見の本文で分けて書いた。
+- ファイルの読み取りと、読み取りの git（`git rev-parse`・`git ls-files -s`・`git -C vendor/make-you-chic-ui log -1`）だけで確かめた。Gradle・npm・Docker は実行していない。`.env`・鍵ファイル・Git 管理外の参考資料は開いていない。個人に関する値は本文に写していない。
+- アーキテクトが自分で確かめ直したもの: 記録するコミットとサブモジュールの固定先、`e82b651` がサブモジュールに取得済みであることとその件名、`useradmin` の本体とテストのファイルの一覧、`UserAdminController` のマッピングの注釈（`api-documentation.md`）、`useradmin` の import と `useradmin` を import する側（`dependencies.md`）、`packagesJudgedByTotal`（7 個）と注記（K-7）、移行の一覧（V9 の存在）、`frontend/e2e` と `support/` のファイルの一覧、画面の登録の order 230、Jackson の版（3.1.7）、`OutputCaptureExtension` を使うテストのファイルの数（31）。
+- 事実と見立て（仮説）は、開発担当の記録どおり各所見の本文で分けて書いた。
+- 開発担当の記録との差: `backend/src/main/java/cherry/mastersmith/useradmin/` は、開発担当は「一意の制約に当たる処理が無いことの確かめ」（検索）として深く読んだ側に挙げたが、読んだファイルの名前が無いため、記録上は `shallow.paths` に置いた（範囲を狭める向きの直し）。`frontend/playwright.config.ts` はスナップショットにあるが、開発担当が読んでいないとしたため、どちらにも入れていない。
 
 ## 前の記録との関係
 
-前のコード知識ベースは Intent `260929-log-deps-cleanup` の開始時のもの（partial、5 部品・22 パス、記録のコミット `c1ed553`）。その Intent の中で所見 K-10〜K-16 が直され、知識ベースの一部（make-you-chic-ui の固定先 `310e1ec`、E2E 100 の既知の違反2件、`ms-check-p95` の 300 ms、初期管理者の INFO のキー `email`）が今の HEAD とずれていた（STALE）。前回の所見の扱いは `business-overview.md`。
+前のコード知識ベースは Intent `260930-user-admin` の開始時のもの（partial、11 部品・74 パス、記録のコミット `31b980b`）。その Intent で利用者の管理（`useradmin`・`frontend-feature-useradmin`、移行 V9、E2E 110〜130 など）が作られたため、前の記録の「利用者の管理が無い」「利用停止の状態が無い」などの文と、make-you-chic-ui の固定先 `077f5b4`・Jackson 3.1.6・`packagesJudgedByTotal` 12 個・E2E 10 本は、今の HEAD とずれていた。
 
-依頼者が Full rescan を選んだため、9 文書を丸ごと置き換え、Scope of Analysis はこの走査の実績だけから作った。前回の `analyzed.paths` と `shallow.paths` は引き継いでいない。前回までの文のうち今回確かめていないもの（`mail`・`dsl` 系・`perf-and-monitoring` などの責務）は、流し読みの扱いとして各部品に短く残した。
+判定が UNVERIFIED のため、今回は次の扱いにした。
+
+- 9 文書を丸ごと置き換えず、前回の文を残したうえで、今回の範囲の節を足し、確かめ直した古い事実（固定先・Jackson・`packagesJudgedByTotal`・E2E の数・API の有無・移行の数）を直した。確かめ直していない前回の文には「前回の記録」と書き添えた。
+- Scope of Analysis の `analyzed.paths` と `analyzed.components` は今回の走査の実績だけから作った。前回の `analyzed.paths`（74）は、今回深く読み直した3つ（`AuditEventListener.java`・`UserAccountService.java`・`InvitationService.java`）を除いて `shallow.paths` に下げ、前回の `shallow.paths` と今回の流し読みの範囲（`common/`・`JsonLogRecords.java`・`useradmin` の両側のディレクトリ）を合わせた。
+- `component-inventory.md` の前回「深い」とした部品は、「流し読み（前回は深い）」に書き換えた。
 
 ## 所見の番号
 
-全体の読み直しのため、所見の番号は K-1 から振り直した（開発担当の S-1〜S-9 を同じ順で K-1〜K-9）。前回までの K の番号とは対応しない。一覧は `business-overview.md`。
+前回の所見は K-1〜K-9。`business-overview.md` の「前々回の所見の扱い」の表にその前の番号 K-10〜K-16 が残っているため、取り違えを避けて今回の所見は K-17〜K-24 とした（開発担当の束の項目 K1・K2・K3・T1・T2・T3・T4・S1 を、K1 を K-17・K-18 に分け、ほかを同じ順で当てた）。一覧は `business-overview.md`。
 
 ## 部品 ID の扱い
 
-- 前回の 36 個の ID をそのまま使い、足しも名前の変更もしていない（見出しの集合は前回と同じ）。
-- `analyzed.components` には、開発担当が深く読んだとした 11 個を入れた: `user`・`auth`・`access`・`audit`・`invitation`・`config`・`frontend-registry`・`frontend-feature-admin`・`frontend-feature-invitation`・`frontend-feature-auth`・`build-and-verify`。このうち `invitation`・`config`・`frontend-feature-invitation` は、今回の Intent の型として要る部分だけを深く読んだ（`component-inventory.md` の「深い（一部）」）。
+- 前回の 36 個の ID をそのまま使い、開発担当の提案どおり `useradmin`（`backend/src/main/java/cherry/mastersmith/useradmin/`）と `frontend-feature-useradmin`（`frontend/src/features/useradmin/`）を足して 38 個にした。名前の変更は無い。
+- `analyzed.components` には、今回深く読んだファイルを持つ 8 個を入れた: `useradmin`（テスト2クラス）・`frontend-feature-useradmin`・`frontend-e2e`・`audit`・`user`・`invitation`・`mail`（`MailConfigurationIT` だけ）・`perf-and-monitoring`。どれも部品の一部だけを読んだ。
 
 ## 範囲の要約
 
-- 深く読んだ: 74 のパス、11 の部品。パスは開発担当の Scan Coverage の「Analyzed deeply」のとおりで、それより広げていない。ただし、開発担当がディレクトリで挙げながら「ほかはファイル名だけ」とした `auth/domain/`（10 ファイル）と `access/web/`（5 ファイル）は、読んだファイルを1つずつ `analyzed.paths` に入れ、ディレクトリそのものは `shallow.paths` に置いた（範囲を狭める向きの直し）。
-- 部分だけを読んだファイル（`AuditEventFactory.java` の 1〜260 行、`AuditEventListener.java` の 1〜200 行、`InvitationService.java` の一覧の部分、`invitationApi.ts` の 1〜80 行、境界の検査の決まりの名前と対象、`backend/build.gradle.kts` の関わる節、`vitest.config.ts` の下限の行）は、開発担当の記録どおり `analyzed.paths` に入れ、読んだ範囲を各文書の本文に書いた。
+- 深く読んだ: 20 のパス（すべてファイル）、8 の部品。パスは開発担当の Scan Coverage の「Analyzed deeply」の括弧の中のファイルで、スナップショットの paths の中にある。
 - 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない（前回までと同じ扱い）。
-- `fingerprint` は、最終の `analyzed.paths`（74）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --mint --paths` に渡した出力をそのまま貼った。
+- `fingerprint` は、最終の `analyzed.paths`（20）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --mint --paths` に渡した出力をそのまま貼った。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: 260930-user-admin
-fingerprint: 8c444e8df425a92b3a1e1b8911107884d8c66e93
+intent: 261003-user-admin-followup
+fingerprint: 942ce8a577919397e70026b68fda78979951d674
 analyzed:
+  paths:
+    - frontend/src/features/useradmin/ConfirmActionDialog.tsx
+    - frontend/src/features/useradmin/EditProfileDialog.tsx
+    - frontend/src/features/useradmin/UserRowActions.tsx
+    - frontend/src/features/useradmin/UserAdminPage.tsx
+    - frontend/src/features/useradmin/useUserAdmin.ts
+    - frontend/src/features/useradmin/focusTarget.ts
+    - frontend/src/features/useradmin/UserAdminPage.test.tsx
+    - frontend/src/features/useradmin/EditProfileDialog.test.tsx
+    - frontend/e2e/110-user-admin-flow.e2e.ts
+    - frontend/e2e/120-user-admin-accessibility.e2e.ts
+    - frontend/e2e/support/overflow.ts
+    - backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminOperationsApiIT.java
+    - backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminListApiIT.java
+    - backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java
+    - backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java
+    - backend/src/main/java/cherry/mastersmith/invitation/service/InvitationService.java
+    - backend/src/test/java/cherry/mastersmith/mail/config/MailConfigurationIT.java
+    - perf/README.md
+    - perf/k6/scenarios.js
+    - docker/monitoring/provisioning/alerting/mastersmith.yaml
+  components:
+    - useradmin
+    - frontend-feature-useradmin
+    - frontend-e2e
+    - audit
+    - user
+    - invitation
+    - mail
+    - perf-and-monitoring
+shallow:
   paths:
     - backend/src/main/java/cherry/mastersmith/user/domain/User.java
     - backend/src/main/java/cherry/mastersmith/user/domain/UserProblemTypes.java
     - backend/src/main/java/cherry/mastersmith/user/repository/
-    - backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java
     - backend/src/main/java/cherry/mastersmith/user/service/UserSummary.java
     - backend/src/main/java/cherry/mastersmith/user/service/PasswordVerification.java
     - backend/src/main/java/cherry/mastersmith/user/service/CreateUserResult.java
@@ -97,14 +130,12 @@ analyzed:
     - backend/src/main/java/cherry/mastersmith/audit/repository/
     - backend/src/main/java/cherry/mastersmith/audit/service/AuditEventRecorder.java
     - backend/src/main/java/cherry/mastersmith/audit/service/AuditConfig.java
-    - backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java
     - backend/src/main/java/cherry/mastersmith/invitation/web/InvitationAdminController.java
     - backend/src/main/java/cherry/mastersmith/invitation/web/InvitationSecurityContributor.java
     - backend/src/main/java/cherry/mastersmith/invitation/web/InvitationRequestContextResolver.java
     - backend/src/main/java/cherry/mastersmith/invitation/web/InvitationPageResponse.java
     - backend/src/main/java/cherry/mastersmith/invitation/domain/InvitationPaging.java
     - backend/src/main/java/cherry/mastersmith/invitation/service/InvitationBarrier.java
-    - backend/src/main/java/cherry/mastersmith/invitation/service/InvitationService.java
     - backend/src/main/java/cherry/mastersmith/config/SecurityConfig.java
     - backend/src/main/resources/db/migration/
     - backend/src/test/java/cherry/mastersmith/ArchitectureTest.java
@@ -125,20 +156,6 @@ analyzed:
     - frontend/src/features/invitation/registration.ts
     - frontend/src/features/invitation/api/invitationApi.ts
     - frontend/src/features/auth/authSession.ts
-  components:
-    - user
-    - auth
-    - access
-    - audit
-    - invitation
-    - config
-    - frontend-registry
-    - frontend-feature-admin
-    - frontend-feature-invitation
-    - frontend-feature-auth
-    - build-and-verify
-shallow:
-  paths:
     - backend/src/main/java/cherry/mastersmith/
     - backend/src/main/java/cherry/mastersmith/auth/domain/
     - backend/src/main/java/cherry/mastersmith/access/web/
@@ -163,4 +180,9 @@ shallow:
     - config/
     - .pre-commit-config.yaml
     - .gitleaks.toml
+    - backend/src/main/java/cherry/mastersmith/useradmin/
+    - frontend/src/features/useradmin/
+    - backend/src/test/java/cherry/mastersmith/useradmin/
+    - backend/src/main/java/cherry/mastersmith/common/
+    - backend/src/test/java/cherry/mastersmith/common/testsupport/JsonLogRecords.java
 ```
