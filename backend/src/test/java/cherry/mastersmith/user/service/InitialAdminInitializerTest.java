@@ -20,17 +20,26 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.user.domain.FontSize;
+import cherry.mastersmith.user.domain.InitialAdminCreatedEvent;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
 import cherry.mastersmith.user.domain.Language;
+import cherry.mastersmith.user.domain.Password;
 import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.Theme;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,12 +47,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.event.KeyValuePair;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessResourceFailureException;
 
 class InitialAdminInitializerTest {
 
     private static final String PASSWORD = "初期管理者のパスワード1";
 
+    private static final Instant NOW = Instant.parse("2026-10-04T00:00:00Z");
+
     private final UserAccountService service = mock(UserAccountService.class);
+
+    private final ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
 
     private static String render(ILoggingEvent event) {
         return event.getFormattedMessage() + " " + event.getKeyValuePairs();
@@ -72,8 +87,12 @@ class InitialAdminInitializerTest {
 
     private List<ILoggingEvent> run(String email, String password, boolean[] created) {
         try (LogEvents events = LogEvents.capture(InitialAdminInitializer.class)) {
-            created[0] =
-                    new InitialAdminInitializer(new InitialAdminProperties(email, password), service).createIfNeeded();
+            created[0] = new InitialAdminInitializer(
+                            new InitialAdminProperties(email, password),
+                            service,
+                            publisher,
+                            Clock.fixed(NOW, ZoneOffset.UTC))
+                    .createIfNeeded();
             return events.list();
         }
     }
@@ -104,18 +123,23 @@ class InitialAdminInitializerTest {
             }
         });
         verify(service, never()).createUser(any(NewUser.class));
+        verify(service, never()).rescueInitialAdmin(any(), any());
+        verifyNoInteractions(publisher);
     }
 
     @Test
-    @DisplayName("an existing administrator is left untouched, logged at INFO with the masked email only")
+    @DisplayName(
+            "an existing administrator that needs no rescue is left untouched, logged at INFO with the masked email only")
     void existing() {
-        when(service.existsByEmail(new RedactedText("admin@example.com"))).thenReturn(true);
+        when(service.rescueInitialAdmin(new RedactedText("admin@example.com"), new Password(PASSWORD)))
+                .thenReturn(new InitialAdminRescueResult.NotNeeded());
         boolean[] created = new boolean[1];
 
         List<ILoggingEvent> events = run("admin@example.com", PASSWORD, created);
 
         assertThat(created[0]).isFalse();
         verify(service, never()).createUser(any(NewUser.class));
+        verifyNoInteractions(publisher);
         assertThat(events).allSatisfy(event -> assertThat(render(event)).doesNotContain(PASSWORD));
         assertThat(events).singleElement().satisfies(event -> {
             assertThat(event.getFormattedMessage()).isEqualTo("初期管理者は既にいるため、作成しませんでした");
@@ -127,6 +151,8 @@ class InitialAdminInitializerTest {
     @DisplayName("a missing administrator is created as admin with the lower-cased email and the initial values,"
             + " logged at INFO with the masked email only")
     void creates() {
+        when(service.rescueInitialAdmin(new RedactedText("admin@example.com"), new Password(PASSWORD)))
+                .thenReturn(new InitialAdminRescueResult.NotFound());
         when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.Created(1));
         boolean[] created = new boolean[1];
 
@@ -148,12 +174,14 @@ class InitialAdminInitializerTest {
             assertThat(render(event)).doesNotContain(PASSWORD);
             assertMaskedEmailOnly(event, "admin@example.com", "Admin@Example.com");
         });
+        verify(publisher).publishEvent(new InitialAdminCreatedEvent(1, NOW));
     }
 
     @Test
     @DisplayName(
             "a duplicate created concurrently is treated as already existing, logged at INFO with the masked email only")
     void duplicate() {
+        when(service.rescueInitialAdmin(any(), any())).thenReturn(new InitialAdminRescueResult.NotFound());
         when(service.createUser(any(NewUser.class))).thenReturn(new CreateUserResult.EmailAlreadyUsed());
         boolean[] created = new boolean[1];
 
@@ -165,5 +193,74 @@ class InitialAdminInitializerTest {
             assertThat(render(event)).doesNotContain(PASSWORD);
             assertMaskedEmailOnly(event, "admin@example.com");
         });
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName("a rescued administrator is logged once at WARN with only the masked email and the conditions")
+    void rescued() {
+        when(service.rescueInitialAdmin(new RedactedText("admin@example.com"), new Password(PASSWORD)))
+                .thenReturn(new InitialAdminRescueResult.Rescued(
+                        7L, Set.of(InitialAdminRescueCondition.PASSWORD, InitialAdminRescueCondition.SUSPENDED)));
+        boolean[] created = new boolean[1];
+
+        List<ILoggingEvent> events = run(" Admin@Example.com ", PASSWORD, created);
+
+        assertThat(created[0]).isFalse();
+        verify(service, never()).createUser(any(NewUser.class));
+        verifyNoInteractions(publisher);
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.WARN);
+            assertThat(event.getFormattedMessage()).isEqualTo("初期管理者を救済しました");
+            assertThat(keyValues(event))
+                    .containsOnlyKeys("maskedEmail", "conditions")
+                    .containsEntry("maskedEmail", "a***@example.com")
+                    .containsEntry("conditions", "SUSPENDED+PASSWORD");
+            assertThat(render(event))
+                    .doesNotContain(PASSWORD)
+                    .doesNotContain("admin@example.com")
+                    .doesNotContain("Admin@Example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("a failed rescue is logged once at ERROR with only the masked email and the exception class,"
+            + " and startup continues")
+    void rescueFails() {
+        when(service.rescueInitialAdmin(any(), any()))
+                .thenThrow(new DataAccessResourceFailureException("admin@example.com の行 " + PASSWORD));
+        boolean[] created = new boolean[1];
+
+        List<ILoggingEvent> events = run("admin@example.com", PASSWORD, created);
+
+        assertThat(created[0]).isFalse();
+        verify(service, never()).createUser(any(NewUser.class));
+        verifyNoInteractions(publisher);
+        assertThat(events).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.ERROR);
+            assertThat(event.getFormattedMessage()).isEqualTo("初期管理者の救済に失敗しました");
+            assertThat(event.getThrowableProxy()).as("例外そのもの（スタックトレース）は載せない").isNull();
+            assertThat(keyValues(event))
+                    .containsOnlyKeys("maskedEmail", "exceptionClass")
+                    .containsEntry("maskedEmail", "a***@example.com")
+                    .containsEntry("exceptionClass", DataAccessResourceFailureException.class.getName());
+            assertThat(render(event)).doesNotContain(PASSWORD).doesNotContain("admin@example.com");
+        });
+    }
+
+    @Test
+    @DisplayName("the startup hook runs the rescue or the creation")
+    void startupHook() {
+        when(service.rescueInitialAdmin(any(), any()))
+                .thenReturn(new InitialAdminRescueResult.Rescued(7L, EnumSet.of(InitialAdminRescueCondition.NO_ADMIN)));
+
+        new InitialAdminInitializer(
+                        new InitialAdminProperties("admin@example.com", PASSWORD),
+                        service,
+                        publisher,
+                        Clock.fixed(NOW, ZoneOffset.UTC))
+                .afterSingletonsInstantiated();
+
+        verify(service).rescueInitialAdmin(new RedactedText("admin@example.com"), new Password(PASSWORD));
     }
 }

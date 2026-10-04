@@ -29,7 +29,7 @@ HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
 SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$HASH" "$i"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
@@ -37,7 +37,7 @@ docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 #    U2・U3 の場面は、下の節「利用者の設定と招待の場面」の手順（Mailpit と利用者の追加）で流す
 mkdir -p build/perf-results && chmod 777 build/perf-results
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=health -e DURATION=60s \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
   run --quiet --summary-export=/out/health.json /scripts/scenarios.js
 
 # 4. 片付け
@@ -65,7 +65,7 @@ docker compose up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
 # 2. イメージ（JRE）には jcmd が無いため、同じ版の JDK のイメージを、アプリのコンテナと PID の名前空間を共有して動かす（java は PID 1）
-nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.4_7-jdk-noble jcmd 1 "$@"; }
+nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.4_7-jdk-noble@sha256:2feab631bffce6236d8bb5261a4abe19a8d6f85bad1c01166f74686c983d011f jcmd 1 "$@"; }
 nmt VM.native_memory baseline
 
 # 3. k6 の場面（例: refresh）を別の端末で流しながら（その端末では D に同じ場所を入れる）、5 秒ごとに内訳とコンテナのメモリを記録する（コンテナが止まると終わる）
@@ -154,7 +154,7 @@ KEEP=1 MASTERSMITH_IMAGE_TAG=perf-dsl OUT_DIR="$PWD/build/perf-results/dsl-k6" .
 D=<表示された一時ディレクトリ>
 docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" -e SCENARIO=dslCycle -e VUS=1 -e DURATION=120s \
   -e DSL_FILE=/data/generated.yaml -v "$PWD/build/perf-results/dsl-k6/postgres:/data:ro" \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
   run --quiet --summary-export=/out/dslCycle.json /scripts/scenarios.js
 ```
 
@@ -211,7 +211,7 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
   while read -r u; do printf "('%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, '%s@example.test')," "$u" "$HASH" "$u"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfc up -d --wait
 
@@ -220,7 +220,7 @@ mkdir -p build/perf-results && chmod 777 build/perf-results
 for s in preferencesGet preferencesSave preferencesInvalid passwordChange passwordMismatch passwordInvalid \
   invite invitationResend invitationList invitationCancel registrationVerify registrationComplete registrationInvalid registrationRejected; do
   caffeinate -i docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
 
@@ -296,7 +296,7 @@ INSERT INTO refresh_tokens (user_id, token_hash, issued_at, expires_at, revoked_
     CASE WHEN r.X <= 100 THEN NULL ELSE CURRENT_TIMESTAMP END FROM users u, SYSTEM_RANGE(1, 1100) r WHERE u.email LIKE 'perf-uasw-%'"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 
@@ -307,7 +307,7 @@ D="$1"
 k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 metrics() {   # 接続プールの値（待ちの時間切れの累計・借りるまでの待ちの最大）を記録する。acquire は baseUnit を見て読む
@@ -332,7 +332,7 @@ cat > "$D/ua-pool10.sh" <<'EOS'
 D="$1"
 for v in 5 10; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=userAdminOps -e VUS=$v \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
     run --quiet --summary-export=/out/userAdminOps-pool10-vus$v.json /scripts/scenarios.js
   for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # acquire は baseUnit を見て読む
     curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/pool10-vus$v-$m.json"
@@ -408,7 +408,7 @@ docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --
   -p 127.0.0.1:13000:3000 --memory 1536m \
   -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_AUTH_DISABLE_LOGIN_FORM=true \
   -v "$PWD/docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro" \
-  grafana/otel-lgtm:0.34.0
+  grafana/otel-lgtm:0.34.0@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c
 until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
 perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
 curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VALUE が 4 であること
@@ -426,7 +426,7 @@ done
 echo "k6 start $(date -u +%FT%TZ)" > "$R/$TAG-times.txt"
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" \
   -e SCENARIO=userAdminPoolLimit -e VUS=$VUSN -e DURATION=$DUR -e PERF_UA_COUNT=20 \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
   run --quiet --summary-export=/out/$TAG.json /scripts/scenarios.js > "$R/$TAG-k6.log" 2>&1 &
 K6=$!
 watch() {   # 3件の警報（題の state と実体の state・activeAt）、接続プールの値、コンテナのメモリを1回ずつ書く

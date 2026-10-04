@@ -44,6 +44,9 @@ import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.LinkRejection;
 import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
 import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
+import cherry.mastersmith.user.domain.InitialAdminCreatedEvent;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
@@ -54,6 +57,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.DisplayName;
@@ -692,6 +696,90 @@ class AuditEventListenerTest {
                 assertThat(values.get("result")).isEqualTo(AuditResult.SUCCESS);
                 assertThat(values).containsEntry("failureReason", null);
             });
+        }
+        verifyNoInteractions(recorder);
+    }
+
+    // ---- 初期管理者の作成と救済（Intent 261004-safety-carryover の FR1.5・FR1.8） ----
+
+    @Test
+    @DisplayName("an initial admin creation and a rescue are each appended exactly once as startup rows")
+    void initialAdminEventsAreAppended() {
+        when(nanoTime.getAsLong()).thenReturn(0L, 1_000_000L, 0L, 1_000_000L);
+        AuditEventListener listener = listener();
+
+        listener.onInitialAdminCreated(new InitialAdminCreatedEvent(11L, OCCURRED_AT));
+        listener.onInitialAdminRescued(new InitialAdminRescuedEvent(
+                12L, Set.of(InitialAdminRescueCondition.NO_ADMIN, InitialAdminRescueCondition.SUSPENDED), OCCURRED_AT));
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(recorder, times(2)).record(captor.capture());
+        AuditEvent created = captor.getAllValues().get(0);
+        AuditEvent rescued = captor.getAllValues().get(1);
+        assertThat(created.getEventType()).isEqualTo(AuditEventType.INITIAL_ADMIN_CREATED);
+        assertThat(created.getTargetUserId()).isEqualTo(11L);
+        assertThat(created.getSourceIp()).isEqualTo("system");
+        assertThat(created.getRejectionKind()).isNull();
+        assertThat(rescued.getEventType()).isEqualTo(AuditEventType.INITIAL_ADMIN_RESCUED);
+        assertThat(rescued.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(rescued.getTargetUserId()).isEqualTo(12L);
+        assertThat(rescued.getActorUserId()).isNull();
+        assertThat(rescued.getRejectionKind()).isEqualTo("SUSPENDED+NO_ADMIN");
+    }
+
+    @Test
+    @DisplayName("a failing append of an initial admin event logs one error each and never reaches the caller")
+    void initialAdminFailureIsContained() {
+        when(nanoTime.getAsLong()).thenReturn(0L);
+        doThrow(new IllegalStateException("追記に失敗しました")).when(recorder).record(any(AuditEvent.class));
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            AuditEventListener listener = listener();
+            assertThatCode(() -> {
+                        listener.onInitialAdminCreated(new InitialAdminCreatedEvent(11L, OCCURRED_AT));
+                        listener.onInitialAdminRescued(new InitialAdminRescuedEvent(
+                                12L, Set.of(InitialAdminRescueCondition.PASSWORD), OCCURRED_AT));
+                    })
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list()).hasSize(2).allSatisfy(logged -> {
+                assertThat(logged.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(logged.getFormattedMessage()).isEqualTo(AuditEventListener.FAILURE_MESSAGE);
+                assertThat(keyValues(logged))
+                        .containsEntry("sourceIp", "system")
+                        .containsEntry("enteredEmail", "null")
+                        .doesNotContainKey("actorUserId");
+            });
+            assertThat(keyValues(logs.list().get(0)))
+                    .containsEntry("auditEventType", "INITIAL_ADMIN_CREATED")
+                    .containsEntry("targetUserId", "11");
+            assertThat(keyValues(logs.list().get(1)))
+                    .containsEntry("auditEventType", "INITIAL_ADMIN_RESCUED")
+                    .containsEntry("targetUserId", "12");
+        }
+        verify(recorder, times(2)).record(any(AuditEvent.class));
+    }
+
+    @Test
+    @DisplayName("null initial admin events are contained and logged with only the type and the target user")
+    void nullInitialAdminEventsAreContained() {
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            AuditEventListener listener = listener();
+            assertThatCode(() -> {
+                        listener.onInitialAdminCreated(null);
+                        listener.onInitialAdminRescued(null);
+                    })
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list()).hasSize(2).allSatisfy(error -> {
+                assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(keyValues(error))
+                        .containsOnlyKeys("auditEventType", "targetUserId", "exceptionType")
+                        .containsEntry("targetUserId", "null");
+            });
+            assertThat(logs.list())
+                    .extracting(error -> keyValues(error).get("auditEventType"))
+                    .containsExactly("INITIAL_ADMIN_CREATED", "INITIAL_ADMIN_RESCUED");
         }
         verifyNoInteractions(recorder);
     }

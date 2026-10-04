@@ -15,6 +15,7 @@
  */
 package cherry.mastersmith.user.service;
 
+import cherry.mastersmith.user.domain.EmailAddress;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -27,9 +28,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("mastersmith.auth.initial-admin")
 public record InitialAdminProperties(String email, String password) {
 
-    /** パスワードの値を伏せて文字列にする（BR1.4）。 */
+    /**
+     * パスワードの値を伏せ（BR1.4）、メールアドレスも伏せ字（{@link EmailAddress#mask(String)}）にして文字列にする（Intent
+     * 261004-safety-carryover の NFR1）。
+     */
     @Override
     public String toString() {
-        return "InitialAdminProperties[email=" + email + ", password=***]";
+        return "InitialAdminProperties[email=" + EmailAddress.mask(email) + ", password=***]";
     }
 }

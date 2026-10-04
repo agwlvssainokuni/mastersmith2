@@ -18,6 +18,7 @@ package cherry.mastersmith.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,8 +34,11 @@ import cherry.mastersmith.common.persistence.RowLockAttempt;
 import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.FieldErrorReason;
 import cherry.mastersmith.user.domain.FontSize;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
+import cherry.mastersmith.user.domain.PasswordHash;
 import cherry.mastersmith.user.domain.Preferences;
 import cherry.mastersmith.user.domain.ProfileUpdate;
 import cherry.mastersmith.user.domain.RedactedText;
@@ -50,6 +54,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -646,5 +651,182 @@ class UserAccountServiceTest {
         assertThatThrownBy(() -> service.setAdmin(10L, false))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("利用者がいません: userId=10");
+    }
+
+    // ---- 初期管理者の救済（Intent 261004-safety-carryover の FR1.1〜FR1.3・NFR3） ----
+
+    private static final String RESCUE_EMAIL = "rescue@example.com";
+
+    private static final String RESCUE_PASSWORD = "救済の設定のパスワード-0001";
+
+    private static final String RESCUE_NEW_HASH = "$2a$04$newhashnewhashnewhashnewhashnewhashnewhashnewhashnewh";
+
+    private User rescueTarget(boolean admin, boolean suspended) {
+        User user = new User(
+                RESCUE_EMAIL, HASH, admin, NOW, new Preferences("初期管理者", Language.JA, Theme.SYSTEM, FontSize.MD));
+        ReflectionTestUtils.setField(user, "userId", 21L);
+        ReflectionTestUtils.setField(user, "suspended", suspended);
+        return user;
+    }
+
+    private void givenRescueTarget(boolean admin, boolean suspended, boolean passwordMatches) {
+        when(repository.findByEmail(RESCUE_EMAIL)).thenReturn(Optional.of(rescueTarget(admin, suspended)));
+        when(encoder.matches(RESCUE_PASSWORD, HASH)).thenReturn(passwordMatches);
+        when(encoder.encode(RESCUE_PASSWORD)).thenReturn(RESCUE_NEW_HASH);
+        when(repository.updateSuspended(21L, false)).thenReturn(1);
+        when(repository.updateAdminFlag(21L, true)).thenReturn(1);
+        when(repository.updatePasswordHashIfUnchanged(eq(21L), any(PasswordHash.class), any(PasswordHash.class)))
+                .thenReturn(1);
+    }
+
+    private InitialAdminRescueResult rescue() {
+        return service.rescueInitialAdmin(new RedactedText("  Rescue@Example.com "), new Password(RESCUE_PASSWORD));
+    }
+
+    @Test
+    @DisplayName("a suspended, non-admin initial admin with another password is rescued with all three conditions")
+    void rescueAllThreeConditions() {
+        givenRescueTarget(false, true, false);
+
+        InitialAdminRescueResult result = rescue();
+
+        assertThat(result)
+                .isEqualTo(new InitialAdminRescueResult.Rescued(
+                        21L,
+                        Set.of(
+                                InitialAdminRescueCondition.SUSPENDED,
+                                InitialAdminRescueCondition.NO_ADMIN,
+                                InitialAdminRescueCondition.PASSWORD)));
+        InOrder order = inOrder(repository, publisher);
+        order.verify(repository).updateSuspended(21L, false);
+        order.verify(repository).updateAdminFlag(21L, true);
+        ArgumentCaptor<PasswordHash> readHash = ArgumentCaptor.forClass(PasswordHash.class);
+        ArgumentCaptor<PasswordHash> newHash = ArgumentCaptor.forClass(PasswordHash.class);
+        order.verify(repository).updatePasswordHashIfUnchanged(eq(21L), readHash.capture(), newHash.capture());
+        ArgumentCaptor<Object> event = ArgumentCaptor.forClass(Object.class);
+        order.verify(publisher).publishEvent(event.capture());
+        assertThat(readHash.getValue().value()).isEqualTo(HASH);
+        assertThat(newHash.getValue().value()).isEqualTo(RESCUE_NEW_HASH);
+        assertThat(event.getValue())
+                .isEqualTo(new InitialAdminRescuedEvent(21L, EnumSet.allOf(InitialAdminRescueCondition.class), NOW));
+        // 照合は1回だけ（NFR3）。
+        verify(encoder, times(1)).matches(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("each single condition is rescued alone and the password is rewritten even when it matches")
+    void rescueSingleConditions() {
+        givenRescueTarget(true, true, true);
+        assertThat(rescue())
+                .isEqualTo(new InitialAdminRescueResult.Rescued(21L, Set.of(InitialAdminRescueCondition.SUSPENDED)));
+        verify(repository).updatePasswordHashIfUnchanged(eq(21L), any(PasswordHash.class), any(PasswordHash.class));
+
+        givenRescueTarget(false, false, true);
+        assertThat(rescue())
+                .isEqualTo(new InitialAdminRescueResult.Rescued(21L, Set.of(InitialAdminRescueCondition.NO_ADMIN)));
+
+        givenRescueTarget(true, false, false);
+        assertThat(rescue())
+                .isEqualTo(new InitialAdminRescueResult.Rescued(21L, Set.of(InitialAdminRescueCondition.PASSWORD)));
+        verify(publisher, times(3)).publishEvent(any(InitialAdminRescuedEvent.class));
+    }
+
+    @Test
+    @DisplayName("an active admin whose password matches is not rescued and nothing is written or published")
+    void rescueNotNeeded() {
+        givenRescueTarget(true, false, true);
+
+        assertThat(rescue()).isEqualTo(new InitialAdminRescueResult.NotNeeded());
+
+        verify(repository, never()).updateSuspended(anyLong(), anyBoolean());
+        verify(repository, never()).updateAdminFlag(anyLong(), anyBoolean());
+        verify(repository, never()).updatePasswordHashIfUnchanged(anyLong(), any(), any());
+        verify(encoder, never()).encode(any());
+        verifyNoInteractions(publisher);
+        verify(encoder, times(1)).matches(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("a missing initial admin is NotFound without any password check or write")
+    void rescueNotFound() {
+        when(repository.findByEmail(RESCUE_EMAIL)).thenReturn(Optional.empty());
+
+        assertThat(rescue()).isEqualTo(new InitialAdminRescueResult.NotFound());
+
+        verify(encoder, never()).matches(any(), any());
+        verify(repository, never()).updateSuspended(anyLong(), anyBoolean());
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName("a configured password over 72 bytes is treated as a mismatch without calling the encoder match")
+    void rescueOverlongPasswordIsMismatch() {
+        String overlong = "あ".repeat(25);
+        when(repository.findByEmail(RESCUE_EMAIL)).thenReturn(Optional.of(rescueTarget(true, false)));
+        when(encoder.encode(overlong)).thenReturn(RESCUE_NEW_HASH);
+        when(repository.updateSuspended(21L, false)).thenReturn(1);
+        when(repository.updateAdminFlag(21L, true)).thenReturn(1);
+        when(repository.updatePasswordHashIfUnchanged(eq(21L), any(PasswordHash.class), any(PasswordHash.class)))
+                .thenReturn(1);
+
+        InitialAdminRescueResult result =
+                service.rescueInitialAdmin(new RedactedText(RESCUE_EMAIL), new Password(overlong));
+
+        assertThat(result)
+                .isEqualTo(new InitialAdminRescueResult.Rescued(21L, Set.of(InitialAdminRescueCondition.PASSWORD)));
+        verify(encoder, never()).matches(any(), any());
+    }
+
+    @Test
+    @DisplayName(
+            "a write that does not hit exactly one row fails without publishing and keeps the email out of the message")
+    void rescueWriteMismatchFails() {
+        givenRescueTarget(false, false, true);
+        when(repository.updatePasswordHashIfUnchanged(eq(21L), any(PasswordHash.class), any(PasswordHash.class)))
+                .thenReturn(0);
+
+        assertThatThrownBy(this::rescue)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("userId=21")
+                .message()
+                .doesNotContain(RESCUE_EMAIL)
+                .doesNotContain(HASH);
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName("the suspension and admin writes must also hit exactly one row")
+    void rescueOtherWritesMustHitOneRow() {
+        givenRescueTarget(false, true, true);
+        when(repository.updateSuspended(21L, false)).thenReturn(0);
+        assertThatThrownBy(this::rescue).isInstanceOf(IllegalStateException.class);
+
+        givenRescueTarget(false, true, true);
+        when(repository.updateAdminFlag(21L, true)).thenReturn(0);
+        assertThatThrownBy(this::rescue).isInstanceOf(IllegalStateException.class);
+        verifyNoInteractions(publisher);
+    }
+
+    @Test
+    @DisplayName("the rescued result rejects empty conditions and keeps an unmodifiable copy")
+    void rescuedResultShape() {
+        assertThatThrownBy(() -> new InitialAdminRescueResult.Rescued(1L, Set.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new InitialAdminRescueResult.Rescued(1L, null))
+                .isInstanceOf(NullPointerException.class);
+        InitialAdminRescueResult.Rescued rescued =
+                new InitialAdminRescueResult.Rescued(1L, Set.of(InitialAdminRescueCondition.PASSWORD));
+        assertThatThrownBy(() -> rescued.conditions().add(InitialAdminRescueCondition.NO_ADMIN))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(rescued.toString()).doesNotContain("@");
+    }
+
+    @Test
+    @DisplayName("the rescue rejects missing arguments")
+    void rescueRejectsMissingArguments() {
+        assertThatThrownBy(() -> service.rescueInitialAdmin(null, new Password(RESCUE_PASSWORD)))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> service.rescueInitialAdmin(new RedactedText(RESCUE_EMAIL), null))
+                .isInstanceOf(NullPointerException.class);
     }
 }

@@ -1,0 +1,254 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.2a",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR1.6",
+    "FR1.6a",
+    "FR1.6b",
+    "FR1.7",
+    "FR1.8",
+    "FR1.9",
+    "FR2.1",
+    "FR2.2",
+    "FR2.2a",
+    "FR2.3",
+    "FR2.4",
+    "FR3.1",
+    "FR3.2",
+    "FR4.1",
+    "FR4.1a",
+    "FR4.1b",
+    "FR4.2",
+    "FR4.3",
+    "FR5.1",
+    "FR6.1",
+    "FR6.2",
+    "FR7.1",
+    "FR7.2",
+    "FR7.3",
+    "FR7.4",
+    "FR8.1",
+    "FR8.2",
+    "FR8.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "id": "FR1.2a",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminRescueIT.java"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminInitializer.java"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "id": "FR1.6",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "id": "FR1.6a",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "id": "FR1.6b",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminRescueIT.java"
+    },
+    {
+      "id": "FR1.7",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminInitializer.java"
+    },
+    {
+      "id": "FR1.8",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "id": "FR1.9",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR2.1",
+      "status": "Deferred",
+      "target": "Build and Test: 統合した版のイメージで、使い捨ての環境（perf/README.md）の loginSuccess を前の Intent と同じ条件で3回以上流し、ログインの p95 を判定する（計画 6.1 節）"
+    },
+    {
+      "id": "FR2.2",
+      "status": "Deferred",
+      "target": "Build and Test: すべての回で p95 が 1 秒を下回るかで判定する。目標は緩めない。1回でも 1 秒以上なら条件をそろえて回数を増やして切り分ける（計画 6.1 節、R-09）"
+    },
+    {
+      "id": "FR2.2a",
+      "status": "Deferred",
+      "target": "Build and Test: 回ごとに日時・イメージのタグとダイジェスト・VM・上限・VUS・DURATION・同時のコンテナ・電源と caffeinate を記録する（計画 6.1 節）"
+    },
+    {
+      "id": "FR2.3",
+      "status": "Deferred",
+      "target": "Build and Test: 停止の判定の前の版は流さず、完了の目安を変えたことを記録する（計画 6.1 節）"
+    },
+    {
+      "id": "FR2.4",
+      "status": "Deferred",
+      "target": "Build and Test が持ち主（計画 6.1 節）"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminBusyLogTraceIT.java"
+    },
+    {
+      "id": "FR3.2",
+      "status": "N/A",
+      "target": "負荷の試験での BUSY の確かめは行わない（依頼者の答え Q4。要件の範囲外）"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/FilterExceptionErrorLogIT.java"
+    },
+    {
+      "id": "FR4.1a",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/FilterExceptionErrorLogIT.java"
+    },
+    {
+      "id": "FR4.1b",
+      "status": "N/A",
+      "target": "再現できた（Step 11 で、認証のフィルターの中で接続を借りられない要求1本に Tomcat のロガーと ErrorPathController の ERROR が2行出た。code-summary.md の 3.3）ため、再現できなかったときの扱いは当たらない"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "id": "FR4.3",
+      "status": "N/A",
+      "target": "原因は見立てどおりだった（同じ例外の連なり CannotCreateTransactionException ← SQLTransientConnectionException、スタックに AccessTokenAuthenticationProvider.authenticate。code-summary.md の 3.3）ため、違う原因だったときの扱いは当たらない"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR6.1",
+      "status": "Deferred",
+      "target": "Build and Test: team.md の「12 パッケージ」を今の packagesJudgedByTotal の 7 個に直す（この段で一覧は変えていない。計画 6.2 節）"
+    },
+    {
+      "id": "FR6.2",
+      "status": "Deferred",
+      "target": "Build and Test: 直す文言を依頼者に確かめてから team.md を書く（計画 6.2 節）"
+    },
+    {
+      "id": "FR7.1",
+      "status": "N/A",
+      "target": "固定先を1か所にまとめる仕組み・一致の検査・Dependabot の対象の追加は行わない（依頼者の答え Q7: C）"
+    },
+    {
+      "id": "FR7.2",
+      "status": "OK",
+      "target": "Dockerfile"
+    },
+    {
+      "id": "FR7.3",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR7.4",
+      "status": "OK",
+      "target": "Dockerfile"
+    },
+    {
+      "id": "FR8.1",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution の段"
+    },
+    {
+      "id": "FR8.2",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution の段: 配備の前に、初期管理者が救済の条件に当たりうるかを確かめ、救済が働く見込みなら依頼者の了承を得る（計画 6.3 節）"
+    },
+    {
+      "id": "FR8.3",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution の段"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminSecretLeakIT.java"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminRescueIT.java"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/user/service/UserAccountServiceTest.java"
+    },
+    {
+      "id": "NFR4",
+      "status": "Deferred",
+      "target": "Build and Test: この段の Step 16 の verify の実測（code-summary.md の 3.4）を判定する。統合の前の E2E は流さず、リリース（配備）の前に流す（依頼者の決定 D5・D7: B、計画 6.3 節）"
+    },
+    {
+      "id": "NFR5",
+      "status": "Deferred",
+      "target": "Build and Test: この段の Step 16 の verify のカバレッジの実測（code-summary.md の 3.5）を判定する"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/error/web/FilterExceptionErrorLogIT.java"
+    },
+    {
+      "id": "NFR7",
+      "status": "Deferred",
+      "target": "Build and Test（計画 6.1 節。ログインの p95 は 1 秒を下回る目標を緩めない）"
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    {
+      "path": ".github/dependabot.yml"
+    },
+    {
+      "path": "Dockerfile"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/service/InitialAdminRescueListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/InitialAdminCreatedEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/InitialAdminRescueCondition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/InitialAdminRescuedEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminInitializer.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/InitialAdminRescueResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/domain/SecretTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/service/InitialAdminRescueListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/auth/web/AuthSuspensionSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/error/web/FilterExceptionErrorLogIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/InitialAdminRescueConditionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminInitializerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminRescueIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/InitialAdminSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserAccountServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/testsupport/FailingInitialAdminRescueConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminBusyLogTraceIT.java"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "docker/hikari-pool.sh"
+    },
+    {
+      "path": "perf/README.md"
+    }
+  ]
+}

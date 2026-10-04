@@ -39,6 +39,12 @@ import org.hibernate.annotations.Immutable;
  * <p>対象の利用者・対象の招待（V7 で足した NULL を許す列。Intent 260925-user-management の契約 C8）を持つ。パスワードの変更では
  * 操作した人と対象の利用者の両方に本人を記録する。既存の出来事では空のまま。
  *
+ * <p>起動時の出来事（初期管理者の作成・救済。Intent 261004-safety-carryover の FR1.5・FR1.6・FR1.6a）は、要求を持たないため
+ * 接続元に決まった値 {@code system} を入れ、操作した人・メールアドレス・User-Agent・要求のパス・トレースID・DSL の項目・対象の招待は
+ * 空にする。救済の行では、当たった条件（例 {@code SUSPENDED+NO_ADMIN+PASSWORD}）を {@code rejection_kind} の列に入れる。列の名前
+ * （受け付けなかった投入の理由の種類）と使い方がずれるが、結果が成功の行に失敗の理由（{@code failure_reason}）を入れないため、また列を
+ * 足さないため（依頼者の決定 D1: A）。列の使い方は出来事の種類ごとに読む。
+ *
  * <p>パスワード・トークン・パスワードのハッシュ値・Authorization ヘッダーの項目を持たない（BR2.3、NFR3.1）。文字列化ではメールアドレスを
  * 伏せる（U1 のメソッドの呼び出しの追跡が引数・戻り値を文字列にするため）。
  */
@@ -203,6 +209,28 @@ public class AuditEvent {
         event.actorUserId = actorUserId;
         event.targetUserId = targetUserId;
         event.targetInvitationId = targetInvitationId;
+        return event;
+    }
+
+    /**
+     * 起動時の出来事（要求を持たない出来事）の監査イベントを作る（Intent 261004-safety-carryover の FR1.5・FR1.6・FR1.6a）。
+     *
+     * <p>結果は成功。操作した人・メールアドレス・失敗の理由・User-Agent・要求のパス・トレースID・DSL の項目・対象の招待は空にする。
+     * {@code rejectionKind} には救済で当たった条件を入れる（作成では null。列の使い方はクラスの説明のとおり）。
+     *
+     * @param occurredAt 出来事が起きた日時
+     * @param eventType 種類
+     * @param sourceIp 接続元（要求が無いため決まった値）
+     * @param targetUserId 対象の利用者 ID
+     * @param rejectionKind 救済で当たった条件（無ければ null）
+     * @return 監査イベント
+     */
+    public static AuditEvent ofStartup(
+            Instant occurredAt, AuditEventType eventType, String sourceIp, long targetUserId, String rejectionKind) {
+        AuditEvent event =
+                new AuditEvent(occurredAt, eventType, AuditResult.SUCCESS, null, null, sourceIp, null, null, null);
+        event.targetUserId = targetUserId;
+        event.rejectionKind = rejectionKind;
         return event;
     }
 

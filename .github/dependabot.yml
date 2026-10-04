@@ -68,6 +68,17 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # ダイジェストでのイメージの固定（Intent 261004-safety-carryover の FR7.2・FR7.3、依頼者の決定 D4: A）。
+  # 次のイメージは「版のタグ@sha256:ダイジェスト」の形で固定している。付けるダイジェストは、複数のアーキテクチャをまとめた
+  # index（manifest list。linux/arm64 と linux/amd64 を含む）のもので、1つのアーキテクチャのイメージのダイジェストは使わない
+  # （docker buildx imagetools inspect <タグ> の先頭の Digest を読み、Manifests に2つのアーキテクチャがあることを確かめる）。
+  #   - Dockerfile の eclipse-temurin:25.0.4_7-jre-noble（この docker の項が見る）
+  #   - compose.yaml の otel/opentelemetry-collector・grafana/otel-lgtm（下の docker-compose の項が見る）
+  #   - 対象DB（mysql・mariadb・postgres）と Mailpit（前の Intent から固定している。下の docker-compose の項が見る）
+  # Dependabot が見ない固定先: docker/perf/compose.yaml、backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java、
+  # perf/README.md（grafana/k6・eclipse-temurin の jre と jdk・grafana/otel-lgtm）、README.md（eclipse-temurin の jre と jdk）、
+  # docker/hikari-pool.sh（JDK_IMAGE の eclipse-temurin の jdk）。
+  # 知らせを受けてイメージを上げるときは、上の固定先も同じ版とダイジェストに手で揃える（grep でタグを探し、残りが無いことを確かめる）。
   - package-ecosystem: docker
     directory: /
     schedule:
@@ -82,6 +93,8 @@ updates:
         update-types: ["version-update:semver-major"]
   # compose.yaml のイメージ（手元でメールを見る受け手 Mailpit、手元の監視、見本の対象DB など。Intent 260925-user-management の U1）。
   # 見本の対象DB のイメージを上げるときは、結合テストのイメージの定数（TargetDbImages）と一緒に上げる。
+  # どのイメージもダイジェストで固定している。上げるときは上の docker の項の「ダイジェストでのイメージの固定」の決まりに従い、
+  # Dependabot が見ない固定先（docker/perf/compose.yaml・TargetDbImages・perf/README.md・README.md）も手で揃える。
   - package-ecosystem: docker-compose
     directory: /
     schedule:

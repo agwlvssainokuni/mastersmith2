@@ -60,11 +60,32 @@ class InitialAdminIT {
             "--mastersmith.auth.initial-admin.email=Admin@Example.COM",
             "--mastersmith.auth.initial-admin.password=" + password
         };
+        int auditRowsAfterFirstStartup;
         try (ConfigurableApplicationContext context = start(dir, args)) {
             assertThat(context.isRunning()).isTrue();
+            auditRowsAfterFirstStartup = new JdbcTemplate(context.getBean(DataSource.class))
+                    .queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class);
         }
         try (ConfigurableApplicationContext context = start(dir, args)) {
             JdbcTemplate jdbc = new JdbcTemplate(context.getBean(DataSource.class));
+            // 作成の監査の行がちょうど1行で、2回目の起動では行が増えない（Intent 261004-safety-carryover の FR1.4・FR1.5）
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class))
+                    .isEqualTo(auditRowsAfterFirstStartup);
+            assertThat(
+                            jdbc.queryForList(
+                                    "SELECT event_type, result, target_user_id, actor_user_id, source_ip,"
+                                            + " rejection_kind, entered_email FROM audit_events WHERE event_type = 'INITIAL_ADMIN_CREATED'"))
+                    .singleElement()
+                    .satisfies(audit -> assertThat(audit)
+                            .containsEntry("RESULT", "SUCCESS")
+                            .containsEntry(
+                                    "TARGET_USER_ID",
+                                    jdbc.queryForObject(
+                                            "SELECT user_id FROM users WHERE email = 'admin@example.com'", Long.class))
+                            .containsEntry("ACTOR_USER_ID", null)
+                            .containsEntry("SOURCE_IP", "system")
+                            .containsEntry("REJECTION_KIND", null)
+                            .containsEntry("ENTERED_EMAIL", null));
             Map<String, Object> row = jdbc.queryForMap(
                     "SELECT user_id, email, password_hash, admin_flag FROM users WHERE LOWER(email) = 'admin@example.com'");
             assertThat(row).containsEntry("EMAIL", "admin@example.com").containsEntry("ADMIN_FLAG", true);

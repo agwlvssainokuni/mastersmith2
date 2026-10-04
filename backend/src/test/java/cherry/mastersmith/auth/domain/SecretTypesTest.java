@@ -112,10 +112,14 @@ class SecretTypesTest {
     }
 
     @Test
-    @DisplayName("initial admin settings hide the password but show the email address")
+    @DisplayName("initial admin settings hide the password and mask the email address")
     void initialAdminProperties() {
         InitialAdminProperties properties = new InitialAdminProperties("admin@example.com", SECRET);
 
-        assertThat(properties.toString()).doesNotContain(SECRET).contains("admin@example.com");
+        // Intent 261004-safety-carryover の NFR1 で、メールアドレスそのものは出さず伏せ字（先頭の1文字＋***＋@ドメイン）にした。
+        assertThat(properties.toString())
+                .doesNotContain(SECRET)
+                .doesNotContain("admin@example.com")
+                .contains("a***@example.com");
     }
 }

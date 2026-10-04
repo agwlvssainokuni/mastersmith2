@@ -30,6 +30,9 @@ import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.LinkRejection;
 import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
 import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
+import cherry.mastersmith.user.domain.InitialAdminCreatedEvent;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangeOutcome;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
@@ -58,9 +61,20 @@ import java.time.Instant;
  * 成否と理由を記録する。メールアドレス（{@code enteredEmail}）は空で、氏名・検索の文字・失敗回数・トークンは出来事が持たないため、
  * 記録にも入らない（BR6.2）。
  *
+ * <p>初期管理者の作成と救済（Intent 261004-safety-carryover の FR1.5・FR1.6・FR1.6a）の出来事は、要求を持たないため接続元に
+ * {@link #SYSTEM_SOURCE_IP} を入れ、操作した人は空、対象の利用者に初期管理者を記録する。救済の行は当たった条件を決まった順につないだ値
+ * （{@link InitialAdminRescueCondition#code(java.util.Set)}）を {@code rejection_kind} の列に入れる。メールアドレス・パスワードは
+ * 出来事が持たないため、記録にも入らない。
+ *
  * <p>種類と理由の写し取りは網羅の {@code switch} で書く。U2・U3 が値を増やしたときに、コンパイルで気づけるようにするため。
  */
 public final class AuditEventFactory {
+
+    /**
+     * 起動時の出来事の接続元に入れる決まった値（Intent 261004-safety-carryover の FR1.6）。要求が無いため IP を持たない。
+     * 列（{@code source_ip}、45 文字）に収まり、IP の形でないため要求の行と見分けられる。
+     */
+    public static final String SYSTEM_SOURCE_IP = "system";
 
     private AuditEventFactory() {}
 
@@ -263,6 +277,32 @@ public final class AuditEventFactory {
                 null);
     }
 
+    /**
+     * 初期管理者の作成の出来事から監査イベントを作る（Intent 261004-safety-carryover の FR1.5・FR1.6）。
+     *
+     * @param event 出来事
+     * @return 監査イベント（条件の列は空）
+     */
+    public static AuditEvent from(InitialAdminCreatedEvent event) {
+        return AuditEvent.ofStartup(
+                event.occurredAt(), AuditEventType.INITIAL_ADMIN_CREATED, SYSTEM_SOURCE_IP, event.userId(), null);
+    }
+
+    /**
+     * 初期管理者の救済の出来事から監査イベントを作る（Intent 261004-safety-carryover の FR1.5・FR1.6・FR1.6a）。
+     *
+     * @param event 出来事
+     * @return 監査イベント（条件の列は当たった条件を決まった順につないだ値）
+     */
+    public static AuditEvent from(InitialAdminRescuedEvent event) {
+        return AuditEvent.ofStartup(
+                event.occurredAt(),
+                AuditEventType.INITIAL_ADMIN_RESCUED,
+                SYSTEM_SOURCE_IP,
+                event.userId(),
+                InitialAdminRescueCondition.code(event.conditions()));
+    }
+
     private static AuditEvent invitationAdmin(
             AuditEventType eventType,
             long invitationId,
@@ -380,7 +420,9 @@ public final class AuditEventFactory {
                     INVITATION_ISSUED,
                     INVITATION_RESENT,
                     INVITATION_CANCELLED,
-                    REGISTRATION_COMPLETED -> AuditResult.SUCCESS;
+                    REGISTRATION_COMPLETED,
+                    INITIAL_ADMIN_CREATED,
+                    INITIAL_ADMIN_RESCUED -> AuditResult.SUCCESS;
             case LOGIN_FAILED, ACCESS_DENIED, DSL_SUBMISSION_REJECTED, REGISTRATION_FAILED -> AuditResult.FAILURE;
             case PASSWORD_CHANGED,
                     USER_ADMIN_GRANTED,

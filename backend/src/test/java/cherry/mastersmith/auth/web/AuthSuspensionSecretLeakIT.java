@@ -205,7 +205,9 @@ class AuthSuspensionSecretLeakIT {
             assertThat(messages(records, "ENTER UserAccountService#verifyPassword("))
                     .isNotEmpty()
                     .allSatisfy(line -> assertThat(line).contains("***"));
-            assertThat(messages(all, "ENTER UserAccountService#existsByEmail("))
+            // 起動時の初期管理者の処理は Intent 261004-safety-carryover で existsByEmail の代わりに rescueInitialAdmin を呼ぶ
+            // （同じく伏せ字の型でメールアドレスを受ける口）。
+            assertThat(messages(all, "ENTER UserAccountService#rescueInitialAdmin("))
                     .isNotEmpty()
                     .allSatisfy(line -> assertThat(line).contains("***"));
             List<String> linesWithEmail = output.getAll()

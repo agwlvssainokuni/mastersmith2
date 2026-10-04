@@ -19,8 +19,11 @@ import cherry.mastersmith.common.persistence.RowLockAttempt;
 import cherry.mastersmith.user.domain.DisplayName;
 import cherry.mastersmith.user.domain.EmailAddress;
 import cherry.mastersmith.user.domain.FieldError;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
+import cherry.mastersmith.user.domain.PasswordHash;
 import cherry.mastersmith.user.domain.PasswordPolicy;
 import cherry.mastersmith.user.domain.Preferences;
 import cherry.mastersmith.user.domain.ProfileUpdate;
@@ -32,6 +35,7 @@ import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.repository.UserRowLockRepository;
 import java.time.Clock;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -384,6 +388,81 @@ public class UserAccountService {
         }
         eventPublisher.publishEvent(new UserCreatedEvent(saved.getUserId()));
         return new CreateUserResult.Created(saved.getUserId());
+    }
+
+    /**
+     * 初期管理者を救済する（Intent 261004-safety-carryover の FR1.1〜FR1.3・FR1.2a・NFR3）。起動時の初期管理者の自動作成だけが使う。
+     *
+     * <p>1つのトランザクションで次を行う。
+     *
+     * <ol>
+     *   <li>メールアドレスをそろえて利用者を1回読む。いなければ {@link InitialAdminRescueResult.NotFound}（何も書かない）
+     *   <li>条件を判定する: 利用停止中なら {@link InitialAdminRescueCondition#SUSPENDED}、管理者の印が無ければ
+     *       {@link InitialAdminRescueCondition#NO_ADMIN}、設定のパスワードと一致しなければ
+     *       {@link InitialAdminRescueCondition#PASSWORD}。照合は1回だけ（NFR3）。UTF-8 で 72 バイトを超える値は照合せずに不一致とする
+     *       （{@link #verifyPassword(RedactedText, Password)} と同じ決まり）
+     *   <li>どれにも当たらなければ書かずに {@link InitialAdminRescueResult.NotNeeded}
+     *   <li>当たれば、停止を解き、管理者の印を付け、パスワードのハッシュを設定の値で作り直して置き換える。パスワードは条件
+     *       {@code PASSWORD} に当たらないときも書き直す（FR1.2(d)、依頼者の決定 D6: A）。最後に {@link InitialAdminRescuedEvent} を
+     *       知らせる（auth の受け手が同じトランザクションで失敗回数とリフレッシュトークンを扱い、監査は確定の後に記録される）
+     * </ol>
+     *
+     * <p>途中のどこかが例外を投げれば、auth の受け手の書き換えを含めてすべて巻き戻り、監査の行も残らない（FR1.2a）。
+     *
+     * <p><strong>書き換えの口との関係</strong>: 管理の操作の書き換えの口（{@link #setAdmin(long, boolean)}・
+     * {@link #setSuspended(long, boolean)}）は呼ばず、リポジトリを直接使う。利用者の管理（{@code useradmin}）を通らない2つ目の
+     * 書き換えの経路になる。Intent 260930-user-admin の BR7.3・NFR11.2（書き換えの口は {@code useradmin.service} だけが呼ぶ）の
+     * 趣旨との差であり、依頼者がこの経路を受け入れた（依頼者の決定 D2: A。境界テストは変えない）。最後の管理者の保護の判定は
+     * 要らない（この操作は有効な管理者を減らさない）。
+     *
+     * <p>メールアドレスとパスワードは文字列にすると伏せる型で受ける。例外のメッセージには利用者 ID だけを載せる。
+     *
+     * @param email 設定のメールアドレス（そろえる前の値でよい）
+     * @param password 設定のパスワード（作成時の規則に合うことは呼び出し元が確かめる）
+     * @return 救済の結果（メールアドレスを含まない）
+     * @throws IllegalStateException 書き込みが1行にならなかったとき（同時の変更など。想定外）
+     */
+    @Transactional
+    public InitialAdminRescueResult rescueInitialAdmin(RedactedText email, Password password) {
+        Objects.requireNonNull(email, "email");
+        Objects.requireNonNull(password, "password");
+        Optional<User> found = userRepository.findByEmail(EmailAddress.normalize(email.value()));
+        if (found.isEmpty()) {
+            return new InitialAdminRescueResult.NotFound();
+        }
+        User user = found.get();
+        long userId = user.getUserId();
+        String readHash = user.getPasswordHash();
+        Set<InitialAdminRescueCondition> conditions = EnumSet.noneOf(InitialAdminRescueCondition.class);
+        if (user.isSuspended()) {
+            conditions.add(InitialAdminRescueCondition.SUSPENDED);
+        }
+        if (!user.isAdminFlag()) {
+            conditions.add(InitialAdminRescueCondition.NO_ADMIN);
+        }
+        boolean matched =
+                PasswordPolicy.fitsMaxBytes(password.value()) && passwordEncoder.matches(password.value(), readHash);
+        if (!matched) {
+            conditions.add(InitialAdminRescueCondition.PASSWORD);
+        }
+        if (conditions.isEmpty()) {
+            return new InitialAdminRescueResult.NotNeeded();
+        }
+        requireOneRow(userRepository.updateSuspended(userId, false), userId);
+        requireOneRow(userRepository.updateAdminFlag(userId, true), userId);
+        requireOneRow(
+                userRepository.updatePasswordHashIfUnchanged(
+                        userId, new PasswordHash(readHash), new PasswordHash(passwordEncoder.encode(password.value()))),
+                userId);
+        eventPublisher.publishEvent(new InitialAdminRescuedEvent(userId, conditions, clock.instant()));
+        return new InitialAdminRescueResult.Rescued(userId, conditions);
+    }
+
+    /** 書き込みがちょうど1行であることを確かめる（例外のメッセージには利用者 ID だけを載せる）。 */
+    private static void requireOneRow(int updated, long userId) {
+        if (updated != 1) {
+            throw new IllegalStateException("初期管理者の救済の書き込みが1行になりませんでした: userId=" + userId);
+        }
     }
 
     /** 作成の入力が決まりに合うことを確かめ、氏名と表示の設定の組を返す（BR5.1）。 */

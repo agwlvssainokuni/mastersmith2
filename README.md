@@ -263,11 +263,26 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 - アプリは起動のときに対象DB に接続しません。見本の対象DB が止まっていてもアプリは起動を続け、スキーマの読み込み（既定の DSL の生成）と照合が「接続できない」になります。対象DB を使わないときは、`--profile targetdb-postgres` を付けずに起動し、`MASTERSMITH_TARGET_DB_*` を書きません（7項目がすべて空なら対象DB を使いません）。
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。`.env` に `MASTERSMITH_WEB_BASE_URL`（招待を使うときに入れる。例 `http://localhost:8080`）を入れた環境では、その値と同じ URL で開きます。`http://127.0.0.1:8080/` で開くと、ログイン・更新・ログアウトの Origin の確かめが合わず 403 / `ORIGIN_NOT_ALLOWED` になり、警報 `ms-origin` の拒否の数が増えます。招待メールを見るときは、受け手（Mailpit）を `docker compose --profile mail up -d mailpit` で起動します（「手元でメールを見る」）。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
-- 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。この INFO にはメールアドレスそのものは載らず、キー `maskedEmail` に伏せ字（先頭の1文字＋`***`＋`@`＋ドメイン、例 `a***@example.com`）だけが載ります（Intent 260929-log-deps-cleanup）。
+- 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。この INFO にはメールアドレスそのものは載らず、キー `maskedEmail` に伏せ字（先頭の1文字＋`***`＋`@`＋ドメイン、例 `a***@example.com`）だけが載ります（Intent 260929-log-deps-cleanup）。2回目以降の起動で、初期管理者が停止中・管理者の印なし・パスワードが設定と違う、のどれかに当たったときは、作る代わりに救済し、WARN「初期管理者を救済しました」が1行出ます（下の「使える管理者がいなくなったとき（初期管理者の救済）」）。
 - 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
 - 見本の対象DB をつないだ配備では、スモークテストに次を足します: サイドバーの「DSL」で DSL の管理画面を開き、今の状態が表示されること。「スキーマを読み込む」で見本の DB から既定の DSL が作られ、プレビューに `sales` のテーブルとビューが並ぶこと（「未設定」「接続できない」にならないこと）。その操作の監査イベント `DSL_GENERATED` が記録されていること。スモークテストの操作は監査ログに残り、消せません。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。メッセージ（`message`）の中の改行は「 ⏎ 」（前後に空白を置いた U+23CE）に置き換えて出すため、Hibernate の起動の案内（ロガー `org.hibernate.orm.connections.pooling`）のような複数行のメッセージも1件が1行に収まります。スタックトレース（`exception`）の改行はそのままです。
 - 止めるときは `docker compose --profile targetdb-postgres down`（アプリと見本の対象DB を一緒に止めます。内部DB と見本の対象DB のデータはボリュームに残ります）。
+
+### 使える管理者がいなくなったとき（初期管理者の救済）
+
+管理者の印を外す・止めるなどで、使える管理者がいなくなったとき（ログインできない・管理の画面が使えない）は、アプリを起動し直すと、`.env` の初期管理者の設定（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）の利用者が救済されます（Intent 261004-safety-carryover）。救済専用の設定はありません。画面・API からは操作できず、起動のときだけ働きます。
+
+- **救済する条件**: 設定のメールアドレスの利用者が既にいて、次のどれか1つでも当たるとき。
+  - (a) 利用が止められている（停止中）
+  - (b) 管理者の印が無い
+  - (c) 今のパスワードが、設定のパスワードと一致しない
+- **救済で行うこと**（1つのトランザクションで、全部が反映されるか、全部が取り消されるかのどちらか）: (a) 停止を解く、(b) 管理者の印を付ける、(c) ログインの失敗回数を 0 に戻しロックを解く、(d) パスワードを設定の値に置き換える（(c) の条件に当たらないときも置き換える）、(e) その利用者のリフレッシュトークンをすべて無効にする（画面でログインし直す）。
+- **ログ**: 救済したときは WARN「初期管理者を救済しました」が1行出ます。キーは `maskedEmail`（伏せ字のメールアドレス）と `conditions`（当たった条件。`SUSPENDED`・`NO_ADMIN`・`PASSWORD` を決まった順に `+` でつないだ値、例 `SUSPENDED+NO_ADMIN`）だけです。どれにも当たらないときは、今までどおり INFO「初期管理者は既にいるため、作成しませんでした」が出て、何も変わりません。救済の途中で失敗したときは、すべてを取り消して ERROR「初期管理者の救済に失敗しました」が1行出ます（キーは `maskedEmail` と `exceptionClass` だけ）。起動は続くため、`docker compose logs app` で原因の例外のクラスを見て、直してから起動し直します。
+- **監査**: 救済は `audit_events` に種類 `INITIAL_ADMIN_RESCUED` の行を1行残します（「監査ログ（U4）」）。途中で失敗したときは残りません。
+- **初期管理者を止めたい・印を外したいとき**: 先に `.env` の初期管理者の設定を替える（別の利用者のメールアドレスにする、または2項目を外す）か、初期管理者のパスワードを画面で変えたときは `.env` のパスワードもそろえます。そうしないと、次の再起動で初期管理者がまた救済され、止めた状態・外した印・画面で変えたパスワードが元に戻ります。
+- **設定のパスワードが規則を満たさないとき**: 設定のパスワードが規則（12 文字以上・72 バイト以内）を満たさないときは、作成も救済もされず、WARN「初期管理者を作成しませんでした」（キー `reason`・`resolution`）が出ます。停止中・印なしの初期管理者がいても救われません。この WARN が出たら、`.env` のパスワードを規則に合う値に直して起動し直します。設定が無いときも同じ WARN が出て、何もしません。
+- **確かめ方**: 値を表示せずに、件数とキーの名前だけで見ます（例: `docker compose logs app | grep -c '初期管理者を救済しました'`）。監査の行は「監査ログの確かめ方」の手順で、種類 `INITIAL_ADMIN_RESCUED` の行の数と `rejection_kind` の値を数えます。メールアドレス・パスワードの値は画面やログに出さないでください。
 
 ### 戻し方
 
@@ -314,7 +329,7 @@ V7（利用者のプリファレンスとパスワードの変更、下の「利
 ```bash
 docker compose stop app
 mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 ls -l ~/.mastersmith-backup/     # ファイルができたこと（中身は開かない）
 docker compose start app         # 配備の途中なら起動せず、次の手順で新しい版を起動する
@@ -324,7 +339,7 @@ docker compose start app         # 配備の途中なら起動せず、次の手
 
 ```bash
 docker compose stop app
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
   sh -c 'rm -rf /data/* && tar xzf /backup/<バックアップのファイル> -C /data && chown -R 10001:10001 /data'
 docker compose start app         # 止めたコンテナをそのまま起動する（作り直すときは戻し方の節の MASTERSMITH_IMAGE_TAG を付ける）
 ```
@@ -354,7 +369,7 @@ DSL の投入と適用を重ねると、アプリが動いている間は内部D
 - **ディスクの空き**: 詰め直しは、残す分の大きさの新しいファイルを書きます。空き（`colima ssh -- df -h /`）が残す分（最大約 210MB）より十分にあることを確かめます。
 - **接続先の指定**: `MASTERSMITH_DB_URL` で接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けます。付けないと、`compact` は接続を閉じて再開するだけで縮まず、道具が「大きさが減っていません」と出します。
 - **記録**: 詰め直しの操作は、監査ログにもアプリのログにも残りません（HikariCP の標準の機能だけで行うため）。前と後の大きさと時間は、道具の出力で見ます。
-- **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.4_7-jdk-noble`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
+- **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.4_7-jdk-noble@sha256:2feab631bffce6236d8bb5261a4abe19a8d6f85bad1c01166f74686c983d011f`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
 - **使い捨ての環境で試す**: `--container mastersmith-perf-app-1` を付けます。`perf/dsl-timing.sh --storage --compact` は、投入と適用を重ねた後にこの道具を流し、前と後の大きさと時間を記録します（`perf/README.md`）。
 
 ### コンテナの資源の上限（colima の VM・メモリ・JVM）
@@ -670,7 +685,7 @@ version: 1
 - **起動時**: 履歴の最新（適用した日時が最も新しい版）を適用中の DSL として読みます。今の検証を通らない（書式の版が変わった など）ときは、ERROR（`適用中の DSL を読めないため、適用中の DSL が無い状態で起動します`、識別の先頭 12 文字と誤りの種類だけ）を1件出し、適用中の DSL が無い状態で起動を続けます。
 - **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
 - **既知の制約（動いている間の内部DB のファイルの大きさ）**: 上限を超えた古い履歴を消しても、アプリが動いている間は H2 がその場所を再利用せず、内部DB のファイルは投入と適用のたびに本文の大きさの分（10MB の DSL なら約 10.8MB）ずつ大きくなります（2026-09-25 の測定で、10MB の DSL の投入と適用を 21 回で約 278MB、40 回で約 483MB。頭打ちになりません）。この伸びは受け入れ、**アプリを止めずに `./docker/hikari-pool.sh compact` で詰め直します**（「内部DBのファイルの詰め直し」の節。詰め直しの間の要求は再開まで待たされます）。アプリを止めたとき（`docker compose restart app` など）にも、接続先の `;DEFRAG_ALWAYS=TRUE`（「環境変数」の表の `MASTERSMITH_DB_URL`）でファイルが詰め直されます。
-  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `./docker/hikari-pool.sh status`（または `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble du -sh /data`）。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、利用の少ない時間に `./docker/hikari-pool.sh compact` で詰め直します。
+  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `./docker/hikari-pool.sh status`（または `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 du -sh /data`）。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、利用の少ない時間に `./docker/hikari-pool.sh compact` で詰め直します。
 
 ### DSL の操作の監査
 
@@ -747,6 +762,12 @@ Intent 260930-user-admin の U3 で、管理者が利用者の一覧を見て探
 - **最後の有効な管理者の保護**: 印を付ける・外す・止めるは、管理者の行と対象の行を利用者 ID の昇順に排他してから数えます。2人の管理者が同時に互いの印を外す・止めるときも、有効な管理者は 0 人になりません（後の操作が 409 `USER_ADMIN_LAST_ADMIN`）。停止を解くは対象の行だけ、失敗回数を戻すはロックの状態の行だけを排他します。
 - **印の変更の効き方**: 印を付けた・外した直後の次の要求から、管理の API の 200／403 が切り替わります（アクセストークンに印を持たないため）。印を外してもトークンは無効にしません（管理の API だけが 403 になり、ほかの API はそのまま使えます）。
 - **秘密と個人情報**: 検索の文字・メールアドレス・氏名は、要求を受けた時点から文字列にすると伏せ字になる型で受け渡し、アプリのログ・トレースの属性・監査に出しません（管理者だけが見る一覧の正常の応答は除く）。URL の問い合わせの部分（q）は、トレースの属性とアクセスの拒否の監査のパスから除かれます。要求の行が 8KB を超える要求（例: page が 9,000 文字）は、アプリに届かず、Tomcat が `text/html` の 400 を返します。
+
+### 利用者の管理の画面の既知の点
+
+- **言語の欄で Enter を押して送信したときのフォーカス**（Intent 261004-safety-carryover の FR5、直さない）: 利用者の管理の画面の氏名と言語の変更（`frontend/src/features/useradmin/EditProfileDialog.tsx`）で、言語の選択肢にフォーカスがある状態で Enter を押して送信すると、送信中はその選択肢を押せなく（`disabled`）するため、フォーカスが選択肢から外れて `body` に落ちます（キーボードで続けて操作するときに、フォーカスの位置を見失いやすい）。
+- **直さない理由**: 送信中に言語を選び直せないようにするには、選択肢を押せなくする必要がありますが、make-you-chic-ui の `RadioGroup` には読み取り専用の口が無く（`disabled` だけ）、`vendor/make-you-chic-ui` はこのリポジトリから変えられません。依頼者の決定で、この Intent では直さず既知の点として残しました。
+- **直すときの候補**: (a) 送信中も `disabled` にせず、`onChange` で値の変更を受け付けない（見た目では押せないことが伝わらない）、(b) 送信を始めるときに、保存のボタンなど押せるままの要素へフォーカスを移す、(c) make-you-chic-ui に読み取り専用の口を足してもらう（make-you-chic-ui のリポジトリ側での変更と、固定先の更新の専用のコミットが要る）。同じ形（送信中に押せなくする選択肢の欄）がほかの画面にもあるかは確かめていません。
 
 ## 外部エクスポートの確かめ方
 
@@ -865,6 +886,12 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 環境変数は増えません。
 - **登録の完了の公開の API（U3）**: 差し込み口（order 310）で上の2つの POST だけを公開します。`/api/registration/` のほかの道・ほかのメソッドはログインが必要です。公開の道でも、壊れた・期限切れのアクセストークンを付けると 401 になります（画面はトークンを付けずに呼ぶ）。**回数の制限は置いていません**（受け入れた危険 R1）。誤ったトークンで完了を呼ぶたびに監査に `REGISTRATION_FAILED` が1行増えます。急な増えに自動で気づく仕組みは無いため、「監査ログの確かめ方」の数える問い合わせで見つけます。
 
+## 例外のログ（フィルターの中の想定外の例外）
+
+- 想定外の例外のログは、例外を応答に変える境界で1回だけ出します。Spring MVC の中の例外は `GlobalExceptionHandler`、フィルターの中（認証の途中で内部DB の接続を借りられないときなど）の例外は `/error` の `ErrorPathController` が、ERROR「想定外のエラーが起きました」を1行出します（原因の例外のスタックトレースと、応答の 500 の Problem Details と同じ `traceId` つき）。障害を調べるときは、応答の `traceId` でこの行を探します。
+- Tomcat がサーブレットの外へ出た例外を自分で出す ERROR（ロガー `org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]`、「Servlet.service() ... threw exception」）は、`application.yaml` の `logging.level` で止めています（Intent 261004-safety-carryover の FR4.2）。止める前は、フィルターの中の同じ例外が、`traceId` を持たない Tomcat の行と `ErrorPathController` の行の2行の ERROR になっていました。
+- **代わりに失うもの**: 応答を書き始めた後（確定した後）に例外がサーブレットの外へ出たときは、`/error` へ回らないため、その例外はどのログにも残りません。今のアプリの API は応答を流しながら書く形ではありませんが、そうした API を足すときは、この扱いを見直してください。
+
 ## 監査ログ（U4）
 
 認証（ログインの成功・失敗・ログアウト）と管理者のみの API へのアクセスの拒否を、内部DBの `audit_events` の表に1件ずつ**追記**します。
@@ -876,6 +903,11 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - パスワードの変更（Intent 260925-user-management の U2）も記録します。種類は `PASSWORD_CHANGED` で、成功（結果 `SUCCESS`）と今のパスワードの誤り（結果 `FAILURE`、失敗の理由 `CURRENT_PASSWORD_MISMATCH`）を1件ずつ記録します。操作した人（`actor_user_id`）と対象の利用者（`target_user_id`）に本人の利用者 ID が入ります。入力の誤りと、氏名・表示の設定の保存は記録しません。
 - 招待と登録の完了（Intent 260925-user-management の U3）も記録します。種類は `INVITATION_ISSUED`・`INVITATION_RESENT`・`INVITATION_CANCELLED`（操作した管理者 `actor_user_id` と対象の招待 `target_invitation_id`、結果 `SUCCESS`）、`REGISTRATION_COMPLETED`（操作した人は空、対象の招待と作った利用者 `target_user_id`）、`REGISTRATION_FAILED`（結果 `FAILURE`、失敗の理由 `INVITATION_EXPIRED`・`INVITATION_ALREADY_USED`・`INVITATION_CANCELLED`・`INVITATION_NOT_FOUND`・`EMAIL_ALREADY_REGISTERED`、対象の招待は見つかったときだけ）です。拒否（400・404・409・503）・送信の失敗・リンクの確かめ・入力の誤り・期限切れの置き換えは記録しません。トークン・招待の URL・メールアドレスは記録しません。
 - 利用者の管理の5つの操作（Intent 260930-user-admin の U3）も記録します。種類は `USER_ADMIN_GRANTED`（印を付ける）・`USER_ADMIN_REVOKED`（印を外す）・`USER_SUSPENDED`（止める）・`USER_RESUMED`（停止を解く）・`LOGIN_FAILURES_RESET`（失敗回数を戻す）で、どの種類も成功（結果 `SUCCESS`）と拒否（結果 `FAILURE`）の両方があります。失敗の理由は `USER_NOT_FOUND`（対象がいない）・`SELF_OPERATION`・`TARGET_SUSPENDED`・`NO_CHANGE`・`LAST_ACTIVE_ADMIN`（業務の拒否）・`NOT_ADMIN`（確かめ直しの 403）です。操作した管理者（`actor_user_id`）と、要求の利用者 ID（`target_user_id`。いない ID もそのまま）が入り、入力されたメールアドレスは空です。氏名・メールアドレス・失敗回数・トークンは記録しません。一覧の閲覧・氏名と言語の変更・409 `USER_ADMIN_BUSY`・入力の誤り（400）・認可の入口の 401 と 403（403 は既存の `ACCESS_DENIED` だけ）は、利用者の管理の種類としては記録しません。記録に失敗しても、5つの操作の応答（204・404・409・403）と状態は変わらず、ERROR には操作した人と対象の利用者（`actorUserId`・`targetUserId`）が載ります（メールアドレスは載りません）。
+- 初期管理者の作成と救済（Intent 261004-safety-carryover）も記録します。種類は `INITIAL_ADMIN_CREATED`（起動のときに初期管理者を作った）と `INITIAL_ADMIN_RESCUED`（起動のときに初期管理者を救済した。「使える管理者がいなくなったとき（初期管理者の救済）」）で、どちらも結果 `SUCCESS` です。起動のときの出来事のため、列の使い方がほかの種類と違います。
+  - 接続元IP（`source_ip`）は決まった値 `system`（IP の形ではない）、操作した人（`actor_user_id`）は空、対象の利用者（`target_user_id`）に初期管理者の利用者 ID が入ります。
+  - 救済で当たった条件は、`rejection_kind` の列に `SUSPENDED`・`NO_ADMIN`・`PASSWORD` を決まった順に `+` でつないだ値で入ります（例 `SUSPENDED+NO_ADMIN+PASSWORD`）。列の名前は DSL の投入の拒否の種類のためのものですが、新しい列を足さずにこの列を使います（作成の行では空）。`failure_reason` は空です。
+  - 入力されたメールアドレス・User-Agent・要求のパス・トレースIDは空です。メールアドレス・パスワード・ハッシュ値・トークンは記録しません。
+  - 救済の途中で失敗して取り消されたときは、救済の行は残りません。記録に失敗したときは、救済・作成はそのまま確定し、ERROR（`監査イベントの記録に失敗しました`）が1回出ます。
 - 対象の列（V7）: `target_user_id`（対象の利用者）・`target_invitation_id`（対象の招待。招待と登録の完了の出来事で使います）。どちらも空を許し、それ以前の種類の記録では空のままです。
 - 監査イベントの `trace_id` は、同じ要求のアプリのログの `traceId` と一致します。1つの要求を追うときは、この値でログを絞り込みます。
 - 記録に失敗しても、ログイン・ログアウト・401／403 の応答は変わりません。失敗したときは、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます。**この ERROR には、記録しようとした項目（メールアドレスを含む）がキーと値で載ります**。後から手で記録を補えるようにするためで、U4 に限った扱いです。パスワード・トークンは載りません。外部エクスポートで外へ送るときは、メールアドレス・接続元IP・User-Agent の値を `[REDACTED]` に置き換えます（「外部エクスポートの確かめ方」）。元の値は標準出力のログで見ます。
@@ -898,7 +930,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 ```bash
 docker compose stop app
 mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 docker compose start app
 # 複写を展開し、H2 の道具で読み取り（ACCESS_MODE_DATA=r）で開いて audit_events を読む

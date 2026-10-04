@@ -351,3 +351,13 @@ logging:
     #   さらに調べるときは、内部DB の複写を読み取りで開いて制約と行を確かめる。配備した環境でこのロガーを有効にしない
     #   （違反の文に重なった値が入り、ログに残るため）。
     org.hibernate.orm.jdbc.error: OFF
+    # Tomcat が、サーブレットの外へ出た例外を自分で出す ERROR（Servlet.service() ... threw exception）は出さない
+    # （261004-safety-carryover の FR4.2。依頼者の決定 D3: A）。
+    # なぜ: フィルターの中（認証の途中で接続を借りられないときなど）で起きた想定外の例外は、Tomcat がこのロガーで ERROR を1行出した
+    #   うえで /error に回し、ErrorPathController がもう1行 ERROR を出すため、同じ例外が二重に記録される。例外のログは変換する境界で
+    #   1回だけ出す決まり（team.md の Code Style）にそろえる。Tomcat の行は traceId を持たず、ErrorPathController の行と結び付けにくい。
+    # 障害の調べ方: ErrorPathController の ERROR「想定外のエラーが起きました」が、原因の例外（スタックトレース付き）と応答と同じ
+    #   traceId を持つ。応答（500 の Problem Details）の traceId で、その行を探す。
+    # 代わりに失うもの: 応答を書き始めた後（確定した後）に例外がサーブレットの外へ出たときは /error へ回らないため、その例外は
+    #   このロガーでしか出ず、ログに残らなくなる（README の「例外のログ」を参照）。今のアプリの API は応答を流しながら書く形ではない。
+    "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": OFF

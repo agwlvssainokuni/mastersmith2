@@ -27,6 +27,8 @@ import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
 import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
 import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
+import cherry.mastersmith.user.domain.InitialAdminCreatedEvent;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
 import java.util.LinkedHashMap;
@@ -46,7 +48,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
  * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）、利用者の管理の操作の出来事（Intent
- * 260930-user-admin の U3）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * 260930-user-admin の U3）、初期管理者の作成と救済の出来事（Intent 261004-safety-carryover の FR1.5）を受け取り、監査イベントを
+ * 1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -229,6 +232,49 @@ public class AuditEventListener {
     }
 
     /**
+     * 初期管理者の作成の出来事を受け取り、監査イベントを追記する（Intent 261004-safety-carryover の FR1.5・FR1.8）。
+     *
+     * <p>作成の確定の後に、トランザクションの外で知らされるため、起動と同じスレッドでその場で受け取る。書き込みの失敗は起動を止めず、
+     * ERROR を1回出す。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onInitialAdminCreated(InitialAdminCreatedEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> initialAdminFields(AuditEventType.INITIAL_ADMIN_CREATED, event == null ? null : event.userId()));
+    }
+
+    /**
+     * 初期管理者の救済の出来事を受け取り、監査イベントを追記する（Intent 261004-safety-carryover の FR1.5・FR1.6a・FR1.8）。
+     *
+     * <p>救済のトランザクションの中で知らされるため、確定の後に受け取る。巻き戻った救済の出来事は受け取らない（FR1.2a）。書き込みの
+     * 失敗は救済を巻き戻さず、起動も止めず、ERROR を1回出す。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onInitialAdminRescued(InitialAdminRescuedEvent event) {
+        record(
+                () -> AuditEventFactory.from(event),
+                () -> initialAdminFields(AuditEventType.INITIAL_ADMIN_RESCUED, event == null ? null : event.userId()));
+    }
+
+    /**
+     * 初期管理者の作成と救済の出来事の組み立てに失敗したときに載せる項目（種類と対象の利用者 ID だけ。出来事はメールアドレス・
+     * パスワードを持たない）。
+     */
+    private static Map<String, Object> initialAdminFields(AuditEventType eventType, Long targetUserId) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        fields.put("auditEventType", eventType);
+        fields.put("targetUserId", targetUserId);
+        return fields;
+    }
+
+    /**
      * 利用者の管理の操作の出来事の項目（組み立てに失敗したときに載せる。メールアドレス・氏名は持たない）。監査の種類・結果・失敗の理由は、
      * 組み立てに成功したときの {@link #fields(AuditEvent)} と同じ値の形（{@link AuditEventType}・{@link AuditResult}・
      * {@code AuditFailureReason}）に、{@link AuditEventFactory} と同じ対応で写す。
@@ -351,7 +397,9 @@ public class AuditEventListener {
                     USER_ADMIN_REVOKED,
                     USER_SUSPENDED,
                     USER_RESUMED,
-                    LOGIN_FAILURES_RESET -> false;
+                    LOGIN_FAILURES_RESET,
+                    INITIAL_ADMIN_CREATED,
+                    INITIAL_ADMIN_RESCUED -> false;
         };
     }
 

@@ -32,6 +32,9 @@ import cherry.mastersmith.invitation.domain.InvitationResentEvent;
 import cherry.mastersmith.invitation.domain.LinkRejection;
 import cherry.mastersmith.invitation.domain.RegistrationCompletedEvent;
 import cherry.mastersmith.invitation.domain.RegistrationFailedEvent;
+import cherry.mastersmith.user.domain.InitialAdminCreatedEvent;
+import cherry.mastersmith.user.domain.InitialAdminRescueCondition;
+import cherry.mastersmith.user.domain.InitialAdminRescuedEvent;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangedEvent;
 import cherry.mastersmith.user.domain.RequestOrigin;
@@ -39,7 +42,9 @@ import cherry.mastersmith.useradmin.domain.AdminOperation;
 import cherry.mastersmith.useradmin.domain.UserAdminAuditEvent;
 import cherry.mastersmith.useradmin.domain.UserAdminAuditFailure;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -445,5 +450,73 @@ class AuditEventFactoryTest {
 
         assertThat(audit.getUserAgent().codePointCount(0, audit.getUserAgent().length()))
                 .isLessThanOrEqualTo(AuditText.MAX_USER_AGENT_LENGTH);
+    }
+
+    @Test
+    @DisplayName(
+            "an initial admin creation is a successful startup row with only the target user and the system source")
+    void initialAdminCreated() {
+        AuditEvent audit = AuditEventFactory.from(new InitialAdminCreatedEvent(5L, OCCURRED_AT));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.INITIAL_ADMIN_CREATED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(audit.getOccurredAt()).isEqualTo(OCCURRED_AT);
+        assertThat(audit.getTargetUserId()).isEqualTo(5L);
+        assertThat(audit.getSourceIp()).isEqualTo("system").isEqualTo(AuditEventFactory.SYSTEM_SOURCE_IP);
+        assertThat(audit.getActorUserId()).isNull();
+        assertThat(audit.getRejectionKind()).isNull();
+        assertThat(audit.getEnteredEmail()).isNull();
+        assertThat(audit.getFailureReason()).isNull();
+        assertThat(audit.getUserAgent()).isNull();
+        assertThat(audit.getRequestPath()).isNull();
+        assertThat(audit.getTraceId()).isNull();
+        assertThat(audit.getDslHash()).isNull();
+        assertThat(audit.getDslSource()).isNull();
+        assertThat(audit.getTargetInvitationId()).isNull();
+    }
+
+    @Test
+    @DisplayName("an initial admin rescue records the conditions in the declared order in the rejection kind column")
+    void initialAdminRescued() {
+        Set<InitialAdminRescueCondition> conditions =
+                Set.of(InitialAdminRescueCondition.PASSWORD, InitialAdminRescueCondition.SUSPENDED);
+
+        AuditEvent audit = AuditEventFactory.from(new InitialAdminRescuedEvent(6L, conditions, OCCURRED_AT));
+
+        assertThat(audit.getEventType()).isEqualTo(AuditEventType.INITIAL_ADMIN_RESCUED);
+        assertThat(audit.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(audit.getOccurredAt()).isEqualTo(OCCURRED_AT);
+        assertThat(audit.getTargetUserId()).isEqualTo(6L);
+        assertThat(audit.getSourceIp()).isEqualTo("system");
+        assertThat(audit.getRejectionKind()).isEqualTo("SUSPENDED+PASSWORD");
+        assertThat(audit.getActorUserId()).isNull();
+        assertThat(audit.getEnteredEmail()).isNull();
+        assertThat(audit.getFailureReason()).isNull();
+        assertThat(audit.getUserAgent()).isNull();
+        assertThat(audit.getRequestPath()).isNull();
+        assertThat(audit.getTraceId()).isNull();
+        assertThat(audit.getDslHash()).isNull();
+        assertThat(audit.getDslSource()).isNull();
+        assertThat(audit.getTargetInvitationId()).isNull();
+    }
+
+    @Test
+    @DisplayName("a rescue of all three conditions fits into the rejection kind column")
+    void initialAdminRescuedAllConditions() {
+        AuditEvent audit = AuditEventFactory.from(
+                new InitialAdminRescuedEvent(6L, EnumSet.allOf(InitialAdminRescueCondition.class), OCCURRED_AT));
+
+        assertThat(audit.getRejectionKind()).isEqualTo("SUSPENDED+NO_ADMIN+PASSWORD");
+        assertThat(audit.getRejectionKind().length()).isLessThanOrEqualTo(32);
+    }
+
+    @Test
+    @DisplayName("the startup types are successes and the system source fits the source column")
+    void startupTypeResults() {
+        assertThat(AuditEventFactory.resultOf(AuditEventType.INITIAL_ADMIN_CREATED))
+                .isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.resultOf(AuditEventType.INITIAL_ADMIN_RESCUED))
+                .isEqualTo(AuditResult.SUCCESS);
+        assertThat(AuditEventFactory.SYSTEM_SOURCE_IP.length()).isLessThanOrEqualTo(45);
     }
 }
