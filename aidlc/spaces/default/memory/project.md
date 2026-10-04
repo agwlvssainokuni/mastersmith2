@@ -123,6 +123,7 @@
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（261003-user-admin-followup）の配備の手順を正として今回の差だけを書いた。今回の差の中心は、配備の起動で救済が働きうること（初期管理者のパスワードが .env の値に戻り、ログイン中の端末がログインし直しになる）で、入れ替えの前にアプリを止めて内部DB を複写し（バックアップを兼ねる）、初期管理者の停止と印の有無を数え、依頼者に画面でパスワードを変えたかを尋ねる手順にした（Q1: A）。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:373ed549a61ef57de3ff001f2a5e049dbd895c7a8d988a6e5076ce15cbb1ad5a -->
 - 配備の前の E2E は 153 件 passed だったが、救済の WARN 0 件を件数で確かめる計画（D5・D7、R-05）は果たせなかった。Playwright の webServer.stdout が ignore で、E2E のアプリの標準出力が残らないため。E2E は毎回一時の内部DB に初期管理者を新しく作るため救済が働きえないことと、初期管理者のログインを含む全件の通過で裏付けた。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:e542e8f79e0529f442980c2af426635d8e08c630811a050df73be9efb339d73f -->
 - 救済で変わった利用者の状態は、イメージだけの戻しでは元に戻らない。元に戻すには配備の前の複写を戻す必要があり、その後のデータと監査の行も失う。そのため、入れ替えの前に救済の見込みを確かめて了承を得る形を選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:04d3e502b79024e24aebc557d219a22e48458f4f9a4c590a63fac53f82796347 -->
+- 停止中の初期管理者を救済で戻すと、有効な管理者は 2 人になる。わざと止めていたのであれば .env を先に替える必要があったが、依頼者はこのまま戻すことを選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-execution:f5d336cbcb187ca59d19e6eb55c97699abde8c1a4492288d69354dd3e7d67c2e -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
