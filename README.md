@@ -35,7 +35,7 @@ pre-commit install
 
 サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
 
-make-you-chic-ui の固定先は `077f5b4` です。経緯: `edb1f94` → `735ef04`（Intent 260925-user-management の B4。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）→ `310e1ec`（Intent 260928-quality-followup。文字の色を背景に合わせて出し分ける直し）→ `077f5b4`（Intent 260929-log-deps-cleanup。Tabs の選ばれたタブの文字と、primary のボタンの hover の文字のコントラストの直し）。
+make-you-chic-ui の固定先は `e82b651` です。経緯: `edb1f94` → `735ef04`（Intent 260925-user-management の B4。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）→ `310e1ec`（Intent 260928-quality-followup。文字の色を背景に合わせて出し分ける直し）→ `077f5b4`（Intent 260929-log-deps-cleanup。Tabs の選ばれたタブの文字と、primary のボタンの hover の文字のコントラストの直し）→ `3d9521a`（Intent 260930-user-admin。Dropdown の項目の押せない状態と理由の表示の追加、その hover・focus のコントラストと読み上げの重なりの直し）→ `e82b651`（Intent 261003-user-admin-followup。Modal を閉じた後のフォーカスの戻しを背景の inert を外した後に行う直しと、`finalFocusRef` の追加）。
 
 どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
