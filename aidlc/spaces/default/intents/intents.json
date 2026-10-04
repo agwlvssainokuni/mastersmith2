@@ -82,5 +82,12 @@
     "dirName": "261004-safety-carryover",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a10543-2e93-7f96-b660-c3a34455e26f",
+    "slug": "role-menu",
+    "dirName": "261004-role-menu",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]

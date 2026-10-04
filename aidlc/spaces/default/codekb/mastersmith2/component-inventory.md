@@ -2,12 +2,12 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は前回の 38 個に、今回（Intent `261004-safety-carryover`）`common-persistence` を足して 39 個になった（名前の変更は無い）。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は前回の 39 個をそのまま使う（今回の追加・名前の変更は無い）。
 - 状態: healthy（問題なし）・at-risk（今の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
 - 読みの深さ:
-  - 「深い（一部）」は今回の走査（コミット `47ec27b`、深さ Minimal）で深く読んだファイルを持つ部品で、`analyzed.components` の 13 個。読んだのは今回の論点に関わるファイル（と範囲）だけで、部品の全体ではない。読んだファイルは各部品に書いた。
+  - 「深い（一部）」は今回の走査（コミット `d5aea52`、深さ Standard）で深く読んだファイルを持つ部品で、`analyzed.components` の 21 個。読んだのは今回の論点に関わるファイル（と範囲）だけで、部品の全体ではない。読んだファイルは各部品に書いた。
   - 「流し読み」はディレクトリとファイルの名前・検索だけで、責務の文はその範囲と前回までの記録による。
-- K の番号は `business-overview.md` の所見の一覧を指す。この文書に本文を書いたのは K-29（`frontend-feature-useradmin`）だけで、ほかは持ち主の文書を参照する。
+- K の番号は `business-overview.md` の所見の一覧を指す。この文書に本文を書いたのは K-36（`make-you-chic-ui`）だけで、ほかは持ち主の文書を参照する。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -21,36 +21,35 @@
 ### config
 
 - 場所: `config/`（あわせて `backend/src/main/resources/application.yaml`・`logback-spring.xml`）
-- 責務: Spring Security の連鎖（`config/SecurityConfig.java`。各機能の差し込み口 `SecurityRuleContributor` を order 順に当てる）、SPA の配信と観測の設定、アプリの設定値。
-- 今回読んだもの: `application.yaml` の初期管理者・bcrypt・接続プール・内部DB の範囲（初期管理者の設定の鍵、bcrypt の cost の既定 12、`maximum-pool-size` の既定 30、`connection-timeout` 5000 ms）と、`logback-spring.xml` の MDC の項目（`traceId`・`spanId` だけを各行に出す。K-27）。`config/` の Java のクラスは読んでいない。
-- 状態: healthy ／ 読みの深さ: 深い（一部。設定のファイル2つの上の範囲だけ）
+- 責務: Spring Security の連鎖（`config/SecurityConfig.java`）、SPA の配信、観測、転送ヘッダー、アプリの設定値。
+- 今回読んだもの: `config/SecurityConfig.java`。公開の決まり（`/actuator/health`・`/api/problems/**`、120 行）→ 各機能の `SecurityRuleContributor` を order 順に当てる → `/api/**` の既定（`ApiDefaultAccess`、129〜135 行）→ 画面の配信は許可、の並び（K-33、本文は `architecture.md` の Interaction Diagrams 1）。
+- 状態: at-risk（K-33 で決まりの並びに手が入りうる） ／ 読みの深さ: 深い（一部。`SecurityConfig.java` だけ）
 
 ### common-error
 
 - 場所: `common/error/{domain,service,web}`
-- 責務: `ProblemType`（code・状態コード・日英の文言）、`BusinessException`、`@RestControllerAdvice` による Problem Details（`web/GlobalExceptionHandler.java`）、Spring MVC の外の例外の受け口 `/error`（`web/ErrorPathController.java`）、`GET /api/problems/{slug}`。
-- 今回読んだもの: `GlobalExceptionHandler.java` の例外の受け口とログ（4xx は WARN「要求をエラー応答に変換しました」、5xx は ERROR「想定外のエラーが起きました」）、`ErrorPathController.java`。L3 のログ（K-27）と、二重の ERROR の経路（K-28）の持ち主。本文は `architecture.md` の Interaction Diagrams 3・4。
-- `common.error.domain`・`common.error.service` は `packagesJudgedByTotal` に残る（K-30）。`common.error.web` は一覧の外。
-- 状態: at-risk（K-28） ／ 読みの深さ: 深い（一部。`web` の2ファイル）
+- 責務: `ProblemType`（code・状態コード・日英の文言）、`BusinessException`、`@RestControllerAdvice` による Problem Details、`/error`、`GET /api/problems/{slug}`。
+- `common.error.domain`・`common.error.service` は `packagesJudgedByTotal` に残る（K-38）。
+- 状態: healthy ／ 読みの深さ: 流し読み
 
 ### common-persistence
 
-- 場所: `common/persistence/`（`RowLockAttempt.java`・`RowLockFailures.java`・`RowLockUnavailableException.java`・`package-info.java`。Intent `260930-user-admin` で足された）
-- 責務: 行の排他の結果の型 `RowLockAttempt`（`Acquired`・`Busy` の sealed interface。取れなかったときの元の例外を持たない。連なりの文に行の値が入りうるため）と、排他の失敗（待ちの上限切れ・行き詰まり）の見分け `RowLockFailures.isLockFailure` とその WARN「行の排他を取れませんでした」（キー `lockKind`・`exceptionClass`）。K-27 の L4 の持ち主（本文は `architecture.md` の Interaction Diagrams 3）。
-- 依存: アプリの中のほかのパッケージを import しない（JPA の例外と SLF4J だけ）。使う側は `dependencies.md`。
-- 状態: healthy（今回の確かめの対象。`packagesJudgedByTotal` の外） ／ 読みの深さ: 深い（一部。`RowLockAttempt.java`・`RowLockFailures.java`）
+- 場所: `common/persistence/`
+- 責務: 行の排他の結果の型 `RowLockAttempt`（`Acquired`・`Busy`）と、排他の失敗の見分け（前回までの記録）。`useradmin` の管理者の行の排他（K-34）が使う。
+- 状態: healthy ／ 読みの深さ: 流し読み
 
 ### common-security
 
-- 場所: `common/security/`
-- 責務: 秘密の値の伏せ字（`RedactedText` など）、安全の決まりの差し込み口の型 `SecurityRuleContributor`。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `common/security/`（`SecurityRuleContributor.java`・`ApiDefaultAccess.java`・`SecurityExtensionValidator.java`・`ErrorResponseWriter.java`）
+- 責務: 安全の決まりの差し込み口の型 `SecurityRuleContributor`（order つき）と `/api/**` の既定の口 `ApiDefaultAccess`、差し込みの検査、エラー応答の書き出し。
+- 今回読んだもの: ディレクトリのすべてのファイル。役割ごとの決まりを足すときの口（K-33）。
+- 状態: at-risk（K-33） ／ 読みの深さ: 深い（一部。ディレクトリの全ファイル）
 
 ### common-web
 
-- 場所: `common/web/`・`common/paging/`（`Paging.java` の1ファイル。小さいため独立の ID にせずここに寄せた）
-- 責務: 本文の大きさの上限、Web の設定値（`mastersmith.web.base-url` ほか）、一覧のページ送りの共通の計算（`common/paging`、`useradmin`・`invitation` が使う）。
-- `common.web` は `packagesJudgedByTotal` に残る（K-30）。
+- 場所: `common/web/`・`common/paging/`
+- 責務: 本文の大きさの上限、Web の設定値、一覧のページ送りの共通の計算。
+- `common.web` は `packagesJudgedByTotal` に残る（K-38）。
 - 状態: healthy ／ 読みの深さ: 流し読み
 
 ### common-health
@@ -68,56 +67,56 @@
 ### common-observability
 
 - 場所: `common/observability/`
-- 責務: `TraceAspect`（`web`・`service`・`domain`・`repository` の層のメソッドの引数と戻り値を、ロガーが TRACE のときに文字列にして出す）、行の排他の失敗の文を伏せる `LockFailureSafeTraceInterceptor`、外部エクスポートの出口の伏せ字ほか（前回までの記録）。
-- 今回は `common/observability/` のファイルを読んでいない（ログの MDC の項目は `config` の `logback-spring.xml` で読んだ）。K-25 の `InitialAdminProperties.toString()` の扱いは `TraceAspect` の対象に関わる（`architecture.md` の Interaction Diagrams 1）。
+- 責務: `TraceAspect`（`web`・`service`・`domain`・`repository` の層の引数と戻り値を TRACE のときに文字列にして出す）ほか（前回までの記録）。役割・権限の値を受け渡す型も、個人に関する値を持つなら `toString` で伏せる必要がある（`team.md` の Code Style）。
 - 状態: healthy ／ 読みの深さ: 流し読み
 
 ### auth
 
 - 場所: `auth/{domain,service,repository,web}`
-- 責務: ログインとアカウントロック、アクセストークン（HS256 の JWT）とリフレッシュトークン、ログアウト、要求ごとのアクセストークンの認証（`web/AccessTokenAuthenticationProvider.java`。利用者を DB から読み直し、停止中を拒否する）、利用者の作成の知らせを受けてロックの状態の行を作る（`service/LoginAttemptStateInitializer.java`）、管理者によるロックの解除（`service/LockAdministrationService.java`、ファイル名だけ）。
-- 今回読んだもの: `service/LoginService.java`（ログインの流れと停止の判定、K-26）、`service/LoginAttemptStateInitializer.java`（`UserCreatedEvent` の唯一の受け手、K-25）、`web/AccessTokenAuthenticationProvider.java`（フィルターの中の `findById`、K-28）、`service/TokenRefreshService.java`（停止の判定の範囲）。`domain`・`repository` は `LoginAttemptStateRepository` の排他の時間の定数（3000 ms）を検索で見ただけ。
-- 依存: `user`（service の口と domain）・`common-error`・`common-security`・`common-observability`・`common-persistence`
-- 状態: at-risk（K-26 は確かめだけ、K-28 は直す見込み） ／ 読みの深さ: 深い（一部。上の4ファイル）
+- 責務: ログインとアカウントロック、アクセストークン（HS256 の JWT）とリフレッシュトークン、ログアウト、要求ごとのアクセストークンの認証と主体の組み立て、初期管理者の救済の受け手（`service/InitialAdminRescueListener.java`、ファイル名だけ）。
+- 今回読んだもの: `domain/AuthenticatedUser.java`、`web/AuthenticatedUserToken.java`・`AccessTokenAuthenticationProvider.java`・`AuthSecurityContributor.java`（order 110）・`CurrentUserResponse.java`・`TokenResponse.java`、`service/AccessTokenService.java`（発行と検証の 83〜140 行）。権限の持ち方の持ち主（K-32、本文は `architecture.md` の Interaction Diagrams 1）と、画面に `admin` を渡す応答（K-35）。
+- 依存: `user`（service の口と domain）・`common`
+- 状態: at-risk（K-32・K-35） ／ 読みの深さ: 深い（一部。上の7ファイル）
 
 ### access
 
 - 場所: `access/{domain,service,web}`
-- 責務: `/api/admin/**` を管理者だけにする決まり、`/api/**` の既定をログイン必須にする決まり、管理者の判定、401・403 の応答と拒否の出来事、`GET /api/admin/check`（前回までの記録）。
-- `access.service` は `packagesJudgedByTotal` に残る（K-30）。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: `/api/admin/**` を管理者だけにする決まり（`web/AdminSecurityContributor.java`、order 210）、管理者の判定（`web/AdminAuthorizationManager.java`）、`/api/**` の既定をログイン必須にする決まり（`web/AdminApiDefaultAccess.java`）、401・403 の応答と拒否の出来事（`web/AdminAccessDeniedHandler.java` ほか）、`GET /api/admin/check`。
+- 今回読んだもの: `domain/AdminPaths.java`・`AccessDeniedReason.java`・`AccessProblemTypes.java`、`web/AdminAuthorizationManager.java`・`AdminSecurityContributor.java`・`AdminApiDefaultAccess.java`・`AdminCheckController.java`・`AdminAccessDeniedHandler.java`。`service/` は流し読み。K-33 の持ち主（本文は `architecture.md` の Interaction Diagrams 1）。
+- 依存: `auth.domain`・`auth.web`（`ClientInfoResolver`・`TokenAuthenticationEntryPoint`）・`config`（`SecurityHeaderProperties`）・`common.error`・`common.security`（今回の import の検索）
+- 境界テストが無く、`access.service` は `packagesJudgedByTotal` に残る（K-38）。
+- 状態: at-risk（K-33・K-38） ／ 読みの深さ: 深い（一部。`domain` の3ファイルと `web` の5ファイル）
 
 ### audit
 
 - 場所: `audit/{domain,service,repository}`（Web の層なし）
-- 責務: 各機能の出来事を受け、確定の後に `audit_events` に追記する（`service/AuditEventListener.java` の `@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)` → `service/AuditEventRecorder.java` の `REQUIRES_NEW`）。書き込みの失敗は受け止めて ERROR を1回出し、呼び出し元に伝えない。監査を見る画面・API は無い。
-- 今回読んだもの: `domain/AuditEvent.java`（構築子の `requireNonNull`、`source_ip` の受け渡し）、`domain/AuditEventType.java`（20 種類）、`domain/AuditEventFactory.java`（`from(...)` の一覧の範囲）、`service/AuditEventListener.java`、`service/AuditEventRecorder.java`、`backend/src/main/resources/db/migration/V4__u4_audit_event.sql`（`event_type VARCHAR(32)`・`source_ip VARCHAR(45) NOT NULL`）。初期管理者の作成・救済の種類が無いこと（K-25）の持ち主の一つ（本文は `architecture.md` の Interaction Diagrams 1）。
-- 依存: 出来事の型のため `auth`・`access`・`user`・`invitation`・`dslmanage`・`useradmin` の domain（前回までの記録と、今回の import の検索）
-- `audit.repository` は `packagesJudgedByTotal` に残る（K-30）。監査の種類を足すだけなら `audit.domain`・`audit.service`（一覧の外）に収まる見込み。
-- 状態: at-risk（K-25） ／ 読みの深さ: 深い（一部。上の6ファイル）
+- 責務: 各機能の出来事を受け、確定の後に `audit_events` に追記する。監査を見る画面・API は無い。
+- 今回読んだもの: `domain/AuditEventType.java`（22 個。`USER_ADMIN_GRANTED`・`USER_ADMIN_REVOKED`・`INITIAL_ADMIN_CREATED`・`INITIAL_ADMIN_RESCUED` を含む）、`service/AuditEventListener.java`（受け取りの一覧）。役割の割り当ての監査を足すときの持ち主（K-38、本文は `code-quality-assessment.md`）。
+- `audit.repository` は `packagesJudgedByTotal` に残る。
+- 状態: at-risk（K-38） ／ 読みの深さ: 深い（一部。上の2ファイル）
 
 ### user
 
 - 場所: `user/{domain,service,repository,web}`
-- 責務: 利用者（表 `users`、V2・V7・V9）、パスワード、氏名と表示の設定、自分の設定の API（`/api/me/**`）、起動時の初期管理者の作成（`service/InitialAdminInitializer.java`）。ほかの機能には `service/UserAccountService.java` の口だけを見せる。
-- 今回読んだもの: `service/InitialAdminInitializer.java`・`InitialAdminProperties.java`・`UserCreatedEvent.java`・`UserSummary.java`・`UserAccountConfig.java`・`PasswordProperties.java`、`service/UserAccountService.java`（`verifyPassword`・`createUser`・`existsByEmail`・`lockAdminRowsInIdOrder`・`lockUserRow` の範囲）、`repository/UserRowLockRepository.java`（`PESSIMISTIC_WRITE`、3000 ms）、`repository/UserRepository.java`（`findByEmail`・`existsByRedactedEmail` の範囲）。K-25（作成の判定と `toString`）・K-26（停止の値の読み取り）・K-27（行の排他）に関わる。
-- 依存: `common-error`・`common-observability`・`common-persistence`
-- `user.*` は `packagesJudgedByTotal` の外（すでにパッケージごとの下限の対象）。
-- 状態: at-risk（K-25） ／ 読みの深さ: 深い（一部。上の9ファイル）
+- 責務: 利用者（表 `users`、V2・V7・V9。管理者の印 `admin_flag` と停止の列を持つ）、パスワード、氏名と表示の設定、自分の設定の API（`/api/me/**`）、起動時の初期管理者の作成と救済。ほかの機能には `service/UserAccountService.java` の口だけを見せる。
+- 今回読んだもの: `domain/User.java`（列の定義と作る口）、`service/UserSummary.java`（`userId`・`email`・`admin` ほか）、`repository/UserRepository.java`（問い合わせの一覧。`findActiveAdminIds` 182 行）。K-32・K-34 に関わる。
+- 依存: `common`
+- 状態: at-risk（K-32・K-34） ／ 読みの深さ: 深い（一部。上の3ファイル）
 
 ### invitation
 
 - 場所: `invitation/{domain,lock,repository,service,web}`
-- 責務: 招待・送り直し・取り消し・一覧（`/api/admin/invitations`）、リンクの確かめと登録の完了（`/api/registration/**`、ログインなし）、期限の切れた招待の定期の削除（前回までの記録）。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: 招待・送り直し・取り消し・一覧（`/api/admin/invitations`）、リンクの確かめと登録の完了（`/api/registration/**`、ログインなし）。
+- 今回読んだもの: `web/InvitationSecurityContributor.java`（決まりの部分。order 310 で登録の API を公開にする）。
+- 状態: healthy ／ 読みの深さ: 深い（一部。`InvitationSecurityContributor.java` の決まりの部分だけ）
 
 ### useradmin
 
 - 場所: `useradmin/{domain,service,web}`
-- 責務: 利用者の管理の API（`/api/admin/users` の一覧と、氏名・言語の変更・管理者の印の付け外し・利用停止と再開・ログインの失敗回数の取り消し）。業務処理は結果の型（`service/OperationResult.java` ほか）を返し、controller が業務エラーに変える。監査の出来事 `domain/UserAdminAuditEvent.java` を知らせる。
-- 今回読んだもの: `service/UserAdminService.java`（`Busy` の作り方と巻き戻しの印の範囲）、`service/UserAdminBarrier.java`（本番は `NoOpUserAdminBarrier`）、`web/UserAdminController.java`（`Busy` から 409 `USER_ADMIN_BUSY` への変換の範囲）、テスト `backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminBusyApiIT.java`。K-27 の持ち主の一つ（本文は `architecture.md` の Interaction Diagrams 3）。
-- 依存: `user`（domain・service）・`auth`（domain・service）・`access.domain`・`common`（`error`・`observability`・`paging`・`persistence`）。外から import するのは `audit` だけ（前回の import の検索）。
-- 状態: at-risk（K-27 の確かめ。直しはテストだけの見込み） ／ 読みの深さ: 深い（一部。上の3ファイルとテスト1つ）
+- 責務: 利用者の管理の API（`/api/admin/users`）。業務処理は結果の型を返し、controller が業務エラーに変える。監査の出来事を知らせる。
+- 今回読んだもの: `domain/AdminOperation.java`・`RejectionReason.java`、`service/UserAdminService.java`（250〜398 行。管理者の行の排他と判定の流れ）、`web/AdminUser.java`、テスト `backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java`（決まりの一覧）。K-34 の持ち主（本文は `architecture.md` の Interaction Diagrams 2）。
+- 依存: `user`（domain・service）・`auth`（domain・service）・`access.domain`（`AccessProblemTypes` だけ）・`common`
+- 状態: at-risk（K-34） ／ 読みの深さ: 深い（一部。上の4ファイルとテスト1つ）
 
 ### mail
 
@@ -129,7 +128,8 @@
 
 - 場所: `appearance/{config,service,web}`
 - 責務: インスタンスの見た目の設定を `GET /api/appearance` で画面に渡す。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 今回読んだもの: `web/AppearanceSecurityContributor.java`（決まりの部分。order 410 で公開にする）。
+- 状態: healthy ／ 読みの深さ: 深い（一部。`AppearanceSecurityContributor.java` の決まりの部分だけ）
 
 ### targetdb
 
@@ -139,42 +139,47 @@
 
 ### dsl
 
-- 場所: `dsl/{domain,parse,validate,service}`
-- 責務: DSL の型・安全な読み込み・検証・適用中のモデル。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `dsl/{domain,parse,validate,service}`（あわせて `backend/src/main/resources/dsl/dsl-schema-v1.json`）
+- 責務: DSL の型・安全な読み込み・検証・適用中のモデル（メニューの木を含む）の保持と提供口 `ActiveDslModelProvider`。
+- 今回読んだもの: `domain/DslMenuItem.java`・`DslModel.java`（メニューの項目）・`DslFormat.java`（上限の定数）、`service/ActiveDslModelProvider.java`、`validate/DslSemanticValidator.java`（メニューの検証の 78〜117 行）、`dsl-schema-v1.json`（`menus`・`menuItem`）。K-37 の持ち主（本文は `api-documentation.md`）。
+- 状態: at-risk（K-37 で提供口の使い方・検証が増えうる） ／ 読みの深さ: 深い（一部。上の6ファイル）
 
 ### dslmanage
 
 - 場所: `dslmanage/{domain,generate,repository,service,web}`
 - 責務: 既定の DSL の生成・投入・プレビュー・適用・履歴（`/api/admin/dsl`）。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 今回読んだもの: `generate/DslTreeBuilder.java`（既定のメニューの生成の 60〜84 行）。テーブルごとに1段のメニューだけを作る（K-37）。
+- 状態: healthy ／ 読みの深さ: 深い（一部。`DslTreeBuilder.java` の上の範囲だけ）
 
 ### backend-test-support
 
-- 場所: `backend/src/test/java/cherry/mastersmith/`（`*Test` 173 件・`*IT` 133 件、`*SecretLeakIT` 12 件。開発担当がファイルの名前で数えた）
-- 責務: 機能ごとの `testsupport` と共通の `common/testsupport`（`JsonLogRecords`・`RowLockHolder`・`TestDatabase` ほか、名前だけ）、アプリ全体を起動する結合テスト、境界の検査、対象DB のイメージの固定（`targetdb/testsupport/TargetDbImages.java`）。
-- 今回読んだもの: `targetdb/testsupport/TargetDbImages.java`（版の定数とダイジェストの定数。Testcontainers は `イメージ名@ダイジェスト` だけで起動し、版の定数は使っていない。K-31）、`user/service/InitialAdminIT.java`（テストの名前の範囲）。
-- 状態: at-risk（K-31） ／ 読みの深さ: 深い（一部。上の2ファイル）
+- 場所: `backend/src/test/java/cherry/mastersmith/`（380 ファイル）
+- 責務: 機能ごとの `testsupport` と共通の `common/testsupport`、アプリ全体を起動する結合テスト、層と境界の検査。
+- 今回読んだもの: `ArchitectureTest.java`（全体の層の決まりの一覧）、`useradmin/UserAdminBoundaryArchitectureTest.java`・`auth/AuthBoundaryArchitectureTest.java`（決まりの一覧）。境界テストは 10 個あり、`access` には無い（K-38）。認可のテスト用の決まり `access/testsupport/PublicApiTestRules`・`AdminTestUsers` は名前だけ。
+- 状態: at-risk（K-38） ／ 読みの深さ: 深い（一部。上の3ファイル）
 
 ## 画面（`frontend/src/`）
 
 ### frontend-app-core
 
-- 場所: `main.tsx`・`app/App.tsx`・`app/pages/`・`app/login-handoff/`・`app/login-state/`・`shared/validation`・`shared/format`
-- 責務: 画面の起動と骨組み、共通の画面、日時の書式、入力の確かめ。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `main.tsx`・`app/App.tsx`・`app/pages/`・`app/admin-forbidden/`・`app/login-handoff/`・`app/login-state/`・`shared/validation`・`shared/format`・`shared/modal`
+- 責務: 画面の起動と骨組み、共通の画面（ホーム・403 の画面 S6）、管理の API の 403 を受けて S6 に切り替える `AdminForbiddenProvider`、日時の書式、入力の確かめ。
+- 今回読んだもの: `app/admin-forbidden/AdminForbiddenProvider.tsx`、`app/pages/HomePage.tsx`。K-35 に関わる（本文は `architecture.md` の Interaction Diagrams 3）。前回の一覧の場所に `app/admin-forbidden/`・`shared/modal` が無かったため、ここに足した（ID は変えていない）。
+- 状態: at-risk（K-35） ／ 読みの深さ: 深い（一部。上の2ファイル）
 
 ### frontend-registry
 
 - 場所: `app/registry/`・`app/navigation/`
-- 責務: `features/<featureId>/registration.ts` を置くだけで機能を読み込む仕組みと、サイドバー・ユーザーメニューの項目。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: `features/<featureId>/registration.ts` を置くだけで機能を読み込む仕組み、4つの差し込み口の型、サイドバー・ユーザーメニューの項目の組み立て（`buildSidebarEntries`・`buildUserMenuItems`）。
+- 今回読んだもの: `app/registry/types.ts`・`registrationModules.ts`・`loadRegistrations.ts`・`validateRegistrations.ts`、`app/navigation/navigationItems.ts`。K-35 の中心（本文は `architecture.md` の Interaction Diagrams 3）。
+- 状態: at-risk（K-35・K-36） ／ 読みの深さ: 深い（一部。上の5ファイル）
 
 ### frontend-app-layout-i18n
 
 - 場所: `app/layout/`・`app/i18n/`・`app/routing/`
-- 責務: AppShell の配置、表示言語、振り分け。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: AppShell の配置（`ShellLayout.tsx`）、表示言語、振り分け（`decideRoute.ts`・`AppRouter.tsx`）。
+- 今回読んだもの: `app/layout/ShellLayout.tsx`、`app/routing/decideRoute.ts`・`AppRouter.tsx`。アイコンの固定（46 行）と、管理者の画面の振り分け（63 行）（K-35・K-36）。
+- 状態: at-risk（K-35・K-36） ／ 読みの深さ: 深い（一部。上の3ファイル）
 
 ### frontend-app-display-settings
 
@@ -184,47 +189,43 @@
 
 ### frontend-api-client
 
-- 場所: `shared/api-client/`
-- 責務: 同じオリジンの `/api/**` の呼び出し、トークンの付与、401 で1回だけ更新して送り直す、Problem Details の読み取り。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `shared/api-client/`・`shared/paging`
+- 責務: 同じオリジンの `/api/**` の呼び出し、トークンの付与、401 で1回だけ更新して送り直す（`refreshSessionOnce`）、Problem Details の読み取り、管理の API の 403 の判定 `isAdminForbidden`。
+- 今回読んだもの: `shared/api-client/adminForbidden.ts`。判定は「パスが `/api/admin/` で始まる・403・`ACCESS_DENIED`」に固定（K-35）。開発担当は深く読んだ部品に挙げていないが、深く読んだファイルを持つため `analyzed.components` に入れた。
+- 状態: at-risk（K-35） ／ 読みの深さ: 深い（一部。`adminForbidden.ts` だけ）
 
 ### frontend-feature-auth
 
 - 場所: `features/auth/`
-- 責務: ログインの画面とログインの状態。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: ログインの画面とログインの状態の提供元。
+- 今回読んだもの: `loginStateProvider.ts`（`CurrentUserResponse.admin` を `LoginState.admin` に写す。K-35）。
+- 状態: at-risk（K-35） ／ 読みの深さ: 深い（一部。`loginStateProvider.ts` だけ）
 
 ### frontend-feature-admin
 
 - 場所: `features/admin/`
-- 責務: 管理の入口の画面 `/admin`。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: 管理の入口の画面 `/admin`。サイドバーの項目（order 200、`ADMIN`）。
+- 今回読んだもの: `registration.ts`。
+- 状態: healthy ／ 読みの深さ: 深い（一部。`registration.ts` だけ）
 
 ### frontend-feature-dsl
 
 - 場所: `features/dsl/`
-- 責務: DSL の管理画面 `/admin/dsl`。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: DSL の管理画面 `/admin/dsl`（order 210）。プレビューのメニューの木を `DslMenuTree.tsx` で描く。
+- 今回読んだもの: `DslMenuTree.tsx`（16〜60 行。入れ子のリストと `aria-expanded` の開閉のボタン、ARIA の tree の役割は使わない）、`api/types.ts`（`MenuNode`、`icon` は無い）。K-36・K-37 に関わる。
+- 状態: healthy ／ 読みの深さ: 深い（一部。上の2ファイル）
 
 ### frontend-feature-invitation
 
 - 場所: `features/invitation/`
-- 責務: 管理者の招待の画面 `/admin/invitations`。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: 管理者の招待の画面 `/admin/invitations`（order 220）。
+- 状態: healthy ／ 読みの深さ: 流し読み（サイドバーの項目の値だけ検索で確かめた）
 
 ### frontend-feature-useradmin
 
 - 場所: `features/useradmin/`
-- 責務: 利用者の管理の画面（一覧・検索・行の「操作」・確かめの表示・氏名と言語の入力 `EditProfileDialog.tsx`）。
-- 今回読んだもの: `EditProfileDialog.tsx`。
-- K-29 言語の欄で Enter で送信すると、押せなくした選択肢からフォーカスが外れる（確かめた事実）:
-  - `EditProfileDialog.tsx` は送信中（`state.status === 'submitting'`）に氏名の欄を `readOnly={submitting}`（フォーカスは残る）にし、言語の `RadioGroup` を `disabled={submitting}`（157〜158 行。前の Intent の FR3.1）にする。フォームは `onSubmit`（118 行）で送るため、言語の選択肢にフォーカスがある状態で Enter を押すと送信になり、その選択肢自身が押せなくなる。
-  - make-you-chic-ui の `RadioGroup`（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/RadioGroup/RadioGroup.tsx`）の props は `name`・`options`・`value`・`defaultValue`・`onChange`・`disabled`・`className`・`style`・`legend` だけで、`readOnly` に当たる口は無い。`disabled` は各 `Radio` にそのまま渡る。
-  - `vendor/make-you-chic-ui` はこのリポジトリから直接変えられない（`project.md` の Forbidden）。変えるなら上流で直し、固定先の更新を承認を得た専用のコミットで行う（`project.md` の Mandated、`team.md` の Way of Working）。
-- K-29 見立て（未検証）:
-  - ブラウザは押せなくなった要素にフォーカスを残さないため、フォーカスは `body` に落ちる。直し方の候補は、(a) 送信中も `disabled` にせず `onChange` で値の変更を受け付けない（見た目で押せないことが伝わらない）、(b) 送信を始めるときに保存のボタンなど押せるままの要素へフォーカスを移す、(c) make-you-chic-ui に読み取り専用の口を足してもらう（依頼者への相談が要る）。
-  - 同じ形（送信中に `disabled` にする選択肢の欄）がほかの画面（プリファレンス・登録の完了など）にもあるかは、今回は確かめていない。
-- 状態: at-risk（K-29） ／ 読みの深さ: 深い（一部。`EditProfileDialog.tsx` だけ）
+- 責務: 利用者の管理の画面（order 230）。
+- 状態: healthy ／ 読みの深さ: 流し読み（サイドバーの項目の値だけ検索で確かめた）
 
 ### frontend-feature-registration
 
@@ -235,25 +236,34 @@
 ### frontend-feature-preferences
 
 - 場所: `features/preferences/`
-- 責務: 自分の設定とパスワードの変更の画面。
+- 責務: 自分の設定とパスワードの変更の画面（ユーザーメニューの項目 order 80・90）。
 - 状態: healthy ／ 読みの深さ: 流し読み
 
 ### frontend-e2e
 
-- 場所: `frontend/e2e/`（`*.e2e.ts` 13 本。開発担当が名前で数えた）
-- 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。
+- 場所: `frontend/e2e/`（`*.e2e.ts` 13 本、010〜130）
+- 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。認可に関わるものは `030-admin-access`・`110-user-admin-flow`・`130-admin-forbidden-accessibility` など（名前だけ）。
 - 状態: healthy ／ 読みの深さ: 流し読み
 
 ### make-you-chic-ui
 
-- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール。画面からは npm の `file:` の依存で使う）。今回は固定先のコミットを確かめていない。
-- 責務: デザインシステム（Alert・AppShell・Button・Dropdown・Modal・RadioGroup・Table・TextInput・Toast ほか）。中身はこのリポジトリから変えない（`project.md` の Forbidden）。
-- 今回読んだもの: `packages/make-you-chic-ui/src/components/RadioGroup/RadioGroup.tsx`（K-29、本文は `frontend-feature-useradmin`）。
-- 状態: at-risk（K-29 の直しで上流の変更が要る場合） ／ 読みの深さ: 深い（一部。`RadioGroup.tsx` だけ）
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `e82b651`。画面からは npm の `file:` の依存で使う）
+- 責務: デザインシステム（AppShell・Button・Dropdown・Modal・Tabs・Table・TextInput・Toast ほか）。中身はこのリポジトリから変えない（`project.md` の Forbidden）。
+- 今回読んだもの: `packages/make-you-chic-ui/src/components/AppShell/AppShell.tsx`・`Sidebar.tsx`、`Icon/registry.ts`。`Dropdown`・`Tabs` は props だけ流し読み。
+- K-36 サイドバーは平らで、N 階層のメニューの部品は make-you-chic-ui に無い（確かめた事実）:
+  - 骨組みの `buildSidebarEntries` は「ホーム」＋表示の条件を満たす登録の項目を `order` の順に並べた平らな一覧を作る（`frontend/src/app/navigation/navigationItems.ts`）。
+  - `AppShell` の `navItems` の型 `AppShellNavItem`（定義は `Sidebar.tsx` 20〜25 行付近）は `label`・`icon?`（`IconName`）・`href`・`onClick?` だけで、子の項目・開閉・グループの見出しの口は無い。`Sidebar` は平らな `<ul>` を描き、`key={item.href}`（49 行）、`aria-label="メインナビゲーション"`（45 行、日本語の固定）で、今の項目を示す `aria-current` も無い。`Sidebar` は外へ出していない（`AppShell` の中だけ）。
+  - アイコンは 18 種類（`menu`・`chevron-down`・`chevron-up`・`close`・`check`・`bell`・`user`・`search`・`edit`・`trash`・`download`・`settings`・`home`・`list`・`info`・`success`・`warning`・`danger`、`Icon/registry.ts`）。
+  - 同じリポジトリの中の N 階層の木の前例は `frontend/src/features/dsl/DslMenuTree.tsx` だけで、機能の中の部品（`shared/` にも骨組みにも無い）。
+- K-36 見立て（未検証）:
+  - N 階層のサイドバーには、(a) make-you-chic-ui に入れ子のナビゲーション（子の項目・開閉・`aria-current`・言語に合わせた `aria-label`）を足してもらう、(b) `AppShell` のサイドバーを使わず骨組みが自前で描く、のどちらかが要る。(b) を選ぶときは、`project.md` の学び（make-you-chic-ui に無い機能を自前で作る設計にしたときは、承認の前に足りない点を一覧にし、取り込みを依頼者に諮る）に当たる。(a) の取り込みは、固定先の更新を承認を得た専用のコミットで行う（`project.md` の Mandated）。
+  - 項目の `key` が `href` のため、同じ行き先を持つ項目が2つあると重なる。まとまり（子だけを持ち行き先の無い節）を平らな一覧に載せる形は、今の型では表せない。
+  - DSL の `icon` を画面に出すなら、18 種類に無い名前の扱いを決める必要がある（K-37）。
+- 状態: at-risk（K-36） ／ 読みの深さ: 深い（一部。上の3ファイル）
 
 ### java-mustache-processor
 
-- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、`0.1.0`）。Gradle の composite build で使う。
+- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、固定先 `8d44c36`）。Gradle の composite build で使う。
 - 責務: メールのテンプレートの Mustache のエンジン。今回の Intent では触れない見込み。
 - 状態: healthy ／ 読みの深さ: 流し読み
 
@@ -263,19 +273,17 @@
 
 - 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`backend/config/spotbugs-exclude.xml`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`settings-gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`
 - 責務: 1コマンドの検査 `./gradlew verify`、E2E の `./gradlew e2eTest`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限（JaCoCo の全体とパッケージごと、`packagesJudgedByTotal`）、SpotBugs の関門、Gitleaks・OSV-Scanner、Dependabot。
-- 今回読んだもの: `backend/build.gradle.kts`（`packagesJudgedByTotal` とカバレッジの検証の範囲、K-30。本文は `code-quality-assessment.md`）、`gradle/libs.versions.toml`（`[versions]` の範囲）、`.github/dependabot.yml`（K-31、本文は `dependencies.md`）。
-- 状態: at-risk（K-30・K-31） ／ 読みの深さ: 深い（一部。上の3ファイル）
+- 今回読んだもの: `backend/build.gradle.kts`（カバレッジの検証と `packagesJudgedByTotal`、225〜233 行）、`gradle/libs.versions.toml`。K-38 に関わる（本文は `code-quality-assessment.md`）。`build.gradle.kts`・`ci.yml`・`frontend/package.json`・`vitest.config.ts` は流し読み。
+- 状態: at-risk（K-38） ／ 読みの深さ: 深い（一部。上の2ファイル）
 
 ### container-runtime
 
-- 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md`（起動と設定の手順）
-- 責務: WAR をコピーするだけのイメージ（`FROM eclipse-temurin:25.0.4_7-jre-noble`、ダイジェストなし）、`app` のサービスと、profile で起動する監視（`otel/opentelemetry-collector`・`grafana/otel-lgtm`、ダイジェストなし）・メールの受け手（Mailpit）・見本の対象DB（PostgreSQL・MySQL・MariaDB、版とダイジェストで固定）。
-- 今回読んだもの: `Dockerfile`、`compose.yaml`（イメージの行）、`.env.example`（初期管理者の項目の名前だけ。値は空）、`README.md`（初期管理者の記述の範囲）。K-31 の持ち主の一つ（本文は `dependencies.md`）。
-- 状態: at-risk（K-31） ／ 読みの深さ: 深い（一部。上の4ファイルの上の範囲）
+- 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md`
+- 責務: WAR をコピーするだけのイメージ、`app` のサービスと、profile で起動する監視・メールの受け手・見本の対象DB（前回までの記録。今回は読み直していない）。
+- 状態: healthy ／ 読みの深さ: 流し読み
 
 ### perf-and-monitoring
 
 - 場所: `perf/`・`docker/`
-- 責務: k6 の負荷の試験（`perf/k6/scenarios.js`、場面を `SCENARIO` で選ぶ）と使い捨ての環境（`docker/perf/compose.yaml`）、手順（`perf/README.md`）、手元の監視の警報とダッシュボード（`docker/monitoring/`）、接続プールの運用の道具（`docker/hikari-pool.sh`・`docker/jmx`）。
-- 今回読んだもの: `perf/k6/scenarios.js`（場面の一覧と利用者の管理の場面の定義、K-26・K-27）、`docker/perf/compose.yaml`（イメージの行、K-31）。
-- 状態: at-risk（K-26 の切り分けの試験・K-31） ／ 読みの深さ: 深い（一部。上の2ファイル）
+- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視の警報とダッシュボード、接続プールの運用の道具（前回までの記録。今回は読み直していない）。
+- 状態: healthy ／ 読みの深さ: 流し読み
