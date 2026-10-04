@@ -1,0 +1,17 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": ["US1.1", "US1.2", "US2.1", "US2.2", "US3.1", "US4.1", "US4.2", "US5.1", "US5.2", "US5.3", "US6.1"],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "RoleManagement, Role, RoleAdminUi, AuditLog, AccessControl" },
+    { "id": "US1.2", "status": "OK", "target": "RoleManagement, PermissionSetting, RoleAdminUi, SharedTreeView, DslDefinition" },
+    { "id": "US2.1", "status": "OK", "target": "GroupManagement, Group, GroupMembership, GroupAdminUi, AuditLog" },
+    { "id": "US2.2", "status": "OK", "target": "RoleManagement, RoleAssignment, RoleAdminUi, UserAdminUi, UserAccount" },
+    { "id": "US3.1", "status": "OK", "target": "RoleManagement, PermissionSetting, RoleTransferUi, AuditLog" },
+    { "id": "US4.1", "status": "OK", "target": "RoleManagement, WorkRoleSelection, AppFrame, AuditLog" },
+    { "id": "US4.2", "status": "OK", "target": "RoleManagement, MyPermissionsUi, SharedTreeView" },
+    { "id": "US5.1", "status": "OK", "target": "Navigation, AppFrame, TablePlaceholderUi, DslDefinition" },
+    { "id": "US5.2", "status": "OK", "target": "DslDefinition, DslAdminUi" },
+    { "id": "US5.3", "status": "OK", "target": "AppFrame, AccessControl" },
+    { "id": "US6.1", "status": "OK", "target": "DslDefinition, DslManagement, DslAdminUi" }
+  ]
+}
