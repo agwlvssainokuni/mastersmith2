@@ -195,6 +195,7 @@
 - ALWAYS 招待のトークンは内部DB にハッシュ値だけを保存し、1回だけ有効で有効期限を持たせる (affirmed 2026-09-25)
 - ALWAYS 利用者の状態（停止・管理者の印）の判定は、ログインの照合・トークンの更新・アクセストークンの認証のすべてでサーバー側で行い、画面で操作を隠すことを代わりにしない (affirmed 2026-09-30)
 - ALWAYS 利用者の権限・状態を変える管理の操作（管理者の印の付け外し・利用停止と再開・ロックの解除）は、操作した人・対象の利用者・結果を監査に残す（拒否した操作を含めるかは要件で決める） (affirmed 2026-09-30)
+- ALWAYS 役割・権限による判定は、API ごとにサーバー側で行い、メニュー・画面の出し分けを代わりにしない (affirmed 2026-10-04)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
@@ -387,3 +388,4 @@
 - 知識ベースが STALE（前回の Intent の後に 42 パスが変更）のため再利用の選択肢は出さず、依頼者は Full rescan を選んだ。深さ Standard で、開発担当は全体を把握したうえで今回の Intent（ロールベースの権限・N 階層のメニュー）に関わる 59 パス・21 部品を深く読んだため、記録上の範囲は kind: partial とし ./ を analyzed.paths に入れない（前回までと同じ扱い）。 (learned 2026-10-04) <!-- cid:261004-role-menu:reverse-engineering:806f232a67fd55c3b44e7ebb338bec7729bfb5bef14df05889f6cf86ccd17e9d -->
 - 比べた結果は NARROWER。前回の深い範囲（common-error・common-persistence・frontend-feature-useradmin・container-runtime・perf-and-monitoring の 5 部品、33 パス）は流し読みに下がった。今回は access・common-security・auth・user・useradmin・dsl・画面の骨組み（registry・navigation・routing）・make-you-chic-ui の Sidebar を深く確かめた。所見は前回に続けて K-32〜K-38 とした。 (learned 2026-10-04) <!-- cid:261004-role-menu:reverse-engineering:be2187714557a1975dfa677f339e3c9b0ddffb095be09e49423a4afb3032b590 -->
 - アーキテクトが開発担当の記録を読み取りで確かめ直し、4 点（API の総数 29→32 本、AccessDeniedReason は 5 値、境界テストは 10 個、AppShellNavItem の定義は Sidebar.tsx）を訂正して timestamp に記録した。部品 ID は前回の 39 個を使い、analyzed.components に frontend-api-client を足した。 (learned 2026-10-04) <!-- cid:261004-role-menu:reverse-engineering:01bcf01beaefe75cf7cdcb17bb7963cd0301280a5d214ecbe2a6bfef7abc95d4 -->
+- Q11（vendor の npm ci は今のまま）が team.md の「npm でパッケージを入れるときはスクリプトを動かさない」と食い違って読めるため追加の質問 F1 で確かめ、team.md の文言は変えず、vendor/make-you-chic-ui の vendorInstall（npm ci）は対象外で --ignore-scripts を付けないことを project.md の学びとして残す形（B）になった。 (learned 2026-10-04) <!-- cid:261004-role-menu:practices-discovery:8257030f60b2dc6f18a07e645b5b23c2c8a503464e03963f303dbdf288d39ae0 -->
