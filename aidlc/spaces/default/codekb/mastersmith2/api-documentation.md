@@ -1,52 +1,40 @@
 # API（mastersmith2）
 
-同じオリジンで配信する SPA から呼ぶ前提である（CORS の設定は無い）。REST（JSON、Spring MVC）で、認証は `Authorization: Bearer <アクセストークン>`。セッションと CSRF の仕組みは無い（`config/SecurityConfig.java`）。`/api/**` の既定はログインが必要（`access/web/AdminApiDefaultAccess.java`）、`/api/admin` と `/api/admin/**` は管理者だけ（`access/domain/AdminPaths.java`）。エラーは RFC 9457 Problem Details に安定した `code` を足した形（`common/error`、1つの code に1つの状態コード）。
+同じオリジンで配信する SPA から呼ぶ前提である（CORS の設定は無い）。REST（JSON、Spring MVC）で、認証は `Authorization: Bearer <アクセストークン>`。セッションと CSRF の仕組みは無い。`/api/**` の既定はログインが必要、`/api/admin/**` は管理者だけ。エラーは RFC 9457 Problem Details に安定した `code` を足した形（`common/error`、1つの code に1つの状態コード）。
 
 パスは `backend/src/main/java/cherry/mastersmith/` を省いて書く。
 
 ## 外部の API（HTTP）
 
+対応づけの注釈の数は開発担当の検索による概数（クラスの単位の `@RequestMapping` を含む）。「深い」の行は今回のコードで確かめた範囲を書いた。
+
 | メソッド・パス | 実装 | アクセス | 読みの深さ |
 |---|---|---|---|
-| `POST /api/auth/login` | `auth/web/AuthController.java` | 公開 | 深い。失敗は理由によらず 401 `AUTHENTICATION_FAILED`（K-1） |
-| `POST /api/auth/session/refresh` | 同上 | 公開・Cookie のリフレッシュトークン・Origin の確かめ | 深い。失敗は `REFRESH_FAILED` |
-| `POST /api/auth/session/logout` | 同上 | 同上 | 深い |
-| `GET /api/admin/check` | `access/web/AdminCheckController.java` | 管理者だけ | 深い。204。画面の管理の入口が使う |
-| `GET /api/me/preferences`・`PUT /api/me/preferences`・`POST /api/me/password` | `user/web/MeController.java` | ログイン | 流し読み（名前だけ） |
-| `POST /api/admin/invitations`・`GET /api/admin/invitations?page=`・`POST /api/admin/invitations/{invitationId}/resend`・`POST /api/admin/invitations/{invitationId}/cancel` | `invitation/web/InvitationAdminController.java` | 管理者だけ | 深い（K-5 の見本） |
-| `GET /api/admin/users`・`PUT /api/admin/users/{userId}/profile`・`POST /api/admin/users/{userId}/grant-admin`・`/revoke-admin`・`/suspend`・`/resume`・`/reset-login-failures` | `useradmin/web/UserAdminController.java` | 管理者だけ | 2026-10-04 にマッピングの注釈を検索で確かめた（Intent `260930-user-admin` で作られた）。一覧の問い合わせの引数と応答の項目は今回読んでいない。K-21 のテストは一覧と `revoke-admin` を呼ぶ |
-| `POST /api/registration/verify`・`POST /api/registration/complete` | `invitation/web/RegistrationController.java` | 公開（差し込み口 order 310） | 流し読み |
-| `/api/admin/dsl` の下の 10 本（状態・プレビュー・投入・破棄・生成・ダウンロード・適用・履歴・戻し・適用済みのダウンロード） | `dslmanage/web/DslAdminController.java` | 管理者だけ | 流し読み |
-| `GET /api/appearance` | `appearance/web/AppearanceController.java` | 公開 | 流し読み |
-| `GET /api/problems/{slug}` | `common/error/web/ProblemTypeController.java` | 公開 | 流し読み |
-| `GET /dsl/dsl-schema-v1.json`・`GET /actuator/health`・SPA の配信 | 静的・Actuator | 公開 | 流し読み |
+| `POST /api/auth/login` | `auth/web/AuthController.java` → `auth/service/LoginService.java` | 公開 | 業務処理を深く（K-26、`architecture.md` の Interaction Diagrams 2）。失敗は理由によらず 401 |
+| `POST /api/auth/session/refresh`・`POST /api/auth/session/logout` | 同上（`TokenRefreshService.java` ほか） | 公開・Cookie のリフレッシュトークン | 更新の停止の判定の範囲だけ |
+| `GET /api/me/...`・`PUT /api/me/...`・`POST /api/me/password` | `user/web/MeController.java` | ログイン | 流し読み（4 本） |
+| `GET /api/admin/users`・`PUT /api/admin/users/{userId}/profile`・`POST /api/admin/users/{userId}/grant-admin`・`/revoke-admin`・`/suspend`・`/resume`・`/reset-login-failures` | `useradmin/web/UserAdminController.java` | 管理者だけ | `Busy` から 409 `USER_ADMIN_BUSY` への変換の範囲だけ（K-27、Interaction Diagrams 3）。一覧の引数と応答の項目は読んでいない |
+| `/api/admin/invitations` の下（招待・一覧・送り直し・取り消し）・`/api/registration/**`（確かめ・完了） | `invitation/web/` | 管理者だけ・公開 | 流し読み |
+| `/api/admin/dsl` の下の 10 本 | `dslmanage/web/DslAdminController.java` | 管理者だけ | 流し読み |
+| `GET /api/admin/check` | `access/web/` | 管理者だけ | 流し読み |
+| `GET /api/appearance` | `appearance/web/` | 公開 | 流し読み |
+| `GET /api/problems/{slug}` | `common/error/web/` | 公開 | 流し読み |
+| `/error` | `common/error/web/ErrorPathController.java` | フィルターやコンテナで起きた例外の受け口 | 深い（K-28、Interaction Diagrams 4）。5xx は ERROR「想定外のエラーが起きました」を原因つきで出す |
+| `GET /actuator/health`・SPA の配信 | Actuator・静的 | 公開 | 流し読み |
 
-前回（2026-09-30、`31b980b`）の記録: **利用者の管理の API は無い。** 利用者の一覧・管理者の印の変更・利用停止・ロックの解除のどれも、controller・service・repository のどの層にも無い。その後 Intent `260930-user-admin` で上の表の `useradmin` の API が作られた（今回 2026-10-04 に存在を確かめた。下の `UserRepository` の問い合わせの記述は前回のまま）。`user/repository/UserRepository.java` の問い合わせは `findByEmail`（43 行）・`existsByRedactedEmail`（55 行）・`updatePreferences`（70 行）・`updatePasswordHashIfUnchanged`（85 行）と `JpaRepository` の標準の操作だけで、`users` の索引は主キーとメールアドレスの一意の制約だけ（V2）。
+## 運用の口（HTTP の外）
+
+| 口 | 場所 | 内容 |
+|---|---|---|
+| 起動時の初期管理者の作成 | `user/service/InitialAdminInitializer.java`、環境変数 `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` | 同じメールアドレスの利用者がいなければ管理者を作る。既にいる利用者を救う（停止を解く・印を付ける）口は無く、監査にも残らない（K-25） |
+| HikariCP の JMX | `docker/hikari-pool.sh`・`docker/jmx`（名前だけ） | 接続プールの運用の道具（前回までの記録） |
 
 ## アプリの中の口（部品の間の契約）
 
 | 口 | 場所 | 内容 |
 |---|---|---|
-| `UserAccountService` | `user/service/UserAccountService.java` | `verifyPassword`・`findById`・`existsByEmail`（文字列と `RedactedText`）・`findDisplayName`・`findLanguage`・`createUser`。戻り値の `UserSummary` は `toString` でメールアドレスと氏名を伏せる（K-8）。`auth`・`invitation`・`dslmanage` が使う |
-| 出来事 `UserCreatedEvent` | `user/service/UserCreatedEvent.java` → `auth/service/LoginAttemptStateInitializer.java` | 同じトランザクション（`Propagation.MANDATORY`）でロックの状態の行を作る。`user` から `auth` への逆向きの知らせの前例（K-3） |
-| 監査の出来事 | `AuthenticationEvent`・`AdminAccessDeniedEvent`・`PasswordChangedEvent`・招待と登録の出来事・`DslOperationEvent` → `audit/service/AuditEventListener.java` | 確定の後に記録（`architecture.md` の Interaction Diagrams 3、K-6） |
-| 監査の出来事（利用者の管理） | `useradmin/domain/UserAdminAuditEvent.java` → `audit/service/AuditEventListener.java`・`audit/domain/AuditEventFactory.java` | 2026-10-04 に import の検索で確かめた。種類の名前は読んでいない |
-| 安全の決まりの差し込み口 `SecurityRuleContributor` | `common/security`、各機能の `web` | order は機能ごとに 100 台（auth 110・access 210・invitation 310・appearance 410。x00・x50 はテストの決まり） |
-
-## K-5 一覧・ページ送り・操作・結果の型の前例（`invitation` の管理の API）
-
-前回の記録で、今回は確かめ直していない。下の見立ては、その後 `useradmin` で同じ形（`/api/admin/users` の一覧、`/{userId}/<動詞>` の操作、結果の型）として作られた。
-
-確かめた事実:
-
-- 一覧: `GET /api/admin/invitations?page=`。`page` は文字列で受け、数でなければ業務処理が `ListResult.InvalidPage` を返し、controller が 400 `VALIDATION_FAILED` にする（`invitation/web/InvitationAdminController.java` 108〜112 行）。1ページは 20 件（`invitation/domain/InvitationPaging.java` の `PAGE_SIZE`、DB を使わない純粋な関数）。応答は `InvitationPageResponse`（`items`・`page`・`size`・`total`・`unavailableReasons` ほか）。
-- 操作: `POST /api/admin/invitations/{invitationId}/resend`・`/cancel` の形（動詞の下位パス）。業務処理は sealed interface の結果の型（`InviteResult`・`ListResult`・`ResendResult`・`CancelResult`）を返し、controller が網羅の `switch` で応答か `BusinessException` に変える（例 `CancelResult.Cancelled` → 204、`CancelResult.NotFound` → `INVITATION_NOT_FOUND`、141〜145 行）。
-- 操作した管理者の ID と送り手の情報は `invitation/web/InvitationRequestContextResolver.java` で読み、業務処理に渡す（`service.resend(actor, context.origin(request), invitationId)`）。
-- 安全の決まり: `/api/admin/**` は `access` の決まりで管理者だけになるため、招待の管理の API は決まりを足していない。`invitation/web/InvitationSecurityContributor.java` が足すのは公開の2本（登録の完了）だけ。
-- 一覧の「招待した管理者の氏名」は、ページの行ごとに `UserAccountService.findDisplayName` を利用者 ID ごとに1回呼ぶ（`invitation/service/InvitationService.java` 269・286 行）。
-
-見立て（未検証）:
-
-- 利用者の管理の API は、同じ形（`/api/admin/<資源>?page=` の一覧、`/{id}/<動詞>` の操作、結果の型と網羅の `switch`、機能ごとの ProblemType の一覧）で `/api/admin/**` に乗せれば、安全の決まりを足さずに済む。
-- 利用者の一覧で、利用者（`user` の表）とロックの状態（`auth` の表）を別々に読むと、1ページ 20 件で読みが増える。件数が少ない前提なら問題になりにくいが、どちらの部品が合わせるかは境界の決まり（K-3、`dependencies.md`）で絞られる。
-- 一覧・件数・状態の絞り込みの問い合わせは `UserRepository` に足すことになる。
+| `UserAccountService` | `user/service/UserAccountService.java` | `verifyPassword`（`users` を1回読み bcrypt で照合）・`findById`・`existsByEmail`・`createUser`・`lockAdminRowsInIdOrder`・`lockUserRow` ほか。戻り値の `UserSummary` は `toString` でメールアドレスと氏名を伏せ、`suspended` を持つ |
+| 出来事 `UserCreatedEvent` | `user/service/UserCreatedEvent.java` → `auth/service/LoginAttemptStateInitializer.java` | 同じトランザクションでロックの状態の行を作る。受け手はこの1つだけで、監査は受けない（K-25） |
+| 監査の出来事 | 各機能の出来事 → `audit/service/AuditEventListener.java` → `audit/service/AuditEventRecorder.java` | 確定の後に `REQUIRES_NEW` で追記。失敗は呼び出し元に伝えない。種類は `audit/domain/AuditEventType.java` の 20 種類 |
+| 行の排他の結果 | `common/persistence/RowLockAttempt.java`・`RowLockFailures.java` | `Acquired`・`Busy` の結果の型と、失敗の見分けと WARN（K-27） |
+| 待ち合わせの口 | `useradmin/service/UserAdminBarrier.java` | 本番は何もしない（`NoOpUserAdminBarrier`）。結合テストが差し替えて同時の重なりを作る |

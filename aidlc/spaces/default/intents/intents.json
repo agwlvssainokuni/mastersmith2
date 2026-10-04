@@ -75,5 +75,12 @@
     "dirName": "261003-user-admin-followup",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a10462-ecb7-7206-8fea-5b5a9844c869",
+    "slug": "safety-carryover",
+    "dirName": "261004-safety-carryover",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

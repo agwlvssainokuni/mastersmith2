@@ -1,327 +1,296 @@
 # アーキテクチャ（mastersmith2）
 
+パスは、`backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く（画面・テスト・設定・移行のファイルは省かない）。部品ごとの責務と読みの深さは `component-inventory.md`、依存の向きは `dependencies.md`。
+
 ## Architecture Analysis
 
 ### System Overview
 
-1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす（`Dockerfile`・`compose.yaml` は今回イメージの行だけを流し読みした）。
+1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
 
-- 内部DB: 組み込みの H2。利用者（`users`）・ロックの状態（`login_attempt_states`）・リフレッシュトークン（`refresh_tokens`）・監査ログ（`audit_events`）・DSL・招待（`invitations`）を置く。スキーマは Flyway（`backend/src/main/resources/db/migration/` の V1〜V9、前進のみ。V9 `V9__u1_user_suspension.sql` は Intent `260930-user-admin` で足された。中身は今回読んでいない）が正本。1インスタンスだけで動く前提で、ロックの判定は行の排他（`SELECT ... FOR UPDATE`、待ちの上限 3 秒）に頼る（`auth/repository/LoginAttemptStateRepository.java` 30 行の注記）。
-- 起動時に、設定の値から初期管理者を1人だけ作る（`user/service/InitialAdminInitializer.java`。同じメールアドレスの利用者がいれば作らない）。
-- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ（今回は流し読み）。
+- 内部DB: 組み込みの H2（`application.yaml` の `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`）。利用者・ロックの状態・リフレッシュトークン・監査ログ・DSL・招待を置く。スキーマは Flyway の V1〜V9（前進のみ）が正本。単一インスタンスの前提で、ロックの判定と利用者の管理の操作は行の排他（待ちの上限 3000 ms）に頼る。
+- 接続プール: HikariCP、上限の既定 30・借りる待ちの上限 5000 ms（`application.yaml`）。要求1件で接続を2本使う経路がある（業務のトランザクションと、確定の後の監査の書き込み）。
+- 起動時に、設定の値から初期管理者を1人だけ作る（K-25、Interaction Diagrams 1）。
+- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ（流し読み）。
 - 外へ出る接続: 対象DB、SMTP（手元では Mailpit）、既定で無効の OTLP の送り先。
-
-パスは、`backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く（画面・テスト・移行のファイルは省かない）。
+- ログ: 1行1件の JSON（logstash-logback-encoder）。MDC のうち `traceId`・`spanId` を各行に載せる（`logback-spring.xml`）。
 
 ### Architectural Style
 
-**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。
+**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`useradmin`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。
 
-根拠:
+根拠（前回までの記録。今回は決まりの中身を確かめ直していない）:
 
-- 層の決まりは全体の `backend/src/test/java/cherry/mastersmith/ArchitectureTest.java`（web は repository を使わない・トランザクションは service だけ・controller はエンティティを返さない・コンストラクター注入だけ・Lombok なし）が、機能の間の向きは機能ごとの `*BoundaryArchitectureTest`（9 本）が確かめる。今回は `ArchitectureTest`・`AuthBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`・`InvitationBoundaryArchitectureTest` の決まりの名前と対象を読んだ。
-- 機能の間は、直接の呼び出し（service の口）・差し込み口（`SecurityRuleContributor` などの Bean）・アプリの中の出来事（Spring の `ApplicationEventPublisher`）でつなぐ。逆向きの知らせは出来事で行う（`team.md` の Code Style）。向きの一覧は `dependencies.md`。
+- 層の決まりは全体の `ArchitectureTest` が、機能の間の向きは機能ごとの `*BoundaryArchitectureTest` が ArchUnit で確かめる。
+- 機能の間は、直接の呼び出し（service の口）・差し込み口（`SecurityRuleContributor` などの Bean）・アプリの中の出来事（Spring の `ApplicationEventPublisher`）でつなぐ。逆向きの知らせは出来事で行う（`team.md` の Code Style）。今回確かめた例は、`user` の `UserCreatedEvent` を `auth` が受ける形と、各機能の出来事を `audit` が受ける形である。
 
 ### Component Relationships
 
 ```mermaid
 flowchart LR
   subgraph FE["画面 frontend/src"]
-    REG["frontend-registry"]
-    FAUTH["frontend-feature-auth"]
-    FADM["frontend-feature-admin"]
-    FINV["frontend-feature-invitation"]
     FUA["frontend-feature-useradmin"]
+    FOTHER["ほかの画面の機能"]
     APIC["frontend-api-client"]
     MYC["make-you-chic-ui"]
   end
   subgraph BE["バックエンド cherry.mastersmith"]
-    CFG["config SecurityConfig"]
+    CFG["config SecurityConfig と設定"]
     AUTH["auth"]
     ACC["access"]
     USER["user"]
-    INV["invitation"]
     UA["useradmin"]
-    MAIL["mail"]
+    INV["invitation"]
     AUDIT["audit"]
-    DSLM["dslmanage"]
+    PERS["common-persistence"]
+    ERR["common-error"]
   end
   H2[("内部DB H2")]
-  SMTP[("SMTP Mailpit")]
 
-  REG --> FAUTH
-  REG --> FADM
-  REG --> FINV
-  REG --> FUA
   FUA --> APIC
   FUA --> MYC
-  FADM --> APIC
-  FINV --> APIC
-  FAUTH --> APIC
-  FINV --> MYC
+  FOTHER --> APIC
+  FOTHER --> MYC
   APIC -- "HTTP /api/**" --> CFG
   CFG -- "Bearer の認証" --> AUTH
   CFG -- "/api/admin/** の判定" --> ACC
   AUTH -- "service の口" --> USER
-  ACC -- "auth.domain・auth.web" --> AUTH
-  INV -- "service の口と domain" --> USER
-  INV --> MAIL
-  MAIL --> SMTP
-  DSLM -- "service の口" --> USER
   UA -- "service の口と domain" --> USER
-  UA -- "auth.domain・auth.service" --> AUTH
-  UA -- "access.domain" --> ACC
-  UA -- "出来事" --> AUDIT
-  UA --> H2
+  UA -- "domain と service" --> AUTH
+  INV -- "service の口と domain" --> USER
   USER -- "UserCreatedEvent" --> AUTH
   AUTH -- "出来事" --> AUDIT
   ACC -- "出来事" --> AUDIT
   USER -- "出来事" --> AUDIT
+  UA -- "出来事" --> AUDIT
   INV -- "出来事" --> AUDIT
-  DSLM -- "出来事" --> AUDIT
+  UA --> PERS
+  USER --> PERS
+  AUTH --> PERS
+  UA -- "BusinessException" --> ERR
   USER --> H2
   AUTH --> H2
+  UA --> H2
   INV --> H2
   AUDIT --> H2
-  DSLM --> H2
 ```
 
-<!-- Text fallback: 画面では、登録の仕組み（frontend-registry）がログイン・管理の入口・招待の管理の各機能を読み込み、各機能は frontend-api-client を通して同じオリジンの /api/** を呼ぶ。招待の管理の画面は make-you-chic-ui の部品を使う。バックエンドでは、config の SecurityConfig が要求を受け、auth が Bearer のアクセストークンを認証し、access が /api/admin/** を管理者だけに絞る。auth は user の service の口を使い、access は auth の domain と web を使う。invitation は user（service の口と domain）と mail を使い、mail が SMTP へ送る。dslmanage も user の service の口を使う。利用者の管理の画面（frontend-feature-useradmin、登録の仕組みが読み込む）は frontend-api-client と make-you-chic-ui を使い、バックエンドの useradmin は user（service の口と domain）・auth（domain と service）・access の domain を使い、出来事を audit に知らせ、内部DB を読み書きする。user の UserCreatedEvent を auth が受けてロックの状態の行を作る。auth・access・user・invitation・dslmanage の出来事を audit が受けて内部DB に記録する。user・auth・invitation・audit・dslmanage が内部DB を読み書きする。 -->
+<!-- Text fallback: 画面では、利用者の管理の画面（frontend-feature-useradmin）とほかの画面の機能が frontend-api-client を通して同じオリジンの /api/** を呼び、make-you-chic-ui の部品を使う。バックエンドでは、config の SecurityConfig が要求を受け、auth が Bearer のアクセストークンを認証し、access が /api/admin/** を管理者だけに絞る。auth・useradmin・invitation は user の service の口（と domain）を使い、useradmin は auth の domain と service も使う。user は UserCreatedEvent で auth にロックの状態の行を作らせる。auth・access・user・useradmin・invitation の出来事を audit が受けて内部DB に記録する。useradmin・user・auth は common-persistence の行の排他の結果の型と失敗の判定を使い、useradmin の業務エラーは common-error が応答に変える。user・auth・useradmin・invitation・audit が内部DB を読み書きする。 -->
 
-図は利用者と管理の流れを中心に描いた。`appearance`・`common`・`dsl`・`targetdb`・画面のほかの機能は省いた（一覧は `component-inventory.md`）。前回（`31b980b`）の図には利用者の管理の部品が無かった。今回（`47541e3`）、Intent `260930-user-admin` で作られた `useradmin` と `frontend-feature-useradmin` を足した。`useradmin` の向きは今回 import の検索で確かめた（`dependencies.md`）。
+図は今回の Intent の論点（初期管理者・ログイン・利用者の管理・例外の扱い）を中心に描いた。`appearance`・`mail`・`dsl`・`dslmanage`・`targetdb`・画面のほかの機能は省いた（一覧は `component-inventory.md`）。`common-persistence` を使う側は import の検索で確かめた（`dependencies.md`）。
 
 ### Data Flow
 
-1. 画面の要求は `Authorization: Bearer <アクセストークン>` を付けて送られる。セッションと CSRF の仕組みは無い（`config/SecurityConfig.java`）。`/api/**` の既定はログインが必要（`access/web/AdminApiDefaultAccess.java`）で、`/api/admin` と `/api/admin/**` は管理者だけ（`access/domain/AdminPaths.java`・`access/web/AdminSecurityContributor.java`）。公開の道は機能ごとの差し込み口（order: auth 110・access 210・invitation 310・appearance 410）が足す。
-2. アクセストークン（HS256 の JWT、`sub`・`iat`・`exp` だけ）は要求ごとに検証され、利用者 ID から **DB の利用者を読み直して** `AuthenticatedUser(userId, email, admin)` を作る（`auth/web/AccessTokenAuthenticationProvider.java` 54〜62 行）。管理者の判定はその `admin` だけを見る（K-4、Interaction Diagrams 2）。
-3. トランザクションは `service` の層で始まり、`repository` の層が内部DB を読み書きする。業務エラーは `@RestControllerAdvice` の1か所で Problem Details（`code` 付き）になる。業務処理は想定内の失敗を結果の型（sealed interface）で返し、controller が `switch` で業務エラーに変える形が `invitation` にある（K-5）。
-4. 監査の対象の出来事は、業務のトランザクションの中で知らせ、`audit/service/AuditEventListener.java` が確定の後（`AFTER_COMMIT`、`fallbackExecution = true`）に `audit/service/AuditEventRecorder.java` の新しいトランザクション（`REQUIRES_NEW`）で `audit_events` に追記する。要求1件で接続を2本使う（Interaction Diagrams 3）。
-5. 画面は、ログインと更新の応答の `user.admin` から `LoginState.admin` を作ってモジュールの変数に持ち（`frontend/src/features/auth/authSession.ts`）、管理者の項目の表示を切り替える。判定はサーバー側だけが正（`frontend/src/app/registry/types.ts` の注記）。
+1. 画面の要求は `Authorization: Bearer <アクセストークン>` を付けて送られる。セッションと CSRF の仕組みは無い。`/api/**` の既定はログインが必要で、`/api/admin/**` は管理者だけ（前回までの記録）。
+2. アクセストークンの認証（`auth/web/AccessTokenAuthenticationProvider.java`）はフィルターの中で動き、利用者 ID から `UserAccountService.findById`（読み取りのトランザクション）で利用者を読み直し、停止中なら拒否する。ここで DB の接続を借りる（K-28、Interaction Diagrams 4）。
+3. トランザクションは `service` の層で始まる。業務処理は想定内の失敗を結果の型（sealed interface）で返し、controller が `switch` で `BusinessException` に変え、`common/error/web/GlobalExceptionHandler.java`（`@RestControllerAdvice`）が Problem Details にする（4xx は WARN「要求をエラー応答に変換しました」、5xx は ERROR「想定外のエラーが起きました」）。Spring MVC の外の例外は `/error`（`common/error/web/ErrorPathController.java`）が受ける。
+4. 監査の対象の出来事は業務のトランザクションの中で知らせ、`audit/service/AuditEventListener.java`（`@TransactionalEventListener(AFTER_COMMIT, fallbackExecution = true)`）が受けて、`audit/service/AuditEventRecorder.java`（`REQUIRES_NEW`）で `audit_events` に追記する。記録の失敗は受け止めて ERROR を1回出し、呼び出し元へ伝えない。
+5. 行の排他を取れなかったとき（待ちの上限切れ・行き詰まり）は `common/persistence/RowLockFailures.java` が見分けて WARN を出し、`RowLockAttempt.Busy` を返す（K-27、Interaction Diagrams 3）。
 
 ### Key Design Decisions
 
 | 選択 | 内容（確かめた場所） | 今回の Intent との関わり |
 |---|---|---|
-| 管理者の印はトークンに入れず、要求ごとに DB から読む | `auth/service/AccessTokenService.java`（クレームは `sub`・`iat`・`exp`）、`auth/web/AccessTokenAuthenticationProvider.java` | 印の変更・停止はサーバー側では次の要求から効かせられる（K-1・K-4） |
-| ログアウトはアクセストークンを失効させない | `project.md` の Decided。アクセストークンの既定の有効期限は 5 分（`auth/service/AuthProperties.java`） | 停止の効き目をアクセストークンの期限まで待つかは、認証の入口で状態を見るかで決まる（K-1） |
-| ロックは時刻で決まり、解除は時間の経過だけ | `auth/domain/LockPolicy.java`、しきい値 5・時間 30 分（`mastersmith.auth.lock.*`） | 管理者による解除は新しい操作（K-2） |
-| `user` は `auth` を知らない | `backend/src/test/java/cherry/mastersmith/auth/AuthBoundaryArchitectureTest.java` 62 行 | 利用者とロックの状態を合わせる処理の置き場（K-3） |
-| 監査は出来事を受けて確定の後に別のトランザクションで追記 | `audit/service/AuditEventListener.java`・`AuditEventRecorder.java` | 管理の操作ごとに出来事の型と監査の種類を足す（K-6） |
-| 失敗の理由を応答に出さない | ログインの失敗は理由によらず `AUTHENTICATION_FAILED`（401）。理由は出来事（`LoginFailureReason`）にだけ載る（`auth/service/LoginService.java`） | 停止の理由を足しても応答は変えない形が前提になる（K-1） |
-| 機能ごとの差し込み口と登録 | バックエンドは `SecurityRuleContributor`、画面は `features/<featureId>/registration.ts` | 管理の API は決まりを足さずに `/api/admin/**` に乗れる（K-5）。画面は骨組みを書き換えずに足せる（K-9） |
-| 内部DB は組み込みの H2・単一インスタンス | 前の Intent からの既知の決定 | ロックの解除も行の排他でログインの判定と順番がそろう見込み（K-2） |
+| 初期管理者は起動時に設定の値から作り、同じメールアドレスの利用者がいれば何もしない | `user/service/InitialAdminInitializer.java` 92〜105 行 | 救済の口が無い。作成は監査に残らない（K-25） |
+| 監査は出来事を受けて確定の後に別のトランザクションで追記し、失敗を呼び出し元へ伝えない | `audit/service/AuditEventListener.java`・`AuditEventRecorder.java` | 起動の途中の出来事も、この仕組みのまま記録できる形（K-25） |
+| 監査の行は接続元 IP を必ず持つ | `audit_events.source_ip VARCHAR(45) NOT NULL`（`V4__u4_audit_event.sql`）、`AuditEvent` の構築子の `requireNonNull` | 要求の無い起動時の出来事の値を決める必要がある（K-25） |
+| 利用者の状態（停止・管理者の印）は認証の3つの入口でサーバー側が判定する | `auth/service/LoginService.java` 189 行・`auth/service/TokenRefreshService.java`・`auth/web/AccessTokenAuthenticationProvider.java` | ログインでは問い合わせを増やさずに判定している（K-26） |
+| 行の排他の失敗は結果の型で返し、元の例外を持たない | `common/persistence/RowLockAttempt.java` 20〜24 行の注記（連なりの文に行の値が入りうるため） | BUSY の L4 の持ち主（K-27） |
+| 例外のログは変換する境界で1回だけ出す | `team.md` の Code Style、`GlobalExceptionHandler`・`ErrorPathController` | フィルターの中の例外が二重に出うる（K-28） |
+| make-you-chic-ui はこのリポジトリから変えない | `project.md` の Forbidden | 言語の欄の直しの選択肢が絞られる（K-29） |
+| 内部DB は組み込みの H2・単一インスタンス | 前の Intent からの既知の決定 | 外の接続から行を持ち続けて BUSY を起こす負荷の場面が作りにくい（K-27） |
 
 ### Improvement Opportunities
 
-- 利用者の状態（停止など）を見る場所が、ログインの照合・トークンの更新・アクセストークンの認証の3か所に分かれている（K-1）。1つの口（例: `user` の service の「使える利用者か」の判定）にまとめないと、入口ごとの見落としが起きやすい（見立て）。
-- 監査の出来事の受け取りと写し取りが `audit` の3ファイルに積み上がる（`code-quality-assessment.md` の技術的負債）。管理の操作を足すたびに3ファイルと境界の検査を直すことになる。
-- 管理の要求の文脈（操作した管理者の ID・送り手の情報）の読み取りが機能ごとに複製されている（`user/web/MeRequestContextResolver.java`・`invitation/web/InvitationRequestContextResolver.java`・`dslmanage/web/DslRequestContextResolver.java` の3つ。開発担当は前の2つを挙げ、アーキテクトがファイル名の検索で3つ目を確かめた。3つ目の中身は読んでいない）。利用者の管理を足すと4つ目になりやすい（`code-quality-assessment.md`）。
-- 管理者の印を外す・停止する操作に対し、最後の管理者を守る仕組みが無い（K-4）。
-- （2026-10-04 追記）一意の制約の違反の例外の文が、既定のログの水準でアプリのログに出うる経路がある（K-24、Interaction Diagrams 6）。`logging.level` で Hibernate の SQL の誤りのロガーの水準を決めていない。
-- （2026-10-04 追記）Modal を閉じた後のフォーカスの戻しが make-you-chic-ui の固定先の不具合に頼っており、単体テスト（jsdom）では見えず E2E も確かめていない（K-17・K-18、Interaction Diagrams 5）。
+- 起動時の運用の操作（初期管理者の作成・将来の救済）が監査の外にある（K-25）。要求の無い出来事を監査に載せる決まり（接続元・操作した人）が無い。
+- 例外を受ける場所が `@RestControllerAdvice`（Spring MVC の中）と `/error`（フィルターとコンテナ）の2つに分かれ、同じ文の ERROR を出す。ログの件数だけでは経路を区別できず、`logger` の項目で見分ける必要がある（K-28）。
+- 同じイメージの版とダイジェストを3か所に手で書いている（K-31、`dependencies.md`）。
+- `audit_events` は追記のたびに NULL を許す列が増え（V6・V7）、出来事ごとにどの列を使うかの決まりはコメントにしか無い（開発担当の記録。今回の Intent の外）。
 
 ## Interaction Diagrams
 
-図 1〜4 は前回（Intent `260930-user-admin` の始め、コミット `31b980b`、利用者の管理を作る前）の記録で、今回は確かめ直していない。図 1・2 の「状態を見ていない」「最後の管理者を守る仕組みが無い」はその時点の事実で、その後の Intent で利用停止（V9）と管理の操作が足された。図 5・6 は今回（`47541e3`）の所見 K-17・K-24 のもの。
+図はどれも今回（コミット `47ec27b`）の走査で読んだコードによる。見立て（未検証）の部分は図の Note と本文で分けた。
 
-### 1. 認証の3つの入口と、利用停止を見る場所（K-1）
+### 1. 起動時の初期管理者の作成と監査（K-25）
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant SP as Spring の起動
+  participant IAI as InitialAdminInitializer
+  participant UAS as UserAccountService
+  participant DB as 内部DB H2
+  participant LAS as LoginAttemptStateInitializer
+  participant AL as AuditEventListener
+
+  Note over SP: Flyway の後、Web が受け付けを始める前
+  SP->>IAI: afterSingletonsInstantiated
+  IAI->>IAI: 設定のメールアドレスとパスワードを確かめる
+  alt 設定が無いか不正
+    IAI-->>SP: WARN 初期管理者を作成しませんでした
+  else 同じメールアドレスの利用者がいる
+    IAI->>UAS: existsByEmail
+    UAS->>DB: users を読む
+    IAI-->>SP: INFO maskedEmail 既にいるため作成しませんでした
+  else いない
+    IAI->>UAS: createUser 管理者の印つき
+    UAS->>DB: users に INSERT
+    UAS->>LAS: UserCreatedEvent 同じトランザクション
+    LAS->>DB: ロックの状態の行を作る
+    IAI-->>SP: INFO maskedEmail 初期管理者を作成しました
+  end
+  Note over AL: UserCreatedEvent を受けないため、どの場合も監査の行は作られない
+```
+
+<!-- Text fallback: Spring の起動で、Flyway の後、Web が受け付けを始める前に InitialAdminInitializer の afterSingletonsInstantiated が呼ばれる。設定のメールアドレスとパスワードを確かめ、無いか不正なら WARN「初期管理者を作成しませんでした」を出して終わる。UserAccountService.existsByEmail で同じメールアドレスの利用者がいれば、停止中でも管理者でなくても INFO（キー maskedEmail）「既にいるため作成しませんでした」を出して終わる。いなければ createUser で管理者の印つきの利用者を作り、同じトランザクションで UserCreatedEvent を知らせ、LoginAttemptStateInitializer がロックの状態の行を作る。最後に INFO「初期管理者を作成しました」を出す。AuditEventListener は UserCreatedEvent を受けないため、どの場合も監査の行は作られない。 -->
+
+K-25 確かめた事実:
+
+- 初期管理者は `user/service/InitialAdminInitializer.java`（`SmartInitializingSingleton`）が、設定 `mastersmith.auth.initial-admin.email`・`password`（環境変数 `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`。`.env.example` では値は空）から作る。記録はアプリのログの INFO（キー `maskedEmail`）だけである（92〜105 行）。
+- 作成の判定は `existsByEmail` だけで、**そのメールアドレスの利用者がいれば、停止中でも管理者でなくても何もしない**（92〜95 行）。今の救済（前の Intent の手順 RB-22、記録による）は「別のメールアドレスに替えて新しい管理者を作る」形しか取れず、既にいる利用者の停止を解く・管理者の印を付ける口はアプリに無い。
+- `createUser` は同じトランザクションで `UserCreatedEvent(userId)` を知らせる（`user/service/UserAccountService.java` 385 行）。受け取るのは `auth/service/LoginAttemptStateInitializer.java` だけで、`audit` は受け取らない（アーキテクトが import の検索で確かめた）。
+- `audit/domain/AuditEventType.java` は 20 種類（`LOGIN_SUCCEEDED`〜`LOGIN_FAILURES_RESET`）で、初期管理者の作成・救済に当たる種類は無い。`audit_events.event_type` は `VARCHAR(32)` で CHECK の制約は無い（種類を足すのに表の変更は要らない）。
+- `audit_events.source_ip` は `VARCHAR(45) NOT NULL`（V4）。起動時の出来事には要求が無く接続元 IP が無いため、記録するには固定の値を決めるか、列の扱いを変える移行（次は V10）が要る。
+- `AuditEventListener` は `fallbackExecution = true` のため、トランザクションの外で知らせた出来事も受け取れる。書き込みの失敗は受け止めて ERROR を1回出すだけなので、起動の途中で記録に失敗しても起動は続く形になる。
+- 依存の向きは `audit` → `user`。新しい出来事を `user` 側（`PasswordChangedEvent` と同じく `user.domain` など）に置き、`audit` が受け取る形なら境界の向きは変わらない。
+- `user/service/InitialAdminProperties.java` の `toString()`（33 行）はパスワードを `***` で伏せるが、**メールアドレスはそのまま文字列にする**。
+
+K-25 見立て（未検証）:
+
+- `InitialAdminProperties` が `TraceAspect` の対象の層の引数・戻り値として渡る経路は見当たらない（設定の部品のため）が、設定の結び付けの失敗のメッセージなどで文字列にされると、メールアドレスがログに出うる。救済の口を設けるときは `toString` を `EmailAddress.mask` の形にそろえるか確かめたい（`project.md` の Forbidden）。
+- 救済を「起動時の設定で既存の利用者の停止を解く・印を付ける」形にするなら、管理者を増やす向きのため `project.md` の Forbidden（最後の有効な管理者を無くす操作を受け付けない）とはぶつからない。ただし `.env` に残したまま再起動するたびに働くか（一度だけか）の決まりが要る。
+
+### 2. ログインの流れと停止の判定（K-26）
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant P as 画面
-  participant AC as AuthController
   participant LS as LoginService
-  participant TR as TokenRefreshService
-  participant ATP as AccessTokenAuthenticationProvider
   participant UAS as UserAccountService
   participant DB as 内部DB H2
-
-  Note over P,DB: 入口1 ログイン
-  P->>AC: POST /api/auth/login
-  AC->>LS: login
-  LS->>UAS: verifyPassword（メールアドレスとパスワード）
-  UAS->>DB: users を読む（いるか・パスワードが合うか）
-  LS->>DB: login_attempt_states を排他つきで読み、LockPolicy で判定して書く
-  LS-->>AC: 成功ならトークン、失敗は理由によらず 401 AUTHENTICATION_FAILED
-
-  Note over P,DB: 入口2 トークンの更新
-  P->>AC: POST /api/auth/session/refresh（Cookie）
-  AC->>TR: refresh
-  TR->>DB: refresh_tokens の照合と revokeIfActive
-  TR->>UAS: findById（いるかだけ）
-  TR-->>AC: 新しいトークン、いなければ REFRESH_FAILED
-
-  Note over P,DB: 入口3 アクセストークンの認証（要求ごと）
-  P->>ATP: 任意の /api/** に Bearer
-  ATP->>ATP: 署名と期限の検証
-  ATP->>UAS: findById（いるかだけ）
-  ATP-->>P: いなければ 401 と TokenFailureReason.USER_NOT_FOUND
-```
-
-<!-- Text fallback: 利用者の状態を見うる入口は3つある。入口1のログインでは、AuthController が LoginService を呼び、LoginService は UserAccountService.verifyPassword で利用者がいるかとパスワードを確かめ、login_attempt_states を排他つきで読んで LockPolicy で判定する。失敗は理由によらず 401 AUTHENTICATION_FAILED。入口2のトークンの更新では、TokenRefreshService がリフレッシュトークンを照合して無効にし、findById で利用者がいるかだけを見て新しいトークンを出す（いなければ REFRESH_FAILED）。入口3では、要求ごとに AccessTokenAuthenticationProvider が署名と期限を検証し、findById で利用者がいるかだけを見る（いなければ 401 と USER_NOT_FOUND）。3つとも利用者の状態（停止など）は見ていない。 -->
-
-K-1 利用停止を表す状態が無い（確かめた事実）:
-
-- `users` の列は `user_id`・`email`・`password_hash`・`admin_flag`・`created_at`（V2）と `language`・`theme`・`font_size`・`display_name`（V7）だけで、停止・無効・状態の列は無い（`backend/src/main/resources/db/migration/V2__u2_user_account.sql`・`V7__u2_user_preferences.sql`、`user/domain/User.java`）。利用者を削除する操作も無い。
-- `refresh_tokens.user_id`（V3 の `fk_refresh_tokens_user`）と `invitations.invited_by_user_id`・`completed_user_id`（V8 の外部キー2つ）が `users` を参照する。DSL の表（V5）と監査（V6 の `actor_user_id`・V7 の `target_user_id`）も利用者 ID を持つ（外部キーなし）。
-- 3つの入口はどれも「利用者がいるか」だけを見る（上の図）。入口1は `user/service/UserAccountService.java` 91〜105 行 → `auth/service/LoginService.java` 157〜198 行、入口2は `auth/service/TokenRefreshService.java` 89 行（リフレッシュトークンを先に無効にしてから `findById`）、入口3は `auth/web/AccessTokenAuthenticationProvider.java` 54〜62 行。
-- 失敗の理由の列挙は網羅の `switch` でつながる: `LoginFailureReason`（`USER_NOT_FOUND`・`PASSWORD_MISMATCH`・`ACCOUNT_LOCKED`）と `TokenFailureReason`（`TOKEN_MALFORMED`・`TOKEN_INVALID`・`TOKEN_EXPIRED`・`USER_NOT_FOUND`）→ `AccessDeniedReason.of(TokenFailureReason)`（`access/domain/AccessDeniedReason.java` 47〜54 行）→ `AuditFailureReason`（`audit/domain/AuditEventFactory.java` の写し取り）。
-- 招待: `InvitationService` は招待先のメールアドレスの利用者がいれば 409 `INVITATION_EMAIL_REGISTERED` にする（`existsByEmail`、状態を見ない）。
-
-K-1（見立て、未検証）:
-
-- 利用者を削除すると上の外部キーと監査の利用者 ID に当たるため、止めるなら状態の列で表す形が前提になりやすい。
-- 入口3は要求ごとに DB から読むため、ここで状態を見れば、停止はアクセストークンの有効期限（既定 5 分）を待たずに次の要求から効く。見ない場合は、ログアウトでアクセストークンを失効させない決定（`project.md` の Decided）と同じく、期限まで使える。どちらにするかは要件で決める。
-- 入口2で状態を見ないなら、停止した利用者のリフレッシュトークンをまとめて無効にする必要があるが、その問い合わせは無い（`auth/repository/RefreshTokenRepository.java` は1件ずつの `revokeIfActive` 50 行と期限切れの削除 `deleteExpiredBefore` 64 行だけ）。
-- 停止の区分を理由の列挙に足すと、上の網羅の `switch` と監査の `failure_reason`（`VARCHAR(32)`、V4）に波及する。応答は理由を推測させない形（ログインは `AUTHENTICATION_FAILED`）を保つ前提になる。
-- 停止した利用者のメールアドレスは、今の招待では「登録済み」として招待できない。停止と再招待の関係は要件で決める。
-
-### 2. 管理者の印の判定と、画面の持つ値（K-4）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant P as 画面 authSession
-  participant ATP as AccessTokenAuthenticationProvider
-  participant UAS as UserAccountService
-  participant AAM as AdminAuthorizationManager
-  participant C as 管理の API
-
-  Note over P: ログインか更新の応答の user.admin を LoginState.admin に持つ
-  P->>ATP: GET /api/admin/... に Bearer
-  ATP->>UAS: findById
-  UAS-->>ATP: UserSummary（admin_flag を含む）
-  ATP->>AAM: AuthenticatedUser(userId, email, admin)
-  alt admin が真
-    AAM->>C: 通す
-    C-->>P: 200
-  else admin が偽
-    AAM-->>P: 403（画面の管理の入口は「ページが見つかりません」）
-  end
-  Note over P: 印が変わっても、画面の LoginState.admin は次の更新かログインまで古いまま
-```
-
-<!-- Text fallback: 画面はログインか更新の応答の user.admin を LoginState.admin としてモジュールの変数に持つ。管理の API への要求ごとに、AccessTokenAuthenticationProvider が findById で利用者を読み、admin_flag を含む AuthenticatedUser を作る。AdminAuthorizationManager はその admin だけで判定し、真なら通して 200、偽なら 403 を返す（画面の管理の入口は 403 を「ページが見つかりません」として扱う）。印が変わっても、画面の LoginState.admin は次の更新かログインまで古いままである。 -->
-
-K-4 管理者の印（確かめた事実）:
-
-- 判定は `access/web/AdminAuthorizationManager.java` 38〜47 行で、認証済みで `AuthenticatedUser` の `admin` が真のときだけ通す。`admin` は要求ごとに DB の `admin_flag` から作る（`auth/web/AccessTokenAuthenticationProvider.java` 61 行）。トークンは管理者の印を持たない。
-- 画面の `LoginState.admin` は `auth/web/CurrentUserResponse.java` の `user.admin` から作り、`frontend/src/features/auth/authSession.ts` のモジュールの変数に持つ。管理の入口は 403 を `NotFound` の表示にする（`frontend/src/features/admin/adminAreaStatus.ts` 23〜27 行）。
-- 管理者の印を変える口（`user/repository/UserRepository.java` の更新の問い合わせ）は無い。既存の更新は列を絞った `@Modifying` の問い合わせ（`updatePreferences` 70 行・`updatePasswordHashIfUnchanged` 85 行）だけで、全列を書かない決まり（同ファイルの注記）。
-- 初期管理者の自動作成は、設定のメールアドレスの利用者が「いるか」だけを見る（`user/service/InitialAdminInitializer.java` 91 行 `existsByEmail`）。
-
-K-4（見立て、未検証）:
-
-- サーバー側では、印の変更は次の要求から効く。画面は、印を外された人が管理の画面に留まれば次の API の呼び出しで 403 になり、印を付けられた人は次の更新かログインまで管理のメニューが出ない。
-- 最後の管理者を失う操作（すべての管理者の印を外す・停止する、自分自身の印を外す・自分を停止する）を止める仕組みが無い。初期管理者の自動作成はメールアドレスの有無だけを見るため回復の道にならず、DB を直接直すしかなくなる。要件で決める必要がある。
-- 同時に2人の管理者が互いの印を外す場合のように、「最後の管理者」の判定は数える問い合わせと更新の間の競合に当たりうる。単一インスタンスの H2 でも、行の排他か条件つきの更新が要る（設計で決める）。
-
-### 3. 管理の操作から監査の記録まで（K-6）
-
-```mermaid
-sequenceDiagram
-  autonumber
-  participant C as 管理の API（例 InvitationAdminController）
-  participant S as 業務処理 service
-  participant DB as 内部DB H2
-  participant EP as ApplicationEventPublisher
   participant AL as AuditEventListener
-  participant AR as AuditEventRecorder
 
-  C->>S: 操作（管理者の ID と送り手の情報を添える）
-  S->>DB: トランザクションの中で更新（接続1本目）
-  S->>EP: 出来事を知らせる
-  S-->>C: 結果の型
-  Note over S,DB: 確定
-  EP->>AL: AFTER_COMMIT で受け取る
-  AL->>AR: 監査の行を作って渡す
-  AR->>DB: REQUIRES_NEW で audit_events に追記（接続2本目）
-  C-->>C: 結果の型を switch で応答か業務エラーに変える
+  P->>LS: POST /api/auth/login
+  Note over LS,UAS: トランザクションと排他の外
+  LS->>UAS: verifyPassword
+  UAS->>DB: users を findByEmail で1回読む suspended を含む
+  UAS->>UAS: bcrypt cost 12 で照合 利用者がいなくてもダミーのハッシュで照合
+  Note over LS,DB: TransactionTemplate の中
+  LS->>DB: login_attempt_states の行を排他つきで読む 待ちの上限 3000 ms
+  alt 利用者が停止中
+    LS->>DB: 読んだ値のまま書く
+    LS-->>P: 401 理由 ACCOUNT_SUSPENDED は出来事にだけ載る
+  else 停止していない
+    LS->>LS: LockPolicy で判定
+    LS->>DB: 失敗回数とロックの期限を書く 成功ならリフレッシュトークンを保存
+    LS-->>P: 200 か 401
+  end
+  Note over AL,DB: 確定の後
+  AL->>DB: REQUIRES_NEW で audit_events に追記 接続2本目
 ```
 
-<!-- Text fallback: 管理の API は、管理者の ID と送り手の情報を添えて業務処理を呼ぶ。業務処理はトランザクションの中で内部DB を更新し（接続1本目）、出来事を知らせて結果の型を返す。確定の後、AuditEventListener が AFTER_COMMIT で出来事を受け取り、AuditEventRecorder が新しいトランザクション（REQUIRES_NEW）で audit_events に追記する（接続2本目）。controller は結果の型を switch で応答か業務エラーに変える。 -->
+<!-- Text fallback: ログインでは、LoginService がトランザクションと排他の外で UserAccountService.verifyPassword を呼び、users を findByEmail で1回読み（suspended の列を含む）、bcrypt（cost 12）で照合する。利用者がいなくてもダミーのハッシュで照合する。次に TransactionTemplate の中で login_attempt_states の行を排他つきで読み（待ちの上限 3000 ms）、利用者が停止中なら読んだ値のまま書いて 401 にする（理由 ACCOUNT_SUSPENDED は出来事にだけ載る）。停止していなければ LockPolicy で判定し、失敗回数とロックの期限を書き、成功ならリフレッシュトークンを保存して 200、失敗なら 401 を返す。確定の後に AuditEventListener が REQUIRES_NEW で audit_events に追記する（接続2本目）。 -->
 
-この形は招待の管理（`invitation`）と自分の設定（`user` の `PasswordChangedEvent`）が使う。要求1件で接続を2本使うため、同時の数がプールの上限に達する場合は負荷の試験で確かめる決まりがある（`project.md` の Corrections）。K-6 の本文（足りている列と無い種類）は `component-inventory.md` の `audit`。
+K-26 確かめた事実:
 
-### 4. 検査の流れと E2E の置き場
+- 停止の判定（`auth/service/LoginService.java` 189 行 `if (user.suspended())`）は、照合の前に読んだ `UserSummary` の値を見るだけで、**問い合わせを増やしていない**。`suspended` は `users` の列（V9）で、同じ1行の読み取りに含まれる。判定は行の排他を取った後、`LockPolicy` の前に置かれている。
+- bcrypt の cost は既定 12（`user/service/PasswordProperties.java`、`application.yaml` の `bcrypt-cost`、環境変数 `MASTERSMITH_AUTH_PASSWORD_BCRYPT_COST`）。
+- `perf/k6/scenarios.js` の `loginSuccess` は「別々の利用者 10 名のログイン」で、台本に閾値を持たない。p95 は k6 の結果から読んで判定している（前の Intent の記録による）。
 
-```mermaid
-flowchart TD
-  DEV["手元 ./gradlew verify"] --> FE["画面の段 vendorInstall・vendorBuild・型検査・リンタ・テスト・ビルド"]
-  CI["CI ci.yml develop へのプッシュ・タグ v*・手動"] --> FE
-  FE --> BE["backend の検査・単体テスト test・結合テスト integrationTest"]
-  BE --> COV["カバレッジ JaCoCo 全体とパッケージごと・coverage-v8"]
-  COV --> GATE["spotbugsGate"]
-  GATE --> SEC["gitleaksScan・osvScan"]
-  E2E["./gradlew e2eTest Playwright と axe"] -. "verify と CI の外。画面・認証の変更の統合の前とリリースの前に手元で" .-> DEV
-```
+K-26 見立て（未検証）:
 
-<!-- Text fallback: 手元の ./gradlew verify と CI（develop へのプッシュ・タグ v*・手動）は同じ検査を通る。画面の段（サブモジュールの準備とビルド、型検査・リンタ・テスト・ビルド）、backend の検査と単体テスト・結合テスト、カバレッジ（JaCoCo の全体とパッケージごと、画面の coverage-v8）、SpotBugs の関門、Gitleaks と OSV-Scanner。E2E（Playwright と axe）は verify と CI の外にあり、画面・認証に関わる変更の統合の前とリリースの前に手元で流す。 -->
+- ログインの時間の大半は bcrypt の計算で、停止の判定の追加は無視できる大きさと見る。939.6 ms と前の Intent の 904 ms の差（36 ms）は、PC の負荷やコンテナの CPU の割り当てのぶれの範囲の可能性が高い。
+- 切り分けるには、停止の判定を入れる前の版のイメージと今の版を、同じ使い捨ての環境・同じ上限・同じ `VUS`・`DURATION` で交互に複数回流し、p95 の分布を比べる形が考えられる（1回ずつの比較ではぶれと区別できない）。手順は `perf/README.md`、`caffeinate -i` で台本全体を包む（`project.md` の Testing Posture）。
 
-段の厳密な並びは今回確かめていない（開発担当は `build.gradle.kts` のタスクの登録と `dependsOn` を検索しただけ）。カバレッジの下限と `packagesJudgedByTotal` の作業は K-7（`code-quality-assessment.md`）。
-
-### 5. Modal を閉じた後のフォーカスの戻し（K-17）
+### 3. 409 USER_ADMIN_BUSY と L3・L4 のログ（K-27）
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as 利用者
-  participant DD as Dropdown 行の操作
-  participant PG as UserAdminPage と useUserAdmin
-  participant M as Modal 確かめか入力
-  participant MS as ModalStackContext
-  participant B as ブラウザ
+  participant P as 画面
+  participant UC as UserAdminController
+  participant US as UserAdminService
+  participant RL as UserRowLockRepository
+  participant RF as RowLockFailures
+  participant GEH as GlobalExceptionHandler
+  participant LOG as アプリのログ
 
-  U->>DD: 項目を選ぶ
-  DD->>PG: item.onClick で状態を設定する
-  DD->>DD: close(true) で trigger へフォーカスを戻す
-  PG->>M: 状態があるので描く
-  M->>MS: 開く。背景に inert を付ける
-  alt やめる・閉じる
-    U->>M: やめる
-    PG->>M: 状態を null にして外す
-    Note over M,B: 固定先 3d9521a では useFocusTrap の後始末が inert を外す前に戻すため、ブラウザでは body に落ちる
-    MS->>B: inert を外す
-    Note over MS,B: e82b651 では inert を外した後に finalFocusRef か開く前の要素へ戻す
-  else 成功
-    PG->>PG: reload で一覧を読み直す
-    PG->>M: 状態を null にして外す
-    PG->>B: 読み直しの後の効果で actionRefs の行の操作の button へ当てる
+  P->>UC: POST /api/admin/users/userId/suspend など
+  UC->>US: 操作
+  US->>RL: PESSIMISTIC_WRITE で対象の行を読む lock.timeout 3000 ms
+  alt 3000 ms 以内に取れた
+    RL-->>US: Acquired
+    US-->>UC: 結果の型
+  else 待ちの上限切れか行き詰まり
+    RL->>RF: isLockFailure で見分ける
+    RF->>LOG: L4 WARN 行の排他を取れませんでした lockKind と exceptionClass と traceId
+    RF-->>US: RowLockAttempt.Busy
+    US->>US: 巻き戻しの印を付ける
+    US-->>UC: OperationResult.Busy
+    UC->>GEH: BusinessException USER_ADMIN_BUSY
+    GEH->>LOG: L3 WARN 要求をエラー応答に変換しました code と traceId
+    GEH-->>P: 409 Problem Details
   end
 ```
 
-<!-- Text fallback: 利用者が行の「操作」の Dropdown で項目を選ぶと、Dropdown は item.onClick で画面（UserAdminPage と useUserAdmin）に状態を設定させた後、close(true) で trigger へフォーカスを戻す。状態があると確かめの表示か入力の Modal が描かれ、ModalStackContext が背景に inert を付ける。やめる・閉じる場合は、画面が状態を null にして Modal ごと外す。固定先 3d9521a では useFocusTrap の後始末が inert を外す前にフォーカスを戻すため、実際のブラウザでは body に落ちる。e82b651 では inert を外した後に finalFocusRef か開く前の要素へ戻す。成功の場合は、画面が一覧を読み直し、Modal を外し、読み直しの後の効果で actionRefs から行の「操作」の button へフォーカスを当てる。 -->
+<!-- Text fallback: 利用者の管理の操作の要求で、UserAdminController が UserAdminService を呼び、UserAdminService は UserRowLockRepository で対象の行を PESSIMISTIC_WRITE（jakarta.persistence.lock.timeout 3000 ms）で読む。3000 ms 以内に取れれば Acquired で操作を続け、結果の型を返す。待ちの上限切れか行き詰まりなら、RowLockFailures.isLockFailure が見分けて L4 の WARN「行の排他を取れませんでした」（キー lockKind・exceptionClass、MDC の traceId）を出し、RowLockAttempt.Busy を返す。UserAdminService は巻き戻しの印を付けて OperationResult.Busy を返し、UserAdminController が BusinessException（USER_ADMIN_BUSY）に変え、GlobalExceptionHandler が L3 の WARN「要求をエラー応答に変換しました」（code、MDC の traceId）を出して 409 の Problem Details を返す。L3 と L4 は同じ要求のスレッドで出る。 -->
 
-確かめた事実と見立ての本文は `component-inventory.md` の `frontend-feature-useradmin`（K-17）と `make-you-chic-ui`。図の固定先ごとの順（後始末と inert を外す効果の前後）は、開発担当が `useFocusTrap.ts`・`Modal.tsx`・`ModalStackContext.tsx` の差を読んだ結果と `e82b651` のコミットの文による（ブラウザで確かめてはいない）。成功の場合の2つの戻し（Modal と画面の効果）のどちらが後になるかは見立てで、E2E で確かめる（K-18）。
+K-27 確かめた事実:
 
-### 6. 一意の制約の違反の例外がログに出うる経路（K-24）
+- BUSY は `user/repository/UserRowLockRepository.java` の排他つきの読み取り（`PESSIMISTIC_WRITE`、`LOCK_TIMEOUT_MILLIS = 3000`）が待ちの上限切れ・行き詰まりになったときだけ起きる。失敗回数を戻す操作は `auth.repository.LoginAttemptStateRepository`（同じく 3000 ms）を通る。
+- 記録の呼び名の L4 は `common/persistence/RowLockFailures.java` の WARN、L3 は `GlobalExceptionHandler` の WARN（`code` が `USER_ADMIN_BUSY`）に当たる。どちらも同じ要求のスレッドで出て、`logback-spring.xml` が MDC の `traceId`・`spanId` を各行に載せる。
+- 本番の待ち合わせの口（`useradmin/service/UserAdminBarrier.java`）は何もしない部品で、結合テストだけが差し替える。
+- 既存の `backend/src/test/java/cherry/mastersmith/useradmin/web/UserAdminBusyApiIT.java` は、別のトランザクションで対象の行を持ち続けて5つの操作の 409 を作るが、L3・L4 の `traceId` の結び付きは確かめていない。
+- 前の Intent の T1 の負荷では、409 の 128 件の内訳は `USER_ADMIN_NO_CHANGE` 70・`USER_ADMIN_TARGET_SUSPENDED` 58・`USER_ADMIN_BUSY` 0 だった（記録による）。
+
+K-27 見立て（未検証）:
+
+- 操作は1件 1 ms 前後（記録による）で排他を持つ時間が短く、本番のコードのまま k6 の負荷で 3 秒の待ちを作るのは難しい。接続の待ち（5 秒）が先に尽きて 500 になる経路の方が起きやすい。
+- 組み込みの H2 のファイルは1つのプロセスからしか開けず、`AUTO_SERVER` も使っていないため、使い捨ての環境でも外から行を持ち続けて BUSY を起こすのは難しい。結合テスト（`UserAdminBusyApiIT` と同じ作り方に、ログの JSON を捕まえる `common/testsupport/JsonLogRecords.java` などを足して L3 と L4 の `traceId` が1対1で一致することを確かめる）の方が確実と見る。どちらで確かめるかは要件で決める。
+
+### 4. フィルターの中の例外と ERROR の二重の出力（K-28）
 
 ```mermaid
-flowchart TD
-  INS["saveAndFlush の INSERT"] --> H2E["H2 の 23505 の例外。文に重なった値を含む見立て"]
-  H2E --> HB["Hibernate の SqlExceptionHelper の変換"]
-  HB -. "経路1 既定の WARN と ERROR の見立て。logging.level で水準を決めていない" .-> LOG[("アプリのログ")]
-  HB --> DIVE["DataIntegrityViolationException"]
-  DIVE --> REPO["repository の呼び出し"]
-  REPO -. "経路2 TraceAspect の TRACE の EXCEPTION と原因の連なり。継承したメソッドが対象かは未確認" .-> LOG
-  REPO --> SVC{"service で受けるか"}
-  SVC -- "UK_USERS_EMAIL・UK_INVITATIONS_PENDING_EMAIL の1回目" --> RES["結果の型にする"]
-  SVC -- "ほかの制約・招待の2回目" --> GEH["GlobalExceptionHandler の 500 INTERNAL_ERROR"]
-  GEH -. "経路3 ERROR を原因の連なり付きで出す。応答には載せない" .-> LOG
+sequenceDiagram
+  autonumber
+  participant P as 画面
+  participant TC as Tomcat のフィルターの連なり
+  participant ATP as AccessTokenAuthenticationProvider
+  participant UAS as UserAccountService
+  participant HK as HikariCP
+  participant EPC as ErrorPathController
+  participant LOG as アプリのログ
+
+  P->>TC: 認証の要る /api/** に Bearer
+  TC->>ATP: authenticate
+  ATP->>UAS: findById 読み取りのトランザクション
+  UAS->>HK: 接続を借りる
+  alt 5000 ms 以内に借りられた
+    HK-->>UAS: 接続
+    UAS-->>ATP: UserSummary
+  else 借りられない
+    HK-->>UAS: 時間切れの例外
+    UAS-->>ATP: CannotCreateTransactionException など
+    Note over ATP,TC: 認証の失敗の例外に変えず、フィルターの連なりの外へ出る
+    TC->>LOG: 見立て Tomcat の ERROR Servlet.service threw exception とスタックトレース
+    TC->>EPC: /error へ回す
+    EPC->>LOG: ERROR 想定外のエラーが起きました 原因つき
+    EPC-->>P: 500 Problem Details
+  end
 ```
 
-<!-- Text fallback: 一意の制約に当たる saveAndFlush の INSERT は H2 の 23505 の例外になり、その文は重なった値（メールアドレスなど）を含む見立てである。Hibernate の SqlExceptionHelper が JDBC の例外を変換するとき、既定で WARN と ERROR を出す見立てで、logging.level でその水準を決めていない（経路1。TRACE を有効にしなくても出うる、最も確かめたい点）。変換された DataIntegrityViolationException は repository の呼び出しを通り、TraceAspect の TRACE が例外の文と原因の連なりを出しうる（経路2。Spring Data の継承したメソッドが対象かは確かめていない）。service が UK_USERS_EMAIL と UK_INVITATIONS_PENDING_EMAIL の1回目の違反を受けると結果の型にし、ほかの制約と招待の2回目の IllegalStateException は GlobalExceptionHandler で 500 INTERNAL_ERROR になり、ERROR が原因の連なり付きで出る（経路3）。応答には例外の文を載せない。 -->
+<!-- Text fallback: 認証の要る /api/** への要求で、Tomcat のフィルターの連なりの中の AccessTokenAuthenticationProvider.authenticate が UserAccountService.findById（読み取りのトランザクション）を呼び、HikariCP から接続を借りる。5000 ms 以内に借りられれば UserSummary を返す。借りられないと時間切れの例外が CannotCreateTransactionException などになり、認証の失敗の例外に変えられずにフィルターの連なりの外へ出る。見立てでは、Tomcat が「Servlet.service() ... threw exception」の ERROR をスタックトレースつきで出し、続いて /error に回して ErrorPathController が同じ例外を原因に付けて ERROR「想定外のエラーが起きました」を出し、500 の Problem Details を返す。 -->
 
-K-24 確かめた事実（2026-10-04）:
+K-28 確かめた事実:
 
-- 一意の制約（`backend/src/main/resources/db/migration/`）: `uk_users_email`（V2）・`uk_refresh_tokens_token_hash`（V3）・`uk_dsl_previews_preview_id`・`uk_dsl_applied_revisions_revision_id`（V5）・`uk_invitations_token_hash`・`uk_invitations_pending_email`（V8）。
-- 受け方: 利用者の作成は `user/service/UserAccountService.java` の `createUser`、招待は `invitation/service/InvitationService.java` の `issueWithOneRetry`（`component-inventory.md` の `user`・`invitation`）。ログインのロックの状態の行は `auth/service/LoginService.java` の `createRow` が `MERGE` で作り、`DataIntegrityViolationException` を DEBUG（`userId` だけ）で受ける。`useradmin` は一意の制約のある列に書かない。
-- `TraceAspect`・`LockFailureSafeTraceInterceptor`・`GlobalExceptionHandler` の扱いは `component-inventory.md` の `common-observability`・`common-error`（流し読み）。
-- `application.yaml` の `logging.level` は JDBC ドライバー3つとメールの部品を OFF にしているが、Hibernate（`org.hibernate.engine.jdbc.spi.SqlExceptionHelper` など）の水準は決めていない（root は INFO。流し読み）。
-- 監査（`audit_events`）・トレースの属性に例外の文が入る経路は、今回読んだ範囲には無い。
+- `GlobalExceptionHandler`（`@RestControllerAdvice`）は `Exception.class` まで受けて 5xx で ERROR を1回出すが、Spring MVC（`DispatcherServlet`）の中の例外だけを受ける。
+- フィルターやコンテナで起きた例外は `/error` に回り、`ErrorPathController` が `RequestDispatcher.ERROR_EXCEPTION` を原因に付けて、5xx なら ERROR「想定外のエラーが起きました」を出す（84〜91 行）。文は `GlobalExceptionHandler` の 5xx の ERROR と同じである。
+- `AccessTokenAuthenticationProvider.authenticate` はフィルターの中で `findById`（`@Transactional(readOnly = true)`）を呼んで接続を借りる。接続を借りられないときの例外を認証の失敗の例外（`TokenAuthenticationException`）に変えていない。
+- 前の Intent の T1 の ERROR の内訳は「想定外のエラーが起きました」456・Tomcat の `dispatcherServlet` のロガーの `Servlet.service() … threw exception` 239・監査の記録の失敗 206 だった（記録による）。
 
-K-24（見立て、未検証）:
+K-28 見立て（未検証）:
 
-- 経路1が当たると、TRACE を有効にしなくても、アプリが受けて結果の型にする場合（同時の利用者の作成・同時の招待）でも、重なったメールアドレスがアプリのログに出る。`project.md` の Forbidden（メールアドレスをアプリのログに含めない）に当たるため、最初に確かめる。
-- 確かめ方の候補: 同時の作成か、テストから直接の重なった INSERT で `uk_users_email`・`uk_invitations_pending_email` に当て、INFO と TRACE の両方で出力に重なった値が無いことを `*SecretLeakIT` の形で確かめる。直し方（Hibernate のロガーの水準、`TraceAspect` の伏せる対象を一意の違反に広げる など）は設計で決める。`common` に手が入ると、`packagesJudgedByTotal` に残る `common.error.domain`・`common.error.service`・`common.web` に当たる場合に K-7 の作業が付く（`code-quality-assessment.md`）。
+- 接続の時間切れの負荷で、上の図の経路により 239 件は「想定外のエラーが起きました」456 件のうちの `/error` 経由の分と重なる。そうなら `team.md` の「例外のログは変換する境界で1回だけ出す」に反する二重の出力である。
+- 確かめ方の候補: 結合テストで、認証の要る要求の間に `findById` の接続の取得を失敗させ（プールの上限を 1 にして持ち続けるなど）、Tomcat のロガー（`org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]`）の ERROR と `ErrorPathController` の ERROR が同じ `traceId` で2行出るかを、ログの JSON の `logger` の項目で数える。
+- 直すときは `common.error.web`・`auth.web`（どちらも `packagesJudgedByTotal` の外）に手が入る見込み。`common.error.service`・`common.error.domain`・`common.web` に手を入れるとカバレッジの作業が付く（K-30）。

@@ -1,0 +1,103 @@
+# AI-DLC State Tracking
+
+## Project Information
+- **Project**: 安全の機能の判断と持ち越し（第2の束と第1の束の持ち越し、team.md・イメージの固定先）。S2: 使える管理者がいなくなったときの救済の口を設けるか、初期管理者の作成（と救済の操作）を監査に残すかを決めて実装する（今は .env を替えて作り直す手順 RB-22 だけで、作成は監査に残らない）。P1: ログインの p95（939.6 ms、目標 1 秒）の余裕の縮みが停止の判定の影響かぶれかを、同じ条件の k6 で切り分ける（目標は緩めない）。持ち越し: BUSY（409 USER_ADMIN_BUSY）を起こす負荷の場面で L3・L4 の traceId の結び付きを確かめる（FR4.2-c）、接続の待ちの時間切れの負荷で出た Tomcat の Servlet.service() の ERROR 239 件の原因を確かめる、言語の欄で Enter を押して送信すると送信中にフォーカスが body に落ちる点を扱う。片付け: team.md の Testing Posture の「12 パッケージ」の古い記述を今の 7 個に直す、対象DB のイメージの固定先（compose.yaml・docker/perf/compose.yaml・TargetDbImages の3か所）の手での揃えの手間を減らし、Dockerfile の FROM 等にもダイジェストを付けるかを決める。出どころは Intent 260930-user-admin の feedback-loop.md の第2の束と、Intent 261003-user-admin-followup の持ち越し。配備（手で PC 上のコンテナへ）まで含める。
+- **Project Description Source**: project-description.json
+- **Project Type**: Brownfield
+- **Scope**: bugfix
+- **Start Date**: 2026-10-04T00:49:14Z
+- **State Version**: 8
+- **Active Agent**: aidlc-product-agent
+- **Worktree Path**:
+- **Bolt Refs**:
+- **Practices Affirmed Timestamp**:
+
+## Scope Configuration
+- **Stages to Execute**: 0.1, 0.2, 0.3, 2.1, 2.3, 3.5, 3.6, 4.1, 4.3
+- **Stages to Skip**: 1.1 (intent-capture), 1.2 (market-research), 1.3 (feasibility), 1.4 (scope-definition), 1.5 (team-formation), 1.6 (rough-mockups), 1.7 (approval-handoff), 2.2 (practices-discovery), 2.4 (user-stories), 2.5 (refined-mockups), 2.6 (domain-design), 2.7 (units-generation), 2.8 (contract-design), 2.9 (delivery-planning), 3.1 (functional-design), 3.2 (nfr-requirements), 3.3 (nfr-design), 3.4 (infrastructure-design), 3.7 (ci-pipeline), 4.2 (environment-provisioning), 4.4 (observability-setup), 4.5 (incident-response), 4.6 (performance-validation), 4.7 (feedback-optimization)
+- **Depth**: Minimal
+- **Test Strategy**: Minimal
+- **Review Override**: 
+- **Change Control**: relaxed (from scope bugfix)
+
+## Workspace State
+- **Project Root**: .
+- **Languages**: Unknown
+- **Frameworks**: Unknown
+- **Build System**: gradle (build.gradle)
+
+## Execution Plan Summary
+- **Total Stages**: 9
+- **Completed**: 4
+- **In Progress**: requirements-analysis
+
+## Runtime State
+- **Revision Count**: 0
+
+## Phase Progress
+<!-- Status values: Pending, Active, Verified, Skipped -->
+
+- **Initialization**: Verified
+- **Ideation**: Skipped
+- **Inception**: Active
+- **Construction**: Pending
+- **Operation**: Pending
+
+## Stage Progress
+<!-- Checkbox states: [ ] not started, [-] in progress, [?] awaiting approval (gate open), [R] revising (user rejected gate), [x] completed, [S] skipped via --stage/--phase jump -->
+
+### INITIALIZATION PHASE
+- [x] workspace-scaffold — EXECUTE
+- [x] workspace-detection — EXECUTE
+- [x] state-init — EXECUTE
+
+### IDEATION PHASE
+- [ ] intent-capture — SKIP
+- [ ] market-research — SKIP
+- [ ] feasibility — SKIP
+- [ ] scope-definition — SKIP
+- [ ] team-formation — SKIP
+- [ ] rough-mockups — SKIP
+- [ ] approval-handoff — SKIP
+
+### INCEPTION PHASE
+- [x] reverse-engineering — EXECUTE
+- [ ] practices-discovery — SKIP
+- [-] requirements-analysis — EXECUTE
+- [ ] user-stories — SKIP
+- [ ] refined-mockups — SKIP
+- [ ] domain-design — SKIP
+- [ ] units-generation — SKIP
+- [ ] contract-design — SKIP
+- [ ] delivery-planning — SKIP
+
+### CONSTRUCTION PHASE
+Per unit: [TBD]
+- [ ] functional-design — SKIP
+- [ ] nfr-requirements — SKIP
+- [ ] nfr-design — SKIP
+- [ ] infrastructure-design — SKIP
+- [ ] code-generation — EXECUTE
+- [ ] build-and-test — EXECUTE
+- [ ] ci-pipeline — SKIP
+
+### OPERATION PHASE
+- [ ] deployment-pipeline — EXECUTE
+- [ ] environment-provisioning — SKIP
+- [ ] deployment-execution — EXECUTE
+- [ ] observability-setup — SKIP
+- [ ] incident-response — SKIP
+- [ ] performance-validation — SKIP
+- [ ] feedback-optimization — SKIP
+
+## Current Status
+- **Lifecycle Phase**: INCEPTION
+- **Current Stage**: requirements-analysis
+- **Next Stage**: code-generation
+- **Status**: Running
+- **Last Updated**: 2026-10-04T01:10:56Z
+
+## Session Resume Point
+- **Last Completed Stage**: reverse-engineering
+- **Next Action**: Execute Requirements Analysis
+- **Pending Artifacts**: none
