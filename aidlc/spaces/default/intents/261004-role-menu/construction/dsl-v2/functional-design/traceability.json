@@ -1,0 +1,443 @@
+{
+  "stage": "functional-design",
+  "unit": "dsl-v2",
+  "upstream_ids": [
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.2.15",
+    "AC1.2.16",
+    "AC1.2.17",
+    "AC1.2.18",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.1.13",
+    "AC3.1.14",
+    "AC3.1.15",
+    "AC3.1.16",
+    "AC3.1.17",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.1.11",
+    "AC5.1.12",
+    "AC5.1.13",
+    "AC5.1.14",
+    "AC5.1.15",
+    "AC5.1.16",
+    "AC5.1.17",
+    "AC5.1.18",
+    "AC5.2.1",
+    "AC5.2.2",
+    "AC5.2.3",
+    "AC5.2.4",
+    "AC5.2.5",
+    "AC6.1.1",
+    "AC6.1.2",
+    "AC6.1.3",
+    "AC6.1.4",
+    "AC6.1.5",
+    "AC6.1.6",
+    "AC6.1.7",
+    "AC6.1.8",
+    "AC6.1.9",
+    "AC6.1.10"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "部分: スキーマの階層と、組でテーブルを引く口を提供口で出す（木の API と画面は U4 role・U6 role-admin-ui）。BR8.1・BR8.2"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.15",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.16",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.17",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC1.2.18",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "部分: 上限つきの安全な読み込みの口の大きさ・入れ子・別名・展開後の節の数の境界（上限の値と応答は U4 role）。BR6.1・BR6.2"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "OK",
+      "target": "部分: 読めた木の位置を引く口（中身の誤りの検証と応答は U4 role）。BR6.4"
+    },
+    {
+      "id": "AC3.1.13",
+      "status": "OK",
+      "target": "部分: タグ・重複キーの拒否と、例外の文を出さないこと（Problem Details の応答は U4 role）。BR6.2・BR6.3"
+    },
+    {
+      "id": "AC3.1.14",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.15",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）・U4 role"
+    },
+    {
+      "id": "AC3.1.16",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.17",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "Deferred",
+      "target": "U5 navigation・U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.11",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui・U5 navigation"
+    },
+    {
+      "id": "AC5.1.12",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.13",
+      "status": "Deferred",
+      "target": "U5 navigation・U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.14",
+      "status": "OK",
+      "target": "部分: 組で引けないテーブルは無いと返す（絞る関数は U5 navigation）。BR8.2"
+    },
+    {
+      "id": "AC5.1.15",
+      "status": "Deferred",
+      "target": "U5 navigation・U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.16",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.17",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.18",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.2.1",
+      "status": "OK",
+      "target": "BR2.1・BR2.2"
+    },
+    {
+      "id": "AC5.2.2",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC5.2.3",
+      "status": "OK",
+      "target": "BR2.3・BR3.1"
+    },
+    {
+      "id": "AC5.2.4",
+      "status": "OK",
+      "target": "BR2.2・BR3.2"
+    },
+    {
+      "id": "AC5.2.5",
+      "status": "OK",
+      "target": "BR3.5"
+    },
+    {
+      "id": "AC6.1.1",
+      "status": "OK",
+      "target": "部分: スキーマの階層を DSL の書式と提供口で出す（権限の設定と自分の権限の画面は U6 role-admin-ui・U7 app-frame-ui）。BR1.2・BR1.6・BR8.1・BR8.2"
+    },
+    {
+      "id": "AC6.1.2",
+      "status": "OK",
+      "target": "BR1.1・BR7.1"
+    },
+    {
+      "id": "AC6.1.3",
+      "status": "OK",
+      "target": "BR4.1・BR4.2・BR4.3・BR4.4"
+    },
+    {
+      "id": "AC6.1.4",
+      "status": "OK",
+      "target": "BR1.3・BR5.1"
+    },
+    {
+      "id": "AC6.1.5",
+      "status": "OK",
+      "target": "BR1.4"
+    },
+    {
+      "id": "AC6.1.6",
+      "status": "OK",
+      "target": "部分: 起動時に Absent にし、DSL の画面に注意を出す（権限の案内・業務のメニュー・import・解決の口は U4 role・U5 navigation・U6・U7）。BR3.1・BR3.6・BR7.2・BR8.1"
+    },
+    {
+      "id": "AC6.1.7",
+      "status": "OK",
+      "target": "BR3.2・BR3.5"
+    },
+    {
+      "id": "AC6.1.8",
+      "status": "Deferred",
+      "target": "deployment-pipeline・deployment-execution（配備の段の戻しの手順と練習）"
+    },
+    {
+      "id": "AC6.1.9",
+      "status": "OK",
+      "target": "BR5.1・BR5.2・BR5.3・BR7.4・BR7.5"
+    },
+    {
+      "id": "AC6.1.10",
+      "status": "OK",
+      "target": "BR1.7・BR6.6"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.5",
+      "status": "N/A",
+      "target": "Q1 の答えで決めた参照の範囲（外部キーと選択肢は同じスキーマの中）。当たる受け入れ基準が無い"
+    },
+    {
+      "id": "BR3.3",
+      "status": "N/A",
+      "target": "Q4 の答え（版を上げる前に置かれていたプレビューの表示）。ストーリーに無い場合"
+    },
+    {
+      "id": "BR3.4",
+      "status": "N/A",
+      "target": "Q4 の答え（読めないプレビューの適用を内部DB を変える前に拒否）。ストーリーに無い場合"
+    },
+    {
+      "id": "BR6.5",
+      "status": "N/A",
+      "target": "team.md の TraceAspect の決まり（結果を文字列にしても木の中身を出さない）。技術の守りで、当たる受け入れ基準が無い"
+    },
+    {
+      "id": "BR7.3",
+      "status": "N/A",
+      "target": "Q4 の答えの画面の表示（読めないプレビューの誤りの一覧と破棄の案内）"
+    }
+  ]
+}

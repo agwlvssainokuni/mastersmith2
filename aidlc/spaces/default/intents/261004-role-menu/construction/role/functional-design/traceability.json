@@ -1,0 +1,847 @@
+{
+  "stage": "functional-design",
+  "unit": "role",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC1.1.14",
+    "AC1.1.15",
+    "AC1.1.16",
+    "AC1.1.17",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.2.15",
+    "AC1.2.16",
+    "AC1.2.17",
+    "AC1.2.18",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.9",
+    "AC2.2.10",
+    "AC2.2.11",
+    "AC2.2.12",
+    "AC2.2.13",
+    "AC2.2.14",
+    "AC2.2.15",
+    "AC2.2.16",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.1.13",
+    "AC3.1.14",
+    "AC3.1.15",
+    "AC3.1.16",
+    "AC3.1.17",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC4.1.13",
+    "AC4.1.14",
+    "AC4.1.15",
+    "AC4.1.16",
+    "AC4.1.17",
+    "AC4.1.18",
+    "AC4.1.19",
+    "AC4.1.20",
+    "AC4.1.21",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.2.6",
+    "AC4.2.7",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.1.11",
+    "AC5.1.12",
+    "AC5.1.13",
+    "AC5.1.14",
+    "AC5.1.15",
+    "AC5.1.16",
+    "AC5.1.17",
+    "AC5.1.18"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "BR3.1, BR11.1"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "BR1.4, BR3.6"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "BR3.2"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "BR3.3, BR11.1"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "BR8.1, BR8.6, BR3.2"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "部分: 応答の残りの数と個人の値を載せないこと BR3.2, BR3.4。文言と移る手がかりは U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "BR1.1, BR1.2, BR1.3"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "BR2.3"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "OK",
+      "target": "BR1.4, BR8.4, BR8.5"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "OK",
+      "target": "BR2.4"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "OK",
+      "target": "BR3.3, BR7.2"
+    },
+    {
+      "id": "AC1.1.14",
+      "status": "OK",
+      "target": "BR1.5"
+    },
+    {
+      "id": "AC1.1.15",
+      "status": "OK",
+      "target": "部分: role が足す API の分類 BR2.1, BR2.2。網羅の検査は U1 cross-cutting"
+    },
+    {
+      "id": "AC1.1.16",
+      "status": "OK",
+      "target": "部分: role の監査の種類と行 BR11.4, BR11.8, BR11.9。group の種類は U3 group"
+    },
+    {
+      "id": "AC1.1.17",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "BR4.10, BR4.12"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "BR4.11, BR5.1"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "BR5.1, BR5.2"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "BR4.1, BR5.2"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "OK",
+      "target": "BR5.4, BR11.6"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "OK",
+      "target": "部分: 保存と木の API の拒否 BR4.5。画面の案内は U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "OK",
+      "target": "部分: 今の DSL に無い印と消す API BR4.7, BR4.10。画面の表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "OK",
+      "target": "部分: 解決の口 BR5.3, BR4.6。メニューの絞り込みは U5 navigation"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "OK",
+      "target": "BR5.1, BR5.2, BR5.6"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "OK",
+      "target": "BR4.1, BR2.4"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "OK",
+      "target": "BR4.9, BR8.1, BR11.6"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "OK",
+      "target": "BR4.6"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.15",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.16",
+      "status": "OK",
+      "target": "部分: 木の inMenu BR4.11。表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.17",
+      "status": "OK",
+      "target": "BR4.8"
+    },
+    {
+      "id": "AC1.2.18",
+      "status": "OK",
+      "target": "部分: 開いた階層だけを読む BR4.10。目標と測り方は NFR 要件の段"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "部分: ロールの割り当ての数の問う口 BR10.1, BR10.2。メンバーの確かめは U3 group"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "部分: グループへの割り当ての側 BR6.6, BR8.2, BR10.1。削除とメンバーの側は U3 group"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "BR6.5, BR6.8, BR7.2"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "OK",
+      "target": "BR6.5, BR7.2"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "BR6.2, BR6.5, BR11.1"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "OK",
+      "target": "BR6.5"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "OK",
+      "target": "BR5.3, BR5.4, BR6.8"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "OK",
+      "target": "BR7.1, BR7.2"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "OK",
+      "target": "BR12.1, BR12.2"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "OK",
+      "target": "部分: 出どころつきの読み取り BR6.5, BR6.11。表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "OK",
+      "target": "部分: 直接の外しの後もグループ経由で残る読み取り BR6.4, BR6.5。表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "OK",
+      "target": "BR2.4, BR6.4, BR6.9"
+    },
+    {
+      "id": "AC2.2.11",
+      "status": "OK",
+      "target": "BR2.3"
+    },
+    {
+      "id": "AC2.2.12",
+      "status": "OK",
+      "target": "BR6.10"
+    },
+    {
+      "id": "AC2.2.13",
+      "status": "OK",
+      "target": "BR6.10"
+    },
+    {
+      "id": "AC2.2.14",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC2.2.15",
+      "status": "OK",
+      "target": "BR6.3, BR6.4"
+    },
+    {
+      "id": "AC2.2.16",
+      "status": "OK",
+      "target": "BR6.1, BR12.2"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "BR9.14, BR9.13"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "BR9.6, BR9.15"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "BR9.6, BR9.7, BR11.7"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "BR9.9, BR9.10"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "BR9.13"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "BR9.8"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "BR9.3, BR9.4"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "OK",
+      "target": "BR9.11"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "OK",
+      "target": "部分: ロールごとの要約と変更の一覧 BR9.6, BR9.7, BR9.8。表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "OK",
+      "target": "部分: 適用の結果の数 BR9.11。確かめの表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "OK",
+      "target": "BR9.1, BR9.5"
+    },
+    {
+      "id": "AC3.1.13",
+      "status": "OK",
+      "target": "BR9.3, BR12.3"
+    },
+    {
+      "id": "AC3.1.14",
+      "status": "OK",
+      "target": "BR9.12, BR9.14"
+    },
+    {
+      "id": "AC3.1.15",
+      "status": "OK",
+      "target": "BR9.14"
+    },
+    {
+      "id": "AC3.1.16",
+      "status": "OK",
+      "target": "BR2.1"
+    },
+    {
+      "id": "AC3.1.17",
+      "status": "OK",
+      "target": "部分: 上限の値 BR9.3。応答時間の目標は NFR 要件の段"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "BR7.7, BR5.4, BR11.1"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "OK",
+      "target": "BR7.7"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "OK",
+      "target": "BR7.5"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "部分: 作業ロールが無いときの NONE・不可 BR5.3, BR7.2。案内の表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "OK",
+      "target": "BR7.8, BR7.2"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "OK",
+      "target": "BR5.5"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "OK",
+      "target": "BR7.5"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "OK",
+      "target": "BR2.2"
+    },
+    {
+      "id": "AC4.1.13",
+      "status": "OK",
+      "target": "BR7.6"
+    },
+    {
+      "id": "AC4.1.14",
+      "status": "OK",
+      "target": "BR3.3, BR7.2"
+    },
+    {
+      "id": "AC4.1.15",
+      "status": "OK",
+      "target": "BR7.3"
+    },
+    {
+      "id": "AC4.1.16",
+      "status": "OK",
+      "target": "BR7.1"
+    },
+    {
+      "id": "AC4.1.17",
+      "status": "OK",
+      "target": "BR7.1, BR7.7"
+    },
+    {
+      "id": "AC4.1.18",
+      "status": "OK",
+      "target": "BR5.3, BR5.4"
+    },
+    {
+      "id": "AC4.1.19",
+      "status": "OK",
+      "target": "BR2.2"
+    },
+    {
+      "id": "AC4.1.20",
+      "status": "OK",
+      "target": "部分: 指標は管理の API と同じ仕組み BR2.2。応答時間の目標と測り方は NFR 要件の段"
+    },
+    {
+      "id": "AC4.1.21",
+      "status": "OK",
+      "target": "BR5.5, BR5.6, BR7.6"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "部分: 自分の権限の API BR4.11, BR4.12, BR5.4。画面は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "部分: 切り替えの後の API の結果 BR5.4, BR7.7。画面は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "OK",
+      "target": "BR2.2"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "OK",
+      "target": "部分: 作業ロールが無いときの API の結果 BR5.3。表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "OK",
+      "target": "BR2.2"
+    },
+    {
+      "id": "AC4.2.6",
+      "status": "OK",
+      "target": "部分: inMenu と実効の値 BR4.11。表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.11",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.12",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.13",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.14",
+      "status": "OK",
+      "target": "部分: DSL に無いテーブルは解決の口が NONE BR5.3。絞る関数は U5 navigation"
+    },
+    {
+      "id": "AC5.1.15",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.16",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.17",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    },
+    {
+      "id": "AC5.1.18",
+      "status": "Deferred",
+      "target": "U5 navigation"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR3.5",
+      "status": "N/A",
+      "target": "一覧のページ送りと並び（SP・Q1 A）。AC は画面の段の一覧の基準で U6 が受け持つ"
+    },
+    {
+      "id": "BR4.2",
+      "status": "N/A",
+      "target": "設定の持ち方（Q2 A）。データの形の決まりで直接の AC は無い"
+    },
+    {
+      "id": "BR4.3",
+      "status": "N/A",
+      "target": "対象の名前の長さと照らし合わせ（SP）。技術の入力の検証"
+    },
+    {
+      "id": "BR4.4",
+      "status": "N/A",
+      "target": "権限の保存の差分の意味（SP）。契約 C7 の補い"
+    },
+    {
+      "id": "BR6.7",
+      "status": "N/A",
+      "target": "外部キーの最後の守り（group-BR5.4）。技術の守り"
+    },
+    {
+      "id": "BR7.4",
+      "status": "N/A",
+      "target": "また割り当てたときに作業ロールが戻る（Q9 A）。契約 C5 から導かれる振る舞いで AC は無い"
+    },
+    {
+      "id": "BR8.3",
+      "status": "N/A",
+      "target": "排他の待ちの上限切れ ROLE_BUSY（Q3 A）。技術の守り"
+    },
+    {
+      "id": "BR9.2",
+      "status": "N/A",
+      "target": "YAML の送り方（Q8 A、契約 C7 との差）"
+    },
+    {
+      "id": "BR10.3",
+      "status": "N/A",
+      "target": "B3 の仮の実装の置き換え（group の Q4 A）。作り方の決まり"
+    },
+    {
+      "id": "BR11.2",
+      "status": "N/A",
+      "target": "業務の拒否の監査の線引き（FR12.2、group の Q5 A）。stories で機能設計に回された点"
+    },
+    {
+      "id": "BR11.3",
+      "status": "N/A",
+      "target": "監査に残さないもの（group-BR8.3・Q7 A）。FR12.4 で機能設計に回された点"
+    },
+    {
+      "id": "BR11.5",
+      "status": "N/A",
+      "target": "detail の上限と要約（group の Q6 A）。技術の上限"
+    },
+    {
+      "id": "BR13.1",
+      "status": "N/A",
+      "target": "code と状態コードの定義（契約 C7・TP Code Style）"
+    },
+    {
+      "id": "BR13.2",
+      "status": "N/A",
+      "target": "共通の code の使い回し（TP Code Style）。当たる受け入れ基準が無い"
+    },
+    {
+      "id": "BR3.7",
+      "status": "N/A",
+      "target": "ロール1件の読み取り。role-admin-ui の Q1 A で足した画面向けの読み取りで、直接の AC は無い"
+    }
+  ]
+}

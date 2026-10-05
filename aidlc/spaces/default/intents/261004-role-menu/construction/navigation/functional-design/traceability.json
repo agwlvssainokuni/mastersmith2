@@ -1,0 +1,163 @@
+{
+  "stage": "functional-design",
+  "unit": "navigation",
+  "upstream_ids": [
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.1.11",
+    "AC5.1.12",
+    "AC5.1.13",
+    "AC5.1.14",
+    "AC5.1.15",
+    "AC5.1.16",
+    "AC5.1.17",
+    "AC5.1.18"
+  ],
+  "coverage": [
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "部分: サーバーは開閉の基になる入れ子の木と項目の id を返す（BR2.4・BR3.1）。開閉・aria-expanded・キーボードは U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "BR2.1・BR2.2・BR2.3"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "部分: 置き場の問い合わせの 200 と表示名（BR5.3）、移れる項目の組（BR3.5）。準備中の画面と aria-current は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "部分: NONE・DSL に無い・DSL が無いを同じ 403 にし表示名を返さない（BR5.2・BR5.4）。権限なしの表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "BR1.4・BR1.6・BR3.4・BR6.1・BR1.1"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "部分: 空の木と NOT_CONFIGURED（BR1.2・BR1.3・BR3.3）。管理のメニューの表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "部分: label をそのまま返し icon を list に置き換える（BR3.2・BR4.2・BR4.1）。文字として描くのは U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（今の項目の祖先を開く。id は BR3.1 で渡す）"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "部分: 作業ロールを切り替えても同じ項目の id が変わらない（BR3.1）。開閉の状態の保持は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（字下げ・長い名前・はみ出し）"
+    },
+    {
+      "id": "AC5.1.11",
+      "status": "OK",
+      "target": "部分: 要求ごとの写しで次の要求から 403 と木が変わる（BR1.4・BR5.2）。読み直しと表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.12",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（ナビゲーションの領域と開閉のボタンの名前の言語。表示名の組は BR3.2）"
+    },
+    {
+      "id": "AC5.1.13",
+      "status": "OK",
+      "target": "部分: 名前を問い合わせの引数で受け、文字の種類を問わない（BR5.1）。画面の道のエンコードは U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.14",
+      "status": "OK",
+      "target": "BR2.6"
+    },
+    {
+      "id": "AC5.1.15",
+      "status": "OK",
+      "target": "部分: サーバー側の絞る関数の jqwik の性質（BR2.7・BR2.3・BR2.4）。画面側の fast-check は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.1.16",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（実際のブラウザの axe）"
+    },
+    {
+      "id": "AC5.1.17",
+      "status": "OK",
+      "target": "BR2.5・BR3.3"
+    },
+    {
+      "id": "AC5.1.18",
+      "status": "OK",
+      "target": "部分: 1回の要求で current() と snapshotFor を1回ずつ（BR1.4）。測り方と確かめは U5 の NFR 要件の段"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.5",
+      "status": "N/A",
+      "target": "DSL の識別の食い違いの扱い（設計の要点 SP 3、AC に無い同時の重なりの決まり）"
+    },
+    {
+      "id": "BR4.3",
+      "status": "N/A",
+      "target": "アイコンの一覧のファイルの誤りで起動を止める技術の検査（Q5 B）"
+    },
+    {
+      "id": "BR4.4",
+      "status": "N/A",
+      "target": "一覧のファイルと画面の一覧の一致のテスト（Q5 B）"
+    },
+    {
+      "id": "BR6.2",
+      "status": "N/A",
+      "target": "読み取りだけの技術の制約（SP 1）"
+    },
+    {
+      "id": "BR7.1",
+      "status": "N/A",
+      "target": "パッケージと境界テスト（要件 C4・team.md の Code Style）"
+    },
+    {
+      "id": "BR7.2",
+      "status": "N/A",
+      "target": "結果の型と switch の技術の決まり（team.md の Code Style）"
+    },
+    {
+      "id": "BR7.3",
+      "status": "N/A",
+      "target": "監査と指標を足さない（SP 8）"
+    },
+    {
+      "id": "BR7.4",
+      "status": "N/A",
+      "target": "TRACE のログの値（SP 9・NFR1.6）"
+    },
+    {
+      "id": "BR5.5",
+      "status": "N/A",
+      "target": "置き場の 403 を監査に残さない（Q6 A、FR12 の対象外）"
+    }
+  ]
+}

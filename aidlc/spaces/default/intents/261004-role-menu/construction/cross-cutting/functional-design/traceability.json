@@ -1,0 +1,379 @@
+{
+  "stage": "functional-design",
+  "unit": "cross-cutting",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC1.1.14",
+    "AC1.1.15",
+    "AC1.1.16",
+    "AC1.1.17",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.2.15",
+    "AC1.2.16",
+    "AC1.2.17",
+    "AC1.2.18",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.2.6",
+    "AC4.2.7",
+    "AC5.3.1",
+    "AC5.3.2",
+    "AC5.3.3",
+    "AC5.3.4",
+    "AC5.3.5",
+    "AC5.3.6",
+    "AC5.3.7"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "部分: BR1.2・BR1.4（ロールの管理の API が ADMIN に分類され、管理者でない利用者が止まることの網羅の検査）。401・403・200 の表のテストは U4 role"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.14",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.15",
+      "status": "OK",
+      "target": "BR1.1・BR1.2・BR1.3・BR1.4・BR1.5・BR1.6・BR1.7・BR1.8・BR1.9（注釈・静的な検査・実行時の検査・既存の 34 の口への印。この Intent で足す口への印は U2〜U5）"
+    },
+    {
+      "id": "AC1.1.16",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.1.17",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "部分: BR4.5（木は開いた所だけ子を読む）。スキーマ・テーブル・カラムの API と画面は U4 role・U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "OK",
+      "target": "部分: BR4.11（木の節の「今の DSL に無い」の印を文字で出す）。設定の扱いは U4 role・U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "OK",
+      "target": "部分: BR1.2・BR1.4（木を開く・保存する API が ADMIN に分類されることの検査）。401・403・200 のテストは U4 role"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "OK",
+      "target": "部分: BR4.2・BR4.3・BR4.8・BR4.10（木の開閉の aria-expanded とキーボード）。主権限を選ぶ部品の名前は U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.15",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.16",
+      "status": "OK",
+      "target": "部分: BR4.11（メニューに出るかの印を色だけでなく文字で出す）。判定と表示は U6 role-admin-ui"
+    },
+    {
+      "id": "AC1.2.17",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC1.2.18",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "部分: BR4.1・BR4.5（S8 の木の表示名と、開いた所だけ子を読む形）。実効の権限の API と画面は U4 role・U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "Deferred",
+      "target": "U4 role（画面は U7 app-frame-ui）"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "Deferred",
+      "target": "U4 role（画面は U7 app-frame-ui）"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "Deferred",
+      "target": "U4 role（画面は U7 app-frame-ui）"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "OK",
+      "target": "部分: BR1.1・BR1.3・BR1.4（自分の権限の API が AUTHENTICATED に分類され、未ログインが止まることの検査）。停止中の拒否は U4 role"
+    },
+    {
+      "id": "AC4.2.6",
+      "status": "OK",
+      "target": "部分: BR4.11（木の印を文字で示す）。表の表示は U7 app-frame-ui"
+    },
+    {
+      "id": "AC4.2.7",
+      "status": "Deferred",
+      "target": "U4 role（画面は U7 app-frame-ui）"
+    },
+    {
+      "id": "AC5.3.1",
+      "status": "OK",
+      "target": "部分: BR5.1・BR5.6（登録の項目の管理の区画）。ロール・グループの入口の登録は U6 role-admin-ui、組み立ては U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.2",
+      "status": "OK",
+      "target": "部分: BR5.3・BR5.5（管理の区画は visibleWhen ADMIN、出し分けはサーバー側の判定の代わりにしない）。描画は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.3",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.4",
+      "status": "OK",
+      "target": "部分: BR5.1・BR5.6（区画を登録に明示）。見出しと読み上げは U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.5",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.6",
+      "status": "OK",
+      "target": "部分: BR5.3（管理の区画は管理者の印だけで出し、作業ロールに依らない）。描画は U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.10",
+      "status": "N/A",
+      "target": "AC なし。境界テストの追加とカバレッジの一覧の扱いの作業の決まり（要件 C4・team.md）"
+    },
+    {
+      "id": "BR2.1",
+      "status": "N/A",
+      "target": "AC なし。要件 C5（画面の機能どうしの import の制限）を受け持つ"
+    },
+    {
+      "id": "BR2.2",
+      "status": "N/A",
+      "target": "AC なし。Q3 A（shared の向きの制限）"
+    },
+    {
+      "id": "BR2.3",
+      "status": "N/A",
+      "target": "AC なし。Q3 A（テストを対象外にする範囲の定義）"
+    },
+    {
+      "id": "BR2.4",
+      "status": "N/A",
+      "target": "AC なし。要件 C5（既存の違反を 0 件にする）"
+    },
+    {
+      "id": "BR3.1",
+      "status": "N/A",
+      "target": "AC なし。要件 C5 の違反の直し（Q4 A）"
+    },
+    {
+      "id": "BR3.2",
+      "status": "N/A",
+      "target": "AC なし。要件 C5 の違反の直し（Q4 A）"
+    },
+    {
+      "id": "BR3.3",
+      "status": "N/A",
+      "target": "AC なし。要件 C5 の違反の直しで既存の動きを保つ"
+    },
+    {
+      "id": "BR4.4",
+      "status": "N/A",
+      "target": "AC なし。契約 C2（開閉の状態を呼ぶ側が持つ）"
+    },
+    {
+      "id": "BR4.6",
+      "status": "N/A",
+      "target": "AC なし。読み込みの失敗の扱い（まとめの確認・construction.md の Error Handling）"
+    },
+    {
+      "id": "BR4.7",
+      "status": "N/A",
+      "target": "AC なし。BR4.5 から導いた技術の決まり"
+    },
+    {
+      "id": "BR4.9",
+      "status": "N/A",
+      "target": "AC なし。NFR4.3（文言を呼ぶ側が渡す）"
+    },
+    {
+      "id": "BR4.12",
+      "status": "N/A",
+      "target": "AC なし。BR4.5 から導いた表示の決まり"
+    },
+    {
+      "id": "BR5.2",
+      "status": "N/A",
+      "target": "AC なし。Q6 A（アイコンの既定）"
+    },
+    {
+      "id": "BR5.4",
+      "status": "N/A",
+      "target": "AC なし。team.md の N 階層のメニュー（icon を許す名前の一覧と照らす）の土台"
+    }
+  ]
+}
