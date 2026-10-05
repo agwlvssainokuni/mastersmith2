@@ -1,0 +1,170 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "dsl-v2",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "部分: NFR1.5, NFR1.7, NFR1.8, NFR1.9, NFR1.10, NFR1.11, NFR1.12, NFR1.13, NFR1.14（API の認可・分類・昇格の防止と個人に関する値は当たらない。下の枝番の行）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "部分: NFR2.5, NFR2.6, NFR2.7, NFR2.8, NFR2.9（権限の木・メニュー・作業ロール・import の時間は U4 role・U5 navigation。下の枝番の行）"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "部分: NFR3.3（同時の重なりと import の一括確定は U3 group・U4 role。NFR3.3 は NFR1.5 の行に載せる）"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "部分: NFR4.1, NFR4.3（S10 で変える部分。N 階層のメニューの画面は U7 app-frame-ui）"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "部分: NFR5.3, NFR5.4, NFR5.5（起動時のログと照合の警告。監査と指標は当たらない。NFR1.6 の行に載せる）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "部分: NFR6.1, NFR6.4, NFR6.5, NFR6.6, NFR6.7（継承とメニューを絞る関数の性質ベースのテストは U4・U5・U7。下の枝番の行）"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "N/A",
+      "target": "API ごとのサーバー側の判定。この単位は API を足さず、既存の DSL の API の道と守りも変えない（新しい API は U3・U4・U5）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "N/A",
+      "target": "401・403・200 のテスト。足す・変える API が無い（U3・U4・U5）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "N/A",
+      "target": "API の分類の網羅。既存の DSL の API への印と検査は U1 cross-cutting"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "N/A",
+      "target": "昇格・一括代入・IDOR。役割・権限を扱わない（U3 group・U4 role）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "部分: NFR1.5, NFR1.7, NFR1.8, NFR1.9, NFR1.10, NFR1.12, NFR1.14, NFR3.3（守りの部品 SafeYamlReader と、FR7.4 が同じ守りを求める DSL の守り・拒否の形。上限の値と権限の YAML の中身の検証は U4 role）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "部分: NFR1.11, NFR1.13, NFR5.3, NFR5.4, NFR5.5（TRACE・ログ・警告に値を出さない決まり。個人に関する値は扱わない）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "部分: NFR2.5, NFR2.6, NFR2.7, NFR2.9（100 テーブル × 100 カラムと上限の 10 MiB の DSL を時間と大きさの条件に使う。利用者・ロール・グループの数は U3・U4）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "権限の木・メニュー・作業ロールの切り替えの時間。U4 role・U5 navigation の持ち物。DSL の時間は足した NFR2.5・NFR2.6 で、NFR2.1 の行に載せる"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "要求ごとの権限の読み出しの重さ。U4 role・U5 navigation の持ち物（この単位の提供口はメモリの中のモデルを返すだけ）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "N/A",
+      "target": "import の時間と権限の YAML の大きさの上限。U4 role の持ち物（この単位は上限を受け取る口だけ）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "割り当て・外し・ロールの削除・作業ロールの切り替えの同時の重なり。U3 group・U4 role の持ち物"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "N/A",
+      "target": "import の一括確定。U4 role の持ち物"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "部分: NFR4.1（S10 で変える部分の WCAG。足す画面は U6・U7）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの画面（aria-expanded・aria-current・axe）。U7 app-frame-ui の持ち物"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "NFR4.3, NFR2.8"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "N/A",
+      "target": "監査（FR12）と種類の名前の長さ。DSL の操作の監査は既存のまま変えず、役割・権限・グループの監査は U3・U4"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "N/A",
+      "target": "新しい管理の API の指標。この単位は API を足さず、DSL の指標は既存のまま"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "部分: NFR6.1, NFR6.5, NFR6.6（N 階層のメニューの深さの上限の境界と DSL の必須のテスト。役割・権限の必須のテストとメニューの画面のテストは U3〜U7）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "N/A",
+      "target": "継承の解決とメニューを絞る関数の性質ベースのテスト。U4・U5・U7 の持ち物。この単位の性質ベースのテストは足した NFR6.6 で、NFR6.1 の行に載せる"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "部分: NFR6.7（新しい E2E は足さない。既存の DSL の E2E を版 2 に書き換え、本数に数えない。2本の流れは U6・U7）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "部分: NFR6.4（dsl・dslmanage のパッケージ。access.service は U1）"
+    }
+  ]
+}

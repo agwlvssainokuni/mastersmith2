@@ -1,0 +1,42 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "app-frame-ui",
+  "upstream_ids": [
+    "NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6",
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6",
+    "NFR2.1", "NFR2.2", "NFR2.3", "NFR2.4",
+    "NFR3.1", "NFR3.2",
+    "NFR4.1", "NFR4.2", "NFR4.3",
+    "NFR5.1", "NFR5.2",
+    "NFR6.1", "NFR6.2", "NFR6.3", "NFR6.4"
+  ],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "部分: NFR1.1, NFR1.4, NFR1.6, NFR1.7, NFR1.8, NFR1.9, NFR1.10（サーバーの認可の表は U3〜U5、API の分類の網羅は U1 cross-cutting。下の枝番の行）" },
+    { "id": "NFR2", "status": "OK", "target": "部分: NFR2.2, NFR2.5, NFR2.6, NFR2.7, NFR2.8, NFR2.9, NFR2.10, NFR2.11, NFR2.12（API の時間と規模とサーバーの読み出しは U4 role・U5 navigation。下の枝番の行）" },
+    { "id": "NFR3", "status": "N/A", "target": "同時性と一括確定はサーバーの持ち物（U4 role）。画面は ROLE_NOT_ASSIGNED の後に読み直すだけで、機能設計 D8 が持つ" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5（N 階層のメニューの主の単位。下の枝番の行）" },
+    { "id": "NFR5", "status": "N/A", "target": "監査と指標は U3 group・U4 role の持ち物。画面は監査と指標を持たない" },
+    { "id": "NFR6", "status": "OK", "target": "部分: NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8（サーバーの必須のテストと jqwik は U3〜U5、F の流れの前半は U6 role-admin-ui。下の枝番の行）" },
+    { "id": "NFR1.1", "status": "OK", "target": "NFR1.1, NFR1.10（NFR1.10 の静的検査は、隠すことに頼らない画面の書き方を守る関門として、判定をサーバーに置く NFR1.1 の行に寄せた）" },
+    { "id": "NFR1.2", "status": "OK", "target": "部分: NFR1.1（画面の権限なしの表示と道の直接入力。サーバーの 401・403・200 の表のテストは U3 group・U4 role・U5 navigation）" },
+    { "id": "NFR1.3", "status": "N/A", "target": "U7 は API を持たない。網羅の検査は U1 cross-cutting、分類の印は U4 role・U5 navigation" },
+    { "id": "NFR1.4", "status": "OK", "target": "部分: NFR1.4, NFR1.8（NFR1.8 の /logout の操作の印は、利用者の意図しない操作を要求の形で防ぐ点が昇格・一括代入の防止に近いため寄せた。判定は U4 role・U5 navigation）" },
+    { "id": "NFR1.5", "status": "OK", "target": "部分: NFR1.7（YAML は扱わない。DSL から来る値を信頼できない入力として描く守りが、YAML の信頼できない入力の守りに近いため寄せた。YAML の守りは U4 role・U6 role-admin-ui）" },
+    { "id": "NFR1.6", "status": "OK", "target": "NFR1.6, NFR1.9" },
+    { "id": "NFR2.1", "status": "OK", "target": "部分: NFR2.12（測りに使う悪い側と目安の木。規模の確定は U4 role・U5 navigation）" },
+    { "id": "NFR2.2", "status": "OK", "target": "部分: NFR2.2, NFR2.5, NFR2.6, NFR2.7, NFR2.8, NFR2.9, NFR2.10, NFR2.11（メニューと作業ロールの切り替えの画面の側の時間と要求の数。NFR2.10 の入口の大きさと NFR2.11 の二重の送信の防ぎは、切り替えとメニューの応答の速さと要求の数に関わるため寄せた。API の時間は U4 role・U5 navigation の目標）" },
+    { "id": "NFR2.3", "status": "N/A", "target": "要求ごとの権限の読み出しはサーバーの持ち物（U4 role・U5 navigation）。画面は読み出さない" },
+    { "id": "NFR2.4", "status": "N/A", "target": "import の時間は U4 role と U6 role-admin-ui の持ち物。U7 は import を扱わない" },
+    { "id": "NFR3.1", "status": "N/A", "target": "作業ロールの切り替えと割り当ての外しの重なりの守りはサーバー（U4 role）" },
+    { "id": "NFR3.2", "status": "N/A", "target": "import の一括確定はサーバー（U4 role）" },
+    { "id": "NFR4.1", "status": "OK", "target": "NFR4.1" },
+    { "id": "NFR4.2", "status": "OK", "target": "NFR4.2, NFR4.4, NFR4.5" },
+    { "id": "NFR4.3", "status": "OK", "target": "NFR4.3" },
+    { "id": "NFR5.1", "status": "N/A", "target": "監査は U3 group・U4 role" },
+    { "id": "NFR5.2", "status": "N/A", "target": "指標は U4 role・U5 navigation（Spring Boot の http.server.requests）" },
+    { "id": "NFR6.1", "status": "OK", "target": "部分: NFR6.1, NFR6.7（NFR6.7 の既存のテストの書き換えは、画面の必須のテストを新しい形で保つ作業のため寄せた。サーバーの必須のテストは U3〜U5）" },
+    { "id": "NFR6.2", "status": "OK", "target": "部分: NFR6.2（画面の木を作る関数と道の往復の fast-check。サーバー側の絞る関数の jqwik は U5 navigation、継承の解決は U4 role）" },
+    { "id": "NFR6.3", "status": "OK", "target": "部分: NFR6.3（I の流れの1本と F の流れに B9 で足す部分。F の流れの前半は U6 role-admin-ui）" },
+    { "id": "NFR6.4", "status": "OK", "target": "NFR6.4, NFR6.5, NFR6.6, NFR6.8（NFR6.5 の依存を足さない・NFR6.6 の固定先の更新の確かめ・NFR6.8 の応答の型の確かめは、カバレッジと同じく統合の前の1コマンドの検査と品質の関門で確かめる品質の要件のため寄せた）" }
+  ]
+}

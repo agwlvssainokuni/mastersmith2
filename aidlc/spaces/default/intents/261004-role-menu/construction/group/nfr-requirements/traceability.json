@@ -1,0 +1,48 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "group",
+  "upstream_ids": [
+    "NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6",
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6",
+    "NFR2.1", "NFR2.2", "NFR2.3", "NFR2.4",
+    "NFR3.1", "NFR3.2",
+    "NFR4.1", "NFR4.2", "NFR4.3",
+    "NFR5.1", "NFR5.2",
+    "NFR6.1", "NFR6.2", "NFR6.3", "NFR6.4"
+  ],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "部分: NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.6, NFR1.7, NFR1.8, NFR1.9, NFR1.10, NFR1.11（権限の YAML の守りは U4 role。下の枝番の行）" },
+    { "id": "NFR2", "status": "OK", "target": "部分: NFR2.1, NFR2.3, NFR2.5, NFR2.6, NFR2.7, NFR2.8（権限の木・メニュー・作業ロール・import の時間は U4 role・U5 navigation。下の枝番の行）" },
+    { "id": "NFR3", "status": "OK", "target": "部分: NFR3.1, NFR3.3, NFR3.4, NFR3.5, NFR3.6, NFR3.7（import の一括確定は U4 role。下の枝番の行）" },
+    { "id": "NFR4", "status": "N/A", "target": "画面の要件（WCAG・N 階層のメニュー・日本語と英語）。この単位は画面を持たない。グループの画面は U6 role-admin-ui" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4, NFR5.5" },
+    { "id": "NFR6", "status": "OK", "target": "部分: NFR6.1, NFR6.4, NFR6.5, NFR6.6, NFR6.7（継承とメニューの性質ベースのテストは U4・U5・U7、E2E は U6・U7。下の枝番の行）" },
+
+    { "id": "NFR1.1", "status": "OK", "target": "NFR1.1" },
+    { "id": "NFR1.2", "status": "OK", "target": "NFR1.2" },
+    { "id": "NFR1.3", "status": "OK", "target": "NFR1.3" },
+    { "id": "NFR1.4", "status": "OK", "target": "部分: NFR1.4（グループの一括代入と IDOR。作業ロールを割り当てられていないロールに変えられないことは U4 role）" },
+    { "id": "NFR1.5", "status": "N/A", "target": "権限の YAML の守り（FR7.4）。U4 role の持ち物で、この単位は YAML を読まない" },
+    { "id": "NFR1.6", "status": "OK", "target": "NFR1.6" },
+
+    { "id": "NFR2.1", "status": "OK", "target": "部分: NFR2.1（グループと利用者の数。テーブル・カラムの数は U4 role・U5 navigation）" },
+    { "id": "NFR2.2", "status": "N/A", "target": "権限の木・メニュー・作業ロールの切り替えの時間。U4 role・U5 navigation の持ち物。グループの API の時間はこの単位で足した NFR2.5" },
+    { "id": "NFR2.3", "status": "OK", "target": "部分: NFR2.3（U4 の解決が呼ぶ所属の読み取りの口の問い合わせの数。解決全体は U4 role）" },
+    { "id": "NFR2.4", "status": "N/A", "target": "import の確かめと適用の時間。U4 role の持ち物" },
+
+    { "id": "NFR3.1", "status": "OK", "target": "部分: NFR3.1（グループの削除とメンバー・グループへの割り当ての追加の重なり。作業ロールとロールの削除の重なりは U4 role）" },
+    { "id": "NFR3.2", "status": "N/A", "target": "import の一括確定。U4 role の持ち物" },
+
+    { "id": "NFR4.1", "status": "N/A", "target": "画面の WCAG。この単位は画面を持たない（U6 role-admin-ui）" },
+    { "id": "NFR4.2", "status": "N/A", "target": "N 階層のメニューの画面。U7 app-frame-ui の持ち物" },
+    { "id": "NFR4.3", "status": "N/A", "target": "画面の文言の日本語と英語。この単位の応答の文言は既存の Problem Details の仕組み（code ごとの日本語と英語）で持ち、画面は U6 role-admin-ui" },
+
+    { "id": "NFR5.1", "status": "OK", "target": "NFR5.1, NFR5.5" },
+    { "id": "NFR5.2", "status": "OK", "target": "NFR5.2, NFR5.4" },
+
+    { "id": "NFR6.1", "status": "OK", "target": "部分: NFR6.1, NFR6.5, NFR6.6（グループに当たる必須のテスト。N 階層のメニューの画面のテストは U5・U7）" },
+    { "id": "NFR6.2", "status": "N/A", "target": "継承の解決とメニューを絞る関数の性質ベースのテスト。U4・U5・U7 の持ち物。この単位の性質ベースのテストは NFR6.5" },
+    { "id": "NFR6.3", "status": "N/A", "target": "E2E（最大2本）。流れは U6・U7 が持ち、この単位は足さない" },
+    { "id": "NFR6.4", "status": "OK", "target": "NFR6.4, NFR6.7" }
+  ]
+}

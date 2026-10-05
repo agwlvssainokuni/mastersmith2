@@ -1,0 +1,170 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "navigation",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "部分: NFR1.1, NFR1.2, NFR1.3, NFR1.4, NFR1.6, NFR1.7, NFR1.8, NFR1.9, NFR1.10, NFR1.11, NFR1.12（権限の YAML の守り NFR1.5 は U4 role、API の分類の網羅の検査の仕組みは U1 cross-cutting。下の枝番の行）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "部分: NFR2.1, NFR2.2, NFR2.3, NFR2.5, NFR2.6（木・保存・作業ロールの切り替えの時間と import は U4 role。下の枝番の行）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "この単位は書き込みを持たない（読み取りだけ、BR6.2）。割り当て・切り替え・削除の同時の重なりの守りと import の一括確定は U4 role。読み取りと DSL の適用し直しの重なりは NFR1.1 の行の NFR1.10"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "画面の要件（WCAG・N 階層のメニューの開閉と aria-current・日本語と英語）。この単位は画面を持たない。メニューの画面は U7 app-frame-ui"
+    },
+    {
+      "id": "NFR5",
+      "status": "N/A",
+      "target": "監査に残す操作が無く（置き場の 403 も残さない、機能設計 Q6 A）、指標の要件の対象（管理の API と作業ロールの切り替え）でもない。記録への漏えいは NFR1.6 の行の NFR1.8"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "部分: NFR6.1, NFR6.2, NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8（N 階層のメニューの画面のテストと画面側の fast-check、E2E は U7 app-frame-ui。下の枝番の行）"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "NFR1.1, NFR1.9, NFR1.10, NFR1.11, NFR1.12"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "NFR1.2"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "部分: NFR1.3（2本の API の分類の印。網羅の検査の仕組みは U1 cross-cutting）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "NFR1.4, NFR1.7"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "N/A",
+      "target": "権限の YAML を扱わない。守りは U4 role"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "NFR1.6, NFR1.8"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "NFR2.1, NFR2.6"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "部分: NFR2.2, NFR2.5（メニューを返す API と置き場の問い合わせ。権限の設定の木・保存・作業ロールの切り替えは U4 role）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "NFR2.3"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "書き込みを持たない。割り当て・外し・削除・切り替えの重なりの守りは U4 role。読み取りとの重なりで権限の無い項目を出さないことは NFR1.10"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面を持たない。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの aria-expanded・aria-current・キーボード・axe は画面の要件。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面の文言を持たない（表示名は ja・en の組で返すだけ）。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "N/A",
+      "target": "監査に残す操作が無い（読み取りだけ。置き場の 403 も残さない、機能設計 Q6 A・BR7.3）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "N/A",
+      "target": "対象は新しい管理の API と作業ロールの切り替え。この単位は既存の http.server.requests だけを使う"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "部分: NFR6.1, NFR6.5, NFR6.7, NFR6.8（サーバー側の部分。N 階層のメニューの画面のテストは U7 app-frame-ui）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "部分: NFR6.2（サーバー側の絞る関数の jqwik。画面側の fast-check は U7 app-frame-ui、継承の解決は U4 role）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E の流れ I（N 階層のメニューをたどって準備中の画面へ）は U7 app-frame-ui が持つ"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "NFR6.4, NFR6.6"
+    }
+  ]
+}

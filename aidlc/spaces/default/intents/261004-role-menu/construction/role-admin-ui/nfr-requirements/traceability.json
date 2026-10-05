@@ -1,0 +1,42 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "role-admin-ui",
+  "upstream_ids": [
+    "NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6",
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6",
+    "NFR2.1", "NFR2.2", "NFR2.3", "NFR2.4",
+    "NFR3.1", "NFR3.2",
+    "NFR4.1", "NFR4.2", "NFR4.3",
+    "NFR5.1", "NFR5.2",
+    "NFR6.1", "NFR6.2", "NFR6.3", "NFR6.4"
+  ],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "部分: NFR1.1, NFR1.4, NFR1.5, NFR1.6, NFR1.7, NFR1.8, NFR1.9, NFR1.10, NFR1.11, NFR1.12（サーバーの認可の表は U3 group・U4 role、API の分類の網羅は U1 cross-cutting。下の枝番の行）" },
+    { "id": "NFR2", "status": "OK", "target": "部分: NFR2.2, NFR2.4, NFR2.5, NFR2.6, NFR2.7, NFR2.8, NFR2.9, NFR2.10, NFR2.11, NFR2.12, NFR2.13（API の時間と規模とサーバーの読み出しは U3 group・U4 role。下の枝番の行）" },
+    { "id": "NFR3", "status": "N/A", "target": "同時性と一括確定はサーバーの持ち物（U3 group・U4 role）。画面は BUSY の表示だけで、機能設計 D4 が持つ" },
+    { "id": "NFR4", "status": "OK", "target": "部分: NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5, NFR4.6, NFR4.7（N 階層のメニューは U7 app-frame-ui。下の枝番の行）" },
+    { "id": "NFR5", "status": "N/A", "target": "監査と指標は U3 group・U4 role の持ち物。画面は監査と指標を持たない" },
+    { "id": "NFR6", "status": "OK", "target": "部分: NFR6.1, NFR6.2, NFR6.3, NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8, NFR6.9, NFR6.10（サーバーの必須のテストと jqwik は U3・U4、メニューの性質と I の流れは U5・U7。下の枝番の行）" },
+    { "id": "NFR1.1", "status": "OK", "target": "NFR1.1, NFR1.12" },
+    { "id": "NFR1.2", "status": "OK", "target": "部分: NFR1.1（画面の 403 の扱いと道の直接入力。サーバーの 401・403・200 の表のテストは U3 group・U4 role）" },
+    { "id": "NFR1.3", "status": "N/A", "target": "U6 は API を持たない。網羅の検査は U1 cross-cutting、分類の印は U3 group・U4 role" },
+    { "id": "NFR1.4", "status": "OK", "target": "部分: NFR1.4, NFR1.7, NFR1.9（画面が送る項目・描き方・読む項目。判定は U3 group・U4 role）" },
+    { "id": "NFR1.5", "status": "OK", "target": "部分: NFR1.5, NFR1.10（送る前の大きさの確かめとファイル名。YAML の守りは U4 role）" },
+    { "id": "NFR1.6", "status": "OK", "target": "NFR1.6, NFR1.8, NFR1.11" },
+    { "id": "NFR2.1", "status": "OK", "target": "部分: NFR2.12（画面の目安のカラムの数。規模の確定は U3 group・U4 role）" },
+    { "id": "NFR2.2", "status": "OK", "target": "部分: NFR2.2, NFR2.5, NFR2.6, NFR2.9, NFR2.11, NFR2.13（API の時間は U4 role の目標をそのまま当てる）" },
+    { "id": "NFR2.3", "status": "N/A", "target": "要求ごとの権限の読み出しはサーバーの持ち物（U4 role）。画面は読み出さない" },
+    { "id": "NFR2.4", "status": "OK", "target": "部分: NFR2.4, NFR2.7, NFR2.8, NFR2.10（import の時間の目標と上限は U4 role）" },
+    { "id": "NFR3.1", "status": "N/A", "target": "同時の重なりの守りはサーバー（U3 group・U4 role）" },
+    { "id": "NFR3.2", "status": "N/A", "target": "import の一括確定はサーバー（U4 role）" },
+    { "id": "NFR4.1", "status": "OK", "target": "NFR4.1, NFR4.5, NFR4.7" },
+    { "id": "NFR4.2", "status": "OK", "target": "部分: NFR4.2, NFR4.4（S4 の共有の木と U6 の画面の実際のブラウザの axe。N 階層のメニューは U7 app-frame-ui）" },
+    { "id": "NFR4.3", "status": "OK", "target": "NFR4.3, NFR4.6" },
+    { "id": "NFR5.1", "status": "N/A", "target": "監査は U3 group・U4 role" },
+    { "id": "NFR5.2", "status": "N/A", "target": "指標は U3 group・U4 role（Spring Boot の http.server.requests）" },
+    { "id": "NFR6.1", "status": "OK", "target": "部分: NFR6.1, NFR6.9, NFR6.10（画面の出し分けと画面のテスト。サーバーの必須のテストは U3 group・U4 role）" },
+    { "id": "NFR6.2", "status": "OK", "target": "部分: NFR6.2（画面の純粋な関数の fast-check。継承の解決は U4 role、メニューを絞る関数は U5 navigation・U7 app-frame-ui）" },
+    { "id": "NFR6.3", "status": "OK", "target": "部分: NFR6.3（F の流れの前半を B8。後半は B9 の U7 app-frame-ui、I の流れは U7 app-frame-ui）" },
+    { "id": "NFR6.4", "status": "OK", "target": "NFR6.4, NFR6.5, NFR6.6, NFR6.7, NFR6.8" }
+  ]
+}
