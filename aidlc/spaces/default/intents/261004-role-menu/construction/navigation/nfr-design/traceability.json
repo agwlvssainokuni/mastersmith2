@@ -1,0 +1,206 @@
+{
+  "stage": "nfr-design",
+  "unit": "navigation",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 2節（判定の置き場と読み方）、logical-components.md 1節 L2"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 1節（NavigationAuthorizationApiIT の表）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "部分: security-design.md 1節（ApiAccess(AUTHENTICATED) の印）。網羅の検査の仕組みは U1 cross-cutting"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 3節（主体は要求の文脈、ほかの引数を結び付けない）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "N/A",
+      "target": "権限の YAML を扱わない。守りは U4 role（承認済みの NFR 要件で N/A）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "security-design.md 6節（伏せ字の型を使わない、AuthenticatedUser を web の外へ出さない規則）、logical-components.md 2節"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 4節（文字を問わない・空の確かめ・NavigationUntrustedInputIT）、reliability-design.md 1節（捨ての試し N1・N2）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "部分: observability-design.md 2節（正しくエンコードした要求で、NavigationQueryExposureIT が確かめる）。正しくない % の並びの要求は 500 と ERROR のログに値が入る受け入れた制約（observability-design.md 3節・5節、security-design.md 7節。アプリ全体の直しは後の Intent）"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "security-design.md 2節（NotVisible の結果の型、同じ 403、resolve を1回）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "reliability-design.md 2節（NavigationBarrier の afterDslRead・afterResolve、NavigationDslSwapIT の4つの場合）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "reliability-design.md 3節（NavigationFailureIT）"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "security-design.md 5節（期待の表・7つの組・role の EffectivePermissionConsistencyIT との分け方）、logical-components.md 4節（承認済みの測り方との差）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "scalability-design.md 1節（悪い側と目安の DSL の作り方、データの入れ方）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "performance-design.md 3節（k6 の4場面、期待の状態コード、基準の値の記録）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "performance-design.md 1節（読み出しの数と NavigationCallCountTest）・2節（時間の予算）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role（承認済みの NFR 要件で N/A）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "performance-design.md 3節（1回の繰り返しに要求1つ、iteration_duration の p95、場面ごとに別の実行）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "scalability-design.md 2節（ConnectionCountingDataSource でスレッドごとの最大を数える、NavigationConnectionUsageIT）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "書き込みを持たない。割り当て・切り替えの重なりの守りは U4 role。読み取りと DSL の適用し直しの重なりは NFR1.10（承認済みの NFR 要件で N/A）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role（承認済みの NFR 要件で N/A）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面を持たない。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの画面の要件。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面の文言を持たない。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "N/A",
+      "target": "監査に残す操作が無い（承認済みの NFR 要件で N/A）。監査の行が増えないことは observability-design.md 2節で確かめる"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "N/A",
+      "target": "対象は新しい管理の API と作業ロールの切り替え。この単位は既存の http.server.requests だけを使う（observability-design.md 1節）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "部分: logical-components.md 5節（テストの一覧）。N 階層のメニューの画面のテストは U7 app-frame-ui"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "部分: logical-components.md 4節（生成器）・5節（MenuFilterPropertyTest の8つの性質）。画面側の fast-check は U7 app-frame-ui"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E の流れ I は U7 app-frame-ui が持つ（承認済みの NFR 要件で N/A）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "logical-components.md 5節（navigation のパッケージごとの下限、NoOpNavigationBarrier も本番の経路で呼ぶ）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "logical-components.md 2節（NavigationBoundaryArchitectureTest の規則、L7 と T1〜T3 の置き場）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "scalability-design.md 1節（生成の手順は Node の標準の部品だけ）、logical-components.md 1節（テストの部品は既存の依存だけで作る）"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "logical-components.md 5節（allowedNavIcons.test.ts）"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "reliability-design.md 4節（AllowedNavIconList の読み方と AllowedNavIconListTest）"
+    }
+  ]
+}

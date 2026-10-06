@@ -1,0 +1,34 @@
+{
+  "stage": "nfr-design",
+  "unit": "cross-cutting",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6", "NFR1.7", "NFR1.8", "NFR1.9", "NFR1.10",
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5",
+    "NFR6.1", "NFR6.2", "NFR6.3", "NFR6.4", "NFR6.5", "NFR6.6", "NFR6.7", "NFR6.8"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "security-design.md 3節 L1・4.1・4.2（印は方法かクラスの一方だけ）・4.2.1（違反の見本で、印なし・二重が ApiAccessRulesTest で落ちることを確かめる）、logical-components.md 1節" },
+    { "id": "NFR1.2", "status": "OK", "target": "security-design.md 4.2（ADMIN と AdminPaths の両方向、AUTHENTICATED の道）" },
+    { "id": "NFR1.3", "status": "OK", "target": "security-design.md 2.2（試しの点 1〜5・7、34 の口で食い違い 0 件）・4.3（3つの主体の期待の表）" },
+    { "id": "NFR1.4", "status": "OK", "target": "security-design.md 2.2 点 1・8節 1（試しで判定の部品が使えると確かめ、MockMvc への切り替えは発動しない）" },
+    { "id": "NFR1.5", "status": "OK", "target": "security-design.md 4.2 手順 3・4、4.3 手順 3（集合はクラスと方法で比べる、34 以上、allowEmptyShould(false)）" },
+    { "id": "NFR1.6", "status": "OK", "target": "security-design.md 4.4（口の単位の 9 行、宣言された方法の集合と道の型の集合）・4.4.1（PublicApiInventoryTest で、行の増減・変数名の変更・/error の方法の増減の4つの境界を確かめる）・2.2 点 6" },
+    { "id": "NFR1.7", "status": "OK", "target": "security-design.md 4.5（actuator と静的配信は口の一覧に入らないことを試しで確かめた）" },
+    { "id": "NFR1.8", "status": "OK", "target": "security-design.md 3節 L4・5.2（登録の区画は見せ方だけ）" },
+    { "id": "NFR1.9", "status": "OK", "target": "security-design.md 5.1（文字の差し込みだけ、失敗の文は labels.loadFailed だけ）" },
+    { "id": "NFR1.10", "status": "OK", "target": "security-design.md 4.1・4.2 手順 5・4.3 手順 6（失敗の文は口・道・方法・主体の種類だけ、主体は見本の値）" },
+    { "id": "NFR4.1", "status": "OK", "target": "security-design.md 5.1（aria-expanded・aria-current、tree の役割なし）" },
+    { "id": "NFR4.2", "status": "OK", "target": "security-design.md 5.1（開閉のボタンの名前に表示名）" },
+    { "id": "NFR4.3", "status": "OK", "target": "security-design.md 5.1（部品ごとに vitest-axe を1件）" },
+    { "id": "NFR4.4", "status": "OK", "target": "logical-components.md 2節（SharedTreeView は文言を持たず labels で受ける）" },
+    { "id": "NFR4.5", "status": "OK", "target": "security-design.md 5.1（実際のブラウザの axe は S4 を U6、S8 を U7 が持つ。深さの上限を置かない理由も同じ節、読み直しの R-05）" },
+    { "id": "NFR6.1", "status": "OK", "target": "security-design.md 5.3・5.4、logical-components.md 2節" },
+    { "id": "NFR6.2", "status": "OK", "target": "security-design.md 5.3（node の実行環境、ESLint の lintText、止める道と許す道の見本。読み直しの R-06）" },
+    { "id": "NFR6.3", "status": "OK", "target": "security-design.md 4.6（access・user の境界テスト）" },
+    { "id": "NFR6.4", "status": "OK", "target": "security-design.md 4.6（手を入れるパッケージは packagesJudgedByTotal に当たらない。要件 NFR6.4 の access.service の持ち主は無し（当たらない）、Build and Test で差が無いことを確かめる。読み直しの R-04）" },
+    { "id": "NFR6.5", "status": "OK", "target": "security-design.md 5.2（アイコンの照合の両方向の型の確かめと境界、読み直しの R-03）・6節" },
+    { "id": "NFR6.6", "status": "OK", "target": "security-design.md 6節" },
+    { "id": "NFR6.7", "status": "OK", "target": "security-design.md 6節（試しで使った部品はすべて今の依存）" },
+    { "id": "NFR6.8", "status": "OK", "target": "security-design.md 4.3 手順 1・6節、logical-components.md 4節（試しで約 32 秒、Build and Test で実測）" }
+  ]
+}

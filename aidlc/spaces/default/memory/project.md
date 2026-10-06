@@ -77,6 +77,7 @@
 - 1〜6回目で繰り返しの時間の p95 が2回 1 秒を超え、依頼者が VM の時計を合わせて測り直しを求めた（F1・F2 の Other）。測り直しの7〜9回目は 1 秒を下回ったため、1〜6回目を FR2.2a の条件がそろわない回として外した（承認の場で確かめる）。時計のずれを ssh の前後のホスト時刻の中間と比べる誤った測り方で 2.2 秒と読み、測り方を直して範囲（VM−終わり、VM−始め）で記録し直した。配備したアプリは2回止めた（約 12 分と約 4 分）。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:build-and-test:e707ec3fd147eaa84362c07d4cfa53f852decdd1fa7b4be6fdd0004941c27f10 -->
 - k6 の判定は1回の繰り返しに要求1つの場面の iteration_duration で行い、トークンは setup() で取って場面を 3 分にした。時計のずれに強い代わりに、操作が2つ以上の場面は op のタグが iteration_duration に付くかを台本で確かめる必要がある（group のレビューの R-01 を先に避けた）。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:5ce4195a3720a78de755ec4a54d93240fa4c34963c432dbda08d5dbfb93d6e3f -->
 - 上限を下げた k6 の場面を置かず、接続の数は結合テスト NavigationConnectionUsageIT で決定的に確かめる。読み取りだけで1要求1本のため詰まりが起きず、role のレビューの R-02 の「k6 では見積もりの誤りを見分けにくい」を避けられる。代わりに、負荷の下での待ちの長さは測らない。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:944e5f7f1a5d9426cea6618c96c838077f8644bbda0797d3161e50b0514b1fa0 -->
+- 違反のテストは先の側を確定させてから書く待たない違反、上限切れは H2 の上限まで放さない形にした（Q3: A）。時間の境に合否を預けない代わりに、待った後の違反の経路は区分の単体テストだけで確かめる。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:1280fca49c6aaa49e31f89203ac28a7e4c45902f63b6e5bb921937e21a83681e -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -143,6 +144,8 @@
 - 対象DB のコンテナの版は長く支援される版に限らず、verify（対象DB の結合テスト）を通った最新の版を使う（quality-followup で mysql 26.7・mariadb 13.0 に上げた）。compose.yaml・docker/perf/compose.yaml・TargetDbImages の digest を一緒に上げる。 (learned 2026-09-29) <!-- cid:260928-quality-followup:code-generation:c720e9319af164201f7a46bcde302cd8f962359ad94dcfaf9752c3de5d76a917 -->
 - Jackson は Spring Boot の管理の系列（3.1）のまま、脆弱性の直しのためにパッチの版だけを Jackson の BOM（platform）で上書きする（quality-followup で 3.1.6）。Spring Boot を上げるときは、この上書きの要否を見直す。 (learned 2026-09-29) <!-- cid:260928-quality-followup:code-generation:beb1aa38dcbea8d87e4f9b199c8b4254f9c7744993c2f54bd86984a9c1586d8d -->
 - Jackson の上書きは 3.1.7 とする（user-admin の B1 の前に、High の脆弱性 4 件を解くため 3.1.6 から上げた。Spring Boot の管理の系列 3.1 のまま、Jackson の BOM を platform で読む形は同じ）。Spring Boot を上げるときは、この上書きの要否を見直す。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:7230d7ba8d3a9a1dcd450f2fa37c323a71091a36a61422a5c44eaa74245fe919 -->
+- 一意の鍵・主キーの待ちの上限を承認済みの「3 秒」ではなく H2 の既定の約 2 秒のままにした。捨ての試しで書き込みの待ちにはヒントが効かず約 2,000 ms で切れ、SET LOCK_TIMEOUT はプールの接続に残ってほかの機能に響くため。差は reliability-design.md 1.3 と logical-components.md 4節に記録した。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:d71ee16a91a075569bb61cd2f8c0ef27095b1bcca3b4ffb6f44ceb31c47ae532 -->
+- 深さと別名の上限を LoaderOptions と LimitingParser の両方に同じ値で渡す形にした。試しの T1' で LoaderOptions の方が小さいと部品の例外（位置なし）が先に出て SYNTAX に写るため。値を2か所に渡す手間の代わりに、区分と位置を必ず保てる。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:0abb2baa97c3474516c45beb3aba6c0e0d584e971be80c3cf81371297320ac26 -->
 ## Decided
 
 <!-- Decisions made in earlier stages that should not be re-asked. -->
@@ -414,3 +417,4 @@
 - 一意の違反の後は巻き戻して新しいトランザクションで失敗の出来事を出し、名前の鍵は Java で作って通常の列に保存する。group のレビューの R-01・R-02・R-04 の手当てを先取りした。group の承認の場の決着が違えばそろえ直す。 (learned 2026-10-05) <!-- cid:261004-role-menu:functional-design:55a6eb1b0b333b516fb0c52d528291c2113a7f025d1f0a3a12002efb63b1c53a -->
 - 上流の枝番と同じ番号は同じ意味でだけ使い、足す要件は上流の最後の枝番の次から振った。dsl-v2 の NFR 要件のレビュー（R-01）で、同じ番号を別の意味に使って N/A と有効が食い違った反省から。対応表を各成果物の冒頭に置いた。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:1df739ff5eb64a157add2245a6a4e61da626df8aac4c2077ca5fddc0a8adb8a7 -->
 - traceability.json は段の定義の例（NFR1〜NFR6 の行）より細かく、上流の枝番ごとにも行を立てた。dsl-v2 のレビューの R-02 で、当たらない枝番が OK の中に混ざると要件の網羅の連鎖が誤ると指摘されたため。OK の target には、この単位で定義した ID だけを書いた。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:3a9c873114dc1e6743371b480679e03725e3291996e1d2e3fa3955c6251a6ab7 -->
+- 試しは Spring Boot と Hibernate を使わず HikariCP と JDBC で行った。3つの範囲は JDBC で確かめられ、2 時間の上限の中で終えるため。本番の上乗せは目標の 10 分の 1 未満の値から見通した。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:3573c63ad89f6110b727dd1501586314a14d929fab38db38718af0cd4dd7e69d -->

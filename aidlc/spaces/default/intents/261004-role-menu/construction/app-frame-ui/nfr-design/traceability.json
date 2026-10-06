@@ -1,0 +1,182 @@
+{
+  "stage": "nfr-design",
+  "unit": "app-frame-ui" ,
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.4",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR2.2",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR2.12",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 1節（判定はサーバー、置き場の同じ権限なしの表示）、logical-components.md 1節 L5・L9"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 2節（要求は各 *Api.ts の1か所、本文は {roleId} だけ、利用者を指す値を入れない）、logical-components.md 1節 L1・L2・L9・L10"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "security-design.md 3節（コンソール・sessionStorage・道、ログアウトで開閉の保存を消す R-04）、logical-components.md 1節 L6・L7・L11"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 4節（文字として描く、アイコンの照合、道は tablePlaceholderPath の1か所）、logical-components.md 2.1節・1節 L5・L6"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "security-design.md 5節（メモリ上の印、beforeNavigate で立てる、StrictMode での読み方と ref で1回、印の消し方、I の流れの確かめ）、logical-components.md 3節（登録の型と骨組みの口の変更）・6.1節・1節 L11・L15"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "security-design.md 6節（既存の報告の部品の使い回し、secretValues.ts の書き忘れを失敗にする R-07）、logical-components.md 6.1節"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "security-design.md 7節（静的検査、骨組みは features を import しない、clearLogoutIntent は LoginStateGate の文脈で渡す）、logical-components.md 3節・1節 L15"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "performance-design.md 1節（API の時間は U4・U5、要求の数ときっかけのまとめ）、logical-components.md 1節 L4"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "performance-design.md 4.1節（PUT の後に切り替えの後の見本を返す差し替えの口）・4.2節（click の捕捉で測り始め、workRoleSwitched の判定）・4.3節"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "performance-design.md 4.3節（悪い側の木で開閉のボタンから子の ul まで）、logical-components.md 2.1節"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "performance-design.md 4.3節（末端の項目から置き場の見出しまで）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "performance-design.md 4.1節・4.2節・4.4節（置き場と見本、操作の直前に入れる聞き手と画面の中の performance.now() の1つの時計、5 回の中央値の判定）、logical-components.md 5節"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "performance-design.md 2節（要求の世代で古い答えを捨てる、表示を残す、ポーリングと独自の時間切れを置かない）"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "performance-design.md 5節（入口の前後の記録と lazy の chunk の大きさ）"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "OK",
+      "target": "performance-design.md 3節（ref で最中を守り、待ちの間は押せないボタンに差し替える）、logical-components.md 2.2節"
+    },
+    {
+      "id": "NFR2.12",
+      "status": "OK",
+      "target": "performance-design.md 4.1節（目安の木と悪い側の木の生成の関数）、logical-components.md 1節 L13"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "logical-components.md 4節（部品ごとの vitest-axe）・2.2節（読み上げは Toast の入れ物だけ）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "logical-components.md 2.1節（Sidebar の開閉・aria-current の口）・4節（キーボードと深さの画面のテスト、性質ベースのテスト）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "logical-components.md 5節（英語の表示の組で navLabels の名前）・2.1節（Topbar の日本語の固定は受け入れた制約）"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "logical-components.md 5節（160 の状態・見本・20 組・組ごとに1つのテスト・合格の条件・畳んだ状態の扱い、R-09）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "logical-components.md 5節（3つの幅と、悪い側の1組 lg・dark・360px の追加 R-05）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "logical-components.md 4節（部品ごとのテストの置き場）・5節（make-you-chic-ui に頼る振る舞いの実際のブラウザの検査）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "logical-components.md 4節（buildNavSections の性質 1〜7 と tablePlaceholderPath の往復）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "logical-components.md 6節（170 の I の流れの前提と手順、150 の F の流れへの追加、番号）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "logical-components.md 1節（部品ごとにテストを置き、カバレッジの下限は今の thresholds のまま除外を足さない）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "logical-components.md 7節（新しい npm の依存を足さない）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "logical-components.md 7節（固定先の更新の専用のコミットと確かめ）・2.1節（2つの版の間の変更の無さ）"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "logical-components.md 4節（既存のテストの書き換えと、E2E の開き口の関数）、1節 L12"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "logical-components.md 7節（型の確かめと、確かめられなかったときに S8 を外すかを諮る R-08）、1節 L10"
+    }
+  ]
+}

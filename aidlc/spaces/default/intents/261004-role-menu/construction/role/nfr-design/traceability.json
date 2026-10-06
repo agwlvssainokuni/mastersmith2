@@ -1,0 +1,278 @@
+{
+  "stage": "nfr-design",
+  "unit": "role",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 1節・2節（入口の判定、ロールで管理の可否を変えない）、logical-components.md 1節 L1"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 2節（表のテスト、B4 と B5 の差と期間）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "security-design.md 1節（ApiAccess の印）、logical-components.md 1節 L1"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 3節（DTO の型、主体は要求の文脈、読み直しての確かめ）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "security-design.md 1節・5節（SafeYamlReader の上限、キーと値の型、二重引用符、別名の数え方）、reliability-design.md 1.2 U1・U2、logical-components.md 1節 L7・L13"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "security-design.md 4.2（伏せ字の型、RoleSecretLeakIT）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 4.4（detail の型、応答の DTO）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "security-design.md 4.1（role.store、包み直し、構造の検査、org.hibernate.orm.jdbc.error）、reliability-design.md 2.3・2.4（RoleStoreTransactions）、logical-components.md 1節 L2・L15"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "security-design.md 4.3（YAML の中身を伏せる型、role.transfer は TraceAspect の対象の外、JDBC の TRACE のロガー OFF と漏えいの確かめ）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "security-design.md 3節（0 以下の ID は 404）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "security-design.md 6節（名前の付いた引数、JDBC のバッチを含む）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "scalability-design.md 1節"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "performance-design.md 2節・3節（場面・判定・予算）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "performance-design.md 1節（問い合わせの形、resolve の使い分けの Javadoc）・3節、reliability-design.md 1.2 U5・3節（写しと resolve の一致）、logical-components.md 1節 L4・4節"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "performance-design.md 2.3（試しの見通し、JdbcTemplate の文の上限、短い名前の形の測り）、reliability-design.md 1.2 U3・U4・1.3・2.5"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "performance-design.md 2節（場面と op のタグ、分けたときの場面の名前）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "performance-design.md 1節（問い合わせの数、RoleAdminQueryCountIT）"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "scalability-design.md 2.2（合否の回は上限 11・5 VU、acquire の最大と時間切れの累計、記録の回）・2.3・2.4（group は role の形にそろえた）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "scalability-design.md 1節"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "scalability-design.md 1節（10 MiB で確定、確かめと適用は同時に1つ）、reliability-design.md 1.2 U3・2.6（RoleTransferSlot）"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "performance-design.md 2.2（判定の指標、op のタグの確かめ）"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "OK",
+      "target": "scalability-design.md 2.1・2.2（RoleConnectionUsageIT）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "reliability-design.md 2.2（排他の順番と待ち合わせの4つの口）・3節（一致のテスト）・4.1（(b)・(g) の期待）・4.2（重なりの作り方の表）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "reliability-design.md 2.5・4.3（RoleTransferAtomicityIT）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "reliability-design.md 2.1（鍵・主キーの待ちは約 2 秒、行の排他は 3 秒のヒント。承認の場で決定）・2.3・4.2（#3・#5・#9・#12）"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "reliability-design.md 2.4（RoleStoreTransactions と status.setRollbackOnly）・4.2（#2・#6）・4.3（RoleStoreTransactionsIT）"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "reliability-design.md 5節"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "reliability-design.md 5節"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "reliability-design.md 1節（捨ての試し U1〜U5 と group の T1〜T7 の使い回し）"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "reliability-design.md 2.5（判定の順）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面の WCAG。この単位は画面を持たない（U6 role-admin-ui・U7 app-frame-ui）。NFR 要件でも N/A"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの画面。U7 app-frame-ui の持ち物。NFR 要件でも N/A"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面の文言の日本語と英語。画面は U6・U7。NFR 要件でも N/A"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "observability-design.md 1節"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "observability-design.md 2節"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "observability-design.md 3節"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "observability-design.md 4節"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "observability-design.md 1節（detail の切り替え）"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "observability-design.md 1節（残さないもの、読み替え中の選び直し）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "reliability-design.md 4節、security-design.md 2節〜5節、logical-components.md 5節"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "logical-components.md 1節 L6・L7、security-design.md 5節（往復の性質ベースのテスト）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E。F・I の流れは U6・U7 が持つ。NFR 要件でも N/A"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "logical-components.md 1節（手を入れるパッケージは packagesJudgedByTotal に入らない）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "logical-components.md 2節（依存の向き、RoleBoundaryArchitectureTest）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "logical-components.md 1節（新しい依存なし。JDBC のバッチは lockfile にある spring-jdbc の JdbcTemplate を、main で新しく使う）"
+    }
+  ]
+}

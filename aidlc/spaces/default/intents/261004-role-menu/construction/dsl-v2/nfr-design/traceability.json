@@ -1,0 +1,158 @@
+{
+  "stage": "nfr-design",
+  "unit": "dsl-v2",
+  "upstream_ids": [
+    "NFR1.5",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR1.13",
+    "NFR1.14",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.3",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR6.1",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "security-design.md 4.1（上限つきの安全な読み込みの口）・3節 T1・T2'"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 4.2（DSL の大きさの上限）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "security-design.md 4.2（深さ・別名・展開後の節・タグ・重複キー、別名の爆発の 5 秒のテスト）・3節 T2"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "security-design.md 4.3（dsl-schema-v2.json と外部の参照）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "security-design.md 4.4（Problem Details の拒否）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "security-design.md 4.1（入力は byte[]、結果の文字列は区分・位置・節の数だけ）"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "security-design.md 4.5（深さの関数と起動時の枝の落とし方）"
+    },
+    {
+      "id": "NFR1.13",
+      "status": "OK",
+      "target": "security-design.md 4.6（接続情報）"
+    },
+    {
+      "id": "NFR1.14",
+      "status": "OK",
+      "target": "security-design.md 4.7（境界）・logical-components.md 3節"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "logical-components.md 4節（1回ずつの時間）・security-design.md 3節 T3・security-design.md 4.9（10 MiB の読み込みのヒープ）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "logical-components.md 4節（95 パーセンタイルと同時の実行）・security-design.md 4.9（同時の投入の扱いと受け入れた制約）"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "logical-components.md 4節（大きさの試算の式）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "logical-components.md 4節（英語の文言）"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "logical-components.md 4節・security-design.md 4.5（木を1回たどる）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "security-design.md 4.4（500 にしない・起動を止めない）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "logical-components.md 5節（S10 の WCAG）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "logical-components.md 5節（ja・en の文言）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "security-design.md 4.8（起動時の WARN）"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "security-design.md 4.8（起動時の ERROR と読めないプレビューのログ、appliedUnreadable の判定）"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "security-design.md 4.6・4.8（SCHEMA_MISMATCH の警告）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "logical-components.md 6節（深さの境界）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "logical-components.md 6節（カバレッジ）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "logical-components.md 6節（DSL の必須のテスト）・security-design.md 4.2"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "logical-components.md 6節（jqwik）"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "logical-components.md 6節（書き換えの持ち主）・7節（配備の段への引き継ぎ）"
+    }
+  ]
+}
