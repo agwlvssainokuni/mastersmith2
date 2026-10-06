@@ -1,0 +1,39 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "dsl-v2",
+  "upstream_ids": [
+    "NFR1.5", "NFR1.7", "NFR1.8", "NFR1.9", "NFR1.10", "NFR1.11", "NFR1.12", "NFR1.13", "NFR1.14",
+    "NFR2.5", "NFR2.6", "NFR2.7", "NFR2.8", "NFR2.9",
+    "NFR3.3",
+    "NFR4.1", "NFR4.3",
+    "NFR5.3", "NFR5.4", "NFR5.5",
+    "NFR6.1", "NFR6.4", "NFR6.5", "NFR6.6", "NFR6.7"
+  ],
+  "coverage": [
+    { "id": "NFR1.5", "status": "N/A", "target": "上限つきの安全な読み込みの口はコードの作り（security-design.md 4.1）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5" },
+    { "id": "NFR1.7", "status": "N/A", "target": "DSL の大きさの上限は DslFormat の値（security-design.md 4.2）で、基盤の設定は要らない。境界のテストは cicd-pipeline.md 2節の段 5・段 6" },
+    { "id": "NFR1.8", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の別名の爆発の 5 秒のテストを2件）・4節（テストの JVM のヒープ 1g を変えず、試しの T2 の約 130 MB で足りる見込み）" },
+    { "id": "NFR1.9", "status": "OK", "target": "cicd-pipeline.md 3節（dsl-schema-v2.json の同梱・processResources の複写・verifyDslSchemaInWar・名指しする箇所の一覧、外部の $ref を取りに行かない設定のまま）・2節（段 4・段 9）" },
+    { "id": "NFR1.10", "status": "N/A", "target": "Problem Details の拒否は既存の変換の作り（security-design.md 4.4）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR1.11", "status": "OK", "target": "cicd-pipeline.md 10節（入力は byte[]、TRACE を有効にした結合テストを段 6 で毎回）・2節（段 6）" },
+    { "id": "NFR1.12", "status": "N/A", "target": "深さの関数と起動時の枝の落とし方はコードの作り（security-design.md 4.5）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5・段 6" },
+    { "id": "NFR1.13", "status": "OK", "target": "cicd-pipeline.md 9節（接続情報は今までどおり .env だけ、秘密を足さない、CI に秘密を渡さない）・10節（漏えいのテストを残す）" },
+    { "id": "NFR1.14", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の DslBoundaryArchitectureTest を変えずに通す）・10節（境界）" },
+    { "id": "NFR2.5", "status": "OK", "target": "cicd-pipeline.md 6節（Build and Test で perf/dsl-timing.sh により 10 MiB の投入と表示の時間・memory.peak・OOMKilled を本番と同じヒープで測る）・5.2（同時の投入の口）" },
+    { "id": "NFR2.6", "status": "OK", "target": "cicd-pipeline.md 5.2（perf/dsl-timing.sh に足す同時の投入の口と判定、Q1: A）・6節（Performance Validation の k6 dslLight・dslCycle・dslMixed）" },
+    { "id": "NFR2.7", "status": "OK", "target": "cicd-pipeline.md 6節（生成した版 2 の DSL の大きさを Build and Test で実測、上限 10 MiB の内）" },
+    { "id": "NFR2.8", "status": "OK", "target": "cicd-pipeline.md 6節（Build and Test で perf/dsl-timing.sh --lang）・5.1（perf/ui の版 2 への書き換え）" },
+    { "id": "NFR2.9", "status": "N/A", "target": "木を1回たどるのは関数の作り（security-design.md 4.5）で、基盤の設定も測る道具も要らない" },
+    { "id": "NFR3.3", "status": "N/A", "target": "500 にしない・起動を止めないのはコードの作り（security-design.md 4.4）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6、版を上げる入れ替えと戻しの手順は 8節の配備の段への引き継ぎ" },
+    { "id": "NFR4.1", "status": "N/A", "target": "S10 の WCAG は画面のコードの作り（logical-components.md 5節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5（vitest-axe）と 7節の E2E" },
+    { "id": "NFR4.3", "status": "N/A", "target": "ja・en の文言の鍵は画面のコードの作り（logical-components.md 5節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5" },
+    { "id": "NFR5.3", "status": "N/A", "target": "起動時の WARN は既存の構造化ログの仕組みで出る（security-design.md 4.8）。新しい指標・警報・ログの収集の設定は足さない（cicd-pipeline.md 2節の補足）" },
+    { "id": "NFR5.4", "status": "N/A", "target": "起動時の ERROR と読めないプレビューの WARN は既存のログの仕組みのまま（security-design.md 4.8）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR5.5", "status": "N/A", "target": "SCHEMA_MISMATCH の警告の文はコードの作り（security-design.md 4.6・4.8）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR6.1", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の dsl.validate の単体テストと段 6 の dslmanage.web の結合テストで深さ 5 と 6 の境界）" },
+    { "id": "NFR6.4", "status": "OK", "target": "cicd-pipeline.md 4節（packagesJudgedByTotal を変えず、dsl・dslmanage のパッケージごとの下限、計測の除外を増やさない、cleanTest を付けて実測）" },
+    { "id": "NFR6.5", "status": "OK", "target": "cicd-pipeline.md 2節（段 5・段 6 の DSL の必須のテストを版 2 で）・10節（信頼できない入力）" },
+    { "id": "NFR6.6", "status": "OK", "target": "cicd-pipeline.md 2節（段 5 の jqwik、補足の乱数の種を CI の記録に残す exceptionFormat = FULL）" },
+    { "id": "NFR6.7", "status": "OK", "target": "cicd-pipeline.md 5.1（負荷の道具の版 2 への書き換えを B1 が持つ）・7節（E2E 040 の書き換え、本数に数えない）・8節（配備の段への引き継ぎ）" }
+  ]
+}

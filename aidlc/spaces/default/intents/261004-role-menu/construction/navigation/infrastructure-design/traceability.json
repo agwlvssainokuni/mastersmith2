@@ -1,0 +1,206 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "navigation",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "N/A",
+      "target": "判定の置き場と読み方はコードの作り（security-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "N/A",
+      "target": "認可の表はテストの作り（security-design.md 1節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 5 の ApiAccessArchitectureTest と段 6 の ApiAccessConsistencyIT が印を毎回確かめる）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "N/A",
+      "target": "主体の読み方はコードの作り（security-design.md 3節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "N/A",
+      "target": "権限の YAML を扱わない。守りは U4 role（NFR 設計でも N/A）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "N/A",
+      "target": "AuthenticatedUser を web の外へ出さない規則はコードの作り（security-design.md 6節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（Tomcat の既定の 400 は受け入れた制約）・cicd-pipeline.md 2節（段 6 の NavigationUntrustedInputIT）・8節"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "部分: monitoring-design.md 1節（問い合わせの部分はタグに入らない）・4節（NavigationQueryExposureIT と受け入れた制約）・2節（ms-error-logs が数える）・cicd-pipeline.md 8節"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "N/A",
+      "target": "同じ 403 と resolve を1回はコードの作り（security-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（DSL の写しの扱い）・cicd-pipeline.md 2節（段 6 の NavigationDslSwapIT と補足、待ちの上限は守りだけ）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "monitoring-design.md 2節（ms-5xx-ratio・ms-error-logs が拾う）・cicd-pipeline.md 2節（段 6 の NavigationFailureIT）"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "N/A",
+      "target": "期待の表で7つの組を確かめるのはテストの作り（security-design.md 5節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 6"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（Instances・Resource sizing）・cicd-pipeline.md 5.2（悪い側と目安の DSL・ロール・グループ・利用者の入れ方、Q1: A）・10節"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 5.1（4場面の持ち主）・5.3（流す順）・monitoring-design.md 3節（SLO は Unverified から始め k6 で判定、置き場の基準の値）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "N/A",
+      "target": "読み出しの数はコードの作り（performance-design.md 1節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5（NavigationCallCountTest）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role（NFR 設計でも N/A）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 5.1（1回の繰り返しに要求1つ、場面ごとに別の実行）・monitoring-design.md 3節（iteration_duration の p95）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（接続プールは変えない、1要求1本）・monitoring-design.md 3節・cicd-pipeline.md 5.4（上限を下げた場面を置かない）・2節（段 6 の NavigationConnectionUsageIT）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "書き込みを持たない。重なりの守りは U4 role（NFR 設計でも N/A）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "N/A",
+      "target": "import を扱わない。U4 role（NFR 設計でも N/A）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面を持たない。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの画面。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面の文言を持たない。U7 app-frame-ui"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "N/A",
+      "target": "監査に残す操作が無い（NFR 設計でも N/A）。監査の行が増えないことは cicd-pipeline.md 2節の段 6（NavigationQueryExposureIT）で確かめる"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "monitoring-design.md 1節（既存の http.server.requests の uri の系列）・5節（ダッシュボードの区画に2つの uri を足す）・7節（式の名前の差）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "部分: cicd-pipeline.md 2節（段 5・段 6 のテストの一覧と、コンテナを使わない結合テスト）。N 階層のメニューの画面のテストは U7"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "部分: cicd-pipeline.md 2節（段 5 の MenuFilterPropertyTest、乱数の種を残す、*Test に当たる名前）。画面の fast-check は U7"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E の流れ I は U7 app-frame-ui が持つ。navigation は E2E を足さず、統合の前に既存の全体を流す（cicd-pipeline.md 4節）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（navigation のパッケージごとの下限、NoOpNavigationBarrier を外さない、除外を増やさない）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 5 の NavigationBoundaryArchitectureTest、テストの部品は src/test/java の navigation/testsupport で WAR に入らない）・infrastructure-specification.md 3節（共有の口の境界）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節（lockfile を変えない）・6節（依存）・5.2（生成の部品は Node の標準の部品だけ）"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3節（アイコンの一覧のファイルを画面のテストが frontend/ の外の相対の道で読む）・cicd-pipeline.md 2節（段 5 の allowedNavIcons.test.ts）・1節（CI はリポジトリ全体を取得する）"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Bundled resource（WAR に同梱、起動時に1回読み誤りなら起動を止める）・cicd-pipeline.md 2節（段 4・段 5 の AllowedNavIconListTest）・7節 (i) の確かめ"
+    }
+  ]
+}

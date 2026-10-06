@@ -1,0 +1,182 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "app-frame-ui",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.4",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR2.2",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR2.12",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "N/A",
+      "target": "判定はサーバーで、画面は見せ方だけ（security-design.md 1節）。基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "N/A",
+      "target": "送る項目を各 *Api.ts の1か所で作るのは画面のコードの作り（security-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Storage（sessionStorage の1つの鍵、ログアウトで消す）・monitoring-design.md 6節・cicd-pipeline.md 4節（170 でログアウトの後に鍵が無い）・7節（秘密）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 2 のセキュリティ系の決まりを緩めずに通す、段 5 の性質ベースのテスト）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（170 のログアウトの確かめ）・5節（統合の前の手元の確かめ: ログアウトとログイン・/logout の直接の表示・戻る・再読み込み）"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（報告の秘密の確かめ、170 の値の読み戻し、資格情報はプロセスの環境変数）・monitoring-design.md 6節"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 1〜段 4 の静的検査と型の検査を緩めずに通す）・infrastructure-specification.md 5節（骨組みは features を import しない口の境界）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "monitoring-design.md 3節（呼ぶ API は navigation・role の区画で見る）・2節（画面の移動ごとの要求の数）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "monitoring-design.md 2節（160 の測りと中央値の判定）・cicd-pipeline.md 4節（160）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "monitoring-design.md 2節・cicd-pipeline.md 4節（160 の測り）"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "monitoring-design.md 2節・cicd-pipeline.md 4節（160 の測り）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "monitoring-design.md 5節（5 回の中央値、記録だけで統合は止めない）・2節"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "N/A",
+      "target": "古い答えを捨てる読み直しの形は画面のコードの作り（performance-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（画面の成果物と入口の量の判定）・6節（上流との差）・cicd-pipeline.md 6節（前の値を先に取る、manifest の静的な import の判定、塊の大きさ）・monitoring-design.md 2節"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "N/A",
+      "target": "切り替えの二重の送信の防ぎは画面のコードの作り（performance-design.md 3節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5"
+    },
+    {
+      "id": "NFR2.12",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（160 の差し替えの口 frameApiRoute.ts と見本の木）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "部品ごとの vitest-axe と Toast の読み上げは画面とテストの作り（logical-components.md 4節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（Sidebar の口を持つ 5bf1ffe への固定先の更新）・cicd-pipeline.md 2節（固定先の更新の手順）・4節（160 の5段のサイドバー）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "navLabels の英語の名前は画面のコードの作り（logical-components.md 5節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 3節の段 5 と 4節の 160 の英語の組"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（160 の 20 組・組ごとに1つのテスト・10 分を超えるなら 160・161 に分ける）・8節 (v)"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（160 の3つの幅と悪い側の1組）・infrastructure-specification.md 4節（配備の後のはみ出しの確かめ）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 5 の部品ごとのテスト）・4節（make-you-chic-ui に頼る振る舞いの実際のブラウザの検査 160）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 5 の fast-check の2つ、失敗時の種を記録）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（170 の I の流れ、150 への追加、本数の読み方、共有の状態、Mailpit に残るメール）・5節（統合の前の手元の確かめ）・9節（上流との差）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 7 の全体の合計の下限、除外を足さない）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Dependencies・cicd-pipeline.md 7節（コード生成の終わりに差分が無いことを確かめる）・3節（段 8）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（固定先の更新の専用のコミットと確かめ、Dependabot、統合の形）・cicd-pipeline.md 2節（手順と記録）・1節（CI のサブモジュールの取得）・8節 (i)"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（段 5 の既存のテストの書き換え）・4節（既存の E2E の開き口の書き換えは本数に数えない）・infrastructure-specification.md 5節（E2E の補助）"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 8節 (vi)（自分の権限の応答の型の確かめと、確かめられなければ S8 を外すかを依頼者に諮る）"
+    }
+  ]
+}

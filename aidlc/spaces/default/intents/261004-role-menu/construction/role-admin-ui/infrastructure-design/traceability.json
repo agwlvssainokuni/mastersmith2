@@ -1,0 +1,236 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "role-admin-ui",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR2.2",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR2.12",
+    "NFR2.13",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8",
+    "NFR6.9",
+    "NFR6.10"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（画面の出し分けは見せ方だけ、判定はサーバー）・cicd-pipeline.md 2節（段 5 の表のテスト）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "N/A",
+      "target": "決めた項目だけを送るのは画面のコードの作り（security-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "N/A",
+      "target": "ファイルの大きさの事前の確かめは画面のコードの作り（security-design.md 3節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5（TransferFilePicker の境界）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Storage（ブラウザの保存に書かない）・monitoring-design.md 6節（コンソールに出さない）・1節（外へ送る仕組みを足さない）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 2 の oxlint の react/no-danger などを緩めずに通す、段 5 の画面のテスト）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "N/A",
+      "target": "文言を code と状態だけで選ぶのは画面のコードの作り（security-design.md 4節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 4 の型の検査、段 5）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "N/A",
+      "target": "書き出しのファイル名は画面のコードの作り（security-design.md 3節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（E2E の報告の秘密の確かめ、recordSecretValues、資格情報はプロセスの環境変数、差し替えの口の打ち切りの確かめ）・monitoring-design.md 6節"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 1〜段 3 の静的検査を緩めずに通す）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（U3・U4 の API の要求の形を変えない）・monitoring-design.md 3節（API の時間は group・role の区画で見る）・5節"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "monitoring-design.md 5節（import の確かめ・適用の SLO は U4 の監視）・3節"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "monitoring-design.md 2節（画面の時間の測りと目標）・cicd-pipeline.md 4節（140 の測り）・5節（記録と判定）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "monitoring-design.md 2節・cicd-pipeline.md 4節・5節・7節 (iv)（responseEnd が得られないときの切り替え）"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "monitoring-design.md 2節（確かめの表示の時間とページのヒープの記録）・cicd-pipeline.md 4節・5節・infrastructure-specification.md 1節 Resource sizing"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "monitoring-design.md 2節・cicd-pipeline.md 4節・5節"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "monitoring-design.md 5節（5 回の中央値、記録だけで統合は止めない）・cicd-pipeline.md 5節（Not Met と値で記録）"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "N/A",
+      "target": "待ちの案内と二重の送信の防ぎは画面のコードの作り（performance-design.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5（偽の時計）"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "N/A",
+      "target": "古い答えを捨てるのは画面のコードの作り（performance-design.md 3節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR2.12",
+      "status": "OK",
+      "target": "monitoring-design.md 2節（1,000 カラムの表と Select の記録）・cicd-pipeline.md 5節"
+    },
+    {
+      "id": "NFR2.13",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（画面の成果物、遅延読み込みの塊）・monitoring-design.md 2節（入口の量と塊の大きさ）・cicd-pipeline.md 2節（段 9 の frontendBundleSize）・5節（B8 の前と後の比べ）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "WCAG と部品ごとの vitest-axe は画面とテストの作り（logical-components.md 1節 L12）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "Select の名前と共有の木の属性は画面のコードの作り（logical-components.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5 と 4節の 140"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "文言の ja・en は画面のコードの作り（logical-components.md 1節 L12）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（140 の実際のブラウザの axe 20 組、開いた Dropdown のはみ出し、差し替えの口）・infrastructure-specification.md 3節（差し替えの口と E2E の番号）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（140 の3つの幅）・infrastructure-specification.md 4節（配備の後のはみ出しの確かめ）"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "N/A",
+      "target": "文言の差し込みと部品の labels は画面のコードの作り（logical-components.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "N/A",
+      "target": "Tabs のフォーカスの戻しは画面のコードの作り（logical-components.md 2節）で、基盤の設定は要らない。確かめは cicd-pipeline.md 2節の段 5"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 5 の画面の出し分けの表のテスト）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 5 の fast-check の3つ）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（150 の F の流れ、自分で E2EF_ の DSL を適用、共有の状態の扱い、統合の前に全体を流す）・infrastructure-specification.md 3節（E2E の番号と DSL の見本）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 7 の全体の合計の下限、計測から外さない）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Dependencies・cicd-pipeline.md 1節（lockfile を変えない）・6節（コード生成の終わりに差分が無いことを確かめる）"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 Networking（同じオリジンのためヘッダーを読める）・2節（ApiDownload の headers）・3節・cicd-pipeline.md 2節（段 5 の apiClient.download.test.ts）"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（入口の data router）・3節（共有の入口）・cicd-pipeline.md 3節（B8 の最初の確かめと戻し）"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 8 の OSV-Scanner の npm の関門を今のまま）"
+    },
+    {
+      "id": "NFR6.9",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（段 5 の補足: waitFor・findBy*、時間の上限を延ばさない、createMemoryRouter）"
+    },
+    {
+      "id": "NFR6.10",
+      "status": "OK",
+      "target": "cicd-pipeline.md 4節（差し替えの口の body: string、150 で本物の応答と見本の一致を確かめる）・2節（段 4 の見本の型の検査）"
+    }
+  ]
+}

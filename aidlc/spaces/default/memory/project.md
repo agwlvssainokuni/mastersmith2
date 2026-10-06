@@ -127,6 +127,7 @@
 - 配備の前の E2E は 153 件 passed だったが、救済の WARN 0 件を件数で確かめる計画（D5・D7、R-05）は果たせなかった。Playwright の webServer.stdout が ignore で、E2E のアプリの標準出力が残らないため。E2E は毎回一時の内部DB に初期管理者を新しく作るため救済が働きえないことと、初期管理者のログインを含む全件の通過で裏付けた。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:e542e8f79e0529f442980c2af426635d8e08c630811a050df73be9efb339d73f -->
 - 救済で変わった利用者の状態は、イメージだけの戻しでは元に戻らない。元に戻すには配備の前の複写を戻す必要があり、その後のデータと監査の行も失う。そのため、入れ替えの前に救済の見込みを確かめて了承を得る形を選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:04d3e502b79024e24aebc557d219a22e48458f4f9a4c590a63fac53f82796347 -->
 - 停止中の初期管理者を救済で戻すと、有効な管理者は 2 人になる。わざと止めていたのであれば .env を先に替える必要があったが、依頼者はこのまま戻すことを選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-execution:f5d336cbcb187ca59d19e6eb55c97699abde8c1a4492288d69354dd3e7d67c2e -->
+- 承認済みの observability-design.md 4節の式の名前 http_server_requests_seconds_bucket は、手元の既存の式の _milliseconds_ と食い違うため、monitoring-design.md 7節に差を書き Observability Setup で確かめる形にした。 (learned 2026-10-06) <!-- cid:261004-role-menu:infrastructure-design:b132c9d9083313c3251b50835de2fb342054784de2ad7bc4deed95672ad2e0f1 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
@@ -418,3 +419,4 @@
 - 上流の枝番と同じ番号は同じ意味でだけ使い、足す要件は上流の最後の枝番の次から振った。dsl-v2 の NFR 要件のレビュー（R-01）で、同じ番号を別の意味に使って N/A と有効が食い違った反省から。対応表を各成果物の冒頭に置いた。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:1df739ff5eb64a157add2245a6a4e61da626df8aac4c2077ca5fddc0a8adb8a7 -->
 - traceability.json は段の定義の例（NFR1〜NFR6 の行）より細かく、上流の枝番ごとにも行を立てた。dsl-v2 のレビューの R-02 で、当たらない枝番が OK の中に混ざると要件の網羅の連鎖が誤ると指摘されたため。OK の target には、この単位で定義した ID だけを書いた。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:3a9c873114dc1e6743371b480679e03725e3291996e1d2e3fa3955c6251a6ab7 -->
 - 試しは Spring Boot と Hibernate を使わず HikariCP と JDBC で行った。3つの範囲は JDBC で確かめられ、2 時間の上限の中で終えるため。本番の上乗せは目標の 10 分の 1 未満の値から見通した。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:3573c63ad89f6110b727dd1501586314a14d929fab38db38718af0cd4dd7e69d -->
+- 承認済みの observability-design.md 4節の「既存の p95 の警報がグループの API にも効く」は、mastersmith.yaml の p95 の警報3つが uri を1つの道に固定しているため事実と食い違った。文書は書き換えず、Q1: A（区画を足し警報は足さない）で monitoring-design.md 7節に差を記録した。 (learned 2026-10-06) <!-- cid:261004-role-menu:infrastructure-design:c79ac4bfde5b30f9276d290cba56f483fa07b379a75325bbdd7c0a802a180a93 -->
