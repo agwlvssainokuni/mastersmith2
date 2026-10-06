@@ -341,6 +341,33 @@ describe('RegistrationPage while logged in', () => {
     expect(verifies[0].body).toEqual({ token: TEST_TOKEN })
   })
 
+  it('returns to the notice and lets the user press again when the provider has no logout (plan D-7)', async () => {
+    const user = userEvent.setup()
+    answerLoggedIn()
+    const providerWithoutLogout = {
+      getLoginState: loginStateProvider.getLoginState,
+      subscribe: loginStateProvider.subscribe,
+    }
+    renderRegistration(<Screens loginElement={<LoginForm />} />, {
+      provider: providerWithoutLogout,
+      registrations: [authRegistration],
+    })
+
+    const button = await screen.findByRole('button', { name: 'ログアウトして続ける' })
+    await user.click(button)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'ログアウトして続ける' })).toBeEnabled(),
+    )
+    expect(screen.getByTestId('registration-logged-in-notice')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'ログアウトして続ける' }))
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'ログアウトして続ける' })).toBeEnabled(),
+    )
+    expect(server.requestsTo(LOGOUT)).toHaveLength(0)
+    expect(server.requestsTo(VERIFY)).toHaveLength(0)
+  })
+
   it('goes back to home without verifying', async () => {
     const user = userEvent.setup()
     answerLoggedIn()

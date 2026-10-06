@@ -31,7 +31,14 @@ const registrations: FeatureRegistration[] = [
   {
     featureId: 'dsl',
     sidebarItems: [
-      { id: 'dsl', labelKey: 'dsl.nav.label', path: '/admin/dsl', order: 20, visibleWhen: 'ADMIN' },
+      {
+        id: 'dsl',
+        labelKey: 'dsl.nav.label',
+        path: '/admin/dsl',
+        order: 20,
+        visibleWhen: 'ADMIN',
+        section: 'ADMIN',
+      },
     ],
     messages: { ja: { 'dsl.nav.label': 'DSL の管理' }, en: { 'dsl.nav.label': 'DSL admin' } },
   },

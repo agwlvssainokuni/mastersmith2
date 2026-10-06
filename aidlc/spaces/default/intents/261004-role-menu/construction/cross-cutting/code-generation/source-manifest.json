@@ -1,0 +1,184 @@
+{
+  "stage": "code-generation",
+  "unit": "cross-cutting",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/access/web/AdminCheckController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/appearance/web/AppearanceController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/auth/web/AuthController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ErrorPathController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/error/web/ProblemTypeController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/ApiAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/common/security/ApiAccessLevel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/web/InvitationAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/invitation/web/RegistrationController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/web/MeController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminController.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/access/AccessBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ApiAccessRulesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/security/ApiAccessTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/AdminOutsideSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/AdminPathNotAdminSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/AuthenticatedOutsideApiSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/DoubleMarkSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/NoMarkSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/apiaccess/ValidSample.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiAccessRules.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiAccessSubjects.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/PublicApiInventory.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/PublicApiInventoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenView.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/forbiddenHeading.test.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/allowedIcons.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/types.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.test.tsx"
+    },
+    {
+      "path": "frontend/src/eslintImportRules.test.ts"
+    },
+    {
+      "path": "frontend/src/features/admin/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/loginStateProvider.test.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/loginStateProvider.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangePage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/testing/renderPreferences.tsx"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/registration/RegistrationPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/registration/useRegistration.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/registration.ts"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeNodeItem.tsx"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeView.css"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeView.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeView.tsx"
+    },
+    {
+      "path": "frontend/src/shared/tree/types.ts"
+    }
+  ]
+}

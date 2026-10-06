@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 // 登録の検査（BR7.2）。重複や決まりに合わない登録があれば、どの登録が問題かを示して起動を止める。
-import { RegistrationError, type FeatureRegistration } from './types'
+import { isAllowedIcon } from './allowedIcons'
+import { RegistrationError, type FeatureRegistration, type SidebarSection } from './types'
 
 /** ホーム（U1 が用意する）の URL。機能は同じ URL を登録できない。 */
 export const HOME_PATH = '/'
 
 const FEATURE_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+
+/** サイドバーの項目の区画の値（BR5.1）。 */
+const SIDEBAR_SECTIONS: ReadonlySet<string> = new Set<SidebarSection>(['ADMIN'])
 
 /** 同じ値が2回以上出てきたものを、最初に出てきた登録とともに記録する。 */
 function collectDuplicates(entries: readonly { value: string; owner: string }[]): string[] {
@@ -125,6 +129,21 @@ export function validateRegistrations(
     if (!routePaths.has(item.path)) {
       problems.push(
         `${owner}: サイドバーの項目 "${item.id}" の URL "${item.path}" は登録されていません`,
+      )
+    }
+    // 区画・アイコンは型の外から来た値も扱う（BR5.1・BR5.3・BR5.4）。区画と visibleWhen は見せ方だけを決め、
+    // 管理の API はサーバー側の判定で守る（BR5.5）。
+    const { section, icon } = item as { section?: unknown; icon?: unknown }
+    if (typeof section !== 'string' || !SIDEBAR_SECTIONS.has(section)) {
+      problems.push(`${owner}: サイドバーの項目 "${item.id}" の区画が正しくありません`)
+    } else if (section === 'ADMIN' && item.visibleWhen !== 'ADMIN') {
+      problems.push(
+        `${owner}: 管理の区画の項目 "${item.id}" は visibleWhen を ADMIN にしてください`,
+      )
+    }
+    if (icon !== undefined && !isAllowedIcon(icon)) {
+      problems.push(
+        `${owner}: サイドバーの項目 "${item.id}" のアイコン "${String(icon)}" は使えません`,
       )
     }
   }

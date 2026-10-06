@@ -32,8 +32,7 @@ import type {
   ThemeChoice,
 } from '../../app/display-settings/displaySettingsTypes'
 import { handOffToLogin } from '../../app/login-handoff/loginHandoff'
-import { useLoginState } from '../../app/login-state/LoginStateGate'
-import { logout } from '../auth/authSession'
+import { useLoginState, useLogout } from '../../app/login-state/LoginStateGate'
 import { completeFailureKind, verifyFailureKind } from './failureKind'
 import {
   checkRegistrationForm,
@@ -119,6 +118,7 @@ export function useRegistration(): RegistrationController {
   const location = useLocation()
   const navigate = useNavigate()
   const loginState = useLoginState()
+  const logout = useLogout()
   const display = useDisplaySettings()
 
   const [state, setState] = useState<RegistrationState>(() => {
@@ -218,8 +218,18 @@ export function useRegistration(): RegistrationController {
     }
     loggingOut.current = true
     setState((current) => ({ ...current, phase: 'loggingOut' }))
-    // logout は API の失敗でも画面の側の破棄を行い、例外を外へ出さない。未ログインの知らせで確かめへ移る。
-    void logout()
+    // ログアウトは骨組みの useLogout から行う（BR3.2）。提供元の logout は API の失敗でも画面の側の破棄を行い、例外を
+    // 外へ出さない。未ログインの知らせで確かめへ移る。提供元が logout を持たず呼べなかったときは、案内に戻して押し直せる
+    // ようにする（計画 D-7）。
+    void logout().then((called) => {
+      if (called || !mounted.current) {
+        return
+      }
+      loggingOut.current = false
+      setState((current) =>
+        current.phase === 'loggingOut' ? { ...current, phase: 'loggedIn' } : current,
+      )
+    })
   }
 
   const goHome = () => {

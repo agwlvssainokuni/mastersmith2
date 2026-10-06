@@ -23,8 +23,22 @@ const registrations: FeatureRegistration[] = [
   {
     featureId: 'a',
     sidebarItems: [
-      { id: 'admin', labelKey: 'a.admin', path: '/admin', order: 20, visibleWhen: 'ADMIN' },
-      { id: 'items', labelKey: 'a.items', path: '/items', order: 10, visibleWhen: 'LOGGED_IN' },
+      {
+        id: 'admin',
+        labelKey: 'a.admin',
+        path: '/admin',
+        order: 20,
+        visibleWhen: 'ADMIN',
+        section: 'ADMIN',
+      },
+      {
+        id: 'items',
+        labelKey: 'a.items',
+        path: '/items',
+        order: 10,
+        visibleWhen: 'LOGGED_IN',
+        section: 'ADMIN',
+      },
     ],
     userMenuItems: [{ id: 'logout', labelKey: 'a.logout', action: noop, order: 99 }],
   },
@@ -37,6 +51,7 @@ const registrations: FeatureRegistration[] = [
         path: '/reports',
         order: 5,
         visibleWhen: 'LOGGED_IN',
+        section: 'ADMIN',
       },
     ],
     userMenuItems: [{ id: 'profile', labelKey: 'b.profile', action: noop, order: 1 }],

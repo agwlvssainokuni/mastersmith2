@@ -41,13 +41,21 @@ function registrations(logout: () => void): FeatureRegistration[] {
         { path: '/admin', screen: () => null, layout: 'SHELL', access: 'ADMIN' },
       ],
       sidebarItems: [
-        { id: 'admin', labelKey: 'demo.admin', path: '/admin', order: 20, visibleWhen: 'ADMIN' },
+        {
+          id: 'admin',
+          labelKey: 'demo.admin',
+          path: '/admin',
+          order: 20,
+          visibleWhen: 'ADMIN',
+          section: 'ADMIN',
+        },
         {
           id: 'reports',
           labelKey: 'demo.reports',
           path: '/reports',
           order: 10,
           visibleWhen: 'LOGGED_IN',
+          section: 'ADMIN',
         },
       ],
       userMenuItems: [{ id: 'logout', labelKey: 'demo.logout', action: logout, order: 1 }],

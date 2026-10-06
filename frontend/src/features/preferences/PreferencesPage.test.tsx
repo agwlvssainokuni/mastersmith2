@@ -26,7 +26,9 @@ import { axe } from 'vitest-axe'
 import { installFakeColorScheme } from '../../app/display-settings/testing/fakeColorScheme'
 import type { UserDisplaySettings } from '../../app/display-settings/displaySettingsTypes'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
-import { refresh, resetAuthSession } from '../auth/authSession'
+import { initializeAuthSession, refresh, resetAuthSession } from '../auth/authSession'
+import { loginStateProvider } from '../auth/loginStateProvider'
+import { registration as authRegistration } from '../auth/registration'
 import { ME_PREFERENCES_PATH, type Preferences } from './preferencesApi'
 import {
   deferred,
@@ -42,7 +44,17 @@ import {
   type FakeAnswer,
   type FakeServer,
 } from './testing/fixtures'
-import { renderPreferencesApp } from './testing/renderPreferences'
+import { renderPreferencesApp, type PreferencesTestAuth } from './testing/renderPreferences'
+
+/** 手伝いに渡すログインの機能の部品（手伝いは auth を直接読まない） */
+const AUTH: PreferencesTestAuth = {
+  registration: authRegistration,
+  provider: loginStateProvider,
+  resetSession: () => {
+    resetAuthSession()
+    initializeAuthSession()
+  },
+}
 
 const applied = vi.hoisted(() => ({ calls: [] as unknown[] }))
 
@@ -119,7 +131,7 @@ function start(options: StartOptions = {}): FakeServer {
     [GET]: options.get ?? [jsonResponse(200, options.session ?? NAMED_PREFERENCES)],
     ...(options.put ? { [PUT]: options.put } : {}),
   })
-  renderPreferencesApp({ languages: options.languages })
+  renderPreferencesApp({ auth: AUTH, languages: options.languages })
   return server
 }
 

@@ -15,6 +15,8 @@
  */
 package cherry.mastersmith.access.web;
 
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * （204、内容なし）を返すだけで、DB を使わない。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.ADMIN)
 public class AdminCheckController {
 
     /** 確認用 API のパス。 */

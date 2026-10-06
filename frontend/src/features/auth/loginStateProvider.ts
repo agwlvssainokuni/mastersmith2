@@ -17,7 +17,7 @@
 // U1 の差し込み口「ログイン状態の提供元」（BR8.7）。最初の復元の結果を待って返し、状態の変化を知らせる。
 // ログイン中は、契約 C3 の氏名と表示の設定をログイン状態に通す（表示の設定の土台が使う。U4 の部品 5節）。
 import type { LoginState, LoginStateProvider } from '../../app/registry/types'
-import { getAuthSnapshot, subscribe, whenRestored } from './authSession'
+import { getAuthSnapshot, logout, subscribe, whenRestored } from './authSession'
 
 /** 今の状態を U1 の形にする。 */
 export function toLoginState(): LoginState {
@@ -37,4 +37,6 @@ export const loginStateProvider: LoginStateProvider = {
     return toLoginState()
   },
   subscribe,
+  // ほかの機能（登録の完了の画面など）が骨組みの useLogout から呼ぶログアウトの手続き（BR3.1）。
+  logout,
 }

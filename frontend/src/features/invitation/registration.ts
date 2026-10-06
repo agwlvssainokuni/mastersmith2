@@ -46,6 +46,7 @@ export const registration: FeatureRegistration = {
       path: INVITATION_ADMIN_PATH,
       order: 220,
       visibleWhen: 'ADMIN',
+      section: 'ADMIN',
     },
   ],
   messages: invitationMessages,

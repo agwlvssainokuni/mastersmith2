@@ -17,6 +17,8 @@ package cherry.mastersmith.invitation.web;
 
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.invitation.domain.InvitationProblemTypes;
 import cherry.mastersmith.invitation.domain.UnavailableReason;
 import cherry.mastersmith.invitation.service.CancelResult;
@@ -55,6 +57,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code page}）、503 INVITATION_NOT_CONFIGURED（{@code unavailableReasons}）、404 INVITATION_NOT_FOUND。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.ADMIN)
 @RequestMapping(InvitationAdminController.PATH)
 public class InvitationAdminController {
 

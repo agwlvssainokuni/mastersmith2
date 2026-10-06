@@ -22,7 +22,9 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
-import { getAuthSnapshot, resetAuthSession } from '../auth/authSession'
+import { getAuthSnapshot, initializeAuthSession, resetAuthSession } from '../auth/authSession'
+import { loginStateProvider } from '../auth/loginStateProvider'
+import { registration as authRegistration } from '../auth/registration'
 import { ME_PASSWORD_PATH, ME_PREFERENCES_PATH } from './preferencesApi'
 import {
   deferred,
@@ -37,7 +39,17 @@ import {
   type FakeAnswer,
   type FakeServer,
 } from './testing/fixtures'
-import { renderPreferencesApp } from './testing/renderPreferences'
+import { renderPreferencesApp, type PreferencesTestAuth } from './testing/renderPreferences'
+
+/** 手伝いに渡すログインの機能の部品（手伝いは auth を直接読まない） */
+const AUTH: PreferencesTestAuth = {
+  registration: authRegistration,
+  provider: loginStateProvider,
+  resetSession: () => {
+    resetAuthSession()
+    initializeAuthSession()
+  },
+}
 
 const CURRENT = 'current-secret-value'
 const NEW = 'new-secret-value-12'
@@ -83,7 +95,7 @@ async function start(post: FakeAnswer[] = [noContent()]): Promise<FakeServer> {
     [REFRESH_PATH]: [sessionResponse(NAMED_PREFERENCES)],
     [`POST ${ME_PASSWORD_PATH}`]: post,
   })
-  renderPreferencesApp({ route: '/me/password' })
+  renderPreferencesApp({ auth: AUTH, route: '/me/password' })
   await screen.findByTestId('preferences-password-form')
   return server
 }

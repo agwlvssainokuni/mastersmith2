@@ -17,6 +17,8 @@ package cherry.mastersmith.user.web;
 
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.UserProblemTypes;
 import cherry.mastersmith.user.service.PasswordChangeCommand;
@@ -53,6 +55,7 @@ import org.springframework.web.bind.annotation.RestController;
  * {@code nfr-design/security-design.md} 3節（項目の名前と理由だけ、入れた値を載せない）。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.AUTHENTICATED)
 @RequestMapping("/api/me")
 public class MeController {
 

@@ -16,6 +16,8 @@
 package cherry.mastersmith.appearance.web;
 
 import cherry.mastersmith.appearance.service.AppearanceService;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * ログと監査の出来事を出さない（BR3.5）。GET 以外のメソッドは受け付けず、既存の共通の扱い（401・405）に任せる（BR3.2）。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.PUBLIC)
 public class AppearanceController {
 
     /** API のパス。 */

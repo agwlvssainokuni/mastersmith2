@@ -16,6 +16,8 @@
 package cherry.mastersmith.invitation.web;
 
 import cherry.mastersmith.common.error.domain.BusinessException;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.invitation.domain.InvitationProblemTypes;
 import cherry.mastersmith.invitation.service.CompleteResult;
 import cherry.mastersmith.invitation.service.RegistrationCommand;
@@ -42,6 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 要求の本文の {@code token} だけで受け取る（BR3.5）。自動ではログインしない（トークンを発行しない）。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.PUBLIC)
 @RequestMapping(RegistrationController.PATH)
 public class RegistrationController {
 

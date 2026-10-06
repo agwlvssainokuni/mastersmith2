@@ -69,3 +69,44 @@ userMenuItems: [
   既定の移動を止めて移る `onClick` にする。サイドバーと同じく読み込み直しなしで移り、マウスでも Enter・Space でも同じ。
   `action` の項目は今までどおり `<button>` で描かれる。
 - 項目は `order` の順に並ぶ（ログアウトは 100。プリファレンス 80・パスワードの変更 90）。
+
+## サイドバーの項目の区画とアイコン（Intent 261004-role-menu の U1、契約 C2）
+
+サイドバーの項目の登録（`SidebarItemRegistration`）は、区画 `section` を必ず持つ。今の区画は管理のメニューの `'ADMIN'` だけで、
+`section: 'ADMIN'` の項目は `visibleWhen: 'ADMIN'` にする（登録の検査が起動を止める）。アイコン `icon` は任意で、
+make-you-chic-ui の `IconName` のうち `src/app/registry/allowedIcons.ts` の `ALLOWED_ICONS` にある名前だけを使える
+（無ければ骨組みが既定のアイコンを当てる）。区画と `visibleWhen` は見せ方だけを決め、管理の API はサーバー側の判定で守る。
+見出しの文言・区画の並び・区画ごとの組み立ては骨組みが持つ。
+
+```ts
+sidebarItems: [
+  { id: 'example', labelKey: 'example.nav.label', path: '/admin/example', order: 300, visibleWhen: 'ADMIN', section: 'ADMIN', icon: 'list' },
+],
+```
+
+## ログアウト（`useLogout`、Intent 261004-role-menu の U1）
+
+機能の画面がログアウトするときは、ログインの機能（`auth`）を直接読まず、骨組みの `useLogout()`
+（`src/app/login-state/LoginStateGate.tsx`）を使う。返す関数は `Promise<boolean>` で、ログイン状態の提供元の `logout` を
+呼べたら `true`、提供元またはその `logout` が無ければ何もせずに `false` を返す（`false` のときは画面を元に戻し、押し直せるようにする）。
+`logout` の失敗は外へ出さない（画面の側のトークンの破棄は `auth` が必ず行う）。未ログインになったことはログイン状態の知らせで伝わる。
+
+## 機能どうしの import の制限（Intent 261004-role-menu の U1）
+
+機能のファイルは、ほかの機能のファイルを直接 import しない。複数の機能で共有するものは `src/shared/` へ移し、ログアウトなどの
+骨組みの口は `src/app/` から使う。`src/shared/` は `src/app/` と `src/features/` を読まない。どちらも `frontend/eslint.config.js` の
+`no-restricted-imports` で止める（`./gradlew verify` の ESLint で落ちる）。
+
+- テストのファイル（`*.test.ts`・`*.test.tsx`）は対象外で、画面を組むためにほかの機能の登録や `authSession` を読んでよい。
+  `testing/` の部品などテストのファイルでないものは対象で、ほかの機能の部品が要るときは呼ぶ側のテストのファイルから引数で受け取る
+  （例: `preferences/testing/renderPreferences.tsx` の `auth`）。
+- 機能の中の下位のディレクトリ（`api/`・`testing/` など）に、機能と同じ名前を付けない（設定の読み込みが失敗する）。
+- 決まりの確かめは `src/eslintImportRules.test.ts`。
+
+## 共有の木（`src/shared/tree/`、Intent 261004-role-menu の U1、契約 C2）
+
+木の形の一覧（権限の設定の対象・メニューの定義など）は `SharedTreeView` を使う。開閉（`expandedIds`・`onToggle`）と
+選び（`selectedId`・`onSelect`）は呼ぶ側が持ち、子は節を開いたときに `loadChildren` で読む（閉じて開き直しても読み直さない。
+`nodes` を新しい配列に替えると読み直す）。文言は `labels`（開く・閉じる・読み込み中・失敗・再試行・子が無い）で表示言語に
+合わせて渡す。表示名と印は文字として描かれ、HTML として描かれない。入れ子の `ul` と `button` で表し、tree の役割と矢印のキーは
+使わない。深さの上限は木に置かず、呼ぶ側のデータで決まる。

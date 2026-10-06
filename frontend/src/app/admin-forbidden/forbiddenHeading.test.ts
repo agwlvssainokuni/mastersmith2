@@ -27,7 +27,14 @@ const registrations: FeatureRegistration[] = [
   {
     featureId: 'admin',
     sidebarItems: [
-      { id: 'admin', labelKey: 'admin.nav.label', path: '/admin', order: 90, visibleWhen: 'ADMIN' },
+      {
+        id: 'admin',
+        labelKey: 'admin.nav.label',
+        path: '/admin',
+        order: 90,
+        visibleWhen: 'ADMIN',
+        section: 'ADMIN',
+      },
     ],
   },
   {
@@ -39,6 +46,7 @@ const registrations: FeatureRegistration[] = [
         path: '/reports',
         order: 10,
         visibleWhen: 'LOGGED_IN',
+        section: 'ADMIN',
       },
       {
         id: 'user',
@@ -46,6 +54,7 @@ const registrations: FeatureRegistration[] = [
         path: '/admin/users/:id',
         order: 20,
         visibleWhen: 'ADMIN',
+        section: 'ADMIN',
       },
     ],
   },

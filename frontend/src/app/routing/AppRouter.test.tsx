@@ -153,7 +153,14 @@ describe('AppRouter', () => {
         featureId: 'manage',
         routes: [{ path: '/admin', screen, layout: 'SHELL', access: 'ADMIN' }],
         sidebarItems: [
-          { id: 'admin', labelKey: 'manage.nav', path: '/admin', order: 90, visibleWhen: 'ADMIN' },
+          {
+            id: 'admin',
+            labelKey: 'manage.nav',
+            path: '/admin',
+            order: 90,
+            visibleWhen: 'ADMIN',
+            section: 'ADMIN',
+          },
         ],
         messages: { ja: { 'manage.nav': '管理の入口' }, en: { 'manage.nav': 'Admin area' } },
       }

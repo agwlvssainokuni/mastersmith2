@@ -17,6 +17,7 @@
 // 後の単位（U2・U3）は frontend/src/features/<featureId>/registration.ts に
 // `export const registration: FeatureRegistration = { ... }` を名前付きで置く。U1 のファイルは書き換えない。
 import type { ComponentType } from 'react'
+import type { IconName } from 'make-you-chic-ui'
 import type { PartialDisplaySettings } from '../display-settings/displaySettingsTypes'
 
 /** 画面を置く場所。SHELL はアプリシェルの中、STANDALONE はアプリシェルの外（ログイン画面など）。 */
@@ -30,6 +31,12 @@ export type RouteRole = 'LOGIN'
 
 /** サイドバーの項目を表示する条件。 */
 export type VisibleWhen = 'LOGGED_IN' | 'ADMIN'
+
+/**
+ * サイドバーの項目の区画（見出しの区分）。見出しの文言と区画の並びは骨組みが持つ（BR5.6）。
+ * 今は管理のメニューの区画 ADMIN だけ。業務のメニューは登録ではなく API から作るため、ここに足さない（契約 C2）。
+ */
+export type SidebarSection = 'ADMIN'
 
 /** 差し込み口1「画面（ルート）の登録」。 */
 export interface RouteRegistration {
@@ -51,6 +58,13 @@ export interface SidebarItemRegistration {
   path: string
   order: number
   visibleWhen: VisibleWhen
+  /** どの区画に出すか（必須、BR5.1）。ADMIN の区画の項目は visibleWhen を ADMIN にする（BR5.3） */
+  section: SidebarSection
+  /**
+   * アイコン（任意、BR5.2）。make-you-chic-ui の許したアイコンの名前だけを使える（BR5.4、ALLOWED_ICONS）。
+   * 無ければ骨組みが既定のアイコンを当てる。
+   */
+  icon?: IconName
 }
 
 /** ユーザーメニューの項目の共通の部分。 */
@@ -97,6 +111,11 @@ export interface LoginStateProvider {
   getLoginState: () => LoginState | Promise<LoginState>
   /** ログイン状態が変わったときに知らせを受け取る（任意）。戻り値は受け取りをやめる関数。 */
   subscribe?: (listener: () => void) => () => void
+  /**
+   * ログアウトの手続き（任意、BR3.1）。ログインの機能（auth）が渡し、ほかの機能は骨組みの useLogout からだけ
+   * 呼ぶ（BR3.2。機能どうしの直接の import をしないため）。
+   */
+  logout?: () => Promise<void>
 }
 
 /** 機能ごとの画面の文言（鍵は `<featureId>.` で始める）。日本語と英語の両方をそろえる（BR6.2）。 */

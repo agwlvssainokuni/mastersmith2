@@ -16,6 +16,8 @@
 package cherry.mastersmith.dslmanage.web;
 
 import cherry.mastersmith.auth.domain.AuthenticatedUser;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.dslmanage.domain.DslDownload;
 import cherry.mastersmith.dslmanage.domain.DslSource;
 import cherry.mastersmith.dslmanage.service.DslLifecycle;
@@ -50,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 共通の変換が Problem Details にする。重い道には {@link HeavyDslOperation} の印を付ける（本文を読む前に同時に1つの許可を取る）。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.ADMIN)
 public class DslAdminController {
 
     /** DSL の本文の形（投入とダウンロード）。 */

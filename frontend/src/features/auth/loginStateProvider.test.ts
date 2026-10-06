@@ -100,4 +100,16 @@ describe('loginStateProvider', () => {
   it('publishes the same subscribe function as the session', () => {
     expect(loginStateProvider.subscribe).toBe(subscribe)
   })
+
+  it('passes the logout of the session, which discards the tokens even when the API fails', async () => {
+    vi.spyOn(authApi, 'requestLogin').mockResolvedValue(tokens)
+    const requestLogout = vi.spyOn(authApi, 'requestLogout').mockRejectedValue({ kind: 'network' })
+    await login('admin@example.com', 'パスワード')
+    expect(toLoginState().loggedIn).toBe(true)
+
+    await loginStateProvider.logout?.()
+
+    expect(requestLogout).toHaveBeenCalledTimes(1)
+    expect(toLoginState()).toEqual({ loggedIn: false, admin: false })
+  })
 })

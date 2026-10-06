@@ -17,6 +17,8 @@ package cherry.mastersmith.common.error.web;
 
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -36,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 500 / {@code INTERNAL_ERROR} にする。例外のメッセージとスタックトレースは応答に載せない。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.PUBLIC)
 public class ErrorPathController implements ErrorController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ErrorPathController.class);

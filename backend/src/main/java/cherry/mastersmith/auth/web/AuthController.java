@@ -21,6 +21,8 @@ import cherry.mastersmith.auth.service.LoginService;
 import cherry.mastersmith.auth.service.LogoutService;
 import cherry.mastersmith.auth.service.TokenRefreshService;
 import cherry.mastersmith.common.error.domain.BusinessException;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.user.domain.Password;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -43,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
  * </ul>
  */
 @RestController
+@ApiAccess(ApiAccessLevel.PUBLIC)
 @RequestMapping("/api/auth")
 public class AuthController {
 

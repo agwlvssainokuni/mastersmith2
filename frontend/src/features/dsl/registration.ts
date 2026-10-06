@@ -45,6 +45,7 @@ export const registration: FeatureRegistration = {
       path: DSL_ADMIN_PATH,
       order: 210,
       visibleWhen: 'ADMIN',
+      section: 'ADMIN',
     },
   ],
   messages: dslMessages,

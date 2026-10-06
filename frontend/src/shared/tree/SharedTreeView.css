@@ -1,0 +1,115 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 共有の木（frontend-components.md 2.1・2.5）。段ごとに字下げし、選んだ節は太字と左の線で示す（aria-current も付ける）。 */
+.shared-tree,
+.shared-tree-group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shared-tree-group {
+  padding-left: var(--space-4);
+}
+
+.shared-tree-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 2rem;
+}
+
+.shared-tree-toggle,
+.shared-tree-toggle-spacer {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.shared-tree-toggle,
+.shared-tree-select,
+.shared-tree-retry {
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.shared-tree-toggle {
+  padding: 0;
+}
+
+.shared-tree-select {
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid transparent;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.shared-tree-select:hover,
+.shared-tree-toggle:hover {
+  background: var(--color-surface-hover);
+}
+
+.shared-tree-select[aria-current='true'] {
+  border-left-color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.shared-tree-badge {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.shared-tree-badge-warning {
+  border-color: var(--color-warning);
+  background: var(--color-warning-subtle-bg);
+  color: var(--color-warning-subtle-text);
+}
+
+.shared-tree-children,
+.shared-tree-message {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+.shared-tree-message {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.shared-tree-message-failed {
+  color: var(--color-danger-text);
+}
+
+.shared-tree-retry {
+  padding: 0 var(--space-1);
+  text-decoration: underline;
+}
+
+.shared-tree-toggle:focus-visible,
+.shared-tree-select:focus-visible,
+.shared-tree-retry:focus-visible,
+.shared-tree-children:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

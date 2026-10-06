@@ -18,6 +18,8 @@ package cherry.mastersmith.useradmin.web;
 import cherry.mastersmith.access.domain.AccessProblemTypes;
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.user.domain.RequestOrigin;
 import cherry.mastersmith.user.domain.SearchText;
 import cherry.mastersmith.user.service.ProfileUpdateResult;
@@ -54,6 +56,7 @@ import org.springframework.web.bind.annotation.RestController;
  * USER_ADMIN_BUSY（原因をつながない）。{@code userId} が整数でないときは既存の型の誤りの扱いで 400 になる（BR2.7）。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.ADMIN)
 @RequestMapping(UserAdminController.PATH)
 public class UserAdminController {
 

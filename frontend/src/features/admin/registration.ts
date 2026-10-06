@@ -44,6 +44,7 @@ export const registration: FeatureRegistration = {
       path: ADMIN_AREA_PATH,
       order: 200,
       visibleWhen: 'ADMIN',
+      section: 'ADMIN',
     },
   ],
   messages: {

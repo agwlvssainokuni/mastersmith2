@@ -15,7 +15,12 @@
  */
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import type { FeatureRegistration, RouteRegistration } from './types'
+import { registration as adminRegistration } from '../../features/admin/registration'
+import { registration as dslRegistration } from '../../features/dsl/registration'
+import { registration as invitationRegistration } from '../../features/invitation/registration'
+import { registration as userAdminRegistration } from '../../features/useradmin/registration'
+import { ALLOWED_ICONS } from './allowedIcons'
+import type { FeatureRegistration, RouteRegistration, SidebarItemRegistration } from './types'
 import { RegistrationError } from './types'
 import { validateRegistrations } from './validateRegistrations'
 
@@ -52,6 +57,7 @@ describe('validateRegistrations', () => {
               path: '/users',
               order: 10,
               visibleWhen: 'ADMIN',
+              section: 'ADMIN',
             },
           ],
           userMenuItems: [{ id: 'profile', labelKey: 'users.profile', action: () => {}, order: 1 }],
@@ -76,14 +82,28 @@ describe('validateRegistrations', () => {
         featureId: 'a',
         routes: [route('/a')],
         sidebarItems: [
-          { id: 'm', labelKey: 'a.m', path: '/a', order: 1, visibleWhen: 'LOGGED_IN' },
+          {
+            id: 'm',
+            labelKey: 'a.m',
+            path: '/a',
+            order: 1,
+            visibleWhen: 'LOGGED_IN',
+            section: 'ADMIN',
+          },
         ],
         userMenuItems: [{ id: 'u', labelKey: 'a.u', action: () => {}, order: 1 }],
       },
       {
         featureId: 'a',
         sidebarItems: [
-          { id: 'm', labelKey: 'a.m', path: '/a', order: 2, visibleWhen: 'LOGGED_IN' },
+          {
+            id: 'm',
+            labelKey: 'a.m',
+            path: '/a',
+            order: 2,
+            visibleWhen: 'LOGGED_IN',
+            section: 'ADMIN',
+          },
         ],
         userMenuItems: [{ id: 'u', labelKey: 'a.u', action: () => {}, order: 2 }],
       },
@@ -117,7 +137,14 @@ describe('validateRegistrations', () => {
         featureId: 'Bad_Id',
         routes: [route('relative')],
         sidebarItems: [
-          { id: 's', labelKey: 'x', path: '/missing', order: 1, visibleWhen: 'LOGGED_IN' },
+          {
+            id: 's',
+            labelKey: 'x',
+            path: '/missing',
+            order: 1,
+            visibleWhen: 'LOGGED_IN',
+            section: 'ADMIN',
+          },
         ],
       },
     ]).join('\n')
@@ -260,5 +287,80 @@ describe('validateRegistrations for user menu items with a path (U7)', () => {
     expect(problems).toMatch(/画面の URL が重複/)
     expect(problems).toMatch(/ユーザーメニューの項目の id が重複/)
     expect(problems).toMatch(/"\/nowhere" は登録されていません/)
+  })
+})
+
+describe('validateRegistrations for the sidebar section and icon', () => {
+  function withItem(
+    item: Partial<SidebarItemRegistration> & Record<string, unknown>,
+  ): FeatureRegistration[] {
+    return [
+      {
+        featureId: 'admin',
+        routes: [route('/admin', { access: 'ADMIN' })],
+        sidebarItems: [
+          {
+            id: 'admin-area',
+            labelKey: 'admin.nav',
+            path: '/admin',
+            order: 1,
+            visibleWhen: 'ADMIN',
+            section: 'ADMIN',
+            ...item,
+          } as SidebarItemRegistration,
+        ],
+      },
+    ]
+  }
+
+  it('rejects a sidebar item whose section is missing or not a known value', () => {
+    expect(problemsOf(withItem({ section: 'BUSINESS' as never }))).toEqual([
+      'admin: サイドバーの項目 "admin-area" の区画が正しくありません',
+    ])
+    expect(problemsOf(withItem({ section: undefined }))).toEqual([
+      'admin: サイドバーの項目 "admin-area" の区画が正しくありません',
+    ])
+  })
+
+  it('rejects an item in the ADMIN section that is visible to every logged-in user', () => {
+    expect(problemsOf(withItem({ visibleWhen: 'LOGGED_IN' }))).toEqual([
+      'admin: 管理の区画の項目 "admin-area" は visibleWhen を ADMIN にしてください',
+    ])
+  })
+
+  it('accepts every icon name of the allowed list', () => {
+    expect(ALLOWED_ICONS).toHaveLength(18)
+    for (const icon of ALLOWED_ICONS) {
+      expect(problemsOf(withItem({ icon }))).toEqual([])
+    }
+  })
+
+  it('rejects an icon name outside the allowed list and an empty icon name', () => {
+    expect(problemsOf(withItem({ icon: 'skull' as never }))).toEqual([
+      'admin: サイドバーの項目 "admin-area" のアイコン "skull" は使えません',
+    ])
+    expect(problemsOf(withItem({ icon: '' as never }))).toEqual([
+      'admin: サイドバーの項目 "admin-area" のアイコン "" は使えません',
+    ])
+  })
+
+  it('accepts an item without an icon', () => {
+    expect(problemsOf(withItem({}))).toEqual([])
+  })
+
+  it('accepts the four sidebar items registered today in the ADMIN section', () => {
+    const registrations = [
+      adminRegistration,
+      dslRegistration,
+      invitationRegistration,
+      userAdminRegistration,
+    ]
+    expect(registrations.flatMap((r) => r.sidebarItems ?? []).map((item) => item.section)).toEqual([
+      'ADMIN',
+      'ADMIN',
+      'ADMIN',
+      'ADMIN',
+    ])
+    expect(problemsOf(registrations)).toEqual([])
   })
 })

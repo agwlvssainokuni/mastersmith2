@@ -21,6 +21,8 @@ import cherry.mastersmith.common.error.domain.ProblemType;
 import cherry.mastersmith.common.error.service.ProblemTypeRegistry;
 import cherry.mastersmith.common.i18n.domain.AcceptLanguageResolver;
 import cherry.mastersmith.common.i18n.domain.DisplayLanguage;
+import cherry.mastersmith.common.security.ApiAccess;
+import cherry.mastersmith.common.security.ApiAccessLevel;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,6 +43,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 定義の無い slug は 404 / {@code NOT_FOUND}。
  */
 @RestController
+@ApiAccess(ApiAccessLevel.PUBLIC)
 public class ProblemTypeController {
 
     private static final MediaType HTML_UTF8 = new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8);

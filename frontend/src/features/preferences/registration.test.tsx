@@ -24,7 +24,8 @@ import { buildSidebarEntries, buildUserMenuItems } from '../../app/navigation/na
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { registration as adminRegistration } from '../admin/registration'
-import { resetAuthSession } from '../auth/authSession'
+import { initializeAuthSession, resetAuthSession } from '../auth/authSession'
+import { loginStateProvider } from '../auth/loginStateProvider'
 import { registration as authRegistration } from '../auth/registration'
 import { registration as dslRegistration } from '../dsl/registration'
 import { registration as invitationRegistration } from '../invitation/registration'
@@ -39,7 +40,17 @@ import {
   REFRESH_PATH,
   sessionResponse,
 } from './testing/fixtures'
-import { renderPreferencesApp } from './testing/renderPreferences'
+import { renderPreferencesApp, type PreferencesTestAuth } from './testing/renderPreferences'
+
+/** 手伝いに渡すログインの機能の部品（手伝いは auth を直接読まない） */
+const AUTH: PreferencesTestAuth = {
+  registration: authRegistration,
+  provider: loginStateProvider,
+  resetSession: () => {
+    resetAuthSession()
+    initializeAuthSession()
+  },
+}
 
 const ENGLISH_USER = { ...NAMED_PREFERENCES, language: 'en' as const }
 
@@ -129,7 +140,7 @@ describe('preferences feature registration', () => {
       const server = installFakeServer({
         [REFRESH_PATH]: [problemResponse(401, 'AUTHENTICATION_REQUIRED')],
       })
-      const view = renderPreferencesApp({ route })
+      const view = renderPreferencesApp({ auth: AUTH, route })
       expect(await screen.findByTestId('login-layout')).toBeInTheDocument()
       expect(screen.queryByTestId('preferences-page')).not.toBeInTheDocument()
       expect(server.requestsTo(ME_PREFERENCES_PATH)).toHaveLength(0)
@@ -145,7 +156,7 @@ describe('preferences feature registration', () => {
       [REFRESH_PATH]: [sessionResponse(ENGLISH_USER)],
       [`GET ${ME_PREFERENCES_PATH}`]: [jsonResponse(200, ENGLISH_USER)],
     })
-    renderPreferencesApp({ route: '/' })
+    renderPreferencesApp({ auth: AUTH, route: '/' })
     await screen.findByTestId('home-page')
     await user.click(await screen.findByRole('button', { name: /検査 太郎/ }))
     const menu = within(await screen.findByRole('menu'))

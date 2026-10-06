@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { act, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { LoginState, LoginStateProvider } from '../registry/types'
-import { LoginStateGate, normalizeLoginState, useLoginState } from './LoginStateGate'
+import { LoginStateGate, normalizeLoginState, useLoginState, useLogout } from './LoginStateGate'
 
 function Probe() {
   const state = useLoginState()
@@ -150,5 +152,80 @@ describe('LoginStateGate', () => {
       </LoginStateGate>,
     )
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+/** useLogout の関数を押して、その答えを出す */
+function LogoutProbe() {
+  const logout = useLogout()
+  const [answer, setAnswer] = useState('-')
+  return (
+    <main>
+      <button
+        type="button"
+        data-testid="logout-probe-button"
+        onClick={() => {
+          void logout().then((called) => setAnswer(String(called)))
+        }}
+      >
+        logout
+      </button>
+      <p data-testid="logout-probe-answer">{answer}</p>
+    </main>
+  )
+}
+
+async function pressLogout(): Promise<string> {
+  const user = userEvent.setup()
+  await user.click(await screen.findByTestId('logout-probe-button'))
+  await waitFor(() => expect(screen.getByTestId('logout-probe-answer')).not.toHaveTextContent('-'))
+  return screen.getByTestId('logout-probe-answer').textContent ?? ''
+}
+
+const loggedIn = () => ({ loggedIn: true, admin: false })
+
+describe('useLogout', () => {
+  it('calls the logout of the provider and answers true', async () => {
+    const logout = vi.fn(() => Promise.resolve())
+    render(
+      <LoginStateGate provider={{ getLoginState: loggedIn, logout }}>
+        <LogoutProbe />
+      </LoginStateGate>,
+    )
+
+    expect(await pressLogout()).toBe('true')
+    expect(logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('does nothing and answers false when the provider has no logout', async () => {
+    render(
+      <LoginStateGate provider={{ getLoginState: loggedIn }}>
+        <LogoutProbe />
+      </LoginStateGate>,
+    )
+
+    expect(await pressLogout()).toBe('false')
+  })
+
+  it('keeps a failing logout inside and answers true because it was called', async () => {
+    const logout = vi.fn(() => Promise.reject(new Error('network down')))
+    render(
+      <LoginStateGate provider={{ getLoginState: loggedIn, logout }}>
+        <LogoutProbe />
+      </LoginStateGate>,
+    )
+
+    expect(await pressLogout()).toBe('true')
+    expect(logout).toHaveBeenCalledTimes(1)
+  })
+
+  it('answers false when no provider is registered', async () => {
+    render(
+      <LoginStateGate>
+        <LogoutProbe />
+      </LoginStateGate>,
+    )
+
+    expect(await pressLogout()).toBe('false')
   })
 })
