@@ -35,6 +35,8 @@
 - **Revision Count**: 8
 
 - **Skeleton Stance**: off
+- **Active Unit**: group
+- **Unit State**: in-progress
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -96,7 +98,7 @@ Per unit: [TBD]
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-10-07T21:23:17Z
+- **Last Updated**: 2026-10-07T21:23:53Z
 
 ## Session Resume Point
 - **Last Completed Stage**: infrastructure-design
