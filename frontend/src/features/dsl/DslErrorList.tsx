@@ -107,7 +107,16 @@ export function DslErrorList({
         </div>
       </div>
       {report !== null && single === null && shown.length > 0 && (
-        <div className="mycui-table-wrapper">
+        // 狭い幅で表が横に動くとき、キーボードでも動かせるよう包みにフォーカスと名前を持たせる（axe の
+        // scrollable-region-focusable。U2 dsl-v2 の 360px の確かめで見つかった既存の作りの直し）。
+        <div
+          className="mycui-table-wrapper dsl-error-table-region"
+          role="region"
+          // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- 横に動く表の領域をキーボードで読めるようにするため（axe の scrollable-region-focusable）。role="region" と名前（aria-label）つきの領域で、除外はこの1か所だけ。
+          tabIndex={0}
+          aria-label={t('dsl.errors.tableRegionLabel')}
+          data-testid={`${testId}-table-region`}
+        >
           <table className="mycui-table" aria-label={t('dsl.errors.tableLabel')}>
             <thead>
               <tr>

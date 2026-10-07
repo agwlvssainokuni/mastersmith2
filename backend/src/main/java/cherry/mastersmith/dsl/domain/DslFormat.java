@@ -22,11 +22,17 @@ import java.time.Duration;
  *
  * <p>大きさの上限は 10MB（10,485,760 バイト）。承認済みの要件（NFR2）・機能設計（BR1.1）・契約 C4 の 5MB は、U3 の NFR 要件の
  * 決定で 10MB に上げた（U2 の NFR 要件の NFR2.1）。
+ *
+ * <p>Intent 261004-role-menu の U2 dsl-v2 で、書式の版を 2（スキーマの階層あり。版 1 は読み替えない）にし、メニューの深さの上限を
+ * 足した（BR1.1・BR1.7・BR2.1）。読み込みの上限の値は変えない（BR6.6）。
  */
 public final class DslFormat {
 
-    /** アプリが対応する書式の版。 */
-    public static final int CURRENT_VERSION = 1;
+    /** アプリが対応する書式の版（版 2 だけ。BR1.1）。 */
+    public static final int CURRENT_VERSION = 2;
+
+    /** メニューの深さの上限（{@code menus} の直下の項目を 1 段目とし、項目1つを1段と数える。BR2.1）。 */
+    public static final int MAX_MENU_DEPTH = 5;
 
     /** 本文の大きさの上限（バイト。10MB = 10 × 1024 × 1024）。 */
     public static final int MAX_BYTES = 10 * 1024 * 1024;
@@ -50,10 +56,10 @@ public final class DslFormat {
     public static final int MAX_ARGUMENT_LENGTH = 100;
 
     /** 同梱の JSON Schema の正本のクラスパスの場所。 */
-    public static final String SCHEMA_RESOURCE = "dsl/dsl-schema-v1.json";
+    public static final String SCHEMA_RESOURCE = "dsl/dsl-schema-v2.json";
 
     /** 同梱の JSON Schema を公開する URL のパス（ログインなしで取れる。Infrastructure Design の決定 D）。 */
-    public static final String SCHEMA_PUBLIC_PATH = "/dsl/dsl-schema-v1.json";
+    public static final String SCHEMA_PUBLIC_PATH = "/dsl/dsl-schema-v2.json";
 
     private DslFormat() {}
 }

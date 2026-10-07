@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-/** モデルの値の単体テスト（BR5.2、契約 C4・C8）。 */
+/** モデルの値の単体テスト（BR5.2、契約 C4・C8。書式の版 2 は U2 dsl-v2 の BR1.2・BR1.6・BR8.2、契約 C3）。 */
 class DslModelTest {
 
     static final String HASH = "0123456789abcdef".repeat(4);
@@ -51,6 +51,14 @@ class DslModelTest {
         return new DslTable(name, new DisplayName("表", name), false, List.of(columnNames[0]), List.of(), columns);
     }
 
+    static DslSchema schema(String name, DslTable... tables) {
+        Map<String, DslTable> map = new LinkedHashMap<>();
+        for (DslTable table : tables) {
+            map.put(table.name(), table);
+        }
+        return new DslSchema(name, new DisplayName("スキーマ", name), map);
+    }
+
     @Test
     @org.junit.jupiter.api.DisplayName("lists and maps are immutable copies and keep the DSL order")
     void immutableAndOrdered() {
@@ -58,38 +66,96 @@ class DslModelTest {
         for (String name : List.of("z_table", "a_table", "m_table")) {
             tables.put(name, table(name, "c3", "c1", "c2"));
         }
-        List<DslMenuItem> menus =
-                new ArrayList<>(List.of(new DslMenuItem(new DisplayName("部署", "Dept"), null, "a_table", List.of())));
+        List<DslSchema> schemas =
+                new ArrayList<>(List.of(new DslSchema("sales", new DisplayName("販売", "Sales"), tables)));
+        List<DslMenuItem> menus = new ArrayList<>(List.of(
+                new DslMenuItem(new DisplayName("部署", "Dept"), null, new TableRef("sales", "a_table"), List.of())));
 
-        DslModel model = new DslModel(HASH, 1, menus, tables);
+        DslModel model = new DslModel(HASH, 2, schemas, menus);
         tables.clear();
+        schemas.clear();
         menus.clear();
 
-        assertThat(model.tables().keySet()).containsExactly("z_table", "a_table", "m_table");
-        assertThat(model.tables().get("a_table").columns().keySet()).containsExactly("c3", "c1", "c2");
+        assertThat(model.formatVersion()).isEqualTo(2);
+        assertThat(model.schemas()).extracting(DslSchema::name).containsExactly("sales");
+        assertThat(model.schema().tables().keySet()).containsExactly("z_table", "a_table", "m_table");
+        assertThat(model.schema().tables().get("a_table").columns().keySet()).containsExactly("c3", "c1", "c2");
         assertThat(model.menus()).hasSize(1);
-        assertThatThrownBy(() -> model.tables().put("x", table("x", "c")))
+        assertThat(model.menus().getFirst().table()).isEqualTo(new TableRef("sales", "a_table"));
+        assertThatThrownBy(() -> model.schema().tables().put("x", table("x", "c")))
                 .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> model.schemas().add(model.schema())).isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> model.menus().add(model.menus().get(0)))
                 .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> model.tables().get("a_table").columns().remove("c1"))
+        assertThatThrownBy(
+                        () -> model.schema().tables().get("a_table").columns().remove("c1"))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     @org.junit.jupiter.api.DisplayName(
-            "the model rejects a malformed hash, an unsupported version and a key that differs from the name")
+            "the model rejects a malformed hash, an unsupported version, duplicate schema names and a key that differs"
+                    + " from the name")
     void rejectsInvalidModel() {
-        Map<String, DslTable> tables = Map.of("dept", table("dept", "code"));
+        List<DslSchema> schemas = List.of(schema("sales", table("dept", "code")));
 
-        assertThatThrownBy(() -> new DslModel(HASH.toUpperCase(), 1, List.of(), tables))
+        assertThatThrownBy(() -> new DslModel(HASH.toUpperCase(), 2, schemas, List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DslModel("abc", 1, List.of(), tables))
+        assertThatThrownBy(() -> new DslModel("abc", 2, schemas, List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DslModel(null, 1, List.of(), tables)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DslModel(HASH, 2, List.of(), tables)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DslModel(HASH, 1, List.of(), Map.of("other", table("dept", "code"))))
+        assertThatThrownBy(() -> new DslModel(null, 2, schemas, List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DslModel(HASH, 1, schemas, List.of()))
+                .as("version 1 is not read as version 2")
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DslModel(
+                        HASH,
+                        2,
+                        List.of(schema("sales", table("a", "c")), schema("sales", table("b", "c"))),
+                        List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(
+                        () -> new DslSchema("sales", new DisplayName("", ""), Map.of("other", table("dept", "code"))))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("a table is found by the pair of schema and table names, case-sensitively")
+    void findTableByRef() {
+        DslTable dept = table("dept_mst", "code");
+        DslModel model = new DslModel(HASH, 2, List.of(schema("sales", dept, table("emp_mst", "no"))), List.of());
+
+        assertThat(model.findTable(new TableRef("sales", "dept_mst"))).contains(dept);
+        assertThat(model.findTable(new TableRef("sales", "no_such"))).isEmpty();
+        assertThat(model.findTable(new TableRef("other", "dept_mst"))).isEmpty();
+        assertThat(model.findTable(new TableRef("Sales", "dept_mst"))).isEmpty();
+        assertThat(model.findTable(new TableRef("sales", "DEPT_MST"))).isEmpty();
+        assertThatThrownBy(() -> model.findTable(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("schema() returns the only schema and fails when there is not exactly one")
+    void onlySchema() {
+        DslSchema sales = schema("sales");
+
+        assertThat(new DslModel(HASH, 2, List.of(sales), List.of()).schema()).isEqualTo(sales);
+        assertThat(sales.tables()).as("a schema may have no tables").isEmpty();
+        assertThatThrownBy(() -> new DslModel(HASH, 2, List.of(), List.of()).schema())
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> new DslModel(HASH, 2, List.of(sales, schema("hr")), List.of()).schema())
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("a table reference and a schema require non-empty names and a label")
+    void tableRefAndSchemaRequireValues() {
+        assertThatThrownBy(() -> new TableRef("", "t")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new TableRef("s", "")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new TableRef(null, "t")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DslSchema("", new DisplayName("", ""), Map.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DslSchema("s", null, Map.of())).isInstanceOf(NullPointerException.class);
+        assertThat(new TableRef("s", "t")).isEqualTo(new TableRef("s", "t"));
     }
 
     @Test
@@ -98,8 +164,6 @@ class DslModelTest {
         DisplayName label = new DisplayName("", "");
         assertThatThrownBy(() -> new DisplayName(null, "en")).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new DslMenuItem(label, null, null, List.of()))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new DslMenuItem(label, null, "", List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new DslTable("t", label, false, List.of(), List.of(), Map.of()))
                 .isInstanceOf(IllegalArgumentException.class);

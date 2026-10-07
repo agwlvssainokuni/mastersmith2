@@ -23,9 +23,13 @@ import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.table;
 import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.valid;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslTable;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dsl.service.DslReader;
 import cherry.mastersmith.dsl.validate.PatternChecker;
+import cherry.mastersmith.targetdb.domain.DatabaseProduct;
+import cherry.mastersmith.targetdb.domain.TargetSchema;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -93,12 +97,27 @@ class DslYamlWriterTest {
                         .map(name -> nullable(name, INT))
                         .toArray(cherry.mastersmith.targetdb.domain.TargetColumn[]::new))));
 
-        DslTable table = valid(READER, yaml).tables().get("t");
+        DslTable table = valid(READER, yaml).schema().tables().get("t");
         assertThat(table.columns().keySet()).containsExactlyElementsOf(names);
         assertThat(new String(yaml, StandardCharsets.UTF_8))
                 .contains("\"a\\rb\"")
                 .doesNotContain("\r");
         assertThat(DslYamlWriter.containsLineBreak("plain")).isFalse();
         assertThat(DslYamlWriter.containsLineBreak("x ")).isTrue();
+    }
+
+    @Test
+    @DisplayName("a schema name with YAML symbols is written as a key and in the menu pairs and reads back unchanged")
+    void schemaNameWithYamlSymbols() {
+        String schemaName = "a: b #c &d *e !f";
+        byte[] yaml = generate(new TargetSchema(
+                DatabaseProduct.POSTGRESQL,
+                schemaName,
+                List.of(table("t", null, List.of(), List.of(), nullable("c", INT)))));
+
+        DslModel model = valid(READER, yaml);
+        assertThat(model.schema().name()).isEqualTo(schemaName);
+        assertThat(model.schema().label().ja()).isEqualTo(schemaName);
+        assertThat(model.menus().getFirst().table()).isEqualTo(new TableRef(schemaName, "t"));
     }
 }

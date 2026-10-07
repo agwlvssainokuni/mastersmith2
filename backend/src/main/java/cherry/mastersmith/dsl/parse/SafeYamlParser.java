@@ -17,7 +17,6 @@ package cherry.mastersmith.dsl.parse;
 
 import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
-import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -42,6 +41,10 @@ import org.yaml.snakeyaml.resolver.Resolver;
  * 使わない。深さ・別名・タグは {@link LimitingParser} で、重複キーと別名の展開後の節の数は {@link YamlTreeConverter} で確かめる。
  * {@code LoaderOptions} にも同じ上限を置き、二重に守る。
  *
+ * <p>上限は呼ぶ側が {@link YamlLimits} で渡す（DSL の読み込みは {@code DslFormat} の値、上限つきの安全な読み込みの口は呼ぶ側の
+ * 値。U2 の機能設計の BR6.6）。深さと別名の上限は {@code LoaderOptions} と {@link LimitingParser} に同じ値を渡す（NFR 設計の
+ * 試し T1'）。
+ *
  * <p>部品の例外は種類ごとに誤りの種類へ写し、部品の文言は使わない。大きさの上限（BR1.1）は呼び出し側が読む前に確かめる。
  */
 @Component
@@ -55,15 +58,17 @@ public class SafeYamlParser {
      * 本文を読み、検証用の JSON の形と位置の対応表を作る。
      *
      * @param yamlBytes UTF-8 の YAML の本文（大きさの上限は確かめ済みであること）
+     * @param limits 読み込みの上限
      * @return 読めた、または読み込みの段で止めた
      */
-    public YamlParseResult parse(byte[] yamlBytes) {
+    public YamlParseResult parse(byte[] yamlBytes, YamlLimits limits) {
         try {
             String text = decode(yamlBytes);
-            LoaderOptions options = loaderOptions();
-            LimitingParser parser = new LimitingParser(new ParserImpl(new StreamReader(text), options));
+            LoaderOptions options = loaderOptions(limits);
+            LimitingParser parser = new LimitingParser(new ParserImpl(new StreamReader(text), options), limits);
             Node root = new Composer(parser, new Resolver(), options).getSingleNode();
-            return new YamlParseResult.Parsed(converter.convert(root, parser.aliasPositions()));
+            return new YamlParseResult.Parsed(
+                    converter.convert(root, parser.aliasPositions(), limits.maxExpandedNodes()));
         } catch (YamlRejection e) {
             return new YamlParseResult.Rejected(e.error());
         } catch (MarkedYAMLException e) {
@@ -75,19 +80,20 @@ public class SafeYamlParser {
     }
 
     /**
-     * 安全な読み込みの設定を作る。
+     * 安全な読み込みの設定を作る。深さ・別名・大きさの上限は {@link LimitingParser} と読む前の判定に渡す値と同じにする。
      *
+     * @param limits 読み込みの上限
      * @return 読み込みの設定
      */
-    static LoaderOptions loaderOptions() {
+    static LoaderOptions loaderOptions(YamlLimits limits) {
         LoaderOptions options = new LoaderOptions();
-        options.setNestingDepthLimit(DslFormat.MAX_DEPTH);
-        options.setMaxAliasesForCollections(DslFormat.MAX_COLLECTION_ALIASES);
+        options.setNestingDepthLimit(limits.maxDepth());
+        options.setMaxAliasesForCollections(limits.maxCollectionAliases());
         options.setAllowDuplicateKeys(false);
         options.setAllowRecursiveKeys(false);
         options.setMergeOnCompose(false);
         options.setProcessComments(false);
-        options.setCodePointLimit(DslFormat.MAX_BYTES);
+        options.setCodePointLimit(limits.maxBytes());
         options.setTagInspector(tag -> false);
         return options;
     }

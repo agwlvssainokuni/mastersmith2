@@ -58,7 +58,7 @@ describe('DslStatusPanel', () => {
   })
 
   it('tells that nothing is applied and that there is no preview', () => {
-    renderPanel({ status: { applied: null, preview: null } })
+    renderPanel({ status: { applied: null, preview: null, appliedUnreadable: false } })
 
     expect(screen.getByTestId('dsl-status-applied')).toHaveTextContent('まだ適用していません')
     expect(screen.getByTestId('dsl-status-preview')).toHaveTextContent('プレビューはありません')
@@ -117,6 +117,38 @@ describe('DslStatusPanel', () => {
     expect(within(region).getByTestId('dsl-status-applied')).toHaveTextContent('3f9a1c000000…')
     expect(within(region).getByTestId('dsl-status-preview')).toHaveTextContent('Upload')
     expect(screen.getByRole('button', { name: 'Load schema' })).toBeInTheDocument()
+  })
+
+  it('shows a warning without a close button when the applied DSL cannot be read, and keeps the applied row', () => {
+    renderPanel({ status: statusOf({ appliedUnreadable: true }) })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('適用中の DSL は使われていません')
+    expect(screen.getByTestId('dsl-status-unreadable')).toHaveTextContent(
+      'スキーマを読み込み、プレビューを確かめて適用し直してください。',
+    )
+    expect(within(alert).queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dsl-status-applied')).toHaveTextContent('3f9a1c000000…')
+    expect(screen.getByRole('button', { name: 'スキーマを読み込む' })).toBeEnabled()
+  })
+
+  it('shows no warning when the applied DSL is in use', () => {
+    renderPanel({ status: statusOf({ appliedUnreadable: false }) })
+
+    expect(screen.queryByTestId('dsl-status-unreadable')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows the warning in English', () => {
+    renderPanel({ status: statusOf({ appliedUnreadable: true }) }, ['en-US'])
+
+    expect(screen.getByRole('alert')).toHaveTextContent('The applied DSL is not in use')
+  })
+
+  it('has no accessibility violations with the unreadable warning', async () => {
+    const { container } = renderPanel({ status: statusOf({ appliedUnreadable: true }) })
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 
   it('has no accessibility violations', async () => {

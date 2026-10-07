@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-/** 対象DB との照合（BR2.4）の単体テスト。 */
+/** 対象DB との照合（BR2.4。書式の版 2 のスキーマ名の照らし合わせは U2 dsl-v2 の BR5.1、NFR5.5）の単体テスト。 */
 class DslReconcilerTest {
 
     private static final PatternChecker PATTERNS = new PatternChecker();
@@ -95,13 +95,15 @@ class DslReconcilerTest {
         assertThat(warnings)
                 .extracting(Warning::kind, Warning::path)
                 .containsExactly(
-                        org.assertj.core.groups.Tuple.tuple(WarningKind.TABLE_MISSING, "tables.absent"),
-                        org.assertj.core.groups.Tuple.tuple(WarningKind.COLUMN_MISSING, "tables.present.columns.nocol"),
+                        org.assertj.core.groups.Tuple.tuple(WarningKind.TABLE_MISSING, "schemas.public.tables.absent"),
                         org.assertj.core.groups.Tuple.tuple(
-                                WarningKind.TYPE_MISMATCH, "tables.present.columns.wrongname"),
+                                WarningKind.COLUMN_MISSING, "schemas.public.tables.present.columns.nocol"),
                         org.assertj.core.groups.Tuple.tuple(
-                                WarningKind.TYPE_MISMATCH, "tables.present.columns.wronglen"),
-                        org.assertj.core.groups.Tuple.tuple(WarningKind.TYPE_MISMATCH, "tables.present.columns.num"));
+                                WarningKind.TYPE_MISMATCH, "schemas.public.tables.present.columns.wrongname"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WarningKind.TYPE_MISMATCH, "schemas.public.tables.present.columns.wronglen"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                WarningKind.TYPE_MISMATCH, "schemas.public.tables.present.columns.num"));
         assertThat(warnings.getFirst().message()).isEqualTo("対象DB にテーブル「absent」がありません。");
         assertThat(warnings.get(3).message()).contains("varchar(20)").contains("varchar(10)");
     }
@@ -190,5 +192,48 @@ class DslReconcilerTest {
                 .satisfies(warning -> assertThat(warning.message())
                         .contains("DSL: numeric(10)")
                         .contains("target database: numeric(12)"));
+    }
+
+    @Test
+    @DisplayName("a DSL schema named differently from the setting is one SCHEMA_MISMATCH and no table is compared")
+    void schemaMismatchComparesNoTables() {
+        DslModel model = DslYaml.model(
+                READER,
+                DslYaml.dsl()
+                        .schema("other_schema", "他", "Other")
+                        .table("absent", column("a"))
+                        .bytes());
+
+        List<Warning> warnings = DslReconciler.reconcile(model, schema(), DisplayLanguage.JA);
+
+        assertThat(warnings).singleElement().satisfies(warning -> {
+            assertThat(warning.kind()).isEqualTo(WarningKind.SCHEMA_MISMATCH);
+            assertThat(warning.path()).isEqualTo("schemas.other_schema");
+            assertThat(warning.message()).isEqualTo("DSL のスキーマ「other_schema」は対象DB の設定のスキーマと違うため、テーブルを照合できませんでした。");
+        });
+    }
+
+    @Test
+    @DisplayName("the SCHEMA_MISMATCH message embeds only the DSL schema name, never the configured one")
+    void schemaMismatchHidesTheConfiguredName() {
+        DslModel model = DslYaml.model(
+                READER,
+                DslYaml.dsl()
+                        .schema("Public", "公開", "Public")
+                        .table("t", column("c"))
+                        .bytes());
+        TargetSchemaResult configured = TargetSchemaResult.success(
+                new TargetSchema(DatabaseProduct.POSTGRESQL, "configured_secret_schema", List.of()));
+
+        List<Warning> warnings = DslReconciler.reconcile(model, configured, DisplayLanguage.EN);
+
+        assertThat(warnings).singleElement().satisfies(warning -> {
+            assertThat(warning.kind()).isEqualTo(WarningKind.SCHEMA_MISMATCH);
+            assertThat(warning.message()).contains("\"Public\"").doesNotContain("configured_secret_schema");
+        });
+        assertThat(DslReconciler.reconcile(model, schema(), DisplayLanguage.EN))
+                .as("names are compared case-sensitively")
+                .extracting(Warning::kind)
+                .containsExactly(WarningKind.SCHEMA_MISMATCH);
     }
 }

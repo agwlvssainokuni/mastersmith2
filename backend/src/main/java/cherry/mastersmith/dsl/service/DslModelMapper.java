@@ -23,6 +23,7 @@ import cherry.mastersmith.dsl.domain.DslForeignKey;
 import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMenuItem;
 import cherry.mastersmith.dsl.domain.DslModel;
+import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.FormPart;
 import cherry.mastersmith.dsl.domain.ListFormat;
@@ -35,6 +36,7 @@ import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import cherry.mastersmith.dsl.domain.SearchOperator;
 import cherry.mastersmith.dsl.domain.SearchSetting;
 import cherry.mastersmith.dsl.domain.SortDirection;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dsl.domain.Validation;
 import cherry.mastersmith.dsl.domain.ValidationOrigin;
 import cherry.mastersmith.dsl.domain.ValidationType;
@@ -46,7 +48,8 @@ import java.util.function.Function;
 import tools.jackson.databind.JsonNode;
 
 /**
- * 検証を通った JSON の形から、変更できないモデルを作る（BR5.2）。構文と意味の検証を通った形だけを受け取る前提で、形が合わない
+ * 検証を通った JSON の形から、変更できないモデルを作る（BR5.2）。書式の版 2 では {@code schemas} → スキーマ → {@code tables} の木と、
+ * メニューの {@code table} の組から作る（U2 dsl-v2 の BR1.2・BR1.6）。構文と意味の検証を通った形だけを受け取る前提で、形が合わない
  * ときはプログラムの誤りとして例外にする。
  */
 final class DslModelMapper {
@@ -61,18 +64,32 @@ final class DslModelMapper {
      * @return モデル
      */
     static DslModel toModel(JsonNode json, String dslHash) {
+        List<DslSchema> schemas = new ArrayList<>();
+        for (Map.Entry<String, JsonNode> schema : json.path("schemas").properties()) {
+            schemas.add(schema(schema.getKey(), schema.getValue()));
+        }
+        return new DslModel(
+                dslHash, DslFormat.CURRENT_VERSION, schemas, list(json.path("menus"), DslModelMapper::menu));
+    }
+
+    private static DslSchema schema(String name, JsonNode node) {
         Map<String, DslTable> tables = new LinkedHashMap<>();
-        for (Map.Entry<String, JsonNode> table : json.path("tables").properties()) {
+        for (Map.Entry<String, JsonNode> table : node.path("tables").properties()) {
             tables.put(table.getKey(), table(table.getKey(), table.getValue()));
         }
-        return new DslModel(dslHash, DslFormat.CURRENT_VERSION, list(json.path("menus"), DslModelMapper::menu), tables);
+        return new DslSchema(name, displayName(node.path("label")), tables);
     }
 
     private static DslMenuItem menu(JsonNode node) {
+        JsonNode table = node.path("table");
         return new DslMenuItem(
                 displayName(node.path("label")),
                 text(node.path("icon")),
-                text(node.path("table")),
+                table.isObject()
+                        ? new TableRef(
+                                table.path("schema").stringValue(),
+                                table.path("name").stringValue())
+                        : null,
                 list(node.path("items"), DslModelMapper::menu));
     }
 

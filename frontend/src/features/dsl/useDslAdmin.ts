@@ -19,6 +19,8 @@
 // - 画面を開いたら、今の状態とプレビューを同時に要求する。履歴は履歴のタブを開いたときに読む。
 // - 読み直しは、前の要求より後に出した要求の応答だけを画面に入れる（古い応答で上書きしない）。画面を離れた後の応答は捨てる。
 // - 定期的な自動の読み直しはしない。
+// - 保存したプレビューが今の書式で読めない（読み込み・適用の応答が DSL_INVALID）ときは previewInvalid に誤りの一覧を入れ、preview
+//   より優先して示す。投入・生成・復元の成功、破棄・適用の成功、プレビューの読み込みの成功で消す（U2 dsl-v2 の BR7.3、計画の D-6）。
 import { useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
@@ -35,7 +37,7 @@ import type {
 import type { DslConfirm, ReplaceOperation } from './DslConfirmDialog'
 import type { EmptyReason } from './DslPreviewPanel'
 import type { DslTab } from './DslTabs'
-import { countColumnChanges, countTableChanges } from './diffCounts'
+import { countColumnChanges, countSchemaChanges, countTableChanges } from './diffCounts'
 import { NOT_COMPARED_KINDS } from './DslWarningList'
 import { failureMessageKey, knownCode } from './failureMessage'
 import type { LoadState } from './loadState'
@@ -61,6 +63,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
   const [statusLoad, setStatusLoad] = useState<LoadState>('loading')
   const [preview, setPreview] = useState<Preview | null>(null)
   const [previewLoad, setPreviewLoad] = useState<LoadState>('loading')
+  const [previewInvalid, setPreviewInvalid] = useState<DslErrorReport | null>(null)
   const [history, setHistory] = useState<HistoryEntry[]>([])
   const [historyLoad, setHistoryLoad] = useState<LoadState>('loading')
   const [selectedTab, setSelectedTab] = useState<DslTab>('preview')
@@ -130,6 +133,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
       (next) => {
         if (isLatest()) {
           setPreview(next)
+          setPreviewInvalid(null)
           setPreviewLoad('loaded')
         }
       },
@@ -139,6 +143,14 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
         }
         if (knownCode(error) === 'DSL_PREVIEW_NOT_FOUND') {
           setPreview(null)
+          setPreviewInvalid(null)
+          setPreviewLoad('loaded')
+          return
+        }
+        const invalid = knownCode(error) === 'DSL_INVALID' ? readErrorReport(error) : undefined
+        if (invalid !== undefined) {
+          setPreview(null)
+          setPreviewInvalid(invalid)
           setPreviewLoad('loaded')
           return
         }
@@ -212,6 +224,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     previewSeq.current += 1
     previewStale.current = false
     setPreview(next)
+    setPreviewInvalid(null)
     setPreviewLoad('loaded')
     setEmptyReason('none')
     setReplacedByOther(false)
@@ -226,6 +239,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     previewSeq.current += 1
     previewStale.current = false
     setPreview(null)
+    setPreviewInvalid(null)
     setPreviewLoad('loaded')
     setEmptyReason(reason)
     setReplacedByOther(false)
@@ -334,6 +348,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     }
     const dialog: DslConfirm = {
       kind: 'apply',
+      schemas: countSchemaChanges(preview.diff),
       tables: countTableChanges(preview.diff),
       columns: countColumnChanges(preview.diff),
       warningCount: preview.warnings.filter((w) => !NOT_COMPARED_KINDS.has(w.kind)).length,
@@ -350,8 +365,16 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
           toast.show({ message: t('dsl.toast.applied'), variant: 'success' })
           focusPreview.current = true
         } catch (error) {
+          const invalid = knownCode(error) === 'DSL_INVALID' ? readErrorReport(error) : undefined
           if (knownCode(error) === 'DSL_PREVIEW_CHANGED') {
             await handleApplyRejected(previewId)
+          } else if (invalid !== undefined) {
+            // 確定の前に今の書式で読めないと分かった（内部DB は変わっていない）。読めないプレビューとして示す。
+            previewSeq.current += 1
+            setPreview(null)
+            setPreviewInvalid(invalid)
+            setPreviewLoad('loaded')
+            focusPreview.current = true
           } else {
             handleFailure(error)
           }
@@ -433,6 +456,7 @@ export function useDslAdmin(api: DslApi, save: (file: DslFile) => void, t: DslTe
     status,
     statusLoad,
     preview,
+    previewInvalid,
     previewLoad,
     history,
     historyLoad,

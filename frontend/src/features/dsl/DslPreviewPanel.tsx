@@ -17,10 +17,13 @@
 // プレビュー（interaction-spec.md の DslPreviewPanel、BR5.6〜BR5.9、AC3.1.1〜AC3.1.7・AC3.2.1〜AC3.2.4・AC4.2.1・AC4.2.2）。
 // 検証を通ったこと・照合の警告・要約・違い・メニューの木を示し、ダウンロード・破棄・適用の操作を持つ。
 // プレビューが無いときは案内と、読み込み・投入のタブへの操作だけを示す（押せない操作を並べない）。
+// 保存したプレビューが今の書式で読めない（読み込み・適用の応答が DSL_INVALID）ときは、誤りの一覧と破棄の案内を出し、操作は
+// ダウンロードと破棄だけにする（U2 dsl-v2 の BR7.3・F3）。要約にスキーマの数を出す（F6）。
 import { Alert, Button, Icon } from 'make-you-chic-ui'
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import type { Preview, PreviewSummary } from './api/types'
+import type { DslErrorReport, Preview, PreviewSummary } from './api/types'
 import { DslDiffTable } from './DslDiffTable'
+import { DslErrorList } from './DslErrorList'
 import { DslMenuTree } from './DslMenuTree'
 import { DslWarningList, NOT_COMPARED_KINDS } from './DslWarningList'
 import type { LoadState } from './loadState'
@@ -34,6 +37,8 @@ export type EmptyReason = 'none' | 'discardedByOther'
 export interface DslPreviewPanelProps {
   /** プレビュー（無ければ null） */
   preview: Preview | null
+  /** 保存したプレビューが今の書式で読めないときの誤りの一覧（読めるとき・無いときは null。preview より優先する） */
+  invalidReport: DslErrorReport | null
   loadState: LoadState
   emptyReason: EmptyReason
   /** 適用が別の管理者の置き換えで拒否された（409） */
@@ -56,7 +61,7 @@ export interface DslPreviewPanelProps {
 /** プレビュー */
 export function DslPreviewPanel(props: DslPreviewPanelProps) {
   const t = useDslText()
-  const { preview, loadState, headingRef } = props
+  const { preview, invalidReport, loadState, headingRef } = props
 
   if (loadState === 'loading') {
     return (
@@ -71,6 +76,9 @@ export function DslPreviewPanel(props: DslPreviewPanelProps) {
         <span data-testid="dsl-preview-error">{t('dsl.preview.loadFailed')}</span>
       </Alert>
     )
+  }
+  if (invalidReport !== null) {
+    return <InvalidPreview {...props} report={invalidReport} />
   }
   if (preview === null) {
     return (
@@ -108,6 +116,48 @@ export function DslPreviewPanel(props: DslPreviewPanelProps) {
     )
   }
   return <PreviewContent {...props} preview={preview} />
+}
+
+/** 今の書式で読めないプレビュー（誤りの一覧と案内、ダウンロードと破棄だけ） */
+function InvalidPreview({
+  report,
+  headingRef,
+  busy,
+  discarding,
+  onDownload,
+  onDiscard,
+}: DslPreviewPanelProps & { report: DslErrorReport }) {
+  const t = useDslText()
+  return (
+    <section
+      className="dsl-preview"
+      aria-labelledby="dsl-preview-heading"
+      data-testid="dsl-preview-invalid"
+    >
+      <h2 id="dsl-preview-heading" ref={headingRef} tabIndex={-1} className="dsl-section-heading">
+        {t('dsl.preview.heading')}
+      </h2>
+      <Alert variant="danger" title={t('dsl.preview.invalidTitle')}>
+        <span data-testid="dsl-preview-invalid-body">{t('dsl.preview.invalidBody')}</span>
+      </Alert>
+      <DslErrorList report={report} data-testid="dsl-preview-invalid-errors" />
+      <div className="dsl-actions">
+        <Button variant="secondary" onClick={onDownload} data-testid="dsl-preview-invalid-download">
+          <Icon name="download" size={16} />
+          {t('dsl.action.download')}
+        </Button>
+        <Button
+          variant="danger"
+          loading={discarding}
+          disabled={busy}
+          onClick={onDiscard}
+          data-testid="dsl-preview-invalid-discard"
+        >
+          {t('dsl.action.discard')}
+        </Button>
+      </div>
+    </section>
+  )
 }
 
 function PreviewContent(props: DslPreviewPanelProps & { preview: Preview }) {
@@ -224,6 +274,9 @@ function Summary({ summary }: { summary: PreviewSummary }) {
   return (
     <div className="dsl-preview-summary" data-testid="dsl-preview-summary">
       <p className="dsl-summary-line">
+        <span data-testid="dsl-preview-schema-count">
+          {t('dsl.preview.schemaCount', { count: summary.schemaCount })}
+        </span>
         <span data-testid="dsl-preview-table-count">
           {t('dsl.preview.tableCount', {
             tables: summary.tableCount,

@@ -1,25 +1,26 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "MasterSmith DSL（書式の版 1）",
-  "description": "MasterSmith の DSL（YAML）の書式。どの対応表も、ここに無い項目を許さない。版の値（version）はアプリが検証の前に確かめる（対応する版は 1）。",
+  "title": "MasterSmith DSL（書式の版 2）",
+  "description": "MasterSmith の DSL（YAML）の書式。どの対応表も、ここに無い項目を許さない。版の値（version）はアプリが検証の前に確かめる（対応する版は 2）。スキーマはちょうど1つ（アプリが意味の検証で確かめる）。メニューの深さは 5 段まで（アプリが意味の検証で確かめる）。",
   "type": "object",
-  "required": ["version", "menus", "tables"],
+  "required": ["version", "menus", "schemas"],
   "additionalProperties": false,
   "properties": {
     "version": {
-      "description": "書式の版（必須）。",
-      "type": "integer"
+      "description": "書式の版（必須。2 だけを受け付ける）。",
+      "type": "integer",
+      "const": 2
     },
     "menus": {
       "description": "最上位のメニュー（N 階層）。",
       "type": "array",
       "items": { "$ref": "#/$defs/menuItem" }
     },
-    "tables": {
-      "description": "テーブル・ビュー。キーは物理名。",
+    "schemas": {
+      "description": "スキーマ。キーはスキーマ名（対象DB の設定のスキーマ名）。中身はちょうど1つ。",
       "type": "object",
       "propertyNames": { "minLength": 1 },
-      "additionalProperties": { "$ref": "#/$defs/table" }
+      "additionalProperties": { "$ref": "#/$defs/schema" }
     }
   },
   "$defs": {
@@ -50,6 +51,21 @@
     "searchOperator": {
       "enum": ["EQUALS", "CONTAINS", "RANGE", "CHOICE", "IN"]
     },
+    "schema": {
+      "description": "スキーマ1つ。",
+      "type": "object",
+      "required": ["label", "tables"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "$ref": "#/$defs/displayName" },
+        "tables": {
+          "description": "テーブル・ビュー。キーは物理名（このスキーマの中で一意）。0 件を許す。",
+          "type": "object",
+          "propertyNames": { "minLength": 1 },
+          "additionalProperties": { "$ref": "#/$defs/table" }
+        }
+      }
+    },
     "menuItem": {
       "description": "メニューの項目。テーブルに紐付く項目か、子を持つまとまり。",
       "type": "object",
@@ -58,7 +74,16 @@
       "properties": {
         "label": { "$ref": "#/$defs/displayName" },
         "icon": { "type": ["string", "null"] },
-        "table": { "type": ["string", "null"], "minLength": 1 },
+        "table": {
+          "description": "紐付くテーブル（スキーマ名とテーブル名の組。無ければ null）。",
+          "type": ["object", "null"],
+          "required": ["schema", "name"],
+          "additionalProperties": false,
+          "properties": {
+            "schema": { "$ref": "#/$defs/name" },
+            "name": { "$ref": "#/$defs/name" }
+          }
+        },
         "items": {
           "type": ["array", "null"],
           "items": { "$ref": "#/$defs/menuItem" }
@@ -100,7 +125,10 @@
           "minItems": 1,
           "items": { "$ref": "#/$defs/name" }
         },
-        "referencedTable": { "$ref": "#/$defs/name" },
+        "referencedTable": {
+          "description": "参照の先のテーブル名（同じスキーマの中）。",
+          "$ref": "#/$defs/name"
+        },
         "referencedColumns": {
           "type": "array",
           "minItems": 1,

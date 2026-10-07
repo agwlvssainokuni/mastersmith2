@@ -85,12 +85,13 @@ public final class DslResponses {
     }
 
     /**
-     * 今の状態（契約 C6 の {@code DslStatus}）。
+     * 今の状態（契約 C6 の {@code DslStatus}。U2 dsl-v2 で {@code appliedUnreadable} を足した。BR3.6）。
      *
      * @param applied 適用中の版（無ければ null）
      * @param preview 今のプレビュー（無ければ null）
+     * @param appliedUnreadable 適用中の版を起動時に今の書式で読めず、適用中の DSL が使われていないなら true
      */
-    public record DslStatusResponse(AppliedRefResponse applied, PreviewRefResponse preview) {
+    public record DslStatusResponse(AppliedRefResponse applied, PreviewRefResponse preview, boolean appliedUnreadable) {
 
         static DslStatusResponse from(DslStatus status) {
             return new DslStatusResponse(
@@ -98,12 +99,14 @@ public final class DslResponses {
                     status.preview() == null
                             ? null
                             : PreviewRefResponse.from(
-                                    status.preview().ref(), status.preview().by()));
+                                    status.preview().ref(), status.preview().by()),
+                    status.appliedUnreadable());
         }
     }
 
     /**
-     * プレビューの中身（契約 C6 の {@code Preview}）。要約・違い・警告は保存しない値（エンティティではない）。
+     * プレビューの中身（契約 C6 の {@code Preview}）。要約・違い・警告は保存しない値（エンティティではない）。書式の版 2（U2 dsl-v2 の
+     * BR5.2・BR5.3）では、要約にスキーマの数、違いにスキーマの階層、メニューの木の節にテーブルの組（{@code {schema, name}}）が入る。
      *
      * @param previewId プレビューの識別
      * @param dslHash DSL の識別

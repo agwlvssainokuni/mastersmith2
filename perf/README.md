@@ -86,6 +86,8 @@ docker inspect mastersmith-perf-app-1 --format '{{.State.OOMKilled}} {{.State.Ex
 
 DSL の機能（既定の DSL の生成・プレビューの表示（照合）・投入・戻し・ダウンロード・適用）の時間を、使い捨ての環境で測る。Build and Test では1回ずつの時間（U3・U4 の NFR1.4〜NFR1.8・NFR1.11・NFR2.5 と U5 の画面の時間 NFR1.18〜NFR1.20）を `perf/dsl-timing.sh` で測る。95 パーセンタイル（U4 の NFR1.10）と同時の実行（U4 の NFR1.12・U4-POOL）は Performance Validation で、下の k6 の DSL の場面を使って測る。記録は `aidlc/spaces/default/intents/260923-dsl-schema-loader/construction/build-and-test/` にある。
 
+台本と道具が作る・送る DSL は、すべて書式の**版 2**（Intent 261004-role-menu の U2 dsl-v2。`version: 2`、スキーマはちょうど1つで、テーブルは `schemas.<スキーマ>.tables` の下、メニューのテーブルは `{schema, name}`）。版 1 の DSL は書式の版の誤り（422）になる。
+
 ### 1回ずつの時間（perf/dsl-timing.sh）
 
 ```bash
@@ -106,8 +108,9 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --ui postgres
   - 履歴からの戻し（生成した DSL の版と 10MB の版）と、その後の表示
 - 生成の内訳は、アプリのログの `既定の DSL の生成の内訳`（`TargetSchemaDslGenerator` の DEBUG。`readMillis`・`buildMillis`・`writeMillis`・`validateMillis`・`bytes`）で読む。環境変数ではクラスの名前を指定できないため、パッケージ `cherry.mastersmith.dslmanage.generate` を DEBUG にしている。
 - ヒープは、GC の記録（`-Xlog:gc`、エポックのミリ秒つき。`MASTERSMITH_JAVA_OPTIONS` で渡す）から、要求の間に起きた GC の直前の使用量の最大を読む。GC が起きなかった要求は値が無い（—）。コンテナのメモリの最大は cgroup の `memory.peak`（起動からの最大）で読む。
-- 10MB の DSL は `perf/make-large-dsl.mjs` が、生成した DSL の先頭のテーブルを別名（`x_<番号>_<元の名前>`）で写して足し、足りない分（数十 KB）を末尾の YAML のコメントで埋めて作る。誤りを含むものは、写したテーブルのすべてのカラムの `formPart` を書式に無い値にしたもの（JSON Schema の誤りが多数）と、最後に写したテーブルの主キーを無いカラムにしたもの（意味の誤りが末尾に1件）。リポジトリには置かず、結果の置き場（`build/` の下）にだけ作る。
-- 結果は `build/perf-results/dsl-<日時>/` に置く。`timings.tsv`（要求ごとの時間）・`summary.md`（`perf/dsl-timing-report.mjs` のまとめ）・種類ごとの `app.log`・`gc.log`・`generate-breakdown.log`・`memory-peak.txt`・`state.txt`（OOMKilled の有無）・応答の本文（`resp-*.body`）・画面の時間（`ui-timing.json`）。応答とログに秘密情報は含まれない（仮の管理者のメールアドレスは `perf-admin@example.test`）。
+- 10MB の DSL は `perf/make-large-dsl.mjs` が、生成した版 2 の DSL のスキーマの `tables` の下の先頭のテーブルを、同じスキーマの下に別名（`x_<番号>_<元の名前>`）で写して足し、足りない分（数十 KB）を末尾の YAML のコメントで埋めて作る。誤りを含むものは、写したテーブルのすべてのカラムの `formPart` を書式に無い値にしたもの（JSON Schema の誤りが多数）と、最後に写したテーブルの主キーを無いカラムにしたもの（意味の誤りが末尾に1件）。リポジトリには置かず、結果の置き場（`build/` の下）にだけ作る。
+- ヒープの使用（`heap.tsv`）: 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics/jvm.memory.used?tag=area:heap` の `VALUE`（バイト。その時点の使用量で、GC の前後で上下する）を、10MB の正しい DSL の投入の後（`after-submit-10mb-valid`）・その表示の後（`after-preview-10mb-first`）・`--busy` の後（`after-busy`）に記録する。Intent 261004-role-menu の U2 dsl-v2 の見積もり（10MB の投入・表示で 256〜384 MB 程度）と並べて読む記録で、判定は今までどおり OOMKilled・`memory.peak` で行う。配備したアプリの公開の範囲は変えない。
+- 結果は `build/perf-results/dsl-<日時>/` に置く。`timings.tsv`（要求ごとの時間）・`heap.tsv`（ヒープの使用）・`busy.tsv`（`--busy` のとき）・`summary.md`（`perf/dsl-timing-report.mjs` のまとめ）・種類ごとの `app.log`・`gc.log`・`generate-breakdown.log`・`memory-peak.txt`・`state.txt`（OOMKilled の有無）・応答の本文（`resp-*.body`）・画面の時間（`ui-timing.json`）。応答とログに秘密情報は含まれない（仮の管理者のメールアドレスは `perf-admin@example.test`）。
 - 画面の時間（`perf/ui/dsl-ui-timing.mjs`、`--ui` のとき）: 想定の規模のプレビュー（生成した DSL）を置いてから、Chromium（画面なし）でログインし、サイドバーの「DSL」から開く場合と `/admin/dsl` を読み直す場合のそれぞれで、今の状態とプレビューが表示されるまでの時間（NFR1.18）、違いの表の最初の行を開いてカラムの表が出るまでの時間（NFR1.19）、10MB のファイルを選んで「投入」と置き換えの確かめの後に送り始めるまでの時間（NFR1.20）を測る。照合を除く時間は、表示までの時間から `GET /preview` のサーバーの時間（送ってから最初のバイトまで）を引いて出す。
 
 前提と注意:
@@ -117,18 +120,21 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --ui postgres
 - 使い捨ての環境だけに要求を送る（`127.0.0.1:18080`）。配備したアプリ・その内部DB・監査ログには触れない。
 - 途中で残したいときは `KEEP=1` を付ける（種類は1つだけ指定する）。終わったら、表示された一時ディレクトリの場所を使って片付ける（`docker compose -p mastersmith-perf -f docker/perf/compose.yaml --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb down -v` と一時ディレクトリの削除。`-f` の compose は `MASTERSMITH_PERF_ENV_FILE` が要るため、`MASTERSMITH_PERF_ENV_FILE=/dev/null` を付けて呼ぶ）。
 
-### 追加の確かめ（--lang・--pattern・--storage・--compact）
+### 追加の確かめ（--lang・--pattern・--busy・--storage・--compact）
 
 `perf/dsl-timing.sh` に次のオプションを付けると、上の測定の後に続けて行う（組み合わせてよい。PostgreSQL の1種類で足りる）。
 
 ```bash
 MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --lang --pattern --storage postgres
+# 同時の投入（重い処理の排他）の確かめ
+MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --busy postgres
 ```
 
 | オプション | すること | 目標 | 結果のファイル |
 |---|---|---|---|
-| `--lang` | 英語のロケール（`en-US`）の Chromium で `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、続けて誤りを含む DSL を貼り付けて投入（422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
+| `--lang` | 英語のロケール（`en-US`）の Chromium で `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、名前の違うスキーマの DSL を投入（照合の警告 `SCHEMA_MISMATCH`）、続けて誤りを含む DSL・書式の版 1 の DSL（`UNSUPPORTED_VERSION`）・メニューの深さが 6 段の DSL（`SEMANTIC`）を貼り付けて投入（どれも 422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
 | `--pattern` | 1,000 文字近くの重い正規表現（深い入れ子の繰り返し・`(a+)+` の並び・大きな繰り返しの回数・Unicode の文字の種類の積・遅延の繰り返しの選択）を `pattern` に 2,000 個持つ DSL と、同じ形で `pattern` の無い DSL を作り（`perf/make-pattern-dsl.mjs`）、普通 3 回 → 重い 3 回 → 重いものの直後に待たずに普通 → 普通 3 回の順に投入する | U2-PATTERN-COMPILE（重い投入が短く終わり、直後の普通の投入が遅れない。アプリのログに「正規表現の確かめを時間の上限で打ち切りました」「受け付けられませんでした」が出ない） | `timings.tsv` の `pattern-*`・`pattern-dsl.txt`・`app.log` |
+| `--busy` | 組ごとにログインを1回して、10MB の正しい DSL の投入を2つ並べて送る（要求ごとに別の応答のファイル `resp-busy-<組>-a.body`・`-b.body`。状態コード（curl の `-w '%{http_code}'`）と curl の終了コードを両方記録）。判定は、成功（201）1つと 503 `DSL_BUSY` 1つで `pass`。2つとも成功は重ならなかった回（先の処理が終わってから後が届いた）として `not-overlapped` にし、`BUSY_ATTEMPTS` 回（既定 5）までやり直す。5 回とも重ならなければ不合格にせず `not-overlapped-5-times（依頼者に諮る）` と記録する。2つとも 503・`DSL_BUSY` 以外の 5xx・状態コードが取れない（`000`）回は `fail-candidate`（不合格の候補）としてやり直さずに記録する。後に `memory.peak`・OOMKilled・終了の状態・健全性とヒープの使用を記録する | U2 dsl-v2 の NFR2.5・NFR2.6（503 が送り手に届く。止まらない）。`memory.peak` は1件の投入（`--busy` を付けずに流した `memory-peak.txt`）と比べる（後の要求は本文を読まずに断るため、大きく増えない見込み） | `busy.tsv`（組ごとに1行）・`<種類>/busy-state.txt`・`resp-busy-*.body`・`busy-*.result`・`busy-*.stderr`・`heap.tsv` の `after-busy` |
 | `--storage` | 10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューも1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（cgroup の `memory.current`・`memory.peak`、`memory.stat` の `anon`（プロセスのメモリ）と `file`（ページキャッシュ。回収できる））、履歴の件数を記録する。最後にアプリを `docker compose stop`（`stop_grace_period` 45 秒）で止め、止めるのにかかった秒数と終わり方（exit code。SIGTERM で正常に終われば 143、猶予切れや OOM の SIGKILL は 137）・止めている間の H2 のファイルの大きさ（同じイメージの一時のコンテナでボリュームを読むだけ）・起動から healthy までの秒数・起動し直した後の大きさを記録し、止める前と後のデータ（適用中の DSL とプレビューの DSL の SHA-256、プレビューの previewId、履歴の版・dslHash・件数）を比べる。その後、履歴のすべての版を戻して、プレビューの本文の SHA-256 が履歴の dslHash と一致する数を記録する（`restore_all_match`。詰め直しで本文が壊れていないか） | U4-STORAGE | `storage.tsv`・`memory-peak-before-restart.txt`・`memory-stat-before-restart.txt`・`stop-state.txt`・`data-while-stopped.txt`・`snapshot-before-stop.txt`・`snapshot-after-restart.txt`・`history-after-restart.txt`・`app-before-restart.log` |
 | `--compact` | `--storage` と組み合わせる。最後のプレビューを置いた後、止める前に、アプリを止めずに内部DB を詰め直す道具（`docker/hikari-pool.sh compact --container mastersmith-perf-app-1`）を流す。道具の出力（接続の本数・前と後の大きさ・かかった時間）と終わりの値・道具全体の秒数を記録し、`storage.tsv` に `after-compact` の行を足し、詰め直しの前後のデータ（適用中の DSL とプレビューの DSL の SHA-256、previewId、履歴）を比べ、詰め直しの後の健全性を記録する。その後の `--storage` の止める・起動し直す・`restore_all_match` はそのまま続く（詰め直しの後の本文も確かめる） | FR1.4・NFR1（Intent 260925-storage-memory-fixes） | `compact.txt`・`snapshot-before-compact.txt`・`snapshot-after-compact.txt` |
 

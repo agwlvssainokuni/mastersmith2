@@ -80,6 +80,6 @@ class DslSchemaPublicationIT {
 
         assertThat(response.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
         assertThat(response.headers().firstValue("Set-Cookie")).isEmpty();
-        assertThat(classpathText("static/dsl/dsl-schema-v1.json")).isEqualTo(classpathText(DslFormat.SCHEMA_RESOURCE));
+        assertThat(classpathText("static/dsl/dsl-schema-v2.json")).isEqualTo(classpathText(DslFormat.SCHEMA_RESOURCE));
     }
 }

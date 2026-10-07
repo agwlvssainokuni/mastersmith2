@@ -114,6 +114,8 @@ class DslLifecycleTest {
 
     private final DslPreviewCache cache = new DslPreviewCache();
 
+    private final UnreadableAppliedRevision unreadable = new UnreadableAppliedRevision();
+
     private DslLifecycle lifecycle;
 
     private DslRecordStore store;
@@ -138,7 +140,8 @@ class DslLifecycleTest {
                 users,
                 events::add,
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                new DslManageProperties(org.springframework.util.unit.DataSize.ofMegabytes(10), 20));
+                new DslManageProperties(org.springframework.util.unit.DataSize.ofMegabytes(10), 20),
+                unreadable);
         when(target.readSchema(ReadPurpose.COMPARE)).thenReturn(TargetSchemaResult.unconfigured());
         when(users.findById(ADMIN))
                 .thenReturn(Optional.of(
@@ -415,7 +418,7 @@ class DslLifecycleTest {
         DslAppliedRef newer = new DslAppliedRef(UUID.randomUUID(), "d".repeat(64), DslSource.PASTE, ADMIN, NOW);
         DslAppliedRef older =
                 new DslAppliedRef(UUID.randomUUID(), "e".repeat(64), DslSource.UPLOAD, ADMIN, NOW.minusSeconds(60));
-        assertThat(lifecycle.status()).isEqualTo(new DslStatus(null, null));
+        assertThat(lifecycle.status()).isEqualTo(new DslStatus(null, null, false));
 
         when(revisions.findCurrentRef()).thenReturn(Optional.of(newer));
         when(revisions.findRefsNewestFirst()).thenReturn(List.of(newer, older));
@@ -530,24 +533,107 @@ class DslLifecycleTest {
         verify(previews, never()).deleteByPreviewId(any());
     }
 
-    @Test
-    @DisplayName("a stored preview that no longer validates is an unexpected failure logging only hash and kinds")
-    void storedPreviewNoLongerValid() {
-        byte[] body = "version: 2\nbody_marker: 1\n".getBytes(StandardCharsets.UTF_8);
+    /** 版 1 の本文（版を上げる前に置かれた、今の書式で読めないプレビュー）を、キャッシュに無い今のプレビューとして置く。 */
+    private DslPreviewRef unreadablePreview() {
+        byte[] body = "version: 1\nbody_marker: 1\n".getBytes(StandardCharsets.UTF_8);
         DslPreviewRef ref = new DslPreviewRef(UUID.randomUUID(), READER.hash(body), DslSource.PASTE, ADMIN, NOW);
         when(previews.findRef()).thenReturn(Optional.of(ref));
         when(previews.findContent()).thenReturn(Optional.of(new DslContent<>(ref, body)));
+        return ref;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<DslErrorItem> errorItems(Throwable thrown) {
+        BusinessException invalid = (BusinessException) thrown;
+        assertThat(invalid.getProblemType()).isEqualTo(DslProblemTypes.DSL_INVALID);
+        return (List<DslErrorItem>) invalid.getProperties().get("errors");
+    }
+
+    @Test
+    @DisplayName("showing a stored preview that no longer validates is 422 with the errors, keeps the row and logs no"
+            + " error")
+    void storedPreviewNoLongerValid() {
+        DslPreviewRef ref = unreadablePreview();
 
         try (LogEvents logs = LogEvents.capture(DslLifecycle.class)) {
-            assertThatThrownBy(() -> lifecycle.showPreview(context(DisplayLanguage.JA)))
-                    .isInstanceOf(IllegalStateException.class);
-            assertThat(logs.list()).singleElement().satisfies(event -> {
-                assertThat(event.getLevel()).isEqualTo(Level.ERROR);
-                assertThat(String.valueOf(event.getKeyValuePairs()))
-                        .contains("UNSUPPORTED_VERSION")
-                        .doesNotContain("body_marker");
+            Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
+                    () -> lifecycle.showPreview(context(DisplayLanguage.EN)));
+
+            assertThat(status(thrown)).isEqualTo(422);
+            assertThat(errorItems(thrown)).singleElement().satisfies(error -> {
+                assertThat(error.kind()).isEqualTo(DslErrorKind.UNSUPPORTED_VERSION);
+                assertThat(error.message()).contains("version 1").doesNotContain("body_marker");
             });
+            assertThat(logs.list()).noneMatch(event -> event.getLevel() == Level.ERROR);
         }
+        verify(previews, never()).deleteByPreviewId(any());
+        assertThat(cache.get(ref.previewId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("applying an uncached preview that no longer validates is 422 before anything is copied")
+    void applyUnreadablePreviewIs422() {
+        DslPreviewRef ref = unreadablePreview();
+
+        Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
+                () -> lifecycle.apply(ref.previewId(), context(DisplayLanguage.JA)));
+
+        assertThat(status(thrown)).isEqualTo(422);
+        assertThat(errorItems(thrown)).isNotEmpty();
+        verify(revisions, never()).copyFromPreview(any(), any(), anyLong(), any());
+        verify(previews, never()).deleteByPreviewId(any());
+        assertThat(active.current()).isInstanceOf(ActiveDsl.Absent.class);
+        assertThat(dslEvents()).isEmpty();
+        assertThat(meterTags()).contains(Map.of("operation", "apply", "outcome", "rejected"));
+    }
+
+    @Test
+    @DisplayName("applying with another previewId while the current preview is unreadable is 409, not 422")
+    void otherPreviewIdIs409BeforeReading() {
+        unreadablePreview();
+
+        assertThatThrownBy(() -> lifecycle.apply(UUID.randomUUID(), context(DisplayLanguage.JA)))
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        e -> assertThat(e.getProblemType()).isEqualTo(DslProblemTypes.DSL_PREVIEW_CHANGED));
+        verify(revisions, never()).deleteOlderThanNewest(anyInt());
+    }
+
+    @Test
+    @DisplayName("an uncached valid preview is checked before the store and the history body is not read again")
+    void applyChecksBeforeStoreAndDoesNotReadHistory() {
+        byte[] body = sample();
+        DslPreviewRef ref = new DslPreviewRef(UUID.randomUUID(), READER.hash(body), DslSource.PASTE, ADMIN, NOW);
+        when(previews.findRef()).thenReturn(Optional.of(ref));
+        when(previews.findContent()).thenReturn(Optional.of(new DslContent<>(ref, body)));
+        when(revisions.copyFromPreview(any(), eq(ref.previewId()), eq(ADMIN), eq(NOW)))
+                .thenReturn(1);
+        when(previews.deleteByPreviewId(ref.previewId())).thenReturn(1);
+
+        lifecycle.apply(ref.previewId(), context(DisplayLanguage.JA));
+
+        verify(revisions, never()).findContent(any());
+        assertThat(active.current())
+                .isInstanceOfSatisfying(
+                        ActiveDsl.Present.class,
+                        present -> assertThat(present.dslHash()).isEqualTo(ref.dslHash()));
+    }
+
+    @Test
+    @DisplayName("the status is marked unreadable only while the applied revision is the one that could not be read")
+    void appliedUnreadableMark() {
+        DslAppliedRef current = new DslAppliedRef(UUID.randomUUID(), "d".repeat(64), DslSource.PASTE, ADMIN, NOW);
+        when(revisions.findCurrentRef()).thenReturn(Optional.of(current));
+
+        assertThat(lifecycle.status().appliedUnreadable()).isFalse();
+        unreadable.remember(current.revisionId());
+        assertThat(lifecycle.status().appliedUnreadable()).isTrue();
+
+        DslAppliedRef newer = new DslAppliedRef(UUID.randomUUID(), "e".repeat(64), DslSource.PASTE, ADMIN, NOW);
+        when(revisions.findCurrentRef()).thenReturn(Optional.of(newer));
+        assertThat(lifecycle.status().appliedUnreadable())
+                .as("a newly applied revision")
+                .isFalse();
     }
 
     @Test
@@ -566,7 +652,8 @@ class DslLifecycleTest {
                     throw new IllegalStateException("受け取り側の失敗");
                 },
                 Clock.fixed(NOW, ZoneOffset.UTC),
-                new DslManageProperties(org.springframework.util.unit.DataSize.ofMegabytes(10), 20));
+                new DslManageProperties(org.springframework.util.unit.DataSize.ofMegabytes(10), 20),
+                unreadable);
 
         try (LogEvents logs = LogEvents.capture(DslLifecycle.class)) {
             PreviewView view = failing.submit(sample(), DslSource.UPLOAD, context(DisplayLanguage.JA));
@@ -634,7 +721,7 @@ class DslLifecycleTest {
     @DisplayName(
             "a revision that no longer validates is 422 with localized errors, keeps the preview and publishes nothing")
     void restoreNoLongerValid() {
-        byte[] body = "version: 2\nbody_marker: 1\n".getBytes(StandardCharsets.UTF_8);
+        byte[] body = "version: 1\nbody_marker: 1\n".getBytes(StandardCharsets.UTF_8);
         DslAppliedRef ref = revision(body);
 
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(

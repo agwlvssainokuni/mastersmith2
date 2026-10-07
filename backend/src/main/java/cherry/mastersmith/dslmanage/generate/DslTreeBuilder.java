@@ -42,7 +42,12 @@ import org.springframework.stereotype.Component;
  * スキーマの写しから DSL の値の木を組み立てる（BR1.2〜BR1.5・BR2.1〜BR2.5・BR3.1・BR3.2・BR4.1、functional-spec.md の 1節）。
  *
  * <p>木は順序を持つ対応表（{@link LinkedHashMap}）と一覧で作り、項目の並びを U2 の書式の例の順に固定する（BR5.1）。写しの外の
- * 値（接続先・ユーザー名・パスワード・スキーマ名）は入れない（BR5.3）。
+ * 値（接続先・ユーザー名・パスワード）は入れない（BR5.3）。
+ *
+ * <p>書式の版 2（Intent 261004-role-menu の U2 dsl-v2、BR4.1〜BR4.3）では、{@code schemas} に写しのスキーマ名（対象DB の設定の
+ * スキーマ名。MySQL・MariaDB ではデータベース名と同じ値）を1つ置き、表示名は ja・en ともスキーマ名にする。その下のテーブルは
+ * 今の規則で並べ、メニューは平らな一覧（深さ 1）で、テーブルごとに {@code {schema, name}} の組で指す。接続先・ポート・ユーザー名・
+ * パスワード・JDBC の URL と PostgreSQL の database の項目は、写しに無いため書けない。
  *
  * <p>外部キーは、参照先のテーブルとカラムが写しにあるものだけを写す（読める権限が無いなどで参照先が写しに無い外部キーは、DSL
  * の意味の検証を通らないため入れない）。{@code longtext} のように長さが DSL の整数の範囲（2147483647 まで）を超える型は、長さを
@@ -61,9 +66,10 @@ public class DslTreeBuilder {
      * 写しから DSL の値の木を作る。
      *
      * @param schema スキーマの写し
-     * @return DSL の値の木（{@code version}・{@code menus}・{@code tables} の順）
+     * @return DSL の値の木（{@code version}・{@code menus}・{@code schemas} の順）
      */
     public Map<String, Object> build(TargetSchema schema) {
+        String schemaName = schema.schemaName();
         List<TargetTable> tables = schema.tables().stream()
                 .sorted(Comparator.comparing(TargetTable::name, NAME_ORDER))
                 .toList();
@@ -72,14 +78,22 @@ public class DslTreeBuilder {
         for (TargetTable table : tables) {
             Map<String, Object> menu = new LinkedHashMap<>();
             menu.put("label", label(table.name(), table.comment()));
-            menu.put("table", table.name());
+            Map<String, Object> tableRef = new LinkedHashMap<>();
+            tableRef.put("schema", schemaName);
+            tableRef.put("name", table.name());
+            menu.put("table", tableRef);
             menus.add(menu);
             tableMap.put(table.name(), table(schema, table));
         }
+        Map<String, Object> schemaNode = new LinkedHashMap<>();
+        schemaNode.put("label", label(schemaName, null));
+        schemaNode.put("tables", tableMap);
+        Map<String, Object> schemas = new LinkedHashMap<>();
+        schemas.put(schemaName, schemaNode);
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("version", DslFormat.CURRENT_VERSION);
         root.put("menus", menus);
-        root.put("tables", tableMap);
+        root.put("schemas", schemas);
         return root;
     }
 

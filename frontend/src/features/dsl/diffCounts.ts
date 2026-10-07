@@ -15,7 +15,7 @@
  */
 //
 // 違いの数え方（BR5.7、AC4.1.2）。表示と確かめる表示で同じ数を使う。
-import type { DslDiff, TableChange } from './api/types'
+import type { DslDiff, TableChange, TableDiff } from './api/types'
 
 /** 区分ごとの数 */
 export interface ChangeCounts {
@@ -24,16 +24,28 @@ export interface ChangeCounts {
   changed: number
 }
 
-/** テーブルの区分ごとの数（変わらないテーブルは数えない）。 */
-export function countTableChanges(diff: DslDiff): ChangeCounts {
-  const count = (change: TableChange) => diff.tables.filter((t) => t.change === change).length
+/** すべてのスキーマのテーブルの違い（スキーマの順、その中は DSL の順）。 */
+export function allTables(diff: DslDiff): TableDiff[] {
+  return diff.schemas.flatMap((schema) => schema.tables)
+}
+
+/** スキーマの区分ごとの数（変わらないスキーマは数えない。CHANGED は表示名の変化）。 */
+export function countSchemaChanges(diff: DslDiff): ChangeCounts {
+  const count = (change: TableChange) => diff.schemas.filter((s) => s.change === change).length
   return { added: count('ADDED'), removed: count('REMOVED'), changed: count('CHANGED') }
 }
 
-/** カラムの区分ごとの数（すべてのテーブルの合計）。 */
+/** テーブルの区分ごとの数（すべてのスキーマの合計。変わらないテーブルは数えない）。 */
+export function countTableChanges(diff: DslDiff): ChangeCounts {
+  const tables = allTables(diff)
+  const count = (change: TableChange) => tables.filter((t) => t.change === change).length
+  return { added: count('ADDED'), removed: count('REMOVED'), changed: count('CHANGED') }
+}
+
+/** カラムの区分ごとの数（すべてのスキーマ・テーブルの合計）。 */
 export function countColumnChanges(diff: DslDiff): ChangeCounts {
   const counts: ChangeCounts = { added: 0, removed: 0, changed: 0 }
-  for (const table of diff.tables) {
+  for (const table of allTables(diff)) {
     for (const column of table.columns) {
       if (column.change === 'ADDED') {
         counts.added += 1

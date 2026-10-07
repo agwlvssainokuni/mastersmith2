@@ -28,15 +28,25 @@ const tree: MenuNode[] = [
     label: { ja: '基本マスタ', en: 'Basic masters' },
     table: null,
     children: [
-      { label: { ja: '部署', en: 'Departments' }, table: 'dept_mst', children: [] },
+      {
+        label: { ja: '部署', en: 'Departments' },
+        table: { schema: 'sales', name: 'dept_mst' },
+        children: [],
+      },
       {
         label: { ja: '品目', en: 'Items' },
         table: null,
-        children: [{ label: { ja: '価格', en: 'Prices' }, table: 'price_mst', children: [] }],
+        children: [
+          {
+            label: { ja: '価格', en: 'Prices' },
+            table: { schema: 'sales', name: 'price_mst' },
+            children: [],
+          },
+        ],
       },
     ],
   },
-  { label: { ja: '', en: '' }, table: 'no_label', children: [] },
+  { label: { ja: '', en: '' }, table: { schema: 'sales', name: 'no_label' }, children: [] },
 ]
 
 describe('DslMenuTree', () => {
@@ -47,13 +57,13 @@ describe('DslMenuTree', () => {
       'aria-expanded',
       'true',
     )
-    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('部署（dept_mst）')
+    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('部署（sales.dept_mst）')
     expect(screen.getByRole('button', { name: '品目 を開く' })).toHaveAttribute(
       'aria-expanded',
       'false',
     )
     expect(screen.queryByText('価格')).not.toBeInTheDocument()
-    expect(screen.getByTestId('dsl-menu-node-1')).toHaveTextContent('—（no_label）')
+    expect(screen.getByTestId('dsl-menu-node-1')).toHaveTextContent('—（sales.no_label）')
   })
 
   it('opens and closes a deeper level with the keyboard', async () => {
@@ -62,7 +72,7 @@ describe('DslMenuTree', () => {
 
     screen.getByRole('button', { name: '品目 を開く' }).focus()
     await user.keyboard('{Enter}')
-    expect(screen.getByTestId('dsl-menu-node-0.1.0')).toHaveTextContent('価格（price_mst）')
+    expect(screen.getByTestId('dsl-menu-node-0.1.0')).toHaveTextContent('価格（sales.price_mst）')
 
     await user.click(screen.getByRole('button', { name: '基本マスタ を閉じる' }))
     expect(screen.queryByTestId('dsl-menu-node-0.0')).not.toBeInTheDocument()
@@ -72,17 +82,37 @@ describe('DslMenuTree', () => {
     renderDsl(<DslMenuTree nodes={tree} />, ['en'])
 
     expect(screen.getByRole('button', { name: 'Collapse Basic masters' })).toBeInTheDocument()
-    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('Departments（dept_mst）')
+    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent(
+      'Departments（sales.dept_mst）',
+    )
   })
 
   it('keeps a label that looks like HTML as text', () => {
     const nodes: MenuNode[] = [
-      { label: { ja: '<script>alert(1)</script>', en: 'x' }, table: 't', children: [] },
+      {
+        label: { ja: '<script>alert(1)</script>', en: 'x' },
+        table: { schema: 's', name: 't' },
+        children: [],
+      },
     ]
     const { container } = renderDsl(<DslMenuTree nodes={nodes} />)
 
     expect(screen.getByText('<script>alert(1)</script>')).toBeInTheDocument()
     expect(container.querySelector('script')).toBeNull()
+  })
+
+  it('shows the pair of schema and table names as text even with HTML-like characters', () => {
+    const nodes: MenuNode[] = [
+      {
+        label: { ja: 'X', en: 'X' },
+        table: { schema: `<b>"s"</b>`, name: `a&b'<i>` },
+        children: [],
+      },
+    ]
+    const { container } = renderDsl(<DslMenuTree nodes={nodes} />)
+
+    expect(screen.getByTestId('dsl-menu-node-0')).toHaveTextContent(`X（<b>"s"</b>.a&b'<i>）`)
+    expect(container.querySelector('b, i')).toBeNull()
   })
 
   it('tells that there is no menu', () => {

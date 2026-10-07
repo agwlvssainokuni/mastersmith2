@@ -62,7 +62,7 @@ class ActiveDslModelStoreTest {
         store.replace(M2);
 
         assertThat(taken).isEqualTo(new ActiveDsl.Present(M1, M1.dslHash()));
-        assertThat(((ActiveDsl.Present) taken).model().tables()).isEqualTo(M1.tables());
+        assertThat(((ActiveDsl.Present) taken).model().schemas()).isEqualTo(M1.schemas());
     }
 
     @Test

@@ -69,13 +69,13 @@ function fakeApi(overrides: Partial<DslApi> = {}) {
     ),
     downloadPreview: vi.fn<DslApi['downloadPreview']>(() =>
       Promise.resolve({
-        blob: new Blob(['version: 1\n']),
+        blob: new Blob(['version: 2\n']),
         fileName: 'dsl-preview-8b02d4000000.yaml',
       }),
     ),
     downloadApplied: vi.fn<DslApi['downloadApplied']>(() =>
       Promise.resolve({
-        blob: new Blob(['version: 1\n']),
+        blob: new Blob(['version: 2\n']),
         fileName: 'dsl-applied-3f9a1c000000.yaml',
       }),
     ),
@@ -143,7 +143,9 @@ describe('DslAdminPage', () => {
 
   it('guides to loading or submitting when nothing is applied and there is no preview', async () => {
     const api = fakeApi({
-      getStatus: vi.fn(() => Promise.resolve({ applied: null, preview: null })),
+      getStatus: vi.fn(() =>
+        Promise.resolve({ applied: null, preview: null, appliedUnreadable: false }),
+      ),
       getPreview: vi.fn(() => failure(404, { code: 'DSL_PREVIEW_NOT_FOUND' })),
     })
     const { user } = renderPage(api)
@@ -198,11 +200,11 @@ describe('DslAdminPage', () => {
 
     await user.click(screen.getByRole('tab', { name: '投入' }))
     await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
-    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 1')
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
     await user.click(screen.getByRole('button', { name: '投入する' }))
 
     expect(await screen.findByText('DSL をプレビューに置きました')).toBeInTheDocument()
-    expect(api.submitPreview).toHaveBeenCalledWith('version: 1', 'PASTE')
+    expect(api.submitPreview).toHaveBeenCalledWith('version: 2', 'PASTE')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('tab', { name: 'プレビュー' })).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByRole('heading', { name: 'プレビュー', level: 2 })).toHaveFocus()
@@ -217,13 +219,13 @@ describe('DslAdminPage', () => {
     await shown()
     await user.click(screen.getByRole('tab', { name: '投入' }))
     await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
-    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 1')
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
     await user.click(screen.getByRole('button', { name: '投入する' }))
 
     await user.click(await screen.findByRole('button', { name: 'やめる' }))
 
     expect(api.submitPreview).not.toHaveBeenCalled()
-    expect(screen.getByLabelText('DSL（YAML、10MB まで）')).toHaveValue('version: 1')
+    expect(screen.getByLabelText('DSL（YAML、10MB まで）')).toHaveValue('version: 2')
     expect(screen.getByRole('button', { name: '投入する' })).toHaveFocus()
   })
 
@@ -300,14 +302,14 @@ describe('DslAdminPage', () => {
     await shown()
     await user.click(screen.getByRole('tab', { name: '投入' }))
     await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
-    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 1')
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
     await user.click(screen.getByRole('button', { name: '投入する' }))
     await user.click(screen.getByRole('button', { name: '置き換える' }))
 
     expect(await screen.findByTestId('dsl-alert')).toHaveTextContent(
       'ほかの処理中です。少し待ってからやり直してください',
     )
-    expect(screen.getByLabelText('DSL（YAML、10MB まで）')).toHaveValue('version: 1')
+    expect(screen.getByLabelText('DSL（YAML、10MB まで）')).toHaveValue('version: 2')
     expect(api.getStatus).toHaveBeenCalledTimes(1)
     expect(api.getPreview).toHaveBeenCalledTimes(1)
   })
@@ -318,7 +320,7 @@ describe('DslAdminPage', () => {
 
     await user.click(screen.getByTestId('dsl-preview-apply'))
     expect(screen.getByTestId('dsl-confirm-diff')).toHaveTextContent(
-      'テーブル 増えた 1・減った 1・変わった 1カラム 増えた 2・減った 2・変わった 1',
+      'スキーマ 増えた 0・減った 0・変わった 0テーブル 増えた 1・減った 1・変わった 1カラム 増えた 2・減った 2・変わった 1',
     )
     expect(screen.getByTestId('dsl-confirm-warnings')).toHaveTextContent('2件')
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '適用する' }))
@@ -533,7 +535,7 @@ describe('DslAdminPage', () => {
 
     await user.click(screen.getByRole('tab', { name: '投入' }))
     await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
-    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 1')
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
     await user.click(screen.getByRole('button', { name: '投入する' }))
     expect(await screen.findByTestId('dsl-preview-table-count')).toHaveTextContent('テーブル 7')
 
@@ -649,7 +651,7 @@ describe('DslAdminPage', () => {
 
     expect(screen.getByRole('tab', { name: 'Preview' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Load schema' })).toBeInTheDocument()
-    expect(screen.getByTestId('dsl-diff-row-dept_mst')).toHaveTextContent('dept_mst')
+    expect(screen.getByTestId('dsl-diff-row-sales/dept_mst')).toHaveTextContent('dept_mst')
     expect(screen.getByTestId('dsl-status-preview')).toHaveTextContent('8b02d4000000…')
   })
 
@@ -658,5 +660,85 @@ describe('DslAdminPage', () => {
     await shown()
 
     expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('shows an unreadable stored preview with the errors and no apply, and discarding returns to no preview', async () => {
+    const api = fakeApi({
+      getPreview: vi.fn(() =>
+        failure(422, { code: 'DSL_INVALID', total: 1, errors: errorItems(1) }),
+      ),
+    })
+    const { user } = renderPage(api)
+
+    expect(await screen.findByTestId('dsl-preview-invalid')).toBeInTheDocument()
+    expect(screen.getByTestId('dsl-preview-invalid-errors')).toHaveTextContent('誤り 1')
+    expect(screen.queryByTestId('dsl-preview-apply')).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('dsl-preview-invalid-discard'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '破棄する' }))
+
+    await waitFor(() => expect(screen.getByTestId('dsl-preview-empty')).toBeInTheDocument())
+    expect(api.discardPreview).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('dsl-preview-invalid')).not.toBeInTheDocument()
+  })
+
+  it('turns the preview into an unreadable one when applying is 422 DSL_INVALID', async () => {
+    const api = fakeApi({
+      applyPreview: vi.fn(() =>
+        failure(422, { code: 'DSL_INVALID', total: 2, errors: errorItems(2) }),
+      ),
+    })
+    const { user } = renderPage(api)
+    await shown()
+
+    await user.click(screen.getByTestId('dsl-preview-apply'))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '適用する' }))
+
+    await waitFor(() => expect(screen.getByTestId('dsl-preview-invalid')).toBeInTheDocument())
+    expect(screen.getByTestId('dsl-preview-invalid-errors')).toHaveTextContent('誤り 2')
+    expect(screen.queryByTestId('dsl-preview-panel')).not.toBeInTheDocument()
+  })
+
+  it('clears the unreadable preview when a new submission succeeds', async () => {
+    const api = fakeApi({
+      getPreview: vi.fn(() =>
+        failure(422, { code: 'DSL_INVALID', total: 1, errors: errorItems(1) }),
+      ),
+    })
+    const { user } = renderPage(api)
+    await screen.findByTestId('dsl-preview-invalid')
+
+    await user.click(screen.getByRole('tab', { name: '投入' }))
+    await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
+    await user.click(screen.getByRole('button', { name: '投入する' }))
+    const dialog = await screen.findByRole('dialog')
+    await user.click(within(dialog).getByRole('button', { name: '置き換える' }))
+
+    await waitFor(() => expect(screen.getByTestId('dsl-preview-panel')).toBeInTheDocument())
+    expect(screen.queryByTestId('dsl-preview-invalid')).not.toBeInTheDocument()
+  })
+
+  it('passes the schema counts to the apply confirmation and does not count SCHEMA_MISMATCH as a mismatch', async () => {
+    const preview = previewOf({
+      diff: {
+        appliedExists: true,
+        schemas: [
+          { name: 'new', label: { ja: '新', en: 'New' }, change: 'ADDED', tables: [] },
+          { name: 'old', label: { ja: '旧', en: 'Old' }, change: 'REMOVED', tables: [] },
+        ],
+      },
+      warnings: [{ kind: 'SCHEMA_MISMATCH', path: 'schemas.new', message: '違う' }],
+    })
+    const api = fakeApi({ getPreview: vi.fn(() => Promise.resolve(preview)) })
+    const { user } = renderPage(api)
+    await shown()
+
+    await user.click(screen.getByTestId('dsl-preview-apply'))
+
+    expect(screen.getByTestId('dsl-confirm-schema-counts')).toHaveTextContent(
+      'スキーマ 増えた 1・減った 1・変わった 0',
+    )
+    expect(screen.getByTestId('dsl-confirm-warnings')).toHaveTextContent('ありません')
   })
 })

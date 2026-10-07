@@ -32,11 +32,20 @@ import java.util.Optional;
  * <p>文言の {@code {0}}・{@code {1}} … には、U2 が渡す埋める値（DSL の中の名前と、利用者が書いた値の先頭の一部）を順に埋める。
  * 部品の例外の文言は U2 が渡さないため、文言にも入らない。知らない鍵は、場所だけを示す汎用の文言にする（鍵の抜けは単体テストで
  * 止める）。
+ *
+ * <p>書式の版 2（U2 dsl-v2 の BR7.1）では、版の誤りの文言で、版 2（スキーマの階層あり）で書く必要と、既定の DSL を生成し直すと版 2
+ * で得られることを示す。書かれた版が 1 のときは、版 1 が使えないことをはっきり示す文言にする。
  */
 public final class DslErrorMessages {
 
     /** 知らない鍵の文言。 */
     static final LocalizedText UNKNOWN = new LocalizedText("DSL に誤りがあります。", "The DSL contains an error.");
+
+    /** 書かれた版が 1 のときの文言（BR7.1）。 */
+    static final LocalizedText VERSION_ONE = new LocalizedText(
+            "書式の版 1 は使えません。書式の版 2（スキーマの階層あり）で書いてください。既定の DSL を生成し直すと版 2 で得られます。",
+            "Format version 1 can no longer be used. Write the DSL in format version 2 (with the schema level). Generating"
+                    + " the default DSL again gives version 2.");
 
     private static final Map<String, LocalizedText> TEXTS = texts();
 
@@ -66,13 +75,15 @@ public final class DslErrorMessages {
         put(
                 texts,
                 DslMessageKeys.VERSION_MISSING,
-                "書式の版（version）がありません。対応する版は {0} です。",
-                "The format version (version) is missing. The supported version is {0}.");
+                "書式の版（version）がありません。書式の版 {0}（スキーマの階層あり）で書いてください。既定の DSL を生成し直すと版 {0} で得られます。",
+                "The format version (version) is missing. Write the DSL in format version {0} (with the schema level)."
+                        + " Generating the default DSL again gives version {0}.");
         put(
                 texts,
                 DslMessageKeys.VERSION_UNSUPPORTED,
-                "書式の版 {0} には対応していません。対応する版は {1} です。",
-                "The format version {0} is not supported. The supported version is {1}.");
+                "書式の版 {0} には対応していません。書式の版 {1}（スキーマの階層あり）で書いてください。既定の DSL を生成し直すと版 {1} で得られます。",
+                "The format version {0} is not supported. Write the DSL in format version {1} (with the schema level)."
+                        + " Generating the default DSL again gives version {1}.");
         put(texts, DslMessageKeys.YAML_ENCODING, "本文を UTF-8 として読めません。", "The DSL cannot be read as UTF-8.");
         put(
                 texts,
@@ -127,6 +138,16 @@ public final class DslErrorMessages {
                 DslMessageKeys.SEMANTIC_MENU_EMPTY,
                 "メニューの項目に、テーブルも子の項目もありません。",
                 "The menu item has neither a table nor child items.");
+        put(
+                texts,
+                DslMessageKeys.SEMANTIC_MENU_DEPTH,
+                "メニューの深さが上限（{0} 段）を超えています。",
+                "The menu depth exceeds the limit ({0} levels).");
+        put(
+                texts,
+                DslMessageKeys.SEMANTIC_SCHEMA_COUNT,
+                "スキーマはちょうど1つにしてください（書かれたスキーマの数: {0}）。",
+                "Write exactly one schema (number of schemas written: {0}).");
         put(
                 texts,
                 DslMessageKeys.SEMANTIC_UNKNOWN_TABLE,
@@ -197,6 +218,11 @@ public final class DslErrorMessages {
      * @return 文言
      */
     public static String message(DslError error, DisplayLanguage language) {
+        if (DslMessageKeys.VERSION_UNSUPPORTED.equals(error.messageKey())
+                && !error.messageArgs().isEmpty()
+                && "1".equals(error.messageArgs().getFirst())) {
+            return VERSION_ONE.in(language);
+        }
         String template = text(error.messageKey()).orElse(UNKNOWN).in(language);
         return DslReconciler.format(template, error.messageArgs().toArray(String[]::new));
     }

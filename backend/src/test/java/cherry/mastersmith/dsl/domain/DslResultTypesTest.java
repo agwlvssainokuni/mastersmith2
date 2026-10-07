@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +28,11 @@ import org.junit.jupiter.api.Test;
 class DslResultTypesTest {
 
     private static DslModel model() {
-        return new DslModel(DslModelTest.HASH, 1, List.of(), Map.of("dept", DslModelTest.table("dept", "code")));
+        return new DslModel(
+                DslModelTest.HASH,
+                2,
+                List.of(DslModelTest.schema("sales", DslModelTest.table("dept", "code"))),
+                List.of());
     }
 
     private static String describe(DslReadResult result) {
@@ -60,6 +63,21 @@ class DslResultTypesTest {
         DslReadResult.Invalid invalid = new DslReadResult.Invalid(errors);
         errors.clear();
         assertThat(invalid.errors()).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("startup read results are either valid with the pruned count or invalid with at least one error")
+    void startupReadResultVariants() {
+        DslError error =
+                new DslError(DslErrorKind.SEMANTIC, null, null, null, DslMessageKeys.SEMANTIC_MENU_EMPTY, List.of());
+
+        assertThat(new DslStartupReadResult.Valid(model(), 3).prunedMenuItems()).isEqualTo(3);
+        assertThat(new DslStartupReadResult.Invalid(List.of(error)).errors()).containsExactly(error);
+        assertThatThrownBy(() -> new DslStartupReadResult.Valid(model(), -1))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new DslStartupReadResult.Valid(null, 0)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new DslStartupReadResult.Invalid(List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -116,7 +134,10 @@ class DslResultTypesTest {
     @Test
     @DisplayName("the format constants hold the decided limits")
     void formatLimits() {
-        assertThat(DslFormat.CURRENT_VERSION).isEqualTo(1);
+        assertThat(DslFormat.CURRENT_VERSION).isEqualTo(2);
+        assertThat(DslFormat.MAX_MENU_DEPTH).isEqualTo(5);
+        assertThat(DslFormat.SCHEMA_RESOURCE).isEqualTo("dsl/dsl-schema-v2.json");
+        assertThat(DslFormat.SCHEMA_PUBLIC_PATH).isEqualTo("/dsl/dsl-schema-v2.json");
         assertThat(DslFormat.MAX_BYTES).isEqualTo(10_485_760);
         assertThat(DslFormat.MAX_DEPTH).isEqualTo(50);
         assertThat(DslFormat.MAX_COLLECTION_ALIASES).isEqualTo(100);

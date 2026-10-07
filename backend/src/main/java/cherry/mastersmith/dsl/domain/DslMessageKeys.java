@@ -88,11 +88,20 @@ public final class DslMessageKeys {
     /** そのほかの構文の誤り。埋める値: JSON Schema のキーワード。 */
     public static final String SYNTAX_INVALID = "dsl.syntax.invalid";
 
-    /** メニューが DSL に無いテーブルを指す（BR3.1）。埋める値: テーブルの名前（先頭 100 文字）。 */
+    /**
+     * メニューが DSL に無いテーブルを指す（BR3.1。書式の版 2 では組の指すスキーマかテーブルが無い、U2 dsl-v2 の BR1.6）。埋める値:
+     * テーブルの名前（先頭 100 文字。版 2 では {@code スキーマ名.テーブル名}）。
+     */
     public static final String SEMANTIC_MENU_UNKNOWN_TABLE = "dsl.semantic.menu.unknownTable";
 
     /** メニューの項目がテーブルも子も持たない（BR3.2）。埋める値: なし。 */
     public static final String SEMANTIC_MENU_EMPTY = "dsl.semantic.menu.empty";
+
+    /** メニューの深さが上限を超えた（U2 dsl-v2 の BR2.1。上限を超えた最初の段の項目ごと）。埋める値: 上限の段の数。 */
+    public static final String SEMANTIC_MENU_DEPTH = "dsl.semantic.menu.depth";
+
+    /** スキーマがちょうど1つでない（U2 dsl-v2 の BR1.3）。埋める値: 書かれたスキーマの数。 */
+    public static final String SEMANTIC_SCHEMA_COUNT = "dsl.semantic.schema.count";
 
     /** 主キー・外部キー・参照の先のテーブルが DSL に無い（BR3.3）。埋める値: テーブルの名前（先頭 100 文字）。 */
     public static final String SEMANTIC_UNKNOWN_TABLE = "dsl.semantic.reference.unknownTable";
@@ -146,6 +155,8 @@ public final class DslMessageKeys {
             SYNTAX_INVALID,
             SEMANTIC_MENU_UNKNOWN_TABLE,
             SEMANTIC_MENU_EMPTY,
+            SEMANTIC_MENU_DEPTH,
+            SEMANTIC_SCHEMA_COUNT,
             SEMANTIC_UNKNOWN_TABLE,
             SEMANTIC_UNKNOWN_COLUMN,
             SEMANTIC_DUPLICATE_ORDER,

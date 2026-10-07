@@ -35,6 +35,7 @@ import cherry.mastersmith.dsl.domain.ListFormat;
 import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import cherry.mastersmith.dsl.domain.SearchOperator;
 import cherry.mastersmith.dsl.domain.SortDirection;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dsl.domain.Validation;
 import cherry.mastersmith.dsl.domain.ValidationOrigin;
 import cherry.mastersmith.dsl.domain.ValidationType;
@@ -96,12 +97,12 @@ class DslTreeBuilderTest {
 
         assertThat(new String(yaml, StandardCharsets.UTF_8)).isEqualTo(GenerateTestSupport.expected("dept_mst.yaml"));
         assertThat(new String(yaml, StandardCharsets.UTF_8))
-                .startsWith(DslYamlWriter.HEADER_COMMENT + "\nversion: 1\n")
+                .startsWith(DslYamlWriter.HEADER_COMMENT + "\nversion: 2\n")
                 .doesNotContain("\r")
                 .doesNotContain("!!")
                 .doesNotContain("&id")
                 .doesNotContain("*id");
-        DslTable dept = valid(READER, yaml).tables().get("dept_mst");
+        DslTable dept = valid(READER, yaml).schema().tables().get("dept_mst");
         assertThat(dept.primaryKey()).containsExactly("dept_code");
         assertThat(dept.columns().keySet()).containsExactly("dept_code", "note");
     }
@@ -117,7 +118,7 @@ class DslTreeBuilderTest {
                 notNull("code", VARCHAR_50),
                 new TargetColumn("name", VARCHAR_50, true, null, "氏名"))));
 
-        DslTable emp = model.tables().get("emp");
+        DslTable emp = model.schema().tables().get("emp");
         assertThat(emp.label()).isEqualTo(new cherry.mastersmith.dsl.domain.DisplayName("emp", "emp"));
         assertThat(emp.columns().get("name").label())
                 .isEqualTo(new cherry.mastersmith.dsl.domain.DisplayName("氏名", "name"));
@@ -141,7 +142,7 @@ class DslTreeBuilderTest {
                 new TargetColumn("b", INT, true, null, longComment),
                 new TargetColumn("c", INT, true, null, "\u0007\u001B"))));
 
-        DslTable table = model.tables().get("t\u0001");
+        DslTable table = model.schema().tables().get("t\u0001");
         assertThat(table.label().ja()).isEqualTo("表のコメント");
         assertThat(table.label().en()).as("物理名は変えない").isEqualTo("t\u0001");
         assertThat(table.columns().get("a").label().ja()).isEqualTo("1行目\n2行目\tタブ");
@@ -168,7 +169,7 @@ class DslTreeBuilderTest {
                 notNull("qty", INT),
                 nullable("huge", new TargetDbType("longtext", 4_294_967_295L, null, null, "longtext")))));
 
-        DslTable item = model.tables().get("item");
+        DslTable item = model.schema().tables().get("item");
         assertThat(item.columns().get("name").validations())
                 .containsExactly(
                         new Validation(ValidationType.REQUIRED, null, null, ValidationOrigin.DB, null),
@@ -199,8 +200,10 @@ class DslTreeBuilderTest {
                 table("a_table", null, List.of(), List.of(), nullable("x", INT)),
                 table("A_table", null, List.of(), List.of(), nullable("x", INT))));
 
-        assertThat(model.menus()).extracting(DslMenuItem::table).containsExactly("A_table", "a_table", "B", "b_table");
-        assertThat(model.tables().keySet()).containsExactly("A_table", "a_table", "B", "b_table");
+        assertThat(model.menus())
+                .extracting(item -> item.table().name())
+                .containsExactly("A_table", "a_table", "B", "b_table");
+        assertThat(model.schema().tables().keySet()).containsExactly("A_table", "a_table", "B", "b_table");
         assertThat(DslTreeBuilder.NAME_ORDER.compare("b_table", "a_table")).isPositive();
         assertThat(DslTreeBuilder.NAME_ORDER.compare("a", "a")).isZero();
         assertThat(DslTreeBuilder.NAME_ORDER.compare("😀", "ａ"))
@@ -220,7 +223,7 @@ class DslTreeBuilderTest {
                 List.of(new TargetForeignKey("fk", List.of("id"), "emp", List.of("id"))));
         DslModel model = model(schema(view, table("emp", null, List.of("id"), List.of(), notNull("id", INT))));
 
-        DslTable table = model.tables().get("v_emp");
+        DslTable table = model.schema().tables().get("v_emp");
         assertThat(table.view()).isTrue();
         assertThat(table.primaryKey()).isEmpty();
         assertThat(table.foreignKeys()).isEmpty();
@@ -251,7 +254,7 @@ class DslTreeBuilderTest {
                 nullable("hidden_col", INT));
         DslModel model = model(schema(emp, dept));
 
-        DslTable table = model.tables().get("emp");
+        DslTable table = model.schema().tables().get("emp");
         DslColumn deptCode = table.columns().get("dept_code");
         assertThat(deptCode.formPart()).isEqualTo(FormPart.SELECT);
         assertThat(deptCode.search().operator()).isEqualTo(SearchOperator.CHOICE);
@@ -291,7 +294,7 @@ class DslTreeBuilderTest {
                 nullable("hm", new TargetDbType("time", null, null, null)),
                 nullable("name", VARCHAR_50))));
 
-        DslTable t = model.tables().get("t");
+        DslTable t = model.schema().tables().get("t");
         DslColumn id = t.columns().get("id");
         assertThat(id.search().operator()).as("主キーは EQUALS").isEqualTo(SearchOperator.EQUALS);
         assertThat(id.list().order()).isEqualTo(1);
@@ -338,12 +341,24 @@ class DslTreeBuilderTest {
                 table("no_key", null, List.of(), List.of(), notNull("id", INT)),
                 table("text_key", null, List.of("body", "id"), List.of(), notNull("body", TEXT), notNull("id", INT))));
 
-        assertThat(model.tables().get("no_key").columns().get("id").list().defaultSort())
+        assertThat(model.schema()
+                        .tables()
+                        .get("no_key")
+                        .columns()
+                        .get("id")
+                        .list()
+                        .defaultSort())
                 .isNull();
-        assertThat(model.tables().get("text_key").columns().values())
+        assertThat(model.schema().tables().get("text_key").columns().values())
                 .extracting(column -> column.list().defaultSort())
                 .containsOnlyNulls();
-        assertThat(model.tables().get("text_key").columns().get("body").search().operator())
+        assertThat(model.schema()
+                        .tables()
+                        .get("text_key")
+                        .columns()
+                        .get("body")
+                        .search()
+                        .operator())
                 .isEqualTo(SearchOperator.EQUALS);
     }
 
@@ -359,13 +374,19 @@ class DslTreeBuilderTest {
                 notNull("body", new TargetDbType("json", null, null, null, "json")),
                 nullable("title", VARCHAR_50))));
 
-        DslColumn body = model.tables().get("doc").columns().get("body");
-        assertThat(model.tables().get("doc").primaryKey()).containsExactly("body");
+        DslColumn body = model.schema().tables().get("doc").columns().get("body");
+        assertThat(model.schema().tables().get("doc").primaryKey()).containsExactly("body");
         assertThat(body.search().enabled()).isFalse();
         assertThat(body.search().operator()).isNull();
         assertThat(body.list().visible()).isFalse();
         assertThat(body.list().defaultSort()).isNull();
-        assertThat(model.tables().get("doc").columns().get("title").search().operator())
+        assertThat(model.schema()
+                        .tables()
+                        .get("doc")
+                        .columns()
+                        .get("title")
+                        .search()
+                        .operator())
                 .isEqualTo(SearchOperator.CONTAINS);
     }
 
@@ -380,7 +401,7 @@ class DslTreeBuilderTest {
                 .toArray(TargetColumn[]::new);
         byte[] yaml = generate(schema(table("!!python/object", "#", List.of(), List.of(), columns)));
 
-        DslTable table = valid(READER, yaml).tables().get("!!python/object");
+        DslTable table = valid(READER, yaml).schema().tables().get("!!python/object");
         assertThat(table.label().ja()).isEqualTo("#");
         assertThat(table.columns().keySet()).containsExactlyElementsOf(names);
         for (String name : names) {
@@ -389,9 +410,9 @@ class DslTreeBuilderTest {
     }
 
     @Test
-    @DisplayName("no value outside the schema copy such as the schema name or connection settings is written")
-    void nothingOutsideTheCopy() {
-        String schemaName = "schema_name_not_in_dsl";
+    @DisplayName("the schema name of the copy is written while connection settings outside the copy are not")
+    void schemaNameButNoConnectionSettings() {
+        String schemaName = "schema_name_in_dsl";
         TargetSchema schema = new TargetSchema(
                 DatabaseProduct.POSTGRESQL,
                 schemaName,
@@ -400,7 +421,7 @@ class DslTreeBuilderTest {
         String yaml = new String(generate(schema), StandardCharsets.UTF_8);
 
         assertThat(yaml)
-                .doesNotContain(schemaName)
+                .contains("schemas:\n  " + schemaName + ":\n")
                 .doesNotContainIgnoringCase("jdbc:")
                 .doesNotContainIgnoringCase("password")
                 .doesNotContainIgnoringCase("user")
@@ -409,14 +430,48 @@ class DslTreeBuilderTest {
     }
 
     @Test
-    @DisplayName("a schema without tables gives empty menus and tables that pass the validation")
+    @DisplayName("a schema without tables gives empty menus and a schema with no tables that pass the validation")
     void emptySchema() {
         byte[] yaml = generate(schema());
 
         assertThat(new String(yaml, StandardCharsets.UTF_8))
-                .isEqualTo(DslYamlWriter.HEADER_COMMENT + "\nversion: 1\nmenus: []\ntables: {}\n");
+                .isEqualTo(DslYamlWriter.HEADER_COMMENT
+                        + "\nversion: 2\nmenus: []\nschemas:\n  sales:\n    label:\n      ja: sales\n      en: sales\n"
+                        + "    tables: {}\n");
         DslModel model = valid(READER, yaml);
         assertThat(model.menus()).isEmpty();
-        assertThat(model.tables()).isEmpty();
+        assertThat(model.schema().tables()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("version 2 has one schema named after the copy with the name as both labels, and flat menus pointing"
+            + " to the pairs")
+    void versionTwoShape() {
+        DslModel model = model(schema(
+                table("b_table", null, List.of("id"), List.of(), notNull("id", INT)),
+                table("a_table", null, List.of("id"), List.of(), notNull("id", INT))));
+
+        assertThat(model.formatVersion()).isEqualTo(2);
+        assertThat(model.schemas()).singleElement().satisfies(schema -> {
+            assertThat(schema.name()).isEqualTo("sales");
+            assertThat(schema.label()).isEqualTo(new cherry.mastersmith.dsl.domain.DisplayName("sales", "sales"));
+            assertThat(schema.tables().keySet()).containsExactly("a_table", "b_table");
+        });
+        assertThat(model.menus())
+                .extracting(DslMenuItem::table)
+                .containsExactly(new TableRef("sales", "a_table"), new TableRef("sales", "b_table"));
+        assertThat(model.menus()).allSatisfy(item -> assertThat(item.items()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("the schema name keeps the case returned by the database")
+    void schemaNameKeepsCase() {
+        DslModel model = model(new TargetSchema(
+                DatabaseProduct.POSTGRESQL,
+                "Sales_DB",
+                List.of(table("emp", null, List.of("id"), List.of(), notNull("id", INT)))));
+
+        assertThat(model.schema().name()).isEqualTo("Sales_DB");
+        assertThat(model.findTable(new TableRef("Sales_DB", "emp"))).isPresent();
     }
 }

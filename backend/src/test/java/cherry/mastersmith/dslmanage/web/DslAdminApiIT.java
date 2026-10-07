@@ -150,7 +150,10 @@ class DslAdminApiIT {
         HttpResponse<String> history = api.get("/history");
 
         assertThat(status.statusCode()).isEqualTo(200);
-        assertThat(DslApi.json(status)).containsEntry("applied", null).containsEntry("preview", null);
+        assertThat(DslApi.json(status))
+                .containsEntry("applied", null)
+                .containsEntry("preview", null)
+                .containsEntry("appliedUnreadable", false);
         assertThat(history.statusCode()).isEqualTo(200);
         assertThat(DslApi.jsonList(history)).isEmpty();
     }
@@ -189,11 +192,20 @@ class DslAdminApiIT {
                 .containsKeys("previewId", "at");
         assertThat(map(preview.get("by"))).containsEntry("email", admin.email());
         assertThat(map(preview.get("summary")))
+                .containsEntry("schemaCount", 1)
                 .containsEntry("tableCount", 1)
                 .containsEntry("columnCount", 2)
                 .containsEntry("missingDisplayNameTotal", 0);
         assertThat(map(preview.get("diff"))).containsEntry("appliedExists", false);
-        assertThat(list(map(preview.get("diff")).get("tables")).getFirst()).containsEntry("change", "ADDED");
+        Map<String, Object> schemaDiff =
+                list(map(preview.get("diff")).get("schemas")).getFirst();
+        assertThat(schemaDiff).containsEntry("name", DslYaml.DEFAULT_SCHEMA).containsEntry("change", "ADDED");
+        assertThat(list(schemaDiff.get("tables")).getFirst()).containsEntry("change", "ADDED");
+        assertThat(map(list(map(preview.get("summary")).get("menuTree"))
+                        .getFirst()
+                        .get("table")))
+                .containsEntry("schema", DslYaml.DEFAULT_SCHEMA)
+                .containsEntry("name", "dept");
         assertThat(list(preview.get("warnings")))
                 .singleElement()
                 .satisfies(warning -> assertThat(warning)
@@ -219,7 +231,7 @@ class DslAdminApiIT {
         byte[] invalid = DslYaml.dsl()
                 .table("t", column("c"))
                 .yaml()
-                .replace("formPart: text", "formPart: text\n        jdbcUrl: 1")
+                .replace("formPart: text", "formPart: text\n            jdbcUrl: 1")
                 .getBytes(StandardCharsets.UTF_8);
 
         HttpResponse<String> en = api.withLanguage("en").submit(invalid, "PASTE");
@@ -260,7 +272,7 @@ class DslAdminApiIT {
         byte[] invalid = DslYaml.dsl()
                 .table("t", columns)
                 .yaml()
-                .replace("formPart: text", "formPart: text\n        extra: 1")
+                .replace("formPart: text", "formPart: text\n            extra: 1")
                 .getBytes(StandardCharsets.UTF_8);
 
         Map<String, Object> problem = DslApi.json(api.submit(invalid, "PASTE"));
@@ -366,7 +378,7 @@ class DslAdminApiIT {
         assertThat(activeDslModelProvider.current())
                 .isInstanceOfSatisfying(
                         ActiveDsl.Present.class,
-                        present -> assertThat(present.model().tables()).containsOnlyKeys("b"));
+                        present -> assertThat(present.model().schema().tables()).containsOnlyKeys("b"));
         assertThat(DslApi.jsonList(api.get("/history")))
                 .singleElement()
                 .satisfies(entry -> assertThat(entry).containsEntry("current", true));
@@ -431,7 +443,7 @@ class DslAdminApiIT {
             ILoggingEvent warn = errors.list().getFirst();
             assertThat(warn.getLevel()).isEqualTo(Level.WARN);
             assertThat(warn.getThrowableProxy()).isNull();
-            assertThat(operations.list().toString()).doesNotContain("code:").doesNotContain("version: 1");
+            assertThat(operations.list().toString()).doesNotContain("code:").doesNotContain("version: 2");
         }
     }
 
@@ -470,7 +482,7 @@ class DslAdminApiIT {
                 .containsKeys("summary", "diff", "warnings");
         assertThat(preview.get("previewId")).as("今のプレビューを置き換える").isNotEqualTo(existing);
         assertThat(map(preview.get("by"))).containsEntry("email", admin.email());
-        assertThat(list(map(preview.get("diff")).get("tables")))
+        assertThat(list(list(map(preview.get("diff")).get("schemas")).getFirst().get("tables")))
                 .extracting(table -> table.get("name") + " " + table.get("change"))
                 .contains("a ADDED", "c REMOVED");
         assertThat(map(DslApi.json(api.get("/status")).get("preview"))).containsEntry("source", "RESTORE");
@@ -492,7 +504,7 @@ class DslAdminApiIT {
         assertThat(activeDslModelProvider.current())
                 .isInstanceOfSatisfying(
                         ActiveDsl.Present.class,
-                        present -> assertThat(present.model().tables()).containsOnlyKeys("a"));
+                        present -> assertThat(present.model().schema().tables()).containsOnlyKeys("a"));
         assertThat(DslApi.jsonList(api.get("/history")).getFirst())
                 .containsEntry("dslHash", hashA)
                 .containsEntry("current", true);
@@ -521,7 +533,7 @@ class DslAdminApiIT {
             + " preview and records no rejection")
     void restoreNoLongerValid() {
         String previewId = api.submitOk(sample("keep"));
-        byte[] old = "version: 2\ntables: {}\n".getBytes(StandardCharsets.UTF_8);
+        byte[] old = DslYaml.VERSION_ONE_YAML.getBytes(StandardCharsets.UTF_8);
         String revisionId = "33333333-3333-3333-3333-333333333333";
         jdbc.update(
                 "INSERT INTO dsl_applied_revisions"
@@ -549,6 +561,8 @@ class DslAdminApiIT {
                 .doesNotContain("Exception")
                 .doesNotContain("snakeyaml")
                 .doesNotContain("networknt");
+        assertThat((String) list(problem.get("errors")).getFirst().get("message"))
+                .contains("version 1");
         assertThat(DslApi.json(api.get("/preview"))).containsEntry("previewId", previewId);
         assertThat(audit.count()).as("受け付けなかった投入の出来事を出さない").isEqualTo(auditBefore);
     }
@@ -611,5 +625,165 @@ class DslAdminApiIT {
         assertThat(DslApi.json(response)).containsEntry("code", "TARGET_DB_UNCONFIGURED");
         assertThat(DslApi.json(api.get("/preview"))).containsEntry("previewId", previewId);
         assertThat(audit.dslRows()).hasSize(auditBefore);
+    }
+
+    // ---- 書式の版 2（Intent 261004-role-menu の U2 dsl-v2）----
+
+    /** 内部DB の DSL の状態（適用中・プレビュー・履歴）を読み直した写し（拒否の後に変わらないことを確かめる。NFR3.3）。 */
+    private List<Map<String, Object>> storedState() {
+        return jdbc.queryForList("SELECT 'P' AS kind, preview_id AS id, dsl_hash FROM dsl_previews"
+                + " UNION ALL SELECT 'R' AS kind, revision_id AS id, dsl_hash FROM dsl_applied_revisions"
+                + " ORDER BY kind, id");
+    }
+
+    private void insertPreview(String previewId, byte[] body) {
+        jdbc.update(
+                "INSERT INTO dsl_previews (preview_slot, preview_id, yaml_bytes, dsl_hash, source, placed_by_user_id,"
+                        + " placed_at) VALUES (1, ?, ?, ?, 'UPLOAD', ?, ?)",
+                java.util.UUID.fromString(previewId),
+                body,
+                dslReader.hash(body),
+                admin.userId(),
+                java.time.OffsetDateTime.parse("2026-01-01T00:00:00Z"));
+    }
+
+    private void insertRevision(String revisionId, byte[] body) {
+        jdbc.update(
+                "INSERT INTO dsl_applied_revisions"
+                        + " (revision_id, yaml_bytes, dsl_hash, source, applied_by_user_id, applied_at)"
+                        + " VALUES (?, ?, ?, 'UPLOAD', ?, ?)",
+                java.util.UUID.fromString(revisionId),
+                body,
+                dslReader.hash(body),
+                admin.userId(),
+                java.time.OffsetDateTime.parse("2026-01-01T00:00:00Z"));
+    }
+
+    private static byte[] twoSchemas() {
+        return (new String(sample("t"), StandardCharsets.UTF_8)
+                        + "  hr:\n    label: { ja: 人事, en: HR }\n    tables: {}\n")
+                .getBytes(StandardCharsets.UTF_8);
+    }
+
+    static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> rejectedVersionTwoBodies() {
+        return java.util.stream.Stream.of(
+                org.junit.jupiter.params.provider.Arguments.of(
+                        "version 1", DslYaml.VERSION_ONE_YAML.getBytes(StandardCharsets.UTF_8), "UNSUPPORTED_VERSION"),
+                org.junit.jupiter.params.provider.Arguments.of(
+                        "menu depth 6",
+                        DslYaml.dsl().table("t", column("c")).deepMenu(6, "t").bytes(),
+                        "SEMANTIC"),
+                org.junit.jupiter.params.provider.Arguments.of(
+                        "no schema",
+                        "version: 2\nmenus: []\nschemas: {}\n".getBytes(StandardCharsets.UTF_8),
+                        "SEMANTIC"),
+                org.junit.jupiter.params.provider.Arguments.of("two schemas", twoSchemas(), "SEMANTIC"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.MethodSource("rejectedVersionTwoBodies")
+    @DisplayName("submitting and restoring a body against the version 2 rules is 422 without component text, and the"
+            + " applied DSL, the preview and the history stay the same")
+    void versionTwoRulesRejectSubmitAndRestore(String label, byte[] body, String kind) {
+        api.apply(api.submitOk(sample("applied")));
+        String previewId = api.submitOk(sample("keep"));
+        String revisionId = "44444444-4444-4444-4444-444444444444";
+        insertRevision(revisionId, body);
+        List<Map<String, Object>> before = storedState();
+
+        HttpResponse<String> submitted = api.submit(body, "PASTE");
+        HttpResponse<String> restored = api.restore(revisionId);
+
+        for (HttpResponse<String> response : List.of(submitted, restored)) {
+            assertThat(response.statusCode()).isEqualTo(422);
+            Map<String, Object> problem = DslApi.json(response);
+            assertThat(problem).containsEntry("code", "DSL_INVALID");
+            assertThat(list(problem.get("errors")))
+                    .first()
+                    .satisfies(error -> assertThat(error).containsEntry("kind", kind));
+            assertThat(response.body())
+                    .doesNotContain("Exception")
+                    .doesNotContain("snakeyaml")
+                    .doesNotContain("networknt")
+                    .doesNotContain("org.");
+        }
+        assertThat(storedState()).isEqualTo(before);
+        assertThat(DslApi.json(api.get("/preview"))).containsEntry("previewId", previewId);
+        assertThat(activeDslModelProvider.current())
+                .isInstanceOfSatisfying(
+                        ActiveDsl.Present.class,
+                        present -> assertThat(present.model().schema().tables()).containsOnlyKeys("applied"));
+    }
+
+    @Test
+    @DisplayName("a menu of depth 6 is reported at the sixth level with the limit, and depth 5 is accepted")
+    void menuDepthBoundaryOverHttp() {
+        byte[] five = DslYaml.dsl().table("t", column("c")).deepMenu(5, "t").bytes();
+        byte[] six = DslYaml.dsl().table("t", column("c")).deepMenu(6, "t").bytes();
+
+        HttpResponse<String> accepted = api.submit(five, "PASTE");
+        HttpResponse<String> rejected = api.withLanguage("en").submit(six, "PASTE");
+
+        assertThat(accepted.statusCode()).isEqualTo(201);
+        assertThat(rejected.statusCode()).isEqualTo(422);
+        assertThat(list(DslApi.json(rejected).get("errors")))
+                .singleElement()
+                .satisfies(error -> assertThat(error)
+                        .containsEntry("kind", "SEMANTIC")
+                        .containsEntry("path", "menus.0.items.0.items.0.items.0.items.0.items.0")
+                        .containsEntry("message", "The menu depth exceeds the limit (5 levels).")
+                        .containsKeys("line", "column"));
+    }
+
+    @Test
+    @DisplayName("an unreadable stored preview is 422 when shown or applied, 409 comes first for another previewId,"
+            + " and nothing in the internal database changes")
+    void unreadablePreviewShowAndApply() {
+        api.apply(api.submitOk(sample("applied")));
+        jdbc.update("DELETE FROM dsl_previews");
+        String previewId = "55555555-5555-5555-5555-555555555555";
+        insertPreview(previewId, DslYaml.VERSION_ONE_YAML.getBytes(StandardCharsets.UTF_8));
+        List<Map<String, Object>> before = storedState();
+
+        HttpResponse<String> shown = api.get("/preview");
+        HttpResponse<String> applied = api.apply(previewId);
+        HttpResponse<String> other = api.apply("66666666-6666-6666-6666-666666666666");
+
+        assertThat(shown.statusCode()).isEqualTo(422);
+        assertThat(DslApi.json(shown)).containsEntry("code", "DSL_INVALID");
+        assertThat(list(DslApi.json(shown).get("errors")))
+                .singleElement()
+                .satisfies(error -> assertThat(error).containsEntry("kind", "UNSUPPORTED_VERSION"));
+        assertThat(applied.statusCode()).isEqualTo(422);
+        assertThat(DslApi.json(applied)).containsEntry("code", "DSL_INVALID");
+        assertThat(other.statusCode()).isEqualTo(409);
+        assertThat(DslApi.json(other)).containsEntry("code", "DSL_PREVIEW_CHANGED");
+        assertThat(storedState())
+                .as("the preview row stays and nothing is applied")
+                .isEqualTo(before);
+        assertThat(activeDslModelProvider.current())
+                .isInstanceOfSatisfying(
+                        ActiveDsl.Present.class,
+                        present -> assertThat(present.model().schema().tables()).containsOnlyKeys("applied"));
+        assertThat(api.discard().statusCode()).isEqualTo(204);
+        assertThat(api.get("/preview").statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    @DisplayName("downloads of an applied DSL of version 1 and of a too deep preview return the stored bytes as they"
+            + " are")
+    void downloadsReturnStoredBytes() {
+        byte[] versionOne = DslYaml.VERSION_ONE_YAML.getBytes(StandardCharsets.UTF_8);
+        byte[] tooDeep = DslYaml.dsl().table("t", column("c")).deepMenu(6, "t").bytes();
+        insertRevision("77777777-7777-7777-7777-777777777777", versionOne);
+        insertPreview("88888888-8888-8888-8888-888888888888", tooDeep);
+
+        HttpResponse<byte[]> appliedDownload = api.getBytes("/applied/download");
+        HttpResponse<byte[]> previewDownload = api.getBytes("/preview/download");
+
+        assertThat(appliedDownload.statusCode()).isEqualTo(200);
+        assertThat(appliedDownload.body()).isEqualTo(versionOne);
+        assertThat(previewDownload.statusCode()).isEqualTo(200);
+        assertThat(previewDownload.body()).isEqualTo(tooDeep);
     }
 }

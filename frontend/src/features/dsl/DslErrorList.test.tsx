@@ -16,6 +16,7 @@
 //
 // 誤りの一覧のテスト（BR5.1〜BR5.4、NFR1.21・NFR3.9・NFR9.1・NFR10.1、AC2.2.9）。
 import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { DslErrorReport } from './api/types'
@@ -131,6 +132,64 @@ describe('DslErrorList', () => {
     expect(screen.getByTestId('dsl-error-list-rest')).toHaveTextContent(
       'Showing the first 100 (50 more).',
     )
+  })
+
+  it('lets the keyboard reach the table region, which has a name, so that a wide table can be scrolled', async () => {
+    const user = userEvent.setup()
+    renderDsl(<DslErrorList report={errorReport(2)} />)
+
+    const region = screen.getByRole('region', { name: '誤りの一覧の表（横に動かして読めます）' })
+    expect(region).toHaveAttribute('tabindex', '0')
+    expect(region).toBe(screen.getByTestId('dsl-error-list-table-region'))
+    expect(within(region).getByRole('table', { name: 'DSL の誤りの一覧' })).toBeInTheDocument()
+
+    await user.tab()
+    expect(region).toHaveFocus()
+  })
+
+  it('names the table region in English', () => {
+    renderDsl(<DslErrorList report={errorReport(2)} />, ['en-US'])
+
+    expect(
+      screen.getByRole('region', { name: 'Table of errors (scroll sideways to read)' }),
+    ).toBeInTheDocument()
+  })
+
+  it('has no table region when only a single reason is shown', () => {
+    renderDsl(
+      <DslErrorList
+        report={{
+          total: 1,
+          errors: [
+            { kind: 'SIZE_LIMIT', line: null, column: null, path: null, message: '大きすぎます' },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.queryByTestId('dsl-error-list-table-region')).not.toBeInTheDocument()
+  })
+
+  it('has no accessibility violations with a long place in the table region', async () => {
+    const { container } = renderDsl(
+      <DslErrorList
+        report={{
+          total: 2,
+          errors: [
+            ...errorReport(1).errors,
+            {
+              kind: 'SEMANTIC',
+              line: 12,
+              column: 23,
+              path: 'menus.0.items.0.items.0.items.0.items.0.items.0',
+              message: 'メニューの深さが上限（5 段）を超えています。',
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 
   it('has no accessibility violations', async () => {

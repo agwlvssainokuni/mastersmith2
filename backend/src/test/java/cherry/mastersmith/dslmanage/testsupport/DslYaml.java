@@ -30,14 +30,27 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * U4 のテストで使う小さな DSL（YAML の本文）を組み立てる補助。U2 の検証を通る形だけを作る。
+ * U4 のテストで使う小さな DSL（YAML の本文）を組み立てる補助。U2 の検証を通る形だけを作る（書式の版 2。スキーマは1つで、名前の
+ * 既定は {@link #DEFAULT_SCHEMA}）。
  *
  * <p>{@code DslYaml.dsl().menu("部署", "Departments", "dept").table("dept", DslYaml.column("code")).bytes()} の形で使う。
  * 大きなファイルをリポジトリに置かないため、101 件以上の表示名の未設定なども、ここで組み立てる。
  */
 public final class DslYaml {
 
+    /** スキーマ名の既定。 */
+    public static final String DEFAULT_SCHEMA = "public";
+
+    /** 版 1 の DSL（今の書式で読めない本文。版を上げる前に置かれたプレビュー・適用中の DSL の見本）。 */
+    public static final String VERSION_ONE_YAML = "version: 1\nmenus: []\ntables: {}\n";
+
     private final List<String> menus = new ArrayList<>();
+
+    private String schemaName = DEFAULT_SCHEMA;
+
+    private String schemaJa = DEFAULT_SCHEMA;
+
+    private String schemaEn = DEFAULT_SCHEMA;
 
     private final Map<String, String> tables = new LinkedHashMap<>();
 
@@ -53,7 +66,22 @@ public final class DslYaml {
     }
 
     /**
-     * 最上位のメニューの項目（テーブルに紐付く）を足す。
+     * スキーマの名前と表示名を変える（メニューの組もこの名前で書く）。
+     *
+     * @param name スキーマ名
+     * @param ja 表示名（日本語）
+     * @param en 表示名（英語）
+     * @return この組み立て
+     */
+    public DslYaml schema(String name, String ja, String en) {
+        this.schemaName = name;
+        this.schemaJa = ja;
+        this.schemaEn = en;
+        return this;
+    }
+
+    /**
+     * 最上位のメニューの項目（このスキーマのテーブルに紐付く）を足す。
      *
      * @param ja 表示名（日本語）
      * @param en 表示名（英語）
@@ -61,7 +89,40 @@ public final class DslYaml {
      * @return この組み立て
      */
     public DslYaml menu(String ja, String en, String table) {
-        menus.add("  - label: { ja: " + quote(ja) + ", en: " + quote(en) + " }\n    table: " + table + "\n");
+        menus.add("  - label: { ja: " + quote(ja) + ", en: " + quote(en) + " }\n    table: { schema: "
+                + quote(schemaName) + ", name: " + quote(table) + " }\n");
+        return this;
+    }
+
+    /**
+     * 深さ depth の1本の枝のメニュー（最も深い項目だけがテーブルに紐付く）を足す。
+     *
+     * @param depth 深さ（1 以上）
+     * @param table 紐付くテーブル
+     * @return この組み立て
+     */
+    public DslYaml deepMenu(int depth, String table) {
+        StringBuilder yaml = new StringBuilder();
+        for (int level = 1; level <= depth; level++) {
+            String indent = "    ".repeat(level - 1);
+            yaml.append(indent)
+                    .append("  - label: { ja: 段")
+                    .append(level)
+                    .append(", en: level")
+                    .append(level)
+                    .append(" }\n");
+            if (level == depth) {
+                yaml.append(indent)
+                        .append("    table: { schema: ")
+                        .append(quote(schemaName))
+                        .append(", name: ")
+                        .append(quote(table))
+                        .append(" }\n");
+            } else {
+                yaml.append(indent).append("    items:\n");
+            }
+        }
+        menus.add(yaml.toString());
         return this;
     }
 
@@ -88,14 +149,14 @@ public final class DslYaml {
      */
     public DslYaml table(String name, String ja, String en, boolean view, Column... columns) {
         StringBuilder yaml = new StringBuilder();
-        yaml.append("  ").append(name).append(":\n");
-        yaml.append("    label: { ja: ")
+        yaml.append("      ").append(name).append(":\n");
+        yaml.append("        label: { ja: ")
                 .append(quote(ja))
                 .append(", en: ")
                 .append(quote(en))
                 .append(" }\n");
-        yaml.append("    view: ").append(view).append("\n");
-        yaml.append("    primaryKey: []\n    foreignKeys: []\n    columns:\n");
+        yaml.append("        view: ").append(view).append("\n");
+        yaml.append("        primaryKey: []\n        foreignKeys: []\n        columns:\n");
         for (Column column : columns) {
             yaml.append(column.yaml());
         }
@@ -109,10 +170,17 @@ public final class DslYaml {
      * @return 本文
      */
     public String yaml() {
-        StringBuilder yaml = new StringBuilder("version: 1\n");
+        StringBuilder yaml = new StringBuilder("version: 2\n");
         yaml.append(menus.isEmpty() ? "menus: []\n" : "menus:\n");
         menus.forEach(yaml::append);
-        yaml.append(tables.isEmpty() ? "tables: {}\n" : "tables:\n");
+        yaml.append("schemas:\n  ")
+                .append(quote(schemaName))
+                .append(":\n    label: { ja: ")
+                .append(quote(schemaJa))
+                .append(", en: ")
+                .append(quote(schemaEn))
+                .append(" }\n");
+        yaml.append(tables.isEmpty() ? "    tables: {}\n" : "    tables:\n");
         tables.values().forEach(yaml::append);
         return yaml.toString();
     }
@@ -196,15 +264,15 @@ public final class DslYaml {
             String list = listOrder == null
                     ? "{ visible: false, sortable: false }"
                     : "{ visible: true, order: " + listOrder + ", sortable: true }";
-            return "      " + name + ":\n"
-                    + "        label: { ja: " + quote(ja) + ", en: " + quote(en) + " }\n"
-                    + "        dbType: { name: " + typeName + ", length: " + nullable(length) + ", precision: "
+            return "          " + name + ":\n"
+                    + "            label: { ja: " + quote(ja) + ", en: " + quote(en) + " }\n"
+                    + "            dbType: { name: " + typeName + ", length: " + nullable(length) + ", precision: "
                     + nullable(precision) + ", scale: " + nullable(scale) + ", nullable: true }\n"
-                    + "        formPart: text\n"
-                    + "        search: { enabled: false, collapsed: false }\n"
-                    + "        list: " + list + "\n"
-                    + "        detail: { visible: true }\n"
-                    + "        validations: []\n";
+                    + "            formPart: text\n"
+                    + "            search: { enabled: false, collapsed: false }\n"
+                    + "            list: " + list + "\n"
+                    + "            detail: { visible: true }\n"
+                    + "            validations: []\n";
         }
 
         private static String nullable(Integer value) {

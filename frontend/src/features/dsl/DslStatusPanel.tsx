@@ -16,6 +16,7 @@
 //
 // 今の状態（interaction-spec.md の DslStatusPanel、BR3.1・BR5.10・BR6.3、AC3.1.6・AC3.1.7）。
 // 適用中とプレビューの識別・出どころ・人・日時を示し、スキーマの読み込みのボタンを持つ。どのタブでも画面の上部に示す。
+// 適用中の DSL を今の書式（版 2）で読めないときは、注意（閉じるボタンなし）を出す（U2 dsl-v2 の BR7.2・F2）。
 import { Alert, Button, Card } from 'make-you-chic-ui'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { DslStatus, DslUser } from './api/types'
@@ -74,6 +75,11 @@ export function DslStatusPanel({
         {loadState === 'failed' && (
           <Alert variant="danger" action={{ label: t('dsl.action.retry'), onClick: onRetry }}>
             <span data-testid="dsl-status-error">{t('dsl.status.loadFailed')}</span>
+          </Alert>
+        )}
+        {loadState === 'loaded' && status?.appliedUnreadable === true && (
+          <Alert variant="warning" title={t('dsl.status.unreadableTitle')}>
+            <span data-testid="dsl-status-unreadable">{t('dsl.status.unreadableBody')}</span>
           </Alert>
         )}
         {loadState === 'loaded' && status && (

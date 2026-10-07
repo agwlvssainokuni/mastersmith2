@@ -57,6 +57,11 @@ import org.springframework.stereotype.Service;
  * 業務の例外に変える（BR8.1）。応答は共通の変換が作る。
  *
  * <p>操作ごとに指標と INFO のログを1件出す（{@link DslOperationMetrics}）。出来事・指標・ログに、DSL の本文と接続先を入れない。
+ *
+ * <p>書式の版 2（U2 dsl-v2 の BR3.3・BR3.4・BR3.6、NFR3.3）では、保存したプレビューの本文が今の検証を通らない（版を上げる前に置かれた
+ * など）とき、プレビューの表示と適用を 500 にせず 422 {@code DSL_INVALID}（誤りの一覧つき）で拒否し、プレビューの行は残す。適用の
+ * 確かめの順は計画の D-4（今のプレビューの識別が要求の識別と同じときだけ本文を読み直す。違えば確かめずに確定の手順の 409 に任せる。
+ * 確定の後は事前に得たモデルで差し替え、履歴の本文を読み直さない）。今の状態に {@code appliedUnreadable} を足す。
  */
 @Service
 public class DslLifecycle {
@@ -88,6 +93,8 @@ public class DslLifecycle {
 
     private final DslManageProperties properties;
 
+    private final UnreadableAppliedRevision unreadableAppliedRevision;
+
     /**
      * 作る。
      *
@@ -102,8 +109,9 @@ public class DslLifecycle {
      * @param eventPublisher アプリの中の出来事の通知
      * @param clock 時計
      * @param properties DSL の管理の設定
+     * @param unreadableAppliedRevision 起動時に読めなかった適用中の版の ID の置き場（判定だけを使う）
      */
-    public DslLifecycle(
+    DslLifecycle(
             DslRecordStore store,
             DslReader dslReader,
             ActiveDslModelHolder activeDslModelHolder,
@@ -114,7 +122,8 @@ public class DslLifecycle {
             UserAccountService userAccountService,
             ApplicationEventPublisher eventPublisher,
             Clock clock,
-            DslManageProperties properties) {
+            DslManageProperties properties,
+            UnreadableAppliedRevision unreadableAppliedRevision) {
         this.store = store;
         this.dslReader = dslReader;
         this.activeDslModelHolder = activeDslModelHolder;
@@ -126,6 +135,7 @@ public class DslLifecycle {
         this.eventPublisher = eventPublisher;
         this.clock = clock;
         this.properties = properties;
+        this.unreadableAppliedRevision = unreadableAppliedRevision;
     }
 
     /**
@@ -260,11 +270,12 @@ public class DslLifecycle {
     }
 
     /**
-     * プレビューの中身を返す（BR2.1・BR2.5）。
+     * プレビューの中身を返す（BR2.1・BR2.5）。キャッシュにモデルが無ければ、保存した本文を今の検証で読み直す（U2 dsl-v2 の BR3.3）。
      *
      * @param context 要求の文脈
      * @return プレビューの中身
-     * @throws BusinessException プレビューが無い（404 {@code DSL_PREVIEW_NOT_FOUND}）
+     * @throws BusinessException プレビューが無い（404 {@code DSL_PREVIEW_NOT_FOUND}）、保存した本文が今の検証を通らない（422
+     *     {@code DSL_INVALID}。誤りの先頭100件と総数を持つ。プレビューの行は消さない）
      */
     public PreviewView showPreview(DslRequestContext context) {
         DslPreviewRef ref = store.findPreviewRef().orElseThrow(DslLifecycle::previewNotFound);
@@ -275,7 +286,10 @@ public class DslLifecycle {
         } else {
             DslContent<DslPreviewRef> content = store.findPreviewContent().orElseThrow(DslLifecycle::previewNotFound);
             ref = content.ref();
-            model = readValid(content.yamlBytes());
+            model = switch (dslReader.read(content.yamlBytes())) {
+                case DslReadResult.Valid valid -> valid.model();
+                case DslReadResult.Invalid invalid -> throw invalid(invalid.errors(), context);
+            };
             cache.put(ref.previewId(), model);
         }
         return analysis.analyze(ref, user(ref.placedByUserId()), model, context.language(), true);
@@ -303,13 +317,29 @@ public class DslLifecycle {
     /**
      * 見たプレビューを適用する（BR4.1〜BR4.7）。対象DB には接続しない。
      *
+     * <p>確かめの順（U2 dsl-v2 の BR3.4、計画の D-4）: (1) キャッシュに見たプレビューのモデルがあれば使う。(2) 無ければ今のプレビューの
+     * 本文と識別を読み、識別が見たプレビューと同じときだけ今の検証で確かめる。通らなければ内部DB を変えずに 422。識別が違えば
+     * 確かめずに (3) へ進む（確定の手順が 409 を返す）。(3) 確定する。(4) 確定の後は (1)・(2) のモデルで差し替え、履歴の本文を
+     * 読み直さない。(2) で確かめていないのに確定できたとき（想定外）だけ、履歴の本文を読む。
+     *
      * @param previewId 見たプレビューの識別
      * @param context 要求の文脈
      * @return 適用した後の今の状態
-     * @throws BusinessException プレビューが無い・違う・同時の適用に負けた（409 {@code DSL_PREVIEW_CHANGED}）。適用中は変わらない
+     * @throws BusinessException プレビューが無い・違う・同時の適用に負けた（409 {@code DSL_PREVIEW_CHANGED}）、見たプレビューの本文が
+     *     今の検証を通らない（422 {@code DSL_INVALID}）。どちらも適用中とプレビューは変わらない
      */
     public DslStatus apply(UUID previewId, DslRequestContext context) {
         long start = metrics.start();
+        DslModel checked;
+        try {
+            checked = checkBeforeApply(previewId, context);
+        } catch (BusinessException e) {
+            metrics.record(DslOperation.APPLY, DslOutcome.REJECTED, start, null, null);
+            throw e;
+        } catch (RuntimeException e) {
+            metrics.record(DslOperation.APPLY, DslOutcome.FAILED, start, null, null);
+            throw e;
+        }
         DslAppliedRef applied;
         try {
             applied = store.apply(previewId, context.actorUserId(), clock.instant(), properties.historyLimit());
@@ -324,11 +354,12 @@ public class DslLifecycle {
             metrics.record(DslOperation.APPLY, DslOutcome.FAILED, start, null, null);
             throw e;
         }
-        // ここから先は確定の後（BR4.6）。
-        DslModel model = cache.get(previewId)
-                .orElseGet(() -> readValid(store.findRevisionContent(applied.revisionId())
+        // ここから先は確定の後（BR4.6）。事前に確かめたモデルを使い、履歴の本文を読み直さない（計画の D-4）。
+        DslModel model = checked != null
+                ? checked
+                : readValid(store.findRevisionContent(applied.revisionId())
                         .orElseThrow(() -> new IllegalStateException("適用した版を読めません"))
-                        .yamlBytes()));
+                        .yamlBytes());
         activeDslModelHolder.replace(model);
         cache.clear();
         publish(DslOperationType.DSL_APPLIED, context, applied.dslHash(), applied.source(), null);
@@ -337,7 +368,30 @@ public class DslLifecycle {
     }
 
     /**
-     * 今の状態を返す（BR6.3）。
+     * 適用の前に、見たプレビューのモデルを得る（計画の D-4 の (1)・(2)）。
+     *
+     * @param previewId 見たプレビューの識別
+     * @param context 要求の文脈
+     * @return 確かめたモデル（今のプレビューの識別が違う・プレビューが無いときは null。確定の手順が 409 を返す）
+     * @throws BusinessException 今のプレビューが見たプレビューで、本文が今の検証を通らない（422 {@code DSL_INVALID}）
+     */
+    private DslModel checkBeforeApply(UUID previewId, DslRequestContext context) {
+        Optional<DslModel> cached = cache.get(previewId);
+        if (cached.isPresent()) {
+            return cached.get();
+        }
+        Optional<DslContent<DslPreviewRef>> content = store.findPreviewContent();
+        if (content.isEmpty() || !content.get().ref().previewId().equals(previewId)) {
+            return null;
+        }
+        return switch (dslReader.read(content.get().yamlBytes())) {
+            case DslReadResult.Valid valid -> valid.model();
+            case DslReadResult.Invalid invalid -> throw invalid(invalid.errors(), context);
+        };
+    }
+
+    /**
+     * 今の状態を返す（BR6.3、U2 dsl-v2 の BR3.6）。
      *
      * @return 今の状態
      */
@@ -348,7 +402,9 @@ public class DslLifecycle {
         DslStatus.Preview preview = store.findPreviewRef()
                 .map(ref -> new DslStatus.Preview(ref, user(ref.placedByUserId())))
                 .orElse(null);
-        return new DslStatus(applied, preview);
+        boolean appliedUnreadable = applied != null
+                && unreadableAppliedRevision.isUnreadable(applied.ref().revisionId());
+        return new DslStatus(applied, preview, appliedUnreadable);
     }
 
     /**
@@ -397,7 +453,7 @@ public class DslLifecycle {
         return analysis.analyze(ref, user(context.actorUserId()), model, context.language(), false);
     }
 
-    /** 保存してある（または U3 が作った）本文を読む。検証を通らないのは想定外の失敗。 */
+    /** U3 が作った本文（または確かめずに確定した版の本文）を読む。検証を通らないのは想定外の失敗。 */
     private DslModel readValid(byte[] yamlBytes) {
         return switch (dslReader.read(yamlBytes)) {
             case DslReadResult.Valid valid -> valid.model();

@@ -23,7 +23,7 @@ import type { SubmitSource } from './api/types'
 export const MAX_SUBMIT_BYTES = 10 * 1024 * 1024
 
 /** JSON Schema（同じオリジンの固定のパス。ログインなしで取れる静的なファイル） */
-export const DSL_SCHEMA_PATH = '/dsl/dsl-schema-v1.json'
+export const DSL_SCHEMA_PATH = '/dsl/dsl-schema-v2.json'
 
 /** 入力のしかた */
 export type SubmitMode = 'file' | 'paste'

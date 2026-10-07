@@ -19,9 +19,12 @@
 // カラムの違いは、行を開いたときだけ描く（開いていない行のカラムは描かない）。
 // make-you-chic-ui の Table には行の開閉が無く、ページ送りの文言が日本語に固定されているため、同じ見た目の
 // 素の表（mycui-table の見た目）で作る（design-system-mapping.md の 2節）。
+// 書式の版 2（U2 dsl-v2 の BR7.5・BR5.2、frontend-components.md の F5）では、スキーマごとに tbody を分け、先頭に見出しの行
+// （th scope="rowgroup"、全列、スキーマ名・表示名・区分）を置く。開閉はテーブルの行だけで、鍵は「スキーマ名/テーブル名」。
 import { Badge, Icon, Switch, type BadgeProps } from 'make-you-chic-ui'
 import { useState } from 'react'
-import type { ColumnChange, DslDiff, TableChange, TableDiff } from './api/types'
+import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
+import type { ColumnChange, DslDiff, SchemaDiff, TableChange, TableDiff } from './api/types'
 import { countTableChanges } from './diffCounts'
 import { useDslText } from './useDslText'
 import './DslCommon.css'
@@ -56,13 +59,13 @@ function columnSummary(table: TableDiff): string {
   return parts.length > 0 ? parts.join(' ') : '—'
 }
 
-function ColumnTable({ table }: { table: TableDiff }) {
+function ColumnTable({ table, rowKey }: { table: TableDiff; rowKey: string }) {
   const t = useDslText()
   return (
     <table
       className="mycui-table dsl-diff-columns"
       aria-label={t('dsl.diff.columnTableLabel', { table: table.name })}
-      data-testid={`dsl-diff-columns-${table.name}`}
+      data-testid={`dsl-diff-columns-${rowKey}`}
     >
       <thead>
         <tr>
@@ -92,7 +95,14 @@ export function DslDiffTable({ diff }: DslDiffTableProps) {
   const [showAll, setShowAll] = useState(false)
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set())
   const counts = countTableChanges(diff)
-  const rows = showAll ? diff.tables : diff.tables.filter((table) => table.change !== 'UNCHANGED')
+  const groups = diff.schemas
+    .map((schema) => ({
+      schema,
+      tables: showAll
+        ? schema.tables
+        : schema.tables.filter((table) => table.change !== 'UNCHANGED'),
+    }))
+    .filter((group) => showAll || group.schema.change !== 'UNCHANGED' || group.tables.length > 0)
 
   function toggle(name: string): void {
     setExpanded((current) => {
@@ -124,7 +134,7 @@ export function DslDiffTable({ diff }: DslDiffTableProps) {
           data-testid="dsl-diff-show-all"
         />
       </div>
-      {rows.length === 0 ? (
+      {groups.length === 0 ? (
         <p className="dsl-muted" data-testid="dsl-diff-none">
           {t('dsl.diff.none')}
         </p>
@@ -138,21 +148,26 @@ export function DslDiffTable({ diff }: DslDiffTableProps) {
                 <th scope="col">{t('dsl.diff.columnChanges')}</th>
               </tr>
             </thead>
-            <tbody>
-              {rows.map((table) => {
-                const isOpen = expanded.has(table.name)
-                const canOpen = table.columns.length > 0
-                return (
-                  <DiffRow
-                    key={table.name}
-                    table={table}
-                    isOpen={isOpen && canOpen}
-                    canOpen={canOpen}
-                    onToggle={() => toggle(table.name)}
-                  />
-                )
-              })}
-            </tbody>
+            {groups.map(({ schema, tables }) => (
+              <tbody key={schema.name} data-testid={`dsl-diff-schema-${schema.name}`}>
+                <SchemaHeading schema={schema} />
+                {tables.map((table) => {
+                  const rowKey = `${schema.name}/${table.name}`
+                  const isOpen = expanded.has(rowKey)
+                  const canOpen = table.columns.length > 0
+                  return (
+                    <DiffRow
+                      key={rowKey}
+                      rowKey={rowKey}
+                      table={table}
+                      isOpen={isOpen && canOpen}
+                      canOpen={canOpen}
+                      onToggle={() => toggle(rowKey)}
+                    />
+                  )
+                })}
+              </tbody>
+            ))}
           </table>
         </div>
       )}
@@ -160,18 +175,45 @@ export function DslDiffTable({ diff }: DslDiffTableProps) {
   )
 }
 
+/** スキーマの見出しの行（全列にまたがる rowgroup の見出し） */
+function SchemaHeading({ schema }: { schema: SchemaDiff }) {
+  const t = useDslText()
+  const language = useDisplayLanguage()
+  return (
+    <tr className="dsl-diff-schema-row">
+      <th
+        scope="rowgroup"
+        colSpan={3}
+        className="dsl-diff-schema-heading"
+        data-testid={`dsl-diff-schema-heading-${schema.name}`}
+      >
+        <span className="dsl-diff-schema-heading-inner">
+          <span className="dsl-diff-schema-name">
+            {t('dsl.diff.schemaHeading', {
+              name: schema.name,
+              label: schema.label[language] || '—',
+            })}
+          </span>
+          <ChangeBadge change={schema.change} />
+        </span>
+      </th>
+    </tr>
+  )
+}
+
 interface DiffRowProps {
+  rowKey: string
   table: TableDiff
   isOpen: boolean
   canOpen: boolean
   onToggle: () => void
 }
 
-function DiffRow({ table, isOpen, canOpen, onToggle }: DiffRowProps) {
+function DiffRow({ rowKey, table, isOpen, canOpen, onToggle }: DiffRowProps) {
   const t = useDslText()
   return (
     <>
-      <tr data-testid={`dsl-diff-row-${table.name}`}>
+      <tr data-testid={`dsl-diff-row-${rowKey}`}>
         <th scope="row" className="dsl-diff-name">
           {canOpen ? (
             <button
@@ -182,7 +224,7 @@ function DiffRow({ table, isOpen, canOpen, onToggle }: DiffRowProps) {
                 table: table.name,
               })}
               onClick={onToggle}
-              data-testid={`dsl-diff-toggle-${table.name}`}
+              data-testid={`dsl-diff-toggle-${rowKey}`}
             >
               <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={14} />
               <span>{table.name}</span>
@@ -199,7 +241,7 @@ function DiffRow({ table, isOpen, canOpen, onToggle }: DiffRowProps) {
       {isOpen && (
         <tr className="dsl-diff-detail-row">
           <td colSpan={3}>
-            <ColumnTable table={table} />
+            <ColumnTable table={table} rowKey={rowKey} />
           </td>
         </tr>
       )}

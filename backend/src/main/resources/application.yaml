@@ -232,6 +232,12 @@ server:
   shutdown: graceful
   # 転送元のヘッダーは既定で使わない。信頼するときはアプリの設定（mastersmith.web.trust-forwarded-headers）で切り替える。
   forward-headers-strategy: none
+  tomcat:
+    # 本文を読む前に断った要求（DSL の重い操作の 503 DSL_BUSY・本文の大きさの 413 など）でも、10 MiB までの本文を読み捨ててから
+    # 応答を返し、送り手に応答が届くようにする（既定の 2 MB を超えると接続を切り、送り手に応答が届かない回がある）。読み捨てる
+    # だけでヒープに貯めない（Intent 261004-role-menu の dsl-v2 の Infrastructure Design の承認の場の決定 (1)、role の基盤の設計の
+    # Q1: A）。
+    max-swallow-size: 11MB
   compression:
     enabled: true
     mime-types: text/html,text/css,text/javascript,application/javascript,application/json,application/problem+json

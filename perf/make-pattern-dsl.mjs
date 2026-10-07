@@ -55,37 +55,45 @@ for (const p of HEAVY_PATTERNS) {
   if (p.includes("'")) throw new Error('引用符を含みます')
 }
 
+/** 書式の版 2 のスキーマ名（Intent 261004-role-menu の U2 dsl-v2） */
+const SCHEMA = 'perf'
+
 function dsl(withPattern) {
-  const out = ['version: 1', 'menus:']
+  const out = ['version: 2', 'menus:']
   const names = Array.from({ length: tables }, (_, t) => `p_${String(t + 1).padStart(3, '0')}`)
-  for (const name of names) out.push(`  - label: { ja: ${name}, en: ${name} }`, `    table: ${name}`)
-  out.push('tables:')
+  for (const name of names) out.push(`  - label: { ja: ${name}, en: ${name} }`, `    table: { schema: ${SCHEMA}, name: ${name} }`)
+  out.push('schemas:', `  ${SCHEMA}:`, `    label: { ja: ${SCHEMA}, en: ${SCHEMA} }`, '    tables:')
   let n = 0
   for (const name of names) {
     out.push(
-      `  ${name}:`,
-      `    label: { ja: ${name}, en: ${name} }`,
-      '    view: false',
-      '    primaryKey: [c_001]',
-      '    foreignKeys: []',
-      '    columns:',
+      `      ${name}:`,
+      `        label: { ja: ${name}, en: ${name} }`,
+      '        view: false',
+      '        primaryKey: [c_001]',
+      '        foreignKeys: []',
+      '        columns:',
     )
     for (let c = 1; c <= columns; c++) {
       const col = `c_${String(c).padStart(3, '0')}`
       out.push(
-        `      ${col}:`,
-        `        label: { ja: ${col}, en: ${col} }`,
-        '        dbType: { name: VARCHAR, length: 40, precision: null, scale: null, nullable: true }',
-        '        formPart: text',
-        '        search: { enabled: false, collapsed: false }',
-        `        list: { visible: true, order: ${c}, sortable: true }`,
-        '        detail: { visible: true }',
+        `          ${col}:`,
+        `            label: { ja: ${col}, en: ${col} }`,
+        '            dbType: { name: VARCHAR, length: 40, precision: null, scale: null, nullable: true }',
+        '            formPart: text',
+        '            search: { enabled: false, collapsed: false }',
+        `            list: { visible: true, order: ${c}, sortable: true }`,
+        '            detail: { visible: true }',
       )
       if (withPattern) {
         const pattern = HEAVY_PATTERNS[n++ % HEAVY_PATTERNS.length]
-        out.push('        validations:', '          - type: pattern', `            value: '${pattern}'`, '            origin: MANUAL')
+        out.push(
+          '            validations:',
+          '              - type: pattern',
+          `                value: '${pattern}'`,
+          '                origin: MANUAL',
+        )
       } else {
-        out.push('        validations: []')
+        out.push('            validations: []')
       }
     }
   }

@@ -19,6 +19,7 @@ import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.dsl.domain.DslColumn;
 import cherry.mastersmith.dsl.domain.DslMenuItem;
 import cherry.mastersmith.dsl.domain.DslModel;
+import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.OptionItem;
 import cherry.mastersmith.dslmanage.domain.PreviewView;
@@ -33,6 +34,9 @@ import java.util.List;
  *
  * <p>表示名が空（空の文字列・空白だけ）の場所は、メニューの項目・テーブル・カラム・固定の選択肢の表示名を DSL の順に数え、言語ごとに
  * 1件とする。一覧は先頭の100件まで、総数は別に返す。
+ *
+ * <p>書式の版 2（U2 dsl-v2 の BR5.3）では、スキーマの数を数え、表示名の未設定はスキーマ・メニュー・テーブル・カラム・固定の選択肢の
+ * 順に数え、場所はスキーマの下の道（例 {@code schemas.sales.tables.dept_mst.label}）で示す。メニューの木の節はテーブルを組で持つ。
  */
 public final class DslSummaryCalculator {
 
@@ -48,18 +52,31 @@ public final class DslSummaryCalculator {
         int tableCount = 0;
         int viewCount = 0;
         int columnCount = 0;
-        for (DslTable table : model.tables().values()) {
-            if (table.view()) {
-                viewCount++;
-            } else {
-                tableCount++;
+        for (DslSchema schema : model.schemas()) {
+            for (DslTable table : schema.tables().values()) {
+                if (table.view()) {
+                    viewCount++;
+                } else {
+                    tableCount++;
+                }
+                columnCount += table.columns().size();
             }
-            columnCount += table.columns().size();
         }
         MissingCollector missing = new MissingCollector();
+        for (DslSchema schema : model.schemas()) {
+            missing.check("schemas." + schema.name() + ".label", schema.label());
+        }
         List<MenuNode> menuTree = menus(model.menus(), "menus", missing);
-        for (DslTable table : model.tables().values()) {
-            String tablePath = "tables." + table.name();
+        for (DslSchema schema : model.schemas()) {
+            tables(schema, missing);
+        }
+        return new Summary(
+                model.schemas().size(), tableCount, viewCount, columnCount, menuTree, missing.first, missing.total);
+    }
+
+    private static void tables(DslSchema schema, MissingCollector missing) {
+        for (DslTable table : schema.tables().values()) {
+            String tablePath = "schemas." + schema.name() + ".tables." + table.name();
             missing.check(tablePath + ".label", table.label());
             for (DslColumn column : table.columns().values()) {
                 String columnPath = tablePath + ".columns." + column.name();
@@ -74,7 +91,6 @@ public final class DslSummaryCalculator {
                 }
             }
         }
-        return new Summary(tableCount, viewCount, columnCount, menuTree, missing.first, missing.total);
     }
 
     private static List<MenuNode> menus(List<DslMenuItem> items, String path, MissingCollector missing) {

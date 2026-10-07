@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
+import cherry.mastersmith.dsl.testsupport.DslSamples;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +47,7 @@ class SafeYamlParserTest {
     private final SafeYamlParser parser = new SafeYamlParser();
 
     static YamlParseResult parse(String yaml) {
-        return new SafeYamlParser().parse(yaml.getBytes(StandardCharsets.UTF_8));
+        return new SafeYamlParser().parse(yaml.getBytes(StandardCharsets.UTF_8), DslSamples.DSL_YAML_LIMITS);
     }
 
     static YamlDocument parsed(String yaml) {
@@ -171,12 +172,24 @@ class SafeYamlParserTest {
     @Test
     @DisplayName("a duplicate key is rejected at the second key with its path and the first value is not overwritten")
     void duplicateKeyIsRejected() {
-        DslError error = rejected("version: 1\ntables:\n  dept:\n    view: false\n  dept:\n    view: true\n");
+        DslError error = rejected(
+                "version: 2\nschemas:\n  sales:\n    tables:\n      dept:\n        view: false\n      dept:\n        view: true\n");
 
         assertThat(error.kind()).isEqualTo(DslErrorKind.DUPLICATE_KEY);
         assertThat(error.messageKey()).isEqualTo(DslMessageKeys.DUPLICATE_KEY);
         assertThat(error.messageArgs()).containsExactly("dept");
-        assertThat(error.path()).isEqualTo("tables.dept");
+        assertThat(error.path()).isEqualTo("schemas.sales.tables.dept");
+        assertThat(error.line()).isEqualTo(7);
+        assertThat(error.column()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("the same schema name written twice is a duplicate key of the schemas map")
+    void duplicateSchemaIsRejected() {
+        DslError error = rejected("version: 2\nschemas:\n  sales:\n    tables: {}\n  sales:\n    tables: {}\n");
+
+        assertThat(error.kind()).isEqualTo(DslErrorKind.DUPLICATE_KEY);
+        assertThat(error.path()).isEqualTo("schemas.sales");
         assertThat(error.line()).isEqualTo(5);
         assertThat(error.column()).isEqualTo(3);
     }
@@ -184,12 +197,13 @@ class SafeYamlParserTest {
     @Test
     @DisplayName("the same column defined twice in a table is a duplicate key of the columns map")
     void duplicateColumnIsRejected() {
-        DslError error = rejected("tables:\n  dept:\n    columns:\n      code: {}\n      name: {}\n      code: {}\n");
+        DslError error = rejected("schemas:\n  sales:\n    tables:\n      dept:\n        columns:\n          code: {}\n"
+                + "          name: {}\n          code: {}\n");
 
         assertThat(error.kind()).isEqualTo(DslErrorKind.DUPLICATE_KEY);
-        assertThat(error.path()).isEqualTo("tables.dept.columns.code");
-        assertThat(error.line()).isEqualTo(6);
-        assertThat(error.column()).isEqualTo(7);
+        assertThat(error.path()).isEqualTo("schemas.sales.tables.dept.columns.code");
+        assertThat(error.line()).isEqualTo(8);
+        assertThat(error.column()).isEqualTo(11);
     }
 
     @ParameterizedTest
@@ -209,7 +223,8 @@ class SafeYamlParserTest {
     @Test
     @DisplayName("bytes that are not UTF-8 are a syntax error without a position")
     void invalidEncodingIsSyntaxError() {
-        YamlParseResult result = parser.parse(new byte[] {'a', ':', ' ', (byte) 0xC3, (byte) 0x28});
+        YamlParseResult result =
+                parser.parse(new byte[] {'a', ':', ' ', (byte) 0xC3, (byte) 0x28}, DslSamples.DSL_YAML_LIMITS);
 
         DslError error = ((YamlParseResult.Rejected) result).error();
         assertThat(error.kind()).isEqualTo(DslErrorKind.SYNTAX);
@@ -231,11 +246,11 @@ class SafeYamlParserTest {
     void emptyDocumentAndByteOrderMark() {
         assertThat(parsed("").json().isNull()).isTrue();
         assertThat(parsed("# only a comment\n").json().isNull()).isTrue();
-        JsonNode json = parser.parse("\uFEFFversion: 1\n".getBytes(StandardCharsets.UTF_8))
+        JsonNode json = parser.parse("\uFEFFversion: 2\n".getBytes(StandardCharsets.UTF_8), DslSamples.DSL_YAML_LIMITS)
                         instanceof YamlParseResult.Parsed parsed
                 ? parsed.document().json()
                 : null;
         assertThat(json).isNotNull();
-        assertThat(json.get("version").intValue()).isEqualTo(1);
+        assertThat(json.get("version").intValue()).isEqualTo(2);
     }
 }

@@ -34,7 +34,14 @@ export type ReplaceOperation = 'generate' | 'submit' | 'restore'
 /** 確かめる内容 */
 export type DslConfirm =
   | { kind: 'replace'; operation: ReplaceOperation; preview: PreviewRef }
-  | { kind: 'apply'; tables: ChangeCounts; columns: ChangeCounts; warningCount: number }
+  | {
+      kind: 'apply'
+      /** スキーマの区分ごとの数（U2 dsl-v2 の計画の 10節 Q5: A） */
+      schemas: ChangeCounts
+      tables: ChangeCounts
+      columns: ChangeCounts
+      warningCount: number
+    }
   | { kind: 'discard'; preview: PreviewRef }
 
 export interface DslConfirmDialogProps {
@@ -131,6 +138,9 @@ export function DslConfirmDialog({
               <div>
                 <dt>{t('dsl.confirm.diffLabel')}</dt>
                 <dd data-testid="dsl-confirm-diff">
+                  <span data-testid="dsl-confirm-schema-counts">
+                    {t('dsl.confirm.schemaCounts', { ...confirm.schemas })}
+                  </span>
                   <span>{t('dsl.confirm.tableCounts', { ...confirm.tables })}</span>
                   <span>{t('dsl.confirm.columnCounts', { ...confirm.columns })}</span>
                 </dd>

@@ -57,7 +57,7 @@ describe('apiClient problem details and download', () => {
 
   it('receives the bytes and the Content-Disposition of a download with the access token', async () => {
     fetchMock.mockResolvedValueOnce(
-      new Response('version: 1\n', {
+      new Response('version: 2\n', {
         status: 200,
         headers: {
           'Content-Type': 'application/yaml',
@@ -68,7 +68,7 @@ describe('apiClient problem details and download', () => {
 
     const download = await apiDownload('/api/admin/dsl/preview/download')
 
-    expect(await download.blob.text()).toBe('version: 1\n')
+    expect(await download.blob.text()).toBe('version: 2\n')
     expect(download.contentDisposition).toBe('attachment; filename="dsl-preview-3f9a1c000000.yaml"')
     const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit]
     expect(path).toBe('/api/admin/dsl/preview/download')

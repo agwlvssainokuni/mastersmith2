@@ -19,8 +19,10 @@ import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.generate
 import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.valid;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.dsl.domain.DslMenuItem;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslTable;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dsl.service.DslReader;
 import cherry.mastersmith.dsl.validate.PatternChecker;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
@@ -103,11 +105,17 @@ class DslGenerationPropertyTest {
         DslModel model = valid(READER, generate(schema));
 
         String expectedJa = DslYamlWriter.stripControlCharacters(comment);
-        assertThat(model.tables().keySet())
+        assertThat(model.schema().name()).isEqualTo(schema.schemaName());
+        assertThat(model.menus())
+                .extracting(DslMenuItem::table)
+                .containsExactlyInAnyOrderElementsOf(schema.tables().stream()
+                        .map(table -> new TableRef(schema.schemaName(), table.name()))
+                        .toList());
+        assertThat(model.schema().tables().keySet())
                 .containsExactlyInAnyOrderElementsOf(
                         schema.tables().stream().map(TargetTable::name).toList());
         for (TargetTable table : schema.tables()) {
-            DslTable read = model.tables().get(table.name());
+            DslTable read = model.schema().tables().get(table.name());
             assertThat(read.label().en()).isEqualTo(table.name());
             assertThat(read.label().ja()).isEqualTo(expectedJa == null ? table.name() : expectedJa);
             for (TargetColumn column : table.columns()) {

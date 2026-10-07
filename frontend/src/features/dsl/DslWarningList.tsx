@@ -31,15 +31,20 @@ export interface DslWarningListProps {
 export const WARNING_KIND_ORDER: readonly WarningKind[] = [
   'TARGET_UNCONFIGURED',
   'TARGET_UNAVAILABLE',
+  'SCHEMA_MISMATCH',
   'TABLE_MISSING',
   'COLUMN_MISSING',
   'TYPE_MISMATCH',
 ]
 
-/** 照合できなかったことを表す種類 */
+/**
+ * 照合できなかったことを表す種類（食い違いの件数に数えない）。DSL のスキーマ名が設定のスキーマと違うとき（SCHEMA_MISMATCH）は
+ * テーブルを1つも比べないため、これに入れる（U2 dsl-v2 の計画の 10節 Q1: A）。
+ */
 export const NOT_COMPARED_KINDS: ReadonlySet<WarningKind> = new Set([
   'TARGET_UNCONFIGURED',
   'TARGET_UNAVAILABLE',
+  'SCHEMA_MISMATCH',
 ])
 
 /** 照合の警告の一覧 */

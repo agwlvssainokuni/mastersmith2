@@ -51,47 +51,61 @@ class DslStartupLoaderTest {
 
     private final ActiveDslModelStore active = new ActiveDslModelStore();
 
-    private final DslStartupLoader loader =
-            new DslStartupLoader(new DslRecordStore(mock(DslPreviewRepository.class), revisions), READER, active);
+    private final UnreadableAppliedRevision unreadable = new UnreadableAppliedRevision();
+
+    private final DslStartupLoader loader = new DslStartupLoader(
+            new DslRecordStore(mock(DslPreviewRepository.class), revisions), READER, active, unreadable);
 
     @AfterAll
     static void close() {
         PATTERNS.close();
     }
 
-    private void stored(byte[] body) {
+    private UUID stored(byte[] body) {
         DslAppliedRef ref = new DslAppliedRef(
                 UUID.randomUUID(), READER.hash(body), DslSource.UPLOAD, 1L, Instant.parse("2026-09-24T00:00:00Z"));
         when(revisions.findCurrentContent()).thenReturn(Optional.of(new DslContent<>(ref, body)));
+        return ref.revisionId();
     }
 
     @Test
     @DisplayName("without history the applied DSL stays absent")
     void noHistory() {
+        UUID earlier = UUID.randomUUID();
+        unreadable.remember(earlier);
+
         loader.afterSingletonsInstantiated();
 
         assertThat(active.current()).isInstanceOf(ActiveDsl.Absent.class);
+        assertThat(unreadable.isUnreadable(earlier))
+                .as("cleared when nothing is applied")
+                .isFalse();
     }
 
     @Test
     @DisplayName("the latest revision becomes the applied model")
     void latestRevisionIsLoaded() {
         byte[] body = DslYaml.dsl().table("t", column("c")).bytes();
-        stored(body);
+        UUID id = stored(body);
+        unreadable.remember(id);
 
-        loader.afterSingletonsInstantiated();
+        try (LogEvents logs = LogEvents.capture(DslStartupLoader.class)) {
+            loader.afterSingletonsInstantiated();
 
+            assertThat(logs.list()).isEmpty();
+        }
         assertThat(active.current())
                 .isInstanceOfSatisfying(
                         ActiveDsl.Present.class,
                         present -> assertThat(present.dslHash()).isEqualTo(READER.hash(body)));
+        assertThat(unreadable.isUnreadable(id)).as("cleared when read").isFalse();
     }
 
     @Test
     @DisplayName("an unreadable revision logs one error with the hash and error kinds only and starts without a DSL")
     void unreadableRevision() {
-        byte[] body = "version: 2\nsecret_body_text: 1\n".getBytes(StandardCharsets.UTF_8);
-        stored(body);
+        byte[] body = "version: 1\nsecret_body_text: 1\n".getBytes(StandardCharsets.UTF_8);
+        UUID id = stored(body);
 
         try (LogEvents logs = LogEvents.capture(DslStartupLoader.class)) {
             loader.afterSingletonsInstantiated();
@@ -107,5 +121,45 @@ class DslStartupLoaderTest {
             });
         }
         assertThat(active.current()).isInstanceOf(ActiveDsl.Absent.class);
+        assertThat(unreadable.isUnreadable(id))
+                .as("the unreadable revision is remembered")
+                .isTrue();
+        assertThat(unreadable.isUnreadable(UUID.randomUUID())).isFalse();
+    }
+
+    @Test
+    @DisplayName(
+            "a too deep menu is pruned and one warning with only the hash, the pruned count and the limit is logged")
+    void tooDeepMenuIsPrunedWithOneWarning() {
+        byte[] body = DslYaml.dsl()
+                .table("secret_table_name", column("c"))
+                .menu("見えるメニュー", "Visible", "secret_table_name")
+                .deepMenu(7, "secret_table_name")
+                .bytes();
+        UUID id = stored(body);
+
+        try (LogEvents logs = LogEvents.capture(DslStartupLoader.class)) {
+            loader.afterSingletonsInstantiated();
+
+            assertThat(logs.list()).singleElement().satisfies(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getMessage()).isEqualTo(DslStartupLoader.PRUNED_MESSAGE);
+                assertThat(event.getKeyValuePairs())
+                        .extracting(pair -> pair.key)
+                        .containsExactly("dsl.hash", "dsl.prunedMenuItems", "dsl.menuDepthLimit");
+                assertThat(event.getKeyValuePairs())
+                        .extracting(pair -> pair.value)
+                        .containsExactly(READER.hash(body).substring(0, 12), 7, 5);
+                assertThat(String.valueOf(event.getKeyValuePairs()) + event.getFormattedMessage())
+                        .doesNotContain("secret_table_name", "段", "level", "見えるメニュー");
+            });
+        }
+        assertThat(active.current()).isInstanceOfSatisfying(ActiveDsl.Present.class, present -> {
+            assertThat(present.dslHash()).isEqualTo(READER.hash(body));
+            assertThat(present.model().menus())
+                    .singleElement()
+                    .satisfies(item -> assertThat(item.label().ja()).isEqualTo("見えるメニュー"));
+        });
+        assertThat(unreadable.isUnreadable(id)).isFalse();
     }
 }

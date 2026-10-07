@@ -17,12 +17,15 @@ package cherry.mastersmith.dslmanage.service;
 
 import cherry.mastersmith.dsl.domain.DslColumn;
 import cherry.mastersmith.dsl.domain.DslModel;
+import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dslmanage.domain.PreviewView.ColumnDiff;
 import cherry.mastersmith.dslmanage.domain.PreviewView.Diff;
 import cherry.mastersmith.dslmanage.domain.PreviewView.DiffChange;
+import cherry.mastersmith.dslmanage.domain.PreviewView.SchemaDiff;
 import cherry.mastersmith.dslmanage.domain.PreviewView.TableDiff;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +38,10 @@ import java.util.function.Function;
  * DSL の順、続けて減ったテーブルを適用中の順）。カラムは表示名・DB 上の型・フォーム部品・検索・一覧・詳細・バリデーション・選択肢を比べ、
  * 増えた・減った・変わったものだけを並べる。変わった項目の名前は DSL のキーの形（例 {@code label.ja}・{@code list.order}）。
  * バリデーションと選択肢は並びの全体を1つの項目（{@code validations}・{@code options}）として比べる。
+ *
+ * <p>書式の版 2（U2 dsl-v2 の BR5.2）では、スキーマを名前で突き合わせ、スキーマごとに区分を付ける。片方だけにあるスキーマは増えた・
+ * 減った（その下のテーブルもすべて同じ区分）、両方にあるスキーマは表示名が違えば変わった、同じなら変わらない（テーブルの違いは
+ * テーブルの行で示す）。テーブルは同じスキーマの中で名前で突き合わせる。並びはプレビューの順、続けて減ったスキーマを適用中の順。
  */
 public final class DslDiffCalculator {
 
@@ -72,18 +79,47 @@ public final class DslDiffCalculator {
      * @return 違い
      */
     public static Diff diff(DslModel preview, DslModel applied) {
-        Map<String, DslTable> appliedTables = applied == null ? Map.of() : applied.tables();
+        Map<String, DslSchema> appliedSchemas = new LinkedHashMap<>();
+        if (applied != null) {
+            applied.schemas().forEach(schema -> appliedSchemas.put(schema.name(), schema));
+        }
+        Map<String, DslSchema> previewSchemas = new LinkedHashMap<>();
+        preview.schemas().forEach(schema -> previewSchemas.put(schema.name(), schema));
+        List<SchemaDiff> schemas = new ArrayList<>();
+        for (DslSchema schema : previewSchemas.values()) {
+            DslSchema before = appliedSchemas.get(schema.name());
+            schemas.add(before == null ? wholeSchema(schema, DiffChange.ADDED) : compare(before, schema));
+        }
+        for (DslSchema schema : appliedSchemas.values()) {
+            if (!previewSchemas.containsKey(schema.name())) {
+                schemas.add(wholeSchema(schema, DiffChange.REMOVED));
+            }
+        }
+        return new Diff(applied != null, schemas);
+    }
+
+    private static SchemaDiff wholeSchema(DslSchema schema, DiffChange change) {
+        List<TableDiff> tables = schema.tables().values().stream()
+                .map(table -> whole(table, change))
+                .toList();
+        return new SchemaDiff(schema.name(), schema.label(), change, tables);
+    }
+
+    private static SchemaDiff compare(DslSchema before, DslSchema after) {
+        Map<String, DslTable> appliedTables = before.tables();
+        Map<String, DslTable> previewTables = after.tables();
         List<TableDiff> tables = new ArrayList<>();
-        for (DslTable table : preview.tables().values()) {
-            DslTable before = appliedTables.get(table.name());
-            tables.add(before == null ? whole(table, DiffChange.ADDED) : compare(before, table));
+        for (DslTable table : previewTables.values()) {
+            DslTable old = appliedTables.get(table.name());
+            tables.add(old == null ? whole(table, DiffChange.ADDED) : compare(old, table));
         }
         for (DslTable table : appliedTables.values()) {
-            if (!preview.tables().containsKey(table.name())) {
+            if (!previewTables.containsKey(table.name())) {
                 tables.add(whole(table, DiffChange.REMOVED));
             }
         }
-        return new Diff(applied != null, tables);
+        DiffChange change = before.label().equals(after.label()) ? DiffChange.UNCHANGED : DiffChange.CHANGED;
+        return new SchemaDiff(after.name(), after.label(), change, tables);
     }
 
     private static TableDiff whole(DslTable table, DiffChange change) {

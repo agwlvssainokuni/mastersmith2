@@ -84,7 +84,7 @@ const previewBody = {
     missingDisplayNames: [],
     missingDisplayNameTotal: 0,
   },
-  diff: { appliedExists: false, tables: [] },
+  diff: { appliedExists: false, schemas: [] },
   warnings: [],
   unknownField: 'ignored',
 }
@@ -107,19 +107,19 @@ describe('dslApi', () => {
   it('submits the text as application/yaml with the source in the query', async () => {
     fetchMock.mockResolvedValueOnce(json(201, previewBody))
 
-    await submitPreview('version: 1\n表示名: 部署\n', 'PASTE')
+    await submitPreview('version: 2\n表示名: 部署\n', 'PASTE')
 
     const { path, init, headers } = call()
     expect(path).toBe('/api/admin/dsl/preview?source=PASTE')
     expect(init.method).toBe('POST')
     expect(headers.get('Content-Type')).toBe('application/yaml')
-    expect(init.body).toBe('version: 1\n表示名: 部署\n')
+    expect(init.body).toBe('version: 2\n表示名: 部署\n')
   })
 
   it('sends UPLOAD as the source of a file', async () => {
     fetchMock.mockResolvedValueOnce(json(201, previewBody))
 
-    await submitPreview('version: 1\n', 'UPLOAD')
+    await submitPreview('version: 2\n', 'UPLOAD')
 
     expect(call().path).toBe('/api/admin/dsl/preview?source=UPLOAD')
   })
@@ -179,20 +179,20 @@ describe('dslApi', () => {
   it('downloads the preview and the applied DSL with the file name of the server', async () => {
     fetchMock
       .mockResolvedValueOnce(
-        new Response('version: 1\n', {
+        new Response('version: 2\n', {
           status: 200,
           headers: {
             'Content-Disposition': 'attachment; filename="dsl-preview-8b02d4aaaaaa.yaml"',
           },
         }),
       )
-      .mockResolvedValueOnce(new Response('version: 1\n', { status: 200 }))
+      .mockResolvedValueOnce(new Response('version: 2\n', { status: 200 }))
 
     const preview = await downloadPreview()
     const applied = await downloadApplied()
 
     expect(preview.fileName).toBe('dsl-preview-8b02d4aaaaaa.yaml')
-    expect(await preview.blob.text()).toBe('version: 1\n')
+    expect(await preview.blob.text()).toBe('version: 2\n')
     expect(call(0).path).toBe('/api/admin/dsl/preview/download')
     expect(applied.fileName).toBe(DEFAULT_DOWNLOAD_FILE_NAME)
     expect(call(1).path).toBe('/api/admin/dsl/applied/download')
@@ -228,7 +228,13 @@ describe('readErrorReport', () => {
       code: 'DSL_INVALID',
       total: 128,
       errors: [
-        { kind: 'SEMANTIC', line: 12, column: 5, path: 'tables.dept_mst', message: '誤り' },
+        {
+          kind: 'SEMANTIC',
+          line: 12,
+          column: 5,
+          path: 'schemas.sales.tables.dept_mst',
+          message: '誤り',
+        },
         { kind: 'SIZE_LIMIT', line: null, column: null, path: null, message: '大きすぎます' },
         { kind: 'SYNTAX', message: '行と列なし' },
       ],
@@ -237,7 +243,13 @@ describe('readErrorReport', () => {
     expect(readErrorReport(error)).toEqual({
       total: 128,
       errors: [
-        { kind: 'SEMANTIC', line: 12, column: 5, path: 'tables.dept_mst', message: '誤り' },
+        {
+          kind: 'SEMANTIC',
+          line: 12,
+          column: 5,
+          path: 'schemas.sales.tables.dept_mst',
+          message: '誤り',
+        },
         { kind: 'SIZE_LIMIT', line: null, column: null, path: null, message: '大きすぎます' },
         { kind: 'SYNTAX', line: null, column: null, path: null, message: '行と列なし' },
       ],

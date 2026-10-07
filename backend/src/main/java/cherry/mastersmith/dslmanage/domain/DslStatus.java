@@ -22,8 +22,10 @@ import java.util.Objects;
  *
  * @param applied 適用中の版（無ければ null）
  * @param preview 今のプレビュー（無ければ null）
+ * @param appliedUnreadable 適用中の版を起動時に今の書式で読めず、適用中の DSL が使われていないなら true（U2 dsl-v2 の BR3.6、
+ *     entities.md の DslStatusV2。判定は NFR 設計の 4.8 のとおり起動時に読めなかった版の ID との比べ）
  */
-public record DslStatus(Applied applied, Preview preview) {
+public record DslStatus(Applied applied, Preview preview, boolean appliedUnreadable) {
 
     /**
      * 適用中の版と、適用した管理者。

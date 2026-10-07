@@ -16,6 +16,7 @@
 package cherry.mastersmith.dslmanage.domain;
 
 import cherry.mastersmith.dsl.domain.DisplayName;
+import cherry.mastersmith.dsl.domain.TableRef;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,8 +46,9 @@ public record PreviewView(
     public static final int MAX_MISSING_DISPLAY_NAMES = 100;
 
     /**
-     * 要約（BR2.3）。
+     * 要約（BR2.3。書式の版 2 でスキーマの数を足した。U2 dsl-v2 の BR5.3）。
      *
+     * @param schemaCount スキーマの数
      * @param tableCount テーブルの数（ビューを除く）
      * @param viewCount ビューの数
      * @param columnCount カラムの数（テーブルとビューの合計）
@@ -55,6 +57,7 @@ public record PreviewView(
      * @param missingDisplayNameTotal 表示名が空の場所の総数
      */
     public record Summary(
+            int schemaCount,
             int tableCount,
             int viewCount,
             int columnCount,
@@ -79,10 +82,10 @@ public record PreviewView(
      * メニューの木の節。
      *
      * @param label 表示名
-     * @param table 紐付くテーブル（無ければ null）
+     * @param table 紐付くテーブルの組（スキーマ名とテーブル名。無ければ null。U2 dsl-v2 の BR5.3）
      * @param children 子（DSL の順）
      */
-    public record MenuNode(DisplayName label, String table, List<MenuNode> children) {
+    public record MenuNode(DisplayName label, TableRef table, List<MenuNode> children) {
 
         /** 子を変更できない一覧にする。 */
         public MenuNode {
@@ -94,21 +97,40 @@ public record PreviewView(
     /**
      * 表示名が空の場所。
      *
-     * @param path DSL の中の場所（点でつないだ形。例 {@code tables.dept_mst.columns.code.label}）
+     * @param path DSL の中の場所（点でつないだ形。例 {@code schemas.sales.tables.dept_mst.columns.code.label}）
      * @param language 空の言語（{@code ja} または {@code en}）
      */
     public record MissingDisplayName(String path, String language) {}
 
     /**
-     * 適用中との違い（BR2.2）。
+     * 適用中との違い（BR2.2。書式の版 2 でスキーマの階層にした。U2 dsl-v2 の BR5.2）。
      *
      * @param appliedExists 適用中の DSL があるか
-     * @param tables テーブルの違い（変わらないテーブルも含めてすべて）
+     * @param schemas スキーマの違い（変わらないスキーマも含めてすべて。プレビューの順、続けて減ったスキーマを適用中の順）
      */
-    public record Diff(boolean appliedExists, List<TableDiff> tables) {
+    public record Diff(boolean appliedExists, List<SchemaDiff> schemas) {
 
         /** 一覧を変更できないものにする。 */
         public Diff {
+            schemas = List.copyOf(schemas);
+        }
+    }
+
+    /**
+     * スキーマ1つの違い（U2 dsl-v2 の BR5.2、entities.md の SchemaDiff）。
+     *
+     * @param name スキーマ名
+     * @param label 表示名（プレビューの表示名。減ったスキーマは適用中の表示名）
+     * @param change 区分（{@link DiffChange#CHANGED} は表示名の違いだけ。テーブルの違いはテーブルの行で示す）
+     * @param tables その下のテーブルの違い（変わらないテーブルも含めてすべて）
+     */
+    public record SchemaDiff(String name, DisplayName label, DiffChange change, List<TableDiff> tables) {
+
+        /** 必須の値を確かめ、一覧を変更できないものにする。 */
+        public SchemaDiff {
+            Objects.requireNonNull(name, "name は必須です");
+            Objects.requireNonNull(label, "label は必須です");
+            Objects.requireNonNull(change, "change は必須です");
             tables = List.copyOf(tables);
         }
     }
@@ -154,7 +176,7 @@ public record PreviewView(
         REMOVED,
         /** 変わった。 */
         CHANGED,
-        /** 変わらない（テーブルだけ）。 */
+        /** 変わらない（スキーマとテーブルだけ）。 */
         UNCHANGED
     }
 
@@ -185,6 +207,8 @@ public record PreviewView(
         /** 対象DB の設定が無いため照合できなかった。 */
         TARGET_UNCONFIGURED,
         /** 対象DB に接続できない・応答しないため照合できなかった。 */
-        TARGET_UNAVAILABLE
+        TARGET_UNAVAILABLE,
+        /** DSL のスキーマ名が対象DB の設定のスキーマと違うため、テーブルを照合できなかった（U2 dsl-v2 の BR5.1）。 */
+        SCHEMA_MISMATCH
     }
 }

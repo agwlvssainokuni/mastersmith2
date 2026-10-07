@@ -33,7 +33,7 @@ describe('saveFile', () => {
       expect(this.download).toBe('dsl-preview-8b02d4aaaaaa.yaml')
       expect(this.getAttribute('href')).toBe('blob:temporary')
     })
-    const blob = new Blob(['version: 1\n'])
+    const blob = new Blob(['version: 2\n'])
 
     saveFile({ blob, fileName: 'dsl-preview-8b02d4aaaaaa.yaml' })
 

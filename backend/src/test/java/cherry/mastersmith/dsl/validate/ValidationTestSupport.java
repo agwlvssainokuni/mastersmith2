@@ -22,6 +22,7 @@ import cherry.mastersmith.dsl.domain.DslMessageKeys;
 import cherry.mastersmith.dsl.parse.SafeYamlParser;
 import cherry.mastersmith.dsl.parse.YamlDocument;
 import cherry.mastersmith.dsl.parse.YamlParseResult;
+import cherry.mastersmith.dsl.testsupport.DslSamples;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -31,7 +32,8 @@ final class ValidationTestSupport {
     private ValidationTestSupport() {}
 
     static YamlDocument document(String yaml) {
-        YamlParseResult result = new SafeYamlParser().parse(yaml.getBytes(StandardCharsets.UTF_8));
+        YamlParseResult result =
+                new SafeYamlParser().parse(yaml.getBytes(StandardCharsets.UTF_8), DslSamples.DSL_YAML_LIMITS);
         assertThat(result).isInstanceOf(YamlParseResult.Parsed.class);
         return ((YamlParseResult.Parsed) result).document();
     }

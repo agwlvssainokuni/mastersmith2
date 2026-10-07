@@ -51,7 +51,7 @@ function Harness({ initial = EMPTY_SUBMIT_INPUT, busy = false, onSubmit }: Harne
 }
 
 function sizedFile(size: number, name = 'master-dsl-v3.yaml'): File {
-  const file = new File(['version: 1\n'], name, { type: 'application/yaml' })
+  const file = new File(['version: 2\n'], name, { type: 'application/yaml' })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -81,7 +81,7 @@ describe('DslSubmitForm', () => {
     await user.click(screen.getByRole('button', { name: '投入する' }))
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith({ text: 'version: 1\n', source: 'UPLOAD' }),
+      expect(onSubmit).toHaveBeenCalledWith({ text: 'version: 2\n', source: 'UPLOAD' }),
     )
   })
 
@@ -110,11 +110,11 @@ describe('DslSubmitForm', () => {
     renderDsl(<Harness onSubmit={onSubmit} />)
 
     await user.click(screen.getByRole('radio', { name: '貼り付ける' }))
-    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 1')
+    await user.type(screen.getByLabelText('DSL（YAML、10MB まで）'), 'version: 2')
     await user.click(screen.getByRole('button', { name: '投入する' }))
 
     await waitFor(() =>
-      expect(onSubmit).toHaveBeenCalledWith({ text: 'version: 1', source: 'PASTE' }),
+      expect(onSubmit).toHaveBeenCalledWith({ text: 'version: 2', source: 'PASTE' }),
     )
   })
 
@@ -173,7 +173,7 @@ describe('DslSubmitForm', () => {
 
     const link = screen.getByRole('link', { name: 'DSL の書式（JSON Schema）' })
     expect(link).toHaveAttribute('href', DSL_SCHEMA_PATH)
-    expect(link.getAttribute('href')).toBe('/dsl/dsl-schema-v1.json')
+    expect(link.getAttribute('href')).toBe('/dsl/dsl-schema-v2.json')
     expect(link).toHaveAttribute('download')
   })
 

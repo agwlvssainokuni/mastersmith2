@@ -31,3 +31,8 @@
 .dsl-error-kind {
   font-weight: var(--font-weight-semibold);
 }
+
+.dsl-error-table-region:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}

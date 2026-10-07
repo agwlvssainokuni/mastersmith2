@@ -32,6 +32,7 @@ import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslReadResult;
+import cherry.mastersmith.dsl.domain.DslStartupReadResult;
 import cherry.mastersmith.dsl.domain.FormPart;
 import cherry.mastersmith.dsl.service.DslReader;
 import cherry.mastersmith.dsl.validate.PatternChecker;
@@ -84,6 +85,11 @@ class TargetSchemaDslGeneratorTest {
         public DslReadResult read(byte[] yamlBytes) {
             reads.incrementAndGet();
             return READER.read(yamlBytes);
+        }
+
+        @Override
+        public DslStartupReadResult readAtStartup(byte[] yamlBytes) {
+            return READER.readAtStartup(yamlBytes);
         }
 
         @Override
@@ -147,7 +153,10 @@ class TargetSchemaDslGeneratorTest {
         assertThat(generated.dslHash()).isEqualTo(READER.hash(generated.yamlBytes()));
         assertThat(valid(READER, generated.yamlBytes()).dslHash()).isEqualTo(generated.dslHash());
         assertThat(dslReader.reads.get()).isEqualTo(1);
-        assertThat(new String(generated.yamlBytes(), StandardCharsets.UTF_8)).doesNotContain(SCHEMA_NAME);
+        assertThat(new String(generated.yamlBytes(), StandardCharsets.UTF_8))
+                .as("the schema name of the setting is written (BR4.1・BR4.3)")
+                .contains("schemas:\n  " + SCHEMA_NAME + ":\n")
+                .contains("    table:\n      schema: " + SCHEMA_NAME + "\n      name: emp\n");
     }
 
     @Test
@@ -158,7 +167,7 @@ class TargetSchemaDslGeneratorTest {
 
         DslModel model = valid(READER, ((DefaultDslResult.Generated) result).yamlBytes());
         assertThat(model.menus()).isEmpty();
-        assertThat(model.tables()).isEmpty();
+        assertThat(model.schema().tables()).isEmpty();
     }
 
     @Test
@@ -176,8 +185,15 @@ class TargetSchemaDslGeneratorTest {
         DefaultDslResult result = generator(TargetSchemaResult.success(schema)).generate();
 
         DslModel model = valid(READER, ((DefaultDslResult.Generated) result).yamlBytes());
-        assertThat(model.tables().get("geo").columns().get("shape").formPart()).isEqualTo(FormPart.TEXT);
-        assertThat(model.tables().get("geo").columns().get("doc").search().enabled())
+        assertThat(model.schema().tables().get("geo").columns().get("shape").formPart())
+                .isEqualTo(FormPart.TEXT);
+        assertThat(model.schema()
+                        .tables()
+                        .get("geo")
+                        .columns()
+                        .get("doc")
+                        .search()
+                        .enabled())
                 .isFalse();
     }
 
@@ -211,7 +227,8 @@ class TargetSchemaDslGeneratorTest {
         DslYamlWriter broken = new DslYamlWriter() {
             @Override
             public byte[] write(Map<String, Object> tree) {
-                return ("version: 1\nmenus:\n  - label: {ja: a, en: a}\n    table: " + secretValue + "\ntables: {}\n")
+                return ("version: 2\nmenus:\n  - label: {ja: a, en: a}\n    table: {schema: s, name: " + secretValue
+                                + "}\nschemas:\n  s:\n    label: {ja: s, en: s}\n    tables: {}\n")
                         .getBytes(StandardCharsets.UTF_8);
             }
         };
@@ -267,14 +284,14 @@ class TargetSchemaDslGeneratorTest {
     @Test
     @DisplayName("the generated result keeps its own copy of the bytes and never prints the body")
     void generatedValue() {
-        byte[] body = "version: 1\n".getBytes(StandardCharsets.UTF_8);
+        byte[] body = "version: 2\n".getBytes(StandardCharsets.UTF_8);
         DefaultDslResult.Generated generated = new DefaultDslResult.Generated(body, "h");
         body[0] = 'X';
         generated.yamlBytes()[0] = 'Y';
 
         assertThat(generated.yamlBytes()[0]).isEqualTo((byte) 'v');
         assertThat(generated)
-                .isEqualTo(new DefaultDslResult.Generated("version: 1\n".getBytes(StandardCharsets.UTF_8), "h"));
+                .isEqualTo(new DefaultDslResult.Generated("version: 2\n".getBytes(StandardCharsets.UTF_8), "h"));
         assertThat(generated).isNotEqualTo(new DefaultDslResult.Generated(new byte[0], "h"));
         assertThat(generated).isNotEqualTo(new DefaultDslResult.Generated(generated.yamlBytes(), "other"));
         assertThat(generated).isNotEqualTo("h");

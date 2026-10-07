@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.domain.DslColumn;
-import cherry.mastersmith.dsl.domain.DslMenuItem;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.FormPart;
@@ -40,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -202,12 +202,20 @@ abstract class AbstractDefaultDslGeneratorIT {
         DslModel model = GenerateTestSupport.valid(dslReader, generated.yamlBytes());
 
         assertThat(generated.dslHash()).isEqualTo(dslReader.hash(generated.yamlBytes()));
+        assertThat(model.formatVersion()).isEqualTo(2);
+        assertThat(model.schema().name()).as("the schema name of the setting").isEqualToIgnoringCase(schema);
+        assertThat(model.schema().label().ja()).isEqualTo(model.schema().name());
+        assertThat(model.schema().label().en()).isEqualTo(model.schema().name());
         assertThat(model.menus())
-                .extracting(DslMenuItem::table)
+                .extracting(item -> item.table().schema())
+                .containsOnly(model.schema().name());
+        assertThat(model.menus())
+                .extracting(item -> item.table().name())
                 .containsExactly("a_first", "Dept_Mst", "emp", SYMBOL_TABLE, "v_emp");
-        assertThat(model.tables().keySet()).containsExactly("a_first", "Dept_Mst", "emp", SYMBOL_TABLE, "v_emp");
+        assertThat(model.schema().tables().keySet())
+                .containsExactly("a_first", "Dept_Mst", "emp", SYMBOL_TABLE, "v_emp");
 
-        DslTable dept = model.tables().get("Dept_Mst");
+        DslTable dept = model.schema().tables().get("Dept_Mst");
         assertThat(dept.label().ja()).isEqualTo("部署");
         assertThat(dept.label().en()).isEqualTo("Dept_Mst");
         assertThat(dept.primaryKey()).containsExactly("code");
@@ -236,33 +244,48 @@ abstract class AbstractDefaultDslGeneratorIT {
         assertThat(dept.columns().get("flag").formPart()).isEqualTo(FormPart.CHECKBOX);
         assertProductSpecificColumns(dept);
 
-        DslColumn deptCode = model.tables().get("emp").columns().get("dept_code");
+        DslColumn deptCode = model.schema().tables().get("emp").columns().get("dept_code");
         assertThat(deptCode.label().ja()).isEqualTo(SYMBOL_COMMENT);
         assertThat(deptCode.formPart()).isEqualTo(FormPart.SELECT);
         assertThat(deptCode.options().source()).isEqualTo(OptionSourceKind.REFERENCE);
         assertThat(deptCode.options().table()).isEqualTo("Dept_Mst");
         assertThat(deptCode.options().valueColumn()).isEqualTo("code");
-        assertThat(model.tables().get("emp").foreignKeys())
+        assertThat(model.schema().tables().get("emp").foreignKeys())
                 .singleElement()
                 .satisfies(fk -> assertThat(fk.referencedTable()).isEqualTo("Dept_Mst"));
-        assertThat(model.tables().get(SYMBOL_TABLE).columns()).containsOnlyKeys(SYMBOL_COLUMN);
-        DslTable view = model.tables().get("v_emp");
+        assertThat(model.schema().tables().get(SYMBOL_TABLE).columns()).containsOnlyKeys(SYMBOL_COLUMN);
+        DslTable view = model.schema().tables().get("v_emp");
         assertThat(view.view()).isTrue();
         assertThat(view.primaryKey()).isEmpty();
         assertThat(view.foreignKeys()).isEmpty();
-        assertThat(model.tables().get("a_first").columns().get("created").formPart())
+        assertThat(model.schema()
+                        .tables()
+                        .get("a_first")
+                        .columns()
+                        .get("created")
+                        .formPart())
                 .isEqualTo(FormPart.DATETIME);
     }
 
     @Test
-    @DisplayName("generating twice gives the same bytes and no connection values or schema name are written")
+    @DisplayName("generating twice gives the same bytes, the schema name is written and no connection values are")
     void deterministicAndWithoutConnectionValues() {
         byte[] first = generate(schema, reader, readerPassword).yamlBytes();
         byte[] second = generate(schema, reader, readerPassword).yamlBytes();
 
         assertThat(second).isEqualTo(first);
-        assertThat(new String(first, StandardCharsets.UTF_8))
-                .doesNotContain(schema)
+        String text = new String(first, StandardCharsets.UTF_8);
+        assertThat(text.toLowerCase(Locale.ROOT)).contains("schemas:\n  " + schema.toLowerCase(Locale.ROOT) + ":\n");
+        if (product() == DatabaseProduct.POSTGRESQL) {
+            // PostgreSQL の database の項目（コンテナの DB の名前）は、キーとしても値としても書かない。
+            String databaseName = database.connectDatabase(schema);
+            assertThat(text)
+                    .as("the database item of PostgreSQL")
+                    .doesNotContainPattern("(?m)^\\s*database:")
+                    .doesNotContain(": " + databaseName + "\n")
+                    .doesNotContain("  " + databaseName + ":\n");
+        }
+        assertThat(text)
                 .doesNotContain(reader)
                 .doesNotContain(readerPassword)
                 .doesNotContain(String.valueOf(database.port()))
@@ -277,6 +300,6 @@ abstract class AbstractDefaultDslGeneratorIT {
                 generate(emptySchema, emptyReader, emptyReaderPassword).yamlBytes());
 
         assertThat(model.menus()).isEmpty();
-        assertThat(model.tables()).isEmpty();
+        assertThat(model.schema().tables()).isEmpty();
     }
 }

@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.dsl.domain.DisplayName;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dslmanage.domain.PreviewView.ColumnDiff;
 import cherry.mastersmith.dslmanage.domain.PreviewView.DiffChange;
 import cherry.mastersmith.dslmanage.domain.PreviewView.MissingDisplayName;
@@ -41,20 +42,20 @@ class DslManageDomainTest {
     @Test
     @org.junit.jupiter.api.DisplayName("content copies its bytes, compares by value and never prints the body")
     void content() {
-        byte[] bytes = "version: 1\n".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "version: 2\n".getBytes(StandardCharsets.UTF_8);
         DslContent<DslPreviewRef> content = new DslContent<>(PREVIEW, bytes);
         bytes[0] = 'X';
         byte[] returned = content.yamlBytes();
         returned[1] = 'Y';
 
-        assertThat(new String(content.yamlBytes(), StandardCharsets.UTF_8)).isEqualTo("version: 1\n");
+        assertThat(new String(content.yamlBytes(), StandardCharsets.UTF_8)).isEqualTo("version: 2\n");
         assertThat(content)
-                .isEqualTo(new DslContent<>(PREVIEW, "version: 1\n".getBytes(StandardCharsets.UTF_8)))
-                .hasSameHashCodeAs(new DslContent<>(PREVIEW, "version: 1\n".getBytes(StandardCharsets.UTF_8)))
+                .isEqualTo(new DslContent<>(PREVIEW, "version: 2\n".getBytes(StandardCharsets.UTF_8)))
+                .hasSameHashCodeAs(new DslContent<>(PREVIEW, "version: 2\n".getBytes(StandardCharsets.UTF_8)))
                 .isNotEqualTo(new DslContent<>(PREVIEW, new byte[0]))
                 .isNotEqualTo(new DslContent<>(
                         new DslPreviewRef(UUID.randomUUID(), "a".repeat(64), DslSource.UPLOAD, 1L, AT), bytes))
-                .isNotEqualTo("version: 1");
+                .isNotEqualTo("version: 2");
         assertThat(content.toString()).contains("bytes=11").doesNotContain("version");
     }
 
@@ -81,7 +82,7 @@ class DslManageDomainTest {
             "the applied download is named dsl-applied with the hash prefix, distinct from the preview name")
     void appliedDownloadFileName() {
         DslAppliedRef applied = new DslAppliedRef(UUID.randomUUID(), "a".repeat(64), DslSource.RESTORE, 1L, AT);
-        byte[] bytes = "version: 1\n".getBytes(StandardCharsets.UTF_8);
+        byte[] bytes = "version: 2\n".getBytes(StandardCharsets.UTF_8);
 
         DslDownload download = DslDownload.applied(new DslContent<>(applied, bytes));
 
@@ -97,14 +98,23 @@ class DslManageDomainTest {
     @org.junit.jupiter.api.DisplayName("preview values reject inconsistent counts and unchanged columns")
     void previewValueRules() {
         List<MissingDisplayName> tooMany = Collections.nCopies(101, new MissingDisplayName("p", "ja"));
-        assertThatThrownBy(() -> new Summary(0, 0, 0, List.of(), tooMany, 101))
+        assertThatThrownBy(() -> new Summary(0, 0, 0, 0, List.of(), tooMany, 101))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new Summary(0, 0, 0, List.of(), List.of(new MissingDisplayName("p", "ja")), 0))
+        assertThatThrownBy(() -> new Summary(0, 0, 0, 0, List.of(), List.of(new MissingDisplayName("p", "ja")), 0))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new ColumnDiff("c", DiffChange.UNCHANGED, List.of()))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(new PreviewView.MenuNode(new DisplayName("a", "a"), null, List.of()).children())
                 .isEmpty();
+        assertThat(new PreviewView.MenuNode(new DisplayName("a", "a"), new TableRef("s", "t"), List.of()).table())
+                .isEqualTo(new TableRef("s", "t"));
+        assertThat(new Summary(1, 0, 0, 0, List.of(), List.of(), 0).schemaCount())
+                .isEqualTo(1);
+        assertThatThrownBy(() -> new PreviewView.SchemaDiff("s", null, DiffChange.ADDED, List.of()))
+                .isInstanceOf(NullPointerException.class);
+        assertThat(new PreviewView.SchemaDiff("s", new DisplayName("s", "s"), DiffChange.UNCHANGED, List.of()).tables())
+                .isEmpty();
+        assertThat(PreviewView.WarningKind.valueOf("SCHEMA_MISMATCH")).isNotNull();
     }
 
     @Test

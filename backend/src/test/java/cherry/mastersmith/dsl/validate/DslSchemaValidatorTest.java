@@ -49,9 +49,10 @@ class DslSchemaValidatorTest {
     @Test
     @DisplayName("a missing required item and a wrong type are both reported with line, column and path")
     void twoSyntaxErrorsWithPositions() {
-        String yaml = validYamlReplacing("        detail: { visible: false }\n", "")
+        String yaml = validYamlReplacing("            detail: { visible: false }\n", "")
                 .replace(
-                        "    view: false\n    primaryKey: [dept_code]", "    view: maybe\n    primaryKey: [dept_code]");
+                        "        view: false\n        primaryKey: [dept_code]",
+                        "        view: maybe\n        primaryKey: [dept_code]");
 
         List<DslError> errors = validate(yaml);
 
@@ -61,22 +62,22 @@ class DslSchemaValidatorTest {
                 .filter(error -> error.messageKey().equals(DslMessageKeys.SYNTAX_TYPE))
                 .findFirst()
                 .orElseThrow();
-        assertThat(type.path()).isEqualTo("tables.dept_mst.view");
-        assertThat(type.line()).isEqualTo(lineOf(yaml, "    view: maybe"));
-        assertThat(type.column()).isEqualTo(5);
+        assertThat(type.path()).isEqualTo("schemas.sales.tables.dept_mst.view");
+        assertThat(type.line()).isEqualTo(lineOf(yaml, "        view: maybe"));
+        assertThat(type.column()).isEqualTo(9);
         assertThat(type.messageArgs()).containsExactly("boolean", "maybe");
         DslError required = errors.stream()
                 .filter(error -> error.messageKey().equals(DslMessageKeys.SYNTAX_REQUIRED))
                 .findFirst()
                 .orElseThrow();
-        assertThat(required.path()).isEqualTo("tables.emp_view.columns.emp_no");
+        assertThat(required.path()).isEqualTo("schemas.sales.tables.emp_view.columns.emp_no");
         assertThat(required.messageArgs()).containsExactly("detail");
         assertThat(required.line())
                 .isEqualTo(
                         lineOf(
                                 yaml,
-                                "      emp_no:\n        label: { ja: 社員番号, en: emp_no }\n        dbType: { name: INTEGER, nullable: false }"));
-        assertThat(required.column()).isEqualTo(7);
+                                "          emp_no:\n            label: { ja: 社員番号, en: emp_no }\n            dbType: { name: INTEGER, nullable: false }"));
+        assertThat(required.column()).isEqualTo(11);
         assertNoComponentText(errors);
     }
 
@@ -88,15 +89,15 @@ class DslSchemaValidatorTest {
                 + "username: sample-user-name\n"
                 + "password: sample-password-value\n";
         String tableLevel = yaml.replace(
-                "  dept_mst:\n    label: { ja: 部署, en: dept_mst }\n",
-                "  dept_mst:\n    label: { ja: 部署, en: dept_mst }\n    password: sample-password-in-table\n");
+                "      dept_mst:\n        label: { ja: 部署, en: dept_mst }\n",
+                "      dept_mst:\n        label: { ja: 部署, en: dept_mst }\n        password: sample-password-in-table\n");
 
         List<DslError> errors = validate(tableLevel);
 
         assertThat(errors).extracting(DslError::messageKey).containsOnly(DslMessageKeys.SYNTAX_UNKNOWN_PROPERTY);
         assertThat(errors)
                 .extracting(DslError::path)
-                .containsExactlyInAnyOrder("url", "username", "password", "tables.dept_mst.password");
+                .containsExactlyInAnyOrder("url", "username", "password", "schemas.sales.tables.dept_mst.password");
         assertThat(errors).allMatch(error -> error.line() != null);
         assertThat(errors.toString())
                 .doesNotContain(
@@ -108,8 +109,8 @@ class DslSchemaValidatorTest {
     @DisplayName("a value written by the user is embedded only up to its first 100 characters")
     void userValueIsCut() {
         String yaml = validYamlReplacing(
-                "        formPart: number\n        search: { enabled: false",
-                "        formPart: " + "x".repeat(150) + "\n        search: { enabled: false");
+                "            formPart: number\n            search: { enabled: false",
+                "            formPart: " + "x".repeat(150) + "\n            search: { enabled: false");
 
         DslError error = validate(yaml).getFirst();
 
@@ -122,11 +123,11 @@ class DslSchemaValidatorTest {
     void otherKeywords() {
         String yaml = validYamlReplacing("width: 120", "width: 0")
                 .replace(
-                        "          lookupSearch:\n            - { column: dept_name, operator: CONTAINS }\n",
-                        "          lookupSearch: []\n")
+                        "              lookupSearch:\n                - { column: dept_name, operator: CONTAINS }\n",
+                        "              lookupSearch: []\n")
                 .replace(
-                        "    columns:\n      emp_no:\n        label: { ja: 社員番号, en: emp_no }\n        dbType: { name: INTEGER, nullable: false }\n        formPart: number\n        search: { enabled: false, collapsed: false }\n        list: { visible: true, order: 1, sortable: true }\n        detail: { visible: false }\n        validations: []\n",
-                        "    columns: {}\n")
+                        "        columns:\n          emp_no:\n            label: { ja: 社員番号, en: emp_no }\n            dbType: { name: INTEGER, nullable: false }\n            formPart: number\n            search: { enabled: false, collapsed: false }\n            list: { visible: true, order: 1, sortable: true }\n            detail: { visible: false }\n            validations: []\n",
+                        "        columns: {}\n")
                 .replace("{ type: unique, origin: DB }", "{ type: unique, value: 1, origin: DB }")
                 .replace("dbType: { name: DATE, nullable: true }", "dbType: { name: \"\", nullable: true }")
                 .replace("precision: 10, scale: 0", "precision: 10, scale: 2147483648");
@@ -145,7 +146,7 @@ class DslSchemaValidatorTest {
                 .filteredOn(error -> error.messageKey().equals(DslMessageKeys.SYNTAX_MINIMUM))
                 .first()
                 .satisfies(error -> {
-                    assertThat(error.path()).isEqualTo("tables.emp_mst.columns.emp_no.list.width");
+                    assertThat(error.path()).isEqualTo("schemas.sales.tables.emp_mst.columns.emp_no.list.width");
                     assertThat(error.messageArgs()).containsExactly("1", "0");
                 });
         assertNoComponentText(errors);
@@ -157,15 +158,15 @@ class DslSchemaValidatorTest {
         try (CountingHttpServer server = new CountingHttpServer()) {
             String yaml = validYaml() + "$ref: \"" + server.url("/dsl.json") + "\"\n";
             yaml = yaml.replace(
-                    "        formPart: date\n",
-                    "        formPart: date\n        $ref: \"" + server.url("/column.json") + "\"\n");
+                    "            formPart: date\n",
+                    "            formPart: date\n            $ref: \"" + server.url("/column.json") + "\"\n");
 
             List<DslError> errors = validate(yaml);
 
             assertThat(errors).extracting(DslError::messageKey).containsOnly(DslMessageKeys.SYNTAX_UNKNOWN_PROPERTY);
             assertThat(errors)
                     .extracting(DslError::path)
-                    .containsExactlyInAnyOrder("$ref", "tables.emp_mst.columns.joined_on.$ref");
+                    .containsExactlyInAnyOrder("$ref", "schemas.sales.tables.emp_mst.columns.joined_on.$ref");
             assertThat(errors.toString()).doesNotContain(server.url(""));
             assertThat(server.requests()).isZero();
         }
@@ -181,6 +182,58 @@ class DslSchemaValidatorTest {
             assertThatThrownBy(() -> new DslSchemaValidator(schema)).isInstanceOf(RuntimeException.class);
             assertThat(server.requests()).isZero();
         }
+    }
+
+    @Test
+    @DisplayName("the version 1 shape with a flat tables map is a syntax error of the version 2 schema")
+    void flatTablesIsUnknownInVersion2() {
+        String yaml =
+                validYaml().replace("schemas:\n  sales:\n    label: { ja: 販売, en: Sales }\n    tables:\n", "tables:\n");
+
+        List<DslError> errors = validate(yaml);
+
+        assertThat(errors)
+                .extracting(DslError::messageKey, DslError::path)
+                .contains(
+                        org.assertj.core.groups.Tuple.tuple(DslMessageKeys.SYNTAX_REQUIRED, null),
+                        org.assertj.core.groups.Tuple.tuple(DslMessageKeys.SYNTAX_UNKNOWN_PROPERTY, "tables"));
+        assertNoComponentText(errors);
+    }
+
+    @Test
+    @DisplayName("a schema needs a label and tables and has no unknown items")
+    void schemaShape() {
+        String yaml = validYamlReplacing("    label: { ja: 販売, en: Sales }\n", "    owner: someone\n");
+
+        List<DslError> errors = validate(yaml);
+
+        assertThat(errors)
+                .extracting(DslError::messageKey, DslError::path)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(DslMessageKeys.SYNTAX_REQUIRED, "schemas.sales"),
+                        org.assertj.core.groups.Tuple.tuple(
+                                DslMessageKeys.SYNTAX_UNKNOWN_PROPERTY, "schemas.sales.owner"));
+    }
+
+    @Test
+    @DisplayName("a menu table must be a pair of schema and name without other items, not a plain name")
+    void menuTableMustBeAPair() {
+        String plain = validYamlReplacing("table: { schema: sales, name: emp_view }", "table: emp_view");
+        String extra = validYamlReplacing(
+                "table: { schema: sales, name: emp_view }", "table: { schema: sales, name: emp_view, db: x }");
+        String missing = validYamlReplacing("table: { schema: sales, name: emp_view }", "table: { name: emp_view }");
+
+        assertThat(validate(plain)).singleElement().satisfies(error -> {
+            assertThat(error.messageKey()).isEqualTo(DslMessageKeys.SYNTAX_TYPE);
+            assertThat(error.path()).isEqualTo("menus.1.table");
+        });
+        assertThat(validate(extra))
+                .extracting(DslError::messageKey, DslError::path)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(
+                        DslMessageKeys.SYNTAX_UNKNOWN_PROPERTY, "menus.1.table.db"));
+        assertThat(validate(missing))
+                .extracting(DslError::messageKey, DslError::path)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(DslMessageKeys.SYNTAX_REQUIRED, "menus.1.table"));
     }
 
     @Test

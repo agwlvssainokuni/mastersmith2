@@ -15,8 +15,8 @@
  */
 package cherry.mastersmith.dsl.parse;
 
+import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
-import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,15 +38,21 @@ import org.yaml.snakeyaml.parser.Parser;
  *
  * <ul>
  *   <li>タグ: 明示のタグはすべて拒否する（{@code !!} の型の指定・独自のタグ {@code !name}・{@code !} とも）
- *   <li>入れ子の深さ: 文書の根から数えた対応表と並びの段の数が {@link DslFormat#MAX_DEPTH} を超えたら止める
- *   <li>別名: コレクションを指す別名の数が {@link DslFormat#MAX_COLLECTION_ALIASES} を超えたら止める
+ *   <li>入れ子の深さ: 文書の根から数えた対応表と並びの段の数が上限（{@link YamlLimits#maxDepth()}）を超えたら止める
+ *   <li>別名: コレクションを指す別名の数が上限（{@link YamlLimits#maxCollectionAliases()}）を超えたら止める
  * </ul>
+ *
+ * <p>上限は呼ぶ側が渡す。{@code LoaderOptions} にも同じ値を渡すこと（{@link SafeYamlParser#loaderOptions(YamlLimits)}）。
  *
  * <p>あわせて、別名を書いた位置を文書の順に記録する（誤りを参照を書いた場所で示すため。BR4.2）。
  */
 final class LimitingParser implements Parser {
 
     private final Parser delegate;
+
+    private final int maxDepth;
+
+    private final int maxCollectionAliases;
 
     /** アンカーの名前ごとに、コレクションを指すかどうか。 */
     private final Map<String, Boolean> anchorIsCollection = new HashMap<>();
@@ -63,9 +69,12 @@ final class LimitingParser implements Parser {
      * 作る。
      *
      * @param delegate SnakeYAML の読み込み
+     * @param limits 読み込みの上限（深さと別名の数を使う）
      */
-    LimitingParser(Parser delegate) {
+    LimitingParser(Parser delegate, YamlLimits limits) {
         this.delegate = delegate;
+        this.maxDepth = limits.maxDepth();
+        this.maxCollectionAliases = limits.maxCollectionAliases();
     }
 
     @Override
@@ -107,13 +116,13 @@ final class LimitingParser implements Parser {
             case CollectionStartEvent start -> {
                 rejectTag(start.getTag(), position);
                 depth++;
-                if (depth > DslFormat.MAX_DEPTH) {
+                if (depth > maxDepth) {
                     throw YamlRejection.of(
                             DslErrorKind.DEPTH_LIMIT,
                             position,
                             null,
                             DslMessageKeys.DEPTH_LIMIT,
-                            String.valueOf(DslFormat.MAX_DEPTH));
+                            String.valueOf(maxDepth));
                 }
                 rememberAnchor(start, true);
             }
@@ -121,13 +130,13 @@ final class LimitingParser implements Parser {
             case AliasEvent alias -> {
                 aliasPositions.add(position);
                 if (Boolean.TRUE.equals(anchorIsCollection.get(alias.getAnchor()))
-                        && ++collectionAliases > DslFormat.MAX_COLLECTION_ALIASES) {
+                        && ++collectionAliases > maxCollectionAliases) {
                     throw YamlRejection.of(
                             DslErrorKind.ALIAS_LIMIT,
                             position,
                             null,
                             DslMessageKeys.ALIAS_LIMIT,
-                            String.valueOf(DslFormat.MAX_COLLECTION_ALIASES));
+                            String.valueOf(maxCollectionAliases));
                 }
             }
             default -> {
@@ -146,11 +155,7 @@ final class LimitingParser implements Parser {
     private static void rejectTag(String tag, YamlPosition position) {
         if (tag != null) {
             throw YamlRejection.of(
-                    DslErrorKind.FORBIDDEN_TAG,
-                    position,
-                    null,
-                    DslMessageKeys.FORBIDDEN_TAG,
-                    cherry.mastersmith.dsl.domain.DslError.excerpt(tag));
+                    DslErrorKind.FORBIDDEN_TAG, position, null, DslMessageKeys.FORBIDDEN_TAG, DslError.excerpt(tag));
         }
     }
 }

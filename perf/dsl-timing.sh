@@ -17,6 +17,9 @@
 # 対象DB の種類ごとに、対象DB とアプリを起動し、100 テーブル × 100 カラムのスキーマ large を作り、
 # 生成・表示（照合）・ダウンロード・適用・投入・戻しの時間と、生成の内訳（DEBUG のログ）、ヒープとコンテナのメモリを記録する。
 # 10MB 近くの DSL（正しいもの・誤りを含むもの）は、生成した DSL から perf/make-large-dsl.mjs で結果の置き場に作る。
+# DSL は書式の版 2（Intent 261004-role-menu の U2 dsl-v2。スキーマは1つ、メニューの table は {schema, name}）。
+# ヒープの使用（/actuator/metrics/jvm.memory.used の heap）を、10MB の投入・表示と --busy の後に heap.tsv に記録する
+# （使い捨てのアプリにだけ health,metrics を公開する。配備したアプリの公開の範囲は変えない）。
 #
 # 使い方（プロジェクトのルートで。事前に WAR とイメージを作る。配備に使うタグ local は上書きしない）:
 #   ./gradlew :backend:bootWar && docker build -t mastersmith:perf-dsl .
@@ -25,6 +28,8 @@
 # 追加の確かめ（どれも上の測定の後に行う。組み合わせてよい）:
 #   --lang     英語のロケールのブラウザーで、照合の警告と投入の誤りの message・画面の文言が英語か（perf/ui/dsl-ui-lang.mjs、U5-LANG-E2E）
 #   --pattern  重い正規表現を多数含む DSL の投入と、直後の普通の DSL の投入の時間（perf/make-pattern-dsl.mjs、U2-PATTERN-COMPILE）
+#   --busy     10MB の DSL の投入を2つ並べて送り、成功1つと 503 DSL_BUSY 1つが送り手に届くかを確かめる（U2 dsl-v2 の NFR2.5・NFR2.6）。
+#              2つとも成功は重ならなかった回として最大 BUSY_ATTEMPTS 回（既定 5）までやり直す。結果は busy.tsv（組ごとに1行）
 #   --storage  10MB の DSL の投入→適用を 21 回くり返し、H2 のファイルの大きさとコンテナのメモリを記録し、アプリを止めて
 #              起動し直した後の大きさ・止めた時間と終わり方・データの無事を記録（U4-STORAGE。最後に行う）
 #   --compact  --storage と組み合わせる。止める前に、アプリを止めずに内部DB を詰め直す道具（docker/hikari-pool.sh compact）を
@@ -36,6 +41,7 @@
 #   MASTERSMITH_CONTAINER_MEMORY  アプリのコンテナのメモリの上限（既定 2g。配備と同じ値で、要件の条件も 2g）
 #   REPEAT                        生成・表示を繰り返す回数（既定 3）
 #   STORAGE_ROUNDS                --storage の投入→適用の回数（既定 21。履歴の上限 20 を1回超える）
+#   BUSY_ATTEMPTS                 --busy の重ならなかった回のやり直しの上限（既定 5）
 #   PERF_DB_URL                   内部DB の接続先（MASTERSMITH_DB_URL）を上書きする（比べるとき。例: jdbc:h2:file:/app/data/mastersmith）
 #   OUT_DIR                       結果の置き場（既定 build/perf-results/dsl-<日時>）
 #   KEEP=1                        終わっても使い捨ての環境を消さない（種類は1つだけ。後で down -v と一時ディレクトリの削除を手で行う）
@@ -53,6 +59,7 @@ API="${BASE}/api/admin/dsl"
 APP=mastersmith-perf-app-1
 REPEAT=${REPEAT:-3}
 STORAGE_ROUNDS=${STORAGE_ROUNDS:-21}
+BUSY_ATTEMPTS=${BUSY_ATTEMPTS:-5}
 export MASTERSMITH_IMAGE_TAG=${MASTERSMITH_IMAGE_TAG:-local}
 export MASTERSMITH_CONTAINER_CPUS=${MASTERSMITH_CONTAINER_CPUS:-4}
 export MASTERSMITH_CONTAINER_MEMORY=${MASTERSMITH_CONTAINER_MEMORY:-2g}
@@ -64,7 +71,7 @@ log() { printf '[%s] %s\n' "$(date +%H:%M:%S)" "$*" >&2; }
 now_ms() { perl -MTime::HiRes=time -e 'printf "%d", time * 1000'; }
 rand() { openssl rand -base64 24 | tr -d '/+=' | cut -c1-24; }
 
-ui=0 pattern=0 storage=0 lang=0 compact=0
+ui=0 pattern=0 storage=0 lang=0 compact=0 busy=0
 kinds=()
 for arg in "$@"; do
   case "${arg}" in
@@ -73,9 +80,10 @@ for arg in "$@"; do
     --storage) storage=1 ;;
     --compact) compact=1 ;;
     --lang) lang=1 ;;
+    --busy) busy=1 ;;
     postgres | mysql | mariadb) kinds+=("${arg}") ;;
     *)
-      echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
+      echo "使い方: $0 [--ui] [--lang] [--pattern] [--busy] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
       exit 1
       ;;
   esac
@@ -89,7 +97,7 @@ if [ "${compact}" = 1 ] && [ "${storage}" != 1 ]; then
   exit 1
 fi
 if ((${#kinds[@]} == 0)); then
-  echo "使い方: $0 [--ui] [--lang] [--pattern] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
+  echo "使い方: $0 [--ui] [--lang] [--pattern] [--busy] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
   exit 1
 fi
 if [ -n "$(compose "${ALL_PROFILES[@]}" ps -aq 2> /dev/null)" ]; then
@@ -127,6 +135,8 @@ db_reader_password=$(rand)
     printf 'LOGGING_LEVEL_CHERRY_MASTERSMITH_DSLMANAGE_GENERATE=DEBUG\n'
     # GC の記録（エポックのミリ秒つき）を内部DB のボリュームに書き、操作ごとのヒープの最大を読む。
     printf 'MASTERSMITH_JAVA_OPTIONS=-Xlog:gc:file=/app/data/gc.log:timemillis\n'
+    # ヒープの使用（jvm.memory.used の heap）を読むため、使い捨てのアプリにだけ指標を公開する（配備したアプリは変えない）。
+    printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n'
     # 内部DB の接続先を上書きして比べるとき（例: DEFRAG_ALWAYS なし）。資格情報を含まない H2 のファイルの URL だけを渡す。
     if [ -n "${PERF_DB_URL:-}" ]; then
       printf 'MASTERSMITH_DB_URL=%s\n' "${PERF_DB_URL}"
@@ -181,6 +191,52 @@ measure() {
   log "${KIND} ${name}: HTTP・秒・受信・送信 = ${result//$'\t'/ }"
   # 重い処理は同時に1つのため、応答の後の片付け（GC など）が次の測定に重ならないよう少し待つ。
   sleep 2
+}
+
+# ヒープの使用（/actuator/metrics/jvm.memory.used?tag=area:heap の VALUE、バイト）を heap.tsv に1行足す。引数: 名前
+heap() {
+  local bytes
+  bytes=$(curl -sS "${BASE}/actuator/metrics/jvm.memory.used?tag=area:heap" |
+    jq -r '[.measurements[] | select(.statistic == "VALUE") | .value][0] // "unknown"') || bytes=unknown
+  printf '%s\t%s\t%s\t%s\n' "${KIND}" "$1" "${bytes}" "$(now_ms)" >> "${OUT_DIR}/heap.tsv"
+  log "${KIND} heap ${1}: ${bytes} バイト"
+}
+
+# 同時の投入の1組（--busy）。ログインを1回して、同じ 10MB の DSL の投入を2つ並べて送る。要求ごとに別の応答のファイルに受け、
+# 状態コード（-w '%{http_code}'）と curl の終了コードを両方記録する。引数: 組の番号。判定を標準出力に出す。
+#   pass            成功（201）1つと 503 DSL_BUSY 1つ
+#   not-overlapped  2つとも成功（先の処理が終わってから後が届いた。やり直す）
+#   fail-candidate  それ以外（2つとも 503、DSL_BUSY 以外の 5xx、状態コードが取れない など。不合格の候補として記録する）
+busy_pair() {
+  local n=$1 side
+  login
+  for side in a b; do
+    (
+      set +e
+      code=$(curl -sS -o "${KIND_DIR}/resp-busy-${n}-${side}.body" -X POST -H "@${TMP}/auth.header" -H "Origin: ${BASE}" \
+        -H 'Accept-Language: ja' -H 'Content-Type: application/yaml' --data-binary "@${KIND_DIR}/valid-10mb.yaml" \
+        -w '%{http_code}' "${API}/preview?source=UPLOAD" 2> "${KIND_DIR}/busy-${n}-${side}.stderr")
+      printf '%s\t%s\n' "${code:-000}" "$?" > "${KIND_DIR}/busy-${n}-${side}.result"
+    ) &
+  done
+  wait
+  local code_a exit_a code_b exit_b body_a body_b verdict
+  IFS=$'\t' read -r code_a exit_a < "${KIND_DIR}/busy-${n}-a.result"
+  IFS=$'\t' read -r code_b exit_b < "${KIND_DIR}/busy-${n}-b.result"
+  body_a=$(jq -r '.code // ""' "${KIND_DIR}/resp-busy-${n}-a.body" 2> /dev/null || true)
+  body_b=$(jq -r '.code // ""' "${KIND_DIR}/resp-busy-${n}-b.body" 2> /dev/null || true)
+  if { [ "${code_a}" = 201 ] && [ "${code_b}" = 503 ] && [ "${body_b}" = DSL_BUSY ]; } ||
+    { [ "${code_b}" = 201 ] && [ "${code_a}" = 503 ] && [ "${body_a}" = DSL_BUSY ]; }; then
+    verdict=pass
+  elif [ "${code_a}" = 201 ] && [ "${code_b}" = 201 ]; then
+    verdict=not-overlapped
+  else
+    verdict=fail-candidate
+  fi
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "${KIND}" "${n}" "${code_a}" "${exit_a}" "${body_a:--}" \
+    "${code_b}" "${exit_b}" "${body_b:--}" "${verdict}" >> "${OUT_DIR}/busy.tsv"
+  log "${KIND} busy ${n}: a=${code_a}(curl ${exit_a}, ${body_a:--}) b=${code_b}(curl ${exit_b}, ${body_b:--}) → ${verdict}"
+  echo "${verdict}"
 }
 
 # 3. 対象DB の種類ごとに測る。
@@ -243,7 +299,9 @@ run_kind() {
   node "${ROOT}/perf/make-large-dsl.mjs" "${KIND_DIR}/generated.yaml" "${KIND_DIR}" > "${KIND_DIR}/large-dsl.txt"
   # 3.5 10MB の投入（NFR1.5・NFR1.8）・表示（NFR1.8）・ダウンロード（NFR1.11）・適用・適用中のダウンロード（NFR1.11）。
   measure submit-10mb-valid POST '/preview?source=UPLOAD' -H 'Content-Type: application/yaml' --data-binary "@${KIND_DIR}/valid-10mb.yaml"
+  heap after-submit-10mb-valid
   measure preview-after-submit-10mb-first GET /preview
+  heap after-preview-10mb-first
   measure preview-after-submit-10mb-second GET /preview
   measure download-preview-10mb GET /preview/download
   apply_current_preview apply-10mb
@@ -251,6 +309,27 @@ run_kind() {
   # 3.6 誤りを含む 10MB の投入（NFR1.5。422 でプレビューは変わらない）。
   measure submit-10mb-invalid-many POST '/preview?source=UPLOAD' -H 'Content-Type: application/yaml' --data-binary "@${KIND_DIR}/invalid-many-10mb.yaml"
   measure submit-10mb-invalid-tail POST '/preview?source=UPLOAD' -H 'Content-Type: application/yaml' --data-binary "@${KIND_DIR}/invalid-tail-10mb.yaml"
+  # 3.6b 同時の投入（任意、--busy）。成功1つと 503 DSL_BUSY 1つで合格。2つとも成功は最大 BUSY_ATTEMPTS 回までやり直し、尽きたら
+  # 不合格にせず記録して依頼者に諮る。不合格の候補の回はやり直さずに記録する。後に memory.peak・OOMKilled・終了の状態とヒープを記録する。
+  if [ "${busy}" = 1 ]; then
+    local attempt verdict=none
+    for ((attempt = 1; attempt <= BUSY_ATTEMPTS; attempt++)); do
+      verdict=$(busy_pair "${attempt}")
+      [ "${verdict}" = not-overlapped ] || break
+      sleep 2
+    done
+    if [ "${verdict}" = not-overlapped ]; then
+      verdict="not-overlapped-${BUSY_ATTEMPTS}-times（依頼者に諮る）"
+    fi
+    {
+      printf 'verdict=%s\nattempts=%s\n' "${verdict}" "$((attempt > BUSY_ATTEMPTS ? BUSY_ATTEMPTS : attempt))"
+      printf 'memory_peak_bytes=%s\n' "$(docker exec "${APP}" cat /sys/fs/cgroup/memory.peak 2> /dev/null || echo unknown)"
+      docker inspect "${APP}" --format 'OOMKilled={{.State.OOMKilled}} ExitCode={{.State.ExitCode}} Status={{.State.Status}} Health={{.State.Health.Status}}'
+    } > "${KIND_DIR}/busy-state.txt"
+    log "${KIND}: 同時の投入 $(tr '\n' ' ' < "${KIND_DIR}/busy-state.txt")"
+    heap after-busy
+    sleep 2
+  fi
   # 3.7 履歴からの戻し（NFR1.8）。想定の規模の版（生成した DSL を適用した版）と 10MB の版。
   measure history GET /history
   local generated_rev large_rev
@@ -436,6 +515,10 @@ apply_current_preview() {
 }
 
 printf 'kind\tname\thttp\tseconds\tbytes_down\tbytes_up\tstart_ms\tend_ms\n' > "${OUT_DIR}/timings.tsv"
+printf 'kind\tlabel\theap_used_bytes\tat_ms\n' > "${OUT_DIR}/heap.tsv"
+if [ "${busy}" = 1 ]; then
+  printf 'kind\tattempt\thttp_a\tcurl_exit_a\tcode_a\thttp_b\tcurl_exit_b\tcode_b\tverdict\n' > "${OUT_DIR}/busy.tsv"
+fi
 for kind in "${kinds[@]}"; do
   run_kind "${kind}"
 done

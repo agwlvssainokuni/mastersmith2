@@ -22,7 +22,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { MissingDisplayName } from './api/types'
 import { DslPreviewPanel, type DslPreviewPanelProps } from './DslPreviewPanel'
-import { previewOf } from './testing/fixtures'
+import { errorReport, previewOf } from './testing/fixtures'
 import { renderDsl } from './testing/renderDsl'
 
 function renderPanel(
@@ -31,6 +31,7 @@ function renderPanel(
 ) {
   const props: DslPreviewPanelProps = {
     preview: previewOf(),
+    invalidReport: null,
     loadState: 'loaded',
     emptyReason: 'none',
     replacedByOther: false,
@@ -52,7 +53,7 @@ function renderPanel(
 
 function missing(n: number): MissingDisplayName[] {
   return Array.from({ length: n }, (_, i) => ({
-    path: `tables.t${i}.label`,
+    path: `schemas.sales.tables.t${i}.label`,
     language: i % 2 === 0 ? 'ja' : 'en',
   }))
 }
@@ -73,7 +74,7 @@ describe('DslPreviewPanel', () => {
     expect(screen.getByTestId('dsl-preview-missing-count')).toHaveTextContent('表示名の未設定 1件')
     expect(screen.getByTestId('dsl-diff-table')).toBeInTheDocument()
     expect(screen.getByTestId('dsl-warning-list')).toBeInTheDocument()
-    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('部署（dept_mst）')
+    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('部署（sales.dept_mst）')
     const headings = screen.getAllByRole('heading').map((h) => `${h.tagName}:${h.textContent}`)
     expect(headings.slice(0, 5)).toEqual([
       'H2:プレビュー',
@@ -213,7 +214,11 @@ describe('DslPreviewPanel', () => {
         summary: {
           ...previewOf().summary,
           menuTree: [
-            { label: { ja: '<img src=x onerror=alert(1)>', en: 'x' }, table: 't', children: [] },
+            {
+              label: { ja: '<img src=x onerror=alert(1)>', en: 'x' },
+              table: { schema: 's', name: 't' },
+              children: [],
+            },
           ],
         },
       }),
@@ -229,7 +234,63 @@ describe('DslPreviewPanel', () => {
 
     expect(screen.getByTestId('dsl-preview-valid')).toHaveTextContent('The DSL passed validation')
     expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
-    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('Departments（dept_mst）')
+    expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent(
+      'Departments（sales.dept_mst）',
+    )
+  })
+
+  it('shows the schema count before the table count', () => {
+    renderPanel({ preview: previewOf({ summary: { ...previewOf().summary, schemaCount: 1 } }) })
+
+    expect(screen.getByTestId('dsl-preview-schema-count')).toHaveTextContent('スキーマ 1')
+  })
+
+  it('shows an unreadable preview with the errors, the guidance, download and discard but no apply', async () => {
+    const user = userEvent.setup()
+    const { props } = renderPanel({ preview: previewOf(), invalidReport: errorReport(2) })
+
+    expect(screen.getByTestId('dsl-preview-invalid')).toBeInTheDocument()
+    expect(
+      screen.getByText('このプレビューは今の書式で読めません').closest('[role="alert"]'),
+    ).not.toBeNull()
+    expect(screen.getByTestId('dsl-preview-invalid-body')).toHaveTextContent(
+      '破棄してから、版 2 の DSL を投入するか、スキーマを読み込んでください。',
+    )
+    expect(screen.getByTestId('dsl-preview-invalid-errors')).toHaveTextContent('誤り 2')
+    expect(screen.queryByTestId('dsl-preview-apply')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('dsl-preview-valid')).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('dsl-preview-invalid-download'))
+    await user.click(screen.getByTestId('dsl-preview-invalid-discard'))
+    expect(props.onDownload).toHaveBeenCalledTimes(1)
+    expect(props.onDiscard).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats SCHEMA_MISMATCH as not compared and never as a mismatch', () => {
+    const only = renderPanel({
+      preview: previewOf({
+        warnings: [{ kind: 'SCHEMA_MISMATCH', path: 'schemas.other', message: '違う' }],
+      }),
+    })
+    expect(screen.getByTestId('dsl-preview-not-compared')).toBeInTheDocument()
+    expect(screen.queryByTestId('dsl-preview-mismatch')).not.toBeInTheDocument()
+    only.unmount()
+
+    renderPanel({
+      preview: previewOf({
+        warnings: [
+          { kind: 'SCHEMA_MISMATCH', path: 'schemas.other', message: '違う' },
+          { kind: 'TABLE_MISSING', path: 'schemas.other.tables.t', message: '無い' },
+        ],
+      }),
+    })
+    expect(screen.getByTestId('dsl-preview-mismatch')).toHaveTextContent('食い違いが 1件')
+  })
+
+  it('has no accessibility violations for an unreadable preview', async () => {
+    const { container } = renderPanel({ preview: null, invalidReport: errorReport(1) })
+
+    expect(await axe(container)).toHaveNoViolations()
   })
 
   it('has no accessibility violations', async () => {

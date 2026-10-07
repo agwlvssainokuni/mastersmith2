@@ -16,6 +16,7 @@
 package cherry.mastersmith.dsl.service;
 
 import cherry.mastersmith.dsl.domain.DslReadResult;
+import cherry.mastersmith.dsl.domain.DslStartupReadResult;
 
 /**
  * DSL の読み込みの口（契約 C2・C4 の {@code DslReader}。U3 の生成した DSL の検証と、U4 の投入・起動時の読み込みが使う）。
@@ -33,6 +34,16 @@ public interface DslReader {
      * @return 検証を通った（モデルと識別）か、通らなかった（誤りの一覧）か
      */
     DslReadResult read(byte[] yamlBytes);
+
+    /**
+     * 起動時の読み方で DSL を読む（U2 dsl-v2 の BR2.3、functional-spec.md の 2節）。段の順は {@link #read(byte[])} と同じで、意味の
+     * 検証からメニューの深さだけを外し、モデルを作る前に深すぎる枝を落とす（{@code MenuDepth.prune}）。深さ以外の誤り（書式の版 1 を
+     * 含む）は通常の読み方と同じく通らない。
+     *
+     * @param yamlBytes UTF-8 の YAML の本文
+     * @return 検証を通った（深すぎる枝を落としたモデルと、落とした項目の数）か、通らなかった（誤りの一覧）か
+     */
+    DslStartupReadResult readAtStartup(byte[] yamlBytes);
 
     /**
      * 本文のバイト列から DSL の識別を求める（検証はしない。BR5.1）。

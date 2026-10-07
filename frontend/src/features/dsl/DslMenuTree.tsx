@@ -15,6 +15,7 @@
  */
 //
 // メニューの木（mockups.md の 2、BR5.9、NFR1.19）。表示言語の表示名を示し、テーブルの物理名は訳さない。
+// 書式の版 2 では、テーブルを指す節の括弧の中を「スキーマ名.テーブル名」にする（U2 dsl-v2 の BR7.4。文字として出す）。
 // 既定では1段目だけを開き（1段目の節の子を示す）、それより下は開いた節だけを描く。
 // ARIA の tree の役割は使わず、入れ子のリストと開閉のボタン（aria-expanded）で表す（design-system-mapping.md の 2節）。
 import { Icon } from 'make-you-chic-ui'
@@ -105,7 +106,11 @@ function MenuItem({ node, nodeKey, expanded, onToggle }: MenuItemProps) {
   const text = (
     <>
       <span>{label}</span>
-      {node.table !== null && <span className="dsl-menu-table">（{node.table}）</span>}
+      {node.table !== null && (
+        <span className="dsl-menu-table">
+          （{node.table.schema}.{node.table.name}）
+        </span>
+      )}
     </>
   )
   return (

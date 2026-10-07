@@ -27,18 +27,20 @@ import tools.jackson.databind.JsonNode;
 class YamlTreeConverterTest {
 
     private static final String YAML = """
-            version: 1
+            version: 2
             menus:
               - label: {ja: 部署, en: Dept}
-                table: dept
-            tables:
-              dept:
-                label: &name
-                  ja: 部署
-                  en: dept
-                columns:
-                  code:
-                    label: *name
+                table: {schema: sales, name: dept}
+            schemas:
+              sales:
+                tables:
+                  dept:
+                    label: &name
+                      ja: 部署
+                      en: dept
+                    columns:
+                      code:
+                        label: *name
             """;
 
     @Test
@@ -51,9 +53,10 @@ class YamlTreeConverterTest {
         assertThat(positions.find("/menus")).contains(new YamlPosition(2, 1));
         assertThat(positions.find("/menus/0")).contains(new YamlPosition(3, 5));
         assertThat(positions.find("/menus/0/table")).contains(new YamlPosition(4, 5));
+        assertThat(positions.find("/menus/0/table/name")).contains(new YamlPosition(4, 28));
         assertThat(positions.find("/menus/0/label/en")).contains(new YamlPosition(3, 21));
-        assertThat(positions.find("/tables/dept/columns/code")).contains(new YamlPosition(11, 7));
-        assertThat(positions.find("/tables/dept/label/ja")).contains(new YamlPosition(8, 7));
+        assertThat(positions.find("/schemas/sales/tables/dept/columns/code")).contains(new YamlPosition(13, 11));
+        assertThat(positions.find("/schemas/sales/tables/dept/label/ja")).contains(new YamlPosition(10, 11));
         assertThat(positions.find("/no/such")).isEmpty();
     }
 
@@ -62,13 +65,16 @@ class YamlTreeConverterTest {
     void aliasValuesUseTheReferencePosition() {
         YamlDocument document = SafeYamlParserTest.parsed(YAML);
 
-        assertThat(document.json().at("/tables/dept/columns/code/label/ja").stringValue())
+        assertThat(document.json()
+                        .at("/schemas/sales/tables/dept/columns/code/label/ja")
+                        .stringValue())
                 .isEqualTo("部署");
-        assertThat(document.positions().find("/tables/dept/columns/code/label")).contains(new YamlPosition(12, 9));
-        assertThat(document.positions().find("/tables/dept/columns/code/label/ja"))
-                .contains(new YamlPosition(12, 9));
-        assertThat(document.positions().find("/tables/dept/columns/code/label/en"))
-                .contains(new YamlPosition(12, 9));
+        assertThat(document.positions().find("/schemas/sales/tables/dept/columns/code/label"))
+                .contains(new YamlPosition(14, 13));
+        assertThat(document.positions().find("/schemas/sales/tables/dept/columns/code/label/ja"))
+                .contains(new YamlPosition(14, 13));
+        assertThat(document.positions().find("/schemas/sales/tables/dept/columns/code/label/en"))
+                .contains(new YamlPosition(14, 13));
     }
 
     @Test

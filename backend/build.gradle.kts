@@ -379,11 +379,11 @@ tasks.bootWar {
     }
 }
 
-// ---- DSL の JSON Schema の公開（U2） ----
-// 正本は src/main/resources/dsl/dsl-schema-v1.json の1つ（検証もこれを読む）。画面の静的なファイルの置き場（static/dsl/）へ
-// ビルドで複写し、ログインなしの /dsl/dsl-schema-v1.json で配る。WAR には WEB-INF/classes/static/dsl/ として入る。
+// ---- DSL の JSON Schema の公開（U2。Intent 261004-role-menu の U2 dsl-v2 で書式の版 2 にした） ----
+// 正本は src/main/resources/dsl/dsl-schema-v2.json の1つ（検証もこれを読む）。画面の静的なファイルの置き場（static/dsl/）へ
+// ビルドで複写し、ログインなしの /dsl/dsl-schema-v2.json で配る。WAR には WEB-INF/classes/static/dsl/ として入る。
 
-val dslSchemaSource = layout.projectDirectory.file("src/main/resources/dsl/dsl-schema-v1.json")
+val dslSchemaSource = layout.projectDirectory.file("src/main/resources/dsl/dsl-schema-v2.json")
 
 tasks.processResources {
     from(dslSchemaSource) {
@@ -401,7 +401,7 @@ tasks.register("verifyDslSchemaInWar") {
     doLast {
         val expected = dslSchemaSource.asFile.readBytes()
         ZipFile(war.get().asFile).use { zip ->
-            for (entryName in listOf("WEB-INF/classes/dsl/dsl-schema-v1.json", "WEB-INF/classes/static/dsl/dsl-schema-v1.json")) {
+            for (entryName in listOf("WEB-INF/classes/dsl/dsl-schema-v2.json", "WEB-INF/classes/static/dsl/dsl-schema-v2.json")) {
                 val entry = zip.getEntry(entryName) ?: throw GradleException("WAR に $entryName がありません。")
                 val actual = zip.getInputStream(entry).use { it.readBytes() }
                 if (!actual.contentEquals(expected)) {

@@ -17,6 +17,7 @@ package cherry.mastersmith.dsl.parse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.dsl.testsupport.DslSamples;
 import java.nio.charset.StandardCharsets;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Label;
@@ -36,7 +37,7 @@ class SafeYamlParserPropertyTest {
     @Property(tries = 300)
     @Label("arbitrary bytes never leak an unexpected exception")
     void arbitraryBytes(@ForAll @Size(max = 300) byte[] bytes) {
-        assertThat(parser.parse(bytes)).isNotNull();
+        assertThat(parser.parse(bytes, DslSamples.DSL_YAML_LIMITS)).isNotNull();
     }
 
     @Property(tries = 500)
@@ -49,7 +50,7 @@ class SafeYamlParserPropertyTest {
                         '#', '%', '@', '\t', '1', '.'
                     })
                     String text) {
-        YamlParseResult result = parser.parse(text.getBytes(StandardCharsets.UTF_8));
+        YamlParseResult result = parser.parse(text.getBytes(StandardCharsets.UTF_8), DslSamples.DSL_YAML_LIMITS);
 
         assertThat(result).isNotNull();
         if (result instanceof YamlParseResult.Rejected rejected) {

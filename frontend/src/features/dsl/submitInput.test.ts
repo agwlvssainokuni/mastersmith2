@@ -28,7 +28,7 @@ import {
 
 /** 中身は小さく、大きさだけを size にしたファイル（10MB の中身を作らない） */
 function sizedFile(size: number, name = 'master.yaml'): File {
-  const file = new File(['version: 1\n'], name, { type: 'application/yaml' })
+  const file = new File(['version: 2\n'], name, { type: 'application/yaml' })
   Object.defineProperty(file, 'size', { value: size })
   return file
 }
@@ -69,7 +69,7 @@ describe('submitInput', () => {
     expect(await readSubmitPayload(fileInput(over))).toBeNull()
     expect(readOver).not.toHaveBeenCalled()
     expect(await readSubmitPayload(fileInput(exact))).toEqual({
-      text: 'version: 1\n',
+      text: 'version: 2\n',
       source: 'UPLOAD',
     })
   })

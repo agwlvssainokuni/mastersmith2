@@ -54,6 +54,7 @@ export function DslAdminPage({ api = dslApi, save = saveFile, timeZone }: DslAdm
     preview: (
       <DslPreviewPanel
         preview={state.preview}
+        invalidReport={state.previewInvalid}
         loadState={state.previewLoad}
         emptyReason={state.emptyReason}
         replacedByOther={state.replacedByOther}

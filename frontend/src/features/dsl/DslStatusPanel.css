@@ -28,7 +28,9 @@
 
 .dsl-status-row {
   display: grid;
-  grid-template-columns: 8em 1fr;
+
+  /* 値の列は中身の幅より狭くなれるようにし、狭い幅（360px）で行がはみ出さず折り返す（U2 dsl-v2 の 360px の確かめ）。 */
+  grid-template-columns: 8em minmax(0, 1fr);
   gap: var(--space-2);
 }
 
@@ -37,17 +39,34 @@
 }
 
 .dsl-status-row dd {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .dsl-status-values {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+.dsl-status-values > * {
+  min-width: 0;
+}
+
+/*
+ * 本文の列が狭い（360px の表示ではサイドバーの残りの約 108px）ときは、識別の先頭の文字も折り返す。読み上げ用の隠した全文は
+ * 識別の中に置き、列の外へ出さない。
+ */
+.dsl-status-values .dsl-hash {
+  position: relative;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 @media (width <= 1023px) {
   .dsl-status-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

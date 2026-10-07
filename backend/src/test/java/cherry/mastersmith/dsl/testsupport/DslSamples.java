@@ -15,6 +15,8 @@
  */
 package cherry.mastersmith.dsl.testsupport;
 
+import cherry.mastersmith.dsl.domain.DslFormat;
+import cherry.mastersmith.dsl.parse.YamlLimits;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -24,6 +26,10 @@ import java.nio.charset.StandardCharsets;
 public final class DslSamples {
 
     private static final String VALID = "cherry/mastersmith/dsl/valid-sample.yaml";
+
+    /** DSL の読み込みと同じ上限（{@link DslFormat} の値）。読み込みの部品を直接使うテストが渡す。 */
+    public static final YamlLimits DSL_YAML_LIMITS = new YamlLimits(
+            DslFormat.MAX_BYTES, DslFormat.MAX_DEPTH, DslFormat.MAX_COLLECTION_ALIASES, DslFormat.MAX_EXPANDED_NODES);
 
     private DslSamples() {}
 

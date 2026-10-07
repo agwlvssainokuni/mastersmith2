@@ -57,6 +57,7 @@ function Harness({ confirm, onConfirm = vi.fn(), onCancel = vi.fn() }: HarnessPr
 const replace: DslConfirm = { kind: 'replace', operation: 'submit', preview: previewRef() }
 const apply: DslConfirm = {
   kind: 'apply',
+  schemas: { added: 1, removed: 0, changed: 1 },
   tables: { added: 1, removed: 1, changed: 3 },
   columns: { added: 12, removed: 5, changed: 2 },
   warningCount: 2,
@@ -138,11 +139,29 @@ describe('DslConfirmDialog', () => {
     const { user } = await openWith({ confirm: apply, onConfirm })
 
     expect(screen.getByTestId('dsl-confirm-diff')).toHaveTextContent(
-      'テーブル 増えた 1・減った 1・変わった 3カラム 増えた 12・減った 5・変わった 2',
+      'スキーマ 増えた 1・減った 0・変わった 1テーブル 増えた 1・減った 1・変わった 3カラム 増えた 12・減った 5・変わった 2',
     )
     expect(screen.getByTestId('dsl-confirm-warnings')).toHaveTextContent('対象DB との食い違い 2件')
     await user.click(screen.getByRole('button', { name: '適用する' }))
     expect(onConfirm).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the schema count row even when every schema count is 0', async () => {
+    await openWith({
+      confirm: { ...apply, schemas: { added: 0, removed: 0, changed: 0 } } as DslConfirm,
+    })
+
+    expect(screen.getByTestId('dsl-confirm-schema-counts')).toHaveTextContent(
+      'スキーマ 増えた 0・減った 0・変わった 0',
+    )
+  })
+
+  it('shows the schema count row in English', async () => {
+    await openWith({ confirm: apply }, ['en-US'])
+
+    expect(screen.getByTestId('dsl-confirm-schema-counts')).toHaveTextContent(
+      'Schemas added 1 · removed 0 · changed 1',
+    )
   })
 
   it('tells that there is no warning', async () => {

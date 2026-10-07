@@ -207,7 +207,9 @@ class DslTargetDbIT {
         Map<String, Object> preview = DslApi.json(generated);
         assertThat(preview).containsEntry("source", "GENERATED");
         assertThat(list(preview.get("warnings"))).isEmpty();
-        assertThat(list(((Map<String, Object>) preview.get("diff")).get("tables")))
+        assertThat(list(list(((Map<String, Object>) preview.get("diff")).get("schemas"))
+                        .getFirst()
+                        .get("tables")))
                 .extracting(table -> table.get("name"))
                 .contains(TargetDbFixture.CUSTOMER, TargetDbFixture.ORDER_ITEMS, TargetDbFixture.CUSTOMER_VIEW);
         assertThat(shown.statusCode()).isEqualTo(200);
@@ -220,7 +222,12 @@ class DslTargetDbIT {
         int port = database.port();
         assertNoConnectionInfo(generated.body() + shown.body() + yaml + row.all(), port);
         assertNoConnectionInfo(appLog(output), port);
-        assertThat(yaml).doesNotContain(schema);
+        assertThat(yaml)
+                .as("the schema name of the setting is written, the database item of PostgreSQL is not (BR4.3)")
+                .contains("schemas:\n  " + schema + ":\n")
+                .contains("      schema: " + schema + "\n")
+                .doesNotContainPattern("(?m)^\\s*database:")
+                .doesNotContain(": " + database.connectDatabase(schema) + "\n");
 
         HttpResponse<String> applied = api.apply((String) preview.get("previewId"));
         assertThat(applied.statusCode()).isEqualTo(200);
@@ -232,6 +239,7 @@ class DslTargetDbIT {
     @DisplayName("a missing table, a missing column and a type mismatch become warnings, and the preview is placed")
     void reconcileWarnings() {
         byte[] body = DslYaml.dsl()
+                .schema(schema, schema, schema)
                 .table(
                         TargetDbFixture.CUSTOMER,
                         column(TargetDbFixture.CUSTOMER_ID).type("int4", null, null, null),
@@ -246,9 +254,9 @@ class DslTargetDbIT {
         assertThat(list(DslApi.json(placed).get("warnings")))
                 .extracting(warning -> warning.get("kind") + " " + warning.get("path"))
                 .containsExactly(
-                        "TYPE_MISMATCH tables.Customer.columns.Name",
-                        "COLUMN_MISSING tables.Customer.columns.ghost",
-                        "TABLE_MISSING tables.absent_table");
+                        "TYPE_MISMATCH schemas." + schema + ".tables.Customer.columns.Name",
+                        "COLUMN_MISSING schemas." + schema + ".tables.Customer.columns.ghost",
+                        "TABLE_MISSING schemas." + schema + ".tables.absent_table");
     }
 
     @Test
@@ -256,6 +264,7 @@ class DslTargetDbIT {
     @DisplayName("restoring a revision with a column the target database lacks shows the mismatch warning")
     void restoreWarnings() {
         byte[] body = DslYaml.dsl()
+                .schema(schema, schema, schema)
                 .table(
                         TargetDbFixture.CUSTOMER,
                         column(TargetDbFixture.CUSTOMER_ID).type("int4", null, null, null),
@@ -276,7 +285,7 @@ class DslTargetDbIT {
         assertThat(DslApi.json(restored)).containsEntry("source", "RESTORE");
         assertThat(list(DslApi.json(restored).get("warnings")))
                 .extracting(warning -> warning.get("kind") + " " + warning.get("path"))
-                .containsExactly("COLUMN_MISSING tables.Customer.columns.ghost");
+                .containsExactly("COLUMN_MISSING schemas." + schema + ".tables.Customer.columns.ghost");
         assertNoConnectionInfo(restored.body(), database.port());
     }
 
@@ -311,5 +320,34 @@ class DslTargetDbIT {
             assertThat(otherApi.discard().statusCode()).isEqualTo(204);
             assertNoConnectionInfo(generated.body() + shown.body() + appLog(output), silent.port());
         }
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("a DSL schema named differently from the setting is one SCHEMA_MISMATCH warning without the configured"
+            + " schema name")
+    void schemaMismatchWarning() {
+        byte[] body = DslYaml.dsl()
+                .schema("other_schema", "他", "Other")
+                .table(TargetDbFixture.CUSTOMER, column("ghost"))
+                .bytes();
+
+        HttpResponse<String> placed = api.submit(body, "PASTE");
+        HttpResponse<String> placedEn = api.withLanguage("en").get("/preview");
+
+        assertThat(placed.statusCode()).isEqualTo(201);
+        assertThat(list(DslApi.json(placed).get("warnings"))).singleElement().satisfies(warning -> {
+            assertThat(warning).containsEntry("kind", "SCHEMA_MISMATCH").containsEntry("path", "schemas.other_schema");
+            assertThat((String) warning.get("message")).contains("other_schema");
+        });
+        assertThat(list(DslApi.json(placedEn).get("warnings")))
+                .singleElement()
+                .satisfies(
+                        warning -> assertThat((String) warning.get("message")).contains("\"other_schema\""));
+        assertThat(list(DslApi.json(placed).get("warnings")).toString()
+                        + list(DslApi.json(placedEn).get("warnings")))
+                .as("the warning never embeds the configured schema name (NFR5.5)")
+                .doesNotContain(schema);
+        assertNoConnectionInfo(placed.body() + placedEn.body(), database.port());
     }
 }

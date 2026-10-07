@@ -111,6 +111,8 @@ try {
 
   // NFR1.19: 違いの表の最初の開ける行を開き、カラムの表が出るまで。
   await page.getByTestId('dsl-diff-show-all').check().catch(() => {})
+  // 書式の版 2（Intent 261004-role-menu の U2 dsl-v2）: 違いの表の行は「スキーマ/テーブル」の名前で識別する。
+  // 渡す 10MB の DSL も版 2（perf/make-large-dsl.mjs が生成した版 2 の DSL から作る）。
   const toggle = page.locator('[data-testid^="dsl-diff-toggle-"]').first()
   if ((await toggle.count()) > 0) {
     const name = (await toggle.getAttribute('data-testid')).replace('dsl-diff-toggle-', '')
@@ -120,7 +122,8 @@ try {
     await columns.waitFor({ state: 'visible', timeout: TIMEOUT })
     const ms = performance.now() - t0
     result.diffExpand = {
-      table: name,
+      schema: name.slice(0, name.indexOf('/')),
+      table: name.slice(name.indexOf('/') + 1),
       columnRows: await columns.locator('tbody tr').count(),
       expandMs: Math.round(ms),
     }

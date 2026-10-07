@@ -20,6 +20,7 @@ import cherry.mastersmith.common.i18n.domain.DisplayLanguage;
 import cherry.mastersmith.dsl.domain.DbType;
 import cherry.mastersmith.dsl.domain.DslColumn;
 import cherry.mastersmith.dsl.domain.DslModel;
+import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dslmanage.domain.PreviewView.Warning;
 import cherry.mastersmith.dslmanage.domain.PreviewView.WarningKind;
@@ -46,6 +47,10 @@ import java.util.stream.Collectors;
  * 書かれているもの（null でないもの）だけを比べる（U3 は DSL の整数に収まらない長さを書かないため、そのときの対象DB の長さは比べない）。
  * U1 が設定なし・接続できないを返したときは、その警告を1件だけにする。どれも失敗にしない。警告には DSL の中の名前と型だけを入れ、
  * 接続先と内部の例外の文言を入れない。
+ *
+ * <p>書式の版 2（U2 dsl-v2 の BR5.1）では、DSL のスキーマ名が対象DB の写しのスキーマ名と同じ（大文字・小文字を区別する）ときだけ、
+ * そのスキーマのテーブル・カラム・型を比べ、場所は {@code schemas.<スキーマ>.tables.<テーブル>(.columns.<カラム>)} にする。違えば
+ * {@code SCHEMA_MISMATCH} を1件（DSL のスキーマ名だけを埋め、写しのスキーマ名は埋めない。NFR5.5）にし、テーブルは比べない。
  */
 public final class DslReconciler {
 
@@ -59,6 +64,11 @@ public final class DslReconciler {
     private static final LocalizedText TYPE_MISMATCH = new LocalizedText(
             "カラム「{0}.{1}」の型が対象DB と違います（DSL: {2}、対象DB: {3}）。",
             "The type of the column \"{0}.{1}\" differs from the target database (DSL: {2}, target database: {3}).");
+
+    private static final LocalizedText SCHEMA_MISMATCH = new LocalizedText(
+            "DSL のスキーマ「{0}」は対象DB の設定のスキーマと違うため、テーブルを照合できませんでした。",
+            "The tables could not be compared because the DSL schema \"{0}\" differs from the schema configured for the"
+                    + " target database.");
 
     private static final LocalizedText UNCONFIGURED = new LocalizedText(
             "対象DB の接続先が設定されていないため、照合できませんでした。",
@@ -98,8 +108,28 @@ public final class DslReconciler {
 
     private static List<Warning> compare(DslModel model, TargetSchema schema, DisplayLanguage language) {
         List<Warning> warnings = new ArrayList<>();
-        for (DslTable table : model.tables().values()) {
-            String tablePath = "tables." + table.name();
+        for (DslSchema dslSchema : model.schemas()) {
+            String schemaPath = "schemas." + dslSchema.name();
+            if (!dslSchema.name().equals(schema.schemaName())) {
+                warnings.add(new Warning(
+                        WarningKind.SCHEMA_MISMATCH,
+                        schemaPath,
+                        format(SCHEMA_MISMATCH.in(language), dslSchema.name())));
+                continue;
+            }
+            compareTables(dslSchema, schemaPath, schema, language, warnings);
+        }
+        return warnings;
+    }
+
+    private static void compareTables(
+            DslSchema dslSchema,
+            String schemaPath,
+            TargetSchema schema,
+            DisplayLanguage language,
+            List<Warning> warnings) {
+        for (DslTable table : dslSchema.tables().values()) {
+            String tablePath = schemaPath + ".tables." + table.name();
             Optional<TargetTable> found = schema.table(table.name());
             if (found.isEmpty()) {
                 warnings.add(new Warning(
@@ -129,7 +159,6 @@ public final class DslReconciler {
                 }
             }
         }
-        return warnings;
     }
 
     /**

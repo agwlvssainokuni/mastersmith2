@@ -19,21 +19,19 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * メニューの項目（N 階層）。テーブルに紐付く項目か、子を持つまとまり（少なくとも一方を持つ。BR3.2）。
+ * メニューの項目（N 階層）。テーブルに紐付く項目か、子を持つまとまり（少なくとも一方を持つ。BR3.2）。書式の版 2 では、テーブルを
+ * スキーマ名とテーブル名の組（{@link TableRef}）で指す（U2 dsl-v2 の BR1.6）。
  *
  * @param label 表示名
  * @param icon アイコンの名前（無ければ null）
- * @param table 紐付くテーブルの物理名（無ければ null）
+ * @param table 紐付くテーブルの組（無ければ null）
  * @param items 子の項目（無ければ空。DSL の順）
  */
-public record DslMenuItem(DisplayName label, String icon, String table, List<DslMenuItem> items) {
+public record DslMenuItem(DisplayName label, String icon, TableRef table, List<DslMenuItem> items) {
 
     /** 必須の値と、テーブルか子の少なくとも一方を持つことを確かめ、子を変更できない一覧にする。 */
     public DslMenuItem {
         Objects.requireNonNull(label, "menu.label は必須です");
-        if (table != null) {
-            ModelValues.requireName(table, "menu.table");
-        }
         items = ModelValues.copyList(items, "menu.items");
         if (table == null && items.isEmpty()) {
             throw new IllegalArgumentException("メニューの項目はテーブルか子の少なくとも一方を持ちます");

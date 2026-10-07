@@ -17,7 +17,6 @@ package cherry.mastersmith.dsl.parse;
 
 import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
-import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -43,7 +42,8 @@ import tools.jackson.databind.node.ObjectNode;
  * BR4.1・BR4.2、NFR2.4・NFR3.2）。
  *
  * <ul>
- *   <li>別名は展開する。展開した後の節の数が {@link DslFormat#MAX_EXPANDED_NODES} を超えたら止める（別名の展開の爆発）。
+ *   <li>別名は展開する。展開した後の節の数が上限（{@link YamlLimits#maxExpandedNodes()}）を超えたら止める（別名の展開の
+ *       爆発）。
  *       自分自身を含む別名も、展開が終わらないため止める。
  *   <li>1つの対応表の中で同じキーが重なれば、2回目のキーの位置と場所で止める（後の値で上書きしない）。
  *   <li>位置の対応表は、対応表の項目ではキーの位置、並びの要素ではその要素の位置を記録する。別名で参照した値の中は、参照を
@@ -63,15 +63,16 @@ final class YamlTreeConverter {
      *
      * @param root 文書の根（空の文書は null）
      * @param aliasPositions 別名を書いた位置（文書の順）
+     * @param maxExpandedNodes 別名を展開した後の節の数の上限
      * @return 検証用の JSON の形と位置の対応表
      * @throws YamlRejection 重複キー・展開後の節の数の上限・自分自身を含む別名・対応表のキーが単独の値でないとき
      */
-    YamlDocument convert(Node root, List<YamlPosition> aliasPositions) {
+    YamlDocument convert(Node root, List<YamlPosition> aliasPositions, int maxExpandedNodes) {
         PositionMap positions = new PositionMap();
         if (root == null) {
             return new YamlDocument(FACTORY.nullNode(), positions);
         }
-        Walk walk = new Walk(positions, aliasPositions);
+        Walk walk = new Walk(positions, aliasPositions, maxExpandedNodes);
         positions.put(JsonPointers.ROOT, YamlPosition.of(root.getStartMark()));
         return new YamlDocument(walk.node(root, JsonPointers.ROOT, null), positions);
     }
@@ -83,6 +84,8 @@ final class YamlTreeConverter {
 
         private final List<YamlPosition> aliasPositions;
 
+        private final int maxExpandedNodes;
+
         private final Set<Node> definedAnchors = Collections.newSetFromMap(new IdentityHashMap<>());
 
         private final Set<Node> onPath = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -91,9 +94,10 @@ final class YamlTreeConverter {
 
         private int nodes;
 
-        Walk(PositionMap positions, List<YamlPosition> aliasPositions) {
+        Walk(PositionMap positions, List<YamlPosition> aliasPositions, int maxExpandedNodes) {
             this.positions = positions;
             this.aliasPositions = aliasPositions;
+            this.maxExpandedNodes = maxExpandedNodes;
         }
 
         /**
@@ -185,13 +189,13 @@ final class YamlTreeConverter {
         }
 
         private void count(Node node, YamlPosition aliasAt) {
-            if (++nodes > DslFormat.MAX_EXPANDED_NODES) {
+            if (++nodes > maxExpandedNodes) {
                 throw YamlRejection.of(
                         DslErrorKind.ALIAS_LIMIT,
                         positionOf(node, aliasAt),
                         null,
                         DslMessageKeys.EXPANDED_NODES_LIMIT,
-                        String.valueOf(DslFormat.MAX_EXPANDED_NODES));
+                        String.valueOf(maxExpandedNodes));
             }
         }
 

@@ -19,14 +19,26 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { DslWarning } from './api/types'
-import { DslWarningList } from './DslWarningList'
+import { DslWarningList, NOT_COMPARED_KINDS } from './DslWarningList'
 import { renderDsl } from './testing/renderDsl'
 
 const warnings: DslWarning[] = [
-  { kind: 'TYPE_MISMATCH', path: 'item_mst.price', message: '型が違います' },
-  { kind: 'COLUMN_MISSING', path: 'dept_mst.remarks', message: '対象DB にありません' },
+  {
+    kind: 'TYPE_MISMATCH',
+    path: 'schemas.sales.tables.item_mst.columns.price',
+    message: '型が違います',
+  },
+  {
+    kind: 'COLUMN_MISSING',
+    path: 'schemas.sales.tables.dept_mst.columns.remarks',
+    message: '対象DB にありません',
+  },
   { kind: 'TARGET_UNAVAILABLE', path: null, message: '照合できませんでした' },
-  { kind: 'COLUMN_MISSING', path: 'dept_mst.fax', message: '<script>alert(1)</script>' },
+  {
+    kind: 'COLUMN_MISSING',
+    path: 'schemas.sales.tables.dept_mst.columns.fax',
+    message: '<script>alert(1)</script>',
+  },
 ]
 
 describe('DslWarningList', () => {
@@ -41,8 +53,29 @@ describe('DslWarningList', () => {
     ])
     const columns = screen.getByTestId('dsl-warning-group-COLUMN_MISSING')
     expect(within(columns).getAllByRole('listitem')).toHaveLength(2)
-    expect(columns).toHaveTextContent('dept_mst.remarks … 対象DB にありません')
+    expect(columns).toHaveTextContent(
+      'schemas.sales.tables.dept_mst.columns.remarks … 対象DB にありません',
+    )
     expect(screen.getByTestId('dsl-warning-group-TARGET_UNAVAILABLE')).not.toHaveTextContent('…')
+  })
+
+  it('puts SCHEMA_MISMATCH among the not-compared kinds, after the unavailable target', () => {
+    renderDsl(
+      <DslWarningList
+        warnings={[
+          ...warnings,
+          { kind: 'SCHEMA_MISMATCH', path: 'schemas.other', message: 'スキーマが違います' },
+        ]}
+      />,
+    )
+
+    const headings = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent)
+    expect(headings.slice(0, 2)).toEqual([
+      '照合できませんでした（対象DB に接続できないか、応答がありません）',
+      'スキーマの名前の違い',
+    ])
+    expect(NOT_COMPARED_KINDS.has('SCHEMA_MISMATCH')).toBe(true)
+    expect(NOT_COMPARED_KINDS.has('TABLE_MISSING')).toBe(false)
   })
 
   it('keeps the message of the server as text', () => {
@@ -65,7 +98,7 @@ describe('DslWarningList', () => {
       screen.getByRole('heading', { name: 'Columns missing from the target database' }),
     ).toBeInTheDocument()
     expect(screen.getByTestId('dsl-warning-group-TYPE_MISMATCH')).toHaveTextContent(
-      'item_mst.price',
+      'schemas.sales.tables.item_mst.columns.price',
     )
   })
 

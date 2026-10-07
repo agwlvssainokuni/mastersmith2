@@ -19,13 +19,16 @@ import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
 import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
+import cherry.mastersmith.dsl.domain.MenuDepth;
 import cherry.mastersmith.dsl.parse.JsonPointers;
 import cherry.mastersmith.dsl.parse.PositionMap;
 import cherry.mastersmith.dsl.parse.YamlDocument;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +48,17 @@ import tools.jackson.databind.JsonNode;
  *   <li>BR3.5: フォーム部品と選択肢の出どころが合う（あわせて、固定の選択肢の値が重ならないことも確かめる。entities.md の
  *       OptionSource.items の制約）
  *   <li>BR3.6: {@code min ≦ max}・{@code minLength ≦ maxLength}・{@code pattern} が正しい正規表現（{@link PatternChecker}）
+ * </ul>
+ *
+ * <p>書式の版 2（Intent 261004-role-menu の U2 dsl-v2）で、次を足し・変えた。誤りは スキーマの数 → メニュー（組・空）→ メニューの
+ * 深さ → スキーマごとのテーブル（参照・既存の決まり）の順に並べる。場所はスキーマの下の道（例 {@code schemas.sales.tables.dept}）。
+ *
+ * <ul>
+ *   <li>BR1.3: スキーマはちょうど1つ（0 か 2 以上なら場所 {@code schemas} に1件）
+ *   <li>BR1.5: 外部キーの参照先と選択肢の出どころは、同じスキーマの中のテーブル名として照らす
+ *   <li>BR1.6: メニューの {@code table} の組が指すスキーマとテーブルが DSL にある
+ *   <li>BR2.1・BR2.2: メニューの深さは {@link DslFormat#MAX_MENU_DEPTH} 段まで（上限を超えた最初の段の項目ごとに1件）。起動時の
+ *       読み直しだけは深さを確かめない（{@link #validate(YamlDocument, boolean)}）
  * </ul>
  */
 @Component
@@ -68,47 +82,100 @@ public class DslSemanticValidator {
     }
 
     /**
-     * 意味を検証する。
+     * 意味を検証する（メニューの深さを含むすべての決まり。投入・復元・プレビューの読み直しの読み方。BR2.2）。
      *
      * @param document 構文の検証を通った JSON の形と位置の対応表
      * @return 意味の誤り（無ければ空）
      */
     public List<DslError> validate(YamlDocument document) {
-        Check check = new Check(document.json().path("tables"), document.positions());
-        JsonNode menus = document.json().path("menus");
-        for (int i = 0; i < menus.size(); i++) {
-            check.menu(menus.get(i), JsonPointers.child(JsonPointers.child(JsonPointers.ROOT, "menus"), i));
+        return validate(document, true);
+    }
+
+    /**
+     * 意味を検証する。
+     *
+     * @param document 構文の検証を通った JSON の形と位置の対応表
+     * @param checkMenuDepth メニューの深さを確かめるなら true（起動時の読み直しだけが false。BR2.3）
+     * @return 意味の誤り（無ければ空）
+     */
+    public List<DslError> validate(YamlDocument document, boolean checkMenuDepth) {
+        JsonNode schemas = document.json().path("schemas");
+        Check check = new Check(schemas, document.positions());
+        String schemasPointer = JsonPointers.child(JsonPointers.ROOT, "schemas");
+        if (schemas.size() != 1) {
+            check.error(schemasPointer, DslMessageKeys.SEMANTIC_SCHEMA_COUNT, String.valueOf(schemas.size()));
         }
-        for (Map.Entry<String, JsonNode> table : document.json().path("tables").properties()) {
-            check.table(table.getKey(), table.getValue());
+        JsonNode menus = document.json().path("menus");
+        String menusPointer = JsonPointers.child(JsonPointers.ROOT, "menus");
+        for (int i = 0; i < menus.size(); i++) {
+            check.menu(menus.get(i), JsonPointers.child(menusPointer, i));
+        }
+        if (checkMenuDepth) {
+            for (List<Integer> path : MenuDepth.overDepth(
+                    elements(menus), item -> elements(item.path("items")), DslFormat.MAX_MENU_DEPTH)) {
+                check.error(
+                        menuPointer(menusPointer, path),
+                        DslMessageKeys.SEMANTIC_MENU_DEPTH,
+                        String.valueOf(DslFormat.MAX_MENU_DEPTH));
+            }
+        }
+        for (Map.Entry<String, JsonNode> schema : schemas.properties()) {
+            JsonNode tables = schema.getValue().path("tables");
+            String tablesPointer = JsonPointers.child(JsonPointers.child(schemasPointer, schema.getKey()), "tables");
+            for (Map.Entry<String, JsonNode> table : tables.properties()) {
+                check.table(
+                        tables, JsonPointers.child(tablesPointer, table.getKey()), table.getKey(), table.getValue());
+            }
         }
         return List.copyOf(check.errors);
+    }
+
+    private static List<JsonNode> elements(JsonNode array) {
+        List<JsonNode> list = new ArrayList<>();
+        Iterator<JsonNode> iterator = array.isArray() ? array.iterator() : Collections.emptyIterator();
+        iterator.forEachRemaining(list::add);
+        return list;
+    }
+
+    private static String menuPointer(String menusPointer, List<Integer> path) {
+        String pointer = JsonPointers.child(menusPointer, path.getFirst());
+        for (int index : path.subList(1, path.size())) {
+            pointer = JsonPointers.child(JsonPointers.child(pointer, "items"), index);
+        }
+        return pointer;
     }
 
     /** 1回の検証の状態。 */
     private final class Check {
 
-        private final JsonNode tables;
+        private final JsonNode schemas;
 
         private final PositionMap positions;
 
         private final List<DslError> errors = new ArrayList<>();
 
-        Check(JsonNode tables, PositionMap positions) {
-            this.tables = tables;
+        /** 今確かめているテーブルのスキーマの {@code tables}（外部キーと選択肢の参照はこの中で照らす。BR1.5）。 */
+        private JsonNode tables;
+
+        Check(JsonNode schemas, PositionMap positions) {
+            this.schemas = schemas;
             this.positions = positions;
         }
 
         void menu(JsonNode item, String pointer) {
             JsonNode table = item.path("table");
             JsonNode items = item.path("items");
-            if (isText(table) && !tables.has(table.stringValue())) {
-                error(
-                        JsonPointers.child(pointer, "table"),
-                        DslMessageKeys.SEMANTIC_MENU_UNKNOWN_TABLE,
-                        DslError.excerpt(table.stringValue()));
+            if (table.isObject()) {
+                String schemaName = table.path("schema").stringValue();
+                String tableName = table.path("name").stringValue();
+                if (!schemas.path(schemaName).path("tables").has(tableName)) {
+                    error(
+                            JsonPointers.child(pointer, "table"),
+                            DslMessageKeys.SEMANTIC_MENU_UNKNOWN_TABLE,
+                            DslError.excerpt(schemaName + "." + tableName));
+                }
             }
-            if (!isText(table) && items.size() == 0) {
+            if (!table.isObject() && items.size() == 0) {
                 error(pointer, DslMessageKeys.SEMANTIC_MENU_EMPTY);
             }
             for (int i = 0; i < items.size(); i++) {
@@ -116,8 +183,8 @@ public class DslSemanticValidator {
             }
         }
 
-        void table(String tableName, JsonNode table) {
-            String pointer = JsonPointers.child(JsonPointers.child(JsonPointers.ROOT, "tables"), tableName);
+        void table(JsonNode schemaTables, String pointer, String tableName, JsonNode table) {
+            this.tables = schemaTables;
             JsonNode columns = table.path("columns");
             columnNames(tableName, columns, table.path("primaryKey"), JsonPointers.child(pointer, "primaryKey"));
             JsonNode foreignKeys = table.path("foreignKeys");
@@ -295,7 +362,7 @@ public class DslSemanticValidator {
             }
         }
 
-        private void error(String pointer, String messageKey, String... messageArgs) {
+        void error(String pointer, String messageKey, String... messageArgs) {
             errors.add(DslErrors.at(DslErrorKind.SEMANTIC, positions, pointer, messageKey, messageArgs));
         }
     }

@@ -131,8 +131,8 @@ class DslManageRepositoryIT {
     @Test
     @DisplayName("placing a preview twice keeps a single row holding the later preview")
     void placeReplacesTheSingleRow() {
-        place(yaml("version: 1\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
-        UUID second = place(yaml("version: 1 # 2\n"), HASH_B, DslSource.PASTE, 2L, T0.plusSeconds(1));
+        place(yaml("version: 2\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
+        UUID second = place(yaml("version: 2 # 2\n"), HASH_B, DslSource.PASTE, 2L, T0.plusSeconds(1));
 
         Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM dsl_previews", Integer.class);
         DslPreviewRef ref = read(() -> previews.findRef()).orElseThrow();
@@ -155,7 +155,7 @@ class DslManageRepositoryIT {
     @Test
     @DisplayName("deleting by previewId removes the row only when the id matches")
     void deleteByPreviewIdCountsRows() {
-        UUID previewId = place(yaml("version: 1\n"), HASH_A, DslSource.GENERATED, 1L, T0);
+        UUID previewId = place(yaml("version: 2\n"), HASH_A, DslSource.GENERATED, 1L, T0);
 
         int mismatch = read(() -> previews.deleteByPreviewId(UUID.randomUUID()));
         int match = read(() -> previews.deleteByPreviewId(previewId));
@@ -168,7 +168,7 @@ class DslManageRepositoryIT {
     @Test
     @DisplayName("reading the status of the preview and the history never selects the body column")
     void projectionsDoNotReadTheBody() {
-        UUID previewId = place(yaml("version: 1\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
+        UUID previewId = place(yaml("version: 2\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
         apply(previewId, 1L, T0);
 
         RecordingStatementInspector.start();
@@ -202,7 +202,7 @@ class DslManageRepositoryIT {
     @DisplayName(
             "copying a preview into the history keeps its body, hash and source, and copies nothing for another id")
     void copyFromPreview() {
-        UUID previewId = place(yaml("version: 1\n"), HASH_A, DslSource.PASTE, 7L, T0);
+        UUID previewId = place(yaml("version: 2\n"), HASH_A, DslSource.PASTE, 7L, T0);
 
         int none = read(() -> revisions.copyFromPreview(UUID.randomUUID(), UUID.randomUUID(), 8L, T0));
         UUID revisionId = apply(previewId, 8L, T0.plusSeconds(5));
@@ -212,14 +212,14 @@ class DslManageRepositoryIT {
         assertThat(none).isZero();
         assertThat(current.ref())
                 .isEqualTo(new DslAppliedRef(revisionId, HASH_A, DslSource.PASTE, 8L, T0.plusSeconds(5)));
-        assertThat(new String(current.yamlBytes(), StandardCharsets.UTF_8)).isEqualTo("version: 1\n");
+        assertThat(new String(current.yamlBytes(), StandardCharsets.UTF_8)).isEqualTo("version: 2\n");
         assertThat(read(() -> revisions.findContent(UUID.randomUUID()))).isEmpty();
     }
 
     @Test
     @DisplayName("the current revision is the latest applied time, and the list is in the order of addition")
     void currentAndListOrder() {
-        UUID previewId = place(yaml("version: 1\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
+        UUID previewId = place(yaml("version: 2\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
         UUID first = apply(previewId, 1L, T0.plusSeconds(10));
         UUID second = apply(previewId, 1L, T0.plusSeconds(10));
         UUID third = apply(previewId, 1L, T0);
@@ -236,7 +236,7 @@ class DslManageRepositoryIT {
     @Test
     @DisplayName("history beyond the limit loses only its oldest rows in the order of addition")
     void deleteOlderThanNewest() {
-        UUID previewId = place(yaml("version: 1\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
+        UUID previewId = place(yaml("version: 2\n"), HASH_A, DslSource.UPLOAD, 1L, T0);
         for (int i = 0; i < 20; i++) {
             apply(previewId, 1L, T0.plusSeconds(i));
         }

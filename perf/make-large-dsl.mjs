@@ -23,6 +23,8 @@
 //   invalid-tail-10mb.yaml  最後に写したテーブルの主キーを無いカラム（同じ長さの z の並び）にしたもの（意味の誤りが末尾に1件。全部の段を通る）
 // 誤りを入れても長さを変えないため、3つとも同じ埋め草の量になる。
 // 写したテーブルは元のテーブルと同じ中身のため、外部キー・選択肢の参照の先は元からあるテーブルで、正しい DSL のままになる。
+// 書式の版 2（Intent 261004-role-menu の U2 dsl-v2）: 生成した DSL はスキーマが1つで、テーブルは schemas.<スキーマ>.tables の下
+// （字下げ 6）にある。写したテーブルは同じスキーマの tables の末尾（本文の末尾）に足す。メニューには足さない。
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -34,14 +36,19 @@ if (!input || !outDir) {
 }
 
 const source = readFileSync(input, 'utf8')
-const tablesAt = source.indexOf('\ntables:\n')
-if (tablesAt < 0) {
-  console.error('tables: が見つかりません')
+if (!/^version: 2$/m.test(source)) {
+  console.error('書式の版 2 の DSL ではありません')
   process.exit(1)
 }
-const body = source.slice(tablesAt + '\ntables:\n'.length)
-// テーブルの見出し（字下げ 2 の「名前:」の行）で区切る。
-const heads = [...body.matchAll(/^ {2}([^\s:#][^:]*):\n/gm)]
+const TABLES_HEAD = '\n    tables:\n'
+const tablesAt = source.indexOf(TABLES_HEAD)
+if (tablesAt < 0 || source.indexOf(TABLES_HEAD, tablesAt + 1) >= 0) {
+  console.error('スキーマの tables: がちょうど1つ見つかりません（テーブルの無いスキーマは使えません）')
+  process.exit(1)
+}
+const body = source.slice(tablesAt + TABLES_HEAD.length)
+// テーブルの見出し（字下げ 6 の「名前:」の行）で区切る。
+const heads = [...body.matchAll(/^ {6}([^\s:#][^:]*):\n/gm)]
 const blocks = heads.map((m, i) => ({
   name: m[1],
   text: body.slice(m.index, i + 1 < heads.length ? heads[i + 1].index : body.length),
@@ -55,7 +62,7 @@ const paddingHeader = '# 以下は大きさを上限ちょうどにするため�
 const copies = []
 let size = baseBytes
 for (const block of blocks) {
-  const copy = block.text.replace(/^ {2}[^\n]*:\n/, `  x_${copies.length + 1}_${block.name}:\n`)
+  const copy = block.text.replace(/^ {6}[^\n]*:\n/, `      x_${copies.length + 1}_${block.name}:\n`)
   const bytes = Buffer.byteLength(copy)
   if (size + bytes + Buffer.byteLength(paddingHeader) > LIMIT) break
   copies.push(copy)
@@ -78,14 +85,14 @@ function pad(text) {
 
 const valid = pad(source + trailing + copies.join(''))
 const invalidMany = pad(
-  source + trailing + copies.map((c) => c.replace(/^( {8}formPart: )(\S+)$/gm, (_, p, v) => p + 'x'.repeat(v.length))).join(''),
+  source + trailing + copies.map((c) => c.replace(/^( {12}formPart: )(\S+)$/gm, (_, p, v) => p + 'x'.repeat(v.length))).join(''),
 )
 const last = copies.length - 1
 const invalidTail = pad(
   source +
     trailing +
     copies
-      .map((c, i) => (i === last ? c.replace(/^( {4}primaryKey:\n {6}- )(\S+)$/m, (_, p, v) => p + 'z'.repeat(v.length)) : c))
+      .map((c, i) => (i === last ? c.replace(/^( {8}primaryKey:\n {10}- )(\S+)$/m, (_, p, v) => p + 'z'.repeat(v.length)) : c))
       .join(''),
 )
 if (invalidTail === valid) throw new Error('末尾の誤りを入れられませんでした')
@@ -101,6 +108,6 @@ console.log(
     `copied_tables=${copies.length}`,
     `padding_comment_bytes=${paddingBytes}`,
     `output_bytes=${LIMIT}`,
-    `invalid_many_formpart_replaced=${(invalidMany.match(/^ {8}formPart: x+$/gm) ?? []).length}`,
+    `invalid_many_formpart_replaced=${(invalidMany.match(/^ {12}formPart: x+$/gm) ?? []).length}`,
   ].join('\n'),
 )

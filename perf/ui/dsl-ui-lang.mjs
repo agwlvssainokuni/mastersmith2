@@ -20,6 +20,8 @@
 //   node perf/ui/dsl-ui-lang.mjs --env-file <PERF_ADMIN_EMAIL・PERF_ADMIN_PASSWORD のファイル> --base <URL> --out <結果の JSON>
 // 流れ: ログイン → /admin/dsl → 投入のタブで、対象DB に無いテーブルを持つ正しい DSL を貼り付けて投入（照合の警告が出る）
 //       → 誤りを含む DSL を貼り付けて投入（422 の誤りの一覧が出る）。応答の message と画面の文字に日本語の文字が無いことを見る。
+// 書式の版 2（Intent 261004-role-menu の U2 dsl-v2、NFR 設計の読み直し R-04・計画の D-8）: DSL は版 2 で書き、次も英語で届くことを
+// 確かめる。名前の違うスキーマの照合の警告（SCHEMA_MISMATCH）、書式の版 1 の誤り、メニューの深さの誤り。
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -51,36 +53,73 @@ const TIMEOUT = 60_000
 // ひらがな・カタカナ・漢字・全角の記号
 const JAPANESE = /[　-ヿ一-鿿＀-￯]/
 
-/** 対象DB（スキーマ large）に無いテーブル。表示名・名前はすべて ASCII にし、日本語の文字が DSL から来ないようにする。 */
+/** 使い捨ての環境の対象DB の設定のスキーマ名 */
+const TARGET_SCHEMA = 'large'
+
+/** 対象DB に無いテーブル（スキーマの tables の下、字下げ 6）。表示名・名前はすべて ASCII にし、日本語の文字が DSL から来ないようにする。 */
 function table(name, withError) {
-  return `  ${name}:
-    label: { ja: ${name}, en: ${name} }
-    view: false
-    primaryKey: [code]
-    foreignKeys: []
-    columns:
-      code:
-        label: { ja: code, en: code }
-        dbType: { name: VARCHAR, length: 10, precision: null, scale: null, nullable: false }
-        formPart: ${withError ? 'bogus_part' : 'text'}
-        search: { enabled: true, operator: EQUALS, collapsed: false }
-        list: { visible: true, order: 1, sortable: true }
-        detail: { visible: true }
-        validations: []
+  return `      ${name}:
+        label: { ja: ${name}, en: ${name} }
+        view: false
+        primaryKey: [code]
+        foreignKeys: []
+        columns:
+          code:
+            label: { ja: code, en: code }
+            dbType: { name: VARCHAR, length: 10, precision: null, scale: null, nullable: false }
+            formPart: ${withError ? 'bogus_part' : 'text'}
+            search: { enabled: true, operator: EQUALS, collapsed: false }
+            list: { visible: true, order: 1, sortable: true }
+            detail: { visible: true }
+            validations: []
 `
 }
-const WARNING_DSL = `version: 1
+
+/** 書式の版 2 の DSL（メニュー1つ、スキーマ1つ、テーブル1つ） */
+function dslV2({ schema, menuTable, tableName, withError = false, menus = null }) {
+  const menuText =
+    menus ??
+    `  - label: { ja: ${tableName}, en: ${tableName} }
+    table: { schema: ${schema}, name: ${menuTable} }
+`
+  return `version: 2
 menus:
-  - label: { ja: lang_extra, en: lang_extra }
-    table: lang_extra
-tables:
-${table('lang_extra', false)}`
-const INVALID_DSL = `version: 1
-menus:
-  - label: { ja: lang_bad, en: lang_bad }
-    table: lang_missing
-tables:
-${table('lang_bad', true)}`
+${menuText}schemas:
+  ${schema}:
+    label: { ja: ${schema}, en: ${schema} }
+    tables:
+${table(tableName, withError)}`
+}
+
+/** 深さ 6 の1本の枝のメニュー */
+function deepMenus(schema, tableName) {
+  let text = ''
+  for (let level = 1; level <= 6; level++) {
+    const indent = '    '.repeat(level - 1)
+    text += `${indent}  - label: { ja: level${level}, en: level${level} }\n`
+    text +=
+      level === 6
+        ? `${indent}    table: { schema: ${schema}, name: ${tableName} }\n`
+        : `${indent}    items:\n`
+  }
+  return text
+}
+
+const WARNING_DSL = dslV2({ schema: TARGET_SCHEMA, menuTable: 'lang_extra', tableName: 'lang_extra' })
+const MISMATCH_DSL = dslV2({ schema: 'lang_other', menuTable: 'lang_extra', tableName: 'lang_extra' })
+const INVALID_DSL = dslV2({
+  schema: TARGET_SCHEMA,
+  menuTable: 'lang_missing',
+  tableName: 'lang_bad',
+  withError: true,
+})
+const VERSION_ONE_DSL = 'version: 1\nmenus: []\ntables: {}\n'
+const DEPTH_DSL = dslV2({
+  schema: TARGET_SCHEMA,
+  menuTable: 'lang_extra',
+  tableName: 'lang_extra',
+  menus: deepMenus(TARGET_SCHEMA, 'lang_extra'),
+})
 
 const result = { base: values.base, locale: 'en-US', browser: '', steps: [], pass: false }
 const browser = await chromium.launch()
@@ -142,41 +181,68 @@ try {
     shownContainsServerMessages: serverWarnings.every((m) => shownWarnings.includes(m)),
   })
 
-  // 2. 投入の誤り（422）。
-  stage = 'submitErrors'
-  const rejected = await pasteAndSubmit(INVALID_DSL)
-  const errorList = page.getByTestId('dsl-submit-errors')
-  await errorList.waitFor({ state: 'visible', timeout: TIMEOUT })
-  const serverErrors = (rejected.body.errors ?? []).map((e) => e.message)
-  const shownErrors = await errorList.innerText()
-  const alert = page.getByTestId('dsl-alert')
-  const alertText = (await alert.isVisible()) ? await alert.innerText() : null
+  // 2. 名前の違うスキーマの照合の警告（SCHEMA_MISMATCH）。
+  stage = 'schemaMismatch'
+  const mismatched = await pasteAndSubmit(MISMATCH_DSL)
+  await warningList.waitFor({ state: 'visible', timeout: TIMEOUT })
+  const mismatchWarnings = (mismatched.body.warnings ?? []).filter((w) => w.kind === 'SCHEMA_MISMATCH')
+  const shownMismatch = await warningList.innerText()
   result.steps.push({
-    step: 'submitErrors',
-    acceptLanguage: await rejected.request.headerValue('accept-language'),
-    http: rejected.response.status(),
-    code: rejected.body.code,
-    serverMessages: serverErrors,
-    serverMessagesJapanese: serverErrors.some((m) => JAPANESE.test(m)),
-    shownText: shownErrors,
-    shownTextJapanese: JAPANESE.test(shownErrors),
-    shownContainsServerMessages: serverErrors.every((m) => shownErrors.includes(m)),
-    alertText,
-    alertTextJapanese: alertText === null ? null : JAPANESE.test(alertText),
+    step: 'schemaMismatch',
+    acceptLanguage: await mismatched.request.headerValue('accept-language'),
+    http: mismatched.response.status(),
+    serverMessages: mismatchWarnings.map((w) => w.message),
+    serverMessagesJapanese: mismatchWarnings.some((w) => JAPANESE.test(w.message)),
+    shownText: shownMismatch,
+    shownTextJapanese: JAPANESE.test(shownMismatch),
+    shownContainsServerMessages: mismatchWarnings.every((w) => shownMismatch.includes(w.message)),
   })
 
-  const [w, e] = result.steps
+  // 3〜5. 投入の誤り（422）。書式の誤り、書式の版 1、メニューの深さ。
+  for (const [step, text, expectKind] of [
+    ['submitErrors', INVALID_DSL, null],
+    ['versionError', VERSION_ONE_DSL, 'UNSUPPORTED_VERSION'],
+    ['depthError', DEPTH_DSL, 'SEMANTIC'],
+  ]) {
+    stage = step
+    const rejected = await pasteAndSubmit(text)
+    const errorList = page.getByTestId('dsl-submit-errors')
+    await errorList.waitFor({ state: 'visible', timeout: TIMEOUT })
+    const errors = rejected.body.errors ?? []
+    const serverErrors = errors.map((e) => e.message)
+    const shownErrors = await errorList.innerText()
+    const alert = page.getByTestId('dsl-alert')
+    const alertText = (await alert.isVisible()) ? await alert.innerText() : null
+    result.steps.push({
+      step,
+      acceptLanguage: await rejected.request.headerValue('accept-language'),
+      http: rejected.response.status(),
+      code: rejected.body.code,
+      kinds: errors.map((e) => e.kind),
+      kindMatches: expectKind === null || errors.some((e) => e.kind === expectKind),
+      serverMessages: serverErrors,
+      serverMessagesJapanese: serverErrors.some((m) => JAPANESE.test(m)),
+      shownText: shownErrors,
+      shownTextJapanese: JAPANESE.test(shownErrors),
+      shownContainsServerMessages: serverErrors.every((m) => shownErrors.includes(m)),
+      alertText,
+      alertTextJapanese: alertText === null ? null : JAPANESE.test(alertText),
+    })
+  }
+
+  const english = (s) =>
+    s.serverMessages.length > 0 &&
+    !s.serverMessagesJapanese &&
+    !s.shownTextJapanese &&
+    s.shownContainsServerMessages
+  const [w, m, ...errorsSteps] = result.steps
   result.pass =
     w.http === 201 &&
-    w.serverMessages.length > 0 &&
-    !w.serverMessagesJapanese &&
-    !w.shownTextJapanese &&
-    w.shownContainsServerMessages &&
-    e.http === 422 &&
-    e.serverMessages.length > 0 &&
-    !e.serverMessagesJapanese &&
-    !e.shownTextJapanese &&
-    e.shownContainsServerMessages
+    english(w) &&
+    m.http === 201 &&
+    english(m) &&
+    errorsSteps.length === 3 &&
+    errorsSteps.every((e) => e.http === 422 && e.kindMatches && english(e))
 } catch (error) {
   result.error = `${stage}: ${String(error?.message ?? error).split('\n')[0]}`
   // 失敗したときの画面の文字（原因を見るため。秘密の値は画面に無い）

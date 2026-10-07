@@ -1,0 +1,340 @@
+{
+  "stage": "code-generation",
+  "unit": "dsl-v2",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslFormat.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslMenuItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslMessageKeys.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslModel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslSchema.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslStartupReadResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/MenuDepth.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/TableRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/LimitingParser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/SafeYamlParser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlLimits.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlTreeConverter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DefaultDslReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DefaultSafeYamlReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DslModelMapper.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DslReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/SafeYamlLimits.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/SafeYamlReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/SafeYamlRejectionKind.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/SafeYamlResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/YamlPositions.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/validate/DslSemanticValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslStatus.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/PreviewView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslDiffCalculator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslErrorMessages.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslLifecycle.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslReconciler.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslStartupLoader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslSummaryCalculator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/UnreadableAppliedRevision.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslResponses.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/dsl/dsl-schema-v1.json"
+    },
+    {
+      "path": "backend/src/main/resources/dsl/dsl-schema-v2.json"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/DslSchemaPublicationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslModelTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslResultTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/MenuDepthPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/MenuDepthTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/YamlTreeConverterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/ActiveDslModelStoreTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/DefaultDslReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/SafeYamlReaderSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/SafeYamlReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/testsupport/DslSamples.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/DslSchemaValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/DslSemanticValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/ValidationTestSupport.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/domain/DslManageDomainTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/AbstractDefaultDslGeneratorIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslGenerationPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslYamlWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/TargetSchemaDslGeneratorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslManageRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslReconcilerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupLoaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/UnreadableAppliedRevisionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/testsupport/DslYaml.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslTargetDbIT.java"
+    },
+    {
+      "path": "backend/src/test/resources/cherry/mastersmith/dsl/valid-sample.yaml"
+    },
+    {
+      "path": "backend/src/test/resources/cherry/mastersmith/dslmanage/generate/dept_mst.yaml"
+    },
+    {
+      "path": "frontend/e2e/040-dsl-admin.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/135-dsl-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslErrorList.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslMenuTree.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslMenuTree.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.css"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslSubmitForm.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslWarningList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslWarningList.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/dslApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/saveFile.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/diffCounts.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/diffCounts.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/submitInput.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/submitInput.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/useDslAdmin.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.download.test.ts"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/dsl-timing.sh"
+    },
+    {
+      "path": "perf/make-large-dsl.mjs"
+    },
+    {
+      "path": "perf/make-pattern-dsl.mjs"
+    },
+    {
+      "path": "perf/ui/dsl-ui-lang.mjs"
+    },
+    {
+      "path": "perf/ui/dsl-ui-timing.mjs"
+    }
+  ]
+}

@@ -55,6 +55,8 @@ export interface PreviewRef extends DslRef {
 export interface DslStatus {
   applied: AppliedRef | null
   preview: PreviewRef | null
+  /** 適用中の DSL を起動時に今の書式（版 2）で読めず、使われていないなら true（BR3.6） */
+  appliedUnreadable: boolean
 }
 
 /** 表示言語ごとの表示名 */
@@ -63,11 +65,17 @@ export interface DisplayLabel {
   en: string
 }
 
+/** テーブルを指す組（スキーマ名とテーブル名。書式の版 2） */
+export interface TableRef {
+  schema: string
+  name: string
+}
+
 /** メニューの木の1つの節 */
 export interface MenuNode {
   label: DisplayLabel
-  /** テーブルの物理名（テーブルを指さない節は null） */
-  table: string | null
+  /** テーブルを指す組（テーブルを指さない節は null） */
+  table: TableRef | null
   children: MenuNode[]
 }
 
@@ -79,6 +87,7 @@ export interface MissingDisplayName {
 
 /** プレビューの要約 */
 export interface PreviewSummary {
+  schemaCount: number
   tableCount: number
   viewCount: number
   columnCount: number
@@ -110,11 +119,19 @@ export interface TableDiff {
   columns: ColumnDiff[]
 }
 
+/** スキーマの違い（書式の版 2。CHANGED は表示名の違いだけ） */
+export interface SchemaDiff {
+  name: string
+  label: DisplayLabel
+  change: TableChange
+  tables: TableDiff[]
+}
+
 /** 適用中との違い */
 export interface DslDiff {
   /** 適用中の DSL があるか（無ければすべてが増えた） */
   appliedExists: boolean
-  tables: TableDiff[]
+  schemas: SchemaDiff[]
 }
 
 /** 照合の警告の種類 */
@@ -124,6 +141,7 @@ export type WarningKind =
   | 'TYPE_MISMATCH'
   | 'TARGET_UNCONFIGURED'
   | 'TARGET_UNAVAILABLE'
+  | 'SCHEMA_MISMATCH'
 
 /** 照合の警告 */
 export interface DslWarning {

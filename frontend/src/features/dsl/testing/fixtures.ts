@@ -22,6 +22,7 @@ import type {
   HistoryEntry,
   Preview,
   PreviewRef,
+  SchemaDiff,
   TableDiff,
 } from '../api/types'
 
@@ -53,6 +54,7 @@ export function statusOf(overrides: Partial<DslStatus> = {}): DslStatus {
       at: '2026-09-24T01:15:00Z',
     },
     preview: previewRef(),
+    appliedUnreadable: false,
     ...overrides,
   }
 }
@@ -83,11 +85,17 @@ export function sampleTables(): TableDiff[] {
   ]
 }
 
+/** スキーマ1つ（sales、変わらない）の下に {@link sampleTables} を置いた違い（書式の版 2） */
+export function sampleSchemas(tables: TableDiff[] = sampleTables()): SchemaDiff[] {
+  return [{ name: 'sales', label: { ja: '販売', en: 'Sales' }, change: 'UNCHANGED', tables }]
+}
+
 /** プレビューの中身 */
 export function previewOf(overrides: Partial<Preview> = {}): Preview {
   return {
     ...previewRef(),
     summary: {
+      schemaCount: 1,
       tableCount: 42,
       viewCount: 3,
       columnCount: 1318,
@@ -96,20 +104,34 @@ export function previewOf(overrides: Partial<Preview> = {}): Preview {
           label: { ja: '基本マスタ', en: 'Basic masters' },
           table: null,
           children: [
-            { label: { ja: '部署', en: 'Departments' }, table: 'dept_mst', children: [] },
-            { label: { ja: '品目', en: 'Items' }, table: 'item_mst', children: [] },
+            {
+              label: { ja: '部署', en: 'Departments' },
+              table: { schema: 'sales', name: 'dept_mst' },
+              children: [],
+            },
+            {
+              label: { ja: '品目', en: 'Items' },
+              table: { schema: 'sales', name: 'item_mst' },
+              children: [],
+            },
           ],
         },
       ],
-      missingDisplayNames: [{ path: 'tables.dept_mst.columns.fax_no.label', language: 'en' }],
+      missingDisplayNames: [
+        { path: 'schemas.sales.tables.dept_mst.columns.fax_no.label', language: 'en' },
+      ],
       missingDisplayNameTotal: 1,
     },
-    diff: { appliedExists: true, tables: sampleTables() },
+    diff: { appliedExists: true, schemas: sampleSchemas() },
     warnings: [
-      { kind: 'COLUMN_MISSING', path: 'dept_mst.remarks', message: '対象DB にありません' },
+      {
+        kind: 'COLUMN_MISSING',
+        path: 'schemas.sales.tables.dept_mst.columns.remarks',
+        message: '対象DB にありません',
+      },
       {
         kind: 'TYPE_MISMATCH',
-        path: 'item_mst.price',
+        path: 'schemas.sales.tables.item_mst.columns.price',
         message: '型が違います（DSL: 数値 / DB: 文字列）',
       },
     ],
@@ -123,7 +145,7 @@ export function errorItems(n: number): DslErrorItem[] {
     kind: 'SEMANTIC' as const,
     line: index + 1,
     column: 3,
-    path: `tables.t${index}`,
+    path: `schemas.sales.tables.t${index}`,
     message: `誤り ${index + 1}`,
   }))
 }
