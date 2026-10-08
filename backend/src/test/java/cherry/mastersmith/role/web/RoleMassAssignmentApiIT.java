@@ -88,11 +88,14 @@ class RoleMassAssignmentApiIT {
 
     private Actor admin;
 
+    private RoleActors actors;
+
     @BeforeEach
     void setUp() {
         api = new RoleApi(port);
         fixtures = new RoleFixtures(jdbc);
-        admin = new RoleActors(userAccountService, revocationService, transactionManager, port).admin();
+        actors = new RoleActors(userAccountService, revocationService, transactionManager, port);
+        admin = actors.admin();
         RoleDslFixture.install(holder, RoleDslFixture.sample());
     }
 
@@ -173,5 +176,80 @@ class RoleMassAssignmentApiIT {
                 .doesNotStartWith("2000");
         assertThat(jdbc.queryForObject("SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, admin.userId()))
                 .isTrue();
+    }
+
+    @Test
+    @DisplayName("extra fields in an assignment are ignored: only the pair in the path and the body is written (B5)")
+    void assignIgnoresExtraFields() {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("一括代入 割り当て"));
+        long other = fixtures.role(RoleFixtures.uniqueName("一括代入 割り当て ほか"));
+        Actor target = actors.user("一括代入 対象");
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("userId", target.userId());
+        body.put("roleId", other);
+        body.put("assignedAt", "2000-01-01T00:00:00Z");
+        body.put("admin", true);
+        body.put("workRoleId", other);
+
+        assertThat(api.assignJson(admin.token(), roleId, RoleApi.json(body)).statusCode())
+                .isEqualTo(204);
+
+        assertThat(fixtures.assignmentRows(roleId)).isOne();
+        assertThat(fixtures.assignmentRows(other)).isZero();
+        assertThat(String.valueOf(jdbc.queryForObject(
+                        "SELECT assigned_at FROM user_role_assignments WHERE role_id = ?", Object.class, roleId)))
+                .doesNotStartWith("2000");
+        assertThat(jdbc.queryForObject(
+                        "SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, target.userId()))
+                .isFalse();
+        assertThat(fixtures.storedWorkRole(target.userId())).isNull();
+    }
+
+    @Test
+    @DisplayName("a userId in a work role switch is ignored: only the caller's own selection changes (B5)")
+    void switchIgnoresOtherUser() {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("一括代入 切り替え"));
+        Actor caller = actors.member();
+        Actor other = actors.user("一括代入 他人");
+        fixtures.assignUser(roleId, caller.userId());
+        fixtures.assignUser(roleId, other.userId());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("roleId", roleId);
+        body.put("userId", other.userId());
+
+        assertThat(api.switchWorkRoleJson(caller.token(), RoleApi.json(body)).statusCode())
+                .isEqualTo(204);
+
+        assertThat(fixtures.storedWorkRole(caller.userId())).isEqualTo(roleId);
+        assertThat(fixtures.storedWorkRole(other.userId())).isNull();
+    }
+
+    @Test
+    @DisplayName("role fields in PUT /api/me/preferences change neither the roles nor the work role (B5)")
+    void preferencesIgnoreRoleFields() {
+        long assigned = fixtures.role(RoleFixtures.uniqueName("一括代入 設定"));
+        long notAssigned = fixtures.role(RoleFixtures.uniqueName("一括代入 設定 外"));
+        Actor caller = actors.member();
+        fixtures.assignUser(assigned, caller.userId());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("displayName", "一括代入 表示名");
+        body.put("language", "ja");
+        body.put("theme", "system");
+        body.put("fontSize", "md");
+        body.put("roleId", notAssigned);
+        body.put("workRoleId", notAssigned);
+        body.put("roles", List.of(notAssigned));
+        body.put("admin", true);
+
+        assertThat(api.send("PUT", "/api/me/preferences", caller.token(), RoleApi.json(body))
+                        .statusCode())
+                .isEqualTo(200);
+
+        assertThat(fixtures.assignmentRows(notAssigned)).isZero();
+        assertThat(fixtures.assignmentRows(assigned)).isOne();
+        assertThat(fixtures.storedWorkRole(caller.userId())).isNull();
+        assertThat(jdbc.queryForObject(
+                        "SELECT admin_flag FROM users WHERE user_id = ?", Boolean.class, caller.userId()))
+                .isFalse();
     }
 }

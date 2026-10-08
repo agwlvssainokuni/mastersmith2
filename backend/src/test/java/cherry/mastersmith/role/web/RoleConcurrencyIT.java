@@ -58,7 +58,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * 同じロールの同時の保存（{@code reliability-design.md} 4.2 の #7、BR4.9・BR8.1、NFR3.1 (c)、AC1.2.12）の結合テスト。重なりは待ち合わせの
+ * 同じロールの同時の保存（{@code reliability-design.md} 4.2 の #7、BR4.9・BR8.1、NFR3.1 (c)、AC1.2.12）と、削除と割り当て（#1 の2つの順、
+ * NFR3.1 (a)、AC1.1.6）・同じ組の割り当て（#4、NFR3.1 (g)、AC2.2.15。B5）の結合テスト。重なりは待ち合わせの
  * 口（{@link TestRoleBarrier}）で作り、合否は経過の時間ではなく状態コード・最後の値・監査の行で決める。後の側が先の側の確定を 3 秒以内に
  * 見られなかったときの {@code ROLE_BUSY} も負けの code として受け入れる（4.2 の注）。
  */
@@ -175,5 +176,82 @@ class RoleConcurrencyIT {
         assertThat(details).hasSize(2);
         assertThat(details.get(0)).contains("\"before\":{\"main\":null").contains("\"after\":{\"main\":\"READ\"");
         assertThat(details.get(1)).contains("\"before\":{\"main\":\"READ\"").contains("\"after\":{\"main\":\"FULL\"");
+    }
+
+    private long user(String name) {
+        return new RoleActors(userAccountService, revocationService, transactionManager, port)
+                .user(name)
+                .userId();
+    }
+
+    @Test
+    @DisplayName("#1 a delete holding the role row first wins and the assignment is ROLE_NOT_FOUND (B5)")
+    void deleteBeforeAssign() throws Exception {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("削除が先"));
+        long userId = user("削除が先 一郎");
+        Gate deleting = barrier.hold(Point.AFTER_LOCK, RoleOperation.DELETE, String.valueOf(roleId));
+        Signal assigning = barrier.signal(Point.BEFORE_LOCK, RoleOperation.ASSIGN, String.valueOf(roleId));
+
+        CompletableFuture<HttpResponse<String>> delete = async(() -> api.delete(admin.token(), roleId));
+        deleting.awaitArrival();
+        CompletableFuture<HttpResponse<String>> assign = async(() -> api.assignUser(admin.token(), roleId, userId));
+        assigning.awaitPassed();
+        deleting.release();
+
+        assertThat(result(delete).statusCode()).isEqualTo(204);
+        HttpResponse<String> loser = result(assign);
+        assertThat(loser.statusCode()).as(loser.body()).isIn(404, 409);
+        assertThat(HttpTestClient.json(loser).get("code")).isIn("ROLE_NOT_FOUND", "ROLE_BUSY");
+        assertThat(fixtures.roleRows(roleId)).isZero();
+        assertThat(fixtures.assignmentRows(roleId)).isZero();
+    }
+
+    @Test
+    @DisplayName("#1 an assignment holding the role row first wins and the delete is ROLE_IN_USE (B5)")
+    void assignBeforeDelete() throws Exception {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("割り当てが先"));
+        long userId = user("割り当てが先 一郎");
+        Gate assigning = barrier.hold(Point.AFTER_LOCK, RoleOperation.ASSIGN, String.valueOf(roleId));
+        Signal deleting = barrier.signal(Point.BEFORE_LOCK, RoleOperation.DELETE, String.valueOf(roleId));
+
+        CompletableFuture<HttpResponse<String>> assign = async(() -> api.assignUser(admin.token(), roleId, userId));
+        assigning.awaitArrival();
+        CompletableFuture<HttpResponse<String>> delete = async(() -> api.delete(admin.token(), roleId));
+        deleting.awaitPassed();
+        assigning.release();
+
+        assertThat(result(assign).statusCode()).isEqualTo(204);
+        HttpResponse<String> loser = result(delete);
+        assertThat(loser.statusCode()).as(loser.body()).isEqualTo(409);
+        assertThat(HttpTestClient.json(loser).get("code")).isIn("ROLE_IN_USE", "ROLE_BUSY");
+        assertThat(fixtures.roleRows(roleId)).isOne();
+        assertThat(fixtures.assignmentRows(roleId)).isOne();
+    }
+
+    @Test
+    @DisplayName("#4 two assignments of the same pair leave one row, the later is ROLE_NO_CHANGE with an audit (B5)")
+    void samePairTwice() throws Exception {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("同じ組"));
+        long userId = user("同じ組 一郎");
+        Gate first = barrier.hold(Point.AFTER_WRITE, RoleOperation.ASSIGN, roleId + ":U" + userId);
+        Signal second = barrier.signal(Point.BEFORE_LOCK, RoleOperation.ASSIGN, String.valueOf(roleId));
+        int failuresBefore = auditRows("ROLE_ASSIGNED", "FAILURE");
+
+        CompletableFuture<HttpResponse<String>> a = async(() -> api.assignUser(admin.token(), roleId, userId));
+        first.awaitArrival();
+        CompletableFuture<HttpResponse<String>> b = async(() -> api.assignUser(admin.token(), roleId, userId));
+        second.awaitPassed();
+        first.release();
+
+        assertThat(result(a).statusCode()).isEqualTo(204);
+        HttpResponse<String> later = result(b);
+        assertThat(later.statusCode()).as(later.body()).isEqualTo(409);
+        assertThat(fixtures.assignmentRows(roleId)).isOne();
+        if ("ROLE_BUSY".equals(HttpTestClient.json(later).get("code"))) {
+            assertThat(auditRows("ROLE_ASSIGNED", "FAILURE")).isEqualTo(failuresBefore);
+            return;
+        }
+        assertCode(later, 409, "ROLE_NO_CHANGE");
+        assertThat(auditRows("ROLE_ASSIGNED", "FAILURE")).isEqualTo(failuresBefore + 1);
     }
 }

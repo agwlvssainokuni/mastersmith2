@@ -454,93 +454,93 @@
 ### 8.4 手順（B5）
 
 #### Step 24: 作業の場の用意
-- [ ] B4 を `develop` へ squash で統合し、push の後の CI を確かめた後に、`develop` の先頭から `feature/261004-role-menu-b5` を作る。開始の時点の HEAD を記録する。`git status --short` と E2E の生成物が無いことを確かめる。
+- [x] B4 を `develop` へ squash で統合し、push の後の CI を確かめた後に、`develop` の先頭から `feature/261004-role-menu-b5` を作る。開始の時点の HEAD を記録する。`git status --short` と E2E の生成物が無いことを確かめる。
 - 対応: Testing Contract の「Project structure…」。
 
 #### Step 25: テストの実行の準備
-- [ ] `unit-test-instructions.md` 2節の B5 のコマンド（B4 で足したテストを名指し）が動くことを確かめ、結果を記録する。colima の状態と共有を確かめる。
-- [ ] 洗い出しの検索を流し直す: `git grep -n 'TODO(B5)' -- backend`（1件）、`git grep -n 'GroupDeletionGuard' -- backend/src`、`git grep -n -e 'FK_GROUP_MEMBERS_GROUP' -- backend/src/main`、`git grep -n -e 'nonAdmin' -- backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java`。
+- [x] `unit-test-instructions.md` 2節の B5 のコマンド（B4 で足したテストを名指し）が動くことを確かめ、結果を記録する。colima の状態と共有を確かめる。
+- [x] 洗い出しの検索を流し直す: `git grep -n 'TODO(B5)' -- backend`（1件）、`git grep -n 'GroupDeletionGuard' -- backend/src`、`git grep -n -e 'FK_GROUP_MEMBERS_GROUP' -- backend/src/main`、`git grep -n -e 'nonAdmin' -- backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java`。
 - 対応: Testing Contract の runner の手順。
 
 #### Step 26: 変更の前の基準
-- [ ] Step 3 と同じコマンドで件数とカバレッジ（`role.*`・`audit.domain`・`audit.service`・`group.store`・全体）を記録する。次の空き移行番号が V12 であることを確かめる。
+- [x] Step 3 と同じコマンドで件数とカバレッジ（`role.*`・`audit.domain`・`audit.service`・`group.store`・全体）を記録する。次の空き移行番号が V12 であることを確かめる。
 - 対応: NFR6.4・NFR3.6。
 
 #### Step 27: データの形 — 実装
-- [ ] `V12__u4_role_assignment.sql`（4.5）と、`UserRoleAssignment`・`GroupRoleAssignment`・`WorkRoleSelection` のエンティティを作る。
+- [x] `V12__u4_role_assignment.sql`（4.5）と、`UserRoleAssignment`・`GroupRoleAssignment`・`WorkRoleSelection` のエンティティを作る。
 - 対応: BR6.2・BR6.7、NFR3.6、`entities.md`。
 
 #### Step 28: データの形 — テスト（`MERGE` の確かめを含む）
-- [ ] `RoleSchemaIT`・`RoleMigrationCompatibilityIT` の追加と `WorkRoleSelectionMergeIT` を書いて流す（8.3）。`MERGE` の結果（SQLState・誤りの番号・待ったか）を `generation-notes.md` に記録し、Step 31 の保存の形（D-19）を決める。23505・上限切れ以外が出たときは「読んでから更新か挿入」の形にし、`code-summary.md` の計画との差に書く。
+- [x] `RoleSchemaIT`・`RoleMigrationCompatibilityIT` の追加と `WorkRoleSelectionMergeIT` を書いて流す（8.3）。`MERGE` の結果（SQLState・誤りの番号・待ったか）を `generation-notes.md` に記録し、Step 31 の保存の形（D-19）を決める。23505・上限切れ以外が出たときは「読んでから更新か挿入」の形にし、`code-summary.md` の計画との差に書く。
 - 対応: NFR3.6・NFR3.7（R-15）、`reliability-design.md` 4.2 の #9。
 
 #### Step 29: ドメイン — 実装
-- [ ] 8.2 の `role.domain` の追加と、4.6 の B5 の分を `audit` に足す（網羅の `switch` の追従を含む）。
+- [x] 8.2 の `role.domain` の追加と、4.6 の B5 の分を `audit` に足す（網羅の `switch` の追従を含む）。
 - 対応: BR6.5・BR7.1・BR7.2・BR11.4、C5・C10。
 
 #### Step 30: ドメイン — テスト
-- [ ] 8.3 のドメインの層のテストを書いて流す。単体テストの結果に `WorkRoleResolutionPropertyTest` が出ることを確かめる。
+- [x] 8.3 のドメインの層のテストを書いて流す。単体テストの結果に `WorkRoleResolutionPropertyTest` が出ることを確かめる。
 - 対応: AC4.1.16・AC4.1.21、BR7.1〜BR7.4、NFR6.2。
 
 #### Step 31: DB アクセス — 実装
-- [ ] 8.2 の `role.repository`・`role.store` の追加。有効な作業ロールを決める4回の読み取りはロールの名前を結合して読む（D-15）。写しと祖先の行は行の値だけの射影（エンティティにしない、`performance-design.md` 4節）。
+- [x] 8.2 の `role.repository`・`role.store` の追加。有効な作業ロールを決める4回の読み取りはロールの名前を結合して読む（D-15）。写しと祖先の行は行の値だけの射影（エンティティにしない、`performance-design.md` 4節）。
 - 対応: BR3.3・BR6.3・BR6.7・BR8.5、NFR2.3・NFR2.6。
 
 #### Step 32: DB アクセス — テスト
-- [ ] `RoleStoreClassificationTest` の追加・`RoleStoreKeyGuardIT`・`RoleAssignmentRepositoryIT` を書いて流す。
+- [x] `RoleStoreClassificationTest` の追加・`RoleStoreKeyGuardIT`・`RoleAssignmentRepositoryIT` を書いて流す。
 - 対応: AC2.2.15（最後の守り）、BR6.3・BR8.5、NFR3.7（T3・T4 の本物での確かめ）。
 
 #### Step 33: 業務処理 — 実装
-- [ ] `RoleAssignmentService`・`WorkRoleService`・`EffectivePermissionResolver`(`Impl`) を作り、`RoleAdminService` の削除と一覧を直す。
-- [ ] `RoleGroupDeletionGuard` を本物に書き換え、`TODO(B5)` と仮の実装の説明を消す。
-- [ ] group の `StoreFailureClassifier` に `FK_GROUP_ROLE_ASSIGNMENTS_GROUP` を足す（13節 Q4: A）。
+- [x] `RoleAssignmentService`・`WorkRoleService`・`EffectivePermissionResolver`(`Impl`) を作り、`RoleAdminService` の削除と一覧を直す。
+- [x] `RoleGroupDeletionGuard` を本物に書き換え、`TODO(B5)` と仮の実装の説明を消す。
+- [x] group の `StoreFailureClassifier` に `FK_GROUP_ROLE_ASSIGNMENTS_GROUP` を足す（13節 Q4: A）。
 - 対応: 2.3・2.8〜2.12、BR3.2〜BR3.4・BR5.4・BR5.5・BR6・BR7.5〜BR7.8・BR8.2・BR10、C4・C5。
 
 #### Step 34: 業務処理 — テスト
-- [ ] 8.3 の業務処理の層のテスト（`RoleGroupDeletionGuardTest` の書き換え、`RoleGroupDeletionGuardIT`・`EffectivePermissionConsistencyIT`・`EffectivePermissionQueryCountIT`・`RoleDeleteCleanupIT` を含む）を書いて流す。13節 Q4: A のとおり group の `StoreFailureClassifierTest` に1件足し、`GroupStoreConstraintIT` に「割り当ての行が残るグループの削除の外部キーの違反が `Referenced` になる」1件を足す。
+- [x] 8.3 の業務処理の層のテスト（`RoleGroupDeletionGuardTest` の書き換え、`RoleGroupDeletionGuardIT`・`EffectivePermissionConsistencyIT`・`EffectivePermissionQueryCountIT`・`RoleDeleteCleanupIT` を含む）を書いて流す。13節 Q4: A のとおり group の `StoreFailureClassifierTest` に1件足し、`GroupStoreConstraintIT` に「割り当ての行が残るグループの削除の外部キーの違反が `Referenced` になる」1件を足す。
 - 対応: AC1.1.3・AC1.1.4・AC1.1.13・AC2.1.3・AC2.1.9・AC2.1.10・AC2.2.2・AC2.2.4・AC4.1.14・AC4.1.15・AC4.1.18・AC5.1.14、BR10.1〜BR10.3、NFR2.3・NFR3.4。
 
 #### Step 35: API — 実装
-- [ ] 8.2 の `role.web` の4つのコントローラーと DTO。管理の口は `@ApiAccess(ADMIN)`、`/api/me` の口は `@ApiAccess(AUTHENTICATED)`。
+- [x] 8.2 の `role.web` の4つのコントローラーと DTO。管理の口は `@ApiAccess(ADMIN)`、`/api/me` の口は `@ApiAccess(AUTHENTICATED)`。
 - 対応: AC2.2.5・AC4.1.12・AC4.1.19・AC4.2.3・AC4.2.5、BR2・BR12、C7・C8。
 
 #### Step 36: API — テスト（結合）と group のテストの書き換え
-- [ ] 8.3 の API の層のテストを書く。`GroupAdminAuthorizationApiIT` と `RoleAdminAuthorizationApiIT` の 403 の主体を Q3 の利用者に置き換え（13節 Q3: A）、`RoleGrantsNoAdminAccessIT` を足す。
-- [ ] Step 36 のコマンドを流す（group の結合テストの全体を含める）。
+- [x] 8.3 の API の層のテストを書く。`GroupAdminAuthorizationApiIT` と `RoleAdminAuthorizationApiIT` の 403 の主体を Q3 の利用者に置き換え（13節 Q3: A）、`RoleGrantsNoAdminAccessIT` を足す。
+- [x] Step 36 のコマンドを流す（group の結合テストの全体を含める）。
 - 対応: AC1.1.6・AC2.1.5・AC2.2.1〜AC2.2.8・AC2.2.10〜AC2.2.16・AC4.1.1〜AC4.1.6・AC4.1.11〜AC4.1.13・AC4.1.17・AC4.1.19・AC4.1.20・AC4.2.1〜AC4.2.6、NFR1.1・NFR1.2（B4 の差の解消、D-17）・NFR1.4・NFR1.6・NFR1.10・NFR2.6・NFR2.11・NFR3.1 (a)(d)(e)(g)・NFR3.4・NFR3.5・NFR5.1・NFR5.2・NFR5.6、group の読み直しの R-04。
 
 #### Step 37: 境界と構造の検査
-- [ ] `RoleBoundaryArchitectureTest`（B5 の規則）と、Step 14 と同じ一式を流す（B5 の 11 の口の印と道が合うこと）。
+- [x] `RoleBoundaryArchitectureTest`（B5 の規則）と、Step 14 と同じ一式を流す（B5 の 11 の口の印と道が合うこと）。
 - 対応: NFR1.3・NFR6.5、AC1.1.15。
 
 #### Step 38: バックエンドの区切りの確かめ
-- [ ] `spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流す。
+- [x] `spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流す。
 - 対応: コミットの区切り B5 の C2 の終わり。
 
 #### Step 39: 負荷の台本
-- [ ] `perf/k6/scenarios.js` に `workRoleSwitch`・`roleAssignOps`・`roleAssignmentsRead`・`workRoleRead`・`myPermissionsTree`・`rolePoolLimit` を足す（Step 16 の op のタグの結果に合わせる）。`rolePoolLimit` は閾値なしで状態コードの件数（204・409・500・そのほか）を数える。作業ロールの切り替え 3 VU・グループへの割り当てと外しを交互に 2 VU（合否の回）、同じ構成の 20 VU（記録の回）。
-- [ ] `perf/README.md` の role の節に B5 の分を書く: 合否の回（`MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11`、時間切れの累計 0・500 が 0 件・`acquire` の最大 20 ms 未満）と記録の回（上限 10・20 VU、`acquire` 10 ms 以上が届いた証拠、40 VU の流し直しは1回まで）。`acquire` は応答の `baseUnit` を確かめて秒にそろえてから 0.020 と比べる（基盤の読み直しの R-06）。健全性の確かめ以外の接続の使い手が無かったことを、試験の前後の `active` とアプリのログで切り分ける。
-- [ ] 場面ごとに `k6 inspect --include-system-env-vars` を流して記録する。
+- [x] `perf/k6/scenarios.js` に `workRoleSwitch`・`roleAssignOps`・`roleAssignmentsRead`・`workRoleRead`・`myPermissionsTree`・`rolePoolLimit` を足す（Step 16 の op のタグの結果に合わせる）。`rolePoolLimit` は閾値なしで状態コードの件数（204・409・500・そのほか）を数える。作業ロールの切り替え 3 VU・グループへの割り当てと外しを交互に 2 VU（合否の回）、同じ構成の 20 VU（記録の回）。
+- [x] `perf/README.md` の role の節に B5 の分を書く: 合否の回（`MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11`、時間切れの累計 0・500 が 0 件・`acquire` の最大 20 ms 未満）と記録の回（上限 10・20 VU、`acquire` 10 ms 以上が届いた証拠、40 VU の流し直しは1回まで）。`acquire` は応答の `baseUnit` を確かめて秒にそろえてから 0.020 と比べる（基盤の読み直しの R-06）。健全性の確かめ以外の接続の使い手が無かったことを、試験の前後の `active` とアプリのログで切り分ける。
+- [x] 場面ごとに `k6 inspect --include-system-env-vars` を流して記録する。
 - 対応: NFR2.2・NFR2.3・NFR2.5・NFR2.7・NFR2.8・NFR2.10。
 
 #### Step 40: 文書
-- [ ] README の role の節に B5 の 11 の口・作業ロールの決め方・解決の口の使い分け（navigation への案内）・同時の操作（ロール → グループの順の排他、切り替えは排他しない）・監査を足し、「スキーマの変更（Flyway）」に V12、「監査ログ（U4）」に B5 の種類と理由を書く。
+- [x] README の role の節に B5 の 11 の口・作業ロールの決め方・解決の口の使い分け（navigation への案内）・同時の操作（ロール → グループの順の排他、切り替えは排他しない）・監査を足し、「スキーマの変更（Flyway）」に V12、「監査ログ（U4）」に B5 の種類と理由を書く。
 - 対応: NFR6.1（引き継ぎ）。
 
 #### Step 41: 取り残しと変えないものの確かめ
-- [ ] Step 19 と同じ確かめ。加えて `git grep -n 'TODO(B5)' -- backend` が 0 件、`RoleGroupDeletionGuard` が仮の実装の説明を持たないこと、group の本体の差が Q4: A の1か所だけであること。
+- [x] Step 19 と同じ確かめ。加えて `git grep -n 'TODO(B5)' -- backend` が 0 件、`RoleGroupDeletionGuard` が仮の実装の説明を持たないこと、group の本体の差が Q4: A の1か所だけであること。
 - 対応: BR10.3、group の読み直しの R-04。
 
 #### Step 42: 記録（B5 の分）
-- [ ] `code-summary.md` の B5 の節（`MERGE` の確かめの結果を含む）、`traceability.json`、`source-manifest.json`、`generation-notes.md` を更新する。
+- [x] `code-summary.md` の B5 の節（`MERGE` の確かめの結果を含む）、`traceability.json`、`source-manifest.json`、`generation-notes.md` を更新する。
 - 対応: Testing Contract の「Documentation and traceability」。
 
 #### Step 43: 1コマンドの検査（統合の前の関門）
-- [ ] Step 21 と同じ。単体テストの結果に B4・B5 の3つの `*PropertyTest` があること、B5 の終わりの条件（8.1）をすべて確かめたことを記録する。
+- [x] Step 21 と同じ。単体テストの結果に B4・B5 の3つの `*PropertyTest` があること、B5 の終わりの条件（8.1）をすべて確かめたことを記録する。
 - 対応: NFR6.4、`cicd-pipeline.md` 10節の B5 の行。
 
 #### Step 44: E2E
-- [ ] Step 22 と同じ（作業ロールの API と認可の表に手が入るため）。生成物を消す。
+- [x] Step 22 と同じ（作業ロールの API と認可の表に手が入るため）。生成物を消す。
 - 対応: `cicd-pipeline.md` 8節。
 
 #### Step 45: コミットの提案・統合の提案（B5）

@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.common.testsupport.TestDatabase;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
+import cherry.mastersmith.role.domain.GroupRoleAssignment;
+import cherry.mastersmith.role.domain.GroupRoleAssignmentId;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.domain.PermissionSetting;
 import cherry.mastersmith.role.domain.PermissionSettingId;
@@ -27,6 +30,10 @@ import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.Role;
 import cherry.mastersmith.role.domain.RoleName;
 import cherry.mastersmith.role.domain.RoleNameValidation;
+import cherry.mastersmith.role.domain.UserRoleAssignment;
+import cherry.mastersmith.role.domain.UserRoleAssignmentId;
+import cherry.mastersmith.role.domain.WorkRoleSelection;
+import cherry.mastersmith.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -46,10 +53,12 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * ロールの表と権限の設定の表（V11）の結合テスト（組み込みの H2。計画の 7.3、NFR3.6、6節 A4）。
+ * ロールの表と権限の設定の表（V11）、割り当ての表と作業ロールの保存の表（V12）の結合テスト（組み込みの H2。計画の 7.3・8.3、
+ * NFR3.6、6節 A4）。
  *
- * <p>制約の名前（store の区分が読み替え先を決めるのに使う）、検査の制約、列の長さ、エンティティの読み書き（JPQL のエンティティ名
- * {@code Role}・{@code PermissionSetting} が予約語に当たらないこと）、{@code users.admin_flag} が残ることを確かめる。
+ * <p>制約の名前（store の区分が読み替え先を決めるのに使う）、検査の制約、列の長さ、索引の名前、エンティティの読み書き（JPQL の
+ * エンティティ名 {@code Role}・{@code PermissionSetting}・{@code UserRoleAssignment}・{@code GroupRoleAssignment}・
+ * {@code WorkRoleSelection} が予約語に当たらないこと）、{@code users.admin_flag} が残ることを確かめる。
  */
 @SpringBootTest
 class RoleSchemaIT {
@@ -72,6 +81,9 @@ class RoleSchemaIT {
 
     @Autowired
     EntityManager entityManager;
+
+    @Autowired
+    UserRepository users;
 
     private static RoleName name(String raw) {
         return ((RoleNameValidation.Valid) RoleName.parse(raw)).name();
@@ -255,5 +267,130 @@ class RoleSchemaIT {
                 .containsEntry("CREATE_PERMISSION", true);
         assertThat(jdbc.queryForObject("SELECT name_key FROM roles WHERE role_id = ?", String.class, roleId))
                 .isEqualTo("エンティティ");
+    }
+
+    @Test
+    @DisplayName("V12 is applied at startup and creates the named keys, foreign keys and indexes")
+    void assignmentTablesApplied() {
+        List<Map<String, Object>> rows = jdbc.queryForList(
+                "SELECT \"version\", \"success\" FROM \"flyway_schema_history\" WHERE \"version\" = '12'");
+        List<String> constraints = jdbc.queryForList(
+                "SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = 'PUBLIC'"
+                        + " AND TABLE_NAME IN ('USER_ROLE_ASSIGNMENTS', 'GROUP_ROLE_ASSIGNMENTS', 'WORK_ROLE_SELECTIONS')"
+                        + " ORDER BY CONSTRAINT_NAME",
+                String.class);
+        List<String> indexes = jdbc.queryForList(
+                "SELECT INDEX_NAME FROM INFORMATION_SCHEMA.INDEXES WHERE TABLE_SCHEMA = 'PUBLIC'"
+                        + " AND INDEX_NAME IN ('IX_USER_ROLE_ASSIGNMENTS_USER_ID', 'IX_GROUP_ROLE_ASSIGNMENTS_GROUP_ID')"
+                        + " ORDER BY INDEX_NAME",
+                String.class);
+        List<String> userColumns = jdbc.queryForList(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'PUBLIC' AND TABLE_NAME = 'USERS'",
+                String.class);
+
+        assertThat(rows).containsExactly(Map.of("version", "12", "success", true));
+        assertThat(constraints)
+                .containsExactly(
+                        "FK_GROUP_ROLE_ASSIGNMENTS_GROUP",
+                        "FK_GROUP_ROLE_ASSIGNMENTS_ROLE",
+                        "FK_USER_ROLE_ASSIGNMENTS_ROLE",
+                        "FK_USER_ROLE_ASSIGNMENTS_USER",
+                        "FK_WORK_ROLE_SELECTIONS_USER",
+                        "PK_GROUP_ROLE_ASSIGNMENTS",
+                        "PK_USER_ROLE_ASSIGNMENTS",
+                        "PK_WORK_ROLE_SELECTIONS");
+        assertThat(indexes).containsExactly("IX_GROUP_ROLE_ASSIGNMENTS_GROUP_ID", "IX_USER_ROLE_ASSIGNMENTS_USER_ID");
+        assertThat(userColumns).contains("ADMIN_FLAG");
+    }
+
+    @Test
+    @DisplayName("the assignment keys reject a second row and the foreign keys reject missing roles, users and groups")
+    void assignmentKeysAndForeignKeys() {
+        GroupFixtures groups = new GroupFixtures(users, jdbc);
+        long roleId = insertRole(GroupFixtures.uniqueName("割り当ての制約"));
+        long userId = groups.user("割り当て 制約一郎");
+        long groupId = groups.group(GroupFixtures.uniqueName("割り当ての制約"));
+        OffsetDateTime at = OffsetDateTime.ofInstant(NOW, ZoneOffset.UTC);
+        String userSql = "INSERT INTO user_role_assignments (role_id, user_id, assigned_at) VALUES (?, ?, ?)";
+        String groupSql = "INSERT INTO group_role_assignments (role_id, group_id, assigned_at) VALUES (?, ?, ?)";
+
+        assertThat(jdbc.update(userSql, roleId, userId, at)).isEqualTo(1);
+        assertThat(jdbc.update(groupSql, roleId, groupId, at)).isEqualTo(1);
+        assertThatThrownBy(() -> jdbc.update(userSql, roleId, userId, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("USER_ROLE_ASSIGNMENTS");
+        assertThatThrownBy(() -> jdbc.update(groupSql, roleId, groupId, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("GROUP_ROLE_ASSIGNMENTS");
+        assertThatThrownBy(() -> jdbc.update(userSql, Long.MAX_VALUE, userId, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_USER_ROLE_ASSIGNMENTS_ROLE");
+        assertThatThrownBy(() -> jdbc.update(userSql, roleId, Long.MAX_VALUE, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_USER_ROLE_ASSIGNMENTS_USER");
+        assertThatThrownBy(() -> jdbc.update(groupSql, Long.MAX_VALUE, groupId, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_GROUP_ROLE_ASSIGNMENTS_ROLE");
+        assertThatThrownBy(() -> jdbc.update(groupSql, roleId, Long.MAX_VALUE, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_GROUP_ROLE_ASSIGNMENTS_GROUP");
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM roles WHERE role_id = ?", roleId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("_ROLE_ASSIGNMENTS_ROLE");
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM groups WHERE group_id = ?", groupId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_GROUP_ROLE_ASSIGNMENTS_GROUP");
+    }
+
+    @Test
+    @DisplayName("the work role selection has one row per user and no foreign key to the role")
+    void workRoleSelectionKeys() {
+        long userId = new GroupFixtures(users, jdbc).user("作業ロール 制約一郎");
+        OffsetDateTime at = OffsetDateTime.ofInstant(NOW, ZoneOffset.UTC);
+        String sql = "INSERT INTO work_role_selections (user_id, role_id, updated_at) VALUES (?, ?, ?)";
+
+        assertThat(jdbc.update(sql, userId, Long.MAX_VALUE, at))
+                .as("ロールへの外部キーは無い")
+                .isEqualTo(1);
+        assertThatThrownBy(() -> jdbc.update(sql, userId, 1L, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("WORK_ROLE_SELECTIONS");
+        assertThatThrownBy(() -> jdbc.update(sql, Long.MAX_VALUE, 1L, at))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("FK_WORK_ROLE_SELECTIONS_USER");
+    }
+
+    @Test
+    @DisplayName("the assignment and selection entities are written and read through JPQL")
+    void assignmentEntitiesRoundTrip() {
+        GroupFixtures groups = new GroupFixtures(users, jdbc);
+        long roleId = insertRole(GroupFixtures.uniqueName("割り当てのエンティティ"));
+        long userId = groups.user("割り当て 実体一郎");
+        long groupId = groups.group(GroupFixtures.uniqueName("割り当てのエンティティ"));
+        tx.executeWithoutResult(status -> {
+            entityManager.persist(new UserRoleAssignment(roleId, userId, NOW));
+            entityManager.persist(new GroupRoleAssignment(roleId, groupId, NOW));
+            entityManager.persist(new WorkRoleSelection(userId, roleId, NOW));
+        });
+
+        UserRoleAssignment user = tx.execute(
+                status -> entityManager.find(UserRoleAssignment.class, new UserRoleAssignmentId(roleId, userId)));
+        GroupRoleAssignment group = tx.execute(
+                status -> entityManager.find(GroupRoleAssignment.class, new GroupRoleAssignmentId(roleId, groupId)));
+        List<Long> selected = tx.execute(status -> entityManager
+                .createQuery("select w.roleId from WorkRoleSelection w where w.userId = :userId", Long.class)
+                .setParameter("userId", userId)
+                .getResultList());
+        Long assigned = tx.execute(status -> entityManager
+                .createQuery("select count(a) from UserRoleAssignment a where a.roleId = :roleId", Long.class)
+                .setParameter("roleId", roleId)
+                .getSingleResult());
+
+        assertThat(user.getUserId()).isEqualTo(userId);
+        assertThat(user.getAssignedAt()).isEqualTo(NOW);
+        assertThat(group.getGroupId()).isEqualTo(groupId);
+        assertThat(selected).containsExactly(roleId);
+        assertThat(assigned).isEqualTo(1L);
+        assertThat(user.toString()).isEqualTo("UserRoleAssignment[roleId=" + roleId + ", userId=" + userId + "]");
     }
 }

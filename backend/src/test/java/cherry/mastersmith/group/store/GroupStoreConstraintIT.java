@@ -218,4 +218,36 @@ class GroupStoreConstraintIT {
                 .isEqualTo(new StoreOutcome.Done<>(null));
         assertThat(fixtures.groupRows(groupId)).isZero();
     }
+
+    @Test
+    @DisplayName(
+            "deleting a group with a committed role assignment of U4 is Referenced and keeps the group (role Q4: A)")
+    void roleAssignmentForeignKeyOnDelete() {
+        long groupId = fixtures.group(GroupFixtures.uniqueName("ロールの割り当ての外部キー"));
+        String roleName = GroupFixtures.uniqueName("外部キーのロール");
+        OffsetDateTime at = OffsetDateTime.ofInstant(NOW, ZoneOffset.UTC);
+        jdbc.update(
+                "INSERT INTO roles (name, name_key, created_at, updated_at) VALUES (?, ?, ?, ?)",
+                roleName,
+                roleName.toLowerCase(java.util.Locale.ROOT),
+                at,
+                at);
+        long roleId = jdbc.queryForObject("SELECT role_id FROM roles WHERE name = ?", Long.class, roleName);
+        jdbc.update(
+                "INSERT INTO group_role_assignments (role_id, group_id, assigned_at) VALUES (?, ?, ?)",
+                roleId,
+                groupId,
+                at);
+
+        StoreOutcome<Void> outcome = inTransaction(s -> switch (s.lockGroup(groupId)) {
+            case StoreOutcome.Done<Group>(Group group) -> s.deleteGroup(group);
+            default -> throw new IllegalStateException("グループを排他できません");
+        });
+
+        assertThat(outcome).isEqualTo(new StoreOutcome.Referenced<Void>());
+        assertThat(fixtures.groupRows(groupId)).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                        "SELECT COUNT(*) FROM group_role_assignments WHERE group_id = ?", Integer.class, groupId))
+                .isEqualTo(1);
+    }
 }

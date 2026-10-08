@@ -183,4 +183,47 @@ class RoleSecretLeakIT {
                     .doesNotContain("$2a$");
         }
     }
+
+    @Test
+    @DisplayName("with TRACE, the assignment list and the user roles leak no email or display name of the users (B5)")
+    void noPersonalValuesOfAssignedUsers(CapturedOutput output) {
+        String displayName = "漏えい確かめ 太郎" + MARKER;
+        RoleActors actors = new RoleActors(userAccountService, revocationService, transactionManager, port);
+        Actor member = actors.member(displayName);
+        long roleId = fixtures.role(RoleFixtures.uniqueName("漏えい 割り当て"));
+        int offset = output.getOut().length();
+        loggingSystem.setLogLevel(ROOT_LOGGER, LogLevel.TRACE);
+        List<HttpResponse<String>> responses;
+        try {
+            responses = List.of(
+                    api.assignUser(admin.token(), roleId, member.userId()),
+                    api.assignments(admin.token(), roleId),
+                    api.userRoles(admin.token(), member.userId()),
+                    api.workRole(member.token()),
+                    api.switchWorkRole(member.token(), roleId),
+                    api.mySchemas(member.token()),
+                    api.unassignUser(admin.token(), roleId, member.userId()));
+        } finally {
+            loggingSystem.setLogLevel(ROOT_LOGGER, null);
+        }
+        String logs = output.getOut().substring(offset) + output.getErr();
+
+        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(204, 200, 200, 200, 204, 200, 204);
+        assertThat(responses.get(1).body()).as("応答には載る（画面に出す値）").contains(member.email());
+        assertThat(logs)
+                .as("メソッドの呼び出しの追跡が有効")
+                .contains("ENTER RoleAssignmentService#assignments")
+                .contains("EXIT  RoleAssignmentService#assignments(): Found[users=1, groups=0]");
+        JsonLogRecords.assertContainsNoSecret(
+                logs, member.email(), displayName, MARKER, admin.email(), RoleActors.PASSWORD);
+        for (HttpResponse<String> response : responses) {
+            assertThat(response.body()).doesNotContain("$2a$").doesNotContainIgnoringCase("passwordHash");
+        }
+        for (var row : jdbc.queryForList(
+                "SELECT * FROM audit_events WHERE event_type IN ('ROLE_ASSIGNED', 'ROLE_UNASSIGNED', 'WORK_ROLE_SWITCHED')")) {
+            assertThat(String.valueOf(row.values()))
+                    .doesNotContain(member.email())
+                    .doesNotContain(displayName);
+        }
+    }
 }

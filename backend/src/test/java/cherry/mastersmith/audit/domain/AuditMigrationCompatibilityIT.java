@@ -55,12 +55,12 @@ class AuditMigrationCompatibilityIT {
     private static final int PREVIOUS_LAST_VERSION = 9;
 
     /**
-     * 今の版の最後の移行の番号（クラスパスの移行をすべて当てたときの版）。Intent 261004-role-menu の B4 で V11 を足したため 11 にした
-     * （依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。
+     * 今の版の最後の移行の番号（クラスパスの移行をすべて当てたときの版）。Intent 261004-role-menu の B4 で V11 を足したため 11 に、B5 で
+     * V12 を足したため 12 にした（依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。
      */
-    private static final int CURRENT_LAST_VERSION = 11;
+    private static final int CURRENT_LAST_VERSION = 12;
 
-    /** 前の版の後に今の版が当てる移行の数（V10・V11）。 */
+    /** 前の版の後に今の版が当てる移行の数（V10〜V12）。 */
     private static final int MIGRATIONS_AFTER_PREVIOUS = CURRENT_LAST_VERSION - PREVIOUS_LAST_VERSION;
 
     private static final Pattern VERSIONED = Pattern.compile("V(\\d+)__.+\\.sql");

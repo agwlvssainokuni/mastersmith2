@@ -246,6 +246,165 @@ public final class RoleApi {
     }
 
     /**
+     * ロールの割り当ての一覧を読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @return 応答
+     */
+    public HttpResponse<String> assignments(String token, Object roleId) {
+        return send("GET", PATH + "/" + roleId + "/assignments", token, null);
+    }
+
+    /**
+     * 利用者にロールを割り当てる（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @param userId 利用者 ID
+     * @return 応答
+     */
+    public HttpResponse<String> assignUser(String token, Object roleId, Object userId) {
+        return assignJson(token, roleId, json(Map.of("userId", userId)));
+    }
+
+    /**
+     * グループにロールを割り当てる（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @param groupId グループの ID
+     * @return 応答
+     */
+    public HttpResponse<String> assignGroup(String token, Object roleId, Object groupId) {
+        return assignJson(token, roleId, json(Map.of("groupId", groupId)));
+    }
+
+    /**
+     * 本文の JSON で割り当てる（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @param body 本文の JSON
+     * @return 応答
+     */
+    public HttpResponse<String> assignJson(String token, Object roleId, String body) {
+        return send("POST", PATH + "/" + roleId + "/assignments", token, body);
+    }
+
+    /**
+     * 利用者への割り当てを外す（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @param userId 利用者 ID
+     * @return 応答
+     */
+    public HttpResponse<String> unassignUser(String token, Object roleId, Object userId) {
+        return send("DELETE", PATH + "/" + roleId + "/assignments/users/" + userId, token, null);
+    }
+
+    /**
+     * グループへの割り当てを外す（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId ロールの ID
+     * @param groupId グループの ID
+     * @return 応答
+     */
+    public HttpResponse<String> unassignGroup(String token, Object roleId, Object groupId) {
+        return send("DELETE", PATH + "/" + roleId + "/assignments/groups/" + groupId, token, null);
+    }
+
+    /**
+     * グループに割り当てたロールを読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param groupId グループの ID
+     * @return 応答
+     */
+    public HttpResponse<String> groupRoles(String token, Object groupId) {
+        return send("GET", "/api/admin/groups/" + groupId + "/roles", token, null);
+    }
+
+    /**
+     * 利用者のロールを読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param userId 利用者 ID
+     * @return 応答
+     */
+    public HttpResponse<String> userRoles(String token, Object userId) {
+        return send("GET", "/api/admin/users/" + userId + "/roles", token, null);
+    }
+
+    /**
+     * 自分の作業ロールを読む（B5）。
+     *
+     * @param token アクセストークン
+     * @return 応答
+     */
+    public HttpResponse<String> workRole(String token) {
+        return send("GET", "/api/me/work-role", token, null);
+    }
+
+    /**
+     * 作業ロールを切り替える（B5）。
+     *
+     * @param token アクセストークン
+     * @param roleId 選ぶロールの ID
+     * @return 応答
+     */
+    public HttpResponse<String> switchWorkRole(String token, Object roleId) {
+        return switchWorkRoleJson(token, json(Map.of("roleId", roleId)));
+    }
+
+    /**
+     * 本文の JSON で作業ロールを切り替える（B5）。
+     *
+     * @param token アクセストークン
+     * @param body 本文の JSON
+     * @return 応答
+     */
+    public HttpResponse<String> switchWorkRoleJson(String token, String body) {
+        return send("PUT", "/api/me/work-role", token, body);
+    }
+
+    /**
+     * 自分の権限の木の1段目を読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param headers 足すヘッダー
+     * @return 応答
+     */
+    public HttpResponse<String> mySchemas(String token, String... headers) {
+        return send("GET", "/api/me/permissions/schemas", token, null, headers);
+    }
+
+    /**
+     * 自分の権限の木のテーブルを読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param schema スキーマの名前（null なら引数を付けない）
+     * @return 応答
+     */
+    public HttpResponse<String> myTables(String token, String schema) {
+        return send("GET", "/api/me/permissions/tables" + query("schema", schema, null, null), token, null);
+    }
+
+    /**
+     * 自分の権限の木のカラムを読む（B5）。
+     *
+     * @param token アクセストークン
+     * @param schema スキーマの名前（null なら引数を付けない）
+     * @param table テーブルの名前（null なら引数を付けない）
+     * @return 応答
+     */
+    public HttpResponse<String> myColumns(String token, String schema, String table) {
+        return send("GET", "/api/me/permissions/columns" + query("schema", schema, "table", table), token, null);
+    }
+
+    /**
      * 任意の要求を送る（認可の表のテストで使う）。
      *
      * @param method 方法

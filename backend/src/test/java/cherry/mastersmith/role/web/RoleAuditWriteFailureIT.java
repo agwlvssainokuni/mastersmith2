@@ -171,4 +171,38 @@ class RoleAuditWriteFailureIT {
             repository.mode(Mode.NONE);
         }
     }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = Mode.class,
+            names = {"APPEND_FAILURE", "CONNECTION_FAILURE"})
+    @DisplayName("a failing audit write keeps a work role switch at 204 with the selection stored and one ERROR (B5)")
+    void switchIsKept(Mode mode) {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("書き込み失敗 切り替え"));
+        Actor member = new RoleActors(userAccountService, revocationService, transactionManager, port).member();
+        fixtures.assignUser(roleId, member.userId());
+        repository.takeSaveCalls();
+        repository.mode(mode);
+        try {
+            try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+                assertThat(api.switchWorkRole(member.token(), roleId).statusCode())
+                        .isEqualTo(204);
+
+                assertThat(fixtures.storedWorkRole(member.userId())).isEqualTo(roleId);
+                assertThat(logs.list()).singleElement().satisfies(error -> {
+                    assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                    assertThat(keyValues(error))
+                            .containsEntry("auditEventType", "WORK_ROLE_SWITCHED")
+                            .containsEntry("result", "SUCCESS")
+                            .containsEntry("actorUserId", String.valueOf(member.userId()))
+                            .containsEntry("targetUserId", String.valueOf(member.userId()))
+                            .containsEntry("targetRoleId", String.valueOf(roleId));
+                    assertThat(keyValues(error).toString()).doesNotContain(member.email());
+                });
+            }
+            assertThat(repository.takeSaveCalls()).as("再試行はしない").isEqualTo(1);
+        } finally {
+            repository.mode(Mode.NONE);
+        }
+    }
 }

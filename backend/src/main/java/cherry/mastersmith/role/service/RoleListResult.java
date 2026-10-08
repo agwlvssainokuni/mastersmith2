@@ -60,7 +60,7 @@ public sealed interface RoleListResult permits RoleListResult.Listed, RoleListRe
     }
 
     /**
-     * 一覧の1行（BR3.4。数は直接の割り当ての数で、割り当ての表を足す B5 で数える。B4 では 0）。
+     * 一覧の1行（BR3.4。数は直接の割り当ての数で、グループ経由の利用者は数えない）。
      *
      * @param roleId ロールの ID
      * @param name 名前

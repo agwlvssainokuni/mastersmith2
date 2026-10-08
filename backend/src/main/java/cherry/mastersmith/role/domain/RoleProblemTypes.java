@@ -17,13 +17,16 @@ package cherry.mastersmith.role.domain;
 
 import cherry.mastersmith.common.error.domain.LocalizedText;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.group.domain.GroupProblemTypes;
+import cherry.mastersmith.user.domain.UserProblemTypes;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * RoleManagement の問題の種類（Intent 261004-role-menu の U4、BR13.1、計画の 4.2）。1つの code に1つの状態コードを固定し、code は一度
- * 決めたら変えない。B4 の7つ。{@code ROLE_NOT_ASSIGNED}（B5）・{@code ROLE_TRANSFER_INVALID}・{@code ROLE_TRANSFER_STALE}（B6）は
- * その Bolt で足す。
+ * 決めたら変えない。B4 の7つと B5 の {@code ROLE_NOT_ASSIGNED}。{@code ROLE_TRANSFER_INVALID}・{@code ROLE_TRANSFER_STALE}
+ * （B6）はその Bolt で足す。割り当ての相手がいないときは、user の {@code USER_NOT_FOUND} と group の {@code GROUP_NOT_FOUND} を使い回す
+ * （BR13.2）。
  *
  * <p>入力の誤りは既存の {@code VALIDATION_FAILED}（400）、未認証は既存の {@code AUTHENTICATION_REQUIRED}（401）、管理者でないは既存の
  * {@code ACCESS_DENIED}（403）を使うため、ここには置かない（BR13.2）。{@code DSL_NOT_APPLIED} は今のアプリに同じ code が無いため
@@ -99,6 +102,16 @@ public final class RoleProblemTypes {
                     "There is no target for permissions because no DSL is applied."),
             new LocalizedText("DSL の管理の画面で DSL を適用してください。", "Apply a DSL on the DSL management screen."));
 
+    /** 割り当ての外・存在しないロールへの作業ロールの切り替え（409。2つを同じ応答で拒否する。BR7.5）。 */
+    public static final ProblemType ROLE_NOT_ASSIGNED = new ProblemType(
+            "ROLE_NOT_ASSIGNED",
+            409,
+            new LocalizedText("割り当てられていないロールです", "The role is not assigned"),
+            new LocalizedText(
+                    "作業ロールには、自分に割り当てられたロールだけを選べます。作業ロールは変わっていません。",
+                    "Only a role assigned to you can be selected as the work role. Nothing was changed."),
+            new LocalizedText("作業ロールの一覧を読み直してください。", "Reload the list of work roles."));
+
     private RoleProblemTypes() {}
 
     /**
@@ -116,6 +129,9 @@ public final class RoleProblemTypes {
             case NO_CHANGE -> ROLE_NO_CHANGE;
             case TARGET_NOT_IN_DSL -> PERMISSION_TARGET_NOT_IN_DSL;
             case DSL_NOT_APPLIED -> DSL_NOT_APPLIED;
+            case NOT_ASSIGNED -> ROLE_NOT_ASSIGNED;
+            case USER_NOT_FOUND -> UserProblemTypes.USER_NOT_FOUND;
+            case GROUP_NOT_FOUND -> GroupProblemTypes.GROUP_NOT_FOUND;
         };
     }
 
@@ -132,6 +148,7 @@ public final class RoleProblemTypes {
                 ROLE_NO_CHANGE,
                 ROLE_BUSY,
                 PERMISSION_TARGET_NOT_IN_DSL,
-                DSL_NOT_APPLIED);
+                DSL_NOT_APPLIED,
+                ROLE_NOT_ASSIGNED);
     }
 }

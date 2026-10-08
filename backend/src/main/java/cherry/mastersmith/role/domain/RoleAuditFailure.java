@@ -17,8 +17,8 @@ package cherry.mastersmith.role.domain;
 
 /**
  * ロールの操作の監査の失敗の理由（BR11.2、契約 C10）。{@code audit} が監査の失敗の理由に写す（{@code NO_CHANGE} は既存の値、ほかは
- * 足した値）。B4 の分。{@code ROLE_NOT_ASSIGNED}・{@code USER_NOT_FOUND}・{@code GROUP_NOT_FOUND}（B5）と
- * {@code ROLE_TRANSFER_STALE}（B6）はその Bolt で足す。
+ * 足した値）。B4 と B5 の分。{@code ROLE_TRANSFER_STALE}（B6）はその Bolt で足す（{@code USER_NOT_FOUND}・
+ * {@code GROUP_NOT_FOUND} は既存の値に写す）。
  */
 public enum RoleAuditFailure {
     /** 操作の対象のロールがいない。 */
@@ -31,6 +31,12 @@ public enum RoleAuditFailure {
     PERMISSION_TARGET_NOT_IN_DSL,
     /** 適用済みの DSL が無いときの保存。 */
     DSL_NOT_APPLIED,
-    /** 変えるものが無い（同じ名前への変更・変わる対象の無い保存・消す行の無い消す操作）。 */
-    NO_CHANGE
+    /** 変えるものが無い（同じ名前への変更・変わる対象の無い保存・消す行の無い消す操作・重ねての割り当て・割り当てていない組の外し）。 */
+    NO_CHANGE,
+    /** 割り当ての外・存在しないロールへの作業ロールの切り替え（B5、BR7.5）。 */
+    ROLE_NOT_ASSIGNED,
+    /** 割り当ての相手の利用者がいない（招待中の人を含む。B5、BR6.1）。 */
+    USER_NOT_FOUND,
+    /** 割り当ての相手のグループがいない（B5、BR6.6）。 */
+    GROUP_NOT_FOUND
 }

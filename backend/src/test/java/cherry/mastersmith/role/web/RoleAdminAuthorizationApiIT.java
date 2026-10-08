@@ -24,12 +24,14 @@ import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.testsupport.RoleActors;
 import cherry.mastersmith.role.testsupport.RoleApi;
 import cherry.mastersmith.role.testsupport.RoleDslFixture;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
+import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
@@ -53,12 +55,13 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * ロールの管理と権限の設定の 10 の口の認可の表（10 の口 × 4つの主体 = 40 行。BR2.1、NFR1.1〜NFR1.3、AC1.1.5・AC1.2.11、
- * {@code security-design.md} 2節）の結合テスト。{@code team.md} の必須のテスト（権限ごとの API の認可）。
+ * ロールの管理・権限の設定・割り当ての 17 の口の認可の表（17 の口 × 4つの主体 = 68 行。BR2.1、NFR1.1〜NFR1.3、AC1.1.5・AC1.2.11・
+ * AC2.2.1、{@code security-design.md} 2節）の結合テスト。{@code team.md} の必須のテスト（権限ごとの API の認可）。
  *
- * <p>主体は未認証・管理者の印を持たない利用者・管理者・停止中の管理者。B4 では作業ロールをまだ持てないため、管理者の印を持たない利用者で
- * 403 を確かめる（B5 で「要る権限だけを欠く利用者」に置き換える。計画の D-17）。停止中の管理者は既存のアクセストークンの認証の入口で
- * 拒否されるため 401（計画の D-34）。拒否の後はロールと設定の行を読み直し、変わっていないことを確かめる。
+ * <p>主体は未認証・要る権限だけを欠く利用者・管理者・停止中の管理者。403 を確かめる利用者は、テストの DSL のすべてのスキーマに FULL・CREATE
+ * と DELETE を可にしたロールを作業ロールに持ち、管理者の印だけを欠く利用者（B5 で置き換えた。計画の 13節 Q3: A・D-17、group の読み直しの
+ * R-04）。停止中の管理者は既存のアクセストークンの認証の入口で拒否されるため 401（計画の D-34）。拒否の後はロール・設定・割り当て・作業ロールの
+ * 保存の行を読み直し、変わっていないことを確かめる。
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -66,7 +69,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Import(AuthApiTestConfig.class)
 class RoleAdminAuthorizationApiIT {
 
-    /** 10 の口と、管理者のときの成功の状態コード。 */
+    /** 17 の口と、管理者のときの成功の状態コード（割り当ての POST は利用者とグループの2行）。 */
     enum Endpoint {
         LIST(200),
         CREATE(201),
@@ -77,7 +80,14 @@ class RoleAdminAuthorizationApiIT {
         TABLES(200),
         COLUMNS(200),
         SAVE(204),
-        CLEAR(204);
+        CLEAR(204),
+        ASSIGNMENTS(200),
+        ASSIGN_USER(204),
+        ASSIGN_GROUP(204),
+        UNASSIGN_USER(204),
+        UNASSIGN_GROUP(204),
+        GROUP_ROLES(200),
+        USER_ROLES(200);
 
         private final int success;
 
@@ -89,7 +99,7 @@ class RoleAdminAuthorizationApiIT {
     /** 主体。 */
     enum Subject {
         ANONYMOUS,
-        MEMBER,
+        FULL_ROLE_WITHOUT_ADMIN_FLAG,
         ADMIN,
         SUSPENDED_ADMIN
     }
@@ -120,17 +130,23 @@ class RoleAdminAuthorizationApiIT {
     @Autowired
     JdbcTemplate jdbc;
 
+    @Autowired
+    UserRepository users;
+
     private RoleApi api;
 
     private RoleActors actors;
 
     private RoleFixtures fixtures;
 
+    private GroupFixtures groups;
+
     @BeforeEach
     void setUp() {
         api = new RoleApi(port);
         actors = new RoleActors(userAccountService, revocationService, transactionManager, port);
         fixtures = new RoleFixtures(jdbc);
+        groups = new GroupFixtures(users, jdbc);
         RoleDslFixture.install(holder, RoleDslFixture.sample());
     }
 
@@ -147,7 +163,8 @@ class RoleAdminAuthorizationApiIT {
     private String tokenOf(Subject subject) {
         return switch (subject) {
             case ANONYMOUS -> null;
-            case MEMBER -> actors.member().token();
+            case FULL_ROLE_WITHOUT_ADMIN_FLAG ->
+                actors.adminFlagMissingFullRole(fixtures).token();
             case ADMIN -> actors.admin().token();
             case SUSPENDED_ADMIN -> actors.suspendedAdmin().token();
         };
@@ -160,6 +177,12 @@ class RoleAdminAuthorizationApiIT {
                 "settings",
                 jdbc.queryForList("SELECT * FROM permission_settings ORDER BY role_id, schema_name, table_name,"
                         + " column_name"));
+        state.put(
+                "userAssignments", jdbc.queryForList("SELECT * FROM user_role_assignments ORDER BY role_id, user_id"));
+        state.put(
+                "groupAssignments",
+                jdbc.queryForList("SELECT * FROM group_role_assignments ORDER BY role_id, group_id"));
+        state.put("selections", jdbc.queryForList("SELECT * FROM work_role_selections ORDER BY user_id"));
         return state;
     }
 
@@ -169,6 +192,12 @@ class RoleAdminAuthorizationApiIT {
         long roleId = fixtures.role(RoleFixtures.uniqueName("認可"));
         fixtures.setting(roleId, PermissionTarget.table("SALES", "GONE"), MainPermission.READ);
         long emptyRole = fixtures.role(RoleFixtures.uniqueName("認可 空"));
+        long assignedUser = groups.user("認可 割り当て済み");
+        long freeUser = groups.user("認可 割り当てなし");
+        long assignedGroup = groups.group(GroupFixtures.uniqueName("認可 割り当て済み"));
+        long freeGroup = groups.group(GroupFixtures.uniqueName("認可 割り当てなし"));
+        fixtures.assignUser(roleId, assignedUser);
+        fixtures.assignGroup(roleId, assignedGroup);
         String token = tokenOf(subject);
         Map<String, Object> before = state();
 
@@ -193,6 +222,13 @@ class RoleAdminAuthorizationApiIT {
                                 roleId,
                                 RoleApi.json(Map.of(
                                         "targets", List.of(Map.of("schemaName", "SALES", "tableName", "GONE")))));
+                    case ASSIGNMENTS -> api.assignments(token, roleId);
+                    case ASSIGN_USER -> api.assignUser(token, roleId, freeUser);
+                    case ASSIGN_GROUP -> api.assignGroup(token, roleId, freeGroup);
+                    case UNASSIGN_USER -> api.unassignUser(token, roleId, assignedUser);
+                    case UNASSIGN_GROUP -> api.unassignGroup(token, roleId, assignedGroup);
+                    case GROUP_ROLES -> api.groupRoles(token, assignedGroup);
+                    case USER_ROLES -> api.userRoles(token, assignedUser);
                 };
 
         switch (subject) {
@@ -202,7 +238,7 @@ class RoleAdminAuthorizationApiIT {
                 assertThat(HttpTestClient.json(response)).containsEntry("code", "AUTHENTICATION_REQUIRED");
                 assertThat(state()).as("拒否の後に状態は変わらない").isEqualTo(before);
             }
-            case MEMBER -> {
+            case FULL_ROLE_WITHOUT_ADMIN_FLAG -> {
                 assertThat(response.statusCode()).isEqualTo(403);
                 assertThat(HttpTestClient.json(response)).containsEntry("code", "ACCESS_DENIED");
                 assertThat(state()).as("拒否の後に状態は変わらない").isEqualTo(before);

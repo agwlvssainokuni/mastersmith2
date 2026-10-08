@@ -16,32 +16,70 @@
 package cherry.mastersmith.role.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import cherry.mastersmith.group.service.DeletionDecision;
+import cherry.mastersmith.role.repository.AssignmentCount;
+import cherry.mastersmith.role.repository.RoleAssignmentRepository;
+import cherry.mastersmith.useradmin.testsupport.RecordingTransactionManager;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-/** group の問う口の B3 の仮の実装（BR6.2・BR6.3、計画の 11節 Q1: A）の単体テスト。B5 で本物に置き換える。 */
+/**
+ * group の問う口の実装（BR10.1〜BR10.3、FS の 2.12、計画の 8.3）の単体テスト。B3 の仮の実装（常に 0・削除してよい）を置き換えたことを、
+ * 割り当ての表の数で答えることで確かめる（仮の実装が残っていれば落ちる）。
+ */
 class RoleGroupDeletionGuardTest {
 
-    private final RoleGroupDeletionGuard guard = new RoleGroupDeletionGuard();
+    private final RoleAssignmentRepository assignments = mock(RoleAssignmentRepository.class);
+
+    private final RecordingTransactionManager recording = new RecordingTransactionManager();
+
+    private final RoleGroupDeletionGuard guard = new RoleGroupDeletionGuard(assignments, recording);
 
     @Test
-    @DisplayName("every given group id gets a count of zero, and an empty set gives an empty map")
-    void zeroForEveryId() {
-        assertThat(guard.assignedRoleCounts(Set.of(1L, 2L, 3L))).isEqualTo(Map.of(1L, 0, 2L, 0, 3L, 0));
-        assertThat(guard.assignedRoleCounts(Set.of())).isEmpty();
+    @DisplayName("every given group id gets a key, the counted ones their count and the others zero, in one query")
+    void countsForEveryId() {
+        when(assignments.countByGroups(any())).thenReturn(List.of(new AssignmentCount(2L, 3L)));
+
+        assertThat(guard.assignedRoleCounts(Set.of(1L, 2L, 3L))).isEqualTo(Map.of(1L, 0, 2L, 3, 3L, 0));
+        verify(assignments).countByGroups(Set.of(1L, 2L, 3L));
+        assertThat(recording.definitions()).singleElement().matches(definition -> definition.isReadOnly());
     }
 
     @Test
-    @DisplayName("every group may be deleted with no assigned role")
+    @DisplayName("an empty set gives an empty map without a query")
+    void emptySet() {
+        assertThat(guard.assignedRoleCounts(Set.of())).isEmpty();
+        verifyNoInteractions(assignments);
+        assertThatThrownBy(() -> guard.assignedRoleCounts(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("a group without assigned roles may be deleted")
     void allowed() {
-        DeletionDecision decision = guard.canDelete(1L);
+        when(assignments.countByGroups(any())).thenReturn(List.of());
+
+        DeletionDecision decision = guard.canDelete(7L);
 
         assertThat(decision).isEqualTo(new DeletionDecision.Allowed());
         assertThat(decision.assignedRoles()).isZero();
-        assertThat(new DeletionDecision.Blocked(3).assignedRoles()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("a group with assigned roles is blocked with the same count as assignedRoleCounts")
+    void blocked() {
+        when(assignments.countByGroups(any())).thenReturn(List.of(new AssignmentCount(7L, 2L)));
+
+        assertThat(guard.canDelete(7L)).isEqualTo(new DeletionDecision.Blocked(2));
+        assertThat(guard.assignedRoleCounts(Set.of(7L))).containsEntry(7L, 2);
     }
 }

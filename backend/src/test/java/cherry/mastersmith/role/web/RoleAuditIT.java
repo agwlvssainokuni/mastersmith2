@@ -27,6 +27,7 @@ import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.testsupport.RoleActors;
@@ -34,6 +35,7 @@ import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.role.testsupport.RoleApi;
 import cherry.mastersmith.role.testsupport.RoleDslFixture;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
+import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.nio.file.Path;
 import java.util.List;
@@ -85,6 +87,9 @@ class RoleAuditIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    UserRepository users;
 
     private RoleApi api;
 
@@ -243,6 +248,96 @@ class RoleAuditIT {
         }
 
         assertThat(rows().all().stream().filter(row -> row.auditEventId() > before))
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("assignments, unassignments and switches leave one row each with the targets and the detail (B5)")
+    void assignmentsAndSwitches() {
+        String name = RoleFixtures.uniqueName("割り当ての監査");
+        long roleId = fixtures.role(name);
+        GroupFixtures groups = new GroupFixtures(users, jdbc);
+        Actor member = new RoleActors(userAccountService, revocationService, transactionManager, port).member();
+        String groupName = GroupFixtures.uniqueName("割り当ての監査");
+        long groupId = groups.group(groupName);
+
+        long before = lastId();
+        api.assignUser(admin.token(), roleId, member.userId());
+        AuditRow toUser = onlyRowSince(before);
+        assertThat(toUser.eventType()).isEqualTo("ROLE_ASSIGNED");
+        assertThat(toUser.result()).isEqualTo("SUCCESS");
+        assertThat(toUser.actorUserId()).isEqualTo(admin.userId());
+        assertThat(toUser.targetRoleId()).isEqualTo(roleId);
+        assertThat(toUser.targetUserId()).isEqualTo(member.userId());
+        assertThat(toUser.targetGroupId()).isNull();
+        assertThat(toUser.detail()).isEqualTo("{\"roleName\":\"" + name + "\",\"groupName\":null}");
+
+        before = lastId();
+        api.assignGroup(admin.token(), roleId, groupId);
+        AuditRow toGroup = onlyRowSince(before);
+        assertThat(toGroup.targetGroupId()).isEqualTo(groupId);
+        assertThat(toGroup.targetUserId()).isNull();
+        assertThat(toGroup.detail()).isEqualTo("{\"roleName\":\"" + name + "\",\"groupName\":\"" + groupName + "\"}");
+
+        before = lastId();
+        api.switchWorkRole(member.token(), roleId);
+        AuditRow switched = onlyRowSince(before);
+        assertThat(switched.eventType()).isEqualTo("WORK_ROLE_SWITCHED");
+        assertThat(switched.actorUserId()).isEqualTo(member.userId());
+        assertThat(switched.targetUserId()).isEqualTo(member.userId());
+        assertThat(switched.targetRoleId()).isEqualTo(roleId);
+        assertThat(switched.detail())
+                .isEqualTo("{\"fromRoleId\":" + roleId + ",\"fromRoleName\":\"" + name + "\",\"toRoleName\":\"" + name
+                        + "\",\"storedBeforeRoleId\":null}");
+
+        before = lastId();
+        api.unassignGroup(admin.token(), roleId, groupId);
+        AuditRow unassigned = onlyRowSince(before);
+        assertThat(unassigned.eventType()).isEqualTo("ROLE_UNASSIGNED");
+        assertThat(unassigned.result()).isEqualTo("SUCCESS");
+        assertThat(unassigned.targetGroupId()).isEqualTo(groupId);
+    }
+
+    @Test
+    @DisplayName("assignment and switch rejections leave one FAILURE row, reads of assignments leave none (B5)")
+    void assignmentRejections() {
+        String name = RoleFixtures.uniqueName("割り当ての拒否");
+        long roleId = fixtures.role(name);
+        Actor member = new RoleActors(userAccountService, revocationService, transactionManager, port).member();
+        fixtures.assignUser(roleId, member.userId());
+
+        long before = lastId();
+        api.assignUser(admin.token(), roleId, member.userId());
+        AuditRow duplicate = onlyRowSince(before);
+        assertThat(duplicate.failureReason()).isEqualTo("NO_CHANGE");
+        assertThat(duplicate.eventType()).isEqualTo("ROLE_ASSIGNED");
+
+        before = lastId();
+        api.assignUser(admin.token(), roleId, Long.MAX_VALUE);
+        AuditRow missingUser = onlyRowSince(before);
+        assertThat(missingUser.failureReason()).isEqualTo("USER_NOT_FOUND");
+        assertThat(missingUser.targetUserId()).isEqualTo(Long.MAX_VALUE);
+
+        before = lastId();
+        api.assignGroup(admin.token(), roleId, Long.MAX_VALUE);
+        assertThat(onlyRowSince(before).failureReason()).isEqualTo("GROUP_NOT_FOUND");
+
+        before = lastId();
+        api.switchWorkRole(member.token(), Long.MAX_VALUE);
+        AuditRow notAssigned = onlyRowSince(before);
+        assertThat(notAssigned.eventType()).isEqualTo("WORK_ROLE_SWITCHED");
+        assertThat(notAssigned.failureReason()).isEqualTo("ROLE_NOT_ASSIGNED");
+        assertThat(notAssigned.targetRoleId()).isEqualTo(Long.MAX_VALUE);
+        assertThat(notAssigned.detail()).isNull();
+
+        before = lastId();
+        api.assignments(admin.token(), roleId);
+        api.userRoles(admin.token(), member.userId());
+        api.workRole(member.token());
+        api.mySchemas(member.token());
+        api.assignJson(admin.token(), roleId, "{}");
+        long last = before;
+        assertThat(rows().all().stream().filter(row -> row.auditEventId() > last))
                 .isEmpty();
     }
 }

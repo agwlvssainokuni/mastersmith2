@@ -104,4 +104,65 @@ class RoleAuditEventTest {
                 .extracting(component -> component.getName())
                 .doesNotContain("email", "displayName", "password", "token");
     }
+
+    @Test
+    @DisplayName("an assignment and a work role switch carry the target user or group with the role")
+    void targetsOfB5() {
+        RoleAuditEvent toGroup = RoleAuditEvent.succeeded(
+                RoleOperation.ASSIGN, 1L, 50L, null, 70L, new RoleAuditDetail.Assignment("営業", "第一営業部"), NOW, ORIGIN);
+        RoleAuditEvent userMissing = RoleAuditEvent.failed(
+                RoleOperation.ASSIGN,
+                1L,
+                50L,
+                999L,
+                null,
+                RoleAuditFailure.USER_NOT_FOUND,
+                new RoleAuditDetail.Assignment("営業", null),
+                NOW,
+                ORIGIN);
+        RoleAuditEvent switched = RoleAuditEvent.succeeded(
+                RoleOperation.SWITCH_WORK_ROLE,
+                8L,
+                50L,
+                8L,
+                null,
+                new RoleAuditDetail.WorkRoleSwitch(null, null, "営業", null),
+                NOW,
+                ORIGIN);
+
+        assertThat(toGroup.targetGroupId()).isEqualTo(70L);
+        assertThat(toGroup.targetUserId()).isNull();
+        assertThat(userMissing.targetUserId()).isEqualTo(999L);
+        assertThat(userMissing.failure()).isEqualTo(RoleAuditFailure.USER_NOT_FOUND);
+        assertThat(switched.actorUserId()).isEqualTo(switched.targetUserId());
+    }
+
+    @Test
+    @DisplayName("a switch to a role outside the assignments has no detail and keeps the requested role id")
+    void notAssigned() {
+        RoleAuditEvent event = RoleAuditEvent.failed(
+                RoleOperation.SWITCH_WORK_ROLE,
+                8L,
+                12345L,
+                8L,
+                null,
+                RoleAuditFailure.ROLE_NOT_ASSIGNED,
+                null,
+                NOW,
+                ORIGIN);
+
+        assertThat(event.targetRoleId()).isEqualTo(12345L);
+        assertThat(event.detail()).isNull();
+        assertThatThrownBy(() -> RoleAuditEvent.failed(
+                        RoleOperation.SWITCH_WORK_ROLE,
+                        8L,
+                        12345L,
+                        8L,
+                        null,
+                        RoleAuditFailure.ROLE_NOT_ASSIGNED,
+                        new RoleAuditDetail.WorkRoleSwitch(null, null, "営業", null),
+                        NOW,
+                        ORIGIN))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

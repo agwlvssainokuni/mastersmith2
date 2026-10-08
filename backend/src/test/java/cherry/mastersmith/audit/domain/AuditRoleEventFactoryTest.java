@@ -49,6 +49,10 @@ class AuditRoleEventFactoryTest {
         assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.DELETE)).isEqualTo(AuditEventType.ROLE_DELETED);
         assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.CHANGE_PERMISSIONS))
                 .isEqualTo(AuditEventType.ROLE_PERMISSION_CHANGED);
+        assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.ASSIGN)).isEqualTo(AuditEventType.ROLE_ASSIGNED);
+        assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.UNASSIGN)).isEqualTo(AuditEventType.ROLE_UNASSIGNED);
+        assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.SWITCH_WORK_ROLE))
+                .isEqualTo(AuditEventType.WORK_ROLE_SWITCHED);
         assertThat(AuditEventFactory.roleEventTypeOf(null)).isNull();
         assertThat(Arrays.stream(RoleAuditFailure.values()).map(AuditEventFactory::roleFailureReasonOf))
                 .containsExactly(
@@ -57,7 +61,10 @@ class AuditRoleEventFactoryTest {
                         AuditFailureReason.ROLE_IN_USE,
                         AuditFailureReason.PERMISSION_TARGET_NOT_IN_DSL,
                         AuditFailureReason.DSL_NOT_APPLIED,
-                        AuditFailureReason.NO_CHANGE);
+                        AuditFailureReason.NO_CHANGE,
+                        AuditFailureReason.ROLE_NOT_ASSIGNED,
+                        AuditFailureReason.USER_NOT_FOUND,
+                        AuditFailureReason.GROUP_NOT_FOUND);
         assertThat(AuditEventFactory.roleFailureReasonOf(null)).isNull();
     }
 
@@ -66,9 +73,11 @@ class AuditRoleEventFactoryTest {
     void namesFitTheColumns() {
         assertThat(Arrays.stream(AuditEventType.values())
                         .filter(type -> type.name().startsWith("ROLE_")))
-                .hasSize(4)
+                .hasSize(6)
                 .allSatisfy(type -> assertThat(type.name().length()).isLessThanOrEqualTo(32));
+        assertThat(AuditEventType.WORK_ROLE_SWITCHED.name()).hasSizeLessThanOrEqualTo(32);
         assertThat(AuditFailureReason.PERMISSION_TARGET_NOT_IN_DSL.name()).hasSizeLessThanOrEqualTo(32);
+        assertThat(AuditFailureReason.ROLE_NOT_ASSIGNED.name()).hasSizeLessThanOrEqualTo(32);
     }
 
     @Test
@@ -103,16 +112,88 @@ class AuditRoleEventFactoryTest {
     }
 
     @Test
-    @DisplayName("the result cannot be decided from the four role types alone")
+    @DisplayName("the result cannot be decided from the seven role types alone")
     void resultComesFromTheEvent() {
         for (AuditEventType type : new AuditEventType[] {
             AuditEventType.ROLE_CREATED,
             AuditEventType.ROLE_RENAMED,
             AuditEventType.ROLE_DELETED,
-            AuditEventType.ROLE_PERMISSION_CHANGED
+            AuditEventType.ROLE_PERMISSION_CHANGED,
+            AuditEventType.ROLE_ASSIGNED,
+            AuditEventType.ROLE_UNASSIGNED,
+            AuditEventType.WORK_ROLE_SWITCHED
         }) {
             org.assertj.core.api.Assertions.assertThatThrownBy(() -> AuditEventFactory.resultOf(type))
                     .isInstanceOf(IllegalArgumentException.class);
         }
+    }
+
+    @Test
+    @DisplayName("an assignment to a group records the role, the group and the assignment detail")
+    void groupAssignment() {
+        AuditEvent event = AuditEventFactory.from(RoleAuditEvent.succeeded(
+                RoleOperation.ASSIGN, 1L, 50L, null, 70L, new RoleAuditDetail.Assignment("営業", "第一営業部"), NOW, ORIGIN));
+
+        assertThat(event.getEventType()).isEqualTo(AuditEventType.ROLE_ASSIGNED);
+        assertThat(event.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(event.getTargetRoleId()).isEqualTo(50L);
+        assertThat(event.getTargetGroupId()).isEqualTo(70L);
+        assertThat(event.getTargetUserId()).isNull();
+        assertThat(json(event.getDetail())).isEqualTo(Map.of("roleName", "営業", "groupName", "第一営業部"));
+    }
+
+    @Test
+    @DisplayName("a rejected unassignment of a user keeps the requested user id and the NO_CHANGE reason")
+    void userUnassignmentRejected() {
+        AuditEvent event = AuditEventFactory.from(RoleAuditEvent.failed(
+                RoleOperation.UNASSIGN,
+                1L,
+                50L,
+                999L,
+                null,
+                RoleAuditFailure.NO_CHANGE,
+                new RoleAuditDetail.Assignment("営業", null),
+                NOW,
+                ORIGIN));
+
+        assertThat(event.getEventType()).isEqualTo(AuditEventType.ROLE_UNASSIGNED);
+        assertThat(event.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(event.getFailureReason()).isEqualTo(AuditFailureReason.NO_CHANGE);
+        assertThat(event.getTargetUserId()).isEqualTo(999L);
+        assertThat(event.getDetail()).isEqualTo("{\"roleName\":\"営業\",\"groupName\":null}");
+    }
+
+    @Test
+    @DisplayName("a work role switch records the user as actor and target with the switch detail")
+    void workRoleSwitch() {
+        AuditEvent switched = AuditEventFactory.from(RoleAuditEvent.succeeded(
+                RoleOperation.SWITCH_WORK_ROLE,
+                8L,
+                50L,
+                8L,
+                null,
+                new RoleAuditDetail.WorkRoleSwitch(41L, "経理", "営業", 41L),
+                NOW,
+                ORIGIN));
+        AuditEvent rejected = AuditEventFactory.from(RoleAuditEvent.failed(
+                RoleOperation.SWITCH_WORK_ROLE,
+                8L,
+                12345L,
+                8L,
+                null,
+                RoleAuditFailure.ROLE_NOT_ASSIGNED,
+                null,
+                NOW,
+                ORIGIN));
+
+        assertThat(switched.getEventType()).isEqualTo(AuditEventType.WORK_ROLE_SWITCHED);
+        assertThat(switched.getActorUserId()).isEqualTo(8L);
+        assertThat(switched.getTargetUserId()).isEqualTo(8L);
+        assertThat(json(switched.getDetail()))
+                .isEqualTo(
+                        Map.of("fromRoleId", 41, "fromRoleName", "経理", "toRoleName", "営業", "storedBeforeRoleId", 41));
+        assertThat(rejected.getFailureReason()).isEqualTo(AuditFailureReason.ROLE_NOT_ASSIGNED);
+        assertThat(rejected.getTargetRoleId()).isEqualTo(12345L);
+        assertThat(rejected.getDetail()).isNull();
     }
 }

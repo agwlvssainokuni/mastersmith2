@@ -17,35 +17,65 @@ package cherry.mastersmith.role.service;
 
 import cherry.mastersmith.group.service.DeletionDecision;
 import cherry.mastersmith.group.service.GroupDeletionGuard;
+import cherry.mastersmith.role.repository.AssignmentCount;
+import cherry.mastersmith.role.repository.RoleAssignmentRepository;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * group が定義する問う口（{@link GroupDeletionGuard}）の B3 の仮の実装（Intent 261004-role-menu の U3、BR6.3、計画の 11節 Q1: A・D-19）。
+ * group が定義する問う口（{@link GroupDeletionGuard}）の実装（契約 C4、{@code logical-components.md} の L5、BR10.1〜BR10.3、FS の 2.12）。
  *
- * <p>グループへのロールの割り当ての表がまだ無いため、渡した ID のすべてに割り当ての数 0 を返し、削除してよい（{@link
- * DeletionDecision.Allowed}）と答える。B5 で U4 role が本物（割り当ての表を数える実装）に置き換え、この仮の実装が残っていないことを B5 の
- * 終わりの条件にする（U4 role の BR10、{@code logical-components.md} の L5）。割り当てが残るときの拒否は、B3 ではテスト用の実装
- * （{@code group/testsupport}、{@code @Primary}）で確かめる。
+ * <p>グループへのロールの割り当ての表（{@code group_role_assignments}）を、グループの ID の集合でまとめて1回で数える。{@link #canDelete}
+ * は数が 0 なら {@link DeletionDecision.Allowed}、1 以上なら {@link DeletionDecision.Blocked}（数）で答え、{@link #assignedRoleCounts}
+ * と同じ数で答える。読み取りだけで、呼び出し元（group）のトランザクションが有ればそれに入る。グループの削除はグループの行を排他してから
+ * この口を呼び、グループへの割り当ては role がロールの行 → グループの行の順に排他するため、両者が重なってもグループの行で順が決まる
+ * （AC2.1.5）。
  */
-// TODO(B5): 割り当ての表を数える本物の実装に置き換える（U4 role の BR10）。
 @Component
 public class RoleGroupDeletionGuard implements GroupDeletionGuard {
 
+    private final RoleAssignmentRepository assignments;
+
+    private final TransactionTemplate readOnly;
+
+    /**
+     * 作る。
+     *
+     * @param assignments 割り当ての表の読み取り
+     * @param transactionManager トランザクションの管理
+     */
+    public RoleGroupDeletionGuard(RoleAssignmentRepository assignments, PlatformTransactionManager transactionManager) {
+        this.assignments = assignments;
+        this.readOnly = new TransactionTemplate(transactionManager);
+        this.readOnly.setReadOnly(true);
+    }
+
     @Override
     public DeletionDecision canDelete(long groupId) {
-        return new DeletionDecision.Allowed();
+        int count = assignedRoleCounts(Set.of(groupId)).get(groupId);
+        return count == 0 ? new DeletionDecision.Allowed() : new DeletionDecision.Blocked(count);
     }
 
     @Override
     public Map<Long, Integer> assignedRoleCounts(Set<Long> groupIds) {
         Objects.requireNonNull(groupIds, "groupIds");
+        if (groupIds.isEmpty()) {
+            return Map.of();
+        }
+        List<AssignmentCount> rows =
+                Objects.requireNonNull(readOnly.execute(status -> assignments.countByGroups(Set.copyOf(groupIds))));
         Map<Long, Integer> counts = new LinkedHashMap<>();
         for (Long groupId : groupIds) {
             counts.put(groupId, 0);
+        }
+        for (AssignmentCount row : rows) {
+            counts.put(row.id(), Math.toIntExact(row.count()));
         }
         return Map.copyOf(counts);
     }

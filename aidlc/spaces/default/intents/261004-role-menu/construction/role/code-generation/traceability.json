@@ -279,8 +279,8 @@
     },
     {
       "id": "AC1.1.3",
-      "status": "Deferred",
-      "target": "U4 role の B5（割り当てが残る削除の拒否。B4 は割り当てが無い削除だけ）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleDeleteCleanupIT.java"
     },
     {
       "id": "AC1.1.4",
@@ -294,8 +294,8 @@
     },
     {
       "id": "AC1.1.6",
-      "status": "Deferred",
-      "target": "U4 role の B5（削除と割り当ての重なり）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java（#1 の両方の順）"
     },
     {
       "id": "AC1.1.7",
@@ -304,8 +304,8 @@
     },
     {
       "id": "AC1.1.8",
-      "status": "Deferred",
-      "target": "U4 role の B5（ROLE_IN_USE の応答の数。B4 の RoleChangeResult.InUse は形だけ）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java（応答の数。文言と画面へ移る手がかりは U6）"
     },
     {
       "id": "AC1.1.9",
@@ -329,8 +329,8 @@
     },
     {
       "id": "AC1.1.13",
-      "status": "Deferred",
-      "target": "U4 role の B5（作業ロールの保存）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleDeleteCleanupIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreKeyGuardIT.java"
     },
     {
       "id": "AC1.1.14",
@@ -454,8 +454,8 @@
     },
     {
       "id": "AC2.1.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/GroupDeletionWithRoleIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java（ロールの割り当ての側。メンバーの側は U3）"
     },
     {
       "id": "AC2.1.4",
@@ -464,8 +464,8 @@
     },
     {
       "id": "AC2.1.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/GroupRoleAssignmentConcurrencyIT.java（ロールの割り当ての側、#10）"
     },
     {
       "id": "AC2.1.6",
@@ -484,13 +484,13 @@
     },
     {
       "id": "AC2.1.9",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java"
     },
     {
       "id": "AC2.1.10",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java"
     },
     {
       "id": "AC2.1.11",
@@ -509,43 +509,43 @@
     },
     {
       "id": "AC2.2.1",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java"
     },
     {
       "id": "AC2.2.2",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java"
     },
     {
       "id": "AC2.2.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java（解決の口。業務のメニューの API は U5）"
     },
     {
       "id": "AC2.2.4",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "AC2.2.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
     },
     {
       "id": "AC2.2.6",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java"
     },
     {
       "id": "AC2.2.7",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java（出どころの API。画面は U6）"
     },
     {
       "id": "AC2.2.8",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java（API。画面は U6）"
     },
     {
       "id": "AC2.2.9",
@@ -554,38 +554,38 @@
     },
     {
       "id": "AC2.2.10",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java"
     },
     {
       "id": "AC2.2.11",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
     },
     {
       "id": "AC2.2.12",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSelfOperationIT.java"
     },
     {
       "id": "AC2.2.13",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSelfOperationIT.java"
     },
     {
       "id": "AC2.2.14",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleGrantsNoAdminAccessIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java"
     },
     {
       "id": "AC2.2.15",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
     },
     {
       "id": "AC2.2.16",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "AC3.1.1",
@@ -674,33 +674,33 @@
     },
     {
       "id": "AC4.1.1",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchAuditIT.java（メニューは U5）"
     },
     {
       "id": "AC4.1.2",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "AC4.1.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java"
     },
     {
       "id": "AC4.1.4",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java（API。案内の画面は U7）"
     },
     {
       "id": "AC4.1.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleConcurrencyIT.java（#8）"
     },
     {
       "id": "AC4.1.6",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionResolverImplTest.java"
     },
     {
       "id": "AC4.1.7",
@@ -724,88 +724,88 @@
     },
     {
       "id": "AC4.1.11",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "AC4.1.12",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
     },
     {
       "id": "AC4.1.13",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchAuditIT.java・backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java"
     },
     {
       "id": "AC4.1.14",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleDeleteCleanupIT.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java"
     },
     {
       "id": "AC4.1.15",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchAuditIT.java"
     },
     {
       "id": "AC4.1.16",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "AC4.1.17",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java（契約 CQ3: B のとおり GET /api/me/work-role で返す。ログインと更新の応答は変えない）"
     },
     {
       "id": "AC4.1.18",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionResolverImplTest.java"
     },
     {
       "id": "AC4.1.19",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
     },
     {
       "id": "AC4.1.20",
       "status": "Deferred",
-      "target": "U4 role の B5"
+      "target": "Performance Validation（k6 の workRoleSwitch。台本は B5 の Step 39。指標は role/web/RoleMetricsIT.java で確かめた）"
     },
     {
       "id": "AC4.1.21",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java"
     },
     {
       "id": "AC4.2.1",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionSnapshotTest.java（API。画面は U7）"
     },
     {
       "id": "AC4.2.2",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java"
     },
     {
       "id": "AC4.2.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
     },
     {
       "id": "AC4.2.4",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java"
     },
     {
       "id": "AC4.2.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
     },
     {
       "id": "AC4.2.6",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java（inMenu。色と文字の表示は U7）"
     },
     {
       "id": "AC4.2.7",
@@ -879,8 +879,8 @@
     },
     {
       "id": "AC5.1.14",
-      "status": "Deferred",
-      "target": "U4 role の B5（解決の口の NONE）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java（解決の口の (f)。絞る関数は U5）"
     },
     {
       "id": "AC5.1.15",
@@ -934,8 +934,8 @@
     },
     {
       "id": "BR2.2",
-      "status": "Deferred",
-      "target": "U4 role の B5（/api/me の口）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java"
     },
     {
       "id": "BR2.3",
@@ -954,8 +954,8 @@
     },
     {
       "id": "BR3.2",
-      "status": "Deferred",
-      "target": "U4 role の B5（割り当て）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
     },
     {
       "id": "BR3.3",
@@ -1054,18 +1054,18 @@
     },
     {
       "id": "BR5.3",
-      "status": "Deferred",
-      "target": "U4 role の B5（解決の口）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionResolverImplTest.java・backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java"
     },
     {
       "id": "BR5.4",
-      "status": "Deferred",
-      "target": "U4 role の B5（解決の口）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionQueryCountIT.java"
     },
     {
       "id": "BR5.5",
-      "status": "Deferred",
-      "target": "U4 role の B5（解決の口）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java・backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java"
     },
     {
       "id": "BR5.6",
@@ -1074,98 +1074,98 @@
     },
     {
       "id": "BR6.1",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "BR6.2",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/repository/RoleAssignmentRepositoryIT.java"
     },
     {
       "id": "BR6.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreKeyGuardIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
     },
     {
       "id": "BR6.4",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "BR6.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/repository/RoleAssignmentRepositoryIT.java"
     },
     {
       "id": "BR6.6",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/GroupRoleAssignmentConcurrencyIT.java"
     },
     {
       "id": "BR6.7",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreKeyGuardIT.java・backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java"
     },
     {
       "id": "BR6.8",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java"
     },
     {
       "id": "BR6.9",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "BR6.10",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSelfOperationIT.java"
     },
     {
       "id": "BR6.11",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminQueryCountIT.java"
     },
     {
       "id": "BR7.1",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "BR7.2",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java・backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "BR7.3",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchAuditIT.java"
     },
     {
       "id": "BR7.4",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java"
     },
     {
       "id": "BR7.5",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java"
     },
     {
       "id": "BR7.6",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java"
     },
     {
       "id": "BR7.7",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchApiIT.java・backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionMergeIT.java"
     },
     {
       "id": "BR7.8",
-      "status": "Deferred",
-      "target": "U4 role の B5"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionMergeIT.java"
     },
     {
       "id": "BR8.1",
@@ -1174,8 +1174,8 @@
     },
     {
       "id": "BR8.2",
-      "status": "Deferred",
-      "target": "U4 role の B5（グループの行の排他）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/GroupRoleAssignmentConcurrencyIT.java"
     },
     {
       "id": "BR8.3",
@@ -1274,18 +1274,18 @@
     },
     {
       "id": "BR10.1",
-      "status": "Deferred",
-      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java・backend/src/test/java/cherry/mastersmith/role/web/GroupDeletionWithRoleIT.java"
     },
     {
       "id": "BR10.2",
-      "status": "Deferred",
-      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java"
     },
     {
       "id": "BR10.3",
-      "status": "Deferred",
-      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java（仮の実装と TODO(B5) が残らないことは Step 41 の検索で確かめた）"
     },
     {
       "id": "BR11.1",
@@ -1334,8 +1334,8 @@
     },
     {
       "id": "BR12.1",
-      "status": "Deferred",
-      "target": "U4 role の B5（割り当ての一覧と利用者のロール）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "BR12.2",
@@ -1384,8 +1384,8 @@
     },
     {
       "id": "NFR1.6",
-      "status": "Deferred",
-      "target": "U4 role の B5（伏せ字の型）"
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
     },
     {
       "id": "NFR1.7",
@@ -1415,27 +1415,27 @@
     {
       "id": "NFR2.1",
       "status": "Deferred",
-      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+      "target": "Performance Validation（k6 の台本は B4 の Step 17・B5 の Step 39。B6 で足す）"
     },
     {
       "id": "NFR2.2",
       "status": "Deferred",
-      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+      "target": "Performance Validation（k6 の台本は B4 の Step 17・B5 の Step 39。B6 で足す）"
     },
     {
       "id": "NFR2.3",
       "status": "Deferred",
-      "target": "U4 role の B5（解決の口の問い合わせの数）・Performance Validation（時間）"
+      "target": "Performance Validation（時間。問い合わせの数は B5 の backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionQueryCountIT.java で確かめた。k6 は myPermissionsTree・workRoleSwitch）"
     },
     {
       "id": "NFR2.4",
       "status": "Deferred",
-      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+      "target": "Performance Validation（k6 の台本は B4 の Step 17・B5 の Step 39。B6 で足す）"
     },
     {
       "id": "NFR2.5",
       "status": "Deferred",
-      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+      "target": "Performance Validation（k6 の台本は B4 の Step 17・B5 の Step 39。B6 で足す）"
     },
     {
       "id": "NFR2.6",
@@ -1450,7 +1450,7 @@
     {
       "id": "NFR2.8",
       "status": "Deferred",
-      "target": "U4 role の B5（roleAssignmentsRead）・Performance Validation"
+      "target": "Performance Validation（k6 の roleAssignmentsRead。台本は B5 の Step 39）"
     },
     {
       "id": "NFR2.9",
@@ -1460,7 +1460,7 @@
     {
       "id": "NFR2.10",
       "status": "Deferred",
-      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+      "target": "Performance Validation（k6 の台本は B4 の Step 17・B5 の Step 39。B6 で足す）"
     },
     {
       "id": "NFR2.11",

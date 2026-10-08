@@ -17,7 +17,7 @@ package cherry.mastersmith.role.domain;
 
 /**
  * ロールの操作の区分（監査の種類と、待ち合わせの口に使う。{@code entities.md} の RoleAuditEvent の type）。B4 はロールの管理と権限の
- * 設定の4つ。割り当て・作業ロール（B5）と受け渡しの適用（B6）はその Bolt で足す。
+ * 設定の4つ、B5 は割り当て・外し・作業ロールの切り替えの3つ。受け渡しの適用（B6）はその Bolt で足す。
  */
 public enum RoleOperation {
     /** ロールの作成。 */
@@ -27,5 +27,11 @@ public enum RoleOperation {
     /** ロールの削除。 */
     DELETE,
     /** 権限の保存と、今の DSL に無い設定を消す操作。 */
-    CHANGE_PERMISSIONS
+    CHANGE_PERMISSIONS,
+    /** 利用者・グループへのロールの割り当て（B5）。 */
+    ASSIGN,
+    /** 利用者・グループからのロールの割り当ての外し（B5）。 */
+    UNASSIGN,
+    /** 自分の作業ロールの切り替え（B5）。 */
+    SWITCH_WORK_ROLE
 }

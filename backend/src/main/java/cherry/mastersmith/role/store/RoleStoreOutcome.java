@@ -76,7 +76,7 @@ public sealed interface RoleStoreOutcome<T>
     }
 
     /**
-     * 割り当ての主キーの違反（SQLState 23505。割り当ての表を足す B5 で区分を足す）。
+     * 割り当ての主キーの違反（SQLState 23505。{@code pk_user_role_assignments}・{@code pk_group_role_assignments}）。
      *
      * @param <T> 値の型
      */
@@ -108,10 +108,11 @@ public sealed interface RoleStoreOutcome<T>
     }
 
     /**
-     * 行の排他・一意の鍵の待ちの上限切れ（BR8.3・BR8.4）。WARN は store が1回出し済み。
+     * 行の排他・一意の鍵の待ちの上限切れ（BR8.3・BR8.4）と、作業ロールの保存の主キーの違反。WARN は store が1回出し済み。
      *
      * @param <T> 値の型
-     * @param lockKind 排他の種類（{@code ROLE_ROW}・{@code ROLE_NAME_KEY}）
+     * @param lockKind 排他の種類（{@code ROLE_ROW}・{@code ROLE_NAME_KEY}・{@code ROLE_ASSIGNMENT_KEY}・
+     *     {@code WORK_ROLE_SELECTION_KEY}）
      */
     record Busy<T>(String lockKind) implements RoleStoreOutcome<T> {
 

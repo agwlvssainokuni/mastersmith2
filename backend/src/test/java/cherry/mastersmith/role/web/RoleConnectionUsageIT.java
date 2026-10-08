@@ -26,6 +26,7 @@ import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
 import cherry.mastersmith.group.testsupport.ConnectionHoldRecorder;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.RoleOperation;
@@ -37,6 +38,7 @@ import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.role.testsupport.TestRoleBarrier;
 import cherry.mastersmith.role.testsupport.TestRoleBarrier.Gate;
 import cherry.mastersmith.role.testsupport.TestRoleBarrier.Point;
+import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
@@ -101,6 +103,9 @@ class RoleConnectionUsageIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    UserRepository users;
 
     private RoleApi api;
 
@@ -198,5 +203,39 @@ class RoleConnectionUsageIT {
         assertThat(a.statusCode()).isEqualTo(201);
         assertThat(lost.statusCode()).isEqualTo(409);
         assertThat(recorder.maxHeldByOneThread()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("assignments, unassignments and a writing switch hold two connections, the rest one (B5)")
+    void assignmentsAndSwitches() {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("接続 割り当て"));
+        long other = fixtures.role(RoleFixtures.uniqueName("接続 割り当て 二"));
+        Actor member = new RoleActors(userAccountService, revocationService, transactionManager, port).member();
+        long groupId = new GroupFixtures(users, jdbc).group(GroupFixtures.uniqueName("接続"));
+        fixtures.assignUser(other, member.userId());
+
+        assertThat(held(() -> api.assignUser(admin.token(), roleId, member.userId()), 204))
+                .isEqualTo(2);
+        assertThat(held(() -> api.assignGroup(admin.token(), roleId, groupId), 204))
+                .isEqualTo(2);
+        assertThat(held(() -> api.assignUser(admin.token(), roleId, member.userId()), 409))
+                .as("拒否")
+                .isEqualTo(2);
+        assertThat(held(() -> api.switchWorkRole(member.token(), roleId), 204))
+                .as("書く切り替え")
+                .isEqualTo(2);
+        assertThat(held(() -> api.switchWorkRole(member.token(), roleId), 204))
+                .as("書かない切り替え")
+                .isEqualTo(1);
+        assertThat(held(() -> api.assignments(admin.token(), roleId), 200)).isEqualTo(1);
+        assertThat(held(() -> api.userRoles(admin.token(), member.userId()), 200))
+                .isEqualTo(1);
+        assertThat(held(() -> api.groupRoles(admin.token(), groupId), 200)).isEqualTo(1);
+        assertThat(held(() -> api.workRole(member.token()), 200)).isEqualTo(1);
+        assertThat(held(() -> api.mySchemas(member.token()), 200)).isEqualTo(1);
+        assertThat(held(() -> api.unassignGroup(admin.token(), roleId, groupId), 204))
+                .isEqualTo(2);
+        assertThat(held(() -> api.unassignUser(admin.token(), roleId, member.userId()), 204))
+                .isEqualTo(2);
     }
 }

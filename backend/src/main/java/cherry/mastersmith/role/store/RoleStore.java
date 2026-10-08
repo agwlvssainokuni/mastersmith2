@@ -15,16 +15,20 @@
  */
 package cherry.mastersmith.role.store;
 
+import cherry.mastersmith.role.domain.GroupRoleAssignment;
 import cherry.mastersmith.role.domain.PermissionSetting;
 import cherry.mastersmith.role.domain.PermissionSettingId;
 import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.Role;
 import cherry.mastersmith.role.domain.RoleName;
+import cherry.mastersmith.role.domain.UserRoleAssignment;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +40,8 @@ import org.springframework.stereotype.Component;
  * ロールの行の排他と、違反と待ちの上限切れを起こしうる書き込みと flush（{@code logical-components.md} の L2、
  * {@code reliability-design.md} 2.2・2.3、{@code security-design.md} 4.1、BR8.1・BR8.3〜BR8.5・BR12.3）。
  *
- * <p>方法は「排他（{@link #lockRole(long)}）」と「書き込みと flush（作成・名前の変更・削除・設定の書き込み・消す）」に分ける。業務の判定と
+ * <p>方法は「排他（{@link #lockRole(long)}）」と「書き込みと flush（作成・名前の変更・削除・設定の書き込み・消す・割り当てと外し・
+ * 作業ロールの保存）」に分ける。業務の判定と
  * 待ち合わせの口は呼び出し元（{@code role.service}）が間に挟む。どの方法も呼び出し元のトランザクションの中で使い、例外をこのクラスの
  * 中で受けて {@link RoleStoreOutcome} に変える（{@link RoleStoreClassifier}）。違反を起こしうる書き込みはその場で DB へ送る（flush）
  * ため、違反は確定の前に起きる。
@@ -57,6 +62,12 @@ public class RoleStore {
     /** 名前の鍵の待ちの種類（WARN の {@code lockKind}）。 */
     public static final String ROLE_NAME_KEY = "ROLE_NAME_KEY";
 
+    /** 割り当ての主キーの待ちの種類（WARN の {@code lockKind}。B5）。 */
+    public static final String ROLE_ASSIGNMENT_KEY = "ROLE_ASSIGNMENT_KEY";
+
+    /** 作業ロールの保存の主キーの待ちと違反の種類（WARN の {@code lockKind}。B5）。 */
+    public static final String WORK_ROLE_SELECTION_KEY = "WORK_ROLE_SELECTION_KEY";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(RoleStore.class);
 
     private static final String LOCK_TIMEOUT_HINT = "jakarta.persistence.lock.timeout";
@@ -67,6 +78,23 @@ public class RoleStore {
 
     private static final String DELETE_SETTING = "delete from PermissionSetting p where p.roleId = :roleId"
             + " and p.schemaName = :schemaName and p.tableName = :tableName and p.columnName = :columnName";
+
+    private static final String DELETE_SELECTIONS = "delete from WorkRoleSelection w where w.roleId = :roleId";
+
+    private static final String DELETE_USER_ASSIGNMENT =
+            "delete from UserRoleAssignment a where a.roleId = :roleId and a.userId = :userId";
+
+    private static final String DELETE_GROUP_ASSIGNMENT =
+            "delete from GroupRoleAssignment a where a.roleId = :roleId and a.groupId = :groupId";
+
+    /**
+     * 作業ロールの保存の書き込み（H2 の {@code MERGE INTO … KEY}。行が無ければ足し、あれば書き換える）。同じ利用者の未確定の行に対しては、
+     * 待った後の上限切れ（SQLState {@code HYT00}・誤りの番号 50200）になることを B5 の Step 28 で確かめた（{@code WorkRoleSelectionMergeIT}、
+     * 計画の D-19）。
+     */
+    private static final String MERGE_SELECTION =
+            "MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id)"
+                    + " VALUES (:userId, :roleId, :updatedAt)";
 
     private final EntityManager entityManager;
 
@@ -140,7 +168,8 @@ public class RoleStore {
     }
 
     /**
-     * 排他したロールを、その権限の設定から順に消し、その場で DB へ送る（BR3.3。作業ロールの保存の削除は B5 で足す）。
+     * 排他したロールを、その権限の設定 → そのロールを指す作業ロールの保存 → ロールの順に消し、その場で DB へ送る（BR3.3）。割り当てが残る
+     * ときは呼び出し元が先に断る（BR3.2）。残っていれば割り当ての表の外部キーが最後の守りになる。
      *
      * @param role 排他したロール（{@link #lockRole(long)} の結果）
      * @return 成功なら値なし、外部キーの違反なら {@link RoleStoreOutcome.Referenced}、待ちの上限切れなら
@@ -151,6 +180,10 @@ public class RoleStore {
         try {
             entityManager
                     .createQuery(DELETE_SETTINGS)
+                    .setParameter("roleId", role.getRoleId())
+                    .executeUpdate();
+            entityManager
+                    .createQuery(DELETE_SELECTIONS)
                     .setParameter("roleId", role.getRoleId())
                     .executeUpdate();
             entityManager.remove(role);
@@ -228,6 +261,115 @@ public class RoleStore {
             return new RoleStoreOutcome.Done<>(deleted);
         } catch (PersistenceException e) {
             return RoleStoreClassifier.toOutcome(e, ROLE_ROW, LOGGER);
+        }
+    }
+
+    /**
+     * 排他したロールを利用者に割り当て、その場で DB へ送る（BR6.1〜BR6.3・BR6.7・BR8.5）。
+     *
+     * @param role 排他したロール（{@link #lockRole(long)} の結果）
+     * @param userId 利用者 ID
+     * @param now 今の日時
+     * @return 成功なら値なし、組の主キーの違反なら {@link RoleStoreOutcome.AlreadyAssigned}、外部キーの違反なら
+     *     {@link RoleStoreOutcome.Referenced}（ロールか利用者）、主キーの待ちの上限切れなら {@link RoleStoreOutcome.Busy}
+     *     （{@value #ROLE_ASSIGNMENT_KEY}）
+     */
+    public RoleStoreOutcome<Void> assignToUser(Role role, long userId, Instant now) {
+        Objects.requireNonNull(role, "role");
+        try {
+            entityManager.persist(new UserRoleAssignment(role.getRoleId(), userId, now));
+            entityManager.flush();
+            return new RoleStoreOutcome.Done<>(null);
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_ASSIGNMENT_KEY, LOGGER);
+        }
+    }
+
+    /**
+     * 排他したロールをグループに割り当て、その場で DB へ送る（BR6.2・BR6.3・BR6.6・BR6.7・BR8.5）。グループの行の排他は呼び出し元が先に
+     * 取る（BR8.2）。
+     *
+     * @param role 排他したロール（{@link #lockRole(long)} の結果）
+     * @param groupId グループの ID
+     * @param now 今の日時
+     * @return 成功なら値なし、組の主キーの違反なら {@link RoleStoreOutcome.AlreadyAssigned}、外部キーの違反なら
+     *     {@link RoleStoreOutcome.Referenced}（ロールかグループ）、主キーの待ちの上限切れなら {@link RoleStoreOutcome.Busy}
+     *     （{@value #ROLE_ASSIGNMENT_KEY}）
+     */
+    public RoleStoreOutcome<Void> assignToGroup(Role role, long groupId, Instant now) {
+        Objects.requireNonNull(role, "role");
+        try {
+            entityManager.persist(new GroupRoleAssignment(role.getRoleId(), groupId, now));
+            entityManager.flush();
+            return new RoleStoreOutcome.Done<>(null);
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_ASSIGNMENT_KEY, LOGGER);
+        }
+    }
+
+    /**
+     * 排他したロールの利用者への割り当てを外し、その場で DB へ送る（BR6.4）。作業ロールの保存は書き換えない（BR7.3・BR7.4）。
+     *
+     * @param role 排他したロール（{@link #lockRole(long)} の結果）
+     * @param userId 利用者 ID
+     * @return 消した行があれば true、無ければ false。待ちの上限切れなら {@link RoleStoreOutcome.Busy}（{@value #ROLE_ASSIGNMENT_KEY}）
+     */
+    public RoleStoreOutcome<Boolean> unassignFromUser(Role role, long userId) {
+        Objects.requireNonNull(role, "role");
+        try {
+            int deleted = entityManager
+                    .createQuery(DELETE_USER_ASSIGNMENT)
+                    .setParameter("roleId", role.getRoleId())
+                    .setParameter("userId", userId)
+                    .executeUpdate();
+            return new RoleStoreOutcome.Done<>(deleted > 0);
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_ASSIGNMENT_KEY, LOGGER);
+        }
+    }
+
+    /**
+     * 排他したロールのグループへの割り当てを外し、その場で DB へ送る（BR6.4・BR6.6）。グループの行の排他は呼び出し元が先に取る（BR8.2）。
+     *
+     * @param role 排他したロール（{@link #lockRole(long)} の結果）
+     * @param groupId グループの ID
+     * @return 消した行があれば true、無ければ false。待ちの上限切れなら {@link RoleStoreOutcome.Busy}（{@value #ROLE_ASSIGNMENT_KEY}）
+     */
+    public RoleStoreOutcome<Boolean> unassignFromGroup(Role role, long groupId) {
+        Objects.requireNonNull(role, "role");
+        try {
+            int deleted = entityManager
+                    .createQuery(DELETE_GROUP_ASSIGNMENT)
+                    .setParameter("roleId", role.getRoleId())
+                    .setParameter("groupId", groupId)
+                    .executeUpdate();
+            return new RoleStoreOutcome.Done<>(deleted > 0);
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_ASSIGNMENT_KEY, LOGGER);
+        }
+    }
+
+    /**
+     * 利用者の作業ロールの保存を書き（無ければ作り）、その場で DB へ送る（BR7.6・BR7.7）。ロールの行の排他は取らない（BR7.8）。
+     *
+     * @param userId 利用者 ID
+     * @param roleId 選んだロールの ID
+     * @param now 今の日時
+     * @return 成功なら値なし、同じ利用者の保存の主キーの待ちの上限切れか違反なら {@link RoleStoreOutcome.Busy}
+     *     （{@value #WORK_ROLE_SELECTION_KEY}）、利用者への外部キーの違反なら {@link RoleStoreOutcome.Referenced}（利用者）
+     */
+    public RoleStoreOutcome<Void> saveWorkRoleSelection(long userId, long roleId, Instant now) {
+        Objects.requireNonNull(now, "now");
+        try {
+            entityManager
+                    .createNativeQuery(MERGE_SELECTION)
+                    .setParameter("userId", userId)
+                    .setParameter("roleId", roleId)
+                    .setParameter("updatedAt", OffsetDateTime.ofInstant(now, ZoneOffset.UTC))
+                    .executeUpdate();
+            return new RoleStoreOutcome.Done<>(null);
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, WORK_ROLE_SELECTION_KEY, LOGGER);
         }
     }
 }

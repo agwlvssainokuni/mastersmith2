@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.common.error.domain.LocalizedText;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.group.domain.GroupProblemTypes;
+import cherry.mastersmith.user.domain.UserProblemTypes;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
@@ -30,7 +32,7 @@ import org.junit.jupiter.api.Test;
 class RoleProblemTypesTest {
 
     @Test
-    @DisplayName("ROLE_NOT_FOUND is fixed to 404 and the six other codes of B4 to 409")
+    @DisplayName("ROLE_NOT_FOUND is fixed to 404 and the six other codes of B4 and ROLE_NOT_ASSIGNED of B5 to 409")
     void codeAndStatus() {
         assertThat(RoleProblemTypes.all())
                 .extracting(ProblemType::code, ProblemType::status)
@@ -41,7 +43,8 @@ class RoleProblemTypesTest {
                         Tuple.tuple("ROLE_NO_CHANGE", 409),
                         Tuple.tuple("ROLE_BUSY", 409),
                         Tuple.tuple("PERMISSION_TARGET_NOT_IN_DSL", 409),
-                        Tuple.tuple("DSL_NOT_APPLIED", 409));
+                        Tuple.tuple("DSL_NOT_APPLIED", 409),
+                        Tuple.tuple("ROLE_NOT_ASSIGNED", 409));
     }
 
     @Test
@@ -54,6 +57,12 @@ class RoleProblemTypesTest {
         assertThat(RoleProblemTypes.of(RoleRejection.TARGET_NOT_IN_DSL))
                 .isSameAs(RoleProblemTypes.PERMISSION_TARGET_NOT_IN_DSL);
         assertThat(RoleProblemTypes.of(RoleRejection.DSL_NOT_APPLIED)).isSameAs(RoleProblemTypes.DSL_NOT_APPLIED);
+        assertThat(RoleProblemTypes.of(RoleRejection.NOT_ASSIGNED)).isSameAs(RoleProblemTypes.ROLE_NOT_ASSIGNED);
+        assertThat(RoleProblemTypes.of(RoleRejection.USER_NOT_FOUND)).isSameAs(UserProblemTypes.USER_NOT_FOUND);
+        assertThat(RoleProblemTypes.of(RoleRejection.GROUP_NOT_FOUND)).isSameAs(GroupProblemTypes.GROUP_NOT_FOUND);
+        assertThat(RoleProblemTypes.all())
+                .as("使い回す code は role で重ねて定義しない（BR13.2）")
+                .doesNotContain(UserProblemTypes.USER_NOT_FOUND, GroupProblemTypes.GROUP_NOT_FOUND);
         assertThat(Arrays.stream(RoleRejection.values())
                         .map(RoleProblemTypes::of)
                         .distinct())
@@ -72,6 +81,9 @@ class RoleProblemTypesTest {
         assertThat(RoleRejection.TARGET_NOT_IN_DSL.auditFailure())
                 .isEqualTo(RoleAuditFailure.PERMISSION_TARGET_NOT_IN_DSL);
         assertThat(RoleRejection.DSL_NOT_APPLIED.auditFailure()).isEqualTo(RoleAuditFailure.DSL_NOT_APPLIED);
+        assertThat(RoleRejection.NOT_ASSIGNED.auditFailure()).isEqualTo(RoleAuditFailure.ROLE_NOT_ASSIGNED);
+        assertThat(RoleRejection.USER_NOT_FOUND.auditFailure()).isEqualTo(RoleAuditFailure.USER_NOT_FOUND);
+        assertThat(RoleRejection.GROUP_NOT_FOUND.auditFailure()).isEqualTo(RoleAuditFailure.GROUP_NOT_FOUND);
         assertThat(Arrays.stream(RoleRejection.values()).map(RoleRejection::auditFailure))
                 .containsExactlyInAnyOrder(RoleAuditFailure.values());
     }

@@ -71,7 +71,9 @@ public final class AuditDetailJson {
      *
      * <p>キーは形ごとに決まっている（{@code Name} は {@code name}、{@code Rename} は {@code before}・{@code after}、{@code InUse} は
      * {@code name}・{@code assignedUsers}・{@code assignedGroups}、{@code PermissionChanges} は {@code roleName}・{@code changes}、
-     * {@code PermissionChangesSummary} は {@code roleName}・{@code changedCount}・{@code firstChanges}）。1つの変更は
+     * {@code PermissionChangesSummary} は {@code roleName}・{@code changedCount}・{@code firstChanges}、{@code Assignment} は
+     * {@code roleName}・{@code groupName}（利用者への割り当てでは null）、{@code WorkRoleSwitch} は {@code fromRoleId}・
+     * {@code fromRoleName}・{@code toRoleName}・{@code storedBeforeRoleId}（無ければ null））。1つの変更は
      * {@code target}（{@code schemaName}・{@code tableName}・{@code columnName}）・{@code before}・{@code after}（{@code main}・
      * {@code create}・{@code delete}、設定なしは null）。
      *
@@ -118,6 +120,17 @@ public final class AuditDetailJson {
                 node.put("roleName", roleName).put("changedCount", changedCount);
                 node.set("firstChanges", changesNode(firstChanges));
             }
+            case RoleAuditDetail.Assignment(String roleName, String groupName) ->
+                node.put("roleName", roleName).put("groupName", groupName);
+            case RoleAuditDetail.WorkRoleSwitch(
+                    Long fromRoleId,
+                    String fromRoleName,
+                    String toRoleName,
+                    Long storedBeforeRoleId) ->
+                node.put("fromRoleId", fromRoleId)
+                        .put("fromRoleName", fromRoleName)
+                        .put("toRoleName", toRoleName)
+                        .put("storedBeforeRoleId", storedBeforeRoleId);
         }
         return node;
     }

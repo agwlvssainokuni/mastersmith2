@@ -185,4 +185,20 @@ class StoreFailureClassifierTest {
                 : event.getKeyValuePairs().stream()
                         .collect(Collectors.toMap(pair -> pair.key, pair -> String.valueOf(pair.value)));
     }
+
+    @Test
+    @DisplayName("a delete blocked by a role assignment of U4 is REFERENCED too, as the last guard (role plan Q4: A)")
+    void roleAssignmentForeignKey() {
+        String message = "Referential integrity constraint violation: \"FK_GROUP_ROLE_ASSIGNMENTS_GROUP:"
+                + " PUBLIC.GROUP_ROLE_ASSIGNMENTS FOREIGN KEY(GROUP_ID) REFERENCES PUBLIC.GROUPS(GROUP_ID)"
+                + " (CAST(11 AS BIGINT))\"";
+
+        assertThat(StoreFailureClassifier.classify(violation(message, "23503", "FK_GROUP_ROLE_ASSIGNMENTS_GROUP")))
+                .isEqualTo(Kind.REFERENCED);
+        assertThat(StoreFailureClassifier.classify(violation(message, "23503", null)))
+                .isEqualTo(Kind.REFERENCED);
+        assertThat(StoreFailureClassifier.classify(violation(message, "23514", null)))
+                .as("外部キーの違反でない SQLState では名前があっても読み替えない")
+                .isEqualTo(Kind.UNEXPECTED);
+    }
 }

@@ -611,32 +611,59 @@ docker compose up -d --wait
 
 ## ロールの管理の場面（Intent 261004-role-menu の U4）
 
-`perf/k6/scenarios.js` のロールの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/role/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5・NFR2.10）と `nfr-design/performance-design.md`（2節）。この節は Bolt B4 の4つの場面の分で、割り当て・作業ロール（B5）と権限の受け渡し（B6）の場面と、悪い側のデータを入れる準備の台本は、その Bolt で足す。B4・B5 の場面も、準備の台本（B6 の import の口に頼る）を流した後に、Performance Validation でまとめて流す（`infrastructure-design/cicd-pipeline.md` 5.3）。Code Generation では `k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。
+`perf/k6/scenarios.js` のロールの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/role/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5・NFR2.10）と `nfr-design/performance-design.md`（2節）。この節は Bolt B4 の4つの場面と、B5 で足した割り当て・作業ロールの6つの場面の分で、権限の受け渡し（B6）の場面と、悪い側のデータを入れる準備の台本は、その Bolt で足す。B4・B5 の場面も、準備の台本（B6 の import の口に頼る）を流した後に、Performance Validation でまとめて流す（`infrastructure-design/cicd-pipeline.md` 5.3）。Code Generation では `k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。
 
 | 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
 |---|---|---|
 | `roleTreeRead` | 悪い側のロール（1万カラムに明示の値）の木で、スキーマ（op `schemas`）・スキーマの下のテーブル（op `tables`）・100 カラムのテーブル（op `columns`）を順に開く（200） | `iteration_duration{scenario:roleTreeRead,op:…}` の p95 < 1000 ms（op ごと）と `checks` の率 1 |
 | `rolePermissionSave` | VU ごとに自分のロール（setup が `perf-save-<実行>-<VU>` を作る）の 100 カラムのテーブルの表を、READ と FULL で交互に保存する（204。変わる点が必ずある） | `iteration_duration{scenario:rolePermissionSave}` の p95 < 1000 ms と `checks` の率 1 |
-| `roleAdminRead` | 一覧の1ページ目（op `listFirst`）・最後のページ（op `listLast`）・1件（op `one`）を順にくり返す（200）。グループのロールと利用者のロールの読み取りは B5 で足す | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `roleAdminRead` | 一覧の1ページ目（op `listFirst`）・最後のページ（op `listLast`）・1件（op `one`）・グループのロール（op `groupRoles`）・利用者のロール（op `userRoles`。B5）を順にくり返す（200）。setup が悪い側のロールをメンバーの候補 `perf-gr-0001` と新しいグループに割り当てる | op ごとの p95 < 1000 ms と `checks` の率 1 |
 | `roleAdminOps` | VU ごとに作成（op `create`、201）・自分のロールの名前の変更（op `rename`、2つの名前で交互、204）・作ったロールの削除（op `delete`、204）を順にくり返す（状態が戻る） | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `workRoleSwitch`（B5） | VU ごとに利用者 `perf-gr-<VU>` の2つのロール（setup が作って割り当てる）へ作業ロールを交互に切り替える（どれも保存を書き 204） | `iteration_duration{scenario:workRoleSwitch}` の p95 < 1000 ms と `checks` の率 1 |
+| `workRoleRead`（B5） | 利用者 `perf-gr-<VU>` が自分のロールと今の作業ロールを読む（200） | 同上 |
+| `myPermissionsTree`（B5） | 悪い側のロールを割り当てた利用者 `perf-gr-<VU>`（最初のロールが悪い側のロールになる）が、自分の権限の木のスキーマ（op `schemas`）・テーブル（op `tables`）・100 カラムのテーブル（op `columns`）を順に開く（200） | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `roleAssignmentsRead`（B5） | 悪い側のロールの割り当ての一覧（利用者 VUS 名と、その全員をメンバーにしたグループ）を読む（200） | `iteration_duration` の p95 < 1000 ms と `checks` の率 1 |
+| `roleAssignOps`（B5） | VU ごとに自分のロール（setup が作る）を、利用者 `perf-gr-<VU>` に割り当てる（op `assignUser`）・外す（op `unassignUser`）・自分のグループ（setup が作る）に割り当てる（op `assignGroup`）・外す（op `unassignGroup`）を順にくり返す（どれも 204 で状態が戻る） | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `rolePoolLimit`（B5） | VU の番号を 5 で割った余りが 1〜3 の VU は作業ロールの切り替え、4・0 の VU は自分のグループへの割り当てと外しを交互にくり返す（下の 3R'） | 閾値を置かない。`rolePoolLimit_204`・`_409`・`_500`・`_other` の件数と、接続プールの値で判定する |
 
 - **形**: どの場面も `constant-vus`（`VUS` 既定 10・`ROLE_DURATION` 既定 3 分）。繰り返しの中に待ちを置かない。操作が2つ以上の場面は、繰り返しの始めに `exec.vu.metrics.tags.op` に操作の名前を入れる（`op` のタグが `iteration_duration` に付くことは B4 の Code Generation の Step 16 で、要求を送らない台本で確かめた）。`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため、要約に並べて記録するだけにする（閾値 `max>=0` は表示のため）。
 - **データ**: 悪い側のロール（名前 `ROLE_WORST_NAME`、既定 `perf-role-worst`）と、版 2 の DSL のスキーマ `ROLE_TREE_SCHEMA`（既定 `perf`）・100 カラムのテーブル `ROLE_TREE_TABLE`（既定 `perf_t001`）は、B6 で足す準備の台本が入れる。名前を変えたときは、同じ値を `-e` で k6 に渡す。台本は一覧のページを順に読んでロールの ID を名前で探し、見つからなければ始める前に止まる。
 - **トークン**: 操作する管理者は試験用の管理者 `perf-roleop01`（初期管理者は使わない。手順 2'' の SQL の形で入れる）。setup の最後にトークンを取り直し、場面は 3 分までにする（アクセストークンは 5 分で切れる）。setup の時間の上限は 10 分（`setupTimeout`）。
 - **名前**: ロールの名前の鍵は大文字と小文字を区別せず全体で一意のため、作る名前は実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。
+- **利用者の側の場面（B5）**: 作業ロールと自分の権限の場面、割り当ての場面は、グループの管理の節の 2G で入れたメンバーの候補 `perf-gr-0001`〜（パスワードは `PERF_USER_PASSWORD`）を VU の番号の順に使う。setup が操作する管理者の API でロール・グループを作って割り当て、最後に利用者のトークンを VU ごとに取る。作業ロールの切り替えと割り当ては使い捨ての環境の監査に残る。
 - 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
 
 ```bash
 # B4 の場面の流し方（準備の台本は B6 で足す。前提: グループの管理の節の 0・1・1G と同じ用意、perf-roleop01 を入れてあること）
 cat > "$D/role-run.sh" <<'EOS'
 D="$1"
-for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps; do
+for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps \
+  workRoleSwitch workRoleRead myPermissionsTree roleAssignmentsRead roleAssignOps; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
 EOS
 caffeinate -i zsh "$D/role-run.sh" "$D"
-#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type LIKE 'ROLE_%'
-#     GROUP BY event_type, result, failure_reason
+
+# 3R'. 接続プールの合否の回と記録の回（B5。NFR2.7・NFR2.8、scalability-design.md 2.3・2.4）。グループの管理の節の 3G' の gr-pool.sh を
+#      SCENARIO=rolePoolLimit・ROLE_DURATION=2m に替えた写し（role-pool.sh）で流す。判定の値の読み方は 3G' と同じ。
+#   合否の回: MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11、VUS=5（作業ロールの切り替え 3 VU・グループへの割り当てと外し 2 VU）、2 分。
+#     合格は、時間切れの累計の増分 0・rolePoolLimit_500 が 0 件・acquire の MAX の最大が 20 ms 未満。
+#   記録の回: MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10、VUS=20（同じ構成）、2 分。判定はせず値を記録する。acquire の MAX が 10 ms 以上に
+#     届いたこと（上限に届いた証拠）を確かめ、届かなければ VUS=40 で1回だけ流し直す。
+#   acquire は応答の baseUnit を確かめて秒にそろえてから 0.020 と比べる（3G' の read_metrics はミリ秒にそろえるため、20 と比べるのと
+#     同じ。baseUnit が seconds でないときは値をそのまま使わず、単位を書き留めてから換算する）。
+#   健全性の確かめ（/actuator/health）のほかに接続を使う者が無かったことを、試験の前後の active が 0 であることと、試験の間のアプリの
+#     ログに role・group の操作のほかの要求が無いことで切り分ける。
+sed -e 's/SCENARIO=groupPoolLimit/SCENARIO=rolePoolLimit/' -e 's/-e DURATION=2m/-e ROLE_DURATION=2m/' "$D/gr-pool.sh" > "$D/role-pool.sh"
+( umask 077; sed -i '' '/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=/d' "$D/app.env"; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11\n' >> "$D/app.env" )
+perfu up -d --wait --force-recreate app
+caffeinate -i zsh "$D/role-pool.sh" "$D" role-pool11 5
+sed -i '' 's/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11$/MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10/' "$D/app.env"
+perfu up -d --wait --force-recreate app
+caffeinate -i zsh "$D/role-pool.sh" "$D" role-pool10 20
+grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.json build/perf-results/role-pool10.json
+#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events
+#     WHERE event_type LIKE 'ROLE_%' OR event_type = 'WORK_ROLE_SWITCHED' GROUP BY event_type, result, failure_reason
 ```

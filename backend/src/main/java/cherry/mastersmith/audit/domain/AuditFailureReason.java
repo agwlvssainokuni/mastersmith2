@@ -75,5 +75,7 @@ public enum AuditFailureReason {
     /** 今の DSL に無い対象への権限の設定（Intent 261004-role-menu の U4）。 */
     PERMISSION_TARGET_NOT_IN_DSL,
     /** 適用済みの DSL が無いときの権限の保存（Intent 261004-role-menu の U4）。 */
-    DSL_NOT_APPLIED
+    DSL_NOT_APPLIED,
+    /** 割り当ての外・存在しないロールへの作業ロールの切り替え（Intent 261004-role-menu の U4）。 */
+    ROLE_NOT_ASSIGNED
 }

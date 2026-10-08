@@ -58,6 +58,23 @@ class RoleStoreClassificationTest {
     private static final String CHECK_MESSAGE =
             "Check constraint violation: \"CK_PERMISSION_SETTINGS_MAIN: " + ROW_VALUE + "\"";
 
+    private static final String USER_ASSIGNMENT_PK_MESSAGE = "Unique index or primary key violation:"
+            + " \"PUBLIC.PRIMARY_KEY_A ON PUBLIC.USER_ROLE_ASSIGNMENTS(ROLE_ID, USER_ID) VALUES ( /* key:1 */ 4242, 77)\";"
+            + " SQL statement: insert into user_role_assignments (assigned_at,role_id,user_id) values (?,?,?)";
+
+    private static final String GROUP_ASSIGNMENT_PK_MESSAGE = "Unique index or primary key violation:"
+            + " \"PUBLIC.PRIMARY_KEY_8 ON PUBLIC.GROUP_ROLE_ASSIGNMENTS(ROLE_ID, GROUP_ID) VALUES ( /* key:1 */ 4242, 88)\";"
+            + " SQL statement: insert into group_role_assignments (assigned_at,group_id,role_id) values (?,?,?)";
+
+    private static final String SELECTION_PK_MESSAGE = "Unique index or primary key violation:"
+            + " \"PUBLIC.PRIMARY_KEY_F ON PUBLIC.WORK_ROLE_SELECTIONS(USER_ID) VALUES ( /* key:1 */ 77)\";"
+            + " SQL statement: MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id) VALUES (?, ?, ?)";
+
+    private static String foreignKeyMessage(String constraint, String table, String column, String parent) {
+        return "Referential integrity constraint violation: \"" + constraint + ": PUBLIC." + table + " FOREIGN KEY("
+                + column + ") REFERENCES PUBLIC." + parent + "(" + column + ") (CAST(4242 AS BIGINT))\"";
+    }
+
     private static PersistenceException violation(String message, String sqlState, String constraintName) {
         SQLException sql = new SQLException(message, sqlState, Integer.parseInt(sqlState));
         return new ConstraintViolationException("could not execute statement [" + message + "]", sql, constraintName);
@@ -199,5 +216,92 @@ class RoleStoreClassificationTest {
         assertThat(new RoleStoreOutcome.Referenced<>(Referent.ROLE).toString()).isEqualTo("Referenced[ROLE]");
         assertThat(new RoleStoreOutcome.Busy<>("ROLE_NAME_KEY").toString()).isEqualTo("Busy[ROLE_NAME_KEY]");
         assertThat(new RoleStoreOutcome.Done<>(null).isDone()).isTrue();
+    }
+
+    @Test
+    @DisplayName("a primary key violation of the user or group assignment is ALREADY_ASSIGNED (B5)")
+    void assignmentPrimaryKeys() {
+        org.slf4j.Logger logger = LoggerFactory.getLogger(RoleStoreClassificationTest.class);
+
+        assertThat(RoleStoreClassifier.classify(violation(USER_ASSIGNMENT_PK_MESSAGE, "23505", "PRIMARY_KEY_A")))
+                .isEqualTo(Kind.ALREADY_ASSIGNED);
+        assertThat(RoleStoreClassifier.classify(violation(GROUP_ASSIGNMENT_PK_MESSAGE, "23505", null)))
+                .isEqualTo(Kind.ALREADY_ASSIGNED);
+        assertThat(RoleStoreClassifier.<Void>toOutcome(
+                        violation(USER_ASSIGNMENT_PK_MESSAGE, "23505", null), RoleStore.ROLE_ASSIGNMENT_KEY, logger))
+                .isEqualTo(new RoleStoreOutcome.AlreadyAssigned<Void>());
+        assertThat(RoleStoreClassifier.classify(new PersistenceException(
+                        "flush failed", violation(GROUP_ASSIGNMENT_PK_MESSAGE, "23505", null))))
+                .as("待った後の違反も同じ区分（#14）")
+                .isEqualTo(Kind.ALREADY_ASSIGNED);
+    }
+
+    @Test
+    @DisplayName("a primary key violation of the work role selection is Busy of WORK_ROLE_SELECTION_KEY with one WARN")
+    void selectionPrimaryKey() {
+        assertThat(RoleStoreClassifier.classify(violation(SELECTION_PK_MESSAGE, "23505", null)))
+                .isEqualTo(Kind.SELECTION_KEY);
+
+        try (LogEvents logs = LogEvents.capture(RoleStoreClassificationTest.class)) {
+            RoleStoreOutcome<Void> outcome = RoleStoreClassifier.toOutcome(
+                    violation(SELECTION_PK_MESSAGE, "23505", null),
+                    RoleStore.WORK_ROLE_SELECTION_KEY,
+                    LoggerFactory.getLogger(RoleStoreClassificationTest.class));
+
+            assertThat(outcome).isEqualTo(new RoleStoreOutcome.Busy<Void>("WORK_ROLE_SELECTION_KEY"));
+            assertThat(logs.list()).singleElement().satisfies(warn -> {
+                assertThat(warn.getThrowableProxy()).isNull();
+                assertThat(keyValues(warn)).containsEntry("lockKind", "WORK_ROLE_SELECTION_KEY");
+            });
+        }
+    }
+
+    @Test
+    @DisplayName("the foreign keys of the assignment tables are REFERENCED to the role, the user or the group (B5)")
+    void assignmentForeignKeys() {
+        org.slf4j.Logger logger = LoggerFactory.getLogger(RoleStoreClassificationTest.class);
+        String userRole =
+                foreignKeyMessage("FK_USER_ROLE_ASSIGNMENTS_ROLE", "USER_ROLE_ASSIGNMENTS", "ROLE_ID", "ROLES");
+        String groupRole =
+                foreignKeyMessage("FK_GROUP_ROLE_ASSIGNMENTS_ROLE", "GROUP_ROLE_ASSIGNMENTS", "ROLE_ID", "ROLES");
+        String user = foreignKeyMessage("FK_USER_ROLE_ASSIGNMENTS_USER", "USER_ROLE_ASSIGNMENTS", "USER_ID", "USERS");
+        String group =
+                foreignKeyMessage("FK_GROUP_ROLE_ASSIGNMENTS_GROUP", "GROUP_ROLE_ASSIGNMENTS", "GROUP_ID", "GROUPS");
+        String selectionUser =
+                foreignKeyMessage("FK_WORK_ROLE_SELECTIONS_USER", "WORK_ROLE_SELECTIONS", "USER_ID", "USERS");
+
+        assertThat(RoleStoreClassifier.classify(violation(userRole, "23503", null)))
+                .isEqualTo(Kind.REFERENCED_ROLE);
+        assertThat(RoleStoreClassifier.classify(violation(groupRole, "23506", null)))
+                .isEqualTo(Kind.REFERENCED_ROLE);
+        assertThat(RoleStoreClassifier.classify(violation(user, "23506", null))).isEqualTo(Kind.REFERENCED_USER);
+        assertThat(RoleStoreClassifier.classify(violation(selectionUser, "23506", null)))
+                .isEqualTo(Kind.REFERENCED_USER);
+        assertThat(RoleStoreClassifier.classify(violation(group, "23506", "FK_GROUP_ROLE_ASSIGNMENTS_GROUP")))
+                .isEqualTo(Kind.REFERENCED_GROUP);
+        assertThat(RoleStoreClassifier.<Void>toOutcome(violation(user, "23506", null), "ROLE_ASSIGNMENT_KEY", logger))
+                .isEqualTo(new RoleStoreOutcome.Referenced<Void>(Referent.USER));
+        assertThat(RoleStoreClassifier.<Void>toOutcome(violation(group, "23506", null), "ROLE_ASSIGNMENT_KEY", logger))
+                .isEqualTo(new RoleStoreOutcome.Referenced<Void>(Referent.GROUP));
+        assertThat(RoleStoreClassifier.classify(violation(
+                        foreignKeyMessage("FK_GROUP_MEMBERS_GROUP", "GROUP_MEMBERS", "GROUP_ID", "GROUPS"),
+                        "23503",
+                        null)))
+                .as("group の外部キーは role の区分に当たらない")
+                .isEqualTo(Kind.UNEXPECTED);
+    }
+
+    @Test
+    @DisplayName("an unexpected failure on an assignment table keeps only the SQL state and the known constraint name")
+    void unexpectedOnAssignmentTables() {
+        org.slf4j.Logger logger = LoggerFactory.getLogger(RoleStoreClassificationTest.class);
+        String userFk = foreignKeyMessage("FK_USER_ROLE_ASSIGNMENTS_USER", "USER_ROLE_ASSIGNMENTS", "USER_ID", "USERS");
+
+        assertThatThrownBy(() -> RoleStoreClassifier.toOutcome(
+                        violation(userFk + " " + ROW_VALUE, "23513", null), "ROLE_ASSIGNMENT_KEY", logger))
+                .isInstanceOfSatisfying(RoleStoreUnexpectedException.class, wrapped -> {
+                    assertThat(wrapped.getConstraintName()).isEqualTo("FK_USER_ROLE_ASSIGNMENTS_USER");
+                    assertThat(wrapped.getMessage()).doesNotContain(ROW_VALUE).doesNotContain("4242");
+                });
     }
 }

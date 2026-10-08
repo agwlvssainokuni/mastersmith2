@@ -23,6 +23,7 @@ import cherry.mastersmith.role.domain.RoleNameValidation;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -31,7 +32,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
 /**
- * role の結合テストの前提を作る手伝い（計画の 7.3）。ロールと設定の行を本番のコードの書き込みを通さずに作る（テストのためだけの API・
+ * role の結合テストの前提を作る手伝い（計画の 7.3・8.3）。ロール・設定・割り当て・作業ロールの保存の行を本番のコードの書き込みを通さずに作る（テストのためだけの API・
  * 操作を本番のコードに足さないため。group の {@code GroupFixtures} と同じ形）。名前の鍵は本番と同じく {@link RoleName} から作る。
  */
 public final class RoleFixtures {
@@ -162,5 +163,73 @@ public final class RoleFixtures {
      */
     public Map<String, Object> roleRow(long roleId) {
         return jdbc.queryForMap("SELECT name, name_key, updated_at FROM roles WHERE role_id = ?", roleId);
+    }
+
+    /**
+     * 利用者への直接の割り当ての行を足す（B5）。
+     *
+     * @param roleId ロールの ID
+     * @param userId 利用者 ID
+     */
+    public void assignUser(long roleId, long userId) {
+        jdbc.update(
+                "INSERT INTO user_role_assignments (role_id, user_id, assigned_at) VALUES (?, ?, ?)",
+                roleId,
+                userId,
+                OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC));
+    }
+
+    /**
+     * グループへの割り当ての行を足す（B5）。
+     *
+     * @param roleId ロールの ID
+     * @param groupId グループの ID
+     */
+    public void assignGroup(long roleId, long groupId) {
+        jdbc.update(
+                "INSERT INTO group_role_assignments (role_id, group_id, assigned_at) VALUES (?, ?, ?)",
+                roleId,
+                groupId,
+                OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC));
+    }
+
+    /**
+     * 作業ロールの保存の行を書く（無ければ足し、あれば書き換える。B5）。
+     *
+     * @param userId 利用者 ID
+     * @param roleId 選んだロールの ID
+     */
+    public void selectWorkRole(long userId, long roleId) {
+        jdbc.update(
+                "MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id) VALUES (?, ?, ?)",
+                userId,
+                roleId,
+                OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC));
+    }
+
+    /**
+     * 利用者の作業ロールの保存のロールの ID を読む（B5）。
+     *
+     * @param userId 利用者 ID
+     * @return ロールの ID（保存が無ければ null）
+     */
+    public Long storedWorkRole(long userId) {
+        List<Long> ids =
+                jdbc.queryForList("SELECT role_id FROM work_role_selections WHERE user_id = ?", Long.class, userId);
+        return ids.isEmpty() ? null : ids.getFirst();
+    }
+
+    /**
+     * ロールの割り当ての行の数を返す（利用者とグループの合計。B5）。
+     *
+     * @param roleId ロールの ID
+     * @return 行の数
+     */
+    public int assignmentRows(long roleId) {
+        Integer users = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM user_role_assignments WHERE role_id = ?", Integer.class, roleId);
+        Integer groups = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM group_role_assignments WHERE role_id = ?", Integer.class, roleId);
+        return (users == null ? 0 : users) + (groups == null ? 0 : groups);
     }
 }

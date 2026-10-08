@@ -106,7 +106,7 @@ class RoleMetricsIT {
     }
 
     @Test
-    @DisplayName("requests of the ten endpoints are recorded under the path templates without ids")
+    @DisplayName("requests of the role endpoints of B4 and B5 are recorded under the path templates without ids")
     void uriTemplates() {
         long roleId = ((Number) HttpTestClient.json(api.create(admin.token(), RoleFixtures.uniqueName("指標")))
                         .get("roleId"))
@@ -127,6 +127,17 @@ class RoleMetricsIT {
                 roleId,
                 RoleApi.json(Map.of("targets", List.of(Map.of("schemaName", "SALES", "tableName", "GONE")))));
         api.delete(admin.token(), roleId);
+        long assigned = ((Number) HttpTestClient.json(api.create(admin.token(), RoleFixtures.uniqueName("指標 割り当て")))
+                        .get("roleId"))
+                .longValue();
+        Actor member = new RoleActors(userAccountService, revocationService, transactionManager, port).member();
+        api.assignUser(admin.token(), assigned, member.userId());
+        api.assignments(admin.token(), assigned);
+        api.userRoles(admin.token(), member.userId());
+        api.workRole(member.token());
+        api.switchWorkRole(member.token(), assigned);
+        api.mySchemas(member.token());
+        api.unassignUser(admin.token(), assigned, member.userId());
 
         Set<String> uris = meterRegistry.find("http.server.requests").timers().stream()
                 .map(timer -> timer.getId().getTag("uri"))
@@ -141,7 +152,17 @@ class RoleMetricsIT {
                         "/api/admin/roles/{roleId}/permissions/schemas",
                         "/api/admin/roles/{roleId}/permissions/tables",
                         "/api/admin/roles/{roleId}/permissions/columns",
-                        "/api/admin/roles/{roleId}/permissions/clear");
+                        "/api/admin/roles/{roleId}/permissions/clear",
+                        "/api/admin/roles/{roleId}/assignments",
+                        "/api/admin/roles/{roleId}/assignments/users/{userId}");
+        Set<String> others = meterRegistry.find("http.server.requests").timers().stream()
+                .map(timer -> timer.getId().getTag("uri"))
+                .filter(uri -> uri != null && (uri.startsWith("/api/me/") || uri.startsWith("/api/admin/users/")))
+                .collect(Collectors.toSet());
+        assertThat(others)
+                .as("B5 の自分の口と利用者のロールの読み取り")
+                .contains("/api/me/work-role", "/api/me/permissions/schemas", "/api/admin/users/{userId}/roles")
+                .noneMatch(uri -> uri.matches(".*/\\d+.*"));
         assertThat(uris).noneMatch(uri -> uri.matches(".*/\\d+.*")).noneMatch(uri -> uri.contains("SALES"));
         Timer created = meterRegistry
                 .find("http.server.requests")

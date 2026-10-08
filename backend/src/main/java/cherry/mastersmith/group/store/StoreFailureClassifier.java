@@ -33,7 +33,7 @@ import org.slf4j.Logger;
  *   <li>{@link RowLockFailures#isLockFailure(Throwable)} が真なら待ちの上限切れ（行の排他・一意の鍵・主キーの待ち）
  *   <li>原因の連なりに SQLState 23505（一意・主キー）か 23503・23506（外部キー。H2 は親の削除を 23503、親の無い追加を 23506 にする）
  *       があれば違反とし、制約の名前で読み替え先を決める（{@code uk_groups_name_key} → 名前の重なり、{@code group_members} の主キー →
- *       すでにメンバー、{@code fk_group_members_group} → グループを指す外部キー）
+ *       すでにメンバー、{@code fk_group_members_group} と U4 role の {@code fk_group_role_assignments_group} → グループを指す外部キー）
  *   <li>どれにも当たらなければ想定外
  * </ol>
  *
@@ -50,7 +50,7 @@ public final class StoreFailureClassifier {
         NAME_TAKEN,
         /** メンバーの主キーの違反。 */
         ALREADY_MEMBER,
-        /** グループを指す外部キーの違反。 */
+        /** グループを指す外部キーの違反（メンバーとロールの割り当て）。 */
         REFERENCED,
         /** 想定外。 */
         UNEXPECTED
@@ -73,6 +73,13 @@ public final class StoreFailureClassifier {
 
     /** メンバーからグループへの外部キーの名前（V10）。 */
     static final String GROUP_FOREIGN_KEY = "FK_GROUP_MEMBERS_GROUP";
+
+    /**
+     * U4 role のグループへの割り当てからグループへの外部キーの名前（V12）。ロールの割り当てが残るグループの削除は問う口とグループの行の
+     * 排他で断るため API からは届かないが、届いたときも {@code GROUP_IN_USE} に読み替える最後の守り（Intent 261004-role-menu の U4 の
+     * 計画 13節 Q4: A・D-18）。
+     */
+    static final String ROLE_ASSIGNMENT_FOREIGN_KEY = "FK_GROUP_ROLE_ASSIGNMENTS_GROUP";
 
     private StoreFailureClassifier() {}
 
@@ -109,7 +116,7 @@ public final class StoreFailureClassifier {
         if (unique && (text.contains(MEMBERS_PRIMARY_KEY) || text.contains(MEMBERS_TABLE))) {
             return Kind.ALREADY_MEMBER;
         }
-        if (foreignKey && text.contains(GROUP_FOREIGN_KEY)) {
+        if (foreignKey && (text.contains(GROUP_FOREIGN_KEY) || text.contains(ROLE_ASSIGNMENT_FOREIGN_KEY))) {
             return Kind.REFERENCED;
         }
         return Kind.UNEXPECTED;

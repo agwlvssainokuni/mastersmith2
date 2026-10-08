@@ -171,4 +171,59 @@ class AuditRoleEventListenerTest {
             });
         }
     }
+
+    @Test
+    @DisplayName("a write failure of a work role switch is logged once with the user target and the switch detail")
+    void writeFailureOfASwitchCarriesTheUser() {
+        doThrow(new IllegalStateException("write failed")).when(recorder).record(any());
+
+        try (LogEvents logs = LogEvents.capture(AuditEventListener.class)) {
+            assertThatCode(() -> listener()
+                            .onRoleAuditEvent(RoleAuditEvent.succeeded(
+                                    RoleOperation.SWITCH_WORK_ROLE,
+                                    8L,
+                                    50L,
+                                    8L,
+                                    null,
+                                    new RoleAuditDetail.WorkRoleSwitch(null, null, "営業", null),
+                                    NOW,
+                                    ORIGIN)))
+                    .doesNotThrowAnyException();
+
+            assertThat(logs.list()).singleElement().satisfies(error -> {
+                assertThat(error.getLevel()).isEqualTo(Level.ERROR);
+                assertThat(keyValues(error))
+                        .containsEntry("auditEventType", AuditEventType.WORK_ROLE_SWITCHED)
+                        .containsEntry("actorUserId", 8L)
+                        .containsEntry("targetUserId", 8L)
+                        .containsEntry("targetRoleId", 50L)
+                        .doesNotContainKey("targetGroupId");
+                assertThat((String) keyValues(error).get("detail")).contains("\"toRoleName\":\"営業\"");
+            });
+        }
+    }
+
+    @Test
+    @DisplayName("an assignment to a group is appended with the group target and no user target")
+    void groupAssignmentAppended() {
+        listener()
+                .onRoleAuditEvent(RoleAuditEvent.failed(
+                        RoleOperation.ASSIGN,
+                        1L,
+                        50L,
+                        null,
+                        70L,
+                        RoleAuditFailure.GROUP_NOT_FOUND,
+                        new RoleAuditDetail.Assignment("営業", null),
+                        NOW,
+                        ORIGIN));
+
+        ArgumentCaptor<AuditEvent> captor = ArgumentCaptor.forClass(AuditEvent.class);
+        verify(recorder, times(1)).record(captor.capture());
+        AuditEvent recorded = captor.getValue();
+        assertThat(recorded.getEventType()).isEqualTo(AuditEventType.ROLE_ASSIGNED);
+        assertThat(recorded.getFailureReason()).isEqualTo(AuditFailureReason.GROUP_NOT_FOUND);
+        assertThat(recorded.getTargetGroupId()).isEqualTo(70L);
+        assertThat(recorded.getTargetUserId()).isNull();
+    }
 }

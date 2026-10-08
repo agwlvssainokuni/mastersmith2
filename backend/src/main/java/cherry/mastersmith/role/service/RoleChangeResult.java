@@ -80,7 +80,7 @@ public sealed interface RoleChangeResult
     }
 
     /**
-     * 割り当てが残る削除の拒否（409 {@code ROLE_IN_USE}、応答に残りの数。BR3.2。監査に FAILURE。B4 では割り当ての表が無く起きない）。
+     * 割り当てが残る削除の拒否（409 {@code ROLE_IN_USE}、応答に残りの数。BR3.2。監査に FAILURE）。
      *
      * @param assignedUsers 利用者への直接の割り当ての数
      * @param assignedGroups グループへの割り当ての数

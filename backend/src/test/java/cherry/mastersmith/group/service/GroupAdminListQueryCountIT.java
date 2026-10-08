@@ -38,8 +38,9 @@ import org.springframework.test.context.DynamicPropertySource;
 
 /**
  * 一覧と詳細の問い合わせの数（NFR2.6、{@code performance-design.md} 1節、計画の D-8）の結合テスト。一覧は 4 回（件数・ページ・メンバーの
- * 数・問う口。B3 の仮の実装は DB を読まないため Hibernate の文は 3 つ）、詳細は 3 回（グループ・メンバー・利用者の要約）で、グループの数と
- * メンバーの数に比例しないことを、既存の {@link SqlStatementCounter} で数える。
+ * 数・問う口。問う口は U4 role の本物の実装（Intent 261004-role-menu の B5）がロールの割り当ての表をグループの ID の集合で1回で数える）、
+ * 詳細は 3 回（グループ・メンバー・利用者の要約）で、グループの数とメンバーの数に比例しないことを、既存の {@link SqlStatementCounter} で
+ * 数える。
  */
 @SpringBootTest(
         properties = "spring.jpa.properties.hibernate.session_factory.statement_inspector="
@@ -92,7 +93,9 @@ class GroupAdminListQueryCountIT {
 
         List<String> full = statementsOf(() -> service.list(null));
 
-        assertThat(one).containsExactly("select groups", "select groups", "select group_members");
+        assertThat(one)
+                .containsExactly(
+                        "select groups", "select groups", "select group_members", "select group_role_assignments");
         assertThat(full).isEqualTo(one);
         assertThat(((GroupListResult.Listed) service.list(null)).page().items()).hasSize(20);
     }

@@ -31,9 +31,11 @@ import cherry.mastersmith.role.domain.RoleName;
 import cherry.mastersmith.role.domain.RoleNameValidation;
 import cherry.mastersmith.role.domain.RoleOperation;
 import cherry.mastersmith.role.domain.RoleRejection;
+import cherry.mastersmith.role.repository.AssignmentCount;
 import cherry.mastersmith.role.repository.PermissionLevelRow;
 import cherry.mastersmith.role.repository.PermissionSettingRepository;
 import cherry.mastersmith.role.repository.PermissionSettingRow;
+import cherry.mastersmith.role.repository.RoleAssignmentRepository;
 import cherry.mastersmith.role.repository.RoleRepository;
 import cherry.mastersmith.role.repository.RoleRowView;
 import cherry.mastersmith.role.repository.RoleView;
@@ -50,7 +52,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -84,6 +88,8 @@ public class RoleAdminService {
 
     private final PermissionSettingRepository settings;
 
+    private final RoleAssignmentRepository assignments;
+
     private final ActiveDslModelProvider activeDsl;
 
     private final RoleBarrier barrier;
@@ -102,6 +108,7 @@ public class RoleAdminService {
      * @param transactions store を呼ぶ1つ目のトランザクションの入口
      * @param roles ロールの表の読み取り
      * @param settings 権限の設定の表の読み取り
+     * @param assignments 割り当ての表の読み取り（削除の確かめと一覧の数。B5）
      * @param activeDsl 適用中の DSL の提供口
      * @param barrier 待ち合わせの口
      * @param eventPublisher 監査の出来事の知らせ
@@ -112,6 +119,7 @@ public class RoleAdminService {
             RoleStoreTransactions transactions,
             RoleRepository roles,
             PermissionSettingRepository settings,
+            RoleAssignmentRepository assignments,
             ActiveDslModelProvider activeDsl,
             RoleBarrier barrier,
             ApplicationEventPublisher eventPublisher,
@@ -120,6 +128,7 @@ public class RoleAdminService {
         this.transactions = transactions;
         this.roles = roles;
         this.settings = settings;
+        this.assignments = assignments;
         this.activeDsl = activeDsl;
         this.barrier = barrier;
         this.eventPublisher = eventPublisher;
@@ -220,8 +229,9 @@ public class RoleAdminService {
     }
 
     /**
-     * ロールを消す（FS の 2.3、BR3.2・BR3.3・BR8.1）。B4 では割り当ての表が無いため、割り当てが残る拒否は起きない（計画の D-37。B5 で
-     * 割り当ての数の判定と、そのロールを指す作業ロールの保存の削除を足す）。
+     * ロールを消す（FS の 2.3、BR3.2〜BR3.4・BR8.1）。ロールの行を排他した後に、利用者への直接の割り当ての数とグループへの割り当ての数を
+     * 数え、どちらかが 1 以上なら {@code ROLE_IN_USE}（応答と detail に数）で断る。通れば、権限の設定 → そのロールを指す作業ロールの保存 →
+     * ロールの順に消す（store）。割り当ての側も同じロールの行を先に排他するため、削除と割り当ての重なりはどちらかが先に確定する（AC1.1.6）。
      *
      * @param actorUserId 操作した管理者の利用者 ID
      * @param origin 要求の送り手の情報
@@ -232,6 +242,13 @@ public class RoleAdminService {
         Objects.requireNonNull(origin, "origin");
         RoleOperation operation = RoleOperation.DELETE;
         RoleFirstStep<Void> step = transactions.inFirst(store -> withLockedRole(store, operation, roleId, role -> {
+            long users = assignments.countUsersOfRole(roleId);
+            long groups = assignments.countGroupsOfRole(roleId);
+            if (users > 0 || groups > 0) {
+                return new RoleFirstStep.Rejected<>(
+                        RoleRejection.IN_USE,
+                        new RoleAuditDetail.InUse(role.getName(), Math.toIntExact(users), Math.toIntExact(groups)));
+            }
             RoleAuditDetail detail = new RoleAuditDetail.Name(role.getName());
             RoleStoreOutcome<Void> outcome = store.deleteRole(role);
             if (!outcome.isDone()) {
@@ -490,8 +507,8 @@ public class RoleAdminService {
 
     /**
      * 1つ目の結果を、変える操作の結果に変える。拒否と違反の読み替えは2つ目のトランザクションで失敗の出来事を出す（計画の 4.3）。ロールへの
-     * 外部キーの違反は、削除なら {@code ROLE_IN_USE}、権限の書き込みなら {@code ROLE_NOT_FOUND} に読み替える（どちらも行の排他のため
-     * API からは届かない最後の守り）。
+     * 外部キーの違反は、削除なら {@code ROLE_IN_USE}（残りの数は2つ目のトランザクションで数え直す）、権限の書き込みなら
+     * {@code ROLE_NOT_FOUND} に読み替える（どちらも行の排他と事前の判定のため API からは届かない最後の守り）。
      */
     private RoleChangeResult changeResult(
             RoleFirstStep<Void> step, RoleOperation operation, long actorUserId, long roleId, RequestOrigin origin) {
@@ -512,12 +529,8 @@ public class RoleAdminService {
                         yield new RoleChangeResult.Rejected(RoleRejection.NAME_DUPLICATE);
                     }
                     case RoleStoreOutcome.Referenced<?>(Referent who)
-                    when who == Referent.ROLE && operation == RoleOperation.DELETE -> {
-                        RoleAuditDetail.InUse inUse =
-                                new RoleAuditDetail.InUse(((RoleAuditDetail.Name) detail).name(), 0, 0);
-                        publishFailure(operation, actorUserId, roleId, RoleRejection.IN_USE, inUse, origin);
-                        yield inUse(inUse);
-                    }
+                    when who == Referent.ROLE && operation == RoleOperation.DELETE ->
+                        inUseAfterViolation(actorUserId, roleId, ((RoleAuditDetail.Name) detail).name(), origin);
                     case RoleStoreOutcome.Referenced<?>(Referent who)
                     when who == Referent.ROLE && operation == RoleOperation.CHANGE_PERMISSIONS -> {
                         publishFailure(operation, actorUserId, roleId, RoleRejection.ROLE_NOT_FOUND, null, origin);
@@ -526,6 +539,26 @@ public class RoleAdminService {
                     default -> throw unexpected(operation, outcome);
                 };
         };
+    }
+
+    /** 削除の違反の後に、2つ目のトランザクションで残りの数を数え直し、失敗の出来事を出す。 */
+    private RoleChangeResult inUseAfterViolation(long actorUserId, long roleId, String name, RequestOrigin origin) {
+        RoleAuditDetail.InUse detail = Objects.requireNonNull(failureTransaction.execute(status -> {
+            RoleAuditDetail.InUse inUse = new RoleAuditDetail.InUse(
+                    name,
+                    Math.toIntExact(assignments.countUsersOfRole(roleId)),
+                    Math.toIntExact(assignments.countGroupsOfRole(roleId)));
+            eventPublisher.publishEvent(RoleAuditEvent.failed(
+                    RoleOperation.DELETE,
+                    actorUserId,
+                    roleId,
+                    RoleRejection.IN_USE.auditFailure(),
+                    inUse,
+                    clock.instant(),
+                    origin));
+            return inUse;
+        }));
+        return inUse(detail);
     }
 
     private static RoleChangeResult.InUse inUse(RoleAuditDetail.InUse detail) {
@@ -552,8 +585,17 @@ public class RoleAdminService {
             return new RoleListResult.Page(List.of(), page, Paging.PAGE_SIZE, total);
         }
         List<RoleRowView> views = roles.findPage(PageRequest.of(page - 1, Paging.PAGE_SIZE));
+        Set<Long> ids = views.stream().map(RoleRowView::roleId).collect(Collectors.toSet());
+        Map<Long, Long> userCounts = assignments.countUsersByRoles(ids).stream()
+                .collect(Collectors.toMap(AssignmentCount::id, AssignmentCount::count));
+        Map<Long, Long> groupCounts = assignments.countGroupsByRoles(ids).stream()
+                .collect(Collectors.toMap(AssignmentCount::id, AssignmentCount::count));
         List<RoleListResult.Row> rows = views.stream()
-                .map(view -> new RoleListResult.Row(view.roleId(), view.name(), 0, 0))
+                .map(view -> new RoleListResult.Row(
+                        view.roleId(),
+                        view.name(),
+                        userCounts.getOrDefault(view.roleId(), 0L),
+                        groupCounts.getOrDefault(view.roleId(), 0L)))
                 .toList();
         return new RoleListResult.Page(rows, page, Paging.PAGE_SIZE, total);
     }

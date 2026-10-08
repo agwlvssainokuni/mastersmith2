@@ -17,10 +17,10 @@ package cherry.mastersmith.role.store;
 
 /** 外部キーの違反の相手（制約の名前から決める。業務処理が操作ごとに読み替える。{@code reliability-design.md} 2.3、計画の D-6）。 */
 public enum Referent {
-    /** ロール（{@code fk_permission_settings_role}。B5 で割り当ての表のロールへの外部キーを足す）。 */
+    /** ロール（{@code fk_permission_settings_role}・{@code fk_user_role_assignments_role}・{@code fk_group_role_assignments_role}）。 */
     ROLE,
-    /** 利用者（B5 の割り当ての表で使う）。 */
+    /** 利用者（{@code fk_user_role_assignments_user}・{@code fk_work_role_selections_user}）。 */
     USER,
-    /** グループ（B5 の割り当ての表で使う）。 */
+    /** グループ（{@code fk_group_role_assignments_group}）。 */
     GROUP
 }

@@ -24,7 +24,9 @@ import cherry.mastersmith.role.domain.RoleOperation;
  * {@code @Primary} の部品で差し替えて、時間に頼らずに重なりを確実に作る。どの点も1つ目のトランザクションの中で呼ばれる。引数は操作の
  * 区分と ID・鍵だけで、追跡の TRACE に個人に関する値は出ない。
  *
- * <p>鍵（{@code key}）は、作成と名前の変更では名前の鍵（{@code RoleName.key()}）、削除と権限の保存・消す操作ではロールの ID の文字列。
+ * <p>鍵（{@code key}）は、作成と名前の変更では名前の鍵（{@code RoleName.key()}）、削除と権限の保存・消す操作ではロールの ID の文字列、
+ * 割り当てでは {@code <ロールの ID>:U<利用者 ID>}・{@code <ロールの ID>:G<グループの ID>}、作業ロールの切り替えでは利用者 ID の文字列
+ * （B5。計画の 4.4）。作業ロールの切り替えはロールの行を排他しないため、{@link #beforeLock}・{@link #afterLock} を呼ばない。
  */
 public interface RoleBarrier {
 
@@ -45,7 +47,7 @@ public interface RoleBarrier {
     void afterLock(RoleOperation operation, long roleId);
 
     /**
-     * 業務の判定（重なり）の後、書き込みの前に呼ばれる（作成・名前の変更）。
+     * 業務の判定（重なり・割り当ての有無）の後、書き込みの前に呼ばれる（作成・名前の変更・割り当て・作業ロールの切り替え）。
      *
      * @param operation 操作の区分
      * @param key 鍵
@@ -53,7 +55,7 @@ public interface RoleBarrier {
     void afterCheck(RoleOperation operation, String key);
 
     /**
-     * 書き込みと flush の後、確定の前に呼ばれる（すべての変える操作）。
+     * 書き込みと flush の後、確定の前に呼ばれる（割り当ての外しを除く変える操作。作業ロールの切り替えは保存を書いたときだけ）。
      *
      * @param operation 操作の区分
      * @param key 鍵

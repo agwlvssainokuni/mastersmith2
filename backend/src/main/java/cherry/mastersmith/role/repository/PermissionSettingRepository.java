@@ -109,4 +109,35 @@ public interface PermissionSettingRepository extends Repository<PermissionSettin
             @Param("schemaName") String schemaName,
             @Param("tableName") String tableName,
             @Param("columnName") String columnName);
+
+    /**
+     * ロールの設定の行をまとめて1回で読む（作業ロールの写し。BR5.4、NFR2.3）。
+     *
+     * @param roleId ロールの ID
+     * @return 設定の行
+     */
+    @Query("select new cherry.mastersmith.role.repository.PermissionSettingRow(s.schemaName, s.tableName, s.columnName,"
+            + " s.mainPermission, s.createPermission, s.deletePermission) from PermissionSetting s"
+            + " where s.roleId = :roleId")
+    List<PermissionSettingRow> findAllOfRole(@Param("roleId") long roleId);
+
+    /**
+     * 1つの対象の祖先の行（スキーマ・テーブル・カラムの最大3行）を1回で読む（{@code resolve}。NFR2.3、計画の D-16）。
+     *
+     * @param roleId ロールの ID
+     * @param schemaName スキーマの名前
+     * @param tableName テーブルの名前（スキーマの対象は空の文字列）
+     * @param columnName カラムの名前（スキーマ・テーブルの対象は空の文字列）
+     * @return 設定の行
+     */
+    @Query("select new cherry.mastersmith.role.repository.PermissionSettingRow(s.schemaName, s.tableName, s.columnName,"
+            + " s.mainPermission, s.createPermission, s.deletePermission) from PermissionSetting s"
+            + " where s.roleId = :roleId and s.schemaName = :schemaName"
+            + " and ((s.tableName = '' and s.columnName = '')"
+            + " or (s.tableName = :tableName and (s.columnName = '' or s.columnName = :columnName)))")
+    List<PermissionSettingRow> findAncestors(
+            @Param("roleId") long roleId,
+            @Param("schemaName") String schemaName,
+            @Param("tableName") String tableName,
+            @Param("columnName") String columnName);
 }

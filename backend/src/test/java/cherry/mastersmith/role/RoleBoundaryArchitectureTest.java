@@ -22,10 +22,12 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +45,8 @@ import org.junit.jupiter.api.Test;
  *   <li>{@code role.service} は {@code EntityManager}・{@code JdbcTemplate} を使わない
  *   <li>{@code role.repository} は書き込みの方法・{@code @Modifying} を持たず、{@code CrudRepository} を継がない
  *   <li>トランザクションの境界は {@code role.service} の {@code TransactionTemplate} だけ（{@code @Transactional} を付けない）
+ *   <li>{@code group.service} のうち使ってよいのは、role に出す口（{@code GroupMembershipQuery}・{@code GroupDeletionGuard}）とその型
+ *       （{@code DeletionDecision}・{@code GroupRowLock}・{@code GroupSummary}）だけ（B5）
  * </ul>
  *
  * <p>規則が空振りしないよう、各規則に「規則が依存を見分けている」ことの確かめを添える（既存の境界テストと同じ形）。既存の全体の決まり
@@ -260,6 +264,35 @@ class RoleBoundaryArchitectureTest {
                         "cherry.mastersmith.role.service",
                         "org.springframework.transaction.support.TransactionTemplate"))
                 .as("規則が依存を見分けている（service は実際に TransactionTemplate を使っている）")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("role uses only the ports of group.service and their types, not the group business logic (B5)")
+    void usesOnlyGroupPorts() {
+        Set<String> ports = Set.of(
+                "cherry.mastersmith.group.service.GroupMembershipQuery",
+                "cherry.mastersmith.group.service.GroupDeletionGuard",
+                "cherry.mastersmith.group.service.DeletionDecision",
+                "cherry.mastersmith.group.service.DeletionDecision$Allowed",
+                "cherry.mastersmith.group.service.DeletionDecision$Blocked",
+                "cherry.mastersmith.group.service.GroupRowLock",
+                "cherry.mastersmith.group.service.GroupRowLock$Locked",
+                "cherry.mastersmith.group.service.GroupRowLock$Busy",
+                "cherry.mastersmith.group.service.GroupSummary");
+        noClasses()
+                .that()
+                .resideInAPackage(ROLE)
+                .should()
+                .dependOnClassesThat(resideInAPackage("cherry.mastersmith.group.service..")
+                        .and(DescribedPredicate.describe(
+                                "is not a port of group for role", javaClass -> !ports.contains(javaClass.getName()))))
+                .check(CLASSES);
+        assertThat(dependsOnClass("cherry.mastersmith.role", "cherry.mastersmith.group.service.GroupMembershipQuery"))
+                .as("規則が依存を見分けている（role は実際に group の読み取りの口を使っている）")
+                .isTrue();
+        assertThat(CLASSES.contain("cherry.mastersmith.group.service.GroupAdminService"))
+                .as("規則が依存を見分けている（group.service には口の外の業務処理がある）")
                 .isTrue();
     }
 }

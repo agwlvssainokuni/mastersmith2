@@ -27,6 +27,8 @@ import cherry.mastersmith.group.testsupport.GroupApi;
 import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.group.testsupport.TestGroupBarrier;
 import cherry.mastersmith.group.testsupport.TestGroupDeletionGuard;
+import cherry.mastersmith.role.testsupport.RoleActors;
+import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
@@ -54,8 +56,9 @@ import org.springframework.transaction.PlatformTransactionManager;
  * グループの管理の7つの口の認可の表（7つの口 × 4つの主体 = 28 行。BR2.1、NFR1.1〜NFR1.3、AC2.1.6、{@code security-design.md} 2節）の
  * 結合テスト。{@code team.md} の必須のテスト（管理の API の認可）。
  *
- * <p>主体は未認証・管理者の印を持たない利用者・管理者・停止中の管理者。B3 では「要る権限だけを欠く利用者」はまだ作れないため、管理者の
- * 印を持たない利用者で 403 を確かめる（B5 で U4 が行を足す。計画の D-16）。停止中の管理者は、既存のアクセストークンの認証の入口で
+ * <p>主体は未認証・要る権限だけを欠く利用者・管理者・停止中の管理者。403 を確かめる利用者は、テストの DSL のすべてのスキーマに FULL・
+ * CREATE と DELETE を可にしたロールを作業ロールに持ち、管理者の印だけを欠く利用者（U4 role の B5 で置き換えた。group の読み直しの R-04、
+ * role の計画の 13節 Q3: A。印もロールも無い利用者の行は残さない）。停止中の管理者は、既存のアクセストークンの認証の入口で
  * 拒否されるため 401（{@code AUTHENTICATION_REQUIRED}）になる（Intent 260930-user-admin の決まり。利用者の管理の API と同じ）。拒否の後は
  * グループとメンバーの行を読み直し、変わっていないことを確かめる。
  */
@@ -85,7 +88,7 @@ class GroupAdminAuthorizationApiIT {
     /** 主体。 */
     enum Subject {
         ANONYMOUS,
-        MEMBER,
+        FULL_ROLE_WITHOUT_ADMIN_FLAG,
         ADMIN,
         SUSPENDED_ADMIN
     }
@@ -122,11 +125,17 @@ class GroupAdminAuthorizationApiIT {
 
     private GroupFixtures fixtures;
 
+    private RoleActors roleActors;
+
+    private RoleFixtures roleFixtures;
+
     @BeforeEach
     void setUp() {
         api = new GroupApi(port);
         actors = new GroupActors(userAccountService, revocationService, transactionManager, port);
         fixtures = new GroupFixtures(users, jdbc);
+        roleActors = new RoleActors(userAccountService, revocationService, transactionManager, port);
+        roleFixtures = new RoleFixtures(jdbc);
     }
 
     static Stream<Arguments> table() {
@@ -142,7 +151,8 @@ class GroupAdminAuthorizationApiIT {
     private String tokenOf(Subject subject) {
         return switch (subject) {
             case ANONYMOUS -> null;
-            case MEMBER -> actors.member().token();
+            case FULL_ROLE_WITHOUT_ADMIN_FLAG ->
+                roleActors.adminFlagMissingFullRole(roleFixtures).token();
             case ADMIN -> actors.admin().token();
             case SUSPENDED_ADMIN -> actors.suspendedAdmin().token();
         };
@@ -188,7 +198,7 @@ class GroupAdminAuthorizationApiIT {
                 assertThat(HttpTestClient.json(response)).containsEntry("code", "AUTHENTICATION_REQUIRED");
                 assertThat(state(groupId)).as("拒否の後に状態は変わらない").isEqualTo(before);
             }
-            case MEMBER -> {
+            case FULL_ROLE_WITHOUT_ADMIN_FLAG -> {
                 assertThat(response.statusCode()).isEqualTo(403);
                 assertThat(HttpTestClient.json(response)).containsEntry("code", "ACCESS_DENIED");
                 assertThat(state(groupId)).as("拒否の後に状態は変わらない").isEqualTo(before);

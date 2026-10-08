@@ -85,5 +85,11 @@ public enum AuditEventType {
     /** ロールを消した（Intent 261004-role-menu の U4）。 */
     ROLE_DELETED,
     /** ロールの権限の設定を変えた（保存と、今の DSL に無い設定を消す操作。Intent 261004-role-menu の U4）。 */
-    ROLE_PERMISSION_CHANGED
+    ROLE_PERMISSION_CHANGED,
+    /** 利用者・グループにロールを割り当てた（Intent 261004-role-menu の U4。成功と失敗は結果で分ける）。 */
+    ROLE_ASSIGNED,
+    /** 利用者・グループからロールの割り当てを外した（Intent 261004-role-menu の U4）。 */
+    ROLE_UNASSIGNED,
+    /** 自分の作業ロールを切り替えた（Intent 261004-role-menu の U4。何も変えない切り替えは残さない）。 */
+    WORK_ROLE_SWITCHED
 }

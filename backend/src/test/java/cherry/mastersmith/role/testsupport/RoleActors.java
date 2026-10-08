@@ -18,6 +18,9 @@ package cherry.mastersmith.role.testsupport;
 import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.auth.testsupport.TestUserSuspension;
+import cherry.mastersmith.role.domain.MainPermission;
+import cherry.mastersmith.role.domain.PermissionTarget;
+import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.user.domain.FontSize;
 import cherry.mastersmith.user.domain.Language;
 import cherry.mastersmith.user.domain.Password;
@@ -25,13 +28,14 @@ import cherry.mastersmith.user.domain.Theme;
 import cherry.mastersmith.user.service.CreateUserResult;
 import cherry.mastersmith.user.service.NewUser;
 import cherry.mastersmith.user.service.UserAccountService;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * ロールの管理の API の結合テストの主体（管理者・管理者の印を持たない利用者・停止中の管理者）を作る手伝い
- * （Intent 261004-role-menu の U4、計画の 7.3）。利用者は本番の作成の口で作り、メールアドレスは予約のドメイン（{@code example.com}）だけ、氏名は
+ * ロールの管理の API の結合テストの主体（管理者・管理者の印を持たない利用者・停止中の管理者、B5 で足した「要る権限だけを欠く利用者」）を作る
+ * 手伝い（Intent 261004-role-menu の U4、計画の 7.3・8.3）。利用者は本番の作成の口で作り、メールアドレスは予約のドメイン（{@code example.com}）だけ、氏名は
  * 明らかな見本の値にする。
  */
 public final class RoleActors {
@@ -91,6 +95,37 @@ public final class RoleActors {
         return login(create("role-member", "見本 一般", false));
     }
 
+    /** {@link #adminFlagMissingFullRole(RoleFixtures)} のロールが FULL・CREATE と DELETE を可にするスキーマ（テストの DSL のすべて）。 */
+    public static final List<String> FULL_SCHEMAS = List.of("SALES", "HR", RoleDslFixture.SYMBOL_SCHEMA);
+
+    /**
+     * 管理者の印だけを欠く利用者を作り、ログインする（group の読み直しの R-04、計画の 13節 Q3: A）。テストの DSL のすべてのスキーマに FULL・
+     * CREATE と DELETE を可にしたロールを割り当て、作業ロールに選んだ利用者で、業務データの権限はすべて持つ。
+     *
+     * @param fixtures 内部DB の行を作る手伝い
+     * @return 主体
+     */
+    public Actor adminFlagMissingFullRole(RoleFixtures fixtures) {
+        Actor actor = member();
+        long roleId = fixtures.role(RoleFixtures.uniqueName("全権限"));
+        for (String schema : FULL_SCHEMAS) {
+            fixtures.setting(
+                    roleId, PermissionTarget.schema(schema), new PermissionValues(MainPermission.FULL, true, true));
+        }
+        fixtures.assignUser(roleId, actor.userId());
+        fixtures.selectWorkRole(actor.userId(), roleId);
+        return actor;
+    }
+
+    /**
+     * 利用者の利用を止める（トークンは止める前に出したもののまま）。
+     *
+     * @param userId 利用者 ID
+     */
+    public void suspend(long userId) {
+        suspension.suspend(userId);
+    }
+
     /**
      * ログインした後に利用を止めた管理者を作る（トークンは止める前に出したもの）。
      *
@@ -110,6 +145,16 @@ public final class RoleActors {
      */
     public Actor user(String displayName) {
         return create("role-user", displayName, false);
+    }
+
+    /**
+     * 管理者の印を持たない利用者を作り、ログインする（氏名を指定する）。
+     *
+     * @param displayName 氏名（見本の値）
+     * @return 主体
+     */
+    public Actor member(String displayName) {
+        return login(create("role-member", displayName, false));
     }
 
     private Actor create(String label, String displayName, boolean admin) {

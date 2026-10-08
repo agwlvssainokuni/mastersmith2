@@ -191,4 +191,31 @@ class RoleBusyApiIT {
                         roleId))
                 .isZero();
     }
+
+    @Test
+    @DisplayName(
+            "#5 a role row held past the limit makes an assignment and an unassignment ROLE_BUSY without audit (B5)")
+    void assignmentRowLockTimeout() throws Exception {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("割り当ての待ち"));
+        long userId = new RoleActors(userAccountService, revocationService, transactionManager, port)
+                .user("割り当ての待ち 一郎")
+                .userId();
+        Gate holding = barrier.hold(Point.AFTER_LOCK, RoleOperation.RENAME, String.valueOf(roleId));
+        int before = auditRows("ROLE_ASSIGNED", "FAILURE") + auditRows("ROLE_UNASSIGNED", "FAILURE");
+
+        CompletableFuture<HttpResponse<String>> rename =
+                async(() -> api.rename(admin.token(), roleId, RoleFixtures.uniqueName("待ち 改名")));
+        holding.awaitArrival();
+        HttpResponse<String> assign = api.assignUser(admin.token(), roleId, userId);
+        HttpResponse<String> unassign = api.unassignUser(admin.token(), roleId, userId);
+        assertThat(rename).as("先の側は放すまで終わらない").isNotDone();
+        holding.release();
+
+        assertCode(assign, 409, "ROLE_BUSY");
+        assertCode(unassign, 409, "ROLE_BUSY");
+        assertThat(result(rename).statusCode()).isEqualTo(204);
+        assertThat(fixtures.assignmentRows(roleId)).isZero();
+        assertThat(auditRows("ROLE_ASSIGNED", "FAILURE") + auditRows("ROLE_UNASSIGNED", "FAILURE"))
+                .isEqualTo(before);
+    }
 }

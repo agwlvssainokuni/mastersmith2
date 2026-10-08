@@ -38,12 +38,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * V11（Intent 261004-role-menu の U4、Bolt B4）の前の版との互換の結合テスト（計画の 13節 Q6: A、NFR3.6）。
+ * V11（Intent 261004-role-menu の U4、Bolt B4）と V12（同じ単位の Bolt B5）の前の版との互換の結合テスト（計画の 13節 Q6: A、NFR3.6）。
  *
  * <p>前の版のアプリは V1〜V10 だけを持つ。前の版と同じ Flyway の設定（{@code validate-on-migrate: true}、既定の
  * {@code ignoreMigrationPatterns}）で、V1〜V10 だけを置いた場所を読ませ、V11 まで当てた内部DB で止まらないことを確かめる。あわせて、
  * V11 の前に前の版が書いた利用者（{@code users.admin_flag}）と監査の行が V11 の後も変わらずに読めること、V11 の後に前の版の列だけで
- * 監査の行を足せることを確かめる。role の移行は表を足すだけで {@code admin_flag} から行を移さない（計画の D-27）。前の版のイメージでの
+ * 監査の行を足せることを確かめる。V12 も同じ形で、前の版（V1〜V10）と B4 の版（V1〜V11）の Flyway が V12 まで当てた内部DB で
+ * 止まらないこと、V12 の前の行が変わらないこと、V12 の後に前の版の列だけで書けることを確かめる。role の移行は表を足すだけで {@code admin_flag} から行を移さない（計画の D-27）。前の版のイメージでの
  * 起動は配備の段（戻しの練習）が確かめる。
  *
  * <p>内部DB はテストごとの一時のディレクトリの組み込みの H2 で、Spring を起動しない（アプリの起動が V11 を当ててしまうため。
@@ -54,8 +55,11 @@ class RoleMigrationCompatibilityIT {
     /** 前の版が持つ最後の移行の番号。 */
     private static final int PREVIOUS_LAST_VERSION = 10;
 
-    /** この Bolt が足す移行の番号。 */
+    /** B4 が足す移行の番号。 */
     private static final int ROLE_VERSION = 11;
+
+    /** B5 が足す移行の番号。 */
+    private static final int ASSIGNMENT_VERSION = 12;
 
     private static final Pattern VERSIONED = Pattern.compile("V(\\d+)__.+\\.sql");
 
@@ -70,6 +74,8 @@ class RoleMigrationCompatibilityIT {
 
     private Path roleMigrations;
 
+    private Path assignmentMigrations;
+
     @BeforeEach
     void setUp() throws IOException {
         dataSource = new DriverManagerDataSource(
@@ -77,12 +83,16 @@ class RoleMigrationCompatibilityIT {
         jdbc = new JdbcTemplate(dataSource);
         previousMigrations = Files.createDirectories(tempDir.resolve("previous-migrations"));
         roleMigrations = Files.createDirectories(tempDir.resolve("role-migrations"));
+        assignmentMigrations = Files.createDirectories(tempDir.resolve("assignment-migrations"));
         assertThat(copyMigrations(previousMigrations, PREVIOUS_LAST_VERSION))
                 .as("前の版の移行 V1〜V10")
                 .isEqualTo(PREVIOUS_LAST_VERSION);
         assertThat(copyMigrations(roleMigrations, ROLE_VERSION))
-                .as("この Bolt の移行 V1〜V11")
+                .as("B4 の移行 V1〜V11")
                 .isEqualTo(ROLE_VERSION);
+        assertThat(copyMigrations(assignmentMigrations, ASSIGNMENT_VERSION))
+                .as("B5 の移行 V1〜V12")
+                .isEqualTo(ASSIGNMENT_VERSION);
     }
 
     /** クラスパスの移行のうち、番号が上限以下のものだけを写し、写した数を返す。 */
@@ -118,6 +128,16 @@ class RoleMigrationCompatibilityIT {
 
     private Flyway roleVersion() {
         return flyway(roleMigrations);
+    }
+
+    private Flyway assignmentVersion() {
+        return flyway(assignmentMigrations);
+    }
+
+    private int maxVersion() {
+        return jdbc.queryForObject(
+                "SELECT MAX(CAST(\"version\" AS INT)) FROM \"flyway_schema_history\" WHERE \"version\" IS NOT NULL",
+                Integer.class);
     }
 
     private void insertUser(String email, boolean admin) {
@@ -201,5 +221,81 @@ class RoleMigrationCompatibilityIT {
                         "SELECT target_role_id, target_group_id FROM audit_events" + " WHERE trace_id = 'trace-0061'"))
                 .containsEntry("TARGET_ROLE_ID", null)
                 .containsEntry("TARGET_GROUP_ID", 72L);
+    }
+
+    @Test
+    @DisplayName("the Flyway of V1 to V10 and of V1 to V11 does not stop on a database migrated to V12")
+    void olderFlywaysIgnoreV12() {
+        assignmentVersion().migrate();
+
+        for (Flyway older : new Flyway[] {previousVersion(), roleVersion()}) {
+            ValidateResult validated = older.validateWithResult();
+            MigrateResult migrated = older.migrate();
+
+            assertThat(validated.validationSuccessful).isTrue();
+            assertThat(migrated.success).isTrue();
+            assertThat(migrated.migrationsExecuted).isZero();
+        }
+        assertThat(maxVersion()).isEqualTo(ASSIGNMENT_VERSION);
+    }
+
+    @Test
+    @DisplayName("users, roles and audit rows written before V12 are read back unchanged and admin_flag is kept as is")
+    void existingRowsSurviveV12() {
+        assertThat(roleVersion().migrate().migrationsExecuted).isEqualTo(ROLE_VERSION);
+        insertUser("role-v12-admin@example.com", true);
+        insertUser("role-v12-member@example.com", false);
+        jdbc.update(
+                "INSERT INTO roles (name, name_key, created_at, updated_at) VALUES ('営業', '営業', ?, ?)",
+                OffsetDateTime.parse("2026-10-09T01:00:00Z"),
+                OffsetDateTime.parse("2026-10-09T01:00:00Z"));
+        jdbc.update(
+                "INSERT INTO audit_events (occurred_at, event_type, result, source_ip, trace_id, actor_user_id,"
+                        + " target_role_id, detail) VALUES (?, 'ROLE_CREATED', 'SUCCESS', '192.0.2.62', 'trace-0062',"
+                        + " 63, 73, '{\"name\":\"営業\"}')",
+                OffsetDateTime.parse("2026-10-09T02:00:00Z"));
+
+        MigrateResult current = assignmentVersion().migrate();
+
+        assertThat(current.migrationsExecuted).isEqualTo(1);
+        assertThat(current.targetSchemaVersion).isEqualTo(String.valueOf(ASSIGNMENT_VERSION));
+        assertThat(jdbc.queryForList("SELECT email, admin_flag FROM users ORDER BY email"))
+                .containsExactly(
+                        Map.of("EMAIL", "role-v12-admin@example.com", "ADMIN_FLAG", true),
+                        Map.of("EMAIL", "role-v12-member@example.com", "ADMIN_FLAG", false));
+        assertThat(jdbc.queryForList("SELECT name FROM roles", String.class)).containsExactly("営業");
+        assertThat(jdbc.queryForMap("SELECT event_type, target_role_id, detail FROM audit_events"
+                        + " WHERE trace_id = 'trace-0062'"))
+                .containsEntry("EVENT_TYPE", "ROLE_CREATED")
+                .containsEntry("TARGET_ROLE_ID", 73L)
+                .containsEntry("DETAIL", "{\"name\":\"営業\"}");
+        for (String table : new String[] {"user_role_assignments", "group_role_assignments", "work_role_selections"}) {
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM " + table, Integer.class))
+                    .as(table)
+                    .isZero();
+        }
+    }
+
+    @Test
+    @DisplayName("after V12 the previous version can still append users and audit rows with only its own columns")
+    void previousVersionWritesAfterV12() {
+        assignmentVersion().migrate();
+
+        insertUser("role-v12-after@example.com", false);
+        int inserted = jdbc.update(
+                "INSERT INTO audit_events (occurred_at, event_type, result, entered_email, failure_reason, source_ip,"
+                        + " user_agent, request_path, trace_id, actor_user_id, dsl_hash, dsl_source, rejection_kind,"
+                        + " target_user_id, target_invitation_id, target_role_id, target_group_id, detail)"
+                        + " VALUES (?, 'USER_SUSPENDED', 'SUCCESS', NULL, NULL, '192.0.2.63', NULL, NULL, 'trace-0063',"
+                        + " 64, NULL, NULL, NULL, 65, NULL, NULL, NULL, NULL)",
+                OffsetDateTime.parse("2026-10-09T03:00:00Z"));
+
+        assertThat(inserted).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                        "SELECT admin_flag FROM users WHERE email = 'role-v12-after@example.com'", Boolean.class))
+                .isFalse();
+        assertThat(jdbc.queryForObject(
+                        "SELECT target_user_id FROM audit_events WHERE trace_id = 'trace-0063'", Long.class))
+                .isEqualTo(65L);
     }
 }

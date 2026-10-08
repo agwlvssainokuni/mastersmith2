@@ -66,4 +66,35 @@ class RoleAuditDetailTest {
         assertThatThrownBy(() -> new PermissionChange(null, PermissionValues.NOT_SET, PermissionValues.NOT_SET))
                 .isInstanceOf(NullPointerException.class);
     }
+
+    @Test
+    @DisplayName("an assignment detail has the role name and the group name only for a group")
+    void assignment() {
+        RoleAuditDetail.Assignment toUser = new RoleAuditDetail.Assignment("営業", null);
+        RoleAuditDetail.Assignment toGroup = new RoleAuditDetail.Assignment("営業", "第一営業部");
+
+        assertThat(toUser.groupName()).isNull();
+        assertThat(toGroup.groupName()).isEqualTo("第一営業部");
+        assertThat(RoleAuditDetail.Assignment.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .containsExactly("roleName", "groupName");
+        assertThatThrownBy(() -> new RoleAuditDetail.Assignment(null, "第一営業部"))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("a work role switch detail keeps the previous role id and name together")
+    void workRoleSwitch() {
+        RoleAuditDetail.WorkRoleSwitch first = new RoleAuditDetail.WorkRoleSwitch(null, null, "営業", null);
+        RoleAuditDetail.WorkRoleSwitch rewrite = new RoleAuditDetail.WorkRoleSwitch(3L, "営業", "営業", 9L);
+
+        assertThat(first.fromRoleId()).isNull();
+        assertThat(rewrite.storedBeforeRoleId()).isEqualTo(9L);
+        assertThatThrownBy(() -> new RoleAuditDetail.WorkRoleSwitch(3L, null, "営業", null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.WorkRoleSwitch(null, "営業", "経理", null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.WorkRoleSwitch(null, null, null, null))
+                .isInstanceOf(NullPointerException.class);
+    }
 }

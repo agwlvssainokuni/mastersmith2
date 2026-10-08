@@ -40,9 +40,11 @@ import cherry.mastersmith.role.domain.RoleAuditFailure;
 import cherry.mastersmith.role.domain.RoleNameValidation;
 import cherry.mastersmith.role.domain.RoleOperation;
 import cherry.mastersmith.role.domain.RoleRejection;
+import cherry.mastersmith.role.repository.AssignmentCount;
 import cherry.mastersmith.role.repository.PermissionLevelRow;
 import cherry.mastersmith.role.repository.PermissionSettingRepository;
 import cherry.mastersmith.role.repository.PermissionSettingRow;
+import cherry.mastersmith.role.repository.RoleAssignmentRepository;
 import cherry.mastersmith.role.repository.RoleRepository;
 import cherry.mastersmith.role.repository.RoleView;
 import cherry.mastersmith.role.store.Referent;
@@ -90,6 +92,8 @@ class RoleAdminServiceTest {
 
     private final PermissionSettingRepository settings = mock(PermissionSettingRepository.class);
 
+    private final RoleAssignmentRepository assignments = mock(RoleAssignmentRepository.class);
+
     private final ActiveDslModelProvider activeDsl = mock(ActiveDslModelProvider.class);
 
     private final RoleBarrier barrier = mock(RoleBarrier.class);
@@ -107,6 +111,7 @@ class RoleAdminServiceTest {
             new RoleStoreTransactions(store, recording),
             roles,
             settings,
+            assignments,
             activeDsl,
             barrier,
             publisher,
@@ -458,5 +463,56 @@ class RoleAdminServiceTest {
         when(activeDsl.current()).thenReturn(new ActiveDsl.Absent());
         assertThat(service.columns(ROLE, "SALES", "ORDER_LINE")).isEqualTo(new PermissionTreeResult.DslNotApplied());
         verifyNoInteractions(publisher, store);
+    }
+
+    @Test
+    @DisplayName("a delete with remaining direct assignments is ROLE_IN_USE with the counts, without deleting (BR3.2)")
+    void deleteInUse() {
+        Role locked = locked("営業");
+        when(assignments.countUsersOfRole(ROLE)).thenReturn(2L);
+        when(assignments.countGroupsOfRole(ROLE)).thenReturn(1L);
+
+        assertThat(service.delete(ACTOR, ORIGIN, ROLE)).isEqualTo(new RoleChangeResult.InUse(2, 1));
+
+        verify(store, never()).deleteRole(locked);
+        assertThat(onlyEvent().failure()).isEqualTo(RoleAuditFailure.ROLE_IN_USE);
+        assertThat(onlyEvent().detail()).isEqualTo(new RoleAuditDetail.InUse("営業", 2, 1));
+        failurePublishedAfterRollback();
+    }
+
+    @Test
+    @DisplayName("a delete only with groups assigned is refused too, and a foreign key violation counts again")
+    void deleteInUseByGroupsAndAfterViolation() {
+        Role locked = locked("経理");
+        when(assignments.countGroupsOfRole(ROLE)).thenReturn(3L);
+
+        assertThat(service.delete(ACTOR, ORIGIN, ROLE)).isEqualTo(new RoleChangeResult.InUse(0, 3));
+
+        events.clear();
+        when(assignments.countGroupsOfRole(ROLE)).thenReturn(0L, 1L);
+        when(store.deleteRole(locked)).thenReturn(new RoleStoreOutcome.Referenced<>(Referent.ROLE));
+        assertThat(service.delete(ACTOR, ORIGIN, ROLE))
+                .as("違反の後に2つ目のトランザクションで数え直す")
+                .isEqualTo(new RoleChangeResult.InUse(0, 1));
+        assertThat(onlyEvent().detail()).isEqualTo(new RoleAuditDetail.InUse("経理", 0, 1));
+    }
+
+    @Test
+    @DisplayName("the list carries the direct user and group counts of the page in one query each (BR3.4)")
+    void listCounts() {
+        when(roles.countAll()).thenReturn(2L);
+        when(roles.findPage(any()))
+                .thenReturn(List.of(
+                        new cherry.mastersmith.role.repository.RoleRowView(5L, "営業"),
+                        new cherry.mastersmith.role.repository.RoleRowView(6L, "経理")));
+        when(assignments.countUsersByRoles(any())).thenReturn(List.of(new AssignmentCount(5L, 3L)));
+        when(assignments.countGroupsByRoles(any())).thenReturn(List.of(new AssignmentCount(6L, 2L)));
+
+        RoleListResult.Page page = ((RoleListResult.Listed) service.list(null)).page();
+
+        assertThat(page.items())
+                .containsExactly(new RoleListResult.Row(5L, "営業", 3, 0), new RoleListResult.Row(6L, "経理", 0, 2));
+        verify(assignments).countUsersByRoles(java.util.Set.of(5L, 6L));
+        verify(assignments).countGroupsByRoles(java.util.Set.of(5L, 6L));
     }
 }

@@ -127,4 +127,18 @@ class AuditRoleDetailJsonTest {
 
         assertThat(json(AuditDetailJson.ofRole(new RoleAuditDetail.Name(name)))).isEqualTo(Map.of("name", name));
     }
+
+    @Test
+    @DisplayName("the assignment and the work role switch produce only their decided keys with null for absent values")
+    void shapesOfB5() {
+        assertThat(AuditDetailJson.ofRole(new RoleAuditDetail.Assignment("営業", "第一営業部")))
+                .isEqualTo("{\"roleName\":\"営業\",\"groupName\":\"第一営業部\"}");
+        assertThat(AuditDetailJson.ofRole(new RoleAuditDetail.Assignment("営業", null)))
+                .isEqualTo("{\"roleName\":\"営業\",\"groupName\":null}");
+        assertThat(AuditDetailJson.ofRole(new RoleAuditDetail.WorkRoleSwitch(null, null, "営業", null)))
+                .isEqualTo("{\"fromRoleId\":null,\"fromRoleName\":null,\"toRoleName\":\"営業\","
+                        + "\"storedBeforeRoleId\":null}");
+        assertThat(json(AuditDetailJson.ofRole(new RoleAuditDetail.WorkRoleSwitch(3L, "経理", "営業", 9L))))
+                .isEqualTo(Map.of("fromRoleId", 3, "fromRoleName", "経理", "toRoleName", "営業", "storedBeforeRoleId", 9));
+    }
 }

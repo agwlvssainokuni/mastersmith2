@@ -101,10 +101,23 @@
 //                       （op columns）を順に開く
 //   rolePermissionSave  VU ごとに自分のロール（setup で作る）の 100 カラムのテーブルの表を、READ と FULL を交互に保存する（変わる点が
 //                       必ずあり ROLE_NO_CHANGE にならない）
-//   roleAdminRead       一覧の1ページ目（op listFirst）・最後のページ（op listLast）・1件（op one）を順にくり返す。グループのロールと
-//                       利用者のロールの読み取りは B5 で足す
+//   roleAdminRead       一覧の1ページ目（op listFirst）・最後のページ（op listLast）・1件（op one）・グループのロール（op groupRoles）・
+//                       利用者のロール（op userRoles。B5 で足した）を順にくり返す
 //   roleAdminOps        VU ごとに作成（op create）・名前の変更（op rename）・削除（op delete）を順にくり返す（作ったロールを消し、
 //                       名前の変更は自分のロールの名前を2つの名前で交互に変える。どれも状態が戻る）
+// B5 で足した場面（Intent 261004-role-menu の U4、Bolt B5。NFR2.2・NFR2.3・NFR2.5・NFR2.7・NFR2.8・NFR2.10）。利用者の側の操作は
+// メンバーの候補 perf-gr-<VU の番号>（グループの場面と同じ利用者。パスワードは PERF_USER_PASSWORD）で行い、setup が API でロールを
+// 割り当て、場面で使うトークンを最後に取る。
+//   workRoleSwitch      VU ごとに自分の2つのロールへ作業ロールを交互に切り替える（どれも保存を書き 204）
+//   workRoleRead        自分のロールと今の作業ロールを読む（GET /api/me/work-role）
+//   myPermissionsTree   悪い側のロールを作業ロールに持つ利用者で、自分の権限の木のスキーマ（op schemas）・テーブル（op tables）・
+//                       100 カラムのテーブル（op columns）を順に開く
+//   roleAssignmentsRead 悪い側のロールの割り当ての一覧（利用者 VUS 名と、そのメンバーのグループ）を読む
+//   roleAssignOps       VU ごとに自分のロールを、利用者に割り当てる（op assignUser）・外す（op unassignUser）・グループに割り当てる
+//                       （op assignGroup）・外す（op unassignGroup）を順にくり返す（どれも 204 で状態が戻る）
+//   rolePoolLimit       VU の番号を 5 で割った余りが 1〜3 の VU は作業ロールの切り替え、4・0 の VU は自分のグループへの割り当てと
+//                       外しを交互にくり返す（接続プールの上限の確かめ。p95 と checks の閾値を置かず、状態コードの件数を
+//                       rolePoolLimit_204・_409・_500・_other で出す。合否の回は VUS=5、記録の回は VUS=20。手順は perf/README.md）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -251,12 +264,25 @@ const GROUP_POOL_COUNTS = {
 
 // ロールの管理の場面（Intent 261004-role-menu の U4、B4）
 const ROLE_API = `${BASE}/api/admin/roles`
-const ROLE_SCENARIOS = ['roleTreeRead', 'rolePermissionSave', 'roleAdminRead', 'roleAdminOps']
+const ROLE_SCENARIOS = [
+  'roleTreeRead',
+  'rolePermissionSave',
+  'roleAdminRead',
+  'roleAdminOps',
+  'workRoleSwitch',
+  'workRoleRead',
+  'myPermissionsTree',
+  'roleAssignmentsRead',
+  'roleAssignOps',
+  'rolePoolLimit',
+]
 // 操作が2つ以上の場面の操作の名前（op のタグ。iteration_duration で操作ごとに判定する）
 const ROLE_OPS = {
   roleTreeRead: ['schemas', 'tables', 'columns'],
-  roleAdminRead: ['listFirst', 'listLast', 'one'],
+  roleAdminRead: ['listFirst', 'listLast', 'one', 'groupRoles', 'userRoles'],
   roleAdminOps: ['create', 'rename', 'delete'],
+  myPermissionsTree: ['schemas', 'tables', 'columns'],
+  roleAssignOps: ['assignUser', 'unassignUser', 'assignGroup', 'unassignGroup'],
 }
 // 場面の長さ（トークンの有効期限 5 分より短くする）
 const ROLE_DURATION = __ENV.ROLE_DURATION || '3m'
@@ -264,6 +290,13 @@ const ROLE_DURATION = __ENV.ROLE_DURATION || '3m'
 const ROLE_WORST_NAME = __ENV.ROLE_WORST_NAME || 'perf-role-worst'
 const ROLE_TREE_SCHEMA = __ENV.ROLE_TREE_SCHEMA || 'perf'
 const ROLE_TREE_TABLE = __ENV.ROLE_TREE_TABLE || 'perf_t001'
+// 接続プールの上限の場面で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
+const ROLE_POOL_COUNTS = {
+  204: new Counter('rolePoolLimit_204'),
+  409: new Counter('rolePoolLimit_409'),
+  500: new Counter('rolePoolLimit_500'),
+  other: new Counter('rolePoolLimit_other'),
+}
 
 function scenariosFor(name) {
   if (ROLE_SCENARIOS.includes(name)) {
@@ -320,6 +353,7 @@ function thresholdsFor(name) {
     return { 'checks{scenario:logins}': ['rate==1'], 'checks{scenario:dslHeavy}': ['rate==1'] }
   }
   // Intent 261004-role-menu の U4（NFR2.2・NFR2.5・NFR2.10）。操作が2つ以上の場面は op ごとの iteration_duration で判定する。
+  if (name === 'rolePoolLimit') return {}
   if (ROLE_SCENARIOS.includes(name)) {
     const thresholds = {
       [`checks{scenario:${name}}`]: ['rate==1'],
@@ -1280,12 +1314,91 @@ function setupRoles(data) {
   } else if (SCENARIO === 'roleAdminRead') {
     const res = http.get(ROLE_API, { headers: roleHeaders(token), tags: { name: 'roleSetup' } })
     data.roleLastPage = Math.max(1, Math.ceil(res.json('total') / PAGE_SIZE))
+    const member = roleMembers(token, 1)[0]
+    data.roleMemberId = member
+    data.roleGroupId = grOf(token, `perf-rolegrp-${runId}-01`)
+    roleAssign(token, worst, { userId: member })
+    roleAssign(token, worst, { groupId: data.roleGroupId })
   } else if (SCENARIO === 'roleAdminOps') {
     data.roleIds = {}
     for (let vu = 1; vu <= VUS; vu++) data.roleIds[vu] = roleCreate(token, roleRenameName(runId, vu, 'a'), 'roleSetup')
+  } else if (ROLE_MEMBER_SCENARIOS.includes(SCENARIO)) {
+    setupRoleMembers(data, token, runId, worst)
   }
   // 用意に時間がかかっても場面の間（3 分）にトークンが切れないよう、最後に取り直す
   data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  if (ROLE_MEMBER_SCENARIOS.includes(SCENARIO)) {
+    data.roleMemberTokens = {}
+    for (let vu = 1; vu <= VUS; vu++) data.roleMemberTokens[vu] = tokenOf(login(grCandidateEmail(vu), USER_PASSWORD))
+  }
+}
+
+// 利用者の側の操作を行う B5 の場面（メンバーの候補 perf-gr-<VU> のトークンを使う）
+const ROLE_MEMBER_SCENARIOS = [
+  'workRoleSwitch',
+  'workRoleRead',
+  'myPermissionsTree',
+  'roleAssignmentsRead',
+  'roleAssignOps',
+  'rolePoolLimit',
+]
+
+// メンバーの候補 perf-gr-0001 から count 人の利用者 ID を引く（ID だけを持ち、値は出力しない）
+function roleMembers(token, count) {
+  const ids = idsBySearch(roleHeaders(token), 'perf-gr-')
+  const members = []
+  for (let n = 1; n <= count; n++) {
+    const id = ids[grCandidateEmail(n)]
+    if (!id) fail(`メンバーの候補 ${grCandidateEmail(n)} がいません（perf/README.md の手順で ${count} 人入れてください）`)
+    members.push(id)
+  }
+  return members
+}
+
+function grOf(token, name) {
+  const res = jsonPost(GROUP_API, { name }, roleHeaders(token), 'roleSetup')
+  if (res.status !== 201) fail(`グループを作れませんでした: ${res.status} ${codeOf(res)}`)
+  return res.json('groupId')
+}
+
+function roleAssign(token, roleId, target) {
+  const res = jsonPost(`${ROLE_API}/${roleId}/assignments`, target, roleHeaders(token), 'roleSetup')
+  if (res.status !== 204) fail(`ロールを割り当てられませんでした: ${res.status} ${codeOf(res)}`)
+}
+
+// B5 の場面の用意。VU ごとに利用者（perf-gr-<VU>）を決め、場面に合わせてロール・グループを作って割り当てる。
+function setupRoleMembers(data, token, runId, worst) {
+  const members = roleMembers(token, VUS)
+  data.roleMembers = {}
+  data.roleOwnIds = {}
+  data.roleSwitchIds = {}
+  data.roleGroupIds = {}
+  for (let vu = 1; vu <= VUS; vu++) {
+    const member = members[vu - 1]
+    data.roleMembers[vu] = member
+    if (['workRoleSwitch', 'workRoleRead', 'rolePoolLimit'].includes(SCENARIO)) {
+      const a = roleCreate(token, `perf-ws-${runId}-${two(vu)}-a`, 'roleSetup')
+      const b = roleCreate(token, `perf-ws-${runId}-${two(vu)}-b`, 'roleSetup')
+      roleAssign(token, a, { userId: member })
+      roleAssign(token, b, { userId: member })
+      data.roleSwitchIds[vu] = [a, b]
+    }
+    if (['myPermissionsTree', 'roleAssignmentsRead'].includes(SCENARIO)) {
+      roleAssign(token, worst, { userId: member })
+    }
+    if (['roleAssignOps', 'rolePoolLimit'].includes(SCENARIO)) {
+      data.roleOwnIds[vu] = roleCreate(token, `perf-assign-${runId}-${two(vu)}`, 'roleSetup')
+      data.roleGroupIds[vu] = grOf(token, `perf-assign-${runId}-${two(vu)}`)
+    }
+  }
+  if (SCENARIO === 'roleAssignmentsRead') {
+    const groupId = grOf(token, `perf-assigned-${runId}`)
+    for (let vu = 1; vu <= VUS; vu++) {
+      const res = jsonPost(`${GROUP_API}/${groupId}/members`, { userId: members[vu - 1] }, roleHeaders(token), 'roleSetup')
+      if (res.status !== 204) fail(`メンバーを足せませんでした: ${res.status} ${codeOf(res)}`)
+    }
+    roleAssign(token, worst, { groupId })
+  }
 }
 
 function roleRenameName(runId, vu, side) {
@@ -1334,7 +1447,11 @@ function roleAdminRead(data) {
       ? ROLE_API
       : op === 'listLast'
         ? `${ROLE_API}?page=${data.roleLastPage}`
-        : `${ROLE_API}/${data.roleWorstId}`
+        : op === 'one'
+          ? `${ROLE_API}/${data.roleWorstId}`
+          : op === 'groupRoles'
+            ? `${GROUP_API}/${data.roleGroupId}/roles`
+            : `${BASE}/api/admin/users/${data.roleMemberId}/roles`
   const res = http.get(url, { headers: roleHeaders(data.roleToken), tags: { name: `roleAdminRead_${op}` } })
   check(res, { 'roleAdminRead 200': (r) => r.status === 200 })
 }
@@ -1372,6 +1489,87 @@ function roleAdminOps(data) {
   }
 }
 
+// B5 の場面（Intent 261004-role-menu の U4、Bolt B5）
+function memberHeaders(data) {
+  return roleHeaders(data.roleMemberTokens[exec.vu.idInTest])
+}
+
+// 作業ロールを2つのロールで交互に切り替える（どちらも保存を書く）
+function switchOnce(data, name) {
+  const ids = data.roleSwitchIds[exec.vu.idInTest]
+  const roleId = ids[exec.vu.iterationInScenario % 2]
+  return jsonPut(`${BASE}/api/me/work-role`, { roleId }, memberHeaders(data), name)
+}
+
+function workRoleSwitch(data) {
+  const res = switchOnce(data, 'workRoleSwitch')
+  check(res, { 'workRoleSwitch 204': (r) => r.status === 204 })
+}
+
+function workRoleRead(data) {
+  const res = http.get(`${BASE}/api/me/work-role`, { headers: memberHeaders(data), tags: { name: 'workRoleRead' } })
+  check(res, { 'workRoleRead 200': (r) => r.status === 200 && r.json('roles').length === 2 })
+}
+
+function myPermissionsTree(data) {
+  const op = roleOp('myPermissionsTree')
+  const base = `${BASE}/api/me/permissions`
+  const schema = `schema=${encodeURIComponent(ROLE_TREE_SCHEMA)}`
+  const url =
+    op === 'schemas'
+      ? `${base}/schemas`
+      : op === 'tables'
+        ? `${base}/tables?${schema}`
+        : `${base}/columns?${schema}&table=${encodeURIComponent(ROLE_TREE_TABLE)}`
+  const res = http.get(url, { headers: memberHeaders(data), tags: { name: `myPermissionsTree_${op}` } })
+  check(res, { 'myPermissionsTree 200': (r) => r.status === 200 && r.json('items').length > 0 })
+}
+
+function roleAssignmentsRead(data) {
+  const res = http.get(`${ROLE_API}/${data.roleWorstId}/assignments`, {
+    headers: roleHeaders(data.roleToken),
+    tags: { name: 'roleAssignmentsRead' },
+  })
+  check(res, { 'roleAssignmentsRead 200': (r) => r.status === 200 && r.json('users').length >= VUS })
+}
+
+// 自分のロールの割り当てと外しを1回送る（利用者・グループの順に、割り当てと外しを交互に）
+function assignOnce(data, op, name) {
+  const vu = exec.vu.idInTest
+  const roleId = data.roleOwnIds[vu]
+  const headers = roleHeaders(data.roleToken)
+  if (op === 'assignUser') return jsonPost(`${ROLE_API}/${roleId}/assignments`, { userId: data.roleMembers[vu] }, headers, name)
+  if (op === 'unassignUser') {
+    return http.del(`${ROLE_API}/${roleId}/assignments/users/${data.roleMembers[vu]}`, null, { headers, tags: { name } })
+  }
+  if (op === 'assignGroup') return jsonPost(`${ROLE_API}/${roleId}/assignments`, { groupId: data.roleGroupIds[vu] }, headers, name)
+  return http.del(`${ROLE_API}/${roleId}/assignments/groups/${data.roleGroupIds[vu]}`, null, { headers, tags: { name } })
+}
+
+function roleAssignOps(data) {
+  const op = roleOp('roleAssignOps')
+  const res = assignOnce(data, op, `roleAssignOps_${op}`)
+  check(res, { 'roleAssignOps 204': (r) => r.status === 204 })
+}
+
+// 接続プールの上限の場面の1回。checks は使わず、状態コードごとの件数を数える。
+function rolePoolLimit(data) {
+  const vu = exec.vu.idInTest
+  const switching = [1, 2, 3].includes(vu % 5)
+  let res
+  let name
+  if (switching) {
+    name = 'rolePoolLimitSwitch'
+    res = switchOnce(data, name)
+  } else {
+    const op = exec.vu.iterationInScenario % 2 === 0 ? 'assignGroup' : 'unassignGroup'
+    name = `rolePoolLimit_${op}`
+    res = assignOnce(data, op, name)
+  }
+  const counter = ROLE_POOL_COUNTS[res.status] ?? ROLE_POOL_COUNTS.other
+  counter.add(1, { name })
+}
+
 // U2・U3 の場面の名前と処理
 const USER_SCENARIOS = {
   preferencesGet,
@@ -1407,6 +1605,12 @@ const USER_SCENARIOS = {
   rolePermissionSave,
   roleAdminRead,
   roleAdminOps,
+  workRoleSwitch,
+  workRoleRead,
+  myPermissionsTree,
+  roleAssignmentsRead,
+  roleAssignOps,
+  rolePoolLimit,
 }
 
 export default function (tokens) {
