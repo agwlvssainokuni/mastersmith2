@@ -1,0 +1,379 @@
+{
+  "stage": "code-generation",
+  "unit": "group",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditDetailJson.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/Group.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupAuditDetail.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupAuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupAuditFailure.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupMember.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupMembership.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupMembershipId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupName.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupNameValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/GroupRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupMemberCount.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupMemberPair.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupMemberRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupMemberRow.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/GroupRowView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/DeletionDecision.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/FirstStep.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupAdminService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupChangeResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupCreateResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupDeletionGuard.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupDetailResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupListResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupMembershipQuery.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupMembershipQueryImpl.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupRowLock.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupStoreTransactions.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupSummary.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/GroupView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/NoOpGroupBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/GroupStore.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/GroupStoreUnexpectedException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/StoreFailureClassifier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/StoreOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupDetailResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupMemberResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupNameRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupPageResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupRequestContextResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/GroupRowResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/MemberAddRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/group/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleGroupDeletionGuard.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/UserProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserAccountService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/useradmin/web/UserAdminController.java"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V10__u3_group.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventGroupTargetTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditGroupEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditGroupEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditWriteFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditRows.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/GroupBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupAuditDetailTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupAuditEventTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupMemberTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNamePropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/domain/GroupProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupStoreTransactionsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/ConnectionHoldRecorder.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/GroupActors.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/GroupApi.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/GroupFixtures.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/TestGroupBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/TestGroupDeletionGuard.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/testsupport/UncommittedWrite.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMassAssignmentIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMetricsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupBusyLogIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupConflictAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/UserProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserSummariesByIdsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/domain/UserAdminProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    }
+  ]
+}

@@ -74,6 +74,22 @@
 //                          準備のログインの失敗と失敗回数を戻す操作は入れない）。constant-vus（VUS・DURATION）。接続の時間切れ
 //                          （500）を起こすための場面のため、p95 と checks の閾値を置かず、状態コードの件数を数え分けの値
 //                          （userAdminPoolLimit_204・_409・_500・_other）で出す。既存の userAdminOps・userAdminPool は変えない
+// グループの管理の場面（Intent 261004-role-menu の U3。手順は perf/README.md の「グループの管理の場面」）。ID は
+// construction/group/nfr-requirements/ の performance-requirements.md（NFR2.5）と scalability-requirements.md（NFR2.7・NFR2.8）。
+// どの場面も1回の繰り返しに要求1つで、繰り返しの中に待ちを置かない。判定は場面ごとの iteration_duration の p95 < 1000 ms と
+// checks の率 1（colima の VM の時計のずれのため、http_req_duration{name:…} は並べて記録するだけ）。操作する管理者は perf-graop01
+// （setup でトークンを取る。初期管理者は使わない）、メンバーの候補は perf-gr-0001〜perf-gr-1000。グループとメンバーは setup が API で
+// 作る。名前は実行ごとの識別（runId）と VU の番号を含めて一意にする（名前の鍵は大文字と小文字を区別せず全体で一意のため）。
+//   groupListFirst     一覧の1ページ目（constant-vus。setup でグループを GROUP_LIST_MIN 件以上にする）
+//   groupListLast      一覧の最後のページ（同上）
+//   groupDetail        メンバー 1,000 人のグループの詳細（constant-vus。setup で1つ作り、候補を全員足す）
+//   groupRename        VU ごとに自分のグループの名前を2つの名前で交互に変える（constant-vus）
+//   groupCreate        VU ごとに GROUP_ROUNDS 回の作成（per-vu-iterations、maxDuration 3m）
+//   groupDelete        VU ごとに setup で作った空のグループ GROUP_ROUNDS 件を1件ずつ消す（per-vu-iterations）
+//   groupMemberAdd     VU ごとに自分のグループへ候補 GROUP_ROUNDS 人を1人ずつ足す（per-vu-iterations）
+//   groupMemberRemove  VU ごとに setup でメンバー GROUP_ROUNDS 人を足したグループから1人ずつ外す（per-vu-iterations）
+//   groupPoolLimit     VU ごとに自分のグループで、自分の候補1人の追加と外しを交互にくり返す（constant-vus。接続プールの上限の
+//                      確かめ。p95 と checks の閾値を置かず、状態コードの件数を groupPoolLimit_204・_409・_500・_other で出す）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -187,11 +203,47 @@ const INVITATION_SETUP_SCENARIOS = [
   'registrationComplete',
 ]
 
+// グループの管理の場面（Intent 261004-role-menu の U3）
+const GROUP_API = `${BASE}/api/admin/groups`
+const GROUP_SCENARIOS = [
+  'groupListFirst',
+  'groupListLast',
+  'groupDetail',
+  'groupRename',
+  'groupCreate',
+  'groupDelete',
+  'groupMemberAdd',
+  'groupMemberRemove',
+  'groupPoolLimit',
+]
+// p95 と checks で判定する8つの場面（groupPoolLimit は件数を数えるだけ）
+const GROUP_JUDGED_SCENARIOS = GROUP_SCENARIOS.filter((name) => name !== 'groupPoolLimit')
+// VU ごとに回数で終わる場面
+const GROUP_ROUND_SCENARIOS = ['groupCreate', 'groupDelete', 'groupMemberAdd', 'groupMemberRemove']
+// 1つの VU の回数（既定 100。候補の利用者は VUS × GROUP_ROUNDS 人以上が要る）
+const GROUP_ROUNDS = Number(__ENV.GROUP_ROUNDS || 100)
+// 一覧の場面で setup が用意するグループの件数の下限
+const GROUP_LIST_MIN = Number(__ENV.GROUP_LIST_MIN || 1000)
+// 入れてあるメンバーの候補の数（perf-gr-0001 から）
+const PERF_GR_COUNT = Number(__ENV.PERF_GR_COUNT || 1000)
+// 接続プールの上限の場面で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
+const GROUP_POOL_COUNTS = {
+  204: new Counter('groupPoolLimit_204'),
+  409: new Counter('groupPoolLimit_409'),
+  500: new Counter('groupPoolLimit_500'),
+  other: new Counter('groupPoolLimit_other'),
+}
+
 function scenariosFor(name) {
   if (name === 'dslMixed') {
     return {
       dslHeavy: { executor: 'constant-vus', vus: 1, duration: DURATION, exec: 'dslHeavy' },
       logins: { executor: 'constant-vus', vus: VUS, duration: DURATION, exec: 'loginLoop' },
+    }
+  }
+  if (GROUP_ROUND_SCENARIOS.includes(name)) {
+    return {
+      [name]: { executor: 'per-vu-iterations', vus: VUS, iterations: GROUP_ROUNDS, maxDuration: '3m' },
     }
   }
   if (USER_ADMIN_ROUND_SCENARIOS.includes(name)) {
@@ -233,6 +285,15 @@ function thresholdsFor(name) {
   if (name === 'dslMixed') {
     return { 'checks{scenario:logins}': ['rate==1'], 'checks{scenario:dslHeavy}': ['rate==1'] }
   }
+  // Intent 261004-role-menu の U3（NFR2.5）。判定は1回の繰り返しに要求1つの場面の iteration_duration（単調な時計）と checks。
+  // http_req_duration{name:…} は要約に並べるための常に通る閾値（max>=0）で、判定には使わない。
+  if (GROUP_JUDGED_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['max>=0'],
+    }
+  }
   // Intent 260925-user-management の U2・U3（出典の ID は先頭のコメント）
   if (USER_THRESHOLDS[name]) {
     const thresholds = { [`checks{scenario:${name}}`]: ['rate==1'] }
@@ -256,6 +317,8 @@ export const options = {
 if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // 利用者の管理の場面は、setup で対象の利用者 ID を一覧の API で引く（止める悪い側は対象が VUS × UA_ROUNDS 名）
 if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// グループの管理の場面は、setup でグループ（最大 1,000 件）とメンバー（最大 1,000 人）を API で作る
+if (GROUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -299,6 +362,7 @@ export function setup() {
   }
   if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) setupInvitations(tokens)
   if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) setupUserAdmin(tokens)
+  if (GROUP_SCENARIOS.includes(SCENARIO)) setupGroups(tokens)
   return tokens
 }
 
@@ -929,6 +993,179 @@ function userAdminPoolLimit(data) {
   uaOperateCounted(userId, 'resume', 'userAdminPoolLimitResume')
 }
 
+// グループの管理の場面（Intent 261004-role-menu の U3）
+function grOperatorEmail() {
+  return 'perf-graop01@example.test'
+}
+
+function grCandidateEmail(n) {
+  return `perf-gr-${String(n).padStart(4, '0')}@example.test`
+}
+
+// setup の中の操作する管理者のヘッダー（用意に時間がかかるため、4分でログインし直す）
+const grSetupState = {}
+function grSetupHeaders() {
+  const now = Date.now()
+  if (!grSetupState.token || now - grSetupState.at > 240_000) {
+    grSetupState.token = tokenOf(login(grOperatorEmail(), USER_PASSWORD))
+    grSetupState.at = now
+  }
+  return { Authorization: `Bearer ${grSetupState.token}`, Origin: BASE }
+}
+
+function grCreate(name) {
+  const res = jsonPost(GROUP_API, { name }, grSetupHeaders(), 'groupSetup')
+  if (res.status !== 201) fail(`グループを作れませんでした: ${res.status} ${codeOf(res)}`)
+  return res.json('groupId')
+}
+
+function grAdd(groupId, userId) {
+  const res = jsonPost(`${GROUP_API}/${groupId}/members`, { userId }, grSetupHeaders(), 'groupSetup')
+  if (res.status !== 204) fail(`メンバーを足せませんでした: ${res.status} ${codeOf(res)}`)
+}
+
+function grTotal() {
+  const res = http.get(GROUP_API, { headers: grSetupHeaders(), tags: { name: 'groupSetup' } })
+  if (res.status !== 200) fail(`グループの一覧を読めませんでした: ${res.status}`)
+  return res.json('total')
+}
+
+// グループの管理の場面の用意。グループとメンバーは API で作る。利用者 ID は利用者の一覧の検索で引く（ID だけを持ち、値は出力しない）。
+// 最後に場面で使うトークンを取り直す（用意に時間がかかっても、場面の間（3 分まで）にトークンが切れないようにする）。
+function setupGroups(data) {
+  const runId = Date.now().toString(36)
+  data.groupRunId = runId
+  const perVu = SCENARIO === 'groupPoolLimit' ? 1 : GROUP_ROUNDS
+  const needsCandidates = ['groupDetail', 'groupMemberAdd', 'groupMemberRemove', 'groupPoolLimit'].includes(SCENARIO)
+  let candidates = []
+  if (needsCandidates) {
+    const ids = idsBySearch(grSetupHeaders(), 'perf-gr-')
+    const count = SCENARIO === 'groupDetail' ? PERF_GR_COUNT : VUS * perVu
+    for (let n = 1; n <= count; n++) {
+      const id = ids[grCandidateEmail(n)]
+      if (!id) fail(`メンバーの候補 ${grCandidateEmail(n)} がいません（perf/README.md の手順で ${count} 人入れてください）`)
+      candidates.push(id)
+    }
+  }
+  if (SCENARIO === 'groupListFirst' || SCENARIO === 'groupListLast') {
+    for (let n = grTotal() + 1; n <= GROUP_LIST_MIN; n++) grCreate(`perf-list-${runId}-${n}`)
+    data.groupLastPage = Math.max(1, Math.ceil(grTotal() / PAGE_SIZE))
+  } else if (SCENARIO === 'groupDetail') {
+    data.groupDetailId = grCreate(`perf-detail-${runId}`)
+    for (const userId of candidates) grAdd(data.groupDetailId, userId)
+  } else if (SCENARIO === 'groupRename') {
+    data.groupIds = {}
+    for (let vu = 1; vu <= VUS; vu++) data.groupIds[vu] = grCreate(grRenameName(runId, vu, 'a'))
+  } else if (SCENARIO === 'groupDelete') {
+    data.groupIds = {}
+    for (let vu = 1; vu <= VUS; vu++) {
+      data.groupIds[vu] = []
+      for (let round = 1; round <= GROUP_ROUNDS; round++) {
+        data.groupIds[vu].push(grCreate(`perf-delete-${runId}-${vu}-${round}`))
+      }
+    }
+  } else if (['groupMemberAdd', 'groupMemberRemove', 'groupPoolLimit'].includes(SCENARIO)) {
+    data.groupIds = {}
+    data.groupMembers = {}
+    for (let vu = 1; vu <= VUS; vu++) {
+      data.groupIds[vu] = grCreate(`perf-member-${runId}-${vu}`)
+      data.groupMembers[vu] = candidates.slice((vu - 1) * perVu, vu * perVu)
+      if (SCENARIO === 'groupMemberRemove') {
+        for (const userId of data.groupMembers[vu]) grAdd(data.groupIds[vu], userId)
+      }
+    }
+  }
+  grSetupState.token = null
+  data.groupToken = tokenOf(login(grOperatorEmail(), USER_PASSWORD))
+}
+
+function grRenameName(runId, vu, side) {
+  return `perf-rename-${runId}-${two(vu)}-${side}`
+}
+
+function grHeaders(data) {
+  return { Authorization: `Bearer ${data.groupToken}`, Origin: BASE }
+}
+
+function groupListFirst(data) {
+  const res = http.get(GROUP_API, { headers: grHeaders(data), tags: { name: 'groupListFirst' } })
+  check(res, { 'groupListFirst 200': (r) => r.status === 200 && r.json('items').length === PAGE_SIZE })
+}
+
+function groupListLast(data) {
+  const res = http.get(`${GROUP_API}?page=${data.groupLastPage}`, {
+    headers: grHeaders(data),
+    tags: { name: 'groupListLast' },
+  })
+  check(res, { 'groupListLast 200': (r) => r.status === 200 && r.json('items').length > 0 })
+}
+
+function groupDetail(data) {
+  const res = http.get(`${GROUP_API}/${data.groupDetailId}`, {
+    headers: grHeaders(data),
+    tags: { name: 'groupDetail' },
+  })
+  check(res, { 'groupDetail 200': (r) => r.status === 200 && r.json('members').length === PERF_GR_COUNT })
+}
+
+function groupRename(data) {
+  const vu = exec.vu.idInTest
+  // setup で名前を a にしてあるため、1回目は b、2回目は a と交互に変える
+  const side = exec.vu.iterationInScenario % 2 === 0 ? 'b' : 'a'
+  const res = jsonPut(
+    `${GROUP_API}/${data.groupIds[vu]}`,
+    { name: grRenameName(data.groupRunId, vu, side) },
+    grHeaders(data),
+    'groupRename',
+  )
+  check(res, { 'groupRename 204': (r) => r.status === 204 })
+}
+
+function groupCreate(data) {
+  const name = `perf-create-${data.groupRunId}-${two(exec.vu.idInTest)}-${exec.vu.iterationInScenario + 1}`
+  const res = jsonPost(GROUP_API, { name }, grHeaders(data), 'groupCreate')
+  check(res, { 'groupCreate 201': (r) => r.status === 201 })
+}
+
+function groupDelete(data) {
+  const groupId = data.groupIds[exec.vu.idInTest][exec.vu.iterationInScenario]
+  const res = http.del(`${GROUP_API}/${groupId}`, null, { headers: grHeaders(data), tags: { name: 'groupDelete' } })
+  check(res, { 'groupDelete 204': (r) => r.status === 204 })
+}
+
+function groupMemberAdd(data) {
+  const vu = exec.vu.idInTest
+  const userId = data.groupMembers[vu][exec.vu.iterationInScenario]
+  const res = jsonPost(`${GROUP_API}/${data.groupIds[vu]}/members`, { userId }, grHeaders(data), 'groupMemberAdd')
+  check(res, { 'groupMemberAdd 204': (r) => r.status === 204 })
+}
+
+function groupMemberRemove(data) {
+  const vu = exec.vu.idInTest
+  const userId = data.groupMembers[vu][exec.vu.iterationInScenario]
+  const res = http.del(`${GROUP_API}/${data.groupIds[vu]}/members/${userId}`, null, {
+    headers: grHeaders(data),
+    tags: { name: 'groupMemberRemove' },
+  })
+  check(res, { 'groupMemberRemove 204': (r) => r.status === 204 })
+}
+
+// 接続プールの上限の場面の1回（追加と外しを交互に送る）。checks は使わず、状態コードごとの件数を数える。
+function groupPoolLimit(data) {
+  const vu = exec.vu.idInTest
+  const groupId = data.groupIds[vu]
+  const userId = data.groupMembers[vu][0]
+  const adding = exec.vu.iterationInScenario % 2 === 0
+  const res = adding
+    ? jsonPost(`${GROUP_API}/${groupId}/members`, { userId }, grHeaders(data), 'groupPoolLimitAdd')
+    : http.del(`${GROUP_API}/${groupId}/members/${userId}`, null, {
+        headers: grHeaders(data),
+        tags: { name: 'groupPoolLimitRemove' },
+      })
+  const counter = GROUP_POOL_COUNTS[res.status] ?? GROUP_POOL_COUNTS.other
+  counter.add(1, { name: adding ? 'groupPoolLimitAdd' : 'groupPoolLimitRemove' })
+}
+
 // U2・U3 の場面の名前と処理
 const USER_SCENARIOS = {
   preferencesGet,
@@ -951,6 +1188,15 @@ const USER_SCENARIOS = {
   userAdminSuspendWorst,
   userAdminPool,
   userAdminPoolLimit,
+  groupListFirst,
+  groupListLast,
+  groupDetail,
+  groupRename,
+  groupCreate,
+  groupDelete,
+  groupMemberAdd,
+  groupMemberRemove,
+  groupPoolLimit,
 }
 
 export default function (tokens) {

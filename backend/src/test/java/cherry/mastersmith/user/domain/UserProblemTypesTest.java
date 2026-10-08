@@ -26,11 +26,26 @@ import org.junit.jupiter.api.Test;
 class UserProblemTypesTest {
 
     @Test
-    @DisplayName("the current-password mismatch is fixed to status 400")
+    @DisplayName("the current-password mismatch is fixed to status 400 and USER_NOT_FOUND to 404")
     void codeAndStatus() {
         assertThat(UserProblemTypes.all())
                 .extracting(ProblemType::code, ProblemType::status)
-                .containsExactly(Tuple.tuple("PASSWORD_CURRENT_MISMATCH", 400));
+                .containsExactly(Tuple.tuple("PASSWORD_CURRENT_MISMATCH", 400), Tuple.tuple("USER_NOT_FOUND", 404));
+    }
+
+    @Test
+    @DisplayName("USER_NOT_FOUND keeps the code and the texts it had in useradmin and shows no user values")
+    void userNotFoundKeepsItsTexts() {
+        ProblemType type = UserProblemTypes.USER_NOT_FOUND;
+
+        assertThat(type.title().ja()).isEqualTo("利用者が見つかりません");
+        assertThat(type.title().en()).isEqualTo("User not found");
+        assertThat(type.description().ja()).isEqualTo("指定した利用者はいません。");
+        assertThat(type.description().en()).isEqualTo("The specified user does not exist.");
+        assertThat(type.resolution()).isNotNull();
+        assertThat(type.resolution().ja()).isEqualTo("利用者の一覧を読み直してください。");
+        assertThat(type.resolution().en()).isEqualTo("Reload the user list.");
+        assertThat(type.slug()).isEqualTo("user-not-found");
     }
 
     @Test

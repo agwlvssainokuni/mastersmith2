@@ -37,6 +37,20 @@ public final class UserProblemTypes {
                     "The password could not be changed because the current password you entered is incorrect."),
             new LocalizedText("今のパスワードを確かめて、もう一度変更してください。", "Check your current password and try again."));
 
+    /**
+     * 操作・変更の対象の利用者がいない（404）。利用者の管理（useradmin）とグループのメンバーの追加（group）が使う。
+     *
+     * <p>Intent 260930-user-admin で {@code useradmin.domain} に置いた定義を、Intent 261004-role-menu の U3 で code・状態コード・文言を
+     * 変えずにここへ移した（U3 の BR10.2）。ほかの機能が {@code useradmin} に依存せずに同じ code を使えるようにするため。説明文に対象の
+     * 利用者のメールアドレス・氏名・ID を載せない。
+     */
+    public static final ProblemType USER_NOT_FOUND = new ProblemType(
+            "USER_NOT_FOUND",
+            404,
+            new LocalizedText("利用者が見つかりません", "User not found"),
+            new LocalizedText("指定した利用者はいません。", "The specified user does not exist."),
+            new LocalizedText("利用者の一覧を読み直してください。", "Reload the user list."));
+
     private UserProblemTypes() {}
 
     /**
@@ -45,6 +59,6 @@ public final class UserProblemTypes {
      * @return 問題の種類の一覧
      */
     public static List<ProblemType> all() {
-        return List.of(PASSWORD_CURRENT_MISMATCH);
+        return List.of(PASSWORD_CURRENT_MISMATCH, USER_NOT_FOUND);
     }
 }

@@ -17,6 +17,7 @@ package cherry.mastersmith.useradmin.domain;
 
 import cherry.mastersmith.common.error.domain.LocalizedText;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.user.domain.UserProblemTypes;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,16 +27,12 @@ import java.util.Objects;
  *
  * <p>入力の誤りは既存の {@code VALIDATION_FAILED}（400）、未認証は既存の {@code AUTHENTICATION_REQUIRED}（401）、管理者でないは既存の
  * {@code ACCESS_DENIED}（403）を使うため、ここには置かない。説明文に対象の利用者のメールアドレス・氏名・ID を載せない（BR7.5）。
+ *
+ * <p>対象の利用者がいない（{@code USER_NOT_FOUND}、404）は、Intent 261004-role-menu の U3 で {@link UserProblemTypes} へ移した（U3 の
+ * BR10.2。code・状態コード・文言は変えていない）。{@link #of(RejectionReason)} はその定義を返し、{@link #all()} には含めない（起動時の
+ * 一覧は {@code UserProblemTypeCatalog} が持つ。code の二重の定義は起動時の検査で起動を止めるため）。
  */
 public final class UserAdminProblemTypes {
-
-    /** 操作・変更の対象の利用者がいない（404。BR2.3・BR5.2）。 */
-    public static final ProblemType USER_NOT_FOUND = new ProblemType(
-            "USER_NOT_FOUND",
-            404,
-            new LocalizedText("利用者が見つかりません", "User not found"),
-            new LocalizedText("指定した利用者はいません。", "The specified user does not exist."),
-            new LocalizedText("利用者の一覧を読み直してください。", "Reload the user list."));
 
     /** 自分自身への操作（409。BR2.2・BR2.3）。 */
     public static final ProblemType SELF_OPERATION = new ProblemType(
@@ -93,7 +90,7 @@ public final class UserAdminProblemTypes {
     public static ProblemType of(RejectionReason reason) {
         Objects.requireNonNull(reason, "reason");
         return switch (reason) {
-            case USER_NOT_FOUND -> USER_NOT_FOUND;
+            case USER_NOT_FOUND -> UserProblemTypes.USER_NOT_FOUND;
             case SELF_OPERATION -> SELF_OPERATION;
             case TARGET_SUSPENDED -> TARGET_SUSPENDED;
             case NO_CHANGE -> NO_CHANGE;
@@ -107,6 +104,6 @@ public final class UserAdminProblemTypes {
      * @return 問題の種類の一覧
      */
     public static List<ProblemType> all() {
-        return List.of(USER_NOT_FOUND, SELF_OPERATION, TARGET_SUSPENDED, NO_CHANGE, LAST_ADMIN, BUSY);
+        return List.of(SELF_OPERATION, TARGET_SUSPENDED, NO_CHANGE, LAST_ADMIN, BUSY);
     }
 }

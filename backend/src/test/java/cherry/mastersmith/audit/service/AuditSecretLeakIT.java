@@ -28,7 +28,10 @@ import cherry.mastersmith.auth.testsupport.AuthApi;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
+import cherry.mastersmith.group.testsupport.GroupApi;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.user.service.UserAccountService;
+import cherry.mastersmith.user.testsupport.TestUserAccounts;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.List;
@@ -48,7 +51,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
-/** 監査イベントの行とアプリのログに秘密情報が出ないことの結合テスト（BR2.3、NFR3.1、team.md の必須のテスト）。 */
+/**
+ * 監査イベントの行とアプリのログに秘密情報が出ないことの結合テスト（BR2.3、NFR3.1、team.md の必須のテスト）。Intent 261004-role-menu の
+ * U3 で、V10 の3列（detail を含む）とグループの操作の後の行の確かめを足した（NFR1.7）。
+ */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
@@ -107,7 +113,8 @@ class AuditSecretLeakIT {
                 + row.sourceIp()
                 + row.userAgent()
                 + row.requestPath()
-                + row.traceId();
+                + row.traceId()
+                + row.detail();
     }
 
     @Test
@@ -169,7 +176,47 @@ class AuditSecretLeakIT {
                         "REJECTION_KIND",
                         // Intent 260925-user-management の U2 の V7 で足した、対象の列（契約 C8。パスワード・トークンは持たない）
                         "TARGET_USER_ID",
-                        "TARGET_INVITATION_ID");
+                        "TARGET_INVITATION_ID",
+                        // Intent 261004-role-menu の U3 の V10 で足した、ロール・グループの対象と detail の列（契約 C10。detail は
+                        // 決めた型からの JSON で、メールアドレス・氏名・パスワード・トークンを持たない）
+                        "TARGET_ROLE_ID",
+                        "TARGET_GROUP_ID",
+                        "DETAIL");
+    }
+
+    @Test
+    @DisplayName("the group audit rows including the detail carry no email, display name, password, hash or token")
+    void groupRowsCarryNoPersonalValues(CapturedOutput output) {
+        AdminTestUsers.TestUser admin = users.createAdmin();
+        String adminToken = users.accessToken(admin);
+        AdminTestUsers.TestUser member = users.createNonAdmin();
+        GroupApi groups = new GroupApi(port);
+        HttpResponse<String> created = groups.create(adminToken, GroupFixtures.uniqueName("監査 漏えい"));
+        long groupId = ((Number) HttpTestClient.json(created).get("groupId")).longValue();
+        groups.addMember(adminToken, groupId, member.userId());
+        groups.addMember(adminToken, groupId, member.userId());
+        groups.rename(adminToken, groupId, GroupFixtures.uniqueName("監査 漏えい 改名"));
+        groups.delete(adminToken, groupId);
+        groups.removeMember(adminToken, groupId, member.userId());
+        groups.delete(adminToken, groupId);
+
+        List<AuditRows.AuditRow> groupRows = rows.all().stream()
+                .filter(row -> row.eventType().startsWith("GROUP_"))
+                .toList();
+        assertThat(groupRows)
+                .hasSize(7)
+                .anySatisfy(row -> assertThat(row.detail()).isNotNull());
+        String rendered = groupRows.stream().map(AuditSecretLeakIT::render).reduce("", String::concat);
+        assertThat(rendered)
+                .doesNotContain(member.email())
+                .doesNotContain(admin.email())
+                .doesNotContain(TestUserAccounts.DISPLAY_NAME)
+                .doesNotContain(AdminTestUsers.PASSWORD)
+                .doesNotContain(adminToken)
+                .doesNotContain("$2a$")
+                .doesNotContain("Bearer ");
+        JsonLogRecords.assertContainsNoSecret(
+                output.getOut(), member.email(), TestUserAccounts.DISPLAY_NAME, AdminTestUsers.PASSWORD, adminToken);
     }
 
     @Test

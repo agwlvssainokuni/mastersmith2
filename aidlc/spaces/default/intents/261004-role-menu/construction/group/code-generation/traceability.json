@@ -1,0 +1,716 @@
+{
+  "stage": "code-generation",
+  "unit": "group",
+  "upstream_ids": [
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.9",
+    "AC2.2.10",
+    "AC2.2.11",
+    "AC2.2.12",
+    "AC2.2.13",
+    "AC2.2.14",
+    "AC2.2.15",
+    "AC2.2.16",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR3.6",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR5.5",
+    "BR5.7",
+    "BR5.6",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR6.4",
+    "BR6.5",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3",
+    "BR8.4",
+    "BR8.5",
+    "BR8.6",
+    "BR8.7",
+    "BR8.8",
+    "BR8.9",
+    "BR9.1",
+    "BR9.2",
+    "BR9.3",
+    "BR10.1",
+    "BR10.2",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7"
+  ],
+  "coverage": [
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java（API の部分。画面は U6）"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupNamePropertyTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java（ロールの側は B5）"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java（停止中の管理者は 401。code-summary.md 4節 G-14）"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java（文言は U6）"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java（候補の絞り込みは U6）"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java（部分: 所属の読み取り。作業ロールは U4）"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java（部分: 所属の読み取り。作業ロールは U4）"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java（部分: 所属の読み取りの口。割り当ては U4）"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（読み取りの API は U4 role）"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java（部分: グループの有無と排他の口。ほかの ID は U4）"
+    },
+    {
+      "id": "AC2.2.11",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.12",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.13",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.14",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.15",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.16",
+      "status": "Deferred",
+      "target": "U4 role（画面は U6 role-admin-ui）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupNamePropertyTest.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/group/GroupBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMassAssignmentIT.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupBusyLogIT.java・backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java・backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java・backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
+    },
+    {
+      "id": "BR5.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConflictAuditIT.java"
+    },
+    {
+      "id": "BR5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java・backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR6.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryCountIT.java"
+    },
+    {
+      "id": "BR6.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryCountIT.java・backend/src/test/java/cherry/mastersmith/user/service/UserSummariesByIdsIT.java"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java・backend/src/test/java/cherry/mastersmith/audit/service/AuditGroupEventListenerTest.java"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConflictAuditIT.java"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminServiceTest.java"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditGroupEventFactoryTest.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupAuditEventTest.java"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditGroupEventFactoryTest.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupAuditDetailTest.java"
+    },
+    {
+      "id": "BR8.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventGroupTargetTest.java"
+    },
+    {
+      "id": "BR8.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java"
+    },
+    {
+      "id": "BR8.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "id": "BR8.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventTest.java（既存。列挙の全値を回す）"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupMemberTest.java"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "id": "BR9.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupBusyLogIT.java"
+    },
+    {
+      "id": "BR10.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupProblemTypesTest.java・backend/src/test/java/cherry/mastersmith/group/service/GroupProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "BR10.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java・backend/src/test/java/cherry/mastersmith/user/domain/UserProblemTypesTest.java・backend/src/test/java/cherry/mastersmith/useradmin/service/UserAdminProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/GroupBoundaryArchitectureTest.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java（API の分類の網羅は B2 の構造・実行時の検査）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMassAssignmentIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java（部分: 作業ロールは U4）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "N/A",
+      "target": "権限の YAML の守り（FR7.4）。U4 role の持ち物で、この単位は YAML を読まない"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupMemberTest.java"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminApiIT.java"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "./gradlew verify（SpotBugs ＋ FindSecBugs、Step 22）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "検証の対象にしない受け入れの記録（入口の後の窓。security-requirements.md）"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNameTest.java・backend/src/test/java/cherry/mastersmith/group/domain/GroupNamePropertyTest.java"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js・perf/README.md（部分: グループと利用者の数。流すのは Performance Validation）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "権限の木・メニュー・作業ロールの切り替えの時間。U4 role・U5 navigation の持ち物"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupMembershipQueryCountIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java（部分: 所属の読み取りの口。解決全体は U4）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "N/A",
+      "target": "import の確かめと適用の時間。U4 role の持ち物"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js（8場面。流すのは Performance Validation）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConnectionUsageIT.java・perf/k6/scenarios.js（groupPoolLimit）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/repository/GroupRepositoryIT.java・perf/k6/scenarios.js"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java（部分: 作業ロールとロールの削除の重なりは U4）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "N/A",
+      "target": "import の一括確定。U4 role の持ち物"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java・backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/service/GroupStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConflictAuditIT.java"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditWriteFailureIT.java・backend/src/test/java/cherry/mastersmith/audit/service/AuditGroupEventListenerTest.java"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupNameConflictIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java・backend/src/test/java/cherry/mastersmith/group/service/GroupStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java（T1〜T7）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面の WCAG。この単位は画面を持たない（U6 role-admin-ui）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "N 階層のメニューの画面。U7 app-frame-ui の持ち物"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面の文言の日本語と英語。この単位の応答の文言は既存の Problem Details の仕組み（code ごとの日本語と英語）で持ち、画面は U6"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMetricsIT.java"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupBusyLogIT.java"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "Deferred",
+      "target": "Observability Setup（monitoring-design.md 7節。警報と SLO）"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditEventGroupTargetTest.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditGroupEventFactoryTest.java"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminIdorApiIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupAdminMassAssignmentIT.java・backend/src/test/java/cherry/mastersmith/group/web/GroupSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/audit/service/GroupAuditIT.java"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "N/A",
+      "target": "継承の解決とメニューを絞る関数の性質ベースのテスト。U4・U5・U7 の持ち物（この単位の性質ベースのテストは NFR6.5）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E（最大2本）。流れは U6・U7 が持ち、この単位は足さない"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify（カバレッジの下限、Step 22）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/domain/GroupNamePropertyTest.java"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/GroupBoundaryArchitectureTest.java・backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java・backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "README.md・perf/README.md・code-summary.md"
+    }
+  ]
+}

@@ -22,6 +22,7 @@ import cherry.mastersmith.common.security.ApiAccess;
 import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.user.domain.RequestOrigin;
 import cherry.mastersmith.user.domain.SearchText;
+import cherry.mastersmith.user.domain.UserProblemTypes;
 import cherry.mastersmith.user.service.ProfileUpdateResult;
 import cherry.mastersmith.useradmin.domain.UserAdminProblemTypes;
 import cherry.mastersmith.useradmin.service.OperationResult;
@@ -109,7 +110,7 @@ public class UserAdminController {
         return switch (service.updateProfile(userId, body.toCommand())) {
             case ProfileUpdateResult.Updated _ -> ResponseEntity.noContent().build();
             case ProfileUpdateResult.Invalid invalid -> throw UserAdminFieldErrors.validationFailed(invalid.errors());
-            case ProfileUpdateResult.NotFound _ -> throw new BusinessException(UserAdminProblemTypes.USER_NOT_FOUND);
+            case ProfileUpdateResult.NotFound _ -> throw new BusinessException(UserProblemTypes.USER_NOT_FOUND);
         };
     }
 

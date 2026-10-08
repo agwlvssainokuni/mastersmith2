@@ -28,12 +28,16 @@ import org.springframework.jdbc.core.RowMapper;
  *
  * <p>監査ログを見る API を本Intentでは作らないため、結合テストは {@code JdbcTemplate} で表を直接読む。テストのためだけの
  * API・操作を本番のコードに足さないための仕組みである。
+ *
+ * <p>Intent 261004-role-menu の U3 で、グループの監査（{@code GroupAuditIT}）が使う列（操作した人・対象の利用者・対象のロール・対象の
+ * グループ・detail）を行の後ろに足した。既存の呼び出し（項目の読み取り）は変えない。
  */
 public final class AuditRows {
 
     private static final String SELECT =
             "SELECT audit_event_id, occurred_at, event_type, result, entered_email, failure_reason,"
-                    + " source_ip, user_agent, request_path, trace_id FROM audit_events";
+                    + " source_ip, user_agent, request_path, trace_id, actor_user_id, target_user_id, target_role_id,"
+                    + " target_group_id, detail FROM audit_events";
 
     private static final RowMapper<AuditRow> MAPPER = AuditRows::map;
 
@@ -61,6 +65,11 @@ public final class AuditRows {
      * @param userAgent User-Agent
      * @param requestPath 要求のパス
      * @param traceId トレースID
+     * @param actorUserId 操作した人の利用者 ID
+     * @param targetUserId 対象の利用者 ID
+     * @param targetRoleId 対象のロールの ID
+     * @param targetGroupId 対象のグループの ID
+     * @param detail 決めた型から作った JSON の文字列
      */
     public record AuditRow(
             long auditEventId,
@@ -72,7 +81,12 @@ public final class AuditRows {
             String sourceIp,
             String userAgent,
             String requestPath,
-            String traceId) {}
+            String traceId,
+            Long actorUserId,
+            Long targetUserId,
+            Long targetRoleId,
+            Long targetGroupId,
+            String detail) {}
 
     /**
      * 行の数を返す。
@@ -118,6 +132,11 @@ public final class AuditRows {
                 rs.getString("source_ip"),
                 rs.getString("user_agent"),
                 rs.getString("request_path"),
-                rs.getString("trace_id"));
+                rs.getString("trace_id"),
+                rs.getObject("actor_user_id", Long.class),
+                rs.getObject("target_user_id", Long.class),
+                rs.getObject("target_role_id", Long.class),
+                rs.getObject("target_group_id", Long.class),
+                rs.getString("detail"));
     }
 }

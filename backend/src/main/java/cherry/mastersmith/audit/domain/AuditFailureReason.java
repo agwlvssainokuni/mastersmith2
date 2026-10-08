@@ -59,5 +59,11 @@ public enum AuditFailureReason {
     /** 管理の操作で変えるものが無い（Intent 260930-user-admin の U3）。 */
     NO_CHANGE,
     /** 管理の操作で有効な管理者が 0 人になる（Intent 260930-user-admin の U3）。 */
-    LAST_ACTIVE_ADMIN
+    LAST_ACTIVE_ADMIN,
+    /** 操作の対象のグループがいない（Intent 261004-role-menu の U3、契約 C10）。 */
+    GROUP_NOT_FOUND,
+    /** グループの名前がほかのグループと重なる（大文字と小文字を区別しない。Intent 261004-role-menu の U3）。 */
+    GROUP_NAME_DUPLICATE,
+    /** メンバーかロールの割り当てが残るグループの削除（Intent 261004-role-menu の U3）。 */
+    GROUP_IN_USE
 }

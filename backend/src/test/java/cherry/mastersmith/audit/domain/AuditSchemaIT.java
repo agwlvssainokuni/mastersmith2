@@ -38,7 +38,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** 監査イベントの表（V4）の結合テスト（組み込みの H2）。 */
+/**
+ * 監査イベントの表（V4）の結合テスト（組み込みの H2）。Intent 261004-role-menu の U3 で、V10 で足したロール・グループの対象と detail の
+ * 3列（NULL 可・既定値なし）と、前の版の列だけの追記を足した（基盤の設計の読み直しの R-02）。
+ */
 @SpringBootTest
 class AuditSchemaIT {
 
@@ -173,6 +176,76 @@ class AuditSchemaIT {
                 .hasSize(2)
                 .allSatisfy(column ->
                         assertThat(column).containsEntry("IS_NULLABLE", "YES").containsEntry("DATA_TYPE", "BIGINT"));
+    }
+
+    @Test
+    @DisplayName("the V10 role, group and detail columns are nullable without defaults and keep a 16384-unit detail")
+    void roleGroupColumns() {
+        String detail = EMOJI.repeat(AuditEvent.MAX_DETAIL_LENGTH / 2);
+        AuditEvent saved = persist(AuditEvent.withRoleGroupTarget(
+                Instant.parse("2026-10-08T01:00:00Z"),
+                AuditEventType.GROUP_RENAMED,
+                AuditResult.SUCCESS,
+                null,
+                "192.0.2.40",
+                "Mozilla/5.0",
+                "trace-0040",
+                41L,
+                null,
+                null,
+                43L,
+                detail));
+
+        AuditEvent found = find(saved.getAuditEventId());
+
+        assertThat(found.getEventType()).isEqualTo(AuditEventType.GROUP_RENAMED);
+        assertThat(found.getActorUserId()).isEqualTo(41L);
+        assertThat(found.getTargetRoleId()).isNull();
+        assertThat(found.getTargetGroupId()).isEqualTo(43L);
+        assertThat(found.getDetail()).isEqualTo(detail);
+        List<Map<String, Object>> columns =
+                jdbc.queryForList("SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_DEFAULT"
+                        + " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AUDIT_EVENTS'"
+                        + " AND COLUMN_NAME IN ('TARGET_ROLE_ID', 'TARGET_GROUP_ID', 'DETAIL') ORDER BY COLUMN_NAME");
+        assertThat(columns)
+                .hasSize(3)
+                .allSatisfy(column ->
+                        assertThat(column).containsEntry("IS_NULLABLE", "YES").containsEntry("COLUMN_DEFAULT", null));
+        assertThat(columns.get(0))
+                .containsEntry("COLUMN_NAME", "DETAIL")
+                .containsEntry("DATA_TYPE", "CHARACTER VARYING")
+                .containsEntry("CHARACTER_MAXIMUM_LENGTH", 16_384L);
+        assertThat(columns.get(1))
+                .containsEntry("COLUMN_NAME", "TARGET_GROUP_ID")
+                .containsEntry("DATA_TYPE", "BIGINT");
+        assertThat(columns.get(2))
+                .containsEntry("COLUMN_NAME", "TARGET_ROLE_ID")
+                .containsEntry("DATA_TYPE", "BIGINT");
+    }
+
+    @Test
+    @DisplayName("an insert with only the previous version's columns succeeds and leaves the three V10 columns empty")
+    void previousVersionInsertLeavesNewColumnsEmpty() {
+        jdbc.update(
+                "INSERT INTO audit_events (occurred_at, event_type, result, entered_email, failure_reason, source_ip,"
+                        + " user_agent, request_path, trace_id, actor_user_id, dsl_hash, dsl_source, rejection_kind,"
+                        + " target_user_id, target_invitation_id)"
+                        + " VALUES (?, 'USER_SUSPENDED', 'SUCCESS', NULL, NULL, '192.0.2.41', NULL, NULL, 'trace-0041',"
+                        + " 51, NULL, NULL, NULL, 52, NULL)",
+                OffsetDateTime.parse("2026-10-08T02:00:00Z"));
+
+        Map<String, Object> row =
+                jdbc.queryForMap("SELECT audit_event_id, target_role_id, target_group_id, detail FROM audit_events"
+                        + " WHERE trace_id = 'trace-0041'");
+        AuditEvent found = find(((Number) row.get("AUDIT_EVENT_ID")).longValue());
+
+        assertThat(row)
+                .containsEntry("TARGET_ROLE_ID", null)
+                .containsEntry("TARGET_GROUP_ID", null)
+                .containsEntry("DETAIL", null);
+        assertThat(found.getEventType()).isEqualTo(AuditEventType.USER_SUSPENDED);
+        assertThat(found.getTargetUserId()).isEqualTo(52L);
+        assertThat(found.getDetail()).isNull();
     }
 
     @Test

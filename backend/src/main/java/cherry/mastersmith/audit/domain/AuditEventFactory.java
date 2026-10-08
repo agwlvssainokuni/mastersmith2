@@ -24,6 +24,9 @@ import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationType;
+import cherry.mastersmith.group.domain.GroupAuditEvent;
+import cherry.mastersmith.group.domain.GroupAuditFailure;
+import cherry.mastersmith.group.domain.GroupOperation;
 import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
 import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
 import cherry.mastersmith.invitation.domain.InvitationResentEvent;
@@ -65,6 +68,10 @@ import java.time.Instant;
  * {@link #SYSTEM_SOURCE_IP} を入れ、操作した人は空、対象の利用者に初期管理者を記録する。救済の行は当たった条件を決まった順につないだ値
  * （{@link InitialAdminRescueCondition#code(java.util.Set)}）を {@code rejection_kind} の列に入れる。メールアドレス・パスワードは
  * 出来事が持たないため、記録にも入らない。
+ *
+ * <p>グループの操作（Intent 261004-role-menu の U3、契約 C10）の出来事は、操作した管理者・対象のグループ・対象の利用者（メンバーの追加と
+ * 外しだけ）と、決めた型から作った {@code detail} の JSON（{@link AuditDetailJson}）を記録する。メールアドレス・氏名・秘密は出来事が
+ * 持たないため、記録にも入らない（BR8.4〜BR8.7）。
  *
  * <p>種類と理由の写し取りは網羅の {@code switch} で書く。U2・U3 が値を増やしたときに、コンパイルで気づけるようにするため。
  */
@@ -278,6 +285,32 @@ public final class AuditEventFactory {
     }
 
     /**
+     * グループの操作の出来事から監査イベントを作る（Intent 261004-role-menu の U3、契約 C10、BR8.1〜BR8.6）。
+     *
+     * <p>成功も失敗も操作ごとの同じ種類で、結果は出来事が持つ。操作した人に操作した管理者、対象のグループと対象の利用者（メンバーの追加と
+     * 外しだけ。いない ID のまま）を記録し、対象のロールは空。{@code detail} は決めたキーだけの JSON（グループ・利用者が無い拒否では空）。
+     * メールアドレス・要求のパス・対象の招待・DSL の項目は空。User-Agent は上限まで切り詰める。
+     *
+     * @param event グループの操作の出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(GroupAuditEvent event) {
+        return AuditEvent.withRoleGroupTarget(
+                event.occurredAt(),
+                groupEventTypeOf(event.operation()),
+                event.succeeded() ? AuditResult.SUCCESS : AuditResult.FAILURE,
+                groupFailureReasonOf(event.failure()),
+                event.sourceIp(),
+                AuditText.userAgent(event.userAgent()),
+                event.traceId(),
+                event.actorUserId(),
+                event.targetUserId(),
+                null,
+                event.targetGroupId(),
+                AuditDetailJson.of(event.detail()));
+    }
+
+    /**
      * 初期管理者の作成の出来事から監査イベントを作る（Intent 261004-safety-carryover の FR1.5・FR1.6）。
      *
      * @param event 出来事
@@ -375,6 +408,45 @@ public final class AuditEventFactory {
         };
     }
 
+    /**
+     * グループの操作の区分を監査の種類に写す。監査イベントの組み立てに失敗したときの ERROR の項目でも、組み立てに成功したときと同じ値の
+     * 形にするために使う。
+     *
+     * @param operation 操作の区分（null でもよい）
+     * @return 監査の種類（操作の区分が null のときは null）
+     */
+    public static AuditEventType groupEventTypeOf(GroupOperation operation) {
+        if (operation == null) {
+            return null;
+        }
+        return switch (operation) {
+            case CREATE -> AuditEventType.GROUP_CREATED;
+            case RENAME -> AuditEventType.GROUP_RENAMED;
+            case DELETE -> AuditEventType.GROUP_DELETED;
+            case ADD_MEMBER -> AuditEventType.GROUP_MEMBER_ADDED;
+            case REMOVE_MEMBER -> AuditEventType.GROUP_MEMBER_REMOVED;
+        };
+    }
+
+    /**
+     * グループの操作の失敗の理由を監査の失敗の理由に写す（{@code USER_NOT_FOUND}・{@code NO_CHANGE} は既存の値。BR8.2）。
+     *
+     * @param failure 失敗の理由（null でもよい）
+     * @return 監査の失敗の理由（失敗の理由が null のときは null）
+     */
+    public static AuditFailureReason groupFailureReasonOf(GroupAuditFailure failure) {
+        if (failure == null) {
+            return null;
+        }
+        return switch (failure) {
+            case GROUP_NOT_FOUND -> AuditFailureReason.GROUP_NOT_FOUND;
+            case USER_NOT_FOUND -> AuditFailureReason.USER_NOT_FOUND;
+            case GROUP_NAME_DUPLICATE -> AuditFailureReason.GROUP_NAME_DUPLICATE;
+            case GROUP_IN_USE -> AuditFailureReason.GROUP_IN_USE;
+            case NO_CHANGE -> AuditFailureReason.NO_CHANGE;
+        };
+    }
+
     private static AuditEventType eventTypeOf(DslOperationType eventType) {
         return switch (eventType) {
             case DSL_GENERATED -> AuditEventType.DSL_GENERATED;
@@ -402,8 +474,9 @@ public final class AuditEventFactory {
     /**
      * 監査イベントの種類から結果を決める（BR1.2）。
      *
-     * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）と利用者の管理の操作の5つの種類は成功も失敗も同じ種類で、結果は
-     * 出来事が持つため、種類からは決められない（呼び出すと想定外の誤り）。
+     * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）と利用者の管理の操作の5つの種類、グループの操作の5つの種類
+     * （Intent 261004-role-menu の U3）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは決められない（呼び出すと想定外の
+     * 誤り）。
      *
      * @param eventType 種類
      * @return 結果
@@ -429,7 +502,12 @@ public final class AuditEventFactory {
                     USER_ADMIN_REVOKED,
                     USER_SUSPENDED,
                     USER_RESUMED,
-                    LOGIN_FAILURES_RESET -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
+                    LOGIN_FAILURES_RESET,
+                    GROUP_CREATED,
+                    GROUP_RENAMED,
+                    GROUP_DELETED,
+                    GROUP_MEMBER_ADDED,
+                    GROUP_MEMBER_REMOVED -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
         };
     }
 

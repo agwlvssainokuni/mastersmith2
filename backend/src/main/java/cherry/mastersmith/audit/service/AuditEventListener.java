@@ -16,12 +16,14 @@
 package cherry.mastersmith.audit.service;
 
 import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
+import cherry.mastersmith.audit.domain.AuditDetailJson;
 import cherry.mastersmith.audit.domain.AuditEvent;
 import cherry.mastersmith.audit.domain.AuditEventFactory;
 import cherry.mastersmith.audit.domain.AuditEventType;
 import cherry.mastersmith.audit.domain.AuditResult;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
+import cherry.mastersmith.group.domain.GroupAuditEvent;
 import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
 import cherry.mastersmith.invitation.domain.InvitationIssuedEvent;
 import cherry.mastersmith.invitation.domain.InvitationResentEvent;
@@ -48,8 +50,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
  * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）、利用者の管理の操作の出来事（Intent
- * 260930-user-admin の U3）、初期管理者の作成と救済の出来事（Intent 261004-safety-carryover の FR1.5）を受け取り、監査イベントを
- * 1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * 260930-user-admin の U3）、初期管理者の作成と救済の出来事（Intent 261004-safety-carryover の FR1.5）、グループの操作の出来事
+ * （Intent 261004-role-menu の U3）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -232,6 +234,20 @@ public class AuditEventListener {
     }
 
     /**
+     * グループの操作の出来事を受け取り、監査イベントを追記する（Intent 261004-role-menu の U3、契約 C10、BR8.1・BR8.2、NFR3.5）。
+     *
+     * <p>成功は操作のトランザクションの中で、業務の拒否は1つ目を巻き戻した後の2つ目のトランザクション（書き込みなし）の中で知らされ、
+     * どちらも確定の後に受け取る。巻き戻った操作の出来事は受け取らない。書き込みの失敗は応答を変えず、ERROR を1回出す（既存の扱い）。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onGroupAuditEvent(GroupAuditEvent event) {
+        record(() -> AuditEventFactory.from(event), () -> fields(event));
+    }
+
+    /**
      * 初期管理者の作成の出来事を受け取り、監査イベントを追記する（Intent 261004-safety-carryover の FR1.5・FR1.8）。
      *
      * <p>作成の確定の後に、トランザクションの外で知らされるため、起動と同じスレッドでその場で受け取る。書き込みの失敗は起動を止めず、
@@ -298,6 +314,35 @@ public class AuditEventListener {
                 event.traceId());
         fields.put("actorUserId", event.actorUserId());
         fields.putAll(targetFields(event.targetUserId(), null));
+        return fields;
+    }
+
+    /**
+     * グループの操作の出来事の項目（組み立てに失敗したときに載せる。メールアドレス・氏名は持たない）。種類・結果・失敗の理由は、組み立てに
+     * 成功したときの {@link #fields(AuditEvent)} と同じ値の形に、{@link AuditEventFactory} と同じ対応で写す。対象のグループと
+     * detail は値があるときだけ載せる（計画の D-10）。
+     */
+    private static Map<String, Object> fields(GroupAuditEvent event) {
+        if (event == null) {
+            Map<String, Object> fields = fields(null, null, null, null, null, null, null, null, null);
+            fields.put("actorUserId", null);
+            return fields;
+        }
+        Map<String, Object> fields = fields(
+                AuditEventFactory.groupEventTypeOf(event.operation()),
+                event.succeeded() ? AuditResult.SUCCESS : AuditResult.FAILURE,
+                event.occurredAt(),
+                null,
+                AuditEventFactory.groupFailureReasonOf(event.failure()),
+                event.sourceIp(),
+                event.userAgent(),
+                null,
+                event.traceId());
+        fields.put("actorUserId", event.actorUserId());
+        if (event.targetUserId() != null) {
+            fields.putAll(targetFields(event.targetUserId(), null));
+        }
+        fields.putAll(roleGroupFields(null, event.targetGroupId(), AuditDetailJson.of(event.detail())));
         return fields;
     }
 
@@ -376,6 +421,26 @@ public class AuditEventListener {
         if (auditEvent.getTargetUserId() != null || auditEvent.getTargetInvitationId() != null) {
             fields.putAll(targetFields(auditEvent.getTargetUserId(), auditEvent.getTargetInvitationId()));
         }
+        fields.putAll(
+                roleGroupFields(auditEvent.getTargetRoleId(), auditEvent.getTargetGroupId(), auditEvent.getDetail()));
+        return fields;
+    }
+
+    /**
+     * ロール・グループの対象と detail の項目（Intent 261004-role-menu の U3、契約 C10、計画の D-10）。値があるときだけ載せる（既存の
+     * 出来事の ERROR の項目を変えないため）。
+     */
+    private static Map<String, Object> roleGroupFields(Long targetRoleId, Long targetGroupId, String detail) {
+        Map<String, Object> fields = new LinkedHashMap<>();
+        if (targetRoleId != null) {
+            fields.put("targetRoleId", targetRoleId);
+        }
+        if (targetGroupId != null) {
+            fields.put("targetGroupId", targetGroupId);
+        }
+        if (detail != null) {
+            fields.put("detail", detail);
+        }
         return fields;
     }
 
@@ -399,7 +464,12 @@ public class AuditEventListener {
                     USER_RESUMED,
                     LOGIN_FAILURES_RESET,
                     INITIAL_ADMIN_CREATED,
-                    INITIAL_ADMIN_RESCUED -> false;
+                    INITIAL_ADMIN_RESCUED,
+                    GROUP_CREATED,
+                    GROUP_RENAMED,
+                    GROUP_DELETED,
+                    GROUP_MEMBER_ADDED,
+                    GROUP_MEMBER_REMOVED -> false;
         };
     }
 

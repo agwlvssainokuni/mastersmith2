@@ -35,6 +35,7 @@ import cherry.mastersmith.user.repository.UserAdminRow;
 import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.repository.UserRowLockRepository;
 import java.time.Clock;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -300,6 +301,29 @@ public class UserAccountService {
         }
     }
 
+    /**
+     * 利用者の要約を ID の集合でまとめて読む（Intent 261004-role-menu の U3、グループの詳細のメンバーの氏名・メールアドレス・停止。
+     * {@code security-design.md} 4.2・{@code performance-design.md} 1節）。
+     *
+     * <p>既存の主キーの読み取り（{@code findAllById}）の1回で読み、人数に比例して問い合わせの回数を増やさない。いない ID は結果に
+     * 含めない。要約は文字列にするとメールアドレスと氏名を伏せる型（{@link UserAdminSummary}）で、パスワードのハッシュ値を持たない
+     * （メソッドの呼び出しの追跡が戻り値を文字列にするため。U3 の BR9.1）。呼び出し元のトランザクションが有ればそれに入る。
+     *
+     * @param userIds 利用者 ID の集合（空なら DB を読まずに空を返す）
+     * @return 要約の一覧（利用者 ID の昇順）
+     */
+    @Transactional(readOnly = true)
+    public List<UserAdminSummary> findSummariesByIds(Set<Long> userIds) {
+        Objects.requireNonNull(userIds, "userIds");
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+        return userRepository.findAllById(Set.copyOf(userIds)).stream()
+                .map(UserAccountService::toAdminSummary)
+                .sorted(Comparator.comparingLong(UserAdminSummary::userId))
+                .toList();
+    }
+
     private Optional<UserAdminSummary> findAdminRow(long userId) {
         return userRepository.findAdminRow(userId).map(UserAccountService::toAdminSummary);
     }
@@ -515,6 +539,17 @@ public class UserAccountService {
                 user.getTheme().value(),
                 user.getFontSize().value(),
                 user.isSuspended());
+    }
+
+    private static UserAdminSummary toAdminSummary(User user) {
+        return new UserAdminSummary(
+                user.getUserId(),
+                user.getEmail(),
+                user.getDisplayName(),
+                user.getLanguage(),
+                user.isAdminFlag(),
+                user.isSuspended(),
+                user.getCreatedAt());
     }
 
     private static UserAdminSummary toAdminSummary(UserAdminRow row) {

@@ -499,3 +499,112 @@ print("L3", len(l3), "L4", sum(l4.values()), "L4 をちょうど1件持つ L3", 
 #    5'' の最後の docker compose up -d --wait は配備したアプリを起動し直すもので、試験のタグのイメージは使わない
 docker rm -f mastersmith-perf-lgtm
 ```
+
+## グループの管理の場面（Intent 261004-role-menu の U3）
+
+`perf/k6/scenarios.js` のグループの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/group/` の `nfr-requirements/performance-requirements.md`（NFR2.5）・`scalability-requirements.md`（NFR2.7・NFR2.8）と、`nfr-design/performance-design.md`（2節）・`scalability-design.md`（2節）。どの場面も1回の繰り返しに要求1つで、繰り返しの中に待ちを置かない。判定は場面ごとの `iteration_duration{scenario:…}` の p95 < 1000 ms と `checks{scenario:…}` の率 1（期待の状態コードだけを合格にする）で、閾値は緩めない。`http_req_duration{name:…}` は colima の VM の時計のずれで崩れうるため、要約に並べて記録するだけにする（台本の閾値 `max>=0` は表示のためで、判定に使わない）。Build and Test では台本と手順を用意し、`k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。流して判定するのは Performance Validation。
+
+| 場面 | すること | 用意（`setup()` が API で作る） | 形 |
+|---|---|---|---|
+| `groupListFirst` | 一覧の1ページ目（200、20 件） | グループを `GROUP_LIST_MIN`（既定 1,000）件以上にする | `constant-vus`（`VUS`・`DURATION`。`DURATION=3m` で流す） |
+| `groupListLast` | 一覧の最後のページ（200） | 同上（最後のページの番号は setup が数える） | 同上 |
+| `groupDetail` | メンバー 1,000 人のグループの詳細（200、メンバー 1,000 人） | グループを1つ作り、候補 `perf-gr-0001`〜`1000` を全員足す | 同上 |
+| `groupRename` | VU ごとに自分のグループの名前を2つの名前（`perf-rename-<実行>-<VU>-a`・`-b`）で交互に変える（204） | VU ごとにグループを1つ | 同上 |
+| `groupCreate` | VU ごとに名前 `perf-create-<実行>-<VU>-<回>` で作る（201） | なし | `per-vu-iterations`（`VUS` × `GROUP_ROUNDS`（既定 100）回、`maxDuration` 3 分） |
+| `groupDelete` | VU ごとに空のグループを1件ずつ消す（204） | VU ごとに空のグループ `GROUP_ROUNDS` 件 | 同上 |
+| `groupMemberAdd` | VU ごとに自分のグループへ候補を1人ずつ足す（204） | VU ごとにグループ1つ。候補は VU ごとに `GROUP_ROUNDS` 人ずつ割り当てる（VU 1 は 0001〜0100 …） | 同上 |
+| `groupMemberRemove` | VU ごとにメンバーを1人ずつ外す（204） | VU ごとにグループ1つとメンバー `GROUP_ROUNDS` 人 | 同上 |
+| `groupPoolLimit` | VU ごとに自分のグループで、自分の候補1人の追加と外しを交互にくり返す | VU ごとにグループ1つと候補1人 | `constant-vus`。閾値なし。状態コードの件数を `groupPoolLimit_204`・`_409`・`_500`・`_other` で出す |
+
+- **名前**: グループの名前の鍵は大文字と小文字を区別せず全体で一意のため、どの名前も実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。同じ使い捨ての環境で流し直しても重ならない。
+- **トークン**: 操作する管理者は試験用の管理者 `perf-graop01`（初期管理者は使わない）。setup は用意に時間がかかるため4分ごとにログインし直し、最後に場面で使うトークンを取り直す。場面は 3 分までにする（アクセストークンは 5 分で切れ、場面の途中でログインし直さない）。setup の時間の上限は 10 分（`setupTimeout`）。
+- **候補の利用者**: `perf-gr-0001`〜`perf-gr-1000`（予約のドメイン `example.test`、管理者の印なし）を SQL で入れる（利用者を作る API は招待とメールの流れのため使わない）。台本は利用者の一覧の検索で ID を引き、足りなければ始める前に止まる。
+- **接続プール（NFR2.7、`scalability-design.md` 2.2）**: `groupPoolLimit` を2回流す。**合否の回**は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11`（健全性の確かめの1本を見込む）にし、`VUS=5`・`DURATION=2m`。合格は、待ちの時間切れの累計（`hikaricp.connections.timeout`）の増分 0、`groupPoolLimit_500` が 0 件、借りるまでの待ちの最大（`hikaricp.connections.acquire` の `MAX`）が 20 ms 未満。5〜20 ms のときは合格のまま値を記録し、承認の場で目安を見直す。不合格に読む前に、健全性の確かめ以外の接続の使い手が無かったことを、試験の前後の `hikaricp.connections.active` が 0 であることとアプリのログで切り分ける。**記録の回**（合否に使わない）は上限 `10`・`VUS=20`・`DURATION=2m` で、上限に届いた証拠（`acquire` の最大 10 ms 以上）を見る。届かなければ `VUS=40` で1回だけ流し直し、それでも届かなければ記録して承認の場で諮る。時間切れの数・500 の数・409 の数は書き込みの2本使いの既知の制約の大きさとして記録する。`pending` は瞬間値のため参考にとどめる。
+- **`acquire` の単位**: `/actuator/metrics/hikaricp.connections.acquire` の応答の `baseUnit` を見て、ミリ秒にそろえてから 20 ms・10 ms と比べる（外部エクスポートを無効にしたときは `seconds`、有効にしたときは `milliseconds`。同じ数が 1,000 倍違って見える）。下の手順の読み取りの関数は、`baseUnit` が `seconds` なら 1,000 倍する。
+- 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡す（配備したアプリの公開の範囲は変えない）。
+- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。手順 0 のとおり配備したアプリを止める（VM の CPU を分け合わないため）。
+- グループの操作は監査に残る（使い捨ての環境の監査で、配備した環境の監査には残らない）。片付けの前に件数を数える。
+
+```bash
+# 0・1. 上の「手順」の 0・1 と同じ（配備したアプリを止め、WAR とイメージを用意し、一時の環境ファイルを作る）。
+#       U3 はメールを送らないため Mailpit（profile mail）は起動しない
+# 1G. 使い捨てのアプリにだけ指標の公開を足す（秘密ではない値）
+( umask 077; printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
+
+# 2G. 使い捨ての環境を起動し、止めて、メンバーの候補 perf-gr-0001〜1000 と操作する管理者 perf-graop01 を入れる
+#     （利用者の管理の節の 2'' と同じ SQL の形。メールアドレスは予約のドメインだけ。氏名は必須のためメールアドレスの名前の部分）
+perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
+docker info --format '{{.NCPU}} CPU / {{.MemTotal}} bytes'   # VM の余裕を読み取りで確かめる（アプリ 2g・k6）
+perfu up -d --wait
+perfu stop app
+HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-gr-' || LPAD(CAST(X AS VARCHAR), 4, '0') || '@example.test', '$HASH', FALSE,
+    DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-gr-' || LPAD(CAST(X AS VARCHAR), 4, '0') FROM SYSTEM_RANGE(1, 1000);
+INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  VALUES ('perf-graop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-graop01')"
+cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+rm build/h2-perf.jar; unset AP UP HASH SQL
+perfu up -d --wait
+
+# 3G. 応答時間の8場面を流す（constant-vus の場面は 3 分、回数の場面は VU ごとに 100 回）。台本の全体を caffeinate -i で包む
+mkdir -p build/perf-results && chmod 777 build/perf-results
+cat > "$D/gr-run.sh" <<'EOS'
+D="$1"
+k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
+}
+for s in groupListFirst groupListLast groupDetail groupRename; do k6run $s -e SCENARIO=$s -e DURATION=3m; done
+for s in groupCreate groupDelete groupMemberAdd groupMemberRemove; do k6run $s -e SCENARIO=$s; done
+EOS
+caffeinate -i zsh "$D/gr-run.sh" "$D"
+
+# 3G'. 接続プールの合否の回（上限 11・VUS=5・2 分）と記録の回（上限 10・VUS=20・2 分。届かなければ VUS=40 で1回だけ流し直す）。
+#      上限を変えて使い捨てのアプリを作り直し、k6 の前・間（5 秒ごと）・後に接続プールの値を読む
+cat > "$D/gr-pool.sh" <<'EOS'
+D="$1"; TAG="$2"; VUSN="$3"; R=build/perf-results
+read_metrics() {   # 引数: 時刻の印。acquire は baseUnit を見てミリ秒にそろえる
+  for m in hikaricp.connections.timeout hikaricp.connections.acquire hikaricp.connections.pending hikaricp.connections.active; do
+    curl -s "http://127.0.0.1:18080/actuator/metrics/$m" | python3 -c 'import json, sys
+d = json.load(sys.stdin); scale = 1000 if d.get("baseUnit") == "seconds" else 1
+print(sys.argv[1], d["name"], {x["statistic"]: (x["value"] * scale if d["name"].endswith("acquire") and x["statistic"] in ("MAX", "TOTAL_TIME") else x["value"]) for x in d["measurements"]})' "$1" >> "$R/$TAG-metrics.txt"
+  done
+}
+read_metrics before
+docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=groupPoolLimit -e VUS=$VUSN -e DURATION=2m \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+  run --quiet --summary-export=/out/$TAG.json /scripts/scenarios.js > "$R/$TAG-k6.log" 2>&1 &
+K6=$!
+while kill -0 $K6 2> /dev/null; do read_metrics "$(date -u +%H:%M:%SZ)"; sleep 5; done
+wait $K6; read_metrics end
+EOS
+( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11\n' >> "$D/app.env" )
+perfu up -d --wait --force-recreate app
+caffeinate -i zsh "$D/gr-pool.sh" "$D" gr-pool11 5
+sed -i '' 's/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11$/MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10/' "$D/app.env"
+perfu up -d --wait --force-recreate app
+caffeinate -i zsh "$D/gr-pool.sh" "$D" gr-pool10 20
+# 判定: 時間切れの累計の増分（before と end の COUNT の差）、acquire の MAX の最大（ミリ秒）、k6 の要約の groupPoolLimit_500 の件数
+python3 -c '
+import ast, sys
+for tag in ("gr-pool11", "gr-pool10"):
+    rows = [line.split(" ", 2) for line in open(f"build/perf-results/{tag}-metrics.txt")]
+    timeout = [ast.literal_eval(r[2])["COUNT"] for r in rows if r[1] == "hikaricp.connections.timeout"]
+    acquire = [ast.literal_eval(r[2])["MAX"] for r in rows if r[1] == "hikaricp.connections.acquire"]
+    print(tag, "時間切れの増分", timeout[-1] - timeout[0], "acquire MAX の最大（ms）", max(acquire))'
+grep -h -o '"groupPoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/gr-pool11.json build/perf-results/gr-pool10.json
+
+# 4G. 秘密が出ていないことを件数で確かめ（どれも 0）、アプリを止めて監査の件数を読み取りだけで数えてから片付ける
+perfu logs app 2>&1 | grep -c 'perf-gr-'
+perfu logs app 2>&1 | grep -c -i -e 'Unique index or primary key violation' -e 'UK_GROUPS_NAME_KEY'
+#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type LIKE 'GROUP_%'
+#     GROUP BY event_type, result, failure_reason
+perfu down -v
+rm -rf "$D"
+docker compose up -d --wait
+```

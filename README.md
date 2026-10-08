@@ -795,6 +795,28 @@ Intent 260930-user-admin の U3 で、管理者が利用者の一覧を見て探
 - **直さない理由**: 送信中に言語を選び直せないようにするには、選択肢を押せなくする必要がありますが、make-you-chic-ui の `RadioGroup` には読み取り専用の口が無く（`disabled` だけ）、`vendor/make-you-chic-ui` はこのリポジトリから変えられません。依頼者の決定で、この Intent では直さず既知の点として残しました。
 - **直すときの候補**: (a) 送信中も `disabled` にせず、`onChange` で値の変更を受け付けない（見た目では押せないことが伝わらない）、(b) 送信を始めるときに、保存のボタンなど押せるままの要素へフォーカスを移す、(c) make-you-chic-ui に読み取り専用の口を足してもらう（make-you-chic-ui のリポジトリ側での変更と、固定先の更新の専用のコミットが要る）。同じ形（送信中に押せなくする選択肢の欄）がほかの画面にもあるかは確かめていません。
 
+## グループの管理の API（Intent 261004-role-menu の U3）
+
+Intent 261004-role-menu の U3 で、管理者が利用者のグループを作り、名前を変え、メンバーを足し外し、消す API を足しました（契約 C6）。どれも `/api/admin/groups` の下にあり、API の分類は `ADMIN`（管理者だけ）です。既存の `/api/admin/**` の決まり（未認証・停止中の利用者は 401 `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 `ACCESS_DENIED`）にそのまま乗ります。グループへのロールの割り当て（U4）と画面（U7）は後の Bolt の受け持ちです。
+
+| API | 成功 | 主な失敗 |
+|---|---|---|
+| `GET /api/admin/groups?page=` | 200 と1ページ（`items`・`page`・`size` 20・`total`）。行は `groupId`・`name`・`memberCount`・`assignedRoleCount` | 400 `VALIDATION_FAILED`（page が 1 以上の整数でない） |
+| `POST /api/admin/groups`（`name`） | 201 と `groupId`・`name`・`createdAt`・`updatedAt` | 400 `VALIDATION_FAILED`（`fieldErrors` の `name`）・409 `GROUP_NAME_DUPLICATE`・409 `GROUP_BUSY` |
+| `GET /api/admin/groups/{groupId}` | 200 と `groupId`・`name`・`members`（足した順に全件。各人の `userId`・`displayName`・`email`・`suspended`） | 404 `GROUP_NOT_FOUND` |
+| `PUT /api/admin/groups/{groupId}`（`name`） | 204（本文なし） | 400・404 `GROUP_NOT_FOUND`・409 `GROUP_NAME_DUPLICATE`・409 `GROUP_NO_CHANGE`（今と同じ名前）・409 `GROUP_BUSY` |
+| `DELETE /api/admin/groups/{groupId}` | 204 | 404 `GROUP_NOT_FOUND`・409 `GROUP_IN_USE`（本文に残りの `members`・`assignedRoles` の数）・409 `GROUP_BUSY` |
+| `POST /api/admin/groups/{groupId}/members`（`userId`） | 204 | 400（`userId` が無い・正の整数でない）・404 `GROUP_NOT_FOUND`・404 `USER_NOT_FOUND`・409 `GROUP_NO_CHANGE`（すでにメンバー）・409 `GROUP_BUSY` |
+| `DELETE /api/admin/groups/{groupId}/members/{userId}` | 204 | 404 `GROUP_NOT_FOUND`・404 `USER_NOT_FOUND`・409 `GROUP_NO_CHANGE`（メンバーでない）・409 `GROUP_BUSY` |
+
+- **名前**: 前後の空白を除いてから判定して保存します。除いた後が 1〜64 文字（コードポイント）で、制御文字を含めません。重なりは大文字と小文字を区別せずに判定し、全角と半角は別の文字です。
+- **メンバー**: 足せるのは登録の終わった利用者だけです（招待中の人は利用者 ID を持ちません）。利用停止中の利用者も足せます。判定はグループの有無、利用者の有無、メンバーかの順です。
+- **削除**: メンバーかロールの割り当てが残るグループは消せません（409 `GROUP_IN_USE`）。メンバーも割り当ても無いグループは行ごと消えます。
+- **本文**: 決めた項目（`name`・`userId`）だけを読み、ほかの項目（ID・日時・作成者など）は読み捨てます。壊れた JSON は 400 `MALFORMED_REQUEST` です。
+- **同時の操作**: グループを変える操作は、最初にそのグループの行を排他します。行の排他の待ちの上限は 3 秒、名前の一意の鍵とメンバーの主キーの待ちは H2 の既定の約 2 秒で、超えると巻き戻して 409 `GROUP_BUSY` で断ります（状態は変わりません。少し待ってやり直してください）。同じ名前の作成・変更が重なったときは、後の側が先の側の確定を見たかどうかで code が分かれます。確定を見れば 409 `GROUP_NAME_DUPLICATE`、先の側が確定しないまま鍵の待ちの上限を過ぎれば 409 `GROUP_BUSY` です。一意の制約の違反の文（鍵の値を含む）は、応答・ログ・監査に出しません。
+- **監査**: 成功した変える操作と、業務の理由で断った変える操作（404・409 の `GROUP_NAME_DUPLICATE`・`GROUP_NO_CHANGE`・`GROUP_IN_USE`）を残します（「監査ログ（U4）」）。入力の誤り（400）・`GROUP_BUSY`・一覧と詳細の読み取りは残しません。
+- **指標**: 既存の `http.server.requests` で道ごとに数えます（新しい指標は足していません）。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。
@@ -890,6 +912,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - V7（`V7__u2_user_preferences.sql`、Intent 260925-user-management の U2）: `users` に `display_name`（必須、既定の値なし。既存の利用者にはメールアドレスを入れる）・`language`（既定 `ja`）・`theme`（既定 `system`）・`font_size`（既定 `md`）を、`audit_events` に `target_user_id`・`target_invitation_id`（空を許す）を足します。前進のみで、1つ前の版のアプリが動く後方互換を保ちます。確かめは2段でした。(1) の自動の結合テスト（V6 までしか知らない Flyway が V7 の後の内部DB で失敗しないこと、既存の利用者の初期値、1つ前の版の追記の形の既知の限界）は、Intent 260930-user-admin の B1 で消しました（依頼者の決定。マスタ管理の機能本体がまだ無いため、戻す場合を想定したテストは置かない）。(2) 1つ前の版を V7 の後の内部DB の複写で起動する確かめ（Hibernate の検証が足した列を許すことを含む）は、過去の配備の段の戻しの練習で行いました。
 - V8（`V8__u3_invitation.sql`、Intent 260925-user-management の U3）: 招待の表 `invitations` を新しく足します（既存の表は変えない）。同じメールアドレスの招待中を1件に限るため、状態が `PENDING` のときだけメールアドレスになる生成列 `pending_email` に一意の制約を付けます。トークンはハッシュ（SHA-256）だけを保存します。確かめは2段でした。(1) の自動の結合テスト（生成列と一意の制約のふるまい、V7 までしか知らない Flyway が V8 の後の内部DB で失敗しないこと）は、Intent 260930-user-admin の B1 で消しました（理由は V7 と同じ）。生成列と一意の制約のふるまいの確かめは `InvitationSchemaIT` に移し、同時の招待の確かめは `InvitationConcurrencyIT` が受け持ちます。(2) 1つ前の版を V7・V8 の後の内部DB の複写で起動する確かめは、過去の配備の段の戻しの練習で行いました。
 - V9（`V9__u1_user_suspension.sql`、Intent 260930-user-admin の U1）: `users` に `suspended`（既定 `FALSE`・必須。既存の利用者は有効のまま）を足す前進のみの変更です。移行の自動のテストと戻しの練習は置きません（依頼者の決定）。確かめは、起動時の Flyway と Hibernate の検証と、利用停止の状態の読み書きの結合テストだけです。**1つ前の版に戻している間は、利用停止が効きません**（1つ前の版は `suspended` を読まないため、停止中の利用者もログイン・トークンの更新・アクセストークンの認証の3つの入口を通れます。止めたときに無効にしたリフレッシュトークンは無効のままです）。戻す前に停止中の利用者がいるかを確かめる手順は、配備の段で決めます。
+- V10（`V10__u3_group.sql`、Intent 261004-role-menu の U3）: グループの表 `groups`（名前の鍵 `name_key` に一意の制約 `uk_groups_name_key`）とメンバーの表 `group_members`（主キーはグループと利用者の組。グループへの外部キーは削除の制限つき、利用者への外部キー、利用者の ID の索引）を新しく足し、`audit_events` に `target_role_id`・`target_group_id`（空を許す）と `detail`（16,384 文字まで、空を許す）を足します。前進のみで、既存の列と表は変えません。確かめは `AuditMigrationCompatibilityIT`（V1〜V9 だけを知る Flyway が V10 の後の内部DB で止まらないこと、V10 の前に書いた監査の行が V10 の後も読めて足した3列が空であること、V10 の後も前の版の列だけで行を追記できること、表と制約の名前・索引・列の長さ）と、起動時の Flyway と Hibernate の検証です。1つ前の版のアプリを V10 の後の内部DB で起動する確かめ（戻しの練習）は、配備の段で扱います。
 
 ## API のアクセス制御（U3）
 
@@ -935,6 +958,8 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
   - 入力されたメールアドレス・User-Agent・要求のパス・トレースIDは空です。メールアドレス・パスワード・ハッシュ値・トークンは記録しません。
   - 救済の途中で失敗して取り消されたときは、救済の行は残りません。記録に失敗したときは、救済・作成はそのまま確定し、ERROR（`監査イベントの記録に失敗しました`）が1回出ます。
 - 対象の列（V7）: `target_user_id`（対象の利用者）・`target_invitation_id`（対象の招待。招待と登録の完了の出来事で使います）。どちらも空を許し、それ以前の種類の記録では空のままです。
+- グループの管理（Intent 261004-role-menu の U3）も記録します。種類は `GROUP_CREATED`・`GROUP_RENAMED`・`GROUP_DELETED`・`GROUP_MEMBER_ADDED`・`GROUP_MEMBER_REMOVED` で、どの種類も成功（結果 `SUCCESS`）と業務の拒否（結果 `FAILURE`）の両方があります。失敗の理由は `GROUP_NOT_FOUND`・`USER_NOT_FOUND`・`GROUP_NAME_DUPLICATE`・`GROUP_IN_USE`・`NO_CHANGE` です。操作した管理者（`actor_user_id`）、対象のグループ（`target_group_id`。作成の名前の重なりでは空、いない ID の拒否では要求の ID）、メンバーの追加・外しでは対象の利用者（`target_user_id`。いない ID もそのまま）が入ります。`target_role_id` は U3 では空です。`detail` には決めたキーだけの JSON（作成・削除・名前の重なりは `name`、名前の変更は `before`・`after`、メンバーの追加・外しは `groupName`、使用中の削除の拒否は `name`・`members`・`assignedRoles`）が入り、404 の拒否では空です。メールアドレス・氏名は記録しません。入力の誤り・`GROUP_BUSY`・一覧と詳細の読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わらず、ERROR には操作した人・対象のグループ・対象の利用者の ID と `detail`（グループの名前を含む）が載ります（メールアドレスは載りません）。
+- 対象の列（V10）: `target_role_id`（対象のロール。後の Bolt の U4 で使います）・`target_group_id`（対象のグループ）・`detail`（JSON の文字列、16,384 文字まで）。どれも空を許し、それ以前の種類の記録では空のままです。
 - 監査イベントの `trace_id` は、同じ要求のアプリのログの `traceId` と一致します。1つの要求を追うときは、この値でログを絞り込みます。
 - 記録に失敗しても、ログイン・ログアウト・401／403 の応答は変わりません。失敗したときは、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます。**この ERROR には、記録しようとした項目（メールアドレスを含む）がキーと値で載ります**。後から手で記録を補えるようにするためで、U4 に限った扱いです。パスワード・トークンは載りません。外部エクスポートで外へ送るときは、メールアドレス・接続元IP・User-Agent の値を `[REDACTED]` に置き換えます（「外部エクスポートの確かめ方」）。元の値は標準出力のログで見ます。
 - パスワードの変更の記録に失敗したときの ERROR には、メールアドレスは載らず（出来事がメールアドレスを持たないため）、操作した人と対象の利用者（`actorUserId`・`targetUserId`・`targetInvitationId`）が載ります。記録に失敗しても、パスワードの変更の応答（204・400）は変わりません。

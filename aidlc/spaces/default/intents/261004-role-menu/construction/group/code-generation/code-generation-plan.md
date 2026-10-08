@@ -206,118 +206,118 @@
 各手順の「対応」は8節の ID。チェックボックスは生成のときに付ける。
 
 ### Step 1: 作業の場の用意（ブランチの作成は依頼者の承認を得てから）
-- [ ] 計画の承認と、計画までの記録のコミット（依頼者の承認を得て指揮役が行う）の後に、`develop` の先頭から `feature/261004-role-menu-b3` を作る。開始の時点の HEAD を `generation-notes.md` に記録する。
-- [ ] `git status --short` でアプリのソースに未コミットの変更が無いことを確かめる（監査ログの追記はワークフローの記録として外して判断する）。`frontend/playwright-report`・`frontend/test-results` が無いことを確かめる。
+- [x] 計画の承認と、計画までの記録のコミット（依頼者の承認を得て指揮役が行う）の後に、`develop` の先頭から `feature/261004-role-menu-b3` を作る。開始の時点の HEAD を `generation-notes.md` に記録する。
+- [x] `git status --short` でアプリのソースに未コミットの変更が無いことを確かめる（監査ログの追記はワークフローの記録として外して判断する）。`frontend/playwright-report`・`frontend/test-results` が無いことを確かめる。
 - 対応: Testing Contract の「Project structure and production configuration skeleton」（新しいパッケージは Step 8 以降で作る）。
 
 ### Step 2: テストの実行の準備（最初のテストより前）
-- [ ] `unit-test-instructions.md` 2節のコマンド（既存のテストを名指し）が動くことを確かめ、結果（件数・失敗 0）を記録する。
-- [ ] colima の状態とホームの共有を確かめる（6節 A15）。
-- [ ] 洗い出しの検索を流し直し、4.3・4.5 の一覧と増減が無いかを記録する: `git grep -n -F 'UserAdminProblemTypes.USER_NOT_FOUND' -- backend frontend perf`、`git grep -n -e 'TARGET_INVITATION_ID' -e 'containsOnlyKeys' -- backend/src/test`、`git grep -n -e 'resideOutsideOfPackages' -- backend/src/test`、`ls backend/src/main/resources/db/migration/`。
+- [x] `unit-test-instructions.md` 2節のコマンド（既存のテストを名指し）が動くことを確かめ、結果（件数・失敗 0）を記録する。
+- [x] colima の状態とホームの共有を確かめる（6節 A15）。
+- [x] 洗い出しの検索を流し直し、4.3・4.5 の一覧と増減が無いかを記録する: `git grep -n -F 'UserAdminProblemTypes.USER_NOT_FOUND' -- backend frontend perf`、`git grep -n -e 'TARGET_INVITATION_ID' -e 'containsOnlyKeys' -- backend/src/test`、`git grep -n -e 'resideOutsideOfPackages' -- backend/src/test`、`ls backend/src/main/resources/db/migration/`。
 - 対応: Testing Contract の runner の手順。
 
 ### Step 3: 変更の前の基準
-- [ ] colima の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` を流し、件数（単体・結合、失敗・飛ばし）と `backend/build/reports/jacoco/test/jacocoTestReport.xml` の `audit.domain`・`audit.service`・`user.domain`・`user.service`・`useradmin.domain`・`useradmin.web` の行と分岐の値、全体の値を記録する（`project.md` の学び）。
-- [ ] `backend/build.gradle.kts` の `packagesJudgedByTotal` が7パッケージのままで、手を入れるパッケージ（5節）が入っていないことを記録する。
-- [ ] 次の空き移行番号が V10 であることを確かめる（V1〜V9 だけがある）。違えば番号を合わせ、10節 D-13 に記録する。
+- [x] colima の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` を流し、件数（単体・結合、失敗・飛ばし）と `backend/build/reports/jacoco/test/jacocoTestReport.xml` の `audit.domain`・`audit.service`・`user.domain`・`user.service`・`useradmin.domain`・`useradmin.web` の行と分岐の値、全体の値を記録する（`project.md` の学び）。
+- [x] `backend/build.gradle.kts` の `packagesJudgedByTotal` が7パッケージのままで、手を入れるパッケージ（5節）が入っていないことを記録する。
+- [x] 次の空き移行番号が V10 であることを確かめる（V1〜V9 だけがある）。違えば番号を合わせ、10節 D-13 に記録する。
 - 対応: NFR6.4、NFR3.6、Infrastructure Design (i)。
 
 ### Step 4: 境界の口の移し替え — 実装（user.domain・user.service・useradmin.domain・useradmin.web）
-- [ ] `UserProblemTypes` に `USER_NOT_FOUND` を移し、`UserAdminProblemTypes` から外す（`of` は user の定義を返す）。`UserAdminController` の1か所を替える。2つの一覧の付け替えを同じ変更で行う（code の二重の定義で起動が止まらないため）。
-- [ ] `UserAccountService.findSummariesByIds(Set<Long>)` を足す（10節 D-2）。
+- [x] `UserProblemTypes` に `USER_NOT_FOUND` を移し、`UserAdminProblemTypes` から外す（`of` は user の定義を返す）。`UserAdminController` の1か所を替える。2つの一覧の付け替えを同じ変更で行う（code の二重の定義で起動が止まらないため）。
+- [x] `UserAccountService.findSummariesByIds(Set<Long>)` を足す（10節 D-2）。
 - 対応: BR10.2、BR9.1、NFR1.6。
 
 ### Step 5: 境界の口の移し替え — テスト
-- [ ] 4.5 の書き換え（4つのテスト）と `UserSummariesByIdsIT` を書く。
-- [ ] `unit-test-instructions.md` 3.1 の Step 5 のコマンド（user・useradmin の単体と結合）を流し、通るまで直す。
+- [x] 4.5 の書き換え（4つのテスト）と `UserSummariesByIdsIT` を書く。
+- [x] `unit-test-instructions.md` 3.1 の Step 5 のコマンド（user・useradmin の単体と結合）を流し、通るまで直す。
 - 対応: BR10.2、NFR1.6。コミットの区切り C1 の終わり。
 
 ### Step 6: データの形 — 実装（移行と監査の列。audit.domain）
-- [ ] `V10__u3_group.sql` を 4.4 のとおり書く。
-- [ ] `AuditEvent` の3項目・`withRoleGroupTarget`・detail の上限・toString、`AuditEventType`・`AuditFailureReason` の値を足す。group のクラスには依存しない（C2 の区切り）。
+- [x] `V10__u3_group.sql` を 4.4 のとおり書く。
+- [x] `AuditEvent` の3項目・`withRoleGroupTarget`・detail の上限・toString、`AuditEventType`・`AuditFailureReason` の値を足す。group のクラスには依存しない（C2 の区切り）。
 - 対応: BR8.4・BR8.6・BR8.8・BR8.9、NFR3.6・NFR5.1・NFR5.5、C10。
 
 ### Step 7: データの形 — テスト
-- [ ] `AuditEventGroupTargetTest`、`AuditSchemaIT`・`AuditSecretLeakIT`（列の一覧）・`AuditRows` の書き換え、`AuditMigrationCompatibilityIT`（11節 Q4）を書く。移行の後に `groups`・`group_members` の表・制約の名前・`user_id` の索引があることも `AuditMigrationCompatibilityIT` か `GroupRepositoryIT` で確かめる（6節 A4）。
-- [ ] `unit-test-instructions.md` 3.1 の Step 7 のコマンドを流し、通るまで直す。既存の監査のテスト（`cherry.mastersmith.audit.*`）を全部流し、既存の監査が壊れないことを確かめる。
+- [x] `AuditEventGroupTargetTest`、`AuditSchemaIT`・`AuditSecretLeakIT`（列の一覧）・`AuditRows` の書き換え、`AuditMigrationCompatibilityIT`（11節 Q4）を書く。移行の後に `groups`・`group_members` の表・制約の名前・`user_id` の索引があることも `AuditMigrationCompatibilityIT` か `GroupRepositoryIT` で確かめる（6節 A4）。
+- [x] `unit-test-instructions.md` 3.1 の Step 7 のコマンドを流し、通るまで直す。既存の監査のテスト（`cherry.mastersmith.audit.*`）を全部流し、既存の監査が壊れないことを確かめる。
 - 対応: NFR3.6、NFR1.7（列）、NFR5.5、AC1.1.16。コミットの区切り C2 の終わり。
 
 ### Step 8: group のドメイン — 実装（group.domain）
-- [ ] 4.1 の `group.domain` のファイルを作る（エンティティ・`GroupName`・出来事・detail・code・拒否の理由・メンバーの値）。
+- [x] 4.1 の `group.domain` のファイルを作る（エンティティ・`GroupName`・出来事・detail・code・拒否の理由・メンバーの値）。
 - 対応: BR1.1〜BR1.5、BR8.5・BR8.7、BR9.1、BR10.1、NFR1.11。
 
 ### Step 9: group のドメイン — テスト
-- [ ] `GroupNameTest`（64 コードポイントちょうど（サロゲートペアを含む）・65・空・全角の空白だけ・改行・タブ・制御文字・「Sales」と「sales」と「SALES」の鍵・全角の「Ｓａｌｅｓ」は別の鍵）、`GroupNamePropertyTest`（jqwik。取り除いた結果に前後の空白が無い、受け付けた名前は 1〜64、鍵は大文字と小文字だけの違いで等しい、鍵の長さが 256 に収まる、名前の長さ（UTF-16）が 128 に収まる。失敗のときの乱数の種は既存の `exceptionFormat = FULL` で残る）、`GroupAuditEventTest`・`GroupAuditDetailTest`・`GroupProblemTypesTest`・`GroupMemberTest`（toString に値が出ない）を書く。
-- [ ] Step 9 のコマンドを流す。
+- [x] `GroupNameTest`（64 コードポイントちょうど（サロゲートペアを含む）・65・空・全角の空白だけ・改行・タブ・制御文字・「Sales」と「sales」と「SALES」の鍵・全角の「Ｓａｌｅｓ」は別の鍵）、`GroupNamePropertyTest`（jqwik。取り除いた結果に前後の空白が無い、受け付けた名前は 1〜64、鍵は大文字と小文字だけの違いで等しい、鍵の長さが 256 に収まる、名前の長さ（UTF-16）が 128 に収まる。失敗のときの乱数の種は既存の `exceptionFormat = FULL` で残る）、`GroupAuditEventTest`・`GroupAuditDetailTest`・`GroupProblemTypesTest`・`GroupMemberTest`（toString に値が出ない）を書く。
+- [x] Step 9 のコマンドを流す。
 - 対応: AC2.1.2、BR1.1〜BR1.4、NFR1.11・NFR6.5（決定 (2)）、BR10.1。
 
 ### Step 10: DB アクセス — 実装（group.repository・group.store）
-- [ ] 読み取りの repository（10節 D-4）と、`GroupStore`・`StoreOutcome`・`StoreFailureClassifier`・`GroupStoreUnexpectedException`（クラスの名前だけを持つ。11節 Q5: A）を作る。store の方法は「排他（`lockGroup`）」と「書き込みと flush（`insertGroup`・`renameGroup`・`deleteGroup`・`insertMember`・`deleteMember`）」に分ける（10節 D-5）。
+- [x] 読み取りの repository（10節 D-4）と、`GroupStore`・`StoreOutcome`・`StoreFailureClassifier`・`GroupStoreUnexpectedException`（クラスの名前だけを持つ。11節 Q5: A）を作る。store の方法は「排他（`lockGroup`）」と「書き込みと flush（`insertGroup`・`renameGroup`・`deleteGroup`・`insertMember`・`deleteMember`）」に分ける（10節 D-5）。
 - 対応: BR5.1・BR5.2・BR5.4・BR5.5、BR7、BR9.3、NFR1.8・NFR1.9・NFR2.3・NFR2.6・NFR3.3。
 
 ### Step 11: DB アクセス — テスト
-- [ ] `StoreFailureClassifierTest`（上限切れ・23505 の制約の名前ごと・23503・想定外・待った後の違反 #9・包み直した例外が元の文を持たない）、`GroupStoreConstraintIT`（#7: 主キーの待たない違反と上限切れ、外部キーの2つの経路（10節 D-6）、上限切れの WARN の `lockKind`）、`GroupRepositoryIT`（ID の順・メンバーの数・詳細の並び・`groupIdsOfUser`・`memberUserIds` で存在しないグループを含めない）を書く。
-- [ ] Step 11 のコマンドを流す。
+- [x] `StoreFailureClassifierTest`（上限切れ・23505 の制約の名前ごと・23503・想定外・待った後の違反 #9・包み直した例外が元の文を持たない）、`GroupStoreConstraintIT`（#7: 主キーの待たない違反と上限切れ、外部キーの2つの経路（10節 D-6）、上限切れの WARN の `lockKind`）、`GroupRepositoryIT`（ID の順・メンバーの数・詳細の並び・`groupIdsOfUser`・`memberUserIds` で存在しないグループを含めない）を書く。
+- [x] Step 11 のコマンドを流す。
 - 対応: AC2.1.5（最後の守り）、BR5.2・BR5.4・BR5.5、BR7.2〜BR7.4、BR6.5、NFR1.8・NFR3.3・NFR3.7（T1〜T7 の本物での確かめ。8節の表）。
 
 ### Step 12: 業務処理 — 実装（group.service・role.service・audit の受け取り）
-- [ ] `GroupAdminService`・`GroupStoreTransactions`・`FirstStep`・結果の型、`GroupBarrier`・`NoOpGroupBarrier`、`GroupMembershipQuery`・実装、`GroupDeletionGuard`・`DeletionDecision`、`GroupProblemTypeCatalog` を作る。
-- [ ] `role.service.RoleGroupDeletionGuard`（仮の実装、11節 Q1: A）を作る。
-- [ ] `AuditEventFactory.from(GroupAuditEvent)`・`AuditDetailJson`、`AuditEventListener.onGroupAuditEvent` と失敗の ERROR の項目（10節 D-10）を足す。
-- [ ] `UserBoundaryArchitectureTest` の「user に依存してよい機能」の一覧に `group` だけを足す（11節 Q2: A で承認済み、D-20）。ほかの規則は変えない。
+- [x] `GroupAdminService`・`GroupStoreTransactions`・`FirstStep`・結果の型、`GroupBarrier`・`NoOpGroupBarrier`、`GroupMembershipQuery`・実装、`GroupDeletionGuard`・`DeletionDecision`、`GroupProblemTypeCatalog` を作る。
+- [x] `role.service.RoleGroupDeletionGuard`（仮の実装、11節 Q1: A）を作る。
+- [x] `AuditEventFactory.from(GroupAuditEvent)`・`AuditDetailJson`、`AuditEventListener.onGroupAuditEvent` と失敗の ERROR の項目（10節 D-10）を足す。
+- [x] `UserBoundaryArchitectureTest` の「user に依存してよい機能」の一覧に `group` だけを足す（11節 Q2: A で承認済み、D-20）。ほかの規則は変えない。
 - 対応: BR3・BR4・BR5.1〜BR5.7・BR6.1〜BR6.5・BR7・BR8.1〜BR8.5、NFR3.4・NFR5.1、C4・C10。
 
 ### Step 13: 業務処理 — テスト
-- [ ] `GroupAdminServiceTest`（操作ごとの判定の順（BR3.5）・拒否と出来事・`Referenced` の操作ごとの読み替え・`Busy` で出来事なし・`FirstStep` の `Done` 以外で巻き戻しの印）、`GroupStoreTransactionsIT`（T5）、`GroupMembershipQueryIT`（`lockForAssignment` の Locked(exists 真・偽) と Busy、外した直後の `groupIdsOfUser`）、`GroupMembershipQueryCountIT`（1回）、`GroupProblemTypeCatalogTest`、`RoleGroupDeletionGuardTest`、`AuditGroupEventFactoryTest`（種類・理由・対象・detail のキー、`GROUP_NOT_FOUND`・`USER_NOT_FOUND` の detail は空）、`AuditGroupEventListenerTest`（確定の後・失敗の ERROR の項目）を書く。
-- [ ] Step 13 のコマンドを流す。
+- [x] `GroupAdminServiceTest`（操作ごとの判定の順（BR3.5）・拒否と出来事・`Referenced` の操作ごとの読み替え・`Busy` で出来事なし・`FirstStep` の `Done` 以外で巻き戻しの印）、`GroupStoreTransactionsIT`（T5）、`GroupMembershipQueryIT`（`lockForAssignment` の Locked(exists 真・偽) と Busy、外した直後の `groupIdsOfUser`）、`GroupMembershipQueryCountIT`（1回）、`GroupProblemTypeCatalogTest`、`RoleGroupDeletionGuardTest`、`AuditGroupEventFactoryTest`（種類・理由・対象・detail のキー、`GROUP_NOT_FOUND`・`USER_NOT_FOUND` の detail は空）、`AuditGroupEventListenerTest`（確定の後・失敗の ERROR の項目）を書く。
+- [x] Step 13 のコマンドを流す。
 - 対応: AC2.1.3・AC2.1.9・AC2.1.10・AC2.2.1・AC2.2.10、BR3.5・BR3.6・BR4.1〜BR4.4・BR5.3・BR5.7・BR6.1〜BR6.5・BR8.1〜BR8.5、NFR2.3・NFR3.4。
 
 ### Step 14: API — 実装（group.web）
-- [ ] `GroupAdminController` と DTO、入力の誤りの `fieldErrors`（`UserAdminFieldErrors` と同じ形）、`GROUP_IN_USE` の `members`・`assignedRoles`（`BusinessException` の追加の項目）。7つの口すべてに `@ApiAccess(ADMIN)`。
+- [x] `GroupAdminController` と DTO、入力の誤りの `fieldErrors`（`UserAdminFieldErrors` と同じ形）、`GROUP_IN_USE` の `members`・`assignedRoles`（`BusinessException` の追加の項目）。7つの口すべてに `@ApiAccess(ADMIN)`。
 - 対応: AC2.1.6・AC2.1.7・AC2.1.8、AC1.1.15、BR2.1〜BR2.3、BR4.2、BR7.1、BR10.1、NFR1.1・NFR1.3・NFR1.4、C6。
 
 ### Step 15: API — テスト（結合）
-- [ ] 4.5 の API の層のテストを書く。同時の重なり（#1〜#6）は `TestGroupBarrier` で作り、合否は 409 と code・状態が変わらないこと・監査の行・WARN で決める（経過の時間で決めない。#1・#5 の Javadoc に2.2 の NFR Design R-02 の注記）。問う口の Blocked と数は `TestGroupDeletionGuard`（`@Primary`）で作る。
-- [ ] `AuditSecretLeakIT` のグループの行の確かめ（4.5）を流す。
-- [ ] Step 15 のコマンドを流す。
+- [x] 4.5 の API の層のテストを書く。同時の重なり（#1〜#6）は `TestGroupBarrier` で作り、合否は 409 と code・状態が変わらないこと・監査の行・WARN で決める（経過の時間で決めない。#1・#5 の Javadoc に2.2 の NFR Design R-02 の注記）。問う口の Blocked と数は `TestGroupDeletionGuard`（`@Primary`）で作る。
+- [x] `AuditSecretLeakIT` のグループの行の確かめ（4.5）を流す。
+- [x] Step 15 のコマンドを流す。
 - 対応: AC2.1.1〜AC2.1.8・AC2.1.11〜AC2.1.13、BR1.4・BR1.5・BR2・BR3.1〜BR3.4・BR4・BR5.2・BR5.5・BR5.7・BR7・BR8.1〜BR8.4・BR9・BR10、NFR1.1〜NFR1.4・NFR1.6〜NFR1.8・NFR2.6・NFR2.7・NFR3.1・NFR3.3〜NFR3.5・NFR5.1〜NFR5.3・NFR6.1。
 
 ### Step 16: 境界と構造の検査
-- [ ] `GroupBoundaryArchitectureTest`（`group` が `role`・`audit`・`useradmin` に依存しない、`group` に依存してよいのは `role`・`audit` だけ、`group.store` を使うのは `group.service` だけ、`group.service` が `EntityManager` を使わない、`group.repository` に書き込みの方法・`@Modifying` が無く `CrudRepository` を継がない、トランザクションの境界は `group.service` の `TransactionTemplate` だけ。規則が依存を見分けていることの確かめを各規則に添える（既存の境界テストと同じ形））と `RoleBoundaryArchitectureTest`（11節 Q1: A。role がアプリの中で依存してよいのは `group.service` と `common` だけ、規則が依存を見分けていることの確かめを添える）を書く。
-- [ ] `cherry.mastersmith.*BoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest`・`ApiAccessRulesTest`・`ApiAccessConsistencyIT`・`PublicApiInventoryTest` を流す（B2 の検査で7つの口の印と管理者の道が合うこと）。
+- [x] `GroupBoundaryArchitectureTest`（`group` が `role`・`audit`・`useradmin` に依存しない、`group` に依存してよいのは `role`・`audit` だけ、`group.store` を使うのは `group.service` だけ、`group.service` が `EntityManager` を使わない、`group.repository` に書き込みの方法・`@Modifying` が無く `CrudRepository` を継がない、トランザクションの境界は `group.service` の `TransactionTemplate` だけ。規則が依存を見分けていることの確かめを各規則に添える（既存の境界テストと同じ形））と `RoleBoundaryArchitectureTest`（11節 Q1: A。role がアプリの中で依存してよいのは `group.service` と `common` だけ、規則が依存を見分けていることの確かめを添える）を書く。
+- [x] `cherry.mastersmith.*BoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest`・`ApiAccessRulesTest`・`ApiAccessConsistencyIT`・`PublicApiInventoryTest` を流す（B2 の検査で7つの口の印と管理者の道が合うこと）。
 - 対応: NFR6.6、NFR1.3、AC1.1.15。
 
 ### Step 17: バックエンドの区切りの確かめ
-- [ ] `./gradlew :backend:spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流し、全体が通ることを確かめる。`TODO(B5)` は `RoleGroupDeletionGuard` の1か所だけであることを検索で確かめる。
+- [x] `./gradlew :backend:spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流し、全体が通ることを確かめる。`TODO(B5)` は `RoleGroupDeletionGuard` の1か所だけであることを検索で確かめる。
 - 対応: コミットの区切り C3 の終わり。
 
 ### Step 18: 負荷の台本（verify と CI の外。流すのは Performance Validation）
-- [ ] `perf/k6/scenarios.js` に 4.6 の9つの場面と `GROUP_SCENARIOS`・`setupTimeout`・閾値を足す。`perf/README.md` にグループの節を書く（4.6、10節 D-15、2.2 の Infrastructure Design R-04・R-05）。
-- [ ] 場面ごとに `SCENARIO=<場面> k6 inspect --include-system-env-vars perf/k6/scenarios.js` を流し、場面の名前・executor・閾値の式（`iteration_duration{scenario:…}`・`checks{scenario:…}`）・`setupTimeout: 10m` が意図どおりであることを記録する（`project.md` の学び）。使い捨ての環境での実行は行わない。
+- [x] `perf/k6/scenarios.js` に 4.6 の9つの場面と `GROUP_SCENARIOS`・`setupTimeout`・閾値を足す。`perf/README.md` にグループの節を書く（4.6、10節 D-15、2.2 の Infrastructure Design R-04・R-05）。
+- [x] 場面ごとに `SCENARIO=<場面> k6 inspect --include-system-env-vars perf/k6/scenarios.js` を流し、場面の名前・executor・閾値の式（`iteration_duration{scenario:…}`・`checks{scenario:…}`）・`setupTimeout: 10m` が意図どおりであることを記録する（`project.md` の学び）。使い捨ての環境での実行は行わない。
 - 対応: NFR2.5・NFR2.7・NFR2.8、Infrastructure Design (iv)。
 
 ### Step 19: 文書
-- [ ] README の3か所（4.6）を書く。設計の文書（承認済み）は書き換えない。
+- [x] README の3か所（4.6）を書く。設計の文書（承認済み）は書き換えない。
 - 対応: NFR6.7。
 
 ### Step 20: 取り残しと変えないものの確かめ
-- [ ] 4.7 のファイルが `develop` と差が無いこと（`git diff --stat develop -- <一覧>`）。`packagesJudgedByTotal`・計測の除外・`org.hibernate.orm.jdbc.error: OFF` が変わっていないこと。
-- [ ] 新しいテストのクラスの名前がすべて `Test` か `IT` で終わること、`GroupNameProperties` の名前が残っていないこと（`git grep -n GroupNameProperties -- backend`）。本体に `Properties` で終わるクラスを作っていないこと。
-- [ ] 新しい依存と lockfile の変更が無いこと。
+- [x] 4.7 のファイルが `develop` と差が無いこと（`git diff --stat develop -- <一覧>`）。`packagesJudgedByTotal`・計測の除外・`org.hibernate.orm.jdbc.error: OFF` が変わっていないこと。
+- [x] 新しいテストのクラスの名前がすべて `Test` か `IT` で終わること、`GroupNameProperties` の名前が残っていないこと（`git grep -n GroupNameProperties -- backend`）。本体に `Properties` で終わるクラスを作っていないこと。
+- [x] 新しい依存と lockfile の変更が無いこと。
 - 対応: Infrastructure Design (vi)、決定 (2)、NFR6.4。
 
 ### Step 21: 記録（コード生成の段の成果物）
-- [ ] `code-summary.md`（作ったもの・計画との差・承認の場で確かめること・後に回すこと（11節 Q5: A の SQLState と制約の名前、NFR 設計の R-09 のコメント、`RoleGroupDeletionGuard` の B5 での置き換え）・見せるものの `curl` の手順）、`traceability.json`（8節の対応。NFR 要件の N/A の ID も理由つきで載せる、2.2 の NFR Design R-07）、`source-manifest.json`（作った・変えたアプリのソースのすべて）、`generation-notes.md`（手順ごとのコマンドと結果）を書く。
+- [x] `code-summary.md`（作ったもの・計画との差・承認の場で確かめること・後に回すこと（11節 Q5: A の SQLState と制約の名前、NFR 設計の R-09 のコメント、`RoleGroupDeletionGuard` の B5 での置き換え）・見せるものの `curl` の手順）、`traceability.json`（8節の対応。NFR 要件の N/A の ID も理由つきで載せる、2.2 の NFR Design R-07）、`source-manifest.json`（作った・変えたアプリのソースのすべて）、`generation-notes.md`（手順ごとのコマンドと結果）を書く。
 - 対応: Testing Contract の「Documentation and traceability」。
 
 ### Step 22: 1コマンドの検査（統合の前の関門）
-- [ ] colima の状態と共有を確かめ（6節 A15）、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す。対象DB の3種類のテストの SKIPPED が 0 件、ログに「コンテナの実行環境」の警告が 0 件であることを確かめる。
-- [ ] 件数（単体・結合・画面、失敗・飛ばし）、カバレッジ（Step 3 の基準と並べる。新しいパッケージと手を入れたパッケージ、全体）、`verify` の時間と Step 3 からの延びを記録する。単体テストの結果に `GroupNamePropertyTest` があることを確かめる。
+- [x] colima の状態と共有を確かめ（6節 A15）、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す。対象DB の3種類のテストの SKIPPED が 0 件、ログに「コンテナの実行環境」の警告が 0 件であることを確かめる。
+- [x] 件数（単体・結合・画面、失敗・飛ばし）、カバレッジ（Step 3 の基準と並べる。新しいパッケージと手を入れたパッケージ、全体）、`verify` の時間と Step 3 からの延びを記録する。単体テストの結果に `GroupNamePropertyTest` があることを確かめる。
 - 対応: NFR6.4、Infrastructure Design (ii)・(iii)。
 
 ### Step 23: E2E（統合の前に手元で）
-- [ ] `docker compose --profile mail up -d mailpit` の後に `caffeinate -i ./gradlew e2eTest` を流し、全体（今は 14 ファイル・177 件）が通ることを確かめる（認可と `USER_NOT_FOUND` の移し替えに手が入るため。110・120・130 を含む）。報告の確かめの道具の出力を記録する。
-- [ ] `frontend/playwright-report`・`frontend/test-results` を消す。
+- [x] `docker compose --profile mail up -d mailpit` の後に `caffeinate -i ./gradlew e2eTest` を流し、全体（今は 14 ファイル・177 件）が通ることを確かめる（認可と `USER_NOT_FOUND` の移し替えに手が入るため。110・120・130 を含む）。報告の確かめの道具の出力を記録する。
+- [x] `frontend/playwright-report`・`frontend/test-results` を消す。
 - 対応: Infrastructure Design (v)、`cicd-pipeline.md` 7節。
 
 ### Step 24: コミットの提案・承認の場・統合の提案

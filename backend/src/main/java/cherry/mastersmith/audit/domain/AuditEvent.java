@@ -45,6 +45,10 @@ import org.hibernate.annotations.Immutable;
  * （受け付けなかった投入の理由の種類）と使い方がずれるが、結果が成功の行に失敗の理由（{@code failure_reason}）を入れないため、また列を
  * 足さないため（依頼者の決定 D1: A）。列の使い方は出来事の種類ごとに読む。
  *
+ * <p>ロールとグループの操作の出来事（Intent 261004-role-menu の U3・U4、契約 C10）は、対象のロール・対象のグループ・決めた型から作った
+ * JSON の {@code detail}（V10 で足した NULL を許す列）を持つ。{@code detail} は Java の文字列の長さ（UTF-16 の単位）で
+ * {@value #MAX_DETAIL_LENGTH} までで、超える値はファクトリーで断る（切り詰めない。U3 の BR8.6）。既存の出来事では空のまま。
+ *
  * <p>パスワード・トークン・パスワードのハッシュ値・Authorization ヘッダーの項目を持たない（BR2.3、NFR3.1）。文字列化ではメールアドレスを
  * 伏せる（U1 のメソッドの呼び出しの追跡が引数・戻り値を文字列にするため）。
  */
@@ -52,6 +56,9 @@ import org.hibernate.annotations.Immutable;
 @Immutable
 @Table(name = "audit_events")
 public class AuditEvent {
+
+    /** {@code detail} の長さの上限（Java の文字列の長さ、UTF-16 の単位。列 {@code detail} の長さと同じ。U3 の BR8.6）。 */
+    public static final int MAX_DETAIL_LENGTH = 16_384;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -107,6 +114,15 @@ public class AuditEvent {
 
     @Column(name = "target_invitation_id", updatable = false)
     private Long targetInvitationId;
+
+    @Column(name = "target_role_id", updatable = false)
+    private Long targetRoleId;
+
+    @Column(name = "target_group_id", updatable = false)
+    private Long targetGroupId;
+
+    @Column(name = "detail", updatable = false, length = MAX_DETAIL_LENGTH)
+    private String detail;
 
     /** JPA が使う。 */
     protected AuditEvent() {}
@@ -209,6 +225,56 @@ public class AuditEvent {
         event.actorUserId = actorUserId;
         event.targetUserId = targetUserId;
         event.targetInvitationId = targetInvitationId;
+        return event;
+    }
+
+    /**
+     * ロール・グループを対象に持つ監査イベントを作る（Intent 261004-role-menu の U3・U4、契約 C10、U3 の BR8.4〜BR8.6）。メールアドレス・
+     * 要求のパス・DSL の項目・対象の招待は空にする。
+     *
+     * <p>{@code detail} は呼び出し元が決めた型から作った JSON の文字列で、Java の文字列の長さ（UTF-16 の単位）で
+     * {@value #MAX_DETAIL_LENGTH} を超えたら作らない（切り詰めない。超えそうな中身は呼び出し元が要約にしてから渡す）。例外の文には
+     * 長さだけを載せ、中身を載せない。
+     *
+     * @param occurredAt 出来事が起きた日時
+     * @param eventType 種類
+     * @param result 結果
+     * @param failureReason 失敗の理由（成功なら null）
+     * @param sourceIp 接続元IP
+     * @param userAgent User-Agent（無ければ null）
+     * @param traceId トレースID（無ければ null）
+     * @param actorUserId 操作した人の利用者 ID（無ければ null）
+     * @param targetUserId 対象の利用者 ID（無ければ null）
+     * @param targetRoleId 対象のロールの ID（無ければ null）
+     * @param targetGroupId 対象のグループの ID（無ければ null）
+     * @param detail 決めた型から作った JSON の文字列（無ければ null）
+     * @return 監査イベント
+     * @throws IllegalArgumentException {@code detail} が上限を超えるとき
+     */
+    public static AuditEvent withRoleGroupTarget(
+            Instant occurredAt,
+            AuditEventType eventType,
+            AuditResult result,
+            AuditFailureReason failureReason,
+            String sourceIp,
+            String userAgent,
+            String traceId,
+            Long actorUserId,
+            Long targetUserId,
+            Long targetRoleId,
+            Long targetGroupId,
+            String detail) {
+        if (detail != null && detail.length() > MAX_DETAIL_LENGTH) {
+            throw new IllegalArgumentException(
+                    "detail が上限を超えています: length=" + detail.length() + ", max=" + MAX_DETAIL_LENGTH);
+        }
+        AuditEvent event =
+                new AuditEvent(occurredAt, eventType, result, null, failureReason, sourceIp, userAgent, null, traceId);
+        event.actorUserId = actorUserId;
+        event.targetUserId = targetUserId;
+        event.targetRoleId = targetRoleId;
+        event.targetGroupId = targetGroupId;
+        event.detail = detail;
         return event;
     }
 
@@ -379,6 +445,33 @@ public class AuditEvent {
     }
 
     /** メールアドレスを伏せて文字列にする（アプリのログにメールアドレスを出さないため）。 */
+    /**
+     * 対象のロールの ID を返す。
+     *
+     * @return ロールの ID（対象のロールを持つ出来事のとき以外は null）
+     */
+    public Long getTargetRoleId() {
+        return targetRoleId;
+    }
+
+    /**
+     * 対象のグループの ID を返す。
+     *
+     * @return グループの ID（対象のグループを持つ出来事のとき以外は null）
+     */
+    public Long getTargetGroupId() {
+        return targetGroupId;
+    }
+
+    /**
+     * 決めた型から作った JSON の文字列を返す。
+     *
+     * @return JSON の文字列（無ければ null）
+     */
+    public String getDetail() {
+        return detail;
+    }
+
     @Override
     public String toString() {
         return "AuditEvent[auditEventId=" + auditEventId
@@ -397,6 +490,10 @@ public class AuditEvent {
                 + ", rejectionKind=" + rejectionKind
                 + ", targetUserId=" + targetUserId
                 + ", targetInvitationId=" + targetInvitationId
+                + ", targetRoleId=" + targetRoleId
+                + ", targetGroupId=" + targetGroupId
+                // detail の中身は出さず長さだけにする（TRACE の行が上限まで膨らむのを避ける。計画の D-10）。
+                + ", detailLength=" + (detail == null ? "null" : String.valueOf(detail.length()))
                 + "]";
     }
 }

@@ -67,5 +67,15 @@ public enum AuditEventType {
      * 起動時に初期管理者を救済した（Intent 261004-safety-carryover の FR1.5・FR1.6a。操作した人は空、接続元は {@code system}、
      * 当たった条件は {@code rejection_kind} の列）。
      */
-    INITIAL_ADMIN_RESCUED
+    INITIAL_ADMIN_RESCUED,
+    /** グループを作った（Intent 261004-role-menu の U3、契約 C10。成功と失敗は結果で分ける）。 */
+    GROUP_CREATED,
+    /** グループの名前を変えた（Intent 261004-role-menu の U3）。 */
+    GROUP_RENAMED,
+    /** グループを消した（Intent 261004-role-menu の U3）。 */
+    GROUP_DELETED,
+    /** グループにメンバーを足した（Intent 261004-role-menu の U3）。 */
+    GROUP_MEMBER_ADDED,
+    /** グループからメンバーを外した（Intent 261004-role-menu の U3）。 */
+    GROUP_MEMBER_REMOVED
 }

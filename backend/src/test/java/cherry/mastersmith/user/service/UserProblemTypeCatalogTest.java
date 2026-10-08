@@ -31,11 +31,13 @@ import org.junit.jupiter.api.Test;
 class UserProblemTypeCatalogTest {
 
     @Test
-    @DisplayName("the catalog offers the current-password mismatch fixed to 400")
+    @DisplayName("the catalog offers the current-password mismatch fixed to 400 and USER_NOT_FOUND fixed to 404")
     void catalog() {
         assertThat(new UserProblemTypeCatalog().problemTypes())
                 .extracting(ProblemType::code, ProblemType::status)
-                .containsExactly(org.assertj.core.groups.Tuple.tuple("PASSWORD_CURRENT_MISMATCH", 400));
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("PASSWORD_CURRENT_MISMATCH", 400),
+                        org.assertj.core.groups.Tuple.tuple("USER_NOT_FOUND", 404));
     }
 
     @Test
@@ -46,6 +48,7 @@ class UserProblemTypeCatalogTest {
 
         assertThat(registry.findByCode("PASSWORD_CURRENT_MISMATCH"))
                 .contains(UserProblemTypes.PASSWORD_CURRENT_MISMATCH);
+        assertThat(registry.findByCode("USER_NOT_FOUND")).contains(UserProblemTypes.USER_NOT_FOUND);
         assertThat(registry.findByCode("AUTHENTICATION_REQUIRED")).isPresent();
         assertThat(registry.findByCode("VALIDATION_FAILED")).isPresent();
     }

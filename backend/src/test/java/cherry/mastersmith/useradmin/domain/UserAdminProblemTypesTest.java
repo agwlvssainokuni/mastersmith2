@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.common.error.domain.LocalizedText;
 import cherry.mastersmith.common.error.domain.ProblemType;
+import cherry.mastersmith.user.domain.UserProblemTypes;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.assertj.core.groups.Tuple;
@@ -30,12 +31,11 @@ import org.junit.jupiter.api.Test;
 class UserAdminProblemTypesTest {
 
     @Test
-    @DisplayName("USER_NOT_FOUND is fixed to status 404 and the five operation codes to 409")
+    @DisplayName("the five operation codes are fixed to 409 and USER_NOT_FOUND is no longer listed here")
     void codeAndStatus() {
         assertThat(UserAdminProblemTypes.all())
                 .extracting(ProblemType::code, ProblemType::status)
                 .containsExactly(
-                        Tuple.tuple("USER_NOT_FOUND", 404),
                         Tuple.tuple("USER_ADMIN_SELF_OPERATION", 409),
                         Tuple.tuple("USER_ADMIN_TARGET_SUSPENDED", 409),
                         Tuple.tuple("USER_ADMIN_NO_CHANGE", 409),
@@ -46,8 +46,7 @@ class UserAdminProblemTypesTest {
     @Test
     @DisplayName("each rejection reason has exactly one problem type")
     void reasonToProblemType() {
-        assertThat(UserAdminProblemTypes.of(RejectionReason.USER_NOT_FOUND))
-                .isSameAs(UserAdminProblemTypes.USER_NOT_FOUND);
+        assertThat(UserAdminProblemTypes.of(RejectionReason.USER_NOT_FOUND)).isSameAs(UserProblemTypes.USER_NOT_FOUND);
         assertThat(UserAdminProblemTypes.of(RejectionReason.SELF_OPERATION))
                 .isSameAs(UserAdminProblemTypes.SELF_OPERATION);
         assertThat(UserAdminProblemTypes.of(RejectionReason.TARGET_SUSPENDED))
