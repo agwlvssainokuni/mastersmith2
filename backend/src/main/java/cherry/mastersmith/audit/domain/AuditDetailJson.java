@@ -16,7 +16,13 @@
 package cherry.mastersmith.audit.domain;
 
 import cherry.mastersmith.group.domain.GroupAuditDetail;
+import cherry.mastersmith.role.domain.MainPermission;
+import cherry.mastersmith.role.domain.PermissionTarget;
+import cherry.mastersmith.role.domain.PermissionValues;
+import cherry.mastersmith.role.domain.RoleAuditDetail;
+import java.util.List;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
@@ -30,6 +36,9 @@ import tools.jackson.databind.node.ObjectNode;
  * {@code switch} で書く（形が増えたときにコンパイルで気づけるようにするため）。
  */
 public final class AuditDetailJson {
+
+    /** 権限の変更の要約に入れる先頭の件数の上限（{@code observability-design.md} 1節。上限に収まるまで減らす。計画の D-11）。 */
+    public static final int SUMMARY_FIRST_CHANGES = 20;
 
     private static final JsonNodeFactory FACTORY = JsonNodeFactory.instance;
 
@@ -54,6 +63,94 @@ public final class AuditDetailJson {
             case GroupAuditDetail.InUse(String name, int members, int assignedRoles) ->
                 node.put("name", name).put("members", members).put("assignedRoles", assignedRoles);
         }
+        return JsonMapper.shared().writeValueAsString(node);
+    }
+
+    /**
+     * ロールの操作の detail を JSON の文字列にする（Intent 261004-role-menu の U4、BR11.5・BR11.6・BR11.8、計画の D-11）。
+     *
+     * <p>キーは形ごとに決まっている（{@code Name} は {@code name}、{@code Rename} は {@code before}・{@code after}、{@code InUse} は
+     * {@code name}・{@code assignedUsers}・{@code assignedGroups}、{@code PermissionChanges} は {@code roleName}・{@code changes}、
+     * {@code PermissionChangesSummary} は {@code roleName}・{@code changedCount}・{@code firstChanges}）。1つの変更は
+     * {@code target}（{@code schemaName}・{@code tableName}・{@code columnName}）・{@code before}・{@code after}（{@code main}・
+     * {@code create}・{@code delete}、設定なしは null）。
+     *
+     * <p>権限の変更は全件の JSON を作ってから長さ（{@link String#length()}）を見て、{@link AuditEvent#MAX_DETAIL_LENGTH} を超えれば要約に
+     * 切り替える。要約の先頭の件数は {@value #SUMMARY_FIRST_CHANGES} 件から、上限に収まるまで減らす（途中で切らない）。
+     *
+     * @param detail detail の中身（無ければ null）
+     * @return JSON の文字列（中身が無ければ null）
+     */
+    public static String ofRole(RoleAuditDetail detail) {
+        if (detail == null) {
+            return null;
+        }
+        String json = write(roleNode(detail));
+        if (json.length() <= AuditEvent.MAX_DETAIL_LENGTH
+                || !(detail instanceof RoleAuditDetail.PermissionChanges changes)) {
+            return json;
+        }
+        for (int first = Math.min(SUMMARY_FIRST_CHANGES, changes.changes().size()); first >= 0; first--) {
+            String summary = write(roleNode(changes.summarize(first)));
+            if (summary.length() <= AuditEvent.MAX_DETAIL_LENGTH) {
+                return summary;
+            }
+        }
+        throw new IllegalStateException("要約が上限に収まりません");
+    }
+
+    private static ObjectNode roleNode(RoleAuditDetail detail) {
+        ObjectNode node = FACTORY.objectNode();
+        switch (detail) {
+            case RoleAuditDetail.Name(String name) -> node.put("name", name);
+            case RoleAuditDetail.Rename(String before, String after) ->
+                node.put("before", before).put("after", after);
+            case RoleAuditDetail.InUse(String name, int assignedUsers, int assignedGroups) ->
+                node.put("name", name).put("assignedUsers", assignedUsers).put("assignedGroups", assignedGroups);
+            case RoleAuditDetail.PermissionChanges(String roleName, List<RoleAuditDetail.PermissionChange> changes) -> {
+                node.put("roleName", roleName);
+                node.set("changes", changesNode(changes));
+            }
+            case RoleAuditDetail.PermissionChangesSummary(
+                    String roleName,
+                    int changedCount,
+                    List<RoleAuditDetail.PermissionChange> firstChanges) -> {
+                node.put("roleName", roleName).put("changedCount", changedCount);
+                node.set("firstChanges", changesNode(firstChanges));
+            }
+        }
+        return node;
+    }
+
+    private static ArrayNode changesNode(List<RoleAuditDetail.PermissionChange> changes) {
+        ArrayNode array = FACTORY.arrayNode();
+        for (RoleAuditDetail.PermissionChange change : changes) {
+            ObjectNode item = array.addObject();
+            item.set("target", targetNode(change.target()));
+            item.set("before", valuesNode(change.before()));
+            item.set("after", valuesNode(change.after()));
+        }
+        return array;
+    }
+
+    private static ObjectNode targetNode(PermissionTarget target) {
+        ObjectNode node = FACTORY.objectNode();
+        node.put("schemaName", target.schemaName());
+        node.put("tableName", target.tableName());
+        node.put("columnName", target.columnName());
+        return node;
+    }
+
+    private static ObjectNode valuesNode(PermissionValues values) {
+        ObjectNode node = FACTORY.objectNode();
+        MainPermission main = values.main();
+        node.put("main", main == null ? null : main.name());
+        node.put("create", values.create());
+        node.put("delete", values.delete());
+        return node;
+    }
+
+    private static String write(ObjectNode node) {
         return JsonMapper.shared().writeValueAsString(node);
     }
 }

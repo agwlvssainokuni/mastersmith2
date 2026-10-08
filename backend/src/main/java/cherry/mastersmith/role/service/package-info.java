@@ -13,5 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** ロールと権限の業務処理（B3 は group の問う口の仮の実装だけ）。 */
+/**
+ * ロールと権限の業務処理（{@code logical-components.md} の L3・L8・L12・L15）。トランザクションの境界はこの層の
+ * {@code TransactionTemplate} だけで、store を呼ぶ1つ目のトランザクションはすべて {@code RoleStoreTransactions} を通す。group の問う口は
+ * B3 の仮の実装のまま（B5 で本物に置き換える）。
+ */
 package cherry.mastersmith.role.service;

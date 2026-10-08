@@ -288,112 +288,112 @@
 各手順の「対応」は 10節の ID。チェックボックスは生成のときに付ける。
 
 #### Step 1: 作業の場の用意（ブランチの作成は依頼者の承認を得てから）
-- [ ] 計画の承認と、計画までの記録のコミット（依頼者の承認を得て指揮役が行う）の後に、`develop` の先頭から `feature/261004-role-menu-b4` を作る。開始の時点の HEAD を `generation-notes.md` に記録する。
-- [ ] `git status --short` でアプリのソースに未コミットの変更が無いことを確かめる（監査ログの追記はワークフローの記録として外して判断する）。`frontend/playwright-report`・`frontend/test-results` が無いことを確かめる。
+- [x] 計画の承認と、計画までの記録のコミット（依頼者の承認を得て指揮役が行う）の後に、`develop` の先頭から `feature/261004-role-menu-b4` を作る。開始の時点の HEAD を `generation-notes.md` に記録する。
+- [x] `git status --short` でアプリのソースに未コミットの変更が無いことを確かめる（監査ログの追記はワークフローの記録として外して判断する）。`frontend/playwright-report`・`frontend/test-results` が無いことを確かめる。
 - 対応: Testing Contract の「Project structure and production configuration skeleton」（新しいパッケージは Step 4 以降で作る）。
 
 #### Step 2: テストの実行の準備（最初のテストより前）
-- [ ] `unit-test-instructions.md` 2節のコマンド（既存のテストを名指し）が動くことを確かめ、結果（件数・失敗 0）を記録する。
-- [ ] colima の状態とホームの共有を確かめる（6節 A15）。
-- [ ] 洗い出しの検索を流し直し、7.2・7.3 の一覧と増減が無いかを記録する: `git grep -n -e 'onlyKnownFeaturesDependOnUser' -e 'dependsOnlyOnGroupServiceAndCommon' -- backend/src/test`、`git grep -n -e 'containsOnlyKeys' -- backend/src/test/java/cherry/mastersmith/audit`、`git grep -n 'TODO(B5)' -- backend`、`git grep -n 'org.hibernate.orm.jdbc.error' -- backend/src/main/resources`、`ls backend/src/main/resources/db/migration/`。
+- [x] `unit-test-instructions.md` 2節のコマンド（既存のテストを名指し）が動くことを確かめ、結果（件数・失敗 0）を記録する。
+- [x] colima の状態とホームの共有を確かめる（6節 A15）。
+- [x] 洗い出しの検索を流し直し、7.2・7.3 の一覧と増減が無いかを記録する: `git grep -n -e 'onlyKnownFeaturesDependOnUser' -e 'dependsOnlyOnGroupServiceAndCommon' -- backend/src/test`、`git grep -n -e 'containsOnlyKeys' -- backend/src/test/java/cherry/mastersmith/audit`、`git grep -n 'TODO(B5)' -- backend`、`git grep -n 'org.hibernate.orm.jdbc.error' -- backend/src/main/resources`、`ls backend/src/main/resources/db/migration/`。
 - 対応: Testing Contract の runner の手順。
 
 #### Step 3: 変更の前の基準
-- [ ] colima の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` を流し、件数（単体・結合、失敗・飛ばし）と `backend/build/reports/jacoco/test/jacocoTestReport.xml` の `audit.domain`・`audit.service`・`role.service`・全体の行と分岐の値を記録する（`project.md` の学び）。
-- [ ] `backend/build.gradle.kts` の `packagesJudgedByTotal` が7パッケージのままで、B4 で手を入れるパッケージ（5節）が入っていないことを記録する。
-- [ ] 次の空き移行番号が V11 であることを確かめる（V1〜V10 だけがある）。違えば番号を合わせ、12節 D-1 に記録する。
+- [x] colima の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` を流し、件数（単体・結合、失敗・飛ばし）と `backend/build/reports/jacoco/test/jacocoTestReport.xml` の `audit.domain`・`audit.service`・`role.service`・全体の行と分岐の値を記録する（`project.md` の学び）。
+- [x] `backend/build.gradle.kts` の `packagesJudgedByTotal` が7パッケージのままで、B4 で手を入れるパッケージ（5節）が入っていないことを記録する。
+- [x] 次の空き移行番号が V11 であることを確かめる（V1〜V10 だけがある）。違えば番号を合わせ、12節 D-1 に記録する。
 - 対応: NFR6.4、NFR3.6。
 
 #### Step 4: データの形 — 実装（移行とエンティティ）
-- [ ] `V11__u4_role.sql` を 4.5 のとおり書く。
-- [ ] `role.domain` の `Role`・`PermissionSetting`・`PermissionSettingId`（列の対応、書き換えの方法、toString は ID と件数だけ）を作る。
-- [ ] `application.yaml` の `org.hibernate.orm.jdbc.error: OFF` のコメントに role の理由を足す（値は変えない）。
+- [x] `V11__u4_role.sql` を 4.5 のとおり書く。
+- [x] `role.domain` の `Role`・`PermissionSetting`・`PermissionSettingId`（列の対応、書き換えの方法、toString は ID と件数だけ）を作る。
+- [x] `application.yaml` の `org.hibernate.orm.jdbc.error: OFF` のコメントに role の理由を足す（値は変えない）。
 - 対応: BR4.2、NFR3.6、NFR1.8、`entities.md`。
 
 #### Step 5: データの形 — テスト
-- [ ] `RoleSchemaIT` と `RoleMigrationCompatibilityIT`（13節 Q6: A）を書く（7.3）。
-- [ ] `unit-test-instructions.md` 3.1 の Step 5 のコマンドを流し、通るまで直す。既存の Flyway・監査のテスト（`cherry.mastersmith.audit.*` の結合）も流し、既存の移行が壊れないことを確かめる。
+- [x] `RoleSchemaIT` と `RoleMigrationCompatibilityIT`（13節 Q6: A）を書く（7.3）。
+- [x] `unit-test-instructions.md` 3.1 の Step 5 のコマンドを流し、通るまで直す。既存の Flyway・監査のテスト（`cherry.mastersmith.audit.*` の結合）も流し、既存の移行が壊れないことを確かめる。
 - 対応: NFR3.6、6節 A4。
 
 #### Step 6: ドメイン — 実装（role.domain と audit の写し方）
-- [ ] 7.2 の `role.domain` の値・純粋な関数・出来事・detail・code を作る。
-- [ ] 4.6 の B4 の分を `audit` に足す（種類4つ・理由5つ・`from(RoleAuditEvent)`・`AuditDetailJson.of(RoleAuditDetail)`・`onRoleAuditEvent`・網羅の `switch` の追従）。
-- [ ] `RoleBoundaryArchitectureTest` を 5節の B4 の規則に広げ、`UserBoundaryArchitectureTest` の一覧に `role` だけを足す（13節 Q1: A）。
+- [x] 7.2 の `role.domain` の値・純粋な関数・出来事・detail・code を作る。
+- [x] 4.6 の B4 の分を `audit` に足す（種類4つ・理由5つ・`from(RoleAuditEvent)`・`AuditDetailJson.of(RoleAuditDetail)`・`onRoleAuditEvent`・網羅の `switch` の追従）。
+- [x] `RoleBoundaryArchitectureTest` を 5節の B4 の規則に広げ、`UserBoundaryArchitectureTest` の一覧に `role` だけを足す（13節 Q1: A）。
 - 対応: BR1.1〜BR1.5、BR4.1・BR4.3、BR5.1〜BR5.3・BR5.6、BR11.4〜BR11.9、BR13、NFR5.1・NFR5.5・NFR6.5、C10。
 
 #### Step 7: ドメイン — テスト
-- [ ] 7.3 のドメインの層のテストを書く。`RoleNameKeyPropertyTest`・`PermissionInheritancePropertyTest` は jqwik の既定の回数で、失敗のときの乱数の種は既存の `exceptionFormat = FULL` で残る。
-- [ ] Step 7 のコマンドを流す。単体テストの結果に2つの `*PropertyTest` が出ることを確かめる。
+- [x] 7.3 のドメインの層のテストを書く。`RoleNameKeyPropertyTest`・`PermissionInheritancePropertyTest` は jqwik の既定の回数で、失敗のときの乱数の種は既存の `exceptionFormat = FULL` で残る。
+- [x] Step 7 のコマンドを流す。単体テストの結果に2つの `*PropertyTest` が出ることを確かめる。
 - 対応: AC1.1.9・AC1.1.14・AC1.1.16・AC1.2.2〜AC1.2.4・AC1.2.9、BR1・BR5.1・BR5.2・BR5.6・BR11.5、NFR5.5・NFR6.2、Infrastructure Design の名前の決定（D-12）。
 
 #### Step 8: DB アクセス — 実装（role.repository・role.store）
-- [ ] 読み取りの repository（Spring Data の `Repository` を継ぎ、`@Query` の射影だけ）と、`RoleStore`・`RoleStoreOutcome`・`Referent`・`RoleStoreClassifier`・`RoleStoreUnexpectedException` を作る。store の方法は「排他（`lockRole`）」と「書き込みと flush（`insertRole`・`renameRole`・`deleteRole`・`writePermissions`・`clearPermissions`）」に分ける。JPQL は定数と名前の付いた引数だけ。
+- [x] 読み取りの repository（Spring Data の `Repository` を継ぎ、`@Query` の射影だけ）と、`RoleStore`・`RoleStoreOutcome`・`Referent`・`RoleStoreClassifier`・`RoleStoreUnexpectedException` を作る。store の方法は「排他（`lockRole`）」と「書き込みと flush（`insertRole`・`renameRole`・`deleteRole`・`writePermissions`・`clearPermissions`）」に分ける。JPQL は定数と名前の付いた引数だけ。
 - 対応: BR3.3（設定の削除）・BR4.2・BR4.9・BR8.1・BR8.3〜BR8.5・BR12.3、NFR1.8・NFR1.11・NFR2.6・NFR3.3。
 
 #### Step 9: DB アクセス — テスト
-- [ ] `RoleStoreClassificationTest`・`RoleStoreConstraintIT`・`RoleRepositoryIT` を書く（7.3）。
-- [ ] Step 9 のコマンドを流す。
+- [x] `RoleStoreClassificationTest`・`RoleStoreConstraintIT`・`RoleRepositoryIT` を書く（7.3）。
+- [x] Step 9 のコマンドを流す。
 - 対応: AC1.1.11（最後の守り）、BR8.3〜BR8.5、NFR1.8・NFR3.3・NFR3.7（T1・T7・U1 の本物での確かめ。10.3 の表）。
 
 #### Step 10: 業務処理 — 実装（role.service）
-- [ ] `RoleStoreTransactions`・`RoleFirstStep`・`RoleAdminService`・結果の型・`RoleBarrier`・`NoOpRoleBarrier`・`RoleProblemTypeCatalog` を作る。拒否・違反・上限切れは 4.3 の一覧（13節 Q2: A）どおりに組む。
+- [x] `RoleStoreTransactions`・`RoleFirstStep`・`RoleAdminService`・結果の型・`RoleBarrier`・`NoOpRoleBarrier`・`RoleProblemTypeCatalog` を作る。拒否・違反・上限切れは 4.3 の一覧（13節 Q2: A）どおりに組む。
 - 対応: 2.1〜2.7、BR1.4・BR1.5・BR3・BR4.4〜BR4.9・BR8.1・BR8.5・BR8.6・BR11.1〜BR11.3、NFR3.4。
 
 #### Step 11: 業務処理 — テスト
-- [ ] `RoleAdminServiceTest`・`RoleStoreTransactionsIT`・`RoleProblemTypeCatalogTest`・`RoleAdminQueryCountIT` を書く（7.3）。
-- [ ] Step 11 のコマンドを流す。
+- [x] `RoleAdminServiceTest`・`RoleStoreTransactionsIT`・`RoleProblemTypeCatalogTest`・`RoleAdminQueryCountIT` を書く（7.3）。
+- [x] Step 11 のコマンドを流す。
 - 対応: AC1.1.2・AC1.1.14・AC1.2.5・AC1.2.6・AC1.2.13・AC1.2.17・AC1.2.18、BR3.6・BR4.4〜BR4.9・BR8.5、NFR2.6・NFR3.4。
 
 #### Step 12: API — 実装（role.web）
-- [ ] `RoleAdminController`・`RolePermissionController` と DTO、`RoleFieldErrors`、`RoleRequestContextResolver`。2つのクラスに `@ApiAccess(ADMIN)`。木の名前は `@RequestParam` で受け、長さで拒否しない。
+- [x] `RoleAdminController`・`RolePermissionController` と DTO、`RoleFieldErrors`、`RoleRequestContextResolver`。2つのクラスに `@ApiAccess(ADMIN)`。木の名前は `@RequestParam` で受け、長さで拒否しない。
 - 対応: AC1.1.1・AC1.1.5・AC1.1.10・AC1.1.12・AC1.1.15・AC1.1.17・AC1.2.1・AC1.2.10・AC1.2.11、BR2・BR3.1・BR3.5・BR3.7・BR4.10〜BR4.12・BR13、NFR1.1・NFR1.3・NFR1.4・NFR1.10、C7。
 
 #### Step 13: API — テスト（結合）
-- [ ] 7.3 の API の層のテストを書く。同時の重なりは `TestRoleBarrier` で作り、合否は 409 と code・状態が変わらないこと・監査の行・WARN で決める（経過の時間で決めない。`reliability-design.md` 4.2 の注のとおり、負けた側の `ROLE_BUSY` も受け入れる行を分けて書く）。
-- [ ] Step 13 のコマンドを流す。
+- [x] 7.3 の API の層のテストを書く。同時の重なりは `TestRoleBarrier` で作り、合否は 409 と code・状態が変わらないこと・監査の行・WARN で決める（経過の時間で決めない。`reliability-design.md` 4.2 の注のとおり、負けた側の `ROLE_BUSY` も受け入れる行を分けて書く）。
+- [x] Step 13 のコマンドを流す。
 - 対応: AC1.1.1〜AC1.1.6（削除は割り当てなし）・AC1.1.9〜AC1.1.12・AC1.1.14・AC1.1.16・AC1.1.17・AC1.2.1〜AC1.2.8・AC1.2.10〜AC1.2.13・AC1.2.16・AC1.2.17、NFR1.1・NFR1.2（B4 の差は D-17）・NFR1.4・NFR1.6〜NFR1.8・NFR1.10・NFR2.11・NFR3.1 (b)(c)・NFR3.3〜NFR3.5・NFR5.1〜NFR5.3・NFR5.5。
 
 #### Step 14: 境界と構造の検査
-- [ ] `RoleBoundaryArchitectureTest`（5節の B4 の規則。各規則に依存を見分けている確かめ）と `UserBoundaryArchitectureTest` を流す。
-- [ ] `cherry.mastersmith.*BoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest`・`ApiAccessRulesTest`・`ApiAccessConsistencyIT`・`PublicApiInventoryTest` を流す（B2 の検査で 10 の口の印と管理者の道が合うこと）。
+- [x] `RoleBoundaryArchitectureTest`（5節の B4 の規則。各規則に依存を見分けている確かめ）と `UserBoundaryArchitectureTest` を流す。
+- [x] `cherry.mastersmith.*BoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest`・`ApiAccessRulesTest`・`ApiAccessConsistencyIT`・`PublicApiInventoryTest` を流す（B2 の検査で 10 の口の印と管理者の道が合うこと）。
 - 対応: NFR1.3・NFR6.5、AC1.1.15。
 
 #### Step 15: バックエンドの区切りの確かめ
-- [ ] `./gradlew :backend:spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流し、全体が通ることを確かめる。
+- [x] `./gradlew :backend:spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流し、全体が通ることを確かめる。
 - 対応: コミットの区切り B4 の C2 の終わり。
 
 #### Step 16: op のタグの確かめ（台本の前。リポジトリの外の捨ての台本）
-- [ ] スクラッチの置き場に、要求を送らない最小の台本（2つの op を `exec.vu.metrics.tags.op` に入れて交互に回し、`iteration_duration{scenario:x,op:a}` の閾値を置く）を作り、`caffeinate -i docker run --rm -v <スクラッチ>:/s grafana/k6:2.3.0 run --summary-export /s/summary.json /s/tag-check.js` で流す。要約に op ごとの `iteration_duration` の値が出るかを記録する（`performance-design.md` 2.2、D-23）。リポジトリの作業フォルダでは k6 を流さない。
-- [ ] 付かなければ、操作ごとに場面を分ける名前（`roleAdminOpsCreate` など、`performance-design.md` 2.2）で Step 17 を書く。
+- [x] スクラッチの置き場に、要求を送らない最小の台本（2つの op を `exec.vu.metrics.tags.op` に入れて交互に回し、`iteration_duration{scenario:x,op:a}` の閾値を置く）を作り、`caffeinate -i docker run --rm -v <スクラッチ>:/s grafana/k6:2.3.0 run --summary-export /s/summary.json /s/tag-check.js` で流す。要約に op ごとの `iteration_duration` の値が出るかを記録する（`performance-design.md` 2.2、D-23）。リポジトリの作業フォルダでは k6 を流さない。
+- [x] 付かなければ、操作ごとに場面を分ける名前（`roleAdminOpsCreate` など、`performance-design.md` 2.2）で Step 17 を書く。
 - 対応: NFR2.10。
 
 #### Step 17: 負荷の台本（verify と CI の外。流すのは Performance Validation）
-- [ ] `perf/k6/scenarios.js` に `roleTreeRead`・`rolePermissionSave`・`roleAdminRead`・`roleAdminOps` と一覧 `ROLE_SCENARIOS`（`setupTimeout = '10m'`）・閾値（`iteration_duration{scenario:…}`（op ごと）の `p(95)<1000` と `checks{scenario:…}` の `rate==1`、`http_req_duration{name:…}` は並べて記録）を足す。1回の繰り返しに要求1つ、状態を戻す操作は交互、繰り返しの中に `sleep` を置かない、名前は実行ごとの識別と VU の番号で一意（group の G-21）、トークンは `setup()` で試験用の管理者から取る（初期管理者は使わない）、場面は 3 分。データは B6 の準備の台本が入れる前提（`cicd-pipeline.md` 5.3。B6 で準備の台本を書く）。
-- [ ] `perf/README.md` に「ロールの管理の場面（Intent 261004-role-menu の U4）」の節の B4 の分（場面の表・判定・使い捨ての環境・`caffeinate -i` で台本全体を包むこと）を書く。
-- [ ] 場面ごとに `SCENARIO=<場面> k6 inspect --include-system-env-vars perf/k6/scenarios.js` を `grafana/k6:2.3.0` のコンテナで流し、場面の名前・executor・閾値の式・`setupTimeout: 10m` を記録する。使い捨ての環境での実行は行わない。
+- [x] `perf/k6/scenarios.js` に `roleTreeRead`・`rolePermissionSave`・`roleAdminRead`・`roleAdminOps` と一覧 `ROLE_SCENARIOS`（`setupTimeout = '10m'`）・閾値（`iteration_duration{scenario:…}`（op ごと）の `p(95)<1000` と `checks{scenario:…}` の `rate==1`、`http_req_duration{name:…}` は並べて記録）を足す。1回の繰り返しに要求1つ、状態を戻す操作は交互、繰り返しの中に `sleep` を置かない、名前は実行ごとの識別と VU の番号で一意（group の G-21）、トークンは `setup()` で試験用の管理者から取る（初期管理者は使わない）、場面は 3 分。データは B6 の準備の台本が入れる前提（`cicd-pipeline.md` 5.3。B6 で準備の台本を書く）。
+- [x] `perf/README.md` に「ロールの管理の場面（Intent 261004-role-menu の U4）」の節の B4 の分（場面の表・判定・使い捨ての環境・`caffeinate -i` で台本全体を包むこと）を書く。
+- [x] 場面ごとに `SCENARIO=<場面> k6 inspect --include-system-env-vars perf/k6/scenarios.js` を `grafana/k6:2.3.0` のコンテナで流し、場面の名前・executor・閾値の式・`setupTimeout: 10m` を記録する。使い捨ての環境での実行は行わない。
 - 対応: NFR2.1・NFR2.2・NFR2.5・NFR2.10。
 
 #### Step 18: 文書
-- [ ] README に「ロールと権限の API（Intent 261004-role-menu の U4）」の節（B4 の 10 の口と成功・主な失敗の表、名前・設定・木・DSL が無いとき・同時の操作（行 3 秒、一意の鍵 約 2 秒、同じ名前の重なりで `ROLE_NAME_DUPLICATE` と `ROLE_BUSY` に分かれること）・監査・指標）、「スキーマの変更（Flyway）」に V11、「監査ログ（U4）」に足した種類と理由と detail のキーを書く。設計の文書（承認済み）は書き換えない。
+- [x] README に「ロールと権限の API（Intent 261004-role-menu の U4）」の節（B4 の 10 の口と成功・主な失敗の表、名前・設定・木・DSL が無いとき・同時の操作（行 3 秒、一意の鍵 約 2 秒、同じ名前の重なりで `ROLE_NAME_DUPLICATE` と `ROLE_BUSY` に分かれること）・監査・指標）、「スキーマの変更（Flyway）」に V11、「監査ログ（U4）」に足した種類と理由と detail のキーを書く。設計の文書（承認済み）は書き換えない。
 - 対応: NFR6.1（引き継ぎ）。
 
 #### Step 19: 取り残しと変えないものの確かめ
-- [ ] 2.3 の「変えないもの」が `develop` と差が無いこと（`git diff --stat develop -- <一覧>`）。`application.yaml` の差がコメントだけであること。`packagesJudgedByTotal`・計測の除外が変わっていないこと。
-- [ ] 新しいテストのクラスの名前がすべて `Test` か `IT` で終わること、`Properties` で終わるテストのクラスと本体のクラスが無いこと（`git grep -n -e 'class [A-Za-z]*Properties\b' -- backend/src`）。新しい依存と lockfile の変更が無いこと。
+- [x] 2.3 の「変えないもの」が `develop` と差が無いこと（`git diff --stat develop -- <一覧>`）。`application.yaml` の差がコメントだけであること。`packagesJudgedByTotal`・計測の除外が変わっていないこと。
+- [x] 新しいテストのクラスの名前がすべて `Test` か `IT` で終わること、`Properties` で終わるテストのクラスと本体のクラスが無いこと（`git grep -n -e 'class [A-Za-z]*Properties\b' -- backend/src`）。新しい依存と lockfile の変更が無いこと。
 - 対応: NFR6.6、6節 A3。
 
 #### Step 20: 記録（コード生成の段の成果物の B4 の分）
-- [ ] `code-summary.md` の B4 の節（作ったもの・計画との差・承認の場で確かめること・後に回すこと・見せるものの `curl` の手順）、`traceability.json`（B4 で OK にする行、B5・B6 の分は Deferred）、`source-manifest.json`（作った・変えたアプリのソース）、`generation-notes.md`（手順ごとのコマンドと結果）を書く。
+- [x] `code-summary.md` の B4 の節（作ったもの・計画との差・承認の場で確かめること・後に回すこと・見せるものの `curl` の手順）、`traceability.json`（B4 で OK にする行、B5・B6 の分は Deferred）、`source-manifest.json`（作った・変えたアプリのソース）、`generation-notes.md`（手順ごとのコマンドと結果）を書く。
 - 対応: Testing Contract の「Documentation and traceability」。
 
 #### Step 21: 1コマンドの検査（統合の前の関門）
-- [ ] colima の状態と共有を確かめ（6節 A15）、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す。対象DB の3種類のテストの SKIPPED が 0 件、ログに「コンテナの実行環境」の警告が 0 件であることを確かめる。
-- [ ] 件数（単体・結合・画面、失敗・飛ばし）、カバレッジ（Step 3 の基準と並べる。新しい `role.*` と `audit.domain`・`audit.service`、全体）、`verify` の時間と Step 3 からの延びを記録する。単体テストの結果に `RoleNameKeyPropertyTest`・`PermissionInheritancePropertyTest` があることを確かめる。
+- [x] colima の状態と共有を確かめ（6節 A15）、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す。対象DB の3種類のテストの SKIPPED が 0 件、ログに「コンテナの実行環境」の警告が 0 件であることを確かめる。
+- [x] 件数（単体・結合・画面、失敗・飛ばし）、カバレッジ（Step 3 の基準と並べる。新しい `role.*` と `audit.domain`・`audit.service`、全体）、`verify` の時間と Step 3 からの延びを記録する。単体テストの結果に `RoleNameKeyPropertyTest`・`PermissionInheritancePropertyTest` があることを確かめる。
 - 対応: NFR6.4、`cicd-pipeline.md` 10節の B4 の行。
 
 #### Step 22: E2E（統合の前に手元で）
-- [ ] `docker compose --profile mail up -d mailpit` の後に `caffeinate -i ./gradlew e2eTest` を流し、全体（今は 14 ファイル・177 件）が通ることを確かめる（認可と管理の API に手が入るため。030・110・120・130 を含む）。報告の確かめの道具の出力を記録する。
-- [ ] `frontend/playwright-report`・`frontend/test-results` を消す。
+- [x] `docker compose --profile mail up -d mailpit` の後に `caffeinate -i ./gradlew e2eTest` を流し、全体（今は 14 ファイル・177 件）が通ることを確かめる（認可と管理の API に手が入るため。030・110・120・130 を含む）。報告の確かめの道具の出力を記録する。
+- [x] `frontend/playwright-report`・`frontend/test-results` を消す。
 - 対応: `cicd-pipeline.md` 8節。
 
 #### Step 23: コミットの提案・統合の提案（B4）

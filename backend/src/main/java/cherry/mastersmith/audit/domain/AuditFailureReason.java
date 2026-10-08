@@ -65,5 +65,15 @@ public enum AuditFailureReason {
     /** グループの名前がほかのグループと重なる（大文字と小文字を区別しない。Intent 261004-role-menu の U3）。 */
     GROUP_NAME_DUPLICATE,
     /** メンバーかロールの割り当てが残るグループの削除（Intent 261004-role-menu の U3）。 */
-    GROUP_IN_USE
+    GROUP_IN_USE,
+    /** 操作の対象のロールがいない（Intent 261004-role-menu の U4、契約 C10）。 */
+    ROLE_NOT_FOUND,
+    /** ロールの名前がほかのロールと重なる（大文字と小文字を区別しない。Intent 261004-role-menu の U4）。 */
+    ROLE_NAME_DUPLICATE,
+    /** 割り当てが残るロールの削除（Intent 261004-role-menu の U4）。 */
+    ROLE_IN_USE,
+    /** 今の DSL に無い対象への権限の設定（Intent 261004-role-menu の U4）。 */
+    PERMISSION_TARGET_NOT_IN_DSL,
+    /** 適用済みの DSL が無いときの権限の保存（Intent 261004-role-menu の U4）。 */
+    DSL_NOT_APPLIED
 }

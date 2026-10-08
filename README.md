@@ -817,6 +817,33 @@ Intent 261004-role-menu の U3 で、管理者が利用者のグループを作�
 - **監査**: 成功した変える操作と、業務の理由で断った変える操作（404・409 の `GROUP_NAME_DUPLICATE`・`GROUP_NO_CHANGE`・`GROUP_IN_USE`）を残します（「監査ログ（U4）」）。入力の誤り（400）・`GROUP_BUSY`・一覧と詳細の読み取りは残しません。
 - **指標**: 既存の `http.server.requests` で道ごとに数えます（新しい指標は足していません）。
 
+## ロールと権限の API（Intent 261004-role-menu の U4、Bolt B4）
+
+Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロールを作り、名前を変え、消し、ロールごとに権限を設定する API を足しました（契約 C7）。どれも `/api/admin/roles` の下にあり、API の分類は `ADMIN`（管理者だけ）です。既存の `/api/admin/**` の決まり（未認証・停止中の利用者は 401 `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 `ACCESS_DENIED`）にそのまま乗ります。利用者・グループへのロールの割り当てと作業ロール（B5）、権限の受け渡し（B6）、画面（U6）は後の Bolt の受け持ちです。
+
+| API | 成功 | 主な失敗 |
+|---|---|---|
+| `GET /api/admin/roles?page=` | 200 と1ページ（`items`・`page`・`size` 20・`total`）。行は `roleId`・`name`・`userCount`・`groupCount`（割り当ての数。割り当ては B5 で足すため、B4 では常に 0） | 400 `VALIDATION_FAILED`（page が 1 以上の整数でない） |
+| `POST /api/admin/roles`（`name`） | 201 と `roleId`・`name`・`createdAt`・`updatedAt` | 400 `VALIDATION_FAILED`（`fieldErrors` の `name`）・409 `ROLE_NAME_DUPLICATE`・409 `ROLE_BUSY` |
+| `GET /api/admin/roles/{roleId}` | 200 と `roleId`・`name`・`createdAt`・`updatedAt` | 404 `ROLE_NOT_FOUND` |
+| `PUT /api/admin/roles/{roleId}`（`name`） | 204 | 400・404 `ROLE_NOT_FOUND`・409 `ROLE_NAME_DUPLICATE`・409 `ROLE_NO_CHANGE`（今と同じ名前）・409 `ROLE_BUSY` |
+| `DELETE /api/admin/roles/{roleId}` | 204（権限の設定も一緒に消える） | 404 `ROLE_NOT_FOUND`・409 `ROLE_IN_USE`（割り当てが残る。B5 から）・409 `ROLE_BUSY` |
+| `GET /api/admin/roles/{roleId}/permissions/schemas` | 200 と `items`（スキーマの節） | 404 `ROLE_NOT_FOUND`・409 `DSL_NOT_APPLIED` |
+| `GET …/permissions/tables?schema=` | 200 と `items`（そのスキーマの下のテーブルの節） | 400（`schema` が無い・空・128 文字を超える）・404・409 `DSL_NOT_APPLIED` |
+| `GET …/permissions/columns?schema=&table=` | 200 と `items`（そのテーブルの下のカラムの節） | 400・404・409 `DSL_NOT_APPLIED` |
+| `PUT /api/admin/roles/{roleId}/permissions`（`scope`・`entries`） | 204（差分だけを保存する） | 400（`fieldErrors`）・404・409 `PERMISSION_TARGET_NOT_IN_DSL`・409 `DSL_NOT_APPLIED`・409 `ROLE_NO_CHANGE`（変わる点が無い）・409 `ROLE_BUSY` |
+| `POST /api/admin/roles/{roleId}/permissions/clear`（`targets`） | 204（指定した対象の明示の設定を消す。今の DSL に無い対象も消せる） | 400・404・409 `ROLE_NO_CHANGE`（消すものが無い）・409 `ROLE_BUSY` |
+
+- **名前**: 前後の空白を除いてから判定して保存します。除いた後が 1〜64 文字（コードポイント）で、制御文字を含めません。重なりは大文字と小文字を区別せずに判定します（グループと同じ決まり）。
+- **木の節**: 各節は `schemaName`・`tableName`・`columnName`（その階層より下は空）、`displayName`（`Accept-Language` で日本語か英語の表示名。今の DSL に無い対象は物理名）、`explicit`（明示の `main`・`create`・`delete`。設定なしは空）、`effective`（上の階層から受け継いだ後の実効の値）、`inheritedFrom`（主権限の出どころの階層）、`inMenu`・`inCurrentDsl`・`hasChildren` を持ちます。今の DSL に無いが設定の残る対象も、`inCurrentDsl: false` で並びます。
+- **主権限**: `NONE`・`READ`・`FULL` の3つです。`create`・`delete` は補助の権限で、スキーマとテーブルの階層で持ちます（カラムの行に入れると 400）。空は上から受け継ぎます。下の階層の明示の値は上の階層の値より優先します。
+- **保存の範囲**: `scope` がスキーマならそのスキーマの行だけ、テーブルならそのテーブルとその下のカラムの行だけを受け付けます。範囲の外の行・重なる行・空の `entries` は 400 です。今の DSL に無い対象を保存しようとすると、全体を断ります（409 `PERMISSION_TARGET_NOT_IN_DSL`、何も保存しない）。
+- **DSL が無いとき**: 適用済みの DSL が無いと、木の読み取りと保存は 409 `DSL_NOT_APPLIED` です。ロールの作成・名前の変更・削除と、設定を消す操作は DSL が無くても行えます。
+- **本文**: 決めた項目だけを読み、ほかの項目（ID・日時・作成者など）は読み捨てます。壊れた JSON は 400 `MALFORMED_REQUEST` です。
+- **同時の操作**: ロールを変える操作は、最初にそのロールの行を排他します。行の排他の待ちの上限は 3 秒、名前の一意の鍵の待ちは H2 の既定の約 2 秒で、超えると巻き戻して 409 `ROLE_BUSY` で断ります（状態は変わりません。少し待ってやり直してください）。同じ名前の作成・変更が重なったときは、後の側が先の側の確定を見たかどうかで code が分かれます。確定を見れば 409 `ROLE_NAME_DUPLICATE`、先の側が確定しないまま鍵の待ちの上限を過ぎれば 409 `ROLE_BUSY` です。一意の制約の違反の文（鍵の値を含む）は、応答・ログ・監査に出しません。
+- **監査**: 成功した変える操作と、業務の理由で断った変える操作（404・409 の `ROLE_NAME_DUPLICATE`・`ROLE_NO_CHANGE`・`ROLE_IN_USE`・`PERMISSION_TARGET_NOT_IN_DSL`・`DSL_NOT_APPLIED`）を残します（「監査ログ（U4）」）。入力の誤り（400）・`ROLE_BUSY`・読み取りは残しません。
+- **指標**: 既存の `http.server.requests` で道ごとに数えます（新しい指標は足していません）。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。
@@ -913,6 +940,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - V8（`V8__u3_invitation.sql`、Intent 260925-user-management の U3）: 招待の表 `invitations` を新しく足します（既存の表は変えない）。同じメールアドレスの招待中を1件に限るため、状態が `PENDING` のときだけメールアドレスになる生成列 `pending_email` に一意の制約を付けます。トークンはハッシュ（SHA-256）だけを保存します。確かめは2段でした。(1) の自動の結合テスト（生成列と一意の制約のふるまい、V7 までしか知らない Flyway が V8 の後の内部DB で失敗しないこと）は、Intent 260930-user-admin の B1 で消しました（理由は V7 と同じ）。生成列と一意の制約のふるまいの確かめは `InvitationSchemaIT` に移し、同時の招待の確かめは `InvitationConcurrencyIT` が受け持ちます。(2) 1つ前の版を V7・V8 の後の内部DB の複写で起動する確かめは、過去の配備の段の戻しの練習で行いました。
 - V9（`V9__u1_user_suspension.sql`、Intent 260930-user-admin の U1）: `users` に `suspended`（既定 `FALSE`・必須。既存の利用者は有効のまま）を足す前進のみの変更です。移行の自動のテストと戻しの練習は置きません（依頼者の決定）。確かめは、起動時の Flyway と Hibernate の検証と、利用停止の状態の読み書きの結合テストだけです。**1つ前の版に戻している間は、利用停止が効きません**（1つ前の版は `suspended` を読まないため、停止中の利用者もログイン・トークンの更新・アクセストークンの認証の3つの入口を通れます。止めたときに無効にしたリフレッシュトークンは無効のままです）。戻す前に停止中の利用者がいるかを確かめる手順は、配備の段で決めます。
 - V10（`V10__u3_group.sql`、Intent 261004-role-menu の U3）: グループの表 `groups`（名前の鍵 `name_key` に一意の制約 `uk_groups_name_key`）とメンバーの表 `group_members`（主キーはグループと利用者の組。グループへの外部キーは削除の制限つき、利用者への外部キー、利用者の ID の索引）を新しく足し、`audit_events` に `target_role_id`・`target_group_id`（空を許す）と `detail`（16,384 文字まで、空を許す）を足します。前進のみで、既存の列と表は変えません。確かめは `AuditMigrationCompatibilityIT`（V1〜V9 だけを知る Flyway が V10 の後の内部DB で止まらないこと、V10 の前に書いた監査の行が V10 の後も読めて足した3列が空であること、V10 の後も前の版の列だけで行を追記できること、表と制約の名前・索引・列の長さ）と、起動時の Flyway と Hibernate の検証です。1つ前の版のアプリを V10 の後の内部DB で起動する確かめ（戻しの練習）は、配備の段で扱います。
+- V11（`V11__u4_role.sql`、Intent 261004-role-menu の U4）: ロールの表 `roles`（名前の鍵 `name_key` に一意の制約 `uk_roles_name_key`）と権限の設定の表 `permission_settings`（主キー `pk_permission_settings` はロール・スキーマ・テーブル・カラムの組。上の階層の行はテーブル・カラムを空の文字列で持つ。ロールへの外部キー `fk_permission_settings_role` は削除の制限つき。値と階層の検査の制約）を新しく足します。前進のみで、既存の列と表は変えません。確かめは `RoleSchemaIT`（表と制約の名前・列の長さ・制約のふるまい）、`RoleMigrationCompatibilityIT`（V1〜V10 だけを知る Flyway が V11 の後の内部DB で止まらないこと、V11 の前に書いた利用者と監査の行が V11 の後も変わらず読めて `admin_flag` もそのままであること、V11 の後も前の版の列だけで利用者と監査の行を追記できること）、`AuditMigrationCompatibilityIT`（履歴の最後の版。B5 で V12 を足すと書き換える）と、起動時の Flyway と Hibernate の検証です。1つ前の版のアプリを V11 の後の内部DB で起動する確かめ（戻しの練習）は、配備の段で扱います。
 
 ## API のアクセス制御（U3）
 
@@ -959,7 +987,8 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
   - 救済の途中で失敗して取り消されたときは、救済の行は残りません。記録に失敗したときは、救済・作成はそのまま確定し、ERROR（`監査イベントの記録に失敗しました`）が1回出ます。
 - 対象の列（V7）: `target_user_id`（対象の利用者）・`target_invitation_id`（対象の招待。招待と登録の完了の出来事で使います）。どちらも空を許し、それ以前の種類の記録では空のままです。
 - グループの管理（Intent 261004-role-menu の U3）も記録します。種類は `GROUP_CREATED`・`GROUP_RENAMED`・`GROUP_DELETED`・`GROUP_MEMBER_ADDED`・`GROUP_MEMBER_REMOVED` で、どの種類も成功（結果 `SUCCESS`）と業務の拒否（結果 `FAILURE`）の両方があります。失敗の理由は `GROUP_NOT_FOUND`・`USER_NOT_FOUND`・`GROUP_NAME_DUPLICATE`・`GROUP_IN_USE`・`NO_CHANGE` です。操作した管理者（`actor_user_id`）、対象のグループ（`target_group_id`。作成の名前の重なりでは空、いない ID の拒否では要求の ID）、メンバーの追加・外しでは対象の利用者（`target_user_id`。いない ID もそのまま）が入ります。`target_role_id` は U3 では空です。`detail` には決めたキーだけの JSON（作成・削除・名前の重なりは `name`、名前の変更は `before`・`after`、メンバーの追加・外しは `groupName`、使用中の削除の拒否は `name`・`members`・`assignedRoles`）が入り、404 の拒否では空です。メールアドレス・氏名は記録しません。入力の誤り・`GROUP_BUSY`・一覧と詳細の読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わらず、ERROR には操作した人・対象のグループ・対象の利用者の ID と `detail`（グループの名前を含む）が載ります（メールアドレスは載りません）。
-- 対象の列（V10）: `target_role_id`（対象のロール。後の Bolt の U4 で使います）・`target_group_id`（対象のグループ）・`detail`（JSON の文字列、16,384 文字まで）。どれも空を許し、それ以前の種類の記録では空のままです。
+- ロールと権限の管理（Intent 261004-role-menu の U4、B4）も記録します。種類は `ROLE_CREATED`・`ROLE_RENAMED`・`ROLE_DELETED`・`ROLE_PERMISSION_CHANGED`（権限の保存と消す操作）で、どの種類も成功（結果 `SUCCESS`）と業務の拒否（結果 `FAILURE`）の両方があります。失敗の理由は `ROLE_NOT_FOUND`・`ROLE_NAME_DUPLICATE`・`ROLE_IN_USE`・`PERMISSION_TARGET_NOT_IN_DSL`・`DSL_NOT_APPLIED`・`NO_CHANGE` です。操作した管理者（`actor_user_id`）と対象のロール（`target_role_id`。作成の名前の重なりでは空、いない ID の拒否では要求の ID）が入り、`target_user_id`・`target_group_id` は B4 では空です。`detail` には決めたキーだけの JSON（作成・削除・名前の重なりは `name`、名前の変更は `before`・`after`、使用中の削除の拒否は `name`・`assignedUsers`・`assignedGroups`、権限の変更は `roleName` と `changes`（対象ごとの `target`・`before`・`after`））が入り、404 の拒否では空です。16,384 文字に収まらない権限の変更は、`roleName`・`changedCount`・`firstChanges`（先頭の一部）の要約に替えます。メールアドレス・氏名は記録しません。入力の誤り・`ROLE_BUSY`・読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わらず、ERROR には操作した人・対象のロールの ID と `detail`（ロールの名前と対象の名前を含む）が載ります（メールアドレスは載りません）。
+- 対象の列（V10）: `target_role_id`（対象のロール。U4 の B4 から使います）・`target_group_id`（対象のグループ）・`detail`（JSON の文字列、16,384 文字まで）。どれも空を許し、それ以前の種類の記録では空のままです。
 - 監査イベントの `trace_id` は、同じ要求のアプリのログの `traceId` と一致します。1つの要求を追うときは、この値でログを絞り込みます。
 - 記録に失敗しても、ログイン・ログアウト・401／403 の応答は変わりません。失敗したときは、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます。**この ERROR には、記録しようとした項目（メールアドレスを含む）がキーと値で載ります**。後から手で記録を補えるようにするためで、U4 に限った扱いです。パスワード・トークンは載りません。外部エクスポートで外へ送るときは、メールアドレス・接続元IP・User-Agent の値を `[REDACTED]` に置き換えます（「外部エクスポートの確かめ方」）。元の値は標準出力のログで見ます。
 - パスワードの変更の記録に失敗したときの ERROR には、メールアドレスは載らず（出来事がメールアドレスを持たないため）、操作した人と対象の利用者（`actorUserId`・`targetUserId`・`targetInvitationId`）が載ります。記録に失敗しても、パスワードの変更の応答（204・400）は変わりません。

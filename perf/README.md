@@ -608,3 +608,35 @@ perfu down -v
 rm -rf "$D"
 docker compose up -d --wait
 ```
+
+## ロールの管理の場面（Intent 261004-role-menu の U4）
+
+`perf/k6/scenarios.js` のロールの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/role/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5・NFR2.10）と `nfr-design/performance-design.md`（2節）。この節は Bolt B4 の4つの場面の分で、割り当て・作業ロール（B5）と権限の受け渡し（B6）の場面と、悪い側のデータを入れる準備の台本は、その Bolt で足す。B4・B5 の場面も、準備の台本（B6 の import の口に頼る）を流した後に、Performance Validation でまとめて流す（`infrastructure-design/cicd-pipeline.md` 5.3）。Code Generation では `k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
+|---|---|---|
+| `roleTreeRead` | 悪い側のロール（1万カラムに明示の値）の木で、スキーマ（op `schemas`）・スキーマの下のテーブル（op `tables`）・100 カラムのテーブル（op `columns`）を順に開く（200） | `iteration_duration{scenario:roleTreeRead,op:…}` の p95 < 1000 ms（op ごと）と `checks` の率 1 |
+| `rolePermissionSave` | VU ごとに自分のロール（setup が `perf-save-<実行>-<VU>` を作る）の 100 カラムのテーブルの表を、READ と FULL で交互に保存する（204。変わる点が必ずある） | `iteration_duration{scenario:rolePermissionSave}` の p95 < 1000 ms と `checks` の率 1 |
+| `roleAdminRead` | 一覧の1ページ目（op `listFirst`）・最後のページ（op `listLast`）・1件（op `one`）を順にくり返す（200）。グループのロールと利用者のロールの読み取りは B5 で足す | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `roleAdminOps` | VU ごとに作成（op `create`、201）・自分のロールの名前の変更（op `rename`、2つの名前で交互、204）・作ったロールの削除（op `delete`、204）を順にくり返す（状態が戻る） | op ごとの p95 < 1000 ms と `checks` の率 1 |
+
+- **形**: どの場面も `constant-vus`（`VUS` 既定 10・`ROLE_DURATION` 既定 3 分）。繰り返しの中に待ちを置かない。操作が2つ以上の場面は、繰り返しの始めに `exec.vu.metrics.tags.op` に操作の名前を入れる（`op` のタグが `iteration_duration` に付くことは B4 の Code Generation の Step 16 で、要求を送らない台本で確かめた）。`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため、要約に並べて記録するだけにする（閾値 `max>=0` は表示のため）。
+- **データ**: 悪い側のロール（名前 `ROLE_WORST_NAME`、既定 `perf-role-worst`）と、版 2 の DSL のスキーマ `ROLE_TREE_SCHEMA`（既定 `perf`）・100 カラムのテーブル `ROLE_TREE_TABLE`（既定 `perf_t001`）は、B6 で足す準備の台本が入れる。名前を変えたときは、同じ値を `-e` で k6 に渡す。台本は一覧のページを順に読んでロールの ID を名前で探し、見つからなければ始める前に止まる。
+- **トークン**: 操作する管理者は試験用の管理者 `perf-roleop01`（初期管理者は使わない。手順 2'' の SQL の形で入れる）。setup の最後にトークンを取り直し、場面は 3 分までにする（アクセストークンは 5 分で切れる）。setup の時間の上限は 10 分（`setupTimeout`）。
+- **名前**: ロールの名前の鍵は大文字と小文字を区別せず全体で一意のため、作る名前は実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。
+- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
+
+```bash
+# B4 の場面の流し方（準備の台本は B6 で足す。前提: グループの管理の節の 0・1・1G と同じ用意、perf-roleop01 を入れてあること）
+cat > "$D/role-run.sh" <<'EOS'
+D="$1"
+for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps; do
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
+done
+EOS
+caffeinate -i zsh "$D/role-run.sh" "$D"
+#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type LIKE 'ROLE_%'
+#     GROUP BY event_type, result, failure_reason
+```

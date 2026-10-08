@@ -77,5 +77,13 @@ public enum AuditEventType {
     /** グループにメンバーを足した（Intent 261004-role-menu の U3）。 */
     GROUP_MEMBER_ADDED,
     /** グループからメンバーを外した（Intent 261004-role-menu の U3）。 */
-    GROUP_MEMBER_REMOVED
+    GROUP_MEMBER_REMOVED,
+    /** ロールを作った（Intent 261004-role-menu の U4、契約 C10。成功と失敗は結果で分ける）。 */
+    ROLE_CREATED,
+    /** ロールの名前を変えた（Intent 261004-role-menu の U4）。 */
+    ROLE_RENAMED,
+    /** ロールを消した（Intent 261004-role-menu の U4）。 */
+    ROLE_DELETED,
+    /** ロールの権限の設定を変えた（保存と、今の DSL に無い設定を消す操作。Intent 261004-role-menu の U4）。 */
+    ROLE_PERMISSION_CHANGED
 }

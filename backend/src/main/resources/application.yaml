@@ -352,6 +352,10 @@ logging:
     #   H2 の違反の文に重なった値（メールアドレス）が入り、Hibernate がアプリへ例外を渡す前にそのまま WARN に出す。
     #   メールアドレスをアプリのログに出さない決まり（project.md の Forbidden）を破るため。違反はアプリが業務の結果の型
     #   （EmailAlreadyUsed・招待中の勝った側）で受けるため、このログが無くても業務の扱いは変わらない。
+    #   ロールと権限（Intent 261004-role-menu の U4）でも、名前の鍵 uk_roles_name_key・権限の設定の主キー
+    #   pk_permission_settings・外部キー fk_permission_settings_role の違反の文に、ロールの名前と ID・対象の名前が入る。
+    #   違反は role.store が結果の型（NameTaken・Referenced など）で受けるため、このログが無くても業務の扱いは変わらない
+    #   （security-design.md 4.1。消すと RoleUniqueViolationSecretLeakIT が落ちる）。
     # 障害の調べ方: 受ける所の業務の結果の型と、想定外の誤りのときは GlobalExceptionHandler の ERROR の例外のクラスの名前で
     #   原因を絞る（一意の制約の違反は DataIntegrityViolationException・ConstraintViolationException、SQLState は 23505）。
     #   さらに調べるときは、内部DB の複写を読み取りで開いて制約と行を確かめる。配備した環境でこのロガーを有効にしない

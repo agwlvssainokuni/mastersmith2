@@ -1,0 +1,1586 @@
+{
+  "stage": "code-generation",
+  "unit": "role",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC1.1.14",
+    "AC1.1.15",
+    "AC1.1.16",
+    "AC1.1.17",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.2.15",
+    "AC1.2.16",
+    "AC1.2.17",
+    "AC1.2.18",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.9",
+    "AC2.2.10",
+    "AC2.2.11",
+    "AC2.2.12",
+    "AC2.2.13",
+    "AC2.2.14",
+    "AC2.2.15",
+    "AC2.2.16",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.1.13",
+    "AC3.1.14",
+    "AC3.1.15",
+    "AC3.1.16",
+    "AC3.1.17",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC4.1.13",
+    "AC4.1.14",
+    "AC4.1.15",
+    "AC4.1.16",
+    "AC4.1.17",
+    "AC4.1.18",
+    "AC4.1.19",
+    "AC4.1.20",
+    "AC4.1.21",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.2.6",
+    "AC4.2.7",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.1.11",
+    "AC5.1.12",
+    "AC5.1.13",
+    "AC5.1.14",
+    "AC5.1.15",
+    "AC5.1.16",
+    "AC5.1.17",
+    "AC5.1.18",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR3.7",
+    "BR3.6",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR4.5",
+    "BR4.6",
+    "BR4.7",
+    "BR4.8",
+    "BR4.9",
+    "BR4.10",
+    "BR4.11",
+    "BR4.12",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR5.5",
+    "BR5.6",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR6.4",
+    "BR6.5",
+    "BR6.6",
+    "BR6.7",
+    "BR6.8",
+    "BR6.9",
+    "BR6.10",
+    "BR6.11",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR7.5",
+    "BR7.6",
+    "BR7.7",
+    "BR7.8",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3",
+    "BR8.4",
+    "BR8.5",
+    "BR8.6",
+    "BR9.1",
+    "BR9.2",
+    "BR9.3",
+    "BR9.4",
+    "BR9.5",
+    "BR9.6",
+    "BR9.7",
+    "BR9.8",
+    "BR9.9",
+    "BR9.10",
+    "BR9.11",
+    "BR9.12",
+    "BR9.13",
+    "BR9.14",
+    "BR9.15",
+    "BR10.1",
+    "BR10.2",
+    "BR10.3",
+    "BR11.1",
+    "BR11.2",
+    "BR11.3",
+    "BR11.4",
+    "BR11.5",
+    "BR11.6",
+    "BR11.7",
+    "BR11.8",
+    "BR11.9",
+    "BR12.1",
+    "BR12.2",
+    "BR12.3",
+    "BR13.1",
+    "BR13.2",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR3.4",
+    "NFR3.5",
+    "NFR3.6",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（API。画面は U6）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/domain/RoleNameKeyPropertyTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "Deferred",
+      "target": "U4 role の B5（割り当てが残る削除の拒否。B4 は割り当てが無い削除だけ）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: ロールと権限の設定が消える。作業ロールの保存は B5）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "U4 role の B5（削除と割り当ての重なり）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "U4 role の B5（ROLE_IN_USE の応答の数。B4 の RoleChangeResult.InUse は形だけ）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "U4 role の B5（作業ロールの保存）"
+    },
+    {
+      "id": "AC1.1.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java"
+    },
+    {
+      "id": "AC1.1.15",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java・backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java（部分: B4 の 10 の口。B5・B6 の口は Step 37・59）"
+    },
+    {
+      "id": "AC1.1.16",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleAuditEventTest.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleEventFactoryTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の4種類。B5・B6 の種類は後）"
+    },
+    {
+      "id": "AC1.1.17",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMetricsIT.java"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleDetailJsonTest.java（部分: 監査。次の要求から効くことは B5 の RoleChangeVisibilityIT）"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java（部分: 今の DSL に無い対象の保存の拒否と木の表示。解決の口の NONE は B5）"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/PermissionInputsTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）"
+    },
+    {
+      "id": "AC1.2.15",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）"
+    },
+    {
+      "id": "AC1.2.16",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.17",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "AC1.2.18",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の roleTreeRead・rolePermissionSave。台本は B4 の Step 17）"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "Deferred",
+      "target": "U3 group（B3 で済み）"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.11",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.12",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.13",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.14",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.15",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC2.2.16",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "Deferred",
+      "target": "U6 role-admin-ui（画面）"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.13",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.14",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.15",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.16",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC3.1.17",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（画面）"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（画面）"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（画面）"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（画面）"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.13",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.14",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.15",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.16",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.17",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.18",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.19",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.20",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.1.21",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.6",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "AC4.2.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（画面）"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.11",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.12",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.13",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.14",
+      "status": "Deferred",
+      "target": "U4 role の B5（解決の口の NONE）"
+    },
+    {
+      "id": "AC5.1.15",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.16",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.17",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "AC5.1.18",
+      "status": "Deferred",
+      "target": "U5 navigation（業務のメニュー）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameKeyPropertyTest.java・backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java・backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "BR2.2",
+      "status": "Deferred",
+      "target": "U4 role の B5（/api/me の口）"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "Deferred",
+      "target": "U4 role の B5（割り当て）"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java（部分: 権限の設定。作業ロールの保存は B5）"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java（部分: 一覧の数は B4 では 0 固定。数え方は B5）"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/repository/RoleRepositoryIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminQueryCountIT.java"
+    },
+    {
+      "id": "BR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "BR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/PermissionInputsTest.java・backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreConstraintIT.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTargetNameTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/PermissionInputsTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR4.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleAdminQueryCountIT.java"
+    },
+    {
+      "id": "BR4.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java・backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "id": "BR4.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java（部分: ロールの木。自分の権限の API は B5）"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "id": "BR5.3",
+      "status": "Deferred",
+      "target": "U4 role の B5（解決の口）"
+    },
+    {
+      "id": "BR5.4",
+      "status": "Deferred",
+      "target": "U4 role の B5（解決の口）"
+    },
+    {
+      "id": "BR5.5",
+      "status": "Deferred",
+      "target": "U4 role の B5（解決の口）"
+    },
+    {
+      "id": "BR5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "id": "BR6.1",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.2",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.4",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.6",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.7",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.8",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.9",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.10",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR6.11",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.1",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.2",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.3",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.4",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.5",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.6",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.7",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR7.8",
+      "status": "Deferred",
+      "target": "U4 role の B5"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java"
+    },
+    {
+      "id": "BR8.2",
+      "status": "Deferred",
+      "target": "U4 role の B5（グループの行の排他）"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreConstraintIT.java"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java・backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java"
+    },
+    {
+      "id": "BR8.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/testsupport/TestRoleBarrier.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR9.1",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.2",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.3",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.4",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.5",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.6",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.7",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.8",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.9",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.10",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.11",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.12",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.13",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.14",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR9.15",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR10.1",
+      "status": "Deferred",
+      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+    },
+    {
+      "id": "BR10.2",
+      "status": "Deferred",
+      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+    },
+    {
+      "id": "BR10.3",
+      "status": "Deferred",
+      "target": "U4 role の B5（B3 の仮の実装の置き換え）"
+    },
+    {
+      "id": "BR11.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の操作）"
+    },
+    {
+      "id": "BR11.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java（部分: B4 の操作）"
+    },
+    {
+      "id": "BR11.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java（部分: B4 の操作）"
+    },
+    {
+      "id": "BR11.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleEventFactoryTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の操作）"
+    },
+    {
+      "id": "BR11.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleDetailJsonTest.java・backend/src/test/java/cherry/mastersmith/role/domain/RoleAuditDetailTest.java"
+    },
+    {
+      "id": "BR11.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleDetailJsonTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java"
+    },
+    {
+      "id": "BR11.7",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "BR11.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の操作）"
+    },
+    {
+      "id": "BR11.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleProblemTypesTest.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleEventFactoryTest.java"
+    },
+    {
+      "id": "BR12.1",
+      "status": "Deferred",
+      "target": "U4 role の B5（割り当ての一覧と利用者のロール）"
+    },
+    {
+      "id": "BR12.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "BR12.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java（部分: DB の例外。YAML は B6）"
+    },
+    {
+      "id": "BR13.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleProblemTypesTest.java・backend/src/test/java/cherry/mastersmith/role/service/RoleProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "BR13.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleProblemTypesTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java（部分: B4 の口。403 の差は B5 で解消）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java・backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "Deferred",
+      "target": "U4 role の B6（YAML）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "Deferred",
+      "target": "U4 role の B5（伏せ字の型）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "Deferred",
+      "target": "U4 role の B6（YAML の中身の TRACE）"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "./gradlew verify の SpotBugs の関門（B4 の Step 21）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "Deferred",
+      "target": "U4 role の B5（解決の口の問い合わせの数）・Performance Validation（時間）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminQueryCountIT.java（部分: B4 の読み取り）"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConnectionUsageIT.java（部分: B4 の口の本数。上限の場面は Performance Validation）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "Deferred",
+      "target": "U4 role の B5（roleAssignmentsRead）・Performance Validation"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "Deferred",
+      "target": "Performance Validation（k6 の台本は B4 の Step 17 で一部。B5・B6 で足す）"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConnectionUsageIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java（部分: (b)(c) と #7。(a)(d)(e)(g) は B5、(f) は B6）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditWriteFailureIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java・backend/src/test/java/cherry/mastersmith/role/RoleMigrationCompatibilityIT.java・backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java（部分: V11。V12 は B5）"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreConstraintIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java・backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java（部分: group の T1・T5・T6・T7。ほかは B5・B6・Performance Validation）"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "Deferred",
+      "target": "U4 role の B6"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "画面。U6 role-admin-ui・U7 app-frame-ui の持ち物（NFR 要件でも N/A）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "画面。U6 role-admin-ui・U7 app-frame-ui の持ち物（NFR 要件でも N/A）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "画面。U6 role-admin-ui・U7 app-frame-ui の持ち物（NFR 要件でも N/A）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleEventFactoryTest.java・backend/src/test/java/cherry/mastersmith/audit/service/AuditRoleEventListenerTest.java・backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java（部分: B4 の4種類）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleMetricsIT.java"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "Deferred",
+      "target": "Observability Setup（monitoring-design.md 5節）"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleDetailJsonTest.java・backend/src/test/java/cherry/mastersmith/role/domain/RoleAuditDetailTest.java"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java・backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java（部分: B4 の口）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/ の B4 のテストの全体（部分: B4 の分）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameKeyPropertyTest.java・backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java（部分: 4つのうち2つ。作業ロールと受け渡しの往復は B5・B6）"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "N/A",
+      "target": "E2E。F・I の流れは U6・U7 が持つ（NFR 要件でも N/A）"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "./gradlew verify の JaCoCo の下限（B4 の Step 21。値は code-summary.md の 3節）"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java・backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "B4 の Step 19（依存と lockfile の差なし）"
+    }
+  ]
+}

@@ -90,6 +90,21 @@
 //   groupMemberRemove  VU ごとに setup でメンバー GROUP_ROUNDS 人を足したグループから1人ずつ外す（per-vu-iterations）
 //   groupPoolLimit     VU ごとに自分のグループで、自分の候補1人の追加と外しを交互にくり返す（constant-vus。接続プールの上限の
 //                      確かめ。p95 と checks の閾値を置かず、状態コードの件数を groupPoolLimit_204・_409・_500・_other で出す）
+// ロールの管理の場面（Intent 261004-role-menu の U4、Bolt B4。手順は perf/README.md の「ロールの管理の場面」）。ID は
+// construction/role/nfr-requirements/ の performance-requirements.md（NFR2.2・NFR2.5・NFR2.10）。どの場面も 10 VU（VUS）・3 分
+// （ROLE_DURATION）の constant-vus で、1回の繰り返しに要求1つ、繰り返しの中に待ちを置かない。操作が2つ以上の場面は、繰り返しの
+// 始めに exec.vu.metrics.tags.op に操作の名前を入れ、iteration_duration{scenario:…,op:…} の p95 < 1000 ms と checks の率 1 で判定する
+// （op のタグが iteration_duration に付くことは B4 の Step 16 で確かめた）。http_req_duration{name:…} は並べて記録するだけ。操作する
+// 管理者は perf-roleop01（setup でトークンを取る。初期管理者は使わない）。DSL・ロールと権限の悪い側のデータは、B6 で足す準備の台本が
+// 先に入れる前提（ROLE_WORST_NAME のロール、ROLE_TREE_SCHEMA・ROLE_TREE_TABLE の 100 カラムのテーブル）。
+//   roleTreeRead        悪い側のロールの木で、スキーマ（op schemas）・スキーマの下のテーブル（op tables）・100 カラムのテーブル
+//                       （op columns）を順に開く
+//   rolePermissionSave  VU ごとに自分のロール（setup で作る）の 100 カラムのテーブルの表を、READ と FULL を交互に保存する（変わる点が
+//                       必ずあり ROLE_NO_CHANGE にならない）
+//   roleAdminRead       一覧の1ページ目（op listFirst）・最後のページ（op listLast）・1件（op one）を順にくり返す。グループのロールと
+//                       利用者のロールの読み取りは B5 で足す
+//   roleAdminOps        VU ごとに作成（op create）・名前の変更（op rename）・削除（op delete）を順にくり返す（作ったロールを消し、
+//                       名前の変更は自分のロールの名前を2つの名前で交互に変える。どれも状態が戻る）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -234,7 +249,26 @@ const GROUP_POOL_COUNTS = {
   other: new Counter('groupPoolLimit_other'),
 }
 
+// ロールの管理の場面（Intent 261004-role-menu の U4、B4）
+const ROLE_API = `${BASE}/api/admin/roles`
+const ROLE_SCENARIOS = ['roleTreeRead', 'rolePermissionSave', 'roleAdminRead', 'roleAdminOps']
+// 操作が2つ以上の場面の操作の名前（op のタグ。iteration_duration で操作ごとに判定する）
+const ROLE_OPS = {
+  roleTreeRead: ['schemas', 'tables', 'columns'],
+  roleAdminRead: ['listFirst', 'listLast', 'one'],
+  roleAdminOps: ['create', 'rename', 'delete'],
+}
+// 場面の長さ（トークンの有効期限 5 分より短くする）
+const ROLE_DURATION = __ENV.ROLE_DURATION || '3m'
+// 準備の台本が入れる悪い側のロールの名前と、木を開くスキーマ・テーブル
+const ROLE_WORST_NAME = __ENV.ROLE_WORST_NAME || 'perf-role-worst'
+const ROLE_TREE_SCHEMA = __ENV.ROLE_TREE_SCHEMA || 'perf'
+const ROLE_TREE_TABLE = __ENV.ROLE_TREE_TABLE || 'perf_t001'
+
 function scenariosFor(name) {
+  if (ROLE_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'constant-vus', vus: VUS, duration: ROLE_DURATION } }
+  }
   if (name === 'dslMixed') {
     return {
       dslHeavy: { executor: 'constant-vus', vus: 1, duration: DURATION, exec: 'dslHeavy' },
@@ -285,6 +319,20 @@ function thresholdsFor(name) {
   if (name === 'dslMixed') {
     return { 'checks{scenario:logins}': ['rate==1'], 'checks{scenario:dslHeavy}': ['rate==1'] }
   }
+  // Intent 261004-role-menu の U4（NFR2.2・NFR2.5・NFR2.10）。操作が2つ以上の場面は op ごとの iteration_duration で判定する。
+  if (ROLE_SCENARIOS.includes(name)) {
+    const thresholds = {
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{scenario:${name}}`]: ['max>=0'],
+    }
+    const ops = ROLE_OPS[name]
+    if (ops) {
+      for (const op of ops) thresholds[`iteration_duration{scenario:${name},op:${op}}`] = ['p(95)<1000']
+    } else {
+      thresholds[`iteration_duration{scenario:${name}}`] = ['p(95)<1000']
+    }
+    return thresholds
+  }
   // Intent 261004-role-menu の U3（NFR2.5）。判定は1回の繰り返しに要求1つの場面の iteration_duration（単調な時計）と checks。
   // http_req_duration{name:…} は要約に並べるための常に通る閾値（max>=0）で、判定には使わない。
   if (GROUP_JUDGED_SCENARIOS.includes(name)) {
@@ -319,6 +367,8 @@ if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // グループの管理の場面は、setup でグループ（最大 1,000 件）とメンバー（最大 1,000 人）を API で作る
 if (GROUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// ロールの管理の場面は、setup で悪い側のロールを一覧から探し、VU ごとのロールを API で作る
+if (ROLE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -363,6 +413,7 @@ export function setup() {
   if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) setupInvitations(tokens)
   if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) setupUserAdmin(tokens)
   if (GROUP_SCENARIOS.includes(SCENARIO)) setupGroups(tokens)
+  if (ROLE_SCENARIOS.includes(SCENARIO)) setupRoles(tokens)
   return tokens
 }
 
@@ -1166,6 +1217,161 @@ function groupPoolLimit(data) {
   counter.add(1, { name: adding ? 'groupPoolLimitAdd' : 'groupPoolLimitRemove' })
 }
 
+// ロールの管理の場面（Intent 261004-role-menu の U4、B4）
+function roleOperatorEmail() {
+  return 'perf-roleop01@example.test'
+}
+
+function roleHeaders(token) {
+  return { Authorization: `Bearer ${token}`, Origin: BASE }
+}
+
+// 一覧のページを順に読み、名前の一致するロールの ID を返す（無ければ null）
+function roleIdByName(token, name) {
+  for (let page = 1; ; page++) {
+    const res = http.get(`${ROLE_API}?page=${page}`, { headers: roleHeaders(token), tags: { name: 'roleSetup' } })
+    if (res.status !== 200) fail(`ロールの一覧を読めませんでした: ${res.status}`)
+    const items = res.json('items')
+    const found = items.find((item) => item.name === name)
+    if (found) return found.roleId
+    if (items.length < PAGE_SIZE) return null
+  }
+}
+
+function roleCreate(token, name, tag) {
+  const res = jsonPost(ROLE_API, { name }, roleHeaders(token), tag)
+  if (res.status !== 201) fail(`ロールを作れませんでした: ${res.status} ${codeOf(res)}`)
+  return res.json('roleId')
+}
+
+function roleSaveBody(columns, main) {
+  return {
+    scope: { schemaName: ROLE_TREE_SCHEMA, tableName: ROLE_TREE_TABLE },
+    entries: columns.map((column) => ({
+      schemaName: ROLE_TREE_SCHEMA,
+      tableName: ROLE_TREE_TABLE,
+      columnName: column,
+      main,
+      create: null,
+      delete: null,
+    })),
+  }
+}
+
+// ロールの管理の場面の用意。悪い側のロールは準備の台本が入れたものを名前で探し、VU ごとのロールは API で作る。ID だけを持つ。
+function setupRoles(data) {
+  const token = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  data.roleToken = token
+  const runId = Date.now().toString(36)
+  data.roleRunId = runId
+  const worst = roleIdByName(token, ROLE_WORST_NAME)
+  if (!worst) fail(`ロール ${ROLE_WORST_NAME} がいません（perf/README.md の準備の台本を先に流してください）`)
+  data.roleWorstId = worst
+  if (SCENARIO === 'rolePermissionSave') {
+    const query = `schema=${encodeURIComponent(ROLE_TREE_SCHEMA)}&table=${encodeURIComponent(ROLE_TREE_TABLE)}`
+    const res = http.get(`${ROLE_API}/${worst}/permissions/columns?${query}`, {
+      headers: roleHeaders(token),
+      tags: { name: 'roleSetup' },
+    })
+    if (res.status !== 200) fail(`カラムを読めませんでした: ${res.status} ${codeOf(res)}`)
+    data.roleColumns = res.json('items').filter((item) => item.inCurrentDsl).map((item) => item.columnName)
+    data.roleIds = {}
+    for (let vu = 1; vu <= VUS; vu++) data.roleIds[vu] = roleCreate(token, `perf-save-${runId}-${two(vu)}`, 'roleSetup')
+  } else if (SCENARIO === 'roleAdminRead') {
+    const res = http.get(ROLE_API, { headers: roleHeaders(token), tags: { name: 'roleSetup' } })
+    data.roleLastPage = Math.max(1, Math.ceil(res.json('total') / PAGE_SIZE))
+  } else if (SCENARIO === 'roleAdminOps') {
+    data.roleIds = {}
+    for (let vu = 1; vu <= VUS; vu++) data.roleIds[vu] = roleCreate(token, roleRenameName(runId, vu, 'a'), 'roleSetup')
+  }
+  // 用意に時間がかかっても場面の間（3 分）にトークンが切れないよう、最後に取り直す
+  data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+}
+
+function roleRenameName(runId, vu, side) {
+  return `perf-role-rename-${runId}-${two(vu)}-${side}`
+}
+
+// 繰り返しの番号から操作を決め、op のタグに入れる
+function roleOp(name) {
+  const ops = ROLE_OPS[name]
+  const op = ops[exec.vu.iterationInScenario % ops.length]
+  exec.vu.metrics.tags.op = op
+  return op
+}
+
+function roleTreeRead(data) {
+  const op = roleOp('roleTreeRead')
+  const base = `${ROLE_API}/${data.roleWorstId}/permissions`
+  const schema = `schema=${encodeURIComponent(ROLE_TREE_SCHEMA)}`
+  const url =
+    op === 'schemas'
+      ? `${base}/schemas`
+      : op === 'tables'
+        ? `${base}/tables?${schema}`
+        : `${base}/columns?${schema}&table=${encodeURIComponent(ROLE_TREE_TABLE)}`
+  const res = http.get(url, { headers: roleHeaders(data.roleToken), tags: { name: `roleTreeRead_${op}` } })
+  check(res, { 'roleTreeRead 200': (r) => r.status === 200 && r.json('items').length > 0 })
+}
+
+function rolePermissionSave(data) {
+  const vu = exec.vu.idInTest
+  // 1回目は READ、2回目は FULL と交互に保存する（自分のロールのため、ほかの VU と重ならない）
+  const main = exec.vu.iterationInScenario % 2 === 0 ? 'READ' : 'FULL'
+  const res = jsonPut(
+    `${ROLE_API}/${data.roleIds[vu]}/permissions`,
+    roleSaveBody(data.roleColumns, main),
+    roleHeaders(data.roleToken),
+    'rolePermissionSave',
+  )
+  check(res, { 'rolePermissionSave 204': (r) => r.status === 204 })
+}
+
+function roleAdminRead(data) {
+  const op = roleOp('roleAdminRead')
+  const url =
+    op === 'listFirst'
+      ? ROLE_API
+      : op === 'listLast'
+        ? `${ROLE_API}?page=${data.roleLastPage}`
+        : `${ROLE_API}/${data.roleWorstId}`
+  const res = http.get(url, { headers: roleHeaders(data.roleToken), tags: { name: `roleAdminRead_${op}` } })
+  check(res, { 'roleAdminRead 200': (r) => r.status === 200 })
+}
+
+function roleAdminOps(data) {
+  const vu = exec.vu.idInTest
+  const op = roleOp('roleAdminOps')
+  const round = Math.floor(exec.vu.iterationInScenario / 3)
+  let res
+  if (op === 'create') {
+    res = jsonPost(
+      ROLE_API,
+      { name: `perf-role-ops-${data.roleRunId}-${two(vu)}-${round}` },
+      roleHeaders(data.roleToken),
+      'roleAdminOps_create',
+    )
+    vuState.roleCreatedId = res.status === 201 ? res.json('roleId') : null
+    check(res, { 'roleAdminOps 201': (r) => r.status === 201 })
+  } else if (op === 'rename') {
+    // setup で名前を a にしてあるため、1回目は b、2回目は a と交互に変える
+    const side = round % 2 === 0 ? 'b' : 'a'
+    res = jsonPut(
+      `${ROLE_API}/${data.roleIds[vu]}`,
+      { name: roleRenameName(data.roleRunId, vu, side) },
+      roleHeaders(data.roleToken),
+      'roleAdminOps_rename',
+    )
+    check(res, { 'roleAdminOps 204': (r) => r.status === 204 })
+  } else {
+    res = http.del(`${ROLE_API}/${vuState.roleCreatedId}`, null, {
+      headers: roleHeaders(data.roleToken),
+      tags: { name: 'roleAdminOps_delete' },
+    })
+    check(res, { 'roleAdminOps 204': (r) => r.status === 204 })
+  }
+}
+
 // U2・U3 の場面の名前と処理
 const USER_SCENARIOS = {
   preferencesGet,
@@ -1197,6 +1403,10 @@ const USER_SCENARIOS = {
   groupMemberAdd,
   groupMemberRemove,
   groupPoolLimit,
+  roleTreeRead,
+  rolePermissionSave,
+  roleAdminRead,
+  roleAdminOps,
 }
 
 export default function (tokens) {

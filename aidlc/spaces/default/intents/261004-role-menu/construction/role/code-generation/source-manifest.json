@@ -1,0 +1,367 @@
+{
+  "stage": "code-generation",
+  "unit": "role",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditDetailJson.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/EffectivePermission.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/InheritedFrom.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/MainPermission.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionInheritance.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionLevel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionNode.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSetting.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSettingId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionTarget.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionTargetName.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/Role.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleAuditDetail.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleAuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleAuditFailure.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleName.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleNameValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/PermissionLevelRow.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/PermissionSettingRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/PermissionSettingRow.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleRowView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/NoOpRoleBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/PermissionInputs.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/PermissionTreeResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAdminService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleChangeResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleCreateResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleDetail.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleDetailResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleFirstStep.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleListResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleStoreTransactions.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/Referent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStore.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStoreClassifier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStoreOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStoreUnexpectedException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionClearRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionEntryRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionNodeResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionNodesResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionSaveRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionTargetRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAdminController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleNameRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RolePageResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RolePermissionController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRequestContextResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRowResponse.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V11__u4_role.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleDetailJsonTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditRoleEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditRoleEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTargetNameTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTargetTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleAuditDetailTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleAuditEventTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameKeyPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleNameTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleProblemTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/repository/RoleRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/PermissionInputsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreConstraintIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleActors.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleApi.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleDslFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleFixtures.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TestRoleBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditWriteFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConflictAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMetricsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RolePermissionApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

@@ -30,11 +30,15 @@ import org.junit.jupiter.api.Test;
  *
  * <p>B2 で {@code user.web} の口に API の分類の印を付けたため、今の依存をそのまま書いて足した。{@code user} がアプリの中で依存して
  * よいのは {@code common} だけで、{@code user} に依存してよいのは {@code audit}・{@code auth}・{@code dslmanage}・
- * {@code group}・{@code invitation}・{@code useradmin} だけ。既存の全体の決まり（ArchitectureTest）とほかの機能の境界テストは変えない。
+ * {@code group}・{@code invitation}・{@code role}・{@code useradmin} だけ。既存の全体の決まり（ArchitectureTest）とほかの機能の境界テストは変えない。
  *
  * <p>{@code group} は Intent 261004-role-menu の B3（U3）で足した（グループのメンバーの利用者の有無と、まとめて読む口
  * {@code findSummariesByIds}、伏せる型の値。設計の依存の向き group → user）。既存の境界テストを緩める変更として、コード生成の計画に
  * 明記して依頼者の承認を得た（計画の 11節 Q2: A、D-20）。ほかの規則は緩めていない。
+ *
+ * <p>{@code role} は Intent 261004-role-menu の B4（U4）で足した（出来事と要求の文脈の {@code RequestOrigin}、B5 で利用者の有無と伏せる
+ * 型の要約。設計の依存の向き role → user、NFR6.5）。group と同じく既存の境界テストを緩める変更として、U4 のコード生成の計画に明記して
+ * 依頼者の承認を得た（計画の 13節 Q1: A、D-35）。ほかの規則は緩めていない。
  */
 class UserBoundaryArchitectureTest {
 
@@ -79,7 +83,7 @@ class UserBoundaryArchitectureTest {
     }
 
     @Test
-    @DisplayName("outside user only audit, auth, dslmanage, group, invitation and useradmin may depend on it")
+    @DisplayName("outside user only audit, auth, dslmanage, group, invitation, role and useradmin may depend on it")
     void onlyKnownFeaturesDependOnUser() {
         noClasses()
                 .that()
@@ -90,6 +94,7 @@ class UserBoundaryArchitectureTest {
                         "cherry.mastersmith.dslmanage..",
                         "cherry.mastersmith.group..",
                         "cherry.mastersmith.invitation..",
+                        "cherry.mastersmith.role..",
                         "cherry.mastersmith.useradmin..")
                 .should()
                 .dependOnClassesThat()

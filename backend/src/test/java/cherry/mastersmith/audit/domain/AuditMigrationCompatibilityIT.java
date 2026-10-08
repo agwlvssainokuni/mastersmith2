@@ -54,6 +54,15 @@ class AuditMigrationCompatibilityIT {
     /** 前の版が持つ最後の移行の番号。 */
     private static final int PREVIOUS_LAST_VERSION = 9;
 
+    /**
+     * 今の版の最後の移行の番号（クラスパスの移行をすべて当てたときの版）。Intent 261004-role-menu の B4 で V11 を足したため 11 にした
+     * （依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。
+     */
+    private static final int CURRENT_LAST_VERSION = 11;
+
+    /** 前の版の後に今の版が当てる移行の数（V10・V11）。 */
+    private static final int MIGRATIONS_AFTER_PREVIOUS = CURRENT_LAST_VERSION - PREVIOUS_LAST_VERSION;
+
     private static final Pattern VERSIONED = Pattern.compile("V(\\d+)__.+\\.sql");
 
     @TempDir
@@ -123,7 +132,7 @@ class AuditMigrationCompatibilityIT {
         assertThat(jdbc.queryForObject(
                         "SELECT MAX(CAST(\"version\" AS INT)) FROM \"flyway_schema_history\" WHERE \"version\" IS NOT NULL",
                         Integer.class))
-                .isEqualTo(10);
+                .isEqualTo(CURRENT_LAST_VERSION);
     }
 
     @Test
@@ -138,8 +147,8 @@ class AuditMigrationCompatibilityIT {
 
         MigrateResult current = currentVersion().migrate();
 
-        assertThat(current.migrationsExecuted).isEqualTo(1);
-        assertThat(current.targetSchemaVersion).isEqualTo("10");
+        assertThat(current.migrationsExecuted).isEqualTo(MIGRATIONS_AFTER_PREVIOUS);
+        assertThat(current.targetSchemaVersion).isEqualTo(String.valueOf(CURRENT_LAST_VERSION));
         Map<String, Object> row =
                 jdbc.queryForMap("SELECT event_type, result, source_ip, actor_user_id, target_user_id,"
                         + " target_role_id, target_group_id, detail FROM audit_events WHERE trace_id = 'trace-0050'");
