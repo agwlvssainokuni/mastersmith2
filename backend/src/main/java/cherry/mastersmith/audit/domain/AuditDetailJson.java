@@ -21,6 +21,7 @@ import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.RoleAuditDetail;
 import java.util.List;
+import java.util.function.IntFunction;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
@@ -39,6 +40,9 @@ public final class AuditDetailJson {
 
     /** 権限の変更の要約に入れる先頭の件数の上限（{@code observability-design.md} 1節。上限に収まるまで減らす。計画の D-11）。 */
     public static final int SUMMARY_FIRST_CHANGES = 20;
+
+    /** 権限の YAML の適用の要約に入れる先頭のロールの数の上限（{@code observability-design.md} 1節。上限に収まるまで減らす）。 */
+    public static final int SUMMARY_FIRST_ROLES = 50;
 
     private static final JsonNodeFactory FACTORY = JsonNodeFactory.instance;
 
@@ -73,12 +77,16 @@ public final class AuditDetailJson {
      * {@code name}・{@code assignedUsers}・{@code assignedGroups}、{@code PermissionChanges} は {@code roleName}・{@code changes}、
      * {@code PermissionChangesSummary} は {@code roleName}・{@code changedCount}・{@code firstChanges}、{@code Assignment} は
      * {@code roleName}・{@code groupName}（利用者への割り当てでは null）、{@code WorkRoleSwitch} は {@code fromRoleId}・
-     * {@code fromRoleName}・{@code toRoleName}・{@code storedBeforeRoleId}（無ければ null））。1つの変更は
+     * {@code fromRoleName}・{@code toRoleName}・{@code storedBeforeRoleId}（無ければ null）、{@code Transfer} は
+     * {@code fileSha256}・{@code fingerprint}・{@code roles}、{@code TransferSummary} は {@code fileSha256}・{@code fingerprint}・
+     * {@code roleCount}・{@code firstRoles}。1つのロールは {@code name}・{@code roleId}・{@code action}・{@code added}・
+     * {@code changed}・{@code cleared}・{@code notInDsl}）。1つの変更は
      * {@code target}（{@code schemaName}・{@code tableName}・{@code columnName}）・{@code before}・{@code after}（{@code main}・
      * {@code create}・{@code delete}、設定なしは null）。
      *
-     * <p>権限の変更は全件の JSON を作ってから長さ（{@link String#length()}）を見て、{@link AuditEvent#MAX_DETAIL_LENGTH} を超えれば要約に
-     * 切り替える。要約の先頭の件数は {@value #SUMMARY_FIRST_CHANGES} 件から、上限に収まるまで減らす（途中で切らない）。
+     * <p>権限の変更と権限の YAML の適用は全件の JSON を作ってから長さ（{@link String#length()}）を見て、
+     * {@link AuditEvent#MAX_DETAIL_LENGTH} を超えれば要約に切り替える。要約の先頭の件数は、権限の変更は
+     * {@value #SUMMARY_FIRST_CHANGES} 件、適用は {@value #SUMMARY_FIRST_ROLES} 件から、上限に収まるまで減らす（途中で切らない）。
      *
      * @param detail detail の中身（無ければ null）
      * @return JSON の文字列（中身が無ければ null）
@@ -88,12 +96,22 @@ public final class AuditDetailJson {
             return null;
         }
         String json = write(roleNode(detail));
-        if (json.length() <= AuditEvent.MAX_DETAIL_LENGTH
-                || !(detail instanceof RoleAuditDetail.PermissionChanges changes)) {
+        if (json.length() <= AuditEvent.MAX_DETAIL_LENGTH) {
             return json;
         }
-        for (int first = Math.min(SUMMARY_FIRST_CHANGES, changes.changes().size()); first >= 0; first--) {
-            String summary = write(roleNode(changes.summarize(first)));
+        return switch (detail) {
+            case RoleAuditDetail.PermissionChanges changes ->
+                summary(Math.min(SUMMARY_FIRST_CHANGES, changes.changes().size()), changes::summarize);
+            case RoleAuditDetail.Transfer transfer ->
+                summary(Math.min(SUMMARY_FIRST_ROLES, transfer.roles().size()), transfer::summarize);
+            default -> json;
+        };
+    }
+
+    /** 先頭の件数を、上限に収まるまで1つずつ減らして要約を作る（途中で切らない）。 */
+    private static String summary(int maxFirst, IntFunction<RoleAuditDetail> summarize) {
+        for (int first = maxFirst; first >= 0; first--) {
+            String summary = write(roleNode(summarize.apply(first)));
             if (summary.length() <= AuditEvent.MAX_DETAIL_LENGTH) {
                 return summary;
             }
@@ -131,8 +149,40 @@ public final class AuditDetailJson {
                         .put("fromRoleName", fromRoleName)
                         .put("toRoleName", toRoleName)
                         .put("storedBeforeRoleId", storedBeforeRoleId);
+            case RoleAuditDetail.Transfer(
+                    String fileSha256,
+                    String fingerprint,
+                    List<RoleAuditDetail.TransferRole> roles) -> {
+                node.put("fileSha256", fileSha256).put("fingerprint", fingerprint);
+                node.set("roles", transferRolesNode(roles));
+            }
+            case RoleAuditDetail.TransferSummary(
+                    String fileSha256,
+                    String fingerprint,
+                    int roleCount,
+                    List<RoleAuditDetail.TransferRole> firstRoles) -> {
+                node.put("fileSha256", fileSha256)
+                        .put("fingerprint", fingerprint)
+                        .put("roleCount", roleCount);
+                node.set("firstRoles", transferRolesNode(firstRoles));
+            }
         }
         return node;
+    }
+
+    private static ArrayNode transferRolesNode(List<RoleAuditDetail.TransferRole> roles) {
+        ArrayNode array = FACTORY.arrayNode();
+        for (RoleAuditDetail.TransferRole role : roles) {
+            array.addObject()
+                    .put("name", role.name())
+                    .put("roleId", role.roleId())
+                    .put("action", role.action().name())
+                    .put("added", role.added())
+                    .put("changed", role.changed())
+                    .put("cleared", role.cleared())
+                    .put("notInDsl", role.notInDsl());
+        }
+        return array;
     }
 
     private static ArrayNode changesNode(List<RoleAuditDetail.PermissionChange> changes) {

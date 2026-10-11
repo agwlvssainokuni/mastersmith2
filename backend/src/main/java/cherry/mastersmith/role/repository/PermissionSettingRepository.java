@@ -17,6 +17,7 @@ package cherry.mastersmith.role.repository;
 
 import cherry.mastersmith.role.domain.PermissionSetting;
 import cherry.mastersmith.role.domain.PermissionSettingId;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
@@ -140,4 +141,25 @@ public interface PermissionSettingRepository extends Repository<PermissionSettin
             @Param("schemaName") String schemaName,
             @Param("tableName") String tableName,
             @Param("columnName") String columnName);
+
+    /**
+     * すべてのロールの設定の行をロールの ID の順に読む（権限の YAML の書き出し。BR9.14、B6）。
+     *
+     * @return 設定の行（ロールの ID の順）
+     */
+    @Query("select new cherry.mastersmith.role.repository.RoleSettingRow(s.roleId, s.schemaName, s.tableName,"
+            + " s.columnName, s.mainPermission, s.createPermission, s.deletePermission) from PermissionSetting s"
+            + " order by s.roleId")
+    List<RoleSettingRow> findAllOrderByRole();
+
+    /**
+     * 指定のロールの設定の行を読む（権限の YAML の確かめと適用で、置き換えに当たるロールの今の設定。BR9.7、B6）。
+     *
+     * @param roleIds ロールの ID（空でないこと）
+     * @return 設定の行
+     */
+    @Query("select new cherry.mastersmith.role.repository.RoleSettingRow(s.roleId, s.schemaName, s.tableName,"
+            + " s.columnName, s.mainPermission, s.createPermission, s.deletePermission) from PermissionSetting s"
+            + " where s.roleId in :roleIds")
+    List<RoleSettingRow> findAllOfRoles(@Param("roleIds") Collection<Long> roleIds);
 }

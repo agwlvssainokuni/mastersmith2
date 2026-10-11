@@ -24,9 +24,8 @@ import java.util.Objects;
 
 /**
  * RoleManagement の問題の種類（Intent 261004-role-menu の U4、BR13.1、計画の 4.2）。1つの code に1つの状態コードを固定し、code は一度
- * 決めたら変えない。B4 の7つと B5 の {@code ROLE_NOT_ASSIGNED}。{@code ROLE_TRANSFER_INVALID}・{@code ROLE_TRANSFER_STALE}
- * （B6）はその Bolt で足す。割り当ての相手がいないときは、user の {@code USER_NOT_FOUND} と group の {@code GROUP_NOT_FOUND} を使い回す
- * （BR13.2）。
+ * 決めたら変えない。B4 の7つ、B5 の {@code ROLE_NOT_ASSIGNED}、B6 の {@code ROLE_TRANSFER_INVALID}・{@code ROLE_TRANSFER_STALE}。
+ * 割り当ての相手がいないときは、user の {@code USER_NOT_FOUND} と group の {@code GROUP_NOT_FOUND} を使い回す（BR13.2）。
  *
  * <p>入力の誤りは既存の {@code VALIDATION_FAILED}（400）、未認証は既存の {@code AUTHENTICATION_REQUIRED}（401）、管理者でないは既存の
  * {@code ACCESS_DENIED}（403）を使うため、ここには置かない（BR13.2）。{@code DSL_NOT_APPLIED} は今のアプリに同じ code が無いため
@@ -112,6 +111,28 @@ public final class RoleProblemTypes {
                     "Only a role assigned to you can be selected as the work role. Nothing was changed."),
             new LocalizedText("作業ロールの一覧を読み直してください。", "Reload the list of work roles."));
 
+    /** 権限の YAML の読み込みの拒否と中身の誤り（400。応答の {@code errors} に位置と理由。監査に残さない。BR9.3・BR9.5）。 */
+    public static final ProblemType ROLE_TRANSFER_INVALID = new ProblemType(
+            "ROLE_TRANSFER_INVALID",
+            400,
+            new LocalizedText("権限の YAML に誤りがあります", "The permission YAML has errors"),
+            new LocalizedText(
+                    "権限の YAML を読めないか、中身に誤りがあります。設定は変わっていません。",
+                    "The permission YAML cannot be read or its contents have errors. Nothing was changed."),
+            new LocalizedText(
+                    "誤りの一覧の位置を確かめて、YAML を直してください。", "Check the positions in the error list and correct the YAML."));
+
+    /** 適用で作り直した一覧が確かめの一覧と違う（409。確かめの後にロール・設定・DSL が変わった。BR9.10）。 */
+    public static final ProblemType ROLE_TRANSFER_STALE = new ProblemType(
+            "ROLE_TRANSFER_STALE",
+            409,
+            new LocalizedText("確かめの後に状態が変わりました", "The state changed after the check"),
+            new LocalizedText(
+                    "確かめの後にロール・権限の設定・DSL が変わったため、適用できません。設定は変わっていません。",
+                    "The YAML cannot be applied because roles, permission settings or the DSL changed after the check."
+                            + " Nothing was changed."),
+            new LocalizedText("もう一度確かめてから適用してください。", "Check the YAML again and then apply it."));
+
     private RoleProblemTypes() {}
 
     /**
@@ -132,6 +153,7 @@ public final class RoleProblemTypes {
             case NOT_ASSIGNED -> ROLE_NOT_ASSIGNED;
             case USER_NOT_FOUND -> UserProblemTypes.USER_NOT_FOUND;
             case GROUP_NOT_FOUND -> GroupProblemTypes.GROUP_NOT_FOUND;
+            case TRANSFER_STALE -> ROLE_TRANSFER_STALE;
         };
     }
 
@@ -149,6 +171,8 @@ public final class RoleProblemTypes {
                 ROLE_BUSY,
                 PERMISSION_TARGET_NOT_IN_DSL,
                 DSL_NOT_APPLIED,
-                ROLE_NOT_ASSIGNED);
+                ROLE_NOT_ASSIGNED,
+                ROLE_TRANSFER_INVALID,
+                ROLE_TRANSFER_STALE);
     }
 }

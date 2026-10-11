@@ -17,8 +17,7 @@ package cherry.mastersmith.role.domain;
 
 /**
  * ロールの操作の監査の失敗の理由（BR11.2、契約 C10）。{@code audit} が監査の失敗の理由に写す（{@code NO_CHANGE} は既存の値、ほかは
- * 足した値）。B4 と B5 の分。{@code ROLE_TRANSFER_STALE}（B6）はその Bolt で足す（{@code USER_NOT_FOUND}・
- * {@code GROUP_NOT_FOUND} は既存の値に写す）。
+ * 足した値）。B4・B5・B6 の分（{@code USER_NOT_FOUND}・{@code GROUP_NOT_FOUND} は既存の値に写す）。
  */
 public enum RoleAuditFailure {
     /** 操作の対象のロールがいない。 */
@@ -38,5 +37,7 @@ public enum RoleAuditFailure {
     /** 割り当ての相手の利用者がいない（招待中の人を含む。B5、BR6.1）。 */
     USER_NOT_FOUND,
     /** 割り当ての相手のグループがいない（B5、BR6.6）。 */
-    GROUP_NOT_FOUND
+    GROUP_NOT_FOUND,
+    /** 権限の YAML の適用で、作り直した一覧の指紋が確かめの指紋と一致しない（B6、BR9.10）。 */
+    ROLE_TRANSFER_STALE
 }

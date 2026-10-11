@@ -32,7 +32,8 @@ import org.junit.jupiter.api.Test;
 class RoleProblemTypesTest {
 
     @Test
-    @DisplayName("ROLE_NOT_FOUND is fixed to 404 and the six other codes of B4 and ROLE_NOT_ASSIGNED of B5 to 409")
+    @DisplayName(
+            "each code is fixed to one status: 404 for a missing role, 400 for an invalid YAML and 409 for the others")
     void codeAndStatus() {
         assertThat(RoleProblemTypes.all())
                 .extracting(ProblemType::code, ProblemType::status)
@@ -44,7 +45,9 @@ class RoleProblemTypesTest {
                         Tuple.tuple("ROLE_BUSY", 409),
                         Tuple.tuple("PERMISSION_TARGET_NOT_IN_DSL", 409),
                         Tuple.tuple("DSL_NOT_APPLIED", 409),
-                        Tuple.tuple("ROLE_NOT_ASSIGNED", 409));
+                        Tuple.tuple("ROLE_NOT_ASSIGNED", 409),
+                        Tuple.tuple("ROLE_TRANSFER_INVALID", 400),
+                        Tuple.tuple("ROLE_TRANSFER_STALE", 409));
     }
 
     @Test
@@ -60,6 +63,7 @@ class RoleProblemTypesTest {
         assertThat(RoleProblemTypes.of(RoleRejection.NOT_ASSIGNED)).isSameAs(RoleProblemTypes.ROLE_NOT_ASSIGNED);
         assertThat(RoleProblemTypes.of(RoleRejection.USER_NOT_FOUND)).isSameAs(UserProblemTypes.USER_NOT_FOUND);
         assertThat(RoleProblemTypes.of(RoleRejection.GROUP_NOT_FOUND)).isSameAs(GroupProblemTypes.GROUP_NOT_FOUND);
+        assertThat(RoleProblemTypes.of(RoleRejection.TRANSFER_STALE)).isSameAs(RoleProblemTypes.ROLE_TRANSFER_STALE);
         assertThat(RoleProblemTypes.all())
                 .as("使い回す code は role で重ねて定義しない（BR13.2）")
                 .doesNotContain(UserProblemTypes.USER_NOT_FOUND, GroupProblemTypes.GROUP_NOT_FOUND);
@@ -67,7 +71,7 @@ class RoleProblemTypesTest {
                         .map(RoleProblemTypes::of)
                         .distinct())
                 .hasSize(RoleRejection.values().length)
-                .doesNotContain(RoleProblemTypes.ROLE_BUSY);
+                .doesNotContain(RoleProblemTypes.ROLE_BUSY, RoleProblemTypes.ROLE_TRANSFER_INVALID);
         assertThatThrownBy(() -> RoleProblemTypes.of(null)).isInstanceOf(NullPointerException.class);
     }
 
@@ -84,6 +88,7 @@ class RoleProblemTypesTest {
         assertThat(RoleRejection.NOT_ASSIGNED.auditFailure()).isEqualTo(RoleAuditFailure.ROLE_NOT_ASSIGNED);
         assertThat(RoleRejection.USER_NOT_FOUND.auditFailure()).isEqualTo(RoleAuditFailure.USER_NOT_FOUND);
         assertThat(RoleRejection.GROUP_NOT_FOUND.auditFailure()).isEqualTo(RoleAuditFailure.GROUP_NOT_FOUND);
+        assertThat(RoleRejection.TRANSFER_STALE.auditFailure()).isEqualTo(RoleAuditFailure.ROLE_TRANSFER_STALE);
         assertThat(Arrays.stream(RoleRejection.values()).map(RoleRejection::auditFailure))
                 .containsExactlyInAnyOrder(RoleAuditFailure.values());
     }

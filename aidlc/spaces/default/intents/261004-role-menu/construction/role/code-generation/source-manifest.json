@@ -4,6 +4,9 @@
   "version": 1,
   "writes": [
     {
+      "path": "README.md"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditDetailJson.java"
     },
     {
@@ -19,16 +22,25 @@
       "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/group/store/StoreFailureClassifier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/EffectiveNode.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/EffectivePermission.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/GroupRoleAssignment.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/GroupRoleAssignmentId.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/InheritedFrom.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/MainPermission.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/package-info.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionInheritance.java"
@@ -44,6 +56,9 @@
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSettingId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSnapshot.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionTarget.java"
@@ -85,7 +100,46 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleRejection.java"
     },
     {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/package-info.java"
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleSource.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/TransferAction.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/TransferError.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleAssignment.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleAssignmentId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleChooser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleSelection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/AssignedRoleRow.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/AssignmentCount.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/GroupAssignedRoleRow.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/repository/PermissionLevelRow.java"
@@ -97,19 +151,46 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/repository/PermissionSettingRow.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleAssignmentRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleKeyView.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleRepository.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleRowView.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleSettingRow.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleView.java"
     },
     {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/NoOpRoleBarrier.java"
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/WorkRoleSelectionRepository.java"
     },
     {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/package-info.java"
+      "path": "backend/src/main/java/cherry/mastersmith/role/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/EffectivePermissionResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/EffectivePermissionResolverImpl.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/GroupRolesResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/MyPermissionService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/MyPermissionTree.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/NoOpRoleBarrier.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/PermissionInputs.java"
@@ -119,6 +200,15 @@
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAdminService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentsResult.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleBarrier.java"
@@ -139,16 +229,61 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleFirstStep.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleGroupDeletionGuard.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleListResult.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleProblemTypeCatalog.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleRef.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleStoreTransactions.java"
     },
     {
-      "path": "backend/src/main/java/cherry/mastersmith/role/store/package-info.java"
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleTransferBody.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleTransferLimits.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleTransferService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleTransferSlot.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/TransferApplyResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/TransferCheckResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/TransferExport.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRoleReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRoles.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRolesResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleSwitchResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/package-info.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/store/Referent.java"
@@ -166,7 +301,67 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStoreUnexpectedException.java"
     },
     {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/package-info.java"
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/TransferWrite.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/TransferWritten.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/store/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/RoleTransferDocument.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/RoleTransferPayload.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/RoleTransferReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/RoleTransferTree.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/RoleTransferWriter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferChange.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferFingerprint.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferOrder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferPlan.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferPlanner.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferRolePlan.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/TransferRoleSettings.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/transfer/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/AssignmentRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/MeWorkRoleController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/MyPermissionNodesResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/MyPermissionsController.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/web/PermissionClearRequest.java"
@@ -190,7 +385,16 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAdminController.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAssignmentController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAssignmentsResponse.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleLookupController.java"
     },
     {
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleNameRequest.java"
@@ -202,6 +406,9 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RolePermissionController.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRefResponse.java"
+    },
+    {
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRequestContextResolver.java"
     },
     {
@@ -211,10 +418,49 @@
       "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRowResponse.java"
     },
     {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleSourceResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleTransferController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleTransferLimitProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleTransferPaths.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleWebConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/TransferCheckResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/TransferErrorItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/TransferResultResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/UserRoleResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/WorkRoleRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/WorkRoleResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/web/package-info.java"
+    },
+    {
       "path": "backend/src/main/resources/application.yaml"
     },
     {
       "path": "backend/src/main/resources/db/migration/V11__u4_role.sql"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V12__u4_role_assignment.sql"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java"
@@ -229,10 +475,34 @@
       "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditRoleEventListenerTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritancePropertyTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionInheritanceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionSnapshotTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionTargetNameTest.java"
@@ -259,16 +529,25 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/domain/RoleProblemTypesTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/repository/RoleAssignmentRepositoryIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/repository/RoleRepositoryIT.java"
     },
     {
-      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java"
     },
     {
-      "path": "backend/src/test/java/cherry/mastersmith/role/RoleMigrationCompatibilityIT.java"
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionQueryCountIT.java"
     },
     {
-      "path": "backend/src/test/java/cherry/mastersmith/role/RoleSchemaIT.java"
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionResolverImplTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/service/PermissionInputsTest.java"
@@ -280,16 +559,67 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleAdminServiceTest.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleDeleteCleanupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleProblemTypeCatalogTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleStoreTransactionsIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferAtomicityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferBusyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferSlotTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferStaleIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreClassificationTest.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreConstraintIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreKeyGuardIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreTransferBatchIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionMergeIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/FailingSettingTrigger.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYamlTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RawTransferPost.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleActors.java"
@@ -307,10 +637,40 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TestRoleBarrier.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TransferYamlTrees.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/RoleTransferReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/RoleTransferRoundTripPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/RoleTransferWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/TransferFingerprintTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/TransferPlannerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/GroupDeletionWithRoleIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/GroupRoleAssignmentConcurrencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAdminAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAuditIT.java"
@@ -325,6 +685,9 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
     },
     {
@@ -334,10 +697,16 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConnectionUsageIT.java"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleGrantsNoAdminAccessIT.java"
+    },
+    {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleIdorApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMassAssignmentApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMetricsIT.java"
@@ -349,235 +718,25 @@
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleSecretLeakIT.java"
     },
     {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
-    },
-    {
-      "path": "perf/k6/scenarios.js"
-    },
-    {
-      "path": "perf/README.md"
-    },
-    {
-      "path": "README.md"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/group/store/StoreFailureClassifier.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/EffectiveNode.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/GroupRoleAssignment.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/GroupRoleAssignmentId.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSnapshot.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/RoleSource.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleAssignment.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleAssignmentId.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/UserRoleView.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleChooser.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleRef.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/domain/WorkRoleSelection.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/AssignedRoleRow.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/AssignmentCount.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/GroupAssignedRoleRow.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/RoleAssignmentRepository.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/repository/WorkRoleSelectionRepository.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/EffectivePermissionResolver.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/EffectivePermissionResolverImpl.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/GroupRolesResult.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/MyPermissionService.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/MyPermissionTree.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentResult.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentService.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleAssignmentsResult.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleGroupDeletionGuard.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleRef.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRoleReader.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRoles.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/UserRolesResult.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleService.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleSwitchResult.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/service/WorkRoleView.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/AssignmentRequest.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/MeWorkRoleController.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/MyPermissionNodesResponse.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/MyPermissionsController.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAssignmentController.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleAssignmentsResponse.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleLookupController.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleRefResponse.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/RoleSourceResponse.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/UserRoleResponse.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/WorkRoleRequest.java"
-    },
-    {
-      "path": "backend/src/main/java/cherry/mastersmith/role/web/WorkRoleResponse.java"
-    },
-    {
-      "path": "backend/src/main/resources/db/migration/V12__u4_role_assignment.sql"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/group/service/GroupAdminListQueryCountIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/group/store/GroupStoreConstraintIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/group/store/StoreFailureClassifierTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/group/web/GroupAdminAuthorizationApiIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionSnapshotTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleChooserTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/domain/WorkRoleResolutionPropertyTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/repository/RoleAssignmentRepositoryIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionConsistencyIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionQueryCountIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/EffectivePermissionResolverImplTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleAssignmentServiceTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleDeleteCleanupIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleGroupDeletionGuardTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/service/WorkRoleServiceTest.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/store/RoleStoreKeyGuardIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionMergeIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/GroupDeletionWithRoleIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/GroupRoleAssignmentConcurrencyIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/MyPermissionsApiIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleAssignmentApiIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleChangeVisibilityIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleGrantsNoAdminAccessIT.java"
-    },
-    {
-      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleMeAuthorizationApiIT.java"
-    },
-    {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleSelfOperationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferExportLimitIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferLimitsApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferTomcatSwallowIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleUniqueViolationSecretLeakIT.java"
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleConcurrencyIT.java"
@@ -587,6 +746,15 @@
     },
     {
       "path": "backend/src/test/java/cherry/mastersmith/role/web/WorkRoleSwitchAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/UserBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
     }
   ]
 }

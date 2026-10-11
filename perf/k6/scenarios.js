@@ -118,6 +118,15 @@
 //   rolePoolLimit       VU の番号を 5 で割った余りが 1〜3 の VU は作業ロールの切り替え、4・0 の VU は自分のグループへの割り当てと
 //                       外しを交互にくり返す（接続プールの上限の確かめ。p95 と checks の閾値を置かず、状態コードの件数を
 //                       rolePoolLimit_204・_409・_500・_other で出す。合否の回は VUS=5、記録の回は VUS=20。手順は perf/README.md）
+// B6 で足した場面（Intent 261004-role-menu の U4、Bolt B6。NFR2.4・NFR2.5・NFR2.9・NFR2.10、performance-design.md 2.3）。
+//   rolePrepare         準備の場面（1 VU・1 回）。DSL_FILE の版 2 の DSL を投入して適用し、準備の YAML（悪い側のロール
+//                       ROLE_WORST_NAME に 100 テーブル × 100 カラムを明示、置き換える先の ROLE_LARGE_PREFIX 00001〜ROLE_LARGE_COUNT、
+//                       埋めるロールで合わせて ROLE_PREPARE_TOTAL 件）を台本の中で作り、確かめて適用する。ほかのロールの場面の前に1回流す
+//   roleExport          権限の YAML の書き出し（GET /api/admin/role-transfer/export、200）。10 VU・3 分
+//   roleTransferLargeCheck  上限ちょうど（10 MiB）の YAML（ROLE_YAML_FILE。LargeRoleTransferYaml.java で作る）の確かめ（1 VU・1 回。
+//                           判定は iteration_duration の最大 < 15 秒）
+//   roleTransferLargeApply  同じ YAML の適用（1 VU・1 回。setup で確かめて指紋を受ける。判定は iteration_duration の最大 < 30 秒）。
+//                           ROLE_LARGE_COUNT 件のロールを置き換えるため、流し直すときは使い捨ての環境を作り直して準備からやり直す
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -275,6 +284,7 @@ const ROLE_SCENARIOS = [
   'roleAssignmentsRead',
   'roleAssignOps',
   'rolePoolLimit',
+  'roleExport',
 ]
 // 操作が2つ以上の場面の操作の名前（op のタグ。iteration_duration で操作ごとに判定する）
 const ROLE_OPS = {
@@ -286,10 +296,24 @@ const ROLE_OPS = {
 }
 // 場面の長さ（トークンの有効期限 5 分より短くする）
 const ROLE_DURATION = __ENV.ROLE_DURATION || '3m'
-// 準備の台本が入れる悪い側のロールの名前と、木を開くスキーマ・テーブル
+// 準備の台本が入れる悪い側のロールの名前と、木を開くスキーマ・テーブル（perf/dsl-timing.sh が生成した DSL の名前。B6 でそろえた）
 const ROLE_WORST_NAME = __ENV.ROLE_WORST_NAME || 'perf-role-worst'
-const ROLE_TREE_SCHEMA = __ENV.ROLE_TREE_SCHEMA || 'perf'
-const ROLE_TREE_TABLE = __ENV.ROLE_TREE_TABLE || 'perf_t001'
+const ROLE_TREE_SCHEMA = __ENV.ROLE_TREE_SCHEMA || 'large'
+const ROLE_TREE_TABLE = __ENV.ROLE_TREE_TABLE || 't_001'
+// 権限の YAML の受け渡しの場面（B6）
+const ROLE_TRANSFER_API = `${BASE}/api/admin/role-transfer`
+// 1 VU・1 回の場面（準備と、上限ちょうどの YAML の確かめ・適用）
+const ROLE_ONE_SHOT_SCENARIOS = ['rolePrepare', 'roleTransferLargeCheck', 'roleTransferLargeApply']
+// 準備の YAML の形（悪い側のロールの 100 テーブル × 100 カラム、置き換える先のロールの数と名前の頭、ロールの合計）
+const ROLE_TREE_TABLES = Number(__ENV.ROLE_TREE_TABLES || 100)
+const ROLE_TREE_COLUMNS = Number(__ENV.ROLE_TREE_COLUMNS || 100)
+const ROLE_LARGE_PREFIX = __ENV.ROLE_LARGE_PREFIX || 'perf_large_'
+const ROLE_LARGE_COUNT = Number(__ENV.ROLE_LARGE_COUNT || 25)
+const ROLE_PREPARE_TOTAL = Number(__ENV.ROLE_PREPARE_TOTAL || 1000)
+// 準備の DSL（rolePrepare）と上限ちょうどの YAML（roleTransferLarge*）は初期化の段でだけ読める（k6 の open）
+const ROLE_DSL_BODY = SCENARIO === 'rolePrepare' && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
+const ROLE_YAML_BODY =
+  SCENARIO.startsWith('roleTransferLarge') && __ENV.ROLE_YAML_FILE ? open(__ENV.ROLE_YAML_FILE, 'b') : null
 // 接続プールの上限の場面で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
 const ROLE_POOL_COUNTS = {
   204: new Counter('rolePoolLimit_204'),
@@ -299,6 +323,9 @@ const ROLE_POOL_COUNTS = {
 }
 
 function scenariosFor(name) {
+  if (ROLE_ONE_SHOT_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
+  }
   if (ROLE_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: ROLE_DURATION } }
   }
@@ -354,6 +381,15 @@ function thresholdsFor(name) {
   }
   // Intent 261004-role-menu の U4（NFR2.2・NFR2.5・NFR2.10）。操作が2つ以上の場面は op ごとの iteration_duration で判定する。
   if (name === 'rolePoolLimit') return {}
+  // Intent 261004-role-menu の U4（NFR2.4）。上限ちょうどの YAML の確かめ 15 秒・適用 30 秒を、1回の要求の iteration_duration の最大で判定する。
+  if (name === 'roleTransferLargeCheck' || name === 'roleTransferLargeApply') {
+    return {
+      [`iteration_duration{scenario:${name}}`]: [name.endsWith('Check') ? 'max<15000' : 'max<30000'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{scenario:${name}}`]: ['max>=0'],
+    }
+  }
+  if (name === 'rolePrepare') return { 'checks{scenario:rolePrepare}': ['rate==1'] }
   if (ROLE_SCENARIOS.includes(name)) {
     const thresholds = {
       [`checks{scenario:${name}}`]: ['rate==1'],
@@ -403,6 +439,8 @@ if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 if (GROUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // ロールの管理の場面は、setup で悪い側のロールを一覧から探し、VU ごとのロールを API で作る
 if (ROLE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// 上限ちょうどの YAML の適用は、setup で同じ YAML を確かめて指紋を受ける
+if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -448,6 +486,7 @@ export function setup() {
   if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) setupUserAdmin(tokens)
   if (GROUP_SCENARIOS.includes(SCENARIO)) setupGroups(tokens)
   if (ROLE_SCENARIOS.includes(SCENARIO)) setupRoles(tokens)
+  if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) setupRoleTransfer(tokens)
   return tokens
 }
 
@@ -1571,6 +1610,97 @@ function rolePoolLimit(data) {
 }
 
 // U2・U3 の場面の名前と処理
+// 権限の YAML の受け渡しの場面（Intent 261004-role-menu の U4、B6）
+function yamlHeaders(token, extra) {
+  return { Authorization: `Bearer ${token}`, Origin: BASE, 'Content-Type': 'application/yaml', ...extra }
+}
+
+function transferCheck(token, body, name) {
+  return http.post(`${ROLE_TRANSFER_API}/check`, body, {
+    headers: yamlHeaders(token),
+    tags: { name },
+    timeout: '60s',
+  })
+}
+
+function transferApply(token, body, fingerprint, name) {
+  return http.post(`${ROLE_TRANSFER_API}/apply`, body, {
+    headers: yamlHeaders(token, { 'X-Role-Transfer-Fingerprint': fingerprint }),
+    tags: { name },
+    timeout: '120s',
+  })
+}
+
+// 1 VU・1 回の場面の用意。操作する管理者のトークンを取り、適用の場面では上限ちょうどの YAML を確かめて指紋を受ける（値は出力しない）。
+function setupRoleTransfer(data) {
+  if (SCENARIO === 'rolePrepare' && !ROLE_DSL_BODY) fail('DSL_FILE を指定してください（perf/README.md の準備の手順）')
+  if (SCENARIO.startsWith('roleTransferLarge') && !ROLE_YAML_BODY) fail('ROLE_YAML_FILE を指定してください')
+  data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  if (SCENARIO === 'roleTransferLargeApply') {
+    const res = transferCheck(data.roleToken, ROLE_YAML_BODY, 'roleSetup')
+    if (res.status !== 200) fail(`上限ちょうどの YAML を確かめられませんでした: ${res.status} ${codeOf(res)}`)
+    data.roleFingerprint = res.json('fingerprint')
+    // 確かめに時間がかかっても適用の間にトークンが切れないよう、最後に取り直す
+    data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  }
+}
+
+// 準備の YAML を作る。悪い側のロールは ROLE_TREE_SCHEMA の主権限と、t_001〜 のテーブル × c_001〜 のカラムに READ と FULL を
+// 交互に明示する。置き換える先のロールはスキーマの主権限だけ、埋めるロールは設定なし。名前はどれも二重引用符の要らない形。
+function preparationYaml() {
+  const three = (n) => String(n).padStart(3, '0')
+  const lines = ['version: 1', 'roles:', `  ${ROLE_WORST_NAME}:`, '    schemas:', `      ${ROLE_TREE_SCHEMA}:`]
+  lines.push('        main: READ', '        tables:')
+  for (let t = 1; t <= ROLE_TREE_TABLES; t++) {
+    lines.push(`          t_${three(t)}:`, '            main: READ', '            columns:')
+    for (let c = 1; c <= ROLE_TREE_COLUMNS; c++) lines.push(`              c_${three(c)}: ${(t + c) % 2 ? 'FULL' : 'READ'}`)
+  }
+  for (let n = 1; n <= ROLE_LARGE_COUNT; n++) {
+    lines.push(`  ${ROLE_LARGE_PREFIX}${String(n).padStart(5, '0')}:`, '    schemas:', `      ${ROLE_TREE_SCHEMA}: {main: NONE}`)
+  }
+  for (let n = 1; n <= ROLE_PREPARE_TOTAL - ROLE_LARGE_COUNT - 1; n++) lines.push(`  perf-fill-${String(n).padStart(4, '0')}: {}`)
+  return lines.join('\n') + '\n'
+}
+
+// 準備の場面: DSL の投入と適用（対象DB には接続しない。照合が届かないときは警告になるだけ）→ 準備の YAML の確かめと適用
+function rolePrepare(data) {
+  const headers = roleHeaders(data.roleToken)
+  const submit = http.post(`${DSL_API}/preview?source=UPLOAD`, ROLE_DSL_BODY, {
+    headers: { ...headers, 'Content-Type': 'application/yaml' },
+    tags: { name: 'rolePrepare' },
+    timeout: '60s',
+  })
+  check(submit, { 'dsl submit 201': (r) => r.status === 201 })
+  const previewId = submit.status === 201 ? submit.json('previewId') : null
+  const apply = http.post(`${DSL_API}/apply`, JSON.stringify({ previewId }), {
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    tags: { name: 'rolePrepare' },
+    timeout: '60s',
+  })
+  check(apply, { 'dsl apply 200': (r) => r.status === 200 })
+  const yaml = preparationYaml()
+  const checked = transferCheck(data.roleToken, yaml, 'rolePrepare')
+  check(checked, { 'yaml check 200': (r) => r.status === 200 })
+  if (checked.status !== 200) return
+  const applied = transferApply(data.roleToken, yaml, checked.json('fingerprint'), 'rolePrepare')
+  check(applied, { 'yaml apply 200': (r) => r.status === 200 })
+}
+
+function roleExport(data) {
+  const res = http.get(`${ROLE_TRANSFER_API}/export`, { headers: roleHeaders(data.roleToken), tags: { name: 'roleExport' } })
+  check(res, { 200: (r) => r.status === 200 })
+}
+
+function roleTransferLargeCheck(data) {
+  const res = transferCheck(data.roleToken, ROLE_YAML_BODY, 'roleTransferLargeCheck')
+  check(res, { 200: (r) => r.status === 200 })
+}
+
+function roleTransferLargeApply(data) {
+  const res = transferApply(data.roleToken, ROLE_YAML_BODY, data.roleFingerprint, 'roleTransferLargeApply')
+  check(res, { 200: (r) => r.status === 200 })
+}
+
 const USER_SCENARIOS = {
   preferencesGet,
   preferencesSave,
@@ -1611,6 +1741,10 @@ const USER_SCENARIOS = {
   roleAssignmentsRead,
   roleAssignOps,
   rolePoolLimit,
+  roleExport,
+  rolePrepare,
+  roleTransferLargeCheck,
+  roleTransferLargeApply,
 }
 
 export default function (tokens) {

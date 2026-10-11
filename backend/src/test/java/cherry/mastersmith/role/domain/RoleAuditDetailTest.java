@@ -82,6 +82,61 @@ class RoleAuditDetailTest {
                 .isInstanceOf(NullPointerException.class);
     }
 
+    private static RoleAuditDetail.TransferRole transferRole(int index) {
+        return new RoleAuditDetail.TransferRole("ロール" + index, (long) index, TransferAction.REPLACE, 1, 2, 3, 1);
+    }
+
+    @Test
+    @DisplayName(
+            "a transfer summary keeps the number of roles, the file hash, the fingerprint and only the first roles")
+    void transferSummary() {
+        RoleAuditDetail.Transfer transfer = new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                IntStream.range(1, 61)
+                        .mapToObj(RoleAuditDetailTest::transferRole)
+                        .toList());
+
+        RoleAuditDetail.TransferSummary summary = transfer.summarize(50);
+
+        assertThat(summary.fileSha256()).isEqualTo("a".repeat(64));
+        assertThat(summary.fingerprint()).isEqualTo("b".repeat(64));
+        assertThat(summary.roleCount()).isEqualTo(60);
+        assertThat(summary.firstRoles()).hasSize(50).first().isEqualTo(transferRole(1));
+        assertThat(transfer.summarize(100).firstRoles()).hasSize(60);
+        assertThat(transfer.summarize(0).firstRoles()).isEmpty();
+        assertThatThrownBy(() -> transfer.summarize(-1)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("a transfer role has an id only when it is replaced and its counts are not negative")
+    void transferInvariants() {
+        RoleAuditDetail.TransferRole created =
+                new RoleAuditDetail.TransferRole("営業", null, TransferAction.CREATE, 5, 0, 0, 2);
+        RoleAuditDetail.Transfer beforeReading = new RoleAuditDetail.Transfer(null, "c".repeat(64), List.of());
+
+        assertThat(created.roleId()).isNull();
+        assertThat(beforeReading.fileSha256()).isNull();
+        assertThat(beforeReading.roles()).isEmpty();
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferRole("営業", 3L, TransferAction.CREATE, 0, 0, 0, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferRole("営業", null, TransferAction.REPLACE, 0, 0, 0, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferRole("営業", 3L, TransferAction.REPLACE, -1, 0, 0, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferRole("営業", 3L, TransferAction.REPLACE, 1, 0, 0, 2))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferRole(null, 3L, TransferAction.REPLACE, 0, 0, 0, 0))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.Transfer("a", null, List.of()))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RoleAuditDetail.TransferSummary("a", "b", 0, List.of(transferRole(1))))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(RoleAuditDetail.TransferRole.class.getRecordComponents())
+                .extracting(component -> component.getName())
+                .containsExactly("name", "roleId", "action", "added", "changed", "cleared", "notInDsl");
+    }
+
     @Test
     @DisplayName("a work role switch detail keeps the previous role id and name together")
     void workRoleSwitch() {

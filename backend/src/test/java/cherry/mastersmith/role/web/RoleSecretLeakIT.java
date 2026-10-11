@@ -226,4 +226,37 @@ class RoleSecretLeakIT {
                     .doesNotContain(displayName);
         }
     }
+
+    @Test
+    @DisplayName(
+            "with TRACE on the application and Spring JDBC, the YAML role and target names never reach the log (B6)")
+    void noYamlContentInTheLog(CapturedOutput output) {
+        String yaml = "version: 1\nroles:\n  " + MARKER + ":\n    schemas:\n      " + MARKER + "_SCHEMA:\n"
+                + "        main: READ\n        tables:\n          T:\n            columns:\n              " + MARKER
+                + "_COLUMN: FULL\n";
+        int offset = output.getOut().length();
+        loggingSystem.setLogLevel(ROOT_LOGGER, LogLevel.TRACE);
+        loggingSystem.setLogLevel("org.springframework.jdbc", LogLevel.TRACE);
+        List<HttpResponse<String>> responses;
+        try {
+            HttpResponse<String> checked = api.check(admin.token(), yaml);
+            responses = List.of(
+                    checked,
+                    api.apply(admin.token(), yaml, RoleApi.fingerprintOf(checked)),
+                    api.check(admin.token(), yaml.replace("FULL", "wrong")),
+                    api.export(admin.token()));
+        } finally {
+            loggingSystem.setLogLevel(ROOT_LOGGER, null);
+            loggingSystem.setLogLevel("org.springframework.jdbc", null);
+        }
+        String logs = output.getOut().substring(offset) + output.getErr();
+
+        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(200, 200, 400, 200);
+        assertThat(logs)
+                .as("メソッドの呼び出しの追跡と JDBC の部品のログが有効")
+                .contains("ENTER RoleTransferService#apply")
+                .contains("EXIT  RoleTransferService#check(): Checked[plan=TransferPlan[roles=1");
+        JsonLogRecords.assertContainsNoSecret(logs, MARKER, admin.email(), RoleActors.PASSWORD);
+        assertThat(responses.get(3).body()).as("書き出しの本文には載る").contains(MARKER);
+    }
 }

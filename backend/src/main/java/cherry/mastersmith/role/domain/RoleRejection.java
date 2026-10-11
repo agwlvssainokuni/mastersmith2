@@ -16,7 +16,7 @@
 package cherry.mastersmith.role.domain;
 
 /**
- * ロールの操作の業務の拒否の理由（BR1.4・BR1.5・BR3.2・BR4.5〜BR4.8・BR6.1・BR6.3・BR6.4・BR6.6・BR7.5）。1つの理由に1つの code（BR13.1）と1つの監査の失敗の理由
+ * ロールの操作の業務の拒否の理由（BR1.4・BR1.5・BR3.2・BR4.5〜BR4.8・BR6.1・BR6.3・BR6.4・BR6.6・BR7.5・BR9.10・BR9.12・BR9.13）。1つの理由に1つの code（BR13.1）と1つの監査の失敗の理由
  * （BR11.2）が当たる。排他の待ちの上限切れ（{@code ROLE_BUSY}）は業務の拒否ではないため、ここに置かない（BR8.3）。
  */
 public enum RoleRejection {
@@ -37,7 +37,9 @@ public enum RoleRejection {
     /** 割り当ての相手の利用者がいない（404。user の {@code USER_NOT_FOUND}。B5、BR6.1）。 */
     USER_NOT_FOUND(RoleAuditFailure.USER_NOT_FOUND),
     /** 割り当ての相手のグループがいない（404。group の {@code GROUP_NOT_FOUND}。B5、BR6.6）。 */
-    GROUP_NOT_FOUND(RoleAuditFailure.GROUP_NOT_FOUND);
+    GROUP_NOT_FOUND(RoleAuditFailure.GROUP_NOT_FOUND),
+    /** 権限の YAML の適用で、作り直した一覧の指紋が確かめの指紋と一致しない（409。B6、BR9.10）。 */
+    TRANSFER_STALE(RoleAuditFailure.ROLE_TRANSFER_STALE);
 
     private final RoleAuditFailure auditFailure;
 

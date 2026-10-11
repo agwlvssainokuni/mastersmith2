@@ -522,7 +522,8 @@ public class AuditEventListener {
                     ROLE_PERMISSION_CHANGED,
                     ROLE_ASSIGNED,
                     ROLE_UNASSIGNED,
-                    WORK_ROLE_SWITCHED -> false;
+                    WORK_ROLE_SWITCHED,
+                    ROLE_TRANSFER_APPLIED -> false;
         };
     }
 

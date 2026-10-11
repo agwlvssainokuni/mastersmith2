@@ -371,3 +371,10 @@ logging:
     # 代わりに失うもの: 応答を書き始めた後（確定した後）に例外がサーブレットの外へ出たときは /error へ回らないため、その例外は
     #   このロガーでしか出ず、ログに残らなくなる（README の「例外のログ」を参照）。今のアプリの API は応答を流しながら書く形ではない。
     "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": OFF
+    # Spring の JDBC の部品が文の引数の値を TRACE に出すログ（StatementCreatorUtils）は出さない（Intent 261004-role-menu の U4、
+    #   security-design.md 4.3）。
+    # なぜ: 権限の YAML の適用（role.store）は JdbcTemplate のバッチで設定の行を書き、引数にロールの ID・対象の名前・権限の値が入る。
+    #   TRACE を広げて調べるときにも、YAML の中身をログに出さない（NFR1.9。消すと RoleSecretLeakIT が落ちる）。
+    # 障害の調べ方: 適用の結果は監査の行（ROLE_TRANSFER_APPLIED の detail の要約）と、想定外の誤りのときは GlobalExceptionHandler の
+    #   ERROR の例外のクラスの名前と SQLState で絞る。
+    org.springframework.jdbc.core.StatementCreatorUtils: OFF

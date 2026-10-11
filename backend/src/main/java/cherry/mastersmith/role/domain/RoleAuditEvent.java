@@ -28,7 +28,8 @@ import java.util.Objects;
  * 中で知らせる（計画の 4.3、13節 Q2: A）。入力の誤り・排他の待ちの上限切れ・読み取りでは出さない（BR11.3）。
  *
  * <p>メールアドレス・氏名・パスワード・トークン・ハッシュ値を持たない（BR11.8）。対象の利用者・グループは ID だけで示す（B5 の割り当てと
- * 外しで使う。作業ロールの切り替えは対象の利用者に操作した人と同じ ID を入れる。BR11.4。B4 の操作では null）。
+ * 外しで使う。作業ロールの切り替えは対象の利用者に操作した人と同じ ID を入れる。BR11.4。B4 の操作では null）。権限の YAML の適用（B6）は
+ * 対象のロール・利用者・グループをどれも持たず、ロールは detail に書く（BR11.4）。
  *
  * @param operation 操作の区分
  * @param actorUserId 操作した管理者の利用者 ID（認証の主体から読んだ値）
@@ -65,7 +66,14 @@ public record RoleAuditEvent(
         if (succeeded != (failure == null)) {
             throw new IllegalArgumentException("成功は理由なし、失敗は理由ありです");
         }
-        if (succeeded && targetRoleId == null) {
+        if (operation == RoleOperation.APPLY_TRANSFER) {
+            if (targetRoleId != null || targetUserId != null || targetGroupId != null) {
+                throw new IllegalArgumentException("権限の YAML の適用は対象の列を持ちません（detail に書く。BR11.4）");
+            }
+            if (!(detail instanceof RoleAuditDetail.Transfer) && !(detail instanceof RoleAuditDetail.TransferSummary)) {
+                throw new IllegalArgumentException("権限の YAML の適用の detail は受け渡しの形です");
+            }
+        } else if (succeeded && targetRoleId == null) {
             throw new IllegalArgumentException("成功の出来事は対象のロールを持ちます");
         }
         boolean missingTarget =
@@ -129,6 +137,38 @@ public record RoleAuditEvent(
                 targetGroupId,
                 true,
                 null,
+                detail,
+                occurredAt,
+                origin.sourceIp(),
+                origin.userAgent(),
+                origin.traceId());
+    }
+
+    /**
+     * 権限の YAML の適用の出来事を作る（B6、BR11.4・BR11.7。対象の列は空にし、ロールは detail に書く）。
+     *
+     * @param actorUserId 操作した管理者の利用者 ID
+     * @param failure 失敗の理由（成功のときは null）
+     * @param detail detail の中身
+     * @param occurredAt 日時
+     * @param origin 要求の送り手の情報
+     * @return 出来事
+     */
+    public static RoleAuditEvent transferApplied(
+            long actorUserId,
+            RoleAuditFailure failure,
+            RoleAuditDetail.Transfer detail,
+            Instant occurredAt,
+            RequestOrigin origin) {
+        Objects.requireNonNull(detail, "detail");
+        return new RoleAuditEvent(
+                RoleOperation.APPLY_TRANSFER,
+                actorUserId,
+                null,
+                null,
+                null,
+                failure == null,
+                failure,
                 detail,
                 occurredAt,
                 origin.sourceIp(),

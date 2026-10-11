@@ -138,6 +138,46 @@ class RoleAuditEventTest {
     }
 
     @Test
+    @DisplayName("a transfer apply has no target role, user or group and keeps the roles in the transfer detail")
+    void transferApplied() {
+        RoleAuditDetail.Transfer detail = new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                java.util.List.of(new RoleAuditDetail.TransferRole("営業", 3L, TransferAction.REPLACE, 1, 0, 0, 0)));
+
+        RoleAuditEvent applied = RoleAuditEvent.transferApplied(1L, null, detail, NOW, ORIGIN);
+        RoleAuditEvent stale =
+                RoleAuditEvent.transferApplied(1L, RoleAuditFailure.ROLE_TRANSFER_STALE, detail, NOW, ORIGIN);
+
+        assertThat(applied.operation()).isEqualTo(RoleOperation.APPLY_TRANSFER);
+        assertThat(applied.succeeded()).isTrue();
+        assertThat(applied.targetRoleId()).isNull();
+        assertThat(applied.targetUserId()).isNull();
+        assertThat(applied.targetGroupId()).isNull();
+        assertThat(applied.detail()).isEqualTo(detail);
+        assertThat(stale.succeeded()).isFalse();
+        assertThat(stale.failure()).isEqualTo(RoleAuditFailure.ROLE_TRANSFER_STALE);
+        assertThatThrownBy(() -> RoleAuditEvent.succeeded(RoleOperation.APPLY_TRANSFER, 1L, 3L, detail, NOW, ORIGIN))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new RoleAuditEvent(
+                        RoleOperation.APPLY_TRANSFER,
+                        1L,
+                        null,
+                        null,
+                        null,
+                        true,
+                        null,
+                        new RoleAuditDetail.Name("営業"),
+                        NOW,
+                        "192.0.2.40",
+                        null,
+                        null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> RoleAuditEvent.transferApplied(1L, null, null, NOW, ORIGIN))
+                .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
     @DisplayName("a switch to a role outside the assignments has no detail and keeps the requested role id")
     void notAssigned() {
         RoleAuditEvent event = RoleAuditEvent.failed(

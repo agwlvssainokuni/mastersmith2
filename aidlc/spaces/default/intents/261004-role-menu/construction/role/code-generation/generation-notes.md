@@ -416,3 +416,224 @@
 - コマンド: colima の環境変数を付けて `caffeinate -i ./gradlew e2eTest`（02:42:31〜02:49:58、BUILD SUCCESSFUL in 7m 27s、exit 0）。
 - 結果: 177 passed（7.4m）。失敗 0 のため流し直しはしなかった（B4 で1回落ちた `135-dsl-admin-accessibility.e2e.ts` の `dsl admin green dark 360px` も通った）。報告の確かめの道具は「残してはならない値は含まれていません（値の種類 7・json の報告 1・添付 299・失敗の画面の写し 0・見つかった件数 0）」。
 - 片付け: `rm -rf frontend/playwright-report frontend/test-results`（git の対象外）。
+
+## B6
+
+- 依頼の範囲: B6 の Step 46〜56（業務処理のテストまで）。Step 56 が通ったら止めて報告する。
+- 長いコマンドは `caffeinate -i` で包み、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して流した。件数は `backend/build/test-results/{test,integrationTest}/*.xml` を集計した実測の値（名指しの実行でも `:backend:cleanTest`・`:backend:cleanIntegrationTest` を付けた）。
+
+### Step 46: 作業の場の用意
+
+- ブランチ: `feature/261004-role-menu-b6`（指揮役が作成済み）。開始の時点の HEAD は `b1c2760ac09a87030e9b708b6c9f7c4d3612ad20`（B5 の squash の統合）。
+- `git status --short`: アプリのソースに未コミットの変更なし。変更は監査ログ（`aidlc/spaces/default/intents/261004-role-menu/audit/sakura-local-4e42a93f87ce.md`）の追記だけ（ワークフローの記録として外して判断）。
+- `frontend/playwright-report`・`frontend/test-results`: どちらも無い。
+
+### Step 47: テストの実行の準備
+
+- colima: `colima status` は running（macOS Virtualization.Framework、aarch64、docker、mountType sshfs）。`colima ssh -- ls <リポジトリ>/docker` でホームの共有が付いていることを確かめた。
+- `unit-test-instructions.md` 2.3 のコマンド: 単体 22 クラス・158 件、結合 2 クラス・13 件。失敗 0・飛ばし 0。
+- `application.yaml` に `server.tomcat.max-swallow-size: 11MB` がある（240 行。コメントに本文を読み捨てる理由がある）。B1 の記録（dsl-v2 の `code-summary.md` の 22 行・101 行）と README には、読み捨ての影響（未認証の要求でも最大 11MB を読み捨てる、スレッドの占有が延びる、配備先が決まったときに見直す）が書かれていない（`grep -i swallow` で確かめた）。基盤の読み直しの R-02 のとおり、Step 62 で README の役割の受け渡しの節に書く。
+
+### Step 48: 変更の前の基準
+
+- **作業の誤りと流し直し**: 1回目は作業フォルダで流し、コンパイルが終わった後に Step 49 のファイルを書き、さらに `:backend:spotlessApply :backend:compileJava` を同じ作業フォルダで流してしまった。走っているテストの下の `build/classes` が入れ替わり、`HealthEndpointIT`・`ExternalExportIT` の3件が落ちた（変更とは関わりの無いテスト）。この実行は基準として使えないため止めた。
+- 流し直し: 作業フォルダを変えないため（`git stash`・`git restore` を使わない）、スクラッチの置き場に `git archive b1c2760` で開始の時点のソースを書き出し、サブモジュール `vendor/java-mustache-processor` だけを作業フォルダから写して、その場所で同じコマンドを流した（`caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport`、03:04〜03:16、BUILD SUCCESSFUL in 11m 51s、exit 0）。流している間は作業フォルダでテストを流さなかった。
+- 件数: 単体 224 クラス・1,914 件、結合 205 クラス・1,061 件。失敗 0・飛ばし 0（B5 の Step 43 と同じ）。
+- カバレッジ（写した場所の `backend/build/reports/jacoco/test/jacocoTestReport.xml`。B5 の Step 43 の値と同じ）:
+
+| パッケージ | 行 | 分岐 |
+|---|---|---|
+| `role.domain` | 93.8%（532/567） | 85.0%（260/306） |
+| `role.repository` | 100.0%（27/27） | 100.0%（2/2） |
+| `role.store` | 97.2%（210/216） | 90.3%（65/72） |
+| `role.service` | 96.5%（783/811） | 89.7%（278/310） |
+| `role.web` | 95.6%（263/275） | 86.2%（75/87） |
+| `audit.domain` | 99.5%（432/434） | 95.1%（136/143） |
+| `audit.service` | 99.6%（226/227） | 84.5%（49/58） |
+| 全体 | 98.0%（9,438/9,635） | 92.5%（3,525/3,810） |
+
+- 移行は足さない（V1〜V12 のまま）。
+
+### Step 49: ドメイン — 実装
+
+- `role.domain`: `RoleOperation.APPLY_TRANSFER`、`RoleAuditFailure.ROLE_TRANSFER_STALE`、`RoleRejection.TRANSFER_STALE`、`RoleProblemTypes` に `ROLE_TRANSFER_INVALID`（400）・`ROLE_TRANSFER_STALE`（409）、`RoleAuditDetail` に `Transfer`（`fileSha256`・`fingerprint`・`roles`、`summarize(n)`）・`TransferSummary`・1つのロールの要約 `TransferRole`（`name`・`roleId`・`action`・`added`・`changed`・`cleared`・`notInDsl`）、新しい `TransferAction`（`CREATE`・`REPLACE`）と `TransferError`（理由 13・行・列・場所。入れた値を持たない、toString は理由と位置だけ）。`RoleAuditEvent` は `APPLY_TRANSFER` のとき対象のロール・利用者・グループを持たず detail が受け渡しの形であることを確かめ、ファクトリー `transferApplied` を足した（BR11.4）。
+- `audit`: `AuditEventType.ROLE_TRANSFER_APPLIED`、`AuditFailureReason.ROLE_TRANSFER_STALE`（どちらも 32 文字以内）、`AuditEventFactory` の網羅の `switch`・`resultOf`、`AuditEventListener` の網羅の `switch` の追従、`AuditDetailJson.ofRole` に `Transfer`・`TransferSummary`（16,384 文字を超えると先頭 50 件から上限に収まるまで減らした要約。D-11）。
+- 計画との差:
+  - `TransferAction` と `RoleAuditDetail.TransferRole` を足した（計画の 9.2 の一覧に無い。適用の detail のロールごとの要約の形と、`role.transfer` と `role.domain` で同じ区分を使うため）。
+  - `Transfer` の `fileSha256` は、本文を読む前の拒否（入口の後の DSL が無いときの適用）では null にした。拒否の detail の `fingerprint` は要求の指紋、成功は一致した指紋。
+
+### Step 50: ドメイン — テスト
+
+- 足した: `RoleAuditDetailTest`（+2: 要約・組み合わせの検査）、`RoleAuditEventTest`（+1: 適用の出来事は対象の列を持たない）、`RoleProblemTypesTest`（2つの code と `TRANSFER_STALE` の写し・監査の理由）、`audit/domain/AuditRoleDetailJsonTest`（+2: 適用の detail のキー、上限を超えると先頭 50 件以下の要約・長い名前では 50 件未満で上限に収まる）、`audit/domain/AuditRoleEventFactoryTest`（+1 と既存の期待の追従: ROLE_ で始まる種類 6→7、失敗の理由に `ROLE_TRANSFER_STALE`、`resultOf` の種類に `ROLE_TRANSFER_APPLIED`）。
+- コマンド: `caffeinate -i ./gradlew :backend:spotlessApply :backend:cleanTest :backend:test --tests 'cherry.mastersmith.role.domain.*' --tests 'cherry.mastersmith.audit.*'`
+- 結果: 単体 27 クラス・244 件、失敗 0・飛ばし 0（exit 0）。1回目は自分のテストの誤り（長い名前の要約の確かめで、名前の規則の内の長さ（絵文字 63 字）では 50 件でも上限に収まった）で落ち、detail の型が名前の長さを確かめないことを使って絵文字 200 字の名前に直した。
+
+### Step 51: YAML の部品 — 実装（role.transfer）
+
+- `role.transfer`（TraceAspect の対象の外）: `RoleTransferReader`（木の検証と誤りの一覧、読み込みの部品の拒否の写し `rejected`）・`RoleTransferWriter`（書き出しの文字列、二重引用符の規則）・`TransferPlanner`（変わる点の一覧。今のロールは `CurrentRole`）・`TransferFingerprint`（指紋と SHA-256）・`TransferOrder`（コードポイントの順）、受け渡しの伏せる型 `RoleTransferPayload`・`RoleTransferTree`・`RoleTransferDocument`・`TransferPlan`・`TransferRolePlan`・`TransferChange`・`TransferErrors`・`TransferRoleSettings`、`package-info`。依存は Jackson の木・`role.domain`・`dsl.service`（`YamlPositions`・`SafeYamlResult`）だけ。
+- 上限ちょうどの YAML の生成の部品: `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java`（JDK だけに依存する1ファイル、`main` つき。ロールごとに1つのスキーマの下へテーブルあたり決めた数のカラムを `READ` で明示し、末尾の YAML のコメントの行で目標のバイト数ちょうどにする）。
+- 実装で決めたこと（承認済みの文書に細かい決まりが無かった点）:
+  - 誤りの `path` はキーを点でつないだ形（例 `roles.営業.schemas.SALES`）にした。読み込みの部品の拒否（`SafeYamlResult.Rejected.path`）と DSL の誤りの一覧が同じ形で、1つの応答の中の形をそろえるため。`entities.md` の TransferError の例（`/roles/営業/...` の斜線の形）との差。
+  - 版は整数の 1 だけ（`'1'`・`1.0` は `UNSUPPORTED_VERSION`）。版が誤りなら、ほかを確かめずにその1件だけを返す。
+  - ロール・`schemas`・スキーマ・`tables`・テーブル・`columns` の値は対応表だけ（null・並び・文字は `INVALID_VALUE`。空の対応表は受け付ける）。無い項目（`version`・`roles`）の `MISSING_KEY` は、親の位置と無い項目の場所で返す。
+  - 名前の誤り（`INVALID_ROLE_NAME`・`INVALID_TARGET_NAME`）・ロールの重なり（`DUPLICATE_ROLE`）があった所の下は確かめない（同じ名前の誤りを重ねて出さない）。
+  - カラムの値が対応表のとき、`create` か `delete` があれば `COLUMN_AUX_NOT_ALLOWED`、無ければ `INVALID_VALUE`。
+  - 書き出しの二重引用符は、`security-design.md` 5節の一覧（真偽・null の語、数・日付に読める名前、記号を含む名前、前後の空白、空の名前）に加えて、先頭が `-`・`?`・`[`・`]`・`{`・`}`・`,`・`<`・`=`・`~`・`.`・`+`・数字の名前、`y`・`n`・`off` の語、`\` と制御文字・行の区切り・BOM を含む名前を囲む（読み込みで同じ名前に戻すための、広い側の決め方）。
+  - 指紋の文字列は、項目を「文字数:値;」（無い値は「~;」）で区切り、名前に区切りの文字が入っても別の並びと同じ文字列にならないようにした（BR9.9 の並べ方のまま）。
+  - 変わる点の一覧は、ファイルのすべてのロール（変わる対象の無い置き換えも）を持つ。変わる点が無い（BR9.12）は「作るロールが無く、すべての置き換えの変わる対象が 0」。
+
+### Step 52: YAML の部品 — テスト
+
+- 新しい（`role/transfer`、件数）: `RoleTransferReaderTest`（17。13 の理由、最大 100 件、位置と場所、入れた値を載せない、読み込みの部品の拒否の写し）、`RoleTransferWriterTest`（48。並び・設定のある対象だけ・コードポイントの順・二重引用符の名前 37 と囲まない名前 7・エスケープ・別名とタグを作らない）、`TransferPlannerTest`（5）、`TransferFingerprintTest`（5）、`RoleTransferRoundTripPropertyTest`（2 性質。jqwik: 書き出し → 読み込みで同じ名前と設定、今の設定の書き出しを読み込むと変わる点が無い。名前に `true`・`false`・`null`・`~`・`123`・`yes`・`on`・日付・記号・前後の空白（全角を含む）を混ぜる）、`role/testsupport/LargeRoleTransferYamlTest`（3。10,485,760 バイトちょうどで読み込みと検証を通る、1 バイトの余り、小さすぎる目標の拒否、`main` でのファイルの書き出し）。
+- 手伝い: `role/testsupport/TransferYamlTrees`（本番と同じ上限の `DefaultSafeYamlReader` で木を作る）。
+- コマンド: `caffeinate -i ./gradlew :backend:spotlessApply :backend:cleanTest :backend:test --tests 'cherry.mastersmith.role.transfer.*' --tests 'cherry.mastersmith.role.testsupport.LargeRoleTransferYamlTest'`
+- 結果: 単体 6 クラス・80 件、失敗 0・飛ばし 0（exit 0）。単体テストの結果に `RoleTransferRoundTripPropertyTest` がある。1・2回目は自分のテストの誤りで落ちた（`no: {create: no}` が設定であることの見落とし、重複キーは読み込みの部品が先に拒否することの見落とし）。
+- 計画との差: 生成の部品のテストの上限ちょうどの形は、計画の例（ロール 26・1万カラム）ではなくロール 20・1万カラム・名前 30 文字にした（26 では中身だけで 10 MiB を超えるため）。
+
+### Step 53: DB アクセス — 実装
+
+- `role.store`: `RoleStore.applyTransfer(List<TransferWrite>, Instant)`（作るロールを JPA で足して flush（名前の鍵の違反は `NameTaken`・上限切れは `Busy(ROLE_NAME_KEY)`）→ `JdbcTemplate` で置き換えるロールごとに設定の行を1文で消す → 設定の行を 1,000 件ずつのバッチで書く → 置き換えるロールの `updated_at` を書く。JDBC の例外は `Busy(ROLE_ROW)` か想定外に区分）。受けた `JdbcTemplate` は書き換えず、同じ `DataSource` の写しに `setQueryTimeout(10)` を付けて持つ。新しい型 `TransferWrite`（置き換えるロールか作るロールの名前と、適用の後の設定）・`TransferWritten`（作った数・置き換えた数・行の数・バッチの数）。
+- `role.repository`: `RoleRepository.findAllKeys()`（ID・名前・名前の鍵を ID の順）、`PermissionSettingRepository.findAllOrderByRole()`（書き出し）・`findAllOfRoles(ids)`（照らし合わせ）、射影 `RoleKeyView`・`RoleSettingRow`。
+- `application.yaml`: `logging.level.org.springframework.jdbc.core.StatementCreatorUtils: OFF` と理由・調べ方のコメント（`security-design.md` 4.3）。
+- 計画との差: `role.repository` の読み取り3つと射影2つを足した（計画の 9.2 の一覧に無い。書き出しと照らし合わせの読み取り）。`RoleStore` のコンストラクターに `JdbcTemplate` を足した（計画の 9.2 のとおり。既存のテストで `RoleStore` を直接作るものは無い）。
+
+### Step 54: DB アクセス — テスト
+
+- 新しい: `role/store/RoleStoreTransferBatchIT`（4。2,500 行が 1,000 件ずつの 3 バッチで書かれ、置き換えたロールの古い行が消え更新の日時が書かれる／名前の鍵の違反は `NameTaken` で何も書かれない／JDBC のバッチと Hibernate の作成が同じトランザクションで巻き戻る／文の上限 10 秒・バッチ 1,000 件・空の書き込み）。
+- コマンド: `caffeinate -i ./gradlew :backend:spotlessApply :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.role.store.*'`
+- 結果: 結合 4 クラス・19 件、失敗 0・飛ばし 0（exit 0）。1回目は自分のテストの誤り（同じクラスの前のテストの行を数えた）で落ち、スキーマの名前をテストごとに分けた。
+
+### Step 55: 業務処理 — 実装
+
+- `role.service`: `RoleTransferService`（`export`・`check`・`apply`。判定の順は NFR3.8 のとおり、入口 → DSL → 本文を上限まで読む → 上限つきの読み込み → 検証 →（適用）置き換えるロールの行の排他（ID の昇順、待ち合わせの口 `beforeLock`・`afterLock`）→ DSL → 一覧の作り直し → 指紋 → 変える点の有無 → 書き込み → `afterWrite`（指紋の先頭 8 文字）→ 成功の出来事。拒否は1つ目を巻き戻して2つ目のトランザクションで失敗の出来事。入口は `finally` で必ず放す）、`RoleTransferSlot`（`Semaphore(1)` の `tryAcquire`、取れなければ `lockKind=ROLE_TRANSFER_SLOT` だけの WARN を1回。D-20）、`RoleTransferLimits`（大きさは設定値、深さ 10・別名 0・節 1,000,000）、本文の流れの伏せる型 `RoleTransferBody`、結果の型 `TransferCheckResult`・`TransferApplyResult`・`TransferExport`。
+- 排他の前に消えたロール（`RoleMissing`）は飛ばし、作り直した一覧の置き換えるロールが排他できていなければ `ROLE_TRANSFER_STALE` にした。
+- 計画との差:
+  - `RoleTransferLimitProperties`・`RoleWebConfig`（`RoleTransferLimits` の Bean と、確かめ・適用の道の `RequestBodyLimitRoute`）・道の定数 `RoleTransferPaths` を、計画の Step 57 ではなくこの Step で作った。業務処理が `RoleTransferLimits` の Bean を要り、Step 56 の結合テストで Spring を起動するため（中身は計画の 9.2 のとおり。コントローラーと DTO は Step 57）。
+  - 本文の流れの型は `role.service.RoleTransferBody`（`reliability-design.md` 2.6 の名前）、読んだバイト列は `role.transfer.RoleTransferPayload`（計画の 9.2 の名前）と分けた。
+  - 本文を上限より多く読めたとき（分割送信）は 413 の結果（`TooLarge`）にした。読み込みの部品の `TOO_LARGE` も同じ。
+
+### Step 56: 業務処理 — テスト
+
+- 新しい（単体）: `RoleTransferServiceTest`（10。確かめは書き込み・排他・監査なしで入口を放す、入口の取り損ねは DSL と本文を読まない、DSL が無いときの確かめ（監査なし）と適用（FAILURE）、大きさ・拒否・中身の誤りは監査なし、適用の順と成功の出来事、指紋の違いは STALE で2つ目のトランザクション、変える点が無い・排他の前に消えたロール・排他の後に外れた DSL、名前の鍵の違反と上限切れと想定外、本文の読み込みの失敗でも入口を放す・指紋の形の誤りは入口の前で断る、書き出し）、`RoleTransferSlotTest`（3）。
+- 新しい（結合、`role/service`）: `RoleTransferAtomicityIT`（2。1,200 件目の目印の行で失敗させると、作るロールも設定もすべて前と同じで監査の行が無く、入口は放されている／目印が無ければ1回確定し、対象の列が空で指紋を持つ成功の行が1つ）、`RoleTransferStaleIT`（5。#13 の保存・削除・同名の作成・DSL の差し替えで STALE、DSL を外すと `DSL_NOT_APPLIED`。状態は別の要求の後のまま、監査に FAILURE）、`RoleTransferBusyIT`（3。#11 適用を `afterLock` で止めたまま2つ目の確かめと適用が `ROLE_BUSY` で WARN が2件（`lockKind=ROLE_TRANSFER_SLOT` だけ・例外なし）、#12 適用中の同じロールへの割り当てが `ROLE_ROW` の上限切れで `Busy` で割り当ては変わらない、例外で終わった後に次の適用が通る）。
+- 手伝い: `role/testsupport/FailingSettingTrigger`（H2 のトリガー。目印のカラムの名前の行の書き込みで SQLState 45000 を投げる）。
+- コマンド: `caffeinate -i ./gradlew :backend:spotlessApply :backend:cleanTest :backend:cleanIntegrationTest :backend:test --tests 'cherry.mastersmith.role.service.*' :backend:integrationTest --tests 'cherry.mastersmith.role.service.*'`
+- 結果: 単体 9 クラス・66 件、結合 9 クラス・33 件。失敗 0・飛ばし 0（exit 0）。途中の失敗はどれも自分のテストの誤り（2つ目のトランザクションの確定の前に出す時点の期待、同じクラスの監査の行の数え方）。
+- 計画との差:
+  - `FailingSettingTrigger` は、H2 の `org.h2.api.Trigger` を実装するクラスではなく、H2 のソースのトリガー（`CREATE TRIGGER … AS $$…$$`、H2 が実行時に JDK のコンパイラでコンパイルする）にした。H2 はテストのコンパイルの依存に無く（実行時だけ）、ビルドの設定を変えないため。
+  - `RoleTransferStaleIT` の「DSL の適用し直し」は、DSL の管理の API ではなく、適用中の DSL の提供口（`ActiveDslModelHolder`）を別の識別のモデルに置き換えて起こした（`unit-test-instructions.md` 6節の「DSL の管理の API を通す」との差。業務処理の層の結合テストのため。API を通す確かめは Step 58 で扱えるかを判断する）。
+  - `RoleTransferAtomicityIT`・`RoleTransferStaleIT`・`RoleTransferBusyIT` は、計画の 9.3 の業務処理の行と Step 56 のコマンドに合わせ、API ではなく業務処理を直接呼ぶ結合テストとして `role/service` に置いた。
+- 追加の確かめ（計画のコマンドの外）: `caffeinate -i ./gradlew :backend:cleanTest :backend:test`（単体の全体）で 232 クラス・2,013 件、失敗 0（構造の検査と既存の境界テストを含む）。
+
+### Step 57: API — 実装
+
+- `role.web`: `RoleTransferController`（`GET /api/admin/role-transfer/export`・`POST …/check`・`POST …/apply`、クラスに `@ApiAccess(ADMIN)`。書き出しは `application/yaml` の添付（ファイル名 `role-permissions.yaml`）で、上限を超えたら `X-Role-Transfer-Exceeds-Import-Limit: true`。確かめ・適用は `consumes = application/yaml`（ほかは既存の扱いで 415）で、本文は読まずに要求の入力の流れを `RoleTransferBody` で業務処理に渡す。適用の `X-Role-Transfer-Fingerprint` が無いときは `fieldErrors` の `REQUIRED`、形の誤りは `INVALID_VALUE` の 400）、DTO `TransferCheckResponse`（toString はロールと変わる対象の数だけ）・`TransferResultResponse`・`TransferErrorItem`（`errors` の1件。toString は理由と位置だけ）。`RoleWebConfig`・`RoleTransferLimitProperties`・`RoleTransferPaths` は Step 55 で作り済み。
+- 計画との差: `errors` の1件を、計画に無い record `TransferErrorItem` にした。共通の誤りの応答の変換（`ErrorResponseFactory`・`GlobalExceptionHandler`、`common.error.web`）が TRACE で ProblemDetail の追加の項目を文字列にし、1件の場所（ロール・対象の名前）がログに出たため（Step 58 の `RoleSecretLeakIT` で見つかった。`common` は変えない）。あわせて `RoleAuditDetail.Transfer`・`TransferSummary`・`TransferRole`、`RoleKeyView`・`RoleSettingRow` の toString を数・ID だけにした（監査の受け取りと repository の TRACE に名前が出ないため）。
+
+### Step 58: API — テスト（結合）
+
+- 新しい（`role/web`、件数）: `RoleTransferApiIT`（7。書き出しの形と添付・DSL が無くても書ける、確かめの応答の形と適用の作成・置き換え（名前は変えない）、415、指紋のヘッダーの 400、`ROLE_NO_CHANGE`・`ROLE_TRANSFER_STALE`、DSL が無いと `DSL_NOT_APPLIED`、同じ名前を未確定で持つ作成と重なった適用は鍵の待ちの上限切れで `ROLE_BUSY`）、`RoleTransferLimitsApiIT`（6。10,485,760 バイトちょうどは 200・1 バイト超えは Content-Length つきと分割送信の両方で 413、深さ 10 と 11、コレクションの別名 0 と 1・スカラーの別名・別名の展開の爆発、展開後の節 1,000,000 は中身の誤り・1,000,001 は `TOO_MANY_ALIASES`、タグ・重複キー（ロール・対象）・`DUPLICATE_ROLE`・知らない項目・版、位置と場所、適用も同じ守り）、`RoleTransferExportLimitIT`（1。上限 2,000 にした設定で、ちょうどはヘッダーなし・1 バイト超えはヘッダーあり、2つに分けてそれぞれ確かめと適用）、`RoleTransferTomcatSwallowIT`（2。生のソケットで本文を書き切ってから読む。適用が入口を持つ間の 10 MiB の確かめに 409 `ROLE_BUSY` の Problem Details が届く、上限を少し超える本文に 413 が届く、どちらも次の要求が通る）、`RoleTransferAuditIT`（3。適用の1行（対象の列が空、ファイルの SHA-256・指紋・ロールごとの数）、確かめと書き出しは行が増えない、STALE の FAILURE の行は要求の指紋、300 ロールで要約（`roleCount`・先頭 50 件））。
+- 足した: `RoleAdminAuthorizationApiIT`（3つの口 × 4 の主体、合わせて 80）、`RoleSecretLeakIT`（+1。目印 `LEAKCHECK_ROLE_7f3a` を入れた YAML で確かめ・適用・誤りのある確かめ・書き出しを TRACE（`cherry.mastersmith` と `org.springframework.jdbc`）で流し、ログに目印が 0 件）、`RoleConnectionUsageIT`（+1。適用 2 本・確かめと書き出し 1 本・拒否 2 本）、`RoleBusyLogTraceIT`（+1。入口の取り損ねの WARN が traceId ごとに1件、`lockKind=ROLE_TRANSFER_SLOT` だけで `exceptionClass` を持たない。入口は Bean を直接取って塞いだ）。
+- 手伝い: `role/testsupport/RawTransferPost`（分割の転送の応答の本文を外す）、`RoleApi` に `export`・`check`・`apply`・`sendYaml`・`fingerprintOf`。
+- コマンド: `caffeinate -i ./gradlew :backend:cleanIntegrationTest :backend:integrationTest --tests 'cherry.mastersmith.role.*' --tests 'cherry.mastersmith.audit.service.*'`（03:45〜03:47）
+- 結果: 結合 61 クラス・337 件、失敗 0・飛ばし 0（exit 0）。この名指しの実行ではテストの JVM のヒープ（1g）は足りた。途中の失敗は自分のテストの誤り（分割の転送の本文、型の書き方）と、上の `errors` の漏えい（直した）。
+- 計画との差: 「作るロールの名前の重なり」は API からは、別の作成が未確定のまま持つ同じ名前の鍵を待って上限切れになる `ROLE_BUSY` で確かめた（`ROLE_NAME_DUPLICATE` に読み替わる違反の経路は、待ち合わせの口が作り直しと書き込みの間に無く API から決まった形で作れないため、`RoleTransferServiceTest` だけで確かめた）。
+
+### Step 59: 境界と構造の検査
+
+- `RoleBoundaryArchitectureTest` に B6 の規則を1件足した: `role.transfer` は `EntityManager`・`JdbcTemplate`・`role.repository`・`role.store`・`dsl.parse` に依存しない（空振りしない確かめ: transfer が `dsl.service` を使う、`dsl.service` が `dsl.parse` を使う、store が `JdbcTemplate` を使う）。
+- コマンド: Step 37 と同じ一式（`*BoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest`・`ApiAccessRulesTest`・`PublicApiInventoryTest`、`ApiAccessConsistencyIT`）。
+- 結果: 単体 18 クラス・94 件、結合 1 クラス・5 件。失敗 0（exit 0）。B6 の3つの口の印と `/api/admin/**` が合い、`MIN_ENDPOINTS` の変更は要らなかった。
+
+### Step 60: バックエンドの区切りの確かめ（止めた。決定 A の後も再び止めた）
+
+- コマンド: `./gradlew :backend:spotlessApply` の後、colima の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:spotlessCheck :backend:test :backend:integrationTest`（BUILD FAILED in 11m 40s）。
+- 結果: 単体 232 クラス・2,014 件、失敗 0。結合 214 クラス・1,109 件、失敗 1。
+- **止めた理由（計画の 6節 A28）**: `RoleTransferLimitsApiIT` の「展開後の節 1,000,000」の確かめが、全体の実行の中で 500 になった。原因はアプリの中の `java.lang.OutOfMemoryError: Java heap space`（`GlobalExceptionHandler` の ERROR で確かめた）。テストの JVM のヒープ（1g）を、それまでに起動した多くの Spring のアプリ（テストの文脈の再利用の保持）と分け合う中で、100 万の節の木（SnakeYAML の節・JSON の木・位置の対応表）を作ったため。名指しの実行（Step 58、2回）では通っている。10 MiB の大きさの確かめは全体の中でも通った。ヒープを黙って上げない決まりのため、直さずに止めた（依頼者・指揮役の判断を待つ）。
+- **依頼者の決定 A の後（計画との差 B6-差 A）**: 節の上限の境界の確かめ（1,000,000 は受け付け、1,000,001 は拒否）を、Spring を起動しない単体テスト `RoleTransferReaderTest#expandedNodeBoundary`（本物の `SafeYamlReader` と `RoleTransferReader`）へ移した。`RoleTransferLimitsApiIT#expandedNodes` は 1,000,001 の拒否だけにした。ビルドの設定（テストの JVM のヒープ）は変えていない。配備した形で大きい YAML がどれだけメモリを使うかは、Performance Validation（`roleTransferLargeCheck`・`roleTransferLargeApply`）で確かめるよう引き継ぐ。
+- 流し直し（11:09〜11:21）: 同じコマンドで BUILD FAILED in 11m 45s。単体の失敗は 0。結合は 1,109 件のうち 1 件が失敗した。`RoleTransferLimitsApiIT#expandedNodes`（1,000,001 の拒否）が 500 を返し、原因は前回と同じ `OutOfMemoryError: Java heap space`（テストの結果の XML にある ERROR のログで確かめた）。
+- **再び止めた理由**: 節の数は、SnakeYAML が節の木を組み立て終えた後に、木の変換（`dsl.parse.YamlTreeConverter`）の中で数える。コレクションの別名は 0 で断るため、展開した後の節を 1,000,001 にするには、本文に 100 万を超える節が実際に要る。このため API の確かめを「小さい木」にはできなかった（決定 A の前の報告で見込みとして伝えた点）。指揮役の指示（OOM が再び出たら止めて報告する）のとおり、ここで止めた。
+- 単体テストの確かめ: Step 60 が終わった後、作業フォルダでほかにテストが流れていないときに `./gradlew :backend:test --tests '*LargeRoleTransferYamlTest' --tests '*RoleTransferReaderTest'` を流した。3 件・18 件ともすべて通った（下の Step 61 で変えた生成の部品を含む）。
+
+### Step 61〜63（Step 60 の結果を待つ間に、ビルドを使わずに行った）
+
+- Step 61: `perf/k6/scenarios.js` に次の4つの場面を足した。
+  - `rolePrepare`: 1 VU・1 回。DSL を投入して適用し、準備の YAML を台本の中で作って確かめ・適用する。
+  - `roleExport`: 10 VU・3 分。p95 < 1000 ms。
+  - `roleTransferLargeCheck`: 1 VU・1 回。最大 < 15000 ms。
+  - `roleTransferLargeApply`: 1 VU・1 回。setup で確かめて指紋を受ける。最大 < 30000 ms。
+
+  `ROLE_TREE_SCHEMA`・`ROLE_TREE_TABLE` の既定を `perf`・`perf_t001` から `large`・`t_001` に替えた。これは `perf/dsl-timing.sh` が対象DB の 100 × 100 のスキーマから生成する DSL の名前である。`LargeRoleTransferYaml` の既定の名前（スキーマ `large`、テーブル `t_001`〜、カラム `c_001`〜、ロール `perf_large_`）を合わせて替え、カラムの名前の頭を渡す引数を足した。`perf/README.md` の role の節には、B6 の場面・準備のデータ・順番・メモリの記録・`caffeinate -i` の台本を書いた。順番は、`roleTransferLarge*` を最後に流し、流し直すときは環境を作り直して準備からやり直す。
+  - `k6 inspect --include-system-env-vars`（`grafana/k6:2.3.0`）: 4つの場面とも、executor・VU・回数・閾値・`setupTimeout` 10m が想定どおりだった。既存の `roleTreeRead` も変わらず読める。
+  - 生成の部品: `java …/LargeRoleTransferYaml.java <出力> 25 10000 0 10485760 large t_ 100 perf_large_ c_` で、ちょうど 10,485,760 バイトのファイルができた（`READ` の行は 252,525）。
+  - 計画との差:
+    1. 準備の YAML は、生成の部品ではなく k6 の台本の中で作る。悪い側のロールには READ と FULL を交互に明示する形が要り、置き換える先のロールと埋めるロールも合わせて1つの場面で作れるため。
+    2. 準備の DSL は、`perf/make-large-dsl.mjs` ではなく、`perf/dsl-timing.sh` が生成した DSL（100 × 100）をそのまま使う。`make-large-dsl.mjs` は 10 MiB まで埋めるための道具で、テーブルの名前の形が変わるため。生成には対象DB が要るが、使い捨ての環境と各場面には要らない。
+    3. 準備の場面では、グループ・メンバー・割り当てを作らない。B5 の各場面の setup が、その場面に要る分を API で作るため。
+- Step 62: `README.md` の「ロールと権限の API」に「権限の受け渡し（B6）」の節を書いた。中身は次のとおり。
+  - 3つの口、YAML の形と上限、照らし方、指紋、一括の確定
+  - 信頼できない入力の守りと、`path` の点の形
+  - 同時に1つずつしか通さないこと、大きい書き出しの分け方
+  - 受け入れた制約（R-11・R-16、入口に入らない操作、R-02 の読み捨ての影響）
+  - 監査とログ
+
+  あわせて、「監査ログ（U4）」に `ROLE_TRANSFER_APPLIED` と detail のキーを足した。
+- Step 63: 次の確かめをした。
+  - 変えないものの一覧（ビルドの設定・lockfile・`.github`・compose・`docker`・Dockerfile・`frontend`・`vendor`・`common`・`access`・`auth`・`audit/repository`）について、`git diff --stat develop` は空だった。
+  - `git diff --stat f9d1134 -- backend/gradle.lockfile frontend/package-lock.json` も空だった。
+  - `application.yaml` の develop との差は、B6 の `StatementCreatorUtils: OFF` とそのコメントだけだった（B4 のコメントは develop に入り済み）。
+  - 新しい `*Properties` は、機能の中の `role/web/RoleTransferLimitProperties` の1つだけだった。
+  - テストのクラスの名前は、手伝い（`testsupport`）を除いて `Test` か `IT` で終わる。
+  - 気づいたこと: `role/package-info.java` の説明は B3 の時点の文のまま残っている（計画に無いため直していない）。
+
+### Step 60（流し直し、依頼者の決定 A' の後に通った）
+
+- 直したこと: `RoleTransferLimitsApiIT#expandedNodes`（API に 1,000,001 の節を送るテスト）を消し、`expandedNodeLimit` を足した。これは、上限の Bean（`RoleTransferLimits`）が `SafeYamlLimits(10485760, 10, 0, 1000000)` を渡すことだけを確かめる。境界の確かめは `RoleTransferReaderTest#expandedNodeBoundary` に残る。ビルドの設定は変えていない。`role/package-info.java` の説明は、今の作りに合わせて直した（依頼者の決定、コメントだけ）。
+- 流す前の確かめ: `colima status` は running。`colima ssh -- ls <リポジトリ>/docker` で共有が付いていることを確かめた。README の環境変数を付けて流した。
+- コマンド: `./gradlew :backend:spotlessApply` を流した後に、`caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:spotlessCheck :backend:test :backend:integrationTest` を流した（12:13〜12:25）。
+- 結果: BUILD SUCCESSFUL in 11m 41s（exit 0）。単体は 232 クラス・2,015 件、結合は 214 クラス・1,109 件で、失敗 0・飛ばし 0。
+- 引き継ぎ: 100 万の節を API に送る確かめと、配備した形での大きい YAML のメモリは、Performance Validation（`roleTransferLargeCheck`・`roleTransferLargeApply`）で必ず確かめる。配備したアプリの最大ヒープは約 1g で、10 MiB の本文1つでヒープが尽きないかを見る。テストの JVM では、全体の実行の中で OutOfMemoryError が2回起きた。
+
+### Step 61〜63 の決定（依頼者）
+
+- Step 61 の計画との差 1〜3 は、依頼者の決定 A で受け入れた。`role/package-info.java` の直しも依頼者の決定 A（Step 60 の流し直しの前に直した）。
+
+### Step 64: 記録
+
+- `traceability.json`: 単位の全体で 263 件（OK 212・Deferred 47・N/A 4）。B6 の AC3.1.x（画面の AC3.1.11 と時間の AC3.1.17 を除く）、BR9.1〜BR9.15、BR11.7、NFR1.5・NFR1.9・NFR2.9・NFR3.2・NFR3.8 を OK にし、それぞれの target を既存の1ファイルにした。B4・B5 の OK の target も、複数のファイルを並べていたものは先頭の既存のファイル1つにした（128 件）。AC3.1.17・NFR2.4 は Performance Validation へ Deferred にし、配備した形でのヒープを必ず確かめる旨を target に書いた。
+- `source-manifest.json`: B6 で 56 の道を足し、合わせて 251。
+- `code-summary.md`: B6 の節と単位の全体のまとめ（Step 65・66 の実測を含む）。
+
+### Step 65: 1コマンドの検査
+
+- 流す前の確かめ: colima は running で、ホームの共有を確かめた。README の環境変数を付けて流した。
+- コマンド: `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（12:25〜12:39）。
+- 結果: BUILD SUCCESSFUL in 13m 49s（exit 0）。B5 の 13 分 30 秒より約 19 秒延びた。
+  - バックエンド: 単体 232 クラス・2,015 件（B5 から +101）、結合 214 クラス・1,109 件（+48）。失敗 0・飛ばし 0。
+  - 対象DB のテストの SKIPPED は 0 件。「コンテナの実行環境」の警告も 0 件。
+  - 単体テストの結果に、role の4つの `*PropertyTest`（`RoleNameKeyPropertyTest`・`PermissionInheritancePropertyTest`・`WorkRoleResolutionPropertyTest`・`RoleTransferRoundTripPropertyTest`）がある。
+  - 画面: 113 ファイル・1,043 件 passed。Gitleaks は no leaks found。`osvScan` は UP-TO-DATE（入力の lockfile が変わっていないため、前回の合格をそのまま使った）。
+- カバレッジ（行・分岐。矢印の左は Step 48 の変更の前の値）:
+
+| パッケージ | 行 | 分岐 |
+|---|---|---|
+| `role.domain` | 93.8% → 94.2% | 85.0% → 85.4% |
+| `role.repository` | 100.0% → 95.0% | 100.0% |
+| `role.store` | 97.2% → 97.5% | 90.3% → 90.6% |
+| `role.service` | 96.5% → 96.6% | 89.7% → 90.3% |
+| `role.web` | 95.6% → 96.0% | 86.2% → 86.0% |
+| `role.transfer`（新しい） | 97.8% | 91.6% |
+| `audit.domain` | 99.5% → 99.6% | 95.1% → 94.7% |
+| `audit.service` | 99.6% | 84.5% |
+| 全体 | 98.0% → 97.9% | 92.5% → 92.4% |
+
+  どのパッケージも、下限（行 80%・分岐 70%）を満たす。
+
+### Step 66: E2E
+
+- 流す前の確かめ: Mailpit は動いていた（配備した環境の `mastersmith-mailpit-1`。止めない・作り直さない）。報告のフォルダーは無かった。
+- コマンド: `caffeinate -i ./gradlew e2eTest`（全体、12:39〜12:46）。
+- 結果: 177 passed（6.8m）、BUILD SUCCESSFUL in 6m 57s。失敗 0 で、流し直しは要らなかった。
+- 報告の確かめの道具: 「残してはならない値は含まれていません（値の種類 7・json の報告 1・添付 299・見つかった件数 0）」。
+- 片付け: `rm -rf frontend/playwright-report frontend/test-results` で消した。消した後に、どちらも無いことを確かめた。
+- Step 67（コミットの提案・承認の場・統合の提案）の手前で止める。

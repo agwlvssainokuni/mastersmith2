@@ -499,6 +499,7 @@ public final class AuditEventFactory {
             case ASSIGN -> AuditEventType.ROLE_ASSIGNED;
             case UNASSIGN -> AuditEventType.ROLE_UNASSIGNED;
             case SWITCH_WORK_ROLE -> AuditEventType.WORK_ROLE_SWITCHED;
+            case APPLY_TRANSFER -> AuditEventType.ROLE_TRANSFER_APPLIED;
         };
     }
 
@@ -522,6 +523,7 @@ public final class AuditEventFactory {
             case ROLE_NOT_ASSIGNED -> AuditFailureReason.ROLE_NOT_ASSIGNED;
             case USER_NOT_FOUND -> AuditFailureReason.USER_NOT_FOUND;
             case GROUP_NOT_FOUND -> AuditFailureReason.GROUP_NOT_FOUND;
+            case ROLE_TRANSFER_STALE -> AuditFailureReason.ROLE_TRANSFER_STALE;
         };
     }
 
@@ -553,7 +555,7 @@ public final class AuditEventFactory {
      * 監査イベントの種類から結果を決める（BR1.2）。
      *
      * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）と利用者の管理の操作の5つの種類、グループの操作の5つの種類
-     * （Intent 261004-role-menu の U3）とロールの操作の7つの種類（同じ Intent の U4）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは決められない（呼び出すと想定外の
+     * （Intent 261004-role-menu の U3）とロールの操作の8つの種類（同じ Intent の U4）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは決められない（呼び出すと想定外の
      * 誤り）。
      *
      * @param eventType 種類
@@ -592,7 +594,8 @@ public final class AuditEventFactory {
                     ROLE_PERMISSION_CHANGED,
                     ROLE_ASSIGNED,
                     ROLE_UNASSIGNED,
-                    WORK_ROLE_SWITCHED -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
+                    WORK_ROLE_SWITCHED,
+                    ROLE_TRANSFER_APPLIED -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
         };
     }
 

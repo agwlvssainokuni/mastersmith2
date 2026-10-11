@@ -53,6 +53,8 @@ class AuditRoleEventFactoryTest {
         assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.UNASSIGN)).isEqualTo(AuditEventType.ROLE_UNASSIGNED);
         assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.SWITCH_WORK_ROLE))
                 .isEqualTo(AuditEventType.WORK_ROLE_SWITCHED);
+        assertThat(AuditEventFactory.roleEventTypeOf(RoleOperation.APPLY_TRANSFER))
+                .isEqualTo(AuditEventType.ROLE_TRANSFER_APPLIED);
         assertThat(AuditEventFactory.roleEventTypeOf(null)).isNull();
         assertThat(Arrays.stream(RoleAuditFailure.values()).map(AuditEventFactory::roleFailureReasonOf))
                 .containsExactly(
@@ -64,7 +66,8 @@ class AuditRoleEventFactoryTest {
                         AuditFailureReason.NO_CHANGE,
                         AuditFailureReason.ROLE_NOT_ASSIGNED,
                         AuditFailureReason.USER_NOT_FOUND,
-                        AuditFailureReason.GROUP_NOT_FOUND);
+                        AuditFailureReason.GROUP_NOT_FOUND,
+                        AuditFailureReason.ROLE_TRANSFER_STALE);
         assertThat(AuditEventFactory.roleFailureReasonOf(null)).isNull();
     }
 
@@ -73,11 +76,12 @@ class AuditRoleEventFactoryTest {
     void namesFitTheColumns() {
         assertThat(Arrays.stream(AuditEventType.values())
                         .filter(type -> type.name().startsWith("ROLE_")))
-                .hasSize(6)
+                .hasSize(7)
                 .allSatisfy(type -> assertThat(type.name().length()).isLessThanOrEqualTo(32));
         assertThat(AuditEventType.WORK_ROLE_SWITCHED.name()).hasSizeLessThanOrEqualTo(32);
         assertThat(AuditFailureReason.PERMISSION_TARGET_NOT_IN_DSL.name()).hasSizeLessThanOrEqualTo(32);
         assertThat(AuditFailureReason.ROLE_NOT_ASSIGNED.name()).hasSizeLessThanOrEqualTo(32);
+        assertThat(AuditFailureReason.ROLE_TRANSFER_STALE.name()).hasSizeLessThanOrEqualTo(32);
     }
 
     @Test
@@ -112,7 +116,7 @@ class AuditRoleEventFactoryTest {
     }
 
     @Test
-    @DisplayName("the result cannot be decided from the seven role types alone")
+    @DisplayName("the result cannot be decided from the eight role types alone")
     void resultComesFromTheEvent() {
         for (AuditEventType type : new AuditEventType[] {
             AuditEventType.ROLE_CREATED,
@@ -121,7 +125,8 @@ class AuditRoleEventFactoryTest {
             AuditEventType.ROLE_PERMISSION_CHANGED,
             AuditEventType.ROLE_ASSIGNED,
             AuditEventType.ROLE_UNASSIGNED,
-            AuditEventType.WORK_ROLE_SWITCHED
+            AuditEventType.WORK_ROLE_SWITCHED,
+            AuditEventType.ROLE_TRANSFER_APPLIED
         }) {
             org.assertj.core.api.Assertions.assertThatThrownBy(() -> AuditEventFactory.resultOf(type))
                     .isInstanceOf(IllegalArgumentException.class);
@@ -195,5 +200,31 @@ class AuditRoleEventFactoryTest {
         assertThat(rejected.getFailureReason()).isEqualTo(AuditFailureReason.ROLE_NOT_ASSIGNED);
         assertThat(rejected.getTargetRoleId()).isEqualTo(12345L);
         assertThat(rejected.getDetail()).isNull();
+    }
+
+    @Test
+    @DisplayName("a transfer apply leaves the target columns empty and writes the roles in the detail (BR11.4)")
+    void transferApplied() {
+        RoleAuditDetail.Transfer detail = new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                java.util.List.of(new RoleAuditDetail.TransferRole(
+                        "営業", 50L, cherry.mastersmith.role.domain.TransferAction.REPLACE, 1, 2, 3, 0)));
+
+        AuditEvent applied = AuditEventFactory.from(RoleAuditEvent.transferApplied(1L, null, detail, NOW, ORIGIN));
+        AuditEvent stale = AuditEventFactory.from(
+                RoleAuditEvent.transferApplied(1L, RoleAuditFailure.ROLE_TRANSFER_STALE, detail, NOW, ORIGIN));
+
+        assertThat(applied.getEventType()).isEqualTo(AuditEventType.ROLE_TRANSFER_APPLIED);
+        assertThat(applied.getResult()).isEqualTo(AuditResult.SUCCESS);
+        assertThat(applied.getActorUserId()).isEqualTo(1L);
+        assertThat(applied.getTargetRoleId()).isNull();
+        assertThat(applied.getTargetUserId()).isNull();
+        assertThat(applied.getTargetGroupId()).isNull();
+        assertThat(json(applied.getDetail()))
+                .containsEntry("fingerprint", "b".repeat(64))
+                .containsKey("roles");
+        assertThat(stale.getResult()).isEqualTo(AuditResult.FAILURE);
+        assertThat(stale.getFailureReason()).isEqualTo(AuditFailureReason.ROLE_TRANSFER_STALE);
     }
 }

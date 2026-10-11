@@ -817,9 +817,9 @@ Intent 261004-role-menu の U3 で、管理者が利用者のグループを作�
 - **監査**: 成功した変える操作と、業務の理由で断った変える操作（404・409 の `GROUP_NAME_DUPLICATE`・`GROUP_NO_CHANGE`・`GROUP_IN_USE`）を残します（「監査ログ（U4）」）。入力の誤り（400）・`GROUP_BUSY`・一覧と詳細の読み取りは残しません。
 - **指標**: 既存の `http.server.requests` で道ごとに数えます（新しい指標は足していません）。
 
-## ロールと権限の API（Intent 261004-role-menu の U4、Bolt B4・B5）
+## ロールと権限の API（Intent 261004-role-menu の U4、Bolt B4・B5・B6）
 
-Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロールを作り、名前を変え、消し、ロールごとに権限を設定する API を足しました（契約 C7）。どれも `/api/admin/roles` の下にあり、API の分類は `ADMIN`（管理者だけ）です。既存の `/api/admin/**` の決まり（未認証・停止中の利用者は 401 `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 `ACCESS_DENIED`）にそのまま乗ります。2つ目の Bolt（B5）で、利用者・グループへのロールの割り当て、作業ロール、自分の権限の木の API と、実効の権限の解決の口（契約 C5）を足しました（下の「割り当てと作業ロール（B5）」）。権限の受け渡し（B6）と画面（U6）は後の Bolt の受け持ちです。
+Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロールを作り、名前を変え、消し、ロールごとに権限を設定する API を足しました（契約 C7）。どれも `/api/admin/roles` の下にあり、API の分類は `ADMIN`（管理者だけ）です。既存の `/api/admin/**` の決まり（未認証・停止中の利用者は 401 `AUTHENTICATION_REQUIRED`、管理者でない利用者は 403 `ACCESS_DENIED`）にそのまま乗ります。2つ目の Bolt（B5）で、利用者・グループへのロールの割り当て、作業ロール、自分の権限の木の API と、実効の権限の解決の口（契約 C5）を足しました（下の「割り当てと作業ロール（B5）」）。3つ目の Bolt（B6）で、ロールと権限の設定を YAML で書き出し・読み込む API を足しました（下の「権限の受け渡し（B6）」）。画面（U6）は後の Bolt の受け持ちです。
 
 | API | 成功 | 主な失敗 |
 |---|---|---|
@@ -870,6 +870,31 @@ Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロー
 - **実効の権限の解決の口（後の Intent・U5 navigation 向け）**: `role.service.EffectivePermissionResolver` を使います。対象が1つのときは `resolve(userId, target)`（有効な作業ロールを決める読み取り4回と祖先の行の読み取り1回）、2つ以上の対象を判定するときは `snapshotFor(userId)` を1回呼び、返った写しで判定してください（読み取り4回と設定の読み取り1回で、1回の要求の中で同じ作業ロールで答えます）。写しは要求をまたいで持たないでください。有効な作業ロールだけが要るときは `effectiveWorkRole(userId)` です。
 - **同時の操作**: 割り当ての操作はロールの行を、グループへの割り当てはグループの行も排他します（待ちの上限を過ぎるとロールは 409 `ROLE_BUSY`、グループは 409 `GROUP_BUSY`）。作業ロールの切り替えはロール・グループの行を排他せず、保存の1行を書くだけです。ロールの割り当てを外す操作と重なっても、外したロールを保存したまま残しません（外れたロールは読みで最初のロールに読み替えます）。同じ利用者の初めての切り替えが重なったときは、後の側が 409 `ROLE_BUSY` になりえます（少し待ってやり直してください）。グループの削除は、ロールの割り当てが残ると 409 `GROUP_IN_USE` で断ります（グループの一覧の `assignedRoleCount`）。
 - **監査**: 割り当て・外し・作業ロールの切り替えの成功と業務の拒否を残します（「監査ログ（U4）」）。今の保存と同じ作業ロールへの切り替え・入力の誤り（400）・`ROLE_BUSY`・`GROUP_BUSY`・読み取りは残しません。
+
+### 権限の受け渡し（B6）
+
+ロールと権限の設定を YAML で書き出し、別の環境や同じ環境へ読み込みます（契約 C7。送り方は機能設計の 8節の差のとおり）。3つの口はどれも `ADMIN` です。読み込みは「確かめ」と「適用」の2段で、確かめは何も変えず、変わる点の一覧と指紋を返します。適用は同じ YAML と確かめの指紋を送り、確かめの後に状態が変わっていなければまとめて確定します。
+
+| API | 成功 | 主な失敗 |
+|---|---|---|
+| `GET /api/admin/role-transfer/export` | 200 と `application/yaml` の添付（`role-permissions.yaml`）。本文が読み込みの上限を超えたら応答のヘッダー `X-Role-Transfer-Exceeds-Import-Limit: true` | 401・403 |
+| `POST /api/admin/role-transfer/check`（本文は `application/yaml`） | 200 と `fingerprint`・`roles`（ロールごとの `name`・`roleId`（置き換えのとき）・`action`（`CREATE`・`REPLACE`）・`added`・`changed`・`cleared`・`notInDsl`・`changes`（対象ごとの `target`・`before`・`after`・`reason`・`inCurrentDsl`））・`untouchedRoles` | 400 `ROLE_TRANSFER_INVALID`（`errors` に `reason`・`line`・`column`・`path`、最大 100 件）・409 `DSL_NOT_APPLIED`・409 `ROLE_BUSY`・413 `PAYLOAD_TOO_LARGE`・415 `UNSUPPORTED_MEDIA_TYPE` |
+| `POST /api/admin/role-transfer/apply`（本文は `application/yaml`、ヘッダー `X-Role-Transfer-Fingerprint` に確かめの指紋） | 200 と `created`・`replaced` | 400 `VALIDATION_FAILED`（指紋のヘッダーが無い・16 進数の小文字 64 文字でない。`fieldErrors` の `X-Role-Transfer-Fingerprint`）・400 `ROLE_TRANSFER_INVALID`・409 `ROLE_TRANSFER_STALE`・409 `DSL_NOT_APPLIED`・409 `ROLE_NO_CHANGE`（変わる点が無い）・409 `ROLE_NAME_DUPLICATE`・409 `ROLE_BUSY`・413・415 |
+
+- **YAML の形**: `version: 1` と `roles`（ロールの名前をキーにした対応表）。ロールは `schemas`、スキーマとテーブルは `main`（`NONE`・`READ`・`FULL`）・`create`・`delete`（真偽）と下位の `tables`・`columns`、カラムは主権限の値だけを書きます。書かない項目は設定なしです。書き出しは、ロールを ID の順、対象を名前のコードポイントの順に並べ、設定のある対象だけを書き、YAML で型や特別な意味を持ちうる名前（`true`・`null`・数・日付・記号を含む名前・前後に空白のある名前など）は二重引用符で囲みます。別名とタグは作りません。
+- **照らし方**: ファイルのロールは名前（大文字と小文字・前後の空白を除いた鍵）で今のロールと照らし、当たれば設定をファイルの状態に置き換え（名前は今のまま。ファイルに無い対象の設定は消える）、当たらなければ作ります。ファイルに無いロールは残します（`untouchedRoles`）。グループ・メンバー・割り当ては書き出さず、読み込みでも変えません。今の DSL に無い対象の設定も名前で持つ設定として読み込みます（`inCurrentDsl: false`、`notInDsl` に数える）。
+- **指紋**: 作り直した変わる点の一覧（ロールの鍵の順・対象の順）と適用中の DSL の識別から作る SHA-256 の 16 進数の小文字です。サーバーは保存しません。確かめの後に別の操作でロール・設定が変わる、同じ名前のロールが作られる、DSL が適用し直されると、適用は 409 `ROLE_TRANSFER_STALE` になります（DSL が外れたときは 409 `DSL_NOT_APPLIED`）。確かめからやり直してください。
+- **一括の確定**: 適用は、置き換えるロールの行を ID の昇順に排他してから、1つのトランザクションで作成・置き換えを書きます。途中で失敗すると何も変わらず、監査の成功の行も残りません。適用の間、同じロールへのほかの管理の操作は待ちの上限（3 秒）で 409 `ROLE_BUSY` になります。
+- **信頼できない入力の守り**: 読み込みは上限つきの安全な読み込みだけで行います。上限は大きさ 10 MiB（10,485,760 バイト。確かめと適用の道ごとの本文の上限と同じ値）・入れ子の深さ 10・コレクションを指す別名 0（値を指す別名は受け付ける）・別名を展開した後の節 1,000,000 です。タグ・任意の型・重複キーを断り、知らない項目・版の誤り・値の誤り・カラムの `create`・`delete`・名前の規則の違反・ロールの重なりを `errors` に返します。応答に読み込みの部品の例外の文は載りません。`errors` の `path` はキーを点でつないだ形です（例 `roles.営業.schemas.SALES.main`）。
+- **同時に1つずつ**: 確かめと適用は、アプリの中で同時に1つずつしか通しません。2つ目は待たずに 409 `ROLE_BUSY` で断り（監査に残さない）、WARN（`権限の受け渡しの入口を取れませんでした`、キーは `lockKind=ROLE_TRANSFER_SLOT` だけ）を1回出します。少し待ってからやり直してください。
+- **大きい書き出し**: 書き出しは上限を超えても止めません。`X-Role-Transfer-Exceeds-Import-Limit: true` が付いたファイルはそのままでは読み込めない（413）ため、ロールの一部ずつに分けて、それぞれ確かめと適用を行ってください（ロールのキーごとに分ければ、各ファイルが独立して読み込めます）。
+- **受け入れた制約**:
+  - 分割送信（`Content-Length` の無い本文）は、既存の本文の大きさのフィルターが上限（10 MiB）まで先に読みます。入口（同時に1つずつ）はその後の読み込み・木・適用を守ります。
+  - 本文をゆっくり送る管理者は、その間入口を持ち続けます（本文の読み込みの時間切れは Tomcat の既定に頼ります）。
+  - 書き出しと、DSL の管理の 10 MiB の投入と適用は、入口に入りません（同時に動くとヒープを大きく使いえます。管理者の操作の頻度が低いことを前提にしています）。
+  - 本文を読まずに断った要求（`ROLE_BUSY`・413・DSL の重い操作の 503 `DSL_BUSY` など）でも、送り手に応答を届けるため、Tomcat は最大 11MB（`server.tomcat.max-swallow-size`）の本文を読み捨ててから応答を返します。この読み捨ては**未認証の要求にも**働き、その間 Tomcat のスレッドを持ち続けます（ヒープには貯めません）。配備先が決まったときに、前段の大きさの上限と合わせて見直してください。
+- **監査**: 適用の成功と業務の拒否（`ROLE_TRANSFER_STALE`・`DSL_NOT_APPLIED`・`NO_CHANGE`・`ROLE_NAME_DUPLICATE`）を1回1行残します（「監査ログ（U4）」）。確かめ・書き出し・入力の誤り（400・413・415）・`ROLE_BUSY` は残しません。
+- **ログ**: YAML の中身（ロールの名前・対象の名前・値）はアプリのログに出しません（TRACE を有効にしても、受け渡しの値は大きさと件数だけで出ます。JDBC の部品の引数の TRACE（`org.springframework.jdbc.core.StatementCreatorUtils`）は `OFF` です）。
 
 ## 外部エクスポートの確かめ方
 
@@ -1017,6 +1042,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - グループの管理（Intent 261004-role-menu の U3）も記録します。種類は `GROUP_CREATED`・`GROUP_RENAMED`・`GROUP_DELETED`・`GROUP_MEMBER_ADDED`・`GROUP_MEMBER_REMOVED` で、どの種類も成功（結果 `SUCCESS`）と業務の拒否（結果 `FAILURE`）の両方があります。失敗の理由は `GROUP_NOT_FOUND`・`USER_NOT_FOUND`・`GROUP_NAME_DUPLICATE`・`GROUP_IN_USE`・`NO_CHANGE` です。操作した管理者（`actor_user_id`）、対象のグループ（`target_group_id`。作成の名前の重なりでは空、いない ID の拒否では要求の ID）、メンバーの追加・外しでは対象の利用者（`target_user_id`。いない ID もそのまま）が入ります。`target_role_id` は U3 では空です。`detail` には決めたキーだけの JSON（作成・削除・名前の重なりは `name`、名前の変更は `before`・`after`、メンバーの追加・外しは `groupName`、使用中の削除の拒否は `name`・`members`・`assignedRoles`）が入り、404 の拒否では空です。メールアドレス・氏名は記録しません。入力の誤り・`GROUP_BUSY`・一覧と詳細の読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わらず、ERROR には操作した人・対象のグループ・対象の利用者の ID と `detail`（グループの名前を含む）が載ります（メールアドレスは載りません）。
 - ロールと権限の管理（Intent 261004-role-menu の U4、B4）も記録します。種類は `ROLE_CREATED`・`ROLE_RENAMED`・`ROLE_DELETED`・`ROLE_PERMISSION_CHANGED`（権限の保存と消す操作）で、どの種類も成功（結果 `SUCCESS`）と業務の拒否（結果 `FAILURE`）の両方があります。失敗の理由は `ROLE_NOT_FOUND`・`ROLE_NAME_DUPLICATE`・`ROLE_IN_USE`・`PERMISSION_TARGET_NOT_IN_DSL`・`DSL_NOT_APPLIED`・`NO_CHANGE` です。操作した管理者（`actor_user_id`）と対象のロール（`target_role_id`。作成の名前の重なりでは空、いない ID の拒否では要求の ID）が入り、`target_user_id`・`target_group_id` は B4 の種類では空です。`detail` には決めたキーだけの JSON（作成・削除・名前の重なりは `name`、名前の変更は `before`・`after`、使用中の削除の拒否は `name`・`assignedUsers`・`assignedGroups`、権限の変更は `roleName` と `changes`（対象ごとの `target`・`before`・`after`））が入り、404 の拒否では空です。16,384 文字に収まらない権限の変更は、`roleName`・`changedCount`・`firstChanges`（先頭の一部）の要約に替えます。メールアドレス・氏名は記録しません。入力の誤り・`ROLE_BUSY`・読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わらず、ERROR には操作した人・対象のロールの ID と `detail`（ロールの名前と対象の名前を含む）が載ります（メールアドレスは載りません）。
 - ロールの割り当てと作業ロール（Intent 261004-role-menu の U4、B5）も記録します。種類は `ROLE_ASSIGNED`・`ROLE_UNASSIGNED`（利用者・グループへの割り当てと外し）と `WORK_ROLE_SWITCHED`（自分の作業ロールの切り替え）で、成功（`SUCCESS`）と業務の拒否（`FAILURE`）の両方があります。失敗の理由は、割り当てが `ROLE_NOT_FOUND`・`USER_NOT_FOUND`・`GROUP_NOT_FOUND`・`NO_CHANGE`、外しが `ROLE_NOT_FOUND`・`NO_CHANGE`、切り替えが `ROLE_NOT_ASSIGNED` です。割り当てと外しは操作した管理者・対象のロール（`target_role_id`）と、相手の利用者（`target_user_id`）かグループ（`target_group_id`）が入り、`detail` は `roleName` と `groupName`（利用者への割り当てでは null）です。切り替えは操作した人と対象の利用者がどちらも本人で、`target_role_id` は切り替え先のロール、`detail` は `fromRoleId`・`fromRoleName`・`toRoleName`・`storedBeforeRoleId`（前の保存。無ければ null）です。`ROLE_NOT_FOUND` と `ROLE_NOT_ASSIGNED` の拒否の `detail` は空です（`USER_NOT_FOUND`・`GROUP_NOT_FOUND`・`NO_CHANGE` は `roleName` を持ちます）。切り替えの拒否の `target_role_id` は要求のロールの ID です。メールアドレス・氏名は記録しません。今の保存と同じロールへの切り替え（何も変えない成功）・入力の誤り・`ROLE_BUSY`・`GROUP_BUSY`・読み取りは記録しません。記録に失敗しても、操作の応答と状態は変わりません。
+- 権限の受け渡しの適用（Intent 261004-role-menu の U4、B6）も記録します。種類は `ROLE_TRANSFER_APPLIED` で、1回の適用を1行にします。成功（`SUCCESS`）と業務の拒否（`FAILURE`、失敗の理由 `ROLE_TRANSFER_STALE`・`DSL_NOT_APPLIED`・`NO_CHANGE`・`ROLE_NAME_DUPLICATE`）があります。操作した管理者（`actor_user_id`）が入り、対象の列（`target_role_id`・`target_user_id`・`target_group_id`）は空です。`detail` は `fileSha256`（読み込んだ本文の SHA-256。本文を読む前の `DSL_NOT_APPLIED` では null）・`fingerprint`（成功は一致した指紋、拒否は要求の指紋）・`roles`（ロールごとの `name`・`roleId`（作るときは null）・`action`・`added`・`changed`・`cleared`・`notInDsl`）で、前後の値の全件は残しません。16,384 文字に収まらないときは `fileSha256`・`fingerprint`・`roleCount`・`firstRoles`（先頭の一部、最大 50 件）の要約に替えます。確かめ・書き出し・入力の誤り・`ROLE_BUSY` は記録しません。
 - 対象の列（V10）: `target_role_id`（対象のロール。U4 の B4 から使います）・`target_group_id`（対象のグループ）・`detail`（JSON の文字列、16,384 文字まで）。どれも空を許し、それ以前の種類の記録では空のままです。
 - 監査イベントの `trace_id` は、同じ要求のアプリのログの `traceId` と一致します。1つの要求を追うときは、この値でログを絞り込みます。
 - 記録に失敗しても、ログイン・ログアウト・401／403 の応答は変わりません。失敗したときは、アプリのログに ERROR（`監査イベントの記録に失敗しました`）が1回出ます。**この ERROR には、記録しようとした項目（メールアドレスを含む）がキーと値で載ります**。後から手で記録を補えるようにするためで、U4 に限った扱いです。パスワード・トークンは載りません。外部エクスポートで外へ送るときは、メールアドレス・接続元IP・User-Agent の値を `[REDACTED]` に置き換えます（「外部エクスポートの確かめ方」）。元の値は標準出力のログで見ます。

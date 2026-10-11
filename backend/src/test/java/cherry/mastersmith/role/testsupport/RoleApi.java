@@ -431,6 +431,85 @@ public final class RoleApi {
         return client.send(builder.build());
     }
 
+    /**
+     * 権限の YAML を書き出す（B6）。
+     *
+     * @param token アクセストークン
+     * @return 応答
+     */
+    public HttpResponse<String> export(String token) {
+        return send("GET", "/api/admin/role-transfer/export", token, null);
+    }
+
+    /**
+     * 権限の YAML を確かめる（B6。本文は {@code application/yaml}）。
+     *
+     * @param token アクセストークン
+     * @param yaml 本文
+     * @return 応答
+     */
+    public HttpResponse<String> check(String token, String yaml) {
+        return sendYaml(
+                "/api/admin/role-transfer/check", token, yaml.getBytes(StandardCharsets.UTF_8), "application/yaml");
+    }
+
+    /**
+     * 権限の YAML を適用する（B6。本文は {@code application/yaml}、指紋は要求のヘッダー）。
+     *
+     * @param token アクセストークン
+     * @param yaml 本文
+     * @param fingerprint 指紋（無ければ null）
+     * @return 応答
+     */
+    public HttpResponse<String> apply(String token, String yaml, String fingerprint) {
+        return fingerprint == null
+                ? sendYaml(
+                        "/api/admin/role-transfer/apply",
+                        token,
+                        yaml.getBytes(StandardCharsets.UTF_8),
+                        "application/yaml")
+                : sendYaml(
+                        "/api/admin/role-transfer/apply",
+                        token,
+                        yaml.getBytes(StandardCharsets.UTF_8),
+                        "application/yaml",
+                        "X-Role-Transfer-Fingerprint",
+                        fingerprint);
+    }
+
+    /**
+     * 本文のバイト列を本文の型を指定して POST で送る（B6）。
+     *
+     * @param path 道
+     * @param token アクセストークン（無ければ null）
+     * @param body 本文
+     * @param contentType 本文の型
+     * @param headers 足すヘッダー
+     * @return 応答
+     */
+    public HttpResponse<String> sendYaml(
+            String path, String token, byte[] body, String contentType, String... headers) {
+        HttpRequest.Builder builder = client.request(path).header("Content-Type", contentType);
+        if (token != null) {
+            builder.header("Authorization", "Bearer " + token);
+        }
+        if (headers.length > 0) {
+            builder.headers(headers);
+        }
+        return client.send(
+                builder.POST(HttpRequest.BodyPublishers.ofByteArray(body)).build());
+    }
+
+    /**
+     * 確かめの応答から指紋を読む（B6）。
+     *
+     * @param response 確かめの応答（200）
+     * @return 指紋
+     */
+    public static String fingerprintOf(HttpResponse<String> response) {
+        return (String) HttpTestClient.json(response).get("fingerprint");
+    }
+
     private static String query(String name1, String value1, String name2, String value2) {
         StringBuilder query = new StringBuilder();
         append(query, name1, value1);

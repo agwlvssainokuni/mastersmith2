@@ -591,90 +591,90 @@
 ### 9.4 手順（B6）
 
 #### Step 46: 作業の場の用意
-- [ ] B5 を `develop` へ squash で統合し、push の後の CI を確かめた後に、`develop` の先頭から `feature/261004-role-menu-b6` を作る。開始の時点の HEAD を記録する。`git status --short` と E2E の生成物が無いことを確かめる。
+- [x] B5 を `develop` へ squash で統合し、push の後の CI を確かめた後に、`develop` の先頭から `feature/261004-role-menu-b6` を作る。開始の時点の HEAD を記録する。`git status --short` と E2E の生成物が無いことを確かめる。
 - 対応: Testing Contract の「Project structure…」。
 
 #### Step 47: テストの実行の準備
-- [ ] `unit-test-instructions.md` 2節の B6 のコマンドが動くことを確かめる。colima の状態と共有を確かめる。
-- [ ] `application.yaml` に `server.tomcat.max-swallow-size: 11MB` があることと、B1 の記録（dsl-v2 の `code-summary.md` と README）に読み捨ての影響（未認証でも最大 11MB を読み捨てる・スレッドの占有が延びる）が書かれているかを確かめて記録する（基盤の読み直しの R-02）。
+- [x] `unit-test-instructions.md` 2節の B6 のコマンドが動くことを確かめる。colima の状態と共有を確かめる。
+- [x] `application.yaml` に `server.tomcat.max-swallow-size: 11MB` があることと、B1 の記録（dsl-v2 の `code-summary.md` と README）に読み捨ての影響（未認証でも最大 11MB を読み捨てる・スレッドの占有が延びる）が書かれているかを確かめて記録する（基盤の読み直しの R-02）。
 - 対応: Testing Contract の runner の手順。
 
 #### Step 48: 変更の前の基準
-- [ ] Step 3 と同じコマンドで件数とカバレッジを記録する。移行は足さない。
+- [x] Step 3 と同じコマンドで件数とカバレッジを記録する。移行は足さない。
 - 対応: NFR6.4。
 
 #### Step 49: ドメイン — 実装
-- [ ] 9.2 の `role.domain` の追加と、4.6 の B6 の分を `audit` に足す。
+- [x] 9.2 の `role.domain` の追加と、4.6 の B6 の分を `audit` に足す。
 - 対応: BR9.5・BR11.5・BR11.7、C10。
 
 #### Step 50: ドメイン — テスト
-- [ ] 9.3 のドメインの層のテストを書いて流す。
+- [x] 9.3 のドメインの層のテストを書いて流す。
 - 対応: NFR5.5・NFR5.6。
 
 #### Step 51: YAML の部品 — 実装（role.transfer）
-- [ ] 9.2 の `role.transfer` と、上限ちょうどの YAML の生成の部品（13節 Q7: A の Java の1ファイル）を作る。`role.transfer` は DB の部品と `dsl.parse` に依存しない（Jackson の木と `role.domain` と `dsl.service` の `YamlPositions` だけ）。
+- [x] 9.2 の `role.transfer` と、上限ちょうどの YAML の生成の部品（13節 Q7: A の Java の1ファイル）を作る。`role.transfer` は DB の部品と `dsl.parse` に依存しない（Jackson の木と `role.domain` と `dsl.service` の `YamlPositions` だけ）。
 - 対応: BR9.1・BR9.5〜BR9.9・BR9.14、NFR1.9。
 
 #### Step 52: YAML の部品 — テスト
-- [ ] 9.3 の YAML の部品の層のテストを書いて流す。単体テストの結果に `RoleTransferRoundTripPropertyTest` が出ることを確かめる。
+- [x] 9.3 の YAML の部品の層のテストを書いて流す。単体テストの結果に `RoleTransferRoundTripPropertyTest` が出ることを確かめる。
 - 対応: AC3.1.6・AC3.1.12・AC3.1.14・AC3.1.15、BR9.9、NFR3.7（U1・U2 の本物での確かめ）、NFR6.2。
 
 #### Step 53: DB アクセス — 実装
-- [ ] `RoleStore.applyTransfer`（9.2）と、`application.yaml` の `StatementCreatorUtils: OFF`（理由のコメントつき）。
+- [x] `RoleStore.applyTransfer`（9.2）と、`application.yaml` の `StatementCreatorUtils: OFF`（理由のコメントつき）。
 - 対応: BR9.7・BR9.11、NFR1.8・NFR1.11、`reliability-design.md` 2.5。
 
 #### Step 54: DB アクセス — テスト
-- [ ] `RoleStoreTransferBatchIT` を書いて流す。
+- [x] `RoleStoreTransferBatchIT` を書いて流す。
 - 対応: NFR3.2（一部）、NFR3.7（U4）。
 
 #### Step 55: 業務処理 — 実装
-- [ ] `RoleTransferService`・`RoleTransferSlot`・`RoleTransferLimits`・結果の型。入口の WARN は専用の出し方（D-20）。
+- [x] `RoleTransferService`・`RoleTransferSlot`・`RoleTransferLimits`・結果の型。入口の WARN は専用の出し方（D-20）。
 - 対応: 2.13〜2.15、BR9.2〜BR9.13・BR9.15、NFR3.2・NFR3.8、`reliability-design.md` 2.6。
 
 #### Step 56: 業務処理 — テスト
-- [ ] `RoleTransferServiceTest`・`RoleTransferSlotTest`・`RoleTransferAtomicityIT`・`RoleTransferStaleIT`・`RoleTransferBusyIT` を書いて流す。
+- [x] `RoleTransferServiceTest`・`RoleTransferSlotTest`・`RoleTransferAtomicityIT`・`RoleTransferStaleIT`・`RoleTransferBusyIT` を書いて流す。
 - 対応: AC3.1.2〜AC3.1.5・AC3.1.8・AC3.1.10、NFR3.1 (f)・NFR3.2・NFR3.3・NFR3.8。
 
 #### Step 57: API — 実装
-- [ ] `RoleTransferController`・`RoleWebConfig`・`RoleTransferLimitProperties`・DTO。クラスに `@ApiAccess(ADMIN)`。
+- [x] `RoleTransferController`・`RoleWebConfig`・`RoleTransferLimitProperties`・DTO。クラスに `@ApiAccess(ADMIN)`。
 - 対応: AC3.1.1・AC3.1.7・AC3.1.16・AC3.1.17、BR9.2・BR9.4・BR9.13・BR9.14、NFR1.3・NFR1.5・NFR2.9。
 
 #### Step 58: API — テスト（結合）
-- [ ] 9.3 の API の層のテストを書いて流す。テストの JVM のヒープ（1g）が足りなければ止めて依頼者に確かめる（6節 A28）。
+- [x] 9.3 の API の層のテストを書いて流す。テストの JVM のヒープ（1g）が足りなければ止めて依頼者に確かめる（6節 A28）。
 - 対応: AC3.1.1〜AC3.1.17（画面の分を除く）、NFR1.2・NFR1.5・NFR1.7・NFR1.9・NFR2.9・NFR2.11・NFR5.3・NFR5.6、基盤の読み直しの R-01、NFR 設計の読み直しの R-12。
 
 #### Step 59: 境界と構造の検査
-- [ ] `RoleBoundaryArchitectureTest`（B6 の規則）と、Step 14 と同じ一式を流す（B6 の3つの口）。
+- [x] `RoleBoundaryArchitectureTest`（B6 の規則）と、Step 14 と同じ一式を流す（B6 の3つの口）。
 - 対応: NFR1.3・NFR6.5。
 
 #### Step 60: バックエンドの区切りの確かめ
-- [ ] `spotlessApply` の後、`caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流す。
+- [x] `spotlessApply` の後、`caffeinate -i ./gradlew :backend:spotlessCheck :backend:test :backend:integrationTest` を流す。
 - 対応: コミットの区切り B6 の C2 の終わり。
 
 #### Step 61: 負荷の台本と準備の台本
-- [ ] `perf/k6/scenarios.js` に `roleExport`（10 VU・3 分）と `roleTransferLarge`（確かめと適用を別の場面にし、1 VU・1 回。適用は確かめの指紋を `setup()` で受ける。判定は `iteration_duration` の最大で、確かめ 15 秒・適用 30 秒）を足す。準備の場面（1 VU・1 回。DSL の投入と適用、準備の YAML の確かめと適用、グループとメンバー、割り当て）を足す。準備の DSL は `perf/make-large-dsl.mjs`（版 2、100 テーブル × 100 カラム）で作り、対象DB は要らない（6節 A20）。準備の YAML（ロール 1,000、うち1つは1万カラム明示、置き換える先の 25 ロール）と `roleTransferLarge` の 10 MiB の YAML は、上限ちょうどの YAML の生成の部品で作る。
-- [ ] `perf/README.md` の role の節に B6 の分と全体の順を書く: 利用者は手順 2'' の SQL の形（メンバー 1,000 人のグループの利用者、100 のグループに属する利用者、VU ごとの利用者、操作する試験用の管理者。初期管理者は使わない。予約のドメイン）、準備の場面を1回、各場面、**`roleTransferLarge` を最後に流す**（流し直すときは使い捨ての環境を作り直して準備からやり直す。基盤の読み直しの R-05）、台本全体を `caffeinate -i` で包むこと、片付け。
-- [ ] 場面ごとに `k6 inspect --include-system-env-vars` を流し、生成の部品が上限ちょうどの YAML を作れることを記録する。
+- [x] `perf/k6/scenarios.js` に `roleExport`（10 VU・3 分）と `roleTransferLarge`（確かめと適用を別の場面にし、1 VU・1 回。適用は確かめの指紋を `setup()` で受ける。判定は `iteration_duration` の最大で、確かめ 15 秒・適用 30 秒）を足す。準備の場面（1 VU・1 回。DSL の投入と適用、準備の YAML の確かめと適用、グループとメンバー、割り当て）を足す。準備の DSL は `perf/make-large-dsl.mjs`（版 2、100 テーブル × 100 カラム）で作り、対象DB は要らない（6節 A20）。準備の YAML（ロール 1,000、うち1つは1万カラム明示、置き換える先の 25 ロール）と `roleTransferLarge` の 10 MiB の YAML は、上限ちょうどの YAML の生成の部品で作る。
+- [x] `perf/README.md` の role の節に B6 の分と全体の順を書く: 利用者は手順 2'' の SQL の形（メンバー 1,000 人のグループの利用者、100 のグループに属する利用者、VU ごとの利用者、操作する試験用の管理者。初期管理者は使わない。予約のドメイン）、準備の場面を1回、各場面、**`roleTransferLarge` を最後に流す**（流し直すときは使い捨ての環境を作り直して準備からやり直す。基盤の読み直しの R-05）、台本全体を `caffeinate -i` で包むこと、片付け。
+- [x] 場面ごとに `k6 inspect --include-system-env-vars` を流し、生成の部品が上限ちょうどの YAML を作れることを記録する。
 - 対応: NFR2.1・NFR2.4・NFR2.5・NFR2.9・NFR2.10、基盤の Q2: A。
 
 #### Step 62: 文書
-- [ ] README の role の節に B6 の3つの口・YAML の形と上限・指紋・送り方（`application/yaml` とヘッダー）・同時に1つずつ・上限超えの書き出しのヘッダーと分けて読み込むこと、受け入れた制約（分割送信の本文は既存のフィルターが上限まで先に読む（R-11）、本文をゆっくり送る管理者が入口を持ち続ける（R-16）、書き出しと DSL の管理の適用は入口に入らない、読み捨ての影響（Step 47 で B1 の記録に無かったとき、R-02））を書く。「監査ログ（U4）」に B6 の種類と理由を書く。
+- [x] README の role の節に B6 の3つの口・YAML の形と上限・指紋・送り方（`application/yaml` とヘッダー）・同時に1つずつ・上限超えの書き出しのヘッダーと分けて読み込むこと、受け入れた制約（分割送信の本文は既存のフィルターが上限まで先に読む（R-11）、本文をゆっくり送る管理者が入口を持ち続ける（R-16）、書き出しと DSL の管理の適用は入口に入らない、読み捨ての影響（Step 47 で B1 の記録に無かったとき、R-02））を書く。「監査ログ（U4）」に B6 の種類と理由を書く。
 - 対応: NFR2.9、NFR 設計の読み直しの R-11・R-16、基盤の読み直しの R-02。
 
 #### Step 63: 取り残しと変えないものの確かめ
-- [ ] Step 19 と同じ確かめ。`application.yaml` の差が B4 のコメントと B6 の1行だけであること。B4〜B6 を通して lockfile が変わっていないこと（`git diff --stat f9d1134 -- backend/gradle.lockfile frontend/package-lock.json`）。
+- [x] Step 19 と同じ確かめ。`application.yaml` の差が B4 のコメントと B6 の1行だけであること。B4〜B6 を通して lockfile が変わっていないこと（`git diff --stat f9d1134 -- backend/gradle.lockfile frontend/package-lock.json`）。
 - 対応: NFR6.6。
 
 #### Step 64: 記録（B6 の分と単位の全体）
-- [ ] `code-summary.md` の B6 の節と単位の全体のまとめ（計画との差・承認の場で確かめること・後に回すこと（2.2 の記録だけの項目、group の R-05 の H2 の文への依存）・見せるもの）、`traceability.json`（単位の全体。Deferred は U5・U6・U7 と Performance Validation・Observability Setup）、`source-manifest.json`、`generation-notes.md`。
+- [x] `code-summary.md` の B6 の節と単位の全体のまとめ（計画との差・承認の場で確かめること・後に回すこと（2.2 の記録だけの項目、group の R-05 の H2 の文への依存）・見せるもの）、`traceability.json`（単位の全体。Deferred は U5・U6・U7 と Performance Validation・Observability Setup）、`source-manifest.json`、`generation-notes.md`。
 - 対応: Testing Contract の「Documentation and traceability」。
 
 #### Step 65: 1コマンドの検査（統合の前の関門）
-- [ ] Step 21 と同じ。単体テストの結果に4つの `*PropertyTest` があること、`verify` の時間の延び（上限切れと 10 MiB のテスト）を記録する。
+- [x] Step 21 と同じ。単体テストの結果に4つの `*PropertyTest` があること、`verify` の時間の延び（上限切れと 10 MiB のテスト）を記録する。
 - 対応: NFR6.4、`cicd-pipeline.md` 10節の B6 の行。
 
 #### Step 66: E2E
-- [ ] Step 22 と同じ。生成物を消す。
+- [x] Step 22 と同じ。生成物を消す。
 - 対応: `cicd-pipeline.md` 8節。
 
 #### Step 67: コミットの提案・承認の場・統合の提案（B6）

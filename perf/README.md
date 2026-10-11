@@ -611,7 +611,7 @@ docker compose up -d --wait
 
 ## ロールの管理の場面（Intent 261004-role-menu の U4）
 
-`perf/k6/scenarios.js` のロールの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/role/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5・NFR2.10）と `nfr-design/performance-design.md`（2節）。この節は Bolt B4 の4つの場面と、B5 で足した割り当て・作業ロールの6つの場面の分で、権限の受け渡し（B6）の場面と、悪い側のデータを入れる準備の台本は、その Bolt で足す。B4・B5 の場面も、準備の台本（B6 の import の口に頼る）を流した後に、Performance Validation でまとめて流す（`infrastructure-design/cicd-pipeline.md` 5.3）。Code Generation では `k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。
+`perf/k6/scenarios.js` のロールの管理の場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/role/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5・NFR2.10）と `nfr-design/performance-design.md`（2節）。この節は Bolt B4 の4つの場面、B5 で足した割り当て・作業ロールの6つの場面、B6 で足した権限の受け渡しの場面と準備の場面の分。どの場面も、準備の場面（`rolePrepare`。B6 の受け渡しの口で悪い側のデータを入れる）を流した後に、Performance Validation でまとめて流す（`infrastructure-design/cicd-pipeline.md` 5.3）。Code Generation では `k6 inspect`（`--include-system-env-vars` を付ける）で場面の名前・閾値・`setupTimeout` を確かめるだけにする。
 
 | 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
 |---|---|---|
@@ -627,14 +627,14 @@ docker compose up -d --wait
 | `rolePoolLimit`（B5） | VU の番号を 5 で割った余りが 1〜3 の VU は作業ロールの切り替え、4・0 の VU は自分のグループへの割り当てと外しを交互にくり返す（下の 3R'） | 閾値を置かない。`rolePoolLimit_204`・`_409`・`_500`・`_other` の件数と、接続プールの値で判定する |
 
 - **形**: どの場面も `constant-vus`（`VUS` 既定 10・`ROLE_DURATION` 既定 3 分）。繰り返しの中に待ちを置かない。操作が2つ以上の場面は、繰り返しの始めに `exec.vu.metrics.tags.op` に操作の名前を入れる（`op` のタグが `iteration_duration` に付くことは B4 の Code Generation の Step 16 で、要求を送らない台本で確かめた）。`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため、要約に並べて記録するだけにする（閾値 `max>=0` は表示のため）。
-- **データ**: 悪い側のロール（名前 `ROLE_WORST_NAME`、既定 `perf-role-worst`）と、版 2 の DSL のスキーマ `ROLE_TREE_SCHEMA`（既定 `perf`）・100 カラムのテーブル `ROLE_TREE_TABLE`（既定 `perf_t001`）は、B6 で足す準備の台本が入れる。名前を変えたときは、同じ値を `-e` で k6 に渡す。台本は一覧のページを順に読んでロールの ID を名前で探し、見つからなければ始める前に止まる。
+- **データ**: 悪い側のロール（名前 `ROLE_WORST_NAME`、既定 `perf-role-worst`）と、版 2 の DSL のスキーマ `ROLE_TREE_SCHEMA`（既定 `large`）・100 カラムのテーブル `ROLE_TREE_TABLE`（既定 `t_001`）は、準備の場面 `rolePrepare`（下の B6 の手順）が入れる（既定の名前は B6 で `perf/dsl-timing.sh` が生成する DSL の名前にそろえた）。名前を変えたときは、同じ値を `-e` で k6 に渡す。台本は一覧のページを順に読んでロールの ID を名前で探し、見つからなければ始める前に止まる。
 - **トークン**: 操作する管理者は試験用の管理者 `perf-roleop01`（初期管理者は使わない。手順 2'' の SQL の形で入れる）。setup の最後にトークンを取り直し、場面は 3 分までにする（アクセストークンは 5 分で切れる）。setup の時間の上限は 10 分（`setupTimeout`）。
 - **名前**: ロールの名前の鍵は大文字と小文字を区別せず全体で一意のため、作る名前は実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。
 - **利用者の側の場面（B5）**: 作業ロールと自分の権限の場面、割り当ての場面は、グループの管理の節の 2G で入れたメンバーの候補 `perf-gr-0001`〜（パスワードは `PERF_USER_PASSWORD`）を VU の番号の順に使う。setup が操作する管理者の API でロール・グループを作って割り当て、最後に利用者のトークンを VU ごとに取る。作業ロールの切り替えと割り当ては使い捨ての環境の監査に残る。
 - 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
 
 ```bash
-# B4 の場面の流し方（準備の台本は B6 で足す。前提: グループの管理の節の 0・1・1G と同じ用意、perf-roleop01 を入れてあること）
+# B4・B5 の場面の流し方（先に B6 の準備の場面 rolePrepare を1回流す。下の B6 の手順の role-b6-run.sh がこの台本も呼ぶ。前提: グループの管理の節の 0・1・1G と同じ用意、perf-roleop01 を入れてあること）
 cat > "$D/role-run.sh" <<'EOS'
 D="$1"
 for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps \
@@ -667,3 +667,51 @@ grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.j
 #   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events
 #     WHERE event_type LIKE 'ROLE_%' OR event_type = 'WORK_ROLE_SWITCHED' GROUP BY event_type, result, failure_reason
 ```
+
+### 権限の受け渡しの場面と準備の場面（B6）
+
+目標の出典は `construction/role/nfr-requirements/performance-requirements.md` の NFR2.4（上限ちょうどの YAML の確かめ 15 秒・適用 30 秒）・NFR2.5（書き出し）と `scalability-requirements.md` の NFR2.9、`nfr-design/performance-design.md` 2.3。
+
+| 場面 | すること | 判定（閾値は緩めない） |
+|---|---|---|
+| `rolePrepare` | 1 VU・1 回。`DSL_FILE` の版 2 の DSL を投入して適用し、準備の YAML を台本の中で作って確かめ・適用する（下の「準備のデータ」） | `checks{scenario:rolePrepare}` の率 1 |
+| `roleExport` | 書き出し（200）。10 VU・3 分（`ROLE_DURATION`） | `iteration_duration{scenario:roleExport}` の p95 < 1000 ms と `checks` の率 1 |
+| `roleTransferLargeCheck` | 上限ちょうど（10,485,760 バイト）の YAML（`ROLE_YAML_FILE`）の確かめ（200）。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeCheck}` の最大 < 15000 ms と `checks` の率 1 |
+| `roleTransferLargeApply` | 同じ YAML の適用（200。置き換え 25 ロール × 1万カラム）。setup で同じ YAML を確かめて指紋を受ける。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeApply}` の最大 < 30000 ms と `checks` の率 1 |
+
+- **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00025`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`。スキーマの主権限 NONE だけ）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
+- **DSL**: `perf/dsl-timing.sh` が対象DB の 100 テーブル × 100 カラムのスキーマ `large` から生成した版 2 の DSL（`<結果の置き場>/postgres/generated.yaml`）を `DSL_FILE` で渡す。生成には対象DB が要るが、使い捨ての環境の準備と各場面は対象DB を要らない（DSL の適用は対象DB に接続しない。プレビューの照合は届かなくても警告になるだけ。基盤の読み直しの R-07）。生成した DSL が手元にあれば作り直さなくてよい。
+- **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00025` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 10,485,760 バイトちょうどにする。名前は既定の短い形（`c_001`）のため、中身は上限の約 6 割で、残りはコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
+- **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 25 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
+- **メモリ**: 上限ちょうどの YAML の確かめ・適用は、テストの JVM ではなく配備と同じ形（コンテナの上限 2g・最大ヒープの割合 50%）の使い捨てのアプリで流し、確かめ・適用の間のヒープの最大（`/actuator/metrics/jvm.memory.used?tag=area:heap` を数秒ごと）と OOMKilled の有無を記録する（単体・結合のテストでは、節の上限の境界を Spring を起動しない単体テストで確かめた。依頼者の決定 A）。
+- 台本の全体を `caffeinate -i` で包む。権限の受け渡しの適用は使い捨ての環境の監査に `ROLE_TRANSFER_APPLIED` として残る。
+
+```bash
+# 前提: グループの管理の節の 0・1・1G・2G と同じ用意（perf-roleop01 を入れてあること）。生成した版 2 の DSL を用意する
+#   （手元に無ければ: KEEP=1 MASTERSMITH_IMAGE_TAG=perf-dsl OUT_DIR="$PWD/build/perf-results/dsl-k6" ./perf/dsl-timing.sh postgres の後に片付ける）
+GEN=build/perf-results/dsl-k6/postgres/generated.yaml
+mkdir -p build/perf-results/role-data && cp "$GEN" build/perf-results/role-data/dsl.yaml
+java backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java \
+  build/perf-results/role-data/large-10mb.yaml 25 10000 0 10485760 large t_ 100 perf_large_ c_
+wc -c build/perf-results/role-data/large-10mb.yaml   # 10485760 であること
+
+cat > "$D/role-b6-run.sh" <<'EOS'
+D="$1"
+k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/role-data:/data:ro" \
+    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
+}
+k6r rolePrepare -e SCENARIO=rolePrepare -e DSL_FILE=/data/dsl.yaml
+zsh "$D/role-run.sh" "$D"                                   # B4・B5 の場面（上の手順）
+k6r roleExport -e SCENARIO=roleExport
+k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-10mb.yaml
+k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-10mb.yaml
+EOS
+caffeinate -i zsh "$D/role-b6-run.sh" "$D"
+#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type = 'ROLE_TRANSFER_APPLIED'
+#     GROUP BY event_type, result, failure_reason
+```
+

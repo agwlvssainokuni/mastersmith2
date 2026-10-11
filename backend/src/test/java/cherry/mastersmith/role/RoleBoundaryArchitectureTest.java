@@ -47,6 +47,8 @@ import org.junit.jupiter.api.Test;
  *   <li>トランザクションの境界は {@code role.service} の {@code TransactionTemplate} だけ（{@code @Transactional} を付けない）
  *   <li>{@code group.service} のうち使ってよいのは、role に出す口（{@code GroupMembershipQuery}・{@code GroupDeletionGuard}）とその型
  *       （{@code DeletionDecision}・{@code GroupRowLock}・{@code GroupSummary}）だけ（B5）
+ *   <li>{@code role.transfer}（権限の YAML の純粋な部品）は DB の部品（{@code EntityManager}・{@code JdbcTemplate}・
+ *       {@code role.repository}・{@code role.store}）と {@code dsl.parse} に依存しない（B6）
  * </ul>
  *
  * <p>規則が空振りしないよう、各規則に「規則が依存を見分けている」ことの確かめを添える（既存の境界テストと同じ形）。既存の全体の決まり
@@ -293,6 +295,33 @@ class RoleBoundaryArchitectureTest {
                 .isTrue();
         assertThat(CLASSES.contain("cherry.mastersmith.group.service.GroupAdminService"))
                 .as("規則が依存を見分けている（group.service には口の外の業務処理がある）")
+                .isTrue();
+    }
+
+    @Test
+    @DisplayName("role.transfer depends on no database part and not on dsl.parse (B6)")
+    void transferIsPure() {
+        noClasses()
+                .that()
+                .resideInAPackage("cherry.mastersmith.role.transfer..")
+                .should()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("jakarta.persistence.EntityManager")
+                .orShould()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.jdbc.core.JdbcTemplate")
+                .orShould()
+                .dependOnClassesThat()
+                .resideInAnyPackage(REPOSITORY, STORE, "cherry.mastersmith.dsl.parse..")
+                .check(CLASSES);
+        assertThat(dependsOnPackage("cherry.mastersmith.role.transfer", "cherry.mastersmith.dsl.service"))
+                .as("規則が依存を見分けている（transfer は dsl.service の位置を引く口を使っている）")
+                .isTrue();
+        assertThat(dependsOnPackage("cherry.mastersmith.dsl.service", "cherry.mastersmith.dsl.parse"))
+                .as("規則が依存を見分けている（dsl.service は dsl.parse を使っている）")
+                .isTrue();
+        assertThat(dependsOnClass("cherry.mastersmith.role.store", "org.springframework.jdbc.core.JdbcTemplate"))
+                .as("規則が依存を見分けている（store は実際に JdbcTemplate を使っている）")
                 .isTrue();
     }
 }

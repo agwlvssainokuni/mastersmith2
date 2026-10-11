@@ -77,5 +77,7 @@ public enum AuditFailureReason {
     /** 適用済みの DSL が無いときの権限の保存（Intent 261004-role-menu の U4）。 */
     DSL_NOT_APPLIED,
     /** 割り当ての外・存在しないロールへの作業ロールの切り替え（Intent 261004-role-menu の U4）。 */
-    ROLE_NOT_ASSIGNED
+    ROLE_NOT_ASSIGNED,
+    /** 権限の YAML の適用で、確かめの後にロール・設定・DSL が変わった（指紋の不一致。Intent 261004-role-menu の U4）。 */
+    ROLE_TRANSFER_STALE
 }

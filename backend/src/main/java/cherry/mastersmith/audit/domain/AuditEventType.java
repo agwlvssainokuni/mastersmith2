@@ -91,5 +91,10 @@ public enum AuditEventType {
     /** 利用者・グループからロールの割り当てを外した（Intent 261004-role-menu の U4）。 */
     ROLE_UNASSIGNED,
     /** 自分の作業ロールを切り替えた（Intent 261004-role-menu の U4。何も変えない切り替えは残さない）。 */
-    WORK_ROLE_SWITCHED
+    WORK_ROLE_SWITCHED,
+    /**
+     * 権限の YAML を適用した（Intent 261004-role-menu の U4。1回の適用を1行にし、対象の列は空で detail にロールごとの要約。確かめと
+     * 書き出しは残さない）。
+     */
+    ROLE_TRANSFER_APPLIED
 }

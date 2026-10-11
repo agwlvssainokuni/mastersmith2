@@ -1,6 +1,6 @@
 # コードの要約（Code Summary）— U4 ロール（role）
 
-この単位は3つの Bolt（B4・B5・B6）で作る（計画 3節）。この文書は Bolt ごとの節を足していき、B6 の後に単位の全体のまとめを書く。
+この単位は3つの Bolt（B4・B5・B6）で作る（計画 3節）。この文書は Bolt ごとの節と、最後に単位の全体のまとめを持つ。
 
 ## B4 ロールと権限の設定
 
@@ -231,3 +231,183 @@ curl -s "${M[@]}" "$B/api/me/permissions/tables?schema=<schema>"           # 200
 curl -s "${H[@]}" -X DELETE "$B/api/admin/roles/<営業のroleId>"            # 409 ROLE_IN_USE と数
 unset T U
 ```
+
+## B6 権限の受け渡し（書き出し・確かめ・適用）
+
+コミットは依頼者の承認を得て計画 3節の区切りで行う（B6 は C1〜C3）。develop へは squash で1コミットになる。
+
+- 計画: `code-generation-plan.md`（同じディレクトリの 9節）。13節の Q1〜Q9 と D-11・D-12 は A。
+- Step ごとのコマンドと結果: `generation-notes.md` の「B6」。
+- 方法: test-after。層ごとに実装を書き、同じ Bolt の中でその層のテストを書いて流した。
+- 作業ブランチ: `feature/261004-role-menu-b6`（`develop` の b1c2760 から）。
+
+### B6.1 作ったもの・変えたもの
+
+アプリのソースの道の一覧は `source-manifest.json`（B6 で 56 を足し、合わせて 251）。移行は足していない（V1〜V12 のまま）。
+
+- **`role.domain`**:
+  - 既存の型に足したもの: `RoleOperation.APPLY_TRANSFER`、`RoleAuditFailure.ROLE_TRANSFER_STALE`、`RoleRejection.TRANSFER_STALE`、`RoleProblemTypes`（`ROLE_TRANSFER_INVALID` 400・`ROLE_TRANSFER_STALE` 409）、`RoleAuditDetail`（`Transfer`・`TransferSummary`・`TransferRole`）、`RoleAuditEvent.transferApplied`。
+  - 新しい型: `TransferAction`、`TransferError`（理由 13・行・列・場所。入れた値は持たない）。
+- **`role.transfer`**（新しい。TraceAspect の対象の外、DB と `dsl.parse` に依存しない）:
+  - 読み込みと検証 `RoleTransferReader`、書き出し `RoleTransferWriter`、変わる点の一覧 `TransferPlanner`、指紋 `TransferFingerprint`、並べ方 `TransferOrder`。
+  - 中身を伏せる受け渡しの型: `RoleTransferPayload`・`RoleTransferTree`・`RoleTransferDocument`・`TransferPlan`・`TransferRolePlan`・`TransferChange`・`TransferErrors`・`TransferRoleSettings`。
+- **`role.repository`**: 書き出しと照らし合わせの読み取り（`findAllKeys`・`findAllOrderByRole`・`findAllOfRoles`）と、射影 `RoleKeyView`・`RoleSettingRow`。
+- **`role.store`**: `RoleStore.applyTransfer`。新しいロールは JPA で作って flush し、設定の行は `JdbcTemplate` で消してから 1,000 件ずつのバッチで書く（文の上限は 10 秒）。あわせて `TransferWrite`・`TransferWritten`。
+- **`role.service`**: `RoleTransferService`（`export`・`check`・`apply`。判定の順は NFR3.8）、入口 `RoleTransferSlot`（`Semaphore(1)`）、`RoleTransferLimits`（深さ 10・コレクションの別名 0・節 1,000,000・大きさは設定）、`RoleTransferBody`、結果の型。
+- **`role.web`**: `RoleTransferController`（`ADMIN` の3つの口）、`RoleWebConfig`（上限の Bean と、確かめと適用の道の `RequestBodyLimitRoute`）、`RoleTransferLimitProperties`、`RoleTransferPaths`、DTO（`TransferCheckResponse`・`TransferResultResponse`・`TransferErrorItem`）。
+- **`audit`**: `ROLE_TRANSFER_APPLIED`、`ROLE_TRANSFER_STALE`、写し方、受け取り、detail の JSON（16,384 文字を超えると要約に替える）。
+- **`application.yaml`**: `org.springframework.jdbc.core.StatementCreatorUtils: OFF` と、その理由のコメント。
+- **`role/package-info.java`**: 説明を今の作りに合わせて直した（コメントだけ。依頼者の決定）。
+- **テスト**:
+  - `role/transfer` に単体 5 クラス。`role/service`・`role/store`・`role/web` に結合 9 クラス。
+  - 手伝い: `LargeRoleTransferYaml`（1ファイルで起動できる上限ちょうどの YAML の生成。テストつき）、`TransferYamlTrees`、`FailingSettingTrigger`、`RawTransferPost`。
+  - 既存のテストに B6 の分を足した: `RoleAdminAuthorizationApiIT`、`RoleSecretLeakIT`、`RoleConnectionUsageIT`、`RoleBusyLogTraceIT`、`RoleBoundaryArchitectureTest`、`RoleApi`、domain と audit のテスト。
+- **負荷の道具と文書**:
+  - `perf/k6/scenarios.js`: `rolePrepare`・`roleExport`・`roleTransferLargeCheck`・`roleTransferLargeApply` を足した。
+  - `perf/README.md`: B6 の場面と、流す順番を書いた。
+  - `README.md`: 「権限の受け渡し（B6）」と監査の種類を書いた。
+
+### B6.2 実装で決めたこと
+
+- **判定の順（NFR3.8）**: 次の順で判定する。
+  1. 本文の型と大きさ（web と既存のフィルター）
+  2. 入口（取れなければ `ROLE_BUSY` と WARN 1回。監査には残さない）
+  3. DSL の有無
+  4. 本文を上限まで読む
+  5. 上限つきの読み込み
+  6. 中身の検証
+  7. （適用だけ）置き換えるロールの行を ID の昇順に排他し、DSL を確かめ直し、一覧を作り直して指紋を照らす
+  8. 書き込み
+  9. 成功の出来事
+
+  拒否したときは1つ目のトランザクションを巻き戻し、2つ目のトランザクションで失敗の出来事を出す。入口は `finally` で必ず放す。
+- **排他の前に消えたロール**: 飛ばす。作り直した一覧の置き換え先に排他できなかったロールがあれば、`ROLE_TRANSFER_STALE` にする。
+- **YAML の読み方**:
+  - 版は整数の 1 だけを受け付ける。版が誤りなら、その1件だけを返す。
+  - 入れ子の値は対応表だけを受け付ける。
+  - 名前の誤りとロールの重なりがあった所の下は、確かめない。
+  - カラムの `create`・`delete` は `COLUMN_AUX_NOT_ALLOWED` にする。
+- **書き出しの二重引用符**: `security-design.md` 5節の一覧より広い側で囲む（読み込みで同じ名前に戻すため）。
+- **指紋**: 項目を「文字数:値;」で区切って SHA-256 を取る。
+- **書き出しの読み取り**: 書き出しは入口に入らない。
+
+### B6.3 テストの量とカバレッジ
+
+**1コマンドの検査（Step 65）**: colima の共有を確かめ、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流した実測の値（BUILD SUCCESSFUL in 13m 49s。B5 の 13 分 30 秒から約 19 秒延びた）。
+
+- バックエンドは、単体 232 クラス・2,015 件（B5 の 1,914 件から +101）、結合 214 クラス・1,109 件（1,061 件から +48）。失敗 0・飛ばし 0。
+- 対象DB のテストの SKIPPED は 0 件で、「コンテナの実行環境」の警告も 0 件だった。
+- 単体テストの結果に、role の4つの `*PropertyTest` がある（B5 の3つに `RoleTransferRoundTripPropertyTest` が加わった）。
+- 画面は 113 ファイル・1,043 件 passed（B6 は `frontend/` に触れていない）。Gitleaks は漏えいなし。OSV-Scanner は lockfile が変わっていないため UP-TO-DATE（前回の合格のまま）。
+
+| パッケージ | 行 | 分岐 |
+|---|---|---|
+| `role.domain` | 93.8% → 94.2% | 85.0% → 85.4% |
+| `role.repository` | 100.0% → 95.0% | 100.0% |
+| `role.store` | 97.2% → 97.5% | 90.3% → 90.6% |
+| `role.service` | 96.5% → 96.6% | 89.7% → 90.3% |
+| `role.web` | 95.6% → 96.0% | 86.2% → 86.0% |
+| `role.transfer`（新しい） | 97.8% | 91.6% |
+| `audit.domain` | 99.5% → 99.6% | 95.1% → 94.7% |
+| `audit.service` | 99.6% | 84.5% |
+| 全体 | 98.0% → 97.9% | 92.5% → 92.4% |
+
+（矢印の左は Step 48 の変更の前の値。）どのパッケージも下限（行 80%・分岐 70%）を満たす。新しいパッケージ `role.transfer` は、自動でパッケージごとの下限の対象になる。
+
+**E2E（Step 66）**: 全体を1回流し、177 passed（6.8m）、失敗 0。報告の確かめの道具の結果は「残してはならない値は含まれていません（見つかった件数 0）」。報告のフォルダーは消した。
+
+**節の上限**: 境界（1,000,000 と 1,000,001）は単体テストで確かめた。API での確かめは、上限の Bean の値の確かめだけである（B6-12）。結合テストの全体の実行の中で、API に 100 万の節を送ると OutOfMemoryError が起きた事実は、B6.5 の 1 と B6.6 のとおり Performance Validation に引き継ぐ。
+
+### B6.4 計画との差
+
+| ID | 差 | 理由 |
+|---|---|---|
+| B6-1 | `TransferAction` と `RoleAuditDetail.TransferRole` を足した（計画の 9.2 に無い） | 適用の detail に、ロールごとの要約の形が要るため。`role.transfer` と `role.domain` で同じ区分を使うため |
+| B6-2 | 適用の detail の `fileSha256` は、本文を読む前の拒否（`DSL_NOT_APPLIED`）では null にした。`fingerprint` は、成功では一致した指紋、拒否では要求の指紋 | 本文を読んでいない時点では、SHA-256 が無いため |
+| B6-3 | `TransferError.path` は、キーを点でつないだ形（例 `roles.営業.schemas.SALES`）にした。`entities.md` の例は斜線の形（`/roles/営業/...`） | 読み込みの部品の拒否（`SafeYamlResult.Rejected.path`）と DSL の誤りの一覧が点の形で、1つの応答の中の形をそろえるため |
+| B6-4 | `errors` の1件を record `TransferErrorItem` にした。`RoleAuditDetail.Transfer`・`TransferSummary`・`TransferRole` と `RoleKeyView`・`RoleSettingRow` の `toString` は、数と ID だけを出す形にした（**TRACE の漏えいの直し**） | `RoleSecretLeakIT` で、共通の誤りの応答の変換（`common.error.web` の `ErrorResponseFactory`・`GlobalExceptionHandler`）が TRACE で追加の項目を文字列にし、ロールと対象の名前がログに出ると分かったため。`common` は変えていない |
+| B6-5 | `role.repository` に読み取り3つと射影2つを足した。`RoleStore` のコンストラクターに `JdbcTemplate` を足した | 書き出しと照らし合わせに読み取りが要るため（後者は計画の 9.2 のとおり） |
+| B6-6 | `RoleWebConfig`・`RoleTransferLimitProperties`・`RoleTransferPaths` を、Step 57 ではなく Step 55 で作った | 業務処理が上限の Bean を要り、Step 56 の結合テストで Spring を起動するため |
+| B6-7 | 分割送信で本文を上限より多く読めたときと、読み込みの部品の `TOO_LARGE` は、どちらも 413 の結果にした | 大きさの誤りを1つの形にそろえるため |
+| B6-8 | 上限ちょうどの YAML の生成の部品のテストを、ロール 20・1万カラム・名前 30 文字の形にした（計画の例はロール 26） | 26 では中身だけで 10 MiB を超えるため |
+| B6-9 | `FailingSettingTrigger` を、H2 のソースのトリガー（`CREATE TRIGGER … AS $$…$$`）にした | H2 がテストのコンパイルの依存に無く、ビルドの設定を変えないため |
+| B6-10 | `RoleTransferStaleIT` の「DSL の適用し直し」を、`ActiveDslModelHolder` の差し替えで起こした。適用・確かめ・重なりの結合テスト3つは `role/service` に置いた | 業務処理の層の結合テストのため（`unit-test-instructions.md` 6節との差） |
+| B6-11 | 作るロールの名前の重なりは、API では鍵の待ちの上限切れの `ROLE_BUSY` で確かめた。`ROLE_NAME_DUPLICATE` に読み替える経路は `RoleTransferServiceTest` だけで確かめた | 作り直しと書き込みの間に待ち合わせの口が無く、API からは決まった形で起こせないため |
+| B6-12 | **節の上限の確かめ（依頼者の決定 A と A'）**: 境界（1,000,000 は受け付け、1,000,001 は拒否）は、Spring を起動しない単体テスト `RoleTransferReaderTest#expandedNodeBoundary`（本物の `SafeYamlReader` と `RoleTransferReader`）で確かめた。API で 100 万の節を送る確かめは消し、`RoleTransferLimitsApiIT#expandedNodeLimit` で、上限の Bean が 1,000,000 を `SafeYamlLimits` に渡すことだけを確かめる。ビルドの設定は変えていない | 結合テストの全体の実行の中で、100 万の節を API に送ると `OutOfMemoryError: Java heap space` で 500 になったため（2回。テストの JVM のヒープ 1g を多くの Spring のアプリと分け合う中で起きた。名指しの実行では通った）。コレクションの別名を 0 にしているので、節を 100 万にするには本文に実際に 100 万の節が要り、小さい木では作れなかった |
+| B6-13 | `role/package-info.java` の B3 の時点の説明を、今の作りに合わせて直した（コメントだけ） | 依頼者の決定（計画に無い変更） |
+| B6-14 | 準備の YAML は、生成の部品ではなく k6 の台本の中で作る。準備の DSL は、`perf/make-large-dsl.mjs` ではなく `perf/dsl-timing.sh` が生成した 100 × 100 の DSL をそのまま使う。準備の場面ではグループ・メンバー・割り当てを作らない | 悪い側のロールには READ と FULL を交互に明示する形が要るため。`make-large-dsl.mjs` は名前の形を変えるため。B5 の各場面の setup がグループ・メンバー・割り当てを作るため（依頼者の決定 A で受け入れた） |
+| B6-15 | k6 の `ROLE_TREE_SCHEMA`・`ROLE_TREE_TABLE` の既定を `perf`・`perf_t001` から `large`・`t_001` に替えた。`LargeRoleTransferYaml` の既定の名前も同じく替え、カラムの名前の頭を渡す引数を足した | 準備の DSL の名前に合わせるため（B4・B5 の場面にも効く） |
+
+### B6.5 承認の場で確かめたいこと
+
+**依頼者の答え（B6 の作業の中）**:
+- Step 60 の OOM には A（境界を単体テストへ移す）、続けて A'（API の 100 万の節の確かめを消し、上限の Bean の確かめにする）。
+- `package-info` の直しは A。
+- Step 61 の計画との差 1〜3 は A（受け入れる）。
+
+承認の場で確かめたいのは次の点です。
+
+1. **テストの中の OutOfMemoryError と Performance Validation への引き継ぎ**（B6-12）: 結合テストの全体の実行の中で、100 万の節の YAML を API に送ると、テストの JVM のヒープ（1g）が尽きた（2回）。配備したアプリの最大ヒープも約 1g（コンテナの上限 2g の 50%）のため、**10 MiB の本文1つでヒープが尽きないか**と、100 万の節を API に送る確かめを、Performance Validation の `roleTransferLargeCheck`・`roleTransferLargeApply` で必ず確かめる。それまでは、確かめていない危険として残る。
+2. **`TransferError.path` の点の形**（B6-3）: `entities.md` の例の斜線の形と違う。U6 の画面は点の形で読む前提になる。
+3. **作るロールの名前の重なり**（B6-11）: `ROLE_NAME_DUPLICATE` への読み替えを、単体テストだけで確かめた形でよいか。
+4. **受け入れた制約**（README の「権限の受け渡し（B6）」）でよいか。
+   - 分割送信の本文は、既存のフィルターが上限まで先に読む（R-11）。
+   - 本文をゆっくり送る管理者は、その間入口を持ち続ける（R-16）。
+   - 書き出しと DSL の管理の操作は、入口に入らない。
+   - 未認証の要求でも、最大 11MB の本文を読み捨てる（R-02）。
+5. **k6 の既定の名前の変更**（B6-15）: B4・B5 の場面の前提も `large`・`t_001` になる。
+6. そのほかの差（B6-1・B6-2・B6-4〜B6-10・B6-14）。
+
+### B6.6 後に回すこと・引き継ぎ
+
+- **Performance Validation**:
+  - 準備の場面を1回流した後に、B4・B5 の場面、`roleExport`、`roleTransferLargeCheck`・`roleTransferLargeApply` の順に流す（最後の2つは、流し直すときに環境を作り直す）。
+  - 上限ちょうどの YAML の確かめと適用は、配備と同じ形（コンテナの上限 2g・最大ヒープ 50%）の使い捨てのアプリで流す。ヒープの最大（`jvm.memory.used`）と OOMKilled の有無を記録する（上の 1。テストの中で OutOfMemoryError が起きた事実を前提に、必ず確かめる）。
+  - AC3.1.17・NFR2.4・NFR2.5 などの時間の目標は、`traceability.json` で Performance Validation へ Deferred にした。
+- **U6 role-admin-ui**: 確かめの一覧の画面と拒否の表示（AC3.1.9〜AC3.1.11 の画面の分）。`errors[].path` は点の形で読む。
+- **group の R-05（H2 の例外の文への依存）**: B4.6 のとおり、学びの段で諮る。
+
+### B6.7 見せるもの（`curl` の手順）
+
+開発時の起動か、ビルドした WAR で行う。DSL を適用しておく。操作は監査に残るため、配備した環境では行わない。`$T` は管理者のアクセストークン（値を記録に残さない）。
+
+```bash
+B=http://localhost:8080; A=(-H "Authorization: Bearer $T" -H "Origin: $B")
+curl -s "${A[@]}" -o roles.yaml -D - "$B/api/admin/role-transfer/export"        # 200、添付 role-permissions.yaml
+curl -s "${A[@]}" -H 'Content-Type: application/yaml' --data-binary @roles.yaml \
+  "$B/api/admin/role-transfer/check"                                           # 200、fingerprint と roles（変わる点なし）
+FP=<確かめの fingerprint>
+curl -s "${A[@]}" -H 'Content-Type: application/yaml' -H "X-Role-Transfer-Fingerprint: $FP" \
+  --data-binary @roles.yaml "$B/api/admin/role-transfer/apply"                 # 409 ROLE_NO_CHANGE（往復で変わらない）
+# roles.yaml の1つのロールの main を書き換え、check → apply すると 200 と created・replaced
+unset T FP
+```
+
+## 単位の全体のまとめ（U4 role、B4〜B6）
+
+- **作ったもの**:
+  - ロールと権限の設定（B4）。
+  - 割り当て・作業ロール・実効の権限の解決の口（B5、契約 C5）。
+  - 権限の YAML の書き出し・確かめ・適用（B6）。
+  - API は合わせて 24 の口（B4 10・B5 11・B6 3）。どの口も、401・403・200 の表で確かめた。
+  - 移行は V11・V12。監査の種類は 8（`ROLE_*`・`WORK_ROLE_SWITCHED`）。
+- **パッケージ**: `role.domain`・`role.repository`・`role.store`・`role.service`・`role.web`・`role.transfer`。どれもパッケージごとの下限（行 80%・分岐 70%）の対象（値は B4.3・B5.3・B6.3）。
+- **依頼者がすでに答えた点**:
+  - B4.5 の 1〜6: 1 は A（文字列1つのまま）。2〜4 は受け入れ。5 は受け入れ（B5 で数える）。6 は再現しないものとして記録して進める。
+  - B5.5 の 1〜4: 1 は A。2 は detail を残さない。3 は U6 の設計で扱う。4 はテストを足さない。
+  - B5-1: `GroupAdminListQueryCountIT` の期待を直す（決定 A）。
+  - B6 の作業の中: Step 60 は A と A'、`package-info` の直しは A、Step 61 の差 1〜3 は A。
+- **承認の場で確かめる点**:
+  - B4.5 の 7: B4-1〜B4-5・B4-9・B4-12〜B4-15。
+  - B5.5 の 5: B5-1〜B5-3・B5-5・B5-7〜B5-14。
+  - B6.5 の 1〜6。とくに次の2点。
+    - テストの中の OutOfMemoryError と、配備した形での大きい YAML のメモリを、Performance Validation で必ず確かめること。
+    - `path` の点の形。
+- **後に回すこと**:
+  - **U5 navigation**: 業務のメニュー。`EffectivePermissionResolver` を使う。
+  - **U6 role-admin-ui**: 画面と、確かめの一覧の表示。
+  - **U7 app-frame-ui**: 作業ロールの表示。
+  - **Performance Validation**: k6 の全場面と、大きい YAML のメモリ。
+  - **Observability Setup**: NFR5.4。
+  - **記録だけの項目**: H2 の例外の文への依存（group の R-05）と、想定外の DB の例外の手がかり（B4.6）。
+- **traceability.json**: 単位の全体で 263 件。OK 212・Deferred 47・N/A 4。OK の target は既存の1ファイルを指す（括弧の中は補足）。Deferred は U3（済み）・U5・U6・U7・Performance Validation・Observability Setup。

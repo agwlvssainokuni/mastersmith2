@@ -27,6 +27,7 @@ import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
 import cherry.mastersmith.group.testsupport.UncommittedWrite;
+import cherry.mastersmith.role.service.RoleTransferSlot;
 import cherry.mastersmith.role.testsupport.RoleActors;
 import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.role.testsupport.RoleApi;
@@ -74,6 +75,9 @@ class RoleBusyLogTraceIT {
     /** WARN に出てよい項目（ログの共通の項目と、排他の種類・例外のクラスの名前）。 */
     private static final Set<String> ALLOWED_KEYS = Set.of(
             "timestamp", "level", "logger", "thread", "message", "traceId", "spanId", "lockKind", "exceptionClass");
+
+    @Autowired
+    RoleTransferSlot slot;
 
     @TempDir
     static Path tempDir;
@@ -170,5 +174,34 @@ class RoleBusyLogTraceIT {
                 .doesNotContain(RoleFixtures.name(keyName).key())
                 .doesNotContain("Timeout trying to lock")
                 .doesNotContain("Unique index or primary key violation");
+    }
+
+    @Test
+    @DisplayName("a check refused at the transfer slot has one warning with its trace id and only the lock kind (R-12)")
+    void slotWarning(CapturedOutput output) {
+        int offset = output.getOut().length();
+        HttpResponse<String> response;
+        assertThat(slot.tryAcquire()).isTrue();
+        try {
+            response = api.check(admin.token(), "version: 1\nroles:\n  LEAKCHECK_ROLE_7f3a: {}\n");
+        } finally {
+            slot.release();
+        }
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(409);
+        Map<String, Object> body = HttpTestClient.json(response);
+        assertThat(body).containsEntry("code", "ROLE_BUSY");
+        String logs = output.getOut().substring(offset) + output.getErr();
+        List<Map<String, Object>> warnings = JsonLogRecords.parse(logs).stream()
+                .filter(record -> "権限の受け渡しの入口を取れませんでした".equals(record.get("message")))
+                .filter(record -> String.valueOf(body.get("traceId")).equals(record.get("traceId")))
+                .toList();
+        assertThat(warnings).hasSize(1);
+        assertThat(warnings.getFirst())
+                .containsEntry("level", "WARN")
+                .containsEntry("lockKind", "ROLE_TRANSFER_SLOT")
+                .doesNotContainKey("exceptionClass");
+        assertThat(ALLOWED_KEYS).containsAll(warnings.getFirst().keySet());
+        assertThat(logs).doesNotContain("LEAKCHECK_ROLE_7f3a");
     }
 }

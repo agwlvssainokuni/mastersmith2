@@ -22,6 +22,7 @@ import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.RoleAuditDetail;
 import cherry.mastersmith.role.domain.RoleAuditDetail.PermissionChange;
+import cherry.mastersmith.role.domain.TransferAction;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -140,5 +141,54 @@ class AuditRoleDetailJsonTest {
                         + "\"storedBeforeRoleId\":null}");
         assertThat(json(AuditDetailJson.ofRole(new RoleAuditDetail.WorkRoleSwitch(3L, "経理", "営業", 9L))))
                 .isEqualTo(Map.of("fromRoleId", 3, "fromRoleName", "経理", "toRoleName", "営業", "storedBeforeRoleId", 9));
+    }
+
+    private static RoleAuditDetail.TransferRole transferRole(String name, int index) {
+        return new RoleAuditDetail.TransferRole(name + index, (long) index, TransferAction.REPLACE, 3, 2, 1, 1);
+    }
+
+    @Test
+    @DisplayName(
+            "a transfer has the file hash, the fingerprint and the per role counts with null for a created role id")
+    void transfer() {
+        String detail = AuditDetailJson.ofRole(new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                List.of(new RoleAuditDetail.TransferRole("営業", null, TransferAction.CREATE, 4, 0, 0, 1))));
+
+        assertThat(detail)
+                .isEqualTo("{\"fileSha256\":\"" + "a".repeat(64) + "\",\"fingerprint\":\"" + "b".repeat(64)
+                        + "\",\"roles\":[{\"name\":\"営業\",\"roleId\":null,\"action\":\"CREATE\",\"added\":4,"
+                        + "\"changed\":0,\"cleared\":0,\"notInDsl\":1}]}");
+        assertThat(json(AuditDetailJson.ofRole(new RoleAuditDetail.Transfer(null, "c".repeat(64), List.of()))))
+                .containsEntry("fileSha256", null)
+                .containsEntry("roles", List.of());
+    }
+
+    @Test
+    @DisplayName("a transfer over 16,384 characters switches to a summary of at most 50 roles that fits the limit")
+    void transferSummary() {
+        RoleAuditDetail.Transfer many = new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                IntStream.range(0, 1000).mapToObj(i -> transferRole("ROLE_", i)).toList());
+        RoleAuditDetail.Transfer longNames = new RoleAuditDetail.Transfer(
+                "a".repeat(64),
+                "b".repeat(64),
+                IntStream.range(0, 100)
+                        .mapToObj(i -> transferRole(EMOJI.repeat(200), i))
+                        .toList());
+
+        String manySummary = AuditDetailJson.ofRole(many);
+        String longSummary = AuditDetailJson.ofRole(longNames);
+
+        assertThat(manySummary.length()).isLessThanOrEqualTo(AuditEvent.MAX_DETAIL_LENGTH);
+        assertThat(json(manySummary))
+                .containsEntry("roleCount", 1000)
+                .containsKeys("fileSha256", "fingerprint", "firstRoles")
+                .doesNotContainKey("roles");
+        assertThat((List<?>) json(manySummary).get("firstRoles")).hasSize(AuditDetailJson.SUMMARY_FIRST_ROLES);
+        assertThat(longSummary.length()).isLessThanOrEqualTo(AuditEvent.MAX_DETAIL_LENGTH);
+        assertThat((List<?>) json(longSummary).get("firstRoles")).hasSizeBetween(1, 49);
     }
 }

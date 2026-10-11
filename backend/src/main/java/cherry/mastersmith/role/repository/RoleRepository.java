@@ -70,4 +70,13 @@ public interface RoleRepository extends Repository<Role, Long> {
      */
     @Query("select r.roleId from Role r where r.nameKey = :nameKey")
     Optional<Long> findIdByNameKey(@Param("nameKey") String nameKey);
+
+    /**
+     * すべてのロールの ID・名前・名前の鍵を ID の順に読む（権限の YAML の照らし合わせと書き出し。BR9.6・BR9.14、B6）。
+     *
+     * @return ロール（ID の順）
+     */
+    @Query("select new cherry.mastersmith.role.repository.RoleKeyView(r.roleId, r.name, r.nameKey) from Role r"
+            + " order by r.roleId")
+    List<RoleKeyView> findAllKeys();
 }

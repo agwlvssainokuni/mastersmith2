@@ -24,7 +24,8 @@ import java.util.Objects;
  * <p>形ごとにキーを決めた型で、{@code audit} がこの型から決めたキーだけの JSON を作る。ロールの名前・対象の名前・権限の値・数だけを
  * 持ち、メールアドレス・氏名・パスワード・トークン・ハッシュ値は型に無い。自由な対応表や任意の文字列の連結は受けない。B4 の形は
  * {@link Name}・{@link Rename}・{@link InUse}・{@link PermissionChanges}・{@link PermissionChangesSummary}、B5 の形は割り当ての
- * {@link Assignment} と作業ロールの切り替えの {@link WorkRoleSwitch}。受け渡し（B6）の形はその Bolt で足す。
+ * {@link Assignment} と作業ロールの切り替えの {@link WorkRoleSwitch}、B6 の形は権限の YAML の適用の {@link Transfer} と
+ * {@link TransferSummary}（BR11.7）。
  */
 public sealed interface RoleAuditDetail
         permits RoleAuditDetail.Name,
@@ -33,7 +34,9 @@ public sealed interface RoleAuditDetail
                 RoleAuditDetail.PermissionChanges,
                 RoleAuditDetail.PermissionChangesSummary,
                 RoleAuditDetail.Assignment,
-                RoleAuditDetail.WorkRoleSwitch {
+                RoleAuditDetail.WorkRoleSwitch,
+                RoleAuditDetail.Transfer,
+                RoleAuditDetail.TransferSummary {
 
     /**
      * 作成・削除・名前の重なり・同じ名前への変更・権限の操作の拒否の detail。
@@ -180,6 +183,106 @@ public sealed interface RoleAuditDetail
             if ((fromRoleId == null) != (fromRoleName == null)) {
                 throw new IllegalArgumentException("前の作業ロールの ID と名前はそろえて持ちます");
             }
+        }
+    }
+
+    /**
+     * 権限の YAML の適用の1つのロールの要約（BR11.7。前後の値の全件は残さない）。
+     *
+     * @param name ロールの名前（作るときはファイルの名前、置き換えるときは今の名前）
+     * @param roleId 置き換えるロールの ID（作るときは null）
+     * @param action 作るか置き換えるか
+     * @param added 足す対象の数
+     * @param changed 値が変わる対象の数
+     * @param cleared 設定なしになる対象の数
+     * @param notInDsl 変わる対象のうち今の DSL に無いものの数
+     */
+    record TransferRole(
+            String name, Long roleId, TransferAction action, int added, int changed, int cleared, int notInDsl) {
+
+        /** 値が null でなく、数が負でなく、置き換えのときだけ ID を持つことを確かめる。 */
+        public TransferRole {
+            Objects.requireNonNull(name, "name");
+            Objects.requireNonNull(action, "action");
+            if ((action == TransferAction.REPLACE) != (roleId != null)) {
+                throw new IllegalArgumentException("置き換えのときだけロールの ID を持ちます");
+            }
+            if (added < 0 || changed < 0 || cleared < 0 || notInDsl < 0) {
+                throw new IllegalArgumentException("数は 0 以上です");
+            }
+            if (notInDsl > added + changed + cleared) {
+                throw new IllegalArgumentException("今の DSL に無い数は変わる対象の数以下です");
+            }
+        }
+
+        /** 作るか置き換えるかと数だけを出す（YAML の中のロールの名前を出さない。NFR1.9）。 */
+        @Override
+        public String toString() {
+            return "TransferRole[" + action + ", added=" + added + ", changed=" + changed + ", cleared=" + cleared
+                    + ", notInDsl=" + notInDsl + "]";
+        }
+    }
+
+    /**
+     * 権限の YAML の適用と、その業務の拒否の detail（BR11.7・BR11.4。監査の行の対象の列は空で、ロールはここに書く）。
+     *
+     * @param fileSha256 読み込んだファイル（本文のバイト列）の SHA-256 の 16 進数の小文字（本文を読む前の拒否では null）
+     * @param fingerprint 指紋（成功は一致した指紋、拒否は要求の指紋）
+     * @param roles ロールごとの要約（ロールの鍵の順。本文を読む前の拒否では空）
+     */
+    record Transfer(String fileSha256, String fingerprint, List<TransferRole> roles) implements RoleAuditDetail {
+
+        /** 値を写して持つ。 */
+        public Transfer {
+            Objects.requireNonNull(fingerprint, "fingerprint");
+            roles = List.copyOf(roles);
+        }
+
+        /**
+         * 先頭の何件かとロールの数の要約にする（全件の JSON が上限を超えるとき。BR11.5）。
+         *
+         * @param first 要約に入れる先頭の件数（0 以上。全件より多ければ全件）
+         * @return 要約
+         */
+        public TransferSummary summarize(int first) {
+            if (first < 0) {
+                throw new IllegalArgumentException("件数は 0 以上です");
+            }
+            return new TransferSummary(
+                    fileSha256, fingerprint, roles.size(), roles.subList(0, Math.min(first, roles.size())));
+        }
+
+        /** ロールの数だけを出す（YAML の中のロールの名前を出さない。NFR1.9）。 */
+        @Override
+        public String toString() {
+            return "Transfer[roles=" + roles.size() + "]";
+        }
+    }
+
+    /**
+     * 権限の YAML の適用の detail の要約（全件の JSON が 16,384 文字を超えるとき。BR11.5、計画の D-11）。
+     *
+     * @param fileSha256 読み込んだファイルの SHA-256（本文を読む前の拒否では null）
+     * @param fingerprint 指紋
+     * @param roleCount ロールの数
+     * @param firstRoles 先頭の何件か
+     */
+    record TransferSummary(String fileSha256, String fingerprint, int roleCount, List<TransferRole> firstRoles)
+            implements RoleAuditDetail {
+
+        /** 値を写して持つ。 */
+        public TransferSummary {
+            Objects.requireNonNull(fingerprint, "fingerprint");
+            firstRoles = List.copyOf(firstRoles);
+            if (roleCount < firstRoles.size()) {
+                throw new IllegalArgumentException("ロールの数は先頭の件数以上です");
+            }
+        }
+
+        /** ロールの数だけを出す（YAML の中のロールの名前を出さない。NFR1.9）。 */
+        @Override
+        public String toString() {
+            return "TransferSummary[roleCount=" + roleCount + "]";
         }
     }
 }

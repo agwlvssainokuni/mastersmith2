@@ -29,11 +29,14 @@ import jakarta.persistence.PersistenceException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /**
@@ -49,6 +52,11 @@ import org.springframework.stereotype.Component;
  * <p>行の排他の待ちの上限は既存の排他と同じ 3,000 ミリ秒（問い合わせのヒント）。一意の鍵の書き込みの待ちはヒントが効かず H2 の既定
  * （約 2 秒）で切れる（{@code reliability-design.md} 2.1。設定は変えない）。問い合わせは定数の JPQL と名前の付いた引数だけで組む
  * （NFR1.11）。{@link EntityManager} はコンストラクターで受ける。
+ *
+ * <p>権限の YAML の適用（B6、{@code reliability-design.md} 2.5）だけは、設定の行を Spring の JDBC の部品（{@link JdbcTemplate}）の
+ * バッチで書く。JPA のトランザクションと同じ接続を使い、書く前に {@link EntityManager#flush()} を呼ぶ。同じトランザクションの中で、JDBC で
+ * 書いた設定の行をエンティティとして読まない。文の上限は {@value #TRANSFER_QUERY_TIMEOUT_SECONDS} 秒を明示する
+ * （{@code jakarta.persistence.query.timeout} は JDBC の部品に効かないため）。SQL は定数と位置の引数だけで組む（NFR1.11）。
  */
 @Component
 public class RoleStore {
@@ -96,15 +104,43 @@ public class RoleStore {
             "MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id)"
                     + " VALUES (:userId, :roleId, :updatedAt)";
 
+    /** 権限の YAML の適用の設定の行の書き込みの 1 バッチの件数（{@code performance-design.md} 2.3）。 */
+    public static final int TRANSFER_BATCH_SIZE = 1000;
+
+    /** 権限の YAML の適用の JDBC の文の上限（秒。{@code reliability-design.md} 2.5）。 */
+    public static final int TRANSFER_QUERY_TIMEOUT_SECONDS = 10;
+
+    private static final String TRANSFER_DELETE_SETTINGS = "DELETE FROM permission_settings WHERE role_id = ?";
+
+    private static final String TRANSFER_INSERT_SETTING = "INSERT INTO permission_settings (role_id, schema_name,"
+            + " table_name, column_name, main_permission, create_permission, delete_permission, updated_at)"
+            + " VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+    private static final String TRANSFER_TOUCH_ROLE = "UPDATE roles SET updated_at = ? WHERE role_id = ?";
+
     private final EntityManager entityManager;
+
+    private final JdbcTemplate transferJdbc;
 
     /**
      * 作る。
      *
      * @param entityManager JPA のエンティティの管理
+     * @param jdbcTemplate Spring の JDBC の部品（権限の YAML の適用だけで使う。文の上限を付けた写しを持ち、受けた部品は書き換えない）
      */
-    public RoleStore(EntityManager entityManager) {
+    public RoleStore(EntityManager entityManager, JdbcTemplate jdbcTemplate) {
         this.entityManager = entityManager;
+        this.transferJdbc = new JdbcTemplate(Objects.requireNonNull(jdbcTemplate.getDataSource(), "dataSource"));
+        this.transferJdbc.setQueryTimeout(TRANSFER_QUERY_TIMEOUT_SECONDS);
+    }
+
+    /**
+     * 権限の YAML の適用の JDBC の文の上限を返す（確かめのテストで使う）。
+     *
+     * @return 文の上限（秒）
+     */
+    int transferQueryTimeoutSeconds() {
+        return transferJdbc.getQueryTimeout();
     }
 
     /**
@@ -371,5 +407,89 @@ public class RoleStore {
         } catch (PersistenceException e) {
             return RoleStoreClassifier.toOutcome(e, WORK_ROLE_SELECTION_KEY, LOGGER);
         }
+    }
+
+    /**
+     * 権限の YAML の適用を書く（{@code reliability-design.md} 2.5、BR9.6・BR9.7・BR9.11）。置き換えるロールの行の排他（ID の昇順）は
+     * 呼び出し元が先に取る。
+     *
+     * <ol>
+     *   <li>作るロールを足し、その場で DB へ送る（名前の鍵の違反は {@link RoleStoreOutcome.NameTaken}）
+     *   <li>{@link EntityManager#flush()} の後に、置き換えるロールごとに設定の行を1文で消す
+     *   <li>作る・置き換えるロールの設定の行を {@value #TRANSFER_BATCH_SIZE} 件ずつのバッチで書く
+     *   <li>置き換えるロールの更新の日時を書く
+     * </ol>
+     *
+     * <p>どれも呼び出し元のトランザクションの中で行い、途中で失敗したら呼び出し元が全体を巻き戻す（BR9.11）。
+     *
+     * @param writes 書くロール（置き換えは排他したもの）
+     * @param now 今の日時
+     * @return 書いた数、名前の鍵の違反なら {@link RoleStoreOutcome.NameTaken}、鍵の待ちの上限切れなら {@link RoleStoreOutcome.Busy}
+     *     （{@value #ROLE_NAME_KEY}）、設定の行の待ちの上限切れなら {@link RoleStoreOutcome.Busy}（{@value #ROLE_ROW}）
+     */
+    public RoleStoreOutcome<TransferWritten> applyTransfer(List<TransferWrite> writes, Instant now) {
+        Objects.requireNonNull(writes, "writes");
+        Objects.requireNonNull(now, "now");
+        List<long[]> roleIds = new ArrayList<>();
+        List<Object[]> rows = new ArrayList<>();
+        OffsetDateTime updatedAt = OffsetDateTime.ofInstant(now, ZoneOffset.UTC);
+        int created = 0;
+        try {
+            for (TransferWrite write : writes) {
+                long roleId;
+                if (write.created() != null) {
+                    Role role = new Role(write.created(), now);
+                    entityManager.persist(role);
+                    entityManager.flush();
+                    roleId = role.getRoleId();
+                    created++;
+                } else {
+                    roleId = write.replaced().getRoleId();
+                    roleIds.add(new long[] {roleId});
+                }
+                for (Map.Entry<PermissionTarget, PermissionValues> setting :
+                        write.settings().entrySet()) {
+                    rows.add(settingRow(roleId, setting.getKey(), setting.getValue(), updatedAt));
+                }
+            }
+            entityManager.flush();
+        } catch (PersistenceException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_NAME_KEY, LOGGER);
+        }
+        try {
+            for (long[] roleId : roleIds) {
+                transferJdbc.update(TRANSFER_DELETE_SETTINGS, roleId[0]);
+            }
+            int[][] batches =
+                    transferJdbc.batchUpdate(TRANSFER_INSERT_SETTING, rows, TRANSFER_BATCH_SIZE, (statement, row) -> {
+                        for (int i = 0; i < row.length; i++) {
+                            statement.setObject(i + 1, row[i]);
+                        }
+                    });
+            List<Object[]> touches = roleIds.stream()
+                    .map(roleId -> new Object[] {updatedAt, roleId[0]})
+                    .toList();
+            if (!touches.isEmpty()) {
+                transferJdbc.batchUpdate(TRANSFER_TOUCH_ROLE, touches);
+            }
+            return new RoleStoreOutcome.Done<>(
+                    new TransferWritten(created, roleIds.size(), rows.size(), batches.length));
+        } catch (DataAccessException e) {
+            return RoleStoreClassifier.toOutcome(e, ROLE_ROW, LOGGER);
+        }
+    }
+
+    private static Object[] settingRow(
+            long roleId, PermissionTarget target, PermissionValues values, OffsetDateTime updatedAt) {
+        return new Object[] {
+            roleId,
+            target.schemaName(),
+            target.storedTableName(),
+            target.storedColumnName(),
+            values.main() == null ? null : values.main().name(),
+            values.create(),
+            values.delete(),
+            updatedAt
+        };
     }
 }

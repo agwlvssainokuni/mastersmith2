@@ -238,4 +238,19 @@ class RoleConnectionUsageIT {
         assertThat(held(() -> api.unassignUser(admin.token(), roleId, member.userId()), 204))
                 .isEqualTo(2);
     }
+
+    @Test
+    @DisplayName("an apply holds two connections and a check and an export hold one (B6)")
+    void transfer() {
+        String yaml = "version: 1\nroles:\n  \"" + RoleFixtures.uniqueName("接続 受け渡し")
+                + "\":\n    schemas:\n      SALES: {main: READ}\n";
+        String fingerprint = RoleApi.fingerprintOf(api.check(admin.token(), yaml));
+
+        assertThat(held(() -> api.check(admin.token(), yaml), 200)).isEqualTo(1);
+        assertThat(held(() -> api.export(admin.token()), 200)).isEqualTo(1);
+        assertThat(held(() -> api.apply(admin.token(), yaml, fingerprint), 200)).isEqualTo(2);
+        assertThat(held(() -> api.apply(admin.token(), yaml, "d".repeat(64)), 409))
+                .as("業務の拒否（2つ目のトランザクションで失敗の監査）")
+                .isEqualTo(2);
+    }
 }

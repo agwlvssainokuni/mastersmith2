@@ -69,7 +69,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @Import(AuthApiTestConfig.class)
 class RoleAdminAuthorizationApiIT {
 
-    /** 17 の口と、管理者のときの成功の状態コード（割り当ての POST は利用者とグループの2行）。 */
+    /** 20 の口と、管理者のときの成功の状態コード（割り当ての POST は利用者とグループの2行。B6 の受け渡しの3つを含む）。 */
     enum Endpoint {
         LIST(200),
         CREATE(201),
@@ -87,7 +87,10 @@ class RoleAdminAuthorizationApiIT {
         UNASSIGN_USER(204),
         UNASSIGN_GROUP(204),
         GROUP_ROLES(200),
-        USER_ROLES(200);
+        USER_ROLES(200),
+        TRANSFER_EXPORT(200),
+        TRANSFER_CHECK(200),
+        TRANSFER_APPLY(200);
 
         private final int success;
 
@@ -199,6 +202,11 @@ class RoleAdminAuthorizationApiIT {
         fixtures.assignUser(roleId, assignedUser);
         fixtures.assignGroup(roleId, assignedGroup);
         String token = tokenOf(subject);
+        String transferYaml = "version: 1\nroles:\n  \"" + RoleFixtures.uniqueName("認可 受け渡し")
+                + "\":\n    schemas:\n      SALES: {main: READ}\n";
+        String transferFingerprint = endpoint == Endpoint.TRANSFER_APPLY
+                ? RoleApi.fingerprintOf(api.check(actors.admin().token(), transferYaml))
+                : null;
         Map<String, Object> before = state();
 
         HttpResponse<String> response =
@@ -229,6 +237,9 @@ class RoleAdminAuthorizationApiIT {
                     case UNASSIGN_GROUP -> api.unassignGroup(token, roleId, assignedGroup);
                     case GROUP_ROLES -> api.groupRoles(token, assignedGroup);
                     case USER_ROLES -> api.userRoles(token, assignedUser);
+                    case TRANSFER_EXPORT -> api.export(token);
+                    case TRANSFER_CHECK -> api.check(token, transferYaml);
+                    case TRANSFER_APPLY -> api.apply(token, transferYaml, transferFingerprint);
                 };
 
         switch (subject) {
