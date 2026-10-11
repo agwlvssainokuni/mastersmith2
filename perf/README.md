@@ -679,7 +679,7 @@ grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.j
 | `roleTransferLargeCheck` | 上限ちょうど（10,485,760 バイト）の YAML（`ROLE_YAML_FILE`）の確かめ（200）。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeCheck}` の最大 < 15000 ms と `checks` の率 1 |
 | `roleTransferLargeApply` | 同じ YAML の適用（200。置き換え 25 ロール × 1万カラム）。setup で同じ YAML を確かめて指紋を受ける。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeApply}` の最大 < 30000 ms と `checks` の率 1 |
 
-- **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00025`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`。スキーマの主権限 NONE だけ）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
+- **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00025`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`。スキーマの主権限 NONE だけ）、業務のメニューの悪い側のロール `perf-nav-worst`（B7 で足した。下の「業務のメニューの場面」）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
 - **DSL**: `perf/dsl-timing.sh` が対象DB の 100 テーブル × 100 カラムのスキーマ `large` から生成した版 2 の DSL（`<結果の置き場>/postgres/generated.yaml`）を `DSL_FILE` で渡す。生成には対象DB が要るが、使い捨ての環境の準備と各場面は対象DB を要らない（DSL の適用は対象DB に接続しない。プレビューの照合は届かなくても警告になるだけ。基盤の読み直しの R-07）。生成した DSL が手元にあれば作り直さなくてよい。
 - **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00025` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 10,485,760 バイトちょうどにする。名前は既定の短い形（`c_001`）のため、中身は上限の約 6 割で、残りはコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
 - **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 25 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
@@ -715,3 +715,88 @@ caffeinate -i zsh "$D/role-b6-run.sh" "$D"
 #     GROUP BY event_type, result, failure_reason
 ```
 
+
+## 業務のメニューの場面（Intent 261004-role-menu の U5）
+
+`perf/k6/scenarios.js` の業務のメニューの場面を、使い捨ての環境で流す。目標の出典は `aidlc/spaces/default/intents/261004-role-menu/construction/navigation/` の `nfr-requirements/performance-requirements.md`（NFR2.2・NFR2.5）・`scalability-requirements.md`（NFR2.1）と `nfr-design/performance-design.md`（3節）。Code Generation（B7）では `k6 inspect --include-system-env-vars` で場面と閾値の名前を確かめ、各場面を 1 VU・10 秒で試し走りしただけで、本番の長さ（10 VU・3 分）で流して判定するのは Performance Validation。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
+|---|---|---|
+| `navPrepare` | 1 VU・1 回。悪い側の DSL（`DSL_FILE`）の投入と適用、グループ 100 個（`NAV_GROUP_COUNT`）の作成と試験用の利用者 `perf-nav-01`〜`10` 全員の所属、どのグループにもロール `perf-nav-worst` の割り当て、各利用者の作業ロールの保存（1人ずつログインする） | `checks{scenario:navPrepare}` の率 1 |
+| `navMenu` | 業務のメニュー（`GET /api/me/navigation`、200 で項目が1つ以上）。10 VU・3 分 | `iteration_duration{scenario:navMenu}` の p95 < 1000 ms と `checks` の率 1 |
+| `tableAccessVisible` | 読めるテーブル（番号が奇数の `t_001`・`t_003`…を VU と繰り返しの番号で回す）の置き場の問い合わせ（200 で `main` が `READ`）。10 VU・3 分 | 同上 |
+| `tableAccessDenied` | `NONE` のテーブル（番号が偶数）の置き場の問い合わせ（403 `ACCESS_DENIED`。場面の始めに `http.setResponseCallback(http.expectedStatuses(403))` で期待の状態コードを宣言）。10 VU・3 分 | 同上 |
+| `navMenuBaseline` | setup で目安の DSL（`DSL_FILE`）を適用し直した後の業務のメニュー（200）。10 VU・3 分 | 同上 |
+
+- **データ**（使った規模は結果に記録する）:
+  - 悪い側の DSL: `rolePrepare` の版 2 の DSL（スキーマ `large`、100 テーブル × 100 カラム）の最上位の `menus:` の塊を `perf/make-nav-dsl.mjs --worst` で置き換えたもの。menus 1,000 項目・深さ 5（最上位のまとまり 40 個 × 25 項目。鎖の項目もテーブルを指す）で、100 テーブルのそれぞれを、ちょうど 10 回ずつ別々のまとまりから指す。
+  - 目安の DSL: 同じ DSL の `menus:` を `--baseline` で置き換えたもの（menus 100 項目・深さ 1、各項目がテーブルを1つ指す）。
+  - ロール `perf-nav-worst`: `rolePrepare` の準備の YAML が入れる（計画の 13節 Q5: A）。1万カラムに READ と FULL を交互に明示し、テーブルの番号が偶数なら `NONE`・奇数なら `READ` を明示する（テーブルの半分が `NONE`）。スキーマには明示しない。準備の YAML のロールの合計（`ROLE_PREPARE_TOTAL`、既定 1,000）は変えず、埋めるロールを1つ減らした。
+  - グループ・所属・割り当て・作業ロールの保存は `navPrepare` が API で行う（使い捨ての環境の監査に残る）。
+- **準備の順**（基盤の設計の読み直しの R-02）:
+  1. 手順 2'' と同じ SQL の形で、試験用の利用者 `perf-nav-01`〜`10`（管理者の印なし）と、操作する管理者 `perf-roleop01`（管理者の印あり）を入れる（下の 2N）
+  2. 使い捨てのアプリを起動する
+  3. `rolePrepare`（大きな DSL の適用と、`perf-nav-worst` を含む準備の YAML の確かめと適用）
+  4. `navPrepare`（悪い側の DSL の適用、グループと所属、割り当て、1人ずつログインして作業ロールの保存）
+- **流す順**（`cicd-pipeline.md` 5.3 との差。基盤の設計の読み直しの R-01 の手当てで、依頼者の指示）: 準備 → 大きな DSL の読み取りの場面（`navMenu`・`tableAccessVisible`・`tableAccessDenied` と、ロールの管理の節の B4・B5 の場面）→ `roleExport` → `roleTransferLargeCheck` → `roleTransferLargeApply` → **`navMenuBaseline` を最後**。`navMenuBaseline` は目安の DSL に入れ替えるため、その後は 1万カラムのロールの前提が崩れる。ロールの場面は `perf-role-worst`（スキーマ `large` の DSL）を使い、`navPrepare` の悪い側の DSL もスキーマとテーブルは同じため、ロールの場面の前提を崩さない。
+- **p95 を場面ごとに別に残す**（NFR 設計の読み直しの R-08）: `tableAccessDenied` は表示名のための DSL の読み取り（`current()`）をしないため、`tableAccessVisible` と合わせずに場面ごとの p95 を記録する。置き場の p95 の実測値は基準の値として記録し、目標（1 秒）より桁違いに小さければ後の Intent で目標を見直すかを結果に書く（`performance-design.md` 3節）。
+- **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
+- **VM の余裕**: 試し走り（B7、2026-10-12）は、配備したアプリ（上限 2g）を止めずに、使い捨てのアプリ（上限 2g）を並べて流した（VM 6 GiB のうち空きは約 4.9 GiB）。本番の長さの判定の回は、手順 0 のとおり配備したアプリを止めて CPU を取り合わないようにする。
+- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。
+
+```bash
+# 前提: 上の「手順」の 0・1 と同じ用意（一時の環境ファイル。置き場はホームの下（権限 700）。VM から見えるようにするため）。
+#       生成した版 2 の DSL（rolePrepare と同じ。ロールの管理の節の B6 の手順で build/perf-results/role-data/dsl.yaml に置く）
+# 2N. 使い捨ての環境を起動し、止めて、試験用の利用者と操作する管理者を入れる
+perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
+docker info --format '{{.NCPU}} CPU / {{.MemTotal}} bytes'   # VM の余裕を読み取りで確かめる（アプリ 2g・k6）
+perfu up -d --wait
+perfu stop app
+HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-nav-' || LPAD(CAST(X AS VARCHAR), 2, '0') || '@example.test', '$HASH', FALSE,
+    DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-nav-' || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10);
+INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  VALUES ('perf-roleop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-roleop01')"
+cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+rm build/h2-perf.jar; unset AP UP HASH SQL
+perfu up -d --wait
+
+# 3N. 業務のメニューの DSL を作る（どちらも版 2 の DSL の menus: の塊だけを置き換える）
+mkdir -p build/perf-results/nav-data
+node perf/make-nav-dsl.mjs --worst build/perf-results/role-data/dsl.yaml build/perf-results/nav-data/worst.yaml
+node perf/make-nav-dsl.mjs --baseline build/perf-results/role-data/dsl.yaml build/perf-results/nav-data/baseline.yaml
+
+# 4N. 準備 → 読み取りの場面 → ロールの受け渡しの場面 → 目安の場面を最後に（台本の全体を caffeinate -i で包む）
+cat > "$D/nav-run.sh" <<'EOS'
+D="$1"
+k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" \
+    -v "$PWD/build/perf-results/role-data:/data:ro" -v "$PWD/build/perf-results/nav-data:/nav:ro" \
+    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
+}
+k6r rolePrepare -e SCENARIO=rolePrepare -e DSL_FILE=/data/dsl.yaml
+k6r navPrepare -e SCENARIO=navPrepare -e DSL_FILE=/nav/worst.yaml
+for s in navMenu tableAccessVisible tableAccessDenied; do k6r $s -e SCENARIO=$s; done
+zsh "$D/role-run.sh" "$D"                                   # ロールの管理の節の B4・B5 の場面（流すときだけ）
+k6r roleExport -e SCENARIO=roleExport
+k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-10mb.yaml
+k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-10mb.yaml
+k6r navMenuBaseline -e SCENARIO=navMenuBaseline -e DSL_FILE=/nav/baseline.yaml   # 最後（DSL を目安に入れ替える）
+EOS
+caffeinate -i zsh "$D/nav-run.sh" "$D"
+# 試し走りのときは、各場面に -e VUS=1 -e ROLE_DURATION=10s を足す
+
+# 5N. 秘密と名前が出ていないことを件数で確かめる（どれも 0）。片付けは上の「手順」の 4 と同じ
+perfu logs app 2>&1 | grep -c 'perf-nav-[0-9]'
+perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
+#   SELECT event_type, result, COUNT(*) FROM audit_events WHERE event_type LIKE 'ROLE_%' OR event_type = 'WORK_ROLE_SWITCHED'
+#     OR event_type LIKE 'GROUP_%' GROUP BY event_type, result
+```
+
+- **試し走りの結果**（B7 の Code Generation、2026-10-12。1 VU・10 秒、判定ではない）: どの場面も閾値と checks を通った。`navPrepare` の DSL の適用は、対象DB に届かない照合の警告のまま通った（基盤の設計の読み直しの R-07）。繰り返しの時間の p95 は `navMenu` 29.4 ms・`tableAccessVisible` 3.3 ms・`tableAccessDenied` 3.3 ms・`navMenuBaseline` 25.1 ms。アプリのログに試験用の利用者のメールアドレスと、WARN・ERROR にテーブル名は出なかった（どちらも 0 件、ERROR は 0 行）。

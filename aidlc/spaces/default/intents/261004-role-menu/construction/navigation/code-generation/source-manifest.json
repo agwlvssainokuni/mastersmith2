@@ -1,0 +1,175 @@
+{
+  "stage": "code-generation",
+  "unit": "navigation",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/DisplayLabel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/EmptyReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/MenuFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/MenuFilterInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/NavIconPolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/NavNode.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/NavTableRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/NavigationMenu.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/TableAccessResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/AllowedNavIconList.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NavigationService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NoOpNavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/DisplayLabelResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavNodeResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavTableRefResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavigationController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavigationResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/TableAccessResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/resources/navigation/allowed-icons.txt"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/NavigationBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/MenuFilterPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/MenuFilterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/NavIconPolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/NavNodeTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/service/AllowedNavIconListTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/service/NavigationCallCountTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/service/NavigationServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/ConnectionCountingConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/ConnectionCountingDataSource.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/CountingDslProvider.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/CountingResolver.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/MeasureIdFilter.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/NavigationActors.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/NavigationDslFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/NavigationModels.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/TestNavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationDslSwapIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationMenuAccessConsistencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationQueryExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationUntrustedInputIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "frontend/src/app/registry/allowedNavIcons.test.ts"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/make-nav-dsl.mjs"
+    }
+  ]
+}

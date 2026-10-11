@@ -151,6 +151,11 @@ tasks.withType<Test>().configureEach {
 
 tasks.test {
     description = "単体テスト（*Test）を実行する。"
+    // 単体テストの JVM だけヒープの上限を 1.5g（1536m。Gradle は小数の表記を読めない）にする（結合テストは上の共通の 1g の
+    // まま）。構造の検査の各クラスが読み込みの結果を静的に持ち続けるため、Intent 261004-role-menu の B7 で navigation の本体の
+    // クラスが増えると、大きな YAML を読む RoleTransferReaderTest でヒープが尽きた（依頼者の決定 A）。テストの件数・カバレッジの
+    // 下限は変えていない。
+    maxHeapSize = "1536m"
     filter {
         includeTestsMatching("*Test")
     }

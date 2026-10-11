@@ -896,6 +896,27 @@ Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロー
 - **監査**: 適用の成功と業務の拒否（`ROLE_TRANSFER_STALE`・`DSL_NOT_APPLIED`・`NO_CHANGE`・`ROLE_NAME_DUPLICATE`）を1回1行残します（「監査ログ（U4）」）。確かめ・書き出し・入力の誤り（400・413・415）・`ROLE_BUSY` は残しません。
 - **ログ**: YAML の中身（ロールの名前・対象の名前・値）はアプリのログに出しません（TRACE を有効にしても、受け渡しの値は大きさと件数だけで出ます。JDBC の部品の引数の TRACE（`org.springframework.jdbc.core.StatementCreatorUtils`）は `OFF` です）。
 
+## 業務のメニューの API（Intent 261004-role-menu の U5、Bolt B7）
+
+Intent 261004-role-menu の U5 で、ログインした利用者の業務のメニュー（適用中の DSL の `menus` を、作業ロールの実効の主権限で絞った N 階層の木）と、テーブルの画面の置き場の問い合わせの API を足しました（契約 C9 を機能設計の差で読んだ形）。2本とも API の分類は `AUTHENTICATED`（ログインした利用者なら誰でも）で、読み取りだけです。主体は要求の文脈から読み、利用者を指す値（`userId` などの引数）は読みません。画面（U7）は後の Bolt の受け持ちです。
+
+| API | 成功 | 主な失敗 |
+|---|---|---|
+| `GET /api/me/navigation` | 200 と `items`（項目の木）と `emptyReason` | 401 `AUTHENTICATION_REQUIRED`（未認証・停止中） |
+| `GET /api/me/table-access?schema=&table=` | 200 と `schemaName`・`tableName`・`displayName`（`{ja, en}`）・`main`（`READ`・`FULL`） | 400 `VALIDATION_FAILED`（`schema`・`table` が無い・空。`fieldErrors` なし）・401・403 `ACCESS_DENIED`（見られない） |
+
+- **項目**: 各項目は `id`（絞る前の DSL の木での位置の道。各段の 0 から数えた番号を `.` でつなぐ。例 `2.0`。落とした項目があっても番号を詰めない）・`label`（`{ja, en}`。DSL の値をそのまま。エスケープも空白の除去もしない）・`icon`（下の一覧で照らした名前）・`table`（移れる項目だけ `{schemaName, tableName}`、ほかは null）・`navigable`・`items`（子）を持ちます。DSL の識別・ロールの ID・権限の値は載せません。
+- **絞り方**: テーブルを指す項目は、そのテーブルの階層の実効の主権限が `READ`・`FULL` なら移れる項目として出ます（カラムの値は見ません）。テーブルが見えない項目は、子が残れば移れないまとまり（`navigable: false`・`table: null`）として残り、子も残らなければ落ちます。子が残らないまとまりはさかのぼって落ちます。残った項目の親子と並びは DSL のままです。管理のメニューは含めません。
+- **空の理由**: `items` が空のときだけ値を持ちます。`NOT_CONFIGURED` は適用済みの DSL が無い・DSL の `menus` が空、`NOTHING_VISIBLE` は作業ロールが無い・すべて見えないなど絞った結果が空です（どちらも 200）。
+- **置き場の問い合わせ**: 名前は問い合わせの引数で受けます（画面は必ず `encodeURIComponent` で正しくエンコードしてください）。欠け・空だけを 400 にし、名前の長さと文字の種類では拒否しません（空白だけの名前は空と見なさず、通常の判定です）。適用済みの DSL が無い・組が DSL に無い・実効の主権限が `NONE` は区別せず、同じ 403 `ACCESS_DENIED`・同じ本文（表示名を含まない）です。メニューに出ているかは見ません（メニューに無くても DSL にあり `READ` 以上なら 200）。
+- **反映**: 作業ロールの切り替え・権限の設定・割り当ての変更・DSL の適用は、次の要求の木と問い合わせに効きます（要求をまたいで写しを持ちません）。
+- **アイコンの一覧**: 許したアイコンの名前は `backend/src/main/resources/navigation/allowed-icons.txt`（1行に1つ。`#` で始まる行と空行は読まない）にあります。DSL の `icon` が無い・空・一覧に無い（大文字と小文字・前後の空白も区別）ときは `list` になります。ファイルが無い・読めない・名前が無い・`list` が無い・名前が重なるときは起動を止めます。make-you-chic-ui の固定先を上げてアイコンが変わったら、このファイルと `frontend/src/app/registry/allowedIcons.ts` の両方を直してください（一致は `frontend/src/app/registry/allowedNavIcons.test.ts` が確かめます）。
+- **監査とログ**: どちらの API も監査に残しません。403・400 は既存の誤りの変換の WARN の1行（code・状態・例外の型）だけで、スキーマ名・テーブル名は出しません。指標は既存の `http.server.requests` だけです。
+- **受け入れた制約**:
+  - 正しくない `%` の並び（例 `table=a%zz`）の引数は 500 `INTERNAL_ERROR` になり、ERROR のログの例外の文に引数の名前と値が入ります（アプリ全体の今の振る舞いで、直しは後の Intent に回します。応答の本文には値は入りません）。
+  - エンコードしていない空白・`#`・`"`・`<`・`|`・`{` や、8 KiB を超える問い合わせは、Tomcat が Spring に渡す前に既定の HTML の 400 で断ります（アプリの共通の誤りの本文になりません）。
+  - p95 の警報はありません（応答時間の目標の確かめは Performance Validation で行います）。
+
 ## 外部エクスポートの確かめ方
 
 受け取ったものを標準出力に出すだけの OTLP の受け手（OpenTelemetry Collector）を、profile `observability` で一緒に起動します。

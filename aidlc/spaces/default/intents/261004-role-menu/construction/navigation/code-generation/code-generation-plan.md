@@ -194,25 +194,25 @@ U5 navigation は service の単位で、読み取りだけの API を2本持つ
 
 方法は test-after。層（domain → service → web → 画面）ごとに実装を書き、同じ Bolt の中でその層のテストを書いて流し、通ってから次の層へ進む。コマンドの正確な形は `unit-test-instructions.md`。
 
-- [ ] **Step 1: 作業の場の用意**。計画の承認の後に `develop` の先頭から `feature/261004-role-menu-b7` を作る（依頼者の承認を得てから）。`git status` で作業フォルダが空であること、E2E の報告のフォルダーが無いこと、`vendor/make-you-chic-ui` の固定先が e82b651 であることを確かめる。
-- [ ] **Step 2: テストの実行の準備**（最初のテストより前）。名指しのコマンドが動くことを、既存のテスト（`RoleBoundaryArchitectureTest`・`MyPermissionsApiIT` の名指し、画面の `validateRegistrations.test.ts`）で確かめ、失敗 0 を記録する。
-- [ ] **Step 3: 変更の前の基準**。`caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` で、全体と 5節のパッケージの値、テストの件数を記録する。`backend/gradle.lockfile`・`frontend/package-lock.json` の SHA-256 を記録する。role の `EffectivePermissionConsistencyIT` があることを確かめる（NFR1.12 の引き継ぎ）。
-- [ ] **Step 4: ドメイン — 実装**（`navigation.domain`）。4.1 の値の型・`MenuFilter`・`MenuFilterInput`・`NavIconPolicy`・`TableAccessResult`・`NavigationMenu`。`package-info.java`。
-- [ ] **Step 5: ドメイン — テスト**。`MenuFilterTest`・`MenuFilterPropertyTest`・`NavIconPolicyTest`・`NavNodeTest` を書いて流す。`RoleBoundaryArchitectureTest` の navigation の規則を `role.service`・`role.domain` に広げ（13節 Q1: A。ほかの規則は変えない）、流す。
-- [ ] **Step 6: 業務処理 — 実装**（`navigation.service`）。`allowed-icons.txt`（`#` の行のライセンスヘッダーつき。13節 Q6: A）、`AllowedNavIconList`、`NavigationBarrier`・`NoOpNavigationBarrier`、`NavigationService`。
-- [ ] **Step 7: 業務処理 — テスト**。数える替え物（T3）を作り、`AllowedNavIconListTest`・`NavigationCallCountTest`・`NavigationServiceTest` を書いて流す。C1 のコミットの提案（実行は承認の後）。
-- [ ] **Step 8: API — 実装**（`navigation.web`）。`NavigationController` と応答の `record`。`ACCESS_DENIED` は `ProblemTypeRegistry` から起動時に引く（13節 Q2: A）。引数の欠け・空は `fieldErrors` の無い 400 `VALIDATION_FAILED`（Q3: A）、空白だけの名前は通常の判定（Q4: A）。
-- [ ] **Step 9: テストの部品**。T1（`ConnectionCountingDataSource`・`ConnectionCountingConfig`・`MeasureIdFilter`。R-09 の手当て）、T2（`TestNavigationBarrier`）、`NavigationDslFixture`、`NavigationActors`。
-- [ ] **Step 10: API — テスト（結合）**。4.4 の結合テスト8つを書いて流す。
-- [ ] **Step 11: 境界と構造の検査**。`NavigationBoundaryArchitectureTest` を書き、既存の `ArchitectureTest`・`ApiAccessArchitectureTest`・`RoleBoundaryArchitectureTest`・`AccessBoundaryArchitectureTest`・`DslBoundaryArchitectureTest`・`AuthBoundaryArchitectureTest` と `ApiAccessConsistencyIT` を流す。
-- [ ] **Step 12: 画面のテスト**。`allowedNavIcons.test.ts` を書いて流す（Prettier・ESLint・oxlint・ライセンスヘッダーの検査を名指しで通す）。
-- [ ] **Step 13: バックエンドの区切りの確かめ**。navigation の単体・結合のテストのすべてと、6節で読んだ関わりのある既存のテストを名指しで流す。C2 のコミットの提案。
-- [ ] **Step 14: 負荷の台本**（流すのは Performance Validation）。4.6 の `perf/make-nav-dsl.mjs`・`perf/k6/scenarios.js`（`rolePrepare` の YAML に `perf-nav-worst` を足し、残りの準備は `navPrepare`。13節 Q5: A）。`k6 inspect --include-system-env-vars` で場面と閾値の名前を5つの場面で確かめる。使い捨ての環境で、準備（`rolePrepare` → `navPrepare`）と各場面の短い試し走り（1 VU・10 秒）を流し、閾値の指標が出ること、版 2 の大きな DSL の適用が照合の警告のまま通ること（基盤の R-07）を確かめる。配備したアプリはこの間止める（試し走りの前に依頼者に伝える）。
-- [ ] **Step 15: 文書**。`perf/README.md` と `README.md`（4.6）。
-- [ ] **Step 16: 取り残しと変えないものの確かめ**。`git diff --stat develop` で 4.7 のファイルに差が無いこと、lockfile の SHA-256 が Step 3 と同じこと、`TODO` が無いこと、ライセンスヘッダーが新しいファイルすべてにあること。C3 のコミットの提案。
-- [ ] **Step 17: 記録**（`aidlc/` の下）。`code-summary.md`（作ったもの・決めたこと・計画との差・承認の場で確かめたいこと・後に回すこと）、`source-manifest.json`（アプリのソースの道すべて）、`traceability.json`（AC5.1.1〜AC5.1.18、BR1.1〜BR7.4、NFR1〜NFR6 と枝番）、`generation-notes.md`（Step ごとのコマンドと結果）。
-- [ ] **Step 18: 1コマンドの検査**（統合の前の関門）。colima の共有を確かめ、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`。件数・カバレッジ（5節のパッケージ）・時間を記録する。
-- [ ] **Step 19: E2E**。`caffeinate -i ./gradlew e2eTest` の全体。報告の確かめの道具で残してはならない値が 0 件であることを確かめ、報告のフォルダーを消す。落ちたら `team.md` の不安定なテストの決まりで扱う。
+- [x] **Step 1: 作業の場の用意**。計画の承認の後に `develop` の先頭から `feature/261004-role-menu-b7` を作る（依頼者の承認を得てから）。`git status` で作業フォルダが空であること、E2E の報告のフォルダーが無いこと、`vendor/make-you-chic-ui` の固定先が e82b651 であることを確かめる。
+- [x] **Step 2: テストの実行の準備**（最初のテストより前）。名指しのコマンドが動くことを、既存のテスト（`RoleBoundaryArchitectureTest`・`MyPermissionsApiIT` の名指し、画面の `validateRegistrations.test.ts`）で確かめ、失敗 0 を記録する。
+- [x] **Step 3: 変更の前の基準**。`caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` で、全体と 5節のパッケージの値、テストの件数を記録する。`backend/gradle.lockfile`・`frontend/package-lock.json` の SHA-256 を記録する。role の `EffectivePermissionConsistencyIT` があることを確かめる（NFR1.12 の引き継ぎ）。
+- [x] **Step 4: ドメイン — 実装**（`navigation.domain`）。4.1 の値の型・`MenuFilter`・`MenuFilterInput`・`NavIconPolicy`・`TableAccessResult`・`NavigationMenu`。`package-info.java`。
+- [x] **Step 5: ドメイン — テスト**。`MenuFilterTest`・`MenuFilterPropertyTest`・`NavIconPolicyTest`・`NavNodeTest` を書いて流す。`RoleBoundaryArchitectureTest` の navigation の規則を `role.service`・`role.domain` に広げ（13節 Q1: A。ほかの規則は変えない）、流す。
+- [x] **Step 6: 業務処理 — 実装**（`navigation.service`）。`allowed-icons.txt`（`#` の行のライセンスヘッダーつき。13節 Q6: A）、`AllowedNavIconList`、`NavigationBarrier`・`NoOpNavigationBarrier`、`NavigationService`。
+- [x] **Step 7: 業務処理 — テスト**。数える替え物（T3）を作り、`AllowedNavIconListTest`・`NavigationCallCountTest`・`NavigationServiceTest` を書いて流す。C1 のコミットの提案（実行は承認の後）。
+- [x] **Step 8: API — 実装**（`navigation.web`）。`NavigationController` と応答の `record`。`ACCESS_DENIED` は `ProblemTypeRegistry` から起動時に引く（13節 Q2: A）。引数の欠け・空は `fieldErrors` の無い 400 `VALIDATION_FAILED`（Q3: A）、空白だけの名前は通常の判定（Q4: A）。
+- [x] **Step 9: テストの部品**。T1（`ConnectionCountingDataSource`・`ConnectionCountingConfig`・`MeasureIdFilter`。R-09 の手当て）、T2（`TestNavigationBarrier`）、`NavigationDslFixture`、`NavigationActors`。
+- [x] **Step 10: API — テスト（結合）**。4.4 の結合テスト8つを書いて流す。
+- [x] **Step 11: 境界と構造の検査**。`NavigationBoundaryArchitectureTest` を書き、既存の `ArchitectureTest`・`ApiAccessArchitectureTest`・`RoleBoundaryArchitectureTest`・`AccessBoundaryArchitectureTest`・`DslBoundaryArchitectureTest`・`AuthBoundaryArchitectureTest` と `ApiAccessConsistencyIT` を流す。
+- [x] **Step 12: 画面のテスト**。`allowedNavIcons.test.ts` を書いて流す（Prettier・ESLint・oxlint・ライセンスヘッダーの検査を名指しで通す）。
+- [x] **Step 13: バックエンドの区切りの確かめ**。navigation の単体・結合のテストのすべてと、6節で読んだ関わりのある既存のテストを名指しで流す。C2 のコミットの提案。
+- [x] **Step 14: 負荷の台本**（流すのは Performance Validation）。4.6 の `perf/make-nav-dsl.mjs`・`perf/k6/scenarios.js`（`rolePrepare` の YAML に `perf-nav-worst` を足し、残りの準備は `navPrepare`。13節 Q5: A）。`k6 inspect --include-system-env-vars` で場面と閾値の名前を5つの場面で確かめる。使い捨ての環境で、準備（`rolePrepare` → `navPrepare`）と各場面の短い試し走り（1 VU・10 秒）を流し、閾値の指標が出ること、版 2 の大きな DSL の適用が照合の警告のまま通ること（基盤の R-07）を確かめる。配備したアプリはこの間止める（試し走りの前に依頼者に伝える）。
+- [x] **Step 15: 文書**。`perf/README.md` と `README.md`（4.6）。
+- [x] **Step 16: 取り残しと変えないものの確かめ**。`git diff --stat develop` で 4.7 のファイルに差が無いこと、lockfile の SHA-256 が Step 3 と同じこと、`TODO` が無いこと、ライセンスヘッダーが新しいファイルすべてにあること。C3 のコミットの提案。
+- [x] **Step 17: 記録**（`aidlc/` の下）。`code-summary.md`（作ったもの・決めたこと・計画との差・承認の場で確かめたいこと・後に回すこと）、`source-manifest.json`（アプリのソースの道すべて）、`traceability.json`（AC5.1.1〜AC5.1.18、BR1.1〜BR7.4、NFR1〜NFR6 と枝番）、`generation-notes.md`（Step ごとのコマンドと結果）。
+- [x] **Step 18: 1コマンドの検査**（統合の前の関門）。colima の共有を確かめ、README の環境変数を付けて `caffeinate -i ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`。件数・カバレッジ（5節のパッケージ）・時間を記録する。
+- [x] **Step 19: E2E**。`caffeinate -i ./gradlew e2eTest` の全体。報告の確かめの道具で残してはならない値が 0 件であることを確かめ、報告のフォルダーを消す。落ちたら `team.md` の不安定なテストの決まりで扱う。
 - [ ] **Step 20: コミットと承認の場と統合**。最後のコードのコミットの後にコード生成の段の承認の場を開き、その後に記録のコミット、`aidlc/` の未コミットの変更の確かめ、`develop` への squash の提案（どれも実行の前に依頼者の承認を得る）。統合の後に作業ブランチを消す。
 
 ## 8. ストーリー・要件と手順の対応

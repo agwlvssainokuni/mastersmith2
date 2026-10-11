@@ -127,6 +127,18 @@
 //                           判定は iteration_duration の最大 < 15 秒）
 //   roleTransferLargeApply  同じ YAML の適用（1 VU・1 回。setup で確かめて指紋を受ける。判定は iteration_duration の最大 < 30 秒）。
 //                           ROLE_LARGE_COUNT 件のロールを置き換えるため、流し直すときは使い捨ての環境を作り直して準備からやり直す
+// B7 で足した場面（Intent 261004-role-menu の U5 navigation、Bolt B7。NFR2.1・NFR2.2・NFR2.5、performance-design.md 3節）。利用者は
+// 試験用の利用者 perf-nav-01〜NAV_USER_COUNT（VU の番号で決める。パスワードは PERF_USER_PASSWORD）。どの場面も1回の繰り返しに要求1つで、
+// トークンは setup で VU の数だけ取る。判定は iteration_duration の p95 < 1000 ms と checks の率 1（http_req_duration は並べて記録）。
+//   navPrepare          準備の場面（1 VU・1 回。rolePrepare の後に流す）。DSL_FILE の悪い側の DSL（perf/make-nav-dsl.mjs --worst）を
+//                       投入して適用し、グループ NAV_GROUP_COUNT 個を作って試験用の利用者を全員メンバーにし、どのグループにもロール
+//                       NAV_WORST_NAME（rolePrepare が入れる）を割り当て、各利用者の作業ロールを NAV_WORST_NAME に保存する
+//   navMenu             業務のメニュー（GET /api/me/navigation、200）。10 VU・3 分
+//   tableAccessVisible  読めるテーブル（番号が奇数の t_001・t_003…を順に回す）の置き場の問い合わせ（200）。10 VU・3 分
+//   tableAccessDenied   NONE のテーブル（番号が偶数）の置き場の問い合わせ（403。期待の状態コードを 403 と宣言する）。10 VU・3 分。
+//                       表示名のための DSL の読み取りをしないため、p95 は tableAccessVisible と別に残す（NFR 設計の読み直しの R-08）
+//   navMenuBaseline     目安の DSL（DSL_FILE。perf/make-nav-dsl.mjs --baseline、menus 100 項目・深さ 1）を setup で適用し直した後の
+//                       業務のメニュー（200）。10 VU・3 分。DSL を入れ替えるため、流す順の最後に置く（perf/README.md）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -315,6 +327,21 @@ const ROLE_DSL_BODY = SCENARIO === 'rolePrepare' && __ENV.DSL_FILE ? open(__ENV.
 const ROLE_YAML_BODY =
   SCENARIO.startsWith('roleTransferLarge') && __ENV.ROLE_YAML_FILE ? open(__ENV.ROLE_YAML_FILE, 'b') : null
 // 接続プールの上限の場面で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
+// 業務のメニューの場面（Intent 261004-role-menu の U5、B7）
+const NAV_SCENARIOS = ['navMenu', 'tableAccessVisible', 'tableAccessDenied', 'navMenuBaseline']
+// 準備の YAML（rolePrepare）が入れる業務のメニューの悪い側のロールの名前（1万カラムに READ と FULL を交互に明示し、テーブルの番号が
+// 偶数なら NONE・奇数なら READ を明示する。計画の 13節 Q5: A）
+const NAV_WORST_NAME = __ENV.NAV_WORST_NAME || 'perf-nav-worst'
+// 試験用の利用者の数（perf-nav-01〜）とグループの数（navPrepare が作る）
+const NAV_USER_COUNT = Number(__ENV.NAV_USER_COUNT || 10)
+const NAV_GROUP_COUNT = Number(__ENV.NAV_GROUP_COUNT || 100)
+// 置き場の問い合わせで回すテーブルの数（番号 1〜ROLE_TREE_TABLES のうち、奇数は読める・偶数は NONE）
+const NAV_TABLE_HALF = Math.floor(ROLE_TREE_TABLES / 2)
+// 悪い側・目安の DSL（navPrepare・navMenuBaseline）は初期化の段でだけ読める（k6 の open）
+const NAV_DSL_BODY =
+  (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
+// 置き場の NONE の場面は 403 を期待の状態コードとして宣言する（http_req_failed に数えない。performance-design.md 3節の R-03）
+if (SCENARIO === 'tableAccessDenied') http.setResponseCallback(http.expectedStatuses(403))
 const ROLE_POOL_COUNTS = {
   204: new Counter('rolePoolLimit_204'),
   409: new Counter('rolePoolLimit_409'),
@@ -323,6 +350,12 @@ const ROLE_POOL_COUNTS = {
 }
 
 function scenariosFor(name) {
+  if (name === 'navPrepare') {
+    return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
+  }
+  if (NAV_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'constant-vus', vus: VUS, duration: ROLE_DURATION } }
+  }
   if (ROLE_ONE_SHOT_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
   }
@@ -390,6 +423,15 @@ function thresholdsFor(name) {
     }
   }
   if (name === 'rolePrepare') return { 'checks{scenario:rolePrepare}': ['rate==1'] }
+  // Intent 261004-role-menu の U5（NFR2.2・NFR2.5）。1回の繰り返しに要求1つの場面の iteration_duration（単調な時計）と checks で判定する。
+  if (name === 'navPrepare') return { 'checks{scenario:navPrepare}': ['rate==1'] }
+  if (NAV_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{scenario:${name}}`]: ['max>=0'],
+    }
+  }
   if (ROLE_SCENARIOS.includes(name)) {
     const thresholds = {
       [`checks{scenario:${name}}`]: ['rate==1'],
@@ -441,6 +483,8 @@ if (GROUP_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 if (ROLE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // 上限ちょうどの YAML の適用は、setup で同じ YAML を確かめて指紋を受ける
 if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// 業務のメニューの準備は setup で操作する管理者のトークンを取り、目安の場面は setup で目安の DSL を適用し直す（大きな DSL の投入）
+if (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -487,6 +531,7 @@ export function setup() {
   if (GROUP_SCENARIOS.includes(SCENARIO)) setupGroups(tokens)
   if (ROLE_SCENARIOS.includes(SCENARIO)) setupRoles(tokens)
   if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) setupRoleTransfer(tokens)
+  if (SCENARIO === 'navPrepare' || NAV_SCENARIOS.includes(SCENARIO)) setupNavigation(tokens)
   return tokens
 }
 
@@ -1646,7 +1691,8 @@ function setupRoleTransfer(data) {
 }
 
 // 準備の YAML を作る。悪い側のロールは ROLE_TREE_SCHEMA の主権限と、t_001〜 のテーブル × c_001〜 のカラムに READ と FULL を
-// 交互に明示する。置き換える先のロールはスキーマの主権限だけ、埋めるロールは設定なし。名前はどれも二重引用符の要らない形。
+// 交互に明示する。置き換える先のロールはスキーマの主権限だけ、業務のメニューの悪い側のロール（B7）はテーブルの半分が NONE、埋める
+// ロールは設定なし（合計 ROLE_PREPARE_TOTAL 件）。名前はどれも二重引用符の要らない形。
 function preparationYaml() {
   const three = (n) => String(n).padStart(3, '0')
   const lines = ['version: 1', 'roles:', `  ${ROLE_WORST_NAME}:`, '    schemas:', `      ${ROLE_TREE_SCHEMA}:`]
@@ -1658,7 +1704,14 @@ function preparationYaml() {
   for (let n = 1; n <= ROLE_LARGE_COUNT; n++) {
     lines.push(`  ${ROLE_LARGE_PREFIX}${String(n).padStart(5, '0')}:`, '    schemas:', `      ${ROLE_TREE_SCHEMA}: {main: NONE}`)
   }
-  for (let n = 1; n <= ROLE_PREPARE_TOTAL - ROLE_LARGE_COUNT - 1; n++) lines.push(`  perf-fill-${String(n).padStart(4, '0')}: {}`)
+  // 業務のメニューの悪い側のロール（B7、計画の 13節 Q5: A）。1万カラムに READ と FULL を交互に明示し、テーブルの番号が偶数なら NONE・
+  // 奇数なら READ を明示する（テーブルの半分を NONE にする）。スキーマには明示しない。
+  lines.push(`  ${NAV_WORST_NAME}:`, '    schemas:', `      ${ROLE_TREE_SCHEMA}:`, '        tables:')
+  for (let t = 1; t <= ROLE_TREE_TABLES; t++) {
+    lines.push(`          t_${three(t)}:`, `            main: ${t % 2 ? 'READ' : 'NONE'}`, '            columns:')
+    for (let c = 1; c <= ROLE_TREE_COLUMNS; c++) lines.push(`              c_${three(c)}: ${c % 2 ? 'READ' : 'FULL'}`)
+  }
+  for (let n = 1; n <= ROLE_PREPARE_TOTAL - ROLE_LARGE_COUNT - 2; n++) lines.push(`  perf-fill-${String(n).padStart(4, '0')}: {}`)
   return lines.join('\n') + '\n'
 }
 
@@ -1699,6 +1752,124 @@ function roleTransferLargeCheck(data) {
 function roleTransferLargeApply(data) {
   const res = transferApply(data.roleToken, ROLE_YAML_BODY, data.roleFingerprint, 'roleTransferLargeApply')
   check(res, { 200: (r) => r.status === 200 })
+}
+
+// 業務のメニューの場面（Intent 261004-role-menu の U5、B7）
+function navUserEmail(n) {
+  return `perf-nav-${two(n)}@example.test`
+}
+
+// DSL を投入して適用する（対象DB には接続しない。照合が届かないときは警告になるだけ。基盤の設計の読み直しの R-07）
+function navApplyDsl(token, body, name) {
+  const headers = roleHeaders(token)
+  const submit = http.post(`${DSL_API}/preview?source=UPLOAD`, body, {
+    headers: { ...headers, 'Content-Type': 'application/yaml' },
+    tags: { name },
+    timeout: '60s',
+  })
+  const previewId = submit.status === 201 ? submit.json('previewId') : null
+  const apply = http.post(`${DSL_API}/apply`, JSON.stringify({ previewId }), {
+    headers: { ...headers, 'Content-Type': 'application/json' },
+    tags: { name },
+    timeout: '60s',
+  })
+  return { submit, apply }
+}
+
+// 業務のメニューの場面の用意。準備の場面は操作する管理者のトークンを取る。読み取りの場面は試験用の利用者のトークンを VU の数だけ取る
+// （目安の場面は、その前に目安の DSL を適用し直す）。トークンの値は出力しない。
+function setupNavigation(data) {
+  if ((SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') && !NAV_DSL_BODY) {
+    fail('DSL_FILE を指定してください（perf/make-nav-dsl.mjs で作った DSL。perf/README.md の業務のメニューの手順）')
+  }
+  if (VUS > NAV_USER_COUNT) fail(`VUS（${VUS}）が試験用の利用者の数 NAV_USER_COUNT（${NAV_USER_COUNT}）を超えています`)
+  if (SCENARIO === 'navPrepare') {
+    data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+    return
+  }
+  if (SCENARIO === 'navMenuBaseline') {
+    const { submit, apply } = navApplyDsl(tokenOf(login(roleOperatorEmail(), USER_PASSWORD)), NAV_DSL_BODY, 'navSetup')
+    if (submit.status !== 201 || apply.status !== 200) {
+      fail(`目安の DSL を適用できませんでした: ${submit.status} ${apply.status} ${codeOf(apply)}`)
+    }
+  }
+  data.navTokens = {}
+  for (let vu = 1; vu <= VUS; vu++) data.navTokens[vu] = tokenOf(login(navUserEmail(vu), USER_PASSWORD))
+}
+
+// 準備の場面: 悪い側の DSL の投入と適用 → グループと所属 → グループへの割り当て → 各利用者の作業ロールの保存
+function navPrepare(data) {
+  const token = data.roleToken
+  const headers = roleHeaders(token)
+  const { submit, apply } = navApplyDsl(token, NAV_DSL_BODY, 'navPrepare')
+  check(submit, { 'dsl submit 201': (r) => r.status === 201 })
+  check(apply, { 'dsl apply 200': (r) => r.status === 200 })
+  const worst = roleIdByName(token, NAV_WORST_NAME)
+  if (!worst) fail(`ロール ${NAV_WORST_NAME} がいません（先に rolePrepare を流してください）`)
+  const ids = idsBySearch(headers, 'perf-nav-')
+  const members = []
+  for (let n = 1; n <= NAV_USER_COUNT; n++) {
+    const id = ids[navUserEmail(n)]
+    if (!id) fail(`試験用の利用者 ${navUserEmail(n)} がいません（perf/README.md の手順で入れてください）`)
+    members.push(id)
+  }
+  const runId = Date.now().toString(36)
+  let ok = true
+  for (let g = 1; g <= NAV_GROUP_COUNT; g++) {
+    const created = jsonPost(GROUP_API, { name: `perf-nav-grp-${runId}-${String(g).padStart(3, '0')}` }, headers, 'navPrepare')
+    if (created.status !== 201) fail(`グループを作れませんでした: ${created.status} ${codeOf(created)}`)
+    const groupId = created.json('groupId')
+    for (const userId of members) {
+      ok = jsonPost(`${GROUP_API}/${groupId}/members`, { userId }, headers, 'navPrepare').status === 204 && ok
+    }
+    ok = jsonPost(`${ROLE_API}/${worst}/assignments`, { groupId }, headers, 'navPrepare').status === 204 && ok
+  }
+  check(ok, { 'groups and assignments 204': (value) => value })
+  let saved = true
+  for (let n = 1; n <= NAV_USER_COUNT; n++) {
+    // 1人ずつログインする（ロックの状態の行を作る。project.md の学び）
+    const userToken = tokenOf(login(navUserEmail(n), USER_PASSWORD))
+    saved = jsonPut(`${BASE}/api/me/work-role`, { roleId: worst }, roleHeaders(userToken), 'navPrepare').status === 204 && saved
+  }
+  check(saved, { 'work roles 204': (value) => value })
+}
+
+function navHeaders(data) {
+  return roleHeaders(data.navTokens[exec.vu.idInTest])
+}
+
+// 置き場の問い合わせで回すテーブルの名前（odd が true なら番号が奇数の読めるテーブル、false なら偶数の NONE のテーブル）
+function navTable(odd) {
+  const k = (exec.vu.idInTest * 7 + exec.vu.iterationInScenario) % NAV_TABLE_HALF
+  return `t_${String(odd ? 2 * k + 1 : 2 * k + 2).padStart(3, '0')}`
+}
+
+function navMenuRead(data, name) {
+  const res = http.get(`${BASE}/api/me/navigation`, { headers: navHeaders(data), tags: { name } })
+  check(res, { [`${name} 200`]: (r) => r.status === 200 && r.json('items').length > 0 })
+}
+
+function navMenu(data) {
+  navMenuRead(data, 'navMenu')
+}
+
+function navMenuBaseline(data) {
+  navMenuRead(data, 'navMenuBaseline')
+}
+
+function tableAccess(data, name, odd) {
+  const query = `schema=${encodeURIComponent(ROLE_TREE_SCHEMA)}&table=${encodeURIComponent(navTable(odd))}`
+  return http.get(`${BASE}/api/me/table-access?${query}`, { headers: navHeaders(data), tags: { name } })
+}
+
+function tableAccessVisible(data) {
+  const res = tableAccess(data, 'tableAccessVisible', true)
+  check(res, { 'tableAccessVisible 200': (r) => r.status === 200 && r.json('main') === 'READ' })
+}
+
+function tableAccessDenied(data) {
+  const res = tableAccess(data, 'tableAccessDenied', false)
+  check(res, { 'tableAccessDenied 403': (r) => r.status === 403 && r.json('code') === 'ACCESS_DENIED' })
 }
 
 const USER_SCENARIOS = {
@@ -1745,6 +1916,11 @@ const USER_SCENARIOS = {
   rolePrepare,
   roleTransferLargeCheck,
   roleTransferLargeApply,
+  navPrepare,
+  navMenu,
+  tableAccessVisible,
+  tableAccessDenied,
+  navMenuBaseline,
 }
 
 export default function (tokens) {

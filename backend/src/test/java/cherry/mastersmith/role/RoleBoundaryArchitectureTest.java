@@ -39,7 +39,8 @@ import org.junit.jupiter.api.Test;
  *   <li>{@code role} がアプリの中で依存してよいのは {@code group.service}・{@code group.domain}・{@code user.service}・
  *       {@code user.domain}・{@code dsl.service}・{@code dsl.domain}・{@code common} だけ（{@code dsl.parse}・{@code dsl.validate}・
  *       {@code group.store}・{@code group.repository}・{@code user.repository} には依存しない）
- *   <li>{@code role} に依存してよいのは {@code audit}（{@code role.domain} だけ）と {@code navigation}（{@code role.service} だけ）
+ *   <li>{@code role} に依存してよいのは {@code audit}（{@code role.domain} だけ）と {@code navigation}（{@code role.service}・
+ *       {@code role.domain} だけ。Intent 261004-role-menu の B7 の計画の 13節 Q1: A で {@code role.domain} を足した）
  *   <li>{@code role.store} を使うのは {@code role.service} だけで、{@code role.store} を持つ（注入される）のは
  *       {@code RoleStoreTransactions} だけ
  *   <li>{@code role.service} は {@code EntityManager}・{@code JdbcTemplate} を使わない
@@ -63,6 +64,8 @@ class RoleBoundaryArchitectureTest {
     private static final String SERVICE = "cherry.mastersmith.role.service..";
 
     private static final String REPOSITORY = "cherry.mastersmith.role.repository..";
+
+    private static final String DOMAIN = "cherry.mastersmith.role.domain..";
 
     private static final JavaClasses CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -123,7 +126,7 @@ class RoleBoundaryArchitectureTest {
     }
 
     @Test
-    @DisplayName("outside role only audit (role.domain) and navigation (role.service) may depend on it")
+    @DisplayName("outside role only audit (role.domain) and navigation (role.service and role.domain) may depend on it")
     void onlyAuditAndNavigationDependOnRole() {
         noClasses()
                 .that()
@@ -143,11 +146,14 @@ class RoleBoundaryArchitectureTest {
                 .that()
                 .resideInAPackage("cherry.mastersmith.navigation..")
                 .should()
-                .dependOnClassesThat(resideInAPackage(ROLE).and(resideOutsideOfPackages(SERVICE)))
+                .dependOnClassesThat(resideInAPackage(ROLE).and(resideOutsideOfPackages(SERVICE, DOMAIN)))
                 .allowEmptyShould(true)
                 .check(CLASSES);
         assertThat(dependsOnPackage("cherry.mastersmith.audit", "cherry.mastersmith.role.domain"))
                 .as("規則が依存を見分けている（audit は実際に role の出来事を使っている）")
+                .isTrue();
+        assertThat(dependsOnPackage("cherry.mastersmith.navigation", "cherry.mastersmith.role.domain"))
+                .as("規則が依存を見分けている（navigation は実際に role.domain の型を使っている）")
                 .isTrue();
     }
 
