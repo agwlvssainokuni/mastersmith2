@@ -31,6 +31,7 @@ import { ConfirmActionDialog } from './ConfirmActionDialog'
 import { EditProfileDialog } from './EditProfileDialog'
 import { focusAfterReload } from './focusTarget'
 import { UserRowActions } from './UserRowActions'
+import { UserRolesDialog } from './UserRolesDialog'
 import { UserSearchBox } from './UserSearchBox'
 import { UserTable } from './UserTable'
 import { useUserAdmin } from './useUserAdmin'
@@ -223,6 +224,15 @@ export function UserAdminPage({
         onCancel={state.closeEdit}
         finalFocusRef={dialogReturnRef}
       />
+      {state.rolesUser !== null && (
+        <UserRolesDialog
+          user={state.rolesUser}
+          api={api}
+          reportForbidden={reportForbidden}
+          onClose={state.closeRoles}
+          finalFocusRef={dialogReturnRef}
+        />
+      )}
     </div>
   )
 }

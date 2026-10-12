@@ -19,6 +19,9 @@
 // フォントのファイルは読まれず、明朝体の文字を描くときにだけ読まれる（<link rel="preload"> は足さない）。
 // 描画の前に、make-you-chic-ui の写しの鍵を U4 の鍵の値で書き直し（W1 の2）、要求の言語の関数を登録し、
 // 見た目の設定の読み取りを描画の外で1回だけ始める（W1 の3、NFR6.2）。埋め込みのスクリプトは使わない（NFR9.4）。
+// ルーターは data router（createBrowserRouter）とし、未保存の確かめ（useBlocker）を使えるようにする
+// （Intent 261004-role-menu の U6 の L11・NFR6.7）。すべての道を1つの経路で App に渡し、App の中の振り分けは変えない。
+// ルーターは前処理の後に作る。
 import '@fontsource/noto-sans-jp/japanese-400.css'
 import '@fontsource/noto-sans-jp/japanese-500.css'
 import '@fontsource/noto-sans-jp/japanese-600.css'
@@ -38,7 +41,7 @@ import '@fontsource/noto-serif-jp/latin-700.css'
 import 'make-you-chic-ui/style.css'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter } from 'react-router'
+import { createBrowserRouter, RouterProvider } from 'react-router'
 import { App } from './app/App'
 import { startAppearanceLoad } from './app/display-settings/appearanceLoad'
 import { rewriteDesignSystemCopies } from './app/display-settings/browserStorage'
@@ -53,11 +56,10 @@ if (!rootElement) {
 rewriteDesignSystemCopies(getPrefersDark())
 installLanguageResolver()
 const appearance = startAppearanceLoad()
+const router = createBrowserRouter([{ path: '*', element: <App appearance={appearance} /> }])
 
 createRoot(rootElement).render(
   <StrictMode>
-    <BrowserRouter>
-      <App appearance={appearance} />
-    </BrowserRouter>
+    <RouterProvider router={router} />
   </StrictMode>,
 )

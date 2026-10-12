@@ -25,3 +25,10 @@ export const PASSWORD_MIN_CODE_POINTS = 12
 
 /** パスワードの長さの上限（UTF-8 のバイト数。U2 の BR4.1） */
 export const PASSWORD_MAX_UTF8_BYTES = 72
+
+/**
+ * 管理の画面で付けるロール・グループの名前の長さの上限（前後の空白を除いた後のコードポイントの数）。
+ * サーバーの `cherry.mastersmith.role.domain.RoleName.MAX_CODE_POINTS`・`cherry.mastersmith.group.domain.GroupName`
+ * の上限と同じ 64（Intent 261004-role-menu の U6 の D7、L9。変えるときは両方を同じ変更で直す）。
+ */
+export const ADMIN_NAME_MAX_CODE_POINTS = 64

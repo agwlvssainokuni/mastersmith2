@@ -17,12 +17,13 @@
 // 検索の文字の画面の側の確かめ（functional-spec.md の D15・W3、frontend-components.md の 7節、AC1.1.4・AC1.1.11）。
 // 前後の White_Space（半角・全角を含む）を trimDisplayName で除いてから countCodePoints で数え、上限を超えれば送らない。
 // 除いた後が空なら検索なし（q を付けない）。送る値は除いた後の値。判定はサーバーが正で、この確かめはその代わりにしない。
-import { countCodePoints, trimDisplayName } from '../../shared/validation/codePoints'
+// Intent 261004-role-menu の U6（計画 13節 Q3: A）で、useradmin の searchInput.ts から中身を変えずにここへ移した。
+// 利用者の管理（useradmin）と、ロール・グループの管理の候補の検索（roleadmin・groupadmin）が使う。
+import { countCodePoints, trimDisplayName } from './codePoints'
 
 /**
  * 検索の文字の上限（前後の空白を除いた後のコードポイントの数）。サーバー（U3 の Q3 A、
  * `cherry.mastersmith.useradmin.web.SearchTextConverter` の上限）と同じ 254 にする（変えるときは両方を同じ変更で直す）。
- * この機能だけが使うため、shared/validation/limits.ts には置かない。
  */
 export const USER_SEARCH_MAX_CODE_POINTS = 254
 

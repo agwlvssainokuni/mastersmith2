@@ -28,8 +28,14 @@ import { expect, type Page, type Route } from '@playwright/test'
 /** 口のモード */
 export type AdminRouteMode = 'inspect' | 'measure-first' | 'measure-second'
 
-/** 見本の応答（abort は通信の失敗の見本） */
-export type MockReply = { status: number; json?: unknown } | { abort: true }
+/**
+ * 見本の応答（abort は通信の失敗の見本）。body は前もって JSON.stringify した本文の文字列で、口は直列化せずにそのまま
+ * route.fulfill に渡す（Intent 261004-role-menu の U6 の L13、performance-design.md 4.1・9節の R-01。測りの中に直列化の
+ * 時間を入れないため）。body の形は status を必須にし、contentType は json の形と同じ規則（400 以上は
+ * application/problem+json、それ以外は application/json）、失敗の数え方も同じ（NFR 設計の読み直し R-09）。
+ */
+export type MockReply =
+  { status: number; json?: unknown } | { status: number; body: string } | { abort: true }
 
 /** 見本を返す関数（問い合わせで返す見本を変えるとき） */
 export type MockHandler = (url: URL) => MockReply
@@ -101,13 +107,18 @@ export async function routeAdminApi(
     if (answer.status >= 400) {
       state.failedReplies += 1
     }
+    const contentType = answer.status >= 400 ? 'application/problem+json' : 'application/json'
+    if ('body' in answer) {
+      await route.fulfill({ status: answer.status, contentType, body: answer.body })
+      return
+    }
     if (answer.json === undefined) {
       await route.fulfill({ status: answer.status })
       return
     }
     await route.fulfill({
       status: answer.status,
-      contentType: answer.status >= 400 ? 'application/problem+json' : 'application/json',
+      contentType,
       body: JSON.stringify(answer.json),
     })
   }

@@ -1,0 +1,215 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+//
+// 権限の受け渡しの画面の文言（Intent 261004-role-menu の U6 の D22〜D26・D28、frontend-components.md の 7節、NFR4.3・
+// NFR4.6）。鍵は `roletransfer.` で始め、ja・en を対で置く。誤りの理由（role の TransferError.Reason の 13 個）と
+// 知らない理由の汎用の文言を持つ。ロールの名前・対象の名前は訳さず、React の文字として描く。
+import type { FeatureMessages } from '../../app/registry/types'
+
+const ja: Record<string, string> = {
+  'roletransfer.nav.label': '権限の受け渡し',
+  'roletransfer.title': '権限の受け渡し',
+  'roletransfer.export.heading': '書き出す',
+  'roletransfer.export.description': 'すべてのロールの権限の設定を YAML のファイルに書き出します。',
+  'roletransfer.export.button': '書き出す',
+  'roletransfer.export.exceeds':
+    '書き出したファイルは読み込みの上限（{{limit}} MiB）を超えています。このままでは読み込めません。',
+  'roletransfer.import.heading': '読み込む',
+  'roletransfer.import.description':
+    'YAML のファイルを選んで確かめ、変わる点を見てから適用します。',
+  'roletransfer.file.choose': 'ファイルを選ぶ',
+  'roletransfer.file.selected': '選んだファイル: {{name}}（{{size}} バイト）',
+  'roletransfer.file.none': 'ファイルが選ばれていません。',
+  'roletransfer.check.button': '確かめる',
+  'roletransfer.check.checking': '確かめています…',
+  'roletransfer.result.heading': '確かめた結果',
+  'roletransfer.result.table': 'ロールごとの変わる点',
+  'roletransfer.result.region': 'ロールごとの変わる点の表',
+  'roletransfer.column.role': 'ロール',
+  'roletransfer.column.action': '変わり方',
+  'roletransfer.column.added': '足す',
+  'roletransfer.column.changed': '変わる',
+  'roletransfer.column.cleared': '消える',
+  'roletransfer.column.notInDsl': '今の DSL に無い',
+  'roletransfer.action.CREATE': '作る',
+  'roletransfer.action.REPLACE': '置き換える',
+  'roletransfer.toggle.open': '{{name}}の変わる点を開く',
+  'roletransfer.toggle.close': '{{name}}の変わる点を閉じる',
+  'roletransfer.changes.region': '{{name}}の変わる点',
+  'roletransfer.changes.empty': '変わる点はありません。',
+  'roletransfer.changes.target': '対象',
+  'roletransfer.changes.before': '前',
+  'roletransfer.changes.after': '後',
+  'roletransfer.changes.reason': '理由',
+  'roletransfer.changes.range': '{{from}}〜{{to}} 件目 / 全 {{total}} 件',
+  'roletransfer.reasonKind.ADDED': 'ファイルで足す',
+  'roletransfer.reasonKind.CHANGED': 'ファイルで変わる',
+  'roletransfer.reasonKind.CLEARED': 'ファイルに無い',
+  'roletransfer.orphan': '⚠ 今の DSL に無い',
+  'roletransfer.value.unset': '設定なし',
+  'roletransfer.value.allow': '可',
+  'roletransfer.value.deny': '不可',
+  'roletransfer.value.format': '主権限 {{main}}・CREATE {{create}}・DELETE {{delete}}',
+  'roletransfer.pager.prev': '前へ',
+  'roletransfer.pager.next': '次へ',
+  'roletransfer.summary.cleared':
+    '置き換えるロールでは、ファイルに無い対象の設定は「設定なし」に戻ります（消える: {{count}}）。',
+  'roletransfer.summary.untouched': 'ファイルに無いロール（{{names}}）は残ります。',
+  'roletransfer.summary.separator': '、',
+  'roletransfer.noChangeResult': '変わる点はありません。',
+  'roletransfer.apply.button': '適用する',
+  'roletransfer.apply.title': '適用する',
+  'roletransfer.apply.confirm':
+    '{{count}} つのロールを置き換え・作成します。置き換えるロールでは、ファイルに無い対象の設定（{{cleared}} 件）は設定なしに戻ります。ファイルに無いロールは残ります。',
+  'roletransfer.apply.submit': '適用する',
+  'roletransfer.apply.done': '作成 {{created}}・置き換え {{replaced}}',
+  'roletransfer.errors.region': '誤りの一覧の表',
+  'roletransfer.errors.table': '誤りの一覧',
+  'roletransfer.errors.line': '行',
+  'roletransfer.errors.column': '列',
+  'roletransfer.errors.path': '場所',
+  'roletransfer.errors.reason': '種類',
+  'roletransfer.action.cancel': 'やめる',
+  'roletransfer.action.close': '閉じる',
+  'roletransfer.action.dismiss': '知らせを閉じる',
+  'roletransfer.action.processing': '処理中',
+  'roletransfer.slow': '時間がかかっています。そのままお待ちください。',
+  'roletransfer.slow.check':
+    '時間がかかっています。上限に近い大きさのファイルでは、確かめに最大 15 秒かかります。そのままお待ちください。',
+  'roletransfer.slow.apply':
+    '時間がかかっています。上限に近い大きさのファイルでは、適用に最大 30 秒かかります。そのままお待ちください。',
+  'roletransfer.error.general': '操作できませんでした。もう一度お試しください。',
+  'roletransfer.busy': 'ほかの読み込みか操作と重なりました。少し待ってからもう一度お試しください。',
+  'roletransfer.stale':
+    '確かめた後にロールの設定が変わったため、適用できませんでした。もう一度[確かめる]を押してください。',
+  'roletransfer.noDsl': 'DSL が適用されていないため読み込めません。',
+  'roletransfer.noChange': '変わる点はありませんでした。',
+  'roletransfer.invalid.summary': 'ファイルに誤りがあります（{{count}} 件）。',
+  'roletransfer.file.tooLarge': 'ファイルが大きすぎます（上限 {{limit}} MiB）。',
+  'roletransfer.reason.TOO_DEEP': '入れ子が深すぎます',
+  'roletransfer.reason.TOO_MANY_ALIASES': '別名（アンカー）が多すぎます',
+  'roletransfer.reason.TAG_NOT_ALLOWED': '使えないタグがあります',
+  'roletransfer.reason.DUPLICATE_KEY': '同じ項目が重なっています',
+  'roletransfer.reason.SYNTAX': 'YAML の書き方に誤りがあります',
+  'roletransfer.reason.UNSUPPORTED_VERSION': '扱えない版です',
+  'roletransfer.reason.MISSING_KEY': '必要な項目がありません',
+  'roletransfer.reason.UNKNOWN_KEY': '知らない項目です',
+  'roletransfer.reason.INVALID_VALUE': '値が正しくありません',
+  'roletransfer.reason.INVALID_ROLE_NAME': 'ロールの名前が正しくありません',
+  'roletransfer.reason.DUPLICATE_ROLE': '同じ名前のロールが重なっています',
+  'roletransfer.reason.INVALID_TARGET_NAME': '対象の名前が正しくありません',
+  'roletransfer.reason.COLUMN_AUX_NOT_ALLOWED': 'カラムには補助権限を設定できません',
+  'roletransfer.reason.unknown': 'ファイルに誤りがあります',
+}
+
+const en: Record<string, string> = {
+  'roletransfer.nav.label': 'Permission transfer',
+  'roletransfer.title': 'Permission transfer',
+  'roletransfer.export.heading': 'Export',
+  'roletransfer.export.description': 'Export the permission settings of all roles to a YAML file.',
+  'roletransfer.export.button': 'Export',
+  'roletransfer.export.exceeds':
+    'The exported file exceeds the import limit ({{limit}} MiB). It cannot be imported as it is.',
+  'roletransfer.import.heading': 'Import',
+  'roletransfer.import.description':
+    'Choose a YAML file, check it, review the changes, and then apply it.',
+  'roletransfer.file.choose': 'Choose a file',
+  'roletransfer.file.selected': 'Chosen file: {{name}} ({{size}} bytes)',
+  'roletransfer.file.none': 'No file is chosen.',
+  'roletransfer.check.button': 'Check',
+  'roletransfer.check.checking': 'Checking…',
+  'roletransfer.result.heading': 'Check result',
+  'roletransfer.result.table': 'Changes by role',
+  'roletransfer.result.region': 'Table of changes by role',
+  'roletransfer.column.role': 'Role',
+  'roletransfer.column.action': 'Change',
+  'roletransfer.column.added': 'Added',
+  'roletransfer.column.changed': 'Changed',
+  'roletransfer.column.cleared': 'Cleared',
+  'roletransfer.column.notInDsl': 'Not in the current DSL',
+  'roletransfer.action.CREATE': 'Create',
+  'roletransfer.action.REPLACE': 'Replace',
+  'roletransfer.toggle.open': 'Open the changes of {{name}}',
+  'roletransfer.toggle.close': 'Close the changes of {{name}}',
+  'roletransfer.changes.region': 'Changes of {{name}}',
+  'roletransfer.changes.empty': 'There are no changes.',
+  'roletransfer.changes.target': 'Target',
+  'roletransfer.changes.before': 'Before',
+  'roletransfer.changes.after': 'After',
+  'roletransfer.changes.reason': 'Reason',
+  'roletransfer.changes.range': '{{from}}–{{to}} of {{total}}',
+  'roletransfer.reasonKind.ADDED': 'Added by the file',
+  'roletransfer.reasonKind.CHANGED': 'Changed by the file',
+  'roletransfer.reasonKind.CLEARED': 'Not in the file',
+  'roletransfer.orphan': '⚠ Not in the current DSL',
+  'roletransfer.value.unset': 'Not set',
+  'roletransfer.value.allow': 'Allowed',
+  'roletransfer.value.deny': 'Denied',
+  'roletransfer.value.format': 'Main {{main}}, CREATE {{create}}, DELETE {{delete}}',
+  'roletransfer.pager.prev': 'Previous',
+  'roletransfer.pager.next': 'Next',
+  'roletransfer.summary.cleared':
+    'For replaced roles, settings of targets not in the file return to "Not set" (cleared: {{count}}).',
+  'roletransfer.summary.untouched': 'Roles not in the file ({{names}}) remain.',
+  'roletransfer.summary.separator': ', ',
+  'roletransfer.noChangeResult': 'There are no changes.',
+  'roletransfer.apply.button': 'Apply',
+  'roletransfer.apply.title': 'Apply',
+  'roletransfer.apply.confirm':
+    'Replace or create {{count}} roles. For replaced roles, settings of targets not in the file ({{cleared}}) return to not set. Roles not in the file remain.',
+  'roletransfer.apply.submit': 'Apply',
+  'roletransfer.apply.done': 'Created {{created}}, replaced {{replaced}}',
+  'roletransfer.errors.region': 'Table of errors',
+  'roletransfer.errors.table': 'Errors',
+  'roletransfer.errors.line': 'Line',
+  'roletransfer.errors.column': 'Column',
+  'roletransfer.errors.path': 'Location',
+  'roletransfer.errors.reason': 'Kind',
+  'roletransfer.action.cancel': 'Cancel',
+  'roletransfer.action.close': 'Close',
+  'roletransfer.action.dismiss': 'Dismiss',
+  'roletransfer.action.processing': 'Processing',
+  'roletransfer.slow': 'This is taking a while. Please wait.',
+  'roletransfer.slow.check':
+    'This is taking a while. A file near the size limit can take up to 15 seconds to check. Please wait.',
+  'roletransfer.slow.apply':
+    'This is taking a while. A file near the size limit can take up to 30 seconds to apply. Please wait.',
+  'roletransfer.error.general': 'The operation could not be completed. Please try again.',
+  'roletransfer.busy': 'Another load or operation was in progress. Wait a moment and try again.',
+  'roletransfer.stale':
+    'The role settings changed after the check, so they were not applied. Press [Check] again.',
+  'roletransfer.noDsl': 'The file cannot be read because no DSL has been applied.',
+  'roletransfer.noChange': 'There was nothing to change.',
+  'roletransfer.invalid.summary': 'The file has errors ({{count}}).',
+  'roletransfer.file.tooLarge': 'The file is too large (limit {{limit}} MiB).',
+  'roletransfer.reason.TOO_DEEP': 'The nesting is too deep',
+  'roletransfer.reason.TOO_MANY_ALIASES': 'There are too many aliases (anchors)',
+  'roletransfer.reason.TAG_NOT_ALLOWED': 'A tag that is not allowed is used',
+  'roletransfer.reason.DUPLICATE_KEY': 'A key appears more than once',
+  'roletransfer.reason.SYNTAX': 'The YAML syntax is wrong',
+  'roletransfer.reason.UNSUPPORTED_VERSION': 'The version is not supported',
+  'roletransfer.reason.MISSING_KEY': 'A required key is missing',
+  'roletransfer.reason.UNKNOWN_KEY': 'Unknown key',
+  'roletransfer.reason.INVALID_VALUE': 'The value is not valid',
+  'roletransfer.reason.INVALID_ROLE_NAME': 'The role name is not valid',
+  'roletransfer.reason.DUPLICATE_ROLE': 'The same role appears more than once',
+  'roletransfer.reason.INVALID_TARGET_NAME': 'The target name is not valid',
+  'roletransfer.reason.COLUMN_AUX_NOT_ALLOWED': 'Columns cannot have auxiliary permissions',
+  'roletransfer.reason.unknown': 'The file has an error',
+}
+
+/** 権限の受け渡しの画面の文言 */
+export const roleTransferMessages: FeatureMessages = { ja, en }

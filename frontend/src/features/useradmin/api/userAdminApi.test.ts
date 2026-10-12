@@ -21,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerAuthHandlers, resetApiClient } from '../../../shared/api-client/apiClient'
 import type { ApiError } from '../../../shared/api-client/apiError'
 import {
+  getUserRoles,
   grantAdmin,
   listUsers,
   resetLoginFailures,
@@ -219,5 +220,49 @@ describe('userAdminApi failures', () => {
       (error: unknown) => error as ApiError,
     )
     expect(network).toEqual({ kind: 'network' })
+  })
+})
+
+describe('userAdminApi roles of a user', () => {
+  it('reads the roles of a user and maps the source type to the kind', async () => {
+    fetchMock.mockResolvedValueOnce(
+      json(200, [
+        {
+          roleId: 1,
+          name: '営業',
+          sources: [
+            { type: 'DIRECT', groupId: null, name: null },
+            { type: 'GROUP', groupId: 2, name: '営業部' },
+          ],
+          internal: true,
+        },
+      ]),
+    )
+    expect(await getUserRoles(7)).toEqual([
+      {
+        roleId: 1,
+        name: '営業',
+        sources: [{ kind: 'DIRECT' }, { kind: 'GROUP', groupId: 2, name: '営業部' }],
+      },
+    ])
+    expect(call().path).toBe('/api/admin/users/7/roles')
+    expect(call().init.method).toBe('GET')
+  })
+
+  it('rejects a body that is not an array or has an unknown source type as a network error', async () => {
+    fetchMock
+      .mockResolvedValueOnce(json(200, { items: [] }))
+      .mockResolvedValueOnce(json(200, [{ roleId: 1, name: '営業', sources: [{ type: 'USER' }] }]))
+      .mockResolvedValueOnce(json(200, [{ roleId: 1, name: '営業', sources: 'DIRECT' }]))
+      .mockResolvedValueOnce(new Response('x', { status: 200 }))
+    await expect(getUserRoles(7)).rejects.toEqual({ kind: 'network' })
+    await expect(getUserRoles(7)).rejects.toEqual({ kind: 'network' })
+    await expect(getUserRoles(7)).rejects.toEqual({ kind: 'network' })
+    await expect(getUserRoles(7)).rejects.toEqual({ kind: 'network' })
+  })
+
+  it('passes USER_NOT_FOUND through', async () => {
+    fetchMock.mockResolvedValueOnce(json(404, { status: 404, code: 'USER_NOT_FOUND' }))
+    await expect(getUserRoles(7)).rejects.toMatchObject({ status: 404, code: 'USER_NOT_FOUND' })
   })
 })

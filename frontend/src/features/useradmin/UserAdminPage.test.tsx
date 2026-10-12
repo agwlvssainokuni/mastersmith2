@@ -122,6 +122,7 @@ function fakeApi(firstPage: AdminUserPage = pageOf()): FakeApi {
       resumeUser: resume,
       resetLoginFailures: reset,
       updateProfile: profile,
+      getUserRoles: vi.fn(() => Promise.resolve([])),
     },
     list,
     grant,
@@ -1104,5 +1105,36 @@ describe('UserAdminPage privacy, language and accessibility', () => {
         view.unmount()
       }
     }
+  })
+})
+
+describe('UserAdminPage roles of a user', () => {
+  afterEach(() => {
+    resetDisplayTestState()
+    vi.restoreAllMocks()
+  })
+
+  it('opens the roles of the row from "view roles" and returns focus to the row actions on close', async () => {
+    const user = userEvent.setup()
+    const fake = fakeApi(pageOf({ items: [TARGET] }))
+    const getUserRoles = fake.api.getUserRoles as Mock<UserAdminApi['getUserRoles']>
+    getUserRoles.mockResolvedValue([
+      {
+        roleId: 5,
+        name: '営業',
+        sources: [{ kind: 'DIRECT' }, { kind: 'GROUP', groupId: 3, name: '営業部' }],
+      },
+    ])
+    renderPage(fake)
+    await rowsShown()
+    await choose(user, TARGET, 'ロールを見る')
+    const dialog = await screen.findByRole('dialog', { name: '佐藤 花子さんのロール' })
+    expect(await within(dialog).findByText('営業（直接・グループ 営業部）')).toBeInTheDocument()
+    expect(getUserRoles).toHaveBeenCalledWith(11)
+    expect(fake.list).toHaveBeenCalledTimes(1)
+    await user.click(within(dialog).getByTestId('useradmin-roles-close'))
+    await waitFor(() => expect(actionsButton(TARGET)).toHaveFocus())
+    // 表の列と既存の操作は変わらない。
+    expect(screen.getAllByRole('columnheader')).toHaveLength(7)
   })
 })

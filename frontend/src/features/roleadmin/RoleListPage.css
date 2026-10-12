@@ -1,0 +1,131 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * ロールの一覧（S3）と名前・削除の Modal の配置（Intent 261004-role-menu の U6 の D5・D6・D31、mockups の S3・10a）。
+ * make-you-chic-ui のトークン（CSS の変数）だけを使い、Table の中の class は上書きしない。表は包む要素の中で横に動き、
+ * 画面全体の横のスクロールを出さない（min-width: 0・overflow-wrap: anywhere）。
+ */
+.roleadmin-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.roleadmin-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.roleadmin-heading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  overflow-wrap: anywhere;
+}
+
+.roleadmin-notice:empty {
+  display: none;
+}
+
+.roleadmin-load-error,
+.roleadmin-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.roleadmin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.roleadmin-list-heading {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.roleadmin-status,
+.roleadmin-empty-text {
+  margin: 0;
+}
+
+.roleadmin-table {
+  min-width: 0;
+}
+
+.roleadmin-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.roleadmin-link {
+  /* リンクの文字は文字用の色（--color-primary は WCAG AA に届かない組がある。DSL の画面と同じ） */
+  color: var(--color-primary-subtle-text);
+  overflow-wrap: anywhere;
+}
+
+.roleadmin-wrap {
+  overflow-wrap: anywhere;
+}
+
+.roleadmin-nowrap {
+  white-space: nowrap;
+}
+
+.roleadmin-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.roleadmin-dialog-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.roleadmin-dialog-slow {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+.roleadmin-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.roleadmin-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

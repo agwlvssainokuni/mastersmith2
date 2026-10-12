@@ -75,6 +75,35 @@ describe('apiClient problem details and download', () => {
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer access-token')
   })
 
+  it('gives all the response headers with a download and keeps the other fields', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('roles: []\n', {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/yaml',
+          'Content-Disposition': 'attachment; filename="roles.yaml"',
+          'X-Role-Transfer-Exceeds-Import-Limit': 'true',
+        },
+      }),
+    )
+
+    const download = await apiDownload('/api/admin/role-transfer/export')
+
+    expect(download.headers.get('X-Role-Transfer-Exceeds-Import-Limit')).toBe('true')
+    expect(download.headers.get('Content-Type')).toBe('application/yaml')
+    expect(download.contentDisposition).toBe('attachment; filename="roles.yaml"')
+    expect(await download.blob.text()).toBe('roles: []\n')
+    expect(Object.keys(download).sort()).toEqual(['blob', 'contentDisposition', 'headers'])
+  })
+
+  it('gives headers without the custom header when the server does not send it', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('a: 1\n', { status: 200 }))
+
+    const download = await apiDownload('/api/admin/role-transfer/export')
+
+    expect(download.headers.get('X-Role-Transfer-Exceeds-Import-Limit')).toBeNull()
+  })
+
   it('gives a null Content-Disposition when the header is missing', async () => {
     fetchMock.mockResolvedValueOnce(new Response('a: 1\n', { status: 200 }))
 

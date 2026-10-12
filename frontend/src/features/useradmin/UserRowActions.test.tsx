@@ -63,6 +63,7 @@ describe('UserRowActions', () => {
       '利用を止める',
       'ロックを解除（失敗回数を戻す）',
       '氏名・言語を直す',
+      'ロールを見る',
     ])
     await user.click(screen.getByRole('menuitem', { name: '利用を止める' }))
     expect(onSelect).toHaveBeenCalledWith('suspend')

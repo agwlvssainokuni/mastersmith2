@@ -1,0 +1,466 @@
+{
+  "stage": "code-generation",
+  "unit": "role-admin-ui",
+  "version": 1,
+  "writes": [
+    {
+      "path": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/150-role-permission-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/adminApiRoute.ts"
+    },
+    {
+      "path": "frontend/e2e/support/roleAdminFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/shapeCompare.ts"
+    },
+    {
+      "path": "frontend/e2e/support/u6Measure.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/DataRouterBlocker.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/api/groupAdminApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/api/groupAdminApi.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/CandidateDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/DeleteConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/DeleteConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/failureMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/failureMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupAdminEnglish.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupAdminForbidden.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupDetailPage.css"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupDetailPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupListPage.css"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupListPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupNameDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupNameDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/latestLoad.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/MemberTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/MemberTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/paths.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/removedRoles.test.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/removedRoles.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/testing/renderGroupAdmin.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useGroupAdminText.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useGroupDetail.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useGroupList.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/api/roleAdminApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/api/roleAdminApi.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/AssignmentPanel.css"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/AssignmentPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/CandidateDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/DeleteConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/DeleteConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/failureMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/failureMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/latestLoad.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/latestLoad.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/LeaveConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/LeaveConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/paths.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/permissionDraft.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/permissionDraft.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/permissionLabels.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/permissionLabels.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionPanel.css"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/removalImpact.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/removalImpact.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleDetailPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleDetailPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleListPage.css"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleListPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleNameDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleNameDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/testing/renderRoleAdmin.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRole.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRoleAdminText.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRoleAssignments.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRoleList.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRolePermissions.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useSlowNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useUnsavedGuard.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useUnsavedGuard.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/api/roleTransferApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/api/roleTransferApi.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/ApplyConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/ApplyConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/changePaging.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/changePaging.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/failureMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/failureMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/latestLoad.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/reasonMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/reasonMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/RoleTransferForbidden.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/RoleTransferPage.css"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/RoleTransferPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/safeFileName.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/safeFileName.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/saveFile.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/testing/fixtures.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferCheckTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferCheckTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferErrorList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferErrorList.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferFilePicker.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/TransferFilePicker.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/transferLimits.test.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/transferLimits.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useRoleTransfer.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useRoleTransfer.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useRoleTransferText.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/api/userAdminApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/api/userAdminApi.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/rowActions.test.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/rowActions.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRolesDialog.css"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRolesDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRolesDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/useUserAdmin.ts"
+    },
+    {
+      "path": "frontend/src/main.tsx"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.download.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/api-client/apiClient.ts"
+    },
+    {
+      "path": "frontend/src/shared/validation/limits.ts"
+    },
+    {
+      "path": "frontend/src/shared/validation/searchText.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/validation/searchText.ts"
+    },
+    {
+      "path": "frontend/src/shared/validation/validateAdminName.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/validation/validateAdminName.ts"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

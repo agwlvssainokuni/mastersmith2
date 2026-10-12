@@ -1,0 +1,93 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * S7 権限の受け渡しの配置（Intent 261004-role-menu の U6 の D22〜D26・D31、mockups の S7・10a）。表は外枠の中で横に動き、
+ * 画面全体の横のスクロールを出さない。make-you-chic-ui のトークン（CSS の変数）だけを使う。
+ */
+.roletransfer-page,
+.roletransfer-section,
+.roletransfer-picker,
+.roletransfer-errors,
+.roletransfer-result,
+.roletransfer-changes,
+.roletransfer-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.roletransfer-heading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.roletransfer-subheading {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.roletransfer-notice:empty {
+  display: none;
+}
+
+.roletransfer-text,
+.roletransfer-error-text {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.roletransfer-error-text {
+  color: var(--color-danger-text);
+}
+
+.roletransfer-picker-label {
+  font-weight: var(--font-weight-semibold);
+}
+
+.roletransfer-picker-input {
+  max-width: 100%;
+}
+
+.roletransfer-wrap {
+  overflow-wrap: anywhere;
+}
+
+.roletransfer-role,
+.roletransfer-reason,
+.roletransfer-pager {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.roletransfer-focusable:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.roletransfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.roletransfer-actions-start {
+  justify-content: flex-start;
+}

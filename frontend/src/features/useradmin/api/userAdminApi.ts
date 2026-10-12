@@ -30,6 +30,8 @@ import {
   type AdminUserPage,
   type ProfileRequest,
   type UserLanguage,
+  type UserRole,
+  type UserRoleSource,
 } from './types'
 
 /** 利用者の管理の API の根 */
@@ -205,6 +207,72 @@ export async function updateProfile(userId: number, request: ProfileRequest): Pr
   })
 }
 
+/** 利用者のロールの API のパス（Intent 261004-role-menu の U6 の D27、契約 C7） */
+export function userRolesPath(userId: number): string {
+  return `${USER_ADMIN_API_ROOT}/${encodeURIComponent(String(userId))}/roles`
+}
+
+/** 出どころを写す（応答の type を kind に写す。DIRECT・GROUP 以外は形の違い）。 */
+function toUserRoleSource(value: unknown): UserRoleSource | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const { type, groupId, name } = value
+  if (type === 'DIRECT') {
+    return { kind: 'DIRECT' }
+  }
+  if (type === 'GROUP' && isInteger(groupId) && typeof name === 'string') {
+    return { kind: 'GROUP', groupId, name }
+  }
+  return undefined
+}
+
+/** 利用者のロールの1件を写す。形が違えば undefined。 */
+function toUserRole(value: unknown): UserRole | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const { roleId, name, sources } = value
+  if (!isInteger(roleId) || typeof name !== 'string' || !Array.isArray(sources)) {
+    return undefined
+  }
+  const converted: UserRoleSource[] = []
+  for (const source of sources as unknown[]) {
+    const item = toUserRoleSource(source)
+    if (item === undefined) {
+      return undefined
+    }
+    converted.push(item)
+  }
+  return { roleId, name, sources: converted }
+}
+
+/**
+ * 利用者のロールを読む（GET /api/admin/users/{userId}/roles、配列。Intent 261004-role-menu の U6 の D27）。
+ * 応答は配列で、各要素の roleId・name・sources だけを写す。形が違えば通信の失敗。
+ */
+export async function getUserRoles(userId: number): Promise<UserRole[]> {
+  const response = await apiRequest(userRolesPath(userId), { method: 'GET' })
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    throw networkError()
+  }
+  if (!Array.isArray(body)) {
+    throw networkError()
+  }
+  const roles: UserRole[] = []
+  for (const item of body as unknown[]) {
+    const role = toUserRole(item)
+    if (role === undefined) {
+      throw networkError()
+    }
+    roles.push(role)
+  }
+  return roles
+}
+
 /** 画面が使う API の関数の集まり（テストで差し替える） */
 export const userAdminApi = {
   listUsers,
@@ -214,6 +282,7 @@ export const userAdminApi = {
   resumeUser,
   resetLoginFailures,
   updateProfile,
+  getUserRoles,
 }
 
 /** 画面が使う API の関数の集まりの型 */

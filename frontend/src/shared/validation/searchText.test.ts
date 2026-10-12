@@ -20,8 +20,8 @@
 // git diff で指定が残っていないことを確かめる）。
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { countCodePoints } from '../../shared/validation/codePoints'
-import { checkSearchInput, USER_SEARCH_MAX_CODE_POINTS } from './searchInput'
+import { countCodePoints } from './codePoints'
+import { checkSearchInput, USER_SEARCH_MAX_CODE_POINTS } from './searchText'
 
 /** 前後に付ける空白（半角・全角・タブ・改行） */
 const spaceArbitrary = fc.string({

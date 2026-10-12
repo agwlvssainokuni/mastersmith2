@@ -26,13 +26,17 @@ export const ROW_ACTION_KINDS = [
   'resume',
   'resetFailures',
   'editProfile',
+  'viewRoles',
 ] as const
 
 /** 行の操作の種類 */
 export type RowActionKind = (typeof ROW_ACTION_KINDS)[number]
 
-/** 確かめの表示（S3）を出す操作（editProfile を除く5つ） */
-export type ConfirmActionKind = Exclude<RowActionKind, 'editProfile'>
+/**
+ * 確かめの表示（S3）を出す操作（editProfile と viewRoles を除く5つ）。viewRoles（Intent 261004-role-menu の U6 の D27）は
+ * 読み取りの Modal を開くだけで確かめを出さない（計画 2.4・11節 D-5）。
+ */
+export type ConfirmActionKind = Exclude<RowActionKind, 'editProfile' | 'viewRoles'>
 
 /** 押せない理由の値 */
 export const DISABLED_REASONS = ['selfRevoke', 'selfSuspend'] as const
@@ -78,5 +82,7 @@ export function rowActions({ admin, suspended, resettable, self }: RowActionInpu
     actions.push({ kind: 'resetFailures' })
   }
   actions.push({ kind: 'editProfile' })
+  // 「ロールを見る」はどの行でも押せ、並びの最後に置く（Intent 261004-role-menu の U6 の D27、W9.1）。
+  actions.push({ kind: 'viewRoles' })
   return actions
 }

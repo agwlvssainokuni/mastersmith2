@@ -49,6 +49,7 @@ function expected({ admin, suspended, resettable, self }: RowActionInput): RowAc
   if (suspended) result.push({ kind: 'resume' })
   if (resettable) result.push({ kind: 'resetFailures' })
   result.push({ kind: 'editProfile' })
+  result.push({ kind: 'viewRoles' })
   return result
 }
 
@@ -75,12 +76,12 @@ describe('rowActions', () => {
       rowActions({ admin: false, suspended: false, resettable: true, self: false }).map(
         (a) => a.kind,
       ),
-    ).toEqual(['grantAdmin', 'suspend', 'resetFailures', 'editProfile'])
+    ).toEqual(['grantAdmin', 'suspend', 'resetFailures', 'editProfile', 'viewRoles'])
     expect(
       rowActions({ admin: true, suspended: true, resettable: true, self: false }).map(
         (a) => a.kind,
       ),
-    ).toEqual(['resume', 'resetFailures', 'editProfile'])
+    ).toEqual(['resume', 'resetFailures', 'editProfile', 'viewRoles'])
   })
 
   it('always shows revoke and suspend as disabled on the own row', () => {
@@ -121,6 +122,8 @@ describe('rowActions', () => {
       fc.property(inputArbitrary, (input) => {
         const actions = rowActions(input)
         expect(find(actions, 'editProfile')).toEqual({ kind: 'editProfile' })
+        // 「ロールを見る」はどの行でも押せる形で最後に出る（Intent 261004-role-menu の U6 の D27）。
+        expect(actions.at(-1)).toEqual({ kind: 'viewRoles' })
         const adminItems = actions.filter(
           (a) => a.kind === 'grantAdmin' || a.kind === 'revokeAdmin',
         )

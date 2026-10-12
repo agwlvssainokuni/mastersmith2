@@ -33,6 +33,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ApplyOwnProfileInput } from '../../app/display-settings/useApplyOwnProfile'
 import { readFieldErrors } from '../../shared/api-client/fieldErrors'
 import { trimDisplayName } from '../../shared/validation/codePoints'
+import { checkSearchInput } from '../../shared/validation/searchText'
 import {
   correctedPage,
   pageRange,
@@ -57,7 +58,6 @@ import {
   type ProfileField,
 } from './profileInput'
 import { rowActions, type ConfirmActionKind, type RowActionKind } from './rowActions'
-import { checkSearchInput } from './searchInput'
 import type { UserAdminText } from './useUserAdminText'
 
 /** 一覧の読み込みの状態 */
@@ -192,6 +192,7 @@ export function useUserAdmin({ api, t, reportForbidden, applyOwnProfile }: UseUs
   const [failure, setFailure] = useState<FailureNotice | null>(null)
   const [confirm, setConfirm] = useState<ConfirmState | null>(null)
   const [edit, setEdit] = useState<EditState | null>(null)
+  const [rolesUser, setRolesUser] = useState<AdminUser | null>(null)
   const [busyUserId, setBusyUserId] = useState<number | null>(null)
   const [slow, setSlow] = useState(false)
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null)
@@ -396,6 +397,11 @@ export function useUserAdmin({ api, t, reportForbidden, applyOwnProfile }: UseUs
       return
     }
     setFailure(null)
+    if (action === 'viewRoles') {
+      // 読み取りの Modal を開くだけ（確かめを出さない。Intent 261004-role-menu の U6 の D27）。
+      setRolesUser(user)
+      return
+    }
     if (action === 'editProfile') {
       setEdit({
         user,
@@ -614,6 +620,7 @@ export function useUserAdmin({ api, t, reportForbidden, applyOwnProfile }: UseUs
     liveMessage,
     confirm,
     edit,
+    rolesUser,
     busyUserId,
     slow,
     focusTarget,
@@ -630,6 +637,7 @@ export function useUserAdmin({ api, t, reportForbidden, applyOwnProfile }: UseUs
     changeEditLanguage,
     saveEdit,
     closeEdit,
+    closeRoles: () => setRolesUser(null),
     dismissFailure,
     consumeFocus,
   }

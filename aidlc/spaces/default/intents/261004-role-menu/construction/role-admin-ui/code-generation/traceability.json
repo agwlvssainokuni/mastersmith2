@@ -1,0 +1,980 @@
+{
+  "stage": "code-generation",
+  "unit": "role-admin-ui",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.1.10",
+    "AC1.1.11",
+    "AC1.1.12",
+    "AC1.1.13",
+    "AC1.1.14",
+    "AC1.1.15",
+    "AC1.1.16",
+    "AC1.1.17",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.2.15",
+    "AC1.2.16",
+    "AC1.2.17",
+    "AC1.2.18",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.11",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.9",
+    "AC2.2.10",
+    "AC2.2.11",
+    "AC2.2.12",
+    "AC2.2.13",
+    "AC2.2.14",
+    "AC2.2.15",
+    "AC2.2.16",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.1.11",
+    "AC3.1.12",
+    "AC3.1.13",
+    "AC3.1.14",
+    "AC3.1.15",
+    "AC3.1.16",
+    "AC3.1.17",
+    "AC5.3.1",
+    "AC5.3.2",
+    "AC5.3.3",
+    "AC5.3.4",
+    "AC5.3.5",
+    "AC5.3.6",
+    "AC5.3.7",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7",
+    "D8",
+    "D9",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20",
+    "D21",
+    "D22",
+    "D23",
+    "D24",
+    "D25",
+    "D26",
+    "D27",
+    "D28",
+    "D29",
+    "D30",
+    "D31",
+    "D32",
+    "NFR1",
+    "NFR1.1",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR2",
+    "NFR2.2",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR2.12",
+    "NFR2.13",
+    "NFR4",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR6",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8",
+    "NFR6.9",
+    "NFR6.10"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "Deferred",
+      "target": "U4 role（認可の表のテスト。画面の 403 の扱いは functional-spec.md D2）"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/DeleteConfirmDialog.test.tsx"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleNameDialog.test.tsx"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "U4 role（画面は名前だけを送る: functional-spec.md D7）"
+    },
+    {
+      "id": "AC1.1.11",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.1.12",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleDetailPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.13",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.1.14",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "AC1.1.15",
+      "status": "Deferred",
+      "target": "U1 cross-cutting（分類の網羅の検査）・U4 role（足す GET /api/admin/roles/{roleId} の印: functional-spec.md 10節）"
+    },
+    {
+      "id": "AC1.1.16",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.1.17",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionTable.test.tsx"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "Deferred",
+      "target": "U4 role（監査と次の要求からの効き目。画面の保存は functional-spec.md W4.4・D13）"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "Deferred",
+      "target": "U4 role（解決）・U5 navigation（メニュー）"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "Deferred",
+      "target": "U4 role（画面は許した値だけを選ばせる: functional-spec.md W4.3）"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.15",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleDetailPage.test.tsx"
+    },
+    {
+      "id": "AC1.2.16",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.17",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "AC1.2.18",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "Deferred",
+      "target": "U3 group"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "Deferred",
+      "target": "U3 group（招待中の人は API が候補に返さない: functional-spec.md D17）"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "Deferred",
+      "target": "U3 group（画面は値をコンソールと保存に出さない: functional-spec.md D3）"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "Deferred",
+      "target": "U4 role（画面は値をコンソールと保存に出さない: functional-spec.md D3）"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRolesDialog.test.tsx"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.11",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.12",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.13",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.14",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC2.2.15",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "AC2.2.16",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/useRoleTransfer.test.tsx"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferCheckTable.test.tsx"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferCheckTable.test.tsx"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/useRoleTransfer.test.tsx"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferCheckTable.test.tsx"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.11",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.12",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferErrorList.test.tsx"
+    },
+    {
+      "id": "AC3.1.13",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.14",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "AC3.1.15",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.16",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC3.1.17",
+      "status": "Deferred",
+      "target": "U4 role"
+    },
+    {
+      "id": "AC5.3.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/registration.test.tsx"
+    },
+    {
+      "id": "AC5.3.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "id": "AC5.3.3",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.4",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.5",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "AC5.3.6",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui（管理の API の可否は U4 role）"
+    },
+    {
+      "id": "AC5.3.7",
+      "status": "Deferred",
+      "target": "U7 app-frame-ui"
+    },
+    {
+      "id": "D1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/registration.test.tsx"
+    },
+    {
+      "id": "D2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "id": "D3",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/failureMessage.test.ts"
+    },
+    {
+      "id": "D4",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "D5",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "D6",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleRowActions.test.tsx"
+    },
+    {
+      "id": "D7",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleNameDialog.test.tsx"
+    },
+    {
+      "id": "D8",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/DeleteConfirmDialog.test.tsx"
+    },
+    {
+      "id": "D9",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "D10",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "D11",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionTable.test.tsx"
+    },
+    {
+      "id": "D12",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/permissionDraft.test.ts"
+    },
+    {
+      "id": "D13",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "D14",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "D15",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/useUnsavedGuard.test.tsx"
+    },
+    {
+      "id": "D16",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "D17",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "id": "D18",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/CandidateDialog.test.tsx"
+    },
+    {
+      "id": "D19",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/AssignmentPanel.test.tsx"
+    },
+    {
+      "id": "D20",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "D21",
+      "status": "OK",
+      "target": "frontend/src/features/groupadmin/GroupDetailPage.test.tsx"
+    },
+    {
+      "id": "D22",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/useRoleTransfer.test.tsx"
+    },
+    {
+      "id": "D23",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferFilePicker.test.tsx"
+    },
+    {
+      "id": "D24",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferCheckTable.test.tsx"
+    },
+    {
+      "id": "D25",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "D26",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/TransferErrorList.test.tsx"
+    },
+    {
+      "id": "D27",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRolesDialog.test.tsx"
+    },
+    {
+      "id": "D28",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "id": "D29",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "D30",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "D31",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "D32",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleDetailPage.test.tsx"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/api/roleAdminApi.test.ts"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/useRoleTransfer.test.tsx"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/reasonMessage.test.ts"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/api/roleAdminApi.test.ts"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/safeFileName.test.ts"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "frontend/e2e/150-role-permission-flow.e2e.ts"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "frontend/eslint.config.js"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/api/roleAdminApi.test.ts"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "frontend/src/features/roletransfer/RoleTransferPage.test.tsx"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/useSlowNotice.test.tsx"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "id": "NFR2.12",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.13",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/registration.test.tsx"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/DeleteConfirmDialog.test.tsx"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/PermissionPanel.test.tsx"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleDetailPage.test.tsx"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/permissionDraft.test.ts"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "frontend/e2e/150-role-permission-flow.e2e.ts"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "frontend/package-lock.json"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "frontend/src/shared/api-client/apiClient.download.test.ts"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "frontend/src/app/routing/DataRouterBlocker.test.tsx"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "config/npm-build-tools.txt"
+    },
+    {
+      "id": "NFR6.9",
+      "status": "OK",
+      "target": "frontend/src/features/roleadmin/useSlowNotice.test.tsx"
+    },
+    {
+      "id": "NFR6.10",
+      "status": "OK",
+      "target": "frontend/e2e/150-role-permission-flow.e2e.ts"
+    }
+  ]
+}

@@ -173,6 +173,11 @@ export interface ApiDownload {
   blob: Blob
   /** 応答の `Content-Disposition`（無ければ null） */
   contentDisposition: string | null
+  /**
+   * 応答のヘッダーのすべて（Intent 261004-role-menu の U6 の L10・NFR6.6。権限の書き出しの
+   * `X-Role-Transfer-Exceeds-Import-Limit` を読むため）。既存の `blob`・`contentDisposition` は変えない。
+   */
+  headers: Headers
 }
 
 /**
@@ -187,5 +192,9 @@ export async function apiDownload(path: string, init: RequestInit = {}): Promise
   } catch {
     throw networkError()
   }
-  return { blob, contentDisposition: response.headers.get('Content-Disposition') }
+  return {
+    blob,
+    contentDisposition: response.headers.get('Content-Disposition'),
+    headers: response.headers,
+  }
 }

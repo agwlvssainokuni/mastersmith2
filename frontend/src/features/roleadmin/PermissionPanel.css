@@ -1,0 +1,104 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * S4 権限の設定の配置（Intent 261004-role-menu の U6 の D31、mockups の S4・10a）。768px 以上は左の木と右の表を並べ、
+ * 768px 未満は縦に積む。表は外枠の中で横に動き、画面全体の横のスクロールを出さない。make-you-chic-ui のトークンだけを使う。
+ */
+.roleadmin-perm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.roleadmin-perm-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (width >= 768px) {
+  .roleadmin-perm-body {
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 3fr);
+  }
+}
+
+.roleadmin-perm-tree,
+.roleadmin-perm-main,
+.roleadmin-perm-table,
+.roleadmin-columns,
+.roleadmin-save,
+.roleadmin-nodsl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.roleadmin-perm-heading,
+.roleadmin-perm-subheading {
+  margin: 0;
+  font-size: var(--font-size-md);
+  overflow-wrap: anywhere;
+}
+
+.roleadmin-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.roleadmin-grid {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.roleadmin-grid th,
+.roleadmin-grid td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.roleadmin-target,
+.roleadmin-effective,
+.roleadmin-orphan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.roleadmin-physical,
+.roleadmin-menu-state,
+.roleadmin-unsaved,
+.roleadmin-save-reason {
+  font-size: var(--font-size-sm);
+  font-weight: normal;
+  color: var(--color-text-muted);
+}
+
+.roleadmin-menu-state {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roleadmin-perm * {
+    transition: none;
+  }
+}
