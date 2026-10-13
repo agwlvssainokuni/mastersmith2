@@ -176,6 +176,20 @@ export function validateRegistrations(
         `${owner}: ユーザーメニューの項目 "${item.id}" の URL "${path}" は登録されていません`,
       )
     }
+    // 移る直前の口（beforeNavigate）は path の項目だけに許し、関数でなければ止める（Intent 261004-role-menu の U7 の
+    // L15）。型の外から来た値（action の項目に付けた・関数でない値）も扱う。
+    const { beforeNavigate } = item as { beforeNavigate?: unknown }
+    if (beforeNavigate !== undefined) {
+      if (typeof beforeNavigate !== 'function') {
+        problems.push(
+          `${owner}: ユーザーメニューの項目 "${item.id}" の beforeNavigate は関数にしてください`,
+        )
+      } else if (!hasPath || hasAction) {
+        problems.push(
+          `${owner}: ユーザーメニューの項目 "${item.id}" の beforeNavigate は path の項目だけに付けられます`,
+        )
+      }
+    }
   }
 
   for (const registration of registrations) {

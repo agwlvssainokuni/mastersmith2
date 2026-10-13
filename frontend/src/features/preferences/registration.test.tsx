@@ -20,7 +20,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries, buildUserMenuItems } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems, buildUserMenuItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { registration as adminRegistration } from '../admin/registration'
@@ -98,9 +98,9 @@ describe('preferences feature registration', () => {
     expect(items.map(({ id, path, order }) => ({ id, path, order }))).toEqual([
       { id: 'preferences-open', path: '/me/preferences', order: 80 },
       { id: 'preferences-password', path: '/me/password', order: 90 },
-      { id: 'auth-logout', path: undefined, order: 100 },
+      { id: 'auth-logout', path: '/logout', order: 100 },
     ])
-    expect(buildSidebarEntries([registration], { loggedIn: true, admin: true })).toHaveLength(1)
+    expect(selectAdminSidebarItems([registration], { loggedIn: true, admin: true })).toEqual([])
   })
 
   it('passes the checks of the application shell together with the other features', () => {

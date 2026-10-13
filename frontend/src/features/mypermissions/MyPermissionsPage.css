@@ -1,0 +1,72 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 自分の権限の画面（S8。Intent 261004-role-menu の U7 の D24・D25、mockups の 10a 節） */
+.mypermissions-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.mypermissions-heading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.mypermissions-subheading {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.mypermissions-text {
+  margin: 0;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.mypermissions-layout {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) 2fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.mypermissions-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.mypermissions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.mypermissions-table th,
+.mypermissions-table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+/* 768px 未満は木と表を縦に積む（10a 節） */
+@media (width < 768px) {
+  .mypermissions-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -17,7 +17,7 @@
 // 管理者向け領域の登録のテスト（BR5.1、BR5.4、NFR7.1）。
 import { describe, expect, it } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries, HOME_ENTRY } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { registration as authRegistration } from '../auth/registration'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { ADMIN_AREA_PATH, registration } from './registration'
@@ -40,15 +40,14 @@ describe('admin registration', () => {
     expect(registration.routes?.[0].role).toBeUndefined()
   })
 
-  it('shows the sidebar item to an administrator after home', () => {
-    const entries = buildSidebarEntries([registration], {
+  it('shows the sidebar item in the admin section to an administrator', () => {
+    const entries = selectAdminSidebarItems([registration], {
       loggedIn: true,
       admin: true,
     })
 
-    expect(entries).toHaveLength(2)
-    expect(entries[0]).toEqual(HOME_ENTRY)
-    expect(entries[1]).toEqual({
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
       id: 'admin-area',
       labelKey: 'admin.nav.label',
       path: ADMIN_AREA_PATH,
@@ -56,13 +55,13 @@ describe('admin registration', () => {
   })
 
   it('hides the sidebar item from a logged-in user without the administrator flag', () => {
-    const entries = buildSidebarEntries([registration], { loggedIn: true, admin: false })
+    const entries = selectAdminSidebarItems([registration], { loggedIn: true, admin: false })
 
-    expect(entries).toEqual([HOME_ENTRY])
+    expect(entries).toEqual([])
   })
 
   it('hides the sidebar item when nobody is logged in', () => {
-    expect(buildSidebarEntries([registration], { loggedIn: false, admin: false })).toEqual([])
+    expect(selectAdminSidebarItems([registration], { loggedIn: false, admin: false })).toEqual([])
   })
 
   it('has the same message keys in Japanese and in English', () => {

@@ -17,23 +17,36 @@
 // 登録された画面は、その URL の形（`/users/:id` など）の Route の中で表示し、画面が URL の引数を読めるようにする。
 // ADMIN_FORBIDDEN は、SCREEN（SHELL）と同じ形の木（Routes → Route → ShellLayout）の中に S6 を描く。管理の画面の 403
 // による S6（ShellLayout が子を置き換える）から移っても、ShellLayout・AppShell・S6 が作り直されないため（U4 の R-05）。
+import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router'
 import { AdminForbiddenView } from '../admin-forbidden/AdminForbiddenView'
 import { LoginLayout } from '../layout/LoginLayout'
 import { ShellLayout } from '../layout/ShellLayout'
 import { StandaloneLayout } from '../layout/StandaloneLayout'
-import { useLoginState } from '../login-state/LoginStateGate'
+import { useClearLogoutIntent, useLoginState } from '../login-state/LoginStateGate'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { useFeatureRegistry } from '../registry/FeatureRegistryContext'
 import { decideRoute } from './decideRoute'
+
+/** ログアウトの画面の道（この道ではログアウトの印を消さない） */
+const LOGOUT_PATH = '/logout'
 
 /** 開かれた URL に応じて画面を表示する。 */
 export function AppRouter() {
   const { pathname } = useLocation()
   const registrations = useFeatureRegistry()
   const loginState = useLoginState()
+  const clearLogoutIntent = useClearLogoutIntent()
   const decision = decideRoute(pathname, registrations, loginState)
+
+  // `/logout` 以外の道が描かれたらログアウトの印を消す（Intent 261004-role-menu の U7 の L15、security-design.md 5.1。
+  // 別のタブに開いた・移動が中止されたなどで印が残った場合の消し方）。
+  useEffect(() => {
+    if (pathname !== LOGOUT_PATH) {
+      clearLogoutIntent()
+    }
+  }, [pathname, clearLogoutIntent])
 
   switch (decision.kind) {
     case 'HOME':

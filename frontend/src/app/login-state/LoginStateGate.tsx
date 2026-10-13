@@ -35,6 +35,15 @@ const LoginStateContext = createContext<LoginState>(LOGGED_OUT)
 /** 提供元のログアウトの手続き（提供元またはその logout が無ければ undefined）。ログイン状態とは別の文脈で渡す。 */
 const LogoutContext = createContext<(() => Promise<void>) | undefined>(undefined)
 
+/** 何もしない関数（ログアウトの印を消す口が無いとき） */
+function doNothing(): void {}
+
+/**
+ * 提供元のログアウトの印を消す口（Intent 261004-role-menu の U7 の L15）。無ければ何もしない関数。ログイン状態とは別の
+ * 文脈で渡す（useLogout と同じ形）。
+ */
+const ClearLogoutIntentContext = createContext<() => void>(doNothing)
+
 /**
  * 提供元の値を整える。loggedIn が false なら admin は常に false で、氏名と表示の設定も落とす。
  * ログイン中なら氏名と表示の設定（preferences。あれば）を通す。
@@ -103,12 +112,21 @@ export function LoginStateGate({ provider, children }: LoginStateGateProps) {
     return () => provider.logout?.() ?? Promise.resolve()
   }, [provider])
 
+  const clearLogoutIntent = useMemo(() => {
+    if (provider?.clearLogoutIntent === undefined) {
+      return doNothing
+    }
+    return () => provider.clearLogoutIntent?.()
+  }, [provider])
+
   if (state === null) {
     return null
   }
   return (
     <LogoutContext.Provider value={logout}>
-      <LoginStateContext.Provider value={state}>{children}</LoginStateContext.Provider>
+      <ClearLogoutIntentContext.Provider value={clearLogoutIntent}>
+        <LoginStateContext.Provider value={state}>{children}</LoginStateContext.Provider>
+      </ClearLogoutIntentContext.Provider>
     </LogoutContext.Provider>
   )
 }
@@ -138,4 +156,12 @@ export function useLogout(): () => Promise<boolean> {
     }
     return true
   }, [logout])
+}
+
+/**
+ * ログアウトの印を消す関数を返す（Intent 261004-role-menu の U7 の L15、security-design.md 5.1）。提供元またはその
+ * clearLogoutIntent が無ければ何もしない関数を返す。返す関数は提供元が変わらない限り同じ。
+ */
+export function useClearLogoutIntent(): () => void {
+  return useContext(ClearLogoutIntentContext)
 }

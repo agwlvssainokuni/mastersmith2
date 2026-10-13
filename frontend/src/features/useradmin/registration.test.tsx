@@ -20,7 +20,7 @@ import { screen } from '@testing-library/react'
 import { Suspense, type ComponentType } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries, HOME_ENTRY } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { registration as adminRegistration } from '../admin/registration'
 import { registration as authRegistration } from '../auth/registration'
@@ -65,21 +65,18 @@ describe('useradmin registration', () => {
       order: 230,
       visibleWhen: 'ADMIN',
     })
-    const entries = buildSidebarEntries(
+    const entries = selectAdminSidebarItems(
       [registration, invitationRegistration, dslRegistration, adminRegistration],
       { loggedIn: true, admin: true },
     )
     expect(entries.map((entry) => entry.id)).toEqual([
-      HOME_ENTRY.id,
       'admin-area',
       'dsl',
       'invitation',
       'useradmin',
     ])
-    expect(buildSidebarEntries([registration], { loggedIn: true, admin: false })).toEqual([
-      HOME_ENTRY,
-    ])
-    expect(buildSidebarEntries([registration], { loggedIn: false, admin: false })).toEqual([])
+    expect(selectAdminSidebarItems([registration], { loggedIn: true, admin: false })).toEqual([])
+    expect(selectAdminSidebarItems([registration], { loggedIn: false, admin: false })).toEqual([])
   })
 
   it('has every message in Japanese and in English, not empty, with keys starting with useradmin.', () => {

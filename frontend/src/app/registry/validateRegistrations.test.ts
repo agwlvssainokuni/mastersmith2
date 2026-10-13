@@ -364,3 +364,73 @@ describe('validateRegistrations for the sidebar section and icon', () => {
     expect(problemsOf(registrations)).toEqual([])
   })
 })
+
+describe('validateRegistrations for beforeNavigate of user menu items (U7 L15)', () => {
+  const routes = [route('/logout'), route('/me/preferences')]
+
+  it('accepts a function on a path item and items without it', () => {
+    expect(
+      problemsOf([
+        {
+          featureId: 'me',
+          routes,
+          userMenuItems: [
+            {
+              id: 'logout',
+              labelKey: 'me.logout',
+              path: '/logout',
+              beforeNavigate: () => {},
+              order: 100,
+            },
+            { id: 'prefs', labelKey: 'me.prefs', path: '/me/preferences', order: 80 },
+            { id: 'act', labelKey: 'me.act', action: () => {}, order: 90 },
+          ],
+        },
+      ]),
+    ).toEqual([])
+  })
+
+  it('rejects beforeNavigate on an action item', () => {
+    expect(
+      problemsOf([
+        {
+          featureId: 'me',
+          routes,
+          userMenuItems: [
+            {
+              id: 'act',
+              labelKey: 'me.act',
+              action: () => {},
+              beforeNavigate: () => {},
+              order: 1,
+            } as never,
+          ],
+        },
+      ]),
+    ).toEqual([
+      'me: ユーザーメニューの項目 "act" の beforeNavigate は path の項目だけに付けられます',
+    ])
+  })
+
+  it('rejects a beforeNavigate that is not a function', () => {
+    for (const value of ['mark', 1, null, {}]) {
+      expect(
+        problemsOf([
+          {
+            featureId: 'me',
+            routes,
+            userMenuItems: [
+              {
+                id: 'logout',
+                labelKey: 'me.logout',
+                path: '/logout',
+                beforeNavigate: value,
+                order: 1,
+              } as never,
+            ],
+          },
+        ]),
+      ).toEqual(['me: ユーザーメニューの項目 "logout" の beforeNavigate は関数にしてください'])
+    }
+  })
+})

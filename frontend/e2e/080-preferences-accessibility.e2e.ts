@@ -58,6 +58,7 @@ import {
   openUserMenuItem,
   registrationPrerequisites,
 } from './support/registeredUser'
+import { openUserMenu } from './support/userMenu'
 import type { Preferences } from '../src/features/preferences/preferencesApi'
 
 const OPEN_TARGET_MS = 2_000
@@ -229,7 +230,7 @@ test.describe('080 preferences screens accessibility on the built WAR', () => {
           const page = await context.newPage()
           const watch = await watchPage(page)
           await loginWithForm(page, user.email, user.password)
-          await page.getByTestId('app-shell').getByTestId('dropdown-trigger').click()
+          await openUserMenu(page)
           const item = page.getByRole('menuitem', {
             name: screenName === 'preferences' ? PREFERENCES_ITEM : PASSWORD_ITEM,
             exact: true,

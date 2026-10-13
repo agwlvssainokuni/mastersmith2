@@ -19,7 +19,7 @@
 // 遅延読み込み（lazy）。サイドバーの「ロール」は管理者にだけ示す（隠すのは見せ方だけで、判定はサーバー）。
 import { describe, expect, it } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries, HOME_ENTRY } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import type { LoginState } from '../../app/registry/types'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { decideRoute } from '../../app/routing/decideRoute'
@@ -71,10 +71,10 @@ describe('roleadmin registration', () => {
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
     })
-    const entries = buildSidebarEntries([registration, useradminRegistration], ADMIN)
-    expect(entries.map((entry) => entry.id)).toEqual([HOME_ENTRY.id, 'useradmin', 'roleadmin'])
-    expect(buildSidebarEntries([registration], MEMBER)).toEqual([HOME_ENTRY])
-    expect(buildSidebarEntries([registration], GUEST)).toEqual([])
+    const entries = selectAdminSidebarItems([registration, useradminRegistration], ADMIN)
+    expect(entries.map((entry) => entry.id)).toEqual(['useradmin', 'roleadmin'])
+    expect(selectAdminSidebarItems([registration], MEMBER)).toEqual([])
+    expect(selectAdminSidebarItems([registration], GUEST)).toEqual([])
   })
 
   it('has every message in Japanese and English with the same placeholders and no markup', () => {

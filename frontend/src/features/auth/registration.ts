@@ -18,12 +18,22 @@
 // 画面の部品は遅延読み込みにし、起動時にはログイン状態の提供元と文言だけを渡す。
 import { lazy } from 'react'
 import type { FeatureRegistration } from '../../app/registry/types'
-import { initializeAuthSession, logout } from './authSession'
+import { initializeAuthSession } from './authSession'
 import { loginStateProvider } from './loginStateProvider'
+import { markLogoutIntent } from './logoutIntent'
 
 const LoginPage = lazy(() =>
   import('./LoginPage').then((module) => ({ default: module.LoginPage })),
 )
+
+// ログアウトは道 /logout への移動にする（Intent 261004-role-menu の U7 の D27。S4 の未保存の確かめを当てるため）。
+// 画面は遅延読み込みで、入口の JavaScript に入れない（計画 11節）。
+const LogoutPage = lazy(() =>
+  import('./LogoutPage').then((module) => ({ default: module.LogoutPage })),
+)
+
+/** ログアウトの画面の道 */
+export const LOGOUT_PATH = '/logout'
 
 initializeAuthSession()
 
@@ -38,14 +48,14 @@ export const registration: FeatureRegistration = {
       access: 'PUBLIC',
       role: 'LOGIN',
     },
+    { path: LOGOUT_PATH, screen: LogoutPage, layout: 'STANDALONE', access: 'LOGGED_IN' },
   ],
   userMenuItems: [
     {
       id: 'auth-logout',
       labelKey: 'auth.menu.logout',
-      action: () => {
-        void logout()
-      },
+      path: LOGOUT_PATH,
+      beforeNavigate: markLogoutIntent,
       order: 100,
     },
   ],
@@ -60,6 +70,7 @@ export const registration: FeatureRegistration = {
       'auth.login.failed': 'メールアドレスまたはパスワードが正しくありません',
       'auth.login.error': 'ログインできませんでした。しばらくしてから、もう一度お試しください',
       'auth.menu.logout': 'ログアウト',
+      'auth.logout.inProgress': 'ログアウトしています',
       'auth.login.registered': '登録が完了しました。設定したパスワードでログインしてください。',
       'auth.language.label': '表示の言語',
     },
@@ -72,6 +83,7 @@ export const registration: FeatureRegistration = {
       'auth.login.failed': 'The email address or the password is not correct',
       'auth.login.error': 'The login failed. Please try again later',
       'auth.menu.logout': 'Log out',
+      'auth.logout.inProgress': 'Logging out',
       'auth.login.registered': 'Registration is complete. Log in with the password you set.',
       'auth.language.label': 'Display language',
     },

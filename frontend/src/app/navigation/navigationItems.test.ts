@@ -15,7 +15,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { FeatureRegistration } from '../registry/types'
-import { buildSidebarEntries, buildUserMenuItems, HOME_ENTRY } from './navigationItems'
+import { buildUserMenuItems, selectAdminSidebarItems } from './navigationItems'
 
 const noop = () => {}
 
@@ -59,20 +59,18 @@ const registrations: FeatureRegistration[] = [
 ]
 
 describe('navigationItems', () => {
-  it('puts home first followed by items in ascending order', () => {
+  it('selects the ADMIN section items in ascending order for administrators', () => {
     expect(
-      buildSidebarEntries(registrations, { loggedIn: true, admin: true }).map((e) => e.id),
-    ).toEqual(['home', 'reports', 'items', 'admin'])
+      selectAdminSidebarItems(registrations, { loggedIn: true, admin: true }).map((e) => e.id),
+    ).toEqual(['reports', 'items', 'admin'])
   })
 
-  it('shows ADMIN items only to administrators', () => {
-    expect(
-      buildSidebarEntries(registrations, { loggedIn: true, admin: false }).map((e) => e.id),
-    ).toEqual(['home', 'reports', 'items'])
+  it('selects no items for logged-in non-administrators', () => {
+    expect(selectAdminSidebarItems(registrations, { loggedIn: true, admin: false })).toEqual([])
   })
 
-  it('shows only home when nothing is registered', () => {
-    expect(buildSidebarEntries([], { loggedIn: true, admin: false })).toEqual([HOME_ENTRY])
+  it('selects nothing when nothing is registered', () => {
+    expect(selectAdminSidebarItems([], { loggedIn: true, admin: true })).toEqual([])
   })
 
   it('sorts user menu items by order', () => {
@@ -102,7 +100,7 @@ describe('navigationItems', () => {
 
   it('shows no items when logged out', () => {
     const loggedOut = { loggedIn: false, admin: false }
-    expect(buildSidebarEntries(registrations, loggedOut)).toEqual([])
+    expect(selectAdminSidebarItems(registrations, loggedOut)).toEqual([])
     expect(buildUserMenuItems(registrations, loggedOut)).toEqual([])
   })
 })

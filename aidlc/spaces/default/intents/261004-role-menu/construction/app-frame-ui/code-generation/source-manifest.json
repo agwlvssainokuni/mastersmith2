@@ -1,0 +1,271 @@
+{
+  "stage": "code-generation",
+  "unit": "app-frame-ui",
+  "version": 1,
+  "writes": [
+    {
+      "path": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/150-role-permission-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/170-menu-navigation-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/frameApiRoute.ts"
+    },
+    {
+      "path": "frontend/e2e/support/navTreeFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/registeredUser.ts"
+    },
+    {
+      "path": "frontend/e2e/support/u7Measure.ts"
+    },
+    {
+      "path": "frontend/e2e/support/userMenu.ts"
+    },
+    {
+      "path": "frontend/src/app/App.tsx"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.css"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/useNarrowLayout.ts"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.property.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/BusinessNavigationProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/navExpansion.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navExpansion.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationApi.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationApi.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/tablePlaceholderPath.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/tablePlaceholderPath.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/useReloadTriggers.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/useReloadTriggers.ts"
+    },
+    {
+      "path": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/HomePage.tsx"
+    },
+    {
+      "path": "frontend/src/app/pages/Page.css"
+    },
+    {
+      "path": "frontend/src/app/registry/types.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/AppRouter.tsx"
+    },
+    {
+      "path": "frontend/src/app/routing/DataRouterBlocker.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/testing/frameTestSupport.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/workRoleApi.test.ts"
+    },
+    {
+      "path": "frontend/src/app/work-role/workRoleApi.ts"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleSwitcher.css"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleSwitcher.tsx"
+    },
+    {
+      "path": "frontend/src/features/admin/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/loginStateProvider.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/logoutIntent.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/auth/logoutIntent.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/LogoutPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/auth/LogoutPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/auth/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/auth/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/myPermissionsApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/myPermissionsApi.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/MyPermissionsDetail.tsx"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/MyPermissionsPage.css"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/MyPermissionsPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/useMyPermissions.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/registration/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/tableAccessApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/tableAccessApi.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.css"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableAccess.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/registration.test.tsx"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "vendor/make-you-chic-ui"
+    }
+  ]
+}

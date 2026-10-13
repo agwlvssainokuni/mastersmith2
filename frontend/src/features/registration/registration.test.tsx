@@ -19,7 +19,7 @@ import { screen } from '@testing-library/react'
 import { Suspense, type ComponentType } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { registration as adminRegistration } from '../admin/registration'
@@ -51,7 +51,7 @@ describe('registration feature', () => {
     expect(registration.sidebarItems).toBeUndefined()
     expect(registration.userMenuItems).toBeUndefined()
     expect(registration.loginStateProvider).toBeUndefined()
-    expect(buildSidebarEntries([registration], { loggedIn: true, admin: true })).toHaveLength(1)
+    expect(selectAdminSidebarItems([registration], { loggedIn: true, admin: true })).toEqual([])
   })
 
   it('passes the checks of the application shell together with the other features', () => {

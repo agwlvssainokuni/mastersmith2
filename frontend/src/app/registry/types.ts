@@ -82,14 +82,20 @@ interface UserMenuItemBase {
  */
 export type UserMenuItemRegistration =
   | (UserMenuItemBase & {
-      /** 選んだときに行う操作（例: ログアウト） */
+      /** 選んだときに行う操作（例: 登録の完了の画面の中の操作） */
       action: () => void
       path?: never
+      beforeNavigate?: never
     })
   | (UserMenuItemBase & {
       /** 移る先の登録済みの画面の URL（ホームを含む。外の URL は使えない） */
       path: string
       action?: never
+      /**
+       * 移る直前に骨組みが1回呼ぶ関数（任意。Intent 261004-role-menu の U7 の L15）。例: ログアウトの項目が
+       * ログアウトの印を立てる。`path` の項目だけに許し、関数でなければ登録の検査が起動を止める。
+       */
+      beforeNavigate?: () => void
     })
 
 /** ログイン状態。loggedIn が false のときは admin も常に false。 */
@@ -116,6 +122,11 @@ export interface LoginStateProvider {
    * 呼ぶ（BR3.2。機能どうしの直接の import をしないため）。
    */
   logout?: () => Promise<void>
+  /**
+   * ログアウトの印を消す口（任意。Intent 261004-role-menu の U7 の L15）。ログインの機能（auth）が渡し、骨組みは
+   * `/logout` 以外の道が描かれたときに useClearLogoutIntent から呼ぶ（骨組みから機能を直接 import しないため）。
+   */
+  clearLogoutIntent?: () => void
 }
 
 /** 機能ごとの画面の文言（鍵は `<featureId>.` で始める）。日本語と英語の両方をそろえる（BR6.2）。 */

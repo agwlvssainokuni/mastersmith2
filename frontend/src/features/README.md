@@ -68,7 +68,21 @@ userMenuItems: [
 - `ShellLayout` は `path` の項目を、make-you-chic-ui の Dropdown の `href`（`<a>` で描かれ、リンクとして読み上げられる）と、
   既定の移動を止めて移る `onClick` にする。サイドバーと同じく読み込み直しなしで移り、マウスでも Enter・Space でも同じ。
   `action` の項目は今までどおり `<button>` で描かれる。
-- 項目は `order` の順に並ぶ（ログアウトは 100。プリファレンス 80・パスワードの変更 90）。
+- 項目は `order` の順に並ぶ（ログアウトは 100。自分の権限 70・プリファレンス 80・パスワードの変更 90）。
+- `path` の項目は、任意で `beforeNavigate`（引数なしの関数）を持てる（Intent 261004-role-menu の U7、L15）。`ShellLayout` は
+  選ばれたときに、移る前に1回だけ呼ぶ。`action` の項目には付けられない（登録の検査が起動を止める）。ログアウトの項目
+  （`auth-logout`、道 `/logout`）は、ここで一度きりの印を立て、メニューを通らずに `/logout` を開いたときはログアウトしない。
+
+## 骨組みの作業ロールと業務のメニュー（Intent 261004-role-menu の U7）
+
+- 機能の画面は、今の作業ロールを骨組みのフック `useWorkRole()`（`src/app/work-role/WorkRoleProvider.tsx`。`status`・`roles`・
+  `current`・`revision`（切り替えの回数）・`reload`・`focusWorkRoleSwitcher`）で読む。作業ロールの切り替え（`revision` の変化）で、
+  画面の中身を読み直す。
+- 業務のメニューは `useBusinessNavigation()`（`src/app/navigation/BusinessNavigationProvider.tsx`。`status`・`response`・
+  `reload`）で読む。権限が無いと分かったとき（置き場の 403 など）は `reload()` で読み直す。
+- どちらも、提供元の外（`renderWithProviders` で描く画面のテストなど）では要求を送らない既定の値（`idle`）を返す。
+- テーブルの置き場の道は、必ず `toTablePlaceholderPath`（`src/app/navigation/tablePlaceholderPath.ts`）で作る（名前は
+  `URLSearchParams` でエンコードし、先頭は常に `/tables?`）。文字列の連結で作らない。
 
 ## サイドバーの項目の区画とアイコン（Intent 261004-role-menu の U1、契約 C2）
 
@@ -84,7 +98,10 @@ sidebarItems: [
 ],
 ```
 
-## ログアウト（`useLogout`、Intent 261004-role-menu の U1）
+## ログアウト（`useLogout`、Intent 261004-role-menu の U1・U7）
+
+利用者がユーザーメニューから選ぶログアウトは、Intent 261004-role-menu の U7 から道 `/logout` への移動（`auth` の
+`LogoutPage`）にした。下の `useLogout()` は、機能の画面がその場でログアウトするときのための口で、そのまま使える。
 
 機能の画面がログアウトするときは、ログインの機能（`auth`）を直接読まず、骨組みの `useLogout()`
 （`src/app/login-state/LoginStateGate.tsx`）を使う。返す関数は `Promise<boolean>` で、ログイン状態の提供元の `logout` を

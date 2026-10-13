@@ -22,6 +22,7 @@ import { resetApiClient } from '../../shared/api-client/apiClient'
 import * as authApi from './authApi'
 import { getAccessToken, getAuthSnapshot, login, resetAuthSession } from './authSession'
 import { loginStateProvider } from './loginStateProvider'
+import { consumeLogoutIntent, peekLogoutIntent } from './logoutIntent'
 import { registration } from './registration'
 
 const tokens = {
@@ -51,14 +52,22 @@ describe('auth registration', () => {
     expect(() => validateRegistrations([registration], baseMessageKeys)).not.toThrow()
   })
 
-  it('registers the login screen as a public standalone login route', () => {
-    expect(registration.routes).toHaveLength(1)
+  it('registers the login screen as a public standalone login route and the logout screen', () => {
+    expect(registration.routes).toHaveLength(2)
     expect(registration.routes?.[0]).toMatchObject({
       path: '/login',
       role: 'LOGIN',
       layout: 'STANDALONE',
       access: 'PUBLIC',
     })
+    expect(registration.routes?.[1]).toMatchObject({
+      path: '/logout',
+      layout: 'STANDALONE',
+      access: 'LOGGED_IN',
+    })
+    // 画面は遅延読み込み（入口の JavaScript に入れない。計画 11節）
+    const logoutScreen = registration.routes?.[1]?.screen as { $$typeof?: symbol } | undefined
+    expect(logoutScreen?.$$typeof).toBe(Symbol.for('react.lazy'))
   })
 
   it('registers the login state provider of the session', () => {
@@ -86,20 +95,30 @@ describe('auth registration', () => {
     }
   })
 
-  it('logs out and drops the token from the user menu item', async () => {
+  it('makes the logout menu item a path to /logout that marks the intent before moving', () => {
+    const logoutItem = registration.userMenuItems?.[0]
+    expect(logoutItem).toMatchObject({
+      id: 'auth-logout',
+      labelKey: 'auth.menu.logout',
+      order: 100,
+    })
+    expect(logoutItem?.path).toBe('/logout')
+    expect(logoutItem?.action).toBeUndefined()
+    expect(peekLogoutIntent()).toBe(false)
+    logoutItem?.beforeNavigate?.()
+    expect(peekLogoutIntent()).toBe(true)
+    consumeLogoutIntent()
+  })
+
+  it('logs out and drops the token through the provider used by the logout screen', async () => {
     vi.spyOn(authApi, 'requestLogin').mockResolvedValue(tokens)
     const logoutRequest = vi.spyOn(authApi, 'requestLogout').mockResolvedValue()
     await login('user@example.com', 'パスワード')
 
-    const logoutItem = registration.userMenuItems?.[0]
-    if (logoutItem?.action === undefined) {
-      throw new Error('the logout item has no action')
-    }
-    logoutItem.action()
+    await loginStateProvider.logout?.()
     await vi.waitFor(() => expect(getAuthSnapshot().status).toBe('LoggedOut'))
 
     expect(logoutRequest).toHaveBeenCalledTimes(1)
     expect(getAccessToken()).toBeNull()
-    expect(registration.userMenuItems?.[0].labelKey).toBe('auth.menu.logout')
   })
 })

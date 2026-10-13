@@ -18,6 +18,7 @@
 // ログイン中は、契約 C3 の氏名と表示の設定をログイン状態に通す（表示の設定の土台が使う。U4 の部品 5節）。
 import type { LoginState, LoginStateProvider } from '../../app/registry/types'
 import { getAuthSnapshot, logout, subscribe, whenRestored } from './authSession'
+import { consumeLogoutIntent } from './logoutIntent'
 
 /** 今の状態を U1 の形にする。 */
 export function toLoginState(): LoginState {
@@ -39,4 +40,8 @@ export const loginStateProvider: LoginStateProvider = {
   subscribe,
   // ほかの機能（登録の完了の画面など）が骨組みの useLogout から呼ぶログアウトの手続き（BR3.1）。
   logout,
+  // ログアウトの印を骨組みが消す口（Intent 261004-role-menu の U7 の L15）。/logout 以外の道が描かれたときに呼ばれる。
+  clearLogoutIntent: () => {
+    consumeLogoutIntent()
+  },
 }

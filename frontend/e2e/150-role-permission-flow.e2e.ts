@@ -26,12 +26,17 @@
 // 7. 140 の見本のすべての形を本物の応答と項目の名前と型で比べる（NFR6.10、13節 Q6: A）。グループは自分の E2EF_ のグループを
 //    API で作って読み、確かめの応答は自分の E2EF_ の新しいロールを作る YAML を check にだけ送って読む（適用しない）。
 // 8. test.step の題・注記・添付に値を入れない。初期管理者の資格情報を webServer.env に置かない（既存のとおり）。
-// B9（U7）が 6 の後に、画面での作業ロールの切り替えとサイドバーの業務のメニューの変化を足す（本数は1本のまま）。
+// 6a〜6e（Intent 261004-role-menu の U7、計画 10.3、logical-components.md 6.2。本数は1本のまま）: 2つ目のロール（T を設定しない）を
+//    API で作って同じ利用者に割り当て、利用者で画面からログインし、トップバーで2つ目へ切り替えるとサイドバーから T の項目が
+//    消え、1つ目に戻すと出ることを確かめる。GET /api/me/work-role の本物の応答と 160 の見本の形を比べる。2つ目のロールの作成と
+//    割り当ては API で行う（画面の S3・S5 は 3〜5 で確かめ済み。計画 12節 D-10）。
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
 import { requestAdminAccessToken } from './support/invitationSeed'
+import { THREE_ROLES, workRoleWire } from './support/navTreeFixtures'
 import {
   createRegisteredUser,
+  loginWithForm,
   REGISTERED_DISPLAY_NAME,
   registrationPrerequisites,
 } from './support/registeredUser'
@@ -53,6 +58,7 @@ import { recordSecretValues } from './support/secretValues'
 import { shapeCompare } from './support/shapeCompare'
 import { e2eTraceMode } from './support/traceMode'
 import { newUserAdminRunTag } from './support/userAdminRun'
+import { openUserMenuItem } from './support/userMenu'
 
 test.use({ trace: e2eTraceMode() })
 
@@ -238,6 +244,73 @@ test.describe('150 role permission flow (F)', () => {
         hasTableItem(navigation.items, schema, table),
         '業務のメニューにテーブルの項目が出る',
       ).toBe(true)
+    })
+
+    const role2Name = `E2EF_ROLE2_${tag}`
+    await test.step('6a. create a second role without T and assign the user', async () => {
+      const created = await request.post('/api/admin/roles', {
+        headers: auth,
+        data: { name: role2Name },
+      })
+      expect(created.status(), '2つ目のロールの作成の状態コード').toBe(201)
+      const { roleId: role2Id } = (await created.json()) as { roleId: number }
+      const userList = (await getJson(
+        request,
+        adminToken,
+        `/api/admin/users?page=1&q=${encodeURIComponent(email)}`,
+      )) as { items: { userId: number }[] }
+      const assigned = await request.post(`/api/admin/roles/${role2Id}/assignments`, {
+        headers: auth,
+        data: { userId: userList.items[0]?.userId ?? 0 },
+      })
+      expect(assigned.status(), '2つ目のロールの割り当ての状態コード').toBe(204)
+    })
+
+    const workRoleTrigger = () => page.getByTestId('work-role-switcher').getByRole('button')
+    const tableItem = page.getByTestId('sidebar-nav-biz:0')
+
+    await test.step('6b. the user sees two roles on the topbar and the T item', async () => {
+      await openUserMenuItem(page, 'ログアウト')
+      await expect(page.getByTestId('login-layout')).toBeVisible()
+      await loginWithForm(page, user.email, user.password)
+      await expect(workRoleTrigger()).toHaveAccessibleName(`作業ロール: ${roleName}`)
+      await expect(tableItem).toBeVisible()
+      await workRoleTrigger().click()
+      await expect(
+        page.getByRole('menuitem', { name: `${roleName}（使用中）`, exact: true }),
+      ).toBeVisible()
+      await expect(page.getByRole('menuitem', { name: role2Name, exact: true })).toBeVisible()
+    })
+
+    await test.step('6c. switching to the second role removes the T item', async () => {
+      await page.getByRole('menuitem', { name: role2Name, exact: true }).click()
+      await expect(page.getByTestId('toast-container')).toContainText(
+        `作業ロールを${role2Name}に切り替えました`,
+      )
+      await expect(workRoleTrigger()).toHaveAccessibleName(`作業ロール: ${role2Name}`)
+      await expect(tableItem).toHaveCount(0)
+    })
+
+    await test.step('6d. switching back to the first role shows the T item', async () => {
+      await workRoleTrigger().click()
+      await page.getByRole('menuitem', { name: roleName, exact: true }).click()
+      await expect(workRoleTrigger()).toHaveAccessibleName(`作業ロール: ${roleName}`)
+      await expect(tableItem).toBeVisible()
+    })
+
+    await test.step('6e. the work role sample of 160 has the shape of the real response', async () => {
+      const login = await request.post('/api/auth/login', {
+        data: { email: user.email, password: user.password },
+      })
+      expect(login.status(), '利用者のログインの状態コード').toBe(200)
+      const { accessToken } = (await login.json()) as { accessToken: string }
+      const real = await getJson(request, accessToken, '/api/me/work-role')
+      const found = shapeCompare(real, workRoleWire(THREE_ROLES, THREE_ROLES[0] ?? null), NULLABLE)
+      test.info().annotations.push({
+        type: 'work-role-shape-differences',
+        description: JSON.stringify(found),
+      })
+      expect(found, '作業ロールの見本と本物の応答の項目の名前と型の違い').toEqual([])
     })
 
     await test.step('7. the samples of 140 have the shape of the real responses', async () => {

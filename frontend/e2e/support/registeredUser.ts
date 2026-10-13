@@ -113,8 +113,9 @@ export async function loginWithForm(page: Page, email: string, password: string)
   await expect(page.getByTestId('home-page')).toBeVisible()
 }
 
-/** アプリシェルのユーザーメニューを開き、項目を名前で選ぶ（開き口は氏名で探さない）。 */
-export async function openUserMenuItem(page: Page, name: string): Promise<void> {
-  await page.getByTestId('app-shell').getByTestId('dropdown-trigger').click()
-  await page.getByRole('menuitem', { name, exact: true }).click()
-}
+/**
+ * アプリシェルのユーザーメニューを開き、項目を名前で選ぶ（開き口は氏名で探さない）。
+ * Intent 261004-role-menu の U7 で userMenu.ts へ移した（トップバーに作業ロールの Dropdown が並ぶため）。既存の呼び出し元の
+ * import を保つため、ここから再び出す。
+ */
+export { openUserMenuItem } from './userMenu'

@@ -19,7 +19,13 @@ import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { LoginState, LoginStateProvider } from '../registry/types'
-import { LoginStateGate, normalizeLoginState, useLoginState, useLogout } from './LoginStateGate'
+import {
+  LoginStateGate,
+  normalizeLoginState,
+  useClearLogoutIntent,
+  useLoginState,
+  useLogout,
+} from './LoginStateGate'
 
 function Probe() {
   const state = useLoginState()
@@ -227,5 +233,45 @@ describe('useLogout', () => {
     )
 
     expect(await pressLogout()).toBe('false')
+  })
+})
+
+/** useClearLogoutIntent の関数を押す */
+function ClearIntentProbe() {
+  const clear = useClearLogoutIntent()
+  return (
+    <button type="button" data-testid="clear-intent-probe" onClick={() => clear()}>
+      clear
+    </button>
+  )
+}
+
+describe('useClearLogoutIntent', () => {
+  it('calls the clearLogoutIntent of the provider', async () => {
+    const user = userEvent.setup()
+    const clearLogoutIntent = vi.fn()
+    render(
+      <LoginStateGate provider={{ getLoginState: loggedIn, clearLogoutIntent }}>
+        <ClearIntentProbe />
+      </LoginStateGate>,
+    )
+
+    await user.click(await screen.findByTestId('clear-intent-probe'))
+    expect(clearLogoutIntent).toHaveBeenCalledTimes(1)
+  })
+
+  it('does nothing when the provider has no clearLogoutIntent or no provider is registered', async () => {
+    const user = userEvent.setup()
+    const { unmount } = render(
+      <LoginStateGate provider={{ getLoginState: loggedIn }}>
+        <ClearIntentProbe />
+      </LoginStateGate>,
+    )
+    await user.click(await screen.findByTestId('clear-intent-probe'))
+    unmount()
+
+    render(<ClearIntentProbe />)
+    await user.click(screen.getByTestId('clear-intent-probe'))
+    expect(screen.getByTestId('clear-intent-probe')).toBeInTheDocument()
   })
 })

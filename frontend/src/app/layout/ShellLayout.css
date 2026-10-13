@@ -1,0 +1,36 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* 768px 未満で内容の領域の先頭に置く作業ロールの切り替え（Intent 261004-role-menu の U7、依頼者の決定 G2: A）。 */
+.shell-work-role-bar {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  margin-bottom: var(--space-3);
+}
+
+.shell-work-role-bar:empty {
+  display: none;
+}
+
+/* 内容の領域では幅に余裕があるため、見える文字に「作業ロール:」を戻す（読み上げの名前は aria-label のまま）。 */
+.shell-work-role-bar .work-role-switcher-prefix {
+  display: inline;
+}
+
+.shell-work-role-bar .work-role-switcher-trigger {
+  max-width: 100%;
+}

@@ -19,7 +19,7 @@ import { screen } from '@testing-library/react'
 import { Suspense, type ComponentType } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
-import { buildSidebarEntries, HOME_ENTRY } from '../../app/navigation/navigationItems'
+import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { registration as adminRegistration } from '../admin/registration'
 import { registration as authRegistration } from '../auth/registration'
@@ -48,20 +48,18 @@ describe('dsl registration', () => {
 
   it('shows the sidebar item to an administrator right after the administration item', () => {
     expect(registration.sidebarItems?.[0]).toMatchObject({ order: 210, visibleWhen: 'ADMIN' })
-    const entries = buildSidebarEntries([registration, adminRegistration], {
+    const entries = selectAdminSidebarItems([registration, adminRegistration], {
       loggedIn: true,
       admin: true,
     })
 
-    expect(entries.map((entry) => entry.id)).toEqual([HOME_ENTRY.id, 'admin-area', 'dsl'])
-    expect(entries[2]).toEqual({ id: 'dsl', labelKey: 'dsl.nav.label', path: DSL_ADMIN_PATH })
+    expect(entries.map((entry) => entry.id)).toEqual(['admin-area', 'dsl'])
+    expect(entries[1]).toMatchObject({ id: 'dsl', labelKey: 'dsl.nav.label', path: DSL_ADMIN_PATH })
   })
 
   it('hides the sidebar item from users without the administrator flag', () => {
-    expect(buildSidebarEntries([registration], { loggedIn: true, admin: false })).toEqual([
-      HOME_ENTRY,
-    ])
-    expect(buildSidebarEntries([registration], { loggedIn: false, admin: false })).toEqual([])
+    expect(selectAdminSidebarItems([registration], { loggedIn: true, admin: false })).toEqual([])
+    expect(selectAdminSidebarItems([registration], { loggedIn: false, admin: false })).toEqual([])
   })
 
   it('has every message in Japanese and in English with keys starting with dsl.', () => {

@@ -16,7 +16,7 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect } from 'react'
-import { useParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { apiRequest } from '../../shared/api-client/apiClient'
@@ -217,7 +217,7 @@ describe('AppRouter', () => {
       })
       expect(await screen.findByTestId('admin-forbidden-view')).toBeInTheDocument()
       expect(screen.getByTestId('admin-forbidden-heading')).toHaveTextContent('管理の入口')
-      expect(screen.queryByTestId('sidebar-nav-/admin')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('sidebar-nav-adm:admin')).not.toBeInTheDocument()
     })
 
     it('keeps the same shell and view from forbidden by the API to forbidden by the route', async () => {
@@ -228,7 +228,7 @@ describe('AppRouter', () => {
         registrations: [adminFeature(ReportingAdminScreen)],
         provider: login.provider,
       })
-      expect(await screen.findByTestId('sidebar-nav-/admin')).toBeInTheDocument()
+      expect(await screen.findByTestId('sidebar-nav-adm:admin')).toBeInTheDocument()
       await user.click(screen.getByTestId('report-403'))
 
       const heading = await screen.findByTestId('admin-forbidden-heading')
@@ -240,7 +240,7 @@ describe('AppRouter', () => {
 
       act(() => login.set({ loggedIn: true, admin: false, displayName: '管理者' }))
       await waitFor(() =>
-        expect(screen.queryByTestId('sidebar-nav-/admin')).not.toBeInTheDocument(),
+        expect(screen.queryByTestId('sidebar-nav-adm:admin')).not.toBeInTheDocument(),
       )
 
       expect(screen.getByTestId('admin-forbidden-heading')).toBe(heading)
@@ -248,6 +248,51 @@ describe('AppRouter', () => {
       expect(heading).toHaveFocus()
       expect(shell).toHaveClass('collapsed')
       expect(screen.queryByTestId('report-403')).not.toBeInTheDocument()
+    })
+  })
+  describe('clearing the logout intent (U7 L15)', () => {
+    function LogoutScreen() {
+      const navigate = useNavigate()
+      return (
+        <button type="button" data-testid="leave-logout" onClick={() => void navigate('/items/7')}>
+          leave
+        </button>
+      )
+    }
+
+    function intentRegistration(): FeatureRegistration {
+      return {
+        featureId: 'probe',
+        routes: [
+          { path: '/logout', screen: LogoutScreen, layout: 'STANDALONE', access: 'LOGGED_IN' },
+          { path: '/items/:id', screen: ItemScreen, layout: 'SHELL', access: 'LOGGED_IN' },
+        ],
+      }
+    }
+
+    it('clears the intent when a path other than /logout is rendered', async () => {
+      const clearLogoutIntent = vi.fn()
+      renderWithProviders(<AppRouter />, {
+        route: '/items/3',
+        registrations: [intentRegistration()],
+        provider: { getLoginState: () => ({ loggedIn: true, admin: false }), clearLogoutIntent },
+      })
+      expect(await screen.findByTestId('item-screen')).toBeInTheDocument()
+      expect(clearLogoutIntent).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the intent on /logout and clears it after moving to another path', async () => {
+      const user = userEvent.setup()
+      const clearLogoutIntent = vi.fn()
+      renderWithProviders(<AppRouter />, {
+        route: '/logout',
+        registrations: [intentRegistration()],
+        provider: { getLoginState: () => ({ loggedIn: true, admin: false }), clearLogoutIntent },
+      })
+      await user.click(await screen.findByTestId('leave-logout'))
+      expect(await screen.findByTestId('item-screen')).toHaveTextContent('item 7')
+
+      expect(clearLogoutIntent).toHaveBeenCalledTimes(1)
     })
   })
 })

@@ -1,0 +1,680 @@
+{
+  "stage": "code-generation",
+  "unit": "app-frame-ui",
+  "upstream_ids": [
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "AC4.1.10",
+    "AC4.1.11",
+    "AC4.1.12",
+    "AC4.1.13",
+    "AC4.1.14",
+    "AC4.1.15",
+    "AC4.1.16",
+    "AC4.1.17",
+    "AC4.1.18",
+    "AC4.1.19",
+    "AC4.1.20",
+    "AC4.1.21",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.2.6",
+    "AC4.2.7",
+    "AC5.1.1",
+    "AC5.1.2",
+    "AC5.1.3",
+    "AC5.1.4",
+    "AC5.1.5",
+    "AC5.1.6",
+    "AC5.1.7",
+    "AC5.1.8",
+    "AC5.1.9",
+    "AC5.1.10",
+    "AC5.1.11",
+    "AC5.1.12",
+    "AC5.1.13",
+    "AC5.1.14",
+    "AC5.1.15",
+    "AC5.1.16",
+    "AC5.1.17",
+    "AC5.1.18",
+    "AC5.3.1",
+    "AC5.3.2",
+    "AC5.3.3",
+    "AC5.3.4",
+    "AC5.3.5",
+    "AC5.3.6",
+    "AC5.3.7",
+    "D1",
+    "D2",
+    "D3",
+    "D4",
+    "D5",
+    "D6",
+    "D7",
+    "D8",
+    "D9",
+    "D10",
+    "D11",
+    "D12",
+    "D13",
+    "D14",
+    "D15",
+    "D16",
+    "D17",
+    "D18",
+    "D19",
+    "D20",
+    "D21",
+    "D22",
+    "D23",
+    "D24",
+    "D25",
+    "D26",
+    "D27",
+    "D28",
+    "D29",
+    "D30",
+    "NFR1.1",
+    "NFR1.4",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR2.2",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.7",
+    "NFR2.8",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR2.11",
+    "NFR2.12",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR6.3",
+    "NFR6.4",
+    "NFR6.5",
+    "NFR6.6",
+    "NFR6.7",
+    "NFR6.8"
+  ],
+  "coverage": [
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "Deferred",
+      "target": "U4 role（作業ロールの保存。画面は functional-spec.md W1.1 で読むだけ）"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "U4 role（同時の重なり。画面は functional-spec.md D8 で 4xx を受けて読み直す）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "U4 role（管理者でも作業ロールで決まる。画面の管理の区画は functional-spec.md D12）"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "AC4.1.11",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "id": "AC4.1.12",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/workRoleApi.test.ts"
+    },
+    {
+      "id": "AC4.1.13",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.14",
+      "status": "Deferred",
+      "target": "U4 role（覚えた作業ロールの読み替え。画面は functional-spec.md W1.2 で current を表示する）"
+    },
+    {
+      "id": "AC4.1.15",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "AC4.1.16",
+      "status": "Deferred",
+      "target": "U4 role（最初のロールの順序）"
+    },
+    {
+      "id": "AC4.1.17",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "id": "AC4.1.18",
+      "status": "Deferred",
+      "target": "U4 role（解決の口）"
+    },
+    {
+      "id": "AC4.1.19",
+      "status": "Deferred",
+      "target": "U4 role（認可）"
+    },
+    {
+      "id": "AC4.1.20",
+      "status": "Deferred",
+      "target": "U4 role（性能と指標）"
+    },
+    {
+      "id": "AC4.1.21",
+      "status": "Deferred",
+      "target": "U4 role（jqwik の性質ベースのテスト）"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "Deferred",
+      "target": "U4 role（他人を指す値を使わない。画面は functional-spec.md D3 で送らない）"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "Deferred",
+      "target": "U4 role（認可）"
+    },
+    {
+      "id": "AC4.2.6",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "AC4.2.7",
+      "status": "OK",
+      "target": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "id": "AC5.1.1",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.1.2",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "AC5.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "AC5.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "AC5.1.5",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "id": "AC5.1.6",
+      "status": "OK",
+      "target": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "id": "AC5.1.7",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.1.8",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.1.9",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.1.10",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "AC5.1.11",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "AC5.1.12",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.1.13",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/tablePlaceholderPath.test.ts"
+    },
+    {
+      "id": "AC5.1.14",
+      "status": "Deferred",
+      "target": "U5 navigation（DSL に無いテーブルを指す項目を絞る関数で落とす）"
+    },
+    {
+      "id": "AC5.1.15",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.property.test.ts"
+    },
+    {
+      "id": "AC5.1.16",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "AC5.1.17",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "AC5.1.18",
+      "status": "Deferred",
+      "target": "U5 navigation（性能）"
+    },
+    {
+      "id": "AC5.3.1",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "AC5.3.2",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.3.3",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "AC5.3.4",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.3.5",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "AC5.3.6",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "AC5.3.7",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "D1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/registration.test.ts"
+    },
+    {
+      "id": "D2",
+      "status": "OK",
+      "target": "frontend/src/app/App.test.tsx"
+    },
+    {
+      "id": "D3",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/navigationApi.test.ts"
+    },
+    {
+      "id": "D4",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "id": "D5",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "D6",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "D7",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "D8",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "id": "D9",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "D10",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "D11",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "D12",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "id": "D13",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "D14",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "D15",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "D16",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/navExpansion.test.ts"
+    },
+    {
+      "id": "D17",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "D18",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "id": "D19",
+      "status": "OK",
+      "target": "frontend/src/app/pages/HomePage.test.tsx"
+    },
+    {
+      "id": "D20",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/tablePlaceholderPath.test.ts"
+    },
+    {
+      "id": "D21",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "D22",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "D23",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "D24",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "D25",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/MyPermissionsPage.test.tsx"
+    },
+    {
+      "id": "D26",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/registration.test.ts"
+    },
+    {
+      "id": "D27",
+      "status": "OK",
+      "target": "frontend/src/features/auth/LogoutPage.test.tsx"
+    },
+    {
+      "id": "D28",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/AppShell/Sidebar.tsx"
+    },
+    {
+      "id": "D29",
+      "status": "OK",
+      "target": "frontend/src/app/i18n/messages.test.ts"
+    },
+    {
+      "id": "D30",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/workRoleApi.test.ts"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "frontend/src/features/auth/LogoutPage.test.tsx"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.property.test.ts"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "frontend/src/features/auth/logoutIntent.test.tsx"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "frontend/e2e/170-menu-navigation-flow.e2e.ts"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "frontend/eslint.config.js"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "frontend/src/features/tables/registration.test.ts"
+    },
+    {
+      "id": "NFR2.11",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "NFR2.12",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "frontend/src/app/navigation/buildNavSections.property.test.ts"
+    },
+    {
+      "id": "NFR6.3",
+      "status": "OK",
+      "target": "frontend/e2e/170-menu-navigation-flow.e2e.ts"
+    },
+    {
+      "id": "NFR6.4",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    },
+    {
+      "id": "NFR6.5",
+      "status": "OK",
+      "target": "frontend/package-lock.json"
+    },
+    {
+      "id": "NFR6.6",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/AppShell/Sidebar.tsx"
+    },
+    {
+      "id": "NFR6.7",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR6.8",
+      "status": "OK",
+      "target": "frontend/src/features/mypermissions/myPermissionsApi.test.ts"
+    }
+  ]
+}

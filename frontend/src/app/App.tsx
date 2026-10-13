@@ -16,7 +16,8 @@
 // 画面の起動（WF5）。登録の読み込みと検査、ログイン状態、表示の設定、表示言語、URL ごとの振り分けをつなぐ。
 // ログイン状態を受けてから表示の設定を決め、その言語で文言を引くため、並びは
 // ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider →
-// AdminForbiddenProvider（管理の画面の 403 の共通の扱い。Intent 260930-user-admin の U4）とする（U4 の部品 1節）。
+// AdminForbiddenProvider（管理の画面の 403 の共通の扱い。Intent 260930-user-admin の U4）→ WorkRoleProvider →
+// BusinessNavigationProvider（作業ロールと業務のメニュー。Intent 261004-role-menu の U7 の D2）とする（U4 の部品 1節）。
 // React Router のルーター（BrowserRouter など）は、呼び出し側（main.tsx・テスト）が外側に置く。
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'
 import { useMemo, type ReactNode } from 'react'
@@ -37,6 +38,8 @@ import { registrationModules } from './registry/registrationModules'
 import { RegistrationError, type FeatureMessages, type FeatureRegistration } from './registry/types'
 import { validateRegistrations } from './registry/validateRegistrations'
 import { AppRouter } from './routing/AppRouter'
+import { BusinessNavigationProvider } from './navigation/BusinessNavigationProvider'
+import { WorkRoleProvider } from './work-role/WorkRoleProvider'
 
 export interface AppProps {
   /** 登録用ファイルの読み込みの結果（既定は src/features/<featureId>/registration.ts のすべて） */
@@ -111,7 +114,11 @@ export function App({
                 {result.ok ? (
                   <FeatureRegistryProvider registrations={result.registrations}>
                     <AdminForbiddenProvider>
-                      <AppRouter />
+                      <WorkRoleProvider>
+                        <BusinessNavigationProvider>
+                          <AppRouter />
+                        </BusinessNavigationProvider>
+                      </WorkRoleProvider>
                     </AdminForbiddenProvider>
                   </FeatureRegistryProvider>
                 ) : (

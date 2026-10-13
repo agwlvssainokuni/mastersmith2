@@ -20,7 +20,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useEffect, useRef, useState } from 'react'
 import { createMemoryRouter, RouterProvider, useBlocker } from 'react-router'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../App'
 import { resolvedAppearance } from '../display-settings/appearanceLoad'
 import type { FeatureRegistration, LoginState } from '../registry/types'
@@ -69,12 +69,20 @@ function OtherScreen() {
   return <h1 data-testid="other-screen">other</h1>
 }
 
+function LogoutScreen() {
+  return <h1 data-testid="logout-screen">logout</h1>
+}
+
+/** 印を立てた回数（ユーザーメニューのログアウトの beforeNavigate） */
+let logoutMarks: string[] = []
+
 function registration(state: LoginState): FeatureRegistration {
   return {
     featureId: 'probe',
     routes: [
       { path: '/admin/guarded', screen: GuardedScreen, layout: 'SHELL', access: 'ADMIN' },
       { path: '/admin/other', screen: OtherScreen, layout: 'SHELL', access: 'ADMIN' },
+      { path: '/logout', screen: LogoutScreen, layout: 'STANDALONE', access: 'LOGGED_IN' },
     ],
     sidebarItems: [
       {
@@ -86,7 +94,22 @@ function registration(state: LoginState): FeatureRegistration {
         section: 'ADMIN',
       },
     ],
-    messages: { ja: { 'probe.other': 'ほかの画面' }, en: { 'probe.other': 'Other' } },
+    // ログアウトの道（Intent 261004-role-menu の U7 の D27。features/auth と同じ形の path の項目と印）
+    userMenuItems: [
+      {
+        id: 'probe-logout',
+        labelKey: 'probe.logout',
+        path: '/logout',
+        beforeNavigate: () => {
+          logoutMarks.push('marked')
+        },
+        order: 100,
+      },
+    ],
+    messages: {
+      ja: { 'probe.other': 'ほかの画面', 'probe.logout': 'ログアウト' },
+      en: { 'probe.other': 'Other', 'probe.logout': 'Log out' },
+    },
     loginStateProvider: { getLoginState: () => state },
   }
 }
@@ -106,7 +129,33 @@ function renderDataRouter(entries: string[], state: LoginState = ADMIN) {
   return router
 }
 
+/** 骨組みの作業ロールと業務のメニューの API に見本を返す（Intent 261004-role-menu の U7。App が読む） */
+function stubFrameApi() {
+  const fetchMock = vi.fn((input: RequestInfo | URL) => {
+    const path = typeof input === 'string' ? input : input.toString()
+    const body = path.startsWith('/api/me/work-role')
+      ? { roles: [], current: null }
+      : path.startsWith('/api/me/navigation')
+        ? { items: [], emptyReason: 'NOT_CONFIGURED' }
+        : {}
+    return Promise.resolve(
+      new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+beforeEach(() => {
+  logoutMarks = []
+  stubFrameApi()
+})
+
 afterEach(() => {
+  vi.unstubAllGlobals()
   resetDisplayTestState()
 })
 
@@ -118,7 +167,7 @@ describe('data router entry', () => {
       expect(screen.getByTestId('guard-ready')).toHaveAttribute('data-ready', 'true'),
     )
 
-    await user.click(await screen.findByTestId('sidebar-nav-/admin/other'))
+    await user.click(await screen.findByTestId('sidebar-nav-adm:probe-other'))
     await waitFor(() => expect(screen.getByTestId('blocker-state')).toHaveTextContent('blocked'))
     expect(router.state.location.pathname).toBe('/admin/guarded')
 
@@ -151,7 +200,7 @@ describe('data router entry', () => {
     const user = userEvent.setup()
     const router = renderDataRouter(['/admin/guarded'])
     await user.click(await screen.findByRole('button', { name: 'clean' }))
-    await user.click(await screen.findByTestId('sidebar-nav-/admin/other'))
+    await user.click(await screen.findByTestId('sidebar-nav-adm:probe-other'))
     expect(await screen.findByTestId('other-screen')).toBeInTheDocument()
     expect(router.state.location.pathname).toBe('/admin/other')
   })
@@ -170,5 +219,29 @@ describe('data router entry', () => {
     renderDataRouter(['/admin/guarded'], MEMBER)
     expect(await screen.findByTestId('admin-forbidden-view')).toBeInTheDocument()
     expect(screen.queryByTestId('guarded-screen')).not.toBeInTheDocument()
+  })
+  it('asks to confirm the unsaved changes before the logout path, and stays or moves (D27)', async () => {
+    const user = userEvent.setup()
+    const router = renderDataRouter(['/admin/guarded'])
+    await waitFor(() =>
+      expect(screen.getByTestId('guard-ready')).toHaveAttribute('data-ready', 'true'),
+    )
+
+    await user.click(await screen.findByRole('button', { name: /管理 太郎/ }))
+    await user.click(screen.getByRole('menuitem', { name: 'ログアウト' }))
+    await waitFor(() => expect(screen.getByTestId('blocker-state')).toHaveTextContent('blocked'))
+    expect(logoutMarks).toEqual(['marked'])
+    expect(router.state.location.pathname).toBe('/admin/guarded')
+
+    await user.click(screen.getByRole('button', { name: 'stay' }))
+    await waitFor(() => expect(screen.getByTestId('blocker-state')).toHaveTextContent('unblocked'))
+    expect(router.state.location.pathname).toBe('/admin/guarded')
+
+    await user.click(await screen.findByRole('button', { name: /管理 太郎/ }))
+    await user.click(screen.getByRole('menuitem', { name: 'ログアウト' }))
+    await waitFor(() => expect(screen.getByTestId('blocker-state')).toHaveTextContent('blocked'))
+    await user.click(screen.getByRole('button', { name: 'leave' }))
+    expect(await screen.findByTestId('logout-screen')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/logout')
   })
 })
