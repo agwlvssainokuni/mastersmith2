@@ -78,6 +78,8 @@
 - k6 の判定は1回の繰り返しに要求1つの場面の iteration_duration で行い、トークンは setup() で取って場面を 3 分にした。時計のずれに強い代わりに、操作が2つ以上の場面は op のタグが iteration_duration に付くかを台本で確かめる必要がある（group のレビューの R-01 を先に避けた）。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:5ce4195a3720a78de755ec4a54d93240fa4c34963c432dbda08d5dbfb93d6e3f -->
 - 上限を下げた k6 の場面を置かず、接続の数は結合テスト NavigationConnectionUsageIT で決定的に確かめる。読み取りだけで1要求1本のため詰まりが起きず、role のレビューの R-02 の「k6 では見積もりの誤りを見分けにくい」を避けられる。代わりに、負荷の下での待ちの長さは測らない。 (learned 2026-10-05) <!-- cid:261004-role-menu:nfr-requirements:944e5f7f1a5d9426cea6618c96c838077f8644bbda0797d3161e50b0514b1fa0 -->
 - 違反のテストは先の側を確定させてから書く待たない違反、上限切れは H2 の上限まで放さない形にした（Q3: A）。時間の境に合否を預けない代わりに、待った後の違反の経路は区分の単体テストだけで確かめる。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:1280fca49c6aaa49e31f89203ac28a7e4c45902f63b6e5bb921937e21a83681e -->
+- 長いテスト（verify・E2E・k6）は caffeinate -dims で包み、流す前に pmset -g assertions で眠らない状態か、流した後に pmset -g log で Sleep・DarkWake が無かったかを確かめ、入っていたら結果を使わずに流し直す。DarkWake の Thermal Emergency のスリープは caffeinate -i では止められず、role-menu の B8 で画面のテストが約 660 秒止まって時間切れになった。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:ace2e1c64daff91a5036ba5e11d8c52dff9fe8c8a0aac3e0305e0acb062bde56 -->
+- コード生成の計画の段で、変える型・表・移行の番号・API・画面の骨組みを使っている既存のテストと E2E を検索で洗い出し、影響の範囲に入れる。role-menu では移行の最後の版を前提にしたテスト（AuditMigrationCompatibilityIT）、SQL の文の数を数えるテスト（GroupAdminListQueryCountIT）、狭い幅のはみ出し（E2E の 375px）で計画の外の失敗が起き、生成が止まった。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:53c9696fc93ca4b91d5dfd93ed2001e062229dc11d24984c3641370f0075ca8f -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -89,6 +91,7 @@
 - 前の段の記録を承認なしでコミットしてしまい、依頼者の了承を得た。段の承認と記録のコミットは別の承認として、必ずコミットの前に提案する。 (learned 2026-09-29) <!-- cid:260928-quality-followup:deployment-execution:309234a070e87e27f11791c756861ffbb9fe4e3a7d2751a8ce1639e6976f6146 -->
 - コード生成の段の承認の場は、最後のコードのコミットの後、記録だけのコミット（aidlc/ の下だけ）を積む前に開く。user-admin で R2・R3・R4 と承認の場の記録のコミットが先頭に続き、aidlc/ の外のコードの作業が見えないとして承認の場が断られた（REQUIRED_SOURCE_WORK_MISSING）。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:82a48423a89edaac5d5346295acd928c13c5ebc6b48abe2741f6c6f687196578 -->
 - squash の統合の前に、監査ログを含む aidlc/ の未コミットの変更をコミットしておく。user-admin の U3 の小さな直しの統合で git restore --source=HEAD -- aidlc/ を使い、未コミットの監査ログの追記（承認の場の断りと問いと答えの記録）を消して戻せなかった。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:6134b387e5869328fae2d8bafc2131cf7bf2251f06efa3069d5c9bc4c620406e -->
+- コード生成のコミットは計画の手順ごとではなく、import の向きを確かめて場所・機能ごとに区切り、最初のコミットの時点で型の検査（コンパイル）が通ることを確かめる（role-menu の B1・B3・B8・B9 で計画の手順ごとの区切りがビルドの通らない区切りになり、場所ごとに変えた）。コミットの提案は確かめたい点の問いとは別に、積む前に必ず尋ねる（B5 で確かめたい点の答えの後に承認なしで C1 を積んだ）。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:1a3edd202ea8b42358822afbf8772db989401c8b6f89d39b7877d0ac0500d441 -->
 ## Deployment
 
 <!-- Project-specific specialisation. -->
