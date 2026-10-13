@@ -131,6 +131,7 @@
 - 救済で変わった利用者の状態は、イメージだけの戻しでは元に戻らない。元に戻すには配備の前の複写を戻す必要があり、その後のデータと監査の行も失う。そのため、入れ替えの前に救済の見込みを確かめて了承を得る形を選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-pipeline:04d3e502b79024e24aebc557d219a22e48458f4f9a4c590a63fac53f82796347 -->
 - 停止中の初期管理者を救済で戻すと、有効な管理者は 2 人になる。わざと止めていたのであれば .env を先に替える必要があったが、依頼者はこのまま戻すことを選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-execution:f5d336cbcb187ca59d19e6eb55c97699abde8c1a4492288d69354dd3e7d67c2e -->
 - 承認済みの observability-design.md 4節の式の名前 http_server_requests_seconds_bucket は、手元の既存の式の _milliseconds_ と食い違うため、monitoring-design.md 7節に差を書き Observability Setup で確かめる形にした。 (learned 2026-10-06) <!-- cid:261004-role-menu:infrastructure-design:b132c9d9083313c3251b50835de2fb342054784de2ad7bc4deed95672ad2e0f1 -->
+- CI の結果を記録するときは、最後の結論だけでなく試行ごとの結果（gh run view --json attempt・jobs）を確かめ、再実行で通ったものは1回目の失敗とそのテストも書く（role-menu の Build and Test で 0415b94 の CI の1回目の ShellLayout のテストの失敗を書き漏らし、CI Pipeline の段で見つかった）。 (learned 2026-10-13) <!-- cid:261004-role-menu:ci-pipeline:c1c5c3a6138f0eff457e882887e4a064a7844c47f77005258015c611cd615079 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->

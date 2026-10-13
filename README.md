@@ -78,6 +78,7 @@ make-you-chic-ui の固定先は `5bf1ffe` です。経緯: `edb1f94` → `735ef
 - 実行時か開発用かは、lockfile の各項目の印（`dev`）で判定します。lockfile で見つからないものは実行時として扱います。
 - 重大度の分からないものは警告として表示します。警告も毎回すべて表示されるので、定期的に見直してください。
 - 画面を作る道具（Vite など）を足したり入れ替えたりしたときは、`config/npm-build-tools.txt` も見直してください。
+- 手元の `./gradlew verify` では、lockfile が変わらないと OSV-Scanner（`osvScan`）が前回の結果のまま飛ばされます（UP-TO-DATE）。新しく公表された脆弱性を手元で確かめるときは、`./gradlew osvScan --rerun` で流し直してください。CI はまっさらな環境で動くため、毎回確かめます。
 
 ## ビルドした WAR での画面の確認（E2E）
 
