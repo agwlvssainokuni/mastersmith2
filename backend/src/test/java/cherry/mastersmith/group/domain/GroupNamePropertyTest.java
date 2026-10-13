@@ -25,6 +25,7 @@ import net.jqwik.api.ForAll;
 import net.jqwik.api.Label;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.constraints.IntRange;
 
 /**
  * グループの名前の正規化と検証の性質ベースのテスト（jqwik。BR1.1〜BR1.4、NFR1.11・NFR6.5、Infrastructure Design の承認の場の決定 (2)）。
@@ -37,7 +38,7 @@ class GroupNamePropertyTest {
     /** 名前の材料（ASCII・全角・日本語・サロゲートペア・小文字化で文字が増える文字・空白・制御文字・行の区切り）。 */
     private static final List<String> TOKENS = List.of(
             "a", "Z", "s", "S", "営", "業", "Ｓ", "ｓ", "😀", "𐐀", "İ", "ß", "Σ", " ", "　", " ", "\t", "\n", "\u0000",
-            "\u007F", " ");
+            "\u007F", " ", "\u200B", "\uFEFF");
 
     /** 大文字と小文字の行き来で元に戻る材料（大文字と小文字だけの違いの確かめに使う）。 */
     private static final List<String> CASE_TOKENS = List.of("a", "Z", "s", "S", "営", "業", "Ｓ", "ｓ", "𐐀", "𐐨", "部");
@@ -80,9 +81,44 @@ class GroupNamePropertyTest {
         String trimmed = GroupName.strip(raw);
         boolean expected = !trimmed.isEmpty()
                 && trimmed.codePointCount(0, trimmed.length()) <= GroupName.MAX_CODE_POINTS
-                && trimmed.codePoints().noneMatch(GroupName::isControl);
+                && trimmed.codePoints().noneMatch(GroupName::isControl)
+                && !trimmed.codePoints().allMatch(GroupName::isInvisible);
 
         assertThat(GroupName.parse(raw) instanceof GroupNameValidation.Valid).isEqualTo(expected);
+    }
+
+    /** 目に見えない材料（書式文字 Cf と、制御文字でない空白）。 */
+    private static final List<String> INVISIBLE_TOKENS =
+            List.of("\u200B", "\u200C", "\u200D", "\u2060", "\uFEFF", "\u00AD", " ", "\u3000", "\u00A0", "\u2003");
+
+    /** 目に見える材料。 */
+    private static final List<String> VISIBLE_TOKENS = List.of("a", "営", "😀", "-", "Ｓ");
+
+    @Provide
+    Arbitrary<String> invisibleNames() {
+        return Arbitraries.of(INVISIBLE_TOKENS)
+                .list()
+                .ofMinSize(1)
+                .ofMaxSize(63)
+                .map(tokens -> String.join("", tokens));
+    }
+
+    @Provide
+    Arbitrary<String> visibleTokens() {
+        return Arbitraries.of(VISIBLE_TOKENS);
+    }
+
+    @Property
+    @Label("a name made only of format characters and white space is blank, and one visible character makes it valid")
+    void invisibleOnlyNamesAreBlank(
+            @ForAll("invisibleNames") String raw,
+            @ForAll("visibleTokens") String visible,
+            @ForAll @IntRange(min = 0, max = 63) int at) {
+        assertThat((((GroupNameValidation.Invalid) GroupName.parse(raw)).reason()))
+                .isEqualTo(GroupNameValidation.Reason.INVALID_BLANK);
+        int index = Math.min(at, raw.length());
+        String withVisible = raw.substring(0, index) + visible + raw.substring(index);
+        assertThat(GroupName.parse(withVisible)).isInstanceOf(GroupNameValidation.Valid.class);
     }
 
     @Property

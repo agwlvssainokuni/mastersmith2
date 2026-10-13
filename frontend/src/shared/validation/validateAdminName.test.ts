@@ -66,6 +66,55 @@ describe('validateAdminName', () => {
     expect(validateAdminName('\ufeff営業')).toBeUndefined()
   })
 
+  it('returns required for a name made only of format characters (Cf) and white space', () => {
+    expect(validateAdminName('\u200b')).toBe('required')
+    expect(validateAdminName('\u200b\u200b')).toBe('required')
+    expect(validateAdminName('\ufeff')).toBe('required')
+    expect(validateAdminName('\u2060')).toBe('required')
+    expect(validateAdminName('\u200b\u3000\u200b')).toBe('required')
+    expect(validateAdminName(' \u200b ')).toBe('required')
+    expect(validateAdminName('\u200d\u00a0\u200c')).toBe('required')
+  })
+
+  it('checks the invisible-only rule after tooLong and invalidCharacter, as the server does', () => {
+    expect(validateAdminName('\u200b'.repeat(65))).toBe('tooLong')
+    expect(validateAdminName('\u200b\u0007\u200b')).toBe('invalidCharacter')
+    expect(validateAdminName('\u200b'.repeat(64))).toBe('required')
+  })
+
+  it('returns required for any mix of format characters and white space, and accepts it with one visible character (property)', () => {
+    const invisible = fc.string({
+      unit: fc.constantFrom(
+        '\u200b',
+        '\u200c',
+        '\u200d',
+        '\u2060',
+        '\ufeff',
+        '\u00ad',
+        ' ',
+        '\u3000',
+        '\u00a0',
+        '\u2003',
+      ),
+      minLength: 1,
+      maxLength: 63,
+    })
+    fc.assert(
+      fc.property(
+        invisible,
+        fc.constantFrom('a', '営', '😀', '-', 'Ｓ'),
+        fc.nat({ max: 63 }),
+        (name, visible, at) => {
+          expect(validateAdminName(name)).toBe('required')
+          const index = Math.min(at, name.length)
+          expect(
+            validateAdminName(`${name.slice(0, index)}${visible}${name.slice(index)}`),
+          ).toBeUndefined()
+        },
+      ),
+    )
+  })
+
   it('accepts inner spaces and symbols that the server accepts', () => {
     expect(validateAdminName('営業 部')).toBeUndefined()
     expect(validateAdminName('<script>&"\'')).toBeUndefined()

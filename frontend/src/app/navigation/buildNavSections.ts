@@ -126,8 +126,19 @@ export function resolveNavIcon(icon: unknown): IconName {
   return isAllowedIcon(icon) ? icon : DEFAULT_ICON
 }
 
+/**
+ * 修飾キー（Ctrl・Cmd・Shift・Alt）つき、または主ボタン以外のクリックか。ブラウザの既定（新しいタブ・新しい窓など）に任せる
+ * （Build and Test の Q3 D、app-frame-ui の R-05）。
+ */
+function isModifiedClick(event: MouseEvent): boolean {
+  return event.button > 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
+}
+
 function linkTo(href: string, navigate: (to: string) => void): (event: MouseEvent) => void {
   return (event) => {
+    if (isModifiedClick(event)) {
+      return
+    }
     event.preventDefault()
     navigate(href)
   }

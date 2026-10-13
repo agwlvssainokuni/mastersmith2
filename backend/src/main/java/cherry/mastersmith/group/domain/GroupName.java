@@ -70,6 +70,11 @@ public final class GroupName {
         if (stripped.codePoints().anyMatch(GroupName::isControl)) {
             return new GroupNameValidation.Invalid(GroupNameValidation.Reason.INVALID_CONTROL_CHARACTER);
         }
+        if (stripped.codePoints().allMatch(GroupName::isInvisible)) {
+            // 書式文字（Cf。幅ゼロの空白 U+200B など）と空白だけで、目に見える文字が無い名前は空として扱う（Build and Test の Q3 B、
+            // group の R-03）。目に見える文字と一緒の Cf は今までどおり受け付ける。
+            return new GroupNameValidation.Invalid(GroupNameValidation.Reason.INVALID_BLANK);
+        }
         return new GroupNameValidation.Valid(new GroupName(stripped));
     }
 
@@ -152,6 +157,17 @@ public final class GroupName {
     static boolean isControl(int codePoint) {
         int type = Character.getType(codePoint);
         return type == Character.CONTROL || type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR;
+    }
+
+    /**
+     * 目に見えない文字（Unicode の White_Space の文字と、書式文字 Cf）かを返す。これだけでできた名前は空とみなす（Build and Test の
+     * Q3 B）。画面の側の {@code validateAdminName} と同じ判定にする。
+     *
+     * @param codePoint コードポイント
+     * @return 目に見えない文字なら true
+     */
+    static boolean isInvisible(int codePoint) {
+        return isWhiteSpace(codePoint) || Character.getType(codePoint) == Character.FORMAT;
     }
 
     @Override

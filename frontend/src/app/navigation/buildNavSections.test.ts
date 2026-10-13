@@ -265,4 +265,41 @@ describe('buildNavSections', () => {
     expect(event.preventDefault).toHaveBeenCalled()
     expect(navigate).toHaveBeenCalledWith('/tables?schema=S&table=ORDER&item=1')
   })
+
+  it.each([
+    ['Ctrl', { ctrlKey: true }],
+    ['Cmd', { metaKey: true }],
+    ['Shift', { shiftKey: true }],
+    ['Alt', { altKey: true }],
+    ['the middle button', { button: 1 }],
+  ])(
+    'leaves a click with %s to the browser without preventDefault or navigate',
+    (_name, modifier) => {
+      const navigate = vi.fn()
+      const { sections } = build({ business: loaded(tree), navigate })
+      const links = [sections[0].items[0], sections[1].items[1], sections[2].items[0]]
+      for (const link of links) {
+        const event = { button: 0, preventDefault: vi.fn(), ...modifier }
+        link.onClick?.(event as never)
+        expect(event.preventDefault).not.toHaveBeenCalled()
+      }
+      expect(navigate).not.toHaveBeenCalled()
+    },
+  )
+
+  it('still navigates for a plain primary-button click with every modifier off', () => {
+    const navigate = vi.fn()
+    const { sections } = build({ business: loaded(tree), navigate })
+    const event = {
+      button: 0,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      altKey: false,
+      preventDefault: vi.fn(),
+    }
+    sections[0].items[0].onClick?.(event as never)
+    expect(event.preventDefault).toHaveBeenCalled()
+    expect(navigate).toHaveBeenCalledWith('/')
+  })
 })

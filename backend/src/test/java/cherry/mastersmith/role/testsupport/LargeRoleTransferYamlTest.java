@@ -29,19 +29,19 @@ import org.junit.jupiter.api.io.TempDir;
 /** 上限ちょうどの大きさの権限の YAML の生成の部品（計画の 13節 Q7: A・D-22）の単体テスト。 */
 class LargeRoleTransferYamlTest {
 
-    private static final int LIMIT = 10_485_760;
+    private static final int LIMIT = 5_242_880;
 
     @Test
     @DisplayName("the YAML has exactly the target size and passes the safe reader and the validation")
     void exactSize() {
-        byte[] bytes = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(20, 10_000, 30, LIMIT));
+        byte[] bytes = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT));
 
         assertThat(bytes).hasSize(LIMIT);
         RoleTransferReader.Result result = RoleTransferReader.read(
                 TransferYamlTrees.tree(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
         assertThat(result).isInstanceOf(RoleTransferReader.Valid.class);
         RoleTransferDocument document = ((RoleTransferReader.Valid) result).document();
-        assertThat(document.roles()).hasSize(20);
+        assertThat(document.roles()).hasSize(10);
         assertThat(document.roles().getFirst().settings()).hasSize(1 + 100 + 10_000);
     }
 

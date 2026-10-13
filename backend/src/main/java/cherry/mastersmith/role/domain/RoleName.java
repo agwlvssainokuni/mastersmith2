@@ -38,7 +38,7 @@ import java.util.Objects;
  * 保存し DB の生成列にしない）。名前の列は UTF-16 の 128 単位、鍵の列は 256 単位で、どちらも上限の名前で収まる（性質ベースのテスト
  * {@code RoleNameKeyPropertyTest} で確かめる）。
  *
- * <p>group の {@code GroupName} と同じ規則（制御文字は Cc と U+2028・U+2029 の Zl・Zp、Cf は拒否しない）を role の中に持つ（計画の
+ * <p>group の {@code GroupName} と同じ規則（制御文字は Cc と U+2028・U+2029 の Zl・Zp、目に見える文字と一緒の Cf は拒否しない。Cf と空白だけの名前は空とする）を role の中に持つ（計画の
  * D-30。名前の型は機能ごとに持ち、group.domain の型を使わない）。ロールの名前は個人に関する値として扱わない。
  */
 public final class RoleName {
@@ -71,6 +71,11 @@ public final class RoleName {
         }
         if (stripped.codePoints().anyMatch(RoleName::isControl)) {
             return new RoleNameValidation.Invalid(RoleNameValidation.Reason.INVALID_CONTROL_CHARACTER);
+        }
+        if (stripped.codePoints().allMatch(RoleName::isInvisible)) {
+            // 書式文字（Cf。幅ゼロの空白 U+200B など）と空白だけで、目に見える文字が無い名前は空として扱う（Build and Test の Q3 B、
+            // group の R-03）。目に見える文字と一緒の Cf は今までどおり受け付ける。
+            return new RoleNameValidation.Invalid(RoleNameValidation.Reason.INVALID_BLANK);
         }
         return new RoleNameValidation.Valid(new RoleName(stripped));
     }
@@ -154,6 +159,17 @@ public final class RoleName {
     static boolean isControl(int codePoint) {
         int type = Character.getType(codePoint);
         return type == Character.CONTROL || type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR;
+    }
+
+    /**
+     * 目に見えない文字（Unicode の White_Space の文字と、書式文字 Cf）かを返す。これだけでできた名前は空とみなす（Build and Test の
+     * Q3 B）。画面の側の {@code validateAdminName} と同じ判定にする。
+     *
+     * @param codePoint コードポイント
+     * @return 目に見えない文字なら true
+     */
+    static boolean isInvisible(int codePoint) {
+        return isWhiteSpace(codePoint) || Character.getType(codePoint) == Character.FORMAT;
     }
 
     @Override

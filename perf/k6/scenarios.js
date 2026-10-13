@@ -123,7 +123,7 @@
 //                       ROLE_WORST_NAME に 100 テーブル × 100 カラムを明示、置き換える先の ROLE_LARGE_PREFIX 00001〜ROLE_LARGE_COUNT、
 //                       埋めるロールで合わせて ROLE_PREPARE_TOTAL 件）を台本の中で作り、確かめて適用する。ほかのロールの場面の前に1回流す
 //   roleExport          権限の YAML の書き出し（GET /api/admin/role-transfer/export、200）。10 VU・3 分
-//   roleTransferLargeCheck  上限ちょうど（10 MiB）の YAML（ROLE_YAML_FILE。LargeRoleTransferYaml.java で作る）の確かめ（1 VU・1 回。
+//   roleTransferLargeCheck  上限ちょうど（5 MiB）の YAML（ROLE_YAML_FILE。LargeRoleTransferYaml.java で作る）の確かめ（1 VU・1 回。
 //                           判定は iteration_duration の最大 < 15 秒）
 //   roleTransferLargeApply  同じ YAML の適用（1 VU・1 回。setup で確かめて指紋を受ける。判定は iteration_duration の最大 < 30 秒）。
 //                           ROLE_LARGE_COUNT 件のロールを置き換えるため、流し直すときは使い捨ての環境を作り直して準備からやり直す
@@ -320,7 +320,7 @@ const ROLE_ONE_SHOT_SCENARIOS = ['rolePrepare', 'roleTransferLargeCheck', 'roleT
 const ROLE_TREE_TABLES = Number(__ENV.ROLE_TREE_TABLES || 100)
 const ROLE_TREE_COLUMNS = Number(__ENV.ROLE_TREE_COLUMNS || 100)
 const ROLE_LARGE_PREFIX = __ENV.ROLE_LARGE_PREFIX || 'perf_large_'
-const ROLE_LARGE_COUNT = Number(__ENV.ROLE_LARGE_COUNT || 25)
+const ROLE_LARGE_COUNT = Number(__ENV.ROLE_LARGE_COUNT || 19)
 const ROLE_PREPARE_TOTAL = Number(__ENV.ROLE_PREPARE_TOTAL || 1000)
 // 準備の DSL（rolePrepare）と上限ちょうどの YAML（roleTransferLarge*）は初期化の段でだけ読める（k6 の open）
 const ROLE_DSL_BODY = SCENARIO === 'rolePrepare' && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null

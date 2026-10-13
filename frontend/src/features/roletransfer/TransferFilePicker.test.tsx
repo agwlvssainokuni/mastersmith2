@@ -64,8 +64,8 @@ describe('TransferFilePicker', () => {
   })
 
   it('shows the too-large message with the limit from the constant', async () => {
-    await renderPicker({ tooLarge: true, fileInfo: { name: 'big.yaml', size: 10_485_761 } })
-    expect(screen.getByRole('alert')).toHaveTextContent('ファイルが大きすぎます（上限 10 MiB）。')
+    await renderPicker({ tooLarge: true, fileInfo: { name: 'big.yaml', size: 5_242_881 } })
+    expect(screen.getByRole('alert')).toHaveTextContent('ファイルが大きすぎます（上限 5 MiB）。')
   })
 
   it('cannot be used while disabled', async () => {
@@ -76,7 +76,7 @@ describe('TransferFilePicker', () => {
   it('has no accessibility violations with the too-large message', async () => {
     const view = await renderPicker({
       tooLarge: true,
-      fileInfo: { name: 'big.yaml', size: 10_485_761 },
+      fileInfo: { name: 'big.yaml', size: 5_242_881 },
     })
     expect(await axe(view.container)).toHaveNoViolations()
   })

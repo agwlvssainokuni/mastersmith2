@@ -676,13 +676,13 @@ grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.j
 |---|---|---|
 | `rolePrepare` | 1 VU・1 回。`DSL_FILE` の版 2 の DSL を投入して適用し、準備の YAML を台本の中で作って確かめ・適用する（下の「準備のデータ」） | `checks{scenario:rolePrepare}` の率 1 |
 | `roleExport` | 書き出し（200）。10 VU・3 分（`ROLE_DURATION`） | `iteration_duration{scenario:roleExport}` の p95 < 1000 ms と `checks` の率 1 |
-| `roleTransferLargeCheck` | 上限ちょうど（10,485,760 バイト）の YAML（`ROLE_YAML_FILE`）の確かめ（200）。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeCheck}` の最大 < 15000 ms と `checks` の率 1 |
-| `roleTransferLargeApply` | 同じ YAML の適用（200。置き換え 25 ロール × 1万カラム）。setup で同じ YAML を確かめて指紋を受ける。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeApply}` の最大 < 30000 ms と `checks` の率 1 |
+| `roleTransferLargeCheck` | 上限ちょうど（5,242,880 バイト）の YAML（`ROLE_YAML_FILE`）の確かめ（200）。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeCheck}` の最大 < 15000 ms と `checks` の率 1 |
+| `roleTransferLargeApply` | 同じ YAML の適用（200。置き換え 19 ロール × 1万カラム）。setup で同じ YAML を確かめて指紋を受ける。1 VU・1 回 | `iteration_duration{scenario:roleTransferLargeApply}` の最大 < 30000 ms と `checks` の率 1 |
 
-- **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00025`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`。スキーマの主権限 NONE だけ）、業務のメニューの悪い側のロール `perf-nav-worst`（B7 で足した。下の「業務のメニューの場面」）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
+- **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00019`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`、既定 19。スキーマの主権限 NONE だけ）、業務のメニューの悪い側のロール `perf-nav-worst`（B7 で足した。下の「業務のメニューの場面」）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
 - **DSL**: `perf/dsl-timing.sh` が対象DB の 100 テーブル × 100 カラムのスキーマ `large` から生成した版 2 の DSL（`<結果の置き場>/postgres/generated.yaml`）を `DSL_FILE` で渡す。生成には対象DB が要るが、使い捨ての環境の準備と各場面は対象DB を要らない（DSL の適用は対象DB に接続しない。プレビューの照合は届かなくても警告になるだけ。基盤の読み直しの R-07）。生成した DSL が手元にあれば作り直さなくてよい。
-- **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00025` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 10,485,760 バイトちょうどにする。名前は既定の短い形（`c_001`）のため、中身は上限の約 6 割で、残りはコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
-- **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 25 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
+- **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00019` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 5,242,880 バイトちょうどにする（上限は Build and Test の Q1 で 10 MiB・節 1,000,000 から 5 MiB・節 500,000 に下げた）。名前は既定の短い形（`c_001`）のため、中身は上限の約 96%（約 39 万の節）で、残り約 185 KB がコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
+- **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 19 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
 - **メモリ**: 上限ちょうどの YAML の確かめ・適用は、テストの JVM ではなく配備と同じ形（コンテナの上限 2g・最大ヒープの割合 50%）の使い捨てのアプリで流し、確かめ・適用の間のヒープの最大（`/actuator/metrics/jvm.memory.used?tag=area:heap` を数秒ごと）と OOMKilled の有無を記録する（単体・結合のテストでは、節の上限の境界を Spring を起動しない単体テストで確かめた。依頼者の決定 A）。
 - 台本の全体を `caffeinate -i` で包む。権限の受け渡しの適用は使い捨ての環境の監査に `ROLE_TRANSFER_APPLIED` として残る。
 
@@ -692,8 +692,8 @@ grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.j
 GEN=build/perf-results/dsl-k6/postgres/generated.yaml
 mkdir -p build/perf-results/role-data && cp "$GEN" build/perf-results/role-data/dsl.yaml
 java backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java \
-  build/perf-results/role-data/large-10mb.yaml 25 10000 0 10485760 large t_ 100 perf_large_ c_
-wc -c build/perf-results/role-data/large-10mb.yaml   # 10485760 であること
+  build/perf-results/role-data/large-5mb.yaml 19 10000 0 5242880 large t_ 100 perf_large_ c_
+wc -c build/perf-results/role-data/large-5mb.yaml   # 5242880 であること
 
 cat > "$D/role-b6-run.sh" <<'EOS'
 D="$1"
@@ -707,8 +707,8 @@ k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
 k6r rolePrepare -e SCENARIO=rolePrepare -e DSL_FILE=/data/dsl.yaml
 zsh "$D/role-run.sh" "$D"                                   # B4・B5 の場面（上の手順）
 k6r roleExport -e SCENARIO=roleExport
-k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-10mb.yaml
-k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-10mb.yaml
+k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-5mb.yaml
+k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-5mb.yaml
 EOS
 caffeinate -i zsh "$D/role-b6-run.sh" "$D"
 #   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type = 'ROLE_TRANSFER_APPLIED'
@@ -785,8 +785,8 @@ k6r navPrepare -e SCENARIO=navPrepare -e DSL_FILE=/nav/worst.yaml
 for s in navMenu tableAccessVisible tableAccessDenied; do k6r $s -e SCENARIO=$s; done
 zsh "$D/role-run.sh" "$D"                                   # ロールの管理の節の B4・B5 の場面（流すときだけ）
 k6r roleExport -e SCENARIO=roleExport
-k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-10mb.yaml
-k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-10mb.yaml
+k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-5mb.yaml
+k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-5mb.yaml
 k6r navMenuBaseline -e SCENARIO=navMenuBaseline -e DSL_FILE=/nav/baseline.yaml   # 最後（DSL を目安に入れ替える）
 EOS
 caffeinate -i zsh "$D/nav-run.sh" "$D"

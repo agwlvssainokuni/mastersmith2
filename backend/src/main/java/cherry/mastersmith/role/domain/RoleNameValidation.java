@@ -22,7 +22,7 @@ public sealed interface RoleNameValidation permits RoleNameValidation.Valid, Rol
 
     /** 名前が正しくない理由。 */
     enum Reason {
-        /** 前後の空白を取り除いた後が空（空・空白だけを含む）。 */
+        /** 前後の空白を取り除いた後が空（空・空白だけを含む）か、書式文字（Cf）と空白だけで目に見える文字が無い。 */
         INVALID_BLANK,
         /** 64 コードポイントを超える。 */
         INVALID_TOO_LONG,

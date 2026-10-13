@@ -52,8 +52,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * 権限の YAML の信頼できない入力の守り（NFR1.5、BR9.3・BR9.4、AC3.1.7・AC3.1.12・AC3.1.13、試し U1・U2、計画の D-38）の結合テスト。
- * 大きさ（10,485,760 バイト）・深さ（10）・コレクションの別名（0）の境界、展開後の節の上限を超えた拒否、タグ、重複キー、知らない
- * 項目、版の誤りを、確かめの口に送って確かめる。展開後の節の上限ちょうど（1,000,000）の受け付けは、テストの JVM のヒープを Spring の
+ * 大きさ（5,242,880 バイト）・深さ（10）・コレクションの別名（0）の境界、展開後の節の上限を超えた拒否、タグ、重複キー、知らない
+ * 項目、版の誤りを、確かめの口に送って確かめる。展開後の節の上限ちょうど（500,000）の受け付けは、テストの JVM のヒープを Spring の
  * アプリと分け合わないよう、{@code RoleTransferReaderTest} で確かめる（依頼者の決定 A）。拒否は Problem Details の {@code ROLE_TRANSFER_INVALID}（400）か {@code PAYLOAD_TOO_LARGE}（413）で、
  * 読み込みの部品の例外の文を含まない。
  */
@@ -115,7 +115,7 @@ class RoleTransferLimitsApiIT {
         assertThat(json(response)).containsEntry("code", code);
     }
 
-    private static final int LIMIT = 10_485_760;
+    private static final int LIMIT = 5_242_880;
 
     @SuppressWarnings("unchecked")
     private static List<String> reasons(HttpResponse<String> response) {
@@ -143,10 +143,10 @@ class RoleTransferLimitsApiIT {
     }
 
     @Test
-    @DisplayName("exactly 10,485,760 bytes is accepted and one byte more is 413 with Content-Length and with chunks")
+    @DisplayName("exactly 5,242,880 bytes is accepted and one byte more is 413 with Content-Length and with chunks")
     void size() {
-        byte[] exact = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(20, 10_000, 30, LIMIT));
-        byte[] over = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(20, 10_000, 30, LIMIT + 1));
+        byte[] exact = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT));
+        byte[] over = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT + 1));
 
         HttpResponse<String> accepted =
                 api.sendYaml("/api/admin/role-transfer/check", admin.token(), exact, "application/yaml");
@@ -190,9 +190,9 @@ class RoleTransferLimitsApiIT {
     }
 
     @Test
-    @DisplayName("the configured limits give the safe reader 1,000,000 expanded nodes (the boundary is a unit test)")
+    @DisplayName("the configured limits give the safe reader 500,000 expanded nodes (the boundary is a unit test)")
     void expandedNodeLimit() {
-        assertThat(limits.toSafeYamlLimits()).isEqualTo(new SafeYamlLimits(LIMIT, 10, 0, 1_000_000));
+        assertThat(limits.toSafeYamlLimits()).isEqualTo(new SafeYamlLimits(LIMIT, 10, 0, 500_000));
     }
 
     @Test

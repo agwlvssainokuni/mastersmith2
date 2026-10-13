@@ -49,7 +49,7 @@ describe('useRoleTransfer', () => {
     vi.restoreAllMocks()
   })
 
-  it('accepts a file of exactly 10,485,760 bytes and refuses 10,485,761 bytes without sending', async () => {
+  it('accepts a file of exactly 5,242,880 bytes and refuses 5,242,881 bytes without sending', async () => {
     const { result, api } = setup()
     act(() => result.current.selectFile(fileOf('a', 'roles.yaml', MAX_TRANSFER_BYTES)))
     expect(result.current.phase).toBe('fileSelected')
@@ -187,7 +187,7 @@ describe('useRoleTransfer', () => {
     expect(result.current.notice).toEqual({
       variant: 'warning',
       key: 'roletransfer.file.tooLarge',
-      values: { limit: 10 },
+      values: { limit: 5 },
     })
   })
 

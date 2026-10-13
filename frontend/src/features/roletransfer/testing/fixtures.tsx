@@ -15,8 +15,8 @@
  */
 //
 // 権限の受け渡しの画面のテストの値と描き方（テストからだけ使う。画面からは読み込まない）。値はテストごとに関数で作る。
-// ファイルは大きさだけを持つ見本（Object.defineProperty で size を与える）で 10 MiB の境界を作り、本文を実際に
-// 10 MiB 作らない（計画 unit-test-instructions.md の 6節）。ロールの名前に HTML に見える記号を含むものを入れる。
+// ファイルは大きさだけを持つ見本（Object.defineProperty で size を与える）で上限（5 MiB）の境界を作り、本文を実際に
+// 上限の大きさで作らない（計画 unit-test-instructions.md の 6節）。ロールの名前に HTML に見える記号を含むものを入れる。
 import type { RenderResult } from '@testing-library/react'
 import { ModalStackProvider, ToastProvider } from 'make-you-chic-ui'
 import type { ReactElement } from 'react'

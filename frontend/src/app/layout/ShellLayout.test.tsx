@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { act, cleanup, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -117,6 +117,34 @@ describe('ShellLayout', () => {
     })
     await user.click(await screen.findByTestId('sidebar-nav-adm:reports'))
     expect(screen.getByTestId('location')).toHaveTextContent('/reports')
+  })
+
+  it('leaves a sidebar link clicked with Ctrl, Cmd, Shift or the middle button to the browser', async () => {
+    renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
+      registrations: registrations(() => {}),
+      provider: fakeProvider({ loggedIn: true, admin: true }),
+    })
+    const link = await screen.findByTestId('sidebar-nav-adm:reports')
+    const prevented: boolean[] = []
+    // React の処理の後に既定が止められたかを記録し、jsdom の移動（未実装）を起こさないよう最後に止める。
+    const record = (event: Event) => {
+      prevented.push(event.defaultPrevented)
+      event.preventDefault()
+    }
+    window.addEventListener('click', record)
+    try {
+      fireEvent.click(link, { ctrlKey: true })
+      fireEvent.click(link, { metaKey: true })
+      fireEvent.click(link, { shiftKey: true })
+      fireEvent.click(link, { button: 1 })
+      expect(prevented).toEqual([false, false, false, false])
+      expect(screen.getByTestId('location')).not.toHaveTextContent('/reports')
+      fireEvent.click(link)
+      expect(prevented[4]).toBe(true)
+      expect(screen.getByTestId('location')).toHaveTextContent('/reports')
+    } finally {
+      window.removeEventListener('click', record)
+    }
   })
 
   it('shows the display name and runs the chosen user menu action', async () => {
@@ -707,6 +735,20 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
     expect(screen.queryByTestId('sidebar-toggle-biz:0')).toBeNull()
   })
 
+  it('shows the load failure item instead of the previous tree when the reload after a switch fails', async () => {
+    const user = userEvent.setup()
+    renderShell({
+      navAnswers: [menu(deepTree()), new Error('down')],
+      roleAnswers: [TWO, { ...TWO, current: ACCOUNTING }],
+    })
+    await user.click(await screen.findByRole('button', { name: '作業ロール: 営業' }))
+    await user.click(screen.getByRole('menuitem', { name: '経理' }))
+    expect(await screen.findByTestId('sidebar-nav-biz-load-error')).toHaveTextContent(
+      '業務のメニューを読み込めませんでした',
+    )
+    expect(screen.queryByTestId('sidebar-toggle-biz:0')).toBeNull()
+  })
+
   it('calls beforeNavigate of a path item once before moving', async () => {
     const user = userEvent.setup()
     const order: string[] = []
@@ -789,7 +831,9 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
       expect(screen.getAllByTestId('work-role-switcher')).toHaveLength(1)
       // ユーザーメニューのトリガーはトップバーに残る。
       expect(within(header() as HTMLElement).getByRole('button', { name: /管理者/ })).toBeVisible()
-      await user.click(within(switcher).getByRole('button', { name: '作業ロール: 営業' }))
+      // 作業ロールのボタンは作業ロールの読み込みの答えの後に出る（帯より後に届きうる）ため、出るのを待つ（Build and Test で
+      // verify の中で2回落ちた。team.md の waitFor の決まり）。
+      await user.click(await within(switcher).findByRole('button', { name: '作業ロール: 営業' }))
       expect(screen.getByRole('menuitem', { name: '経理' })).toBeInTheDocument()
     })
 

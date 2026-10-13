@@ -16,7 +16,7 @@
 //
 // ファイルの選択と大きさの案内（Intent 261004-role-menu の U6 の D23、functional-spec.md の W7.2、frontend-components.md
 // の 5節、AC3.1.7）。ネイティブの input type="file"（accept=".yaml,.yml"）を見える label で包む。選んだファイルの名前と
-// 大きさを文字で出し、上限を超えたときは「ファイルが大きすぎます（上限 10 MiB）」を出す（上限の値は定数から）。
+// 大きさを文字で出し、上限を超えたときは「ファイルが大きすぎます（上限 5 MiB）」を出す（上限の値は定数から）。
 // 大きさの判定は呼ぶ側（useRoleTransfer）が行い、この部品はファイルを渡すだけ。名前は React の文字として描く。
 import { useId } from 'react'
 import type { FileInfo } from './useRoleTransfer'

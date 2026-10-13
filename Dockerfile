@@ -45,5 +45,8 @@ EXPOSE 8080
 #   表ごとの写しを CPU の数 / 4 本のスレッドで並べて行う。2本以上で並べると H2 の中の競合に当たり、詰め直しが中断されてファイルが
 #   縮まないことがある（CPU 8 の PC のテストで再現。H2CompactionByPoolSuspensionIT）。CPU の数によらず同じ動きにするため 1 本に
 #   固定する（今の配備の CPU 4 でも 1 本で、速さは変わらない）。H2 を上げるときは、この指定が要るかを見直す。
+# -XX:+ExitOnOutOfMemoryError（Intent 261004-role-menu の Build and Test の Q2 A）: ヒープが尽きた（OutOfMemoryError）ときは、
+#   中途半端な状態で動き続けず JVM を止める。compose のアプリは restart: "no" のため起き直さず、開発者が原因（ログ・OOMKilled など）を
+#   見てから起動し直す。テストの JVM には足さない。
 # exec で sh を java に置き換えて java をコンテナの PID 1 にし、停止の合図（SIGTERM）を Java が直接受け取るようにする（穏やかな停止）。
-ENTRYPOINT ["sh", "-c", "set -f; exec java -XX:MaxRAMPercentage=50.0 -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1 ${MASTERSMITH_JAVA_OPTIONS:-} \"$@\" -jar /app/mastersmith.war", "mastersmith"]
+ENTRYPOINT ["sh", "-c", "set -f; exec java -XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1 ${MASTERSMITH_JAVA_OPTIONS:-} \"$@\" -jar /app/mastersmith.war", "mastersmith"]

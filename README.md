@@ -35,7 +35,7 @@ pre-commit install
 
 サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
 
-make-you-chic-ui の固定先は `e82b651` です。経緯: `edb1f94` → `735ef04`（Intent 260925-user-management の B4。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）→ `310e1ec`（Intent 260928-quality-followup。文字の色を背景に合わせて出し分ける直し）→ `077f5b4`（Intent 260929-log-deps-cleanup。Tabs の選ばれたタブの文字と、primary のボタンの hover の文字のコントラストの直し）→ `3d9521a`（Intent 260930-user-admin。Dropdown の項目の押せない状態と理由の表示の追加、その hover・focus のコントラストと読み上げの重なりの直し）→ `e82b651`（Intent 261003-user-admin-followup。Modal を閉じた後のフォーカスの戻しを背景の inert を外した後に行う直しと、`finalFocusRef` の追加）。
+make-you-chic-ui の固定先は `5bf1ffe` です。経緯: `edb1f94` → `735ef04`（Intent 260925-user-management の B4。Modal・RadioGroup・Table・Dropdown・Button の追加と直し）→ `310e1ec`（Intent 260928-quality-followup。文字の色を背景に合わせて出し分ける直し）→ `077f5b4`（Intent 260929-log-deps-cleanup。Tabs の選ばれたタブの文字と、primary のボタンの hover の文字のコントラストの直し）→ `3d9521a`（Intent 260930-user-admin。Dropdown の項目の押せない状態と理由の表示の追加、その hover・focus のコントラストと読み上げの重なりの直し）→ `e82b651`（Intent 261003-user-admin-followup。Modal を閉じた後のフォーカスの戻しを背景の inert を外した後に行う直しと、`finalFocusRef` の追加）→ `5bf1ffe`（Intent 261004-role-menu の B9。N 階層のサイドバー（`navSections`）の追加）。
 
 どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
@@ -409,6 +409,7 @@ docker compose up -d --wait                              # app が healthy に�
 - コンテナの上限の既定は CPU 4・メモリ 2g で、この VM の大きさが前提です。VM を広げた後は `docker compose up -d --wait` でコンテナを作り直し、上限を `docker inspect mastersmith-app-1 --format '{{.HostConfig.NanoCpus}} {{.HostConfig.Memory}}'`（`4000000000 2147483648`）で確かめます。VM がこれより小さい PC では、`.env` の `MASTERSMITH_CONTAINER_CPUS`・`MASTERSMITH_CONTAINER_MEMORY` で下げます（下の「既知の制約」）。
 - 照合に使える CPU は、コンテナの `cpus` と VM の CPU の数の小さい方で頭打ちになります。VM だけを広げても、`MASTERSMITH_CONTAINER_CPUS` が小さいままではログインは速くなりません。
 - JVM の設定は `.env` の `MASTERSMITH_JAVA_OPTIONS` で足します（イメージの作り直しは要らず、コンテナの作り直しで効きます）。最大ヒープは既定でメモリの上限の 50% です（以前は 75%。10MB の DSL の投入とログインを重ねたときにメモリの上限に迫ったため下げました。下の「既知の制約」）。ヒープ以外（メタ領域・スレッドのスタック・直接バッファなど）はこの外側で使うため、割合を変える（例: `-XX:MaxRAMPercentage=40.0`）か、ヒープ以外の上限（例: `-XX:MaxMetaspaceSize=256m`）を足して調整します。値は空白で区切り、空白を含む値は扱いません。JVM 標準の `JAVA_TOOL_OPTIONS` は使いません（コマンド行の 50% に上書きされ、起動の時に JSON でない行をログに出すため）。
+- ヒープが尽きた（`OutOfMemoryError`）ときは、イメージの既定の JVM の引数 `-XX:+ExitOnOutOfMemoryError` で JVM が止まります（中途半端な状態で動き続けないため。Intent 261004-role-menu）。compose のアプリは `restart: "no"` のため起き直さないので、`docker compose logs app` と `docker inspect mastersmith-app-1 --format '{{.State.OOMKilled}} {{.State.ExitCode}}'` で原因を見てから `docker compose up -d --wait` で起動し直します。テストの JVM には付けていません。
 
 #### 既知の制約（メモリの上限を下げるときと高い負荷）
 
@@ -439,7 +440,7 @@ docker compose up -d --wait                              # app が healthy に�
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（「コンテナの資源の上限」の「既知の制約」） |
-| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、タイムゾーン Asia/Tokyo、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
+| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、ヒープが尽きたら JVM を止める、タイムゾーン Asia/Tokyo、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
@@ -565,7 +566,7 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 ### 対象DB の結合テストとコンテナの実行環境
 
-対象DB の結合テストは、版とダイジェストを固定したイメージ（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）の MySQL 8.4・MariaDB 11.8・PostgreSQL 18 を Testcontainers で起動して行います。`./gradlew verify` の中で3種類とも毎回実行します（CI も同じ）。
+対象DB の結合テストは、版とダイジェストを固定したイメージ（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）の MySQL 26.7・MariaDB 13.0・PostgreSQL 18 を Testcontainers で起動して行います。`./gradlew verify` の中で3種類とも毎回実行します（CI も同じ）。
 
 Testcontainers は Docker の context を読まないため、colima を使う PC では、Docker の接続先を環境変数で渡してください（シェルの設定ファイルに書いておくと便利です）。
 
@@ -904,11 +905,11 @@ Intent 261004-role-menu の U4 の最初の Bolt（B4）で、管理者がロー
 - **照らし方**: ファイルのロールは名前（大文字と小文字・前後の空白を除いた鍵）で今のロールと照らし、当たれば設定をファイルの状態に置き換え（名前は今のまま。ファイルに無い対象の設定は消える）、当たらなければ作ります。ファイルに無いロールは残します（`untouchedRoles`）。グループ・メンバー・割り当ては書き出さず、読み込みでも変えません。今の DSL に無い対象の設定も名前で持つ設定として読み込みます（`inCurrentDsl: false`、`notInDsl` に数える）。
 - **指紋**: 作り直した変わる点の一覧（ロールの鍵の順・対象の順）と適用中の DSL の識別から作る SHA-256 の 16 進数の小文字です。サーバーは保存しません。確かめの後に別の操作でロール・設定が変わる、同じ名前のロールが作られる、DSL が適用し直されると、適用は 409 `ROLE_TRANSFER_STALE` になります（DSL が外れたときは 409 `DSL_NOT_APPLIED`）。確かめからやり直してください。
 - **一括の確定**: 適用は、置き換えるロールの行を ID の昇順に排他してから、1つのトランザクションで作成・置き換えを書きます。途中で失敗すると何も変わらず、監査の成功の行も残りません。適用の間、同じロールへのほかの管理の操作は待ちの上限（3 秒）で 409 `ROLE_BUSY` になります。
-- **信頼できない入力の守り**: 読み込みは上限つきの安全な読み込みだけで行います。上限は大きさ 10 MiB（10,485,760 バイト。確かめと適用の道ごとの本文の上限と同じ値）・入れ子の深さ 10・コレクションを指す別名 0（値を指す別名は受け付ける）・別名を展開した後の節 1,000,000 です。タグ・任意の型・重複キーを断り、知らない項目・版の誤り・値の誤り・カラムの `create`・`delete`・名前の規則の違反・ロールの重なりを `errors` に返します。応答に読み込みの部品の例外の文は載りません。`errors` の `path` はキーを点でつないだ形です（例 `roles.営業.schemas.SALES.main`）。
+- **信頼できない入力の守り**: 読み込みは上限つきの安全な読み込みだけで行います。上限は大きさ 5 MiB（5,242,880 バイト。確かめと適用の道ごとの本文の上限と同じ値）・入れ子の深さ 10・コレクションを指す別名 0（値を指す別名は受け付ける）・別名を展開した後の節 500,000 です（Intent 261004-role-menu の Build and Test で、配備と同じ最大ヒープ 1 GiB での測りから 10 MiB・1,000,000 を下げました。1万カラムを明示したロールで、1ファイルに約 12〜19 ロール分です）。タグ・任意の型・重複キーを断り、知らない項目・版の誤り・値の誤り・カラムの `create`・`delete`・名前の規則の違反・ロールの重なりを `errors` に返します。応答に読み込みの部品の例外の文は載りません。`errors` の `path` はキーを点でつないだ形です（例 `roles.営業.schemas.SALES.main`）。
 - **同時に1つずつ**: 確かめと適用は、アプリの中で同時に1つずつしか通しません。2つ目は待たずに 409 `ROLE_BUSY` で断り（監査に残さない）、WARN（`権限の受け渡しの入口を取れませんでした`、キーは `lockKind=ROLE_TRANSFER_SLOT` だけ）を1回出します。少し待ってからやり直してください。
 - **大きい書き出し**: 書き出しは上限を超えても止めません。`X-Role-Transfer-Exceeds-Import-Limit: true` が付いたファイルはそのままでは読み込めない（413）ため、ロールの一部ずつに分けて、それぞれ確かめと適用を行ってください（ロールのキーごとに分ければ、各ファイルが独立して読み込めます）。
 - **受け入れた制約**:
-  - 分割送信（`Content-Length` の無い本文）は、既存の本文の大きさのフィルターが上限（10 MiB）まで先に読みます。入口（同時に1つずつ）はその後の読み込み・木・適用を守ります。
+  - 分割送信（`Content-Length` の無い本文）は、既存の本文の大きさのフィルターが上限（5 MiB）まで先に読みます。入口（同時に1つずつ）はその後の読み込み・木・適用を守ります。
   - 本文をゆっくり送る管理者は、その間入口を持ち続けます（本文の読み込みの時間切れは Tomcat の既定に頼ります）。
   - 書き出しと、DSL の管理の 10 MiB の投入と適用は、入口に入りません（同時に動くとヒープを大きく使いえます。管理者の操作の頻度が低いことを前提にしています）。
   - 本文を読まずに断った要求（`ROLE_BUSY`・413・DSL の重い操作の 503 `DSL_BUSY` など）でも、送り手に応答を届けるため、Tomcat は最大 11MB（`server.tomcat.max-swallow-size`）の本文を読み捨ててから応答を返します。この読み捨ては**未認証の要求にも**働き、その間 Tomcat のスレッドを持ち続けます（ヒープには貯めません）。配備先が決まったときに、前段の大きさの上限と合わせて見直してください。
@@ -945,7 +946,7 @@ Intent 261004-role-menu の U5 で、ログインした利用者の業務のメ�
 - **未保存の確かめ**: 保存していない変更があるまま、木の別の節・タブ・サイドバー・ブラウザの戻るで移ろうとすると確かめ（「留まる」「移る」）が出ます。読み込み直し・タブを閉じるときはブラウザの確かめが出ます。上の帯の「ログアウト」でも確かめが出ます（Bolt B9 でログアウトを道 `/logout` への移動にしたため）。
 - **割り当て**: 利用者（出どころ「直接」「グループ 〇〇」）とグループを足す・外す。利用者の直接の割り当てを外して、その人のロールが無くなるときは、作業ロールが変わることを確かめます。
 - **グループ**: 一覧・作る・名前を変える・削除、詳細でメンバーを足す・外す（外した後に、グループ経由で無くなったロールを知らせます）、割り当てたロールの読み取り。
-- **権限の受け渡し**: 「書き出す」で全ロールの権限を YAML に保存（読み込みの上限 10 MiB を超えるときは案内）。ファイルを選んで「確かめる」と、ロールごとの変わる点（作る・置き換える、足す・変わる・消える）を示し、「適用する」で確かめた内容をそのまま送ります。確かめた後にロールの設定が変わっていると適用せず、確かめのやり直しを案内します。ファイルは 10 MiB まで（上限の確かめは案内で、正はサーバー側の 413）。
+- **権限の受け渡し**: 「書き出す」で全ロールの権限を YAML に保存（読み込みの上限 5 MiB を超えるときは案内）。ファイルを選んで「確かめる」と、ロールごとの変わる点（作る・置き換える、足す・変わる・消える）を示し、「適用する」で確かめた内容をそのまま送ります。確かめた後にロールの設定が変わっていると適用せず、確かめのやり直しを案内します。ファイルは 5 MiB まで（上限の確かめは案内で、正はサーバー側の 413）。
 - **表示言語**: ブラウザの言語が英語なら英語、それ以外は日本語です。ロール・グループ・スキーマ・テーブル・カラムの名前と氏名は訳しません。
 - **入れ替えの後**: 新しい版に入れ替えた後は、開いているタブを読み込み直してください（古い版の画面の部品の読み込みに失敗することがあります）。
 

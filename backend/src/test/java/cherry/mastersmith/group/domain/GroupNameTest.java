@@ -80,6 +80,38 @@ class GroupNameTest {
     }
 
     @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "\u200B",
+                "\u200B\u200B",
+                "\uFEFF",
+                "\u2060",
+                "\u200B\u3000\u200B",
+                " \u200B ",
+                "\u200D\u00A0\u200C"
+            })
+    @DisplayName("a name made only of format characters (Cf) and white space has no visible character and is blank")
+    void invisibleOnlyNames(String raw) {
+        assertThat(invalid(raw)).isEqualTo(Reason.INVALID_BLANK);
+    }
+
+    @Test
+    @DisplayName("a format character next to a visible character is still accepted and kept")
+    void formatCharacterWithVisibleCharacter() {
+        assertThat(valid("営業\u200B部").value()).isEqualTo("営業\u200B部");
+        assertThat(valid("\u200Ba").value()).isEqualTo("\u200Ba");
+        assertThat(valid("\uFEFF営業").value()).isEqualTo("\uFEFF営業");
+    }
+
+    @Test
+    @DisplayName("the invisible-only check comes after the length and control character checks")
+    void invisibleCheckOrder() {
+        assertThat(invalid("\u200B".repeat(65))).isEqualTo(Reason.INVALID_TOO_LONG);
+        assertThat(invalid("\u200B\u0007\u200B")).isEqualTo(Reason.INVALID_CONTROL_CHARACTER);
+        assertThat(invalid("\u200B".repeat(64))).isEqualTo(Reason.INVALID_BLANK);
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"営業\n部", "営業\t部", "営業\r部", "営業\u0000部", "営業\u0007部", "営業\u007F部", "営業 部"})
     @DisplayName("an inner line break, tab or other control character is refused")
     void controlCharacters(String raw) {

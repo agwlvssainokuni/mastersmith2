@@ -70,7 +70,7 @@ describe('RoleTransferPage', () => {
     expect(api.exportRoles).toHaveBeenCalledTimes(1)
     answer({ blob: new Blob(['x']), fileName: 'roles.yaml', exceedsImportLimit: true })
     expect(await screen.findByTestId('roletransfer-export-exceeds')).toHaveTextContent(
-      '書き出したファイルは読み込みの上限（10 MiB）を超えています。',
+      '書き出したファイルは読み込みの上限（5 MiB）を超えています。',
     )
   })
 
@@ -170,7 +170,7 @@ describe('RoleTransferPage', () => {
     const user = userEvent.setup()
     const api = fakeRoleTransferApi()
     await renderPage(api)
-    await user.upload(screen.getByLabelText('ファイルを選ぶ'), fileOf('x', 'big.yaml', 10_485_761))
+    await user.upload(screen.getByLabelText('ファイルを選ぶ'), fileOf('x', 'big.yaml', 5_242_881))
     expect(screen.getByTestId('roletransfer-file-too-large')).toBeInTheDocument()
     expect(screen.getByTestId('roletransfer-check')).toBeDisabled()
     expect(api.checkTransfer).not.toHaveBeenCalled()

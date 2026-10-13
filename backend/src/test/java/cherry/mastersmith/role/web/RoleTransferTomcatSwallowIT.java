@@ -58,7 +58,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 /**
  * 実際の Tomcat での本文の読み捨て（基盤の Q1: A、基盤の読み直しの R-01、計画の D-24、{@code server.tomcat.max-swallow-size}）の結合テスト。
- * 生のソケット（{@link RawTransferPost}）で要求の行・ヘッダー・本文をすべて書き切ってから応答を読み、10 MiB の本文を読まずに断った
+ * 生のソケット（{@link RawTransferPost}）で要求の行・ヘッダー・本文をすべて書き切ってから応答を読み、5 MiB の本文を読まずに断った
  * 要求（入口の {@code ROLE_BUSY}・大きさの {@code PAYLOAD_TOO_LARGE}）の Problem Details が送り手に届くこと、その後の要求が通ることを
  * 確かめる。
  */
@@ -120,7 +120,7 @@ class RoleTransferTomcatSwallowIT {
         assertThat(json(response)).containsEntry("code", code);
     }
 
-    private static final int LIMIT = 10_485_760;
+    private static final int LIMIT = 5_242_880;
 
     @AfterEach
     void tearDown() {
@@ -134,7 +134,7 @@ class RoleTransferTomcatSwallowIT {
     }
 
     @Test
-    @DisplayName("a 10 MiB check while an apply holds the slot gets 409 ROLE_BUSY, and the next request passes")
+    @DisplayName("a 5 MiB check while an apply holds the slot gets 409 ROLE_BUSY, and the next request passes")
     void busyAfterTheWholeBody() throws Exception {
         String name = RoleFixtures.uniqueName("読み捨て");
         long roleId = fixtures.role(name);
@@ -152,7 +152,7 @@ class RoleTransferTomcatSwallowIT {
                     port,
                     "/api/admin/role-transfer/check",
                     admin.token(),
-                    LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(20, 10_000, 30, LIMIT)));
+                    LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT)));
         } finally {
             gate.release();
         }
@@ -173,7 +173,7 @@ class RoleTransferTomcatSwallowIT {
                 port,
                 "/api/admin/role-transfer/check",
                 admin.token(),
-                LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(20, 10_000, 30, LIMIT + 1_024)));
+                LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT + 1_024)));
 
         assertThat(tooLarge.status()).isEqualTo(413);
         assertThat(problem(tooLarge)).containsEntry("code", "PAYLOAD_TOO_LARGE");

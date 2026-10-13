@@ -19,15 +19,15 @@ import cherry.mastersmith.dsl.service.SafeYamlLimits;
 
 /**
  * 権限の YAML の確かめ・適用の上限（BR9.3・NFR1.5・NFR2.9、{@code entities.md} の RoleTransferLimits）。大きさは道ごとの本文の上限
- * （{@code RequestBodyLimitRoute}）と同じ値（計画の D-21。値は設定 {@code mastersmith.role-transfer.max-bytes}、既定 10 MiB）。深さ・
+ * （{@code RequestBodyLimitRoute}）と同じ値（計画の D-21。値は設定 {@code mastersmith.role-transfer.max-bytes}、既定 5 MiB）。深さ・
  * コレクションの別名・展開後の節の数の上限は決まった値。
  *
  * @param maxBytes 本文の大きさの上限（バイト）
  */
 public record RoleTransferLimits(int maxBytes) {
 
-    /** 既定の大きさの上限（10 MiB）。 */
-    public static final int DEFAULT_MAX_BYTES = 10_485_760;
+    /** 既定の大きさの上限（5 MiB。Build and Test の Q1 で 10 MiB から下げた）。 */
+    public static final int DEFAULT_MAX_BYTES = 5_242_880;
 
     /** 入れ子の深さの上限。 */
     public static final int MAX_DEPTH = 10;
@@ -36,7 +36,7 @@ public record RoleTransferLimits(int maxBytes) {
     public static final int MAX_ALIASES = 0;
 
     /** 別名を展開した後の節の数の上限。 */
-    public static final int MAX_EXPANDED_NODES = 1_000_000;
+    public static final int MAX_EXPANDED_NODES = 500_000;
 
     /** 大きさが 1 以上であることを確かめる。 */
     public RoleTransferLimits {

@@ -142,6 +142,32 @@ describe('BusinessNavigationProvider', () => {
     expect(screen.getByTestId('menu')).toHaveTextContent('受注')
   })
 
+  it('drops the tree of the previous role and shows load-error when the reload after a switch fails', async () => {
+    const user = userEvent.setup()
+    const calls = renderNav([menu('受注'), new Error('down'), menu('請求')])
+    await waitFor(() => expect(status()).toHaveTextContent('loaded'))
+    await user.click(screen.getByRole('button', { name: 'switch' }))
+    await waitFor(() => expect(status()).toHaveTextContent('load-error'))
+    expect(screen.getByTestId('menu')).toHaveTextContent('none')
+    expect(calls.role.put).toEqual([ACCOUNTING.roleId])
+    expect(calls.nav.count).toBe(2)
+
+    await user.click(screen.getByRole('button', { name: 'reload' }))
+    await waitFor(() => expect(screen.getByTestId('menu')).toHaveTextContent('請求'))
+    expect(status()).toHaveTextContent('loaded')
+  })
+
+  it('keeps the tree when a later reload with the same work role fails after a switch', async () => {
+    const user = userEvent.setup()
+    renderNav([menu('受注'), menu('請求'), new Error('down')])
+    await waitFor(() => expect(status()).toHaveTextContent('loaded'))
+    await user.click(screen.getByRole('button', { name: 'switch' }))
+    await waitFor(() => expect(screen.getByTestId('menu')).toHaveTextContent('請求'))
+    await user.click(screen.getByRole('button', { name: 'reload' }))
+    await waitFor(() => expect(status()).toHaveTextContent('loaded'))
+    expect(screen.getByTestId('menu')).toHaveTextContent('請求')
+  })
+
   it('shows load-error for a failed first load and recovers with reload', async () => {
     const user = userEvent.setup()
     renderNav([new Error('down'), menu('受注')])

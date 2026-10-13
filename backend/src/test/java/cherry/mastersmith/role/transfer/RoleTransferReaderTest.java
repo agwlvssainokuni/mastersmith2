@@ -364,11 +364,11 @@ class RoleTransferReaderTest {
     }
 
     @Test
-    @DisplayName("1,000,000 expanded nodes reach the content check and 1,000,001 are TOO_MANY_ALIASES (NFR1.5, D-38)")
+    @DisplayName("500,000 expanded nodes reach the content check and 500,001 are TOO_MANY_ALIASES (NFR1.5, D-38)")
     void expandedNodeBoundary() {
-        assertThat(reasons(flowSequence(1_000_000))).containsExactly(Reason.INVALID_VALUE);
+        assertThat(reasons(flowSequence(500_000))).containsExactly(Reason.INVALID_VALUE);
 
-        SafeYamlResult.Rejected over = rejected(flowSequence(1_000_001));
+        SafeYamlResult.Rejected over = rejected(flowSequence(500_001));
         assertThat(over.kind()).isEqualTo(SafeYamlRejectionKind.TOO_MANY_ALIASES);
         assertThat(RoleTransferReader.rejected(over).errors())
                 .extracting(TransferError::reason)
