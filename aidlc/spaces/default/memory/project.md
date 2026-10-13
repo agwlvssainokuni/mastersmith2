@@ -132,6 +132,7 @@
 - 停止中の初期管理者を救済で戻すと、有効な管理者は 2 人になる。わざと止めていたのであれば .env を先に替える必要があったが、依頼者はこのまま戻すことを選んだ。 (learned 2026-10-04) <!-- cid:261004-safety-carryover:deployment-execution:f5d336cbcb187ca59d19e6eb55c97699abde8c1a4492288d69354dd3e7d67c2e -->
 - 承認済みの observability-design.md 4節の式の名前 http_server_requests_seconds_bucket は、手元の既存の式の _milliseconds_ と食い違うため、monitoring-design.md 7節に差を書き Observability Setup で確かめる形にした。 (learned 2026-10-06) <!-- cid:261004-role-menu:infrastructure-design:b132c9d9083313c3251b50835de2fb342054784de2ad7bc4deed95672ad2e0f1 -->
 - CI の結果を記録するときは、最後の結論だけでなく試行ごとの結果（gh run view --json attempt・jobs）を確かめ、再実行で通ったものは1回目の失敗とそのテストも書く（role-menu の Build and Test で 0415b94 の CI の1回目の ShellLayout のテストの失敗を書き漏らし、CI Pipeline の段で見つかった）。 (learned 2026-10-13) <!-- cid:261004-role-menu:ci-pipeline:c1c5c3a6138f0eff457e882887e4a064a7844c47f77005258015c611cd615079 -->
+- スモークテストに「切り替える」「選ぶ」などの操作を入れるときは、その操作が成り立つ前提（候補が2つ以上ある、自動で選ばれない）を手順と監査の期待の件数に入れる（role-menu の Deployment Pipeline で、確かめ用のロールが1つだと作業ロールが自動で選ばれて切り替えを確かめられず、2つにした）。 (learned 2026-10-13) <!-- cid:261004-role-menu:deployment-pipeline:5a55541d44e88fa43851bf5936c568e32948ecbd28528dbebb42ef7402dc30a4 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
