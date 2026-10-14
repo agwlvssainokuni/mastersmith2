@@ -4,6 +4,13 @@
 
 ## 手順
 
+**PC の眠りの守り（すべての節に共通）**: 長い試験（k6・`perf/dsl-timing.sh`）は、台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない。切れ目で守りが外れるため）。`caffeinate -i` だけでは画面の消灯と DarkWake の Thermal Emergency のスリープを止められず、試験が止まった例がある（Intent 261004-role-menu の B8）。流す前に `pmset -g assertions` で眠らない状態（`PreventUserIdleSystemSleep` などが 1）を確かめ、流した後に `pmset -g log` で試験の時間の窓に `Sleep`・`DarkWake` が無いことを確かめる。入っていたら、その回の結果は使わずに流し直す。
+
+```bash
+# 流した後の眠りの確かめ（始めと終わりの時刻は台本が記録した UTC を手元の時刻に直して読む）
+pmset -g log | grep -E ' (Sleep|DarkWake|Wake) ' | tail -n 20
+```
+
 ```bash
 # 0. 配備したアプリを止め（CPU を取り合って測定の値がぶれないため）、WAR とイメージを用意する。
 #    イメージは Intent ごとの別のタグで作る（docker compose build app は配備したアプリのタグ local を上書きし、
@@ -11,8 +18,9 @@
 docker compose stop app
 ./gradlew :backend:bootWar && docker build -t mastersmith:<Intent の名前> .   # 例: mastersmith:user-admin-followup
 
-# 1. リポジトリの外に一時の環境ファイルを作る（値は乱数。表示しない）
-D=$(mktemp -d) && chmod 700 "$D"
+# 1. リポジトリの外に一時の環境ファイルを作る（値は乱数。表示しない）。置き場はホームの下（権限 700）にする
+#    （macOS の一時ディレクトリは colima の VM から見えず、コンテナとの受け渡しが空振りするため）
+D=$(mktemp -d "$HOME/.mastersmith-perf-XXXXXX") && chmod 700 "$D"
 AP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); UP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
 ( umask 077
   printf 'MASTERSMITH_AUTH_SIGNING_KEY=%s\nMASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL=perf-admin@example.test\nMASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD=%s\n' "$(openssl rand -base64 32)" "$AP" > "$D/app.env"
@@ -132,7 +140,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --busy postgres
 
 | オプション | すること | 目標 | 結果のファイル |
 |---|---|---|---|
-| `--lang` | 英語のロケール（`en-US`）の Chromium で `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、名前の違うスキーマの DSL を投入（照合の警告 `SCHEMA_MISMATCH`）、続けて誤りを含む DSL・書式の版 1 の DSL（`UNSUPPORTED_VERSION`）・メニューの深さが 6 段の DSL（`SEMANTIC`）を貼り付けて投入（どれも 422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
+| `--lang` | 仮の管理者の表示の言語を API（`PUT /api/me/preferences`）で `en` にしてから（ログインの後は利用者の言語がブラウザーの言語より優先されるため。終わったら元の値に戻す。設定の保存は監査に残らない）、英語のロケール（`en-US`）の Chromium でログインし、`<html lang>` が `en` になったことを確かめて `/admin/dsl` を開き、対象DB に無いテーブルを持つ DSL を貼り付けて投入（照合の警告）、名前の違うスキーマの DSL を投入（照合の警告 `SCHEMA_MISMATCH`）、続けて誤りを含む DSL・書式の版 1 の DSL（`UNSUPPORTED_VERSION`）・メニューの深さが 6 段の DSL（`SEMANTIC`）を貼り付けて投入（どれも 422）。応答の `message` と、画面の警告・誤りの一覧に日本語の文字が無いこと、画面に応答の `message` がそのまま出ることを確かめる（`perf/ui/dsl-ui-lang.mjs`） | U5-LANG-E2E | `ui-lang.json`（`pass`） |
 | `--pattern` | 1,000 文字近くの重い正規表現（深い入れ子の繰り返し・`(a+)+` の並び・大きな繰り返しの回数・Unicode の文字の種類の積・遅延の繰り返しの選択）を `pattern` に 2,000 個持つ DSL と、同じ形で `pattern` の無い DSL を作り（`perf/make-pattern-dsl.mjs`）、普通 3 回 → 重い 3 回 → 重いものの直後に待たずに普通 → 普通 3 回の順に投入する | U2-PATTERN-COMPILE（重い投入が短く終わり、直後の普通の投入が遅れない。アプリのログに「正規表現の確かめを時間の上限で打ち切りました」「受け付けられませんでした」が出ない） | `timings.tsv` の `pattern-*`・`pattern-dsl.txt`・`app.log` |
 | `--busy` | 組ごとにログインを1回して、10MB の正しい DSL の投入を2つ並べて送る（要求ごとに別の応答のファイル `resp-busy-<組>-a.body`・`-b.body`。状態コード（curl の `-w '%{http_code}'`）と curl の終了コードを両方記録）。判定は、成功（201）1つと 503 `DSL_BUSY` 1つで `pass`。2つとも成功は重ならなかった回（先の処理が終わってから後が届いた）として `not-overlapped` にし、`BUSY_ATTEMPTS` 回（既定 5）までやり直す。5 回とも重ならなければ不合格にせず `not-overlapped-5-times（依頼者に諮る）` と記録する。2つとも 503・`DSL_BUSY` 以外の 5xx・状態コードが取れない（`000`）回は `fail-candidate`（不合格の候補）としてやり直さずに記録する。後に `memory.peak`・OOMKilled・終了の状態・健全性とヒープの使用を記録する | U2 dsl-v2 の NFR2.5・NFR2.6（503 が送り手に届く。止まらない）。`memory.peak` は1件の投入（`--busy` を付けずに流した `memory-peak.txt`）と比べる（後の要求は本文を読まずに断るため、大きく増えない見込み） | `busy.tsv`（組ごとに1行）・`<種類>/busy-state.txt`・`resp-busy-*.body`・`busy-*.result`・`busy-*.stderr`・`heap.tsv` の `after-busy` |
 | `--storage` | 10MB の DSL（埋め草の先頭の行に回の番号を入れ、大きさは同じ）の投入→適用を `STORAGE_ROUNDS` 回（既定 21）くり返し、最後にプレビューも1件置く（プレビュー1件と履歴 20 件の最大の状態）。回ごとに H2 のファイル（`/app/data/mastersmith.mv.db`）の大きさ、コンテナのメモリ（cgroup の `memory.current`・`memory.peak`、`memory.stat` の `anon`（プロセスのメモリ）と `file`（ページキャッシュ。回収できる））、履歴の件数を記録する。最後にアプリを `docker compose stop`（`stop_grace_period` 45 秒）で止め、止めるのにかかった秒数と終わり方（exit code。SIGTERM で正常に終われば 143、猶予切れや OOM の SIGKILL は 137）・止めている間の H2 のファイルの大きさ（同じイメージの一時のコンテナでボリュームを読むだけ）・起動から healthy までの秒数・起動し直した後の大きさを記録し、止める前と後のデータ（適用中の DSL とプレビューの DSL の SHA-256、プレビューの previewId、履歴の版・dslHash・件数）を比べる。その後、履歴のすべての版を戻して、プレビューの本文の SHA-256 が履歴の dslHash と一致する数を記録する（`restore_all_match`。詰め直しで本文が壊れていないか） | U4-STORAGE | `storage.tsv`・`memory-peak-before-restart.txt`・`memory-stat-before-restart.txt`・`stop-state.txt`・`data-while-stopped.txt`・`snapshot-before-stop.txt`・`snapshot-after-restart.txt`・`history-after-restart.txt`・`app-before-restart.log` |
@@ -146,25 +154,36 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --busy postgres
 
 ### k6 の DSL の場面（Performance Validation で使う）
 
-`perf/k6/scenarios.js` に DSL の場面を足した。Build and Test では測定として流していない。k6 で読み込めること（`k6 inspect`、全場面）と、`dslLight`・`dslCycle` が動くこと（使い捨ての環境で 10 秒ずつ。条件（履歴 20 件など）をそろえていないため、目標の判定には使わない）だけを確かめた。
+`perf/k6/scenarios.js` に DSL の場面を足した。Build and Test では測定として流していない。
 
-| 場面 | すること | 目標 |
+Intent 261004-role-menu の Performance Validation（Q3: A）で、`dslLight`・`dslCycle` を**1回の繰り返しに要求1つ**にし、繰り返しの始めに op のタグを付けて **op ごとの `iteration_duration`**（単調な時計）と `checks` の率 1 で判定する形に直した。colima の VM の時計が負荷の間にずれて合わせ直されると `http_req_duration` が崩れるため（`aidlc/spaces/default/memory/project.md` の学び）、`http_req_duration{name:…}` は要約に並べるだけ（閾値 `max>=0`）にした。管理者のトークンは setup で1回取るため、場面の長さはトークンの有効期限（5 分）より短くする（`DURATION=3m`）。目標の出典は Intent 261004-role-menu の U2 dsl-v2 の NFR2.6（`construction/dsl-v2/nfr-requirements/tech-stack-decisions.md`。前の Intent の U4 の NFR1.10・NFR1.12 を保つ）。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
 |---|---|---|
-| `dslLight` | 今の状態と履歴を同時 `VUS` で繰り返す | U4 の NFR1.10（今の状態・履歴の 95% が 1 秒以内）。閾値 `http_req_duration{name:dslStatus}`・`{name:dslHistory}` |
-| `dslCycle` | 投入 → 適用 → 投入 → 破棄 → 履歴を繰り返す。投入は重い処理（同時に1つ）のため `VUS=1` で使う | U4 の NFR1.10（適用・破棄の 95% が 1 秒以内）。閾値 `{name:dslApply}`・`{name:dslDiscard}` |
-| `dslMixed` | 10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 `VUS` 名のログインを重ねる | U4 の NFR1.12・U4-POOL（失敗しない。閾値は場面ごとの `checks` の率 1）。コンテナの上限は配備の既定 2g で流し、止まらないこと（OOMKilled）と NMT・Hikari の値を別に記録する |
+| `dslPrepare` | 1 VU・1 回。`DSL_FILE` の投入と適用を、履歴が `DSL_HISTORY_MIN`（既定 20。履歴の上限）件になるまで繰り返し、最後に同じ DSL を投入してプレビューに置く（`dslLight` の条件を作る準備） | `checks{scenario:dslPrepare}` の率 1 |
+| `dslLight` | 今の状態（op `status`）と履歴（op `history`）を、繰り返しごとに交互に同時 `VUS` で送る。setup で条件（適用中の DSL・プレビュー・履歴 `DSL_HISTORY_MIN` 件）を確かめ、そろっていなければ始める前に止まる | `iteration_duration{scenario:dslLight,op:status}`・`{…,op:history}` の p95 < 1000 ms と `checks` の率 1 |
+| `dslCycle` | 投入（op `submit`）→ 適用（op `apply`）→ 投入 → 破棄（op `discard`）→ 履歴（op `history`）を繰り返しの番号で1つずつ送る。適用の `previewId` は直前の投入の応答から受ける。投入は重い処理（同時に1つ）のため `VUS=1` で使う | op `apply`・`discard`・`history` の `iteration_duration` の p95 < 1000 ms と `checks` の率 1。投入（op `submit`）は記録だけ（NFR2.5 の 10 秒は `perf/dsl-timing.sh` で測る） |
+| `dslMixed` | 10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 `VUS` 名のログインを重ねる | 失敗しない（閾値は場面ごとの `checks` の率 1）。コンテナの上限は配備の既定 2g で流し、止まらないこと（OOMKilled）と Hikari の値を別に記録する |
 
 ```bash
-# 例: 1種類だけ残して起動し（生成した DSL と 10MB の DSL が結果の置き場にできる）、同じ一時ディレクトリの ui.env（管理者のメールアドレスとパスワード）で k6 を流す
-KEEP=1 MASTERSMITH_IMAGE_TAG=perf-dsl OUT_DIR="$PWD/build/perf-results/dsl-k6" ./perf/dsl-timing.sh postgres
+# 1種類だけ残して起動し（生成した DSL と 10MB の DSL が結果の置き場にできる）、同じ一時ディレクトリの ui.env（管理者のメールアドレスと
+# パスワード）で k6 を流す。<タグ> は使い捨て用のイメージのタグ（配備した版をそのまま使うときは local）
+KEEP=1 MASTERSMITH_IMAGE_TAG=<タグ> OUT_DIR="$PWD/build/perf-results/dsl-k6" ./perf/dsl-timing.sh postgres
 D=<表示された一時ディレクトリ>
-docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" -e SCENARIO=dslCycle -e VUS=1 -e DURATION=120s \
-  -e DSL_FILE=/data/generated.yaml -v "$PWD/build/perf-results/dsl-k6/postgres:/data:ro" \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
-  run --quiet --summary-export=/out/dslCycle.json /scripts/scenarios.js
+k6d() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" "$@" \
+    -v "$PWD/build/perf-results/dsl-k6/postgres:/data:ro" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
+}
+# 流す順: dslCycle（適用と破棄）→ dslPrepare（dslLight の条件をそろえる）→ dslLight → dslMixed。台本の全体を caffeinate -dims で包む
+k6d dslCycle -e SCENARIO=dslCycle -e VUS=1 -e DURATION=3m -e DSL_FILE=/data/generated.yaml
+k6d dslPrepare -e SCENARIO=dslPrepare -e DSL_FILE=/data/generated.yaml
+k6d dslLight -e SCENARIO=dslLight -e VUS=10 -e DURATION=3m
 ```
 
-- `dslLight` は `DSL_FILE` が要らない（履歴 20 件と想定の規模のプレビュー・適用中の DSL を先に置いておく。NFR1.10 の条件）。
+- `dslLight` は `DSL_FILE` が要らない。条件（履歴 20 件と想定の規模のプレビュー・適用中の DSL）は直前の `dslPrepare` が作る。
 - `dslMixed` は試験用の利用者 11 名（`perf-user01`〜`11`）と `PERF_USER_PASSWORD` が要る。前の節の手順 2（アプリを止めて内部DB に入れる）で入れ、`PERF_USER_PASSWORD` を `ui.env` に足してから流す。ログインの VU は試験全体で重ならない番号（`exec.vu.idInTest`）で利用者を選び、番号は `VUS + 1` まで取りうるため、利用者は `VUS + 1` 名要る。`VUS` を変えるときは利用者を足し、`-e PERF_USER_COUNT=<入れた数>`（既定 11）を渡す（足りないと始める前に止まる）。
 - `dslMixed` の試験用の利用者は、ロックの状態の行が無いまま流す（先に1人ずつログインして行を作らない）。同じ利用者の初めてのログインが同時に来ても 500 にならないこと（Intent 260924-followup-fixes の FR2 の直し）の確かめを兼ねる。合格はログインの `checks` の率 1（500 が 0 件）。
 - 利用者が VU の間で重ならないことは、k6 の出力の `loginLoop-user vu=<番号> user=<利用者>` の行（VU ごとの最初の回に1行）で確かめる。行の数が `VUS` と同じで、利用者の重なりが 0 件であること（例: `grep -o 'loginLoop-user vu=[0-9]* user=[^ "]*' <k6 の出力> | sed 's/.* user=//' | sort | uniq -d` が何も出さない）。
@@ -221,11 +240,11 @@ docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/buil
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfc up -d --wait
 
-# 3'. 場面ごとに流す（caffeinate -i で PC のスリープを防ぐ）。k6 は同じネットワークの中から app と mailpit に届く
+# 3'. 場面ごとに流す（caffeinate -dims で PC のスリープを防ぐ）。k6 は同じネットワークの中から app と mailpit に届く
 mkdir -p build/perf-results && chmod 777 build/perf-results
 for s in preferencesGet preferencesSave preferencesInvalid passwordChange passwordMismatch passwordInvalid \
   invite invitationResend invitationList invitationCancel registrationVerify registrationComplete registrationInvalid registrationRejected; do
-  caffeinate -i docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
+  caffeinate -dims docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
@@ -267,7 +286,7 @@ docker compose up -d --wait
 - **対象の利用者 ID**: setup が `perf-uaop01` で一覧の API を検索して引く（ID だけを持ち、値は出力しない）。足りないと始める前に止まる。
 - **止める悪い側のくり返し**: 止めるとトークンがすべて無効になるため、回ごとに別の対象を使う。流し直すときは、環境を作り直して（手順 5'' と 2''）入れ直す。
 - **接続プール（NFR6.2・NFR6.3）**: 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics` の `hikaricp.connections.timeout`（待ちの時間切れの累計）と `hikaricp.connections.acquire`（借りるまでの待ちの最大）で判断する。数秒ごとの使用中の数では判断しない。NFR6.2 は上限 30（既定）で `userAdminPool` を流し、時間切れの累計 0・500 が 0 件・流した5つの操作の成功の件数と監査の `SUCCESS` の件数の一致を見る。`hikaricp.connections.acquire` の値は、応答の `baseUnit` を見て読む（外部エクスポートを無効にしたときは `seconds`、有効にしたときは `milliseconds` になる。同じ数が単位で 1,000 倍違って見えるため、ミリ秒にそろえてから比べる）。NFR6.3 は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10` にして `userAdminOps` を (A) `VUS=5`（見積もり 10 本で上限ちょうど。時間切れの累計 0・件数が一致）と (B) `VUS=10`（見積もり 20 本で上限の2倍。2本目の待ちが出る）で流す。(B) は待ちを起こす場面のため、欠けた監査と ERROR の件数を記録し、p95 と件数の一致に数えない。(A)・(B) の後は上限を既定に戻して起動し直すか、環境を作り直す。配備したアプリの公開の範囲と上限は変えない。
-- 長い試験は `caffeinate -i` で台本の全体を包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。
+- 長い試験は `caffeinate -dims` で台本の全体を包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。
 - k6 はアプリと同じ VM の CPU を分け合うため、測った値にその分が混ざりうる。結果に明記する。
 - 目標に届かないときは目標を緩めず、原因をログと状態で確かめて依頼者に相談する。一覧が NFR5.1 に届かなければ、`users (created_at, user_id)` の索引を足す直しを諮る。
 
@@ -306,7 +325,7 @@ docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/buil
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 
-# 3''. 場面ごとに流す。台本の全体を caffeinate -i で包む（場面ごとに起こし直さない）
+# 3''. 場面ごとに流す。台本の全体を caffeinate -dims で包む（場面ごとに起こし直さない）
 mkdir -p build/perf-results && chmod 777 build/perf-results
 cat > "$D/ua-run.sh" <<'EOS'
 D="$1"
@@ -329,7 +348,7 @@ metrics before-pool
 k6run userAdminPool -e SCENARIO=userAdminPool -e DURATION=60s
 metrics after-pool
 EOS
-caffeinate -i zsh "$D/ua-run.sh" "$D"
+caffeinate -dims zsh "$D/ua-run.sh" "$D"
 
 # 3'''. 上限 10 の場面（NFR6.3）。使い捨てのアプリの上限を 10 にして起動し直し、(A) VUS=5 と (B) VUS=10 で 5つの操作を流す
 ( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10\n' >> "$D/app.env" )
@@ -345,7 +364,7 @@ for v in 5 10; do
   done
 done
 EOS
-caffeinate -i zsh "$D/ua-pool10.sh" "$D"
+caffeinate -dims zsh "$D/ua-pool10.sh" "$D"
 docker logs mastersmith-perf-app-1 2>&1 | grep -c '監査イベントの記録に失敗しました'   # (B) の欠けた監査の件数と突き合わせる
 
 # 3''''. 接続プールの上限を下げて流す（下の節「接続プールの上限を下げて流す」。上限 4・userAdminPoolLimit・VUS=12・5 分）
@@ -422,7 +441,7 @@ curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VAL
 until curl -s -G http://127.0.0.1:13000/api/datasources/proxy/uid/prometheus/api/v1/query \
   --data-urlencode 'query=max(hikaricp_connections_pending{service_name="mastersmith"})' | grep -q '"value"'; do sleep 5; done
 
-# c. 台本の全体を caffeinate -i で包み、k6（5 分）を流しながら、警報・接続プールの値・メモリを 30 秒ごとに読む（終わった後も 5 分読む）。
+# c. 台本の全体を caffeinate -dims で包み、k6（5 分）を流しながら、警報・接続プールの値・メモリを 30 秒ごとに読む（終わった後も 5 分読む）。
 #    引数は 結果の名前・VUS・DURATION（流し直しは limit2 20 8m のように渡す）。時刻は UTC で書く
 cat > "$D/ua-limit.sh" <<'EOS'
 D="$1"; TAG="$2"; VUSN="$3"; DUR="$4"; R=build/perf-results
@@ -463,7 +482,7 @@ done
 echo "watch end $(date -u +%FT%TZ)" >> "$R/$TAG-times.txt"
 EOS
 mkdir -p build/perf-results && chmod 777 build/perf-results
-caffeinate -i zsh "$D/ua-limit.sh" "$D" limit 12 5m
+caffeinate -dims zsh "$D/ua-limit.sh" "$D" limit 12 5m
 # (b): 題ごとに firing になった回数（3件とも 1 以上であること）。Alerting では数えない（題の state に出ないため）
 awk '$2 == "firing"' build/perf-results/limit-alerts.txt | sed 's/ \[.*//' | cut -d' ' -f3- | sort | uniq -c
 # (a): 時間切れの累計の増分と、acquire の MAX の最大（ミリ秒。baseUnit が seconds のときは 1,000 倍する）
@@ -522,7 +541,7 @@ docker rm -f mastersmith-perf-lgtm
 - **接続プール（NFR2.7、`scalability-design.md` 2.2）**: `groupPoolLimit` を2回流す。**合否の回**は使い捨てのアプリの上限を `MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11`（健全性の確かめの1本を見込む）にし、`VUS=5`・`DURATION=2m`。合格は、待ちの時間切れの累計（`hikaricp.connections.timeout`）の増分 0、`groupPoolLimit_500` が 0 件、借りるまでの待ちの最大（`hikaricp.connections.acquire` の `MAX`）が 20 ms 未満。5〜20 ms のときは合格のまま値を記録し、承認の場で目安を見直す。不合格に読む前に、健全性の確かめ以外の接続の使い手が無かったことを、試験の前後の `hikaricp.connections.active` が 0 であることとアプリのログで切り分ける。**記録の回**（合否に使わない）は上限 `10`・`VUS=20`・`DURATION=2m` で、上限に届いた証拠（`acquire` の最大 10 ms 以上）を見る。届かなければ `VUS=40` で1回だけ流し直し、それでも届かなければ記録して承認の場で諮る。時間切れの数・500 の数・409 の数は書き込みの2本使いの既知の制約の大きさとして記録する。`pending` は瞬間値のため参考にとどめる。
 - **`acquire` の単位**: `/actuator/metrics/hikaricp.connections.acquire` の応答の `baseUnit` を見て、ミリ秒にそろえてから 20 ms・10 ms と比べる（外部エクスポートを無効にしたときは `seconds`、有効にしたときは `milliseconds`。同じ数が 1,000 倍違って見える）。下の手順の読み取りの関数は、`baseUnit` が `seconds` なら 1,000 倍する。
 - 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡す（配備したアプリの公開の範囲は変えない）。
-- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。手順 0 のとおり配備したアプリを止める（VM の CPU を分け合わないため）。
+- 台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。遅れが出たら `pmset -g log` でスリープを確かめる。手順 0 のとおり配備したアプリを止める（VM の CPU を分け合わないため）。
 - グループの操作は監査に残る（使い捨ての環境の監査で、配備した環境の監査には残らない）。片付けの前に件数を数える。
 
 ```bash
@@ -549,7 +568,7 @@ docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/buil
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 
-# 3G. 応答時間の8場面を流す（constant-vus の場面は 3 分、回数の場面は VU ごとに 100 回）。台本の全体を caffeinate -i で包む
+# 3G. 応答時間の8場面を流す（constant-vus の場面は 3 分、回数の場面は VU ごとに 100 回）。台本の全体を caffeinate -dims で包む
 mkdir -p build/perf-results && chmod 777 build/perf-results
 cat > "$D/gr-run.sh" <<'EOS'
 D="$1"
@@ -562,7 +581,7 @@ k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
 for s in groupListFirst groupListLast groupDetail groupRename; do k6run $s -e SCENARIO=$s -e DURATION=3m; done
 for s in groupCreate groupDelete groupMemberAdd groupMemberRemove; do k6run $s -e SCENARIO=$s; done
 EOS
-caffeinate -i zsh "$D/gr-run.sh" "$D"
+caffeinate -dims zsh "$D/gr-run.sh" "$D"
 
 # 3G'. 接続プールの合否の回（上限 11・VUS=5・2 分）と記録の回（上限 10・VUS=20・2 分。届かなければ VUS=40 で1回だけ流し直す）。
 #      上限を変えて使い捨てのアプリを作り直し、k6 の前・間（5 秒ごと）・後に接続プールの値を読む
@@ -585,10 +604,10 @@ wait $K6; read_metrics end
 EOS
 ( umask 077; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11\n' >> "$D/app.env" )
 perfu up -d --wait --force-recreate app
-caffeinate -i zsh "$D/gr-pool.sh" "$D" gr-pool11 5
+caffeinate -dims zsh "$D/gr-pool.sh" "$D" gr-pool11 5
 sed -i '' 's/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11$/MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10/' "$D/app.env"
 perfu up -d --wait --force-recreate app
-caffeinate -i zsh "$D/gr-pool.sh" "$D" gr-pool10 20
+caffeinate -dims zsh "$D/gr-pool.sh" "$D" gr-pool10 20
 # 判定: 時間切れの累計の増分（before と end の COUNT の差）、acquire の MAX の最大（ミリ秒）、k6 の要約の groupPoolLimit_500 の件数
 python3 -c '
 import ast, sys
@@ -631,7 +650,7 @@ docker compose up -d --wait
 - **トークン**: 操作する管理者は試験用の管理者 `perf-roleop01`（初期管理者は使わない。手順 2'' の SQL の形で入れる）。setup の最後にトークンを取り直し、場面は 3 分までにする（アクセストークンは 5 分で切れる）。setup の時間の上限は 10 分（`setupTimeout`）。
 - **名前**: ロールの名前の鍵は大文字と小文字を区別せず全体で一意のため、作る名前は実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。
 - **利用者の側の場面（B5）**: 作業ロールと自分の権限の場面、割り当ての場面は、グループの管理の節の 2G で入れたメンバーの候補 `perf-gr-0001`〜（パスワードは `PERF_USER_PASSWORD`）を VU の番号の順に使う。setup が操作する管理者の API でロール・グループを作って割り当て、最後に利用者のトークンを VU ごとに取る。作業ロールの切り替えと割り当ては使い捨ての環境の監査に残る。
-- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
+- 台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
 
 ```bash
 # B4・B5 の場面の流し方（先に B6 の準備の場面 rolePrepare を1回流す。下の B6 の手順の role-b6-run.sh がこの台本も呼ぶ。前提: グループの管理の節の 0・1・1G と同じ用意、perf-roleop01 を入れてあること）
@@ -644,7 +663,7 @@ for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
 EOS
-caffeinate -i zsh "$D/role-run.sh" "$D"
+caffeinate -dims zsh "$D/role-run.sh" "$D"
 
 # 3R'. 接続プールの合否の回と記録の回（B5。NFR2.7・NFR2.8、scalability-design.md 2.3・2.4）。グループの管理の節の 3G' の gr-pool.sh を
 #      SCENARIO=rolePoolLimit・ROLE_DURATION=2m に替えた写し（role-pool.sh）で流す。判定の値の読み方は 3G' と同じ。
@@ -659,13 +678,55 @@ caffeinate -i zsh "$D/role-run.sh" "$D"
 sed -e 's/SCENARIO=groupPoolLimit/SCENARIO=rolePoolLimit/' -e 's/-e DURATION=2m/-e ROLE_DURATION=2m/' "$D/gr-pool.sh" > "$D/role-pool.sh"
 ( umask 077; sed -i '' '/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=/d' "$D/app.env"; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11\n' >> "$D/app.env" )
 perfu up -d --wait --force-recreate app
-caffeinate -i zsh "$D/role-pool.sh" "$D" role-pool11 5
+caffeinate -dims zsh "$D/role-pool.sh" "$D" role-pool11 5
 sed -i '' 's/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11$/MASTERSMITH_DB_MAXIMUM_POOL_SIZE=10/' "$D/app.env"
 perfu up -d --wait --force-recreate app
-caffeinate -i zsh "$D/role-pool.sh" "$D" role-pool10 20
+caffeinate -dims zsh "$D/role-pool.sh" "$D" role-pool10 20
 grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.json build/perf-results/role-pool10.json
 #   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events
 #     WHERE event_type LIKE 'ROLE_%' OR event_type = 'WORK_ROLE_SWITCHED' GROUP BY event_type, result, failure_reason
+```
+
+#### 警報の確かめの回（Intent 261004-role-menu の Performance Validation、Q6: A）
+
+Observability Setup から持ち主を移された3つの警報（`ms-pool-pending`・`ms-error-logs`・`ms-audit-fail`）が、ロール・グループの書き込みの2本使いで鳴ることを確かめる。判定の回（上の 3R' の上限 11・10 の回と、上限 30 の p95 の場面）とは別の回にし、判定の回の条件は変えない。形は「接続プールの上限を下げて流す」（Intent 261003-user-admin-followup の FR4）と同じで、場面だけを `rolePoolLimit`（作業ロールの切り替えとグループへの割り当て・外し。どれも確定の後の監査で2本目の接続を借りる）にする。
+
+- **上限 4・`VUS=12`・5 分**: 同時の書き込みが上限の3倍で全員が2本目を待ち、`connection-timeout`（5 秒）で時間切れになって監査の書き込みの失敗の ERROR が出る。5 分は `ms-pool-pending`（1 分ごとの値で `for: 1m`）が指標の送信の時点を2回以上またぐため。鳴らなければ、条件が起きたかを指標とログで確かめ、起きなかったときだけ上限 2・`VUS=20`・8 分で1回流し直す。
+- **利用者の数**: `rolePoolLimit` は VU ごとにメンバーの候補 `perf-gr-<VU の番号>` を使う（setup の `roleMembers`。`VUS` 人を候補 `perf-gr-0001` から引く）。グループの管理の節の 2G で 1,000 人入れてあるため、`VUS=12`（流し直しの 20）でも足りる。足すものは無い。
+- **トークンの有効期限**: `rolePoolLimit` は setup で取ったトークンを使い続け、アクセストークンの有効期限は既定 5 分のため、5 分（流し直しの 8 分）の回では終わりの近くで 401（`rolePoolLimit_other`）が混ざる。この回だけ、使い捨てのアプリに `MASTERSMITH_AUTH_ACCESS_TOKEN_TTL=15m` を足す（接続プールの使い方は変わらない。配備したアプリの設定は変えない）。
+- **手元の監視**: lgtm を先に使い捨ての環境の網に別名 `lgtm` でつないでから、使い捨てのアプリを上限 4 と外部エクスポートで起動し直す（先にアプリを起動するとログの送信の失敗の ERROR が出て `ms-error-logs` の数に混ざる）。警報の決まりのファイルはそのまま読み込ませる。
+- **BUSY**: 409 `ROLE_BUSY`・`GROUP_BUSY` が出たときは、L3 と L4 の結び付きを `traceId` で数える。0 件のときは `Unverified`（feedback-optimization へ渡す）。
+- 終わったら、上限・外部エクスポート・有効期限の4行を `app.env` から消して使い捨てのアプリを起動し直すか、環境ごと片付ける。
+
+```bash
+# 前提: 上の 3R' までを済ませ、使い捨ての環境（mastersmith-perf）が動いていること（ネットワーク mastersmith-perf_default）。
+# a. 使い捨てのアプリにだけ、上限 4・外部エクスポート・トークンの有効期限を足す（秘密ではない値）
+( umask 077; sed -i '' '/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=/d' "$D/app.env"
+  printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=4\nMASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true\nMASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://lgtm:4318\nMASTERSMITH_AUTH_ACCESS_TOKEN_TTL=15m\n' >> "$D/app.env" )
+# b. 「接続プールの上限を下げて流す」の b と同じ手順で lgtm を起動し（先に網につなぐ）、その後にアプリを起動し直して上限 4 を確かめる
+# c. 同じ節の c の ua-limit.sh を、場面だけ替えた写し（role-limit.sh）にして流す
+sed -e 's/SCENARIO=userAdminPoolLimit/SCENARIO=rolePoolLimit/' -e 's/-e DURATION=\$DUR -e PERF_UA_COUNT=20/-e ROLE_DURATION=$DUR/' \
+  "$D/ua-limit.sh" > "$D/role-limit.sh"
+grep -c 'SCENARIO=rolePoolLimit' "$D/role-limit.sh"   # 1 であること
+grep -c 'ROLE_DURATION=\$DUR' "$D/role-limit.sh"      # 1 であること
+caffeinate -dims zsh "$D/role-limit.sh" "$D" role-limit 12 5m
+# 判定の読み方は同じ節の (a)・(b) と同じ（結果の名前の limit を role-limit に替える）。件数は k6 の要約の rolePoolLimit_204・_409・_500・_other
+grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-limit.json
+# d. BUSY の L3 と L4 を traceId で突き合わせる（同じ節の d の USER_ADMIN_BUSY を ROLE_BUSY・GROUP_BUSY に替える。件数だけを出す）
+docker logs mastersmith-perf-app-1 2>/dev/null | python3 -c '
+import collections, json, sys
+l3, l4 = [], collections.Counter()
+for line in sys.stdin:
+    try:
+        r = json.loads(line)
+    except ValueError:
+        continue
+    if r.get("message") == "要求をエラー応答に変換しました" and r.get("code") in ("ROLE_BUSY", "GROUP_BUSY"):
+        l3.append(r.get("traceId"))
+    elif r.get("message") == "行の排他を取れませんでした":
+        l4[r.get("traceId")] += 1
+print("L3", len(l3), "L4", sum(l4.values()), "L4 をちょうど1件持つ L3", sum(1 for t in l3 if l4.get(t) == 1))'
+# e. 結果を確かめて記録してから lgtm を消す（docker rm -f mastersmith-perf-lgtm）。監査の件数を数えてから片付ける
 ```
 
 ### 権限の受け渡しの場面と準備の場面（B6）
@@ -684,7 +745,7 @@ grep -h -o '"rolePoolLimit_[0-9a-z]*": {[^}]*}' build/perf-results/role-pool11.j
 - **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00019` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 5,242,880 バイトちょうどにする（上限は Build and Test の Q1 で 10 MiB・節 1,000,000 から 5 MiB・節 500,000 に下げた）。名前は既定の短い形（`c_001`）のため、中身は上限の約 96%（約 39 万の節）で、残り約 185 KB がコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
 - **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 19 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
 - **メモリ**: 上限ちょうどの YAML の確かめ・適用は、テストの JVM ではなく配備と同じ形（コンテナの上限 2g・最大ヒープの割合 50%）の使い捨てのアプリで流し、確かめ・適用の間のヒープの最大（`/actuator/metrics/jvm.memory.used?tag=area:heap` を数秒ごと）と OOMKilled の有無を記録する（単体・結合のテストでは、節の上限の境界を Spring を起動しない単体テストで確かめた。依頼者の決定 A）。
-- 台本の全体を `caffeinate -i` で包む。権限の受け渡しの適用は使い捨ての環境の監査に `ROLE_TRANSFER_APPLIED` として残る。
+- 台本の全体を `caffeinate -dims` で包む。権限の受け渡しの適用は使い捨ての環境の監査に `ROLE_TRANSFER_APPLIED` として残る。
 
 ```bash
 # 前提: グループの管理の節の 0・1・1G・2G と同じ用意（perf-roleop01 を入れてあること）。生成した版 2 の DSL を用意する
@@ -710,7 +771,7 @@ k6r roleExport -e SCENARIO=roleExport
 k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-5mb.yaml
 k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-5mb.yaml
 EOS
-caffeinate -i zsh "$D/role-b6-run.sh" "$D"
+caffeinate -dims zsh "$D/role-b6-run.sh" "$D"
 #   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type = 'ROLE_TRANSFER_APPLIED'
 #     GROUP BY event_type, result, failure_reason
 ```
@@ -742,7 +803,7 @@ caffeinate -i zsh "$D/role-b6-run.sh" "$D"
 - **p95 を場面ごとに別に残す**（NFR 設計の読み直しの R-08）: `tableAccessDenied` は表示名のための DSL の読み取り（`current()`）をしないため、`tableAccessVisible` と合わせずに場面ごとの p95 を記録する。置き場の p95 の実測値は基準の値として記録し、目標（1 秒）より桁違いに小さければ後の Intent で目標を見直すかを結果に書く（`performance-design.md` 3節）。
 - **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
 - **VM の余裕**: 試し走り（B7、2026-10-12）は、配備したアプリ（上限 2g）を止めずに、使い捨てのアプリ（上限 2g）を並べて流した（VM 6 GiB のうち空きは約 4.9 GiB）。本番の長さの判定の回は、手順 0 のとおり配備したアプリを止めて CPU を取り合わないようにする。
-- 台本の全体を `caffeinate -i` で包む（場面ごとに起こし直さない）。
+- 台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。
 
 ```bash
 # 前提: 上の「手順」の 0・1 と同じ用意（一時の環境ファイル。置き場はホームの下（権限 700）。VM から見えるようにするため）。
@@ -769,7 +830,7 @@ mkdir -p build/perf-results/nav-data
 node perf/make-nav-dsl.mjs --worst build/perf-results/role-data/dsl.yaml build/perf-results/nav-data/worst.yaml
 node perf/make-nav-dsl.mjs --baseline build/perf-results/role-data/dsl.yaml build/perf-results/nav-data/baseline.yaml
 
-# 4N. 準備 → 読み取りの場面 → ロールの受け渡しの場面 → 目安の場面を最後に（台本の全体を caffeinate -i で包む）
+# 4N. 準備 → 読み取りの場面 → ロールの受け渡しの場面 → 目安の場面を最後に（台本の全体を caffeinate -dims で包む）
 cat > "$D/nav-run.sh" <<'EOS'
 D="$1"
 k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
@@ -789,7 +850,7 @@ k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=
 k6r roleTransferLargeApply -e SCENARIO=roleTransferLargeApply -e ROLE_YAML_FILE=/data/large-5mb.yaml
 k6r navMenuBaseline -e SCENARIO=navMenuBaseline -e DSL_FILE=/nav/baseline.yaml   # 最後（DSL を目安に入れ替える）
 EOS
-caffeinate -i zsh "$D/nav-run.sh" "$D"
+caffeinate -dims zsh "$D/nav-run.sh" "$D"
 # 試し走りのときは、各場面に -e VUS=1 -e ROLE_DURATION=10s を足す
 
 # 5N. 秘密と名前が出ていないことを件数で確かめる（どれも 0）。片付けは上の「手順」の 4 と同じ

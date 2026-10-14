@@ -22,6 +22,10 @@
 //       → 誤りを含む DSL を貼り付けて投入（422 の誤りの一覧が出る）。応答の message と画面の文字に日本語の文字が無いことを見る。
 // 書式の版 2（Intent 261004-role-menu の U2 dsl-v2、NFR 設計の読み直し R-04・計画の D-8）: DSL は版 2 で書き、次も英語で届くことを
 // 確かめる。名前の違うスキーマの照合の警告（SCHEMA_MISMATCH）、書式の版 1 の誤り、メニューの深さの誤り。
+// 利用者の表示の言語（Intent 261004-role-menu の Performance Validation、Q4: A。dsl-v2 の読み直し R-02）: ログインの後は利用者の
+// 表示の言語がブラウザーの言語より優先されるため、画面のログインの前に API（PUT /api/me/preferences）で仮の管理者の言語を en に
+// してから測り、終わったら元の値に戻す。使い捨ての環境の仮の管理者だけに使う（設定の保存は監査に残らない）。画面が英語になった
+// ことは <html lang> が en であることで確かめる（englishUi の段）。
 import { readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -30,7 +34,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(path.resolve(here, '../../frontend/package.json'))
-const { chromium } = require('@playwright/test')
+const { chromium, request: apiRequest } = require('@playwright/test')
 
 const { values } = parseArgs({
   options: {
@@ -127,6 +131,35 @@ result.browser = `chromium ${browser.version()}`
 const context = await browser.newContext({ baseURL: values.base, locale: 'en-US' })
 const page = await context.newPage()
 
+// 設定の API は、ブラウザーと Cookie を分けた要求の文脈で呼ぶ（同じ文脈で API のログインをするとリフレッシュトークンの Cookie が
+// 画面に渡り、画面がログインの済んだ状態で開いてログインの画面を通らなくなるため）。
+const api = await apiRequest.newContext({ baseURL: values.base })
+
+/** API のログインでアクセストークンを受ける（画面のログインとは別。値は出力しない）。 */
+async function apiToken() {
+  const res = await api.post('/api/auth/login', {
+    headers: { Origin: values.base },
+    data: { email: env.PERF_ADMIN_EMAIL, password: env.PERF_ADMIN_PASSWORD },
+  })
+  if (res.status() !== 200) throw new Error(`API のログインに失敗しました: ${res.status()}`)
+  return (await res.json()).accessToken
+}
+
+/** 自分の設定を読む・置き換える（4つをまとめて置き換える API のため、読んだ値の言語だけを変えて送る）。 */
+async function preferences(token, language) {
+  const headers = { Authorization: `Bearer ${token}`, Origin: values.base }
+  const got = await api.get('/api/me/preferences', { headers })
+  if (got.status() !== 200) throw new Error(`設定を読めませんでした: ${got.status()}`)
+  const current = await got.json()
+  if (language === undefined) return current
+  const put = await api.put('/api/me/preferences', {
+    headers,
+    data: { ...current, language },
+  })
+  if (put.status() !== 200) throw new Error(`設定を保存できませんでした: ${put.status()}`)
+  return current
+}
+
 /** 貼り付けで投入し、POST の要求と応答を返す（置き換えの確かめが出れば確定する）。 */
 async function pasteAndSubmit(text) {
   await page.getByRole('tab', { name: 'Submit' }).click()
@@ -145,13 +178,23 @@ async function pasteAndSubmit(text) {
   return { request: response.request(), response, body: await response.json() }
 }
 
-let stage = 'login'
+let stage = 'preferences'
+let originalLanguage = null
 try {
+  // 0. 仮の管理者の表示の言語を en にする（元の値は終わりに戻す）。
+  originalLanguage = (await preferences(await apiToken(), 'en')).language
+  result.originalLanguage = originalLanguage
+  stage = 'login'
   await page.goto('/')
   await page.getByTestId('login-form-email-input').fill(env.PERF_ADMIN_EMAIL)
   await page.getByTestId('login-form-password-input').fill(env.PERF_ADMIN_PASSWORD)
   await page.getByTestId('login-form-submit-button').click()
   await page.getByTestId('home-page').waitFor({ state: 'visible', timeout: TIMEOUT })
+  // 画面が英語になったこと（利用者の言語が <html lang> に反映される。描画の後の効果のため待って確かめる）
+  stage = 'englishUi'
+  await page.waitForFunction(() => document.documentElement.lang === 'en', null, { timeout: TIMEOUT })
+  result.htmlLang = await page.evaluate(() => document.documentElement.lang)
+  stage = 'openDsl'
   // 画面を開くとプレビューの表示（重い処理、照合を含む）を読みに行く。重い処理は同時に1つのため、読み終わってから投入する
   // （重なると 503 DSL_BUSY になる）。
   const initialPreview = page.waitForResponse(
@@ -237,6 +280,7 @@ try {
     s.shownContainsServerMessages
   const [w, m, ...errorsSteps] = result.steps
   result.pass =
+    result.htmlLang === 'en' &&
     w.http === 201 &&
     english(w) &&
     m.http === 201 &&
@@ -249,6 +293,13 @@ try {
   result.pageTextOnError = await page.locator('body').innerText().catch(() => null)
   process.exitCode = 1
 } finally {
+  // 仮の管理者の表示の言語を元に戻す（戻せなくても使い捨ての環境のため測りの結果は変えず、記録だけする）
+  if (originalLanguage !== null) {
+    result.languageRestored = await apiToken()
+      .then((token) => preferences(token, originalLanguage))
+      .then(() => true, () => false)
+  }
+  await api.dispose()
   await browser.close()
   writeFileSync(values.out, JSON.stringify(result, null, 2) + '\n')
   console.log(JSON.stringify({ pass: result.pass, error: result.error ?? null }))

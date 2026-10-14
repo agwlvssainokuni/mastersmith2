@@ -25,8 +25,16 @@
 //   appearance    見た目の設定の API（トークンなしの GET /api/appearance。U8 の NFR6.1）
 // DSL の場面（Intent 260923-dsl-schema-loader の Performance Validation 用。手順は perf/README.md の「DSL の時間を測る」）。
 // 管理者のトークンは5分で切れるため、VU ごとに4分でログインし直す。DSL の本文は DSL_FILE（k6 のコンテナの中のパス）から読む。
-//   dslLight      今の状態と履歴を同時 VUS で繰り返す（U4 の NFR1.10 の今の状態・履歴。重い処理の制限を受けない）
-//   dslCycle      投入 → 適用 → 投入 → 破棄 → 履歴を1人で繰り返す（U4 の NFR1.10 の適用・破棄。投入は重い処理のため VUS=1 で使う）
+// Intent 261004-role-menu の Performance Validation（Q3: A）で、dslLight・dslCycle を「1回の繰り返しに要求1つ」にし、
+// 繰り返しの始めに exec.vu.metrics.tags.op に操作の名前を入れて、iteration_duration{scenario:…,op:…} の p95 < 1000 ms と
+// checks の率 1 で判定する形に直した（colima の VM の時計のずれのため、http_req_duration{name:…} は並べて記録するだけ）。
+// 管理者のトークンは setup で1回取る（場面の長さはトークンの有効期限 5 分より短くする。既定 DURATION の 60 秒、README では 3 分）。
+//   dslPrepare    dslLight の条件（履歴 DSL_HISTORY_MIN 件・適用中の DSL・想定の規模のプレビュー）を作る準備の場面（1 VU・1 回）。
+//                 DSL_FILE の投入と適用を履歴が DSL_HISTORY_MIN 件になるまで繰り返し、最後に同じ DSL を投入してプレビューに置く
+//   dslLight      今の状態（op status）と履歴（op history）を、繰り返しごとに交互に同時 VUS で送る（U2 dsl-v2 の NFR2.6 の
+//                 今の状態・履歴。重い処理の制限を受けない）。setup で条件（上の dslPrepare が作る）がそろっていることを確かめる
+//   dslCycle      投入（op submit。記録だけ）→ 適用（op apply）→ 投入 → 破棄（op discard）→ 履歴（op history）を、繰り返しの番号で
+//                 1つずつ送る（NFR2.6 の適用・破棄。投入は重い処理のため VUS=1 で使う。適用の previewId は直前の投入の応答から受ける）
 //   dslMixed      10MB の DSL の投入とプレビューの表示（1人）に、別々の利用者 VUS 名のログインを重ねる
 //                 （U4 の NFR1.12・U4-POOL。コンテナの上限を配備の既定 2g にして流し、止まらないこと・失敗が無いことを見る）
 //                 ログインの VU は試験全体で重ならない番号（exec.vu.idInTest）で利用者を選ぶため、VU どうしで利用者が
@@ -156,7 +164,14 @@ const PERF_USER_COUNT = Number(__ENV.PERF_USER_COUNT || 11)
 const REFRESH_COOKIE = 'mastersmith_refresh'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Origin: BASE }
 const DSL_API = `${BASE}/api/admin/dsl`
-const DSL_SCENARIOS = ['dslLight', 'dslCycle', 'dslMixed']
+const DSL_SCENARIOS = ['dslPrepare', 'dslLight', 'dslCycle', 'dslMixed']
+// dslLight・dslCycle の操作の名前（op のタグ。繰り返しの番号で順に回す）
+const DSL_OPS = {
+  dslLight: ['status', 'history'],
+  dslCycle: ['submit', 'apply', 'submit', 'discard', 'history'],
+}
+// dslLight の条件の履歴の件数（履歴の上限 20 件。dslPrepare がそろえ、dslLight の setup が確かめる）
+const DSL_HISTORY_MIN = Number(__ENV.DSL_HISTORY_MIN || 20)
 // DSL の本文は初期化の段でだけ読める（k6 の open）。DSL の場面のときだけ読む。
 const DSL_BODY =
   DSL_SCENARIOS.includes(SCENARIO) && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
@@ -350,6 +365,9 @@ const ROLE_POOL_COUNTS = {
 }
 
 function scenariosFor(name) {
+  if (name === 'dslPrepare') {
+    return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '20m' } }
+  }
   if (name === 'navPrepare') {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
   }
@@ -397,16 +415,29 @@ function thresholdsFor(name) {
   if (name === 'appearance') {
     return { 'http_req_duration{name:appearance}': ['p(95)<300'] }
   }
+  // Intent 261004-role-menu の Performance Validation（Q3: A）。op ごとの iteration_duration（単調な時計）と checks で判定し、
+  // http_req_duration{name:…} は要約に並べるための常に通る閾値（max>=0）にする。投入（op submit）は記録だけ。
+  if (name === 'dslPrepare') return { 'checks{scenario:dslPrepare}': ['rate==1'] }
   if (name === 'dslLight') {
     return {
-      'http_req_duration{name:dslStatus}': ['p(95)<1000'],
-      'http_req_duration{name:dslHistory}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslLight,op:status}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslLight,op:history}': ['p(95)<1000'],
+      'checks{scenario:dslLight}': ['rate==1'],
+      'http_req_duration{name:dslStatus}': ['max>=0'],
+      'http_req_duration{name:dslHistory}': ['max>=0'],
     }
   }
   if (name === 'dslCycle') {
     return {
-      'http_req_duration{name:dslApply}': ['p(95)<1000'],
-      'http_req_duration{name:dslDiscard}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslCycle,op:apply}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslCycle,op:discard}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslCycle,op:history}': ['p(95)<1000'],
+      'iteration_duration{scenario:dslCycle,op:submit}': ['max>=0'],
+      'checks{scenario:dslCycle}': ['rate==1'],
+      'http_req_duration{name:dslSubmit}': ['max>=0'],
+      'http_req_duration{name:dslApply}': ['max>=0'],
+      'http_req_duration{name:dslDiscard}': ['max>=0'],
+      'http_req_duration{name:dslHistory}': ['max>=0'],
     }
   }
   if (name === 'dslMixed') {
@@ -520,6 +551,13 @@ export function setup() {
     )
   }
   const tokens = {}
+  // DSL の場面（dslMixed を除く）は、管理者のトークンを setup で1回取る（繰り返しの中でログインし直さない）
+  if (['dslPrepare', 'dslLight', 'dslCycle'].includes(SCENARIO)) {
+    tokens.dslAdmin = tokenOf(login(ADMIN_EMAIL, ADMIN_PASSWORD))
+  }
+  // dslCycle は繰り返しの番号で投入 → 適用 → 投入 → 破棄を回すため、1 VU でしか状態がそろわない
+  if (SCENARIO === 'dslCycle' && VUS !== 1) fail(`dslCycle は VUS=1 で流してください（VUS=${VUS}）`)
+  if (SCENARIO === 'dslLight') checkDslLightCondition(tokens.dslAdmin)
   if (SCENARIO === 'adminCheck') tokens.admin = tokenOf(login(ADMIN_EMAIL, ADMIN_PASSWORD))
   if (SCENARIO === 'forbidden') tokens.user = tokenOf(login(userEmail(1), USER_PASSWORD))
   // U3 の場面の用意。招待の宛先を実行ごとに変えるための識別（409 を混ぜない）。
@@ -652,44 +690,105 @@ function dslSubmit(name) {
   })
 }
 
-function dslPreviewId() {
-  const res = http.get(`${DSL_API}/status`, { headers: adminAuth(), tags: { name: 'dslStatus' } })
-  check(res, { 'status 200': (r) => r.status === 200 })
-  return res.status === 200 && res.json('preview') ? res.json('preview.previewId') : null
+// setup で取った管理者のトークンの見出し（dslPrepare・dslLight・dslCycle）
+function dslHeaders(tokens, extra) {
+  return { Authorization: `Bearer ${tokens.dslAdmin}`, Origin: BASE, ...extra }
 }
 
-function dslLight() {
-  const status = http.get(`${DSL_API}/status`, {
-    headers: adminAuth(),
-    tags: { name: 'dslStatus' },
+function dslSubmitWith(tokens) {
+  return http.post(`${DSL_API}/preview?source=UPLOAD`, DSL_BODY, {
+    headers: dslHeaders(tokens, { 'Content-Type': 'application/yaml' }),
+    tags: { name: 'dslSubmit' },
+    timeout: '60s',
   })
-  check(status, { 'status 200': (r) => r.status === 200 })
-  const history = http.get(`${DSL_API}/history`, {
-    headers: adminAuth(),
-    tags: { name: 'dslHistory' },
-  })
-  check(history, { 'history 200': (r) => r.status === 200 })
 }
 
-function dslCycle() {
-  check(dslSubmit('dslSubmit'), { 'submit 201': (r) => r.status === 201 })
-  const previewId = dslPreviewId()
-  const apply = http.post(`${DSL_API}/apply`, JSON.stringify({ previewId }), {
-    headers: { ...adminAuth(), 'Content-Type': 'application/json' },
+function dslApplyWith(tokens, previewId) {
+  return http.post(`${DSL_API}/apply`, JSON.stringify({ previewId }), {
+    headers: dslHeaders(tokens, { 'Content-Type': 'application/json' }),
     tags: { name: 'dslApply' },
   })
-  check(apply, { 'apply 200': (r) => r.status === 200 })
-  check(dslSubmit('dslSubmit'), { 'submit 201': (r) => r.status === 201 })
-  const discard = http.del(`${DSL_API}/preview`, null, {
-    headers: adminAuth(),
-    tags: { name: 'dslDiscard' },
-  })
-  check(discard, { 'discard 204': (r) => r.status === 204 })
-  const history = http.get(`${DSL_API}/history`, {
-    headers: adminAuth(),
-    tags: { name: 'dslHistory' },
-  })
-  check(history, { 'history 200': (r) => r.status === 200 })
+}
+
+function dslHistoryWith(tokens) {
+  return http.get(`${DSL_API}/history`, { headers: dslHeaders(tokens), tags: { name: 'dslHistory' } })
+}
+
+// 繰り返しの番号から操作を決め、op のタグに入れる
+function dslOp(name) {
+  const ops = DSL_OPS[name]
+  const op = ops[exec.vu.iterationInScenario % ops.length]
+  exec.vu.metrics.tags.op = op
+  return op
+}
+
+// dslLight の条件（履歴 DSL_HISTORY_MIN 件・適用中の DSL・プレビュー）がそろっているかを確かめる（setup から呼ぶ）
+function checkDslLightCondition(token) {
+  const tokens = { dslAdmin: token }
+  const status = http.get(`${DSL_API}/status`, { headers: dslHeaders(tokens), tags: { name: 'dslSetup' } })
+  if (status.status !== 200) fail(`今の状態を読めませんでした: ${status.status}`)
+  const history = dslHistoryWith(tokens)
+  if (history.status !== 200) fail(`履歴を読めませんでした: ${history.status}`)
+  const count = history.json().length
+  if (!status.json('applied') || !status.json('preview') || count < DSL_HISTORY_MIN) {
+    fail(
+      `dslLight の条件がそろっていません（適用中 ${Boolean(status.json('applied'))}、プレビュー ` +
+        `${Boolean(status.json('preview'))}、履歴 ${count} 件 / ${DSL_HISTORY_MIN} 件）。先に dslPrepare を流してください`,
+    )
+  }
+  console.log(`dslLight の条件: 適用中あり、プレビューあり、履歴 ${count} 件`)
+}
+
+// dslLight の準備（1 VU・1 回）。投入と適用を履歴が DSL_HISTORY_MIN 件になるまで繰り返し、最後に投入してプレビューに置く。
+function dslPrepare(tokens) {
+  let count = dslHistoryWith(tokens).json().length
+  let rounds = 0
+  while (count < DSL_HISTORY_MIN) {
+    const submit = dslSubmitWith(tokens)
+    if (!check(submit, { 'prepare submit 201': (r) => r.status === 201 })) return
+    const apply = dslApplyWith(tokens, submit.json('previewId'))
+    if (!check(apply, { 'prepare apply 200': (r) => r.status === 200 })) return
+    const history = dslHistoryWith(tokens)
+    if (!check(history, { 'prepare history 200': (r) => r.status === 200 })) return
+    count = history.json().length
+    rounds += 1
+    if (rounds > DSL_HISTORY_MIN + 5) {
+      check(null, { 'prepare history grows': () => false })
+      return
+    }
+  }
+  check(dslSubmitWith(tokens), { 'prepare preview 201': (r) => r.status === 201 })
+  console.log(`dslPrepare: 投入と適用 ${rounds} 回、履歴 ${count} 件、プレビューを置いた`)
+}
+
+// 1回の繰り返しに要求1つ（今の状態と履歴を交互に送る）
+function dslLight(tokens) {
+  if (dslOp('dslLight') === 'status') {
+    const status = http.get(`${DSL_API}/status`, { headers: dslHeaders(tokens), tags: { name: 'dslStatus' } })
+    check(status, { 'status 200': (r) => r.status === 200 })
+  } else {
+    check(dslHistoryWith(tokens), { 'history 200': (r) => r.status === 200 })
+  }
+}
+
+// 1回の繰り返しに要求1つ（投入 → 適用 → 投入 → 破棄 → 履歴を繰り返しの番号で回す。VUS=1）。
+// 適用の previewId は直前の投入（op submit）の応答から受ける。
+function dslCycle(tokens) {
+  const op = dslOp('dslCycle')
+  if (op === 'submit') {
+    const res = dslSubmitWith(tokens)
+    check(res, { 'submit 201': (r) => r.status === 201 })
+    vuState.dslPreviewId = res.status === 201 ? res.json('previewId') : null
+  } else if (op === 'apply') {
+    check(dslApplyWith(tokens, vuState.dslPreviewId), { 'apply 200': (r) => r.status === 200 })
+    vuState.dslPreviewId = null
+  } else if (op === 'discard') {
+    const res = http.del(`${DSL_API}/preview`, null, { headers: dslHeaders(tokens), tags: { name: 'dslDiscard' } })
+    check(res, { 'discard 204': (r) => r.status === 204 })
+    vuState.dslPreviewId = null
+  } else {
+    check(dslHistoryWith(tokens), { 'history 200': (r) => r.status === 200 })
+  }
 }
 
 // dslMixed の重い側（1人）: 10MB の投入と、プレビューの表示（照合を含む）を繰り返す。
@@ -1973,10 +2072,12 @@ export default function (tokens) {
         return keys.length === 2 && keys[0] === 'brandColor' && keys[1] === 'fontFamily'
       },
     })
+  } else if (SCENARIO === 'dslPrepare') {
+    dslPrepare(tokens)
   } else if (SCENARIO === 'dslLight') {
-    dslLight()
+    dslLight(tokens)
   } else if (SCENARIO === 'dslCycle') {
-    dslCycle()
+    dslCycle(tokens)
   } else if (USER_SCENARIOS[SCENARIO]) {
     USER_SCENARIOS[SCENARIO](tokens)
   } else {
