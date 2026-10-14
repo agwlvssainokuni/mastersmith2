@@ -324,6 +324,8 @@ test.describe('160 app frame accessibility on the built WAR', () => {
         await page.getByRole('button', { name: '販売の長い表示名を開く' }).click()
         await page.getByRole('button', { name: LEAF_LABEL.ja, exact: true }).click()
         await expect(page.getByTestId('mypermissions-columns')).toBeVisible()
+        // テーブルの節に開閉のボタンが無い（木はスキーマとテーブルの2段。ボタンはスキーマの1つだけ）
+        await expect(page.getByTestId('shared-tree-toggle')).toHaveCount(1)
         await check('my-permissions-columns')
       })
 

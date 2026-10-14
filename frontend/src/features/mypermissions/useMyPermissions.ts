@@ -78,8 +78,17 @@ export function labelOf(node: MyPermissionNode): string {
   return node.columnName ?? node.tableName ?? node.schemaName
 }
 
+/**
+ * 権限の節を共有の木の節にする。木はスキーマとテーブルの2段で、カラムは右の表に出す（D24）。
+ * API はカラムがあるテーブルの節でも hasChildren を真で返すため、テーブルの節は開閉のボタンを出さない
+ * （出すと、開いたときに自分自身を子に持つ木になり描画が止まらない。ロールの権限の設定の treeNodeOf と同じ形）。
+ */
 function toTreeNode(node: MyPermissionNode): SharedTreeNode {
-  return { id: nodeIdOf(node), label: labelOf(node), hasChildren: node.hasChildren }
+  return {
+    id: nodeIdOf(node),
+    label: labelOf(node),
+    hasChildren: node.hasChildren && node.tableName === null,
+  }
 }
 
 /**
@@ -151,7 +160,13 @@ export function useMyPermissions(api: MyPermissionsApi = DEFAULT_API) {
 
   const loadChildren = useCallback(
     async (id: string): Promise<readonly SharedTreeNode[]> => {
-      const [schema] = JSON.parse(id) as [string]
+      const names = JSON.parse(id) as string[]
+      // 子を読むのはスキーマの節（名前が1つの id）だけ。テーブルの節は開閉のボタンを出さないため呼ばれない想定だが、
+      // 呼ばれても要求を出さずに空を返す。拒否すると木が「読み込みの失敗」と再試行を出し、押しても直らないため。
+      if (names.length !== 1) {
+        return []
+      }
+      const [schema] = names
       const mine = generation.current
       const result = await api.listMyTables(schema)
       if (generation.current === mine) {

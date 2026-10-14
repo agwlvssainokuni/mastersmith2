@@ -61,7 +61,8 @@ const TABLE = item({
   displayName: '受注',
   effective: { main: 'FULL', create: true, delete: false },
   inMenu: true,
-  hasChildren: false,
+  // 本物の API と同じく、カラムがあるテーブルの節は hasChildren が真（Deployment Execution の S8 の不具合の再現）
+  hasChildren: true,
 })
 const COLUMN = item({
   tableName: 'ORDER',
@@ -169,6 +170,17 @@ describe('MyPermissionsPage', () => {
     expect(within(columns).getByRole('cell')).toHaveTextContent('NONE（見られない）')
     expect(calls.tables).toEqual(['SALES'])
     expect(calls.columns).toEqual(['SALES.ORDER'])
+  })
+
+  it('shows no expand button on a table node even when the API says it has children', async () => {
+    const user = userEvent.setup()
+    const { api } = fakeApi([ready])
+    renderPage(api)
+    await user.click(await screen.findByRole('button', { name: '販売を開く' }))
+    expect(await screen.findByRole('button', { name: '受注' })).toBeInTheDocument()
+    // 開閉のボタンはスキーマの節の1つだけ（テーブルの節に出ると、押したときに自分自身を子に持って描画が止まらない）
+    expect(screen.getAllByTestId('shared-tree-toggle')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: '受注を開く' })).toBeNull()
   })
 
   it('shows the schema values without the business menu column', async () => {
