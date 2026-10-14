@@ -502,3 +502,5 @@ T0 からの監査の全体（T2 以降は 13:18:34Z まで）:
 - `a16cd68`（S8 の直し）と `876042b` は未 push（`origin/develop` は `2669c62`）。直した版の CI は push の後に確かめる。
 - 監査の差の確かめ（13:25:07Z 依頼者の答え）: S11 の ROLE_DELETED FAILURE（ROLE_IN_USE）1 件と、戻しの練習のログイン・ログアウトの各 1 件の多さは、どちらも依頼者の操作（仕様どおりの拒否として受け入れる）。ae794e4 の CI の 1 回目の失敗（ShellLayout.test.tsx の Unhandled Rejection）は、main への取り込みの前に上限 30 分で調べて、テストだけの直しを短命のブランチで行う（A）。CI の記録の漏れも書き足す。
 - push（13:30:40Z）: 依頼者が develop を push した（origin/develop = b265a2f）。CI run 38572240082・38572240463 が動き始めた。2669c62 の CI（run 38482643592）は success。
+- push と CI（14:51:51Z）: 依頼者が develop を push した（origin/develop = 2161ce0）。CI はどれも1回目で success: run 38580529710（2161ce0）、run 38572240082・38572240463（b265a2f、push とプッシュの2本）。リリースの WAR の添付は skipped（タグなし）。main（d5aea52）は develop の祖先で fast-forward できる。
+- 順 10（2026-10-14T15:03:54Z）: 依頼者の承認で develop（2161ce0）を main へ fast-forward で取り込んだ（main = 2161ce0、タグなし。作業フォルダの記録の未コミットの変更を保つため、checkout せずに git fetch . develop:main で進めた）。push は依頼者が行う。

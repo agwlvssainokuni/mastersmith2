@@ -80,6 +80,8 @@
 - 違反のテストは先の側を確定させてから書く待たない違反、上限切れは H2 の上限まで放さない形にした（Q3: A）。時間の境に合否を預けない代わりに、待った後の違反の経路は区分の単体テストだけで確かめる。 (learned 2026-10-06) <!-- cid:261004-role-menu:nfr-design:1280fca49c6aaa49e31f89203ac28a7e4c45902f63b6e5bb921937e21a83681e -->
 - 長いテスト（verify・E2E・k6）は caffeinate -dims で包み、流す前に pmset -g assertions で眠らない状態か、流した後に pmset -g log で Sleep・DarkWake が無かったかを確かめ、入っていたら結果を使わずに流し直す。DarkWake の Thermal Emergency のスリープは caffeinate -i では止められず、role-menu の B8 で画面のテストが約 660 秒止まって時間切れになった。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:ace2e1c64daff91a5036ba5e11d8c52dff9fe8c8a0aac3e0305e0acb062bde56 -->
 - コード生成の計画の段で、変える型・表・移行の番号・API・画面の骨組みを使っている既存のテストと E2E を検索で洗い出し、影響の範囲に入れる。role-menu では移行の最後の版を前提にしたテスト（AuditMigrationCompatibilityIT）、SQL の文の数を数えるテスト（GroupAdminListQueryCountIT）、狭い幅のはみ出し（E2E の 375px）で計画の外の失敗が起き、生成が止まった。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:53c9696fc93ca4b91d5dfd93ed2001e062229dc11d24984c3641370f0075ca8f -->
+- 木の画面の単体テスト・E2E・スモークテストでは、本物と同じ形の応答（子の有無の印を含む）を使い、すべての段の開閉を押して確かめる（role-menu の配備の後のスモークテストで、「自分の権限を見る」の木でテーブルの開閉を押すと自分自身を子に持って固まる不具合が見つかった。単体の見本のテーブルは子が無い形で本物と違い、E2E は選ぶだけで開閉を押していなかった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:617c2725a739e866d25a157a07f607a7d8eccb7ce66d3be91fa609e2f0aba46e -->
+- 画面の不具合を使い捨ての環境で再現するときは、依頼者がした操作（どのボタン・どの開閉を押したか、画面の文言とその場所）を先に聞き、同じ操作を試す。role-menu の S8 で、選ぶだけで開閉を押さずに再現せず「環境の差」と誤って見立て、依頼者の再試行で条件が分かった。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:f96cc73619d8f749689d96ebc66682424b85c179f12439e0c3f9117fe01e992d -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -134,6 +136,8 @@
 - CI の結果を記録するときは、最後の結論だけでなく試行ごとの結果（gh run view --json attempt・jobs）を確かめ、再実行で通ったものは1回目の失敗とそのテストも書く（role-menu の Build and Test で 0415b94 の CI の1回目の ShellLayout のテストの失敗を書き漏らし、CI Pipeline の段で見つかった）。 (learned 2026-10-13) <!-- cid:261004-role-menu:ci-pipeline:c1c5c3a6138f0eff457e882887e4a064a7844c47f77005258015c611cd615079 -->
 - スモークテストに「切り替える」「選ぶ」などの操作を入れるときは、その操作が成り立つ前提（候補が2つ以上ある、自動で選ばれない）を手順と監査の期待の件数に入れる（role-menu の Deployment Pipeline で、確かめ用のロールが1つだと作業ロールが自動で選ばれて切り替えを確かめられず、2つにした）。 (learned 2026-10-13) <!-- cid:261004-role-menu:deployment-pipeline:5a55541d44e88fa43851bf5936c568e32948ecbd28528dbebb42ef7402dc30a4 -->
 - 配備の手順を書く前に、Dockerfile が手元の WAR を写すだけか（イメージを作り直しても WAR は作り直さない）を確かめ、配備の前に WAR の SHA-256 と中身（直しの値など）を確かめる（role-menu の Deployment Pipeline で cd-config.md が「up --build で WAR を作り直す」と誤って書き、Environment Provisioning で見つかった）。 (learned 2026-10-13) <!-- cid:261004-role-menu:environment-provisioning:19663d7c6afca48311dc4cd8b393c532406dafc07cfca2ca53b6f45c32a7f3d3 -->
+- スモークテストの片付けは、依頼者の「済んだ」の答えの後も、配備の後の複写で状態（行の数）と監査を数えてから判定する（role-menu の S11 で、片付けがまだ行われていなかったと複写で分かった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:4c57f4b8d57f8647dd202af9ab1667fd6b35d542b8b619b6118a43f1e9e244b9 -->
+- main への取り込みの前に、前の取り込みの後のすべてのコミットの CI を試行ごと（gh run view --json attempt・jobs）に確かめ、再実行で通ったものは1回目の失敗とそのテストを記録する（role-menu で ae794e4 の1回目の失敗を書き漏らし、同じファイルの2回目の失敗だと Deployment Execution で分かった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:e2e1e2972322b4d3120b1d0d6bd9b542e971d202a61b6efdb78488b7ba5593de -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
