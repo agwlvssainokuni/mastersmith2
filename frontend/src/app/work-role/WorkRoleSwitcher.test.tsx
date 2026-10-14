@@ -63,10 +63,13 @@ const trigger = () => within(screen.getByTestId('work-role-switcher')).getByRole
 describe('WorkRoleSwitcher', () => {
   it('shows text without a button while loading and after a failed first load', async () => {
     const answer = deferred<WorkRoleState>()
-    const { api } = fakeWorkRoleApi([answer])
+    const { api, calls } = fakeWorkRoleApi([answer])
     renderSwitcher(api)
     expect(await screen.findByText('作業ロール: 読み込んでいます')).toBeInTheDocument()
     expect(within(screen.getByTestId('work-role-switcher')).queryByRole('button')).toBeNull()
+    // 「読み込んでいます」はログインした直後、読み込みを始める前（効果の前）にも出るため、読み込みの要求が出て拒否を
+    // 受け取る側が付いたのを待ってから拒否する。先に拒否すると、受け取る側の無い拒否（Unhandled Rejection）になる。
+    await waitFor(() => expect(calls.get).toBeGreaterThan(0))
     act(() => answer.reject(new Error('down')))
     expect(await screen.findByText('作業ロール: 読み込めませんでした')).toBeInTheDocument()
   })
