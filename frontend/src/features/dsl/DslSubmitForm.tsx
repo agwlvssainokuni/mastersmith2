@@ -147,7 +147,10 @@ export function DslSubmitForm({
               </label>
               <span data-testid="dsl-submit-file-name">
                 {input.file
-                  ? `${input.file.name}（${formatBytes(input.file.size)}）`
+                  ? t('dsl.submit.fileNameSize', {
+                      name: input.file.name,
+                      size: formatBytes(input.file.size),
+                    })
                   : t('dsl.submit.noFile')}
               </span>
             </div>

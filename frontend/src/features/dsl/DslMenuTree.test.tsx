@@ -83,8 +83,15 @@ describe('DslMenuTree', () => {
 
     expect(screen.getByRole('button', { name: 'Collapse Basic masters' })).toBeInTheDocument()
     expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent(
-      'Departments（sales.dept_mst）',
+      'Departments (sales.dept_mst)',
     )
+    expect(screen.getByTestId('dsl-menu-node-0.0').textContent).not.toMatch(/[（）]/)
+  })
+
+  it('keeps the full-width parentheses around the schema and table names in Japanese', () => {
+    renderDsl(<DslMenuTree nodes={tree} />)
+
+    expect(screen.getByTestId('dsl-menu-node-0.0').textContent).toBe('部署（sales.dept_mst）')
   })
 
   it('keeps a label that looks like HTML as text', () => {

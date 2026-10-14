@@ -108,7 +108,7 @@ function MenuItem({ node, nodeKey, expanded, onToggle }: MenuItemProps) {
       <span>{label}</span>
       {node.table !== null && (
         <span className="dsl-menu-table">
-          （{node.table.schema}.{node.table.name}）
+          {t('dsl.menu.tableName', { schema: node.table.schema, name: node.table.name })}
         </span>
       )}
     </>

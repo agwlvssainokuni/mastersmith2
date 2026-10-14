@@ -96,6 +96,19 @@ describe('DslDiffTable', () => {
     expect(screen.queryByTestId('dsl-diff-columns-sales/dept_mst')).not.toBeInTheDocument()
   })
 
+  it('joins the changed items with a comma in English', async () => {
+    const user = userEvent.setup()
+    renderDsl(<DslDiffTable diff={diffOf()} />, ['en-US'])
+
+    await user.click(
+      screen.getByRole('button', { name: 'Show the column differences of dept_mst' }),
+    )
+
+    const columns = screen.getByRole('table', { name: 'Column differences of dept_mst' })
+    expect(within(columns).getByText('label.ja, dbType.length')).toBeInTheDocument()
+    expect(columns.textContent).not.toContain('・')
+  })
+
   it('does not draw the columns of 100 tables with 100 columns until a row is opened', async () => {
     const user = userEvent.setup()
     const { container } = renderDsl(<DslDiffTable diff={largeDiff()} />)

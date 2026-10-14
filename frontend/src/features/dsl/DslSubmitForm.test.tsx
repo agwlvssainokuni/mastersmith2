@@ -85,6 +85,28 @@ describe('DslSubmitForm', () => {
     )
   })
 
+  it('shows the chosen file name and size with half-width parentheses in English', async () => {
+    const user = userEvent.setup()
+    renderDsl(<Harness onSubmit={vi.fn()} />, ['en-US'])
+
+    await user.upload(screen.getByLabelText('DSL file (YAML, up to 10MB)'), sizedFile(1536))
+
+    const fileName = screen.getByTestId('dsl-submit-file-name')
+    expect(fileName).toHaveTextContent('master-dsl-v3.yaml (1.5KB)')
+    expect(fileName.textContent).not.toMatch(/[（）]/)
+  })
+
+  it('keeps the full-width parentheses around the file size in Japanese', async () => {
+    const user = userEvent.setup()
+    renderDsl(<Harness onSubmit={vi.fn()} />)
+
+    await user.upload(screen.getByLabelText('DSL のファイル（YAML、10MB まで）'), sizedFile(1536))
+
+    expect(screen.getByTestId('dsl-submit-file-name').textContent).toBe(
+      'master-dsl-v3.yaml（1.5KB）',
+    )
+  })
+
   it('tells before sending that a file over 10MB is too large and never reads it', async () => {
     const user = userEvent.setup()
     const onSubmit = vi.fn()

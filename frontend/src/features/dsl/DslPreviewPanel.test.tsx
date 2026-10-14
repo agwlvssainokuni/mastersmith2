@@ -235,7 +235,7 @@ describe('DslPreviewPanel', () => {
     expect(screen.getByTestId('dsl-preview-valid')).toHaveTextContent('The DSL passed validation')
     expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument()
     expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent(
-      'Departments（sales.dept_mst）',
+      'Departments (sales.dept_mst)',
     )
   })
 

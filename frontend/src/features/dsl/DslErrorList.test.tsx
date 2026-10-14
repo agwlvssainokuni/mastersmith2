@@ -90,6 +90,53 @@ describe('DslErrorList', () => {
     expect(screen.queryByTestId('dsl-error-list-count')).not.toBeInTheDocument()
   })
 
+  it('separates the kind and the reason with an English colon on the English screen', () => {
+    renderDsl(
+      <DslErrorList
+        report={{
+          total: 1,
+          errors: [
+            {
+              kind: 'UNSUPPORTED_VERSION',
+              line: null,
+              column: null,
+              path: null,
+              message: 'Version 2 is not supported',
+            },
+          ],
+        }}
+      />,
+      ['en-US'],
+    )
+
+    const single = screen.getByTestId('dsl-error-list-single')
+    expect(single).toHaveTextContent('Format version: Version 2 is not supported')
+    expect(single.textContent).not.toContain('：')
+  })
+
+  it('keeps the full-width colon between the kind and the reason on the Japanese screen', () => {
+    renderDsl(
+      <DslErrorList
+        report={{
+          total: 1,
+          errors: [
+            {
+              kind: 'UNSUPPORTED_VERSION',
+              line: null,
+              column: null,
+              path: null,
+              message: '版 2 には対応していません',
+            },
+          ],
+        }}
+      />,
+    )
+
+    expect(screen.getByTestId('dsl-error-list-single').textContent).toBe(
+      '書式の版：版 2 には対応していません',
+    )
+  })
+
   it('shows a table for a single syntax error', () => {
     renderDsl(
       <DslErrorList

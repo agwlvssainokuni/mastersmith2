@@ -81,7 +81,11 @@ function ColumnTable({ table, rowKey }: { table: TableDiff; rowKey: string }) {
             <td>
               <ChangeBadge change={column.change} />
             </td>
-            <td>{column.changedItems.length > 0 ? column.changedItems.join('・') : '—'}</td>
+            <td>
+              {column.changedItems.length > 0
+                ? column.changedItems.join(t('dsl.diff.changedItemsSeparator'))
+                : '—'}
+            </td>
           </tr>
         ))}
       </tbody>

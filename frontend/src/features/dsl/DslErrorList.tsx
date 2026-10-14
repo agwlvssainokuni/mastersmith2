@@ -17,6 +17,7 @@
 // 誤りの一覧（interaction-spec.md の DslErrorList、BR5.1〜BR5.4、NFR1.21、AC2.2.9）。
 // 件数を先頭に出し、先頭 100 件だけを行・列・場所・種類・内容の表で示し、残りの件数を示す。
 // 危険な形・版の非対応で1件だけのときは、理由の1件だけを示す。行・列・場所が無ければ「—」。
+// 種類と理由の区切りは文言の鍵（dsl.errors.kindSeparator）から引き、日本語は「：」、英語は「: 」とする。
 // 表示された時点で件数の警告（role="alert"、tabindex="-1"）へフォーカスを移す。
 import { Icon } from 'make-you-chic-ui'
 import { useEffect, useRef } from 'react'
@@ -87,7 +88,7 @@ export function DslErrorList({
               <p className="dsl-error-text">{t('dsl.errors.single')}</p>
               <p className="dsl-error-text" data-testid={`${testId}-single`}>
                 <span className="dsl-error-kind">{t(`dsl.errorKind.${single.kind}`)}</span>
-                {'：'}
+                {t('dsl.errors.kindSeparator')}
                 <span>{single.message}</span>
               </p>
             </>
