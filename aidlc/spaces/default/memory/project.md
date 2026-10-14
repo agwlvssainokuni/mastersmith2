@@ -140,6 +140,7 @@
 - main への取り込みの前に、前の取り込みの後のすべてのコミットの CI を試行ごと（gh run view --json attempt・jobs）に確かめ、再実行で通ったものは1回目の失敗とそのテストを記録する（role-menu で ae794e4 の1回目の失敗を書き漏らし、同じファイルの2回目の失敗だと Deployment Execution で分かった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:e2e1e2972322b4d3120b1d0d6bd9b542e971d202a61b6efdb78488b7ba5593de -->
 - 監視の確かめで使い捨てのアプリを lgtm に送らせるときは、lgtm を網につないだ後にアプリを起動する（先に起動するとログの送信の失敗の ERROR が出る。role-menu と前の Intent で同じ失敗）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:a8d53fd0789113ff432dccf8d823b05492162f4b14a1dc843f02f95381ae4cc3 -->
 - JVM が止まったとき（ExitOnOutOfMemoryError・restart no）に拾える警報は ms-app-absent だけで、止めてから Pending まで約 5 分 20 秒、Alerting まで約 10 分 20 秒かかる（role-menu の Observability Setup で初めて鳴ることを実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:1a99f2925284ff87c8d2a97c4d253696ad0efae836692e39ddbc374f5dea9697 -->
+- ExitOnOutOfMemoryError で JVM が止まる直前の1行（Terminating due to java.lang.OutOfMemoryError）は JSON ではなく Loki に届かない。docker logs と終了コード 3（Exited (3)、OOMKilled false）で見分け、docker compose start で約 10 秒で戻る（role-menu の Incident Response で使い捨ての環境のヒープを 192 MB に下げて実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:incident-response:e9b409e49db86bac4a108d2e842106160121cdf9b39d41a62ff90a0f87a52aa6 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
