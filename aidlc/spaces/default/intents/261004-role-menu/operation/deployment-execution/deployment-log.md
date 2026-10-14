@@ -181,6 +181,284 @@ S1・S2 は通った。S3 以降（依頼者の画面の操作）は、依頼者
 
 03:37:37Z に `docker compose -p mastersmith-s8 … down -v` で、コンテナ・ボリューム（`perf-data`・`perf-targetdb-postgres`）・ネットワークを消し、一時ディレクトリ（仮の鍵・資格情報・台本・応答の写し）も消した。`mastersmith-s8` のコンテナ・ボリュームが残っていないことと、配備したアプリ・mailpit・見本の対象DB が動いたままであることを確かめた。
 
+## 11. 直した版の配備（S8 の不具合の直し a16cd68）
+
+S8 の不具合（「自分の権限を見る」の木で、テーブルの節を開くと自分自身を子に持ち描画が止まらない。10節・`fix-notes.md`）を直した版を、`cd-config.md` の順 5〜7 と S1 に準じて配備し直した。スキーマの変更は無い。
+
+### 11.1 時系列（2026-10-14 UTC）
+
+| 時刻（UTC） | 出来事 |
+|---|---|
+| 07:54:04（16:54:04 JST） | 関門の確かめを始めた（11.2） |
+| 07:54 頃 | 前の版（`e41a5b02fd0b`）が配っている `MyPermissionsPage` の資源に直しの形が無いこと（0 件）を、比べの元として確かめた |
+| 07:54:29（16:54:29 JST） | `docker compose stop app`（ここからアプリが止まる） |
+| 07:54:30 | 初回の配備の後の複写 `~/.mastersmith-backup/mastersmith-data-202610141654-after-role-menu.tgz`（29,028 B、権限 600）を作った（初回の配備の後のバックアップを兼ねる） |
+| 07:54 頃 | 複写を読み取りで開いて数えた（11.3） |
+| 07:54:52 | 前の版のイメージに `mastersmith:role-menu-before-s8fix` のタグを付け、WAR の SHA-256 を確かめ直した（同じ）。`docker compose --profile targetdb-postgres up -d --build app` を始めた |
+| 07:54:57 | 新しいコンテナが起動した |
+| 07:55:07（16:55:07 JST） | healthy。アプリが止まっていたのは 07:54:29〜07:55:07 の約 38 秒 |
+| 07:55:21 | 起動の確かめと S1 を終えた（11.4・11.5）。依頼者の S8 の確かめ直しを待つ |
+
+### 11.2 関門
+
+| 確かめ | 結果 | 判定 |
+|---|---|---|
+| `develop` の先頭 | `a16cd68`（自分の権限の木でテーブルの節に開閉を出さない）。`origin/develop` は `2669c62` のまま（push は依頼者が行う） | 通る |
+| 作業ブランチの最後とのソースの差 | `git diff 08d1e71 a16cd68` は空（0 行） | 通る |
+| 未コミットの変更 | `aidlc/` の下の監査の記録だけ | 通る |
+| `876042b` からのアプリの差 | `frontend/` の4ファイルだけ（`useMyPermissions.ts` の直し、そのテスト2つ、E2E 160 の2行）。`005730a` からの差は、これに README の1行を足した5ファイル | 通る |
+| 移行・サブモジュール | `005730a` から `db/migration/` に差は無い。サブモジュールの固定先も同じ（`5bf1ffe`・`8d44c36`） | 通る |
+| WAR | `backend/build/libs/mastersmith.war`（102,383,236 B、2026-10-14 15:47:53 JST）の SHA-256 は `f5293bed7fe2062271a34b84b48586d28431f294d75b1045ed459f0b8c58a376`（指揮役が知らせた値と同じ） | 通る |
+| WAR の中の直し | `WEB-INF/classes/static/assets/MyPermissionsPage-Cq9CMLeF.js` に直しの形（`hasChildren` を `tableName===null` で絞る形）が1件ある | 通る |
+
+### 11.3 入れ替えの前の複写と数え（T0 ＝ 2026-10-13T23:15:41Z、T1 ＝ 2026-10-14T06:17:59Z）
+
+数え方は7節と同じ（H2 Shell、`ACCESS_MODE_DATA=r`、値は表示しない。作業用のディレクトリは数えた後に消した）。
+
+| 数えたもの | 結果 |
+|---|---|
+| 初期管理者（`.env` のメールアドレス） | 1 行。停止 0・管理者の印 1（救済の条件 (a)・(b) に当たらない） |
+| 利用者 | 2 人。管理者の印 2・停止中 0（7節と同じ） |
+| ロール・権限の設定 | ロール 2・権限の設定 0 行 |
+| 割り当て | 利用者へのロールの割り当て 2・グループへの割り当て 0・作業ロールの保存 1 |
+| グループ | グループ 0・メンバー 0 |
+| DSL | 適用の履歴 6 行（7節の 5 行から S4 の適用で 1 増えた）・プレビュー 0 行 |
+| Flyway の版 | 12 |
+| 監査の最後の行 | 2026-10-14 06:21:43Z |
+
+T0 以降の監査（結果はすべて `SUCCESS`。結果が失敗の行は 0）:
+
+| 種類 | T0〜T1 | T1 以降 | 合計 |
+|---|---|---|---|
+| `LOGIN_SUCCEEDED` | 2 | 0 | 2 |
+| `LOGGED_OUT` | 1 | 0 | 1 |
+| `DSL_GENERATED` | 1 | 0 | 1 |
+| `DSL_APPLIED` | 1 | 0 | 1 |
+| `ROLE_CREATED` | 2 | 2 | 4 |
+| `ROLE_PERMISSION_CHANGED` | 2 | 0 | 2 |
+| `ROLE_ASSIGNED` | 2 | 2 | 4 |
+| `WORK_ROLE_SWITCHED` | 1 | 1 | 2 |
+| `GROUP_CREATED` | 1 | 0 | 1 |
+| `GROUP_MEMBER_ADDED` | 1 | 0 | 1 |
+| `GROUP_MEMBER_REMOVED` | 1 | 0 | 1 |
+| `GROUP_DELETED` | 1 | 0 | 1 |
+| `ROLE_UNASSIGNED` | 2 | 0 | 2 |
+| `ROLE_DELETED` | 2 | 0 | 2 |
+| `DSL_PREVIEW_DISCARDED`・`INITIAL_ADMIN_RESCUED`・`INITIAL_ADMIN_CREATED` | 0 | 0 | 0 |
+
+- T1 以降の操作: ロールの作成 2・割り当て 2・作業ロールの切り替え 1 だけ。権限の設定の保存（`ROLE_PERMISSION_CHANGED`）は T1 以降 0 件で、残っているロール甲・乙は権限なしという指揮役の記録と合う。T1 以降のログインは 0 件（ログイン中のまま操作した見込み）。
+- T0〜T1 の分は、初回の S3〜S10（作成・権限・割り当て・切り替え・グループ・片付け）の見込みとそろう。ログイン 2・ログアウト 1 のうち、ログイン 1・ログアウト 1 は順 4 の分（6節）。
+
+### 11.4 入れ替えと起動の確かめ
+
+| 確かめ | 結果 | 判定 |
+|---|---|---|
+| 配備したイメージ | `mastersmith:local` ＝ `sha256:3247c5bdab79b19a7cef28b8ca602b14a49914fadf7758064ebc8d528eff8292`（作成 2026-10-14 16:54:54 JST） | 記録 |
+| 戻し先 | `mastersmith:pre-role-menu` ＝ `sha256:fefeafbd299b…`（初回の前の版。消していない）、`mastersmith:role-menu-before-s8fix` ＝ `sha256:e41a5b02fd0b…`（直す前の版。タグを付けて残した） | 通る |
+| イメージの中の WAR | `/app/mastersmith.war` の SHA-256 は `f5293bed…8c58a376`（11.2 と同じ） | 通る |
+| 健全性 | 07:55:07Z に healthy（起動から約 10 秒）。`/actuator/health` は 200・`{"status":"UP"}` | 通る |
+| 上限 | メモリ 2g（2,147,483,648 B）・CPU 4・`restart: no`・OOMKilled false | 通る |
+| JVM の設定 | PID 1 のコマンド行に `-XX:+ExitOnOutOfMemoryError` 1 件・`-XX:MaxRAMPercentage=50.0` 1 件 | 通る |
+| 移行 | 「Current version of schema "PUBLIC": 12」「Schema "PUBLIC" is up to date. No migration necessary.」。新しい移行は無い | 通る |
+| 配っている画面の資源 | `/` の `index-CpFR0PzS.js` が読む `MyPermissionsPage-Cq9CMLeF.js`（WAR の中と同じ名前）に直しの形が1件。前の版の `MyPermissionsPage-D4hwEj89.js` では 0 件だった | 通る |
+| ほかのコンテナ | Mailpit・見本の対象DB は動いたまま | 通る |
+
+### 11.5 S1: 起動のログ（値は表示していない）
+
+| 確かめ | 結果 | 判定 |
+|---|---|---|
+| 行数とレベル | 39 行（すべて JSON）。INFO 36・WARN 2・ERROR 0 | 通る |
+| ERROR | 0 件（版 2 の DSL が適用済みのため、「適用中の DSL を読めない」は出ない） | 見込みどおり |
+| WARN | Flyway の H2 の版の案内 1 件と、Spring の Bean の案内 1 件だけ（前の版から出ているもの） | 通る |
+| 救済 | 救済の WARN 0 件。INFO「初期管理者は既にいるため、作成しませんでした」1 件（キー `maskedEmail` あり、`email` 無し） | 見込みどおり |
+| メールアドレスの漏れ | `.env` の初期管理者のメールアドレスの値がログに現れる件数 0、キー `email` を持つ行 0 | 通る |
+
+S1 は通った。S8 の確かめ直しと片付けは、依頼者の画面の操作を待つ。
+
+## 12. S11: 配備の後の複写と監査の数え
+
+### 12.1 時系列（2026-10-14 UTC）
+
+| 時刻（UTC） | 出来事 |
+|---|---|
+| 07:56:31 | T2（S8 の確かめ直しの数え始め。指揮役が控えた） |
+| 13:06:12〜13:09:45 | T2 以降の監査の行 7 件（12.3） |
+| 13:10:43 | 依頼者の答え（指揮役が記録）: S8 の確かめ直しはすべて見込みどおり、片付けも済んだ |
+| 13:11:05（22:11:05 JST） | `docker compose stop app` |
+| 13:11:06 | 配備の後の複写 `~/.mastersmith-backup/mastersmith-data-202610142211-after-role-menu.tgz`（30,590 B、権限 600）を作り、`docker compose start app` で同じコンテナを起動し直した |
+| 13:11:14 | healthy・`/actuator/health` 200。アプリが止まっていたのは約 9 秒 |
+
+### 12.2 状態（数え方は7節と同じ。値は表示していない）
+
+| 数えたもの | 結果 | 見込み | 判定 |
+|---|---|---|---|
+| 初期管理者 | 1 行、停止 0・管理者の印 1 | 同じ | 通る |
+| 利用者 | 2 人、管理者の印 2・停止 0 | 配備の前（7節）と同じ | 通る |
+| ロール | **2** | 0 | **違う** |
+| 権限の設定 | **2 行** | 0（ロールを消すと一緒に消える） | **違う** |
+| 利用者へのロールの割り当て | **2** | 0 | **違う** |
+| 作業ロールの保存 | **1** | 0 | **違う** |
+| グループへの割り当て・グループ・メンバー | 0・0・0 | 0 | 通る |
+| DSL | 適用の履歴 6・プレビュー 0 | 同じ | 通る |
+| Flyway の版 | 12 | 12 | 通る |
+
+### 12.3 監査（結果はすべて `SUCCESS`、失敗の行は 0）
+
+| 種類 | T0〜T1 | T1〜T2 | T2 以降 | 合計 | T2 以降の見込み |
+|---|---|---|---|---|---|
+| `LOGIN_SUCCEEDED` | 2 | 0 | 0 | 2 | 回数どおり（0 なら合う） |
+| `LOGGED_OUT` | 1 | 0 | 0 | 1 | 0 |
+| `DSL_GENERATED` | 1 | 0 | **1** | 2 | 0 |
+| `DSL_PREVIEW_DISCARDED` | 0 | 0 | **1** | 1 | 0 |
+| `DSL_APPLIED` | 1 | 0 | 0 | 1 | 0 |
+| `ROLE_CREATED` | 2 | 2 | 0 | 4 | 0 |
+| `ROLE_PERMISSION_CHANGED` | 2 | 0 | 2 | 4 | 2 |
+| `ROLE_ASSIGNED` | 2 | 2 | 0 | 4 | 0 |
+| `WORK_ROLE_SWITCHED` | 1 | 1 | 3 | 5 | 回数どおり |
+| `ROLE_UNASSIGNED` | 2 | 0 | **0** | 2 | **2** |
+| `ROLE_DELETED` | 2 | 0 | **0** | 2 | **2** |
+| `GROUP_CREATED`・`GROUP_MEMBER_ADDED`・`GROUP_MEMBER_REMOVED`・`GROUP_DELETED` | 各 1 | 0 | 0 | 各 1 | 0 |
+| `INITIAL_ADMIN_RESCUED`・`INITIAL_ADMIN_CREATED` | 0 | 0 | 0 | 0 | 0 |
+
+T2 以降の行の順（時刻 UTC と種類だけ）: 13:06:12 `ROLE_PERMISSION_CHANGED` → 13:07:16 `WORK_ROLE_SWITCHED` → 13:07:53 `ROLE_PERMISSION_CHANGED` → 13:07:59 `WORK_ROLE_SWITCHED` → 13:08:50 `DSL_GENERATED` → 13:09:26 `DSL_PREVIEW_DISCARDED` → 13:09:45 `WORK_ROLE_SWITCHED`。アプリのログの T2 以降の WARN は、13:08:46Z の `DSL_PREVIEW_NOT_FOUND`（404）1件だけ（ERROR は 0）。
+
+### 12.4 判定
+
+- S8 の確かめ直しの操作（権限の保存 2、作業ロールの切り替え）は監査で裏付けられた。
+- **片付け（割り当てを外す・ロールを消す）は内部DB に反映されていない**。T2 以降の `ROLE_UNASSIGNED`・`ROLE_DELETED` は 0 件、ロール 2・割り当て 2・作業ロールの保存 1・権限の設定 2 が残っている。片付けを試みた失敗の行も、ログの WARN・ERROR も無いため、片付けの要求はサーバーに届いていない見込み（依頼者の答えとの食い違い）。
+- 予定に無い `DSL_GENERATED` 1・`DSL_PREVIEW_DISCARDED` 1 があった（生成した版 2 のプレビューを破棄した。適用中の DSL は変わっていない）。
+- S11 は、片付けの食い違いが解けるまで **未通過** とする。依頼者に確かめる。
+- 依頼者の答え（13:15:06Z）: 片付けはまだしていなかった（不具合ではない）。DSL の生成と破棄の各 1 件は依頼者の操作で、期待の件数に足す。片付けの後に複写を取り直して数え直した（12.5）。13:11 の複写は消さずに残す。
+
+### 12.5 数え直し（片付けの後）
+
+| 時刻（UTC） | 出来事 |
+|---|---|
+| 13:15:42〜13:16:04 | 依頼者の片付けの監査の行 5 件（下の表） |
+| 13:18:24 | 依頼者の答え（指揮役が記録）: 片付けは済んだ、ほかの操作なし |
+| 13:18:34（22:18:34 JST） | `docker compose stop app` |
+| 13:18:35 | 配備の後の複写（取り直し）`~/.mastersmith-backup/mastersmith-data-202610142218-after-role-menu-final.tgz`（30,074 B、権限 600）を作り、`docker compose start app` で起動し直した |
+| 13:18:45 | healthy・`/actuator/health` 200。アプリが止まっていたのは約 11 秒 |
+
+状態:
+
+| 数えたもの | 結果 | 見込み | 判定 |
+|---|---|---|---|
+| 初期管理者 | 1 行、停止 0・管理者の印 1 | 同じ | 通る |
+| 利用者 | 2 人、管理者の印 2・停止 0 | 配備の前と同じ | 通る |
+| ロール・権限の設定・利用者への割り当て・グループへの割り当て・作業ロールの保存 | 0・0・0・0・0 | 0 | 通る |
+| グループ・メンバー | 0・0 | 0 | 通る |
+| DSL | 適用の履歴 6・プレビュー 0 | 同じ | 通る |
+| Flyway の版 | 12 | 12 | 通る |
+
+T0 からの監査の全体（T2 以降は 13:18:34Z まで）:
+
+| 種類 | 結果 | T0〜T1 | T1〜T2 | T2 以降 | 合計 | T2 以降の期待 |
+|---|---|---|---|---|---|---|
+| `LOGIN_SUCCEEDED` | SUCCESS | 2 | 0 | 0 | 2 | 0（回数どおり） |
+| `LOGGED_OUT` | SUCCESS | 1 | 0 | 0 | 1 | 0 |
+| `DSL_GENERATED` | SUCCESS | 1 | 0 | 1 | 2 | 1 |
+| `DSL_PREVIEW_DISCARDED` | SUCCESS | 0 | 0 | 1 | 1 | 1 |
+| `DSL_APPLIED` | SUCCESS | 1 | 0 | 0 | 1 | 0 |
+| `ROLE_CREATED` | SUCCESS | 2 | 2 | 0 | 4 | 0 |
+| `ROLE_PERMISSION_CHANGED` | SUCCESS | 2 | 0 | 2 | 4 | 2 |
+| `ROLE_ASSIGNED` | SUCCESS | 2 | 2 | 0 | 4 | 0 |
+| `WORK_ROLE_SWITCHED` | SUCCESS | 1 | 1 | 3 | 5 | 3 |
+| `ROLE_UNASSIGNED` | SUCCESS | 2 | 0 | 2 | 4 | 2 |
+| `ROLE_DELETED` | SUCCESS | 2 | 0 | 2 | 4 | 2 |
+| `ROLE_DELETED` | **FAILURE** | 0 | 0 | **1** | 1 | 0 |
+| `GROUP_CREATED`・`GROUP_MEMBER_ADDED`・`GROUP_MEMBER_REMOVED`・`GROUP_DELETED` | SUCCESS | 各 1 | 0 | 0 | 各 1 | 0 |
+| `INITIAL_ADMIN_RESCUED`・`INITIAL_ADMIN_CREATED` | — | 0 | 0 | 0 | 0 | 0 |
+
+片付けの行の順（時刻 UTC）: 13:15:42 `ROLE_DELETED` **FAILURE**（`failure_reason` は `ROLE_IN_USE`）→ 13:15:49 `ROLE_UNASSIGNED` → 13:15:57 `ROLE_UNASSIGNED` → 13:16:02 `ROLE_DELETED` → 13:16:04 `ROLE_DELETED`。アプリのログにも同じ時刻（22:15:42 JST）に `ROLE_IN_USE`（409）の WARN が1件ある。ほかの T2 以降の WARN は `DSL_PREVIEW_NOT_FOUND`（404）2 件（13:08:46Z・13:16:18Z、DSL の画面を開いたときの読み出し）と、起動し直しの案内だけ。ERROR は 0。
+
+判定:
+
+- 期待（T2 以降の成功の行と、ロール・割り当て・作業ロールの保存・権限の設定がすべて 0）はすべて満たした。
+- 期待と違うのは、失敗の行 1 件（`ROLE_DELETED` の `ROLE_IN_USE`）だけ。割り当てを外す前にロールを消そうとして、仕様どおり拒否された（409、状態は変わっていない）と読める。その後に割り当てを外して消し直し、成功している。業務の拒否が正しく働き監査に残った例であり、配備の不具合ではない。
+- S11 は、この 1 件を依頼者の操作の順の違いとして受け入れれば **通る**。依頼者に確かめる（`deployment-strategy.md` の 4節「期待と違う件数が出て、依頼者の操作で説明できない」には当たらない見込み）。
+
+## 13. 戻しの練習（`rollback-runbook.md` の 6節）
+
+### 13.1 環境（2026-10-14 UTC）
+
+| 時刻（UTC） | 出来事 |
+|---|---|
+| 13:11 頃 | 前提を確かめた: `mastersmith-lgtm-1` は Exited、`mastersmith-rollback_*` のボリュームは無い。VM のメモリは全体 5,910 MiB・使える量 4,849 MiB |
+| 13:11 頃 | 練習用の場所 `~/.mastersmith-rollback-role-menu/`（権限 700）に、`.env` の複写 `app.env`（権限 600、中身は表示していない）と、乱数のパスワードの `targetdb.env`（権限 600、`POSTGRES_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` の2行）を作った。`app.env` の末尾に `MASTERSMITH_WEB_BASE_URL=http://localhost:18080` と `MASTERSMITH_TARGET_DB_PASSWORD`（読み取りのアカウントと同じ乱数）を足した |
+| 13:12:08 | `docker compose -p mastersmith-rollback -f docker/perf/compose.yaml create app` でボリューム `mastersmith-rollback_perf-data` を作り、12節の複写（`…202610142211-after-role-menu.tgz`）を展開し、持ち主を 10001 にした |
+| 13:12:14 | `MASTERSMITH_IMAGE_TAG=pre-role-menu docker compose -p mastersmith-rollback -f docker/perf/compose.yaml --profile targetdb-postgres up -d --wait app targetdb-postgres` |
+| 13:12:23 | 練習のアプリと練習の対象DB が healthy |
+
+- 練習のアプリのイメージは `sha256:fefeafbd299b…`（`mastersmith:pre-role-menu`）、上限は 2g。配備したアプリは止めておらず、`http://localhost:8080/actuator/health` は 200 のまま。
+- メモリの使用（13:12 頃）: 練習のアプリ 421 MiB・練習の対象DB 27 MiB・配備したアプリ 569 MiB・Mailpit 42 MiB・見本の対象DB 56 MiB。
+- 12節の片付けの食い違いのため、練習の元の複写にはロール 2・割り当て 2・作業ロールの保存 1・権限の設定 2 が入っている（G-19 の確かめには、新しい表に行がある状態として使える）。
+
+### 13.2 AI だけで確かめたもの
+
+| # | 確かめ | 結果 | 判定 |
+|---|---|---|---|
+| D1 | 前の版の起動 | `/actuator/health` 200。Flyway は「Successfully validated 12 migrations」「Current version of schema "PUBLIC": 12」「Schema "PUBLIC" has a version (12) that is newer than the latest available migration (9) !」（WARN）「Schema "PUBLIC" is up to date. No migration necessary.」。`Migrating schema` 0 件、検証の失敗は無い。Hibernate の検証で止まらない | 通る（版 12 が前の版より新しいという WARN は、戻したときに出る見込みの1件） |
+| D2 | DSL が無い状態での起動（AC6.1.8） | ERROR は `DslStartupLoader`「適用中の DSL を読めないため、適用中の DSL が無い状態で起動します」1件だけ。キー `dsl.errorKinds` の値は `UNSUPPORTED_VERSION`（版 2 の DSL を前の版が読めない） | 通る |
+| ログ | ほかのログ | 41 行（すべて JSON）。INFO 36・WARN 3（Flyway の H2 の版の案内、Spring の Bean の案内、上の版 12 の WARN）・ERROR 1。救済の WARN 0、INFO「初期管理者は既にいるため、作成しませんでした」。初期管理者のメールアドレスの値がログに現れる件数 0 | 通る |
+| D4（読み） | 前の版が監査の行を実体として読まないこと | `git grep` で `273c021` の `backend/src/main` を調べ、`AuditEventRepository` の呼び出しは `AuditEventRecorder` の `repository.save` だけ。`findById`・`findAllByOrderByOccurredAtAsc` を呼ぶ所は無い | 通る（画面の操作を含む D4 の残りは D3・D5 で確かめる） |
+
+### 13.3 依頼者の画面の操作（D3・D5・D6）と、止めた後の確かめ
+
+- 依頼者の答え（13:18:24Z）: 18080 で D3（ログイン・管理の画面）・D5（DSL の生成と適用）・D6（ログアウト）はすべて見込みどおり。
+- 13:19:16Z に練習のアプリを止めた（終了コード 143、OOMKilled false。止める直前のメモリの使用は 544 MiB）。止める前の練習のアプリのログは、WARN 9（起動の案内3、`REFRESH_FAILED` 401 が1、`DSL_PREVIEW_NOT_FOUND` 404 が5）・ERROR 1（起動の DSL の1件）。初期管理者のメールアドレスの値の件数 0。
+- 練習のボリュームを練習用の場所（権限 700）へ複写し、読み取り（`ACCESS_MODE_DATA=r`）で開いて数えた。
+
+| 数えたもの | 結果 | 見込み | 判定 |
+|---|---|---|---|
+| 管理者の印が真の行 | 2（利用者 2、停止 0） | 配備の前の複写（7節）の 2 | 同じ（権限のずれは無い） |
+| 練習の監査（13:12Z 以降） | 13:16:50 `LOGIN_SUCCEEDED` → 13:17:25 `LOGGED_OUT` → 13:17:36 `LOGIN_SUCCEEDED` → 13:17:40 `DSL_GENERATED` → 13:17:53 `DSL_APPLIED` → 13:18:04 `LOGGED_OUT`。結果はすべて SUCCESS | `LOGIN_SUCCEEDED` 1・`DSL_GENERATED` 1・`DSL_APPLIED` 1・`LOGGED_OUT` 1 | ログインとログアウトが各 1 件多い（一度ログアウトしてログインし直した）。依頼者に確かめる |
+| 練習の DSL | 適用の履歴 7（元の 6 に前の版での適用が 1 増えた）・プレビュー 0 | 適用が 1 増える | 通る |
+| 練習で出たリフレッシュトークン | 2 件、どちらも無効化済み（失効していないもの 0） | D6 のログアウトで無効 | 通る |
+| Flyway の版 | 12（前の版は移行を当てていない） | 12 | 通る |
+| ロール・割り当て | 2・2（練習の元の複写は 13:11 のもので、片付けの前の状態） | — | 前の版は新しい表を読まずに動いた（G-19） |
+
+### 13.4 判定
+
+| # | 確かめ | 判定 |
+|---|---|---|
+| D1 | 前の版の起動（Flyway の誤りなし、`Migrating schema` 0、版 12 を前の版の 9 より新しいと WARN で案内するだけ） | 通る |
+| D2 | DSL が無い状態での起動（ERROR 1 件、`UNSUPPORTED_VERSION`） | 通る |
+| D3 | 管理の可否（依頼者が管理の画面を開けた。管理者の印が真の行が配備の前と同じ 2） | 通る。403 の側（管理者でない利用者）は、パスワードを依頼者が知る管理者でない利用者がいないため行っていない（前の版の結合テストで確かめ済みの振る舞いとして扱う） |
+| D4 | G-19（`GROUP_*`・`ROLE_*` の監査の行と新しい3列、新しい表の行がある内部DB で D1〜D3・D5 が失敗しない。前の版のコードは監査の行を `save` だけで扱う） | 通る |
+| D5 | 前の版での DSL の生成し直しと適用 | 通る |
+| D6 | ログアウト（練習で出したリフレッシュトークンはすべて無効） | 通る |
+
+### 13.5 片付け
+
+- 13:19:43Z に `docker compose -p mastersmith-rollback -f docker/perf/compose.yaml --profile targetdb-postgres down -v` で、練習のコンテナ・ボリューム（`perf-data`・`perf-targetdb-postgres`）・ネットワークを消した。
+- 練習用の場所 `~/.mastersmith-rollback-role-menu/`（`.env` の複写・対象DB の環境ファイル・練習の H2 の複写）を消した。
+- `rollback` の名前のコンテナ・ボリューム・ネットワークが 0、練習用の場所が無いことを確かめた。`mastersmith:pre-role-menu`（`fefeafbd299b`）は残っている。配備したアプリ・Mailpit・見本の対象DB は動いたまま。
+
+## 14. 片付け（Environment Provisioning の Q2: A）
+
+名前の無いイメージ（dangling）とビルドのキャッシュだけを片付けた。タグ付きのイメージとボリュームには触れていない。
+
+| 時刻（UTC） | 操作 |
+|---|---|
+| 13:19:49 | 前の量を記録した |
+| 13:19:49〜13:19:57 | `docker image prune -f`（名前の無いイメージは 0 個で、回収 0B）、`docker builder prune -a -f`（ビルドのキャッシュ 2.323GB を消した） |
+| 13:19:57 | 後の量を記録した |
+
+| 種類 | 前 | 後 |
+|---|---|---|
+| イメージ（`docker system df`） | 32 個・10.12GB（回収できる 4.591GB） | 32 個・10.12GB（同じ） |
+| 名前の無いイメージ | 0 個 | 0 個 |
+| コンテナ | 4 個（動いている 3）・35.45MB | 同じ |
+| ボリューム | 64 個・10.12GB | 64 個・10.12GB（同じ） |
+| ビルドのキャッシュ（`docker system df`） | 23 個・2.323GB（回収できる 889.7MB） | 0 個・0B |
+| ビルドのキャッシュ（`docker builder du`） | 2.323GB（回収できる 2.323GB） | 0B |
+
+- イメージは Environment Provisioning の記録（30 個）より 2 個多い。この段で作った `mastersmith:local`（`3247c5bdab79`）と、タグを付けて残した `mastersmith:role-menu-before-s8fix`（`e41a5b02fd0b`）の分。
+- タグの一覧は片付けの前後で同じ（全 32 行）。`mastersmith` のタグは 19 個: `local`（`3247c5bdab79`、配備した版）・`pre-role-menu`（`fefeafbd299b`、戻し先）・`role-menu-before-s8fix`（`e41a5b02fd0b`、直す前の版）・`role-menu-b7`・`perf-dsl`・`safety-carryover`・`pre-safety-carryover`・`user-admin-followup`・`pre-user-admin-followup`・`pre-user-admin`・`pre-log-deps-cleanup`・`pre-quality-followup`・`storage-memory-fix`・`pre-user-management`・`pre-storage-memory`・`storage-memory-base`・`followup-fixes`・`pre-followup`・`pre-dsl`。
+- 次にイメージを作るときは、ビルドのキャッシュが無いため層を作り直す（初回だけ時間が延びる）。
+- `~/.mastersmith-backup/` には、この段の複写 4 件（`…202610140820-pre-role-menu`・`…202610141654-after-role-menu`・`…202610142211-after-role-menu`・`…202610142218-after-role-menu-final`、すべて権限 600）と、数えるスクリプト `count-db.sh`（値を含まない）が残る。作業用のディレクトリは残っていない。
+
 ## Sources
 
 - `deployment-execution-questions.md`（決まっていること、Q1〜Q3、まとめの確認）
@@ -191,6 +469,9 @@ S1・S2 は通った。S3 以降（依頼者の画面の操作）は、依頼者
 - リポジトリ（読むだけ）: `git show 273c021:frontend/src/features/dsl/messages.ts`・`registration.ts`、`git grep 273c021`（`DslPreviewPanel.tsx`・`DslConfirmDialog.tsx`）
 - 順 5〜7・S1・S2 の確かめ（2026-10-13 23:20〜23:21 UTC）: `docker compose stop app`、README の「内部DBのバックアップと戻し方」の `docker run … tar czf`、`org.h2.tools.Shell`（`ACCESS_MODE_DATA=r`）、`docker logs --since`（前の版のアプリ。レベル・ロガー・`code`・`status` だけ）、`docker compose --profile targetdb-postgres up -d --build app`、`docker inspect`（`State.Health`・`HostConfig`）、`docker compose exec app`（`/proc/1/cmdline` の件数・`sha256sum`）、`curl` で `/actuator/health`、`docker compose logs --no-log-prefix app` と `jq`（レベル・ロガー・メッセージ・キーの名前・件数だけ）
 - `git show 273c021:backend/src/main/java/cherry/mastersmith/dslmanage/service/DslLifecycle.java`（破棄と 404 の経路）、`backend/src/main/resources/db/migration/`（表と列の名前）、README（コンテナでの起動と確認、初期管理者の救済、戻し方、内部DBのバックアップと戻し方、監査ログの確かめ方）
+- 11節の確かめ（2026-10-14 07:54〜07:55 UTC）: `git diff 08d1e71 a16cd68`・`git diff 876042b a16cd68`・`git diff 005730a a16cd68`、`shasum -a 256`、`unzip`（WAR の `static/assets`）、`curl`（`/`・`/assets/…`・`/actuator/health`）、`docker compose stop app`・`docker run … tar czf`、`org.h2.tools.Shell`（`ACCESS_MODE_DATA=r`）、`docker tag`、`docker compose --profile targetdb-postgres up -d --build app`、`docker inspect`、`docker compose exec app`、`docker compose logs --no-log-prefix app` と `jq`
+- 12・13節の確かめ（2026-10-14 13:11〜13:13 UTC）: `docker compose stop app`・`start app`、`docker run … tar czf`・`tar xzf`、`org.h2.tools.Shell`（`ACCESS_MODE_DATA=r`）、`docker logs`（レベル・ロガー・`code`・`status`・キーの名前だけ）、`openssl rand -hex 24`、`docker compose -p mastersmith-rollback -f docker/perf/compose.yaml`（`create`・`up -d --wait`）、`docker stats --no-stream`、`colima ssh -- free -m`、`git grep 273c021 -- backend/src/main`、`rollback-runbook.md` の 6節
+- 12.5・13.3〜14節の確かめ（2026-10-14 13:18〜13:20 UTC）: 配備の後の複写の取り直しと読み取り、`docker logs`（練習のアプリと配備したアプリ。レベル・ロガー・`code`・`status` だけ）、練習のボリュームの複写の読み取り、`docker compose -p mastersmith-rollback … down -v`、`docker image prune -f`・`docker builder prune -a -f`、`docker system df`・`docker builder du`・`docker images`、`gh run list --branch develop`・`gh api …/actions/runs/38435315180/attempts/1`・`gh run view 38435315180 --attempt 1 --log-failed`
 - `aidlc/spaces/default/memory/team.md`・`project.md`（Deployment・Change Control・Corrections）
 
 ## Assumptions & Open Questions
@@ -211,3 +492,12 @@ S1・S2 は通った。S3 以降（依頼者の画面の操作）は、依頼者
 - 再試行のほかの操作（06:26:31Z 依頼者の答え）: 中身は覚えていないため、配備の後の複写で T1 以降の監査を種類ごとに数えて示す。ロール甲・乙は残っている（直した版での確かめに使うか、後で片付ける）。
 - S8 の原因（06:27:12Z、コードの読みで突き止めた）: 権限の有無とは関係なく、「自分の権限を見る」の木でテーブルの節の開閉を押すと、テーブルの節が同じ id の自分自身を子として持ち、描画が止まらなくなる（画面だけの不具合。useMyPermissions.ts の toTreeNode が API の hasChildren をテーブルの節にもそのまま渡し、loadChildren がテーブルの id でスキーマのテーブルの一覧を読み直すため）。10.4 の「環境の差に原因がある」という見立ては誤りで、使い捨ての環境ではテーブルの開閉を押していなかったために再現しなかった。
 - S8 の直し（06:27:52Z 依頼者の答え A）: 今直して配備し直す。develop から fix/261004-role-menu-mypermissions-tree を作り、主な直し（テーブルの節に開閉を出さない）＋守り（スキーマ以外の id で子を読まない）＋再現のテスト。verify と E2E を通して squash で develop へ統合し、WAR とイメージを作り直して配備し直す。
+
+- T2（S8 の確かめ直しの監査の数え始め）: 2026-10-14T07:56:31Z（依頼者に手順を伝える直前に指揮役が控えた）
+- S8 の確かめ直し（13:10:43Z 依頼者の答え）: すべて見込みどおり（テーブルに開閉なし、選ぶと値が出る、固まらない）。片付けも済んだ。操作の回数は覚えていないため、T2 以降の監査を複写で数える。
+- S11 の食い違いの確かめ（13:15:06Z 依頼者の答え）: 片付けはまだしていなかった（不具合ではない）。DSL の生成と破棄の各 1 件は依頼者の操作。期待の件数に足す。片付けをしてもらい、配備の後の複写を取り直して S11 を数え直す。戻しの練習 D3〜D6 は片付けの後に 18080 で行う。
+- 片付けと戻しの練習（13:18:24Z 依頼者の答え）: 8080 の片付け（割り当てを外す → 2 つのロールを消す）は済んだ、ほかの操作なし。18080 の戻しの練習 D3・D5・D6 はすべて見込みどおり。
+- [assumption] `ROLE_DELETED` の FAILURE 1 件（`ROLE_IN_USE`）と、戻しの練習のログイン・ログアウトの各 1 回の多さは、依頼者の操作によるものと読んだ。依頼者に確かめる。
+- `ae794e4` の push の CI（run 38435315180）は、1回目が `frontendTest` で失敗し（`ShellLayout.test.tsx` の 702 行の `Error: down` の Unhandled Rejection。テストは 1,581 件すべて通過、エラーが 1 件）、2回目で success だった。CI Pipeline の記録（`construction/ci-pipeline/ci-config.md`）に無い。`ae794e4` は `aidlc/` の下だけのコミットで、コードは 1 回目で success だった `005730a` と同じ。扱いは依頼者に確かめる（`team.md` の「不安定なテストと CI の失敗」）。
+- `a16cd68`（S8 の直し）と `876042b` は未 push（`origin/develop` は `2669c62`）。直した版の CI は push の後に確かめる。
+- 監査の差の確かめ（13:25:07Z 依頼者の答え）: S11 の ROLE_DELETED FAILURE（ROLE_IN_USE）1 件と、戻しの練習のログイン・ログアウトの各 1 件の多さは、どちらも依頼者の操作（仕様どおりの拒否として受け入れる）。ae794e4 の CI の 1 回目の失敗（ShellLayout.test.tsx の Unhandled Rejection）は、main への取り込みの前に上限 30 分で調べて、テストだけの直しを短命のブランチで行う（A）。CI の記録の漏れも書き足す。
