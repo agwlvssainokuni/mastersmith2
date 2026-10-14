@@ -693,12 +693,15 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
   it('keeps the saved expanded ids while the tree is loading or failed, and drops unknown ones once loaded', async () => {
     sessionStorage.setItem(NAV_EXPANDED_STORAGE_KEY, JSON.stringify(['biz:0', 'biz:gone']))
     const pending = deferred<NavigationResponse>()
-    const { view } = renderShell({ navAnswers: [pending] })
+    const { view, nav } = renderShell({ navAnswers: [pending] })
     await screen.findByRole('navigation')
     expect(JSON.parse(sessionStorage.getItem(NAV_EXPANDED_STORAGE_KEY) ?? '[]')).toEqual([
       'biz:0',
       'biz:gone',
     ])
+    // メニューの枠は読み込みを始める前（ログイン状態が届く前後）にも出るため、読み込みの要求が出て拒否を受け取る
+    // 側が付いたのを待ってから拒否する。先に拒否すると、受け取る側の無い拒否（Unhandled Rejection）になる。
+    await waitFor(() => expect(nav.count).toBeGreaterThan(0))
     act(() => pending.reject(new Error('down')))
     expect(await screen.findByTestId('sidebar-nav-biz-load-error')).toHaveTextContent(
       '業務のメニューを読み込めませんでした',

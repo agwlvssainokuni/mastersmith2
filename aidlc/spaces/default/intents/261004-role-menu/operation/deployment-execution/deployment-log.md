@@ -501,3 +501,4 @@ T0 からの監査の全体（T2 以降は 13:18:34Z まで）:
 - `ae794e4` の push の CI（run 38435315180）は、1回目が `frontendTest` で失敗し（`ShellLayout.test.tsx` の 702 行の `Error: down` の Unhandled Rejection。テストは 1,581 件すべて通過、エラーが 1 件）、2回目で success だった。CI Pipeline の記録（`construction/ci-pipeline/ci-config.md`）に無い。`ae794e4` は `aidlc/` の下だけのコミットで、コードは 1 回目で success だった `005730a` と同じ。扱いは依頼者に確かめる（`team.md` の「不安定なテストと CI の失敗」）。
 - `a16cd68`（S8 の直し）と `876042b` は未 push（`origin/develop` は `2669c62`）。直した版の CI は push の後に確かめる。
 - 監査の差の確かめ（13:25:07Z 依頼者の答え）: S11 の ROLE_DELETED FAILURE（ROLE_IN_USE）1 件と、戻しの練習のログイン・ログアウトの各 1 件の多さは、どちらも依頼者の操作（仕様どおりの拒否として受け入れる）。ae794e4 の CI の 1 回目の失敗（ShellLayout.test.tsx の Unhandled Rejection）は、main への取り込みの前に上限 30 分で調べて、テストだけの直しを短命のブランチで行う（A）。CI の記録の漏れも書き足す。
+- push（13:30:40Z）: 依頼者が develop を push した（origin/develop = b265a2f）。CI run 38572240082・38572240463 が動き始めた。2669c62 の CI（run 38482643592）は success。

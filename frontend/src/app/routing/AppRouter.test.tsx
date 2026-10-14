@@ -278,7 +278,8 @@ describe('AppRouter', () => {
         provider: { getLoginState: () => ({ loggedIn: true, admin: false }), clearLogoutIntent },
       })
       expect(await screen.findByTestId('item-screen')).toBeInTheDocument()
-      expect(clearLogoutIntent).toHaveBeenCalledTimes(1)
+      // 印を消すのは描画の後の効果のため、画面が出た直後に同期で確かめず、呼ばれるのを待つ。
+      await waitFor(() => expect(clearLogoutIntent).toHaveBeenCalledTimes(1))
     })
 
     it('keeps the intent on /logout and clears it after moving to another path', async () => {
@@ -292,7 +293,8 @@ describe('AppRouter', () => {
       await user.click(await screen.findByTestId('leave-logout'))
       expect(await screen.findByTestId('item-screen')).toHaveTextContent('item 7')
 
-      expect(clearLogoutIntent).toHaveBeenCalledTimes(1)
+      // 印を消すのは描画の後の効果のため、画面が出た直後に同期で確かめず、呼ばれるのを待つ。
+      await waitFor(() => expect(clearLogoutIntent).toHaveBeenCalledTimes(1))
     })
   })
 })
