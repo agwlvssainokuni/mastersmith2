@@ -6,7 +6,7 @@
   ],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "editable": false,
   "time": {
     "from": "now-6h",
@@ -68,7 +68,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 6,
         "x": 0,
         "y": 1
@@ -80,10 +80,10 @@
       "title": "仮の目標の一覧",
       "options": {
         "mode": "markdown",
-        "content": "| SLI | 仮の目標 |\n|---|---|\n| 稼働（30 日） | 99.5% |\n| ログインの API の 95 パーセンタイル | 1 秒以内 |\n| トークンの更新の API の 95 パーセンタイル | 1 秒以内 |\n| 確認用 API の 95 パーセンタイル | 500 ミリ秒以内 |\n| 監査イベント1件の書き込み（95 パーセンタイル） | 50 ミリ秒以内（Performance Validation で測る。指標は無い） |"
+        "content": "| SLI | 仮の目標 |\n|---|---|\n| 稼働（30 日） | 99.5% |\n| ログインの API の 95 パーセンタイル | 1 秒以内 |\n| トークンの更新の API の 95 パーセンタイル | 1 秒以内 |\n| 確認用 API の 95 パーセンタイル | 500 ミリ秒以内 |\n| 監査イベント1件の書き込み（95 パーセンタイル） | 50 ミリ秒以内（Performance Validation で測る。指標は無い） |\n| ロール・グループ・メニューの API の 95 パーセンタイル | 1 秒以内（判定は k6。下の区画は目安） |\n| 権限の YAML の確かめ・適用 | 確かめ 15 秒以内・適用 30 秒以内（k6 で判定。パネルでは見ない） |"
       },
       "gridPos": {
-        "h": 6,
+        "h": 8,
         "w": 18,
         "x": 6,
         "y": 1
@@ -98,7 +98,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 9
       },
       "panels": []
     },
@@ -145,7 +145,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 8
+        "y": 10
       }
     },
     {
@@ -195,7 +195,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 8
+        "y": 10
       }
     },
     {
@@ -245,7 +245,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 8
+        "y": 10
       }
     },
     {
@@ -257,7 +257,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 18
       },
       "panels": []
     },
@@ -308,7 +308,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 17
+        "y": 19
       }
     },
     {
@@ -358,7 +358,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 17
+        "y": 19
       }
     },
     {
@@ -408,7 +408,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 17
+        "y": 19
       }
     },
     {
@@ -420,7 +420,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 27
       },
       "panels": []
     },
@@ -471,7 +471,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 26
+        "y": 28
       }
     },
     {
@@ -521,7 +521,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 26
+        "y": 28
       }
     },
     {
@@ -571,7 +571,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 26
+        "y": 28
       }
     },
     {
@@ -583,7 +583,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 36
       },
       "panels": []
     },
@@ -634,7 +634,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 35
+        "y": 37
       }
     },
     {
@@ -684,7 +684,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 35
+        "y": 37
       }
     },
     {
@@ -734,7 +734,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 35
+        "y": 37
       }
     },
     {
@@ -784,7 +784,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 43
+        "y": 45
       }
     },
     {
@@ -834,7 +834,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 43
+        "y": 45
       }
     },
     {
@@ -849,7 +849,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 43
+        "y": 45
       }
     },
     {
@@ -861,7 +861,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 51
+        "y": 53
       },
       "panels": []
     },
@@ -895,7 +895,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 52
+        "y": 54
       }
     },
     {
@@ -928,7 +928,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 52
+        "y": 54
       }
     },
     {
@@ -987,7 +987,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 52
+        "y": 54
       }
     },
     {
@@ -999,7 +999,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 60
+        "y": 62
       },
       "panels": []
     },
@@ -1033,7 +1033,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 61
+        "y": 63
       }
     },
     {
@@ -1088,7 +1088,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 61
+        "y": 63
       }
     },
     {
@@ -1121,7 +1121,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 61
+        "y": 63
       }
     },
     {
@@ -1133,7 +1133,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 69
+        "y": 71
       },
       "panels": []
     },
@@ -1167,7 +1167,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 70
+        "y": 72
       }
     },
     {
@@ -1200,7 +1200,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 70
+        "y": 72
       }
     },
     {
@@ -1251,7 +1251,137 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 70
+        "y": 72
+      }
+    },
+    {
+      "id": 35,
+      "type": "row",
+      "title": "ロール・グループ・メニュー（Intent 261004-role-menu）",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 80
+      },
+      "panels": []
+    },
+    {
+      "id": 36,
+      "type": "timeseries",
+      "title": "API ごとの要求の数（1 時間）",
+      "description": "グループの管理（/api/admin/groups）、ロールの管理・権限の設定・割り当て（/api/admin/roles）、権限の YAML の書き出し・確かめ・適用（/api/admin/role-transfer）、グループ・利用者のロールの読み取り（/api/admin/groups/{groupId}/roles・/api/admin/users/{userId}/roles）、作業ロール・自分の権限（/api/me/work-role・/api/me/permissions/…）、業務のメニューと置き場（/api/me/navigation・/api/me/table-access）の要求の数（状態コードごと）。認可の入口で拒否した 403（管理者でない利用者からの管理の API）は uri=\"UNKNOWN\" に入るため、この区画には出ない（403 の件数のパネルと、ログの問い合わせで見る）。置き場の 403 は「見られないテーブル」という業務の結果",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (method, uri, status) (increase(http_server_requests_milliseconds_count{service_name=\"mastersmith\",uri=~\"/api/admin/(groups|roles|role-transfer)(/.*)?|/api/admin/users/[^/]+/roles|/api/me/(work-role|navigation|table-access|permissions/.*)\"}[1h]))",
+          "legendFormat": "{{method}} {{uri}} {{status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 81
+      }
+    },
+    {
+      "id": 37,
+      "type": "timeseries",
+      "title": "API ごとの時間（95 パーセンタイル）",
+      "description": "アプリの指標 http.server.requests のバケット（100・250・500・1000・2000・5000 ms）で測る（招待と登録の行のトレースの値 traces_spanmetrics_latency とは元の指標が違う）。目安の線は 1000 ms（U3〜U5 の SLO の p95 1 秒）。目標の判定は Performance Validation の k6 で行い、この線は目安。権限の YAML の確かめ・適用（目標 15 秒・30 秒）のように 5000 ms を超える要求は +Inf のバケットに入り、このパネルでは判定しない",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, method, uri) (rate(http_server_requests_milliseconds_bucket{service_name=\"mastersmith\",uri=~\"/api/admin/(groups|roles|role-transfer)(/.*)?|/api/admin/users/[^/]+/roles|/api/me/(work-role|navigation|table-access|permissions/.*)\"}[5m])))",
+          "legendFormat": "{{method}} {{uri}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1000
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 81
+      }
+    },
+    {
+      "id": 38,
+      "type": "timeseries",
+      "title": "API ごとの 5xx の件数（1 時間）",
+      "description": "この区画の API の 5xx。全体の割合は警報 ms-5xx-ratio で見る（この行に警報は足していない）",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "sum by (method, uri) (increase(http_server_requests_milliseconds_count{service_name=\"mastersmith\",uri=~\"/api/admin/(groups|roles|role-transfer)(/.*)?|/api/admin/users/[^/]+/roles|/api/me/(work-role|navigation|table-access|permissions/.*)\",status=~\"5..\"}[1h])) or on() vector(0)",
+          "legendFormat": "{{method}} {{uri}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 81
       }
     }
   ],
