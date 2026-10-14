@@ -138,6 +138,8 @@
 - 配備の手順を書く前に、Dockerfile が手元の WAR を写すだけか（イメージを作り直しても WAR は作り直さない）を確かめ、配備の前に WAR の SHA-256 と中身（直しの値など）を確かめる（role-menu の Deployment Pipeline で cd-config.md が「up --build で WAR を作り直す」と誤って書き、Environment Provisioning で見つかった）。 (learned 2026-10-13) <!-- cid:261004-role-menu:environment-provisioning:19663d7c6afca48311dc4cd8b393c532406dafc07cfca2ca53b6f45c32a7f3d3 -->
 - スモークテストの片付けは、依頼者の「済んだ」の答えの後も、配備の後の複写で状態（行の数）と監査を数えてから判定する（role-menu の S11 で、片付けがまだ行われていなかったと複写で分かった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:4c57f4b8d57f8647dd202af9ab1667fd6b35d542b8b619b6118a43f1e9e244b9 -->
 - main への取り込みの前に、前の取り込みの後のすべてのコミットの CI を試行ごと（gh run view --json attempt・jobs）に確かめ、再実行で通ったものは1回目の失敗とそのテストを記録する（role-menu で ae794e4 の1回目の失敗を書き漏らし、同じファイルの2回目の失敗だと Deployment Execution で分かった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:e2e1e2972322b4d3120b1d0d6bd9b542e971d202a61b6efdb78488b7ba5593de -->
+- 監視の確かめで使い捨てのアプリを lgtm に送らせるときは、lgtm を網につないだ後にアプリを起動する（先に起動するとログの送信の失敗の ERROR が出る。role-menu と前の Intent で同じ失敗）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:a8d53fd0789113ff432dccf8d823b05492162f4b14a1dc843f02f95381ae4cc3 -->
+- JVM が止まったとき（ExitOnOutOfMemoryError・restart no）に拾える警報は ms-app-absent だけで、止めてから Pending まで約 5 分 20 秒、Alerting まで約 10 分 20 秒かかる（role-menu の Observability Setup で初めて鳴ることを実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:1a99f2925284ff87c8d2a97c4d253696ad0efae836692e39ddbc374f5dea9697 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
