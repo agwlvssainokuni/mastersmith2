@@ -1,6 +1,6 @@
 # コード生成のまとめ（261015-deps-ui-carryover）
 
-> この文書は、ブランチごとに書き足していく。今はブランチ ①（依存の更新、Step 1〜11）の分だけを書いている。ブランチ ②・③ と Step 45 の追跡（FR12.1 の一覧の結果など）は、それぞれのブランチで書き足す。
+> この文書は、ブランチごとに書き足していく。今はブランチ ①（依存の更新、Step 1〜11）と ②（画面・コードの小さな直し、Step 13〜29）の分を書いている。ブランチ ②・③ と Step 45 の追跡（FR12.1 の一覧の結果など）は、それぞれのブランチで書き足す。
 
 ## 1. ブランチ ①: 版とダイジェストの確かめ（Step 2）
 
@@ -67,3 +67,49 @@
 | `./gradlew e2eTest`（axe-core を戻した後、21:40〜21:51） | 230 passed・失敗 0 |
 | 新しい jre のイメージの起動（Step 9） | 使い捨てのコンテナで約 10 秒で `/actuator/health` 200、Java 25.0.4.1+1、ERROR 0 |
 | スリープ（`pmset -g log`） | verify・E2E の間に Sleep・DarkWake 無し |
+
+## 4. ブランチ ②: make-you-chic-ui の固定先の更新（Step 15）
+
+| 項目 | 値 |
+|---|---|
+| 更新の前 | `5bf1ffe3cb7ee5c49963c3d7e8d4e8d0f032aae6` |
+| 更新の後 | `a9309c4ee863b162236571a7d6300c62fd4b4f70` |
+| 中身の変更 | なし（`git -C vendor/make-you-chic-ui checkout` だけ。`status --porcelain` は空） |
+| package の版の定義と lockfile | 変わらない |
+| 先に満たした型の差 | `SidebarLabels.containsCurrent`（必須）を、Step 14 で注記の無い `navLabels` に足した |
+
+## 5. ブランチ ②: FR12.1 の一覧の各指摘の結果
+
+| 束 | 指摘 | 結果 |
+|---|---|---|
+| K2 | dsl-v2 R-04（360px・表の名前の重なり） | 直した。060・120 の E2E に 360px の悪い側の組（dark・lg・blue）を足し、横のはみ出しなしと行の操作のメニューの収まりが通った。名前の重なりは D-8: A で直さず記録だけ（`DslErrorList`・`TransferErrorList`・`TransferCheckTable` の領域と表の名前は役目が違い、axe の違反は無い） |
+| K2 | dsl-v2 R-05（`DslError` の文字列） | 直した。`DslSecretLeakIT` が直す前に2件とも落ち（`DslReadResult.Invalid` の `DslError`、`ProblemDetail` の `DslErrorItem`）、直した後に通った（D-11: A） |
+| K2 | dsl-v2 R-07（メニューを比べない） | 直した（D-6: A）。違いが無いときの文言と、違いの表の上の説明の1文で伝える |
+| K2 | dsl-v2 R-08（落とした枝を画面に出さない） | 直した（D-7: A）。状態の応答の `prunedMenuItems` と、1以上のときの `DslStatusPanel` の警告 |
+| K3 | navigation R-03（record の文字列） | 直した（D-10: A）。`NavigationSecretLeakIT` が直す前に落ち、直した後に通った。あわせて見つけた dsl の `ActiveDslModelStore#current()` の漏れ道（DSL のモデルを丸ごと TRACE に出す）も、依頼者の決定 A で `DslModel.toString` を伏せて直した（6節の差1） |
+| K3 | navigation R-04（`MenuFilter` の Javadoc） | 直した。深さの前提と境界のテストの持ち主を書いた |
+| K4 | cross-cutting R-02（共有の木の失敗の文と区画） | 直した。失敗の文を `role="alert"`、区画を `role="group"` と名前（`childArea`）にした |
+| K4 | cross-cutting R-03（管理者でない利用者向けの区画） | 直した（D-9: A）。README とコメントに決まりを書き、反する見本6か所を直した |
+| K4 | cross-cutting R-05（直書きの下限 34） | 直した。`ApiEndpointCounts.MIN_ENDPOINTS` = 67（今の口の数） |
+| K4 | cross-cutting R-06（`useLogout` の README） | 直した。一文を足した |
+| K4 | cross-cutting R-07（前の Intent の記録の差） | 記録だけ。前の Intent の確定済みの記録は書き換えない。今の境界テストは 15 ファイル（`*BoundaryArchitectureTest.java`）。前の Intent の `code-summary.md` の 11 と 10 の差、`traceability.json` の NFR6.4・BR1.7 が既存のファイルを指す点は、そのまま残す |
+
+## 6. ブランチ ②: 計画との差
+
+1. **計画に無い変更（依頼者の決定 A）**: `dsl.service.ActiveDslModelStore#current()` の TRACE が、DSL のモデル（`DslModel`）を丸ごと文字列にして表示名を出していた。依頼者の決定で ② で直した。`NavigationSecretLeakIT` の除外を外して直す前に落ちることを確かめ（23:11）、`DslModel.toString` を識別の先頭 12 文字・版・スキーマの数・メニューの数だけにし（`ActiveDsl.Present`・`DslReadResult.Valid`・`DslStartupReadResult.Valid` も伏せられる）、`DslModelToStringTest` を足した。直した後は除外なしで通る。
+2. 落とした項目の数の置き場を、新しい部品ではなく既存の `UnreadableAppliedRevision` に足した（作り方を変えずに済むため。名前は役目より狭い）。
+3. 共有の木の区画の名前のため、`SharedTreeLabels` に必須の `childArea` を足し、使う2か所の文言を足した。区画は `role="group"`。
+4. 違いの見出しの説明は、見出しの文言を変えずに表の上の説明の1文（`dsl.diff.scope`）にした。
+5. 画面に深さの上限の定数が無いため、`DslStatusPanel.tsx` に `MENU_DEPTH_LIMIT = 5` を置いた。
+6. E2E の状態の見本は `support/adminApiRoute.ts` ではなく `135-dsl-admin-accessibility.e2e.ts` の中にあり、そこを直した。
+7. 360px の確かめは、20 組の外の1組 `WORST_360_COMBO`（dark・lg・blue）を `support/displayCombos.ts` に足し、060・120 の組のループに加えた。
+
+## 7. ブランチ ②: 確かめの結果
+
+| 確かめ | 結果 |
+|---|---|
+| `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（2026-10-15 22:40〜22:55） | 成功。backend 単体 2,115・結合 1,168（失敗 0・SKIPPED 0）、frontend 1,589。backend 行 97.9%・分岐 92.5%、frontend 行 95.36%・分岐 90.38%。`osvScan` は UP-TO-DATE（lockfile は ① から変わらない） |
+| `./gradlew e2eTest`（22:56〜23:07） | 232 passed・失敗 0 |
+| 再現のテスト（直す前） | `DslSecretLeakIT` 2件・`NavigationSecretLeakIT` 1件が落ちることを確かめた（22:19・22:21） |
+| スリープ（`pmset -g log`） | verify・E2E の間に Sleep・DarkWake 無し |
+| `verify` の流し直し（依頼者の決定 A の直しの後、23:13〜23:27） | 成功。backend 単体 2,118・結合 1,168（失敗 0・SKIPPED 0）、frontend 1,589。backend 行 97.9%・分岐 92.5%、frontend 行 95.36%・分岐 90.38%。Sleep・DarkWake 無し。E2E は画面に触れないため流し直していない |
