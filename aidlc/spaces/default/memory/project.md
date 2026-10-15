@@ -148,6 +148,8 @@
 - 監視の確かめで使い捨てのアプリを lgtm に送らせるときは、lgtm を網につないだ後にアプリを起動する（先に起動するとログの送信の失敗の ERROR が出る。role-menu と前の Intent で同じ失敗）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:a8d53fd0789113ff432dccf8d823b05492162f4b14a1dc843f02f95381ae4cc3 -->
 - JVM が止まったとき（ExitOnOutOfMemoryError・restart no）に拾える警報は ms-app-absent だけで、止めてから Pending まで約 5 分 20 秒、Alerting まで約 10 分 20 秒かかる（role-menu の Observability Setup で初めて鳴ることを実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:observability-setup:1a99f2925284ff87c8d2a97c4d253696ad0efae836692e39ddbc374f5dea9697 -->
 - ExitOnOutOfMemoryError で JVM が止まる直前の1行（Terminating due to java.lang.OutOfMemoryError）は JSON ではなく Loki に届かない。docker logs と終了コード 3（Exited (3)、OOMKilled false）で見分け、docker compose start で約 10 秒で戻る（role-menu の Incident Response で使い捨ての環境のヒープを 192 MB に下げて実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:incident-response:e9b409e49db86bac4a108d2e842106160121cdf9b39d41a62ff90a0f87a52aa6 -->
+- CI Pipeline・Infrastructure Design の段が無いため、前の Intent（261004-role-menu）の配備の手順を正として差だけを書いた。移行と .env の変更が無いため戻しはイメージだけで練習なし、配備の前の k6 は Build and Test の試験済みで省く。D-5: A の DSL の最長の行の測り直しのために止めて複写するため、その複写を配備の前のバックアップに兼ねた。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:deployment-pipeline:9ac412376db08f5ba4ecb0eeb571f0231f8586ea352af2c1c184a8d4d98d3476 -->
+- 依頼者の決定（Q2: B）で、要件 FR11.2 の「1行の長さの上限の拒否をスモークテストに入れる」を行わず、結合テストで確かめ済みとした。監査に DSL_SUBMISSION_REJECTED が残るため。要件は書き換えず cd-config.md 5節に差を記録した。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:deployment-pipeline:83db7796b312036847d7d7d3ea6dd1e9b7517b4ea9e119e98f9742b6333db217 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
