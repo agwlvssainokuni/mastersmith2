@@ -153,7 +153,8 @@ class DslAdminApiIT {
         assertThat(DslApi.json(status))
                 .containsEntry("applied", null)
                 .containsEntry("preview", null)
-                .containsEntry("appliedUnreadable", false);
+                .containsEntry("appliedUnreadable", false)
+                .containsEntry("prunedMenuItems", 0);
         assertThat(history.statusCode()).isEqualTo(200);
         assertThat(DslApi.jsonList(history)).isEmpty();
     }

@@ -404,7 +404,10 @@ public class DslLifecycle {
                 .orElse(null);
         boolean appliedUnreadable = applied != null
                 && unreadableAppliedRevision.isUnreadable(applied.ref().revisionId());
-        return new DslStatus(applied, preview, appliedUnreadable);
+        int prunedMenuItems = applied == null
+                ? 0
+                : unreadableAppliedRevision.prunedMenuItems(applied.ref().revisionId());
+        return new DslStatus(applied, preview, appliedUnreadable, prunedMenuItems);
     }
 
     /**

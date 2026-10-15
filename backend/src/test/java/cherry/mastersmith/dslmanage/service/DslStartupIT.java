@@ -82,6 +82,11 @@ class DslStartupIT {
                 assertThat(present.dslHash()).isEqualTo(hash);
                 assertThat(present.model().schema().tables()).containsOnlyKeys("kept");
             });
+            AdminTestUsers users = new AdminTestUsers(second.getBean(UserAccountService.class), port(second));
+            DslApi api = new DslApi(port(second), users.accessToken(users.createAdmin()));
+            assertThat(DslApi.json(api.get("/status")))
+                    .as("nothing is pruned when the applied DSL is within the depth limit")
+                    .containsEntry("prunedMenuItems", 0);
         }
     }
 
@@ -115,7 +120,9 @@ class DslStartupIT {
                     .isEqualTo(200);
             AdminTestUsers users = new AdminTestUsers(second.getBean(UserAccountService.class), port(second));
             DslApi api = new DslApi(port(second), users.accessToken(users.createAdmin()));
-            assertThat(DslApi.json(api.get("/status"))).containsEntry("appliedUnreadable", true);
+            assertThat(DslApi.json(api.get("/status")))
+                    .containsEntry("appliedUnreadable", true)
+                    .containsEntry("prunedMenuItems", 0);
         }
         List<Map<String, Object>> errors = JsonLogRecords.parse(output.getAll()).stream()
                 .filter(record -> String.valueOf(record.get("message")).equals(DslStartupLoader.INVALID_MESSAGE))
@@ -149,7 +156,10 @@ class DslStartupIT {
             });
             AdminTestUsers users = new AdminTestUsers(second.getBean(UserAccountService.class), port(second));
             DslApi api = new DslApi(port(second), users.accessToken(users.createAdmin()));
-            assertThat(DslApi.json(api.get("/status"))).containsEntry("appliedUnreadable", false);
+            assertThat(DslApi.json(api.get("/status")))
+                    .as("the status reports the number of pruned menu items")
+                    .containsEntry("appliedUnreadable", false)
+                    .containsEntry("prunedMenuItems", 6);
         }
         List<Map<String, Object>> warnings = JsonLogRecords.parse(output.getAll()).stream()
                 .filter(record -> String.valueOf(record.get("message")).equals(DslStartupLoader.PRUNED_MESSAGE))

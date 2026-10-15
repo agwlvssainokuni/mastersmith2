@@ -67,4 +67,48 @@ class UnreadableAppliedRevisionTest {
         assertThat(revision.isUnreadable(first)).isFalse();
         assertThat(revision.isUnreadable(second)).isTrue();
     }
+
+    @Test
+    @DisplayName("the pruned count is answered only for the remembered revision and is 0 otherwise")
+    void prunedCountOnlyForTheRememberedRevision() {
+        UUID id = UUID.randomUUID();
+
+        assertThat(revision.prunedMenuItems(id)).isZero();
+
+        revision.rememberPruned(id, 4);
+
+        assertThat(revision.prunedMenuItems(id)).isEqualTo(4);
+        assertThat(revision.prunedMenuItems(UUID.randomUUID())).isZero();
+        assertThat(revision.prunedMenuItems(null)).isZero();
+        assertThat(revision.isUnreadable(id)).isFalse();
+    }
+
+    @Test
+    @DisplayName("remembering an unreadable revision, a pruned revision or clearing replaces the other")
+    void unreadableAndPrunedReplaceEachOther() {
+        UUID id = UUID.randomUUID();
+        revision.rememberPruned(id, 2);
+        revision.remember(id);
+
+        assertThat(revision.prunedMenuItems(id)).isZero();
+        assertThat(revision.isUnreadable(id)).isTrue();
+
+        revision.rememberPruned(id, 2);
+
+        assertThat(revision.isUnreadable(id)).isFalse();
+        assertThat(revision.prunedMenuItems(id)).isEqualTo(2);
+
+        revision.clear();
+
+        assertThat(revision.prunedMenuItems(id)).isZero();
+    }
+
+    @Test
+    @DisplayName("a pruned count below 1 is refused")
+    void prunedCountBelowOneIsRefused() {
+        UUID id = UUID.randomUUID();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> revision.rememberPruned(id, 0))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

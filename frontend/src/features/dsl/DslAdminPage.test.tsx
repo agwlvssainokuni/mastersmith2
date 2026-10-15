@@ -141,10 +141,25 @@ describe('DslAdminPage', () => {
     expect(api.getHistory).not.toHaveBeenCalled()
   })
 
+  it('shows the pruned menu warning from the status answer on the page (FR3.2)', async () => {
+    const api = fakeApi({
+      getStatus: vi.fn(() => Promise.resolve(statusOf({ prunedMenuItems: 4 }))),
+    })
+    renderPage(api)
+    await shown()
+
+    expect(await screen.findByTestId('dsl-status-pruned')).toHaveTextContent('4 件落としました')
+  })
+
   it('guides to loading or submitting when nothing is applied and there is no preview', async () => {
     const api = fakeApi({
       getStatus: vi.fn(() =>
-        Promise.resolve({ applied: null, preview: null, appliedUnreadable: false }),
+        Promise.resolve({
+          applied: null,
+          preview: null,
+          appliedUnreadable: false,
+          prunedMenuItems: 0,
+        }),
       ),
       getPreview: vi.fn(() => failure(404, { code: 'DSL_PREVIEW_NOT_FOUND' })),
     })

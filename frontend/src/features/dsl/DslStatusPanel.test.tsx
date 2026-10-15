@@ -20,7 +20,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { DslStatus } from './api/types'
-import { DslStatusPanel, type DslStatusPanelProps } from './DslStatusPanel'
+import { DslStatusPanel, MENU_DEPTH_LIMIT, type DslStatusPanelProps } from './DslStatusPanel'
 import { hashOf, previewRef, statusOf } from './testing/fixtures'
 import { renderDsl } from './testing/renderDsl'
 
@@ -58,7 +58,9 @@ describe('DslStatusPanel', () => {
   })
 
   it('tells that nothing is applied and that there is no preview', () => {
-    renderPanel({ status: { applied: null, preview: null, appliedUnreadable: false } })
+    renderPanel({
+      status: { applied: null, preview: null, appliedUnreadable: false, prunedMenuItems: 0 },
+    })
 
     expect(screen.getByTestId('dsl-status-applied')).toHaveTextContent('まだ適用していません')
     expect(screen.getByTestId('dsl-status-preview')).toHaveTextContent('プレビューはありません')
@@ -147,6 +149,39 @@ describe('DslStatusPanel', () => {
 
   it('has no accessibility violations with the unreadable warning', async () => {
     const { container } = renderPanel({ status: statusOf({ appliedUnreadable: true }) })
+
+    expect(await axe(container)).toHaveNoViolations()
+  })
+
+  it('warns with the count and the depth limit when menu items were pruned at startup (FR3.2)', () => {
+    renderPanel({ status: statusOf({ prunedMenuItems: 3 }) })
+
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('適用中の DSL のメニューの一部を表示していません')
+    expect(screen.getByTestId('dsl-status-pruned')).toHaveTextContent(
+      `メニューの深さの上限（${MENU_DEPTH_LIMIT} 段）を超える項目を 3 件落としました`,
+    )
+    expect(within(alert).queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('dsl-status-applied')).toHaveTextContent('3f9a1c000000…')
+  })
+
+  it('shows no pruned warning when nothing was pruned, and shows it in English', () => {
+    const { unmount } = renderPanel({ status: statusOf({ prunedMenuItems: 0 }) })
+
+    expect(screen.queryByTestId('dsl-status-pruned')).not.toBeInTheDocument()
+    unmount()
+
+    renderPanel({ status: statusOf({ prunedMenuItems: 1 }) }, ['en-US'])
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Part of the menu of the applied DSL is not shown',
+    )
+    expect(screen.getByTestId('dsl-status-pruned')).toHaveTextContent(
+      '1 menu items deeper than the depth limit (5 levels) were dropped',
+    )
+  })
+
+  it('has no accessibility violations with the pruned warning', async () => {
+    const { container } = renderPanel({ status: statusOf({ prunedMenuItems: 2 }) })
 
     expect(await axe(container)).toHaveNoViolations()
   })

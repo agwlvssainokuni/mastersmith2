@@ -55,6 +55,7 @@ export function statusOf(overrides: Partial<DslStatus> = {}): DslStatus {
     },
     preview: previewRef(),
     appliedUnreadable: false,
+    prunedMenuItems: 0,
     ...overrides,
   }
 }

@@ -92,6 +92,7 @@ const STATUS_SAMPLE: DslStatus = {
     at: '2026-10-01T00:00:00Z',
   },
   appliedUnreadable: true,
+  prunedMenuItems: 0,
 }
 
 /** 読めないプレビューの誤りの一覧の見本（422 DSL_INVALID の本文の total・errors） */

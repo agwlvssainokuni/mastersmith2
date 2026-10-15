@@ -24,8 +24,17 @@ import java.util.Objects;
  * @param preview 今のプレビュー（無ければ null）
  * @param appliedUnreadable 適用中の版を起動時に今の書式で読めず、適用中の DSL が使われていないなら true（U2 dsl-v2 の BR3.6、
  *     entities.md の DslStatusV2。判定は NFR 設計の 4.8 のとおり起動時に読めなかった版の ID との比べ）
+ * @param prunedMenuItems 適用中の版を起動時に読んだときに落とした、深さの上限を超えるメニューの項目の数（落としていなければ 0。
+ *     Intent 261015-deps-ui-carryover の FR3.2。判定は {@code appliedUnreadable} と同じく起動時に覚えた版の ID との比べ）
  */
-public record DslStatus(Applied applied, Preview preview, boolean appliedUnreadable) {
+public record DslStatus(Applied applied, Preview preview, boolean appliedUnreadable, int prunedMenuItems) {
+
+    /** 落とした項目の数が負でないことを確かめる。 */
+    public DslStatus {
+        if (prunedMenuItems < 0) {
+            throw new IllegalArgumentException("prunedMenuItems は 0 以上です");
+        }
+    }
 
     /**
      * 適用中の版と、適用した管理者。

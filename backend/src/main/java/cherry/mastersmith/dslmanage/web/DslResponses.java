@@ -90,8 +90,11 @@ public final class DslResponses {
      * @param applied 適用中の版（無ければ null）
      * @param preview 今のプレビュー（無ければ null）
      * @param appliedUnreadable 適用中の版を起動時に今の書式で読めず、適用中の DSL が使われていないなら true
+     * @param prunedMenuItems 適用中の版を起動時に読んだときに落とした、深さの上限を超えるメニューの項目の数（落としていなければ 0。
+     *     Intent 261015-deps-ui-carryover の FR3.2 で足した）
      */
-    public record DslStatusResponse(AppliedRefResponse applied, PreviewRefResponse preview, boolean appliedUnreadable) {
+    public record DslStatusResponse(
+            AppliedRefResponse applied, PreviewRefResponse preview, boolean appliedUnreadable, int prunedMenuItems) {
 
         static DslStatusResponse from(DslStatus status) {
             return new DslStatusResponse(
@@ -100,7 +103,8 @@ public final class DslResponses {
                             ? null
                             : PreviewRefResponse.from(
                                     status.preview().ref(), status.preview().by()),
-                    status.appliedUnreadable());
+                    status.appliedUnreadable(),
+                    status.prunedMenuItems());
         }
     }
 

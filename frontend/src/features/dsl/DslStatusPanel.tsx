@@ -17,6 +17,7 @@
 // 今の状態（interaction-spec.md の DslStatusPanel、BR3.1・BR5.10・BR6.3、AC3.1.6・AC3.1.7）。
 // 適用中とプレビューの識別・出どころ・人・日時を示し、スキーマの読み込みのボタンを持つ。どのタブでも画面の上部に示す。
 // 適用中の DSL を今の書式（版 2）で読めないときは、注意（閉じるボタンなし）を出す（U2 dsl-v2 の BR7.2・F2）。
+// 起動時に深すぎるメニューの項目を落としたときも、数と上限の値の注意を出す（Intent 261015-deps-ui-carryover の FR3.2）。
 import { Alert, Button, Card } from 'make-you-chic-ui'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { DslStatus, DslUser } from './api/types'
@@ -26,6 +27,12 @@ import type { LoadState } from './loadState'
 import { useDslText, type DslText } from './useDslText'
 import './DslCommon.css'
 import './DslStatusPanel.css'
+
+/**
+ * DSL のメニューの深さの上限（段）。サーバーの DslFormat.MAX_MENU_DEPTH と同じ値で、落とした項目の警告の文言にだけ使う
+ * （Intent 261015-deps-ui-carryover の FR3.2）。
+ */
+export const MENU_DEPTH_LIMIT = 5
 
 export interface DslStatusPanelProps {
   /** 今の状態（読めていなければ null） */
@@ -80,6 +87,16 @@ export function DslStatusPanel({
         {loadState === 'loaded' && status?.appliedUnreadable === true && (
           <Alert variant="warning" title={t('dsl.status.unreadableTitle')}>
             <span data-testid="dsl-status-unreadable">{t('dsl.status.unreadableBody')}</span>
+          </Alert>
+        )}
+        {loadState === 'loaded' && status !== null && status.prunedMenuItems > 0 && (
+          <Alert variant="warning" title={t('dsl.status.prunedTitle')}>
+            <span data-testid="dsl-status-pruned">
+              {t('dsl.status.prunedBody', {
+                count: status.prunedMenuItems,
+                limit: MENU_DEPTH_LIMIT,
+              })}
+            </span>
           </Alert>
         )}
         {loadState === 'loaded' && status && (

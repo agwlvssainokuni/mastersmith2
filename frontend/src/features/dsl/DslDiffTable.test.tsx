@@ -145,6 +145,22 @@ describe('DslDiffTable', () => {
     renderDsl(<DslDiffTable diff={diffOf([{ name: 'a', change: 'UNCHANGED', columns: [] }])} />)
 
     expect(screen.getByTestId('dsl-diff-none')).toHaveTextContent('違いはありません')
+    expect(screen.getByTestId('dsl-diff-none')).toHaveTextContent('メニューの違いは比べていません')
+  })
+
+  it('tells that only schemas, tables and columns are compared, not menus, in Japanese and English (FR3.2)', () => {
+    const { unmount } = renderDsl(<DslDiffTable diff={diffOf()} />)
+
+    expect(screen.getByTestId('dsl-diff-scope')).toHaveTextContent(
+      'スキーマ・テーブル・カラムの違いを比べます。メニューの違いは比べません。',
+    )
+    unmount()
+
+    renderDsl(<DslDiffTable diff={diffOf([{ name: 'a', change: 'UNCHANGED', columns: [] }])} />, [
+      'en-US',
+    ])
+    expect(screen.getByTestId('dsl-diff-scope')).toHaveTextContent('Menus are not compared.')
+    expect(screen.getByTestId('dsl-diff-none')).toHaveTextContent('(menus are not compared)')
   })
 
   it('keeps table and column names that look like HTML as text and does not translate them', async () => {

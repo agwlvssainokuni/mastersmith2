@@ -73,6 +73,7 @@ describe('DslPreviewPanel', () => {
     expect(screen.getByTestId('dsl-preview-column-count')).toHaveTextContent('カラム 1318')
     expect(screen.getByTestId('dsl-preview-missing-count')).toHaveTextContent('表示名の未設定 1件')
     expect(screen.getByTestId('dsl-diff-table')).toBeInTheDocument()
+    expect(screen.getByTestId('dsl-diff-scope')).toHaveTextContent('メニューの違いは比べません')
     expect(screen.getByTestId('dsl-warning-list')).toBeInTheDocument()
     expect(screen.getByTestId('dsl-menu-node-0.0')).toHaveTextContent('部署（sales.dept_mst）')
     const headings = screen.getAllByRole('heading').map((h) => `${h.tagName}:${h.textContent}`)

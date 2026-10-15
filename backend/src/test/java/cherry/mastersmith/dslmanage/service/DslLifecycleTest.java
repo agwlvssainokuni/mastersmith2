@@ -418,7 +418,7 @@ class DslLifecycleTest {
         DslAppliedRef newer = new DslAppliedRef(UUID.randomUUID(), "d".repeat(64), DslSource.PASTE, ADMIN, NOW);
         DslAppliedRef older =
                 new DslAppliedRef(UUID.randomUUID(), "e".repeat(64), DslSource.UPLOAD, ADMIN, NOW.minusSeconds(60));
-        assertThat(lifecycle.status()).isEqualTo(new DslStatus(null, null, false));
+        assertThat(lifecycle.status()).isEqualTo(new DslStatus(null, null, false, 0));
 
         when(revisions.findCurrentRef()).thenReturn(Optional.of(newer));
         when(revisions.findRefsNewestFirst()).thenReturn(List.of(newer, older));

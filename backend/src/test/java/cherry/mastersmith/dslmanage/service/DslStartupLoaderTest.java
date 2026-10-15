@@ -161,5 +161,33 @@ class DslStartupLoaderTest {
                     .satisfies(item -> assertThat(item.label().ja()).isEqualTo("見えるメニュー"));
         });
         assertThat(unreadable.isUnreadable(id)).isFalse();
+        assertThat(unreadable.prunedMenuItems(id))
+                .as("the pruned count is remembered for the status")
+                .isEqualTo(7);
+        assertThat(unreadable.prunedMenuItems(UUID.randomUUID())).isZero();
+    }
+
+    @Test
+    @DisplayName("a revision read without pruning clears an earlier pruned count")
+    void readWithoutPruningClearsTheCount() {
+        byte[] body = DslYaml.dsl().table("t", column("c")).bytes();
+        UUID id = stored(body);
+        unreadable.rememberPruned(id, 3);
+
+        loader.afterSingletonsInstantiated();
+
+        assertThat(unreadable.prunedMenuItems(id)).isZero();
+    }
+
+    @Test
+    @DisplayName("an unreadable revision clears an earlier pruned count")
+    void unreadableRevisionClearsTheCount() {
+        UUID id = stored("version: 1\n".getBytes(StandardCharsets.UTF_8));
+        unreadable.rememberPruned(id, 3);
+
+        loader.afterSingletonsInstantiated();
+
+        assertThat(unreadable.prunedMenuItems(id)).isZero();
+        assertThat(unreadable.isUnreadable(id)).isTrue();
     }
 }

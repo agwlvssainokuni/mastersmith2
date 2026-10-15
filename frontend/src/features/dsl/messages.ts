@@ -43,6 +43,9 @@ const ja: Record<string, string> = {
   'dsl.status.unreadableTitle': '適用中の DSL は使われていません',
   'dsl.status.unreadableBody':
     '適用中の DSL は今の書式（版 2）で読めないため、権限とメニューでは DSL が無い扱いです。スキーマを読み込み、プレビューを確かめて適用し直してください。',
+  'dsl.status.prunedTitle': '適用中の DSL のメニューの一部を表示していません',
+  'dsl.status.prunedBody':
+    '起動時に、メニューの深さの上限（{{limit}} 段）を超える項目を {{count}} 件落としました。DSL のメニューを {{limit}} 段以内に直して、投入と適用をし直してください。',
   'dsl.user.unknown': '不明',
 
   'dsl.source.GENERATED': '生成',
@@ -99,7 +102,9 @@ const ja: Record<string, string> = {
   'dsl.diff.noApplied':
     '適用中の DSL がまだ無いため、すべてのテーブルとカラムを「増えた」として示します。',
   'dsl.diff.showAll': 'すべて表示',
-  'dsl.diff.none': '適用中の DSL と違いはありません',
+  'dsl.diff.none':
+    'スキーマ・テーブル・カラムに、適用中の DSL との違いはありません（メニューの違いは比べていません）',
+  'dsl.diff.scope': 'スキーマ・テーブル・カラムの違いを比べます。メニューの違いは比べません。',
   'dsl.diff.tableLabel': 'スキーマ・テーブルごとの違い',
   'dsl.diff.schemaHeading': 'スキーマ {{name}}（{{label}}）',
   'dsl.diff.table': 'テーブル',
@@ -256,6 +261,9 @@ const en: Record<string, string> = {
   'dsl.status.unreadableTitle': 'The applied DSL is not in use',
   'dsl.status.unreadableBody':
     'The applied DSL cannot be read in the current format (version 2), so permissions and menus treat it as absent. Load the schema, check the preview and apply it again.',
+  'dsl.status.prunedTitle': 'Part of the menu of the applied DSL is not shown',
+  'dsl.status.prunedBody':
+    'At startup, {{count}} menu items deeper than the depth limit ({{limit}} levels) were dropped. Fix the menu of the DSL to within {{limit}} levels, then submit and apply it again.',
   'dsl.user.unknown': 'Unknown',
 
   'dsl.source.GENERATED': 'Generated',
@@ -311,7 +319,9 @@ const en: Record<string, string> = {
   'dsl.diff.counts': 'Added {{added}} · Removed {{removed}} · Changed {{changed}}',
   'dsl.diff.noApplied': 'No DSL has been applied yet, so every table and column is shown as added.',
   'dsl.diff.showAll': 'Show all',
-  'dsl.diff.none': 'There are no differences from the applied DSL',
+  'dsl.diff.none':
+    'There are no differences in schemas, tables or columns from the applied DSL (menus are not compared)',
+  'dsl.diff.scope': 'Schemas, tables and columns are compared. Menus are not compared.',
   'dsl.diff.tableLabel': 'Differences by schema and table',
   'dsl.diff.schemaHeading': 'Schema {{name}} ({{label}})',
   'dsl.diff.table': 'Table',

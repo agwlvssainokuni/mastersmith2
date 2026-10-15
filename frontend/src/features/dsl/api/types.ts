@@ -57,6 +57,11 @@ export interface DslStatus {
   preview: PreviewRef | null
   /** 適用中の DSL を起動時に今の書式（版 2）で読めず、使われていないなら true（BR3.6） */
   appliedUnreadable: boolean
+  /**
+   * 適用中の DSL を起動時に読んだときに落とした、深さの上限を超えるメニューの項目の数（落としていなければ 0。
+   * Intent 261015-deps-ui-carryover の FR3.2）
+   */
+  prunedMenuItems: number
 }
 
 /** 表示言語ごとの表示名 */

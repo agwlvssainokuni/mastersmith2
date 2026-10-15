@@ -38,7 +38,8 @@ import org.springframework.stereotype.Component;
  * <p>書式の版 2（U2 dsl-v2 の BR2.3・BR3.1、NFR5.3・NFR5.4）では、起動時の読み方（{@link DslReader#readAtStartup(byte[])}、
  * メニューの深さだけを外す）で読む。深すぎる枝を落としたときは WARN を1件（識別の先頭12文字・落とした項目の数・上限の値の3つの
  * キーだけ）出す。読めなかった版の ID は {@link UnreadableAppliedRevision} に覚え、読めた・適用中が無いときは空にする（今の状態の
- * {@code appliedUnreadable} の元）。
+ * {@code appliedUnreadable} の元）。深すぎる枝を落としたときは、版の ID と落とした項目の数を同じ置き場に覚える（今の状態の
+ * {@code prunedMenuItems} の元。Intent 261015-deps-ui-carryover の FR3.2）。
  */
 @Component
 public class DslStartupLoader implements SmartInitializingSingleton {
@@ -103,7 +104,11 @@ public class DslStartupLoader implements SmartInitializingSingleton {
                             .log(PRUNED_MESSAGE);
                 }
                 activeDslModelHolder.replace(valid.model());
-                unreadableAppliedRevision.clear();
+                if (valid.prunedMenuItems() > 0) {
+                    unreadableAppliedRevision.rememberPruned(content.ref().revisionId(), valid.prunedMenuItems());
+                } else {
+                    unreadableAppliedRevision.clear();
+                }
             }
             case DslStartupReadResult.Invalid invalid -> {
                 LOGGER.atError()

@@ -122,6 +122,10 @@ export function DslDiffTable({ diff }: DslDiffTableProps) {
 
   return (
     <div className="dsl-diff" data-testid="dsl-diff-table">
+      {/* 違いはスキーマ・テーブル・カラムだけを比べ、メニューは比べない（サーバーの DslDiffCalculator。Intent 261015 の FR3.2） */}
+      <p className="dsl-muted" data-testid="dsl-diff-scope">
+        {t('dsl.diff.scope')}
+      </p>
       {!diff.appliedExists && (
         <p className="dsl-muted" data-testid="dsl-diff-no-applied">
           {t('dsl.diff.noApplied')}
