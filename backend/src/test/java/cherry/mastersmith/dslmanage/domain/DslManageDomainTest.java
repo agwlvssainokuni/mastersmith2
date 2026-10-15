@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cherry.mastersmith.dsl.domain.DisplayName;
+import cherry.mastersmith.dsl.domain.DslErrorKind;
 import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dslmanage.domain.PreviewView.ColumnDiff;
 import cherry.mastersmith.dslmanage.domain.PreviewView.DiffChange;
@@ -135,5 +136,26 @@ class DslManageDomainTest {
         assertThatThrownBy(() -> new DslOperationEvent(
                         DslOperationType.DSL_GENERATED, 1L, AT, null, null, "SYNTAX", "192.0.2.1", null, null))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName(
+            "an error item prints its kind and position but neither the path nor the built message")
+    void errorItemToStringHidesValues() {
+        DslErrorItem item = new DslErrorItem(
+                DslErrorKind.DUPLICATE_KEY, 3, 1, "schemas.MARKER_PATH", "キー「MARKER_MESSAGE」が重なっています。");
+
+        assertThat(item.toString())
+                .isEqualTo("DslErrorItem[kind=DUPLICATE_KEY, line=3, column=1]")
+                .doesNotContain("MARKER_PATH", "MARKER_MESSAGE");
+        assertThat(item.path()).isEqualTo("schemas.MARKER_PATH");
+        assertThat(item.message()).contains("MARKER_MESSAGE");
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("an error item without a position prints null for the line and the column")
+    void errorItemWithoutPosition() {
+        assertThat(new DslErrorItem(DslErrorKind.SYNTAX, null, null, null, "文言").toString())
+                .isEqualTo("DslErrorItem[kind=SYNTAX, line=null, column=null]");
     }
 }

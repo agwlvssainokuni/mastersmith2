@@ -52,6 +52,20 @@ public record DslError(
     }
 
     /**
+     * 種類・位置・文言の鍵と、埋める値の件数だけを出す（Intent 261015-deps-ui-carryover の FR3.1）。
+     *
+     * <p>{@code TraceAspect} が読み込みの結果（{@code DslReadResult.Invalid} など）を TRACE のログに文字列で出すため、利用者が書いた値
+     * （{@code path} の中の名前と埋める値）は出さない。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "DslError[kind=" + kind + ", line=" + line + ", column=" + column + ", messageKey=" + messageKey
+                + ", messageArgs=" + messageArgs.size() + " items]";
+    }
+
+    /**
      * 利用者が書いた値を、埋める値として使える長さ（先頭 {@link DslFormat#MAX_ARGUMENT_LENGTH} 文字）に切る。
      *
      * @param value 利用者が書いた値（null は空の文字列にする）

@@ -35,4 +35,17 @@ public record DslErrorItem(DslErrorKind kind, Integer line, Integer column, Stri
         Objects.requireNonNull(kind, "kind は必須です");
         Objects.requireNonNull(message, "message は必須です");
     }
+
+    /**
+     * 種類と位置だけを出す（Intent 261015-deps-ui-carryover の FR3.1）。
+     *
+     * <p>{@code TraceAspect} が誤りの応答（{@code ProblemDetail} の項目）を TRACE のログに文字列で出すため、利用者が書いた値を含みうる
+     * {@code path} と、それを埋めて組み立てた {@code message} は出さない。応答の本文は項目の値をそのまま載せる（この文字列は使わない）。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "DslErrorItem[kind=" + kind + ", line=" + line + ", column=" + column + "]";
+    }
 }
