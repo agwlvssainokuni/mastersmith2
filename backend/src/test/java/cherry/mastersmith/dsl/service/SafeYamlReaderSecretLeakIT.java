@@ -47,7 +47,7 @@ class SafeYamlReaderSecretLeakIT {
 
     private static final String MARKER = "LEAK_MARKER_7f3a";
 
-    private static final SafeYamlLimits LIMITS = new SafeYamlLimits(1024, 10, 0, 1000);
+    private static final SafeYamlLimits LIMITS = new SafeYamlLimits(1024, 10, 0, 1000, 1024);
 
     @TempDir
     static Path tempDir;

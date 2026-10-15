@@ -49,8 +49,12 @@ public class DefaultSafeYamlReader implements SafeYamlReader {
         if (yamlBytes.length > limits.maxBytes()) {
             return new SafeYamlResult.Rejected(SafeYamlRejectionKind.TOO_LARGE, null, null, null);
         }
-        YamlLimits yamlLimits =
-                new YamlLimits(limits.maxBytes(), limits.maxDepth(), limits.maxAliases(), limits.maxExpandedNodes());
+        YamlLimits yamlLimits = new YamlLimits(
+                limits.maxBytes(),
+                limits.maxDepth(),
+                limits.maxAliases(),
+                limits.maxExpandedNodes(),
+                limits.maxLineLength());
         return switch (parser.parse(yamlBytes, yamlLimits)) {
             case YamlParseResult.Parsed parsed ->
                 new SafeYamlResult.Parsed(

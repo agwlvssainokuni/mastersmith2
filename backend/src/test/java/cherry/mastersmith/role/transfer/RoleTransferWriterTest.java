@@ -15,12 +15,17 @@
  */
 package cherry.mastersmith.role.transfer;
 
+import static cherry.mastersmith.role.testsupport.TransferYamlTrees.read;
 import static cherry.mastersmith.role.testsupport.TransferYamlTrees.tree;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.dsl.service.SafeYamlResult;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.domain.PermissionTarget;
+import cherry.mastersmith.role.domain.PermissionTargetName;
 import cherry.mastersmith.role.domain.PermissionValues;
+import cherry.mastersmith.role.domain.RoleName;
+import cherry.mastersmith.role.service.RoleTransferLimits;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -178,5 +183,54 @@ class RoleTransferWriterTest {
                 .contains("      S:\n        tables:\n          T:\n            columns:\n              C: READ\n");
         assertThat(yaml).doesNotContain("D:");
         assertThat(new TransferRoleSettings("営業", Map.of()).toString()).doesNotContain("営業");
+    }
+
+    private static int longestLine(String yaml) {
+        return yaml.lines()
+                .mapToInt(line -> line.codePointCount(0, line.length()))
+                .max()
+                .orElse(0);
+    }
+
+    /** 逃がす文字（引用符・逆斜線）を含み、指定の長さ（コードポイント）ちょうどの名前。 */
+    private static String escapedName(String head, int length) {
+        StringBuilder name = new StringBuilder(head);
+        while (name.codePointCount(0, name.length()) < length) {
+            name.append(name.length() % 2 == 0 ? '"' : '\\');
+        }
+        return name.toString();
+    }
+
+    @Test
+    @DisplayName("names at their length limits with escaped characters are written within the line limit and read back")
+    void longestNamesStayWithinTheLineLimit() {
+        String role = escapedName("r", RoleName.MAX_CODE_POINTS);
+        String schema = escapedName("s", PermissionTargetName.MAX_CODE_POINTS);
+        String table = escapedName("t", PermissionTargetName.MAX_CODE_POINTS);
+        String column = escapedName("c", PermissionTargetName.MAX_CODE_POINTS);
+        PermissionTarget target = PermissionTarget.column(schema, table, column);
+
+        String yaml = RoleTransferWriter.write(List.of(
+                new TransferRoleSettings(role, Map.of(target, new PermissionValues(MainPermission.FULL, null, null)))));
+
+        assertThat(longestLine(yaml)).isLessThanOrEqualTo(RoleTransferLimits.MAX_LINE_LENGTH);
+        RoleTransferDocument document = readBack(yaml);
+        assertThat(document.roles().getFirst().name().value()).isEqualTo(role);
+        assertThat(document.roles().getFirst().settings()).containsKey(target);
+    }
+
+    @Test
+    @DisplayName(
+            "names at the name limit written with the longest escape are still within the line limit and read back")
+    void longestEscapedNamesAreReadable() {
+        String longest = "x" + "\u2028".repeat(PermissionTargetName.MAX_CODE_POINTS - 1);
+        PermissionTarget target = PermissionTarget.column(longest, longest, longest);
+
+        String yaml = RoleTransferWriter.write(List.of(new TransferRoleSettings(
+                escapedName("r", RoleName.MAX_CODE_POINTS),
+                Map.of(target, new PermissionValues(MainPermission.FULL, null, null)))));
+
+        assertThat(longestLine(yaml)).isGreaterThan(700).isLessThanOrEqualTo(RoleTransferLimits.MAX_LINE_LENGTH);
+        assertThat(read(yaml)).isInstanceOf(SafeYamlResult.Parsed.class);
     }
 }

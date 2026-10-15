@@ -27,6 +27,7 @@ import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.TransferError;
 import cherry.mastersmith.role.domain.TransferError.Reason;
+import cherry.mastersmith.role.testsupport.TransferYamlTrees;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -342,7 +343,8 @@ class RoleTransferReaderTest {
     }
 
     @Test
-    @DisplayName("tags, deep nesting, collection aliases and syntax errors are refused by the safe reader")
+    @DisplayName(
+            "tags, deep nesting, collection aliases, syntax errors and too long lines are refused by the safe reader")
     void realRefusals() {
         assertThat(rejected("version: 1\nroles: !!map {}\n").kind()).isEqualTo(SafeYamlRejectionKind.TAG_NOT_ALLOWED);
         assertThat(rejected("version: 1\nroles: {a: &x {schemas: {}}, b: *x}\n").kind())
@@ -351,16 +353,30 @@ class RoleTransferReaderTest {
                         .kind())
                 .isEqualTo(SafeYamlRejectionKind.TOO_DEEP);
         assertThat(rejected("version: 1\nroles: {\n").kind()).isEqualTo(SafeYamlRejectionKind.SYNTAX);
+        assertThat(rejected("version: 1\nroles: {}\n#" + "x".repeat(65_536) + "\n"))
+                .as("1行の長さの上限（65,536）を超える行は大きさの区分で拒否する")
+                .satisfies(refusal -> {
+                    assertThat(refusal.kind()).isEqualTo(SafeYamlRejectionKind.TOO_LARGE);
+                    assertThat(refusal.line()).isEqualTo(3);
+                });
+        assertThat(TransferYamlTrees.read("version: 1\nroles: {}\n#" + "x".repeat(65_535) + "\n"))
+                .isInstanceOf(SafeYamlResult.Parsed.class);
         assertThatThrownBy(() -> RoleTransferReader.rejected(
                         new SafeYamlResult.Rejected(SafeYamlRejectionKind.TOO_LARGE, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new TransferErrors(List.of())).isInstanceOf(IllegalArgumentException.class);
     }
 
-    /** 展開後の節の数がちょうど nodes になる流れの書き方の並び（根・2つのキー・版の値・並び = 5 節と要素。計画の D-38）。 */
+    /**
+     * 展開後の節の数がちょうど nodes になる流れの書き方の並び（根・2つのキー・版の値・並び = 5 節と要素。計画の D-38）。1行の長さの
+     * 上限（65,536）の内に収めるため、要素 1,000 個ごとに改行して続ける。
+     */
     private static String flowSequence(int nodes) {
         return "version: 1\nroles: ["
-                + IntStream.range(0, nodes - 5).mapToObj(i -> "1").collect(Collectors.joining(",")) + "]\n";
+                + IntStream.range(0, nodes - 5)
+                        .mapToObj(i -> i > 0 && i % 1_000 == 0 ? "\n  1" : "1")
+                        .collect(Collectors.joining(","))
+                + "]\n";
     }
 
     @Test

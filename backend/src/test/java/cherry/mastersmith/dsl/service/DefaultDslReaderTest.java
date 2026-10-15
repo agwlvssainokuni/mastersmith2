@@ -189,6 +189,43 @@ class DefaultDslReaderTest {
         });
     }
 
+    /** 正しい見本の末尾に、指定の長さ（コードポイント）のコメントの1行を足す。 */
+    private static String withCommentLine(int length) {
+        return validYaml() + "#" + "x".repeat(length - 1) + "\n";
+    }
+
+    @Test
+    @DisplayName("a line of exactly the line limit is read and one more code point is a SIZE_LIMIT error at that line")
+    void lineLengthLimitOnSubmit() {
+        assertThat(read(withCommentLine(DslFormat.MAX_LINE_LENGTH))).isInstanceOf(DslReadResult.Valid.class);
+
+        List<DslError> errors = errors(withCommentLine(DslFormat.MAX_LINE_LENGTH + 1));
+
+        int expectedLine = (int) validYaml().lines().count() + 1;
+        assertThat(errors).singleElement().satisfies(error -> {
+            assertThat(error.kind()).isEqualTo(DslErrorKind.SIZE_LIMIT);
+            assertThat(error.messageKey()).isEqualTo(DslMessageKeys.LINE_LIMIT);
+            assertThat(error.messageArgs()).containsExactly(String.valueOf(DslFormat.MAX_LINE_LENGTH));
+            assertThat(error.line()).isEqualTo(expectedLine);
+            assertThat(error.column()).isEqualTo(DslFormat.MAX_LINE_LENGTH + 1);
+            assertThat(error.path()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("reading at startup also rejects a line over the limit, so the applied DSL becomes unreadable")
+    void lineLengthLimitAtStartup() {
+        assertThat(readAtStartup(withCommentLine(DslFormat.MAX_LINE_LENGTH)))
+                .isInstanceOf(DslStartupReadResult.Valid.class);
+        assertThat(readAtStartup(withCommentLine(DslFormat.MAX_LINE_LENGTH + 1)))
+                .isInstanceOfSatisfying(
+                        DslStartupReadResult.Invalid.class,
+                        invalid -> assertThat(invalid.errors())
+                                .singleElement()
+                                .extracting(DslError::messageKey)
+                                .isEqualTo(DslMessageKeys.LINE_LIMIT));
+    }
+
     @Test
     @DisplayName(
             "the hash is the same for the same bytes, different for one different byte, and 64 lower case hex digits")

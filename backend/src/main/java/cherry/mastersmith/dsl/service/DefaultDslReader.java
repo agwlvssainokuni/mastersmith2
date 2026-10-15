@@ -57,7 +57,11 @@ public class DefaultDslReader implements DslReader {
 
     /** DSL の読み込みの上限（{@link DslFormat} の値。U2 の機能設計の BR6.6）。 */
     static final YamlLimits DSL_LIMITS = new YamlLimits(
-            DslFormat.MAX_BYTES, DslFormat.MAX_DEPTH, DslFormat.MAX_COLLECTION_ALIASES, DslFormat.MAX_EXPANDED_NODES);
+            DslFormat.MAX_BYTES,
+            DslFormat.MAX_DEPTH,
+            DslFormat.MAX_COLLECTION_ALIASES,
+            DslFormat.MAX_EXPANDED_NODES,
+            DslFormat.MAX_LINE_LENGTH);
 
     private final SafeYamlParser parser;
 

@@ -26,6 +26,7 @@ import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.RowLockHolder;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
+import cherry.mastersmith.group.testsupport.GroupFixtures;
 import cherry.mastersmith.group.testsupport.UncommittedWrite;
 import cherry.mastersmith.role.service.RoleTransferSlot;
 import cherry.mastersmith.role.testsupport.RoleActors;
@@ -33,6 +34,7 @@ import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.role.testsupport.RoleApi;
 import cherry.mastersmith.role.testsupport.RoleDslFixture;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
+import cherry.mastersmith.user.repository.UserRepository;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
@@ -104,6 +106,9 @@ class RoleBusyLogTraceIT {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    UserRepository users;
 
     private RoleApi api;
 
@@ -203,5 +208,42 @@ class RoleBusyLogTraceIT {
                 .doesNotContainKey("exceptionClass");
         assertThat(ALLOWED_KEYS).containsAll(warnings.getFirst().keySet());
         assertThat(logs).doesNotContain("LEAKCHECK_ROLE_7f3a");
+    }
+
+    @Test
+    @DisplayName(
+            "a role assignment that waits too long for the group row is GROUP_BUSY with exactly one GROUP_ROW warning"
+                    + " carrying its trace id (FR10)")
+    void groupBusyOnAssignment(CapturedOutput output) throws Exception {
+        long roleId = fixtures.role(RoleFixtures.uniqueName("ログ 割り当て"));
+        String groupName = GroupFixtures.uniqueName("ログ グループ");
+        long groupId = new GroupFixtures(users, jdbc).group(groupName);
+        String url = TestDatabase.url(tempDir);
+
+        int offset = output.getOut().length();
+        HttpResponse<String> response;
+        try (RowLockHolder held =
+                RowLockHolder.hold(url, "SELECT group_id FROM groups WHERE group_id = ? FOR UPDATE", groupId)) {
+            assertThat(held.lockedRows()).isEqualTo(1);
+            response = api.assignGroup(admin.token(), roleId, groupId);
+        }
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(409);
+        Map<String, Object> body = HttpTestClient.json(response);
+        assertThat(body).containsEntry("code", "GROUP_BUSY");
+        String traceId = String.valueOf(body.get("traceId"));
+        String logs = output.getOut().substring(offset) + output.getErr();
+        List<Map<String, Object>> warnings = JsonLogRecords.parse(logs).stream()
+                .filter(record -> LOCK_WARN_MESSAGE.equals(record.get("message")))
+                .filter(record -> traceId.equals(record.get("traceId")))
+                .toList();
+        assertThat(warnings).as("応答の traceId の排他の WARN がちょうど1行").hasSize(1);
+        assertThat(warnings.getFirst())
+                .containsEntry("level", "WARN")
+                .containsEntry("lockKind", "GROUP_ROW")
+                .containsKey("exceptionClass");
+        assertThat(ALLOWED_KEYS).as("WARN の項目").containsAll(warnings.getFirst().keySet());
+        assertThat(logs).doesNotContain(groupName).doesNotContain("Timeout trying to lock");
+        assertThat(fixtures.assignmentRows(roleId)).isZero();
     }
 }

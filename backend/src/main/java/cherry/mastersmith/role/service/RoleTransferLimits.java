@@ -15,12 +15,14 @@
  */
 package cherry.mastersmith.role.service;
 
+import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.service.SafeYamlLimits;
 
 /**
  * 権限の YAML の確かめ・適用の上限（BR9.3・NFR1.5・NFR2.9、{@code entities.md} の RoleTransferLimits）。大きさは道ごとの本文の上限
  * （{@code RequestBodyLimitRoute}）と同じ値（計画の D-21。値は設定 {@code mastersmith.role-transfer.max-bytes}、既定 5 MiB）。深さ・
- * コレクションの別名・展開後の節の数の上限は決まった値。
+ * コレクションの別名・展開後の節の数・1行の長さの上限は決まった値（1行の長さは DSL と同じ {@link DslFormat#MAX_LINE_LENGTH}。
+ * Intent 261015-deps-ui-carryover の FR9.2。超えたら大きさの区分 {@code TOO_LARGE} で拒否する。計画の D-3）。
  *
  * @param maxBytes 本文の大きさの上限（バイト）
  */
@@ -37,6 +39,9 @@ public record RoleTransferLimits(int maxBytes) {
 
     /** 別名を展開した後の節の数の上限。 */
     public static final int MAX_EXPANDED_NODES = 500_000;
+
+    /** 1行の長さの上限（コードポイント。DSL と同じ値）。 */
+    public static final int MAX_LINE_LENGTH = DslFormat.MAX_LINE_LENGTH;
 
     /** 大きさが 1 以上であることを確かめる。 */
     public RoleTransferLimits {
@@ -60,6 +65,6 @@ public record RoleTransferLimits(int maxBytes) {
      * @return 読み込みの上限
      */
     public SafeYamlLimits toSafeYamlLimits() {
-        return new SafeYamlLimits(maxBytes, MAX_DEPTH, MAX_ALIASES, MAX_EXPANDED_NODES);
+        return new SafeYamlLimits(maxBytes, MAX_DEPTH, MAX_ALIASES, MAX_EXPANDED_NODES, MAX_LINE_LENGTH);
     }
 }

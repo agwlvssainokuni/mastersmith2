@@ -130,9 +130,10 @@ class DslTreeBuilderTest {
     }
 
     @Test
-    @DisplayName("control characters are removed from comments while line feeds, tabs and long comments stay")
+    @DisplayName(
+            "control characters are removed from comments while line feeds, tabs and comments up to the label limit stay")
     void controlCharactersInComments() {
-        String longComment = "長".repeat(10_000);
+        String longComment = "長".repeat(DslTreeBuilder.MAX_LABEL_CODE_POINTS);
         DslModel model = model(schema(table(
                 "t\u0001",
                 "表\u0000の\u007Fコメ\u0085ント\u009F\r",
@@ -146,7 +147,7 @@ class DslTreeBuilderTest {
         assertThat(table.label().ja()).isEqualTo("表のコメント");
         assertThat(table.label().en()).as("物理名は変えない").isEqualTo("t\u0001");
         assertThat(table.columns().get("a").label().ja()).isEqualTo("1行目\n2行目\tタブ");
-        assertThat(table.columns().get("b").label().ja()).as("長さは切り詰めない").isEqualTo(longComment);
+        assertThat(table.columns().get("b").label().ja()).as("上限ちょうどは切り詰めない").isEqualTo(longComment);
         assertThat(table.columns().get("c").label().ja())
                 .as("制御文字だけのコメントは無いものとして物理名")
                 .isEqualTo("c");
@@ -473,5 +474,28 @@ class DslTreeBuilderTest {
 
         assertThat(model.schema().name()).isEqualTo("Sales_DB");
         assertThat(model.findTable(new TableRef("Sales_DB", "emp"))).isPresent();
+    }
+
+    @Test
+    @DisplayName(
+            "a comment longer than the label limit is cut at the limit by code point and the DSL stays within the line limit")
+    void longCommentsAreCutAtTheLabelLimit() {
+        String longKanji = "長".repeat(10_000);
+        String longEmoji = "😀".repeat(DslTreeBuilder.MAX_LABEL_CODE_POINTS + 1);
+        byte[] yaml = generate(
+                schema(table("t", longKanji, List.of(), List.of(), new TargetColumn("a", INT, true, null, longEmoji))));
+
+        DslTable table = valid(READER, yaml).schema().tables().get("t");
+        String tableLabel = table.label().ja();
+        String columnLabel = table.columns().get("a").label().ja();
+        assertThat(tableLabel.codePointCount(0, tableLabel.length())).isEqualTo(DslTreeBuilder.MAX_LABEL_CODE_POINTS);
+        assertThat(longKanji).startsWith(tableLabel);
+        assertThat(columnLabel.codePointCount(0, columnLabel.length())).isEqualTo(DslTreeBuilder.MAX_LABEL_CODE_POINTS);
+        assertThat(columnLabel).isEqualTo("😀".repeat(DslTreeBuilder.MAX_LABEL_CODE_POINTS));
+        assertThat(new String(yaml, StandardCharsets.UTF_8).lines())
+                .allSatisfy(line -> assertThat(line.codePointCount(0, line.length()))
+                        .isLessThanOrEqualTo(cherry.mastersmith.dsl.domain.DslFormat.MAX_LINE_LENGTH));
+        assertThat(DslTreeBuilder.truncate(null)).isNull();
+        assertThat(DslTreeBuilder.truncate("短い")).isEqualTo("短い");
     }
 }

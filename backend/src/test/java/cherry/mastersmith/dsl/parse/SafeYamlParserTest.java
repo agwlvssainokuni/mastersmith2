@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.dsl.domain.DslError;
 import cherry.mastersmith.dsl.domain.DslErrorKind;
+import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslMessageKeys;
 import cherry.mastersmith.dsl.testsupport.DslSamples;
 import java.nio.charset.StandardCharsets;
@@ -252,5 +253,86 @@ class SafeYamlParserTest {
                 : null;
         assertThat(json).isNotNull();
         assertThat(json.get("version").intValue()).isEqualTo(2);
+    }
+
+    /** 1行の長さの上限だけを小さくした上限（ほかは DSL と同じ）。 */
+    private static YamlLimits lineLimit(int maxLineLength) {
+        return new YamlLimits(
+                DslFormat.MAX_BYTES,
+                DslFormat.MAX_DEPTH,
+                DslFormat.MAX_COLLECTION_ALIASES,
+                DslFormat.MAX_EXPANDED_NODES,
+                maxLineLength);
+    }
+
+    private YamlParseResult parse(String yaml, YamlLimits limits) {
+        return parser.parse(yaml.getBytes(StandardCharsets.UTF_8), limits);
+    }
+
+    @Test
+    @DisplayName("a line of exactly 65536 code points is accepted and 65537 is rejected as a size error at that line")
+    void lineLengthBoundary() {
+        String marker = "LEAK_MARKER_line_";
+        String exact = "k: " + marker + "a".repeat(DslFormat.MAX_LINE_LENGTH - 3 - marker.length());
+        assertThat(exact.codePointCount(0, exact.length())).isEqualTo(DslFormat.MAX_LINE_LENGTH);
+        assertThat(parsed("version: 2\n" + exact + "\n").json().get("k").asString())
+                .startsWith(marker);
+
+        DslError error = rejected("version: 2\n" + exact + "a\nnext: 1\n");
+
+        assertThat(error.kind()).isEqualTo(DslErrorKind.SIZE_LIMIT);
+        assertThat(error.messageKey()).isEqualTo(DslMessageKeys.LINE_LIMIT);
+        assertThat(error.messageArgs()).containsExactly(String.valueOf(DslFormat.MAX_LINE_LENGTH));
+        assertThat(error.line()).isEqualTo(2);
+        assertThat(error.column()).isEqualTo(DslFormat.MAX_LINE_LENGTH + 1);
+        assertThat(error.path()).isNull();
+        assertThat(error.toString()).doesNotContain(marker);
+    }
+
+    @Test
+    @DisplayName("CR LF and a lone CR end a line and are not counted in its length")
+    void lineBreaksAreNotCounted() {
+        assertThat(parse("a: 123\r\nbb: 12\rc: 1\n", lineLimit(6))).isInstanceOf(YamlParseResult.Parsed.class);
+
+        YamlParseResult result = parse("a: 123\r\nbb: 12\rccc: 1234\r\n", lineLimit(6));
+
+        assertThat(result).isInstanceOf(YamlParseResult.Rejected.class);
+        DslError error = ((YamlParseResult.Rejected) result).error();
+        assertThat(error.messageKey()).isEqualTo(DslMessageKeys.LINE_LIMIT);
+        assertThat(error.line()).isEqualTo(3);
+        assertThat(error.column()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("full-width characters and surrogate pairs count as one code point each")
+    void lineLengthCountsCodePoints() {
+        assertThat(parse("k: あい😀\n", lineLimit(6))).isInstanceOf(YamlParseResult.Parsed.class);
+
+        YamlParseResult result = parse("k: あい😀😀\n", lineLimit(6));
+
+        assertThat(result).isInstanceOf(YamlParseResult.Rejected.class);
+        DslError error = ((YamlParseResult.Rejected) result).error();
+        assertThat(error.messageKey()).isEqualTo(DslMessageKeys.LINE_LIMIT);
+        assertThat(error.line()).isEqualTo(1);
+        assertThat(error.column()).isEqualTo(7);
+        assertThat(error.messageArgs()).containsExactly("6");
+    }
+
+    @Test
+    @DisplayName("a long comment line is rejected before reading and the first too long line is reported")
+    void longCommentLineIsRejectedBeforeReading() {
+        YamlParseResult result = parse("ok: 1\n# " + "x".repeat(20) + "\n" + "y".repeat(30) + "\n", lineLimit(10));
+
+        assertThat(result).isInstanceOf(YamlParseResult.Rejected.class);
+        DslError error = ((YamlParseResult.Rejected) result).error();
+        assertThat(error.kind()).isEqualTo(DslErrorKind.SIZE_LIMIT);
+        assertThat(error.line()).isEqualTo(2);
+        assertThat(error.messageArgs()).containsExactly("10");
+    }
+
+    @Test
+    @DisplayName("the byte order mark is not counted in the length of the first line")
+    void byteOrderMarkIsNotCounted() {
+        assertThat(parse("\uFEFFk: 1234\n", lineLimit(7))).isInstanceOf(YamlParseResult.Parsed.class);
     }
 }

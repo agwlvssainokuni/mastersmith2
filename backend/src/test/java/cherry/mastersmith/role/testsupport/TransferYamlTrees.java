@@ -25,12 +25,12 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * 権限の YAML の部品の単体テストで、本番と同じ上限つきの読み込み（{@code SafeYamlReader}）で木を作る手伝い（BR9.3、計画の 9.3）。
- * 上限は本番の確かめ・適用と同じ値（大きさ 5 MiB・深さ 10・コレクションの別名 0・展開後の節 500,000）。
+ * 上限は本番の確かめ・適用と同じ値（大きさ 5 MiB・深さ 10・コレクションの別名 0・展開後の節 500,000・1行の長さ 65,536）。
  */
 public final class TransferYamlTrees {
 
     /** 本番と同じ上限。 */
-    public static final SafeYamlLimits LIMITS = new SafeYamlLimits(5_242_880, 10, 0, 500_000);
+    public static final SafeYamlLimits LIMITS = new SafeYamlLimits(5_242_880, 10, 0, 500_000, 65_536);
 
     private static final SafeYamlReader READER = new DefaultSafeYamlReader(new SafeYamlParser());
 

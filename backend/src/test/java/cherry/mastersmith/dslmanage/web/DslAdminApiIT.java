@@ -26,6 +26,7 @@ import cherry.mastersmith.common.error.web.GlobalExceptionHandler;
 import cherry.mastersmith.common.testsupport.LogEvents;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.domain.ActiveDsl;
+import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
 import cherry.mastersmith.dsl.service.ActiveDslModelProvider;
 import cherry.mastersmith.dsl.service.DslReader;
@@ -261,6 +262,50 @@ class DslAdminApiIT {
         assertThat(row.rejectionKind()).isEqualTo("SYNTAX");
         assertThat(row.dslHash()).isEqualTo(dslReader.hash(invalid));
         assertThat(row.dslSource()).isEqualTo("PASTE");
+    }
+
+    @Test
+    @DisplayName("a line over the line limit is 422 DSL_INVALID at that line without the body or component text,"
+            + " and a line of exactly the limit is accepted")
+    void lineLengthLimit() {
+        String marker = "LEAK_MARKER_dsl_line_";
+        byte[] base = sample("line");
+        int nextLine = (int) new String(base, StandardCharsets.UTF_8).lines().count() + 1;
+        byte[] exact = (new String(base, StandardCharsets.UTF_8) + "#" + marker
+                        + "x".repeat(DslFormat.MAX_LINE_LENGTH - 1 - marker.length()) + "\n")
+                .getBytes(StandardCharsets.UTF_8);
+        byte[] over = (new String(base, StandardCharsets.UTF_8) + "#" + marker
+                        + "x".repeat(DslFormat.MAX_LINE_LENGTH - marker.length()) + "\n")
+                .getBytes(StandardCharsets.UTF_8);
+
+        assertThat(api.submit(exact, "PASTE").statusCode()).isEqualTo(201);
+        HttpResponse<String> en = api.withLanguage("en").submit(over, "PASTE");
+        HttpResponse<String> ja = api.submit(over, "UPLOAD");
+
+        assertThat(en.statusCode()).isEqualTo(422);
+        assertThat(en.headers().firstValue("Content-Type"))
+                .hasValueSatisfying(type -> assertThat(type).startsWith("application/problem+json"));
+        Map<String, Object> problem = DslApi.json(en);
+        assertThat(problem).containsEntry("code", "DSL_INVALID").containsEntry("total", 1);
+        assertThat(list(problem.get("errors"))).singleElement().satisfies(error -> {
+            assertThat(error)
+                    .containsEntry("kind", "SIZE_LIMIT")
+                    .containsEntry("line", nextLine)
+                    .containsEntry("column", DslFormat.MAX_LINE_LENGTH + 1);
+            assertThat((String) error.get("message"))
+                    .isEqualTo("Line " + nextLine + " exceeds the line length limit (65536 characters).");
+        });
+        assertThat(ja.statusCode()).isEqualTo(422);
+        assertThat(ja.body()).contains(nextLine + " 行目が1行の長さの上限（65536 文字）を超えています。");
+        assertThat(en.body() + ja.body())
+                .doesNotContain(marker)
+                .doesNotContain("xxxxxxxxxx")
+                .doesNotContain("Exception")
+                .doesNotContain("snakeyaml");
+        DslAuditRows.Row row = audit.last();
+        assertThat(row.eventType()).isEqualTo("DSL_SUBMISSION_REJECTED");
+        assertThat(row.rejectionKind()).isEqualTo("SIZE_LIMIT");
+        assertThat(row.dslHash()).isEqualTo(dslReader.hash(over));
     }
 
     @Test

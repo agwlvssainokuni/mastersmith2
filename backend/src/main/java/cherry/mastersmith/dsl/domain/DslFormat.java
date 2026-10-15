@@ -37,6 +37,12 @@ public final class DslFormat {
     /** 本文の大きさの上限（バイト。10MB = 10 × 1024 × 1024）。 */
     public static final int MAX_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * 1行の長さの上限（UTF-8 を解読した後の1行のコードポイントの数。改行は数えない。Intent 261015-deps-ui-carryover の FR9.2、
+     * 計画の D-2）。権限の YAML の上限（{@code RoleTransferLimits}）も同じ値を使う。
+     */
+    public static final int MAX_LINE_LENGTH = 65_536;
+
     /** YAML の入れ子の深さの上限（文書の根から数えた、対応表と並びの段の数）。 */
     public static final int MAX_DEPTH = 50;
 

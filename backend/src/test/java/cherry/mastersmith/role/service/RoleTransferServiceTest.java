@@ -226,6 +226,13 @@ class RoleTransferServiceTest {
                 .containsExactly(TransferError.Reason.UNSUPPORTED_VERSION);
         assertThat(service(new RoleTransferLimits(1_000)).check(body("x".repeat(1_000))))
                 .isNotInstanceOf(TransferCheckResult.TooLarge.class);
+        String longLine = "version: 1\nroles: {}\n#" + "x".repeat(RoleTransferLimits.MAX_LINE_LENGTH) + "\n";
+        RoleTransferService roomy = service(new RoleTransferLimits(200_000));
+        assertThat(roomy.check(body(longLine)))
+                .as("大きさの上限の内でも、1行の長さの上限を超えれば大きさの拒否（計画の D-3）")
+                .isInstanceOf(TransferCheckResult.TooLarge.class);
+        assertThat(roomy.apply(ACTOR, ORIGIN, body(longLine), "a".repeat(64)))
+                .isInstanceOf(TransferApplyResult.TooLarge.class);
         assertThat(events).isEmpty();
         verifyNoInteractions(store);
     }

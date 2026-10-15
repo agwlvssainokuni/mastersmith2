@@ -639,8 +639,8 @@ docker compose up -d --wait
 | `roleAdminRead` | 一覧の1ページ目（op `listFirst`）・最後のページ（op `listLast`）・1件（op `one`）・グループのロール（op `groupRoles`）・利用者のロール（op `userRoles`。B5）を順にくり返す（200）。setup が悪い側のロールをメンバーの候補 `perf-gr-0001` と新しいグループに割り当てる | op ごとの p95 < 1000 ms と `checks` の率 1 |
 | `roleAdminOps` | VU ごとに作成（op `create`、201）・自分のロールの名前の変更（op `rename`、2つの名前で交互、204）・作ったロールの削除（op `delete`、204）を順にくり返す（状態が戻る） | op ごとの p95 < 1000 ms と `checks` の率 1 |
 | `workRoleSwitch`（B5） | VU ごとに利用者 `perf-gr-<VU>` の2つのロール（setup が作って割り当てる）へ作業ロールを交互に切り替える（どれも保存を書き 204） | `iteration_duration{scenario:workRoleSwitch}` の p95 < 1000 ms と `checks` の率 1 |
-| `workRoleRead`（B5） | 利用者 `perf-gr-<VU>` が自分のロールと今の作業ロールを読む（200） | 同上 |
-| `myPermissionsTree`（B5） | 悪い側のロールを割り当てた利用者 `perf-gr-<VU>`（最初のロールが悪い側のロールになる）が、自分の権限の木のスキーマ（op `schemas`）・テーブル（op `tables`）・100 カラムのテーブル（op `columns`）を順に開く（200） | op ごとの p95 < 1000 ms と `checks` の率 1 |
+| `workRoleRead`（B5） | 利用者 `perf-gr-<VU>` が自分のロールと今の作業ロールを読む（200。setup が割り当てた2つのロールが一覧に含まれることを確かめる。前の場面が残したほかのロールがあっても数では落とさない。Intent 261015-deps-ui-carryover の FR7.1） | 同上 |
+| `myPermissionsTree`（B5） | 悪い側のロールを割り当てた利用者 `perf-gr-<VU>`（setup の最後に作業ロールを悪い側のロールへ切り替える。前の場面が保存した作業ロールに頼らない。FR7.1）が、自分の権限の木のスキーマ（op `schemas`）・テーブル（op `tables`）・100 カラムのテーブル（op `columns`）を順に開く（200） | op ごとの p95 < 1000 ms と `checks` の率 1 |
 | `roleAssignmentsRead`（B5） | 悪い側のロールの割り当ての一覧（利用者 VUS 名と、その全員をメンバーにしたグループ）を読む（200） | `iteration_duration` の p95 < 1000 ms と `checks` の率 1 |
 | `roleAssignOps`（B5） | VU ごとに自分のロール（setup が作る）を、利用者 `perf-gr-<VU>` に割り当てる（op `assignUser`）・外す（op `unassignUser`）・自分のグループ（setup が作る）に割り当てる（op `assignGroup`）・外す（op `unassignGroup`）を順にくり返す（どれも 204 で状態が戻る） | op ごとの p95 < 1000 ms と `checks` の率 1 |
 | `rolePoolLimit`（B5） | VU の番号を 5 で割った余りが 1〜3 の VU は作業ロールの切り替え、4・0 の VU は自分のグループへの割り当てと外しを交互にくり返す（下の 3R'） | 閾値を置かない。`rolePoolLimit_204`・`_409`・`_500`・`_other` の件数と、接続プールの値で判定する |
@@ -649,6 +649,7 @@ docker compose up -d --wait
 - **データ**: 悪い側のロール（名前 `ROLE_WORST_NAME`、既定 `perf-role-worst`）と、版 2 の DSL のスキーマ `ROLE_TREE_SCHEMA`（既定 `large`）・100 カラムのテーブル `ROLE_TREE_TABLE`（既定 `t_001`）は、準備の場面 `rolePrepare`（下の B6 の手順）が入れる（既定の名前は B6 で `perf/dsl-timing.sh` が生成する DSL の名前にそろえた）。名前を変えたときは、同じ値を `-e` で k6 に渡す。台本は一覧のページを順に読んでロールの ID を名前で探し、見つからなければ始める前に止まる。
 - **トークン**: 操作する管理者は試験用の管理者 `perf-roleop01`（初期管理者は使わない。手順 2'' の SQL の形で入れる）。setup の最後にトークンを取り直し、場面は 3 分までにする（アクセストークンは 5 分で切れる）。setup の時間の上限は 10 分（`setupTimeout`）。
 - **名前**: ロールの名前の鍵は大文字と小文字を区別せず全体で一意のため、作る名前は実行ごとの識別（setup の時刻から作る `runId`）と VU の番号を含める。
+- **前の場面の状態に頼らない setup**（Intent 261015-deps-ui-carryover の FR7.1）: `roleAdminRead`・`workRoleRead`・`myPermissionsTree`・`roleAssignmentsRead` の setup の割り当ては、割り当て済み（409 `ROLE_NO_CHANGE`）も受け入れる（台本の `roleAssignEnsured`）。手順書の順のまま流しても、1つだけを単独で流しても同じ前提で始まる。
 - **利用者の側の場面（B5）**: 作業ロールと自分の権限の場面、割り当ての場面は、グループの管理の節の 2G で入れたメンバーの候補 `perf-gr-0001`〜（パスワードは `PERF_USER_PASSWORD`）を VU の番号の順に使う。setup が操作する管理者の API でロール・グループを作って割り当て、最後に利用者のトークンを VU ごとに取る。作業ロールの切り替えと割り当ては使い捨ての環境の監査に残る。
 - 台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。手順 0 のとおり配備したアプリを止める。使い捨ての環境で流し、配備した環境のデータと監査ログには触れない。ロールの操作は使い捨ての環境の監査に残る。片付けの前に件数を数える。
 
@@ -742,7 +743,7 @@ print("L3", len(l3), "L4", sum(l4.values()), "L4 をちょうど1件持つ L3", 
 
 - **準備のデータ**（`rolePrepare` が作る。ロールの合計 `ROLE_PREPARE_TOTAL`、既定 1,000）: 悪い側のロール `perf-role-worst`（スキーマ `large` の主権限と、`t_001`〜`t_100` × `c_001`〜`c_100` の1万カラムに READ と FULL を交互に明示）、置き換える先のロール `perf_large_00001`〜`perf_large_00019`（`ROLE_LARGE_PREFIX`・`ROLE_LARGE_COUNT`、既定 19。スキーマの主権限 NONE だけ）、業務のメニューの悪い側のロール `perf-nav-worst`（B7 で足した。下の「業務のメニューの場面」）、残りは設定の無い埋めるロール `perf-fill-NNNN`。グループ・メンバー・割り当ては、B5 の各場面の setup がその場面に合わせて API で作る（準備の場面では作らない）。
 - **DSL**: `perf/dsl-timing.sh` が対象DB の 100 テーブル × 100 カラムのスキーマ `large` から生成した版 2 の DSL（`<結果の置き場>/postgres/generated.yaml`）を `DSL_FILE` で渡す。生成には対象DB が要るが、使い捨ての環境の準備と各場面は対象DB を要らない（DSL の適用は対象DB に接続しない。プレビューの照合は届かなくても警告になるだけ。基盤の読み直しの R-07）。生成した DSL が手元にあれば作り直さなくてよい。
-- **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00019` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメントで 5,242,880 バイトちょうどにする（上限は Build and Test の Q1 で 10 MiB・節 1,000,000 から 5 MiB・節 500,000 に下げた）。名前は既定の短い形（`c_001`）のため、中身は上限の約 96%（約 39 万の節）で、残り約 185 KB がコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
+- **上限ちょうどの YAML**: テストの手伝いの1ファイル `backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java` を、1ファイルのソースの起動で呼んで作る（テストと同じ部品。計画の 13節 Q7: A）。ロール `perf_large_00001`〜`00019` に、`large` の `t_001`〜`t_100` × `c_001`〜`c_100`（1万カラム）を READ で明示し、末尾の YAML のコメント（1行 1,000 バイトまでに分ける。Intent 261015-deps-ui-carryover の FR9.2 の1行の長さの上限 65,536 の内に収めるため）で 5,242,880 バイトちょうどにする（上限は Build and Test の Q1 で 10 MiB・節 1,000,000 から 5 MiB・節 500,000 に下げた）。名前は既定の短い形（`c_001`）のため、中身は上限の約 96%（約 39 万の節）で、残り約 185 KB がコメントになる。節の数が上限に近い形と時間は Build and Test で1回測る（`reliability-design.md` 1.3）。
 - **順番**: 準備の場面を1回 → B4・B5 の場面 → `roleExport` → **`roleTransferLargeCheck` → `roleTransferLargeApply` を最後に流す**（適用で 19 ロールの設定が入れ替わり、準備の状態が変わるため。流し直すときは使い捨ての環境を作り直して、準備からやり直す。基盤の読み直しの R-05）。
 - **メモリ**: 上限ちょうどの YAML の確かめ・適用は、テストの JVM ではなく配備と同じ形（コンテナの上限 2g・最大ヒープの割合 50%）の使い捨てのアプリで流し、確かめ・適用の間のヒープの最大（`/actuator/metrics/jvm.memory.used?tag=area:heap` を数秒ごと）と OOMKilled の有無を記録する（単体・結合のテストでは、節の上限の境界を Spring を起動しない単体テストで確かめた。依頼者の決定 A）。
 - 台本の全体を `caffeinate -dims` で包む。権限の受け渡しの適用は使い捨ての環境の監査に `ROLE_TRANSFER_APPLIED` として残る。
@@ -776,6 +777,160 @@ caffeinate -dims zsh "$D/role-b6-run.sh" "$D"
 #     GROUP BY event_type, result, failure_reason
 ```
 
+
+## 性能の測り直し（Intent 261015-deps-ui-carryover の FR7.2・FR8・FR9.1・FR9.4）
+
+前の Intent（261004-role-menu）の Performance Validation から持ち越した3つの測り直しを、新しい土台のイメージ（eclipse-temurin `25.0.4.1_1-jre-noble`）の使い捨ての環境で流す。Performance Validation の段が無いため、流すのは Build and Test（`aidlc/spaces/default/memory/project.md` の学び）。目標は緩めない。測れなかった目標は `Unverified`、外れた目標は `Not Met` とする。
+
+- **共通の前提**: 上の「手順」の 0・1 と、グループの管理の節の 1G（指標の公開）・2G（メンバーの候補と `perf-roleop01`）、ロールの管理の節の B6 の準備（`rolePrepare`）を済ませる。配備したアプリは手順 0 のとおり止める。台本の全体を `caffeinate -dims` で包み、流す前に `pmset -g assertions` で眠らない状態か、流した後に `pmset -g log` で Sleep・DarkWake が無かったかを確かめる。入っていた回は数えずに流し直し、外した回と理由を記録する。
+- **1行の長さの上限**（FR9.2）: DSL と権限の YAML の1行は 65,536 コードポイントまで（`DslFormat.MAX_LINE_LENGTH`）。超えると DSL は 422 `DSL_INVALID`（誤りの種類 `SIZE_LIMIT`）、権限の YAML は 413 `PAYLOAD_TOO_LARGE` で拒否される。前の Intent の悪い形（1.5 MB の1行のコメント）と、流れの書き方の並びを1行に詰めた形は、読む前に拒否されるため使えない。下の (b) の悪い形は行を分けて作る。
+
+### (a) ロールの書き込みの待ちの最大の合否の回を 5 回（FR8）
+
+ロールの管理の節の 3R' の合否の回（上限 11・`VUS=5`・2 分、`rolePoolLimit`）を 5 回流す。数 ms の目標は1回の値が揺れるため、合否は 5 回の値で決める（`project.md` の学び）。
+
+- **合否**（FR8.4）: 5 回すべてで acquire の MAX の最大が 20 ms 未満なら `Met`、1回でも 20 ms 以上なら `Not Met`。あわせて各回の時間切れの累計の増分 0・`rolePoolLimit_500` が 0 件であること。
+- **回ごとに作り直す**: 指標の MAX と累計を回ごとにそろえるため、各回の前に使い捨てのアプリを作り直す（`--force-recreate`）。
+- **20 ms 以上の回の見立て**（FR8.2）: その回の `role-pool11-r<回>-metrics.txt` で MAX が最大になった時刻を読み、その前後 30 秒の (1) アプリのログの WARN・ERROR の件数（`監査イベントの記録に時間がかかりました` を含む）、(2) `jvm.gc.pause` の MAX（下の台本が回の前後に記録する）、(3) `docker stats` の CPU を並べる。見立ては事実（値）と仮説を分けて書く。直す形は依頼者に諮る（FR8.3）。
+
+```bash
+# 前提: 3R' の role-pool.sh を作ってあること（ロールの管理の節）
+( umask 077; sed -i '' '/^MASTERSMITH_DB_MAXIMUM_POOL_SIZE=/d' "$D/app.env"; printf 'MASTERSMITH_DB_MAXIMUM_POOL_SIZE=11\n' >> "$D/app.env" )
+cat > "$D/role-pool-5.sh" <<'EOS'
+D="$1"; R=build/perf-results
+gc() { curl -s "http://127.0.0.1:18080/actuator/metrics/jvm.gc.pause" >> "$R/$1-gc.json"; echo >> "$R/$1-gc.json"; }
+for n in 1 2 3 4 5; do
+  docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait --force-recreate app
+  date -u +"r$n start %Y-%m-%dT%H:%M:%SZ" >> "$R/role-pool-5-times.txt"
+  gc role-pool11-r$n
+  zsh "$D/role-pool.sh" "$D" role-pool11-r$n 5
+  gc role-pool11-r$n
+  docker stats --no-stream --format '{{.Name}} {{.CPUPerc}} {{.MemUsage}}' mastersmith-perf-app-1 >> "$R/role-pool11-r$n-stats.txt"
+  date -u +"r$n end %Y-%m-%dT%H:%M:%SZ" >> "$R/role-pool-5-times.txt"
+done
+EOS
+pmset -g assertions | grep -E 'PreventUserIdleSystemSleep|PreventSystemSleep'
+caffeinate -dims zsh "$D/role-pool-5.sh" "$D"
+pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20   # 回の始めと終わりの時刻（role-pool-5-times.txt）の間に無いこと
+# 判定: 回ごとの時間切れの増分・acquire の MAX の最大（ミリ秒）と、rolePoolLimit_500 の件数
+python3 -c '
+import ast
+for n in range(1, 6):
+    tag = f"role-pool11-r{n}"
+    rows = [line.split(" ", 2) for line in open(f"build/perf-results/{tag}-metrics.txt")]
+    timeout = [ast.literal_eval(r[2])["COUNT"] for r in rows if r[1] == "hikaricp.connections.timeout"]
+    acquire = [(r[0], ast.literal_eval(r[2])["MAX"]) for r in rows if r[1] == "hikaricp.connections.acquire"]
+    at, peak = max(acquire, key=lambda x: x[1])
+    print(tag, "時間切れの増分", timeout[-1] - timeout[0], "acquire MAX の最大（ms）", round(peak, 2), "時刻", at,
+          "20ms 以上" if peak >= 20 else "")'
+grep -h -o '"rolePoolLimit_500": {[^}]*}' build/perf-results/role-pool11-r*.json
+```
+
+### (b) 大きな入力のヒープ（FR9.1・FR9.4）
+
+10 MiB の DSL の投入と、1行の長さの上限の内で作る悪い形の 5 MiB の権限の YAML の確かめ・適用の間のヒープを、配備と同じ上限（コンテナ 2g・最大ヒープの割合 50%）の使い捨てのアプリで測る。続けて `dslMixed` の `memory.peak` を取る。
+
+- **合否**（FR9.4）: どの測りでも OutOfMemoryError と JVM の停止（`ExitOnOutOfMemoryError` の終了コード 3）が無く、`OOMKilled` が false。`dslMixed` の `memory.peak` が、FR9.3 の見直しの後のメモリの上限（変えないときは 2g）の 90% 未満。
+- **ヒープの記録**: `jvm.memory.used?tag=area:heap` を 0.5 秒ごとに読み、測りの間の最大を記録する（GC の後の値ではなく読んだ値の最大。前の Intent の見積もり 256〜384 MB との差と、GC の後でも残った値を並べる）。最大ヒープは `jvm.memory.max?tag=area:heap` で読む。
+- **悪い形の権限の YAML**: 流れの書き方の並びで節の上限（500,000）ちょうどを作り、要素 1,000 個ごとに改行して続ける。残りを1行 1,000 バイトまでのコメントの行で埋めて 5,242,880 バイトちょうどにする。前の悪い形（49.7 万の節＋1.5 MB の1行のコメント）とは、行の分け方と埋め草の形が違う（形の違いを結果に記録する）。中身は `roles` が並びのため、確かめ・適用とも 400 `ROLE_TRANSFER_INVALID` で返る（読み込みと節の数え上げは最後まで行う。適用の指紋は比べる前に同じ上限で拒否される）。
+- **memory.peak**: 前の最大の値を消すため、`dslMixed` の前に使い捨てのアプリを作り直す（`project.md` の学び）。読み方は `docker exec mastersmith-perf-app-1 cat /sys/fs/cgroup/memory.peak`。
+
+```bash
+# 前提: 共通の前提に加え、DSL の時間の節の手順で 10 MiB の DSL（valid-10mb.yaml）を build/perf-results/dsl-k6/postgres/ に作ってあること
+# 悪い形の 5 MiB の権限の YAML を作る（結果の置き場だけに書き、リポジトリには置かない）
+python3 - build/perf-results/role-data/worst-5mb.yaml <<'EOS'
+import sys
+target, nodes = 5_242_880, 500_000
+items = nodes - 5   # 根・2つのキー・版の値・並びの5節と要素（RoleTransferReaderTest の flowSequence と同じ数え方）
+parts = ["version: 1\nroles: ["]
+for i in range(items):
+    parts.append(("1" if i == 0 else (",\n  1" if i % 1000 == 0 else ",1")))
+parts.append("]\n")
+text = "".join(parts)
+rest = target - len(text.encode())
+while rest > 0:
+    n = min(rest, 1000)
+    text += "\n" if n == 1 else "#" + "x" * (n - 2) + "\n"
+    rest -= n
+open(sys.argv[1], "w").write(text)
+EOS
+wc -c build/perf-results/role-data/worst-5mb.yaml                                    # 5242880 であること
+awk '{ if (length($0) > m) m = length($0) } END { print m }' build/perf-results/role-data/worst-5mb.yaml   # 65536 以下であること
+
+# ヒープを 0.5 秒ごとに読む（引数: 結果の名前。止めるときは kill）
+heapwatch() {
+  while :; do
+    printf '%s\t%s\n' "$(date -u +%H:%M:%SZ)" \
+      "$(curl -s 'http://127.0.0.1:18080/actuator/metrics/jvm.memory.used?tag=area:heap' | python3 -c 'import json,sys; print(int(json.load(sys.stdin)["measurements"][0]["value"]))')" \
+      >> "build/perf-results/$1-heap.tsv"
+    sleep 0.5
+  done
+}
+# 管理者のトークン（k6.env の管理者でログインする。値は表示しない）
+token() {
+  set -a; . "$D/k6.env"; set +a
+  curl -s -H 'Content-Type: application/json' -H 'Origin: http://127.0.0.1:18080' \
+    -d "{\"email\":\"$PERF_ADMIN_EMAIL\",\"password\":\"$PERF_ADMIN_PASSWORD\"}" \
+    http://127.0.0.1:18080/api/auth/login | python3 -c 'import json,sys; print(json.load(sys.stdin)["accessToken"])'
+}
+cat > "$D/heap-run.sh" <<'EOS'
+D="$1"; R=build/perf-results; B=http://127.0.0.1:18080
+source "$D/heap-funcs.sh"
+curl -s "$B/actuator/metrics/jvm.memory.max?tag=area:heap" > "$R/heap-max.json"
+T=$(token)
+heapwatch dsl10 & W=$!
+curl -s -o /dev/null -w 'dsl10 %{http_code} %{time_total}s\n' -H "Authorization: Bearer $T" -H 'Origin: http://127.0.0.1:18080' \
+  -H 'Content-Type: application/yaml' --data-binary @build/perf-results/dsl-k6/postgres/valid-10mb.yaml "$B/api/admin/dsl/preview?source=UPLOAD" >> "$R/heap-codes.txt"
+sleep 5; kill $W
+heapwatch role5 & W=$!
+FP=$(printf '0%.0s' $(seq 64))   # 適用は形の正しい指紋（16 進数の小文字 64 文字）の見出しが要る。中身は比べる前に上限と検証で止まる
+for p in check apply; do
+  curl -s -o /dev/null -w "role5-$p %{http_code} %{time_total}s\n" -H "Authorization: Bearer $T" -H 'Origin: http://127.0.0.1:18080' \
+    -H "X-Role-Transfer-Fingerprint: $FP" -H 'Content-Type: application/yaml' \
+    --data-binary @build/perf-results/role-data/worst-5mb.yaml "$B/api/admin/role-transfer/$p" >> "$R/heap-codes.txt"
+done
+sleep 5; kill $W
+unset T
+EOS
+typeset -f heapwatch token > "$D/heap-funcs.sh"
+caffeinate -dims zsh "$D/heap-run.sh" "$D"
+cat build/perf-results/heap-codes.txt                                                # 投入 201・確かめと適用 400 であること
+for n in dsl10 role5; do sort -t$'\t' -k2 -n "build/perf-results/$n-heap.tsv" | tail -1; done   # 測りごとのヒープの最大（バイト）
+docker inspect --format '{{.State.Status}} {{.State.ExitCode}} OOMKilled={{.State.OOMKilled}}' mastersmith-perf-app-1
+docker logs mastersmith-perf-app-1 2>&1 | grep -c 'OutOfMemoryError'                 # 0 であること
+
+# dslMixed の memory.peak。使い捨てのアプリを作り直してから、DSL の節の手順（k6d の関数と ui.env、試験用の利用者 11 名）で
+# dslMixed を流し（台本の全体を caffeinate -dims で包む）、流した後に読む
+docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait --force-recreate app
+#   （ここで DSL の節の k6d で dslMixed を流す）
+docker exec mastersmith-perf-app-1 cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.max   # peak / max が 0.9 未満であること
+pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
+```
+
+- 道（`/api/admin/role-transfer/check`・`/apply`）・指紋の見出し（`X-Role-Transfer-Fingerprint`）・ログインの応答の項目（`accessToken`）は、Code Generation で `RoleTransferPaths`・`RoleTransferController`・`perf/k6/scenarios.js` の `login` と照らした。この節の台本（`heap-run.sh`・`role-pool-5.sh`・`role-three.sh`）は Code Generation では流していないため、最初の回で値が取れているかを結果のファイルで確かめてから続ける。
+- FR9.3（メモリの上限と最大ヒープの割合を変えるか）は、この測りの結果をもとに Build and Test で決める。変えるときは値・根拠・戻し方（設定の値を戻す）を記録する。
+
+### (c) ロールの3場面を手順書の順と単独で（FR7.2）
+
+`workRoleRead`・`myPermissionsTree`・`roleAssignmentsRead` を、(1) ロールの管理の節の `role-run.sh` の順（`workRoleSwitch` の後）のまま、(2) 1場面ずつ単独で、の2通りに流す。合否は、どちらでも 3場面の `checks` の率が 1 で、setup が `ROLE_NO_CHANGE` や確かめの不一致で止まらないこと。
+
+```bash
+# (1) 手順書の順（B4・B5 の場面の全部。上の role-run.sh）
+caffeinate -dims zsh "$D/role-run.sh" "$D"
+# (2) 単独（同じ環境のまま、前の流しが残した割り当てと作業ロールの上で1場面ずつ）
+cat > "$D/role-three.sh" <<'EOS'
+D="$1"
+for s in workRoleRead myPermissionsTree roleAssignmentsRead; do
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/$s-alone.json /scripts/scenarios.js
+done
+EOS
+caffeinate -dims zsh "$D/role-three.sh" "$D"
+for s in workRoleRead myPermissionsTree roleAssignmentsRead; do
+  grep -h -o '"checks": {[^}]*}' "build/perf-results/$s.json" "build/perf-results/$s-alone.json"   # どれも passes が 1 以上・fails が 0
+done
+```
 
 ## 業務のメニューの場面（Intent 261004-role-menu の U5）
 

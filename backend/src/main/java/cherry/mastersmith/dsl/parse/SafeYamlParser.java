@@ -46,6 +46,11 @@ import org.yaml.snakeyaml.resolver.Resolver;
  * 試し T1'）。
  *
  * <p>部品の例外は種類ごとに誤りの種類へ写し、部品の文言は使わない。大きさの上限（BR1.1）は呼び出し側が読む前に確かめる。
+ *
+ * <p>1行の長さの上限（Intent 261015-deps-ui-carryover の FR9.2）は、UTF-8 を解読した後、SnakeYAML に渡す前に確かめる。改行
+ * （{@code \n}・{@code \r}。{@code \r\n} は1つの改行）で区切った1行のコードポイントの数（改行は数えない）が上限を超えた最初の行で、
+ * 大きさの種類（{@link DslErrorKind#SIZE_LIMIT}）の誤りにする。位置はその行と上限＋1 の列、埋める値は上限の値だけで、本文は誤りに
+ * 入れない。1行が長い文書は、読む前に止めないと部品の中で大きな文字列を何度も作るため。
  */
 @Component
 public class SafeYamlParser {
@@ -64,6 +69,7 @@ public class SafeYamlParser {
     public YamlParseResult parse(byte[] yamlBytes, YamlLimits limits) {
         try {
             String text = decode(yamlBytes);
+            checkLineLength(text, limits.maxLineLength());
             LoaderOptions options = loaderOptions(limits);
             LimitingParser parser = new LimitingParser(new ParserImpl(new StreamReader(text), options), limits);
             Node root = new Composer(parser, new Resolver(), options).getSingleNode();
@@ -109,6 +115,42 @@ public class SafeYamlParser {
             return !text.isEmpty() && text.charAt(0) == BYTE_ORDER_MARK ? text.substring(1) : text;
         } catch (CharacterCodingException e) {
             throw YamlRejection.of(DslErrorKind.SYNTAX, null, null, DslMessageKeys.YAML_ENCODING);
+        }
+    }
+
+    /**
+     * 1行の長さ（コードポイント。改行は数えない）が上限の内であることを確かめる。
+     *
+     * @param text 解読した本文（先頭のバイト順の印は除いたもの）
+     * @param maxLineLength 1行の長さの上限
+     * @throws YamlRejection 上限を超えた最初の行で
+     */
+    static void checkLineLength(String text, int maxLineLength) {
+        int line = 1;
+        int length = 0;
+        int index = 0;
+        while (index < text.length()) {
+            char ch = text.charAt(index);
+            if (ch == '\n' || ch == '\r') {
+                index += ch == '\r' && index + 1 < text.length() && text.charAt(index + 1) == '\n' ? 2 : 1;
+                line++;
+                length = 0;
+                continue;
+            }
+            index += Character.isHighSurrogate(ch)
+                            && index + 1 < text.length()
+                            && Character.isLowSurrogate(text.charAt(index + 1))
+                    ? 2
+                    : 1;
+            length++;
+            if (length > maxLineLength) {
+                throw YamlRejection.of(
+                        DslErrorKind.SIZE_LIMIT,
+                        new YamlPosition(line, maxLineLength + 1),
+                        null,
+                        DslMessageKeys.LINE_LIMIT,
+                        String.valueOf(maxLineLength));
+            }
         }
     }
 

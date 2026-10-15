@@ -461,6 +461,18 @@ class DslLifecycleTest {
     }
 
     @Test
+    @DisplayName("the line length message puts the line of the error first and the limit second")
+    void lineLimitMessageUsesTheLine() {
+        cherry.mastersmith.dsl.domain.DslError line = new cherry.mastersmith.dsl.domain.DslError(
+                DslErrorKind.SIZE_LIMIT, 7, 65_537, null, DslMessageKeys.LINE_LIMIT, List.of("65536"));
+
+        assertThat(DslErrorMessages.message(line, DisplayLanguage.JA)).isEqualTo("7 行目が1行の長さの上限（65536 文字）を超えています。");
+        assertThat(DslErrorMessages.message(line, DisplayLanguage.EN))
+                .isEqualTo("Line 7 exceeds the line length limit (65536 characters).");
+        assertThat(DslErrorMessages.item(line, DisplayLanguage.EN).line()).isEqualTo(7);
+    }
+
+    @Test
     @DisplayName(
             "metric tags use fixed words only, and the operation logs carry keys but no body or connection details")
     void metricsAndLogs() {

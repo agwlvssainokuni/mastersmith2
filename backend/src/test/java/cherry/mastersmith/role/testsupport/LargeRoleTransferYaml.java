@@ -29,7 +29,8 @@ import java.util.Locale;
  * <p>作る形は、ロールごとに1つのスキーマの下へ、テーブルあたり決めた数のカラムを主権限 {@code READ} で明示したもの（スキーマと
  * テーブルにも主権限を書く）。既定の名前（スキーマ {@code large}・テーブル {@code t_001}〜・カラム {@code c_001}〜）は、
  * {@code perf/dsl-timing.sh} が対象DB に作る 100 テーブル × 100 カラムのスキーマから生成した DSL と同じ。中身を書いた後に、目標のバイト数（UTF-8）ちょうどになるよう末尾に YAML のコメントの行を足す（読み込みの
- * 部品はコメントを読み捨てるため、設定は変わらない）。名前はどれも二重引用符の要らない英数字と下線だけで、指定の長さまで {@code x} で
+ * 部品はコメントを読み捨てるため、設定は変わらない）。コメントの行は1行 {@link #PADDING_LINE_BYTES} バイト（改行を含む）までに分ける
+ * （1行の長さの上限 65,536 コードポイントの内に収めるため。Intent 261015-deps-ui-carryover の FR9.2）。名前はどれも二重引用符の要らない英数字と下線だけで、指定の長さまで {@code x} で
  * 伸ばす。
  *
  * <p>起動の引数: {@code <出力の道> <ロールの数> <ロールあたりのカラムの数> <名前の長さ> <目標のバイト数> [スキーマの名前] [テーブルの名前の
@@ -51,6 +52,9 @@ public final class LargeRoleTransferYaml {
 
     /** 既定のロールの名前の頭。 */
     public static final String DEFAULT_ROLE_PREFIX = "perf_large_";
+
+    /** 末尾に足すコメントの1行の最大のバイト数（{@code #} と改行を含む）。 */
+    public static final int PADDING_LINE_BYTES = 1_000;
 
     private LargeRoleTransferYaml() {}
 
@@ -148,10 +152,14 @@ public final class LargeRoleTransferYaml {
             throw new IllegalArgumentException(
                     "中身だけで目標のバイト数を超えます: content=" + contentBytes + ", target=" + spec.targetBytes());
         }
-        if (remaining == 1) {
-            yaml.append('\n');
-        } else if (remaining >= 2) {
-            yaml.append('#').append("x".repeat(Math.toIntExact(remaining - 2))).append('\n');
+        while (remaining > 0) {
+            if (remaining == 1) {
+                yaml.append('\n');
+                break;
+            }
+            int lineBytes = Math.toIntExact(Math.min(remaining, PADDING_LINE_BYTES));
+            yaml.append('#').append("x".repeat(lineBytes - 2)).append('\n');
+            remaining -= lineBytes;
         }
         return yaml.toString();
     }

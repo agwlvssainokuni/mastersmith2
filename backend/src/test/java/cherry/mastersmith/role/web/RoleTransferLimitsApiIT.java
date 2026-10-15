@@ -34,6 +34,7 @@ import cherry.mastersmith.user.service.UserAccountService;
 import java.io.ByteArrayInputStream;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -166,6 +167,37 @@ class RoleTransferLimitsApiIT {
     }
 
     @Test
+    @DisplayName("a line of exactly 65,536 code points is read and a longer line is 413 without the body or component"
+            + " text, although the body is far below the size limit (D-3)")
+    void lineLength() {
+        String marker = "LEAK_MARKER_role_line_";
+        String head = "version: 1\nroles: {}\n#" + marker;
+        String exact = head + "x".repeat(65_536 - 1 - marker.length()) + "\n";
+        String over = head + "x".repeat(65_536 - marker.length()) + "\n";
+
+        HttpResponse<String> accepted = api.sendYaml(
+                "/api/admin/role-transfer/check",
+                admin.token(),
+                exact.getBytes(StandardCharsets.UTF_8),
+                "application/yaml");
+        HttpResponse<String> rejected = api.sendYaml(
+                "/api/admin/role-transfer/check",
+                admin.token(),
+                over.getBytes(StandardCharsets.UTF_8),
+                "application/yaml");
+
+        assertThat(accepted.statusCode()).as(accepted.body()).isEqualTo(200);
+        assertCode(rejected, 413, "PAYLOAD_TOO_LARGE");
+        assertThat(rejected.headers().firstValue("Content-Type"))
+                .hasValueSatisfying(type -> assertThat(type).startsWith("application/problem+json"));
+        assertThat(rejected.body())
+                .doesNotContain(marker)
+                .doesNotContain("xxxxxxxxxx")
+                .doesNotContain("Exception")
+                .doesNotContain("snakeyaml");
+    }
+
+    @Test
     @DisplayName("nesting depth 10 is read and 11 is TOO_DEEP")
     void depth() {
         assertThat(reasons(api.check(admin.token(), nested(10)))).doesNotContain("TOO_DEEP");
@@ -192,7 +224,7 @@ class RoleTransferLimitsApiIT {
     @Test
     @DisplayName("the configured limits give the safe reader 500,000 expanded nodes (the boundary is a unit test)")
     void expandedNodeLimit() {
-        assertThat(limits.toSafeYamlLimits()).isEqualTo(new SafeYamlLimits(LIMIT, 10, 0, 500_000));
+        assertThat(limits.toSafeYamlLimits()).isEqualTo(new SafeYamlLimits(LIMIT, 10, 0, 500_000, 65_536));
     }
 
     @Test

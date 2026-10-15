@@ -28,6 +28,12 @@ public final class DslMessageKeys {
     /** 本文が大きさの上限を超えた。埋める値: 上限のバイト数。 */
     public static final String SIZE_LIMIT = "dsl.limit.size";
 
+    /**
+     * 1行の長さが上限を超えた（Intent 261015-deps-ui-carryover の FR9.2。種類は大きさの {@code SIZE_LIMIT}、位置は上限を超えた最初の
+     * 行）。埋める値: 上限の文字数（コードポイント）。
+     */
+    public static final String LINE_LIMIT = "dsl.limit.line";
+
     /** 入れ子の深さが上限を超えた。埋める値: 上限の深さ。 */
     public static final String DEPTH_LIMIT = "dsl.limit.depth";
 
@@ -133,6 +139,7 @@ public final class DslMessageKeys {
 
     private static final List<String> ALL = List.of(
             SIZE_LIMIT,
+            LINE_LIMIT,
             DEPTH_LIMIT,
             ALIAS_LIMIT,
             EXPANDED_NODES_LIMIT,

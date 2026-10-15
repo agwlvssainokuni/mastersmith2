@@ -23,10 +23,14 @@ import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.table;
 import static cherry.mastersmith.dslmanage.generate.GenerateTestSupport.valid;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.dsl.domain.DslFormat;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.TableRef;
+import cherry.mastersmith.dsl.parse.SafeYamlParser;
+import cherry.mastersmith.dsl.parse.YamlParseResult;
 import cherry.mastersmith.dsl.service.DslReader;
+import cherry.mastersmith.dsl.testsupport.DslSamples;
 import cherry.mastersmith.dsl.validate.PatternChecker;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import cherry.mastersmith.targetdb.domain.TargetSchema;
@@ -119,5 +123,25 @@ class DslYamlWriterTest {
         assertThat(model.schema().name()).isEqualTo(schemaName);
         assertThat(model.schema().label().ja()).isEqualTo(schemaName);
         assertThat(model.menus().getFirst().table()).isEqualTo(new TableRef(schemaName, "t"));
+    }
+
+    @Test
+    @DisplayName(
+            "a 4096 code point comment with quotes, backslashes and escaped characters stays within the line limit and reads back")
+    void longestEscapedCommentStaysWithinTheLineLimit() {
+        String comment = "\"\\\n" + "\uFFFE".repeat(DslTreeBuilder.MAX_LABEL_CODE_POINTS - 3);
+        assertThat(comment.codePointCount(0, comment.length())).isEqualTo(DslTreeBuilder.MAX_LABEL_CODE_POINTS);
+
+        byte[] yaml = generate(schema(table("t", comment, List.of(), List.of(), nullable("c", INT))));
+
+        String text = new String(yaml, StandardCharsets.UTF_8);
+        int longest = text.lines()
+                .mapToInt(line -> line.codePointCount(0, line.length()))
+                .max()
+                .orElse(0);
+        assertThat(longest).isGreaterThan(20_000).isLessThanOrEqualTo(DslFormat.MAX_LINE_LENGTH);
+        assertThat(new SafeYamlParser().parse(yaml, DslSamples.DSL_YAML_LIMITS))
+                .isInstanceOf(YamlParseResult.Parsed.class);
+        assertThat(valid(READER, yaml).schema().tables().get("t").label().ja()).isEqualTo(comment);
     }
 }

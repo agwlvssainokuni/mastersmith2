@@ -33,6 +33,9 @@ import java.util.Optional;
  * 部品の例外の文言は U2 が渡さないため、文言にも入らない。知らない鍵は、場所だけを示す汎用の文言にする（鍵の抜けは単体テストで
  * 止める）。
  *
+ * <p>1行の長さの上限の誤り（{@link DslMessageKeys#LINE_LIMIT}、Intent 261015-deps-ui-carryover の FR9.2）は、埋める値が上限の値だけ
+ * のため、{@code {0}} に誤りの位置の行を、{@code {1}} に上限の値を埋める。
+ *
  * <p>書式の版 2（U2 dsl-v2 の BR7.1）では、版の誤りの文言で、版 2（スキーマの階層あり）で書く必要と、既定の DSL を生成し直すと版 2
  * で得られることを示す。書かれた版が 1 のときは、版 1 が使えないことをはっきり示す文言にする。
  */
@@ -58,6 +61,11 @@ public final class DslErrorMessages {
                 DslMessageKeys.SIZE_LIMIT,
                 "本文が大きさの上限（{0} バイト）を超えています。",
                 "The DSL exceeds the size limit ({0} bytes).");
+        put(
+                texts,
+                DslMessageKeys.LINE_LIMIT,
+                "{0} 行目が1行の長さの上限（{1} 文字）を超えています。",
+                "Line {0} exceeds the line length limit ({1} characters).");
         put(texts, DslMessageKeys.DEPTH_LIMIT, "入れ子の深さが上限（{0}）を超えています。", "The nesting depth exceeds the limit ({0}).");
         put(
                 texts,
@@ -224,6 +232,14 @@ public final class DslErrorMessages {
             return VERSION_ONE.in(language);
         }
         String template = text(error.messageKey()).orElse(UNKNOWN).in(language);
+        if (DslMessageKeys.LINE_LIMIT.equals(error.messageKey()) && error.line() != null) {
+            String[] args = new String[error.messageArgs().size() + 1];
+            args[0] = String.valueOf(error.line());
+            for (int i = 0; i < error.messageArgs().size(); i++) {
+                args[i + 1] = error.messageArgs().get(i);
+            }
+            return DslReconciler.format(template, args);
+        }
         return DslReconciler.format(template, error.messageArgs().toArray(String[]::new));
     }
 

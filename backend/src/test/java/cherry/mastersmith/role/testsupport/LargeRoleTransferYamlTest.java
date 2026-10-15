@@ -32,11 +32,14 @@ class LargeRoleTransferYamlTest {
     private static final int LIMIT = 5_242_880;
 
     @Test
-    @DisplayName("the YAML has exactly the target size and passes the safe reader and the validation")
+    @DisplayName("the YAML has exactly the target size in short lines and passes the safe reader and the validation")
     void exactSize() {
         byte[] bytes = LargeRoleTransferYaml.generateBytes(LargeRoleTransferYaml.Spec.of(10, 10_000, 30, LIMIT));
 
         assertThat(bytes).hasSize(LIMIT);
+        assertThat(new String(bytes, java.nio.charset.StandardCharsets.UTF_8).lines())
+                .allSatisfy(line ->
+                        assertThat(line.length()).isLessThanOrEqualTo(LargeRoleTransferYaml.PADDING_LINE_BYTES));
         RoleTransferReader.Result result = RoleTransferReader.read(
                 TransferYamlTrees.tree(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)));
         assertThat(result).isInstanceOf(RoleTransferReader.Valid.class);

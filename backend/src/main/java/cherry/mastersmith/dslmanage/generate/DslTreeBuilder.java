@@ -56,6 +56,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class DslTreeBuilder {
 
+    /**
+     * 表示名の {@code ja} にするコメントの長さの上限（コードポイント。Intent 261015-deps-ui-carryover の FR9.2、計画の D-4）。
+     * これより長いコメントは先頭から上限までを使う。書き出しで1文字が最悪 10 文字（{@code \UXXXXXXXX}）に逃がされても、1行の
+     * 長さの上限（{@link DslFormat#MAX_LINE_LENGTH}）の内に収まる値にする。MySQL・MariaDB のコメントの上限（テーブル 2,048 文字・
+     * カラム 1,024 文字）より長く、普通は切られない（PostgreSQL のコメントには実用上の上限が無い）。
+     */
+    static final int MAX_LABEL_CODE_POINTS = 4_096;
+
     /** 表示するカラムの並び順の始まり（BR2.5）。 */
     private static final int FIRST_ORDER = 1;
 
@@ -230,13 +238,29 @@ public class DslTreeBuilder {
         return result;
     }
 
-    /** 表示名（BR1.2・NFR9.2）。ja はコメント（制御文字を除いたもの。NFR4.8）があればコメント、無ければ物理名。en は物理名。 */
+    /**
+     * 表示名（BR1.2・NFR9.2）。ja はコメント（制御文字を除き、{@link #MAX_LABEL_CODE_POINTS} で切ったもの。NFR4.8・FR9.2）があれば
+     * コメント、無ければ物理名。en は物理名。
+     */
     private static Map<String, Object> label(String name, String comment) {
-        String cleaned = DslYamlWriter.stripControlCharacters(comment);
+        String cleaned = truncate(DslYamlWriter.stripControlCharacters(comment));
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("ja", cleaned == null ? name : cleaned);
         result.put("en", name);
         return result;
+    }
+
+    /**
+     * 文字列をコードポイントの数で上限までに切る（サロゲートの組を分けない）。
+     *
+     * @param value 文字列（null 可）
+     * @return 上限までの文字列（null なら null）
+     */
+    static String truncate(String value) {
+        if (value == null || value.codePointCount(0, value.length()) <= MAX_LABEL_CODE_POINTS) {
+            return value;
+        }
+        return value.substring(0, value.offsetByCodePoints(0, MAX_LABEL_CODE_POINTS));
     }
 
     private static Integer dslLength(TargetDbType type) {

@@ -37,12 +37,16 @@ class SafeYamlReaderTest {
     private static final String MARKER = "LEAK_MARKER_7f3a";
 
     private static final SafeYamlLimits DSL_LIMITS = new SafeYamlLimits(
-            DslFormat.MAX_BYTES, DslFormat.MAX_DEPTH, DslFormat.MAX_COLLECTION_ALIASES, DslFormat.MAX_EXPANDED_NODES);
+            DslFormat.MAX_BYTES,
+            DslFormat.MAX_DEPTH,
+            DslFormat.MAX_COLLECTION_ALIASES,
+            DslFormat.MAX_EXPANDED_NODES,
+            DslFormat.MAX_LINE_LENGTH);
 
     private final SafeYamlReader reader = new DefaultSafeYamlReader(new SafeYamlParser());
 
     private static SafeYamlLimits limits(int maxBytes, int maxDepth, int maxAliases, int maxExpandedNodes) {
-        return new SafeYamlLimits(maxBytes, maxDepth, maxAliases, maxExpandedNodes);
+        return new SafeYamlLimits(maxBytes, maxDepth, maxAliases, maxExpandedNodes, DslFormat.MAX_LINE_LENGTH);
     }
 
     private SafeYamlResult read(String yaml, SafeYamlLimits limits) {
@@ -109,6 +113,22 @@ class SafeYamlReaderTest {
         assertThat(over.line()).isNull();
         assertThat(over.column()).isNull();
         assertThat(over.path()).isNull();
+    }
+
+    @Test
+    @DisplayName("a line of exactly the line limit is read and a longer line is rejected as TOO_LARGE at that line")
+    void lineLengthLimit() {
+        SafeYamlLimits lineLimited = new SafeYamlLimits(1024, 10, 10, 100, 8);
+        assertThat(parsed("a: 1\nb: 12345\n", lineLimited).tree().get("b").intValue())
+                .isEqualTo(12345);
+
+        SafeYamlResult.Rejected over = rejected("a: 1\nb: 123456\n", lineLimited);
+
+        assertThat(over.kind()).isEqualTo(SafeYamlRejectionKind.TOO_LARGE);
+        assertThat(over.line()).isEqualTo(2);
+        assertThat(over.column()).isEqualTo(9);
+        assertThat(over.path()).isNull();
+        assertThat(over.toString()).doesNotContain("123456");
     }
 
     @Test
@@ -262,6 +282,7 @@ class SafeYamlReaderTest {
         assertThatThrownBy(() -> limits(1, 0, 0, 1)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> limits(1, 1, -1, 1)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> limits(1, 1, 0, 0)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new SafeYamlLimits(1, 1, 0, 1, 0)).isInstanceOf(IllegalArgumentException.class);
         assertThat(limits(1, 1, 0, 1).maxAliases()).isZero();
     }
 

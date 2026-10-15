@@ -29,7 +29,11 @@ public final class DslSamples {
 
     /** DSL の読み込みと同じ上限（{@link DslFormat} の値）。読み込みの部品を直接使うテストが渡す。 */
     public static final YamlLimits DSL_YAML_LIMITS = new YamlLimits(
-            DslFormat.MAX_BYTES, DslFormat.MAX_DEPTH, DslFormat.MAX_COLLECTION_ALIASES, DslFormat.MAX_EXPANDED_NODES);
+            DslFormat.MAX_BYTES,
+            DslFormat.MAX_DEPTH,
+            DslFormat.MAX_COLLECTION_ALIASES,
+            DslFormat.MAX_EXPANDED_NODES,
+            DslFormat.MAX_LINE_LENGTH);
 
     private DslSamples() {}
 

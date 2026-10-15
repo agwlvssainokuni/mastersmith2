@@ -23,17 +23,22 @@ package cherry.mastersmith.dsl.parse;
  * {@link LimitingParser} の両方に、大きさは {@code LoaderOptions} の文字の数の上限に同じ値を渡す（NFR 設計の試し T1'。片方だけ
  * を小さくすると、部品の例外が先に出て区分と位置を失うため）。
  *
+ * <p>1行の長さの上限（Intent 261015-deps-ui-carryover の FR9.2）は、UTF-8 を解読した後の1行のコードポイントの数（改行は数えない）で、
+ * {@link SafeYamlParser} が読む前に確かめる。{@code LoaderOptions} には対応する設定が無い。
+ *
  * @param maxBytes 本文の大きさの上限（バイト。1 以上）
  * @param maxDepth 入れ子の深さの上限（文書の根から数えた対応表と並びの段の数。1 以上）
  * @param maxCollectionAliases コレクション（対応表・並び）を指す別名の数の上限（0 以上）
  * @param maxExpandedNodes 別名を展開した後の節の数の上限（1 以上）
+ * @param maxLineLength 1行の長さの上限（コードポイント。改行は数えない。1 以上。ちょうどは受け付ける）
  */
-public record YamlLimits(int maxBytes, int maxDepth, int maxCollectionAliases, int maxExpandedNodes) {
+public record YamlLimits(
+        int maxBytes, int maxDepth, int maxCollectionAliases, int maxExpandedNodes, int maxLineLength) {
 
     /** 上限の値の範囲を確かめる。 */
     public YamlLimits {
-        if (maxBytes < 1 || maxDepth < 1 || maxExpandedNodes < 1) {
-            throw new IllegalArgumentException("大きさ・深さ・展開後の節の数の上限は 1 以上です");
+        if (maxBytes < 1 || maxDepth < 1 || maxExpandedNodes < 1 || maxLineLength < 1) {
+            throw new IllegalArgumentException("大きさ・深さ・展開後の節の数・1行の長さの上限は 1 以上です");
         }
         if (maxCollectionAliases < 0) {
             throw new IllegalArgumentException("別名の数の上限は 0 以上です");

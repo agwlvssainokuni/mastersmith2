@@ -24,8 +24,10 @@ package cherry.mastersmith.dsl.service;
  * @param maxAliases コレクション（対応表・並び）を指す別名の数の上限（0 以上。0 ならコレクションを指す別名を1つも許さない。
  *     文字などの単独の値を指す別名は数えない）
  * @param maxExpandedNodes 別名を展開した後の節の数の上限（キーと値の節を数える。1 以上）
+ * @param maxLineLength 1行の長さの上限（UTF-8 を解読した後の1行のコードポイントの数。改行は数えない。1 以上。ちょうどは受け付ける。
+ *     超えたら大きさの区分 {@link SafeYamlRejectionKind#TOO_LARGE} で拒否する。Intent 261015-deps-ui-carryover の FR9.2）
  */
-public record SafeYamlLimits(int maxBytes, int maxDepth, int maxAliases, int maxExpandedNodes) {
+public record SafeYamlLimits(int maxBytes, int maxDepth, int maxAliases, int maxExpandedNodes, int maxLineLength) {
 
     /** 上限の値の範囲を確かめる。 */
     public SafeYamlLimits {
@@ -40,6 +42,9 @@ public record SafeYamlLimits(int maxBytes, int maxDepth, int maxAliases, int max
         }
         if (maxExpandedNodes < 1) {
             throw new IllegalArgumentException("maxExpandedNodes は 1 以上です");
+        }
+        if (maxLineLength < 1) {
+            throw new IllegalArgumentException("maxLineLength は 1 以上です");
         }
     }
 }

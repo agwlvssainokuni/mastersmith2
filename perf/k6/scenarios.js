@@ -1500,8 +1500,8 @@ function setupRoles(data) {
     const member = roleMembers(token, 1)[0]
     data.roleMemberId = member
     data.roleGroupId = grOf(token, `perf-rolegrp-${runId}-01`)
-    roleAssign(token, worst, { userId: member })
-    roleAssign(token, worst, { groupId: data.roleGroupId })
+    roleAssignEnsured(token, worst, { userId: member })
+    roleAssignEnsured(token, worst, { groupId: data.roleGroupId })
   } else if (SCENARIO === 'roleAdminOps') {
     data.roleIds = {}
     for (let vu = 1; vu <= VUS; vu++) data.roleIds[vu] = roleCreate(token, roleRenameName(runId, vu, 'a'), 'roleSetup')
@@ -1513,6 +1513,14 @@ function setupRoles(data) {
   if (ROLE_MEMBER_SCENARIOS.includes(SCENARIO)) {
     data.roleMemberTokens = {}
     for (let vu = 1; vu <= VUS; vu++) data.roleMemberTokens[vu] = tokenOf(login(grCandidateEmail(vu), USER_PASSWORD))
+  }
+  if (SCENARIO === 'myPermissionsTree') {
+    // 前の場面（workRoleSwitch など）が保存した作業ロールに頼らず、悪い側のロールを作業ロールにする（FR7.1）
+    for (let vu = 1; vu <= VUS; vu++) {
+      const headers = roleHeaders(data.roleMemberTokens[vu])
+      const res = jsonPut(`${BASE}/api/me/work-role`, { roleId: worst }, headers, 'roleSetup')
+      if (res.status !== 204) fail(`作業ロールを切り替えられませんでした: ${res.status} ${codeOf(res)}`)
+    }
   }
 }
 
@@ -1549,6 +1557,15 @@ function roleAssign(token, roleId, target) {
   if (res.status !== 204) fail(`ロールを割り当てられませんでした: ${res.status} ${codeOf(res)}`)
 }
 
+// 割り当て済み（409 ROLE_NO_CHANGE）も受け入れる割り当て。前の場面が同じ割り当てを残していても止まらないよう、前の状態に頼る場面の
+// setup で使う（Intent 261015-deps-ui-carryover の FR7.1、project.md の学び「setup は前の場面が残した状態に頼らない」）。
+function roleAssignEnsured(token, roleId, target) {
+  const res = jsonPost(`${ROLE_API}/${roleId}/assignments`, target, roleHeaders(token), 'roleSetup')
+  if (res.status === 204) return
+  if (res.status === 409 && codeOf(res) === 'ROLE_NO_CHANGE') return
+  fail(`ロールを割り当てられませんでした: ${res.status} ${codeOf(res)}`)
+}
+
 // B5 の場面の用意。VU ごとに利用者（perf-gr-<VU>）を決め、場面に合わせてロール・グループを作って割り当てる。
 function setupRoleMembers(data, token, runId, worst) {
   const members = roleMembers(token, VUS)
@@ -1562,12 +1579,13 @@ function setupRoleMembers(data, token, runId, worst) {
     if (['workRoleSwitch', 'workRoleRead', 'rolePoolLimit'].includes(SCENARIO)) {
       const a = roleCreate(token, `perf-ws-${runId}-${two(vu)}-a`, 'roleSetup')
       const b = roleCreate(token, `perf-ws-${runId}-${two(vu)}-b`, 'roleSetup')
-      roleAssign(token, a, { userId: member })
-      roleAssign(token, b, { userId: member })
+      const assign = SCENARIO === 'workRoleRead' ? roleAssignEnsured : roleAssign
+      assign(token, a, { userId: member })
+      assign(token, b, { userId: member })
       data.roleSwitchIds[vu] = [a, b]
     }
     if (['myPermissionsTree', 'roleAssignmentsRead'].includes(SCENARIO)) {
-      roleAssign(token, worst, { userId: member })
+      roleAssignEnsured(token, worst, { userId: member })
     }
     if (['roleAssignOps', 'rolePoolLimit'].includes(SCENARIO)) {
       data.roleOwnIds[vu] = roleCreate(token, `perf-assign-${runId}-${two(vu)}`, 'roleSetup')
@@ -1580,7 +1598,7 @@ function setupRoleMembers(data, token, runId, worst) {
       const res = jsonPost(`${GROUP_API}/${groupId}/members`, { userId: members[vu - 1] }, roleHeaders(token), 'roleSetup')
       if (res.status !== 204) fail(`メンバーを足せませんでした: ${res.status} ${codeOf(res)}`)
     }
-    roleAssign(token, worst, { groupId })
+    roleAssignEnsured(token, worst, { groupId })
   }
 }
 
@@ -1689,9 +1707,18 @@ function workRoleSwitch(data) {
   check(res, { 'workRoleSwitch 204': (r) => r.status === 204 })
 }
 
+// 自分のロールの一覧に、setup で割り当てた2つのロールが含まれることを確かめる（前の場面が残したほかの割り当てがあっても数で落とさない。
+// Intent 261015-deps-ui-carryover の FR7.1）
 function workRoleRead(data) {
   const res = http.get(`${BASE}/api/me/work-role`, { headers: memberHeaders(data), tags: { name: 'workRoleRead' } })
-  check(res, { 'workRoleRead 200': (r) => r.status === 200 && r.json('roles').length === 2 })
+  const own = data.roleSwitchIds[exec.vu.idInTest]
+  check(res, {
+    'workRoleRead 200': (r) => {
+      if (r.status !== 200) return false
+      const ids = (r.json('roles') || []).map((role) => role.roleId)
+      return own.every((id) => ids.includes(id))
+    },
+  })
 }
 
 function myPermissionsTree(data) {
