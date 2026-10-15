@@ -24,25 +24,25 @@
 
 ### ブランチ ① 依存の更新（FR1）
 
-- [ ] **Step 1**（FR1・NFR1）`aidlc/` の未コミットの変更が無いことを確かめ（あれば先にコミットを提案）、`develop` から `fix/261015-deps-ui-carryover-1-deps` を作る。
-- [ ] **Step 2**（FR1.2・FR1.2a・FR1.2c）読み取りだけで版とダイジェストを確かめ、表にして `code-summary.md` に記録する。
+- [x] **Step 1**（FR1・NFR1）`aidlc/` の未コミットの変更が無いことを確かめ（あれば先にコミットを提案）、`develop` から `fix/261015-deps-ui-carryover-1-deps` を作る。
+- [x] **Step 2**（FR1.2・FR1.2a・FR1.2c）読み取りだけで版とダイジェストを確かめ、表にして `code-summary.md` に記録する。
   - `docker buildx imagetools inspect` で、`eclipse-temurin:25.0.4.1_1-jre-noble`、`grafana/otel-lgtm:0.36.0`、`axllent/mailpit:v1.31.5` の index のダイジェストと、Manifests に linux/arm64・linux/amd64 があることを確かめる。
   - FR1.2a: `eclipse-temurin:25.0.4.1_1-jdk-noble` があるかを同じ形で確かめる。無ければ前提 A1 のとおり jdk の固定先（`docker/hikari-pool.sh` 48 行・`perf/README.md` 76 行・`README.md` 392 行）は `25.0.4_7-jdk-noble` のまま残し、理由と次にそろえる時期を `.github/dependabot.yml` のコメントと `code-summary.md` に書く。
   - FR1.2c: `grafana/k6` の、その時点で公開されている最新の版（タグの一覧で確かめる）と index のダイジェスト。
   - Actions の4件（`actions/setup-node` v7.1.0・`gradle/actions/setup-gradle` v6.4.0・`actions/upload-artifact` v7.0.2・`actions/download-artifact` v8.0.2。版は各プルリクエストの版）のタグが指すコミットのハッシュ（`gh api` の読み取り）。
-- [ ] **Step 3**（FR1.1）Gradle の更新: `gradle/libs.versions.toml` の `spotless` を 8.10.4、`jqwik` を 1.10.2 にする。wrapper は `./gradlew wrapper --gradle-version 9.8.1` で上げ（`gradle-wrapper.properties`・`gradlew`・`gradlew.bat`・`gradle-wrapper.jar` のうち変わるもの）、もう一度 `./gradlew wrapper` を流して wrapper 自身の差を落ち着かせる。lockfile は `./gradlew :backend:resolveAndLockAll --write-locks` で書き直し、`backend/gradle.lockfile`・`settings-gradle.lockfile` の差が今回上げたものとその推移依存だけであることを確かめる。
-- [ ] **Step 4**（FR1.1・NFR6）npm の更新（`frontend/`）: 10 件（`@vitejs/plugin-react`・`@typescript-eslint/parser`・`oxlint`・`@types/node`・`vite`・`axe-core`・`stylelint`・`eslint`・`@vitest/coverage-v8`・`vitest`）を各プルリクエストの版で `package.json` に書き、`npm install` で `package-lock.json` を書き直す（`frontend/.npmrc` の `ignore-scripts=true` のまま）。`vitest` と `@vitest/coverage-v8` は同じ版にそろえる。`vite`・`@vitejs/plugin-react` は `config/npm-build-tools.txt` の成果物を作る道具で、開発時の依存でも High 以上で止まることを OSV-Scanner で確かめる。
-- [ ] **Step 5**（FR1.1）Actions の更新: `.github/workflows/ci.yml` の4つの `uses:` のハッシュと末尾のコメントの版を Step 2 の値に替える。
-- [ ] **Step 6**（FR1.1・FR1.2・FR1.2b）イメージの更新（Step 2 の版とダイジェスト）。替える箇所の一覧は4.1節。
+- [x] **Step 3**（FR1.1）Gradle の更新: `gradle/libs.versions.toml` の `spotless` を 8.10.4、`jqwik` を 1.10.2 にする。wrapper は `./gradlew wrapper --gradle-version 9.8.1` で上げ（`gradle-wrapper.properties`・`gradlew`・`gradlew.bat`・`gradle-wrapper.jar` のうち変わるもの）、もう一度 `./gradlew wrapper` を流して wrapper 自身の差を落ち着かせる。lockfile は `./gradlew :backend:resolveAndLockAll --write-locks` で書き直し、`backend/gradle.lockfile`・`settings-gradle.lockfile` の差が今回上げたものとその推移依存だけであることを確かめる。
+- [x] **Step 4**（FR1.1・NFR6）npm の更新（`frontend/`）: 10 件（`@vitejs/plugin-react`・`@typescript-eslint/parser`・`oxlint`・`@types/node`・`vite`・`axe-core`・`stylelint`・`eslint`・`@vitest/coverage-v8`・`vitest`）を各プルリクエストの版で `package.json` に書き、`npm install` で `package-lock.json` を書き直す（`frontend/.npmrc` の `ignore-scripts=true` のまま）。`vitest` と `@vitest/coverage-v8` は同じ版にそろえる。`vite`・`@vitejs/plugin-react` は `config/npm-build-tools.txt` の成果物を作る道具で、開発時の依存でも High 以上で止まることを OSV-Scanner で確かめる。
+- [x] **Step 5**（FR1.1）Actions の更新: `.github/workflows/ci.yml` の4つの `uses:` のハッシュと末尾のコメントの版を Step 2 の値に替える。
+- [x] **Step 6**（FR1.1・FR1.2・FR1.2b）イメージの更新（Step 2 の版とダイジェスト）。替える箇所の一覧は4.1節。
   - `Dockerfile` の eclipse-temurin の jre。
   - `compose.yaml` の `grafana/otel-lgtm`・`axllent/mailpit`、`docker/perf/compose.yaml` の `axllent/mailpit`。
   - `perf/README.md` の jre（5 か所）・otel-lgtm（1 か所）・k6（11 か所。FR1.2c）、jdk（Step 2 の結果による）。
   - `README.md` の jre（4 か所）、mailpit（552 行。ダイジェストを足して版を v1.31.5 にそろえる。FR1.2b）、jdk（Step 2 の結果による）。
   - `docker/hikari-pool.sh` の `JDK_IMAGE`（Step 2 の結果による）。
-- [ ] **Step 7**（FR1.2d）`.github/dependabot.yml` の「ダイジェストでのイメージの固定」のコメントを、実際の固定先と一致させる。書いてある版の文字（`25.0.4_7-jre-noble`）を新しい版にし、「Dependabot が見ない固定先」に `README.md` の mailpit を足し、`grafana/k6` は知らせが来ない固定先であること（上げる時期は Intent の依存の更新のとき）を書く。jdk を据え置いたときは、その理由と時期を書く。
-- [ ] **Step 8**（FR1.2・FR1.2d）残りの確かめ: 古い版の文字（`25.0.4_7-jre`、`otel-lgtm:0.34.0`、`mailpit:v1.31.2`、`grafana/k6:2.3.0`、古いダイジェストの先頭 12 文字）を `grep -rn`（`vendor/`・`node_modules`・`build`・`aidlc/` を除く）で探し、据え置いたもの以外が残らないことを確かめて結果を記録する。
-- [ ] **Step 9**（FR1.4・NFR1）D-13 の答えにより、新しい jre のイメージで `docker build` し、使い捨ての名前・一時のボリュームで起動して `/actuator/health` の 200 を待つ（イメージに HEALTHCHECK が無いため bash の `/dev/tcp` で待つ。`project.md` の学び）。確かめた後にコンテナ・ボリュームを消す。配備したアプリは止めない（VM のメモリの空きを先に確かめ、足りなければ依頼者に諮る）。
-- [ ] **Step 10**（FR1.3・FR1.4・NFR1・NFR6）`./gradlew verify` と `./gradlew e2eTest` を流す。通らない更新は、原因を確かめ、FR1.3 に従ってその件だけ見送る（`.github/dependabot.yml` の `ignore` に理由と外す時期を書き、版を戻す）。重大度 High 以上の脆弱性の直しを含む更新は見送らずに直す。見送りが出たときは、その場で依頼者に伝える。
+- [x] **Step 7**（FR1.2d）`.github/dependabot.yml` の「ダイジェストでのイメージの固定」のコメントを、実際の固定先と一致させる。書いてある版の文字（`25.0.4_7-jre-noble`）を新しい版にし、「Dependabot が見ない固定先」に `README.md` の mailpit を足し、`grafana/k6` は知らせが来ない固定先であること（上げる時期は Intent の依存の更新のとき）を書く。jdk を据え置いたときは、その理由と時期を書く。
+- [x] **Step 8**（FR1.2・FR1.2d）残りの確かめ: 古い版の文字（`25.0.4_7-jre`、`otel-lgtm:0.34.0`、`mailpit:v1.31.2`、`grafana/k6:2.3.0`、古いダイジェストの先頭 12 文字）を `grep -rn`（`vendor/`・`node_modules`・`build`・`aidlc/` を除く）で探し、据え置いたもの以外が残らないことを確かめて結果を記録する。
+- [x] **Step 9**（FR1.4・NFR1）D-13 の答えにより、新しい jre のイメージで `docker build` し、使い捨ての名前・一時のボリュームで起動して `/actuator/health` の 200 を待つ（イメージに HEALTHCHECK が無いため bash の `/dev/tcp` で待つ。`project.md` の学び）。確かめた後にコンテナ・ボリュームを消す。配備したアプリは止めない（VM のメモリの空きを先に確かめ、足りなければ依頼者に諮る）。
+- [x] **Step 10**（FR1.3・FR1.4・NFR1・NFR6）`./gradlew verify` と `./gradlew e2eTest` を流す。通らない更新は、原因を確かめ、FR1.3 に従ってその件だけ見送る（`.github/dependabot.yml` の `ignore` に理由と外す時期を書き、版を戻す）。重大度 High 以上の脆弱性の直しを含む更新は見送らずに直す。見送りが出たときは、その場で依頼者に伝える。
 - [ ] **Step 11**（FR1）コミットの案（3節の C1-1〜C1-5）を依頼者に提案し、承認の後にコミットする。`develop` へ squash で統合（件名の案: 「Dependabot の知らせ 20 件を取り込み、見ない固定先のイメージをそろえる」）し、作業ブランチを消す。
 - [ ] **Step 12**（FR1.1・FR1.4）依頼者の push の後、`gh pr list` で 20 件の状態を確かめ、D-12 の答えに従ってプルリクエストを閉じる（取り込んだ件と見送った件の一覧と理由を `code-summary.md` に記録）。統合の後の CI の確かめは Build and Test に引き継ぐ（6節）。
 

@@ -37,7 +37,7 @@ HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
 SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$HASH" "$i"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
@@ -73,7 +73,7 @@ docker compose up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
 # 2. イメージ（JRE）には jcmd が無いため、同じ版の JDK のイメージを、アプリのコンテナと PID の名前空間を共有して動かす（java は PID 1）
-nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.4_7-jdk-noble@sha256:2feab631bffce6236d8bb5261a4abe19a8d6f85bad1c01166f74686c983d011f jcmd 1 "$@"; }
+nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc3f71aab462e7048a47a0d10edf57fbccde3fceea2281e610bf5880b4 jcmd 1 "$@"; }
 nmt VM.native_memory baseline
 
 # 3. k6 の場面（例: refresh）を別の端末で流しながら（その端末では D に同じ場所を入れる）、5 秒ごとに内訳とコンテナのメモリを記録する（コンテナが止まると終わる）
@@ -236,7 +236,7 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
   while read -r u; do printf "('%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, '%s@example.test')," "$u" "$HASH" "$u"; done | sed 's/,$//')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfc up -d --wait
 
@@ -321,7 +321,7 @@ INSERT INTO refresh_tokens (user_id, token_hash, issued_at, expires_at, revoked_
     CASE WHEN r.X <= 100 THEN NULL ELSE CURRENT_TIMESTAMP END FROM users u, SYSTEM_RANGE(1, 1100) r WHERE u.email LIKE 'perf-uasw-%'"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 
@@ -433,7 +433,7 @@ docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --
   -p 127.0.0.1:13000:3000 --memory 1536m \
   -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_AUTH_DISABLE_LOGIN_FORM=true \
   -v "$PWD/docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro" \
-  grafana/otel-lgtm:0.34.0@sha256:b966ea107831d526d9eb8fe4d2d86c9e5731392fad9dce8296bcf2072031f07c
+  grafana/otel-lgtm:0.36.0@sha256:57c04cbd8e7022f32bb84c4ac005d79baf8b08e2c5be44facf11f5f1f9944ba2
 until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
 perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
 curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VALUE が 4 であること
@@ -564,7 +564,7 @@ INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   VALUES ('perf-graop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-graop01')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 
@@ -821,7 +821,7 @@ INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   VALUES ('perf-roleop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-roleop01')"
 cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
 docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
 rm build/h2-perf.jar; unset AP UP HASH SQL
 perfu up -d --wait
 

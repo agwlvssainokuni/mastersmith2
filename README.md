@@ -349,7 +349,7 @@ V7（利用者のプリファレンスとパスワードの変更、下の「利
 ```bash
 docker compose stop app
 mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 ls -l ~/.mastersmith-backup/     # ファイルができたこと（中身は開かない）
 docker compose start app         # 配備の途中なら起動せず、次の手順で新しい版を起動する
@@ -359,7 +359,7 @@ docker compose start app         # 配備の途中なら起動せず、次の手
 
 ```bash
 docker compose stop app
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab \
   sh -c 'rm -rf /data/* && tar xzf /backup/<バックアップのファイル> -C /data && chown -R 10001:10001 /data'
 docker compose start app         # 止めたコンテナをそのまま起動する（作り直すときは戻し方の節の MASTERSMITH_IMAGE_TAG を付ける）
 ```
@@ -389,7 +389,7 @@ DSL の投入と適用を重ねると、アプリが動いている間は内部D
 - **ディスクの空き**: 詰め直しは、残す分の大きさの新しいファイルを書きます。空き（`colima ssh -- df -h /`）が残す分（最大約 210MB）より十分にあることを確かめます。
 - **接続先の指定**: `MASTERSMITH_DB_URL` で接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けます。付けないと、`compact` は接続を閉じて再開するだけで縮まず、道具が「大きさが減っていません」と出します。
 - **記録**: 詰め直しの操作は、監査ログにもアプリのログにも残りません（HikariCP の標準の機能だけで行うため）。前と後の大きさと時間は、道具の出力で見ます。
-- **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.4_7-jdk-noble@sha256:2feab631bffce6236d8bb5261a4abe19a8d6f85bad1c01166f74686c983d011f`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
+- **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc3f71aab462e7048a47a0d10edf57fbccde3fceea2281e610bf5880b4`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
 - **使い捨ての環境で試す**: `--container mastersmith-perf-app-1` を付けます。`perf/dsl-timing.sh --storage --compact` は、投入と適用を重ねた後にこの道具を流し、前と後の大きさと時間を記録します（`perf/README.md`）。
 
 ### コンテナの資源の上限（colima の VM・メモリ・JVM）
@@ -549,7 +549,7 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 - アプリのコンテナから送るときは、`.env` に `SPRING_MAIL_HOST=mailpit`・`SPRING_MAIL_PORT=1025`・`MASTERSMITH_MAIL_FROM`（暗号化なし・資格情報なし）を書いて、`docker compose up -d` で作り直します。PC の上で動かす WAR（E2E など）からは `localhost:1025` へ送ります。
 - 画面と API（8025）と SMTP（1025）は PC の localhost だけに開きます。Mailpit は受けたメールを外へ中継しません。
-- ボリュームを置かないため、コンテナを消すと受けたメールも消えます。Mailpit が持つメールは既定で最大 500 通で、超えると古いものから消えます（イメージ `axllent/mailpit:v1.31.2` の起動の引数 `--max` の既定の値。有効期間 `--max-age` は既定で無し）。
+- ボリュームを置かないため、コンテナを消すと受けたメールも消えます。Mailpit が持つメールは既定で最大 500 通で、超えると古いものから消えます（イメージ `axllent/mailpit:v1.31.5@sha256:94f6b70c1436defae6799d9ac7ff0eeff9540465b842026d5cdb018f1c0234ea` の起動の引数 `--max` の既定の値。有効期間 `--max-age` は既定で無し）。
 - E2E（`./gradlew e2eTest`）の前に起動しておきます（「ビルドした WAR での画面の確認（E2E）」）。
 
 ## 対象DB（利用者の業務データの DB）
@@ -732,7 +732,7 @@ schemas:                        # スキーマはちょうど1つ
 - **書式の版を上げたとき（版 1 → 版 2）**: 版 1 で適用していた DSL は起動時に読めないため、上の「適用中の DSL が無い状態」で起動します。版 1 のプレビューは読めないプレビューとして残り、表示（`GET /preview`）は 422 `DSL_INVALID`（書式の版の誤り）になります。破棄してから、スキーマを読み込んで既定の DSL を作り直し（版 2）、確かめて適用してください。履歴の版 1 の版は「プレビューに戻す」と 422 になります。
 - **保存**: プレビュー（最大1件）と適用の履歴は内部DB の `dsl_previews`・`dsl_applied_revisions`（Flyway の V5）に、受け取ったバイト列のまま入れます。すべて 10MB なら最大約 210MB です。
 - **既知の制約（動いている間の内部DB のファイルの大きさ）**: 上限を超えた古い履歴を消しても、アプリが動いている間は H2 がその場所を再利用せず、内部DB のファイルは投入と適用のたびに本文の大きさの分（10MB の DSL なら約 10.8MB）ずつ大きくなります（2026-09-25 の測定で、10MB の DSL の投入と適用を 21 回で約 278MB、40 回で約 483MB。頭打ちになりません）。この伸びは受け入れ、**アプリを止めずに `./docker/hikari-pool.sh compact` で詰め直します**（「内部DBのファイルの詰め直し」の節。詰め直しの間の要求は再開まで待たされます）。アプリを止めたとき（`docker compose restart app` など）にも、接続先の `;DEFRAG_ALWAYS=TRUE`（「環境変数」の表の `MASTERSMITH_DB_URL`）でファイルが詰め直されます。
-  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `./docker/hikari-pool.sh status`（または `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 du -sh /data`）。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、利用の少ない時間に `./docker/hikari-pool.sh compact` で詰め直します。
+  - 内部DB のファイルの大きさは、アプリを止めずに読み取りだけで見られます: `./docker/hikari-pool.sh status`（または `docker run --rm -v mastersmith_mastersmith-data:/data:ro eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab du -sh /data`）。目安として、DSL の投入と適用を重ねて 300MB を超えたら、ディスクの空き（`colima ssh -- df -h /`）を確かめ、利用の少ない時間に `./docker/hikari-pool.sh compact` で詰め直します。
 
 ### DSL の操作の監査
 
@@ -1132,7 +1132,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 ```bash
 docker compose stop app
 mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
-docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e331196fbc42e246da4df24df9b6c556c73e7efddfde0511f1c9508c5 \
+docker run --rm -v mastersmith_mastersmith-data:/data -v "$HOME/.mastersmith-backup":/backup eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab \
   tar czf /backup/mastersmith-data-$(date +%Y%m%d%H%M).tgz -C /data .
 docker compose start app
 # 複写を展開し、H2 の道具で読み取り（ACCESS_MODE_DATA=r）で開いて audit_events を読む
