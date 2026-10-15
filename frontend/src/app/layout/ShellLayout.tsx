@@ -24,7 +24,7 @@
 // - トップバーの右に作業ロールの切り替え（WorkRoleSwitcher）を置く。768px 未満では、トップバーから外して内容の領域の
 //   先頭に置く（依頼者の決定 G2: A。機能設計 D9 との差。幅 220px 固定のサイドバーの横のトップバーに収まらないため）。
 // - ユーザーメニューの path の項目は、既定の移動を止め、beforeNavigate があれば呼んでから移る（L15）。
-import { AppShell, type MenuItem, type SidebarLabels } from 'make-you-chic-ui'
+import { AppShell, type MenuItem } from 'make-you-chic-ui'
 import {
   useEffect,
   useMemo,
@@ -121,10 +121,14 @@ export function ShellLayout({ children }: ShellLayoutProps) {
 
   const expandedIds = useMemo(() => new Set(nextExpansion.ids), [nextExpansion.ids])
 
-  const navLabels: SidebarLabels = {
+  // 型の注記を付けずに作ってから渡す（make-you-chic-ui の SidebarLabels の containsCurrent は a9309c4 で必須に
+  // なった。注記の無いオブジェクトなら、containsCurrent を持たない前の版の型にも余分な項目として咎められずに渡せる）。
+  // containsCurrent は、畳んだ状態で今の項目を子孫に持つ1段目のまとまりの読み上げの名前（Intent 261015 の FR2.3）。
+  const navLabels = {
     navigationLabel: t('nav.navigationLabel'),
-    expandGroup: (label) => format('nav.expandGroup', { label }),
-    collapseGroup: (label) => format('nav.collapseGroup', { label }),
+    expandGroup: (label: string) => format('nav.expandGroup', { label }),
+    collapseGroup: (label: string) => format('nav.collapseGroup', { label }),
+    containsCurrent: (label: string) => format('nav.containsCurrent', { label }),
   }
 
   // ユーザーメニューの項目は、path を持てば href（<a> で描かれ、リンクとして読み上げられる）と、既定の移動を止めて
