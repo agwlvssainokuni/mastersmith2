@@ -4,6 +4,17 @@
 
 パスは `backend/src/main/java/cherry/mastersmith/` を省いて書く。
 
+> 2026-10-15（コミット `4f6c27d`、Intent `261015-deps-ui-carryover`）の更新: 下の「外部の API」の本数（32 本）と表は前回（コミット `d5aea52`、`261004-role-menu` の実装の前）の記録で、`261004-role-menu` で加わった `role`・`group`・`navigation` の API（作業ロール `GET /api/me/work-role` ほか）は数えていない。今回の束では API の足し引きは無いため数え直さず、行の排他の待ちの上限切れを返す経路（P4・K-40）だけを下の「BUSY を返す経路」に足した。
+
+## BUSY を返す経路（2026-10-15）
+
+| code（状態コード） | 返す controller | 中身 |
+|---|---|---|
+| `ROLE_BUSY`（409） | `role/web/` の `MeWorkRoleController`・`RoleAssignmentController`・`RoleAdminController`・`RoleTransferController` | 業務処理の結果の型 `Busy` を `switch` で `BusinessException` に変える（例: `RoleAdminController.java` 121・186 行）。ロールの行の排他（3,000 ms）の上限切れ |
+| `GROUP_BUSY`（409） | `group/web/GroupAdminController.java`（123・215 行）、`role/web/RoleAssignmentController.java`（156 行、グループの行の待ち） | グループの行の排他（3,000 ms）の上限切れ |
+
+行の番号は開発担当の記録で、アーキテクトは排他の上限（`RoleStore`・`GroupStore` の `LOCK_TIMEOUT_MILLIS`）だけを確かめた。流れは `architecture.md` の Interaction Diagrams 5（K-40）。
+
 ## 外部の API（HTTP）
 
 本数は controller ごとの対応づけの注釈（`@GetMapping` などメソッドの単位）を数えた値で、合わせて **32 本**（エラーの経路 `/error` と Actuator・画面の配信を除く）。開発担当の記録は総数を「29 本」と書いているが、内訳の合計は 32 で、今回の数え直しも 32 だった。

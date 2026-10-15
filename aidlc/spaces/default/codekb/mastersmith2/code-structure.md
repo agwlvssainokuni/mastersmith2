@@ -2,13 +2,15 @@
 
 各部品の責務と読みの深さは `component-inventory.md`、部品の間の依存は `dependencies.md` に書き、ここでは置き場と決まりだけを書く。構成はディレクトリとファイルの名前の単位で確かめた（流し読み）。件数は開発担当がファイルを数えた値で、実行の件数ではない。
 
+> 2026-10-15（コミット `4f6c27d`）の更新: バックエンドと画面の構成の図に `261004-role-menu` で増えたパッケージ・ディレクトリを足し（`ls` で確かめた）、K-48 と今回深く読んだファイルの表を足した。ファイルの件数（480・380・110 など）と移行の一覧は前回（コミット `d5aea52`）の値のままで、今回は数え直していない。
+
 ## リポジトリの最上位
 
 | パス | 分類 | 内容 |
 |---|---|---|
 | `backend/` | バックエンド | Gradle のサブプロジェクト。Java のソース・テスト・設定・Flyway の移行・SpotBugs の除外 |
 | `frontend/` | 画面 | npm のプロジェクト（React＋TypeScript、Vite）。ルートの Gradle から呼ぶ。E2E は `frontend/e2e/` |
-| `vendor/make-you-chic-ui/` | デザインシステム | Git サブモジュール（固定先 `e82b651`、npm の `file:` の依存）。このリポジトリからは変えない |
+| `vendor/make-you-chic-ui/` | デザインシステム | Git サブモジュール（固定先 `5bf1ffe`、npm の `file:` の依存）。このリポジトリからは変えない |
 | `vendor/java-mustache-processor/` | Mustache のエンジン | Git サブモジュール（固定先 `8d44c36`、Gradle の composite build）。このリポジトリからは変えない |
 | `gradle/`・`settings.gradle.kts`・`build.gradle.kts` | ビルド | 版の一覧（`gradle/libs.versions.toml`）、依存の取得元の固定と composite build、1コマンドの検査 `verify` と `e2eTest` |
 | `backend/gradle.lockfile`・`settings-gradle.lockfile`・`frontend/package-lock.json` | 版の固定 | Gradle と npm の依存の実際の版 |
@@ -36,7 +38,10 @@ cherry.mastersmith
 ├── appearance/{config,service,web}          インスタンスの見た目の設定
 ├── targetdb/{config,domain,repository,service}       対象DB のスキーマの読み取り
 ├── dsl/{domain,parse,validate,service}      DSL の型・読み込み・検証・適用中のモデル（メニューの木を含む）
-└── dslmanage/{domain,generate,repository,service,web} DSL の管理の API と既定の DSL の生成
+├── dslmanage/{domain,generate,repository,service,web} DSL の管理の API と既定の DSL の生成
+├── role/{domain,repository,service,store,transfer,web} ロール・権限・割り当て・作業ロール・権限の YAML（261004-role-menu）
+├── group/{domain,repository,service,store,web}         グループ（261004-role-menu）
+└── navigation/{domain,service,web}                     権限で枝を落とした N 階層のメニュー（261004-role-menu）
 ```
 
 - 層の決まりは `team.md` の Code Style のとおりで、ArchUnit で確かめる（全体の `ArchitectureTest` と機能ごとの `*BoundaryArchitectureTest`。`access` には無い。K-38）。
@@ -73,12 +78,37 @@ cherry.mastersmith
 ```
 frontend/src
 ├── main.tsx
-├── app/        registry・navigation・layout・routing・admin-forbidden・login-state・login-handoff・display-settings・i18n・pages
-├── shared/     api-client・format・modal・paging・validation
-└── features/   admin・auth・dsl・invitation・preferences・registration・useradmin（各 registration.ts で登録）
+├── app/        registry・navigation・layout・routing・admin-forbidden・login-state・login-handoff・display-settings・i18n・pages・work-role・testing
+├── shared/     api-client・format・modal・paging・tree・validation
+└── features/   admin・auth・dsl・groupadmin・invitation・mypermissions・preferences・registration・roleadmin・roletransfer・tables・useradmin（各 registration.ts で登録）
 ```
 
 - 機能は `features/<featureId>/registration.ts` を置くだけで読み込まれ（`app/registry/registrationModules.ts`・`loadRegistrations.ts`、検査は `validateRegistrations.ts`）、骨組みのファイルは書き換えない。機能どうしは直接 import し合わず、共有するものは `shared/` に置く（`team.md` の Code Style、`frontend/src/features/README.md`）。
 - 差し込み口は4つ: 画面（ルート、`access: AccessLevel`）・サイドバーの項目（`visibleWhen: VisibleWhen`・`order`・`labelKey`・`path`）・ユーザーメニューの項目・ログイン状態の提供元（`frontend/src/app/registry/types.ts`）。
-- N 階層の木を描く部品は `features/dsl/DslMenuTree.tsx` だけで、機能の中にある（`shared/` にも骨組みにも無い。K-36）。
+- N 階層の木を描く部品は `features/dsl/DslMenuTree.tsx` だけで、機能の中にある（`shared/` にも骨組みにも無い。K-36）。これは前回（`d5aea52`）の記録で、`261004-role-menu` で共有の木 `shared/tree/` が加わった（K-47）。
 - CSS は部品と同じ場所に素の CSS で置く。
+
+## 2026-10-15 に深く読んだファイル（Intent `261015-deps-ui-carryover`）
+
+| 場所 | 役割 | 所見（束の項目） |
+|---|---|---|
+| `gradle/libs.versions.toml`・`settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/dependabot.yml`・`.github/workflows/ci.yml`・`config/npm-build-tools.txt`・`Dockerfile` | 版の定義・検査の並び・更新の通知・土台のイメージ | K-39（U1）・K-43（P7） |
+| `role/store/RoleStore.java`・`role/service/RoleStoreTransactions.java` | ロールの書き込みと行の排他 | K-40（P1・P4） |
+| `dsl/parse/SafeYamlParser.java`・`dsl/parse/YamlLimits.java` | 信頼できない YAML の読み込み | K-41（P2） |
+| `perf/k6/scenarios.js` | k6 の台本 | K-42（P3・P5） |
+| `frontend/src/app/work-role/WorkRoleSwitcher.css` | Dropdown の幅の上書き | K-44（K1） |
+| `dsl/domain/DslError.java` | DSL の誤り | K-45（K2 R-05） |
+| `navigation/domain/MenuFilter.java` | 権限でメニューの枝を落とす | K-46（K3 R-04）、`navigation` の record は K-45（K3 R-03） |
+| `frontend/src/shared/tree/SharedTreeView.tsx`・`SharedTreeNodeItem.tsx` | 共有の木 | K-47（K4 R-02） |
+| `frontend/src/features/{groupadmin,roleadmin,roletransfer}/useSlowNotice.ts` | 遅いときの知らせ | K-48（K5） |
+
+### K-48 `useSlowNotice` が3つの機能に複製されている
+
+確かめた事実:
+
+- `useSlowNotice.ts` は `frontend/src/features/groupadmin/`・`roleadmin/`・`roletransfer/` の **3つ** にあり（振り返りの K5 の文言は groupadmin・roletransfer の2つ）、違いはコメントの1行（ほかの2つの名前）だけ。テスト `useSlowNotice.test.tsx` も3つにある（`ls` と開発担当の差分の確かめ）。
+- `frontend/src/shared/` には `api-client`・`format`・`modal`・`paging`・`tree`・`validation` があり、機能の間で共有するものの置き場の形はそろっている。機能どうしの import は ESLint の `no-restricted-imports` で止める決まり（`team.md` の Code Style）。
+
+見立て（未検証）:
+
+- `shared/` の1つにまとめ、3つの機能の import を替え、テストを1つにまとめる直しになる（role-admin-ui R-02）。テストを1つにすると画面のカバレッジ（`frontend/vitest.config.ts` の `thresholds`）の分母が変わるが、同じ中身の重複が減るだけで下限に響かない見込み。

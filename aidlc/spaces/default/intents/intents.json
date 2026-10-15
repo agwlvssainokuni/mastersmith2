@@ -89,5 +89,12 @@
     "dirName": "261004-role-menu",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a13da2-138b-72ea-a46d-d14ba321470c",
+    "slug": "deps-ui-carryover",
+    "dirName": "261015-deps-ui-carryover",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]

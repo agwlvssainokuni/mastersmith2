@@ -2,12 +2,13 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は前回の 39 個をそのまま使う（今回の追加・名前の変更は無い）。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は前回の 39 個をそのまま使い、2026-10-15 に `261004-role-menu` で増えたコードの 8 個（`role`・`group`・`navigation`・`frontend-feature-roleadmin`・`frontend-feature-groupadmin`・`frontend-feature-roletransfer`・`frontend-feature-mypermissions`・`frontend-feature-tables`）を足した（計 47 個。前の ID の名前は変えていない）。
 - 状態: healthy（問題なし）・at-risk（今の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
 - 読みの深さ:
-  - 「深い（一部）」は今回の走査（コミット `d5aea52`、深さ Standard）で深く読んだファイルを持つ部品で、`analyzed.components` の 21 個。読んだのは今回の論点に関わるファイル（と範囲）だけで、部品の全体ではない。読んだファイルは各部品に書いた。
+  - 「深い（一部）」は今回の走査（2026-10-15、コミット `4f6c27d`、Focused scan・深さ Minimal）で深く読んだファイルを持つ部品で、`analyzed.components` の 11 個。読んだのは束の項目に関わるファイル（と範囲）だけで、部品の全体ではない。読んだファイルは各部品の「2026-10-15 に読んだもの」に書いた。
+  - 「前回の深い（一部）」は前回（2026-10-04、コミット `d5aea52`、`261004-role-menu` の実装の前）に深く読んだもので、今回は確かめ直していない。今回の記録の上では流し読みの扱いである。状態（at-risk など）と K-32〜K-38 の文も前回の時点のもの。
   - 「流し読み」はディレクトリとファイルの名前・検索だけで、責務の文はその範囲と前回までの記録による。
-- K の番号は `business-overview.md` の所見の一覧を指す。この文書に本文を書いたのは K-36（`make-you-chic-ui`）だけで、ほかは持ち主の文書を参照する。
+- K の番号は `business-overview.md` の所見の一覧を指す。この文書に本文を書いたのは K-36（`make-you-chic-ui`、前回）、K-44（`make-you-chic-ui`）、K-46（`navigation`）、K-47（`frontend-app-core`）で、ほかは持ち主の文書を参照する。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -142,7 +143,8 @@
 - 場所: `dsl/{domain,parse,validate,service}`（あわせて `backend/src/main/resources/dsl/dsl-schema-v1.json`）
 - 責務: DSL の型・安全な読み込み・検証・適用中のモデル（メニューの木を含む）の保持と提供口 `ActiveDslModelProvider`。
 - 今回読んだもの: `domain/DslMenuItem.java`・`DslModel.java`（メニューの項目）・`DslFormat.java`（上限の定数）、`service/ActiveDslModelProvider.java`、`validate/DslSemanticValidator.java`（メニューの検証の 78〜117 行）、`dsl-schema-v1.json`（`menus`・`menuItem`）。K-37 の持ち主（本文は `api-documentation.md`）。
-- 状態: at-risk（K-37 で提供口の使い方・検証が増えうる） ／ 読みの深さ: 深い（一部。上の6ファイル）
+- 2026-10-15 に読んだもの: `parse/SafeYamlParser.java`・`parse/YamlLimits.java`（上限は4項目で1行の長さの上限が無い。K-41、本文は `architecture.md` の Interaction Diagrams 6）、`domain/DslError.java`（`toString` を上書きしない record。K-45、本文は `code-quality-assessment.md`）。`DslFormat` の上限の定数は grep で見た。
+- 状態: at-risk（K-41・K-45） ／ 読みの深さ: 深い（一部。2026-10-15 は上の3ファイル。前回の6ファイルは前回の深い（一部））
 
 ### dslmanage
 
@@ -150,6 +152,29 @@
 - 責務: 既定の DSL の生成・投入・プレビュー・適用・履歴（`/api/admin/dsl`）。
 - 今回読んだもの: `generate/DslTreeBuilder.java`（既定のメニューの生成の 60〜84 行）。テーブルごとに1段のメニューだけを作る（K-37）。
 - 状態: healthy ／ 読みの深さ: 深い（一部。`DslTreeBuilder.java` の上の範囲だけ）
+
+### role
+
+- 場所: `role/{domain,repository,service,store,transfer,web}`（`261004-role-menu` で加わった。domain 35・repository 14・service 37・store 8・transfer 14・web 34 ファイル）
+- 責務: ロールと権限の設定、利用者・グループへの割り当て、作業ロール（`/api/me/work-role`）、権限の解決、権限の YAML の書き出しと取り込み（`transfer`・`service/RoleTransferLimits.java`）。行の排他は `store`。
+- 2026-10-15 に読んだもの: `store/RoleStore.java`（排他と待ちの上限 3,000 ms）、`service/RoleStoreTransactions.java`（1つ目のトランザクションの入口）。K-40 の持ち主（本文は `architecture.md` の Interaction Diagrams 5）。web の `ROLE_BUSY` の変換と `RoleAdminService` の流れのコメントは grep。
+- 状態: at-risk（K-40） ／ 読みの深さ: 深い（一部。上の2ファイル）
+
+### group
+
+- 場所: `group/{domain,repository,service,store,web}`（`261004-role-menu` で加わった）
+- 責務: グループの管理（`group/web/GroupAdminController.java`）と、行の排他（`store/GroupStore.java`、待ちの上限 3,000 ms）。上限切れは `GROUP_BUSY`（409）。
+- 状態: at-risk（K-40） ／ 読みの深さ: 流し読み（BUSY と排他の grep だけ）
+
+### navigation
+
+- 場所: `navigation/{domain,service,web}`（`261004-role-menu` で加わった）
+- 責務: 適用中の DSL のメニューから、権限で枝を落とした表示の木を作り画面に渡す。テーブルを指す項目の可否。
+- 2026-10-15 に読んだもの: `domain/MenuFilter.java`（Javadoc の部分）。record の `toString` の有無は grep（K-45、本文は `code-quality-assessment.md`）。
+- K-46 `MenuFilter` の再帰の安全が DSL の上限に頼る:
+  - 確かめた事実: `MenuFilter` の Javadoc（40 行）は「入れ子は DSL の深さの上限（5 段）の内に収まるため、再帰でたどってもスタックを使い尽くさない」と書く。上限は `dsl/domain/DslFormat.java` の `MAX_MENU_DEPTH = 5`（35 行）で、`MenuFilter` の中では深さを確かめていない（Javadoc の範囲。実装の全体は読んでいない）。
+  - 見立て（未検証）: 振り返りの K3 R-04 は、この前提を Javadoc に書くだけでよいか、`MenuFilter` の入口で深さを確かめるかの判断である。DSL の検証を通らない木が `MenuFilter` に来る経路が無いかは、要件定義・コード生成の計画で確かめる。
+- 状態: at-risk（K-45・K-46） ／ 読みの深さ: 深い（一部。`MenuFilter.java` の Javadoc だけ）
 
 ### backend-test-support
 
@@ -165,21 +190,27 @@
 - 場所: `main.tsx`・`app/App.tsx`・`app/pages/`・`app/admin-forbidden/`・`app/login-handoff/`・`app/login-state/`・`shared/validation`・`shared/format`・`shared/modal`
 - 責務: 画面の起動と骨組み、共通の画面（ホーム・403 の画面 S6）、管理の API の 403 を受けて S6 に切り替える `AdminForbiddenProvider`、日時の書式、入力の確かめ。
 - 今回読んだもの: `app/admin-forbidden/AdminForbiddenProvider.tsx`、`app/pages/HomePage.tsx`。K-35 に関わる（本文は `architecture.md` の Interaction Diagrams 3）。前回の一覧の場所に `app/admin-forbidden/`・`shared/modal` が無かったため、ここに足した（ID は変えていない）。
-- 状態: at-risk（K-35） ／ 読みの深さ: 深い（一部。上の2ファイル）
+- 2026-10-15 に読んだもの: `shared/tree/SharedTreeView.tsx`・`SharedTreeNodeItem.tsx`（`261004-role-menu` で加わった共有の木。権限の設定の左の木などが使う）。前回の一覧の場所に `shared/tree` が無かったため、ここに足した（ID は変えていない）。
+- K-47 共有の木の読み込みの失敗が読み上げられない:
+  - 確かめた事実: `SharedTreeNodeItem.tsx` の子の読み込みの失敗の表示（62 行付近）は `<p className="shared-tree-message shared-tree-message-failed">` で、`role`・`aria-live` が無い。失敗の時は区画（`shared-tree-children`）に `tabIndex={-1}` があり、再試行でそこへフォーカスを戻す（コメント 58 行付近）。
+  - 見立て（未検証）: 振り返りの K4 R-02 は、失敗を `role="alert"` などで読み上げに知らせる直しになる。木を使う画面（権限の設定・自分の権限を見る）のテストと axe に響くため、画面のテストで読み上げの印を確かめる（`team.md` の Testing Posture の N 階層のメニュー・画面部品ごとのアクセシビリティ検査）。
+- 状態: at-risk（K-35 は前回、K-47） ／ 読みの深さ: 深い（一部。2026-10-15 は `shared/tree` の2ファイル）
 
 ### frontend-registry
 
 - 場所: `app/registry/`・`app/navigation/`
 - 責務: `features/<featureId>/registration.ts` を置くだけで機能を読み込む仕組み、4つの差し込み口の型、サイドバー・ユーザーメニューの項目の組み立て（`buildSidebarEntries`・`buildUserMenuItems`）。
 - 今回読んだもの: `app/registry/types.ts`・`registrationModules.ts`・`loadRegistrations.ts`・`validateRegistrations.ts`、`app/navigation/navigationItems.ts`。K-35 の中心（本文は `architecture.md` の Interaction Diagrams 3）。
-- 状態: at-risk（K-35・K-36） ／ 読みの深さ: 深い（一部。上の5ファイル）
+- 2026-10-15: `app/navigation/buildNavSections.ts`（`261004-role-menu` で加わった区画の組み立て。ADMIN の区画は項目が0なら足さない、272 行付近）を grep で見た（K4 R-03 の対象の候補。開発担当の記録）。
+- 状態: at-risk（K-35・K-36 は前回） ／ 読みの深さ: 前回の深い（一部。上の5ファイル）
 
 ### frontend-app-layout-i18n
 
 - 場所: `app/layout/`・`app/i18n/`・`app/routing/`
 - 責務: AppShell の配置（`ShellLayout.tsx`）、表示言語、振り分け（`decideRoute.ts`・`AppRouter.tsx`）。
 - 今回読んだもの: `app/layout/ShellLayout.tsx`、`app/routing/decideRoute.ts`・`AppRouter.tsx`。アイコンの固定（46 行）と、管理者の画面の振り分け（63 行）（K-35・K-36）。
-- 状態: at-risk（K-35・K-36） ／ 読みの深さ: 深い（一部。上の3ファイル）
+- 2026-10-15 に読んだもの: `app/work-role/WorkRoleSwitcher.css`（`261004-role-menu` で加わったトップバーの作業ロールの切り替え。K-44、本文は `make-you-chic-ui`）。`ShellLayout.tsx` は文言の行だけ grep（トップバーへは `navLabels: SidebarLabels` だけを渡す、124 行）。前回の一覧の場所に `app/work-role/` が無かったため、ここに足した（ID は変えていない）。
+- 状態: at-risk（K-44） ／ 読みの深さ: 深い（一部。2026-10-15 は `WorkRoleSwitcher.css` だけ）
 
 ### frontend-app-display-settings
 
@@ -227,6 +258,39 @@
 - 責務: 利用者の管理の画面（order 230）。
 - 状態: healthy ／ 読みの深さ: 流し読み（サイドバーの項目の値だけ検索で確かめた）
 
+### frontend-feature-roleadmin
+
+- 場所: `features/roleadmin/`（`261004-role-menu` で加わった）
+- 責務: ロールの管理と割り当ての画面。
+- 2026-10-15 に読んだもの: `useSlowNotice.ts`（K-48、本文は `code-structure.md`）。
+- 状態: at-risk（K-48） ／ 読みの深さ: 深い（一部。`useSlowNotice.ts` だけ）
+
+### frontend-feature-groupadmin
+
+- 場所: `features/groupadmin/`（`261004-role-menu` で加わった）
+- 責務: グループの管理の画面。
+- 2026-10-15 に読んだもの: `useSlowNotice.ts`（K-48）。
+- 状態: at-risk（K-48） ／ 読みの深さ: 深い（一部。`useSlowNotice.ts` だけ）
+
+### frontend-feature-roletransfer
+
+- 場所: `features/roletransfer/`（`261004-role-menu` で加わった）
+- 責務: 権限の YAML の書き出しと取り込みの画面。
+- 2026-10-15 に読んだもの: `useSlowNotice.ts`（K-48）。
+- 状態: at-risk（K-48） ／ 読みの深さ: 深い（一部。`useSlowNotice.ts` だけ）
+
+### frontend-feature-mypermissions
+
+- 場所: `features/mypermissions/`（`261004-role-menu` で加わった）
+- 責務: 自分の権限を木で見る画面（ディレクトリの名前と `project.md` の学びによる）。
+- 状態: healthy ／ 読みの深さ: 流し読み（ディレクトリの名前だけ）
+
+### frontend-feature-tables
+
+- 場所: `features/tables/`（`261004-role-menu` で加わった）
+- 責務: メニューのテーブルを指す項目が移る準備中の画面（ディレクトリの名前と前の Intent の要件の記録による）。
+- 状態: healthy ／ 読みの深さ: 流し読み（ディレクトリの名前だけ）
+
 ### frontend-feature-registration
 
 - 場所: `features/registration/`
@@ -247,7 +311,7 @@
 
 ### make-you-chic-ui
 
-- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `e82b651`。画面からは npm の `file:` の依存で使う）
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `5bf1ffe`。2026-10-15 に `git submodule status` で確かめた。前回の記録は `e82b651`。画面からは npm の `file:` の依存で使う）
 - 責務: デザインシステム（AppShell・Button・Dropdown・Modal・Tabs・Table・TextInput・Toast ほか）。中身はこのリポジトリから変えない（`project.md` の Forbidden）。
 - 今回読んだもの: `packages/make-you-chic-ui/src/components/AppShell/AppShell.tsx`・`Sidebar.tsx`、`Icon/registry.ts`。`Dropdown`・`Tabs` は props だけ流し読み。
 - K-36 サイドバーは平らで、N 階層のメニューの部品は make-you-chic-ui に無い（確かめた事実）:
@@ -259,7 +323,11 @@
   - N 階層のサイドバーには、(a) make-you-chic-ui に入れ子のナビゲーション（子の項目・開閉・`aria-current`・言語に合わせた `aria-label`）を足してもらう、(b) `AppShell` のサイドバーを使わず骨組みが自前で描く、のどちらかが要る。(b) を選ぶときは、`project.md` の学び（make-you-chic-ui に無い機能を自前で作る設計にしたときは、承認の前に足りない点を一覧にし、取り込みを依頼者に諮る）に当たる。(a) の取り込みは、固定先の更新を承認を得た専用のコミットで行う（`project.md` の Mandated）。
   - 項目の `key` が `href` のため、同じ行き先を持つ項目が2つあると重なる。まとまり（子だけを持ち行き先の無い節）を平らな一覧に載せる形は、今の型では表せない。
   - DSL の `icon` を画面に出すなら、18 種類に無い名前の扱いを決める必要がある（K-37）。
-- 状態: at-risk（K-36） ／ 読みの深さ: 深い（一部。上の3ファイル）
+- K-36 の文は前回（固定先 `e82b651`）の時点のもの。`261004-role-menu` で入れ子のサイドバー（`navSections`・開閉・`current`・`labels`）が上流に加わり、固定先が `5bf1ffe` に上がった（`project.md` の学び。今回はソースを確かめ直していない）。
+- K-44 make-you-chic-ui の口が無い所をアプリの CSS で上書きしている:
+  - 確かめた事実: `frontend/src/app/work-role/WorkRoleSwitcher.css`（70〜73 行）は、画面の幅 768px 未満で `body:has(.work-role-switcher [aria-expanded='true']) .mycui-dropdown-menu { max-width: calc(100vw - 2 * var(--space-4)); }` と、make-you-chic-ui の Dropdown の幅をアプリの側から上書きしている（前の Intent の G3: A）。トップバーへは `ShellLayout.tsx` 124 行の `navLabels: SidebarLabels` だけを渡し、トップバーの文言（畳むボタン・ユーザーメニューのトリガーの名前）を外から渡す口は無い。固定先 `5bf1ffe` は手元の origin の参照の先頭と同じ（`git fetch` はしていないため、上流の今の先頭は確かめていない。開発担当の記録）。
+  - 見立て（未検証）: 振り返りの K1（畳んだ状態の今の項目の印・トップバーの文言の口・Dropdown を画面に収める口）は上流の公開待ちで、依頼（3）の文面はコミット `425ab64` にある。公開されたら固定先の更新の専用のコミット（fast-forward の例外）で取り込み、`:has()` の上書きを外す。間に合わなければ K1 を除いて進める（`team.md` の Way of Working）。
+- 状態: at-risk（K-44） ／ 読みの深さ: 前回の深い（一部。上の3ファイル）。2026-10-15 は固定先だけ確かめた
 
 ### java-mustache-processor
 
@@ -274,16 +342,19 @@
 - 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`backend/config/spotbugs-exclude.xml`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`settings-gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`
 - 責務: 1コマンドの検査 `./gradlew verify`、E2E の `./gradlew e2eTest`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限（JaCoCo の全体とパッケージごと、`packagesJudgedByTotal`）、SpotBugs の関門、Gitleaks・OSV-Scanner、Dependabot。
 - 今回読んだもの: `backend/build.gradle.kts`（カバレッジの検証と `packagesJudgedByTotal`、225〜233 行）、`gradle/libs.versions.toml`。K-38 に関わる（本文は `code-quality-assessment.md`）。`build.gradle.kts`・`ci.yml`・`frontend/package.json`・`vitest.config.ts` は流し読み。
-- 状態: at-risk（K-38） ／ 読みの深さ: 深い（一部。上の2ファイル）
+- 2026-10-15 に読んだもの: `gradle/libs.versions.toml`・`settings.gradle.kts`・`build.gradle.kts`（verify の並び・osvScan・npm の呼び出しの部分）・`backend/build.gradle.kts`（テストのヒープ・カバレッジ・`packagesJudgedByTotal`）・`frontend/package.json`・`.github/dependabot.yml`・`.github/workflows/ci.yml`・`config/npm-build-tools.txt`。K-39（`dependencies.md`）と K-43（`code-quality-assessment.md`）の持ち主。lockfile は版の行だけ。
+- 状態: at-risk（K-39・K-43） ／ 読みの深さ: 深い（一部。2026-10-15 は上の8ファイル）
 
 ### container-runtime
 
 - 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md`
-- 責務: WAR をコピーするだけのイメージ、`app` のサービスと、profile で起動する監視・メールの受け手・見本の対象DB（前回までの記録。今回は読み直していない）。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: WAR をコピーするだけのイメージ、`app` のサービスと、profile で起動する監視・メールの受け手・見本の対象DB（前回までの記録）。
+- 2026-10-15 に読んだもの: `Dockerfile`（土台 `eclipse-temurin:25.0.4_7-jre-noble@sha256:b573af9e…`、17 行。ENTRYPOINT の `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError` と `-Dh2.compactThreads=1`）。`compose.yaml` は `image:`・`mem_limit` の行だけ。K-39・K-41 に関わる。
+- 状態: at-risk（K-39 で土台のイメージを上げる） ／ 読みの深さ: 深い（一部。`Dockerfile` だけ）
 
 ### perf-and-monitoring
 
 - 場所: `perf/`・`docker/`
-- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視の警報とダッシュボード、接続プールの運用の道具（前回までの記録。今回は読み直していない）。
-- 状態: healthy ／ 読みの深さ: 流し読み
+- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視の警報とダッシュボード、接続プールの運用の道具（`docker/hikari-pool.sh`）。
+- 2026-10-15 に読んだもの: `perf/k6/scenarios.js`（2,086 行のうち場面の一覧の説明と `setupRoles`・`setupRoleMembers`・ロールの読み取りの3場面）。K-42 の持ち主（本文は `code-quality-assessment.md`）。`perf/README.md`・`docker/perf/compose.yaml`・`docker/hikari-pool.sh` はイメージの行だけ（K-39）。
+- 状態: at-risk（K-39・K-42） ／ 読みの深さ: 深い（一部。`perf/k6/scenarios.js` の上の範囲だけ）

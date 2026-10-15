@@ -2,13 +2,17 @@
 
 パスは、`backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く（画面・テスト・設定・移行・`vendor/` のファイルは省かない）。部品ごとの責務と読みの深さは `component-inventory.md`、依存の向きは `dependencies.md`。
 
+> 2026-10-15（Intent `261015-deps-ui-carryover`、コミット `4f6c27d`、Focused scan）の更新: System Overview と Architectural Style に `261004-role-menu` で増えたパッケージを書き足し、Interaction Diagrams 5・6（K-40・K-41）を足した。それ以外の節（Component Relationships・Data Flow・Key Design Decisions・Improvement Opportunities・Interaction Diagrams 1〜4）は前回（コミット `d5aea52`、`261004-role-menu` の実装の前）の記録のままで、今回は確かめ直していない。権限が `admin_flag` だけという前提の文は、`261004-role-menu` でロール・グループの仕組みが加わった後の状態とは違う。
+
 ## Architecture Analysis
 
 ### System Overview
 
 1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
 
-- 内部DB: 組み込みの H2（ファイル）。利用者・ロックの状態・リフレッシュトークン・監査ログ・DSL・招待を置く。スキーマは Flyway の V1〜V9（前進のみ）が正本で、次に足す移行は V10 になる。単一インスタンスの前提（前回までの記録）。
+- 内部DB: 組み込みの H2（ファイル）。利用者・ロックの状態・リフレッシュトークン・監査ログ・DSL・招待を置き、`261004-role-menu` でロール・グループ・割り当ての表が加わった。スキーマは Flyway の移行（前進のみ）が正本。単一インスタンスの前提（前回までの記録。移行の番号は今回確かめていない）。
+- 行の排他: ロール・グループの書き込みは JPA の `PESSIMISTIC_WRITE` と待ちの上限 3,000 ms で行を排他し、上限切れを `ROLE_BUSY`・`GROUP_BUSY`（409）に読み替える（K-40、Interaction Diagrams 5）。
+- 信頼できない入力の YAML（DSL と権限の YAML）は、同じ `dsl/parse/SafeYamlParser.java` で上限つきで読む（K-41、Interaction Diagrams 6）。
 - 認証: `Authorization: Bearer <アクセストークン>`（HS256 の JWT）。セッションと CSRF の仕組みは無い。アクセストークンの主張は `sub`（利用者 ID）・`iat`・`exp` だけで、権限は入っていない（`auth/service/AccessTokenService.java` 92〜96 行）。
 - 認可: 要求ごとに利用者を DB から読み直して主体を作り、URL の決まりで判定する。権限は「管理者の印」1つ（K-32・K-33、Interaction Diagrams 1）。
 - 画面: 機能ごとの `registration.ts` を骨組みが読み込み、サイドバー・振り分け・403 の画面を組み立てる。外枠は make-you-chic-ui の `AppShell`（K-35・K-36）。
@@ -17,7 +21,7 @@
 
 ### Architectural Style
 
-**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`useradmin`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。
+**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`useradmin`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`、`261004-role-menu` で加わった `role`・`group`・`navigation`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。
 
 根拠（今回確かめた範囲）:
 
@@ -108,7 +112,7 @@ flowchart LR
 
 ## Interaction Diagrams
 
-図はどれも今回（コミット `d5aea52`）の走査で読んだコードによる。見立て（未検証）の部分は図の Note と本文で分けた。
+図 1〜4 は前回（コミット `d5aea52`）の走査で読んだコードによる（`261004-role-menu` の実装の前。今回は確かめ直していない）。図 5・6 は今回（コミット `4f6c27d`）の走査による。見立て（未検証）の部分は図の Note と本文で分けた。
 
 ### 1. 要求の認証と管理の API の認可（K-32・K-33）
 
@@ -287,3 +291,76 @@ flowchart LR
 <!-- Text fallback: DSL の YAML の menus は、dsl の読み込みと JSON Schema の検証、DslSemanticValidator のメニューの検証を経て、DslModel の DslMenuItem の木になる。適用で丸ごと差し替わり、ActiveDslModelProvider.current() で読める。今の読み手は dslmanage のプレビューの分析だけで、画面にメニューを渡す API と、それを骨組みのサイドバーに載せる流れは無い（点線は今は無い流れ）。 -->
 
 本文（確かめた事実と見立て）は `api-documentation.md` の K-37 に書いた。
+
+### 5. ロール・グループの書き込みと BUSY（K-40）
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant FE as 画面
+  participant WEB as role web の controller
+  participant SVC as role service
+  participant TX as RoleStoreTransactions
+  participant ST as RoleStore
+  participant DB as 内部DB H2
+  participant AUD as audit の受け手
+  FE->>WEB: ロールの作成・変更・割り当て
+  WEB->>SVC: 操作を呼ぶ
+  SVC->>TX: inFirst（1つ目のトランザクション、接続1本目）
+  TX->>ST: 行の排他 PESSIMISTIC_WRITE（待ちの上限 3,000 ms）
+  ST->>DB: SELECT ... FOR UPDATE
+  alt 上限切れ
+    ST-->>TX: Busy（RoleStoreClassifier が読み替え）
+    TX-->>SVC: setRollbackOnly の後に戻る
+    SVC-->>WEB: 結果の型 Busy
+    WEB-->>FE: 409 ROLE_BUSY
+  else 排他できた
+    ST->>DB: 判定・書き込み・flush
+    SVC->>SVC: 成功の出来事を1つ目の中で出す
+    TX->>DB: 確定
+    DB-->>AUD: 確定の後に出来事を受ける
+    AUD->>DB: 監査の追記（接続2本目）
+    WEB-->>FE: 成功
+  end
+  Note over AUD,DB: 見立て: P1 の「2本使いの待ちの最大」はここで2本目を借りるまでの待ち
+```
+
+<!-- Text fallback: 画面の要求を role の web の controller が受け、service の操作を呼ぶ。service は RoleStoreTransactions.inFirst で1つ目のトランザクション（接続1本目）を始め、RoleStore が PESSIMISTIC_WRITE と待ちの上限 3,000 ms で行を排他する。上限切れなら RoleStoreClassifier が Busy に読み替え、巻き戻しの印を付けて戻り、controller が 409 ROLE_BUSY を返す。排他できたら判定・書き込み・flush を行い、成功の出来事を1つ目の中で出して確定する。確定の後に audit の受け手が出来事を受け、接続2本目で監査を追記する。P1 の待ちの最大はこの2本目を借りるまでの待ちと見られる（見立て）。グループ（GroupStore・GROUP_BUSY）も同じ形。 -->
+
+確かめた事実:
+
+- ロールの書き込みは `role/service/RoleStoreTransactions.java` の `inFirst`（`TransactionTemplate`）の1つ目のトランザクションで、排他 → 業務の判定 → 書き込みと flush を行う。結果が `Done` 以外なら必ず `setRollbackOnly()` を付けて戻る。入れ子の REQUIRES_NEW は使わず、1つ目の接続を返してから2つ目を借りる（クラスの説明）。`RoleStore` を持つのはこのクラスだけ（`RoleBoundaryArchitectureTest`、説明の記述）。
+- 行の排他は `role/store/RoleStore.java`（`LOCK_TIMEOUT_MILLIS = 3000`、65 行、`PESSIMISTIC_WRITE` 158 行）と `group/store/GroupStore.java`（48 行・91 行）。一意の鍵・主キーの待ちにはヒントが効かず、H2 の既定の約 2 秒で切れる（`project.md` の Tech Stack、`RoleStore` の説明）。
+- `ROLE_BUSY`（409）は role の4つの controller（`MeWorkRoleController`・`RoleAssignmentController`・`RoleAdminController`・`RoleTransferController`）が結果の型の `Busy` を `switch` で変える。`GROUP_BUSY` は `group/web/GroupAdminController.java` と `role/web/RoleAssignmentController.java`（グループの行の待ち）（開発担当の記録）。
+- BUSY の結合テストのファイル `RoleBusyApiIT`・`RoleBusyLogTraceIT`・`RoleTransferBusyIT`・`GroupBusyLogIT` がある（ファイル名だけ。中身は読んでいない）。
+
+見立て（未検証）:
+
+- P1: 合否の回の1回目だけの 23.55 ms の原因は、コードからは分からない（GC の停止・colima の VM の時計のずれ・プールの借りる順などの候補）。`audit` の受け手（`audit/service/AuditEventListener.java`）は今回深く読んでいない。
+- P4: k6 で BUSY が 0 件なのは、ロール・グループの場面がどれも VU ごとに別の行を使い、同じ行で 3 秒待つ重なりが起きないため。L3・L4 の結び付きは、既存の `RoleBusyLogTraceIT`・`GroupBusyLogIT` がすでに確かめている可能性があり、要件定義の前に中身を確かめるとよい。
+
+### 6. 信頼できない YAML の読み込みと本文の形（K-41）
+
+```mermaid
+flowchart LR
+  REQ["要求の本文 byte[]（DSL は最大 10 MiB）"] --> DEC["SafeYamlParser.decode UTF-8 の String"]
+  DEC --> LIM["LoaderOptions と LimitingParser（大きさ・深さ・別名・展開後の節の数）"]
+  LIM --> NODE["SnakeYAML の Node の木"]
+  NODE --> CONV["YamlTreeConverter 検証用の JSON の形と位置の対応表"]
+  CONV --> VAL["JSON Schema と意味の検証"]
+  REQ -. "DSL のプレビュー" .-> PREV["DslPreviewRecord の byte[]"]
+```
+
+<!-- Text fallback: 要求の本文の byte[]（DSL は最大 10 MiB）を SafeYamlParser.decode が UTF-8 の String にし、LoaderOptions と LimitingParser が大きさ・深さ・別名・展開後の節の数の上限を見ながら SnakeYAML の Node の木にする。YamlTreeConverter がそれを検証用の JSON の形と位置の対応表にし、JSON Schema と意味の検証を行う。DSL のプレビューの行（DslPreviewRecord）も byte[] を持つ。1行の長さの上限はどこにも無い。権限の YAML も同じ SafeYamlParser を使う。 -->
+
+確かめた事実:
+
+- 上限は `dsl/parse/YamlLimits.java`（31 行）の4項目（`maxBytes`・`maxDepth`・`maxCollectionAliases`・`maxExpandedNodes`）だけで、**1行の長さの上限は無い**。深さ・別名は `LoaderOptions`（`SafeYamlParser.java` 90・91 行）と `LimitingParser` の両方に、大きさは `setCodePointLimit`（96 行）に渡す。
+- DSL の上限は `dsl/domain/DslFormat.java` の `MAX_BYTES = 10 MiB`・`MAX_DEPTH = 50`・`MAX_COLLECTION_ALIASES = 100`・`MAX_EXPANDED_NODES = 1,000,000`。権限の YAML は `role/service/RoleTransferLimits.java`（5,242,880 バイト・深さ 10・別名 0・節 500,000。値は開発担当の記録）。DSL と権限の YAML は同じ `SafeYamlParser` を使う。
+- 本文は読み込みの中で `byte[]`（`dslmanage/web/DslAdminController.java` 121 行）・`String`（`SafeYamlParser.decode`、101 行）・`Node` の木・JSON の形と位置の対応表の形で同時に生きる。プレビューの行 `DslPreviewRecord` も `byte[]` を持つ（開発担当の記録）。
+- 実行の設定: `Dockerfile` の ENTRYPOINT は `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError`、`compose.yaml`・`docker/perf/compose.yaml` の app は `mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-2g}`、`application.yaml` は `max-submit-size: 10MB`・Tomcat の `max-swallow-size: 11MB`（開発担当の記録）。
+
+見立て（未検証）:
+
+- 見積もり（256〜384 MB）と実測（GC の後 573〜746 MB）の差は、上の4つの形が同時に生きることと、全角を含む本文の `String` が UTF-16 で約2倍になることで説明できる可能性がある。試しの測定で確かめる（`project.md` の学び）。
+- 1行の上限を足すなら、DSL と権限の YAML の両方に効く（共通の部品のため）。上限の値と拒否の区分（Problem Details の code）は設計で決める。
