@@ -43,4 +43,15 @@ public record DisplayLabel(String ja, String en) {
         Objects.requireNonNull(name, "name は必須です");
         return new DisplayLabel(name.ja(), name.en());
     }
+
+    /**
+     * 値を伏せた文字列を返す（Intent 261015-deps-ui-carryover の FR4.1）。{@code TraceAspect} が引数と戻り値を TRACE のログに文字列で出す
+     * ため、DSL の表示名を出さない。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "DisplayLabel[ja=***, en=***]";
+    }
 }

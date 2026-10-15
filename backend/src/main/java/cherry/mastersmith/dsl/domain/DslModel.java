@@ -80,6 +80,22 @@ public record DslModel(String dslHash, int formatVersion, List<DslSchema> schema
         return schemas.getFirst();
     }
 
+    /**
+     * 識別の先頭 12 文字と、版・スキーマの数・最上位のメニューの数だけを出す（Intent 261015-deps-ui-carryover の依頼者の決定 A。
+     * FR4.1・NFR4）。
+     *
+     * <p>{@code TraceAspect} が適用中のモデルの取り出し（{@code ActiveDslModelStore#current()} の {@code ActiveDsl.Present}）や読み込みの
+     * 結果（{@code DslReadResult.Valid}）を TRACE のログに文字列で出すため、スキーマ・テーブル・カラム・メニューの名前と表示名を
+     * 出さない。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "DslModel[dslHash=" + dslHash.substring(0, 12) + "…, formatVersion=" + formatVersion + ", schemas="
+                + schemas.size() + ", menus=" + menus.size() + "]";
+    }
+
     private static void requireHash(String dslHash) {
         if (dslHash == null
                 || dslHash.length() != 64

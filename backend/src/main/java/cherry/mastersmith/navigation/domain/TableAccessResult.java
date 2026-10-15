@@ -46,6 +46,17 @@ public sealed interface TableAccessResult {
                 throw new IllegalArgumentException("見られる結果の主権限は READ か FULL です");
             }
         }
+
+        /**
+         * 実効の主権限だけを出す（Intent 261015-deps-ui-carryover の FR4.1）。{@code TraceAspect} が業務処理の戻り値を TRACE のログに
+         * 文字列で出すため、スキーマ・テーブルの名前と DSL の表示名を出さない。
+         *
+         * @return 値を伏せた文字列
+         */
+        @Override
+        public String toString() {
+            return "Visible[schemaName=***, tableName=***, displayName=***, main=" + main + "]";
+        }
     }
 
     /** 見られない（NONE・DSL に無い・DSL が無いを区別しない。理由を持たない。BR5.2）。 */

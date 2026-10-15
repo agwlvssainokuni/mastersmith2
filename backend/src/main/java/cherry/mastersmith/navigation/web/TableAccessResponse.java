@@ -40,4 +40,15 @@ public record TableAccessResponse(String schemaName, String tableName, DisplayLa
                 DisplayLabelResponse.from(visible.displayName()),
                 visible.main().name());
     }
+
+    /**
+     * 実効の主権限だけを出す（Intent 261015-deps-ui-carryover の FR4.1）。{@code TraceAspect} が画面入出力の層の戻り値を TRACE のログに
+     * 文字列で出すため、スキーマ・テーブルの名前と DSL の表示名を出さない。応答の本文は項目の値をそのまま載せる（この文字列は使わない）。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "TableAccessResponse[schemaName=***, tableName=***, displayName=***, main=" + main + "]";
+    }
 }

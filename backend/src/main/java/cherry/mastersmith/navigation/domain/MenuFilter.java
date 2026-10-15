@@ -37,7 +37,11 @@ import java.util.Objects;
  *   <li>残った項目の親子と並びは元の木と同じ（並べ替え・付け替え・深さの変更をしない）
  * </ul>
  *
- * <p>入れ子は DSL の深さの上限（5 段）の内に収まるため、再帰でたどってもスタックを使い尽くさない。
+ * <p>深さの前提: 渡されるメニューは、DSL の深さの上限（{@link cherry.mastersmith.dsl.domain.DslFormat#MAX_MENU_DEPTH} = 5 段）の
+ * 検証を通ったモデルのものだけである（投入・適用の検証と、起動時の読み込みで深すぎる枝を落とす処理が守る）。この関数は深さを数えず、
+ * 上限を超えた木を拒否もしない。入れ子が上限の内に収まるため、再帰でたどってもスタックを使い尽くさない。深さの境界（上限ちょうどは
+ * 受け付け、超えると拒否する）のテストの持ち主は dsl の部品（{@code MenuDepthTest}・{@code MenuDepthPropertyTest}）で、この関数の
+ * テストは境界を確かめない（Intent 261015-deps-ui-carryover の FR4.2、前の Intent のレビューの navigation R-04）。
  */
 public final class MenuFilter {
 

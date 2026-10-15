@@ -34,4 +34,15 @@ public record NavTableRefResponse(String schemaName, String tableName) {
     public static NavTableRefResponse from(NavTableRef ref) {
         return ref == null ? null : new NavTableRefResponse(ref.schemaName(), ref.tableName());
     }
+
+    /**
+     * 値を伏せた文字列を返す（Intent 261015-deps-ui-carryover の FR4.1）。{@code TraceAspect} が引数と戻り値を TRACE のログに文字列で出す
+     * ため、DSL のスキーマ・テーブルの名前を出さない。
+     *
+     * @return 値を伏せた文字列
+     */
+    @Override
+    public String toString() {
+        return "NavTableRefResponse[schemaName=***, tableName=***]";
+    }
 }
