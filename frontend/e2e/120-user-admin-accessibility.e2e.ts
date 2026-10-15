@@ -50,6 +50,7 @@ import {
   DISPLAY_COMBOS,
   expectComboApplied,
   prepareCombo,
+  WORST_360_COMBO,
   type DisplayCombo,
 } from './support/displayCombos'
 import { routeLoginPreferences } from './support/loginPreferences'
@@ -241,7 +242,9 @@ test.describe('120 user admin accessibility and screen time on the built WAR', (
     await diagnostics.attachOnFailure(testInfo)
   })
 
-  for (const combo of DISPLAY_COMBOS) {
+  // 20 組に、360px の悪い側の組を足す（画面全体の横のはみ出しと、表の右端の行の操作のメニューの収まり。Intent
+  // 261015-deps-ui-carryover の FR12.1 の K2・dsl-v2 R-04、make-you-chic-ui a9309c4 の Dropdown の既定の max-width）。
+  for (const combo of [...DISPLAY_COMBOS, WORST_360_COMBO]) {
     test(`user admin ${combo.name}`, async ({ page }) => {
       // 11 の状態ごとに axe を流すため、既定の 30 秒を超える。
       test.setTimeout(120_000)

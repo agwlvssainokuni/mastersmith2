@@ -413,6 +413,12 @@ test.describe('140 role admin widths, paths and screen time (default combo)', ()
       await openSidebarItem(page, 'ロール')
       await expect(page.getByTestId('roleadmin-table').locator('tbody tr').first()).toBeVisible()
       await inspect(page, label, 'S3-list')
+      // 表の右端の行の操作のメニューが、360px を含む幅で画面に収まる（make-you-chic-ui a9309c4 の Dropdown の既定の
+      // max-width。Intent 261015-deps-ui-carryover の FR2.2・FR2.5）。
+      await page.getByRole('button', { name: `${LONG_ROLE_NAME}の操作` }).click()
+      await expectContained(page, 'menu', `${label} S3-menu-open`)
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('menu')).toHaveCount(0)
       await page.getByTestId('roleadmin-create').click()
       await expectContained(page, 'dialog', `${label} S3-name-dialog`)
       if (narrow) {

@@ -48,6 +48,7 @@ import {
   DISPLAY_COMBOS,
   expectComboApplied,
   prepareCombo,
+  WORST_360_COMBO,
   type DisplayCombo,
 } from './support/displayCombos'
 import {
@@ -150,7 +151,8 @@ async function checkState(
 }
 
 test.describe('060 invitation screen accessibility on the built WAR', () => {
-  for (const combo of DISPLAY_COMBOS) {
+  // 20 組に、360px の悪い側の組を足す（Intent 261015-deps-ui-carryover の FR12.1 の K2・dsl-v2 R-04）。
+  for (const combo of [...DISPLAY_COMBOS, WORST_360_COMBO]) {
     test(`invitations ${combo.name}`, async ({ page }) => {
       const watch = await watchPage(page)
       const posts = countInvitationPosts(page)

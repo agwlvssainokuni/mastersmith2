@@ -22,6 +22,7 @@ import cherry.mastersmith.common.security.ApiAccessLevel;
 import cherry.mastersmith.common.testsupport.ApiAccessRules;
 import cherry.mastersmith.common.testsupport.ApiAccessSubjects;
 import cherry.mastersmith.common.testsupport.ApiAccessSubjects.Subject;
+import cherry.mastersmith.common.testsupport.ApiEndpointCounts;
 import cherry.mastersmith.common.testsupport.PublicApiInventory;
 import cherry.mastersmith.common.testsupport.PublicApiInventory.Diff;
 import cherry.mastersmith.common.testsupport.PublicApiInventory.PublicApiEntry;
@@ -72,9 +73,6 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 class ApiAccessConsistencyIT {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiAccessConsistencyIT.class);
-
-    /** 今ある口の数（機能設計 3節）。 */
-    private static final int MIN_ENDPOINTS = 34;
 
     /** 方法の宣言が無い口で確かめる方法。 */
     private static final List<String> DEFAULT_METHODS = List.of("GET", "POST", "PUT", "PATCH", "DELETE");
@@ -156,14 +154,15 @@ class ApiAccessConsistencyIT {
     }
 
     @Test
-    @DisplayName("the runtime endpoints match the endpoints of the static check by class and method, at least 34")
+    @DisplayName("the runtime endpoints match the endpoints of the static check by class and method,"
+            + " at least ApiEndpointCounts.MIN_ENDPOINTS")
     void sameSetAsStaticCheck() {
         Set<String> runtime = handlers().values().stream()
                 .map(ApiAccessConsistencyIT::keyOf)
                 .collect(Collectors.toCollection(TreeSet::new));
         Set<String> statics = ApiAccessRules.endpointKeys(PRODUCTION_CLASSES);
 
-        assertThat(runtime).hasSizeGreaterThanOrEqualTo(MIN_ENDPOINTS);
+        assertThat(runtime).hasSizeGreaterThanOrEqualTo(ApiEndpointCounts.MIN_ENDPOINTS);
         assertThat(runtime).isEqualTo(statics);
     }
 

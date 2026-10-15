@@ -18,6 +18,7 @@ package cherry.mastersmith;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.common.testsupport.ApiAccessRules;
+import cherry.mastersmith.common.testsupport.ApiEndpointCounts;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -39,9 +40,6 @@ import org.junit.jupiter.api.Test;
  * （{@code PublicApiInventory}）を {@code ApiAccessConsistencyIT} が比べる。
  */
 class ApiAccessArchitectureTest {
-
-    /** 今ある口の数（機能設計 3節）。口が減ったら検査が空振りに近づくため、これ以上であることを確かめる。 */
-    private static final int MIN_ENDPOINTS = 34;
 
     private static final JavaClasses CLASSES = new ClassFileImporter()
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
@@ -72,8 +70,8 @@ class ApiAccessArchitectureTest {
     }
 
     @Test
-    @DisplayName("the check sees at least the 34 endpoints that exist today")
+    @DisplayName("the check sees at least the endpoints that exist today (ApiEndpointCounts.MIN_ENDPOINTS)")
     void seesAllEndpoints() {
-        assertThat(ApiAccessRules.endpointKeys(CLASSES)).hasSizeGreaterThanOrEqualTo(MIN_ENDPOINTS);
+        assertThat(ApiAccessRules.endpointKeys(CLASSES)).hasSizeGreaterThanOrEqualTo(ApiEndpointCounts.MIN_ENDPOINTS);
     }
 }

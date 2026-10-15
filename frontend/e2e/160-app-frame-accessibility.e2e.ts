@@ -20,6 +20,9 @@
 // - 流れの E2E ではないため、team.md の「機能の Intent ごとに代表の流れを1本まで」に数えない（流れは 170・150）。
 // - 組ごとに1つのテスト（support/displayCombos.ts の 20 組）で、状態を順にたどり、axe の違反 0 件・REQUIRED_RULES が流れた・
 //   画面全体の横のはみ出しなし・開いた Dropdown と 5 段のサイドバーの矩形が表示の中に収まることを確かめる。
+// - Intent 261015-deps-ui-carryover（make-you-chic-ui a9309c4）: 畳んだ状態で今の項目を含む1段目のまとまりの印（クラスと読み上げの
+//   名前）を組ごとに確かめ、axe は畳んだ状態（印が出ている）と開いた状態の両方で流す。英語の表示でトップバーの文言が英語になる。
+//   作業ロールの一覧の幅は make-you-chic-ui の Dropdown の既定に任せた（アプリの CSS の上書きを外した後も expectContained が通る）。
 // - 骨組みの API はすべて差し替えの口（support/frameApiRoute.ts）で受け、内部DB に書かない。見本は画面の側の型で縛った
 //   support/navTreeFixtures.ts（ロールとテーブルの名前だけ）。差し替えた失敗に Chrome が出す「Failed to load resource:」は、
 //   位置が骨組みの API の道のものだけを数えて引く（140 と同じ扱い）。
@@ -206,6 +209,19 @@ async function expectSidebarContained(page: Page, name: string) {
   ).toBe(true)
 }
 
+/**
+ * 畳んだサイドバーで、今の項目（末端）を子孫に持つ1段目のまとまりに印（クラス contains-current と読み上げの名前）が付き、
+ * 今の項目を含まない1段目の項目には付かないことを確かめる（make-you-chic-ui a9309c4。Intent 261015-deps-ui-carryover の FR2.3）。
+ */
+async function expectContainsCurrentMark(page: Page, suffix: RegExp): Promise<void> {
+  const group = page.getByTestId(`sidebar-nav-biz:${chainIds()[0] ?? ''}`)
+  await expect(group).toHaveClass(/contains-current/)
+  await expect(group).toHaveAccessibleName(suffix)
+  const other = page.getByTestId('sidebar-nav-biz:1')
+  await expect(other).not.toHaveClass(/contains-current/)
+  await expect(other).not.toHaveAccessibleName(suffix)
+}
+
 /** 作業ロールのトリガー（作業ロールの入れ物の中の1つ） */
 function workRoleTrigger(page: Page) {
   return page.getByTestId('work-role-switcher').getByRole('button')
@@ -365,11 +381,16 @@ test.describe('160 app frame accessibility on the built WAR', () => {
         route.setWorkRole(jsonReply(200, workRoleWire(THREE_ROLES, SALES)))
       })
 
-      await test.step('collapsed sidebar', async () => {
+      await test.step('collapsed sidebar with the contains-current mark', async () => {
         await openLeaf(page)
         await page.getByTestId('sidebar-toggle').click()
         await expect(page.getByTestId('app-shell').locator('nav')).toHaveClass(/collapsed/)
+        await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('サイドバーを開く')
+        await expectContainsCurrentMark(page, /（今のページを含む）$/)
         await check('sidebar-collapsed')
+        // 次のテストの状態に残さないよう開き直す（畳んだ状態は localStorage に覚えられる）
+        await page.getByTestId('sidebar-toggle').click()
+        await expect(page.getByTestId('app-shell').locator('nav')).not.toHaveClass(/collapsed/)
       })
 
       await finish(page, route, watch, excludedTexts, combo.name)
@@ -449,7 +470,15 @@ test.describe('160 app frame widths, English and screen time', () => {
     await page.getByTestId(`sidebar-toggle-biz:${first}`).click()
     await expect(page.getByTestId(`sidebar-toggle-biz:${first}`)).toHaveAccessibleName(/^Expand /)
     await expect(workRoleTrigger(page)).toHaveAccessibleName('Work role: 営業')
+    // トップバーの文言も英語（make-you-chic-ui a9309c4 の topbarLabels。Intent 261015-deps-ui-carryover の FR2.4）
+    await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Collapse the sidebar')
+    await expect(page.getByRole('button', { name: /^Menu for / })).toHaveCount(1)
     await inspect(page, 'English', 'sidebar-and-placeholder')
+    await page.getByTestId('sidebar-toggle').click()
+    await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Expand the sidebar')
+    await expectContainsCurrentMark(page, / \(contains the current page\)$/)
+    await inspect(page, 'English', 'sidebar-collapsed')
+    await page.getByTestId('sidebar-toggle').click()
     await finish(page, route, watch, excludedTexts, 'English')
   })
 

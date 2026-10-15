@@ -68,6 +68,18 @@ export const DISPLAY_COMBOS: readonly DisplayCombo[] = [
 ]
 
 /**
+ * 360px の幅の悪い側の組（dark・lg・blue）。20 組の外に置き、招待（060）と利用者の管理（120）の画面で 360px の横のはみ出しと
+ * 開いたメニューの収まりを確かめるために足す（Intent 261015-deps-ui-carryover の FR12.1 の K2・dsl-v2 R-04）。
+ */
+export const WORST_360_COMBO: DisplayCombo = {
+  name: '(d) dark lg blue 360px',
+  theme: 'dark',
+  fontSize: 'lg',
+  brandColor: 'blue',
+  viewport: { width: 360, height: 800 },
+}
+
+/**
  * 組の表示の設定をページに仕込む（ページは Playwright がテストごとに作る新しいコンテキストのもの）。
  * 表示の幅、読み込みの前の U4 の鍵、見た目の設定の答えの差し替え（このページの中だけで効く）を置く。
  */
