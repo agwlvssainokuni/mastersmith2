@@ -171,3 +171,154 @@
 - 直し: `dsl/domain/DslModel.java` の `toString` を、識別の先頭 12 文字・版・スキーマの数・最上位のメニューの数だけを出す形（`DslModel[dslHash=0123456789ab…, formatVersion=2, schemas=1, menus=2]`）に上書きした。`ActiveDsl.Present`・`DslReadResult.Valid`・`DslStartupReadResult.Valid` は中の `DslModel` の文字列を使うため、これで伏せられる（`Present`・`Valid` の `dslHash` の項目は今までどおり全体が出る。識別は秘密ではない）。
 - テスト: `dsl/domain/DslModelToStringTest`（3件。名前と表示名が出ない、包む結果の型3つの文字列にも出ない、メニューが無いときの件数）を足した。`DslModel` の文字列に頼るテストは無かった（検索で `DslModel[`・`schemas=[`・`Present[model` は 0 件）。直した後に `NavigationSecretLeakIT` が除外なしで通り、dsl・dslmanage・navigation の単体が通った。
 - verify の流し直し（2026-10-15 23:13:10〜23:27:31、14分20秒、`caffeinate -dims`、colima の2つの変数、`:backend:cleanTest :backend:cleanIntegrationTest`）: 成功。backend の単体 2,118 件・結合 1,168 件（失敗 0・SKIPPED 0）、frontend 1,589 件。カバレッジは backend 全体 行 97.9%・分岐 92.5%（`dsl.domain` 行 100.0%・分岐 96.1%）、frontend 行 95.36%・分岐 90.38%。`osvScan` は UP-TO-DATE（lockfile は変わらない）。この間の `pmset -g log` は Assertions だけで、Sleep・DarkWake は無い。流す前のバッテリーは 28%。画面に触れないため E2E は流し直していない（指揮役の指示）。
+
+## ブランチ ③（Step 31〜43・45）
+
+### Step 31
+
+- `develop` の先頭 `60b49e5`（② の fast-forward の統合）から `fix/261015-deps-ui-carryover-3-perf` を作った。作業ツリーには、計画の Step 30 の印と、この Intent の監査ログ（`audit/sakura-local-4e42a93f87ce.md`）の未コミットの変更があり、そのまま持ってきた（生成の担当はコミットしない）。
+
+### Step 32（配備済みの DSL の最も長い行、D-5: A）
+
+- 依頼者の了承（「止めてよい」）のうえで行った。README の「監査ログの確かめ方」の手順で、`docker compose stop app` → ボリューム `mastersmith_mastersmith-data` を `~/.mastersmith-backup/`（権限 700）へ `tar czf`（新しい jre のイメージの中で）→ `docker compose start app` の順にし、複写を取った直後にアプリを起動し直した。
+- 止めた時間: 停止の開始 2026-10-15 14:54:02 UTC → 起動の命令 14:54:07（5 秒）→ `/actuator/health` 200 は 14:54:14（停止から 12 秒）。その後の状態は `healthy`。
+- 測り方: 複写を権限 700 の作業用のディレクトリに展開し、H2 2.4.240 の JDBC で `ACCESS_MODE_DATA=r`（読み取り）で開いた。リポジトリの外（スクラッチ）の小さな Java の道具で、各行の `yaml_bytes` を UTF-8 で解読し、改行（`\n`・`\r`・`\r\n`）で区切った1行のコードポイントの数の最大だけを出した（本文は表示していない）。
+- 結果: `dsl_applied_revisions` 6 行（各行の最も長い行 58・58・58・58・58・58、全体の最大 58）、`dsl_previews` 0 行。上限 65,536 を大きく下回る。配備の起動で読めなくなる（`appliedUnreadable`）おそれは無い。
+- 測った後に、作業用のディレクトリと複写（`mastersmith-data-202610152354-linelen.tgz`）を消した。配備の前（Deployment Execution）にもう一度測る（D-5: A、計画 6節の 8）。
+
+### Step 33（ドメインの層: 1行の長さの上限）
+
+- `YamlLimits` に5つ目の項目 `maxLineLength`（1 以上）を足した。`SafeYamlParser.parse` で UTF-8 の解読（先頭のバイト順の印を除いた後）の直後、SnakeYAML に渡す前に `checkLineLength` で行ごとの長さを確かめる。改行は `\n`・`\r`（`\r\n` は1つ）で、改行は数えない。サロゲートの組は1つと数える。上限を超えた最初の行で `YamlRejection`（種類 `SIZE_LIMIT`（D-3: A）、位置はその行と上限＋1 の列、場所なし、文言の鍵 `dsl.limit.line`、埋める値は上限の値だけ）にする。
+- `DslFormat.MAX_LINE_LENGTH = 65_536`（D-2: A）、`DslMessageKeys.LINE_LIMIT`（`all()` にも足した）。`LoaderOptions` の値は変えていない。
+- SnakeYAML は YAML 1.1 の改行（U+0085・U+2028・U+2029）も行の区切りに数えるが、計画どおり `\n`・`\r` だけで区切った。そのため、それらの文字を含む行は、この確かめでは長めに数える（厳しい側）。位置の行の番号も SnakeYAML の位置とずれうる。
+
+### Step 34（ドメインの層のテスト）
+
+- `SafeYamlParserTest` に5件: 65,536 ちょうどの行は読み、65,537 は 2 行目・65,537 列の `SIZE_LIMIT`・`dsl.limit.line`・埋める値 `65536`（誤りの文字列に目印が出ない）、`\r\n`・`\r` の行（改行を数えない）、全角とサロゲートの組をコードポイントで数える、長いコメントの行も読む前に最初の行で止める、バイト順の印を数えない。
+- `SafeYamlParserPropertyTest` に2つの性質（jqwik。種は jqwik の報告に出る）: 上限（20）以下の行だけの文書は行の長さで拒否されない（3種類の改行）、上限を超える行を1つ含む文書は必ずその行で行の長さの拒否になる。
+- 大きさの境界を1行で作るテストの直し（4.1節）: 検索の結果、行を分ける必要があったのは2つだった。
+  - `role/testsupport/LargeRoleTransferYaml`（5 MiB ちょうどの権限の YAML。テストと負荷の試験の準備の両方が使う）: 末尾の埋め草のコメントを1行にしていたのを、1行 1,000 バイト（`PADDING_LINE_BYTES`）までに分けた。`LargeRoleTransferYamlTest` にすべての行が 1,000 バイト以内の確かめを足した。
+  - `role/transfer/RoleTransferReaderTest` の `flowSequence`（展開後の節 500,000 の境界。流れの書き方の並びを約 100 万文字の1行にしていた）: 要素 1,000 個ごとに改行して続ける形にした。1回目の単体テストの流しで、ここが行の長さの拒否で落ちて分かった（計画 4.1節の一覧には無かったファイル）。
+  - `DslAdminApiIT`・`DefaultDslReaderTest` の 10 MiB の埋め草は、前から 1,000 文字の行に分けていて、直す必要は無かった。`perf/make-large-dsl.mjs` も約 100 文字の行で影響しない。
+
+### Step 35・36（業務処理の層・既定の DSL の生成）
+
+- `SafeYamlLimits` に5つ目の項目 `maxLineLength`、`DefaultSafeYamlReader` で `YamlLimits` に渡す。超えたときの区分は既存の対応（`SIZE_LIMIT` → `TOO_LARGE`）で写る。
+- `DefaultDslReader.DSL_LIMITS` に `DslFormat.MAX_LINE_LENGTH`、`RoleTransferLimits.MAX_LINE_LENGTH`（= `DslFormat.MAX_LINE_LENGTH`。role は dsl.domain に依存してよい境界）を `toSafeYamlLimits()` に渡した。
+- `DslErrorMessages` に `dsl.limit.line` の ja「{0} 行目が1行の長さの上限（{1} 文字）を超えています。」・en「Line {0} exceeds the line length limit ({1} characters).」を足した。埋める値が上限だけのため、`message()` でこの鍵のときだけ `{0}` に誤りの位置の行、`{1}` に上限を埋める（計画の「行は誤りの位置から出す」の形）。
+- D-3: A のため、権限の YAML では行の上限の拒否も `TooLarge` → 413 `PAYLOAD_TOO_LARGE` になる（本文が 5 MiB の内でも）。画面の roletransfer の文言は「大きすぎる」のまま（計画 4.1節のとおり）。
+- D-4: A: `DslTreeBuilder.MAX_LABEL_CODE_POINTS = 4_096` を置き、表示名の `ja` にするコメント（制御文字を除いた後）をコードポイントで切る `truncate` を足した（サロゲートの組を分けない）。
+
+### Step 37（業務処理の層のテスト）
+
+- `DefaultDslReaderTest`: 投入の読み方で上限ちょうどは読み、＋1 は見本の次の行の `LINE_LIMIT` 1件。起動時の読み方も ＋1 を `DslStartupReadResult.Invalid` にする（`DslStartupLoader` はこれを `appliedUnreadable` の道で扱う。既存の道で、ローダーのテストは足していない）。
+- `SafeYamlReaderTest`: 上限 8 で ちょうどは読み、9 文字の行は `TOO_LARGE`・2 行目・9 列（文字列に値が出ない）。`maxLineLength` 0 は呼ぶ側の誤り。
+- `RoleTransferReaderTest`: 65,537 文字のコメントの行は `TOO_LARGE`・3 行目、65,536 は読む。
+- `RoleTransferServiceTest`: 大きさの上限の内（200,000 バイト）でも、1行の長さの上限を超えれば確かめ・適用とも `TooLarge`。
+- `RoleTransferWriterTest`: ロール 64 コードポイント・対象の名前 128 コードポイント（逃がす `"`・`\` を交互に含む）の書き出しが上限の内で、読み直して同じ。対象の名前 128 コードポイントを最長の逃がし（` ` → 6 文字）で書いても上限の内で、安全な読み込みで読める。
+  - **計画との差**: 計画は「スキーマ・テーブル・カラム 256 文字（表の列の幅）」で確かめるとしていたが、名前の検証の上限は 128 コードポイント（`PermissionTargetName.MAX_CODE_POINTS`）で、256 文字の名前は保存できない。試しに 256 文字を最長の逃がしで書くと、約 1,540 文字のキーになり、SnakeYAML の単純なキーの長さの上限（1,024）で読めなかった（1行の長さの上限とは関係のない既存の制約）。そのため、保存できる最大の 128 コードポイントで確かめた。
+- `DslTreeBuilderTest`: 既存の「長いコメントは切り詰めない（1万文字）」を、上限ちょうど（4,096）は切らない確かめに変え、1万文字の漢字と 4,097 個の絵文字のコメントが 4,096 コードポイントで切られ、生成した DSL のすべての行が上限の内であることを足した。
+- `DslYamlWriterTest`: 4,096 コードポイントの、二重引用符・逆斜線・改行と書き出しで逃がす文字（U+FFFE → `￾`）を含むコメントを書き出し、最も長い行が 20,000 文字を超えて 65,536 以内で、`SafeYamlParser` で読めて表示名が元と同じ。
+- `DslLifecycleTest`: 行の上限の文言が ja・en とも行と上限を埋めること。
+- `SafeYamlReaderSecretLeakIT`・`TransferYamlTrees`・`DslSamples`・`SafeYamlReaderTest`・`RoleTransferLimitsApiIT` の作り方を5つの引数に直した（計画の一覧の残り（`YamlTreeConverterTest`・`DslResultTypesTest`・`ValidationTestSupport`・`GenerateTestSupport`・`DslYaml`・`RoleTransferServiceTest` など）は `DslSamples.DSL_YAML_LIMITS` などを通して使っていて、直す必要が無かった）。
+- `./gradlew :backend:test`（単体の全体）が通った。
+
+### Step 38（API の層の結合テスト）
+
+- `DslAdminApiIT`: 上限ちょうどの行の投入は 201。＋1 は 422 `application/problem+json`・`DSL_INVALID`・`total` 1・誤り1件（`kind` `SIZE_LIMIT`、`line` は見本の次の行、`column` 65,537、文言は ja・en とも行と上限）。応答に目印・本文・`Exception`・`snakeyaml` が出ない。受け付けなかった投入の監査は理由 `SIZE_LIMIT` で、本文を読んだため識別（`dsl_hash`）が入る（本文の大きさで断ったときは識別なし。違いは既存の道のまま）。
+- `RoleTransferLimitsApiIT`: 権限の YAML の確かめで、65,536 の行は 200、65,537 は 413 `PAYLOAD_TOO_LARGE`（Problem Details。目印・本文・部品の例外の文なし）。
+
+### Step 39（BUSY の結び付き、FR10）
+
+- 読み取りの結果: `RoleBusyLogTraceIT` は `ROLE_BUSY`（ロールの行・名前の鍵の2つの待ち）と受け渡しの入口で、`GroupBusyLogIT` は `GROUP_BUSY`（行・名前の鍵・メンバーの主キーの3つの待ち）で、応答の `code` と応答の `traceId` の WARN がちょうど1行（排他の種類と例外のクラスの名前だけ）を確かめていた。
+- 足りなかった道: ロールの割り当ての API がグループの行の待ちで返す `GROUP_BUSY`（`RoleAssignmentController` の `GroupBusy`）。`RoleBusyLogTraceIT` に1件足した（別の接続でグループの行を `FOR UPDATE` で持ち続け、`POST /api/admin/roles/{id}/assignments` に `groupId` を送る → 409 `GROUP_BUSY`、応答の `traceId` の WARN がちょうど1行・`lockKind` `GROUP_ROW`・項目は決まったものだけ、ログにグループの名前と部品の文が出ない、割り当ての行は 0）。WARN は group の `StoreFailureClassifier` が1回出し、role の側は値で `Busy` を受けるため重ならない。
+- `RoleBusyLogTraceIT`（3件）・`GroupBusyLogIT`（1件）が通った。k6 では上限切れを狙っていない。
+
+### Step 40（k6 の台本、FR7.1）
+
+- `roleAssignEnsured`（204 と 409 `ROLE_NO_CHANGE` を受け入れる）を足し、`roleAdminRead` の setup の2つ、`workRoleRead` の2つ、`myPermissionsTree` の1つ、`roleAssignmentsRead` の2つの割り当てで使った（`workRoleSwitch`・`rolePoolLimit` は今のまま `roleAssign`）。
+- `workRoleRead` の確かめを「ロールの数が 2」から「setup で割り当てた2つのロールの ID が一覧に含まれる」にした。
+- **計画との差（小さな足し）**: `myPermissionsTree` の setup の最後で、利用者ごとに作業ロールを悪い側のロールへ切り替える（`PUT /api/me/work-role`、204）を足した。前の場面（`workRoleSwitch`・`workRoleRead`）が保存した作業ロールが残ると、木が悪い側のロールで開かず確かめの不一致になりうるため（FR7.1 の「前の場面の状態に頼らない」に含まれると読んだ）。切り替えは使い捨ての環境の監査に `WORK_ROLE_SWITCHED` として残る。
+- `k6 inspect --include-system-env-vars`（`grafana/k6:2.3.0@sha256:9c2dee7f…`、`-e SCENARIO=…`）で、`workRoleRead`・`myPermissionsTree`・`roleAssignmentsRead`・`roleAdminRead` の台本が読めた。流すのは Build and Test。
+
+### Step 41（測りの手順、FR7.2・FR8・FR9.1・FR9.4）
+
+- `perf/README.md` に「性能の測り直し」の節を足した: (a) ロールの書き込みの待ちの最大の合否の回を、回ごとにアプリを作り直して 5 回（`role-pool-5.sh`。回ごとの `jvm.gc.pause`・`docker stats`、回の始めと終わりの時刻、判定の読み方、20 ms 以上の回の見立てに使うログと指標）、(b) 10 MiB の DSL の投入と、1行の長さの上限の内で作る悪い形の 5 MiB の権限の YAML（流れの書き方で節 500,000 ちょうど、要素 1,000 個ごとに改行、残りを1行 1,000 バイトまでのコメント）の確かめ・適用の間のヒープを 0.5 秒ごとに読む手順と、`dslMixed` の `memory.peak`、(c) ロールの3場面を手順書の順と単独で流す手順。
+- (b) の悪い形の作り方（Python の部分）は、スクラッチで実際に流し、5,242,880 バイトちょうど・最も長い行 2,008 文字になることを確かめた（作ったファイルは消した）。ほかの台本（`heap-run.sh`・`role-pool-5.sh`・`role-three.sh`）は流していない。道・指紋の見出し・ログインの応答の項目は、ソースと台本で照らした。
+- ロールの管理の節の表と説明（`workRoleRead`・`myPermissionsTree`、setup の決まり）と、上限ちょうどの YAML の埋め草のコメントを行に分けたことを直した。
+
+### Step 42（README）
+
+- DSL の読み込みの上限の表に「1行の長さ」の行を足し、既定の DSL の生成の節に長いコメントを 4,096 文字で切ることを書いた。権限の YAML の「信頼できない入力の守り」に 1行の長さ 65,536 と、超えたときの 413 と画面の文言を足した。
+
+### Step 43（verify）
+
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（2026-10-15 15:14:53〜15:29:43 UTC、14分49秒、`caffeinate -dims`、colima の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡した。流す前の電池 89%）: 成功。backend の単体 2,133 件・結合 1,171 件（失敗 0・SKIPPED 0。対象DB のテストも流れた）、frontend 184 ファイル・1,589 件。カバレッジは backend 全体 行 98.0%・分岐 92.6%、frontend 行 95.36%・分岐 90.38%。手を入れたパッケージ（行・分岐）: `dsl.parse` 98.4・89.2、`dsl.domain` 100.0・96.1、`dsl.service` 97.1・93.5、`dslmanage.service` 97.9・97.0、`dslmanage.generate` 99.4・100.0、`role.service` 96.9・91.1（すべてパッケージごとの下限の内。一覧の 7 パッケージには手を入れていない）。`osvScan` は UP-TO-DATE（lockfile は ② から変わらない）。
+- この間の `pmset -g log` に Sleep・DarkWake は無い。
+- 画面のコードに触れていないため E2E は流していない（計画 1節）。
+
+### Step 45
+
+- `code-summary.md` に ③ の節と、①〜③ の全体の節を書き足した。`source-manifest.json` は `cf6d5de`（① の前の `develop`）から作業ツリーまでの `aidlc/` の外の変更 118 パス（消した4つと名前を変えた2つの元の道を含む）。`traceability.json` は要件の FR1.1〜FR12.3・NFR1〜NFR6 の 44 件（OK 28・Deferred 13・N/A 3）。
+
+### Step 12（push の後のプルリクエスト、D-12: A。2026-10-16）
+
+- 依頼者の push で `origin/develop` が `60b49e5` に届いたことを確かめた。
+- 取り込んだ 19 件のうち 15 件（#49・#48・#45・#44・#43・#42・#41・#40・#38・#37・#36・#35・#27・#25・#24）は Dependabot が自動で閉じた。見送った #39（axe-core）も閉じた。
+- 開いたまま残った 4 件（#47 Spotless 8.10.4・#46 gradle-wrapper 9.8.1・#34 stylelint 17.16.0・#32 eslint 10.12.0）は `develop` に同じ版で取り込み済みと確かめ、`gh pr close` のコマンドを依頼者に示した（閉じるのは依頼者）。
+
+### 依頼者の決定（ブランチ ③ の後、計画に無い変更）
+
+- push の後に届いた Dependabot の知らせ 4 件（#53 prettier 3.9.10・#52 vitest 5.0.4・#51 @vitest/coverage-v8 5.0.4・#50 @fontsource/noto-sans-jp 5.3.1）も、この Intent で取り込む（依頼者「#50〜#53 もこのintentで対応して欲しい」）。ブランチ ③ の統合の後に、依存の更新だけの短いブランチ ④（`fix/261015-deps-ui-carryover-4-deps`、squash）で行う。
+- E2E は Intent の最後（Build and Test）に1回だけ流し、ブランチごとの統合の前は `./gradlew verify` だけにする（依頼者「E2Eはintentの最後に実行するので良いかな。都度実行は./gradlew verifyだけにして。」）。`team.md` の「画面・認証に関わる変更は統合の前に E2E」との差として記録する。① と ② は統合の前に E2E を流して通っている。`@fontsource/noto-sans-jp` は画面の書体のため、配備の後のスモークテストで文字の表示を確かめる。
+
+## ブランチ ④（計画に無い追加、依頼者の決定。Dependabot の知らせ 4 件）
+
+### 作り方と取り込んだ版
+
+- `develop` の先頭 `0b04d3a` から `fix/261015-deps-ui-carryover-4-deps` を作った（`aidlc/` の未コミットの記録はそのまま持ってきた）。計画のファイルは変えていない。
+- 4 件を各プルリクエストと同じ版・同じ範囲の書き方で入れた（`npm install --save-dev prettier@3.9.10 vitest@5.0.4 @vitest/coverage-v8@5.0.4`、`npm install --save @fontsource/noto-sans-jp@5.3.1`。`frontend/.npmrc` の `ignore-scripts=true` のまま）。直接の依存は #50〜#53 の差分の版と一致し、npm が範囲の中のもっと新しい版へ上げたものは無かった（入れ直しは不要）。
+  - #53 `prettier` 3.9.9 → 3.9.10、#52 `vitest` 5.0.3 → 5.0.4、#51 `@vitest/coverage-v8` 5.0.3 → 5.0.4（`vitest` と同じ版にそろう）、#50 `@fontsource/noto-sans-jp` 5.3.0 → 5.3.1（実行時の依存）。
+  - lockfile の推移依存の変化: `@vitest/mocker`・`@vitest/spy` 5.0.3 → 5.0.4、`obug` 2.2.1 → 3.0.0（`vitest`・`@vitest/coverage-v8` の依存。開発時だけ）。ほかは変わらない。
+- `npm install` は前と同じ `npm audit` の High 7 件（`braces` の1件の勧告の連なり、`stylelint` 経由の開発時だけの依存）を表示した。今回の更新で増えたものではない。
+- prettier 3.9.10 の書式の検査（`npm run format:check`）は全ファイルが通り、書式の直しは無い。`vendor/` は変えていない。
+
+### verify（統合の前の関門）: 1件の失敗で止まった
+
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（2026-10-15 15:35:46〜15:49:48 UTC、14分1秒、`caffeinate -dims`、colima の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡した。流す前の電池 85%）: **失敗**。
+  - 書式・リンタ・ライセンスヘッダー・画面のビルドと型の検査は通った。frontend 184 ファイル・1,589 件は通った（vitest 5.0.4 で流れた）。backend の単体 2,133 件は通った（失敗 0・SKIPPED 0）。
+  - backend の結合 1,171 件のうち 1 件が失敗（SKIPPED 0。対象DB のテストも流れた）: `invitation.web.InvitedPersonAuthenticationIT` の「logging in with the invited email is the same 401 as an unknown user」。`setUp` の `UPDATE invitations SET invitation_id = ? WHERE email = ?` が主キーの重なり（`DuplicateKeyException`）で落ちた。
+  - 結合テストで止まったため、その後のカバレッジの下限の検証とセキュリティ検査は verify の中では流れていない。カバレッジは今回測れていない。
+- 見立て（コードの読み取り。直していない）: このテストは各テストの前に招待を1件作り、その ID を `910_000 + Math.abs(email.hashCode() % 1000)`（email は毎回乱数の UUID）に書き換える。3 つのテストが同じ Spring の文脈（同じ内部DB）で招待を作り、消さないため、3 件の ID が 1,000 の枠の中で重なると落ちる（1回の実行で約 0.3%）。今回の変更は `frontend/` の依存だけで backend に触れておらず、更新とは関わらない、前からある不安定なテストと見る。
+- 扱い: `team.md` の決まり（手元で再現した不安定なテストは、原因を直すまで統合しない）に当たる。直しはテストだけで済む見込み（例: ID の書き換えをやめる、重ならない値を選ぶ）だが、依頼の範囲（依存の更新）の外のため、生成の担当は直さず、指揮役・依頼者に諮る。
+- OSV-Scanner: verify の中では流れなかったため、`./gradlew osvScan` だけを流した。失敗の条件 0 件・警告 18 件（`frontend` の `braces` 1件と `vendor/make-you-chic-ui` の lockfile の開発用 17 件。① と同じ顔ぶれ）。
+- この間の `pmset -g log` に Sleep・DarkWake は無い（Chrome の画面の眠りの防止の出入りだけ）。
+- E2E は流していない（依頼者の決定。Intent の最後に1回流す）。
+- コミットはしていない。見送った更新は無い。
+
+### 計画に無い変更（依頼者の決定 A）: InvitedPersonAuthenticationIT の招待の ID の重なりを ④ で直す
+
+- 再現のテスト: 招待の ID の選び方をテストの手伝い `backend/src/test/java/cherry/mastersmith/invitation/testsupport/InvitedPersonIds.java`（`reassign`）に移し、まず前と同じ式（`910_000 + Math.abs(email.hashCode() % 1000)`）のまま、再現の結合テスト `InvitedPersonIdsIT.java`（同じ置き場）を書いた。前の式で同じ枠に入る2つのメールアドレスを乱数に頼らず探し（`same-slot-<n>@example.com` の最初の組）、2件の招待を入れてから両方を書き換える。直す前に流すと、2件目の書き換えが `verify` と同じ `DuplicateKeyException`（主キー key 910324）で落ちることを確かめた（2026-10-15 16:14 UTC ごろ、2件中1件失敗）。
+- 直し: `InvitedPersonIds.reassign` の ID を、下限 910,000・内部DB の招待の ID の最大＋1・利用者の ID の最大＋1 のうち最も大きい値にした（1つの SQL の `GREATEST`）。`InvitedPersonAuthenticationIT` は `setUp` でこの手伝いを呼ぶ形にし、定数 `INVITATION_ID` を消した。招待の ID が利用者の ID と重ならないこと（`accessTokensAreRefused` が前提とする）と、3つのテストの意図（応答から存在を推測できない・トークンの拒否）は変えていない。`src/main` は変えていない。再現のテストには「書き換えた ID がどの利用者の ID でもない」も足した。
+- 同じ形の検索（`hashCode() %`・`% 1000`・`Math.abs(` を backend の test と frontend で）: ID をハッシュ値で作るのはこの1か所だけ。似た形が2つあるが同じ原因ではないため直していない。
+  - `invitation/service/InvitationSendResultIT.java` 135 行: `token_hash` を `Math.abs(email.hashCode())` の 16 進で作る。一意の制約はあるが、1回の実行で1件だけ入れ、32 ビットの値のため重なりは実用上起きない。
+  - `mail/template/MailTemplateRegistryTest.java` 175 行: 言語の選び分け（`% 2`）で、一意の値ではない。
+- 単独の繰り返し: `InvitedPersonAuthenticationIT` と `InvitedPersonIdsIT` を `--rerun` で 10 回流した（16:14:41〜16:16:36 UTC、`caffeinate -dims`）。10 回とも 5 件が通った（失敗 0・SKIPPED 0）。
+- verify の流し直し（`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`、16:16:43〜16:30:47 UTC、14分4秒、`caffeinate -dims`、colima の2つの変数、電池 75%）: backend の単体 2,133 件・結合 1,173 件（足した2件を含む）は失敗 0・SKIPPED 0 で通った。frontend の `frontendTest`（1,589 件）も通った。ところが、その後の `frontendCoverage`（同じテストをカバレッジ付きでもう一度流す）で、`src/app/navigation/BusinessNavigationProvider.test.tsx` の「drops the tree and the saved expanded ids when logged out」が1件落ちた（`sessionStorage` の開閉の記録が null でなく `["biz:0"]`）。
+  - 見立て（コードの読み取り。直していない）: 状態の `idle` は描画の中で決まり、開閉の記録の消去（`clearExpanded`）は描画の後の効果（`useEffect`）で動く。テストは `waitFor` で `idle` を待った後、記録の消去を同期で確かめているため、効果の前に確かめると落ちる。`team.md` の「描画の後に反映される値は `waitFor` で待つ」に当たる形。今回の依存の更新（vitest 5.0.4 など）が時間の取り方を変えたかは確かめていない。前の Intent の 0415b94・005730a から同じテストで、①〜③ の verify では落ちていない。
+  - 再現の試み（上限 30 分のうち約 4 分）: そのファイルをカバレッジ付きで単独 15 回、frontend 全体をカバレッジ付きで 3 回流し、すべて通った（再現しない）。
+  - 直しの案（テストだけ）: 203 行の確かめを `await waitFor(() => expect(sessionStorage.getItem(NAV_EXPANDED_STORAGE_KEY)).toBeNull())` にする。依頼の範囲の外のため、生成の担当は直さず、指揮役・依頼者に諮る。
+- 残りの関門: 上の verify は `frontendCoverage` で止まったため、続けて `./gradlew verify`（clean なし、16:35:42〜16:38:14 UTC）を流した。backend のテストは直前の clean の実行の結果で UP-TO-DATE、frontend のテストとカバレッジは流し直して 1,589 件が通り、カバレッジの下限・Gitleaks（漏えい無し）・SpotBugs の関門・OSV-Scanner（UP-TO-DATE。lockfile は単独で流した時と同じで、失敗の条件 0・警告 18）が通った（BUILD SUCCESSFUL）。
+  - カバレッジ（JaCoCo は clean の実行の結果から）: backend 全体 行 98.0%・分岐 92.6%。frontend 行 95.36%・分岐 90.38%。`src/main` に手を入れたパッケージは無い（テストだけの変更）。招待のパッケージは参考で `invitation.web` 行 97.3%・分岐 87.0%、`invitation.service` 行 100.0%・分岐 93.5%。
+- この間の `pmset -g log` に Sleep・DarkWake は無い。E2E は流していない（依頼者の決定）。
+
+### 計画に無い変更（依頼者の決定 A）: BusinessNavigationProvider のテストの待ち方を ④ で直す
+
+- 直し: `frontend/src/app/navigation/BusinessNavigationProvider.test.tsx` の「drops the tree and the saved expanded ids when logged out」の 203 行（ログアウトの後の開閉の記録の消去の確かめ）を、`await waitFor(() => expect(sessionStorage.getItem(NAV_EXPANDED_STORAGE_KEY)).toBeNull())` で待って確かめる形にした。テストの時間の上限は変えていない。
+- 近いテストの確かめ（開閉の記録 `NAV_EXPANDED_STORAGE_KEY` を確かめる箇所を検索）: 同じ原因の形はほかに無く、直していない。
+  - `features/auth/LogoutPage.test.tsx` 79 行: 記録の消去は `logout()` と同じ効果の中で `logout()` より先に動き、`waitFor` で `logout` の呼び出しを待った後に確かめるため、効果の後になる。88 行は変わらないことの確かめ。
+  - `app/layout/ShellLayout.test.tsx` 667 行: 記録の書き込み（効果）は1回目の `user.click` の中で動き、その後に別の操作と `waitFor` を挟んで確かめる。698・709 行は初めの値が変わらないことの確かめ、712 行以降は既に `waitFor` で待っている。
+  - `navExpansion.test.ts` は関数を直接呼ぶ単体テストで、効果を挟まない。
+- 繰り返し: そのファイルをカバレッジ付きで単独 10 回流し、10 回とも通った（16:59:18〜16:59:45 UTC）。
+- verify の流し直し（`./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`、16:59:54〜17:14:21 UTC、14分26秒、`caffeinate -dims`、colima の2つの変数、電池 63%）: **成功**。backend の単体 2,133 件・結合 1,173 件（失敗 0・SKIPPED 0。対象DB のテストも流れた）、frontend 184 ファイル・1,589 件（`frontendTest` と `frontendCoverage` の両方）。カバレッジは backend 全体 行 98.0%・分岐 92.6%、frontend 行 95.36%・分岐 90.36%（下限の内）。Gitleaks は漏えい無し、SpotBugs の関門は通過、OSV-Scanner は UP-TO-DATE（lockfile は単独で流した時と同じで、失敗の条件 0・警告 18）。`src/main` に手を入れたパッケージは無い（④ はテストと依存だけ）。
+- この間の `pmset -g log` に Sleep・DarkWake は無い。E2E は流していない（依頼者の決定）。これを ④ の統合の前の確かめの結果とする。

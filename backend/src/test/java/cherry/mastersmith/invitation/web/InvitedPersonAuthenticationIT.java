@@ -25,6 +25,7 @@ import cherry.mastersmith.auth.testsupport.MutableClock;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.invitation.testsupport.InvitationApi;
 import cherry.mastersmith.invitation.testsupport.InvitationTestProperties;
+import cherry.mastersmith.invitation.testsupport.InvitedPersonIds;
 import cherry.mastersmith.mail.testsupport.SmtpTestServer;
 import cherry.mastersmith.user.service.UserAccountService;
 import cherry.mastersmith.user.testsupport.MeApi;
@@ -61,9 +62,6 @@ import org.springframework.test.context.DynamicPropertySource;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(AuthApiTestConfig.class)
 class InvitedPersonAuthenticationIT {
-
-    /** どの利用者の ID とも重ならない招待の ID。 */
-    private static final long INVITATION_ID = 910_000;
 
     private static final SmtpTestServer RECEIVER = SmtpTestServer.builder().start();
 
@@ -107,10 +105,8 @@ class InvitedPersonAuthenticationIT {
                         .invite(users.accessToken(admin), email, "ja")
                         .statusCode())
                 .isEqualTo(201);
-        jdbc.update(
-                "UPDATE invitations SET invitation_id = ? WHERE email = ?",
-                INVITATION_ID + Math.abs(email.hashCode() % 1000),
-                email);
+        // どの利用者の ID とも、同じ内部DB のほかの招待の ID とも重ならない値に書き換える。
+        InvitedPersonIds.reassign(jdbc, email);
     }
 
     @Test

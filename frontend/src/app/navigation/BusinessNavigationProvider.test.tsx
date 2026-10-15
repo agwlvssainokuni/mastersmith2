@@ -200,6 +200,7 @@ describe('BusinessNavigationProvider', () => {
     act(() => login.set({ loggedIn: false, admin: false }))
     await waitFor(() => expect(status()).toHaveTextContent('idle'))
     expect(screen.getByTestId('menu')).toHaveTextContent('none')
-    expect(sessionStorage.getItem(NAV_EXPANDED_STORAGE_KEY)).toBeNull()
+    // 開閉の記録の消去は描画の後の効果で動くため、idle を見た後も待って確かめる（team.md の waitFor の決まり）。
+    await waitFor(() => expect(sessionStorage.getItem(NAV_EXPANDED_STORAGE_KEY)).toBeNull())
   })
 })

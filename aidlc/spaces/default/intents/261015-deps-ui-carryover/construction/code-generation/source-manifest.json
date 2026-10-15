@@ -1,0 +1,373 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    {
+      "path": ".github/dependabot.yml"
+    },
+    {
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "path": "Dockerfile"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslError.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslFormat.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslMessageKeys.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/domain/DslModel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/SafeYamlParser.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/parse/YamlLimits.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DefaultDslReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/DefaultSafeYamlReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dsl/service/SafeYamlLimits.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslErrorItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslStatus.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslErrorMessages.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslLifecycle.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/DslStartupLoader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/service/UnreadableAppliedRevision.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/web/DslResponses.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/DisplayLabel.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/MenuFilter.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/NavTableRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/TableAccessResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/DisplayLabelResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavTableRefResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/TableAccessResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/service/RoleTransferLimits.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/ApiAccessConsistencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiEndpointCounts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslErrorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/domain/DslModelToStringTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/parse/SafeYamlParserTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/DefaultDslReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/SafeYamlReaderSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/service/SafeYamlReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/testsupport/DslSamples.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/domain/DslManageDomainTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslYamlWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslLifecycleTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupLoaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/UnreadableAppliedRevisionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslAdminApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/testsupport/InvitedPersonIds.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/testsupport/InvitedPersonIdsIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/invitation/web/InvitedPersonAuthenticationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/NavigationRecordsToStringTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/service/RoleTransferServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYaml.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/LargeRoleTransferYamlTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TransferYamlTrees.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/RoleTransferReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/transfer/RoleTransferWriterTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleTransferLimitsApiIT.java"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "docker/hikari-pool.sh"
+    },
+    {
+      "path": "docker/perf/compose.yaml"
+    },
+    {
+      "path": "frontend/e2e/060-invitation-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/135-dsl-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/displayCombos.ts"
+    },
+    {
+      "path": "frontend/package-lock.json"
+    },
+    {
+      "path": "frontend/package.json"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/forbiddenHeading.test.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/BusinessNavigationProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/navigation/navigationItems.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/types.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.test.ts"
+    },
+    {
+      "path": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleSwitcher.css"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslDiffTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslPreviewPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/api/types.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useGroupDetail.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useGroupList.ts"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useSlowNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/MyPermissionsPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/mypermissions/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRoleAssignments.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRoleList.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useRolePermissions.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useSlowNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useRoleTransfer.ts"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useSlowNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roletransfer/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/shared/slow-notice/useSlowNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/slow-notice/useSlowNotice.ts"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeNodeItem.tsx"
+    },
+    {
+      "path": "frontend/src/shared/tree/SharedTreeView.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/tree/types.ts"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.jar"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "vendor/make-you-chic-ui"
+    }
+  ]
+}

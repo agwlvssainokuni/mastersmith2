@@ -1,0 +1,272 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4.1",
+    "FR4.2",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR6.1",
+    "FR6.2",
+    "FR7.1",
+    "FR7.2",
+    "FR8.1",
+    "FR8.2",
+    "FR8.3",
+    "FR8.4",
+    "FR9.1",
+    "FR9.2",
+    "FR9.3",
+    "FR9.4",
+    "FR10.1",
+    "FR10.2",
+    "FR10.3",
+    "FR11.1",
+    "FR11.2",
+    "FR11.3",
+    "FR12.1",
+    "FR12.2",
+    "FR12.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "frontend/package.json"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "Dockerfile"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR1.4",
+      "status": "Deferred",
+      "target": "Build and Test: 統合の後の CI の試行ごとの確かめと、取り込んだプルリクエストの閉じ方（D-12: A）。verify・E2E はこの段で通った（code-summary.md 3節）"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.css"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslSecretLeakIT.java"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "frontend/src/features/dsl/DslStatusPanel.tsx"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslStartupIT.java"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationSecretLeakIT.java"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/navigation/domain/MenuFilter.java"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "frontend/src/shared/tree/SharedTreeNodeItem.tsx"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "frontend/src/app/registry/validateRegistrations.ts"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "frontend/src/shared/tree/SharedTreeView.test.tsx"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": "frontend/src/shared/slow-notice/useSlowNotice.ts"
+    },
+    {
+      "id": "FR6.2",
+      "status": "OK",
+      "target": "frontend/src/shared/slow-notice/useSlowNotice.test.tsx"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "FR7.2",
+      "status": "Deferred",
+      "target": "Build and Test: ロールの3場面を手順書の順と単独で流す（perf/README.md の「性能の測り直し」の (c)）。この段は k6 inspect で台本が読めることまで"
+    },
+    {
+      "id": "FR8.1",
+      "status": "Deferred",
+      "target": "Build and Test: 合否の回を 5 回流す（perf/README.md の「性能の測り直し」の (a)）"
+    },
+    {
+      "id": "FR8.2",
+      "status": "Deferred",
+      "target": "Build and Test: 20 ms 以上の回の数と見立ての記録（同 (a)）"
+    },
+    {
+      "id": "FR8.3",
+      "status": "Deferred",
+      "target": "Build and Test: 原因が分かって直せるときだけ、依頼者に諮って直す"
+    },
+    {
+      "id": "FR8.4",
+      "status": "Deferred",
+      "target": "Build and Test: 5 回の値で Met / Not Met を判定する（同 (a)）"
+    },
+    {
+      "id": "FR9.1",
+      "status": "Deferred",
+      "target": "Build and Test: 10 MiB の DSL の投入のヒープの試しの測り（perf/README.md の「性能の測り直し」の (b)）"
+    },
+    {
+      "id": "FR9.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/dsl/parse/SafeYamlParser.java"
+    },
+    {
+      "id": "FR9.3",
+      "status": "Deferred",
+      "target": "Build and Test: FR9.1 の測り直しをもとにメモリの上限と MaxRAMPercentage を見直す"
+    },
+    {
+      "id": "FR9.4",
+      "status": "Deferred",
+      "target": "Build and Test: 10 MiB の DSL と悪い形の 5 MiB の権限の YAML のヒープ、dslMixed の memory.peak（同 (b)）"
+    },
+    {
+      "id": "FR10.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "id": "FR10.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleBusyLogTraceIT.java"
+    },
+    {
+      "id": "FR10.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/group/web/GroupBusyLogIT.java"
+    },
+    {
+      "id": "FR11.1",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution: 開発者の PC 上のコンテナへの配備とヘルスチェック・スモークテスト"
+    },
+    {
+      "id": "FR11.2",
+      "status": "Deferred",
+      "target": "Deployment Pipeline: スモークテストに今回の変化（Dropdown の収まり・畳んだサイドバーの印・英語のトップバー・1行の長さの上限の拒否）を入れる"
+    },
+    {
+      "id": "FR11.3",
+      "status": "Deferred",
+      "target": "Deployment Pipeline: 直前の版のイメージでの戻し方。配備済みの DSL の最も長い行の測り直し（D-5: A）も配備の前に行う"
+    },
+    {
+      "id": "FR12.1",
+      "status": "N/A",
+      "target": "計画の 5節の一覧として作り、各行の結果を code-summary.md 5節に写した（実装のファイルではない記録の要件）"
+    },
+    {
+      "id": "FR12.2",
+      "status": "N/A",
+      "target": "計画の承認で依頼者が確かめた（D-1〜D-13 はすべて A）"
+    },
+    {
+      "id": "FR12.3",
+      "status": "N/A",
+      "target": "範囲の外へ出した指摘は無い（D-6・D-7・D-9 はすべて A で、この Intent の中で直した）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR3",
+      "status": "Deferred",
+      "target": "Build and Test: ロールの書き込みの待ちの最大・ヒープ・memory.peak の目標を緩めずに測る（perf/README.md の「性能の測り直し」）"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/dslmanage/web/DslSecretLeakIT.java"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    }
+  ]
+}
