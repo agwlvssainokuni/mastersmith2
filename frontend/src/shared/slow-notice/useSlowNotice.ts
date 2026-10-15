@@ -17,7 +17,8 @@
 // 送信の待ちの案内と、送信中の2回目の呼び出しを捨てる口（Intent 261004-role-menu の U6 の L5、NFR2.10）。送信の開始から
 // 5 秒の時計を始め、応答・失敗・画面を離れたときに止める。5 秒で slow を真にする（画面が「時間がかかっています」を出す）。
 // 送信の最中は参照で持ち、その間の run の呼び出しは何もしないで undefined を返す。要求に独自の時間切れを置かない。
-// roleadmin・roletransfer にも同じ形を持つ（機能どうしの import の禁止）。
+// groupadmin・roleadmin・roletransfer が使う（3つの機能に複製していたものを、Intent 261015-deps-ui-carryover の FR6.1 で
+// src/shared/ へまとめた。機能どうしの import の禁止は変えない）。
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 /** 「時間がかかっています」を出すまでの時間（ミリ秒） */

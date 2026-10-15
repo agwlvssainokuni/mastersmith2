@@ -130,6 +130,12 @@ export function ShellLayout({ children }: ShellLayoutProps) {
     collapseGroup: (label: string) => format('nav.collapseGroup', { label }),
     containsCurrent: (label: string) => format('nav.containsCurrent', { label }),
   }
+  // トップバーの畳むボタンとユーザーメニューのトリガーの読み上げの名前（make-you-chic-ui の TopbarLabels。Intent 261015 の FR2.4）。
+  const topbarLabels = {
+    expandSidebar: t('topbar.expandSidebar'),
+    collapseSidebar: t('topbar.collapseSidebar'),
+    userMenu: (userName: string) => format('topbar.userMenu', { name: userName }),
+  }
 
   // ユーザーメニューの項目は、path を持てば href（<a> で描かれ、リンクとして読み上げられる）と、既定の移動を止めて
   // 読み込み直しなしで移る onClick にする（サイドバーと同じ作り。U7 の機能設計 9.3）。beforeNavigate があれば移る前に
@@ -161,6 +167,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
       navExpandedIds={expandedIds}
       onNavExpandedChange={(ids) => setExpansion((prev) => ({ ...prev, ids: new Set(ids) }))}
       navLabels={navLabels}
+      topbarLabels={topbarLabels}
       topbarEnd={narrow ? undefined : <WorkRoleSwitcher />}
       user={user}
       userMenuItems={userMenuItems}

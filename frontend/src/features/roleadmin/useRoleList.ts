@@ -37,7 +37,7 @@ import type { RolePage, RoleRow } from './api/types'
 import { failureMessageKey, inUseCounts, knownCode } from './failureMessage'
 import { createLatestLoad } from './latestLoad'
 import type { RoleAdminText } from './useRoleAdminText'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** 一覧の画面の状態（4.1） */
 export type RoleListView = 'loading' | 'populated' | 'empty' | 'reloading' | 'load-error'

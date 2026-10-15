@@ -49,6 +49,11 @@ export interface SharedTreeLabels {
   loading: string
   /** 子の読み込みの失敗（拒否の理由は出さない） */
   loadFailed: string
+  /**
+   * 子の読み込み中・失敗を出す区画（再試行の後にフォーカスを受ける）の読み上げの名前（例「販売DB の子」）。
+   * Intent 261015-deps-ui-carryover の FR5.1 で足した。
+   */
+  childArea: (label: string) => string
   /** 再試行のボタン */
   retry: string
   /** 子が0件 */

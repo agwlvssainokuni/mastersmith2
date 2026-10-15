@@ -132,7 +132,8 @@ export function validateRegistrations(
       )
     }
     // 区画・アイコンは型の外から来た値も扱う（BR5.1・BR5.3・BR5.4）。区画と visibleWhen は見せ方だけを決め、
-    // 管理の API はサーバー側の判定で守る（BR5.5）。
+    // 管理の API はサーバー側の判定で守る（BR5.5）。区画は管理だけで、管理者でない利用者向けの項目はサイドバーに登録しない
+    // （自分向けの画面はユーザーメニューに置く。Intent 261015-deps-ui-carryover の FR5.2）ため、visibleWhen は ADMIN だけが通る。
     const { section, icon } = item as { section?: unknown; icon?: unknown }
     if (typeof section !== 'string' || !SIDEBAR_SECTIONS.has(section)) {
       problems.push(`${owner}: サイドバーの項目 "${item.id}" の区画が正しくありません`)

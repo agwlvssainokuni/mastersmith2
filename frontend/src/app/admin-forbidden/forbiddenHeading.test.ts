@@ -45,7 +45,7 @@ const registrations: FeatureRegistration[] = [
         labelKey: 'reports.nav.label',
         path: '/reports',
         order: 10,
-        visibleWhen: 'LOGGED_IN',
+        visibleWhen: 'ADMIN',
         section: 'ADMIN',
       },
       {

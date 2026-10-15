@@ -29,6 +29,7 @@ const labels: SharedTreeLabels = {
   collapse: (label) => `${label} を閉じる`,
   loading: '読み込み中',
   loadFailed: '読み込めませんでした',
+  childArea: (label) => `${label} の子`,
   retry: '再試行',
   empty: '子がありません',
 }
@@ -38,6 +39,7 @@ const englishLabels: SharedTreeLabels = {
   collapse: (label) => `Collapse ${label}`,
   loading: 'Loading',
   loadFailed: 'Could not load',
+  childArea: (label) => `Children of ${label}`,
   retry: 'Retry',
   empty: 'No children',
 }
@@ -244,6 +246,29 @@ describe('SharedTreeView', () => {
     expect(loadChildren.mock.calls.filter(([id]) => id === 'db:sales')).toHaveLength(2)
   })
 
+  it('announces the failure text as an alert and names the focused child area by the node (FR5.1)', async () => {
+    const user = userEvent.setup()
+    const { loadChildren, take } = manualLoader()
+    render(<Harness nodes={[SALES]} loadChildren={loadChildren} initialExpanded={['db:sales']} />)
+    await waitFor(() => expect(loadChildren).toHaveBeenCalledTimes(1))
+    const area = screen.getByRole('group', { name: '販売DB の子' })
+    expect(within(area).getByRole('status')).toHaveTextContent('読み込み中')
+    expect(screen.queryByRole('alert')).toBeNull()
+
+    await act(async () => {
+      take('db:sales').reject(new Error('x'))
+    })
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('読み込めませんでした')
+    expect(within(alert).queryByRole('button')).toBeNull()
+    expect(within(area).getByRole('button', { name: '再試行' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '再試行' }))
+    await waitFor(() => expect(area).toHaveFocus())
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(within(area).getByRole('status')).toHaveTextContent('読み込み中')
+  })
+
   it('shows the empty text when a node has no children', async () => {
     render(
       <Harness nodes={[SALES]} loadChildren={tableLoader({})} initialExpanded={['db:sales']} />,
@@ -321,6 +346,7 @@ describe('SharedTreeView', () => {
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
     expect(screen.getByText('No children')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Collapse 販売DB' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Children of 販売DB' })).toBeInTheDocument()
     expect(document.body.textContent).not.toMatch(/読み込|再試行|子がありません/)
   })
 
@@ -346,6 +372,8 @@ describe('SharedTreeView', () => {
     })
     await screen.findByText('読み込めませんでした')
     expect(screen.getByRole('status')).toHaveTextContent('読み込み中')
+    expect(screen.getByRole('alert')).toHaveTextContent('読み込めませんでした')
+    expect(screen.getByRole('group', { name: '在庫DB の子' })).toBeInTheDocument()
 
     expect(await axe(container)).toHaveNoViolations()
   })

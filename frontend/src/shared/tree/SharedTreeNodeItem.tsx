@@ -56,11 +56,22 @@ function ChildArea({ node, tree }: SharedTreeNodeItemProps) {
   }
 
   // 再試行の後もフォーカスをこの場所（読み込み中の表示）に残すため、区画そのものにフォーカスを当てられるようにする。
+  // フォーカスを受けたときに読み上げで場所が分かるよう、節の名前を含む名前を付ける（role="group"。Intent 261015 の FR5.1）。
+  // 失敗の文は、出た時点で読み上げられるよう role="alert" にする（再試行のボタンは alert の外に置く）。
   return (
-    <div className="shared-tree-children" ref={areaRef} tabIndex={-1}>
+    <div
+      className="shared-tree-children"
+      ref={areaRef}
+      tabIndex={-1}
+      role="group"
+      aria-label={labels.childArea(node.label)}
+      data-testid="shared-tree-children"
+    >
       {state?.status === 'failed' ? (
         <p className="shared-tree-message shared-tree-message-failed">
-          {labels.loadFailed}{' '}
+          <span role="alert" data-testid="shared-tree-load-failed">
+            {labels.loadFailed}
+          </span>{' '}
           <button
             type="button"
             className="shared-tree-retry"

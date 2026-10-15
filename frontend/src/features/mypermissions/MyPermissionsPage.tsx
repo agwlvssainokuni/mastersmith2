@@ -51,6 +51,7 @@ export function MyPermissionsPage({ api }: MyPermissionsPageProps = {}) {
       collapse: (label) => t('mypermissions.tree.collapse', { label }),
       loading: t('mypermissions.loading'),
       loadFailed: t('mypermissions.loadError'),
+      childArea: (label) => t('mypermissions.tree.childArea', { label }),
       retry: t('mypermissions.retry'),
       empty: t('mypermissions.tree.empty'),
     }),

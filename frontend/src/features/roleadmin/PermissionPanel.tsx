@@ -68,6 +68,7 @@ export function PermissionPanel({ roleId, api = roleAdminApi, onMissing }: Permi
     collapse: (name) => t('roleadmin.tree.collapse', { name }),
     loading: t('roleadmin.tree.loading'),
     loadFailed: t('roleadmin.tree.loadFailed'),
+    childArea: (name) => t('roleadmin.tree.childArea', { name }),
     retry: t('roleadmin.tree.retry'),
     empty: t('roleadmin.tree.empty'),
   }

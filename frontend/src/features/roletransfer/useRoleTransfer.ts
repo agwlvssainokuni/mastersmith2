@@ -36,7 +36,7 @@ import { failureMessageKey, knownCode } from './failureMessage'
 import { createLatestLoad } from './latestLoad'
 import { saveFile } from './saveFile'
 import { MAX_TRANSFER_MIB, withinTransferLimit } from './transferLimits'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** S7 の状態（4.5） */
 export type TransferPhase =

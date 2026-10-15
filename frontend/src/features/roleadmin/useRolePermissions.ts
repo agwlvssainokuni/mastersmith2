@@ -40,7 +40,7 @@ import {
   type PermissionDraft,
 } from './permissionDraft'
 import type { RoleAdminText } from './useRoleAdminText'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** S4 の外側の状態（4.3） */
 export type PermissionPhase = 'loading' | 'noDsl' | 'ready' | 'load-error'

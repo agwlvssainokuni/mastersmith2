@@ -92,6 +92,12 @@ make-you-chic-ui の `IconName` のうち `src/app/registry/allowedIcons.ts` の
 （無ければ骨組みが既定のアイコンを当てる）。区画と `visibleWhen` は見せ方だけを決め、管理の API はサーバー側の判定で守る。
 見出しの文言・区画の並び・区画ごとの組み立ては骨組みが持つ。
 
+管理者でない利用者向けの項目は、サイドバーに登録しない（区画は管理だけのまま。Intent 261015-deps-ui-carryover の FR5.2、
+前の Intent のレビューの cross-cutting R-03 への答え）。業務の画面へのメニューは登録ではなく、適用中の DSL のメニューから骨組みが
+作る（作業ロールの権限で絞る）。利用者が自分のために使う画面（パスワードの変更・表示の設定・自分の権限を見る など）は、
+ユーザーメニューの項目（`userMenuItems`）として登録する。そのため `visibleWhen: 'LOGGED_IN'` のサイドバーの項目は、今の区画では
+登録の検査を通らない。
+
 ```ts
 sidebarItems: [
   { id: 'example', labelKey: 'example.nav.label', path: '/admin/example', order: 300, visibleWhen: 'ADMIN', section: 'ADMIN', icon: 'list' },
@@ -107,6 +113,9 @@ sidebarItems: [
 （`src/app/login-state/LoginStateGate.tsx`）を使う。返す関数は `Promise<boolean>` で、ログイン状態の提供元の `logout` を
 呼べたら `true`、提供元またはその `logout` が無ければ何もせずに `false` を返す（`false` のときは画面を元に戻し、押し直せるようにする）。
 `logout` の失敗は外へ出さない（画面の側のトークンの破棄は `auth` が必ず行う）。未ログインになったことはログイン状態の知らせで伝わる。
+呼ぶ側は、API の失敗と成功を区別しない（区別する口も無い）。提供元が API の失敗でもログイン状態を未ログインに替える契約で、
+`src/app/login-state/LoginStateGate.test.tsx` がそれを確かめている（Intent 261015-deps-ui-carryover、前の Intent のレビューの
+cross-cutting R-06）。
 
 ## 機能どうしの import の制限（Intent 261004-role-menu の U1）
 
@@ -120,10 +129,17 @@ sidebarItems: [
 - 機能の中の下位のディレクトリ（`api/`・`testing/` など）に、機能と同じ名前を付けない（設定の読み込みが失敗する）。
 - 決まりの確かめは `src/eslintImportRules.test.ts`。
 
+## 送信の待ちの案内（`src/shared/slow-notice/`、Intent 261015-deps-ui-carryover の FR6.1）
+
+送信の開始から 5 秒を過ぎても答えが無いときに「時間がかかっています」を出す口と、送信の最中の2回目の押下を捨てる口は、
+`src/shared/slow-notice/useSlowNotice.ts` の `useSlowNotice()` を使う（`run(task)` が送信の最中なら何もしないで `undefined` を
+返す。要求に独自の時間切れを置かない）。groupadmin・roleadmin・roletransfer の3つの機能に複製していたものをまとめた。
+
 ## 共有の木（`src/shared/tree/`、Intent 261004-role-menu の U1、契約 C2）
 
 木の形の一覧（権限の設定の対象・メニューの定義など）は `SharedTreeView` を使う。開閉（`expandedIds`・`onToggle`）と
 選び（`selectedId`・`onSelect`）は呼ぶ側が持ち、子は節を開いたときに `loadChildren` で読む（閉じて開き直しても読み直さない。
 `nodes` を新しい配列に替えると読み直す）。文言は `labels`（開く・閉じる・読み込み中・失敗・再試行・子が無い）で表示言語に
-合わせて渡す。表示名と印は文字として描かれ、HTML として描かれない。入れ子の `ul` と `button` で表し、tree の役割と矢印のキーは
+合わせて渡す（Intent 261015-deps-ui-carryover の FR5.1 で、子の読み込み中・失敗を出す区画の読み上げの名前 `childArea` を足した。
+失敗の文は `role="alert"` で読み上げられる）。表示名と印は文字として描かれ、HTML として描かれない。入れ子の `ul` と `button` で表し、tree の役割と矢印のキーは
 使わない。深さの上限は木に置かず、呼ぶ側のデータで決まる。

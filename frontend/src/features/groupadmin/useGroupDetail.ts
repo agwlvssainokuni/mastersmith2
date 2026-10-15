@@ -30,7 +30,7 @@ import { failureMessageKey, knownCode } from './failureMessage'
 import { createLatestLoad } from './latestLoad'
 import { removedRoles } from './removedRoles'
 import type { GroupAdminText } from './useGroupAdminText'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** 詳細の読み込みの状態 */
 export type GroupDetailPhase = 'loading' | 'ready' | 'missing' | 'load-error'

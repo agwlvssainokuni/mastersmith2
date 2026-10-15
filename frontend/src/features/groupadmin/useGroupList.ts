@@ -43,7 +43,7 @@ import type { GroupPage, GroupRow } from './api/types'
 import { failureMessageKey, inUseCounts, knownCode } from './failureMessage'
 import { createLatestLoad } from './latestLoad'
 import type { GroupAdminText } from './useGroupAdminText'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** 一覧の画面の状態（4.1） */
 export type GroupListView = 'loading' | 'populated' | 'empty' | 'reloading' | 'load-error'

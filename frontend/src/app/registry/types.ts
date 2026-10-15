@@ -35,6 +35,8 @@ export type VisibleWhen = 'LOGGED_IN' | 'ADMIN'
 /**
  * サイドバーの項目の区画（見出しの区分）。見出しの文言と区画の並びは骨組みが持つ（BR5.6）。
  * 今は管理のメニューの区画 ADMIN だけ。業務のメニューは登録ではなく API から作るため、ここに足さない（契約 C2）。
+ * 管理者でない利用者向けの項目はサイドバーに登録せず、自分向けの画面はユーザーメニューに置く（区画を足さない。
+ * Intent 261015-deps-ui-carryover の FR5.2、features/README.md の「サイドバーの項目の区画とアイコン」）。
  */
 export type SidebarSection = 'ADMIN'
 

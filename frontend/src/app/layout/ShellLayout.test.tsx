@@ -779,6 +779,61 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
     expect(order).toEqual(['/'])
   })
 
+  it('names the topbar toggle and the user menu trigger in Japanese and in English (FR2.4)', async () => {
+    const user = userEvent.setup()
+    const { view } = renderShell()
+    const toggleSidebar = await screen.findByTestId('sidebar-toggle')
+    expect(toggleSidebar).toHaveAccessibleName('サイドバーを折り畳む')
+    expect(screen.getByRole('button', { name: '管理者のメニュー' })).toBeInTheDocument()
+    await user.click(toggleSidebar)
+    await waitFor(() => expect(toggleSidebar).toHaveAccessibleName('サイドバーを開く'))
+    view.unmount()
+    localStorage.clear()
+    sessionStorage.clear()
+
+    renderShell({ languages: ['en-US'] })
+    const english = await screen.findByTestId('sidebar-toggle')
+    await waitFor(() => expect(english).toHaveAccessibleName('Collapse the sidebar'))
+    expect(screen.getByRole('button', { name: 'Menu for 管理者' })).toBeInTheDocument()
+    await user.click(english)
+    await waitFor(() => expect(english).toHaveAccessibleName('Expand the sidebar'))
+  })
+
+  it('marks a collapsed top-level group that contains the current page (FR2.3)', async () => {
+    const user = userEvent.setup()
+    const { view } = renderShell({ route: '/tables?schema=S&table=T1&item=0.0.0.0.0' })
+    await screen.findByRole('link', { name: LONG('段5') })
+    await user.click(screen.getByTestId('sidebar-toggle'))
+
+    const group = await screen.findByTestId('sidebar-nav-biz:0')
+    await waitFor(() => expect(group).toHaveClass('contains-current'))
+    expect(group).toHaveAccessibleName(`${LONG('段1')}（今のページを含む）`)
+    const other = screen.getByTestId('sidebar-nav-biz:1')
+    expect(other).not.toHaveClass('contains-current')
+    expect(other.getAttribute('aria-label')).not.toContain('今のページを含む')
+    expect(await axe(view.container)).toHaveNoViolations()
+    view.unmount()
+    sessionStorage.clear()
+
+    renderShell({ route: '/tables?schema=S&table=T1&item=0.0.0.0.0', languages: ['en-US'] })
+    await waitFor(() =>
+      expect(screen.getByTestId('sidebar-nav-biz:0')).toHaveAccessibleName(
+        'Level 1 (contains the current page)',
+      ),
+    )
+  })
+
+  it('does not mark a collapsed group when the current page is outside it (FR2.3)', async () => {
+    const user = userEvent.setup()
+    renderShell({ route: '/somewhere' })
+    await waitFor(() => expect(toggle('0')).toBeInTheDocument())
+    await user.click(screen.getByTestId('sidebar-toggle'))
+
+    const group = await screen.findByTestId('sidebar-nav-biz:0')
+    await waitFor(() => expect(group).toHaveAccessibleName(LONG('段1')))
+    expect(group).not.toHaveClass('contains-current')
+  })
+
   it('has no accessibility violations with five open levels, long names and the current leaf', async () => {
     const { view } = renderShell({ route: '/tables?schema=S&table=T1' })
     await screen.findByRole('link', { name: LONG('段5') })

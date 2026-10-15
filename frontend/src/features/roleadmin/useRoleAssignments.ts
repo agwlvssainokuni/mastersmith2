@@ -29,7 +29,7 @@ import type { AddResult, Candidate, CandidatePage } from './CandidateDialog'
 import { failureMessageKey, knownCode } from './failureMessage'
 import { createLatestLoad } from './latestLoad'
 import { removalImpact } from './removalImpact'
-import { useSlowNotice } from './useSlowNotice'
+import { useSlowNotice } from '../../shared/slow-notice/useSlowNotice'
 
 /** 割り当ての読み込みの状態 */
 export type AssignmentsPhase = 'loading' | 'ready' | 'load-error'
