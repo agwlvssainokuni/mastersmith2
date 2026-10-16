@@ -96,5 +96,12 @@
     "dirName": "261015-deps-ui-carryover",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a14425-5dd0-7285-b96e-112f79f0a4f3",
+    "slug": "business-data-views",
+    "dirName": "261016-business-data-views",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]
