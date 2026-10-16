@@ -1,67 +1,80 @@
 # API（mastersmith2）
 
-同じオリジンで配信する SPA から呼ぶ前提である（CORS の設定は無い）。REST（JSON、Spring MVC）で、認証は `Authorization: Bearer <アクセストークン>`。セッションと CSRF の仕組みは無い。`/api/**` の既定はログインが必要、`/api/admin/**` は管理者だけ（決まりの並びと判定は `architecture.md` の Interaction Diagrams 1、K-33）。エラーは RFC 9457 Problem Details に安定した `code` を足した形（`common/error`、1つの code に1つの状態コード）。
+> 2026-10-16（記録のコミット `09b795d`）の Full rescan で作り直した。口の一覧は、アーキテクトが `@RestController` のクラスの `@ApiAccess` と各 Mapping と道の定数を検索で数えたもの（中身は読んでいない口が多い）。深く読んだのは `navigation/web/NavigationController.java` と `common/security/`。所見の本文はこの文書に K-51・K-61 を書いた。
 
-パスは `backend/src/main/java/cherry/mastersmith/` を省いて書く。
+## 外部の API（REST、Spring MVC、JSON）
 
-> 2026-10-15（コミット `4f6c27d`、Intent `261015-deps-ui-carryover`）の更新: 下の「外部の API」の本数（32 本）と表は前回（コミット `d5aea52`、`261004-role-menu` の実装の前）の記録で、`261004-role-menu` で加わった `role`・`group`・`navigation` の API（作業ロール `GET /api/me/work-role` ほか）は数えていない。今回の束では API の足し引きは無いため数え直さず、行の排他の待ちの上限切れを返す経路（P4・K-40）だけを下の「BUSY を返す経路」に足した。
+エラー応答は RFC 9457 Problem Details に安定した `code` を足した形（`common/error`）。分類は口ごとの印 `@ApiAccess`（`PUBLIC`・`AUTHENTICATED`・`ADMIN`）。
 
-## BUSY を返す経路（2026-10-15）
+| 道の根 | 分類 | 口の数 | 持ち主（controller） |
+|---|---|---|---|
+| `/api/auth`（ログイン・`/session/refresh`・`/session/logout`） | PUBLIC | 3 | `auth/web/AuthController.java` |
+| `/api/registration`（リンクの確かめ・`/complete`） | PUBLIC | 2 | `invitation/web/RegistrationController.java` |
+| `/api/appearance` | PUBLIC | 1 | `appearance/web/AppearanceController.java` |
+| `/api/problems/{slug}` | PUBLIC | 1 | `common/error/web/ProblemTypeController.java` |
+| `/api/me`（`/preferences` の GET・PUT、`/password`） | AUTHENTICATED | 3 | `user/web/MeController.java` |
+| `/api/me/work-role`（GET・PUT） | AUTHENTICATED | 2 | `role/web/MeWorkRoleController.java` |
+| `/api/me/permissions`（`/schemas`・`/tables`・`/columns`） | AUTHENTICATED | 3 | `role/web/MyPermissionsController.java` |
+| `/api/me/navigation`・`/api/me/table-access` | AUTHENTICATED | 2 | `navigation/web/NavigationController.java` |
+| `/api/admin/check` | ADMIN | 1 | `access/web/AdminCheckController.java` |
+| `/api/admin/users`（一覧・`/{userId}/profile`・`grant-admin`・`revoke-admin`・`suspend`・`resume`・`reset-login-failures`） | ADMIN | 7 | `useradmin/web/UserAdminController.java` |
+| `/api/admin/invitations`（招待・一覧・送り直し・取り消し） | ADMIN | 4 | `invitation/web/InvitationAdminController.java` |
+| `/api/admin/dsl`（状態・プレビュー・生成・ダウンロード・適用・履歴と戻し） | ADMIN | 10 | `dslmanage/web/DslAdminController.java` |
+| `/api/admin/groups`（一覧・作成・詳細・変更・削除・メンバーの追加と削除） | ADMIN | 7 | `group/web/GroupAdminController.java` |
+| `/api/admin/roles`（一覧・作成・詳細・変更・削除） | ADMIN | 5 | `role/web/RoleAdminController.java` |
+| `/api/admin/roles/{roleId}/permissions`（`/schemas`・`/tables`・`/columns`・設定・`/clear`） | ADMIN | 5 | `role/web/RolePermissionController.java` |
+| `/api/admin/roles/{roleId}/assignments`（一覧・割り当て・利用者とグループの外し） | ADMIN | 4 | `role/web/RoleAssignmentController.java` |
+| `/api/admin/groups/{groupId}/roles`・`/api/admin/users/{userId}/roles` | ADMIN | 2 | `role/web/RoleLookupController.java` |
+| `/api/admin/role-transfer`（書き出し・取り込みの確かめと適用） | ADMIN | 3 | `role/web/RoleTransferController.java` |
 
-| code（状態コード） | 返す controller | 中身 |
-|---|---|---|
-| `ROLE_BUSY`（409） | `role/web/` の `MeWorkRoleController`・`RoleAssignmentController`・`RoleAdminController`・`RoleTransferController` | 業務処理の結果の型 `Busy` を `switch` で `BusinessException` に変える（例: `RoleAdminController.java` 121・186 行）。ロールの行の排他（3,000 ms）の上限切れ |
-| `GROUP_BUSY`（409） | `group/web/GroupAdminController.java`（123・215 行）、`role/web/RoleAssignmentController.java`（156 行、グループの行の待ち） | グループの行の排他（3,000 ms）の上限切れ |
+- 合計 65 口（上の表の数え。`ErrorPathController` の `/error` は数えない）。業務データ（行の一覧・詳細・作成・更新・削除）の口は**無い**（K-49、本文は `architecture.md`）。
+- ログインの応答（`TokenResponse`）は `CurrentUserResponse` を含み、画面へ `admin`（管理者の印）を渡す（K-53）。
+- `/actuator/health` は公開（前の記録。今回は `config/SecurityConfig.java` を開いていない）。
 
-行の番号は開発担当の記録で、アーキテクトは排他の上限（`RoleStore`・`GroupStore` の `LOCK_TIMEOUT_MILLIS`）だけを確かめた。流れは `architecture.md` の Interaction Diagrams 5（K-40）。
+### 今回深く読んだ口: `GET /api/me/navigation`・`GET /api/me/table-access`
 
-## 外部の API（HTTP）
+- `navigation/web/NavigationController.java`（道の根 `/api/me`、55 行。`@ApiAccess(AUTHENTICATED)`、50 行）。
+- `GET /api/me/navigation`: 作業ロールで枝を落とした業務のメニューの木。
+- `GET /api/me/table-access?schema=&table=`: 200 は `schemaName`・`tableName`・`displayName`・`main`（`READ` か `FULL`）。見られなければ 403 `ACCESS_DENIED`（見られない理由 NONE・DSL に無い・DSL が無い を区別しない）、引数が欠け・空なら `fieldErrors` の無い 400 `VALIDATION_FAILED`。CREATE・DELETE・カラムの主権限・主キーの有無は返さない（K-50、本文は `architecture.md`）。
 
-本数は controller ごとの対応づけの注釈（`@GetMapping` などメソッドの単位）を数えた値で、合わせて **32 本**（エラーの経路 `/error` と Actuator・画面の配信を除く）。開発担当の記録は総数を「29 本」と書いているが、内訳の合計は 32 で、今回の数え直しも 32 だった。
+## 画面の道（SPA）
 
-| まとまり | 実装 | 本数 | アクセス | 今回の読みの深さ |
-|---|---|---|---|---|
-| 認証 `POST /api/auth/login`・`/api/auth/session/refresh`・`/api/auth/session/logout` | `auth/web/AuthController.java` | 3 | 公開（更新とログアウトは Cookie のリフレッシュトークン） | 応答の形だけ深く。ログインと更新の応答 `TokenResponse` にログイン中の利用者 `CurrentUserResponse`（`email`・`admin`・`displayName`・`language`・`theme`・`fontSize`）を含む。ログイン中の利用者を返す単独の API（`GET /api/me` など）は無い（K-35） |
-| 自分の設定 `GET`・`PUT /api/me/preferences`、`POST /api/me/password` | `user/web/MeController.java` | 3 | ログイン | 流し読み |
-| 管理者の確かめ `GET /api/admin/check`（204） | `access/web/AdminCheckController.java` | 1 | 管理者だけ | 深い |
-| 利用者の管理 `GET /api/admin/users`、`PUT .../{userId}/profile`、`POST .../{userId}/grant-admin`・`revoke-admin`・`suspend`・`resume`・`reset-login-failures` | `useradmin/web/UserAdminController.java` | 7 | 管理者だけ | 印と停止の業務の流れ（K-34）。引数と応答の項目は流し読み |
-| 招待の管理 `/api/admin/invitations` の作成・一覧・送り直し・取り消し | `invitation/web/InvitationAdminController.java` | 4 | 管理者だけ | 流し読み |
-| 登録 `POST /api/registration/verify`・`/complete` | `invitation/web/RegistrationController.java` | 2 | 公開（`InvitationSecurityContributor`、order 310） | 流し読み（決まりの部分だけ深く） |
-| DSL の管理 `/api/admin/dsl/` の status・preview・generate・download・apply・history・restore・applied/download | `dslmanage/web/DslAdminController.java` | 10 | 管理者だけ | 流し読み |
-| 見た目 `GET /api/appearance` | `appearance/web/AppearanceController.java` | 1 | 公開（`AppearanceSecurityContributor`、order 410） | 流し読み（決まりの部分だけ深く） |
-| 問題の種類 `GET /api/problems/{slug}` | `common/error/web/ProblemTypeController.java` | 1 | 公開（`SecurityConfig` の公開の決まり） | 流し読み |
+- `/tables?schema=&table=&item=`: テーブルの置き場（`features/tables/registration.ts`、`access: 'LOGGED_IN'`）。作るのは `toTablePlaceholderPath` の1か所（K-52、本文は `architecture.md`）。
+- 管理の画面は `/admin/**`、自分の設定は `/preferences` など（流し読み）。
 
-- 管理者だけの API は 22 本（check・利用者・招待・DSL）で、どれも「管理者なら全部できる」。操作ごと・画面ごとの権限の区別は無い（K-33）。
-- 拒否の応答: 未認証・トークンの誤りは 401、管理者でない利用者の管理の API は 403（code `ACCESS_DENIED`、監査の理由 `NOT_ADMIN`）。403 の理由はこの1つだけ（`access/domain/AccessDeniedReason.java`）。
-- メニュー・ナビゲーションを画面に渡す API は無い（K-37）。
+## 内部の口: DSL のモデル
 
-## アプリの中の口（部品の間の契約）
+適用中の DSL は `dsl/service/ActiveDslModelProvider.java` から変更できない値 `DslModel` として読む。後の Intent（業務データの一覧・詳細）が使う提供口である。
 
-| 口 | 場所 | 内容 |
-|---|---|---|
-| `SecurityRuleContributor` | `common/security/SecurityRuleContributor.java` | 機能ごとの追加のアクセスの決まり。`SecurityConfig` が order の小さい順に当てる。本番は auth 110・access 210・invitation 310・appearance 410（K-33） |
-| `ApiDefaultAccess` | `common/security/ApiDefaultAccess.java` | `/api/**` の既定。実装は `access/web/AdminApiDefaultAccess.java` の1つだけで、ログイン必須 |
-| 主体 `AuthenticatedUser` | `auth/domain/AuthenticatedUser.java` | `userId`・`email`・`admin`。要求ごとに DB から作る（K-32） |
-| `UserAccountService` | `user/service/UserAccountService.java` | `findById`（認証の入口が使う）ほか。戻り値の `UserSummary` は `toString` でメールアドレスと氏名を伏せ、`admin`・`suspended` を持つ（前回までの記録と今回の `UserSummary.java`） |
-| 管理者の行の排他と有効な管理者の集合 | `user/repository/UserRepository.java` の `findActiveAdminIds`（182 行）ほか | 最後の管理者の保護に使う（K-34） |
-| 監査の出来事 | 各機能の出来事 → `audit/service/AuditEventListener.java` | 確定の後に追記。種類は `audit/domain/AuditEventType.java` の 22 個（K-38） |
-| `ActiveDslModelProvider` | `dsl/service/ActiveDslModelProvider.java` | 適用中の DSL のモデル（下の K-37） |
-| 画面の差し込み口 | `frontend/src/app/registry/types.ts` | 画面（ルート）・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元の4つ（K-35） |
+**K-51 DSL のモデルは一覧・詳細の画面に要る情報（主キー・ビュー・列の表示の設定・選択肢）を持つが、まだ誰も使っていない（`dsl`）**
 
-### K-37 N 階層のメニューの定義は、すでに DSL の中にある
+- 確かめた事実:
+  - `dsl/domain/DslTable.java`: `primaryKey`（主キーのカラムの物理名の一覧。無ければ空、36 行）、`view`（ビューなら true、35 行）、`foreignKeys`、`columns`（DSL の順を保つ対応表、1件以上）。
+  - `dsl/domain/DslColumn.java`: `dbType`（名前・長さ・精度・小数の桁・NULL の可否）、`formPart`（11種）、`search`（`enabled`・`operator`・`defaultValue`・`collapsed`）、`list`（`visible`・`order`・`width`・`sortable`・`defaultSort`・`format`）、`detail.visible`、`validations`（`required`・`unique`・長さ・範囲・`pattern`）、`options`（`FIXED`・`REFERENCE`・`LOOKUP`）。`ListFormat` の Javadoc に「書式の中身は画面の Intent で決める」とある。
+  - `dsl/domain/DslModel.java`: 書式の版 2、スキーマは検証でちょうど1つ（`schema()` は1つでないと例外）。テーブルは `findTable(TableRef(schema, name))` で引く（大文字と小文字を区別する）。
+  - `DslForeignKey.referencedTable`・`OptionSource.table` はテーブルの物理名だけで、スキーマ名を持たない（スキーマが1つの前提）。
+  - `ActiveDslModelProvider` の Javadoc: `pattern` は正しい正規表現かを確かめただけで値に当てはめたことは無く、当てはめるときは時間の上限つきにすること。
+  - 識別子の引用の入り口 `targetdb/domain/SqlIdentifiers.java`（`quote`・`quoteKnown`。DB の種類の引用符で囲み、中の引用符を二重にする。NUL を拒否）は Javadoc で「今は使わない。利用者の入力から識別子を作らない」。
+  - 見本の対象DB（`docker/targetdb/postgres/01-sample-schema.sql`）には、単一の主キーの表（`customers`・`orders`）、複合の主キーの表（`order_items` の `(order_id, line_no)`）、引用符と空白と `;` を含む名前の表、ビュー（`customer_orders`）がある。主キーの無い表は見本に無い（grep で確かめた）。
+- 今回の Intent への意味: 主キーの有無による操作の可否の材料は `DslTable.primaryKey` の空かどうかと `view` でそろっている。主キーの無い表の確かめには、見本の DB かテストの表を足す必要がある。行の識別（詳細の道・更新・削除の対象）は複合の主キーと特殊な文字を含む値を扱う必要があり、画面の道の組み立て（エンコード）とサーバー側の識別子の引用（`SqlIdentifiers` を DSL の名前の一覧に照らして使う）が要る。`team.md` の「信頼できない入力」の決まりは DSL の YAML について書かれており、道に乗る主キーの値・検索の値の扱いは要件・設計で決める。
+- 見立て（未検証）: `DslModel` は変更できない値のため、業務データの機能は `ActiveDslModelProvider` だけに依存すれば足りる見込み。`dsl` への逆向きの依存を止める規則があるかは今回読んでいない（`dependencies.md`）。
 
-確かめた事実:
+## 内部の口: 権限の解決
 
-- DSL の JSON Schema（`backend/src/main/resources/dsl/dsl-schema-v1.json`）の `menus` は「最上位のメニュー（N 階層）」の配列で、項目 `menuItem` は `label`（必須、表示名 ja・en）・`icon`（文字列か null）・`table`（文字列か null）・`items`（子の配列か null）を持ち、`additionalProperties: false`。
-- モデルは `DslMenuItem(DisplayName label, String icon, String table, List<DslMenuItem> items)`（`dsl/domain/DslMenuItem.java` 29 行、Javadoc に「N 階層」）で、テーブルか子の少なくとも一方を持つ。意味の検証（`dsl/validate/DslSemanticValidator.java` 102〜117 行）は、指すテーブルがあること（`SEMANTIC_MENU_UNKNOWN_TABLE`）と空のまとまりでないこと（`SEMANTIC_MENU_EMPTY`）だけ。
-- 深さの上限は DSL 全体の入れ子の深さ `DslFormat.MAX_DEPTH = 50`（`dsl/domain/DslFormat.java` 35 行）だけで、メニュー専用の上限は無い。`icon` は make-you-chic-ui のアイコンの名前の一覧（18 種類、K-36）と照らしていない。
-- 既定の DSL の生成は、テーブルごとに1段のメニュー（`label` と `table`。アイコンなし）を作るだけ（`dslmanage/generate/DslTreeBuilder.java` 70〜77 行）。
-- 適用中のモデルは `ActiveDslModelProvider.current()` で読める（契約 C8、Javadoc に「後続の Intent I・J・K が使う」）。アプリの中の読み手は `dsl` の内側（`ActiveDslModelStore`・`ActiveDslModelHolder`）を除くと `dslmanage/service/DslPreviewAnalysis.java` だけで、画面のナビゲーションには使われていない。適用で丸ごと差し替わる（読み手から見て一度に切り替わる）。
-- 画面の DSL の管理画面は、プレビューのメニューの木を `MenuNode { label, table, children }`（`frontend/src/features/dsl/api/types.ts` 67〜72 行。`icon` は無い）で受け、`features/dsl/DslMenuTree.tsx` で描く。
-- メニューの項目が指す「テーブルの画面」（業務データの一覧・詳細）はまだ無い（画面の経路の登録に該当が無い）。DSL の項目に権限（役割）の指定は無い。
+`role/service/EffectivePermissionResolver.java`（`effectiveWorkRole`・`snapshotFor`・`resolve`）。中身と依存してよい相手の制限は K-50（`architecture.md` の Interaction Diagrams 2）。
 
-見立て（未検証）:
+## API を足すときの決まり
 
-- Intent I のメニューは、骨組みの静的な登録（機能の `sidebarItems`）と、DSL の動的なメニュー（テーブルへの項目）の2つの出どころを持つことになりうる。DSL のメニューを画面に渡す API（今は無い）、まだ無いテーブルの画面への行き先の扱い、適用で差し替わったときの画面の追従が論点になる。
-- DSL の項目に役割の指定を足すかどうか（Intent F と I の結び付け方）は、JSON Schema の `additionalProperties: false` のため、Schema の版と既存の DSL の扱いに関わる。
-- `icon` の値を make-you-chic-ui の名前に限るなら、検証を `DslSemanticValidator` に足す形と、画面で知らない名前を代わりのアイコンにする形がある。
+**K-61 業務データの API を足すときに当たる決まり（API の分類・安全の決まりの差し込み・境界テスト）**
+
+- 確かめた事実:
+  - 新しい口には同じ変更で `@ApiAccess` を付ける。`ADMIN` は `/api/admin` の下だけ、`AUTHENTICATED` は `/api/` の下で管理の道の外（`common/security/ApiAccess.java` の Javadoc）。`ADMIN` の道は `/api/admin` と `/api/admin/**`（`access/domain/AdminPaths.java`）、`/api/**` の既定はログインだけ（`access/web/AdminApiDefaultAccess.java`）。検査はテストの `ApiAccessArchitectureTest`（印の書き忘れ・二重・道との食い違い）と `ApiAccessConsistencyIT`（印と本番の決まりの一致。ファイルの有無だけ確かめた）。
+  - 安全の決まりの差し込み口 `common/security/SecurityRuleContributor.java` の order は機能の名前で 100 台ずつ（`auth` 100 台・`access` 200 台・`invitation` 300 台・`appearance` 400 台、本番は x10）。重なると起動を失敗させる（`SecurityExtensionValidator`）。
+  - 置き場の API の 403 は `access` に依存せず、共通の問題の種類の一覧から code `ACCESS_DENIED` で引く（`NavigationController` 64・79 行）。
+  - 手元の監視の警報 `ms-forbidden` は 403 の全体の数を数える（`docker/monitoring/provisioning/alerting/mastersmith.yaml`、`status="403"` の `increase` の合計。式だけ読んだ）。前の Intent の持ち越し D2（置き場の 403 を分けるか）がある。
+- 今回の Intent への意味: 業務データの API は利用者の作業ロールで判定するため `AUTHENTICATED` の分類になる見込みで、判定は API ごとにサーバー側で行う（`project.md` の Mandated）。`team.md` の「役割・権限の機能」の必須のテスト（API ごとの 401・403・200、要る権限だけを欠く利用者での 403、API の分類の網羅、割り当ての変更の直後の切り替え、IDOR・一括代入の防止）がすべて当たる。業務データの 403 が増えると `ms-forbidden` のしきい値（20）に届きやすくなる。
+
+## Sources
+
+- アーキテクトの検索（`@RestController`・`@ApiAccess`・各 Mapping・道の定数、2026-10-16）。
+- 開発担当の調査の APIs Discovered・K-51・K-61。

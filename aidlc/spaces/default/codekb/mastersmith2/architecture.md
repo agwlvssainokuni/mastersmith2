@@ -1,366 +1,234 @@
 # アーキテクチャ（mastersmith2）
 
-パスは、`backend/src/main/java/cherry/mastersmith/` の下のものはそれを省いて書く（画面・テスト・設定・移行・`vendor/` のファイルは省かない）。部品ごとの責務と読みの深さは `component-inventory.md`、依存の向きは `dependencies.md`。
+> 2026-10-16（記録のコミット `09b795d`）の Full rescan で作り直した。深く読んだのは今回の Intent に関わる範囲だけで、図の中の流し読みの部品は前の記録とディレクトリの一覧による（各節に書く）。所見の本文はこの文書に K-49・K-50・K-52・K-54 を書いた。
 
-> 2026-10-15（Intent `261015-deps-ui-carryover`、コミット `4f6c27d`、Focused scan）の更新: System Overview と Architectural Style に `261004-role-menu` で増えたパッケージを書き足し、Interaction Diagrams 5・6（K-40・K-41）を足した。それ以外の節（Component Relationships・Data Flow・Key Design Decisions・Improvement Opportunities・Interaction Diagrams 1〜4）は前回（コミット `d5aea52`、`261004-role-menu` の実装の前）の記録のままで、今回は確かめ直していない。権限が `admin_flag` だけという前提の文は、`261004-role-menu` でロール・グループの仕組みが加わった後の状態とは違う。
+## System Overview
 
-## Architecture Analysis
+- 1つの実行可能 WAR（Spring Boot 4.1.1、Java 25）が、画面（React の SPA、`frontend/dist` を同梱）と API（`/api/**`）を同じオリジンで配る。CORS は置かない。
+- 内部DB は組み込みの H2（利用者・認証・招待・DSL・ロール・グループ・監査）。スキーマは Flyway の V1〜V12。
+- 対象DB（MySQL・MariaDB・PostgreSQL のどれか1つ）は設定（環境変数）だけから接続し、読み取り専用の接続でスキーマを読む。
+- 配備先は開発者の PC 上のコンテナだけ（`Dockerfile`・`compose.yaml`）。監視・メールの受け手・見本の対象DB は compose の profile で必要なときだけ起動する。
 
-### System Overview
+## Architectural Style
 
-1つのプロセスの Web アプリケーションである。バックエンド（Java 25・Spring Boot 4.1.1）が REST API と、ビルド済みの画面（React の SPA）の配信の両方を受け持つ。成果物は画面のビルド結果を同梱した実行可能 WAR 1つで、コンテナ1つ（`Dockerfile`・`compose.yaml` の `app`）で動かす。
+- モジュール化した一枚岩（modular monolith）。根拠: 1つの Gradle のアプリ（`backend`）の中で、機能ごとのパッケージ（`auth`・`access`・`audit`・`user`・`useradmin`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`・`role`・`group`・`navigation`・`common/*`・`config`）に分け、各機能の中を `web`・`service`・`domain`・`repository` と用途名の下位パッケージに分ける。
+- 機能の間の依存の向きは ArchUnit の境界テスト 18 個（全体の `ArchitectureTest`・`ApiAccessArchitectureTest` と機能ごとの 16 個）で固定し、逆向きの知らせは Spring の出来事で行う（監査など）。
+- 画面は `frontend/src/features/<featureId>/registration.ts` を置くと読み込まれる差し込みの形で、機能どうしの import は ESLint の `no-restricted-imports` で止める。
 
-- 内部DB: 組み込みの H2（ファイル）。利用者・ロックの状態・リフレッシュトークン・監査ログ・DSL・招待を置き、`261004-role-menu` でロール・グループ・割り当ての表が加わった。スキーマは Flyway の移行（前進のみ）が正本。単一インスタンスの前提（前回までの記録。移行の番号は今回確かめていない）。
-- 行の排他: ロール・グループの書き込みは JPA の `PESSIMISTIC_WRITE` と待ちの上限 3,000 ms で行を排他し、上限切れを `ROLE_BUSY`・`GROUP_BUSY`（409）に読み替える（K-40、Interaction Diagrams 5）。
-- 信頼できない入力の YAML（DSL と権限の YAML）は、同じ `dsl/parse/SafeYamlParser.java` で上限つきで読む（K-41、Interaction Diagrams 6）。
-- 認証: `Authorization: Bearer <アクセストークン>`（HS256 の JWT）。セッションと CSRF の仕組みは無い。アクセストークンの主張は `sub`（利用者 ID）・`iat`・`exp` だけで、権限は入っていない（`auth/service/AccessTokenService.java` 92〜96 行）。
-- 認可: 要求ごとに利用者を DB から読み直して主体を作り、URL の決まりで判定する。権限は「管理者の印」1つ（K-32・K-33、Interaction Diagrams 1）。
-- 画面: 機能ごとの `registration.ts` を骨組みが読み込み、サイドバー・振り分け・403 の画面を組み立てる。外枠は make-you-chic-ui の `AppShell`（K-35・K-36）。
-- 対象DB: MySQL・MariaDB・PostgreSQL のどれか1つ。スキーマを読むだけ（流し読み）。
-- 外へ出る接続: 対象DB、SMTP（手元では Mailpit）、既定で無効の OTLP の送り先。
-
-### Architectural Style
-
-**モジュール分けしたモノリス（層構造）**である。パッケージが機能ごと（`auth`・`access`・`audit`・`user`・`useradmin`・`invitation`・`mail`・`appearance`・`targetdb`・`dsl`・`dslmanage`、`261004-role-menu` で加わった `role`・`group`・`navigation`）と共通（`common`・`config`）に分かれ、各機能の中が `web`・`service`・`domain`・`repository` の層（と用途名の下位パッケージ）になる（`code-structure.md`）。
-
-根拠（今回確かめた範囲）:
-
-- 層の決まりは全体の `backend/src/test/java/cherry/mastersmith/ArchitectureTest.java` が、機能の間の向きは機能ごとの `*BoundaryArchitectureTest` が ArchUnit で確かめる。境界テストは 10 個あり、`access` には無い（K-38）。
-- 機能の間は、直接の呼び出し（service の口）・差し込み口（`common/security/SecurityRuleContributor`・`ApiDefaultAccess` の Bean）・アプリの中の出来事（Spring の `ApplicationEventPublisher`）でつなぐ。各機能の出来事を `audit` が確定の後に受ける。
-- 画面も同じ考え方で、機能は `features/<featureId>/registration.ts` で骨組みの4つの差し込み口（画面・サイドバーの項目・ユーザーメニューの項目・ログイン状態の提供元）に登録し、骨組みのファイルは書き換えない（`frontend/src/app/registry/types.ts`）。
-
-### Component Relationships
+## Component Relationships
 
 ```mermaid
 flowchart LR
-  subgraph FE["画面 frontend/src"]
-    REG["frontend-registry 登録とサイドバーの項目"]
-    LAY["frontend-app-layout-i18n 外枠と振り分け"]
-    CORE["frontend-app-core 403 の画面ほか"]
-    FAUTH["frontend-feature-auth ログイン状態"]
-    FADM["管理の画面の機能 admin dsl invitation useradmin"]
-    APIC["frontend-api-client 403 の判定"]
-    MYC["make-you-chic-ui AppShell と Sidebar"]
+  subgraph FE["frontend SPA"]
+    REG["frontend-registry"]
+    TBL["frontend-feature-tables"]
+    ADMFE["admin features"]
+    API["frontend-api-client"]
   end
-  subgraph BE["バックエンド cherry.mastersmith"]
-    CFG["config SecurityConfig"]
-    SEC["common-security 差し込み口の型"]
-    AUTH["auth 認証と主体"]
-    ACC["access 管理者の判定と 401 403"]
-    USER["user 利用者と管理者の印"]
-    UA["useradmin 印と停止の操作"]
-    AUDIT["audit"]
-    DSL["dsl 適用中のモデルとメニューの木"]
+  subgraph BE["backend WAR"]
+    SEC["config and common-security"]
+    AUTH["auth"]
+    ACC["access"]
+    USR["user"]
+    UADM["useradmin"]
+    NAV["navigation"]
+    ROLE["role"]
+    GRP["group"]
+    DSL["dsl"]
     DSLM["dslmanage"]
+    TDB["targetdb"]
+    AUD["audit"]
   end
-  H2[("内部DB H2")]
-
-  FADM --> REG
-  FAUTH --> REG
-  REG --> LAY
-  LAY --> MYC
-  LAY --> CORE
-  FADM --> APIC
-  APIC -- "HTTP /api/**" --> CFG
-  CFG -- "order 順に当てる" --> SEC
-  AUTH -- "SecurityRuleContributor 110" --> SEC
-  ACC -- "SecurityRuleContributor 210 と ApiDefaultAccess" --> SEC
-  AUTH -- "findById" --> USER
-  ACC -- "AuthenticatedUser を読む" --> AUTH
-  UA -- "印と停止の書き換えの口" --> USER
-  UA -- "access.domain の問題の種類" --> ACC
-  ACC -- "拒否の出来事" --> AUDIT
-  UA -- "操作の出来事" --> AUDIT
-  DSLM -- "適用と差し替え" --> DSL
-  USER --> H2
-  AUDIT --> H2
+  H2[("internal DB H2")]
+  TARGET[("target DB read only")]
+  REG --> API
+  TBL --> API
+  ADMFE --> API
+  API -->|HTTP same origin| SEC
+  SEC --> AUTH
+  SEC --> ACC
+  AUTH --> USR
+  UADM --> USR
+  NAV --> ROLE
+  NAV --> DSL
+  ROLE --> DSL
+  DSLM --> DSL
+  DSLM --> TDB
+  TDB --> TARGET
+  USR --> H2
+  ROLE --> H2
+  GRP --> H2
   DSLM --> H2
+  AUD --> H2
+  ROLE -.->|events| AUD
+  UADM -.->|events| AUD
+  DSLM -.->|events| AUD
+  AUTH -.->|events| AUD
 ```
 
-<!-- Text fallback: 画面では、管理の画面の機能（admin・dsl・invitation・useradmin）と frontend-feature-auth（ログイン状態の提供元）が frontend-registry に登録し、frontend-app-layout-i18n がそれを使って外枠（make-you-chic-ui の AppShell と Sidebar）と振り分けを組み立て、403 の画面は frontend-app-core が出す。管理の画面は frontend-api-client で同じオリジンの /api/** を呼び、403 の判定もそこにある。バックエンドでは config の SecurityConfig が common-security の差し込み口（SecurityRuleContributor と ApiDefaultAccess）を order の順に当てる。auth は order 110、access は order 210 の決まりと /api/** の既定を置く。auth は user の findById で利用者を読み直して主体 AuthenticatedUser を作り、access はその主体の admin を見る。useradmin は user の印と停止の書き換えの口と、access.domain の問題の種類を使う。access の拒否と useradmin の操作の出来事を audit が受けて内部DB に記録する。dslmanage は dsl の適用中のモデル（メニューの木を含む）を差し替える。 -->
+文字の代わりの説明: 画面の機能（骨組みの `frontend-registry`、置き場の `frontend-feature-tables`、管理の画面）は `frontend-api-client` を通して同じオリジンの API を呼ぶ。API の入口は Spring Security の連鎖（`config` と `common-security` の差し込み口）で、`auth` がアクセストークンを確かめ、`access` が `/api/admin/**` を管理者だけにする。`auth` と `useradmin` は `user` を使う。`navigation` は `role` の解決の口と `dsl` の適用中のモデルを使ってメニューを作る。`role` は `dsl` を参照する。`dslmanage` は `dsl` と `targetdb` を使い、`targetdb` だけが対象DB に読み取り専用でつなぐ。内部DB の H2 には `user`・`role`・`group`・`dslmanage`・`audit` などが書く。点線は Spring の出来事で、`role`・`useradmin`・`dslmanage`・`auth` などの出来事を `audit` が受けて監査の行にする。依存の向きの細部は `dependencies.md`。図の矢印のうち深く確かめたのは `navigation`→`role`・`navigation`→`dsl`・`role` に依存してよい相手（K-50）、`targetdb` の境界（K-49）、`audit` の import（K-54）で、ほかは前の記録とディレクトリの一覧による。
 
-図は今回の Intent の論点（認可・管理者の印・画面の出し分け・メニュー）を中心に描いた。`invitation`・`appearance`・`mail`・`targetdb`・`common-error` などは省いた（一覧は `component-inventory.md`、依存の向きの全体は `dependencies.md`）。
+## Data Flow
 
-### Data Flow
-
-1. 画面の要求は `Authorization: Bearer <アクセストークン>` を付けて送られる。
-2. アクセストークンの認証（`auth/web/AccessTokenAuthenticationProvider.java`）はフィルターの中で動き、`sub` の利用者 ID から `UserAccountService.findById` で利用者を読み直し、停止中なら 401（`USER_SUSPENDED`）、そうでなければ主体 `AuthenticatedUser(userId, email, admin)` を作る（K-32）。
-3. URL の決まり（`SecurityConfig` の公開の決まり → contributor の order 順 → `/api/**` の既定 → 画面の配信）で判定する。`/api/admin/**` は `AdminAuthorizationManager` が主体の `admin` を見る（K-33）。
-4. トランザクションは `service` の層で始まる。新しい機能の業務処理は想定内の失敗を結果の型で返し、controller が `BusinessException` に変え、`common/error/web/GlobalExceptionHandler.java` が Problem Details にする（前回までの記録）。
-5. 監査の対象の出来事は業務のトランザクションの中で知らせ、`audit/service/AuditEventListener.java` が確定の後（AFTER_COMMIT）に受けて `audit_events` に追記する。種類は `AuditEventType` の 22 個（K-38）。
-6. 画面は、ログインと更新の応答 `TokenResponse` に含まれる `CurrentUserResponse.admin` をログイン状態に写し、サイドバーと振り分けを決める。管理の API の 403 を受けると 403 の画面（S6）に切り替え、ログイン状態を1回読み直す（K-35）。
-
-### Key Design Decisions
-
-| 選択 | 内容（確かめた場所） | 今回の Intent との関わり |
-|---|---|---|
-| 権限はトークンに入れず、要求ごとに DB から読む | `AccessTokenService.issue`（92〜96 行）、`AccessTokenAuthenticationProvider` | 権限・役割を変えても次の要求で効く性質を保てる（K-32） |
-| 権限は `users.admin_flag` の真偽値1つ | `backend/src/main/resources/db/migration/V2__u2_user_account.sql` 25 行、`auth/domain/AuthenticatedUser.java` 25 行 | 役割・権限の表と主体の形を新しく決める（K-32） |
-| Spring Security の権限（`GrantedAuthority`）・メソッドの認可は使わず、`AuthorizationManager` で URL を判定する | `auth/web/AuthenticatedUserToken.java` 35 行の `super(List.of())`、`access/web/AdminAuthorizationManager.java`。`GrantedAuthority`・`hasRole`・`@PreAuthorize`・`@EnableMethodSecurity` はアプリのソースに 0 件（検索） | 役割の判定をどこに足すか（K-33） |
-| 安全の決まりは機能ごとの差し込み口を order 順に当てる | `common/security/SecurityRuleContributor`、order は auth 110・access 210・invitation 310・appearance 410（各 `*SecurityContributor` の `ORDER`） | 権限ごとの決まりを足す位置（K-33） |
-| 最後の有効な管理者を無くす操作を受け付けない | `useradmin/service/UserAdminService.java`、`project.md` の Forbidden | 役割を入れても守る決まり（K-34） |
-| 画面の機能は登録だけで骨組みにつながる | `frontend/src/app/registry/types.ts` | サイドバーの項目に階層・アイコン・権限の指定を足す口になる（K-35・K-36） |
-| make-you-chic-ui はこのリポジトリから変えない | `project.md` の Forbidden | N 階層のサイドバーの描き方の選択肢が絞られる（K-36） |
-| DSL は適用で丸ごと差し替わり、後続の Intent は `ActiveDslModelProvider` で読む | `dsl/service/ActiveDslModelProvider.java`（契約 C8） | DSL のメニューを画面に渡す口が無い（K-37） |
-
-### Improvement Opportunities
-
-- 「管理者」の判定が、サーバー側（`AdminAuthorizationManager`・`UserAdminService`・`UserRepository.findActiveAdminIds`）と画面側（`navigationItems.ts`・`decideRoute.ts`・`adminForbidden.ts`）に散っている（K-32〜K-35）。権限の判定の入口を1つに寄せる余地がある（見立て）。
-- 画面の 403 の判定が URL の接頭辞 `/api/admin/` に結び付いている（K-35）。
-- サイドバーの項目の型にアイコン・階層・権限の項目が無く、骨組みがアイコンを固定で決めている（K-35・K-36）。
-- `access` に境界テストが無く、機能の間の向きが確かめられていない（K-38）。
+- 要求ごとに: 画面 → `Authorization` のアクセストークン → `auth` が署名と期限を確かめ、内部DB の利用者を読んで主体（`AuthenticatedUser`、管理者の印を含む）を作る → 安全の決まり（order 順の `SecurityRuleContributor`、`/api/**` の既定はログインだけ）→ controller → service（トランザクションの境界）→ repository（内部DB）。
+- 対象DB へは `dslmanage` の生成・照合のときだけ、`targetdb` の `TargetSchemaReader.readSchema(ReadPurpose)` で読み取りの接続を借りる。
+- 監査は各機能の出来事を `audit` が確定の後に受け、別のトランザクションで内部DB に追記する。
+- メニュー: 適用中の DSL のメニューの木（`dsl`）→ 作業ロールの権限の写し（`role`）→ 枝を落とした木（`navigation`）→ 画面のサイドバー。
 
 ## Interaction Diagrams
 
-図 1〜4 は前回（コミット `d5aea52`）の走査で読んだコードによる（`261004-role-menu` の実装の前。今回は確かめ直していない）。図 5・6 は今回（コミット `4f6c27d`）の走査による。見立て（未検証）の部分は図の Note と本文で分けた。
-
-### 1. 要求の認証と管理の API の認可（K-32・K-33）
+### 1. 対象DB の読み取り（K-49）
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant FE as 画面
-  participant FC as Spring Security のフィルター
-  participant ATP as AccessTokenAuthenticationProvider
-  participant UAS as UserAccountService
-  participant DB as 内部DB H2
-  participant AAM as AdminAuthorizationManager
-  participant ADH as AdminAccessDeniedHandler
-  participant CTL as 管理の API の controller
-
-  FE->>FC: GET /api/admin/users と Bearer
-  FC->>ATP: アクセストークンを検証
-  ATP->>ATP: 署名と期限を確かめ sub を取り出す
-  ATP->>UAS: findById 利用者 ID
-  UAS->>DB: users を読む
-  alt 利用者がいない
-    ATP-->>FE: 401
-  else 停止中
-    ATP-->>FE: 401 USER_SUSPENDED
-  else 有効
-    ATP->>FC: 主体 AuthenticatedUser userId email admin
-  end
-  FC->>FC: 公開の決まり、order 110 の auth、order 210 の access の順に照らす
-  FC->>AAM: /api/admin/** に当たる
-  alt admin が true
-    AAM-->>FC: 許可
-    FC->>CTL: 要求を渡す
-    CTL-->>FE: 200
-  else admin が false
-    AAM-->>FC: 拒否
-    FC->>ADH: 403 の処理
-    ADH-->>FE: 403 ACCESS_DENIED と監査の ACCESS_DENIED 理由 NOT_ADMIN
-  end
-  Note over FC: /api/admin/** の外の /api/** はログインだけで通す。AdminApiDefaultAccess
+  participant Admin as admin screen
+  participant DM as dslmanage
+  participant TR as targetdb TargetSchemaReader
+  participant DS as targetDataSource read only pool
+  participant T as target DB
+  Admin->>DM: POST generate or compare
+  DM->>TR: readSchema(GENERATE or COMPARE)
+  TR->>DS: borrow connection
+  DS->>T: metadata queries with timeout 20s or 5s
+  T-->>TR: tables columns keys
+  TR-->>DM: TargetSchemaResult
+  DM-->>Admin: preview or diff
 ```
 
-<!-- Text fallback: 画面が Bearer を付けて GET /api/admin/users を送る。Spring Security のフィルターが AccessTokenAuthenticationProvider でアクセストークンを検証し、署名と期限を確かめて sub（利用者 ID）を取り出す。UserAccountService.findById で内部DB の users を読み、利用者がいなければ 401、停止中なら 401（USER_SUSPENDED）、有効なら主体 AuthenticatedUser（userId・email・admin）を作る。フィルターは公開の決まり、order 110 の auth、order 210 の access の順に決まりを照らし、/api/admin/** に当たると AdminAuthorizationManager が主体の admin を見る。true なら controller に渡して 200、false なら AdminAccessDeniedHandler が 403（ACCESS_DENIED）を返し、監査の ACCESS_DENIED（理由 NOT_ADMIN）の出来事を出す。/api/admin/** の外の /api/** は AdminApiDefaultAccess によりログインだけで通る。 -->
+文字の代わりの説明: 管理の画面が既定の DSL の生成か照合を頼むと、`dslmanage` が `targetdb` の `readSchema` を目的（`GENERATE` か `COMPARE`）つきで呼ぶ。`targetdb` は読み取り専用のプール `targetDataSource` から接続を借り、目的ごとの時間の上限（生成 20 秒・照合 5 秒）でスキーマの情報だけを読んで返す。行の値を読む段は無い。
 
-K-32 権限の持ち方は「管理者の印」の真偽値1つだけで、要求ごとに DB から読む
+**K-49 業務データを読む・書く仕組みが無く、今の対象DB の部品は「読み取り専用・スキーマだけ」に固定されている（`targetdb`）**
 
-確かめた事実:
+- 確かめた事実:
+  - 接続は読み取り専用で作る（`backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java` 105 行の `config.setReadOnly(true)`）。接続は既定の候補にせず（79 行の `defaultCandidate = false`）、名前 `targetDataSource` で指定して使う。プールの上限は既定 5（`TargetDbProperties.Pool`）。
+  - 問い合わせの目的は `ReadPurpose` の `GENERATE`（1回 20 秒）と `COMPARE`（1回 5 秒）の2つだけ（`targetdb/domain/ReadPurpose.java`、`TargetDbProperties.QueryTimeout`）。`targetdb/service/` は口の `TargetSchemaReader`（`readSchema(ReadPurpose)`、39 行）とその実装 `JdbcTargetSchemaReader` と `package-info.java` で、スキーマの情報を返す口しか無い。
+  - 境界テスト `backend/src/test/java/cherry/mastersmith/targetdb/TargetDbBoundaryArchitectureTest.java` は、`targetdb` の外から `targetdb.config`・`targetdb.repository` に依存しない、`targetdb` は `dsl`・`dslmanage`・`web` を知らず `web` の層を持たない、JDBC・Spring JDBC の書き込み・DDL の呼び出し（`executeUpdate`・`update`・`batchUpdate` など）と `JdbcTemplate` を使わない、`@Transactional` を使わない、を固定する。
+  - 見本の対象DB の読み取りのアカウント `mastersmith_reader` は `SELECT` だけ（`docker/targetdb/postgres/02-reader-account.sh` の `GRANT` の行）。`backend/src/main/resources/application.yaml` のコメントも読み取りの権限だけを勧める。
+- 今回の Intent への意味: 主権限 `FULL`・補助権限 `CREATE`・`DELETE` を実際の作成・更新・削除に当てるなら、(1) 書ける接続（読み取り専用でない別の接続か、設定の切り替え）、(2) 書けるアカウント（見本の DB と README の手順を含む）、(3) 境界テストの変更か `targetdb` の外の新しいパッケージ、(4) 書き込みの待ちの上限（今の `QueryTimeout` に目的が無い）が要る。既存の境界テストを緩める・消すときは、コード生成の計画に明記して依頼者の承認が要る（`team.md` の Code Style）。読み取り（一覧・詳細）だけでも、行の値を読む新しい目的と時間の上限が要る。
+- 見立て（未検証）: 一覧・詳細の表示だけを範囲にし、作成・更新・削除は操作の可否の表示（押せる・押せない）に留める形も取りうる。業務データの書き込みの有無が接続・アカウント・監査・トランザクションの設計を大きく変えるため、要件定義で最初に決める論点である。
 
-- 内部DB の権限の列は `users.admin_flag BOOLEAN NOT NULL` だけである（`backend/src/main/resources/db/migration/V2__u2_user_account.sql` 25 行）。役割・権限・役割の割り当ての表は V1〜V9 のどこにも無い。
-- 主体は `AuthenticatedUser(long userId, String email, boolean admin)`（`auth/domain/AuthenticatedUser.java` 25 行）で、認証の結果 `AuthenticatedUserToken` の権限の一覧は空（`auth/web/AuthenticatedUserToken.java` 35 行の `super(List.of())`）。
-- アクセストークンの主張は `sub`・`iat`・`exp` だけで、権限は入っていない（`auth/service/AccessTokenService.java` 92〜96 行）。`AccessTokenAuthenticationProvider` が要求ごとに `UserAccountService.findById` で利用者を読み直すため、印の変更は次の要求で効く（トークンの作り直しは要らない）。
-- `access/web/AdminAuthorizationManager.java` の Javadoc に「後続 Intent F で役割・権限の判定を足す場所はここになる（ADR-003）」とある（33 行）。判定は `user.admin()` を見るだけである（40〜46 行）。
-
-見立て（未検証）:
-
-- 役割・権限を足しても、要求ごとに DB から読む今の形を保てば、変更が即時に効く性質と `project.md` の Mandated（利用者の状態の判定はサーバー側で行う）は残せる。ただし、要求ごとに読むものが増える（役割と権限の結び付き）ため、問い合わせの回数・キャッシュの有無は設計で決める必要がある。
-
-K-33 URL による認可は「`/api/admin/**` は管理者だけ」の1つの決まり
-
-確かめた事実:
-
-- `access/web/AdminSecurityContributor.java`（`ORDER = 210`）が `AdminPaths.adminPatterns()`（`/api/admin`・`/api/admin/**`）に `AdminAuthorizationManager` を当てる（66 行付近の `contribute`）。それ以外の `/api/**` は `access/web/AdminApiDefaultAccess.java`（`common/security/ApiDefaultAccess` の唯一の実装）でログイン必須だけ（`config/SecurityConfig.java` 129〜135 行）。
-- 決まりは先に当たったものが勝つ。並びは `SecurityConfig` の公開の決まり（`/actuator/health`・`/api/problems/**`、120 行）→ contributor の order の小さい順（auth 110 → access 210 → invitation 310 → appearance 410）→ `/api/**` の既定 → 画面の配信は許可。
-- 管理の API は `/api/admin/users`・`/api/admin/invitations`・`/api/admin/dsl/**`・`/api/admin/check` の4つのまとまりで、どれも「管理者なら全部できる」。操作ごと・画面ごとの権限の区別は無い（`api-documentation.md`）。
-- 拒否の理由 `access/domain/AccessDeniedReason.java` は5つ（`NOT_ADMIN`・`TOKEN_MISSING`・`TOKEN_MALFORMED`・`TOKEN_INVALID`・`USER_NOT_FOUND`）で、403 の理由は `NOT_ADMIN` だけ（ほかの4つは 401）。`AdminAccessDeniedHandler` が監査の `ACCESS_DENIED` の出来事を出す。
-
-見立て（未検証）:
-
-- 役割ごとに API の範囲を分けるなら、(a) `AdminAuthorizationManager` の判定を「パスに要る権限を持つか」に変える、(b) order 210 より前（200 台の中）に権限ごとの決まりを足す、のどちらかになる。どちらも 403 の理由（`NOT_ADMIN` だけ）・監査の記録の項目と、画面の 403 の判定（K-35）に波及する。
-- Spring Security の `GrantedAuthority` に写す形を選ぶと、`AuthenticatedUserToken` の空の一覧を埋めることになり、既存のテスト（`AdminAuthorizationManagerTest`・`AdminAccessIT` など）の前提が変わる。
-
-### 2. 管理者の印の付け外しと最後の管理者の保護（K-34）
+### 2. 実効の権限の解決（K-50）
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant CTL as UserAdminController
-  participant SVC as UserAdminService
-  participant UAS as UserAccountService
-  participant DB as 内部DB H2
-  participant AL as AuditEventListener
-
-  CTL->>SVC: revoke-admin 操作した人と対象
-  SVC->>UAS: 管理者の行を利用者 ID の昇順に排他
-  UAS->>DB: SELECT FOR UPDATE 待ちの上限 3000 ms
-  alt 排他を取れない
-    SVC-->>CTL: Busy
-    CTL-->>CTL: 409 USER_ADMIN_BUSY
-  else 取れた
-    SVC->>UAS: 有効な管理者の ID を読む findActiveAdminIds
-    alt 操作した人が有効な管理者でない
-      SVC-->>CTL: 拒否 NOT_ADMIN
-    else 対象が最後の有効な管理者
-      SVC-->>CTL: 拒否 LAST_ACTIVE_ADMIN
-    else 受け付ける
-      SVC->>UAS: admin_flag を書き換える
-      UAS->>DB: UPDATE users
-      SVC-->>AL: 出来事 USER_ADMIN_REVOKED 確定の後に記録
-      SVC-->>CTL: 成功
-    end
-  end
+  participant FE as screen
+  participant NC as NavigationController
+  participant NS as NavigationService
+  participant R as EffectivePermissionResolver
+  participant DB as internal DB
+  participant DP as ActiveDslModelProvider
+  FE->>NC: GET /api/me/table-access schema table
+  NC->>NS: tableAccess
+  NS->>R: resolve(userId, target)
+  R->>DB: work role and permission settings
+  R->>DP: current DslModel
+  R-->>NS: EffectivePermission main create delete
+  NS-->>NC: TableAccessResult
+  NC-->>FE: 200 main only or 403 ACCESS_DENIED or 400
 ```
 
-<!-- Text fallback: UserAdminController が操作した人と対象を付けて UserAdminService の印を外す操作を呼ぶ。UserAdminService は UserAccountService で管理者の行を利用者 ID の昇順に排他する（SELECT FOR UPDATE、待ちの上限 3000 ms）。取れなければ Busy を返し、controller が 409 USER_ADMIN_BUSY にする。取れたら findActiveAdminIds で有効な管理者（印あり・停止なし）の ID を読み、操作した人が有効な管理者でなければ NOT_ADMIN、対象が最後の有効な管理者なら LAST_ACTIVE_ADMIN で拒否する。受け付けたら admin_flag を書き換え、USER_ADMIN_REVOKED の出来事を確定の後に監査に記録し、成功を返す。 -->
+文字の代わりの説明: 置き場の画面がテーブルの可否を問うと、`NavigationController` から `NavigationService.tableAccess` が呼ばれ、`role` の `EffectivePermissionResolver.resolve` を1回呼ぶ。解決の口は要求ごとに内部DB から作業ロールと権限の設定を読み、適用中の DSL を参照して、主権限・CREATE・DELETE を求める。応答はテーブルの主権限だけで、見られなければ 403、引数が欠ければ 400。
 
-K-34 「管理者」は利用者の管理の業務の決まりにも組み込まれている
+**K-50 権限の解決の口は「主権限・CREATE・DELETE」を返せるが、置き場の API が返すのはテーブルの主権限だけ（`role`・`navigation`）**
 
-確かめた事実:
+- 確かめた事実:
+  - 解決の口 `backend/src/main/java/cherry/mastersmith/role/service/EffectivePermissionResolver.java` は3つ: `effectiveWorkRole(userId)`、`snapshotFor(userId)`（作業ロールの設定の写し。2つ以上の対象を判定するときに使う）、`resolve(userId, target)`（対象1つ）。どれも要求ごとに内部DB から読み、キャッシュを持たない。作業ロールが無い・適用済みの DSL が無い・対象が今の DSL に無いときは `EffectivePermission.NONE`（主権限 NONE・CREATE 不可・DELETE 不可）。
+  - 継承（`role/domain/PermissionInheritance.java`）: 主権限は `column ?? table ?? schema ?? NONE`、補助権限は `table ?? schema ?? false` を CREATE と DELETE で別々に求める。カラムの補助権限はそのテーブルの値。主権限と補助権限は互いに独立に求まり、`PermissionValues` と表 `permission_settings` の検査の制約（`V11__u4_role.sql`）にも組み合わせを縛るものは無い（例: 主権限 READ で CREATE が true もありうる）。
+  - 写し `role/domain/PermissionSnapshot.java` は `effective(target)`・`main(schema, table, column)`・`create(schema, table)`・`delete(schema, table)` を持ち、カラムごとの主権限（列の出し分け）も求まる。
+  - 置き場の API（`GET /api/me/table-access`、`navigation/service/NavigationService.java` の `tableAccess`）は `resolve` を1回呼び、応答 `navigation/web/TableAccessResponse.java`（28 行）は `schemaName`・`tableName`・`displayName`・`main` だけ。CREATE・DELETE・カラムの主権限・主キーの有無は返さない（`toString` は名前を伏せる、51 行）。
+  - `backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java`（129 行の `@DisplayName`）は「role の外で role に依存してよいのは `audit`（`role.domain`）と `navigation`（`role.service`・`role.domain`）だけ」。`navigation` の境界テストは「どの機能も navigation に依存しない」。
+- 今回の Intent への意味: 業務データの機能を新しいパッケージに置くと、解決の口を使うために `RoleBoundaryArchitectureTest` の許す相手を足す変更（境界テストを緩める変更に当たり、計画での明記と承認が要る）が要る。`navigation` を広げる形なら `role` の境界テストは変えずに済むが、`navigation` の「repository を持たず DB の部品に依存しない（読み取りだけ）」という境界テストに当たる。
+- 要件定義で決める論点: 主権限と補助権限の組み合わせの意味（READ＋CREATE、NONE の列を持つ表での作成・更新、FULL で DELETE 不可）、カラムの主権限が NONE の列を一覧・詳細・更新の要求でどう扱うか（応答から外す・要求の本文にあれば拒否する など）。
 
-- `useradmin/service/UserAdminService.java`（250〜398 行）は、管理者の印の付け外しと停止で管理者の行を利用者 ID の昇順に排他し、排他の後の「有効な管理者」（印あり・停止なし）の集合で、最後の管理者の保護（拒否の理由 `LAST_ACTIVE_ADMIN`）と操作した人の確かめ直し（`NOT_ADMIN`）を行う。集合は `user/repository/UserRepository.java` の `findActiveAdminIds`（182 行）で読む。操作の種類は `useradmin/domain/AdminOperation.java`、拒否の理由は `useradmin/domain/RejectionReason.java`。
-- `project.md` の Forbidden「最後の有効な管理者を無くす操作を受け付けない」と Mandated「利用者の状態（停止・管理者の印）の判定は…サーバー側で行う」「利用者の権限・状態を変える管理の操作は…監査に残す」が、この形に結び付いている。
-- 監査の種類に `USER_ADMIN_GRANTED`・`USER_ADMIN_REVOKED` がある（`audit/domain/AuditEventType.java`）。
-- `backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java` が「印・停止・トークン・失敗回数を変える口を呼べるのは `useradmin.service` だけ」（191 行〜）と「`useradmin` が使ってよい `access` は `access.domain.AccessProblemTypes` だけ」（113 行〜）を固定している。
-
-見立て（未検証）:
-
-- 役割を入れるときに「管理者の印」を残すか（例: 管理者は役割の1つにする／印は全権の役割として残す）で、最後の管理者の保護の数え方・監査の種類・境界テストの書き換えの量が大きく変わる。要件定義の論点になる。役割の割り当てを変える口も、境界テストの「書き換えの口」と同じ扱い（呼べる側を固定する）にするかが論点になる。
-
-### 3. 画面のサイドバー・振り分け・403 の画面（K-35）
+### 3. メニューから置き場の画面へ（K-52）
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant LSP as loginStateProvider
-  participant REG as 登録 registrationModules
-  participant NAV as buildSidebarEntries
-  participant RT as decideRoute
-  participant SH as ShellLayout と AppShell
-  participant PG as 管理の画面
-  participant AFP as AdminForbiddenProvider
-
-  LSP->>LSP: TokenResponse の CurrentUserResponse.admin を LoginState.admin に写す
-  REG->>NAV: 各機能の sidebarItems
-  NAV->>NAV: visibleWhen が LOGGED_IN か admin が true の項目を order 順に並べる
-  NAV->>SH: ホームと項目の平らな一覧
-  SH->>SH: アイコンはホームが home、ほかは list
-  RT->>RT: 画面の access が ADMIN で admin が false なら ADMIN_FORBIDDEN
-  PG->>AFP: API の失敗を渡す
-  AFP->>AFP: isAdminForbidden パスが /api/admin/ で始まり 403 と ACCESS_DENIED
-  alt 当たる
-    AFP->>AFP: S6 の画面に切り替え refreshSessionOnce を1回
-  else 当たらない
-    AFP-->>PG: 画面がそのまま扱う
-  end
+  participant SB as sidebar buildNavSections
+  participant P as tablePlaceholderPath
+  participant PG as TablePlaceholderPage
+  participant H as useTableAccess
+  participant BE as GET /api/me/table-access
+  SB->>P: toTablePlaceholderPath(table, node.id)
+  P-->>SB: /tables?schema=..&table=..&item=..
+  SB->>PG: user selects item
+  PG->>H: schema table work role
+  H->>BE: query
+  BE-->>H: 200 or 403 or 400
+  H-->>PG: heading and preparing, or no permission
 ```
 
-<!-- Text fallback: loginStateProvider が認証の応答 TokenResponse の CurrentUserResponse.admin を LoginState.admin に写す。各機能の登録（registrationModules）の sidebarItems を buildSidebarEntries が受け、visibleWhen が LOGGED_IN か、admin が true の項目だけを order の順に並べ、ホームと合わせた平らな一覧を ShellLayout に渡す。ShellLayout は AppShell の navItems にし、アイコンはホームが home、ほかはすべて list にする。decideRoute は access が ADMIN の画面を admin が false の利用者に開かれたら ADMIN_FORBIDDEN にする。管理の画面は API の失敗を AdminForbiddenProvider に渡し、isAdminForbidden（パスが /api/admin/ で始まり、403 で、code が ACCESS_DENIED）が真なら 403 の画面（S6）に切り替え、ログイン状態を refreshSessionOnce で1回読み直す。当たらなければ画面がそのまま扱う。 -->
+文字の代わりの説明: サイドバーの業務の項目は `buildNavSections` が `toTablePlaceholderPath` で道 `/tables?schema=&table=&item=` を作る。選ぶと置き場の画面 `TablePlaceholderPage` が開き、`useTableAccess` が置き場の API に問い合わせる。200 なら見出し（表示名）と「準備中」、403・400・引数なしなら同じ「権限なし」の表示を出す。
 
-K-35 画面の出し分けも真偽値 `admin` と `/api/admin/` の接頭辞だけ
+**K-52 テーブルを指すメニューの項目の移り先は「準備中」の置き場で、画面の道・今の項目・E2E がこの形に依っている（`frontend-feature-tables`・`frontend-registry`）**
 
-確かめた事実:
+- 確かめた事実:
+  - 道は `/tables?schema=<スキーマ名>&table=<テーブル名>&item=<位置の道>`。作るのは `frontend/src/app/navigation/tablePlaceholderPath.ts` の `toTablePlaceholderPath` の1か所だけ（`URLSearchParams` でエンコードし、先頭は常に `/tables?`）。サイドバーの業務の項目は `frontend/src/app/navigation/buildNavSections.ts` 158 行でこの関数から `href` を作る（`node.navigable` のときだけ）。
+  - `frontend/src/features/tables/TablePlaceholderPage.tsx` は、200 で見出しと「準備中」、403・400・引数なしで同じ「権限なし」（作業ロールが2つ以上なら切り替えのボタン）、それ以外で読み込みの失敗を出す。`useTableAccess.ts` は引数・作業ロール・切り替えの回数が変わるたびに問い合わせ、403 を受けると業務のメニューと作業ロールを読み直す。
+  - 機能 `tables` の登録は `access: 'LOGGED_IN'`（`frontend/src/features/tables/registration.ts`）。`frontend/src/app/registry/types.ts` の `AccessLevel` の説明は「表示の制御であり、サーバー側の権限の確認の代わりにはならない」。
+  - この画面に依る E2E と部品: `frontend/e2e/170-menu-navigation-flow.e2e.ts`（`/tables?` へ移ること、見られない表の名前が出ないこと、本物の応答）、`frontend/e2e/160-app-frame-accessibility.e2e.ts`、`frontend/e2e/support/u7Measure.ts`（`tables-page`・`tables-heading` などの `data-testid`。grep の行）。
+- 今回の Intent への意味: 一覧・詳細の画面を置くと、道の形（`/tables?…` のまま中身を一覧にするか、詳細の道を足すか）、`buildNavSections` の今の項目の決め方（置き場の道の `pathname` と引数で決める）、上の E2E と画面のテストの書き換え（`team.md` により本数に数えない）が影響の範囲に入る。
 
-- ログイン状態は `LoginState { loggedIn, admin, displayName?, preferences? }`（`frontend/src/app/registry/types.ts` 82〜84 行付近）で、`admin` は認証の応答の `CurrentUserResponse.admin` から来る（`frontend/src/features/auth/loginStateProvider.ts`）。`CurrentUserResponse` は `email`・`admin`・`displayName`・`language`・`theme`・`fontSize` を持ち（`auth/web/CurrentUserResponse.java`）、ログイン中の利用者を返す単独の API は無い。
-- 画面の見られる人 `AccessLevel = 'PUBLIC' | 'LOGGED_IN' | 'ADMIN'`（26 行）、サイドバーの表示の条件 `VisibleWhen = 'LOGGED_IN' | 'ADMIN'`（32 行）。`buildSidebarEntries` は `visibleWhen === 'LOGGED_IN' || loginState.admin` で絞り、`order` の順に並べる（`frontend/src/app/navigation/navigationItems.ts` 43 行）。`decideRoute` は `loggedIn && loginState.admin` で管理者を決める（`frontend/src/app/routing/decideRoute.ts` 63 行）。
-- 403 の判定は `isAdminForbidden` の1か所で、「パスが `/api/admin/` で始まる・403・code が `ACCESS_DENIED`」に固定（`frontend/src/shared/api-client/adminForbidden.ts`）。`frontend/src/app/admin-forbidden/AdminForbiddenProvider.tsx` が S6 に切り替え、`refreshSessionOnce` でログイン状態を1回読み直す。
-- 骨組みのアイコンは「ホームは `home`、ほかはすべて `list`」に固定（`frontend/src/app/layout/ShellLayout.tsx` 46 行）。登録の型 `SidebarItemRegistration` にアイコンの項目は無い。
-- 今のサイドバーの項目は、管理（order 200）・DSL（210）・招待（220）・利用者（230）の4つで、どれも `ADMIN`（各 `features/*/registration.ts`）。ユーザーメニューの項目は auth（100）・preferences（80・90）。
-
-見立て（未検証）:
-
-- 役割・権限で出し分けるには、ログイン状態に権限（または見てよい画面・メニュー）の一覧を足し、`AccessLevel`・`VisibleWhen` を権限の指定に広げ、403 の判定を `/api/admin/` の外にも広げる必要がある。骨組みのファイル（`types.ts`・`navigationItems.ts`・`decideRoute.ts`・`adminForbidden.ts`）と、それぞれのテスト（`navigationItems.test.ts`・`decideRoute.test.ts`・`AppRouter.test.tsx`・`validateRegistrations.test.ts`）の書き換えになる。
-- 画面の出し分けはサーバー側の判定の代わりにしない（`team.md` の Testing Posture の「認可」、`project.md` の Mandated）。画面の権限の一覧はあくまで表示のためで、正はサーバー側の判定である。
-
-### 4. DSL の適用とメニューの木の届き方（K-37 の補足）
-
-```mermaid
-flowchart LR
-  YAML["DSL の YAML menus"] --> PARSE["dsl の読み込みと JSON Schema の検証"]
-  PARSE --> SEM["DslSemanticValidator のメニューの検証"]
-  SEM --> MODEL["DslModel と DslMenuItem の木"]
-  MODEL -- "適用で丸ごと差し替え" --> PROV["ActiveDslModelProvider current"]
-  PROV --> PREV["dslmanage のプレビューの分析"]
-  PROV -. "今は無い" .-> NAVAPI["画面にメニューを渡す API"]
-  NAVAPI -. "今は無い" .-> SIDE["骨組みのサイドバー"]
-```
-
-<!-- Text fallback: DSL の YAML の menus は、dsl の読み込みと JSON Schema の検証、DslSemanticValidator のメニューの検証を経て、DslModel の DslMenuItem の木になる。適用で丸ごと差し替わり、ActiveDslModelProvider.current() で読める。今の読み手は dslmanage のプレビューの分析だけで、画面にメニューを渡す API と、それを骨組みのサイドバーに載せる流れは無い（点線は今は無い流れ）。 -->
-
-本文（確かめた事実と見立て）は `api-documentation.md` の K-37 に書いた。
-
-### 5. ロール・グループの書き込みと BUSY（K-40）
+### 4. 監査の書き込み（K-54）
 
 ```mermaid
 sequenceDiagram
-  autonumber
-  participant FE as 画面
-  participant WEB as role web の controller
-  participant SVC as role service
-  participant TX as RoleStoreTransactions
-  participant ST as RoleStore
-  participant DB as 内部DB H2
-  participant AUD as audit の受け手
-  FE->>WEB: ロールの作成・変更・割り当て
-  WEB->>SVC: 操作を呼ぶ
-  SVC->>TX: inFirst（1つ目のトランザクション、接続1本目）
-  TX->>ST: 行の排他 PESSIMISTIC_WRITE（待ちの上限 3,000 ms）
-  ST->>DB: SELECT ... FOR UPDATE
-  alt 上限切れ
-    ST-->>TX: Busy（RoleStoreClassifier が読み替え）
-    TX-->>SVC: setRollbackOnly の後に戻る
-    SVC-->>WEB: 結果の型 Busy
-    WEB-->>FE: 409 ROLE_BUSY
-  else 排他できた
-    ST->>DB: 判定・書き込み・flush
-    SVC->>SVC: 成功の出来事を1つ目の中で出す
-    TX->>DB: 確定
-    DB-->>AUD: 確定の後に出来事を受ける
-    AUD->>DB: 監査の追記（接続2本目）
-    WEB-->>FE: 成功
-  end
-  Note over AUD,DB: 見立て: P1 の「2本使いの待ちの最大」はここで2本目を借りるまでの待ち
+  participant S as feature service
+  participant TX as internal DB transaction
+  participant L as AuditEventListener
+  participant RC as AuditEventRecorder
+  participant A as audit_events
+  S->>TX: business change
+  S->>S: publishEvent(domain event)
+  TX-->>L: AFTER_COMMIT or fallbackExecution
+  L->>RC: record
+  RC->>A: insert in REQUIRES_NEW transaction
 ```
 
-<!-- Text fallback: 画面の要求を role の web の controller が受け、service の操作を呼ぶ。service は RoleStoreTransactions.inFirst で1つ目のトランザクション（接続1本目）を始め、RoleStore が PESSIMISTIC_WRITE と待ちの上限 3,000 ms で行を排他する。上限切れなら RoleStoreClassifier が Busy に読み替え、巻き戻しの印を付けて戻り、controller が 409 ROLE_BUSY を返す。排他できたら判定・書き込み・flush を行い、成功の出来事を1つ目の中で出して確定する。確定の後に audit の受け手が出来事を受け、接続2本目で監査を追記する。P1 の待ちの最大はこの2本目を借りるまでの待ちと見られる（見立て）。グループ（GroupStore・GROUP_BUSY）も同じ形。 -->
+文字の代わりの説明: 各機能の service が内部DB を変えて出来事を出すと、確定の後（トランザクションが無ければ出した時点、`fallbackExecution`）に `AuditEventListener` が受け、`AuditEventRecorder` が新しいトランザクション（`REQUIRES_NEW`）で `audit_events` に追記する。監査の書き込みは要求のスレッドで、2本目の接続を借りる。
 
-確かめた事実:
+**K-54 業務データの操作の監査の仕組みが無い。今の監査は内部DB のトランザクションの確定の後に書く形（`audit`）**
 
-- ロールの書き込みは `role/service/RoleStoreTransactions.java` の `inFirst`（`TransactionTemplate`）の1つ目のトランザクションで、排他 → 業務の判定 → 書き込みと flush を行う。結果が `Done` 以外なら必ず `setRollbackOnly()` を付けて戻る。入れ子の REQUIRES_NEW は使わず、1つ目の接続を返してから2つ目を借りる（クラスの説明）。`RoleStore` を持つのはこのクラスだけ（`RoleBoundaryArchitectureTest`、説明の記述）。
-- 行の排他は `role/store/RoleStore.java`（`LOCK_TIMEOUT_MILLIS = 3000`、65 行、`PESSIMISTIC_WRITE` 158 行）と `group/store/GroupStore.java`（48 行・91 行）。一意の鍵・主キーの待ちにはヒントが効かず、H2 の既定の約 2 秒で切れる（`project.md` の Tech Stack、`RoleStore` の説明）。
-- `ROLE_BUSY`（409）は role の4つの controller（`MeWorkRoleController`・`RoleAssignmentController`・`RoleAdminController`・`RoleTransferController`）が結果の型の `Busy` を `switch` で変える。`GROUP_BUSY` は `group/web/GroupAdminController.java` と `role/web/RoleAssignmentController.java`（グループの行の待ち）（開発担当の記録）。
-- BUSY の結合テストのファイル `RoleBusyApiIT`・`RoleBusyLogTraceIT`・`RoleTransferBusyIT`・`GroupBusyLogIT` がある（ファイル名だけ。中身は読んでいない）。
+- 確かめた事実:
+  - `backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java` の 34 個の種類（認証・`ACCESS_DENIED`・DSL・パスワード・招待と登録・利用者の管理・初期管理者・グループ・ロール・作業ロールの切り替え）に、業務データの操作の種類は無い。
+  - `audit/service/AuditEventListener.java` は各機能の出来事の型を import して受け取る（`access.domain`・`auth.domain`・`dslmanage.domain`・`group.domain`・`invitation.domain`・`role.domain`・`user.domain`・`useradmin.domain`）。受け取りは `@TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)` で、書き込みは `AuditEventRecorder` の `@Transactional(propagation = REQUIRES_NEW)`（どちらも一部だけ読んだ）。
+  - `project.md` の Decided に「監査記録の共通の仕組みは…業務データの CRUD を扱う後続 Intent で共通化を検討する」がある。
+- 今回の Intent への意味: 業務データを書き込むなら、対象DB の確定と監査の行（内部DB）は別の DB のため同じトランザクションにできない。今の形をそのまま使うと、内部DB のトランザクションが無い要求では `fallbackExecution` で出した時点に書かれる。どちらか一方だけが残る場合の扱い、監査に残す中身（業務データの値・主キーの値を含めるか。`detail` の列は UTF-16 の 16,384 単位まで、`V10__u3_group.sql`）、読み取り（一覧・詳細）を残すかは要件・設計で決める。
+- 見立て（未検証）: 業務データの機能も同じ受け手に出来事の型を足すと、`audit` の import がさらに増える。Decided の宿題（共通化の検討）はこの Intent が持ち主になる。
 
-見立て（未検証）:
-
-- P1: 合否の回の1回目だけの 23.55 ms の原因は、コードからは分からない（GC の停止・colima の VM の時計のずれ・プールの借りる順などの候補）。`audit` の受け手（`audit/service/AuditEventListener.java`）は今回深く読んでいない。
-- P4: k6 で BUSY が 0 件なのは、ロール・グループの場面がどれも VU ごとに別の行を使い、同じ行で 3 秒待つ重なりが起きないため。L3・L4 の結び付きは、既存の `RoleBusyLogTraceIT`・`GroupBusyLogIT` がすでに確かめている可能性があり、要件定義の前に中身を確かめるとよい。
-
-### 6. 信頼できない YAML の読み込みと本文の形（K-41）
+### 5. 管理の API の判定（K-53 の背景）
 
 ```mermaid
-flowchart LR
-  REQ["要求の本文 byte[]（DSL は最大 10 MiB）"] --> DEC["SafeYamlParser.decode UTF-8 の String"]
-  DEC --> LIM["LoaderOptions と LimitingParser（大きさ・深さ・別名・展開後の節の数）"]
-  LIM --> NODE["SnakeYAML の Node の木"]
-  NODE --> CONV["YamlTreeConverter 検証用の JSON の形と位置の対応表"]
-  CONV --> VAL["JSON Schema と意味の検証"]
-  REQ -. "DSL のプレビュー" .-> PREV["DslPreviewRecord の byte[]"]
+sequenceDiagram
+  participant FE as admin screen
+  participant AT as AccessTokenAuthenticationProvider
+  participant U as user repository
+  participant AM as AdminAuthorizationManager
+  participant C as admin controller
+  FE->>AT: Bearer access token
+  AT->>U: load user each request
+  U-->>AT: user with admin_flag
+  AT-->>AM: AuthenticatedUser admin
+  AM-->>C: allowed when admin true
+  AM-->>FE: 403 ACCESS_DENIED otherwise
 ```
 
-<!-- Text fallback: 要求の本文の byte[]（DSL は最大 10 MiB）を SafeYamlParser.decode が UTF-8 の String にし、LoaderOptions と LimitingParser が大きさ・深さ・別名・展開後の節の数の上限を見ながら SnakeYAML の Node の木にする。YamlTreeConverter がそれを検証用の JSON の形と位置の対応表にし、JSON Schema と意味の検証を行う。DSL のプレビューの行（DslPreviewRecord）も byte[] を持つ。1行の長さの上限はどこにも無い。権限の YAML も同じ SafeYamlParser を使う。 -->
+文字の代わりの説明: 管理の API の要求では、`auth` の `AccessTokenAuthenticationProvider` が要求ごとに内部DB の利用者を読み、`admin_flag` から主体の `admin()` を作る。`access` の `AdminAuthorizationManager` はこの `admin()` だけを見て通すか 403 にする。ロールの権限はこの判定に入らない。本文は `code-quality-assessment.md` の K-53。
 
-確かめた事実:
+## Key Design Decisions
 
-- 上限は `dsl/parse/YamlLimits.java`（31 行）の4項目（`maxBytes`・`maxDepth`・`maxCollectionAliases`・`maxExpandedNodes`）だけで、**1行の長さの上限は無い**。深さ・別名は `LoaderOptions`（`SafeYamlParser.java` 90・91 行）と `LimitingParser` の両方に、大きさは `setCodePointLimit`（96 行）に渡す。
-- DSL の上限は `dsl/domain/DslFormat.java` の `MAX_BYTES = 10 MiB`・`MAX_DEPTH = 50`・`MAX_COLLECTION_ALIASES = 100`・`MAX_EXPANDED_NODES = 1,000,000`。権限の YAML は `role/service/RoleTransferLimits.java`（5,242,880 バイト・深さ 10・別名 0・節 500,000。値は開発担当の記録）。DSL と権限の YAML は同じ `SafeYamlParser` を使う。
-- 本文は読み込みの中で `byte[]`（`dslmanage/web/DslAdminController.java` 121 行）・`String`（`SafeYamlParser.decode`、101 行）・`Node` の木・JSON の形と位置の対応表の形で同時に生きる。プレビューの行 `DslPreviewRecord` も `byte[]` を持つ（開発担当の記録）。
-- 実行の設定: `Dockerfile` の ENTRYPOINT は `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError`、`compose.yaml`・`docker/perf/compose.yaml` の app は `mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-2g}`、`application.yaml` は `max-submit-size: 10MB`・Tomcat の `max-swallow-size: 11MB`（開発担当の記録）。
+- 対象DB は読み取り専用の別のプールで、既定の候補にしない（Flyway・JPA が誤って使わない）。書き込み・`JdbcTemplate`・`@Transactional` を境界テストで止める（K-49）。
+- 権限は要求ごとに内部DB から解決し、キャッシュしない（割り当ての変更が次の要求で効く。K-50）。
+- 管理の可否と業務の権限を別の仕組みに持つ（`admin_flag` とロール。広げてから縮める二段の「広げる」側だけが終わった状態。K-53）。
+- 監査は確定の後に別のトランザクションで書く（操作と監査の順と接続の2本使いを受け入れた形。K-54・K-57）。
+- API の分類の印 `@ApiAccess` を口ごとに付け、テストで網羅を確かめる（K-61）。
 
-見立て（未検証）:
+## Improvement Opportunities
 
-- 見積もり（256〜384 MB）と実測（GC の後 573〜746 MB）の差は、上の4つの形が同時に生きることと、全角を含む本文の `String` が UTF-16 で約2倍になることで説明できる可能性がある。試しの測定で確かめる（`project.md` の学び）。
-- 1行の上限を足すなら、DSL と権限の YAML の両方に効く（共通の部品のため）。上限の値と拒否の区分（Problem Details の code）は設計で決める。
+- 業務データの読み書きの置き場（新しい機能のパッケージか、`navigation`・`targetdb` を広げるか）と、それに伴う境界テストの変更を、要件定義と設計で先に決める（K-49・K-50）。
+- 監査の受け手が各機能の出来事の型をすべて import する集まりの形を、業務データを足す前に共通化するかを決める（K-54）。
+- 管理の可否をロールで表す形へ縮める手順（最後の管理者の保護・初期管理者・画面の `admin`）を一続きで設計する（K-53）。
+
+## Sources
+
+- 開発担当の調査（K-49・K-50・K-52・K-54 の事実と見立て）と、アーキテクトの確かめ直し（`reverse-engineering-timestamp.md`）。

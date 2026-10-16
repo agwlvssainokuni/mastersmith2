@@ -1,72 +1,61 @@
 # 業務の概要（mastersmith2）
 
-## 目的
+> 2026-10-16、Intent `261016-business-data-views` の Reverse Engineering（Full rescan・深さ Standard、記録のコミット `09b795d`）で作り直した。深く読んだ範囲は今回の Intent に関わる 77 パス・16 部品だけで、範囲の外は流し読みである（`reverse-engineering-timestamp.md` の Scope of Analysis）。
 
-mastersmith2 は MasterSmith（マスタ管理アプリ）のリポジトリである。管理画面の土台（ログイン・アカウントロック・管理の API の認可・監査ログ）の上に、業務データの画面の元になる DSL（YAML）を扱う機能、利用者の招待と登録の完了、自分の設定（言語・テーマ・文字の大きさ・パスワード）、管理者による利用者の管理（一覧・氏名と言語の変更・管理者の印・利用停止と再開・ログインの失敗回数の取り消し）、起動時の初期管理者の作成と救済がある。業務データそのもの（マスタの一覧・登録・更新）の画面は、まだ無い。
+## 何をするアプリか
 
-Intent `261004-role-menu` で、ロール・グループによる権限の設定と解決（`role`・`group`）、権限の YAML の書き出しと取り込み（`role/transfer`）、N 階層のメニュー（`navigation`、画面のサイドバーは make-you-chic-ui の入れ子のサイドバー）、作業ロールの切り替え（`frontend/src/app/work-role/`）が加わった（今回、パッケージとディレクトリの構成で確かめた）。管理の可否は今も `users.admin_flag` で決まる（振り返りの F2。前回までの記録 K-32〜K-35 は `261004-role-menu` の前の状態を書いたもので、今回は確かめ直していない）。
+mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・PostgreSQL）のテーブルを、DSL（YAML）で定義した見せ方に従って画面から扱うための管理のアプリである。今のコードがすること:
 
-配備先は当面、開発者の PC 上のコンテナ（colima）だけである（`team.md` の Deployment）。メールは外部の SMTP へ送らず、手元では Mailpit で受ける（`project.md` の Forbidden）。
+- 利用者の認証（ログイン・アカウントロック・アクセストークンとリフレッシュトークン・ログアウト）と、招待から登録の完了までの流れ（招待のメール）。
+- 利用者の管理（一覧・氏名と言語の変更・管理者の印の付け外し・利用停止と再開・ロックの解除）。最後の有効な管理者を無くす操作は拒否する。
+- 対象DB のスキーマの読み取りと、既定の DSL の生成・投入・プレビュー・適用・履歴（DSL の書式の版 2、スキーマはちょうど1つ）。
+- ロールとグループ、ロールの権限の設定（スキーマ・テーブル・カラムへの主権限 `NONE`・`READ`・`FULL` と、テーブルの補助権限 `CREATE`・`DELETE`）、利用者・グループへの割り当て、作業ロールの切り替え、権限の YAML の書き出しと取り込み。
+- 適用中の DSL のメニュー（N 階層の木）を、作業ロールの権限で枝を落としてサイドバーに出す。
+- 管理の操作・認証・DSL・ロールなどの出来事を内部DB（組み込みの H2）の監査の表に追記する。
 
-## 利用者と、今ある機能
+## 今のコードに無いもの（今回の Intent の主題）
 
-| 利用者 | 機能 | 主な部品（詳しくは `component-inventory.md`） |
-|---|---|---|
-| 管理画面の利用者 | ログイン（連続の失敗でロック）・トークンの更新・ログアウト | `auth`・`user`・`frontend-feature-auth` |
-| 管理画面の利用者 | 自分の設定とパスワードの変更、自分の権限を見る、作業ロールの切り替え | `user`・`role`・`frontend-feature-preferences`・`frontend-feature-mypermissions`・`frontend-app-layout-i18n` |
-| 管理者 | 管理の入口（`/admin`）と管理者の確かめ（`GET /api/admin/check`） | `access`・`frontend-feature-admin` |
-| 管理者 | 利用者の招待・送り直し・取り消し・一覧 | `invitation`・`mail`・`frontend-feature-invitation` |
-| 招待を受けた人 | リンクの確かめと登録の完了（ログインなし） | `invitation`・`frontend-feature-registration` |
-| 管理者 | 既定の DSL の生成、DSL の投入・プレビュー・適用・破棄・履歴・ダウンロード（DSL にはメニューの木の定義を含む） | `dslmanage`・`dsl`・`targetdb`・`frontend-feature-dsl` |
-| 管理者 | 利用者の管理（一覧・検索・氏名と言語・印の付け外し・停止と再開・失敗回数の取り消し） | `useradmin`・`frontend-feature-useradmin`・`user`・`auth`・`audit` |
-| 管理者 | ロール・グループの管理、割り当て、権限の YAML の書き出しと取り込み | `role`・`group`・`frontend-feature-roleadmin`・`frontend-feature-groupadmin`・`frontend-feature-roletransfer` |
-| 管理画面の利用者 | 権限で枝を落とした N 階層のメニュー、テーブルを指す項目の準備中の画面 | `navigation`・`frontend-registry`・`frontend-feature-tables` |
-| 運用者・監査者 | 認証・アクセスの拒否・DSL・招待と登録・パスワードの変更・利用者の管理・ロールの操作・初期管理者の作成と救済を、追記だけの監査ログ（内部DB）に残す。見る画面・API は無い | `audit` |
-| 開発者（運用者を兼ねる） | 1コマンドの検査（`./gradlew verify`）、コンテナでの起動、手元の監視、負荷の試験、E2E | `build-and-verify`・`container-runtime`・`perf-and-monitoring`・`frontend-e2e` |
+- 業務データ（対象DB のテーブルの行）を一覧・詳細で見る画面と API は**まだ無い**。テーブルを指すメニューの項目は「準備中」の置き場の画面（`/tables?schema=&table=&item=`）へ移る。
+- 対象DB の接続は読み取り専用で、目的はスキーマの読み取りだけに固定されている。行の値を読む口も書く口も無い（K-49）。
+- 管理の可否は今も利用者の列 `users.admin_flag` だけで決まり、ロールの仕組みには管理の権限が無い（K-53）。
 
-上の表の機能の一覧は、パッケージとディレクトリの名前の単位で確かめた（流し読み）。今回深く読んだのは下の束の項目に関わる部分だけで、部品ごとの読みの深さは `component-inventory.md` に書いた。
+## 利用者と役割
 
-## この Intent（`261015-deps-ui-carryover`）との関係
+| 人 | すること |
+|---|---|
+| 管理者（`admin_flag` が真で停止していない利用者） | 利用者・招待・DSL・ロール・グループの管理（`/api/admin/**`） |
+| ログインした利用者 | 自分の設定・パスワードの変更、作業ロールの切り替え、自分の権限を見る、業務のメニューをたどる（`/api/me/**`） |
+| 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-scope bugfix、深さ Minimal。Intent `261004-role-menu` の振り返り（`aidlc/spaces/default/intents/261004-role-menu/operation/feedback-optimization/feedback-loop.md` 2節）の第1の束（依存の更新と性能の確かめ直し、U1・P1〜P7）と第2の束（画面・コードの小さな直し、K1〜K5）を、同じ Intent で扱う。
+## 今回の Intent に関わる所見（K-49〜K-61）
 
-| 束の項目 | 今のコードで分かったこと（要点） | 所見 |
-|---|---|---|
-| U1 依存の更新 20 件 | 内訳は振り返りと一致。eclipse-temurin の jre を上げると、Dependabot が見ない同じ版の jdk（`docker/hikari-pool.sh` ほか）も手でそろえる必要がある。grafana/k6 には知らせの経路が無い | K-39 |
-| P1 ロールの書き込みの待ちの最大 | 書き込みは1つ目のトランザクションで排他 → 判定 → 書き込みを行い、確定の後に監査が2本目の接続を借りる。1回だけの外れの原因はコードからは分からない | K-40 |
-| P2 大きな入力のヒープ | YAML の読み込みに1行の長さの上限が無い。本文が `byte[]`・`String`・節の木・JSON の形で同時に生きる | K-41 |
-| P3・P5 k6 の台本 | ロールの setup が前の場面の割り当てに頼り、`workRoleRead` はロールの数 2 に頼る。DSL と権限の YAML を重ねる場面は無い | K-42 |
-| P4 BUSY の L3・L4 | 行の排他の待ちは 3,000 ms。k6 の場面は VU ごとに別の行を使うため、待ちの上限切れが起きない（見立て） | K-40 |
-| P6 置き場の p95 の目標 | 目標の文書（設計）の論点で、今回のコードの走査の対象外 | — |
-| P7 単体テストのヒープ | 単体テストだけ `1536m`。ArchUnit のテストの多くがクラスを別々に読み込んで持つ | K-43 |
-| K1 make-you-chic-ui の口待ち | Dropdown の幅をアプリの CSS の `:has()` で上書きしている。トップバーの文言の口は無い | K-44 |
-| K2 R-05・K3 R-03 伏せ字 | `DslError` と `navigation` の 7 つの record が `toString` を上書きしていない | K-45 |
-| K3 R-04 `MenuFilter` の前提 | 再帰の安全を `DslFormat.MAX_MENU_DEPTH = 5` に頼る Javadoc | K-46 |
-| K4 R-02 共有の木の読み上げ | 読み込みの失敗の表示に `role`・`aria-live` が無い | K-47 |
-| K5 `useSlowNotice` の複製 | 複製は3つ（振り返りの文言は2つ） | K-48 |
-| K2 R-04・R-07・R-08、K4 R-03・R-05〜R-07 | 指摘の本文が今回の走査の範囲の外のため、対象のファイルを特定していない。要件定義で指摘の本文と突き合わせる | — |
+番号は開発担当の調査（`aidlc/spaces/default/intents/261016-business-data-views/inception/reverse-engineering/developer-scan.md`）のもの。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-48 は作り直しにより本文を残していない（前の Intent の記録には残る）。
 
-### 所見の一覧
-
-前回の所見は K-38 で終わるため、今回は **K-39〜K-48** とした。本文は持ち主の文書に1か所だけ書き、ここには題だけを並べる。事実と見立て（仮説）の区別は各所見の本文にある。
-
-| ID | 束の項目 | 所見の題 | 書いた場所 |
+| 番号 | 要点 | 主な部品 | 本文の場所 |
 |---|---|---|---|
-| K-39 | U1 | 依存の更新 20 件と、手でそろえる固定先 | `dependencies.md` |
-| K-40 | P1・P4 | ロール・グループの書き込みの2つのトランザクションと、BUSY が出ない理由 | `architecture.md` の Interaction Diagrams 5 |
-| K-41 | P2 | YAML の読み込みに1行の上限が無く、本文が複数の形で同時に生きる | `architecture.md` の Interaction Diagrams 6 |
-| K-42 | P3・P5 | k6 の台本のロールの場面が前の場面の状態に頼る | `code-quality-assessment.md` |
-| K-43 | P7 | 単体テストの JVM のヒープと ArchUnit の読み込み | `code-quality-assessment.md` |
-| K-44 | K1 | make-you-chic-ui の口が無い所をアプリの CSS で上書きしている | `component-inventory.md` の `make-you-chic-ui` |
-| K-45 | K2 R-05・K3 R-03 | 利用者の値を持つ record の `toString` の伏せ字の抜け | `code-quality-assessment.md` |
-| K-46 | K3 R-04 | `MenuFilter` の再帰の安全が DSL の上限に頼る | `component-inventory.md` の `navigation` |
-| K-47 | K4 R-02 | 共有の木の読み込みの失敗が読み上げられない | `component-inventory.md` の `frontend-app-core` |
-| K-48 | K5 | `useSlowNotice` が3つの機能に複製されている | `code-structure.md` |
+| K-49 | 業務データを読む・書く仕組みが無く、対象DB の部品は読み取り専用・スキーマだけに固定 | `targetdb` | `architecture.md` の Interaction Diagrams 1 |
+| K-50 | 権限の解決の口は主権限・CREATE・DELETE を返せるが、置き場の API はテーブルの主権限だけ。解決の口に依存してよい機能は `audit` と `navigation` だけ | `role`・`navigation` | `architecture.md` の Interaction Diagrams 2 |
+| K-51 | DSL のモデルは一覧・詳細に要る情報（主キー・ビュー・列の表示の設定・選択肢）を持つが、まだ誰も使っていない | `dsl`・`targetdb` | `api-documentation.md` の「内部の口: DSL のモデル」 |
+| K-52 | テーブルを指すメニューの項目の移り先は準備中の置き場で、道・今の項目・E2E がこの形に依る | `frontend-feature-tables`・`frontend-registry` | `architecture.md` の Interaction Diagrams 3 |
+| K-53 | 管理の可否は `users.admin_flag` だけで決まり、ロールに管理の権限が無い（F2 の論点） | `access`・`user`・`useradmin`・`auth` | `code-quality-assessment.md` の技術的負債 |
+| K-54 | 業務データの操作の監査の仕組みが無い。今の監査は内部DB の確定の後に書く形 | `audit` | `architecture.md` の Interaction Diagrams 4 |
+| K-55 | 行の「操作」のトリガーの名前と axe-core 4.14 の判定 | `frontend-feature-useradmin`・`frontend-feature-groupadmin`・`frontend-feature-roleadmin` | `component-inventory.md` の `frontend-feature-useradmin` |
+| K-56 | 表示の設定の画面（E2E 080）の違反は、トップバーの利用者のメニューのトリガー（Topbar と Avatar）の可能性 | `make-you-chic-ui`・`frontend-e2e` | `component-inventory.md` の `make-you-chic-ui` |
+| K-57 | `RoleConcurrencyIT` の #7 は監査の行の ID の順に頼り、作りの上で順は決まっていない | `role`・`audit` | `code-quality-assessment.md` の不安定なテスト |
+| K-58 | `AdminForbiddenProvider.test.tsx` の1件は効果の回数を効果が済む前に写しうる | `frontend-app-core` | `code-quality-assessment.md` の不安定なテスト |
+| K-59 | `dslMixed` の `memory.peak` はページキャッシュを含むコンテナの最大で測っている | `perf-and-monitoring`・`container-runtime` | `code-quality-assessment.md` の性能の測り方 |
+| K-60 | make-you-chic-ui の固定先の更新（`a9309c4`→`b0a1e79`）と axe-core の取り込みの前提 | `make-you-chic-ui`・`build-and-verify`・`frontend-e2e` | `dependencies.md` の「サブモジュールと見送りの依存」 |
+| K-61 | 業務データの API を足すときに当たる決まり（API の分類・安全の決まりの差し込み・境界テスト・警報） | `common-security`・`access`・`navigation` | `api-documentation.md` の「API を足すときの決まり」 |
 
-### 前の所見・記録とのつながり
+## 今回の Intent の範囲から見た要点
 
-- K-32〜K-38（Intent `261004-role-menu` の開始時）は、その Intent で手当てされた前の状態の所見である。手当ての中身は今回確かめていない。本文は各文書に「前回までの記録」として残した。
-- K-40 は `project.md` の Corrections「要求1件で接続を2本使う経路があるときは、同時の数がプールの上限に達する場合を負荷の試験で確かめる」と、学び「接続の待ちの最大のように数 ms の目標は合否の回を複数回流す」（2026-10-15）の続きである。
-- K-41 は `project.md` の学び「大きな入力のヒープの見積もりは、設計の段で試しの測定で裏付ける」（2026-10-15）と、Tech Stack の「深さと別名の上限を LoaderOptions と LimitingParser の両方に渡す」の続きである。
-- K-42 は `project.md` の学び「k6 の場面の setup は前の場面が残した状態に頼らない」（2026-10-15）の続きである。
-- K-44 は `team.md` の Way of Working（make-you-chic-ui に無い部品は上流へ先に依頼する）と、コミット `425ab64`（make-you-chic-ui への依頼（3）の文面）に当たる。
+- 一覧・詳細に要る材料（実効の権限の解決の口、DSL の主キー・ビュー・列の表示の設定、テーブルを指すメニューの道）はそろっている（K-50・K-51・K-52）。
+- 行を読む・書く仕組みは無く、作成・更新・削除まで行うかで、書ける接続とアカウント・書き込みの待ちの上限・監査と対象DB の確定の関係・既存の境界テストの変更（`team.md` により計画での明記と依頼者の承認が要る）が大きく変わる（K-49・K-50・K-54）。
+- 前の Intent からの持ち越し（make-you-chic-ui の固定先 `b0a1e79`、axe-core 4.14、不安定なテスト2件、`dslMixed` の `memory.peak`）は K-55〜K-60 に事実と見立てを分けて書いた。
+- F2（`admin_flag` を縮める）は列を消すだけでは済まない（K-53）。範囲を決める段（`scope-definition`）はこのワークフローで SKIP のため、扱いを決める段は要件定義になる見込みで、指揮役が確かめる。
+
+## Sources
+
+- 開発担当の調査: `aidlc/spaces/default/intents/261016-business-data-views/inception/reverse-engineering/developer-scan.md`
+- Intent の依頼の文: `aidlc/spaces/default/intents/261016-business-data-views/project-description.json`
+- アーキテクトが読み取りで確かめ直したもの: `reverse-engineering-timestamp.md` の「確かめ方」

@@ -1,126 +1,70 @@
 # 依存関係（mastersmith2）
 
-部品の版は `technology-stack.md`、部品ごとの責務は `component-inventory.md` に書き、ここでは依存の向きと管理の決まりを書く。この文書に本文を書いた所見は K-39（2026-10-15、下の「依存の更新の知らせと固定先」）だけ（境界テストの欠けは K-38、`code-quality-assessment.md`）。
+> 2026-10-16（記録のコミット `09b795d`）の Full rescan で作り直した。所見の本文はこの文書に K-60 を書いた。
 
-> 2026-10-15（コミット `4f6c27d`）の更新: 「依存の更新の知らせと固定先」（K-39）を足し、サブモジュールの固定先を確かめ直した。「内部の依存」の図と表は前回（コミット `d5aea52`）の記録のままで、`261004-role-menu` で加わった `role`・`group`・`navigation` の向きは入っていない（今回は import を検索していない）。
+## 機能の間の依存（バックエンド）
 
-## 外部への依存
+アーキテクトが `backend/src/main/java/cherry/mastersmith/<機能>/` の `import cherry.mastersmith.<機能>` を検索して数え直した（2026-10-16）。`common` は共通部品、ほかは機能の名前。
 
-### 実行時に接続するもの
-
-| 相手 | 接続の仕方 | 既定 |
+| 機能 | 依存する機能（import の先） | 境界テスト |
 |---|---|---|
-| 内部DB（H2、組み込み・ファイル） | Spring Boot の `DataSource`（HikariCP） | 有効。単一インスタンス前提。権限（`users.admin_flag`）も要求ごとにここから読む（K-32） |
-| 対象DB（MySQL・MariaDB・PostgreSQL のどれか1つ） | `targetdb`、設定は環境変数だけ | 設定したときだけ。読み取りだけ |
-| SMTP（手元では Mailpit） | `mail`、接続先と資格情報は環境変数（`.env`）だけ | 接続先の設定が無ければ送らない（`project.md` の Mandated） |
-| OTLP の受け手 | 観測の設定 | 無効 |
+| `auth` | `common`・`user` | `AuthBoundaryArchitectureTest` |
+| `access` | `auth`・`common`・`config` | `AccessBoundaryArchitectureTest` |
+| `audit` | `access`・`auth`・`dslmanage`・`group`・`invitation`・`role`・`user`・`useradmin`（各機能の出来事の型） | `AuditBoundaryArchitectureTest` |
+| `user` | `common` | `UserBoundaryArchitectureTest` |
+| `useradmin` | `access`・`auth`・`common`・`user` | `UserAdminBoundaryArchitectureTest` |
+| `invitation` | `common`・`mail`・`user` | `InvitationBoundaryArchitectureTest` |
+| `mail` | なし | `MailBoundaryArchitectureTest` |
+| `appearance` | `common` | `AppearanceBoundaryArchitectureTest` |
+| `targetdb` | なし | `TargetDbBoundaryArchitectureTest`・`targetdb/testsupport/ExtensionOrderArchitectureTest` |
+| `dsl` | なし | `DslBoundaryArchitectureTest` |
+| `dslmanage` | `auth`・`common`・`dsl`・`targetdb`・`user` | `DslManageBoundaryArchitectureTest`・`DslManageGenerateBoundaryArchitectureTest` |
+| `role` | `common`・`dsl`・`group`・`user` | `RoleBoundaryArchitectureTest` |
+| `group` | `common`・`user` | `GroupBoundaryArchitectureTest` |
+| `navigation` | `auth`・`common`・`dsl`・`role` | `NavigationBoundaryArchitectureTest` |
+| `config` | `common` | 全体の `ArchitectureTest` |
 
-### ビルド時・検査時に使うもの
-
-- Maven Central（Gradle の依存の唯一の取得元。ビルドのプラグインは Gradle Plugin Portal）、npm のレジストリ。
-- Git サブモジュール `vendor/make-you-chic-ui`（固定先 `5bf1ffe`、npm の `file:`）と `vendor/java-mustache-processor`（固定先 `8d44c36`・タグ 0.1.0、Gradle の composite build）。2026-10-15 に `git submodule status` で確かめた。
-- Gitleaks・OSV-Scanner、コンテナの実行環境（対象DB の結合テスト）。
-
-## 依存の管理の決まり
-
-- Gradle の依存は lockfile で固定、npm は `npm ci`（`package-lock.json`）。
-- 新しい依存は、採用の前にライセンスと、推移依存で既存の部品の版を引き上げないかを確かめる（`team.md` の Code Style、`project.md` の Corrections）。
-- make-you-chic-ui に部品（例: 入れ子のナビゲーション。K-36）を足してもらうときは上流のリポジトリで変え、固定先の更新を承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録する（`project.md` の Mandated、`team.md` の Way of Working）。
-- Dependabot のプルリクエストは GitHub の画面でマージせず、手元でまとめて更新し `./gradlew verify` を通してから `develop` に統合して閉じる（`team.md` の Way of Working）。
-
-## 依存の更新の知らせと固定先（2026-10-15）
-
-### K-39 依存の更新 20 件と、手でそろえる固定先
-
-確かめた事実:
-
-- 開いている Dependabot のプルリクエストは 20 件（開発担当の `gh pr list`。#24・#25・#27・#32・#34〜#49）。内訳は npm 10・Gradle 3（#37 jqwik・#46 wrapper・#47 Spotless）・Actions 4（#25・#40・#43・#44）・docker 1（#38 eclipse-temurin）・docker-compose 2（#35 mailpit・#36 otel-lgtm）で、振り返りの U1 の一覧と一致する。版の一覧は `technology-stack.md` の「更新の候補」。
-- `.github/dependabot.yml` の項目は gradle・npm・github-actions・docker・docker-compose の5つ。ignore は Gradle の3つ（`opentelemetry-logback-appender-1.0`・`com.networknt:json-schema-validator`・`tools.jackson:jackson-bom`、どれも全版）、npm の `typescript`（大きな版だけ）、docker の `eclipse-temurin`（大きな版だけ）（50〜93 行）。
-- Dependabot が見ない固定先に、今回上げるイメージが次のとおりある（`team.md` の Deployment「上げるときは Dependabot が見ない固定先も同じ版とダイジェストにそろえる」に当たる）。
-
-| イメージ（プルリクエスト） | Dependabot が見る場所 | 手でそろえる固定先 |
-|---|---|---|
-| eclipse-temurin の jre（#38、`25.0.4_7` → `25.0.4.1_1`） | `Dockerfile` 17 行 | `perf/README.md`（40・239・324・567・824 行）・`README.md`（352・362・735・1135 行） |
-| eclipse-temurin の jdk（同じ版、プルリクエストは無い） | 無い | `docker/hikari-pool.sh` 48 行（`25.0.4_7-jdk-noble@sha256:2feab631…`、アーキテクトが確かめた）・`perf/README.md` 76 行・`README.md` 392 行 |
-| grafana/otel-lgtm（#36、0.34.0 → 0.36.0） | `compose.yaml` | `perf/README.md` 436 行 |
-| axllent/mailpit（#35、v1.31.2 → v1.31.5） | `compose.yaml` | `docker/perf/compose.yaml` 134 行（ダイジェスト付き）・`README.md` 552 行（タグだけ、ダイジェスト無し） |
-
-- Actions はコミットのハッシュで固定し、コメントに版の名前を書く（`.github/workflows/ci.yml`）。更新はハッシュとコメントの両方を替える。Gitleaks 8.30.1・OSV-Scanner 2.6.0 は `ci.yml` の env で版と SHA-256 を固定し、Dependabot の対象外。
-- `vite`（#41）・`@vitejs/plugin-react`（#49）は `config/npm-build-tools.txt` の成果物を作る道具で、devDependencies でも High 以上で統合を止める（`team.md` の Deployment）。
-- 対象DB のイメージ（`TargetDbImages`・`compose.yaml`・`docker/perf/compose.yaml`）は今回の 20 件に無い。
-
-見立て（未検証）:
-
-- grafana/k6 は `perf/README.md` にしか無く、Dependabot が見るファイルに無いため、更新の知らせが来ない（`dependabot.yml` の「見ない固定先」の一覧に名前はある）。
-- eclipse-temurin の `25.0.4.1_1` は版の付け方が変わる（`25.0.4_7` → `25.0.4.1_1`）。同じ版の jdk のタグと複数アーキテクチャの index のダイジェストがあるかは確かめていない。jre だけ上げると、接続プールの運用の道具（`docker/hikari-pool.sh`）と手順書の jdk が古いまま残る。
-- 土台のイメージ・Tomcat・Jackson などの実行時の部品を上げた後は、性能の基準の値（P1〜P5）を同じ使い捨ての環境で取り直す前提になる（振り返りの進め方の案）。
-
-## 内部の依存（バックエンドのパッケージ間）
-
-今回（コミット `d5aea52`）、各パッケージの `import cherry.mastersmith.*` を検索して確かめた。図は import の向きだけを描き、出来事による逆向きの知らせ（`user` の出来事を `auth` が受けるなど）は線にしていない。
-
-```mermaid
-flowchart TD
-  config --> common
-  auth -- "user.service・user.domain" --> user
-  auth --> common
-  access -- "auth.domain・auth.web" --> auth
-  access --> common
-  access -- "SecurityHeaderProperties" --> config
-  user --> common
-  invitation -- "user.domain・user.service" --> user
-  invitation --> mail
-  invitation --> common
-  appearance --> common
-  audit -- "出来事の型" --> user
-  audit -- "出来事の型" --> auth
-  audit -- "出来事の型" --> access
-  audit -- "出来事の型" --> invitation
-  audit -- "出来事の型" --> dslmanage
-  audit -- "出来事の型" --> useradmin
-  dslmanage --> dsl
-  dslmanage --> targetdb
-  dslmanage --> user
-  dslmanage --> auth
-  dslmanage --> common
-  useradmin -- "user.domain・user.service" --> user
-  useradmin -- "auth.domain・auth.service" --> auth
-  useradmin -- "access.domain" --> access
-  useradmin --> common
-```
-
-<!-- Text fallback: config は common を使う。auth は user（service と domain）と common を使う。access は auth（domain と web）・common・config（SecurityHeaderProperties）を使う。user は common だけを import する。invitation は user・mail・common を使う。appearance は common だけを使う。audit は出来事の型のために user・auth・access・invitation・dslmanage・useradmin を使う。dslmanage は dsl・targetdb・user・auth・common を使う。useradmin は user（domain と service）・auth（domain と service）・access の domain・common を使う。mail・dsl・targetdb・common はアプリの中のほかのパッケージを import しない。循環する依存は無い。 -->
-
-### 今回の論点に関わる依存の要点
-
-| 向き | 中身（今回確かめたもの） | 関わる所見 |
-|---|---|---|
-| `access` → `auth` | `auth.domain.AuthenticatedUser`（判定の主体）・`TokenAuthenticationException`・`TokenFailureReason`・`ClientInfo`、`auth.web.ClientInfoResolver`・`TokenAuthenticationEntryPoint` | K-32・K-33 |
-| `access` → `config` | `access/web/AccessRequestRejectedHandler.java` が `config.SecurityHeaderProperties` を使う | — |
-| `auth` → `user` | 認証の入口が `UserAccountService.findById` で利用者（`admin`・停止）を読む | K-32 |
-| `useradmin` → `user` | 管理者の印・停止の書き換えの口と `findActiveAdminIds`。書き換えの口を呼べるのは `useradmin.service` だけ（境界テスト） | K-34 |
-| `useradmin` → `access` | `access.domain.AccessProblemTypes` だけ（境界テスト） | K-34 |
-| `audit` → 各機能 | 出来事の型（`access` の拒否、`useradmin` の印の付け外しほか） | K-38 |
-| `dslmanage` → `dsl` | `ActiveDslModelProvider` を使う唯一の外の読み手（`DslPreviewAnalysis`） | K-37 |
-| 差し込み口 | `auth`・`access`・`invitation`・`appearance` の `*SecurityContributor` → `common.security.SecurityRuleContributor`。`config.SecurityConfig` がそれらを集めて当てる | K-33 |
-
-`access` の機能の境界（どの機能に依存してよいか・依存されてよいか）を確かめる ArchUnit のテストは無い（K-38）。
-
-### 境界の決まり（今回の論点に関わるもの）
-
-- `user` は `auth` を知らず、`auth` は `user` の service の口と値の型だけを使う（`backend/src/test/java/cherry/mastersmith/auth/AuthBoundaryArchitectureTest.java`、今回は決まりの一覧を読んだ）。
-- `useradmin` が使ってよい `access` は `access.domain.AccessProblemTypes` だけで、印・停止・トークン・失敗回数を変える口を呼べるのは `useradmin.service` だけ（`UserAdminBoundaryArchitectureTest.java` 113 行〜・191 行〜）。
-- 機能から `audit` への知らせは出来事で行い、機能は `audit` に依存しない。
-- 既存の ArchUnit の境界の検査を緩める・変える場合は、コード生成の計画に明記して依頼者の承認を得る。新しい機能は自分の `<機能>BoundaryArchitectureTest` を足し、既存のものは書き換えない（`team.md` の Code Style）。
+- 依存される側の制限（今回の Intent に効くもの）:
+  - `role` に依存してよいのは `audit`（`role.domain`）と `navigation`（`role.service`・`role.domain`）だけ（`RoleBoundaryArchitectureTest` 129 行。K-50、本文は `architecture.md`）。
+  - どの機能も `navigation` に依存しない（`NavigationBoundaryArchitectureTest`）。
+  - `targetdb` の外から `targetdb.config`・`targetdb.repository` に依存しない。`targetdb` は `dsl`・`dslmanage`・`web` を知らない（K-49、本文は `architecture.md`）。
+  - `dsl` の境界テストは「dsl は targetdb を知らない」を持つ。業務データの機能が `dsl` の提供口 `ActiveDslModelProvider` に依存することを止める規則があるかは、今回読んでいない（K-51 の見立て）。
+- 逆向きの知らせは Spring の出来事（監査は `audit` が各機能の `domain` の出来事の型を import して受ける。K-54）。
 
 ## 画面の依存
 
-- `main.tsx` が `app/App.tsx` を起動し、`App.tsx` は make-you-chic-ui・見た目の設定・登録・振り分けを組み合わせる。
-- 登録は各機能（`admin`・`auth`・`dsl`・`invitation`・`preferences`・`registration`・`useradmin`）の `registration.ts` を `app/registry/registrationModules.ts` が読み込む。骨組み（`app/navigation`・`app/routing`・`app/layout`・`app/admin-forbidden`）は登録の型（`app/registry/types.ts`）とログイン状態にだけ依存し、個々の機能を import しない（今回読んだファイルで確かめた）。
-- 機能は `shared/api-client` と make-you-chic-ui の部品を使う。`app/admin-forbidden/AdminForbiddenProvider.tsx` は `shared/api-client/adminForbidden.ts`（判定）と `apiClient.ts`（`refreshSessionOnce`）を使う（K-35）。
-- `ShellLayout.tsx` は make-you-chic-ui の `AppShell` に `navItems` を渡す。サイドバーの描画は make-you-chic-ui の中の `Sidebar` で、骨組みからは差し替えられない（K-36）。
+- 機能（`frontend/src/features/<featureId>/`、13 機能）どうしの import は `frontend/eslint.config.js` の `no-restricted-imports` で止める。`src/shared/` から `src/app/`・`src/features/` を読むことも止める（2つの規則を一部だけ読んだ）。
+- 画面は make-you-chic-ui を npm の `file:../vendor/make-you-chic-ui/packages/make-you-chic-ui` で使う（`frontend/package.json`）。
 
-## ビルドのタスクの依存
+## ビルドの依存
 
-- `verify` の中に画面の検査・バックエンドの単体と結合のテスト・カバレッジ・SpotBugs・Gitleaks・OSV-Scanner がある。`e2eTest` は `verify` の外。
-- `frontend` → `make-you-chic-ui`（サブモジュールのパッケージを `file:` で読む）。`backend` → `java-mustache-processor`（composite build）。`:backend:bootWar` → 画面のビルド（WAR に `dist` を同梱）。
+- `backend` の WAR は `frontend` のビルド結果（`dist`）を同梱する。
+- `frontend` は `vendor/make-you-chic-ui` に、`backend` は `vendor/java-mustache-processor`（Gradle の composite build、`cherry-mustache` 0.1.0）に依存する。
+- 依存の取得元は Maven Central だけに固定（`settings.gradle.kts`。今回は開いていない。`team.md` の記録）。lockfile は `backend/gradle.lockfile`・`frontend/package-lock.json`。
+
+## 外部の依存（主なもの）
+
+版は `technology-stack.md`。依存の脆弱性の関門は `./gradlew verify` の中の OSV-Scanner（`vendor/make-you-chic-ui` の lockfile を含む）で、更新の知らせは Dependabot（`.github/dependabot.yml`）。
+
+## サブモジュールと見送りの依存
+
+| 依存 | 今の固定 | メモ |
+|---|---|---|
+| `vendor/make-you-chic-ui` | `a9309c4`（`git submodule status` の `heads/main-19-ga9309c4`） | 次の候補 `b0a1e79` は手元の履歴にある（K-60） |
+| `vendor/java-mustache-processor` | `8d44c36`（0.1.0） | 今回の Intent では触れない見込み |
+| `axe-core`（npm、dev） | `^4.13.0`、lockfile は 4.13.0 の1つ | `>= 4.14.0` を Dependabot で見送り（K-60） |
+
+**K-60 make-you-chic-ui の固定先の更新と axe-core の取り込みの前提**
+
+- 確かめた事実:
+  - サブモジュールは `a9309c4`。`b0a1e79`（「Dropdown: 説明付き項目でlabel-content-name-mismatch(WCAG 2.5.3)に 違反しないようDOM構造を変更」、2026-10-16）は手元の履歴にあり、`a9309c4` の次の1コミット（`git log a9309c4..b0a1e79`）。変わるのは `Dropdown.tsx`・`Dropdown.css`・`Dropdown.test.tsx` の3つだけ（119 行の追加・42 行の削除、`git diff --stat`。アーキテクトが確かめ直した）。
+  - `.github/dependabot.yml` の npm の項で `axe-core` の `versions: [">= 4.14.0"]` を `ignore` し、理由と外す時期（画面の側の名前の直しと make-you-chic-ui の Dropdown の直しを取り込んだ後）をコメントに書いている（65〜75 行）。
+  - E2E の axe（`frontend/e2e/support/axe.ts`）はタグ `wcag2a`・`wcag2aa`・`wcag21a`・`wcag21aa` で流す。`label-content-name-mismatch` のタグは `wcag21a`・`wcag253` と `experimental`（手元の 4.13.0 の規則の定義、`frontend/node_modules/axe-core/axe.js` 32991 行。入れた依存の読み取り）。4.14 で `experimental` が外れると、今のタグの指定のまま流れる。既知の違反の一覧（`KNOWN_VIOLATIONS`）は空で、どの違反も失敗にする。
+  - 画面の部品のテストの `vitest-axe` も同じ `axe-core`（lockfile の 4.13.0 の1つ）を使う。
+- 今回の Intent への意味: 取り込みの順は「固定先の更新（承認を得た専用のコミット、fast-forward の例外。`project.md` の Mandated と `team.md` の Way of Working）→ 行のトリガーの名前の直し（K-55）→ axe-core を 4.14 以降に上げて `ignore` を外す → E2E（080・100・120・130・160）で確かめる」。K-56 が正しければ、`b0a1e79` だけでは 080 などの違反が残りうる。`vitest-axe` で流れる規則も変わりうるため、画面の部品のテストも確かめの範囲に入る。
+- 見立て（未検証）: 4.14 の `axe.js` は手元に無く、規則の判定の変わり方は確かめていない（K-55）。
+
+## Sources
+
+- アーキテクトの import の検索（2026-10-16）と境界テストのファイルの一覧（`git ls-files`）。
+- 開発担当の調査の K-60 と Frameworks & Libraries。

@@ -1,114 +1,71 @@
 # コードの構成（mastersmith2）
 
-各部品の責務と読みの深さは `component-inventory.md`、部品の間の依存は `dependencies.md` に書き、ここでは置き場と決まりだけを書く。構成はディレクトリとファイルの名前の単位で確かめた（流し読み）。件数は開発担当がファイルを数えた値で、実行の件数ではない。
-
-> 2026-10-15（コミット `4f6c27d`）の更新: バックエンドと画面の構成の図に `261004-role-menu` で増えたパッケージ・ディレクトリを足し（`ls` で確かめた）、K-48 と今回深く読んだファイルの表を足した。ファイルの件数（480・380・110 など）と移行の一覧は前回（コミット `d5aea52`）の値のままで、今回は数え直していない。
+> 2026-10-16（記録のコミット `09b795d`）の Full rescan で作り直した。ファイルの数は `git ls-files` と `find` の数（アーキテクトが数え直した）。所見の本文はこの文書には無く、各所見の場所は `business-overview.md` の一覧。
 
 ## リポジトリの最上位
 
-| パス | 分類 | 内容 |
+| 場所 | 中身 |
+|---|---|
+| `backend/` | Java のアプリ（Gradle、実行可能 WAR）。本体のソース 736 ファイル・テスト 586 ファイル（リソースを含む `git ls-files` の数） |
+| `frontend/` | React + TypeScript の SPA。`src/app/`（90）・`src/shared/`（34）・`src/features/`（13 機能・351）・`e2e/`（18 本と `support/` 26） |
+| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `a9309c4`） |
+| `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`） |
+| `docker/` | `monitoring/`（手元の監視）・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）・`jmx/`・`hikari-pool.sh`・`check-container-limits.sh` |
+| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js`）と手順（`perf/README.md`） |
+| `config/` | 検査の設定（`npm-build-tools.txt` など） |
+| `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
+| 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`README.md` |
+| `aidlc/` | AI-DLC の記録（コードではない） |
+
+## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
+
+| パッケージ | ファイル数 | 下位のパッケージ |
 |---|---|---|
-| `backend/` | バックエンド | Gradle のサブプロジェクト。Java のソース・テスト・設定・Flyway の移行・SpotBugs の除外 |
-| `frontend/` | 画面 | npm のプロジェクト（React＋TypeScript、Vite）。ルートの Gradle から呼ぶ。E2E は `frontend/e2e/` |
-| `vendor/make-you-chic-ui/` | デザインシステム | Git サブモジュール（固定先 `5bf1ffe`、npm の `file:` の依存）。このリポジトリからは変えない |
-| `vendor/java-mustache-processor/` | Mustache のエンジン | Git サブモジュール（固定先 `8d44c36`、Gradle の composite build）。このリポジトリからは変えない |
-| `gradle/`・`settings.gradle.kts`・`build.gradle.kts` | ビルド | 版の一覧（`gradle/libs.versions.toml`）、依存の取得元の固定と composite build、1コマンドの検査 `verify` と `e2eTest` |
-| `backend/gradle.lockfile`・`settings-gradle.lockfile`・`frontend/package-lock.json` | 版の固定 | Gradle と npm の依存の実際の版 |
-| `config/` | 検査の設定 | ライセンスヘッダーのひな形、OSV の判定で止める画面の道具の一覧 |
-| `.github/` | CI と更新の通知 | `workflows/ci.yml`・`dependabot.yml` |
-| `Dockerfile`・`compose.yaml`・`.env.example` | コンテナ | アプリのイメージとサービス、profile で起動する監視・メールの受け手・見本の対象DB（今回は読み直していない） |
-| `docker/`・`perf/` | 付属の環境 | 負荷の試験の使い捨ての環境、手元の監視、k6 の台本と手順（今回は読み直していない） |
-| `README.md` | 文書 | 起動・配備・設定の一覧・既知の制約（今回は読み直していない） |
-| `aidlc/`・`.claude/` | ワークフローの記録と枠組み | アプリのソースではない |
+| `access` | 20 | `domain`・`service`・`web` |
+| `appearance` | 14 | `config`・`service`・`web` |
+| `audit` | 15 | `domain`・`repository`・`service`（Web の層なし） |
+| `auth` | 58 | `domain`・`repository`・`service`・`web` |
+| `common` | 47 | `error`・`health`・`i18n`・`observability`・`paging`・`persistence`・`security`・`web` |
+| `config` | 6 | なし |
+| `dsl` | 64 | `domain`・`parse`・`service`・`validate` |
+| `dslmanage` | 54 | `domain`・`generate`・`repository`・`service`・`web` |
+| `group` | 55 | `domain`・`repository`・`service`・`store`・`web` |
+| `invitation` | 65 | `domain`・`lock`・`repository`・`service`・`web` |
+| `mail` | 28 | `config`・`domain`・`service`・`template`・`transport` |
+| `navigation` | 23 | `domain`・`service`・`web`（repository なし） |
+| `role` | 143 | `domain`・`repository`・`service`・`store`・`transfer`・`web` |
+| `targetdb` | 26 | `config`・`domain`・`repository`・`service`（web なし） |
+| `user` | 70 | `domain`・`repository`・`service`・`web` |
+| `useradmin` | 27 | `domain`・`service`・`web`（repository なし） |
 
-## バックエンド（`backend/src/main/java/cherry/mastersmith/`、`src/main` に 480 ファイル）
+- 起動クラスは `MastersmithApplication.java`。
+- リソース（`backend/src/main/resources/`）: `db/migration/`（Flyway の V1〜V12）・`dsl/`（`dsl-schema-v2.json` ほか）・`navigation/`（`allowed-icons.txt`）・`mail/`（テンプレート）・`META-INF/`・`application.yaml`。
+- 移行の一覧: V1 baseline・V2 利用者・V3 認証・V4 監査・V5 DSL の管理・V6 DSL の監査の列・V7 利用者の設定・V8 招待・V9 利用停止・V10 グループ・V11 ロール・V12 ロールの割り当て。業務データの表はアプリの内部DB に無い（業務データは対象DB にある）。
 
-```
-cherry.mastersmith
-├── MastersmithApplication
-├── config                                   Security の連鎖（SecurityConfig）・画面の配信・観測・転送ヘッダー
-├── common/{error,health,i18n,observability,paging,persistence,security,web}
-├── auth/{domain,service,repository,web}     ログイン・ロック・トークン・ログアウト・初期管理者の救済の受け手
-├── access/{domain,service,web}              /api/admin/** の認可、/api/** の既定、401・403
-├── audit/{domain,service,repository}        出来事を確定の後に audit_events へ追記（Web の層なし）
-├── user/{domain,service,repository,web}     利用者・管理者の印と停止の列・表示の設定・/api/me/**・初期管理者
-├── useradmin/{domain,service,web}           利用者の管理 /api/admin/users
-├── invitation/{domain,lock,repository,service,web}   招待の管理と登録の完了
-├── mail/{config,domain,service,template,transport}   SMTP の送信と Mustache のテンプレート
-├── appearance/{config,service,web}          インスタンスの見た目の設定
-├── targetdb/{config,domain,repository,service}       対象DB のスキーマの読み取り
-├── dsl/{domain,parse,validate,service}      DSL の型・読み込み・検証・適用中のモデル（メニューの木を含む）
-├── dslmanage/{domain,generate,repository,service,web} DSL の管理の API と既定の DSL の生成
-├── role/{domain,repository,service,store,transfer,web} ロール・権限・割り当て・作業ロール・権限の YAML（261004-role-menu）
-├── group/{domain,repository,service,store,web}         グループ（261004-role-menu）
-└── navigation/{domain,service,web}                     権限で枝を落とした N 階層のメニュー（261004-role-menu）
-```
+## 層と型の決まり（コードで見られる形）
 
-- 層の決まりは `team.md` の Code Style のとおりで、ArchUnit で確かめる（全体の `ArchitectureTest` と機能ごとの `*BoundaryArchitectureTest`。`access` には無い。K-38）。
-- 4つの層に当たらない用途名の下位パッケージ（`invitation/lock`・`mail/transport`・`dsl/parse`・`dsl/validate`・`dslmanage/generate` など）を機能の中に置いてよい。機能ごとにエラーの code の一覧（`XxxProblemTypes`・`XxxProblemTypeCatalog`）を置き、1つの code に1つの状態コードを固定する（`access` は `access/domain/AccessProblemTypes.java`）。
-- 安全の決まりの差し込み口は各機能の `web` の `*SecurityContributor`（order は機能の名前で 100 台ずつ: auth 110・access 210・invitation 310・appearance 410）と、`/api/**` の既定 `access/web/AdminApiDefaultAccess.java`。型は `common/security/`（`SecurityRuleContributor`・`ApiDefaultAccess`・`SecurityExtensionValidator`・`ErrorResponseWriter`）。
+- `web`: controller と `record` の DTO（`XxxRequest`・`XxxResponse`）。口ごとに `@ApiAccess`。個人に関する値・秘密を持つ record は `toString` を上書きして伏せる（例: `navigation/web/TableAccessResponse.java` 51 行）。
+- `service`: トランザクションの境界。新しい機能は想定内の失敗を結果の型（sealed interface の record）で返し、controller が `switch` で `BusinessException` に変える。
+- `domain`: 変更できない値（`record`）と列挙。問題の種類の定数は `<機能>.domain.XxxProblemTypes`、起動時に集める一覧は `<機能>.service`。
+- `repository`: Spring Data JPA と JDBC。`role`・`group` は行の排他を `store` に分ける。
+- 用途名の下位パッケージ: `dsl/parse`・`dsl/validate`・`dslmanage/generate`・`role/transfer`・`invitation/lock`・`mail/template` など。
+- 依存性の注入はコンストラクター注入、Lombok は使わない、ロガーは SLF4J（`team.md` の Code Style。今回深く読んだファイルはこの形）。
 
-### 設定とスキーマ（`backend/src/main/resources/`）
+## 今回の Intent に関わるパッケージの中身（深く読んだもの）
 
-- `application.yaml`（独自の設定は `mastersmith.*`）、`logback-spring.xml`、`mail/`、`dsl/dsl-schema-v1.json`（DSL の JSON Schema。`menus`・`menuItem` の定義を含む。K-37）。
-- `db/migration/`（Flyway、前進のみ）: V1（土台）・V2（`users`、`admin_flag` を含む）・V3（ロックの状態とリフレッシュトークン）・V4（`audit_events`、`event_type VARCHAR(32)`）・V5（DSL）・V6（監査の DSL の列と `actor_user_id`）・V7（利用者の表示の設定、監査の対象の列）・V8（`invitations`）・V9（利用停止）。役割・権限の表は無く（K-32）、次に足す移行は V10 になる。
-
-### 今回の Intent に関わるファイル（2026-10-04 に深く読んだもの）
-
-| 場所 | 役割 | 所見 |
-|---|---|---|
-| `auth/domain/AuthenticatedUser.java`・`auth/web/AuthenticatedUserToken.java`・`AccessTokenAuthenticationProvider.java`・`AuthSecurityContributor.java`・`CurrentUserResponse.java`・`TokenResponse.java`・`auth/service/AccessTokenService.java`、`user/domain/User.java`・`user/service/UserSummary.java`・`user/repository/UserRepository.java`、`db/migration/` | 主体・トークン・利用者の列 | K-32 |
-| `access/domain/AdminPaths.java`・`AccessDeniedReason.java`・`AccessProblemTypes.java`、`access/web/AdminAuthorizationManager.java`・`AdminSecurityContributor.java`・`AdminApiDefaultAccess.java`・`AdminCheckController.java`・`AdminAccessDeniedHandler.java`、`common/security/`、`config/SecurityConfig.java`、`appearance/web/AppearanceSecurityContributor.java`・`invitation/web/InvitationSecurityContributor.java` | URL の決まりと判定、401・403 | K-33 |
-| `useradmin/domain/AdminOperation.java`・`RejectionReason.java`、`useradmin/service/UserAdminService.java`・`useradmin/web/AdminUser.java`、`backend/src/test/java/cherry/mastersmith/useradmin/UserAdminBoundaryArchitectureTest.java` | 管理者の印の業務の決まり | K-34 |
-| `frontend/src/app/registry/`（`types.ts`・`registrationModules.ts`・`loadRegistrations.ts`・`validateRegistrations.ts`）・`app/navigation/navigationItems.ts`・`app/layout/ShellLayout.tsx`・`app/routing/decideRoute.ts`・`AppRouter.tsx`・`app/admin-forbidden/AdminForbiddenProvider.tsx`・`app/pages/HomePage.tsx`・`shared/api-client/adminForbidden.ts`・`features/auth/loginStateProvider.ts`・`features/admin/registration.ts` | 画面の出し分けと 403 | K-35 |
-| `vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/AppShell/AppShell.tsx`・`Sidebar.tsx`・`Icon/registry.ts`、`frontend/src/features/dsl/DslMenuTree.tsx` | サイドバーとアイコン、自前の木の前例 | K-36 |
-| `dsl/domain/DslMenuItem.java`・`DslModel.java`・`DslFormat.java`、`dsl/service/ActiveDslModelProvider.java`・`dsl/validate/DslSemanticValidator.java`・`dslmanage/generate/DslTreeBuilder.java`、`backend/src/main/resources/dsl/dsl-schema-v1.json`、`frontend/src/features/dsl/api/types.ts` | DSL のメニューの定義と提供口 | K-37 |
-| `audit/domain/AuditEventType.java`・`audit/service/AuditEventListener.java`、`backend/src/test/java/cherry/mastersmith/ArchitectureTest.java`・`auth/AuthBoundaryArchitectureTest.java`、`backend/build.gradle.kts`・`gradle/libs.versions.toml` | 監査の種類・構造の検査・カバレッジ | K-38 |
-
-## テストの構成
-
-- `backend/src/test/java/cherry/mastersmith/`（380 ファイル）: 本体と同じパッケージ構成。単体は `*Test`（タスク `test`）、Spring と組み込みの H2 を起動する結合は `*IT`（タスク `integrationTest`）。機能ごとの補助は `<機能>/testsupport/`（認可には `access/testsupport/PublicApiTestRules`・`AdminTestUsers`）、共通の補助は `common/testsupport/`。
-- 構造の検査: `ArchitectureTest`（全体の層）と、機能ごとの境界テスト 10 個（`appearance`・`audit`・`auth`・`dsl`・`dslmanage`（`DslManageBoundaryArchitectureTest`・`DslManageGenerateBoundaryArchitectureTest`）・`invitation`・`mail`・`targetdb`・`useradmin`）。
-- 対象DB の結合テストは Testcontainers（MySQL・MariaDB・PostgreSQL）。
-- 画面は対象と同じ場所の `*.test.ts(x)`（110 件）。
-- E2E は `frontend/e2e/`（`*.e2e.ts` 13 本、010〜130）。`verify` と CI の外。
+- `targetdb`: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`（読み取り専用のプール・時間の上限）、`domain/ReadPurpose.java`・`domain/SqlIdentifiers.java`、`service/JdbcTargetSchemaReader.java`（口は `service/TargetSchemaReader.java`）。K-49・K-51。
+- `role`: `domain/` の `MainPermission`・`PermissionLevel`・`PermissionValues`・`EffectivePermission`・`EffectiveNode`・`PermissionTarget`・`PermissionInheritance`・`PermissionSnapshot`、`service/EffectivePermissionResolver`・`EffectivePermissionResolverImpl`。K-50。
+- `navigation`: `domain/` の `MenuFilter`・`NavNode`・`NavTableRef`・`TableAccessResult`・`EmptyReason`、`service/NavigationService`、`web/NavigationController`・`TableAccessResponse`・`NavTableRefResponse`。K-50・K-52。
+- `dsl/domain/`: `DslModel`・`DslSchema`・`DslTable`・`DslColumn`・`DbType`・`FormPart`・`SearchSetting`・`SearchOperator`・`ListSetting`・`ListFormat`・`DetailSetting`・`OptionSource`・`OptionSourceKind`・`Validation`・`DslForeignKey`・`LookupListItem`・`LookupSearchItem`・`DslMenuItem`・`TableRef`・`DslFormat`・`ActiveDsl`、`dsl/service/ActiveDslModelProvider`。K-51。
 
 ## 画面の構成（`frontend/src/`）
 
-```
-frontend/src
-├── main.tsx
-├── app/        registry・navigation・layout・routing・admin-forbidden・login-state・login-handoff・display-settings・i18n・pages・work-role・testing
-├── shared/     api-client・format・modal・paging・tree・validation
-└── features/   admin・auth・dsl・groupadmin・invitation・mypermissions・preferences・registration・roleadmin・roletransfer・tables・useradmin（各 registration.ts で登録）
-```
+- `app/`: 骨組み（起動・`registry/`・`navigation/`・`layout/`・`i18n/`・`routing/`・`work-role/`・`admin-forbidden/`・`display-settings/`・`login-handoff/`・`login-state/`・`pages/`・`testing/`）。
+- `shared/`: 機能をまたぐ部品（`api-client/`・`format/`・`modal/`・`paging/`・`slow-notice/`・`tree/`・`validation/`）。`src/app/`・`src/features/` を読まない（ESLint）。
+- `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`（機能の作り方の決まり）。開発担当の「13 機能」はディレクトリの 13 項目の数で、機能は 12 個、残りの1つは `README.md` である（アーキテクトが `ls` で確かめた）。
+- 機能は `registration.ts` で登録し、`access`（`PUBLIC`・`LOGGED_IN`・`ADMIN` の3値の表示の制御）とサイドバー・ユーザーメニューの項目を持つ（`app/registry/types.ts`）。
+- テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜170 の 18 本）と `support/`。
 
-- 機能は `features/<featureId>/registration.ts` を置くだけで読み込まれ（`app/registry/registrationModules.ts`・`loadRegistrations.ts`、検査は `validateRegistrations.ts`）、骨組みのファイルは書き換えない。機能どうしは直接 import し合わず、共有するものは `shared/` に置く（`team.md` の Code Style、`frontend/src/features/README.md`）。
-- 差し込み口は4つ: 画面（ルート、`access: AccessLevel`）・サイドバーの項目（`visibleWhen: VisibleWhen`・`order`・`labelKey`・`path`）・ユーザーメニューの項目・ログイン状態の提供元（`frontend/src/app/registry/types.ts`）。
-- N 階層の木を描く部品は `features/dsl/DslMenuTree.tsx` だけで、機能の中にある（`shared/` にも骨組みにも無い。K-36）。これは前回（`d5aea52`）の記録で、`261004-role-menu` で共有の木 `shared/tree/` が加わった（K-47）。
-- CSS は部品と同じ場所に素の CSS で置く。
+## Sources
 
-## 2026-10-15 に深く読んだファイル（Intent `261015-deps-ui-carryover`）
-
-| 場所 | 役割 | 所見（束の項目） |
-|---|---|---|
-| `gradle/libs.versions.toml`・`settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/dependabot.yml`・`.github/workflows/ci.yml`・`config/npm-build-tools.txt`・`Dockerfile` | 版の定義・検査の並び・更新の通知・土台のイメージ | K-39（U1）・K-43（P7） |
-| `role/store/RoleStore.java`・`role/service/RoleStoreTransactions.java` | ロールの書き込みと行の排他 | K-40（P1・P4） |
-| `dsl/parse/SafeYamlParser.java`・`dsl/parse/YamlLimits.java` | 信頼できない YAML の読み込み | K-41（P2） |
-| `perf/k6/scenarios.js` | k6 の台本 | K-42（P3・P5） |
-| `frontend/src/app/work-role/WorkRoleSwitcher.css` | Dropdown の幅の上書き | K-44（K1） |
-| `dsl/domain/DslError.java` | DSL の誤り | K-45（K2 R-05） |
-| `navigation/domain/MenuFilter.java` | 権限でメニューの枝を落とす | K-46（K3 R-04）、`navigation` の record は K-45（K3 R-03） |
-| `frontend/src/shared/tree/SharedTreeView.tsx`・`SharedTreeNodeItem.tsx` | 共有の木 | K-47（K4 R-02） |
-| `frontend/src/features/{groupadmin,roleadmin,roletransfer}/useSlowNotice.ts` | 遅いときの知らせ | K-48（K5） |
-
-### K-48 `useSlowNotice` が3つの機能に複製されている
-
-確かめた事実:
-
-- `useSlowNotice.ts` は `frontend/src/features/groupadmin/`・`roleadmin/`・`roletransfer/` の **3つ** にあり（振り返りの K5 の文言は groupadmin・roletransfer の2つ）、違いはコメントの1行（ほかの2つの名前）だけ。テスト `useSlowNotice.test.tsx` も3つにある（`ls` と開発担当の差分の確かめ）。
-- `frontend/src/shared/` には `api-client`・`format`・`modal`・`paging`・`tree`・`validation` があり、機能の間で共有するものの置き場の形はそろっている。機能どうしの import は ESLint の `no-restricted-imports` で止める決まり（`team.md` の Code Style）。
-
-見立て（未検証）:
-
-- `shared/` の1つにまとめ、3つの機能の import を替え、テストを1つにまとめる直しになる（role-admin-ui R-02）。テストを1つにすると画面のカバレッジ（`frontend/vitest.config.ts` の `thresholds`）の分母が変わるが、同じ中身の重複が減るだけで下限に響かない見込み。
+- `git ls-files`・`find`・`ls` の数（アーキテクト、2026-10-16）と開発担当の Packages Found。
