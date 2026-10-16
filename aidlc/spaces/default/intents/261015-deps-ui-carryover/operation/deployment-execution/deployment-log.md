@@ -50,6 +50,18 @@ Intent 261015-deps-ui-carryover の配備の記録です。手順は `operation/
 - 配備の記録を `develop` にコミットし（`6dd9bb0`）、依頼者の承認で `main` を `c20dffa` から `6dd9bb0` へ fast-forward した。タグは付けていない。リリースした版は `main` の先頭 `6dd9bb0`（アプリのコードは `776738e`）。
 - 依頼者が `develop` と `main` を push した。`origin/develop`・`origin/main` とも `6dd9bb0`。
 - CI: `6dd9bb0` の push の CI（run 38828025124、記録だけのコミット）は確かめの時点で実行中。その前の `762c489`・`2fe08ae`・`fb6f5e7` は1回目で success。アプリのコードを含む統合の CI は Build and Test の `test-results.md` 3節（`776738e` は2回目の試行で success）。
+- push の後の CI（2026-10-16 追記、`gh run view --json attempt,jobs` で試行ごとに確かめた）:
+
+| コミット | 実行 | 試行 | 結果 |
+|---|---|---|---|
+| `6dd9bb0`（記録だけ） | 38828025124 | 1 | **failure** |
+| `6dd9bb0`（記録だけ） | 38828025124 | 2 | success |
+| `ea6c232`（記録だけ） | 38843278882 | 1 | success |
+
+  - 1回目の失敗: `:backend:integrationTest` の `backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java` の「#7 two saves of the same role are serialized: the later value wins and both audits chain the values」（1,173 件のうち 1 件。177 行の `details.get(0)` の確かめで、1件目に後の保存の監査（`before` が READ、`after` が FULL）が来ていた）。
+  - 見立て（未検証）: 監査は確定の後に別の接続で書くため、1件目の保存の監査の書き込みと、行の排他を待っていた2件目の保存の確定と監査が競り合うと、`audit_event_id` の順が入れ替わりうる。テストが監査の行の ID の順を前提にしている形。この Intent の変更の経路（ロールの保存と監査）には触れていない（記録だけのコミットで、同じコードの `776738e`・`ea6c232` の CI は通った）。
+  - 再現の試み: 手元で同じテストのクラスを 5 回流し（`--rerun`、colima の2つの変数を渡した）、5 回とも通った（上限 5 回と決めて行った）。
+  - 扱い: `team.md` の「手元で再現しないものは、見立てと試みを記録したうえで CI の再実行で通れば進めてよい」により、2回目の試行の成功で進める。同じテストが二度目に落ちたら原因を直すまで次へ進まない。テストを監査の行の順に頼らない形に直すことを、次の Intent の候補とする。
 - Dependabot: 今回の知らせ 24 件（取り込んだ 23 件と見送った #39）はすべて閉じている。開いているプルリクエストは 0 件（#53・#52・#51・#50 は ④ の push の後に、#47・#46・#34・#32 は ① の後に閉じた）。
 
 ## Sources
