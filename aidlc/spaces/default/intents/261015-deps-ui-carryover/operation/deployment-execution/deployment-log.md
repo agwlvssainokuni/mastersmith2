@@ -47,7 +47,10 @@ Intent 261015-deps-ui-carryover の配備の記録です。手順は `operation/
 
 ## 6. 取り込みの結果
 
-（取り込みと push の後に追記する）
+- 配備の記録を `develop` にコミットし（`6dd9bb0`）、依頼者の承認で `main` を `c20dffa` から `6dd9bb0` へ fast-forward した。タグは付けていない。リリースした版は `main` の先頭 `6dd9bb0`（アプリのコードは `776738e`）。
+- 依頼者が `develop` と `main` を push した。`origin/develop`・`origin/main` とも `6dd9bb0`。
+- CI: `6dd9bb0` の push の CI（run 38828025124、記録だけのコミット）は確かめの時点で実行中。その前の `762c489`・`2fe08ae`・`fb6f5e7` は1回目で success。アプリのコードを含む統合の CI は Build and Test の `test-results.md` 3節（`776738e` は2回目の試行で success）。
+- Dependabot: 今回の知らせ 24 件（取り込んだ 23 件と見送った #39）はすべて閉じている。開いているプルリクエストは 0 件（#53・#52・#51・#50 は ④ の push の後に、#47・#46・#34・#32 は ① の後に閉じた）。
 
 ## Sources
 

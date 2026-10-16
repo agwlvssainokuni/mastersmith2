@@ -150,6 +150,8 @@
 - ExitOnOutOfMemoryError で JVM が止まる直前の1行（Terminating due to java.lang.OutOfMemoryError）は JSON ではなく Loki に届かない。docker logs と終了コード 3（Exited (3)、OOMKilled false）で見分け、docker compose start で約 10 秒で戻る（role-menu の Incident Response で使い捨ての環境のヒープを 192 MB に下げて実測した）。 (learned 2026-10-14) <!-- cid:261004-role-menu:incident-response:e9b409e49db86bac4a108d2e842106160121cdf9b39d41a62ff90a0f87a52aa6 -->
 - CI Pipeline・Infrastructure Design の段が無いため、前の Intent（261004-role-menu）の配備の手順を正として差だけを書いた。移行と .env の変更が無いため戻しはイメージだけで練習なし、配備の前の k6 は Build and Test の試験済みで省く。D-5: A の DSL の最長の行の測り直しのために止めて複写するため、その複写を配備の前のバックアップに兼ねた。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:deployment-pipeline:9ac412376db08f5ba4ecb0eeb571f0231f8586ea352af2c1c184a8d4d98d3476 -->
 - 依頼者の決定（Q2: B）で、要件 FR11.2 の「1行の長さの上限の拒否をスモークテストに入れる」を行わず、結合テストで確かめ済みとした。監査に DSL_SUBMISSION_REJECTED が残るため。要件は書き換えず cd-config.md 5節に差を記録した。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:deployment-pipeline:83db7796b312036847d7d7d3ea6dd1e9b7517b4ea9e119e98f9742b6333db217 -->
+- 入れ替えの前の複写を読み取りで開く道具は、リポジトリの外の小さな Java の道具（H2 2.4.240 の JDBC、ACCESS_MODE_DATA=r）にし、DSL の最も長い行・初期管理者の停止と印・T0 以降の監査の種類ごとの件数を、値を表示せずに1つの道具で数えた。配備の前と後の両方の複写に同じ道具を使えた。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:fff69c5487d2e7004f8151d58b3f50d7b0df8414b7103a7525cf8c0b4b577c01 -->
+- 依頼者の決定で、この段の配備の記録をコミットしてから main を fast-forward した（記録も main に入る）。代わりに、取り込みと push の結果は main の後の develop だけのコミットで追記する。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:4bf801cc4e8dd40ad99ecd255f33ab647d9c43ee7da36ffaca81a1e1710c45ad -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
