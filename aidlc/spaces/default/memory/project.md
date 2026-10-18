@@ -205,6 +205,9 @@
 - NEVER `vendor/java-mustache-processor` の中身をこのリポジトリから直接変更しない（変更は java-mustache-processor のリポジトリ側で行う） (affirmed 2026-09-25)
 - NEVER 最後の有効な管理者を無くす操作（管理者の印を外す・利用を止める）を受け付けない (affirmed 2026-09-30)
 - NEVER API の応答（成功の応答を含む）に、パスワードのハッシュ値・招待のトークンのハッシュ値・ロックの判定の内部の値を含めない (affirmed 2026-09-30)
+- NEVER 業務データの SQL に、利用者の入力（スキーマ名・テーブル名・カラム名・並べ替えの列・検索の値）を文字列のまま組み込まない（識別子は適用中の DSL にある名前と照らしてから引用し、値はバインド変数で渡す） (affirmed 2026-10-18)
+- NEVER 業務データの行の値（主キーの値を含む）を、アプリのログ・トレースの属性・エラー応答に含めない (affirmed 2026-10-18)
+- NEVER アクセシビリティの検査の規則を外して（`disableRules`・規則の絞り込み・要素の `exclude` など）axe の違反を通さない (affirmed 2026-10-18)
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->
@@ -226,6 +229,9 @@
 - ALWAYS 利用者の状態（停止・管理者の印）の判定は、ログインの照合・トークンの更新・アクセストークンの認証のすべてでサーバー側で行い、画面で操作を隠すことを代わりにしない (affirmed 2026-09-30)
 - ALWAYS 利用者の権限・状態を変える管理の操作（管理者の印の付け外し・利用停止と再開・ロックの解除）は、操作した人・対象の利用者・結果を監査に残す（拒否した操作を含めるかは要件で決める） (affirmed 2026-09-30)
 - ALWAYS 役割・権限による判定は、API ごとにサーバー側で行い、メニュー・画面の出し分けを代わりにしない (affirmed 2026-10-04)
+- ALWAYS 主キーの無いテーブルとビューの行の更新・削除は、画面で操作を隠すことに頼らず、サーバー側で拒否する (affirmed 2026-10-18)
+- ALWAYS カラムの主権限が NONE（読めない）のカラムは、業務データの API の応答に含めない（画面で隠すことを代わりにしない） (affirmed 2026-10-18)
+- ALWAYS 対象DB へ書き込む場合は、書き込みの接続と資格情報を読み取りと分けて環境変数（`.env`）だけから受け取り、書き込みのアカウントには DSL の対象のスキーマの行の操作（`SELECT`・`INSERT`・`UPDATE`・`DELETE`）だけを与え、DDL の権限を与えない (affirmed 2026-10-18)
 ## Corrections
 
 <!-- Project-specific corrections from human feedback. -->
@@ -457,3 +463,6 @@
 - 知識ベースが UNVERIFIED のため再利用の選択肢は出さず、依頼者は Full rescan を選んだ。深さ Standard で、開発担当は全体を把握したうえで今回の Intent（業務データの一覧・詳細、ロールの権限の当て方、持ち越し）に関わる 77 パス・16 部品を深く読んだため、記録上の範囲は kind: partial とし ./ を analyzed.paths に入れない（前回までと同じ扱い）。 (learned 2026-10-16) <!-- cid:261016-business-data-views:reverse-engineering:e244ed64b85c53f89b925bc65dc5cd58754398f5c6465360e0d7a0c8264e3698 -->
 - 比べた結果は NARROWER。前回の深い範囲（版の定義・Dockerfile・CI・dependabot・k6 の台本・DSL の上限・木の部品など19パス、部品 frontend-app-layout-i18n・frontend-feature-roletransfer・container-runtime・perf-and-monitoring）は流し読みに下がった。 (learned 2026-10-16) <!-- cid:261016-business-data-views:reverse-engineering:80294450d0b9c45b8f1d3cce1ac6d47e363ce7adcfc2f50646017683682be9e9 -->
 - アーキテクトが開発担当の記録を確かめ直し、境界テストは 18 個、画面の機能は 12、access には境界テストがある（前の K-38 の誤り）、AuditEventType は 34 個と訂正して timestamp に記録した。所見は K-49〜K-61 とした。 (learned 2026-10-16) <!-- cid:261016-business-data-views:reverse-engineering:90c3ea1ba186f1a776f96deb68f925c105aaa2152d78dedb22f25714e2c87e6f -->
+- 再実行のため、リードの論点 P1〜P14 と支援役3名の追加（品質 Q1〜Q4、開発 P15〜P18、セキュリティ S1〜S3）のうち、チームの進め方に当たるものだけを 14 問にまとめた。業務データの書き込みを範囲に入れるか・F2 を入れるか・memory.peak の物差しそのもの・監査の中身は要件定義に回し、書き込み（Q5）と F2 の縮める側（Q13）は「入れたときだけ当たる」決まりとして尋ねた。classic の範囲で scope-definition が SKIP のため、F2 を入れるかは要件定義で決めると「決まっていること」に書いた。 (learned 2026-10-18) <!-- cid:261016-business-data-views:practices-discovery:531a2f02d74129048eb7448aee58e84909386b0b88d88f38c21442c2c94dea3a -->
+- 答えの記録（aidlc engine log answer）は1回の依頼者の返事につき1回しか受け付けられず、4問ずつ尋ねた4回の返事のうち最初の1回を「Q1: A」だけで記録した。Q2〜Q14 の答え（すべて A）は質問のファイルの [Answer] とまとめの確認に残っている。複数の問いをまとめて尋ねたときは、返事ごとに全問の答えを1回で記録する。 (learned 2026-10-18) <!-- cid:261016-business-data-views:practices-discovery:ef0c86ddbdddc5db85a3ea3458b1ce61c1515e692574f495c5e3f7470d2941f4 -->
+- 支援役の異論3件を問いの選択肢に取り込んだ: 開発の「見せないカラムの制約は主権限 NONE に限る」（Q4）、開発・セキュリティの「SQL_ の除外を引用の部品に限る形は効かない」（Q6、組み立てて実行する部品を1つに閉じ ArchUnit で絞る形）、セキュリティの「主キーを道に置くとトレースの属性に残る」（Q7、道の扱いは設計で決める）、品質の「不安定なテストの直す前の失敗を必須にすると進めない」（Q11、二段）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:practices-discovery:bdfba4e6aba3caa686624b1baeaa0ddeaf6af944e62ba1af74b9b4add48061d2 -->
