@@ -1,0 +1,13 @@
+{
+  "stage": "functional-design",
+  "unit": "u4-a11y-carryover",
+  "upstream_ids": ["AC4.1.1", "AC4.1.2", "AC4.1.3", "AC4.1.4", "AC4.1.5", "AC4.1.6"],
+  "coverage": [
+    { "id": "AC4.1.1", "status": "OK", "target": "部分: functional-spec.md D1〜D5・D8・F2（名前の関数と、利用者・グループ・ロールの管理の一覧の行の「操作」の名前）と D10b・F5（行の「操作」のトリガーが label-content-name-mismatch の passes に入ることの E2E の確かめ）。業務データの一覧の行の操作の名前は U3 u3-businessdata-screens" },
+    { "id": "AC4.1.2", "status": "OK", "target": "functional-spec.md D7・F1（固定先 b0a1e79 の専用のコミット、辿れること・lockfile の差・hasInstallScript の記録）と D11・F6（依頼（5）を取り込むときの2回目の更新）" },
+    { "id": "AC4.1.3", "status": "OK", "target": "functional-spec.md D10・D10a・D10b・D10c・D12・F5（axe-core 4.14 以降への引き上げ、ignore の外し、REQUIRED_RULES の足し、対象のトリガーが規則の passes に入り incomplete を合格に数えないこと、E2E 全件の通過と違反 0 件・件数・版が1つ）" },
+    { "id": "AC4.1.4", "status": "OK", "target": "functional-spec.md D6・D9・D10c・D11・F3・F4（E2E 080 の違反の部品の記録、トップバーの名前の直し、2語の氏名の利用者でのトップバーのトリガーの passes の確かめ、make-you-chic-ui の部品の違反の依頼）" },
+    { "id": "AC4.1.5", "status": "OK", "target": "functional-spec.md D11・F6 と 6節 G4・8節（上流が間に合わないときの扱い、持ち越すときの ignore の理由と外す時期）" },
+    { "id": "AC4.1.6", "status": "Deferred", "target": "U3 u3-businessdata-screens（業務データの画面の axe の E2E）。U4 は functional-spec.md D10・F5 で、axe-core 4.14 の下で通ることを B7 で確かめる" }
+  ]
+}

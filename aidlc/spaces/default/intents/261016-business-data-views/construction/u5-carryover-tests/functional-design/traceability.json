@@ -1,0 +1,16 @@
+{
+  "stage": "functional-design",
+  "unit": "u5-carryover-tests",
+  "upstream_ids": ["FR15", "FR15.1", "FR15.2", "FR16", "FR16.1", "FR16.2", "FR16.3", "FR16.4"],
+  "coverage": [
+    { "id": "FR15", "status": "OK", "target": "BR1.1, BR1.2, BR1.3, BR1.4, BR1.5, BR1.6, BR2.1, BR2.2, BR2.3, BR2.4, BR2.5" },
+    { "id": "FR15.1", "status": "OK", "target": "BR1.1, BR1.2, BR1.3, BR1.4, BR2.1, BR2.2, BR2.3" },
+    { "id": "FR15.2", "status": "OK", "target": "BR1.5, BR1.6, BR2.4, BR2.5（先の保存の監査を特定して止める待ち合わせで入れ替えた順を作り、上限で放されたら失敗にする。二段の確かめはコード生成で行い、記録を Build and Test でたどる）" },
+    { "id": "FR16", "status": "OK", "target": "BR3.1, BR3.2, BR3.3, BR3.4, BR3.5, BR4.1, BR4.2, BR4.3（測りと試しは Build and Test で行う）" },
+    { "id": "FR16.1", "status": "OK", "target": "BR3.1, BR3.4（測りは Build and Test で行う）" },
+    { "id": "FR16.2", "status": "OK", "target": "BR3.2, BR3.3（測りは Build and Test で行う）" },
+    { "id": "FR16.3", "status": "OK", "target": "BR4.1, BR4.2, BR4.3（PERF_DB_URL の効きと RETENTION_TIME の渡し方をコード生成で確かめ、試しは Build and Test の使い捨ての環境で行い、取り込むかはその時点で諮る）" },
+    { "id": "FR16.4", "status": "OK", "target": "BR3.5（判定は Build and Test で行う）" }
+  ],
+  "reverse": []
+}
