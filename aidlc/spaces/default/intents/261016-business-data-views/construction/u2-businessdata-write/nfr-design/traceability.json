@@ -1,0 +1,43 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-businessdata-write",
+  "upstream_ids": [
+    "NFR1.4", "NFR1.5", "NFR1.6",
+    "NFR2.6", "NFR2.7", "NFR2.8", "NFR2.9",
+    "NFR3.4", "NFR3.5", "NFR3.6",
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.7", "NFR4.9", "NFR4.10", "NFR4.11", "NFR4.12", "NFR4.13", "NFR4.14", "NFR4.15", "NFR4.16",
+    "NFR7.4", "NFR7.5", "NFR7.6",
+    "NFR8.4", "NFR8.5", "NFR8.6"
+  ],
+  "coverage": [
+    { "id": "NFR1.4", "status": "OK", "target": "performance-design.md 1節・2節・4節（文の流れ、p95 1 秒の予算、bizCreate・bizUpdate・bizDelete）。合否は Performance Validation" },
+    { "id": "NFR1.5", "status": "OK", "target": "performance-design.md 1節・2節・4節（違反の道のセーブポイントへの戻しと確かめの1文、bizWritePoolLimit）、scalability-design.md 3節" },
+    { "id": "NFR1.6", "status": "OK", "target": "performance-design.md 3節（256 文字ごとに締め切りを見る、超えは最大 0.05 ms、実時間の線 400 ms、確かめの入力は ((a+)+)+c と (.*a){12}（F4: A））" },
+    { "id": "NFR2.6", "status": "OK", "target": "scalability-design.md 1節、logical-components.md 1節 L9〜L11・3節（内部DB 1・書き込み 1・読み取り 0、セーブポイントと connectionInitSql は同じ1本の中）" },
+    { "id": "NFR2.7", "status": "OK", "target": "scalability-design.md 2節・3節（プール 5、合格の条件、上限を 10 に上げる案は MySQL では採らない（F1: A））。合否は Performance Validation" },
+    { "id": "NFR2.8", "status": "OK", "target": "scalability-design.md 4節（W10 のヒープの裏付け、bizCreateLarge、memory.peak と anon を基準の値と並べる、perf の MySQL のメモリは Infrastructure Design（F1: A））" },
+    { "id": "NFR2.9", "status": "OK", "target": "scalability-design.md 5節（見積もり、R-03 の既知の制約と内部DB の大きさの基準の値（Q7: A））。実測は Performance Validation" },
+    { "id": "NFR3.4", "status": "OK", "target": "performance-design.md 4節（3種類で1つずつ流して並べる、U1 の F1: A の対象DB の設定）" },
+    { "id": "NFR3.5", "status": "OK", "target": "reliability-design.md 2節・3節（段で引く番号の表、件数は一致した行で useAffectedRows=false を明示、セーブポイント + READ COMMITTED（Q2: A））" },
+    { "id": "NFR3.6", "status": "OK", "target": "reliability-design.md 6節（PG は UTC の OffsetDateTime・OffsetTime、MySQL・MariaDB は connectionInitSql の SET time_zone（Q3: A）、秒の端数は検証で拒む（Q6: A））" },
+    { "id": "NFR4.1", "status": "OK", "target": "security-design.md 1節、logical-components.md 1節 L6・L7・2節（RowSqlExecutor だけが組み立てる、主キーの名前を渡して鍵を読む）" },
+    { "id": "NFR4.2", "status": "OK", "target": "security-design.md 2節（非検査例外もメソッドの中で受ける・結果の型の toString を伏せる（U1 R-02 を先に避ける）、監査の失敗の ERROR に例外を付けない）、logical-components.md 3節" },
+    { "id": "NFR4.3", "status": "OK", "target": "security-design.md 3節、logical-components.md 1節 L11（名前つきの書き込みのプール、DML だけの付与、PG の TEMPORARY を PUBLIC から取り上げる（F2: A））" },
+    { "id": "NFR4.4", "status": "OK", "target": "security-design.md 4節（文ごと 5 秒、通信の待ち 10 秒をプールの設定で付ける（Q3: A））、reliability-design.md 5節（最悪の時間の読み替え（Q4: A））" },
+    { "id": "NFR4.7", "status": "OK", "target": "security-design.md 5節、performance-design.md 3節（締め切りを見る包み、値ごと 100 ms・合計 300 ms、確かめの入力（F4: A））" },
+    { "id": "NFR4.9", "status": "OK", "target": "security-design.md 6節（4 MiB・64 KB・10,000 字・1,000 字・秒の端数、R-04 の手当て（Q7: A））" },
+    { "id": "NFR4.10", "status": "OK", "target": "security-design.md 7節" },
+    { "id": "NFR4.11", "status": "OK", "target": "security-design.md 3節、logical-components.md 1節 L11" },
+    { "id": "NFR4.12", "status": "OK", "target": "reliability-design.md 2節・5節・7節（段で分ける表（U1 R-01 を先に避ける）、止まったときの実測、失敗した接続は管理者の後に捨てる（U1 R-04 を先に避ける））、logical-components.md 1節 L8〜L10" },
+    { "id": "NFR4.13", "status": "OK", "target": "security-design.md 8節、logical-components.md 1節 L5・L12（切り詰めは businessdata の側、AuditEvent の確かめは変えない（承認の場の U2 R-01））" },
+    { "id": "NFR4.14", "status": "OK", "target": "security-design.md 8節" },
+    { "id": "NFR4.15", "status": "OK", "target": "reliability-design.md 4節（AuditResult に UNKNOWN を足す（Q5: A）、W7 の確定の途中の時間切れで行が保存されていた根拠）、observability-design.md 2節" },
+    { "id": "NFR4.16", "status": "OK", "target": "部分: security-design.md 3節（W5 で表ごとの GRANT が効くことを確かめた）。付与の範囲と初期化の台本は Infrastructure Design" },
+    { "id": "NFR7.4", "status": "OK", "target": "performance-design.md 5節" },
+    { "id": "NFR7.5", "status": "OK", "target": "security-design.md 9節（必須のテストに、一時の表・非検査例外・生成された鍵・秒の端数・DB が拒む値・最大の本文を足す）" },
+    { "id": "NFR7.6", "status": "OK", "target": "security-design.md 9節" },
+    { "id": "NFR8.4", "status": "OK", "target": "observability-design.md 1節（ログの1か所、キーに stage を足す、業務データの出来事の監査の失敗の ERROR から detail・主キー・例外を外す）" },
+    { "id": "NFR8.5", "status": "OK", "target": "部分: observability-design.md 2節（区画の中身を決めた）。式は Observability Setup" },
+    { "id": "NFR8.6", "status": "OK", "target": "部分: observability-design.md 3節（見立てと確かめ方を決めた）。実測は Observability Setup" }
+  ]
+}

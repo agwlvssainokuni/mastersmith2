@@ -1,0 +1,35 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-a11y-carryover",
+  "upstream_ids": [
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9",
+    "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4", "NFR5.5",
+    "NFR6.1", "NFR6.2",
+    "NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR7.5", "NFR7.6", "NFR7.7"
+  ],
+  "coverage": [
+    { "id": "NFR4.1", "status": "N/A", "target": "上流の SQL の組み立ての要件。U4 は SQL を作らない" },
+    { "id": "NFR4.2", "status": "OK", "target": "security-design.md 3節（ログ・console・トレースの呼び出しの検索）、logical-components.md L1・L2" },
+    { "id": "NFR4.3", "status": "N/A", "target": "上流の対象DB の書き込みの接続の要件。U4 は対象DB を使わない" },
+    { "id": "NFR4.4", "status": "N/A", "target": "上流の対象DB の問い合わせの時間の上限の要件。U4 は対象DB を使わない" },
+    { "id": "NFR4.5", "status": "OK", "target": "security-design.md 1節（target の除去）・2節（要素の鍵）、logical-components.md L3・L4" },
+    { "id": "NFR4.6", "status": "OK", "target": "security-design.md 3節（文字列として作る、性質のテスト）" },
+    { "id": "NFR4.7", "status": "OK", "target": "security-design.md 1節（json の報告の秘密の確かめに値を足す）" },
+    { "id": "NFR4.8", "status": "OK", "target": "security-design.md 4節（依存の確かめの4項目）" },
+    { "id": "NFR4.9", "status": "OK", "target": "security-design.md 4節（固定先を上げる手順）" },
+    { "id": "NFR5.1", "status": "OK", "target": "security-design.md 5節（REQUIRED_RULES の足し、20 組）" },
+    { "id": "NFR5.2", "status": "OK", "target": "security-design.md 5節、logical-components.md 2節（KNOWN_VIOLATIONS は空のまま）" },
+    { "id": "NFR5.3", "status": "OK", "target": "logical-components.md 3節（7区分と下限）、L5" },
+    { "id": "NFR5.4", "status": "OK", "target": "logical-components.md L6・3節の手順1、security-design.md 2節（試しの前の区分の確かめ）" },
+    { "id": "NFR5.5", "status": "OK", "target": "security-design.md 5節（getByRole の name で確かめる）" },
+    { "id": "NFR6.1", "status": "OK", "target": "security-design.md 6節（文言の鍵と英語の先頭の空白）" },
+    { "id": "NFR6.2", "status": "OK", "target": "security-design.md 6節、logical-components.md L2（空の氏名）" },
+    { "id": "NFR7.1", "status": "OK", "target": "performance-design.md 1節（純粋な関数、props・状態・API を変えない）" },
+    { "id": "NFR7.2", "status": "OK", "target": "performance-design.md 3節（基準 232 件・10分35秒、1.5 倍の目安）" },
+    { "id": "NFR7.3", "status": "OK", "target": "performance-design.md 4節（verify と CI の時間の実測）" },
+    { "id": "NFR7.4", "status": "OK", "target": "security-design.md 7節（fast-check の性質のテスト）" },
+    { "id": "NFR7.5", "status": "OK", "target": "security-design.md 7節（名前の検索での洗い出し）" },
+    { "id": "NFR7.6", "status": "OK", "target": "security-design.md 7節（説明のテストを書き換えずに通す）" },
+    { "id": "NFR7.7", "status": "OK", "target": "security-design.md 7節（カバレッジの下限、除外を増やさない）" }
+  ]
+}

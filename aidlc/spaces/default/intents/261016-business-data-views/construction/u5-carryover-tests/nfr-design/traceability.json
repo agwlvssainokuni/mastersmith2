@@ -1,0 +1,15 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-carryover-tests",
+  "upstream_ids": ["NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9", "NFR7.1", "NFR7.2", "NFR7.3"],
+  "coverage": [
+    { "id": "NFR4.5", "status": "OK", "target": "security-design.md S2 資格情報を持つ一時ファイル（S2.1 一覧・S2.2 決まり）" },
+    { "id": "NFR4.6", "status": "OK", "target": "security-design.md S2.2（記録に含めない対象・数値と時刻だけ）、S1.2（db_url は資格情報の無い H2 の URL）、S3（mastersmith.mv.db だけを読む）" },
+    { "id": "NFR4.7", "status": "OK", "target": "security-design.md S1 PERF_DB_URL の形の確かめ（S1.1 方針・S1.2 受け付ける形・S1.3 確かめ方）" },
+    { "id": "NFR4.8", "status": "OK", "target": "security-design.md S3（指標の公開は一時の app.env だけ、待ち受けの口は 127.0.0.1:18080）、logical-components.md 2 失敗の範囲と分け方" },
+    { "id": "NFR4.9", "status": "OK", "target": "security-design.md S3 記録のループ（読むだけ・権限を広げない・cgroup v2 の確かめ・--force-recreate）" },
+    { "id": "NFR7.1", "status": "OK", "target": "security-design.md S4.1 出してよいもの・S4.2 Actor の toString（Q2: A）・S4.3 置き場と依存の向き、logical-components.md 1 部品の一覧" },
+    { "id": "NFR7.2", "status": "OK", "target": "logical-components.md 3 共有の資源と後始末、4 入れ替えの待ち合わせの口（4.1 口の形・4.2 振る舞い・4.3 テストでの使い方。Q1: A）" },
+    { "id": "NFR7.3", "status": "OK", "target": "security-design.md S4.4 時間に頼らない、logical-components.md 4.3" }
+  ]
+}

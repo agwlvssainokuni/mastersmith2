@@ -1,0 +1,38 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-businessdata-read",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR1.3",
+    "NFR2.1", "NFR2.2", "NFR2.3", "NFR2.4", "NFR2.5",
+    "NFR3.1", "NFR3.2", "NFR3.3",
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.8",
+    "NFR7.1", "NFR7.2", "NFR7.3",
+    "NFR8.1", "NFR8.2", "NFR8.3"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "performance-design.md 1節・2節・3節（問い合わせの形、主キーを先に読む形、時間の予算）。合否は Performance Validation で、表が入る対象DB の設定で測る（F1: A）" },
+    { "id": "NFR1.2", "status": "OK", "target": "performance-design.md 4節（判定の決まりはそのまま、種の台本の下書き、対象DB の設定の記録、借りる待ちの時間切れの累計を読む）" },
+    { "id": "NFR1.3", "status": "OK", "target": "performance-design.md 1節・3節（件数と深いページを測りに含める）。超える場面は Performance Validation で Not Met として諮る（F1: A）" },
+    { "id": "NFR2.1", "status": "OK", "target": "scalability-design.md 1節、performance-design.md 4節（Q5: A の種の形）" },
+    { "id": "NFR2.2", "status": "OK", "target": "scalability-design.md 2節、performance-design.md 1節（LIMIT と setMaxRows）" },
+    { "id": "NFR2.3", "status": "OK", "target": "scalability-design.md 3節、logical-components.md 1節 L8・L9・3節" },
+    { "id": "NFR2.4", "status": "OK", "target": "scalability-design.md 4節（プール 5 のまま、合否の条件、F1: A の対象DB の設定）" },
+    { "id": "NFR2.5", "status": "OK", "target": "scalability-design.md 5節（SUBSTRING の絞り、T5 のヒープの見積もり、R-03 の基準の値の記録）、performance-design.md 1節" },
+    { "id": "NFR3.1", "status": "OK", "target": "reliability-design.md 1節・3節・4節（型ごとの差、BR7.9 の型の一覧、bit と空間の型は BINARY と同じ扱い（F3: A））" },
+    { "id": "NFR3.2", "status": "OK", "target": "performance-design.md 4節・7節（3種類で測る、試しの値を基準として並べる）" },
+    { "id": "NFR3.3", "status": "OK", "target": "reliability-design.md 3節（PG は JDBC の型と timetz の AT TIME ZONE、MySQL・MariaDB は SET time_zone。Q2: A の2つ目の形）" },
+    { "id": "NFR4.1", "status": "OK", "target": "security-design.md 1節・2節、logical-components.md 1節 L10〜L13" },
+    { "id": "NFR4.2", "status": "OK", "target": "security-design.md 3節（例外はメソッドの中で捨てる、T3 の根拠）、logical-components.md 3節" },
+    { "id": "NFR4.3", "status": "OK", "target": "部分（読み取りの側）: security-design.md 4節、logical-components.md 1節 L8・L9。書き込みの接続の分離は U2" },
+    { "id": "NFR4.4", "status": "OK", "target": "security-design.md 5節、logical-components.md 1節 L9・L14、reliability-design.md 5節（貸すときの setNetworkTimeout は F2: A、実測）" },
+    { "id": "NFR4.5", "status": "OK", "target": "security-design.md 6節（64KB・1,000 字・page 1〜1,000,000・CHOICE の重複、413 が先）" },
+    { "id": "NFR4.6", "status": "OK", "target": "security-design.md 7節" },
+    { "id": "NFR4.8", "status": "OK", "target": "reliability-design.md 2節・5節（借りる失敗はすべて UNAVAILABLE、分類の表、F2: A の作りで3種類とも 25 秒以内に 503 の実測）、logical-components.md 1節 L9・L10・L12" },
+    { "id": "NFR7.1", "status": "OK", "target": "security-design.md 8節（足す境界のテスト）" },
+    { "id": "NFR7.2", "status": "OK", "target": "security-design.md 8節（部分一致のエスケープの関数を足す）" },
+    { "id": "NFR7.3", "status": "OK", "target": "performance-design.md 5節" },
+    { "id": "NFR8.1", "status": "OK", "target": "部分（業務データの 403 が数に入ること）: observability-design.md 3節。しきい値の見直しは Observability Setup" },
+    { "id": "NFR8.2", "status": "OK", "target": "observability-design.md 1節、logical-components.md 1節 L3" },
+    { "id": "NFR8.3", "status": "OK", "target": "部分（区画の中身）: observability-design.md 2節・3節。式の確かめと R-05 の実測は Observability Setup" }
+  ]
+}
