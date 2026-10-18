@@ -1,0 +1,27 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-carryover-tests",
+  "upstream_ids": ["FR15", "FR15.1", "FR15.2", "FR16", "FR16.1", "FR16.2", "FR16.3", "FR16.4", "NFR1", "NFR2", "NFR3", "NFR4", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR5", "NFR6", "NFR7", "NFR8"],
+  "coverage": [
+    { "id": "FR15", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3" },
+    { "id": "FR15.1", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3" },
+    { "id": "FR15.2", "status": "OK", "target": "NFR7.2" },
+    { "id": "FR16", "status": "OK", "target": "NFR4.5, NFR4.6, NFR4.7, NFR4.8, NFR4.9" },
+    { "id": "FR16.1", "status": "OK", "target": "NFR4.5, NFR4.8" },
+    { "id": "FR16.2", "status": "OK", "target": "NFR4.6, NFR4.9" },
+    { "id": "FR16.3", "status": "OK", "target": "NFR4.7" },
+    { "id": "FR16.4", "status": "OK", "target": "NFR4.5, NFR4.6" },
+    { "id": "NFR1", "status": "N/A", "target": "U5 は業務データの API を持たず、応答時間の目標が無い（dslMixed の判定は FR16.4 で Build and Test が持つ）" },
+    { "id": "NFR2", "status": "N/A", "target": "U5 は対象DB の行を読まず、規模と読む行の上限に触れない" },
+    { "id": "NFR3", "status": "N/A", "target": "#7 は内部DB（H2）のテストで、対象DB の3種類の結合テストに触れない" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.5, NFR4.6, NFR4.7, NFR4.8, NFR4.9" },
+    { "id": "NFR4.1", "status": "N/A", "target": "業務データの SQL を組み立てない" },
+    { "id": "NFR4.2", "status": "N/A", "target": "業務データの行の値を扱わない" },
+    { "id": "NFR4.3", "status": "N/A", "target": "対象DB へ書き込む接続を使わない" },
+    { "id": "NFR4.4", "status": "N/A", "target": "対象DB への問い合わせを足さない" },
+    { "id": "NFR5", "status": "N/A", "target": "画面を変えない。AdminForbiddenProvider.test.tsx の直しは確かめの順だけで、axe の検査は変えない" },
+    { "id": "NFR6", "status": "N/A", "target": "画面の文言・表示名・誤りのメッセージを変えない" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3" },
+    { "id": "NFR8", "status": "N/A", "target": "警報に触れない（ms-forbidden の見直しは Observability Setup）" }
+  ]
+}

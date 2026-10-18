@@ -1,0 +1,15 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-a11y-carryover",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8"],
+  "coverage": [
+    { "id": "NFR1", "status": "N/A", "target": "応答時間は業務データの API の要件で、U4 は API を持たない ui の単位。名前の関数の負荷は NFR7.1 で扱う" },
+    { "id": "NFR2", "status": "N/A", "target": "規模（対象DB のテーブル・カラム・行の数）は API と対象DB に当たる要件で、U4 は読み上げの名前と E2E の確かめだけを変える" },
+    { "id": "NFR3", "status": "N/A", "target": "U4 は対象DB を使わない" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.2, NFR4.5, NFR4.6, NFR4.7, NFR4.8, NFR4.9" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3, NFR5.4, NFR5.5" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.2" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3, NFR7.4, NFR7.5, NFR7.6, NFR7.7" },
+    { "id": "NFR8", "status": "N/A", "target": "警報 ms-forbidden のしきい値は業務データの API の 403 に当たり、Observability Setup が受け持つ。U4 は API を変えない" }
+  ]
+}

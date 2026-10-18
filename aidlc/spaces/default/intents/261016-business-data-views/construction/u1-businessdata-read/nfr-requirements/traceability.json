@@ -1,0 +1,32 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u1-businessdata-read",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4"
+  ],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1, NFR1.2, NFR1.3" },
+    { "id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4, NFR2.5" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2, NFR3.3" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4, NFR4.5, NFR4.6, NFR4.8" },
+    { "id": "NFR5", "status": "N/A", "target": "この単位に画面が無い。WCAG と axe の確かめは U3・U4 の受け持ち" },
+    { "id": "NFR6", "status": "N/A", "target": "表示名を利用者の言語で返すことは機能設計の BR で済み、誤りは code で返して文は U3 の画面が出すため、この単位に NFR の目標が無い" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1, NFR8.2, NFR8.3" },
+    { "id": "NFR4.1", "status": "OK", "target": "NFR4.1" },
+    { "id": "NFR4.2", "status": "OK", "target": "NFR4.2" },
+    { "id": "NFR4.3", "status": "OK", "target": "NFR4.3" },
+    { "id": "NFR4.4", "status": "OK", "target": "NFR4.4, NFR4.8" }
+  ]
+}

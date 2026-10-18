@@ -1,0 +1,19 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u3-businessdata-screens",
+  "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR5", "NFR6", "NFR7", "NFR8"],
+  "coverage": [
+    { "id": "NFR1", "status": "OK", "target": "NFR1.7, NFR1.8, NFR1.9, NFR1.10（部分: 画面の側の時間と要求の数。API の応答時間は U1・U2）" },
+    { "id": "NFR2", "status": "OK", "target": "NFR2.10, NFR2.11" },
+    { "id": "NFR3", "status": "OK", "target": "NFR3.7（部分: 画面は DB の種類で分岐しない。3種類の DB の振る舞いは U1・U2 の結合テスト）" },
+    { "id": "NFR4", "status": "OK", "target": "NFR4.20, NFR4.21, NFR4.22, NFR4.23, NFR4.24, NFR4.25, NFR4.26" },
+    { "id": "NFR4.1", "status": "N/A", "target": "U3 は SQL を作らない画面の単位。SQL の組み立ては U1・U2" },
+    { "id": "NFR4.2", "status": "OK", "target": "NFR4.2（部分: 画面の側。道・履歴・保存・DOM・console・E2E の記録。サーバーの側は U1・U2）" },
+    { "id": "NFR4.3", "status": "N/A", "target": "U3 は対象DB の接続と資格情報を持たない。書き込みの接続の分離は U2。E2E の資格情報の扱いは NFR4.25" },
+    { "id": "NFR4.4", "status": "N/A", "target": "問い合わせの時間の上限はサーバーの側（U1・U2）。画面は独自の時間切れを置かない（NFR1.9 で扱う）" },
+    { "id": "NFR5", "status": "OK", "target": "NFR5.6, NFR5.7, NFR5.8, NFR5.9, NFR5.10" },
+    { "id": "NFR6", "status": "OK", "target": "NFR6.3, NFR6.4" },
+    { "id": "NFR7", "status": "OK", "target": "NFR7.8, NFR7.9, NFR7.10, NFR7.11, NFR7.12, NFR7.13" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.7（部分: 403 を自動で送り直さない。ms-forbidden のしきい値は Observability Setup）" }
+  ]
+}
