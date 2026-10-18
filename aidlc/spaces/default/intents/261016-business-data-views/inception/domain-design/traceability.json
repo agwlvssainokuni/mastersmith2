@@ -1,0 +1,28 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": [
+    "US1.1", "US1.2", "US1.3", "US1.4", "US1.5",
+    "US2.1", "US2.2", "US2.3", "US2.4", "US2.5",
+    "US3.1", "US3.2", "US3.3", "US3.4", "US3.5", "US3.6",
+    "US4.1"
+  ],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "BusinessDataScreens, AppShell, BusinessData" },
+    { "id": "US1.2", "status": "OK", "target": "BusinessDataScreens, BusinessData" },
+    { "id": "US1.3", "status": "OK", "target": "BusinessDataScreens, SharedUi, BusinessData" },
+    { "id": "US1.4", "status": "OK", "target": "BusinessDataScreens, BusinessData" },
+    { "id": "US1.5", "status": "OK", "target": "BusinessDataScreens, SharedUi, BusinessData" },
+    { "id": "US2.1", "status": "OK", "target": "BusinessDataScreens, BusinessData, TargetDb" },
+    { "id": "US2.2", "status": "OK", "target": "BusinessDataScreens, SharedUi, BusinessData, TargetDb" },
+    { "id": "US2.3", "status": "OK", "target": "BusinessDataScreens, BusinessData, TargetDb" },
+    { "id": "US2.4", "status": "OK", "target": "BusinessDataScreens, BusinessData" },
+    { "id": "US2.5", "status": "OK", "target": "BusinessData" },
+    { "id": "US3.1", "status": "OK", "target": "BusinessData, RoleManagement, DslDefinition" },
+    { "id": "US3.2", "status": "OK", "target": "BusinessData, DslDefinition" },
+    { "id": "US3.3", "status": "OK", "target": "BusinessData, BusinessDataScreens, TargetDb" },
+    { "id": "US3.4", "status": "OK", "target": "AuditLog, BusinessData" },
+    { "id": "US3.5", "status": "OK", "target": "BusinessData, RoleManagement" },
+    { "id": "US3.6", "status": "OK", "target": "BusinessData, TargetDb, ApiClient" },
+    { "id": "US4.1", "status": "OK", "target": "AdminLists, SharedUi, AppShell, BusinessDataScreens" }
+  ]
+}
