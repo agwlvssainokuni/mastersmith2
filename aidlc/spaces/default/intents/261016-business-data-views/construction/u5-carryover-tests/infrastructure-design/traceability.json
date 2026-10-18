@@ -1,0 +1,15 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u5-carryover-tests",
+  "upstream_ids": ["NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9", "NFR7.1", "NFR7.2", "NFR7.3"],
+  "coverage": [
+    { "id": "NFR4.5", "status": "OK", "target": "cicd-pipeline.md 5節（一時ファイルの一覧を実物に合わせる・ホームの下の権限 700・KEEP=1 で残ることの明記と手の片付けと確かめ）・4.1節。一覧の手順書への写しはコード生成で確定（R-01）" },
+    { "id": "NFR4.6", "status": "OK", "target": "cicd-pipeline.md 4.3節（記録の列を機能設計 3節の列に限る）・5節（数値と時刻だけ、env.txt の db_url は H2 の URL だけ、文字列の検索は今回の OUT_DIR だけ）" },
+    { "id": "NFR4.7", "status": "OK", "target": "cicd-pipeline.md 4.4節（確かめの関数を一時ディレクトリを作る前の1か所で呼び、失敗したら親を止める）・4.1節（試しの環境は PERF_DB_URL を付けて作り直す、Q1: A）。空白・空の要素・重なりの規則と INIT の要否はコード生成で確定（R-02）" },
+    { "id": "NFR4.8", "status": "OK", "target": "cicd-pipeline.md 4.5節（指標の公開は一時の app.env だけ、待ち受けの口は 127.0.0.1:18080 のまま）" },
+    { "id": "NFR4.9", "status": "OK", "target": "cicd-pipeline.md 4.3節（docker exec 1回の bash のループ、追加の権限なし、秒の上限で自分で終わる、読むだけ）・4.2節（cgroup v2 のファイルを始める前に確かめる）" },
+    { "id": "NFR7.1", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の Actor の toString のテスト、補助は src/test で WAR に入らない）・7節（失敗の文に出す値）。失敗の文を組み立てる箇所の洗い出しはコード生成で確定（R-05）" },
+    { "id": "NFR7.2", "status": "OK", "target": "cicd-pipeline.md 2節（結合テストの段の RoleConcurrencyIT の2つの場合、待ち合わせは RoleConcurrencyIT にだけ @Import）・3節（二段の確かめ）。armFor の初期化と @Primary の重なりの防ぎはコード生成で確定（R-03・R-04）" },
+    { "id": "NFR7.3", "status": "OK", "target": "cicd-pipeline.md 2節（sleep を入れない、WAIT_LIMIT・Vitest・waitFor の上限を延ばさない）・3節（verify だけで統合、verify と CI の時間を試行ごとに記録）" }
+  ]
+}

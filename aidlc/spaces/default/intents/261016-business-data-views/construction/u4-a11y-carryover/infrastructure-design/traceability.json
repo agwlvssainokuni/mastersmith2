@@ -1,0 +1,35 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-a11y-carryover",
+  "upstream_ids": [
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9",
+    "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4", "NFR5.5",
+    "NFR6.1", "NFR6.2",
+    "NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR7.5", "NFR7.6", "NFR7.7"
+  ],
+  "coverage": [
+    { "id": "NFR4.1", "status": "N/A", "target": "SQL を作らない（NFR 設計と同じく当たらない）" },
+    { "id": "NFR4.2", "status": "N/A", "target": "名前の値をログ・トレースに出さないのはコードの作りで、基盤の設定は要らない。確かめは B3 のコードの検索（monitoring-design.md 6節）" },
+    { "id": "NFR4.3", "status": "N/A", "target": "書き込みの接続を使わない（NFR 設計と同じく当たらない）" },
+    { "id": "NFR4.4", "status": "N/A", "target": "対象DB への問い合わせを持たない（NFR 設計と同じく当たらない）" },
+    { "id": "NFR4.5", "status": "OK", "target": "cicd-pipeline.md 3節（鍵の関数を e2e/support の別のモジュールに置き vitest の対象に足す）・4節（試しの記録の形、選択子と値を出さない）、monitoring-design.md 6節" },
+    { "id": "NFR4.6", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の rowActionsName の性質ベースのテスト）" },
+    { "id": "NFR4.7", "status": "OK", "target": "cicd-pipeline.md 4節（json の報告の秘密の確かめに U3 の見本の値を足す）、monitoring-design.md 6節" },
+    { "id": "NFR4.8", "status": "OK", "target": "infrastructure-specification.md 1節（dist に axe-core が無いことの検索、ignore-scripts、MPL-2.0）・cicd-pipeline.md 2節（OSV-Scanner の段）・6節（Dependabot の受け方、Q1: A）" },
+    { "id": "NFR4.9", "status": "OK", "target": "infrastructure-specification.md 2節（固定先 b0a1e79 の手順と、読み取りで確かめた差。B3 の fetch で辿れることを確かめ直す）・cicd-pipeline.md 5節（fast-forward）" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md 4節（B7 で REQUIRED_RULES に label-content-name-mismatch を足す、WCAG_TAGS と 20 の表示の組は変えない）" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline.md 4節・5節（B7 で E2E の全件と vitest-axe、違反 0 件、KNOWN_VIOLATIONS は空のまま）、monitoring-design.md 2節" },
+    { "id": "NFR5.3", "status": "OK", "target": "cicd-pipeline.md 4節（区分ごとの passes の確かめ、対象 0 件は失敗）、monitoring-design.md 2節" },
+    { "id": "NFR5.4", "status": "OK", "target": "cicd-pipeline.md 4節（B3 の試しは作業フォルダでだけ、4.13 に戻したことを差で確かめる、L6 の記録の形）" },
+    { "id": "NFR5.5", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の getByRole の name の確かめ）" },
+    { "id": "NFR6.1", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の英語の busySuffix の先頭の空白）" },
+    { "id": "NFR6.2", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の空の氏名の扱い）" },
+    { "id": "NFR7.1", "status": "N/A", "target": "純粋な関数で状態・API の呼び出しを足さないのはコードの作りで、基盤の設定は要らない（monitoring-design.md 1節）" },
+    { "id": "NFR7.2", "status": "OK", "target": "monitoring-design.md 2節（E2E の件数と時間、1.5 倍の目安、caffeinate -dims と pmset）・cicd-pipeline.md 4節・8節（120 秒の読み）" },
+    { "id": "NFR7.3", "status": "OK", "target": "monitoring-design.md 2節（verify と CI の時間、42 分）・cicd-pipeline.md 1節・5節" },
+    { "id": "NFR7.4", "status": "OK", "target": "cicd-pipeline.md 2節（fast-check の性質ベースのテストを frontendTest で流し、乱数の種を記録する）" },
+    { "id": "NFR7.5", "status": "N/A", "target": "書き換えの対象の洗い出しはコード生成の計画の作業で、基盤の設定は要らない" },
+    { "id": "NFR7.6", "status": "OK", "target": "cicd-pipeline.md 2節（単体テストの段の toHaveAccessibleDescription の既存のテスト）・infrastructure-specification.md 2節（固定先 b0a1e79）" },
+    { "id": "NFR7.7", "status": "OK", "target": "cicd-pipeline.md 2節（カバレッジの段、対象と除外を変えない）・3節（vitest の対象を広げてもカバレッジの対象は src のまま）" }
+  ]
+}

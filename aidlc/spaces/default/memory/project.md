@@ -27,6 +27,8 @@
 - 単位の依存の上では先に作れても、合格の条件が後の単位の画面を含むもの（例: axe-core の引き上げは E2E の全件の通過と違反 0 件）は、Delivery Planning で前半と後半の Bolt に分け、後半を後の単位の後に置く（business-data-views で U4 を B3・B7 に分け、Units Generation のレビューの R-01 を解いた）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:delivery-planning:9bdbedc867d8d465a785327558d6bae8473198dc41964c98d89080086e4fe92c -->
 - U2・U3 では試しを文書より先に流し、前提が崩れた点を確かめてから文書を書いた（U1 では書いた後に諮り、保存し直しが要った）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:304f91ce424baf0ad3d83e9349e545aedff485f73d240dd0171bc76409f1f025 -->
 - 追加の質問のファイルを分けたとき、レビューの依頼の確かめが単位によって本体の質問のファイルと追加の質問のファイルのどちらにもまとめの確認を求め（U1 は追加、U3 は本体）、まとめの確認をもう一度取り、成果物を保存し直した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:af87bb33684bf02e53424f294d730dc8b9e3b19399c9fe600260b493d2b0685b -->
+- U4 と U5 の答えを1回の依頼者の返事で尋ねたため、記録は U4 だけが受け付けられ、U5 の Q1 はもう一度尋ねて記録した（答えの記録は返事1回につき1つ）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:4e7530b8abe67e71cbd216a4a04cbc7506b641adf86b703a6005bf2088625a0a -->
+- 捨ての試しの結果の見出しを「## Q7: A の…」にしたため、Q7 と重なる見出しとしてまとめの確認が受け付けられず、見出しを直した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:3baa6ad95a0ec5612ef06f4976642b07c97c5d09f634e6c9cb16bcf6e584f44d -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -94,6 +96,7 @@
 - 1回目の使い捨てのアプリのログの WARN 43 行を、内訳を読む前に環境を消したため取り直せなかった（project.md の「確かめの結果を見てから片付ける」の漏れ）。memory.peak の取り直しの回では、消す前に WARN を数える指示を最初から書いた。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:build-and-test:d4fc4369fcaed022ade04d4ce9cf521f0b4ef83a29f30b6a30e2957841c87eff -->
 - business-data-views の Delivery Planning の実測（約 13 分）で、全体の合計で判定している7パッケージのうち下限に足りないのは common.health（行 79.2%）だけで、audit.repository は数える行が無かった（全体の合計 行 98.0%・分岐 92.6%）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:delivery-planning:66315121a2fe2c650f99b82f388dce2204d8f77447d41e196c57016dc5f2ca7f -->
 - U1・U2・U3 で捨ての試しを先に行い、前提が崩れた点（U1 は MySQL・MariaDB の重さ、応答しない MySQL の 50 秒、bit と空間の型。U2 は perf の MySQL の OOMKilled、PG の TEMP の権限、更新できないビュー、JDK 25 で重くならない式。U3 は測り終わりの時点、T3 が代わりの案にならない）を追加の質問（F）で依頼者に確かめてから文書に反映した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:e58cc87176fd7cf5ea6590fb9bd14d2a0699f1fbe532157f332b9420b0d1b460 -->
+- U2 の Q7: A で perf の MySQL 1792m を短い捨ての試しで確かめ、プールを埋めた状態で上限に張りつき（anon 90%）、プール以外の量も見立ての約 614 MiB でなく約 840 MiB と分かったため、追加の質問 F1 で 2304m にした。U1 の文書の値は承認の場でそろえる。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:aa0de9ae089b86cd176211039de0b1f0129ba19fe23568374f780116cc2c4908 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->

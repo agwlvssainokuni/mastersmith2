@@ -1,0 +1,43 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-businessdata-write",
+  "upstream_ids": [
+    "NFR1.4", "NFR1.5", "NFR1.6",
+    "NFR2.6", "NFR2.7", "NFR2.8", "NFR2.9",
+    "NFR3.4", "NFR3.5", "NFR3.6",
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.7", "NFR4.9", "NFR4.10", "NFR4.11", "NFR4.12", "NFR4.13", "NFR4.14", "NFR4.15", "NFR4.16",
+    "NFR7.4", "NFR7.5", "NFR7.6",
+    "NFR8.4", "NFR8.5", "NFR8.6"
+  ],
+  "coverage": [
+    { "id": "NFR1.4", "status": "OK", "target": "infrastructure-specification.md 2.1（書き込みのプール）・2.2（perf の対象DB の値: MySQL 768M/2304m・MariaDB 512M/1g・PG 256MB/768m）、monitoring-design.md 3節（bizCreate・bizUpdate・bizDelete の p95 < 1000 ms）、cicd-pipeline.md 5.2・5.3（場面と setup の前提と流す順）。合否は Performance Validation" },
+    { "id": "NFR1.5", "status": "OK", "target": "cicd-pipeline.md 5.2（bizWritePoolLimit と参照先のある表を含む DSL の setup）、monitoring-design.md 3節（p95 < 1000 ms）。合否は Performance Validation" },
+    { "id": "NFR1.6", "status": "N/A", "target": "基盤に当たらない（pattern の照合の締め切りの作り）。確かめの置き場は cicd-pipeline.md 2節の段 5（jqwik の性質ベースのテスト）と段 6" },
+    { "id": "NFR2.6", "status": "OK", "target": "infrastructure-specification.md 2節（名前つきの書き込みのプール mastersmith-target-db-write、内部DB は借りている間 0 本）、cicd-pipeline.md 2.1（BusinessDataConnectionUsageIT に書き込みの DataSource の列）" },
+    { "id": "NFR2.7", "status": "OK", "target": "infrastructure-specification.md 2.1（上限 5・MASTERSMITH_TARGET_DB_WRITE_POOL_MAXIMUM_SIZE、10 に上げない）、monitoring-design.md 1節・3節（書き込みのプールの待ちの時間切れの累計 0・503 の件数 0、待ちの最大は記録だけ）、cicd-pipeline.md 5.2（上限に届く bizWritePoolLimit）" },
+    { "id": "NFR2.8", "status": "OK", "target": "infrastructure-specification.md 2.2（perf の MySQL を 2304m に上げる。F1: A）・2.4（対象DB は OOMKilled false かつ oom_kill 0 で判断。F2: A）・5節（捨ての試しの結果）、monitoring-design.md 3節（bizCreateLarge のアプリの memory.peak < 2g の 90%）、cicd-pipeline.md 5.3 の 6・7" },
+    { "id": "NFR2.9", "status": "OK", "target": "部分（記録の場）: monitoring-design.md 7節（内部DB の大きさの基準の値は Observability Setup）、cicd-pipeline.md 5.3 の 7（監査の行の数を片付けの前に記録）" },
+    { "id": "NFR3.4", "status": "OK", "target": "infrastructure-specification.md 2.2・2.3（3種類の perf の対象DB の値と、VM に収まる組み合わせ）、cicd-pipeline.md 5.3（3種類を1つずつ流す）" },
+    { "id": "NFR3.5", "status": "N/A", "target": "基盤に当たらない（3種類の DB の振る舞いと番号の表）。確かめの置き場は cicd-pipeline.md 2.1（書き込みの振る舞いの結合テスト、版を固定したイメージで CI でも毎回）" },
+    { "id": "NFR3.6", "status": "OK", "target": "infrastructure-specification.md 2.1（MySQL・MariaDB の connectionInitSql で time_zone と sql_mode を付ける。定数）" },
+    { "id": "NFR4.1", "status": "OK", "target": "cicd-pipeline.md 2節の段 5（BusinessDataBoundaryArchitectureTest の書き込みの側）・段 8（SpotBugs の SQL_ の関門と、RowSqlExecutor の書き込みのメソッドとパターン名に絞った除外。B4 の計画で承認）" },
+    { "id": "NFR4.2", "status": "N/A", "target": "基盤に当たらない（例外の通り道と値を伏せる型）。確かめの置き場は cicd-pipeline.md 2.1（BusinessDataWriteSecretLeakIT とトレースの属性の結合テスト）。ログに出さないものは monitoring-design.md 4節" },
+    { "id": "NFR4.3", "status": "OK", "target": "infrastructure-specification.md 1.1（書き込みの資格情報を .env だけから受け取る口）・2.1（名前つきの別のプール、読み取り専用にしない）・3節（mastersmith_writer の 03-writer-account.sh、DML だけ、PG の REVOKE TEMPORARY）・4節（配備した見本の PG への適用）、cicd-pipeline.md 2.1（実際の見本の台本で起動したコンテナの結合テスト。Q6: A）・5.1（E2E は実行ごとの一時のロール。Q5: A）" },
+    { "id": "NFR4.4", "status": "OK", "target": "infrastructure-specification.md 1.1（MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE、既定 5s）・2.1（通信の待ちを書き込みの上限 + 5 秒で計算）、cicd-pipeline.md 2節の段 5（計算の単体テスト）" },
+    { "id": "NFR4.7", "status": "N/A", "target": "基盤に当たらない（pattern の照合の時間の上限の作り）。確かめの置き場は cicd-pipeline.md 2節の段 5・6" },
+    { "id": "NFR4.9", "status": "OK", "target": "部分（本文の上限の設定と README）: infrastructure-specification.md 6節（413 と \\u のエスケープの注意を README に足す）。道ごとの上限の値（4 MiB・64 KB）と境界のテストは B4（cicd-pipeline.md 4節の common.web の扱い）" },
+    { "id": "NFR4.10", "status": "N/A", "target": "基盤に当たらない（認可・一括代入・IDOR）。確かめの置き場は cicd-pipeline.md 2節の段 5（ApiAccessArchitectureTest）と段 6" },
+    { "id": "NFR4.11", "status": "OK", "target": "infrastructure-specification.md 1.1（書き込みの資格情報の片方だけなら項目の名前だけの WARN・409・起動と読み取りは続ける）、monitoring-design.md 4節（設定の欠けの WARN）、cicd-pipeline.md 2.1（両方・片方・無しの結合テスト）" },
+    { "id": "NFR4.12", "status": "N/A", "target": "基盤に当たらない（失敗の分け方と例外の通り道）。確かめの置き場は cicd-pipeline.md 2.1（書き込みの振る舞い・応答しない対象DB の結合テスト）。ログのキーは monitoring-design.md 4節" },
+    { "id": "NFR4.13", "status": "OK", "target": "infrastructure-specification.md 1節（内部DB の V13: target_schema・target_table・work_role_id、前進だけ・後方互換・戻しはイメージだけ）、cicd-pipeline.md 2.1（移行の後方互換の結合テスト）・6節（配備の前のバックアップ）" },
+    { "id": "NFR4.14", "status": "N/A", "target": "基盤に当たらない（主キー・ビューの 409 の監査の範囲）。確かめの置き場は cicd-pipeline.md 2.1（監査の結合テスト）" },
+    { "id": "NFR4.15", "status": "OK", "target": "monitoring-design.md 1節（監査の UNKNOWN の件数を、確定したか分からない書き込みの手がかりとして数える）、cicd-pipeline.md 2.1（確定の途中で止める中継の結合テスト）" },
+    { "id": "NFR4.16", "status": "OK", "target": "infrastructure-specification.md 3.2（絞れることを試しの W5 で確かめた。見本はスキーマ全体に DML を付与し、PG は後から作る表と sequence にも付ける。残る広さと表ごとに絞る書き方を README に書く。Q3: A）、cicd-pipeline.md 5.2（bizPrepare の種への付与）" },
+    { "id": "NFR7.4", "status": "OK", "target": "cicd-pipeline.md 3節（B4 の後と Build and Test で verify と CI の時間を記録、見本の初期化の台本の IT で増える約 1 分も実測、42 分を超えたら諮る）" },
+    { "id": "NFR7.5", "status": "OK", "target": "cicd-pipeline.md 2.1（3種類の対象DB でクラスごとのスキーマを作って消し、別の接続で読み直す。見本の初期化の台本の IT）・4節（audit.repository・common.web に手を入れたら packagesJudgedByTotal から外す）" },
+    { "id": "NFR7.6", "status": "N/A", "target": "基盤に当たらない（性質ベースのテストの中身）。確かめの置き場は cicd-pipeline.md 2節の段 5（jqwik、失敗のときの乱数の種を残す）" },
+    { "id": "NFR8.4", "status": "OK", "target": "monitoring-design.md 4節（WARN の1行、purpose・stage・reason・sqlState・vendorCode・exceptionClass だけ、監査の書き込みの失敗の ERROR から業務データの値と cause を外す）" },
+    { "id": "NFR8.5", "status": "OK", "target": "部分（区画の中身）: monitoring-design.md 5節（書き込みの3本の p95・409 と 503 の数・書き込みのプール）。区画を書いて式を確かめるのは Observability Setup" },
+    { "id": "NFR8.6", "status": "OK", "target": "部分（見立てと確かめ方）: monitoring-design.md 2節（ms-pool-pending・ms-5xx-ratio・ms-audit-fail・ms-audit-slow・ms-forbidden・ms-error-logs が書き込みを拾うかの実測。先に1回書いてから式を流す）。実測は Observability Setup" }
+  ]
+}

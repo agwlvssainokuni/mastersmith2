@@ -1,0 +1,38 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-businessdata-read",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR1.3",
+    "NFR2.1", "NFR2.2", "NFR2.3", "NFR2.4", "NFR2.5",
+    "NFR3.1", "NFR3.2", "NFR3.3",
+    "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.8",
+    "NFR7.1", "NFR7.2", "NFR7.3",
+    "NFR8.1", "NFR8.2", "NFR8.3"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "infrastructure-specification.md 2.1・2.2（perf の対象DB の表が入る設定: MySQL 768M/1792m・MariaDB 512M/1g・PG 256MB/768m、暖め、記録）、monitoring-design.md 3節（p95 < 1000 ms の SLO）、cicd-pipeline.md 5.2・5.3（場面と流す順）。合否は Performance Validation" },
+    { "id": "NFR1.2", "status": "OK", "target": "cicd-pipeline.md 5.2（1回の繰り返しに要求1つ、iteration_duration で判定、k6 inspect）、monitoring-design.md 3節" },
+    { "id": "NFR1.3", "status": "OK", "target": "cicd-pipeline.md 5.2（件数と深いページを含む bizSearchLast。主キー以外の並べ替えを足す R-05）、infrastructure-specification.md 2.1" },
+    { "id": "NFR2.1", "status": "OK", "target": "cicd-pipeline.md 5.2（bizPrepare の種の台本、100 カラム × 100,000 行）、infrastructure-specification.md 3節（種の台本の持ち主 U1）" },
+    { "id": "NFR2.2", "status": "N/A", "target": "基盤に当たらない（LIMIT と setMaxRows の作り）。確かめの置き場は cicd-pipeline.md 2節の段 6（結合テスト）" },
+    { "id": "NFR2.3", "status": "OK", "target": "infrastructure-specification.md 2節（読み取りのプール 1本・内部DB 0本の間）、cicd-pipeline.md 2節の段 6（BusinessDataConnectionUsageIT）" },
+    { "id": "NFR2.4", "status": "OK", "target": "infrastructure-specification.md 2節（プール 5 のまま）・2.1（測る対象DB の設定）、monitoring-design.md 1節・3節（待ちの時間切れの累計 0、503 の件数 0）" },
+    { "id": "NFR2.5", "status": "OK", "target": "infrastructure-specification.md 1節（アプリの上限 2g・最大ヒープ 50% のまま）、monitoring-design.md 3節（memory.peak の基準の値と anon の記録）、cicd-pipeline.md 5.3 の 7（流す前に作り直す）" },
+    { "id": "NFR3.1", "status": "N/A", "target": "基盤に当たらない（3種類の DB の振る舞い）。確かめの置き場は cicd-pipeline.md 2節の段 6（版を固定したイメージの3種類の対象DB の結合テスト、CI でも毎回）" },
+    { "id": "NFR3.2", "status": "OK", "target": "cicd-pipeline.md 5.3（3種類を1つずつ流す）、infrastructure-specification.md 2.1（3種類の設定）・2.3（VM に収まる組み合わせ）" },
+    { "id": "NFR3.3", "status": "N/A", "target": "基盤に当たらない（時差つきの型の扱い）。確かめの置き場は cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR4.1", "status": "OK", "target": "cicd-pipeline.md 2節の段 5（境界テスト）・段 8（SpotBugs の SQL_ の関門と、3つで絞る除外。B2 の計画で承認）" },
+    { "id": "NFR4.2", "status": "OK", "target": "monitoring-design.md 4節（出さないもの、BusinessDataSecretLeakIT とトレースの属性の結合テスト）、cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR4.3", "status": "OK", "target": "部分（読み取りの側）: infrastructure-specification.md 1節・2節（既存の targetDataSource だけを使う、新しい接続の Bean と秘密を足さない）。書き込みの接続の分離は U2" },
+    { "id": "NFR4.4", "status": "OK", "target": "infrastructure-specification.md 1.1（application.yaml の MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST・_DETAIL、既定 5s、.env.example のコメントの行。Q4: A）" },
+    { "id": "NFR4.5", "status": "N/A", "target": "基盤に当たらない（本文の上限 64 KB・値の長さ）。確かめの置き場は cicd-pipeline.md 2節の段 6" },
+    { "id": "NFR4.6", "status": "N/A", "target": "基盤に当たらない（API の分類）。確かめの置き場は cicd-pipeline.md 2節の段 5（ApiAccessArchitectureTest）" },
+    { "id": "NFR4.8", "status": "OK", "target": "infrastructure-specification.md 2節（借りる待ち 3s・通信の待ち 25s・貸すときの 10 秒）、cicd-pipeline.md 2節の段 6（ServerSocket・中継のテスト）、monitoring-design.md 2節（R-05 の実測）" },
+    { "id": "NFR7.1", "status": "OK", "target": "cicd-pipeline.md 2節（段 5・6）・3節（新しいパッケージのパッケージごとの下限、除外を足さない）" },
+    { "id": "NFR7.2", "status": "OK", "target": "cicd-pipeline.md 2節の段 5（jqwik の性質ベースのテスト、乱数の種を残す）" },
+    { "id": "NFR7.3", "status": "OK", "target": "cicd-pipeline.md 4節（B2 の後と Build and Test で verify と CI の時間を記録、42 分を超えたら諮る）" },
+    { "id": "NFR8.1", "status": "OK", "target": "部分（業務データの 403 が ms-forbidden に入ること）: monitoring-design.md 2節。しきい値の見直しは Observability Setup" },
+    { "id": "NFR8.2", "status": "OK", "target": "monitoring-design.md 4節（WARN の1行、決めたキーだけ）" },
+    { "id": "NFR8.3", "status": "OK", "target": "部分（区画の中身）: monitoring-design.md 5節。区画を書いて式を確かめるのと R-05 の実測は Observability Setup" }
+  ]
+}
