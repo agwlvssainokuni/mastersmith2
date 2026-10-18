@@ -24,6 +24,7 @@
 - 確定済みの設計と違う決定を依頼者がしたときは、設計の文書は書き換えず、差をその段の成果物に明記し、README などの手順を決定に合わせて直す。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:deployment-pipeline:b511560ca6ee8edac9468a296692cea2d0ce2afd343dedd46d09e1691cc7ea6f -->
 - 大きい単位を複数の Bolt に分けるときは、設計の段は1つの単位として通し、コード生成の計画で Bolt ごとに分ける（user-admin の U3 を前半 B3・後半 B4 に分けた）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:eeb51d6f303964784162df4356b33c9ff6143b628c976443564ba5121ae3d810 -->
 - 担当を同時に多く動かすと利用の上限に達しうる（user-admin の NFR 設計で5人が同時に止まった）。止まったときは単位の作業を unit pause で一時停止にし、次にすることを記録してから、上限が戻った後に作り直す。 (learned 2026-10-01) <!-- cid:260930-user-admin:nfr-design:e6f09109975092bcc3a8e3da4a0571366205a163cebf2105400f08f123dc1875 -->
+- 単位の依存の上では先に作れても、合格の条件が後の単位の画面を含むもの（例: axe-core の引き上げは E2E の全件の通過と違反 0 件）は、Delivery Planning で前半と後半の Bolt に分け、後半を後の単位の後に置く（business-data-views で U4 を B3・B7 に分け、Units Generation のレビューの R-01 を解いた）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:delivery-planning:9bdbedc867d8d465a785327558d6bae8473198dc41964c98d89080086e4fe92c -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -89,6 +90,7 @@
 - CI の 776738e の1回目が AdminForbiddenProvider.test.tsx の1件（描画の後の効果の回数を、効果が済む前に数える形）で落ち、2回目の試行で通った。手元で10回流して再現しなかったため、team.md の「手元で再現しないものは CI の再実行で通れば進めてよい」の扱いとし、見立てを記録した（同じテストが二度落ちたら直す）。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:build-and-test:f9fa66590900da70a6d9a535f1d12b697a59b451c5c4fdce97c3462a9d7da8d4 -->
 - dslMixed の memory.peak が 94.4%・取り直し 93.1% で線（90% 未満）を超えた。peak の時の内訳は anon 68.3%・回収できるページキャッシュ 23.7% で、依頼者の決定「持ち越す」で設定を変えず Not Met のまま記録した。物差しを anon に替えると Met になるが、目標の測り方を後から緩めることになるため選ばなかった。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:build-and-test:f19f3448c9fb50071da7c82b4b88784f3a50e2dba4de009ecbaf7eb1162ee152 -->
 - 1回目の使い捨てのアプリのログの WARN 43 行を、内訳を読む前に環境を消したため取り直せなかった（project.md の「確かめの結果を見てから片付ける」の漏れ）。memory.peak の取り直しの回では、消す前に WARN を数える指示を最初から書いた。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:build-and-test:d4fc4369fcaed022ade04d4ce9cf521f0b4ef83a29f30b6a30e2957841c87eff -->
+- business-data-views の Delivery Planning の実測（約 13 分）で、全体の合計で判定している7パッケージのうち下限に足りないのは common.health（行 79.2%）だけで、audit.repository は数える行が無かった（全体の合計 行 98.0%・分岐 92.6%）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:delivery-planning:66315121a2fe2c650f99b82f388dce2204d8f77447d41e196c57016dc5f2ca7f -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
