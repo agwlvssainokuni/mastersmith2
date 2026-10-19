@@ -15,7 +15,9 @@
  */
 //
 // 画面のテスト（Vitest）の設定。vite.config.ts の設定（resolve.dedupe を含む）を引き継ぐ。
-// - テストは対象と同じ場所の *.test.ts / *.test.tsx。e2e/（Playwright）は対象外。
+// - テストは対象と同じ場所の *.test.ts / *.test.tsx。e2e/ の Playwright の E2E（*.e2e.ts）は対象外。
+//   E2E の補助の純粋な部品の単体のテスト（e2e/support/**/*.test.ts）は対象にする（Intent 261016-business-data-views の U4 の
+//   基盤の設計の Q2: A）。カバレッジの対象（src/）は変えない。
 // - カバレッジの下限は 行 80%・分岐 70%。計測から外すのは入口（src/main.tsx）と型の宣言だけ
 //   （テストのファイル自体は計測の対象ではない）。
 import { defineConfig, mergeConfig } from 'vitest/config'
@@ -27,8 +29,8 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       setupFiles: ['./vitest.setup.ts'],
-      include: ['src/**/*.test.{ts,tsx}'],
-      exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+      include: ['src/**/*.test.{ts,tsx}', 'e2e/support/**/*.test.ts'],
+      exclude: ['e2e/**/*.e2e.ts', 'node_modules/**', 'dist/**'],
       css: false,
       coverage: {
         provider: 'v8',

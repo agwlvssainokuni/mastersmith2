@@ -32,6 +32,7 @@ import type { DslErrorReport, DslStatus, Preview } from '../src/features/dsl/api
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
 import { appearanceWith } from './support/appearanceFixture'
 import { missingRequiredRules, runAxe } from './support/axe'
+import { describeAxeNode } from './support/axeRuleChecks'
 import { routeLoginPreferences } from './support/loginPreferences'
 import { describeOverflow, measureHorizontalOverflow } from './support/overflow'
 import { watchPage } from './support/pageProblems'
@@ -290,7 +291,7 @@ async function inspect(page: Page, combo: DslCombo, state: string): Promise<void
   const overflow = await measureHorizontalOverflow(page)
   const violationRules = [...new Set(summary.violations.map((violation) => violation.id))]
   const violationNodes = summary.violations.flatMap((violation) =>
-    violation.nodes.map((node) => `${violation.id} ${node.testId ?? node.target}`),
+    violation.nodes.map((node) => describeAxeNode(violation.id, node.key)),
   )
   test.info().annotations.push({
     type: 'axe',

@@ -16,12 +16,28 @@
 // axe-core を検査のページの中だけで動かす（U4 の NFR 設計 security-design.md 6節、NFR7.3・NFR9.4・NFR9.6）。
 // 本体は明示の devDependencies から Node の側で読み、page.evaluate で評価する（@axe-core/playwright と同じ読み込み方）。
 // bypassCSP・addScriptTag・検査のための道は使わない。画面の成果物（src・dist）からは読み込まない。
+// Intent 261016-business-data-views の U4（L3・L4、security-design.md の 1節・2節、U4-NFR4.5・5.3）:
+// - 違反の要素は axe の選択子（target）ではなく鍵（axeElementKey.ts）で返す。選択子は page.evaluate の中でだけ使う。
+// - 規則 label-content-name-mismatch の passes・incomplete・violations の要素を鍵で返す（labelContentNameNodes）。
+// - 毎回、規則・鍵・件数だけを注記 axe-nodes に残す（計画の 10節の D5: A。選択子と値は持たない）。
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import type { Page } from '@playwright/test'
+import { test, type Page } from '@playwright/test'
+import { axeElementKey } from './axeElementKey'
+import {
+  axeNodesAnnotation,
+  describeAxeNode,
+  LABEL_CONTENT_NAME_RULE,
+  UNRESOLVED_KEY,
+  type AxeElementKey,
+  type AxeRuleNode,
+} from './axeRuleChecks'
 
 const require = createRequire(import.meta.url)
 const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8')
+
+/** 鍵の関数を window に置く文（axe.min.js と同じく文字列で評価する） */
+const axeElementKeySource = `window.__axeElementKey = ${axeElementKey.toString()}`
 
 /** 合否に使う規則のタグ（WCAG 2.0・2.1 の A・AA。NFR 設計の Q2 A） */
 export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] as const
@@ -29,12 +45,10 @@ export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] as const
 /** 流れたことを確かめる規則（版を上げてタグが変わり、黙って流れなくなることを防ぐ。6.4） */
 export const REQUIRED_RULES = ['color-contrast', 'scrollable-region-focusable'] as const
 
-/** 違反の対象の要素 */
+/** 違反の対象の要素（選択子と値は持たない） */
 export interface AxeViolationNode {
-  /** axe の選択子 */
-  target: string
-  /** 要素の data-testid（無ければ null） */
-  testId: string | null
+  /** 要素を見分ける鍵 */
+  key: AxeElementKey
   /** make-you-chic-ui の primary の Button か */
   primaryButton: boolean
 }
@@ -44,6 +58,8 @@ export interface AxeSummary {
   violations: { id: string; impact: string | null; nodes: AxeViolationNode[] }[]
   incomplete: { id: string; count: number }[]
   ruleIds: string[]
+  /** 規則 label-content-name-mismatch の結果の要素（区分と鍵。L4） */
+  labelContentNameNodes: AxeRuleNode[]
 }
 
 interface AxeRuleResult {
@@ -64,45 +80,62 @@ declare global {
     axe: {
       run: (context: Document, options: unknown) => Promise<AxeRunResult>
     }
+    __axeElementKey: (element: Element) => AxeElementKey
   }
 }
 
-/** ページで axe-core を評価し、WCAG 2.0・2.1 の A・AA の規則で検査する。 */
+/**
+ * ページで axe-core を評価し、WCAG 2.0・2.1 の A・AA の規則で検査する。
+ * 要素の鍵は検査と同じ1回の page.evaluate の中で作り、選択子は戻り値に入れない。結果の規則・鍵・件数を注記 axe-nodes に残す。
+ */
 export async function runAxe(page: Page): Promise<AxeSummary> {
   await page.evaluate(axeSource)
-  return page.evaluate(
-    async (tags) => {
+  await page.evaluate(axeElementKeySource)
+  const summary = await page.evaluate(
+    async ({ tags, rule, unresolved }) => {
       const result = await window.axe.run(document, { runOnly: { type: 'tag', values: tags } })
+      const elementOf = (node: { target: unknown[] }): Element | null =>
+        node.target.length === 1 ? document.querySelector(node.target.map(String).join(' ')) : null
+      const keyOf = (element: Element | null) =>
+        element === null ? unresolved : window.__axeElementKey(element)
+      const outcomes = ['passes', 'incomplete', 'violations'] as const
       return {
-        violations: result.violations.map((rule) => ({
-          id: rule.id,
-          impact: rule.impact ?? null,
-          nodes: rule.nodes.map((node) => {
-            const target = node.target.map(String).join(' ')
-            const element = node.target.length === 1 ? document.querySelector(target) : null
+        violations: result.violations.map((violation) => ({
+          id: violation.id,
+          impact: violation.impact ?? null,
+          nodes: violation.nodes.map((node) => {
+            const element = elementOf(node)
             return {
-              target,
-              testId: element?.getAttribute('data-testid') ?? null,
+              key: keyOf(element),
               primaryButton: element?.matches('.mycui-button.variant-primary') ?? false,
             }
           }),
         })),
-        incomplete: result.incomplete.map((rule) => ({ id: rule.id, count: rule.nodes.length })),
+        incomplete: result.incomplete.map((item) => ({ id: item.id, count: item.nodes.length })),
         ruleIds: [
           ...result.passes,
           ...result.violations,
           ...result.incomplete,
           ...result.inapplicable,
-        ].map((rule) => rule.id),
+        ].map((item) => item.id),
+        labelContentNameNodes: outcomes.flatMap((outcome) =>
+          result[outcome]
+            .filter((item) => item.id === rule)
+            .flatMap((item) =>
+              item.nodes.map((node) => ({ outcome, key: keyOf(elementOf(node)) })),
+            ),
+        ),
       }
     },
-    [...WCAG_TAGS],
+    { tags: [...WCAG_TAGS], rule: LABEL_CONTENT_NAME_RULE, unresolved: UNRESOLVED_KEY },
   )
+  test.info().annotations.push({ type: 'axe-nodes', description: axeNodesAnnotation(summary) })
+  return summary
 }
 
 /**
- * 既知の違反（依頼者が受け入れた制約）の一覧。組（ブランドカラー）・規則・名前（data-testid）で指定した make-you-chic-ui の
- * primary の Button だけを既知として扱い、ほかの規則・ほかの要素・ほかの組の違反は失敗にする。
+ * 既知の違反（依頼者が受け入れた制約）の一覧。組（ブランドカラー）・規則・名前（鍵の owner。正規化した data-testid）で
+ * 指定した make-you-chic-ui の primary の Button だけを既知として扱い、ほかの規則・ほかの要素・ほかの組の違反は失敗にする。
  * Intent 260925-user-management の U4 で、primary の Button（green 3.30:1・orange 3.56:1）を既知の違反としていたが、
  * make-you-chic-ui の固定先を 310e1ec に上げて（Intent 260928-quality-followup の FR1）、050〜080 の実測で当たらなくなったため
  * 一覧を空にした。既知の違反が無い間は、どの違反も失敗にする。仕組み（splitKnownViolations）は、次に既知の制約を受け入れる
@@ -135,10 +168,10 @@ export function splitKnownViolations(
         (rule) =>
           rule.rule === violation.id &&
           node.primaryButton &&
-          node.testId !== null &&
-          rule.testIds.includes(node.testId),
+          node.key.owner !== null &&
+          rule.testIds.includes(node.key.owner),
       )
-      const label = `${violation.id} ${node.testId ?? node.target}`
+      const label = describeAxeNode(violation.id, node.key)
       if (isKnown) {
         known.push(label)
       } else {

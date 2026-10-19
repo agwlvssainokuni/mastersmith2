@@ -61,9 +61,28 @@ export const SECRET_VALUE_SHAPES: readonly SecretValueShape[] = [
 /**
  * 形ではなく決まった値で探すもの。氏名は registeredUser.ts の REGISTERED_DISPLAY_NAME と同じ値（そのまま・URL の形・
  * JSON の \u の形で探す）。
+ * Intent 261016-business-data-views の U4（U4-NFR4.7、security-design.md の 1節）: 行の「操作」とトップバーのトリガーの
+ * 読み上げの名前に入る見本の値も探す。userAdminFixtures.ts の検査の一覧の行の氏名とメールアドレス（LONG_EMAIL と同じ値を
+ * 含む）と、130 の 2語の氏名（TWO_WORD_NAME）。手伝いの値を変えるときは、この一覧も合わせて直す。
  */
 export const SECRET_FIXED_VALUES: readonly SecretEntry[] = [
   { kind: 'displayName', value: '計測 花子' },
+  { kind: 'displayName', value: '管理 一郎' },
+  { kind: 'email', value: 'kanri.ichiro@example.com' },
+  { kind: 'displayName', value: '佐藤 花子' },
+  { kind: 'email', value: 'sato.hanako@example.com' },
+  { kind: 'displayName', value: '鈴木 次郎' },
+  { kind: 'email', value: 'suzuki.jiro@example.com' },
+  { kind: 'displayName', value: '高橋 三郎' },
+  { kind: 'email', value: 'takahashi.saburo@example.com' },
+  { kind: 'displayName', value: '田中 四郎' },
+  {
+    kind: 'email',
+    value: `${'very.long.mail.address.for.wrapping.check'.repeat(3)}@example.com`,
+  },
+  { kind: 'displayName', value: '<b>記号</b> & "引用" \'名\'' },
+  { kind: 'email', value: 'kigou@example.com' },
+  { kind: 'displayName', value: 'Probe Sample' },
 ]
 
 /** frontend/ の場所 */

@@ -33,6 +33,7 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import { loginAsAdmin } from './support/adminLogin'
 import { missingRequiredRules, runAxe } from './support/axe'
+import { describeAxeNode } from './support/axeRuleChecks'
 import {
   DISPLAY_COMBOS,
   expectComboApplied,
@@ -164,7 +165,7 @@ async function inspect(page: Page, label: string, state: string): Promise<void> 
   const name = `${label} ${state}`
   expect(missingRequiredRules(summary), `${name}: 流れなかった規則`).toEqual([])
   const targets = summary.violations.flatMap((violation) =>
-    violation.nodes.slice(0, 3).map((node) => `${violation.id} ${node.target}`),
+    violation.nodes.slice(0, 3).map((node) => describeAxeNode(violation.id, node.key)),
   )
   expect(violationRules, `${name}: 違反（${targets.join(' / ')}）`).toEqual([])
   expect(overflow.overflows, describeOverflow(name, overflow)).toBe(false)
@@ -470,9 +471,10 @@ test.describe('160 app frame widths, English and screen time', () => {
     await page.getByTestId(`sidebar-toggle-biz:${first}`).click()
     await expect(page.getByTestId(`sidebar-toggle-biz:${first}`)).toHaveAccessibleName(/^Expand /)
     await expect(workRoleTrigger(page)).toHaveAccessibleName('Work role: 営業')
-    // トップバーの文言も英語（make-you-chic-ui a9309c4 の topbarLabels。Intent 261015-deps-ui-carryover の FR2.4）
+    // トップバーの文言も英語（make-you-chic-ui a9309c4 の topbarLabels。Intent 261015-deps-ui-carryover の FR2.4）。
+    // ユーザーメニューの名前は頭文字で始める（Intent 261016-business-data-views の U4 の D6）
     await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Collapse the sidebar')
-    await expect(page.getByRole('button', { name: /^Menu for / })).toHaveCount(1)
+    await expect(page.getByRole('button', { name: /: Menu for / })).toHaveCount(1)
     await inspect(page, 'English', 'sidebar-and-placeholder')
     await page.getByTestId('sidebar-toggle').click()
     await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Expand the sidebar')
