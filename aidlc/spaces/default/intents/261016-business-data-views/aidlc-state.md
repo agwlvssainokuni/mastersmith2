@@ -36,7 +36,7 @@
 
 - **Unit Ownership**: solo
 - **Skeleton Stance**: off
-- **Active Unit**: u4-a11y-carryover
+- **Active Unit**: u5-carryover-tests
 - **Unit State**: in-progress
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -99,7 +99,7 @@ Per unit: [TBD]
 - **Current Stage**: code-generation
 - **Next Stage**: build-and-test
 - **Status**: Running
-- **Last Updated**: 2026-10-19T03:23:39Z
+- **Last Updated**: 2026-10-19T11:55:55Z
 
 ## Session Resume Point
 - **Last Completed Stage**: infrastructure-design
