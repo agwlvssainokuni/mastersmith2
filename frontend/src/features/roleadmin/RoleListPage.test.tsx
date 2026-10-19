@@ -51,7 +51,7 @@ function listOf(page: RolePage) {
 }
 
 async function openMenu(user: UserEvent, name: string) {
-  await user.click(await screen.findByRole('button', { name: `${name}の操作` }))
+  await user.click(await screen.findByRole('button', { name: `操作: ${name}` }))
   return screen.findByRole('menu')
 }
 
@@ -61,6 +61,16 @@ describe('RoleListPage', () => {
     resetDisplayTestState()
     vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('names the row actions with the visible label without extra list requests', async () => {
+    const api = listOf(rolePageOf(roleRowsOf(3)))
+    await renderPage(api)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '操作: ロール2' })).toBeInTheDocument(),
+    )
+    expect(screen.getAllByRole('button', { name: /^操作: / })).toHaveLength(3)
+    expect(api.listRoles).toHaveBeenCalledTimes(1)
   })
 
   it('shows the rows in server order with counts, and names that look like markup as text', async () => {
@@ -203,7 +213,7 @@ describe('RoleListPage', () => {
     expect(await screen.findByTestId('roleadmin-notice')).toHaveTextContent(
       'ロールの名前を「営業部」に変えました。',
     )
-    await waitFor(() => expect(screen.getByRole('button', { name: '営業の操作' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('button', { name: '操作: 営業' })).toHaveFocus())
   })
 
   it('shows "no change" under the field, and closes and reloads on ROLE_NOT_FOUND', async () => {
@@ -236,7 +246,7 @@ describe('RoleListPage', () => {
     await user.click(within(menu).getByRole('menuitem', { name: '削除' }))
     await user.click(await screen.findByTestId('roleadmin-delete-cancel'))
     expect(api.deleteRole).not.toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByRole('button', { name: '営業の操作' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('button', { name: '操作: 営業' })).toHaveFocus())
     menu = await openMenu(user, '営業')
     await user.click(within(menu).getByRole('menuitem', { name: '削除' }))
     await user.click(await screen.findByTestId('roleadmin-delete-submit'))

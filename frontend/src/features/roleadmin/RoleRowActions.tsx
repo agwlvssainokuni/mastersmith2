@@ -16,11 +16,13 @@
 //
 // ロールの一覧の行の操作（Intent 261004-role-menu の U6 の D6、functional-spec.md の W3.4〜W3.6、frontend-components.md
 // の 8節）。「開く」（S4 へのリンク、読み上げの名前に対象の名前）と、Dropdown（placement="bottom-end"）の「名前を変える」
-// 「削除」。削除は割り当ての数によらず押せ、判定はサーバー（D6）。trigger の名前は「〔名前〕の操作」、busy なら
+// 「削除」。削除は割り当ての数によらず押せ、判定はサーバー（D6）。trigger の名前は見える文字で始める「操作: 〔名前〕」
+// （Intent 261016-business-data-views の U4 の D1〜D4、src/shared/row-actions の rowActionsName。WCAG 2.5.3）、busy なら
 // 「（処理中）」を添え、Button の loading でメニューを開かない（既存の UserRowActions と同じ形）。
 // Dropdown は trigger の ref を置き換えるため、フォーカスを戻す先は包む要素の中のボタンから探す。
 import { Button, Dropdown, type MenuItem } from 'make-you-chic-ui'
 import { Link } from 'react-router'
+import { rowActionsName } from '../../shared/row-actions/rowActionsName'
 import type { RoleRow } from './api/types'
 import { roleDetailPath } from './paths'
 import { useRoleAdminText } from './useRoleAdminText'
@@ -43,9 +45,8 @@ export interface RoleRowActionsProps {
 /** ロールの一覧の行の操作 */
 export function RoleRowActions({ role, busy, onSelect, containerRef }: RoleRowActionsProps) {
   const t = useRoleAdminText()
-  const name = t(busy ? 'roleadmin.actions.busyName' : 'roleadmin.actions.name', {
-    name: role.name,
-  })
+  const baseName = rowActionsName(t('roleadmin.actions.button'), role.name)
+  const name = busy ? `${baseName}${t('roleadmin.actions.busySuffix')}` : baseName
   const items: MenuItem[] = (['rename', 'delete'] as const).map((action) => ({
     label: t(`roleadmin.menu.${action}`),
     onClick: () => {

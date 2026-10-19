@@ -69,7 +69,7 @@ describe('groupadmin in English and without leaks', () => {
     )
     renderGroupAdmin(<GroupListPage api={api} />, { languages: EN })
     expect(await screen.findByRole('button', { name: 'Next' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Actions for 営業部' }))
+    await user.click(screen.getByRole('button', { name: 'Actions: 営業部' }))
     await user.click(
       within(await screen.findByRole('menu')).getByRole('menuitem', { name: 'Delete' }),
     )

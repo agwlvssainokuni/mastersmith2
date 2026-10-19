@@ -51,7 +51,7 @@ function listOf(page: GroupPage) {
 }
 
 async function openMenu(user: UserEvent, name: string) {
-  await user.click(await screen.findByRole('button', { name: `${name}の操作` }))
+  await user.click(await screen.findByRole('button', { name: `操作: ${name}` }))
   return screen.findByRole('menu')
 }
 
@@ -61,6 +61,16 @@ describe('GroupListPage', () => {
     resetDisplayTestState()
     vi.useRealTimers()
     vi.restoreAllMocks()
+  })
+
+  it('names the row actions with the visible label without extra list requests', async () => {
+    const api = listOf(groupPageOf(groupRowsOf(3)))
+    await renderPage(api)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: '操作: グループ2' })).toBeInTheDocument(),
+    )
+    expect(screen.getAllByRole('button', { name: /^操作: / })).toHaveLength(3)
+    expect(api.listGroups).toHaveBeenCalledTimes(1)
   })
 
   it('shows the rows in server order with counts, and names that look like markup as text', async () => {
@@ -205,7 +215,7 @@ describe('GroupListPage', () => {
     expect(await screen.findByTestId('groupadmin-notice')).toHaveTextContent(
       'グループの名前を「営業部門」に変えました。',
     )
-    await waitFor(() => expect(screen.getByRole('button', { name: '営業部の操作' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('button', { name: '操作: 営業部' })).toHaveFocus())
   })
 
   it('shows "no change" under the field, and closes and reloads on GROUP_NOT_FOUND', async () => {
@@ -238,7 +248,7 @@ describe('GroupListPage', () => {
     await user.click(within(menu).getByRole('menuitem', { name: '削除' }))
     await user.click(await screen.findByTestId('groupadmin-delete-cancel'))
     expect(api.deleteGroup).not.toHaveBeenCalled()
-    await waitFor(() => expect(screen.getByRole('button', { name: '営業部の操作' })).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('button', { name: '操作: 営業部' })).toHaveFocus())
     menu = await openMenu(user, '営業部')
     await user.click(within(menu).getByRole('menuitem', { name: '削除' }))
     await user.click(await screen.findByTestId('groupadmin-delete-submit'))

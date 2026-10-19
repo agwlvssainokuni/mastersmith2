@@ -70,7 +70,7 @@ function readyApi(): FakeRoleAdminApi {
 }
 
 async function openRowMenu(user: UserEvent, item: string) {
-  await user.click(await screen.findByRole('button', { name: '営業の操作' }))
+  await user.click(await screen.findByRole('button', { name: '操作: 営業' }))
   await user.click(within(await screen.findByRole('menu')).getByRole('menuitem', { name: item }))
 }
 

@@ -41,13 +41,13 @@ describe('UserRowActions', () => {
   it('names the button with the name and the email, and adds processing while busy', () => {
     const user = userOf({ userId: 3, displayName: '山田 太郎', email: 'yamada.taro@example.com' })
     const { unmount } = renderActions(user)
-    expect(trigger('山田 太郎（yamada.taro@example.com）の操作')).toHaveAttribute(
+    expect(trigger('操作: 山田 太郎（yamada.taro@example.com）')).toHaveAttribute(
       'aria-haspopup',
       'true',
     )
     unmount()
     renderActions(user, true)
-    const busyButton = trigger('山田 太郎（yamada.taro@example.com）の操作（処理中）')
+    const busyButton = trigger('操作: 山田 太郎（yamada.taro@example.com）（処理中）')
     expect(busyButton).toHaveAttribute('aria-disabled', 'true')
     expect(busyButton).toHaveAttribute('aria-busy', 'true')
     expect(busyButton).not.toBeDisabled()
@@ -56,7 +56,7 @@ describe('UserRowActions', () => {
   it('opens the menu with the items of the row and selects an enabled item', async () => {
     const user = userEvent.setup()
     const { onSelect } = renderActions(userOf({ userId: 3, resettable: true }))
-    await user.click(trigger(/の操作$/))
+    await user.click(trigger(/^操作: /))
     const items = screen.getAllByRole('menuitem').map((item) => item.textContent)
     expect(items).toEqual([
       '管理者の印を付ける',
@@ -73,7 +73,7 @@ describe('UserRowActions', () => {
   it('marks the disabled items of the own row and links the reason', async () => {
     const user = userEvent.setup()
     renderActions(selfRow())
-    await user.click(trigger(/の操作$/))
+    await user.click(trigger(/^操作: /))
     const revoke = screen.getByRole('menuitem', { name: '管理者の印を外す' })
     const suspend = screen.getByRole('menuitem', { name: '利用を止める' })
     expect(revoke).toHaveAttribute('aria-disabled', 'true')
@@ -88,7 +88,7 @@ describe('UserRowActions', () => {
   it('does not select a disabled item by click, Enter or Space and keeps the menu open', async () => {
     const user = userEvent.setup()
     const { onSelect } = renderActions(selfRow())
-    await user.click(trigger(/の操作$/))
+    await user.click(trigger(/^操作: /))
     await user.click(screen.getByRole('menuitem', { name: '管理者の印を外す' }))
     expect(screen.getByRole('menu')).toBeInTheDocument()
     screen.getByRole('menuitem', { name: '利用を止める' }).focus()
@@ -101,7 +101,7 @@ describe('UserRowActions', () => {
   it('moves the focus to disabled items with the arrow keys and returns it with Escape', async () => {
     const user = userEvent.setup()
     renderActions(selfRow())
-    trigger(/の操作$/).focus()
+    trigger(/^操作: /).focus()
     await user.keyboard('{Enter}')
     await waitFor(() =>
       expect(screen.getByRole('menuitem', { name: '管理者の印を外す' })).toHaveFocus(),
@@ -110,7 +110,7 @@ describe('UserRowActions', () => {
     expect(screen.getByRole('menuitem', { name: '利用を止める' })).toHaveFocus()
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
-    expect(trigger(/の操作$/)).toHaveFocus()
+    expect(trigger(/^操作: /)).toHaveFocus()
   })
 
   it('does not open the menu while busy by click, Enter or Space and keeps the focus', async () => {
@@ -130,17 +130,46 @@ describe('UserRowActions', () => {
     renderUserAdmin(<UserRowActions user={selfRow()} busy={false} onSelect={vi.fn()} />, {
       languages: ['en-US'],
     })
-    await user.click(screen.getByRole('button', { name: /^Actions for / }))
+    await user.click(screen.getByRole('button', { name: /^Actions: / }))
     expect(screen.getByRole('menuitem', { name: 'Revoke admin' })).toHaveAccessibleDescription(
       'You cannot revoke your own admin role',
     )
     expect(screen.getByRole('menuitem', { name: 'Edit name and language' })).toBeInTheDocument()
   })
 
+  it('starts the English name with the visible label and keeps the space before processing', () => {
+    const user = userOf({ userId: 3, displayName: 'Kensa Taro', email: 'kensa.taro@example.com' })
+    const { unmount } = renderUserAdmin(
+      <UserRowActions user={user} busy={false} onSelect={vi.fn()} />,
+      { languages: ['en-US'] },
+    )
+    expect(trigger('Actions: Kensa Taro (kensa.taro@example.com)')).toBeInTheDocument()
+    unmount()
+    renderUserAdmin(<UserRowActions user={user} busy onSelect={vi.fn()} />, {
+      languages: ['en-US'],
+    })
+    expect(trigger('Actions: Kensa Taro (kensa.taro@example.com) (processing)')).toBeInTheDocument()
+  })
+
+  it('keeps the test id and the visible text of the trigger', () => {
+    renderActions(userOf({ userId: 3 }))
+    const container = screen.getByTestId('useradmin-row-actions-3')
+    const button = trigger(/^操作: /)
+    expect(container).toContainElement(button)
+    expect(button).toHaveTextContent(/^操作$/)
+  })
+
+  it('keeps markup-like characters of the name as plain text in the name', () => {
+    const user = userOf({ userId: 3, displayName: '<b>太郎</b> & "花子"', email: 'x@example.com' })
+    const { container } = renderActions(user)
+    expect(trigger('操作: <b>太郎</b> & "花子"（x@example.com）')).toBeInTheDocument()
+    expect(container.querySelector('b')).toBeNull()
+  })
+
   it('has no accessibility violations with the own row menu open and while busy', async () => {
     const user = userEvent.setup()
     const { unmount } = renderActions(selfRow())
-    await user.click(trigger(/の操作$/))
+    await user.click(trigger(/^操作: /))
     await screen.findByRole('menu')
     // メニューは make-you-chic-ui が body の直下に描く（ランドマークの外）ため、best-practice の region の規則に当たる。
     // ShellLayout のユーザーメニューのテストと同じく、WCAG 2.0・2.1 の A・AA の規則で確かめる（文字のコントラストは

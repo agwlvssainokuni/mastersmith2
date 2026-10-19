@@ -78,7 +78,7 @@ describe('roleadmin in English and without leaks', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Roles' })).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Next' })).toBeInTheDocument()
     expect(screen.queryByText('前へ')).toBeNull()
-    await user.click(screen.getByRole('button', { name: 'Actions for 営業' }))
+    await user.click(screen.getByRole('button', { name: 'Actions: 営業' }))
     const menu = await screen.findByRole('menu')
     expectEnglishOnly(['営業'])
     await user.click(within(menu).getByRole('menuitem', { name: 'Delete' }))

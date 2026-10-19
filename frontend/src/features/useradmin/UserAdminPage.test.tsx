@@ -199,6 +199,19 @@ describe('UserAdminPage states', () => {
     expect(screen.getByText('1 / 1ページ（全5件）')).toBeInTheDocument()
   })
 
+  it('names the row actions with the visible label without extra list requests', async () => {
+    const fake = fakeApi(pageOf({ items: rowsOf(3, 1), total: 3 }))
+    renderPage(fake)
+    await rowsShown()
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: '操作: 利用 02（user-02@example.com）' }),
+      ).toBeInTheDocument(),
+    )
+    expect(screen.getAllByRole('button', { name: /^操作: / })).toHaveLength(3)
+    expect(fake.list).toHaveBeenCalledTimes(1)
+  })
+
   it('keeps the rows while reloading and marks the row actions as processing', async () => {
     const user = userEvent.setup()
     const fake = fakeApi(pageOf({ items: rowsOf(20, 1), total: 43 }))
@@ -211,7 +224,7 @@ describe('UserAdminPage states', () => {
     expect(screen.getByText('user-01@example.com')).toBeInTheDocument()
     expect(screen.getByTestId('useradmin-table')).toHaveAttribute('aria-busy', 'true')
     expect(
-      screen.getByRole('button', { name: '利用 01（user-01@example.com）の操作（処理中）' }),
+      screen.getByRole('button', { name: '操作: 利用 01（user-01@example.com）（処理中）' }),
     ).toHaveAttribute('aria-disabled', 'true')
     await act(async () => next.resolve(pageOf({ items: rowsOf(20, 21), page: 2, total: 43 })))
     expect(await screen.findByText('user-21@example.com')).toBeInTheDocument()
@@ -1041,7 +1054,7 @@ describe('UserAdminPage privacy, language and accessibility', () => {
     expect(screen.getByText('Page 1 of 1 (1 total)')).toBeInTheDocument()
     expect(screen.getByText('Sep 25, 2026, 12:00 GMT+9')).toBeInTheDocument()
     await user.click(
-      screen.getByRole('button', { name: 'Actions for 佐藤 花子 (sato.hanako@example.com)' }),
+      screen.getByRole('button', { name: 'Actions: 佐藤 花子 (sato.hanako@example.com)' }),
     )
     await user.click(await screen.findByRole('menuitem', { name: 'Suspend' }))
     await user.click(screen.getByRole('button', { name: 'Suspend' }))

@@ -66,8 +66,8 @@ const ja: Record<string, string> = {
   'useradmin.search.empty':
     '「{{text}}」に当たる利用者はいません。検索の文字を変えるか、「検索を消す」で全体に戻してください。',
   'useradmin.actions.button': '操作',
-  'useradmin.actions.name': '{{name}}（{{email}}）の操作',
-  'useradmin.actions.busyName': '{{name}}（{{email}}）の操作（処理中）',
+  'useradmin.actions.row': '{{name}}（{{email}}）',
+  'useradmin.actions.busySuffix': '（処理中）',
   'useradmin.menu.grantAdmin': '管理者の印を付ける',
   'useradmin.menu.revokeAdmin': '管理者の印を外す',
   'useradmin.menu.suspend': '利用を止める',
@@ -186,8 +186,8 @@ const en: Record<string, string> = {
   'useradmin.search.empty':
     'No users match "{{text}}". Change the search text, or choose "Clear search" to see all users.',
   'useradmin.actions.button': 'Actions',
-  'useradmin.actions.name': 'Actions for {{name}} ({{email}})',
-  'useradmin.actions.busyName': 'Actions for {{name}} ({{email}}) (processing)',
+  'useradmin.actions.row': '{{name}} ({{email}})',
+  'useradmin.actions.busySuffix': ' (processing)',
   'useradmin.menu.grantAdmin': 'Grant admin',
   'useradmin.menu.revokeAdmin': 'Revoke admin',
   'useradmin.menu.suspend': 'Suspend',

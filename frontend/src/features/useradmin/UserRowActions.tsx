@@ -16,7 +16,8 @@
 //
 // 行の「操作」とメニュー（S2、functional-spec.md の 4.4・W4・D5・D6・D13、frontend-components.md の 2.5・4節、
 // AC2.1.9・AC3.1.8、NFR1.1・NFR7.1）。make-you-chic-ui の Dropdown の trigger に Button（secondary・小）を渡す。
-// - 読み上げの名前は「〔氏名〕（〔メールアドレス〕）の操作」、busy なら末尾に「（処理中）」。
+// - 読み上げの名前は見える文字で始める「操作: 〔氏名〕（〔メールアドレス〕）」、busy なら末尾に「（処理中）」
+//   （Intent 261016-business-data-views の U4 の D1〜D4、src/shared/row-actions の rowActionsName。WCAG 2.5.3）。
 // - busy の間は Button を loading にする。Dropdown は trigger の onClick を「開く」の関数で上書きするが、Button は loading の
 //   とき受け取った onClick を呼ばないため、メニューは開かない。disabled 属性を付けないため、フォーカスは残る（4.4）。
 // - 項目は rowActions の結果から作る。押せない項目は disabled と理由の文（description）にし、Dropdown が aria-disabled と
@@ -25,6 +26,7 @@
 // - 画面で押せない形にするのは表示だけで、サーバーの拒否（U3）の代わりにしない。
 // - メニューは placement="bottom-end" で trigger の右端にそろえる（表の右端の列で画面の右へはみ出さないため。FR2.1）。
 import { Button, Dropdown, type MenuItem } from 'make-you-chic-ui'
+import { rowActionsName } from '../../shared/row-actions/rowActionsName'
 import type { AdminUser } from './api/types'
 import { rowActions, type RowActionKind } from './rowActions'
 import { useUserAdminText } from './useUserAdminText'
@@ -43,8 +45,9 @@ export interface UserRowActionsProps {
 /** 行の「操作」 */
 export function UserRowActions({ user, busy, onSelect, containerRef }: UserRowActionsProps) {
   const t = useUserAdminText()
-  const values = { name: user.displayName, email: user.email }
-  const name = t(busy ? 'useradmin.actions.busyName' : 'useradmin.actions.name', values)
+  const rowLabel = t('useradmin.actions.row', { name: user.displayName, email: user.email })
+  const baseName = rowActionsName(t('useradmin.actions.button'), rowLabel)
+  const name = busy ? `${baseName}${t('useradmin.actions.busySuffix')}` : baseName
 
   const items: MenuItem[] = rowActions(user).map((action) =>
     action.disabledReason !== undefined

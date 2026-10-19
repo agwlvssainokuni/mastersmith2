@@ -118,7 +118,7 @@ async function chooseRowAction(page: Page, userId: number, item: string): Promis
   const row = tableRows(page).first()
   const isUserRow = (await row.getByTestId(`useradmin-row-actions-${userId}`).count()) === 1
   expect(isUserRow, '操作の対象が流れの中で作った利用者の行').toBe(true)
-  await row.getByRole('button', { name: /の操作$/ }).click()
+  await row.getByRole('button', { name: /^操作: / }).click()
   await page.getByRole('menuitem', { name: item, exact: true }).click()
 }
 
@@ -134,7 +134,7 @@ async function confirmAction(page: Page, title: string, userId: number): Promise
   await dialog.getByTestId('useradmin-confirm-submit').click()
   await expect(dialog).toBeHidden()
   await expect(
-    page.getByTestId(`useradmin-row-actions-${userId}`).getByRole('button', { name: /の操作$/ }),
+    page.getByTestId(`useradmin-row-actions-${userId}`).getByRole('button', { name: /^操作: / }),
   ).toBeFocused()
 }
 
@@ -205,7 +205,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
         await expect(row.getByRole('cell').nth(4)).toContainText('—')
         await expect(row.getByText('ロック中')).toHaveCount(0)
         const name =
-          (await row.getByRole('button', { name: /の操作$/ }).getAttribute('aria-label')) ?? ''
+          (await row.getByRole('button', { name: /^操作: / }).getAttribute('aria-label')) ?? ''
         expect(
           name.includes(email) && name.includes(REGISTERED_DISPLAY_NAME),
           '操作の名前に対象の氏名と宛先がある',
@@ -250,7 +250,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
         await expect(successToast(page, 'さんのロックを解除しました')).toBeVisible()
         const row = tableRows(page).first()
         await expect(row.getByText('ロック中')).toHaveCount(0)
-        await row.getByRole('button', { name: /の操作$/ }).click()
+        await row.getByRole('button', { name: /^操作: / }).click()
         await expect(
           page.getByRole('menuitem', { name: '利用を止める', exact: true }),
         ).toBeVisible()
@@ -299,7 +299,7 @@ test.describe('110 user admin representative flow on the built WAR', () => {
         await expect(successToast(page, 'さんの利用を止めました')).toBeVisible()
         const row = tableRows(page).first()
         await expect(row.getByRole('cell').nth(3)).toHaveText('利用停止')
-        await row.getByRole('button', { name: /の操作$/ }).click()
+        await row.getByRole('button', { name: /^操作: / }).click()
         await expect(page.getByRole('menuitem', { name: '停止を解く', exact: true })).toBeVisible()
         await page.keyboard.press('Escape')
 

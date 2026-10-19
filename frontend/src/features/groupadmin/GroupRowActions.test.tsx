@@ -16,6 +16,7 @@
 //
 // グループの一覧の行の操作のテスト（Intent 261004-role-menu の U6 の D6）。「開く」のリンクの先と読み上げの名前、
 // Dropdown の項目と bottom-end、busy の間はメニューを開かず選んでも呼ばないことを確かめる。
+// 行の操作の名前は見える文字で始める「操作: 〔名前〕」（Intent 261016-business-data-views の U4 の D1〜D4、U4-NFR5.5・6.1）。
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -50,7 +51,7 @@ describe('GroupRowActions', () => {
   it('opens the menu with rename and delete and reports the choice', async () => {
     const user = userEvent.setup()
     const { onSelect } = await renderActions()
-    await user.click(screen.getByRole('button', { name: '営業部の操作' }))
+    await user.click(screen.getByRole('button', { name: '操作: 営業部' }))
     const menu = screen.getByRole('menu')
     expect(
       within(menu)
@@ -73,7 +74,7 @@ describe('GroupRowActions', () => {
         : DOMRect.fromRect({ x: 300, y: 100, width: 80, height: 30 })
     })
     await renderActions()
-    await user.click(screen.getByRole('button', { name: '営業部の操作' }))
+    await user.click(screen.getByRole('button', { name: '操作: 営業部' }))
     const menu = await screen.findByRole('menu')
     await waitFor(() => expect(menu.style.left).toBe('180px'))
   })
@@ -81,16 +82,51 @@ describe('GroupRowActions', () => {
   it('marks the trigger busy and does not open the menu while busy', async () => {
     const user = userEvent.setup()
     const { onSelect } = await renderActions(true)
-    const trigger = screen.getByRole('button', { name: '営業部の操作（処理中）' })
+    const trigger = screen.getByRole('button', { name: '操作: 営業部（処理中）' })
     await user.click(trigger)
     expect(screen.queryByRole('menu')).toBeNull()
     expect(onSelect).not.toHaveBeenCalled()
   })
 
+  it('names the English trigger starting with the visible label and keeps the space before processing', async () => {
+    renderGroupAdmin(
+      <GroupRowActions
+        group={groupRowOf({ groupId: 7, name: 'Sales' })}
+        busy={false}
+        onSelect={vi.fn()}
+      />,
+      { languages: ['en-US'] },
+    )
+    expect(await screen.findByRole('button', { name: 'Actions: Sales' })).toBeInTheDocument()
+  })
+
+  it('adds the English processing suffix with its leading space while busy', async () => {
+    renderGroupAdmin(
+      <GroupRowActions group={groupRowOf({ groupId: 7, name: 'Sales' })} busy onSelect={vi.fn()} />,
+      { languages: ['en-US'] },
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Actions: Sales (processing)' }),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the test id and the visible text of the trigger', async () => {
+    await renderActions()
+    const button = screen.getByRole('button', { name: '操作: 営業部' })
+    expect(screen.getByTestId('groupadmin-row-actions-7')).toContainElement(button)
+    expect(button).toHaveTextContent(/^操作$/)
+  })
+
+  it('keeps markup-like characters of the name as plain text in the name', async () => {
+    await renderActions(false, '<b>営業</b> & "企画"')
+    expect(screen.getByRole('button', { name: '操作: <b>営業</b> & "企画"' })).toBeInTheDocument()
+    expect(screen.getByTestId('groupadmin-row-actions-7').querySelector('b')).toBeNull()
+  })
+
   it('has no accessibility violations with a 64 character name and the menu open', async () => {
     const user = userEvent.setup()
     await renderActions(false, LONG_GROUP_NAME)
-    await user.click(screen.getByRole('button', { name: `${LONG_GROUP_NAME}の操作` }))
+    await user.click(screen.getByRole('button', { name: `操作: ${LONG_GROUP_NAME}` }))
     await screen.findByRole('menu')
     // メニューは make-you-chic-ui が body の直下に描く（ランドマークの外）ため、best-practice の region の規則に当たる。
     // useradmin の UserRowActions のテストと同じく、WCAG 2.0・2.1 の A・AA の規則で確かめる（文字のコントラストは

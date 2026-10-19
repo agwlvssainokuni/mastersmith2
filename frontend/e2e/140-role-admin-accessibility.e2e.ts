@@ -294,7 +294,7 @@ test.describe('140 role admin accessibility on the built WAR', () => {
         await openSidebarItem(page, 'ロール')
         await expect(page.getByTestId('roleadmin-table').locator('tbody tr')).toHaveCount(3)
         await check('S3-list')
-        await page.getByRole('button', { name: `${LONG_ROLE_NAME}の操作` }).click()
+        await page.getByRole('button', { name: `操作: ${LONG_ROLE_NAME}` }).click()
         await check('S3-menu-open')
         await expectContained(page, 'menu', `${combo.name} S3-menu-open`)
         await page.keyboard.press('Escape')
@@ -415,7 +415,7 @@ test.describe('140 role admin widths, paths and screen time (default combo)', ()
       await inspect(page, label, 'S3-list')
       // 表の右端の行の操作のメニューが、360px を含む幅で画面に収まる（make-you-chic-ui a9309c4 の Dropdown の既定の
       // max-width。Intent 261015-deps-ui-carryover の FR2.2・FR2.5）。
-      await page.getByRole('button', { name: `${LONG_ROLE_NAME}の操作` }).click()
+      await page.getByRole('button', { name: `操作: ${LONG_ROLE_NAME}` }).click()
       await expectContained(page, 'menu', `${label} S3-menu-open`)
       await page.keyboard.press('Escape')
       await expect(page.getByRole('menu')).toHaveCount(0)
