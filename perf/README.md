@@ -149,7 +149,7 @@ MASTERSMITH_IMAGE_TAG=perf-dsl ./perf/dsl-timing.sh --busy postgres
 - `--lang` の画面は、開いたときにプレビューの表示（重い処理）を読みに行く。読み終わる前に投入すると 503 `DSL_BUSY` になるため、台本は最初の読み込みが終わるのを待ってから投入する。
 - `--storage` の `memory.current` はページキャッシュを含むため、H2 のファイルへの書き込みでコンテナの上限の近くまで上がることがある。止まるかどうかは `anon` と、最後の `state.txt`（OOMKilled）で見る。
 - `--storage` はアプリを起動し直すため、GC の記録（`gc.log`）は起動し直す前の分（`gc-before-restart.log`）と後の分をつないで残す。
-- `--storage` で内部DB の接続先を比べるときは、`PERF_DB_URL` で `MASTERSMITH_DB_URL` を上書きする（例: DEFRAG_ALWAYS なしの `PERF_DB_URL=jdbc:h2:file:/app/data/mastersmith`）。指定しなければ application.yaml の既定（DEFRAG_ALWAYS=TRUE）で動く。使った値は `env.txt` の `db_url` に残る。
+- `--storage` で内部DB の接続先を比べるときは、`PERF_DB_URL` で `MASTERSMITH_DB_URL` を上書きする（例: DEFRAG_ALWAYS なしの `PERF_DB_URL=jdbc:h2:file:/app/data/mastersmith`）。指定しなければ application.yaml の既定（DEFRAG_ALWAYS=TRUE）で動く。使った値は `env.txt` の `db_url` に残る。`PERF_DB_URL` が受け付ける形は、前の部分が `jdbc:h2:file:/app/data/mastersmith` ちょうどで、後ろに `;` で `DEFRAG_ALWAYS=TRUE` と `RETENTION_TIME=<1〜9 桁の整数>` だけを続けたもの（名前は大文字、同じ設定は1回まで、空白・`\`・`'`・`"` と空の要素は不可。`perf/lib/perf-db-url.sh`）。外れたら、台本は一時ディレクトリと使い捨ての環境を作る前に終了コード 1 で止まり、外れた決まりの名前だけを出す（値は表示しない）。確かめの関数の試しは `bash perf/lib/perf-db-url-test.sh`。
 - `--storage` のアプリのログは、止める前の分を `app-before-restart.log`、起動し直した後の分を `app.log` に残す。止めるときの終わり方は `app-before-restart.log` の終わりの行（Hikari の shutdown など）と `stop-state.txt` の exit code で見る。
 
 ### k6 の DSL の場面（Performance Validation で使う）
@@ -909,6 +909,96 @@ pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
 
 - 道（`/api/admin/role-transfer/check`・`/apply`）・指紋の見出し（`X-Role-Transfer-Fingerprint`）・ログインの応答の項目（`accessToken`）は、Code Generation で `RoleTransferPaths`・`RoleTransferController`・`perf/k6/scenarios.js` の `login` と照らした。この節の台本（`heap-run.sh`・`role-pool-5.sh`・`role-three.sh`）は Code Generation では流していないため、最初の回で値が取れているかを結果のファイルで確かめてから続ける。
 - FR9.3（メモリの上限と最大ヒープの割合を変えるか）は、この測りの結果をもとに Build and Test で決める。変えるときは値・根拠・戻し方（設定の値を戻す）を記録する。
+
+#### `dslMixed` の `memory.peak` と `memory.stat` の記録（Intent 261016-business-data-views の U5）
+
+前の Intent で Not Met のまま持ち越した `dslMixed` の `memory.peak`（FR16）を、内訳（`memory.stat`）と内部DB のファイルの大きさを1秒ごとに記録しながら測る。1回の測りは `perf/dsl-mixed-memory.sh` が受け持ち、既定の接続先で2回、ページキャッシュを減らす手の試し（H2 の `RETENTION_TIME=0`）で2回、合わせて4回流す。測るのは Build and Test（Performance Validation の段が無いため。`project.md` の学び）。
+
+- **合否**（BR3.1・BR3.5）: 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立てば Met。物差しは変えない（`anon` に替えない。team.md の Testing Posture）。試しの2回は合否に使わず、効いたか（2回とも 0.9 未満か）を見て、取り込むかを依頼者に諮る（BR4.2・BR4.3）。コンテナの上限 2g は上げない。
+- **並べる値**（BR3.2）: `anon` の最大 / `memory.max`、peak の時（`memory_current` が最大の行）の `anon`・`file`・`inactive_file`・`kernel`、`file` の始めと最大の差、内部DB のファイル（`mv_db_bytes`）の始めと最大の差。どれも `summary.txt` に出る。
+- **記録の列**（`memory.tsv`。1秒ごと、時刻は VM の時計の UTC）: `time_utc`・`memory_current`・`memory_peak`・`anon`・`file`・`inactive_file`・`active_file`・`kernel`・`mv_db_bytes`。`memory.stat` は名前で引いてこの順に出し（ファイルの並びに頼らない）、無いキーは `NA` になる。ループはコンテナの中の bash の1つのループを `docker exec` 1回で回し、`--privileged`・`--user`・追加の権限は付けない。秒の上限（既定 320 = 前置き 20 + 場面 180 + 後置き 60 + 余裕 60）で自分で終わり、台本も後置きの 60 秒の後に止める。
+- **1回の流れ**（台本がすること）: 使い捨てのアプリを作り直す（`--force-recreate`。前の peak を消す）→ 始める前の確かめ（`memory.peak`・`memory.current`・`memory.max`・`memory.stat` が読め、`memory.stat` に5つのキーがあり、`mastersmith.mv.db` があること。外れたら `invalid.txt` に理由を書いて終了コード 3 で止まり、その回は合否に使わない）→ 時刻の差（始め）→ ループを始め 20 秒後に `dslMixed`（VUS 10・3 分・10 MiB の DSL）→ 終わりの後 60 秒 → ループを止める → 時刻の差（終わり）→ `memory.peak`・`memory.max`・状態（OOMKilled・終了コード）→ まとめ → WARN・ERROR・OutOfMemoryError の件数とロガーごとの WARN の件数 → アプリを止めて内部DB の設定の値を読む。配備したアプリの停止と起動し直し、`caffeinate -dims`、`pmset` の確かめ、環境の作り分け、片付けは、下の手順で行う。
+- **記録の置き場**: `<DSL の置き場>` の隣の `memory/<回の名前>/`（例: `build/perf-results/dsl-k6/memory/default-1/`）。`run.txt`（条件）・`clock.tsv`（各回の始めと終わりの、手元の時刻（前）・VM の時刻・手元の時刻（後）と範囲 VM−後・VM−前）・`memory.tsv`・`k6.txt`（k6 の始めと終わりの時刻・終了コード・ログインの利用者の行の数と重なりの数・後置きの欠けの秒）・`dslMixed.json`（k6 の要約）・`peak.txt`・`summary.txt`・`warn.txt`・`settings.txt`（`RETENTION_TIME` の値）。k6 の出力は利用者の名前を含むため記録に残さず、件数だけを `k6.txt` に書く。新しい記録に書くのは数値・時刻・状態・ロガーの名前と件数だけ。
+- **後置きの欠け**: k6 が遅れて後置きの 60 秒がループの上限に入りきらなかったときは、`k6.txt` の `post_missing_seconds` が 1 より大きくなる。最後の完全な行の時刻が読めなかったときは `NA`。`memory.peak` はループを止めた直後に cgroup から先に読むため欠けない。
+- **切れた行**: ループを止めたときに書きかけで切れた最後の行（改行で終わらない行）と、9 列・時刻と数か `NA` の形でない行は、まとめと後置きの計算に使わず、捨てた数を `summary.txt` の `dropped_rows` に出す（`memory.tsv` には残る）。`./perf/dsl-mixed-memory.sh --tsv-check <TSV>` で、完全な行の数・最後の完全な行の時刻・まとめだけを出せる（Docker を使わない）。
+- **ループの後始末**: 台本が途中で止まっても（失敗・Ctrl-C・TERM）、`trap` で手元の `docker exec` と、コンテナの中の目印（台本の1回ごとに一意の引数）を持つ記録のループの処理だけを止める。アプリの処理には触れない。
+- **設定の値の確かめ**（BR4.1）: 台本は peak と stat を読んだ後でアプリを `docker compose stop app` で止め（止めると peak が消えるため、順は必ず「peak と stat を読む → 止める → 設定を読む」）、内部DB のボリュームを読み取り専用（`:ro`、`ACCESS_MODE_DATA=r`）で開いて `INFORMATION_SCHEMA.SETTINGS` の `RETENTION_TIME` を読む。H2 の `Shell` は測るアプリのイメージ（同じ JRE）で動かす。`RETENTION_TIME` は接続先の URL の設定で DB に保存され、アプリの起動で DB を開いた時点で当たるため、測りの後に読んだ値を測りの間に効いていた値とみなす。既定の回は H2 の既定の値（45000）、試しの回は 0 であること。値が違う・読めなかった試しの回は、試しの結果に使わない。
+- **環境の分け方**: 既定の2回は1つの `KEEP=1` の環境（内部DB のボリュームは膨らんだまま流す。悪い側の条件）、試しの2回は既定の環境を消してから `PERF_DB_URL` を付けて作り直した環境で流す。`OUT_DIR` を分ける（`build/perf-results/dsl-k6` と `build/perf-results/dsl-k6-retention`）。`perf/dsl-timing.sh` は既存の環境があると止まるため、必ず消してから作る。
+- **一時ファイルと秘密**: `perf/dsl-timing.sh` の一時ディレクトリ（ホームの下、権限 700）には、`app.env`（署名鍵・仮の管理者のパスワード）・`targetdb.env`（対象DB の管理者と読み取りのアカウントのパスワード）・`app-targetdb.env`（対象DB の読み取りの資格情報）・`login.json`（仮の管理者のパスワード）・`ui.env`（仮の管理者のパスワード。この手順で `PERF_USER_PASSWORD` を足す）・`auth.header`（アクセストークン）・`apply.json`（前の適用の previewId。秘密ではない）がある。`KEEP=1` はこの手順の前提のため、環境を消すまでの間は秘密が一時ディレクトリに残る。終わりに手で `down -v` と一時ディレクトリの削除を行い、消えたことを確かめる。結果の置き場（`OUT_DIR`）の `resp-*.body`・`busy-*.result`・`busy-*.stderr`（応答・状態コード・curl の標準エラー。秘密ではない）と、この手順の記録は、下の秘密の検索の対象に入れる。
+
+```bash
+# 前提: 上の「手順」の 0（配備したアプリを止める・WAR と使い捨て用のタグのイメージを作る）を済ませる。
+#       配備したアプリは測る間だけ止め、4回が終わったら起動し直す（下の 6）。
+export MASTERSMITH_IMAGE_TAG=<タグ> MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g
+export K6_IMAGE=grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34   # k6d と同じ固定の値
+
+# 1. 試験用の利用者 11 名を入れ、ui.env に PERF_USER_PASSWORD を足す関数（D は perf/dsl-timing.sh が表示した一時ディレクトリ）。
+#    zsh ではコマンドを変数に入れても単語に分かれないため、関数にする。値は表示しない
+perf_users() {
+  local up hash sql
+  up=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
+  hash=$(htpasswd -nbBC 12 x "$up" | cut -d: -f2)
+  sql="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$hash" "$i"; done | sed 's/,$//')"
+  MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_PERF_TARGETDB_ENV_FILE="$D/targetdb.env" MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE="$D/app-targetdb.env" \
+    docker compose -p mastersmith-perf -f docker/perf/compose.yaml stop app
+  cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+  docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+    eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url "$(grep '^MASTERSMITH_DB_URL=' "$D/app.env" | cut -d= -f2- | sed 's#/app/data#/data#' | grep . || echo jdbc:h2:file:/data/mastersmith)" -user sa -password "" -sql "$sql" > /dev/null
+  rm build/h2-perf.jar
+  ( umask 077; printf 'PERF_USER_PASSWORD=%s\n' "$up" >> "$D/ui.env" )
+}
+
+# 2. 既定の環境を作り（10 MiB の DSL も build/perf-results/dsl-k6/postgres/ にできる）、利用者を入れる
+KEEP=1 OUT_DIR="$PWD/build/perf-results/dsl-k6" ./perf/dsl-timing.sh postgres
+D=<表示された一時ディレクトリ>
+perf_users
+
+# 3. 既定の2回（台本の全体を caffeinate -dims で包む。流す前と後に眠りを確かめる）
+pmset -g assertions | grep -E 'PreventUserIdleSystemSleep|PreventSystemSleep'
+caffeinate -dims sh -c 'for r in default-1 default-2; do ./perf/dsl-mixed-memory.sh "$1" "$r" build/perf-results/dsl-k6/postgres || exit $?; done' _ "$D"
+pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20   # 各回の clock.tsv の始めと終わりの間に無いこと。入っていた回は使わずに流し直す
+cat build/perf-results/dsl-k6/memory/default-*/summary.txt build/perf-results/dsl-k6/memory/default-*/settings.txt
+
+# 4. 秘密の検索（今回の OUT_DIR だけを対象に、件数だけを出す。どれも 0 であること）。その後、既定の環境を消して消えたことを確かめる
+secret_counts() {   # 引数: OUT_DIR
+  local k v
+  for k in MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD MASTERSMITH_AUTH_SIGNING_KEY; do
+    v=$(grep "^$k=" "$D/app.env" | cut -d= -f2-)
+    printf '%s %s\n' "$k" "$(grep -rF -- "$v" "$1" | wc -l | tr -d ' ')"
+  done
+  v=$(grep '^PERF_USER_PASSWORD=' "$D/ui.env" | cut -d= -f2-)
+  printf 'PERF_USER_PASSWORD %s\n' "$(grep -rF -- "$v" "$1" | wc -l | tr -d ' ')"
+  unset v
+  printf 'env.txt と TSV の password・PASSWORD・jdbc:mysql・jdbc:mariadb・jdbc:postgresql %s\n' \
+    "$(cat "$1/env.txt" "$1"/memory/*/memory.tsv "$1"/memory/*/clock.tsv | grep -c -E 'password|PASSWORD|jdbc:mysql|jdbc:mariadb|jdbc:postgresql')"
+}
+secret_counts "$PWD/build/perf-results/dsl-k6"
+MASTERSMITH_PERF_ENV_FILE=/dev/null docker compose -p mastersmith-perf -f docker/perf/compose.yaml \
+  --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb down -v
+rm -rf "$D"; ls -d "$D" 2> /dev/null; docker volume ls --format '{{.Name}}' | grep -c '^mastersmith-perf_'   # 何も出ず、0 であること
+
+# 5. 試しの環境（接続先に RETENTION_TIME=0 を足す。DEFRAG_ALWAYS=TRUE は保つ）を作り、利用者を入れて2回流す
+KEEP=1 OUT_DIR="$PWD/build/perf-results/dsl-k6-retention" \
+  PERF_DB_URL='jdbc:h2:file:/app/data/mastersmith;DEFRAG_ALWAYS=TRUE;RETENTION_TIME=0' ./perf/dsl-timing.sh postgres
+D=<表示された一時ディレクトリ>
+perf_users
+pmset -g assertions | grep -E 'PreventUserIdleSystemSleep|PreventSystemSleep'
+caffeinate -dims sh -c 'for r in retention-1 retention-2; do ./perf/dsl-mixed-memory.sh "$1" "$r" build/perf-results/dsl-k6-retention/postgres || exit $?; done' _ "$D"
+pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
+grep db_url build/perf-results/dsl-k6-retention/env.txt
+cat build/perf-results/dsl-k6-retention/memory/retention-*/summary.txt build/perf-results/dsl-k6-retention/memory/retention-*/settings.txt   # RETENTION_TIME が 0 であること
+secret_counts "$PWD/build/perf-results/dsl-k6-retention"
+MASTERSMITH_PERF_ENV_FILE=/dev/null docker compose -p mastersmith-perf -f docker/perf/compose.yaml \
+  --profile targetdb-postgres --profile targetdb-mysql --profile targetdb-mariadb down -v
+rm -rf "$D"; ls -d "$D" 2> /dev/null; docker volume ls --format '{{.Name}}' | grep -c '^mastersmith-perf_'   # 何も出ず、0 であること
+
+# 6. 配備したアプリを起動し直す（試験のタグのイメージは使わない）
+docker compose start app && docker compose ps app
+```
+
+- 各回の WARN は `warn.txt` で数えてから片付ける（数え終わるまで `down -v` をしない。`project.md` の学び）。台本はアプリを止めて終わるが、コンテナは消さないため、`docker logs mastersmith-perf-app-1` も片付けの前なら読める。
+- 試験用の利用者の行は `perf_users` の関数で入れる。内部DB の接続先は `app.env` の `MASTERSMITH_DB_URL` を道だけ `/data` に替えて使う（試しの環境でも同じ設定で開く）。
+- `perf/dsl-mixed-memory.sh` は `--loop-only <コンテナの名前> <秒> <TSV の置き場>` で記録のループだけを流せる（Code Generation の空回しで、配備したアプリのコンテナに 5 秒向けて列を確かめた）。
 
 ### (c) ロールの3場面を手順書の順と単独で（FR7.2）
 

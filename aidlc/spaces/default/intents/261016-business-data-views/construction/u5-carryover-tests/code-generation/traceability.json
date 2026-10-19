@@ -1,0 +1,170 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-carryover-tests",
+  "upstream_ids": [
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR4.8",
+    "NFR4.9",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3"
+  ],
+  "coverage": [
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteReorderBarrierConfig.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteReorderBarrierConfig.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "BR3.4",
+      "status": "Deferred",
+      "target": "Build and Test（4回の測りで条件をそろえ、WARN を数えてから片付ける。手順は perf/README.md の (b) 節に書いた）"
+    },
+    {
+      "id": "BR3.5",
+      "status": "Deferred",
+      "target": "Build and Test（既定の2回の memory.peak / memory.max の判定）"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "perf/lib/perf-db-url.sh"
+    },
+    {
+      "id": "BR4.2",
+      "status": "Deferred",
+      "target": "Build and Test（試しの2回が効いたときに取り込むかを依頼者に諮る）"
+    },
+    {
+      "id": "BR4.3",
+      "status": "Deferred",
+      "target": "Build and Test（試しの2回が効かなかったときに内訳と試した手を記録して諮る）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "perf/lib/perf-db-url.sh"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "perf/dsl-timing.sh"
+    },
+    {
+      "id": "NFR4.9",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleActors.java"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteReorderBarrierConfig.java"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    }
+  ]
+}

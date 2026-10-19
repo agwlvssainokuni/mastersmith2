@@ -231,6 +231,9 @@ describe('AdminForbiddenProvider', () => {
   it('keeps the same function before and after the URL becomes forbidden', async () => {
     renderProbe()
     await screen.findByTestId('probe')
+    // 初めの描画の効果が済む前に回数を写すと、後で効果が動いた分だけ回数がずれる（K-58）。
+    // 写す前に、初めの効果がちょうど1回動いたことを待つ（2回以上は口の関数が変わった誤り）。
+    await waitFor(() => expect(effectRuns).toBe(1))
     const before = handle
     const runsBefore = effectRuns
 

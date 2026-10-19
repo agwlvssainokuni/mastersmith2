@@ -236,7 +236,7 @@ U5 は種類 `library` の単位で、前の Intent から持ち越した3件（
 
 ### 準備
 
-- [ ] **Step 1: 作業の準備と走らせ方の確かめ**
+- [x] **Step 1: 作業の準備と走らせ方の確かめ**
   - `aidlc/` の下の未コミットの変更を確かめ、あれば依頼者の承認（3節の A1）を得て `develop` に記録のコミットとして積む。
   - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば、ここで消す。段の途中では消さない（`project.md` の学び）。
   - B2・B3 の統合の後の CI を試行ごとに読み取りで確かめ、`RoleConcurrencyIT` と `AdminForbiddenProvider.test.tsx` が落ちた試行があったかを記録する（4.5）。
@@ -245,11 +245,11 @@ U5 は種類 `library` の単位で、前の Intent から持ち越した3件（
 
 ### テストの補助の層（BR1.5、NFR7.1・NFR7.2、S4）
 
-- [ ] **Step 2: テストの補助を書く**
+- [x] **Step 2: テストの補助を書く**
   - `TestRoleBarrier`: `Gate` に `volatile Thread arrivedThread` を足し、`pass` の中で `gate.arrived.countDown()` の直前に記録する。口 `arrivedThread()`（来ていなければ `null`）。`Signal` に `passedThread` を足し、最初に点を通ったスレッドだけを記録する（`compareAndSet` で1回だけ）。口 `passedThread()`。止める・通すの振る舞いと既存の口は変えない。
   - `AuditWriteReorderBarrierConfig` と `AuditWriteReorderBarrier`: 4.6 の口と振る舞いのとおり。状態は1つのロックで守るか、`CountDownLatch` と `AtomicInteger`・`AtomicBoolean` で持ち、止めたスレッドと放す相手は別々の値で持つ。`armFor` は前の回の状態を初めに戻す。`disarm()` は止めているスレッドを放し、何度呼んでもよい。止めている間に割り込まれたら割り込みの印を戻して先へ進ませる。例外の文には、スレッドの名前と上限の値だけを出す。`LongSupplier` は待ち合わせを通した後に `System.nanoTime()` を返す。
   - `RoleActors.Actor`: `toString` を `Actor[userId=<数>, email=***, token=***]` にする（`security-design.md` S4.2）。
-- [ ] **Step 3: テストの補助の単体テストを書いて流す**
+- [x] **Step 3: テストの補助の単体テストを書いて流す**
   - `AuditWriteReorderBarrierTest`（7件）: 準備していない間は止めない／`held` の1回目で止まり、`releaser` の2回目で放され、`heldArrived` が真・`releasedByTimeout` が偽／`releaser` の1回目では放されない／ほかのスレッドの呼び出しでは放されない／放す条件が先に満たされていたら止めずに通す／上限（単体テストでは 200 ミリ秒）で放したら `releasedByTimeout` が真／`disarm` で止めているスレッドが放され、`armFor` で前の回の状態が消える。スレッドの待ち合わせは `CountDownLatch` で作り、`sleep` で順を作らない。上限の場合だけは経過の時間で決まるが、結果（放されたこと・印が立つこと）は決まっている。
   - `TestRoleBarrierTest`（3件）: `Gate` の `arrivedThread` が止まったスレッド／`Signal` の `passedThread` が最初に通ったスレッドで、2回目に通ったスレッドで変わらない／来る前は `null`。
   - `RoleActorsTest`（2件）: `toString` にメールアドレスとトークンの値が含まれず、`userId` が含まれる／`email()`・`token()` は値をそのまま返す。
@@ -257,12 +257,12 @@ U5 は種類 `library` の単位で、前の Intent から持ち越した3件（
 
 ### #7 の直しと二段の確かめ（BR1.1〜BR1.6、FR15.1・FR15.2）
 
-- [ ] **Step 4: 入れ替えた順の場合を足し、直す前の確かめ方で落ちることを確かめる（二段の1段目）**
+- [x] **Step 4: 入れ替えた順の場合を足し、直す前の確かめ方で落ちることを確かめる（二段の1段目）**
   - `RoleConcurrencyIT` に `@Import(AuditWriteReorderBarrierConfig.class)` を足し、`@AfterEach` で `reorderBarrier.disarm()` を `barrier.reset()` の前に呼ぶ（テストが落ちても止めたスレッドを必ず放す）。
   - #7 の本体を手伝いのメソッドに移し、入れ替えた順の場合を足す。流れは `logical-components.md` 4.3 のとおり: 先の保存を `first.awaitArrival()` まで進め、後の保存を `second.awaitPassed()` まで進め、`reorderBarrier.armFor(first.arrivedThread(), second.passedThread(), TestRoleBarrier.WAIT_LIMIT)` の後に `first.release()`。後の保存の結果を先に待ち、次に先の保存の結果を待つ。
   - この時点では、確かめ方を **直す前の形（行の ID の順に1行目・2行目を決め打ち）のまま** にして入れ替えた順の場合を流し、落ちることと失敗の文（`detail` の値だけが出る）を記録する。あわせて、待ち合わせが止めて放したこと（`heldArrived` 真・`releasedByTimeout` 偽）と、「後: FULL」の行の ID が小さいことを記録する。この状態はコミットしない。
   - 入れ替えが起きなかったとき（上限で放された・ID の順が変わらない）は、Step 6 の 30 分の上限の中で試み、範囲と見立てを記録する（BR1.6・BR2.5）。止める相手を印で特定できないと分かったときは、出来事の中身の後の値（主権限 READ）で特定する形に替え、替えたことを記録する（BR1.5）。
-- [ ] **Step 5: 確かめ方を直し、2つの場合を確かめる（二段の2段目）**
+- [x] **Step 5: 確かめ方を直し、2つの場合を確かめる（二段の2段目）**
   - 確かめ方を BR1.1・BR1.2 の形にする: 対象のロールの `ROLE_PERMISSION_CHANGED` の行がちょうど2行で、「前が空・後が READ」と「前が READ・後が FULL」がちょうど1行ずつ。最後の主権限が FULL。行の ID の順は合否に使わない。失敗の文には見つかった行の `detail` だけを出す。
   - 場合ごとの前提の確かめ（BR1.1 の判定とは別。待ち合わせが意図した順を作れたかの確かめ）: `heldArrived()` が真、`releasedByTimeout()` が偽、2行の ID の順がその場合に作った順。どれかが外れたらテストを失敗にする（4.3 の R-04）。
   - 409 の扱い（10節の D1: A）: 自然の順の場合は今の分岐（`ROLE_BUSY` の code だけを確かめる。BR1.3）のまま。入れ替えた順の場合は、待ち合わせの結果の確かめ（`heldArrived` が真・`releasedByTimeout` が偽）を 409 の分岐より前に置き、409 は入れ替えが成り立たなかったとしてテストを失敗にする（合格に数えない）。409 で落ちたときは team.md の不安定なテストの決まりで扱う。
@@ -270,57 +270,57 @@ U5 は種類 `library` の単位で、前の Intent から持ち越した3件（
   - 2つの場合を別のテストのメソッドにし（`@DisplayName` は英語。例 `#7 ... in the natural audit order`・`#7 ... with the audit writes reordered`）、毎回流す（BR1.5、機能設計の Q2: A）。#1・#4 は変えない。
   - `admin.token()` を失敗の文・`.as(...)` に渡す箇所を作っていないことを読み合わせる（4.3 の R-05）。
   - `unit-test-instructions.md` 3.2 の「#7」のコマンドで、`RoleConcurrencyIT` の5件（#7 の2件と #1・#4 の3件）が通ることを記録する。
-- [ ] **Step 6: 繰り返しの確かめ**
+- [x] **Step 6: 繰り返しの確かめ**
   - `RoleConcurrencyIT` を単独で5回流し（`--rerun`）、5回とも通ることを記録する。落ちたときは結果を使わず、原因を確かめてから直す（team.md の「手元で再現した不安定なテストは原因を直すまで統合しない」）。
   - Step 4 で入れ替えを起こせなかったときの試みは、この Step と合わせて 30 分を上限にし、回数と負荷の掛け方と見立てを記録する。
 
 ### 画面のテストの直しと二段の確かめ（BR2.1〜BR2.5、FR15.1・FR15.2）
 
-- [ ] **Step 7: 試し（作業フォルダの中だけ。コミットしない。BR2.4）**
+- [x] **Step 7: 試し（作業フォルダの中だけ。コミットしない。BR2.4）**
   - 試し T1: `Probe` の既存の `useLayoutEffect` に「最初の1回だけ、その時点の `effectRuns` をファイルの中の変数に写す」行を足し（`beforeEach` で初めに戻す）、対象のテストの写す値をその変数に替える。確かめ方は直す前の形（`expect(effectRuns).toBe(runsBefore)`）のまま流し、`expected 1 to be +0` で落ちることを、単独で5回流して5回とも落ちることで記録する（4.1 の R-03 の理由で、写す値は必ず 0）。
   - 試し T2: T1 の `Probe` の変更を残したまま、写す前に `await waitFor(() => expect(effectRuns).toBe(1))` で待ってから `effectRuns` を写す形にし、単独で5回流して5回とも通ることを記録する。
   - 試しの変更をすべて戻し、`git diff` でこのファイルに差が無いことを確かめて記録する。
   - T1 で確実に落とせなかったときは、30 分を上限に試み（くり返し・負荷の下での実行）、範囲と見立てを記録する（BR2.5）。
-- [ ] **Step 8: 本番のテストを直して流す**
+- [x] **Step 8: 本番のテストを直して流す**
   - 対象の1件だけを、`await screen.findByTestId('probe')` の後に `await waitFor(() => expect(effectRuns).toBe(1))` を置き、その後に `before`・`runsBefore` を写す形にする。403 を知らせた後の確かめ（画面が「forbidden」、口の関数が同じ、効果の回数が写した値から変わらない）は保つ（BR2.2）。時間の上限は延ばさない（BR2.3）。
   - `unit-test-instructions.md` 3.2 の「画面のテスト」のコマンドで、ファイルの 12 件を単独で5回流し、5回とも通ることを記録する。
 
 ### `perf/` の台本（BR3.1〜BR4.3、NFR4.5〜NFR4.9、S1〜S3）
 
-- [ ] **Step 9: `PERF_DB_URL` の確かめの関数**
+- [x] **Step 9: `PERF_DB_URL` の確かめの関数**
   - 4.6 の受け付ける形のとおりに関数 `check_perf_db_url` を `perf/lib/perf-db-url.sh` に書く（10節の D3: A。`perf/dsl-timing.sh` が `source` で読む）。区切りは `;` で1つずつ切り出し、空の要素と同じ名前の重なりを拒否する。止めたときは標準エラーに決まりの名前だけを出し、`return 1` する。
   - `perf/dsl-timing.sh` の引数の確かめ（91〜105 行）の直後、既存の環境の確かめ（106 行）の前の最上位で `if [ -n "${PERF_DB_URL:-}" ] && ! check_perf_db_url "${PERF_DB_URL}"; then exit 1; fi` の形で呼ぶ。冒頭の注記（45 行）に、受け付ける形と、外れたら起動の前に止まることを書き足す。144〜145 行の書き込みは変えない。
-- [ ] **Step 10: 確かめの関数の試し（S1.3）**
+- [x] **Step 10: 確かめの関数の試し（S1.3）**
   - 悪い入力: `INIT=RUNSCRIPT FROM 'x'` を付けたもの・`INIT=SET RETENTION_TIME 0`（一覧から外したため拒否）・`;;` を含むもの・末尾の `;`・前の部分の直後の `;` だけ・`jdbc:h2:tcp:` の前の部分・`jdbc:postgresql:` の外部の URL・`jdbc:h2:file:/app/data/mastersmith2`（前の部分の後ろに文字が続く）・`RETENTION_TIME=abc`・`RETENTION_TIME=1234567890`（10 桁）・`RETENTION_TIME=-1`・同じ設定の2回・改行を含む値・空白を含む値・小文字の `retention_time=0`。正しい入力: 設定なし・`DEFRAG_ALWAYS=TRUE` だけ・`DEFRAG_ALWAYS=TRUE;RETENTION_TIME=0`・`RETENTION_TIME=45000;DEFRAG_ALWAYS=TRUE`。
   - 件ごとに、止めたか通したかと期待との一致を記録する。止めたときの標準エラーに入力の値が出ていないことを、入力の中の目印の語（例 `RUNSCRIPT`・`tcp`・`postgresql`）で数えて 0 件であることを確かめる。試しは `perf/lib/perf-db-url-test.sh` に入力の表として書いて流す（D3: A。いつでも流し直せる）。
   - 親が止まることの確かめ: 悪い入力を付けて `perf/dsl-timing.sh postgres` を流し、終了コードが 1 で、ホームの下に新しい `.mastersmith-perf-*` の一時ディレクトリが作られていないこと（流す前と後の一覧の差）を記録する。この呼び出しは確かめが既存の環境とイメージの確かめより前に止まるため、Docker を使わない。
-- [ ] **Step 11: 記録のループと1回の測りの台本**
+- [x] **Step 11: 記録のループと1回の測りの台本**
   - 記録のループ（4.4 の R-01・R-03、S3）: `docker exec <アプリのコンテナ> bash -c '<ループ>' _ <上限の秒>` を1回だけ起こす。`--privileged`・`--user`・追加の権限は付けない。ループは `/sys/fs/cgroup/memory.current`・`memory.peak`・`memory.stat`（連想配列で5つのキーを固定の順に出す、無ければ `NA`）と `stat -c %s /app/data/mastersmith.mv.db` を1秒ごとに読み、`date -u +%FT%TZ` の時刻と一緒に1行を書く。書き先はホームの側の結果の置き場だけ。見出しの行は手元の側で書く。
   - 始める前の確かめ: `memory.peak`・`memory.current`・`memory.max` が読めて、`memory.stat` に5つのキーがすべてあり、`mastersmith.mv.db` があること。どれかが外れたら、その回を無効として `invalid.txt` に理由（ファイル・キーの名前）を書き、測りを始めない。
   - 1回の測り（D3: A。`perf/dsl-mixed-memory.sh <一時ディレクトリ> <回の名前> <DSL の置き場>`）: 機能設計 3節の8手順のうち、作り直し（`--force-recreate app`）・始める前の確かめ・時刻の差（始め）・ループを後ろで起こす（PID を持つ）・20 秒後に `dslMixed`（VUS 10・`DURATION=3m`・10 MiB の DSL。k6 のイメージと引数は README の `k6d` と同じ）・終わりの後 60 秒・ループを止める（`kill` と `wait`）・時刻の差（終わり）・`memory.peak` と `memory.max` と状態（OOMKilled・終了コード）を読む・まとめ（4.6 の peak の時の内訳）を `summary.txt` に書く・WARN の件数とロガーごとの内訳・アプリを止めて設定の値（`RETENTION_TIME`）を読む（4.4 の R-02）までを1つにする。配備したアプリを止める・起動し直す、`caffeinate -dims`、`pmset` の確かめ、環境の作り分け、片付けは README の手順で行い、台本の中では行わない（1回分だけを受け持つ）。
   - 台本は compose を `-f docker/perf/compose.yaml` で呼ぶため、`MASTERSMITH_PERF_ENV_FILE`・`MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE`（`dsl-timing.sh` が作った一時ディレクトリの `app.env`・`app-targetdb.env`）・`MASTERSMITH_IMAGE_TAG`・`MASTERSMITH_CONTAINER_CPUS=4`・`MASTERSMITH_CONTAINER_MEMORY=2g` をシェルの環境変数で渡す。指標の公開の範囲は `dsl-timing.sh` が `app.env` に書いた値のまま（NFR4.8）。
   - 新しい記録に書くのは数値と時刻と状態だけにする（NFR4.6）。`env.txt` は `dsl-timing.sh` が書いたものを使い、台本は秘密を読まない（k6 には `--env-file` で `ui.env` を渡すだけ）。
-- [ ] **Step 12: 台本の静かな確かめと、記録のループの空回し**
+- [x] **Step 12: 台本の静かな確かめと、記録のループの空回し**
   - `bash -n` で `perf/dsl-timing.sh` と新しい3つの台本の構文を確かめる（`shellcheck`・`shfmt` はこの PC に無いため使わない）。
   - 10節の D5: A と3節の A2 のとおり、記録のループだけを配備したアプリのコンテナ `mastersmith-app-1` に向けて上限 5 秒で流し、見出しの行と5行前後が書かれること、どの列にも `NA` が無いこと、`anon` の列の値が同じ時刻の `grep '^anon ' /sys/fs/cgroup/memory.stat` の値と一致すること（列の取り違えが無いこと）、終わった後に `docker exec` の処理が残っていないこと（`docker top mastersmith-app-1` に `sleep 1` のループが無い）を記録する。結果の置き場は `build/perf-results/u5-loop-dryrun/` で、コミットしない。
   - `dslMixed` を含む1回の測りの全体は、配備したアプリを止める必要があるため、この段では流さない（Build and Test。7節）。
-- [ ] **Step 13: `perf/README.md` の手順**
+- [x] **Step 13: `perf/README.md` の手順**
   - (b) 節に「`dslMixed` の `memory.peak` と `memory.stat` の記録（Intent 261016-business-data-views の U5）」を足す。中身: 合否と並べる値（BR3.1・BR3.2・BR3.5）、記録の列と読み方（4.4 の R-01 の列）、環境の分け方（`cicd-pipeline.md` 4.1、基盤の設計の Q1: A）、試しの回の作り方の順（4.4 の R-04。接続先は 4.6 の試しの値 `RETENTION_TIME=0`、10節の D4: A）、各回の前後の確かめ（作り直し・`caffeinate -dims` で台本の全体を包む・流す前の `pmset -g assertions`・流した後の `pmset -g log`・WARN を数えてから片付ける・配備したアプリは測る間だけ止め、4回が終わったら起動し直す）、設定の値の確かめ（4.4 の R-02）、一時ファイルの一覧と `KEEP=1` の間は秘密が残ること（4.3 の R-01・4.4 の R-05）、秘密の検索（今回の `OUT_DIR` だけを対象に、仮の管理者のパスワードと署名鍵の値で検索して件数だけを出す。`env.txt` と TSV に `password`・`PASSWORD`・`jdbc:mysql`・`jdbc:mariadb`・`jdbc:postgresql` が無いことを件数で見る。NFR4.5・NFR4.6）、片付けと消えたことの確かめ、コンテナの上限 2g を上げないこと（BR4.3）。
   - DSL の節の `PERF_DB_URL` の行（152 行）に、受け付ける形と、外れたら起動の前に止まることを書き足す。
   - 書いたコマンドのうち、ファイルの名前・道・環境変数の名前（`k6d`・`ui.env`・`PERF_USER_PASSWORD`・`perf-data` のボリューム・H2 の `Shell` の形）を、既存の README と台本の行で照らして確かめる。
 
 ### 検査
 
-- [ ] **Step 14: 1コマンドの検査**
+- [x] **Step 14: 1コマンドの検査**
   - `unit-test-instructions.md` 2節の準備（colima の確かめと2つの環境変数）をしてから、`caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流し、通ること、対象DB のテストが飛んでいない（WARN が無い）こと、テストの件数（バックエンドの単体・結合、フロントエンド）、全体のカバレッジ、`verify` の時間を記録する（team.md の Testing Posture、`project.md` の学び）。
   - 落ちたときは、この単位の変更の経路に触れるかを見立て、team.md の「不安定なテストと CI の失敗」の決まりで扱う。計画の外の失敗で直す必要があるときは、止めて依頼者に諮る。
-- [ ] **Step 15: 変えていないことの確かめ**
+- [x] **Step 15: 変えていないことの確かめ**
   - `git diff --name-only develop...` で、変えたファイルが 1.1・1.2 の表のものだけであることを確かめる。`backend/src/main`・`frontend/src` のテストでないファイル・`application.yaml`・`Dockerfile`・`compose.yaml`・`docker/`・`.env.example`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/vitest.config.ts`・lockfile に差が無いことを記録する（NFR4.8、TS1）。差があれば止めて諮る（3節の最後の段落）。
   - 新しいファイルの先頭にライセンスのヘッダーがあることを確かめる（`perf/` のシェルは verify の検査の対象の外のため、目で確かめる）。
 
 ### 記録
 
-- [ ] **Step 16: 記録**
+- [x] **Step 16: 記録**
   - `aidlc/spaces/default/intents/261016-business-data-views/construction/u5-carryover-tests/code-generation/generation-notes.md` に、Step 1〜15 の結果を書く: 走らせ方の確かめの件数、4.5 の CI の読み取り、二段の確かめ（#7 の直す前の失敗の文と止めて放した記録・直した後の2つの場合の結果・5回の繰り返し、画面のテストの T1・T2 の結果と戻したことの差）、止める相手の特定の仕方（印で特定できたか）、`PERF_DB_URL` の試しの表、空回しの結果、verify の件数と時間とカバレッジ、変えていないことの確かめ。計画に無い変更は、計画を書き換えずにここへ書く（`project.md` の学び）。
   - 同じ内容を `aidlc/spaces/default/intents/261016-business-data-views/construction/code-generation/generation-notes.md` の B1 の節に写す（B3 と同じ形）。
   - Build and Test へ引き継ぐこと（7節の表）を同じ記録に書く。

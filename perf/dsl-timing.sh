@@ -43,6 +43,9 @@
 #   STORAGE_ROUNDS                --storage の投入→適用の回数（既定 21。履歴の上限 20 を1回超える）
 #   BUSY_ATTEMPTS                 --busy の重ならなかった回のやり直しの上限（既定 5）
 #   PERF_DB_URL                   内部DB の接続先（MASTERSMITH_DB_URL）を上書きする（比べるとき。例: jdbc:h2:file:/app/data/mastersmith）
+#                                 受け付ける形は jdbc:h2:file:/app/data/mastersmith に、; で DEFRAG_ALWAYS=TRUE と
+#                                 RETENTION_TIME=<1〜9 桁の整数> だけを続けたもの（perf/lib/perf-db-url.sh）。外れたら、一時ディレクトリと
+#                                 使い捨ての環境を作る前に終了コード 1 で止まる（値は表示しない）
 #   OUT_DIR                       結果の置き場（既定 build/perf-results/dsl-<日時>）
 #   KEEP=1                        終わっても使い捨ての環境を消さない（種類は1つだけ。後で down -v と一時ディレクトリの削除を手で行う）
 #
@@ -101,6 +104,13 @@ if [ "${compact}" = 1 ] && [ "${storage}" != 1 ]; then
 fi
 if ((${#kinds[@]} == 0)); then
   echo "使い方: $0 [--ui] [--lang] [--pattern] [--busy] [--storage [--compact]] <postgres|mysql|mariadb>..." >&2
+  exit 1
+fi
+# 内部DB の接続先の上書き（PERF_DB_URL）の形を、一時ディレクトリと使い捨ての環境を作る前に確かめる（Intent 261016-business-data-views の U5、
+# security-design.md S1）。サブシェルの中で呼ばず、外れたら親を止める。
+# shellcheck source=perf/lib/perf-db-url.sh
+source "${ROOT}/perf/lib/perf-db-url.sh"
+if [ -n "${PERF_DB_URL:-}" ] && ! check_perf_db_url "${PERF_DB_URL}"; then
   exit 1
 fi
 if [ -n "$(compose "${ALL_PROFILES[@]}" ps -aq 2> /dev/null)" ]; then

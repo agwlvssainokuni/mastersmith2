@@ -19,6 +19,8 @@ import static cherry.mastersmith.role.testsupport.RoleApi.entry;
 import static cherry.mastersmith.role.testsupport.RoleApi.saveBody;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.audit.testsupport.AuditWriteReorderBarrierConfig;
+import cherry.mastersmith.audit.testsupport.AuditWriteReorderBarrierConfig.AuditWriteReorderBarrier;
 import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
@@ -66,7 +68,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "mastersmith.auth.password.bcrypt-cost=4")
-@Import({AuthApiTestConfig.class, TestRoleBarrier.Config.class})
+@Import({AuthApiTestConfig.class, TestRoleBarrier.Config.class, AuditWriteReorderBarrierConfig.class})
 class RoleConcurrencyIT {
 
     @TempDir
@@ -96,6 +98,9 @@ class RoleConcurrencyIT {
     TestRoleBarrier barrier;
 
     @Autowired
+    AuditWriteReorderBarrier reorderBarrier;
+
+    @Autowired
     JdbcTemplate jdbc;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
@@ -116,6 +121,8 @@ class RoleConcurrencyIT {
 
     @AfterEach
     void tearDown() {
+        // テストが落ちても、監査の書き込みの直前で止めたスレッドを必ず放す。
+        reorderBarrier.disarm();
         barrier.reset();
         executor.shutdownNow();
     }
@@ -142,40 +149,130 @@ class RoleConcurrencyIT {
         return count == null ? 0 : count;
     }
 
+    /** #7 で作る、2つの保存の監査の書き込みの順。 */
+    private enum AuditOrder {
+        /** 先の保存の監査が先に書かれる（自然の順）。 */
+        NATURAL,
+        /** 後の保存の監査が先に書かれる（入れ替えた順）。 */
+        REORDERED
+    }
+
     @Test
-    @DisplayName("#7 two saves of the same role are serialized: the later value wins and both audits chain the values")
-    void sameRoleSavedTwice() throws Exception {
+    @DisplayName("#7 two saves of the same role are serialized in the natural audit order: the later value wins and"
+            + " both audits chain the values")
+    void sameRoleSavedTwiceInNaturalAuditOrder() throws Exception {
+        sameRoleSavedTwice(AuditOrder.NATURAL);
+    }
+
+    @Test
+    @DisplayName("#7 two saves of the same role are serialized with the audit writes reordered: the later value wins"
+            + " and both audits chain the values")
+    void sameRoleSavedTwiceWithAuditWritesReordered() throws Exception {
+        sameRoleSavedTwice(AuditOrder.REORDERED);
+    }
+
+    /**
+     * 同じロールの2つの保存を重ね、監査の2行の書き込みの順を待ち合わせで決めて確かめる（Intent 261016-business-data-views の U5、
+     * BR1.1〜BR1.5）。2行は行の ID の順ではなく中身（前と後の主権限）で見分ける。
+     *
+     * <p>止める相手と放す相手は {@link TestRoleBarrier} の印で特定する。先の保存のスレッドは排他の直後で止まったスレッド、後の保存の
+     * スレッドは、先の保存が止まった後に作った排他の直前の知らせを最初に通ったスレッド（先の保存も排他の直前を通るため、知らせは先の保存が
+     * 止まった後に作る）。知らせが保証するのは、後の保存が排他の直前の点を通ったことまでで、排他を待っていることまでは保証しない
+     * （このテストは監査の書き込みの順と中身の確かめで、排他の待ちが働いたことの確かめではない）。
+     *
+     * @param order 監査の書き込みの順
+     */
+    private void sameRoleSavedTwice(AuditOrder order) throws Exception {
         long roleId = fixtures.role(RoleFixtures.uniqueName("同時の保存"));
         String key = String.valueOf(roleId);
         String readBody = saveBody("SALES", null, List.of(entry("SALES", null, null, "READ", null, null)));
         String fullBody = saveBody("SALES", null, List.of(entry("SALES", null, null, "FULL", null, null)));
         Gate first = barrier.hold(Point.AFTER_LOCK, RoleOperation.CHANGE_PERMISSIONS, key);
-        Signal second = barrier.signal(Point.BEFORE_LOCK, RoleOperation.CHANGE_PERMISSIONS, key);
 
         CompletableFuture<HttpResponse<String>> a = async(() -> api.save(admin.token(), roleId, readBody));
         first.awaitArrival();
+        Signal second = barrier.signal(Point.BEFORE_LOCK, RoleOperation.CHANGE_PERMISSIONS, key);
         CompletableFuture<HttpResponse<String>> b = async(() -> api.save(admin.token(), roleId, fullBody));
         second.awaitPassed();
+        Thread firstThread = first.arrivedThread();
+        Thread secondThread = second.passedThread();
+        if (order == AuditOrder.REORDERED) {
+            reorderBarrier.armFor(firstThread, secondThread, TestRoleBarrier.WAIT_LIMIT);
+        } else {
+            reorderBarrier.armFor(secondThread, firstThread, TestRoleBarrier.WAIT_LIMIT);
+        }
         first.release();
 
-        assertThat(result(a).statusCode()).isEqualTo(204);
-        HttpResponse<String> later = result(b);
-        if (later.statusCode() == 409) {
-            assertCode(later, 409, "ROLE_BUSY");
-            return;
+        // 止めた側の上限と結果を待つ上限が重ならないよう、放す相手の結果を先に待つ。
+        HttpResponse<String> later;
+        HttpResponse<String> earlier;
+        if (order == AuditOrder.REORDERED) {
+            later = result(b);
+            earlier = result(a);
+        } else {
+            earlier = result(a);
+            later = result(b);
         }
+        // どちらの順でも、書き込みの順が作れたことと 409 でないことを、ほかの確かめより前に確かめる（計画の D1: A を自然の順にも
+        // 当てる。コードのレビューの R-02）。409 ROLE_BUSY は書き込みの順を作れなかった回として失敗にし、合格に数えない。
+        assertReordered();
+        assertThat(later.statusCode())
+                .as("後の保存が 409 で返り、書き込みの順を作れなかった: code=%s", codeOf(later))
+                .isNotEqualTo(409);
+        assertThat(earlier.statusCode()).isEqualTo(204);
         assertThat(later.statusCode()).isEqualTo(204);
         assertThat(jdbc.queryForObject(
                         "SELECT main_permission FROM permission_settings WHERE role_id = ?", String.class, roleId))
                 .isEqualTo("FULL");
-        List<String> details = jdbc.queryForList(
-                "SELECT detail FROM audit_events WHERE event_type = 'ROLE_PERMISSION_CHANGED' AND target_role_id = ?"
-                        + " ORDER BY audit_event_id",
-                String.class,
+        List<AuditRow> rows = jdbc.query(
+                "SELECT audit_event_id, detail FROM audit_events WHERE event_type = 'ROLE_PERMISSION_CHANGED'"
+                        + " AND target_role_id = ?",
+                (rs, rowNum) -> new AuditRow(rs.getLong("audit_event_id"), rs.getString("detail")),
                 roleId);
-        assertThat(details).hasSize(2);
-        assertThat(details.get(0)).contains("\"before\":{\"main\":null").contains("\"after\":{\"main\":\"READ\"");
-        assertThat(details.get(1)).contains("\"before\":{\"main\":\"READ\"").contains("\"after\":{\"main\":\"FULL\"");
+        List<String> details = rows.stream().map(AuditRow::detail).toList();
+        assertThat(rows).as("監査の行: %s", details).hasSize(2);
+        List<AuditRow> toRead =
+                rows.stream().filter(row -> row.changes("null", "\"READ\"")).toList();
+        List<AuditRow> toFull =
+                rows.stream().filter(row -> row.changes("\"READ\"", "\"FULL\"")).toList();
+        assertThat(toRead).as("前が空・後が READ の行: %s", details).hasSize(1);
+        assertThat(toFull).as("前が READ・後が FULL の行: %s", details).hasSize(1);
+        // 待ち合わせが意図した書き込みの順を作れたことの確かめ（BR1.5。合否の判定の BR1.1 とは別）。
+        if (order == AuditOrder.REORDERED) {
+            assertThat(toFull.getFirst().id())
+                    .as("後: FULL の行が先に書かれた")
+                    .isLessThan(toRead.getFirst().id());
+        } else {
+            assertThat(toRead.getFirst().id())
+                    .as("後: READ の行が先に書かれた")
+                    .isLessThan(toFull.getFirst().id());
+        }
+    }
+
+    /** 待ち合わせが止める相手を止め、上限ではなく放す相手の書き込みの終わりで放したこと。 */
+    private void assertReordered() {
+        assertThat(reorderBarrier.heldArrived()).as("止める相手が監査の書き込みの直前に来た").isTrue();
+        assertThat(reorderBarrier.releasedByTimeout())
+                .as("止める相手を上限で放した（書き込みの順を作れなかった）")
+                .isFalse();
+    }
+
+    private static Object codeOf(HttpResponse<String> response) {
+        return response.statusCode() == 409 ? HttpTestClient.json(response).get("code") : null;
+    }
+
+    /**
+     * 監査の1行（ID と detail だけ）。
+     *
+     * @param id 監査の行の ID
+     * @param detail 前と後の権限の値
+     */
+    private record AuditRow(long id, String detail) {
+
+        boolean changes(String beforeMain, String afterMain) {
+            return detail.contains("\"before\":{\"main\":" + beforeMain)
+                    && detail.contains("\"after\":{\"main\":" + afterMain);
+        }
     }
 
     private long user(String name) {

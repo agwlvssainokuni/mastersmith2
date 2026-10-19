@@ -1,0 +1,46 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-carryover-tests",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteReorderBarrierConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/testsupport/AuditWriteReorderBarrierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleActors.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/RoleActorsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TestRoleBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/testsupport/TestRoleBarrierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/web/RoleConcurrencyIT.java"
+    },
+    {
+      "path": "frontend/src/app/admin-forbidden/AdminForbiddenProvider.test.tsx"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "path": "perf/dsl-timing.sh"
+    },
+    {
+      "path": "perf/lib/perf-db-url-test.sh"
+    },
+    {
+      "path": "perf/lib/perf-db-url.sh"
+    }
+  ]
+}

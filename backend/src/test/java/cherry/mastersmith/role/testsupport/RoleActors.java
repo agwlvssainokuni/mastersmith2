@@ -50,7 +50,19 @@ public final class RoleActors {
      * @param email メールアドレス
      * @param token アクセストークン
      */
-    public record Actor(long userId, String email, String token) {}
+    public record Actor(long userId, String email, String token) {
+
+        /**
+         * 利用者 ID だけを出し、メールアドレスとアクセストークンを伏せる（Intent 261016-business-data-views の U5、
+         * {@code security-design.md} S4.2）。失敗の文や記録に主体が文字列で渡っても、値が出ないようにする。
+         *
+         * @return 伏せた文字列
+         */
+        @Override
+        public String toString() {
+            return "Actor[userId=" + userId + ", email=***, token=***]";
+        }
+    }
 
     private final UserAccountService userAccountService;
 

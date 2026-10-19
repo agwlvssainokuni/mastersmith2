@@ -23,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -71,6 +72,9 @@ public class TestRoleBarrier implements RoleBarrier {
 
         private final CountDownLatch released = new CountDownLatch(1);
 
+        /** 点に来て止まったスレッド（来る前は null。記録だけで、止める・通すの振る舞いには使わない）。 */
+        private volatile Thread arrivedThread;
+
         private Gate(Point point, RoleOperation operation, String key) {
             this.point = point;
             this.operation = operation;
@@ -91,6 +95,15 @@ public class TestRoleBarrier implements RoleBarrier {
             released.countDown();
         }
 
+        /**
+         * 点に来て止まったスレッドを返す（Intent 261016-business-data-views の U5、{@code logical-components.md} 4.3）。
+         *
+         * @return 止まったスレッド。まだ来ていなければ null
+         */
+        public Thread arrivedThread() {
+            return arrivedThread;
+        }
+
         private boolean matches(Point point, RoleOperation operation, String key) {
             return this.point == point && this.operation == operation && this.key.equals(key);
         }
@@ -107,6 +120,9 @@ public class TestRoleBarrier implements RoleBarrier {
 
         private final CountDownLatch passed = new CountDownLatch(1);
 
+        /** 最初に点を通ったスレッド（通る前は null。最初の1回だけを記録する）。 */
+        private final AtomicReference<Thread> passedThread = new AtomicReference<>();
+
         private Signal(Point point, RoleOperation operation, String key) {
             this.point = point;
             this.operation = operation;
@@ -120,6 +136,15 @@ public class TestRoleBarrier implements RoleBarrier {
          */
         public void awaitPassed() {
             await(passed, "点を通らなかった: " + point + " " + operation + " " + key);
+        }
+
+        /**
+         * 最初に点を通ったスレッドを返す（Intent 261016-business-data-views の U5、{@code logical-components.md} 4.3）。
+         *
+         * @return 最初に通ったスレッド。まだ通っていなければ null
+         */
+        public Thread passedThread() {
+            return passedThread.get();
         }
 
         private boolean matches(Point point, RoleOperation operation, String key) {
@@ -189,11 +214,13 @@ public class TestRoleBarrier implements RoleBarrier {
     private void pass(Point point, RoleOperation operation, String key) {
         for (Signal signal : signals) {
             if (signal.matches(point, operation, key)) {
+                signal.passedThread.compareAndSet(null, Thread.currentThread());
                 signal.passed.countDown();
             }
         }
         for (Gate gate : gates) {
             if (gate.matches(point, operation, key) && gate.taken.compareAndSet(false, true)) {
+                gate.arrivedThread = Thread.currentThread();
                 gate.arrived.countDown();
                 await(gate.released, "止めた操作が放されなかった: " + point + " " + operation + " " + key);
                 return;
