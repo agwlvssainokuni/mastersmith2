@@ -24,7 +24,7 @@
 // - トップバーの右に作業ロールの切り替え（WorkRoleSwitcher）を置く。768px 未満では、トップバーから外して内容の領域の
 //   先頭に置く（依頼者の決定 G2: A。機能設計 D9 との差。幅 220px 固定のサイドバーの横のトップバーに収まらないため）。
 // - ユーザーメニューの path の項目は、既定の移動を止め、beforeNavigate があれば呼んでから移る（L15）。
-import { AppShell, type MenuItem } from 'make-you-chic-ui'
+import { AppShell, getInitials, type MenuItem } from 'make-you-chic-ui'
 import {
   useEffect,
   useMemo,
@@ -131,10 +131,18 @@ export function ShellLayout({ children }: ShellLayoutProps) {
     containsCurrent: (label: string) => format('nav.containsCurrent', { label }),
   }
   // トップバーの畳むボタンとユーザーメニューのトリガーの読み上げの名前（make-you-chic-ui の TopbarLabels。Intent 261015 の FR2.4）。
+  // ユーザーメニューのトリガーの名前は、トリガーに見える頭文字（Avatar の丸の中の文字。make-you-chic-ui の getInitials と
+  // 同じ求め方）で始める「<頭文字>: <氏名>のメニュー」にする（Intent 261016-business-data-views の U4 の D6、WCAG 2.5.3）。
+  // 氏名が空で頭文字が空文字のときは、頭文字と区切りを省く（U4-NFR6.2）。状態・効果・API の呼び出しは足さない（U4-NFR7.1）。
   const topbarLabels = {
     expandSidebar: t('topbar.expandSidebar'),
     collapseSidebar: t('topbar.collapseSidebar'),
-    userMenu: (userName: string) => format('topbar.userMenu', { name: userName }),
+    userMenu: (userName: string) => {
+      const initials = getInitials(userName)
+      return initials === ''
+        ? format('topbar.userMenuWithoutInitials', { name: userName })
+        : format('topbar.userMenu', { initials, name: userName })
+    },
   }
 
   // ユーザーメニューの項目は、path を持てば href（<a> で描かれ、リンクとして読み上げられる）と、既定の移動を止めて

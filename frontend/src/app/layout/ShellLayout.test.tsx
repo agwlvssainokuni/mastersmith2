@@ -531,6 +531,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
       registrations?: FeatureRegistration[]
       languages?: string[]
       admin?: boolean
+      displayName?: string
     } = {},
   ) {
     const role = fakeWorkRoleApi(options.roleAnswers ?? [TWO])
@@ -549,7 +550,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
         provider: fakeProvider({
           loggedIn: true,
           admin: options.admin ?? true,
-          displayName: '管理者',
+          displayName: options.displayName ?? '管理者',
         }),
         languages: options.languages,
       },
@@ -784,7 +785,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
     const { view } = renderShell()
     const toggleSidebar = await screen.findByTestId('sidebar-toggle')
     expect(toggleSidebar).toHaveAccessibleName('サイドバーを折り畳む')
-    expect(screen.getByRole('button', { name: '管理者のメニュー' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '管: 管理者のメニュー' })).toBeInTheDocument()
     await user.click(toggleSidebar)
     await waitFor(() => expect(toggleSidebar).toHaveAccessibleName('サイドバーを開く'))
     view.unmount()
@@ -794,9 +795,60 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
     renderShell({ languages: ['en-US'] })
     const english = await screen.findByTestId('sidebar-toggle')
     await waitFor(() => expect(english).toHaveAccessibleName('Collapse the sidebar'))
-    expect(screen.getByRole('button', { name: 'Menu for 管理者' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '管: Menu for 管理者' })).toBeInTheDocument()
     await user.click(english)
     await waitFor(() => expect(english).toHaveAccessibleName('Expand the sidebar'))
+  })
+
+  // ユーザーメニューのトリガーの名前は、見える頭文字で始める（Intent 261016-business-data-views の U4 の D6、U4-NFR6.1・6.2・7.1）。
+  it('starts the user menu name with the two-letter initials of a two-word name in Japanese and in English', async () => {
+    const { view } = renderShell({ displayName: '検査 太郎' })
+    expect(
+      await screen.findByRole('button', { name: '検太: 検査 太郎のメニュー' }),
+    ).toBeInTheDocument()
+    view.unmount()
+    localStorage.clear()
+    sessionStorage.clear()
+
+    renderShell({ displayName: 'Kensa Taro', languages: ['en-US'] })
+    expect(
+      await screen.findByRole('button', { name: 'KT: Menu for Kensa Taro' }),
+    ).toBeInTheDocument()
+  })
+
+  it('uses the same initials as the avatar shown in the trigger', async () => {
+    renderShell({ displayName: 'Kensa Taro' })
+    const trigger = await screen.findByRole('button', { name: /のメニュー$/ })
+    const avatar = trigger.querySelector('.mycui-avatar')
+    expect(avatar).not.toBeNull()
+    const shown = avatar?.textContent ?? ''
+    expect(shown).toBe('KT')
+    expect(trigger).toHaveAccessibleName(`${shown}: Kensa Taroのメニュー`)
+  })
+
+  it('omits the initials and the separator when the name is blank', async () => {
+    const { view } = renderShell({ displayName: '   ' })
+    const trigger = await screen.findByRole('button', { name: /のメニュー$/ })
+    expect(trigger.getAttribute('aria-label')).not.toMatch(/^:/)
+    expect(trigger.getAttribute('aria-label')).not.toContain(': ')
+    view.unmount()
+    localStorage.clear()
+    sessionStorage.clear()
+
+    renderShell({ displayName: '   ', languages: ['en-US'] })
+    const english = await screen.findByRole('button', { name: /Menu for/ })
+    expect(english.getAttribute('aria-label')).toMatch(/^Menu for /)
+  })
+
+  it('does not read the business menu again until the user menu is opened', async () => {
+    const user = userEvent.setup()
+    const { nav } = renderShell({ displayName: '検査 太郎' })
+    const trigger = await screen.findByRole('button', { name: '検太: 検査 太郎のメニュー' })
+    await waitFor(() => expect(toggle('0')).toBeInTheDocument())
+    expect(nav.count).toBe(1)
+    await user.click(trigger)
+    await screen.findByRole('menu')
+    expect(nav.count).toBe(1)
   })
 
   it('marks a collapsed top-level group that contains the current page (FR2.3)', async () => {
