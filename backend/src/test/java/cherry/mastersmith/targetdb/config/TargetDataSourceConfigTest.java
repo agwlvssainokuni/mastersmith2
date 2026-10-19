@@ -24,6 +24,7 @@ import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.ConditionContext;
@@ -101,6 +102,39 @@ class TargetDataSourceConfigTest {
                 .containsEntry("connectTimeout", "5")
                 .containsEntry("loginTimeout", "5")
                 .containsEntry("socketTimeout", "25");
+    }
+
+    @Test
+    @DisplayName("the socket timeout is the longest of the four query limits plus five seconds for every driver")
+    void socketTimeoutFollowsTheLongestLimit() {
+        TargetDbProperties longList = timeouts(Duration.ofSeconds(30), Duration.ofSeconds(5));
+        TargetDbProperties longDetail = timeouts(Duration.ofSeconds(5), Duration.ofSeconds(21));
+
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.MYSQL, longList))
+                .containsEntry("socketTimeout", "35000");
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.MARIADB, longList))
+                .containsEntry("socketTimeout", "35000");
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.POSTGRESQL, longList))
+                .as("PostgreSQL のドライバーは秒の単位")
+                .containsEntry("socketTimeout", "35");
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.MYSQL, longDetail))
+                .containsEntry("socketTimeout", "26000");
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.POSTGRESQL, longDetail))
+                .containsEntry("socketTimeout", "26");
+    }
+
+    private static TargetDbProperties timeouts(Duration list, Duration detail) {
+        return new TargetDbProperties(
+                "mysql",
+                "target-db",
+                "3306",
+                "business",
+                "sales",
+                USERNAME,
+                PASSWORD,
+                null,
+                new TargetDbProperties.QueryTimeout(null, null, list, detail),
+                null);
     }
 
     @Test

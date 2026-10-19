@@ -70,6 +70,8 @@ class TargetDbSettingsTest {
             assertThat(usable.schema()).isEqualTo("Sales");
             assertThat(usable.queryTimeout(ReadPurpose.GENERATE)).isEqualTo(Duration.ofSeconds(20));
             assertThat(usable.queryTimeout(ReadPurpose.COMPARE)).isEqualTo(Duration.ofSeconds(5));
+            assertThat(usable.queryTimeout(ReadPurpose.LIST)).isEqualTo(Duration.ofSeconds(5));
+            assertThat(usable.queryTimeout(ReadPurpose.DETAIL)).isEqualTo(Duration.ofSeconds(5));
             assertThat(usable.toString()).doesNotContain(PASSWORD).doesNotContain("target-db.internal");
         });
         assertThat(TargetDbSettings.inspect(
@@ -146,7 +148,8 @@ class TargetDbSettingsTest {
                 "u",
                 PASSWORD,
                 Duration.ofMillis(100),
-                new TargetDbProperties.QueryTimeout(Duration.ofMillis(500), Duration.ZERO),
+                new TargetDbProperties.QueryTimeout(
+                        Duration.ofMillis(500), Duration.ZERO, Duration.ofMillis(999), Duration.ofMillis(500)),
                 new TargetDbProperties.Pool(0, Duration.ofSeconds(5)));
 
         assertThat(problems(properties))
@@ -154,6 +157,8 @@ class TargetDbSettingsTest {
                         "mastersmith.target-db.connect-timeout",
                         "mastersmith.target-db.query-timeout.generate",
                         "mastersmith.target-db.query-timeout.compare",
+                        "mastersmith.target-db.query-timeout.list",
+                        "mastersmith.target-db.query-timeout.detail",
                         "mastersmith.target-db.pool.maximum-size",
                         "mastersmith.target-db.pool.idle-timeout");
     }
@@ -193,5 +198,28 @@ class TargetDbSettingsTest {
 
             assertThat(events.list()).isEmpty();
         }
+    }
+
+    @Test
+    @DisplayName("the list and detail limits accept exactly one second and reject anything shorter by item name only")
+    void listAndDetailLimitBoundary() {
+        TargetDbProperties oneSecond = withQueryTimeout(
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(1), Duration.ofSeconds(1)));
+        TargetDbProperties tooShort = withQueryTimeout(
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofMillis(500), Duration.ofMillis(999)));
+
+        assertThat(TargetDbSettings.inspect(oneSecond))
+                .isInstanceOfSatisfying(TargetDbSettings.Usable.class, usable -> {
+                    assertThat(usable.queryTimeout(ReadPurpose.LIST)).isEqualTo(Duration.ofSeconds(1));
+                    assertThat(usable.queryTimeout(ReadPurpose.DETAIL)).isEqualTo(Duration.ofSeconds(1));
+                });
+        assertThat(problems(tooShort))
+                .containsExactly(
+                        "mastersmith.target-db.query-timeout.list", "mastersmith.target-db.query-timeout.detail")
+                .noneMatch(item -> item.contains("500") || item.contains("999"));
+    }
+
+    private static TargetDbProperties withQueryTimeout(TargetDbProperties.QueryTimeout queryTimeout) {
+        return new TargetDbProperties("postgresql", "h", "5432", "d", "s", "u", PASSWORD, null, queryTimeout, null);
     }
 }

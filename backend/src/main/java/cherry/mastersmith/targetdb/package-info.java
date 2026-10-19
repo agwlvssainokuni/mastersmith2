@@ -17,7 +17,8 @@
  * 対象DB（U1）。利用者の業務データの DB（MySQL・MariaDB・PostgreSQL）の接続の設定と、読み取り専用の接続でのスキーマの
  * メタデータの読み取りを受け持つ。
  *
- * <p>ほかの機能が使ってよいのは {@code service} の {@code TargetSchemaReader} と {@code domain} の型だけで、{@code config}・
+ * <p>ほかの機能が使ってよいのは {@code service} の {@code TargetSchemaReader}・{@code TargetReadAccess}（業務データの読み取りの
+ * 接続を貸す口。Intent 261016-business-data-views の U1）と {@code domain} の型だけで、{@code config}・
  * {@code repository} は外から使わない（{@code TargetDbBoundaryArchitectureTest}）。DSL のことは知らない。
  */
 package cherry.mastersmith.targetdb;

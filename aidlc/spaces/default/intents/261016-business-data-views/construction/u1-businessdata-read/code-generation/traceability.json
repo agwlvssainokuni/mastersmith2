@@ -1,0 +1,1130 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-businessdata-read",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.2.1",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.2.5",
+    "AC1.2.6",
+    "AC1.2.7",
+    "AC1.2.8",
+    "AC1.2.9",
+    "AC1.2.10",
+    "AC1.2.11",
+    "AC1.2.12",
+    "AC1.2.13",
+    "AC1.2.14",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.3",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC1.3.6",
+    "AC1.3.7",
+    "AC1.3.8",
+    "AC1.3.9",
+    "AC1.3.10",
+    "AC1.3.11",
+    "AC1.3.12",
+    "AC1.3.13",
+    "AC1.3.14",
+    "AC1.3.15",
+    "AC1.3.16",
+    "AC1.4.1",
+    "AC1.4.2",
+    "AC1.4.3",
+    "AC1.4.4",
+    "AC1.4.5",
+    "AC1.4.6",
+    "AC1.4.7",
+    "AC1.4.8",
+    "AC1.5.1",
+    "AC1.5.2",
+    "AC1.5.3",
+    "AC1.5.4",
+    "AC1.5.5",
+    "AC1.5.6",
+    "AC1.5.7",
+    "AC1.5.8",
+    "AC3.1.1",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.1.9",
+    "AC3.1.10",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.2.6",
+    "AC3.2.7",
+    "AC3.3.1",
+    "AC3.3.2",
+    "AC3.3.3",
+    "AC3.3.4",
+    "AC3.3.5",
+    "AC3.3.6",
+    "AC3.3.7",
+    "AC3.3.8",
+    "AC3.3.9",
+    "AC3.3.10",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.5.1",
+    "AC3.5.2",
+    "AC3.6.1",
+    "AC3.6.2",
+    "AC3.6.3",
+    "AC3.6.4",
+    "AC3.6.5",
+    "AC3.6.6",
+    "AC3.6.7",
+    "AC3.6.8",
+    "AC3.6.9",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR1.7",
+    "BR1.8",
+    "BR1.9",
+    "BR1.10",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR2.6",
+    "BR2.7",
+    "BR2.8",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR4.4",
+    "BR4.5",
+    "BR4.6",
+    "BR4.7",
+    "BR4.8",
+    "BR4.9",
+    "BR4.10",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR5.5",
+    "BR5.6",
+    "BR5.7",
+    "BR5.8",
+    "BR6.1",
+    "BR6.2",
+    "BR6.3",
+    "BR6.4",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR7.4",
+    "BR7.5",
+    "BR7.6",
+    "BR7.7",
+    "BR7.8",
+    "BR7.9",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3",
+    "BR8.4",
+    "BR8.5",
+    "BR8.6",
+    "BR9.1",
+    "BR9.2",
+    "BR10.1",
+    "BR10.2",
+    "BR10.3",
+    "BR10.4",
+    "BR11.1",
+    "BR11.2",
+    "BR11.3",
+    "BR11.4",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.8",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（一覧の画面とサイドバーの今の項目）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（メニューの出し分けは既存の navigation のまま）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（サイドバーの今の項目）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternTest.java"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "AC1.2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "AC1.2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "id": "AC1.2.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.2.10",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（1ページ目へ戻る・件数の読み上げ）"
+    },
+    {
+      "id": "AC1.2.11",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（0 件の出し分けと作成の入口）"
+    },
+    {
+      "id": "AC1.2.12",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（検索の項目のキーボード操作）"
+    },
+    {
+      "id": "AC1.2.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternTest.java"
+    },
+    {
+      "id": "AC1.2.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC1.3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "id": "AC1.3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.7",
+      "status": "Deferred",
+      "target": "Performance Validation（場面 bizSearchFirst と全体の件数。台本は perf/k6/scenarios.js、合否は Performance Validation）"
+    },
+    {
+      "id": "AC1.3.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.3.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC1.3.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.13",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（英語の文言と依頼（5））"
+    },
+    {
+      "id": "AC1.3.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.3.15",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（狭い幅と表の横のスクロール）"
+    },
+    {
+      "id": "AC1.3.16",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC1.4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC1.4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.4.6",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（一覧の状態の保ち方）"
+    },
+    {
+      "id": "AC1.4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.4.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "AC1.5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC1.5.2",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（書式。U1 は書式の値と文字の値を返す: BR7.2）"
+    },
+    {
+      "id": "AC1.5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "AC1.5.4",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（文字として出す。U1 は値をそのまま文字で返す: BR7.2）"
+    },
+    {
+      "id": "AC1.5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC1.5.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "AC1.5.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyPropertyTest.java"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC3.2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyPropertyTest.java"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "AC3.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "AC3.3.5",
+      "status": "Deferred",
+      "target": "U2 u2-businessdata-write（書き込みの時間切れ）と U3（確かめる入口）"
+    },
+    {
+      "id": "AC3.3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "AC3.3.7",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（理由ごとの文。U1 は理由ごとの code を返す: BR1.9）"
+    },
+    {
+      "id": "AC3.3.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "AC3.3.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "AC3.3.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "U2 u2-businessdata-write（作成の API の切り替えの直後）"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC3.5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "id": "AC3.5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC3.6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "AC3.6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "AC3.6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC3.6.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/IdentifierMatchingPropertyTest.java"
+    },
+    {
+      "id": "AC3.6.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "AC3.6.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "id": "AC3.6.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "id": "AC3.6.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ValueTypesTest.java"
+    },
+    {
+      "id": "AC3.6.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "BR1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "BR1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyPropertyTest.java"
+    },
+    {
+      "id": "BR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/IdentifierMatchingPropertyTest.java"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternTest.java"
+    },
+    {
+      "id": "BR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "id": "BR4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR4.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "BR4.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "id": "BR4.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyPropertyTest.java"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "id": "BR5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR5.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR5.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR6.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "id": "BR7.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR7.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "BR7.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR7.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "BR7.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifierTest.java"
+    },
+    {
+      "id": "BR8.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifierTest.java"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "id": "BR10.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ValueTypesTest.java"
+    },
+    {
+      "id": "BR10.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "id": "BR10.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "id": "BR10.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTraceExposureIT.java"
+    },
+    {
+      "id": "BR11.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "id": "BR11.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR11.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR11.4",
+      "status": "OK",
+      "target": "backend/config/spotbugs-exclude.xml"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "perf/biz/make-biz-seed.sh"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTimeoutIT.java"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataRequestLimitIT.java"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTimeoutIT.java"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternTest.java"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "Deferred",
+      "target": "Observability Setup（警報 ms-forbidden のしきい値の見直し。この単位の3本の 403 は既存の数に入る）"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "Deferred",
+      "target": "Observability Setup（ダッシュボードの業務データの区画と式の確かめ。pool=\"mastersmith-target-db\" の系列は最初の借用の後に出る）"
+    }
+  ]
+}

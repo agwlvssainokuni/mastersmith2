@@ -60,6 +60,12 @@ public sealed interface TargetDbSettings {
     /** 照合の問い合わせの待ちの項目の名前。 */
     String QUERY_TIMEOUT_COMPARE = TargetDbProperties.PREFIX + ".query-timeout.compare";
 
+    /** 業務データの一覧の問い合わせの待ちの項目の名前。 */
+    String QUERY_TIMEOUT_LIST = TargetDbProperties.PREFIX + ".query-timeout.list";
+
+    /** 業務データの詳細の問い合わせの待ちの項目の名前。 */
+    String QUERY_TIMEOUT_DETAIL = TargetDbProperties.PREFIX + ".query-timeout.detail";
+
     /** プールの接続の数の上限の項目の名前。 */
     String POOL_MAXIMUM_SIZE = TargetDbProperties.PREFIX + ".pool.maximum-size";
 
@@ -125,6 +131,8 @@ public sealed interface TargetDbSettings {
             return switch (purpose) {
                 case GENERATE -> properties.queryTimeout().generate();
                 case COMPARE -> properties.queryTimeout().compare();
+                case LIST -> properties.queryTimeout().list();
+                case DETAIL -> properties.queryTimeout().detail();
             };
         }
     }
@@ -192,6 +200,12 @@ public sealed interface TargetDbSettings {
         }
         if (properties.queryTimeout().compare().getSeconds() < 1) {
             problems.add(QUERY_TIMEOUT_COMPARE);
+        }
+        if (properties.queryTimeout().list().getSeconds() < 1) {
+            problems.add(QUERY_TIMEOUT_LIST);
+        }
+        if (properties.queryTimeout().detail().getSeconds() < 1) {
+            problems.add(QUERY_TIMEOUT_DETAIL);
         }
         if (properties.pool().maximumSize() < 1) {
             problems.add(POOL_MAXIMUM_SIZE);

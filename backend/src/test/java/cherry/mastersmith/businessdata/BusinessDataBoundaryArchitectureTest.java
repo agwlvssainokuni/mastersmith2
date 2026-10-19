@@ -1,0 +1,152 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package cherry.mastersmith.businessdata;
+
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaCall;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
+import java.sql.Connection;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+/**
+ * 業務データ（businessdata）の境界の構造の検査（BR3.5・BR11.2、ADR-001・ADR-002、team.md の Code Style、計画の 4.4）。既存の
+ * {@code ArchitectureTest}・{@code TargetDbBoundaryArchitectureTest}・{@code RoleBoundaryArchitectureTest} は書き換えず、足す。
+ */
+class BusinessDataBoundaryArchitectureTest {
+
+    private static final String BUSINESSDATA = "cherry.mastersmith.businessdata..";
+
+    private static final JavaClasses CLASSES = new ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+            .importPackages("cherry.mastersmith");
+
+    /** 文を作る JDBC の口の名前。 */
+    private static final Set<String> STATEMENT_FACTORIES = Set.of("prepareStatement", "createStatement");
+
+    private static final DescribedPredicate<JavaCall<?>> STATEMENT_CALL = DescribedPredicate.describe(
+            "a statement factory of java.sql.Connection",
+            call -> STATEMENT_FACTORIES.contains(call.getName())
+                    && call.getTargetOwner().isAssignableTo(Connection.class));
+
+    @Test
+    @DisplayName(
+            "businessdata depends only on targetdb service and domain, role service and domain, dsl, common and libraries")
+    void allowedDependencies() {
+        classes()
+                .that()
+                .resideInAPackage(BUSINESSDATA)
+                .should()
+                .onlyDependOnClassesThat()
+                .resideInAnyPackage(
+                        BUSINESSDATA,
+                        "cherry.mastersmith.targetdb.service..",
+                        "cherry.mastersmith.targetdb.domain..",
+                        "cherry.mastersmith.role.service..",
+                        "cherry.mastersmith.role.domain..",
+                        "cherry.mastersmith.dsl.domain..",
+                        "cherry.mastersmith.dsl.service..",
+                        "cherry.mastersmith.common..",
+                        "java..",
+                        "javax..",
+                        "jakarta..",
+                        "org.springframework..",
+                        "org.slf4j..",
+                        "com.fasterxml.jackson.annotation..")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("businessdata.repository does not depend on targetdb.service")
+    void repositoryDoesNotUseTheLendingPort() {
+        noClasses()
+                .that()
+                .resideInAPackage("cherry.mastersmith.businessdata.repository..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("cherry.mastersmith.targetdb.service..")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("only RowSqlExecutor creates statements from a JDBC connection in businessdata")
+    void onlyRowSqlExecutorCreatesStatements() {
+        List<String> callers = CLASSES.stream()
+                .filter(javaClass -> javaClass.getPackageName().startsWith("cherry.mastersmith.businessdata"))
+                .flatMap(javaClass -> javaClass.getMethodCallsFromSelf().stream())
+                .filter(STATEMENT_CALL)
+                .map(call -> call.getOriginOwner().getSimpleName() + "#"
+                        + call.getOrigin().getName())
+                .distinct()
+                .toList();
+        assertThat(callers)
+                .as("規則が呼び出しを見分けている（RowSqlExecutor の search・detail が実際に文を作っている）")
+                .containsExactlyInAnyOrder("RowSqlExecutor#search", "RowSqlExecutor#detail");
+        noClasses()
+                .that()
+                .resideInAPackage(BUSINESSDATA)
+                .and()
+                .doNotHaveFullyQualifiedName("cherry.mastersmith.businessdata.repository.RowSqlExecutor")
+                .should()
+                .callMethodWhere(STATEMENT_CALL)
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("the read side of businessdata takes no part in transactions and uses no JdbcTemplate")
+    void noTransactionsOnTheReadSide() {
+        noClasses()
+                .that()
+                .resideInAnyPackage(
+                        "cherry.mastersmith.businessdata.web..",
+                        "cherry.mastersmith.businessdata.domain..",
+                        "cherry.mastersmith.businessdata.repository..")
+                .or()
+                .haveFullyQualifiedName("cherry.mastersmith.businessdata.service.BusinessDataReadService")
+                .or()
+                .haveFullyQualifiedName("cherry.mastersmith.businessdata.service.TableAccessResolver")
+                .should()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.transaction.annotation.Transactional")
+                .orShould()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.transaction.support.TransactionTemplate")
+                .orShould()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.jdbc.core.JdbcTemplate")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("no other feature depends on businessdata")
+    void nobodyDependsOnBusinessData() {
+        noClasses()
+                .that()
+                .resideOutsideOfPackage(BUSINESSDATA)
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage(BUSINESSDATA)
+                .check(CLASSES);
+    }
+}

@@ -49,6 +49,9 @@
 # 秘密情報（署名鍵・仮の管理者のパスワード・対象DB のパスワード）は乱数で作り、ホームの下の一時ディレクトリ（権限 700）に置く。
 # 値は表示せず、終わったら消す。配備したアプリ（プロジェクト mastersmith）には触れない（別のプロジェクト名 mastersmith-perf）。
 set -euo pipefail
+# 業務データの負荷の試験（perf/README.md の「業務データの場面」）で export した対象DB の設定とメモリの上限を外し、既定の値で測る
+unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL \
+  MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 PERF_COMPOSE="${ROOT}/docker/perf/compose.yaml"

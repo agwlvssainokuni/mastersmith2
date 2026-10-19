@@ -59,7 +59,7 @@ public record TargetDbProperties(
     /** 空の値（環境変数の値が空など）で null になった項目を既定値にする。 */
     public TargetDbProperties {
         connectTimeout = connectTimeout == null ? DEFAULT_CONNECT_TIMEOUT : connectTimeout;
-        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null) : queryTimeout;
+        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null, null, null) : queryTimeout;
         pool = pool == null ? new Pool(null, null) : pool;
     }
 
@@ -68,15 +68,36 @@ public record TargetDbProperties(
      *
      * @param generate 既定の DSL の生成のとき（既定 20 秒）
      * @param compare 照合のとき（既定 5 秒）
+     * @param list 業務データの一覧のとき（件数とページのそれぞれ。既定 5 秒。Intent 261016-business-data-views の NFR4.4）
+     * @param detail 業務データの詳細のとき（既定 5 秒。NFR4.4）
      */
     public record QueryTimeout(
             @DefaultValue("20s") Duration generate,
-            @DefaultValue("5s") Duration compare) {
+            @DefaultValue("5s") Duration compare,
+            @DefaultValue("5s") Duration list,
+            @DefaultValue("5s") Duration detail) {
 
         /** 空の値で null になった項目を既定値にする。 */
         public QueryTimeout {
             generate = generate == null ? Duration.ofSeconds(20) : generate;
             compare = compare == null ? Duration.ofSeconds(5) : compare;
+            list = list == null ? Duration.ofSeconds(5) : list;
+            detail = detail == null ? Duration.ofSeconds(5) : detail;
+        }
+
+        /**
+         * 4つの目的のうち、最も長い上限を返す（ドライバーの通信の待ちの計算に使う。BR8.2、基盤の設計のレビュー R-01）。
+         *
+         * @return 最も長い上限
+         */
+        public Duration longest() {
+            Duration longest = generate;
+            for (Duration value : new Duration[] {compare, list, detail}) {
+                if (value.compareTo(longest) > 0) {
+                    longest = value;
+                }
+            }
+            return longest;
         }
     }
 

@@ -92,6 +92,16 @@ public final class PermissionSnapshot {
     }
 
     /**
+     * 読んだ時点の適用中の DSL のモデルを、読み取りだけで返す（Intent 261016-business-data-views の U1、BR3.1・BR11.3、契約 C7 との差
+     * X6）。業務データの判定と SQL の識別子の照合を、この写しと同じ DSL で行うために使う。モデルは変更できない値の木。
+     *
+     * @return DSL のモデル（無ければ空）
+     */
+    public Optional<DslModel> dsl() {
+        return Optional.ofNullable(dsl);
+    }
+
+    /**
      * 対象の実効の権限を返す（BR5.1〜BR5.3）。カラムの補助権限は、そのカラムのテーブルの実効の値。
      *
      * @param target 対象

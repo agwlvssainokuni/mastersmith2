@@ -166,8 +166,8 @@ class TargetSchemaReaderTest {
     @Test
     @DisplayName("configured per-query limits are applied per purpose")
     void configuredPerQueryLimits() throws SQLException {
-        TargetDbSettings settings =
-                usable(new TargetDbProperties.QueryTimeout(Duration.ofSeconds(30), Duration.ofSeconds(7)));
+        TargetDbSettings settings = usable(new TargetDbProperties.QueryTimeout(
+                Duration.ofSeconds(30), Duration.ofSeconds(7), Duration.ofSeconds(9), Duration.ofSeconds(11)));
 
         new JdbcTargetSchemaReader(settings, Optional.of(dataSource)).readSchema(ReadPurpose.COMPARE);
         verify(statement, times(4)).setQueryTimeout(7);

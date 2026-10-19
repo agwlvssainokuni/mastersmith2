@@ -474,6 +474,8 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TARGET_DB_CONNECT_TIMEOUT` | `3s` | 対象DB への接続の待ちの上限 |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_GENERATE` | `20s` | 既定の DSL の生成で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST` | `5s` | 業務データの一覧で、問い合わせ1回（件数・ページのそれぞれ）の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL` | `5s` | 業務データの詳細で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `5` | 対象DB の接続の数の上限（内部DB のプールとは別） |
 | `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上） |
 | `SPRING_MAIL_HOST` | なし | メールの SMTP の接続先（「メール（U1）」）。無ければメールを送らない。手元では `mailpit` |
@@ -554,16 +556,31 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 ## 対象DB（利用者の業務データの DB）
 
-アプリは、利用者の業務データの DB（対象DB。MySQL・MariaDB・PostgreSQL）を、読み取り専用の接続で読みます（今は、設定したスキーマのテーブル・ビュー・カラム・キー・コメントのメタデータだけ）。接続先は環境変数 `MASTERSMITH_TARGET_DB_*`（「環境変数」の表）だけから受け取り、画面・API から受け取りません。
+アプリは、利用者の業務データの DB（対象DB。MySQL・MariaDB・PostgreSQL）を、読み取り専用の接続で読みます（設定したスキーマのテーブル・ビュー・カラム・キー・コメントのメタデータと、業務データの読み取りの API が読む行）。接続先は環境変数 `MASTERSMITH_TARGET_DB_*`（「環境変数」の表）だけから受け取り、画面・API から受け取りません。
 
 - 7つの項目がすべて空なら対象DB を使わず、起動は続きます。一部だけ空・不正なら、問題のある項目の名前（例: `mastersmith.target-db.schema`）だけを WARN で1件出し、対象DB を使いません（値はログに出しません）。直したら再起動します。
 - 起動時には対象DB に接続しません。ヘルスチェックは内部DB だけで判断し、対象DB の状態は応答に含めません。
 - ログイン・監査ログ・Flyway は内部DB を使い続け、対象DB には表を作りません。
-- 待ちの上限は、接続の待ち（既定 3 秒）と、問い合わせ1回ごとの待ち（既定の DSL の生成 20 秒・照合 5 秒）だけです。読み取りの全体の上限はありません。読み取りは問い合わせ4回のため、応答しない対象DB では、照合でも最悪 接続 3 秒＋5 秒×4 回（約 23 秒）かかることがあります（照合の 10 秒の目標を超えることを許す決定です）。
+- 待ちの上限は、接続の待ち（既定 3 秒）と、問い合わせ1回ごとの待ち（既定の DSL の生成 20 秒・照合 5 秒・業務データの一覧 5 秒・詳細 5 秒）だけです。ドライバーの通信の待ちは、4つの問い合わせの上限の最も長いもの + 5 秒（既定 25 秒）です。読み取りの全体の上限はありません。読み取りは問い合わせ4回のため、応答しない対象DB では、照合でも最悪 接続 3 秒＋5 秒×4 回（約 23 秒）かかることがあります（照合の 10 秒の目標を超えることを許す決定です）。
 - 読めなかったときは、原因の種類（`TIMEOUT`・`CONNECTION_FAILED`）と SQLState だけを WARN で出します。接続先・ユーザー名・パスワード・ドライバーの例外の文言は出しません。
 - 3つのドライバー（MariaDB・PostgreSQL・MySQL）自身のログは、`backend/src/main/resources/application.yaml` の `logging.level` で止めています（`org.mariadb.jdbc`・`org.postgresql`・`com.mysql.cj` を `OFF`）。ドライバーのログは接続先・ユーザー名・例外の文言を含むことがあり、MariaDB のドライバーは認証の失敗をユーザー名つきで WARN に出すことを結合テストで確かめました。MySQL・PostgreSQL のドライバーも同じ扱いにそろえています。
 - 読めない原因を調べるときは、まず読み取りの口（`JdbcTargetSchemaReader`）の WARN の `reason` と `sqlState` で絞ります（`08` で始まる: 接続できない、`28` で始まる: 認証の失敗、`57014`: 問い合わせの打ち切り、`TIMEOUT` で SQLState が無い: 接続の待ちの間に応答が無い）。さらに調べるときは、同じネットワークから DB の付属のクライアント（`psql`・`mysql`・`mariadb`）で接続を試すか、対象DB の側のログを見てください。配備した環境でドライバーのログを有効にしないでください（接続情報がログに残ります）。
 - 対象DB のアカウントは、読み取りの権限だけにしてください（MySQL・MariaDB は `GRANT SELECT, SHOW VIEW ON <DB>.*`、PostgreSQL は `GRANT USAGE ON SCHEMA` と `GRANT SELECT ON ALL TABLES IN SCHEMA`）。アプリは接続を読み取り専用にし、書き込み・DDL を発行するコードを持ちませんが、アカウントの権限は調べません。
+
+### 業務データの読み取りの API（Intent 261016-business-data-views の U1）
+
+適用中の DSL にあるテーブルの定義・一覧（検索と並べ替え）・1行の詳細を、3本の道で返します。どれも `POST` で、スキーマ名・テーブル名・検索の値・主キーの値は道や問い合わせに載せず、本文（JSON）で受け取ります（トレースの道の属性に値を残さないため）。
+
+| 道 | すること |
+|---|---|
+| `POST /api/tables/definition` | テーブルの定義（一覧・詳細に出すカラム、検索の項目、並べ替えられるカラム、許す操作）。対象DB には接続しません |
+| `POST /api/tables/rows/search` | 一覧（条件・並べ替え・ページ。1ページは 20・50・100 件、全体の件数を含む）。文字の値は一覧では 100 字で切り、切ったカラムを示します |
+| `POST /api/tables/rows/get` | 主キーで1行の詳細（文字の値は 10,000 字で切ります） |
+
+- ログインだけが要ります（管理の権限は要りません）。読めるかはテーブルごとに、作業ロールの権限（主権限が `NONE` でないこと）で、要求ごとにサーバー側で判定します。読めないカラム（主権限 `NONE`）は応答に含めません。
+- 対象DB へは読み取りの接続（読み取りだけのアカウント）だけを使い、書き込みはしません。1要求で借りる対象DB の接続は1本までで、借りている間は内部DB の接続を持ちません。
+- 識別子（スキーマ名・テーブル名・カラム名・並べ替えの列）は適用中の DSL にある名前と照らしてから引用し、値はバインド変数で渡します。
+- 失敗は Problem Details の `code` で返します。DSL が適用されていない・テーブルが DSL に無い・行が無いときは 404（`BUSINESS_DSL_NOT_APPLIED`・`BUSINESS_TABLE_NOT_FOUND`・`BUSINESS_ROW_NOT_FOUND`）、権限が無いときは 403（`ACCESS_DENIED`）、主キーの無いテーブル・ビューなど行を1件に決められないテーブルの詳細は 409（`BUSINESS_ROW_OPERATION_NOT_ALLOWED`）、主キーで2行以上が当たったときは 409（`BUSINESS_ROW_NOT_UNIQUE`）、DSL と対象DB が合わないときは 409（`BUSINESS_TARGET_DB_MISMATCH`）、入力の誤りは 400（`VALIDATION_FAILED`）、対象DB に届かない・借りる待ち（3 秒。MySQL で接続の確かめが走るときは 6 秒）を超えた・時間切れのときは 503（`BUSINESS_TARGET_DB_UNAVAILABLE`・`BUSINESS_TARGET_DB_TIMEOUT`）です。行の値・接続先・ドライバーの例外の文言は、応答にもログにも出しません（ログは SQLState・業者のエラーの番号・例外のクラスの名前だけ）。
 
 ### 対象DB の結合テストとコンテナの実行環境
 

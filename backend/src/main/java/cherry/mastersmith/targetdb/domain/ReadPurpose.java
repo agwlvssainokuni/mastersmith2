@@ -18,10 +18,17 @@ package cherry.mastersmith.targetdb.domain;
 /**
  * 読み取りの目的（NFR 設計の差: {@code readSchema(ReadPurpose)}）。目的ごとに問い合わせ1回の待ちの上限が決まる。読み取りの
  * 全体の上限は、生成・照合のどちらにも無い（照合の全体の上限は作らない。NFR 設計の承認の場の決定 B）。
+ *
+ * <p>業務データの読み取り（Intent 261016-business-data-views の U1、BR8.2・NFR4.4）の一覧と詳細の目的を足した。スキーマの読み取り
+ * （{@code TargetSchemaReader}）は生成・照合だけを使い、業務データの読み取りの口（{@code TargetReadAccess}）は一覧・詳細だけを使う。
  */
 public enum ReadPurpose {
     /** 既定の DSL の生成（U3）。問い合わせ1回の上限は既定 20 秒。 */
     GENERATE,
     /** 適用中の DSL との照合（U4）。問い合わせ1回の上限は既定 5 秒。 */
-    COMPARE
+    COMPARE,
+    /** 業務データの一覧（件数とページのそれぞれ）。問い合わせ1回の上限は既定 5 秒。 */
+    LIST,
+    /** 業務データの詳細。問い合わせ1回の上限は既定 5 秒。 */
+    DETAIL
 }

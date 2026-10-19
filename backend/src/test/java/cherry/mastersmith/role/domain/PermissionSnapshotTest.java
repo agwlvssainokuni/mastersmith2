@@ -94,6 +94,26 @@ class PermissionSnapshotTest {
     }
 
     @Test
+    @DisplayName("the snapshot hands out the same DSL model it judges with, read only")
+    void dslOfTheSnapshot() {
+        PermissionSnapshot snapshot = PermissionSnapshot.of(WORK_ROLE, DSL, RoleDslFixture.HASH, settings());
+
+        assertThat(snapshot.dsl()).containsSame(DSL);
+        assertThat(PermissionSnapshot.of(null, DSL, RoleDslFixture.HASH, Map.of())
+                        .dsl())
+                .as("作業ロールが無くても DSL は渡す")
+                .containsSame(DSL);
+    }
+
+    @Test
+    @DisplayName("a snapshot without an applied DSL hands out no DSL model")
+    void noDslOfTheSnapshot() {
+        PermissionSnapshot snapshot = PermissionSnapshot.of(WORK_ROLE, null, null, settings());
+
+        assertThat(snapshot.dsl()).isEmpty();
+    }
+
+    @Test
     @DisplayName("the string form has the work role id and the row count only")
     void stringFormHasNoNames() {
         PermissionSnapshot snapshot = PermissionSnapshot.of(WORK_ROLE, DSL, RoleDslFixture.HASH, settings());

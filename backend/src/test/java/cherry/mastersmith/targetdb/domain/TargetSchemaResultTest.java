@@ -88,6 +88,7 @@ class TargetSchemaResultTest {
         assertThat(DatabaseProduct.fromSetting("oracle")).isEmpty();
         assertThat(DatabaseProduct.fromSetting("")).isEmpty();
         assertThat(DatabaseProduct.fromSetting(null)).isEmpty();
-        assertThat(ReadPurpose.values()).containsExactly(ReadPurpose.GENERATE, ReadPurpose.COMPARE);
+        assertThat(ReadPurpose.values())
+                .containsExactly(ReadPurpose.GENERATE, ReadPurpose.COMPARE, ReadPurpose.LIST, ReadPurpose.DETAIL);
     }
 }

@@ -19,6 +19,9 @@
 # イメージは配備と同じ mastersmith:local を使う（事前に docker compose build で作っておく）。手順は perf/README.md。
 # DSL の時間を測るときは、対象DB（MySQL・MariaDB・PostgreSQL）を profile で1つずつ起動し、
 # アプリの接続先を一時の環境ファイル（MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE）で渡す。手順は perf/README.md の「DSL の時間を測る」。
+# 業務データの負荷の試験（Intent 261016-business-data-views の U1）では、対象DB の設定（バッファープール・共有バッファー）とメモリの上限を
+# シェルの環境変数 MASTERSMITH_PERF_TARGETDB_* で上げる。渡さなければ既定（今の値）のままで、DSL の時間の測りは変わらない。
+# 値と手順は perf/README.md の「業務データの場面」。
 name: mastersmith-perf
 
 services:
@@ -65,6 +68,11 @@ services:
   targetdb-postgres:
     image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
     profiles: [targetdb-postgres]
+    # 共有バッファー（既定 128MB は PostgreSQL の既定と同じ値）
+    command:
+      - postgres
+      - -c
+      - shared_buffers=${MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS:-128MB}
     env_file:
       - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
         required: true
@@ -81,12 +89,16 @@ services:
       retries: 30
       start_period: 60s
       start_interval: 2s
-    mem_limit: 512m
+    mem_limit: ${MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY:-512m}
     restart: "no"
 
   targetdb-mysql:
     image: mysql:26.7.0@sha256:ade067ae2fb15eeb6143e81185afe22573e3b3addc58aaf90c41999fa6883991
     profiles: [targetdb-mysql]
+    # バッファープール（既定 128M は MySQL の既定と同じ値）
+    command:
+      - mysqld
+      - --innodb-buffer-pool-size=${MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL:-128M}
     env_file:
       - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
         required: true
@@ -103,12 +115,16 @@ services:
       retries: 30
       start_period: 90s
       start_interval: 2s
-    mem_limit: 768m
+    mem_limit: ${MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY:-768m}
     restart: "no"
 
   targetdb-mariadb:
     image: mariadb:13.0.2@sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d
     profiles: [targetdb-mariadb]
+    # バッファープール（既定 128M は MariaDB の既定と同じ値）
+    command:
+      - mariadbd
+      - --innodb-buffer-pool-size=${MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL:-128M}
     env_file:
       - path: ${MASTERSMITH_PERF_TARGETDB_ENV_FILE:-/dev/null}
         required: true
@@ -124,7 +140,7 @@ services:
       retries: 30
       start_period: 90s
       start_interval: 2s
-    mem_limit: 512m
+    mem_limit: ${MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY:-512m}
     restart: "no"
 
   # 招待（U3）の負荷の試験で招待メールを受ける手元の受け手（profile mail）。版は compose.yaml の mailpit と同じダイジェスト。

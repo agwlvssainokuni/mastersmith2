@@ -96,6 +96,10 @@ mastersmith:
       # 問い合わせ1回の待ちの上限（照合）。読み取りの全体の上限は置かない（決定 B）。応答しない対象DB では、
       # 照合でも最悪 接続の待ち＋この値×4 回（既定で約 23 秒）かかりうる
       compare: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE:5s}
+      # 問い合わせ1回の待ちの上限（業務データの一覧。件数とページの問い合わせのそれぞれに付ける）
+      list: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST:5s}
+      # 問い合わせ1回の待ちの上限（業務データの詳細）。ドライバーの通信の待ちは、4つの上限の最も長いもの + 5 秒
+      detail: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL:5s}
     pool:
       # 対象DB の接続の数の上限（内部DB の接続とは別）
       maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:5}

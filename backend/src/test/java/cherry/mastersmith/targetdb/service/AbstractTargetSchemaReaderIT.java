@@ -211,7 +211,8 @@ abstract class AbstractTargetSchemaReaderIT {
     @Order(1)
     @DisplayName("both purposes read the configured schema with an account that only has read privileges")
     void readsWithReadOnlyAccount() {
-        for (ReadPurpose purpose : ReadPurpose.values()) {
+        // スキーマの読み取りの目的（生成・照合）だけを並べる。一覧・詳細は業務データの読み取りの口の目的。
+        for (ReadPurpose purpose : List.of(ReadPurpose.GENERATE, ReadPurpose.COMPARE)) {
             TargetSchemaResult result = reader(app).readSchema(purpose);
 
             assertThat(result).isInstanceOfSatisfying(TargetSchemaResult.Success.class, success -> {

@@ -147,6 +147,23 @@
 //                       表示名のための DSL の読み取りをしないため、p95 は tableAccessVisible と別に残す（NFR 設計の読み直しの R-08）
 //   navMenuBaseline     目安の DSL（DSL_FILE。perf/make-nav-dsl.mjs --baseline、menus 100 項目・深さ 1）を setup で適用し直した後の
 //                       業務のメニュー（200）。10 VU・3 分。DSL を入れ替えるため、流す順の最後に置く（perf/README.md）
+// 業務データの場面（Intent 261016-business-data-views の U1 u1-businessdata-read、Bolt B2。手順は perf/README.md の「業務データの場面」）。ID は
+// construction/u1-businessdata-read/nfr-requirements/ の performance-requirements.md（NFR1.1・NFR1.2）と scalability-requirements.md
+// （NFR2.1・NFR2.4・NFR2.5）。種は perf/biz/make-biz-seed.sh（スキーマ bizperf の biz_item 100 カラム × 100,000 行・biz_pair・biz_wide）、
+// DSL は perf/make-biz-dsl.mjs。利用者は試験用の利用者 perf-biz-01〜BIZ_USER_COUNT（VU の番号で決める。パスワードは PERF_USER_PASSWORD）。
+// どの場面も1回の繰り返しに要求1つで、繰り返しの中に待ちを置かない。トークンは setup で VU の数だけ取り、setup は前の場面の状態に
+// 頼らず、定義の API が 200 になること（bizPrepare が作った前提）を確かめてから始める。判定は iteration_duration{scenario:…} の
+// p95 < 1000 ms と checks の率 1（http_req_duration{name:…} は並べて記録）。10 VU（VUS）・3 分（BIZ_DURATION）の constant-vus。
+//   bizPrepare          準備の場面（1 VU・1 回）。DSL_FILE の DSL の投入と適用、ロール BIZ_ROLE_NAME の用意とスキーマへの READ の保存、
+//                       試験用の利用者への割り当て、1人ずつログインして作業ロールの保存（前の回の状態も受け入れる）
+//   bizDefinition       定義（POST /api/tables/definition、200 で一覧のカラム 100）。対象DB に接続しないため PostgreSQL の回だけで流す
+//   bizSearchFirst      一覧の1ページ目（100 件・100 カラム・条件なし・既定の並び、全体の件数を含む。200 で 100 件・total が BIZ_ROWS）
+//   bizSearchContains   c_010 の部分一致（表の全部を読む形。setup で数えた total と同じこと）
+//   bizSearchLast       主キーの順の最後のページ（setup で total から決める）
+//   bizSearchLastSorted 索引の無い c_001 で並べ替えた最後のページ（NFR 設計のレビュー R-05。計画の D2: A）
+//   bizDetail           主キーで1行の詳細（POST /api/tables/rows/get。VU と繰り返しの番号で行を回す）
+//   bizSearchWide       biz_wide の1ページ目（100 件 × 100 カラム × 100 字。NFR2.5 のメモリの確かめ。応答時間は記録だけ）。
+//                       流す前にアプリのコンテナを作り直して前の memory.peak を消す
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -364,12 +381,46 @@ const ROLE_POOL_COUNTS = {
   other: new Counter('rolePoolLimit_other'),
 }
 
+// 業務データの場面（Intent 261016-business-data-views の U1、B2。NFR1.1・NFR1.2・NFR2.4・NFR2.5、performance-design.md 4節）
+const BIZ_API = `${BASE}/api/tables`
+const BIZ_SCENARIOS = [
+  'bizDefinition',
+  'bizSearchFirst',
+  'bizSearchContains',
+  'bizSearchLast',
+  'bizSearchLastSorted',
+  'bizDetail',
+  'bizSearchWide',
+]
+// 場面の長さ（トークンの有効期限 5 分より短くする）
+const BIZ_DURATION = __ENV.BIZ_DURATION || '3m'
+// 種の台本（perf/biz/make-biz-seed.sh）と DSL（perf/make-biz-dsl.mjs）が作るスキーマ・表・カラム
+const BIZ_SCHEMA = __ENV.BIZ_SCHEMA || 'bizperf'
+const BIZ_ITEM_TABLE = 'biz_item'
+const BIZ_WIDE_TABLE = 'biz_wide'
+const BIZ_ROWS = Number(__ENV.BIZ_ROWS || 100000)
+const BIZ_PAGE_SIZE = 100
+const BIZ_CONTAINS_COLUMN = 'c_010'
+const BIZ_CONTAINS_VALUE = '目印'
+const BIZ_SORT_COLUMN = 'c_001'
+// 準備の場面が作るロールの名前と、試験用の利用者の数（perf-biz-01〜）
+const BIZ_ROLE_NAME = __ENV.BIZ_ROLE_NAME || 'perf-biz-reader'
+const BIZ_USER_COUNT = Number(__ENV.BIZ_USER_COUNT || 10)
+// 準備の DSL（bizPrepare）は初期化の段でだけ読める（k6 の open）
+const BIZ_DSL_BODY = SCENARIO === 'bizPrepare' && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
+
 function scenariosFor(name) {
   if (name === 'dslPrepare') {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '20m' } }
   }
   if (name === 'navPrepare') {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
+  }
+  if (name === 'bizPrepare') {
+    return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
+  }
+  if (BIZ_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
   }
   if (NAV_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: ROLE_DURATION } }
@@ -456,6 +507,16 @@ function thresholdsFor(name) {
   if (name === 'rolePrepare') return { 'checks{scenario:rolePrepare}': ['rate==1'] }
   // Intent 261004-role-menu の U5（NFR2.2・NFR2.5）。1回の繰り返しに要求1つの場面の iteration_duration（単調な時計）と checks で判定する。
   if (name === 'navPrepare') return { 'checks{scenario:navPrepare}': ['rate==1'] }
+  // Intent 261016-business-data-views の U1（NFR1.1・NFR1.2）。場面ごとの iteration_duration（単調な時計）の p95 < 1000 ms と checks の率 1 で
+  // 判定し、http_req_duration{name:…} は並べて記録するだけ（max>=0）。bizSearchWide はメモリの確かめの場面（NFR2.5）で、応答時間は記録だけ。
+  if (name === 'bizPrepare') return { 'checks{scenario:bizPrepare}': ['rate==1'] }
+  if (BIZ_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: [name === 'bizSearchWide' ? 'max>=0' : 'p(95)<1000'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['max>=0'],
+    }
+  }
   if (NAV_SCENARIOS.includes(name)) {
     return {
       [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
@@ -516,6 +577,8 @@ if (ROLE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // 業務のメニューの準備は setup で操作する管理者のトークンを取り、目安の場面は setup で目安の DSL を適用し直す（大きな DSL の投入）
 if (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') options.setupTimeout = '10m'
+// 業務データの準備は setup で操作する管理者のトークンを取り、ほかの場面は setup で VU の数だけログインして前提を確かめる
+if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -570,6 +633,7 @@ export function setup() {
   if (ROLE_SCENARIOS.includes(SCENARIO)) setupRoles(tokens)
   if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) setupRoleTransfer(tokens)
   if (SCENARIO === 'navPrepare' || NAV_SCENARIOS.includes(SCENARIO)) setupNavigation(tokens)
+  if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) setupBusinessData(tokens)
   return tokens
 }
 
@@ -1998,6 +2062,163 @@ function tableAccessDenied(data) {
   check(res, { 'tableAccessDenied 403': (r) => r.status === 403 && r.json('code') === 'ACCESS_DENIED' })
 }
 
+// 業務データの場面（Intent 261016-business-data-views の U1、B2）。どの場面も1回の繰り返しに要求1つで、要求の名前（name のタグ）は
+// 場面の名前と同じ。行の値と主キーの値は出力しない（状態コードと件数だけを checks で見る）。
+function bizUserEmail(n) {
+  return `perf-biz-${two(n)}@example.test`
+}
+
+function bizHeaders(data) {
+  return roleHeaders(data.bizTokens[exec.vu.idInTest])
+}
+
+function bizDefinitionRequest(headers, table, name) {
+  return jsonPost(`${BIZ_API}/definition`, { schema: BIZ_SCHEMA, table }, headers, name)
+}
+
+function bizSearchRequest(headers, table, body, name) {
+  return jsonPost(
+    `${BIZ_API}/rows/search`,
+    { schema: BIZ_SCHEMA, table, conditions: [], sort: null, page: 1, size: BIZ_PAGE_SIZE, ...body },
+    headers,
+    name,
+  )
+}
+
+// 業務データの場面の用意。準備の場面は操作する管理者のトークンを取る。ほかの場面は試験用の利用者のトークンを VU の数だけ取り、
+// 前の場面の状態に頼らず、準備の場面が作った前提（定義の API が 200）がそろっていることを確かめてから始める（NFR1.2、基盤の R-02）。
+function setupBusinessData(data) {
+  if (SCENARIO === 'bizPrepare') {
+    if (!BIZ_DSL_BODY) fail('DSL_FILE を指定してください（perf/make-biz-dsl.mjs で作った DSL。perf/README.md の業務データの場面）')
+    data.roleToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+    return
+  }
+  if (VUS > BIZ_USER_COUNT) fail(`VUS（${VUS}）が試験用の利用者の数 BIZ_USER_COUNT（${BIZ_USER_COUNT}）を超えています`)
+  data.bizTokens = {}
+  for (let vu = 1; vu <= VUS; vu++) data.bizTokens[vu] = tokenOf(login(bizUserEmail(vu), USER_PASSWORD))
+  const headers = roleHeaders(data.bizTokens[1])
+  const table = SCENARIO === 'bizSearchWide' ? BIZ_WIDE_TABLE : BIZ_ITEM_TABLE
+  const definition = bizDefinitionRequest(headers, table, 'bizSetup')
+  if (definition.status !== 200) {
+    fail(`業務データの定義を読めませんでした: ${definition.status} ${codeOf(definition)}（先に bizPrepare を流してください）`)
+  }
+  if (SCENARIO === 'bizSearchLast' || SCENARIO === 'bizSearchLastSorted' || SCENARIO === 'bizSearchContains') {
+    const conditions =
+      SCENARIO === 'bizSearchContains' ? [{ column: BIZ_CONTAINS_COLUMN, value: BIZ_CONTAINS_VALUE }] : []
+    const first = bizSearchRequest(headers, BIZ_ITEM_TABLE, { conditions }, 'bizSetup')
+    if (first.status !== 200) fail(`業務データの一覧を読めませんでした: ${first.status} ${codeOf(first)}`)
+    data.bizTotal = first.json('total')
+    if (data.bizTotal < 1) fail('業務データの一覧が 0 件です（種の台本を流してください）')
+    data.bizLastPage = Math.ceil(data.bizTotal / BIZ_PAGE_SIZE)
+    data.bizLastCount = data.bizTotal - (data.bizLastPage - 1) * BIZ_PAGE_SIZE
+  }
+}
+
+// 準備の場面（1 VU・1 回）。DSL の投入と適用、ロール BIZ_ROLE_NAME の用意（無ければ作る）とスキーマ bizperf への READ の保存、
+// 試験用の利用者 perf-biz-01〜への割り当て、1人ずつログインして作業ロールの保存を API で行う（使い捨ての環境の監査に残る）。
+// 前の回が残したロール・割り当て（409 ROLE_NO_CHANGE）も受け入れ、何度流しても同じ状態になる。
+function bizPrepare(data) {
+  const token = data.roleToken
+  const headers = roleHeaders(token)
+  const { submit, apply } = navApplyDsl(token, BIZ_DSL_BODY, 'bizPrepare')
+  check(submit, { 'dsl submit 201': (r) => r.status === 201 })
+  check(apply, { 'dsl apply 200': (r) => r.status === 200 })
+  const roleId = roleIdByName(token, BIZ_ROLE_NAME) || roleCreate(token, BIZ_ROLE_NAME, 'bizPrepare')
+  const saved = jsonPut(
+    `${ROLE_API}/${roleId}/permissions`,
+    {
+      scope: { schemaName: BIZ_SCHEMA, tableName: null },
+      entries: [{ schemaName: BIZ_SCHEMA, tableName: null, columnName: null, main: 'READ', create: null, delete: null }],
+    },
+    headers,
+    'bizPrepare',
+  )
+  check(saved, {
+    'permission saved': (r) => r.status === 204 || (r.status === 409 && codeOf(r) === 'ROLE_NO_CHANGE'),
+  })
+  const ids = idsBySearch(headers, 'perf-biz-')
+  for (let n = 1; n <= BIZ_USER_COUNT; n++) {
+    const userId = ids[bizUserEmail(n)]
+    if (!userId) fail(`試験用の利用者 ${bizUserEmail(n)} がいません（perf/README.md の手順で入れてください）`)
+    roleAssignEnsured(token, roleId, { userId })
+  }
+  let switched = true
+  let readable = true
+  for (let n = 1; n <= BIZ_USER_COUNT; n++) {
+    // 1人ずつログインする（ロックの状態の行を作る。project.md の学び）
+    const userHeaders = roleHeaders(tokenOf(login(bizUserEmail(n), USER_PASSWORD)))
+    switched = jsonPut(`${BASE}/api/me/work-role`, { roleId }, userHeaders, 'bizPrepare').status === 204 && switched
+    for (const table of [BIZ_ITEM_TABLE, 'biz_pair', BIZ_WIDE_TABLE]) {
+      readable = bizDefinitionRequest(userHeaders, table, 'bizPrepare').status === 200 && readable
+    }
+  }
+  check(switched, { 'work roles 204': (value) => value })
+  check(readable, { 'definitions 200': (value) => value })
+}
+
+function bizDefinition(data) {
+  const res = bizDefinitionRequest(bizHeaders(data), BIZ_ITEM_TABLE, 'bizDefinition')
+  check(res, { 'bizDefinition 200': (r) => r.status === 200 && r.json('listColumns').length === 100 })
+}
+
+function bizSearchFirst(data) {
+  const res = bizSearchRequest(bizHeaders(data), BIZ_ITEM_TABLE, {}, 'bizSearchFirst')
+  check(res, {
+    'bizSearchFirst 200': (r) =>
+      r.status === 200 && r.json('items').length === BIZ_PAGE_SIZE && r.json('total') === BIZ_ROWS,
+  })
+}
+
+function bizSearchContains(data) {
+  const conditions = [{ column: BIZ_CONTAINS_COLUMN, value: BIZ_CONTAINS_VALUE }]
+  const res = bizSearchRequest(bizHeaders(data), BIZ_ITEM_TABLE, { conditions }, 'bizSearchContains')
+  check(res, {
+    'bizSearchContains 200': (r) =>
+      r.status === 200 && r.json('total') === data.bizTotal && r.json('items').length === Math.min(BIZ_PAGE_SIZE, data.bizTotal),
+  })
+}
+
+function bizSearchLast(data) {
+  const res = bizSearchRequest(bizHeaders(data), BIZ_ITEM_TABLE, { page: data.bizLastPage }, 'bizSearchLast')
+  check(res, {
+    'bizSearchLast 200': (r) => r.status === 200 && r.json('items').length === data.bizLastCount,
+  })
+}
+
+// 主キー以外（索引の無い c_001）で並べ替えた最後のページ（NFR 設計のレビュー R-05、計画の D2: A）
+function bizSearchLastSorted(data) {
+  const res = bizSearchRequest(
+    bizHeaders(data),
+    BIZ_ITEM_TABLE,
+    { page: data.bizLastPage, sort: { column: BIZ_SORT_COLUMN, direction: 'ASC' } },
+    'bizSearchLastSorted',
+  )
+  check(res, {
+    'bizSearchLastSorted 200': (r) => r.status === 200 && r.json('items').length === data.bizLastCount,
+  })
+}
+
+// 主キーで1行の詳細。VU と繰り返しの番号から行を決め、大きな値（2,000,000 字）の行も回る
+function bizDetail(data) {
+  const n = ((exec.vu.idInTest * 7919 + exec.vu.iterationInScenario * 104729) % BIZ_ROWS) + 1
+  const res = jsonPost(
+    `${BIZ_API}/rows/get`,
+    { schema: BIZ_SCHEMA, table: BIZ_ITEM_TABLE, key: { id: String(n) } },
+    bizHeaders(data),
+    'bizDetail',
+  )
+  check(res, { 'bizDetail 200': (r) => r.status === 200 })
+}
+
+// 最悪の応答（100 件 × 100 カラム × 100 字）。メモリの確かめの場面で、応答時間の判定には数えない（NFR2.5）
+function bizSearchWide(data) {
+  const res = bizSearchRequest(bizHeaders(data), BIZ_WIDE_TABLE, {}, 'bizSearchWide')
+  check(res, {
+    'bizSearchWide 200': (r) =>
+      r.status === 200 && r.json('items').length === BIZ_PAGE_SIZE && r.json('items.0.truncatedColumns').length === 99,
+  })
+}
+
 const USER_SCENARIOS = {
   preferencesGet,
   preferencesSave,
@@ -2047,6 +2268,14 @@ const USER_SCENARIOS = {
   tableAccessVisible,
   tableAccessDenied,
   navMenuBaseline,
+  bizPrepare,
+  bizDefinition,
+  bizSearchFirst,
+  bizSearchContains,
+  bizSearchLast,
+  bizSearchLastSorted,
+  bizDetail,
+  bizSearchWide,
 }
 
 export default function (tokens) {

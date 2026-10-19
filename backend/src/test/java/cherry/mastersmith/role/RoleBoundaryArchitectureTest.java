@@ -126,11 +126,16 @@ class RoleBoundaryArchitectureTest {
     }
 
     @Test
-    @DisplayName("outside role only audit (role.domain) and navigation (role.service and role.domain) may depend on it")
-    void onlyAuditAndNavigationDependOnRole() {
+    @DisplayName("outside role only audit (role.domain), navigation and businessdata (role.service and role.domain) may"
+            + " depend on it")
+    void onlyAuditNavigationAndBusinessDataDependOnRole() {
         noClasses()
                 .that()
-                .resideOutsideOfPackages(ROLE, "cherry.mastersmith.audit..", "cherry.mastersmith.navigation..")
+                .resideOutsideOfPackages(
+                        ROLE,
+                        "cherry.mastersmith.audit..",
+                        "cherry.mastersmith.navigation..",
+                        "cherry.mastersmith.businessdata..")
                 .should()
                 .dependOnClassesThat()
                 .resideInAPackage(ROLE)
@@ -149,11 +154,23 @@ class RoleBoundaryArchitectureTest {
                 .dependOnClassesThat(resideInAPackage(ROLE).and(resideOutsideOfPackages(SERVICE, DOMAIN)))
                 .allowEmptyShould(true)
                 .check(CLASSES);
+        // businessdata が使ってよいのは role.service（権限の解決の口）と role.domain（権限の写しと値）だけ（Intent
+        // 261016-business-data-views の U1、BR11.3・ADR-002、計画の A1）。role.web・role.repository・role.store・role.transfer
+        // は使わない。
+        noClasses()
+                .that()
+                .resideInAPackage("cherry.mastersmith.businessdata..")
+                .should()
+                .dependOnClassesThat(resideInAPackage(ROLE).and(resideOutsideOfPackages(SERVICE, DOMAIN)))
+                .check(CLASSES);
         assertThat(dependsOnPackage("cherry.mastersmith.audit", "cherry.mastersmith.role.domain"))
                 .as("規則が依存を見分けている（audit は実際に role の出来事を使っている）")
                 .isTrue();
         assertThat(dependsOnPackage("cherry.mastersmith.navigation", "cherry.mastersmith.role.domain"))
                 .as("規則が依存を見分けている（navigation は実際に role.domain の型を使っている）")
+                .isTrue();
+        assertThat(dependsOnPackage("cherry.mastersmith.businessdata", "cherry.mastersmith.role.service"))
+                .as("規則が依存を見分けている（businessdata は実際に role.service の解決の口を使っている）")
                 .isTrue();
     }
 

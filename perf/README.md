@@ -1016,3 +1016,141 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
 ```
 
 - **試し走りの結果**（B7 の Code Generation、2026-10-12。1 VU・10 秒、判定ではない）: どの場面も閾値と checks を通った。`navPrepare` の DSL の適用は、対象DB に届かない照合の警告のまま通った（基盤の設計の読み直しの R-07）。繰り返しの時間の p95 は `navMenu` 29.4 ms・`tableAccessVisible` 3.3 ms・`tableAccessDenied` 3.3 ms・`navMenuBaseline` 25.1 ms。アプリのログに試験用の利用者のメールアドレスと、WARN・ERROR にテーブル名は出なかった（どちらも 0 件、ERROR は 0 行）。
+
+## 業務データの場面（Intent 261016-business-data-views の U1）
+
+`perf/k6/scenarios.js` の業務データの読み取りの場面を、使い捨ての環境で対象DB の種類ごとに流す。目標の出典は `aidlc/spaces/default/intents/261016-business-data-views/construction/u1-businessdata-read/` の `nfr-requirements/performance-requirements.md`（NFR1.1・NFR1.2・NFR1.3・NFR3.2）・`scalability-requirements.md`（NFR2.1・NFR2.4・NFR2.5）と、`infrastructure-design/infrastructure-specification.md`（2節）・`cicd-pipeline.md`（5.2・5.3）。Code Generation（B2）では `k6 inspect --include-system-env-vars` で場面と閾値の名前を確かめ、PostgreSQL の1種類だけを既定の設定で試し走り（各場面 1 VU・10 秒）しただけで、本番の長さ（10 VU・3 分）で3種類を流して判定するのは Performance Validation。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
+|---|---|---|
+| `bizPrepare` | 1 VU・1 回。DSL（`DSL_FILE`）の投入と適用、ロール `perf-biz-reader` の用意とスキーマ `bizperf` への READ の保存、試験用の利用者 `perf-biz-01`〜`10` への割り当て、1人ずつログインしての作業ロールの保存と3つの表の定義の確かめ。前の回が残したロールと割り当ても受け入れる | `checks{scenario:bizPrepare}` の率 1 |
+| `bizDefinition` | 定義（`POST /api/tables/definition`、200 で一覧のカラム 100）。対象DB に接続しないため PostgreSQL の回だけで流す | `iteration_duration{scenario:<名前>}` の p95 < 1000 ms と `checks` の率 1 |
+| `bizSearchFirst` | `biz_item` の一覧の1ページ目（100 件・100 カラム・条件なし・既定の並び。全体の件数を含む） | 同上 |
+| `bizSearchContains` | `c_010` の部分一致（目印の語。表の全部を読む形） | 同上 |
+| `bizSearchLast` | 主キーの順の最後のページ（読み飛ばす行の数が多い形。ページの番号は setup が全体の件数から決める） | 同上 |
+| `bizSearchLastSorted` | 索引の無い `c_001` で並べ替えた最後のページ（NFR 設計のレビュー R-05。計画の D2: A。悪い側の条件のまま測り、目標を超えたら Not Met として扱いを諮る） | 同上 |
+| `bizDetail` | 主キーで1行の詳細（`POST /api/tables/rows/get`。VU と繰り返しの番号で行を回し、2,000,000 字の値の行も含む） | 同上 |
+| `bizSearchWide` | `biz_wide` の1ページ目（100 件 × 100 カラム × 100 字、およそ 3 MB）。メモリの確かめの場面 | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.5。`memory.stat` の `anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ |
+
+- **データ**（値はすべて架空。使った規模は結果に記録する）:
+  - 種は `perf/biz/make-biz-seed.sh <postgres|mysql|mariadb> [行の数]` が SQL を標準出力に出す（乱数を使わず、行の番号とカラムの番号だけから決まる）。スキーマ `bizperf`（MySQL・MariaDB ではデータベース）に、`biz_item`（主キー `id` と `c_001`〜`c_099` の 100 カラム、既定 100,000 行）・`biz_pair`（複合の主キー、1,000 行）・`biz_wide`（主キー `id` と 100 字を超える文字の `w_001`〜`w_099`、200 行）を作り、`mastersmith_reader` に読み取りの権限を与え、最後に表ごとの行の数を出す（NFR2.1 の記録）。
+  - `biz_item` の文字の長い型は5本（`c_010`・`c_030`・`c_050`・`c_070`・`c_090`）で、150〜270 字。`c_010` の 10 行だけ 2,000,000 字（MySQL・MariaDB では `LONGTEXT`）。`(n + i) % 11 = 0` の値は NULL。並べ替えのカラム `c_001` には索引を作らない（主キーの索引だけ）。
+  - DSL は `node perf/make-biz-dsl.mjs <postgres|mysql|mariadb> <出力>` で作る（書式の版 2。型の名前は既定の DSL の生成と同じ名前）。種と DSL の形は同じでなければならない（片方を変えるときは両方を変える）。
+  - ロール・割り当て・作業ロールの保存は `bizPrepare` が API で行う（使い捨ての環境の監査に残る）。種のスキーマへの読み取りの権限は、種の SQL が対象DB の管理者で与える。
+- **対象DB の設定とメモリの上限**（`infrastructure-specification.md` 2.1、計画の 4.2 の決定）: `docker/perf/compose.yaml` は次の変数を受ける。渡さなければ既定（今の値）のままで、`perf/dsl-timing.sh` は始めにこれらを `unset` してから測る。業務データの試験では次の値を export してから起動する。
+
+| DB | 変数 | 既定 | 業務データの試験の値 |
+|---|---|---|---|
+| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL`（`--innodb-buffer-pool-size`） | 128M | 768M |
+| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY`（`mem_limit`） | 768m | 2304m（U2 の試しの結果。U1 の設計の文書の 1792m とは違う） |
+| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL` | 128M | 512M |
+| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY` | 512m | 1g |
+| PostgreSQL | `MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS`（`-c shared_buffers`） | 128MB | 256MB |
+| PostgreSQL | `MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY` | 512m | 768m |
+
+- **VM の余裕**（`infrastructure-specification.md` 2.3）: 業務データの試験の間は配備したアプリを止める（上の「手順」の 0 と同じ）。MySQL・MariaDB の回では手元の監視（lgtm）を動かさない。指標は、使い捨てのアプリにだけ公開する actuator の metrics（`MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics`）で読む。MySQL（2304m）の回の上限の合計は perf のアプリ 2048 + MySQL 2304 + 見本の PG 512 + Mailpit 256 = 5,120 MiB（docker から見える量 約 5,910 MiB に収まる）。
+- **流す順**（対象DB の種類ごと。`cicd-pipeline.md` 5.3）:
+  1. 対象DB を、業務データの試験の値で起動する
+  2. 種を入れ（`make-biz-seed.sh`）、`bizPrepare` を流す
+  3. 表のデータと索引の大きさを測る。プール（PG は共有バッファー）の 80% を超えたら 128MiB ずつ上げ、メモリの上限も同じだけ上げて起動し直す
+  4. 設定の実際の値（`@@innodb_buffer_pool_size`・`SHOW shared_buffers`）・コンテナのメモリの上限（`docker inspect` の Memory）・表の大きさを記録する
+  5. 表を1回全部読んで暖める
+  6. 合否の回を流す（待ちの最大のような揺れる値があるため、複数回流す）。場面ごとに、前後で対象DB のプール（`pool="mastersmith-target-db"`）の待ちの時間切れの累計と待ちの最大を読む（NFR2.4。合格は時間切れの累計の増分 0・503 の件数 0）。プールは最初に借りるときに作られるため、指標は最初の要求の後に読む
+  7. `bizSearchWide` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す
+  8. 確かめの結果（待ちの時間切れの累計・`memory.peak`・OOMKilled・WARN の件数・ログに行の値と試験用の利用者のメールアドレスが無いこと）を見てから片付ける
+- **借りる待ち**: 対象DB の読み取りのプールは上限 5・借りる待ち 3 秒（MySQL で接続の確かめが走るときは 6 秒）で、10 VU の場面は上限に必ず届く。待ちが 3 秒を超えると 503 `BUSINESS_TARGET_DB_UNAVAILABLE` になる。
+- **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{name:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
+- 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる（上の「手順」の冒頭）。流した後は、export した変数を `unset` するか、別のシェルで流す（DSL の時間の測りに持ち込まないため。`perf/dsl-timing.sh` も始めに `unset` する）。
+
+```bash
+# 前提: 上の「手順」の 0・1 と同じ用意（配備したアプリを止め、WAR とイメージを用意し、一時の環境ファイル D を作る。
+#       置き場はホームの下（権限 700）。VM から見えるようにするため）。KIND は postgres・mysql・mariadb のどれか
+KIND=postgres
+perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
+# 1B. 対象DB の資格情報（乱数。表示しない）と、アプリの対象DB の接続先（読み取りだけのアカウント）を一時の環境ファイルに書く
+DBA=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); DBR=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
+( umask 077
+  printf 'POSTGRES_PASSWORD=%s\nMYSQL_ROOT_PASSWORD=%s\nMARIADB_ROOT_PASSWORD=%s\nMASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD=%s\n' \
+    "$DBA" "$DBA" "$DBA" "$DBR" > "$D/targetdb.env"
+  case "$KIND" in
+    postgres) T=postgresql P=5432 DB=business ;;
+    mysql) T=mysql P=3306 DB=bizperf ;;
+    mariadb) T=mariadb P=3306 DB=bizperf ;;
+  esac
+  printf 'MASTERSMITH_TARGET_DB_TYPE=%s\nMASTERSMITH_TARGET_DB_HOST=targetdb-%s\nMASTERSMITH_TARGET_DB_PORT=%s\n' "$T" "$KIND" "$P" > "$D/app-targetdb.env"
+  printf 'MASTERSMITH_TARGET_DB_DATABASE=%s\nMASTERSMITH_TARGET_DB_SCHEMA=bizperf\nMASTERSMITH_TARGET_DB_USERNAME=mastersmith_reader\n' "$DB" >> "$D/app-targetdb.env"
+  printf 'MASTERSMITH_TARGET_DB_PASSWORD=%s\n' "$DBR" >> "$D/app-targetdb.env"
+  printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
+unset DBA DBR
+export MASTERSMITH_PERF_TARGETDB_ENV_FILE="$D/targetdb.env" MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE="$D/app-targetdb.env"
+# 業務データの試験の値（試し走りでは export しない。計画の D4: A）
+export MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL=768M MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY=2304m \
+  MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL=512M MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY=1g \
+  MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS=256MB MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY=768m
+
+# 2B. 対象DB を起動して種を入れる（100,000 行で数分。行の数は最後の行に出る）
+perfu --profile "targetdb-$KIND" up -d --wait "targetdb-$KIND"
+case "$KIND" in
+  postgres) client=(psql -q -v ON_ERROR_STOP=1 -U target_admin -d business) ;;
+  mysql) client=(sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root') ;;
+  mariadb) client=(sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root') ;;
+esac
+./perf/biz/make-biz-seed.sh "$KIND" | perfu exec -T "targetdb-$KIND" "${client[@]}"
+
+# 3B. アプリを起動し、止めて、試験用の利用者 perf-biz-01〜10 と操作する管理者 perf-roleop01 を入れる（上の「手順」の 2 と同じ H2 の道具）
+perfu up -d --wait app
+perfu stop app
+HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
+SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  SELECT 'perf-biz-' || LPAD(CAST(X AS VARCHAR), 2, '0') || '@example.test', '$HASH', FALSE,
+    DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-biz-' || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10);
+INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
+  VALUES ('perf-roleop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-roleop01')"
+cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
+docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
+  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
+rm build/h2-perf.jar; unset AP UP HASH SQL
+perfu up -d --wait app
+
+# 4B. DSL を作り、準備 → 表の大きさの記録 → 暖め → 場面（台本の全体を caffeinate -dims で包む）
+mkdir -p build/perf-results/biz-data && chmod 777 build/perf-results
+node perf/make-biz-dsl.mjs "$KIND" build/perf-results/biz-data/dsl.yaml
+cat > "$D/biz-run.sh" <<'EOR'
+D="$1"; KIND="$2"
+k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/biz-data:/data:ro" \
+    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    run --quiet --summary-export=/out/biz-$KIND-$name.json /scripts/scenarios.js
+}
+k6r bizPrepare -e SCENARIO=bizPrepare -e DSL_FILE=/data/dsl.yaml
+# （ここで 5.3 の 3〜5: 表の大きさの実測と 80% の決まり、設定の実際の値の記録、暖め）
+[ "$KIND" = postgres ] && k6r bizDefinition -e SCENARIO=bizDefinition
+for s in bizSearchFirst bizSearchContains bizSearchLast bizSearchLastSorted bizDetail; do k6r $s -e SCENARIO=$s; done
+# bizSearchWide の前にアプリのコンテナを作り直して前の memory.peak を消し、流した後に memory.peak・memory.stat を読む。
+# 作り直すと前のコンテナのログが消えるため、先にログをリポジトリの外（$D）に残す（6B の件数の確かめに使う。表示しない）
+( umask 077; docker compose -p mastersmith-perf -f docker/perf/compose.yaml logs --no-log-prefix app > "$D/app-before-wide.log" 2>&1 )
+docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait --force-recreate app
+k6r bizSearchWide -e SCENARIO=bizSearchWide
+EOR
+caffeinate -dims zsh "$D/biz-run.sh" "$D" "$KIND"
+# 試し走りのときは、k6r の各場面に -e VUS=1 -e BIZ_DURATION=10s を足す
+
+# 5B. 表の大きさ（データと索引。PG の例。MySQL・MariaDB は information_schema.TABLES の DATA_LENGTH・INDEX_LENGTH）
+perfu exec -T targetdb-postgres psql -U target_admin -d business -c \
+  "SELECT relname, pg_size_pretty(pg_table_size(oid)), pg_size_pretty(pg_indexes_size(oid)) FROM pg_class WHERE relnamespace = 'bizperf'::regnamespace AND relkind = 'r'"
+
+# 6B. 秘密・行の値・名前が出ていないことを件数で確かめる（どれも 0）。確かめの結果を見てから片付ける（上の「手順」の 4 と同じだが、
+#     対象DB も消すため perfu --profile "targetdb-$KIND" down -v にする）。export した変数も外す
+perfu logs --no-log-prefix app > "$D/app-after-wide.log" 2>&1
+for f in "$D/app-before-wide.log" "$D/app-after-wide.log"; do
+  echo "$(basename "$f"): 利用者 $(grep -c 'perf-biz-[0-9]' "$f")・行の値 $(grep -c -e '目印' -e 'いろはにほへと' -e '幅[0-9]' "$f")・WARN $(grep -c '"level":"WARN"' "$f")・ERROR $(grep -c '"level":"ERROR"' "$f")"
+done
+#   SELECT event_type, result, COUNT(*) FROM audit_events WHERE event_type LIKE 'ROLE_%' OR event_type = 'WORK_ROLE_SWITCHED'
+#     GROUP BY event_type, result
+unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL \
+  MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY
+```
+
+- **試し走りの結果**（B2 の Code Generation、2026-10-19。PostgreSQL の1種類、既定の設定（`shared_buffers` 128MB・上限 512m、業務データの試験の値は export しない）、配備したアプリを止めずに、各場面 1 VU・10 秒。判定ではない）: 2回流し、2回ともどの場面も閾値と checks を通った（checks の失敗 0、`http_req_failed` 0）。種の SQL は 7 秒で、行の数は `biz_item` 100,000・`biz_pair` 1,000・`biz_wide` 200、表の大きさは `biz_item` 196 MiB（索引 2.2 MiB）・`biz_wide` 4.3 MiB。2回目の繰り返しの時間の p95 は `bizDefinition` 2.1 ms・`bizSearchFirst` 24.1 ms・`bizSearchContains` 162.7 ms（1回目 272.1 ms）・`bizSearchLast` 13.1 ms・`bizSearchLastSorted` 47.9 ms・`bizDetail` 24.6 ms・`bizSearchWide` 48.2 ms。1回目に対象DB のプールの待ちの時間切れの累計は 0。2回目は作り直す前と後のログをどちらも残して数え、試験用の利用者のメールアドレスと行の値は 0 件、WARN は起動ごとの2行（Flyway の H2 の版、Bean の後処理の案内）だけ、ERROR は 0 行だった（1回目は作り直す前のログを残しておらず、その反省で上の台本は作り直す前にログを残す形にした）。`bizSearchWide` の後の `memory.peak` は 1回目 621 MiB・2回目 506 MiB（1 VU、OOMKilled なし）。MySQL・MariaDB の種の SQL は、出した SQL の形と行の数の指定（100,000・1,000・200）を読んで確かめただけで、流すのは Performance Validation（計画の D4: A）。

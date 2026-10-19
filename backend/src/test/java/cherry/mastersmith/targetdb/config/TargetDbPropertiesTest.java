@@ -66,7 +66,34 @@ class TargetDbPropertiesTest {
         assertThat(properties.connectTimeout()).isEqualTo(Duration.ofSeconds(3));
         assertThat(properties.queryTimeout().generate()).isEqualTo(Duration.ofSeconds(20));
         assertThat(properties.queryTimeout().compare()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(properties.queryTimeout().list()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(properties.queryTimeout().detail()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(properties.queryTimeout().longest()).isEqualTo(Duration.ofSeconds(20));
         assertThat(properties.pool().maximumSize()).isEqualTo(5);
         assertThat(properties.pool().idleTimeout()).isEqualTo(Duration.ofSeconds(60));
+    }
+
+    @Test
+    @DisplayName("the list and detail limits fall back to 5 seconds one by one and count for the longest limit")
+    void listAndDetailDefaults() {
+        TargetDbProperties.QueryTimeout partial =
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(7), null);
+
+        assertThat(partial.list()).isEqualTo(Duration.ofSeconds(7));
+        assertThat(partial.detail()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(new TargetDbProperties.QueryTimeout(
+                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(3),
+                                Duration.ofSeconds(30),
+                                Duration.ofSeconds(4))
+                        .longest())
+                .isEqualTo(Duration.ofSeconds(30));
+        assertThat(new TargetDbProperties.QueryTimeout(
+                                Duration.ofSeconds(2),
+                                Duration.ofSeconds(3),
+                                Duration.ofSeconds(4),
+                                Duration.ofSeconds(21))
+                        .longest())
+                .isEqualTo(Duration.ofSeconds(21));
     }
 }

@@ -28,4 +28,24 @@
     <Method name="lockDummyForUpdate" />
     <Bug pattern="PREDICTABLE_RANDOM" />
   </Match>
+  <!--
+    業務データの行の SQL の部品の SQL_ の指摘（Intent 261016-business-data-views の U1、BR3.3・BR3.5・BR11.4、team.md の Code Style、
+    コード生成の計画の A2 で承認済み）。RowSqlExecutor は、業務データの SQL を組み立てて実行する唯一の部品で、search・detail の本体
+    だけが文を作る（BusinessDataBoundaryArchitectureTest で、java.sql.Connection の prepareStatement・createStatement を呼べる場所を
+    この2つのメソッドだけに絞っている）。文に入る識別子（スキーマ名・テーブル名・カラム名・並べ替えの列）は、要求1件の権限の写しの
+    DSL の名前と文字どおり照らしたうえで、種類ごとの名前の一覧（KnownIdentifiers）にあるものだけを SqlIdentifiers.quoteKnown で引用し
+    （一覧に無い名前は文を作らずに失敗する）、値（検索の値・主キーの値・ページの上限と読み飛ばす数）はすべてバインド変数で渡す。ほか
+    は定数の形の文字だけ。そのため、このクラスの2つのメソッドの、この2つのパターンだけを外す（パッケージや SQL_ の全体では外さない）。
+  -->
+  <Match>
+    <Class name="cherry.mastersmith.businessdata.repository.RowSqlExecutor" />
+    <Or>
+      <Method name="search" />
+      <Method name="detail" />
+    </Or>
+    <Or>
+      <Bug pattern="SQL_INJECTION_JDBC" />
+      <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
+    </Or>
+  </Match>
 </FindBugsFilter>

@@ -149,7 +149,8 @@ public class TargetDataSourceConfig {
     }
 
     /**
-     * 種類ごとのドライバーの設定（接続・通信の待ちと、手元のファイルを送る機能の無効化）を返す。
+     * 種類ごとのドライバーの設定（接続・通信の待ちと、手元のファイルを送る機能の無効化）を返す。通信の待ちは、4つの目的の問い合わせの
+     * 上限のうち最も長いものに 5 秒を足す（BR8.2）。業務データの読み取りの口は、貸すたびに目的の上限 + 5 秒の通信の待ちを付け直す。
      *
      * @param product DB の種類
      * @param properties 対象DB の設定
@@ -157,11 +158,8 @@ public class TargetDataSourceConfig {
      */
     static Map<String, String> driverProperties(DatabaseProduct product, TargetDbProperties properties) {
         Duration connect = properties.connectTimeout().plus(DRIVER_TIMEOUT_MARGIN);
-        Duration longestQuery = properties.queryTimeout().generate();
-        if (properties.queryTimeout().compare().compareTo(longestQuery) > 0) {
-            longestQuery = properties.queryTimeout().compare();
-        }
-        Duration socket = longestQuery.plus(SOCKET_TIMEOUT_MARGIN);
+        // 生成・照合・一覧・詳細の4つの上限の最大 + 5 秒（基盤の設計のレビュー R-01）。既定のままなら 25 秒。
+        Duration socket = properties.queryTimeout().longest().plus(SOCKET_TIMEOUT_MARGIN);
         return switch (product) {
             case MYSQL ->
                 Map.of(

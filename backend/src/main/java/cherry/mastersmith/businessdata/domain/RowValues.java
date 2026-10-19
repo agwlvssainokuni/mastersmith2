@@ -1,0 +1,49 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package cherry.mastersmith.businessdata.domain;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+/**
+ * 1行のカラムと、文字にした値の組（entities.md の RowValues、BR7.2・BR7.6）。値は文字か NULL で、NULL と空の文字列を見分ける。
+ *
+ * <p>行を {@code Map} などの汎用の型のまま層をまたいで渡さないための型。文字列にするときはカラムの数と切ったカラムの数だけを出す
+ * （BR10.1）。
+ *
+ * @param values カラムの名前と値（選んだ順。値は null を許す。変更できない）
+ * @param truncatedColumns 上限の文字数で切ったカラムの名前（変更できない）
+ */
+public record RowValues(Map<String, String> values, Set<String> truncatedColumns) {
+
+    /** 対応表と集合を、順を保ったまま変更できないものにする。 */
+    public RowValues {
+        Objects.requireNonNull(values, "values は必須です");
+        Objects.requireNonNull(truncatedColumns, "truncatedColumns は必須です");
+        values = Collections.unmodifiableMap(new LinkedHashMap<>(values));
+        truncatedColumns = Collections.unmodifiableSet(new LinkedHashSet<>(truncatedColumns));
+    }
+
+    /** カラムの数と切ったカラムの数だけを出す（名前と値を出さない）。 */
+    @Override
+    public String toString() {
+        return "RowValues[columns=" + values.size() + ", truncated=" + truncatedColumns.size() + "]";
+    }
+}

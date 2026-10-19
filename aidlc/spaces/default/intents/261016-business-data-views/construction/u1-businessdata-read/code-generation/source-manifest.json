@@ -1,0 +1,460 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-businessdata-read",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": "backend/config/spotbugs-exclude.xml"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/AllowedOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BoundValue.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataFieldError.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataFieldErrorReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnKind.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnValueReader.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ContainsPattern.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/DefinitionId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/KeyInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/KeyValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/KnownIdentifiers.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/PageRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RawCondition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RawSort.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ReadRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RequestedDefinitionId.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RestrictionReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowKey.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowQueryFailure.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowQueryFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowQueryStage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowRecord.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchCondition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchMode.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchRequestValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchRule.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SortKey.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessPolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableQuery.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ValueType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/CellValue.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/MysqlFamilyRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/PostgresRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDetailResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSearchResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlExecutor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalog.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataReadService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataUnexpectedException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/DefinitionResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/ReadRejected.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/RowReadResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/SearchResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/TableAccessResolution.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/TableAccessResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataPaths.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataReadController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataRequestContext.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataWebConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/ColumnDefinitionResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/DefinitionIdBody.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/DefinitionRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/OptionResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowDetailResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowGetRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowItemResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowPageResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/SearchConditionRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/SearchFieldResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/SearchRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/SortKeyBody.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/TableDefinitionResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/role/domain/PermissionSnapshot.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbSettings.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/ReadPurpose.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetReadOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetReadSession.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetReadUnexpectedException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/TargetReadAccess.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ContainsPatternTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/IdentifierMatchingPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchOperatorPolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ValueTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataServiceFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataDslFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataReadTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataSampleSchema.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataTestApp.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/CountingDataSource.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/CountingDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/FakeBusinessDataPorts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/StallingRelay.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataRequestLimitIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTimeoutIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTraceExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MariadbBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MysqlBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/PostgresBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiEndpointCounts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/domain/PermissionSnapshotTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/role/RoleBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSettingsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetReadOutcomeTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetReadSessionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetSchemaResultTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/TargetSchemaReaderTest.java"
+    },
+    {
+      "path": "docker/perf/compose.yaml"
+    },
+    {
+      "path": "perf/biz/make-biz-seed.sh"
+    },
+    {
+      "path": "perf/dsl-timing.sh"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/make-biz-dsl.mjs"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "README.md"
+    }
+  ]
+}

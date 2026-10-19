@@ -243,7 +243,7 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### 準備
 
-- [ ] **Step 1: 作業の準備と走らせ方の確かめ**
+- [x] **Step 1: 作業の準備と走らせ方の確かめ**
   - `aidlc/` の下に未コミットの変更が無いことを確かめる（あれば依頼者にコミットの承認を得てから進む。project.md の Change Control）。
   - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば消す（project.md の学び）。
   - `develop` から `feature/261016-business-data-views-b2` を作って移る。
@@ -251,20 +251,20 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### 値の型と domain の層（Contract の Data model と Business logic の純粋な部分）
 
-- [ ] **Step 2: `targetdb.domain` の実装**
+- [x] **Step 2: `targetdb.domain` の実装**
   - `ReadPurpose` に `LIST`（一覧。件数とページのそれぞれ）と `DETAIL`（詳細）を足す。
   - `TargetReadSession`（record。`DatabaseProduct product`・`Connection connection`・`int queryTimeoutSeconds`）。`toString` は DB の種類と秒だけを出す（BR10.1）。保存しない・戻り値にしない決まりを Javadoc に書く。
   - `TargetReadOutcome`（sealed interface）: `Done<T>(T value)`（`toString` は値の型の単純名だけ。R-02）・`NotConfigured`・`Unavailable(String sqlState, Integer vendorCode, String exceptionClass)`（メッセージと原因を持たない）。
-- [ ] **Step 3: `role.domain` の実装**
+- [x] **Step 3: `role.domain` の実装**
   - `PermissionSnapshot` に `Optional<DslModel> dsl()` を足す（A3）。`toString` は変えない。
-- [ ] **Step 4: `businessdata.domain` の実装**
+- [x] **Step 4: `businessdata.domain` の実装**
   - 値の型（1.1 の表）。値を持つ型（`BoundValue`・`RowKey`・`RowValues`・`SearchCondition`）の `toString` はカラムの名前と件数だけ（BR10.1）。行を `Map` のまま層をまたいで渡さない。
   - `BusinessDataProblemTypes`（BR1.9 の8つ。`BUSINESS_DSL_NOT_APPLIED` 404・`BUSINESS_TABLE_NOT_FOUND` 404・`BUSINESS_ROW_NOT_FOUND` 404・`BUSINESS_ROW_OPERATION_NOT_ALLOWED` 409・`BUSINESS_ROW_NOT_UNIQUE` 409・`BUSINESS_TARGET_DB_MISMATCH` 409・`BUSINESS_TARGET_DB_UNAVAILABLE` 503・`BUSINESS_TARGET_DB_TIMEOUT` 503。D1: A のとおり新しい code は足さず、結果を読む段の型の変換の失敗も `BUSINESS_TARGET_DB_MISMATCH` を使う）。説明文に値・名前を載せない。
   - `TableAccessPolicy`（BR2.1〜BR2.7。出すカラム・入力の可否・許す操作・行を見分ける値のカラム・理由。BR7.9 と BINARY の主キーの DETAIL の取り下げを含む）。
   - `SearchOperatorPolicy`（BR4.6 の読み替えの後に BR4.9 の表を当て、表に無い組は検索の項目から外す。BR4.10）。
   - `SearchRequestValidator`（BR4.1・BR4.4・BR4.5・BR4.7・BR5.1・BR5.2・BR6.2、4.1 の差の表の page・CHOICE・長さ。型として読む処理は `ColumnValueReader` の口で受ける）。誤りはまとめて返す。
   - `ContainsPattern`（`!` → `!!`、`%` → `!%`、`_` → `!_` の順に置き換え、前後に `%` を付ける純粋な関数）。
-- [ ] **Step 5: domain の層のテストを書いて流す**
+- [x] **Step 5: domain の層のテストを書いて流す**
   - `targetdb/domain/TargetReadSessionTest`・`TargetReadOutcomeTest`（toString に接続の文字列・値が出ない、`Done` は型の名前だけ）。`TargetSchemaResultTest` の `ReadPurpose.values()` の確かめを4つにする。
   - `role/domain/PermissionSnapshotTest` に `dsl()` のテスト（DSL のある写し・無い写し）を足す。
   - `businessdata/domain/` の単体テスト（`unit-test-instructions.md` の表の件数）。
@@ -272,15 +272,15 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### 設定と repository の層（Contract の Repository / data access）
 
-- [ ] **Step 6: `targetdb.config` の実装**
+- [x] **Step 6: `targetdb.config` の実装**
   - `TargetDbProperties.QueryTimeout` に `list`・`detail`（`@DefaultValue("5s")`、空の値で null なら 5 秒）を足す。
   - `TargetDbSettings` に `QUERY_TIMEOUT_LIST`・`QUERY_TIMEOUT_DETAIL` の項目の名前、点検（1 秒以上）、`queryTimeout(purpose)` の `switch` の2つの枝を足す。
   - `TargetDataSourceConfig.driverProperties` の通信の待ちを、4つの上限の最大 + 5 秒にする（基盤の R-01）。既定のままなら 25 秒で変わらない。
-- [ ] **Step 7: 設定のテストを書いて流す**
+- [x] **Step 7: 設定のテストを書いて流す**
   - 1.3 の表の既存のテストを直す（`TargetDbSettingsTest`・`TargetSchemaReaderTest`・`TargetDbPropertiesTest`・`TargetDataSourceConfigTest`・`AbstractTargetSchemaReaderIT`）。
   - 足す確かめ: `list`・`detail` の既定 5 秒、0.5 秒で不正の項目の名前（値は出さない）、`list` を 30 秒にしたときの通信の待ち 35 秒（3種類のドライバーの単位の違いを含む）、`detail` を 21 秒にしたときの 26 秒。
   - 流す: 「設定」のコマンド（単体）と、`targetdb` の結合テスト（`AbstractTargetSchemaReaderIT` の3つと `TargetDbStartupIT`・`TargetDbSecretLeakIT`）。
-- [ ] **Step 8: `businessdata.repository` の実装**
+- [x] **Step 8: `businessdata.repository` の実装**
   - `ColumnValueCodec`: DSL の `dbType` の名前（大文字と小文字を区別しない）と DB の種類から `ValueType` を決める1か所（BR7.1。`tinyint(1)`・`bit(1)` は BOOLEAN、MySQL・MariaDB の `bit`（長さ 2 以上）と空間の型は BINARY、表に無い型は OTHER）。要求の文字を型として読む（BR4.7・BR6.2、時差つきの型は NFR3.3）。型ごとのセッター（BR7.8、OTHER は BR7.7 の DB ごとの形）。結果の値を文字にする（BR7.2・BR7.3。時差つきの型は UTC で `+00:00`、桁を失わない）。長い文字の切り詰め（コードポイントで一覧 100 字・詳細 10,000 字、`truncatedColumns`。BR7.6・NFR2.5）。読み取りと変換の失敗はメソッドの中で受けて結果の型にする（R-02）。
   - `RowDialect`（`PostgresRowDialect`・`MysqlFamilyRowDialect`）: NULL の並び（BR5.5）、`LIKE ? ESCAPE '!'`、選ぶ列の式（STRING は `SUBSTRING(列, 1, N+1)`、OTHER は `CAST` の後に `SUBSTRING`、BINARY と password は選ばない）、主キーを先に読んでからつなぐ深いページの形（複合の主キーのつなぎ方を含む）、PG の `timetz` の `(列 AT TIME ZONE 'UTC') = ?`、OTHER の渡し方（PG は `Types.OTHER`、MySQL・MariaDB は `setString`）、BR7.9 の型の一覧、貸し出しの始めの文（MySQL・MariaDB の `SET time_zone = '+00:00'`、PG は無し）。どれも定数の形の文字と、引用した識別子だけで組み立てる。
   - `RowSqlFailureClassifier`: 段階（`SESSION_INIT`・`BIND`・`EXECUTE`・`READ`）と SQLState・業者の番号・例外の型の連なりから理由を決める純粋な部品。順は reliability-design.md の 2節（時間切れ → 接続の失敗 → 定義の食い違い → 値の型の誤り → 想定外）に、R-01（値の型の誤りの 400 は `BIND`・`EXECUTE` だけ、`READ` の型の変換の失敗は D1: A のとおり理由 `READ_CONVERSION` で 409 `MISMATCH` に写す）と R-03（`SESSION_INIT` の失敗は `UNAVAILABLE`）を足す。既存の `JdbcTargetSchemaReader.classify` の時間切れの見分け方（`SQLTimeoutException`・`SocketTimeoutException`・57014）とそろえる。メッセージを読まない。
@@ -290,14 +290,14 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
     - 識別子は `KnownIdentifiers` の種類ごとの一覧を渡して `SqlIdentifiers.quoteKnown` で引用し、テーブルはスキーマ名で修飾する（BR3.3）。値はすべて `ColumnValueCodec` のセッターでバインドする（BR3.4）。
     - `SQLException` と `RuntimeException` はメソッドの中で受けて `RowQueryFailure` にする（R-02）。時間切れの後は同じ接続で続けて問い合わせない。
     - `prepareStatement`・`createStatement` を呼ぶのは `search`・`detail` の本体だけにし、ラムダの中で呼ばない（SpotBugs の除外をメソッドの名前で絞るため。A2）。
-- [ ] **Step 9: repository の層のテストを書いて流す**
+- [x] **Step 9: repository の層のテストを書いて流す**
   - モックの JDBC（Mockito）で、組み立てた SQL の形（DB の種類ごとの期待の文字）、バインドの型と順、`setQueryTimeout`・`setMaxRows` の値、件数以上の読み飛ばしで2つ目の文を作らないこと、例外の経路（`SQLException`・`RuntimeException` で結果の型になり、メッセージを持たない）を確かめる。
   - `RowSqlFailureClassifierTest` は、段階 × SQLState の表（3種類の DB の試しの値: 42P01・42703・42S02/1146・42S22/1054、22P02・22003・22007・22008・42883、22001・22003・22007・22018・HY000/1366・HY000/1525、57014・`MySQLTimeoutException`・70100/1969、08 の類）をパラメーターのテストで書く。
   - 流す: 「repository の層」のコマンド。
 
 ### service の層（Contract の Business logic）
 
-- [ ] **Step 10: `targetdb.service` の実装**
+- [x] **Step 10: `targetdb.service` の実装**
   - `TargetReadAccess`: `<T> TargetReadOutcome<T> withRead(ReadPurpose purpose, Function<TargetReadSession, T> work)` と `Optional<DatabaseProduct> product()`。
   - `JdbcTargetReadAccess`（`@Service`、既定の候補にしない `targetDataSource` を `@Qualifier` の `Optional<DataSource>` で受ける。既存の `JdbcTargetSchemaReader` と同じ形）:
     - 設定が使えない・接続が無い → `NotConfigured`（処理を呼ばない）。
@@ -306,11 +306,11 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
     - `work.apply` の `RuntimeException` → メッセージも原因も持たない `TargetReadUnexpectedException` にして投げ直す（R-02）。
     - `finally` で元の通信の待ちに戻し、失敗したら `evictConnection` で捨て（R-04）、閉じる。戻す・閉じる処理の失敗は例外のクラスの名前だけを WARN で出す。
     - `GENERATE`・`COMPARE` の目的で呼ばれたら想定外として拒む（スキーマの読み取りは今の `JdbcTargetSchemaReader` だけが使う）。
-- [ ] **Step 11: `businessdata.service` の実装**
+- [x] **Step 11: `businessdata.service` の実装**
   - `TableAccessResolver`: `EffectivePermissionResolver.snapshotFor(userId)` を1回だけ呼び、写しの DSL（`PermissionSnapshot.dsl()`）で ②〜④ の判定と `TableAccessView` を作る（BR3.1・BR1.2〜BR1.4、契約 C1 の accessFor）。DB の種類は `TargetReadAccess.product()` から読む（接続しない）。
   - `BusinessDataReadService`: 定義・一覧と検索・詳細の流れ（functional-spec.md の 3節）と判定の順（2節）。内部DB のトランザクションを開かない（写しは解決の口の中の読み取りで取り終える。BR8.3）。`withRead` の結果と `RowQueryFailure` を code に変え、WARN を1行出す（4.4 のログの1か所）。想定外は `BusinessDataUnexpectedException`（メッセージも原因も持たない）にして投げる。結果は sealed interface の record で返す。
   - `BusinessDataProblemTypeCatalog`（起動時に code を集める）。
-- [ ] **Step 12: service の層のテストを書いて流す**
+- [x] **Step 12: service の層のテストを書いて流す**
   - `JdbcTargetReadAccessTest`（モック）: 設定が無い、借りる失敗（メッセージを持たない `Unavailable`）、`LIST`・`DETAIL` で 10 秒の通信の待ちを付けて元へ戻す、戻す処理の失敗で `evictConnection`、処理の `RuntimeException` がメッセージの無い例外になる、失敗しても閉じる、`GENERATE` を拒む、`product()`。
   - `TableAccessResolverTest`・`BusinessDataReadServiceTest`（偽の解決の口・偽の読み取りの口・偽の `RowSqlExecutor`）: 判定の順の表（①〜⑧ の組をパラメーターのテストで。たとえば NONE のテーブルで入力が誤っていても 403）、写しは1回、写しを取り終えてから `withRead` を呼ぶ順、`definitionChanged` の付け方（成功と 400 だけ）、`NotConfigured`・`Unavailable` → 503 `UNAVAILABLE`、時間切れ → 503 `TIMEOUT`、ログのキーと値（値・名前・メッセージが出ない）。
   - `BusinessDataProblemTypeCatalogTest`（8つの code と状態コードの組、共通の code と重ならない）。
@@ -318,12 +318,12 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### web の層（Contract の API / endpoint）
 
-- [ ] **Step 13: `businessdata.web` の実装**
+- [x] **Step 13: `businessdata.web` の実装**
   - `BusinessDataReadController`: 3本の `POST`（`@ApiAccess(AUTHENTICATED)`）。利用者 ID は要求の文脈（認証の主体）から読み、本文から受けない。結果の型を `switch` で場合を尽くして `BusinessException` に変える。403 は `ProblemTypeRegistry` から `ACCESS_DENIED` を code で引く（`access` に依存しない）。400 は `BusinessDataFieldErrors` で `fieldErrors`（`field`・`reason`）と `definitionChanged` を追加の項目に載せる（BR9.2）。
   - 要求と応答の record: 値を持つものは `toString` で値を伏せる（カラムの名前と件数だけ）。応答のカラムの項目は `ColumnDefinition` の形で、読み取りの項目だけ（BR2.8。`validation` があれば写す形にして U2 が書き換えずに済むようにする）。`listFormat` に `BOOLEAN_ON_OFF`、行に `truncatedColumns`、定義に `rowLabelColumns`・`restrictionReason`・`writeConfigured`（U1 では書き込みの設定が無いため常に false）。
   - `BusinessDataWebConfig`: 3本の道ごとに `RequestBodyLimitRoute("POST", 道, 65,536, PAYLOAD_TOO_LARGE)`（NFR4.5。413 が 400 より先）。
   - `ApiEndpointCounts.MIN_ENDPOINTS` を 70 に上げる。
-- [ ] **Step 14: web の層のテストを書いて流す**
+- [x] **Step 14: web の層のテストを書いて流す**
   - 単体: `BusinessDataReadControllerTest`（結果の型ごとの状態コード・code・`definitionChanged`・`fieldErrors` の形）、要求と応答の record の `toString`。
   - 結合（PostgreSQL のコンテナ1種類）: `BusinessDataAuthorizationApiIT`。3本の API と権限の組をパラメーターを使う表で書き、未認証（401）・要る権限だけを欠く利用者（ほかのテーブルは READ を持つ。403）・持つ（200）を確かめる。停止中の利用者は通らない。作業ロールを切り替えた直後・割り当てを変えた直後の次の要求で 403／200 が切り替わる（AC1.1.5・AC3.1.4・AC3.1.5）。
   - 結合: `BusinessDataRequestLimitIT`。本文 64KB ちょうどは受け付け、超えると 413、413 が 400 より先、検索の値・主キーの値の 1,000 字ちょうどは受け付け 1,001 字は 400（`INVALID_VALUE`、`definitionChanged` つき）、page 1,000,000 は受け付け 1,000,001 は 400、どれも応答に値が入らない。
@@ -331,7 +331,7 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### 横断の結合テスト・構造の検査・性質ベースのテスト
 
-- [ ] **Step 15: 3種類の対象DB の結合テスト**
+- [x] **Step 15: 3種類の対象DB の結合テスト**
   - `AbstractBusinessDataReadIT` と `MysqlBusinessDataReadIT`・`MariadbBusinessDataReadIT`・`PostgresBusinessDataReadIT`（既存の `AbstractTargetSchemaReaderIT` と同じ形。`TargetDbTestDatabase` でクラスごとに名前の重ならないスキーマと読み取りだけのアカウントを作って消す。`ContainerRuntimeCheck` で、コンテナの実行環境が無ければ WARN を出して飛ばす。CI では失敗させる）。
   - 表は 100 カラム・数行の小さな表を中心にし、100,000 行の種は入れない。確かめること（NFR3.1・NFR3.3・NFR2.2・NFR2.5・NFR7.1・AC の一覧は 6節）:
     - 定義・一覧・検索・詳細の振る舞い、NONE のカラムが応答に無い、`list.visible`・`detail.visible` の出し分け
@@ -347,7 +347,7 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
     - R-01: MySQL・MariaDB のゼロ日付と範囲の外の値を持つ行で、一覧と詳細が 400 にならず、D1: A のとおり 409 `BUSINESS_TARGET_DB_MISMATCH` になり、WARN の理由が `READ_CONVERSION` になる
     - 読み取りだけのアカウントで通ること
   - 流す: 「3種類の対象DB の結合テスト」のコマンド。
-- [ ] **Step 16: 境界テストと SpotBugs の除外**
+- [x] **Step 16: 境界テストと SpotBugs の除外**
   - `BusinessDataBoundaryArchitectureTest`（新しく足す）:
     - `businessdata` が依存してよいのは `targetdb.service`・`targetdb.domain`・`role.service`・`role.domain`・`dsl.domain`・`dsl.service` の提供口・`common` と、Java・Spring・JDBC の部品だけ
     - `businessdata.repository` は `targetdb.service` に依存しない
@@ -358,14 +358,14 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
   - `TargetDbBoundaryArchitectureTest`・`ArchitectureTest`・`DslBoundaryArchitectureTest` は変えずに流す。
   - `./gradlew :backend:spotbugsMain` の報告で `businessdata` の指摘を読み、A2 の範囲で除外を足して `:backend:spotbugsGate` を通す。A2 の範囲を超える指摘があれば、足す前に依頼者に見せる。
   - 流す: 「境界テストと静的解析」のコマンド。
-- [ ] **Step 17: 漏えいの IT**
+- [x] **Step 17: 漏えいの IT**
   - `BusinessDataSecretLeakIT`（PostgreSQL のコンテナ。`businessdata` と `targetdb.service` のロガーを TRACE にする。既存の `NavigationSecretLeakIT` と同じ形）: 一覧・詳細・400・404・503・PG の 22P02 を起こす OTHER の値・不正な数と日付の文字（非検査の例外の経路）・`Done` を通る戻り値で、アプリのログ・誤りの応答に行の値・主キーの値・検索の値・接続先・資格情報・例外のメッセージが無いこと。ログの JSON の WARN のキーが `purpose`・`reason`・`sqlState`・`vendorCode`・`exceptionClass` だけであること（NFR4.2・NFR8.2）。
   - `BusinessDataTraceExposureIT`（外部へ送る設定を有効にし、トレースを手元で受ける。既存の `NavigationQueryExposureIT` と同じ形）: span の属性に値・名前が無く、`uri` が3つの固定の道だけであること。
   - 流す: 「漏えいの IT」のコマンド。
-- [ ] **Step 18: 接続の数の IT**
+- [x] **Step 18: 接続の数の IT**
   - `BusinessDataConnectionUsageIT`（内部DB と対象DB の両方の DataSource を数える包み。PostgreSQL のコンテナ）: 定義は内部DB 1・対象DB 0、一覧は内部DB 1・対象DB 1（件数とページで1回の貸し出し）、詳細は内部DB 1・対象DB 1、対象DB を借りている間の内部DB の借りている数 0、要求の始まりの借りている数 0。MySQL では `SET time_zone` の文が増えても接続が増えないこと（R-03）は、MySQL のコンテナの行を1つ足して確かめる。U2 が書き込みの3行を足せる表の形にする（scalability-design.md の 8節）。
   - 流す: 「接続の数の IT」のコマンド。
-- [ ] **Step 19: 時間切れの IT**
+- [x] **Step 19: 時間切れの IT**
   - `BusinessDataTimeoutIT`:
     - 応答しない対象DB（`SilentServer`）: 借りる失敗が約 3 秒で 503 `UNAVAILABLE`
     - 拒まれる番号: 503 `UNAVAILABLE`
@@ -374,7 +374,7 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
     - つないだ後に止まる（`StallingRelay`）: 25 秒以内に 503 `TIMEOUT`、止めを解いた後の次の要求はすぐ成功する（壊れた接続はプールが捨てる）。D3: A のとおり3種類すべてに置く（MySQL 約 20 秒・PG 約 15 秒・MariaDB 約 10 秒。verify が約 45 秒延びる）
     - どれも応答とログに接続先・メッセージが無い
   - 流す: 「時間切れの IT」のコマンド。
-- [ ] **Step 20: 性質ベースのテスト（jqwik）**
+- [x] **Step 20: 性質ベースのテスト（jqwik）**
   - `TableAccessPolicyPropertyTest`: 権限を足しても出るカラムと許す操作が減らない、NONE のカラムが出ない、FULL でないカラムが入力にならない、主キーの無いテーブルと主キーのカラムが NONE のテーブルに DETAIL・UPDATE・DELETE が出ない、ビューに CREATE・UPDATE・DELETE が出ない（BR2.5）。
   - `IdentifierMatchingPropertyTest`: `KnownIdentifiers` の種類ごとの一覧に無い名前は拒まれる、引用符・`;`・改行を含む任意の文字列でも `quoteKnown` の結果は両端が引用符で中の引用符が二重になり、1つの識別子としてしか読めない。
   - `ContainsPatternPropertyTest`: 任意の文字列で、エスケープの後に `!` の前置の無い `%`・`_` が残らない。
@@ -384,7 +384,7 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
 
 ### 負荷の試験の台本・設定・文書（Contract の Environment/build configuration）
 
-- [ ] **Step 21: 負荷の試験の台本**
+- [x] **Step 21: 負荷の試験の台本**
   - `perf/biz/`（シェル。新しい道具を入れない）: 3種類の DB ごとに、スキーマ（MySQL・MariaDB はデータベース）`bizperf` と、100 カラムの表 `biz_item`（主キー1つ）・複合の主キーの表・少しの行の表を作り、決めた種（performance-design.md の 4節。型ごとの短い値、TEXT の5本に 150〜270 字、10 行だけ 2,000,000 字、NULL を含む）から 100,000 行を入れる SQL を出す台本。読み取りだけのアカウント `mastersmith_reader` に `bizperf` の SELECT（PG は USAGE も）を与える。値はすべて架空。`bizSearchLastSorted` の並べ替えのカラム（主キー以外の1つ）には索引を作らない（D2: A。主キーの索引だけ）。
   - `perf/make-biz-dsl.mjs`（Node の標準だけ）: 種の表に合わせた DSL（版 2）を作る。部分一致に使う TEXT のカラム、並べ替えのカラム、一覧に出す 100 カラムを決めた形で書く。
   - `perf/k6/scenarios.js` に場面を足す（NFR1.2 の判定の決まり。1回の繰り返しに要求1つ、判定は `iteration_duration{scenario:…}` の p95 < 1000 と `checks` の率 1、`http_req_duration{name:…}` は並べて記録だけ、場面の長さ 3 分、トークンは `setup()` で取る）:
@@ -394,26 +394,26 @@ U1 の基盤の設計のレビューは `.aidlc-reviews/infrastructure-design/un
   - `docker/perf/compose.yaml`: `targetdb-mysql` に `--innodb-buffer-pool-size=${MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL:-128M}` と `mem_limit: ${MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY:-768m}`、`targetdb-mariadb` に `_MARIADB_BUFFER_POOL:-128M`・`_MARIADB_MEMORY:-512m`、`targetdb-postgres` に `-c shared_buffers=${MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS:-128MB}`・`_POSTGRES_MEMORY:-512m` を足す（既定の値は今の値。変数の名前はこの計画で決めた）。
   - `perf/README.md` に業務データの節を足す: 配備したアプリを止める、export する値（MySQL 768M・2304m、MariaDB 512M・1g、PG 256MB・768m）、MySQL・MariaDB の回では lgtm を動かさない（指標は使い捨てのアプリにだけ公開する actuator の metrics で読む）、対象DB の接続先は一時の環境ファイル（`MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE`）で渡す、5.3 の流す順（起動 → `bizPrepare` → 表の大きさの実測と 80% の決まり → 設定の実際の値の記録 → 暖め → 合否の回 → `bizSearchWide` の前にアプリのコンテナを作り直す → 確かめの結果を見てから片付ける）、台本の全体を `caffeinate -dims` で包み流した後に `pmset -g log` で眠りを確かめる、流した後は変数を `unset` するか別のシェルで流す、用意の操作は使い捨ての環境の監査に残る、「3 秒（MySQL で確かめが走るときは 6 秒）」。
   - `perf/dsl-timing.sh` の始めに、業務データの試験の6つの変数を `unset` する1行を足す（基盤の R-04）。
-- [ ] **Step 22: 台本の確かめ（k6 inspect と試し走り）**
+- [x] **Step 22: 台本の確かめ（k6 inspect と試し走り）**
   - `k6 inspect --include-system-env-vars` で、場面ごとに場面の名前と閾値の名前を確かめる（project.md の学び）。
   - ダミーの `MASTERSMITH_PERF_ENV_FILE` と `--profile targetdb-mysql --profile targetdb-mariadb --profile targetdb-postgres` を付けて `docker compose -f docker/perf/compose.yaml config` を読み、変数を渡さないときの `command` と `mem_limit` が今の値と同じことを見る（基盤の R-04）。
   - 試し走り（各場面 1 VU・10 秒。判定ではない）で、閾値の名前の指標が出ることと `checks` が通ることを確かめる。D4: A のとおり、試し走りは PostgreSQL の1種類だけを既定の設定（業務データの試験の値を export しない）で流し、配備したアプリは止めない（上限の合計 5,376 MiB）。PG の種の台本は試し走りの対象DB で一度流して、行の数を数える。MySQL・MariaDB の種の台本は、SQL を出すところまでを確かめ（出した SQL の形と行の数の指定を読む）、流すのは Performance Validation にする。試し走りの値は判定に使わない。使い捨ての環境は、確かめの結果（WARN の件数、ログに試験用の利用者のメールアドレスと行の値が無いこと）を見てから片付ける。
-- [ ] **Step 23: アプリの設定と文書**
+- [x] **Step 23: アプリの設定と文書**
   - `backend/src/main/resources/application.yaml` の `query-timeout` の下に `list: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST:5s}`・`detail: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL:5s}` とコメントの行を足す（基盤の設計 1.1）。
   - `.env.example` にコメントの行2つを足し、55 行の説明を「生成 既定 20s・照合 既定 5s・一覧 既定 5s・詳細 既定 5s。ドライバーの通信の待ちは最も長い上限 + 5 秒」に直す。配備の `.env` は開かず、変えない。
   - `README.md` の環境変数の表に2行と、「対象DB（利用者の業務データの DB）」の節に業務データの読み取りの API（3本の道・ログインだけ・権限はテーブルごと・読み取りの接続だけを使う・時間切れと 503）の段落を足す。
 
 ### 検査と記録
 
-- [ ] **Step 24: 1コマンドの検査とカバレッジ・時間の記録**
+- [x] **Step 24: 1コマンドの検査とカバレッジ・時間の記録**
   - `caffeinate -dims` で包み、流す前に `pmset -g assertions`、流した後に `pmset -g log` で Sleep・DarkWake が無かったかを確かめる（入っていたら結果を使わずに流し直す）。
   - `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡す）。対象DB のテストが SKIPPED でないこと。
   - 記録: verify の時間（直近は 14 分 1 秒。D3: A の中継のテストで約 45 秒延びる見込み。CI の上限の7割の約 42 分を超えたら依頼者に諮る）、カバレッジ（全体と `businessdata.*`・`targetdb.*`・`role.domain` のパッケージごと。実測の数字だけ）、テストの件数。
   - 落ちたテストは、team.md の「不安定なテストと CI の失敗」の決まりで扱う。計画の外の失敗で直し方が分かれるときは、生成を止めて依頼者に諮る（G1〜）。
-- [ ] **Step 25: E2E の全件**
+- [x] **Step 25: E2E の全件**
   - U1 は業務データのパッケージと `role` の `src/main` に触れるため、統合の前に E2E の全体を流す（team.md の Way of Working）。Mailpit を `docker compose --profile mail up -d mailpit` で起動し、`caffeinate -dims` で包んで `./gradlew e2eTest` を流し、通った件数を記録する。眠りの確かめは Step 24 と同じ。
   - E2E のファイルは足さない（業務データの代表の流れは U3 が持つ）。
-- [ ] **Step 26: 記録**
+- [x] **Step 26: 記録**
   - `code-summary.md`（作ったもの・計画との差・依頼者に確かめたいこと・Build and Test と Performance Validation と Observability Setup への引き継ぎ: 4.1 の R-06、4.2 の R-05・R-07、試し走りの値、2304m）。
   - `traceability.json`（機能設計の BR・NFR 要件の枝番から、部品とテストへ。4.2 の R-06 のそろえ方）。
   - `source-manifest.json`（作った・変えた・消したアプリのソースのパスをすべて）。
