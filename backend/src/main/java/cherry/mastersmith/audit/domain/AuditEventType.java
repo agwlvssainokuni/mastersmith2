@@ -96,5 +96,14 @@ public enum AuditEventType {
      * 権限の YAML を適用した（Intent 261004-role-menu の U4。1回の適用を1行にし、対象の列は空で detail にロールごとの要約。確かめと
      * 書き出しは残さない）。
      */
-    ROLE_TRANSFER_APPLIED
+    ROLE_TRANSFER_APPLIED,
+    /**
+     * 業務データの行を作った（Intent 261016-business-data-views の U2、契約 C5、BR11.2・BR11.3。成功と失敗は結果で分ける。対象の
+     * スキーマ・テーブル・作業ロールは足した列、主キーは detail）。
+     */
+    BUSINESS_ROW_CREATED,
+    /** 業務データの行を更新した（Intent 261016-business-data-views の U2）。 */
+    BUSINESS_ROW_UPDATED,
+    /** 業務データの行を削除した（Intent 261016-business-data-views の U2）。 */
+    BUSINESS_ROW_DELETED
 }

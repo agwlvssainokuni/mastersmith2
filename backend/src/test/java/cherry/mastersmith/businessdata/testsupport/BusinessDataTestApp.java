@@ -93,6 +93,22 @@ public final class BusinessDataTestApp implements AutoCloseable {
      * @return 起動したアプリ
      */
     public static BusinessDataTestApp start(Path dir, Target target, Class<?>[] sources, String... extra) {
+        return start(dir, target, null, sources, extra);
+    }
+
+    /**
+     * 対象DB の接続先・書き込みのアカウント・足す部品を渡して起動する（Intent 261016-business-data-views の U2）。書き込みのアカウントが
+     * 無ければ、書き込みの資格情報を空の値で渡す（開発者の環境変数に書き込みの設定があっても、書き込みを使わない形で起動する）。
+     *
+     * @param dir 内部DB のファイルを置くディレクトリ
+     * @param target 接続先（無ければ null で、対象DB の設定を渡さない）
+     * @param writer 書き込みのアカウント（無ければ null）
+     * @param sources 足す部品
+     * @param extra 足す起動の引数（{@code --name=value}。後に置くため、同じ名前の既定を上書きできる）
+     * @return 起動したアプリ
+     */
+    public static BusinessDataTestApp start(
+            Path dir, Target target, Writer writer, Class<?>[] sources, String... extra) {
         List<String> args = new ArrayList<>(List.of(
                 "--spring.datasource.url=" + TestDatabase.url(dir),
                 "--server.port=0",
@@ -107,6 +123,8 @@ public final class BusinessDataTestApp implements AutoCloseable {
                     "--mastersmith.target-db.username=" + target.user(),
                     "--mastersmith.target-db.password=" + target.password()));
         }
+        args.add("--mastersmith.target-db.write.username=" + (writer == null ? "" : writer.user()));
+        args.add("--mastersmith.target-db.write.password=" + (writer == null ? "" : writer.password()));
         args.addAll(List.of(extra));
         return new BusinessDataTestApp(new SpringApplicationBuilder(MastersmithApplication.class)
                 .sources(sources)
@@ -137,6 +155,21 @@ public final class BusinessDataTestApp implements AutoCloseable {
         @Override
         public String toString() {
             return "Target[product=" + product + "]";
+        }
+    }
+
+    /**
+     * 対象DB の書き込みのアカウント（U2）。
+     *
+     * @param user ユーザー名
+     * @param password パスワード
+     */
+    public record Writer(String user, String password) {
+
+        /** 資格情報を出さない。 */
+        @Override
+        public String toString() {
+            return "Writer[]";
         }
     }
 
@@ -253,6 +286,41 @@ public final class BusinessDataTestApp implements AutoCloseable {
             builder.header("Authorization", "Bearer " + token);
         }
         return client.send(builder.build());
+    }
+
+    /**
+     * 本文を JSON にして PATCH する（U2 の更新の API）。
+     *
+     * @param path 道
+     * @param token アクセストークン（無ければ null）
+     * @param body 本文（JSON にする値）
+     * @return 応答
+     */
+    public HttpResponse<String> patch(String path, String token, Object body) {
+        HttpRequest.Builder builder = client.request(path)
+                .header("Content-Type", "application/json")
+                .method("PATCH", HttpRequest.BodyPublishers.ofString(MAPPER.writeValueAsString(body)));
+        if (token != null) {
+            builder.header("Authorization", "Bearer " + token);
+        }
+        return client.send(builder.build());
+    }
+
+    /**
+     * 定義の API を読み、書き込みの本文に入れる定義の識別（{@code dslHash}・{@code workRoleId}）を返す（U2）。
+     *
+     * @param token アクセストークン
+     * @param schema スキーマ
+     * @param table テーブル
+     * @return 定義の識別（定義を読めなければ例外）
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> definitionId(String token, String schema, String table) {
+        HttpResponse<String> response = post("/api/tables/definition", token, Map.of("schema", schema, "table", table));
+        if (response.statusCode() != 200) {
+            throw new IllegalStateException("定義を読めません: " + response.statusCode());
+        }
+        return (Map<String, Object>) HttpTestClient.json(response).get("definitionId");
     }
 
     @Override

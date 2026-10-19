@@ -116,6 +116,12 @@ public final class ColumnValueCodec implements ColumnValueReader {
 
     private static final BigInteger BIG_INTEGER_MAX = new BigInteger("18446744073709551615");
 
+    /** 符号つきの 64 ビットの整数の上限（PostgreSQL の int8）。 */
+    private static final BigInteger BIG_INTEGER_SIGNED_MAX = BigInteger.valueOf(Long.MAX_VALUE);
+
+    /** 符号なしが無い PostgreSQL の 64 ビットの整数の型の名前。 */
+    private static final String POSTGRES_BIG_INTEGER = "int8";
+
     private static final Pattern INTEGER_TEXT = Pattern.compile("[+-]?[0-9]+");
 
     private static final Pattern DECIMAL_TEXT = Pattern.compile("[+-]?([0-9]+(\\.[0-9]*)?|\\.[0-9]+)");
@@ -123,6 +129,9 @@ public final class ColumnValueCodec implements ColumnValueReader {
     private static final Pattern TINYINT_1 = Pattern.compile("tinyint\\s*\\(\\s*1\\s*\\).*");
 
     private static final Pattern BIT_LENGTH = Pattern.compile("bit\\s*\\(\\s*([0-9]+)\\s*\\).*");
+
+    /** 日時・時刻の型の名前の精度（{@code timestamp(3)}・{@code datetime(6)} など）。 */
+    private static final Pattern FRACTION_IN_NAME = Pattern.compile("\\(\\s*([0-9]+)\\s*\\)");
 
     private static final DateTimeFormatter TIME = new DateTimeFormatterBuilder()
             .appendPattern("HH:mm:ss")
@@ -177,9 +186,64 @@ public final class ColumnValueCodec implements ColumnValueReader {
      * @return 型
      */
     public static ColumnKind kind(Optional<DatabaseProduct> product, DslColumn column) {
+        ValueType type = valueType(product, column);
         return new ColumnKind(
-                valueType(product, column),
-                RowDialect.equalsSupported(product, column.dbType().name()));
+                type,
+                RowDialect.equalsSupported(product, column.dbType().name()),
+                fractionDigits(product, column, type));
+    }
+
+    /**
+     * 日時・時刻の型の秒の端数の桁の上限を決める（U2、NFR 設計 Q6: A、generation-notes.md の G1）。型の名前の {@code (n)} → DSL の精度 →
+     * DB の種類の既定（PostgreSQL 6、MySQL・MariaDB 0）の順。DB の種類が分からないときは 0（狭める向き）。ほかの型は null。
+     *
+     * @param product DB の種類（分からなければ空）
+     * @param column DSL のカラム
+     * @param type 受け渡しの型
+     * @return 秒の端数の桁の上限（日時・時刻の型でなければ null）
+     */
+    static Integer fractionDigits(Optional<DatabaseProduct> product, DslColumn column, ValueType type) {
+        if (type != ValueType.DATETIME
+                && type != ValueType.DATETIME_TZ
+                && type != ValueType.TIME
+                && type != ValueType.TIME_TZ) {
+            return null;
+        }
+        Matcher matcher = FRACTION_IN_NAME.matcher(column.dbType().name().toLowerCase(Locale.ROOT));
+        int digits;
+        if (matcher.find()) {
+            digits = parseOrZero(matcher.group(1));
+        } else if (column.dbType().precision() != null) {
+            digits = column.dbType().precision();
+        } else {
+            digits = product.map(p -> p == DatabaseProduct.POSTGRESQL ? 6 : 0).orElse(0);
+        }
+        return Math.min(Math.max(digits, 0), 9);
+    }
+
+    /**
+     * 型として読んだ値を、結果の値と同じ形の文字にする（U2 の作成した主キーの応答・監査に使う）。
+     *
+     * @param value 値
+     * @return 文字（NULL は null）
+     */
+    public static String format(BoundValue value) {
+        Object raw = value.value();
+        if (raw == null) {
+            return null;
+        }
+        return switch (value.valueType()) {
+            case STRING, OTHER -> (String) raw;
+            case INTEGER -> Long.toString((Long) raw);
+            case BIG_INTEGER, DECIMAL -> ((BigDecimal) raw).toPlainString();
+            case BOOLEAN -> Boolean.toString((Boolean) raw);
+            case DATE -> DateTimeFormatter.ISO_LOCAL_DATE.format((LocalDate) raw);
+            case DATETIME -> DATE_TIME.format((LocalDateTime) raw);
+            case TIME -> TIME.format((LocalTime) raw);
+            case DATETIME_TZ -> DATE_TIME_UTC.format(((OffsetDateTime) raw).withOffsetSameInstant(ZoneOffset.UTC));
+            case TIME_TZ -> TIME_UTC.format(((OffsetTime) raw).withOffsetSameInstant(ZoneOffset.UTC));
+            case BINARY -> throw new IllegalArgumentException("BINARY の値は文字にしません");
+        };
     }
 
     /**
@@ -298,7 +362,7 @@ public final class ColumnValueCodec implements ColumnValueReader {
         return switch (type) {
             case STRING, OTHER -> new BoundValue(type, text);
             case INTEGER -> parseInteger(base, text);
-            case BIG_INTEGER -> parseBigInteger(text);
+            case BIG_INTEGER -> parseBigInteger(base, text);
             case DECIMAL -> DECIMAL_TEXT.matcher(text).matches() ? new BoundValue(type, new BigDecimal(text)) : null;
             case BOOLEAN -> parseBoolean(text);
             case DATE -> new BoundValue(type, LocalDate.parse(text));
@@ -323,12 +387,15 @@ public final class ColumnValueCodec implements ColumnValueReader {
         return new BoundValue(ValueType.INTEGER, value);
     }
 
-    private static BoundValue parseBigInteger(String text) {
+    private static BoundValue parseBigInteger(String base, String text) {
         if (!INTEGER_TEXT.matcher(text).matches()) {
             return null;
         }
         BigInteger value = new BigInteger(text);
-        if (value.compareTo(BIG_INTEGER_MIN) < 0 || value.compareTo(BIG_INTEGER_MAX) > 0) {
+        // PostgreSQL の int8 には符号なしが無いため、符号つきの上限を当てる（U2 の BR3.5）。MySQL・MariaDB の bigint は、DSL の型の
+        // 名前から符号なしかが分からないため、符号つきの下限と符号なしの上限の和のまま（U2 の generation-notes.md の G13）。
+        BigInteger max = POSTGRES_BIG_INTEGER.equals(base) ? BIG_INTEGER_SIGNED_MAX : BIG_INTEGER_MAX;
+        if (value.compareTo(BIG_INTEGER_MIN) < 0 || value.compareTo(max) > 0) {
             return null;
         }
         return new BoundValue(ValueType.BIG_INTEGER, new BigDecimal(value));

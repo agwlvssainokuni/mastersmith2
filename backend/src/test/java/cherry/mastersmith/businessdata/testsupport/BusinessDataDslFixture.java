@@ -29,6 +29,7 @@ import cherry.mastersmith.dsl.domain.DbType;
 import cherry.mastersmith.dsl.domain.DetailSetting;
 import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.dsl.domain.DslColumn;
+import cherry.mastersmith.dsl.domain.DslForeignKey;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
@@ -41,9 +42,13 @@ import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import cherry.mastersmith.dsl.domain.SearchOperator;
 import cherry.mastersmith.dsl.domain.SearchSetting;
 import cherry.mastersmith.dsl.domain.SortDirection;
+import cherry.mastersmith.dsl.domain.Validation;
+import cherry.mastersmith.dsl.domain.ValidationOrigin;
+import cherry.mastersmith.dsl.domain.ValidationType;
 import cherry.mastersmith.role.domain.MainPermission;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -94,6 +99,24 @@ public final class BusinessDataDslFixture {
             map.put(column.name(), column);
         }
         return new DslTable(name, new DisplayName("表 " + name, "Table " + name), view, primaryKey, List.of(), map);
+    }
+
+    /**
+     * 外部キーのあるテーブルの定義を作る（U2）。
+     *
+     * @param name テーブルの名前
+     * @param primaryKey 主キーのカラムの名前
+     * @param foreignKeys 外部キー
+     * @param columns カラム（この順）
+     * @return テーブル
+     */
+    public static DslTable tableWithForeignKeys(
+            String name, List<String> primaryKey, List<DslForeignKey> foreignKeys, DslColumn... columns) {
+        Map<String, DslColumn> map = new LinkedHashMap<>();
+        for (DslColumn column : columns) {
+            map.put(column.name(), column);
+        }
+        return new DslTable(name, new DisplayName("表 " + name, "Table " + name), false, primaryKey, foreignKeys, map);
     }
 
     /**
@@ -291,6 +314,14 @@ public final class BusinessDataDslFixture {
 
         private OptionSource options;
 
+        private Integer length;
+
+        private Integer scale;
+
+        private boolean nullable = true;
+
+        private final List<Validation> validations = new ArrayList<>();
+
         private ColumnBuilder(String name) {
             this.name = name;
         }
@@ -423,6 +454,77 @@ public final class BusinessDataDslFixture {
         }
 
         /**
+         * DB の型の長さを決める（U2）。
+         *
+         * @param value 長さ
+         * @return この組み立て
+         */
+        public ColumnBuilder length(Integer value) {
+            this.length = value;
+            return this;
+        }
+
+        /**
+         * DB の型の精度と小数の桁を決める（U2）。
+         *
+         * @param precisionValue 精度
+         * @param scaleValue 小数の桁
+         * @return この組み立て
+         */
+        public ColumnBuilder decimal(Integer precisionValue, Integer scaleValue) {
+            this.precision = precisionValue;
+            this.scale = scaleValue;
+            return this;
+        }
+
+        /**
+         * NULL を許すかを決める（U2。既定は許す）。
+         *
+         * @param value 許すなら true
+         * @return この組み立て
+         */
+        public ColumnBuilder nullable(boolean value) {
+            this.nullable = value;
+            return this;
+        }
+
+        /**
+         * 値を持たない検証（required・unique）を足す（U2）。
+         *
+         * @param type 種類
+         * @param origin 出どころ
+         * @return この組み立て
+         */
+        public ColumnBuilder validation(ValidationType type, ValidationOrigin origin) {
+            validations.add(new Validation(type, null, null, origin, null));
+            return this;
+        }
+
+        /**
+         * 数の値を持つ検証（minLength・maxLength・min・max）を足す（U2）。
+         *
+         * @param type 種類
+         * @param number 値
+         * @return この組み立て
+         */
+        public ColumnBuilder validation(ValidationType type, String number) {
+            validations.add(new Validation(type, new BigDecimal(number), null, ValidationOrigin.MANUAL, null));
+            return this;
+        }
+
+        /**
+         * 正規表現の検証を足す（U2）。
+         *
+         * @param regex 式
+         * @param message 合わないときの文（無ければ null）
+         * @return この組み立て
+         */
+        public ColumnBuilder pattern(String regex, DisplayName message) {
+            validations.add(new Validation(ValidationType.PATTERN, null, regex, ValidationOrigin.MANUAL, message));
+            return this;
+        }
+
+        /**
          * カラムの定義を作る。
          *
          * @return カラム
@@ -431,13 +533,13 @@ public final class BusinessDataDslFixture {
             return new DslColumn(
                     name,
                     new DisplayName("項目 " + name, "Item " + name),
-                    new DbType(dbTypeName, null, precision, null, true),
+                    new DbType(dbTypeName, length, precision, scale, nullable),
                     formPart,
                     search,
                     new ListSetting(
                             listVisible, listVisible ? listOrder : listOrder, width, sortable, defaultSort, format),
                     new DetailSetting(detailVisible),
-                    List.of(),
+                    validations,
                     options);
         }
     }

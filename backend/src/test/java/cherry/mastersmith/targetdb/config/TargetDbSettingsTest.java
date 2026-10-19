@@ -37,7 +37,7 @@ class TargetDbSettingsTest {
 
     private static TargetDbProperties properties(
             String type, String host, String port, String database, String schema, String username, String password) {
-        return new TargetDbProperties(type, host, port, database, schema, username, password, null, null, null);
+        return new TargetDbProperties(type, host, port, database, schema, username, password, null, null, null, null);
     }
 
     private static TargetDbProperties valid() {
@@ -149,8 +149,9 @@ class TargetDbSettingsTest {
                 PASSWORD,
                 Duration.ofMillis(100),
                 new TargetDbProperties.QueryTimeout(
-                        Duration.ofMillis(500), Duration.ZERO, Duration.ofMillis(999), Duration.ofMillis(500)),
-                new TargetDbProperties.Pool(0, Duration.ofSeconds(5)));
+                        Duration.ofMillis(500), Duration.ZERO, Duration.ofMillis(999), Duration.ofMillis(500), null),
+                new TargetDbProperties.Pool(0, Duration.ofSeconds(5)),
+                null);
 
         assertThat(problems(properties))
                 .containsExactly(
@@ -204,9 +205,9 @@ class TargetDbSettingsTest {
     @DisplayName("the list and detail limits accept exactly one second and reject anything shorter by item name only")
     void listAndDetailLimitBoundary() {
         TargetDbProperties oneSecond = withQueryTimeout(
-                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(1), Duration.ofSeconds(1)));
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(1), Duration.ofSeconds(1), null));
         TargetDbProperties tooShort = withQueryTimeout(
-                new TargetDbProperties.QueryTimeout(null, null, Duration.ofMillis(500), Duration.ofMillis(999)));
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofMillis(500), Duration.ofMillis(999), null));
 
         assertThat(TargetDbSettings.inspect(oneSecond))
                 .isInstanceOfSatisfying(TargetDbSettings.Usable.class, usable -> {
@@ -220,6 +221,7 @@ class TargetDbSettingsTest {
     }
 
     private static TargetDbProperties withQueryTimeout(TargetDbProperties.QueryTimeout queryTimeout) {
-        return new TargetDbProperties("postgresql", "h", "5432", "d", "s", "u", PASSWORD, null, queryTimeout, null);
+        return new TargetDbProperties(
+                "postgresql", "h", "5432", "d", "s", "u", PASSWORD, null, queryTimeout, null, null);
     }
 }

@@ -22,6 +22,7 @@ import cherry.mastersmith.audit.domain.AuditEventFactory;
 import cherry.mastersmith.audit.domain.AuditEventType;
 import cherry.mastersmith.audit.domain.AuditResult;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
+import cherry.mastersmith.businessdata.domain.BusinessDataChangedEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.group.domain.GroupAuditEvent;
 import cherry.mastersmith.invitation.domain.InvitationCancelledEvent;
@@ -52,7 +53,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * U2 の認証の出来事と U3 のアクセス拒否の出来事、DSL の操作の出来事（Intent 260923-dsl-schema-loader の U4）、パスワードの変更の
  * 出来事（Intent 260925-user-management の U2）、招待と登録の出来事（同じ Intent の U3）、利用者の管理の操作の出来事（Intent
  * 260930-user-admin の U3）、初期管理者の作成と救済の出来事（Intent 261004-safety-carryover の FR1.5）、グループの操作の出来事
- * （Intent 261004-role-menu の U3）、ロールの操作の出来事（同じ Intent の U4）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
+ * （Intent 261004-role-menu の U3）、ロールの操作の出来事（同じ Intent の U4）、業務データの操作の出来事（Intent
+ * 261016-business-data-views の U2）を受け取り、監査イベントを1件ずつ追記する（BR1.1〜BR1.6、BR3.1、BR3.2）。
  *
  * <p>どちらの受け取りも {@link TransactionalEventListener} の確定の後（{@link TransactionPhase#AFTER_COMMIT}）で、
  * トランザクションが無いときも受け取る設定（{@code fallbackExecution = true}）にする
@@ -261,6 +263,76 @@ public class AuditEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onRoleAuditEvent(RoleAuditEvent event) {
         record(() -> AuditEventFactory.from(event), () -> fields(event));
+    }
+
+    /**
+     * 業務データの操作の出来事を受け取り、監査イベントを追記する（Intent 261016-business-data-views の U2、契約 C5、BR11.1〜BR11.5）。
+     *
+     * <p>出来事は書き込みの口から戻った後（対象DB の接続を返した後）か、主キー・ビューの決まりで拒んだ直後に、内部DB のトランザクションの
+     * 外で知らされるため、要求と同じスレッドでその場で受け取る（{@code fallbackExecution = true}）。書き込みの失敗は応答を変えず、ERROR を
+     * 1回出す。ERROR には {@code detail}・主キーの値・例外（原因）を載せず、主キーのカラムの数・{@code keyTruncated}・例外のクラスの
+     * 名前だけを載せる（BR11.5、NFR8.4。H2 の例外の文に detail の値が入るため。試しの W11）。ほかの出来事の ERROR は変えない。
+     *
+     * @param event 出来事
+     */
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
+    public void onBusinessDataChanged(BusinessDataChangedEvent event) {
+        AuditEvent auditEvent = null;
+        try {
+            auditEvent = AuditEventFactory.from(event);
+            long start = nanoTime.getAsLong();
+            recorder.record(auditEvent);
+            long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(nanoTime.getAsLong() - start);
+            if (elapsedMillis > SLOW_WRITE_THRESHOLD_MILLIS) {
+                LOGGER.atWarn()
+                        .addKeyValue("auditEventType", auditEvent.getEventType())
+                        .addKeyValue("elapsedMs", elapsedMillis)
+                        .log(SLOW_WRITE_MESSAGE);
+            }
+        } catch (RuntimeException e) {
+            logBusinessDataFailure(event, e);
+        }
+    }
+
+    /**
+     * 業務データの出来事の書き込みの失敗を ERROR で1回出す（BR11.5）。{@code detail}・主キーの値・例外の原因を載せない。
+     *
+     * @param event 出来事
+     * @param e 受け止めた例外（クラスの名前だけを載せる）
+     */
+    private void logBusinessDataFailure(BusinessDataChangedEvent event, RuntimeException e) {
+        if (event == null) {
+            Map<String, Object> fields = fields(null, null, null, null, null, null, null, null, null);
+            fields.put("actorUserId", null);
+            LoggingEventBuilder builder = LOGGER.atError();
+            for (Map.Entry<String, Object> field : fields.entrySet()) {
+                builder = builder.addKeyValue(field.getKey(), field.getValue());
+            }
+            builder.addKeyValue("exceptionType", e.getClass().getName()).log(FAILURE_MESSAGE);
+            return;
+        }
+        Map<String, Object> fields = fields(
+                AuditEventFactory.businessDataEventTypeOf(event.operation()),
+                AuditEventFactory.businessDataResultOf(event.result()),
+                event.occurredAt(),
+                null,
+                AuditEventFactory.businessDataFailureReasonOf(event.reason()),
+                event.origin().sourceIp(),
+                event.origin().userAgent(),
+                event.origin().requestPath(),
+                event.origin().traceId());
+        fields.put("actorUserId", event.actorUserId());
+        fields.put("targetSchema", event.schema());
+        fields.put("targetTable", event.table());
+        fields.put("workRoleId", event.workRoleId());
+        fields.put("keyColumnCount", event.keyColumnCount());
+        fields.put("keyTruncated", event.keyTruncated());
+        LoggingEventBuilder builder = LOGGER.atError();
+        for (Map.Entry<String, Object> field : fields.entrySet()) {
+            builder = builder.addKeyValue(field.getKey(), field.getValue());
+        }
+        builder.addKeyValue("exceptionType", e.getClass().getName()).log(FAILURE_MESSAGE);
     }
 
     /**
@@ -523,7 +595,10 @@ public class AuditEventListener {
                     ROLE_ASSIGNED,
                     ROLE_UNASSIGNED,
                     WORK_ROLE_SWITCHED,
-                    ROLE_TRANSFER_APPLIED -> false;
+                    ROLE_TRANSFER_APPLIED,
+                    BUSINESS_ROW_CREATED,
+                    BUSINESS_ROW_UPDATED,
+                    BUSINESS_ROW_DELETED -> false;
         };
     }
 

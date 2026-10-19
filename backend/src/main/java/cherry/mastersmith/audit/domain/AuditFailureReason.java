@@ -79,5 +79,23 @@ public enum AuditFailureReason {
     /** 割り当ての外・存在しないロールへの作業ロールの切り替え（Intent 261004-role-menu の U4）。 */
     ROLE_NOT_ASSIGNED,
     /** 権限の YAML の適用で、確かめの後にロール・設定・DSL が変わった（指紋の不一致。Intent 261004-role-menu の U4）。 */
-    ROLE_TRANSFER_STALE
+    ROLE_TRANSFER_STALE,
+    /** 主キーとビューの決まりで行えない操作（Intent 261016-business-data-views の U2。応答の code は 34 字のため短くした。BR11.6）。 */
+    BUSINESS_ROW_OP_NOT_ALLOWED,
+    /** 業務データの当たった行が 0（U2）。 */
+    BUSINESS_ROW_NOT_FOUND,
+    /** 業務データの当たった行が 2 以上（U2）。 */
+    BUSINESS_ROW_NOT_UNIQUE,
+    /** 同じ値の行がある（U2）。 */
+    BUSINESS_DUPLICATE_VALUE,
+    /** 参照先に無い値（U2）。 */
+    BUSINESS_REFERENCE_NOT_FOUND,
+    /** 対象DB が保存を拒んだ・違反の確かめの失敗（U2）。 */
+    BUSINESS_SAVE_REJECTED,
+    /** 対象DB に接続できない・保存されていない対象DB の失敗（U2）。 */
+    BUSINESS_TARGET_DB_UNAVAILABLE,
+    /** 確定の段の時間切れ（確定したか分からない。結果は {@link AuditResult#UNKNOWN}。U2）。 */
+    BUSINESS_TARGET_DB_TIMEOUT,
+    /** 表・カラムが対象DB に無い（U2）。 */
+    BUSINESS_TARGET_DB_MISMATCH
 }

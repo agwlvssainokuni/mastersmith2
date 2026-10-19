@@ -164,6 +164,20 @@
 //   bizDetail           主キーで1行の詳細（POST /api/tables/rows/get。VU と繰り返しの番号で行を回す）
 //   bizSearchWide       biz_wide の1ページ目（100 件 × 100 カラム × 100 字。NFR2.5 のメモリの確かめ。応答時間は記録だけ）。
 //                       流す前にアプリのコンテナを作り直して前の memory.peak を消す
+// 業務データの書き込みの場面（Intent 261016-business-data-views の U2 u2-businessdata-write、Bolt B4。手順は perf/README.md の「業務データの
+// 書き込みの場面」）。ID は construction/u2-businessdata-write/nfr-requirements/ の performance-requirements.md（NFR1.4・NFR1.5）と
+// scalability-requirements.md（NFR2.7・NFR2.8）。表は種の台本の biz_new（100 カラム、自動の採番の主キー・一意の u_code・biz_ref を指す
+// ref_id）と biz_ref。setup は前の場面の状態に頼らず、書き込みのロール BIZ_WRITER_ROLE_NAME（スキーマを READ、biz_new・biz_ref を FULL
+// と CREATE・DELETE）を用意して試験用の利用者に割り当て、作業ロールを保存し、トークンを VU の数だけ取り、定義の API で書き込みが使える
+// ことを確かめてから始める（DSL の適用は bizPrepare が行う）。どの場面も1回の繰り返しに要求1つで、判定は iteration_duration{scenario:…}
+// の p95 < 1000 ms と checks の率 1（bizCreateLarge は記録だけ）。値はすべて架空で、出力しない。
+//   bizCreate           作成（100 カラムの表の FULL のカラム。一意と外部キーを満たす）。10 VU・3 分
+//   bizUpdate           更新（VU ごとに setup で作った別の行の1カラムを変える）。10 VU・3 分
+//   bizDelete           削除（setup で ITERATIONS 件の行を作り、1回に1行を消す）。既定 100 回
+//   bizWritePoolLimit   参照先に無い値での作成（外部キーの違反 → 巻き戻し → 同じ接続での確かめ。409 を期待の状態コードにする）。
+//                       10 VU で書き込みのプールの上限 5 に必ず届く（NFR2.7）。10 VU・3 分
+//   bizCreateLarge      4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの文字。NFR2.8 のメモリの確かめ）。10 VU ×
+//                       BIZ_LARGE_ITERATIONS 回。流す前にアプリのコンテナを作り直して前の memory.peak を消す
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -409,6 +423,22 @@ const BIZ_USER_COUNT = Number(__ENV.BIZ_USER_COUNT || 10)
 // 準備の DSL（bizPrepare）は初期化の段でだけ読める（k6 の open）
 const BIZ_DSL_BODY = SCENARIO === 'bizPrepare' && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
 
+// 業務データの書き込みの場面（Intent 261016-business-data-views の U2、B4。NFR1.4・NFR1.5・NFR2.7・NFR2.8、performance-design.md 4節）
+const BIZ_WRITE_SCENARIOS = ['bizCreate', 'bizUpdate', 'bizDelete', 'bizWritePoolLimit', 'bizCreateLarge']
+// 1回の繰り返しに要求1つで、p95 を判定する場面（bizCreateLarge は記録だけ）
+const BIZ_WRITE_JUDGED = ['bizCreate', 'bizUpdate', 'bizDelete', 'bizWritePoolLimit']
+const BIZ_NEW_TABLE = 'biz_new'
+const BIZ_REF_TABLE = 'biz_ref'
+const BIZ_REF_ROWS = 100
+const BIZ_NEW_TEXT_COLUMNS = 97
+const BIZ_WRITER_ROLE_NAME = __ENV.BIZ_WRITER_ROLE_NAME || 'perf-biz-writer'
+// 大きな本文の場面の回数（VU ごと）と、1カラムの字数・字（UTF-8 で 4 バイトの架空の字）
+const BIZ_LARGE_ITERATIONS = Number(__ENV.BIZ_LARGE_ITERATIONS || 3)
+const BIZ_LARGE_CHARS = 10000
+const BIZ_LARGE_VALUE = SCENARIO === 'bizCreateLarge' ? '\u{2000B}'.repeat(BIZ_LARGE_CHARS) : null
+// 違反の道の場面は 409 を期待の状態コードとして宣言する（http_req_failed に数えない）
+if (SCENARIO === 'bizWritePoolLimit') http.setResponseCallback(http.expectedStatuses(409))
+
 function scenariosFor(name) {
   if (name === 'dslPrepare') {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '20m' } }
@@ -420,6 +450,15 @@ function scenariosFor(name) {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '10m' } }
   }
   if (BIZ_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
+  }
+  if (name === 'bizDelete') {
+    return { [name]: { executor: 'shared-iterations', vus: VUS, iterations: ITERATIONS, maxDuration: '10m' } }
+  }
+  if (name === 'bizCreateLarge') {
+    return { [name]: { executor: 'per-vu-iterations', vus: VUS, iterations: BIZ_LARGE_ITERATIONS, maxDuration: '10m' } }
+  }
+  if (BIZ_WRITE_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
   }
   if (NAV_SCENARIOS.includes(name)) {
@@ -517,6 +556,14 @@ function thresholdsFor(name) {
       [`http_req_duration{name:${name}}`]: ['max>=0'],
     }
   }
+  // Intent 261016-business-data-views の U2（NFR1.4・NFR1.5・NFR2.7・NFR2.8）。U1 と同じ判定で、bizCreateLarge は応答時間を記録だけにする。
+  if (BIZ_WRITE_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: [BIZ_WRITE_JUDGED.includes(name) ? 'p(95)<1000' : 'max>=0'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['max>=0'],
+    }
+  }
   if (NAV_SCENARIOS.includes(name)) {
     return {
       [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
@@ -579,6 +626,8 @@ if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 if (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') options.setupTimeout = '10m'
 // 業務データの準備は setup で操作する管理者のトークンを取り、ほかの場面は setup で VU の数だけログインして前提を確かめる
 if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// 業務データの書き込みの場面は、setup でロール・割り当て・作業ロール・トークンと、更新・削除の行を API で作る
+if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -634,6 +683,7 @@ export function setup() {
   if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) setupRoleTransfer(tokens)
   if (SCENARIO === 'navPrepare' || NAV_SCENARIOS.includes(SCENARIO)) setupNavigation(tokens)
   if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) setupBusinessData(tokens)
+  if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) setupBusinessDataWrite(tokens)
   return tokens
 }
 
@@ -2219,6 +2269,147 @@ function bizSearchWide(data) {
   })
 }
 
+// 業務データの書き込みの場面（Intent 261016-business-data-views の U2、B4）。どの場面も1回の繰り返しに要求1つで、要求の名前（name の
+// タグ）は場面の名前と同じ。行の値と主キーの値は出力しない（状態コードと code だけを checks で見る）。
+function bizNewValues(uCode, refId, text) {
+  const values = { u_code: uCode, ref_id: refId }
+  for (let i = 1; i <= BIZ_NEW_TEXT_COLUMNS; i++) values[`n_${String(i).padStart(3, '0')}`] = text(i)
+  return values
+}
+
+function bizWriteBody(data, extra) {
+  return { schema: BIZ_SCHEMA, table: BIZ_NEW_TABLE, definitionId: data.bizDefinitionId, ...extra }
+}
+
+function bizCreateRequest(data, headers, values, name) {
+  return jsonPost(`${BIZ_API}/rows`, bizWriteBody(data, { values }), headers, name)
+}
+
+// 書き込みのロールの権限を保存する（前の回が残した同じ設定の 409 ROLE_NO_CHANGE も受け入れる）
+function bizSavePermission(headers, roleId, tableName, main, create, del) {
+  const res = jsonPut(
+    `${ROLE_API}/${roleId}/permissions`,
+    {
+      scope: { schemaName: BIZ_SCHEMA, tableName },
+      entries: [{ schemaName: BIZ_SCHEMA, tableName, columnName: null, main, create, delete: del }],
+    },
+    headers,
+    'bizSetup',
+  )
+  if (res.status !== 204 && !(res.status === 409 && codeOf(res) === 'ROLE_NO_CHANGE')) {
+    fail(`書き込みのロールの権限を保存できませんでした: ${res.status} ${codeOf(res)}`)
+  }
+}
+
+// 業務データの書き込みの場面の用意。前の場面の状態に頼らず、書き込みのロールの用意・割り当て・作業ロールの保存・トークンを自分で行い、
+// 定義の API で書き込みが使えることを確かめる（U1 の基盤の設計のレビュー R-02、project.md の学び）。更新は VU ごとに1行、削除は
+// ITERATIONS 件の行を API で作る（使い捨ての環境の監査に残る）。
+function setupBusinessDataWrite(data) {
+  if (VUS > BIZ_USER_COUNT) fail(`VUS（${VUS}）が試験用の利用者の数 BIZ_USER_COUNT（${BIZ_USER_COUNT}）を超えています`)
+  const operator = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  const operatorHeaders = roleHeaders(operator)
+  const roleId = roleIdByName(operator, BIZ_WRITER_ROLE_NAME) || roleCreate(operator, BIZ_WRITER_ROLE_NAME, 'bizSetup')
+  bizSavePermission(operatorHeaders, roleId, null, 'READ', null, null)
+  for (const table of [BIZ_NEW_TABLE, BIZ_REF_TABLE]) bizSavePermission(operatorHeaders, roleId, table, 'FULL', true, true)
+  const ids = idsBySearch(operatorHeaders, 'perf-biz-')
+  data.bizTokens = {}
+  for (let vu = 1; vu <= VUS; vu++) {
+    const userId = ids[bizUserEmail(vu)]
+    if (!userId) fail(`試験用の利用者 ${bizUserEmail(vu)} がいません（perf/README.md の手順で入れてください）`)
+    roleAssignEnsured(operator, roleId, { userId })
+    // 1人ずつログインする（ロックの状態の行を作る。project.md の学び）
+    const token = tokenOf(login(bizUserEmail(vu), USER_PASSWORD))
+    const switched = jsonPut(`${BASE}/api/me/work-role`, { roleId }, roleHeaders(token), 'bizSetup')
+    if (switched.status !== 204) fail(`作業ロールを保存できませんでした: ${switched.status} ${codeOf(switched)}`)
+    data.bizTokens[vu] = token
+  }
+  const headers = roleHeaders(data.bizTokens[1])
+  const definition = bizDefinitionRequest(headers, BIZ_NEW_TABLE, 'bizSetup')
+  if (definition.status !== 200) {
+    fail(`書き込みの表の定義を読めませんでした: ${definition.status} ${codeOf(definition)}（先に bizPrepare を流してください）`)
+  }
+  const operations = definition.json('operations') || []
+  if (!definition.json('writeConfigured') || !['CREATE', 'UPDATE', 'DELETE'].every((op) => operations.includes(op))) {
+    fail('書き込みが使えません（アプリの一時の環境ファイルの MASTERSMITH_TARGET_DB_WRITE_* と、書き込みのロールを確かめてください）')
+  }
+  data.bizDefinitionId = definition.json('definitionId')
+  data.runId = Date.now().toString(36)
+  const make = (label) => {
+    const res = bizCreateRequest(
+      data,
+      headers,
+      bizNewValues(`${data.runId}-${label}`, '1', (i) => `用意${i}`),
+      'bizSetup',
+    )
+    if (res.status !== 201) fail(`書き込みの場面の行を作れませんでした: ${res.status} ${codeOf(res)}`)
+    return res.json('key.id')
+  }
+  if (SCENARIO === 'bizUpdate') {
+    data.bizUpdateIds = {}
+    for (let vu = 1; vu <= VUS; vu++) data.bizUpdateIds[vu] = make(`u${vu}`)
+  }
+  if (SCENARIO === 'bizDelete') {
+    data.bizDeleteIds = []
+    for (let n = 0; n < ITERATIONS; n++) data.bizDeleteIds.push(make(`d${n}`))
+  }
+}
+
+function bizWriteHeaders(data) {
+  return roleHeaders(data.bizTokens[exec.vu.idInTest])
+}
+
+// 作成（一意の u_code と、参照先にある ref_id を満たす）
+function bizCreate(data) {
+  const vu = exec.vu.idInTest
+  const n = exec.vu.iterationInScenario
+  const values = bizNewValues(`${data.runId}-c${vu}-${n}`, String(((vu + n) % BIZ_REF_ROWS) + 1), (i) => `書き込み${i}`)
+  const res = bizCreateRequest(data, bizWriteHeaders(data), values, 'bizCreate')
+  check(res, { 'bizCreate 201': (r) => r.status === 201 && r.json('key.id') !== undefined })
+}
+
+// 更新（VU ごとに別の行の1カラム。同じ行の排他の待ちを混ぜない）
+function bizUpdate(data) {
+  const vu = exec.vu.idInTest
+  const res = http.patch(
+    `${BIZ_API}/rows`,
+    JSON.stringify(
+      bizWriteBody(data, {
+        key: { id: String(data.bizUpdateIds[vu]) },
+        values: { n_001: `更新${exec.vu.iterationInScenario}` },
+      }),
+    ),
+    { headers: { ...bizWriteHeaders(data), 'Content-Type': 'application/json' }, tags: { name: 'bizUpdate' } },
+  )
+  check(res, { 'bizUpdate 200': (r) => r.status === 200 })
+}
+
+// 削除（setup で作った行を1回に1行）
+function bizDelete(data) {
+  const id = data.bizDeleteIds[exec.scenario.iterationInTest]
+  const res = jsonPost(`${BIZ_API}/rows/delete`, bizWriteBody(data, { key: { id: String(id) } }), bizWriteHeaders(data), 'bizDelete')
+  check(res, { 'bizDelete 200': (r) => r.status === 200 })
+}
+
+// 参照先に無い値での作成（違反の道。409 BUSINESS_REFERENCE_NOT_FOUND を正しい答えとして数える）
+function bizWritePoolLimit(data) {
+  const vu = exec.vu.idInTest
+  const n = exec.vu.iterationInScenario
+  const values = bizNewValues(`${data.runId}-p${vu}-${n}`, '999999', (i) => `違反${i}`)
+  const res = bizCreateRequest(data, bizWriteHeaders(data), values, 'bizWritePoolLimit')
+  check(res, {
+    'bizWritePoolLimit 409': (r) => r.status === 409 && codeOf(r) === 'BUSINESS_REFERENCE_NOT_FOUND',
+  })
+}
+
+// 4 MiB 近い本文の作成（成功の道。97 カラム × 10,000 字 × 4 バイト。NFR2.8）
+function bizCreateLarge(data) {
+  const vu = exec.vu.idInTest
+  const n = exec.vu.iterationInScenario
+  const values = bizNewValues(`${data.runId}-l${vu}-${n}`, String(((vu + n) % BIZ_REF_ROWS) + 1), () => BIZ_LARGE_VALUE)
+  const res = bizCreateRequest(data, bizWriteHeaders(data), values, 'bizCreateLarge')
+  check(res, { 'bizCreateLarge 201': (r) => r.status === 201 })
+}
+
 const USER_SCENARIOS = {
   preferencesGet,
   preferencesSave,
@@ -2276,6 +2467,11 @@ const USER_SCENARIOS = {
   bizSearchLastSorted,
   bizDetail,
   bizSearchWide,
+  bizCreate,
+  bizUpdate,
+  bizDelete,
+  bizWritePoolLimit,
+  bizCreateLarge,
 }
 
 export default function (tokens) {

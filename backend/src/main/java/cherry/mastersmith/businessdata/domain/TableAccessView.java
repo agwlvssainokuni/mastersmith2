@@ -22,7 +22,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +50,8 @@ import java.util.Set;
  * @param writeConfigured 書き込みの接続の設定があるか
  * @param rowLabelColumns 行を見分ける値のカラム（BR2.6）
  * @param knownIdentifiers SQL の部品に渡す名前の一覧（BR3.3）
+ * @param writeRules カラムの名前ごとの書き込みの検証の材料（NONE のカラムは含めない。U2 の BR3・BR4・BR5・BR14.2）
+ * @param foreignKeys 違反の後の確かめに使う外部キー（参照先の名前が分かるものだけ。U2 の BR6.2）
  */
 public record TableAccessView(
         String schema,
@@ -64,7 +68,9 @@ public record TableAccessView(
         RestrictionReason restrictionReason,
         boolean writeConfigured,
         List<String> rowLabelColumns,
-        KnownIdentifiers knownIdentifiers) {
+        KnownIdentifiers knownIdentifiers,
+        Map<String, ColumnWriteRules> writeRules,
+        List<ForeignKeyRef> foreignKeys) {
 
     /** 必須の値を確かめ、一覧と集合を変更できないものにする。 */
     public TableAccessView {
@@ -80,6 +86,18 @@ public record TableAccessView(
                 ? Collections.unmodifiableSet(EnumSet.noneOf(AllowedOperation.class))
                 : Collections.unmodifiableSet(EnumSet.copyOf(operations));
         rowLabelColumns = List.copyOf(rowLabelColumns);
+        writeRules = Collections.unmodifiableMap(new LinkedHashMap<>(writeRules));
+        foreignKeys = List.copyOf(foreignKeys);
+    }
+
+    /**
+     * 名前でカラムの書き込みの検証の材料を引く（NONE のカラムと DSL に無いカラムは無い）。
+     *
+     * @param name カラムの名前
+     * @return 検証の材料（無ければ空）
+     */
+    public Optional<ColumnWriteRules> writeRules(String name) {
+        return Optional.ofNullable(writeRules.get(name));
     }
 
     /**

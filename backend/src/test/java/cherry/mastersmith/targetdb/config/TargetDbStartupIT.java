@@ -71,7 +71,16 @@ class TargetDbStartupIT {
         args.add("--spring.datasource.url=" + TestDatabase.url(dir));
         args.add("--server.port=0");
         args.add("--mastersmith.auth.password.bcrypt-cost=4");
-        for (String item : List.of("type", "host", "port", "database", "schema", "username", "password")) {
+        for (String item : List.of(
+                "type",
+                "host",
+                "port",
+                "database",
+                "schema",
+                "username",
+                "password",
+                "write.username",
+                "write.password")) {
             args.add("--mastersmith.target-db." + item + "=" + target.getOrDefault(item, ""));
         }
         return new SpringApplicationBuilder(MastersmithApplication.class).run(args.toArray(String[]::new));
@@ -237,5 +246,63 @@ class TargetDbStartupIT {
                     .startsWith("jdbc:mariadb://127.0.0.1:");
             assertThat(context.getBean(Flyway.class).info().applied()).isNotEmpty();
         }
+    }
+
+    @Test
+    @DisplayName("only one write credential logs one warning naming the item, and startup and reading go on")
+    void partialWriteSettingWarnsOnce(CapturedOutput output) throws IOException {
+        String writeUsername = "w" + TestDatabase.randomSecret();
+        String password = TestDatabase.randomSecret();
+        Map<String, String> target = Map.of(
+                "type", "postgresql",
+                "host", "127.0.0.1",
+                "port", Integer.toString(closedPort()),
+                "database", "business",
+                "schema", "sales",
+                "username", "reader",
+                "password", password,
+                "write.username", writeUsername);
+        try (ConfigurableApplicationContext context = start(tempDir, target)) {
+            assertThat(context.containsBean(TargetDataSourceConfig.TARGET_DATA_SOURCE))
+                    .as("読み取りは使える")
+                    .isTrue();
+            assertThat(context.containsBean(TargetWriteDataSourceConfig.TARGET_WRITE_DATA_SOURCE))
+                    .isFalse();
+            assertThat(context.getBean(TargetDbWriteSettings.class))
+                    .isInstanceOf(TargetDbWriteSettings.Incomplete.class);
+            assertHealthIsOnlyUp(context);
+        }
+        assertThat(configWarnings(output))
+                .singleElement()
+                .satisfies(record -> assertThat(record)
+                        .containsEntry("level", "WARN")
+                        .containsEntry("items", "mastersmith.target-db.write.password"));
+        JsonLogRecords.assertContainsNoSecret(output.getAll(), writeUsername, password);
+    }
+
+    @Test
+    @DisplayName("both write credentials start the application without any warning and without connecting")
+    void bothWriteCredentialsStartQuietly(CapturedOutput output) throws IOException {
+        String writePassword = TestDatabase.randomSecret();
+        Map<String, String> target = Map.of(
+                "type", "mysql",
+                "host", "127.0.0.1",
+                "port", Integer.toString(closedPort()),
+                "database", "business",
+                "schema", "business",
+                "username", "reader",
+                "password", TestDatabase.randomSecret(),
+                "write.username", "writer",
+                "write.password", writePassword);
+        try (ConfigurableApplicationContext context = start(tempDir, target)) {
+            HikariDataSource write =
+                    context.getBean(TargetWriteDataSourceConfig.TARGET_WRITE_DATA_SOURCE, HikariDataSource.class);
+            assertThat(context.getBean(TargetDbWriteSettings.class)).isInstanceOf(TargetDbWriteSettings.Usable.class);
+            assertHealthIsOnlyUp(context);
+            assertThat(write.getHikariPoolMXBean()).as("書き込みのプールは始まっていない").isNull();
+        }
+        assertThat(configWarnings(output)).isEmpty();
+        assertThat(output.getOut()).doesNotContain("mastersmith-target-db-write - Start");
+        JsonLogRecords.assertContainsNoSecret(output.getAll(), writePassword);
     }
 }

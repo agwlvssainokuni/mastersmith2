@@ -1157,11 +1157,14 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
 #       置き場はホームの下（権限 700）。VM から見えるようにするため）。KIND は postgres・mysql・mariadb のどれか
 KIND=postgres
 perfu() { docker compose -p mastersmith-perf -f docker/perf/compose.yaml "$@"; }
-# 1B. 対象DB の資格情報（乱数。表示しない）と、アプリの対象DB の接続先（読み取りだけのアカウント）を一時の環境ファイルに書く
+# 1B. 対象DB の資格情報（乱数。表示しない）と、アプリの対象DB の接続先（読み取りのアカウントと、U2 の書き込みのアカウント）を一時の
+#     環境ファイルに書く。書き込みのパスワードが空だと、対象DB の初期化の台本 03-writer-account.sh が止まる（読み取りだけの回でも作る）
 DBA=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); DBR=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
+DBW=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
 ( umask 077
   printf 'POSTGRES_PASSWORD=%s\nMYSQL_ROOT_PASSWORD=%s\nMARIADB_ROOT_PASSWORD=%s\nMASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD=%s\n' \
     "$DBA" "$DBA" "$DBA" "$DBR" > "$D/targetdb.env"
+  printf 'MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD=%s\n' "$DBW" >> "$D/targetdb.env"
   case "$KIND" in
     postgres) T=postgresql P=5432 DB=business ;;
     mysql) T=mysql P=3306 DB=bizperf ;;
@@ -1170,8 +1173,9 @@ DBA=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); DBR=$(openssl rand -b
   printf 'MASTERSMITH_TARGET_DB_TYPE=%s\nMASTERSMITH_TARGET_DB_HOST=targetdb-%s\nMASTERSMITH_TARGET_DB_PORT=%s\n' "$T" "$KIND" "$P" > "$D/app-targetdb.env"
   printf 'MASTERSMITH_TARGET_DB_DATABASE=%s\nMASTERSMITH_TARGET_DB_SCHEMA=bizperf\nMASTERSMITH_TARGET_DB_USERNAME=mastersmith_reader\n' "$DB" >> "$D/app-targetdb.env"
   printf 'MASTERSMITH_TARGET_DB_PASSWORD=%s\n' "$DBR" >> "$D/app-targetdb.env"
+  printf 'MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer\nMASTERSMITH_TARGET_DB_WRITE_PASSWORD=%s\n' "$DBW" >> "$D/app-targetdb.env"
   printf 'MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics\n' >> "$D/app.env" )
-unset DBA DBR
+unset DBA DBR DBW
 export MASTERSMITH_PERF_TARGETDB_ENV_FILE="$D/targetdb.env" MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE="$D/app-targetdb.env"
 # 業務データの試験の値（試し走りでは export しない。計画の D4: A）
 export MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL=768M MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY=2304m \
@@ -1244,3 +1248,37 @@ unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQ
 ```
 
 - **試し走りの結果**（B2 の Code Generation、2026-10-19。PostgreSQL の1種類、既定の設定（`shared_buffers` 128MB・上限 512m、業務データの試験の値は export しない）、配備したアプリを止めずに、各場面 1 VU・10 秒。判定ではない）: 2回流し、2回ともどの場面も閾値と checks を通った（checks の失敗 0、`http_req_failed` 0）。種の SQL は 7 秒で、行の数は `biz_item` 100,000・`biz_pair` 1,000・`biz_wide` 200、表の大きさは `biz_item` 196 MiB（索引 2.2 MiB）・`biz_wide` 4.3 MiB。2回目の繰り返しの時間の p95 は `bizDefinition` 2.1 ms・`bizSearchFirst` 24.1 ms・`bizSearchContains` 162.7 ms（1回目 272.1 ms）・`bizSearchLast` 13.1 ms・`bizSearchLastSorted` 47.9 ms・`bizDetail` 24.6 ms・`bizSearchWide` 48.2 ms。1回目に対象DB のプールの待ちの時間切れの累計は 0。2回目は作り直す前と後のログをどちらも残して数え、試験用の利用者のメールアドレスと行の値は 0 件、WARN は起動ごとの2行（Flyway の H2 の版、Bean の後処理の案内）だけ、ERROR は 0 行だった（1回目は作り直す前のログを残しておらず、その反省で上の台本は作り直す前にログを残す形にした）。`bizSearchWide` の後の `memory.peak` は 1回目 621 MiB・2回目 506 MiB（1 VU、OOMKilled なし）。MySQL・MariaDB の種の SQL は、出した SQL の形と行の数の指定（100,000・1,000・200）を読んで確かめただけで、流すのは Performance Validation（計画の D4: A）。
+
+## 業務データの書き込みの場面（Intent 261016-business-data-views の U2）
+
+`perf/k6/scenarios.js` の業務データの書き込みの場面を、上の「業務データの場面」と同じ使い捨ての環境で、読み取りの場面の後に対象DB の種類ごとに流す。目標の出典は `aidlc/spaces/default/intents/261016-business-data-views/construction/u2-businessdata-write/` の `nfr-requirements/performance-requirements.md`（NFR1.4・NFR1.5）・`scalability-requirements.md`（NFR2.7・NFR2.8・NFR2.9）と、`infrastructure-design/cicd-pipeline.md`（5節）・`monitoring-design.md`。Code Generation（B4）では `k6 inspect --include-system-env-vars` で場面と閾値の名前を確かめ、PostgreSQL の1種類だけを既定の設定で試し走り（各場面 1 VU・10 秒、`bizCreateLarge` を含む）しただけで、本番の長さで3種類を流して判定するのは Performance Validation。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
+|---|---|---|
+| `bizCreate` | `biz_new` の作成（100 カラムの表の FULL のカラム。一意の `u_code` と参照先にある `ref_id`）。10 VU・3 分 | `iteration_duration{scenario:<名前>}` の p95 < 1000 ms と `checks` の率 1 |
+| `bizUpdate` | 更新（VU ごとに setup で作った別の行の `n_001` を変える。同じ行の排他の待ちを混ぜない）。10 VU・3 分 | 同上 |
+| `bizDelete` | 削除（setup で `ITERATIONS` 件（既定 100）の行を作り、1回に1行を消す） | 同上 |
+| `bizWritePoolLimit` | 参照先に無い `ref_id` での作成（外部キーの違反 → セーブポイントへの戻し → 同じ接続での確かめ。最も長く接続を持つ道）。10 VU で書き込みのプールの上限 5 に必ず届く。409 `BUSINESS_REFERENCE_NOT_FOUND` を正しい答えとして数える（期待の状態コード）。10 VU・3 分 | 同上（NFR2.7） |
+| `bizCreateLarge` | 4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの架空の字、約 3.9 MB）。10 VU × `BIZ_LARGE_ITERATIONS` 回（既定 3） | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.8。`anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ |
+
+- **データ**: 種の台本（`make-biz-seed.sh`）が、`biz_ref`（参照先、100 行）と `biz_new`（自動の採番の主キー `id`・一意の制約のある `u_code`・`biz_ref` を指す外部キー `ref_id`・文字の `n_001`〜`n_097` の 100 カラム、行は入れない）を作り、書き込みのアカウント `mastersmith_writer`（対象DB の初期化の台本 `03-writer-account.sh` が作る）に `bizperf` の行の操作（PG は sequence の USAGE も）を与える。DSL（`make-biz-dsl.mjs`）にも同じ形の2つの表を書く。値はすべて架空。
+- **setup の前提**（前の場面の状態に頼らない）: どの書き込みの場面も、setup で書き込みのロール `perf-biz-writer`（スキーマ `bizperf` を READ、`biz_new`・`biz_ref` を FULL と CREATE・DELETE）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、`biz_new` の定義で書き込みが使える（`writeConfigured` と CREATE・UPDATE・DELETE）ことを確かめる。DSL の適用は `bizPrepare` が行う（先に流す）。`bizUpdate` は VU ごとに1行、`bizDelete` は `ITERATIONS` 件の行を、setup が API で作る。どれも使い捨ての環境の監査に残る。
+- **アプリの書き込みの設定**: 上の 1B のとおり、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer` と `MASTERSMITH_TARGET_DB_WRITE_PASSWORD`（対象DB の一時の環境ファイルの `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` と同じ値）を入れる。値は表示しない。
+- **流す順**（`cicd-pipeline.md` 5節）: 上の「業務データの場面」の 4B の台本の後（読み取りの場面の後）に、`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit` を流す。待ちの最大のような揺れる値があるため、合否の回は複数回流す。`bizCreateLarge` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す（作り直す前にログを `$D` に残す）。MySQL の回のメモリの上限は 2304m（業務データの試験の値。上の表）のまま。
+- **片付ける前に見るもの**（確かめの結果を見てから片付ける。NFR2.9）: 書き込みのプール（`pool="mastersmith-target-db-write"`。最初に借りるまで出ないため、書き込みを1回流した後に読む）の待ちの時間切れの累計と待ちの最大、アプリの `memory.peak`、対象DB のコンテナの OOMKilled と `memory.events` の `oom_kill`・`max`・`memory.stat` の `anon` の最大、WARN の件数、監査の行の数（`event_type LIKE 'BUSINESS_%'` の種類と結果ごと）、内部DB のファイルの大きさ。対象DB のメモリは「OOMKilled が false、かつ `oom_kill` が 0」で判断し、`anon` の最大が上限の 85% を超えたら依頼者に諮る（基盤の設計のレビューの R-04）。k6 のコンテナの使用量（`docker stats` の CPU・メモリ）も記録する（大きな本文の場面は k6 の側のメモリも使う）。
+- **本文の上限**: 作成・更新の本文の上限は 4 MiB（4,194,304 バイト）。k6 の `JSON.stringify` は日本語や 4 バイトの字を `\u` でエスケープせずに送るため、`bizCreateLarge` の本文は約 3.9 MB に収まる。字を `\uXXXX` でエスケープする作り方の送り手では、4 バイトの字が 12 バイトになり、同じ値でも 413 `PAYLOAD_TOO_LARGE` になる（NFR 設計のレビューの R-09）。
+
+```bash
+# 前提: 上の「業務データの場面」の 1B〜4B を流した後（bizPrepare と読み取りの場面が済んでいる）。k6r と D・KIND も同じ
+for s in bizCreate bizUpdate bizDelete bizWritePoolLimit; do k6r $s -e SCENARIO=$s; done
+( umask 077; docker compose -p mastersmith-perf -f docker/perf/compose.yaml logs --no-log-prefix app > "$D/app-before-large.log" 2>&1 )
+docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait --force-recreate app
+k6r bizCreateLarge -e SCENARIO=bizCreateLarge
+# 試し走りのときは、k6r の各場面に -e VUS=1 -e BIZ_DURATION=10s を足す（bizDelete は -e ITERATIONS=10、bizCreateLarge は
+# -e BIZ_LARGE_ITERATIONS=1。試験用の利用者は perf-biz-01 だけが要る）
+# 書き込みのプールの指標（使い捨てのアプリにだけ公開した actuator の metrics。値は数だけ）
+curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?tag=pool:mastersmith-target-db-write"
+#   監査の行の数（内部DB の複写を読み取りで開いて数える。上の「手順」の 4 と同じ）
+#   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type LIKE 'BUSINESS_%'
+#     GROUP BY event_type, result, failure_reason
+```

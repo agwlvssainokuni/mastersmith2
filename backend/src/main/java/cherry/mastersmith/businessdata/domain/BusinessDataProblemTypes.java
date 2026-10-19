@@ -112,10 +112,66 @@ public final class BusinessDataProblemTypes {
                     "A query to the target database, including the count query, did not finish within the time limit."),
             new LocalizedText("検索の条件を絞ってから、もう一度試してください。", "Narrow the search conditions and try again."));
 
+    /** 画面が使った定義が今の定義と違う（409。U2 の BR1.5）。 */
+    public static final ProblemType BUSINESS_DEFINITION_CHANGED = new ProblemType(
+            "BUSINESS_DEFINITION_CHANGED",
+            409,
+            new LocalizedText("テーブルの定義が変わりました", "The table definition has changed"),
+            new LocalizedText(
+                    "画面を開いた後に、テーブルの定義（DSL または作業ロール）が変わったため、保存しませんでした。",
+                    "Nothing was saved because the table definition (DSL or work role) changed after the screen was"
+                            + " opened."),
+            new LocalizedText("定義を読み直してから、もう一度保存してください。", "Reload the definition and save again."));
+
+    /** 書き込みの接続の設定が無い（409。U2 の BR1.7）。 */
+    public static final ProblemType BUSINESS_WRITE_NOT_CONFIGURED = new ProblemType(
+            "BUSINESS_WRITE_NOT_CONFIGURED",
+            409,
+            new LocalizedText("業務データの書き込みが設定されていません", "Writing business data is not configured"),
+            new LocalizedText(
+                    "対象DB の書き込みの接続が設定されていないため、業務データを作成・更新・削除できません。",
+                    "Business data cannot be created, updated or deleted because the write connection to the target"
+                            + " database is not configured."),
+            new LocalizedText("管理者に書き込みの設定を依頼してください。", "Ask an administrator to configure writing."));
+
+    /** 同じ値の行がある（409。U2 の BR5）。 */
+    public static final ProblemType BUSINESS_DUPLICATE_VALUE = new ProblemType(
+            "BUSINESS_DUPLICATE_VALUE",
+            409,
+            new LocalizedText("同じ値の行があります", "A row with the same value exists"),
+            new LocalizedText(
+                    "重ならないように決められた項目に、ほかの行と同じ値が入っているため、保存しませんでした。",
+                    "Nothing was saved because an item that must be unique has the same value as another row."),
+            new LocalizedText("値を変えてから、もう一度保存してください。", "Change the value and save again."));
+
+    /** 参照先に無い値（409。U2 の BR6.3）。 */
+    public static final ProblemType BUSINESS_REFERENCE_NOT_FOUND = new ProblemType(
+            "BUSINESS_REFERENCE_NOT_FOUND",
+            409,
+            new LocalizedText("参照先に無い値です", "The referenced value does not exist"),
+            new LocalizedText(
+                    "ほかのテーブルを参照する項目に、参照先に無い値が入っているため、保存しませんでした。",
+                    "Nothing was saved because an item that refers to another table has a value that does not exist"
+                            + " there."),
+            new LocalizedText("参照先にある値を入れてから、もう一度保存してください。", "Enter an existing value and save again."));
+
+    /** 対象DB が保存を拒んだ（409。U2 の BR6.3・BR6.4）。 */
+    public static final ProblemType BUSINESS_SAVE_REJECTED = new ProblemType(
+            "BUSINESS_SAVE_REJECTED",
+            409,
+            new LocalizedText("対象DB が保存を受け付けませんでした", "The target database rejected the save"),
+            new LocalizedText(
+                    "対象DB の決まり（参照されている行・必須の項目・長さ・桁など）に合わないため、保存しませんでした。",
+                    "Nothing was saved because the data does not meet a rule of the target database (a referenced"
+                            + " row, a required item, a length or digits)."),
+            new LocalizedText(
+                    "入力を見直してください。直せないときは管理者に連絡してください。",
+                    "Check the input. If you cannot fix it, contact an administrator."));
+
     private BusinessDataProblemTypes() {}
 
     /**
-     * 業務データの問題の種類をすべて返す（U1 の8つ）。
+     * 業務データの問題の種類をすべて返す（U1 の8つと U2 の5つ）。
      *
      * @return 問題の種類の一覧
      */
@@ -128,6 +184,11 @@ public final class BusinessDataProblemTypes {
                 BUSINESS_ROW_NOT_UNIQUE,
                 BUSINESS_TARGET_DB_MISMATCH,
                 BUSINESS_TARGET_DB_UNAVAILABLE,
-                BUSINESS_TARGET_DB_TIMEOUT);
+                BUSINESS_TARGET_DB_TIMEOUT,
+                BUSINESS_DEFINITION_CHANGED,
+                BUSINESS_WRITE_NOT_CONFIGURED,
+                BUSINESS_DUPLICATE_VALUE,
+                BUSINESS_REFERENCE_NOT_FOUND,
+                BUSINESS_SAVE_REJECTED);
     }
 }

@@ -33,6 +33,7 @@ import cherry.mastersmith.role.domain.WorkRoleRef;
 import cherry.mastersmith.role.service.EffectivePermissionResolver;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import cherry.mastersmith.targetdb.service.TargetReadAccess;
+import cherry.mastersmith.targetdb.service.TargetWriteAccess;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -42,7 +43,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * 権限の写しを1回だけ取り、その写しの DSL で名前を照らして判定の材料を作る（契約 C1 の accessFor、BR1.2〜BR1.4・BR3.1〜BR3.3、
- * logical-components.md の L2）。
+ * logical-components.md の L2）。U2 は、書き込みの設定があるかと、書き込みの検証の材料（{@code TableAccessPolicy} が写しの DSL から作る）、
+ * 違反の後の確かめに使う外部キーの参照先の名前を、同じ材料に載せる（BR1.7・BR6.2・BR14.1）。
  *
  * <p>内部DB のトランザクションを開かない（写しは解決の口の中の短い読み取りで取り終える。BR8.3）。対象DB には接続しない（DB の
  * 種類は設定から読む。BR8.4）。管理者の印は使わない。
@@ -54,15 +56,20 @@ public class TableAccessResolver {
 
     private final TargetReadAccess readAccess;
 
+    private final TargetWriteAccess writeAccess;
+
     /**
      * 作る。
      *
      * @param permissions 実効の権限の解決の口
      * @param readAccess 業務データの読み取りの口（DB の種類だけを使う）
+     * @param writeAccess 業務データの書き込みの口（書き込みの設定があるかだけを使う。U2 の BR1.7）
      */
-    public TableAccessResolver(EffectivePermissionResolver permissions, TargetReadAccess readAccess) {
+    public TableAccessResolver(
+            EffectivePermissionResolver permissions, TargetReadAccess readAccess, TargetWriteAccess writeAccess) {
         this.permissions = permissions;
         this.readAccess = readAccess;
+        this.writeAccess = writeAccess;
     }
 
     /**
@@ -104,6 +111,14 @@ public class TableAccessResolver {
         dsl.get().schemas().forEach(s -> schemaNames.add(s.name()));
         KnownIdentifiers names = new KnownIdentifiers(
                 schemaNames, schema.get().tables().keySet(), table.columns().keySet());
+        // 違反の後の確かめに使う、外部キーの参照先（同じスキーマ）の DSL のカラムの名前（U2 の BR6.2）。
+        Map<String, Set<String>> referencedColumns = new HashMap<>();
+        table.foreignKeys().forEach(key -> {
+            DslTable referenced = schema.get().tables().get(key.referencedTable());
+            if (referenced != null) {
+                referencedColumns.put(referenced.name(), referenced.columns().keySet());
+            }
+        });
         DefinitionId definitionId = new DefinitionId(
                 dslHash.get(), snapshot.workRole().map(WorkRoleRef::roleId).orElse(null));
         TableAccessInput input = new TableAccessInput(
@@ -115,9 +130,10 @@ public class TableAccessResolver {
                 snapshot.delete(schemaName, table.name()),
                 columnMain,
                 kinds,
-                // 書き込みの接続の設定は U2 が足す。U1 では常に false。
-                false,
-                names);
+                // 書き込みの接続の設定があるか（U2 の BR1.7。接続はしない）。
+                writeAccess.product().isPresent(),
+                names,
+                referencedColumns);
         return new TableAccessResolution.Resolved(TableAccessPolicy.evaluate(input));
     }
 }

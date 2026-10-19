@@ -48,9 +48,21 @@ public final class StallingRelay implements AutoCloseable {
 
     private final AtomicReference<byte[]> marker = new AtomicReference<>();
 
+    /** 目印を含むまとまりを通した次のまとまりで止める合図の目印（U2）。 */
+    private final AtomicReference<byte[]> markerBeforeStall = new AtomicReference<>();
+
+    /** 目印を通した後で、次の送り手のまとまりで止める印（U2）。 */
+    private final AtomicBoolean stallNext = new AtomicBoolean();
+
     private final List<Socket> sockets = new CopyOnWriteArrayList<>();
 
     private final List<Pair> stalled = new CopyOnWriteArrayList<>();
+
+    /** 止めたときの、合図の後に送り手から届いた大きなまとまりの番号と大きさ（診断の出力。U1 のレビューの R-05）。 */
+    private final List<String> stallReports = new CopyOnWriteArrayList<>();
+
+    /** 合図の後に送り手から届いた大きなまとまりの数（診断の出力）。 */
+    private final AtomicInteger largeChunksSinceArm = new AtomicInteger();
 
     private StallingRelay(ServerSocket server, String targetHost, int targetPort) {
         this.server = server;
@@ -93,9 +105,11 @@ public final class StallingRelay implements AutoCloseable {
      * 大きなまとまり（{@value #LARGE_CHUNK} バイト以上）を {@code pass} 個通した次の大きなまとまりで、流れを止める合図を置く。通信が
      * 暗号化されていて目印の文字が見えない DB（MySQL・MariaDB の既定の TLS）で使う。
      *
-     * @param pass 先に通す大きなまとまりの数（貸し出しの始めの {@code SET time_zone} などの分。数は DB とドライバーの版で決まる）
+     * @param pass 先に通す大きなまとまりの数（止めたい文の前の {@code SET sql_select_limit} などの分。数は DB とドライバーの版で
+     *     決まる）
      */
     public void armAfterLargeChunks(int pass) {
+        largeChunksSinceArm.set(0);
         largeChunksToPass.set(pass);
     }
 
@@ -105,7 +119,30 @@ public final class StallingRelay implements AutoCloseable {
      * @param text 目印（ASCII）
      */
     public void arm(String text) {
+        largeChunksSinceArm.set(0);
         marker.set(text.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    /**
+     * 目印を含むまとまりを通し、その次に送り手から届いたまとまり（大きさを問わない）で流れを止める合図を置く（Intent
+     * 261016-business-data-views の U2）。文の文字を送らない文（PostgreSQL のドライバーが名前つきで準備した {@code COMMIT} など）を、
+     * 前の文の目印で止めるときに使う。
+     *
+     * @param text 目印（ASCII）
+     */
+    public void armAfter(String text) {
+        largeChunksSinceArm.set(0);
+        stallNext.set(false);
+        markerBeforeStall.set(text.getBytes(StandardCharsets.US_ASCII));
+    }
+
+    /**
+     * 止めた位置の診断を返す（合図の後の大きなまとまりの何番目で、何バイトだったか。止めた文の段を確かめるとき、表明の説明に入れる）。
+     *
+     * @return 診断（止めていなければ空の一覧の文字）
+     */
+    public String stallReport() {
+        return "stalled=" + stallReports;
     }
 
     /**
@@ -120,7 +157,10 @@ public final class StallingRelay implements AutoCloseable {
     /** 合図を外し、止めた接続を切る。 */
     public void release() {
         marker.set(null);
+        markerBeforeStall.set(null);
+        stallNext.set(false);
         largeChunksToPass.set(-1);
+        stallReports.clear();
         for (Pair pair : stalled) {
             pair.close();
         }
@@ -150,9 +190,11 @@ public final class StallingRelay implements AutoCloseable {
             OutputStream out = to.getOutputStream();
             int read;
             while ((read = in.read(buffer)) >= 0) {
+                int index = fromClient && read >= LARGE_CHUNK ? largeChunksSinceArm.incrementAndGet() : 0;
                 if (fromClient && shouldStall(buffer, read)) {
                     pair.stalled.set(true);
                     stalled.add(pair);
+                    stallReports.add("chunk#" + index + "(" + read + "B)");
                 }
                 if (pair.stalled.get()) {
                     continue;
@@ -170,6 +212,14 @@ public final class StallingRelay implements AutoCloseable {
     }
 
     private boolean shouldStall(byte[] buffer, int read) {
+        if (stallNext.compareAndSet(true, false)) {
+            return true;
+        }
+        byte[] before = markerBeforeStall.get();
+        if (before != null && contains(buffer, read, before) && markerBeforeStall.compareAndSet(before, null)) {
+            stallNext.set(true);
+            return false;
+        }
         byte[] armed = marker.get();
         if (armed != null && contains(buffer, read, armed) && marker.compareAndSet(armed, null)) {
             return true;

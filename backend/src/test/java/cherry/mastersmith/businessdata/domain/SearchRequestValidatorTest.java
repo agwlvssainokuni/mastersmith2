@@ -32,7 +32,7 @@ import cherry.mastersmith.dsl.domain.SortDirection;
 import cherry.mastersmith.role.domain.MainPermission;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -278,6 +278,13 @@ class SearchRequestValidatorTest {
         assertThatThrownBy(
                         () -> SearchRequestValidator.validateKey(view, new KeyInput(Map.of("a", "1")), simpleReader()))
                 .isInstanceOf(IllegalStateException.class);
-        assertThat(Arrays.asList(BusinessDataFieldErrorReason.values())).hasSize(5);
+        // 読み取りの理由は5つのまま（NFR4.5）。U2（Intent 261016-business-data-views の B4）は書き込みの理由をこの後ろに足した。
+        assertThat(EnumSet.range(BusinessDataFieldErrorReason.NOT_ALLOWED, BusinessDataFieldErrorReason.KEY_MISMATCH))
+                .containsExactly(
+                        BusinessDataFieldErrorReason.NOT_ALLOWED,
+                        BusinessDataFieldErrorReason.INVALID_VALUE,
+                        BusinessDataFieldErrorReason.RANGE_REVERSED,
+                        BusinessDataFieldErrorReason.NOT_A_CHOICE,
+                        BusinessDataFieldErrorReason.KEY_MISMATCH);
     }
 }

@@ -18,13 +18,14 @@ package cherry.mastersmith.businessdata.web;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldError;
 import cherry.mastersmith.common.error.domain.BusinessException;
 import cherry.mastersmith.common.error.domain.CommonProblemTypes;
+import cherry.mastersmith.common.error.domain.ProblemType;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 読み取りの API の入力の誤りの応答（400 {@code VALIDATION_FAILED}。BR1.6・BR9.2・BR10.3）。{@code fieldErrors} にはカラムの名前と理由
- * だけを載せ、入れた値を載せない。カラムに関わる誤りが無い（ページ・件数の誤り、DB の値の型の誤り）ときは {@code fieldErrors} を付けない。
+ * 読み取りと書き込みの API の入力の誤りの応答（400 {@code VALIDATION_FAILED}。BR1.6・BR9.2・BR10.3）と、書き込みのカラムを示す 409（U2）。
+ * {@code fieldErrors} にはカラムの名前と理由（と正規表現に合わないときの DSL の文。U2）だけを載せ、入れた値を載せない。カラムに関わる誤りが無い（ページ・件数の誤り、DB の値の型の誤り）ときは {@code fieldErrors} を付けない。
  * {@code definitionChanged} は真偽値で必ず付ける。
  */
 final class BusinessDataFieldErrors {
@@ -47,18 +48,44 @@ final class BusinessDataFieldErrors {
     static BusinessException of(List<BusinessDataFieldError> errors, boolean definitionChanged) {
         Map<String, Object> properties = new LinkedHashMap<>();
         if (!errors.isEmpty()) {
-            properties.put(
-                    FIELD_ERRORS,
-                    errors.stream()
-                            .map(error -> {
-                                Map<String, String> item = new LinkedHashMap<>();
-                                item.put("field", error.field());
-                                item.put("reason", error.reason().name());
-                                return item;
-                            })
-                            .toList());
+            properties.put(FIELD_ERRORS, items(errors));
         }
         properties.put(DEFINITION_CHANGED, definitionChanged);
         return new BusinessException(CommonProblemTypes.VALIDATION_FAILED, null, properties);
+    }
+
+    /**
+     * カラムを示す業務の失敗（409 の同じ値・参照先に無い値・保存の拒否。U2）の業務エラーを作る。誤りが無ければ {@code fieldErrors} を
+     * 付けない。
+     *
+     * @param type 問題の種類
+     * @param errors カラムに関わる誤り（無ければ空）
+     * @return 業務エラー
+     */
+    static BusinessException withFieldErrors(ProblemType type, List<BusinessDataFieldError> errors) {
+        if (errors.isEmpty()) {
+            return new BusinessException(type);
+        }
+        Map<String, Object> properties = new LinkedHashMap<>();
+        properties.put(FIELD_ERRORS, items(errors));
+        return new BusinessException(type, null, properties);
+    }
+
+    /** 誤りを、カラムの名前・理由・（正規表現の）DSL の文だけの項目にする（値を入れない。U2 の BR12.3）。 */
+    private static List<Map<String, Object>> items(List<BusinessDataFieldError> errors) {
+        return errors.stream()
+                .map(error -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("field", error.field());
+                    item.put("reason", error.reason().name());
+                    if (error.message() != null) {
+                        Map<String, String> message = new LinkedHashMap<>();
+                        message.put("ja", error.message().ja());
+                        message.put("en", error.message().en());
+                        item.put("message", message);
+                    }
+                    return item;
+                })
+                .toList();
     }
 }

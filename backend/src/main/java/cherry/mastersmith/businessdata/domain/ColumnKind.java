@@ -23,11 +23,23 @@ import java.util.Objects;
  *
  * @param valueType 受け渡しの型
  * @param equalsSupported 完全一致の検索と主キーの指し方に使えるなら true（BR7.9 の型は false）
+ * @param fractionDigits 日時・時刻の型の秒の端数の桁の上限（DB の型の精度。ほかの型は null。Intent 261016-business-data-views の U2、
+ *     NFR 設計 Q6: A）
  */
-public record ColumnKind(ValueType valueType, boolean equalsSupported) {
+public record ColumnKind(ValueType valueType, boolean equalsSupported, Integer fractionDigits) {
 
     /** 型が必須であることを確かめる。 */
     public ColumnKind {
         Objects.requireNonNull(valueType, "valueType は必須です");
+    }
+
+    /**
+     * 秒の端数の桁の上限を持たない型を作る。
+     *
+     * @param valueType 受け渡しの型
+     * @param equalsSupported 完全一致の検索と主キーの指し方に使えるなら true
+     */
+    public ColumnKind(ValueType valueType, boolean equalsSupported) {
+        this(valueType, equalsSupported, null);
     }
 }

@@ -15,7 +15,7 @@
  */
 package cherry.mastersmith.businessdata.web;
 
-/** 業務データの読み取りの API の道（BR10.4。名前も行の値も道に載せない）。 */
+/** 業務データの読み取りと書き込みの API の道（BR10.4・U2 の BR12.3。名前も行の値も道に載せない）。 */
 public final class BusinessDataPaths {
 
     /** 道の頭。 */
@@ -29,6 +29,12 @@ public final class BusinessDataPaths {
 
     /** 詳細。 */
     public static final String GET = BASE + "/rows/get";
+
+    /** 作成（POST）と更新（PATCH）。Intent 261016-business-data-views の U2。 */
+    public static final String ROWS = BASE + "/rows";
+
+    /** 削除（POST）。U2。 */
+    public static final String DELETE = BASE + "/rows/delete";
 
     private BusinessDataPaths() {}
 }

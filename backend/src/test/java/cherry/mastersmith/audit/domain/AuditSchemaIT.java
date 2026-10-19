@@ -224,6 +224,51 @@ class AuditSchemaIT {
     }
 
     @Test
+    @DisplayName("the V13 business data columns are nullable without defaults and keep the schema, table and work role")
+    void businessDataColumns() {
+        String name = EMOJI.repeat(127) + "x";
+        AuditEvent saved = persist(AuditEvent.forBusinessData(
+                Instant.parse("2026-10-20T01:00:00Z"),
+                AuditEventType.BUSINESS_ROW_UPDATED,
+                AuditResult.UNKNOWN,
+                AuditFailureReason.BUSINESS_TARGET_DB_TIMEOUT,
+                "192.0.2.42",
+                "Mozilla/5.0",
+                "/api/tables/rows",
+                "trace-0042",
+                44L,
+                name,
+                "item",
+                45L,
+                "{\"key\":{\"id\":\"1\"},\"keyTruncated\":false}"));
+
+        AuditEvent found = find(saved.getAuditEventId());
+
+        assertThat(found.getResult()).as("UNKNOWN は移行なしで result に入る").isEqualTo(AuditResult.UNKNOWN);
+        assertThat(found.getFailureReason()).isEqualTo(AuditFailureReason.BUSINESS_TARGET_DB_TIMEOUT);
+        assertThat(found.getTargetSchema()).isEqualTo(name);
+        assertThat(found.getTargetTable()).isEqualTo("item");
+        assertThat(found.getWorkRoleId()).isEqualTo(45L);
+        assertThat(found.getRequestPath()).isEqualTo("/api/tables/rows");
+        List<Map<String, Object>> columns =
+                jdbc.queryForList("SELECT COLUMN_NAME, IS_NULLABLE, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, COLUMN_DEFAULT"
+                        + " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'AUDIT_EVENTS'"
+                        + " AND COLUMN_NAME IN ('TARGET_SCHEMA', 'TARGET_TABLE', 'WORK_ROLE_ID') ORDER BY COLUMN_NAME");
+        assertThat(columns)
+                .hasSize(3)
+                .allSatisfy(column ->
+                        assertThat(column).containsEntry("IS_NULLABLE", "YES").containsEntry("COLUMN_DEFAULT", null));
+        assertThat(columns.get(0))
+                .containsEntry("COLUMN_NAME", "TARGET_SCHEMA")
+                .containsEntry("DATA_TYPE", "CHARACTER VARYING")
+                .containsEntry("CHARACTER_MAXIMUM_LENGTH", 255L);
+        assertThat(columns.get(1))
+                .containsEntry("COLUMN_NAME", "TARGET_TABLE")
+                .containsEntry("CHARACTER_MAXIMUM_LENGTH", 255L);
+        assertThat(columns.get(2)).containsEntry("COLUMN_NAME", "WORK_ROLE_ID").containsEntry("DATA_TYPE", "BIGINT");
+    }
+
+    @Test
     @DisplayName("an insert with only the previous version's columns succeeds and leaves the three V10 columns empty")
     void previousVersionInsertLeavesNewColumnsEmpty() {
         jdbc.update(

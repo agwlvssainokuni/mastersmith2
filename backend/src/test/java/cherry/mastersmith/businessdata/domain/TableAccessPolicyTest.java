@@ -271,7 +271,22 @@ class TableAccessPolicyTest {
         assertThat(view.orderKeys(Optional.of(new SortKey("note", SortDirection.DESC))))
                 .containsExactly(new SortKey("note", SortDirection.DESC), new SortKey("id", SortDirection.ASC));
         assertThat(view.columns())
-                .allSatisfy(c -> assertThat(c.validation()).as("U1 は検証の材料を埋めない").isNull());
+                .allSatisfy(c ->
+                        assertThat(c.validation()).as("U2 はすべてのカラムで検証の材料を埋める").isNotNull());
+        assertThat(view.column("id").orElseThrow().validation().formPart()).isEqualTo(FormPart.TEXT);
+        assertThat(view.column("id").orElseThrow().validation().maxLength())
+                .as("書けるカラムは検証の材料を持つ")
+                .isEqualTo(10_000);
+        assertThat(view.column("bin").orElseThrow().validation())
+                .as("書けないカラムは formPart と nullable のほかを既定にする")
+                .satisfies(v -> {
+                    assertThat(v.required()).isFalse();
+                    assertThat(v.nullable()).isTrue();
+                    assertThat(v.maxLength()).isNull();
+                    assertThat(v.choices()).isEmpty();
+                    assertThat(v.hasPattern()).isFalse();
+                });
+        assertThat(view.writeRules("note")).isPresent();
     }
 
     @Test

@@ -259,7 +259,7 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
 
 ### 準備
 
-- [ ] **Step 1: 作業の準備と走らせ方の確かめ**
+- [x] **Step 1: 作業の準備と走らせ方の確かめ**
   - `aidlc/` の下の未コミットの変更（計画を書いた時点で `aidlc-state.md` と監査ログの shard に変更がある）を確かめ、依頼者にコミットの承認を得てから進む（`project.md` の Change Control）。
   - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば消す（`project.md` の学び）。
   - `develop` から `feature/261016-business-data-views-b4` を作って移る。
@@ -268,13 +268,13 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
 
 ### 設定の層（Contract の Data model / database behavior の設定の部分）
 
-- [ ] **Step 2: `targetdb.config` の実装（書き込みの設定・プール・管理者と、読み取りのプールの初期化）**
+- [x] **Step 2: `targetdb.config` の実装（書き込みの設定・プール・管理者と、読み取りのプールの初期化）**
   - `TargetDbProperties`: `write`（`username`・`password`・`pool.maximumSize`、既定 5）と `QueryTimeout.write`（既定 5 秒、秒の単位で 1 秒以上）を足す。空の値で null になった項目を既定値にする処理にも足す。`longest()` は読み取りの4つの最大のまま。toString は書き込みの資格情報も有無だけ（BR9.1、NFR4.3・NFR4.4）。
   - `TargetDbSettings`: 読み取りが使える（`Usable`）うえで、書き込みのユーザー名とパスワードの両方があるときだけ「書き込みが使える」を返す口。片方だけなら、足りない項目の名前だけを返す（値は持たない。BR9.1、NFR4.11）。
   - `TargetDataSourceConfig`: 書き込みの片方だけのときに、項目の名前だけを WARN で1回出す（起動と読み取りは続ける）。読み取りのプールの MySQL・MariaDB に `connectionInitSql`（定数。D5）を付ける。
   - `TargetWriteDataSourceConfig`（新規）: 名前つきの `targetWriteDataSource`（`@Bean(name, defaultCandidate = false)`、書き込みが使えるときだけ作る）。プールの名前 `mastersmith-target-db-write`、読み取り専用にしない、minIdle 0、`initializationFailTimeout -1`、上限 5（環境変数で変えられる）、借りる待ちと確かめの待ちは既存の接続の待ち（3 秒）を共用、使っていない接続を閉じるまでの時間は読み取りの `pool.idle-timeout` を共用、ドライバーの接続の待ちは接続の待ち + 2 秒、**ドライバーの通信の待ちは書き込みの上限 + 5 秒（既定 10 秒）を計算で求める**（U1 の基盤の設計のレビュー R-01 を先に避ける）。MySQL は `useAffectedRows=false`・`allowLoadLocalInfile=false`・`allowUrlInLocalInfile=false`、MariaDB は `useAffectedRows=false`（ドライバーが持つ設定の名前を生成で確かめる）・`allowLocalInfile=false`。MySQL・MariaDB の `connectionInitSql` は定数 `SET time_zone = '+00:00', sql_mode = CONCAT_WS(',', NULLIF(@@sql_mode, ''), 'STRICT_ALL_TABLES')`（NFR 設計 Q3: A・Q6: A）。名前つきの `targetWriteTransactionManager`（`DataSourceTransactionManager`、`defaultCandidate = false`）。資格情報は URL に入れない。
   - `application.yaml` に `query-timeout.write`・`write.username`・`write.password`・`write.pool.maximum-size`（`MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE:5s`・`MASTERSMITH_TARGET_DB_WRITE_USERNAME:`・`MASTERSMITH_TARGET_DB_WRITE_PASSWORD:`・`MASTERSMITH_TARGET_DB_WRITE_POOL_MAXIMUM_SIZE:5`）。`.env.example` に4項目のコメントの行と、読み取りと書き込みのアカウントの勧めを分けた説明を足す。配備の `.env` は開かず、変えない。
-- [ ] **Step 3: 設定の層のテスト（名前つきの管理者の注入を先に通す）**
+- [x] **Step 3: 設定の層のテスト（名前つきの管理者の注入を先に通す）**
   - **`TargetWriteTransactionManagerInjectionIT`（新規。NFR 設計のレビュー R-06）**: 書き込みの設定がある状態でアプリを起動し、型で引ける `PlatformTransactionManager`・`DataSource` が内部DB の1つだけであること、既存の `@Transactional` の業務処理（例 ロールの作成）が内部DB の管理者で確定すること、`targetWriteDataSource`・`targetWriteTransactionManager` は名前でだけ引けること、Flyway と JPA が内部DB を使い続けることを確かめる。設定が無いときは2つの Bean が作られないことも確かめる。**この IT が通るまで、Step 4 以降へ進まない**（`unit-test-instructions.md` の 3.2 の順に、ほかの設定の IT より先に流す）。
   - 単体: `TargetDbPropertiesTest`（既定値・空の値・toString の伏せ字）、`TargetDbSettingsTest`（書き込みの両方・片方・無し）、`TargetDataSourceConfigTest`（読み取りの `connectionInitSql` は MySQL・MariaDB だけ、PG には付けない。読み取りの通信の待ちは書き込みの上限を変えても変わらない）、`TargetWriteDataSourceConfigTest`（新規。書き込みの上限を変えたときに通信の待ちが「上限 + 5 秒」になる、`useAffectedRows`・LOAD DATA LOCAL の無効、読み取り専用でない、プールの名前と上限、`connectionInitSql` の定数）。1.3 の `QueryTimeout` の作り方を使うテストを直す。
   - 結合: `TargetDbStartupIT`（書き込みの両方・片方・無しで起動を続け、片方だけのときは項目の名前だけの WARN が1回）、`TargetDbSecretLeakIT`（書き込みの資格情報がログ・toString に出ない）。
@@ -282,21 +282,21 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
 
 ### 書き込みの口（Contract の Data model と Repository の targetdb の部分）
 
-- [ ] **Step 4: `targetdb.domain` の実装**
+- [x] **Step 4: `targetdb.domain` の実装**
   - `TargetWriteSession`（record。`DatabaseProduct product`・`Connection connection`・`int queryTimeoutSeconds` と、口が作るセーブポイントの操作の口）。toString は DB の種類と秒だけ。保存しない・戻り値にしない・口の外へ持ち出さない決まりを Javadoc に書く（R-08 の答え）。
   - `WriteStep<T>`（sealed）: `Commit(T result)`・`Rollback(T result)`・`RollbackToSavepointThenInspect(Function<TargetWriteSession, T> inspect, Function<RowWriteStage, T> onInspectFailure)` の形（名前は生成で決める）。toString は答えの種類だけ。
   - `TargetWriteOutcome<T>`（sealed）: `Done(T value)`（toString は値の型の単純名だけ）・`NotConfigured`・`Unavailable(sqlState, vendorCode, exceptionClass)`（借りる段の失敗）・`Failed(TargetWriteStage stage, sqlState, vendorCode, exceptionClass)`（確定・巻き戻し・セーブポイントの段の失敗）。メッセージと原因を持たない。
   - `TargetWriteStage`（借りる・確定・セーブポイントへの戻し・巻き戻し）、`TargetWriteUnexpectedException`（メッセージも原因も持たない。U1 の `TargetReadUnexpectedException` と同じ形）。
-- [ ] **Step 5: `targetdb.service` の実装（書き込みの口）**
+- [x] **Step 5: `targetdb.service` の実装（書き込みの口）**
   - `TargetWriteAccess`（口）: `<T> TargetWriteOutcome<T> withWrite(Function<TargetWriteSession, WriteStep<T>> work)` と `Optional<DatabaseProduct> product()`。
   - `JdbcTargetWriteAccess`: 書き込みが使えないか接続が無いときは処理を呼ばずに `NotConfigured`。名前つきの `targetWriteTransactionManager` の `TransactionTemplate`（分離のレベル READ COMMITTED）の中で、`DataSourceUtils.getConnection` で1本を1回だけ借り、`TargetWriteSession` を貸す。答えに従う: 確定 → 確定、巻き戻し → `setRollbackOnly`、セーブポイントへ戻して確かめる → `rollbackToSavepoint` → 同じ接続で確かめの処理 → `setRollbackOnly`。処理の非検査の例外は `TargetWriteUnexpectedException` にする。**`TransactionTemplate` の外側で `TransactionSystemException` を含むすべての例外を受け**、段と SQLState・業者の番号・クラスの名前だけの `Failed`・`Unavailable` にする（W7。口のメソッドから例外を出さない。targetdb.service は TraceAspect の対象のため）。確定・巻き戻しが失敗した接続は、管理者が返した後に `HikariDataSource.evictConnection` で捨てる（W12。開いているトランザクションの中では捨てない）。捨てる・閉じる処理の失敗は、例外のクラスの名前だけを WARN で出す。R-05 の前提（返した後に借りられる窓は、借りるときの生存確認に頼り、起きてもその要求が類 08 で失敗するだけ）を Javadoc に書く。`@Transactional` は付けない。文は作らない。
-- [ ] **Step 6: 書き込みの口のテスト**
+- [x] **Step 6: 書き込みの口のテスト**
   - 単体: `TargetWriteSessionTest`・`TargetWriteOutcomeTest`・`WriteStepTest`（toString に接続・値が出ない）、`JdbcTargetWriteAccessTest`（組み込みの H2 のメモリの DB を書き込みの DataSource に見立てる。確定・巻き戻し・セーブポイントへ戻して確かめる・設定が無い・借りる失敗・確定の失敗・処理の非検査の例外・捨てる処理が管理者の後に動くこと・貸した接続が戻り値に出ないこと）。
   - `TargetDbBoundaryArchitectureTest` を変えずに流して通す。
 
 ### 値の型と domain の層（Contract の Data model と Business logic の純粋な部分）
 
-- [ ] **Step 7: `businessdata.domain` の実装**
+- [x] **Step 7: `businessdata.domain` の実装**
   - 値の型: `WriteOperation`（CREATE・UPDATE・DELETE）、`WriteRequest`・`WriteValues`・`TypedValue`（toString はカラムの名前と件数だけ。BR12.1）。主キーは U1 の `RowKey`・`KeyInput` を使い回す。
   - `ColumnWriteRulesFactory`（純粋な関数）: 写しの DSL のカラムと DB の型から `ColumnWriteRules` を作る。BR3.6 の表（`minLength`・`maxLength`・`pattern` は STRING、`min`・`max` は数・日付・時刻、`precision`・`scale` は DECIMAL、`required`・`unique` はすべて）。`maxLength` は DSL と DB の長さと 10,000 字の小さい方（NFR4.9）。`lookup` は `text`。`nullable` はすべてのカラムで DB の値。
   - `ColumnValidation`（U1 の型）: `ColumnWriteRules` から写す口を足す（BR14.2）。作成でも更新でも書けないカラムは `formPart`・`nullable` のほかを既定（`null`・偽・空）にし、`required` は偽（4.1 の決定）。
@@ -307,14 +307,14 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
   - `RowWriteStage`（借りる・事前の問い合わせ・書き込みの文・確定・セーブポイントへの戻し・確かめ・巻き戻し・結果の読み）、`RowWriteFailureReason`、`RowWriteFailure`（理由・段・SQLState・業者の番号・クラスの名前）。
   - `BusinessDataChangedEvent`（操作した人・作業ロール・スキーマ・テーブル・操作・結果（SUCCESS・FAILURE・UNKNOWN）・`BusinessDataAuditReason`・`detail` の文字・主キーのカラムの数・`keyTruncated`・要求の元の値。toString は主キーを伏せる）。`BusinessDataAuditReason`（9つの値）と、応答の code から理由の値への写し（`switch` で場合を尽くす1か所。名前が同じことに頼らない。BR11.6）、結果の値の決め方（TIMEOUT だけ UNKNOWN。D3 の結果に合わせる）。
   - `AuditDetailBuilder`: `{key: {カラム: 値}, keyTruncated: 偽}` の JSON を作り、16,384 字（UTF-16 の単位）を超えるなら値を後ろから切って収め、`keyTruncated` を真にする（BR11.4、NFR 要件の U2 R-01）。
-- [ ] **Step 8: domain の層のテスト**
+- [x] **Step 8: domain の層のテスト**
   - 単体（部品ごとに 5〜8 件を目安）: `WriteValueTypesTest`（伏せ字の toString・変更できない）、`ColumnWriteRulesFactoryTest`（BR3.6 の表、`lookup` → `text`、10,000 字の上限、`nullable` はすべてのカラム）、`WriteRequestValidatorTest`（作成・更新・削除の各理由、長さ・桁・範囲・秒の端数の境界（ちょうど・1つ超え）、10,000 と 10,001 字、主キーの 1,000 と 1,001 字、サロゲートペア、DB 由来の必須、空の更新、時差の3つの形）、`DeadlinePatternMatcherTest`（値ごと・合計の締め切りの境界（ちょうど・超え）を注入した時計で、重い式 `((a+)+)+c`・`(.*a){12}` を `a` の 30 字＋`!` に当てる。`(a+)+$` は重くない式として残す。F4: A）、`DeadlinePatternTimingTest`（NFR1.6: 100 カラムに重い式と長い値を置いた検証の全体が、実時間で 400 ms 以内）、`BusinessDataAuditReasonTest`（監査に残す応答の code のすべてに写しがある・写しが 32 字以内・残さない code に写しが無い）、`AuditDetailBuilderTest`（ちょうど 16,384 字・超え・複合の主キー）、`ColumnDefinitionWriteItemsConsistencyTest`（同じ DSL から作った定義の項目とサーバーの検証の境界の値を突き合わせる。BR14.2）、`TableAccessPolicyTest` の直し（検証の材料が入る）。
   - 性質ベース（jqwik。失敗の種は既存の設定で出力に残る）: `WriteRequestValidatorPropertyTest`（長さ・桁・範囲の内側は受け付け外側は拒む、書けないカラムは必ず拒む）、`DeadlinePatternMatcherPropertyTest`（任意の値と式で、合計の締め切りを超えて照合が続かない）。NFR7.6。
   - 流して、すべて通ってから次へ進む。
 
 ### repository の層（Contract の Repository / data access）
 
-- [ ] **Step 9: `businessdata.repository` の実装**
+- [x] **Step 9: `businessdata.repository` の実装**
   - `RowWriteSqlBuilder`（パッケージの中だけ）: 事前の問い合わせ（送った unique のカラムのうち値が NULL でないものを1文の `SELECT (SELECT 1 … LIMIT 1) AS c0, …`。更新は自分の行を除く）、送ったカラムだけの INSERT、送ったカラムだけを SET し主キーで行を指す UPDATE、主キーで行を指す DELETE、違反の後の確かめの1文（一意は事前の問い合わせと同じ形、外部キーは参照先ごとの `(SELECT 1 FROM 参照先 WHERE … LIMIT 1)` を並べる）。識別子は種類ごとの名前の一覧と照らしてから `SqlIdentifiers.quoteKnown` で引用し、テーブルはスキーマ名で修飾する。値はすべてバインドする（BR7.1）。
   - `RowSqlExecutor` の書き込みのメソッド（見込みは `precheckUnique`・`insert`・`update`・`delete`・`inspectViolation`）: 文を作るのは各メソッドの本体だけ。`TargetWriteSession` を受け、`setQueryTimeout(5)` を付け、`SQLException` と非検査の例外をメソッドの中で受けて結果の型（`RowWriteFailure` を含む）にする（U1 R-02 を先に避ける）。生成された鍵は主キーのカラムの名前を渡す `prepareStatement(sql, String[])` で読む（W8。PG の全部のカラムを受け取らない）。値で送った主キーで鍵が空なのは失敗に数えない。結果の読みの段の失敗は想定外の失敗にする（R-02）。件数は一致した行で数える。
   - 読み取り（D5）: `search`・`detail` の貸し出しの始めの `SET time_zone` を消し、`SET_TIME_ZONE_UTC` と `RowDialect#needsUtcSession`・`RowQueryStage.SESSION_INIT` を消す。
@@ -322,20 +322,20 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
   - `ColumnValueCodec`: 書き込みの型つきのバインド（`BIGINT`・`DECIMAL` は桁を保つ型、日付・日時は日時の型、真偽値、PG の `timestamptz`・`timetz` は UTC の `OffsetDateTime`・`OffsetTime`、MySQL・MariaDB の `timestamp` は UTC の `LocalDateTime`。`stringtype=unspecified` に頼らない。BINARY・OTHER は作らない）。
   - `RowSqlFailureClassifier` の書き込みの表（DB の種類と段で引く。メッセージを読まない）: reliability-design.md 2節の段ごとの表と番号の表（一意 23505/1062、外部キー 23503/1452・1451、NOT NULL 23502/1048・1364、長さ 22001/1406、桁あふれ 22003/1264、CHECK 23514/3819・4025、日時の範囲 22008/1292、文字集合 1366、NUL 22021、更新できないビュー 55000/1471、未定義の表・カラム 42P01・42703/1146・1054、時間切れ・断絶）に、4.3 の R-01 の競合（40001・40P01・55P03/1213・1205。D1）と形の誤り（22P02・22007・22018 など。D2）を足す。文の失敗の種類を先に決め、一意・外部キーだけをセーブポイントの確かめに進める。セーブポイントへの戻し・確かめ・最後の巻き戻しの失敗は、元の失敗の種類を先に見てから分ける（D4）。確定の段（D3）。
   - `spotbugs-exclude.xml` に A3 の除外を足す。
-- [ ] **Step 10: repository の層のテスト**
+- [x] **Step 10: repository の層のテスト**
   - 単体: `RowWriteSqlBuilderTest`（引用・修飾・バインドの位置、事前の問い合わせと確かめの1文、自分の行を除く条件（単一・複合の主キー）、`'`・`"`・`;`・`--`・バッククォート・改行を含む名前が一覧の照合を通らなければ文を作らない）、`RowSqlExecutorTest`（書き込みのメソッドの結果の型、非検査の例外、鍵の読み方。読み取りの `SET` を消した直し）、`RowSqlFailureClassifierTest`（書き込みの表のすべての行、段ごと、MariaDB の 1213 の後の 1305 が競合として分かれること、`SESSION_INIT` の行を消す）、`RowDialectTest`（書き込みの形。`needsUtcSession` の確かめを消す）、`ColumnValueCodecTest`（書き込みのバインドの型）。
   - `./gradlew :backend:spotbugsMain :backend:spotbugsGate` を流す。報告が A3 の見込みと違えば、足す前に依頼者に見せる。
   - 流して、すべて通ってから次へ進む。
 
 ### 監査（Contract の Data model / database behavior の内部DB の部分と Business logic）
 
-- [ ] **Step 11: `audit` の実装と V13**
+- [x] **Step 11: `audit` の実装と V13**
   - `V13__u2_business_data_audit_columns.sql`: 3列を足す（空を許す・既定値・参照の制約・索引なし）。先頭のコメントに、`UNKNOWN` は `result VARCHAR(16)` に入り移行が要らないこと、前の版は3列を読まないことを書く。
   - `AuditEventType` に `BUSINESS_ROW_CREATED`・`BUSINESS_ROW_UPDATED`・`BUSINESS_ROW_DELETED`、`AuditFailureReason` に9つの値、`AuditResult` に `UNKNOWN`（Javadoc に「書き込みの確定の段の時間切れで、確定したか分からない」）。
   - `AuditEvent` に `target_schema`・`target_table`・`work_role_id` の3つの項目（`@Column` の長さは 255）、業務データの出来事の組み立て（`AuditEventFactory`）。`AuditEvent` の `detail` の「超えたら作らない」確かめは変えない。
   - `AuditEventListener`: `onBusinessDataChanged`（`@TransactionalEventListener(phase = AFTER_COMMIT, fallbackExecution = true)`）。`BusinessDataAuditReason` から `AuditFailureReason` への写しは `switch` で場合を尽くす。`logFailure` を出来事の種類で分け、業務データの出来事では `detail`・主キーの値・`setCause` を載せず、主キーのカラムの数・`keyTruncated`・例外のクラスの名前だけを載せる（BR11.5、NFR8.4、W11）。ほかの出来事の ERROR は変えない。文（「監査イベントの記録に失敗しました」）も変えない。
   - `BusinessDataBoundaryArchitectureTest` の A1 の変更（D6）。
-- [ ] **Step 12: 監査のテスト**
+- [x] **Step 12: 監査のテスト**
   - 単体: `AuditBusinessDataEventFactoryTest`（3つの種類・9つの理由・`UNKNOWN`・3列・`detail`）、`AuditBusinessDataEventListenerTest`（写しの網羅、`AuditFailureReason` と `AuditEventType` のすべての値（既存を含む）が 32 字以内、失敗の ERROR の項目に `detail`・主キー・cause が無い）、`AuditEventTest`（変えずに通す）。
   - 結合: `AuditSchemaIT`（V13 の3列）、`AuditMigrationCompatibilityIT`（`CURRENT_LAST_VERSION` 13、V13 の前に書いた行が V13 の後も読めて3列が空、V13 の後に前の版の列だけで追記できる。NFR 要件のレビューの R-06）、`AuditSecretLeakIT`（列の一覧）、既存の `AuditWriteFailureIT` などがそのまま通ること。
   - 境界: `BusinessDataBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`。
@@ -343,83 +343,83 @@ Contract の層の読み替え: この単位は画面を持たないため、`Fr
 
 ### service の層（Contract の Business logic）
 
-- [ ] **Step 13: `businessdata.service` の実装**
+- [x] **Step 13: `businessdata.service` の実装**
   - `BusinessDataWriteService`: 要求の文脈から利用者 ID を読む。`TableAccessResolver` で写しを1回取り（内部DB の短い読み取りで取り終える）、②〜④ を U1 の `accessFor` で判定する。⑤ `definitionId`、⑥ 主キーとビューの決まり（409。監査は、その操作の補助権限を持つ人のときだけ出す。NFR4.14）、⑦ CREATE・DELETE・FULL（403）、⑧ 書き込みの設定（409）、⑨ 検証（400。値を型つきの値にする）。⑤〜⑨ で拒んだときは対象DB に触れない。書き込みの口を1回だけ呼び、処理の中で事前の問い合わせ → 書き込みの文 → 件数（1でなければ巻き戻し）→ 生成された鍵を行い、一意・外部キーの違反ならセーブポイントへ戻して確かめる答えを返す。口から戻った後に、結果の型を code に変え、**ログを出すのはこの1か所**（WARN・スタックトレースなし。`purpose`・`stage`・`reason`・`sqlState`・`vendorCode`・`exceptionClass` だけ。業務の失敗の DUPLICATE・REFERENCE_NOT_FOUND はログを出さない）。その後に `BusinessDataChangedEvent` を出す（BR11.1。口の中・トランザクションの中で出さない）。内部DB のトランザクションを開かない。結果は `WriteResult`（sealed interface の record）で返す。
   - 定義の API: `TableAccessResolver`・`TableAccessPolicy` が写しの DSL と DB の種類から `ColumnWriteRules` を作り、`ColumnValidation` に写す（BR14.1）。読み取りの判定・道・ほかの項目は変えない。
   - `BusinessDataProblemTypeCatalog` に5つの code。
-- [ ] **Step 14: service の層のテスト**
+- [x] **Step 14: service の層のテスト**
   - 単体: `BusinessDataWriteServiceTest`（偽の口と写しで、判定の順 ①〜⑩ の各場合、⑥ の監査の範囲（補助権限を持つ人・持たない人）、口を1回だけ呼ぶ、出来事は口から戻った後、拒んだときは口を呼ばない、ログの1か所とキー、TIMEOUT の結果が UNKNOWN、D1〜D4 の写し）、`BusinessDataProblemTypeCatalogTest`、`TableAccessResolverTest`（検証の材料）。
   - 流して、すべて通ってから次へ進む。
 
 ### web の層（Contract の API / endpoint）
 
-- [ ] **Step 15: `businessdata.web` の実装**
+- [x] **Step 15: `businessdata.web` の実装**
   - `BusinessDataWriteController`（`@ApiAccess(ApiAccessLevel.AUTHENTICATED)`）: `POST /api/tables/rows`（201、`definitionId` と DETAIL が許されるときだけ `key`）・`PATCH /api/tables/rows`（200）・`POST /api/tables/rows/delete`（200）。道は固定し、名前・`key`・`values`・`definitionId` は本文で受ける。値は文字か `null`。要求の record は値と主キーを伏せた toString。結果の型を `switch` で場合を尽くして応答か `BusinessException` に変える（403 は共通の `ACCESS_DENIED`、400 は `VALIDATION_FAILED` に `fieldErrors`（`field`・`reason`・pattern の `message`）。値は入れない）。
   - `BusinessDataPaths` に書き込みの道、`BusinessDataWebConfig` に道ごとの本文の上限（作成・更新 4,194,304 バイト、削除 65,536 バイト。413 `PAYLOAD_TOO_LARGE`）。
   - `ColumnDefinitionResponse`: 検証の材料をすべてのカラムで返す（`NON_NULL` で省かない。`required`・`nullable` は必ず値を持ち、型に当たらない項目は `null`）。
   - `ApiEndpointCounts.MIN_ENDPOINTS` を 73 にする。
-- [ ] **Step 16: web の層のテスト**
+- [x] **Step 16: web の層のテスト**
   - 単体: `BusinessDataWriteControllerTest`（3本の成功・各拒否の code と状態コード・`fieldErrors` の形・応答に値が無い・要求の toString の伏せ字）、`BusinessDataReadControllerTest`（126行の直し。検証の材料が出る）、`ApiAccessArchitectureTest`。
   - 結合: `ApiAccessConsistencyIT`・`ProblemTypeDuplicateStartupIT`。
   - 流して、すべて通ってから次へ進む。
 
 ### 横断の結合テスト・構造の検査
 
-- [ ] **Step 17: 結合テストの手伝い（`businessdata/testsupport`・`targetdb/testsupport`）**
+- [x] **Step 17: 結合テストの手伝い（`businessdata/testsupport`・`targetdb/testsupport`）**
   - `BusinessDataWriteTables`: テストのクラスごとに名前の重ならないスキーマ（MySQL・MariaDB ではデータベース。名前に実行ごとに一意の値）を作って消す。表: 自動の採番の主キー（PG は `serial` と `identity` の両方）、複合の主キー、一意の制約のあるカラムと無い unique のカラム、参照先のある外部キー（`ON DELETE CASCADE` の表を含む）、NOT NULL（入力できるカラム・できないカラム）、CHECK、更新できないビュー、主キーの無い表、境界の値の型（`BIGINT`・`DECIMAL(38,10)`・時差つきと無しの日時・秒の端数）、競合を起こすトリガー（D1 の確かめ）。
   - 書き込みのアカウント: テストのクラスごとに、そのスキーマの DML（と PG の sequence の USAGE）だけを与えたアカウントを作る（DDL を与えない）。パスワードはテストの中の乱数。
   - 別の接続で読み直す部品（アプリの接続とは別。書いた後の値・件数を確かめる）。
   - `BusinessDataTestApp` に書き込みの資格情報を渡す口、`CountingDataSourceConfig` に `targetWriteDataSource` を包む列、`StallingRelay` に確定の途中で止める形（D7）と止めた段を診断の出力に残す形（U1 R-05）。
-- [ ] **Step 18: 3種類の対象DB の書き込みの結合テスト**
+- [x] **Step 18: 3種類の対象DB の書き込みの結合テスト**
   - `AbstractBusinessDataWriteIT` と `PostgresBusinessDataWriteIT`・`MysqlBusinessDataWriteIT`・`MariadbBusinessDataWriteIT`（版を固定したイメージ）。
   - 作成（送ったカラムだけ、既定値、自動の採番の主キーを返す、主キーの無い表の作成で `key` が空、DB 由来の必須）、更新（変えたカラムだけ、今と同じ値の更新も1行、後勝ち、空の文字列と null）、削除（`ON DELETE CASCADE` は DB に任せる）、当たった行 0 は 404・2 以上は 409 で巻き戻し、一意（事前の問い合わせと制約の違反が同じ code、カラムの決まり方）、外部キー（作成・更新は `REFERENCE_NOT_FOUND` でカラムを示す、削除は `SAVE_REJECTED`）、NOT NULL（入力できる・できないカラムの reason）、CHECK・日時の範囲・文字集合・NUL（PG）・更新できないビューは `SAVE_REJECTED`（Q6: A・F3: A）、競合と形の誤り（D1・D2）、境界の値（`BIGINT` の上限と下限・`DECIMAL(38,10)`・NULL を丸めずに書き、別の接続で読み直して1桁も変わらない）、時差（オフセットの無い値・`Z`・`+09:00` が同じ時点、JVM の既定のタイムゾーンを変えても同じ）、秒の端数の境界、識別子と値に `'`・`"`・`;`・`--`・バッククォート・改行（値は文字として保存され、識別子は 404・400）、PG の生成された鍵が主キーだけ、書き込みのアカウントの接続を使い読み取りの API は読み取りのアカウントを使う。
   - 書いた後の値は、アプリとは別の接続で読み直して確かめる。アプリのトランザクションの巻き戻しに頼らない。
-- [ ] **Step 19: 認可と IDOR・一括代入の結合テスト**
+- [x] **Step 19: 認可と IDOR・一括代入の結合テスト**
   - `BusinessDataWriteAuthorizationApiIT`: 3本 × 未認証 401・要る権限だけを欠く利用者 403・持つ利用者 200 を、パラメーターを使う表で書く（403 の利用者はほかの権限を持つ）。作業ロールを切り替えた直後・割り当てを変えた直後の次の要求で切り替わる。停止中の利用者は通らない。判定の順（②〜⑨。NONE のテーブルは行の有無にかかわらず 403、⑥ の 409 が ⑦ の 403 より先、定義が古いと 409）。DSL に無いスキーマ・テーブル（404）、書けないカラムを本文に足す（400 `NOT_ALLOWED`、反映されない）、`definitionId` の差し替え（409）、無い行（404）で、状態が変わらないこと（別の接続で確かめる）と、対象DB に文が出ないこと（数える包みで文の数 0）。
-- [ ] **Step 20: 本文と値の長さの結合テスト**
+- [x] **Step 20: 本文と値の長さの結合テスト**
   - `BusinessDataWriteRequestLimitIT`: 作成・更新の 4 MiB ちょうどは受け付け、1 バイト超えは 413（400 より先）、削除の 64 KB の境界、全部のカラムを 4 バイトの文字で埋めた最大の本文が通る（NFR 要件の R-04）、値の 10,000 字と 10,001 字、主キーの 1,000 字と 1,001 字。どの応答にも値が入らない。
-- [ ] **Step 21: 時間切れと失敗の結合テスト**
+- [x] **Step 21: 時間切れと失敗の結合テスト**
   - `BusinessDataWriteTimeoutIT`: 答えない ServerSocket（借りる段の 3 秒で 503 `UNAVAILABLE`）、接続できない番号、つないだ後に止まる中継で書き込みの文の段（D3）・確定の段（503 `BUSINESS_TARGET_DB_TIMEOUT`、監査は `UNKNOWN`）・違反の後の確かめの段（D4）で止め、3種類とも 25 秒以内に返ること（実測の時間を DB ごとに記録。NFR 設計の R-07）、止めを解いた後の次の要求が通ること（R-05）、応答とログに JDBC の例外のメッセージ・接続先・値が無いこと。中継を置く DB の種類は D7。
   - `BusinessDataTimeoutIT`（U1）の MySQL の通すまとまりの数を、D5 の直しに合わせて手元で確かめて直す。
   - `BusinessDataWriteNotConfiguredIT`: 書き込みの資格情報の両方・片方・無しで、書き込みは 409 `BUSINESS_WRITE_NOT_CONFIGURED`（権限の無い人には 403 のまま）、読み取りは動き続け、定義は `writeConfigured: false`、WARN は項目の名前だけ。
-- [ ] **Step 22: 監査の結合テスト**
+- [x] **Step 22: 監査の結合テスト**
   - `BusinessDataWriteAuditIT`: 成功の3種類が、操作した人・作業ロール・3列・`detail` の主キー（主キー以外の値・前後の値は無い）とともに残る。BR11.3 の残す失敗（理由の値）と残さない拒否（401・403・400・DSL とテーブルの 404・定義が古い・設定が無い）。⑥ は補助権限を持つ人だけが残る（作成・更新・削除のそれぞれ。NFR4.14）。`detail` がちょうど 16,384 字・超え（`keyTruncated` 真）。TIMEOUT は `UNKNOWN`。監査の書き込みを失敗させても操作は成功のままで、ERROR の項目に `detail`・主キーの値・`exception`（cause）が無く、主キーのカラムの数と `keyTruncated` がある（既存の `FailingAuditEventRepositoryConfig` を使う）。
-- [ ] **Step 23: 漏えいの結合テスト**
+- [x] **Step 23: 漏えいの結合テスト**
   - `BusinessDataWriteSecretLeakIT`（TRACE を有効にする）: 作成・更新・削除・違反・時間切れ・監査の書き込みの失敗・非検査の例外（不正な数・日時の文字）・結果の型を通る戻り値の場合で、ログに値・主キー・接続先・例外のメッセージが無く、ログのキーが決めた名前だけ。400・409・503 の応答に値が無い。
   - `BusinessDataWriteTraceExposureIT`（外部へ送る設定を有効にする）: トレースの属性に値・主キーが無い。
-- [ ] **Step 24: 接続の数の結合テスト**
+- [x] **Step 24: 接続の数の結合テスト**
   - `BusinessDataConnectionUsageIT` に作成（違反の後の確かめの経路を含む）・更新・削除の3行と、書き込みの DataSource の列を足す。要求の始めに借りている数が 0、同時の最大が内部DB 1・対象DB の書き込み 1・読み取り 0、書き込みの接続を借りている間は内部DB が 0、口は1回だけ借りる（NFR2.6）。
-- [ ] **Step 25: 構造の検査と静的解析**
+- [x] **Step 25: 構造の検査と静的解析**
   - `BusinessDataBoundaryArchitectureTest`（A1・A2 と足す決まり）、`TargetDbBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`・`RoleBoundaryArchitectureTest`・`ArchitectureTest`・`ApiAccessArchitectureTest` を流す。
   - `./gradlew :backend:spotbugsMain :backend:spotbugsGate`（`SQL_` の残り 0 件）。
 
 ### 見本の対象DB・負荷の試験の台本・文書（Contract の Environment/build configuration と Documentation）
 
-- [ ] **Step 26: 見本の対象DB の書き込みのアカウントと、その結合テスト**
+- [x] **Step 26: 見本の対象DB の書き込みのアカウントと、その結合テスト**
   - `docker/targetdb/{postgres,mysql,mariadb}/03-writer-account.sh`: `mastersmith_writer`。パスワードは `.env.targetdb` の `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD`（空なら exit 1）。渡し方は PG が psql の変数、MySQL・MariaDB がエスケープした文字列（4.4 の R-02）。無ければ作り、毎回パスワードと付与を当て直す（冪等）。PG: `USAGE ON SCHEMA`、`SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA`、`USAGE ON ALL SEQUENCES IN SCHEMA`、`ALTER DEFAULT PRIVILEGES`、`REVOKE TEMPORARY ON DATABASE business FROM PUBLIC`。MySQL・MariaDB: `SELECT, INSERT, UPDATE, DELETE ON business.*`。DDL・`CREATE TEMPORARY TABLES`・`LOCK TABLES`・`SHOW VIEW` を与えない。先頭のコメントに付与するスキーマの一覧と PG 14 以前の注意（4.4 の R-07）。
   - `.env.targetdb.example` に `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD=` と「空だと新しいボリュームの初期化が止まる」の注記。
   - `TargetDbSampleInitScriptIT`（3種類。基盤の設計 Q6: A）: (a) 実際の `docker/targetdb/<種類>/` の台本を初期化の場所に写して起動し、`mastersmith_writer` は見本の表の DML が通り、CREATE・DROP・ALTER・TRUNCATE・INDEX・VIEW・SCHEMA は拒まれ、PG の一時の表も拒まれ、`mastersmith_reader` では書けない。(b) 01・02 だけで起動し、03 を `exec` で2回流して同じ結果になり、パスワードを替えて流し直すと新しいパスワードで入れて古いパスワードでは入れない（4.4 の R-02・R-03）。パスワードはテストの中の乱数。
-- [ ] **Step 27: 負荷の試験の台本**
+- [x] **Step 27: 負荷の試験の台本**
   - `perf/biz/make-biz-seed.sh` と `perf/make-biz-dsl.mjs`（1対1にそろえる）: 書き込みの場面の表（100 カラムの作成の表、自動の採番の主キー、一意の制約のあるカラム、参照先の表と外部キー）と、書き込みのアカウントへの種のスキーマの DML の付与（`bizPrepare` の中。MySQL・MariaDB は種の DB、PG は種のスキーマと sequence）。値は架空。
   - `perf/k6/scenarios.js`: `bizCreate`（10 VU・3 分）・`bizUpdate`（10 VU・3 分、VU ごとに別の行）・`bizDelete`（既定 100 回、setup で回数以上の行を作る）・`bizWritePoolLimit`（10 VU・3 分、参照先に無い値の作成で 409 を正しい答えとして checks に入れる）・`bizCreateLarge`（10 VU・短い回、4 MiB 近い成功の作成）。1回の繰り返しに要求1つ、判定は `iteration_duration{scenario:…}` の p95 < 1000 と `checks` の率 1（`bizCreateLarge` は記録だけ）、トークンは `setup()` で取る。setup の前提（DSL の適用、FULL のカラムと CREATE・DELETE の補助権限を持つロール・割り当て・作業ロール・トークン、`bizDelete` の行）は自分で作り、前の場面の状態に頼らない（U1 の基盤の設計のレビュー R-02、`project.md` の学び）。
   - `perf/dsl-timing.sh` と `perf/README.md` の一時の環境ファイルに `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` の生成を、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_WRITE_*` を足す（値は表示しない）。
   - `perf/README.md` の業務データの節: 書き込みの場面、5.3 の流す順（U1 の読み取りの場面の後）、`bizCreateLarge` の前にアプリのコンテナを作り直す、片付ける前に見るもの（待ちの時間切れの累計・待ちの最大・アプリの `memory.peak`・対象DB の OOMKilled と `oom_kill`・`anon` の最大・`memory.events` の `max`・WARN の件数・監査の行の数・内部DB の大きさ）、`anon` の最大が上限の 85% を超えたら諮る（4.4 の R-04）、k6 のコンテナの使用量の記録、MySQL 2304m（既にある記述を保つ）、`\u` のエスケープの 413（R-09）。
   - 確かめ: `k6 inspect --include-system-env-vars` で5場面の名前と閾値を確かめる。試し走りは D8。`docker compose -f docker/perf/compose.yaml config`（ダミーの `MASTERSMITH_PERF_ENV_FILE` と3つの `--profile`）で既定の `command` と `mem_limit` が今のままであることを確かめる（基盤の設計の (v)）。ダミーの一時の環境ファイルで perf の PG の初期化（01〜03）が通ることを実行して確かめる（4.4 の R-05。PG の1種類）。
-- [ ] **Step 28: 文書**
+- [x] **Step 28: 文書**
   - `README.md`: 環境変数の表の4行。「対象DB」の節の 566行（読み取り専用だけの記述）・588行（見本の DB が持つもの）を、書き込みの接続は別のアカウントで行の操作だけを発行する、書き込みのアカウントとアプリから書いた行も持つ（作り直すと失われる）に直す。小見出し「業務データの書き込みの API」（3本の道・ログインだけ・権限はテーブルごと・書き込みの接続・code と 409・503・413 の出し分け・監査）。見本の書き込みのアカウント（既存のボリュームへの足し方: 乱数を変数に入れて表示せずに `.env.targetdb` と `.env` の両方へ足す、`--profile targetdb-postgres` の `--force-recreate`、`docker compose exec` で 03 を流す、件数で確かめる。消し方: `DROP ROLE`・付与の取り消し・PUBLIC の `TEMPORARY` を戻すか。初期化が止まったときの直し方）。残る広さ（DSL に無い表も DB の上では書ける。アプリはサーバー側で DSL の表だけに絞る）と、利用者の DB で表ごとに絞る書き方（参照先の表の SELECT も要る）、PG 14 以前の `public` の `CREATE` の取り上げ方。既知の制約（一意の制約の無いカラムの同時の重なり、同じ行の後勝ち、索引の無い unique のカラムは表の全部を読む、大きな本文の同時の書き込みが対象DB のメモリを使い切りうる、補助権限を持つ人の繰り返しの失敗で監査の行が増えうる）。
   - Javadoc と `V13` のコメントで、V13 は3列だけ・`UNKNOWN` は移行が要らないと書く（4.4 の R-06）。
 
 ### 検査と記録
 
-- [ ] **Step 29: 1コマンドの検査とカバレッジ・時間の記録**
+- [x] **Step 29: 1コマンドの検査とカバレッジ・時間の記録**
   - `caffeinate -dims` で包み、流す前に `pmset -g assertions`、流した後に `pmset -g log` で Sleep・DarkWake が無かったかを確かめる（入っていたら結果を使わずに流し直す）。
   - `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡す）。対象DB のテストが SKIPPED でないこと。
   - 記録: verify の時間（U1 の B2 の後は 18 分 32 秒。書き込みの結合テスト・見本の初期化の台本の IT・中継で数分延びる見込み。CI の上限の7割の約 42 分を超えたら依頼者に諮る。NFR7.4）、カバレッジ（全体と `businessdata.*`・`targetdb.*`・`audit.domain`・`audit.service` のパッケージごと。実測の数字だけ）、テストの件数、`packagesJudgedByTotal` の本体のソースに手を入れていないこと。
   - 落ちたテストは、team.md の「不安定なテストと CI の失敗」の決まりで扱う。計画の外の失敗で直し方が分かれるときは、生成を止めて依頼者に諮る（G1〜）。
-- [ ] **Step 30: E2E の全件**
+- [x] **Step 30: E2E の全件**
   - U2 は業務データのパッケージの `src/main` に触れるため、統合の前に E2E の全体を流す（team.md の Way of Working）。Mailpit を `docker compose --profile mail up -d mailpit` で起動し、`caffeinate -dims` で包んで `./gradlew e2eTest` を流し、通った件数を記録する。眠りの確かめは Step 29 と同じ。
   - E2E のファイルは足さない（業務データの代表の流れは U3 が持つ）。
-- [ ] **Step 31: 記録**
+- [x] **Step 31: 記録**
   - `code-summary.md`（作ったもの・計画との差・依頼者に確かめたいこと・9節の引き継ぎ）。
   - `traceability.json`（機能設計の BR・NFR 要件の枝番から、部品とテストへ。測っていない負荷の目標（NFR1.4・NFR1.5・NFR2.7・NFR2.8・NFR2.9 の実測・NFR3.4）は OK にせず、Performance Validation への Deferred にし、target に場面の名前を書く。NFR8.5・NFR8.6 は Observability Setup への Deferred）。
   - `source-manifest.json`（作った・変えた・消したアプリのソースのパスをすべて）。

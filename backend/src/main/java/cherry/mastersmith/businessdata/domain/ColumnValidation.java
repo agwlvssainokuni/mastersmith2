@@ -21,8 +21,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 入力の検証の材料（契約 C2 の {@code ColumnDefinition} の検証の項目、entities.md の ColumnValidation、BR2.8）。持ち主は U2 で、
- * U1 は型と置き場だけを用意し、値を入れない（{@link ColumnAccess#validation()} は null のまま）。
+ * 入力の検証の材料（契約 C2 の {@code ColumnDefinition} の検証の項目、entities.md の ColumnValidation、BR2.8）。持ち主は U2（Intent
+ * 261016-business-data-views の B4、BR14.1・BR14.2）で、すべてのカラムで {@link ColumnWriteRules} から写して入れる
+ * （{@link #from}）。{@code nullable} の持ち主も U2 で、DB の値を入れる。
  *
  * @param formPart フォーム部品
  * @param required 必須なら true
@@ -53,5 +54,32 @@ public record ColumnValidation(
     public ColumnValidation {
         Objects.requireNonNull(formPart, "formPart は必須です");
         choices = List.copyOf(choices == null ? List.of() : choices);
+    }
+
+    /**
+     * サーバーの検証と同じ材料から写す（BR14.2。別に計算しない）。作成でも更新でも書けないカラムは、フォーム部品と {@code nullable}
+     * のほかを既定（{@code null}・偽・空）にし、{@code required} は偽にする（機能設計の承認の場の U2 R-07・U3 R-09 の決定）。
+     *
+     * @param rules 検証の材料
+     * @param writable 作成か更新で書けるなら true
+     * @return 定義の API の検証の材料
+     */
+    public static ColumnValidation from(ColumnWriteRules rules, boolean writable) {
+        if (!writable) {
+            return new ColumnValidation(
+                    rules.formPart(), false, rules.nullable(), null, null, null, null, null, null, List.of(), false);
+        }
+        return new ColumnValidation(
+                rules.formPart(),
+                rules.required(),
+                rules.nullable(),
+                rules.minLength(),
+                rules.maxLength(),
+                rules.precision(),
+                rules.scale(),
+                rules.min(),
+                rules.max(),
+                rules.choices(),
+                rules.pattern() != null);
     }
 }

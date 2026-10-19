@@ -75,7 +75,8 @@ mastersmith:
   target-db:
     # 対象DB（利用者の業務データの DB。U1）。接続先はこの設定（環境変数）だけから受け取る。
     # 7つの項目がすべて空なら対象DB を使わない（起動は続く）。一部だけが空・不正なら、項目の名前だけを WARN で出して使わない。
-    # 値（接続先・ユーザー名・パスワード）はここに書かず、環境変数で渡す。アカウントは読み取りの権限だけにすることを勧める。
+    # 値（接続先・ユーザー名・パスワード）はここに書かず、環境変数で渡す。読み取りのアカウント（username・password）は読み取りの
+    # 権限だけにすることを勧める。業務データの書き込みは、別の書き込みのアカウント（write.username・write.password）で行う。
     # DB の種類（mysql・mariadb・postgresql。大文字・小文字は問わない）
     type: ${MASTERSMITH_TARGET_DB_TYPE:}
     # 接続先のホスト名と番号（1〜65535）
@@ -98,13 +99,26 @@ mastersmith:
       compare: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE:5s}
       # 問い合わせ1回の待ちの上限（業務データの一覧。件数とページの問い合わせのそれぞれに付ける）
       list: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST:5s}
-      # 問い合わせ1回の待ちの上限（業務データの詳細）。ドライバーの通信の待ちは、4つの上限の最も長いもの + 5 秒
+      # 問い合わせ1回の待ちの上限（業務データの詳細）。読み取りのドライバーの通信の待ちは、生成・照合・一覧・詳細の4つの上限の
+      # 最も長いもの + 5 秒
       detail: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL:5s}
+      # 書き込みの文1回の待ちの上限（事前の問い合わせ・書き込みの文・違反の後の確かめのそれぞれに付ける。U2）。書き込みのドライバーの
+      # 通信の待ちは、この値 + 5 秒（読み取りの通信の待ちには入れない）
+      write: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE:5s}
     pool:
-      # 対象DB の接続の数の上限（内部DB の接続とは別）
+      # 対象DB の読み取りの接続の数の上限（内部DB の接続とは別）
       maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:5}
-      # 使っていない接続を閉じるまでの時間
+      # 使っていない接続を閉じるまでの時間（書き込みの接続と共用）
       idle-timeout: ${MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT:60s}
+    write:
+      # 業務データの書き込みのアカウント（秘密。U2）。接続先は上の読み取りの設定をそのまま使う。読み取りが使えて、ユーザー名と
+      # パスワードの両方があるときだけ書き込みを使う。片方だけなら項目の名前だけを WARN で出して書き込みを使わない（読み取りは動く）。
+      # アカウントには DSL の対象のスキーマの行の操作（SELECT・INSERT・UPDATE・DELETE）だけを与え、DDL の権限を与えない。
+      username: ${MASTERSMITH_TARGET_DB_WRITE_USERNAME:}
+      password: ${MASTERSMITH_TARGET_DB_WRITE_PASSWORD:}
+      pool:
+        # 対象DB の書き込みの接続の数の上限（読み取りの接続とは別。対象DB のメモリを守る役目も持つ）
+        maximum-size: ${MASTERSMITH_TARGET_DB_WRITE_POOL_MAXIMUM_SIZE:5}
   dsl:
     # DSL の管理（U4）。既定値は Java の設定の型（DslManageProperties）の既定値と同じにする。
     # 投入の API（POST /api/admin/dsl/preview）だけの要求の本文の上限（既定 10MB = 10,485,760 バイト）。

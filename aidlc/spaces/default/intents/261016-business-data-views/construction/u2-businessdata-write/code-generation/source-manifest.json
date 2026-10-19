@@ -1,0 +1,478 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-businessdata-write",
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": ".env.targetdb.example"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/config/spotbugs-exclude.xml"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditEventType.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/domain/AuditResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/audit/service/AuditEventListener.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/AuditDetailBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataAuditReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataAuditResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataChangedEvent.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataFieldError.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataFieldErrorReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BusinessDataProblemTypes.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnKind.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnWriteRules.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ColumnWriteRulesFactory.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/DeadlinePatternMatcher.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ForeignKeyRef.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowQueryStage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowWriteFailure.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowWriteFailureReason.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RowWriteStage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessPolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TableAccessView.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/TypedValue.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteOperation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteOrigin.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteRejection.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteRequestValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/MysqlFamilyRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/PostgresRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowChangeResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowInsertResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowInspectResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowPrecheckResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlExecutor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowWriteSqlBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/TableAccessResolver.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/WriteResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataFieldErrors.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataPaths.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataWebConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/BusinessDataWriteController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/ColumnDefinitionResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowCreateRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowCreatedResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowDeleteRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowUpdateRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/web/RowWrittenResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbWriteSettings.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbWriteUsableCondition.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetWriteDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/SavepointMarker.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetWriteFailure.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetWriteOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetWriteSession.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetWriteStage.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetWriteUnexpectedException.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/WriteStep.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetWriteAccess.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/TargetWriteAccess.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V13__u2_business_data_audit_columns.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditBusinessDataEventFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditBusinessDataEventListenerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/service/AuditSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/AuditDetailBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/BusinessDataAuditReasonTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ColumnDefinitionWriteItemsConsistencyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ColumnWriteRulesFactoryTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/DeadlinePatternMatcherPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/DeadlinePatternMatcherTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/DeadlinePatternTimingTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/TableAccessPolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteValueTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorWriteTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlFailureClassifierTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowWriteSqlBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalogTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataReadServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataDslFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataSampleSchema.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataTestApp.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataWriteTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/CountingDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/FakeBusinessDataPorts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/StallingRelay.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/SteppingClock.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTimeoutIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteNotConfiguredIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteRequestLimitIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteTimeoutIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteTraceExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MariadbBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MysqlBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/PostgresBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiEndpointCounts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/TargetDbSampleInitScriptIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSettingsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbStartupIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbWriteSettingsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetWriteDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetWriteTransactionManagerInjectionIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetWriteOutcomeTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetWriteSessionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/WriteStepTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetWriteAccessTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/TargetSchemaReaderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/MysqlFamilyTestDatabase.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/PostgresTestDatabase.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java"
+    },
+    {
+      "path": "docker/targetdb/mariadb/03-writer-account.sh"
+    },
+    {
+      "path": "docker/targetdb/mysql/03-writer-account.sh"
+    },
+    {
+      "path": "docker/targetdb/postgres/03-writer-account.sh"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/biz/make-biz-seed.sh"
+    },
+    {
+      "path": "perf/dsl-timing.sh"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/make-biz-dsl.mjs"
+    }
+  ]
+}

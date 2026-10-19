@@ -101,6 +101,13 @@ final class MysqlFamilyTestDatabase extends TargetDbTestDatabase {
     }
 
     @Override
+    public void createWriterAccount(String user, String password, String schema) {
+        execute(
+                "CREATE USER '" + user + "'@'%' IDENTIFIED BY '" + password + "'",
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON " + q(schema) + ".* TO '" + user + "'@'%'");
+    }
+
+    @Override
     public void dropAccount(String user) {
         execute("DROP USER IF EXISTS '" + user + "'@'%'");
     }

@@ -124,6 +124,18 @@ public class AuditEvent {
     @Column(name = "detail", updatable = false, length = MAX_DETAIL_LENGTH)
     private String detail;
 
+    /** 業務データの操作の対象のスキーマ（Intent 261016-business-data-views の U2、V13）。 */
+    @Column(name = "target_schema", updatable = false, length = 255)
+    private String targetSchema;
+
+    /** 業務データの操作の対象のテーブル（U2、V13）。 */
+    @Column(name = "target_table", updatable = false, length = 255)
+    private String targetTable;
+
+    /** 業務データの操作の作業ロール（U2、V13。作業ロールが無ければ空）。 */
+    @Column(name = "work_role_id", updatable = false)
+    private Long workRoleId;
+
     /** JPA が使う。 */
     protected AuditEvent() {}
 
@@ -291,6 +303,55 @@ public class AuditEvent {
      * @param rejectionKind 救済で当たった条件（無ければ null）
      * @return 監査イベント
      */
+    /**
+     * 業務データの操作の監査イベントを作る（Intent 261016-business-data-views の U2、契約 C5、BR11.2〜BR11.4）。対象のスキーマ・テーブル・
+     * 作業ロールは足した列に、主キーは {@code detail} に置く。{@code detail} の切り詰めは呼び出し側（businessdata）が行い、上限を超える
+     * 値は作らない（切り詰めない。NFR 要件の承認の場の U2 R-01）。
+     *
+     * @param occurredAt 起きた日時
+     * @param eventType 種類
+     * @param result 結果
+     * @param failureReason 失敗の理由（成功のときは null）
+     * @param sourceIp 接続元IP
+     * @param userAgent User-Agent
+     * @param requestPath 要求の道（固定の道で値を含まない）
+     * @param traceId トレースID
+     * @param actorUserId 操作した人
+     * @param targetSchema 対象のスキーマ
+     * @param targetTable 対象のテーブル
+     * @param workRoleId 作業ロール（無ければ null）
+     * @param detail 主キーの JSON（無ければ null）
+     * @return 監査イベント
+     * @throws IllegalArgumentException detail が上限を超えるとき
+     */
+    public static AuditEvent forBusinessData(
+            Instant occurredAt,
+            AuditEventType eventType,
+            AuditResult result,
+            AuditFailureReason failureReason,
+            String sourceIp,
+            String userAgent,
+            String requestPath,
+            String traceId,
+            long actorUserId,
+            String targetSchema,
+            String targetTable,
+            Long workRoleId,
+            String detail) {
+        if (detail != null && detail.length() > MAX_DETAIL_LENGTH) {
+            throw new IllegalArgumentException(
+                    "detail が上限を超えています: length=" + detail.length() + ", max=" + MAX_DETAIL_LENGTH);
+        }
+        AuditEvent event = new AuditEvent(
+                occurredAt, eventType, result, null, failureReason, sourceIp, userAgent, requestPath, traceId);
+        event.actorUserId = actorUserId;
+        event.targetSchema = Objects.requireNonNull(targetSchema, "targetSchema");
+        event.targetTable = Objects.requireNonNull(targetTable, "targetTable");
+        event.workRoleId = workRoleId;
+        event.detail = detail;
+        return event;
+    }
+
     public static AuditEvent ofStartup(
             Instant occurredAt, AuditEventType eventType, String sourceIp, long targetUserId, String rejectionKind) {
         AuditEvent event =
@@ -472,6 +533,33 @@ public class AuditEvent {
         return detail;
     }
 
+    /**
+     * 業務データの操作の対象のスキーマを返す。
+     *
+     * @return スキーマ（業務データの出来事でなければ null）
+     */
+    public String getTargetSchema() {
+        return targetSchema;
+    }
+
+    /**
+     * 業務データの操作の対象のテーブルを返す。
+     *
+     * @return テーブル（業務データの出来事でなければ null）
+     */
+    public String getTargetTable() {
+        return targetTable;
+    }
+
+    /**
+     * 業務データの操作の作業ロールを返す。
+     *
+     * @return 作業ロール（無ければ null）
+     */
+    public Long getWorkRoleId() {
+        return workRoleId;
+    }
+
     @Override
     public String toString() {
         return "AuditEvent[auditEventId=" + auditEventId
@@ -492,6 +580,9 @@ public class AuditEvent {
                 + ", targetInvitationId=" + targetInvitationId
                 + ", targetRoleId=" + targetRoleId
                 + ", targetGroupId=" + targetGroupId
+                + ", targetSchema=" + targetSchema
+                + ", targetTable=" + targetTable
+                + ", workRoleId=" + workRoleId
                 // detail の中身は出さず長さだけにする（TRACE の行が上限まで膨らむのを避ける。計画の D-10）。
                 + ", detailLength=" + (detail == null ? "null" : String.valueOf(detail.length()))
                 + "]";

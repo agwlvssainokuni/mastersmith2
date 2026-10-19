@@ -39,7 +39,7 @@ class TargetDataSourceConfigTest {
 
     private static TargetDbSettings.Usable usable(String type, String port) {
         TargetDbProperties properties = new TargetDbProperties(
-                type, "target-db", port, "business", "sales", USERNAME, PASSWORD, null, null, null);
+                type, "target-db", port, "business", "sales", USERNAME, PASSWORD, null, null, null, null);
         return (TargetDbSettings.Usable) TargetDbSettings.inspect(properties);
     }
 
@@ -133,7 +133,8 @@ class TargetDataSourceConfigTest {
                 USERNAME,
                 PASSWORD,
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, list, detail),
+                new TargetDbProperties.QueryTimeout(null, null, list, detail, null),
+                null,
                 null);
     }
 
@@ -171,5 +172,45 @@ class TargetDataSourceConfigTest {
         ConditionContext context = mock(ConditionContext.class);
         when(context.getEnvironment()).thenReturn(environment);
         return context;
+    }
+
+    @Test
+    @DisplayName(
+            "the read pool of MySQL and MariaDB sets the session time zone once per connection, PostgreSQL does not")
+    void readConnectionInitSql() {
+        assertThat(TargetDataSourceConfig.hikariConfig(usable("mysql", "3306")).getConnectionInitSql())
+                .isEqualTo("SET time_zone = '+00:00'")
+                .isEqualTo(TargetDataSourceConfig.READ_CONNECTION_INIT_SQL);
+        assertThat(TargetDataSourceConfig.hikariConfig(usable("mariadb", "3306"))
+                        .getConnectionInitSql())
+                .isEqualTo(TargetDataSourceConfig.READ_CONNECTION_INIT_SQL);
+        assertThat(TargetDataSourceConfig.hikariConfig(usable("postgresql", "5432"))
+                        .getConnectionInitSql())
+                .isNull();
+        assertThat(TargetDataSourceConfig.READ_CONNECTION_INIT_SQL)
+                .as("読み取りのプールには sql_mode を付けない（D5: A）")
+                .doesNotContain("sql_mode");
+    }
+
+    @Test
+    @DisplayName("the read socket timeout does not change when only the write limit changes")
+    void readSocketTimeoutIgnoresTheWriteLimit() {
+        TargetDbProperties longWrite = new TargetDbProperties(
+                "mysql",
+                "target-db",
+                "3306",
+                "business",
+                "sales",
+                USERNAME,
+                PASSWORD,
+                null,
+                new TargetDbProperties.QueryTimeout(null, null, null, null, Duration.ofSeconds(90)),
+                null,
+                null);
+
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.MYSQL, longWrite))
+                .containsEntry("socketTimeout", "25000");
+        assertThat(TargetDataSourceConfig.driverProperties(DatabaseProduct.POSTGRESQL, longWrite))
+                .containsEntry("socketTimeout", "25");
     }
 }

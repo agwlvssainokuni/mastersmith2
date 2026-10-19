@@ -21,7 +21,10 @@
 //             検索は id の完全一致（EQUALS）と c_010 の部分一致（CONTAINS。bizSearchContains）だけ。
 //   biz_pair: 複合の主キー（region_code・item_code）。全カラムを一覧に出し、主キーの順で並べる。
 //   biz_wide: 100 カラムのすべてを一覧に出す（bizSearchWide の 100 件 × 100 カラム × 100 字）。
-// メニューは3つの表を1つずつ指す。Node の標準の部品だけを使い、指定した出力のファイル（build/ の下など）にだけ書く。
+//   biz_ref:  外部キーの参照先（U2 の書き込みの場面）。
+//   biz_new:  100 カラムの書き込みの表（U2）。主キー id は自動の採番で必須にしない、u_code は unique、ref_id は biz_ref を指す外部キー、
+//             n_001〜n_097 は文字の長い型（bizCreateLarge で 10,000 字ずつ入れる）。
+// メニューは5つの表を1つずつ指す。Node の標準の部品だけを使い、指定した出力のファイル（build/ の下など）にだけ書く。
 //   node perf/make-biz-dsl.mjs <postgres|mysql|mariadb> <出力のファイル>
 import { writeFileSync } from 'node:fs'
 
@@ -99,23 +102,40 @@ function column(name, ja, type, opts) {
   push(14, `format: ${type.format ?? 'null'}`)
   push(12, 'detail:')
   push(14, 'visible: true')
-  if (opts.nullable) {
+  // 必須は既定で NULL を許さないカラム（自動の採番の主キーは required: false で外す）。unique は U2 の書き込みの表だけ。
+  const required = opts.required ?? !opts.nullable
+  if (!required && !opts.unique) {
     push(12, 'validations: []')
   } else {
     push(12, 'validations:')
-    push(14, '- type: required')
-    push(14, '  origin: DB')
+    if (required) {
+      push(14, '- type: required')
+      push(14, '  origin: DB')
+    }
+    if (opts.unique) {
+      push(14, '- type: unique')
+      push(14, '  origin: DB')
+    }
   }
   push(12, 'options: null')
 }
 
-function table(name, ja, primaryKey, columns) {
+function table(name, ja, primaryKey, columns, foreignKeys = []) {
   push(6, `${name}:`)
   label(8, ja, name)
   push(8, 'view: false')
   push(8, 'primaryKey:')
   for (const key of primaryKey) push(10, `- ${key}`)
-  push(8, 'foreignKeys: []')
+  if (foreignKeys.length === 0) {
+    push(8, 'foreignKeys: []')
+  } else {
+    push(8, 'foreignKeys:')
+    for (const key of foreignKeys) {
+      push(10, `- columns: [${key.columns.join(', ')}]`)
+      push(10, `  referencedTable: ${key.referencedTable}`)
+      push(10, `  referencedColumns: [${key.referencedColumns.join(', ')}]`)
+    }
+  }
   push(8, 'columns:')
   columns()
 }
@@ -124,6 +144,8 @@ const TABLES = [
   ['biz_item', '業務データの試験の表'],
   ['biz_pair', '複合の主キーの表'],
   ['biz_wide', '幅の広い表'],
+  ['biz_ref', '参照先の表'],
+  ['biz_new', '書き込みの試験の表'],
 ]
 
 push(0, '# 業務データの負荷の試験の DSL（perf/make-biz-dsl.mjs で作った。値はすべて架空）')
@@ -174,6 +196,41 @@ table('biz_wide', TABLES[2][1], ['id'], () => {
     column(name, `幅 ${i}`, typeOf('text', 0), { nullable: true, search: null, order: i + 1, sortable: false, defaultSort: null })
   }
 })
+
+table('biz_ref', TABLES[3][1], ['id'], () => {
+  column('id', '番号', typeOf('int', 0), { nullable: false, search: 'EQUALS', order: 1, sortable: true, defaultSort: 'ASC' })
+  column('name', '名前', typeOf('varchar', 0), { nullable: true, search: null, order: 2, sortable: false, defaultSort: null })
+})
+
+table(
+  'biz_new',
+  TABLES[4][1],
+  ['id'],
+  () => {
+    column('id', '番号', typeOf('int', 0), {
+      nullable: false,
+      required: false,
+      search: 'EQUALS',
+      order: 1,
+      sortable: true,
+      defaultSort: 'ASC',
+    })
+    column('u_code', '一意の符号', typeOf('varchar', 0), {
+      nullable: true,
+      unique: true,
+      search: null,
+      order: 2,
+      sortable: false,
+      defaultSort: null,
+    })
+    column('ref_id', '参照', typeOf('int', 0), { nullable: true, search: null, order: 3, sortable: false, defaultSort: null })
+    for (let i = 1; i <= 97; i++) {
+      const name = `n_${String(i).padStart(3, '0')}`
+      column(name, `書き込み ${i}`, typeOf('text', 0), { nullable: true, search: null, order: i + 3, sortable: false, defaultSort: null })
+    }
+  },
+  [{ columns: ['ref_id'], referencedTable: 'biz_ref', referencedColumns: ['id'] }],
+)
 
 const result = lines.join('\n') + '\n'
 writeFileSync(output, result)

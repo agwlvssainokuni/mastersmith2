@@ -191,6 +191,17 @@ public abstract class TargetDbTestDatabase {
     public abstract void createReadOnlyAccount(String user, String password, String schema);
 
     /**
+     * スキーマの行の操作（{@code SELECT}・{@code INSERT}・{@code UPDATE}・{@code DELETE}）だけを持つ書き込みのアカウントを作る
+     * （Intent 261016-business-data-views の U2。DDL を与えない。PostgreSQL は sequence の USAGE も与える）。スキーマの表を作った後に
+     * 呼ぶ。
+     *
+     * @param user ユーザー名
+     * @param password パスワード
+     * @param schema スキーマ
+     */
+    public abstract void createWriterAccount(String user, String password, String schema);
+
+    /**
      * アカウントを消す。
      *
      * @param user ユーザー名

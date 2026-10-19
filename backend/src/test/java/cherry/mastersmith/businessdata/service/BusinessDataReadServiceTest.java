@@ -67,7 +67,9 @@ class BusinessDataReadServiceTest {
         ports = new FakeBusinessDataPorts();
         ports.resolver.snapshot = BusinessDataServiceFixture.snapshot();
         service = new BusinessDataReadService(
-                new TableAccessResolver(ports.resolver, ports.readAccess), ports.readAccess, ports.executor);
+                new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess),
+                ports.readAccess,
+                ports.executor);
     }
 
     private static SearchInput validSearch() {

@@ -32,21 +32,27 @@ class BusinessDataProblemTypeCatalogTest {
     private final List<ProblemType> types = new BusinessDataProblemTypeCatalog().problemTypes();
 
     @Test
-    @DisplayName("the catalog has the eight codes with one status each")
+    @DisplayName("the catalog has the eight read codes and the five write codes with one status each")
     void codesAndStatuses() {
         Map<String, Integer> statuses =
                 types.stream().collect(Collectors.toMap(ProblemType::code, ProblemType::status));
 
         assertThat(statuses)
-                .containsExactlyInAnyOrderEntriesOf(Map.of(
-                        "BUSINESS_DSL_NOT_APPLIED", 404,
-                        "BUSINESS_TABLE_NOT_FOUND", 404,
-                        "BUSINESS_ROW_NOT_FOUND", 404,
-                        "BUSINESS_ROW_OPERATION_NOT_ALLOWED", 409,
-                        "BUSINESS_ROW_NOT_UNIQUE", 409,
-                        "BUSINESS_TARGET_DB_MISMATCH", 409,
-                        "BUSINESS_TARGET_DB_UNAVAILABLE", 503,
-                        "BUSINESS_TARGET_DB_TIMEOUT", 503));
+                .containsExactlyInAnyOrderEntriesOf(Map.ofEntries(
+                        Map.entry("BUSINESS_DSL_NOT_APPLIED", 404),
+                        Map.entry("BUSINESS_TABLE_NOT_FOUND", 404),
+                        Map.entry("BUSINESS_ROW_NOT_FOUND", 404),
+                        Map.entry("BUSINESS_ROW_OPERATION_NOT_ALLOWED", 409),
+                        Map.entry("BUSINESS_ROW_NOT_UNIQUE", 409),
+                        Map.entry("BUSINESS_TARGET_DB_MISMATCH", 409),
+                        Map.entry("BUSINESS_TARGET_DB_UNAVAILABLE", 503),
+                        Map.entry("BUSINESS_TARGET_DB_TIMEOUT", 503),
+                        // U2（Intent 261016-business-data-views の B4、BR1.9）が足した書き込みの code（どれも 409）
+                        Map.entry("BUSINESS_DEFINITION_CHANGED", 409),
+                        Map.entry("BUSINESS_WRITE_NOT_CONFIGURED", 409),
+                        Map.entry("BUSINESS_DUPLICATE_VALUE", 409),
+                        Map.entry("BUSINESS_REFERENCE_NOT_FOUND", 409),
+                        Map.entry("BUSINESS_SAVE_REJECTED", 409)));
     }
 
     @Test

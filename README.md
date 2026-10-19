@@ -262,9 +262,9 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 ```
 
 - 配備したアプリには、見本の対象DB（PostgreSQL、compose の profile `targetdb-postgres`、DB `business`・スキーマ `sales`、読み取りだけのアカウント `mastersmith_reader`）をつなぎ、アプリと一緒に起動・停止します。そのため、起動・状態の確認・停止の `docker compose` のコマンドには `--profile targetdb-postgres` を付けます。
-- 初めて起動する前に、次の9項目を入れておきます。値は各自で決め、コミットしません。
-  - `.env.targetdb` の2項目 `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`: 見本の DB の管理者と `mastersmith_reader` のパスワード。乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`$` の展開などに左右されません）。見本の対象DB のコンテナだけが読み、アプリのコンテナには渡りません（アプリのコンテナは `.env` だけを読むため、見本の DB の管理者のパスワードを `.env` に置かない）。
-  - `.env` の `MASTERSMITH_TARGET_DB_*` の7項目: 「対象DB」の「手元で試す対象DB（compose の profile）」の手順 3 の PostgreSQL の値（ホストは `targetdb-postgres`、番号は `5432`）。`MASTERSMITH_TARGET_DB_PASSWORD` は `.env.targetdb` の `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` と同じ値にします。
+- 初めて起動する前に、次の12項目を入れておきます。値は各自で決め、コミットしません。
+  - `.env.targetdb` の3項目 `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD`（U2）: 見本の DB の管理者・`mastersmith_reader`・`mastersmith_writer` のパスワード。乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`$` の展開などに左右されません）。見本の対象DB のコンテナだけが読み、アプリのコンテナには渡りません（アプリのコンテナは `.env` だけを読むため、見本の DB の管理者のパスワードを `.env` に置かない）。
+  - `.env` の `MASTERSMITH_TARGET_DB_*` の7項目と書き込みの2項目（U2）: 「対象DB」の「手元で試す対象DB（compose の profile）」の手順 3 の PostgreSQL の値（ホストは `targetdb-postgres`、番号は `5432`）。`MASTERSMITH_TARGET_DB_PASSWORD` は `.env.targetdb` の `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`、`MASTERSMITH_TARGET_DB_WRITE_PASSWORD` は `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` と同じ値にします。既にある見本の DB に書き込みのアカウントを足すときは、「既にある見本の DB に書き込みのアカウントを足す」の手順で行います。
 - 見本のスキーマと読み取りのアカウントは、見本の DB のボリュームが無い状態で初めて起動したときだけ作られます。起動の後に `docker compose logs targetdb-postgres` で初期化の誤りが無いことを確かめます。後から `.env.targetdb` のパスワードを変えても見本の DB には効かないため、変えるときは見本の DB を作り直します（「手元で試す対象DB（compose の profile）」の手順 5 で消してから起動し直す）。
 - これまで `.env` に `MASTERSMITH_SAMPLE_TARGETDB_*` の2項目を入れていたときは、次の手順で `.env.targetdb` に移します。どのコマンドも値を画面に出しません。値を変えずに移すだけなら、見本の DB のボリュームはそのまま使え、作り直しは要りません。
 
@@ -476,8 +476,12 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST` | `5s` | 業務データの一覧で、問い合わせ1回（件数・ページのそれぞれ）の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL` | `5s` | 業務データの詳細で、問い合わせ1回の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE` | `5s` | 業務データの書き込みで、文1回（事前の問い合わせ・書き込みの文・違反の後の確かめのそれぞれ）の待ちの上限（1 秒以上。Intent 261016-business-data-views の U2）。書き込みのドライバーの通信の待ちはこの値 + 5 秒 |
 | `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `5` | 対象DB の接続の数の上限（内部DB のプールとは別） |
-| `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上） |
+| `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上。書き込みの接続と共用） |
+| `MASTERSMITH_TARGET_DB_WRITE_USERNAME` | 空 | 業務データの書き込みのアカウントのユーザー名（U2）。接続先は読み取りの項目をそのまま使う。読み取りが使えて、ユーザー名とパスワードの両方があるときだけ書き込みを使い、片方だけなら項目の名前だけを WARN で出して書き込みを使わない（読み取りは動く） |
+| `MASTERSMITH_TARGET_DB_WRITE_PASSWORD` | 空 | 業務データの書き込みのアカウントのパスワード（秘密情報。U2） |
+| `MASTERSMITH_TARGET_DB_WRITE_POOL_MAXIMUM_SIZE` | `5` | 対象DB の書き込みの接続の数の上限（読み取りの接続とは別。U2） |
 | `SPRING_MAIL_HOST` | なし | メールの SMTP の接続先（「メール（U1）」）。無ければメールを送らない。手元では `mailpit` |
 | `SPRING_MAIL_PORT` | 方式の標準 | SMTP の番号（1〜65535）。STARTTLS では 587 を書く。数でない値は起動が止まる |
 | `SPRING_MAIL_PROTOCOL` | `smtp` | `smtps` にすると接続の始めから暗号化する（SMTPS） |
@@ -556,16 +560,17 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 ## 対象DB（利用者の業務データの DB）
 
-アプリは、利用者の業務データの DB（対象DB。MySQL・MariaDB・PostgreSQL）を、読み取り専用の接続で読みます（設定したスキーマのテーブル・ビュー・カラム・キー・コメントのメタデータと、業務データの読み取りの API が読む行）。接続先は環境変数 `MASTERSMITH_TARGET_DB_*`（「環境変数」の表）だけから受け取り、画面・API から受け取りません。
+アプリは、利用者の業務データの DB（対象DB。MySQL・MariaDB・PostgreSQL）を、読み取り専用の接続で読みます（設定したスキーマのテーブル・ビュー・カラム・キー・コメントのメタデータと、業務データの読み取りの API が読む行）。業務データの書き込み（作成・更新・削除。Intent 261016-business-data-views の U2）は、読み取りとは別の書き込みのアカウントの接続で、行の操作（`INSERT`・`UPDATE`・`DELETE` と、確かめの `SELECT`）だけを発行します。接続先と資格情報は環境変数 `MASTERSMITH_TARGET_DB_*`（「環境変数」の表）だけから受け取り、画面・API から受け取りません。
 
 - 7つの項目がすべて空なら対象DB を使わず、起動は続きます。一部だけ空・不正なら、問題のある項目の名前（例: `mastersmith.target-db.schema`）だけを WARN で1件出し、対象DB を使いません（値はログに出しません）。直したら再起動します。
 - 起動時には対象DB に接続しません。ヘルスチェックは内部DB だけで判断し、対象DB の状態は応答に含めません。
 - ログイン・監査ログ・Flyway は内部DB を使い続け、対象DB には表を作りません。
-- 待ちの上限は、接続の待ち（既定 3 秒）と、問い合わせ1回ごとの待ち（既定の DSL の生成 20 秒・照合 5 秒・業務データの一覧 5 秒・詳細 5 秒）だけです。ドライバーの通信の待ちは、4つの問い合わせの上限の最も長いもの + 5 秒（既定 25 秒）です。読み取りの全体の上限はありません。読み取りは問い合わせ4回のため、応答しない対象DB では、照合でも最悪 接続 3 秒＋5 秒×4 回（約 23 秒）かかることがあります（照合の 10 秒の目標を超えることを許す決定です）。
+- 待ちの上限は、接続の待ち（既定 3 秒）と、問い合わせ1回ごとの待ち（既定の DSL の生成 20 秒・照合 5 秒・業務データの一覧 5 秒・詳細 5 秒）だけです。ドライバーの通信の待ちは、4つの問い合わせの上限の最も長いもの + 5 秒（既定 25 秒）です。読み取りの全体の上限はありません。業務データの書き込み（U2）は、文1回ごとの待ち（既定 5 秒）と、書き込みのドライバーの通信の待ち（その値 + 5 秒、既定 10 秒）を、読み取りとは別に持ちます。読み取りは問い合わせ4回のため、応答しない対象DB では、照合でも最悪 接続 3 秒＋5 秒×4 回（約 23 秒）かかることがあります（照合の 10 秒の目標を超えることを許す決定です）。
 - 読めなかったときは、原因の種類（`TIMEOUT`・`CONNECTION_FAILED`）と SQLState だけを WARN で出します。接続先・ユーザー名・パスワード・ドライバーの例外の文言は出しません。
 - 3つのドライバー（MariaDB・PostgreSQL・MySQL）自身のログは、`backend/src/main/resources/application.yaml` の `logging.level` で止めています（`org.mariadb.jdbc`・`org.postgresql`・`com.mysql.cj` を `OFF`）。ドライバーのログは接続先・ユーザー名・例外の文言を含むことがあり、MariaDB のドライバーは認証の失敗をユーザー名つきで WARN に出すことを結合テストで確かめました。MySQL・PostgreSQL のドライバーも同じ扱いにそろえています。
 - 読めない原因を調べるときは、まず読み取りの口（`JdbcTargetSchemaReader`）の WARN の `reason` と `sqlState` で絞ります（`08` で始まる: 接続できない、`28` で始まる: 認証の失敗、`57014`: 問い合わせの打ち切り、`TIMEOUT` で SQLState が無い: 接続の待ちの間に応答が無い）。さらに調べるときは、同じネットワークから DB の付属のクライアント（`psql`・`mysql`・`mariadb`）で接続を試すか、対象DB の側のログを見てください。配備した環境でドライバーのログを有効にしないでください（接続情報がログに残ります）。
-- 対象DB のアカウントは、読み取りの権限だけにしてください（MySQL・MariaDB は `GRANT SELECT, SHOW VIEW ON <DB>.*`、PostgreSQL は `GRANT USAGE ON SCHEMA` と `GRANT SELECT ON ALL TABLES IN SCHEMA`）。アプリは接続を読み取り専用にし、書き込み・DDL を発行するコードを持ちませんが、アカウントの権限は調べません。
+- 対象DB の読み取りのアカウントは、読み取りの権限だけにしてください（MySQL・MariaDB は `GRANT SELECT, SHOW VIEW ON <DB>.*`、PostgreSQL は `GRANT USAGE ON SCHEMA` と `GRANT SELECT ON ALL TABLES IN SCHEMA`）。読み取りの接続は読み取り専用にしています。
+- 書き込みのアカウント（`MASTERSMITH_TARGET_DB_WRITE_*`。U2）には、DSL の対象のスキーマの行の操作（`SELECT`・`INSERT`・`UPDATE`・`DELETE`。PostgreSQL は自動の採番の sequence の `USAGE` も）だけを与え、DDL（表・索引・ビュー・スキーマを作る・消す・変える、`TRUNCATE`）・一時の表・`LOCK TABLES` の権限を与えないでください。アプリはアカウントの権限を調べません。書き込みの設定が無ければ、書き込みの API は 409 `BUSINESS_WRITE_NOT_CONFIGURED` を返し、読み取りは動き続けます。
 
 ### 業務データの読み取りの API（Intent 261016-business-data-views の U1）
 
@@ -581,6 +586,24 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 - 対象DB へは読み取りの接続（読み取りだけのアカウント）だけを使い、書き込みはしません。1要求で借りる対象DB の接続は1本までで、借りている間は内部DB の接続を持ちません。
 - 識別子（スキーマ名・テーブル名・カラム名・並べ替えの列）は適用中の DSL にある名前と照らしてから引用し、値はバインド変数で渡します。
 - 失敗は Problem Details の `code` で返します。DSL が適用されていない・テーブルが DSL に無い・行が無いときは 404（`BUSINESS_DSL_NOT_APPLIED`・`BUSINESS_TABLE_NOT_FOUND`・`BUSINESS_ROW_NOT_FOUND`）、権限が無いときは 403（`ACCESS_DENIED`）、主キーの無いテーブル・ビューなど行を1件に決められないテーブルの詳細は 409（`BUSINESS_ROW_OPERATION_NOT_ALLOWED`）、主キーで2行以上が当たったときは 409（`BUSINESS_ROW_NOT_UNIQUE`）、DSL と対象DB が合わないときは 409（`BUSINESS_TARGET_DB_MISMATCH`）、入力の誤りは 400（`VALIDATION_FAILED`）、対象DB に届かない・借りる待ち（3 秒。MySQL で接続の確かめが走るときは 6 秒）を超えた・時間切れのときは 503（`BUSINESS_TARGET_DB_UNAVAILABLE`・`BUSINESS_TARGET_DB_TIMEOUT`）です。行の値・接続先・ドライバーの例外の文言は、応答にもログにも出しません（ログは SQLState・業者のエラーの番号・例外のクラスの名前だけ）。
+
+### 業務データの書き込みの API（Intent 261016-business-data-views の U2）
+
+適用中の DSL にあるテーブルの行の作成・更新・削除を、3本の道で行います。読み取りと同じく、スキーマ名・テーブル名・主キー・値・定義の識別（`definitionId`。定義の API が返したもの）は道や問い合わせに載せず、本文（JSON）で受け取ります。
+
+| 道 | すること | 本文の上限 |
+|---|---|---|
+| `POST /api/tables/rows` | 作成（送ったカラムだけを入れる。自動の採番の主キーは作った値を返す）。201 | 4 MiB |
+| `PATCH /api/tables/rows` | 更新（主キーで1行を指し、変えたカラムだけを入れる）。200 | 4 MiB |
+| `POST /api/tables/rows/delete` | 削除（主キーで1行を指す。外部キーの `ON DELETE CASCADE` は DB に任せる）。200 | 64 KB |
+
+- ログインだけが要ります（管理の権限は要りません）。作成はテーブルの補助権限 CREATE、削除は DELETE、更新は主権限 FULL のカラムが要り、要求ごとにサーバー側で判定します。入力できないカラム（主権限 FULL でない・詳細に出さない・主キーの更新）を本文に足すと 400 `VALIDATION_FAILED`（`NOT_ALLOWED`）になり、反映されません。
+- 書き込みは書き込みの接続（書き込みのアカウント）だけを使い、1要求で1回だけ借ります。借りている間は内部DB の接続を持ちません。監査の記録は、書き込みの接続を返した後に内部DB へ書きます。
+- 値は DSL の検証の材料（必須・長さ・桁・範囲・正規表現・選択肢・一意）でサーバー側で確かめます（定義の API の各カラムに同じ材料を返すため、画面と同じ判定になります）。値1つは 10,000 字、主キーの値は 1,000 字までです。DB 由来の必須・一意は、事前の問い合わせと DB の制約の違反のどちらでも同じ code で返します。
+- 失敗の code: 読み取りの API と同じもの（403・404・409・400・503）に加えて、定義が古い・定義の識別が無いときは 409 `BUSINESS_DEFINITION_CHANGED`、書き込みの設定が無いときは 409 `BUSINESS_WRITE_NOT_CONFIGURED`、同じ値があるときは 409 `BUSINESS_DUPLICATE_VALUE`、参照先に無い値は 409 `BUSINESS_REFERENCE_NOT_FOUND`（作成・更新。どちらもカラムを `fieldErrors` で示す）、DB が保存を受け付けなかったとき（CHECK・NOT NULL・値の範囲・文字集合・削除の外部キーなど）は 409 `BUSINESS_SAVE_REJECTED`、主キーで0行は 404 `BUSINESS_ROW_NOT_FOUND`・2行以上は 409 `BUSINESS_ROW_NOT_UNIQUE`（巻き戻す）、本文が上限を超えると 413 `PAYLOAD_TOO_LARGE`（400 より先）です。
+- 503 の出し分け: `BUSINESS_TARGET_DB_UNAVAILABLE` は「保存されていない」（借りられない・書き込みの文の段の時間切れ・断絶・競合（デッドロック・直列化の失敗・ロックの待ち切れ）・違反の後の確かめの段の時間切れ）、`BUSINESS_TARGET_DB_TIMEOUT` は「保存されたか分からない」（確定の段の失敗だけ）です。もう一度試す前に、一覧で行を確かめてください。
+- 監査: 作成・更新・削除の成功（`BUSINESS_ROW_CREATED`・`BUSINESS_ROW_UPDATED`・`BUSINESS_ROW_DELETED`）と、対象DB に関わる失敗（同じ値・参照先に無い・保存の拒否・行が無い・2行以上・接続できない・時間切れ・食い違い、主キーとビューの決まりによる拒否は補助権限を持つ人の分だけ）を、操作した人・作業ロール・スキーマ・テーブル・主キー（`detail`。主キー以外の値は残さない）とともに残します。確定の段の失敗の結果は `UNKNOWN` です。401・403・400・定義が古い・設定が無いは残しません。監査の書き込みの失敗は操作を失敗させず、ERROR を1行出します（主キーの値・例外の原因は載せません）。
+- 行の値・主キーの値・接続先・ドライバーの例外の文言は、応答にもログにもトレースの属性にも出しません（ログは段・理由・SQLState・業者のエラーの番号・例外のクラスの名前だけ）。
 
 ### 対象DB の結合テストとコンテナの実行環境
 
@@ -602,10 +625,10 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 画面からスキーマの読み込みを試すときや、読み取りの時間を測るときは、見本の対象DB を compose の profile で1つずつ起動します。ポートは PC に開けず、アプリのコンテナから compose の中の名前で接続します。
 
-配備したアプリには、見本のうち PostgreSQL（`targetdb-postgres`）をつなぎ、アプリと一緒に起動・停止します（「コンテナでの起動と確認」の `docker compose --profile targetdb-postgres up -d --build` と `docker compose --profile targetdb-postgres down`）。下の手順 1 の `.env.targetdb` と手順 3 の `.env` の設定は、その配備でも同じです。手順 2・5 の見本の DB だけの起動・停止は、ほかの種類を試すときや、見本の DB だけを止める・作り直すときに使います。ほかの種類に切り替えるときは、手順 3 の値を替えてアプリのコンテナを作り直し、使わなくなった見本の DB は止めます。見本の DB が持つのは見本のスキーマと読み取りのアカウントだけで、手順 5 で消しても業務のデータや内部DB は失われません。
+配備したアプリには、見本のうち PostgreSQL（`targetdb-postgres`）をつなぎ、アプリと一緒に起動・停止します（「コンテナでの起動と確認」の `docker compose --profile targetdb-postgres up -d --build` と `docker compose --profile targetdb-postgres down`）。下の手順 1 の `.env.targetdb` と手順 3 の `.env` の設定は、その配備でも同じです。手順 2・5 の見本の DB だけの起動・停止は、ほかの種類を試すときや、見本の DB だけを止める・作り直すときに使います。ほかの種類に切り替えるときは、手順 3 の値を替えてアプリのコンテナを作り直し、使わなくなった見本の DB は止めます。見本の DB が持つのは、見本のスキーマ・読み取りのアカウント・書き込みのアカウント（U2）と、アプリの書き込みの API で書いた見本の表の行です。手順 5 で消すと、書いた行は失われます（内部DB と監査ログは失われません）。
 
-1. `.env.targetdb` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` と `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` を入れる（`(umask 077 && cp .env.targetdb.example .env.targetdb)` で作る。空だと DB を作れません）。見本の対象DB のコンテナは起動の入口で管理者のパスワードを各イメージの変数（`POSTGRES_PASSWORD`・`MYSQL_ROOT_PASSWORD`・`MARIADB_ROOT_PASSWORD`）に写すため、`docker compose exec` の中ではそれらの変数ではなく `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` を使います。
-2. 起動する（初めての起動で、見本のスキーマと読み取りだけのアカウント `mastersmith_reader` を `docker/targetdb/<種類>/` の SQL と台本で作ります）。
+1. `.env.targetdb` に `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD`・`MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD`（U2）を入れる（`(umask 077 && cp .env.targetdb.example .env.targetdb)` で作る。空だと DB を作れません。書き込みのパスワードが空だと、新しいボリュームの初期化が `03-writer-account.sh` で止まります）。見本の対象DB のコンテナは起動の入口で管理者のパスワードを各イメージの変数（`POSTGRES_PASSWORD`・`MYSQL_ROOT_PASSWORD`・`MARIADB_ROOT_PASSWORD`）に写すため、`docker compose exec` の中ではそれらの変数ではなく `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` を使います。
+2. 起動する（初めての起動で、見本のスキーマ・読み取りだけのアカウント `mastersmith_reader`・書き込みのアカウント `mastersmith_writer`（見本のスキーマの行の操作だけ）を `docker/targetdb/<種類>/` の SQL と台本で作ります）。
 
    ```bash
    docker compose --profile targetdb-postgres up -d targetdb-postgres   # PostgreSQL（DB business・スキーマ sales）
@@ -623,7 +646,11 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
    MASTERSMITH_TARGET_DB_SCHEMA=sales
    MASTERSMITH_TARGET_DB_USERNAME=mastersmith_reader
    MASTERSMITH_TARGET_DB_PASSWORD=<MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD と同じ値>
+   MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer
+   MASTERSMITH_TARGET_DB_WRITE_PASSWORD=<MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD と同じ値>
    ```
+
+   書き込みの2行を書かなければ、アプリは読み取りだけで動きます（書き込みの API は 409 `BUSINESS_WRITE_NOT_CONFIGURED`）。
 
    MySQL・MariaDB は `TYPE` を `mysql`・`mariadb`、`HOST` を `targetdb-mysql`・`targetdb-mariadb`、`PORT` を `3306`、`DATABASE` と `SCHEMA` を `business` にします。
 
@@ -639,6 +666,29 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
    ```
 
 5. 止める・消す: `docker compose --profile targetdb-postgres stop targetdb-postgres`。データごと消すときは `docker compose --profile targetdb-postgres rm -sf targetdb-postgres` の後に `docker volume rm mastersmith_mastersmith-targetdb-postgres`（mysql・mariadb も同じ形）。
+
+#### 既にある見本の DB に書き込みのアカウントを足す（U2）
+
+初期化の台本は、見本の DB のボリュームが無い状態で初めて起動したときだけ動きます。この版より前に作ったボリュームには書き込みのアカウントが無いため、次の手順で足します（PostgreSQL の例。mysql・mariadb は名前を読み替えます）。台本は何度流しても同じ結果になり（無ければ作り、毎回パスワードと付与を当て直す）、パスワードを替えたときも同じ手順で当て直せます。どのコマンドも値を画面に出しません。
+
+```bash
+(umask 077 && cp .env "$HOME/.mastersmith-env-before-writer")                  # 戻すときのために .env をリポジトリの外へ複写する
+W=$(openssl rand -hex 24)                                                      # 乱数を変数に入れる（表示しない）
+(umask 077 && printf 'MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD=%s\n' "$W" >> .env.targetdb)
+(umask 077 && printf 'MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer\nMASTERSMITH_TARGET_DB_WRITE_PASSWORD=%s\n' "$W" >> .env)
+unset W
+docker compose --profile targetdb-postgres up -d --force-recreate targetdb-postgres   # 見本の DB のコンテナに新しい変数を渡す（データは残る）
+docker compose --profile targetdb-postgres exec -T targetdb-postgres bash /docker-entrypoint-initdb.d/03-writer-account.sh
+docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -tAc \
+  "SELECT COUNT(*) FROM pg_roles WHERE rolname = 'mastersmith_writer'"          # 1 と出ること
+docker compose --profile targetdb-postgres up -d --force-recreate app            # アプリに書き込みの設定を渡す
+```
+
+- 確かめ: アプリの定義の API の `writeConfigured` が `true` になり、起動のログに書き込みの設定の WARN が無いこと。問題が無ければ、複写した `$HOME/.mastersmith-env-before-writer` を消します。戻すときは、その複写を `.env` に戻してアプリのコンテナを作り直します（書き込みのアカウントは残っても使われません）。
+- 消し方: PostgreSQL は管理者で `REVOKE ALL ON ALL TABLES IN SCHEMA sales FROM mastersmith_writer; REVOKE ALL ON ALL SEQUENCES IN SCHEMA sales FROM mastersmith_writer; REVOKE USAGE ON SCHEMA sales FROM mastersmith_writer; ALTER DEFAULT PRIVILEGES IN SCHEMA sales REVOKE ALL ON TABLES FROM mastersmith_writer; ALTER DEFAULT PRIVILEGES IN SCHEMA sales REVOKE ALL ON SEQUENCES FROM mastersmith_writer; DROP ROLE mastersmith_writer;`、MySQL・MariaDB は `DROP USER 'mastersmith_writer'@'%';`。台本が PUBLIC から取り上げた PostgreSQL の DB の `TEMPORARY` は、戻す必要があるときだけ `GRANT TEMPORARY ON DATABASE business TO PUBLIC` で戻します。あわせて `.env` の書き込みの2行を消してアプリのコンテナを作り直します。
+- 初期化が止まったとき（新しいボリュームで `03-writer-account.sh` が「…が空です」で終わる）: `.env.targetdb` に `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` を入れ、手順 5 でボリュームごと消してから起動し直します（初期化が途中で止まったボリュームは使わない）。
+- 残る広さ: 見本の付与はスキーマ（MySQL・MariaDB は DB）の単位のため、書き込みのアカウントは DSL に無い表も DB の上では書けます。アプリはサーバー側で、適用中の DSL にある表とカラムだけに書きます。利用者の DB で表ごとに絞るときは、DSL の表ごとに `GRANT SELECT, INSERT, UPDATE, DELETE ON <表>` を与え、外部キーの参照先の表にも `SELECT` を与えます（違反の後の確かめで参照先を読むため）。PostgreSQL 14 以前では、`public` スキーマの `CREATE` が PUBLIC に与えられているため、`REVOKE CREATE ON SCHEMA public FROM PUBLIC` も行います。
+- 既知の制約: 一意の制約の無いカラムを DSL で unique にしたときは、同時の作成・更新の重なりを防げません（事前の問い合わせだけで見るため）。同じ行の同時の更新は後勝ちです。索引の無い unique のカラムの事前の問い合わせは、表の全部を読みます。大きな本文の同時の書き込みは、対象DB のメモリを使い切りうります（書き込みのプールの上限 5 で絞ります）。補助権限を持つ人が同じ失敗をくり返すと、監査の行が増えます。
 
 メモリの上限は PostgreSQL・MariaDB が 512MB、MySQL が 768MB です。3つを同時に起動すると、colima の VM（6GiB）のうち約 2GB を使います。配備したアプリ（上限 2GB）と PostgreSQL の見本（512MB）を一緒に動かすと約 2.5GB です。
 

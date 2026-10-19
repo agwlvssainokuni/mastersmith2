@@ -17,8 +17,10 @@ package cherry.mastersmith.businessdata.domain;
 
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.role.domain.MainPermission;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * 出し分けの関数（{@link TableAccessPolicy}）の入力。権限の写しとその写しの DSL、DB の種類から作る（BR2・BR3.1）。
@@ -33,6 +35,8 @@ import java.util.Objects;
  * @param kinds カラムの名前ごとの受け渡しの型（無いカラムは OTHER・完全一致に使えない として扱う）
  * @param writeConfigured 書き込みの接続の設定があるか
  * @param knownIdentifiers SQL の部品に渡す名前の一覧
+ * @param referencedColumns 外部キーの参照先のテーブル（同じスキーマ）ごとの DSL のカラムの名前（U2 の違反の後の確かめに使う。無い参照先の
+ *     外部キーは確かめに使わない）
  */
 public record TableAccessInput(
         String schema,
@@ -44,7 +48,8 @@ public record TableAccessInput(
         Map<String, MainPermission> columnMain,
         Map<String, ColumnKind> kinds,
         boolean writeConfigured,
-        KnownIdentifiers knownIdentifiers) {
+        KnownIdentifiers knownIdentifiers,
+        Map<String, Set<String>> referencedColumns) {
 
     /** 必須の値を確かめ、対応表を変更できないものにする。 */
     public TableAccessInput {
@@ -55,6 +60,49 @@ public record TableAccessInput(
         Objects.requireNonNull(knownIdentifiers, "knownIdentifiers は必須です");
         columnMain = Map.copyOf(columnMain);
         kinds = Map.copyOf(kinds);
+        Map<String, Set<String>> copied = new HashMap<>();
+        (referencedColumns == null ? Map.<String, Set<String>>of() : referencedColumns)
+                .forEach((referenced, names) -> copied.put(referenced, Set.copyOf(names)));
+        referencedColumns = Map.copyOf(copied);
+    }
+
+    /**
+     * 外部キーの参照先の名前を持たない入力を作る（違反の後の確かめに外部キーを使わない）。
+     *
+     * @param schema 照らしたスキーマ名
+     * @param table 照らしたテーブルの DSL の定義
+     * @param definitionId 今の定義の識別
+     * @param tableMain テーブルの実効の主権限
+     * @param canCreate 補助権限 CREATE
+     * @param canDelete 補助権限 DELETE
+     * @param columnMain カラムの名前ごとの実効の主権限
+     * @param kinds カラムの名前ごとの受け渡しの型
+     * @param writeConfigured 書き込みの接続の設定があるか
+     * @param knownIdentifiers SQL の部品に渡す名前の一覧
+     */
+    public TableAccessInput(
+            String schema,
+            DslTable table,
+            DefinitionId definitionId,
+            MainPermission tableMain,
+            boolean canCreate,
+            boolean canDelete,
+            Map<String, MainPermission> columnMain,
+            Map<String, ColumnKind> kinds,
+            boolean writeConfigured,
+            KnownIdentifiers knownIdentifiers) {
+        this(
+                schema,
+                table,
+                definitionId,
+                tableMain,
+                canCreate,
+                canDelete,
+                columnMain,
+                kinds,
+                writeConfigured,
+                knownIdentifiers,
+                Map.of());
     }
 
     /** テーブルの名前と数だけを出す。 */

@@ -51,6 +51,22 @@ public class TargetDataSourceConfig {
     /** 問い合わせの待ちの上限より、ドライバーの通信の待ちを長くする分。 */
     static final Duration SOCKET_TIMEOUT_MARGIN = Duration.ofSeconds(5);
 
+    /**
+     * 読み取りのプールの MySQL・MariaDB で、接続を作るときに1回だけ流す初期化の文（定数。利用者の入力を含まない）。セッションの
+     * タイムゾーンを UTC にする（U1 のコード生成のレビュー R-03 の直し、U2 の計画の D5: A）。
+     *
+     * <p>読み取りのプールは DSL の生成・照合の読み取りと共有する。生成・照合はメタデータ（情報スキーマ・カタログ）だけを読み、時刻の
+     * 値を読まないため、セッションのタイムゾーンに依存しない。初期化が失敗すると、借りる失敗（{@code UNAVAILABLE}）になる。
+     */
+    public static final String READ_CONNECTION_INIT_SQL = "SET time_zone = '+00:00'";
+
+    /**
+     * 書き込みのプールの MySQL・MariaDB で、接続を作るときに1回だけ流す初期化の文（定数。U2 の NFR 設計 Q3: A・Q6: A）。セッションの
+     * タイムゾーンを UTC にし、{@code sql_mode} に {@code STRICT_ALL_TABLES} を足す。読み取りと同じ置き場にそろえる。
+     */
+    public static final String WRITE_CONNECTION_INIT_SQL =
+            "SET time_zone = '+00:00', sql_mode = CONCAT_WS(',', NULLIF(@@sql_mode, ''), 'STRICT_ALL_TABLES')";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TargetDataSourceConfig.class);
 
     /**
@@ -68,6 +84,25 @@ public class TargetDataSourceConfig {
                     .log("対象DB の設定に欠け・不正があるため、対象DB を使いません。項目を直して再起動してください");
         }
         return settings;
+    }
+
+    /**
+     * 起動時に1回だけ書き込みの設定を点検する（Intent 261016-business-data-views の U2、BR9.1・NFR4.11）。片方だけの資格情報など欠け
+     * があれば、項目の名前だけを WARN で1件出す（値は出さない）。どの場合も起動と読み取りは続ける。
+     *
+     * @param settings 読み取りの設定の点検の結果
+     * @param properties 対象DB の設定
+     * @return 書き込みの設定の点検の結果
+     */
+    @Bean
+    public TargetDbWriteSettings targetDbWriteSettings(TargetDbSettings settings, TargetDbProperties properties) {
+        TargetDbWriteSettings writeSettings = TargetDbWriteSettings.inspect(settings, properties);
+        if (writeSettings instanceof TargetDbWriteSettings.Incomplete incomplete) {
+            LOGGER.atWarn()
+                    .addKeyValue("items", String.join(", ", incomplete.problemItems()))
+                    .log("対象DB の書き込みの設定に欠け・不正があるため、業務データの書き込みを使いません。項目を直して再起動してください");
+        }
+        return writeSettings;
     }
 
     /**
@@ -111,6 +146,10 @@ public class TargetDataSourceConfig {
         config.setValidationTimeout(properties.connectTimeout().toMillis());
         // 起動時に接続しない（プールは初めて使うときに始まる。NFR7.2）。
         config.setInitializationFailTimeout(-1);
+        if (usable.product() != DatabaseProduct.POSTGRESQL) {
+            // 接続を作るときに1回だけ、セッションのタイムゾーンを UTC にする（D5: A。貸すたびには流さない）。
+            config.setConnectionInitSql(READ_CONNECTION_INIT_SQL);
+        }
         driverProperties(usable.product(), properties).forEach(config::addDataSourceProperty);
         return config;
     }

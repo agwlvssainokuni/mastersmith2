@@ -278,6 +278,44 @@ abstract class AbstractBusinessDataReadIT {
         assertThat(definition.toString()).doesNotContain(UUID_1);
     }
 
+    @Test
+    @DisplayName("every column of the definition carries the validation items, with required and nullable always set")
+    void definitionValidationItems() {
+        Map<String, Object> definition = definition(ITEM);
+        List<String> items = List.of(
+                "formPart",
+                "required",
+                "nullable",
+                "minLength",
+                "maxLength",
+                "precision",
+                "scale",
+                "min",
+                "max",
+                "choices",
+                "hasPattern");
+
+        // Intent 261016-business-data-views の U2 の BR14.1・BR14.2: 検証の材料はすべてのカラムで省かずに出す（型に当たらない項目は
+        // null、required・nullable は必ず真偽値）。
+        for (String field : List.of("listColumns", "detailColumns")) {
+            assertThat((List<Map<String, Object>>) definition.get(field)).allSatisfy(column -> {
+                assertThat(column).containsKeys(items.toArray(String[]::new));
+                assertThat(column.get("required")).isInstanceOf(Boolean.class);
+                assertThat(column.get("nullable")).isInstanceOf(Boolean.class);
+                assertThat(column.get("hasPattern")).isInstanceOf(Boolean.class);
+            });
+        }
+        // この利用者は READ のため入力できず、検証の値は null（nullable だけは DSL の値）。入力できるカラムの値は
+        // AbstractBusinessDataWriteIT#definitionForWrites が確かめる。
+        assertThat(columnOf(definition, "detailColumns", "name"))
+                .containsEntry("editableOnCreate", false)
+                .containsEntry("required", false)
+                .containsEntry("nullable", true)
+                .containsEntry("maxLength", null)
+                .containsEntry("choices", List.of())
+                .containsEntry("hasPattern", false);
+    }
+
     // ── 値の受け渡し ──
 
     @Test

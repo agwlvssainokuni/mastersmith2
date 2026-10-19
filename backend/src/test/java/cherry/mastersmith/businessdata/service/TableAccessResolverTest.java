@@ -46,7 +46,7 @@ class TableAccessResolverTest {
     void setUp() {
         ports = new FakeBusinessDataPorts();
         ports.resolver.snapshot = BusinessDataServiceFixture.snapshot();
-        resolver = new TableAccessResolver(ports.resolver, ports.readAccess);
+        resolver = new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess);
     }
 
     private TableAccessResolution resolve(String schema, String table) {
@@ -65,8 +65,30 @@ class TableAccessResolverTest {
             assertThat(view.column("code").orElseThrow().valueType()).isEqualTo(ValueType.INTEGER);
             assertThat(view.operations()).containsExactlyInAnyOrder(AllowedOperation.LIST, AllowedOperation.DETAIL);
             assertThat(view.definitionId()).isEqualTo(new DefinitionId(BusinessDataDslFixture.HASH, 7L));
-            assertThat(view.writeConfigured()).isFalse();
+            assertThat(view.writeConfigured()).as("書き込みの口に設定がある（U2）").isTrue();
         });
+    }
+
+    @Test
+    @DisplayName("without write settings the view says writing is not configured and allows no write operation")
+    void writeNotConfigured() {
+        ports.writeAccess.product = Optional.empty();
+
+        TableAccessView view = ((TableAccessResolution.Resolved) resolve("sample", "item")).view();
+
+        assertThat(view.writeConfigured()).isFalse();
+        assertThat(view.operations()).doesNotContain(AllowedOperation.CREATE, AllowedOperation.UPDATE);
+    }
+
+    @Test
+    @DisplayName("the view carries the write rules and the definition items of every visible column (BR14.1)")
+    void writeRulesAndDefinitionItems() {
+        TableAccessView view = ((TableAccessResolution.Resolved) resolve("sample", "item")).view();
+
+        assertThat(view.writeRules("code")).isPresent();
+        assertThat(view.writeRules("cost")).as("NONE のカラムは持たない").isEmpty();
+        assertThat(view.columns()).allSatisfy(c -> assertThat(c.validation()).isNotNull());
+        assertThat(view.foreignKeys()).isEmpty();
     }
 
     @Test

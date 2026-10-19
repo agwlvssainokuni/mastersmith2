@@ -217,20 +217,27 @@ class BusinessDataTimeoutIT {
         if (product == DatabaseProduct.POSTGRESQL) {
             env.relay().arm("COUNT(");
         } else {
-            // MySQL・MariaDB は既定で TLS のため目印の文字が見えない。貸し出しの始めの文を通し、次の件数の問い合わせで止める。通す
-            // まとまりの数は、手元の確かめで MySQL 9.7（Connector/J）は2つ（SET time_zone の前にもう1つ送る）、MariaDB（3.5）は1つ
-            // だった（generation-notes.md）。止めた段が件数の問い合わせであることは、503 TIMEOUT（貸し出しの始めで止めると UNAVAILABLE）
-            // で確かめる。
-            env.relay().armAfterLargeChunks(product == DatabaseProduct.MYSQL ? 2 : 1);
+            // MySQL・MariaDB は目印の文字で止めない（MySQL は既定で TLS）。件数の段の最初のまとまりで止める。U2 で時差の文を接続を
+            // 作るときの初期化に移した（D5）ため、貸すたびの SET time_zone は無い。手元の確かめ（DB の general_log）で、1回の一覧は
+            // MySQL 9.7（Connector/J）が「SET sql_select_limit=1・件数・SET sql_select_limit=20・ページ」、MariaDB（3.5）が「件数・
+            // ページ」のまとまりになった。どちらも最初のまとまり（MySQL は件数の前の SET、MariaDB は件数）で止める（U1 の G23 の続き、
+            // U2 の generation-notes.md の N20）。MySQL で件数の問い合わせそのものを止めると、Connector/J の文の上限で 503 TIMEOUT に
+            // なった後に壊れた接続がプールに戻り、次の1回が 503 UNAVAILABLE になる（U2 の G15）。止めた段が件数の段であることは、503
+            // TIMEOUT（貸し出しの始めで止めると UNAVAILABLE）で確かめる。
+            env.relay().armAfterLargeChunks(0);
         }
         Timed stalled =
                 timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
         int stalledConnections = env.relay().stalledCount();
+        String report = env.relay().stallReport();
         env.relay().release();
         Timed next =
                 timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
 
-        assertThat(stalledConnections).as("中継が問い合わせで止めた").isEqualTo(1);
+        assertThat(stalledConnections).as("中継が問い合わせで止めた " + report).isEqualTo(1);
+        assertThat(stalled.response().statusCode())
+                .as(report + " " + stalled.response().body())
+                .isEqualTo(503);
         assertProblem(
                 stalled,
                 503,

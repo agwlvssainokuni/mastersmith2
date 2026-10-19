@@ -138,6 +138,8 @@ trap cleanup EXIT
 admin_password=$(rand)
 db_admin_password=$(rand)
 db_reader_password=$(rand)
+# 見本の対象DB の初期化の台本 03-writer-account.sh は書き込みのパスワードが空だと止まるため、使わなくても作る（U2。値は表示しない）。
+db_writer_password=$(rand)
 (
   umask 077
   {
@@ -159,12 +161,13 @@ db_reader_password=$(rand)
     printf 'POSTGRES_PASSWORD=%s\nMYSQL_ROOT_PASSWORD=%s\nMARIADB_ROOT_PASSWORD=%s\n' \
       "${db_admin_password}" "${db_admin_password}" "${db_admin_password}"
     printf 'MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD=%s\n' "${db_reader_password}"
+    printf 'MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD=%s\n' "${db_writer_password}"
   } > "${TMP}/targetdb.env"
   printf '{"email":"%s","password":"%s"}' "${ADMIN_EMAIL}" "${admin_password}" > "${TMP}/login.json"
   # 画面の時間の台本（perf/ui/dsl-ui-timing.mjs）が読む。
   printf 'PERF_ADMIN_EMAIL=%s\nPERF_ADMIN_PASSWORD=%s\n' "${ADMIN_EMAIL}" "${admin_password}" > "${TMP}/ui.env"
 )
-unset admin_password db_admin_password
+unset admin_password db_admin_password db_writer_password
 export MASTERSMITH_PERF_ENV_FILE="${TMP}/app.env" MASTERSMITH_PERF_TARGETDB_ENV_FILE="${TMP}/targetdb.env"
 
 mkdir -p "${OUT_DIR}"

@@ -141,6 +141,15 @@ class ColumnValueCodecTest {
                 .contains(new BigDecimal("18446744073709551615"));
         assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint"), "18446744073709551616"))
                 .isEmpty();
+        // PostgreSQL の int8 は符号つきの範囲だけ（U2 の BR3.5。上限ちょうどは受け付け、1 を超えると空）。
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "int8"), "9223372036854775807"))
+                .map(BoundValue::value)
+                .contains(new BigDecimal("9223372036854775807"));
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "int8"), "9223372036854775808"))
+                .isEmpty();
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "int8"), "-9223372036854775808"))
+                .map(BoundValue::value)
+                .contains(new BigDecimal("-9223372036854775808"));
         assertThat(codec.read(access(ValueType.DECIMAL, "numeric"), "-1234567890123456789012345678.0123456789"))
                 .map(b -> ((BigDecimal) b.value()).toPlainString())
                 .contains("-1234567890123456789012345678.0123456789");
@@ -293,5 +302,78 @@ class ColumnValueCodecTest {
                 .isInstanceOf(CellValue.Unreadable.class);
         assertThat(codec.readCell(text, 3, ValueType.DATETIME, Integer.MAX_VALUE, mariadb))
                 .isEqualTo(new CellValue.Text("2026-03-08T02:30:00.123456", false));
+    }
+
+    @Test
+    @DisplayName("fractional digits come from the type name, then the DSL precision, then the database default")
+    void fractionDigits() {
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.POSTGRESQL),
+                                column("t").dbType("timestamptz").build())
+                        .fractionDigits())
+                .isEqualTo(6);
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.MYSQL),
+                                column("t").dbType("datetime").build())
+                        .fractionDigits())
+                .isZero();
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.MYSQL),
+                                column("t").dbType("datetime(3)").build())
+                        .fractionDigits())
+                .isEqualTo(3);
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.MARIADB),
+                                column("t").dbType("timestamp", 6).build())
+                        .fractionDigits())
+                .isEqualTo(6);
+        assertThat(ColumnValueCodec.kind(
+                                Optional.empty(), column("t").dbType("time").build())
+                        .fractionDigits())
+                .as("DB の種類が分からないときは狭める向き")
+                .isZero();
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.POSTGRESQL),
+                                column("d").dbType("date").build())
+                        .fractionDigits())
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("typed values are written back as the same text as read values")
+    void formatTypedValues() {
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.INTEGER, 7L)))
+                .isEqualTo("7");
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.DECIMAL, new BigDecimal("1.50"))))
+                .isEqualTo("1.50");
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.BOOLEAN, Boolean.TRUE)))
+                .isEqualTo("true");
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.DATE, LocalDate.of(2026, 1, 2))))
+                .isEqualTo("2026-01-02");
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.DATETIME, LocalDateTime.of(2026, 1, 2, 3, 4, 5))))
+                .isEqualTo("2026-01-02T03:04:05");
+        assertThat(ColumnValueCodec.format(new BoundValue(
+                        ValueType.DATETIME_TZ, OffsetDateTime.of(2026, 1, 2, 12, 0, 0, 0, ZoneOffset.ofHours(9)))))
+                .isEqualTo("2026-01-02T03:00:00+00:00");
+        assertThat(ColumnValueCodec.format(new BoundValue(ValueType.STRING, null)))
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("write values are bound with typed setters and NULL keeps its SQL type")
+    void bindForWrite() throws SQLException {
+        PreparedStatement statement = mock(PreparedStatement.class);
+        ColumnValueCodec codec = new ColumnValueCodec();
+        RowDialect postgres = RowDialect.of(DatabaseProduct.POSTGRESQL);
+
+        codec.bind(
+                statement, 1, new BoundValue(ValueType.BIG_INTEGER, new BigDecimal("9223372036854775807")), postgres);
+        codec.bind(
+                statement, 2, new BoundValue(ValueType.TIME_TZ, OffsetTime.of(1, 0, 0, 0, ZoneOffset.UTC)), postgres);
+        codec.bind(statement, 3, new BoundValue(ValueType.DATETIME_TZ, null), postgres);
+
+        verify(statement).setBigDecimal(1, new BigDecimal("9223372036854775807"));
+        verify(statement).setObject(2, OffsetTime.of(1, 0, 0, 0, ZoneOffset.UTC));
+        verify(statement).setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
     }
 }

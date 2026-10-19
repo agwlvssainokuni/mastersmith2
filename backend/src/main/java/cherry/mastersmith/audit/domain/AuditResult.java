@@ -20,5 +20,10 @@ public enum AuditResult {
     /** 成功（ログインの成功・ログアウト）。 */
     SUCCESS,
     /** 失敗（ログインの失敗・アクセスの拒否）。 */
-    FAILURE
+    FAILURE,
+    /**
+     * 確定したか分からない（業務データの書き込みの確定の段の時間切れで、確定したか分からない。Intent 261016-business-data-views の U2、
+     * NFR 設計 Q5: A）。列 {@code result} は VARCHAR(16) で CHECK の制約が無いため、値を足すのに移行は要らない。
+     */
+    UNKNOWN
 }

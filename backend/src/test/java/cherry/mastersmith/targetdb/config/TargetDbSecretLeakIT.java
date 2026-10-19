@@ -59,7 +59,9 @@ class TargetDbSecretLeakIT {
                         "--mastersmith.target-db.database=business",
                         "--mastersmith.target-db.schema=sales",
                         "--mastersmith.target-db.username=" + username,
-                        "--mastersmith.target-db.password=" + password);
+                        "--mastersmith.target-db.password=" + password,
+                        "--mastersmith.target-db.write.username=" + username + "w",
+                        "--mastersmith.target-db.write.password=" + password + "w");
     }
 
     @Test
@@ -77,6 +79,11 @@ class TargetDbSecretLeakIT {
             assertThat(properties.password()).as("設定は読めている").isEqualTo(password);
             assertThat(properties.toString()).doesNotContain(password).doesNotContain(username);
             assertThat(settings.toString()).doesNotContain(password).doesNotContain(username);
+            TargetDbWriteSettings writeSettings = context.getBean(TargetDbWriteSettings.class);
+            assertThat(properties.write().password()).as("書き込みの設定も読めている").isEqualTo(password + "w");
+            assertThat(writeSettings).isInstanceOf(TargetDbWriteSettings.Usable.class);
+            assertThat(writeSettings.toString()).doesNotContain(password).doesNotContain(username);
+            assertThat(properties.write().toString()).doesNotContain(password).doesNotContain(username);
 
             result = context.getBean(TargetSchemaReader.class).readSchema(ReadPurpose.GENERATE);
         }

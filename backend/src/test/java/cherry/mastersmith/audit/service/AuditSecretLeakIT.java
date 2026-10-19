@@ -181,7 +181,12 @@ class AuditSecretLeakIT {
                         // 決めた型からの JSON で、メールアドレス・氏名・パスワード・トークンを持たない）
                         "TARGET_ROLE_ID",
                         "TARGET_GROUP_ID",
-                        "DETAIL");
+                        "DETAIL",
+                        // Intent 261016-business-data-views の U2 の V13 で足した、業務データの操作の対象の列（契約 C5。スキーマ・テーブルは
+                        // 写しの DSL の名前、作業ロールは ID で、行の値・接続先を持たない。主キーは detail）
+                        "TARGET_SCHEMA",
+                        "TARGET_TABLE",
+                        "WORK_ROLE_ID");
     }
 
     @Test

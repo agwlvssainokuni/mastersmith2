@@ -91,6 +91,15 @@ final class PostgresTestDatabase extends TargetDbTestDatabase {
     }
 
     @Override
+    public void createWriterAccount(String user, String password, String schema) {
+        execute(
+                "CREATE ROLE " + q(user) + " LOGIN PASSWORD '" + password + "'",
+                "GRANT USAGE ON SCHEMA " + q(schema) + " TO " + q(user),
+                "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA " + q(schema) + " TO " + q(user),
+                "GRANT USAGE ON ALL SEQUENCES IN SCHEMA " + q(schema) + " TO " + q(user));
+    }
+
+    @Override
     public void dropAccount(String user) {
         execute("DROP OWNED BY " + q(user), "DROP ROLE IF EXISTS " + q(user));
     }

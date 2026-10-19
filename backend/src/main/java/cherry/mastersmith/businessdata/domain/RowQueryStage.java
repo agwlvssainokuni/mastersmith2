@@ -15,10 +15,11 @@
  */
 package cherry.mastersmith.businessdata.domain;
 
-/** 行の SQL のどの段階で失敗したか（NFR 設計のレビュー R-01・R-03）。 */
+/**
+ * 行の SQL のどの段階で失敗したか（NFR 設計のレビュー R-01・R-03）。貸し出しの始めの文の段（{@code SESSION_INIT}）は、U2 の D5: A で
+ * MySQL・MariaDB のタイムゾーンを接続を作るときの初期化の文に移したため消した。
+ */
 public enum RowQueryStage {
-    /** 貸し出しの始めの文（MySQL・MariaDB の {@code SET time_zone}）。 */
-    SESSION_INIT,
     /** 文を作って値をバインドする段階。 */
     BIND,
     /** 文を実行する段階。 */

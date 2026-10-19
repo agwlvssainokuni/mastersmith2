@@ -102,7 +102,7 @@ class BusinessDataReadControllerTest {
     }
 
     @Test
-    @DisplayName("the definition carries the read items only and no validation items yet")
+    @DisplayName("the definition carries the read items and the validation items of every column (U2, BR14.1)")
     void definition() {
         when(service.definition(eq(42L), any())).thenReturn(new DefinitionResult.Found(VIEW, true));
 
@@ -123,9 +123,11 @@ class BusinessDataReadControllerTest {
                 .containsExactly("code", "name", "pw");
         assertThat(response.detailColumns().get(2).masked()).isTrue();
         assertThat(response.listColumns()).allSatisfy(c -> {
-            assertThat(c.formPart()).isNull();
-            assertThat(c.nullable()).isNull();
-            assertThat(c.choices()).isNull();
+            assertThat(c.formPart()).as("検証の材料はすべてのカラムで出す（U2 が埋める）").isEqualTo("text");
+            assertThat(c.nullable()).isTrue();
+            assertThat(c.required()).as("READ のカラムは書けないため偽").isFalse();
+            assertThat(c.choices()).isEmpty();
+            assertThat(c.maxLength()).as("書けないカラムは既定").isNull();
         });
         assertThat(response.searchFields())
                 .extracting(SearchFieldResponse::column)

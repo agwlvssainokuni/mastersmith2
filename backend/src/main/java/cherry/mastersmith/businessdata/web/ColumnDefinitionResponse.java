@@ -24,8 +24,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
 /**
- * 定義の応答のカラムの項目（契約 C2 の {@code ColumnDefinition}、BR2.8）。U1 は読み取りの項目を返す。検証の材料（{@code formPart} から
- * {@code hasPattern} まで）は {@link ColumnAccess#validation()} があるときだけ写す（U2 が埋める。U1 では出さない）。
+ * 定義の応答のカラムの項目（契約 C2 の {@code ColumnDefinition}、BR2.8）。U1 の読み取りの項目に、U2（Intent 261016-business-data-views の
+ * B4、BR14.1・BR14.2）が検証の材料（{@code formPart} から {@code hasPattern} まで）を、すべてのカラムで省かずに足す。{@code required}・
+ * {@code nullable} は必ず値を持ち、型に当たらない項目は {@code null} で出す（機能設計の承認の場の U2 R-07・U3 R-09 の決定）。値はサーバーの
+ * 検証と同じ材料（{@link ColumnAccess#validation()}）から写すだけで、別に計算しない。
  *
  * @param column カラムの名前
  * @param displayName 表示名
@@ -35,17 +37,17 @@ import java.util.List;
  * @param editableOnCreate 作成で入力できるか
  * @param editableOnUpdate 更新で入力できるか
  * @param masked password のカラムか
- * @param formPart フォーム部品（検証の材料。無ければ出さない）
- * @param required 必須か（検証の材料。無ければ出さない）
- * @param nullable NULL を許すか（検証の材料。無ければ出さない）
- * @param minLength 文字数の下限（検証の材料。無ければ出さない）
- * @param maxLength 文字数の上限（検証の材料。無ければ出さない）
- * @param precision 精度（検証の材料。無ければ出さない）
- * @param scale 小数の桁（検証の材料。無ければ出さない）
- * @param min 値の下限（検証の材料。無ければ出さない）
- * @param max 値の上限（検証の材料。無ければ出さない）
- * @param choices 固定の選択肢（検証の材料。無ければ出さない）
- * @param hasPattern 正規表現の検証があるか（検証の材料。無ければ出さない）
+ * @param formPart フォーム部品（検証の材料。{@code lookup} は {@code text}）
+ * @param required 必須か（書けないカラムは偽）
+ * @param nullable NULL を許すか（DB の値のまま）
+ * @param minLength 文字数の下限（STRING だけ。ほかは null）
+ * @param maxLength 文字数の上限（STRING だけ。ほかは null）
+ * @param precision 精度（DECIMAL だけ。ほかは null）
+ * @param scale 小数の桁（DECIMAL だけ。ほかは null）
+ * @param min 値の下限（数の型だけ。ほかは null）
+ * @param max 値の上限（数の型だけ。ほかは null）
+ * @param choices 固定の選択肢（select・radio だけ。ほかは空）
+ * @param hasPattern 正規表現の検証があるか（式そのものは返さない）
  */
 public record ColumnDefinitionResponse(
         String column,
@@ -56,17 +58,17 @@ public record ColumnDefinitionResponse(
         boolean editableOnCreate,
         boolean editableOnUpdate,
         boolean masked,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String formPart,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean required,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean nullable,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Integer minLength,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Integer maxLength,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Integer precision,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Integer scale,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String min,
-        @JsonInclude(JsonInclude.Include.NON_NULL) String max,
-        @JsonInclude(JsonInclude.Include.NON_NULL) List<OptionResponse> choices,
-        @JsonInclude(JsonInclude.Include.NON_NULL) Boolean hasPattern) {
+        @JsonInclude(JsonInclude.Include.ALWAYS) String formPart,
+        boolean required,
+        boolean nullable,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer minLength,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer maxLength,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer precision,
+        @JsonInclude(JsonInclude.Include.ALWAYS) Integer scale,
+        @JsonInclude(JsonInclude.Include.ALWAYS) String min,
+        @JsonInclude(JsonInclude.Include.ALWAYS) String max,
+        List<OptionResponse> choices,
+        boolean hasPattern) {
 
     /**
      * カラムの見せ方から作る。
@@ -86,8 +88,8 @@ public record ColumnDefinitionResponse(
                 column.editableOnUpdate(),
                 column.masked(),
                 v == null ? null : v.formPart().dslName(),
-                v == null ? null : v.required(),
-                v == null ? null : v.nullable(),
+                v != null && v.required(),
+                v != null && v.nullable(),
                 v == null ? null : v.minLength(),
                 v == null ? null : v.maxLength(),
                 v == null ? null : v.precision(),
@@ -95,8 +97,8 @@ public record ColumnDefinitionResponse(
                 v == null ? null : v.min(),
                 v == null ? null : v.max(),
                 v == null
-                        ? null
+                        ? List.of()
                         : v.choices().stream().map(OptionResponse::from).toList(),
-                v == null ? null : v.hasPattern());
+                v != null && v.hasPattern());
     }
 }

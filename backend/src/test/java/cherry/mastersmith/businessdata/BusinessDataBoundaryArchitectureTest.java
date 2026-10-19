@@ -101,8 +101,15 @@ class BusinessDataBoundaryArchitectureTest {
                 .distinct()
                 .toList();
         assertThat(callers)
-                .as("規則が呼び出しを見分けている（RowSqlExecutor の search・detail が実際に文を作っている）")
-                .containsExactlyInAnyOrder("RowSqlExecutor#search", "RowSqlExecutor#detail");
+                .as("規則が呼び出しを見分けている（RowSqlExecutor の読み取りの search・detail と、U2 の書き込みの5つのメソッドが実際に文を" + "作っている。U2 の計画の A2）")
+                .containsExactlyInAnyOrder(
+                        "RowSqlExecutor#search",
+                        "RowSqlExecutor#detail",
+                        "RowSqlExecutor#precheckUnique",
+                        "RowSqlExecutor#insert",
+                        "RowSqlExecutor#update",
+                        "RowSqlExecutor#delete",
+                        "RowSqlExecutor#inspectViolation");
         noClasses()
                 .that()
                 .resideInAPackage(BUSINESSDATA)
@@ -139,14 +146,61 @@ class BusinessDataBoundaryArchitectureTest {
     }
 
     @Test
-    @DisplayName("no other feature depends on businessdata")
-    void nobodyDependsOnBusinessData() {
+    @DisplayName(
+            "the write side of businessdata opens no transaction of the internal database and uses no JdbcTemplate")
+    void noTransactionsOnTheWriteSide() {
+        // U2 の計画の 3節の足す決まり（BR9.4）。対象DB の書き込みのトランザクションは targetdb.service の書き込みの口だけが持つ。
         noClasses()
                 .that()
-                .resideOutsideOfPackage(BUSINESSDATA)
+                .resideInAnyPackage(
+                        "cherry.mastersmith.businessdata.web..",
+                        "cherry.mastersmith.businessdata.domain..",
+                        "cherry.mastersmith.businessdata.repository..")
+                .or()
+                .haveFullyQualifiedName("cherry.mastersmith.businessdata.service.BusinessDataWriteService")
+                .should()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.transaction.annotation.Transactional")
+                .orShould()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.transaction.support.TransactionTemplate")
+                .orShould()
+                .dependOnClassesThat()
+                .haveFullyQualifiedName("org.springframework.jdbc.core.JdbcTemplate")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("only audit depends on businessdata, and only on its domain for the change event and the audit reason")
+    void nobodyDependsOnBusinessDataButAuditOnTheDomain() {
+        // 規則が依存を見分けていることの確かめ（audit → businessdata.domain が実際にある。U2 の計画の A1・D6: A）。
+        assertThat(CLASSES.stream()
+                        .filter(javaClass -> javaClass.getPackageName().startsWith("cherry.mastersmith.audit"))
+                        .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
+                        .anyMatch(dependency -> dependency
+                                .getTargetClass()
+                                .getPackageName()
+                                .equals("cherry.mastersmith.businessdata.domain")))
+                .isTrue();
+        noClasses()
+                .that()
+                .resideOutsideOfPackages(BUSINESSDATA, "cherry.mastersmith.audit..")
                 .should()
                 .dependOnClassesThat()
                 .resideInAPackage(BUSINESSDATA)
+                .check(CLASSES);
+        // audit が使ってよいのは、出来事（BusinessDataChangedEvent）と監査の理由の値（BusinessDataAuditReason）を置く domain だけ
+        // （契約 C5 の向き。role・group などの出来事と同じ形）。
+        noClasses()
+                .that()
+                .resideInAPackage("cherry.mastersmith.audit..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage(
+                        "cherry.mastersmith.businessdata.service..",
+                        "cherry.mastersmith.businessdata.repository..",
+                        "cherry.mastersmith.businessdata.web..",
+                        "cherry.mastersmith.businessdata")
                 .check(CLASSES);
     }
 }

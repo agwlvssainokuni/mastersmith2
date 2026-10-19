@@ -80,12 +80,15 @@ class RowDialectTest {
     }
 
     @Test
-    @DisplayName("only MySQL and MariaDB set the session time zone to UTC first")
-    void sessionInit() {
-        assertThat(POSTGRES.needsUtcSession()).isFalse();
-        assertThat(MYSQL.needsUtcSession()).isTrue();
-        assertThat(MARIADB.needsUtcSession()).isTrue();
-        assertThat(RowSqlExecutor.SET_TIME_ZONE_UTC).isEqualTo("SET time_zone = '+00:00'");
+    @DisplayName(
+            "a create without values uses the default form of each database and only PostgreSQL reads keys by name")
+    void writeForms() {
+        assertThat(POSTGRES.insertWithoutValues("\"s\".\"t\"")).isEqualTo("INSERT INTO \"s\".\"t\" DEFAULT VALUES");
+        assertThat(MYSQL.insertWithoutValues("`s`.`t`")).isEqualTo("INSERT INTO `s`.`t` () VALUES ()");
+        assertThat(MARIADB.insertWithoutValues("`s`.`t`")).isEqualTo("INSERT INTO `s`.`t` () VALUES ()");
+        assertThat(POSTGRES.readsGeneratedKeysByName()).isTrue();
+        assertThat(MYSQL.readsGeneratedKeysByName()).isFalse();
+        assertThat(MARIADB.readsGeneratedKeysByName()).isFalse();
         assertThat(MARIADB.product()).isEqualTo(DatabaseProduct.MARIADB);
     }
 

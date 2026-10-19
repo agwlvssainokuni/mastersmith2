@@ -26,8 +26,9 @@ import java.time.ZoneOffset;
 import java.util.Set;
 
 /**
- * MySQL・MariaDB の行の SQL の方言（BR5.5・BR7.3・BR7.7・BR7.9）。時差つきの型（{@code timestamp}）は、貸し出しの始めに
- * {@code SET time_zone = '+00:00'} を流した後に、UTC の時差の無い日時として読み書きする（T1）。
+ * MySQL・MariaDB の行の SQL の方言（BR5.5・BR7.3・BR7.7・BR7.9）。時差つきの型（{@code timestamp}）は、接続を作るときの初期化の文
+ * （{@code connectionInitSql} の {@code SET time_zone = '+00:00'}。読み取りのプールと書き込みのプールの両方。U2 の D5: A）の上で、UTC の
+ * 時差の無い日時として読み書きする（T1）。
  */
 public final class MysqlFamilyRowDialect implements RowDialect {
 
@@ -52,8 +53,13 @@ public final class MysqlFamilyRowDialect implements RowDialect {
     }
 
     @Override
-    public boolean needsUtcSession() {
-        return true;
+    public String insertWithoutValues(String table) {
+        return "INSERT INTO " + table + " () VALUES ()";
+    }
+
+    @Override
+    public boolean readsGeneratedKeysByName() {
+        return false;
     }
 
     @Override
@@ -86,7 +92,7 @@ public final class MysqlFamilyRowDialect implements RowDialect {
 
     @Override
     public OffsetDateTime readDateTimeTz(ResultSet resultSet, int index) throws SQLException {
-        // 貸し出しの始めに time_zone を +00:00 にしているため、サーバーが送る文字は UTC の日時（ゼロの日時は読めずに例外になる）。
+        // 接続を作るときに time_zone を +00:00 にしているため、サーバーが送る文字は UTC の日時（ゼロの日時は読めずに例外になる）。
         String text = resultSet.getString(index);
         return text == null ? null : ColumnValueCodec.parseLocalDateTime(text).atOffset(ZoneOffset.UTC);
     }

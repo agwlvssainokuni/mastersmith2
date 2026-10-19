@@ -56,11 +56,13 @@ class AuditMigrationCompatibilityIT {
 
     /**
      * 今の版の最後の移行の番号（クラスパスの移行をすべて当てたときの版）。Intent 261004-role-menu の B4 で V11 を足したため 11 に、B5 で
-     * V12 を足したため 12 にした（依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。
+     * V12 を足したため 12 にした（依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。Intent
+     * 261016-business-data-views の B4 で V13（監査の3列 target_schema・target_table・work_role_id）を足したため 13 にした。前の版
+     * （V1〜V9）との互換の確かめは、そのまま V13 の3列にも当てる（NFR 要件のレビューの R-06）。
      */
-    private static final int CURRENT_LAST_VERSION = 12;
+    private static final int CURRENT_LAST_VERSION = 13;
 
-    /** 前の版の後に今の版が当てる移行の数（V10〜V12）。 */
+    /** 前の版の後に今の版が当てる移行の数（V10〜V13）。 */
     private static final int MIGRATIONS_AFTER_PREVIOUS = CURRENT_LAST_VERSION - PREVIOUS_LAST_VERSION;
 
     private static final Pattern VERSIONED = Pattern.compile("V(\\d+)__.+\\.sql");
@@ -151,7 +153,8 @@ class AuditMigrationCompatibilityIT {
         assertThat(current.targetSchemaVersion).isEqualTo(String.valueOf(CURRENT_LAST_VERSION));
         Map<String, Object> row =
                 jdbc.queryForMap("SELECT event_type, result, source_ip, actor_user_id, target_user_id,"
-                        + " target_role_id, target_group_id, detail FROM audit_events WHERE trace_id = 'trace-0050'");
+                        + " target_role_id, target_group_id, detail, target_schema, target_table, work_role_id"
+                        + " FROM audit_events WHERE trace_id = 'trace-0050'");
         assertThat(row)
                 .containsEntry("EVENT_TYPE", "USER_RESUMED")
                 .containsEntry("RESULT", "SUCCESS")
@@ -160,7 +163,10 @@ class AuditMigrationCompatibilityIT {
                 .containsEntry("TARGET_USER_ID", 62L)
                 .containsEntry("TARGET_ROLE_ID", null)
                 .containsEntry("TARGET_GROUP_ID", null)
-                .containsEntry("DETAIL", null);
+                .containsEntry("DETAIL", null)
+                .containsEntry("TARGET_SCHEMA", null)
+                .containsEntry("TARGET_TABLE", null)
+                .containsEntry("WORK_ROLE_ID", null);
     }
 
     @Test
@@ -177,11 +183,14 @@ class AuditMigrationCompatibilityIT {
                 OffsetDateTime.parse("2026-10-08T04:00:00Z"));
 
         assertThat(inserted).isEqualTo(1);
-        assertThat(jdbc.queryForMap("SELECT target_role_id, target_group_id, detail FROM audit_events"
-                        + " WHERE trace_id = 'trace-0051'"))
+        assertThat(jdbc.queryForMap("SELECT target_role_id, target_group_id, detail, target_schema, target_table,"
+                        + " work_role_id FROM audit_events WHERE trace_id = 'trace-0051'"))
                 .containsEntry("TARGET_ROLE_ID", null)
                 .containsEntry("TARGET_GROUP_ID", null)
-                .containsEntry("DETAIL", null);
+                .containsEntry("DETAIL", null)
+                .containsEntry("TARGET_SCHEMA", null)
+                .containsEntry("TARGET_TABLE", null)
+                .containsEntry("WORK_ROLE_ID", null);
     }
 
     @Test

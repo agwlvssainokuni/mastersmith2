@@ -44,8 +44,13 @@ public final class PostgresRowDialect implements RowDialect {
     }
 
     @Override
-    public boolean needsUtcSession() {
-        return false;
+    public String insertWithoutValues(String table) {
+        return "INSERT INTO " + table + " DEFAULT VALUES";
+    }
+
+    @Override
+    public boolean readsGeneratedKeysByName() {
+        return true;
     }
 
     @Override

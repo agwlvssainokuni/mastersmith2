@@ -17,9 +17,15 @@ package cherry.mastersmith.businessdata.testsupport;
 
 import cherry.mastersmith.businessdata.domain.PageRequest;
 import cherry.mastersmith.businessdata.domain.RowKey;
+import cherry.mastersmith.businessdata.domain.RowValues;
 import cherry.mastersmith.businessdata.domain.SearchCondition;
 import cherry.mastersmith.businessdata.domain.TableAccessView;
+import cherry.mastersmith.businessdata.domain.TypedValue;
+import cherry.mastersmith.businessdata.repository.RowChangeResult;
 import cherry.mastersmith.businessdata.repository.RowDetailResult;
+import cherry.mastersmith.businessdata.repository.RowInsertResult;
+import cherry.mastersmith.businessdata.repository.RowInspectResult;
+import cherry.mastersmith.businessdata.repository.RowPrecheckResult;
 import cherry.mastersmith.businessdata.repository.RowSearchResult;
 import cherry.mastersmith.businessdata.repository.RowSqlExecutor;
 import cherry.mastersmith.role.domain.EffectivePermission;
@@ -31,13 +37,22 @@ import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import cherry.mastersmith.targetdb.domain.ReadPurpose;
 import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
 import cherry.mastersmith.targetdb.domain.TargetReadSession;
+import cherry.mastersmith.targetdb.domain.TargetWriteFailure;
+import cherry.mastersmith.targetdb.domain.TargetWriteOutcome;
+import cherry.mastersmith.targetdb.domain.TargetWriteSession;
+import cherry.mastersmith.targetdb.domain.TargetWriteStage;
+import cherry.mastersmith.targetdb.domain.WriteStep;
 import cherry.mastersmith.targetdb.service.TargetReadAccess;
+import cherry.mastersmith.targetdb.service.TargetWriteAccess;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import org.mockito.Mockito;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * businessdata の業務処理の層のテストで使う、手で書いた小さな偽物（unit-test-instructions.md の 6節）。呼んだ順と回数を1つの記録に
@@ -56,6 +71,85 @@ public final class FakeBusinessDataPorts {
 
     /** 行の SQL の部品の偽物。 */
     public final Executor executor = new Executor();
+
+    /** 書き込みの口の偽物（U2）。 */
+    public final WriteAccess writeAccess = new WriteAccess();
+
+    /** 出来事の発行の偽物（U2）。発行した出来事を残す。 */
+    public final List<Object> events = new ArrayList<>();
+
+    /** 出来事の発行の偽物（U2）。 */
+    public final ApplicationEventPublisher publisher = event -> {
+        calls.add("event");
+        events.add(event);
+    };
+
+    /** 書き込みの口の答え方（U2）。 */
+    public enum WriteMode {
+        /** 処理を呼び、答えに従って Done を返す。 */
+        DONE,
+        /** 設定が無い。 */
+        NOT_CONFIGURED,
+        /** 借りられない。 */
+        UNAVAILABLE,
+        /** 処理を呼び、答えによらず決めた失敗を返す（確定の段の失敗など）。 */
+        FAILED,
+        /** 処理を呼び、セーブポイントへの戻しを決めた失敗にする。 */
+        INSPECT_FAILS
+    }
+
+    /** 書き込みの口の偽物（U2）。答えの種類を {@link #answers} に残す。 */
+    public final class WriteAccess implements TargetWriteAccess {
+
+        /** 答え方。 */
+        public WriteMode mode = WriteMode.DONE;
+
+        /** DB の種類（空なら書き込みの設定が無い）。 */
+        public Optional<DatabaseProduct> product = Optional.of(DatabaseProduct.POSTGRESQL);
+
+        /** FAILED・INSPECT_FAILS で返す失敗。 */
+        public TargetWriteFailure failure =
+                new TargetWriteFailure(TargetWriteStage.COMMIT, "08006", 0, "java.sql.SQLException", true);
+
+        /** 処理の答えの種類。 */
+        public final List<String> answers = new ArrayList<>();
+
+        @Override
+        public <T> TargetWriteOutcome<T> withWrite(Function<TargetWriteSession, WriteStep<T>> work) {
+            calls.add("withWrite");
+            return switch (mode) {
+                case NOT_CONFIGURED -> new TargetWriteOutcome.NotConfigured<>();
+                case UNAVAILABLE -> new TargetWriteOutcome.Unavailable<>("08001", 0, "java.sql.SQLException");
+                case FAILED -> {
+                    answers.add(work.apply(session()).toString());
+                    yield new TargetWriteOutcome.Failed<>(failure);
+                }
+                case DONE, INSPECT_FAILS -> {
+                    WriteStep<T> step = work.apply(session());
+                    answers.add(step.toString());
+                    yield new TargetWriteOutcome.Done<>(
+                            switch (step) {
+                                case WriteStep.Commit<T> commit -> commit.result();
+                                case WriteStep.Rollback<T> rollback -> rollback.result();
+                                case WriteStep.RollbackToSavepointThenInspect<T> inspect ->
+                                    mode == WriteMode.INSPECT_FAILS
+                                            ? inspect.onFailure().apply(failure)
+                                            : inspect.inspect().apply(session());
+                            });
+                }
+            };
+        }
+
+        private TargetWriteSession session() {
+            return new TargetWriteSession(
+                    product.orElse(DatabaseProduct.POSTGRESQL), Mockito.mock(Connection.class), 5, () -> {});
+        }
+
+        @Override
+        public Optional<DatabaseProduct> product() {
+            return product;
+        }
+    }
 
     /** 読み取りの口の答え方。 */
     public enum Mode {
@@ -146,6 +240,65 @@ public final class FakeBusinessDataPorts {
         public RowDetailResult detail(TargetReadSession session, TableAccessView view, RowKey key) {
             calls.add("detail");
             return detailResult;
+        }
+
+        /** 事前の問い合わせの答え（U2）。 */
+        public RowPrecheckResult precheckResult = new RowPrecheckResult.Clear();
+
+        /** 作成の答え（U2）。 */
+        public RowInsertResult insertResult =
+                new RowInsertResult.Inserted(new RowValues(Map.of("id", "101"), Set.of()));
+
+        /** 更新の答え（U2）。 */
+        public RowChangeResult updateResult = new RowChangeResult.Changed(1);
+
+        /** 削除の答え（U2）。 */
+        public RowChangeResult deleteResult = new RowChangeResult.Changed(1);
+
+        /** 確かめの答え（U2）。 */
+        public RowInspectResult inspectResult = new RowInspectResult.Inspected(Optional.of("name"));
+
+        /** 受け取った型つきの値（U2）。 */
+        public List<TypedValue> values;
+
+        @Override
+        public RowPrecheckResult precheckUnique(
+                TargetWriteSession session, TableAccessView view, List<TypedValue> values, RowKey self) {
+            calls.add("precheck");
+            this.values = values;
+            return precheckResult;
+        }
+
+        @Override
+        public RowInsertResult insert(TargetWriteSession session, TableAccessView view, List<TypedValue> values) {
+            calls.add("insert");
+            this.values = values;
+            return insertResult;
+        }
+
+        @Override
+        public RowChangeResult update(
+                TargetWriteSession session, TableAccessView view, List<TypedValue> values, RowKey key) {
+            calls.add("update");
+            this.values = values;
+            return updateResult;
+        }
+
+        @Override
+        public RowChangeResult delete(TargetWriteSession session, TableAccessView view, RowKey key) {
+            calls.add("delete");
+            return deleteResult;
+        }
+
+        @Override
+        public RowInspectResult inspectViolation(
+                TargetWriteSession session,
+                TableAccessView view,
+                boolean reference,
+                List<TypedValue> values,
+                RowKey self) {
+            calls.add(reference ? "inspectReference" : "inspectUnique");
+            return inspectResult;
         }
     }
 }

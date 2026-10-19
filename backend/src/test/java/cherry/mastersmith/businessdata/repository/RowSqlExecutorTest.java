@@ -168,7 +168,7 @@ class RowSqlExecutorTest {
     }
 
     @Test
-    @DisplayName("MySQL sets the session time zone once first and uses backticks and IS NULL ordering")
+    @DisplayName("MySQL runs no session statement on lending and uses backticks and IS NULL ordering")
     void mysqlSearchShape() throws SQLException {
         when(firstResult.next()).thenReturn(true);
         when(firstResult.getLong(1)).thenReturn(1L);
@@ -176,9 +176,9 @@ class RowSqlExecutorTest {
 
         executor.search(session(DatabaseProduct.MYSQL), VIEW, List.of(), new PageRequest(1, 50, null));
 
-        InOrder order = inOrder(connection, init);
-        order.verify(connection).createStatement();
-        order.verify(init).execute("SET time_zone = '+00:00'");
+        // タイムゾーンは接続を作るときの初期化の文で付けるため、貸し出しの始めの文は流さない（U2 の D5: A）。
+        verify(connection, never()).createStatement();
+        InOrder order = inOrder(connection);
         order.verify(connection).prepareStatement("SELECT COUNT(*) FROM `sample`.`item`");
         order.verify(connection)
                 .prepareStatement("SELECT t.`code`, t.`code`, SUBSTRING(t.`name`, 1, 101), t.`price`"
@@ -186,8 +186,6 @@ class RowSqlExecutorTest {
                         + " ORDER BY `price` IS NULL DESC, `price` DESC, `code` IS NULL ASC, `code` ASC LIMIT ? OFFSET ?) p"
                         + " ON t.`code` = p.`code` ORDER BY t.`price` IS NULL DESC, t.`price` DESC,"
                         + " t.`code` IS NULL ASC, t.`code` ASC");
-        verify(connection, times(1)).createStatement();
-        verify(init).setQueryTimeout(5);
         verify(second).setLong(1, 50L);
         verify(second).setLong(2, 0L);
     }
@@ -262,17 +260,10 @@ class RowSqlExecutorTest {
     }
 
     @Test
-    @DisplayName("failures of the session time zone and unchecked failures while binding become results")
+    @DisplayName("unchecked failures while binding become results")
     void sessionAndBindFailures() throws SQLException {
-        when(init.execute(anyString())).thenThrow(new SQLException("x", "42000", 1064));
-        RowSearchResult session =
-                executor.search(session(DatabaseProduct.MARIADB), VIEW, List.of(), new PageRequest(1, 20, null));
-        assertThat(((RowSearchResult.Failed) session).failure().reason()).isEqualTo(RowQueryFailureReason.UNAVAILABLE);
-        verify(connection, never()).prepareStatement(anyString());
-
         connection = mock(Connection.class);
         when(connection.prepareStatement(anyString())).thenReturn(first);
-        when(connection.createStatement()).thenReturn(init);
         org.mockito.Mockito.doThrow(new IllegalStateException("bad"))
                 .when(first)
                 .setString(anyInt(), anyString());

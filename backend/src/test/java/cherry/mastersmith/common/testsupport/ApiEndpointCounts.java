@@ -24,8 +24,11 @@ package cherry.mastersmith.common.testsupport;
  */
 public final class ApiEndpointCounts {
 
-    /** 今ある API の口の数（2026-10-19 の時点。Intent 261016-business-data-views の U1 で3本足した。静的な検査の {@code ApiAccessRules.endpointKeys} で数えた）。 */
-    public static final int MIN_ENDPOINTS = 70;
+    /**
+     * 今ある API の口の数（2026-10-20 の時点。Intent 261016-business-data-views の U1 で読み取りの3本、U2 で書き込みの3本を足した。静的な
+     * 検査の {@code ApiAccessRules.endpointKeys} で数えた）。
+     */
+    public static final int MIN_ENDPOINTS = 73;
 
     private ApiEndpointCounts() {}
 }

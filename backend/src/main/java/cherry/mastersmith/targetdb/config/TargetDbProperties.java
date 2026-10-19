@@ -36,6 +36,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param connectTimeout 接続の待ちの上限（既定 3 秒）
  * @param queryTimeout 問い合わせ1回の待ちの上限（目的ごと）
  * @param pool 接続のプールの設定
+ * @param write 書き込みの接続の設定（Intent 261016-business-data-views の U2、BR9.1。接続先は読み取りの設定をそのまま使い、資格情報と
+ *     プールだけを足す）
  */
 @ConfigurationProperties("mastersmith.target-db")
 public record TargetDbProperties(
@@ -48,7 +50,8 @@ public record TargetDbProperties(
         String password,
         @DefaultValue("3s") Duration connectTimeout,
         @DefaultValue QueryTimeout queryTimeout,
-        @DefaultValue Pool pool) {
+        @DefaultValue Pool pool,
+        @DefaultValue Write write) {
 
     /** 設定の接頭辞。 */
     public static final String PREFIX = "mastersmith.target-db";
@@ -59,8 +62,9 @@ public record TargetDbProperties(
     /** 空の値（環境変数の値が空など）で null になった項目を既定値にする。 */
     public TargetDbProperties {
         connectTimeout = connectTimeout == null ? DEFAULT_CONNECT_TIMEOUT : connectTimeout;
-        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null, null, null) : queryTimeout;
+        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null, null, null, null) : queryTimeout;
         pool = pool == null ? new Pool(null, null) : pool;
+        write = write == null ? new Write(null, null, null) : write;
     }
 
     /**
@@ -70,12 +74,15 @@ public record TargetDbProperties(
      * @param compare 照合のとき（既定 5 秒）
      * @param list 業務データの一覧のとき（件数とページのそれぞれ。既定 5 秒。Intent 261016-business-data-views の NFR4.4）
      * @param detail 業務データの詳細のとき（既定 5 秒。NFR4.4）
+     * @param write 業務データの書き込みの文1回のとき（事前の問い合わせ・書き込みの文・違反の後の確かめ。既定 5 秒。U2 の NFR4.4・
+     *     BR9.5）。読み取りのプールの通信の待ち（{@link #longest()}）には入れない
      */
     public record QueryTimeout(
             @DefaultValue("20s") Duration generate,
             @DefaultValue("5s") Duration compare,
             @DefaultValue("5s") Duration list,
-            @DefaultValue("5s") Duration detail) {
+            @DefaultValue("5s") Duration detail,
+            @DefaultValue("5s") Duration write) {
 
         /** 空の値で null になった項目を既定値にする。 */
         public QueryTimeout {
@@ -83,10 +90,13 @@ public record TargetDbProperties(
             compare = compare == null ? Duration.ofSeconds(5) : compare;
             list = list == null ? Duration.ofSeconds(5) : list;
             detail = detail == null ? Duration.ofSeconds(5) : detail;
+            write = write == null ? Duration.ofSeconds(5) : write;
         }
 
         /**
-         * 4つの目的のうち、最も長い上限を返す（ドライバーの通信の待ちの計算に使う。BR8.2、基盤の設計のレビュー R-01）。
+         * 読み取りの4つの目的のうち、最も長い上限を返す（読み取りのプールのドライバーの通信の待ちの計算に使う。BR8.2、基盤の設計の
+         * レビュー R-01）。書き込みの上限は入れない（書き込みのプールは専用で、通信の待ちを書き込みの上限から別に計算する。U2 の基盤の
+         * 設計 2.1）。
          *
          * @return 最も長い上限
          */
@@ -119,8 +129,45 @@ public record TargetDbProperties(
     }
 
     /**
+     * 書き込みの接続の設定（Intent 261016-business-data-views の U2、BR9.1・NFR4.3）。ユーザー名とパスワードの両方があるときだけ
+     * 書き込みを使う（{@link TargetDbSettings#inspectWrite}）。使っていない接続を閉じるまでの時間は読み取りの
+     * {@code pool.idle-timeout} を共用する。
+     *
+     * @param username 書き込みのユーザー名（秘密に準じる。文字列にするときは有無だけ）
+     * @param password 書き込みのパスワード（秘密。文字列にするときは有無だけ）
+     * @param pool 書き込みの接続のプールの設定
+     */
+    public record Write(
+            String username, String password, @DefaultValue WritePool pool) {
+
+        /** 空の値で null になった項目を既定値にする。 */
+        public Write {
+            pool = pool == null ? new WritePool(null) : pool;
+        }
+
+        /** 資格情報の有無だけを出す（NFR4.3・NFR4.4）。 */
+        @Override
+        public String toString() {
+            return "Write[username=" + presence(username) + ", password=" + presence(password) + ", pool=" + pool + "]";
+        }
+    }
+
+    /**
+     * 書き込みの接続のプール（読み取りのプールとは別）。
+     *
+     * @param maximumSize 接続の数の上限（既定 5。対象DB のメモリを守る役目も持つ。U2 の NFR 設計 F1: A）
+     */
+    public record WritePool(@DefaultValue("5") Integer maximumSize) {
+
+        /** 空の値で null になった項目を既定値にする。 */
+        public WritePool {
+            maximumSize = maximumSize == null ? Integer.valueOf(5) : maximumSize;
+        }
+    }
+
+    /**
      * 接続先・資格情報を伏せて文字列にする（BR1.4、NFR4.2）。種類・スキーマ名・待ち時間だけを値で出し、ホスト・番号・DB の
-     * 名前・ユーザー名・パスワードは値の有無だけにする。
+     * 名前・ユーザー名・パスワードは値の有無だけにする。書き込みの資格情報も有無だけにする（U2 の NFR4.3）。
      */
     @Override
     public String toString() {
@@ -133,7 +180,8 @@ public record TargetDbProperties(
                 + ", password=" + presence(password)
                 + ", connectTimeout=" + connectTimeout
                 + ", queryTimeout=" + queryTimeout
-                + ", pool=" + pool + "]";
+                + ", pool=" + pool
+                + ", write=" + write + "]";
     }
 
     /**

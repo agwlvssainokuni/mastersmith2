@@ -19,6 +19,7 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.table;
 
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp.Target;
+import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp.Writer;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.dsl.domain.DslModel;
@@ -57,6 +58,10 @@ public final class BusinessDataSampleSchema {
 
     private final String readerPassword = TestDatabase.randomSecret();
 
+    private final String writer = TargetDbTestDatabase.uniqueName("writer_");
+
+    private final String writerPassword = TestDatabase.randomSecret();
+
     /**
      * 作る（まだ起動しない）。
      *
@@ -80,6 +85,8 @@ public final class BusinessDataSampleSchema {
                         + "', 100.00), (2, 'ノート', 250.50), (3, NULL, NULL)",
                 "INSERT INTO " + s + database.q(OTHER) + " (id, title) VALUES (1, '見本')");
         database.createReadOnlyAccount(reader, readerPassword, schema);
+        // 書き込みのアカウント（U2）。行の操作だけを持ち、DDL を持たない。読み取りだけのテストでは使わない。
+        database.createWriterAccount(writer, writerPassword, schema);
     }
 
     /**
@@ -96,13 +103,17 @@ public final class BusinessDataSampleSchema {
         database.execute(statements);
         if (database.product() == DatabaseProduct.POSTGRESQL) {
             database.execute(
-                    "GRANT SELECT ON ALL TABLES IN SCHEMA " + database.q(schema) + " TO " + database.q(reader));
+                    "GRANT SELECT ON ALL TABLES IN SCHEMA " + database.q(schema) + " TO " + database.q(reader),
+                    "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA " + database.q(schema) + " TO "
+                            + database.q(writer),
+                    "GRANT USAGE ON ALL SEQUENCES IN SCHEMA " + database.q(schema) + " TO " + database.q(writer));
         }
     }
 
     /** アカウントとスキーマを消し、コンテナを止める。 */
     public void stop() {
         try {
+            database.dropAccount(writer);
             database.dropAccount(reader);
             database.dropSchema(schema);
         } finally {
@@ -160,6 +171,38 @@ public final class BusinessDataSampleSchema {
      */
     public String readerPassword() {
         return readerPassword;
+    }
+
+    /**
+     * 書き込みのアカウントを返す（U2）。
+     *
+     * @return 書き込みのアカウント
+     */
+    public Writer writer() {
+        return new Writer(writer, writerPassword);
+    }
+
+    /**
+     * スキーマを READ、{@code item} を FULL にし、補助権限 CREATE・DELETE を与えた設定を返す（U2 の書き込みの利用者）。
+     *
+     * @return 設定
+     */
+    public Map<PermissionTarget, PermissionValues> writeSettings() {
+        Map<PermissionTarget, PermissionValues> settings = new LinkedHashMap<>();
+        settings.put(PermissionTarget.schema(schema), new PermissionValues(MainPermission.READ, false, false));
+        settings.put(PermissionTarget.table(schema, ITEM), new PermissionValues(MainPermission.FULL, true, true));
+        return settings;
+    }
+
+    /**
+     * 管理者の接続で、表の行の数を数える（アプリとは別の接続。書いた後の確かめ）。
+     *
+     * @param table テーブル
+     * @param where 条件（無ければ null。値はテストの架空の値だけ）
+     * @return 行の数
+     */
+    public long count(String table, String where) {
+        return BusinessDataWriteTables.count(database, schema, table, where);
     }
 
     /**

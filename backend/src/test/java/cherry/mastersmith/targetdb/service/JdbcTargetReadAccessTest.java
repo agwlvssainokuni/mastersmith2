@@ -67,7 +67,7 @@ class JdbcTargetReadAccessTest {
 
     private static TargetDbSettings usable() {
         return TargetDbSettings.inspect(new TargetDbProperties(
-                "mysql", HOST, "3306", "business", "sales", "reader", PASSWORD, null, null, null));
+                "mysql", HOST, "3306", "business", "sales", "reader", PASSWORD, null, null, null, null));
     }
 
     @BeforeEach

@@ -16,13 +16,16 @@
 package cherry.mastersmith.businessdata.domain;
 
 import cherry.mastersmith.dsl.domain.DslColumn;
+import cherry.mastersmith.dsl.domain.DslForeignKey;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.FormPart;
 import cherry.mastersmith.role.domain.MainPermission;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,6 +52,7 @@ public final class TableAccessPolicy {
         boolean readable = input.tableMain() != MainPermission.NONE;
         Set<String> primaryKey = Set.copyOf(table.primaryKey());
         List<ColumnAccess> columns = new ArrayList<>();
+        Map<String, ColumnWriteRules> writeRules = new LinkedHashMap<>();
         for (DslColumn column : table.columns().values()) {
             MainPermission main = readable
                     ? input.columnMain().getOrDefault(column.name(), MainPermission.NONE)
@@ -56,7 +60,10 @@ public final class TableAccessPolicy {
             if (main == MainPermission.NONE) {
                 continue;
             }
-            columns.add(columnAccess(column, main, kind(input, column.name()), primaryKey.contains(column.name())));
+            ColumnKind kind = kind(input, column.name());
+            ColumnWriteRules rules = ColumnWriteRulesFactory.create(column, kind);
+            writeRules.put(column.name(), rules);
+            columns.add(columnAccess(column, main, kind, primaryKey.contains(column.name()), rules));
         }
         Set<AllowedOperation> operations = operations(input, columns, readable);
         return new TableAccessView(
@@ -74,14 +81,33 @@ public final class TableAccessPolicy {
                 restrictionReason(input),
                 input.writeConfigured(),
                 rowLabelColumns(operations, columns, table.primaryKey()),
-                input.knownIdentifiers());
+                input.knownIdentifiers(),
+                writeRules,
+                foreignKeys(input));
+    }
+
+    /** 違反の後の確かめに使う外部キー（参照先の DSL のカラムの名前が分かるものだけ。U2 の BR6.2）。 */
+    private static List<ForeignKeyRef> foreignKeys(TableAccessInput input) {
+        List<ForeignKeyRef> keys = new ArrayList<>();
+        for (DslForeignKey key : input.table().foreignKeys()) {
+            Set<String> referenced = input.referencedColumns().get(key.referencedTable());
+            if (referenced == null
+                    || !input.knownIdentifiers().tables().contains(key.referencedTable())
+                    || !referenced.containsAll(key.referencedColumns())
+                    || key.columns().size() != key.referencedColumns().size()) {
+                continue;
+            }
+            keys.add(new ForeignKeyRef(key.columns(), key.referencedTable(), key.referencedColumns(), referenced));
+        }
+        return keys;
     }
 
     private static ColumnKind kind(TableAccessInput input, String column) {
         return input.kinds().getOrDefault(column, UNKNOWN_KIND);
     }
 
-    private static ColumnAccess columnAccess(DslColumn column, MainPermission main, ColumnKind kind, boolean key) {
+    private static ColumnAccess columnAccess(
+            DslColumn column, MainPermission main, ColumnKind kind, boolean key, ColumnWriteRules rules) {
         boolean masked = column.formPart() == FormPart.PASSWORD;
         ValueType type = kind.valueType();
         boolean binary = type == ValueType.BINARY;
@@ -110,7 +136,8 @@ public final class TableAccessPolicy {
                 editableOnCreate,
                 editableOnCreate && !key,
                 masked,
-                null);
+                // 検証の材料はサーバーの検証と同じ材料から写す（U2 の BR14.1・BR14.2）。
+                ColumnValidation.from(rules, editableOnCreate));
     }
 
     /** 許す操作（BR2.3、FR9.1 の表、BR7.9）。 */

@@ -22,6 +22,10 @@ import cherry.mastersmith.access.domain.AdminAccessDeniedEvent;
 import cherry.mastersmith.auth.domain.AuthenticationEvent;
 import cherry.mastersmith.auth.domain.AuthenticationEventType;
 import cherry.mastersmith.auth.domain.LoginFailureReason;
+import cherry.mastersmith.businessdata.domain.BusinessDataAuditReason;
+import cherry.mastersmith.businessdata.domain.BusinessDataAuditResult;
+import cherry.mastersmith.businessdata.domain.BusinessDataChangedEvent;
+import cherry.mastersmith.businessdata.domain.WriteOperation;
 import cherry.mastersmith.dslmanage.domain.DslOperationEvent;
 import cherry.mastersmith.dslmanage.domain.DslOperationType;
 import cherry.mastersmith.group.domain.GroupAuditEvent;
@@ -369,6 +373,85 @@ public final class AuditEventFactory {
                 InitialAdminRescueCondition.code(event.conditions()));
     }
 
+    /**
+     * 業務データの操作の出来事から監査イベントを作る（Intent 261016-business-data-views の U2、契約 C5、BR11.2〜BR11.4・BR11.6）。
+     *
+     * <p>操作ごとの種類で、結果（成功・失敗・確定したか分からない）と理由の値は出来事が持つ。対象のスキーマ・テーブル・作業ロールは足した
+     * 列に、主キーは {@code detail}（出来事が上限に収めて作ったもの）に置く。メールアドレス・対象の利用者・招待・ロール・グループ・DSL の
+     * 項目は空。User-Agent は上限まで切り詰める。
+     *
+     * @param event 業務データの操作の出来事
+     * @return 監査イベント
+     */
+    public static AuditEvent from(BusinessDataChangedEvent event) {
+        return AuditEvent.forBusinessData(
+                event.occurredAt(),
+                businessDataEventTypeOf(event.operation()),
+                businessDataResultOf(event.result()),
+                businessDataFailureReasonOf(event.reason()),
+                event.origin().sourceIp(),
+                AuditText.userAgent(event.origin().userAgent()),
+                event.origin().requestPath(),
+                event.origin().traceId(),
+                event.actorUserId(),
+                event.schema(),
+                event.table(),
+                event.workRoleId(),
+                event.detail());
+    }
+
+    /**
+     * 業務データの操作から監査イベントの種類を決める（Intent 261016-business-data-views の U2）。
+     *
+     * @param operation 操作
+     * @return 種類
+     */
+    public static AuditEventType businessDataEventTypeOf(WriteOperation operation) {
+        return switch (operation) {
+            case CREATE -> AuditEventType.BUSINESS_ROW_CREATED;
+            case UPDATE -> AuditEventType.BUSINESS_ROW_UPDATED;
+            case DELETE -> AuditEventType.BUSINESS_ROW_DELETED;
+        };
+    }
+
+    /**
+     * 業務データの操作の結果を監査の結果に写す（Intent 261016-business-data-views の U2、NFR 設計 Q5: A）。
+     *
+     * @param result 業務データの操作の結果
+     * @return 監査の結果
+     */
+    public static AuditResult businessDataResultOf(BusinessDataAuditResult result) {
+        return switch (result) {
+            case SUCCESS -> AuditResult.SUCCESS;
+            case FAILURE -> AuditResult.FAILURE;
+            case UNKNOWN -> AuditResult.UNKNOWN;
+        };
+    }
+
+    /**
+     * 業務データの操作の監査の理由の値を、監査の失敗の理由に写す（Intent 261016-business-data-views の U2、BR11.6。場合を尽くし、名前が
+     * 同じことに頼らない）。
+     *
+     * @param reason 監査の理由の値（成功のときは null）
+     * @return 監査の失敗の理由（成功のときは null）
+     */
+    public static AuditFailureReason businessDataFailureReasonOf(BusinessDataAuditReason reason) {
+        if (reason == null) {
+            return null;
+        }
+        return switch (reason) {
+            case BUSINESS_ROW_OP_NOT_ALLOWED -> AuditFailureReason.BUSINESS_ROW_OP_NOT_ALLOWED;
+            case BUSINESS_ROW_NOT_FOUND -> AuditFailureReason.BUSINESS_ROW_NOT_FOUND;
+            case BUSINESS_ROW_NOT_UNIQUE -> AuditFailureReason.BUSINESS_ROW_NOT_UNIQUE;
+            case BUSINESS_DUPLICATE_VALUE -> AuditFailureReason.BUSINESS_DUPLICATE_VALUE;
+            case BUSINESS_REFERENCE_NOT_FOUND -> AuditFailureReason.BUSINESS_REFERENCE_NOT_FOUND;
+            case BUSINESS_SAVE_REJECTED -> AuditFailureReason.BUSINESS_SAVE_REJECTED;
+            case BUSINESS_TARGET_DB_UNAVAILABLE -> AuditFailureReason.BUSINESS_TARGET_DB_UNAVAILABLE;
+            case BUSINESS_TARGET_DB_TIMEOUT -> AuditFailureReason.BUSINESS_TARGET_DB_TIMEOUT;
+            case BUSINESS_TARGET_DB_MISMATCH -> AuditFailureReason.BUSINESS_TARGET_DB_MISMATCH;
+        };
+    }
+
     private static AuditEvent invitationAdmin(
             AuditEventType eventType,
             long invitationId,
@@ -555,7 +638,8 @@ public final class AuditEventFactory {
      * 監査イベントの種類から結果を決める（BR1.2）。
      *
      * <p>パスワードの変更（{@link AuditEventType#PASSWORD_CHANGED}）と利用者の管理の操作の5つの種類、グループの操作の5つの種類
-     * （Intent 261004-role-menu の U3）とロールの操作の8つの種類（同じ Intent の U4）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは決められない（呼び出すと想定外の
+     * （Intent 261004-role-menu の U3）とロールの操作の8つの種類（同じ Intent の U4）、業務データの操作の3つの種類（Intent
+     * 261016-business-data-views の U2）は成功も失敗も同じ種類で、結果は出来事が持つため、種類からは決められない（呼び出すと想定外の
      * 誤り）。
      *
      * @param eventType 種類
@@ -595,7 +679,10 @@ public final class AuditEventFactory {
                     ROLE_ASSIGNED,
                     ROLE_UNASSIGNED,
                     WORK_ROLE_SWITCHED,
-                    ROLE_TRANSFER_APPLIED -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
+                    ROLE_TRANSFER_APPLIED,
+                    BUSINESS_ROW_CREATED,
+                    BUSINESS_ROW_UPDATED,
+                    BUSINESS_ROW_DELETED -> throw new IllegalArgumentException(eventType + " の結果は種類から決められません（出来事が持つ）");
         };
     }
 

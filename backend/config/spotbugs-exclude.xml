@@ -36,12 +36,24 @@
     DSL の名前と文字どおり照らしたうえで、種類ごとの名前の一覧（KnownIdentifiers）にあるものだけを SqlIdentifiers.quoteKnown で引用し
     （一覧に無い名前は文を作らずに失敗する）、値（検索の値・主キーの値・ページの上限と読み飛ばす数）はすべてバインド変数で渡す。ほか
     は定数の形の文字だけ。そのため、このクラスの2つのメソッドの、この2つのパターンだけを外す（パッケージや SQL_ の全体では外さない）。
+
+    書き込みのメソッド（Intent 261016-business-data-views の U2、BR7.1・BR13.3、U2 のコード生成の計画の A3 で承認済み）:
+    precheckUnique・insert・update・delete・inspectViolation の本体も文を作る（境界テストで、文を作れる場所をこの5つと search・detail
+    だけに絞っている）。書き込みの文の識別子も、要求1件の権限の写しの DSL の種類ごとの名前の一覧と照らしたものだけを
+    SqlIdentifiers.quoteKnown で引用し（外部キーの参照先のカラムは、参照先のテーブルの DSL のカラムの一覧と照らす）、値（作成・更新の
+    値・主キーの値・事前の問い合わせと確かめの値）はすべてバインドする。ほかは定数の形の文字（INSERT・UPDATE・DELETE・SELECT の
+    骨組みと DEFAULT VALUES など）だけ。
   -->
   <Match>
     <Class name="cherry.mastersmith.businessdata.repository.RowSqlExecutor" />
     <Or>
       <Method name="search" />
       <Method name="detail" />
+      <Method name="precheckUnique" />
+      <Method name="insert" />
+      <Method name="update" />
+      <Method name="delete" />
+      <Method name="inspectViolation" />
     </Or>
     <Or>
       <Bug pattern="SQL_INJECTION_JDBC" />

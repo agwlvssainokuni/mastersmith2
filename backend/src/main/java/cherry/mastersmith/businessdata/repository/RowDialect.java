@@ -79,13 +79,21 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
     DatabaseProduct product();
 
     /**
-     * 貸し出しの始めに1回だけ、セッションのタイムゾーンを UTC にする文（{@link RowSqlExecutor#SET_TIME_ZONE_UTC}）を流すかを返す
-     * （MySQL・MariaDB は true、PostgreSQL は false。T1）。文そのものは {@link RowSqlExecutor} の定数に置く（SpotBugs が定数の文と
-     * 見分けられるように）。
+     * 値を1つも送らない作成の文を返す（すべてのカラムを DB の既定値に任せる。U2 の BR2.2）。PostgreSQL は
+     * {@code INSERT INTO 表 DEFAULT VALUES}、MySQL・MariaDB は {@code INSERT INTO 表 () VALUES ()}。
      *
-     * @return 流すなら true
+     * @param table 引用・修飾したテーブル
+     * @return 文
      */
-    boolean needsUtcSession();
+    String insertWithoutValues(String table);
+
+    /**
+     * 生成された鍵を、主キーのカラムの名前で読めるかを返す（U2 の BR7.2、試しの W8）。PostgreSQL は名前で読む（渡した名前のカラムだけを
+     * 返す）。MySQL・MariaDB は自動の採番の値1つだけを返すため、送らなかった主キーのカラムが1つのときだけ、その値として読む。
+     *
+     * @return 名前で読めるなら true
+     */
+    boolean readsGeneratedKeysByName();
 
     /**
      * 並べ替えの項を返す（NULL は昇順で最後、降順で最初。BR5.5）。
