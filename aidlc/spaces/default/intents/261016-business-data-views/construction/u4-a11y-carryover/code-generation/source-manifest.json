@@ -1,0 +1,112 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-a11y-carryover",
+  "version": 1,
+  "writes": [
+    {
+      "path": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/135-dsl-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeElementKey.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeElementKey.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeRuleChecks.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeRuleChecks.ts"
+    },
+    {
+      "path": "frontend/e2e/support/secretValues.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupAdminEnglish.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupAdminForbidden.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/GroupRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/features/groupadmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleAdminEnglish.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleAdminForbidden.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/RoleRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserRowActions.tsx"
+    },
+    {
+      "path": "frontend/src/shared/row-actions/rowActionsName.property.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/row-actions/rowActionsName.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/row-actions/rowActionsName.ts"
+    },
+    {
+      "path": "frontend/vitest.config.ts"
+    },
+    {
+      "path": "vendor/make-you-chic-ui"
+    }
+  ]
+}

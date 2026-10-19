@@ -1,0 +1,182 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-a11y-carryover",
+  "upstream_ids": [
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR4.8",
+    "NFR4.9",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR7.6",
+    "NFR7.7"
+  ],
+  "coverage": [
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "frontend/src/shared/row-actions/rowActionsName.ts"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Dropdown/Dropdown.tsx"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7: axe-core の引き上げ・ignore の外し・違反 0 件と件数・版が1つ）"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7: 上流が間に合わないときの持ち越しの扱い）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（業務データの画面の axe の E2E。機能設計の段のとおり）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "U4 は SQL を作らない"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "frontend/src/shared/row-actions/rowActionsName.ts"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "N/A",
+      "target": "U4 は対象DB の書き込みの接続を使わない"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "N/A",
+      "target": "U4 は対象DB への問い合わせを持たない"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "frontend/e2e/support/axeElementKey.ts"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "frontend/src/shared/row-actions/rowActionsName.property.test.ts"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "frontend/e2e/support/secretValues.ts"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7 で採る版の確かめ。B3 の試しの確かめは generation-notes.md の Step 16・18 に記録）"
+    },
+    {
+      "id": "NFR4.9",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Dropdown/Dropdown.tsx"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7: REQUIRED_RULES に label-content-name-mismatch を足す）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7: 違反 0 件。KNOWN_VIOLATIONS は空のまま）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "Deferred",
+      "target": "U3 u3-businessdata-screens（B7: E2E の passes の確かめ。L5 の部品は B3 で作り単体で確かめた）"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "frontend/e2e/support/axeRuleChecks.ts"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/UserRowActions.test.tsx"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "frontend/src/features/useradmin/messages.ts"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.tsx"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "frontend/src/app/layout/ShellLayout.test.tsx"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "Deferred",
+      "target": "Build and Test（B3 の分は generation-notes.md の Step 17・19 に記録し、B7 と Build and Test でまとめて判定する）"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "Deferred",
+      "target": "Build and Test（B3 の分は generation-notes.md の Step 15 に記録し、B7 と Build and Test でまとめて判定する）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "frontend/src/shared/row-actions/rowActionsName.property.test.ts"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "id": "NFR7.6",
+      "status": "OK",
+      "target": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
+      "id": "NFR7.7",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts"
+    }
+  ]
+}

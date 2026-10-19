@@ -14,4 +14,5 @@
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+- 2026-10-19T12:30:00Z — U4（B3）のコードのレビュー（READY、Minor 4）の扱い: R-01（L5 は incomplete を合格に数えないため、C4 の確かめは2語の氏名の場面に限る）・R-02（行の値を data-testid に入れない）は U3 の計画（B5〜B7）の前提として引き継ぐ。R-03（測りの見本の生成値を json の探索に入れるか）は U3 の計画で扱う。R-04（記録のコミット）は統合の前に行う。
 - 2026-10-19T08:00:00Z — U1 のコードのレビュー（READY、Major 1・Minor 7）の扱いの依頼者の決定: R-04（G7、主キーが NONE のテーブルでも主キーで並べ、深いページの先読みに使う）はこのままとし、既知の制約として記録する（A）。R-01（traceability の負荷の目標 NFR1.1〜1.3・2.4・3.2 を OK でなく Performance Validation への Deferred にする）は Code Generation の承認の場で直す。R-03（MySQL・MariaDB の SET time_zone を戻さない）は U2 と同じく接続を作るときに付ける形に切り替え、U2（B4）の計画で直す。そのほかの Minor（R-02・R-05〜R-08）は記録して持ち越す。B2 は今の形で統合する。

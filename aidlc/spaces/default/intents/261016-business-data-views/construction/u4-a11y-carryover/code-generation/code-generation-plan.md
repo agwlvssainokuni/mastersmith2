@@ -235,7 +235,7 @@ U4 は種類 `ui` の単位で、前の Intent からのアクセシビリティ
 
 ### 準備
 
-- [ ] **Step 1: 作業の準備と走らせ方の確かめ**
+- [x] **Step 1: 作業の準備と走らせ方の確かめ**
   - `aidlc/` の下に未コミットの変更が無いことを確かめる（あれば依頼者にコミットの承認を得てから進む。`project.md` の Change Control）。
   - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば、ここで消す。段の途中では消さない（`project.md` の学び）。
   - `develop` から `feature/261016-business-data-views-b3` を作って移る。
@@ -244,81 +244,81 @@ U4 は種類 `ui` の単位で、前の Intent からのアクセシビリティ
 
 ### 固定先の更新（F1）
 
-- [ ] **Step 2: 上流の確かめ（依頼者の承認を得て fetch）**
+- [x] **Step 2: 上流の確かめ（依頼者の承認を得て fetch）**
   - 依頼者の承認（A1）を得て、`git -C vendor/make-you-chic-ui fetch origin` を流す。
   - `git -C vendor/make-you-chic-ui merge-base --is-ancestor b0a1e79 origin/main` が成り立つ（宙に浮いたコミットでない）ことを確かめる。
   - `git -C vendor/make-you-chic-ui log --oneline a9309c4..origin/main` を記録する。`b0a1e79` より新しいコミットがあれば、件名と変わったファイルを記録するだけにし、固定先は `b0a1e79` のままにする。取り込むかは B7（U3 の計画）で上流のソースを確かめて決める（10節の D2: A）。
   - `git -C vendor/make-you-chic-ui diff --stat a9309c4 b0a1e79` と、`package.json`・`package-lock.json`・`packages/make-you-chic-ui/package.json`・`LICENSE` の差が無いことを確かめる。
   - `hasInstallScript` の付いた項目の名前を、`a9309c4` と `b0a1e79` の `package-lock.json` で並べて比べる（`git show <rev>:package-lock.json` を読み取りで読む。基盤の設計のレビューの R-05）。増えた・変わったときは止めて諮る。
-- [ ] **Step 3: 固定先の更新**
+- [x] **Step 3: 固定先の更新**
   - `git -C vendor/make-you-chic-ui checkout b0a1e79` で固定先を移し、作業フォルダの差が `vendor/make-you-chic-ui` の固定先だけであることを `git diff --stat` で確かめる。
   - `./gradlew vendorInstall vendorBuild vendorUnchanged frontendInstall` を流し、`frontend/package-lock.json` が変わらないこと（`git diff --exit-code frontend/package-lock.json`）と、`hasInstallScript` の付いた項目の名前が前と同じであることを確かめる。
   - 前後のコミットハッシュ（`a9309c4ee863b162236571a7d6300c62fd4b4f70` → `b0a1e79` の完全な値）、Step 2・3 の結果を記録に書く（`project.md` の Mandated）。コミットは Step 22 で C1 として専用に積む。
-- [ ] **Step 4: 固定先の後の既存のテスト（D7・U4-NFR7.6）**
+- [x] **Step 4: 固定先の後の既存のテスト（D7・U4-NFR7.6）**
   - テストを書き換えずに、`unit-test-instructions.md` の 3.2 の「固定先の後」のコマンドで、`toHaveAccessibleDescription` を使う既存のテスト（`WorkRoleSwitcher.test.tsx`・`UserRowActions.test.tsx` など 6 ファイル。残りの4ファイルは Step 15 の verify で確かめる）を流し、通ることを記録する。
   - 落ちたときは、Dropdown の項目の DOM の変更（説明が menuitem の外の兄弟になった）による差かを確かめ、テストを直す前に止めて諮る（D7 は「書き換えずに通る」ことを求める）。
 
 ### 名前の関数 L1（F2 の 1）
 
-- [ ] **Step 5: `rowActionsName` の実装**
+- [x] **Step 5: `rowActionsName` の実装**
   - `frontend/src/shared/row-actions/rowActionsName.ts` に、`frontend-components.md` 2節の形で書く。`rowLabel.trim()` が空なら `visibleLabel` だけを返し、そうでなければ `` `${visibleLabel}: ${row}` `` を返す。区切りは日英とも半角のコロンと空白。文字列をつなぐだけで、HTML として解釈しない。ログ・`console`・トレースを書かない（U4-NFR4.2・4.6・7.1）。
-- [ ] **Step 6: `rowActionsName` のテストを書いて流す**
+- [x] **Step 6: `rowActionsName` のテストを書いて流す**
   - `rowActionsName.test.ts`（6 件）: 日本語の見える文字と値、英語の `Actions`、空の値、空白だけの値、前後の空白の切り落とし、`<`・`"`・`'`・改行を含む値が文字のまま返る。
   - `rowActionsName.property.test.ts`（4 つの性質）: 見える文字で始まる、空でない値なら `trim` した値を含む、空白だけの値では見える文字と等しい、区切り `": "` がちょうど1つ（見える文字と値が `": "` を含まない生成器で）。fast-check が失敗のときに出す seed と path を記録する決まりを先頭の説明に書く（既存の `buildNavSections.property.test.ts` と同じ形。U4-NFR7.4）。
   - `unit-test-instructions.md` の 3.2 の L1 のコマンドで流し、通るまで次へ進まない。
 
 ### 行の操作の部品（F2 の 2〜4）
 
-- [ ] **Step 7: 文言の鍵と3つの行の操作の部品の実装**
+- [x] **Step 7: 文言の鍵と3つの行の操作の部品の実装**
   - 3つの機能の `messages.ts` を `frontend-components.md` 4節のとおりに変える（`useradmin.actions.row`・`*.actions.busySuffix` を足し、`*.actions.name`・`*.actions.busyName` を消す。日本語 `（処理中）`、英語 ` (processing)` の先頭の空白を保つ）。
   - `UserRowActions.tsx`: `rowActionsName(t('useradmin.actions.button'), t('useradmin.actions.row', { name, email }))`、`busy` なら `t('useradmin.actions.busySuffix')` を足す。
   - `GroupRowActions.tsx`・`RoleRowActions.tsx`: `rowActionsName(t('<機能>.actions.button'), <名前>)`、`busy` なら `t('<機能>.actions.busySuffix')` を足す。
   - 3つの部品の Dropdown・Button・`placement="bottom-end"`・`data-testid`・見える文字・props・状態を変えない（D5）。先頭の説明の文の名前の形を新しい形に直す。
-- [ ] **Step 8: 行の操作の部品のテストを書いて流す**
+- [x] **Step 8: 行の操作の部品のテストを書いて流す**
   - `UserRowActions.test.tsx`・`GroupRowActions.test.tsx`・`RoleRowActions.test.tsx` を新しい名前に書き換え、次を足す（各 6〜8 件になる）: 日本語の名前が「操作: …」で始まる（`getByRole(..., { name })`、U4-NFR5.5）、処理中の名前、英語の名前（`Actions: …`）、英語の処理中の名前の `" (processing)"` が先頭の空白ごと保たれる（U4-NFR6.1・R-04）、`data-testid` と見える文字が変わらない、`<` や `&` を含む名前が文字のまま名前に入る、既存のアクセシビリティの検査（vitest-axe）。
   - ページのテスト（`UserAdminPage.test.tsx`・`GroupListPage.test.tsx`・`GroupAdminEnglish.test.tsx`・`GroupAdminForbidden.test.tsx`・`RoleListPage.test.tsx`・`RoleAdminEnglish.test.tsx`・`RoleAdminForbidden.test.tsx`）の名前の照合を書き換え、一覧の描画の後の一覧の API の呼び出しの回数が今までと同じ（初めの描画で1回）であることを3つのページで1件ずつ確かめる（U4-NFR7.1・基盤の設計のレビューの R-04）。描画の後に反映される値は `waitFor` で待つ（team.md）。
   - `unit-test-instructions.md` の 3.2 の「行の操作」のコマンドで流し、通るまで次へ進まない。
 
 ### トップバー L2（F3）
 
-- [ ] **Step 9: トップバーの名前の実装**
+- [x] **Step 9: トップバーの名前の実装**
   - `frontend/src/app/i18n/messages/ja.ts`・`en.ts` の `topbar.userMenu` を変え、`topbar.userMenuWithoutInitials` を足す（4.4 の表）。
   - `ShellLayout.tsx` で `getInitials` を `make-you-chic-ui` から名前付きで読み、`userMenu: (userName) => { const initials = getInitials(userName); return initials === '' ? format('topbar.userMenuWithoutInitials', { name: userName }) : format('topbar.userMenu', { initials, name: userName }) }` の形にする。状態・効果・API の呼び出しを足さない（U4-NFR7.1）。説明の文に D6 を書く。
-- [ ] **Step 10: トップバーのテストを書いて流す**
+- [x] **Step 10: トップバーのテストを書いて流す**
   - `ShellLayout.test.tsx` の 787・797行を新しい名前（「管: 管理者のメニュー」「管: Menu for 管理者」）に書き換え、次を足す: 2語の氏名（「検査 太郎」→「検太: 検査 太郎のメニュー」、英語「Kensa Taro」→「KT: Menu for Kensa Taro」）、頭文字が丸の中の文字（Avatar）と同じであること、氏名が空白だけのとき「: 」で始まらないこと（U4-NFR6.2）、ユーザーメニューを開くまでの業務のメニューの API の呼び出しの回数が今までと同じであること（U4-NFR7.1）。
   - `unit-test-instructions.md` の 3.2 の「トップバー」のコマンドで流し、通るまで次へ進まない。
 
 ### E2E の axe の補助 L3〜L6
 
-- [ ] **Step 11: 鍵の関数・区分の要約・確かめの部品と設定の実装**
+- [x] **Step 11: 鍵の関数・区分の要約・確かめの部品と設定の実装**
   - `frontend/vitest.config.ts`（A3）: `include: ['src/**/*.test.{ts,tsx}', 'e2e/support/**/*.test.ts']`、`exclude: ['e2e/**/*.e2e.ts', 'node_modules/**', 'dist/**']`。先頭の説明の文を直す。カバレッジの設定は変えない。
   - `frontend/e2e/support/axeElementKey.ts`（L3）: 要素を受けて鍵を返す関数 `axeElementKey(element)` を、外の名前・import・補助の関数に頼らない1つの関数として書く（中で使う定数と小さな関数は、関数の本体の中に置く）。4.1 の R-01（menuOwner は `aria-haspopup` と `aria-expanded="true"` の両方を持つトリガーから作り、2つ以上なら誤りの印を返す）・R-03（`/-(?:\d+|r\d+)$/` だけを `-*` にする）・R-04（`path` を足す）に従う。owner は自分か近い祖先の `data-testid` のうち `dropdown-trigger`・`dropdown-item-*`・`dropdown-menu` を除いた最初のもの。portal の中の項目（`dropdown-menu` の中の要素）には menuOwner を付ける。`aria-label`・要素の文字・`id`・属性の値を鍵に入れない。
   - `frontend/e2e/support/axeRuleChecks.ts`（L5・L6）: 型 `AxeElementKey`・`AxeRuleNode`、7つの区分 C1〜C7 の当てはめ（`logical-components.md` 3節）、`labelContentNameProblems(summary, categories)`（4.4）、違反と記録の文の作り方 `describeAxeNode(ruleId, key)`、L6 の記録の行 `labelContentNameRows(file, combo, state, summary)`（ファイル × 表示の組 × 規則 × 鍵 × 結果の区分）、注記 `axe-nodes` の中身を作る `axeNodesAnnotation(summary)`（規則・鍵・件数だけ。10節の D5: A）。
   - `frontend/e2e/support/axe.ts`（L4）: `runAxe` は `axe.min.js` を評価した後に、`axeElementKey.toString()` を `page.evaluate` の文字列で `window` に置き、検査の1回の `page.evaluate` の中で、違反の要素と規則 `label-content-name-mismatch` の passes・incomplete・violations の要素の鍵を作る。選択子は `page.evaluate` の中でだけ使い、戻り値に入れない。`AxeViolationNode` から `target` を除く（A4）。`splitKnownViolations` の文を `describeAxeNode` で作る。`runAxe` は、毎回いつも、規則・鍵・区分の件数だけを注記（種類 `axe-nodes`）に残す（10節の D5: A。環境変数の切り替えは置かない。値と選択子は持たない）。
   - `135-dsl-admin-accessibility.e2e.ts`（293行）・`160-app-frame-accessibility.e2e.ts`（167行）の `node.target` を `describeAxeNode` に置き換える。
-- [ ] **Step 12: 鍵の関数と確かめの部品のテストを書いて流す**
+- [x] **Step 12: 鍵の関数と確かめの部品のテストを書いて流す**
   - `axeElementKey.test.ts`（jsdom、8 件）: 5つの区分（行の操作のトリガー3種類・作業ロールのトリガー・トップバーのトリガー）と portal の中の作業ロールの項目の鍵が区別できる、サイドバーの枝（`aria-expanded` だけ）を開き作業ロールのメニューも開いた場面で menuOwner が作業ロールのトリガーになり誤りにならない（R-01）、Dropdown のトリガーが2つ開いていると誤りの印になる、`work-role-switcher`・`sidebar-toggle` が残り `useradmin-row-actions-12`・`tables-row-actions-r3` が `-*` になる（R-03）、`data-testid` の無い要素に `path` が付く（R-04）、氏名・メールアドレスを含む `aria-label` と文字が鍵のどこにも出ない（U4-NFR4.5）、`toString()` した文字列を評価し直しても同じ鍵を返す（`page.evaluate` で動く形であることの確かめ）。
   - `axeRuleChecks.test.ts`（8 件）: 区分の要素が passes にだけあれば問題 0 件、incomplete に1件あれば問題になる（incomplete を合格に数えない）、violations に1件あれば問題になる、区分の要素が 0 件なら「確かめの作りの誤り」の問題になる、C1〜C7 の当てはめ、`describeAxeNode` の文と `axeNodesAnnotation` の注記の中身に選択子と値が出ない（D5: A）、L6 の行の形、既知の違反の照らし（`splitKnownViolations` は空の一覧ですべてを失敗に分ける）。
   - `unit-test-instructions.md` の 3.2 の「E2E の補助」のコマンドで流し、通るまで次へ進まない。
   - Step 1 と同じ `npx vitest list | wc -l` の数が「Step 1 の数＋この単位で足したテストの数（消したテストを引く）」になること（`*.e2e.ts` を Vitest が拾っていないこと）と、カバレッジの報告（`frontend/coverage/coverage-summary.json`）に `e2e/` のファイルが入らないことを記録する（基盤の設計のレビューの R-03）。
-- [ ] **Step 13: 報告の秘密の確かめの値**
+- [x] **Step 13: 報告の秘密の確かめの値**
   - `frontend/e2e/support/secretValues.ts` の `SECRET_FIXED_VALUES` に、`userAdminFixtures.ts` の行の氏名とメールアドレス（`管理 一郎`・`kanri.ichiro@example.com` など、行の操作の名前に入る値）と、130 の 2語の氏名 `Probe Sample` を足す（U4-NFR4.7）。値は既存の決まりどおりこのファイルとテストの変数だけに持ち、注記・添付・標準出力に出さない。
   - E2E の報告に値が正しく出ている所（失敗でない実行で見つかる所）があれば、Step 17 で報告の部品が失敗にする。そのときは値を消して通さず、生成を止めて依頼者に諮る。
-- [ ] **Step 14: E2E の名前の照合の書き換えと検索の流し直し**
+- [x] **Step 14: E2E の名前の照合の書き換えと検索の流し直し**
   - `110`・`140`・`160` の名前の照合を 1.2 の表のとおりに書き換える。
   - 1.3 の検索をもう一度流し、古い名前の形（`の操作$`・`Actions for`・`actions.name`・`actions.busyName`・`のメニュー'`・`^Menu for`）と `node.target` が `frontend/src`・`frontend/e2e` で 0 件であることを記録する（U4-NFR7.5）。
   - `UserRowActions.tsx`・`GroupRowActions.tsx`・`RoleRowActions.tsx`・`ShellLayout.tsx`・`rowActionsName.ts` に、ログ・`console`・トレースの呼び出しが無いことを検索で確かめて記録する（U4-NFR4.2）。
 
 ### 検査（今の axe-core 4.13）
 
-- [ ] **Step 15: 1コマンドの検査**
+- [x] **Step 15: 1コマンドの検査**
   - colima が動いていることと、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡すことを確かめ、`caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を流す。対象DB のテストが飛んでいない（SKIPPED の警告が無い）ことを確かめる。
   - verify の時間、Vitest の件数、フロントエンドのカバレッジ（全体の行・分岐）、OSV-Scanner の結果（変化が無いこと）を記録する（U4-NFR7.3・7.7）。
-- [ ] **Step 16: `dist` に axe-core と E2E の補助が入らないことの確かめ（U4-NFR4.8、基盤の設計のレビューの R-02）**
+- [x] **Step 16: `dist` に axe-core と E2E の補助が入らないことの確かめ（U4-NFR4.8、基盤の設計のレビューの R-02）**
   - 陽性の対照: 4.2 の R-02 の3つの語が `frontend/node_modules/axe-core/axe.min.js` で 1 件以上見つかることを確かめる。
   - Step 15 のビルドの結果 `frontend/dist` を同じ3つの語と `axeElementKey`・`labelContentNameProblems` で検索し、どれも 0 件であることを、検索語と件数で記録する。
   - `frontend/src` から `e2e/` を読む import が 0 件であることを検索で記録する。
-- [ ] **Step 17: E2E の全件（4.13）**
+- [x] **Step 17: E2E の全件（4.13）**
   - Mailpit を起動しておき（README）、`caffeinate -dims ./gradlew e2eTest` を流す。`frontend/src` に触れるため、統合の前に全件を通す（team.md の Way of Working）。
   - 件数・始めと終わりの時刻・眠りの有無を記録し、基準（前の Intent の 232 件・約 10分35秒、1件あたり約 2.74 秒）と並べる。基準の 1.5 倍（約 15分53秒）を超えたら、ファイルごとの時間を記録して見立て、依頼者に諮る（U4-NFR7.2、`performance-design.md` 3節）。
   - 報告の秘密の確かめ（`frontend/playwright-secret-check-reporter.ts`）が通ることを確かめる（U4-NFR4.7）。
@@ -326,24 +326,24 @@ U4 は種類 `ui` の単位で、前の Intent からのアクセシビリティ
 
 ### axe-core 4.14 系の試し（F4。作業フォルダの中だけ、統合しない）
 
-- [ ] **Step 18: 試しの準備**
+- [x] **Step 18: 試しの準備**
   - Step 17 までの変更を、Step 22 のコミットの区切りで先に積むか、`git stash` を使わずに作業フォルダのまま置くかを決める前に、作業フォルダの状態（`git status --short` と `git diff --stat`）を記録しておく（Step 20 で戻ったことを比べる元）。
   - `npm view axe-core version`（`frontend` の中）で、その時点の 4 系の最新の版を記録する。変更の記録（CHANGELOG）を読み取りで読み、既定で流れるようになった規則（`experimental` の印が外れたもの）を記録する（`tech-stack-decisions.md`）。
   - `frontend/.npmrc` の `ignore-scripts=true` のまま、`frontend` で `npm install --save-dev axe-core@<その版>` を流す。`frontend/package-lock.json` の axe-core の項の `license` が `MPL-2.0` であること、`hasInstallScript` が無いこと、`hasInstallScript` の付いた項目の名前が前と同じであること（R-05）、`npm ls axe-core` で版が1つ（vitest-axe の分を含む）であることを記録する（U4-NFR4.8）。
   - axe の違反の確かめを「記録して続ける」形（`expect.soft`）にする一時の差分を、作業フォルダの中で当てる（10節の D4: A）。規則・要素は外さない（違反は失敗として数え、記録する）。差分のファイルの一覧を記録する。
-- [ ] **Step 19: 試しの実行と記録（D9、U4-NFR5.4）**
+- [x] **Step 19: 試しの実行と記録（D9、U4-NFR5.4）**
   - `caffeinate -dims ./gradlew e2eTest` を流す（失敗が出ることを見込む）。眠りの有無を確かめる。
   - json の報告（`frontend/test-results/e2e-results.json`）の注記 `axe-nodes` から、L6 の形の表（ファイル × 表示の組 × 規則 × 鍵 × 結果の区分）を作る。集める台本は Claude の一時の場所に置き、リポジトリに足さない。表には規則・鍵・件数だけを書き、選択子と値を書かない（U4-NFR4.5）。
   - 記録すること: 区分 C1〜C7 ごとの passes・incomplete・violations の件数と、要素が見つからなかった場面とその理由（C7 は、ユーザーメニューを開いた状態で axe を流す場面が今の E2E に無い見込み）、トップバーのトリガー（C4）の1語の氏名と2語の氏名（130 の `Probe Sample`）の結果、作業ロールのトリガー（C5。見える文字が「作業ロール:」と名前の2つの部分で、名前が「作業ロール: <名前>」）の結果、説明を持つ作業ロールの項目（C6、`work-role-menu-single`・`work-role-menu-none`）の結果、前の Intent の見立て（トップバーの頭文字か、Dropdown のトリガーと作業ロールの項目か）を確かめた結果、前の Intent で incomplete だった 060 の結果、E2E の件数と時間、vitest-axe を同じ版で流した件数（jsdom ではこの規則が判定されない見込みの確かめ）。
   - 違反は 4.1 の R-05 の基準で、直し先（アプリの側か、make-you-chic-ui の部品か）を分けて表に書く。
-- [ ] **Step 20: 試しの片付けと戻ったことの確かめ**
+- [x] **Step 20: 試しの片付けと戻ったことの確かめ**
   - `git checkout -- frontend/package.json frontend/package-lock.json` と、Step 18 の一時の差分のファイルの `git checkout --` で戻し、`./gradlew frontendInstall`（`npm ci`、`ignore-scripts` のまま）で入れ直す。
   - `npm ls axe-core` が 4.13.0 の1つであること、`git diff --exit-code frontend/package.json frontend/package-lock.json` が差なしであること、`git status --short` と `git diff --stat` が Step 18 の記録と同じであることを確かめて記録する（U4-NFR5.4）。
   - 違反が出たら、ここで生成を止め、Step 19 の違反の表と直し先の案（4.1 の R-05 の基準で、アプリの側か make-you-chic-ui の部品か）を依頼者に見せ、B3 で直すか B7 へ回すかをその場で諮る（10節の D6: A）。違反が無ければ、結果を見せて次へ進む。B3 で直すと決まったものは、その直しを Step 5〜14 の該当の層に足し（計画に無い変更として `generation-notes.md` に書く）、Step 15〜17 を流し直す。make-you-chic-ui の部品の違反は、新しい依頼の文面（`<record>/make-you-chic-ui-request-6.md`）の案を作って依頼者に諮る（FR14.5、機能設計の 8節）。
 
 ### 記録
 
-- [ ] **Step 21: 記録**
+- [x] **Step 21: 記録**
   - `aidlc/spaces/default/intents/261016-business-data-views/construction/code-generation/generation-notes.md` の B3 の節に、Step 1〜20 の結果（固定先の前後のハッシュと確かめ、走らせ方の確かめ、件数、カバレッジ、時間、`dist` の検索語と件数、4.14 の試しの版と表、戻したことの差）を書く。計画に無い変更は、計画を書き換えずにここへ書く（`project.md` の学び）。
   - 依頼（5）の送付を「送ってある（日付は答えに無し）」と書く（10節の D3: A）。
   - B7 へ引き継ぐこと（7節の表）を同じ記録に書く。
