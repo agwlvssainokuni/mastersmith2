@@ -16,7 +16,7 @@
 //
 // S3 行の作成・S4 行の更新のテスト（Intent 261016-business-data-views の U3 の L7、計画 Step 33、D19〜D25a・D2〜D4・F4・F6・F7、
 // U3-NFR4.21・7.9・7.11）。data router で描き、API は fetch を差し替えて ApiClient を通す。
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
@@ -92,7 +92,9 @@ const DETAIL_VALUES = {
   owner: '佐藤',
 }
 
-type WriteAnswer = (request: RecordedRequest) => { status: number; body: unknown } | Response
+type WriteAnswer = (
+  request: RecordedRequest,
+) => { status: number; body: unknown } | Response | Promise<Response>
 
 function responder(
   write: WriteAnswer,
@@ -438,5 +440,109 @@ describe('BusinessDataFormPage update', () => {
     expect(await screen.findByRole('heading', { name: 'Edit Items: A/1 #' })).toBeInTheDocument()
     expect(screen.getByTestId('tables-form-save')).toHaveTextContent('Save')
     expect(screen.getByText('No fields were changed.')).toBeInTheDocument()
+  })
+})
+
+/** 解決を後に回せる応答（保存の最中に画面を離れる確かめ） */
+function deferredResponse() {
+  let resolve: (response: Response) => void = () => {}
+  const promise = new Promise<Response>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
+function searchCount(calls: readonly RecordedRequest[]): number {
+  return calls.filter((call) => call.path === BUSINESS_DATA_PATHS.search).length
+}
+
+describe('BusinessDataFormPage leaving while saving (R-01)', () => {
+  const LIST_ROUTE = `/tables${QUERY}`
+
+  /** 画面を離れた後に答えを返し、引き戻されないこと・Toast が出ないことを確かめる */
+  async function answerAfterLeaving(
+    answer: ReturnType<typeof deferredResponse>,
+    router: ReturnType<typeof renderTablesDataRouter>['router'],
+    calls: readonly RecordedRequest[],
+    body: { status: number; body: unknown },
+    toastText: string,
+  ) {
+    await waitFor(() => expect(router.state.location.pathname).toBe('/tables'))
+    // 一覧の画面の副作用が出す読み込みの要求を待つ。React は前の画面の後片付けを先に流すため、作成・更新の画面が
+    // 外れた後に答えが届く順が確実になる（PasswordChangePage のテストと同じ形）。
+    await waitFor(() => expect(searchCount(calls)).toBeGreaterThanOrEqual(1))
+    const keyAfterLeaving = router.state.location.key
+    await act(async () => {
+      answer.resolve(jsonResponse(body.status, body.body))
+      await answer.promise
+    })
+    // 届いた答えの処理（then）が流れ終わるまで待つ
+    await act(async () => {
+      await new Promise((settle) => setTimeout(settle, 50))
+    })
+    expect(router.state.location.pathname).toBe('/tables')
+    expect(router.state.location.key).toBe(keyAfterLeaving)
+    expect(screen.queryByText(toastText)).toBeNull()
+  }
+
+  it('does not move or show a toast when a create answer arrives after leaving by the sidebar', async () => {
+    const user = userEvent.setup()
+    const answer = deferredResponse()
+    const { router, calls } = renderTablesDataRouter(
+      NEW_ROUTE,
+      responder(() => answer.promise),
+    )
+    await user.type(await screen.findByRole('textbox', { name: '商品コード *必須' }), 'N/1')
+    await user.type(screen.getByRole('textbox', { name: '商品名 *必須' }), '名')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    // サイドバーのテーブルの項目と同じく、一覧の道へ移る
+    void router.navigate(LIST_ROUTE)
+    await user.click(await screen.findByTestId('tables-leave-go'))
+    await answerAfterLeaving(
+      answer,
+      router,
+      calls,
+      { status: 201, body: { definitionId: SAMPLE_DEFINITION_ID, key: { code: 'N/1' } } },
+      '作成しました。',
+    )
+  })
+
+  it('does not move or show a toast when an update answer arrives after going back', async () => {
+    const user = userEvent.setup()
+    const answer = deferredResponse()
+    const rowToken = putRowKey({ code: 'A/1 #' }, SALES.roleId)
+    const { router, calls } = renderTablesDataRouter(
+      EDIT_ROUTE,
+      responder(() => answer.promise),
+      { state: { rowToken }, before: [LIST_ROUTE] },
+    )
+    await user.type(await screen.findByRole('textbox', { name: '備考' }), 'a')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    const searchesBefore = searchCount(calls)
+    void router.navigate(-1)
+    await user.click(await screen.findByTestId('tables-leave-go'))
+    await waitFor(() => expect(searchCount(calls)).toBeGreaterThan(searchesBefore))
+    await answerAfterLeaving(answer, router, calls, written(), '更新しました。')
+  })
+
+  it('does not move back to the detail when an update answer arrives after switching the work role', async () => {
+    const user = userEvent.setup()
+    const answer = deferredResponse()
+    const roles = { roles: [SALES, ACCOUNTING], current: SALES }
+    const rowToken = putRowKey({ code: 'A/1 #' }, SALES.roleId)
+    const { router, calls } = renderTablesDataRouter(
+      EDIT_ROUTE,
+      responder(() => answer.promise),
+      { state: { rowToken }, roles: [roles, { ...roles, current: ACCOUNTING }] },
+    )
+    await user.type(await screen.findByRole('textbox', { name: '備考' }), 'a')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    await user.click(screen.getByRole('button', { name: '作業ロール: 営業' }))
+    await user.click(screen.getByRole('menuitem', { name: '経理' }))
+    await user.click(await screen.findByTestId('tables-leave-go'))
+    await answerAfterLeaving(answer, router, calls, written(), '更新しました。')
   })
 })

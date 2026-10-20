@@ -100,6 +100,10 @@ export function compareDecimalText(a: string, b: string): number | undefined {
     return xNegative ? -1 : 1
   }
   const magnitude = compareMagnitude(x, y)
+  // 等しいときは +0 を返す（負の数どうしで -magnitude にすると -0 になるため。性質のテストの seed 1380462492 で見つかった）
+  if (magnitude === 0) {
+    return 0
+  }
   return xNegative ? -magnitude : magnitude
 }
 

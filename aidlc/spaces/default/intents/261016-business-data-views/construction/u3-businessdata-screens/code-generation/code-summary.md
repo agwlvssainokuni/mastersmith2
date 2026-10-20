@@ -1,4 +1,4 @@
-# コードの要約 — U3 u3-businessdata-screens（Bolt B5・B6。B7 は後で足す）
+# コードの要約 — U3 u3-businessdata-screens（Bolt B5・B6・B7）
 
 作業ブランチ `feature/261016-business-data-views-b5`（`develop` の `6815308` から）。コミットはまだしていない。詳しい記録は `aidlc/spaces/default/intents/261016-business-data-views/construction/u3-businessdata-screens/code-generation/generation-notes.md`。
 
@@ -90,3 +90,54 @@
 ### 6. 依頼者に確かめたいこと
 
 コミットの区切り（generation-notes の 7.5 の C1〜C5）。ほかの点（偶然の失敗の扱い・N-16・(c)・N-17・N-23・N-24）は依頼者の答えで決まった（generation-notes の 9節）。
+
+## B7（U4 の後半: axe-core の引き上げ）
+
+作業ブランチ `feature/261016-business-data-views-b7`（`develop` の `a031ba1` から）。コミットはまだしていない。統合の前の関門（verify と E2E の全件）は、`-0` の直しの後に通った。詳しい記録は `generation-notes.md` の 10節。
+
+### 1. 作ったもの・変えたもの
+
+- **axe-core**: `frontend/package.json`・`frontend/package-lock.json` を 4.13.0 → **4.14.0**（`^4.14.0`、MPL-2.0、install の scripts 無し、`npm ls axe-core` は1つ）。依頼者が採ることを決めた（A9）。
+- **Dependabot**: `.github/dependabot.yml` の axe-core の `ignore` と見送りのコメントを外し、受け方のコメント（更新は lockfile だけでも E2E の全件と vitest-axe を流す）を書いた。
+- **E2E の axe の確かめ**: `frontend/e2e/support/axe.ts` の `REQUIRED_RULES` に `label-content-name-mismatch`。`axeRuleChecks.ts` に区分 C8（業務データの行の操作）・C9（業務データの行のリンク）、`axeElementKey.ts` に2つの印。120・130・140・160・185 に区分ごとの passes の確かめを足し、130 に利用者のメニューを開いた場面（C7）、140 にグループの一覧の場面（C2）を足した（本数に数えない書き換え）。対象は C1〜C9 の9区分（A10）。単体のテストを2件足した。
+- **`-0` の直し**（N-38、依頼者の決定）: `frontend/src/features/tables/formValidation.ts` の `compareDecimalText` が、等しいときは `+0` を返す。例のテストを `formValidation.test.ts` に足した。
+- **依頼（5）**: 上流の `main` は `b0a1e79` のままで入っていない（ソースで確かめた）。固定先は上げず、`src/shared/scroll-region`・`page-size` の手当てのまま。統合は squash の形。
+
+### 2. 主な決定
+
+- passes の確かめは、区分ごとに決めた場面で「passes 1件以上、incomplete・violations 0件、要素 0 件は失敗」。C4 は 130 の2語の氏名の場面だけで、1語の氏名の incomplete は記録だけ。
+- 規則・要素を外す指定は足していない。`KNOWN_VIOLATIONS` は空のまま。
+- `eslintImportRules.test.ts` の時間切れと 185 のログインの1件は、再現しなかったため「不安定と確かめられていない」扱い（依頼者の決定）。同じテストがもう一度落ちたら止める。
+
+### 3. テストと検査（直した後）
+
+- verify（`:backend:cleanTest :backend:cleanIntegrationTest`）: **通過、21分50秒**。フロントエンド 225 ファイル・1,966 件、行 95.10%・分岐 89.90%（`src/features/tables/` は 行 93.86%・分岐 88.34%）、vitest-axe は 86 ファイル・113 か所で違反 0 件。バックエンド 3,975 件（失敗 0・SKIPPED 9）、行 97.64%・分岐 91.23%。OSV-Scanner の失敗の条件 0 件（axe-core の指摘無し）、Gitleaks は漏れ無し。
+- E2E の全件（見本の PG の前提）: **256 件すべて通過、13分29秒**（基準の約 1.27 倍）。どの規則の違反も 0 件。区分の passes は C1 882・C2 40・C3 129・C4 420・C5 1,078・C6 176・C7 80・C8 3,160・C9 2,440（incomplete・violations 0。C4 の 1語の氏名の incomplete 658 は記録だけ）。`frontend/dist` に axe-core は 0 件。
+- 直す前の verify は2回とも `frontendCoverage` で落ち、E2E の全件は1件落ちた（generation-notes.md の 10.6・10.7）。
+- 15432 は E2E の前に開け、誤ったパスワードが拒まれることを確かめ、E2E の後に閉じた。`pmset -g log` に Sleep・DarkWake は無い。
+
+### 4. 計画との差
+
+`generation-notes.md` の 10.9（N-34〜N-39）。
+
+### 5. コードのレビューの直し（U3 の全体）
+
+- レビューは READY（Major 1・Minor 7）。依頼者の決定で B7 のブランチで直した（`generation-notes.md` の 11節）。
+- R-01（Major）: 保存・削除の最中に画面を離れた後に応答が届いても、移動・履歴の書き換え・Toast を行わない（`useScreenPresence`）。直す前のテストが4件とも落ち、直した後に通ることを確かめた。
+- R-05: markClean の旗を、移動が始まらなければ次のタスクで下ろす。R-06: `no-console` を `src/app/login-state`・`src/app/work-role` に足した。R-08: (d) の確かめの経路の説明を直した。R-02・R-03: traceability と source-manifest を直した。
+- 既知の制約（R-04・R-07）: 1語の氏名のトップバーのトリガーは incomplete（658 件）のまま判定が出ない。行のリンクを新しいタブで開くと一覧へ戻る。
+- 直した後: verify は通過（23分24秒、フロントエンド 1,975 件・行 95.06%・分岐 89.82%、バックエンド 3,975 件・失敗 0）。1回目の verify は `logoutIntent.test.tsx` の1件で落ち、再現しなかった（不安定と確かめられていない扱い）。E2E の全件は 256 件すべて通過（13分2秒）。
+
+### 6. 依頼者に確かめたいこと
+
+1. コミットの区切り（直しを C7〜C9 に分ける案）。
+2. `logoutIntent.test.tsx` の1件を「不安定と確かめられていない」扱いで記録したこと（`generation-notes.md` の 11.4）。
+
+## U3 の全体のまとめ（B5〜B7）
+
+- 画面: 業務データの一覧・詳細・作成・更新・削除の確かめ・開けないときの表示（`frontend/src/features/tables/`）、共通の部品（`src/shared/` の横のスクロールの枠・件数の選択・NULL の表示・未保存の確かめ）、骨組みの口（4つの道・ログインの範囲の知らせ・作業ロールの切り替えの確かめ）。今の置き場の画面は消した。
+- E2E: 代表の流れ 180（本物の見本の PG）、185（表示の組ごとの axe と測り）、160・170・040 の書き換え、B7 の passes の確かめ。見本の PG を E2E の間だけ開ける仕組み（`build.gradle.kts`・上乗せの compose）。
+- axe-core 4.14.0 と `label-content-name-mismatch` の確かめ。依頼（5）の置き換えは次の Intent に回る。
+- 作った・変えた・消したパスは `source-manifest.json`（156 件）、受け入れ基準と NFR の対応は `traceability.json`（OK 125・Deferred 44・N/A 12。sensor は pass）。
+- 既知の制約: 1語の氏名のトップバーのトリガーの incomplete（R-04）、行のリンクは新しいタブでは詳細を開けない（R-07）。
+- 残り: レビューの直しのコミットと B7 の統合、Build and Test への引き継ぎ（計画 9節）。

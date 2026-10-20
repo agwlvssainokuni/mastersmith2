@@ -19,6 +19,7 @@
 // - 一覧・詳細・作成・更新の4つの道と、トップバーの作業ロールの切り替えを、骨組みの Provider・作業ロール・業務のメニューで包む。
 // - API は fetch を差し替えて ApiClient を通す。答えは道・メソッド・本文で決める関数で返し、呼ばれた要求を記録する。
 // - 1つの答えを Response そのもので返すこともできる（content-type の違う 2xx・本文の無い 5xx の確かめ）。
+// - before で、履歴で最初の道の前に置く道を渡せる（戻る操作の確かめ。最初の道が今の位置になる）。
 import { render } from '@testing-library/react'
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'
 import type { ReactNode } from 'react'
@@ -82,7 +83,13 @@ function LocationProbe() {
 export function renderTablesDataRouter(
   route: string,
   responder: DataRouterResponder,
-  options: { roles?: WorkRoleState[]; languages?: string[]; state?: unknown } = {},
+  options: {
+    roles?: WorkRoleState[]
+    languages?: string[]
+    state?: unknown
+    /** 履歴で route の前に置く道（ブラウザの戻る操作の確かめ） */
+    before?: string[]
+  } = {},
 ) {
   const calls: RecordedRequest[] = []
   const fetchMock = vi.fn(async (path: string, init?: RequestInit) => {
@@ -141,6 +148,10 @@ export function renderTablesDataRouter(
     ],
     {
       initialEntries: [
+        ...(options.before ?? []).map((entry) => ({
+          pathname: entry.split('?')[0],
+          search: entry.includes('?') ? `?${entry.split('?')[1]}` : '',
+        })),
         {
           pathname: route.split('?')[0],
           search: route.includes('?') ? `?${route.split('?')[1]}` : '',

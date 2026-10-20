@@ -116,4 +116,11 @@ describe('formValidation', () => {
     expect(compareDecimalText('12345678901234567890', '12345678901234567891')).toBe(-1)
     expect(compareDecimalText('1e3', '1')).toBeUndefined()
   })
+
+  it('returns +0, not -0, for two equal negative decimal texts', () => {
+    expect(Object.is(compareDecimalText('-28', '-28'), 0)).toBe(true)
+    expect(Object.is(compareDecimalText('-1.50', '-1.5'), 0)).toBe(true)
+    expect(compareDecimalText('-28', '-27')).toBe(-1)
+    expect(compareDecimalText('-27', '-28')).toBe(1)
+  })
 })

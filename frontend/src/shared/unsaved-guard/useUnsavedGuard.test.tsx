@@ -141,6 +141,7 @@ function FormProbe({ onNavigate }: { onNavigate: (to: string) => void }) {
   const [text, setText] = useState('')
   const [version, setVersion] = useState(0)
   const guard = useUnsavedGuard(text !== '', () => setText(''), { version })
+  const [skipping, setSkipping] = useState<boolean | null>(null)
   return (
     <div>
       <output data-testid="blocked">{String(guard.blocked)}</output>
@@ -168,6 +169,10 @@ function FormProbe({ onNavigate }: { onNavigate: (to: string) => void }) {
       <button type="button" onClick={guard.stay}>
         stay
       </button>
+      <button type="button" onClick={() => setSkipping(guard.skipsNextNavigation())}>
+        readSkip
+      </button>
+      <output data-testid="skipping">{String(skipping)}</output>
     </div>
   )
 }
@@ -269,6 +274,24 @@ describe('useUnsavedGuard markClean', () => {
     const again = new Event('beforeunload', { cancelable: true })
     window.dispatchEvent(again)
     expect(again.defaultPrevented).toBe(true)
+  })
+
+  it('drops the skip flag in the next task when no navigation starts after markClean (R-05)', async () => {
+    const user = userEvent.setup()
+    renderFormProbe()
+    await user.click(screen.getByRole('button', { name: 'edit' }))
+    // markClean と旗の読み取りを同じ手順で行うと、旗は立っている
+    await act(async () => {
+      screen.getByRole('button', { name: 'markClean' }).click()
+      screen.getByRole('button', { name: 'readSkip' }).click()
+    })
+    expect(screen.getByTestId('skipping')).toHaveTextContent('true')
+    // 移動が始まらないまま次のタスクになると、旗は下りる
+    await act(async () => {
+      await new Promise((settle) => setTimeout(settle, 0))
+    })
+    await user.click(screen.getByRole('button', { name: 'readSkip' }))
+    expect(screen.getByTestId('skipping')).toHaveTextContent('false')
   })
 
   it('decides without side effects', () => {

@@ -33,9 +33,14 @@
 // - 画面の時間は測らず、記録もしない（NFR9.3）。test.step の題・注記・添付に、氏名・メールアドレス・パスワード・
 //   トークンを入れない。注記に残すのは組の名前と件数・規則の名前・はみ出し・Avatar の文字の数だけ。
 // - 既存の 010〜100 は変えない。
+// - Intent 261016-business-data-views の B7（U4-NFR5.3、U3 の計画の D6: A）で、規則 label-content-name-mismatch の
+//   passes の確かめを足した。2語の氏名のトップバーのトリガー（C4）は「権限が無い」の表示の検査で、トップバーの利用者の
+//   メニューの項目（C7）は、そのメニューを開いた場面を足して確かめる（本数に数えない書き換え）。1語の氏名の場面の
+//   incomplete は、ほかのファイルで記録だけにして合否に使わない（U4 の D10c）。
 import { expect, test, type Page } from '@playwright/test'
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
 import { missingRequiredRules, runAxe } from './support/axe'
+import { labelContentNameProblems } from './support/axeRuleChecks'
 import { DISPLAY_COMBOS, expectComboApplied, prepareCombo } from './support/displayCombos'
 import { routeLoginPreferences } from './support/loginPreferences'
 import { describeOverflow, measureHorizontalOverflow } from './support/overflow'
@@ -187,6 +192,10 @@ test.describe('130 admin forbidden view accessibility on the built WAR', () => {
         test.info().annotations.push({ type: 'axe', description: JSON.stringify(record) })
         expect(missingRequiredRules(summary), `${combo.name}: 流れなかった規則`).toEqual([])
         expect(record.violationRules, `${combo.name}: 違反`).toEqual([])
+        expect(
+          labelContentNameProblems(summary, ['C4']),
+          `${combo.name}: label-content-name-mismatch の passes`,
+        ).toEqual([])
         expect(overflow.overflows, describeOverflow(combo.name, overflow)).toBe(false)
         await expect(view.getByTestId('alert')).toHaveAttribute('role', 'status')
         await expect(heading).toBeFocused()
@@ -199,6 +208,29 @@ test.describe('130 admin forbidden view accessibility on the built WAR', () => {
           login.rewritten,
           `${combo.name}: ログインと復元の応答の書き換え`,
         ).toBeGreaterThanOrEqual(1)
+      })
+
+      await test.step('check the opened topbar user menu', async () => {
+        const trigger = page.locator('.mycui-topbar-user-trigger')
+        await trigger.click()
+        await expect(page.getByRole('menu')).toBeVisible()
+        const summary = await runAxe(page)
+        const overflow = await measureHorizontalOverflow(page)
+        const name = `${combo.name} topbar-menu-open`
+        const violationRules = [...new Set(summary.violations.map((violation) => violation.id))]
+        test.info().annotations.push({
+          type: 'axe',
+          description: JSON.stringify({ combo: name, violations: violationRules, overflow }),
+        })
+        expect(missingRequiredRules(summary), `${name}: 流れなかった規則`).toEqual([])
+        expect(violationRules, `${name}: 違反`).toEqual([])
+        expect(
+          labelContentNameProblems(summary, ['C7']),
+          `${name}: label-content-name-mismatch の passes`,
+        ).toEqual([])
+        expect(overflow.overflows, describeOverflow(name, overflow)).toBe(false)
+        await page.keyboard.press('Escape')
+        await expect(page.getByRole('menu')).toHaveCount(0)
       })
 
       await test.step('go back home from the forbidden view', async () => {

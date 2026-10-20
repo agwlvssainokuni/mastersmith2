@@ -188,7 +188,8 @@ const sharedImportRule = {
 
 /**
  * 業務データの画面（Intent 261016-business-data-views の U3、計画 D10: A）で、主キー・行の値・検索の値を console に出さないよう、
- * src/features/tables/ と U3 が足した src/shared/ の部品に no-console を当てる（テストのファイルを除く）。規則を足すだけで緩めない。
+ * src/features/tables/ と U3 が足した src/shared/ の部品、U3 が手を入れた src/app/login-state/・src/app/work-role/（コードのレビューの
+ * R-06）に no-console を当てる（テストのファイルを除く）。規則を足すだけで緩めない。
  */
 const businessDataConsoleRule = {
   files: [
@@ -197,6 +198,9 @@ const businessDataConsoleRule = {
     'src/shared/page-size/**/*.{ts,tsx}',
     'src/shared/null-value/**/*.{ts,tsx}',
     'src/shared/unsaved-guard/**/*.{ts,tsx}',
+    // U3 が手を入れた骨組みの口（記憶を消す知らせ・作業ロールの切り替えの確かめ）。コードのレビューの R-06
+    'src/app/login-state/**/*.{ts,tsx}',
+    'src/app/work-role/**/*.{ts,tsx}',
   ],
   ignores: TEST_FILES,
   rules: {

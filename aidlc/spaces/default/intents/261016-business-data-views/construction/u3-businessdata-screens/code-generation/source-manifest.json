@@ -4,6 +4,9 @@
   "version": 1,
   "writes": [
     {
+      "path": ".github/dependabot.yml"
+    },
+    {
       "path": "README.md"
     },
     {
@@ -31,6 +34,15 @@
       "path": "frontend/e2e/040-dsl-admin.e2e.ts"
     },
     {
+      "path": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/130-admin-forbidden-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/140-role-admin-accessibility.e2e.ts"
+    },
+    {
       "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
     },
     {
@@ -41,6 +53,21 @@
     },
     {
       "path": "frontend/e2e/185-business-data-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeElementKey.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeElementKey.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeRuleChecks.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axeRuleChecks.ts"
     },
     {
       "path": "frontend/e2e/support/businessDataApiRoute.test.ts"
@@ -80,6 +107,12 @@
     },
     {
       "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/package-lock.json"
+    },
+    {
+      "path": "frontend/package.json"
     },
     {
       "path": "frontend/playwright.config.ts"
@@ -124,10 +157,22 @@
       "path": "frontend/src/features/README.md"
     },
     {
+      "path": "frontend/src/features/roleadmin/LeaveConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/LeaveConfirmDialog.tsx"
+    },
+    {
       "path": "frontend/src/features/roleadmin/PermissionPanel.tsx"
     },
     {
       "path": "frontend/src/features/roleadmin/testing/renderRoleAdmin.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useUnsavedGuard.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/useUnsavedGuard.ts"
     },
     {
       "path": "frontend/src/features/tables/BusinessDataDetailPage.css"
@@ -203,6 +248,15 @@
     },
     {
       "path": "frontend/src/features/tables/SearchPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.css"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/TablePlaceholderPage.tsx"
     },
     {
       "path": "frontend/src/features/tables/businessDataApi.test.ts"
@@ -292,6 +346,12 @@
       "path": "frontend/src/features/tables/searchConditions.ts"
     },
     {
+      "path": "frontend/src/features/tables/tableAccessApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/tableAccessApi.ts"
+    },
+    {
       "path": "frontend/src/features/tables/tableHookSupport.ts"
     },
     {
@@ -338,6 +398,15 @@
     },
     {
       "path": "frontend/src/features/tables/useRowWrite.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useScreenPresence.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useScreenPresence.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableAccess.ts"
     },
     {
       "path": "frontend/src/features/tables/useTableDefinition.test.tsx"

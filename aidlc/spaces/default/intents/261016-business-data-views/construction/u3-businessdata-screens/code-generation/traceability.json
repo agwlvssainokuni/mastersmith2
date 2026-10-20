@@ -161,68 +161,89 @@
     "NFR7.11",
     "NFR7.12",
     "NFR7.13",
-    "NFR8.7"
+    "NFR8.7",
+    "U4-NFR4.8",
+    "U4-NFR5.1",
+    "U4-NFR5.2",
+    "U4-NFR5.3",
+    "U4-NFR7.2",
+    "U4-NFR7.3",
+    "AC2.4.3",
+    "AC2.4.4",
+    "AC3.1.2",
+    "AC3.1.3",
+    "AC3.1.4",
+    "AC3.1.5",
+    "NFR2.5",
+    "NFR2.8",
+    "NFR3.3",
+    "NFR4.5",
+    "NFR4.8",
+    "NFR5.4",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.4"
   ],
   "coverage": [
     {
       "id": "AC1.1.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.8",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.1.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC1.2.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.4",
@@ -232,47 +253,47 @@
     {
       "id": "AC1.2.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.8",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.11",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.12",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.13",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/searchConditions.ts・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "AC1.2.14",
@@ -282,17 +303,17 @@
     {
       "id": "AC1.3.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.4",
@@ -337,22 +358,22 @@
     {
       "id": "AC1.3.12",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.13",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.14",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.15",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/listPaging.ts・frontend/src/shared/page-size/PageSizeSelect.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC1.3.16",
@@ -362,37 +383,37 @@
     {
       "id": "AC1.4.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/useRowDetail.ts・frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
       "id": "AC1.4.8",
@@ -402,72 +423,72 @@
     {
       "id": "AC1.5.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC1.5.8",
       "status": "OK",
-      "target": "frontend/src/features/tables/valueFormat.ts・frontend/src/shared/null-value/NullValue.tsx・frontend/src/features/tables/valueFormat.test.ts"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "AC2.1.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.1.2",
       "status": "OK",
-      "target": "部分（画面）: frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/src/features/tables/RowActionsMenu.test.tsx。API の 403 は U2"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC2.1.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.1.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.1.5",
       "status": "OK",
-      "target": "部分（画面の文）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/writeOutcome.test.ts・frontend/src/features/tables/problemMessage.test.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx。DB の拒否と監査は U2"
+      "target": "frontend/src/features/tables/writeOutcome.ts"
     },
     {
       "id": "AC2.1.6",
       "status": "OK",
-      "target": "部分（画面の文と入力への結び付け）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/writeOutcome.test.ts・frontend/src/features/tables/problemMessage.test.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx。違反の確かめと監査は U2"
+      "target": "frontend/src/features/tables/writeOutcome.ts"
     },
     {
       "id": "AC2.1.7",
@@ -477,27 +498,27 @@
     {
       "id": "AC2.1.8",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.1.9",
       "status": "OK",
-      "target": "部分（画面は空のカラムを送らない）: frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formDiff.test.ts。DB の既定値は U2"
+      "target": "frontend/src/features/tables/formDiff.ts"
     },
     {
       "id": "AC2.1.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.3",
@@ -507,77 +528,77 @@
     {
       "id": "AC2.2.4",
       "status": "OK",
-      "target": "部分（画面の文）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/writeOutcome.test.ts・frontend/src/features/tables/problemMessage.test.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx。404 と監査は U2"
+      "target": "frontend/src/features/tables/writeOutcome.ts"
     },
     {
       "id": "AC2.2.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.8",
       "status": "OK",
-      "target": "部分（画面は変えたカラムだけを送る）: frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formDiff.test.ts・frontend/src/features/tables/formDiff.property.test.ts。値の保ちは U2"
+      "target": "frontend/src/features/tables/formDiff.ts"
     },
     {
       "id": "AC2.2.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx（何も変えなければ保存を押せない）・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.11",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.12",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/formDiff.ts・frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts・frontend/src/shared/unsaved-guard/useUnsavedGuard.ts・frontend/src/shared/unsaved-guard/useUnsavedGuard.test.tsx・frontend/src/app/work-role/WorkRoleProvider.tsx・frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.2.13",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx（D3）"
+      "target": "frontend/src/features/tables/BusinessDataFormPage.tsx"
     },
     {
       "id": "AC2.3.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx・frontend/src/features/tables/useRowDeleteFlow.ts・frontend/src/features/tables/DeleteConfirmModal.test.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx"
     },
     {
       "id": "AC2.3.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx・frontend/src/features/tables/useRowDeleteFlow.ts・frontend/src/features/tables/DeleteConfirmModal.test.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx"
     },
     {
       "id": "AC2.3.3",
       "status": "OK",
-      "target": "部分（画面）: frontend/src/features/tables/BusinessDataListPage.tsx・frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/src/features/tables/RowActionsMenu.test.tsx。API の 403 は U2"
+      "target": "frontend/src/features/tables/BusinessDataListPage.tsx"
     },
     {
       "id": "AC2.3.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx・frontend/src/features/tables/useRowDeleteFlow.ts・frontend/src/features/tables/DeleteConfirmModal.test.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx"
     },
     {
       "id": "AC2.3.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx・frontend/src/features/tables/useRowDeleteFlow.ts・frontend/src/features/tables/DeleteConfirmModal.test.tsx・frontend/src/features/tables/BusinessDataListPage.write.test.tsx・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/src/features/tables/DeleteConfirmModal.tsx"
     },
     {
       "id": "AC2.3.6",
@@ -587,37 +608,37 @@
     {
       "id": "AC2.4.1",
       "status": "OK",
-      "target": "frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/formValidation.test.ts・frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/formValidation.ts"
     },
     {
       "id": "AC2.4.2",
       "status": "OK",
-      "target": "frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/formValidation.test.ts・frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/formValidation.ts"
     },
     {
       "id": "AC2.4.5",
       "status": "OK",
-      "target": "部分（画面の文）: frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/messages.ts（PATTERN_TIMEOUT の文）。時間の上限は U2"
+      "target": "frontend/src/features/tables/problemMessage.ts"
     },
     {
       "id": "AC2.4.6",
       "status": "OK",
-      "target": "frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/formValidation.test.ts・frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/formValidation.ts"
     },
     {
       "id": "AC2.4.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/writeOutcome.test.ts・frontend/src/features/tables/problemMessage.test.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/writeOutcome.ts"
     },
     {
       "id": "AC2.4.8",
       "status": "OK",
-      "target": "frontend/src/features/tables/formValidation.ts・frontend/src/features/tables/formValidation.test.ts・frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/formValidation.ts"
     },
     {
       "id": "AC3.1.1",
       "status": "OK",
-      "target": "部分（B5 の一覧・詳細）: frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx。作成・更新の側（B6）: frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC3.1.6",
@@ -632,12 +653,12 @@
     {
       "id": "AC3.1.8",
       "status": "OK",
-      "target": "部分（B5 の一覧・詳細）: frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx。作成・更新の側（B6）: frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC3.1.9",
       "status": "OK",
-      "target": "部分（B5 の一覧・詳細）: frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx。作成・更新の側（B6）: frontend/src/features/tables/BusinessDataFormPage.tsx・frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "AC3.1.10",
@@ -647,17 +668,17 @@
     {
       "id": "AC3.2.1",
       "status": "OK",
-      "target": "部分（B5 の一覧）: frontend/src/features/tables/RestrictionNotice.tsx・frontend/src/features/tables/RestrictionNotice.test.tsx。書き込みの側（B6）: frontend/src/features/tables/RestrictionNotice.tsx（N-5 の canWriteWhenConfigured）・frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
+      "target": "frontend/src/features/tables/RestrictionNotice.tsx"
     },
     {
       "id": "AC3.2.2",
       "status": "OK",
-      "target": "部分（B5 の一覧）: frontend/src/features/tables/RestrictionNotice.tsx・frontend/src/features/tables/RestrictionNotice.test.tsx。書き込みの側（B6）: frontend/src/features/tables/RestrictionNotice.tsx（N-5 の canWriteWhenConfigured）・frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
+      "target": "frontend/src/features/tables/RestrictionNotice.tsx"
     },
     {
       "id": "AC3.2.3",
       "status": "OK",
-      "target": "部分（B5 の一覧）: frontend/src/features/tables/RestrictionNotice.tsx・frontend/src/features/tables/RestrictionNotice.test.tsx。書き込みの側（B6）: frontend/src/features/tables/RestrictionNotice.tsx（N-5 の canWriteWhenConfigured）・frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
+      "target": "frontend/src/features/tables/RestrictionNotice.tsx"
     },
     {
       "id": "AC3.2.4",
@@ -667,12 +688,12 @@
     {
       "id": "AC3.2.5",
       "status": "OK",
-      "target": "部分（B5 の一覧）: frontend/src/features/tables/RestrictionNotice.tsx・frontend/src/features/tables/RestrictionNotice.test.tsx。書き込みの側（B6）: frontend/src/features/tables/RestrictionNotice.tsx（N-5 の canWriteWhenConfigured）・frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
+      "target": "frontend/src/features/tables/RestrictionNotice.tsx"
     },
     {
       "id": "AC3.2.6",
       "status": "OK",
-      "target": "部分（B5 の一覧）: frontend/src/features/tables/RestrictionNotice.tsx・frontend/src/features/tables/RestrictionNotice.test.tsx。書き込みの側（B6）: frontend/src/features/tables/RestrictionNotice.tsx（N-5 の canWriteWhenConfigured）・frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
+      "target": "frontend/src/features/tables/RestrictionNotice.tsx"
     },
     {
       "id": "AC3.2.7",
@@ -697,12 +718,12 @@
     {
       "id": "AC3.3.4",
       "status": "OK",
-      "target": "部分（B5 の読み取り）: frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts。書き込みの文（B6）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts"
+      "target": "frontend/src/features/tables/BusinessDataProblemView.tsx"
     },
     {
       "id": "AC3.3.5",
       "status": "OK",
-      "target": "部分（B5 の読み取り）: frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts。書き込みの文（B6）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts"
+      "target": "frontend/src/features/tables/BusinessDataProblemView.tsx"
     },
     {
       "id": "AC3.3.6",
@@ -712,17 +733,17 @@
     {
       "id": "AC3.3.7",
       "status": "OK",
-      "target": "部分（B5 の読み取り）: frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts。書き込みの文（B6）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts"
+      "target": "frontend/src/features/tables/BusinessDataProblemView.tsx"
     },
     {
       "id": "AC3.3.8",
       "status": "OK",
-      "target": "部分（B5 の読み取り）: frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts。書き込みの文（B6）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts"
+      "target": "frontend/src/features/tables/BusinessDataProblemView.tsx"
     },
     {
       "id": "AC3.3.9",
       "status": "OK",
-      "target": "部分（B5 の読み取り）: frontend/src/features/tables/BusinessDataProblemView.tsx・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts。書き込みの文（B6）: frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/problemMessage.test.ts"
+      "target": "frontend/src/features/tables/BusinessDataProblemView.tsx"
     },
     {
       "id": "AC3.3.10",
@@ -752,7 +773,7 @@
     {
       "id": "AC3.6.5",
       "status": "OK",
-      "target": "frontend/src/features/tables/rowLabel.ts・frontend/src/features/tables/rowLabel.property.test.ts"
+      "target": "frontend/src/features/tables/rowLabel.ts"
     },
     {
       "id": "AC3.6.6",
@@ -777,67 +798,69 @@
     {
       "id": "AC4.1.1",
       "status": "OK",
-      "target": "部分（B5）: frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/rowLabel.ts・frontend/e2e/185-business-data-accessibility.e2e.ts。4.14 の試しの記録は generation-notes.md 4節"
+      "target": "frontend/src/features/tables/RowActionsMenu.tsx"
     },
     {
       "id": "AC4.1.2",
       "status": "Deferred",
-      "target": "U4 u4-a11y-carryover（固定先の更新）"
+      "target": "次の Intent（make-you-chic-ui の固定先の2回目の更新。依頼（5）が上流の main に無く、B7 で固定先を上げなかった）",
+      "reason": "依頼（5）（表の横のスクロールの枠のフォーカスとラベル・1ページの件数の選択）は、2026-10-20 の時点で上流の main（b0a1e79）に無い。U4 の B7 の分を U3 が受けたが果たせず、次の Intent へ持ち越す（U4 の D11）。src/shared/scroll-region・page-size の手当てのまま。generation-notes.md 10.2"
     },
     {
       "id": "AC4.1.3",
-      "status": "Deferred",
-      "target": "U4 u4-a11y-carryover（axe-core の引き上げ。U3 は D31 の試しの記録を渡す）"
+      "status": "OK",
+      "target": "frontend/package-lock.json"
     },
     {
       "id": "AC4.1.4",
       "status": "Deferred",
-      "target": "U4 u4-a11y-carryover（E2E 080 の違反の部品）"
+      "target": "次の Intent（E2E 080 の違反の部品の上流での直しの取り込み。依頼（5）が上流の main に無く、B7 で固定先を上げなかった）",
+      "reason": "axe-core 4.14.0 の下で E2E の全件の違反は 0 件で、今は違反の部品は無い。依頼（5）の Topbar の項目の上流の対応と固定先の更新は次の Intent へ持ち越す。generation-notes.md 10.2・10.7"
     },
     {
       "id": "AC4.1.5",
-      "status": "Deferred",
-      "target": "U4 u4-a11y-carryover（持ち越しの諮り）"
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261016-business-data-views/construction/u3-businessdata-screens/code-generation/generation-notes.md"
     },
     {
       "id": "AC4.1.6",
       "status": "OK",
-      "target": "部分（B5）: frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/rowLabel.ts・frontend/e2e/185-business-data-accessibility.e2e.ts。4.14 の試しの記録は generation-notes.md 4節"
+      "target": "frontend/e2e/185-business-data-accessibility.e2e.ts"
     },
     {
       "id": "NFR1.7",
-      "status": "OK",
-      "target": "frontend/e2e/185-business-data-accessibility.e2e.ts（測り。generation-notes.md 1節 Step 13）・frontend/src/features/tables/BusinessDataTable.tsx"
+      "status": "Deferred",
+      "target": "Build and Test（画面の時間の判定。B5・B6 の測りの値は generation-notes.md 4.2 と 7.2）"
     },
     {
       "id": "NFR1.8",
       "status": "OK",
-      "target": "frontend/e2e/support/businessDataMeasure.ts・frontend/e2e/support/businessDataMeasure.test.ts"
+      "target": "frontend/e2e/support/businessDataMeasure.ts"
     },
     {
       "id": "NFR1.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/useRowSearch.ts・frontend/src/features/tables/useRowSearch.test.tsx・frontend/src/features/tables/useTableDefinition.test.tsx"
+      "target": "frontend/src/features/tables/useRowSearch.ts"
     },
     {
       "id": "NFR1.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/registration.ts・frontend/src/features/tables/registration.test.ts（作成・更新は同じ lazy の画面）"
+      "target": "frontend/src/features/tables/registration.ts"
     },
     {
       "id": "NFR2.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/businessDataStore.test.ts"
+      "target": "frontend/src/features/tables/businessDataStore.ts"
     },
     {
       "id": "NFR2.11",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/BusinessDataTable.css・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "NFR3.7",
       "status": "OK",
-      "target": "部分: frontend/src/features/tables/valueFormat.ts（DB の種類で分岐しない）。3種類の DB の振る舞いは U1・U2 の結合テスト"
+      "target": "frontend/src/features/tables/valueFormat.ts"
     },
     {
       "id": "NFR4.1",
@@ -847,7 +870,7 @@
     {
       "id": "NFR4.2",
       "status": "OK",
-      "target": "部分: frontend/src/features/tables/businessDataStore.ts・frontend/src/features/tables/BusinessDataDetailPage.test.tsx・frontend/e2e/support/secretValues.ts。サーバーの側は U1・U2"
+      "target": "frontend/src/features/tables/businessDataStore.ts"
     },
     {
       "id": "NFR4.3",
@@ -862,107 +885,212 @@
     {
       "id": "NFR4.20",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataTable.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx・frontend/src/app/navigation/tablePlaceholderPath.ts"
+      "target": "frontend/src/features/tables/BusinessDataTable.tsx"
     },
     {
       "id": "NFR4.21",
       "status": "OK",
-      "target": "frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/RowActionsMenu.tsx"
     },
     {
       "id": "NFR4.22",
       "status": "OK",
-      "target": "frontend/src/features/tables/businessDataStore.ts・frontend/src/app/login-state/loginScope.ts・frontend/src/features/tables/businessDataStore.test.ts"
+      "target": "frontend/src/features/tables/businessDataStore.ts"
     },
     {
       "id": "NFR4.23",
       "status": "OK",
-      "target": "frontend/src/features/tables/businessDataApi.ts・frontend/src/features/tables/businessDataLimits.ts・frontend/src/features/tables/businessDataApi.test.ts・frontend/src/features/tables/searchConditions.test.ts（書き込みの上限 4 MiB・削除 64 KiB も同じ）"
+      "target": "frontend/src/features/tables/businessDataApi.ts"
     },
     {
       "id": "NFR4.24",
       "status": "OK",
-      "target": "frontend/src/features/tables/businessDataParse.ts・frontend/src/features/tables/businessDataParse.property.test.ts・frontend/src/features/tables/writeOutcome.ts・frontend/src/features/tables/writeOutcome.test.ts"
+      "target": "frontend/src/features/tables/businessDataParse.ts"
     },
     {
       "id": "NFR4.25",
       "status": "OK",
-      "target": "frontend/e2e/support/secretValues.ts（SECRET_KINDS・businessValue）・frontend/e2e/support/secretValues.test.ts・frontend/playwright.config.ts（一時のロールの4つの名前と接続先）・frontend/e2e/180-business-data-flow.e2e.ts"
+      "target": "frontend/e2e/support/secretValues.ts"
     },
     {
       "id": "NFR4.26",
       "status": "OK",
-      "target": "frontend/src/features/tables/RowActionsMenu.tsx・frontend/src/features/tables/BusinessDataListPage.test.tsx"
+      "target": "frontend/src/features/tables/RowActionsMenu.tsx"
     },
     {
       "id": "NFR5.6",
       "status": "OK",
-      "target": "frontend/e2e/185-business-data-accessibility.e2e.ts・frontend/src/shared/scroll-region/ScrollRegion.tsx"
+      "target": "frontend/e2e/185-business-data-accessibility.e2e.ts"
     },
     {
       "id": "NFR5.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/RowActionsMenu.tsx・frontend/e2e/185-business-data-accessibility.e2e.ts（expectContained）"
+      "target": "frontend/src/features/tables/RowActionsMenu.tsx"
     },
     {
       "id": "NFR5.8",
       "status": "OK",
-      "target": "部分（B5）: generation-notes.md 4節（4.14 の試しの記録）"
+      "target": "frontend/e2e/support/axeRuleChecks.ts"
     },
     {
       "id": "NFR5.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/rowLabel.ts・frontend/src/features/tables/rowLabel.property.test.ts"
+      "target": "frontend/src/features/tables/rowLabel.ts"
     },
     {
       "id": "NFR5.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/SearchPanel.tsx・frontend/src/features/tables/BusinessDataDetailPage.tsx・frontend/src/features/tables/SearchPanel.test.tsx"
+      "target": "frontend/src/features/tables/SearchPanel.tsx"
     },
     {
       "id": "NFR6.3",
       "status": "OK",
-      "target": "frontend/src/features/tables/messages.ts・frontend/src/features/tables/problemMessage.ts・frontend/src/features/tables/messages.test.ts"
+      "target": "frontend/src/features/tables/messages.ts"
     },
     {
       "id": "NFR6.4",
       "status": "OK",
-      "target": "frontend/src/features/tables/problemMessage.ts（tables.problem.writeForbidden・writeForbiddenDelete）・frontend/src/features/tables/problemMessage.test.ts・frontend/src/features/tables/BusinessDataFormPage.test.tsx・frontend/src/features/tables/DeleteConfirmModal.test.tsx"
+      "target": "frontend/src/features/tables/problemMessage.ts"
     },
     {
       "id": "NFR7.8",
       "status": "OK",
-      "target": "部分: generation-notes.md 4節（B5 の verify と E2E の時間）"
+      "target": "aidlc/spaces/default/intents/261016-business-data-views/construction/u3-businessdata-screens/code-generation/generation-notes.md"
     },
     {
       "id": "NFR7.9",
       "status": "OK",
-      "target": "frontend/src/features/tables/BusinessDataListPage.test.tsx・frontend/src/features/tables/BusinessDataDetailPage.test.tsx・frontend/src/features/tables/BusinessDataTable.test.tsx"
+      "target": "frontend/src/features/tables/BusinessDataListPage.test.tsx"
     },
     {
       "id": "NFR7.10",
       "status": "OK",
-      "target": "frontend/src/features/tables/businessDataParse.property.test.ts・frontend/src/features/tables/rowLabel.property.test.ts・frontend/src/features/tables/valueFormat.property.test.ts"
+      "target": "frontend/src/features/tables/businessDataParse.property.test.ts"
     },
     {
       "id": "NFR7.11",
       "status": "OK",
-      "target": "frontend/src/shared/unsaved-guard/useUnsavedGuard.ts・frontend/src/shared/unsaved-guard/useUnsavedGuard.test.tsx"
+      "target": "frontend/src/shared/unsaved-guard/useUnsavedGuard.ts"
     },
     {
       "id": "NFR7.12",
       "status": "OK",
-      "target": "frontend/vitest.config.ts（下限と除外は変えない）。generation-notes.md 4節"
+      "target": "frontend/vitest.config.ts"
     },
     {
       "id": "NFR7.13",
       "status": "OK",
-      "target": "frontend/e2e/support/businessDataFixtures.ts・frontend/e2e/support/businessDataApiRoute.ts・frontend/e2e/180-business-data-flow.e2e.ts（shapeCompare）・build.gradle.kts（e2eTest の見本の PG の準備と片付け）"
+      "target": "frontend/e2e/support/businessDataFixtures.ts"
     },
     {
       "id": "NFR8.7",
       "status": "OK",
-      "target": "frontend/src/features/tables/tableHookSupport.ts・frontend/src/features/tables/useTableDefinition.test.tsx・frontend/src/features/tables/useRowSearch.test.tsx"
+      "target": "frontend/src/features/tables/tableHookSupport.ts"
+    },
+    {
+      "id": "U4-NFR4.8",
+      "status": "OK",
+      "target": "frontend/package-lock.json"
+    },
+    {
+      "id": "U4-NFR5.1",
+      "status": "OK",
+      "target": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "id": "U4-NFR5.2",
+      "status": "OK",
+      "target": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "id": "U4-NFR5.3",
+      "status": "OK",
+      "target": "frontend/e2e/support/axeRuleChecks.ts"
+    },
+    {
+      "id": "U4-NFR7.2",
+      "status": "Deferred",
+      "target": "Build and Test（E2E の時間。B7 の値は generation-notes.md 10節）"
+    },
+    {
+      "id": "U4-NFR7.3",
+      "status": "Deferred",
+      "target": "Build and Test（verify と CI の時間。B7 の値は generation-notes.md 10節）"
+    },
+    {
+      "id": "AC2.4.3",
+      "status": "Deferred",
+      "target": "U2 u2-businessdata-write（一意の確かめ。US2.5 へ移した ID）"
+    },
+    {
+      "id": "AC2.4.4",
+      "status": "Deferred",
+      "target": "U2 u2-businessdata-write（一意の確かめ。US2.5 へ移した ID）"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "Deferred",
+      "target": "U1 u1-businessdata-read・U2 u2-businessdata-write（サーバーの権限の判定）"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "U2 u2-businessdata-write（作成の API の切り替えの直後）"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "Deferred",
+      "target": "U1 u1-businessdata-read・U2 u2-businessdata-write（サーバーの権限の判定）"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "Deferred",
+      "target": "U1 u1-businessdata-read（一覧の API の 403）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "N/A",
+      "target": "ほかの単位（U1・U2・U4）の ID を U3 の NFR 要件・NFR 設計の本文で引用しただけ。U3 の要件ではない（U4 の ID は U4-NFR の行で扱う）"
     }
   ]
 }

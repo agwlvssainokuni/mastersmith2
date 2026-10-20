@@ -37,7 +37,11 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import { loginAsAdmin } from './support/adminLogin'
 import { missingRequiredRules, runAxe } from './support/axe'
-import { describeAxeNode } from './support/axeRuleChecks'
+import {
+  describeAxeNode,
+  labelContentNameProblems,
+  type LabelContentNameCategory,
+} from './support/axeRuleChecks'
 import {
   DISPLAY_COMBOS,
   expectComboApplied,
@@ -163,8 +167,16 @@ function withoutExcluded(problems: readonly string[], excluded: readonly string[
   return rest
 }
 
-/** 1つの状態を検査し、注記に件数と規則の名前だけを残す。 */
-async function inspect(page: Page, label: string, state: string): Promise<void> {
+/**
+ * 1つの状態を検査し、注記に件数と規則の名前だけを残す。labelCategories を渡した状態では、規則
+ * label-content-name-mismatch の区分ごとの passes を確かめる（Intent 261016-business-data-views の B7、U4-NFR5.3）。
+ */
+async function inspect(
+  page: Page,
+  label: string,
+  state: string,
+  labelCategories: readonly LabelContentNameCategory[] = [],
+): Promise<void> {
   const summary = await runAxe(page)
   const overflow = await measureHorizontalOverflow(page)
   const violationRules = [...new Set(summary.violations.map((violation) => violation.id))]
@@ -178,6 +190,10 @@ async function inspect(page: Page, label: string, state: string): Promise<void> 
     violation.nodes.slice(0, 3).map((node) => describeAxeNode(violation.id, node.key)),
   )
   expect(violationRules, `${name}: 違反（${targets.join(' / ')}）`).toEqual([])
+  expect(
+    labelContentNameProblems(summary, labelCategories),
+    `${name}: label-content-name-mismatch の passes`,
+  ).toEqual([])
   expect(overflow.overflows, describeOverflow(name, overflow)).toBe(false)
 }
 
@@ -328,7 +344,10 @@ test.describe('160 app frame accessibility on the built WAR', () => {
       // 10 の状態ごとに axe を流すため、既定の 30 秒を超える。
       test.setTimeout(180_000)
       const { watch, excludedTexts, route } = await startU7(page, combo)
-      const check = (state: InspectionState) => inspect(page, combo.name, state)
+      const check = (
+        state: InspectionState,
+        labelCategories?: readonly LabelContentNameCategory[],
+      ) => inspect(page, combo.name, state, labelCategories)
 
       await test.step('sidebar with five open levels, long names and the business data list', async () => {
         await openLeaf(page)
@@ -338,14 +357,14 @@ test.describe('160 app frame accessibility on the built WAR', () => {
             'true',
           )
         }
-        await check('sidebar-5-levels-and-list')
+        await check('sidebar-5-levels-and-list', ['C5', 'C8', 'C9'])
         await expectSidebarContained(page, `${combo.name} sidebar`)
       })
 
       await test.step('work role menu with three roles', async () => {
         await workRoleTrigger(page).click()
         await expect(page.getByRole('menuitem', { name: LONG_WORK_ROLE })).toBeVisible()
-        await check('work-role-menu-3-roles')
+        await check('work-role-menu-3-roles', ['C6'])
         await expectContained(page, `${combo.name} work-role-menu`)
         await page.keyboard.press('Escape')
         await expect(page.getByRole('menu')).toHaveCount(0)

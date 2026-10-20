@@ -27,7 +27,11 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import { loginAsAdmin } from './support/adminLogin'
 import { missingRequiredRules, runAxe } from './support/axe'
-import { describeAxeNode } from './support/axeRuleChecks'
+import {
+  describeAxeNode,
+  labelContentNameProblems,
+  type LabelContentNameCategory,
+} from './support/axeRuleChecks'
 import {
   fixturePage,
   longDetail,
@@ -185,8 +189,16 @@ function withoutExcluded(problems: readonly string[], excluded: readonly string[
   return rest
 }
 
-/** 1つの状態を検査し、注記に件数と規則の名前だけを残す（160 と同じ形）。 */
-async function inspect(page: Page, label: string, state: string): Promise<void> {
+/**
+ * 1つの状態を検査し、注記に件数と規則の名前だけを残す（160 と同じ形）。labelCategories を渡した状態では、規則
+ * label-content-name-mismatch の区分ごとの passes を確かめる（B7、U4-NFR5.3・U3-NFR5.8）。
+ */
+async function inspect(
+  page: Page,
+  label: string,
+  state: string,
+  labelCategories: readonly LabelContentNameCategory[] = [],
+): Promise<void> {
   const summary = await runAxe(page)
   const overflow = await measureHorizontalOverflow(page)
   const violationRules = [...new Set(summary.violations.map((violation) => violation.id))]
@@ -200,6 +212,10 @@ async function inspect(page: Page, label: string, state: string): Promise<void> 
     violation.nodes.slice(0, 3).map((node) => describeAxeNode(violation.id, node.key)),
   )
   expect(violationRules, `${name}: 違反（${targets.join(' / ')}）`).toEqual([])
+  expect(
+    labelContentNameProblems(summary, labelCategories),
+    `${name}: label-content-name-mismatch の passes`,
+  ).toEqual([])
   expect(overflow.overflows, describeOverflow(name, overflow)).toBe(false)
 }
 
@@ -249,12 +265,13 @@ async function walkStates(
   label: string,
 ): Promise<void> {
   const { business } = started
-  const check = (state: string) => inspect(page, label, state)
+  const check = (state: string, labelCategories?: readonly LabelContentNameCategory[]) =>
+    inspect(page, label, state, labelCategories)
 
   await test.step('list with 100 columns, NULL rows and long names', async () => {
     await openWideList(page)
     await expect(page.locator('[data-testid^="table-row-r"]')).toHaveCount(20)
-    await check('list')
+    await check('list', ['C8', 'C9'])
   })
 
   await test.step('open search fields with an error', async () => {

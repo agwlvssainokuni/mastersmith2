@@ -519,10 +519,10 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
 
 ### B7（U4 の後半: axe-core の引き上げ）
 
-- [ ] **Step 41: 作業の準備と走らせ方の確かめ（B7）**
+- [x] **Step 41: 作業の準備と走らせ方の確かめ（B7）**
   - Step 1 と同じ確かめ。`develop` から `feature/261016-business-data-views-b7` を作る。
   - 走らせ方の確かめ: `unit-test-instructions.md` の 3.1 の B7 のコマンド（`e2e/support/axeRuleChecks.test.ts`・`axeElementKey.test.ts`、置き換える共通の部品のテスト）を流し、件数を記録する。
-- [ ] **Step 42: 依頼（5）の上流の対応の確かめ（A8）**
+- [x] **Step 42: 依頼（5）の上流の対応の確かめ（A8）**
   - 依頼者の承認を得て `vendor/make-you-chic-ui` で `git fetch` し、上流の `main` の新しいコミットで、表の横のスクロールの領域と1ページの件数の選択の口の形を、読み取りだけの `git show` で確かめる（報告ではなくソースで。team.md）。
   - 間に合っていなければ Step 43・44 を行わず、`src/shared/` の手当てのまま残し、置き換えを次の Intent に回したことを記録する（U4 の D11・AC4.1.5）。axe-core の引き上げは止めない。
 - [ ] **Step 43: 固定先の2回目の更新（間に合ったとき。A8）**
@@ -530,21 +530,21 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
   - `./gradlew vendorInstall vendorBuild frontendInstall` の後に、Dropdown・Table・Modal を使う既存の部品のテストを書き換えずに流して通ることを確かめる。
 - [ ] **Step 44: 手当ての置き換え（間に合ったとき）**
   - `BusinessDataTable` の横のスクロールの枠と件数の選択を make-you-chic-ui の口に置き換え、要らなくなった `src/shared/scroll-region`・`page-size` とそのテストを消す（ほかに使う所が無いことを検索で確かめる）。置き換えた部品のテストを書いて流す（`aria-label`・フォーカス・件数を変えたら1ページ目、vitest-axe）。
-- [ ] **Step 45: axe-core の版の確定と取り込み（A9）**
+- [x] **Step 45: axe-core の版の確定と取り込み（A9）**
   - その時点の 4 系の最新（4.14 以上）を採る。CHANGELOG で既定で流れるようになった規則、`license`（MPL-2.0 のままか）、`hasInstallScript` を確かめて依頼者に見せ、承認を得てから `frontend/.npmrc` の `ignore-scripts=true` のまま入れる。`package.json` の範囲は `^<採った版>`。`npm ls axe-core` で版が1つ（vitest-axe の分を含む）。`vendor/make-you-chic-ui/package-lock.json` の axe-core は版を記録するだけ。
   - `.github/dependabot.yml` の axe-core の `ignore` と 65〜70行のコメントを外し、受け方のコメント（U4 の基盤の設計 6節の形。Way of Working との差は「lockfile だけの更新の例外、根拠は Testing Posture の axe-core の決まり」）を書く。
-- [ ] **Step 46: `REQUIRED_RULES` と passes の確かめを E2E に足す（A10）**
+- [x] **Step 46: `REQUIRED_RULES` と passes の確かめを E2E に足す（A10）**
   - `REQUIRED_RULES` に `label-content-name-mismatch` を足す。区分ごとの passes の確かめ（U4 の L5 `labelContentNameProblems`。passes に1件以上、incomplete と violations に 0 件、対象が 0 件なら失敗）を、D6 の答えの対象と場面で既存の E2E と 185 に足す。C4 は 130 の2語の氏名の場面だけ（4.5 の R-01）。U3 の行の操作（`tables-row-actions-*`）と行のリンク（`tables-row-link-*`）は、B5・B6 の試しで要素が見つかったものを対象にする。足す確かめは適用中の DSL に頼らない（1.4）。
   - 既存の axe の検査の結果をもう一度読むだけにし、新しく画面を開き直さない（U4-NFR の性能の決まり）。場面を足すときだけ、その場面を開く。
-- [ ] **Step 47: 単体のテストと vitest-axe**
+- [x] **Step 47: 単体のテストと vitest-axe**
   - 変えた `e2e/support/` のテストと、新しい axe-core の下の画面の部品のテスト（vitest-axe）を流し、件数と違反 0 件を記録する。
-- [ ] **Step 48: 1コマンドの検査（B7）**
+- [x] **Step 48: 1コマンドの検査（B7）**
   - Step 15 と同じ。OSV-Scanner の axe-core の結果（devDependency の High は警告、`MAL-` は止める）を記録する。
-- [ ] **Step 49: E2E の全件と件数の記録（B7）**
+- [x] **Step 49: E2E の全件と件数の記録（B7）**
   - Mailpit と上乗せで起動した見本の PG の前提で `./gradlew e2eTest` を流す。記録: E2E の全件の通過、違反 0 件、区分ごとの passes の件数（incomplete・violations は 0）、vitest-axe の件数、`npm ls axe-core` の結果、E2E の時間（U4-NFR7.2。B3・B5・B6 の試しの時間と並べる）。
   - `npm run build` の後に `frontend/dist` を `axe-core`・`axe.run` などで検索して 0 件（U4-NFR4.8）。
   - 流し終えたら、上乗せ無しで見本の PG を作り直してポートを閉じる。
-- [ ] **Step 50: 記録とコードのレビュー（B7。単位の最後）**
+- [x] **Step 50: 記録とコードのレビュー（B7。単位の最後）**
   - `code-summary.md` の B7 の節と単位の全体のまとめ、`traceability.json`（U3 の機能設計・NFR 要件の ID と、U4 から Deferred で受けた AC4.1.3・AC4.1.5・AC4.1.6・U4-NFR4.8・U4-NFR5.1〜5.3。画面の時間の目標 U3-NFR1.7 と U4-NFR7.2・7.3 は Build and Test への Deferred）、`source-manifest.json`（B5〜B7 のすべてのパス）、`generation-notes.md`。
   - 指揮役がコードのレビューを依頼する（Step 18 と同じ伝え方）。
 - [ ] **Step 51: コミットの提案と積み（B7、依頼者の承認）**

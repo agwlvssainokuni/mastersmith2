@@ -16,13 +16,14 @@
 //
 // S1 一覧と S2 詳細の作成・更新・削除の入口のテスト（Intent 261016-business-data-views の U3 の L7、計画 Step 33、D13（N-5）・
 // D18・D26、AC2.1.1・AC2.2.6・AC2.3.1・AC3.3.9）。data router で描く。
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { BUSINESS_DATA_PATHS } from './businessDataApi'
 import { clearBusinessDataStore } from './businessDataStore'
 import {
+  jsonResponse,
   SAMPLE_DEFINITION_ID,
   wireColumn,
   wireDefinition,
@@ -137,5 +138,54 @@ describe('BusinessDataListPage writes', () => {
     render(ALL)
     await user.click(await screen.findByRole('link', { name: '詳細: 商品 A01' }))
     expect(await screen.findByTestId('tables-detail-update')).toHaveTextContent('更新')
+  })
+})
+
+describe('BusinessDataDetailPage leaving while deleting (R-01)', () => {
+  it('does not move or show a toast when a delete answer arrives after going back', async () => {
+    const user = userEvent.setup()
+    let resolveDelete: (response: Response) => void = () => {}
+    const pending = new Promise<Response>((settle) => {
+      resolveDelete = settle
+    })
+    const { router, calls } = renderTablesDataRouter(ROUTE, (request: RecordedRequest) => {
+      if (request.path === BUSINESS_DATA_PATHS.definition) {
+        return { status: 200, body: wireDefinition({ detailColumns: EDITABLE, ...ALL }) }
+      }
+      if (request.path === BUSINESS_DATA_PATHS.search) {
+        return { status: 200, body: wirePage([wireRow('A01')]) }
+      }
+      if (request.path === BUSINESS_DATA_PATHS.get) {
+        return { status: 200, body: wireDetail('A01') }
+      }
+      if (request.path === BUSINESS_DATA_PATHS.delete) {
+        return pending
+      }
+      return { status: 404, body: {} }
+    })
+    await user.click(await screen.findByRole('link', { name: '詳細: 商品 A01' }))
+    await user.click(await screen.findByTestId('tables-detail-delete'))
+    await user.click(await screen.findByTestId('tables-delete-confirm'))
+    await waitFor(() =>
+      expect(calls.filter((call) => call.path === BUSINESS_DATA_PATHS.delete)).toHaveLength(1),
+    )
+    const searches = () => calls.filter((call) => call.path === BUSINESS_DATA_PATHS.search).length
+    const searchesBefore = searches()
+    void router.navigate(-1)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/tables'))
+    // 一覧の画面の副作用が出す読み込みの要求を待ち、詳細の画面の後片付けが済んだ後に答えを返す
+    await waitFor(() => expect(searches()).toBeGreaterThan(searchesBefore))
+    const keyAfterLeaving = router.state.location.key
+    const searchesAfterLeaving = searches()
+    await act(async () => {
+      resolveDelete(jsonResponse(200, { definitionId: SAMPLE_DEFINITION_ID }))
+      await pending
+    })
+    await act(async () => {
+      await new Promise((settle) => setTimeout(settle, 50))
+    })
+    expect(router.state.location.key).toBe(keyAfterLeaving)
+    expect(screen.queryByText('削除しました。')).toBeNull()
+    expect(searches()).toBe(searchesAfterLeaving)
   })
 })

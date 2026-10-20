@@ -78,6 +78,21 @@ const TOPBAR_ITEM: AxeElementKey = {
   menuOwner: '- .mycui-topbar-user-trigger',
 }
 
+const TABLES_ROW_TRIGGER: AxeElementKey = {
+  element: 'button',
+  owner: 'tables-row-actions-*',
+  marks: ['mycui-button', 'tables-row-actions'],
+  menuOwner: null,
+  path: 'button>span>span>span>td',
+}
+const TABLES_ROW_LINK: AxeElementKey = {
+  element: 'a',
+  owner: 'tables-row-link-*',
+  marks: ['tables-row-link'],
+  menuOwner: null,
+  path: 'a>span>span>td>tr',
+}
+
 function node(outcome: AxeOutcome, key: AxeElementKey): AxeRuleNode {
   return { outcome, key }
 }
@@ -131,7 +146,7 @@ describe('labelContentNameProblems', () => {
 })
 
 describe('categorizeKey', () => {
-  it('assigns the seven categories and leaves other elements out', () => {
+  it('assigns the nine categories and leaves other elements out', () => {
     expect(
       [
         USER_ROW_TRIGGER,
@@ -141,14 +156,34 @@ describe('categorizeKey', () => {
         WORK_ROLE_TRIGGER,
         WORK_ROLE_ITEM,
         TOPBAR_ITEM,
+        TABLES_ROW_TRIGGER,
+        TABLES_ROW_LINK,
       ].map(categorizeKey),
-    ).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'])
-    // 行の「開く」のリンク・メニューの持ち主の無い項目・U3 の行の操作（後の Bolt で候補に足す）は当てはめない
+    ).toEqual(['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'])
+    // 行の「開く」のリンク・メニューの持ち主の無い項目・印の無い業務データの要素は当てはめない
     expect(categorizeKey({ ...GROUP_ROW_TRIGGER, element: 'a', marks: [] })).toBeNull()
     expect(categorizeKey({ ...WORK_ROLE_ITEM, menuOwner: null })).toBeNull()
     expect(
       categorizeKey({ ...USER_ROW_TRIGGER, owner: 'tables-row-actions-*', marks: [] }),
     ).toBeNull()
+    expect(categorizeKey({ ...TABLES_ROW_LINK, marks: [] })).toBeNull()
+    // 行のリンクの印を持つボタン・行の操作の印を持つリンクは、取り違えない
+    expect(categorizeKey({ ...TABLES_ROW_LINK, element: 'button' })).toBeNull()
+    expect(categorizeKey({ ...TABLES_ROW_TRIGGER, element: 'a' })).toBeNull()
+  })
+
+  it('checks the business data row actions and row links like the other categories', () => {
+    const passing = summaryOf([node('passes', TABLES_ROW_TRIGGER), node('passes', TABLES_ROW_LINK)])
+    expect(labelContentNameProblems(passing, ['C8', 'C9'])).toEqual([])
+    expect(
+      labelContentNameProblems(summaryOf([node('passes', TABLES_ROW_TRIGGER)]), ['C8', 'C9']),
+    ).toEqual([expect.stringContaining('確かめの作りの誤り: C9')])
+    expect(
+      labelContentNameProblems(
+        summaryOf([node('passes', TABLES_ROW_LINK), node('violations', TABLES_ROW_LINK)]),
+        ['C9'],
+      ),
+    ).toEqual([expect.stringContaining('C9（業務データの行のリンク）: violations')])
   })
 })
 

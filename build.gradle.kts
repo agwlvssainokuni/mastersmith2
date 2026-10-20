@@ -565,6 +565,10 @@ fun checkE2eTargetDb() {
     }
     // (d) 公開の番号から来る接続が trust に当たらず、誤ったパスワードで拒まれるか（基盤の設計のレビュー R-02）。
     //     同じイメージ（同じ digest）の一時の psql を、docker の host のネットワークで流す。パスワードは乱数で、表示しない。
+    //     確かめる経路は、docker の実行環境の側（colima では VM の中）の 127.0.0.1 の公開の番号で、PC の側の
+    //     127.0.0.1:15432 から入る経路そのものではない。どちらも公開の番号の転送（bridge の gateway）から入るため、
+    //     pg_hba.conf で当たる行（scram-sha-256）は同じ見込み。PC の側の経路は (b) の TCP の到達だけを確かめる
+    //     （U3 のコードのレビューの R-08）。
     val containerId =
         runE2eCommand(listOf("docker", "compose", "--profile", e2eTargetDbService, "ps", "-q", e2eTargetDbService)).stdout.trim()
     val image = runE2eCommand(listOf("docker", "inspect", "--format", "{{.Config.Image}}", containerId)).stdout.trim()

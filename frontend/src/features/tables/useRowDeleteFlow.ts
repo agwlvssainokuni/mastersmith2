@@ -20,6 +20,7 @@
 // - 保存されていない: 403 は閉じて onForbidden（D3。S6 の 403 の表示）、定義が変わった（409 BUSINESS_DEFINITION_CHANGED）は
 //   onDefinitionStale（F6）と文、ほかは Modal の中に code ごとの文（外部キー・行が無い・つながらない など）。
 // - 分からない（D4: A）: Modal の中に文と確かめる入口を出し、もう一度押すと「削除済みかもしれません」の確かめを経て送る。
+// - 送った後に画面を離れていたら、届いた結果では何もしない（useScreenPresence。コードのレビューの R-01）。
 import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TableRef } from '../../app/navigation/tablePlaceholderPath'
@@ -27,6 +28,7 @@ import type { RowKey, TableDefinition } from './businessDataTypes'
 import type { DeletePhase } from './DeleteConfirmModal'
 import { writeProblemKind, writeProblemMessageKey } from './problemMessage'
 import { useRowWrite, type RowWriteApi } from './useRowWrite'
+import { useScreenPresence } from './useScreenPresence'
 
 /** 削除する行 */
 export interface DeleteTarget {
@@ -70,6 +72,7 @@ export function useRowDeleteFlow({
 }: RowDeleteFlowOptions): RowDeleteFlow {
   const { t } = useTranslation()
   const write = useRowWrite(ref, api)
+  const beginPresence = useScreenPresence()
   const [target, setTarget] = useState<DeleteTarget | null>(null)
   const [phase, setPhase] = useState<DeletePhase>('confirm')
   const [message, setMessage] = useState<string | undefined>(undefined)
@@ -101,7 +104,12 @@ export function useRowDeleteFlow({
     if (pending === undefined) {
       return
     }
+    const stillHere = beginPresence()
     void pending.then((outcome) => {
+      // 送った後に画面を離れていたら、onDeleted（一覧への移動・読み直し・Toast）などを呼ばない（コードのレビューの R-01）。
+      if (!stillHere()) {
+        return
+      }
       if (outcome.kind === 'saved') {
         setTarget(null)
         setPhase('confirm')
@@ -129,7 +137,18 @@ export function useRowDeleteFlow({
       }
       setMessage(t(writeProblemMessageKey(kind, 'delete')))
     })
-  }, [target, definition, unknown, phase, write, onDeleted, onForbidden, onDefinitionStale, t])
+  }, [
+    target,
+    definition,
+    unknown,
+    phase,
+    write,
+    beginPresence,
+    onDeleted,
+    onForbidden,
+    onDefinitionStale,
+    t,
+  ])
 
   return {
     target,

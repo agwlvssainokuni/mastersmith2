@@ -1,4 +1,4 @@
-# 生成の記録 — U3 u3-businessdata-screens（Bolt B5、Step 1〜18）
+# 生成の記録 — U3 u3-businessdata-screens（Bolt B5〜B7）
 
 計画（`code-generation-plan.md`）の本文は書き換えず、チェックボックスの印だけを付けた。計画に無い変更と計画と違う判断は 2節に書く。パスはリポジトリのルートからの相対。
 
@@ -347,3 +347,207 @@
 2. N-16 → 近い判定でよい（機能設計 D13 との差として記録したまま）。
 3. (c) の満たさない形 → 使い捨ての PG で確かめる（8.2）。
 4. N-17・N-23・N-24 → この読み方でよい。
+
+## 10. B7（Step 41〜50。U4 の後半: axe-core の引き上げ）
+
+### 10.1 Step 41: 作業の準備と走らせ方の確かめ（B7）
+
+- `aidlc/` の下の未コミットの変更は、監査の記録の shard だけ（触れていない）。git の対象外の生成物（`frontend/test-results`・`frontend/playwright-report`）は無かった。
+- `develop` の先頭は `a031ba1`（B6 の統合。その前に CI の不安定なテストの直し `b7291d3` と B5 の統合 `1152202`）。作業の開始の時点（2026-10-20 19:50 ごろ）で、`a031ba1` の CI（run 39410572004）は pending、`b7291d3` の CI（run 39410449247）は実行中。B5 の統合の後の CI（run 39375104956）は試行 3 で failure の記録（その扱いは指揮役の記録のとおり。直しが `b7291d3`）。B6 の統合の後の CI の結果は、B7 の統合の前に試行ごとに確かめる。
+- `develop` から `feature/261016-business-data-views-b7` を作って移った。
+- 走らせ方の確かめ（`unit-test-instructions.md` の 3.1 の B7）: `axeRuleChecks.test.ts`・`axeElementKey.test.ts`・`src/shared/scroll-region`・`src/shared/page-size`・`BusinessDataTable.test.tsx` の **5 ファイル・36 件**がすべて通った。
+
+### 10.2 Step 42: 依頼（5）の上流の対応の確かめ（A8）
+
+- 承認済みの fetch を `vendor/make-you-chic-ui` で行った（読み取りだけ。作業フォルダの中身は変えていない）。`git ls-remote origin` でも、上流の `main` と `HEAD` は **`b0a1e79`**（2026-10-16、今の固定先と同じ）で、新しいコミットは無い。
+- 上流のソース（`git show origin/main:` の読み取り）で確かめた: `packages/make-you-chic-ui/src/components/Table/Table.tsx` に、表の枠の `role="region"`・`tabIndex`・枠のラベルの口も、1ページの件数の選択（`onPageSizeChange` など）の口も無い。`AppShell/Topbar.tsx` の利用者のメニューのトリガーは今のまま（`aria-label={resolvedLabels.userMenu(user.name)}`。名前は MasterSmith の側の `topbar.userMenu` で見える頭文字から始めている）。
+- 依頼（5）は上流に入っていないため、計画のとおり **固定先は上げない**（Step 43・44 は行わない。印も付けない）。`src/shared/scroll-region`・`page-size` の手当てのまま残し、置き換えは次の Intent に回す（U4 の D11・AC4.1.5）。B7 の統合の形は squash になる（計画 8節）。
+
+### 10.3 Step 45: axe-core の版の確定と取り込み（A9）
+
+- `npm view axe-core version` は **4.14.0**（2026-10-05 公開。4 系の最新で、B3・B5・B6 の試しと同じ版）。`license` は **MPL-2.0**。
+- CHANGELOG（上流の `v4.14.0` の `CHANGELOG.md` を `gh api` で読み取りだけ）: 既定で流れるようになった規則は **`label-content-name-mismatch` の1つ**（「Enable rule by default」#5421）。同じ規則の直し（語ごとの比べ #5345、CJK の語の分け #5437、CJK・全角の正規化 #5419、括弧の中を無視 #5360、値を持つ role は incomplete #5355）と、target-size への EN 301 549 v4 の印（タグの足し）。ほかは直しだけ。
+- `frontend/.npmrc` の `ignore-scripts=true` のまま `npm install --save-dev axe-core@^4.14.0`。`package.json` の範囲は `^4.14.0`。lockfile の差は2ファイル・5 行の追加と 5 行の削除（B5・B6 の試しと同じ形）。`node_modules/axe-core` に install の scripts は無く、lockfile の `hasInstallScript` の項目は前と同じ `node_modules/fsevents` の1件だけ。`npm ls axe-core` は **4.14.0 の1つ**（vitest-axe の分は deduped）。`vendor/make-you-chic-ui/package-lock.json` の axe-core は 4.13.0（記録だけ。固定先は上げていない）。
+- **計画との差（N-34）**: 計画は「依頼者に見せて承認を得てから入れる」。依頼の文の「上げる版は計画に従い、上げてください」のとおり、作業フォルダに入れて確かめまで流した。コミットは C3 の前に依頼者の承認を得る（コミットしていない）。
+- `.github/dependabot.yml`: axe-core の `ignore`（`versions: [">= 4.14.0"]`）と、見送りの理由と外す時期のコメントを外し、受け方のコメントを書いた（U4 の基盤の設計 `cicd-pipeline.md` 6節の形。Way of Working の「依存の版と lockfile だけの更新は verify だけ」の例外で、根拠は Testing Posture の axe-core の決まり、と書いた）。typescript の `ignore` は変えていない。
+
+### 10.4 Step 46: `REQUIRED_RULES` と passes の確かめ（A10）
+
+- `frontend/e2e/support/axe.ts` の `REQUIRED_RULES` に `label-content-name-mismatch` を足した。`WCAG_TAGS`・`KNOWN_VIOLATIONS`（空）・20 の表示の組は変えていない。規則・要素を外す指定（`disableRules`・`exclude`）は足していない。
+- 区分に業務データの2つを足した（`axeRuleChecks.ts`）: **C8** 業務データの行の操作のトリガー（`button`・owner `tables-row-actions-*`・印 `tables-row-actions`）、**C9** 業務データの行のリンク（`a`・owner `tables-row-link-*`・印 `tables-row-link`）。`axeElementKey.ts` の印の一覧に `tables-row-actions`・`tables-row-link` を足した（鍵に値を入れない形は同じ）。
+- 確かめの対象（A10、D6: A。確かめる場面ごとに、区分が passes に1件以上、incomplete と violations に 0 件、要素が 0 件なら失敗）:
+
+| 区分 | ファイル・場面 | 足し方 |
+|---|---|---|
+| C1 利用者の行の操作 | 120 `01-list` | 既存の検査の結果を読む |
+| C2 グループの行の操作 | 140 `S6-group-list`（グループの一覧を開いた場面） | **場面を足した**（本数に数えない書き換え） |
+| C3 ロールの行の操作 | 140 `S3-list` | 既存の検査の結果を読む |
+| C4 トップバーのトリガー | 130 の「権限が無い」の表示（2語の氏名） | 既存の検査の結果を読む。1語の氏名の場面の incomplete は記録だけ（D10c） |
+| C5 作業ロールのトリガー | 160 `sidebar-5-levels-and-list` | 既存の検査の結果を読む |
+| C6 作業ロールの項目 | 160 `work-role-menu-3-roles` | 既存の検査の結果を読む |
+| C7 トップバーの項目 | 130 `topbar-menu-open`（利用者のメニューを開いた場面） | **場面を足した**（本数に数えない書き換え） |
+| C8・C9 業務データの行の操作・行のリンク | 160 `sidebar-5-levels-and-list`、185 `list` | 既存の検査の結果を読む |
+
+- 足した確かめは、どれも差し替えた応答の画面で、180 が適用した DSL に頼らない（1.4）。新しく画面を開き直すのは C2・C7 の2つの場面だけ。
+- 130 の説明（「既存の 010〜100 は変えない」の下）に、B7 で足したことを書いた。
+
+### 10.5 Step 47: 単体のテストと vitest-axe
+
+- `axeRuleChecks.test.ts`（C8・C9 の当てはめ、取り違えない、確かめの文。+1 件）・`axeElementKey.test.ts`（業務データの行の操作と行のリンクの鍵に値が入らない。+1 件）。2 ファイル・18 件が通った。
+- `unit-test-instructions.md` の 3.3 の B7 のコマンド（上の2つと `BusinessDataTable.test.tsx`・`BusinessDataListPage.test.tsx`）: 4 ファイル・38 件が通った。
+- vitest-axe: 新しい axe-core（4.14.0）の下で、画面のテストの `toHaveNoViolations()` は **86 ファイル・113 か所**で、フロントエンドの全件（225 ファイル・1,965 件）が通った（10.6 の1回目・2回目の `frontendTest` と、単独の `npm run test:coverage`）。違反 0 件。
+
+### 10.6 Step 48: 1コマンドの検査（B7。**通っていない**）
+
+`caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡した）を2回流し、2回とも `frontendCoverage`（7 の段）で落ちた。B7 の変更の経路（`e2e/`・`package.json`・lockfile・`dependabot.yml`）には触れないテストで、別々の失敗。
+
+- **1回目**（2026-10-20 20:07:55〜20:31:33、23分37秒）: `frontendTest`（225 ファイル・1,965 件）は通ったが、`frontendCoverage` で `src/eslintImportRules.test.ts` の `beforeAll`（ESLint の部品の読み込み）が `Hook timed out in 10000ms` で落ちた。バックエンドの単体・結合テストは通った。
+  - 再現の試み（上限は「単独 3 回とカバレッジの全件 1 回」と先に決めた）: 単独 3 回は 22 件すべて通過（0.9〜1.9 秒）、`npm run test:coverage` の全件 1 回も 225 ファイル・1,965 件が通過（行 95.1%・分岐 89.88%）。再現しなかった。見立て（未検証）: カバレッジの計測の下で 225 ファイルを並べて流す負荷で、ESLint の部品の最初の読み込みが 10 秒を超えた。team.md の「手元で再現しないもの」の扱い。時間の上限は延ばしていない。
+- **2回目**（2026-10-20 20:35:04〜20:58:14、23分9秒）: `frontendTest` は通ったが、`frontendCoverage` で **`src/features/tables/formDiff.property.test.ts` の「compares decimal texts like their numeric values without losing digits」が落ちた**（fast-check、`seed: 1380462492`・`path: "79"`、反例 `[-28n, -28n]`）。
+  - 原因（**決まった形で再現した**）: `formValidation.ts` の `compareDecimalText` は、等しい2つの負の数（例 `'-28'` と `'-28'`）で `-magnitude` の `-0` を返す。テストは `Math.sign(result)` を `toBe(0)`（`Object.is`）で比べるため `-0` で落ちる。`compareDecimalText('-28','-28')` を単独で呼び、`-0` が返ることを確かめた（関数だけを一時に esbuild で写して node で呼んだ。写しは消した。リポジトリには何も足していない）。
+  - 画面の振る舞いへの響き: 呼ぶ側（`validateValue` の範囲の確かめ）は `< 0`・`> 0` だけで見るため、`-0` でも誤りの判定は変わらない（`-0 < 0` も `-0 > 0` も偽）。性質のテストが乱数で見つけた B6 のコードの欠け（返す値の形）で、B6 の統合の前の verify では当たらなかった。
+  - **直していない**（依頼の文の「計画の外で既存のテストが落ちて判断が要るときは止める」のとおり）。直し方の案: `return xNegative ? -magnitude : magnitude` を `magnitude === 0 ? 0 : (xNegative ? -magnitude : magnitude)` にし、`compareDecimalText('-28', '-28')` が `+0` を返す例のテストを同じコミットに足す（project.md の Mandated。不具合を再現するテストを同じコミットに含める）。team.md の決まり（手元で再現した不安定なテストは原因を直すまで統合しない）により、直すまで B7 は統合できない。
+  - バックエンド: 単体 2,589 件・結合 1,386 件、失敗 0、SKIPPED 9（どれも別の DB の種類だけに当たる前提の飛ばし。対象DB のテストはコンテナで流れた）。JaCoCo・安全の検査・成果物の段は、2回目では `frontendCoverage` の失敗で流れていない。
+- 残りの段を別に流した（`./gradlew verifySecurity verifyArtifact`、通過）: Gitleaks は漏れ無し。OSV-Scanner は「失敗の条件に当たるもの 0 件、警告 18 件」で、**axe-core の指摘は無い**（警告は開発用の `braces`・`brace-expansion`・`postcss-selector-parser`・`source-map-js`・`undici`。`frontend/package-lock.json` の `braces@3.0.3`（GHSA-vfj7-8cjw-p6xm、CVSS 8.7、開発用）が1件、ほかは `vendor/make-you-chic-ui/package-lock.json`）。SpotBugs の関門は通過（priority 2・3 の警告だけ）。`MAL-` は無い。
+- 時間: 1回目 23分37秒、2回目 23分9秒（B6 の後は 20分43秒。CI の上限の7割の約 42 分の内）。流した後の `pmset -g log` に Sleep・DarkWake は無い。
+- 1回目の E2E（10.7 の前の5ファイル）と verify の1回目は、Gradle の作業プロセスの手元の通信が sandbox で止められ、Mailpit の確かめで1回止まった（Mailpit は動いていた。`curl` は 200）。sandbox の外で流し直した。
+
+### 10.7 Step 49: E2E（見本の PG を上乗せで開けた前提。**全件は1件落ちた**）
+
+- 15432: 2026-10-20 19:56:51 に上乗せで見本の PG を作り直して開け、直後に、同じイメージ・digest（`postgres:18.6@sha256:5a5a84b1…`）の一時の psql（`docker run --rm --network host`）で `target_admin` へ乱数の誤ったパスワードで入り、**終了コード 2・`password authentication failed`** で拒まれた（scram）。E2E の後、2026-10-20 21:21 に上乗せ無しで作り直して閉じた（`5432/tcp` だけ、`nc -z 127.0.0.1 15432` は失敗）。閉じた後も `has_database_privilege('public','business','TEMP')` は `f`、`e2e_biz_%` のスキーマと `mastersmith_e2e_%` のロールは 0 件、配備したアプリの `/actuator/health` は 200。
+- 先に、passes の確かめを足した5ファイル（120・130・140・160・185）を `-Pe2e.files` で流した（19:57:31〜20:06:31）: **117 件すべて通過**（8.9 分）、違反 0 件。
+- 全件（`caffeinate -dims ./gradlew e2eTest`、2026-10-20 21:01:17〜21:14:45、Gradle で 13分27秒、Playwright の duration 803 秒＝13分23秒）: **256 件のうち 255 件通過・1 件失敗**（json の stats は expected 255・unexpected 1・flaky 0）。
+  - 落ちた1件: 185 の `business data (b) orange light md`（5.1 秒）。`loginAsAdmin` の最初の `getByTestId('login-layout')` が 5 秒で見えなかった（そのとき `routeLoginPreferences` の差し替えが `POST /api/auth/session/refresh` を `route.fetch` で取り次いでいる最中）。axe の結果に届く前のログインで落ちた。B7 で変えたのは 185 の `inspect` と `list` の場面の確かめだけで、ログインの経路には触れていない。
+  - 再現の試み（上限は「185 を単独で 2 回」と先に決めた）: `-Pe2e.files=e2e/185-business-data-accessibility.e2e.ts` を 2 回流し、**23 件・23 件すべて通過**（各 2.6 分）。前の5ファイルの回でも 185 の 23 件は通っていた。再現しなかった。team.md の「手元で再現しないもの」の扱い（見立て（未検証）: 全件の後半の負荷で、ログインの状態の読み直しの取り次ぎが遅れ、ログインの画面の描画が 5 秒を超えた）。同じテストが二度落ちたら直す。
+  - 準備 と片付けは毎回動き、全件の回の片付けは「スキーマ 1・ロール 2・切った接続 0・226 ms・接頭辞の残り 0」。秘密の確かめは見つかった件数 0。流した後の `pmset -g log` に Sleep・DarkWake は無い。
+- **axe の件数**（全件の回の json の注記 `axe-nodes` の集計。台本はスクラッチに置き、リポジトリに足していない）: どの規則の違反も **0 件**。規則 `label-content-name-mismatch` の区分:
+
+| 区分 | passes | incomplete | violations |
+|---|---|---|---|
+| C1 | 882 | 0 | 0 |
+| C2 | 40 | 0 | 0 |
+| C3 | 129 | 0 | 0 |
+| C4 | 410 | 658（1語の氏名の場面。記録だけ） | 0 |
+| C5 | 1,068 | 0 | 0 |
+| C6 | 176 | 0 | 0 |
+| C7 | 80 | 0 | 0 |
+| C8 | 3,080 | 0 | 0 |
+| C9 | 2,400 | 0 | 0 |
+| 区分に当たらない要素 | 11,982 | 113 | 0 |
+
+  - C8・C9 が B5・B6 の試し（3,160・2,440）より少ないのは、185 の落ちた1件（ログインで止まった）の分。5ファイルの回では C8 3,160・C9 2,440 で、試しと同じ。
+  - 区分に当たらない要素の incomplete 113 件は、140 の `shared-tree-toggle`（木の開閉）43 件と owner `button` のボタン 46 件、160 の `shared-tree-toggle` 24 件。違反ではなく、B5・B6 の試しの記録は owner の無い要素（22 件）だけを数えていたため、比べられない。確かめの対象（A10）の外のまま記録する。
+- ファイルごとの時間（秒）: 120 は 164.6、185 は 144.6、080 は 89.1、140 は 88.6、160 は 79.2、060 は 51.3、135 は 43.4、100 は 32.4、130 は 29.3（B6 の後は 185 182.4。130 は利用者のメニューの場面を足した分を含む）。全体は基準（232 件・約 10分35秒）の約 1.27 倍で、1.5 倍の内。
+- `npm run build` の後の `frontend/dist` を `axe-core`・`axe.run`・`Deque` で検索して **0 件**（U4-NFR4.8）。`npm ls axe-core` は 4.14.0 の1つ。
+
+### 10.8 Step 50: 記録（B7）
+
+- この節、`code-summary.md` の B7 の節と単位の全体のまとめ、`source-manifest.json`（B7 の 11 のパスを足して 144 件。B5〜B7 の U3 の変更の道。CI の不安定なテストの直し `b7291d3` の2つのテストは Intent の記録（`construction/code-generation/generation-notes.md`）の持ち物で、U3 の一覧には入れていない）、`traceability.json`（AC4.1.3・AC4.1.5・AC4.1.6・NFR5.8 を OK に、U4 から受けた U4-NFR4.8・U4-NFR5.1〜5.3 を OK で足し、U4-NFR7.2・7.3 と U3 の NFR1.7 を Build and Test への Deferred にした。OK 125・Deferred 38・N/A 3）。
+- `traceability.json` の B7 で書いた行の target は、検査の部品（traceability の sensor）が道として確かめられるよう、1つの道だけにした。B5・B6 の行は「・」でつないだ複数の道と説明を target に書いており、sensor（advisory）は 132 件を invalid_targets、15 件を missing_from_upstream_ids として返す（B5・B6 の時点から同じ）。直していない。
+- 計画のチェックボックスは Step 41・42・45・46・47 に印を付けた。Step 43・44 は行わない（依頼（5）が上流に無い）。Step 48・49 は通っていないため印を付けていない。Step 50 は記録だけで、コードのレビューは指揮役が依頼する（依頼者の決定: B7 の後に U3 の全体で1回）。
+- コミットはしていない。
+
+### 10.9 B7 の計画に無い判断・計画との差
+
+| # | 差 | 理由 |
+|---|---|---|
+| N-34 | axe-core 4.14.0 を、依頼者に版を見せる前に作業フォルダに入れて確かめまで流した（計画 3節 A9 は「見せて承認を得てから入れる」） | 依頼の文の指示。版・license・hasInstallScript・CHANGELOG は 10.3 に書き、コミット（C3）の前に承認を得る |
+| N-35 | 区分 C8・C9 を足し、`axeElementKey.ts` の印に `tables-row-actions`・`tables-row-link` を足した | 計画 Step 46 の「U3 の行の操作と行のリンクを対象にする」を、ほかの区分と同じ owner と印の形で見分けるため |
+| N-36 | passes の確かめを場面ごとに置き、区分ごとの確かめの場面を1つ（C8・C9 は 160 と 185 の2つ）に決めた | U4 の logical-components.md 3節の「確かめる場面ごとに」。ほかの場面の incomplete（1語の氏名の C4 など）は記録だけ |
+| N-37 | 既存のテストの失敗2件（`eslintImportRules.test.ts` の時間切れ・`formDiff.property.test.ts` の `-0`）と E2E の1件（185 のログイン）は、最初は直さずに報告した | 依頼の文の「止めて報告」。依頼者の決定で `-0` は B7 で直した（10.10） |
+| N-38 | **計画に無い変更（依頼者の決定）**: `frontend/src/features/tables/formValidation.ts` の `compareDecimalText` が、等しいときは `+0` を返すようにした。例のテストを `formValidation.test.ts` に足した | 10.6 の2回目の verify で性質のテストが見つけた B6 のコードの欠け。直して統合する（team.md の不安定なテストの決まり） |
+| N-39 | `traceability.json` の B5・B6 の OK の行の target を、実在する道1つずつに直し、sensor が返した upstream の 15 個の ID を行として足した | 依頼者の決定。sensor の invalid_targets 132 件を 0 件にするため（10.10） |
+
+### 10.10 依頼者の決定の後の直しと確かめ（B7）
+
+依頼者の答え: `-0` は B7 で直す。`eslintImportRules.test.ts` の時間切れと 185 のログインの1件は「不安定と確かめられていない」扱いで記録する。axe-core 4.14.0 を採る（A9）。passes の確かめの対象は C1〜C9 の9区分でよい（A10）。N-34 は記録のまま。traceability の B5・B6 の行の target も直す。
+
+**`compareDecimalText` の直し（N-38）と二段の確かめ**
+
+- 直し: `compareMagnitude` の結果が 0 のときは、符号によらず `0`（`+0`）を返す。ほかは変えていない（`formValidation.ts` に 4 行）。
+- 例のテスト（`formValidation.test.ts`、+1 件）: `('-28','-28')` と `('-1.50','-1.5')` が `Object.is(…, 0)`、`('-28','-27')` が -1、`('-27','-28')` が 1。
+- 二段の確かめ（team.md）: 性質のテストの `fc.assert` に一時に `{ seed: 1380462492, path: '79', endOnFailure: true }` を書き、
+  - 1段目（直す前）: 落ちた（反例 `[-28n,-28n]`、`expected -0 to be +0`）。
+  - 2段目（直した後）: 通った。
+  - 確かめの後に一時の seed を戻し、`formDiff.property.test.ts` の差は無い。
+
+**不安定と確かめられていないものの記録（team.md の「手元で再現しないもの」）**
+
+| テスト | 起きたとき | 見立て（未検証） | 試みの範囲と上限 | 結果 |
+|---|---|---|---|---|
+| `src/eslintImportRules.test.ts` の `beforeAll`（10 秒の時間切れ） | 10.6 の1回目の verify の `frontendCoverage` | カバレッジの計測の下で 225 ファイルを並べて流す負荷で、ESLint の部品の最初の読み込みが 10 秒を超えた | 上限を先に「単独 3 回とカバレッジの全件 1 回」と決めた。単独 3 回・`npm run test:coverage` 1 回 | どれも通った。直した後の verify でも通った |
+| E2E 185 `business data (b) orange light md`（ログインの画面を 5 秒で待てない） | 10.7 の全件の1回目 | 全件の後半の負荷で、`routeLoginPreferences` のログインの状態の読み直しの取り次ぎが遅れ、ログインの画面の描画が 5 秒を超えた | 上限を先に「185 を単独で 2 回」と決めた。2 回（各 23 件） | 46 件すべて通った。直した後の全件でも通った |
+
+- どちらも時間の上限は延ばしていない。同じテストがもう一度落ちたら、そこで止めて報告する（直すまで進まない）。
+
+**直した後の1コマンドの検査**
+
+- `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（2026-10-20 21:27:28〜21:49:19、`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡した）: **BUILD SUCCESSFUL、21分50秒**（B6 の後は 20分43秒。CI の上限の7割の約 42 分の内）。
+- バックエンド: 単体 2,589 件・結合 1,386 件（計 3,975 件）、失敗 0、SKIPPED 9。JaCoCo の全体の合計は 行 97.64%・分岐 91.23%（本体のソースには触れていない）。
+- フロントエンド: 225 ファイル・**1,966 件**がすべて通過（`frontendTest`・`frontendCoverage` の両方）。カバレッジの全体の合計は **行 95.10%・分岐 89.90%**（下限 80%・70% を保つ）。`src/features/tables/` は 行 93.86%・分岐 88.34%。下限・対象・除外は変えていない。vitest-axe は 86 ファイル・113 か所で違反 0 件。
+- 安全の検査: Gitleaks は漏れ無し。OSV-Scanner は失敗の条件に当たるもの 0 件（axe-core の指摘無し）。SpotBugs の関門は通過。
+- 流した後の `pmset -g log` に Sleep・DarkWake は無い。
+
+**直した後の E2E の全件**
+
+- 15432: 2026-10-20 21:49:55 に上乗せで作り直して開け、直後に同じイメージ・digest の一時の psql で `target_admin` へ乱数の誤ったパスワードで入り、**終了コード 2・`password authentication failed`** で拒まれた。E2E の後、22:04 に上乗せ無しで作り直して閉じた（`5432/tcp` だけ、`nc -z 127.0.0.1 15432` は失敗）。閉じた後も TEMP は `f`、`e2e_biz_%` と `mastersmith_e2e_%` は 0 件、配備したアプリの `/actuator/health` は 200。
+- `caffeinate -dims ./gradlew e2eTest`（2026-10-20 21:50:03〜22:03:37、Gradle で 13分33秒、Playwright の duration 809 秒＝13分29秒）: **256 件すべて通過**（json の stats は expected 256・unexpected 0・flaky 0）。基準（232 件・約 10分35秒）の約 1.27 倍で、1.5 倍の内。片付けは「スキーマ 1・ロール 2・切った接続 0・257 ms・接頭辞の残り 0」。秘密の確かめは見つかった件数 0。
+- axe: どの規則の違反も **0 件**。規則 `label-content-name-mismatch` の区分の passes は C1 882・C2 40・C3 129・C4 420・C5 1,078・C6 176・C7 80・C8 3,160・C9 2,440、incomplete・violations はどれも 0（C4 の 1語の氏名の場面の incomplete 658 は記録だけ。区分に当たらない要素の incomplete 113 は 10.7 と同じ）。
+- `frontend/dist` を `axe-core`・`axe.run` で検索して 0 件。`npm ls axe-core` は 4.14.0 の1つ。
+- 流した後の `pmset -g log` に Sleep・DarkWake は無い。
+
+**traceability の直し（N-39）**
+
+- B5・B6 の OK の行の target（「・」でつないだ複数の道と説明）116 行を、そこに書いていた道のうち最初の実在する道1つにした。NFR7.8 は道が無かったため、この `generation-notes.md` の道にした。
+- sensor が missing_from_upstream_ids として返した 15 個を行として足した: AC2.4.3・AC2.4.4・AC3.1.3 は U2 への Deferred、AC3.1.5 は U1 への Deferred、AC3.1.2・AC3.1.4 は U1・U2 への Deferred（サーバーの判定。U1・U2 の traceability で OK）。NFR2.5・NFR2.8・NFR3.3・NFR4.5・NFR4.8・NFR5.4・NFR7.1・NFR7.2・NFR7.4 は、ほかの単位の ID を本文で引用しただけのため N/A。
+- 結果: OK 125・Deferred 44・N/A 12。sensor は **pass**（invalid_targets 0・invalid_entries 0・missing_from_upstream_ids 0・findings 0）。
+- 失ったもの: OK の行の target に書いていた2つ目以降の道と「部分」などの説明は、traceability.json には残らない（各 Step の記録と code-summary.md に残る）。
+
+## 11. コードのレビューの直し（U3 の全体、B5〜B7）
+
+レビュー（`aidlc/spaces/default/intents/261016-business-data-views/.aidlc-reviews/code-generation/units/u3-businessdata-screens/bb969d769be0cb2e/1.json`、READY、Major 1・Minor 7）の後に、依頼者の決定で B7 のブランチ（`6c8f7ba` の上）で直した。B7 の3つのコミット（`722fa6f`・`d5f7f5b`・`6c8f7ba`）は指揮役が積んだ。この節の直しはコミットしていない。
+
+### 11.1 直したもの
+
+| # | 直し | ファイル |
+|---|---|---|
+| R-01（Major） | 保存・削除の応答が届いた時点で、送った画面にまだ居るか（アンマウントしていない・送った後に `location.key` が変わっていない）を確かめ、離れていたら移動・履歴の書き換え・Toast・一覧の読み直しを行わない。確かめの口 `useScreenPresence`（外れた印と key は副作用で書く）を足し、作成・更新の `send` と削除の `confirm` の `pending.then` の先頭で使う | `frontend/src/features/tables/useScreenPresence.ts`（新しい）・`BusinessDataFormPage.tsx`・`useRowDeleteFlow.ts` |
+| R-05 | `markClean` の「次の移動を1回飛ばす」旗を下ろす条件 (3) を足した: markClean と同じ手順の中で移動が始まらなければ、次のタスクで下ろす（data router の navigate は呼んだ手順の中で止めるかを判定するため、保存の成功の直後の移動は先に判定される）。画面が外れたら時計を止める。旗を読むだけの口 `skipsNextNavigation()` を足した | `frontend/src/shared/unsaved-guard/useUnsavedGuard.ts` |
+| R-06 | `no-console`（error）の対象に `src/app/login-state/**`・`src/app/work-role/**` を足した（テストのファイルを除く）。今の違反は 0 件 | `frontend/eslint.config.js` |
+| R-08 | E2E の前提の確かめ (d) の説明を、実際に確かめる経路（docker の実行環境の側、colima では VM の中の `127.0.0.1` の公開の番号への host ネットワークの psql）に合わせ、PC の側の `127.0.0.1:15432` の経路は (b) の TCP の到達だけと書いた | `build.gradle.kts`・`README.md` |
+| R-02 | `traceability.json` の AC4.1.2・AC4.1.4 を、持ち主が読める形の Deferred にした（target は「次の Intent（…依頼（5）が上流の main に無く、B7 で固定先を上げなかった）」、reason に理由と記録の場所） | `traceability.json` |
+| R-03 | `source-manifest.json` の writes に、B5・B6 で消した・移したパス（`TablePlaceholderPage.tsx`・`.css`・`.test.tsx`、`useTableAccess.ts`、`tableAccessApi.ts`・`.test.ts`、roleadmin の `useUnsavedGuard.ts`・`.test.tsx`・`LeaveConfirmDialog.tsx`・`.test.tsx`）と、この節で作ったパスを足した（段の定義の形。作った・変えた・消したパスを `path` で並べる） | `source-manifest.json`（156 件） |
+
+テストの補助: `testing/renderTablesDataRouter.tsx` に、履歴で最初の道の前に置く道 `before` を足した（戻る操作の確かめ）。
+
+### 11.2 足したテスト
+
+- `BusinessDataFormPage.test.tsx`（+3 件）: 保存の最中に (1) サイドバーと同じ一覧の道への移動、(2) ブラウザの戻る、(3) 作業ロールの切り替えで離れ（どれも未保存の確かめで［移る］）、その後に保存の成功が届いても、道（`/tables`）と `location.key` が変わらず、Toast（作成しました・更新しました）が出ない。答えは、一覧の画面の副作用が出す読み込みの要求を待ってから返す（前の画面の後片付けが先に済む順を確実にする。`PasswordChangePage` のテストの直しと同じ形）。
+- `BusinessDataListPage.write.test.tsx`（+1 件）: 詳細の画面で削除の確かめを押した後にブラウザの戻るで一覧へ移り、その後に削除の成功が届いても、`location.key` が変わらず、「削除しました。」が出ず、一覧を読み直さない。
+- `useScreenPresence.test.tsx`（4 件、新しい）: 何も変わらなければ真、同じ画面でも道が変われば偽、別の画面へ移れば偽、アンマウントの後は偽。
+- `useUnsavedGuard.test.tsx`（+1 件）: markClean の後に移動が始まらなければ、次のタスクで旗が下りる。
+
+### 11.3 二段の確かめ
+
+- **R-01**: 直す前の `BusinessDataFormPage.tsx`・`useRowDeleteFlow.ts`（`git show HEAD:` の形）に戻し、足した4件を流すと **4件とも落ちた**（作成と戻る: `expected '/tables/row' to be '/tables'`、作業ロールの切り替えと削除: `location.key` が替わった）。直した形に戻すと **4件とも通った**。
+- **R-05**: (3) の旗を下ろす2行を一時に外すと、足した1件が落ち、戻すと通った。
+- 直したところの単体のテスト（`src/features/tables`・`src/shared/unsaved-guard`・`src/features/roleadmin`・`src/app/work-role`・`src/app/login-state`、58 ファイル・535 件）を3回流し、3回とも通った。`npm run lint`・`tsc` も通った。
+
+### 11.4 1コマンドの検査と E2E
+
+- verify の1回目（2026-10-20 22:27:51〜22:30:31）: `frontendTest` で **`src/features/auth/logoutIntent.test.tsx` の「leaves the intent while staying on the same path and clears it on the next path change」が落ちた**（`peekLogoutIntent()` が真のはずが偽）。この節の直しの経路（業務データの画面・未保存の確かめ）にも、前に「不安定と確かめられていない」とした2件にも当たらない、別のテスト（Intent 261004-role-menu の B9 の後、変えていない）。
+  - 再現の試み（上限は先に「単独 5 回と画面のテストの全件 1 回」と決めた）: 単独 5 回はすべて 4 件通過、`npx vitest run` の全件 1 回も 226 ファイル・1,975 件が通過。再現しなかった。見立て（未検証）: 並べて流す負荷で、印を立てた後の `await Promise.resolve()` の間に、骨組みの道の移動の副作用が先に流れて印を消した。team.md の「手元で再現しないもの」の扱いとし、時間の上限は延ばしていない。同じテストがもう一度落ちたら止める。
+- verify の2回目（`caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`、2026-10-20 22:33:12〜22:56:37）: **BUILD SUCCESSFUL、23分24秒**。フロントエンド 226 ファイル・**1,975 件**、カバレッジは **行 95.06%・分岐 89.82%**（`src/features/tables/` は 行 93.94%・分岐 88.39%）。バックエンド 単体 2,589 件・結合 1,386 件、失敗 0、SKIPPED 9、行 97.64%・分岐 91.23%。OSV-Scanner は失敗の条件 0 件・警告 18 件、Gitleaks は漏れ無し。
+- 15432: 2026-10-20 22:57:32 に上乗せで開け、直後に誤ったパスワードの接続が **終了コード 2・`password authentication failed`** で拒まれた。E2E の後、23:11 に上乗せ無しで作り直して閉じた（`5432/tcp` だけ、`nc` は失敗、TEMP は `f`、接頭辞のスキーマとロールは 0 件、配備したアプリのヘルスは 200）。
+- E2E の全件（2026-10-20 22:57:42〜23:10:48、Gradle で 13分5秒、Playwright の duration 782 秒＝13分2秒）: **256 件すべて通過**（flaky 0）。片付けの後の残り 0、秘密の確かめ 0 件。axe の違反 0 件、区分の passes は C1 882・C2 40・C3 129・C4 420・C5 1,078・C6 176・C7 80・C8 3,160・C9 2,440（incomplete・violations 0）。前に「不安定と確かめられていない」とした2件（`eslintImportRules`・185 のログイン）は、この回の verify と E2E でも通った。
+- verify と E2E の間の `pmset -g log` に Sleep・DarkWake は無い。
+
+### 11.5 既知の制約として残すもの（R-04・R-07）
+
+- **R-04**: トップバーのトリガー（C4）は、1語の氏名の場面（060・120・135・140・160 など）で規則 `label-content-name-mismatch` が incomplete（全件の回で 658 件）になり、判定が出ないまま残る。頭文字が1字で見える文字が短く、axe が名前との一致を決められないため。passes の確かめは2語の氏名の場面（130）だけで行い、1語の氏名の場面は記録だけにする（U4 の D10c）。違反ではなく、規則・要素は外していない。1語の氏名の名前と見える文字の一致を別に裏付けることは、この Intent ではしていない。
+- **R-07**: 行のリンクの `href` は、主キーを道に載せない設計（D2・D16）のため、どの行も同じ詳細の道になる。新しいタブで開く・リンクを写すと、記憶に印が無く一覧へ戻る。読み上げのリンクの一覧では、行の区別は名前（「詳細: <表示名> <行のラベル>」）だけになる。設計どおりで漏えいは無い。Build and Test の既知の制約に載せる。
+
+### 11.6 そのほか
+
+- `source-manifest.json` には、CI の不安定なテストの直し（`b7291d3`。`backend/src/test/java/cherry/mastersmith/config/H2CompactionByPoolSuspensionIT.java`・`frontend/src/features/preferences/PasswordChangePage.test.tsx`）を入れていない。Intent の記録（`construction/code-generation/generation-notes.md`）の持ち物で、U3 の作業ではないため。B5 の始まり（`6815308`）からの差には出るため、段を終える確かめで「単位が持たない変わったパス」として扱われるかは指揮役が確かめる。
+- traceability の sensor は直した後も **pass**（invalid_targets・invalid_entries・missing_from_upstream_ids・findings はどれも 0）。

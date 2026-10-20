@@ -62,17 +62,14 @@ updates:
     # 6 系の中の小さな更新は知らせる。
     # 外す時期: @typescript-eslint/* が TypeScript 7 を受け付けたとき。
     #
-    # axe-core の 4.14.0 以降を知らせない（Intent 261015-deps-ui-carryover の FR1.3 で見送った）。4.14.0 で規則
-    # label-content-name-mismatch（WCAG 2.5.3、見える文字と読み上げの名前の一致）から experimental の印が外れて既定で流れるようになり、
-    # ./gradlew e2eTest の axe の確かめ（080・100・120・130・160）で、make-you-chic-ui の Dropdown のトリガーと作業ロールのメニューの
-    # 項目が新しく違反として出て 100 件が落ちたため。脆弱性の直しを含む更新ではない。
-    # 外す時期: この規則の違反を直したとき（画面の側の名前の付け方の直しと、make-you-chic-ui の Dropdown のトリガーの直しを
-    # make-you-chic-ui のリポジトリ側に依頼して取り込んだ後）。axe-core 4.14 以降を取り込み、E2E の axe がすべての組で通ることを確かめる。
+    # axe-core は ignore に入れない（Intent 261016-business-data-views の B7 で 4.14.0 に上げ、ignore を外した）。
+    # 小さな版でも既定で流れる規則が増えうる（4.14.0 の label-content-name-mismatch がその例）ため、axe-core の
+    # 更新だけは、版と lockfile だけの変更でも統合の前に ./gradlew e2eTest の全件と vitest-axe を流し、違反 0 件を
+    # 件数で記録する。team.md の Way of Working の「依存の版と lockfile だけの更新は verify だけで統合する」の例外で、
+    # 根拠は team.md の Testing Posture の axe-core の決まり（規則を外して通さない・違反をすべて直してから上げる）。
     ignore:
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
-      - dependency-name: "axe-core"
-        versions: [">= 4.14.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

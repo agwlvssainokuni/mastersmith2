@@ -25,6 +25,7 @@
 // - 保存中は保存・やめるを押せなくし「保存しています…」、5 秒で「時間がかかっています」（D23）。
 // - 保存の成功: markClean() → 切り替えの確かめを外す → 移動 → Toast（D24・D25）。作成で key があればその行の詳細へ、
 //   無ければ一覧へ。更新は詳細へ戻る。
+//   保存の最中に画面を離れていたら（サイドバー・戻る・作業ロールの切り替え）、届いた結果では何もしない（R-01）。
 // - 保存の結果が分からない（D4: A）: 入力を残し、文と確かめる入口（作成は一覧、更新はその行を開き直す）を出す。もう一度押すと
 //   「保存済みかもしれません」の確かめ（はじめのフォーカスは「やめる」）を経て送る。
 // - 書き込みの 403（D3: A）: S6 の 403 の表示に替え、tables.problem.writeForbidden を出す。入力は捨てる（RQ5: A）。
@@ -85,6 +86,7 @@ import { useForbiddenFollowUp, useTableRefFromSearch, useWorkRoleKey } from './t
 import { localizedName, useValueTexts } from './tablesText'
 import { useRowDetail } from './useRowDetail'
 import { useRowWrite, type RowWriteApi } from './useRowWrite'
+import { useScreenPresence } from './useScreenPresence'
 import { useTableDefinition } from './useTableDefinition'
 import { formatCell } from './valueFormat'
 import './tablesCommon.css'
@@ -150,6 +152,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   const toast = useToast()
   const location = useLocation()
   const navigate = useNavigate()
+  const beginPresence = useScreenPresence()
   const mode: FormMode = forcedMode ?? (location.pathname === TABLE_PATHS.new ? 'create' : 'update')
   const { ref, itemId } = useTableRefFromSearch(location.search)
   const { settled, roleId } = useWorkRoleKey()
@@ -368,7 +371,13 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       if (pending === undefined) {
         return
       }
+      const stillHere = beginPresence()
       void pending.then((outcome) => {
+        // 送った後に画面を離れていたら（サイドバー・戻る・作業ロールの切り替え）、移動・履歴の書き換え・Toast を行わない
+        // （コードのレビューの R-01）。サーバーでは保存は済んでいるかもしれないが、利用者を引き戻さない。
+        if (!stillHere()) {
+          return
+        }
         if (outcome.kind === 'saved') {
           // 自分の保存の成功の移動を未保存の確かめが止めないよう、移る前に「変更なし」にする（D24・D25）。
           markClean()
@@ -412,6 +421,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       t,
       token,
       showNotSaved,
+      beginPresence,
     ],
   )
 

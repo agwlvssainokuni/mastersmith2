@@ -74,6 +74,12 @@ function renderFrame(options: { workRoleOpen?: boolean; topbarOpen?: boolean } =
               </span>
             </span></td>
             <td><span data-testid="tables-row-actions-r3"><button type="button">操作</button></span></td>
+            <td><span class="tables-row-actions" data-testid="tables-row-actions-r4">
+              <button type="button" class="mycui-button variant-secondary size-sm" data-testid="dropdown-trigger"
+                aria-haspopup="true" aria-expanded="false" aria-label="操作: 見本の品 E2E-0001">操作</button>
+            </span></td>
+            <td><span class="mycui-tooltip"><a class="tables-row-link tables-cell-text" href="/tables/row"
+              data-testid="tables-row-link-r4" aria-label="詳細: 見本の品 E2E-0001">E2E-0001</a></span></td>
             <td><span id="cell-without-test-id">${USER_EMAIL}</span></td>
           </tr>
         </tbody></table>
@@ -138,6 +144,27 @@ describe('axeElementKey', () => {
     expect(new Set(keys.map((key) => JSON.stringify(key))).size).toBe(5)
     // グループの行の「開く」のリンクは行の操作のトリガーに数えない
     expect(categorizeKey(axeElementKey(byLabel('営業部を開く')))).toBeNull()
+  })
+
+  it('distinguishes the business data row action trigger and row link without values', () => {
+    renderFrame()
+    const trigger = axeElementKey(byLabel('操作: 見本の品 E2E-0001'))
+    const link = axeElementKey(byLabel('詳細: 見本の品 E2E-0001'))
+    expect(trigger).toMatchObject({
+      element: 'button',
+      owner: 'tables-row-actions-*',
+      marks: ['mycui-button', 'tables-row-actions'],
+    })
+    expect(link).toMatchObject({
+      element: 'a',
+      owner: 'tables-row-link-*',
+      marks: ['tables-row-link'],
+    })
+    expect([trigger, link].map(categorizeKey)).toEqual(['C8', 'C9'])
+    const serialized = JSON.stringify([trigger, link])
+    for (const value of ['見本の品', 'E2E-0001', '/tables/row']) {
+      expect(serialized).not.toContain(value)
+    }
   })
 
   it('gives a portal item the open work role trigger as menuOwner even with a sidebar branch open', () => {

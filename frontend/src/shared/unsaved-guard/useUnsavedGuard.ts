@@ -25,7 +25,10 @@
 //   呼ばれても、旗を使い切らない）。
 // - markClean(): 保存の成功の直後に呼ぶ。「変更なし」にし、beforeunload を外し、次の移動1回だけ確かめを飛ばす。
 //   飛ばす旗を下ろすのは、(1) 止めなかった移動が成り立った後（useLocation の key の変化で見る。道が同じ移動を含む）と、
-//   (2) markClean の後に入力の版の数が変わったとき（変更が生まれたら、また止める）。版の数が変わったら「変更なし」も解き、
+//   (2) markClean の後に入力の版の数が変わったとき（変更が生まれたら、また止める）、(3) markClean と同じ手順の中で移動が
+//   始まらなかったとき（次のタスクで下ろす。data router の navigate は呼んだ手順の中で止めるかを判定するため、保存の成功の
+//   直後の移動は (3) より先に判定される。移動が拒まれた・呼ばれなかったときに旗が残り、後の離れる操作が確かめ無しで通るのを
+//   防ぐ。Intent 261016-business-data-views の U3 のコードのレビューの R-05）。版の数が変わったら「変更なし」も解き、
 //   beforeunload を付け直す。
 // - 骨組みのログアウトは道を変える前にトークンを捨てるため、確かめが出ないことがある（7.2、README に書く）。
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
@@ -41,6 +44,8 @@ export interface UnsavedGuard {
   leave: () => void
   /** 「変更なし」にし、beforeunload を外し、次の移動1回だけ確かめを飛ばす */
   markClean: () => void
+  /** 次の移動の確かめを飛ばす旗が立っているか（読むだけ。旗の寿命の確かめに使う） */
+  skipsNextNavigation: () => boolean
 }
 
 /** 未保存の確かめの任意の設定 */
@@ -90,6 +95,7 @@ export function useUnsavedGuard(
   const skipOnceRef = useRef(false)
   const skipLocationKeyRef = useRef<string | null>(null)
   const versionRef = useRef(version)
+  const expiryTimerRef = useRef<number | null>(null)
 
   useLayoutEffect(() => {
     dirtyRef.current = effectiveDirty
@@ -124,6 +130,17 @@ export function useUnsavedGuard(
     }
   }, [cleanVersion, version])
 
+  // (3) の時計を、画面が外れたら止める。
+  useEffect(
+    () => () => {
+      if (expiryTimerRef.current !== null) {
+        window.clearTimeout(expiryTimerRef.current)
+        expiryTimerRef.current = null
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     if (!effectiveDirty) {
       return
@@ -141,7 +158,18 @@ export function useUnsavedGuard(
     skipLocationKeyRef.current = location.key
     window.removeEventListener('beforeunload', preventUnload)
     setCleanVersion(versionRef.current)
+    // (3) 同じ手順の中で移動が始まらなければ、次のタスクで旗を下ろす。
+    if (expiryTimerRef.current !== null) {
+      window.clearTimeout(expiryTimerRef.current)
+    }
+    expiryTimerRef.current = window.setTimeout(() => {
+      expiryTimerRef.current = null
+      skipOnceRef.current = false
+      skipLocationKeyRef.current = null
+    }, 0)
   }, [location.key])
+
+  const skipsNextNavigation = useCallback((): boolean => skipOnceRef.current, [])
 
   const stay = useCallback((): void => {
     if (blocker.state === 'blocked') {
@@ -156,5 +184,5 @@ export function useUnsavedGuard(
     }
   }, [blocker, discard])
 
-  return { blocked: blocker.state === 'blocked', stay, leave, markClean }
+  return { blocked: blocker.state === 'blocked', stay, leave, markClean, skipsNextNavigation }
 }

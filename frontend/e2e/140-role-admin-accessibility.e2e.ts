@@ -39,6 +39,7 @@ import {
   type AdminApiRoute,
 } from './support/adminApiRoute'
 import { missingRequiredRules, runAxe } from './support/axe'
+import { labelContentNameProblems, type LabelContentNameCategory } from './support/axeRuleChecks'
 import {
   DISPLAY_COMBOS,
   expectComboApplied,
@@ -102,6 +103,7 @@ type InspectionState =
   | 'S4-orphan'
   | 'S5-candidates'
   | 'S5-removal-confirm'
+  | 'S6-group-list'
   | 'S6-member-removed'
   | 'S7-result-open'
   | 'S7-errors'
@@ -191,8 +193,16 @@ function withoutExcluded(problems: readonly string[], excluded: readonly string[
   return rest
 }
 
-/** 1つの状態を検査し、注記に件数と規則の名前だけを残す。 */
-async function inspect(page: Page, label: string, state: string): Promise<void> {
+/**
+ * 1つの状態を検査し、注記に件数と規則の名前だけを残す。labelCategories を渡した状態では、規則
+ * label-content-name-mismatch の区分ごとの passes を確かめる（Intent 261016-business-data-views の B7、U4-NFR5.3）。
+ */
+async function inspect(
+  page: Page,
+  label: string,
+  state: string,
+  labelCategories: readonly LabelContentNameCategory[] = [],
+): Promise<void> {
   const summary = await runAxe(page)
   const overflow = await measureHorizontalOverflow(page)
   const violationRules = [...new Set(summary.violations.map((violation) => violation.id))]
@@ -203,6 +213,10 @@ async function inspect(page: Page, label: string, state: string): Promise<void> 
   const name = `${label} ${state}`
   expect(missingRequiredRules(summary), `${name}: 流れなかった規則`).toEqual([])
   expect(violationRules, `${name}: 違反`).toEqual([])
+  expect(
+    labelContentNameProblems(summary, labelCategories),
+    `${name}: label-content-name-mismatch の passes`,
+  ).toEqual([])
   expect(overflow.overflows, describeOverflow(name, overflow)).toBe(false)
 }
 
@@ -288,12 +302,13 @@ test.describe('140 role admin accessibility on the built WAR', () => {
       // 12 の状態ごとに axe を流すため、既定の 30 秒を超える。
       test.setTimeout(180_000)
       const { watch, excludedTexts, route, state } = await startU6(page, combo)
-      const check = (s: InspectionState) => inspect(page, combo.name, s)
+      const check = (s: InspectionState, labelCategories?: readonly LabelContentNameCategory[]) =>
+        inspect(page, combo.name, s, labelCategories)
 
       await test.step('S3 list, menu and name error', async () => {
         await openSidebarItem(page, 'ロール')
         await expect(page.getByTestId('roleadmin-table').locator('tbody tr')).toHaveCount(3)
-        await check('S3-list')
+        await check('S3-list', ['C3'])
         await page.getByRole('button', { name: `操作: ${LONG_ROLE_NAME}` }).click()
         await check('S3-menu-open')
         await expectContained(page, 'menu', `${combo.name} S3-menu-open`)
@@ -355,6 +370,9 @@ test.describe('140 role admin accessibility on the built WAR', () => {
 
       await test.step('S6 detail and member removal notice', async () => {
         await openSidebarItem(page, 'グループ')
+        // グループの一覧の行の操作のトリガー（C2）の passes を確かめる場面（B7 で足した。本数に数えない書き換え）
+        await expect(page.getByRole('link', { name: `${SYMBOL_NAME}を開く` })).toBeVisible()
+        await check('S6-group-list', ['C2'])
         await page.getByRole('link', { name: `${SYMBOL_NAME}を開く` }).click()
         await expect(page.getByTestId('groupadmin-members')).toBeVisible()
         state.userRoles = userRolesWire().filter((role) => role.roleId !== SAMPLE_ROLE_ID)

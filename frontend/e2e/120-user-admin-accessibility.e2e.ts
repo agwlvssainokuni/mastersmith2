@@ -46,6 +46,7 @@ import {
   type AdminApiRoute,
 } from './support/adminApiRoute'
 import { missingRequiredRules, runAxe } from './support/axe'
+import { labelContentNameProblems, type LabelContentNameCategory } from './support/axeRuleChecks'
 import {
   DISPLAY_COMBOS,
   expectComboApplied,
@@ -153,8 +154,16 @@ function withoutExcluded(problems: readonly string[], excluded: readonly string[
   return rest
 }
 
-/** 1つの状態を検査し、注記に件数と規則の名前だけを残す。 */
-async function inspect(page: Page, combo: DisplayCombo, state: InspectionState): Promise<void> {
+/**
+ * 1つの状態を検査し、注記に件数と規則の名前だけを残す。labelCategories を渡した状態では、規則
+ * label-content-name-mismatch の区分ごとの passes を確かめる（Intent 261016-business-data-views の B7、U4-NFR5.3）。
+ */
+async function inspect(
+  page: Page,
+  combo: DisplayCombo,
+  state: InspectionState,
+  labelCategories: readonly LabelContentNameCategory[] = [],
+): Promise<void> {
   const summary = await runAxe(page)
   const overflow = await measureHorizontalOverflow(page)
   const record = {
@@ -169,6 +178,10 @@ async function inspect(page: Page, combo: DisplayCombo, state: InspectionState):
   const label = `${combo.name} ${state}`
   expect(missingRequiredRules(summary), `${label}: 流れなかった規則`).toEqual([])
   expect(record.violationRules, `${label}: 違反`).toEqual([])
+  expect(
+    labelContentNameProblems(summary, labelCategories),
+    `${label}: label-content-name-mismatch の passes`,
+  ).toEqual([])
   expect(overflow.overflows, describeOverflow(label, overflow)).toBe(false)
 }
 
@@ -274,7 +287,7 @@ test.describe('120 user admin accessibility and screen time on the built WAR', (
       })
 
       await diagnostics.step('check the list', async () => {
-        await inspect(page, combo, '01-list')
+        await inspect(page, combo, '01-list', ['C1'])
       })
 
       await diagnostics.step('check the own row menu and its disabled items', async () => {

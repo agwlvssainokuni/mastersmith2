@@ -31,6 +31,9 @@ export function axeElementKey(element: Element): AxeElementKey {
     'useradmin-row-actions',
     'groupadmin-row-menu',
     'roleadmin-row-menu',
+    // 業務データの行の操作の包みと行のリンク（Intent 261016-business-data-views の U3 の B7、区分 C8・C9）
+    'tables-row-actions',
+    'tables-row-link',
   ]
   // Dropdown の部品が付ける data-testid（行や画面を見分けないため owner に使わない）
   const dropdownTestId = /^dropdown-(?:trigger|menu|item-\d+)$/

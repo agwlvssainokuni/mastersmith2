@@ -42,8 +42,16 @@ const axeElementKeySource = `window.__axeElementKey = ${axeElementKey.toString()
 /** 合否に使う規則のタグ（WCAG 2.0・2.1 の A・AA。NFR 設計の Q2 A） */
 export const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] as const
 
-/** 流れたことを確かめる規則（版を上げてタグが変わり、黙って流れなくなることを防ぐ。6.4） */
-export const REQUIRED_RULES = ['color-contrast', 'scrollable-region-focusable'] as const
+/**
+ * 流れたことを確かめる規則（版を上げてタグが変わり、黙って流れなくなることを防ぐ。6.4）。
+ * label-content-name-mismatch（WCAG 2.5.3）は axe-core 4.14.0 で既定で流れるようになったため、Intent
+ * 261016-business-data-views の B7（U4-NFR5.1）で足した。区分ごとの passes の確かめは labelContentNameProblems。
+ */
+export const REQUIRED_RULES = [
+  'color-contrast',
+  'scrollable-region-focusable',
+  'label-content-name-mismatch',
+] as const
 
 /** 違反の対象の要素（選択子と値は持たない） */
 export interface AxeViolationNode {

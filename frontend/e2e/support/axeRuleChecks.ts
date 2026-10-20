@@ -64,8 +64,11 @@ export const UNRESOLVED_KEY: AxeElementKey = {
   path: '',
 }
 
-/** passes の確かめの対象の候補の区分（logical-components.md の 3節） */
-export type LabelContentNameCategory = 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7'
+/**
+ * passes の確かめの対象の候補の区分（U4 の logical-components.md の 3節の C1〜C7）。C8・C9 は U3 の B5・B6 の
+ * 4.14 の試しで要素が見つかった業務データの行の操作と行のリンク（U3 の計画の Step 46、D6: A）。
+ */
+export type LabelContentNameCategory = 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'C6' | 'C7' | 'C8' | 'C9'
 
 /** 区分ごとの説明（記録の表の見出しに使う） */
 export const LABEL_CONTENT_NAME_CATEGORIES: Readonly<Record<LabelContentNameCategory, string>> = {
@@ -76,6 +79,8 @@ export const LABEL_CONTENT_NAME_CATEGORIES: Readonly<Record<LabelContentNameCate
   C5: '作業ロールのトリガー',
   C6: '作業ロールの項目',
   C7: 'トップバーの項目',
+  C8: '業務データの行の操作のトリガー',
+  C9: '業務データの行のリンク',
 }
 
 const WORK_ROLE_OWNER = 'work-role-switcher'
@@ -121,6 +126,13 @@ export function categorizeKey(key: AxeElementKey): LabelContentNameCategory | nu
   if (key.owner === WORK_ROLE_OWNER && key.marks.includes(WORK_ROLE_MARK)) {
     return 'C5'
   }
+  if (
+    key.element === 'a' &&
+    key.owner === 'tables-row-link-*' &&
+    key.marks.includes('tables-row-link')
+  ) {
+    return 'C9'
+  }
   if (!isPlainButton(key)) {
     return null
   }
@@ -132,6 +144,9 @@ export function categorizeKey(key: AxeElementKey): LabelContentNameCategory | nu
   }
   if (key.owner === 'roleadmin-row-actions-*' && key.marks.includes('roleadmin-row-menu')) {
     return 'C3'
+  }
+  if (key.owner === 'tables-row-actions-*' && key.marks.includes('tables-row-actions')) {
+    return 'C8'
   }
   return null
 }
