@@ -352,7 +352,7 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
 
 #### 準備
 
-- [ ] **Step 1: 作業の準備と走らせ方の確かめ（B5）**
+- [x] **Step 1: 作業の準備と走らせ方の確かめ（B5）**
   - `aidlc/` の下の未コミットの変更（計画を書いた時点で `aidlc-state.md` と監査ログの shard）を確かめ、依頼者にコミットの承認を得てから進む（`project.md` の Change Control）。
   - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）が残っていれば消す（`project.md` の学び）。
   - `develop` の先頭が B4 の統合（`04b0589`）か、その後の記録のコミットであることと、B4 の統合の後の CI の結果を試行ごと（`gh run view --json attempt,jobs`）に確かめる。CI が失敗していたら、team.md の「不安定なテストと CI の失敗」の決まりで扱ってから進む。
@@ -363,70 +363,70 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
 
 #### 型と写しの関数（Contract の Data model）
 
-- [ ] **Step 2: 受け渡しの型と写しの関数を書く**
+- [x] **Step 2: 受け渡しの型と写しの関数を書く**
   - `businessDataTypes.ts`: 1.5 の実際の形の型（`TableDefinition`・`ColumnDefinition`（検証の材料は任意の項目。B6 で入力にするカラムの欠けを確かめる）・`SearchField`・`RowPage`・`RowItem`・`RowDetail`・`DefinitionId`・`LocalizedText`・`CellValue = string | null`・列挙の union）。
   - `businessDataParse.ts`: `parseTableDefinition`・`parseRowPage`・`parseRowDetail`・`parseBusinessProblem` を `unknown` から写す。例外を投げず、形が違えば `undefined`。列挙はすべて既知の一覧と照らす（`lookup` を含めない）。値は文字か `null` で、数に直さない。`schema`・`table` が要求と違う定義の応答は形の崩れ。
-- [ ] **Step 3: 型と写しの関数のテストを書いて流す**
+- [x] **Step 3: 型と写しの関数のテストを書いて流す**
   - 例のテスト（正しい形・各項目の欠け・知らない列挙・`lookup`・数の値の型の誤り・`page`・`total` の範囲・`key` の null・`definitionChanged` が 400 にも付くこと）と、性質ベースのテスト（fast-check。任意の JSON で例外を投げずに `undefined` か正しい型を返す。BIGINT・DECIMAL の桁を失わない。失敗のときの乱数の種を記録する）。
 
 #### API の呼び出し・記憶・ログインの範囲の知らせ（Contract の Repository / data access）
 
-- [ ] **Step 4: 読み取りの API・記憶・知らせを書く**
+- [x] **Step 4: 読み取りの API・記憶・知らせを書く**
   - `businessDataApi.ts`: `getDefinition`・`searchRows`・`getRow`。本文は `JSON.stringify` を1回だけ行い、`utf8ByteLength` が 65,536 を超えたら送らずに 413 と同じ扱いにする（U3-NFR4.23）。今の `apiRequest` を通し、失敗は今の ApiError のまま投げる。自動では送り直さない。
   - `businessDataStore.ts`: `putRowKey`（印は `crypto.getRandomValues` の 16 バイトの16進。主キーから作らない）・`peekRowKey`（読んでも消さない。作った順に最大 100 件、101 件目で最も古いものを捨てる）・`tableEntry`（テーブルごとの `{ definition, listState }`。使った順に最大 100 個）・`clearBusinessDataStore`・世代（全部を消すたびに進め、古い世代の書き戻しを捨てる。4.3 の R-04）・roleId の変化での全部の消去（null と数の間の変化を含む）。ブラウザの保存に写さない。`console` を呼ばない。
   - `frontend/src/app/login-state/loginScope.ts`（P-1）と、`LoginStateGate.tsx` の切り替わりのたびの知らせ。記憶は読み込まれた時に購読する。
   - D9 が B のときは、`features/auth` の更新の成功で利用者が変わったときにも知らせる口を足す（A のときは既知の制約として記録するだけ）。
-- [ ] **Step 5: API・記憶・知らせのテストを書いて流す**
+- [x] **Step 5: API・記憶・知らせのテストを書いて流す**
   - `businessDataApi.test.ts`（本文の上限ちょうどは送る・+1 バイトは送らない、サロゲートの組と組になっていないサロゲートを含む、要求の本文の形、失敗の投げ方）、`businessDataStore.test.ts`（101 件目で最古が捨てられる、読んだ後も残る、101 テーブル目、3つの消す時（ログアウト・トークンの更新の失敗で未ログイン・新しいログイン）と roleId の変化で消える、消した後の遅れた書き戻しが捨てられる）、`loginScope.test.ts` と `LoginStateGate.test.tsx` の足し。
 
 #### 純粋な関数（Contract の Business logic）
 
-- [ ] **Step 6: 書式・行のラベル・ページ・文と読み直しの判定・上限の定数を書く**
+- [x] **Step 6: 書式・行のラベル・ページ・文と読み直しの判定・上限の定数を書く**
   - `valueFormat.ts`（D15。日英で同じ形、時差つきは `+00:00`、`masked` は `••••••`、BINARY は「（バイナリ）」、NULL は「（値なし）」、空の文字列は空のまま、真偽値は `listFormat` の文言）、`rowLabel.ts`（`rowLabelParts`・`rowLabelText`・`rowLinkText`。見える文字が空白だけなら「（空）」にし、行のラベルにも含める。最初のカラムが一覧の列に無ければリンクを出さない判定を返す。U3-NFR5.9）、`listPaging.ts`（20・50・100、表示の範囲、ページを超えたとき）、`businessDataLimits.ts`（65,536・4,194,304・1,000・10,000。説明文に U1・U2 の定数の名前）、`problemMessage.ts` の読み取りの code と `needsDefinitionReload`（`field` が空の文字の誤りは判定から外す。4.6）。
-- [ ] **Step 7: 純粋な関数のテストを書いて流す**
+- [x] **Step 7: 純粋な関数のテストを書いて流す**
   - 例のテストと性質ベースのテスト（D29・U3-NFR7.10）: BIGINT・DECIMAL の桁を失わない、`<`・`"`・`'`・`javascript:` を含んでも文字のまま返る、任意の値（NULL・空の文字列・`masked`・BINARY・真偽値・数、先頭のカラムが空の文字列を含む）で行のリンクの見える文字が「詳細: <表示名> <行のラベル>」と `rowActionsName(見える文字, 行のラベル)` に必ず含まれる。`needsDefinitionReload` は `definitionChanged` のとき・今の定義に無い `field` のときに真、今の定義の項目だけ・`field` が空の文字だけなら偽。失敗のときの乱数の種を記録する。
 
 #### 骨組みの変更と共通の部品（Contract の Frontend behavior の骨組みと shared）
 
-- [ ] **Step 8: 道・今の項目と、共通の部品を書く**
+- [x] **Step 8: 道・今の項目と、共通の部品を書く**
   - `tablePlaceholderPath.ts` に4つの道を作る1か所の関数と `isTablePath`、`buildNavSections.ts` の今の項目の判定（D1・L9）。
   - `src/shared/scroll-region/ScrollRegion.tsx`（`role="region"`・`aria-label`・`tabIndex={0}`、横にだけスクロール）、`src/shared/page-size/PageSizeSelect.tsx`（make-you-chic-ui の Select。20・50・100）、`src/shared/null-value/NullValue.tsx`（淡い文字の「（値なし）」、読み上げは「値なし」、色だけで表さない）。`src/shared/` は `app/`・`features/` を読まない（文言は props）。
-- [ ] **Step 9: 骨組みと共通の部品のテストを書いて流す**
+- [x] **Step 9: 骨組みと共通の部品のテストを書いて流す**
   - `tablePlaceholderPath.test.ts`・`buildNavSections.test.ts`・`buildNavSections.property.test.ts` の書き換え（4つの道、詳細・作成・更新でもテーブルの項目が今の項目、道の値は `URLSearchParams` でエンコードされ `/tables` で始まる）。`ShellLayout.test.tsx` を書き換えずに流して通ることを確かめる。3つの共通の部品のテスト（各 5〜8 件、vitest-axe を1件ずつ）。
 
 #### フック・画面（Contract の Frontend behavior）
 
-- [ ] **Step 10: フックを書き、続けてそのテストを書いて流す**
+- [x] **Step 10: フックを書き、続けてそのテストを書いて流す**
   - `useTableDefinition`（記憶にあれば読まない、D4 のきっかけで読み直す、作業ロールの読み込みの後に始める P-9）・`useRowSearch`（操作1回で一覧の API は1本、世代で古い答えと画面を離れた後の答えを捨てる、400 で `needsDefinitionReload` なら定義を読み直す、403 の後に送り直さない U3-NFR8.7）・`useRowDetail`（印が記憶に無ければ `missing`）。
   - テスト（各 5〜8 件）: 操作ごとの要求の数、遅らせた古い応答が新しい表示を上書きしない、消去の後の書き戻しが捨てられる、403 の後に要求が増えない、決まった間隔の読み直しが無い。
-- [ ] **Step 11: 一覧・詳細・開けないときの画面と部品を書く**
+- [x] **Step 11: 一覧・詳細・開けないときの画面と部品を書く**
   - `BusinessDataListPage`（D3・D7〜D14、`aria-busy`、件数と表示の範囲の `aria-live`、空の一覧の出し分け、ページを超えたとき）、`SearchPanel`（開閉の `aria-expanded`・`aria-controls`、範囲と選択肢は `fieldset`・`legend`、誤りは `aria-invalid`・`aria-describedby`、入力に `autocomplete="off"`。R-06）、`BusinessDataTable`（`React.memo`、列の定義は `useMemo` で1回、Table の `getRowId` はページの中の番号、セルは素の `span` を Tooltip で包み CSS だけで省略、`truncatedColumns` の印、行のリンクの `data-testid` は `tables-row-link-r<n>`、`ScrollRegion` で包む）、`RowActionsMenu`（Dropdown を `placement="bottom-end"`、名前は U4 の `rowActionsName`、包みの span の `data-testid` は `tables-row-actions-r<n>`。B5 は「詳細」だけ）、`RestrictionNotice`、`BusinessDataDetailPage`（`dl`、`white-space: pre-wrap; overflow-wrap: anywhere`、開いたら h1 へフォーカス、`document.title` に行のラベルを入れない）、`BusinessDataProblemView`（6.1 と 4.6 の文、F8 の作業ロールの切り替えの入口）、`messages.ts`（日英）、`registration.ts`（3つの画面を別々の `lazy`、4つの道。B5 では `/tables/new`・`/tables/edit` は登録しない（作成・更新の画面は B6）、各部品の CSS。
   - 一覧の画面の枠と見出しに `tables-page`・`tables-heading` を引き継ぐ（P-7）。
   - 1.3 のファイルを消し、`e2e/support/navTreeFixtures.ts` の型の import と `tableAccessWire` を消す（型の検査を通すため同じ Step で行う）。`features/README.md` を直す。
   - D10 が A のとき、lint の設定に `no-console` を足す。
-- [ ] **Step 12: 画面と部品のテストを書いて流す**
+- [x] **Step 12: 画面と部品のテストを書いて流す**
   - 部品ごとに 5〜8 件と vitest-axe 1件。必須の項目（team.md の「業務データの一覧・詳細」の画面の分、U3-NFR7.9）: 権限の無いテーブルへ直接移ったときの 403 の表示、`operations` に無い操作のボタンが出ない、値と表示名の `<script>`・`<img onerror>`・`"`・`'`・`javascript:` が文字として出てリンクの先にならない、`/`・`%`・`?`・`#`・空白・引用符を含む複合の主キーが道・履歴の状態に現れず記憶を通して詳細へ往復できる、`data-testid` と `id` に行の値が無い（4.5 の R-02）、読み直しの間の `aria-busy`、切った値の全体が DOM の文字と Tooltip にある（U3-NFR2.11）、ブラウザの戻る操作で一覧の状態が保たれ再読み込みで既定に戻る、`registration.test.ts` の `lazy` と道（U3-NFR1.10）。
 
 #### E2E の補助と E2E（Contract の Environment/build configuration）
 
-- [ ] **Step 13: E2E の補助と、測りの先行**
+- [x] **Step 13: E2E の補助と、測りの先行**
   - `businessDataFixtures.ts`（型を付けた1つの見本。100 カラム × 100 行・NULL の行・長い表示名・10,000 字の値。値は架空の固定の文字と番号だけ）、`businessDataApiRoute.ts`、`businessDataMeasure.ts`（判定は P-3 の5つ。判定の値と「塗りまで」を並べ、記録は名前と時間だけ）、`secretValues.ts` の `SecretKind` の1つの定数化と `businessValue`（R-07）、185 の見本の目印の値と、D5 が A なら U4 の測りの見本の生成の値（`測定 NN`・`sokutei.NN@example.com`）を `SECRET_FIXED_VALUES` に足す。それぞれの単体のテスト（`e2e/support/*.test.ts`、P-8）を書いて流す。
   - 測りの先行（NFR 要件のレビュー R-02）: 185 の測りの1件（既定の組・既定の幅・各 5 回・中央値）だけを先に作り、`./gradlew :backend:bootWar` と Mailpit の起動の後に `npx playwright test e2e/185-business-data-accessibility.e2e.ts -g measure` で流す。中央値が目標（`listShown100`・`listShown100Back` 1.0 秒、`listShown20`・`detailFocused` 0.5 秒）を超えたら、生成を止めて依頼者に諮る（候補は「重ねたときに作る Tooltip」と「仮想化」。F2: A）。「塗りまで」が超えたときは、止めずに記録して承認の場で報告する（R-11）。
-- [ ] **Step 14: 160・170 の書き換えと 185（一覧・詳細）**
+- [x] **Step 14: 160・170 の書き換えと 185（一覧・詳細）**
   - 160: 置き場の画面を業務データの一覧の画面に、`/api/me/table-access` の差し替えを `businessDataApiRoute` の差し替えに、測りの `placeholderShown` を一覧の見出しの判定に置き換える。170: 259〜302行を、型の付いた見本で応答を差し替えた業務データの一覧の画面と、権限の無いテーブルの道の 403 の表示に書き換える（表示名と名前が出ないことは今のまま確かめる）。`frameApiRoute.ts`・`u7Measure.ts` を直す。
   - 185: `displayCombos.ts` の 20 組を1組1件にし、各件は1回のログイン（`routeLoginPreferences` で2語の氏名）で、一覧（100 カラム × 20 行、NULL の行・長い表示名）・開いた検索の項目と誤りの状態・開いた行の操作のメニューと収まり（`overflow.ts`）・サイドバーを展開した状態・空の一覧・読み込み中・403 の表示・詳細（10,000 字）を回って状態ごとに axe を流す。200% の2件（640×360 の CSS ピクセル。既定の組と dark・lg）。測りの1件は別の件。規則・要素は外さない。記録は選択子を出さず、U4 の鍵の形。作成・更新・削除・離れる確かめの状態は B6 の Step 34 で足す。
   - `README.md` の E2E の表（160・170 の説明、185 の行）。
 
 #### 検査・記録・統合
 
-- [ ] **Step 15: 1コマンドの検査とカバレッジ・時間の記録（B5）**
+- [x] **Step 15: 1コマンドの検査とカバレッジ・時間の記録（B5）**
   - `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡す。対象DB のテストが SKIPPED でないこと）。
   - 記録: verify の時間（B4 の後は 21 分 4 秒。CI の上限の7割の約 42 分を超えたら依頼者に諮る）、フロントエンドのテストの件数とカバレッジ（全体の合計。下限を割らないこと）、`npm run build` の後の入口と3つの画面の chunk の gzip（P-6。B5 では作成・更新の画面はまだ無い）。
   - `src/features/tables/` と U3 の `src/shared/` の部品で、`console`・`localStorage`・`sessionStorage`・`indexedDB`・`dangerouslySetInnerHTML`・`document.title` を検索して 0 件であることを記録する（U3-NFR4.2・4.20）。
-- [ ] **Step 16: E2E の全件（4.13）**
+- [x] **Step 16: E2E の全件（4.13）**
   - B5 は `frontend/src` に触れるため、統合の前に E2E の全件を流す（team.md の Way of Working）。D1 が A なら、見本の PG はまだ前提にしない。Mailpit を起動して `./gradlew e2eTest` を流し、件数（基準 232 件から増える見込み: 185 の 23 件）・時間・ファイルごとの時間（`test-results/e2e-results.json` の duration）・秘密の確かめの件数 0 を記録する。
   - E2E の全体が基準（232 件・約 10分35秒）の 1.5 倍（約 15分53秒）を超えたら、185 の時間と B6 で増える分の見込みを添えて、組の分け方を依頼者に諮る（上限で落とさない。U3-NFR7.8）。
-- [ ] **Step 17: axe-core 4.14 の試し（B5、統合しない）**
+- [x] **Step 17: axe-core 4.14 の試し（B5、統合しない）**
   - 作業フォルダの中だけで axe-core を 4 系の最新（4.14 以上）にして E2E の全件を流す（A7）。違反を「ファイル × 表示の組 × 規則 × 鍵 × 区分 × 持ち主（`mycui-` の印があれば make-you-chic-ui、無ければ U3）」で記録し、行の操作のトリガーと行のリンクが `label-content-name-mismatch` の passes・incomplete・violations のどれに入ったかを件数で記録する（U3-NFR5.8）。
   - 違反が U3 の部品なら、B5 の中で直してから統合する（規則・要素を外さない）。make-you-chic-ui の部品なら、新しい依頼の文面を `make-you-chic-ui-request-<n>.md` に置いて依頼者に諮る（FR14.5）。
   - `package.json`・`package-lock.json` を戻し、`git diff` に差が無いことを確かめる。

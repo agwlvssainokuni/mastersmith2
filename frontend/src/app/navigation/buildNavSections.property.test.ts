@@ -129,6 +129,17 @@ const locationArb = fc.oneof(
       }
       return { pathname: '/tables', search: `?${query.toString()}` }
     }),
+  // 業務データの詳細・作成・更新の道（Intent 261016-business-data-views の U3 の D1）
+  fc
+    .record({
+      pathname: fc.constantFrom('/tables/row', '/tables/new', '/tables/edit'),
+      schema: fc.string({ maxLength: 4 }),
+      table: fc.string({ maxLength: 4 }),
+    })
+    .map(({ pathname, schema, table }) => ({
+      pathname,
+      search: `?${new URLSearchParams({ schema, table }).toString()}`,
+    })),
   fc.string().map((pathname) => ({ pathname, search: '' })),
 )
 

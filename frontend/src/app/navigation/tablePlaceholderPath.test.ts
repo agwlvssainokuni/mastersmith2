@@ -15,11 +15,19 @@
  */
 //
 // 置き場の道の純粋な関数のテスト（Intent 261004-role-menu の U7 の D20、L6、NFR1.6・NFR1.7）。
+// Intent 261016-business-data-views の U3 の D1・L9 で、業務データの4つの道と isTablePath のテストを足した。
 // 性質ベースのテスト（fast-check）は、失敗したときに seed と path を出力に示す。再現はその値を fc.assert の第2引数に
 // 一時的に書いて行う。
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { readTablePlaceholderParams, toTablePlaceholderPath } from './tablePlaceholderPath'
+import {
+  TABLE_PATHS,
+  isTablePath,
+  readTablePlaceholderParams,
+  toTablePath,
+  toTablePlaceholderPath,
+  type TableScreen,
+} from './tablePlaceholderPath'
 
 const SCRIPT_URL = ['javascript', 'alert(1)'].join(':')
 
@@ -101,5 +109,53 @@ describe('readTablePlaceholderParams', () => {
       expect(readTablePlaceholderParams(search).ref).toBeNull()
     }
     expect(readTablePlaceholderParams('?schema=S&table=T&item=').itemId).toBeNull()
+  })
+})
+
+describe('toTablePath', () => {
+  const screens: TableScreen[] = ['list', 'row', 'new', 'edit']
+
+  it('builds the four business data paths with the same query', () => {
+    const ref = { schemaName: 'SALES', tableName: 'ORDER' }
+    expect(screens.map((screen) => toTablePath(screen, ref, '0.1'))).toEqual([
+      '/tables?schema=SALES&table=ORDER&item=0.1',
+      '/tables/row?schema=SALES&table=ORDER&item=0.1',
+      '/tables/new?schema=SALES&table=ORDER&item=0.1',
+      '/tables/edit?schema=SALES&table=ORDER&item=0.1',
+    ])
+    expect(toTablePath('list', ref)).toBe(toTablePlaceholderPath(ref))
+  })
+
+  it('keeps every path inside the app and reads back the names (property)', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...screens),
+        fc.string({ minLength: 1 }),
+        fc.string({ minLength: 1 }),
+        fc.option(fc.string({ minLength: 1 }), { nil: null }),
+        (screen, schemaName, tableName, itemId) => {
+          const path = toTablePath(screen, { schemaName, tableName }, itemId)
+          const url = new URL(path, 'https://app.example.com')
+          expect(url.origin).toBe('https://app.example.com')
+          expect(url.pathname).toBe(TABLE_PATHS[screen])
+          expect(isTablePath(url.pathname)).toBe(true)
+          expect(readTablePlaceholderParams(url.search)).toEqual({
+            ref: { schemaName, tableName },
+            itemId,
+          })
+        },
+      ),
+    )
+  })
+})
+
+describe('isTablePath', () => {
+  it('accepts only the four business data paths exactly', () => {
+    for (const path of ['/tables', '/tables/row', '/tables/new', '/tables/edit']) {
+      expect(isTablePath(path)).toBe(true)
+    }
+    for (const path of ['/tables/', '/tables/rows', '/tablesx', '/TABLES', '/', '/tables/row/1']) {
+      expect(isTablePath(path)).toBe(false)
+    }
   })
 })

@@ -186,6 +186,23 @@ const sharedImportRule = {
   },
 }
 
+/**
+ * 業務データの画面（Intent 261016-business-data-views の U3、計画 D10: A）で、主キー・行の値・検索の値を console に出さないよう、
+ * src/features/tables/ と U3 が足した src/shared/ の部品に no-console を当てる（テストのファイルを除く）。規則を足すだけで緩めない。
+ */
+const businessDataConsoleRule = {
+  files: [
+    'src/features/tables/**/*.{ts,tsx}',
+    'src/shared/scroll-region/**/*.{ts,tsx}',
+    'src/shared/page-size/**/*.{ts,tsx}',
+    'src/shared/null-value/**/*.{ts,tsx}',
+  ],
+  ignores: TEST_FILES,
+  rules: {
+    'no-console': 'error',
+  },
+}
+
 export default [
   { ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results'] },
   {
@@ -230,4 +247,5 @@ export default [
   },
   ...featureImportRules,
   sharedImportRule,
+  businessDataConsoleRule,
 ]

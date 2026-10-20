@@ -79,10 +79,16 @@ userMenuItems: [
   `current`・`revision`（切り替えの回数）・`reload`・`focusWorkRoleSwitcher`）で読む。作業ロールの切り替え（`revision` の変化）で、
   画面の中身を読み直す。
 - 業務のメニューは `useBusinessNavigation()`（`src/app/navigation/BusinessNavigationProvider.tsx`。`status`・`response`・
-  `reload`）で読む。権限が無いと分かったとき（置き場の 403 など）は `reload()` で読み直す。
+  `reload`）で読む。権限が無いと分かったとき（業務データの API の 403 など）は `reload()` で読み直す。
 - どちらも、提供元の外（`renderWithProviders` で描く画面のテストなど）では要求を送らない既定の値（`idle`）を返す。
-- テーブルの置き場の道は、必ず `toTablePlaceholderPath`（`src/app/navigation/tablePlaceholderPath.ts`）で作る（名前は
-  `URLSearchParams` でエンコードし、先頭は常に `/tables?`）。文字列の連結で作らない。
+- 業務データの画面（機能 `tables`。Intent 261016-business-data-views の U3）の道は、一覧 `/tables`・詳細 `/tables/row`
+  （と、作成 `/tables/new`・更新 `/tables/edit`）の4つで、必ず `toTablePath`（一覧は `toTablePlaceholderPath` でもよい。
+  `src/app/navigation/tablePlaceholderPath.ts`）で作る。名前は `URLSearchParams` でエンコードし、問い合わせの部分は
+  `schema`・`table`・`item` だけにする。主キー・行の値・検索の値は道に載せず、文字列の連結で道を作らない。サイドバーの今の
+  項目の判定は `isTablePath` で4つの道をすべてテーブルの道として扱う。
+- 業務データの記憶（主キーの印・一覧の状態・定義）は `src/features/tables/businessDataStore.ts` の画面の外の変数に持ち、
+  ブラウザの保存に写さない。ログイン⇄未ログインの切り替わりは骨組みの知らせ（`src/app/login-state/loginScope.ts` の
+  `subscribeLoginScope`）で受けて全部消す。
 
 ## サイドバーの項目の区画とアイコン（Intent 261004-role-menu の U1、契約 C2）
 

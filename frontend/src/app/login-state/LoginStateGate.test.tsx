@@ -18,7 +18,9 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import { switchableProvider } from '../testing/frameTestSupport'
 import type { LoginState, LoginStateProvider } from '../registry/types'
+import { subscribeLoginScope } from './loginScope'
 import {
   LoginStateGate,
   normalizeLoginState,
@@ -273,5 +275,41 @@ describe('useClearLogoutIntent', () => {
     render(<ClearIntentProbe />)
     await user.click(screen.getByTestId('clear-intent-probe'))
     expect(screen.getByTestId('clear-intent-probe')).toBeInTheDocument()
+  })
+})
+
+describe('LoginStateGate login scope notification', () => {
+  it('notifies on every switch between logged in and logged out, but not on the first answer', async () => {
+    const listener = vi.fn()
+    const unsubscribe = subscribeLoginScope(listener)
+    const { provider, set } = switchableProvider({ loggedIn: true, admin: false })
+    render(
+      <LoginStateGate provider={provider}>
+        <Probe />
+      </LoginStateGate>,
+    )
+    expect(await screen.findByTestId('state')).toHaveTextContent('true/false/-')
+    expect(listener).not.toHaveBeenCalled()
+    act(() => set({ loggedIn: false, admin: false }))
+    await waitFor(() => expect(listener).toHaveBeenCalledTimes(1))
+    act(() => set({ loggedIn: true, admin: true }))
+    await waitFor(() => expect(listener).toHaveBeenCalledTimes(2))
+    unsubscribe()
+  })
+
+  it('does not notify when the state changes without a login switch', async () => {
+    const listener = vi.fn()
+    const unsubscribe = subscribeLoginScope(listener)
+    const { provider, set } = switchableProvider({ loggedIn: true, admin: false })
+    render(
+      <LoginStateGate provider={provider}>
+        <Probe />
+      </LoginStateGate>,
+    )
+    await screen.findByTestId('state')
+    act(() => set({ loggedIn: true, admin: true, displayName: '別の名前' }))
+    await waitFor(() => expect(screen.getByTestId('state')).toHaveTextContent('true/true/別の名前'))
+    expect(listener).not.toHaveBeenCalled()
+    unsubscribe()
   })
 })

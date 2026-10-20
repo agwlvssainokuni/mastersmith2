@@ -25,7 +25,11 @@
 //   作業ロールの一覧の幅は make-you-chic-ui の Dropdown の既定に任せた（アプリの CSS の上書きを外した後も expectContained が通る）。
 // - 骨組みの API はすべて差し替えの口（support/frameApiRoute.ts）で受け、内部DB に書かない。見本は画面の側の型で縛った
 //   support/navTreeFixtures.ts（ロールとテーブルの名前だけ）。差し替えた失敗に Chrome が出す「Failed to load resource:」は、
-//   位置が骨組みの API の道のものだけを数えて引く（140 と同じ扱い）。
+//   位置が骨組みの API・業務データの API の道のものだけを数えて引く（140 と同じ扱い）。
+// - Intent 261016-business-data-views の U3（B5）: テーブルの置き場の画面を業務データの一覧の画面に置き換えたため、末端の
+//   テーブルは業務データの一覧（S1）で開き、業務データの API（/api/tables/*）は型を付けた1つの見本
+//   （support/businessDataFixtures.ts・businessDataApiRoute.ts）で差し替える。見てよくないテーブルの定義には 403 を返す。
+//   本数に数えない書き換え。画面の時間の判定 placeholderShown は、一覧の見出しが出た判定 tableListShown に置き換えた。
 // - 768px 未満では、作業ロールの切り替えは内容の領域の先頭に置く（依頼者の決定 G2: A。機能設計 D9 との差）。
 // - 幅（360px・768px・1280px と悪い側の lg・dark・360px）、英語、画面の時間の測りは既定の1組（light・md・blue）を基にする。
 //   測りの値は記録だけで成否にしない（NFR2.8）。
@@ -40,6 +44,13 @@ import {
   prepareCombo,
   type DisplayCombo,
 } from './support/displayCombos'
+import { fixturePage, leafDefinition } from './support/businessDataFixtures'
+import {
+  isBusinessDataApiPath,
+  routeBusinessDataApi,
+  tableResponder,
+  type BusinessDataApiRoute,
+} from './support/businessDataApiRoute'
 import {
   expectFrameRouteClean,
   FRAME_API_PATHS,
@@ -50,7 +61,6 @@ import {
 } from './support/frameApiRoute'
 import { routeLoginPreferences } from './support/loginPreferences'
 import {
-  accessDeniedProblem,
   chainIds,
   emptyNavigation,
   FRAME_SCHEMA,
@@ -61,7 +71,6 @@ import {
   myColumnsWire,
   mySchemasWire,
   myTablesWire,
-  tableAccessWire,
   THREE_ROLES,
   TYPICAL_MARKER_ID,
   typicalTree,
@@ -84,9 +93,9 @@ test.use({ trace: e2eTraceMode() })
 
 /** 検査の状態の名前 */
 type InspectionState =
-  | 'sidebar-5-levels-and-placeholder'
+  | 'sidebar-5-levels-and-list'
   | 'work-role-menu-3-roles'
-  | 'placeholder-forbidden'
+  | 'list-forbidden'
   | 'my-permissions-columns'
   | 'home-not-configured'
   | 'home-nothing-visible'
@@ -97,25 +106,26 @@ type InspectionState =
 
 const [SALES, ACCOUNTING] = THREE_ROLES as [(typeof THREE_ROLES)[0], (typeof THREE_ROLES)[1]]
 
-/** 末端の置き場の道（item は末端の位置の道） */
+/** 末端の業務データの一覧の道（item は末端の位置の道） */
 const LEAF_PATH = `/tables?${new URLSearchParams({
   schema: FRAME_SCHEMA,
   table: LEAF_TABLE,
   item: chainIds().at(-1) ?? '',
 }).toString()}`
 
-/** 見てよくないテーブルの置き場の道 */
+/** 見てよくないテーブルの一覧の道 */
 const FORBIDDEN_PATH = `/tables?${new URLSearchParams({ schema: FRAME_SCHEMA, table: 'SECRET_T' }).toString()}`
 
-/** 見本を張る（検査の既定: ロール3つ・検査の木・置き場・自分の権限） */
+/** 業務データの差し替えの口（finish で失敗の件数を読むため、page ごとに覚える） */
+const businessRoutes = new WeakMap<Page, BusinessDataApiRoute>()
+
+/** 末端のテーブルの見本の定義（作業ロールは営業） */
+const LEAF_DEFINITION = leafDefinition(SALES.roleId)
+
+/** 見本を張る（検査の既定: ロール3つ・検査の木・自分の権限） */
 function mockFrame(route: FrameApiRoute): void {
   route.setWorkRole(jsonReply(200, workRoleWire(THREE_ROLES, SALES)))
   route.setNavigation(jsonReply(200, inspectionTree()))
-  route.setReply('GET', FRAME_API_PATHS.tableAccess, (url) =>
-    url.searchParams.get('table') === LEAF_TABLE
-      ? jsonReply(200, tableAccessWire())
-      : jsonReply(403, accessDeniedProblem()),
-  )
   route.setReply('GET', `${FRAME_API_PATHS.permissions}/schemas`, jsonReply(200, mySchemasWire()))
   route.setReply('GET', `${FRAME_API_PATHS.permissions}/tables`, jsonReply(200, myTablesWire()))
   route.setReply('GET', `${FRAME_API_PATHS.permissions}/columns`, jsonReply(200, myColumnsWire()))
@@ -134,7 +144,7 @@ function watchExcludedConsole(page: Page): string[] {
     } catch {
       return
     }
-    if (isFrameApiPath(pathname)) {
+    if (isFrameApiPath(pathname) || isBusinessDataApiPath(pathname)) {
       excludedTexts.push(`console: ${message.text()}`)
     }
   })
@@ -237,6 +247,7 @@ async function finish(
   label: string,
 ): Promise<void> {
   await page.waitForLoadState('networkidle')
+  const business = businessRoutes.get(page)
   const remaining = withoutExcluded(watch.problems, excludedTexts)
   test.info().annotations.push({
     type: 'u7-problems',
@@ -245,6 +256,7 @@ async function finish(
       routeSeen: route.seen,
       blocked: route.blocked.length,
       failedReplies: route.failedReplies,
+      businessFailedReplies: business?.failedReplies ?? 0,
       excludedConsole: excludedTexts.length,
       remainingProblems: remaining.length,
       cspViolations: watch.cspViolations.length,
@@ -252,8 +264,9 @@ async function finish(
   })
   expectFrameRouteClean(route, label)
   expect(excludedTexts.length, `${label}: 除いた表示の件数`).toBeLessThanOrEqual(
-    route.failedReplies,
+    route.failedReplies + (business?.failedReplies ?? 0),
   )
+  expect(business?.blocked ?? [], `${label}: 答えの無い業務データの要求`).toEqual([])
   expect(watch.cspViolations, `${label}: CSP の違反`).toEqual([])
   expect(remaining, `${label}: 画面の問題`).toEqual([])
 }
@@ -265,6 +278,16 @@ async function startU7(page: Page, combo: DisplayCombo, language?: 'ja' | 'en') 
   const excludedTexts = watchExcludedConsole(page)
   const route = await routeFrameApi(page, baseURL ?? '')
   mockFrame(route)
+  businessRoutes.set(
+    page,
+    await routeBusinessDataApi(
+      page,
+      baseURL ?? '',
+      tableResponder(LEAF_DEFINITION, (number, size) =>
+        fixturePage(LEAF_DEFINITION, number, size, 45),
+      ),
+    ),
+  )
   await prepareCombo(page, combo)
   // loginPreferences.ts は渡した項目をそのまま重ねる（language も同じ形で当たる）。
   const preferences = { theme: combo.theme, fontSize: combo.fontSize, language }
@@ -289,7 +312,7 @@ function defaultCombo(): DisplayCombo {
   return combo
 }
 
-/** 末端の置き場を開き、5 段の祖先が開いて末端が今の項目になるのを待つ。 */
+/** 末端のテーブルの一覧を開き、5 段の祖先が開いて末端が今の項目になるのを待つ。 */
 async function openLeaf(page: Page): Promise<void> {
   await page.goto(LEAF_PATH)
   await expect(page.getByTestId('tables-heading')).toHaveText(LEAF_LABEL.ja)
@@ -307,7 +330,7 @@ test.describe('160 app frame accessibility on the built WAR', () => {
       const { watch, excludedTexts, route } = await startU7(page, combo)
       const check = (state: InspectionState) => inspect(page, combo.name, state)
 
-      await test.step('sidebar with five open levels, long names and the placeholder', async () => {
+      await test.step('sidebar with five open levels, long names and the business data list', async () => {
         await openLeaf(page)
         for (const id of chainIds().slice(0, -1)) {
           await expect(page.getByTestId(`sidebar-toggle-biz:${id}`)).toHaveAttribute(
@@ -315,7 +338,7 @@ test.describe('160 app frame accessibility on the built WAR', () => {
             'true',
           )
         }
-        await check('sidebar-5-levels-and-placeholder')
+        await check('sidebar-5-levels-and-list')
         await expectSidebarContained(page, `${combo.name} sidebar`)
       })
 
@@ -328,12 +351,12 @@ test.describe('160 app frame accessibility on the built WAR', () => {
         await expect(page.getByRole('menu')).toHaveCount(0)
       })
 
-      await test.step('placeholder without permission', async () => {
+      await test.step('business data list without permission', async () => {
         await page.goto(FORBIDDEN_PATH)
         await expect(page.getByTestId('tables-heading')).toHaveText(
-          'この画面を表示する権限がありません',
+          'このテーブルを見る権限がありません。作業ロールを確かめてください。',
         )
-        await check('placeholder-forbidden')
+        await check('list-forbidden')
       })
 
       await test.step('my permissions with the column table', async () => {
@@ -433,7 +456,7 @@ test.describe('160 app frame widths, English and screen time', () => {
         await expect(page.getByTestId('shell-work-role-bar')).toHaveCount(0)
       }
       await expect(switcher.getByRole('button')).toHaveAccessibleName('作業ロール: 営業')
-      await inspect(page, label, 'sidebar-5-levels-and-placeholder')
+      await inspect(page, label, 'sidebar-5-levels-and-list')
       await expectSidebarContained(page, `${label} sidebar`)
       await workRoleTrigger(page).click()
       await inspect(page, label, 'work-role-menu-3-roles')
@@ -475,7 +498,7 @@ test.describe('160 app frame widths, English and screen time', () => {
     // ユーザーメニューの名前は頭文字で始める（Intent 261016-business-data-views の U4 の D6）
     await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Collapse the sidebar')
     await expect(page.getByRole('button', { name: /: Menu for / })).toHaveCount(1)
-    await inspect(page, 'English', 'sidebar-and-placeholder')
+    await inspect(page, 'English', 'sidebar-and-list')
     await page.getByTestId('sidebar-toggle').click()
     await expect(page.getByTestId('sidebar-toggle')).toHaveAccessibleName('Expand the sidebar')
     await expectContainsCurrentMark(page, / \(contains the current page\)$/)
@@ -505,7 +528,7 @@ test.describe('160 app frame widths, English and screen time', () => {
       switchedRoleName: ACCOUNTING.name,
       markerTestId: `sidebar-nav-biz:${markerId}`,
       groupToggleTestId: `sidebar-toggle-biz:${fourthId}`,
-      placeholderHeading: LEAF_LABEL.ja,
+      listHeading: LEAF_LABEL.ja,
     })
     /** 開閉の保存を決めた状態にして読み込み直す（ids は biz: を除いた位置の道） */
     const reloadWith = async (expanded: readonly string[], markerId: string) => {
@@ -598,7 +621,7 @@ test.describe('160 app frame widths, English and screen time', () => {
 
     await test.step('NFR2.7 select the fifth level leaf of the worst tree', async () => {
       await measure(
-        'NFR2.7 open the placeholder',
+        'NFR2.7 open the business data list',
         RUNS,
         500,
         async () => {
@@ -606,7 +629,7 @@ test.describe('160 app frame widths, English and screen time', () => {
           await expect(page.getByTestId(`sidebar-nav-biz:${leafId}`)).toBeVisible()
         },
         `[data-testid="sidebar-nav-biz:${leafId}"]`,
-        'placeholderShown',
+        'tableListShown',
         () => page.getByTestId(`sidebar-nav-biz:${leafId}`).click(),
       )
     })

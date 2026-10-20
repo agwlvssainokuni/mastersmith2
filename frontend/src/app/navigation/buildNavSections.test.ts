@@ -257,6 +257,26 @@ describe('buildNavSections', () => {
     expect(run('')).toEqual({ current: [], ancestors: [] })
   })
 
+  it('keeps the business item current on the detail, create and update paths (U3 D1, AC1.1.6)', () => {
+    for (const pathname of ['/tables/row', '/tables/new', '/tables/edit']) {
+      const output = build({
+        business: loaded(tree),
+        location: { pathname, search: '?schema=S&table=ORDER_LINE&item=0.0.1' },
+      })
+      expect(
+        allItems(output.sections)
+          .filter((i) => i.current)
+          .map((i) => i.id),
+      ).toEqual(['biz:0.0.1'])
+      expect(output.currentAncestorIds).toEqual(['biz:0', 'biz:0.0'])
+    }
+    const other = build({
+      business: loaded(tree),
+      location: { pathname: '/tables/other', search: '?schema=S&table=ORDER' },
+    })
+    expect(allItems(other.sections).filter((i) => i.current)).toEqual([])
+  })
+
   it('navigates without reloading when a link is clicked', () => {
     const navigate = vi.fn()
     const { sections } = build({ business: loaded(tree), navigate })

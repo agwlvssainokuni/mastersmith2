@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 //
-// テーブルの置き場の画面の登録のテスト（Intent 261004-role-menu の U7 の D1・D20、計画 11節）。
+// 業務データの画面の登録のテスト（Intent 261016-business-data-views の U3 の D1・D28、U3-NFR1.10）。
 import { describe, expect, it } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
@@ -23,15 +23,15 @@ import { registration as authRegistration } from '../auth/registration'
 import { registration } from './registration'
 
 describe('tables registration', () => {
-  it('registers /tables as a lazy screen for logged-in users inside the shell, without sidebar items', () => {
-    expect(registration.routes).toHaveLength(1)
-    expect(registration.routes?.[0]).toMatchObject({
-      path: '/tables',
-      access: 'LOGGED_IN',
-      layout: 'SHELL',
-    })
-    const screen = registration.routes?.[0]?.screen as { $$typeof?: symbol } | undefined
-    expect(screen?.$$typeof).toBe(Symbol.for('react.lazy'))
+  it('registers the list and the detail as separate lazy screens for logged-in users in the shell', () => {
+    expect(registration.routes?.map((route) => route.path)).toEqual(['/tables', '/tables/row'])
+    for (const route of registration.routes ?? []) {
+      expect(route).toMatchObject({ access: 'LOGGED_IN', layout: 'SHELL' })
+      const screen = route.screen as { $$typeof?: symbol }
+      expect(screen.$$typeof).toBe(Symbol.for('react.lazy'))
+    }
+    const [list, detail] = registration.routes ?? []
+    expect(list?.screen).not.toBe(detail?.screen)
     expect(registration.sidebarItems).toBeUndefined()
     expect(registration.userMenuItems).toBeUndefined()
   })
@@ -46,11 +46,13 @@ describe('tables registration', () => {
     expect(Object.keys(ja).every((key) => key.startsWith('tables.'))).toBe(true)
   })
 
-  it('sends logged-out users to the login screen', () => {
-    const decision = decideRoute('/tables', [registration, authRegistration], {
-      loggedIn: false,
-      admin: false,
-    })
-    expect(decision.kind).toBe('REDIRECT_TO_LOGIN')
+  it('sends logged-out users to the login screen on both paths', () => {
+    for (const path of ['/tables', '/tables/row']) {
+      const decision = decideRoute(path, [registration, authRegistration], {
+        loggedIn: false,
+        admin: false,
+      })
+      expect(decision.kind).toBe('REDIRECT_TO_LOGIN')
+    }
   })
 })

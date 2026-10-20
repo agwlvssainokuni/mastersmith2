@@ -22,15 +22,20 @@
 // 2. ロール（E2EI_ROLE_<印>）を API で作り、T1 を READ、T2 を NONE にする。
 // 3. createRegisteredUser で利用者を作り、メールアドレス・パスワード・氏名を recordSecretValues で書いて読み戻し、
 //    3つが揃わなければ流れの始めで失敗にする（NFR1.9、R-07）。そのロールを API で割り当てる。
-// 4〜7. その利用者で画面からログインし、5段を開閉のボタンで開いて末端の T1 を選び、置き場の見出し・aria-current・祖先の展開、
-//    再読み込みでも同じこと、T2 の置き場の道を直接開くと権限なしの表示で T2 の表示名が出ないことを確かめる。
-// 8. 利用者のトークンで GET /api/me/navigation・/api/me/table-access・/api/me/permissions/schemas の本物の応答を読み、
-//    160 の見本（navTreeFixtures.ts）と項目の名前と型が一致することを確かめる。
+// 4〜7. その利用者で画面からログインし、5段を開閉のボタンで開いて末端の T1 を選び、業務データの一覧の見出し・aria-current・
+//    祖先の展開、再読み込みでも同じこと、T2 の一覧の道を直接開くと 403 の表示で T2 の表示名と名前が出ないことを確かめる。
+//    E2E の環境には対象DB が無いため、業務データの API（/api/tables/*）は型を付けた1つの見本（businessDataFixtures.ts）で
+//    差し替える（Intent 261016-business-data-views の U3 の B5、NFR 要件 Q2: A。本数に数えない書き換え）。T1 の定義と一覧を
+//    返し、T2 の定義には 403 ACCESS_DENIED を返す。業務データの本物の応答との形の比べは 180（B6）が受け持つ。
+// 8. 利用者のトークンで GET /api/me/navigation・/api/me/permissions/schemas の本物の応答を読み、160 の見本
+//    （navTreeFixtures.ts）と項目の名前と型が一致することを確かめる（今の置き場の API は画面が呼ばなくなったため外した）。
 // 9. ログアウトの確かめ（security-design.md 5.3）。
 // test.step の題・注記・添付に値を入れない。初期管理者の資格情報を webServer.env に置かない（既存のとおり）。
 import { expect, test, type APIRequestContext } from '@playwright/test'
 import { requestAdminAccessToken } from './support/invitationSeed'
-import { inspectionTree, mySchemasWire, tableAccessWire } from './support/navTreeFixtures'
+import { fixturePage, tableDefinitionFor } from './support/businessDataFixtures'
+import { routeBusinessDataApi, tableResponder } from './support/businessDataApiRoute'
+import { inspectionTree, mySchemasWire } from './support/navTreeFixtures'
 import {
   createRegisteredUser,
   loginWithForm,
@@ -119,7 +124,7 @@ async function getJson(request: APIRequestContext, token: string, path: string):
 }
 
 test.describe('170 menu navigation flow (I)', () => {
-  test('open a five-level menu item, see the placeholder, the forbidden table and log out', async ({
+  test('open a five-level menu item, see the business data list, the forbidden table and log out', async ({
     page,
     request,
   }) => {
@@ -228,6 +233,19 @@ test.describe('170 menu navigation flow (I)', () => {
     )
     const leafId = levelIds.at(-1) ?? ''
 
+    // 業務データの API を見本で差し替える（T1 の定義と一覧。T2 の定義は 403）。
+    const t1Definition = tableDefinitionFor({
+      schema,
+      table: t1.name,
+      displayName: { ja: t1.label, en: t1.label },
+      workRoleId: roleId,
+    })
+    const businessRoute = await routeBusinessDataApi(
+      page,
+      test.info().project.use.baseURL ?? '',
+      tableResponder(t1Definition, (number, size) => fixturePage(t1Definition, number, size, 3)),
+    )
+
     await test.step('4. open the five levels with the toggle buttons and choose T1', async () => {
       await loginWithForm(page, user.email, user.password)
       for (const id of levelIds.slice(0, -1)) {
@@ -255,9 +273,10 @@ test.describe('170 menu navigation flow (I)', () => {
       await expect(page.getByRole('link', { name: `${t2.name}の項目` })).toHaveCount(0)
     }
 
-    await test.step('5. the placeholder shows T1 with the current leaf and open ancestors', async () => {
+    await test.step('5. the business data list shows T1 with the current leaf and open ancestors', async () => {
       await expect(page).toHaveURL(/\/tables\?/)
       await expectLeafShown()
+      await expect(page.getByTestId('tables-count')).toContainText('3')
     })
 
     await test.step('6. the same after reloading', async () => {
@@ -265,13 +284,14 @@ test.describe('170 menu navigation flow (I)', () => {
       await expectLeafShown()
     })
 
-    await test.step('7. the T2 placeholder opened directly shows no permission', async () => {
+    await test.step('7. the T2 list opened directly shows no permission', async () => {
       await page.goto(`/tables?${new URLSearchParams({ schema, table: t2.name }).toString()}`)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-        'この画面を表示する権限がありません',
+        'このテーブルを見る権限がありません。作業ロールを確かめてください。',
       )
       await expect(page.getByTestId('tables-page')).not.toContainText(t2.label)
       await expect(page.getByTestId('tables-page')).not.toContainText(t2.name)
+      expect(businessRoute.blocked, '答えの無い業務データの要求').toEqual([])
     })
 
     await test.step('8. the samples of 160 have the shape of the real responses', async () => {
@@ -291,15 +311,6 @@ test.describe('170 menu navigation flow (I)', () => {
         'navigation',
         await getJson(request, accessToken, '/api/me/navigation'),
         inspectionTree(),
-      )
-      compare(
-        'tableAccess',
-        await getJson(
-          request,
-          accessToken,
-          `/api/me/table-access?${new URLSearchParams({ schema, table: t1.name }).toString()}`,
-        ),
-        tableAccessWire(),
       )
       compare(
         'permissionsSchemas',

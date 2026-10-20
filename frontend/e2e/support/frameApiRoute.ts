@@ -16,7 +16,8 @@
 //
 // U7 の骨組みの API の差し替えの口（Intent 261004-role-menu の U7 の L13、performance-design.md 4.1、計画 12節 D-12）。
 // page ごとに page.route の口を1つ張り、アプリと同じオリジンの `/api/me/work-role`・`/api/me/navigation`・
-// `/api/me/table-access`・`/api/me/permissions/` の下の要求を受ける（/api/me そのものと認証の道は受けない）。
+// `/api/me/permissions/` の下の要求を受ける（/api/me そのものと認証の道は受けない）。Intent 261016-business-data-views の
+// U3（B5）で、画面が呼ばなくなった `/api/me/table-access` の差し替えを外した（業務データの API は businessDataApiRoute.ts）。
 // - 見本の本文は前もって JSON.stringify した文字列で持ち、口は直列化せずに route.fulfill の body に渡す（測りの中に直列化の
 //   時間を入れない。U6 の読み直しの R-01）。
 // - 状態を1つ持つ: PUT /api/me/work-role を受けて 204 を返したら、その後の GET /api/me/work-role・GET /api/me/navigation には
@@ -35,7 +36,6 @@ export type FrameHandler = (url: URL) => FrameReply
 export const FRAME_API_PATHS = {
   workRole: '/api/me/work-role',
   navigation: '/api/me/navigation',
-  tableAccess: '/api/me/table-access',
   permissions: '/api/me/permissions',
 } as const
 
@@ -44,7 +44,6 @@ export function isFrameApiPath(pathname: string): boolean {
   return (
     pathname === FRAME_API_PATHS.workRole ||
     pathname === FRAME_API_PATHS.navigation ||
-    pathname === FRAME_API_PATHS.tableAccess ||
     pathname.startsWith(`${FRAME_API_PATHS.permissions}/`)
   )
 }

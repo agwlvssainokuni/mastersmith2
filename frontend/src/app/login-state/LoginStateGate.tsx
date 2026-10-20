@@ -16,16 +16,20 @@
 // ログイン状態を得て、画面の部品へ渡す（ST2、BR7.3）。骨組みはログイン状態を自分で持たず、提供元（U2）の値に従う。
 // あわせて、提供元のログアウトの手続きを別の文脈で渡し、機能が useLogout からだけログアウトできるようにする（BR3.1・BR3.2。
 // 機能どうしの直接の import をしないため）。
+// ログイン⇄未ログインの切り替わりのたびに、ログインの範囲の知らせ（loginScope）を鳴らす（Intent 261016-business-data-views の
+// U3 の L4。業務データの記憶はこの知らせで全部消す）。
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
 import type { LoginState, LoginStateProvider } from '../registry/types'
+import { notifyLoginScopeChanged } from './loginScope'
 
 /** 未ログインの状態 */
 export const LOGGED_OUT: LoginState = { loggedIn: false, admin: false }
@@ -75,6 +79,20 @@ export interface LoginStateGateProps {
  */
 export function LoginStateGate({ provider, children }: LoginStateGateProps) {
   const [state, setState] = useState<LoginState | null>(provider ? null : LOGGED_OUT)
+  const previousLoggedIn = useRef<boolean | null>(null)
+
+  const loggedIn = state === null ? null : state.loggedIn
+  useEffect(() => {
+    if (loggedIn === null) {
+      return
+    }
+    const previous = previousLoggedIn.current
+    previousLoggedIn.current = loggedIn
+    // 最初の答えは切り替わりではない（記憶はまだ空）。ログイン⇄未ログインが変わったときだけ鳴らす。
+    if (previous !== null && previous !== loggedIn) {
+      notifyLoginScopeChanged()
+    }
+  }, [loggedIn])
 
   useEffect(() => {
     if (!provider) {

@@ -35,8 +35,8 @@ import { BUSINESS_ID_PREFIX } from './navExpansion'
 import type { LocalizedLabel, NavigationResponse, NavNode } from './navigationApi'
 import { selectAdminSidebarItems } from './navigationItems'
 import {
+  isTablePath,
   readTablePlaceholderParams,
-  TABLE_PLACEHOLDER_PATH,
   toTablePlaceholderPath,
   type TableRef,
 } from './tablePlaceholderPath'
@@ -280,7 +280,8 @@ export function buildNavSections(input: BuildNavInput): BuildNavOutput {
   let currentAncestorIds: readonly string[] = []
   if (location.pathname === HOME_PATH) {
     homeItem.current = true
-  } else if (location.pathname === TABLE_PLACEHOLDER_PATH) {
+  } else if (isTablePath(location.pathname)) {
+    // 業務データの一覧・詳細・作成・更新のどの道でも、そのテーブルの項目を今の項目にする（D1・AC1.1.6）。
     const entry = findBusinessCurrent(navigable, location.search)
     if (entry !== undefined) {
       entry.item.current = true

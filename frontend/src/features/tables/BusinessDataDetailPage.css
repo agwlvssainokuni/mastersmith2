@@ -1,0 +1,59 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* S2 行の詳細（D18）。項目名と値を組で出し、狭い幅では縦に積む。値は折り返して全体を出す。 */
+.tables-detail {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.tables-detail-item {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+@media (width >= 768px) {
+  .tables-detail-item {
+    grid-template-columns: minmax(8rem, 14rem) minmax(0, 1fr);
+  }
+}
+
+.tables-detail-item > dt {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tables-detail-item > dd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+}
+
+.tables-detail-value {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tables-detail-truncated {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}

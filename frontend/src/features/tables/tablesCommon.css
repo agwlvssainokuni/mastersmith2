@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-/* テーブルの置き場の画面（S2。Intent 261004-role-menu の U7 の D21〜D23） */
+/* 業務データの画面の共通の見た目（S1・S2・S6）。今の置き場の画面の tables-page・tables-heading の見た目を引き継ぐ（P-7）。 */
 .tables-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-width: 0;
 }
 
 .tables-heading {
@@ -30,6 +32,12 @@
 .tables-text {
   margin: 0;
   color: var(--color-text-muted);
+}
+
+.tables-notices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
 .tables-actions {

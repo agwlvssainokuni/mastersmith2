@@ -18,13 +18,15 @@
 // - 時計は画面の中の performance.now() の1つだけ。聞き手と見張りは page.evaluate で入れ、アプリのコードには入れない。
 // - 測り始め: document の click の捕捉の段で、event.target.closest(選択子) が当たった最初の1回。
 // - 測り終わり: MutationObserver で、決まった判定の表 __u7Done の名前で選んだ判定が真になった後の、次の
-//   requestAnimationFrame の時刻。判定は見張りの中に用意した3つ（workRoleSwitched・groupOpened・placeholderShown）だけで、
+//   requestAnimationFrame の時刻。判定は見張りの中に用意した3つ（workRoleSwitched・groupOpened・tableListShown）だけで、
 //   テストは関数の本体ではなく名前で選ぶ。
+// - Intent 261016-business-data-views の U3（B5）: テーブルの置き場の画面を業務データの一覧の画面に置き換えたため、判定
+//   placeholderShown を、一覧の画面の見出し（tables-heading を引き継いだもの）が出た判定 tableListShown に置き換えた（P-7）。
 // - 判定と記録は u6Measure.ts の summarizeRuns（5 回の中央値・最大・1回目）を使う。値は名前と時間だけ。
 import { expect, type Page } from '@playwright/test'
 
 /** 判定の名前 */
-export type U7DoneName = 'workRoleSwitched' | 'groupOpened' | 'placeholderShown'
+export type U7DoneName = 'workRoleSwitched' | 'groupOpened' | 'tableListShown'
 
 /** 判定に使う値（見本の名前と id だけ） */
 export interface U7DoneParams {
@@ -34,8 +36,8 @@ export interface U7DoneParams {
   markerTestId: string
   /** 開くまとまりの開閉のボタンの data-testid（sidebar-toggle-biz:<id>） */
   groupToggleTestId: string
-  /** 置き場の見出しに出る表示名 */
-  placeholderHeading: string
+  /** 業務データの一覧の見出しに出る表示名 */
+  listHeading: string
 }
 
 /** 判定の表を画面に入れる（画面を読み込み直した後、armU7Measure より前に呼ぶ）。 */
@@ -55,8 +57,8 @@ export async function installU7Done(page: Page, params: U7DoneParams): Promise<v
         const list = listId ? document.getElementById(listId) : null
         return list !== null && list.querySelector('li') !== null
       },
-      placeholderShown: () =>
-        (byTestId('tables-heading')?.textContent ?? '').trim() === values.placeholderHeading,
+      tableListShown: () =>
+        (byTestId('tables-heading')?.textContent ?? '').trim() === values.listHeading,
     }
     ;(window as unknown as { __u7Done: Record<string, () => boolean> }).__u7Done = done
   }, params)

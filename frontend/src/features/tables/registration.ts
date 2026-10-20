@@ -14,29 +14,30 @@
  * limitations under the License.
  */
 //
-// テーブルの置き場の画面（S2）を骨組みに登録する（Intent 261004-role-menu の U7 の D1・D20、L9）。道は `/tables`
-// （引数は問い合わせの schema・table・item）。ログインだけで開ける画面で、見てよいかはサーバーの置き場の問い合わせが
-// 判定する（NFR1.1）。サイドバーの項目は登録しない（業務のメニューは骨組みが API から作る）。
-// 画面は遅延読み込み（lazy）で、入口の JavaScript に入れない（計画 11節）。このファイルは文言だけを静的に読む。
+// 業務データの画面を骨組みに登録する（Intent 261016-business-data-views の U3 の D1・D28、L7、U3-NFR1.10）。
+// - 道は一覧 `/tables`・詳細 `/tables/row`（B6 で作成 `/tables/new`・更新 `/tables/edit` を足す）。引数は問い合わせの
+//   schema・table・item だけ。どれも「ログインだけ」で開ける画面で、見てよいかと許す操作はサーバーが判定する。
+// - 画面はそれぞれ別の遅延読み込み（lazy）にし、入口の JavaScript に入れない。このファイルは文言だけを静的に読む。
+// - サイドバーの項目は登録しない（業務のメニューは骨組みが API から作る）。
 import { lazy } from 'react'
-import { TABLE_PLACEHOLDER_PATH } from '../../app/navigation/tablePlaceholderPath'
+import { TABLE_PATHS } from '../../app/navigation/tablePlaceholderPath'
 import type { FeatureRegistration } from '../../app/registry/types'
 import { tablesMessages } from './messages'
 
-const TablePlaceholderPage = lazy(() =>
-  import('./TablePlaceholderPage').then((module) => ({ default: module.TablePlaceholderPage })),
+const BusinessDataListPage = lazy(() =>
+  import('./BusinessDataListPage').then((module) => ({ default: module.BusinessDataListPage })),
 )
 
-/** テーブルの置き場の画面の機能の登録 */
+const BusinessDataDetailPage = lazy(() =>
+  import('./BusinessDataDetailPage').then((module) => ({ default: module.BusinessDataDetailPage })),
+)
+
+/** 業務データの画面の機能の登録 */
 export const registration: FeatureRegistration = {
   featureId: 'tables',
   routes: [
-    {
-      path: TABLE_PLACEHOLDER_PATH,
-      screen: TablePlaceholderPage,
-      layout: 'SHELL',
-      access: 'LOGGED_IN',
-    },
+    { path: TABLE_PATHS.list, screen: BusinessDataListPage, layout: 'SHELL', access: 'LOGGED_IN' },
+    { path: TABLE_PATHS.row, screen: BusinessDataDetailPage, layout: 'SHELL', access: 'LOGGED_IN' },
   ],
   messages: tablesMessages,
 }

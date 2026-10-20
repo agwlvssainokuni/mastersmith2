@@ -32,8 +32,35 @@ export const SECRET_VALUES_FILE = 'test-results/e2e-secret-values.json'
 /** 報告の部品が runTag を単独の値として探す最小の長さ（短いときは宛先の形の中でだけ探し、警告する） */
 export const RUN_TAG_MIN_SEARCH_LENGTH = 24
 
+/**
+ * 値の種類（型と実行時の一覧を1つの定数から作る。Intent 261016-business-data-views の U3 の NFR 設計のレビュー R-07）。
+ * businessValue は業務データの見本の値（185 の見本の目印・180 が実行ごとに作る値）。
+ */
+export const SECRET_KINDS = ['email', 'password', 'displayName', 'runTag', 'businessValue'] as const
+
 /** 値の種類 */
-export type SecretKind = 'email' | 'password' | 'displayName' | 'runTag'
+export type SecretKind = (typeof SECRET_KINDS)[number]
+
+/**
+ * 業務データの見本の目印（Intent 261016-business-data-views の U3 の L10、security-design.md の 8節）。185 などの見本の
+ * 行の値（主キー・セルの値）は、すべてこの目印を含む形で作る（businessDataFixtures.ts）。報告にこの目印が出れば、見本の
+ * 行の値が報告に漏れたことになる。`<script>` のような一般的な文字列は探す値にしない。
+ */
+export const BUSINESS_VALUE_MARK = 'E2E-BIZ-MARK'
+
+/**
+ * U4 の測りの見本（userAdminFixtures.ts の measurementListPage）が作る値（Intent 261016-business-data-views の U3 の計画 D5: A）。
+ * 番号 01〜25 の「測定 NN」と sokutei.NN@example.com。見本の作り方を変えるときは、ここも合わせて直す（このファイルは Node の外の
+ * 部品を読み込まないため、同じ式をここに置く）。
+ */
+export function measurementSampleValues(): SecretEntry[] {
+  return Array.from({ length: 25 }, (_, index) => String(index + 1).padStart(2, '0')).flatMap(
+    (number): SecretEntry[] => [
+      { kind: 'displayName', value: `測定 ${number}` },
+      { kind: 'email', value: `sokutei.${number}@example.com` },
+    ],
+  )
+}
 
 /** 値のファイルの1件 */
 export interface SecretEntry {
@@ -83,6 +110,9 @@ export const SECRET_FIXED_VALUES: readonly SecretEntry[] = [
   { kind: 'displayName', value: '<b>記号</b> & "引用" \'名\'' },
   { kind: 'email', value: 'kigou@example.com' },
   { kind: 'displayName', value: 'Probe Sample' },
+  // Intent 261016-business-data-views の U3（計画 Step 13）: 185 の見本の目印と、U4 の測りの見本の値（D5: A）。
+  { kind: 'businessValue', value: BUSINESS_VALUE_MARK },
+  ...measurementSampleValues(),
 ]
 
 /** frontend/ の場所 */
@@ -108,7 +138,7 @@ export function readSecretValues(file: string): SecretEntry[] {
       entry === null ||
       typeof entry !== 'object' ||
       typeof entry.value !== 'string' ||
-      !['email', 'password', 'displayName', 'runTag'].includes(String(entry.kind))
+      !(SECRET_KINDS as readonly string[]).includes(String(entry.kind))
     ) {
       throw new Error('値のファイルの形が違います（種類か値が読めません）。')
     }

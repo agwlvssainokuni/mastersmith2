@@ -15,13 +15,12 @@
  */
 //
 // U7 の骨組みの API の見本（Intent 261004-role-menu の U7 の L13、performance-design.md 4.1、logical-components.md 5節）。
-// - 型は画面の側の型（NavigationResponse・WorkRoleState・TableAccess・MyPermissionNodes）で縛る（project.md の学び。
+// - 型は画面の側の型（NavigationResponse・WorkRoleState・MyPermissionNodes）で縛る（project.md の学び。
 //   本物の応答との項目の名前と型の一致は 170・150 で確かめる）。
 // - 項目の id はサーバーと同じ「絞る前の木での位置の道」（各段の 0 から数えた番号を . でつなぐ）。
 // - 名前は架空のもの（テーブル・ロールの名前と表示名だけ）。氏名・メールアドレスを持たない。
 import type { NavigationResponse, NavNode } from '../../src/app/navigation/navigationApi'
 import type { WorkRoleRef, WorkRoleState } from '../../src/app/work-role/workRoleApi'
-import type { TableAccess } from '../../src/features/tables/tableAccessApi'
 import type {
   MyPermissionNode,
   MyPermissionNodes,
@@ -189,17 +188,7 @@ export function workRoleWire(
   return { roles: [...roles], current }
 }
 
-/** 置き場の見本（見てよいテーブル） */
-export function tableAccessWire(): TableAccess {
-  return {
-    schemaName: FRAME_SCHEMA,
-    tableName: LEAF_TABLE,
-    displayName: { ...LEAF_LABEL },
-    main: 'READ',
-  }
-}
-
-/** 置き場の権限なしの応答（403 ACCESS_DENIED の Problem Details の形） */
+/** 権限なしの応答（403 ACCESS_DENIED の Problem Details の形） */
 export function accessDeniedProblem(): Readonly<Record<string, unknown>> {
   return {
     type: 'about:blank',

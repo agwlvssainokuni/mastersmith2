@@ -1,0 +1,292 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-businessdata-screens",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/170-menu-navigation-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/185-business-data-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataApiRoute.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataApiRoute.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataFixtures.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataMeasure.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataMeasure.ts"
+    },
+    {
+      "path": "frontend/e2e/support/frameApiRoute.ts"
+    },
+    {
+      "path": "frontend/e2e/support/navTreeFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/secretValues.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/secretValues.ts"
+    },
+    {
+      "path": "frontend/e2e/support/u7Measure.ts"
+    },
+    {
+      "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/LoginStateGate.tsx"
+    },
+    {
+      "path": "frontend/src/app/login-state/loginScope.test.ts"
+    },
+    {
+      "path": "frontend/src/app/login-state/loginScope.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.property.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/buildNavSections.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/tablePlaceholderPath.test.ts"
+    },
+    {
+      "path": "frontend/src/app/navigation/tablePlaceholderPath.ts"
+    },
+    {
+      "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataDetailPage.css"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataListPage.css"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataListPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataProblemView.css"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataProblemView.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataProblemView.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataTable.css"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/RestrictionNotice.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/RestrictionNotice.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/RowActionsMenu.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/RowActionsMenu.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/SearchPanel.css"
+    },
+    {
+      "path": "frontend/src/features/tables/SearchPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/SearchPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataApi.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataLimits.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataStore.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataStore.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataTypes.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/listPaging.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/listPaging.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/listState.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/listState.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/messages.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/problemMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/problemMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/registration.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/registration.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/rowLabel.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/rowLabel.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/rowLabel.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/searchConditions.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/searchConditions.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/tableHookSupport.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/tablesCommon.css"
+    },
+    {
+      "path": "frontend/src/features/tables/tablesText.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/businessDataSamples.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/renderTablesScreen.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/sampleDefinition.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/tableProviders.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/valueTexts.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowDetail.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowDetail.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowSearch.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowSearch.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableDefinition.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableDefinition.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/valueFormat.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/valueFormat.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/valueFormat.ts"
+    },
+    {
+      "path": "frontend/src/shared/null-value/NullValue.css"
+    },
+    {
+      "path": "frontend/src/shared/null-value/NullValue.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/null-value/NullValue.tsx"
+    },
+    {
+      "path": "frontend/src/shared/page-size/PageSizeSelect.css"
+    },
+    {
+      "path": "frontend/src/shared/page-size/PageSizeSelect.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/page-size/PageSizeSelect.tsx"
+    },
+    {
+      "path": "frontend/src/shared/scroll-region/ScrollRegion.css"
+    },
+    {
+      "path": "frontend/src/shared/scroll-region/ScrollRegion.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/scroll-region/ScrollRegion.tsx"
+    }
+  ]
+}

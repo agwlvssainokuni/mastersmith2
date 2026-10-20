@@ -6,6 +6,7 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-10-20T15:30:00Z — U3 のコードのレビューは単位ごとに1回のため、依頼者の決定で B5・B6 は verify と E2E の全体を通してそれぞれ develop に統合し、B7 の後に U3 の全体（B5〜B7）を1回でレビューする（計画の Step 18 の「記録とレビュー」との差）。指摘は直しの Bolt で直す。
 - 2026-10-19T07:00:00Z — B1（U5）が Bolt の計画の1番目から3番目（U1・U4 の後）に移る。計画の理由は「CI を安定させる（不安定なテスト2件が後の Bolt の統合の後の CI で落ちうる）」だったため、B2・B3 の統合の後の CI で2件が落ちる危険が残る。依頼者の決定（今の順のまま）で進め、落ちたら team.md の不安定なテストの決まりで扱う。U1 の code-summary.md にも Bolt の計画との差として書く。
 - 2026-10-19T06:20:00Z — コード生成は単位ごとに U1→U4→U5→U2→U3 の順で進む（単位の依存の順。各単位のコード生成を終えてから次へ）。Bolt の計画の B7（U4 の後半、axe-core 4.14 の引き上げと依頼（5）の取り込み）は U3 の後に置く必要があるため、依頼者の決定（A）で U3 のコード生成の計画の最後の Bolt（B5→B6→B7）に入れ、U4 のコード生成は B3 だけにする。U4 の B7 の分の ID は U3 へ Deferred にする。B1（U5）は U1・U4 の後になる。
 
@@ -14,6 +15,7 @@
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+- 2026-10-20T15:00:00Z — U3 の B5 の生成で依頼者が決めたこと: N-8 は受け入れる（ScrollRegion の tabIndex に oxlint の jsx-a11y/no-noninteractive-tabindex の1行の除外。計画の「緩める変更は無い」との差として記録）、N-5 は B6 で絞る（書き込みの設定が無いときの知らせは、書き込みの操作が許される人にだけ出す）、N-3・N-4 はこの読み方でよい。B5 のコミットは E2E を C3 に寄せる区切り（C1〜C4）。
 - 2026-10-20T12:00:00Z — U2（B4）のコードのレビュー（READY、Minor 3）は、依頼者の決定で3件とも統合の前に直す: R-01（03-writer-account.sh のライセンスヘッダーの最後の行）、R-02（作成でドライバーに渡す主キーのカラム名の引用。大文字小文字の混じる名前・予約語の結合テストで確かめる）、R-03（生成された鍵を文字で読めないときは MySQL 系と同じく鍵を空にして 201）。直した後に verify と E2E を流し直す。
 - 2026-10-20T09:00:00Z — U2（B4）の生成で依頼者が決めたこと: G1: A（秒の端数の精度は型の名前の (n) → DSL の精度 → DB の種類の既定）、G5: A（違反の後の確かめの失敗に誤りを付けず 409 だけ。BR6.4 との差）、G13: A（MySQL・MariaDB の整数の符号なしは DSL から分からず、範囲の外は 409。既知の制約）、G14: A（Connector/J の 22001 を形の誤りに含める）、G15: A（U1 の MySQL の件数の問い合わせの時間切れの後に止まった接続がプールに戻り次の1回も 503 になる。既知の制約として後の Intent に持ち越す）、G16: A（Performance Validation の WARN の件数の判定から bizWritePoolLimit の想定どおりの 409 の WARN を code で絞って外し、外した件数を並べて記録する）。G6〜G12 は承認の場で確かめる。
 - 2026-10-19T15:30:00Z — U5（B1）のコードのレビュー（READY、Minor 4）の扱い: 依頼者の決定で R-02（自然の順も 409 を失敗にする）・R-03（dsl-mixed-memory.sh の切れた行と trap）を統合の前に直し、R-01（code-summary の「保証する」を弱める）も直す。R-04（K6_IMAGE の digest と H2 の jar の取り方の2か所書き）は持ち越す。
