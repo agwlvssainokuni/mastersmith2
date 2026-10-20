@@ -169,6 +169,9 @@
 - CI の時間は run の始めから終わりではなく、検査の job の始めから終わりで測った。a031ba1 の run は前の run の終わりまで約 31 分待ち、run の全体では 59 分だったが、検査の job は 28分37秒で 42 分の線の内だった。 (learned 2026-10-20) <!-- cid:261016-business-data-views:build-and-test:61c8c95d0bef093d17ae4b3d25a4d54b365e106c1b90b5937bacd770b29e3bc3 -->
 - 288736d・22de65f は単独の CI の run を持たず、まとめて push された先頭の 31d434c の run（1回目で成功、検査の job 22分42秒）で確かめたと読んだ。 (learned 2026-10-20) <!-- cid:261016-business-data-views:ci-pipeline:4e67a096f6ce2ed25d2ac6864a9c062a2ddfe48d5ac92d16c42ad2323c335596 -->
 - 05a9b37 の CI（run 39261104974、B3 を含む push）の1回目が PasswordChangePage.test.tsx の「drops the answer when the screen is left while sending」で落ちていたことが、Build and Test とコード生成の段の記録から抜けていた。同じテストは3回落ちており、team.md の「二度目に落ちたら直すまで進まない」に当たった後に B1・B4・B5 を統合していた。テストは b7291d3 で直り、その後は落ちていない。依頼者の決定で、承認済みの記録は書き換えず、この段の ci-config.md 6.2 に差を記録した。 (learned 2026-10-20) <!-- cid:261016-business-data-views:ci-pipeline:64d8325e02a3192f0acf0f2b8c122da2862166773183abf84143160709073035 -->
+- Q4: A の「ページ送り」は、見本の customers が2行で1ページの件数が最小 20 のため次のページへ移れず、スモークテストでは表示と件数の選択だけを確かめ、複数ページの送りは E2E 180 で確かめ済みとした（依頼者が受け入れた）。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:474fa014a1132b93b965c4c760a4dc89c627728b932e8d16043db1052a10fad4 -->
+- 配備の前の k6 は流さず Performance Validation に任せる（Build and Test の Q3: A）。project.md の「試験済みのときだけ省く」との差を cd-config.md 3.3 に記録した。書き込みだけに問題が出たときに .env の複写を戻して 409 にする手を、まとめの確認に無かったが rollback-runbook.md 3.1 に足した（依頼者が受け入れた）。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:5ec91dde4692e7d25eb2435a4568900a9a7b32a04030472bccf295c9c996cd5f -->
+- 書き込みのアカウントと .env の書き足しを入れ替えの前の停止の間に行う形（Q1: A）にした。アプリの作り直しを1回で済ませる代わりに、停止の時間に見本の PG の作り直しと台本の実行が乗る。WAR の作り直しは停止の前に置いて止まる時間を短くした。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:a2e7d1bc48f58fb9b6022742fe00ec8ea72a0a992d551b09bf9be9c0ed8d5b03 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
