@@ -6,10 +6,11 @@
 - Test Strategy: Standard（`aidlc-state.md`）。範囲は classic、深さは Standard。
 - 依頼者の決定（`build-and-test-questions.md`）:
   - Q1: B — verify と E2E の全件は `develop` の今の形では流さない。各 Bolt の作業ブランチの上の最後の結果と CI の結果を正とする。
-  - Q2: A — `dslMixed` の `memory.peak` の内訳をこの段で測る（別の担当。結果は `memory-peak-measurement.md`、後でできる）。
-  - Q3: A — 業務データの k6 の場面は Performance Validation で判定する。この段は手順書と `k6 inspect` の確かめまで。
-  - Q4: A — B5 の統合の後のすべてのコミットの CI を試行ごとに確かめて記録する（指揮役が後で足す）。
-- ビルドの状態: 作業ブランチの上の最後の回（B7 のレビューの直しの後）で `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` が通過（23分24秒）、E2E の全件 256 件が通過（13分2秒）。
+  - Q2: A — `dslMixed` の `memory.peak` の内訳をこの段で測った（結果は `memory-peak-measurement.md`。既定の2回 0.873・0.870 で Met）。
+  - Q3: A — 業務データの k6 の場面は Performance Validation で判定する。この段は手順書と `k6 inspect` の確かめまで（業務データの 12 の場面とも終了コード 0、`test-results.md` 7節）。
+  - Q4: A — B5 の統合の後のコミットの CI を試行ごとに確かめた（`test-results.md` 6節）。未 push の `288736d`・`22de65f` の CI は push の後に確かめる。
+- この段の直し（依頼者の決定、`develop` に `22de65f` で squash 済み。`test-results.md` 8節）: `eslintImportRules.test.ts` の2度目の失敗の直し、AC3.4.5 の結合テスト `AbstractBusinessDataReadIT#readsLeaveNoAudit` の追加、`README.md`・`perf/README.md` の食い違いの直し。直したのはテスト・テストの設定・文書だけ。
+- ビルドの状態: この段の直しの後（`develop` と同じ中身）で `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` が通過（22分26秒。単体 2,589・結合 1,389・画面 1,975 件、失敗 0）。E2E の全件 256 件は B7 の後の作業ブランチの上で通過（13分2秒。この段の直しはテストと文書だけのため流し直していない）。
 - 前提の道具と環境: `build-instructions.md` の 1・2節（JDK 25・Node 24・Gitleaks・OSV-Scanner・colima と2つの環境変数・Mailpit・見本の PG の 15432）。
 
 ## 2. 作ったテストの手順書
@@ -20,7 +21,8 @@
 | `integration-test-instructions.md` | 単位の境目ごとの結合テスト、3種類の対象DB、E2E の流し方とデータの後始末 |
 | `performance-test-instructions.md` | 業務データの k6 の場面（Performance Validation）、`dslMixed` の `memory.peak`（この段）、画面の時間（E2E 185）、時間の記録 |
 | `security-test-instructions.md` | SpotBugs・OSV-Scanner・Gitleaks、構造の検査、認可・IDOR・SQL・漏えいの結合テスト、性質ベースのテスト、画面と E2E の確かめ |
-| `test-results.md` | Bolt ごとの build と test の結果、失敗と扱い、不安定と確かめられていない3件、CI の不安定なテスト2件の直し。CI と `memory.peak` は後で足す |
+| `test-results.md` | Bolt ごとの build と test の結果、失敗と扱い、不安定と確かめられていない3件、CI の不安定なテスト2件の直し、CI の試行ごとの結果、`memory.peak` の内訳、この段の直し |
+| `memory-peak-measurement.md` | `dslMixed` の `memory.peak` の4回の測り（別の担当） |
 | `cross-unit-traceability.md` | 要件の FR・NFR と受け入れ基準の網羅（2段の連鎖） |
 
 ## 3. 単位ごとのカバレッジ
@@ -32,30 +34,30 @@
 | U3 | `src/features/tables/` | 行 93.94%・分岐 88.39%（記録だけ。下限は全体の合計に当てる） | 全体の合計で行 80%・分岐 70% |
 | U4 | `src/shared/row-actions/rowActionsName.ts` | 100%・100% | 同上 |
 | U5 | 本体のソースを変えていない | — | — |
-| 全体 | バックエンド・フロントエンド | バックエンド 行 97.64%・分岐 91.23%、フロントエンド 行 95.06%・分岐 89.82% | 行 80%・分岐 70% |
+| 全体 | バックエンド・フロントエンド | バックエンド 行 97.64%・分岐 91.23%、フロントエンド 行 95.06%・分岐 89.80%（この段の直しの後） | 行 80%・分岐 70% |
 
 ## Target Verification Matrix
 
-全単位の NFR 要件・NFR 設計の測れる目標と、Testing Contract（team.md・org.md の Testing Posture の写し）の測れる目標を1行ずつ並べた。Actual と Evidence は作業ブランチの上の実測（Q1: B）。`Pending` は後で足す行（CI の試行ごとの結果と `memory.peak` の測り）、`Unverified` は持ち主の後の段が判定する行。
+全単位の NFR 要件・NFR 設計の測れる目標と、Testing Contract（team.md・org.md の Testing Posture の写し）の測れる目標を1行ずつ並べた。Actual と Evidence は作業ブランチの上とこの段の直しの後の実測（Q1: B）、CI の試行ごとの結果、`memory.peak` の測り。`Pending` は残っていない。`Unverified` は持ち主の後の段が判定する行。
 
 | Target ID | Source | Expected | Actual | Evidence | Owning Stage | Verdict |
 |---|---|---|---|---|---|---|
-| TC-01 | Testing Contract（team.md のカバレッジの下限） | バックエンドの全体の合計で行 80% 以上・分岐 70% 以上 | 行 97.64%・分岐 91.23% | U3 の `generation-notes.md` 11.4（B7 のレビューの直しの後の verify） | Build and Test | Met |
+| TC-01 | Testing Contract（team.md のカバレッジの下限） | バックエンドの全体の合計で行 80% 以上・分岐 70% 以上 | 行 97.64%・分岐 91.23%（この段の直しの後の verify） | `test-results.md` 8.4 | Build and Test | Met |
 | TC-02 | Testing Contract（パッケージごとの下限、新しいパッケージ） | `businessdata.*`・`targetdb.*` などの新しいパッケージごとに行 80%・分岐 70% 以上 | `jacocoTestCoverageVerification` が通過。最も低い分岐は `targetdb.service` 75.4%・`businessdata.web` 77.9%（B4） | U2 の `code-summary.md` 3節、U3 の `generation-notes.md` 11.4 | Build and Test | Met |
-| TC-03 | Testing Contract（フロントエンドの全体の合計） | 行 80% 以上・分岐 70% 以上 | 行 95.06%・分岐 89.82% | U3 の `generation-notes.md` 11.4 | Build and Test | Met |
+| TC-03 | Testing Contract（フロントエンドの全体の合計） | 行 80% 以上・分岐 70% 以上 | 行 95.06%・分岐 89.80%（この段の直しの後の verify） | `test-results.md` 8.4 | Build and Test | Met |
 | TC-04 | Testing Contract（除外を増やさない） | カバレッジの除外を増やさない | どの Bolt も除外を増やしていない | 各単位の `code-summary.md` の3節 | Build and Test | Met |
 | TC-05 | Testing Contract（`packagesJudgedByTotal`） | 一覧の7パッケージの本体に手を入れたら下限を満たして一覧から外す。一覧を増やさない | どの Bolt も7パッケージの本体に触れていない。一覧は変わらない | U1・U2 の `code-summary.md` 1節 | Build and Test | Met |
-| TC-06 | Testing Contract（verify の時間） | `./gradlew verify` が CI の上限の7割の約 42 分以内 | 23分24秒（最後の回） | `test-results.md` 2.1 | Build and Test | Met |
-| TC-07 | Testing Contract（CI の時間） | CI の時間が約 42 分以内 | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| TC-06 | Testing Contract（verify の時間） | `./gradlew verify` が CI の上限の7割の約 42 分以内 | 22分26秒（この段の直しの後。B7 のレビューの直しの後は 23分24秒） | `test-results.md` 2.1・8.4 | Build and Test | Met |
+| TC-07 | Testing Contract（CI の時間） | CI の時間が約 42 分以内 | 検査の job 31分27秒（`b7291d3`）・28分37秒（`a031ba1`）・32分49秒（`d220447`） | `test-results.md` 6節 | Build and Test | Met |
 | TC-08 | Testing Contract（3種類の対象DB） | MySQL・MariaDB・PostgreSQL の結合テストを verify の中で毎回、コンテナの飛ばし無し | どの回も3種類がコンテナで流れた。SKIPPED 9 はすべて DB の種類の `assumeTrue` | `test-results.md` 2.1 | Build and Test | Met |
 | TC-09 | Testing Contract（E2E の本数） | 業務データの代表の流れは1本まで。持ち越しの直しと書き換えは数えない | 180 の1本 | U3 の `code-summary.md` 全体のまとめ | Build and Test | Met |
 | TC-10 | Testing Contract（統合の前の E2E） | frontend の本体か認証・権限・業務データの `src/main` に触れるブランチは統合の前に E2E を通す | B2・B3・B4・B5・B6・B7 は統合の前に全件を通した。B1 と CI の直しはテストだけで verify のみ | `test-results.md` 2.3 | Build and Test | Met |
 | TC-11 | Testing Contract（統合の前の1コマンドの関門） | フォーマット・リンタ・ライセンス・ビルド・全テスト・カバレッジ・秘密・静的解析・脆弱性が通ってから統合 | どの Bolt も通過した回で統合した | `test-results.md` 2.1・2.5 | Build and Test | Met |
-| TC-12 | Testing Contract（CI の失敗の扱い） | 統合の後の CI の失敗を、次の Bolt の前に決まりどおりに扱う。試行ごとに記録する | B5 までの経緯は記録済み（`test-results.md` 5節）。B5 の後のコミットの試行ごとの結果は後で足す | `test-results.md` 5・6節 | Build and Test | Pending |
-| TC-13 | Testing Contract（不安定なテストの決まり） | 同じテストが二度目に落ちたら、原因を直すまで次へ進まない | `eslintImportRules.test.ts` が B3 の 4.14.0 の試しと B7 の verify で同じ形（読み込みの時間切れ）で2度落ちたが、B7 は「不安定と確かめられていない」扱いで進めた | `test-results.md` 4節、U4 の `generation-notes.md` N-10、U3 の `generation-notes.md` 10.10 | Build and Test | Not Met |
+| TC-12 | Testing Contract（CI の失敗の扱い） | 統合の後の CI の失敗を、次の Bolt の前に決まりどおりに扱う。試行ごとに記録する | `1152202` の3回の失敗（2つのテストが2度目）を直しのブランチ `b7291d3` で直して二段で確かめ、その後の3つのコミットは1回目で成功。未 push の `288736d`・`22de65f` は push の後に確かめる | `test-results.md` 5・6節 | Build and Test | Met |
+| TC-13 | Testing Contract（不安定なテストの決まり） | 同じテストが二度目に落ちたら、原因を直すまで次へ進まない | `eslintImportRules.test.ts` の2度目の失敗（B3 の試し・B7）を、この段で直した（project を分けて先に1つで流す）。同じ負荷で直す前は落ち（13,350 ms）直した後は通る（848 ms）二段、単独5回通過、直した後の verify 通過 | `test-results.md` 8.1・8.4（4節の元の行は起きた時点の記録のまま） | Build and Test | Met |
 | TC-14 | Testing Contract（性質ベースのテスト） | jqwik・fast-check の性質ベースのテストを置き、失敗時の乱数の種を記録 | jqwik 7 クラス・fast-check の性質のテストを置いた。B7 の `-0` は種 `1380462492`・path `79` を記録して再現した | U3 の `generation-notes.md` 10.6・10.10 | Build and Test | Met |
 | TC-15 | Testing Contract（axe-core の引き上げ） | 規則を外さず違反を 0 件にして上げ、E2E の全件の通過と違反 0 件を件数で記録、vitest-axe も流し、版が lockfile で1つ | 4.14.0。E2E 256 件通過・違反 0 件、vitest-axe 86 ファイル・113 か所で違反 0 件、`npm ls axe-core` は1つ | `test-results.md` 2.4 | Build and Test | Met |
-| TC-16 | Testing Contract（Standard の量） | 部品ごとに 5〜8 件の目安で単体テスト、境目の結合テスト | 単体 2,589・結合 1,386・画面 1,975 件。境目は `integration-test-instructions.md` 2節 | `test-results.md` 2.1 | Build and Test | Met |
+| TC-16 | Testing Contract（Standard の量） | 部品ごとに 5〜8 件の目安で単体テスト、境目の結合テスト | 単体 2,589・結合 1,389・画面 1,975 件（この段の直しの後）。境目は `integration-test-instructions.md` 2節 | `test-results.md` 8.4 | Build and Test | Met |
 | TC-17 | Testing Contract（project.md の Mandated の関門） | 脆弱性の High 以上 0 件・秘密の検出 0 件 | OSV-Scanner の失敗の条件 0 件（警告 18）、Gitleaks 0 件 | `test-results.md` 2.5 | Build and Test | Met |
 | TC-18 | Testing Contract（SpotBugs の `SQL_` の関門） | `SQL_` の指摘は priority によらず止め、除外はクラス・メソッド・パターン名の3つで絞る | `SQL_` の残り 0 件。除外は `RowSqlExecutor` の7メソッドと2パターンだけ | U1・U2 の `code-summary.md` 3節 | Build and Test | Met |
 | U1-NFR1.1 | U1 `nfr-requirements/performance-requirements.md`、`nfr-design/performance-design.md` | 読み取りの5場面（`bizDefinition`・`bizSearchFirst`・`bizSearchContains`・`bizSearchLast`・`bizDetail`）と `bizSearchLastSorted` を 10 VU・3 分、`iteration_duration` の p95 < 1000 ms・`checks` の率 1 | 試し走り（PG・1 VU・10 秒、判定ではない）の p95 は 2.1〜162.7 ms | U1 の `code-summary.md` 7節、`perf/README.md` | Performance Validation | Unverified |
@@ -79,8 +81,8 @@
 | U1-NFR4.8 | U1 `reliability-requirements.md`、`nfr-design/reliability-design.md` 5節 | 接続できない・答えないときに 503（UNAVAILABLE・TIMEOUT）。応答しない対象DB で約 13 秒以内（設計の線は3種類とも 25 秒以内） | つないだ後に止まる相手の 503 TIMEOUT は3種類とも約 10 秒 | U1 の `generation-notes.md`、`BusinessDataTimeoutIT` | Code Generation（B2） | Met |
 | U1-NFR7.1 | U1 `security-requirements.md` | team.md の業務データの必須のテストのうち読み取りの分 | 書いて通過 | U1 の `traceability.json`（OK 165） | Code Generation（B2） | Met |
 | U1-NFR7.2 | U1 `security-requirements.md` | 許す操作の関数と識別子の照合に jqwik の性質ベースのテスト | 通過 | `TableAccessPolicyPropertyTest`・`IdentifierMatchingPropertyTest`・`SearchOperatorPolicyPropertyTest`・`ContainsPatternPropertyTest` | Code Generation（B2） | Met |
-| U1-NFR7.3a | U1 `performance-requirements.md` | B2 の後と Build and Test で verify の時間を記録し、約 42 分を超えたら諮る | B2 18分32秒、最後 23分24秒 | `test-results.md` 2.1 | Build and Test | Met |
-| U1-NFR7.3b | U1 `performance-requirements.md` | CI の時間を記録し、約 42 分を超えたら諮る | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| U1-NFR7.3a | U1 `performance-requirements.md` | B2 の後と Build and Test で verify の時間を記録し、約 42 分を超えたら諮る | B2 18分32秒、最後 22分26秒 | `test-results.md` 2.1 | Build and Test | Met |
+| U1-NFR7.3b | U1 `performance-requirements.md` | CI の時間を記録し、約 42 分を超えたら諮る | CI の検査の job 28分37秒〜32分49秒 | `test-results.md` 6節 | Build and Test | Met |
 | U1-NFR8.1 | U1 `observability-requirements.md` | 警報 `ms-forbidden` のしきい値（20）を見直す | 確かめていない | U1 の `traceability.json`（Deferred） | Observability Setup | Unverified |
 | U1-NFR8.2 | U1 `observability-requirements.md` | 失敗のログは WARN・スタックトレースなしで `reason`・`sqlState`・`vendorCode`・`exceptionClass` だけ | ログの JSON のテストが通過 | `BusinessDataSecretLeakIT` | Code Generation（B2） | Met |
 | U1-NFR8.3 | U1 `observability-requirements.md` | ダッシュボードの業務データの区画（3本の p95・503 の数・プールの待ち）と既存の警報で拾えること | 確かめていない | U1 の `traceability.json`（Deferred） | Observability Setup | Unverified |
@@ -107,8 +109,8 @@
 | U2-NFR4.14 | U2 `security-requirements.md` | 主キー・ビューの 409 は補助権限を持つ人の拒否だけを監査に残す | 結合テストが通過 | `BusinessDataWriteAuditIT` | Code Generation（B4） | Met |
 | U2-NFR4.15 | U2 `reliability-requirements.md` | 時間切れの監査の行が「確定したかは分からない」と読める（`UNKNOWN`） | 結合テストが通過 | `BusinessDataWriteAuditIT`・`AuditEventListenerTest` | Code Generation（B4） | Met |
 | U2-NFR4.16 | U2 `security-requirements.md` | MySQL・MariaDB の書き込みのアカウントの付与の範囲を確かめ、残る広さを書く | 初期化の台本の結合テストが通過。残る広さは README | `TargetDbSampleInitScriptIT`、`README.md` の「既にある見本の DB に書き込みのアカウントを足す」 | Infrastructure Design・Code Generation（B4） | Met |
-| U2-NFR7.4a | U2 `performance-requirements.md` | B4 の後と Build and Test で verify の時間を記録し、約 42 分を超えたら諮る | B4 20分6秒（直しの後 21分4秒）、最後 23分24秒 | `test-results.md` 2.1 | Build and Test | Met |
-| U2-NFR7.4b | U2 `performance-requirements.md` | CI の時間を記録し、約 42 分を超えたら諮る | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| U2-NFR7.4a | U2 `performance-requirements.md` | B4 の後と Build and Test で verify の時間を記録し、約 42 分を超えたら諮る | B4 20分6秒（直しの後 21分4秒）、最後 22分26秒 | `test-results.md` 2.1 | Build and Test | Met |
+| U2-NFR7.4b | U2 `performance-requirements.md` | CI の時間を記録し、約 42 分を超えたら諮る | CI の検査の job 28分37秒〜32分49秒 | `test-results.md` 6節 | Build and Test | Met |
 | U2-NFR7.5 | U2 `security-requirements.md` | team.md の業務データの必須のテストのうち書き込みの分（スキーマをクラスごとに作り、別の接続で読み直す） | 書いて通過 | U2 の `traceability.json`（OK 150） | Code Generation（B4） | Met |
 | U2-NFR7.6 | U2 `security-requirements.md` | `WriteRequestValidator` と pattern の打ち切りに jqwik の性質ベースのテスト | 通過 | `WriteRequestValidatorPropertyTest`・`DeadlinePatternMatcherPropertyTest` | Code Generation（B4） | Met |
 | U2-NFR8.4 | U2 `observability-requirements.md` | 書き込みの失敗のログは WARN でキー4つだけ、監査の失敗の ERROR から `detail`・主キーを外す | 結合テストが通過 | `BusinessDataWriteSecretLeakIT`・`BusinessDataWriteAuditIT` | Code Generation（B4） | Met |
@@ -141,12 +143,12 @@
 | U3-NFR6.3 | 同上 | 日英の文言、413 の文を含む、鍵が日英でそろう | 単体テストが通過 | `messages.test.ts` | Code Generation（B5・B6） | Met |
 | U3-NFR6.4 | 同上 | 保存の 403 の別の文を日英で用意する | 用意した | `frontend/src/features/tables/problemMessage.ts` | Code Generation（B6） | Met |
 | U3-NFR7.8a | U3 `performance-requirements.md` | E2E の全件の時間が基準の 1.5 倍（約 15分53秒）を超えたら諮る | 13分2秒（約 1.23 倍） | `test-results.md` 2.3 | Build and Test | Met |
-| U3-NFR7.8b | 同上 | verify の時間を B5・B6 の後と Build and Test で記録 | B5 20分27秒、B6 20分43秒、最後 23分24秒 | `test-results.md` 2.1 | Build and Test | Met |
-| U3-NFR7.8c | 同上 | CI の時間を記録 | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| U3-NFR7.8b | 同上 | verify の時間を B5・B6 の後と Build and Test で記録 | B5 20分27秒、B6 20分43秒、B7 の後 23分24秒、最後 22分26秒 | `test-results.md` 2.1・8.4 | Build and Test | Met |
+| U3-NFR7.8c | 同上 | CI の時間を記録 | CI の検査の job 28分37秒〜32分49秒（B5 の `1152202` は失敗、直しの後は成功） | `test-results.md` 6節 | Build and Test | Met |
 | U3-NFR7.9 | U3 `security-requirements.md` | team.md の業務データの必須のテストのうち画面の分（`waitFor` で待つ、時間の上限を延ばさない） | 書いて通過 | U3 の `traceability.json`（OK 125） | Code Generation（B5・B6） | Met |
 | U3-NFR7.10 | 同上 | 純粋な関数に fast-check の性質ベースのテスト、種を記録 | 通過、B7 の `-0` は種を記録して再現した | `businessDataParse.property.test.ts`・`formDiff.property.test.ts` | Code Generation（B5・B6） | Met |
 | U3-NFR7.11 | 同上 | 「1回だけ飛ばす」の旗のテスト | 単体テストと画面のテストが通過（R-05 の直しの二段を含む） | `useUnsavedGuard.test.tsx` | Code Generation（B6・B7） | Met |
-| U3-NFR7.12 | 同上 | フロントエンドの下限を保ち、`src/features/tables/` の値を記録 | 全体 行 95.06%・分岐 89.82%、`src/features/tables/` 行 93.94%・分岐 88.39% | `test-results.md` 2.2 | Build and Test | Met |
+| U3-NFR7.12 | 同上 | フロントエンドの下限を保ち、`src/features/tables/` の値を記録 | 全体 行 95.06%・分岐 89.80%（最後）、`src/features/tables/` 行 93.94%・分岐 88.39%（B7 のレビューの直しの後） | `test-results.md` 2.2・8.4 | Build and Test | Met |
 | U3-NFR7.13 | 同上 | 代表の流れ 180 を1本、前提の確かめ、見本と本物の形を毎回比べる | 180 が通過、前提の確かめ (a)〜(d) が毎回通過 | `frontend/e2e/180-business-data-flow.e2e.ts` | Code Generation（B6）、Build and Test | Met |
 | U3-NFR8.7 | 同上 | 403 を受けても自動で送り直さない | フックのテストが通過 | `frontend/src/features/tables/tableHookSupport.ts` のテスト | Code Generation（B5・B6） | Met |
 | U4-NFR4.2 | U4 `nfr-requirements/security-requirements.md` | 名前の関数と ShellLayout は名前の値をログ・トレースに出さない | 5つのファイルの検索で 0 件 | U4 の `generation-notes.md` Step 14 | Code Generation（B3） | Met |
@@ -164,23 +166,23 @@
 | U4-NFR6.2 | 同上 | 氏名が空なら頭文字と区切りを省く | 部品のテストが通過 | `ShellLayout.test.tsx` | Code Generation（B3） | Met |
 | U4-NFR7.1 | U4 `nfr-requirements/performance-requirements.md` | 名前を作るために描画の回数も API の呼び出しも増やさない | 一覧の API の呼び出しが1回のままのテストが通過 | `ShellLayout.test.tsx`・3つのページのテスト | Code Generation（B3） | Met |
 | U4-NFR7.2 | 同上、`nfr-design/performance-design.md` 3節 | E2E の全件の時間を B3・B7・Build and Test で記録し基準と並べる（上限なし） | B3 10分43秒、B7 13分29秒、最後 13分2秒（基準 約 10分35秒） | `test-results.md` 2.3 | Build and Test | Met |
-| U4-NFR7.3a | U4 `performance-requirements.md` | verify の時間を B3・B7 の後に記録 | B3 17分37秒、B7 21分50秒、最後 23分24秒 | `test-results.md` 2.1 | Build and Test | Met |
-| U4-NFR7.3b | 同上 | CI の時間を記録 | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| U4-NFR7.3a | U4 `performance-requirements.md` | verify の時間を B3・B7 の後に記録 | B3 17分37秒、B7 21分50秒、最後 22分26秒 | `test-results.md` 2.1 | Build and Test | Met |
+| U4-NFR7.3b | 同上 | CI の時間を記録 | CI の検査の job 28分37秒〜32分49秒 | `test-results.md` 6節 | Build and Test | Met |
 | U4-NFR7.4 | U4 `security-requirements.md` | `rowActionsName` に fast-check の性質ベースのテスト（4つの性質） | 通過、失敗なし | `rowActionsName.property.test.ts` | Code Generation（B3） | Met |
 | U4-NFR7.5 | 同上 | 書き換えの対象のテストと E2E を名前の検索で洗い出し直す | 検索の流し直しで残りは別の文言だけ | U4 の `generation-notes.md` Step 14 | Code Generation（B3） | Met |
 | U4-NFR7.6 | 同上 | 固定先の後も説明を確かめる既存のテストが書き換えずに通る | 6 ファイル・62 件が通過 | U4 の `generation-notes.md` Step 4 | Code Generation（B3） | Met |
 | U4-NFR7.7 | 同上 | フロントエンドの下限を保ち除外を増やさない | 行 95.37%・分岐 90.34%（B3） | U4 の `code-summary.md` 3節 | Code Generation（B3） | Met |
 | U5-BR1 | U5 `functional-design/`（BR1.1〜BR1.6）、要件 FR15 | `RoleConcurrencyIT` の #7 を待ち合わせで確実に作り、直す前は落ち直した後は通る二段、5回の繰り返し | 直す前の確かめ方で落ち、2つの順の場合が通過、5回とも5件通過・`ROLE_BUSY` 0 件 | U5 の `generation-notes.md` Step 4〜6 | Code Generation（B1） | Met |
 | U5-BR2 | U5 `functional-design/`（BR2.1〜BR2.5） | `AdminForbiddenProvider.test.tsx` の対象の1件の二段（T1 で落ち T2 で通る）と5回の繰り返し | T1 は5回とも落ち、T2 は5回とも通過、直したファイル 12 件を5回通過 | U5 の `generation-notes.md` Step 7・8 | Code Generation（B1） | Met |
-| U5-BR-CI | U5 `code-summary.md` 4節（Build and Test に残ること） | 直した2件の CI の試行ごとの結果 | 後で足す | `test-results.md` 6節 | Build and Test | Pending |
+| U5-BR-CI | U5 `code-summary.md` 4節（Build and Test に残ること） | 直した2件の CI の試行ごとの結果 | 直した2件（`RoleConcurrencyIT`・`AdminForbiddenProvider.test.tsx`）は B5 の後の CI のどの試行でも落ちていない。`b7291d3`・`a031ba1`・`d220447` は1回目で成功 | `test-results.md` 6節 | Build and Test | Met |
 | CIFIX-01 | 段の `construction/code-generation/generation-notes.md`（CI の不安定なテスト2件の直し） | `PasswordChangePage.test.tsx` と `H2CompactionByPoolSuspensionIT` を待ち合わせで確実に起こし、直す前は落ち直した後は通る二段と5回の繰り返し | どちらも二段を記録、5回とも通過、直しの後の verify 通過 | `test-results.md` 5節 | Code Generation | Met |
 | U5-BR3.1 | U5 `functional-design/`（BR3.1〜BR3.3）、`nfr-design/logical-components.md` | 記録のループと1回の測りの台本、列が正しいこと、切れた行と `trap` の後始末 | 空回しで5行・`NA` 0 件、5つのキーが一致、`--tsv-check` と TERM・INT の確かめが通った | U5 の `generation-notes.md` Step 11・12 と 4節 | Code Generation（B1） | Met |
-| U5-BR3.4 | U5 `functional-design/`（BR3.4） | 4回の測りで条件をそろえ、WARN を数えてから片付ける | 後で足す | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
-| U5-BR3.5 | U5 `functional-design/`（BR3.5）、要件 FR16.4 | 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立つ。物差しは変えない | 後で足す | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
-| U5-BR4.1 | U5 `functional-design/`（BR4.1）、`nfr-requirements/security-requirements.md` の NFR4.7 | 試しの2回で `RETENTION_TIME` が 0、既定の回が 45000 であることを `settings.txt` で確かめる | 後で足す（確かめの関数は Code Generation で 19 件通過） | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
-| U5-BR4.2 | U5 `functional-design/`（BR4.2・BR4.3） | 試しの結果で、取り込むかを依頼者に諮る（効いた・効かなかったときの記録） | 後で足す | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
-| U5-NFR4.5 | U5 `nfr-requirements/security-requirements.md`、`nfr-design/security-design.md` S2 | 秘密の検索の件数がどれも 0、片付けで一時ディレクトリとボリュームが消える | 後で足す | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
-| U5-NFR4.6 | 同上 | 新しい記録に書くのは数値・時刻・状態・ロガーの名前と件数だけ（`env.txt` と TSV の件数の確かめ） | 後で足す（列の形は Code Generation で確かめた） | `memory-peak-measurement.md`（後でできる） | Build and Test | Pending |
+| U5-BR3.4 | U5 `functional-design/`（BR3.4） | 4回の測りで条件をそろえ、WARN を数えてから片付ける | 4回とも k6 の終了コード 0・checks の失敗 0・`dropped_rows` 0・`post_missing_seconds` 0・OOMKilled なし。WARN 各回 2（起動の案内）を片付けの前に数えた。眠りなし | `memory-peak-measurement.md` 1・6・7節 | Build and Test | Met |
+| U5-BR3.5 | U5 `functional-design/`（BR3.5）、要件 FR16.4 | 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立つ。物差しは変えない | default-1 0.8731・default-2 0.8696（`anon` の最大 0.6991・0.6902 は並べるだけ） | `memory-peak-measurement.md` 1・2節 | Build and Test | Met |
+| U5-BR4.1 | U5 `functional-design/`（BR4.1）、`nfr-requirements/security-requirements.md` の NFR4.7 | 試しの2回で `RETENTION_TIME` が 0、既定の回が 45000 であることを `settings.txt` で確かめる | 試しの2回は 0、既定の2回は 45000 | `memory-peak-measurement.md` 3節 | Build and Test | Met |
+| U5-BR4.2 | U5 `functional-design/`（BR4.2・BR4.3） | 試しの結果で、取り込むかを依頼者に諮る（効いた・効かなかったときの記録） | 試しの2回は 0.7400・0.7175 で効いた。依頼者に諮り、取り込むかは後の Intent で決めることになった | `memory-peak-measurement.md` 3節、`test-results.md` 7節 | Build and Test | Met |
+| U5-NFR4.5 | U5 `nfr-requirements/security-requirements.md`、`nfr-design/security-design.md` S2 | 秘密の検索の件数がどれも 0、片付けで一時ディレクトリとボリュームが消える | 秘密の検索は2つの段ともすべて 0 件。一時ディレクトリ・`mastersmith-perf_` のボリューム・コンテナの残りは 0 | `memory-peak-measurement.md` 7節 | Build and Test | Met |
+| U5-NFR4.6 | 同上 | 新しい記録に書くのは数値・時刻・状態・ロガーの名前と件数だけ（`env.txt` と TSV の件数の確かめ） | 記録は数値・時刻・状態・ロガーの名前と件数だけ。`env.txt` と TSV の `password`・`jdbc:` の件数 0 | `memory-peak-measurement.md` 7節 | Build and Test | Met |
 | U5-NFR4.7 | 同上、`nfr-design/security-design.md` S1 | `PERF_DB_URL` は決めた形だけを受け付け、`INIT` を受け付けない。外れたら環境を作らずに止まる | 試し 19 件がすべて期待どおり、値の漏れ 0 件、悪い値で終了コード 1 | U5 の `generation-notes.md` Step 9・10 | Code Generation（B1） | Met |
 | U5-NFR4.8 | 同上 | 指標の公開は一時の `app.env` だけ、待ち受けは 127.0.0.1:18080 | `dsl-timing.sh` の形のまま | `perf/dsl-timing.sh` | Code Generation（B1） | Met |
 | U5-NFR4.9 | 同上 | 記録のループは読むだけで追加の権限を付けない | `--privileged`・`--user` を付けない形 | `perf/dsl-mixed-memory.sh` | Code Generation（B1） | Met |
@@ -188,10 +190,15 @@
 | U5-NFR7.2 | 同上、`nfr-design/logical-components.md` 4節 | 待ち合わせの後始末と、放した理由の判定 | `disarm()` を `@AfterEach` で呼ぶ、`releasedByTimeout` を確かめる | `AuditWriteReorderBarrierTest` | Code Generation（B1） | Met |
 | U5-NFR7.3 | 同上 | 時間に頼らない（`sleep` と上限の延長なし） | `CountDownLatch` とスレッドの状態で順を作った | `RoleConcurrencyIT` | Code Generation（B1） | Met |
 
-判定ごとの件数（147 行）: Met 117・Not Met 1・Unverified 16・Pending 13。
+判定ごとの件数（147 行）: Met 131・Not Met 0・Unverified 16・Pending 0。
 
-- Unverified の内訳: Performance Validation 12（U1 の NFR1.1・NFR1.3・NFR2.1・NFR2.4・NFR2.5b・NFR3.2、U2 の NFR1.4・NFR1.5・NFR2.7・NFR2.8・NFR2.9・NFR3.4）、Observability Setup 4（U1 の NFR8.1・NFR8.3、U2 の NFR8.5・NFR8.6）。どちらの段も実行の計画にある（`aidlc-state.md`）。目標は緩めていない。
-- Pending の内訳: CI 7（TC-07・TC-12・U1-NFR7.3b・U2-NFR7.4b・U3-NFR7.8c・U4-NFR7.3b・U5-BR-CI）、`memory.peak` 6（U5-BR3.4・U5-BR3.5・U5-BR4.1・U5-BR4.2・U5-NFR4.5・U5-NFR4.6）。
+- 前の版からの変わり: Pending 13 件（CI 7・`memory.peak` 6）はすべて Met になった。TC-13 は、この段の直し（`test-results.md` 8.1）を根拠に Not Met から Met にした（4節の元の記録は書き換えていない）。
+- Unverified の内訳（どちらの段も実行の計画にある。`aidlc-state.md`。目標は緩めていない）:
+
+| 持ち主の段 | 行 |
+|---|---|
+| Performance Validation（12） | U1-NFR1.1・U1-NFR1.3・U1-NFR2.1・U1-NFR2.4・U1-NFR2.5b・U1-NFR3.2、U2-NFR1.4・U2-NFR1.5・U2-NFR2.7・U2-NFR2.8・U2-NFR2.9・U2-NFR3.4 |
+| Observability Setup（4） | U1-NFR8.1・U1-NFR8.3、U2-NFR8.5・U2-NFR8.6 |
 
 ## 4. この段の手順書が受け持つテストの種類
 
@@ -215,7 +222,10 @@
 | U3 R-09 | 保存の後に画面を離れると、権限の取り上げと定義の更新の知らせも捨てられる。次に一覧を開いたときに読み直す | 段の `memory.md`（承認の場の決定） |
 | 詰め直しの道具 | `docker/hikari-pool.sh compact` が補充の途中に流すと1本残って詰め直さずに終わりうる（流し直せば済む） | 段の `generation-notes.md` 4節 |
 | 切り替えの直後の知らせ | パスワードの変更と表示の設定の画面で、切り替えの直後の短い間に答えが届くと成功の知らせが出うる | 同上 |
-| 不安定と確かめられていない3件 | `eslintImportRules.test.ts`・E2E 185 のログイン・`logoutIntent.test.tsx`（同じテストがもう一度落ちたら直すまで進まない） | `test-results.md` 4節 |
+| 不安定と確かめられていない2件 | E2E 185 のログイン・`logoutIntent.test.tsx`（同じテストがもう一度落ちたら直すまで進まない）。3件目の `eslintImportRules.test.ts` はこの段で直した | `test-results.md` 4節・8.1 |
+| 人工の強い負荷の下でだけ落ちた画面のテスト | `registration.test.tsx`・`PreferencesPage.test.tsx`・`preferences/registration.test.tsx`（`findBy` の既定の待ち）。依頼者の決定で記録だけにし、CI や手元で落ちたら team.md の決まりで扱う | `test-results.md` 8.1 |
+| `RETENTION_TIME=0` の取り込み | 試しの2回で効いた（0.740・0.718）が、配備物に取り込むかは依頼者の決定で後の Intent で決める | `memory-peak-measurement.md` 3節 |
+| `memory.peak` の余裕 | 既定の回は 0.873・0.870 で Met だが、0.9 までの余裕は約 55〜62 MiB で小さい | 同上 2節 |
 | 依頼（5）の持ち越し | make-you-chic-ui の依頼（5）が上流の `main` に無く、固定先の2回目の更新をしなかった。自前の `ScrollRegion`・`PageSizeSelect` は次の Intent で置き換える（AC4.1.2・AC4.1.4 の依頼（5）の分は次の Intent へ） | U3 の `code-summary.md` B7 |
 | U5 R-04 | 固定の値（`K6_IMAGE` の digest と H2 の jar の取り方）の2か所書き | U5 の `code-summary.md` 7節 |
 | 一意の制約の無いカラムの同時の重なり・同じ行の同時の更新の後勝ち | 防ぐ仕組みを足さない | U2 の `reliability-requirements.md` の補足 |
@@ -224,25 +234,23 @@
 
 | 判定 | 状態 | 根拠 |
 |---|---|---|
-| build-ready | 準備できている | 作業ブランチの上の最後の回で `verify` の全段が通過し、WAR ができる |
-| test-ready | 条件つき | 単体・結合・E2E・セキュリティの検査は通過。ただし `develop` の今の形では流しておらず（Q1: B）、CI の試行ごとの結果（Pending 7）と `memory.peak` の測り（Pending 6）がまだそろっていない。TC-13 が Not Met |
-| deployment-ready | まだ | 負荷の目標（Unverified 12）は Performance Validation、監視の目標（Unverified 4）は Observability Setup が判定する。段の定義の失敗の判定では、`Unverified` と `Not Met` が残る間はこの段は成功の結果にならない |
+| build-ready | 準備できている | この段の直しの後（`develop` と同じ中身）で `verify` の全段が通過し、WAR ができる |
+| test-ready | 準備できている（条件つき） | 単体・結合・セキュリティの検査は `develop` と同じ中身で通過、E2E は B7 の後の作業ブランチの上で 256 件通過、CI は `d220447` まで1回目で成功。条件: 未 push の `288736d`・`22de65f` の CI を push の後に確かめる |
+| deployment-ready | まだ | 負荷の目標（Unverified 12）は Performance Validation、監視の目標（Unverified 4）は Observability Setup が判定する。段の定義の失敗の述語では、`Unverified` が残る間はこの段は成功の結果にならない |
 
 ## 7. 段の定義の失敗の判定との関わり
 
-段の定義（Step 9）は、`Not Met` か `Unverified` の目標が1つでもあれば Build and Test を失敗とし、`Pending` を Step 9 の終わりに残さない。この文書の時点では Step 9 の結果（CI と `memory.peak`）を足す前のため `Pending` が残る。足した後も、Unverified 16 件（後の段が持ち主で、実行の計画にある）と TC-13 の Not Met 1 件が残る見込みで、失敗の段の扱い（段の中の直し・持ち越しの決定）を承認の場で依頼者に諮る必要がある。目標は緩めない。
+段の定義（Step 9）は、`Not Met` か `Unverified` の目標が1つでもあれば Build and Test を失敗とする。`Pending` と `Not Met` は無くなったが、**Unverified 16 件が残るため、この段の結果は成功にならない**。16 件はどれも、配備した環境に近い使い捨ての負荷の環境か監視の環境が要る目標で、実行の計画にある後の段（Performance Validation 12・Observability Setup 4）が明示に持ち主になっている。段の定義のとおり、後の段に回した目標は `Unverified` のまま成功に数えない。扱い（Unverified を持ち越して次の段へ進めるか）は、承認の場で依頼者に諮る。目標は緩めない。
 
 ## 8. 承認の場に出すこと
 
-1. **Unverified 16 件**（Performance Validation 12・Observability Setup 4）が残ったまま、この段を進めるか。段の定義では失敗の結果になる。
-2. **Pending 13 件**（CI 7・`memory.peak` 6）。指揮役と別の担当が足した後に、判定をそろえる。`memory.peak` の結果しだいで、FR16.4（`cross-unit-traceability.md`）と U5-BR3.5 が決まる。
-3. **TC-13（Not Met）**: `eslintImportRules.test.ts` が B3 の試しと B7 で同じ形で2度落ちた。team.md の「同じテストが二度目に落ちたら直す」に当たるかを確かめる。
-4. **AC3.4.5 が覆われていない**: 一覧・詳細の読み取りとその拒否が監査に残らないことを確かめるテストの行が、どの単位の traceability にも無い（U2 が U1 へ Deferred にしたが、U1 に行が無い）。`cross-unit-traceability.md` の 4節。
-5. **記録の食い違い**（直すかを確かめる。承認済みの記録は書き換えていない）:
-   - U2 の `code-generation/traceability.json` の NFR1.6・NFR4.1・NFR4.4・NFR4.7・NFR4.10・NFR4.11・NFR7.5 の target が、NFR 要件のその ID の中身と違うテストを指している（例: NFR4.10「認可・一括代入・IDOR」が `DeadlinePatternMatcherTest`、NFR4.11「書き込みの設定の欠け」が境界テストと SpotBugs の除外）。中身に合うテスト（`DeadlinePatternTimingTest`・`BusinessDataWriteNotConfiguredIT` など）は実在し、この文書の行はそちらを根拠にした。`cross-unit-traceability.md` の 5節。
-   - `README.md` の 38 行が make-you-chic-ui の固定先を `a9309c4` と書いたまま（今は `b0a1e79`）。
-   - `perf/README.md` の U5 の節が「Performance Validation の段が無いため Build and Test で測る」と書く（この Intent には Performance Validation がある。持ち主は U5 の設計と Q2: A のとおり Build and Test のまま）。
+1. **Unverified 16 件**（Performance Validation 12・Observability Setup 4。照合の表の下の内訳の表）を持ち越して進めるか。段の定義の述語ではこの段は失敗の結果になる。Performance Validation では、U1 の `bizSearchContains`（10 VU で 1 秒を超える見込み）と `bizSearchLastSorted`（MySQL・MariaDB）が Not Met になりうる。
+2. **未 push の2つのコミットの CI**（`288736d`・`22de65f`）は、push の後に試行ごとに確かめる。
+3. **`RETENTION_TIME=0` の取り込み**は後の Intent で決める（依頼者の決定）。`memory.peak` の余裕は約 55〜62 MiB で小さい。
+4. **この段の直し**（`test-results.md` 8節）を、承認の場で受け入れる。TC-13 と AC3.4.5 はこの直しを根拠に Met・Covered にした。人工の強い負荷の下だけで落ちた画面のテストは記録だけ（依頼者の決定）。
+5. **記録の食い違い**: `README.md`・`perf/README.md` は直した（8.3）。U1・U2 の `code-generation/traceability.json` の target のずれは書き換えず、ずれと正しい根拠を `cross-unit-traceability.md` の 5節に書いた。U1・U2 の traceability に AC3.4.5 の行が無いことも同じく書き換えず、根拠を同じ文書の 4節に書いた。
 6. **既知の制約**（5節）を受け入れたまま次の段へ進めること。
+7. **`k6 inspect`** はこの段で業務データの 12 の場面について流し、どれも終了コード 0 で場面と閾値の名前が出た（`test-results.md` 7節）。p95 と checks の判定は Performance Validation で流して行う。
 
 ## Sources
 
@@ -254,6 +262,6 @@
 
 ## Assumptions & Open Questions
 
-- [assumption] 作業ブランチの上の最後の結果を `develop` の中身の結果と見る（Q1: B）。合わせた形は CI が確かめる。
+- [assumption] verify はこの段の直しの後（`develop` と同じ中身）の実測、E2E は B7 の後の作業ブランチの上の実測を正とする（Q1: B）。合わせた形は CI（`d220447` まで成功）が確かめた。
 - [assumption] U3-NFR1.7 は B6 の測りの値（中央値）で判定した。B7 とレビューの直しの後の 185 の測りの値は記録に写されていない（B7 は画面の測りの部品と表示の道に触れないが、R-01 で作成・更新の画面に手を入れた）。
 - U1・U2 の負荷の目標の判定は Performance Validation に委ね、この段では目標を緩めず `Unverified` のままにする。

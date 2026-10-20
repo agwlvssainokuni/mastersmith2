@@ -2,16 +2,16 @@
 
 ## 1. 判定
 
-**不合格（条件つき）**。覆われていない ID が1つある（AC3.4.5）。ほかの ID は、Code Generation の `traceability.json` のどれかの単位で `OK`（target のファイルが実在する）か、持ち主の後の段（Performance Validation・Observability Setup・この段の `memory.peak` の測り・次の Intent）への `Deferred` として書かれている。
+**合格（条件つき）**。覆われていない ID は 0 件。前の版で覆われていなかった AC3.4.5 は、この段で足した結合テスト `AbstractBusinessDataReadIT#readsLeaveNoAudit`（3種類の対象DB、各 17 件が通過。`test-results.md` 8.2）で覆われた（4節）。Code Generation が「Build and Test」へ `Deferred` にした ID（U5 の BR3.4・BR3.5・BR4.2・BR4.3、U4 の NFR7.2・NFR7.3、U3 の NFR1.7）は、この段で確かめて Met にした。条件として、後の段（Performance Validation・Observability Setup・次の Intent）への `Deferred` が残る（6節）。承認済みの単位の `traceability.json` は書き換えていない。
 
 | 区分 | 数 | Covered | Covered（一部 Deferred） | Deferred のみ | 覆われていない |
 |---|---|---|---|---|---|
-| 要件の FR（枝番を含む） | 85 | 70 | 14 | 1（FR16.4） | 0（ただし FR12・FR12.1〜FR12.4 の連鎖に AC3.4.5 が含まれる） |
-| 要件の NFR（NFR1〜NFR8 と NFR4.1〜NFR4.4） | 12 | 7 | 5 | 0 | 0 |
-| ストーリーの受け入れ基準（三つの段の AC） | 146 | 144 | — | 1（AC1.3.7） | 1（AC3.4.5） |
+| 要件の FR（枝番を含む） | 85 | 79 | 6（FR4・FR4.1〜FR4.4・FR14.5。どれも AC1.3.7） | 0 | 0 |
+| 要件の NFR（NFR1〜NFR8 と NFR4.1〜NFR4.4） | 12 | 8 | 4（NFR1・NFR2・NFR3・NFR8） | 0 | 0 |
+| ストーリーの受け入れ基準（三つの段の AC） | 146 | 145 | — | 1（AC1.3.7、Performance Validation） | 0 |
 
-- 「Covered（一部 Deferred）」の FR・NFR は、2段目の ID の一部が後の段への `Deferred`（下の 6節）。目標は緩めていない。
-- FR12 と FR12.1〜FR12.4 の「一部 Deferred」は、AC3.4.5 が覆われていないことによる（4節）。
+- 「Covered（一部 Deferred）」の FR・NFR は、2段目の ID の一部が後の段への `Deferred`（6節）。目標は緩めていない。
+- 「Covered」のうち、この段で確かめて覆ったもの: FR12・FR12.1〜FR12.4（AC3.4.5）、FR16・FR16.1・FR16.3・FR16.4（`memory-peak-measurement.md`）、NFR7（U4 の NFR7.2・NFR7.3）。各行の注記に書いた。
 
 ## 2. 確かめ方
 
@@ -32,34 +32,51 @@
 | U4 u4-a11y-carryover | 17・9・3 | US4.1（AC4.1.1・AC4.1.2・AC4.1.4）、NFR4.x・NFR5.x・NFR6.x・NFR7.x（axe・名前） |
 | U5 u5-carryover-tests | 23・4・0 | FR15・FR16（BR1〜BR4）、NFR4.5〜NFR4.9・NFR7.1〜NFR7.3 |
 
-## 4. 覆われていない ID
+## 4. 覆われていない ID と、この段で覆ったもの
 
-| ID | 中身（`stories.md`） | 状態 | 見立て |
+覆われていない ID は無い。前の版で覆われていなかった ID と、この段で覆った根拠を書く。
+
+| ID | 中身（`stories.md`） | 前の状態 | この段で覆った根拠 |
 |---|---|---|---|
-| AC3.4.5 | 一覧・詳細を読んだ、または詳細が拒否された（409・403・404）ときは、監査に残らない（FR12.2） | U2 の `traceability.json` が「U1 u1-businessdata-read（読み取りとその拒否を監査に残さない。U1 の rules.md の監査の決まり）」への `Deferred` にしたが、U1 の `traceability.json` に AC3.4.5 の行が無い（単位の割り当てで US3.4 は U2 だけ。`inception/units-generation/unit-of-work-story-map.md`） | 読み取りの側に監査の出来事を出す経路は無い見込み（U1 は監査に依存しない）が、それを確かめるテスト（一覧・詳細の後と、詳細の 409・403・404 の後に `audit_events` が増えないこと）の行が無い。`BusinessDataWriteAuditIT` は書き込みの側の「401・403・400・… は監査の行を残さない」だけを確かめる。承認の場で、テストを足す（直しの Bolt）か、根拠を書いて受け入れるかを諮る |
+| AC3.4.5 | 一覧・詳細を読んだ、または詳細が拒否された（409・403・404）ときは、監査に残らない（FR12.2） | U2 の `traceability.json` が「U1 u1-businessdata-read（読み取りとその拒否を監査に残さない）」への `Deferred` にしたが、U1 の `traceability.json` に AC3.4.5 の行が無かった（単位の割り当てで US3.4 は U2 だけ。`inception/units-generation/unit-of-work-story-map.md`） | 依頼者の決定で、この段の直し（`22de65f`）で `backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java` に `readsLeaveNoAudit`（「reads and their rejections (401, 400, 403, 404, 409) leave no audit row at all」）を足した。定義・一覧・詳細の 200 と、401・400・403・404・409 の拒否の後に `audit_events` のすべての行の数が変わらないことを確かめる。子のクラス `PostgresBusinessDataReadIT`・`MysqlBusinessDataReadIT`・`MariadbBusinessDataReadIT` の3種類で、各 17 件が通過し、verify の中でも通過（`test-results.md` 8.2・8.4） |
 
-## 5. 記録の食い違い（直していない）
+- U1・U2 の承認済みの `traceability.json` は書き換えていない。AC3.4.5 の持ち主は、この段（Build and Test）が足したテストとしてこの文書に記録する。
 
-承認済みの単位の記録は書き換えていない。見つかったものを、判定の根拠とともに書く（`project.md` の Change Control）。
+## 5. 記録の食い違い
+
+承認済みの単位の記録は書き換えていない。見つかったものを、判定の根拠とともに書く（`project.md` の Change Control）。U1・U2 の `traceability.json` のずれは、依頼者の決定で書き換えずに、この表を正しい根拠とする。
 
 | 記録 | 食い違い | 判定への響き |
 |---|---|---|
-| U2 の `code-generation/traceability.json` | NFR1.6（検証の時間 400 ms）の target が `BusinessDataWriteTimeoutIT`、NFR4.1（書き込みの SQL）が `BusinessDataWriteAuthorizationApiIT`、NFR4.4（書き込みの時間の上限）が `BusinessDataWriteSecretLeakIT`、NFR4.7（pattern の時間の上限）が `AbstractBusinessDataWriteIT`・`RowSqlFailureClassifierTest`、NFR4.10（認可・IDOR）が `DeadlinePatternMatcherTest`、NFR4.11（書き込みの設定の欠け）が `BusinessDataBoundaryArchitectureTest`・`spotbugs-exclude.xml`、NFR7.5（必須のテスト）が `BusinessDataWriteTimeoutIT` を指す。NFR 要件の文書のその ID の中身とずれている（隣の ID の中身を指す形） | どの target も実在し、機械の判定は `OK` のまま。中身に合うテスト（`DeadlinePatternTimingTest`・`BusinessDataBoundaryArchitectureTest`・`BusinessDataWriteTimeoutIT`・`DeadlinePatternMatcherTest`・`BusinessDataWriteAuthorizationApiIT`・`BusinessDataWriteNotConfiguredIT`）も実在し通過している。`build-and-test-summary.md` の照合の表はそちらを根拠にした |
-| U1 の `code-generation/traceability.json` | NFR1.2（場面の判定の決まり）の target の説明が「検索の場面 bizSearchContains・bizSearchLastSorted を含む p95」、NFR3.2（3種類で測る）の説明が「メモリ。手順は perf/README.md」 | どちらも Performance Validation への `Deferred` で、持ち主は合っている。説明の文だけのずれ |
-| `README.md` 38 行 | make-you-chic-ui の固定先を `a9309c4` と書いたまま（今は `b0a1e79`） | 網羅には響かない |
+| U2 の `code-generation/traceability.json` | NFR 要件の文書のその ID の中身と target がずれている（隣の ID の中身を指す形）。下の表 | どの target も実在し、機械の判定は `OK` のまま。中身に合うテストも実在し通過している。`build-and-test-summary.md` の照合の表は下の正しい根拠を使った |
+| U1 の `code-generation/traceability.json` | NFR1.2（場面の判定の決まり）の target の説明が「検索の場面 bizSearchContains・bizSearchLastSorted を含む p95」、NFR3.2（3種類で測る）の説明が「メモリ。手順は perf/README.md」 | どちらも Performance Validation への `Deferred` で、持ち主は合っている。正しい読み: NFR1.2 は台本の判定の決まり（Code Generation の B2 で `k6 inspect` と試し走りを確かめ済み、照合の表の U1-NFR1.2 は Met）、NFR3.2 は NFR1.1 の4場面を3種類の対象DB で流すこと（Performance Validation） |
+| U1・U2 の `code-generation/traceability.json` | AC3.4.5 の行が U1 に無い（U2 は U1 への `Deferred`） | 4節のとおり、この段で足したテストで覆った |
+| `README.md` 38 行・`perf/README.md` の U5 の節 | make-you-chic-ui の固定先が `a9309c4` のまま、U5 の節の「Performance Validation の段が無いため」 | この段の直し（`test-results.md` 8.3）で直した。網羅には響かない |
+
+U2 の target のずれと、正しい根拠（どれも `backend/src/test/java/cherry/mastersmith/` の下で、実在し verify で通過）:
+
+| ID | NFR 要件の中身 | traceability.json の target | 正しい根拠 |
+|---|---|---|---|
+| NFR1.6 | 検証の全体が実時間で 400 ms 以内 | `businessdata/web/BusinessDataWriteTimeoutIT.java` | `businessdata/domain/DeadlinePatternTimingTest.java` |
+| NFR4.1 | 書き込みの SQL の組み立て | `businessdata/web/BusinessDataWriteAuthorizationApiIT.java` | `businessdata/BusinessDataBoundaryArchitectureTest.java`・`backend/config/spotbugs-exclude.xml`・`businessdata/web/AbstractBusinessDataWriteIT.java` |
+| NFR4.4 | 書き込みの時間の上限 | `businessdata/web/BusinessDataWriteSecretLeakIT.java` | `businessdata/web/BusinessDataWriteTimeoutIT.java` |
+| NFR4.7 | pattern の照合の時間の上限 | `businessdata/web/AbstractBusinessDataWriteIT.java`・`businessdata/repository/RowSqlFailureClassifierTest.java` | `businessdata/domain/DeadlinePatternMatcherTest.java`・`businessdata/domain/DeadlinePatternMatcherPropertyTest.java` |
+| NFR4.10 | 認可・一括代入・IDOR | `businessdata/domain/DeadlinePatternMatcherTest.java` | `businessdata/web/BusinessDataWriteAuthorizationApiIT.java`・`ApiAccessConsistencyIT.java` |
+| NFR4.11 | 書き込みの設定の欠け | `businessdata/BusinessDataBoundaryArchitectureTest.java`・`backend/config/spotbugs-exclude.xml` | `businessdata/web/BusinessDataWriteNotConfiguredIT.java` |
+| NFR7.5 | 業務データの必須のテスト（書き込みの分） | `businessdata/web/BusinessDataWriteTimeoutIT.java` | `businessdata/web/AbstractBusinessDataWriteIT.java` と3種類の DB の子のクラス、`BusinessDataWriteAuthorizationApiIT.java`・`BusinessDataWriteAuditIT.java`・`BusinessDataWriteSecretLeakIT.java` ほか（U2 の `traceability.json` の AC の行） |
 
 ## 6. Deferred の行
 
 | ID | 持ち主 | 中身 |
 |---|---|---|
 | AC1.3.7 | Performance Validation | 1ページ 100 件 × 100 カラム・全体の件数の応答時間（U1 の NFR1.1・NFR1.3、場面 `bizSearchFirst`） |
-| FR16.4・FR16（BR3.4・BR3.5）・FR16.1（BR3.4） | Build and Test（この段の `memory.peak` の測り。Q2: A） | 既定の2回の `memory.peak / memory.max < 0.9` の判定と条件のそろえ。結果は `memory-peak-measurement.md`（後でできる） |
-| FR16・FR16.3（BR4.2・BR4.3） | Build and Test（同上） | 試しの2回の結果で取り込むかを依頼者に諮る |
+| FR16.4・FR16（BR3.4・BR3.5）・FR16.1（BR3.4） | Build and Test（この段で確かめた） | 既定の2回 0.8731・0.8696 で `memory.peak / memory.max < 0.9` が Met。条件のそろえも Met（`memory-peak-measurement.md`） |
+| FR16・FR16.3（BR4.2・BR4.3） | Build and Test（この段で諮った）、取り込みは後の Intent | 試しの2回（0.7400・0.7175）で効いた。`RETENTION_TIME=0` を取り込むかは、依頼者の決定で後の Intent で決める |
 | NFR1（U1 の NFR1.1〜NFR1.3、U2 の NFR1.4・NFR1.5） | Performance Validation | 業務データの API の p95 |
 | NFR1（U3 の NFR1.7） | Build and Test | 画面の時間。この段で B6 の測りの値で Met と判定した（`build-and-test-summary.md` の U3-NFR1.7a〜e） |
 | NFR2（U1 の NFR2.4、U2 の NFR2.7〜NFR2.9） | Performance Validation | プールの見積もり・大きな本文のメモリ・監査の行の増え方 |
 | NFR3（U1 の NFR3.2、U2 の NFR3.4） | Performance Validation | 3種類の対象DB で測ること |
-| NFR7（U4 の NFR7.2・NFR7.3） | Build and Test | E2E と verify の時間はこの段で Met と判定した。CI の時間は後で足す（`Pending`） |
+| NFR7（U4 の NFR7.2・NFR7.3） | Build and Test（この段で確かめた） | E2E・verify・CI の時間はこの段で Met と判定した（CI の検査の job 28分37秒〜32分49秒） |
 | NFR8（U1 の NFR8.1・NFR8.3、U2 の NFR8.5・NFR8.6） | Observability Setup | `ms-forbidden` のしきい値、ダッシュボードの区画、既存の警報で拾えること |
 | AC4.1.2・AC4.1.4 の依頼（5）の分 | 次の Intent | make-you-chic-ui の固定先の2回目の更新と E2E 080 の違反の部品の取り込み（依頼（5）が上流の `main` に無い）。B3 の分（`b0a1e79` への更新とトップバーの名前）は U4 で `OK` |
 
@@ -126,11 +143,11 @@
 | FR11.3 | Covered | US1.5 | AC 8 件（OK 8） | — |
 | FR11.4 | Covered | US1.5 | AC 8 件（OK 8） | — |
 | FR11.5 | Covered | US1.5 | AC 8 件（OK 8） | — |
-| FR12 | Covered（一部 Deferred） | US3.4 | AC 8 件（OK 7・覆われていない 1） | AC3.4.5（4節） |
-| FR12.1 | Covered（一部 Deferred） | US3.4・US2.1・US2.2・US2.3 | AC 37 件（OK 36・覆われていない 1） | AC3.4.5（4節） |
-| FR12.2 | Covered（一部 Deferred） | US3.4 | AC 8 件（OK 7・覆われていない 1） | AC3.4.5（4節。FR12.2 は AC3.4.5 の直接の出典） |
-| FR12.3 | Covered（一部 Deferred） | US3.4 | AC 8 件（OK 7・覆われていない 1） | AC3.4.5（4節） |
-| FR12.4 | Covered（一部 Deferred） | US3.4・US3.2・US2.5 | AC 17 件（OK 16・覆われていない 1） | AC3.4.5（4節） |
+| FR12 | Covered | US3.4 | AC 8 件（OK 7・この段で覆った 1） | AC3.4.5 はこの段のテストで覆った（4節） |
+| FR12.1 | Covered | US3.4・US2.1・US2.2・US2.3 | AC 37 件（OK 36・この段で覆った 1） | AC3.4.5 はこの段のテストで覆った（4節） |
+| FR12.2 | Covered | US3.4 | AC 8 件（OK 7・この段で覆った 1） | AC3.4.5 はこの段のテストで覆った（4節。FR12.2 は AC3.4.5 の直接の出典） |
+| FR12.3 | Covered | US3.4 | AC 8 件（OK 7・この段で覆った 1） | AC3.4.5 はこの段のテストで覆った（4節） |
+| FR12.4 | Covered | US3.4・US3.2・US2.5 | AC 17 件（OK 16・この段で覆った 1） | AC3.4.5 はこの段のテストで覆った（4節） |
 | FR13 | Covered | US3.3 | AC 10 件（OK 10） | — |
 | FR13.1 | Covered | US3.3・US1.1 | AC 19 件（OK 19） | — |
 | FR13.2 | Covered | US3.3 | AC 10 件（OK 10） | — |
@@ -144,14 +161,14 @@
 | FR14.4 | Covered | US4.1 | AC 6 件（OK 6） | — |
 | FR14.5 | Covered（一部 Deferred） | US4.1・US1.3 | AC 22 件（OK 21・Deferred 1） | AC1.3.7（Performance Validation） |
 | FR14.6 | Covered | US4.1 | AC 6 件（OK 6） | — |
-| FR15 | Covered | U5 の BR1.1〜BR1.6・BR2.1〜BR2.5 | BR 11 件（OK 11） | CI の試行ごとの結果は `test-results.md` 6節（後で足す） |
+| FR15 | Covered | U5 の BR1.1〜BR1.6・BR2.1〜BR2.5 | BR 11 件（OK 11） | CI の試行ごとの結果は `test-results.md` 6節（直した2件は B5 の後の CI で落ちていない） |
 | FR15.1 | Covered | U5 の BR1.1〜BR1.4・BR2.1〜BR2.3 | BR 7 件（OK 7） | — |
 | FR15.2 | Covered | U5 の BR1.5・BR1.6・BR2.4・BR2.5 | BR 4 件（OK 4） | — |
-| FR16 | Covered（一部 Deferred） | U5 の BR3.1〜BR3.5・BR4.1〜BR4.3 | BR 8 件（OK 4・Deferred 4） | BR3.4・BR3.5・BR4.2・BR4.3（この段の `memory.peak` の測り） |
-| FR16.1 | Covered（一部 Deferred） | U5 の BR3.1・BR3.4 | BR 2 件（OK 1・Deferred 1） | BR3.4（この段の測り） |
+| FR16 | Covered | U5 の BR3.1〜BR3.5・BR4.1〜BR4.3 | BR 8 件（OK 4・この段で確かめた 4） | BR3.4・BR3.5・BR4.2・BR4.3 はこの段の測りで確かめた（`memory-peak-measurement.md`）。`RETENTION_TIME=0` の取り込みは後の Intent |
+| FR16.1 | Covered | U5 の BR3.1・BR3.4 | BR 2 件（OK 1・この段で確かめた 1） | BR3.4 はこの段の測りで確かめた |
 | FR16.2 | Covered | U5 の BR3.2・BR3.3 | BR 2 件（OK 2） | — |
-| FR16.3 | Covered（一部 Deferred） | U5 の BR4.1・BR4.2・BR4.3 | BR 3 件（OK 1・Deferred 2） | BR4.2・BR4.3（この段の測りの後に諮る）。BR4.1 の `OK` は渡し方の確かめまでで、効いたことは測りで読む |
-| FR16.4 | Deferred | U5 の BR3.5 | BR 1 件（Deferred 1） | BR3.5（この段の測り。結果は `memory-peak-measurement.md`） |
+| FR16.3 | Covered | U5 の BR4.1・BR4.2・BR4.3 | BR 3 件（OK 1・この段で確かめた 2） | `RETENTION_TIME` が試しの回 0・既定の回 45000（BR4.1）。試しは効き、取り込むかは依頼者の決定で後の Intent で決める（BR4.2・BR4.3） |
+| FR16.4 | Covered | U5 の BR3.5 | BR 1 件（この段で確かめた 1） | 既定の2回 0.8731・0.8696 で Met（`memory-peak-measurement.md`） |
 | NFR1 | Covered（一部 Deferred） | 単位の枝番 | 枝番 10 件（OK 4・Deferred 6）、N/A の単位 2 | U1 の NFR1.1〜NFR1.3・U2 の NFR1.4・NFR1.5（Performance Validation）、U3 の NFR1.7（この段で判定、Met） |
 | NFR2 | Covered（一部 Deferred） | 単位の枝番 | 枝番 11 件（OK 7・Deferred 4）、N/A の単位 2 | U1 の NFR2.4・U2 の NFR2.7〜NFR2.9（Performance Validation） |
 | NFR3 | Covered（一部 Deferred） | 単位の枝番 | 枝番 7 件（OK 5・Deferred 2）、N/A の単位 2 | U1 の NFR3.2・U2 の NFR3.4（Performance Validation） |
@@ -162,7 +179,7 @@
 | NFR4.4 | Covered | 単位の枝番 | 枝番 6 件（OK 6）、N/A の単位 2 | — |
 | NFR5 | Covered | 単位の枝番 | 枝番 10 件（OK 10）、N/A の単位 3 | — |
 | NFR6 | Covered | 単位の枝番 | 枝番 4 件（OK 4）、N/A の単位 3 | — |
-| NFR7 | Covered（一部 Deferred） | 単位の枝番 | 枝番 22 件（OK 20・Deferred 2） | U4 の NFR7.2・NFR7.3（この段で判定。CI の時間は後で足す） |
+| NFR7 | Covered | 単位の枝番 | 枝番 22 件（OK 20・この段で確かめた 2） | U4 の NFR7.2・NFR7.3 はこの段で E2E・verify・CI の時間を確かめた |
 | NFR8 | Covered（一部 Deferred） | 単位の枝番 | 枝番 7 件（OK 3・Deferred 4）、N/A の単位 2 | U1 の NFR8.1・NFR8.3、U2 の NFR8.5・NFR8.6（Observability Setup） |
 
 - FR14.2 の行の注記: 依頼（5）の分（固定先の2回目の更新）は AC4.1.2・AC4.1.4 の U3 の行で次の Intent への `Deferred`。B3 の分は U4 の行で `OK` のため、機械の判定は Covered。
@@ -296,7 +313,7 @@
 | AC3.4.2 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuditIT.java` |
 | AC3.4.3 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteTimeoutIT.java` |
 | AC3.4.4 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuditIT.java` |
-| AC3.4.5 | 覆われていない | — | U2: U1 への Deferred。U1 に行が無い（4節） |
+| AC3.4.5 | Covered（この段で足したテスト） | Build and Test | `backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java`（`readsLeaveNoAudit`。U1・U2 の traceability は書き換えていない。4節） |
 | AC3.4.6 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuditIT.java` |
 | AC3.4.7 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuditIT.java` |
 | AC3.4.8 | Covered | U2 | `backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteSecretLeakIT.java` |
@@ -331,4 +348,6 @@
 
 - [assumption] FR → US の段の Covered は「その US の AC のすべてが、どれかの単位で `OK`」とし、後の段への `Deferred` が混じるときは「Covered（一部 Deferred）」とした。
 - [assumption] 要件の NFR の網羅は、単位の NFR 要件の段が置いた枝番で判定した（単位が `N/A` とした NFR はその単位の分を数えない）。
-- FR16・FR16.1・FR16.3・FR16.4 の判定は、この段の `memory.peak` の測り（`memory-peak-measurement.md`）が済んだ後に確かめ直す。
+- 後の段への `Deferred`（AC1.3.7 と NFR1・NFR2・NFR3・NFR8 の一部）は、Performance Validation・Observability Setup の結果で確かめ直す。
+- FR16・FR16.1・FR16.3・FR16.4 は、この段の `memory.peak` の測り（`memory-peak-measurement.md`）で確かめて Covered にした。
+- [assumption] Code Generation が「Build and Test」へ `Deferred` にした ID は、この段で確かめた結果で Covered とした（承認済みの `traceability.json` は `Deferred` のまま）。

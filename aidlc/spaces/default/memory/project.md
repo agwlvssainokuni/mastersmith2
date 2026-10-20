@@ -32,6 +32,7 @@
 - U3 のコードのレビューは単位ごとに1回のため、依頼者の決定で B5・B6 は verify と E2E の全体を通してそれぞれ develop に統合し、B7 の後に U3 の全体（B5〜B7）を1回でレビューする（計画の Step 18 の「記録とレビュー」との差）。指摘は直しの Bolt で直す。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:58f5be780891ae84aebffcbd61af842afca44069d07ad38bc5426bbb840395bc -->
 - B1（U5）が Bolt の計画の1番目から3番目（U1・U4 の後）に移る。計画の理由は「CI を安定させる（不安定なテスト2件が後の Bolt の統合の後の CI で落ちうる）」だったため、B2・B3 の統合の後の CI で2件が落ちる危険が残る。依頼者の決定（今の順のまま）で進め、落ちたら team.md の不安定なテストの決まりで扱う。U1 の code-summary.md にも Bolt の計画との差として書く。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:5de3dcd2b9ac4e9388e86090c0347631bc87fb104e6e8bd0048966cc47d253b9 -->
 - コード生成は単位ごとに U1→U4→U5→U2→U3 の順で進む（単位の依存の順。各単位のコード生成を終えてから次へ）。Bolt の計画の B7（U4 の後半、axe-core 4.14 の引き上げと依頼（5）の取り込み）は U3 の後に置く必要があるため、依頼者の決定（A）で U3 のコード生成の計画の最後の Bolt（B5→B6→B7）に入れ、U4 のコード生成は B3 だけにする。U4 の B7 の分の ID は U3 へ Deferred にする。B1（U5）は U1・U4 の後になる。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:cfbdc5ec1f1200994c602bf9b27e3c43bf15b0b6e5f2876c2684e7f1d319fa68 -->
+- まとめの確認で「この段で k6 inspect の確かめまで行う」としたが、記録の担当は流さずに Code Generation の確かめを正とする形で書いた。承認の場の前に指揮役が業務データの 12 の場面を流し（どれも終了コード 0）、記録を直した。 (learned 2026-10-20) <!-- cid:261016-business-data-views:build-and-test:365d21513b3820e74da3c7e85ff30f94a093a2e52bbab922996de53ecdac55bc -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -101,6 +102,7 @@
 - U1・U2・U3 で捨ての試しを先に行い、前提が崩れた点（U1 は MySQL・MariaDB の重さ、応答しない MySQL の 50 秒、bit と空間の型。U2 は perf の MySQL の OOMKilled、PG の TEMP の権限、更新できないビュー、JDK 25 で重くならない式。U3 は測り終わりの時点、T3 が代わりの案にならない）を追加の質問（F）で依頼者に確かめてから文書に反映した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:e58cc87176fd7cf5ea6590fb9bd14d2a0699f1fbe532157f332b9420b0d1b460 -->
 - U2 の Q7: A で perf の MySQL 1792m を短い捨ての試しで確かめ、プールを埋めた状態で上限に張りつき（anon 90%）、プール以外の量も見立ての約 614 MiB でなく約 840 MiB と分かったため、追加の質問 F1 で 2304m にした。U1 の文書の値は承認の場でそろえる。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:aa0de9ae089b86cd176211039de0b1f0129ba19fe23568374f780116cc2c4908 -->
 - U1 のコードのレビューの R-01（承認の場で直す決定）を、段の承認の場の前に直した: U1 の traceability.json の NFR1.1・NFR1.2・NFR1.3・NFR2.4・NFR3.2 を OK から Deferred（Performance Validation）にし、target に場面と台本・設定の置き場を書いた（AC1.3.7 と同じ扱い）。測っていない目標を満たした扱いで読まないため。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:3ad749d07c62241cc5c96d2f6da85424e818420dbadd838b7bd9f4b088cfb2d8 -->
+- 依頼者の決定（Q1: B）で、B6 と CI の直しを合わせた develop の今の形では verify と E2E の全件を流さず、各 Bolt の作業ブランチの上の結果と CI（d220447 の1回目で成功）を正とした。流す時間（約 40 分）を省く代わりに、合わせた形の手元の確かめは CI だけになる。 (learned 2026-10-20) <!-- cid:261016-business-data-views:build-and-test:f9b432278e7c1e0e2f12d4236f9059c0ea8516a112be9eafe7bb5027fc9852aa -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -164,6 +166,7 @@
 - 依頼者の決定（Q2: B）で、要件 FR11.2 の「1行の長さの上限の拒否をスモークテストに入れる」を行わず、結合テストで確かめ済みとした。監査に DSL_SUBMISSION_REJECTED が残るため。要件は書き換えず cd-config.md 5節に差を記録した。 (learned 2026-10-15) <!-- cid:261015-deps-ui-carryover:deployment-pipeline:83db7796b312036847d7d7d3ea6dd1e9b7517b4ea9e119e98f9742b6333db217 -->
 - 入れ替えの前の複写を読み取りで開く道具は、リポジトリの外の小さな Java の道具（H2 2.4.240 の JDBC、ACCESS_MODE_DATA=r）にし、DSL の最も長い行・初期管理者の停止と印・T0 以降の監査の種類ごとの件数を、値を表示せずに1つの道具で数えた。配備の前と後の両方の複写に同じ道具を使えた。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:fff69c5487d2e7004f8151d58b3f50d7b0df8414b7103a7525cf8c0b4b577c01 -->
 - 依頼者の決定で、この段の配備の記録をコミットしてから main を fast-forward した（記録も main に入る）。代わりに、取り込みと push の結果は main の後の develop だけのコミットで追記する。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:4bf801cc4e8dd40ad99ecd255f33ab647d9c43ee7da36ffaca81a1e1710c45ad -->
+- CI の時間は run の始めから終わりではなく、検査の job の始めから終わりで測った。a031ba1 の run は前の run の終わりまで約 31 分待ち、run の全体では 59 分だったが、検査の job は 28分37秒で 42 分の線の内だった。 (learned 2026-10-20) <!-- cid:261016-business-data-views:build-and-test:61c8c95d0bef093d17ae4b3d25a4d54b365e106c1b90b5937bacd770b29e3bc3 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->

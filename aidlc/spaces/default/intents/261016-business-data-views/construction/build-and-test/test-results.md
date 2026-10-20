@@ -117,15 +117,40 @@ team.md の「手元で再現しないものは、再現の試みに先に時間
 5. 直しの後の verify は通過（21分35秒）。テストだけの変更のため E2E は流していない。
 6. 依頼者の決定で後の Intent に回した既知の制約: 運用の詰め直しの道具（`docker/hikari-pool.sh compact`）が補充の途中に流すと1本残って詰め直さずに終わりうる（流し直せば済む）。パスワードの変更と表示の設定の画面で、切り替えの直後の短い間に答えが届くと成功の知らせが出うる（直すには本体の変更が要る）。
 
-## 6. CI の試行ごとの結果（後で足す）
+## 6. CI の試行ごとの結果
 
-B5 の統合の後のすべてのコミット（`1152202`・`b7291d3`・`a031ba1`・`d220447`、記録だけのコミットを含む）の CI を、試行ごと（`gh run view --json attempt・jobs`）に確かめて足す（Q4: A）。再実行で通ったものは1回目の失敗とテストも書く。CI の時間もここに足す。指揮役が足す。
+B5 の統合の後のコミットの CI を、試行ごと（`gh run view --json attempt・jobs`）に指揮役が確かめた（Q4: A）。
 
-## 7. `dslMixed` の `memory.peak` の内訳（後で足す）
+| コミット | run | 試行 | 結果 | 失敗したテスト・検査の job の時間 |
+|---|---|---|---|---|
+| `1152202`（B5） | 39375104956 | 1回目 | 失敗 | `PasswordChangePage.test.tsx`「drops the answer when the screen is left while sending」 |
+| `1152202`（B5） | 39375104956 | 2回目・3回目 | 失敗 | どちらも `H2CompactionByPoolSuspensionIT`（`total=1, idle=1` で 30 秒の時間切れ） |
+| `b7291d3`（CI の直し） | 39410449247 | 1回目 | 成功 | 検査の job 31分27秒 |
+| `a031ba1`（B6） | 39410572004 | 1回目 | 成功 | 検査の job 28分37秒（前の run の終わりまで約 31 分待った） |
+| `d220447`（B7） | 39441119537 | 1回目 | 成功 | 検査の job 32分49秒 |
 
-既定の接続先で2回・`RETENTION_TIME=0` の試しで2回の測りの結果（`memory.peak / memory.max`、`anon`・`file`・`inactive_file`・`kernel`、内部DB のファイルの大きさ、`settings.txt` の値、WARN の件数、秘密の検索の件数、片付けの確かめ、配備したアプリを止めた時間）を、`construction/build-and-test/memory-peak-measurement.md` から足す（Q2: A）。
+- `1152202` の2件は、team.md の決まり（同じテストが二度目に落ちたら直すまで進まない）どおり、直しのブランチ（`b7291d3`）でテストの待ちの抜けとして直し、二段で確かめた（5節、段の `construction/code-generation/generation-notes.md`）。直しの後の3つのコミットは、どれも1回目の試行で通った。
+- CI の時間は 28分37秒〜32分49秒で、どれも CI の上限 60 分の7割（約 42 分）の内。テストの分け方を諮る線には当たらない。
+- **push の後に確かめる点**: 記録のコミット `288736d` と、この段の直し `22de65f`（`develop` に squash 済み）は、まだ push されていない。この2つの CI の試行ごとの結果は、push の後に確かめて記録する（次の段の CI Pipeline か Deployment Execution の前の確かめで扱う）。
 
-- あわせて、この段の `k6 inspect --include-system-env-vars` の確かめ（Q3: A。`performance-test-instructions.md` の 2.4）の結果もここに足す。
+## 7. `dslMixed` の `memory.peak` の内訳
+
+結果の全体は `construction/build-and-test/memory-peak-measurement.md`。`perf/README.md` の手順と `perf/dsl-mixed-memory.sh` で、既定の接続先で2回、`RETENTION_TIME=0` の試しで2回、それぞれ別の使い捨ての環境で流した（2026-10-20、`develop` の `288736d`。backend・frontend は `d220447` と同じ）。`memory.max` はどの回も 2048 MiB。
+
+| 回 | memory.peak（MiB） | peak / max | anon の最大 / max | peak の時の file（MiB） | mv.db の伸び（MiB） | 判定（< 0.9） |
+|---|---|---|---|---|---|---|
+| default-1 | 1788.1 | 0.8731 | 0.6991 | 335.0 | 363.9 | 0.9 未満 |
+| default-2 | 1780.9 | 0.8696 | 0.6902 | 343.4 | 354.1 | 0.9 未満 |
+| retention-1（試し） | 1515.5 | 0.7400 | 0.7030 | 72.0 | 71.9 | 0.9 未満 |
+| retention-2（試し） | 1469.4 | 0.7175 | 0.6865 | 54.3 | 74.8 | 0.9 未満 |
+
+- **判定（BR3.5・FR16.4）: Met**。既定の2回が 0.873・0.870 で、2回とも 0.9 未満。物差し（`memory.peak / memory.max`）は変えていない。`anon` の割合は並べるだけ。0.9 までの余裕は約 55〜62 MiB で小さい。前の Intent の同じ場面は 94.4%・93.1%（Not Met）で、差の原因は確かめていない。
+- **条件のそろえ（BR3.4）**: 4回とも k6 の終了コード 0・checks の失敗 0・`http_req_failed` 0・`dropped_rows` 0・`post_missing_seconds` 0・OOMKilled なし。WARN は各回 2 行（起動の案内 2 つ）・ERROR 0・OutOfMemoryError 0 で、片付けの前に数えた。流す前後の `pmset` で眠りは無かった。
+- **設定の確かめ（BR4.1）**: `settings.txt` の `RETENTION_TIME` は、試しの2回が 0、既定の2回が 45000（H2 の既定）。試しの結果に使える。
+- **試しの結果（BR4.2・BR4.3）**: 試しの2回は 0.740・0.718 で効いた。下がったのはページキャッシュ（`file`）と内部DB のファイルの伸びで、`anon` は変わらない。**`RETENTION_TIME=0` を配備物に取り込むかは、依頼者の決定で後の Intent で決める**（書き込みの途中で止まったときの壊れやすさと値をそのときに決める）。配備物は変えていない。
+- **秘密と片付け（NFR4.5・NFR4.6）**: 秘密の検索は2つの段ともすべて 0 件。各段の後に `down -v` と一時ディレクトリの削除を行い、一時ディレクトリ・`mastersmith-perf_` のボリューム・`mastersmith-perf-` のコンテナがどれも 0 であることを確かめた。記録に書いたのは数値・時刻・状態・ロガーの名前と件数だけ。
+- **配備したアプリを止めた間**: 2026-10-20T14:53:31Z〜15:17:13Z（約 23分42秒）。同じコンテナで戻し、`/actuator/health` は 15:17:26Z に 200。
+- **`k6 inspect` の確かめ（Q3: A）**: この段で、`develop`（22de65f）の `perf/k6/scenarios.js` を `grafana/k6:2.3.0@sha256:9c2dee7f…` の `k6 inspect --include-system-env-vars` で、業務データの 12 の場面（`bizPrepare`・`bizSearchFirst`・`bizSearchLast`・`bizSearchLastSorted`・`bizSearchContains`・`bizSearchWide`・`bizDetail`・`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`・`bizCreateLarge`）ごとに流した。12 とも終了コード 0 で、場面の名前が1つだけ出た。`bizPrepare`・`bizSearchWide` のほかの 10 の場面は、閾値に `checks{scenario:…}`・`http_req_duration{name:…}`・`iteration_duration{scenario:…}` が出た。判定（p95 と checks）は Performance Validation で流して行う。
 
 ## 8. この段の直し（Build and Test、依頼者の決定）
 
@@ -195,4 +220,6 @@ B5 の統合の後のすべてのコミット（`1152202`・`b7291d3`・`a031ba1
 ## Assumptions & Open Questions
 
 - [assumption] `develop` の `d220447` は B7 の作業ブランチを squash で統合したもので、最後の作業ブランチの上の結果（2節の最後の行）が `develop` の中身にも当たると見る。B5・B6・直しを合わせた形の確かめは CI が受け持つ（6節）。
-- 6節と7節は後で足す。この2節がそろうまで、Target Verification Matrix の該当の行は `Pending`。
+- 6節と7節は足した（CI の試行ごとの結果・`memory.peak` の内訳）。Target Verification Matrix に `Pending` は残っていない。
+- 4節の3件のうち `eslintImportRules.test.ts` は、この段で直した（8.1）。4節の行は起きた時点の記録として書き換えていない。残る2件（E2E 185 のログイン・`logoutIntent.test.tsx`）は、引き続き「不安定と確かめられていない」扱い。8.1 の人工の強い負荷の下でだけ落ちた画面のテスト（`registration.test.tsx`・`PreferencesPage.test.tsx`・`preferences/registration.test.tsx`）は、依頼者の決定で記録だけにし、CI や手元で落ちたら team.md の決まりで扱う。
+- 最新の verify は 8.4（`develop` の `22de65f` と同じ中身、22分26秒）。E2E は B7 の後の作業ブランチの上の 256 件の通過を正とし、この段の直し（テストと文書だけ）の後は流していない。

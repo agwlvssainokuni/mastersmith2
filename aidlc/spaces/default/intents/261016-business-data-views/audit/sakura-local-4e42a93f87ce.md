@@ -49437,3 +49437,670 @@
 **Tool**: Bash
 
 ---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:06:57Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: acd218f19ef1b2e60
+**Message**: Handing back build-and-test-summary.md report
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:07:10Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:07:10Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:07:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:07:14Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:07:27Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:07:30Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a298202458390e675
+**Message**: Filling CI results in test-results.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:07:50Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:08:03Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ad1ce083be3b3c2b0
+**Message**: Reading build-and-test-summary.md prose sections
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:09Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:09Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:11Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:11Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:13Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:13Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:15Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:15Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:22Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:22Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:26Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:27Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:08:37Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a77fcab045bcb6413
+**Message**: Updating build-and-test-summary.md verdict sections
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:46Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:46Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:48Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:48Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:55Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:08:55Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:08:57Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:09:10Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a658d37bc889b6793
+**Message**: Reading cross-unit-traceability.md sections
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:09:16Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:09:16Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:09:27Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:09:27Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:09:44Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:09:44Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:09:45Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: a161a7afc807e0764
+**Message**: Updating AC3.4.5 coverage in cross-unit-traceability.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:09:48Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:09:48Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:09:51Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:09:51Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:10:12Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:10:18Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: aa6b0d4fd9ddf9efd
+**Message**: Marking FR16 rows Covered in cross-unit-traceability.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:10:20Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:10:20Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/cross-unit-traceability.md
+**Context**: construction > build-and-test > cross-unit-traceability.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:10:23Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:10:32Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/integration-test-instructions.md
+**Context**: construction > build-and-test > integration-test-instructions.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-20T17:10:49Z
+**Event**: HUMAN_TURN
+**Session**: ac0d855b-75c9-4807-9313-afd8989d9f17
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-20T17:10:49Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-quality-agent
+**Agent ID**: ad2283bfc3f49ec5f
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:11:34Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:14:17Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/test-results.md
+**Context**: construction > build-and-test > test-results.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:14:18Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:14:41Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:14:43Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-20T17:14:43Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261016-business-data-views/construction/build-and-test/build-and-test-summary.md
+**Context**: construction > build-and-test > build-and-test-summary.md
+**Summary Authorization Id**: 7305c51e17ad2e3385702c24b1dbe2795a71bdf765ad67b09c3e72e4e0d176be
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:14:54Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-20T17:15:00Z
+**Event**: DECISION_RECORDED
+**Stage**: build-and-test
+**Decision**: Build and Test の学びとして project.md に残すもの（c1〜c3）
+**Options**: c1,c2,c3
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-20T17:15:41Z
+**Event**: HUMAN_TURN
+**Session**: ac0d855b-75c9-4807-9313-afd8989d9f17
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:15:50Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-20T17:15:51Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: c1, c2, c3
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-10-20T17:15:51Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c1
+**Content-Hash**: 61c8c95d0bef093d17ae4b3d25a4d54b365e106c1b90b5937bacd770b29e3bc3
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Deployment
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-10-20T17:15:51Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c2
+**Content-Hash**: 365d21513b3820e74da3c7e85ff30f94a093a2e52bbab922996de53ecdac55bc
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Way of Working
+**Source**: orchestrator
+
+---
+
+## Rule Learned
+**Timestamp**: 2026-10-20T17:15:51Z
+**Event**: RULE_LEARNED
+**Stage**: build-and-test
+**Candidate-ID**: c3
+**Content-Hash**: f9b432278e7c1e0e2f12d4236f9059c0ea8516a112be9eafe7bb5027fc9852aa
+**Destination**: <project-dir>/aidlc/spaces/default/memory/project.md
+**Heading**: ## Testing Posture
+**Source**: orchestrator
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-20T17:15:51Z
+**Event**: DECISION_RECORDED
+**Stage**: build-and-test
+**Decision**: 次の Intent のために足しておきたいことはありますか？
+**Options**: Nothing to add,Add a note
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-20T17:16:05Z
+**Event**: HUMAN_TURN
+**Session**: ac0d855b-75c9-4807-9313-afd8989d9f17
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:16:09Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-20T17:16:10Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: Nothing to add
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-10-20T17:16:11Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: build-and-test
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-20T17:18:15Z
+**Event**: HUMAN_TURN
+**Session**: ac0d855b-75c9-4807-9313-afd8989d9f17
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:18:22Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-10-20T17:18:23Z
+**Event**: GATE_APPROVED
+**Stage**: build-and-test
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-10-20T17:18:23Z
+**Event**: STAGE_COMPLETED
+**Stage**: build-and-test
+**Validation Basis**: {"graphContract":"sha256:96b8f13dd5dc4ed374a013c67c59513754aa4e6f9c23c96a9953c7cb00d73f5c","inputs":[{"artifact":"code-generation-plan","contentHash":"sha256:ddff36031d089c681d094d0f1657d028b4eca9716cecf57dd6cdc7e92289ab54","instanceCount":5,"presentCount":5,"producer":"code-generation","required":true,"structureHash":"sha256:e69d945831e3953a1c47d42fbb3a8fb9d4978c9f2617f08ea6636641ff7d74f8"},{"artifact":"code-summary","contentHash":"sha256:c518a471e567a44c9ee7794d6ec0c7a99ff42682174d3edd657d4947f6704e60","instanceCount":5,"presentCount":5,"producer":"code-generation","required":true,"structureHash":"sha256:bbc858b0a69a26fe30fce740f7c62a103ea0318ce31a45c9ca83cb93ad1b74f8"},{"artifact":"unit-test-instructions","contentHash":"sha256:bc7f70b4214f728c48e13aba7c43715e3c4462999e541d769876b2afe4517749","instanceCount":5,"presentCount":5,"producer":"code-generation","required":true,"structureHash":"sha256:9167fad1ed911b07bdba698bfc4e933c8142f442f53a75f1ba58d245c3b30d68"}],"outputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:086b00a02ebd9e89b987ab6bec942e11e4373666534ecdbf6ba552cd65399212","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:10c86d21441ea2d9189fb6dd8686c9d204d373cd0f10b5ff42fffb7a20772eeb"},{"artifact":"build-instructions","contentHash":"sha256:93314b114e23f539dd4c17692487ac42b51faa73d293846eb458c89072b64c1f","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:a4ffe5d3599f45640659e696338da2201f68b713b5e933185723f45cb3fc6535"},{"artifact":"build-test-results","contentHash":"sha256:bfba13ca6ec4cf575ba0ffb9db0b8af3ef2d14b4a359bb565c7812e4fc7c5d90","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:2105a3abecb350e345b02ad05dffc390a57dad48ef0a7b0661f7b1b1d28715a3"},{"artifact":"cross-unit-traceability","contentHash":"sha256:f4df20141837d99904d30deea0f14220f0c07f5a971b030128a138070e915a9a","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:f93fca27287d0fceb4757081c91af77d98d844482f862aa76756f67dee035850"},{"artifact":"integration-test-instructions","contentHash":"sha256:26b91b5df5a6aed5759789130c474a01841b97ae395096b6ec0f46bcf860f3fc","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:ba2ea6a60871b31dfa9724ea8540ff896b2d8b5c7d889c773bbe5351960c4171"},{"artifact":"performance-test-instructions","contentHash":"sha256:941dd4d4f45be81ad02cffb2baf4ba5d454f3232ee035dc6e9f56c03df9c8f2a","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:133fca1a56b8266b6949111d644ea6984e6dd7de55372f4d5071aa5cf49e3187"},{"artifact":"security-test-instructions","contentHash":"sha256:8112acb8a5bc8a117480a3d43b792f3e7f1fd913fdeb3d9e5a6906af27e00321","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:ed9f75406e8f42d72be3fe9ec42aecea307c11faf27bf5eb9df8532c136fcded"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Build and Test approved by gate
+**Tokens In**: 474
+**Tokens Out**: 149376
+**Cache Read**: 102638817
+**Cache Write**: 5953649
+**Cost USD**: 95.27
+**By Model**: opus-5=95.27
+**By Agent**: main=25.15; aidlc-developer-agent=39.94; aidlc-quality-agent=30.18
+**Tokens By Model**: opus-5=474/149.4k/102.6M/6M
+**Tokens By Agent**: main=102/40.4k/32.2M/802.2k; aidlc-developer-agent=208/12.2k/31.5M/3.8M; aidlc-quality-agent=164/96.8k/38.9M/1.3M
+
+---
+
+## Stage Start
+**Timestamp**: 2026-10-20T17:18:23Z
+**Event**: STAGE_STARTED
+**Stage**: ci-pipeline
+**Agent**: aidlc-pipeline-deploy-agent
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-20T17:18:33Z
+**Event**: HUMAN_TURN
+**Session**: ac0d855b-75c9-4807-9313-afd8989d9f17
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-20T17:18:38Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---

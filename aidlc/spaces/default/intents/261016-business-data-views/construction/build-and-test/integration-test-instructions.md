@@ -78,4 +78,5 @@ Test Strategy は Standard。この文書は、単位の境目（U1 の読み取
 ## Assumptions & Open Questions
 
 - [assumption] 5節の最後の値は B7 の作業ブランチの上の回で、`develop` の今の形では流していない（Q1: B）。合わせた形の確かめは CI が受け持つ。
-- AC3.4.5（一覧・詳細の読み取りとその拒否は監査に残らない）を確かめる結合テストが、どの単位の traceability にも無い（U2 が U1 へ Deferred にしたが、U1 に行が無い）。`cross-unit-traceability.md` の 4節。
+- AC3.4.5（一覧・詳細の読み取りとその拒否は監査に残らない）は、この段で `AbstractBusinessDataReadIT#readsLeaveNoAudit` を足して3種類の対象DB で確かめた（各 17 件通過。`test-results.md` 8.2、`cross-unit-traceability.md` の 4節）。流し方: `./gradlew :backend:integrationTest --tests '*BusinessDataReadIT'`。
+- この段の直しの後の最新の値は、結合 1,389 件（SKIPPED 9）・フロントエンド 行 95.06%・分岐 89.80%（`test-results.md` 8.4）。
