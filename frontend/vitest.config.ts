@@ -20,8 +20,15 @@
 //   基盤の設計の Q2: A）。カバレッジの対象（src/）は変えない。
 // - カバレッジの下限は 行 80%・分岐 70%。計測から外すのは入口（src/main.tsx）と型の宣言だけ
 //   （テストのファイル自体は計測の対象ではない）。
+// - ESLint の設定を読むテスト（src/eslintImportRules.test.ts）は、ほかのテストより先に、1つだけで流す（project の groupOrder）。
+//   設定の読み込み（@typescript-eslint/parser が TypeScript の本体を読む。単独で約 0.35 秒）は1つの CPU で重く、jsdom の
+//   ほかのテストのファイルと同時に始まると、PC の負荷の下で beforeAll の上限（10 秒）を超えて落ちた（Intent
+//   261016-business-data-views の B3・B7、Build and Test で負荷をかけて再現した）。時間の上限は延ばしていない。
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
+
+/** ほかのテストより先に、1つだけで流すテストのファイル */
+const ESLINT_CONFIG_TEST = 'src/eslintImportRules.test.ts'
 
 export default mergeConfig(
   viteConfig,
@@ -29,9 +36,26 @@ export default mergeConfig(
     test: {
       environment: 'jsdom',
       setupFiles: ['./vitest.setup.ts'],
-      include: ['src/**/*.test.{ts,tsx}', 'e2e/support/**/*.test.ts'],
-      exclude: ['e2e/**/*.e2e.ts', 'node_modules/**', 'dist/**'],
       css: false,
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: 'eslint-config',
+            include: [ESLINT_CONFIG_TEST],
+            sequence: { groupOrder: 0 },
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: 'unit',
+            include: ['src/**/*.test.{ts,tsx}', 'e2e/support/**/*.test.ts'],
+            exclude: ['e2e/**/*.e2e.ts', 'node_modules/**', 'dist/**', ESLINT_CONFIG_TEST],
+            sequence: { groupOrder: 1 },
+          },
+        },
+      ],
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}'],

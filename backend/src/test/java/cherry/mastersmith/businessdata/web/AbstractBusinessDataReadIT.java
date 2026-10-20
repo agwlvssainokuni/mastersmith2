@@ -63,6 +63,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * 業務データの定義・一覧と検索・詳細を、3種類の対象DB で確かめる共通の結合テスト（Step 15、NFR3.1・NFR3.3・NFR2.2・NFR2.5・NFR7.1、
@@ -551,5 +552,53 @@ abstract class AbstractBusinessDataReadIT {
         assertThat(names(definition, "searchFields")).doesNotContain("b", "g");
         assertThat((List<Object>) definition.get("sortableColumns")).doesNotContain("b", "g");
         assertThat(values(items(page).getFirst())).containsOnlyKeys("id", "v");
+    }
+
+    // ── 監査 ──
+
+    @Test
+    @DisplayName("reads and their rejections (401, 400, 403, 404, 409) leave no audit row at all")
+    void readsLeaveNoAudit() {
+        // AC3.4.5（FR12.2）: 業務データの読み取り（定義・一覧・詳細）とその拒否は、監査に1行も残さない。利用者の用意（ロールの作成・
+        // 割り当て）は監査に残りうるため、数え始める前に済ませる。403 の利用者は ITEM だけを NONE にし、ほかは READ を持つ。
+        Map<PermissionTarget, PermissionValues> withoutItem = new LinkedHashMap<>();
+        withoutItem.put(PermissionTarget.schema(schema), new PermissionValues(MainPermission.READ, false, false));
+        withoutItem.put(PermissionTarget.table(schema, ITEM), new PermissionValues(MainPermission.NONE, null, null));
+        Actor lacking = app.reader(withoutItem);
+        JdbcTemplate internal = app.bean(JdbcTemplate.class);
+        int before = auditRows(internal);
+
+        // 成功
+        definition(ITEM);
+        search(ITEM, List.of(), null, 1, 20);
+        get(ITEM, Map.of("id", "1"));
+        // 拒否
+        assertThat(app.post(BusinessDataPaths.SEARCH, null, body(ITEM, "page", 1, "size", 20))
+                        .statusCode())
+                .isEqualTo(401);
+        assertThat(app.post(BusinessDataPaths.GET, null, body(ITEM, "key", Map.of("id", "1")))
+                        .statusCode())
+                .isEqualTo(401);
+        assertThat(searchResponse(ITEM, List.of(), null, 1_000_001, 20).statusCode())
+                .isEqualTo(400);
+        assertProblem(
+                app.post(BusinessDataPaths.SEARCH, lacking.token(), body(ITEM, "page", 1, "size", 20)),
+                403,
+                "ACCESS_DENIED");
+        assertProblem(
+                app.post(BusinessDataPaths.GET, lacking.token(), body(ITEM, "key", Map.of("id", "1"))),
+                403,
+                "ACCESS_DENIED");
+        assertThat(getResponse("nothing", Map.of("id", "1")).statusCode()).isEqualTo(404);
+        assertProblem(getResponse(ITEM, Map.of("id", "999")), 404, "BUSINESS_ROW_NOT_FOUND");
+        assertProblem(getResponse(DUP_VIEW, Map.of("order_no", "1")), 409, "BUSINESS_ROW_NOT_UNIQUE");
+        assertProblem(getResponse(NO_KEY, Map.of("txt", "one")), 409, "BUSINESS_ROW_OPERATION_NOT_ALLOWED");
+        assertProblem(searchResponse(GHOST, List.of(), null, 1, 20), 409, "BUSINESS_TARGET_DB_MISMATCH");
+
+        assertThat(auditRows(internal)).as("読み取りとその拒否は監査に残らない").isEqualTo(before);
+    }
+
+    private static int auditRows(JdbcTemplate internal) {
+        return internal.queryForObject("SELECT COUNT(*) FROM audit_events", Integer.class);
     }
 }

@@ -912,7 +912,7 @@ pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
 
 #### `dslMixed` の `memory.peak` と `memory.stat` の記録（Intent 261016-business-data-views の U5）
 
-前の Intent で Not Met のまま持ち越した `dslMixed` の `memory.peak`（FR16）を、内訳（`memory.stat`）と内部DB のファイルの大きさを1秒ごとに記録しながら測る。1回の測りは `perf/dsl-mixed-memory.sh` が受け持ち、既定の接続先で2回、ページキャッシュを減らす手の試し（H2 の `RETENTION_TIME=0`）で2回、合わせて4回流す。測るのは Build and Test（Performance Validation の段が無いため。`project.md` の学び）。
+前の Intent で Not Met のまま持ち越した `dslMixed` の `memory.peak`（FR16）を、内訳（`memory.stat`）と内部DB のファイルの大きさを1秒ごとに記録しながら測る。1回の測りは `perf/dsl-mixed-memory.sh` が受け持ち、既定の接続先で2回、ページキャッシュを減らす手の試し（H2 の `RETENTION_TIME=0`）で2回、合わせて4回流す。測るのは Build and Test（この Intent には Performance Validation の段があるが、`memory.peak` の内訳の測りは依頼者の決定（Build and Test の質問の Q2: A）で Build and Test で行った）。
 
 - **合否**（BR3.1・BR3.5）: 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立てば Met。物差しは変えない（`anon` に替えない。team.md の Testing Posture）。試しの2回は合否に使わず、効いたか（2回とも 0.9 未満か）を見て、取り込むかを依頼者に諮る（BR4.2・BR4.3）。コンテナの上限 2g は上げない。
 - **並べる値**（BR3.2）: `anon` の最大 / `memory.max`、peak の時（`memory_current` が最大の行）の `anon`・`file`・`inactive_file`・`kernel`、`file` の始めと最大の差、内部DB のファイル（`mv_db_bytes`）の始めと最大の差。どれも `summary.txt` に出る。
