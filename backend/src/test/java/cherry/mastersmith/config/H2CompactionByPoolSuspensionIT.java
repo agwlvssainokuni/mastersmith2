@@ -26,6 +26,7 @@ import cherry.mastersmith.dslmanage.domain.DslContent;
 import cherry.mastersmith.dslmanage.domain.DslPreviewRef;
 import cherry.mastersmith.dslmanage.domain.DslSource;
 import cherry.mastersmith.dslmanage.service.DslRecordStore;
+import com.zaxxer.hikari.HikariConfigMXBean;
 import com.zaxxer.hikari.HikariPoolMXBean;
 import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
@@ -92,6 +93,24 @@ class H2CompactionByPoolSuspensionIT {
     /** 1件の本文の大きさ（2MiB）。 */
     private static final int BODY_BYTES = (int) (2 * MIB);
 
+    /**
+     * 接続の補充（HikariCP の connection-adder）が、一時停止の前に済むのを待つ。
+     *
+     * <p>HikariCP の補充は、一時停止かを確かめた後に接続を作り、作り終えてから袋に足す（{@code PoolEntryCreator}）。そのため、
+     * 作っている途中で一時停止と接続の破棄をすると、破棄の後に新しい接続が1本だけ足され、0 本にならない
+     * （CI の失敗の {@code total=1, active=0, idle=1}）。補充は、前のテストの再開（{@code resumePool}）・起動の直後・接続の破棄の
+     * 後に始まる。補充の担い手は1本のスレッドで、全体が上限に届くか、空きが最小の空きの数に届くと、次の補充は作る前に止まる。
+     * そこで、そのどちらかになるまで待ってから一時停止する（作っている途中の接続が無いことを確かめる）。待ちの上限は、
+     * ほかの接続の数の待ちと同じ {@link #ZERO_CONNECTIONS_WAIT} とし、延ばさない。
+     */
+    private static void awaitFillSettled() {
+        int maximum = poolConfig.getMaximumPoolSize();
+        int minimumIdle = Math.min(poolConfig.getMinimumIdle(), maximum);
+        awaitPool(
+                "the pool has finished adding connections before suspension",
+                () -> pool.getTotalConnections() >= maximum || pool.getIdleConnections() >= minimumIdle);
+    }
+
     /** 投入（プレビューを置く）と適用を重ねる回数。 */
     private static final int ROUNDS = 24;
 
@@ -135,6 +154,8 @@ class H2CompactionByPoolSuspensionIT {
 
     private static HikariPoolMXBean pool;
 
+    private static HikariConfigMXBean poolConfig;
+
     private static DslRecordStore recordStore;
 
     private static JdbcTemplate jdbc;
@@ -158,6 +179,10 @@ class H2CompactionByPoolSuspensionIT {
                 .as("application.yaml の register-mbeans: true でプールの MBean が登録される")
                 .isTrue();
         pool = JMX.newMXBeanProxy(server, name, HikariPoolMXBean.class);
+        poolConfig = JMX.newMXBeanProxy(
+                server,
+                new ObjectName("com.zaxxer.hikari:type=PoolConfig (" + POOL_NAME + ")"),
+                HikariConfigMXBean.class);
         recordStore = context.getBean(DslRecordStore.class);
         jdbc = context.getBean(JdbcTemplate.class);
         dataSource = context.getBean(DataSource.class);
@@ -199,7 +224,8 @@ class H2CompactionByPoolSuspensionIT {
         jdbc.execute("CHECKPOINT SYNC");
         assertThat(Files.size(dbFile)).isGreaterThanOrEqualTo(grown);
 
-        // 運用の道具と同じ順の、HikariCP の標準の操作だけ。
+        // 運用の道具と同じ順の、HikariCP の標準の操作だけ。前のテストの再開などで始まった接続の補充が済むのを先に待つ。
+        awaitFillSettled();
         pool.suspendPool();
         pool.softEvictConnections();
         awaitPool("all connections closed after suspend and evict", () -> pool.getTotalConnections() == 0);
@@ -253,6 +279,7 @@ class H2CompactionByPoolSuspensionIT {
     void borrowedConnectionIsClosedOnReturn() throws SQLException {
         Connection borrowed = dataSource.getConnection();
         try {
+            awaitFillSettled();
             pool.suspendPool();
             pool.softEvictConnections();
 

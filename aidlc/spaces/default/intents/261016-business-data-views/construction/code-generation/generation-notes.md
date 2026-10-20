@@ -329,3 +329,36 @@
 - **R-04**: 持ち越し（手を付けていない）。
 - **直しの後の verify**: `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` は BUILD SUCCESSFUL、17分44秒。単体 2,370 件・結合 1,254 件（既存の `assumeTrue` の飛ばし 4 件、コンテナの実行環境の警告 0 件）・画面 188 ファイル・1,633 件、失敗 0。カバレッジはバックエンド 行 97.8%・分岐 91.8%、フロントエンド 行 95.37%・分岐 90.32%。流す前の `pmset -g assertions` で `PreventUserIdleSystemSleep` が 1、流した後の `pmset -g log` に検査の窓の Sleep・DarkWake は無かった。
 - `source-manifest.json` と `traceability.json` は、変えたパスが変わらないため直していない。
+
+## CI の不安定なテスト2件の直し（B6 の統合の前）
+
+`develop` の CI（run 39375104956、`1152202`）で、前に落ちたことのある2件が二度目に落ちた。team.md の「同じテストが二度目に落ちたら、原因を直すまで次へ進まない」に当たるため、依頼者の決定で B6 の統合の前に直した。作業のブランチは `fix/261016-business-data-views-ci-flaky`。直しはテストだけで、本番のコード（`src/main`）・`vendor/`・`.env` には触れていない。再現の試みの時間の上限は、それぞれ 1 時間とした（画面のテストは約 10 分、バックエンドは約 40 分で済んだ）。
+
+### 1. `frontend/src/features/preferences/PasswordChangePage.test.tsx`「drops the answer when the screen is left while sending」
+
+- **失敗**: 試行 1 で `expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement()` が通らず、「パスワードを変更しました」の Toast が出ていた。前に `0427d45`（run 39172328548）の1回目でも同じテストが落ちている（「手元で再現しないもの」として記録済み）。
+- **見立て**: `usePasswordChangeForm` は、部品が外れたかの印（`mounted`）を `useEffect` の後片付けで下ろす。プリファレンスの画面は遅延読み込み（`lazy`）で、画面の切り替えの commit は同期の更新ではないため、後片付けは commit の後のタスクで流れる。テストは新しい画面の DOM（`preferences-page`）が見えた時点で答えを返しており、後片付けより先に答えが届くと、印がまだ下りていないため Toast が出る。手元では後片付けのタスクが先に流れて通り、遅い CI では順が入れ替わって落ちる。テストの待ち合わせの抜け（「画面を離れた」を DOM だけで判定している）と見た。
+- **再現（待ち合わせで確実に起こした）**: 使い捨てのテストのファイル（確かめの後に消した）で、新しい画面の DOM が置かれた直後（`MutationObserver` の知らせ、同じ commit の後のマイクロタスク）に答えを返す順を作った。5回とも、CI と同じ「パスワードを変更しました」の Toast が出て失敗した。
+- **直した中身**: 新しい画面の DOM を待った後に、新しい画面の副作用が出す読み込みの要求（`GET /api/me/preferences`）が届くのを `waitFor` で待ってから答えを返す形にした。React は副作用を流すときに後片付けを先に流すため、要求が届いた時点で前の画面の印は下りている。時間の上限は変えていない。本番のコード（`usePasswordChangeForm`）は変えていない。
+- **二段の確かめ**: 直す前の順（DOM の直後に答える）は上のとおり5回とも落ち、直した後の順（読み込みの要求を待ってから答える）は同じ使い捨てのファイルで通った。直した本物のファイルを単独で5回流し、5回とも 17 件通過。
+
+### 2. `backend` の `H2CompactionByPoolSuspensionIT`「the H2 file grows while connections are open and shrinks after suspend, evict and resume via the pool MBean」
+
+- **失敗**: 試行 2・3 で、一時停止と接続の破棄の後の待ちが `pool condition not met within 30000 ms (all connections closed after suspend and evict): total=1, active=0, idle=1, threadsAwaiting=0` になった（前の Intent で上限を 30 秒に延ばし、失敗のときの診断を足したテスト）。
+- **見立て**: HikariCP 7.0.2 の補充（`PoolEntryCreator`、担い手は1本の `connection-adder` のスレッド）は、一時停止かを確かめた後に接続を作り、作り終えてから袋に足す。作っている途中で一時停止と接続の破棄をすると、破棄の後に新しい接続が1本だけ足され、その後の補充は一時停止のため止まる。足された1本は破棄の印を持たず空きのまま残るため、0 本にならない（`total=1, idle=1` と合う）。補充は、クラスの中で先に流れる2つのテスト（JUnit の並びは「借りた接続」→「一時停止の間の要求」→このテスト）の再開（`resumePool`）や起動の直後に始まり、最小の空きの数（既定で上限と同じ 30）まで1本ずつ作る。手元では補充がテストの投入と適用の間に終わり、遅い CI では一時停止の時点でまだ作っている途中だった。上限を延ばしても直らない、テストの待ち合わせの抜けと見た。
+- **再現（待ち合わせで確実に起こした）**: 使い捨ての変更（確かめの後に戻した）で、`connection-init-sql` から呼ぶ H2 の関数（別のスキーマに置いた待ち合わせ）で `connection-adder` を接続を作る途中で止めた。補充を始めて止まったのを確かめてから、直す前の順（一時停止 → 破棄 → 0 本を待つ）で進め、止めていた作る途中の接続を進めると、CI と同じ `total=1, active=0, idle=1, threadsAwaiting=0` で 30 秒の待ちが切れた。あわせて、確実にしない試し（`connection-init-sql` の重い問い合わせで作る時間を延ばしただけ）でも、「借りた接続」のテストが同じ理由（`total=2, active=1, idle=1`）で落ちた。この試しでは後のテストが H2 の `CK_DSL_PREVIEWS_SOURCE` の制約の誤りでも落ちたが、試しの設定（すべての接続で重い問い合わせを流す）のときだけ出て、本物の設定と CI では出ていない（原因は確かめていない）。
+- **直した中身**: 一時停止の前に、補充が済むのを待つ `awaitFillSettled()` を足し、一時停止の前に破棄の後の本数を数える2つのテスト（このテストと「借りた接続」のテスト）で、一時停止の直前に呼ぶ。条件は、全体が上限に届くか、空きが最小の空きの数に届くこと（どちらかになると、次の補充は作る前に止まり、作っている途中の接続が無い）。上限と最小の空きの数は、プールの設定の MBean（`HikariConfigMXBean`）から読む。待ちの上限は、ほかの待ちと同じ `ZERO_CONNECTIONS_WAIT`（30 秒）で、延ばしていない。運用の道具と同じ「一時停止 → 破棄 → 0 本を待つ → 再開」の順は変えていない。
+- **二段の確かめ**: 上の待ち合わせのまま、直す前の順は CI と同じ失敗になり、直した後の順（作る途中の接続を 2 秒後に進め、`awaitFillSettled()` がそれを待ってから一時停止する）は `total=0` になって通った。使い捨ての変更を戻した後、直した本物のクラスを `--rerun` で単独で5回流し、5回とも 3 件通過（1回 11〜12 秒）。
+
+### 3. 直しの後の verify
+
+- `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡した）は BUILD SUCCESSFUL、21分35秒（18:39:46〜19:01:21 JST）。
+- 件数: 単体 2,584 件、結合 1,386 件（飛ばしは既存の DB の種類ごとの `assumeTrue` の 9 件、コンテナの実行環境の警告 0 件）、画面 217 ファイル・1,821 件、失敗 0。
+- カバレッジ: バックエンド 行 97.64%・分岐 91.23%、フロントエンド 行 95.22%・分岐 90.30%。
+- 流す前の `pmset -g assertions` で `PreventUserIdleSystemSleep` が 1、流した後の `pmset -g log` の検査の窓には Assertions の行だけで、Sleep・DarkWake は無かった。
+- 直しはテストだけのため、team.md の Way of Working のとおり E2E は流していない（Intent の最後の Build and Test で流す）。
+
+### 4. 依頼者に確かめたいこと
+
+- 運用の道具 `docker/hikari-pool.sh compact`（`docker/jmx/HikariPoolControl.java`）も、一時停止 → 破棄を1回だけ行うため、補充の途中（起動の直後・接続の寿命の 30 分ごとの入れ替えの直後など）に流すと、同じ理由で 0 本にならず、`--zero-wait`（10 秒）で詰め直さずに再開して 1 で終わりうる。害は無く（再開は済む）、流し直せばよいが、道具の側で「0 本になるまで破棄を繰り返す」か「補充が済むのを待ってから一時停止する」形にするかは、今回は触れていない（テストだけの直しの範囲の外）。
+- `usePasswordChangeForm`・`usePreferencesForm` は、外れたかの印を `useEffect` の後片付けで下ろすため、本物のブラウザでも、画面の切り替えの commit と後片付けの間（ごく短い間）に答えが届くと Toast が出うる（出る文言は事実のとおり）。直すなら `useLayoutEffect` などに替える本番のコードの変更になるため、今回は触れていない。

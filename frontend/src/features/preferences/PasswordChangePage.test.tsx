@@ -291,12 +291,17 @@ describe('PasswordChangePage', () => {
   it('drops the answer when the screen is left while sending', async () => {
     const user = userEvent.setup()
     const answer = deferred()
-    await start([answer.promise])
+    const server = await start([answer.promise])
     await fill(user, [CURRENT, NEW, NEW])
     await user.click(submit())
     await user.click(await screen.findByRole('button', { name: /検査 太郎/ }))
     await user.click(await screen.findByRole('menuitem', { name: 'プリファレンス' }))
     await screen.findByTestId('preferences-page')
+    // 新しい画面の DOM が置かれた時点では、前の画面の useEffect の後片付け（外れた印）がまだ済んでいないことがある
+    // （遅延読み込みの画面の切り替えは同期の commit ではなく、副作用は後のタスクで流れる）。新しい画面の副作用が出す
+    // 読み込みの要求を待つと、同じか前の回の後片付けが先に済んでいる（React は後片付けを先に流す）ため、
+    // 「画面を離れた後に答えが届く」順が確実になる。
+    await waitFor(() => expect(server.requestsTo(ME_PREFERENCES_PATH, 'GET')).toHaveLength(1))
     await act(async () => {
       answer.resolve(noContent())
       await answer.promise
