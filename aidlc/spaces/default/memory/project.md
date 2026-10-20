@@ -167,6 +167,8 @@
 - 入れ替えの前の複写を読み取りで開く道具は、リポジトリの外の小さな Java の道具（H2 2.4.240 の JDBC、ACCESS_MODE_DATA=r）にし、DSL の最も長い行・初期管理者の停止と印・T0 以降の監査の種類ごとの件数を、値を表示せずに1つの道具で数えた。配備の前と後の両方の複写に同じ道具を使えた。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:fff69c5487d2e7004f8151d58b3f50d7b0df8414b7103a7525cf8c0b4b577c01 -->
 - 依頼者の決定で、この段の配備の記録をコミットしてから main を fast-forward した（記録も main に入る）。代わりに、取り込みと push の結果は main の後の develop だけのコミットで追記する。 (learned 2026-10-16) <!-- cid:261015-deps-ui-carryover:deployment-execution:4bf801cc4e8dd40ad99ecd255f33ab647d9c43ee7da36ffaca81a1e1710c45ad -->
 - CI の時間は run の始めから終わりではなく、検査の job の始めから終わりで測った。a031ba1 の run は前の run の終わりまで約 31 分待ち、run の全体では 59 分だったが、検査の job は 28分37秒で 42 分の線の内だった。 (learned 2026-10-20) <!-- cid:261016-business-data-views:build-and-test:61c8c95d0bef093d17ae4b3d25a4d54b365e106c1b90b5937bacd770b29e3bc3 -->
+- 288736d・22de65f は単独の CI の run を持たず、まとめて push された先頭の 31d434c の run（1回目で成功、検査の job 22分42秒）で確かめたと読んだ。 (learned 2026-10-20) <!-- cid:261016-business-data-views:ci-pipeline:4e67a096f6ce2ed25d2ac6864a9c062a2ddfe48d5ac92d16c42ad2323c335596 -->
+- 05a9b37 の CI（run 39261104974、B3 を含む push）の1回目が PasswordChangePage.test.tsx の「drops the answer when the screen is left while sending」で落ちていたことが、Build and Test とコード生成の段の記録から抜けていた。同じテストは3回落ちており、team.md の「二度目に落ちたら直すまで進まない」に当たった後に B1・B4・B5 を統合していた。テストは b7291d3 で直り、その後は落ちていない。依頼者の決定で、承認済みの記録は書き換えず、この段の ci-config.md 6.2 に差を記録した。 (learned 2026-10-20) <!-- cid:261016-business-data-views:ci-pipeline:64d8325e02a3192f0acf0f2b8c122da2862166773183abf84143160709073035 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
