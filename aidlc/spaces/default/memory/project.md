@@ -172,6 +172,8 @@
 - Q4: A の「ページ送り」は、見本の customers が2行で1ページの件数が最小 20 のため次のページへ移れず、スモークテストでは表示と件数の選択だけを確かめ、複数ページの送りは E2E 180 で確かめ済みとした（依頼者が受け入れた）。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:474fa014a1132b93b965c4c760a4dc89c627728b932e8d16043db1052a10fad4 -->
 - 配備の前の k6 は流さず Performance Validation に任せる（Build and Test の Q3: A）。project.md の「試験済みのときだけ省く」との差を cd-config.md 3.3 に記録した。書き込みだけに問題が出たときに .env の複写を戻して 409 にする手を、まとめの確認に無かったが rollback-runbook.md 3.1 に足した（依頼者が受け入れた）。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:5ec91dde4692e7d25eb2435a4568900a9a7b32a04030472bccf295c9c996cd5f -->
 - 書き込みのアカウントと .env の書き足しを入れ替えの前の停止の間に行う形（Q1: A）にした。アプリの作り直しを1回で済ませる代わりに、停止の時間に見本の PG の作り直しと台本の実行が乗る。WAR の作り直しは停止の前に置いて止まる時間を短くした。 (learned 2026-10-20) <!-- cid:261016-business-data-views:deployment-pipeline:a2e7d1bc48f58fb9b6022742fe00ec8ea72a0a992d551b09bf9be9c0ed8d5b03 -->
+- 前の Intent の内部DB の複写2件（~/.mastersmith-backup/ の …-pre-deps-ui-carryover.tgz・…-after-deps-ui-carryover.tgz）が権限 644 のままだった（置き場は 700）。依頼者の決定で 600 に直し、中身は開いていない。この Intent で作る複写も 600 にする。 (learned 2026-10-20) <!-- cid:261016-business-data-views:environment-provisioning:47e70b0e1d533e0485ae6e232655bf9b391a94d7b78a672b4b9c036e5a228ca7 -->
+- 片付けは使われていないビルドのキャッシュだけ（700.8MB）にし、前の Intent までの戻し先のタグ付きのイメージは残した（Q1: A）。戻し先を残す代わりに、PC のディスクの使用は 92% のまま残る。戻しの練習を並べると VM のメモリの余裕は約 100 MiB しか無いため、練習の間は lgtm を起動しない。 (learned 2026-10-20) <!-- cid:261016-business-data-views:environment-provisioning:78bb26aaa287bd6cf04163f1834e9176359ff7f571c4721823f8da2a6e2a0dc3 -->
 ## Code Style
 
 <!-- Project-specific specialisation. -->
