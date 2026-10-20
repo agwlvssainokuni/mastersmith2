@@ -29,6 +29,9 @@
 - 追加の質問のファイルを分けたとき、レビューの依頼の確かめが単位によって本体の質問のファイルと追加の質問のファイルのどちらにもまとめの確認を求め（U1 は追加、U3 は本体）、まとめの確認をもう一度取り、成果物を保存し直した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:af87bb33684bf02e53424f294d730dc8b9e3b19399c9fe600260b493d2b0685b -->
 - U4 と U5 の答えを1回の依頼者の返事で尋ねたため、記録は U4 だけが受け付けられ、U5 の Q1 はもう一度尋ねて記録した（答えの記録は返事1回につき1つ）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:4e7530b8abe67e71cbd216a4a04cbc7506b641adf86b703a6005bf2088625a0a -->
 - 捨ての試しの結果の見出しを「## Q7: A の…」にしたため、Q7 と重なる見出しとしてまとめの確認が受け付けられず、見出しを直した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:3baa6ad95a0ec5612ef06f4976642b07c97c5d09f634e6c9cb16bcf6e584f44d -->
+- U3 のコードのレビューは単位ごとに1回のため、依頼者の決定で B5・B6 は verify と E2E の全体を通してそれぞれ develop に統合し、B7 の後に U3 の全体（B5〜B7）を1回でレビューする（計画の Step 18 の「記録とレビュー」との差）。指摘は直しの Bolt で直す。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:58f5be780891ae84aebffcbd61af842afca44069d07ad38bc5426bbb840395bc -->
+- B1（U5）が Bolt の計画の1番目から3番目（U1・U4 の後）に移る。計画の理由は「CI を安定させる（不安定なテスト2件が後の Bolt の統合の後の CI で落ちうる）」だったため、B2・B3 の統合の後の CI で2件が落ちる危険が残る。依頼者の決定（今の順のまま）で進め、落ちたら team.md の不安定なテストの決まりで扱う。U1 の code-summary.md にも Bolt の計画との差として書く。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:5de3dcd2b9ac4e9388e86090c0347631bc87fb104e6e8bd0048966cc47d253b9 -->
+- コード生成は単位ごとに U1→U4→U5→U2→U3 の順で進む（単位の依存の順。各単位のコード生成を終えてから次へ）。Bolt の計画の B7（U4 の後半、axe-core 4.14 の引き上げと依頼（5）の取り込み）は U3 の後に置く必要があるため、依頼者の決定（A）で U3 のコード生成の計画の最後の Bolt（B5→B6→B7）に入れ、U4 のコード生成は B3 だけにする。U4 の B7 の分の ID は U3 へ Deferred にする。B1（U5）は U1・U4 の後になる。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:cfbdc5ec1f1200994c602bf9b27e3c43bf15b0b6e5f2876c2684e7f1d319fa68 -->
 ## Walking Skeleton
 
 <!-- Project-specific specialisation. Example: -->
@@ -97,6 +100,7 @@
 - business-data-views の Delivery Planning の実測（約 13 分）で、全体の合計で判定している7パッケージのうち下限に足りないのは common.health（行 79.2%）だけで、audit.repository は数える行が無かった（全体の合計 行 98.0%・分岐 92.6%）。 (learned 2026-10-18) <!-- cid:261016-business-data-views:delivery-planning:66315121a2fe2c650f99b82f388dce2204d8f77447d41e196c57016dc5f2ca7f -->
 - U1・U2・U3 で捨ての試しを先に行い、前提が崩れた点（U1 は MySQL・MariaDB の重さ、応答しない MySQL の 50 秒、bit と空間の型。U2 は perf の MySQL の OOMKilled、PG の TEMP の権限、更新できないビュー、JDK 25 で重くならない式。U3 は測り終わりの時点、T3 が代わりの案にならない）を追加の質問（F）で依頼者に確かめてから文書に反映した。 (learned 2026-10-18) <!-- cid:261016-business-data-views:nfr-design:e58cc87176fd7cf5ea6590fb9bd14d2a0699f1fbe532157f332b9420b0d1b460 -->
 - U2 の Q7: A で perf の MySQL 1792m を短い捨ての試しで確かめ、プールを埋めた状態で上限に張りつき（anon 90%）、プール以外の量も見立ての約 614 MiB でなく約 840 MiB と分かったため、追加の質問 F1 で 2304m にした。U1 の文書の値は承認の場でそろえる。 (learned 2026-10-18) <!-- cid:261016-business-data-views:infrastructure-design:aa0de9ae089b86cd176211039de0b1f0129ba19fe23568374f780116cc2c4908 -->
+- U1 のコードのレビューの R-01（承認の場で直す決定）を、段の承認の場の前に直した: U1 の traceability.json の NFR1.1・NFR1.2・NFR1.3・NFR2.4・NFR3.2 を OK から Deferred（Performance Validation）にし、target に場面と台本・設定の置き場を書いた（AC1.3.7 と同じ扱い）。測っていない目標を満たした扱いで読まないため。 (learned 2026-10-20) <!-- cid:261016-business-data-views:code-generation:3ad749d07c62241cc5c96d2f6da85424e818420dbadd838b7bd9f4b088cfb2d8 -->
 ## Change Control
 
 <!-- Project-specific. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->

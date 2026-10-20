@@ -1008,18 +1008,18 @@
     },
     {
       "id": "NFR1.1",
-      "status": "OK",
-      "target": "perf/k6/scenarios.js"
+      "status": "Deferred",
+      "target": "Performance Validation（一覧・詳細の応答の p95。台本は perf/k6/scenarios.js、合否は Performance Validation）"
     },
     {
       "id": "NFR1.2",
-      "status": "OK",
-      "target": "perf/k6/scenarios.js"
+      "status": "Deferred",
+      "target": "Performance Validation（検索の場面 bizSearchContains・bizSearchLastSorted を含む p95。台本は perf/k6/scenarios.js、合否は Performance Validation）"
     },
     {
       "id": "NFR1.3",
-      "status": "OK",
-      "target": "perf/k6/scenarios.js"
+      "status": "Deferred",
+      "target": "Performance Validation（悪い側の規模の場面の p95。台本は perf/k6/scenarios.js、合否は Performance Validation）"
     },
     {
       "id": "NFR2.1",
@@ -1038,8 +1038,8 @@
     },
     {
       "id": "NFR2.4",
-      "status": "OK",
-      "target": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+      "status": "Deferred",
+      "target": "Performance Validation（読み取りのプールの見積もり。設定は TargetDataSourceConfig.java、合否は Performance Validation）"
     },
     {
       "id": "NFR2.5",
@@ -1053,8 +1053,8 @@
     },
     {
       "id": "NFR3.2",
-      "status": "OK",
-      "target": "perf/README.md"
+      "status": "Deferred",
+      "target": "Performance Validation（メモリ。手順は perf/README.md、合否は Performance Validation）"
     },
     {
       "id": "NFR3.3",

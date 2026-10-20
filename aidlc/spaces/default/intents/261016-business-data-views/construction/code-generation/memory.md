@@ -6,6 +6,9 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-10-21T05:40:00Z — 段を終える操作（Approve の記録）も同じ 7 つのパスで断られたため、依頼者の明示の承認を得て、その操作1回だけにも AIDLC_SKIP_SOURCE_FRESHNESS=1 を付けた。承認の場を開く操作と段を終える操作の両方で、変わったファイルの確かめが行われる。
+- 2026-10-21T05:00:00Z — 段の承認の場を開く操作が、どの単位の source-manifest にも無い 7 つのパスで断られた（.idea/workspace.xml と frontend/test-results/e2e-results.json は git の対象外の IDE と E2E の生成物、PasswordChangePage.test.tsx と H2CompactionByPoolSuspensionIT.java は CI の不安定なテスト2件の直し（b7291d3、単位の外）、vendor/make-you-chic-ui の Dropdown の 3 ファイルは B3 の固定先の更新 a9309c4→b0a1e79 によるサブモジュールの中身の変化）。どれも中身を確かめた変更で、依頼者の明示の承認を得て、承認の場を開く操作1回だけに AIDLC_SKIP_SOURCE_FRESHNESS=1 を付けた（user-admin の学びのとおり）。
+- 2026-10-21T04:00:00Z — U1 のコードのレビューの R-01（承認の場で直す決定）を、段の承認の場の前に直した: U1 の traceability.json の NFR1.1・NFR1.2・NFR1.3・NFR2.4・NFR3.2 を OK から Deferred（Performance Validation）にし、target に場面と台本・設定の置き場を書いた（AC1.3.7 と同じ扱い）。測っていない目標を満たした扱いで読まないため。
 - 2026-10-20T15:30:00Z — U3 のコードのレビューは単位ごとに1回のため、依頼者の決定で B5・B6 は verify と E2E の全体を通してそれぞれ develop に統合し、B7 の後に U3 の全体（B5〜B7）を1回でレビューする（計画の Step 18 の「記録とレビュー」との差）。指摘は直しの Bolt で直す。
 - 2026-10-19T07:00:00Z — B1（U5）が Bolt の計画の1番目から3番目（U1・U4 の後）に移る。計画の理由は「CI を安定させる（不安定なテスト2件が後の Bolt の統合の後の CI で落ちうる）」だったため、B2・B3 の統合の後の CI で2件が落ちる危険が残る。依頼者の決定（今の順のまま）で進め、落ちたら team.md の不安定なテストの決まりで扱う。U1 の code-summary.md にも Bolt の計画との差として書く。
 - 2026-10-19T06:20:00Z — コード生成は単位ごとに U1→U4→U5→U2→U3 の順で進む（単位の依存の順。各単位のコード生成を終えてから次へ）。Bolt の計画の B7（U4 の後半、axe-core 4.14 の引き上げと依頼（5）の取り込み）は U3 の後に置く必要があるため、依頼者の決定（A）で U3 のコード生成の計画の最後の Bolt（B5→B6→B7）に入れ、U4 のコード生成は B3 だけにする。U4 の B7 の分の ID は U3 へ Deferred にする。B1（U5）は U1・U4 の後になる。
@@ -15,6 +18,7 @@
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+- 2026-10-21T05:30:00Z — 承認の場の決定（Approve）: U2 の G6〜G12 と U3 の2回目のレビューの R-09（保存の後に画面を離れると権限の取り上げと定義の更新の知らせも捨てられる。次に一覧を開いたときに読み直す）は、記録の形のまま受け入れ、R-09 は既知の制約とする。既知の制約（G13・G15・U3 の R-04・R-07・詰め直しの道具・切り替えの直後の知らせ）と、make-you-chic-ui の依頼（5）の持ち越し、負荷の目標の Performance Validation での判定を、Build and Test 以降に引き継ぐ。
 - 2026-10-21T03:30:00Z — U3 のレビューの直しの後の verify の1回目で frontend/src/features/auth/logoutIntent.test.tsx が1件落ち、単独 5 回・全件 1 回で再現しなかった。依頼者の決定で不安定と確かめられていない扱いとして記録し、同じテストがもう一度落ちたら直すまで進まない。2回目の verify と E2E の全件は通った。
 - 2026-10-21T02:00:00Z — U3 のコードのレビュー（READY、Major 1・Minor 7）は、依頼者の決定で直せるものを B7 のブランチで直す: R-01（保存・削除の応答が画面を離れた後に届いたときは移らず、テストを足す）、R-05（次の移動を飛ばす印が移動の無いときに下りない）、R-06（no-console を app/login-state・app/work-role にも当てる）、R-08（前提の確かめ (d) のコメント）、R-02（AC4.1.2・AC4.1.4 の持ち主を次の Intent への持ち越しとして書く）、R-03（source-manifest に消した・移したパスを足す）。R-04（1語の氏名の incomplete）と R-07（行のリンクを新しいタブで開くと一覧に戻る）は既知の制約として記録する。直した後に verify と E2E の全件を流し直す。
 - 2026-10-21T00:00:00Z — U3 の B7 で依頼者が決めたこと: make-you-chic-ui の依頼（5）は上流に入っていないため固定先は上げない（自前の ScrollRegion・PageSizeSelect は次の Intent で置き換える）。axe-core 4.14.0（MPL-2.0）を採り、名前の規則の passes の確かめの対象を C1〜C9（区分ごとに場面を1つ。C2・C7 は場面を足した）とする（A9・A10。版は承認の前に作業フォルダで確かめた、N-34）。B6 の compareDecimalText の -0 は B7 で直し、再現の例のテストを同じコミットに入れて verify と E2E の全件を流し直す。verify の1回目の eslintImportRules.test.ts の時間切れと E2E の 185 の (b) orange light md のログインの1件は、手元で再現しないため不安定と確かめられていない扱いとして記録し、同じテストがもう一度落ちたら直すまで進まない。
