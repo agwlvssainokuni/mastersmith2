@@ -25,6 +25,9 @@
 // - 未ログインになったら値と世代を捨てる（D2）。
 // - 提供元が無いときは既定の値（idle、要求を送らない）を返す（D-8。既存の画面のテストへの影響を避ける）。
 // - 応答・要求の値をコンソール・ブラウザの保存に出さない。
+// - 切り替えの前の確かめ（Intent 261016-business-data-views の U3 の D25a）: 画面が registerSwitchGuard で確かめを1つ登録できる
+//   （後の登録が前を置き換える。戻り値は外す関数）。switchTo は、送る前に登録された確かめを呼び、false なら送らずに 'ignored' を
+//   返してトリガーへフォーカスを戻す。確かめの最中の2回目の switchTo も 'ignored'。登録が無ければ今と同じに切り替える。
 import {
   createContext,
   useCallback,
@@ -35,6 +38,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { runAfterModalClosed } from '../../shared/modal/afterModalClosed'
 import { useLoginState } from '../login-state/LoginStateGate'
 import { useReloadTriggers } from '../navigation/useReloadTriggers'
 import { getWorkRole, switchWorkRole, type WorkRoleRef, type WorkRoleState } from './workRoleApi'
@@ -44,6 +48,9 @@ export type WorkRoleStatus = 'idle' | 'loading' | 'ready' | 'reloading' | 'switc
 
 /** 切り替えの結果（'ignored' は送信の最中の2回目を捨てたとき） */
 export type SwitchResult = 'unchanged' | 'switched' | 'rejected' | 'failed' | 'ignored'
+
+/** 切り替えの前の確かめ。false を返せば切り替えない（D25a） */
+export type SwitchGuard = () => Promise<boolean>
 
 /** 作業ロールの API（テストで差し替える） */
 export interface WorkRoleApi {
@@ -74,6 +81,8 @@ export interface WorkRoleContextValue {
   focusWorkRoleSwitcher: () => void
   /** トリガーへフォーカスを移す関数を置く（WorkRoleSwitcher が使う）。戻り値は外す関数 */
   registerSwitcherFocus: (focus: () => void) => () => void
+  /** 切り替えの前の確かめを登録する（登録は1つだけ。後の登録が前を置き換える）。戻り値は外す関数（D25a） */
+  registerSwitchGuard: (guard: SwitchGuard) => () => void
 }
 
 const IDLE: WorkRoleContextValue = {
@@ -86,6 +95,7 @@ const IDLE: WorkRoleContextValue = {
   reload: () => {},
   focusWorkRoleSwitcher: () => {},
   registerSwitcherFocus: () => () => {},
+  registerSwitchGuard: () => () => {},
 }
 
 const WorkRoleContext = createContext<WorkRoleContextValue>(IDLE)
@@ -126,6 +136,8 @@ export function WorkRoleProvider({ api = DEFAULT_API, children }: WorkRoleProvid
   const loggedInRef = useRef(loginState.loggedIn)
   const currentRef = useRef<WorkRoleRef | null>(null)
   const focusRef = useRef<(() => void) | null>(null)
+  const guardRef = useRef<SwitchGuard | null>(null)
+  const guardingRef = useRef(false)
 
   useEffect(() => {
     loggedInRef.current = loginState.loggedIn
@@ -184,11 +196,28 @@ export function WorkRoleProvider({ api = DEFAULT_API, children }: WorkRoleProvid
 
   const switchTo = useCallback(
     async (roleId: number): Promise<SwitchResult> => {
-      if (switchingRef.current) {
+      if (switchingRef.current || guardingRef.current) {
         return 'ignored'
       }
       if (currentRef.current?.roleId === roleId) {
         return 'unchanged'
+      }
+      const guard = guardRef.current
+      if (guard !== null) {
+        guardingRef.current = true
+        let allowed: boolean
+        try {
+          allowed = await guard()
+        } catch {
+          allowed = false
+        } finally {
+          guardingRef.current = false
+        }
+        if (!allowed) {
+          // 確かめの Modal が閉じ終わり、Modal のフォーカスの戻しが済んでから、トリガーへフォーカスを戻す。
+          runAfterModalClosed(() => focusRef.current?.())
+          return 'ignored'
+        }
       }
       switchingRef.current = true
       setSwitching(true)
@@ -225,9 +254,18 @@ export function WorkRoleProvider({ api = DEFAULT_API, children }: WorkRoleProvid
     focusRef.current?.()
   }, [])
 
+  const registerSwitchGuard = useCallback((guard: SwitchGuard): (() => void) => {
+    guardRef.current = guard
+    return () => {
+      if (guardRef.current === guard) {
+        guardRef.current = null
+      }
+    }
+  }, [])
+
   const value = useMemo<WorkRoleContextValue>(() => {
     if (!loginState.loggedIn) {
-      return { ...IDLE, registerSwitcherFocus, focusWorkRoleSwitcher }
+      return { ...IDLE, registerSwitcherFocus, focusWorkRoleSwitcher, registerSwitchGuard }
     }
     let status: WorkRoleStatus
     if (load.phase === 'idle') {
@@ -250,6 +288,7 @@ export function WorkRoleProvider({ api = DEFAULT_API, children }: WorkRoleProvid
       reload,
       focusWorkRoleSwitcher,
       registerSwitcherFocus,
+      registerSwitchGuard,
     }
   }, [
     loginState.loggedIn,
@@ -260,6 +299,7 @@ export function WorkRoleProvider({ api = DEFAULT_API, children }: WorkRoleProvid
     reload,
     focusWorkRoleSwitcher,
     registerSwitcherFocus,
+    registerSwitchGuard,
   ])
 
   return <WorkRoleContext.Provider value={value}>{children}</WorkRoleContext.Provider>

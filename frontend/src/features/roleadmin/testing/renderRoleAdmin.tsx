@@ -17,7 +17,7 @@
 // ロールの管理の画面のテストの補助（テストからだけ使う。画面からは読み込まない。計画 unit-test-instructions.md の 6節）。
 // - renderRoleAdmin: 文言を登録した骨組みの Provider と make-you-chic-ui の Modal の Provider の中に部品を描く
 //   （既存の renderWithProviders、MemoryRouter）。useBlocker を使わない部品（S3・S5 の部品）に使う。
-// - renderRoleAdminDataRouter: useBlocker を使う部品（RoleDetailPage・PermissionPanel・useUnsavedGuard）を、
+// - renderRoleAdminDataRouter: useBlocker を使う部品（RoleDetailPage・PermissionPanel・src/shared/unsaved-guard の useUnsavedGuard）を、
 //   data router（createMemoryRouter＋RouterProvider）で描く。renderWithProviders は変えない（計画 5節 (d)）。
 import { render, type RenderResult } from '@testing-library/react'
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'

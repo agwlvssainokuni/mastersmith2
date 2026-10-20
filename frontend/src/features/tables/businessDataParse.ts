@@ -270,6 +270,25 @@ function parseSortKey(value: unknown): SortKey | undefined {
   return { column: value.column, direction: value.direction }
 }
 
+/**
+ * 入力にするカラム（作成か更新で入力できる詳細のカラム）が、フォームを作る材料を持つか（機能設計の承認の場の U2 R-07・U3 R-09、
+ * D19、U3-NFR4.24）。formPart・required・nullable のどれかが欠ければ形の崩れ（黙って文字の入力にしない）。
+ * 入力にしないカラムの `formPart: null` は正しい形。知らない formPart（`lookup` を含む）は parseValidation が先に弾く。
+ *
+ * @param column 写したカラムの定義
+ */
+export function hasWriteMaterial(column: ColumnDefinition): boolean {
+  if (!column.editableOnCreate && !column.editableOnUpdate) {
+    return true
+  }
+  return (
+    column.formPart !== undefined &&
+    column.formPart !== null &&
+    typeof column.required === 'boolean' &&
+    typeof column.nullable === 'boolean'
+  )
+}
+
 /** 要求したスキーマ名とテーブル名 */
 export interface RequestedTable {
   schemaName: string
@@ -322,7 +341,8 @@ export function parseTableDefinition(
     detailColumns === undefined ||
     searchFields === undefined ||
     sortableColumns === undefined ||
-    defaultSort === undefined
+    defaultSort === undefined ||
+    !detailColumns.every(hasWriteMaterial)
   ) {
     return undefined
   }
@@ -488,4 +508,20 @@ export function parseBusinessProblem(error: unknown): BusinessProblem | undefine
   return code === undefined
     ? { status: apiError.status, fieldErrors, definitionChanged }
     : { status: apiError.status, code, fieldErrors, definitionChanged }
+}
+
+/**
+ * 書き込みの成功の応答を写す（作成の 201 の `RowCreatedResponse`・更新と削除の 200 の `RowWrittenResponse`）。
+ * 作成の `key` は、DETAIL が許され主キーを作れたときだけ来る（U2 の G8・R-03）。`key` が無い・形が違うときは null
+ * （一覧へ戻る。D24）。成功の状態コードを受けた後の写しのため、本文の形が違っても undefined にはしない
+ * （保存したとみなす。計画 4.3 の R-03）。
+ *
+ * @param body 応答の本文（読めなかったときは undefined）
+ */
+export function parseCreatedKey(body: unknown): RowKey | null {
+  if (!isObject(body) || body.key === undefined || body.key === null) {
+    return null
+  }
+  const key = parseKey(body.key)
+  return key === undefined || Object.keys(key).length === 0 ? null : key
 }

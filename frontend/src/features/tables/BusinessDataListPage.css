@@ -34,17 +34,12 @@
   gap: var(--space-2);
 }
 
-.tables-text-button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-primary-subtle-text);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.tables-text-button:focus-visible {
-  box-shadow: var(--focus-ring);
-  outline: none;
+/* 見出しと「作成」の帯（B6。狭い幅では「作成」を見出しの下に回す） */
+.tables-title-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
 }

@@ -26,13 +26,13 @@ import { Link } from 'react-router'
 import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
 import { SharedTreeView } from '../../shared/tree/SharedTreeView'
 import type { SharedTreeLabels } from '../../shared/tree/types'
+import { LeaveConfirmDialog } from '../../shared/unsaved-guard/LeaveConfirmDialog'
+import { useUnsavedGuard } from '../../shared/unsaved-guard/useUnsavedGuard'
 import { roleAdminApi, type RoleAdminApi } from './api/roleAdminApi'
-import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { DSL_ADMIN_PATH } from './paths'
 import { PermissionTable } from './PermissionTable'
 import { treeNodeOf, useRolePermissions } from './useRolePermissions'
 import { useRoleAdminText } from './useRoleAdminText'
-import { useUnsavedGuard } from './useUnsavedGuard'
 import './PermissionPanel.css'
 
 export interface PermissionPanelProps {
@@ -201,6 +201,14 @@ export function PermissionPanel({ roleId, api = roleAdminApi, onMissing }: Permi
         <LeaveConfirmDialog
           onStay={guard.blocked ? guard.stay : state.staySelect}
           onLeave={guard.blocked ? guard.leave : state.leaveSelect}
+          labels={{
+            title: t('roleadmin.leave.title'),
+            body: t('roleadmin.unsaved.leave'),
+            stay: t('roleadmin.leave.stay'),
+            leave: t('roleadmin.leave.go'),
+            close: t('roleadmin.action.close'),
+          }}
+          testIdPrefix="roleadmin-leave"
         />
       )}
     </div>

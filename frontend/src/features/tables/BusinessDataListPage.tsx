@@ -25,7 +25,10 @@
 //   移る前に押した要素（行の番号と、リンクか操作か）を一覧の状態に置き、戻ったらそこへフォーカスを戻す。
 // - 開けないとき（403・404・503 など）は S6 の表示に置き換え、前の行を残さない（F8）。
 // - 定義が変わったと分かったら定義を読み直し、「表示の設定が変わりました」を読み上げにも伝える（F6）。
-import { Alert } from 'make-you-chic-ui'
+// - 作成・更新・削除（B6）: 許す操作に CREATE があれば「作成」（行の無いテーブルの表示にも添える）。行の操作の「更新」は印を
+//   作って更新の画面へ、「削除」は S5 の確かめを開き、削除できたら一覧の状態を保ったまま読み直して Toast で知らせる。
+//   書き込みの 403 は S6 の 403 の表示にする（D3）。
+import { Alert, Button, useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
@@ -43,13 +46,15 @@ import {
 } from './businessDataTypes'
 import { BusinessDataProblemView } from './BusinessDataProblemView'
 import { BusinessDataTable } from './BusinessDataTable'
+import { DeleteConfirmModal } from './DeleteConfirmModal'
 import { displayRange, isPageOverflow, previousPageFor } from './listPaging'
 import { readProblemMessageKey } from './problemMessage'
-import { RestrictionNotice } from './RestrictionNotice'
+import { canWriteWhenConfigured, RestrictionNotice } from './RestrictionNotice'
 import { SearchPanel } from './SearchPanel'
 import { countActiveConditions } from './searchConditions'
-import { useTableRefFromSearch, useWorkRoleKey } from './tableHookSupport'
+import { useForbiddenFollowUp, useTableRefFromSearch, useWorkRoleKey } from './tableHookSupport'
 import { localizedName, useValueTexts } from './tablesText'
+import { useRowDeleteFlow } from './useRowDeleteFlow'
 import { useRowSearch } from './useRowSearch'
 import { useTableDefinition } from './useTableDefinition'
 import './tablesCommon.css'
@@ -74,6 +79,23 @@ export function BusinessDataListPage() {
   const rows = useRowSearch(ref, definition, onDefinitionStale)
   const { listState, setListState } = rows
   const sectionRef = useRef<HTMLElement | null>(null)
+  const toast = useToast()
+  const followUp = useForbiddenFollowUp()
+  const [writeForbidden, setWriteForbidden] = useState(false)
+  const { retry: reloadRows } = rows
+  const deletion = useRowDeleteFlow({
+    ref: ref ?? { schemaName: '', tableName: '' },
+    definition,
+    onDeleted: () => {
+      reloadRows()
+      toast.show({ message: t('tables.toast.deleted'), variant: 'success' })
+    },
+    onForbidden: () => {
+      setWriteForbidden(true)
+      followUp()
+    },
+    onDefinitionStale,
+  })
 
   const tableName =
     definition === null ? '' : localizedName(definition.displayName, language, definition.table)
@@ -101,6 +123,35 @@ export function BusinessDataListPage() {
     [rows.page, ref, roleId, listState, itemId, navigate],
   )
 
+  const onRowAction = useCallback(
+    (index: number, action: 'update' | 'delete', label: string) => {
+      const item = rows.page?.items[index]
+      if (ref === null || item === undefined || item.key === null || listState === null) {
+        return
+      }
+      if (action === 'delete') {
+        deletion.open({ key: item.key, label, index })
+        return
+      }
+      const rowToken = putRowKey(item.key, roleId)
+      saveListState(ref, roleId, { ...listState, returnFocus: { index, via: 'actions' } })
+      void navigate(toTablePath('edit', ref, itemId), { state: { rowToken } })
+    },
+    [rows.page, ref, roleId, listState, itemId, navigate, deletion],
+  )
+
+  const canCreate = definition !== null && definition.operations.includes('CREATE') && ref !== null
+  const createButton = canCreate ? (
+    <Button
+      variant="primary"
+      size="sm"
+      onClick={() => void navigate(toTablePath('new', ref, itemId))}
+      data-testid="tables-create"
+    >
+      {t('tables.list.create')}
+    </Button>
+  ) : null
+
   // 詳細から戻ったら、移る前に押した行のリンクか「操作」のトリガーへフォーカスを戻す（1回だけ）。
   const returnFocus = listState?.returnFocus
   const pageReady = rows.status === 'ready' && rows.page !== null
@@ -122,7 +173,12 @@ export function BusinessDataListPage() {
   let body: React.JSX.Element
   let announcement = ''
   let busy = false
-  if (definitionState.status === 'problem' && definitionState.failure !== null) {
+  if (writeForbidden) {
+    announcement = t('tables.problem.writeForbiddenDelete')
+    body = (
+      <BusinessDataProblemView kind="forbidden" messageKey="tables.problem.writeForbiddenDelete" />
+    )
+  } else if (definitionState.status === 'problem' && definitionState.failure !== null) {
     announcement = t(readProblemMessageKey(definitionState.failure.kind))
     body = (
       <BusinessDataProblemView
@@ -190,6 +246,7 @@ export function BusinessDataListPage() {
         content = (
           <div className="tables-empty" data-testid="tables-empty-table">
             <p className="tables-text">{t('tables.list.empty.table')}</p>
+            {createButton}
           </div>
         )
       }
@@ -212,18 +269,23 @@ export function BusinessDataListPage() {
             onSortChange={(sort: SortKey | null) => change({ sort, page: 1 })}
             onPageChange={(next: number) => change({ page: next })}
             onOpenRow={onOpenRow}
+            onRowAction={onRowAction}
           />
         </ScrollRegion>
       )
     }
     body = (
       <>
-        <h1 className="tables-heading" data-testid="tables-heading">
-          {tableName}
-        </h1>
+        <div className="tables-title-bar">
+          <h1 className="tables-heading" data-testid="tables-heading">
+            {tableName}
+          </h1>
+          {createButton}
+        </div>
         <RestrictionNotice
           reason={definition.restrictionReason}
           writeConfigured={definition.writeConfigured}
+          writeAllowed={canWriteWhenConfigured(definition)}
         />
         {rows.notice !== null && (
           <Alert variant="warning">{t(readProblemMessageKey(rows.notice.kind))}</Alert>
@@ -266,6 +328,22 @@ export function BusinessDataListPage() {
       <p className="tables-visually-hidden" aria-live="polite" data-testid="tables-live">
         {busy ? '' : announcement}
       </p>
+      {deletion.target !== null && definition !== null && (
+        <DeleteConfirmModal
+          title={t('tables.delete.title', { table: tableName, label: deletion.target.label })}
+          phase={deletion.phase}
+          busy={deletion.busy}
+          slow={deletion.slow}
+          message={deletion.message}
+          unknown={deletion.unknown}
+          onCheck={() => {
+            deletion.cancel()
+            reloadRows()
+          }}
+          onCancel={deletion.cancel}
+          onConfirm={deletion.confirm}
+        />
+      )}
     </section>
   )
 }

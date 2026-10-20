@@ -32,6 +32,7 @@ import {
   WIDE_TABLE,
   wideDefinition,
   wideNavigation,
+  writableDefinition,
 } from './businessDataFixtures'
 import { FRAME_SCHEMA, LEAF_TABLE } from './navTreeFixtures'
 import { BUSINESS_VALUE_MARK } from './secretValues'
@@ -49,6 +50,19 @@ describe('businessDataFixtures', () => {
     expect(
       parseTableDefinition(wire(wide), { schemaName: WIDE_SCHEMA, tableName: WIDE_TABLE }),
     ).toEqual(wide)
+  })
+
+  it('makes a writable definition that passes the parser with the write material (B6)', () => {
+    const writable = writableDefinition(wideDefinition(8, 11))
+    expect(writable.operations).toEqual(['LIST', 'DETAIL', 'CREATE', 'UPDATE', 'DELETE'])
+    expect(
+      parseTableDefinition(wire(writable), { schemaName: WIDE_SCHEMA, tableName: WIDE_TABLE }),
+    ).toEqual(writable)
+    expect(writable.detailColumns[0]).toMatchObject({
+      editableOnCreate: true,
+      editableOnUpdate: false,
+      required: true,
+    })
   })
 
   it('passes the page and detail parsers and keeps NULL rows', () => {

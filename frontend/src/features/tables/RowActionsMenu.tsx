@@ -20,14 +20,15 @@
 //   busy のときは末尾に「（処理中）」を足し、Button を loading にする（メニューは開かない。フォーカスは残る）。
 // - data-testid は Dropdown を包む span に tables-row-actions-r<n>（ページの中の番号）で置く。Dropdown はトリガーの
 //   data-testid を上書きするため、トリガーには置けない。行の値・主キーを data-testid・id に入れない（U4 の R-02）。
-// - 項目は許す操作だけ。B5 は「詳細」だけで、B6 で「更新」「削除」を足す。画面で出し分けるのは表示だけで、判定はサーバー。
+// - 項目は許す操作だけ（「詳細」「更新」「削除」。B6 で更新・削除を足した）。画面で出し分けるのは表示だけで、判定はサーバー。
+//   サーバーは書き込みの設定が無いとき・ビューのとき・入力できるカラムが無いときに UPDATE・DELETE を返さない（U2）。
 import { Button, Dropdown, type MenuItem } from 'make-you-chic-ui'
 import { useTranslation } from 'react-i18next'
 import { rowActionsName } from '../../shared/row-actions/rowActionsName'
 import type { Operation } from './businessDataTypes'
 
 /** 行の操作の項目 */
-export type RowAction = 'detail'
+export type RowAction = 'detail' | 'update' | 'delete'
 
 export interface RowActionsMenuProps {
   /** ページの中の行の番号（data-testid の末尾） */
@@ -44,7 +45,17 @@ export interface RowActionsMenuProps {
 
 /** 許す操作から出す項目 */
 export function rowActionItems(operations: readonly Operation[]): RowAction[] {
-  return operations.includes('DETAIL') ? ['detail'] : []
+  if (!operations.includes('DETAIL')) {
+    return []
+  }
+  const actions: RowAction[] = ['detail']
+  if (operations.includes('UPDATE')) {
+    actions.push('update')
+  }
+  if (operations.includes('DELETE')) {
+    actions.push('delete')
+  }
+  return actions
 }
 
 /** 行の「操作」 */

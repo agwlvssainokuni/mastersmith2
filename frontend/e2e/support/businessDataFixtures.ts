@@ -188,6 +188,24 @@ export function wideDefinition(columns: number, workRoleId: number | null): Tabl
   return definitionOf(WIDE_SCHEMA, WIDE_TABLE, { ...WIDE_LABEL }, list, workRoleId)
 }
 
+/**
+ * 書き込みのできる定義にする（Intent 261016-business-data-views の U3 の B6。185 の作成・更新・削除の状態と formShown100）。
+ * 許す操作をすべてにし、書き込みの設定ありにする。主キー（code）は作成だけで入力し必須、ほかのカラムは作成と更新で入力する。
+ */
+export function writableDefinition(definition: TableDefinition): TableDefinition {
+  const editable = (column: ColumnDefinition): ColumnDefinition =>
+    column.column === 'code'
+      ? { ...column, editableOnCreate: true, formPart: 'text', required: true, nullable: false }
+      : { ...column, editableOnCreate: true, editableOnUpdate: true, formPart: 'text' }
+  return {
+    ...definition,
+    operations: ['LIST', 'DETAIL', 'CREATE', 'UPDATE', 'DELETE'],
+    writeConfigured: true,
+    listColumns: definition.listColumns.map(editable),
+    detailColumns: definition.detailColumns.map(editable),
+  }
+}
+
 /** 1行の値（7 行ごとに3列目を NULL にする。値は目印を含む） */
 function rowValues(definition: TableDefinition, number: number): Record<string, string | null> {
   return Object.fromEntries(

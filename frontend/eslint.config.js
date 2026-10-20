@@ -196,6 +196,7 @@ const businessDataConsoleRule = {
     'src/shared/scroll-region/**/*.{ts,tsx}',
     'src/shared/page-size/**/*.{ts,tsx}',
     'src/shared/null-value/**/*.{ts,tsx}',
+    'src/shared/unsaved-guard/**/*.{ts,tsx}',
   ],
   ignores: TEST_FILES,
   rules: {

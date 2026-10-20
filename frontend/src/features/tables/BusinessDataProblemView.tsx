@@ -36,6 +36,8 @@ export interface BusinessDataProblemViewProps {
   onRetry?: () => void
   /** 一覧の道（詳細から一覧へ戻る行き先。一覧の画面では渡さない） */
   listPath?: string
+  /** 見出しの文の鍵を替える（書き込みの 403 の tables.problem.writeForbidden など。B6 の D3） */
+  messageKey?: string
 }
 
 const RETRYABLE: ReadonlySet<ReadProblemKind> = new Set([
@@ -54,10 +56,15 @@ const BACK_TO_LIST: ReadonlySet<ReadProblemKind> = new Set([
 ])
 
 /** 開けない・つながらないときの表示 */
-export function BusinessDataProblemView({ kind, onRetry, listPath }: BusinessDataProblemViewProps) {
+export function BusinessDataProblemView({
+  kind,
+  onRetry,
+  listPath,
+  messageKey,
+}: BusinessDataProblemViewProps) {
   const { t } = useTranslation()
   const workRole = useWorkRole()
-  const message = t(readProblemMessageKey(kind))
+  const message = t(messageKey ?? readProblemMessageKey(kind))
   const showList = BACK_TO_LIST.has(kind) && listPath !== undefined
   return (
     <div className="tables-problem" data-testid="tables-problem">

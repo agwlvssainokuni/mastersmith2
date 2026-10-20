@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 //
-// 業務データの読み取りの API のテスト（Intent 261016-business-data-views の U3 の L1、計画 Step 5、U3-NFR1.9・4.23・4.24）。
+// 業務データの読み取りと書き込みの API のテスト（Intent 261016-business-data-views の U3 の L1、計画 Step 5・27、U3-NFR1.9・4.23・4.24）。
 // fetch を差し替えて ApiClient（apiRequest）を通す。
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { registerAuthHandlers, resetApiClient } from '../../shared/api-client/apiClient'
 import { utf8ByteLength } from '../../shared/validation/codePoints'
 import {
   BUSINESS_DATA_PATHS,
+  createRow,
+  deleteRow,
   getDefinition,
   getRow,
   postWithinLimit,
   searchRows,
+  updateRow,
 } from './businessDataApi'
-import { MAX_READ_BODY_BYTES } from './businessDataLimits'
+import { MAX_READ_BODY_BYTES, MAX_WRITE_BODY_BYTES } from './businessDataLimits'
 import {
   SAMPLE_DEFINITION_ID,
   SAMPLE_REF,
@@ -177,5 +180,101 @@ describe('businessDataApi', () => {
     })
     fetchMock.mockRejectedValueOnce(new TypeError('offline'))
     await expect(getDefinition(SAMPLE_REF)).rejects.toEqual({ kind: 'network' })
+  })
+})
+
+describe('businessDataApi writes', () => {
+  it('creates a row with the definition id and the changed values in the body', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(201, { definitionId: SAMPLE_DEFINITION_ID, key: { code: 'N/1' } }),
+    )
+    const outcome = await createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { code: 'N/1', note: null })
+    expect(outcome).toEqual({ kind: 'saved', key: { code: 'N/1' } })
+    const { path, init } = lastCall()
+    expect(path).toBe(BUSINESS_DATA_PATHS.rows)
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({
+      schema: 'shop',
+      table: 'item',
+      definitionId: SAMPLE_DEFINITION_ID,
+      values: { code: 'N/1', note: null },
+    })
+  })
+
+  it('updates with PATCH and deletes with POST to the delete path', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { definitionId: SAMPLE_DEFINITION_ID }))
+    await expect(
+      updateRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { code: 'A' }, { name: '' }),
+    ).resolves.toEqual({ kind: 'saved', key: null })
+    expect(lastCall().init.method).toBe('PATCH')
+    expect(lastCall().path).toBe(BUSINESS_DATA_PATHS.rows)
+    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
+      key: { code: 'A' },
+      values: { name: '' },
+    })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { definitionId: SAMPLE_DEFINITION_ID }))
+    await expect(deleteRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { code: 'A' })).resolves.toEqual({
+      kind: 'saved',
+      key: null,
+    })
+    expect(lastCall().path).toBe(BUSINESS_DATA_PATHS.delete)
+    expect(lastCall().init.method).toBe('POST')
+  })
+
+  it('splits failures into not saved and unknown without throwing', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { status: 409, code: 'BUSINESS_SAVE_REJECTED' }),
+    )
+    await expect(createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, {})).resolves.toMatchObject({
+      kind: 'not-saved',
+      problem: { status: 409, code: 'BUSINESS_SAVE_REJECTED' },
+    })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(503, { status: 503, code: 'BUSINESS_TARGET_DB_TIMEOUT' }),
+    )
+    await expect(createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, {})).resolves.toEqual({
+      kind: 'unknown',
+    })
+    fetchMock.mockResolvedValueOnce(new Response('<html>', { status: 502 }))
+    await expect(updateRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { code: 'A' }, {})).resolves.toEqual({
+      kind: 'unknown',
+    })
+    fetchMock.mockRejectedValueOnce(new TypeError('offline'))
+    await expect(deleteRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { code: 'A' })).resolves.toEqual({
+      kind: 'unknown',
+    })
+    fetchMock.mockResolvedValueOnce(
+      new Response('<html>login</html>', { status: 201, headers: { 'Content-Type': 'text/html' } }),
+    )
+    await expect(createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, {})).resolves.toEqual({
+      kind: 'unknown',
+    })
+  })
+
+  it('does not send a write body over its limit and reports it as not saved', async () => {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(jsonResponse(201, { definitionId: SAMPLE_DEFINITION_ID })),
+    )
+    const shell = utf8ByteLength(
+      JSON.stringify({
+        schema: 'shop',
+        table: 'item',
+        definitionId: SAMPLE_DEFINITION_ID,
+        values: { v: '' },
+      }),
+    )
+    const exact = 'a'.repeat(MAX_WRITE_BODY_BYTES - shell)
+    await expect(createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { v: exact })).resolves.toEqual({
+      kind: 'saved',
+      key: null,
+    })
+    const calls = fetchMock.mock.calls.length
+    await expect(
+      createRow(SAMPLE_REF, SAMPLE_DEFINITION_ID, { v: `${exact}𠮷` }),
+    ).resolves.toMatchObject({
+      kind: 'not-saved',
+      problem: { status: 413, code: 'PAYLOAD_TOO_LARGE' },
+    })
+    expect(fetchMock.mock.calls.length).toBe(calls)
   })
 })

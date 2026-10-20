@@ -18,7 +18,7 @@
 // 12節 D-4・D-8）。API は偽物に差し替え、遅れた応答は解決を手で決める約束で作る。
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   fakeProvider,
@@ -28,6 +28,7 @@ import {
 import {
   ACCOUNTING,
   deferred,
+  type Deferred,
   fakeWorkRoleApi,
   NavigateButton,
   SALES,
@@ -232,5 +233,114 @@ describe('WorkRoleProvider', () => {
     await waitFor(() => expect(status()).toHaveTextContent('idle'))
     expect(screen.getByTestId('current')).toHaveTextContent('none')
     expect(screen.getByTestId('roles')).toBeEmptyDOMElement()
+  })
+})
+
+/** 切り替えの前の確かめを登録する画面（業務データの作成・更新の画面と同じ使い方。D25a） */
+function GuardProbe({ answers }: { answers: Deferred<boolean>[] }) {
+  const role = useWorkRole()
+  const [registered, setRegistered] = useState(false)
+  const unregister = useRef<() => void>(() => {})
+  const index = useRef(0)
+  return (
+    <div>
+      <output data-testid="registered">{String(registered)}</output>
+      <button
+        type="button"
+        onClick={() => {
+          unregister.current = role.registerSwitchGuard(() => {
+            const answer = answers[Math.min(index.current, answers.length - 1)]
+            index.current += 1
+            return answer.promise
+          })
+          setRegistered(true)
+        }}
+      >
+        register
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          unregister.current()
+          setRegistered(false)
+        }}
+      >
+        unregister
+      </button>
+    </div>
+  )
+}
+
+function renderWithGuard(api: WorkRoleApi, answers: Deferred<boolean>[]) {
+  return renderWithProviders(
+    <WorkRoleProvider api={api}>
+      <Probe />
+      <GuardProbe answers={answers} />
+    </WorkRoleProvider>,
+    { provider: fakeProvider({ loggedIn: true, admin: false }) },
+  )
+}
+
+describe('WorkRoleProvider switch guard (D25a)', () => {
+  it('asks the registered guard first and does not switch when it stays', async () => {
+    const user = userEvent.setup()
+    const stay = deferred<boolean>()
+    const { api, calls } = fakeWorkRoleApi([TWO, AFTER_SWITCH])
+    renderWithGuard(api, [stay])
+    await waitFor(() => expect(status()).toHaveTextContent('ready'))
+    await user.click(screen.getByRole('button', { name: 'register' }))
+    await user.click(screen.getByRole('button', { name: 'to-accounting' }))
+    // 確かめの最中の2回目は捨てる。
+    await user.click(screen.getByRole('button', { name: 'to-accounting' }))
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('ignored'))
+    act(() => stay.resolve(false))
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(calls.put).toEqual([])
+    expect(screen.getByTestId('current')).toHaveTextContent('営業')
+    expect(screen.getByTestId('revision')).toHaveTextContent('0')
+  })
+
+  it('switches when the guard leaves', async () => {
+    const user = userEvent.setup()
+    const leave = deferred<boolean>()
+    const { api, calls } = fakeWorkRoleApi([TWO, AFTER_SWITCH])
+    renderWithGuard(api, [leave])
+    await waitFor(() => expect(status()).toHaveTextContent('ready'))
+    await user.click(screen.getByRole('button', { name: 'register' }))
+    await user.click(screen.getByRole('button', { name: 'to-accounting' }))
+    act(() => leave.resolve(true))
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('switched'))
+    expect(calls.put).toEqual([2])
+  })
+
+  it('switches without asking after the guard is removed, and asks nothing for the current role', async () => {
+    const user = userEvent.setup()
+    const never = deferred<boolean>()
+    const { api, calls } = fakeWorkRoleApi([TWO, AFTER_SWITCH])
+    renderWithGuard(api, [never])
+    await waitFor(() => expect(status()).toHaveTextContent('ready'))
+    await user.click(screen.getByRole('button', { name: 'register' }))
+    await user.click(screen.getByRole('button', { name: 'to-sales' }))
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('unchanged'))
+    await user.click(screen.getByRole('button', { name: 'unregister' }))
+    await user.click(screen.getByRole('button', { name: 'to-accounting' }))
+    await waitFor(() => expect(screen.getByTestId('result')).toHaveTextContent('switched'))
+    expect(calls.put).toEqual([2])
+  })
+
+  it('returns a removal function from the default value without a provider', async () => {
+    const removals: (() => void)[] = []
+    function Bare() {
+      const role = useWorkRole()
+      useEffect(() => {
+        removals.push(role.registerSwitchGuard(() => Promise.resolve(false)))
+      }, [role])
+      return null
+    }
+    render(<Bare />)
+    await waitFor(() => expect(removals).toHaveLength(1))
+    expect(typeof removals[0]).toBe('function')
   })
 })

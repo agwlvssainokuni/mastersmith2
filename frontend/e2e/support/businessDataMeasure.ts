@@ -74,7 +74,9 @@ export async function installBusinessDataDone(
         document.activeElement?.getAttribute('data-testid') === 'tables-detail-heading' &&
         document.querySelectorAll('[data-testid^="tables-detail-c"]').length === values.detailItems,
       formShown100: () =>
-        document.querySelectorAll('[data-testid^="tables-form-c"]').length === values.detailItems,
+        notBusy() &&
+        document.querySelectorAll('[data-testid^="tables-form-field-c"]').length ===
+          values.detailItems,
     }
     ;(window as unknown as { __bizDone: Record<string, () => boolean> }).__bizDone = done
   }, params)

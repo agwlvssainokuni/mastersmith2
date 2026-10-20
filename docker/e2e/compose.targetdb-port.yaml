@@ -1,0 +1,26 @@
+# Copyright 2026 agwlvssainokuni
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# E2E（./gradlew e2eTest）のあいだだけ、見本の PostgreSQL（targetdb-postgres）を PC の 127.0.0.1 に開ける上乗せのファイル。
+# compose.yaml は変えない（既定ではポートを開けない）。ポートを足すとコンテナは作り直しになるが、ボリュームは残る。
+#   開ける: docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml \
+#             --profile targetdb-postgres up -d targetdb-postgres
+#   閉じる: docker compose --profile targetdb-postgres up -d targetdb-postgres（上乗せ無しで作り直す）
+# 番号は E2E_TARGETDB_PORT で替えられる（既定 15432）。127.0.0.1 だけに開け、ほかの端末からは届かない。
+# 公開の番号から来る接続はコンテナの中で bridge の gateway から来るため、pg_hba.conf の最後の行（scram-sha-256）に当たる。
+# 開けた直後に、誤ったパスワードの接続が拒まれること（trust に当たらないこと）を確かめる（e2eTest の前提の確かめ (d) も同じ）。
+services:
+  targetdb-postgres:
+    ports:
+      - "127.0.0.1:${E2E_TARGETDB_PORT:-15432}:5432"

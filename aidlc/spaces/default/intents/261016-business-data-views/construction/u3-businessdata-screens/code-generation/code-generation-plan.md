@@ -435,7 +435,7 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
   - 指揮役がコードのレビューを依頼する。レビュー役には、git・gradlew・npm・docker を使わず Read だけで確かめるよう最初から伝える（`project.md` の学び）。指摘の扱いを依頼者に諮る。
 - [ ] **Step 19: コミットの提案と積み（B5、依頼者の承認）**
   - 7節の B5 の区切りで提案し、承認を得てから積む。区切りごとに `npm run typecheck`（と `npm run lint`）が通ることを、区切りの順に重ねて確かめる（`project.md` の学び）。コミットの提案は、確かめたい点の問いとは別に、積む前に必ず尋ねる。
-- [ ] **Step 20: 統合（B5、依頼者の承認の後）**
+- [x] **Step 20: 統合（B5、依頼者の承認の後）**
   - 統合の前に `aidlc/` の未コミットの変更（監査ログを含む）をコミットしておく（`project.md` の学び）。
   - Step 15 の verify と Step 16 の E2E が通った状態で、`develop` へ squash で1コミットとして戻す。件名は「業務データの一覧と詳細の画面を足す（Intent 261016-business-data-views、B5）」の形。統合を終えたブランチは消す。
   - push は依頼者が行う。B6 に入る前に、B5 の統合の後の CI の結果を試行ごとに確かめる。
@@ -444,73 +444,73 @@ U2 の D1〜D4・G5・G6・G8・G12・G13・R-03 で、画面が受ける code �
 
 #### 準備と見本の PG
 
-- [ ] **Step 21: 作業の準備と走らせ方の確かめ（B6）**
+- [x] **Step 21: 作業の準備と走らせ方の確かめ（B6）**
   - Step 1 と同じ確かめ（`aidlc/` の未コミットの変更、生成物、B5 の統合の後の CI）。`develop` から `feature/261016-business-data-views-b6` を作る。
   - 走らせ方の確かめ: `unit-test-instructions.md` の 3.1 の B6 のコマンドで、移す roleadmin のテスト・作業ロールのテスト・B5 の業務データのテストが通ることを確かめ、件数を記録する。
   - 変更の前の入口と chunk の gzip を記録する（P-6）。
-- [ ] **Step 22: 上乗せの compose と、開けた直後の確かめ（D1 が A のとき。A4）**
+- [x] **Step 22: 上乗せの compose と、開けた直後の確かめ（D1 が A のとき。A4）**
   - `docker/e2e/compose.targetdb-port.yaml` を書く。開ける前に依頼者に一言伝える。
   - 上乗せを付けて見本の PG を作り直し、すぐに誤ったパスワードで `127.0.0.1:15432` に入れず拒まれることを確かめる（4.4 の R-02。見本の PG と同じイメージ・digest の `docker run --rm` の一時の psql か、ホストの psql。値は表示しない）。拒まれなければ（`trust` に当たれば）、すぐに上乗せ無しで作り直して閉じ、生成を止めて Q1 を諮り直す。
   - 配備したアプリを動かしたまま作り直し、作り直しの後に配備したアプリのヘルスと業務データの一覧の API が戻ることを確かめる（4.4 の R-05。確かめられなければ未確認として記録する）。
-- [ ] **Step 23: 見本の PG の TEMPORARY の取り上げ（手で1回。A5）**
+- [x] **Step 23: 見本の PG の TEMPORARY の取り上げ（手で1回。A5）**
   - SQL が U2 の README と `docker/targetdb/postgres/03-writer-account.sh` の取り上げと同じであることを読み取りで確かめ、依頼者に見せて承認を得てから、`docker compose exec -T targetdb-postgres psql -U target_admin -d business -v ON_ERROR_STOP=1` で流す。共有の見本の PG（配備したアプリも使う）を変える操作であることを記録に書く。
   - `has_database_privilege('public','business','TEMP')` が偽になったことを確かめる（値を表示しない形で）。
-- [ ] **Step 24: E2E のタスクと Playwright の設定（Contract の Environment/build configuration を先に行う）**
+- [x] **Step 24: E2E のタスクと Playwright の設定（Contract の Environment/build configuration を先に行う）**
   - 順の理由: 見本の PG を前提にする仕組みは、安全の確かめ（Step 22・23）の直後に入れ、以降の Step の E2E がこの前提で流れるようにする（4.4 の R-01・R-02）。画面の層の前に置くのは Contract の baseline の順と違うが、methodology と各層の「実装 → テスト」の順は変えない。
   - `build.gradle.kts` の `e2eTest`: 前提の確かめ（Mailpit、見本の PG の (a) `docker compose --profile targetdb-postgres exec -T targetdb-postgres pg_isready`・(b) `127.0.0.1:${E2E_TARGETDB_PORT:-15432}` に TCP で届くか・(c) PUBLIC と作る書き込みのロールに TEMPORARY が無いこと・(d) 誤ったパスワードで拒まれること）、前の残りの片付け（接頭辞の LIKE、`pg_terminate_backend` は接頭辞のロールの接続だけ）、準備（実行の印、`e2e_biz_<UTC の年月日時分秒>_<16進 8 文字>`、`businessDataSchema.sql`、2つのロール（`VALID UNTIL` 2 時間、LOGIN、乱数のパスワード）、付与。`-v ON_ERROR_STOP=1`・`-1`、値は標準入力の `\set`）、値の受け渡し（`Exec` の environment。`webServer.env` に置かない）、`-Pe2e.files`、`finalizedBy` の片付けのタスク（接続を切る → `DROP OWNED BY` → `DROP ROLE` → `DROP SCHEMA … CASCADE`、消した件数だけをログに出す）。名前は Gradle の同じビルドの中で渡し、パスワードは片付けに渡さない（R-04）。psql の誤りの出力の扱いは D8。
   - `frontend/e2e/support/businessDataSchema.sql`（表1つ・架空の行 21 件以上）。
   - `playwright.config.ts`: `SECRET_ENV_NAMES` に4つの名前を足す。対象DB の環境変数が無いときは設定の読み込みで止める（Q7: A）。接続先の値（`127.0.0.1:15432`）を探す対象に入れるかは、D8 と同じ記録に書く（入れる見込み）。
   - 確かめ（この Step の中で流す）: 前提の (a)〜(d) をそれぞれ満たさない形で `./gradlew e2eTest -Pe2e.files=e2e/010-skeleton.e2e.ts` を流し、起動の手順を示して止まること、満たした形で通り片付けの後に `e2e_biz_*` と `mastersmith_e2e_*` が 0 件になること。
-- [ ] **Step 25: 040 の書き換え**
+- [x] **Step 25: 040 の書き換え**
   - 照合の期待を `dsl-warning-group-SCHEMA_MISMATCH` に替え、21行の説明を直し、PG の読み取りが失敗したときの揺れの1行を足す（4.4 の R-07）。`./gradlew e2eTest -Pe2e.files=e2e/040-dsl-admin.e2e.ts` で通ることを確かめる。
 
 #### 書き込みの型・API・結果の分け方（Contract の Data model と Repository / data access）
 
-- [ ] **Step 26: 書き込みの写し・API・結果の分け方を書く**
+- [x] **Step 26: 書き込みの写し・API・結果の分け方を書く**
   - 写しの関数に、入力にするカラムの `formPart`・`nullable`・`required` の欠けと `lookup`・知らない値の形の崩れを足す（4.1）。`parseWriteResult`（作成の `key` の有無）。
   - `businessDataApi.ts` に `createRow`・`updateRow`・`deleteRow`（4,194,304・65,536 バイトの上限。`definitionId` を必ず送る）。
   - `writeOutcome.ts`: 書き込みの結果を「保存した」「保存されていない（code と文）」「分からない」に分ける純粋な関数（4.3 の R-01・R-03 の表。今の `apiRequest` の `networkError()` は、書き込みの呼び出しだけ「分からない」に分ける）。
-- [ ] **Step 27: 書き込みの写し・API・結果の分け方のテストを書いて流す**
+- [x] **Step 27: 書き込みの写し・API・結果の分け方のテストを書いて流す**
   - 例のテスト（各 code・状態コード・`content-type`・本文なしの 2xx・HTML の 200・502・504・code の無い 503・知らない code）と性質ベースのテスト（任意の応答で、既知の code が読めないかぎり「保存されていない」にならない）。
 
 #### 純粋な関数（Contract の Business logic）
 
-- [ ] **Step 28: 変更の比べ・画面の検証・書き込みの文を書く**
+- [x] **Step 28: 変更の比べ・画面の検証・書き込みの文を書く**
   - `formDiff.ts`（D20。初めの値と今の値の比べ、作成では空のカラムを送らない、更新で空にした文字の型は `""`・ほかは `null`、`masked` は入れたときだけ、真偽値の NULL は変えなければ送らない、`DATETIME_TZ` は送るときに `+00:00`、日時は秒まで）、`formValidation.ts`（D21。必須・長さ（コードポイント）・桁・範囲・型・選択肢、10,000 字と DSL の短い方。`pattern` は画面で当てない）、`problemMessage.ts` の書き込みの code（4.6 の表、`field` が空の誤りはフォームの上、413、D3 が A なら `tables.problem.writeForbidden`）。
-- [ ] **Step 29: 純粋な関数のテストを書いて流す**
+- [x] **Step 29: 純粋な関数のテストを書いて流す**
   - 例のテストと性質ベースのテスト: 変えないカラムは本文に入らない、BIGINT・DECIMAL の桁を失わない、上限ちょうどは通り +1 字は誤り（サロゲートの組を含む）、`field` が空の誤りで `needsDefinitionReload` が偽。失敗のときの乱数の種を記録する。
 
 #### 共通の部品と骨組みの口（Contract の Frontend behavior の shared と骨組み）
 
-- [ ] **Step 30: 未保存の確かめの移し替えと、作業ロールの確かめの口を書く**
+- [x] **Step 30: 未保存の確かめの移し替えと、作業ロールの確かめの口を書く**
   - `src/shared/unsaved-guard/useUnsavedGuard.ts`・`LeaveConfirmDialog.tsx`（roleadmin から移す。文言は props、CSS は同じ場所）。足すもの: `dirtyRef`（判定の関数は ref を読む）、`markClean()`（「変更なし」にし、`beforeunload` を外し、次の移動1回だけ確かめを飛ばす）、任意の引数の入力の版の数、旗を下ろす3つの条件、副作用の無い判定の関数、`markClean()` の後の入力の変更で `beforeunload` を付け直す（4.3 の R-08、U3-NFR7.11）。roleadmin の `PermissionPanel.tsx`・`testing/renderRoleAdmin.tsx` の import と文言の渡し方を変える（A3）。
   - `app/work-role/WorkRoleProvider.tsx`・`WorkRoleSwitcher.tsx` に `registerSwitchGuard`（登録は1つ、後の登録が前を置き換える、外す関数を返す、`switchTo` の前に呼ぶ、拒まれたら `'ignored'` でトリガーへフォーカスを戻す、既定の値にも足す）。
-- [ ] **Step 31: 共通の部品と骨組みのテストを書いて流す**
+- [x] **Step 31: 共通の部品と骨組みのテストを書いて流す**
   - 移した `useUnsavedGuard.test.tsx`・`LeaveConfirmDialog.test.tsx`（roleadmin の今の振る舞いのまま通る）と足すテスト: `markClean()` の後の道の移動が止まらない、その後に変更を作ると次の移動が止まる、呼ばなければ今どおり止まる、`markClean()` で `beforeunload` が外れ入力の変更で戻る、道の変わらない移動の後に変更を作ると次の移動が止まる、実物の data router で判定が何回呼ばれても旗が1回の移動で尽きない。`PermissionPanel.test.tsx`・`WorkRoleProvider.test.tsx`・`WorkRoleSwitcher.test.tsx`（登録の有無・留まる・離れる）・`BusinessNavigationProvider.test.tsx` を流す。
 
 #### フック・画面（Contract の Frontend behavior）
 
-- [ ] **Step 32: 書き込みのフックと、作成・更新・削除の画面を書く**
+- [x] **Step 32: 書き込みのフックと、作成・更新・削除の画面を書く**
   - `useRowWrite`（`create`・`update`・`remove`・`saving`・`slow`。`useSlowNotice` の 5 秒）、`BusinessDataFormPage`（D19〜D25a。`formPart` ごとの部品、BIGINT・DECIMAL は文字の入力、`aria-required` を自分で付ける、誤りのまとめ（`role="alert"`）へフォーカス、入力は消さない、入力に `autocomplete="off"`（password は `new-password`）、保存の成功で `markClean()` → 移動 → Toast、作業ロールの確かめの登録と外し、「分からない」の後の画面は D4、作業ロールを切り替えた後は D2、書き込みの 403 は D3、F6 で入力できなくなったカラムの変更を捨てて促す）、`DeleteConfirmModal`（`role="alertdialog"`・`closeOnBackdropClick={false}`・はじめのフォーカスは「やめる」、見出しは行のラベル、失敗は Modal の中）、`RowActionsMenu` と詳細の画面に「更新」「削除」（`operations` に従う）、`registration.ts` に `/tables/new`・`/tables/edit`（同じ `lazy` のフォームの画面）、`messages.ts` の足し（日英）。
-- [ ] **Step 33: 書き込みのフックと画面のテストを書いて流す**
+- [x] **Step 33: 書き込みのフックと画面のテストを書いて流す**
   - 部品ごとに 5〜8 件と vitest-axe 1件。必須の項目: 作成と更新の保存の成功から詳細への移動で未保存の確かめの Modal が出ない（D25）、`key` の無い作成で一覧へ戻る、4.6 の code ごとの文と行き先（`field` が空の誤り・`NOT_EDITABLE_NOT_NULL`・413・409 の文）、「分からない」の後の画面（D4）、`operations` に無いボタンが出ない、値の `<script>` などが入力・読み取りの欄で文字として出る、`aria-required`・`aria-invalid`・`aria-describedby`、上限 +1 字・+1 バイトで送らない、作業ロールの切り替えの前の確かめ（留まる・離れる）と切り替えの後の画面（D2）、書き込みの 403（D3）、F6 の後の入力。
 
 #### E2E・検査・記録・統合
 
-- [ ] **Step 34: 180 と 185 の残り**
+- [x] **Step 34: 180 と 185 の残り**
   - 180: 本物の見本の PG の実行のスキーマ（`E2E_BIZ_SCHEMA`）で、DSL を組んで API で適用し、流れの中で利用者とロールを作り（初期管理者の状態は変えない）、一覧 → 作成 → 詳細 → 更新 → 削除をキーボードの操作を含めて流す（U3-NFR5.10）。保存の後に未保存の確かめが出ないこと、ページ送り（21 件以上）を確かめる。見本の形（`businessDataFixtures`）を本物の応答と `shapeCompare` で比べる。180 が作る値は目印を付けて値のファイルに書く（`businessValue`）。
   - 185: 作成の誤りのまとめ・更新・削除の確かめの Modal・離れる確かめの Modal・「保存されたか分かりません」の知らせを各件の状態に足す。測りの件に `formShown100` を足す。
   - `README.md` の E2E の節（3.1 の起動の手順、`.env.targetdb` が要ること、実行のスキーマと一時のロール、`-Pe2e.files`、片付けの件数、E2E の後に上乗せ無しで作り直して閉じる、前の残りを手で消す）と、TEMPORARY の取り上げの手順。
-- [ ] **Step 35: 1コマンドの検査とカバレッジ・時間の記録（B6）**
+- [x] **Step 35: 1コマンドの検査とカバレッジ・時間の記録（B6）**
   - Step 15 と同じ。入口と3つの画面の chunk の gzip を記録する（P-6）。`no-console` の検索も同じ。
-- [ ] **Step 36: E2E の全件と B6 で確かめること**
+- [x] **Step 36: E2E の全件と B6 で確かめること**
   - Mailpit と、上乗せで起動した見本の PG の前提で `./gradlew e2eTest` を流す。記録: 件数・時間・ファイルごとの時間（180・185 を分けて）・準備と片付けの所要・秘密の確かめの件数 0。
   - 確かめ: 040・150・170・180 が通る、片付けの後に `e2e_biz_*` と `mastersmith_e2e_*` が 0 件（E2E を途中で失敗させた回（`-Pe2e.files` で1件だけわざと落とす）も含める）、(d) の誤ったパスワードの拒否、見本の PG の `docker stats --no-stream` の値。
   - E2E の全体が基準の 1.5 倍を超えたら、185 の組み立てを依頼者に諮る。
   - 流し終えたら、上乗せ無しで見本の PG を作り直してポートを閉じる（README の手順。4.4 の R-02）。
-- [ ] **Step 37: axe-core 4.14 の試し（B6、統合しない）**
+- [x] **Step 37: axe-core 4.14 の試し（B6、統合しない）**
   - Step 17 と同じ。B6 の新しい画面（作成・更新・削除・離れる確かめ）の区分の結果を足して記録する。
-- [ ] **Step 38: 記録とコードのレビュー（B6）**
+- [x] **Step 38: 記録とコードのレビュー（B6）**
   - Step 18 と同じ（B6 の節）。
 - [ ] **Step 39: コミットの提案と積み（B6、依頼者の承認）**
   - 7節の B6 の区切りで、Step 19 と同じ形。

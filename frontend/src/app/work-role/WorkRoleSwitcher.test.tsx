@@ -19,6 +19,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ToastProvider } from 'make-you-chic-ui'
+import { useEffect } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import type { FeatureRegistration } from '../registry/types'
@@ -28,7 +29,7 @@ import {
   renderWithProviders,
   resetDisplayTestState,
 } from '../testing/renderWithProviders'
-import { WorkRoleProvider } from './WorkRoleProvider'
+import { useWorkRole, WorkRoleProvider } from './WorkRoleProvider'
 import { WorkRoleSwitcher } from './WorkRoleSwitcher'
 import type { WorkRoleState } from './workRoleApi'
 
@@ -203,5 +204,51 @@ describe('WorkRoleSwitcher', () => {
         },
       }),
     ).toHaveNoViolations()
+  })
+})
+
+/** 切り替えの前の確かめを登録する画面（D25a） */
+function Guard({ answer }: { answer: () => Promise<boolean> }) {
+  const { registerSwitchGuard } = useWorkRole()
+  useEffect(() => registerSwitchGuard(answer), [registerSwitchGuard, answer])
+  return null
+}
+
+function renderGuarded(
+  api: ReturnType<typeof fakeWorkRoleApi>['api'],
+  answer: () => Promise<boolean>,
+) {
+  return renderWithProviders(
+    <ToastProvider>
+      <WorkRoleProvider api={api}>
+        <WorkRoleSwitcher />
+        <Guard answer={answer} />
+      </WorkRoleProvider>
+    </ToastProvider>,
+    { provider: fakeProvider({ loggedIn: true, admin: false }) },
+  )
+}
+
+describe('WorkRoleSwitcher with a switch guard (D25a)', () => {
+  it('stays on the role and returns the focus to the trigger when the guard refuses', async () => {
+    const user = userEvent.setup()
+    const { api, calls } = fakeWorkRoleApi([TWO])
+    renderGuarded(api, () => Promise.resolve(false))
+    await user.click(await screen.findByRole('button', { name: '作業ロール: 営業' }))
+    await user.click(screen.getByRole('menuitem', { name: '経理' }))
+    await waitFor(() => expect(trigger()).toHaveFocus())
+    expect(calls.put).toEqual([])
+    expect(trigger()).toHaveAccessibleName('作業ロール: 営業')
+    expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement()
+  })
+
+  it('switches when the guard allows it', async () => {
+    const user = userEvent.setup()
+    const { api, calls } = fakeWorkRoleApi([TWO, { ...TWO, current: ACCOUNTING }])
+    renderGuarded(api, () => Promise.resolve(true))
+    await user.click(await screen.findByRole('button', { name: '作業ロール: 営業' }))
+    await user.click(screen.getByRole('menuitem', { name: '経理' }))
+    expect(await screen.findByText('作業ロールを経理に切り替えました')).toBeInTheDocument()
+    expect(calls.put).toEqual([2])
   })
 })

@@ -87,10 +87,38 @@ make-you-chic-ui の固定先は `a9309c4` です。経緯: `edb1f94` → `735ef
 ```bash
 cd frontend && npx playwright install chromium && cd ..   # 初回と Playwright の更新のとき
 docker compose --profile mail up -d mailpit                # メールの受け手（Mailpit）を起動しておく
-./gradlew e2eTest
+# 見本の PostgreSQL を E2E の間だけ 127.0.0.1:15432 に開ける（.env.targetdb が要る。下の「E2E の見本の PostgreSQL」）
+docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml \
+  --profile targetdb-postgres up -d targetdb-postgres
+./gradlew e2eTest                                          # ファイルを選ぶなら -Pe2e.files=e2e/180-business-data-flow.e2e.ts
+docker compose --profile targetdb-postgres up -d targetdb-postgres   # 流し終えたら上乗せ無しで作り直してポートを閉じる
 ```
 
 E2E の WAR はメールを手元の受け手 Mailpit（`127.0.0.1:1025`）へ送ります（「メール（U1）」）。`./gradlew e2eTest` は始める前に Mailpit の API（`http://127.0.0.1:8025/api/v1/info`）に届くかを確かめ、届かなければ起動の手順を示して失敗します（Mailpit の起動・停止はしません）。
+
+E2E は `./gradlew e2eTest` から流します。ファイルを選ぶときは `-Pe2e.files=e2e/<ファイル>`（カンマで区切って複数）を付けます。`npx playwright test` を直接流すと、対象DB の環境変数（`./gradlew e2eTest` が作って渡す）が無いため、設定の読み込みで止まります。
+
+### E2E の見本の PostgreSQL（Intent 261016-business-data-views の U3）
+
+業務データの代表の流れ（180）は、手元で試す対象DB の見本の PostgreSQL（`targetdb-postgres`。配備したアプリと共有）を使います。`./gradlew e2eTest` は見本の PG の起動・停止をしません。
+
+- 起動: 上の上乗せ（`docker/e2e/compose.targetdb-port.yaml`）を付けて作り直し、見本の PG を `127.0.0.1:${E2E_TARGETDB_PORT:-15432}` に開けます（`compose.yaml` の既定は開けません）。見本の PG の起動には `.env.targetdb`（「手元で試す対象DB」）が要ります。作り直しはボリュームを残します。作り直しの間、配備したアプリの業務データの読み取りが短い間失敗します（戻りは自動の見込み）。
+- 前提の確かめ（`./gradlew e2eTest` が始める前に行い、満たさなければ手順を示して止める）: (a) コンテナの中で `pg_isready` が応答する、(b) `127.0.0.1:15432` に TCP で届く、(c) DB `business` の PUBLIC に `TEMPORARY` が無い（無ければ「既にある見本の DB に書き込みのアカウントを足す（U2）」の取り上げの1文を流す）、(d) 公開の番号への誤ったパスワードの接続が拒まれる（`trust` に当たらない。拒まれなければ、すぐに上乗せ無しで作り直して閉じます）。(d) は見本の PG と同じイメージ（同じ digest）の一時の psql を `docker run --rm --network host` で流します。
+- 準備: 実行ごとに、スキーマ `e2e_biz_<UTC の年月日時分秒>_<16進 8 文字>` と表 `e2e_item`・架空の行 25 件（`frontend/e2e/support/businessDataSchema.sql`）、一時の読み取りのロール `mastersmith_e2e_r_<印>` と書き込みのロール `mastersmith_e2e_w_<印>`（LOGIN、乱数のパスワード、2 時間で失効。書き込みのロールは行の操作だけで DDL と `TEMPORARY` は無い）を1つのトランザクションで作ります。管理者は `docker compose exec` でコンテナの中のソケットから入り、管理者のパスワードを読みません。ロールの名前とパスワードは `./gradlew e2eTest` のプロセスの環境変数だけで WAR と Playwright に渡します（ファイル・ログ・`webServer.env` に置かない。報告の確かめの対象に入れる）。
+- 片付け: E2E の後に（失敗しても）`e2eTargetDbCleanup` が、その実行のロールの接続を切り、`DROP OWNED BY`・`DROP ROLE`・`DROP SCHEMA … CASCADE` で消し、消した件数と接頭辞の残りの件数だけをログに出します。前の実行が途中で止められて残ったものは、次の実行の始めに接頭辞（`e2e\_biz\_%`・`mastersmith\_e2e\_%`）で消します。
+- psql の誤りの出力は、失敗した文に一時のパスワードを含みうるため Gradle のログに出さず、段の名前と SQLSTATE と件数だけを出します。見本の PG のサーバーのログ（`docker logs`）には失敗した文が残りうります（2 時間で失効する使い捨ての値）。
+- 前の残りを消す段が失敗したときは、手で次を流します（接頭辞に当たるものだけを消します）。
+
+```bash
+docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -v ON_ERROR_STOP=1 <<'SQL'
+SELECT count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE usename LIKE 'mastersmith\_e2e\_%';
+SELECT format('DROP OWNED BY %I', rolname) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%' \gexec
+SELECT format('DROP ROLE %I', rolname) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%' \gexec
+SELECT format('DROP SCHEMA %I CASCADE', nspname) FROM pg_namespace WHERE nspname LIKE 'e2e\_biz\_%' \gexec
+SQL
+```
+
+- 流し終えたら、上乗せ無しで作り直してポートを閉じます（`docker compose --profile targetdb-postgres up -d targetdb-postgres`）。
 
 WAR をビルドし、一時ディレクトリの内部DBで起動して、`frontend/e2e/` のすべての確認を CSP 違反やスクリプトのエラーなしに通ることを確かめます（番号は 18081。`E2E_PORT` で変えられます）。1つの WAR と内部DBを共有するため、ファイル名の番号の順に1本ずつ実行します。
 
@@ -99,7 +127,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `010-skeleton.e2e.ts` | 画面の骨格（ログイン画面の枠と CSP の応答ヘッダー） |
 | `020-auth.e2e.ts` | 初期管理者のログインとログアウト、誤ったパスワードの表示 |
 | `030-admin-access.e2e.ts` | 代表の流れ「ログイン → 管理画面に入れるか → ログアウト」 |
-| `040-dsl-admin.e2e.ts` | DSL の管理「ログイン → DSL の管理 → 貼り付けで投入 → プレビュー → 適用 → 今の状態が適用中 → ログアウト」（対象DB は設定しないため、照合は「接続先が設定されていません」の警告になる） |
+| `040-dsl-admin.e2e.ts` | DSL の管理「ログイン → DSL の管理 → 貼り付けで投入 → プレビュー → 適用 → 今の状態が適用中 → ログアウト」（対象DB は見本の PG の実行のスキーマで、投入する DSL のスキーマ `e2e` と違うため、照合は「スキーマの名前の違い」の警告になる。見本の PG の読み取りが失敗すると「接続できない」の警告になり落ちる） |
 | `050-display-accessibility.e2e.ts` | ログインの画面の表示の設定の 20 組（テーマ × 文字の大きさ、ブランドカラー × テーマ、幅 375px のテーマ × 文字の大きさ）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、最初の画面が出るまでの時間の測定（5 回）。ログインはしない |
 | `060-invitation-accessibility.e2e.ts` | 招待の管理の画面の表示の設定の 20 組と 360px の悪い側の組（dark・lg・blue）ごとのアクセシビリティの検査（一覧・警告・招待の入力の Modal・取り消しの確かめの Modal。axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し、一覧と次のページが出るまでの時間の測定（5 回）。初期管理者でログインする |
 | `070-registration-accessibility.e2e.ts` | 登録の完了の画面の表示の設定の 20 組 × 2 つの状態（フォーム・使えないリンク）ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA）と横のはみ出し。ログインしない。確かめの API だけを見本に差し替え、完了の要求は送らない |
@@ -114,14 +142,15 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 | `150-role-permission-flow.e2e.ts` | Intent 261004-role-menu の F の流れ「`E2EF_` の版 2 の DSL を API で適用 → 招待から利用者を作る → 初期管理者でロールを作り、テーブルの主権限を READ にして保存し、利用者を割り当てる → 利用者の作業ロールと業務のメニューを API で確かめる → 2つ目のロールを API で割り当て、利用者で画面からログインしてトップバーで作業ロールを切り替えると、サイドバーのテーブルの項目が消え、戻すと出る → 140 と 160 の見本と本物の応答の形を比べる」。後始末はしない |
 | `160-app-frame-accessibility.e2e.ts` | 骨組みの画面（作業ロールの切り替え・5段まで開いた業務のメニュー・業務データの一覧（末端のテーブル・権限なし）・自分の権限・ホームの案内（設定なし・表示なし・読み込みの失敗）・畳んだサイドバー）の、表示の設定の 20 組ごとのアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。文字のコントラストを含む。40 文字の名前・40 文字のロール名・記号を含む名前）と横のはみ出し、開いた作業ロールの一覧と5段のサイドバーが表示の中に収まること、畳んだサイドバーで今のページを含む1段目のまとまりに印（クラス `contains-current` と読み上げの名前）が付くこと（axe は畳んだ状態と開いた状態の両方）。既定の組で 360px・768px・1280px と悪い側（lg・dark・360px）の幅、英語の表示（トップバーの文言と畳んだ状態の印も英語）、画面の時間の測り（記録だけ）。骨組みの API と業務データの API（`/api/tables/*`）はすべて差し替え、内部DB に書かない |
 | `170-menu-navigation-flow.e2e.ts` | Intent 261004-role-menu の I の流れ「`E2EI_` の版 2 の DSL（5段のメニュー、末端がテーブル T1）を API で適用 → ロールを作り T1 を READ・T2 を NONE にする → 招待から利用者を作って割り当てる → 利用者で画面からログインし、5段を開いて T1 の業務データの一覧を開く（再読み込みでも同じ。業務データの API は型を付けた見本で差し替える） → T2 の一覧の道を直接開くと 403 の表示 → 160 の見本と本物の応答（業務のメニュー・自分の権限）の形を比べる → `/logout` の直接の表示と、ユーザーメニューからのログアウト（戻る・再読み込みでもログインの画面）」。後始末はしない |
-| `185-business-data-accessibility.e2e.ts` | Intent 261016-business-data-views の業務データの画面（一覧・詳細・開けないとき）の、表示の設定の 20 組ごとと 200% の拡大（640×360 の CSS ピクセルで代える。既定の組と dark・lg）のアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。規則と要素は外さない）と横のはみ出し。100 カラム × 20 行の一覧（NULL の行・長い表示名）・開いた検索の項目と誤り・右端の行の「操作」のメニューの収まり・読み込み中・10,000 字の値を含む詳細・空の一覧・権限の無いテーブルの 403 の表示を回る。ログインの利用者は2語の氏名。既定の組で画面の時間の測り（判定の値と参考の「塗りまで」を記録し、成否にしない）。業務データの API と骨組みの API はすべて型を付けた見本で差し替え、適用中の DSL と見本の PG に頼らない |
+| `180-business-data-flow.e2e.ts` | Intent 261016-business-data-views の業務データの代表の流れ「実行のスキーマの DSL を API で適用 → ロール（表は FULL・作成・削除あり）を作り招待から利用者を作って割り当てる → 利用者で画面からログインし、メニューから一覧（25 件。ページ送りで 21〜25 件）→ 検索 → 作成 → 詳細 → 更新 → 削除の確かめ → 一覧」。操作と保存はキーボード（Enter）で行い、保存の後に未保存の確かめが出ないことを確かめる。業務データの見本（185・170 が差し替えに使う）と本物の応答の形を比べる。見本の PG を使い、後始末はしない（適用した DSL は残る） |
+| `185-business-data-accessibility.e2e.ts` | Intent 261016-business-data-views の業務データの画面（一覧・詳細・作成・更新・削除の確かめ・離れる確かめ・保存されたか分からない知らせ・開けないとき）の、表示の設定の 20 組ごとと 200% の拡大（640×360 の CSS ピクセルで代える。既定の組と dark・lg）のアクセシビリティの検査（axe-core、WCAG 2.0・2.1 の A・AA。規則と要素は外さない）と横のはみ出し。100 カラム × 20 行の一覧（NULL の行・長い表示名）・開いた検索の項目と誤り・右端の行の「操作」のメニューの収まり・読み込み中・10,000 字の値を含む詳細・作成の誤りのまとめ・離れる確かめ・保存されたか分からない知らせ・更新・削除の確かめ・空の一覧・権限の無いテーブルの 403 の表示を回る。ログインの利用者は2語の氏名。既定の組で画面の時間の測り（判定の値と参考の「塗りまで」を記録し、成否にしない）。業務データの API と骨組みの API はすべて型を付けた見本で差し替え、適用中の DSL と見本の PG に頼らない |
 
 050 について（Intent 260925-user-management の U4）:
 
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 最初の画面の時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）は記録だけで、失敗にはしません。CSP の違反と、見た目の設定が `sans` のときの Noto Serif JP のフォントの読み込みは失敗にします。
 - 既知の違反は `frontend/e2e/support/axe.ts` の `KNOWN_VIOLATIONS` に名前と対象を指定して扱います。green・orange の組の primary のボタンのコントラスト不足は、make-you-chic-ui の固定先を `310e1ec` に上げて当たらなくなったため（Intent 260928-quality-followup）、一覧は空で、どの違反も失敗にします。一覧に載せた既知の違反が消えたときも失敗にするため、一覧を変えたときはこの README も見直します。
-- 050 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/050-display-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 050 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/050-display-accessibility.e2e.ts`）。
 
 060 について（Intent 260925-user-management の U5）:
 
@@ -130,7 +159,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - ログインの後は利用者の設定が当たるため、組のテーマと文字の大きさは、ログイン（`POST /api/auth/login`）と復元（`POST /api/auth/session/refresh`）の本物の応答の `user.theme`・`user.fontSize` の2項目だけを書き換えて当てます（`frontend/e2e/support/loginPreferences.ts`）。サーバーの状態（利用者の設定）は変えません。U6 の 070 はログインの前の画面のため U4 の鍵で当て、U7 の 080 はプリファレンスの答え（`GET /api/me/preferences`）の差し替えで当てます（どちらも `loginPreferences.ts` は使いません）。
 - 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は記録だけで、失敗にはしません。CSP の違反、画面の問題、本物の一覧の応答と見本の形の違いは失敗にします。測定は招待の API で招待を 21 件置くため、1 回の実行で Mailpit に 21 通のメールが届きます（Mailpit は消しません）。招待を使える設定が無い WAR では、測定を飛ばして理由を注記に残します（E2E の WAR には SMTP とベース URL が渡るため、念のための備え）。
 - 既知の違反は `frontend/e2e/support/axe.ts` の `INVITATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います。以前の既知の違反（green・orange の組の一覧の「招待する」、招待の入力の「招待する」）は make-you-chic-ui の `310e1ec` で当たらなくなり、どの状態も空です。ほかの違反と、一覧と一致しない既知の違反は失敗にします。
-- 060 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/060-invitation-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 060 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/060-invitation-accessibility.e2e.ts`）。
 
 070 について（Intent 260925-user-management の U6）:
 
@@ -138,7 +167,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 登録の完了の画面はログインの前の画面のため、組のテーマと文字の大きさは 050 と同じく、読み込みの前に U4 の鍵（`mastersmith.display-settings`）へ置いて当てます（`loginPreferences.ts` は使いません）。
 - フォームの状態は、確かめの API（`POST /api/registration/verify`）の答えだけを見本（`frontend/e2e/support/registrationFixtures.ts` の `VERIFY_SAMPLE`、どの招待にも当たらないトークン `a11y-sample-token`）に差し替えて出します。使えないリンクの状態は、差し替えずにフラグメントの無い `/register` を開いて出します。完了の要求は送らず、サーバーの状態（内部DB・監査・招待）を変えません。
 - 既知の違反は `frontend/e2e/support/axe.ts` の `REGISTRATION_KNOWN_VIOLATIONS` に画面の状態ごとの名前で扱います。以前の既知の違反（green・orange の組のフォームの「登録を完了する」）は make-you-chic-ui の `310e1ec` で当たらなくなり、どの状態も空です。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
-- 070 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/070-registration-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動。070 はメールを送りませんが、E2E の WAR はメールを Mailpit へ送る設定で起動します）。
+- 070 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/070-registration-accessibility.e2e.ts`。070 はメールを送りませんが、E2E の WAR はメールを Mailpit へ送る設定で起動します）。
 
 080 について（Intent 260925-user-management の U7）:
 
@@ -148,7 +177,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 既知の違反は、状態ごとの名前の一覧（`frontend/e2e/support/axe.ts` の `PREFERENCES_KNOWN_VIOLATIONS`）で扱います。以前の既知の違反（green・orange の組の「保存する」「変更する」、2語の氏名のトップバーのアバター、dark の組の誤りの文字）は make-you-chic-ui の `310e1ec` で当たらなくなったため、一覧は空にし、アバターと誤りの文字の専用の扱いは外しました。ほかの違反と、一覧と一致しない既知の違反は失敗にします。CSP の違反も失敗にします。
 - 測定は、招待の API で招待を1件置き、Mailpit のメールからリンクを取り出し、登録の完了の API で利用者を1人作って行います（`frontend/e2e/support/registeredUser.ts`、宛先は実行ごとに重ならない `u7-perf-…@example.com`）。1 回の実行で Mailpit に1通届き、新しい利用者と、招待・パスワードの変更の監査が一時の内部DB に残ります。Mailpit の API は読むだけです。
 - 時間（目標は開く 2 秒・保存 1.5 秒・パスワードの変更 2.5 秒）は記録だけで、失敗にはしません。本物の `GET /api/me/preferences` の応答と見本の形の違い、CSP の違反、画面の問題は失敗にします。招待を使える設定が無い・Mailpit に届かない WAR では、測定を飛ばして理由を注記に残します（念のための備え）。
-- 080 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/080-preferences-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 080 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/080-preferences-accessibility.e2e.ts`）。
 
 090 について（Intent 260925-user-management の U6、E2E-1）:
 
@@ -157,7 +186,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 招待メールのリンクは Mailpit の API（`GET /api/v1/search`・`GET /api/v1/message/{ID}`）を読むだけで取り出し、書き込まず、メールを消しません（`frontend/e2e/support/mailpit.ts`。API の場所は `build.gradle.kts` の `mailpitInfoUrl` と同じ `http://127.0.0.1:8025`）。
 - リンクを開いてからフォームが出るまでの時間（目標は手元の PC でキャッシュが空の状態から 2 秒以内）を5回測り、値と目標以内の回数を注記と添付に残します。時間では失敗させません。同じ5回で、アドレス欄に `#token=` が残らないこと・CSP の違反が無いこと・ブラウザの保存にトークンが無いことは失敗の条件です。
 - 本物の確かめの応答の項目の名前と型が見本（`VERIFY_SAMPLE`）と同じことを毎回確かめます（値は比べません）。
-- 090 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/090-invitation-registration-flow.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 090 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/090-invitation-registration-flow.e2e.ts`）。
 - HTML の報告は作らず、トレースは既定で残しません（Intent 260930-user-admin の U5。下の「結果と報告」）。手元でトレースを有効にした実行のトレースには、090 で開いた使い捨てのトークンを含むリンクが載ります（E2E の一時の内部DB の中の値）。共有しません。json の結果・注記・添付・`test.step` の題には、リンク・トークン・宛先・パスワードを入れません。
 
 100 について（Intent 260928-quality-followup の FR2）:
@@ -166,7 +195,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 組ごとに初期管理者でログインし、ユーザーメニューの「プリファレンス」を開いて組を当て（080 と同じく `GET /api/me/preferences` の答えを見本に差し替える）、その後は読み込み直さずに画面の中で移ります（サイドバーの「DSL」の「投入」のタブ、見つからない画面 `/e2e-app-text-contrast-not-found`）。ログインの状態は利用者の保存した設定を持ち、読み込み直すとそれに戻るためです。
 - 選択のまとまりの誤りは、`PUT /api/me/preferences` だけを 400 `VALIDATION_FAILED` の見本（`frontend/e2e/support/preferencesFixtures.ts` の `preferencesValidationProblem`、テーマの項目の誤り）に差し替えて出します。保存・投入の要求はサーバーへ送りません（送られていれば失敗）。対象の要素が出ていることを確かめてから検査し、押した後はマウスを要素の外へ移して、hover でない状態の色を検査します。あわせて、プリファレンスの画面の「保存する」（primary のボタン）にマウスを重ね、背景が hover の色に変わったことを確かめてから検査します（依頼者の決定 G2: C。要求は送りません）。
 - 既知の違反はありません。以前の既知の違反（DSL の管理の画面の選ばれたタブと、「保存する」にマウスを重ねた状態の primary のボタンの hover）は、make-you-chic-ui の固定先を `077f5b4` に上げて当たらなくなりました（Intent 260929-log-deps-cleanup。「画面の表示の設定（U4）」の既知の制約）。100 の中の `STATE_KNOWN_VIOLATIONS` は空で、どの違反も失敗にします。一覧に組と状態と要素を指定して載せた既知の違反が一覧どおりに当たらなければ（当たらなくなったときも）失敗にする仕組みは残しています。
-- 100 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/100-app-text-contrast.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 100 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/100-app-text-contrast.e2e.ts`）。
 
 110 について（Intent 260930-user-admin の U5、E2E-M9）:
 
@@ -177,7 +206,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 本物の一覧・409（`USER_ADMIN_NO_CHANGE`）・400（`VALIDATION_FAILED`）の応答の項目の名前と型が、120 の見本（`frontend/e2e/support/userAdminFixtures.ts`）と同じことを毎回確かめます（値は比べません。違いは項目の名前だけで知らせます）。
 - 招待を使える設定が無い・Mailpit に届かない WAR では、理由の種類だけを注記（`skip-reason`）に残して飛ばします（念のための備え）。統合とリリースの前の実行では、110 に `skip-reason` の注記が無いことを確かめます。
 - U の宛先・パスワード・氏名と `runTag` は、作った直後に値のファイル（`frontend/test-results/e2e-secret-values.json`、権限 600）に書き、報告の部品が探し終えたら消します（下の「結果と報告」）。`test.step` の題・注記・添付には入れません。
-- 110 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/110-user-admin-flow.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 110 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/110-user-admin-flow.e2e.ts`）。
 
 120 について（Intent 260930-user-admin の U5）:
 
@@ -186,7 +215,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 管理の API（`/api/admin` ちょうどと `/api/admin/` の下）は、ページごとに1つの差し替えの口（`frontend/e2e/support/adminApiRoute.ts`）で受けます。一覧の GET と止める操作の POST は見本（`frontend/e2e/support/userAdminFixtures.ts`。2語の氏名・長いメールアドレス・ロック中・利用停止・管理者・「あなた」の行）で返し、見本の無い GET は本物へ通さず通信の失敗で返し、GET 以外で見本の無い要求は打ち切って記録します。組の終わりに、口が受けた件数が 1 以上で、打ち切った要求が 0 件であることを確かめます（内部DB と Mailpit に書きません）。
 - 差し替えた失敗（409・通信の失敗）に Chrome が出す「Failed to load resource:」の表示は、位置の URL が管理の API の道のものだけを 120 の中で数えて引きます（共有の `support/pageProblems.ts` は変えません）。CSP の違反とほかの問題は失敗にします。既知の違反はありません。
 - 一覧と次のページの時間（目標は一覧 2 秒・次のページ 1.5 秒）は、既定の1組（light・md・blue・既定の幅）だけで5回ずつ測り、注記と添付 `user-admin-screen-ms` に記録するだけで、失敗にはしません（本番での判定は配備先が決まった後）。一覧は本物の一覧の API を差し替えの口を通して読む時間（口の上乗せを含む）、次のページは見本の応答での描画の時間（API の時間を含まない）です。
-- 120 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/120-user-admin-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 120 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/120-user-admin-accessibility.e2e.ts`）。
 
 130 について（Intent 260930-user-admin の U4）:
 
@@ -196,7 +225,7 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - S6 が出た後のログインの状態の読み直し（`POST /api/auth/session/refresh`）の応答を待ってから確かめます。E2E には初期管理者しかおらず、読み直しの後も管理者のままのため、S6 のまま続きます。管理者でない利用者が URL を開いたときの S6 は、部品のテスト（`frontend/src/app/routing/`）で確かめます。
 - 差し替えた 403 に Chrome が出す「Failed to load resource:」の表示は、位置の URL が `/api/admin/check` のものだけを 130 の中で数えて引きます（共有の `support/pageProblems.ts` は変えません）。CSP の違反とほかの問題は失敗にします。既知の違反はありません。
 - 画面の時間は測りません。注記には組の名前・件数・規則の名前・はみ出し・アバターの文字の数だけを残し、氏名・メールアドレス・パスワード・トークンは入れません。
-- 130 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/130-admin-forbidden-accessibility.e2e.ts)` の前に `./gradlew :backend:bootWar` と Mailpit の起動）。
+- 130 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/130-admin-forbidden-accessibility.e2e.ts`）。
 
 140・150 について（Intent 261004-role-menu の U6、Bolt B8）:
 
@@ -208,10 +237,11 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 
 - 160 は流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。170 はこの Intent の流れのもう1本（I の流れ）です（この Intent の2本は 150 と 170）。
 - 160 は骨組みの API（`/api/me/work-role`・`/api/me/navigation`・`/api/me/permissions/` の下）を差し替えの口（`frontend/e2e/support/frameApiRoute.ts`）で、業務データの API（`/api/tables/*`）を差し替えの口（`frontend/e2e/support/businessDataApiRoute.ts`）で受け、内部DB に書きません。画面の時間の測りの値は注記と添付 `u7-screen-ms` に記録するだけで、成否にしません。
-- 170 は E2E の環境に対象DB が無いため、業務データの API だけを型を付けた1つの見本（`frontend/e2e/support/businessDataFixtures.ts`）で差し替えます（本数に数えない書き換え）。業務データの本物の応答との形の比べは、後の Bolt で足す代表の流れが受け持ちます。
-- 170 は走らせるごとに一意の名前（`E2EI_` と実行の印）の DSL・ロール・利用者を作り、後始末をしません。適用中の DSL は 170 の `E2EI_` のものに置き換わります。170 より後に流れる 185 は業務データの API を差し替えるため、適用中の DSL に頼りません。
-- 160・170・185 だけを流すときも Mailpit の起動が要ります（`(cd frontend && npx playwright test e2e/160-app-frame-accessibility.e2e.ts)` などの前に `./gradlew :backend:bootWar` と Mailpit の起動）。
-- 185 は流れの確かめではないため、本数に数えません（Intent 261016-business-data-views の U3 の B5）。画面の時間の測りの値は注記と添付 `u3-screen-ms` に記録するだけで、成否にしません。見本の行の値は目印（`E2E-BIZ-MARK`）を含む架空の値で、報告の確かめ（`playwright-secret-check-reporter.ts`）がその目印を探します。
+- 170 は E2E の環境に対象DB が無いため、業務データの API だけを型を付けた1つの見本（`frontend/e2e/support/businessDataFixtures.ts`）で差し替えます（本数に数えない書き換え）。業務データの本物の応答との形の比べは、代表の流れ 180 が受け持ちます。
+- 170 は走らせるごとに一意の名前（`E2EI_` と実行の印）の DSL・ロール・利用者を作り、後始末をしません。適用中の DSL は 170 の `E2EI_` のものに置き換わります。170 より後に流れる 180 は自分で DSL を適用し直し、185 は業務データの API を差し替えるため、適用中の DSL に頼りません。
+- 160・170・180・185 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/160-app-frame-accessibility.e2e.ts` など）。
+- 180 は Intent 261016-business-data-views の業務データの代表の流れの1本です（U3 の B6）。走らせるごとに一意の名前（`E2EB_` と実行の印）のロール・利用者を作り、後始末をしません。適用中の DSL は 180 の実行のスキーマのものに置き換わります（実行のスキーマは片付けで消えるため、その後は照合の警告になる）。
+- 185 は流れの確かめではないため、本数に数えません（Intent 261016-business-data-views の U3 の B5・B6）。画面の時間の測りの値は注記と添付 `u3-screen-ms` に記録するだけで、成否にしません。見本の行の値は目印（`E2E-BIZ-MARK`）を含む架空の値で、報告の確かめ（`playwright-secret-check-reporter.ts`）がその目印を探します。
 - ユーザーメニューを開く手伝いは `frontend/e2e/support/userMenu.ts` です。トップバーに作業ロールの切り替え（同じ形の Dropdown）が並ぶため、作業ロールの入れ物の外のトリガーを開きます。
 
 E2E は Mailpit に届いたメールを消しません。`./gradlew e2eTest` の後に片付けるときは、「手元でメールを見る」の2行（`docker compose stop mailpit` と `docker compose rm -f mailpit`）で止めて消します（後の単位の E2E もこの書き方に従います）。
@@ -231,7 +261,7 @@ rm -rf frontend/playwright-report
 - それでも原因が分からないときだけ、手元でトレースを有効にして流し直します。この実行は報告の部品がトレースの中の値を見つけて失敗になりうるため、合否には使いません。統合とリリースの前の確かめは `E2E_TRACE` を付けない実行で行います。
 
 ```bash
-E2E_TRACE=retain-on-failure ./gradlew e2eTest      # 調べたいファイルだけなら (cd frontend && E2E_TRACE=retain-on-failure npx playwright test e2e/110-user-admin-flow.e2e.ts)
+E2E_TRACE=retain-on-failure ./gradlew e2eTest      # 調べたいファイルだけなら E2E_TRACE=retain-on-failure ./gradlew e2eTest -Pe2e.files=e2e/110-user-admin-flow.e2e.ts
 (cd frontend && npx playwright show-trace test-results/<テストのディレクトリ>/trace.zip)
 rm -rf frontend/test-results                       # 見た後に消す（共有しない）
 ```
@@ -685,6 +715,15 @@ docker compose --profile targetdb-postgres exec -T targetdb-postgres bash /docke
 docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -tAc \
   "SELECT COUNT(*) FROM pg_roles WHERE rolname = 'mastersmith_writer'"          # 1 と出ること
 docker compose --profile targetdb-postgres up -d --force-recreate app            # アプリに書き込みの設定を渡す
+```
+
+E2E（`./gradlew e2eTest`）も、見本の PG の DB `business` の PUBLIC に `TEMPORARY` が無いことを前提にします（「E2E の見本の PostgreSQL」の (c)）。書き込みのアカウントを足さずに取り上げだけを行うときは、台本の最後の文と同じ次の1文を流します（共有の見本の PG を変える操作です。何度流しても同じ結果になります）。
+
+```bash
+docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -v ON_ERROR_STOP=1 \
+  -c 'REVOKE TEMPORARY ON DATABASE business FROM PUBLIC'
+docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -tAc \
+  "SELECT has_database_privilege('public','business','TEMP')"                  # f と出ること
 ```
 
 - 確かめ: アプリの定義の API の `writeConfigured` が `true` になり、起動のログに書き込みの設定の WARN が無いこと。問題が無ければ、複写した `$HOME/.mastersmith-env-before-writer` を消します。戻すときは、その複写を `.env` に戻してアプリのコンテナを作り直します（書き込みのアカウントは残っても使われません）。

@@ -22,18 +22,28 @@
 // - 今の ApiClient（apiRequest）を通す。失敗は今の ApiError のまま投げ、自動では送り直さない。
 // - 応答は unknown として受け、写しの関数で確かめる。形が違えば通信の失敗（D5）。
 // - 値を console・ブラウザの保存に出さない。
+// - 書き込みの3本（B6）は、例外を投げずに結果を「保存した」「保存されていない」「分からない」に分けて返す（writeOutcome.ts）。
+//   definitionId は必ず送る（無いと 409 BUSINESS_DEFINITION_CHANGED。U2 の G12）。本文の上限は作成・更新が 4,194,304 バイト、
+//   削除が 65,536 バイト。上限を超えたら送らずに「保存されていない」（413）にする。
 import type { TableRef } from '../../app/navigation/tablePlaceholderPath'
 import { apiRequest } from '../../shared/api-client/apiClient'
 import { networkError, type ApiResponseError } from '../../shared/api-client/apiError'
 import { utf8ByteLength } from '../../shared/validation/codePoints'
-import { MAX_READ_BODY_BYTES } from './businessDataLimits'
+import { MAX_READ_BODY_BYTES, MAX_WRITE_BODY_BYTES } from './businessDataLimits'
 import { parseRowDetail, parseRowPage, parseTableDefinition } from './businessDataParse'
+import {
+  classifyWriteFailure,
+  classifyWriteSuccess,
+  type WriteOperation,
+  type WriteOutcome,
+} from './writeOutcome'
 import type {
   DefinitionId,
   PageSize,
   RowDetail,
   RowKey,
   RowPage,
+  RowValues,
   SearchCondition,
   SortKey,
   TableDefinition,
@@ -44,6 +54,10 @@ export const BUSINESS_DATA_PATHS = {
   definition: '/api/tables/definition',
   search: '/api/tables/rows/search',
   get: '/api/tables/rows/get',
+  /** 作成（POST）と更新（PATCH）。U2 */
+  rows: '/api/tables/rows',
+  /** 削除（POST）。U2 */
+  delete: '/api/tables/rows/delete',
 } as const
 
 /** 本文の上限を超えたときの失敗（サーバーの 413 と同じ形） */
@@ -150,4 +164,98 @@ export async function getRow(
   const payload = { schema: ref.schemaName, table: ref.tableName, definitionId, key }
   const body = await postWithinLimit(BUSINESS_DATA_PATHS.get, payload, MAX_READ_BODY_BYTES)
   return orNetworkError(parseRowDetail(body))
+}
+
+/**
+ * 書き込みの要求を送り、結果を分ける（例外を投げない）。
+ *
+ * @param operation 書き込みの操作
+ * @param method HTTP のメソッド
+ * @param path API の道
+ * @param payload 送る本文
+ * @param limit 本文の上限（バイト）
+ */
+async function sendWrite(
+  operation: WriteOperation,
+  method: 'POST' | 'PATCH',
+  path: string,
+  payload: unknown,
+  limit: number,
+): Promise<WriteOutcome> {
+  const body = JSON.stringify(payload)
+  if (utf8ByteLength(body) > limit) {
+    return classifyWriteFailure(payloadTooLargeError())
+  }
+  let response: Response
+  try {
+    response = await apiRequest(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    })
+  } catch (error: unknown) {
+    return classifyWriteFailure(error)
+  }
+  let parsed: unknown = undefined
+  try {
+    const text = await response.text()
+    parsed = text === '' ? undefined : (JSON.parse(text) as unknown)
+  } catch {
+    parsed = undefined
+  }
+  return classifyWriteSuccess(operation, {
+    status: response.status,
+    contentType: response.headers.get('Content-Type'),
+    body: parsed,
+  })
+}
+
+/**
+ * 行を作る。
+ *
+ * @param ref スキーマ名とテーブル名
+ * @param definitionId 定義の識別
+ * @param values 送るカラムの値（変えたカラムだけ。formDiff で作る）
+ */
+export function createRow(
+  ref: TableRef,
+  definitionId: DefinitionId,
+  values: RowValues,
+): Promise<WriteOutcome> {
+  const payload = { schema: ref.schemaName, table: ref.tableName, definitionId, values }
+  return sendWrite('create', 'POST', BUSINESS_DATA_PATHS.rows, payload, MAX_WRITE_BODY_BYTES)
+}
+
+/**
+ * 行を更新する。
+ *
+ * @param ref スキーマ名とテーブル名
+ * @param definitionId 定義の識別
+ * @param key 行を指す主キー
+ * @param values 送るカラムの値（変えたカラムだけ）
+ */
+export function updateRow(
+  ref: TableRef,
+  definitionId: DefinitionId,
+  key: RowKey,
+  values: RowValues,
+): Promise<WriteOutcome> {
+  const payload = { schema: ref.schemaName, table: ref.tableName, definitionId, key, values }
+  return sendWrite('update', 'PATCH', BUSINESS_DATA_PATHS.rows, payload, MAX_WRITE_BODY_BYTES)
+}
+
+/**
+ * 行を削除する。
+ *
+ * @param ref スキーマ名とテーブル名
+ * @param definitionId 定義の識別
+ * @param key 行を指す主キー
+ */
+export function deleteRow(
+  ref: TableRef,
+  definitionId: DefinitionId,
+  key: RowKey,
+): Promise<WriteOutcome> {
+  const payload = { schema: ref.schemaName, table: ref.tableName, definitionId, key }
+  return sendWrite('delete', 'POST', BUSINESS_DATA_PATHS.delete, payload, MAX_READ_BODY_BYTES)
 }

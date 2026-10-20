@@ -20,6 +20,7 @@ import {
   MAX_PAGE,
   parseBusinessProblem,
   parseColumnDefinition,
+  parseCreatedKey,
   parseRowDetail,
   parseRowPage,
   parseTableDefinition,
@@ -210,5 +211,49 @@ describe('parseBusinessProblem', () => {
     })
     expect(parseBusinessProblem({ kind: 'network' })).toBeUndefined()
     expect(parseBusinessProblem(new Error('x'))).toBeUndefined()
+  })
+})
+
+describe('businessDataParse write material (B6)', () => {
+  const editable = (overrides: Record<string, unknown>) =>
+    wireDefinition({
+      detailColumns: [
+        wireColumn('code'),
+        wireColumn('name', { editableOnCreate: true, formPart: 'text', ...overrides }),
+      ],
+    })
+
+  it('accepts an editable column with formPart, required and nullable', () => {
+    expect(parseTableDefinition(editable({}), SAMPLE_REF)).toBeDefined()
+  })
+
+  it.each([
+    ['formPart is null', { formPart: null }],
+    ['formPart is missing', { formPart: undefined }],
+    ['formPart is lookup', { formPart: 'lookup' }],
+    ['formPart is unknown', { formPart: 'slider' }],
+    ['required is missing', { required: undefined }],
+    ['nullable is missing', { nullable: undefined }],
+    ['nullable is not a boolean', { nullable: 'yes' }],
+  ])('treats an editable column whose %s as a broken shape', (_name, overrides) => {
+    expect(parseTableDefinition(editable(overrides), SAMPLE_REF)).toBeUndefined()
+  })
+
+  it('accepts formPart null for a column that is not editable', () => {
+    expect(
+      parseTableDefinition(
+        wireDefinition({ detailColumns: [wireColumn('code', { formPart: null })] }),
+        SAMPLE_REF,
+      ),
+    ).toBeDefined()
+  })
+
+  it('reads the key of a created row and returns null for no key or a broken key', () => {
+    expect(parseCreatedKey({ key: { code: '<A>' } })).toEqual({ code: '<A>' })
+    expect(parseCreatedKey({})).toBeNull()
+    expect(parseCreatedKey({ key: null })).toBeNull()
+    expect(parseCreatedKey({ key: {} })).toBeNull()
+    expect(parseCreatedKey({ key: { code: 1 } })).toBeNull()
+    expect(parseCreatedKey('text')).toBeNull()
   })
 })

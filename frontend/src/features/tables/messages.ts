@@ -18,7 +18,7 @@
 // frontend-components.md の 5節、inception/refined-mockups/interaction-spec.md の「文言」、計画 4.6、U3-NFR6.3）。
 // - 鍵は `tables.` で始め、ja・en を対で置く。テーブル・カラムの表示名と値は訳さず、React の文字として描く。
 // - 置き場の画面の `tables.preparing` は消し、`tables.forbidden` を業務データの文に変えた。
-// - 作成・更新・削除の文言は B6 で足す。
+// - 作成・更新・削除・離れる確かめ・書き込みの失敗の文言は B6 で足した（計画 4.6・D3・D4）。
 import type { FeatureMessages } from '../../app/registry/types'
 
 const ja: Record<string, string> = {
@@ -80,6 +80,73 @@ const ja: Record<string, string> = {
   'tables.actions.detail': '詳細',
   'tables.detailLink': '詳細: {{table}} {{label}}',
   'tables.detail.heading': '{{table}}: {{label}}',
+
+  'tables.actions.update': '更新',
+  'tables.actions.delete': '削除',
+  'tables.list.create': '作成',
+
+  'tables.form.createTitle': '{{table}}を作成',
+  'tables.form.updateTitle': '{{table}}を更新: {{label}}',
+  'tables.form.backToDetail': '詳細へ戻る',
+  'tables.form.required': '*必須',
+  'tables.form.maxLength': '{{count}} 文字まで',
+  'tables.form.utc': 'UTC で入れる',
+  'tables.form.dateHint': '形: YYYY-MM-DD',
+  'tables.form.numberHint': '例: 1234.56',
+  'tables.form.passwordHint': '入れたときだけ変わります',
+  'tables.form.emptyStringHint': '空にすると空の文字列になります',
+  'tables.form.readOnly': '（変えられません）',
+  'tables.form.save': '保存',
+  'tables.form.cancel': 'やめる',
+  'tables.form.saving': '保存しています…',
+  'tables.form.slow': '時間がかかっています',
+  'tables.form.noChange': '変えた項目がありません。',
+  'tables.form.errorSummary': '{{count}} 件の入力を確かめてください',
+  'tables.form.checkInputs': '入力を確かめてください。',
+  'tables.form.definitionChangedDiscard':
+    '表示の設定が変わりました。入力できなくなった項目の変更は捨てました。確かめてもう一度保存してください。',
+  'tables.form.notAllowed': 'この操作はできません。一覧へ戻ってください。',
+  'tables.form.unselected': '（選ばない）',
+
+  'tables.write.notSavedRetry': '保存されていません。時間をおいてやり直してください。',
+  'tables.write.notDeletedRetry': '削除されていません。時間をおいてやり直してください。',
+  'tables.write.saveRejected':
+    '保存できませんでした（保存はされていません）。入力を確かめてやり直し、続くときは管理者に確かめてください。',
+  'tables.write.deleteReferenced': 'ほかのデータから使われているため削除できません。',
+  'tables.write.unknown': '保存されたか分かりません。',
+  'tables.write.unknownDelete': '削除されたか分かりません。',
+  'tables.write.reopen': 'この行を開き直して確かめる',
+  'tables.write.checkList': '一覧で同じ行が無いか確かめる',
+  'tables.write.reloadList': '一覧を読み直して確かめる',
+  'tables.write.maybeSavedTitle': '保存済みかもしれません',
+  'tables.write.maybeSavedBody':
+    '前の保存が済んだかどうか分かりません。もう一度送ると、同じ内容で保存し直します。',
+  'tables.write.maybeSavedCreateBody':
+    '前の保存が済んだかどうか分かりません。もう一度送ると、同じ行が2つできることがあります。',
+  'tables.write.maybeDeletedBody':
+    '前の削除が済んだかどうか分かりません。済んでいれば、行が見つからない旨が出ます。',
+  'tables.write.sendAgain': 'もう一度送る',
+  'tables.write.cancel': 'やめる',
+
+  'tables.problem.writeForbidden':
+    '権限が変わったため、保存できませんでした。作業ロールを確かめてください。',
+  'tables.problem.writeForbiddenDelete':
+    '権限が変わったため、削除できませんでした。作業ロールを確かめてください。',
+
+  'tables.delete.title': '{{table}} {{label}} を削除しますか',
+  'tables.delete.body': 'この操作は元に戻せません。',
+  'tables.delete.confirm': '削除する',
+  'tables.delete.cancel': 'やめる',
+  'tables.delete.deleting': '削除しています…',
+
+  'tables.leave.title': '保存していない変更があります',
+  'tables.leave.body': 'この画面を離れると、入力した内容は失われます。',
+  'tables.leave.stay': '留まる',
+  'tables.leave.leave': '離れる',
+
+  'tables.toast.created': '作成しました。',
+  'tables.toast.updated': '更新しました。',
+  'tables.toast.deleted': '削除しました。',
 
   'tables.restriction.noPrimaryKey':
     'このテーブルは行を1件に決められないため、詳細・更新・削除はできません。',
@@ -181,6 +248,73 @@ const en: Record<string, string> = {
   'tables.actions.detail': 'Details',
   'tables.detailLink': 'Details: {{table}} {{label}}',
   'tables.detail.heading': '{{table}}: {{label}}',
+
+  'tables.actions.update': 'Edit',
+  'tables.actions.delete': 'Delete',
+  'tables.list.create': 'Create',
+
+  'tables.form.createTitle': 'Create {{table}}',
+  'tables.form.updateTitle': 'Edit {{table}}: {{label}}',
+  'tables.form.backToDetail': 'Back to the details',
+  'tables.form.required': '*Required',
+  'tables.form.maxLength': 'Up to {{count}} characters',
+  'tables.form.utc': 'Enter in UTC',
+  'tables.form.dateHint': 'Format: YYYY-MM-DD',
+  'tables.form.numberHint': 'Example: 1234.56',
+  'tables.form.passwordHint': 'Changes only when you enter a value',
+  'tables.form.emptyStringHint': 'Leaving this empty saves an empty string',
+  'tables.form.readOnly': '(cannot be changed)',
+  'tables.form.save': 'Save',
+  'tables.form.cancel': 'Cancel',
+  'tables.form.saving': 'Saving…',
+  'tables.form.slow': 'This is taking a while',
+  'tables.form.noChange': 'No fields were changed.',
+  'tables.form.errorSummary': 'Check {{count}} fields',
+  'tables.form.checkInputs': 'Check your input.',
+  'tables.form.definitionChangedDiscard':
+    'The display settings have changed. Changes to fields you can no longer edit were discarded. Check and save again.',
+  'tables.form.notAllowed': 'You cannot perform this operation. Go back to the list.',
+  'tables.form.unselected': '(not selected)',
+
+  'tables.write.notSavedRetry': 'The changes were not saved. Please try again later.',
+  'tables.write.notDeletedRetry': 'The row was not deleted. Please try again later.',
+  'tables.write.saveRejected':
+    'The changes could not be saved (nothing was saved). Check your input and try again; if this continues, contact your administrator.',
+  'tables.write.deleteReferenced': 'This row cannot be deleted because other data uses it.',
+  'tables.write.unknown': 'We could not confirm whether the change was saved.',
+  'tables.write.unknownDelete': 'We could not confirm whether the row was deleted.',
+  'tables.write.reopen': 'Reopen this row to check',
+  'tables.write.checkList': 'Check the list for the same row',
+  'tables.write.reloadList': 'Reload the list to check',
+  'tables.write.maybeSavedTitle': 'This may already be saved',
+  'tables.write.maybeSavedBody':
+    'We do not know whether the previous save finished. Sending again saves the same content again.',
+  'tables.write.maybeSavedCreateBody':
+    'We do not know whether the previous save finished. Sending again may create the same row twice.',
+  'tables.write.maybeDeletedBody':
+    'We do not know whether the previous delete finished. If it did, you will see that the row was not found.',
+  'tables.write.sendAgain': 'Send again',
+  'tables.write.cancel': 'Cancel',
+
+  'tables.problem.writeForbidden':
+    'Your permissions have changed, so the changes could not be saved. Check your work role.',
+  'tables.problem.writeForbiddenDelete':
+    'Your permissions have changed, so the row could not be deleted. Check your work role.',
+
+  'tables.delete.title': 'Delete {{table}} {{label}}?',
+  'tables.delete.body': 'This cannot be undone.',
+  'tables.delete.confirm': 'Delete',
+  'tables.delete.cancel': 'Cancel',
+  'tables.delete.deleting': 'Deleting…',
+
+  'tables.leave.title': 'You have unsaved changes',
+  'tables.leave.body': 'If you leave this page, your changes will be lost.',
+  'tables.leave.stay': 'Stay',
+  'tables.leave.leave': 'Leave',
+
+  'tables.toast.created': 'Created.',
+  'tables.toast.updated': 'Updated.',
+  'tables.toast.deleted': 'Deleted.',
 
   'tables.restriction.noPrimaryKey':
     'Rows in this table cannot be identified one by one, so you cannot view, edit, or delete them.',

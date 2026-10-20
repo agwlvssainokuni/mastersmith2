@@ -1,4 +1,4 @@
-# コードの要約 — U3 u3-businessdata-screens（Bolt B5。B6・B7 は後で足す）
+# コードの要約 — U3 u3-businessdata-screens（Bolt B5・B6。B7 は後で足す）
 
 作業ブランチ `feature/261016-business-data-views-b5`（`develop` の `6815308` から）。コミットはまだしていない。詳しい記録は `aidlc/spaces/default/intents/261016-business-data-views/construction/u3-businessdata-screens/code-generation/generation-notes.md`。
 
@@ -50,3 +50,43 @@
 2. N-5: `writeConfigured` が false のとき、読み取りだけの作業ロールにも「いまは業務データを変えられません（書き込みの設定がありません）」を出す（機能設計 D13 の文のまま）でよいか。B6 で、書き込みの操作が許されるときだけに絞る形もとれる。
 3. N-3・N-4: 検索の既定の値の入れ方（RANGE は下限、CHOICE は選択肢の1つ）と、検索の領域をすべての項目が折りたたみのときだけ閉じて始める読み方でよいか。
 4. コミットの区切り: 計画の C3 では型の検査が通らないため、E2E の変更を C3 に入れ、C4 を `README.md` だけにする案でよいか。
+
+## B6（作成・更新・削除）
+
+作業ブランチ `feature/261016-business-data-views-b6`（`develop` の `1152202` から）。コミットはまだしていない。詳しい記録は `generation-notes.md` の 5〜8節。
+
+### 1. 作ったもの・変えたもの
+
+- **見本の PG の安全の確かめと TEMPORARY の取り上げ**（Step 22・23）: 上乗せ `docker/e2e/compose.targetdb-port.yaml`。開けた直後に誤ったパスワードが拒まれた（scram）。共有の見本の PG の PUBLIC の `TEMPORARY` を取り上げた（`f|f|t`）。E2E の後に上乗せ無しで作り直し、15432 は閉じた。
+- **E2E の見本の PG の仕組み**（Step 24）: `build.gradle.kts` の `e2eTest` に前提の確かめ (a)〜(d)・前の残りの片付け・準備・値の受け渡し・`-Pe2e.files`・`finalizedBy` の片付け（`e2eTargetDbCleanup`）。`frontend/e2e/support/businessDataSchema.sql`（表1つ・架空の行 25 件）。`playwright.config.ts`（対象DB の値が無ければ止める、`SECRET_ENV_NAMES` に一時のロールの4つと接続先）。
+- **E2E**: 040 の書き換え（`SCHEMA_MISMATCH`）、代表の流れ 180（本物の見本の PG。一覧 → 検索 → 作成 → 詳細 → 更新 → 削除、キーボード、見本と本物の形の比べ）、185 に作成の誤り・離れる確かめ・分からない知らせ・更新・削除の確かめの状態と測り `formShown100`。
+- **業務データの画面**（`frontend/src/features/tables/`）: 書き込みの写しの確かめ・書き込みの API 3本・結果の分け方（`writeOutcome.ts`）・本文の写し（`formDiff.ts`）・画面の検証（`formValidation.ts`）・書き込みの文、フック `useRowWrite`・`useRowDeleteFlow`、作成・更新の画面 `BusinessDataFormPage`、削除の確かめ `DeleteConfirmModal`、一覧の「作成」と行の操作の「更新」「削除」、詳細の「更新」「削除」、N-5 の絞り（`RestrictionNotice`）、登録に `/tables/new`・`/tables/edit`。
+- **共通の部品と骨組み**: 未保存の確かめを roleadmin から `src/shared/unsaved-guard/` へ移し、`markClean()`・版の数・副作用の無い判定を足した（roleadmin の振る舞いは同じ）。作業ロールの切り替えの前の確かめの口 `registerSwitchGuard`。
+- **文書**: `README.md`（E2E の起動の手順、「E2E の見本の PostgreSQL」の節、040・180・185 の行、ファイルを選んで流す手順を `-Pe2e.files` に、TEMPORARY の取り上げの1文）。
+- **バックエンドのテストの直し**（N-32）: `backend/src/test/java/cherry/mastersmith/businessdata/testsupport/RandomFieldMask.java`（乱数の欄を伏せる）と単体のテスト、`AbstractBusinessDataReadIT`・`BusinessDataSecretLeakIT`・`BusinessDataWriteSecretLeakIT` の確かめに当てた。本体は変えていない。
+- 作ったパス・変えたパスの一覧は `source-manifest.json`（計 133 件）。
+
+### 2. 主な決定
+
+- 書き込みの結果は「保存した」「保存されていない」「分からない」に分け、「保存されていない」は既知の状態コードと code の組（15 組）のときだけ。ほかはすべて「分からない」に倒す。
+- 保存の成功では `markClean()` → 切り替えの確かめを外す → 移動 → Toast の順にし、自分の保存の移動を未保存の確かめが止めない。
+- 「分からない」の後は入力を残し、確かめる入口を出し、もう一度押すと「保存済みかもしれません」の確かめを経て送る（D4: A）。書き込みの 403 は S6 の 403 の表示に替え、入力を捨てる（D3: A）。作業ロールが変わったら一覧へ移る（D2: A）。
+
+### 3. テストとカバレッジ
+
+- 画面のテスト: `src/features/tables` 32 ファイル・295 件、`src/shared/unsaved-guard` 2 ファイル・17 件、`src/app/work-role` 3 ファイル・30 件、E2E の補助の単体のテスト 30 件。性質ベースのテストは書き込みの結果の分け方・本文の写し・画面の検証の長さと小数の比べ（失敗なし）。
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`: 3回目で通過、21分15秒（1回目は CSS の lint、2回目は既存のバックエンドの結合テストの偶然の失敗。トレースID に `838`。generation-notes の 7.1）。依頼者の決定でその確かめを直した後（N-32）の最後の回は 20分43秒で通過。フロントエンド 1,963 件、行 95.10%・分岐 89.90%（`src/features/tables/` は 行 94.01%・分岐 88.17%）。バックエンド 3,975 件（失敗 0・SKIPPED 9）、行 97.64%・分岐 91.23%。
+- E2E の全件（見本の PG あり）: 256 件すべて通過、13分45秒（基準の約 1.30 倍）。180 は 2.6 秒、185 は 182.4 秒。途中で失敗させた回でも片付けの後の残りは 0。
+- 画面の時間（185、各 5 回の中央値）: listShown20 50.1 ms・listShown100 70.1 ms・detailFocused 45.2 ms・listShown100Back 179.0 ms・formShown100 32.8 ms。どれも目標の内。
+
+### 4. axe-core 4.14.0 の試し
+
+- 作業フォルダの中だけで 4.14.0 にして E2E の全件を流し、256 件すべて通過・違反 0 件。U3 の行の操作 3,160 件と行のリンク 2,440 件はすべて passes。B6 の状態で新しい区分は出なかった。戻した後に `package.json`・`package-lock.json` の差は無い。
+
+### 5. 計画との差
+
+`generation-notes.md` の 6節（N-16〜N-31）。主なもの: N-5 の近い判定（N-16、機能設計 D13 との差）、必須の真偽値の初めの値（N-17）、`WorkRoleSwitcher.tsx` を変えなかった（N-19）、計画の表に無いファイル（N-22）、180 の DSL に `validations` を付けた（N-27）、`formShown100` の判定の直し（N-29）、README のファイルを選んで流す手順（N-30）、乱数の欄に当たる既存のバックエンドの確かめの直し（N-32。テストだけ。二段の確かめは generation-notes の 8.1）、(c) の満たさない形を使い捨ての PG で確かめた（N-33）。
+
+### 6. 依頼者に確かめたいこと
+
+コミットの区切り（generation-notes の 7.5 の C1〜C5）。ほかの点（偶然の失敗の扱い・N-16・(c)・N-17・N-23・N-24）は依頼者の答えで決まった（generation-notes の 9節）。

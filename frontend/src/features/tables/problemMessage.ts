@@ -152,3 +152,100 @@ export function needsDefinitionReload(
   const known = knownFields(definition)
   return problem.fieldErrors.some((error) => error.field !== '' && !known.has(error.field))
 }
+
+/** 書き込みの失敗（保存されていない）の種類（計画 4.6 の表、機能設計の 6.1） */
+export type WriteProblemKind =
+  | 'forbidden'
+  | 'table-not-found'
+  | 'row-not-found'
+  | 'dsl-not-applied'
+  | 'unavailable'
+  | 'mismatch'
+  | 'not-unique'
+  | 'write-not-configured'
+  | 'definition-changed'
+  | 'duplicate'
+  | 'reference-not-found'
+  | 'save-rejected'
+  | 'validation'
+  | 'payload-too-large'
+
+/** code ごとの書き込みの失敗の種類（writeOutcome の NOT_SAVED_CODES と同じ code） */
+const WRITE_CODE_KINDS: Readonly<Record<string, WriteProblemKind>> = {
+  ACCESS_DENIED: 'forbidden',
+  BUSINESS_TABLE_NOT_FOUND: 'table-not-found',
+  BUSINESS_ROW_NOT_FOUND: 'row-not-found',
+  BUSINESS_DSL_NOT_APPLIED: 'dsl-not-applied',
+  BUSINESS_TARGET_DB_UNAVAILABLE: 'unavailable',
+  BUSINESS_TARGET_DB_MISMATCH: 'mismatch',
+  BUSINESS_ROW_OPERATION_NOT_ALLOWED: 'not-unique',
+  BUSINESS_ROW_NOT_UNIQUE: 'not-unique',
+  BUSINESS_WRITE_NOT_CONFIGURED: 'write-not-configured',
+  BUSINESS_DEFINITION_CHANGED: 'definition-changed',
+  BUSINESS_DUPLICATE_VALUE: 'duplicate',
+  BUSINESS_REFERENCE_NOT_FOUND: 'reference-not-found',
+  BUSINESS_SAVE_REJECTED: 'save-rejected',
+  VALIDATION_FAILED: 'validation',
+  PAYLOAD_TOO_LARGE: 'payload-too-large',
+}
+
+/**
+ * 書き込みの失敗（writeOutcome で「保存されていない」に分けたもの）の種類を決める。
+ *
+ * @param problem 業務データの誤り（code は NOT_SAVED_CODES のどれか）
+ */
+export function writeProblemKind(problem: BusinessProblem): WriteProblemKind {
+  if (problem.code !== undefined && Object.hasOwn(WRITE_CODE_KINDS, problem.code)) {
+    return WRITE_CODE_KINDS[problem.code]
+  }
+  // NOT_SAVED_CODES の外は writeOutcome が「分からない」に倒すため、ここには来ない。来たら最も弱い文にする。
+  return 'save-rejected'
+}
+
+/** 書き込みの操作（文の出し分けに使う） */
+export type WriteMessageOperation = 'save' | 'delete'
+
+/**
+ * 書き込みの失敗の文言の鍵（フォームの上・削除の Modal の中に出す文）。
+ * validation・definition-changed は項目ごとの文と F6 で扱い、フォームの上の文は補いに使う。
+ *
+ * @param kind 書き込みの失敗の種類
+ * @param operation 保存（作成・更新）か削除か
+ */
+export function writeProblemMessageKey(
+  kind: WriteProblemKind,
+  operation: WriteMessageOperation,
+): string {
+  switch (kind) {
+    case 'forbidden':
+      return operation === 'delete'
+        ? 'tables.problem.writeForbiddenDelete'
+        : 'tables.problem.writeForbidden'
+    case 'unavailable':
+      return operation === 'delete' ? 'tables.write.notDeletedRetry' : 'tables.write.notSavedRetry'
+    case 'save-rejected':
+      return operation === 'delete' ? 'tables.write.deleteReferenced' : 'tables.write.saveRejected'
+    case 'duplicate':
+      return 'tables.error.DUPLICATE'
+    case 'reference-not-found':
+      return 'tables.error.REFERENCE_NOT_FOUND'
+    case 'write-not-configured':
+      return 'tables.writeNotConfigured'
+    case 'definition-changed':
+      return 'tables.definitionChanged'
+    case 'validation':
+      return 'tables.form.checkInputs'
+    case 'payload-too-large':
+      return 'tables.problem.payloadTooLarge'
+    case 'table-not-found':
+      return 'tables.problem.tableNotFound'
+    case 'row-not-found':
+      return 'tables.problem.rowNotFound'
+    case 'dsl-not-applied':
+      return 'tables.problem.dslNotApplied'
+    case 'mismatch':
+      return 'tables.problem.mismatch'
+    case 'not-unique':
+      return 'tables.problem.notUnique'
+  }
+}

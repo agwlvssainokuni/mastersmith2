@@ -21,11 +21,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
 import { renderWithProviders, resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { registration } from './registration'
+import type { Operation } from './businessDataTypes'
 import { RowActionsMenu, rowActionItems } from './RowActionsMenu'
 
 afterEach(() => resetDisplayTestState())
 
-function renderMenu(props: { busy?: boolean; operations?: ('LIST' | 'DETAIL')[] } = {}) {
+function renderMenu(props: { busy?: boolean; operations?: Operation[] } = {}) {
   const onSelect = vi.fn()
   const view = renderWithProviders(
     <main>
@@ -59,6 +60,19 @@ describe('RowActionsMenu', () => {
     expect(onSelect).toHaveBeenCalledWith('detail')
   })
 
+  it('adds edit and delete only when they are allowed (B6)', async () => {
+    const user = userEvent.setup()
+    const { onSelect } = renderMenu({ operations: ['LIST', 'DETAIL', 'UPDATE', 'DELETE'] })
+    await user.click(await screen.findByRole('button', { name: '操作: A01 見本の品' }))
+    expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      '詳細',
+      '更新',
+      '削除',
+    ])
+    await user.click(screen.getByRole('menuitem', { name: '削除' }))
+    expect(onSelect).toHaveBeenCalledWith('delete')
+  })
+
   it('adds the processing suffix while busy and does not open', async () => {
     const user = userEvent.setup()
     const { onSelect } = renderMenu({ busy: true })
@@ -74,6 +88,12 @@ describe('RowActionsMenu', () => {
     expect(screen.queryByRole('button')).toBeNull()
     expect(rowActionItems(['LIST'])).toEqual([])
     expect(rowActionItems(['LIST', 'DETAIL'])).toEqual(['detail'])
+    expect(rowActionItems(['LIST', 'UPDATE', 'DELETE'])).toEqual([])
+    expect(rowActionItems(['LIST', 'DETAIL', 'UPDATE', 'DELETE'])).toEqual([
+      'detail',
+      'update',
+      'delete',
+    ])
   })
 
   it('has no accessibility violations', async () => {

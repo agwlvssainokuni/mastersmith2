@@ -20,7 +20,13 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { axe } from 'vitest-axe'
 import { renderWithProviders, resetDisplayTestState } from '../../app/testing/renderWithProviders'
 import { registration } from './registration'
-import { RestrictionNotice, restrictionMessageKey } from './RestrictionNotice'
+import {
+  canWriteWhenConfigured,
+  RestrictionNotice,
+  restrictionMessageKey,
+} from './RestrictionNotice'
+import { wireColumn } from './testing/businessDataSamples'
+import { sampleDefinition } from './testing/sampleDefinition'
 
 afterEach(() => resetDisplayTestState())
 
@@ -29,16 +35,19 @@ const NO_KEY = 'このテーブルは行を1件に決められないため、詳
 describe('RestrictionNotice', () => {
   it('shows the same text for a table without a key and with a hidden key', async () => {
     const first = renderWithProviders(
-      <RestrictionNotice reason="NO_PRIMARY_KEY" writeConfigured />,
+      <RestrictionNotice reason="NO_PRIMARY_KEY" writeConfigured writeAllowed />,
       {
         registrations: [registration],
       },
     )
     expect(await screen.findByText(NO_KEY)).toBeInTheDocument()
     first.unmount()
-    renderWithProviders(<RestrictionNotice reason="PRIMARY_KEY_HIDDEN" writeConfigured />, {
-      registrations: [registration],
-    })
+    renderWithProviders(
+      <RestrictionNotice reason="PRIMARY_KEY_HIDDEN" writeConfigured writeAllowed />,
+      {
+        registrations: [registration],
+      },
+    )
     expect(await screen.findByText(NO_KEY)).toBeInTheDocument()
     expect(restrictionMessageKey('PRIMARY_KEY_HIDDEN')).toBe(
       restrictionMessageKey('NO_PRIMARY_KEY'),
@@ -46,23 +55,43 @@ describe('RestrictionNotice', () => {
   })
 
   it('shows the read-only text for a view', async () => {
-    renderWithProviders(<RestrictionNotice reason="VIEW" writeConfigured />, {
+    renderWithProviders(<RestrictionNotice reason="VIEW" writeConfigured writeAllowed />, {
       registrations: [registration],
     })
     expect(await screen.findByText('このビューは読み取りだけです。')).toBeInTheDocument()
   })
 
   it('shows the write configuration notice when writing is not configured', async () => {
-    renderWithProviders(<RestrictionNotice reason={null} writeConfigured={false} />, {
+    renderWithProviders(<RestrictionNotice reason={null} writeConfigured={false} writeAllowed />, {
       registrations: [registration],
     })
     expect(await screen.findByText(/書き込みの設定がありません/)).toBeInTheDocument()
   })
 
+  it('does not show the write configuration notice to someone who could not write anyway (N-5)', async () => {
+    renderWithProviders(
+      <main>
+        <RestrictionNotice reason={null} writeConfigured={false} writeAllowed={false} />
+      </main>,
+      { registrations: [registration] },
+    )
+    await screen.findByRole('main')
+    expect(screen.queryByTestId('tables-restriction')).toBeNull()
+  })
+
+  it('decides who could write from the editable detail columns of a table that is not a view', () => {
+    const editable = sampleDefinition({
+      detailColumns: [wireColumn('code', { editableOnUpdate: true, formPart: 'text' })],
+    })
+    expect(canWriteWhenConfigured(editable)).toBe(true)
+    expect(canWriteWhenConfigured(sampleDefinition())).toBe(false)
+    expect(canWriteWhenConfigured({ ...editable, view: true })).toBe(false)
+  })
+
   it('shows nothing without a reason when writing is configured', async () => {
     renderWithProviders(
       <main>
-        <RestrictionNotice reason={null} writeConfigured />
+        <RestrictionNotice reason={null} writeConfigured writeAllowed />
       </main>,
       { registrations: [registration] },
     )
@@ -73,7 +102,7 @@ describe('RestrictionNotice', () => {
   it('has no accessibility violations', async () => {
     const { container } = renderWithProviders(
       <main>
-        <RestrictionNotice reason="VIEW" writeConfigured={false} />
+        <RestrictionNotice reason="VIEW" writeConfigured={false} writeAllowed={false} />
       </main>,
       { registrations: [registration] },
     )

@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 //
-// ビルドした WAR で、業務データの画面（S1 一覧・S2 詳細・S6 開けないとき）を表示の設定の組ごとに実際のブラウザで確かめ、
+// ビルドした WAR で、業務データの画面（S1 一覧・S2 詳細・S3 作成・S4 更新・S5 削除の確かめ・S6 開けないとき・離れる確かめ・
+// 保存されたか分からない知らせ）を表示の設定の組ごとに実際のブラウザで確かめ、
 // 画面の時間を測って記録する（Intent 261016-business-data-views の U3 の L10、計画 Step 13・14、security-design.md の 7節、
 // performance-design.md の 4節・6節、U3-NFR1.7・1.8・5.6〜5.8・7.13）。
 // - 流れの E2E ではないため、team.md の「機能の Intent ごとに代表の流れを1本まで」に数えない（流れは 180）。
@@ -34,6 +35,7 @@ import {
   WIDE_TABLE,
   wideDefinition,
   wideNavigation,
+  writableDefinition,
 } from './support/businessDataFixtures'
 import {
   expectBusinessDataRouteClean,
@@ -82,6 +84,27 @@ const SALES = THREE_ROLES[0] as (typeof THREE_ROLES)[0]
 /** 広い表（100 カラム）の見本。全体は 250 行 */
 const WIDE = wideDefinition(100, SALES.roleId)
 const WIDE_TOTAL = 250
+
+/** 書き込みのできる狭い表（8 カラム。B6 の作成・更新・削除の状態）と、書き込みのできる広い表（formShown100） */
+const WRITABLE = writableDefinition(wideDefinition(8, SALES.roleId))
+const WRITABLE_WIDE = writableDefinition(WIDE)
+
+/** 作成の画面の道 */
+const NEW_PATH = `/tables/new?${new URLSearchParams({ schema: WIDE_SCHEMA, table: WIDE_TABLE, item: '0' }).toString()}`
+
+/**
+ * 書き込みのできる表の答え。作成は 502（本文なし）を返し、「保存されたか分かりません」の状態にする（D4）。
+ * 更新・削除は送らない（状態を見るだけ）。
+ */
+function writableResponder(definition = WRITABLE) {
+  const base = tableResponder(
+    definition,
+    (number, size) => fixturePage(definition, number, size, WIDE_TOTAL),
+    () => longDetail(definition, 1),
+  )
+  return (call: Parameters<typeof base>[0], body: unknown) =>
+    call === 'create' ? { status: 502, body: '' } : base(call, body)
+}
 
 /** 広い表の一覧の道（item はメニューの位置の道） */
 const WIDE_PATH = `/tables?${new URLSearchParams({ schema: WIDE_SCHEMA, table: WIDE_TABLE, item: '0' }).toString()}`
@@ -219,7 +242,7 @@ async function finish(
   expect(remaining, `${label}: 画面の問題`).toEqual([])
 }
 
-/** 一覧・詳細の状態を順にたどり、状態ごとに axe を流す（B6 で作成・更新・削除・離れる確かめの状態を足す） */
+/** 一覧・詳細・作成・更新・削除・離れる確かめの状態を順にたどり、状態ごとに axe を流す（作成・更新・削除は B6 で足した） */
 async function walkStates(
   page: Page,
   started: Awaited<ReturnType<typeof startBusinessData>>,
@@ -269,6 +292,52 @@ async function walkStates(
     await page.getByTestId('tables-row-link-r0').click()
     await expect(page.getByTestId('tables-detail-heading')).toBeFocused()
     await check('detail')
+  })
+
+  await test.step('create form with errors in the summary', async () => {
+    business.setResponder(writableResponder())
+    await page.goto(NEW_PATH)
+    await expect(page.getByTestId('tables-form-heading')).toBeFocused()
+    await page.getByTestId('tables-form-field-c2').getByRole('textbox').fill('x')
+    await page.getByTestId('tables-form-save').click()
+    await expect(page.getByTestId('tables-form-summary')).toBeFocused()
+    await check('create-errors')
+  })
+
+  await test.step('leave confirmation', async () => {
+    await page.getByTestId('tables-form-cancel').click()
+    await expect(page.getByTestId('tables-leave-dialog')).toBeVisible()
+    await check('leave-confirm')
+    await page.getByTestId('tables-leave-stay').click()
+    await expect(page.getByTestId('tables-leave-dialog')).toHaveCount(0)
+  })
+
+  await test.step('save result unknown', async () => {
+    await page.getByTestId('tables-form-field-c0').getByRole('textbox').fill('N-185')
+    await page.getByTestId('tables-form-save').click()
+    await expect(page.getByTestId('tables-form-unknown')).toBeVisible()
+    await check('save-unknown')
+    await page.getByTestId('tables-form-cancel').click()
+    await page.getByTestId('tables-leave-go').click()
+    await expect(page.getByTestId('tables-count')).toContainText(String(WIDE_TOTAL))
+  })
+
+  await test.step('update form', async () => {
+    await page.getByTestId('tables-row-actions-r0').getByRole('button').click()
+    await page.getByRole('menuitem', { name: '更新' }).click()
+    await expect(page.getByTestId('tables-form-heading')).toBeFocused()
+    await check('update')
+  })
+
+  await test.step('delete confirmation', async () => {
+    await page.getByTestId('tables-form-back').click()
+    await expect(page.getByTestId('tables-detail-heading')).toBeFocused()
+    await page.getByTestId('tables-detail-delete').click()
+    await expect(page.getByTestId('tables-delete-dialog')).toBeVisible()
+    await check('delete-confirm')
+    await page.getByTestId('tables-delete-cancel').click()
+    await expect(page.getByTestId('tables-delete-dialog')).toHaveCount(0)
+    business.setResponder(defaultResponder())
   })
 
   await test.step('empty list', async () => {
@@ -333,7 +402,7 @@ async function openWideList(page: Page): Promise<void> {
 test.describe('185 business data accessibility on the built WAR', () => {
   for (const combo of DISPLAY_COMBOS) {
     test(`business data ${combo.name}`, async ({ page }) => {
-      // 7 つの状態ごとに axe を流し、100 カラムの表を含むため、既定の 30 秒を超える。
+      // 12 の状態ごとに axe を流し、100 カラムの表を含むため、既定の 30 秒を超える。
       test.setTimeout(180_000)
       const started = await startBusinessData(page, combo)
       await walkStates(page, started, combo.name)
@@ -351,7 +420,7 @@ test.describe('185 business data accessibility on the built WAR', () => {
   }
 
   test('measure business data screen time with the default combo', async ({ page }) => {
-    // 4つの判定を 5 回ずつ、画面を読み込み直して測る。100 カラム × 100 行の表を描くため長くかかる。
+    // 5つの判定を 5 回ずつ、画面を読み込み直して測る。100 カラム × 100 行の表を描くため長くかかる。
     test.setTimeout(600_000)
     const { watch, frame, business } = await startBusinessData(page, defaultCombo())
     const RUNS = 5
@@ -425,6 +494,19 @@ test.describe('185 business data accessibility on the built WAR', () => {
         '[data-testid="tables-back-to-list"]',
         () => page.getByTestId('tables-back-to-list').click(),
       )
+    })
+
+    await test.step('formShown100 open the create form with 100 columns', async () => {
+      await measure(
+        'formShown100',
+        async () => {
+          business.setResponder(writableResponder(WRITABLE_WIDE))
+          await openWideList(page)
+        },
+        '[data-testid="tables-create"]',
+        () => page.getByTestId('tables-create').click(),
+      )
+      business.setResponder(defaultResponder())
     })
 
     test.info().annotations.push({ type: 'u3-screen-ms', description: JSON.stringify(records) })

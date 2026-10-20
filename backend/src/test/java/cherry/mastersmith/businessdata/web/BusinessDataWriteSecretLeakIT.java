@@ -25,6 +25,7 @@ import cherry.mastersmith.audit.testsupport.FailingAuditEventRepositoryConfig.Fa
 import cherry.mastersmith.businessdata.service.BusinessDataWriteService;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
+import cherry.mastersmith.businessdata.testsupport.RandomFieldMask;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.dsl.domain.DslForeignKey;
 import cherry.mastersmith.dsl.domain.DslModel;
@@ -217,7 +218,8 @@ class BusinessDataWriteSecretLeakIT {
         assertThat(successes).extracting(HttpResponse::statusCode).containsExactly(201, 200, 200, 201);
         assertThat(errors).extracting(HttpResponse::statusCode).containsExactly(409, 409, 409, 409, 400, 400, 503);
         for (HttpResponse<String> error : errors) {
-            assertThat(error.body())
+            // 8 桁の数字の目印が乱数のトレースID と type の URL の番号に偶然に当たらないよう、伏せてから確かめる（U3 の B6、N-32）。
+            assertThat(RandomFieldMask.mask(error.body()))
                     .doesNotContain(VALUE_MARK)
                     .doesNotContain(KEY_MARK)
                     .doesNotContain(UNIQUE_MARK)
@@ -233,7 +235,7 @@ class BusinessDataWriteSecretLeakIT {
                 .as("メソッドの呼び出しの追跡が有効")
                 .contains("BusinessDataWriteService#", "RowSqlExecutor#", "BusinessDataWriteController#");
         JsonLogRecords.assertContainsNoSecret(
-                logs,
+                RandomFieldMask.mask(logs),
                 VALUE_MARK,
                 KEY_MARK,
                 KEY_MARK.substring(1),

@@ -19,6 +19,8 @@
 // - 事前に ./gradlew :backend:bootWar で backend/build/libs/mastersmith.war を作っておく。
 // - WAR は一時ディレクトリの内部DB（H2 のファイル）で、使っていない番号（既定 18081）で起動する。
 // - ブラウザは Chromium だけを使う（npx playwright install chromium）。
+// - 対象DB は見本の PostgreSQL（上乗せの compose で 127.0.0.1:15432 に開ける）。./gradlew e2eTest が実行のスキーマと一時のロールを
+//   作って環境変数で渡し、終わったら消す。直接 npx playwright test を流すと、その値が無いため下で止まる（Intent 261016-business-data-views の U3）。
 // - メールは手元の受け手 Mailpit（docker compose --profile mail up -d mailpit）へ送る。./gradlew e2eTest は始める前に Mailpit に
 //   届くかを確かめ、届かなければ起動の手順を示して失敗する（Intent 260925-user-management の U1、基盤の設計の Q1 A）。
 // - 結果は list と json（test-results/e2e-results.json）に書く。html の報告は作らない（Intent 260930-user-admin の U5、
@@ -54,11 +56,43 @@ process.env.MASTERSMITH_AUTH_SIGNING_KEY = process.env.E2E_SIGNING_KEY
 process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL = adminEmail
 process.env.MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD = adminPassword
 
+// 業務データの E2E は見本の PostgreSQL を前提にする（Intent 261016-business-data-views の U3、基盤の設計 cicd-pipeline.md 3.3）。
+// 対象DB の値（実行のスキーマと2つの一時のロール）は ./gradlew e2eTest が作り、このプロセスの環境変数で渡す（webServer.env に
+// 置かない）。値が無いまま npx playwright test を直接流すと、対象DB の無い前提で黙って流れてしまうため、ここで止める（Q7: A）。
+const TARGET_DB_ENV_NAMES = [
+  'MASTERSMITH_TARGET_DB_TYPE',
+  'MASTERSMITH_TARGET_DB_HOST',
+  'MASTERSMITH_TARGET_DB_PORT',
+  'MASTERSMITH_TARGET_DB_DATABASE',
+  'MASTERSMITH_TARGET_DB_SCHEMA',
+  'MASTERSMITH_TARGET_DB_USERNAME',
+  'MASTERSMITH_TARGET_DB_PASSWORD',
+  'MASTERSMITH_TARGET_DB_WRITE_USERNAME',
+  'MASTERSMITH_TARGET_DB_WRITE_PASSWORD',
+  'E2E_BIZ_SCHEMA',
+] as const
+const missingTargetDbEnv = TARGET_DB_ENV_NAMES.filter((name) => !process.env[name])
+if (missingTargetDbEnv.length > 0) {
+  throw new Error(
+    `E2E は ./gradlew e2eTest から流してください（見本の PostgreSQL の実行のスキーマと一時のロールを作って渡します。` +
+      `ファイルを選ぶときは -Pe2e.files=e2e/<ファイル>）。足りない環境変数: ${missingTargetDbEnv.join(', ')}`,
+  )
+}
+// 対象DB の接続先（ホストと番号の組）も報告に残さない値として探す（基盤の設計 3.3 の「コード生成で決める」。秘密ではないが、
+// 接続先の情報を報告に出さない決まり（project.md の Forbidden）を確かめるため）。
+process.env.E2E_TARGETDB_ENDPOINT = `${process.env.MASTERSMITH_TARGET_DB_HOST}:${process.env.MASTERSMITH_TARGET_DB_PORT}`
+
 /** 報告に含まれてはならない値の環境変数の名前と、その種類の名前（値は表示しない） */
 const SECRET_ENV_NAMES = [
   { name: 'MASTERSMITH_AUTH_SIGNING_KEY', kind: 'signingKey' },
   { name: 'MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL', kind: 'adminEmail' },
   { name: 'MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD', kind: 'adminPassword' },
+  // 一時の2つのロール（ユーザー名とパスワード）と接続先（Intent 261016-business-data-views の U3）。管理者の値はプロセスに無い。
+  { name: 'MASTERSMITH_TARGET_DB_USERNAME', kind: 'targetDbUsername' },
+  { name: 'MASTERSMITH_TARGET_DB_PASSWORD', kind: 'targetDbPassword' },
+  { name: 'MASTERSMITH_TARGET_DB_WRITE_USERNAME', kind: 'targetDbWriteUsername' },
+  { name: 'MASTERSMITH_TARGET_DB_WRITE_PASSWORD', kind: 'targetDbWritePassword' },
+  { name: 'E2E_TARGETDB_ENDPOINT', kind: 'targetDbEndpoint' },
 ]
 const resultsDir = 'test-results'
 const jsonResultsFile = `${resultsDir}/e2e-results.json`

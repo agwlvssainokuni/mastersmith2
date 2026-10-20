@@ -226,6 +226,8 @@ describe('BusinessDataListPage', () => {
           rowLabelColumns: [],
           primaryKeyColumns: [],
           hasPrimaryKey: false,
+          // 書き込みの設定が無い旨は、書き込みの操作が許されるはずの人（入力できるカラムがある人）にだけ出す（N-5）。
+          detailColumns: [wireColumn('code', { editableOnCreate: true, formPart: 'text' })],
         },
       }),
     )

@@ -62,3 +62,34 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* 確かめの Modal の中身（削除・保存済みかもしれない確かめ。Intent 261016-business-data-views の U3 の B6） */
+.tables-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.tables-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* 文字のボタン（B5 では一覧の CSS にあった。B6 で詳細・Modal でも使うため共通へ移した） */
+.tables-text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-primary-subtle-text);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tables-text-button:focus-visible {
+  box-shadow: var(--focus-ring);
+  outline: none;
+}

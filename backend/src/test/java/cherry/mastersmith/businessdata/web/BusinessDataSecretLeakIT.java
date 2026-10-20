@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import cherry.mastersmith.businessdata.service.BusinessDataReadService;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
+import cherry.mastersmith.businessdata.testsupport.RandomFieldMask;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.role.domain.MainPermission;
@@ -165,7 +166,8 @@ class BusinessDataSecretLeakIT {
         assertThat(errors).extracting(HttpResponse::statusCode).containsExactly(400, 400, 404, 400, 503, 503);
         assertThat(HttpTestClient.json(errors.get(3))).as("22P02 は値を出さずに 400").doesNotContainKey("fieldErrors");
         for (HttpResponse<String> error : errors) {
-            assertThat(error.body())
+            // 8 桁の数字の目印が乱数のトレースID と type の URL の番号に偶然に当たらないよう、伏せてから確かめる（U3 の B6、N-32）。
+            assertThat(RandomFieldMask.mask(error.body()))
                     .doesNotContain(SEARCH_MARK)
                     .doesNotContain(KEY_MARK)
                     .doesNotContain(OTHER_MARK)
@@ -178,7 +180,7 @@ class BusinessDataSecretLeakIT {
                 .contains("BusinessDataReadService#", "RowSqlExecutor#", "BusinessDataReadController#");
         assertThat(logs).as("Done を通る戻り値は型の名前だけ").contains("Done[valueType=");
         JsonLogRecords.assertContainsNoSecret(
-                logs,
+                RandomFieldMask.mask(logs),
                 BusinessDataSampleSchema.SECRET_NAME,
                 "ノート",
                 SEARCH_MARK,

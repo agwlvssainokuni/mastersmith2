@@ -23,15 +23,24 @@ import { registration as authRegistration } from '../auth/registration'
 import { registration } from './registration'
 
 describe('tables registration', () => {
-  it('registers the list and the detail as separate lazy screens for logged-in users in the shell', () => {
-    expect(registration.routes?.map((route) => route.path)).toEqual(['/tables', '/tables/row'])
+  it('registers the list, the detail and the form as separate lazy screens for logged-in users in the shell', () => {
+    expect(registration.routes?.map((route) => route.path)).toEqual([
+      '/tables',
+      '/tables/row',
+      '/tables/new',
+      '/tables/edit',
+    ])
     for (const route of registration.routes ?? []) {
       expect(route).toMatchObject({ access: 'LOGGED_IN', layout: 'SHELL' })
       const screen = route.screen as { $$typeof?: symbol }
       expect(screen.$$typeof).toBe(Symbol.for('react.lazy'))
     }
-    const [list, detail] = registration.routes ?? []
+    const [list, detail, create, edit] = registration.routes ?? []
     expect(list?.screen).not.toBe(detail?.screen)
+    expect(create?.screen).not.toBe(list?.screen)
+    expect(create?.screen).not.toBe(detail?.screen)
+    // 作成と更新は同じ画面（道で決める）。
+    expect(create?.screen).toBe(edit?.screen)
     expect(registration.sidebarItems).toBeUndefined()
     expect(registration.userMenuItems).toBeUndefined()
   })
@@ -46,8 +55,8 @@ describe('tables registration', () => {
     expect(Object.keys(ja).every((key) => key.startsWith('tables.'))).toBe(true)
   })
 
-  it('sends logged-out users to the login screen on both paths', () => {
-    for (const path of ['/tables', '/tables/row']) {
+  it('sends logged-out users to the login screen on every path', () => {
+    for (const path of ['/tables', '/tables/row', '/tables/new', '/tables/edit']) {
       const decision = decideRoute(path, [registration, authRegistration], {
         loggedIn: false,
         admin: false,

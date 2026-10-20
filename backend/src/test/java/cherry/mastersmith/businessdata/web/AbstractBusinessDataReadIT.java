@@ -35,6 +35,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import cherry.mastersmith.businessdata.service.BusinessDataReadService;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
+import cherry.mastersmith.businessdata.testsupport.RandomFieldMask;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
@@ -526,7 +527,8 @@ abstract class AbstractBusinessDataReadIT {
         assertProblem(list, 409, "BUSINESS_TARGET_DB_MISMATCH");
         assertProblem(zeroDate, 409, "BUSINESS_TARGET_DB_MISMATCH");
         assertProblem(longTime, 409, "BUSINESS_TARGET_DB_MISMATCH");
-        assertThat(list.body() + zeroDate.body() + longTime.body())
+        // 乱数のトレースID と type の URL の番号に 838 が偶然に含まれうるため、伏せてから確かめる（U3 の B6、N-32）。
+        assertThat(RandomFieldMask.mask(list.body() + zeroDate.body() + longTime.body()))
                 .doesNotContain("0000-00-00")
                 .doesNotContain("838");
         List<Map<String, Object>> warns = JsonLogRecords.parse(output.getAll()).stream()

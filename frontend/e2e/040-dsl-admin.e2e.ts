@@ -18,7 +18,10 @@
 // ログイン → サイドバーから DSL の管理（/admin/dsl）→ 書式の版 1 を貼り付けると版の誤りの文が出る → 書式の版 2 を貼り付けで投入
 // → プレビュー（要約・違いの表）→ 適用（確かめる表示で確定）→ 今の状態が「適用中」になる → ログアウト。
 // 書式の版 2 は Intent 261004-role-menu の U2 dsl-v2（スキーマの階層・メニューの組）。版 1 の確かめは計画の D-11 で1か所足した。
-// E2E の環境には対象DB の接続先が無いため、照合は「対象DB の接続先が設定されていません」の警告になる前提で書く。
+// E2E の環境の対象DB は見本の PostgreSQL の実行のスキーマ（./gradlew e2eTest が e2e_biz_<印> を作って渡す。Intent
+// 261016-business-data-views の U3、基盤の設計 Q2: A）。この DSL のスキーマ e2e は設定のスキーマと違うため、照合は「スキーマの名前の違い」
+// （SCHEMA_MISMATCH。テーブルを比べない）の警告になる前提で書く。見本の PG の読み取りが失敗したときは TARGET_UNAVAILABLE になり、
+// この確かめは落ちる（見本の PG が応答しているか、e2eTest の前提の確かめと片付けのログを見る）。
 // 内部DB は実行ごとの一時ディレクトリで、ファイル名の順に1本ずつ実行するため、この確かめの始めは適用もプレビューも無い。
 import { expect, test, type Page } from '@playwright/test'
 import { adminEmail, adminPassword } from '../playwright.config'
@@ -143,8 +146,8 @@ test.describe('040 DSL administration on the built WAR', () => {
     await expect(preview).toBeVisible()
     await expect(page.getByTestId('dsl-preview-valid')).toHaveText('検証を通りました')
     await expect(page.getByTestId('dsl-preview-not-compared')).toBeVisible()
-    await expect(page.getByTestId('dsl-warning-group-TARGET_UNCONFIGURED')).toContainText(
-      '対象DB の接続先が設定されていません',
+    await expect(page.getByTestId('dsl-warning-group-SCHEMA_MISMATCH')).toContainText(
+      'スキーマの名前の違い',
     )
     await expect(page.getByTestId('dsl-preview-schema-count')).toHaveText('スキーマ 1')
     await expect(page.getByTestId('dsl-preview-table-count')).toHaveText(

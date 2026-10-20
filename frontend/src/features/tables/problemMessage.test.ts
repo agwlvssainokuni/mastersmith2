@@ -23,7 +23,11 @@ import {
   needsDefinitionReload,
   readProblemKind,
   readProblemMessageKey,
+  writeProblemKind,
+  writeProblemMessageKey,
 } from './problemMessage'
+import { tablesMessages } from './messages'
+import { NOT_SAVED_CODES } from './writeOutcome'
 import { sampleDefinition } from './testing/sampleDefinition'
 
 function problem(
@@ -122,5 +126,44 @@ describe('needsDefinitionReload', () => {
       ),
     ).toBe(false)
     expect(needsDefinitionReload(undefined, definition)).toBe(false)
+  })
+})
+
+describe('problemMessage writes (B6)', () => {
+  it.each(Object.entries(NOT_SAVED_CODES))('has a kind and messages for %s', (code, status) => {
+    const kind = writeProblemKind({ status, code, fieldErrors: [], definitionChanged: false })
+    for (const operation of ['save', 'delete'] as const) {
+      const key = writeProblemMessageKey(kind, operation)
+      expect(tablesMessages.ja[key]).toBeDefined()
+      expect(tablesMessages.en[key]).toBeDefined()
+    }
+  })
+
+  it('uses the write forbidden text, not the read text, for a 403 on save and delete', () => {
+    const kind = writeProblemKind({
+      status: 403,
+      code: 'ACCESS_DENIED',
+      fieldErrors: [],
+      definitionChanged: false,
+    })
+    expect(kind).toBe('forbidden')
+    expect(writeProblemMessageKey(kind, 'save')).toBe('tables.problem.writeForbidden')
+    expect(writeProblemMessageKey(kind, 'delete')).toBe('tables.problem.writeForbiddenDelete')
+  })
+
+  it('separates a referenced row on delete from a rejected save', () => {
+    expect(writeProblemMessageKey('save-rejected', 'delete')).toBe('tables.write.deleteReferenced')
+    expect(writeProblemMessageKey('save-rejected', 'save')).toBe('tables.write.saveRejected')
+    expect(writeProblemMessageKey('unavailable', 'delete')).toBe('tables.write.notDeletedRetry')
+  })
+
+  it('does not reload the definition for write errors whose field is empty', () => {
+    const problem: BusinessProblem = {
+      status: 409,
+      code: 'BUSINESS_SAVE_REJECTED',
+      fieldErrors: [{ field: '', reason: 'NOT_EDITABLE_NOT_NULL' }],
+      definitionChanged: false,
+    }
+    expect(needsDefinitionReload(problem, sampleDefinition())).toBe(false)
   })
 })

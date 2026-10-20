@@ -419,13 +419,312 @@ tasks.register("verify") {
 // 同じ場所を E2E の側の定数 MAILPIT_API_URL（frontend/e2e/support/mailpit.ts）も持つ。変えるときは両方をそろえる（U6）。
 val mailpitInfoUrl = "http://127.0.0.1:8025/api/v1/info"
 
+// ---- E2E の見本の PostgreSQL（Intent 261016-business-data-views の U3、基盤の設計 cicd-pipeline.md 3.2）----
+// 業務データの代表の流れ（180）は、手元の見本の PostgreSQL（compose の targetdb-postgres。配備したアプリと共有）の中に、実行ごとの
+// スキーマ e2e_biz_<印> と2つの一時のロール mastersmith_e2e_r_<印>・mastersmith_e2e_w_<印> を作って使い、終わったら消す。
+// - 見本の PG は上乗せ docker/e2e/compose.targetdb-port.yaml で 127.0.0.1:${E2E_TARGETDB_PORT:-15432} に開けておく（e2eTest は
+//   起動・停止しない）。管理者は docker compose exec でコンテナの中のローカルのソケットから入り、管理者のパスワードを読まない（Q3: A）。
+// - 触るのは接頭辞 e2e_biz_ のスキーマと mastersmith_e2e_ のロールだけ。
+// - 一時のロールのパスワードはこのビルドの中で乱数で作り、WAR と Playwright へは e2eTest のプロセスの環境変数だけで渡す
+//   （ファイル・ログ・webServer.env に置かない）。片付けには名前だけを渡す（R-04）。
+// - psql の誤りの出力（標準エラー）は、失敗した文に一時のパスワードが入りうるため Gradle のログに流さない。段の名前と SQLSTATE と
+//   件数だけを出す（D8: A）。見本の PG のサーバーのログ（docker logs）には失敗した文が残りうる（2 時間で失効する使い捨ての値）。
+// - docker の呼び出しは、このプロセスの環境変数（colima の DOCKER_HOST など）を引き継ぐ。
+
+/** 見本の PG の公開の番号（上乗せの compose と同じ既定） */
+val e2eTargetDbPort: String = providers.environmentVariable("E2E_TARGETDB_PORT").getOrElse("15432")
+
+/** 見本の PG のサービス名と、管理者で入るときの共通の引数 */
+val e2eTargetDbService = "targetdb-postgres"
+
+/** この実行で作ったスキーマとロールの名前（準備のタスクが入れ、片付けのタスクが読む。パスワードは入れない） */
+val e2eTargetDbRun: MutableMap<String, String> = mutableMapOf()
+
+/** コマンドの結果（標準エラーは呼び出し側がログに出さずに SQLSTATE だけを取り出す） */
+data class E2eCommandResult(val exitCode: Int, val stdout: String, val stderr: String)
+
+/** コマンドを流す（標準入力を渡せる。標準出力と標準エラーは別のスレッドで読む）。 */
+fun runE2eCommand(
+    command: List<String>,
+    stdin: String? = null,
+    extraEnv: Map<String, String> = emptyMap(),
+    timeoutSeconds: Long = 120,
+): E2eCommandResult {
+    val builder = ProcessBuilder(command).directory(rootDir)
+    builder.environment().putAll(extraEnv)
+    val process = builder.start()
+    val stdoutBuffer = ByteArrayOutputStream()
+    val stderrBuffer = ByteArrayOutputStream()
+    val stdoutReader = Thread { process.inputStream.use { it.copyTo(stdoutBuffer) } }
+    val stderrReader = Thread { process.errorStream.use { it.copyTo(stderrBuffer) } }
+    stdoutReader.start()
+    stderrReader.start()
+    process.outputStream.use { out -> if (stdin != null) out.write(stdin.toByteArray(Charsets.UTF_8)) }
+    if (!process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        throw GradleException("コマンドが ${timeoutSeconds} 秒で終わりませんでした: ${command.take(4).joinToString(" ")} …")
+    }
+    stdoutReader.join()
+    stderrReader.join()
+    return E2eCommandResult(process.exitValue(), stdoutBuffer.toString(Charsets.UTF_8), stderrBuffer.toString(Charsets.UTF_8))
+}
+
+/** 標準エラーから SQLSTATE（VERBOSITY sqlstate の形）だけを取り出す。値や文は返さない。 */
+fun sqlStatesOf(stderr: String): List<String> =
+    Regex("""(?:ERROR|FATAL|PANIC):\s+([0-9A-Z]{5})""").findAll(stderr).map { it.groupValues[1] }.toList()
+
+/**
+ * 見本の PG の中で、管理者（target_admin）がコンテナの中のソケットから SQL を流す。
+ * 誤りは段の名前・SQLSTATE・件数だけを出して止める（標準エラーはログに出さない。D8: A）。
+ */
+fun runTargetDbAdminSql(stage: String, script: String, singleTransaction: Boolean = false): List<String> {
+    val command =
+        mutableListOf(
+            "docker", "compose", "--profile", e2eTargetDbService, "exec", "-T", e2eTargetDbService,
+            "psql", "-X", "-q", "-t", "-A", "-U", "target_admin", "-d", "business",
+            "-v", "ON_ERROR_STOP=1", "-v", "VERBOSITY=sqlstate",
+        )
+    if (singleTransaction) {
+        command.add("-1")
+    }
+    val result = runE2eCommand(command, stdin = script)
+    if (result.exitCode != 0) {
+        val states = sqlStatesOf(result.stderr)
+        throw GradleException(
+            "見本の PostgreSQL の「$stage」が失敗しました（終了コード ${result.exitCode}・誤りの件数 ${states.size}・" +
+                "SQLSTATE ${states.distinct().ifEmpty { listOf("なし") }.joinToString(",")}）。psql の誤りの出力は、" +
+                "一時のパスワードを含みうるため表示しません。README の「E2E の見本の PostgreSQL」の手順で確かめてください。",
+        )
+    }
+    return result.stdout.lines().map { it.trim() }.filter { it.isNotEmpty() }
+}
+
+/** `key=value` の行から数を読む */
+fun countOf(lines: List<String>, key: String): Int =
+    lines.firstOrNull { it.startsWith("$key=") }?.substringAfter("=")?.toIntOrNull()
+        ?: throw GradleException("見本の PostgreSQL の結果に $key がありません。")
+
+/** 接頭辞のスキーマとロールを消す SQL（前の残りの片付け。名前は接頭辞で選ぶ） */
+val e2eTargetDbPrefixCleanupSql =
+    """
+    SELECT 'schemas=' || count(*) FROM pg_namespace WHERE nspname LIKE 'e2e\_biz\_%';
+    SELECT 'roles=' || count(*) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%';
+    SELECT 'terminated=' || count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE usename LIKE 'mastersmith\_e2e\_%';
+    SELECT format('DROP OWNED BY %I', rolname) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%' \gexec
+    SELECT format('DROP ROLE %I', rolname) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%' \gexec
+    SELECT format('DROP SCHEMA %I CASCADE', nspname) FROM pg_namespace WHERE nspname LIKE 'e2e\_biz\_%' \gexec
+    SELECT 'remaining=' || ((SELECT count(*) FROM pg_namespace WHERE nspname LIKE 'e2e\_biz\_%')
+        + (SELECT count(*) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%'));
+    """.trimIndent() + "\n"
+
+/** 見本の PG の前提の確かめ (a)〜(d)。満たさなければ起動・取り上げの手順を示して止める。 */
+fun checkE2eTargetDb() {
+    // (a) コンテナが動き、DB が応答するか（profile での起動）。
+    val ready =
+        try {
+            runE2eCommand(
+                listOf("docker", "compose", "--profile", e2eTargetDbService, "exec", "-T", e2eTargetDbService, "pg_isready", "-q"),
+                timeoutSeconds = 30,
+            ).exitCode == 0
+        } catch (e: java.io.IOException) {
+            logger.info("docker を呼べません: ${e.javaClass.name}")
+            false
+        }
+    if (!ready) {
+        throw GradleException(
+            "見本の PostgreSQL（$e2eTargetDbService）が応答しません。E2E の前に " +
+                "docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml --profile targetdb-postgres up -d targetdb-postgres " +
+                "で起動してください（.env.targetdb が要ります。README の「E2E の見本の PostgreSQL」）。",
+        )
+    }
+    // (b) PC の 127.0.0.1 の公開の番号に TCP で届くか（上乗せでの起動）。
+    val tcpReachable =
+        try {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", e2eTargetDbPort.toInt()), 2000)
+            }
+            true
+        } catch (e: java.io.IOException) {
+            logger.info("見本の PostgreSQL の公開の番号に届きません: ${e.javaClass.name}")
+            false
+        }
+    if (!tcpReachable) {
+        throw GradleException(
+            "見本の PostgreSQL が 127.0.0.1:$e2eTargetDbPort に開いていません。上乗せの compose で作り直してください: " +
+                "docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml --profile targetdb-postgres up -d targetdb-postgres",
+        )
+    }
+    // (c) PUBLIC に DB の TEMPORARY が残っていないか（一時の表で書き込みの権限の外を作れないようにする。Q6: A）。
+    val publicTemp = runTargetDbAdminSql("TEMPORARY の確かめ", "SELECT 'temp=' || has_database_privilege('public', 'business', 'TEMP');\n")
+    if (publicTemp.firstOrNull { it.startsWith("temp=") } != "temp=false") {
+        throw GradleException(
+            "見本の PostgreSQL の DB business で、PUBLIC に TEMPORARY が残っています。共有の見本の PG（配備したアプリも使う）を変える操作です。" +
+                "docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -v ON_ERROR_STOP=1 " +
+                "-c 'REVOKE TEMPORARY ON DATABASE business FROM PUBLIC' で取り上げてから流し直してください（README の U2 の手順と同じ）。",
+        )
+    }
+    // (d) 公開の番号から来る接続が trust に当たらず、誤ったパスワードで拒まれるか（基盤の設計のレビュー R-02）。
+    //     同じイメージ（同じ digest）の一時の psql を、docker の host のネットワークで流す。パスワードは乱数で、表示しない。
+    val containerId =
+        runE2eCommand(listOf("docker", "compose", "--profile", e2eTargetDbService, "ps", "-q", e2eTargetDbService)).stdout.trim()
+    val image = runE2eCommand(listOf("docker", "inspect", "--format", "{{.Config.Image}}", containerId)).stdout.trim()
+    if (containerId.isEmpty() || !image.contains("@sha256:")) {
+        throw GradleException("見本の PostgreSQL のイメージ（digest つき）を読めませんでした。compose.yaml の targetdb-postgres を確かめてください。")
+    }
+    val wrongPassword = java.util.HexFormat.of().formatHex(ByteArray(24).also { java.security.SecureRandom().nextBytes(it) })
+    val probe =
+        runE2eCommand(
+            listOf(
+                "docker", "run", "--rm", "--network", "host", "-e", "PGPASSWORD", "-e", "PGCONNECT_TIMEOUT=5", image,
+                "psql", "-X", "-w", "-h", "127.0.0.1", "-p", e2eTargetDbPort, "-U", "target_admin", "-d", "business", "-tAc", "SELECT 1",
+            ),
+            extraEnv = mapOf("PGPASSWORD" to wrongPassword),
+            timeoutSeconds = 60,
+        )
+    val rejected = probe.exitCode != 0 && probe.stderr.contains("password authentication failed")
+    if (!rejected) {
+        throw GradleException(
+            "見本の PostgreSQL の公開の番号への誤ったパスワードの接続が拒まれませんでした（終了コード ${probe.exitCode}）。" +
+                "trust に当たっているおそれがあるため、すぐに上乗せ無しで作り直してポートを閉じてください: " +
+                "docker compose --profile targetdb-postgres up -d targetdb-postgres",
+        )
+    }
+}
+
+/** 前の実行の残り（接頭辞のスキーマとロール）を消す。消した件数だけをログに出す。 */
+fun cleanupE2eTargetDbLeftovers() {
+    val lines = runTargetDbAdminSql("前の残りの片付け", e2eTargetDbPrefixCleanupSql)
+    val remaining = countOf(lines, "remaining")
+    logger.lifecycle(
+        "E2E の見本の PG: 前の残りを消しました（スキーマ ${countOf(lines, "schemas")}・ロール ${countOf(lines, "roles")}・" +
+            "切った接続 ${countOf(lines, "terminated")}・残り $remaining）。",
+    )
+    if (remaining != 0) {
+        throw GradleException("E2E の見本の PG の前の残りを消しきれませんでした（残り $remaining）。README の手で消す手順で消してください。")
+    }
+}
+
+/** psql の \set に入れる値（英数字と _ と記号の限られた形だけを受ける。引用符で包む） */
+fun psqlSetLine(name: String, value: String): String {
+    require(Regex("""[0-9A-Za-z_:+\- ]+""").matches(value)) { "psql の変数 $name の値の形が違います。" }
+    return "\\set $name '$value'\n"
+}
+
+/** 実行のスキーマ・表・架空の行・2つの一時のロール・付与を作り、WAR と Playwright へ渡す値を返す。 */
+fun prepareE2eTargetDb(): Map<String, String> {
+    val random = java.security.SecureRandom()
+    val hex = java.util.HexFormat.of()
+    val stamp = java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(java.time.ZoneOffset.UTC)
+        .format(java.time.Instant.now())
+    val mark = "${stamp}_${hex.formatHex(ByteArray(4).also { random.nextBytes(it) })}"
+    val schema = "e2e_biz_$mark"
+    val reader = "mastersmith_e2e_r_$mark"
+    val writer = "mastersmith_e2e_w_$mark"
+    val readerPassword = hex.formatHex(ByteArray(24).also { random.nextBytes(it) })
+    val writerPassword = hex.formatHex(ByteArray(24).also { random.nextBytes(it) })
+    val until = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss+00").withZone(java.time.ZoneOffset.UTC)
+        .format(java.time.Instant.now().plus(java.time.Duration.ofHours(2)))
+    // 片付けには名前だけを渡す。準備が途中で失敗しても、片付けのタスクが名前で消す。
+    e2eTargetDbRun["schema"] = schema
+    e2eTargetDbRun["reader"] = reader
+    e2eTargetDbRun["writer"] = writer
+    val tableSql = frontendDir.file("e2e/support/businessDataSchema.sql").asFile.readText(Charsets.UTF_8)
+    val script =
+        psqlSetLine("schema", schema) + psqlSetLine("reader", reader) + psqlSetLine("writer", writer) +
+            psqlSetLine("reader_pw", readerPassword) + psqlSetLine("writer_pw", writerPassword) + psqlSetLine("until", until) +
+            "CREATE SCHEMA :\"schema\";\n" +
+            tableSql + "\n" +
+            """
+            CREATE ROLE :"reader" LOGIN PASSWORD :'reader_pw' VALID UNTIL :'until';
+            CREATE ROLE :"writer" LOGIN PASSWORD :'writer_pw' VALID UNTIL :'until';
+            GRANT USAGE ON SCHEMA :"schema" TO :"reader", :"writer";
+            GRANT SELECT ON ALL TABLES IN SCHEMA :"schema" TO :"reader";
+            GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA :"schema" TO :"writer";
+            GRANT USAGE ON ALL SEQUENCES IN SCHEMA :"schema" TO :"writer";
+            SELECT 'rows=' || count(*) FROM :"schema".e2e_item;
+            SELECT 'writerTemp=' || has_database_privilege(:'writer', 'business', 'TEMP');
+            """.trimIndent() + "\n"
+    val started = System.nanoTime()
+    val lines = runTargetDbAdminSql("準備", script, singleTransaction = true)
+    if (lines.firstOrNull { it.startsWith("writerTemp=") } != "writerTemp=false") {
+        throw GradleException("E2E の書き込みのロールに TEMPORARY があります。PUBLIC の TEMPORARY を取り上げてから流し直してください。")
+    }
+    logger.lifecycle(
+        "E2E の見本の PG: 実行のスキーマ $schema と一時のロール2つを作りました（行 ${countOf(lines, "rows")}・" +
+            "${(System.nanoTime() - started) / 1_000_000} ms・ロールは $until まで有効）。",
+    )
+    return mapOf(
+        "MASTERSMITH_TARGET_DB_TYPE" to "postgresql",
+        "MASTERSMITH_TARGET_DB_HOST" to "127.0.0.1",
+        "MASTERSMITH_TARGET_DB_PORT" to e2eTargetDbPort,
+        "MASTERSMITH_TARGET_DB_DATABASE" to "business",
+        "MASTERSMITH_TARGET_DB_SCHEMA" to schema,
+        "MASTERSMITH_TARGET_DB_USERNAME" to reader,
+        "MASTERSMITH_TARGET_DB_PASSWORD" to readerPassword,
+        "MASTERSMITH_TARGET_DB_WRITE_USERNAME" to writer,
+        "MASTERSMITH_TARGET_DB_WRITE_PASSWORD" to writerPassword,
+        "E2E_BIZ_SCHEMA" to schema,
+    )
+}
+
+/** この実行のスキーマとロールを消す片付け（e2eTest の finalizedBy。名前だけで消す）。 */
+val e2eTargetDbCleanup =
+    tasks.register("e2eTargetDbCleanup") {
+        description = "E2E が見本の PostgreSQL に作った実行のスキーマと一時のロールを消す（e2eTest の後に必ず動く）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        doLast {
+            val schema = e2eTargetDbRun["schema"]
+            val reader = e2eTargetDbRun["reader"]
+            val writer = e2eTargetDbRun["writer"]
+            if (schema == null || reader == null || writer == null) {
+                logger.lifecycle("E2E の見本の PG: この実行で作ったものは無いため、片付けは要りません。")
+                return@doLast
+            }
+            val started = System.nanoTime()
+            val script =
+                psqlSetLine("schema", schema) + psqlSetLine("reader", reader) + psqlSetLine("writer", writer) +
+                    """
+                    SELECT 'terminated=' || count(pg_terminate_backend(pid)) FROM pg_stat_activity WHERE usename IN (:'reader', :'writer');
+                    SELECT 'roles=' || count(*) FROM pg_roles WHERE rolname IN (:'reader', :'writer');
+                    SELECT 'schemas=' || count(*) FROM pg_namespace WHERE nspname = :'schema';
+                    SELECT format('DROP OWNED BY %I', rolname) FROM pg_roles WHERE rolname IN (:'reader', :'writer') \gexec
+                    SELECT format('DROP ROLE %I', rolname) FROM pg_roles WHERE rolname IN (:'reader', :'writer') \gexec
+                    SELECT format('DROP SCHEMA %I CASCADE', nspname) FROM pg_namespace WHERE nspname = :'schema' \gexec
+                    SELECT 'remaining=' || ((SELECT count(*) FROM pg_namespace WHERE nspname LIKE 'e2e\_biz\_%')
+                        + (SELECT count(*) FROM pg_roles WHERE rolname LIKE 'mastersmith\_e2e\_%'));
+                    """.trimIndent() + "\n"
+            val lines = runTargetDbAdminSql("片付け", script)
+            e2eTargetDbRun.clear()
+            val remaining = countOf(lines, "remaining")
+            logger.lifecycle(
+                "E2E の見本の PG: 片付けました（スキーマ ${countOf(lines, "schemas")}・ロール ${countOf(lines, "roles")}・" +
+                    "切った接続 ${countOf(lines, "terminated")}・${(System.nanoTime() - started) / 1_000_000} ms・" +
+                    "接頭辞の残り $remaining）。",
+            )
+            if (remaining != 0) {
+                throw GradleException("E2E の見本の PG に接頭辞のスキーマかロールが残っています（$remaining 件）。README の手で消す手順で消してください。")
+            }
+        }
+    }
+
+/** 流す E2E のファイル（-Pe2e.files=e2e/180-….e2e.ts,e2e/185-….e2e.ts。無ければ e2e の全件） */
+val e2eFiles: List<String> =
+    providers.gradleProperty("e2e.files").orNull
+        ?.split(',')
+        ?.map { it.trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.ifEmpty { null }
+        ?: listOf("e2e")
+
 tasks.register<Exec>("e2eTest") {
     description =
         "ビルドした WAR を起動し、Playwright で画面を確かめる（./gradlew verify と CI には入れない。計画の P2 の決定）。" +
             "事前に npx playwright install chromium でブラウザを入れ、docker compose --profile mail up -d mailpit で" +
-            "メールの受け手（Mailpit）を起動しておく。"
+            "メールの受け手（Mailpit）を、上乗せの compose で見本の PostgreSQL を起動しておく。" +
+            "ファイルを選ぶときは -Pe2e.files=e2e/180-business-data-flow.e2e.ts（カンマで区切って複数）。"
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(":backend:bootWar")
+    finalizedBy(e2eTargetDbCleanup)
     doFirst {
         // E2E はメールを手元の受け手（Mailpit）へ送る。届かなければ起動の手順を示して失敗させる（黙って飛ばさない。
         // 基盤の設計の Q1 A）。e2eTest は Mailpit を起動・停止しない。
@@ -449,7 +748,12 @@ tasks.register<Exec>("e2eTest") {
                     "docker compose --profile mail up -d mailpit で起動してください（README の「メール（U1）」）。",
             )
         }
+        // 業務データの E2E は見本の PostgreSQL を前提にする（team.md の Testing Posture。届かなければ手順を示して止める）。
+        checkE2eTargetDb()
+        cleanupE2eTargetDbLeftovers()
+        // 値は Exec の環境変数だけで渡す（WAR は Playwright の webServer がこのプロセスの環境変数を引き継いで起動する）。
+        environment(prepareE2eTargetDb())
     }
     workingDir = frontendDir.asFile
-    commandLine("npx", "playwright", "test", "e2e")
+    commandLine(listOf("npx", "playwright", "test") + e2eFiles)
 }

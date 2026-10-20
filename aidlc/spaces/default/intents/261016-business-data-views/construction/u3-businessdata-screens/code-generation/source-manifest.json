@@ -7,10 +7,37 @@
       "path": "README.md"
     },
     {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/RandomFieldMask.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/RandomFieldMaskTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteSecretLeakIT.java"
+    },
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "docker/e2e/compose.targetdb-port.yaml"
+    },
+    {
+      "path": "frontend/e2e/040-dsl-admin.e2e.ts"
+    },
+    {
       "path": "frontend/e2e/160-app-frame-accessibility.e2e.ts"
     },
     {
       "path": "frontend/e2e/170-menu-navigation-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/180-business-data-flow.e2e.ts"
     },
     {
       "path": "frontend/e2e/185-business-data-accessibility.e2e.ts"
@@ -34,6 +61,9 @@
       "path": "frontend/e2e/support/businessDataMeasure.ts"
     },
     {
+      "path": "frontend/e2e/support/businessDataSchema.sql"
+    },
+    {
       "path": "frontend/e2e/support/frameApiRoute.ts"
     },
     {
@@ -50,6 +80,9 @@
     },
     {
       "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/playwright.config.ts"
     },
     {
       "path": "frontend/src/app/login-state/LoginStateGate.test.tsx"
@@ -79,7 +112,22 @@
       "path": "frontend/src/app/navigation/tablePlaceholderPath.ts"
     },
     {
+      "path": "frontend/src/app/work-role/WorkRoleProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/work-role/WorkRoleSwitcher.test.tsx"
+    },
+    {
       "path": "frontend/src/features/README.md"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/PermissionPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/roleadmin/testing/renderRoleAdmin.tsx"
     },
     {
       "path": "frontend/src/features/tables/BusinessDataDetailPage.css"
@@ -91,6 +139,15 @@
       "path": "frontend/src/features/tables/BusinessDataDetailPage.tsx"
     },
     {
+      "path": "frontend/src/features/tables/BusinessDataFormPage.css"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataFormPage.tsx"
+    },
+    {
       "path": "frontend/src/features/tables/BusinessDataListPage.css"
     },
     {
@@ -98,6 +155,9 @@
     },
     {
       "path": "frontend/src/features/tables/BusinessDataListPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataListPage.write.test.tsx"
     },
     {
       "path": "frontend/src/features/tables/BusinessDataProblemView.css"
@@ -116,6 +176,12 @@
     },
     {
       "path": "frontend/src/features/tables/BusinessDataTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/DeleteConfirmModal.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/DeleteConfirmModal.tsx"
     },
     {
       "path": "frontend/src/features/tables/RestrictionNotice.test.tsx"
@@ -164,6 +230,21 @@
     },
     {
       "path": "frontend/src/features/tables/businessDataTypes.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formValidation.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formValidation.ts"
     },
     {
       "path": "frontend/src/features/tables/listPaging.test.ts"
@@ -223,6 +304,9 @@
       "path": "frontend/src/features/tables/testing/businessDataSamples.ts"
     },
     {
+      "path": "frontend/src/features/tables/testing/renderTablesDataRouter.tsx"
+    },
+    {
       "path": "frontend/src/features/tables/testing/renderTablesScreen.tsx"
     },
     {
@@ -235,6 +319,9 @@
       "path": "frontend/src/features/tables/testing/valueTexts.ts"
     },
     {
+      "path": "frontend/src/features/tables/useRowDeleteFlow.ts"
+    },
+    {
       "path": "frontend/src/features/tables/useRowDetail.test.tsx"
     },
     {
@@ -245,6 +332,12 @@
     },
     {
       "path": "frontend/src/features/tables/useRowSearch.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowWrite.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useRowWrite.ts"
     },
     {
       "path": "frontend/src/features/tables/useTableDefinition.test.tsx"
@@ -260,6 +353,12 @@
     },
     {
       "path": "frontend/src/features/tables/valueFormat.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/writeOutcome.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/writeOutcome.ts"
     },
     {
       "path": "frontend/src/shared/null-value/NullValue.css"
@@ -287,6 +386,21 @@
     },
     {
       "path": "frontend/src/shared/scroll-region/ScrollRegion.tsx"
+    },
+    {
+      "path": "frontend/src/shared/unsaved-guard/LeaveConfirmDialog.css"
+    },
+    {
+      "path": "frontend/src/shared/unsaved-guard/LeaveConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/unsaved-guard/LeaveConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/shared/unsaved-guard/useUnsavedGuard.test.tsx"
+    },
+    {
+      "path": "frontend/src/shared/unsaved-guard/useUnsavedGuard.ts"
     }
   ]
 }

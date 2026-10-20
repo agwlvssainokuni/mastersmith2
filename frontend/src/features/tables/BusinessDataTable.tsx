@@ -73,6 +73,8 @@ export interface BusinessDataTableProps {
   onPageChange: (page: number) => void
   /** 行を開く（index はページの中の番号） */
   onOpenRow: (index: number, via: 'link' | 'actions') => void
+  /** 行の操作の「更新」「削除」を選んだ（B6。無ければ「詳細」と同じく onOpenRow） */
+  onRowAction?: (index: number, action: 'update' | 'delete', label: string) => void
 }
 
 /** リンクの押下を横取りしてよいか（新しいタブで開く操作は横取りしない） */
@@ -94,6 +96,7 @@ export const BusinessDataTable = memo(function BusinessDataTable({
   onSortChange,
   onPageChange,
   onOpenRow,
+  onRowAction,
 }: BusinessDataTableProps) {
   const { t } = useTranslation()
 
@@ -185,13 +188,19 @@ export const BusinessDataTable = memo(function BusinessDataTable({
               rowLabel={row.label}
               operations={definition.operations}
               busy={busy}
-              onSelect={() => onOpenRow(row.index, 'actions')}
+              onSelect={(action) => {
+                if (action === 'detail' || onRowAction === undefined) {
+                  onOpenRow(row.index, 'actions')
+                } else {
+                  onRowAction(row.index, action, row.label)
+                }
+              }}
             />
           ),
       })
     }
     return listed
-  }, [definition, language, t, texts, tableName, detailHref, busy, onOpenRow])
+  }, [definition, language, t, texts, tableName, detailHref, busy, onOpenRow, onRowAction])
 
   const labels: TableLabels = useMemo(
     () => ({
