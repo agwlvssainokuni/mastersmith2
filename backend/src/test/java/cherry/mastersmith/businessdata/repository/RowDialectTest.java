@@ -127,6 +127,13 @@ class RowDialectTest {
     void baseName() {
         assertThat(RowDialect.baseName(" VARCHAR(100) ")).isEqualTo("varchar");
         assertThat(RowDialect.baseName("int unsigned")).isEqualTo("int unsigned");
+        // 括弧の後ろに unsigned が付く手書きの表記も、符号なしの印を落とさない（FR3.1）。括弧の後ろのほかの語は従来どおり落とす。
+        assertThat(RowDialect.baseName("int(10) unsigned")).isEqualTo("int unsigned");
+        assertThat(RowDialect.baseName("INT ( 10 )  UNSIGNED")).isEqualTo("int unsigned");
+        assertThat(RowDialect.baseName("bigint(20) unsigned zerofill")).isEqualTo("bigint unsigned");
+        assertThat(RowDialect.baseName("double(10,2) unsigned")).as("整数の型だけ").isEqualTo("double");
+        assertThat(RowDialect.baseName("int(10)")).isEqualTo("int");
+        assertThat(RowDialect.baseName("timestamp(3) with time zone")).isEqualTo("timestamp");
         assertThat(POSTGRES.castToText("\"a\"")).isEqualTo("CAST(\"a\" AS TEXT)");
         assertThat(MYSQL.readsTemporalAsText()).isTrue();
         assertThat(MARIADB.readsTemporalAsText()).isTrue();

@@ -123,7 +123,7 @@ class NavigationConnectionUsageIT {
     }
 
     @Test
-    @DisplayName("the menu and the table access use at most one connection at a time per request")
+    @DisplayName("the menu uses at most one connection at a time per request")
     void oneConnectionPerRequest() {
         Actor member = actors.memberWithWorkRole(
                 actors.role("SALES", Map.of("T0", MainPermission.READ, "T1", MainPermission.NONE)));
@@ -131,11 +131,7 @@ class NavigationConnectionUsageIT {
         counter.reset();
 
         int menu = measure(counter, id -> actors.navigation(member.token(), MeasureIdFilter.HEADER, id), 200);
-        int visible = measure(
-                counter, id -> actors.tableAccess(member.token(), "SALES", "T0", MeasureIdFilter.HEADER, id), 200);
-        int denied = measure(
-                counter, id -> actors.tableAccess(member.token(), "SALES", "T1", MeasureIdFilter.HEADER, id), 403);
 
-        assertThat(List.of(menu, visible, denied)).containsOnly(1);
+        assertThat(menu).isEqualTo(1);
     }
 }

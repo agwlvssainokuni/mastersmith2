@@ -115,15 +115,14 @@ class NavigationFailureIT {
     }
 
     @Test
-    @DisplayName("a failure of the resolver gives the common 500 body without the exception message on both APIs")
+    @DisplayName("a failure of the resolver gives the common 500 body without the exception message")
     void unexpectedFailure() {
         Actor member = actors.member();
 
-        for (HttpResponse<String> response :
-                List.of(actors.navigation(member.token()), actors.tableAccess(member.token(), "SALES", "T0"))) {
-            assertThat(response.statusCode()).as(response.body()).isEqualTo(500);
-            assertThat(HttpTestClient.json(response)).containsEntry("code", "INTERNAL_ERROR");
-            assertThat(response.body()).doesNotContain(MESSAGE, "IllegalStateException", "items");
-        }
+        HttpResponse<String> response = actors.navigation(member.token());
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(500);
+        assertThat(HttpTestClient.json(response)).containsEntry("code", "INTERNAL_ERROR");
+        assertThat(response.body()).doesNotContain(MESSAGE, "IllegalStateException", "items");
     }
 }

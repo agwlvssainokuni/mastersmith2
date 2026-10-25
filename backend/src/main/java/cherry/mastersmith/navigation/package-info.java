@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 /**
- * 業務のメニュー（Intent 261004-role-menu の U5、契約 C9）。作業ロールの実効の主権限で絞った業務のメニューの木と、テーブルの置き場の
- * 問い合わせの2本の読み取りの API を持つ。
+ * 業務のメニュー（Intent 261004-role-menu の U5、契約 C9）。作業ロールの実効の主権限で絞った業務のメニューの木を返す読み取りの API を
+ * 持つ。テーブルの置き場の問い合わせ（{@code GET /api/me/table-access}）は、画面が呼ばなくなったため Intent
+ * 261025-deps-perf-carryover の FR3.3 で削除した。
  *
  * <ul>
- *   <li>{@code navigation.domain}: 応答の木の値、絞る純粋な関数 {@code MenuFilter}、アイコンの照らし合わせ、結果の型
+ *   <li>{@code navigation.domain}: 応答の木の値、絞る純粋な関数 {@code MenuFilter}、アイコンの照らし合わせ
  *   <li>{@code navigation.service}: 業務処理 {@code NavigationService}、アイコンの一覧のファイルの読み込み、待ち合わせの口
- *   <li>{@code navigation.web}: 2本の API と応答の record
+ *   <li>{@code navigation.web}: メニューの API と応答の record
  * </ul>
  *
  * <p>依存してよい先は {@code dsl.service}・{@code dsl.domain}・{@code role.service}・{@code role.domain}・{@code auth.domain}・
- * {@code common} だけ（BR7.1）。{@code ACCESS_DENIED} は {@code access} に依存せず、共通の問題の種類の一覧から code で引く（計画の
- * 13節 Q2: A）。どの機能も navigation に依存しない。repository の層と内部DB の表を持たず、読み取りだけ（BR6.2）。
+ * {@code common} だけ（BR7.1）。どの機能も navigation に依存しない。repository の層と内部DB の表を持たず、読み取りだけ（BR6.2）。
  */
 package cherry.mastersmith.navigation;

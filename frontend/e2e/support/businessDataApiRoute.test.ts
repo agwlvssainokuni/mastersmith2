@@ -38,7 +38,7 @@ describe('businessDataApiRoute', () => {
     expect(classifyBusinessDataRequest('GET', BUSINESS_DATA_API.definition)).toBeNull()
     expect(classifyBusinessDataRequest('POST', '/api/tables/other')).toBeNull()
     expect(isBusinessDataApiPath('/api/tables/definition')).toBe(true)
-    expect(isBusinessDataApiPath('/api/me/table-access')).toBe(false)
+    expect(isBusinessDataApiPath('/api/me/navigation')).toBe(false)
   })
 
   it('reads the table and the page from a body and falls back for broken bodies', () => {

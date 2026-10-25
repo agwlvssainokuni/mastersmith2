@@ -121,12 +121,60 @@ class SearchRequestValidatorTest {
         assertThat(errors(result))
                 .extracting(BusinessDataFieldError::field, BusinessDataFieldError::reason)
                 .containsExactly(
-                        tuple("hidden", BusinessDataFieldErrorReason.NOT_ALLOWED),
-                        tuple("nowhere", BusinessDataFieldErrorReason.NOT_ALLOWED),
+                        tuple("", BusinessDataFieldErrorReason.NOT_ALLOWED),
+                        tuple("", BusinessDataFieldErrorReason.NOT_ALLOWED),
                         tuple("pw", BusinessDataFieldErrorReason.NOT_ALLOWED),
                         tuple("branch", BusinessDataFieldErrorReason.NOT_ALLOWED),
                         tuple("name", BusinessDataFieldErrorReason.NOT_ALLOWED),
-                        tuple("x'; DROP TABLE item; --", BusinessDataFieldErrorReason.NOT_ALLOWED));
+                        tuple("", BusinessDataFieldErrorReason.NOT_ALLOWED));
+    }
+
+    @Test
+    @DisplayName("a name that the table does not show is never echoed: a 64 KB name and quotes give an empty field")
+    void unknownNamesAreNotEchoed() {
+        String longName = "n".repeat(64 * 1024);
+        String quoted = "x'; DROP TABLE item; --\n`\"";
+
+        SearchValidation conditions = search(
+                List.of(value(longName, "x"), value(quoted, "x"), value("hidden", "x"), value(null, "x")),
+                new RawSort(longName, "ASC"),
+                null,
+                null);
+        SearchValidation sortOnly = search(List.of(), new RawSort(quoted, "ASC"), null, null);
+        Map<String, String> badKey = new LinkedHashMap<>();
+        badKey.put("code", "12");
+        badKey.put("branch", "a");
+        badKey.put(longName, "1");
+        badKey.put(quoted, "1");
+        badKey.put("hidden", "1");
+        KeyValidation key = SearchRequestValidator.validateKey(VIEW, new KeyInput(badKey), simpleReader());
+
+        List<BusinessDataFieldError> all = new java.util.ArrayList<>(errors(conditions));
+        all.addAll(errors(sortOnly));
+        all.addAll(((KeyValidation.Invalid) key).errors());
+        assertThat(all).hasSize(4 + 1 + 1 + 3);
+        assertThat(all)
+                .extracting(BusinessDataFieldError::field)
+                .allSatisfy(field -> assertThat(field).isEmpty());
+        assertThat(all.toString()).as("TRACE に出る文字列にも名前が入らない").hasSizeLessThan(2_000);
+    }
+
+    @Test
+    @DisplayName("a name of a column that the table shows is still echoed, so the screen can point at it")
+    void knownNamesAreEchoed() {
+        SearchValidation result =
+                search(List.of(value("pw", "x"), value("name", "a"), value("name", "b")), null, null, null);
+        Map<String, String> missing = new LinkedHashMap<>();
+        missing.put("code", "12");
+        missing.put("name", "not a key column");
+        KeyValidation key = SearchRequestValidator.validateKey(VIEW, new KeyInput(missing), simpleReader());
+
+        assertThat(errors(result)).extracting(BusinessDataFieldError::field).containsExactly("pw", "name");
+        assertThat(((KeyValidation.Invalid) key).errors())
+                .extracting(BusinessDataFieldError::field, BusinessDataFieldError::reason)
+                .containsExactlyInAnyOrder(
+                        tuple("branch", BusinessDataFieldErrorReason.KEY_MISMATCH),
+                        tuple("name", BusinessDataFieldErrorReason.KEY_MISMATCH));
     }
 
     @Test
@@ -256,7 +304,7 @@ class SearchRequestValidatorTest {
                 .extracting(BusinessDataFieldError::field, BusinessDataFieldError::reason)
                 .containsExactlyInAnyOrder(
                         tuple("branch", BusinessDataFieldErrorReason.KEY_MISMATCH),
-                        tuple("extra", BusinessDataFieldErrorReason.KEY_MISMATCH),
+                        tuple("", BusinessDataFieldErrorReason.KEY_MISMATCH),
                         tuple("code", BusinessDataFieldErrorReason.INVALID_VALUE));
 
         Map<String, String> nullValue = new HashMap<>();

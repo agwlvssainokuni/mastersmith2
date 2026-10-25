@@ -18,7 +18,6 @@ package cherry.mastersmith.navigation.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cherry.mastersmith.role.domain.MainPermission;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -86,18 +85,5 @@ class NavNodeTest {
         assertThatThrownBy(() -> new NavigationMenu(List.of(), null)).isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new NavigationMenu(List.of(leaf("0")), EmptyReason.NOTHING_VISIBLE))
                 .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @Test
-    @DisplayName("a visible table access result needs READ or FULL")
-    void tableAccessResult() {
-        cherry.mastersmith.dsl.domain.DisplayName name = new cherry.mastersmith.dsl.domain.DisplayName("受注", "Orders");
-        assertThat(new TableAccessResult.Visible("S", "T", name, MainPermission.FULL).main())
-                .isEqualTo(MainPermission.FULL);
-        assertThatThrownBy(() -> new TableAccessResult.Visible("S", "T", name, MainPermission.NONE))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new TableAccessResult.Visible("S", "T", null, MainPermission.READ))
-                .isInstanceOf(NullPointerException.class);
-        assertThat(new TableAccessResult.NotVisible()).isEqualTo(new TableAccessResult.NotVisible());
     }
 }

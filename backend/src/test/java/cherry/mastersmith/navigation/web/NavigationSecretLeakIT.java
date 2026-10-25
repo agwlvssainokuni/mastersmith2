@@ -57,13 +57,11 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
- * メニューとテーブルの置き場の問い合わせの漏えいの防止（Intent 261015-deps-ui-carryover の FR4.1、前の Intent のレビューの navigation
- * R-03）の結合テスト。
+ * メニューの漏えいの防止（Intent 261015-deps-ui-carryover の FR4.1、前の Intent のレビューの navigation R-03）の結合テスト。
  *
- * <p>メソッドの呼び出しの追跡（TRACE）を有効にして {@code GET /api/me/navigation} と {@code GET /api/me/table-access} を呼び、DSL の
- * 表示名（目印）がアプリのログに出ないことを確かめる。{@code TraceAspect} を外さず、本物の Spring の部品で流す（既存の
- * {@code *SecretLeakIT} と同じ形）。テーブルの置き場の問い合わせのスキーマ名・テーブル名は、controller と service の引数として TRACE
- * に出る業務の名前で、計画の D-10（A）でそのままとしたため、ここでは確かめない。
+ * <p>メソッドの呼び出しの追跡（TRACE）を有効にして {@code GET /api/me/navigation} を呼び、DSL の表示名（目印）がアプリのログに出ない
+ * ことを確かめる。{@code TraceAspect} を外さず、本物の Spring の部品で流す（既存の {@code *SecretLeakIT} と同じ形）。テーブルの置き場の
+ * 問い合わせ（{@code GET /api/me/table-access}）は Intent 261025-deps-perf-carryover の FR3.3 で削除した。
  */
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -141,15 +139,13 @@ class NavigationSecretLeakIT {
     }
 
     @Test
-    @org.junit.jupiter.api.DisplayName("with TRACE, reading the navigation and the table access leaks no display label")
+    @org.junit.jupiter.api.DisplayName("with TRACE, reading the navigation leaks no display label")
     void noDisplayLabelInTheLog(CapturedOutput output) {
         int offset = output.getOut().length();
         HttpResponse<String> navigation;
-        HttpResponse<String> access;
         loggingSystem.setLogLevel(ROOT_LOGGER, LogLevel.TRACE);
         try {
             navigation = actors.navigation(reader.token());
-            access = actors.tableAccess(reader.token(), SCHEMA, TABLE);
         } finally {
             loggingSystem.setLogLevel(ROOT_LOGGER, null);
         }
@@ -157,8 +153,6 @@ class NavigationSecretLeakIT {
 
         assertThat(navigation.statusCode()).as(navigation.body()).isEqualTo(200);
         assertThat(navigation.body()).as("応答は表示名をそのまま返す").contains(MENU_LABEL + "_child_ja");
-        assertThat(access.statusCode()).as(access.body()).isEqualTo(200);
-        assertThat(access.body()).as("応答は表示名をそのまま返す").contains(TABLE_LABEL + "_ja");
         assertThat(logs).as("メソッドの呼び出しの追跡が有効").contains("NavigationService#", "NavigationController#");
         JsonLogRecords.assertContainsNoSecret(logs, TABLE_LABEL, MENU_LABEL);
         assertThat(logs).doesNotContain(TABLE_LABEL).doesNotContain(MENU_LABEL);

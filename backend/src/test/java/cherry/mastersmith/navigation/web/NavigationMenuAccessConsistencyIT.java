@@ -146,7 +146,7 @@ class NavigationMenuAccessConsistencyIT {
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(Group.class)
-    @DisplayName("the table access and the navigable menu items agree with the expected table")
+    @DisplayName("the navigable menu items agree with the expected main permission of each table")
     void menuAndAccessAgree(Group group) {
         Case target = build(group);
         if (target.dsl()) {
@@ -161,22 +161,6 @@ class NavigationMenuAccessConsistencyIT {
             long roleId = fixtures.role(RoleFixtures.uniqueName("一致"));
             target.settings().accept(roleId);
             member = actors.memberWithWorkRole(roleId);
-        }
-
-        for (Map.Entry<TableRef, MainPermission> entry : target.expected().entrySet()) {
-            TableRef table = entry.getKey();
-            HttpResponse<String> response = actors.tableAccess(member.token(), table.schema(), table.name());
-            if (entry.getValue() == MainPermission.NONE) {
-                assertThat(response.statusCode())
-                        .as("%s %s", table, response.body())
-                        .isEqualTo(403);
-            } else {
-                assertThat(response.statusCode())
-                        .as("%s %s", table, response.body())
-                        .isEqualTo(200);
-                assertThat(HttpTestClient.json(response))
-                        .containsEntry("main", entry.getValue().name());
-            }
         }
 
         Set<TableRef> pointed = new HashSet<>();

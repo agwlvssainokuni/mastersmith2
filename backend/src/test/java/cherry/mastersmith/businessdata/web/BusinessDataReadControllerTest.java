@@ -197,6 +197,31 @@ class BusinessDataReadControllerTest {
     }
 
     @Test
+    @DisplayName("a field error for a name outside the DSL has an empty field and carries no name")
+    void emptyFieldForUnknownNames() {
+        String longName = "n".repeat(60_000);
+        when(service.search(anyLong(), any(), any()))
+                .thenReturn(new ReadRejected(
+                        ReadRejection.VALIDATION_FAILED,
+                        List.of(new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_ALLOWED)),
+                        false));
+
+        assertThatThrownBy(() -> controller.search(new SearchRequest(
+                        "sample",
+                        "item",
+                        null,
+                        List.of(new SearchConditionRequest(longName, "x", null, null, null)),
+                        null,
+                        BigDecimal.ONE,
+                        BigDecimal.valueOf(20))))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getProperties())
+                            .containsEntry("fieldErrors", List.of(Map.of("field", "", "reason", "NOT_ALLOWED")));
+                    assertThat(e.getProperties().toString()).hasSizeLessThan(500);
+                });
+    }
+
+    @Test
     @DisplayName("the page and the detail carry keys, values and truncated columns")
     void pageAndDetail() {
         RowRecord row = new RowRecord(

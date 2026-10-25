@@ -310,6 +310,37 @@ describe('PasswordChangePage', () => {
     expect(consoleCalls()).toEqual([])
   })
 
+  it('drops the answer that arrives the moment the next screen is placed in the DOM, before any effect cleanup', async () => {
+    const user = userEvent.setup()
+    const answer = deferred()
+    await start([answer.promise])
+    await fill(user, [CURRENT, NEW, NEW])
+    await user.click(submit())
+    // 新しい画面の DOM が置かれた直後（描画の後の効果の後片付けより前）に答えを届ける。DOM の変化の通知は commit の直後の
+    // マイクロタスクで流れ、描画の後の効果（useEffect）の後片付けはその後のタスクで流れるため、順が決まる。
+    const placed = new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (screen.queryByTestId('preferences-page') !== null) {
+          observer.disconnect()
+          answer.resolve(noContent())
+          resolve()
+        }
+      })
+      observer.observe(document.body, { childList: true, subtree: true })
+    })
+    await user.click(await screen.findByRole('button', { name: /検査 太郎/ }))
+    await user.click(await screen.findByRole('menuitem', { name: 'プリファレンス' }))
+    await placed
+    await act(async () => {
+      await answer.promise
+      // 答えを受けた処理（マイクロタスク）と、その後の描画の後の効果が済むのを待つ。
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await screen.findByTestId('preferences-page')
+    expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement()
+    expect(consoleCalls()).toEqual([])
+  })
+
   it('keeps the passwords out of the browser storage, the URL and the console (NFR9.1)', async () => {
     const user = userEvent.setup()
     await start([problemResponse(500), noContent()])

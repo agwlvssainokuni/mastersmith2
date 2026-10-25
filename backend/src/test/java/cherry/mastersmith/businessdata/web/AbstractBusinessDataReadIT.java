@@ -17,6 +17,7 @@ package cherry.mastersmith.businessdata.web;
 
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.BITS;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.DUP_VIEW;
+import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.FLAGS;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.GHOST;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.ITEM;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.LEGACY;
@@ -537,6 +538,30 @@ abstract class AbstractBusinessDataReadIT {
                 .filter(r -> "READ_CONVERSION".equals(r.get("reason")))
                 .toList();
         assertThat(warns).hasSizeGreaterThanOrEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("MySQL and MariaDB tinyint read as a boolean give false for 0 and true for 1,"
+            + " and any other stored value is 409 MISMATCH logged as READ_CONVERSION")
+    void booleanTinyint(CapturedOutput output) {
+        assumeTrue(!postgres(), "tinyint を真偽値として読むのは MySQL・MariaDB だけ");
+
+        Map<String, Object> zero = values(get(FLAGS, Map.of("id", "1")));
+        Map<String, Object> one = values(get(FLAGS, Map.of("id", "2")));
+        Map<String, Object> none = values(get(FLAGS, Map.of("id", "3")));
+        HttpResponse<String> five = getResponse(FLAGS, Map.of("id", "4"));
+        HttpResponse<String> list = searchResponse(FLAGS, List.of(), null, 1, 20);
+
+        assertThat(zero).containsEntry("f", "false").containsEntry("g", "false");
+        assertThat(one).containsEntry("f", "true").containsEntry("g", "true");
+        assertThat(none).containsEntry("f", null).containsEntry("g", null);
+        assertProblem(five, 409, "BUSINESS_TARGET_DB_MISMATCH");
+        assertProblem(list, 409, "BUSINESS_TARGET_DB_MISMATCH");
+        List<Map<String, Object>> warns = JsonLogRecords.parse(output.getAll()).stream()
+                .filter(r -> BusinessDataReadService.class.getName().equals(r.get("logger")))
+                .filter(r -> "READ_CONVERSION".equals(r.get("reason")))
+                .toList();
+        assertThat(warns).hasSizeGreaterThanOrEqualTo(2);
     }
 
     @Test

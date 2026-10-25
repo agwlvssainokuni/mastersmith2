@@ -41,9 +41,7 @@ public class TestNavigationBarrier implements NavigationBarrier {
     /** 待ち合わせの点。 */
     public enum Point {
         /** メニュー: {@code current()} の後、{@code snapshotFor} の前。 */
-        AFTER_DSL_READ,
-        /** 置き場: {@code resolve} の後、表示名の {@code current()} の前。 */
-        AFTER_RESOLVE
+        AFTER_DSL_READ
     }
 
     /** 止める点（最初に来た1件だけを止める）。 */
@@ -101,11 +99,6 @@ public class TestNavigationBarrier implements NavigationBarrier {
     @Override
     public void afterDslRead() {
         pass(Point.AFTER_DSL_READ);
-    }
-
-    @Override
-    public void afterResolve() {
-        pass(Point.AFTER_RESOLVE);
     }
 
     private void pass(Point point) {

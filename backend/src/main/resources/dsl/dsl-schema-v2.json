@@ -170,11 +170,15 @@
       }
     },
     "dbType": {
+      "description": "カラムの DB 上の型。値の範囲の判定（書き込みの値の検査）は、ここの名前を読む。",
       "type": "object",
       "required": ["name", "nullable"],
       "additionalProperties": false,
       "properties": {
-        "name": { "$ref": "#/$defs/name" },
+        "name": {
+          "description": "DB 上の型の名前（例: varchar・int4・decimal）。MySQL・MariaDB の符号なしの整数は、名前に unsigned を付けて int unsigned・bigint unsigned・tinyint unsigned・smallint unsigned・mediumint unsigned のように書く。unsigned を含む名前は 0 以上でその型の符号なしの上限までを受け付け、含まない名前は従来どおり符号つきの下限から符号なしの上限までを受け付ける（符号なしの列の名前を int のままにした既存の DSL を壊さないため）。PostgreSQL には符号なしの型が無く、付けない。",
+          "$ref": "#/$defs/name"
+        },
         "length": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
         "precision": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },
         "scale": { "type": ["integer", "null"], "minimum": 0, "maximum": 2147483647 },

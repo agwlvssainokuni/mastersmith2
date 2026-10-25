@@ -44,14 +44,14 @@ class TargetDataSourceConfigTest {
     }
 
     @Test
-    @DisplayName("the pool is read-only, starts empty, holds at most 5 connections and waits 3 seconds to connect")
+    @DisplayName("the pool is read-only, starts empty, holds at most 10 connections and waits 3 seconds to connect")
     void poolSettings() {
         HikariConfig config = TargetDataSourceConfig.hikariConfig(usable("postgresql", "5432"));
 
         assertThat(config.getPoolName()).isEqualTo("mastersmith-target-db");
         assertThat(config.isReadOnly()).isTrue();
         assertThat(config.getMinimumIdle()).isZero();
-        assertThat(config.getMaximumPoolSize()).isEqualTo(5);
+        assertThat(config.getMaximumPoolSize()).isEqualTo(10);
         assertThat(config.getConnectionTimeout()).isEqualTo(3_000L);
         assertThat(config.getValidationTimeout()).isLessThanOrEqualTo(config.getConnectionTimeout());
         assertThat(config.getIdleTimeout()).isEqualTo(60_000L);

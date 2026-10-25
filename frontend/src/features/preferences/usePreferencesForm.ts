@@ -25,7 +25,7 @@
 // - 部品が外れるとき clearPreview（D6）。外れた後の保存の 200 は applyUserPreferences だけを行い、失敗は捨てる（W6 の3）。
 // - 誤りと知らせは文言の鍵で持つ。氏名・応答の値を console・ブラウザの保存・URL に出さない（NFR2.1）。
 import { useToast } from 'make-you-chic-ui'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useDisplaySettings } from '../../app/display-settings/DisplaySettingsProvider'
 import type {
   DisplayLanguage,
@@ -131,14 +131,23 @@ export function usePreferencesForm(): PreferencesController {
     displayRef.current = display
   }, [display])
 
-  // 部品が付いているかの印と、外れるときの見せ方の取りやめ（D6）。
-  useEffect(() => {
+  // 部品が付いているかの印は、描画の後の効果（useEffect）ではなく commit と同時に下りる useLayoutEffect で持つ。画面を離れた
+  // 直後（新しい画面の DOM が置かれた直後）に答えが届いても、画面の状態を更新しないため（Intent 261025-deps-perf-carryover
+  // の C5）。
+  useLayoutEffect(() => {
     mounted.current = true
     return () => {
       mounted.current = false
-      displayRef.current.clearPreview()
     }
   }, [])
+
+  // 外れるときの見せ方の取りやめ（D6）。
+  useEffect(
+    () => () => {
+      displayRef.current.clearPreview()
+    },
+    [],
+  )
 
   // 読み込み（D1・W2・W3）。答えは、この回の副作用がまだ有効なときだけ使う。
   const { loadAttempt } = state

@@ -1148,7 +1148,7 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
   6. 合否の回を流す（待ちの最大のような揺れる値があるため、複数回流す）。場面ごとに、前後で対象DB のプール（`pool="mastersmith-target-db"`）の待ちの時間切れの累計と待ちの最大を読む（NFR2.4。合格は時間切れの累計の増分 0・503 の件数 0）。プールは最初に借りるときに作られるため、指標は最初の要求の後に読む
   7. `bizSearchWide` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す
   8. 確かめの結果（待ちの時間切れの累計・`memory.peak`・OOMKilled・WARN の件数・ログに行の値と試験用の利用者のメールアドレスが無いこと）を見てから片付ける
-- **借りる待ち**: 対象DB の読み取りのプールは上限 5・借りる待ち 3 秒（MySQL で接続の確かめが走るときは 6 秒）で、10 VU の場面は上限に必ず届く。待ちが 3 秒を超えると 503 `BUSINESS_TARGET_DB_UNAVAILABLE` になる。
+- **借りる待ち**: 対象DB の読み取りのプールは上限 10（Intent 261025-deps-perf-carryover で 5 から引き上げた）・借りる待ち 3 秒（MySQL で接続の確かめが走るときは 6 秒）で、10 VU の場面は同時に処理できる。プールの上限に届かせる場面は 12 VU 以上（`bizSearchContains` など）で流す。待ちが 3 秒を超えると 503 `BUSINESS_TARGET_DB_UNAVAILABLE` になる。
 - **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{name:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
 - 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる（上の「手順」の冒頭）。流した後は、export した変数を `unset` するか、別のシェルで流す（DSL の時間の測りに持ち込まないため。`perf/dsl-timing.sh` も始めに `unset` する）。
 

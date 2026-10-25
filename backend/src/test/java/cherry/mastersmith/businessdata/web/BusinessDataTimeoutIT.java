@@ -22,7 +22,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp.Target;
+import cherry.mastersmith.businessdata.testsupport.StallStage;
 import cherry.mastersmith.businessdata.testsupport.StallingRelay;
+import cherry.mastersmith.businessdata.testsupport.StatementLog;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.role.domain.MainPermission;
@@ -226,15 +228,35 @@ class BusinessDataTimeoutIT {
             // TIMEOUT（貸し出しの始めで止めると UNAVAILABLE）で確かめる。
             env.relay().armAfterLargeChunks(0);
         }
-        Timed stalled =
-                timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
-        int stalledConnections = env.relay().stalledCount();
-        String report = env.relay().stallReport();
+        Timed stalled;
+        int stalledConnections;
+        String report;
+        List<String> reached = null;
+        if (product == DatabaseProduct.POSTGRESQL) {
+            stalled =
+                    timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
+            stalledConnections = env.relay().stalledCount();
+            report = env.relay().stallReport();
+        } else {
+            try (StatementLog log = new StatementLog(env.sample().database())) {
+                String mark = log.mark();
+                stalled = timed(
+                        () -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
+                stalledConnections = env.relay().stalledCount();
+                report = env.relay().stallReport();
+                reached = log.queriesSince(mark, env.sample().reader());
+            }
+        }
         env.relay().release();
         Timed next =
                 timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
 
         assertThat(stalledConnections).as("中継が問い合わせで止めた " + report).isEqualTo(1);
+        if (reached != null) {
+            // 貸し出しの後の最初の文のまとまりで止めた（その前に対象DB に届いた文は無い）。MySQL では件数の前の SET sql_select_limit、
+            // MariaDB では件数の問い合わせそのもの。暗号化された通信では文字が見えないため、届いた文で確かめる（R-05）。
+            StallStage.require(List.of(), reached, report);
+        }
         assertThat(stalled.response().statusCode())
                 .as(report + " " + stalled.response().body())
                 .isEqualTo(503);
@@ -246,6 +268,59 @@ class BusinessDataTimeoutIT {
                 env.sample().target());
         assertThat(next.response().statusCode()).as(next.response().body()).isEqualTo(200);
         assertThat(next.elapsed()).as("壊れた接続はプールが捨て、次はすぐ読める").isLessThan(Duration.ofSeconds(5));
+    }
+
+    /**
+     * 件数の問い合わせそのものを止める（Intent 261025-deps-perf-carryover の FR3.2）。時間切れの後に壊れた接続をプールへ戻すと、次の
+     * 1回が同じ接続を借りて 503 UNAVAILABLE になった（261016-business-data-views の U2 の G15）。直す前はこのテストの最後の表明が
+     * 落ちる。
+     */
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = DatabaseProduct.class,
+            names = {"MYSQL", "MARIADB"})
+    @DisplayName("a stall inside the count query is 503 TIMEOUT once and the very next request is 200, not 503")
+    void nextRequestSucceedsAfterStallInsideCountQuery(DatabaseProduct product) {
+        Env env = envs.get(product);
+        assertThat(search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM)
+                        .statusCode())
+                .as("中継を通して読める（プールに接続ができる）")
+                .isEqualTo(200);
+
+        // 暗号化された通信で文の文字が見えないため、大きなまとまりの数で件数の問い合わせを指す。MySQL（Connector/J）は件数の前に
+        // SET sql_select_limit のまとまりが1つ先にあり、MariaDB は件数が最初のまとまり。止まった段は診断（stallReport）に残す。
+        env.relay().armAfterLargeChunks(product == DatabaseProduct.MYSQL ? 1 : 0);
+        Timed stalled;
+        String report;
+        int stalledConnections;
+        List<String> reached;
+        try (StatementLog log = new StatementLog(env.sample().database())) {
+            String mark = log.mark();
+            stalled =
+                    timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
+            report = env.relay().stallReport();
+            stalledConnections = env.relay().stalledCount();
+            reached = log.queriesSince(mark, env.sample().reader());
+        }
+        env.relay().release();
+        Timed next =
+                timed(() -> search(env.relayApp(), env.relayMember(), env.sample(), BusinessDataSampleSchema.ITEM));
+
+        assertThat(stalledConnections).as("中継が問い合わせで止めた " + report).isEqualTo(1);
+        // 止めた段は件数の問い合わせ。MySQL（Connector/J）は件数の前に SET sql_select_limit が先に届き、MariaDB は件数が最初の文。
+        // 暗号化された通信では文の文字が見えないため、止める前に対象DB に届いた文で段を確かめる（R-05）。
+        StallStage.require(
+                product == DatabaseProduct.MYSQL ? List.of("SET sql_select_limit=1") : List.of(), reached, report);
+        assertProblem(
+                stalled,
+                503,
+                "BUSINESS_TARGET_DB_TIMEOUT",
+                Duration.ofSeconds(25),
+                env.sample().target());
+        assertThat(next.response().statusCode())
+                .as("時間切れの接続は捨てられ、次の1回目から読める " + report + " " + next.response().body())
+                .isEqualTo(200);
+        assertThat(next.elapsed()).isLessThan(Duration.ofSeconds(5));
     }
 
     @Test

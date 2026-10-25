@@ -31,7 +31,9 @@ import java.util.Set;
  * 一覧と検索・詳細の本文を確かめる純粋な関数（BR1.6・BR4.1・BR4.2・BR4.4・BR4.5・BR4.7・BR4.10・BR5.1・BR5.2・BR6.2、NFR4.5、
  * NFR 設計の Q4: A・Q6: A）。誤りはまとめて返す。型として読む処理は {@link ColumnValueReader} の口で受ける。
  *
- * <p>NONE のカラムと DSL に無いカラムは、{@link TableAccessView} に無いため同じ答え（{@code NOT_ALLOWED}）になる。
+ * <p>NONE のカラムと DSL に無いカラムは、{@link TableAccessView} に無いため同じ答え（{@code NOT_ALLOWED}）になる。要求の名前が
+ * {@link TableAccessView} に無いときは、その名前を誤りの {@code field} に入れず空の文字にする（長い名前や引用符などを応答とログに
+ * 載せないため。Intent 261025-deps-perf-carryover の FR3.7 R-07）。
  */
 public final class SearchRequestValidator {
 
@@ -62,7 +64,8 @@ public final class SearchRequestValidator {
             }
             Optional<ColumnAccess> column = view.column(raw.column()).filter(c -> c.search() != null);
             if (column.isEmpty() || !seen.add(raw.column())) {
-                errors.add(new BusinessDataFieldError(raw.column(), BusinessDataFieldErrorReason.NOT_ALLOWED));
+                errors.add(new BusinessDataFieldError(
+                        known(view, raw.column()), BusinessDataFieldErrorReason.NOT_ALLOWED));
                 continue;
             }
             condition(column.get(), raw, reader, errors).ifPresent(conditions::add);
@@ -100,8 +103,7 @@ public final class SearchRequestValidator {
         }
         for (String name : input.values().keySet()) {
             if (!keyNames.contains(name)) {
-                errors.add(new BusinessDataFieldError(
-                        name == null ? "" : name, BusinessDataFieldErrorReason.KEY_MISMATCH));
+                errors.add(new BusinessDataFieldError(known(view, name), BusinessDataFieldErrorReason.KEY_MISMATCH));
             }
         }
         Map<String, BoundValue> values = new LinkedHashMap<>();
@@ -121,6 +123,14 @@ public final class SearchRequestValidator {
             return new KeyValidation.Invalid(errors);
         }
         return new KeyValidation.Valid(new RowKey(values));
+    }
+
+    /**
+     * 誤りの {@code field} に入れる名前を返す。このテーブルで読めるカラム（{@link TableAccessView} にあるもの）の名前だけをそのまま
+     * 返し、DSL に無い名前・NONE のカラムの名前・null は空の文字にする（R-07。NONE と DSL に無いカラムは同じ答えのまま）。
+     */
+    private static String known(TableAccessView view, String name) {
+        return name != null && view.column(name).isPresent() ? name : "";
     }
 
     /** 条件1つを確かめる。値が空なら条件にしない（BR4.2・BR4.4・BR4.5）。 */
@@ -206,7 +216,7 @@ public final class SearchRequestValidator {
         String name = raw.column() == null ? "" : raw.column();
         Optional<ColumnAccess> column = view.column(name).filter(ColumnAccess::sortable);
         if (column.isEmpty()) {
-            errors.add(new BusinessDataFieldError(name, BusinessDataFieldErrorReason.NOT_ALLOWED));
+            errors.add(new BusinessDataFieldError(known(view, name), BusinessDataFieldErrorReason.NOT_ALLOWED));
             return null;
         }
         SortDirection direction;

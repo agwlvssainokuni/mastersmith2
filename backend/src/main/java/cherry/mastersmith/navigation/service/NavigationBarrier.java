@@ -24,7 +24,4 @@ public interface NavigationBarrier {
 
     /** メニュー: {@code current()} の後、{@code snapshotFor} の前。 */
     void afterDslRead();
-
-    /** 置き場: {@code resolve} の後、表示名のための {@code current()} の前。 */
-    void afterResolve();
 }

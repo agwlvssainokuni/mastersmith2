@@ -18,13 +18,11 @@ package cherry.mastersmith.navigation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.navigation.domain.EmptyReason;
 import cherry.mastersmith.navigation.domain.NavNode;
 import cherry.mastersmith.navigation.domain.NavTableRef;
 import cherry.mastersmith.navigation.domain.NavigationMenu;
-import cherry.mastersmith.navigation.domain.TableAccessResult;
 import cherry.mastersmith.navigation.testsupport.CountingDslProvider;
 import cherry.mastersmith.navigation.testsupport.CountingResolver;
 import cherry.mastersmith.navigation.testsupport.NavigationModels;
@@ -49,18 +47,10 @@ class NavigationServiceTest {
 
         private Runnable onDslRead = () -> {};
 
-        private Runnable onResolve = () -> {};
-
         @Override
         public void afterDslRead() {
             points.add("afterDslRead");
             onDslRead.run();
-        }
-
-        @Override
-        public void afterResolve() {
-            points.add("afterResolve");
-            onResolve.run();
         }
     }
 
@@ -131,65 +121,12 @@ class NavigationServiceTest {
     }
 
     @Test
-    @org.junit.jupiter.api.DisplayName("a visible table returns its names, display name and main permission")
-    void visibleTable() {
-        resolver.table("SALES", "ORDER", MainPermission.FULL);
-
-        TableAccessResult result = service().tableAccess(1L, "SALES", "ORDER");
-
-        assertThat(result)
-                .isEqualTo(new TableAccessResult.Visible(
-                        "SALES", "ORDER", new DisplayName("テーブル ORDER", "Table ORDER"), MainPermission.FULL));
-        assertThat(barrier.points).containsExactly("afterResolve");
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName("NONE, a table outside the DSL and no DSL are all NotVisible")
-    void notVisible() {
-        resolver.table("SALES", "ORDER", MainPermission.NONE);
-        assertThat(service().tableAccess(1L, "SALES", "ORDER")).isEqualTo(new TableAccessResult.NotVisible());
-        assertThat(service().tableAccess(1L, "SALES", "MISSING")).isEqualTo(new TableAccessResult.NotVisible());
-        snapshotModel = null;
-        dsl.replace(null);
-        assertThat(service().tableAccess(1L, "SALES", "ORDER")).isEqualTo(new TableAccessResult.NotVisible());
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName(
-            "a table removed from the DSL after the resolve is NotVisible, a kept one uses the new display name")
-    void dslReplacedDuringTableAccess() {
-        resolver.table("SALES", "ORDER", MainPermission.READ);
-        barrier.onResolve =
-                () -> dsl.replace(NavigationModels.model(List.of(NavigationModels.schema("SALES", "LINE")), List.of()));
-        assertThat(service().tableAccess(1L, "SALES", "ORDER")).isEqualTo(new TableAccessResult.NotVisible());
-
-        DslModel renamed = NavigationModels.model(
-                List.of(cherry.mastersmith.role.testsupport.RoleDslFixture.schema(
-                        "SALES",
-                        new cherry.mastersmith.dsl.domain.DslTable(
-                                "ORDER",
-                                new DisplayName("新しい受注", "New orders"),
-                                false,
-                                List.of("ID"),
-                                List.of(),
-                                java.util.Map.of(
-                                        "ID", cherry.mastersmith.role.testsupport.RoleDslFixture.column("ID"))))),
-                List.of());
-        barrier.onResolve = () -> dsl.replace(renamed);
-        assertThat(service().tableAccess(1L, "SALES", "ORDER"))
-                .isInstanceOfSatisfying(
-                        TableAccessResult.Visible.class,
-                        visible -> assertThat(visible.displayName()).isEqualTo(new DisplayName("新しい受注", "New orders")));
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName("a failure of the resolver is thrown as it is from both operations")
+    @org.junit.jupiter.api.DisplayName("a failure of the resolver is thrown as it is")
     void resolverFailure() {
         IllegalStateException failure = new IllegalStateException("DB の誤り");
         resolver.failWith(failure);
 
         assertThatThrownBy(() -> service().menu(1L)).isSameAs(failure);
-        assertThatThrownBy(() -> service().tableAccess(1L, "SALES", "ORDER")).isSameAs(failure);
     }
 
     @Test
@@ -200,7 +137,6 @@ class NavigationServiceTest {
                 new NavigationService(dsl, resolver, new AllowedNavIconList(), new NoOpNavigationBarrier());
 
         assertThat(service.menu(1L).items()).hasSize(1);
-        assertThat(service.tableAccess(1L, "SALES", "ORDER")).isInstanceOf(TableAccessResult.Visible.class);
         assertThat(service.menu(1L).items().getFirst().items().getFirst().table())
                 .isEqualTo(new NavTableRef("SALES", "ORDER"));
     }

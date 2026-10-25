@@ -138,6 +138,41 @@ class JdbcTargetReadAccessTest {
     }
 
     @Test
+    @DisplayName("a connection marked broken by the work is evicted from the pool before closing it")
+    void brokenMarkEvicts() throws SQLException {
+        TargetReadOutcome<String> outcome = access.withRead(ReadPurpose.LIST, session -> {
+            session.markBroken();
+            return "時間切れ";
+        });
+
+        assertThat(outcome).isEqualTo(new TargetReadOutcome.Done<>("時間切れ"));
+        InOrder order = inOrder(dataSource, connection);
+        order.verify(dataSource).evictConnection(connection);
+        order.verify(connection).close();
+    }
+
+    @Test
+    @DisplayName("a connection not marked broken is closed back to the pool without eviction")
+    void unmarkedIsNotEvicted() throws SQLException {
+        access.withRead(ReadPurpose.DETAIL, session -> "読んだ");
+
+        verify(dataSource, never()).evictConnection(any());
+        verify(connection).close();
+    }
+
+    @Test
+    @DisplayName("a connection marked broken is evicted even when the work then throws")
+    void brokenMarkEvictsOnUnexpectedFailure() throws SQLException {
+        assertThatThrownBy(() -> access.withRead(ReadPurpose.LIST, session -> {
+                    session.markBroken();
+                    throw new IllegalStateException("x");
+                }))
+                .isInstanceOf(TargetReadUnexpectedException.class);
+
+        verify(dataSource).evictConnection(connection);
+    }
+
+    @Test
     @DisplayName("a failure to restore the network timeout evicts the connection before closing it")
     void restoreFailureEvicts() throws SQLException {
         doThrow(new SQLException("closed", "08003"))

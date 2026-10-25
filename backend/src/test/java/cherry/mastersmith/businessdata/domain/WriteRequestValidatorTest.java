@@ -219,8 +219,25 @@ class WriteRequestValidatorTest {
         assertThat(errors(validate(WriteOperation.CREATE, Map.of(), values)))
                 .containsExactly(
                         new BusinessDataFieldError("ro", BusinessDataFieldErrorReason.NOT_ALLOWED),
-                        new BusinessDataFieldError("unknown", BusinessDataFieldErrorReason.NOT_ALLOWED));
+                        new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_ALLOWED));
         assertThat(updateError("id", "2")).isEqualTo(BusinessDataFieldErrorReason.NOT_ALLOWED);
+    }
+
+    @Test
+    @DisplayName("a name that is not in the DSL is never echoed: the field is empty, however long or odd the name is")
+    void unknownNameIsNotEchoed() {
+        String longName = "zz-name-" + "n".repeat(60_000);
+        String oddName = "x`; DROP TABLE t; --\n";
+
+        for (String name : List.of(longName, oddName)) {
+            assertThat(errors(validate(WriteOperation.CREATE, Map.of(), required(name, "x"))))
+                    .containsExactly(new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_ALLOWED));
+            assertThat(errors(validate(WriteOperation.UPDATE, Map.of("id", "1"), one(name, "x"))))
+                    .containsExactly(new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_ALLOWED));
+        }
+        assertThat(errors(validate(WriteOperation.CREATE, Map.of(), required("ro", "x"))))
+                .as("DSL にある名前（書けないカラム）は従来どおり名前を返す")
+                .containsExactly(new BusinessDataFieldError("ro", BusinessDataFieldErrorReason.NOT_ALLOWED));
     }
 
     @Test
@@ -310,7 +327,7 @@ class WriteRequestValidatorTest {
         assertThat(errors(validate(WriteOperation.UPDATE, Map.of("other", "1"), one("qty", "1"))))
                 .containsExactly(
                         new BusinessDataFieldError("id", BusinessDataFieldErrorReason.KEY_MISMATCH),
-                        new BusinessDataFieldError("other", BusinessDataFieldErrorReason.KEY_MISMATCH));
+                        new BusinessDataFieldError("", BusinessDataFieldErrorReason.KEY_MISMATCH));
         assertThat(validate(WriteOperation.DELETE, Map.of("id", "1"), one("qty", "x")))
                 .as("削除は値を見ない")
                 .isInstanceOfSatisfying(WriteValidation.Valid.class, valid -> {

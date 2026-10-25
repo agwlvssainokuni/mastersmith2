@@ -113,16 +113,18 @@ public class JdbcTargetReadAccess implements TargetReadAccess {
             giveBack(connection, original, true);
             return unavailable(e);
         }
+        TargetReadSession session = new TargetReadSession(usable.product(), connection, queryTimeoutSeconds);
         try {
             T value;
             try {
-                value = work.apply(new TargetReadSession(usable.product(), connection, queryTimeoutSeconds));
+                value = work.apply(session);
             } catch (RuntimeException e) {
                 throw new TargetReadUnexpectedException(e.getClass().getSimpleName());
             }
             return new TargetReadOutcome.Done<>(value);
         } finally {
-            giveBack(connection, original, false);
+            // 時間切れ・断絶の後の接続は、壊れた状態でプールへ戻さず捨てる（次の要求が同じ接続を借りて失敗しないため）
+            giveBack(connection, original, session.isBroken());
         }
     }
 

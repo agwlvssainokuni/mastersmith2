@@ -521,6 +521,39 @@ describe('PreferencesPage while saving (D10・NFR6.5)', () => {
 })
 
 describe('PreferencesPage when the login state is renewed during a preview (10節の (f)、決定 4)', () => {
+  it('shows no toast for a 200 that arrives the moment the next screen is placed in the DOM, before any effect cleanup', async () => {
+    const user = userEvent.setup()
+    const success = deferred()
+    const saved = { ...NAMED_PREFERENCES, theme: 'dark' as const }
+    start({ put: [success.promise] })
+    await formReady()
+    await user.click(radio('ダーク'))
+    await user.click(saveButton())
+    // 新しい画面の DOM が置かれた直後（描画の後の効果の後片付けより前）に答えを届ける。DOM の変化の通知は commit の直後の
+    // マイクロタスクで流れ、描画の後の効果（useEffect）の後片付けはその後のタスクで流れるため、順が決まる。
+    const placed = new Promise<void>((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (screen.queryByTestId('preferences-password-page') !== null) {
+          observer.disconnect()
+          success.resolve(jsonResponse(200, saved))
+          resolve()
+        }
+      })
+      observer.observe(document.body, { childList: true, subtree: true })
+    })
+    await user.click(await menuButton(/検査 太郎/))
+    await user.click(await screen.findByRole('menuitem', { name: 'パスワードの変更' }))
+    await placed
+    await act(async () => {
+      await success.promise
+      // 答えを受けた処理（マイクロタスク）と、その後の描画の後の効果が済むのを待つ。
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    await waitFor(() => expect(applied.calls).toEqual([saved]))
+    expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement()
+    expect(consoleCalls()).toEqual([])
+  })
+
   it('records what the screen and the form show after a token refresh', async () => {
     const user = userEvent.setup()
     const server = start()

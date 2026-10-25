@@ -55,6 +55,17 @@ class TargetReadSessionTest {
     }
 
     @Test
+    @DisplayName("the broken mark starts down, goes up once marked and stays out of the string form")
+    void brokenMark() {
+        TargetReadSession session = new TargetReadSession(DatabaseProduct.MYSQL, mock(Connection.class), 5);
+
+        assertThat(session.isBroken()).isFalse();
+        session.markBroken();
+        assertThat(session.isBroken()).isTrue();
+        assertThat(session.toString()).isEqualTo("TargetReadSession[product=MYSQL, queryTimeoutSeconds=5]");
+    }
+
+    @Test
     @DisplayName("the product is required")
     void productIsRequired() {
         assertThatThrownBy(() -> new TargetReadSession(null, mock(Connection.class), 5))

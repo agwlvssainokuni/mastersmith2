@@ -90,6 +90,11 @@ public final class PostgresRowDialect implements RowDialect {
     }
 
     @Override
+    public boolean readsBooleanAsInteger() {
+        return false;
+    }
+
+    @Override
     public boolean equalsSupported(String dbTypeName) {
         return !NO_EQUALITY_TYPES.contains(RowDialect.baseName(dbTypeName));
     }

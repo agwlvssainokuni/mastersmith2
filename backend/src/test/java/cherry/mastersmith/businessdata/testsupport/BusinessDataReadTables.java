@@ -65,6 +65,9 @@ public final class BusinessDataReadTables {
     /** MySQL・MariaDB の {@code bit(8)} と空間の型の表。 */
     public static final String BITS = "bits";
 
+    /** MySQL・MariaDB の {@code tinyint} を真偽値として読む表（0・1 と、0 と 1 以外の値 5 を持つ。FR3.7 の R-08）。 */
+    public static final String FLAGS = "flags";
+
     /** PostgreSQL の {@code timetz} の表。 */
     public static final String ZONED = "zoned";
 
@@ -193,6 +196,9 @@ public final class BusinessDataReadTables {
             sql.add("CREATE TABLE " + t(LEGACY) + " (id INTEGER NOT NULL PRIMARY KEY, d DATE NULL, tm TIME NULL)");
             sql.add("INSERT INTO " + t(LEGACY) + " (id, d, tm) VALUES (1, '0000-00-00', '10:00:00')");
             sql.add("INSERT INTO " + t(LEGACY) + " (id, d, tm) VALUES (2, '2026-01-01', '838:59:59')");
+            sql.add("CREATE TABLE " + t(FLAGS) + " (id INTEGER NOT NULL PRIMARY KEY, f TINYINT(1) NULL,"
+                    + " g TINYINT NULL)");
+            sql.add("INSERT INTO " + t(FLAGS) + " (id, f, g) VALUES (1, 0, 0), (2, 1, 1), (3, NULL, NULL), (4, 5, 5)");
             sql.add("CREATE TABLE " + t(BITS) + " (id INTEGER NOT NULL PRIMARY KEY, b BIT(8) NULL, g POINT NULL,"
                     + " v VARCHAR(10) NULL)");
             sql.add("INSERT INTO " + t(BITS) + " (id, b, g, v) VALUES (1, b'00000101', ST_GeomFromText('POINT(1 1)'),"
@@ -376,6 +382,23 @@ public final class BusinessDataReadTables {
                             column("id").dbType("int").list(true, 1).build(),
                             column("d").dbType("date").list(true, 2).build(),
                             column("tm").dbType("time").list(true, 3).build()));
+            tables.put(
+                    FLAGS,
+                    table(
+                            FLAGS,
+                            false,
+                            List.of("id"),
+                            column("id").dbType("int").list(true, 1).build(),
+                            column("f")
+                                    .dbType("tinyint")
+                                    .form(FormPart.CHECKBOX)
+                                    .list(true, 2)
+                                    .build(),
+                            column("g")
+                                    .dbType("tinyint")
+                                    .form(FormPart.SWITCH)
+                                    .list(true, 3)
+                                    .build()));
             DslColumn bit = column("b")
                     .dbType("bit", 8)
                     .list(true, 2)

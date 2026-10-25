@@ -18,13 +18,18 @@ package cherry.mastersmith.businessdata;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import cherry.mastersmith.common.testsupport.StatementCallFixture;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaCall;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.lang.ArchRule;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
@@ -42,13 +47,42 @@ class BusinessDataBoundaryArchitectureTest {
             .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
             .importPackages("cherry.mastersmith");
 
-    /** 文を作る JDBC の口の名前。 */
-    private static final Set<String> STATEMENT_FACTORIES = Set.of("prepareStatement", "createStatement");
+    /** 文を作る JDBC の口の名前（ストアドの呼び出しの {@code prepareCall} を含む）。 */
+    private static final Set<String> STATEMENT_FACTORIES = Set.of("prepareStatement", "createStatement", "prepareCall");
+
+    /** 文を実行する JDBC の口の名前（{@code Statement} と {@code PreparedStatement}・{@code CallableStatement} のもの）。 */
+    private static final Set<String> STATEMENT_EXECUTIONS = Set.of(
+            "execute", "executeQuery", "executeUpdate", "executeBatch", "executeLargeUpdate", "executeLargeBatch");
 
     private static final DescribedPredicate<JavaCall<?>> STATEMENT_CALL = DescribedPredicate.describe(
-            "a statement factory of java.sql.Connection",
-            call -> STATEMENT_FACTORIES.contains(call.getName())
-                    && call.getTargetOwner().isAssignableTo(Connection.class));
+            "a statement factory of java.sql.Connection or an execution of java.sql.Statement",
+            call -> (STATEMENT_FACTORIES.contains(call.getName())
+                            && call.getTargetOwner().isAssignableTo(Connection.class))
+                    || (STATEMENT_EXECUTIONS.contains(call.getName())
+                            && call.getTargetOwner().isAssignableTo(Statement.class)));
+
+    /**
+     * アプリのどこで JDBC の文を作る・実行するかを、クラスの名前で許す一覧（R-06。{@code businessdata} の外を含む）。業務データの SQL は
+     * {@code RowSqlExecutor} だけ。ほかは、対象DB のスキーマの読み取りの決まった SQL（{@code targetdb.repository}）と、内部DB の
+     * 死活の確かめ（{@code common.health}）。この一覧に足すときは、理由を添えて計画で承認を得る（足すだけで通る規則ではなく、足すこと
+     * 自体を見える変更にするための一覧）。
+     */
+    private static final Set<String> ALLOWED_STATEMENT_OWNERS = Set.of(
+            "cherry.mastersmith.businessdata.repository.RowSqlExecutor",
+            "cherry.mastersmith.targetdb.repository.MysqlSchemaQueries",
+            "cherry.mastersmith.targetdb.repository.PostgresSchemaQueries",
+            "cherry.mastersmith.targetdb.repository.SchemaRows",
+            "cherry.mastersmith.common.health.TimeBoundedDbHealthIndicator");
+
+    /** 一覧の外のクラスが JDBC の文を作る・実行することを禁じる規則。 */
+    private static ArchRule noStatementsOutsideTheAllowedOwners() {
+        return noClasses()
+                .that(DescribedPredicate.describe(
+                        "is not one of the allowed statement owners",
+                        (JavaClass javaClass) -> !ALLOWED_STATEMENT_OWNERS.contains(javaClass.getName())))
+                .should()
+                .callMethodWhere(STATEMENT_CALL);
+    }
 
     @Test
     @DisplayName(
@@ -118,6 +152,27 @@ class BusinessDataBoundaryArchitectureTest {
                 .should()
                 .callMethodWhere(STATEMENT_CALL)
                 .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("no class outside the allowed owners creates or runs a JDBC statement, in businessdata or elsewhere")
+    void statementsOnlyInTheAllowedOwners() {
+        noStatementsOutsideTheAllowedOwners().check(CLASSES);
+        assertThat(ALLOWED_STATEMENT_OWNERS)
+                .as("一覧のクラスが実際に存在する（名前の誤りで規則が空振りしない）")
+                .allSatisfy(name -> assertThat(CLASSES.contain(name)).as(name).isTrue());
+    }
+
+    @Test
+    @DisplayName("the rule finds prepareCall and Statement.execute outside the allowed owners and fails")
+    void ruleFindsCallsOutsideTheAllowedOwners() {
+        JavaClasses fixture = new ClassFileImporter().importClasses(StatementCallFixture.class);
+
+        assertThatThrownBy(() -> noStatementsOutsideTheAllowedOwners().check(fixture))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("StatementCallFixture")
+                .hasMessageContaining("prepareCall")
+                .hasMessageContaining("execute");
     }
 
     @Test

@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -71,6 +72,21 @@ class DslSchemaPublicationIT {
         assertThat(response.body()).isEqualTo(classpathText(DslFormat.SCHEMA_RESOURCE));
         assertThat(HttpTestClient.json(response))
                 .containsEntry("$schema", "https://json-schema.org/draft/2020-12/schema");
+    }
+
+    @Test
+    @DisplayName("the served schema explains the unsigned type names on dbType and its name")
+    @SuppressWarnings("unchecked")
+    void schemaDescribesUnsignedNames() {
+        HttpResponse<String> response = new HttpTestClient(port).get(DslFormat.SCHEMA_PUBLIC_PATH);
+
+        Map<String, Object> defs =
+                (Map<String, Object>) HttpTestClient.json(response).get("$defs");
+        Map<String, Object> dbType = (Map<String, Object>) defs.get("dbType");
+        Map<String, Object> name = (Map<String, Object>) ((Map<String, Object>) dbType.get("properties")).get("name");
+        assertThat((String) dbType.get("description")).isNotBlank();
+        assertThat((String) name.get("description")).contains("int unsigned", "bigint unsigned", "PostgreSQL");
+        assertThat(name).containsEntry("$ref", "#/$defs/name");
     }
 
     @Test

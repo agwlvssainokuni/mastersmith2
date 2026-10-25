@@ -107,7 +107,7 @@ mastersmith:
       write: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE:5s}
     pool:
       # 対象DB の読み取りの接続の数の上限（内部DB の接続とは別）
-      maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:5}
+      maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:10}
       # 使っていない接続を閉じるまでの時間（書き込みの接続と共用）
       idle-timeout: ${MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT:60s}
     write:

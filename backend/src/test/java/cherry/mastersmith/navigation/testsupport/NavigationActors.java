@@ -21,9 +21,7 @@ import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.testsupport.RoleActors;
 import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
-import java.net.URLEncoder;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
@@ -111,22 +109,6 @@ public final class NavigationActors {
     }
 
     /**
-     * 置き場を問い合わせる（引数は正しくエンコードする。null の引数は送らない）。
-     *
-     * @param token アクセストークン（無ければ null）
-     * @param schema スキーマの名前
-     * @param table テーブルの名前
-     * @param headers 足すヘッダー（名前, 値, ...）
-     * @return 応答
-     */
-    public HttpResponse<String> tableAccess(String token, String schema, String table, String... headers) {
-        StringBuilder query = new StringBuilder();
-        append(query, "schema", schema);
-        append(query, "table", table);
-        return get("/api/me/table-access" + query, token, headers);
-    }
-
-    /**
      * 道と問い合わせをそのまま送る。
      *
      * @param pathAndQuery 道と問い合わせ
@@ -143,15 +125,5 @@ public final class NavigationActors {
             builder.headers(headers);
         }
         return client.send(builder.build());
-    }
-
-    private static void append(StringBuilder query, String name, String value) {
-        if (value == null) {
-            return;
-        }
-        query.append(query.isEmpty() ? '?' : '&')
-                .append(name)
-                .append('=')
-                .append(URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20"));
     }
 }

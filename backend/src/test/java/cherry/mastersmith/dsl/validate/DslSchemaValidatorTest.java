@@ -47,6 +47,18 @@ class DslSchemaValidatorTest {
     }
 
     @Test
+    @DisplayName(
+            "unsigned integer type names such as 'int unsigned' pass the schema and the sample without them is unchanged")
+    void unsignedTypeNamesPass() {
+        String yaml = validYamlReplacing(
+                "dbType: { name: INTEGER, nullable: false }", "dbType: { name: int unsigned, nullable: false }");
+
+        assertThat(yaml).isNotEqualTo(validYaml());
+        assertThat(validate(yaml)).isEmpty();
+        assertThat(validate(validYaml())).isEmpty();
+    }
+
+    @Test
     @DisplayName("a missing required item and a wrong type are both reported with line, column and path")
     void twoSyntaxErrorsWithPositions() {
         String yaml = validYamlReplacing("            detail: { visible: false }\n", "")

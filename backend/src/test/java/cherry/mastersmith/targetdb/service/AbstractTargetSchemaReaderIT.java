@@ -227,14 +227,14 @@ abstract class AbstractTargetSchemaReaderIT {
 
     @Test
     @Order(2)
-    @DisplayName("the target connection is read-only, pooled apart from the internal one and at most 5 connections")
+    @DisplayName("the target connection is read-only, pooled apart from the internal one and at most 10 connections")
     void connectionIsReadOnly() throws SQLException {
         HikariDataSource target = app.getBean(TargetDataSourceConfig.TARGET_DATA_SOURCE, HikariDataSource.class);
         try (Connection connection = target.getConnection()) {
             assertThat(connection.isReadOnly()).isTrue();
         }
         assertThat(target.getPoolName()).isEqualTo("mastersmith-target-db");
-        assertThat(target.getMaximumPoolSize()).isEqualTo(5);
+        assertThat(target.getMaximumPoolSize()).isEqualTo(10);
         assertThat(app.getBean(DataSource.class).unwrap(HikariDataSource.class).getPoolName())
                 .isEqualTo("mastersmith-db");
     }

@@ -73,3 +73,127 @@
 - `./gradlew osvScan --rerun`: 失敗の条件に当たるもの 0 件、警告 12 件。
 - `pmset -g log` の最後の Sleep は 22:53 JST で、verify の開始より前。流している間の眠りは無い。
 - 最初に旧い版（collector 0.163.1 など）で流し始めたが、連絡を受けて止め、更新後の状態で最初から流し直した。
+
+## B3 前半（バックエンド）: Step 14〜28
+
+作業ブランチ: `fix/261025-deps-perf-carryover-code`。コミットはしていない（変更はワークツリーに残す）。`./gradlew verify` 全体・E2E・カバレッジの実測（Step 32〜35）・画面（Step 29〜31）はやっていない。対象DB の結合テストは README のとおり `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡して実行した（対象DB のテストは SKIPPED でなく実行された。SKIPPED は他の DB 向けの `assumeTrue` だけ）。
+
+### Step 14〜15 設定の層（FR4.2・FR4.4）
+- 読み取りのプールの既定を 5 → 10 にした（`TargetDbProperties.Pool`、`application.yaml`、`.env.example`、`README.md` の表、`perf/README.md` の借りる待ちの説明）。書き込みのプール（5）は変えていない。
+- 計画の影響の範囲に無かった既存のテスト 2 件が既定の 5 に頼っていたため直した: `TargetDataSourceConfigTest`（`getMaximumPoolSize` の 5）・`AbstractTargetSchemaReaderIT.connectionIsReadOnly`（3種類の対象DB。最初の統合テストの流しで落ちて分かった）。
+- `docker/monitoring` のダッシュボード・警報は上限をしきい値に使っていない（`hikaricp_connections_active/pending` の値だけ）。変更なし。
+- 接続の数（FR4.4）: `BusinessDataConnectionUsageIT`・`NavigationConnectionUsageIT`・`GroupConnectionUsageIT`・`RoleConnectionUsageIT`・`TargetDbStartupIT` を流し、プール 10 のもとで 1 要求が使う接続の数は変わらず通った（上限 5 に頼る決定的な数え方は無かった）。
+
+### Step 16〜17 C2: 時間切れの後に接続を捨てる（FR3.2）
+- `TargetReadSession` に印（`AtomicBoolean`、4つ目の component。3引数の constructor も残した。`markBroken()`・`isBroken()`。`toString` は伏せたまま）。`RowSqlExecutor` の読み取り（`search`・`detail`）が、失敗の分類が `TIMEOUT` または `UNAVAILABLE`（断絶）のときに印を立てる。`JdbcTargetReadAccess.withRead` が返すとき、印があれば `evictConnection` で捨てる（例外の連なりで返す場合も）。ログは既存どおり例外のクラスの名前だけ。
+- 直す前に失敗する再現: `BusinessDataTimeoutIT.nextRequestSucceedsAfterStallInsideCountQuery`（MySQL・MariaDB）。**直す前の確かめ**（`giveBack` に印を渡さない形に一時的に戻して実行）: MySQL は落ち（時間切れの次の1回が 503 `BUSINESS_TARGET_DB_UNAVAILABLE`、止めた位置 `chunk#2(87B)`）、MariaDB は直す前でも通った（MariaDB のドライバーは時間切れの接続をプールに戻しても次の要求に響かない）。直した後は両方通る。単体: `JdbcTargetReadAccessTest`（印のある接続は閉じる前に捨てる／印が無ければ捨てない／処理が例外でも捨てる）・`TargetReadSessionTest`・`RowSqlExecutorTest`（時間切れ・断絶は印が立ち、定義との食い違いは立たない）。直す前は `JdbcTargetReadAccessTest.brokenMarkEvicts` が落ちる形（印を見ないため）。
+
+### Step 18〜20 C1: 符号なしの型の名前（FR3.1、計画の R-08 の案 A）
+- `ColumnValueCodec`: 型の名前に `unsigned` を含む整数は下限 0・符号なしの上限（`tinyint` 255・`smallint` 65,535・`mediumint` 16,777,215・`int`/`integer` 4,294,967,295・`bigint` 2^64−1）。含まない名前は従来の「符号つきの下限と符号なしの上限の和」のまま。範囲の外は 400 `VALIDATION_FAILED`（`OUT_OF_RANGE`）。
+- `RowDialect.baseName` の決定: `int(10) unsigned` のように括弧の後ろに `unsigned` がある手書きの表記は、**整数の型（tinyint/smallint/mediumint/int/integer/bigint）に限り** `int unsigned` として符号なしの印を残す（括弧の後ろのほかの語や整数でない型 `double(10,2) unsigned` は従来どおり落とす。`float unsigned` などの `equalsSupported` の判定を変えないため）。`timestamp(3) with time zone` は従来どおり `timestamp`（計画外の挙動変更をしない）。
+- `DslTreeBuilder.dbType`: MySQL・MariaDB の `COLUMN_TYPE` に `unsigned` を含む整数型は名前を `int unsigned` のように書く（Q4: A）。`tinyint(1)`（真偽値）や整数でない型・PostgreSQL は変えない。`TypeCategoryMapping` は `TargetDbType` を見るため変わらない（既存のテストが符号なしの NUMBER を確かめている）。再生成の差の表では `dbType.name` の型の差として出る（`DslSummaryAndDiffTest` に足した）。
+- `dsl-schema-v2.json` に `dbType` と `dbType.name` の `description` を足した（構造・版は変えない）。README の「DSL の書式」「既定の DSL の生成の決まり」に書いた。
+- 直す前に失敗する再現（実際に直す前の状態で確かめた）: `ColumnValueCodecTest` の符号なしの境界（8件）・`RowDialectTest.baseName`・`DslTreeBuilderTest.unsignedIntegerNames` が落ちた。結合テスト `AbstractBusinessDataWriteIT.unsignedRanges`（新しい表 `w_sign`）は MySQL・MariaDB が `expected 400 but was 409` で落ち、PostgreSQL は直す前後とも通る（符号なしが無く変わらない）。符号を持たない既存の DSL は `valid-sample.yaml`・`dept_mst.yaml` の既存のテスト（`DslSchemaValidatorTest`・`DslTreeBuilderTest`）が変更なしで通る。符号つきの列（名前に unsigned なし）は従来どおり、範囲内の外の 2147483648 は 409 `BUSINESS_SAVE_REJECTED`、−2147483649 は 400（`unsignedRanges` で確かめた）。
+
+### Step 21 C7 R-08: 真偽値の `tinyint` が 0 と 1 以外
+- `RowDialect.readsBooleanAsInteger()`（MySQL 系 true／PostgreSQL false）を足し、`ColumnValueCodec.readCell` の BOOLEAN が MySQL 系では `getLong` で読んで 0→false・1→true・NULL→NULL・それ以外は `IllegalStateException`（値を入れない）→ `CellValue.Unreadable` → 既存の経路で `READ_CONVERSION`（409 `BUSINESS_TARGET_DB_MISMATCH`）。
+- 直す前の確かめ: 結合テスト `AbstractBusinessDataReadIT.booleanTinyint`（新しい表 `flags`、`tinyint(1)` と `tinyint`＋switch、値 5）が MySQL・MariaDB とも `expected 409 but was 200`（true が返る）で落ち、直した後は通る。単体: `ColumnValueCodecTest.readBooleanAsInteger`・`RowSqlExecutorTest.booleanTinyintOtherThanZeroAndOne`。
+
+### Step 22 C7 R-07: 要求の名前を fieldErrors に返さない
+- `SearchRequestValidator`: 条件の列・並べ替えの列・主キーの名前が、このテーブルで読めるカラム（`TableAccessView.column`）に無いときは `field` を空の文字にする（`NOT_ALLOWED` / `KEY_MISMATCH`。NONE のカラムも DSL に無い名前と同じ空）。DSL にある名前（検索できない `pw`・重ねた `name` など）は従来どおり名前を返す。応答の形（`fieldErrors` の `field`・`reason`）は変えない。`validateKey` は更新・削除の鍵の確かめにも使われるため、書き込み側の鍵の誤りも同じになった（`WriteRequestValidatorTest` の1件の期待を直した）。
+- 直す前に失敗する再現（実際に確かめた）: `SearchRequestValidatorTest`（3件）と `BusinessDataSecretLeakIT.unknownNamesLeaveNoTrace`（約 60,000 文字の名前・引用符を含む名前を TRACE を有効にして送り、応答とログに名前が無いこと。直す前は応答に長い名前がそのまま載って落ちた）。本文の上限 64 KB のため長い名前は1要求に1つ、鍵の名前は Jackson の名前の長さの上限（50,000 文字）に収まる 40,000 文字にした。`BusinessDataReadControllerTest` は、コントローラーが渡された空の `field` をそのまま返す（長い名前が応答に載らない）ことを確かめる。
+- **書き込みの本文の `values` の名前**（`WriteRequestValidator` の `NOT_ALLOWED`）は、計画の範囲（検索の条件・並べ替え・主キー）の外のため変えていない。同じく要求の名前を `fieldErrors` に返す（`AbstractBusinessDataWriteIT.injection` がその名前の返りを確かめている）。依頼者に確かめたい点。
+
+### Step 23〜24 C3: `GET /api/me/table-access` の削除（FR3.3）
+- 削除: `NavigationController.tableAccess`（と、それだけが使った `SCHEMA`/`TABLE`/`ACCESS_DENIED_CODE`・`ProblemTypeRegistry` の引数。constructor は `NavigationService` だけになった）、`TableAccessResponse`、`TableAccessResult`、`NavigationService.tableAccess`、`NavigationBarrier.afterResolve`（`tableAccess` だけが使っていた待ち合わせの点。`NoOp` と、テストの `TestNavigationBarrier.Point.AFTER_RESOLVE` も外した）。アプリの中にこの道を呼ぶコードが無いことは grep で再確認した（`frontend/src` に無し。`frontend/e2e/support/frameApiRoute.ts` のコメントと `businessDataApiRoute.test.ts` の「この道は業務データの API でない」の1件だけが残る。画面の側は今回触っていない）。
+- テスト: 削除した道に依存したテスト・ケースを外し（`NavigationApiIT` の置き場の3件、`NavigationUntrustedInputIT` の名前の23種の `tableAccess`、`NavigationDslSwapIT` の `AFTER_RESOLVE` の2件、`NavigationServiceTest`/`NavigationCallCountTest`/`NavNodeTest`/`NavigationRecordsToStringTest` の置き場の件）、`NavigationAuthorizationApiIT` はメニューの API だけの表（主体 5 つ）にした。**消えたことの確かめ**: `NavigationApiIT.tableAccessPathIsGone`（作業ロールを持つ利用者で 404、トークン無しで 401、名前が応答に出ない）。`NavigationQueryExposureIT` は削除した道に目印の名前を付けて送っても span・指標・ログに残らないことを確かめる形に直した。
+- 計画外の1件: `ApiEndpointCounts.MIN_ENDPOINTS` を 73 → 72 に下げた（`ApiAccessArchitectureTest`・`ApiAccessConsistencyIT` が数える API の数が1本減ったため。ファイルの注記の「下げるのは口を外したときだけ」に当たる。検査を弱めたのではなく、数え方の下限を口の数に合わせた）。
+- README: 業務のメニューの API の節から置き場の問い合わせの行・説明・受け入れた制約（`%` の並びの500 など、その道に限る話）を外し、削除したことを書いた。`perf/k6/scenarios.js`・`perf/README.md` の `tableAccess*` の場面は B4（Step 46）。
+
+### Step 25 C7 R-02: DSL に無い名前の確かめ
+- 新しい `BusinessDataUnknownNamesIT`（計画は `BusinessDataAuthorizationApiIT`・`AbstractBusinessDataReadIT` に足すとしていたが、3種類の対象DB で同じ表を回し、対象DB の接続を貸す部品を `CountingDataSourceConfig` で数えるため、新しいクラスにした。本番のコードは変えない）。DSL に無いスキーマ・テーブルの名前（引用符・`;`・`--`・バッククォート・改行・`../`・末尾の空白の10種）を3本の API に送って 404 `BUSINESS_TABLE_NOT_FOUND`、DSL に無い並べ替えの列・検索の列・主キーの列で 400 `VALIDATION_FAILED`、DSL が適用されていないアプリで 404 `BUSINESS_DSL_NOT_APPLIED`。**「文の数 0」は、対象DB の接続を貸す部品が借りられた回数 0（`CountingDataSource.borrows()`）で確かめた**（文を作る部品は接続を借りてからしか文を作れないため）。最後に正しい要求で借りた回数が 1 になること（数える部品が働いていること）も確かめた。6件通過。
+
+### Step 26 C7 R-05: 止める段（`StallingRelay`）
+- 暗号化された通信（MySQL・MariaDB の TLS）では応答の種類が中継から見えないため、中継は「大きなまとまりの何番目で止めるか」のままにして、**止めた後に一般ログ（`general_log` の表出力）で、止める前に対象DB に届いた文を読み、想定の段か確かめる**形を足した（新しい `StatementLog`・`StallStage`。ドライバーが時間切れの後に別の接続から流す `KILL QUERY` は段の手がかりでないため除く）。MySQL（Connector/J）の件数の問い合わせの前は `SET sql_select_limit=1` だけが届く、MariaDB は何も届かない（件数が最初の文）。`BusinessDataTimeoutIT` の既存の `stallAfterConnecting`（最初の文のまとまり＝何も届かない）と新しい `nextRequestSucceedsAfterStallInsideCountQuery`（MySQL は SET の次＝件数）で確かめる。
+- 再現のテスト: `StallStageTest`（ドライバーの分け方が変わった疑似の届いた文で、届いた文の一覧・中継の診断・原因の見立てを持つ失敗になる）。実際の初回の流しで、`KILL QUERY` が届いた文に混ざって想定と違う失敗が出て、除く形に直した（原因の分かる失敗が本当に出ることの確認にもなった）。
+- README の「対象DB の結合テストとコンテナの実行環境」に、ドライバーの版への依存と直し方を書いた。
+
+### Step 27 C7 R-06: 境界テスト（緩めず厳しくした）
+- `BusinessDataBoundaryArchitectureTest`: 文を作る口に `prepareCall` を、実行に `Statement.execute/executeQuery/executeUpdate/executeBatch/executeLargeUpdate/executeLargeBatch` を足した。既存の規則（businessdata の中で `RowSqlExecutor` だけ）を残したまま、新しい規則 `statementsOnlyInTheAllowedOwners`: アプリ全体（`businessdata` の外を含む）で、これらを呼んでよいクラスを名前の一覧に限る（`RowSqlExecutor`・`MysqlSchemaQueries`・`PostgresSchemaQueries`・`SchemaRows`・`TimeBoundedDbHealthIndicator`。実在も確かめる）。一覧は実際の呼び出し元を洗い出して決めた（最初は `SchemaRows` が漏れ、規則が実際に呼び出しを見つけることの確認になった）。
+- 再現: `common/testsupport/StatementCallFixture`（確かめ用のクラス。`prepareCall` と `Statement.execute` を持つ）だけを読み込んで同じ規則を適用すると、`prepareCall` と `execute` を理由に失敗する（`ruleFindsCallsOutsideTheAllowedOwners`）。
+
+### Step 28 API・境界・構造のテスト
+- 実行して通った: `ArchitectureTest`・`ApiAccessRulesTest`・`ApiAccessArchitectureTest`・各機能の境界テスト・`ApiAccessConsistencyIT`・`RoleGrantsNoAdminAccessIT`（API の分類の網羅）、`businessdata.*`・`navigation.*`・`dsl.*`・`dslmanage.*`・`targetdb.*` の結合テストの全部（401 件、失敗 0、SKIPPED 10 は他の DB 向けの `assumeTrue`）。最初の流しで落ちた3件（`AbstractTargetSchemaReaderIT` の既定 5）は直して通した。
+- 単体テストの全部（`:backend:cleanTest :backend:test`）: 2,611 件、失敗 0、SKIPPED 0（B2 の 2,589 件から +22）。これは `verify` ではなく、`verify`・E2E・カバレッジの実測は Step 32〜35 で行う。
+- 新しい `src/main` の変更があるパッケージ（Step 34 の実測の対象）: `targetdb.config`・`targetdb.domain`・`targetdb.service`・`businessdata.domain`・`businessdata.repository`・`dslmanage.generate`・`navigation.web`・`navigation.service`・`navigation.domain`（削除のみ）。`packagesJudgedByTotal` の7パッケージ（`access.service`・`audit.repository`・`common.error.*`・`common.health`・`common.i18n.domain`・`common.web`）には手を入れていない。
+
+### 依頼者に確かめたい点（B3 前半）
+1. 書き込みの本文（`values`）の DSL に無い名前は、R-07 の範囲外として今も `fieldErrors` に返している（`AbstractBusinessDataWriteIT.injection` がその返りを確かめている）。同じように空の `field` にするか。
+2. `ApiEndpointCounts.MIN_ENDPOINTS` を 73 → 72 に下げた（口を1本外したため）。
+3. R-02 の「文の数 0」を、文の数ではなく対象DB の接続を借りた回数 0 で確かめた。
+4. 「ドライバーの分け方が変わったときの失敗」を、中継の改造ではなく、止める前に届いた文の一般ログでの確かめにした（MySQL・MariaDB だけ。`general_log` を一時的に有効にする。PostgreSQL は合図の文字で止めるため対象外）。
+5. `RowDialect.baseName` は整数の型に限って括弧の後ろの `unsigned` を残す。
+6. README の対象DB の結合テストの節の MySQL・MariaDB の版（26.7・13.0）が、B2 の固定の更新（MySQL 26.10.0）と合っていない（本 Bolt の変更ではない。B2 の記録の直しの対象かもしれない）。
+
+## B3 後半: Step 29〜35
+
+### 依頼者の決定（B3 前半の確認事項1）: 書き込みの本文 `values` の DSL に無い名前
+- 決定: 書き込みの本文 `values` に DSL に無い名前（読めないカラムを含む）があるとき、R-07 と同じく要求の名前をそのまま `fieldErrors` に返さず、空の `field` で `NOT_ALLOWED` にする（応答の形は変えない）。DSL にある名前（書けないカラム `ro` や主キー `id` の更新など）は従来どおり名前を返す。
+- 実装: `WriteRequestValidator.validate` の `NOT_ALLOWED` の組み立てで、`view.column(name)` が空のとき `field` を空にする。
+- 直す前に失敗する再現（直す前の状態で実際に流して確かめた）:
+  - 単体 `WriteRequestValidatorTest.unknownNameIsNotEchoed`（約 60,000 文字の名前・引用符と改行を含む名前。作成と更新）と、既存の `notAllowed`（`unknown` の名前の期待を空に直した）が落ちた（`15 tests completed, 2 failed`）。
+  - 結合 `BusinessDataWriteSecretLeakIT.unknownValueNamesLeaveNoTrace`（TRACE を有効にして、作成・更新の `values` に長い名前（40,000 文字）と引用符・改行を含む名前を送り、応答の本文とアプリのログに名前の目印が無いこと、応答が 4,000 文字未満であること）が落ちた。直す前は応答の `fieldErrors` に長い名前がそのまま載った。
+  - 名前の長さは Jackson の名前の長さの上限（50,000 文字）に収まる 40,000 文字にした（依頼の約 60,000 文字は `values` の対応表の鍵には通らず、要求の段階で別の誤りになるため。読み取りの条件の列の名前は値なので 60,000 文字を使えた）。
+- 直した後: 上の 2 つと、期待を空の `field` に直した `AbstractBusinessDataWriteIT.injection`（3種類の対象DB）・`BusinessDataWriteAuthorizationApiIT.idorAndMassAssignment`（`owner_id`）が通った。
+- 計画の範囲外だった `WriteRequestValidator` の置き場（`businessdata.domain`）は R-07 と同じパッケージで、新しいパッケージの追加はない。
+
+### Step 29〜31 C5: 部品が外れた印を `useLayoutEffect` に（FR3.5）
+- 直す前に失敗するテスト（決定的、3回とも同じ失敗）: `PasswordChangePage.test.tsx` の「drops the answer that arrives the moment the next screen is placed in the DOM, before any effect cleanup」。`MutationObserver` で次の画面（`preferences-page`）の DOM が置かれた直後に保存の成功の答えを届ける。直す前は Toast（`パスワードを変更しました`）が出て `toast-container` が空でなくなり落ちた（3回）。
+- `usePasswordChangeForm.ts`: `mounted` の印を `useLayoutEffect` に替えた。`usePreferencesForm.ts`: `mounted` の印を `useLayoutEffect` に、見せ方の取りやめ（`clearPreview`）は従来どおり `useEffect` の後片付けに分けた。
+- `PreferencesPage.test.tsx` にも同じ順（DOM が置かれた直後）で答えを届けるテストを足した。ただし**直す前でも通る**（プリファレンスの Toast は状態の更新の後の効果で出すため、外れた部品への状態の更新は React が捨て、見える差が出ない）。このため PreferencesPage は「直す前に失敗する」確かめはできず、一貫性のための直しと、順の固定の確かめにとどまる（依頼者に確かめたい点）。
+- 直した後: プリファレンスのフォルダの画面のテスト 9 ファイル・91 件が 3 回続けて通過（`waitFor` で待つ形は既存のまま、時間の上限は変えていない）。Prettier・tsc・oxlint・ESLint は通過。
+- `frontend/e2e/support/frameApiRoute.ts` のコメントを、消えた道を指す書き方から「業務データの API は `businessDataApiRoute.ts` が受ける（置き場の問い合わせの道はバックエンドから消えた）」に直した。`businessDataApiRoute.test.ts` の `isBusinessDataApiPath('/api/me/table-access')` は、消えた道の名前をやめて別の業務データでない道 `/api/me/navigation` にした（期待は偽のまま）。テストのどれも table-access を前提にしていなかった。動作の変更なし。
+
+### 決定の影響で直した既存のテスト
+- `BusinessDataWriteServiceTest.validationFailed`（`values` の DSL に無い名前 `nothing` の期待を空の `field` に）。1回目の `verify` がこの1件で落ちて分かった（`2612 tests completed, 1 failed`、約 2分11秒で停止）。ほかに `WriteRequestValidatorTest.notAllowed`・`AbstractBusinessDataWriteIT.injection`・`BusinessDataWriteAuthorizationApiIT.idorAndMassAssignment` の期待を同じ形に直した。
+
+### Step 32 `verify`
+- `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡し、`PATH` に `$HOME/.volta/bin`）。2回目: BUILD SUCCESSFUL、**22分27秒**（CI の上限 `timeout-minutes: 60` の 7 割 = 42 分の **約 53%**）。
+- 単体テスト 2,612 件（失敗 0・SKIPPED 0）、結合テスト 1,375 件（失敗 0・SKIPPED 10。他の DB 種別向けの `assumeTrue` だけで、対象DB のテストは実行された）、画面のテスト 226 ファイル・1,977 件が通過。B2 の結合テスト 1,389 件から減ったのは、消した道 `GET /api/me/table-access` のテストを外したため。
+- Gitleaks: 漏れ 0（501 コミット）。SpotBugs の関門・`verifyCoverage` 通過。眠り: 流している間の `Entering Sleep`・`DarkWake` は無し（最後の `Sleep` は 00:06 JST で開始前）。
+
+### `osvScan --rerun`
+- BUILD SUCCESSFUL（失敗の条件に当たるもの 0 件、警告は開発用の npm の依存の警告だけ）。`verify` の中の `osvScan` は UP-TO-DATE だったため、`--rerun` で流し直した。
+
+### Step 33 E2E（`./gradlew e2eTest`）
+- Playwright 1.64.1。必要なブラウザは chromium-1248 で手元に無く、`npx playwright install chromium`（README のとおり）で入れた（Chrome Headless Shell 156.0.8078.4、v1248）。
+- 見本の PostgreSQL は README のとおり上乗せ（`docker/e2e/compose.targetdb-port.yaml`）で 127.0.0.1:15432 に開けて作り直し、流し終えた後に上乗せ無しで作り直してポートを閉じた（配備したアプリは healthy のまま）。Mailpit は起動済みだった。
+- 結果: **256 件 passed**（失敗 0・flaky 0・skipped 0）、13.0 分（BUILD SUCCESSFUL 13分7秒）。眠りは無し。
+- 報告の確かめ: 報告の部品の出力「値の種類 13・json の報告 1・添付 305・見つかった件数 0」。加えて、`.env` の署名鍵・初期管理者のパスワード・対象DB の読み取り／書き込みのユーザー名とパスワードの値を json の報告から文字列で探し、すべて 0 件（値は表示していない）。`jdbc:` を探すと1件当たるが、アプリの起動の引数の一時の内部DB のファイルの道（`jdbc:h2:file:/var/folders/…`、対象DB の接続先ではない）だけ。`15432`・一時のロール名の接頭辞は 0 件。`frontend/playwright-report/` は無い。
+- 画面の時間の測り（FR4.7）は Build and Test の持ち主のため、この段では記録しない。
+
+### Step 34 カバレッジの実測
+- バックエンド全体（`jacocoTestReport.xml`、`verify` の 2 回目）: 行 97.7%・分岐 91.4%。
+- `src/main` に手が入ったパッケージ（`git diff --name-only develop -- backend/src/main` から。行／分岐）: `targetdb.config` 100.0／99.1、`targetdb.domain` 100.0／97.2、`targetdb.service` 89.1／75.4、`dslmanage.generate` 99.4／100.0、`businessdata.repository` 96.4／89.0、`businessdata.domain` 97.7／90.2、`businessdata.web`（`src/main` の変更なし）97.6／77.9、`navigation.web` 92.0／100.0、`navigation.service` 100.0／100.0、`navigation.domain` 100.0／92.6。すべてパッケージごとの下限（行 80%・分岐 70%）以上。
+- `packagesJudgedByTotal`（`access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`）との重なりは**無し**。一覧は変えていない。除外は増やしていない。
+- フロントエンド全体（`coverage-summary.json`）: 行 95.06%・分岐 89.79%。今回触ったフック `usePasswordChangeForm.ts` 行 92.85%・分岐 83.33%、`usePreferencesForm.ts` 行 94.49%・分岐 87.67%。
+
+### Step 35 ライセンスヘッダー
+- `verify` の中の `spotlessJavaCheck`・`spotlessCheck` と、画面側の検査が通った。新しいファイル（`StallStage.java`・`StallStageTest.java`・`StatementLog.java`・`BusinessDataUnknownNamesIT.java`・`StatementCallFixture.java`）は `/* … */` の 2026・agwlvssainokuni のヘッダー付き。
+
+### Step 36 コミットの区切りの案（積んでいない。承認を得てから）
+各区切りでコンパイルが通る順（依存の向き: 設定 → `targetdb` → `businessdata`・`dslmanage` → `navigation` → 画面）。
+1. 読み取りのプールの既定 10（`TargetDbProperties`・`application.yaml`・`.env.example`・`README.md`・`perf/README.md` の説明、`TargetDbPropertiesTest`・`TargetDataSourceConfigTest`・`AbstractTargetSchemaReaderIT`）
+2. C2: 時間切れの後に接続を捨てる（`targetdb` の `TargetReadSession`・`JdbcTargetReadAccess`、`businessdata.repository.RowSqlExecutor` の印、各テストと `BusinessDataTimeoutIT`・`StallStage`・`StatementLog`・`StallStageTest`）。R-05 の止める段の確かめと README の注意も同じ区切り
+3. C1: 符号なしの型の名前（`ColumnValueCodec`・`RowDialect` と2つの方言、`DslTreeBuilder`、`dsl-schema-v2.json`、README、各テスト）。R-08 の真偽値の読み（`readCell`）は `ColumnValueCodec` を同じく触るためここに入れる
+4. C7: R-07（`SearchRequestValidator`・`WriteRequestValidator` と各テスト・今回の決定）、R-02（`BusinessDataUnknownNamesIT`）、R-06（`BusinessDataBoundaryArchitectureTest`・`StatementCallFixture`）
+5. C3: `GET /api/me/table-access` の削除（`navigation` の本体とテスト、`ApiEndpointCounts`、README）
+6. C5: 画面（`usePasswordChangeForm.ts`・`usePreferencesForm.ts` と2つのテスト、`frameApiRoute.ts` のコメント、`businessDataApiRoute.test.ts`）
+- `aidlc/` の記録（この `generation-notes.md`・計画のチェック・監査ログ）は、上のコードのコミットの後に記録だけのコミットとして別に積む（`project.md` の Change Control）。統合は squash で `develop` へ。
+
+### 依頼者に確かめたい点（B3 後半）
+1. `WriteRequestValidator` の決定の範囲: DSL に無い名前だけを空の `field` にし、DSL にある書けないカラム（`ro`・主キー `id` の更新）は名前を返す形にした（R-07 と同じ）。読めないカラム（主権限 NONE）は DSL に無い名前と同じ扱いで空になる。
+2. 再現の名前の長さは、`values` の鍵が Jackson の名前の上限（50,000 文字）に収まる 40,000 文字になった（依頼は約 60,000 文字）。条件の列などの値は 60,000 文字で確かめ済み。
+3. PreferencesPage は直す前に失敗するテストを作れなかった（見える差が出ないため）。PasswordChangePage だけが決定的に再現した。
+4. `playwright install chromium`（v1248）でブラウザを入れた。
+5. E2E の json に `jdbc:h2:file:/var/folders/…`（一時の内部DB の道）が起動の引数として残る（前からの形で、報告の部品の対象外）。対象DB の接続先ではない。

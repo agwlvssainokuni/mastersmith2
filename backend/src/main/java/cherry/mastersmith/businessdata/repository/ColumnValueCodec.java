@@ -112,6 +112,17 @@ public final class ColumnValueCodec implements ColumnValueReader {
             "integer", new long[] {Integer.MIN_VALUE, 4_294_967_295L},
             "int4", new long[] {Integer.MIN_VALUE, Integer.MAX_VALUE});
 
+    /** 符号なしの整数の型ごとの値の範囲（型の名前に {@code unsigned} を含むとき。下限は 0）。 */
+    private static final Map<String, long[]> UNSIGNED_INTEGER_RANGES = Map.of(
+            "tinyint", new long[] {0L, 255L},
+            "smallint", new long[] {0L, 65_535L},
+            "mediumint", new long[] {0L, 16_777_215L},
+            "int", new long[] {0L, 4_294_967_295L},
+            "integer", new long[] {0L, 4_294_967_295L});
+
+    /** 型の名前の中の符号なしの印（{@link RowDialect#baseName} は括弧の後ろの {@code unsigned} も残す）。 */
+    private static final Pattern UNSIGNED = Pattern.compile("(?:^|\\s)unsigned(?:\\s|$)");
+
     private static final BigInteger BIG_INTEGER_MIN = BigInteger.valueOf(Long.MIN_VALUE);
 
     private static final BigInteger BIG_INTEGER_MAX = new BigInteger("18446744073709551615");
@@ -380,7 +391,13 @@ public final class ColumnValueCodec implements ColumnValueReader {
         }
         long value = Long.parseLong(text);
         int space = base.indexOf(' ');
-        long[] range = INTEGER_RANGES.get(space < 0 ? base : base.substring(0, space));
+        String word = space < 0 ? base : base.substring(0, space);
+        // 型の名前に unsigned を含むときだけ符号なしの範囲（下限 0）で厳しく判定する。含まない名前は、DSL の型の名前に符号の情報が
+        // 無い既存の DSL（符号なしの列も int）を壊さないよう、従来の「符号つきの下限と符号なしの上限の和」のまま（FR3.1、計画の R-08 案 A）。
+        long[] range = (isUnsigned(base) ? UNSIGNED_INTEGER_RANGES : INTEGER_RANGES).get(word);
+        if (range == null) {
+            range = INTEGER_RANGES.get(word);
+        }
         if (range != null && (value < range[0] || value > range[1])) {
             return null;
         }
@@ -395,10 +412,16 @@ public final class ColumnValueCodec implements ColumnValueReader {
         // PostgreSQL の int8 には符号なしが無いため、符号つきの上限を当てる（U2 の BR3.5）。MySQL・MariaDB の bigint は、DSL の型の
         // 名前から符号なしかが分からないため、符号つきの下限と符号なしの上限の和のまま（U2 の generation-notes.md の G13）。
         BigInteger max = POSTGRES_BIG_INTEGER.equals(base) ? BIG_INTEGER_SIGNED_MAX : BIG_INTEGER_MAX;
-        if (value.compareTo(BIG_INTEGER_MIN) < 0 || value.compareTo(max) > 0) {
+        // 型の名前に unsigned を含むときは下限を 0 にする（FR3.1）。
+        BigInteger min = isUnsigned(base) ? BigInteger.ZERO : BIG_INTEGER_MIN;
+        if (value.compareTo(min) < 0 || value.compareTo(max) > 0) {
             return null;
         }
         return new BoundValue(ValueType.BIG_INTEGER, new BigDecimal(value));
+    }
+
+    private static boolean isUnsigned(String base) {
+        return UNSIGNED.matcher(base).find();
     }
 
     private static BoundValue parseBoolean(String text) {
@@ -495,6 +518,9 @@ public final class ColumnValueCodec implements ColumnValueReader {
                     yield new CellValue.Text(value == null ? null : value.toPlainString(), false);
                 }
                 case BOOLEAN -> {
+                    if (dialect.readsBooleanAsInteger()) {
+                        yield readBooleanAsInteger(resultSet, index);
+                    }
                     boolean value = resultSet.getBoolean(index);
                     yield new CellValue.Text(resultSet.wasNull() ? null : Boolean.toString(value), false);
                 }
@@ -526,6 +552,21 @@ public final class ColumnValueCodec implements ColumnValueReader {
         } catch (RuntimeException e) {
             return new CellValue.Unreadable(e.getClass().getName());
         }
+    }
+
+    /**
+     * 真偽値を整数として読む。0 は false、1 は true、それ以外の値は読めない値（{@link IllegalStateException}。呼び出しが
+     * {@link CellValue.Unreadable} にする）。値は例外に入れない。
+     */
+    private static CellValue readBooleanAsInteger(ResultSet resultSet, int index) throws SQLException {
+        long value = resultSet.getLong(index);
+        if (resultSet.wasNull()) {
+            return new CellValue.Text(null, false);
+        }
+        if (value != 0L && value != 1L) {
+            throw new IllegalStateException("真偽値として読めない値です");
+        }
+        return new CellValue.Text(Boolean.toString(value == 1L), false);
     }
 
     private static <T> T parseText(String text, Function<String, T> parser) {

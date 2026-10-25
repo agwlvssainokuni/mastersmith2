@@ -187,18 +187,14 @@ class NavigationQueryExposureIT {
         SpanCollector.ATTRIBUTES.clear();
         SpanCollector.NAMES.clear();
 
-        HttpResponse<String> visible = actors.tableAccess(member.token(), SCHEMA_MARK, VISIBLE_MARK);
-        HttpResponse<String> hidden = actors.tableAccess(member.token(), SCHEMA_MARK, HIDDEN_MARK);
-        HttpResponse<String> empty = actors.tableAccess(member.token(), SCHEMA_MARK, "");
+        // 削除した道（FR3.3）に名前を付けて送っても、名前はどこにも残らない。
+        HttpResponse<String> removed =
+                actors.get("/api/me/table-access?schema=" + SCHEMA_MARK + "&table=" + HIDDEN_MARK, member.token());
         HttpResponse<String> menu = actors.navigation(member.token());
 
-        assertThat(visible.statusCode()).isEqualTo(200);
-        assertThat(hidden.statusCode()).isEqualTo(403);
-        assertThat(empty.statusCode()).isEqualTo(400);
+        assertThat(removed.statusCode()).isEqualTo(404);
         assertThat(menu.statusCode()).isEqualTo(200);
-        for (HttpResponse<String> error : List.of(hidden, empty)) {
-            assertThat(error.body()).doesNotContain(MARKS).contains("\"instance\":\"/api/me/table-access\"");
-        }
+        assertThat(removed.body()).doesNotContain(MARKS);
         assertThat(SpanCollector.NAMES).as("スパンが集まっている（集め手が働いている）").isNotEmpty();
         assertThat(SpanCollector.ATTRIBUTES)
                 .as("スパンの属性")
@@ -208,7 +204,6 @@ class NavigationQueryExposureIT {
                 .flatMap(id -> id.getTags().stream())
                 .map(tag -> tag.getKey() + "=" + tag.getValue())
                 .toList();
-        assertThat(tags).contains("uri=/api/me/table-access");
         assertThat(tags).allSatisfy(tag -> assertThat(tag).doesNotContain(MARKS));
         List<Map<String, Object>> records = JsonLogRecords.parse(output.getOut()).stream()
                 .filter(record -> !"DEBUG".equals(record.get("level")) && !"TRACE".equals(record.get("level")))

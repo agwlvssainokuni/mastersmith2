@@ -21,6 +21,7 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -204,6 +205,26 @@ class RowSqlExecutorTest {
     }
 
     @Test
+    @DisplayName("a timeout or a lost connection marks the lent connection as broken, other failures do not")
+    void timeoutMarksTheConnectionBroken() throws SQLException {
+        TargetReadSession timedOut = session(DatabaseProduct.POSTGRESQL);
+        when(first.executeQuery()).thenThrow(new SQLTimeoutException("cancel", "57014"));
+        executor.search(timedOut, VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        assertThat(timedOut.isBroken()).isTrue();
+
+        TargetReadSession lost = session(DatabaseProduct.MYSQL);
+        when(connection.prepareStatement(anyString())).thenReturn(first);
+        doThrow(new SQLException("gone", "08S01", 0)).when(first).executeQuery();
+        executor.detail(lost, VIEW, new RowKey(Map.of("code", new BoundValue(ValueType.INTEGER, 1L))));
+        assertThat(lost.isBroken()).isTrue();
+
+        TargetReadSession mismatch = session(DatabaseProduct.POSTGRESQL);
+        doThrow(new SQLException("no table", "42P01", 0)).when(first).executeQuery();
+        executor.search(mismatch, VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        assertThat(mismatch.isBroken()).isFalse();
+    }
+
+    @Test
     @DisplayName("a table without a primary key is read as it is, with no key and no order")
     void tableWithoutPrimaryKey() throws SQLException {
         DslTable log =
@@ -309,6 +330,45 @@ class RowSqlExecutorTest {
             assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.READ_CONVERSION);
             assertThat(failed.failure().stage()).isEqualTo(RowQueryStage.READ);
             assertThat(failed.failure().exceptionClass()).isEqualTo("java.lang.NumberFormatException");
+        });
+    }
+
+    @Test
+    @DisplayName("MySQL family: a boolean read from tinyint 5 fails the detail as READ_CONVERSION, 0 and 1 are read")
+    void booleanTinyintOtherThanZeroAndOne() throws SQLException {
+        DslTable flags = table(
+                "flags",
+                false,
+                List.of("code"),
+                column("code").dbType("int").list(true, 1).build(),
+                column("flag")
+                        .dbType("tinyint")
+                        .form(FormPart.CHECKBOX)
+                        .list(true, 2)
+                        .build());
+        TableAccessView flagView = BusinessDataDslFixture.view(
+                flags, MainPermission.READ, Map.of("code", kind(ValueType.INTEGER), "flag", kind(ValueType.BOOLEAN)));
+        RowKey key = new RowKey(Map.of("code", new BoundValue(ValueType.INTEGER, 7L)));
+        when(firstResult.next()).thenReturn(true, false);
+        when(firstResult.getLong(anyInt())).thenReturn(7L, 7L, 1L);
+
+        RowDetailResult one = executor.detail(session(DatabaseProduct.MYSQL), flagView, key);
+
+        assertThat(one)
+                .isInstanceOfSatisfying(
+                        RowDetailResult.Found.class,
+                        found -> assertThat(found.row().values().values()).containsEntry("flag", "true"));
+
+        when(connection.prepareStatement(anyString())).thenReturn(second);
+        when(secondResult.next()).thenReturn(true);
+        when(secondResult.getLong(anyInt())).thenReturn(7L, 7L, 5L);
+
+        RowDetailResult five = executor.detail(session(DatabaseProduct.MYSQL), flagView, key);
+
+        assertThat(five).isInstanceOfSatisfying(RowDetailResult.Failed.class, failed -> {
+            assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.READ_CONVERSION);
+            assertThat(failed.failure().exceptionClass()).isEqualTo("java.lang.IllegalStateException");
+            assertThat(failed.toString()).doesNotContain("5");
         });
     }
 

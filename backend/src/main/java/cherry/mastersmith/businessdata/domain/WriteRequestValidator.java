@@ -88,8 +88,10 @@ public final class WriteRequestValidator {
                 Optional<ColumnAccess> column = name == null ? Optional.empty() : view.column(name);
                 Optional<ColumnWriteRules> rules = name == null ? Optional.empty() : view.writeRules(name);
                 if (column.isEmpty() || rules.isEmpty() || !editable(column.get(), operation)) {
+                    // このテーブルで読めるカラムに無い名前（DSL に無い名前・読めないカラム）は、要求の名前をそのまま返さない
+                    // （長い名前や引用符を含む名前が応答に載らないよう、空の field にする）。DSL にある名前は従来どおり返す。
                     errors.add(new BusinessDataFieldError(
-                            name == null ? "" : name, BusinessDataFieldErrorReason.NOT_ALLOWED));
+                            column.isEmpty() ? "" : name, BusinessDataFieldErrorReason.NOT_ALLOWED));
                     continue;
                 }
                 switch (check(column.get(), rules.get(), entry.getValue(), reader, matcher, dslHash, budget)) {

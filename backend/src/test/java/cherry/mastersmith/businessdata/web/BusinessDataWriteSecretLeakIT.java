@@ -26,6 +26,7 @@ import cherry.mastersmith.businessdata.service.BusinessDataWriteService;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
 import cherry.mastersmith.businessdata.testsupport.RandomFieldMask;
+import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.dsl.domain.DslForeignKey;
 import cherry.mastersmith.dsl.domain.DslModel;
@@ -78,6 +79,9 @@ class BusinessDataWriteSecretLeakIT {
 
     /** 一意の値の目印（DB の一意の制約にだけ当たる）。 */
     private static final String UNIQUE_MARK = "zz-leak-unique-4d70";
+
+    /** 要求のカラムの名前の目印（DSL に無い名前。応答にもログにも出ない）。 */
+    private static final String NAME_MARK = "zz-leak-name-6b14";
 
     private final BusinessDataSampleSchema sample = new BusinessDataSampleSchema(DatabaseProduct.POSTGRESQL);
 
@@ -261,5 +265,37 @@ class BusinessDataWriteSecretLeakIT {
                                     .contains(key))
                     .containsOnly("purpose", "stage", "reason", "sqlState", "vendorCode", "exceptionClass");
         });
+    }
+
+    @Test
+    @DisplayName("with TRACE, a long or odd name in values that is not in the DSL is not echoed in the 400"
+            + " nor written to the logs (decision on B3-first-half item 1)")
+    void unknownValueNamesLeaveNoTrace(CapturedOutput output) {
+        int offset = output.getOut().length();
+        // 値の対応表の名前は Jackson の名前の長さの上限（50,000 文字）に収まる長さにする。
+        String longName = NAME_MARK + "n".repeat(40_000);
+        String oddName = NAME_MARK + "`; DROP TABLE " + LEAKY + "; --\n";
+        List<HttpResponse<String>> responses = new ArrayList<>();
+        LoggingSystem logging = app.bean(LoggingSystem.class);
+        logging.setLogLevel(ROOT_LOGGER, LogLevel.TRACE);
+        try {
+            responses.add(create(Map.of("id", "7" + KEY_MARK.substring(1), longName, "x")));
+            responses.add(create(Map.of("id", "8" + KEY_MARK.substring(1), oddName, "x")));
+            Map<String, Object> update = body(app, member);
+            update.put("key", Map.of("id", KEY_MARK));
+            update.put("values", Map.of(longName, "x"));
+            responses.add(app.patch(BusinessDataPaths.ROWS, member.token(), update));
+        } finally {
+            logging.setLogLevel(ROOT_LOGGER, null);
+        }
+        String logs = output.getOut().substring(offset) + output.getErr();
+
+        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(400, 400, 400);
+        for (HttpResponse<String> response : responses) {
+            assertThat(response.body()).doesNotContain(NAME_MARK).hasSizeLessThan(4_000);
+            assertThat(HttpTestClient.json(response)).containsKey("fieldErrors");
+        }
+        assertThat(logs).as("メソッドの呼び出しの追跡が有効").contains("BusinessDataWriteController#");
+        assertThat(logs).doesNotContain(NAME_MARK);
     }
 }

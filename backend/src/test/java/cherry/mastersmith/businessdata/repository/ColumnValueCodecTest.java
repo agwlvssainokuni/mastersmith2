@@ -161,6 +161,68 @@ class ColumnValueCodecTest {
                 .contains(false);
     }
 
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource({
+        "tinyint unsigned, 255, 256, -1",
+        "smallint unsigned, 65535, 65536, -1",
+        "mediumint unsigned, 16777215, 16777216, -1",
+        "int unsigned, 4294967295, 4294967296, -1",
+        "integer unsigned, 4294967295, 4294967296, -1",
+        "INT(10) UNSIGNED, 4294967295, 4294967296, -1",
+        "int  unsigned, 4294967295, 4294967296, -1"
+    })
+    @DisplayName("an unsigned integer type accepts zero up to its maximum and rejects a negative number and one above")
+    void readUnsignedIntegers(String typeName, String max, String over, String negative) {
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), max))
+                .map(BoundValue::value)
+                .contains(Long.parseLong(max));
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), "0"))
+                .map(BoundValue::value)
+                .contains(0L);
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), over)).isEmpty();
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), negative)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("an unsigned bigint accepts zero up to 2^64-1 and rejects a negative number and one above")
+    void readUnsignedBigInteger() {
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint unsigned"), "18446744073709551615"))
+                .map(BoundValue::value)
+                .contains(new BigDecimal("18446744073709551615"));
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint unsigned"), "0"))
+                .map(BoundValue::value)
+                .contains(new BigDecimal("0"));
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint unsigned"), "18446744073709551616"))
+                .isEmpty();
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint unsigned"), "-1"))
+                .isEmpty();
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint(20) unsigned"), "-1"))
+                .isEmpty();
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "tinyint, -128, 255, -129, 256",
+        "smallint, -32768, 65535, -32769, 65536",
+        "mediumint, -8388608, 16777215, -8388609, 16777216",
+        "int, -2147483648, 4294967295, -2147483649, 4294967296",
+        "int(11), -2147483648, 4294967295, -2147483649, 4294967296"
+    })
+    @DisplayName(
+            "a type name without unsigned keeps the former range: the signed lower bound up to the unsigned maximum")
+    void unsignedFreeNamesKeepTheFormerRange(String typeName, String min, String max, String below, String above) {
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), min))
+                .map(BoundValue::value)
+                .contains(Long.parseLong(min));
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), max))
+                .map(BoundValue::value)
+                .contains(Long.parseLong(max));
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), below)).isEmpty();
+        assertThat(codec.read(access(ValueType.INTEGER, typeName), above)).isEmpty();
+        assertThat(codec.read(access(ValueType.BIG_INTEGER, "bigint"), "-9223372036854775808"))
+                .isPresent();
+    }
+
     @Test
     @DisplayName("zoned values without an offset are read as UTC, and Z or +09:00 are moved to UTC")
     void readZoned() {
@@ -253,6 +315,32 @@ class ColumnValueCodecTest {
         } finally {
             TimeZone.setDefault(original);
         }
+    }
+
+    @Test
+    @DisplayName(
+            "MySQL family booleans are read as integers: 0 is false, 1 is true, NULL is NULL, others are unreadable")
+    void readBooleanAsInteger() throws SQLException {
+        ResultSet resultSet = mock(ResultSet.class);
+        RowDialect mysql = RowDialect.of(DatabaseProduct.MYSQL);
+        RowDialect mariadb = RowDialect.of(DatabaseProduct.MARIADB);
+        when(resultSet.getLong(1)).thenReturn(0L);
+        when(resultSet.getLong(2)).thenReturn(1L);
+        when(resultSet.getLong(3)).thenReturn(5L);
+        when(resultSet.getLong(4)).thenReturn(-1L);
+        when(resultSet.getLong(5)).thenReturn(0L);
+        when(resultSet.wasNull()).thenReturn(false, false, false, false, true);
+
+        assertThat(codec.readCell(resultSet, 1, ValueType.BOOLEAN, Integer.MAX_VALUE, mysql))
+                .isEqualTo(new CellValue.Text("false", false));
+        assertThat(codec.readCell(resultSet, 2, ValueType.BOOLEAN, Integer.MAX_VALUE, mariadb))
+                .isEqualTo(new CellValue.Text("true", false));
+        assertThat(codec.readCell(resultSet, 3, ValueType.BOOLEAN, Integer.MAX_VALUE, mysql))
+                .isEqualTo(new CellValue.Unreadable("java.lang.IllegalStateException"));
+        assertThat(codec.readCell(resultSet, 4, ValueType.BOOLEAN, Integer.MAX_VALUE, mysql))
+                .isEqualTo(new CellValue.Unreadable("java.lang.IllegalStateException"));
+        assertThat(codec.readCell(resultSet, 5, ValueType.BOOLEAN, Integer.MAX_VALUE, mysql))
+                .isEqualTo(new CellValue.Text(null, false));
     }
 
     @Test

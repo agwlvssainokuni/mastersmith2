@@ -279,6 +279,33 @@ class DslTreeBuilderTest {
     }
 
     @Test
+    @DisplayName(
+            "an unsigned integer column of MySQL or MariaDB gets 'unsigned' in the type name, others keep the name")
+    void unsignedIntegerNames() {
+        DslModel model = model(schema(table(
+                "t",
+                null,
+                List.of("id"),
+                List.of(),
+                notNull("id", INT),
+                nullable("u", new TargetDbType("int", null, 10, 0, "int unsigned")),
+                nullable("bu", new TargetDbType("bigint", null, 20, 0, "bigint(20) unsigned zerofill")),
+                nullable("s", new TargetDbType("int", null, 10, 0, "int")),
+                nullable("flag", new TargetDbType("tinyint", null, 3, 0, "tinyint(1)")),
+                nullable("pg", new TargetDbType("int4", null, 32, 0)),
+                nullable("d", new TargetDbType("decimal", null, 10, 2, "decimal(10,2) unsigned")))));
+
+        DslTable t = model.schema().tables().get("t");
+        assertThat(t.columns().get("u").dbType().name()).isEqualTo("int unsigned");
+        assertThat(t.columns().get("bu").dbType().name()).isEqualTo("bigint unsigned");
+        assertThat(t.columns().get("s").dbType().name()).isEqualTo("int");
+        assertThat(t.columns().get("flag").dbType().name()).isEqualTo("tinyint");
+        assertThat(t.columns().get("pg").dbType().name()).isEqualTo("int4");
+        assertThat(t.columns().get("d").dbType().name()).as("整数の型だけ").isEqualTo("decimal");
+        assertThat(t.columns().get("u").formPart()).as("分類は変わらない").isEqualTo(FormPart.NUMBER);
+    }
+
+    @Test
     @DisplayName("search, list, detail and format follow the category and the primary key")
     void initialSettings() {
         DslModel model = model(schema(table(

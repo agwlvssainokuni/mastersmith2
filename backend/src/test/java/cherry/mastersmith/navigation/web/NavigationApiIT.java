@@ -32,7 +32,6 @@ import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -191,58 +190,29 @@ class NavigationApiIT {
     }
 
     @Test
-    @DisplayName("a READ table that no menu item points to is still answered 200 by the table access")
-    void tableOutsideTheMenu() {
-        Actor member = actors.memberWithWorkRole(halfNoneRole());
-
-        Map<String, Object> body = ok(actors.tableAccess(member.token(), "SALES", "T5"));
-
-        assertThat(body)
-                .containsExactlyInAnyOrderEntriesOf(Map.of(
-                        "schemaName", "SALES",
-                        "tableName", "T5",
-                        "displayName", Map.of("ja", "テーブル T5", "en", "Table T5"),
-                        "main", "READ"));
-        assertThat(ok(actors.tableAccess(member.token(), "SALES", "T4"))).containsEntry("main", "FULL");
-    }
-
-    @Test
-    @DisplayName("a userId parameter is ignored and the subject's own tree and access are returned")
+    @DisplayName("a userId parameter is ignored and the subject's own tree is returned")
     void idorIsPrevented() {
         Actor member = actors.memberWithWorkRole(halfNoneRole());
         Actor other = actors.memberWithWorkRole(actors.role(
                 "SALES", Map.of("T0", MainPermission.FULL, "T1", MainPermission.FULL, "T2", MainPermission.FULL)));
 
         Map<String, Object> body = ok(actors.get("/api/me/navigation?userId=" + other.userId(), member.token()));
-        HttpResponse<String> denied =
-                actors.get("/api/me/table-access?schema=SALES&table=T1&userId=" + other.userId(), member.token());
 
         assertThat(navigableTables(body)).containsExactly("T0", "T3", "T4");
-        assertThat(denied.statusCode()).isEqualTo(403);
     }
 
     @Test
-    @DisplayName("NONE, a table outside the DSL and no DSL give the same 403 body without the display name")
-    void sameForbiddenBody() {
+    @DisplayName("the removed table access path is not served: 404 for a member and 401 without a token (FR3.3)")
+    void tableAccessPathIsGone() {
         Actor member = actors.memberWithWorkRole(halfNoneRole());
 
-        Map<String, Object> none = forbidden(actors.tableAccess(member.token(), "SALES", "T1"));
-        Map<String, Object> missing = forbidden(actors.tableAccess(member.token(), "SALES", "NOT_IN_DSL"));
-        NavigationDslFixture.remove(holder);
-        Map<String, Object> noDsl = forbidden(actors.tableAccess(member.token(), "SALES", "T1"));
+        HttpResponse<String> asMember = actors.get("/api/me/table-access?schema=SALES&table=T0", member.token());
+        HttpResponse<String> anonymous = actors.get("/api/me/table-access?schema=SALES&table=T0", null);
 
-        assertThat(none).isEqualTo(missing).isEqualTo(noDsl);
-        assertThat(none).containsEntry("code", "ACCESS_DENIED");
-    }
-
-    /** 403 の本文から、要求ごとに変わる instance と traceId を除いた項目を返す（表示名を含まないことも確かめる）。 */
-    private static Map<String, Object> forbidden(HttpResponse<String> response) {
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(403);
-        assertThat(response.body()).doesNotContain("テーブル", "Table T", "NOT_IN_DSL");
-        Map<String, Object> body = new HashMap<>(HttpTestClient.json(response));
-        assertThat(body.remove("instance")).isNotNull();
-        body.remove("traceId");
-        return body;
+        assertThat(asMember.statusCode()).as(asMember.body()).isEqualTo(404);
+        assertThat(asMember.body()).doesNotContain("T0", "SALES", "テーブル");
+        assertThat(anonymous.statusCode()).isEqualTo(401);
+        assertThat(ok(actors.navigation(member.token()))).containsKey("items");
     }
 
     @Test
@@ -255,23 +225,18 @@ class NavigationApiIT {
         fixtures.assignUser(allRead, member.userId());
         String token = member.token();
         assertThat(navigableTables(ok(actors.navigation(token)))).containsExactly("T0", "T3", "T4");
-        assertThat(actors.tableAccess(token, "SALES", "T1").statusCode()).isEqualTo(403);
 
         fixtures.selectWorkRole(member.userId(), allRead);
         assertThat(navigableTables(ok(actors.navigation(token)))).containsExactly("T1");
-        assertThat(actors.tableAccess(token, "SALES", "T1").statusCode()).isEqualTo(200);
 
         jdbc.update(
                 "UPDATE permission_settings SET main_permission = 'NONE' WHERE role_id = ? AND table_name = 'T1'",
                 allRead);
         assertThat(ok(actors.navigation(token))).containsEntry("emptyReason", "NOTHING_VISIBLE");
-        assertThat(actors.tableAccess(token, "SALES", "T1").statusCode()).isEqualTo(403);
 
         fixtures.selectWorkRole(member.userId(), halfNone);
-        assertThat(actors.tableAccess(token, "SALES", "T0").statusCode()).isEqualTo(200);
         jdbc.update("DELETE FROM user_role_assignments WHERE user_id = ?", member.userId());
         assertThat(ok(actors.navigation(token))).containsEntry("emptyReason", "NOTHING_VISIBLE");
-        assertThat(actors.tableAccess(token, "SALES", "T0").statusCode()).isEqualTo(403);
     }
 
     @Test
@@ -318,7 +283,7 @@ class NavigationApiIT {
     }
 
     @Test
-    @DisplayName("an administrator without a work role gets no admin menu, and the two APIs add no audit rows")
+    @DisplayName("an administrator without a work role gets no admin menu, and the API adds no audit rows")
     void noAdminMenuAndNoAudit() {
         Actor admin = roleActors.admin();
         Actor member = actors.memberWithWorkRole(halfNoneRole());
@@ -328,9 +293,6 @@ class NavigationApiIT {
                 .containsEntry("items", List.of())
                 .containsEntry("emptyReason", "NOTHING_VISIBLE");
         ok(actors.navigation(member.token()));
-        ok(actors.tableAccess(member.token(), "SALES", "T0"));
-        actors.tableAccess(member.token(), "SALES", "T1");
-        actors.tableAccess(member.token(), "SALES", "");
 
         assertThat(auditRows()).isEqualTo(before);
     }

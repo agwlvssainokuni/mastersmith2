@@ -63,6 +63,9 @@ class BusinessDataSecretLeakIT {
     /** 主キーの値の目印。 */
     private static final String KEY_MARK = "98765431";
 
+    /** 要求のカラムの名前の目印（DSL に無い名前。応答にもログにも出ない）。 */
+    private static final String NAME_MARK = "zz-leak-name-3c9d";
+
     /** OTHER の値の目印（uuid として読めない値。PostgreSQL の 22P02 の文に入る）。 */
     private static final String OTHER_MARK = "zz-leak-uuid-77ab";
 
@@ -110,6 +113,59 @@ class BusinessDataSecretLeakIT {
         } finally {
             sample.stop();
         }
+    }
+
+    @Test
+    @DisplayName("with TRACE, a long or odd name of a condition, a sort column or a key column is not echoed in the 400"
+            + " nor written to the logs (R-07)")
+    void unknownNamesLeaveNoTrace(CapturedOutput output) {
+        int offset = output.getOut().length();
+        String longName = NAME_MARK + "n".repeat(60 * 1000);
+        // 対象の名前の長さは Jackson の上限（50,000 文字）に収まる長さにする（主キーの対応表の名前）。
+        String keyName = NAME_MARK + "k".repeat(40_000);
+        String oddName = NAME_MARK + "'; DROP TABLE item; --";
+        List<HttpResponse<String>> responses = new ArrayList<>();
+        LoggingSystem logging = app.bean(LoggingSystem.class);
+        logging.setLogLevel(ROOT_LOGGER, LogLevel.TRACE);
+        try {
+            // 本文の上限は 64 KB のため、長い名前は 1 つの要求に 1 つだけ入れる。
+            responses.add(app.post(
+                    BusinessDataPaths.SEARCH,
+                    member.token(),
+                    sample.body("item", "conditions", List.of(Map.of("column", longName, "value", "x")))));
+            responses.add(app.post(
+                    BusinessDataPaths.SEARCH,
+                    member.token(),
+                    sample.body(
+                            "item",
+                            "conditions",
+                            List.of(Map.of("column", oddName, "value", "x")),
+                            "sort",
+                            Map.of("column", oddName, "direction", "ASC"))));
+            responses.add(app.post(
+                    BusinessDataPaths.SEARCH,
+                    member.token(),
+                    sample.body("item", "sort", Map.of("column", longName, "direction", "ASC"))));
+            responses.add(app.post(
+                    BusinessDataPaths.GET,
+                    member.token(),
+                    sample.body("item", "key", Map.of("id", "1", keyName, "1"))));
+            responses.add(app.post(
+                    BusinessDataPaths.GET,
+                    member.token(),
+                    sample.body("item", "key", Map.of("id", "1", oddName, "1"))));
+        } finally {
+            logging.setLogLevel(ROOT_LOGGER, null);
+        }
+        String logs = output.getOut().substring(offset) + output.getErr();
+
+        assertThat(responses).extracting(HttpResponse::statusCode).containsExactly(400, 400, 400, 400, 400);
+        for (HttpResponse<String> response : responses) {
+            assertThat(response.body()).doesNotContain(NAME_MARK).hasSizeLessThan(4_000);
+            assertThat(HttpTestClient.json(response)).containsKey("fieldErrors");
+        }
+        assertThat(logs).as("メソッドの呼び出しの追跡が有効").contains("BusinessDataReadController#");
+        assertThat(logs).doesNotContain(NAME_MARK);
     }
 
     @Test

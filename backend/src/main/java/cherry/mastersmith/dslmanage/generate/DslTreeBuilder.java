@@ -33,9 +33,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Component;
 
 /**
@@ -195,11 +197,19 @@ public class DslTreeBuilder {
         return result;
     }
 
-    /** DB 上の型を変換せずに写す（BR2.1）。長さが DSL の整数の範囲を超えるときだけ、長さを無しにする。 */
+    /** 符号なしの印を型の名前に写す整数の型（MySQL・MariaDB の {@code DATA_TYPE}）。 */
+    private static final Set<String> UNSIGNED_CAPABLE_TYPES =
+            Set.of("tinyint", "smallint", "mediumint", "int", "integer", "bigint");
+
+    /**
+     * DB 上の型を変換せずに写す（BR2.1）。長さが DSL の整数の範囲を超えるときだけ、長さを無しにする。MySQL・MariaDB の符号なしの整数
+     * （{@code COLUMN_TYPE} に {@code unsigned} を含む）は、名前を {@code int unsigned} のように書く（Intent
+     * 261025-deps-perf-carryover の FR3.1。書き込みの値の範囲を符号なしの範囲で判定できるようにする）。
+     */
     private static Map<String, Object> dbType(TargetColumn column) {
         TargetDbType type = column.dbType();
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("name", type.typeName());
+        result.put("name", dbTypeName(type));
         result.put("length", dslLength(type));
         result.put("precision", type.precision());
         result.put("scale", type.scale());
@@ -261,6 +271,18 @@ public class DslTreeBuilder {
             return value;
         }
         return value.substring(0, value.offsetByCodePoints(0, MAX_LABEL_CODE_POINTS));
+    }
+
+    private static final Pattern UNSIGNED_WORD = Pattern.compile("\\bunsigned\\b", Pattern.CASE_INSENSITIVE);
+
+    private static String dbTypeName(TargetDbType type) {
+        String columnType = type.columnType();
+        if (columnType != null
+                && UNSIGNED_CAPABLE_TYPES.contains(type.typeName().toLowerCase(Locale.ROOT))
+                && UNSIGNED_WORD.matcher(columnType).find()) {
+            return type.typeName() + " unsigned";
+        }
+        return type.typeName();
     }
 
     private static Integer dslLength(TargetDbType type) {

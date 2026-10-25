@@ -17,6 +17,7 @@ package cherry.mastersmith.targetdb.domain;
 
 import java.sql.Connection;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 業務データの読み取りの口（{@code TargetReadAccess}）が貸している間だけ使える、対象DB の接続と DB の種類の組（Intent
@@ -31,16 +32,45 @@ import java.util.Objects;
  * @param product DB の種類
  * @param connection 貸している接続
  * @param queryTimeoutSeconds 目的ごとの問い合わせ1回の待ちの上限（秒。1 以上）
+ * @param brokenMark この接続は壊れたとみなす印（時間切れ・断絶の後に立てる。貸した口が返すときに見て、立っていれば接続を
+ *     プールから捨てる。Intent 261025-deps-perf-carryover の FR3.2）
  */
-public record TargetReadSession(DatabaseProduct product, Connection connection, int queryTimeoutSeconds) {
+public record TargetReadSession(
+        DatabaseProduct product, Connection connection, int queryTimeoutSeconds, AtomicBoolean brokenMark) {
+
+    /**
+     * 印が立っていない状態で作る。
+     *
+     * @param product DB の種類
+     * @param connection 貸している接続
+     * @param queryTimeoutSeconds 問い合わせ1回の待ちの上限（秒。1 以上）
+     */
+    public TargetReadSession(DatabaseProduct product, Connection connection, int queryTimeoutSeconds) {
+        this(product, connection, queryTimeoutSeconds, new AtomicBoolean());
+    }
 
     /** 必須の値と、上限の秒が 1 以上であることを確かめる。 */
     public TargetReadSession {
         Objects.requireNonNull(product, "product は必須です");
         Objects.requireNonNull(connection, "connection は必須です");
+        Objects.requireNonNull(brokenMark, "brokenMark は必須です");
         if (queryTimeoutSeconds < 1) {
             throw new IllegalArgumentException("queryTimeoutSeconds は 1 以上です");
         }
+    }
+
+    /** 時間切れ・断絶の後に、この接続を壊れたとみなす印を立てる（貸した口が返すときにプールから捨てる）。 */
+    public void markBroken() {
+        brokenMark.set(true);
+    }
+
+    /**
+     * 壊れたとみなす印が立っているかを返す。
+     *
+     * @return 立っていれば true
+     */
+    public boolean isBroken() {
+        return brokenMark.get();
     }
 
     /** DB の種類と問い合わせの上限の秒だけを出す（接続を出さない）。 */

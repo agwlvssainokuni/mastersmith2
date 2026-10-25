@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.dsl.domain.DslModel;
 import cherry.mastersmith.navigation.domain.NavigationMenu;
-import cherry.mastersmith.navigation.domain.TableAccessResult;
 import cherry.mastersmith.navigation.testsupport.CountingDslProvider;
 import cherry.mastersmith.navigation.testsupport.CountingResolver;
 import cherry.mastersmith.navigation.testsupport.NavigationModels;
@@ -93,37 +92,5 @@ class NavigationCallCountTest {
         service(NO_MENUS).menu(1L);
 
         assertCalls(1, 0, 0);
-    }
-
-    @Test
-    @DisplayName("a visible table resolves once and reads the DSL once for the display name")
-    void visibleTable() {
-        assertThat(service(SMALL).tableAccess(1L, "SALES", "ORDER")).isInstanceOf(TableAccessResult.Visible.class);
-
-        assertCalls(1, 0, 1);
-    }
-
-    @Test
-    @DisplayName("a NONE table resolves once and does not read the DSL")
-    void noneTable() {
-        assertThat(service(SMALL).tableAccess(1L, "SALES", "LINE")).isInstanceOf(TableAccessResult.NotVisible.class);
-
-        assertCalls(0, 0, 1);
-    }
-
-    @Test
-    @DisplayName("a table that is not in the DSL resolves once and does not read the DSL")
-    void tableNotInDsl() {
-        assertThat(service(SMALL).tableAccess(1L, "SALES", "MISSING")).isInstanceOf(TableAccessResult.NotVisible.class);
-
-        assertCalls(0, 0, 1);
-    }
-
-    @Test
-    @DisplayName("without a DSL the table access resolves once and does not read the DSL")
-    void tableWithoutDsl() {
-        assertThat(service(null).tableAccess(1L, "SALES", "ORDER")).isInstanceOf(TableAccessResult.NotVisible.class);
-
-        assertCalls(0, 0, 1);
     }
 }

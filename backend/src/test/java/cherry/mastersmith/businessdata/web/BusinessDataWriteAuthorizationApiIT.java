@@ -324,7 +324,7 @@ class BusinessDataWriteAuthorizationApiIT {
         assertThat((List<Map<String, Object>>) keyProblem.get("fieldErrors"))
                 .containsExactly(Map.of("field", "id", "reason", "NOT_ALLOWED"));
         assertThat((List<Map<String, Object>>) columnProblem.get("fieldErrors"))
-                .containsExactly(Map.of("field", "owner_id", "reason", "NOT_ALLOWED"));
+                .containsExactly(Map.of("field", "", "reason", "NOT_ALLOWED"));
         assertThat(writes.borrows()).as("対象DB に文を出さない").isZero();
         assertThat(rows("id = 88888")).isZero();
         assertThat(rows("id = " + id + " AND name = '認可'")).as("状態は変わらない").isEqualTo(1);

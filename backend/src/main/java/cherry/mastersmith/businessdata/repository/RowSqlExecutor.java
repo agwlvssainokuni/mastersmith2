@@ -120,8 +120,21 @@ public class RowSqlExecutor {
             }
             return new RowSearchResult.Page(total, records);
         } catch (SQLException | RuntimeException e) {
-            return new RowSearchResult.Failed(RowSqlFailureClassifier.classify(stage, e));
+            return new RowSearchResult.Failed(classifyAndMark(session, stage, e));
         }
+    }
+
+    /**
+     * 読み取りの失敗を分類し、時間切れ・断絶のときは接続に「壊れたとみなす」印を立てる（FR3.2。次の要求が壊れた接続を借りないため）。
+     * 例外のメッセージは読まない。
+     */
+    private static RowQueryFailure classifyAndMark(TargetReadSession session, RowQueryStage stage, Throwable e) {
+        RowQueryFailure failure = RowSqlFailureClassifier.classify(stage, e);
+        if (failure.reason() == RowQueryFailureReason.TIMEOUT
+                || failure.reason() == RowQueryFailureReason.UNAVAILABLE) {
+            session.markBroken();
+        }
+        return failure;
     }
 
     /**
@@ -158,7 +171,7 @@ public class RowSqlExecutor {
                 }
             }
         } catch (SQLException | RuntimeException e) {
-            return new RowDetailResult.Failed(RowSqlFailureClassifier.classify(stage, e));
+            return new RowDetailResult.Failed(classifyAndMark(session, stage, e));
         }
     }
 

@@ -25,9 +25,4 @@ public class NoOpNavigationBarrier implements NavigationBarrier {
     public void afterDslRead() {
         // 本番では待ち合わせない（本番のコードの流れを変えないための既定の部品）。
     }
-
-    @Override
-    public void afterResolve() {
-        // 本番では待ち合わせない。
-    }
 }

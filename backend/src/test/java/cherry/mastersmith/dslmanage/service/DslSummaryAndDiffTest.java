@@ -194,6 +194,20 @@ class DslSummaryAndDiffTest {
     }
 
     @Test
+    @DisplayName("regenerating an unsigned column as 'int unsigned' after an applied 'int' shows only dbType.name")
+    void unsignedNameShowsAsTypeDifference() {
+        DslModel applied = model(DslYaml.dsl().table("t", column("c").type("int", null, null, null)));
+        DslModel preview = model(DslYaml.dsl().table("t", column("c").type("int unsigned", null, null, null)));
+
+        assertThat(tables(DslDiffCalculator.diff(preview, applied))
+                        .getFirst()
+                        .columns()
+                        .getFirst()
+                        .changedItems())
+                .containsExactly("dbType.name");
+    }
+
+    @Test
     @DisplayName("a changed primary key or foreign key alone marks the table CHANGED")
     void keysOnly() {
         String base = DslYaml.dsl().table("t", column("a"), column("b")).yaml();

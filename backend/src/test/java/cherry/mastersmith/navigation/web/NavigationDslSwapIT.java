@@ -21,9 +21,7 @@ import cherry.mastersmith.auth.service.RefreshTokenRevocationService;
 import cherry.mastersmith.auth.testsupport.AuthApiTestConfig;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.TestDatabase;
-import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.dsl.domain.DslSchema;
-import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.service.ActiveDslModelHolder;
 import cherry.mastersmith.navigation.testsupport.NavigationActors;
 import cherry.mastersmith.navigation.testsupport.NavigationDslFixture;
@@ -34,7 +32,6 @@ import cherry.mastersmith.navigation.testsupport.TestNavigationBarrier.Point;
 import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.role.testsupport.RoleActors;
 import cherry.mastersmith.role.testsupport.RoleActors.Actor;
-import cherry.mastersmith.role.testsupport.RoleDslFixture;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.user.service.UserAccountService;
 import java.net.http.HttpResponse;
@@ -188,42 +185,5 @@ class NavigationDslSwapIT {
                 .containsEntry("label", Map.of("ja", "古い T1", "en", "古い T1-en"))
                 .containsEntry("table", Map.of("schemaName", "SALES", "tableName", "T1"));
         assertThat(response.body()).doesNotContain("T2", "新しい");
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName(
-            "table access: a table removed after the resolve gives 403 without the display name")
-    void tableAccessWithRemovedTable() throws Exception {
-        HttpResponse<String> response = swapWhileHeld(
-                Point.AFTER_RESOLVE,
-                () -> actors.tableAccess(member.token(), "SALES", "T1"),
-                List.of(NavigationModels.schema("SALES", "T0")),
-                "T0");
-
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(403);
-        assertThat(HttpTestClient.json(response)).containsEntry("code", "ACCESS_DENIED");
-        assertThat(response.body()).doesNotContain("テーブル", "Table T1");
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName(
-            "table access: a table kept after the resolve gives 200 with the new display name")
-    void tableAccessWithKeptTable() throws Exception {
-        DslTable renamed = new DslTable(
-                "T1",
-                new DisplayName("新しい明細", "New lines"),
-                false,
-                List.of("ID"),
-                List.of(),
-                Map.of("ID", RoleDslFixture.column("ID")));
-        DslSchema schema = RoleDslFixture.schema("SALES", RoleDslFixture.table("T0", "ID"), renamed);
-
-        HttpResponse<String> response = swapWhileHeld(
-                Point.AFTER_RESOLVE, () -> actors.tableAccess(member.token(), "SALES", "T1"), List.of(schema), "T1");
-
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        assertThat(HttpTestClient.json(response))
-                .containsEntry("displayName", Map.of("ja", "新しい明細", "en", "New lines"))
-                .containsEntry("main", "READ");
     }
 }

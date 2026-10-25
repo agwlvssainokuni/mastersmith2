@@ -22,7 +22,7 @@
 //   流れに乗らないため、ログインしたまま）。400 VALIDATION_FAILED は項目ごとの誤り、ほかは画面の知らせ（値は残す）。
 // - 部品が外れた後の答えは捨てる（W10 の5）。
 import { useToast } from 'make-you-chic-ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { useMessages } from '../../app/i18n/I18nProvider'
 import {
   CURRENT_MISMATCH_KEY,
@@ -113,7 +113,9 @@ export function usePasswordChangeForm(): PasswordChangeController {
   const mounted = useRef(true)
   const busy = useRef(false)
 
-  useEffect(() => {
+  // 部品が外れた印は、描画の後の効果（useEffect）ではなく commit と同時に下りる useLayoutEffect で持つ。画面を離れた直後
+  // （新しい画面の DOM が置かれた直後）に答えが届いても、Toast を出さないため（Intent 261025-deps-perf-carryover の C5）。
+  useLayoutEffect(() => {
     mounted.current = true
     return () => {
       mounted.current = false

@@ -114,16 +114,16 @@ public record TargetDbProperties(
     /**
      * 対象DB の接続のプール（内部DB のプールとは別）。
      *
-     * @param maximumSize 接続の数の上限（既定 5）
+     * @param maximumSize 接続の数の上限（既定 10。Intent 261025-deps-perf-carryover の FR4.2 で 5 から引き上げた）
      * @param idleTimeout 使っていない接続を閉じるまでの時間（既定 60 秒）
      */
     public record Pool(
-            @DefaultValue("5") Integer maximumSize,
+            @DefaultValue("10") Integer maximumSize,
             @DefaultValue("60s") Duration idleTimeout) {
 
         /** 空の値で null になった項目を既定値にする。 */
         public Pool {
-            maximumSize = maximumSize == null ? Integer.valueOf(5) : maximumSize;
+            maximumSize = maximumSize == null ? Integer.valueOf(10) : maximumSize;
             idleTimeout = idleTimeout == null ? Duration.ofSeconds(60) : idleTimeout;
         }
     }

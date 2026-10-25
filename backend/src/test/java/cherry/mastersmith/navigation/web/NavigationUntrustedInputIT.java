@@ -35,20 +35,14 @@ import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.role.testsupport.RoleDslFixture;
 import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.user.service.UserAccountService;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -135,8 +129,6 @@ class NavigationUntrustedInputIT {
 
     private Actor reader;
 
-    private Actor denied;
-
     @BeforeEach
     void setUp() {
         RoleActors roleActors = new RoleActors(userAccountService, revocationService, transactionManager, port);
@@ -160,7 +152,6 @@ class NavigationUntrustedInputIT {
         NavigationDslFixture.install(holder, List.of(schema), menus());
         // 名前の列の長さ（256）を超える 300 文字のテーブルにも当たるよう、スキーマの階層の明示の値を継承させる。
         reader = actors.memberWithWorkRole(actors.schemaRole(SCHEMA, MainPermission.READ));
-        denied = actors.memberWithWorkRole(actors.schemaRole(SCHEMA, MainPermission.NONE));
     }
 
     private static List<DslMenuItem> menus() {
@@ -174,74 +165,6 @@ class NavigationUntrustedInputIT {
             menus.add(new DslMenuItem(new DisplayName(name, name), null, new TableRef(SCHEMA, name), List.of()));
         }
         return menus;
-    }
-
-    static Stream<Arguments> names() {
-        return NAMES.stream().map(name -> Arguments.of(name.length() > 40 ? "x*" + name.length() : escape(name), name));
-    }
-
-    private static String escape(String name) {
-        StringBuilder text = new StringBuilder();
-        name.codePoints().forEach(c -> {
-            if (Character.isISOControl(c)) {
-                text.append(String.format("\\u%04X", c));
-            } else {
-                text.appendCodePoint(c);
-            }
-        });
-        return text.toString();
-    }
-
-    @ParameterizedTest(name = "[{index}] {0}")
-    @MethodSource("names")
-    @org.junit.jupiter.api.DisplayName(
-            "names with symbols and control characters are answered 200 or 403 and never 400")
-    void symbolNames(String label, String name) {
-        HttpResponse<String> visible = actors.tableAccess(reader.token(), SCHEMA, name);
-        HttpResponse<String> hidden = actors.tableAccess(denied.token(), SCHEMA, name);
-
-        assertThat(visible.statusCode()).as(visible.body()).isEqualTo(200);
-        assertThat(HttpTestClient.json(visible))
-                .containsEntry("schemaName", SCHEMA)
-                .containsEntry("tableName", name)
-                .containsEntry("main", "READ");
-        assertThat(hidden.statusCode()).as(hidden.body()).isEqualTo(403);
-        assertThat(HttpTestClient.json(hidden)).containsEntry("code", "ACCESS_DENIED");
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName("a name of only spaces is not empty and follows the normal decision")
-    void blankName() {
-        assertThat(actors.tableAccess(reader.token(), SCHEMA, BLANK).statusCode())
-                .isEqualTo(200);
-        assertThat(actors.tableAccess(denied.token(), SCHEMA, BLANK).statusCode())
-                .isEqualTo(403);
-        assertThat(actors.tableAccess(reader.token(), SCHEMA, "  ").statusCode())
-                .isEqualTo(403);
-        assertThat(actors.tableAccess(reader.token(), BLANK, BLANK).statusCode())
-                .isEqualTo(403);
-    }
-
-    @Test
-    @org.junit.jupiter.api.DisplayName(
-            "missing and empty parameters give the same 400 VALIDATION_FAILED without field errors")
-    void missingOrEmptyParameters() {
-        List<Map<String, Object>> bodies = new ArrayList<>();
-        for (HttpResponse<String> response : List.of(
-                actors.tableAccess(reader.token(), null, "LABELED"),
-                actors.tableAccess(reader.token(), SCHEMA, null),
-                actors.tableAccess(reader.token(), null, null),
-                actors.tableAccess(reader.token(), "", "LABELED"),
-                actors.tableAccess(reader.token(), SCHEMA, ""))) {
-            assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
-            Map<String, Object> body = new HashMap<>(HttpTestClient.json(response));
-            assertThat(body).containsEntry("code", "VALIDATION_FAILED").doesNotContainKey("fieldErrors");
-            assertThat(body.remove("instance")).isNotNull();
-            body.remove("traceId");
-            bodies.add(body);
-        }
-
-        assertThat(bodies).allSatisfy(body -> assertThat(body).isEqualTo(bodies.getFirst()));
     }
 
     @Test
@@ -259,7 +182,5 @@ class NavigationUntrustedInputIT {
         assertThat(items.subList(8, items.size()))
                 .extracting(item -> (Object) ((Map<?, ?>) item.get("table")).get("tableName"))
                 .containsExactlyElementsOf(List.<Object>copyOf(NAMES));
-        assertThat(HttpTestClient.json(actors.tableAccess(reader.token(), SCHEMA, "LABELED")))
-                .containsEntry("displayName", Map.of("ja", MARKUP, "en", MARKUP));
     }
 }

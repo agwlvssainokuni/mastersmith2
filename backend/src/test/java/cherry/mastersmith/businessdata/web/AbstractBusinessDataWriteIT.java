@@ -25,6 +25,7 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTable
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.ODD_BRANCH;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.PARENT;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.SERIAL;
+import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.SIGN;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.STUCK_VIEW;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataWriteTables.TRICKY_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -563,6 +564,43 @@ abstract class AbstractBusinessDataWriteIT {
     // ── 境界の値と時差 ──
 
     @Test
+    @DisplayName("an unsigned column rejects a negative or too large number as 400 and keeps its full range,"
+            + " a signed one keeps the former behavior")
+    void unsignedRanges() {
+        if (postgres()) {
+            // PostgreSQL には符号なしの型が無く、型の名前の見方も変わらない（int4 の範囲の外は 400）。
+            ok(create(SIGN, values("u", "-1")), 201);
+            Map<String, Object> over = problem(create(SIGN, values("u", "4294967296")), 400, "VALIDATION_FAILED");
+            assertThat(fieldErrors(over)).containsExactly(fieldError("u", "OUT_OF_RANGE"));
+            assertThat(tables.count(SIGN, "u = -1")).isEqualTo(1);
+            return;
+        }
+        String max = id(ok(create(SIGN, values("u", "4294967295", "bu", "18446744073709551615")), 201));
+        String zero = id(ok(create(SIGN, values("u", "0", "bu", "0")), 201));
+        Map<String, Object> negative = problem(create(SIGN, values("u", "-1")), 400, "VALIDATION_FAILED");
+        Map<String, Object> over = problem(create(SIGN, values("u", "4294967296")), 400, "VALIDATION_FAILED");
+        Map<String, Object> negativeBig = problem(create(SIGN, values("bu", "-1")), 400, "VALIDATION_FAILED");
+        Map<String, Object> overBig =
+                problem(create(SIGN, values("bu", "18446744073709551616")), 400, "VALIDATION_FAILED");
+        // 符号つきの列（名前に unsigned が無い）は従来どおり: 符号なしの上限までは受け付けて DB が拒み（409）、符号つきの下限の外は 400。
+        Map<String, Object> signedOver =
+                problem(create(SIGN, values("s", "2147483648")), 409, "BUSINESS_SAVE_REJECTED");
+        Map<String, Object> signedUnder = problem(create(SIGN, values("s", "-2147483649")), 400, "VALIDATION_FAILED");
+
+        assertThat(fieldErrors(negative)).containsExactly(fieldError("u", "OUT_OF_RANGE"));
+        assertThat(fieldErrors(over)).containsExactly(fieldError("u", "OUT_OF_RANGE"));
+        assertThat(fieldErrors(negativeBig)).containsExactly(fieldError("bu", "OUT_OF_RANGE"));
+        assertThat(fieldErrors(overBig)).containsExactly(fieldError("bu", "OUT_OF_RANGE"));
+        assertThat(fieldErrors(signedOver)).isEmpty();
+        assertThat(fieldErrors(signedUnder)).containsExactly(fieldError("s", "OUT_OF_RANGE"));
+        assertThat(tables.row(SIGN, "id = " + max))
+                .containsEntry("u", "4294967295")
+                .containsEntry("bu", "18446744073709551615");
+        assertThat(tables.row(SIGN, "id = " + zero)).containsEntry("u", "0").containsEntry("bu", "0");
+        assertThat(tables.count(SIGN, null)).as("拒んだ行は書かれない").isEqualTo(2);
+    }
+
+    @Test
     @DisplayName("BIGINT limits, DECIMAL(38,10) and NULL are written without rounding and read back digit by digit")
     void boundaryValues() {
         String high = id(ok(
@@ -645,7 +683,7 @@ abstract class AbstractBusinessDataWriteIT {
         problem(app.post(BusinessDataPaths.ROWS, member.token(), badTable), 404, "BUSINESS_TABLE_NOT_FOUND");
         Map<String, Object> badColumn =
                 problem(create(ITEM, values("name", "x", "note`; DROP TABLE x; --\n", "y")), 400, "VALIDATION_FAILED");
-        assertThat(fieldErrors(badColumn)).containsExactly(fieldError("note`; DROP TABLE x; --\n", "NOT_ALLOWED"));
+        assertThat(fieldErrors(badColumn)).containsExactly(fieldError("", "NOT_ALLOWED"));
         assertThat(tables.count(PARENT, null)).as("表は消えていない").isPositive();
     }
 

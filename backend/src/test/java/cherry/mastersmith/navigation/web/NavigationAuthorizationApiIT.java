@@ -102,12 +102,6 @@ class NavigationAuthorizationApiIT {
                         NavigationModels.tableItem("明細", "SALES", "LINE")));
     }
 
-    /** API。 */
-    enum Endpoint {
-        MENU,
-        TABLE_ACCESS
-    }
-
     /** 主体。 */
     enum Subject {
         ANONYMOUS,
@@ -117,21 +111,19 @@ class NavigationAuthorizationApiIT {
         ONLY_THIS_NONE
     }
 
+    /** 認可の表（メニューの API 1本。削除した置き場の API の行は FR3.3 で外した）。最後の数はメニューに残る項目の数。 */
     static Stream<Arguments> table() {
         return Stream.of(
-                Arguments.of(Endpoint.MENU, Subject.ANONYMOUS, 401, "AUTHENTICATION_REQUIRED"),
-                Arguments.of(Endpoint.MENU, Subject.SUSPENDED, 401, "AUTHENTICATION_REQUIRED"),
-                Arguments.of(Endpoint.MENU, Subject.READ, 200, null),
-                Arguments.of(Endpoint.TABLE_ACCESS, Subject.ANONYMOUS, 401, "AUTHENTICATION_REQUIRED"),
-                Arguments.of(Endpoint.TABLE_ACCESS, Subject.SUSPENDED, 401, "AUTHENTICATION_REQUIRED"),
-                Arguments.of(Endpoint.TABLE_ACCESS, Subject.READ, 200, null),
-                Arguments.of(Endpoint.TABLE_ACCESS, Subject.FULL, 200, null),
-                Arguments.of(Endpoint.TABLE_ACCESS, Subject.ONLY_THIS_NONE, 403, "ACCESS_DENIED"));
+                Arguments.of(Subject.ANONYMOUS, 401, "AUTHENTICATION_REQUIRED", 0),
+                Arguments.of(Subject.SUSPENDED, 401, "AUTHENTICATION_REQUIRED", 0),
+                Arguments.of(Subject.READ, 200, null, 2),
+                Arguments.of(Subject.FULL, 200, null, 2),
+                Arguments.of(Subject.ONLY_THIS_NONE, 200, null, 1));
     }
 
-    @ParameterizedTest(name = "{0} by {1} gives {2}")
+    @ParameterizedTest(name = "menu by {0} gives {1}")
     @MethodSource("table")
-    void authorization(Endpoint endpoint, Subject subject, int status, String code) {
+    void authorization(Subject subject, int status, String code, int items) {
         MainPermission order =
                 switch (subject) {
                     case FULL -> MainPermission.FULL;
@@ -146,21 +138,15 @@ class NavigationAuthorizationApiIT {
         }
         String token = subject == Subject.ANONYMOUS ? null : member.token();
 
-        HttpResponse<String> response =
-                switch (endpoint) {
-                    case MENU -> actors.navigation(token);
-                    case TABLE_ACCESS -> actors.tableAccess(token, "SALES", "ORDER");
-                };
+        HttpResponse<String> response = actors.navigation(token);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(status);
         if (code != null) {
             assertThat(HttpTestClient.json(response)).containsEntry("code", code);
-        } else if (endpoint == Endpoint.TABLE_ACCESS) {
-            assertThat(HttpTestClient.json(response)).containsEntry("main", order.name());
         } else {
             assertThat(HttpTestClient.json(response).get("items"))
                     .asInstanceOf(InstanceOfAssertFactories.LIST)
-                    .hasSize(2);
+                    .hasSize(items);
         }
     }
 }

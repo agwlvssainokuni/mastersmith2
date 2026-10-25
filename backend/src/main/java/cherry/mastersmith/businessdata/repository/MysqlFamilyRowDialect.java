@@ -103,6 +103,11 @@ public final class MysqlFamilyRowDialect implements RowDialect {
     }
 
     @Override
+    public boolean readsBooleanAsInteger() {
+        return true;
+    }
+
+    @Override
     public boolean equalsSupported(String dbTypeName) {
         return !noEqualityTypes.contains(RowDialect.baseName(dbTypeName));
     }

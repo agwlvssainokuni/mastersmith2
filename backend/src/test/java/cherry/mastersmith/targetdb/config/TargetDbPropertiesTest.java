@@ -70,7 +70,7 @@ class TargetDbPropertiesTest {
         assertThat(properties.queryTimeout().list()).isEqualTo(Duration.ofSeconds(5));
         assertThat(properties.queryTimeout().detail()).isEqualTo(Duration.ofSeconds(5));
         assertThat(properties.queryTimeout().longest()).isEqualTo(Duration.ofSeconds(20));
-        assertThat(properties.pool().maximumSize()).isEqualTo(5);
+        assertThat(properties.pool().maximumSize()).isEqualTo(10);
         assertThat(properties.pool().idleTimeout()).isEqualTo(Duration.ofSeconds(60));
     }
 

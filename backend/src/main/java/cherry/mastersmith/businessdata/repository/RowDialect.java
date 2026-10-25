@@ -188,6 +188,15 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
     boolean readsTemporalAsText();
 
     /**
+     * 真偽値を整数として読み、0 と 1 以外を読めない値にするかを返す。MySQL・MariaDB は真偽値を {@code tinyint}（0 と 1 以外も入る）で
+     * 持つため、ドライバーの {@code getBoolean}（0 以外をすべて真にする）に任せず、整数で読んで確かめる（Intent
+     * 261025-deps-perf-carryover の FR3.7 R-08）。PostgreSQL の {@code boolean} は 2 値だけなので任せる。
+     *
+     * @return 整数として読むなら true
+     */
+    boolean readsBooleanAsInteger();
+
+    /**
      * 完全一致の検索と主キーの指し方に使える型かを返す（BR7.9 の一覧に無ければ使える）。
      *
      * @param dbTypeName DSL の型の名前（大文字と小文字を区別しない）
@@ -196,7 +205,8 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
     boolean equalsSupported(String dbTypeName);
 
     /**
-     * 型の名前の基の部分（小文字。{@code (}・空白から後を除く）を返す。
+     * 型の名前の基の部分（小文字。{@code (} から後を除く。ただし整数の型の {@code int(10) unsigned} の
+     * {@code unsigned} は残して {@code int unsigned} にする）を返す。
      *
      * @param dbTypeName DSL の型の名前
      * @return 基の部分
@@ -205,7 +215,11 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
         String name = dbTypeName.strip().toLowerCase(Locale.ROOT);
         int paren = name.indexOf('(');
         if (paren >= 0) {
-            name = name.substring(0, paren);
+            // 括弧の後ろは落とすが、符号なしの印（int(10) unsigned）は型の名前の一部として残す（FR3.1）。
+            String head = name.substring(0, paren).strip();
+            boolean unsigned = head.matches("tinyint|smallint|mediumint|int|integer|bigint")
+                    && name.substring(paren).matches("(?s).*\\bunsigned\\b.*");
+            return unsigned ? head + " unsigned" : head;
         }
         return name.strip();
     }

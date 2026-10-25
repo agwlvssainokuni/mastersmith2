@@ -278,7 +278,7 @@ class BusinessDataWriteServiceTest {
         assertThat(result)
                 .isEqualTo(new WriteResult.Rejected(
                         WriteRejection.VALIDATION_FAILED,
-                        List.of(new BusinessDataFieldError("nothing", BusinessDataFieldErrorReason.NOT_ALLOWED))));
+                        List.of(new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_ALLOWED))));
         assertThat(ports.calls).doesNotContain("withWrite");
         assertThat(ports.events).isEmpty();
     }
