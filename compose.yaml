@@ -70,7 +70,7 @@ services:
         max-file: "3"
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.162.0@sha256:310a800ad69ee430e7c541796852a242c9c7db97aaad4daa5ccf843c525fbdb2
+    image: otel/opentelemetry-collector:0.163.2@sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda
     profiles: [observability]
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
