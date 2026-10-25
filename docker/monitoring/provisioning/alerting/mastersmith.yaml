@@ -540,3 +540,35 @@ groups:
             type: gt
             params:
             - 0
+  - uid: ms-biz-target-db
+    title: 業務データの対象DB に届かない
+    condition: C
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      severity: 中
+      service: mastersmith
+    annotations:
+      summary: 業務データの API（/api/tables/…）が 5 分の間に 503 を返した。ログの WARN（対象DB の業務データを読めませんでした・書き込めませんでした）のキー reason で UNAVAILABLE（借りる待ちの時間切れ）と TIMEOUT（問い合わせの時間切れ）を見分け、docker compose ps targetdb-postgres で対象DB を確かめる（Intent 261016-business-data-views）
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: prometheus
+      model:
+        refId: A
+        expr: sum(increase(http_server_requests_milliseconds_count{service_name="mastersmith",uri=~"/api/tables/.*",status="503"}[5m])) or vector(0)
+        instant: true
+    - refId: C
+      datasourceUid: __expr__
+      model:
+        refId: C
+        type: threshold
+        expression: A
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
