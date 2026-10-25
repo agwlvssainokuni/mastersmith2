@@ -1,20 +1,20 @@
 # コードの構成（mastersmith2）
 
-> 2026-10-16（記録のコミット `09b795d`）の Full rescan で作り直した。ファイルの数は `git ls-files` と `find` の数（アーキテクトが数え直した）。所見の本文はこの文書には無く、各所見の場所は `business-overview.md` の一覧。
+> 2026-10-25（記録のコミット `bc484c9`）の Full rescan・深さ Minimal で作り直した。ファイルの数は `find` と `git ls-files` の数（アーキテクトが数えた）。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
 
 ## リポジトリの最上位
 
 | 場所 | 中身 |
 |---|---|
-| `backend/` | Java のアプリ（Gradle、実行可能 WAR）。本体のソース 736 ファイル・テスト 586 ファイル（リソースを含む `git ls-files` の数） |
-| `frontend/` | React + TypeScript の SPA。`src/app/`（90）・`src/shared/`（34）・`src/features/`（13 機能・351）・`e2e/`（18 本と `support/` 26） |
-| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `a9309c4`） |
-| `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`） |
-| `docker/` | `monitoring/`（手元の監視）・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）・`jmx/`・`hikari-pool.sh`・`check-container-limits.sh` |
-| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js`）と手順（`perf/README.md`） |
-| `config/` | 検査の設定（`npm-build-tools.txt` など） |
+| `backend/` | Java のアプリ（Gradle、実行可能 WAR）。Java のパッケージ配下に 16 パッケージ（下表）。`git ls-files backend/src/main` は 867、`backend/src/test` は 669（リソースを含む） |
+| `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）・`e2e/`（58 ファイル、`*.e2e.ts` は 20 本） |
+| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `ecb07e9`） |
+| `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`、0.1.0） |
+| `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）ほか |
+| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js`、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`）と手順（`perf/README.md`） |
+| `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
 | `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
-| 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`README.md` |
+| 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`README.md` |
 | `aidlc/` | AI-DLC の記録（コードではない） |
 
 ## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
@@ -23,8 +23,9 @@
 |---|---|---|
 | `access` | 20 | `domain`・`service`・`web` |
 | `appearance` | 14 | `config`・`service`・`web` |
-| `audit` | 15 | `domain`・`repository`・`service`（Web の層なし） |
+| `audit` | 15 | `domain`・`repository`・`service` |
 | `auth` | 58 | `domain`・`repository`・`service`・`web` |
+| `businessdata` | 113 | `domain`・`repository`・`service`・`web` |
 | `common` | 47 | `error`・`health`・`i18n`・`observability`・`paging`・`persistence`・`security`・`web` |
 | `config` | 6 | なし |
 | `dsl` | 64 | `domain`・`parse`・`service`・`validate` |
@@ -32,40 +33,36 @@
 | `group` | 55 | `domain`・`repository`・`service`・`store`・`web` |
 | `invitation` | 65 | `domain`・`lock`・`repository`・`service`・`web` |
 | `mail` | 28 | `config`・`domain`・`service`・`template`・`transport` |
-| `navigation` | 23 | `domain`・`service`・`web`（repository なし） |
+| `navigation` | 23 | `domain`・`service`・`web` |
 | `role` | 143 | `domain`・`repository`・`service`・`store`・`transfer`・`web` |
-| `targetdb` | 26 | `config`・`domain`・`repository`・`service`（web なし） |
+| `targetdb` | 43 | `config`・`domain`・`repository`・`service` |
 | `user` | 70 | `domain`・`repository`・`service`・`web` |
-| `useradmin` | 27 | `domain`・`service`・`web`（repository なし） |
+| `useradmin` | 27 | `domain`・`service`・`web` |
 
-- 起動クラスは `MastersmithApplication.java`。
-- リソース（`backend/src/main/resources/`）: `db/migration/`（Flyway の V1〜V12）・`dsl/`（`dsl-schema-v2.json` ほか）・`navigation/`（`allowed-icons.txt`）・`mail/`（テンプレート）・`META-INF/`・`application.yaml`。
-- 移行の一覧: V1 baseline・V2 利用者・V3 認証・V4 監査・V5 DSL の管理・V6 DSL の監査の列・V7 利用者の設定・V8 招待・V9 利用停止・V10 グループ・V11 ロール・V12 ロールの割り当て。業務データの表はアプリの内部DB に無い（業務データは対象DB にある）。
+- 起動クラスは `MastersmithApplication.java`。リソースは `backend/src/main/resources/`: `db/migration/`（Flyway の V1〜V13。V13 は業務データの監査の列）・`dsl/dsl-schema-v2.json`・`navigation/allowed-icons.txt`・`mail/templates/`・`application.yaml`・`logback-spring.xml`。
 
-## 層と型の決まり（コードで見られる形）
+## 今回深く読んだ `businessdata` と `targetdb` の中身
 
-- `web`: controller と `record` の DTO（`XxxRequest`・`XxxResponse`）。口ごとに `@ApiAccess`。個人に関する値・秘密を持つ record は `toString` を上書きして伏せる（例: `navigation/web/TableAccessResponse.java` 51 行）。
-- `service`: トランザクションの境界。新しい機能は想定内の失敗を結果の型（sealed interface の record）で返し、controller が `switch` で `BusinessException` に変える。
-- `domain`: 変更できない値（`record`）と列挙。問題の種類の定数は `<機能>.domain.XxxProblemTypes`、起動時に集める一覧は `<機能>.service`。
-- `repository`: Spring Data JPA と JDBC。`role`・`group` は行の排他を `store` に分ける。
-- 用途名の下位パッケージ: `dsl/parse`・`dsl/validate`・`dslmanage/generate`・`role/transfer`・`invitation/lock`・`mail/template` など。
-- 依存性の注入はコンストラクター注入、Lombok は使わない、ロガーは SLF4J（`team.md` の Code Style。今回深く読んだファイルはこの形）。
+- `businessdata/repository/`: `RowSqlBuilder`（`where`・`count`・`page`・`detail` の SQL）、`RowSqlExecutor`（実行。`search`・詳細・書き込み）、`RowDialect`（`MysqlFamilyRowDialect`・`PostgresRowDialect`）、`RowSqlFailureClassifier`、`RowWriteSqlBuilder`、`ColumnValueCodec`、`RowSearchResult`（`Page(long total, rows)` か `Failed`）。
+- `businessdata/service/`: `BusinessDataReadService`（`definition`・`search`・詳細）、`BusinessDataWriteService`、`TableAccessResolver`、`SearchResult`・`WriteResult`、`BusinessDataProblemTypeCatalog`。
+- `businessdata/web/`: `BusinessDataReadController`・`BusinessDataWriteController`・`BusinessDataPaths`、要求・応答の `record`（`RowPageResponse`・`SearchRequest` ほか）。
+- `businessdata/domain/`: `PageRequest`（ページの大きさ 20・50・100）、`ContainsPattern`、`SearchRequestValidator`、`TableAccessView`、`ReadRejection`、`BusinessDataChangedEvent` ほか。
+- `targetdb/config/`: `TargetDataSourceConfig`（読み取り）・`TargetWriteDataSourceConfig`（書き込み）・`TargetDbProperties`（`Pool`・`QueryTimeout`・`Write`）・`TargetDbSettings`・`TargetDbUsableCondition`。`targetdb/service/`: `TargetReadAccess`・`JdbcTargetReadAccess`・`TargetWriteAccess`・`JdbcTargetWriteAccess`・`TargetSchemaReader`・`JdbcTargetSchemaReader`。
 
-## 今回の Intent に関わるパッケージの中身（深く読んだもの）
+## 層と型の決まり（`team.md` の Code Style と一致する形）
 
-- `targetdb`: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`（読み取り専用のプール・時間の上限）、`domain/ReadPurpose.java`・`domain/SqlIdentifiers.java`、`service/JdbcTargetSchemaReader.java`（口は `service/TargetSchemaReader.java`）。K-49・K-51。
-- `role`: `domain/` の `MainPermission`・`PermissionLevel`・`PermissionValues`・`EffectivePermission`・`EffectiveNode`・`PermissionTarget`・`PermissionInheritance`・`PermissionSnapshot`、`service/EffectivePermissionResolver`・`EffectivePermissionResolverImpl`。K-50。
-- `navigation`: `domain/` の `MenuFilter`・`NavNode`・`NavTableRef`・`TableAccessResult`・`EmptyReason`、`service/NavigationService`、`web/NavigationController`・`TableAccessResponse`・`NavTableRefResponse`。K-50・K-52。
-- `dsl/domain/`: `DslModel`・`DslSchema`・`DslTable`・`DslColumn`・`DbType`・`FormPart`・`SearchSetting`・`SearchOperator`・`ListSetting`・`ListFormat`・`DetailSetting`・`OptionSource`・`OptionSourceKind`・`Validation`・`DslForeignKey`・`LookupListItem`・`LookupSearchItem`・`DslMenuItem`・`TableRef`・`DslFormat`・`ActiveDsl`、`dsl/service/ActiveDslModelProvider`。K-51。
+- `web`: controller と `record` の DTO。口ごとに `@ApiAccess`。個人に関する値・行の値を持つ型は `toString` を上書きして伏せる。
+- `service`: トランザクションの境界。新しい機能は想定内の失敗を結果の型（sealed interface）で返し、controller が `switch` で `BusinessException` に変える（`SearchResult`・`WriteResult` はこの形）。
+- `domain`: 変更できない値と列挙。問題の種類は `<機能>.domain.XxxProblemTypes`。
+- `repository`: 内部DB は Spring Data JPA、対象DB の SQL は `businessdata/repository` の `RowSqlExecutor` に閉じる。
 
 ## 画面の構成（`frontend/src/`）
 
-- `app/`: 骨組み（起動・`registry/`・`navigation/`・`layout/`・`i18n/`・`routing/`・`work-role/`・`admin-forbidden/`・`display-settings/`・`login-handoff/`・`login-state/`・`pages/`・`testing/`）。
-- `shared/`: 機能をまたぐ部品（`api-client/`・`format/`・`modal/`・`paging/`・`slow-notice/`・`tree/`・`validation/`）。`src/app/`・`src/features/` を読まない（ESLint）。
-- `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`（機能の作り方の決まり）。開発担当の「13 機能」はディレクトリの 13 項目の数で、機能は 12 個、残りの1つは `README.md` である（アーキテクトが `ls` で確かめた）。
-- 機能は `registration.ts` で登録し、`access`（`PUBLIC`・`LOGGED_IN`・`ADMIN` の3値の表示の制御）とサイドバー・ユーザーメニューの項目を持つ（`app/registry/types.ts`）。
-- テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜170 の 18 本）と `support/`。
+- `app/`: 骨組み（`registry/`・`navigation/`・`layout/`・`i18n/`・`routing/`・`work-role/` ほか）。
+- `shared/`: 機能をまたぐ部品（`api-client/`・`format/`・`modal/`・`null-value/`・`page-size/`・`paging/`・`row-actions/`・`scroll-region/`・`slow-notice/`・`tree/`・`unsaved-guard/`・`validation/`）。
+- `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`。業務データの画面は `tables`（一覧 `BusinessDataListPage`・詳細・作成/更新の `BusinessDataFormPage`・表 `BusinessDataTable`・検索 `SearchPanel`・ページの計算 `listPaging.ts`・API の呼び出し `businessDataApi.ts`）。
+- テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜185、20 本）と `support/`。
 
 ## Sources
 
-- `git ls-files`・`find`・`ls` の数（アーキテクト、2026-10-16）と開発担当の Packages Found。
+- `find`・`ls`・`git ls-files` の数（アーキテクト、2026-10-25）と開発担当の Packages Found。
