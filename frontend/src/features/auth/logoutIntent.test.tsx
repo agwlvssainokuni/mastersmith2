@@ -59,9 +59,12 @@ describe('logoutIntent', () => {
         { path: '/other', screen: Stay, layout: 'STANDALONE', access: 'LOGGED_IN' },
       ],
     }
+    // 骨組みが印を消した回数（最初の描画の効果が流れたかを待つため）
+    let clears = 0
     const provider = {
       getLoginState: () => ({ loggedIn: true, admin: false }),
       clearLogoutIntent: () => {
+        clears += 1
         consumeLogoutIntent()
       },
     }
@@ -78,8 +81,12 @@ describe('logoutIntent', () => {
 
     it('leaves the intent while staying on the same path and clears it on the next path change', async () => {
       const user = userEvent.setup()
+      clears = 0
       renderWithProviders(<AppRouter />, { route: '/stay', registrations: [feature], provider })
       await screen.findByRole('button', { name: 'move' })
+      // 最初の描画で骨組みが印を消す効果は、負荷が高いと描画が分かれて、ボタンが見つかった後に流れることがある。
+      // その効果が印を立てた後に流れると印が消えるため、効果が流れ終わってから印を立てる（CI で2度落ちた）。
+      await waitFor(() => expect(clears).toBeGreaterThan(0))
       // ［留まる］と同じく、印を立てた後に道が変わらない場合（G1: A）
       markLogoutIntent()
       await act(async () => {
