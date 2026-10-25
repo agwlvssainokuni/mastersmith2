@@ -32,10 +32,10 @@ public final class TargetDbImages {
      * MySQL の版（26.7 の系列）。長く支援される版（8.4 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
      * 上げた（Intent 260928-quality-followup の FR5.2）。
      */
-    public static final String MYSQL_VERSION = "26.7.0";
+    public static final String MYSQL_VERSION = "26.10.0";
 
     /** MySQL のイメージのダイジェスト。 */
-    public static final String MYSQL_DIGEST = "sha256:ade067ae2fb15eeb6143e81185afe22573e3b3addc58aaf90c41999fa6883991";
+    public static final String MYSQL_DIGEST = "sha256:f51c9c01c16b0eb5d81bb70ab7e7fcb3b96abc6a54114be3a94e8e569cae7815";
 
     /**
      * MariaDB の版（13.0 の系列）。長く支援される版（11.8 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて

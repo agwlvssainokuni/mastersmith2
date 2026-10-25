@@ -40,3 +40,36 @@
 - 原因: `*SecretLeakIT` などが `logging.level.cherry.mastersmith…=TRACE` を指定した文脈を起動すると、ロガーの水準が JVM に残る。Spring Boot 4.1.1 まではキャッシュ中の文脈の一時停止で `LoggingApplicationListener.Lifecycle.stop()`（ロギングの後片付け）が走って水準が戻っていたが、4.1.2 でこの Lifecycle の `isPauseable()` が偽になった（ソースの差で確認）ため、TRACE が次のテストへ漏れる。
 - 直し: `backend/src/test/java/cherry/mastersmith/common/testsupport/LoggingLevelResetTestExecutionListener.java` を足し、`backend/src/test/resources/META-INF/spring.factories` で登録した。Spring の文脈を使うテストの前に、TRACE・DEBUG を明示したロガーのうち文脈の設定（`logging.level.*`）に無いものを継承へ戻し、設定にあるものを設定どおりにする。YAML の `OFF` が `false` として届くため OFF に読む（これを抜くと `org.hibernate.orm.jdbc.error` の OFF が外れ、`*UniqueViolationSecretLeakIT` 8 件が落ちた。その場で直した）。Spring Boot が既定で入れる WARN・OFF などの水準は触らない。
 - 確かめ: 原因の再現（SecretLeak + Audit の組）で直す前に落ち、直した後に通ることを確かめた。品質の目標・閾値・テストは弱めていない。
+
+## B2: Dependabot の更新と固定先のそろえ（Step 8〜13）
+
+作業ブランチ: `chore/261025-deps-perf-carryover-deps`。コミットはしていない（変更はワークツリーに残す）。
+
+### Step 8 知らせの状態
+- 作業の途中で指揮役から更新の連絡があり、`gh pr list` の今の状態は 17 件（#54・#57・#58・#63・#66 は #69・#72・#71・#73・#75 に置き換わり、#70・#74 が新規）。この版で進めた。計画の Step 9 の collector 0.163.1 は 0.163.2 に変わった（差）。
+- `vendor/make-you-chic-ui` の固定先は上げていない。
+
+### Step 9 イメージ（版のタグ + 複数アーキテクチャの index のダイジェスト）
+- `otel/opentelemetry-collector` 0.162.0 → 0.163.2 `sha256:63e5e8ec…`（amd64・arm64）: `compose.yaml`
+- `axllent/mailpit` v1.31.5 → v1.31.6 `sha256:23fe39e8…`（386・amd64・arm64）: `compose.yaml`・`docker/perf/compose.yaml`・`README.md`
+- `grafana/otel-lgtm` 0.36.0 → 0.37.0 `sha256:57b5ab1c…`（amd64・arm64）: `compose.yaml`・`perf/README.md`
+- `mysql` 26.7.0 → 26.10.0 `sha256:f51c9c01…`（amd64・arm64/v8）: `compose.yaml`・`docker/perf/compose.yaml`・`TargetDbImages.java`（`MYSQL_VERSION`・`MYSQL_DIGEST`）
+- 旧い版・ダイジェストを `grep` で探し、残りが無いことを確かめた。`.github/dependabot.yml` の固定先の一覧は実際と一致している（追記のコメントを足した）。`grafana/k6` は 2.3.0 が最新で変更なし。
+
+### Step 10 Gradle・Actions
+- `com.github.spotbugs` 6.5.12 → 6.5.13（`gradle/libs.versions.toml`）。
+- `actions/setup-java` 6.0.1 → 6.1.0（SHA `b843ebf9…`、`.github/workflows/ci.yml`）。
+- gradle-wrapper 9.8.1 → 9.8.2（#74。`./gradlew wrapper --gradle-version 9.8.2` で `gradle-wrapper.properties` の `distributionUrl`。`distributionSha256Sum` は元から無い。wrapper の jar に差は出なかった）。
+
+### Step 11 npm
+- `package.json` の下限を #59・#61・#62・#64・#67・#68・#69〜#73・#75 に合わせ、`npm install --ignore-scripts --package-lock-only` → `npm ci`（`frontend/.npmrc` の `ignore-scripts=true` のまま）。通った。
+- lockfile は caret の範囲で最新に解決され、Dependabot の版より新しい: i18next 26.5.10（#73 は 26.5.5）、react-i18next 17.1.8（#71 は 17.1.2）。ほかは Dependabot の版どおり（oxlint 1.89.0、@typescript-eslint/parser 8.72.0 など）。
+- lockfile の差: 追加 0、削除 1（`data-urls/node_modules/whatwg-url@16.0.1`）、`hasInstallScript` の付いた項目は更新前後とも `fsevents` の1件のみ（増えていない）。`npm audit --omit=dev` は 0 件。
+- 見送った件は無い。
+
+### Step 12・13 検査
+- 依頼者の決定: B2 では `./gradlew e2eTest` を流さない（Build and Test と B3 の統合前に回す）。計画の Q2: A との差。Playwright は 1.64.1（`npx playwright --version`）。ブラウザの版の確認と `npx playwright install` は E2E を流す段に回す。
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`: BUILD SUCCESSFUL、27分49秒（`caffeinate -dims`）。単体テスト 2589 件（失敗 0・SKIPPED 0）、結合テスト 1389 件（失敗 0・SKIPPED 9。他の DB 種別向けの条件付きで B1 と同数）。画面のテスト 226 ファイル・1975 件が通過。対象DB（mysql 26.10.0 を含む）の結合テストは実行された。
+- `./gradlew osvScan --rerun`: 失敗の条件に当たるもの 0 件、警告 12 件。
+- `pmset -g log` の最後の Sleep は 22:53 JST で、verify の開始より前。流している間の眠りは無い。
+- 最初に旧い版（collector 0.163.1 など）で流し始めたが、連絡を受けて止め、更新後の状態で最初から流し直した。
