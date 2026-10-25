@@ -42,29 +42,12 @@ dependencyLocking {
     lockAllConfigurations()
 }
 
-// 組み込みの Tomcat の版を、脆弱性の修正を含む版にそろえる（gradle/libs.versions.toml の tomcat の説明を参照）。
-configurations.configureEach {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.apache.tomcat.embed") {
-            useVersion(libs.versions.tomcat.get())
-            because("Spring Boot が管理する Tomcat 11.0.24 の重大度 High 以上の脆弱性を避けるため")
-        }
-    }
-}
-
 dependencies {
     val bom = platform(libs.spring.boot.bom)
     implementation(bom)
     providedRuntime(bom)
     testImplementation(bom)
     testRuntimeOnly(bom)
-    // Jackson の版を、Spring Boot の管理の 3.1.5 から同じ 3.1 系の修正版に上げる（gradle/libs.versions.toml の jackson の説明を参照）。
-    // Spring Boot の BOM と同じく、Jackson の部品の版を Jackson の BOM でまとめてそろえる（高い方の版が選ばれる）。
-    val jacksonBom = platform(libs.jackson.bom)
-    implementation(jacksonBom)
-    providedRuntime(jacksonBom)
-    testImplementation(jacksonBom)
-    testRuntimeOnly(jacksonBom)
 
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.security)

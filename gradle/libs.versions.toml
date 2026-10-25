@@ -18,15 +18,7 @@
 
 [versions]
 java = "25"
-spring-boot = "4.1.1"
-# 組み込みの Tomcat。Spring Boot 4.1.1 が管理する 11.0.24 に重大度 High 以上の脆弱性（GHSA-9xv2-5v5q-p794 ほか、
-# 11.0.25 で修正）があるため、同じ 11.0 系の最新の修正版に上げる。Spring Boot を上げるときに、この固定が要るか見直す。
-tomcat = "11.0.26"
-# Jackson（3 系）。Spring Boot 4.1.1 が管理する 3.1.5 に重大度 High の脆弱性（GHSA-q4xh-88c3-wmh7、3.1.6 で修正）があり、
-# 3.1.6 にも重大度 High の脆弱性（jackson-core の GHSA-7hhh-6rmp-j9qf・GHSA-p6pp-m3f8-5c89、jackson-databind の
-# GHSA-cxp5-3px4-pw24・GHSA-wv8q-qhhj-9h54、3.1.7 で修正）があるため、Jackson の BOM を同じ 3.1 系の修正版で読み込み、
-# Spring Boot の管理の版を上書きする（backend/build.gradle.kts）。Spring Boot を上げるときに、この上書きが要るか見直す。
-jackson = "3.1.7"
+spring-boot = "4.1.2"
 spotless = "8.10.4"
 palantir-java-format = "2.98.0"
 spotbugs-gradle-plugin = "6.5.12"
@@ -34,15 +26,17 @@ spotbugs-tool = "4.10.4"
 findsecbugs = "1.14.0"
 jacoco = "0.8.15"
 logstash-logback-encoder = "9.0"
-# OpenTelemetry の logback 用の出力。Spring Boot が管理する OpenTelemetry（現在 1.62.0）に合う版に固定する。
-# Spring Boot を上げるときは、Boot の OpenTelemetry の版に合わせてこの版も見直す（2.29 以降は api 1.63 以上を求める）。
+# OpenTelemetry の logback 用の出力。Spring Boot が管理する OpenTelemetry（4.1.2 でも 1.62.0 のまま）に合う版に固定する。
+# Spring Boot 4.1.2 への引き上げで見直した結果、OpenTelemetry が 1.62.0 のままのため固定を残す（2.29 以降は api 1.63 以上を求める）。
+# 外す時期: Spring Boot の管理の OpenTelemetry が 1.63 以上になったとき（外部エクスポートを有効にして確かめる）。
 opentelemetry-instrumentation = "2.28.1-alpha"
 jqwik = "1.10.2"
 archunit = "1.5.1"
 # DSL の YAML の読み込み（U2）。Spring Boot の推移依存と同じ版を、直接の依存として明示する。
 snakeyaml = "2.7"
 # DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
-# 固定する。Spring Boot を上げるときは、この版も合わせて見直す。
+# 固定する。Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、見直した結果この固定を残す。
+# 外す時期: Spring Boot の管理の Jackson が 3.2 系以上になったとき。
 networknt-json-schema-validator = "3.0.6"
 # メールのテンプレートの描画（Intent 260925-user-management の U1）。自前の Mustache のエンジン java-mustache-processor の版。
 # 実体は Git サブモジュール vendor/java-mustache-processor（タグ 0.1.0、コミット 8d44c36）を composite build で組んだもので置き換える
@@ -53,7 +47,6 @@ subethasmtp = "7.2.2"
 
 [libraries]
 spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
-jackson-bom = { module = "tools.jackson:jackson-bom", version.ref = "jackson" }
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }

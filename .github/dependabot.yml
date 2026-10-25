@@ -33,24 +33,17 @@ updates:
     # opentelemetry-logback-appender は 2.28.1-alpha に固定している（Spring Boot 4.1.1 の OpenTelemetry 1.62 と、より新しい版が
     # 食い違い、外部エクスポートを有効にしたときに失敗するため。project.md の Tech Stack）。外部エクスポートが既定で無効の
     # ./gradlew verify ではこの失敗が現れず確かめられないため、すべての更新を知らせない。
-    # 外す時期: Spring Boot を上げるとき（この部品の版も合わせて見直し、外部エクスポートを有効にして確かめる）。
+    # Spring Boot 4.1.2 でも OpenTelemetry は 1.62.0 のままのため、固定を残した（Intent 261025-deps-perf-carryover の FR2.3）。
+    # 外す時期: Spring Boot の管理の OpenTelemetry が 1.63 以上になったとき（外部エクスポートを有効にして確かめる）。
     #
     # networknt-json-schema-validator は 3.0.6 に固定している。3.0.7 以降はアプリ全体の Jackson を 3.2 系に引き上げ、Spring Boot の
     # 管理の 3.1 系から外れるため（project.md の学び、Intent 260928-quality-followup の G4: A）。すべての更新を知らせない。
+    # Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、固定を残した。
     # 外す時期: Spring Boot を上げて、Spring Boot の管理の Jackson が 3.2 系以上になったとき。
     #
-    # Jackson の BOM（tools.jackson:jackson-bom）は、脆弱性の直しのために Spring Boot の管理の 3.1 系のままパッチの版だけを
-    # 上書きしている（Intent 260928-quality-followup の G4: A）。パッチの更新も含め、すべての版の更新を知らせない
-    # （Intent 260929-log-deps-cleanup の FR4.4、依頼者の決定）。
-    # 知らせを受けない代わりに、脆弱性の直しが要る版には OSV-Scanner の関門（./gradlew verify の osvScan）で気づく。この関門が
-    # 働くのは、手元の ./gradlew verify と CI の実行のときだけで、Dependabot のように新しい脆弱性の公表の時点では知らせない。
-    # team.md の Way of Working の「重大度 High 以上の知らせは次の Bolt に入る前に取り込む」とは、Jackson については
-    # Dependabot の知らせではなく次の verify・CI の OSV-Scanner で気づく形になる点が異なる（要件のレビューの R-02 を受け入れた扱い）。
-    # 外す時期: Spring Boot を上げるとき（この上書きの要否を合わせて見直す）。
     ignore:
       - dependency-name: "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0"
       - dependency-name: "com.networknt:json-schema-validator"
-      - dependency-name: "tools.jackson:jackson-bom"
   - package-ecosystem: npm
     directory: /frontend
     schedule:

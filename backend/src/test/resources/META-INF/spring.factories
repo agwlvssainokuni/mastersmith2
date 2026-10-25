@@ -18,3 +18,8 @@
 org.springframework.boot.EnvironmentPostProcessor=\
 cherry.mastersmith.auth.testsupport.TestSigningKeyEnvironmentPostProcessor,\
 cherry.mastersmith.common.testsupport.TestHikariMbeansEnvironmentPostProcessor
+
+# テストの前に、ロガーの水準を文脈の設定（logging.level.*）に合わせ直す。別のテストの TRACE の指定が次のテストへ漏れるのを防ぐ
+# （Spring Boot 4.1.2 でキャッシュ中の文脈の一時停止でロギングの後片付けが走らなくなったため。Intent 261025-deps-perf-carryover の B1）。
+org.springframework.test.context.TestExecutionListener=\
+cherry.mastersmith.common.testsupport.LoggingLevelResetTestExecutionListener

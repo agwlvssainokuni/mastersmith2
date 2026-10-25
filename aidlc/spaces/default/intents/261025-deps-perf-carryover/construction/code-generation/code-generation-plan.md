@@ -168,12 +168,12 @@ Testing Contract の用語との対応: 「プロジェクト構成と設定」=
 ### B1: Spring Boot 4.1.2（FR2）
 
 - [ ] **Step 1** 作業の前提を整える。`aidlc/` の未コミットの変更（監査ログ・この段の記録）のコミットを依頼者に提案する。承認を得たら `develop` から `chore/261025-deps-perf-carryover-spring-boot` を切る。（FR2・NFR3）
-- [ ] **Step 2** テスト実行の準備を確かめる。`unit-test-instructions.md` の「最初のテストの前に実行できるコマンド」（`./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.config.TargetDbPropertiesTest'`）が通ること、colima が動いていて `DOCKER_HOST` と `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡せること、`osv-scanner` が入っていることを確かめる。（NFR3）
-- [ ] **Step 3** `gradle/libs.versions.toml` の `spring-boot` を `4.1.2` にし、依存の解決を `./gradlew :backend:dependencies --configuration runtimeClasspath` で読んで 4 節の 1 の事実（Tomcat 11.0.27・Jackson 3.1.7・OpenTelemetry 1.62.0）を確かめる。（FR2.1・FR2.2・A1）
-- [ ] **Step 4** 上書きを外す: `libs.versions.toml` の `tomcat`・`jackson`・`jackson-bom`、`backend/build.gradle.kts` の `resolutionStrategy` と `jacksonBom` の4行。`./gradlew :backend:resolveAndLockAll --write-locks` で `backend/gradle.lockfile` を作り直し、差（Tomcat・Jackson・postgresql・Spring Boot の部品）を読んで記録する。（FR2.2）
-- [ ] **Step 5** 固定を残す部品（`opentelemetry-logback-appender` 2.28.1-alpha、networknt 3.0.6）のコメントと外す時期を 4.1.2 の事実に合わせて書き直す。`build.gradle.kts`・`libs.versions.toml` の「Spring Boot を上げるときに見直す」コメントを、見直した結果に更新する。`.github/dependabot.yml` の Jackson の `ignore` とコメントを外し、残す項のコメントを更新する。（FR2.3・FR2.4・FR1.3 の記録先）
-- [ ] **Step 6**（ビルド設定の層のテスト）`OtlpLogExportIT`・`ExternalExportIT` を単独で流して通す。使い捨ての起動（外部エクスポートを有効にして起動し、appender の失敗が無い）を確かめる。結果を `generation-notes.md` に書く。（FR2.3）
-- [ ] **Step 7** `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`caffeinate -dims` で包み、前後に `pmset -g assertions`・`pmset -g log` で眠らなかったことを確かめる）と `./gradlew osvScan --rerun` を通す。High 以上が出ないこと。時間を記録する。コミットを依頼者に提案し、承認を得て積む。squash で `develop` に統合する。（FR2.2・NFR2・NFR3）
+- [x] **Step 2** テスト実行の準備を確かめる。`unit-test-instructions.md` の「最初のテストの前に実行できるコマンド」（`./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.config.TargetDbPropertiesTest'`）が通ること、colima が動いていて `DOCKER_HOST` と `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡せること、`osv-scanner` が入っていることを確かめる。（NFR3）
+- [x] **Step 3** `gradle/libs.versions.toml` の `spring-boot` を `4.1.2` にし、依存の解決を `./gradlew :backend:dependencies --configuration runtimeClasspath` で読んで 4 節の 1 の事実（Tomcat 11.0.27・Jackson 3.1.7・OpenTelemetry 1.62.0）を確かめる。（FR2.1・FR2.2・A1）
+- [x] **Step 4** 上書きを外す: `libs.versions.toml` の `tomcat`・`jackson`・`jackson-bom`、`backend/build.gradle.kts` の `resolutionStrategy` と `jacksonBom` の4行。`./gradlew :backend:resolveAndLockAll --write-locks` で `backend/gradle.lockfile` を作り直し、差（Tomcat・Jackson・postgresql・Spring Boot の部品）を読んで記録する。（FR2.2）
+- [x] **Step 5** 固定を残す部品（`opentelemetry-logback-appender` 2.28.1-alpha、networknt 3.0.6）のコメントと外す時期を 4.1.2 の事実に合わせて書き直す。`build.gradle.kts`・`libs.versions.toml` の「Spring Boot を上げるときに見直す」コメントを、見直した結果に更新する。`.github/dependabot.yml` の Jackson の `ignore` とコメントを外し、残す項のコメントを更新する。（FR2.3・FR2.4・FR1.3 の記録先）
+- [x] **Step 6**（ビルド設定の層のテスト）`OtlpLogExportIT`・`ExternalExportIT` を単独で流して通す。使い捨ての起動（外部エクスポートを有効にして起動し、appender の失敗が無い）を確かめる。結果を `generation-notes.md` に書く。（FR2.3）
+- [x] **Step 7** `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`caffeinate -dims` で包み、前後に `pmset -g assertions`・`pmset -g log` で眠らなかったことを確かめる）と `./gradlew osvScan --rerun` を通す。High 以上が出ないこと。時間を記録する。コミットを依頼者に提案し、承認を得て積む。squash で `develop` に統合する。（FR2.2・NFR2・NFR3）
 
 ### B2: Dependabot の15件と固定先のそろえ（FR1）
 
