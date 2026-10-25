@@ -28,6 +28,9 @@ AP=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24); UP=$(openssl rand -bas
 # コンテナの上限は配備と同じ値（CPU 4・メモリ 2g）。-f で指定する compose は .env を読まないため、シェルの環境変数で渡す
 export MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g \
   MASTERSMITH_IMAGE_TAG=<Intent の名前>   # 手順 0 で作ったタグ（docker/perf/compose.yaml の既定は local）
+# k6 と H2 の Shell のイメージ（K6_IMAGE・PERF_JRE_IMAGE）の固定の値は perf/versions.env に一本化している（この README の手順は
+# すべて "$K6_IMAGE" で読む）。H2 に SQL を流すのは perf/h2-shell.sh（jar の探し方と Shell の起動を持つ）。手順の前に読み込む
+source perf/versions.env
 
 # 2. 使い捨ての環境を起動し（初期管理者が作られる）、止めて試験用の利用者 11 名を入れる（dslMixed が VUS + 1 名を使う。ほかの場面は 01〜10）
 #    V7 の後は氏名（display_name）が必須のため、メールアドレスと同じ値を入れる（言語・テーマ・文字の大きさは既定の値）
@@ -35,17 +38,15 @@ docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml stop app
 HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
 SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$HASH" "$i"; done | sed 's/,$//')"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
 # 3. 場面ごとに流す（health / loginSuccess / loginFailure / refresh / adminCheck / forbidden / appearance）
 #    U2・U3 の場面は、下の節「利用者の設定と招待の場面」の手順（Mailpit と利用者の追加）で流す
 mkdir -p build/perf-results && chmod 777 build/perf-results
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=health -e DURATION=60s \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
   run --quiet --summary-export=/out/health.json /scripts/scenarios.js
 
 # 4. 片付け
@@ -174,7 +175,7 @@ k6d() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/ui.env" "$@" \
     -v "$PWD/build/perf-results/dsl-k6/postgres:/data:ro" \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 # 流す順: dslCycle（適用と破棄）→ dslPrepare（dslLight の条件をそろえる）→ dslLight → dslMixed。台本の全体を caffeinate -dims で包む
@@ -234,10 +235,8 @@ HASH=$(htpasswd -nbBC 12 x "$UP" | cut -d: -f2)
 SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(
   { for i in $(seq -w 1 11); do echo "perf-user$i"; done; for i in $(seq -w 1 10); do echo "perf-pw$i"; done; } |
   while read -r u; do printf "('%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, '%s@example.test')," "$u" "$HASH" "$u"; done | sed 's/,$//')"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 perfc up -d --wait
 
 # 3'. 場面ごとに流す（caffeinate -dims で PC のスリープを防ぐ）。k6 は同じネットワークの中から app と mailpit に届く
@@ -245,7 +244,7 @@ mkdir -p build/perf-results && chmod 777 build/perf-results
 for s in preferencesGet preferencesSave preferencesInvalid passwordChange passwordMismatch passwordInvalid \
   invite invitationResend invitationList invitationCancel registrationVerify registrationComplete registrationInvalid registrationRejected; do
   caffeinate -dims docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
 
@@ -319,10 +318,8 @@ INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
 INSERT INTO refresh_tokens (user_id, token_hash, issued_at, expires_at, revoked_at)
   SELECT u.user_id, HASH('SHA-256', STRINGTOUTF8(u.email || '-' || r.X)), CURRENT_TIMESTAMP, DATEADD('DAY', 30, CURRENT_TIMESTAMP),
     CASE WHEN r.X <= 100 THEN NULL ELSE CURRENT_TIMESTAMP END FROM users u, SYSTEM_RANGE(1, 1100) r WHERE u.email LIKE 'perf-uasw-%'"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 perfu up -d --wait
 
 # 3''. 場面ごとに流す。台本の全体を caffeinate -dims で包む（場面ごとに起こし直さない）
@@ -332,7 +329,7 @@ D="$1"
 k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 metrics() {   # 接続プールの値（待ちの時間切れの累計・借りるまでの待ちの最大）を記録する。acquire は baseUnit を見て読む
@@ -357,7 +354,7 @@ cat > "$D/ua-pool10.sh" <<'EOS'
 D="$1"
 for v in 5 10; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=userAdminOps -e VUS=$v \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/userAdminOps-pool10-vus$v.json /scripts/scenarios.js
   for m in hikaricp.connections.timeout hikaricp.connections.acquire; do   # acquire は baseUnit を見て読む
     curl -s "http://127.0.0.1:18080/actuator/metrics/$m" > "build/perf-results/pool10-vus$v-$m.json"
@@ -451,7 +448,7 @@ done
 echo "k6 start $(date -u +%FT%TZ)" > "$R/$TAG-times.txt"
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" \
   -e SCENARIO=userAdminPoolLimit -e VUS=$VUSN -e DURATION=$DUR -e PERF_UA_COUNT=20 \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
   run --quiet --summary-export=/out/$TAG.json /scripts/scenarios.js > "$R/$TAG-k6.log" 2>&1 &
 K6=$!
 watch() {   # 3件の警報（題の state と実体の state・activeAt）、接続プールの値、コンテナのメモリを1回ずつ書く
@@ -562,10 +559,8 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
     DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-gr-' || LPAD(CAST(X AS VARCHAR), 4, '0') FROM SYSTEM_RANGE(1, 1000);
 INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   VALUES ('perf-graop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-graop01')"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 perfu up -d --wait
 
 # 3G. 応答時間の8場面を流す（constant-vus の場面は 3 分、回数の場面は VU ごとに 100 回）。台本の全体を caffeinate -dims で包む
@@ -575,7 +570,7 @@ D="$1"
 k6run() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 for s in groupListFirst groupListLast groupDetail groupRename; do k6run $s -e SCENARIO=$s -e DURATION=3m; done
@@ -596,7 +591,7 @@ print(sys.argv[1], d["name"], {x["statistic"]: (x["value"] * scale if d["name"].
 }
 read_metrics before
 docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=groupPoolLimit -e VUS=$VUSN -e DURATION=2m \
-  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
   run --quiet --summary-export=/out/$TAG.json /scripts/scenarios.js > "$R/$TAG-k6.log" 2>&1 &
 K6=$!
 while kill -0 $K6 2> /dev/null; do read_metrics "$(date -u +%H:%M:%SZ)"; sleep 5; done
@@ -660,7 +655,7 @@ D="$1"
 for s in roleTreeRead rolePermissionSave roleAdminRead roleAdminOps \
   workRoleSwitch workRoleRead myPermissionsTree roleAssignmentsRead roleAssignOps; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$s.json /scripts/scenarios.js
 done
 EOS
@@ -763,7 +758,7 @@ k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/role-data:/data:ro" \
-    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    "$K6_IMAGE" \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 k6r rolePrepare -e SCENARIO=rolePrepare -e DSL_FILE=/data/dsl.yaml
@@ -777,6 +772,40 @@ caffeinate -dims zsh "$D/role-b6-run.sh" "$D"
 #     GROUP BY event_type, result, failure_reason
 ```
 
+
+## 手元の監視の式の値を確かめる場面（Intent 261025-deps-perf-carryover の FR3.8）
+
+手元の監視（`grafana/otel-lgtm`、README の「手元の監視（Grafana）」）の式の値を確かめるための、負荷の試験ではない少ない要求の場面 `monitorLight` を使う。負荷の試験の場面（待ちが無い）は 2 VU でも毎秒 1,500〜2,200 件になり、lgtm の中の受け手（otelcol）と Tempo がメモリの上限（1.5GiB）で止められ、以後の指標・ログ・トレースが届かなくなった（Intent 261016-business-data-views の Observability Setup）。式の値の確かめは、この場面で送る。
+
+| 場面 | すること | 判定 |
+|---|---|---|
+| `monitorLight` | 1 VU・繰り返しごとに 1〜2 秒の待ち（毎秒 約 0.6 件）。`GET /actuator/health`・`GET /api/appearance`・`GET /api/admin/check`（管理者のトークンは setup で取る）を順に1つずつ回す。`MONITOR_BIZ=1` のときは、試験用の利用者 `perf-biz-01` の業務データの定義と一覧（`POST /api/tables/definition`・`/api/tables/rows/search`）も順に回す（先に `bizPrepare`。種と DSL の用意は「業務データの場面」） | `checks{scenario:monitorLight}` の率 1 だけ（応答時間は監視の式で見る） |
+
+- 長さ `MONITOR_DURATION`（既定 5 分）は、指標の送信の周期（60 秒）を複数またぐ。新しく現れた系列の最初の 1 件は Prometheus の `increase` に数えられないため、1 回ずつの送信では値が 0 や小さく見える。トークンは setup の 1 つを使うため、5 分より長くするときは（アクセストークンの有効期限が 5 分）台本の setup の取り直しが要る。
+- 流し方（手順の 0・1 と、lgtm を使い捨ての環境のネットワークに名前 `lgtm` で起動して、その後にアプリを起動し直す手順は「接続プールの上限を下げて流す」の a・b と同じ。lgtm を先に網につなぐ）:
+
+```bash
+source perf/versions.env
+# 使い捨ての環境（app）が動いていて、外部エクスポートが lgtm に向いていること。台本の全体を caffeinate -dims で包む
+caffeinate -dims docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=monitorLight -e MONITOR_DURATION=5m \
+  -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" run --quiet --summary-export=/out/monitor.json /scripts/scenarios.js
+jq -c '.metrics.checks' build/perf-results/monitor.json      # fails が 0
+```
+
+- 台本は `k6 inspect --include-system-env-vars` で場面と閾値の名前が出る形を確かめる（`-e SCENARIO=monitorLight`）。
+- 流して確かめて記録するのは Build and Test（lgtm が止まらず、監視の式の値が確かめられること）。この Intent の Code Generation では、使い捨ての環境で 20 秒だけ流し、checks が全件通ることを確かめた。
+
+## DSL の投入と権限の YAML の確かめを重ねる場面（Intent 261025-deps-perf-carryover の FR4.8 P5）
+
+dsl-v2 の NFR 設計の任意の重なり（R-07）で、見積もりのまま測っていなかった項目を、測った値で置き換えるための場面 `dslRoleOverlap`。
+
+| 場面 | すること | 判定 |
+|---|---|---|
+| `dslRoleOverlap` | 2 つの VU を並べて `DURATION`（既定 60s）流す。`dslHeavy`（1 VU）: 10MB の DSL（`DSL_FILE`）の投入とプレビューの表示（`dslMixed` の重い側と同じ）。`roleChecks`（1 VU）: 上限ちょうどの権限の YAML（`ROLE_YAML_FILE`）の確かめ（`roleTransferLargeCheck` と同じ YAML、`POST /api/admin/role-transfer/check`）。適用はしない（DSL は投入だけでプレビューのまま。権限の YAML も確かめだけ） | `checks{scenario:dslHeavy}`・`checks{scenario:roleChecks}` の率 1、`iteration_duration{scenario:roleChecks}` の最大 < 15 秒（`roleTransferLargeCheck` と同じ線）。`dslHeavy` の繰り返しの時間は記録だけ |
+
+- 前提: 「ロールの管理の場面」の B6 の準備（`rolePrepare`、大きな DSL の適用、`perf-roleop01`）が済んでいること。`ROLE_YAML_FILE` はそこで作る上限ちょうどの YAML。`DSL_FILE` は `perf/dsl-timing.sh` が作る 10MB の DSL（`dslMixed` の節と同じ）。k6 の setup は前の場面の状態に頼らない（管理者のトークンは VU の中で取り、権限の YAML の側は 4 分ごとにログインし直す）。
+- 合否の件数の記録: k6 の要約の `checks`（`jq -c '.root_group.checks' …`）と、`iteration_duration{scenario:roleChecks}` の最大・件数。重なっても権限の YAML の確かめが 15 秒を超えないか（NFR2.4 の線）を見る。DSL の投入と YAML の確かめが重なる間の 5xx・時間切れの件数は、アプリのログ（WARN・ERROR の件数だけ）で数える。
+- 流すのは Build and Test。配備したアプリを止め、使い捨ての環境で、`caffeinate -dims` で台本の全体を包む。
 
 ## 性能の測り直し（Intent 261015-deps-ui-carryover の FR7.2・FR8・FR9.1・FR9.4）
 
@@ -930,7 +959,7 @@ pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
 # 前提: 上の「手順」の 0（配備したアプリを止める・WAR と使い捨て用のタグのイメージを作る）を済ませる。
 #       配備したアプリは測る間だけ止め、4回が終わったら起動し直す（下の 6）。
 export MASTERSMITH_IMAGE_TAG=<タグ> MASTERSMITH_CONTAINER_CPUS=4 MASTERSMITH_CONTAINER_MEMORY=2g
-export K6_IMAGE=grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34   # k6d と同じ固定の値
+source perf/versions.env   # K6_IMAGE（k6d と同じ固定の値）を読み込む
 
 # 1. 試験用の利用者 11 名を入れ、ui.env に PERF_USER_PASSWORD を足す関数（D は perf/dsl-timing.sh が表示した一時ディレクトリ）。
 #    zsh ではコマンドを変数に入れても単語に分かれないため、関数にする。値は表示しない
@@ -941,10 +970,7 @@ perf_users() {
   sql="INSERT INTO users (email, password_hash, admin_flag, created_at, display_name) VALUES $(for i in $(seq -w 1 11); do printf "('perf-user%s@example.test', '%s', FALSE, CURRENT_TIMESTAMP, 'perf-user%s@example.test')," "$i" "$hash" "$i"; done | sed 's/,$//')"
   MASTERSMITH_PERF_ENV_FILE="$D/app.env" MASTERSMITH_PERF_TARGETDB_ENV_FILE="$D/targetdb.env" MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE="$D/app-targetdb.env" \
     docker compose -p mastersmith-perf -f docker/perf/compose.yaml stop app
-  cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-  docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-    eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url "$(grep '^MASTERSMITH_DB_URL=' "$D/app.env" | cut -d= -f2- | sed 's#/app/data#/data#' | grep . || echo jdbc:h2:file:/data/mastersmith)" -user sa -password "" -sql "$sql" > /dev/null
-  rm build/h2-perf.jar
+  H2_URL="$(grep '^MASTERSMITH_DB_URL=' "$D/app.env" | cut -d= -f2- | sed 's#/app/data#/data#' | grep . || echo jdbc:h2:file:/data/mastersmith)" ./perf/h2-shell.sh mastersmith-perf_perf-data "$sql" > /dev/null
   ( umask 077; printf 'PERF_USER_PASSWORD=%s\n' "$up" >> "$D/ui.env" )
 }
 
@@ -1012,13 +1038,14 @@ cat > "$D/role-three.sh" <<'EOS'
 D="$1"
 for s in workRoleRead myPermissionsTree roleAssignmentsRead; do
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s \
-    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \
     run --quiet --summary-export=/out/$s-alone.json /scripts/scenarios.js
 done
 EOS
 caffeinate -dims zsh "$D/role-three.sh" "$D"
 for s in workRoleRead myPermissionsTree roleAssignmentsRead; do
-  grep -h -o '"checks": {[^}]*}' "build/perf-results/$s.json" "build/perf-results/$s-alone.json"   # どれも passes が 1 以上・fails が 0
+  # k6 の要約（--summary-export）は複数行の JSON のため、行ごとに探す grep では何も出ない。jq で読む
+  jq -c '.metrics.checks // .root_group.checks' "build/perf-results/$s.json" "build/perf-results/$s-alone.json"   # どれも passes が 1 以上・fails が 0
 done
 ```
 
@@ -1030,8 +1057,6 @@ done
 |---|---|---|
 | `navPrepare` | 1 VU・1 回。悪い側の DSL（`DSL_FILE`）の投入と適用、グループ 100 個（`NAV_GROUP_COUNT`）の作成と試験用の利用者 `perf-nav-01`〜`10` 全員の所属、どのグループにもロール `perf-nav-worst` の割り当て、各利用者の作業ロールの保存（1人ずつログインする） | `checks{scenario:navPrepare}` の率 1 |
 | `navMenu` | 業務のメニュー（`GET /api/me/navigation`、200 で項目が1つ以上）。10 VU・3 分 | `iteration_duration{scenario:navMenu}` の p95 < 1000 ms と `checks` の率 1 |
-| `tableAccessVisible` | 読めるテーブル（番号が奇数の `t_001`・`t_003`…を VU と繰り返しの番号で回す）の置き場の問い合わせ（200 で `main` が `READ`）。10 VU・3 分 | 同上 |
-| `tableAccessDenied` | `NONE` のテーブル（番号が偶数）の置き場の問い合わせ（403 `ACCESS_DENIED`。場面の始めに `http.setResponseCallback(http.expectedStatuses(403))` で期待の状態コードを宣言）。10 VU・3 分 | 同上 |
 | `navMenuBaseline` | setup で目安の DSL（`DSL_FILE`）を適用し直した後の業務のメニュー（200）。10 VU・3 分 | 同上 |
 
 - **データ**（使った規模は結果に記録する）:
@@ -1044,8 +1069,8 @@ done
   2. 使い捨てのアプリを起動する
   3. `rolePrepare`（大きな DSL の適用と、`perf-nav-worst` を含む準備の YAML の確かめと適用）
   4. `navPrepare`（悪い側の DSL の適用、グループと所属、割り当て、1人ずつログインして作業ロールの保存）
-- **流す順**（`cicd-pipeline.md` 5.3 との差。基盤の設計の読み直しの R-01 の手当てで、依頼者の指示）: 準備 → 大きな DSL の読み取りの場面（`navMenu`・`tableAccessVisible`・`tableAccessDenied` と、ロールの管理の節の B4・B5 の場面）→ `roleExport` → `roleTransferLargeCheck` → `roleTransferLargeApply` → **`navMenuBaseline` を最後**。`navMenuBaseline` は目安の DSL に入れ替えるため、その後は 1万カラムのロールの前提が崩れる。ロールの場面は `perf-role-worst`（スキーマ `large` の DSL）を使い、`navPrepare` の悪い側の DSL もスキーマとテーブルは同じため、ロールの場面の前提を崩さない。
-- **p95 を場面ごとに別に残す**（NFR 設計の読み直しの R-08）: `tableAccessDenied` は表示名のための DSL の読み取り（`current()`）をしないため、`tableAccessVisible` と合わせずに場面ごとの p95 を記録する。置き場の p95 の実測値は基準の値として記録し、目標（1 秒）より桁違いに小さければ後の Intent で目標を見直すかを結果に書く（`performance-design.md` 3節）。
+- **流す順**（`cicd-pipeline.md` 5.3 との差。基盤の設計の読み直しの R-01 の手当てで、依頼者の指示）: 準備 → 大きな DSL の読み取りの場面（`navMenu` と、ロールの管理の節の B4・B5 の場面）→ `roleExport` → `roleTransferLargeCheck` → `roleTransferLargeApply` → **`navMenuBaseline` を最後**。`navMenuBaseline` は目安の DSL に入れ替えるため、その後は 1万カラムのロールの前提が崩れる。ロールの場面は `perf-role-worst`（スキーマ `large` の DSL）を使い、`navPrepare` の悪い側の DSL もスキーマとテーブルは同じため、ロールの場面の前提を崩さない。
+- **置き場の問い合わせの場面は外した**（Intent 261025-deps-perf-carryover の FR3.3）: `GET /api/me/table-access`（置き場の問い合わせ）を消したため、場面 `tableAccessVisible`・`tableAccessDenied` を台本から外した。前の Intent の記録（置き場の p95 の実測値など）は承認済みの記録で、書き換えない。
 - **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{scenario:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
 - **VM の余裕**: 試し走り（B7、2026-10-12）は、配備したアプリ（上限 2g）を止めずに、使い捨てのアプリ（上限 2g）を並べて流した（VM 6 GiB のうち空きは約 4.9 GiB）。本番の長さの判定の回は、手順 0 のとおり配備したアプリを止めて CPU を取り合わないようにする。
 - 台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。
@@ -1064,10 +1089,8 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
     DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-nav-' || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10);
 INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   VALUES ('perf-roleop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-roleop01')"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 perfu up -d --wait
 
 # 3N. 業務のメニューの DSL を作る（どちらも版 2 の DSL の menus: の塊だけを置き換える）
@@ -1083,12 +1106,12 @@ k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" \
     -v "$PWD/build/perf-results/role-data:/data:ro" -v "$PWD/build/perf-results/nav-data:/nav:ro" \
-    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    "$K6_IMAGE" \
     run --quiet --summary-export=/out/$name.json /scripts/scenarios.js
 }
 k6r rolePrepare -e SCENARIO=rolePrepare -e DSL_FILE=/data/dsl.yaml
 k6r navPrepare -e SCENARIO=navPrepare -e DSL_FILE=/nav/worst.yaml
-for s in navMenu tableAccessVisible tableAccessDenied; do k6r $s -e SCENARIO=$s; done
+for s in navMenu; do k6r $s -e SCENARIO=$s; done
 zsh "$D/role-run.sh" "$D"                                   # ロールの管理の節の B4・B5 の場面（流すときだけ）
 k6r roleExport -e SCENARIO=roleExport
 k6r roleTransferLargeCheck -e SCENARIO=roleTransferLargeCheck -e ROLE_YAML_FILE=/data/large-5mb.yaml
@@ -1131,12 +1154,15 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
 
 | DB | 変数 | 既定 | 業務データの試験の値 |
 |---|---|---|---|
-| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL`（`--innodb-buffer-pool-size`） | 128M | 768M |
-| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY`（`mem_limit`） | 768m | 2304m（U2 の試しの結果。U1 の設計の文書の 1792m とは違う） |
-| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL` | 128M | 512M |
-| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY` | 512m | 1g |
+| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL`（`--innodb-buffer-pool-size`） | 128M | **1280M** |
+| MySQL | `MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY`（`mem_limit`） | 768m | **2688m** |
+| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL` | 128M | **896M** |
+| MariaDB | `MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY` | 512m | **1408m** |
 | PostgreSQL | `MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS`（`-c shared_buffers`） | 128MB | 256MB |
 | PostgreSQL | `MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY` | 512m | 768m |
+
+- **この表の値は、実際の表の大きさに合わせたもの**（Intent 261025-deps-perf-carryover の FR4.6）。前の Intent（261016-business-data-views）の Performance Validation で、種を正しく入れた後の表（データと索引）の合計が、MySQL 1,017,806,848 B・MariaDB 747,274,240 B・PostgreSQL 212,566,016 B と分かり、設計の値（MySQL 768M・MariaDB 512M）ではプール（共有バッファー）の 80% を超えたため、決まり（80% を超えたら 128MiB ずつ上げ、メモリの上限も同じだけ上げる）で上げた。MySQL は VM の余裕（300 MiB）を残すため、上限を決まりの 2816m より 128 MiB 少ない 2688m にした（依頼者の決定。差は記録済み）。割合（表の合計 ÷ プール）は MySQL 75.8%・MariaDB 79.5%・PostgreSQL 79.2%。以前の値（MySQL 2304m・MariaDB 1g）は表の大きさに足りなかった古い値で、使わない。
+- 表の大きさが変わった（種の行の数・カラムを変えた）ときは、下の流す順の 3 で測り直し、上の割合が 80% 以内になる値にする。
 
 - **VM の余裕**（`infrastructure-specification.md` 2.3）: 業務データの試験の間は配備したアプリを止める（上の「手順」の 0 と同じ）。MySQL・MariaDB の回では手元の監視（lgtm）を動かさない。指標は、使い捨てのアプリにだけ公開する actuator の metrics（`MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics`）で読む。MySQL（2304m）の回の上限の合計は perf のアプリ 2048 + MySQL 2304 + 見本の PG 512 + Mailpit 256 = 5,120 MiB（docker から見える量 約 5,910 MiB に収まる）。
 - **流す順**（対象DB の種類ごと。`cicd-pipeline.md` 5.3）:
@@ -1149,6 +1175,7 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
   7. `bizSearchWide` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す
   8. 確かめの結果（待ちの時間切れの累計・`memory.peak`・OOMKilled・WARN の件数・ログに行の値と試験用の利用者のメールアドレスが無いこと）を見てから片付ける
 - **借りる待ち**: 対象DB の読み取りのプールは上限 10（Intent 261025-deps-perf-carryover で 5 から引き上げた）・借りる待ち 3 秒（MySQL で接続の確かめが走るときは 6 秒）で、10 VU の場面は同時に処理できる。プールの上限に届かせる場面は 12 VU 以上（`bizSearchContains` など）で流す。待ちが 3 秒を超えると 503 `BUSINESS_TARGET_DB_UNAVAILABLE` になる。
+- **部分一致は索引が効かない**（FR4.3）: `bizSearchContains` のような `LIKE '%…%'` の検索は、どの対象DB でも通常の索引を使えず、1回の検索（件数とページの2つの問い合わせ）で表の全部を2回読む。読み取りのプールの接続を長く借りるため、MySQL・MariaDB でこの場面が Not Met になりやすい原因はここにある（前の Intent の結果）。運用の注意は `README.md` の「業務データの読み取りの API」に、DSL の説明は JSON Schema の `description`（`searchOperator`）に書いてある。
 - **判定**: どの場面も `iteration_duration`（単調な時計）で判定し、`http_req_duration{name:…}` は colima の VM の時計のずれで崩れうるため並べて記録するだけ（閾値 `max>=0` は表示のため）。
 - 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる（上の「手順」の冒頭）。流した後は、export した変数を `unset` するか、別のシェルで流す（DSL の時間の測りに持ち込まないため。`perf/dsl-timing.sh` も始めに `unset` する）。
 
@@ -1178,18 +1205,28 @@ DBW=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
 unset DBA DBR DBW
 export MASTERSMITH_PERF_TARGETDB_ENV_FILE="$D/targetdb.env" MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE="$D/app-targetdb.env"
 # 業務データの試験の値（試し走りでは export しない。計画の D4: A）
-export MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL=768M MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY=2304m \
-  MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL=512M MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY=1g \
+export MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL=1280M MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY=2688m \
+  MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL=896M MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY=1408m \
   MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS=256MB MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY=768m
 
 # 2B. 対象DB を起動して種を入れる（100,000 行で数分。行の数は最後の行に出る）
 perfu --profile "targetdb-$KIND" up -d --wait "targetdb-$KIND"
 case "$KIND" in
   postgres) client=(psql -q -v ON_ERROR_STOP=1 -U target_admin -d business) ;;
-  mysql) client=(sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root') ;;
-  mariadb) client=(sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root') ;;
+  # 文字の組は utf8mb4 を明示する（付けないと mysql の道具の既定が latin1 になり、種の日本語（目印の語）が二重に符号化されて入る。
+  # Intent 261016-business-data-views の Performance Validation で、bizSearchContains の setup が 0 件で止まった）
+  mysql) client=(sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql --user=root --default-character-set=utf8mb4') ;;
+  mariadb) client=(sh -c 'MYSQL_PWD="$MARIADB_ROOT_PASSWORD" mariadb --user=root --default-character-set=utf8mb4') ;;
 esac
 ./perf/biz/make-biz-seed.sh "$KIND" | perfu exec -T "targetdb-$KIND" "${client[@]}"
+# 2B'. 種の確かめ（アプリを起動する前に。表の大きさを測る前に必ず行う。件数と長さだけを出し、行の値は出さない）
+#      - 目印の語（目印）を含む行の数が 0 でないこと（二重に符号化されていると 0 になる）
+#      - 最長の文字数が 2,000,000 であること（c_010 の 10 行だけ）
+#      - 行の数が既定の 100,000 であること
+#      PostgreSQL は -d business の schema bizperf、MySQL・MariaDB は database bizperf。次は PostgreSQL の例（MySQL・MariaDB は
+#      $client に -e 'SELECT … FROM bizperf.biz_item' を渡し、LENGTH を CHAR_LENGTH に替える）
+perfu exec -T "targetdb-$KIND" "${client[@]}" -c \
+  "SELECT COUNT(*) AS rows_total, COUNT(*) FILTER (WHERE c_010 LIKE '%目印%') AS marker_rows, MAX(LENGTH(c_010)) AS longest FROM bizperf.biz_item"   # postgres
 
 # 3B. アプリを起動し、止めて、試験用の利用者 perf-biz-01〜10 と操作する管理者 perf-roleop01 を入れる（上の「手順」の 2 と同じ H2 の道具）
 perfu up -d --wait app
@@ -1200,10 +1237,8 @@ SQL="INSERT INTO users (email, password_hash, admin_flag, created_at, display_na
     DATEADD('SECOND', X, CURRENT_TIMESTAMP), 'perf-biz-' || LPAD(CAST(X AS VARCHAR), 2, '0') FROM SYSTEM_RANGE(1, 10);
 INSERT INTO users (email, password_hash, admin_flag, created_at, display_name)
   VALUES ('perf-roleop01@example.test', '$HASH', TRUE, CURRENT_TIMESTAMP, 'perf-roleop01')"
-cp ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar build/h2-perf.jar
-docker run --rm -u 10001:10001 -v mastersmith-perf_perf-data:/data -v "$PWD/build/h2-perf.jar:/h2.jar:ro" \
-  eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab java -cp /h2.jar org.h2.tools.Shell -url jdbc:h2:file:/data/mastersmith -user sa -password "" -sql "$SQL" > /dev/null
-rm build/h2-perf.jar; unset AP UP HASH SQL
+./perf/h2-shell.sh mastersmith-perf_perf-data "$SQL" > /dev/null   # H2 の jar と Shell の起動は perf/h2-shell.sh に一本化している
+unset AP UP HASH SQL
 perfu up -d --wait app
 
 # 4B. DSL を作り、準備 → 表の大きさの記録 → 暖め → 場面（台本の全体を caffeinate -dims で包む）
@@ -1215,7 +1250,7 @@ k6r() {   # 引数: 結果の名前 と k6 に渡す -e の組
   local name="$1"; shift
   docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/biz-data:/data:ro" \
-    grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34 \
+    "$K6_IMAGE" \
     run --quiet --summary-export=/out/biz-$KIND-$name.json /scripts/scenarios.js
 }
 k6r bizPrepare -e SCENARIO=bizPrepare -e DSL_FILE=/data/dsl.yaml
@@ -1264,7 +1299,8 @@ unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQ
 - **データ**: 種の台本（`make-biz-seed.sh`）が、`biz_ref`（参照先、100 行）と `biz_new`（自動の採番の主キー `id`・一意の制約のある `u_code`・`biz_ref` を指す外部キー `ref_id`・文字の `n_001`〜`n_097` の 100 カラム、行は入れない）を作り、書き込みのアカウント `mastersmith_writer`（対象DB の初期化の台本 `03-writer-account.sh` が作る）に `bizperf` の行の操作（PG は sequence の USAGE も）を与える。DSL（`make-biz-dsl.mjs`）にも同じ形の2つの表を書く。値はすべて架空。
 - **setup の前提**（前の場面の状態に頼らない）: どの書き込みの場面も、setup で書き込みのロール `perf-biz-writer`（スキーマ `bizperf` を READ、`biz_new`・`biz_ref` を FULL と CREATE・DELETE）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、`biz_new` の定義で書き込みが使える（`writeConfigured` と CREATE・UPDATE・DELETE）ことを確かめる。DSL の適用は `bizPrepare` が行う（先に流す）。`bizUpdate` は VU ごとに1行、`bizDelete` は `ITERATIONS` 件の行を、setup が API で作る。どれも使い捨ての環境の監査に残る。
 - **アプリの書き込みの設定**: 上の 1B のとおり、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer` と `MASTERSMITH_TARGET_DB_WRITE_PASSWORD`（対象DB の一時の環境ファイルの `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` と同じ値）を入れる。値は表示しない。
-- **流す順**（`cicd-pipeline.md` 5節）: 上の「業務データの場面」の 4B の台本の後（読み取りの場面の後）に、`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit` を流す。待ちの最大のような揺れる値があるため、合否の回は複数回流す。`bizCreateLarge` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す（作り直す前にログを `$D` に残す）。MySQL の回のメモリの上限は 2304m（業務データの試験の値。上の表）のまま。
+- **流す順**（`cicd-pipeline.md` 5節）: 上の「業務データの場面」の 4B の台本の後（読み取りの場面の後）に、`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit` を流す。待ちの最大のような揺れる値があるため、合否の回は複数回流す。`bizCreateLarge` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す（作り直す前にログを `$D` に残す）。MySQL の回のメモリの上限は 2688m（業務データの試験の値。上の「業務データの場面」の表）。
+- **流す順の見直しの案**（Intent 261025-deps-perf-carryover の FR4.6）: 前の Intent では、書き込みの場面の後に読み取りの場面を流したため、MySQL の `bizSearchFirst`・`bizSearchLast` が、書き込みで `biz_new` が約 524 MB に増えて表が MySQL のバッファープールを超えた状態で測られ、1回目だけ満たさなかった（作り直した3回目で満たした）。書き込みの後の読み取りは悪い側に寄る。次の順を提案する（Build and Test の計画で決める）。(1) 読み取りの場面を先に流す（上の 4B の台本）。(2) 書き込みの場面（`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`・`bizCreateLarge`）は、その後に流す。(3) 書き込みの場面の後に読み取りの値が要るときは、対象DB を作り直して（`perfu --profile "targetdb-$KIND" down -v` の後、2B から種を入れ直す）、読み取りを流し直す。この案は、読み取りの値を書き込みの影響から切り離す代わりに、対象DB の作り直しと種の入れ直し（数分）が1種類あたり1回増える。
 - **片付ける前に見るもの**（確かめの結果を見てから片付ける。NFR2.9）: 書き込みのプール（`pool="mastersmith-target-db-write"`。最初に借りるまで出ないため、書き込みを1回流した後に読む）の待ちの時間切れの累計と待ちの最大、アプリの `memory.peak`、対象DB のコンテナの OOMKilled と `memory.events` の `oom_kill`・`max`・`memory.stat` の `anon` の最大、WARN の件数、監査の行の数（`event_type LIKE 'BUSINESS_%'` の種類と結果ごと）、内部DB のファイルの大きさ。対象DB のメモリは「OOMKilled が false、かつ `oom_kill` が 0」で判断し、`anon` の最大が上限の 85% を超えたら依頼者に諮る（基盤の設計のレビューの R-04）。k6 のコンテナの使用量（`docker stats` の CPU・メモリ）も記録する（大きな本文の場面は k6 の側のメモリも使う）。
 - **本文の上限**: 作成・更新の本文の上限は 4 MiB（4,194,304 バイト）。k6 の `JSON.stringify` は日本語や 4 バイトの字を `\u` でエスケープせずに送るため、`bizCreateLarge` の本文は約 3.9 MB に収まる。字を `\uXXXX` でエスケープする作り方の送り手では、4 バイトの字が 12 バイトになり、同じ値でも 413 `PAYLOAD_TOO_LARGE` になる（NFR 設計のレビューの R-09）。
 

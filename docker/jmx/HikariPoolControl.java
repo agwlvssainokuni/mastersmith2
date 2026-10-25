@@ -39,8 +39,11 @@ import javax.management.remote.JMXServiceURL;
  *
  * 副コマンド:
  *   status   接続の本数と内部DB のファイルの大きさを出す
- *   compact  一時停止 → 接続の破棄 → 0 本を待つ → ファイルが落ち着くのを待つ → 再開。最後の接続が閉じたときに、接続先の
- *            DEFRAG_ALWAYS=TRUE に従って H2 が詰め直す。どこで失敗・中断しても、再開を必ず試みる
+ *   compact  補充が済むのを待つ → 一時停止 → 接続の破棄 → 0 本を待つ → ファイルが落ち着くのを待つ → 再開。最後の接続が
+ *            閉じたときに、接続先の DEFRAG_ALWAYS=TRUE に従って H2 が詰め直す。どこで失敗・中断しても、再開を必ず試みる
+ *            （補充の途中で一時停止すると、破棄の後に補充の途中の接続が1本だけ足され、0 本にならず取りこぼすため、
+ *            先に補充が済むのを待つ。済む条件はプールの上限に届くか、待機の接続が最小の空きの数に届くか。
+ *            前の Intent の結合テスト H2CompactionByPoolSuspensionIT の awaitFillSettled と同じ）
  *   resume   再開だけ行う（再開し忘れ・道具の途中の終わりからの戻し）
  *
  * 終わりの値: 0 成功、1 詰め直していない・終わりを確かめられない（再開は済み）、2 使い方・前提の誤り、3 再開に失敗した。
@@ -71,6 +74,7 @@ public final class HikariPoolControl {
             String command,
             String pool,
             Path dbFile,
+            long fillWaitMillis,
             long zeroWaitMillis,
             long settleWaitMillis,
             long totalLimitMillis,
@@ -83,6 +87,7 @@ public final class HikariPoolControl {
             String command = args[0];
             String pool = DEFAULT_POOL;
             Path dbFile = Path.of(DEFAULT_DB_FILE);
+            long fillWait = 10_000;
             long zeroWait = 10_000;
             long settleWait = 30_000;
             long totalLimit = 45_000;
@@ -96,6 +101,7 @@ public final class HikariPoolControl {
                 switch (name) {
                     case "--pool" -> pool = value;
                     case "--db-file" -> dbFile = Path.of(value);
+                    case "--fill-wait" -> fillWait = seconds(name, value);
                     case "--zero-wait" -> zeroWait = seconds(name, value);
                     case "--settle-wait" -> settleWait = seconds(name, value);
                     case "--total-limit" -> totalLimit = seconds(name, value);
@@ -109,7 +115,7 @@ public final class HikariPoolControl {
             if (totalLimit < zeroWait) {
                 throw new IllegalArgumentException("--total-limit は --zero-wait 以上にしてください");
             }
-            return new Options(command, pool, dbFile, zeroWait, settleWait, totalLimit, stable);
+            return new Options(command, pool, dbFile, fillWait, zeroWait, settleWait, totalLimit, stable);
         }
 
         private static long seconds(String name, String value) {
@@ -154,7 +160,15 @@ public final class HikariPoolControl {
             log("アプリの JVM に接続できません（" + e.getClass().getSimpleName() + "）。対象のコンテナが動いているかを確かめてください");
             return EXIT_USAGE;
         }
-        Pool pool = new Pool(connection, poolName, options.dbFile());
+        ObjectName configName;
+        try {
+            configName = new ObjectName("com.zaxxer.hikari:type=PoolConfig (" + options.pool() + ")");
+        } catch (Exception e) {
+            log("プールの設定の MBean の名前を作れません（" + e.getClass().getSimpleName() + "）");
+            close(connector);
+            return EXIT_USAGE;
+        }
+        Pool pool = new Pool(connection, poolName, configName, options.dbFile());
         try {
             return switch (options.command()) {
                 case "status" -> {
@@ -187,6 +201,21 @@ public final class HikariPoolControl {
     private static int compact(Pool pool, Options options) {
         long before = pool.fileSize();
         log("始める前: " + pool.describe());
+        // 補充の途中で一時停止しない（一時停止していないので、待ちが済まなくても再開は要らない）。
+        try {
+            if (!awaitFillSettled(pool, options)) {
+                log(String.format(
+                        Locale.ROOT,
+                        "プールの補充が %d ms の内に済みませんでした（%s）。詰め直さずに終わります",
+                        options.fillWaitMillis(),
+                        pool.describe()));
+                return EXIT_NOT_COMPACTED;
+            }
+        } catch (Exception e) {
+            log("補充の待ちの途中で失敗しました（" + e.getClass().getSimpleName() + "）。詰め直さずに終わります");
+            return EXIT_NOT_COMPACTED;
+        }
+        log("補充が済んでいます: " + pool.describe());
         AtomicBoolean suspended = new AtomicBoolean(false);
         // 中断（Ctrl-C・docker stop の合図）で終わるときも、一時停止のままにしない。
         Thread hook = new Thread(() -> {
@@ -230,6 +259,25 @@ public final class HikariPoolControl {
             log("大きさが減っていません。接続先（MASTERSMITH_DB_URL）に ;DEFRAG_ALWAYS=TRUE があるかを確かめてください");
         }
         return result;
+    }
+
+    /**
+     * 補充が済むのを待つ。済む条件は、全体の接続の数がプールの上限に届くか、待機の接続の数が最小の空きの数
+     * （上限を超えない）に届くこと。上限の時間を超えたら偽を返す。
+     */
+    private static boolean awaitFillSettled(Pool pool, Options options) throws Exception {
+        int maximum = pool.configIntAttribute("MaximumPoolSize");
+        int minimumIdle = Math.min(pool.configIntAttribute("MinimumIdle"), maximum);
+        long deadline = System.nanoTime() + options.fillWaitMillis() * 1_000_000;
+        while (true) {
+            if (pool.intAttribute("TotalConnections") >= maximum || pool.intAttribute("IdleConnections") >= minimumIdle) {
+                return true;
+            }
+            if (System.nanoTime() >= deadline) {
+                return false;
+            }
+            Thread.sleep(POLL_MILLIS);
+        }
     }
 
     /** 0 本を待ち、ファイルが落ち着くのを待つ。上限を超えたら打ち切る（再開は呼び出し元が行う）。 */
@@ -323,7 +371,7 @@ public final class HikariPoolControl {
     }
 
     /** プールの MBean とファイルの読み取り。 */
-    private record Pool(MBeanServerConnection connection, ObjectName name, Path dbFile) {
+    private record Pool(MBeanServerConnection connection, ObjectName name, ObjectName configName, Path dbFile) {
 
         void invoke(String operation) throws Exception {
             connection.invoke(name, operation, null, null);
@@ -331,6 +379,11 @@ public final class HikariPoolControl {
 
         int intAttribute(String attribute) throws Exception {
             return (Integer) connection.getAttribute(name, attribute);
+        }
+
+        /** プールの設定の MBean（HikariConfigMXBean）の整数の属性。 */
+        int configIntAttribute(String attribute) throws Exception {
+            return (Integer) connection.getAttribute(configName, attribute);
         }
 
         long fileSize() {

@@ -75,14 +75,16 @@ updates:
   #   - compose.yaml の otel/opentelemetry-collector・grafana/otel-lgtm（下の docker-compose の項が見る）
   #   - 対象DB（mysql・mariadb・postgres）と Mailpit（前の Intent から固定している。下の docker-compose の項が見る）
   # Dependabot が見ない固定先: docker/perf/compose.yaml、backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java、
-  # perf/README.md（grafana/k6・eclipse-temurin の jre と jdk・grafana/otel-lgtm）、README.md（eclipse-temurin の jre と jdk・Mailpit）、
+  # perf/versions.env（grafana/k6 の K6_IMAGE と eclipse-temurin の jre の PERF_JRE_IMAGE。perf/README.md・perf/h2-shell.sh・
+  # perf/dsl-mixed-memory.sh はここを読む。Intent 261025-deps-perf-carryover の FR3.6 で1か所にまとめた）、
+  # perf/README.md（eclipse-temurin の jdk・grafana/otel-lgtm）、README.md（eclipse-temurin の jre と jdk・Mailpit）、
   # docker/hikari-pool.sh（JDK_IMAGE の eclipse-temurin の jdk）。
   # eclipse-temurin の jdk は、Dependabot が見る固定先が無く知らせが来ないため、jre の知らせを受けたときに同じ版のタグ（-jdk-noble）で
   # 揃える（Intent 261015-deps-ui-carryover で 25.0.4.1_1 に揃えた）。
   # Intent 261025-deps-perf-carryover の B2 で、otel/opentelemetry-collector 0.163.2・axllent/mailpit v1.31.6・grafana/otel-lgtm 0.37.0 を
   # 複数アーキテクチャの index のダイジェストで固定し、上の固定先（docker/perf/compose.yaml の Mailpit、README.md の Mailpit、
   # perf/README.md の grafana/otel-lgtm）を同じ版とダイジェストに揃えた（grep で旧い版が残っていないことを確かめた）。
-  # grafana/k6 は perf/README.md だけに固定していて、Dependabot の知らせが来ない。上げる時期は、Intent で依存の更新を行うとき
+  # grafana/k6 は perf/versions.env だけに固定していて、Dependabot の知らせが来ない。上げる時期は、Intent で依存の更新を行うとき
   # （その時点で公開されている最新の版をタグの一覧で確かめ、index のダイジェストで固定する。Intent 261015-deps-ui-carryover の FR1.2c）。
   # 知らせを受けてイメージを上げるときは、上の固定先も同じ版とダイジェストに手で揃える（grep でタグを探し、残りが無いことを確かめる）。
   - package-ecosystem: docker

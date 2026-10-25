@@ -49,6 +49,7 @@
       }
     },
     "searchOperator": {
+      "description": "検索の比べ方。CONTAINS（部分一致）は LIKE '%…%' で、MySQL・MariaDB・PostgreSQL のどれでも通常の索引が効かず、1回の検索（件数とページの2つの問い合わせ）で表の全部を2回読む。行が多い表の文字のカラムには、CONTAINS でなく EQUALS（完全一致）にするか、search.enabled を false にする。",
       "enum": ["EQUALS", "CONTAINS", "RANGE", "CHOICE", "IN"]
     },
     "schema": {
@@ -186,6 +187,7 @@
       }
     },
     "search": {
+      "description": "検索の項目の設定。operator が CONTAINS（部分一致）のカラムは、索引が効かず表の全部を読む（searchOperator の説明を参照）。行が多い表では enabled を false にするか、operator を EQUALS にする。",
       "type": "object",
       "required": ["enabled", "collapsed"],
       "additionalProperties": false,

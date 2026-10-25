@@ -197,3 +197,84 @@
 3. PreferencesPage は直す前に失敗するテストを作れなかった（見える差が出ないため）。PasswordChangePage だけが決定的に再現した。
 4. `playwright install chromium`（v1248）でブラウザを入れた。
 5. E2E の json に `jdbc:h2:file:/var/folders/…`（一時の内部DB の道）が起動の引数として残る（前からの形で、報告の部品の対象外）。対象DB の接続先ではない。
+
+## B4: 運用の道具・台本・手順書（Step 37〜50）
+
+作業ブランチ: `docs/261025-deps-perf-carryover-perf`（`develop` の B3 統合後から）。コミットはしていない（変更はワークツリーに残す）。使い捨ての環境（`docker/perf/compose.yaml`、プロジェクト名 `mastersmith-perf`、イメージは配備済みの `mastersmith:local` をそのまま使い、作り直していない）でだけ流し、配備したアプリ・配備した見本の対象DB・Mailpit・`.env` は止めず、変えず、開かなかった（流している間も `mastersmith-app-1` は healthy のまま）。一時の環境ファイルはホームの下（権限 700）に作り、終わりに環境（ボリュームを含む）と一時のディレクトリを消した。
+
+### Step 38 FR4.3 部分一致は索引が効かない
+- `README.md` の「業務データの読み取りの API」に、運用の注意（`LIKE '%…%'` は索引を使えず、1回の検索で件数とページの2つの問い合わせにより表の全部を2回読む。DSL では行が多い表の文字のカラムの `search.enabled` を `false` にするか `search.operator` を `EQUALS` にする）を足した。`perf/README.md` の「借りる待ち」の下にも原因として足した。
+- **計画との差**: 計画（Step 38）は「JSON Schema の `description` は Step 19 で足してある」としたが、Step 19 で足したのは `dbType`・`dbType.name` の説明だけで、検索の設定の説明は無かった。そのため `backend/src/main/resources/dsl/dsl-schema-v2.json` の `searchOperator` と `search` に `description` を足した（構造・版は変えない。JSON として読めることを確かめた。公開の複写の一致は `DslSchemaPublicationIT` が `verify` で確かめる）。B4 は文書と台本が中心だが、`src/main/resources` の1ファイルに触れている。
+
+### Step 39 FR3.4（C4）`compact` が補充の途中を避ける
+- `docker/jmx/HikariPoolControl.java`: `compact` の始め（一時停止の前）に `awaitFillSettled` を足した。プールの設定の MBean（`com.zaxxer.hikari:type=PoolConfig (<プール名>)`、`HikariConfigMXBean`）から `MaximumPoolSize` と `MinimumIdle` を読み、全体の接続の数が上限に届くか、待機の接続の数が最小の空きの数（上限を超えない）に届くまで待つ（前の Intent の結合テスト `H2CompactionByPoolSuspensionIT.awaitFillSettled` と同じ条件）。待ちの上限は新しい `--fill-wait`（既定 10 秒、1〜600）で、超えたら**一時停止せず**、詰め直さずに終わりの値 1（まだ止めていないため再開は要らない）。
+- `docker/hikari-pool.sh`: 使い方と `--fill-wait` の受け取りを足した。`README.md` の「内部DBのファイルの詰め直し」に「補充の途中を避ける」を足した。
+- `javac` で `HikariPoolControl.java` がコンパイルできることを確かめた。
+
+### Step 40 FR3.4 の確かめ（使い捨ての環境）
+- 試みの時間の上限は先に 30 分と決めた（実際は約 10 分で終えた）。使い捨てのアプリは `mastersmith:local`（上限 2g）、プールは既定の上限 30・最小の空きは未指定（= 30）。
+- 新しい道具: `status` は「使用中 0・待機 30・合計 30」。`compact` は「補充が済んでいます」のあと、接続の破棄から 7 ms で 0 本、約 3.2 秒でファイルが落ち着き、終わりの値 0（始めに要求を1つ送って補充を起こした直後に流した3回と、続けた1回の計4回とも同じ）。
+- **取りこぼしの再現は、できなかった**。前の道具の動き（補充の途中で一時停止 → 破棄 → 0 本を待つ）を、同じ JMX の呼び出しで、使い捨ての環境のアプリに直接かける確かめ用の小さな Java（リポジトリの外、`Race.java`）を作り、「接続を全部捨てる → 要求を1つ送って補充を起こす → 合計が閾値（2・3・10・20・28 本）に届いた直後に、一時停止 → 破棄 → 3 秒まで 0 本を待つ」を、前の手順で（最初の版 12 回 + 12 回 + 40 回 + 閾値 10・20・28 本の各 25 回）計 139 回繰り返した。**139 回とも 0 本になった（取りこぼし 0 回）**。新しい手順（補充が済むのを待ってから）も 25 回、取りこぼし 0 回。
+- 見立て（未検証）: 使い捨ての環境では接続の作成（組み込みの H2）が1本あたり数マイクロ秒〜ミリ秒と速く、「破棄の後に補充の途中の接続が1本だけ足される」窓がほとんど開かない。前の Intent のテストで起きた取りこぼしは、PC の負荷が高く接続の作成が遅いときの窓と見られる。試みの範囲: 補充を起こす方法は「接続を全部捨てて要求を送る」の1つだけで、PC に負荷をかけた状態は作っていない（上限 30 分の内で、負荷をかけた再現は行わなかった）。
+- 新しい道具の `--fill-wait` を超える経路（補充が済まない）は、実際には起こせず、確かめていない（`--fill-wait 0` は範囲外の値として使い方の誤り（終わりの値 2）になることだけ確かめた）。
+
+### Step 41 FR3.6（C6）固定の値を1か所に
+- 新しい `perf/versions.env`（`K6_IMAGE`・`PERF_JRE_IMAGE`。ヘッダー付き。`source` で読む）と `perf/h2-shell.sh`（H2 の jar の探し方と Shell の起動。`--read-only` で `:ro` と `ACCESS_MODE_DATA=r`。`H2_URL` で接続先を替えられる）を作った。`perf/README.md` の 14 か所の k6 のイメージは `"$K6_IMAGE"` に、7 か所の H2 の jar の取り方と Shell の起動は `./perf/h2-shell.sh …` に直した（手順 1 に `source perf/versions.env` を足した）。`perf/dsl-mixed-memory.sh` は `versions.env` を読み、設定の値の読み取りは `h2-shell.sh --read-only` に替えた（`bash -n` で構文を確かめた）。
+- `grep -rn 'grafana/k6:2.3.0@sha256' .`（`vendor`・`node_modules`・`build`・`aidlc` を除く）は `perf/versions.env` の1か所だけ。`h2-2.4.240.jar` の取り方は `perf/h2-shell.sh` の1か所だけ。`.github/dependabot.yml` のコメント（Dependabot が見ない固定先の一覧）を更新した。
+- `h2-shell.sh --read-only` を使い捨ての環境の内部DB で実際に動かした（`SELECT COUNT(*) FROM users` が出た）。JRE は Java のソースを直接実行できない（`jdk.compiler` が無い）ため、Step 43 の数える道具は JDK のイメージ（`docker/hikari-pool.sh` と同じ固定先）で動かす。
+- **計画との差**: 計画は JDK のイメージも `versions.env` に集めるとしたが、`perf/h2-shell.sh` が使うのは JRE のイメージで、JDK のイメージは `docker/hikari-pool.sh`・`perf/README.md` の NMT の手順・README にあり、perf の手順の外（hikari-pool.sh は独立した運用の道具）のため、`versions.env` には `K6_IMAGE` と `PERF_JRE_IMAGE` だけを置いた。JDK のイメージの固定先は変えていない。
+
+### Step 42 FR3.8（G2）監視の確かめ用の台本 `monitorLight`
+- `perf/k6/scenarios.js` に `monitorLight` を足した: 1 VU・繰り返しごとに `sleep(1 + Math.random())`（1〜2 秒）、`GET /actuator/health`・`GET /api/appearance`・`GET /api/admin/check`（setup で管理者のトークンを取る）を順に1つずつ。`MONITOR_BIZ=1` のときは業務データの定義と一覧（試験用の利用者 `perf-biz-01`、先に `bizPrepare`）も回す。長さは `MONITOR_DURATION`（既定 5m）。閾値は `checks` の率 1 だけ。
+- `k6 inspect --include-system-env-vars` で場面（`monitorLight`、1 VU・5m）と閾値が読めた。使い捨ての環境で 20 秒流し、最初は `adminCheck` が 204 でなく 200 を期待していて 5 件落ちた（台本の誤り）。204 に直して流し直し、**checks 13 件・失敗 0**、要求は毎秒 約 0.65 件。
+- `README.md` の「手元の監視（Grafana）」と `perf/README.md`（新しい節「手元の監視の式の値を確かめる場面」）に流し方を書いた。lgtm が止まらないことと式の値の確かめは、Build and Test の持ち主（この段では lgtm を起動していない。VM のメモリの余裕のため）。
+
+### Step 43 FR3.9（G4）複写を数える道具
+- `README.md` の「内部DBのバックアップと戻し方」の後に「内部DBの複写を数える（読み取りだけ・個人に関する値を出さない）」を足し、リポジトリの外に置く小さな Java（`CountRows.java`）を載せた。表と列の名前は `INFORMATION_SCHEMA.COLUMNS` で先に確かめ、無ければ `列なし`・`表なし` と書くだけ（誤りの文は出さない）。開けない・読めないときは例外のクラスの名前と SQLState だけ。`group` は `event_type`・`result`・`failure_reason` に限る。値はバインド変数、名前は INFORMATION_SCHEMA で見つけた名前を引用して使う。
+- README に載せた文面そのものをファイルに取り出して、使い捨ての環境の内部DB の複写（`tar` で取った複写をホームの下の新しいディレクトリへ）で確かめた: `count users` → `users 1`、`group audit_events event_type` → `INITIAL_ADMIN_CREATED 1`、`count audit_events event_type LOGIN_SUCCESS` → `audit_events.event_type 0`、**存在しない列 `count users no_such_column x` → `users.no_such_column 列なし`**（誤りの文なし）、存在しない表 → `no_table 表なし`、`group users email` → `users.email 表示しない列`、`users;DROP` → `表なし`、複写が空のディレクトリ → `開けない・読めない（JdbcSQLNonTransientException 90028）`。**個人に関する値は表示していない**（複写の中身は件数だけ）。
+- 確かめの途中で2点を README に反映した: (1) JRE のイメージでは Java のソースを直接実行できない → JDK のイメージを使う。(2) 複写の展開で `chown` が macOS のホームの下の bind マウントで失敗する → `chown` を外し、複写を `:ro` で付けて root のまま読む。複写・道具・一時のディレクトリは確かめの後に消した。
+
+### Step 44 FR3.10（G9）リリースの前の確かめ（実測）
+- `README.md` に「リリースの前の確かめ」の節（`osvScan --rerun` と `dist`・WAR に axe-core が入らない確かめのコマンドと期待の出力）を足した。
+- 実際に流した結果（2026-10-26 05:52 JST、このブランチの作業の途中の状態）: `./gradlew osvScan --rerun` は **失敗の条件に当たるもの 0 件、警告 12 件**、BUILD SUCCESSFUL（6 秒）。`grep -rIl 'axe-core\|axe\.min' frontend/dist` は**何も出さない**（終わりの値 1）。`unzip -l backend/build/libs/mastersmith.war | grep -i axe` も何も出さない。`frontend/dist` と WAR は B3 の `verify`（01:29・01:54）のもの。取り込みの前の実測は Build and Test でもう一度行う。
+- 警告 12 件は開発用の npm の依存関係（`fast-uri`・`@vitest/mocker`・`zod` ほか）の公表。**`zod@4.6.5`（frontend）と `zod@4.4.3`（vendor/make-you-chic-ui）に CVSS 8.2 の公表（GHSA-mrhx-c7xc-m3w5）があるが、開発用の依存関係で、成果物を作る道具の一覧（`config/npm-build-tools.txt`）にも無いため、決まりどおり警告のまま**（実行時の依存関係なら止まる）。
+
+### Step 45 FR3.11 `checks` の `grep`
+- 使い捨ての環境で k6 の `health` を 10 秒流し、`--summary-export` の報告（145 行の複数行の JSON）に対して、直す前の `grep -h -o '"checks": {[^}]*}'` が**何も出さない**（終わりの値 1）ことを先に確かめた。k6 2.3.0 の報告の構造は `.metrics.checks` が `{fails, passes, value}`、`.root_group.checks` が check の名前ごとの `{passes, fails}`。
+- `perf/README.md`（ロールの管理の節の `role-three.sh` の後）を `jq -c '.metrics.checks // .root_group.checks'` に直し、同じ報告で `{"fails":43189,"passes":54501,"value":0.5578…}` が出ることを確かめた。
+- **気づき（計画の範囲外。直していない）**: この試し走りの `health` は 10 VU・待ち無しで毎秒 約 9,800 件になり、約 44% が非 2xx だった（`http_req_failed`）。直前に `compact` を流した後で、プールが 0 本からの補充の最中だったこと、上限なしの負荷で内部DB の接続待ちが出たことが見立てだが、確かめていない。FR3.11 の確かめ（報告から `checks` の値を読めること）には関係しない。
+- **気づき（計画の範囲外。直していない）**: `perf/README.md` の `grep -h -o '"groupPoolLimit_[0-9a-z]*": {[^}]*}'`（619・686・715・826 行ほか）も、同じ複数行の報告に対しては何も出さない見込み（`--summary-export` の同じ形）。FR3.11 は `checks` の1行だけが対象のため、ここは直していない。前の Intent で出ていた値は、別の形（単一行）の報告だった可能性がある。確かめていない。
+
+### Step 46 FR3.3 の台本側
+- `perf/k6/scenarios.js` から `tableAccessVisible`・`tableAccessDenied`・`tableAccess`・`navTable`・`NAV_TABLE_HALF`・403 を期待の状態コードとする宣言・`NAV_SCENARIOS` の該当・export の該当を消した。`perf/README.md` の業務のメニューの場面の表・流す順・`k6r` の繰り返しから外し、外した旨を書いた。`k6 inspect` で `navMenu`・`monitorLight`・`dslRoleOverlap` が読め、`tableAccessVisible` は場面を持たない名前になった（実行すれば「知らない SCENARIO です」）。前の Intent の試し走りの結果の文（B7 の記録）は日付つきの過去の記録として残した。
+
+### Step 47 FR4.6（B5・G1）
+- `perf/README.md` の 2B: `mysql`・`mariadb` の道具に `--default-character-set=utf8mb4` を足した。種を入れた後の確かめ 2B'（目印の語の当たり・最長の文字数・行の数を、行の値を出さずに数えてから表の大きさを測る）を足した（PostgreSQL の例の SQL。**実際には流していない**。種の投入に数分かかるため）。
+- 試験の値の表を、前の Intent の Performance Validation の記録（`load-test-plan.md`）の実際の値に直した: MySQL プール **1280M**・上限 **2688m**（表 1,017,806,848 B、75.8%）、MariaDB プール **896M**・上限 **1408m**（747,274,240 B、79.5%）、PostgreSQL 256MB・768m（212,566,016 B、79.2%）。古い値（MySQL 768M／2304m、MariaDB 512M／1g）は使わないと書いた。
+- **計画との差**: 計画は「MariaDB・PostgreSQL は `docker/perf/compose.yaml` の既定」と書いたが、compose の既定（MariaDB 512m・PostgreSQL 512m）は表の大きさに足りず、前の Intent が実際に使った値は MariaDB 896M／1408m・PostgreSQL 256MB／768m だった。実際に使った値を採った。
+- 流す順の見直しの案（読み取りを先に、書き込みはその後、書き込みの後に読み取りが要るときは対象DB を作り直す）を、書き込みの場面の「流す順」の下に書いた。
+
+### Step 48 FR4.8 P5 `dslRoleOverlap`
+- `perf/k6/scenarios.js` に足した。2 つの VU を並べて `DURATION` 流す: `dslHeavy`（既存の `dslMixed` の重い側。10MB の DSL の投入とプレビューの表示）と `roleChecks`（新しい `roleCheckLoop`。上限ちょうどの権限の YAML（`ROLE_YAML_FILE`）の確かめ。適用はしない。トークンは VU の中で 4 分ごとに取り直す）。判定は `checks` の率 1 と `iteration_duration{scenario:roleChecks}` の最大 15 秒未満（`roleTransferLargeCheck` と同じ線）。k6 の setup は前の場面の状態に頼らない。
+- `k6 inspect --include-system-env-vars` で、場面（`dslHeavy`・`roleChecks`）と閾値が読めた（`DSL_FILE`・`ROLE_YAML_FILE` には確かめ用の仮のファイルを渡した）。**実際には流していない**（準備に 10MB の DSL と上限ちょうどの YAML が要り、流すのは Build and Test）。`perf/README.md` に新しい節を足した。
+
+### Step 49 Build and Test の手順
+- `unit-test-instructions.md` に「7.1 Build and Test の手順」を足した（FR4.9・FR4.2・FR4.5・FR4.7・P5〜P7・FR3.8・FR3.10・時間の計測）。**P6 は計画と食い違うため「要確認」と書いた**（下の「依頼者に確かめたい点」）。
+
+### 補足の直し（計画の範囲外）
+- `README.md` の対象DB の結合テストの節の版（MySQL 26.7・MariaDB 13.0・PostgreSQL 18）を、いまの固定（MySQL 26.10.0・MariaDB 13.0.2・PostgreSQL 18.6。正は `TargetDbImages.java`・`compose.yaml`）に直した。ほかに古い版の記述が README・`perf/README.md`・`.env.example`・`compose.yaml`・`docker/` に無いかを `grep`（`26.7`・`v1.31.5`・`0.162.0`・`0.36.0`）で確かめ、残りは無かった。`TargetDbImages.java` の Javadoc「26.7 の系列」だけが古かったため「26.10 の系列」に直した（コメントだけ）。
+
+### Step 50 `verify`
+- `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を README のとおり渡し、`PATH` に `$HOME/.volta/bin`）。開始 06:01:25 JST、**BUILD SUCCESSFUL、22分38秒**（CI の上限 `timeout-minutes: 60` の 7 割 = 42 分の約 54%）。
+- 単体テスト 2,612 件（失敗 0・SKIPPED 0）、結合テスト 1,375 件（失敗 0・SKIPPED 10。他の DB 種別向けの `assumeTrue` だけで、対象DB のテストは実行された。B3 と同数）、画面のテスト 226 ファイル・1,977 件が通過。B3 と件数が同じ（このブランチは `src/main` のコードを変えていない）。`dsl-schema-v2.json` の説明の追加は `DslSchemaPublicationIT`・`DslSchemaValidatorTest` を含めて通過。フロントエンドのカバレッジは行 95.06%・分岐 89.77%（B3 と同じ）。ライセンスヘッダー・SpotBugs・Gitleaks・`osvScan`・`verifyCoverage` を含めて通過。
+- 眠り: 流している間（06:01〜06:24）の `Sleep`・`DarkWake` は無し（最後の `DarkWake` は 05:52 JST で開始より前）。
+- `HikariPoolControl.java` の変更は `src/main`・`src/test` の外（`docker/jmx/`）で、`verify` のどのテストも読まない。既存のテストへの影響は無い（`javac` でのコンパイルと、使い捨ての環境での動作の確かめが確認のすべて）。
+
+### コミットの区切りの案（積んでいない。承認を得てから）
+いずれの区切りでも、アプリのコンパイルに影響しない（文書・台本・運用の道具・JSON Schema の説明・Javadoc だけ）。`README.md`・`perf/README.md` は複数の区切りにまたがるため、`git add -p` で分ける。
+1. `docker/hikari-pool.sh`・`docker/jmx/HikariPoolControl.java`・`README.md` の「内部DBのファイルの詰め直し」（FR3.4。補充の途中を避ける）
+2. `perf/versions.env`・`perf/h2-shell.sh`・`perf/dsl-mixed-memory.sh`・`perf/README.md` の k6 のイメージと H2 の Shell の呼び出し・`.github/dependabot.yml` のコメント（FR3.6）
+3. `perf/k6/scenarios.js`（`monitorLight`・`dslRoleOverlap`・`tableAccess*` の削除）・`perf/README.md` の該当の節と流す順・2B の直し（FR3.8・FR4.8 P5・FR3.3 の台本側・FR4.6・FR3.11）
+4. `README.md` の「内部DBの複写を数える」「リリースの前の確かめ」「手元の監視」の注意・対象DB の版の記述（FR3.9・FR3.10・FR3.8）、`README.md` と `dsl-schema-v2.json` の部分一致の注意（FR4.3）、`TargetDbImages.java` の Javadoc
+5. `aidlc/` の記録（この `generation-notes.md`・`code-generation-plan.md` のチェック・`unit-test-instructions.md`・監査ログ）— 記録だけのコミットとして別に積む
+- 統合は squash で `develop` へ（B4 はサブモジュールの固定先の更新を含まない）。

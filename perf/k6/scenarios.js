@@ -23,6 +23,15 @@
 //   adminCheck    管理者の確認用 API（U3-NFR1.1 成功、U2-NFR1.4 の上限）
 //   forbidden     管理者でない利用者の確認用 API の 403（U3-NFR1.1 403、U3-NFR1.3、U4-NFR1.2）
 //   appearance    見た目の設定の API（トークンなしの GET /api/appearance。U8 の NFR6.1）
+// 監視の確かめの場面（Intent 261025-deps-perf-carryover の FR3.8）。負荷の試験の場面ではなく、手元の監視（lgtm）の式の値を確かめるための
+// 少ない要求。負荷の試験の場面（待ちが無い）を流すと lgtm の受け手が止まったため、待ちを入れて要求を絞る。
+//   monitorLight  1 VU・繰り返しごとに 1〜2 秒の待ち（MONITOR_DURATION、既定 5m）。ヘルスチェック・見た目の設定・管理者の確認用 API を
+//                 順に回す。MONITOR_BIZ=1 のときは、試験用の利用者 perf-biz-01 の業務データの定義と一覧（bizPrepare の後）も回す。
+//                 判定は checks の率 1 だけ（応答時間は監視の式で見る。閾値は置かない）
+// 重なりの場面（Intent 261025-deps-perf-carryover の FR4.8 P5。dsl-v2 の NFR 設計 R-07 の任意の重なり）。
+//   dslRoleOverlap  10MB の DSL の投入とプレビューの表示（1人、dslMixed の重い側と同じ）に、上限ちょうどの権限の YAML の確かめ
+//                   （roleTransferLargeCheck と同じ YAML、1人）を重ねる。DSL_FILE（10MB の DSL）と ROLE_YAML_FILE（上限ちょうどの YAML）を
+//                   渡す。DURATION（既定 60s）の間くり返し、checks の率 1 と、YAML の確かめの繰り返しの時間の最大 15 秒未満で判定する
 // DSL の場面（Intent 260923-dsl-schema-loader の Performance Validation 用。手順は perf/README.md の「DSL の時間を測る」）。
 // 管理者のトークンは5分で切れるため、VU ごとに4分でログインし直す。DSL の本文は DSL_FILE（k6 のコンテナの中のパス）から読む。
 // Intent 261004-role-menu の Performance Validation（Q3: A）で、dslLight・dslCycle を「1回の繰り返しに要求1つ」にし、
@@ -142,9 +151,8 @@
 //                       投入して適用し、グループ NAV_GROUP_COUNT 個を作って試験用の利用者を全員メンバーにし、どのグループにもロール
 //                       NAV_WORST_NAME（rolePrepare が入れる）を割り当て、各利用者の作業ロールを NAV_WORST_NAME に保存する
 //   navMenu             業務のメニュー（GET /api/me/navigation、200）。10 VU・3 分
-//   tableAccessVisible  読めるテーブル（番号が奇数の t_001・t_003…を順に回す）の置き場の問い合わせ（200）。10 VU・3 分
-//   tableAccessDenied   NONE のテーブル（番号が偶数）の置き場の問い合わせ（403。期待の状態コードを 403 と宣言する）。10 VU・3 分。
-//                       表示名のための DSL の読み取りをしないため、p95 は tableAccessVisible と別に残す（NFR 設計の読み直しの R-08）
+//                       （置き場の問い合わせ GET /api/me/table-access の場面 tableAccessVisible・tableAccessDenied は、その道を
+//                       消した Intent 261025-deps-perf-carryover の FR3.3 で外した）
 //   navMenuBaseline     目安の DSL（DSL_FILE。perf/make-nav-dsl.mjs --baseline、menus 100 項目・深さ 1）を setup で適用し直した後の
 //                       業務のメニュー（200）。10 VU・3 分。DSL を入れ替えるため、流す順の最後に置く（perf/README.md）
 // 業務データの場面（Intent 261016-business-data-views の U1 u1-businessdata-read、Bolt B2。手順は perf/README.md の「業務データの場面」）。ID は
@@ -195,7 +203,7 @@ const PERF_USER_COUNT = Number(__ENV.PERF_USER_COUNT || 11)
 const REFRESH_COOKIE = 'mastersmith_refresh'
 const JSON_HEADERS = { 'Content-Type': 'application/json', Origin: BASE }
 const DSL_API = `${BASE}/api/admin/dsl`
-const DSL_SCENARIOS = ['dslPrepare', 'dslLight', 'dslCycle', 'dslMixed']
+const DSL_SCENARIOS = ['dslPrepare', 'dslLight', 'dslCycle', 'dslMixed', 'dslRoleOverlap']
 // dslLight・dslCycle の操作の名前（op のタグ。繰り返しの番号で順に回す）
 const DSL_OPS = {
   dslLight: ['status', 'history'],
@@ -371,23 +379,21 @@ const ROLE_PREPARE_TOTAL = Number(__ENV.ROLE_PREPARE_TOTAL || 1000)
 // 準備の DSL（rolePrepare）と上限ちょうどの YAML（roleTransferLarge*）は初期化の段でだけ読める（k6 の open）
 const ROLE_DSL_BODY = SCENARIO === 'rolePrepare' && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
 const ROLE_YAML_BODY =
-  SCENARIO.startsWith('roleTransferLarge') && __ENV.ROLE_YAML_FILE ? open(__ENV.ROLE_YAML_FILE, 'b') : null
+  (SCENARIO.startsWith('roleTransferLarge') || SCENARIO === 'dslRoleOverlap') && __ENV.ROLE_YAML_FILE
+    ? open(__ENV.ROLE_YAML_FILE, 'b')
+    : null
 // 接続プールの上限の場面で数える状態コードの件数。閾値は置かず、要約に件数だけを出す。
 // 業務のメニューの場面（Intent 261004-role-menu の U5、B7）
-const NAV_SCENARIOS = ['navMenu', 'tableAccessVisible', 'tableAccessDenied', 'navMenuBaseline']
+const NAV_SCENARIOS = ['navMenu', 'navMenuBaseline']
 // 準備の YAML（rolePrepare）が入れる業務のメニューの悪い側のロールの名前（1万カラムに READ と FULL を交互に明示し、テーブルの番号が
 // 偶数なら NONE・奇数なら READ を明示する。計画の 13節 Q5: A）
 const NAV_WORST_NAME = __ENV.NAV_WORST_NAME || 'perf-nav-worst'
 // 試験用の利用者の数（perf-nav-01〜）とグループの数（navPrepare が作る）
 const NAV_USER_COUNT = Number(__ENV.NAV_USER_COUNT || 10)
 const NAV_GROUP_COUNT = Number(__ENV.NAV_GROUP_COUNT || 100)
-// 置き場の問い合わせで回すテーブルの数（番号 1〜ROLE_TREE_TABLES のうち、奇数は読める・偶数は NONE）
-const NAV_TABLE_HALF = Math.floor(ROLE_TREE_TABLES / 2)
 // 悪い側・目安の DSL（navPrepare・navMenuBaseline）は初期化の段でだけ読める（k6 の open）
 const NAV_DSL_BODY =
   (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') && __ENV.DSL_FILE ? open(__ENV.DSL_FILE, 'b') : null
-// 置き場の NONE の場面は 403 を期待の状態コードとして宣言する（http_req_failed に数えない。performance-design.md 3節の R-03）
-if (SCENARIO === 'tableAccessDenied') http.setResponseCallback(http.expectedStatuses(403))
 const ROLE_POOL_COUNTS = {
   204: new Counter('rolePoolLimit_204'),
   409: new Counter('rolePoolLimit_409'),
@@ -439,7 +445,20 @@ const BIZ_LARGE_VALUE = SCENARIO === 'bizCreateLarge' ? '\u{2000B}'.repeat(BIZ_L
 // 違反の道の場面は 409 を期待の状態コードとして宣言する（http_req_failed に数えない）
 if (SCENARIO === 'bizWritePoolLimit') http.setResponseCallback(http.expectedStatuses(409))
 
+// 監視の確かめの場面（monitorLight）。1 VU で、繰り返しごとに 1〜2 秒待つ
+const MONITOR_DURATION = __ENV.MONITOR_DURATION || '5m'
+const MONITOR_BIZ = __ENV.MONITOR_BIZ === '1'
+
 function scenariosFor(name) {
+  if (name === 'monitorLight') {
+    return { [name]: { executor: 'constant-vus', vus: 1, duration: MONITOR_DURATION } }
+  }
+  if (name === 'dslRoleOverlap') {
+    return {
+      dslHeavy: { executor: 'constant-vus', vus: 1, duration: DURATION, exec: 'dslHeavy' },
+      roleChecks: { executor: 'constant-vus', vus: 1, duration: DURATION, exec: 'roleCheckLoop' },
+    }
+  }
   if (name === 'dslPrepare') {
     return { [name]: { executor: 'per-vu-iterations', vus: 1, iterations: 1, maxDuration: '20m' } }
   }
@@ -532,6 +551,17 @@ function thresholdsFor(name) {
   }
   if (name === 'dslMixed') {
     return { 'checks{scenario:logins}': ['rate==1'], 'checks{scenario:dslHeavy}': ['rate==1'] }
+  }
+  // FR3.8: 監視の式の確かめ用。応答時間は閾値にしない（監視の式で見る）。
+  if (name === 'monitorLight') return { 'checks{scenario:monitorLight}': ['rate==1'] }
+  // FR4.8 P5: 重い側（DSL）と権限の YAML の確かめの重なり。YAML の確かめは roleTransferLargeCheck と同じ 15 秒未満（最大）で判定する。
+  if (name === 'dslRoleOverlap') {
+    return {
+      'checks{scenario:dslHeavy}': ['rate==1'],
+      'checks{scenario:roleChecks}': ['rate==1'],
+      'iteration_duration{scenario:roleChecks}': ['max<15000'],
+      'iteration_duration{scenario:dslHeavy}': ['max>=0'],
+    }
   }
   // Intent 261004-role-menu の U4（NFR2.2・NFR2.5・NFR2.10）。操作が2つ以上の場面は op ごとの iteration_duration で判定する。
   if (name === 'rolePoolLimit') return {}
@@ -671,6 +701,8 @@ export function setup() {
   if (SCENARIO === 'dslCycle' && VUS !== 1) fail(`dslCycle は VUS=1 で流してください（VUS=${VUS}）`)
   if (SCENARIO === 'dslLight') checkDslLightCondition(tokens.dslAdmin)
   if (SCENARIO === 'adminCheck') tokens.admin = tokenOf(login(ADMIN_EMAIL, ADMIN_PASSWORD))
+  if (SCENARIO === 'dslRoleOverlap' && !ROLE_YAML_BODY) fail('ROLE_YAML_FILE を指定してください（上限ちょうどの権限の YAML）')
+  if (SCENARIO === 'monitorLight') setupMonitor(tokens)
   if (SCENARIO === 'forbidden') tokens.user = tokenOf(login(userEmail(1), USER_PASSWORD))
   // U3 の場面の用意。招待の宛先を実行ごとに変えるための識別（409 を混ぜない）。
   if (SCENARIO === 'invite' || INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) {
@@ -1994,6 +2026,53 @@ function roleTransferLargeApply(data) {
   check(res, { 200: (r) => r.status === 200 })
 }
 
+// 監視の確かめの場面（FR3.8）の用意。管理者のトークンを取る（管理者の確認用 API）。MONITOR_BIZ=1 のときは試験用の利用者 perf-biz-01 の
+// トークンを取り、業務データの定義を読めること（bizPrepare が済んでいること）を確かめる。
+function setupMonitor(data) {
+  data.admin = tokenOf(login(ADMIN_EMAIL, ADMIN_PASSWORD))
+  if (!MONITOR_BIZ) return
+  data.bizToken = tokenOf(login(bizUserEmail(1), USER_PASSWORD))
+  const definition = bizDefinitionRequest(roleHeaders(data.bizToken), BIZ_ITEM_TABLE, 'monitorSetup')
+  if (definition.status !== 200) {
+    fail(`業務データの定義を読めませんでした: ${definition.status} ${codeOf(definition)}（先に bizPrepare を流してください）`)
+  }
+}
+
+// 1回の繰り返しに、軽い要求を順に1つ（繰り返しの番号で回す）。そのあと 1〜2 秒待つ。トークンは setup の1つを使うため、場面は
+// トークンの有効期限（5 分）より短くする（MONITOR_DURATION の既定は 5m のため、長くするときは setup の取り直しが要る）。
+function monitorLight(data) {
+  const ops = MONITOR_BIZ ? ['health', 'appearance', 'adminCheck', 'bizDefinition', 'bizSearchFirst'] : ['health', 'appearance', 'adminCheck']
+  const op = ops[exec.vu.iterationInScenario % ops.length]
+  if (op === 'health') {
+    check(http.get(`${BASE}/actuator/health`, { tags: { name: 'monitorHealth' } }), { 'health 200': (r) => r.status === 200 })
+  } else if (op === 'appearance') {
+    check(http.get(`${BASE}/api/appearance`, { tags: { name: 'monitorAppearance' } }), { 'appearance 200': (r) => r.status === 200 })
+  } else if (op === 'adminCheck') {
+    const res = http.get(`${BASE}/api/admin/check`, {
+      headers: { Authorization: `Bearer ${data.admin}` },
+      tags: { name: 'monitorAdminCheck' },
+    })
+    check(res, { 'adminCheck 204': (r) => r.status === 204 })
+  } else if (op === 'bizDefinition') {
+    const res = bizDefinitionRequest(roleHeaders(data.bizToken), BIZ_ITEM_TABLE, 'monitorBizDefinition')
+    check(res, { 'bizDefinition 200': (r) => r.status === 200 })
+  } else {
+    const res = bizSearchRequest(roleHeaders(data.bizToken), BIZ_ITEM_TABLE, {}, 'monitorBizSearch')
+    check(res, { 'bizSearch 200': (r) => r.status === 200 })
+  }
+  sleep(1 + Math.random())
+}
+
+// dslRoleOverlap の権限の YAML の確かめの側（1人）: 上限ちょうどの YAML の確かめを繰り返す。トークンは VU の中で 4 分ごとに取り直す。
+export function roleCheckLoop() {
+  const now = Date.now()
+  if (!vuState.overlapToken || now - vuState.overlapTokenAt > 240_000) {
+    vuState.overlapToken = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+    vuState.overlapTokenAt = now
+  }
+  check(transferCheck(vuState.overlapToken, ROLE_YAML_BODY, 'roleOverlapCheck'), { 'yaml check 200': (r) => r.status === 200 })
+}
+
 // 業務のメニューの場面（Intent 261004-role-menu の U5、B7）
 function navUserEmail(n) {
   return `perf-nav-${two(n)}@example.test`
@@ -2078,12 +2157,6 @@ function navHeaders(data) {
   return roleHeaders(data.navTokens[exec.vu.idInTest])
 }
 
-// 置き場の問い合わせで回すテーブルの名前（odd が true なら番号が奇数の読めるテーブル、false なら偶数の NONE のテーブル）
-function navTable(odd) {
-  const k = (exec.vu.idInTest * 7 + exec.vu.iterationInScenario) % NAV_TABLE_HALF
-  return `t_${String(odd ? 2 * k + 1 : 2 * k + 2).padStart(3, '0')}`
-}
-
 function navMenuRead(data, name) {
   const res = http.get(`${BASE}/api/me/navigation`, { headers: navHeaders(data), tags: { name } })
   check(res, { [`${name} 200`]: (r) => r.status === 200 && r.json('items').length > 0 })
@@ -2095,21 +2168,6 @@ function navMenu(data) {
 
 function navMenuBaseline(data) {
   navMenuRead(data, 'navMenuBaseline')
-}
-
-function tableAccess(data, name, odd) {
-  const query = `schema=${encodeURIComponent(ROLE_TREE_SCHEMA)}&table=${encodeURIComponent(navTable(odd))}`
-  return http.get(`${BASE}/api/me/table-access?${query}`, { headers: navHeaders(data), tags: { name } })
-}
-
-function tableAccessVisible(data) {
-  const res = tableAccess(data, 'tableAccessVisible', true)
-  check(res, { 'tableAccessVisible 200': (r) => r.status === 200 && r.json('main') === 'READ' })
-}
-
-function tableAccessDenied(data) {
-  const res = tableAccess(data, 'tableAccessDenied', false)
-  check(res, { 'tableAccessDenied 403': (r) => r.status === 403 && r.json('code') === 'ACCESS_DENIED' })
 }
 
 // 業務データの場面（Intent 261016-business-data-views の U1、B2）。どの場面も1回の繰り返しに要求1つで、要求の名前（name のタグ）は
@@ -2411,6 +2469,7 @@ function bizCreateLarge(data) {
 }
 
 const USER_SCENARIOS = {
+  monitorLight,
   preferencesGet,
   preferencesSave,
   preferencesInvalid,
@@ -2456,8 +2515,6 @@ const USER_SCENARIOS = {
   roleTransferLargeApply,
   navPrepare,
   navMenu,
-  tableAccessVisible,
-  tableAccessDenied,
   navMenuBaseline,
   bizPrepare,
   bizDefinition,

@@ -29,7 +29,7 @@ import org.testcontainers.utility.DockerImageName;
 public final class TargetDbImages {
 
     /**
-     * MySQL の版（26.7 の系列）。長く支援される版（8.4 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
+     * MySQL の版（26.10 の系列）。長く支援される版（8.4 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
      * 上げた（Intent 260928-quality-followup の FR5.2）。
      */
     public static final String MYSQL_VERSION = "26.10.0";

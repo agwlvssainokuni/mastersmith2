@@ -80,6 +80,28 @@ make-you-chic-ui の固定先は `ecb07e9` です。経緯: `edb1f94` → `735ef
 - 画面を作る道具（Vite など）を足したり入れ替えたりしたときは、`config/npm-build-tools.txt` も見直してください。
 - 手元の `./gradlew verify` では、lockfile が変わらないと OSV-Scanner（`osvScan`）が前回の結果のまま飛ばされます（UP-TO-DATE）。新しく公表された脆弱性を手元で確かめるときは、`./gradlew osvScan --rerun` で流し直してください。CI はまっさらな環境で動くため、毎回確かめます。
 
+## リリースの前の確かめ
+
+`develop` から `main` へ取り込む前（リリースの前）に、`./gradlew verify` と E2E のほかに、次の2つを手で確かめます（Intent 261025-deps-perf-carryover の FR3.10）。結果は、その回の Deployment Execution の記録に書きます。
+
+**1. 新しく公表された脆弱性（`osvScan --rerun`）**: ソースを変えなくても、取り込みの前に新しい公表で失敗することがあります（記録だけのコミットの CI で見つかった例がある）。`verify` の中の `osvScan` は lockfile が変わらないと飛ばされる（UP-TO-DATE）ため、流し直します。
+
+```bash
+./gradlew osvScan --rerun
+```
+
+期待の出力: 最後の行が `OSV-Scanner: 失敗の条件に当たるもの 0 件、警告 N 件`（N は開発用の依存関係の警告の件数。数は公表によって変わる）で、`BUILD SUCCESSFUL`。「失敗の条件に当たるもの」が 1 件以上なら取り込まない（原因の依存と版を記録し、依頼者に諮る）。
+
+**2. 画面の成果物に axe-core が入っていないこと**: axe-core（アクセシビリティの検査の道具）は開発用の依存関係で、画面のビルド結果（`frontend/dist`）と WAR に入れません。画面を作り直した後（`./gradlew verify` の後）に、次のコマンドが **何も出さない**（終わりの値が 1）ことを確かめます。
+
+```bash
+grep -rIl 'axe-core\|axe\.min' frontend/dist     # 期待の出力: なし（終わりの値 1）
+unzip -l backend/build/libs/mastersmith.war | grep -i axe   # 期待の出力: なし（終わりの値 1）
+```
+
+- 1行目が何かのファイル名を出したら、axe-core が画面の成果物に入っている。入れた依存（`dependencies` に axe-core や vitest-axe を足していないか）と、本体のソースが axe-core を読み込んでいないか（`frontend/src` のテストのファイル以外）を調べる。
+- 画面を作り直していない（`frontend/dist` が古い）ときは、`./gradlew verify`（または `:frontend:` の画面のビルド）の後に流す。
+
 ## ビルドした WAR での画面の確認（E2E）
 
 `./gradlew verify` と CI には入れていません。統合の前と、リリースの前に手で実行します。
@@ -399,9 +421,126 @@ docker compose start app         # 止めたコンテナをそのまま起動す
 
 コンテナの外で動かしている場合は、アプリを止めて `./data/`（`bootRun` なら `backend/data/`）を複写します。
 
+### 内部DBの複写を数える（読み取りだけ・個人に関する値を出さない）
+
+配備の前後の複写の中身（監査の種類ごとの件数・利用者の数など）を確かめるときは、複写を **読み取りだけで開き**、件数だけを出す小さな道具を使います（Intent 261025-deps-perf-carryover の FR3.9）。道具はリポジトリの外（ホームの下）に置き、コミットしません。複写は上の手順で取った `.tgz` を、ホームの下の新しいディレクトリ（権限 700）に展開したものです（macOS の一時ディレクトリは colima の VM から見えません）。
+
+- 表と列の名前は、先に `INFORMATION_SCHEMA.COLUMNS` で確かめます。無いときは **誤りの文を出さず**、`列なし` と書くだけです（H2 の誤りの文には、問い合わせた行の値（メールアドレスなど個人に関する値）が入りうるためです）。
+- 開けない・読めないときも、例外の文は表示しません（例外のクラスの名前と SQLState だけ）。
+- 値を並べる `group` は、個人に関する値を持たない列（`event_type`・`result`・`failure_reason`）だけに限ります。それ以外の列は `表示しない列` と出します。
+- 値はバインド変数で渡し、表と列の名前は `INFORMATION_SCHEMA` で見つけた名前を引用して使います（利用者の入力を SQL に組み込みません）。
+
+```bash
+mkdir -p ~/.mastersmith-tools && chmod 700 ~/.mastersmith-tools
+cat > ~/.mastersmith-tools/CountRows.java <<'EOS'
+import java.sql.*;
+import java.util.Set;
+
+/** 内部DB の複写を、読み取りだけで数える。使い方: count <表> [<列> <値>] / group <表> <列> */
+public class CountRows {
+    private static final Set<String> GROUPABLE = Set.of("EVENT_TYPE", "RESULT", "FAILURE_REASON");
+
+    public static void main(String[] args) {
+        try (Connection c = DriverManager.getConnection(
+                "jdbc:h2:file:/data/mastersmith;ACCESS_MODE_DATA=r", "sa", "")) {
+            run(c, args);
+        } catch (SQLException e) {
+            System.out.println("開けない・読めない（" + e.getClass().getSimpleName() + " " + e.getSQLState() + "）");
+        }
+    }
+
+    private static void run(Connection c, String[] a) throws SQLException {
+        if (a.length < 2 || !(a[0].equals("count") || a[0].equals("group"))) {
+            System.out.println("使い方: count <表> [<列> <値>] / group <表> <列>");
+            return;
+        }
+        String table = name(c, "TABLE_NAME", a[1], null);
+        if (table == null) {
+            System.out.println(a[1] + " 表なし");
+            return;
+        }
+        if (a[0].equals("count") && a.length == 2) {
+            System.out.println(a[1] + " " + one(c, "SELECT COUNT(*) FROM \"" + table + "\"", null));
+            return;
+        }
+        if (a.length < 3) {
+            System.out.println("使い方: count <表> [<列> <値>] / group <表> <列>");
+            return;
+        }
+        String column = name(c, "COLUMN_NAME", a[2], table);
+        if (column == null) {
+            System.out.println(a[1] + "." + a[2] + " 列なし");
+            return;
+        }
+        if (a[0].equals("count")) {
+            String value = a.length > 3 ? a[3] : "";
+            System.out.println(a[1] + "." + a[2] + " " + one(c,
+                    "SELECT COUNT(*) FROM \"" + table + "\" WHERE \"" + column + "\" = ?", value));
+            return;
+        }
+        if (!GROUPABLE.contains(column)) {
+            System.out.println(a[1] + "." + a[2] + " 表示しない列");
+            return;
+        }
+        try (PreparedStatement s = c.prepareStatement("SELECT \"" + column + "\", COUNT(*) FROM \"" + table
+                + "\" GROUP BY \"" + column + "\" ORDER BY 1");
+                ResultSet r = s.executeQuery()) {
+            while (r.next()) {
+                System.out.println(r.getString(1) + " " + r.getLong(2));
+            }
+        }
+    }
+
+    /** 表または列の名前を INFORMATION_SCHEMA で探す（見つからなければ null）。 */
+    private static String name(Connection c, String field, String wanted, String table) throws SQLException {
+        String sql = "SELECT " + field + " FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = 'PUBLIC' AND UPPER("
+                + field + ") = UPPER(?)" + (table == null ? "" : " AND TABLE_NAME = ?") + " FETCH FIRST 1 ROWS ONLY";
+        try (PreparedStatement s = c.prepareStatement(sql)) {
+            s.setString(1, wanted);
+            if (table != null) {
+                s.setString(2, table);
+            }
+            try (ResultSet r = s.executeQuery()) {
+                return r.next() ? r.getString(1) : null;
+            }
+        }
+    }
+
+    private static long one(Connection c, String sql, String value) throws SQLException {
+        try (PreparedStatement s = c.prepareStatement(sql)) {
+            if (value != null) {
+                s.setString(1, value);
+            }
+            try (ResultSet r = s.executeQuery()) {
+                r.next();
+                return r.getLong(1);
+            }
+        }
+    }
+}
+EOS
+
+# 複写（.tgz）を、ホームの下の新しいディレクトリに展開する（読み取りだけで開くため、所有者は問わない。消すときは docker で消す）
+COPY=$(mktemp -d "$HOME/.mastersmith-copy-XXXXXX") && chmod 700 "$COPY"
+docker run --rm -v "$HOME/.mastersmith-backup":/backup:ro -v "$COPY":/out eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23634650173f1e2bbc176227af9728587ecf0f4b62d53e9355cd7a19ab \
+  tar xzf /backup/<バックアップのファイル> -C /out
+# 数える（H2 の jar は perf/h2-shell.sh と同じ Gradle のキャッシュのもの。コンテナの中の複写は /data、道具は /tool。
+# 道具は Java のソースを直接実行するため、JRE でなく JDK のイメージで動かす。複写は :ro で付ける）
+H2_JAR=$(ls ~/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar | head -n 1)
+count() { docker run --rm -v "$COPY":/data:ro -v "$H2_JAR":/h2.jar:ro -v "$HOME/.mastersmith-tools":/tool:ro \
+  eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc3f71aab462e7048a47a0d10edf57fbccde3fceea2281e610bf5880b4 java -cp /h2.jar /tool/CountRows.java "$@" 2>&1 | grep -v '^$'; }
+count count users                              # 利用者の数
+count group audit_events event_type            # 監査の種類ごとの件数
+count count audit_events event_type USER_SUSPENDED
+count count users no_such_column x             # 存在しない列でも、誤りの文は出ず「列なし」と出る
+```
+
+- 使い終わったら複写のディレクトリを消します（`rm -rf "$COPY"`）。
+- 配備の時刻以降の件数だけを数えたいときは、`count <表> <列> <値>` の列を日時でなく種類（`event_type`）にし、複写を配備の前後で2つ取って差を見ます。
+
 ### 内部DBのファイルの詰め直し（アプリを止めずに）
 
-DSL の投入と適用を重ねると、アプリが動いている間は内部DB（組み込みの H2）のファイルが伸び続けます（「DSL の管理の API」の節の既知の制約）。H2 は接続が1本でも開いている間は詰め直さないため、運用の道具 `docker/hikari-pool.sh` で、HikariCP の接続プールの標準の JMX の操作（一時停止 → 接続の破棄 → 0 本を待つ → 再開）を呼びます。最後の接続が閉じたときに、接続先の `;DEFRAG_ALWAYS=TRUE` に従って H2 がファイルを詰め直します。アプリのプロセスは止めません。
+DSL の投入と適用を重ねると、アプリが動いている間は内部DB（組み込みの H2）のファイルが伸び続けます（「DSL の管理の API」の節の既知の制約）。H2 は接続が1本でも開いている間は詰め直さないため、運用の道具 `docker/hikari-pool.sh` で、HikariCP の接続プールの標準の JMX の操作（補充が済むのを待つ → 一時停止 → 接続の破棄 → 0 本を待つ → 再開）を呼びます。最後の接続が閉じたときに、接続先の `;DEFRAG_ALWAYS=TRUE` に従って H2 がファイルを詰め直します。アプリのプロセスは止めません。
 
 詰め直しのスレッドは 1 本に固定しています（イメージの既定の JVM の引数 `-Dh2.compactThreads=1`。テストの JVM と E2E の WAR の起動も同じ）。H2 2.4.240 は閉じるときの全体の詰め直しを CPU の数 / 4 本のスレッドで並べて行いますが、2本以上では H2 の中の競合に当たり、詰め直しが中断されてファイルが縮まないことがあるためです（Intent 260925-user-management の U3 で、CPU 8 の PC の結合テスト `H2CompactionByPoolSuspensionIT` で見つけた）。CPU の数によらず同じ動きになり、今の配備（CPU 4）では元から 1 本のため速さは変わりません。`MASTERSMITH_JAVA_OPTIONS` で上書きしないでください。H2 を上げるときは、この指定が要るかを見直します。この引数より前の版のイメージに戻したときは、CPU 4 の配備では元から 1 本のため動きは変わりません。
 
@@ -414,6 +553,7 @@ DSL の投入と適用を重ねると、アプリが動いている間は内部D
 - **いつ行うか**: 目安として、ファイルが 300MB を超えたとき（`status` で見られます）に、利用の少ない時間に行います。自動では行いません。
 - **詰め直しの間の要求**: 一時停止の間、内部DB を使う要求（ログイン・トークンの更新・監査の記録・DSL の操作・健全性の確認）は、失敗せずに再開まで待たされます（接続を借りる待ちの上限 5 秒は効きません）。道具は一時停止から再開までを既定で 45 秒以内に抑えます。
 - **かかる時間の目安**: 借りている接続が無ければ、接続の破棄から詰め直しの終わりまで1秒未満〜数秒です（圧縮の効く 10MB の DSL を 21 件適用した状態で、229MiB → 15MiB が 1 秒未満。圧縮の効かない本文の約 210MB の詰め直しは、PC の上の試しで約 2 秒）。道具は詰め直しの終わりを「ファイルの大きさが 3 秒変わらない」ことで判断するため、一時停止は数秒〜十数秒になります（使い捨ての環境で 10MB の DSL を 21 回適用しプレビューを1件置いた状態から、270.4MiB → 15.2MiB、一時停止から再開まで 3.6 秒）。10MB の本文 21 件の悪い側の条件での時間は Build and Test で測ります。
+- **補充の途中を避ける**: プールが接続を補充している途中（起動の直後・接続を作り直した直後）に一時停止すると、破棄の後に補充の途中の接続が1本だけ足され、0 本にならずに取りこぼすことがあります（Intent 261025-deps-perf-carryover の FR3.4）。そのため道具は、一時停止の前に、補充が済むのを待ちます。済む条件は、全体の接続の数がプールの上限（`MaximumPoolSize`）に届くか、待機の接続の数が最小の空きの数（`MinimumIdle`、上限を超えない）に届くことです（結合テスト `H2CompactionByPoolSuspensionIT` の `awaitFillSettled` と同じ）。待ちの上限は 10 秒（`--fill-wait`）で、超えたら一時停止せず、詰め直さずに 1 で終わります（まだ何も止めていないため、再開は要りません）。
 - **時間の上限と打ち切り**: 重い DSL の操作やログインの最中で接続が借りられていると、返されるまで待ちます。10 秒（`--zero-wait`）の内に 0 本にならなければ、詰め直さずに再開し、「詰め直しを確かめられませんでした」と出して 1 で終わります（何も壊しません。時間を置いてやり直します）。0 本になった後、ファイルが落ち着くまでの待ちは 30 秒（`--settle-wait`）、一時停止から再開までの全体は 45 秒（`--total-limit`）が上限で、超えそうなら再開を優先します。
 - **健全性**: 一時停止が約 30 秒を超えると、`/actuator/health` が 503 を返し続け、コンテナが unhealthy になります（再開で戻ります）。その間、アプリのログに `TimeBoundedDbHealthIndicator` の WARN が出ます。
 - **同時に1つ**: `compact` は同じコンテナに対して同時に1つだけ動きます（この PC の上のロック）。途中で失敗・中断（Ctrl-C）しても、再開を必ず試みます。
@@ -620,6 +760,8 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 - 識別子（スキーマ名・テーブル名・カラム名・並べ替えの列）は適用中の DSL にある名前と照らしてから引用し、値はバインド変数で渡します。
 - 失敗は Problem Details の `code` で返します。DSL が適用されていない・テーブルが DSL に無い・行が無いときは 404（`BUSINESS_DSL_NOT_APPLIED`・`BUSINESS_TABLE_NOT_FOUND`・`BUSINESS_ROW_NOT_FOUND`）、権限が無いときは 403（`ACCESS_DENIED`）、主キーの無いテーブル・ビューなど行を1件に決められないテーブルの詳細は 409（`BUSINESS_ROW_OPERATION_NOT_ALLOWED`）、主キーで2行以上が当たったときは 409（`BUSINESS_ROW_NOT_UNIQUE`）、DSL と対象DB が合わないときは 409（`BUSINESS_TARGET_DB_MISMATCH`）、入力の誤りは 400（`VALIDATION_FAILED`）、対象DB に届かない・借りる待ち（3 秒。MySQL で接続の確かめが走るときは 6 秒）を超えた・時間切れのときは 503（`BUSINESS_TARGET_DB_UNAVAILABLE`・`BUSINESS_TARGET_DB_TIMEOUT`）です。行の値・接続先・ドライバーの例外の文言は、応答にもログにも出しません（ログは SQLState・業者のエラーの番号・例外のクラスの名前だけ）。
 
+- **部分一致の検索は索引が効かない（運用の注意。Intent 261025-deps-perf-carryover の FR4.3）**: 文字のカラムの部分一致は `LIKE '%…%'`（前にも後ろにも `%`）で、MySQL・MariaDB・PostgreSQL のどの DB でも通常の索引を使えず、表の全部を読みます。一覧は件数（`COUNT`）とページの2つの問い合わせで返すため、**1回の検索で表の全部を2回読みます**。行が多い表（数十万行以上）では、読み取りのプールの接続を長く借り（上限 10・借りる待ち 3 秒）、同時の検索が重なると 503（`BUSINESS_TARGET_DB_UNAVAILABLE`）や対象DB のメモリ（MySQL・MariaDB のバッファープール）の使い切りにつながりえます。DSL では、行が多い表の文字のカラムは `search.enabled` を `false` にする（検索の項目から外す）か、`search.operator` を `EQUALS`（完全一致）にしてください。同じ注意を DSL の JSON Schema の `description`（`searchOperator`・`search`）にも書いています。画面は変えません（検索の項目の出し分けは DSL の `search` の設定に従います）。負荷の試験の数字（`bizSearchContains`）は `perf/README.md` の「業務データの場面」にあります。
+
 ### 業務データの書き込みの API（Intent 261016-business-data-views の U2）
 
 適用中の DSL にあるテーブルの行の作成・更新・削除を、3本の道で行います。読み取りと同じく、スキーマ名・テーブル名・主キー・値・定義の識別（`definitionId`。定義の API が返したもの）は道や問い合わせに載せず、本文（JSON）で受け取ります。
@@ -640,7 +782,7 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 ### 対象DB の結合テストとコンテナの実行環境
 
-対象DB の結合テストは、版とダイジェストを固定したイメージ（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）の MySQL 26.7・MariaDB 13.0・PostgreSQL 18 を Testcontainers で起動して行います。`./gradlew verify` の中で3種類とも毎回実行します（CI も同じ）。
+対象DB の結合テストは、版とダイジェストを固定したイメージ（`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`）の MySQL 26.10.0・MariaDB 13.0.2・PostgreSQL 18.6 を Testcontainers で起動して行います（固定の正は `TargetDbImages.java`。`compose.yaml` と `docker/perf/compose.yaml` の対象DB のイメージも同じ版とダイジェストにそろえる）。`./gradlew verify` の中で3種類とも毎回実行します（CI も同じ）。
 
 Testcontainers は Docker の context を読まないため、colima を使う PC では、Docker の接続先を環境変数で渡してください（シェルの設定ファイルに書いておくと便利です）。
 
@@ -1114,6 +1256,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 - 指標は 60 秒ごとに届きます。起動の直後は空のパネルがあります。起動より前のログ（Spring の起動のログ）は送られません。
 - 監視のコンテナのメモリの上限は 1.5GB（`1536m`）です。900MB では、DSL の行を含むダッシュボードを開いたときに Grafana がメモリの上限で止められました（コンテナは動き続け、画面だけが応答しなくなります）。colima の VM は CPU 4・メモリ 6GiB を前提にしています（アプリ 2GB・見本の対象DB 512MB と合わせて約 4GB。負荷の試験の間は監視を止めます）。VM が小さいときは「コンテナの資源の上限」の手順で広げてください（`colima start --cpu 4 --memory 6`）。
 - 集めたデータはボリューム `mastersmith_mastersmith-monitoring` に残ります。消すときは `docker volume rm mastersmith_mastersmith-monitoring`（アプリの内部DBのボリュームとは別です）。
+- **監視の式の値を確かめる要求は、待ちを入れた少ない要求で送ります**（Intent 261025-deps-perf-carryover の FR3.8）。負荷の試験の場面（待ちが無い）は、2 VU でも毎秒 1,500〜2,200 件になり、lgtm の中の受け手（otelcol）と Tempo がメモリの上限で止められ、以後の指標・ログ・トレースが届かなくなりました。使い捨ての環境（`perf/README.md`）の k6 の場面 `monitorLight`（1 VU・繰り返しごとに 1〜2 秒の待ち。ヘルスチェック・見た目の設定・管理者の確認用 API を順に回す。毎秒 約 0.6 件）を、指標の送信の周期（60 秒）を複数またぐ長さ（`MONITOR_DURATION` 既定 5 分）で流します。業務データの式（`ms-biz-target-db` など）を確かめるときは `MONITOR_BIZ=1` を足します（先に `bizPrepare`）。流し方は `perf/README.md` の「手元の監視の式の値を確かめる場面」。
 - 外部エクスポートを有効にすると、JVM が `sun.misc.Unsafe` の警告を標準エラーに数行出します（送信に使う protobuf の部品による。1行1件の JSON ではありません）。
 
 ## 警報と対応の手順

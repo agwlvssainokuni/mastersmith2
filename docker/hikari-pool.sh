@@ -18,10 +18,12 @@
 #
 # 実行（プロジェクトのルートで）:
 #   ./docker/hikari-pool.sh status                 接続の本数と内部DB のファイルの大きさを出す
-#   ./docker/hikari-pool.sh compact                一時停止 → 接続の破棄 → 0 本を待つ → ファイルが落ち着くのを待つ → 再開
+#   ./docker/hikari-pool.sh compact                補充が済むのを待つ → 一時停止 → 接続の破棄 → 0 本を待つ → ファイルが落ち着くのを待つ → 再開
 #   ./docker/hikari-pool.sh resume                 再開だけ行う（再開し忘れ・道具の途中の終わりからの戻し）
 # 指定（どの副コマンドにも付けられる。compact の上限は秒）:
 #   --container <名前>     対象のコンテナ（既定 mastersmith-app-1。使い捨ての環境は mastersmith-perf-app-1）
+#   --fill-wait <秒>       一時停止の前に、プールの補充（上限に届くか、待機が最小の空きの数に届く）が済むのを待つ上限（既定 10）。
+#                          超えたら一時停止せず、詰め直さずに 1 で終わる
 #   --zero-wait <秒>       借りている接続が 0 本になるまでの待ちの上限（既定 10）。超えたら詰め直さずに再開して 1 で終わる
 #   --settle-wait <秒>     0 本になった後、ファイルが落ち着くまでの待ちの上限（既定 30）
 #   --total-limit <秒>     一時停止から再開までの全体の上限（既定 45）。超えそうなら再開を優先する
@@ -84,7 +86,7 @@ while [ $# -gt 0 ]; do
             container=$2
             shift 2
             ;;
-        --zero-wait | --settle-wait | --total-limit | --stable | --db-file | --pool)
+        --fill-wait | --zero-wait | --settle-wait | --total-limit | --stable | --db-file | --pool)
             [ $# -ge 2 ] || { echo "$1 の値がありません" >&2; exit 2; }
             tool_args+=("$1" "$2")
             if [ "$1" = "--pool" ]; then

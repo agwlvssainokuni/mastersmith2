@@ -139,3 +139,23 @@ caffeinate -dims ./gradlew e2eTest
 | FR4.8 P7 | `verify` の実測で単体テストの JVM のヒープ（1g／結合 1536m）が尽きていないことを確かめて記録。尽きたときだけ境界テストの読み込みを共有する直し |
 | FR3.10 | リリースの前の確かめ（`osvScan --rerun`、`dist` に axe-core が無い）を、取り込みの前に実際に流す |
 | `verify` と CI の時間 | 計測して記録。上限（`timeout-minutes: 60`）の 7 割（約 42 分）を超えたら依頼者に諮る |
+
+### 7.1 Build and Test の手順（B4 で整えた台本・手順書・設定の使い方）
+
+共通: 長い試験は台本の全体を `caffeinate -dims` で包む（場面ごとに起こし直さない）。流す前に `pmset -g assertions` で眠らない状態を、流した後に `pmset -g log` で窓の中に `Sleep`・`DarkWake` が無いことを確かめ、入っていたらその回は使わずに流し直す。長い試験の始めに `source perf/versions.env` を読む（`K6_IMAGE`・`PERF_JRE_IMAGE`）。H2 に SQL を流すのは `perf/h2-shell.sh`。確かめの結果を見てから環境を片付ける（消してから取り直せない）。
+
+1. **3種類の対象DB の負荷の試験（FR4.9・FR4.2）**
+   - 手順は `perf/README.md` の「業務データの場面」（1B〜6B）。配備したアプリを止め（約 4 時間の見込み。前回 4 時間 27 分）、使い捨ての環境で、対象DB の種類ごとに 1 種類ずつ流す。MySQL・MariaDB の回は手元の監視（lgtm）を動かさない。
+   - 試験の値は README の表（MySQL 1280M／2688m、MariaDB 896M／1408m、PostgreSQL 256MB／768m。表の大きさに合わせた値）。種は **`--default-character-set=utf8mb4` を付けて流し**、2B' の確かめ（目印の語の当たり・最長の文字数・行の数）を通してから表の大きさを測る。
+   - 読み取りを先に流し、書き込みの場面はその後（流す順の見直しの案。`perf/README.md` の書き込みの場面の「流す順の見直しの案」）。書き込みの後に読み取りの値が要るときは、対象DB を作り直して種を入れ直す。
+   - 上限に届く形: 読み取りのプール 10 に対し 12 VU の `bizSearchContains`（`-e VUS=12`）を流す。
+   - 場面ごとに、対象DB のプールの待ちの時間切れの累計の増分と待ちの最大、503 の件数、`iteration_duration` の p95 を記録する。対象DB のコンテナは `docker inspect` の OOMKilled と `oom_kill`（cgroup の `memory.events`）、`anon` の最大（線は 85%、諮る線）を並べる。OOMKilled か `oom_kill` が 0 でなければ、既定を 5 に戻して依頼者に諮る。
+   - 前回と同じ場面・同じ線で、Not Met 4 件（U1-NFR1.1・1.3・3.2・2.4）が Met になったかを場面ごとの値と件数で記録する。Met にならない件は Not Met のまま次の Intent へ持ち越す。目標は緩めない。
+2. **`dslMixed` の `memory.peak` の測り直し（FR4.5）**: `perf/README.md` の (b) の節。既定の回と `RETENTION_TIME=0` の試しの回（各 2 回）。線は peak が上限 2g の 90% 未満（前回 0.8731・0.8696）。前回の値と並べて記録する。`perf/dsl-mixed-memory.sh` は `K6_IMAGE` を `perf/versions.env` から読み、設定の値（`RETENTION_TIME`）は `perf/h2-shell.sh --read-only` で読む。`RETENTION_TIME=0` を配備物に入れるかは、測った結果を添えて依頼者に諮る。
+3. **画面の時間（FR4.7）**: `./gradlew e2eTest` の全件の流しの中で、E2E 185 の 5 つの線（U3-NFR1.7a〜e、計画の 5.2 節）を 5 回の中央値で測る。線を超えたら Not Met とし、緩めない。値は名前と時間だけを記録する。
+4. **置き場の p95（P6）**: **要確認**。測る対象だった置き場の問い合わせ（`GET /api/me/table-access`）は、この Intent の FR3.3 で消した。台本の `tableAccessVisible`・`tableAccessDenied` も外したため、測り直せない。前回の値（`aidlc/spaces/default/intents/261004-role-menu/operation/performance-validation/nfr-validation-matrix.md`）は承認済みの記録として残る。代わりに、残っている業務のメニュー（`navMenu`）の p95 を測り直して記録し、締める案を提案する形にするかを、依頼者に諮る（目標の数値は変えない）。
+5. **単体テストの JVM のヒープ（P7）**: `verify` の実測で単体テスト（1g）・結合テスト（1536m）の JVM が `OutOfMemoryError` で尽きていないことを確かめて記録する。尽きたときだけ、境界テストの読み込みを共有する直しを入れる。
+6. **DSL の投入と権限の YAML の確かめの重なり（P5）**: `dslRoleOverlap`（`perf/README.md` の「DSL の投入と権限の YAML の確かめを重ねる場面」）。前提の準備（`rolePrepare` と大きな DSL・`perf-roleop01`、10MB の DSL、上限ちょうどの YAML）を済ませてから流し、`checks` の件数と `iteration_duration{scenario:roleChecks}` の最大（線は 15 秒未満）を記録する。
+7. **手元の監視の式の値（FR3.8）**: `monitorLight`（`perf/README.md` の「手元の監視の式の値を確かめる場面」）で lgtm が止まらず、式の値が確かめられること。業務データの式は `MONITOR_BIZ=1`。
+8. **リリースの前の確かめ（FR3.10）**: `README.md` の「リリースの前の確かめ」を、取り込みの前に実際に流して結果を記録する（Code Generation の B4 では `osvScan --rerun` と `dist` の確かめを 1 回流した。結果は `generation-notes.md`）。
+9. **`verify` と CI の時間**: 計測して記録する。上限（`timeout-minutes: 60`）の 7 割（約 42 分）を超えたら依頼者に諮る。

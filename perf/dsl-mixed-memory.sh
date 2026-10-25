@@ -19,7 +19,7 @@
 # 回の数え方、片付けは perf/README.md の (b) 節の手順で行う。
 #
 # 使い方（プロジェクトのルートで。perf/README.md の (b) 節の手順の中で呼ぶ）:
-#   K6_IMAGE=<perf/README.md の k6d と同じ固定のイメージ> MASTERSMITH_IMAGE_TAG=<タグ> \
+#   MASTERSMITH_IMAGE_TAG=<タグ> \
 #     ./perf/dsl-mixed-memory.sh <一時ディレクトリ> <回の名前> <DSL の置き場>
 #   <一時ディレクトリ>  KEEP=1 の perf/dsl-timing.sh が作ったもの（app.env・targetdb.env・app-targetdb.env、
 #                       PERF_USER_PASSWORD を足した ui.env がある）
@@ -38,7 +38,7 @@
 # 記録のループは docker exec 1回で回し、--privileged・--user・追加の権限は付けない（NFR4.9）。
 #
 # 環境変数:
-#   K6_IMAGE                     k6 のイメージ（必須。perf/README.md の k6d と同じ版とダイジェスト。固定先を増やさないため既定を置かない）
+#   K6_IMAGE                     k6 のイメージ。perf/versions.env の定義を読む（固定の値の定義はそこだけ）
 #   MASTERSMITH_IMAGE_TAG        使い捨てのアプリのイメージのタグ（必須。perf/dsl-timing.sh に渡したもの）
 #   MASTERSMITH_CONTAINER_CPUS   アプリのコンテナの CPU の上限（既定 4）
 #   MASTERSMITH_CONTAINER_MEMORY アプリのコンテナのメモリの上限（既定 2g。上げない。BR4.3）
@@ -224,7 +224,8 @@ if (($# != 3)); then
   exit 1
 fi
 D=$1 RUN=$2 DATA_DIR=$(cd "$3" && pwd)
-: "${K6_IMAGE:?k6 のイメージを K6_IMAGE で渡してください（perf/README.md の k6d と同じ固定の値）}"
+# shellcheck source=perf/versions.env
+source "${ROOT}/perf/versions.env"
 : "${MASTERSMITH_IMAGE_TAG:?使い捨てのアプリのイメージのタグを MASTERSMITH_IMAGE_TAG で渡してください}"
 if ! [[ ${RUN} =~ ^[A-Za-z0-9-]{1,40}$ ]]; then
   echo "回の名前は英数字と - だけにしてください。" >&2
@@ -366,20 +367,15 @@ summarize "${OUT}/memory.tsv" "${OUT}/peak.txt" > "${OUT}/summary.txt"
 } > "${OUT}/warn.txt"
 
 # 9. アプリを止めて、内部DB の設定の値（RETENTION_TIME）を読み取りだけで読む（cicd-pipeline.md 4節、計画の 4.4 の R-02）。
-#    ボリュームを :ro で付け、ACCESS_MODE_DATA=r で開く。Shell は測るアプリのイメージ（同じ JRE）で動かし、イメージの固定先を増やさない。
+#    ボリュームを :ro で付け、ACCESS_MODE_DATA=r で開く（perf/h2-shell.sh --read-only。H2 の jar の探し方と Shell の起動はそこに一本化）。
 log "${RUN}: アプリを止めて、内部DB の設定の値を読みます"
 compose stop app > /dev/null
-h2_jar=$(ls "${HOME}"/.gradle/caches/modules-2/files-2.1/com.h2database/h2/2.4.240/*/h2-2.4.240.jar | head -n 1)
-cp "${h2_jar}" "${D}/h2.jar"
 set +e
-docker run --rm -u 10001:10001 --entrypoint java -v mastersmith-perf_perf-data:/data:ro -v "${D}/h2.jar:/h2.jar:ro" \
-  "mastersmith:${MASTERSMITH_IMAGE_TAG}" -cp /h2.jar org.h2.tools.Shell \
-  -url 'jdbc:h2:file:/data/mastersmith;ACCESS_MODE_DATA=r' -user sa -password '' \
-  -sql "SELECT SETTING_NAME, SETTING_VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE SETTING_NAME IN ('RETENTION_TIME')" \
+"${ROOT}/perf/h2-shell.sh" --read-only mastersmith-perf_perf-data \
+  "SELECT SETTING_NAME, SETTING_VALUE FROM INFORMATION_SCHEMA.SETTINGS WHERE SETTING_NAME IN ('RETENTION_TIME')" \
   > "${OUT}/settings.txt" 2>&1
 settings_exit=$?
 set -e
-rm -f "${D}/h2.jar"
 echo "settings_exit=${settings_exit}" >> "${OUT}/settings.txt"
 
 log "${RUN}: 終わりました。記録は ${OUT}（アプリは止めたままです。次の回は作り直しから始まります）"
