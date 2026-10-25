@@ -1,0 +1,230 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR3.5",
+    "FR3.6",
+    "FR3.7",
+    "FR3.8",
+    "FR3.9",
+    "FR3.10",
+    "FR3.11",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR4.5",
+    "FR4.6",
+    "FR4.7",
+    "FR4.8",
+    "FR4.9",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "compose.yaml"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "frontend/package-lock.json"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "frontend/package.json"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "backend/gradle.lockfile"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "backend/src/test/resources/META-INF/spring.factories"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccess.java"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/navigation/web/NavigationController.java"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "docker/jmx/HikariPoolControl.java"
+    },
+    {
+      "id": "FR3.5",
+      "status": "OK",
+      "target": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "id": "FR3.6",
+      "status": "OK",
+      "target": "perf/versions.env"
+    },
+    {
+      "id": "FR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataUnknownNamesIT.java"
+    },
+    {
+      "id": "FR3.8",
+      "status": "Deferred",
+      "target": "Build and Test: perf/k6/scenarios.js の monitorLight は作成済み（Step 42、B4。k6 inspect と 20 秒の試し走りで checks 失敗 0）。lgtm が止まらないことと式の値の確かめは未実施"
+    },
+    {
+      "id": "FR3.9",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR3.10",
+      "status": "OK",
+      "target": "README.md"
+    },
+    {
+      "id": "FR3.11",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR4.1",
+      "status": "Deferred",
+      "target": "Build and Test: 3種類の対象DB の測り直しで Not Met 4 件が Met になったかを件数で記録（未実施）"
+    },
+    {
+      "id": "FR4.2",
+      "status": "Deferred",
+      "target": "Build and Test: 既定の変更は backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java、backend/src/main/resources/application.yaml、.env.example、README.md で完了（Step 14-15、B3）。対象DB の OOMKilled・oom_kill・anon の最大の測りは未実施"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "backend/src/main/resources/dsl/dsl-schema-v2.json"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationConnectionUsageIT.java"
+    },
+    {
+      "id": "FR4.5",
+      "status": "Deferred",
+      "target": "Build and Test: dslMixed の memory.peak の測り直しと RETENTION_TIME=0 の諮り。手順は unit-test-instructions.md の 7.1（Step 49）"
+    },
+    {
+      "id": "FR4.6",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR4.7",
+      "status": "Deferred",
+      "target": "Build and Test: 画面の時間（U3-NFR1.7a〜e）を Intent の最後の E2E の全件の中で測る（frontend/e2e/185-business-data-accessibility.e2e.ts）。未実施"
+    },
+    {
+      "id": "FR4.8",
+      "status": "Deferred",
+      "target": "Build and Test: P5 の台本（perf/k6/scenarios.js の dslRoleOverlap）は作成済み（Step 48、B4）で流していない。P6 は navMenu の p95 の測り直しと締める案の提案に替える（依頼者の確認待ち）。P7 は verify で尽きなかった（確かめ済み）"
+    },
+    {
+      "id": "FR4.9",
+      "status": "Deferred",
+      "target": "Build and Test: 3種類の対象DB の負荷の試験の流し直し。手順は unit-test-instructions.md の 7.1（Step 49、B4）"
+    },
+    {
+      "id": "FR5.1",
+      "status": "Deferred",
+      "target": "Deployment Execution: イメージの入れ替えと直前の版での戻し"
+    },
+    {
+      "id": "FR5.2",
+      "status": "Deferred",
+      "target": "Deployment Execution: WAR の SHA-256 と中身の確認、main の先頭からの WAR の作り直し、起動確認とスモークテスト"
+    },
+    {
+      "id": "FR5.3",
+      "status": "Deferred",
+      "target": "Deployment Execution: main への取り込みの前の CI の試行ごとの確かめ"
+    },
+    {
+      "id": "NFR1",
+      "status": "Deferred",
+      "target": "Build and Test: 目標の数値と物差しは変えていない。直した後の値の並記は FR4.5・FR4.7・FR4.9 の測りの後"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteSecretLeakIT.java"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261025-deps-perf-carryover/construction/code-generation/code-summary.md"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "backend/src/main/resources/dsl/dsl-schema-v2.json"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    }
+  ]
+}

@@ -1,0 +1,289 @@
+{
+  "stage": "code-generation",
+  "unit": null,
+  "version": 1,
+  "writes": [
+    {
+      "path": ".env.example"
+    },
+    {
+      "path": ".github/dependabot.yml"
+    },
+    {
+      "path": ".github/workflows/ci.yml"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/build.gradle.kts"
+    },
+    {
+      "path": "backend/gradle.lockfile"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/SearchRequestValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteRequestValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/MysqlFamilyRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/PostgresRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlExecutor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/domain/TableAccessResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/package-info.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NavigationService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/service/NoOpNavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/NavigationController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/navigation/web/TableAccessResponse.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbProperties.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/domain/TargetReadSession.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccess.java"
+    },
+    {
+      "path": "backend/src/main/resources/application.yaml"
+    },
+    {
+      "path": "backend/src/main/resources/dsl/dsl-schema-v2.json"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/SearchRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataReadTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataWriteTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/StallStage.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/StallStageTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/StatementLog.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataReadControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataTimeoutIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataUnknownNamesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/ApiEndpointCounts.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/LoggingLevelResetTestExecutionListener.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/StatementCallFixture.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/DslSchemaPublicationIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dsl/validate/DslSchemaValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/service/DslSummaryAndDiffTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/NavNodeTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/domain/NavigationRecordsToStringTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/service/NavigationCallCountTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/service/NavigationServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/NavigationActors.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/testsupport/TestNavigationBarrier.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationDslSwapIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationMenuAccessConsistencyIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationQueryExposureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/navigation/web/NavigationUntrustedInputIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbPropertiesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/domain/TargetReadSessionTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/AbstractTargetSchemaReaderIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java"
+    },
+    {
+      "path": "backend/src/test/resources/META-INF/spring.factories"
+    },
+    {
+      "path": "compose.yaml"
+    },
+    {
+      "path": "docker/hikari-pool.sh"
+    },
+    {
+      "path": "docker/jmx/HikariPoolControl.java"
+    },
+    {
+      "path": "docker/perf/compose.yaml"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataApiRoute.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/frameApiRoute.ts"
+    },
+    {
+      "path": "frontend/package-lock.json"
+    },
+    {
+      "path": "frontend/package.json"
+    },
+    {
+      "path": "frontend/src/features/preferences/PasswordChangePage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/usePasswordChangeForm.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "path": "gradle/libs.versions.toml"
+    },
+    {
+      "path": "gradle/wrapper/gradle-wrapper.properties"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "path": "perf/h2-shell.sh"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/versions.env"
+    }
+  ]
+}
