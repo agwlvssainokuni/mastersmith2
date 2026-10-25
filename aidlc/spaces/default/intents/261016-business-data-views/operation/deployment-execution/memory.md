@@ -3,6 +3,8 @@
 
 ## Interpretations
 <!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
+- 2026-10-25T01:21:00Z — main への取り込みの前の CI の確かめで、Build and Test の後に公表された依存の脆弱性（vendor の vite@8.2.1）が記録だけのコミットの CI で見つかった。記録だけのコミットの CI も、取り込みの前の確かめの対象として意味がある（新しい公表は、ソースを変えなくても次の CI で落ちる）。
+- 2026-10-25T01:22:00Z — 1152202 の CI の3回の失敗は Build and Test の test-results.md に試行ごとに記録済みだったが、依頼者への説明で一度「記録が抜けている」と誤って伝えた。確かめる前に記録の有無を言わない。
 - 2026-10-21T00:20:00Z — 配備の後の複写で ROLE_PERMISSION_CHANGED が期待の 1 に対し 2 件だった。依頼者に尋ねると権限の設定の保存を2回押していたため、操作と合うと判定した（期待の件数は保存した回数）。ほかの種類は期待どおりで、FAILURE・UNKNOWN は 0 件、BUSINESS_ROW_* の3列はすべて空でない。乙は消され、ロールの数と初期管理者の割り当て・作業ロールの保存は前と同じ。
 - 2026-10-21T00:06:00Z — 入れ替えでアプリが止まっていたのは 23:48:18Z〜23:49:11Z の約 53 秒（見込みの 3〜4 分より短い）。WAR の SHA-256 は作り直す前と同じ 6426111d… で、B7 の後にアプリのコードが変わっていないことと合う。
 
@@ -14,6 +16,7 @@
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
+- 2026-10-25T01:20:00Z — Vite の直し（vendor の固定先だけの変更）の統合の前の verify では、バックエンドのテストが入力の変わらないため UP-TO-DATE で飛ばされた。テストの件数を報告する目的ではないため cleanTest を付けずに流し、時間を約 25 分省いた代わりに、バックエンドの確かめは前の成功の結果と CI（4d963c9、1回目で成功）に頼った。
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
