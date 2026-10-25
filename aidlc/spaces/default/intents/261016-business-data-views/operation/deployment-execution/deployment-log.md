@@ -81,10 +81,32 @@ Intent 261016-business-data-views の配備の記録です。手順は `operatio
 
 | 順 | すること | 状態 |
 |---|---|---|
-| 12 | この段の配備の記録のコミット | 依頼者の承認を得てから行う |
+| 12 | この段の配備の記録のコミット | 済み（`ed713ea`） |
 | 13 | `main` への取り込み | 依頼者の承認を得てから行う。前の取り込み（`6dd9bb0`）の後のすべてのコミットの CI を試行ごと（`gh run view --json attempt,jobs`）に確かめ、再実行で通ったものは1回目の失敗とそのテストを記録してから、`main` を `develop` の先頭へ fast-forward する。タグは付けない |
 | 14 | 取り込みと push の結果の追記 | `main` の後の `develop` だけのコミットで、この節に追記する |
 | 15 | `origin` への push（`develop`・`main`） | 依頼者が行う |
+
+### 7.1 取り込みの前の CI の確かめと、Vite の直し（2026-10-21〜25）
+
+順 13 の確かめで、前の取り込み（`6dd9bb0`）の後の CI のうち、次の2つの run が落ちていた。
+
+| コミット | run | 試行 | 結果 | 失敗 |
+|---|---|---|---|---|
+| `7f2575c`（CI Pipeline の段の記録） | 39514642704 | 1回目〜3回目 | 失敗 | `osvScan`: `vendor/make-you-chic-ui/package-lock.json` の `vite@8.2.1`（GHSA-587h-7wmj-h5pm、CVSS 7.5、成果物を作る道具の High） |
+| `ed713ea`（この段の配備の記録） | 39522990618 | 1回目・2回目 | 失敗 | 同じ `osvScan` の1件 |
+
+- テストの失敗は無く、どちらも新しく公表された脆弱性による（`a031ba1`・`d220447`・`31d434c` の CI の後に公表された見込み）。`frontend` の Vite は 8.3.4 で当たらず、配備した WAR のビルドには使っていない。
+- 依頼者の決定「直してから取り込む」で `main` への取り込みを止め、`aidlc/spaces/default/intents/261016-business-data-views/make-you-chic-ui-request-6.md` の依頼を出した。
+- 上流の対応は、報告ではなく上流のソース（`git show` を読み取りだけで使う）で確かめた。
+  - `ecb07e9` は上流の `main` の先頭で、`b0a1e79` から1コミット、変わったのは `package.json`・`package-lock.json` だけ。
+  - lockfile の差は、増えた 1（`@rolldown/binding-android-arm-eabi`）・消えた 0・版の変わった 24 で、`hasInstallScript` は前後とも `fsevents` だけ。
+  - `vite` 8.3.4、`undici` 8.12.3、`brace-expansion` 5.0.12、`postcss-selector-parser` 7.1.7、`source-map-js` 1.2.2。`braces` 3.0.3 は直る版が無く残る（開発時だけ使うもの、警告）。
+- 固定先の更新は、短命のブランチ `fix/261016-business-data-views-vite` で専用のコミット `5797582`（`b0a1e79` → `ecb07e9`）と README の固定先の直し `4d963c9` を積み、`develop` へ fast-forward で統合した（固定先の更新の例外）。
+- 統合の前の確かめ:
+  - `./gradlew verify` は 5分27秒で通った。画面のテスト 1975 件 passed、OSV-Scanner は失敗の条件 0 件・警告 15 件。バックエンドのテストは入力が変わらず UP-TO-DATE で飛ばされた（変更は `vendor/` だけ）。
+  - E2E（`./gradlew e2eTest`）は 256 件 passed（13分32秒）。流す間だけ見本の PG を 127.0.0.1:15432 を開ける上乗せで作り直し（依頼者の決定 A）、終わった後に上乗せを外して作り直した（`5432/tcp`）。PC のスリープは無かった。
+- 依頼者の push の後の CI（run 40147342538、`4d963c9`）は1回目の試行で成功した。検査の job は 31分0秒（00:36:21Z〜01:07:21Z）、OSV-Scanner は失敗の条件 0 件・警告 15 件。
+- 配備したアプリは作り直していない。Vite の直しは make-you-chic-ui を組む道具だけで、配備した WAR の中身に当たらないため。
 
 ## Sources
 
