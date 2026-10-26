@@ -147,7 +147,7 @@ services:
   # 使い捨てのアプリのコンテナからだけ SPRING_MAIL_HOST=mailpit・SPRING_MAIL_PORT=1025 で送る（一時の環境ファイルの行は perf/README.md）。
   # PC にポートを公開しない。ボリュームを置かない（コンテナを消すと受けたメールも消える）。外へ中継しない。
   mailpit:
-    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
     profiles: [mail]
     mem_limit: 256m
     restart: "no"

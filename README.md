@@ -728,7 +728,7 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 - アプリのコンテナから送るときは、`.env` に `SPRING_MAIL_HOST=mailpit`・`SPRING_MAIL_PORT=1025`・`MASTERSMITH_MAIL_FROM`（暗号化なし・資格情報なし）を書いて、`docker compose up -d` で作り直します。PC の上で動かす WAR（E2E など）からは `localhost:1025` へ送ります。
 - 画面と API（8025）と SMTP（1025）は PC の localhost だけに開きます。Mailpit は受けたメールを外へ中継しません。
-- ボリュームを置かないため、コンテナを消すと受けたメールも消えます。Mailpit が持つメールは既定で最大 500 通で、超えると古いものから消えます（イメージ `axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387` の起動の引数 `--max` の既定の値。有効期間 `--max-age` は既定で無し）。
+- ボリュームを置かないため、コンテナを消すと受けたメールも消えます。Mailpit が持つメールは既定で最大 500 通で、超えると古いものから消えます（イメージ `axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498` の起動の引数 `--max` の既定の値。有効期間 `--max-age` は既定で無し）。
 - E2E（`./gradlew e2eTest`）の前に起動しておきます（「ビルドした WAR での画面の確認（E2E）」）。
 
 ## 対象DB（利用者の業務データの DB）

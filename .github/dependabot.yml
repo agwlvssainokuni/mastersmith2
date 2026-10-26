@@ -81,7 +81,7 @@ updates:
   # docker/hikari-pool.sh（JDK_IMAGE の eclipse-temurin の jdk）。
   # eclipse-temurin の jdk は、Dependabot が見る固定先が無く知らせが来ないため、jre の知らせを受けたときに同じ版のタグ（-jdk-noble）で
   # 揃える（Intent 261015-deps-ui-carryover で 25.0.4.1_1 に揃えた）。
-  # Intent 261025-deps-perf-carryover の B2 で、otel/opentelemetry-collector 0.163.2・axllent/mailpit v1.31.6・grafana/otel-lgtm 0.37.0 を
+  # Intent 261025-deps-perf-carryover の B2 で、otel/opentelemetry-collector 0.163.2・axllent/mailpit v1.31.6（その後の B5 で v1.32.0）・grafana/otel-lgtm 0.37.0 を
   # 複数アーキテクチャの index のダイジェストで固定し、上の固定先（docker/perf/compose.yaml の Mailpit、README.md の Mailpit、
   # perf/README.md の grafana/otel-lgtm）を同じ版とダイジェストに揃えた（grep で旧い版が残っていないことを確かめた）。
   # grafana/k6 は perf/versions.env だけに固定していて、Dependabot の知らせが来ない。上げる時期は、Intent で依存の更新を行うとき
