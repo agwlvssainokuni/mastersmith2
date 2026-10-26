@@ -1,0 +1,55 @@
+alert	ms-app-absent	prometheus	ok	0
+alert	ms-5xx-ratio	prometheus	ok	1
+alert	ms-error-logs	prometheus	ok	1
+alert	ms-audit-fail	loki	ok	0
+alert	ms-login-p95	prometheus	ok	1
+alert	ms-refresh-p95	prometheus	ok	0
+alert	ms-check-p95	prometheus	ok	1
+alert	ms-pool-pending	prometheus	ok	1
+alert	ms-heap	prometheus	ok	1
+alert	ms-forbidden	prometheus	ok	1
+alert	ms-lock	loki	ok	0
+alert	ms-rejected	loki	ok	0
+alert	ms-origin	loki	ok	0
+alert	ms-audit-slow	loki	ok	0
+alert	ms-cleanup-fail	loki	ok	0
+alert	ms-bcrypt	loki	ok	0
+alert	ms-biz-target-db	prometheus	ok	1
+panel	稼働（5xx でない応答の割合、30 日）	prometheus	ok	1
+panel	要求の数（1 分あたり）	prometheus	ok	1
+panel	5xx の割合（5 分）	prometheus	ok	1
+panel	ERROR のログ（5 分あたり）	prometheus	ok	1
+panel	ログインの API	prometheus	ok	1
+panel	トークンの更新の API	prometheus	ok	0
+panel	確認用 API（/api/admin/check）	prometheus	ok	1
+panel	コネクションプールの待ち	prometheus	ok	1
+panel	JVM のヒープの使用率	prometheus	ok	1
+panel	403 の件数（1 時間）	prometheus	ok	1
+panel	監査の書き込みの失敗（1 時間）	loki	ok	0
+panel	アカウントのロック（1 時間）	loki	ok	0
+panel	正規化されていないパスの拒否（1 時間）	loki	ok	0
+panel	送り元の不一致の拒否（1 時間）	loki	ok	0
+panel	監査の書き込みの遅れ（1 日）	loki	ok	0
+panel	操作ごとの件数（1 時間）	prometheus	ok	0
+panel	結果ごとの件数（1 時間）	prometheus	ok	0
+panel	操作ごとの時間（95 パーセンタイル）	prometheus	ok	0
+panel	API ごとの要求の数（1 時間）	prometheus	ok	0
+panel	API ごとの時間（95 パーセンタイル）	prometheus	ok	0
+panel	API ごとの 5xx の件数（1 時間）	prometheus	ok	1
+panel	送信の数（1 時間）	prometheus	ok	0
+panel	失敗の種類ごとの数（1 時間）	prometheus	ok	1
+panel	送信の時間（95 パーセンタイル）	prometheus	ok	0
+panel	API ごとの要求の数（1 時間）	prometheus	ok	0
+panel	API ごとの時間（95 パーセンタイル）	prometheus	ok	0
+panel	API ごとの 5xx の件数（1 時間）	prometheus	ok	1
+panel	API ごとの要求の数（1 時間）	prometheus	ok	2
+panel	API ごとの時間（95 パーセンタイル）	prometheus	ok	2
+panel	API ごとの 503 の件数（1 時間）	prometheus	ok	1
+panel	API ごとの 409 の件数（1 時間）	prometheus	ok	1
+panel	対象DB の読み取りのプール	prometheus	ok	1
+panel	対象DB の読み取りのプール	prometheus	ok	1
+panel	対象DB の読み取りのプール	prometheus	ok	1
+panel	対象DB の書き込みのプール	prometheus	ok	0
+panel	対象DB の書き込みのプール	prometheus	ok	0
+panel	対象DB の書き込みのプール	prometheus	ok	0
+TOTAL 54 with-value 27 empty 27 error 0

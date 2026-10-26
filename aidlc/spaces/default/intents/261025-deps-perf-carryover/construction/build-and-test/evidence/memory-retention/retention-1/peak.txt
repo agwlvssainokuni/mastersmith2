@@ -1,0 +1,8 @@
+memory.peak=1521340416
+memory.max=2147483648
+stat.anon=1459769344
+stat.file=34988032
+stat.inactive_file=34988032
+stat.active_file=0
+stat.kernel=6590464
+state=running exit=0 OOMKilled=false

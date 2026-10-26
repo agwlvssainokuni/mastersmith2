@@ -1,0 +1,24 @@
+== log counts (file: 利用者メール / 行の値 / WARN / ERROR / OOM)
+before-large1.log: user=0 rowval=0 WARN=773026 ERROR=0 OOM=0
+before-large2.log: user=0 rowval=0 WARN=15 ERROR=0 OOM=0
+before-wide1.log: user=0 rowval=0 WARN=4 ERROR=0 OOM=0
+before-wide2.log: user=0 rowval=0 WARN=2 ERROR=0 OOM=0
+final.log: user=0 rowval=0 WARN=15 ERROR=0 OOM=0
+== http 503 (current JVM metrics)
+== final containers
+final	mastersmith-perf-targetdb-mariadb-1	false running 0	max 0 oom_kill 0 	peak=1329213440
+final-app	mastersmith-perf-app-1	false running 0	max 0 oom_kill 0 	peak=921288704
+ Container mastersmith-perf-app-1 Stopping 
+ Container mastersmith-perf-app-1 Stopped 
+== audit (BUSINESS_*)
+EVENT_TYPE           | RESULT  | FAILURE_REASON               | COUNT(*)
+BUSINESS_ROW_CREATED | FAILURE | BUSINESS_REFERENCE_NOT_FOUND | 772933
+BUSINESS_ROW_CREATED | SUCCESS | null                         | 819407
+BUSINESS_ROW_DELETED | SUCCESS | null                         | 200
+BUSINESS_ROW_UPDATED | SUCCESS | null                         | 1237026
+(4 rows, 2803 ms)
+COUNT(*)
+2829991
+(1 row, 5 ms)
+== mv.db bytes
+305565696

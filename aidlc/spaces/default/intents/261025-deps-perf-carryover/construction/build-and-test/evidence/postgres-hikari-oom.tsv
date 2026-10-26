@@ -1,0 +1,108 @@
+before:bizDefinition-r1	mastersmith-target-db	0.0	79.94565300000001	seconds
+after:bizDefinition-r1	mastersmith-target-db	0.0	0.0	seconds
+rc:bizDefinition-r1	0
+bizDefinition-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 341 oom_kill 0 	peak=805306368
+before:bizDefinition-r2	mastersmith-target-db	0.0	0.0	seconds
+after:bizDefinition-r2	mastersmith-target-db	0.0	0.0	seconds
+rc:bizDefinition-r2	0
+bizDefinition-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 341 oom_kill 0 	peak=805306368
+before:bizSearchFirst-r1	mastersmith-target-db	0.0	0.0	seconds
+after:bizSearchFirst-r1	mastersmith-target-db	0.0	3.599064	seconds
+rc:bizSearchFirst-r1	0
+bizSearchFirst-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 341 oom_kill 0 	peak=805306368
+before:bizSearchFirst-r2	mastersmith-target-db	0.0	3.599064	seconds
+after:bizSearchFirst-r2	mastersmith-target-db	0.0	3.378276	seconds
+rc:bizSearchFirst-r2	0
+bizSearchFirst-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 341 oom_kill 0 	peak=805306368
+before:bizSearchContains-r1	mastersmith-target-db	0.0	3.378276	seconds
+after:bizSearchContains-r1	mastersmith-target-db	0.0	2.577584	seconds
+rc:bizSearchContains-r1	0
+bizSearchContains-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 470 oom_kill 0 	peak=805306368
+before:bizSearchContains-r2	mastersmith-target-db	0.0	2.577584	seconds
+after:bizSearchContains-r2	mastersmith-target-db	0.0	1.75844	seconds
+rc:bizSearchContains-r2	0
+bizSearchContains-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 470 oom_kill 0 	peak=805306368
+before:bizSearchLast-r1	mastersmith-target-db	0.0	1.75844	seconds
+after:bizSearchLast-r1	mastersmith-target-db	0.0	5.7104230000000005	seconds
+rc:bizSearchLast-r1	0
+bizSearchLast-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 472 oom_kill 0 	peak=805306368
+before:bizSearchLast-r2	mastersmith-target-db	0.0	5.7104230000000005	seconds
+after:bizSearchLast-r2	mastersmith-target-db	0.0	3.4278049999999998	seconds
+rc:bizSearchLast-r2	0
+bizSearchLast-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 472 oom_kill 0 	peak=805306368
+before:bizSearchLastSorted-r1	mastersmith-target-db	0.0	3.4278049999999998	seconds
+after:bizSearchLastSorted-r1	mastersmith-target-db	0.0	1.214562	seconds
+rc:bizSearchLastSorted-r1	0
+bizSearchLastSorted-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 531 oom_kill 0 	peak=805306368
+before:bizSearchLastSorted-r2	mastersmith-target-db	0.0	1.214562	seconds
+after:bizSearchLastSorted-r2	mastersmith-target-db	0.0	17.819688	seconds
+rc:bizSearchLastSorted-r2	0
+bizSearchLastSorted-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+before:bizDetail-r1	mastersmith-target-db	0.0	17.819688	seconds
+after:bizDetail-r1	mastersmith-target-db	0.0	13.274553999999998	seconds
+rc:bizDetail-r1	0
+bizDetail-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+before:bizDetail-r2	mastersmith-target-db	0.0	13.274553999999998	seconds
+after:bizDetail-r2	mastersmith-target-db	0.0	11.816806	seconds
+rc:bizDetail-r2	0
+bizDetail-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+before:bizSearchContains-rL12	mastersmith-target-db	0.0	11.816806	seconds
+after:bizSearchContains-rL12	mastersmith-target-db	0.0	11.816806	seconds
+rc:bizSearchContains-rL12	107
+bizSearchContains-rL12	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+before:bizSearchWide-r1	mastersmith-target-db	NA	NA	
+after:bizSearchWide-r1	mastersmith-target-db	0.0	0.302662	seconds
+rc:bizSearchWide-r1	0
+bizSearchWide-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+app-peak:wide1	972824576 2147483648 
+before:bizSearchWide-r2	mastersmith-target-db	NA	NA	
+after:bizSearchWide-r2	mastersmith-target-db	0.0	2.4344959999999998	seconds
+rc:bizSearchWide-r2	0
+bizSearchWide-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 536 oom_kill 0 	peak=805306368
+app-peak:wide2	953782272 2147483648 
+before:bizCreate-r1	mastersmith-target-db-write	NA	NA	
+after:bizCreate-r1	mastersmith-target-db-write	0.0	169.27836299999998	seconds
+rc:bizCreate-r1	0
+bizCreate-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 9252 oom_kill 0 	peak=805310464
+before:bizCreate-r2	mastersmith-target-db-write	0.0	169.27836299999998	seconds
+after:bizCreate-r2	mastersmith-target-db-write	0.0	122.77826999999999	seconds
+rc:bizCreate-r2	0
+bizCreate-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 20034 oom_kill 0 	peak=805314560
+before:bizUpdate-r1	mastersmith-target-db-write	0.0	122.77826999999999	seconds
+after:bizUpdate-r1	mastersmith-target-db-write	0.0	35.051514	seconds
+rc:bizUpdate-r1	0
+bizUpdate-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 23280 oom_kill 0 	peak=805408768
+before:bizUpdate-r2	mastersmith-target-db-write	0.0	35.051514	seconds
+after:bizUpdate-r2	mastersmith-target-db-write	0.0	47.304516	seconds
+rc:bizUpdate-r2	0
+bizUpdate-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 27757 oom_kill 0 	peak=805462016
+before:bizDelete-r1	mastersmith-target-db-write	0.0	47.304516	seconds
+after:bizDelete-r1	mastersmith-target-db-write	0.0	47.304516	seconds
+rc:bizDelete-r1	0
+bizDelete-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 27758 oom_kill 0 	peak=805462016
+before:bizDelete-r2	mastersmith-target-db-write	0.0	47.304516	seconds
+after:bizDelete-r2	mastersmith-target-db-write	0.0	47.304516	seconds
+rc:bizDelete-r2	0
+bizDelete-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 27758 oom_kill 0 	peak=805462016
+before:bizWritePoolLimit-r1	mastersmith-target-db-write	0.0	47.304516	seconds
+after:bizWritePoolLimit-r1	mastersmith-target-db-write	0.0	15.349671	seconds
+rc:bizWritePoolLimit-r1	0
+bizWritePoolLimit-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 33672 oom_kill 0 	peak=805502976
+before:bizWritePoolLimit-r2	mastersmith-target-db-write	0.0	15.349671	seconds
+after:bizWritePoolLimit-r2	mastersmith-target-db-write	0.0	91.685739	seconds
+rc:bizWritePoolLimit-r2	0
+bizWritePoolLimit-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 36015 oom_kill 0 	peak=805502976
+before:bizCreateLarge-r1	mastersmith-target-db-write	NA	NA	
+after:bizCreateLarge-r1	mastersmith-target-db-write	0.0	241.5031	seconds
+rc:bizCreateLarge-r1	0
+bizCreateLarge-r1	mastersmith-perf-targetdb-postgres-1	false running 0	max 36015 oom_kill 0 	peak=805502976
+app-peak:large1	678563840 2147483648 
+before:bizCreateLarge-r2	mastersmith-target-db-write	NA	NA	
+after:bizCreateLarge-r2	mastersmith-target-db-write	0.0	259.883792	seconds
+rc:bizCreateLarge-r2	0
+bizCreateLarge-r2	mastersmith-perf-targetdb-postgres-1	false running 0	max 36015 oom_kill 0 	peak=805502976
+app-peak:large2	694890496 2147483648 
+before:bizSearchContains-rL12	mastersmith-target-db	0.0	80.055105	seconds
+after:bizSearchContains-rL12	mastersmith-target-db	0.0	310.58128600000003	seconds
+rc:bizSearchContains-rL12	0
+bizSearchContains-rL12	mastersmith-perf-targetdb-postgres-1	false running 0	max 37104 oom_kill 0 	peak=805502976

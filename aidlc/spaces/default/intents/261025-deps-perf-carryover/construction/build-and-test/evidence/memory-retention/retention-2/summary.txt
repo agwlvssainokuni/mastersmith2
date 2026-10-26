@@ -1,0 +1,8 @@
+dropped_rows=0
+rows=255 na_rows=0
+peak_ratio=0.7194
+judge=under-0.9
+anon_max_ratio=0.6911
+current_max_at=2026-10-26T05:19:41Z current_max=1543761920 anon=1478754304 file=56926208 inactive_file=56926208 kernel=8085504
+anon_max=1484034048 file_first=61440 file_max=78483456 file_growth=78422016
+mv_db_first=2252800 mv_db_max=80662528 mv_db_growth=78409728

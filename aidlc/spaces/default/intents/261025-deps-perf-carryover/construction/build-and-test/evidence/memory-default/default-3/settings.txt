@@ -1,0 +1,4 @@
+SETTING_NAME   | SETTING_VALUE
+RETENTION_TIME | 45000
+(1 row, 15 ms)
+settings_exit=0

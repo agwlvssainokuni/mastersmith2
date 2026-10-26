@@ -1,0 +1,104 @@
+before:bizSearchFirst-r1	mastersmith-target-db	0.0	179.498392	seconds
+after:bizSearchFirst-r1	mastersmith-target-db	0.0	3.562947	seconds
+rc:bizSearchFirst-r1	0
+bizSearchFirst-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2612809728
+before:bizSearchFirst-r2	mastersmith-target-db	0.0	3.562947	seconds
+after:bizSearchFirst-r2	mastersmith-target-db	0.0	110.40317800000001	seconds
+rc:bizSearchFirst-r2	0
+bizSearchFirst-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2616238080
+before:bizSearchContains-r1	mastersmith-target-db	0.0	110.40317800000001	seconds
+after:bizSearchContains-r1	mastersmith-target-db	0.0	0.017915999999999998	seconds
+rc:bizSearchContains-r1	99
+bizSearchContains-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2616238080
+before:bizSearchContains-r2	mastersmith-target-db	0.0	0.017915999999999998	seconds
+after:bizSearchContains-r2	mastersmith-target-db	0.0	0.026126999999999997	seconds
+rc:bizSearchContains-r2	99
+bizSearchContains-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2616238080
+before:bizSearchLast-r1	mastersmith-target-db	0.0	0.026126999999999997	seconds
+after:bizSearchLast-r1	mastersmith-target-db	0.0	0.0	seconds
+rc:bizSearchLast-r1	99
+bizSearchLast-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2616238080
+before:bizSearchLast-r2	mastersmith-target-db	0.0	0.0	seconds
+after:bizSearchLast-r2	mastersmith-target-db	0.0	5.062341	seconds
+rc:bizSearchLast-r2	0
+bizSearchLast-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2616238080
+before:bizSearchLastSorted-r1	mastersmith-target-db	0.0	5.062341	seconds
+after:bizSearchLastSorted-r1	mastersmith-target-db	0.0	2.3669580000000003	seconds
+rc:bizSearchLastSorted-r1	0
+bizSearchLastSorted-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2656940032
+before:bizSearchLastSorted-r2	mastersmith-target-db	0.0	2.3669580000000003	seconds
+after:bizSearchLastSorted-r2	mastersmith-target-db	0.0	38.658734	seconds
+rc:bizSearchLastSorted-r2	0
+bizSearchLastSorted-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+before:bizDetail-r1	mastersmith-target-db	0.0	38.658734	seconds
+after:bizDetail-r1	mastersmith-target-db	0.0	6.223351999999999	seconds
+rc:bizDetail-r1	0
+bizDetail-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+before:bizDetail-r2	mastersmith-target-db	0.0	6.223351999999999	seconds
+after:bizDetail-r2	mastersmith-target-db	0.0	5.246828	seconds
+rc:bizDetail-r2	0
+bizDetail-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+before:bizSearchContains-rL12	mastersmith-target-db	0.0	5.246828	seconds
+after:bizSearchContains-rL12	mastersmith-target-db	0.0	1092.801484	seconds
+rc:bizSearchContains-rL12	99
+bizSearchContains-rL12	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+before:bizSearchWide-r1	mastersmith-target-db	NA	NA	
+after:bizSearchWide-r1	mastersmith-target-db	0.0	7.006048	seconds
+rc:bizSearchWide-r1	0
+bizSearchWide-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+app-peak:wide1	978907136 2147483648 
+before:bizSearchWide-r2	mastersmith-target-db	NA	NA	
+after:bizSearchWide-r2	mastersmith-target-db	0.0	484.966198	seconds
+rc:bizSearchWide-r2	0
+bizSearchWide-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2660007936
+app-peak:wide2	946298880 2147483648 
+before:bizCreate-r1	mastersmith-target-db-write	NA	NA	
+after:bizCreate-r1	mastersmith-target-db-write	0.0	309.494217	seconds
+rc:bizCreate-r1	0
+bizCreate-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 2506 oom_kill 0 	peak=2818576384
+before:bizCreate-r2	mastersmith-target-db-write	0.0	309.494217	seconds
+after:bizCreate-r2	mastersmith-target-db-write	0.0	183.668076	seconds
+rc:bizCreate-r2	0
+bizCreate-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 5636 oom_kill 0 	peak=2818576384
+before:bizUpdate-r1	mastersmith-target-db-write	0.0	183.668076	seconds
+after:bizUpdate-r1	mastersmith-target-db-write	0.0	137.650835	seconds
+rc:bizUpdate-r1	0
+bizUpdate-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 8858 oom_kill 0 	peak=2818576384
+before:bizUpdate-r2	mastersmith-target-db-write	0.0	137.650835	seconds
+after:bizUpdate-r2	mastersmith-target-db-write	0.0	112.305516	seconds
+rc:bizUpdate-r2	0
+bizUpdate-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 12051 oom_kill 0 	peak=2818576384
+before:bizDelete-r1	mastersmith-target-db-write	0.0	112.305516	seconds
+after:bizDelete-r1	mastersmith-target-db-write	0.0	112.305516	seconds
+rc:bizDelete-r1	0
+bizDelete-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 12051 oom_kill 0 	peak=2818576384
+before:bizDelete-r2	mastersmith-target-db-write	0.0	112.305516	seconds
+after:bizDelete-r2	mastersmith-target-db-write	0.0	112.305516	seconds
+rc:bizDelete-r2	0
+bizDelete-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 12052 oom_kill 0 	peak=2818576384
+before:bizWritePoolLimit-r1	mastersmith-target-db-write	0.0	112.305516	seconds
+after:bizWritePoolLimit-r1	mastersmith-target-db-write	0.0	17.010889000000002	seconds
+rc:bizWritePoolLimit-r1	0
+bizWritePoolLimit-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 12052 oom_kill 0 	peak=2818576384
+before:bizWritePoolLimit-r2	mastersmith-target-db-write	0.0	17.010889000000002	seconds
+after:bizWritePoolLimit-r2	mastersmith-target-db-write	0.0	13.787145	seconds
+rc:bizWritePoolLimit-r2	0
+bizWritePoolLimit-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 12052 oom_kill 0 	peak=2818576384
+before:bizCreateLarge-r1	mastersmith-target-db-write	NA	NA	
+after:bizCreateLarge-r1	mastersmith-target-db-write	0.0	700.2487619999999	seconds
+rc:bizCreateLarge-r1	0
+bizCreateLarge-r1	mastersmith-perf-targetdb-mysql-1	false running 0	max 12052 oom_kill 0 	peak=2818576384
+app-peak:large1	950202368 2147483648 
+before:bizCreateLarge-r2	mastersmith-target-db-write	NA	NA	
+after:bizCreateLarge-r2	mastersmith-target-db-write	0.0	549.641083	seconds
+rc:bizCreateLarge-r2	0
+bizCreateLarge-r2	mastersmith-perf-targetdb-mysql-1	false running 0	max 13416 oom_kill 0 	peak=2819952640
+app-peak:large2	960614400 2147483648 
+before:bizSearchLast-rR1	mastersmith-target-db	0.0	175.17887100000002	seconds
+after:bizSearchLast-rR1	mastersmith-target-db	0.0	2.582771	seconds
+rc:bizSearchLast-rR1	0
+bizSearchLast-rR1	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2532556800
+before:bizSearchLast-rR2	mastersmith-target-db	0.0	2.582771	seconds
+after:bizSearchLast-rR2	mastersmith-target-db	0.0	3.330526	seconds
+rc:bizSearchLast-rR2	0
+bizSearchLast-rR2	mastersmith-perf-targetdb-mysql-1	false running 0	max 0 oom_kill 0 	peak=2545229824

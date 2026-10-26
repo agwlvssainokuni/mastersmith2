@@ -1,0 +1,1 @@
+{"checks":{"passes":14475,"fails":0,"value":1},"it":{"iteration_duration{scenario:navMenu}":{"count":14475,"avg":124.36826365381725,"min":36.92919,"med":123.70562,"p(90)":168.8886314,"p(95)":187.13146319999996,"p(99)":232.5237788999999,"max":343.051991,"thresholds":{"p(95)<1000":false}}},"failed":{"passes":0,"fails":14485,"value":0}}
