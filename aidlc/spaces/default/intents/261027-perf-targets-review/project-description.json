@@ -1,0 +1,1 @@
+"前の Intent 261025-deps-perf-carryover で Not Met だった性能・資源の目標を見直す（読み取りの p95: bizSearchContains は 3 秒未満・bizSearchLast と bizSearchLastSorted は 2 秒未満、dslMixed の memory.peak は 95% 未満、対象DB の anon の最大は 92% 以下。anon 85% の物差しは変えない）。k6 の合否の線と README を直して測り直し、前の物差しの値を並べて記録する。あわせて Dependabot の開いている PR（#80 ほか）を洗い出して取り込むか閉じる。"

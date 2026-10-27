@@ -110,5 +110,12 @@
     "dirName": "261025-deps-perf-carryover",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a17fb9-1801-75e0-8d58-5ab91c750a26",
+    "slug": "perf-targets-review",
+    "dirName": "261027-perf-targets-review",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
