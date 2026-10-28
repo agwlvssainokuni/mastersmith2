@@ -1,0 +1,6 @@
+k6_start_utc=2026-10-28T15:31:55Z
+k6_end_utc=2026-10-28T15:34:57Z
+k6_exit=0
+login_user_lines=10
+login_user_duplicates=0
+post_missing_seconds=0

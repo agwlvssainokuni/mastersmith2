@@ -153,7 +153,8 @@ complete_rows() {
     }'
 }
 
-# まとめを出す（合否は memory.peak / memory.max < 0.9 だけ。並べる値は peak の時の内訳・anon の最大の割合・file と内部DB の
+# まとめを出す（合否は memory.peak / memory.max < 0.95 だけ（Intent 261027-perf-targets-review の FR1.2 で 0.9 から緩めた）。
+# 前の線 0.9 での判定は judge_090 に並べて出す（FR1.5）。並べる値は peak の時の内訳・anon の最大の割合・file と内部DB の
 # ファイルの伸び）。引数: TSV の置き場 peak.txt の置き場（無ければ /dev/null。比は NA になる）。
 summarize() {
   local tsv=$1 peakfile=$2 all complete
@@ -181,7 +182,8 @@ summarize() {
       printf "rows=%d na_rows=%d\n", rows, na
       if (max ~ /^[0-9]+$/ && max > 0) {
         printf "peak_ratio=%.4f\n", peak / max
-        printf "judge=%s\n", (peak / max < 0.9 ? "under-0.9" : "not-under-0.9")
+        printf "judge=%s\n", (peak / max < 0.95 ? "under-0.95" : "not-under-0.95")
+        printf "judge_090=%s\n", (peak / max < 0.9 ? "under-0.9" : "not-under-0.9")
         printf "anon_max_ratio=%.4f\n", anonmax / max
       } else {
         print "peak_ratio=NA"

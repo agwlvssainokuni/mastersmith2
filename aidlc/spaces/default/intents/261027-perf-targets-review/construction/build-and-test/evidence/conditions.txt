@@ -1,0 +1,19 @@
+image_local_id=sha256:3075065a2653d58c2eb68fcf2362101bc5f833f6b676784d4a0ea971b8ef87b0
+image_war_sha256=ff50498b88a97ac122ac39336ed946908389b1ddcacb14665e8412deead6f9f0
+local_war_sha256=ff50498b88a97ac122ac39336ed946908389b1ddcacb14665e8412deead6f9f0
+git_head=b342649
+colima=default Running aarch64 4 6GiB 100GiB docker 
+vm_mem=Mem: 5910 1035 614 18 4470 4875
+k6_image=grafana/k6:2.3.0@sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34
+t_app_stopped=2026-10-28T14:46:27Z
+   PreventSystemSleep             0
+   PreventUserIdleSystemSleep     1
+   pid 552(powerd): [0x0045ab8d00018107] 00:12:25 PreventUserIdleSystemSleep named: "Powerd - Prevent sleep while display is on"  
+   pid 49243(caffeinate): [0x0045ad910001812d] 00:03:49 PreventUserIdleSystemSleep named: "caffeinate command-line tool"  
+   pid 51007(caffeinate): [0x0045ae750001813d] 00:00:01 PreventUserIdleSystemSleep named: "caffeinate command-line tool"  
+   pid 51007(caffeinate): [0x0045ae750007813f] 00:00:01 PreventSystemSleep named: "caffeinate command-line tool"  
+t_start_all=2026-10-28T14:46:27Z
+t_end_all=2026-10-28T15:40:34Z
+volumes_left=0
+dir_left=0
+t_app_started=2026-10-28T15:40:46Z health=healthy

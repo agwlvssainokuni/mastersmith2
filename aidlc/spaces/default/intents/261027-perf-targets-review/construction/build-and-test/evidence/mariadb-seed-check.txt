@@ -1,0 +1,3 @@
+seed_seconds=5
+rows_total marker_rows longest_chars = 100000	909	2000000
+biz_pair biz_wide rows = 1000	200

@@ -1,0 +1,30 @@
+before:bizSearchContains-r1	0.0 0.0455843
+after:bizSearchContains-r1	0.0 0.002352477
+bizSearchContains-r1	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1019613184
+bizSearchContains-r1	app OOMKilled=false status=running exit=0
+bizSearchContains-r1	k6-out-user-mentions=0
+before:bizSearchContains-r2	0.0 0.002352477
+after:bizSearchContains-r2	0.0 0.000035385
+bizSearchContains-r2	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1021456384
+bizSearchContains-r2	app OOMKilled=false status=running exit=0
+bizSearchContains-r2	k6-out-user-mentions=0
+before:bizSearchLast-r1	0.0 0.000035385
+after:bizSearchLast-r1	0.0 0.000012629
+bizSearchLast-r1	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1067474944
+bizSearchLast-r1	app OOMKilled=false status=running exit=0
+bizSearchLast-r1	k6-out-user-mentions=0
+before:bizSearchLast-r2	0.0 0.000012629
+after:bizSearchLast-r2	0.0 0.000017253
+bizSearchLast-r2	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1069465600
+bizSearchLast-r2	app OOMKilled=false status=running exit=0
+bizSearchLast-r2	k6-out-user-mentions=0
+before:bizSearchLastSorted-r1	0.0 0.000017253
+after:bizSearchLastSorted-r1	0.0 0.00001916
+bizSearchLastSorted-r1	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1077960704
+bizSearchLastSorted-r1	app OOMKilled=false status=running exit=0
+bizSearchLastSorted-r1	k6-out-user-mentions=0
+before:bizSearchLastSorted-r2	0.0 0.00001916
+after:bizSearchLastSorted-r2	0.0 0.000018301
+bizSearchLastSorted-r2	target OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=1086423040
+bizSearchLastSorted-r2	app OOMKilled=false status=running exit=0
+bizSearchLastSorted-r2	k6-out-user-mentions=0

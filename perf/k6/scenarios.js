@@ -412,6 +412,8 @@ const BIZ_SCENARIOS = [
   'bizDetail',
   'bizSearchWide',
 ]
+// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000。bizSearchWide は応答時間を記録だけにする（thresholdsFor）。
+const BIZ_P95_LIMIT_MS = { bizSearchContains: 3000, bizSearchLast: 2000, bizSearchLastSorted: 2000 }
 // 場面の長さ（トークンの有効期限 5 分より短くする）
 const BIZ_DURATION = __ENV.BIZ_DURATION || '3m'
 // 種の台本（perf/biz/make-biz-seed.sh）と DSL（perf/make-biz-dsl.mjs）が作るスキーマ・表・カラム
@@ -579,9 +581,14 @@ function thresholdsFor(name) {
   // Intent 261016-business-data-views の U1（NFR1.1・NFR1.2）。場面ごとの iteration_duration（単調な時計）の p95 < 1000 ms と checks の率 1 で
   // 判定し、http_req_duration{name:…} は並べて記録するだけ（max>=0）。bizSearchWide はメモリの確かめの場面（NFR2.5）で、応答時間は記録だけ。
   if (name === 'bizPrepare') return { 'checks{scenario:bizPrepare}': ['rate==1'] }
+  // Intent 261027-perf-targets-review（FR1.1・FR1.4）: 部分一致（bizSearchContains）は p95 3000 ms、末尾に近いページ（bizSearchLast・
+  // bizSearchLastSorted）は 2000 ms に緩めた（前の線はどれも 1000 ms）。MySQL・MariaDB の部分一致は索引を使えず、深い OFFSET は読む行が増えるため。
+  // DB の種類は区別しない（Q1: A）。ほかの場面（bizSearchFirst・bizDetail・bizDefinition）は 1000 ms のまま。
+  // 変えたときは perf/k6/thresholds-test.sh の期待の表も合わせる。
+  const bizP95LimitMs = BIZ_P95_LIMIT_MS[name] ?? 1000
   if (BIZ_SCENARIOS.includes(name)) {
     return {
-      [`iteration_duration{scenario:${name}}`]: [name === 'bizSearchWide' ? 'max>=0' : 'p(95)<1000'],
+      [`iteration_duration{scenario:${name}}`]: [name === 'bizSearchWide' ? 'max>=0' : `p(95)<${bizP95LimitMs}`],
       [`checks{scenario:${name}}`]: ['rate==1'],
       [`http_req_duration{name:${name}}`]: ['max>=0'],
     }
