@@ -1,6 +1,6 @@
 # API（mastersmith2）
 
-> 2026-10-25（記録のコミット `bc484c9`）の Full rescan・深さ Minimal で作り直した。深く読んだのは業務データの API（`businessdata/web/`）と、一覧の応答の型・画面の件数の表示。ほかの口の一覧は前回の記録（`261016-business-data-views`、`@RestController` と `@ApiAccess` と道の定数の検索による）で、今回は数え直していない。所見の本文はこの文書に K-64 を書いた。
+> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。今回は `businessdata` の `web`・`service` を読み、`RowPageResponse.total` が `long` のままであること（K-64）を再確認した。画面の件数の表示と他の口は前回（`261025-deps-perf-carryover`）の記録による。ほかの口の一覧は前回の記録（`261016-business-data-views`、`@RestController` と `@ApiAccess` と道の定数の検索による）で、今回は数え直していない。所見の本文はこの文書に K-64 を書いた。
 
 ## 外部の API（REST、Spring MVC、JSON）
 

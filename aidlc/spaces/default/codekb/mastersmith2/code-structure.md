@@ -1,6 +1,6 @@
 # コードの構成（mastersmith2）
 
-> 2026-10-25（記録のコミット `bc484c9`）の Full rescan・深さ Minimal で作り直した。ファイルの数は `find` と `git ls-files` の数（アーキテクトが数えた）。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
+> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。`businessdata` と `targetdb` の合計 156 ファイル（`git ls-files`）を再確認し、他のパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。`perf/` の構成（`biz/`・`lib/`・`k6/`・`ui/` ほか）を足した。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
 
 ## リポジトリの最上位
 
@@ -11,7 +11,7 @@
 | `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `ecb07e9`） |
 | `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`、0.1.0） |
 | `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）ほか |
-| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js`、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`）と手順（`perf/README.md`） |
+| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2595 行、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1320 行） |
 | `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
 | `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
 | 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`README.md` |

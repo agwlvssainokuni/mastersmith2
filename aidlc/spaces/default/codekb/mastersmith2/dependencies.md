@@ -1,6 +1,6 @@
 # 依存関係（mastersmith2）
 
-> 2026-10-25（記録のコミット `bc484c9`）の Full rescan・深さ Minimal で作り直した。機能の間の依存は `businessdata` と `audit` を今回の `import` の検索で確かめ、ほかは前回の記録（`261016-business-data-views`、`import` の検索）による。見送りの依存（K-66）の本文はこの文書に書いた。
+> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による（今回は `businessdata`・`targetdb` の境界を読んだが依存の先は変わっていない）。Dependabot の現状（K-66・K-72）の本文はこの文書に書いた。
 
 ## 機能の間の依存（バックエンド）
 
@@ -41,18 +41,21 @@
 
 | 依存 | 今の固定 | メモ |
 |---|---|---|
-| `vendor/make-you-chic-ui` | `ecb07e9248af9f1203a0bd2d79673d35547a4416`（`git submodule status`） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は 1 件（3112 行付近。どのパッケージかは未確認）。固定先を上げるときは `team.md` の手順で増減を確かめる |
+| `vendor/make-you-chic-ui` | `ecb07e9248af9f1203a0bd2d79673d35547a4416`（前回の `git submodule status`。今回は読んでいない） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は 1 件（3112 行付近。どのパッケージかは未確認）。固定先を上げるときは `team.md` の手順で増減を確かめる |
 | `vendor/java-mustache-processor` | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（0.1.0） | 今回の Intent では触れない見込み |
 | `axe-core`（npm、dev） | `^4.14.0` | 以前の `>= 4.14.0` の見送りは外れている（`dependabot.yml` 65 行のコメント） |
 
-**K-66 Dependabot の見送り（`ignore`）3件は、どれも「外す時期: Spring Boot を上げるとき」（`.github/dependabot.yml`）**
+**K-66・K-72 Dependabot の現状（`.github/dependabot.yml`、2026-10-28 に再読）**
 
 - 確かめた事実:
-  - gradle の項（`dependabot.yml` 26〜53 行）の `ignore` は `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0`（外部エクスポートの有効時の失敗を確かめられないため、すべての更新を知らせない）、`com.networknt:json-schema-validator`（3.0.7 以降が Jackson を 3.2 系に上げるため。外す時期は管理の Jackson が 3.2 系以上になったとき）、`tools.jackson:jackson-bom`（脆弱性の直しのパッチの版を上書きしているため、すべての版の更新を知らせない）。Jackson については Dependabot の知らせではなく次の `./gradlew verify`・CI の OSV-Scanner で気づく形。
-  - 同じ項に `exclude-paths: vendor/**`（composite build のサブモジュールの中は更新できないため）。npm の項は `typescript` の大きな版を見送る（TypeScript 7 を受け付けるまで）。docker の項は `eclipse-temurin` の更新を見送る（JDK をビルド・CI とそろえて上げるとき）。
-  - 版の一覧は `technology-stack.md` の K-66 の表。
-- 今回の Intent への意味: Spring Boot を 4.1.2 に上げたら、Tomcat の上書き・Jackson の上書き・appender の固定・networknt の固定を1つずつ見直し、不要になったものは `libs.versions.toml` の上書き・`dependabot.yml` の `ignore` とコメントを同じ変更で外す（`team.md`: 見送りを足す・外すときは理由と時期をコメントに書く）。
+  - エコシステムは gradle・npm（`/frontend`）・github-actions・docker・docker-compose の5つ（いずれも weekly、`open-pull-requests-limit: 10`）。`groups` は使っていない。
+  - gradle: `exclude-paths: vendor/**`（composite build のサブモジュールの依存を更新できないため）。`ignore` は `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0` と `com.networknt:json-schema-validator` の2件（すべての更新）。前回の記録にあった `tools.jackson:jackson-bom` の `ignore` は無くなっている（Jackson の上書きが外れたため）。外す時期はコメントに書いてある（`technology-stack.md` の K-66 の表）。
+  - npm: `typescript` の大きな版だけを見送る（`@typescript-eslint/*` が TypeScript 7 を受け付けるまで）。`axe-core` は `ignore` に入れず、更新時は版と lockfile だけでも E2E の全件と vitest-axe を流し違反 0 件を件数で記録する例外の手順がある。
+  - docker: `eclipse-temurin` の大きな版だけを見送る（JDK をビルド・CI とそろえて上げるとき）。
+  - Dependabot が見ない固定先（手でそろえる）: `docker/perf/compose.yaml`、`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`、`perf/versions.env`（k6・JRE）、`perf/README.md`、`README.md`、`docker/hikari-pool.sh`。
+  - `team.md` の受け方: Dependabot の PR は GitHub の画面でマージせず、手元で版と lockfile をまとめて更新し `./gradlew verify` を通してから `develop` に統合し、PR は閉じる。重大度 High 以上は次の Bolt の前に取り込む。見送りを足すときは理由と外す時期を同じファイルのコメントに書く。
+- 未確認: 今開いている Dependabot の PR の一覧と重大度（`gh` を使っていないため。後の段で確かめる）。
 
 ## Sources
 
-- `import` の検索（アーキテクト、2026-10-25: `businessdata`・`audit`）、境界テストの `@DisplayName`、`git submodule status`、`.github/dependabot.yml`。
+- `import` の検索（前回: `businessdata`・`audit`）、境界テストの `@DisplayName`、`git submodule status`（前回）、`.github/dependabot.yml`（今回）。

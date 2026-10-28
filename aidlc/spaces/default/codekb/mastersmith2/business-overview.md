@@ -1,6 +1,6 @@
 # 業務の概要（mastersmith2）
 
-> 2026-10-25、Intent `261025-deps-perf-carryover` の Reverse Engineering（Full rescan・深さ Minimal、記録のコミット `bc484c9`）で作り直した。深く読んだのは今回の Intent に関わる範囲だけで、それ以外は流し読みか前回の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
+> 2026-10-28、Intent `261027-perf-targets-review`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `bb7e9ce`）で更新した。既存の散文は残し、今回の範囲（perf・`businessdata`・`targetdb`・ビルドと依存の版・Dependabot）の節を更新・拡張した。深く読んだのは今回の範囲だけで、それ以外は前回（`261025-deps-perf-carryover`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
 
 ## 何をするアプリか
 
@@ -21,26 +21,37 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-## 今回の Intent の主題と所見（K-62〜K-68）
+## 所見の一覧（K-62〜K-73）
 
-今回の Intent は前の Intent からの持ち越し（2つの束）である。番号は前回の K-61 の続き。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は前回の K-61 から続く。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-- 第1の束: 固定している部品（Spring Boot 4.1.1 とその上書き）を 4.1.2 で見直す。
-- 第2の束: MySQL・MariaDB の一覧が重い（部分一致・深い OFFSET）ことへの手当て（件数の取り方・読み取りのプール・perf の測り方）。
+### 今回（Intent 261027-perf-targets-review）の主題
+
+性能・資源の目標（k6 の応答時間の線、`memory.peak`・`anon` の物差し）の見直しと、Dependabot の知らせの洗い出し。bugfix のため `backend/src/main` を変える見込みは低い。物差しを変えるのは、`team.md` により要件定義で依頼者が明示に決めたときだけで、変えた後も1回は前の物差しの値を並べて記録する（緩和の決定は 2026-10-28 に出ている。値と対象は要件定義で記録する）。
 
 | 番号 | 要点 | 主な部品 | 本文の場所 |
 |---|---|---|---|
-| K-62 | 一覧は同じ接続で `COUNT(*)`（上限なし）とページの文の2回を実行する | `businessdata` | `architecture.md` の Interaction Diagrams 1 |
-| K-63 | 読み取りのプールは既定 5・借りる待ち 3 秒で、1要求が1接続を使い続ける | `targetdb` | `architecture.md` の Interaction Diagrams 1 |
-| K-64 | 件数 `total` は確定した `long` だけで、「多数」を持てる形が API・画面・テストのどこにも無い | `businessdata`・`frontend-feature-tables` | `api-documentation.md` |
-| K-65 | MySQL と MariaDB は同じ方言クラスで、別の最適化に使う口が無い。索引の案内の部品も DSL の索引の情報も無い | `businessdata`・`dsl` | `component-inventory.md` の `businessdata` |
-| K-66 | 固定している部品（Spring Boot 4.1.1・Tomcat・Jackson・OpenTelemetry の appender・networknt）と Dependabot の見送り3件 | `build-and-verify` | `technology-stack.md`（一覧）・`dependencies.md`（見送り） |
-| K-67 | perf の biz の場面・種・資源の上限と、読み取りのプールを変える口 | `perf-and-monitoring` | `code-quality-assessment.md` |
-| K-68 | `perf/README.md` の依頼の「(c) の grep の形」は該当行を特定できていない | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-69 | k6 の合否の線の定義場所は `perf/k6/scenarios.js` の `thresholdsFor`。biz の読み取りは `iteration_duration` の `p(95)<1000` と `checks` の率 1、`http_req_duration` は記録だけ。DB の種類別の線は無い | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-70 | `memory.peak`・`anon` の物差しの記述箇所（`perf/README.md` と `perf/dsl-mixed-memory.sh`）と現行の判定（peak/max < 0.9、anon に替えない） | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-71 | `docker/perf/compose.yaml` の資源の上限の既定と、`perf/README.md` の運用値（MySQL 2304m・2688m など）が食い違う | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-72 | Dependabot の現状: ignore は gradle 2件・npm 1件・docker 1件、groups 未使用。Tomcat・Jackson の上書きは外れて Spring Boot 4.1.2 の管理の版になっている。開いている PR は未確認 | `build-and-verify` | `dependencies.md`（一覧）・`technology-stack.md`（版） |
+| K-73 | `perf/README.md`（1320 行）・`perf/k6/scenarios.js`（2595 行）が大きく、同じ指標に前の Intent の結果と現行の判定が混在して、どの値が基準か読み取りにくい | `perf-and-monitoring` | `code-quality-assessment.md` |
 
-前回の所見のうち今回も効く未確認の持ち越し（K-53 管理の可否が `users.admin_flag` だけで決まる件、K-59 `memory.peak` の測り方、K-60 make-you-chic-ui と axe-core）は、今回は深く読んでいない。前の記録（`261016-business-data-views` の知識ベース）と `aidlc/spaces/default/memory/project.md` の記録を参照すること。
+### 前の Intent（261025-deps-perf-carryover）から続く所見（今回は再確認した範囲のみ更新）
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-62 | 一覧は同じ接続で `COUNT(*)`（上限なし）とページの文の2回を実行する（今回も `RowSqlBuilder.count`・`RowSqlExecutor.search` は変わっていないことを確かめた） | `businessdata` | `architecture.md` の Interaction Diagrams 1 |
+| K-63 | 読み取りのプールの既定は上限 10・借りる待ち 3 秒（前回 5 から引き上げ済み）で、1要求が1接続を使い続ける | `targetdb` | `architecture.md` の Interaction Diagrams 1 |
+| K-64 | 件数 `total` は確定した `long` だけで、「多数」を持てる形が API・画面・テストのどこにも無い | `businessdata`・`frontend-feature-tables` | `api-documentation.md` |
+| K-65 | MySQL と MariaDB は同じ方言クラスで、別の最適化に使う口が無い | `businessdata`・`dsl` | `component-inventory.md` の `businessdata` |
+| K-66 | 固定している部品の見直し: Spring Boot 4.1.2 に上がり、Tomcat・Jackson の上書きは外れた。appender と networknt の固定は残る | `build-and-verify` | `technology-stack.md`（一覧）・`dependencies.md` |
+| K-67 | perf の biz の場面・種・資源の上限と、読み取りのプールを変える口 | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-68 | `perf/README.md` の依頼の「(c) の grep の形」は、(c) の節 1003 行の 1021 行（今回は読み直していない） | `perf-and-monitoring` | `code-quality-assessment.md` |
+
+前回の所見のうち今回も効く未確認の持ち越し（K-53 管理の可否が `users.admin_flag` だけで決まる件、K-59 `memory.peak` の測り方、K-60 make-you-chic-ui と axe-core）は、K-59 を除き今回も深く読んでいない（K-59 の測り方は K-70 で読み直した）。前の記録と `aidlc/spaces/default/memory/project.md` の記録を参照すること。
 
 ## Sources
 
-- 開発担当の調査: `aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`
+- 開発担当の調査: `aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
 - アーキテクトが読み取りで確かめ直したもの: `reverse-engineering-timestamp.md` の「確かめ方」

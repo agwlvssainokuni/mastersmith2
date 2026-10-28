@@ -2,10 +2,10 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は前回までの 47 個に、業務データの機能 `businessdata` を足した 48 個（前回の知識ベースの時点ではコードに無かった）。
-- 2026-10-25（記録のコミット `bc484c9`）の Full rescan・深さ Minimal で作り直した。前回までの K-1〜K-61 の本文はここに残していない。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし）。
+- 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で、今回の範囲の4部品（`businessdata`・`targetdb`・`build-and-verify`・`perf-and-monitoring`）を更新した。ほかの部品の記述は前回（2026-10-25、`261025-deps-perf-carryover`）のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
-- 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 5 個。「流し読み」は名前・一覧・grep・前回の記録による（今回は確かめていない）。
+- 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 4 個（`businessdata`・`targetdb`・`build-and-verify`・`perf-and-monitoring`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `frontend-feature-tables` は今回は流し読みに下がった。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -81,8 +81,8 @@
 ### targetdb
 
 - 場所: `targetdb/{config,domain,repository,service}`（43 ファイル、web なし）
-- 責務: 対象DB への接続とスキーマの読み取り。読み取り専用のプール `targetDataSource`（既定の候補にしない、既定の上限 5、借りる待ち 3 秒）と、設定が揃うときだけ作る書き込みのプール（`TargetWriteDataSourceConfig`、`write.pool.maximumSize`）。貸し出しの口 `TargetReadAccess.withRead(ReadPurpose, …)`・`TargetWriteAccess`。目的 `ReadPurpose` は `GENERATE`・`COMPARE`・`LIST`・`DETAIL`、時間の上限は `TargetDbProperties.QueryTimeout`。K-63 の持ち主（本文は `architecture.md`）。
-- 今回読んだもの: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`・`domain/ReadPurpose.java`。ほかはクラスの一覧と `TargetWriteDataSourceConfig` のプールの行だけ。
+- 責務: 対象DB への接続とスキーマの読み取り。読み取り専用のプール `targetDataSource`（既定の候補にしない、既定の上限 10、借りる待ち 3 秒）と、設定が揃うときだけ作る書き込みのプール（`TargetWriteDataSourceConfig`、`write.pool.maximumSize`）。貸し出しの口 `TargetReadAccess.withRead(ReadPurpose, …)`・`TargetWriteAccess`。目的 `ReadPurpose` は `GENERATE`・`COMPARE`・`LIST`・`DETAIL`、時間の上限は `TargetDbProperties.QueryTimeout`。K-63 の持ち主（本文は `architecture.md`）。
+- 今回読んだもの: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`・`domain/ReadPurpose.java`（読み取りのプールの既定 10、書き込みのプールの既定 5 を `TargetDbProperties` で確かめた）、`service/JdbcTargetReadAccess.java` の接続の返し方（`evictConnection`）。ほかはクラスの一覧による。
 - 依存: なし（ほかの機能を import しない） ／ 状態: at-risk（K-63） ／ 読みの深さ: 深い（一部）
 
 ### dsl
@@ -109,7 +109,7 @@
 
 - 場所: `businessdata/{domain,repository,service,web}`（113 ファイル）
 - 責務: 業務データの定義・一覧・詳細・作成・更新・削除。`web` が 6 口（`/api/tables`）、`service` が権限の判定と対象DB の貸し出し、`repository` が SQL の組み立て（`RowSqlBuilder`）と実行（`RowSqlExecutor`）と DB の種類ごとの方言（`MysqlFamilyRowDialect`・`PostgresRowDialect`）と失敗の分類（`RowSqlFailureClassifier`）、`domain` が検証・列の出し分け・出来事 `BusinessDataChangedEvent`。K-62・K-64・K-65 の持ち主。
-- 今回読んだもの: `repository/RowSqlBuilder.java`（`where`・`count`・`page`）・`repository/RowSqlExecutor.java`（`search`）・`service/BusinessDataReadService.java`（`search`）・`web/RowPageResponse.java`・`web/BusinessDataReadController.java`・`web/BusinessDataWriteController.java`・`web/BusinessDataPaths.java`・`domain/PageRequest.java`・`domain/ContainsPattern.java`。書き込み側と `domain` の大半は読んでいない。
+- 今回読んだもの（前回の読みを今回も再確認した範囲を含む）: `repository/RowSqlBuilder.java`（`where`・`count`・`page`）・`repository/RowSqlExecutor.java`（`search`）・`service/BusinessDataReadService.java`（`search`）・`web/RowPageResponse.java`・`web/BusinessDataReadController.java`・`web/BusinessDataWriteController.java`・`web/BusinessDataPaths.java`・`domain/PageRequest.java`・`domain/ContainsPattern.java`。書き込み側と `domain` の大半は読んでいない。
 - K-65: `RowDialect` の実装は `MysqlFamilyRowDialect`（MySQL と MariaDB の共通）と `PostgresRowDialect` の 2 つで、MySQL と MariaDB で別の最適化をするには切り方の見直しが要る（見立て）。`web`・`domain` に索引を案内する部品は見当たらない（クラス一覧と grep による）。
 - 依存: `common`・`dsl`・`role`（`role.service`・`role.domain` だけ）・`targetdb`。依存されるのは `audit`（`businessdata.domain` だけ）。境界テストは `BusinessDataBoundaryArchitectureTest`（`RowSqlExecutor` だけが JDBC の接続から文を作る、読み取り側はトランザクションと `JdbcTemplate` を使わない、など）。
 - 状態: at-risk（K-62・K-64・K-65） ／ 読みの深さ: 深い（一部）
@@ -180,8 +180,8 @@
 
 - 場所: `features/tables/`（業務データの画面）
 - 責務: 一覧（`BusinessDataListPage`・`BusinessDataTable`・`SearchPanel`・`listPaging.ts`・`listState.ts`）、詳細（`BusinessDataDetailPage`）、作成と更新（`BusinessDataFormPage`）、削除の確かめ、API の呼び出し（`businessDataApi.ts`）、制限の通知（`RestrictionNotice`）。件数は `page.total`（数値）をそのまま表示とページ送りに使う（K-64、本文は `api-documentation.md`）。
-- 今回読んだもの: `BusinessDataListPage.tsx`（207〜225 行の件数とページの範囲の外れ）・`BusinessDataTable.tsx`（213・251 行）。ファイルの一覧。
-- 状態: at-risk（K-64） ／ 読みの深さ: 深い（一部）
+- 前回読んだもの: `BusinessDataListPage.tsx`（207〜225 行の件数とページの範囲の外れ）・`BusinessDataTable.tsx`（213・251 行）。今回は読んでいない。
+- 状態: at-risk（K-64） ／ 読みの深さ: 流し読み（前回は深い（一部）。今回の範囲の外のため降格）
 
 ### frontend-feature-registration
 
@@ -207,10 +207,10 @@
 
 ### build-and-verify
 
-- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`
-- 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66 の持ち主（版の一覧は `technology-stack.md`、見送りは `dependencies.md`）。
-- 今回読んだもの: `gradle/libs.versions.toml`・`backend/build.gradle.kts` の Jackson の BOM と `packagesJudgedByTotal` の部分・`backend/gradle.lockfile` の版・`.github/dependabot.yml`・`frontend/package.json`・`frontend/vitest.config.ts`。`ci.yml` は構成だけ。
-- 状態: at-risk（K-66） ／ 読みの深さ: 深い（一部）
+- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回読んだのは `backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`.github/dependabot.yml`）
+- 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。
+- 今回読んだもの: `gradle/libs.versions.toml`・`backend/build.gradle.kts` の `packagesJudgedByTotal` と jacoco の規則・`backend/gradle.lockfile` の版・`.github/dependabot.yml`・`frontend/package.json`。`vitest.config.ts`・`ci.yml` は今回読んでいない（前回の記録による）。
+- 状態: healthy（K-66 の見直しは Spring Boot 4.1.2 で済み、固定は appender と networknt の2つ。開いている Dependabot の PR は未確認） ／ 読みの深さ: 深い（一部）
 
 ### container-runtime
 
@@ -219,6 +219,6 @@
 ### perf-and-monitoring
 
 - 場所: `perf/`・`docker/`
-- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視、見本の対象DB。biz の場面は `bizSearchFirst`・`bizSearchContains`・`bizSearchLast`・`bizSearchLastSorted`・`bizDetail`・`bizSearchWide`（`perf/k6/scenarios.js` 160〜165 行）。種は `perf/biz/make-biz-seed.sh`（`biz_item` は 100 カラム × 既定 100,000 行、`c_001` に索引なし）、DSL は `perf/make-biz-dsl.mjs`、環境は `docker/perf/compose.yaml`。K-67・K-68 の持ち主（本文は `code-quality-assessment.md`）。
-- 今回読んだもの: `perf/k6/scenarios.js` の biz の場面の説明部、`perf/README.md` の biz の場面の表と grep の行、`docker/perf/compose.yaml` の資源の上限の行。
-- 状態: at-risk（K-67・K-68） ／ 読みの深さ: 深い（一部）
+- 責務: k6 の負荷の試験と使い捨ての環境、手元の監視、見本の対象DB。biz の場面は `bizSearchFirst`・`bizSearchContains`・`bizSearchLast`・`bizSearchLastSorted`・`bizDetail`・`bizSearchWide`（`perf/k6/scenarios.js` 160〜165 行）。種は `perf/biz/make-biz-seed.sh`（`biz_item` は 100 カラム × 既定 100,000 行、`c_001` に索引なし）、DSL は `perf/make-biz-dsl.mjs`、環境は `docker/perf/compose.yaml`。K-67〜K-71・K-73 と K-68 の持ち主（本文は `code-quality-assessment.md`）。`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`、`perf/ui/` を含む。
+- 今回読んだもの: `perf/k6/scenarios.js` の `thresholdsFor`・biz の場面の説明部・場面の関数の位置、`perf/README.md` の `memory.peak`・`anon` の記述箇所と対象DB の資源の表、`perf/dsl-mixed-memory.sh`、`perf/versions.env`、`docker/perf/compose.yaml` の資源の上限と対象DB のイメージ。
+- 状態: at-risk（K-69〜K-71・K-73。性能・資源の目標の見直し対象） ／ 読みの深さ: 深い（一部）
