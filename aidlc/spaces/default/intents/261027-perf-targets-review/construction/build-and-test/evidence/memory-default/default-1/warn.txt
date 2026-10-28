@@ -1,0 +1,5 @@
+warn_lines=2
+error_lines=0
+oome_lines=0
+   1 "logger":"org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker"
+   1 "logger":"org.flywaydb.core.internal.database.base.Database"

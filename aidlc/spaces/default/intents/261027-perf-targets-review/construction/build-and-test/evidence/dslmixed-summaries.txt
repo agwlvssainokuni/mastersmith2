@@ -1,0 +1,57 @@
+== build/perf-results/dsl-k6/memory/default-1
+dropped_rows=0
+rows=255 na_rows=0
+peak_ratio=0.9053
+judge=under-0.95
+judge_090=not-under-0.9
+anon_max_ratio=0.6914
+current_max_at=2026-10-28T15:30:49Z current_max=1940676608 anon=1484832768 file=436232192 inactive_file=435941376 kernel=19206144
+anon_max=1484840960 file_first=212992 file_max=436232192 file_growth=436019200
+mv_db_first=1875968 mv_db_max=437604352 mv_db_growth=435728384
+SETTING_NAME   | SETTING_VALUE
+RETENTION_TIME | 45000
+(1 row, 14 ms)
+settings_exit=0
+warn_lines=2
+error_lines=0
+oome_lines=0
+   1 "logger":"org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker"
+   1 "logger":"org.flywaydb.core.internal.database.base.Database"
+== build/perf-results/dsl-k6/memory/default-2
+dropped_rows=0
+rows=255 na_rows=0
+peak_ratio=0.8862
+judge=under-0.95
+judge_090=under-0.9
+anon_max_ratio=0.6877
+current_max_at=2026-10-28T15:34:58Z current_max=1899466752 anon=1476841472 file=403976192 inactive_file=403976192 kernel=18014208
+anon_max=1476853760 file_first=61440 file_max=403976192 file_growth=403914752
+mv_db_first=2252800 mv_db_max=406093824 mv_db_growth=403841024
+SETTING_NAME   | SETTING_VALUE
+RETENTION_TIME | 45000
+(1 row, 14 ms)
+settings_exit=0
+warn_lines=2
+error_lines=0
+oome_lines=0
+   1 "logger":"org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker"
+   1 "logger":"org.flywaydb.core.internal.database.base.Database"
+== build/perf-results/dsl-k6/memory/default-3
+dropped_rows=0
+rows=255 na_rows=0
+peak_ratio=0.8840
+judge=under-0.95
+judge_090=under-0.9
+anon_max_ratio=0.6965
+current_max_at=2026-10-28T15:40:32Z current_max=1896013824 anon=1495646208 file=383672320 inactive_file=383672320 kernel=17874944
+anon_max=1495646208 file_first=65536 file_max=383672320 file_growth=383606784
+mv_db_first=2633728 mv_db_max=386170880 mv_db_growth=383537152
+SETTING_NAME   | SETTING_VALUE
+RETENTION_TIME | 45000
+(1 row, 15 ms)
+settings_exit=0
+warn_lines=2
+error_lines=0
+oome_lines=0
+   1 "logger":"org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker"
+   1 "logger":"org.flywaydb.core.internal.database.base.Database"

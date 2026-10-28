@@ -1,0 +1,6 @@
+run=default-2
+date=2026-10-28T15:31:26Z
+commit=b342649
+image=mastersmith:perf-targets-review
+cpus=4 memory=2g vus=10 duration=3m
+loop_limit_seconds=320 pre_seconds=20 post_seconds=60

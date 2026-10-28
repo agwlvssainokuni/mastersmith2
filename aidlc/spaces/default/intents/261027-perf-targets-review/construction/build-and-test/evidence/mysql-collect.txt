@@ -1,0 +1,33 @@
+bizPrepare rc=0
+== table sizes (table data_length index_length, bytes)
+biz_item	742391808	0
+biz_new	16384	32768
+biz_pair	81920	0
+biz_ref	16384	0
+biz_wide	275267584	0
+== innodb_buffer_pool_size
+1342177280
+== container HostConfig.Memory
+2818572288
+== server version
+26.10.0
+table_total=1017806848 buffer_pool=1342177280 ratio=0.7583
+== app log counts: user_mentions row_values WARN ERROR OOM
+0 0 4 0 0
+== WARN logger names (count)
+   2 org.springframework.context.support.PostProcessorRegistrationDelegate$BeanPostProcessorChecker
+   2 org.flywaydb.core.internal.database.base.Database
+== app 503 count
+== target final state
+OOMKilled=false status=running exit=0 events: low 0 high 0 max 0 oom 0 oom_kill 0 oom_group_kill 0  peak=2258214912 max=2818572288
+== app final
+OOMKilled=false status=running exit=0
+== target anon max per run
+bizSearchContains-r1	anon_max_MiB=1523.6	memory_max=2818572288	ratio=0.5668
+bizSearchContains-r2	anon_max_MiB=1520.1	memory_max=2818572288	ratio=0.5655
+bizSearchLast-r1	anon_max_MiB=1914.9	memory_max=2818572288	ratio=0.7124
+bizSearchLast-r2	anon_max_MiB=1919.1	memory_max=2818572288	ratio=0.7139
+bizSearchLastSorted-r1	anon_max_MiB=1922.9	memory_max=2818572288	ratio=0.7154
+bizSearchLastSorted-r2	anon_max_MiB=1921.7	memory_max=2818572288	ratio=0.7149
+overall: anon_max_MiB=1922.9 memory_max=2818572288 ratio=0.7154 samples=1073
+volumes_left=0

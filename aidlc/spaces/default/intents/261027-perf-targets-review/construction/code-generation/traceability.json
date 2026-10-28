@@ -1,0 +1,139 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR1.5",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR2.6",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR4.1",
+    "FR4.2",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory.sh"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "perf/k6/thresholds-test.sh"
+    },
+    {
+      "id": "FR1.5",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR2.1",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR2.2",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR2.3",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR2.4",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "FR2.6",
+      "status": "OK",
+      "target": "perf/k6/thresholds-test.sh"
+    },
+    {
+      "id": "FR3.1",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR3.2",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": ".github/dependabot.yml"
+    },
+    {
+      "id": "FR4.1",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "FR4.2",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "perf/dsl-mixed-memory-test.sh"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "NFR3",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "NFR4",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    },
+    {
+      "id": "NFR5",
+      "status": "Deferred",
+      "target": "Build and Test / Deployment Pipeline が持つ（code-summary.md の次の段へ引き継ぐこと）"
+    }
+  ]
+}

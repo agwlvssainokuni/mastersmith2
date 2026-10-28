@@ -1,0 +1,12 @@
+{
+  "stage": "code-generation",
+  "version": 1,
+  "writes": [
+    { "path": "perf/k6/scenarios.js" },
+    { "path": "perf/k6/thresholds-test.sh" },
+    { "path": "perf/dsl-mixed-memory.sh" },
+    { "path": "perf/dsl-mixed-memory-test.sh" },
+    { "path": "perf/README.md" },
+    { "path": ".github/dependabot.yml" }
+  ]
+}

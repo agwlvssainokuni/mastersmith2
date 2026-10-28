@@ -107,3 +107,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # 見送る更新（Intent 261027-perf-targets-review の FR3.3・FR3.4、#80）。
+    # otel/opentelemetry-collector の「-386」を付けたタグ（0.163.2-386）は linux/386 だけのイメージで、arm64 と amd64 が無い
+    # （docker buildx imagetools inspect で確かめた）。手元の PC（arm64）で動かないため取り込まない。通常のタグ（0.163.2）の index とは別物。
+    # Dependabot は新しい版のたびに「-386」のタグを提案しうるため、そのつど版を足すか、PR を閉じる（前に #21 の 0.161.0-386 も同じ）。
+    # 外す時期: 公式のタグの付け方が変わったとき、または通常のタグが更新の候補に戻ったとき。
+    ignore:
+      - dependency-name: "otel/opentelemetry-collector"
+        versions: ["0.163.2-386"]

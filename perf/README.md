@@ -859,7 +859,7 @@ grep -h -o '"rolePoolLimit_500": {[^}]*}' build/perf-results/role-pool11-r*.json
 
 10 MiB の DSL の投入と、1行の長さの上限の内で作る悪い形の 5 MiB の権限の YAML の確かめ・適用の間のヒープを、配備と同じ上限（コンテナ 2g・最大ヒープの割合 50%）の使い捨てのアプリで測る。続けて `dslMixed` の `memory.peak` を取る。
 
-- **合否**（FR9.4）: どの測りでも OutOfMemoryError と JVM の停止（`ExitOnOutOfMemoryError` の終了コード 3）が無く、`OOMKilled` が false。`dslMixed` の `memory.peak` が、FR9.3 の見直しの後のメモリの上限（変えないときは 2g）の 90% 未満。
+- **合否**（FR9.4）: どの測りでも OutOfMemoryError と JVM の停止（`ExitOnOutOfMemoryError` の終了コード 3）が無く、`OOMKilled` が false。`dslMixed` の `memory.peak` が、FR9.3 の見直しの後のメモリの上限（変えないときは 2g）の 90% 未満。（Intent 261027-perf-targets-review で、`dslMixed` の `memory.peak` の線は 95% 未満に緩めた。下の「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る。ここは前の Intent の線のまま残す）
 - **ヒープの記録**: `jvm.memory.used?tag=area:heap` を 0.5 秒ごとに読み、測りの間の最大を記録する（GC の後の値ではなく読んだ値の最大。前の Intent の見積もり 256〜384 MB との差と、GC の後でも残った値を並べる）。最大ヒープは `jvm.memory.max?tag=area:heap` で読む。
 - **悪い形の権限の YAML**: 流れの書き方の並びで節の上限（500,000）ちょうどを作り、要素 1,000 個ごとに改行して続ける。残りを1行 1,000 バイトまでのコメントの行で埋めて 5,242,880 バイトちょうどにする。前の悪い形（49.7 万の節＋1.5 MB の1行のコメント）とは、行の分け方と埋め草の形が違う（形の違いを結果に記録する）。中身は `roles` が並びのため、確かめ・適用とも 400 `ROLE_TRANSFER_INVALID` で返る（読み込みと節の数え上げは最後まで行う。適用の指紋は比べる前に同じ上限で拒否される）。
 - **memory.peak**: 前の最大の値を消すため、`dslMixed` の前に使い捨てのアプリを作り直す（`project.md` の学び）。読み方は `docker exec mastersmith-perf-app-1 cat /sys/fs/cgroup/memory.peak`。
@@ -932,7 +932,7 @@ docker logs mastersmith-perf-app-1 2>&1 | grep -c 'OutOfMemoryError'            
 # dslMixed を流し（台本の全体を caffeinate -dims で包む）、流した後に読む
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait --force-recreate app
 #   （ここで DSL の節の k6d で dslMixed を流す）
-docker exec mastersmith-perf-app-1 cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.max   # peak / max が 0.9 未満であること
+docker exec mastersmith-perf-app-1 cat /sys/fs/cgroup/memory.peak /sys/fs/cgroup/memory.max   # peak / max が 0.9 未満であること（Intent 261027-perf-targets-review で 0.95 未満に緩めた。「性能・資源の目標の見直し」の節を参照。前の線の 0.9 も並べて記録する）
 pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
 ```
 
@@ -943,7 +943,7 @@ pmset -g log | grep -E ' (Sleep|DarkWake) ' | tail -20
 
 前の Intent で Not Met のまま持ち越した `dslMixed` の `memory.peak`（FR16）を、内訳（`memory.stat`）と内部DB のファイルの大きさを1秒ごとに記録しながら測る。1回の測りは `perf/dsl-mixed-memory.sh` が受け持ち、既定の接続先で2回、ページキャッシュを減らす手の試し（H2 の `RETENTION_TIME=0`）で2回、合わせて4回流す。測るのは Build and Test（この Intent には Performance Validation の段があるが、`memory.peak` の内訳の測りは依頼者の決定（Build and Test の質問の Q2: A）で Build and Test で行った）。
 
-- **合否**（BR3.1・BR3.5）: 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立てば Met。物差しは変えない（`anon` に替えない。team.md の Testing Posture）。試しの2回は合否に使わず、効いたか（2回とも 0.9 未満か）を見て、取り込むかを依頼者に諮る（BR4.2・BR4.3）。コンテナの上限 2g は上げない。
+- **合否**（BR3.1・BR3.5）: 既定の2回で `memory.peak / memory.max < 0.9` が2回とも成り立てば Met（Intent 261027-perf-targets-review で 0.95 未満に緩めた。`perf/dsl-mixed-memory.sh` は `judge`（0.95）と `judge_090`（前の線）を並べて出す。「性能・資源の目標の見直し」の節を参照）。物差しは変えない（`anon` に替えない。team.md の Testing Posture）。試しの2回は合否に使わず、効いたか（2回とも 0.9 未満か）を見て、取り込むかを依頼者に諮る（BR4.2・BR4.3）。コンテナの上限 2g は上げない。
 - **並べる値**（BR3.2）: `anon` の最大 / `memory.max`、peak の時（`memory_current` が最大の行）の `anon`・`file`・`inactive_file`・`kernel`、`file` の始めと最大の差、内部DB のファイル（`mv_db_bytes`）の始めと最大の差。どれも `summary.txt` に出る。
 - **記録の列**（`memory.tsv`。1秒ごと、時刻は VM の時計の UTC）: `time_utc`・`memory_current`・`memory_peak`・`anon`・`file`・`inactive_file`・`active_file`・`kernel`・`mv_db_bytes`。`memory.stat` は名前で引いてこの順に出し（ファイルの並びに頼らない）、無いキーは `NA` になる。ループはコンテナの中の bash の1つのループを `docker exec` 1回で回し、`--privileged`・`--user`・追加の権限は付けない。秒の上限（既定 320 = 前置き 20 + 場面 180 + 後置き 60 + 余裕 60）で自分で終わり、台本も後置きの 60 秒の後に止める。
 - **1回の流れ**（台本がすること）: 使い捨てのアプリを作り直す（`--force-recreate`。前の peak を消す）→ 始める前の確かめ（`memory.peak`・`memory.current`・`memory.max`・`memory.stat` が読め、`memory.stat` に5つのキーがあり、`mastersmith.mv.db` があること。外れたら `invalid.txt` に理由を書いて終了コード 3 で止まり、その回は合否に使わない）→ 時刻の差（始め）→ ループを始め 20 秒後に `dslMixed`（VUS 10・3 分・10 MiB の DSL）→ 終わりの後 60 秒 → ループを止める → 時刻の差（終わり）→ `memory.peak`・`memory.max`・状態（OOMKilled・終了コード）→ まとめ → WARN・ERROR・OutOfMemoryError の件数とロガーごとの WARN の件数 → アプリを止めて内部DB の設定の値を読む。配備したアプリの停止と起動し直し、`caffeinate -dims`、`pmset` の確かめ、環境の作り分け、片付けは、下の手順で行う。
@@ -1139,11 +1139,11 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
 | `bizPrepare` | 1 VU・1 回。DSL（`DSL_FILE`）の投入と適用、ロール `perf-biz-reader` の用意とスキーマ `bizperf` への READ の保存、試験用の利用者 `perf-biz-01`〜`10` への割り当て、1人ずつログインしての作業ロールの保存と3つの表の定義の確かめ。前の回が残したロールと割り当ても受け入れる | `checks{scenario:bizPrepare}` の率 1 |
 | `bizDefinition` | 定義（`POST /api/tables/definition`、200 で一覧のカラム 100）。対象DB に接続しないため PostgreSQL の回だけで流す | `iteration_duration{scenario:<名前>}` の p95 < 1000 ms と `checks` の率 1 |
 | `bizSearchFirst` | `biz_item` の一覧の1ページ目（100 件・100 カラム・条件なし・既定の並び。全体の件数を含む） | 同上 |
-| `bizSearchContains` | `c_010` の部分一致（目印の語。表の全部を読む形） | 同上 |
-| `bizSearchLast` | 主キーの順の最後のページ（読み飛ばす行の数が多い形。ページの番号は setup が全体の件数から決める） | 同上 |
-| `bizSearchLastSorted` | 索引の無い `c_001` で並べ替えた最後のページ（NFR 設計のレビュー R-05。計画の D2: A。悪い側の条件のまま測り、目標を超えたら Not Met として扱いを諮る） | 同上 |
+| `bizSearchContains` | `c_010` の部分一致（目印の語。表の全部を読む形） | 同上（Intent 261027-perf-targets-review で p95 の線を 3000 ms に緩めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る） |
+| `bizSearchLast` | 主キーの順の最後のページ（読み飛ばす行の数が多い形。ページの番号は setup が全体の件数から決める） | 同上（同じく p95 の線を 2000 ms に緩めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る） |
+| `bizSearchLastSorted` | 索引の無い `c_001` で並べ替えた最後のページ（NFR 設計のレビュー R-05。計画の D2: A。悪い側の条件のまま測り、目標を超えたら Not Met として扱いを諮る） | 同上（同じく p95 の線を 2000 ms に緩めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る） |
 | `bizDetail` | 主キーで1行の詳細（`POST /api/tables/rows/get`。VU と繰り返しの番号で行を回し、2,000,000 字の値の行も含む） | 同上 |
-| `bizSearchWide` | `biz_wide` の1ページ目（100 件 × 100 カラム × 100 字、およそ 3 MB）。メモリの確かめの場面 | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.5。`memory.stat` の `anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ |
+| `bizSearchWide` | `biz_wide` の1ページ目（100 件 × 100 カラム × 100 字、およそ 3 MB）。メモリの確かめの場面 | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.5。`memory.stat` の `anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（対象DB の `anon` の線は Intent 261027-perf-targets-review で 92% 以下の合格の条件に改めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る） |
 
 - **データ**（値はすべて架空。使った規模は結果に記録する）:
   - 種は `perf/biz/make-biz-seed.sh <postgres|mysql|mariadb> [行の数]` が SQL を標準出力に出す（乱数を使わず、行の番号とカラムの番号だけから決まる）。スキーマ `bizperf`（MySQL・MariaDB ではデータベース）に、`biz_item`（主キー `id` と `c_001`〜`c_099` の 100 カラム、既定 100,000 行）・`biz_pair`（複合の主キー、1,000 行）・`biz_wide`（主キー `id` と 100 字を超える文字の `w_001`〜`w_099`、200 行）を作り、`mastersmith_reader` に読み取りの権限を与え、最後に表ごとの行の数を出す（NFR2.1 の記録）。
@@ -1294,14 +1294,14 @@ unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQ
 | `bizUpdate` | 更新（VU ごとに setup で作った別の行の `n_001` を変える。同じ行の排他の待ちを混ぜない）。10 VU・3 分 | 同上 |
 | `bizDelete` | 削除（setup で `ITERATIONS` 件（既定 100）の行を作り、1回に1行を消す） | 同上 |
 | `bizWritePoolLimit` | 参照先に無い `ref_id` での作成（外部キーの違反 → セーブポイントへの戻し → 同じ接続での確かめ。最も長く接続を持つ道）。10 VU で書き込みのプールの上限 5 に必ず届く。409 `BUSINESS_REFERENCE_NOT_FOUND` を正しい答えとして数える（期待の状態コード）。10 VU・3 分 | 同上（NFR2.7） |
-| `bizCreateLarge` | 4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの架空の字、約 3.9 MB）。10 VU × `BIZ_LARGE_ITERATIONS` 回（既定 3） | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.8。`anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ |
+| `bizCreateLarge` | 4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの架空の字、約 3.9 MB）。10 VU × `BIZ_LARGE_ITERATIONS` 回（既定 3） | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.8。`anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（Intent 261027-perf-targets-review で `memory.peak` の線は 95% 未満に緩めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る） |
 
 - **データ**: 種の台本（`make-biz-seed.sh`）が、`biz_ref`（参照先、100 行）と `biz_new`（自動の採番の主キー `id`・一意の制約のある `u_code`・`biz_ref` を指す外部キー `ref_id`・文字の `n_001`〜`n_097` の 100 カラム、行は入れない）を作り、書き込みのアカウント `mastersmith_writer`（対象DB の初期化の台本 `03-writer-account.sh` が作る）に `bizperf` の行の操作（PG は sequence の USAGE も）を与える。DSL（`make-biz-dsl.mjs`）にも同じ形の2つの表を書く。値はすべて架空。
 - **setup の前提**（前の場面の状態に頼らない）: どの書き込みの場面も、setup で書き込みのロール `perf-biz-writer`（スキーマ `bizperf` を READ、`biz_new`・`biz_ref` を FULL と CREATE・DELETE）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、`biz_new` の定義で書き込みが使える（`writeConfigured` と CREATE・UPDATE・DELETE）ことを確かめる。DSL の適用は `bizPrepare` が行う（先に流す）。`bizUpdate` は VU ごとに1行、`bizDelete` は `ITERATIONS` 件の行を、setup が API で作る。どれも使い捨ての環境の監査に残る。
 - **アプリの書き込みの設定**: 上の 1B のとおり、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_WRITE_USERNAME=mastersmith_writer` と `MASTERSMITH_TARGET_DB_WRITE_PASSWORD`（対象DB の一時の環境ファイルの `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` と同じ値）を入れる。値は表示しない。
 - **流す順**（`cicd-pipeline.md` 5節）: 上の「業務データの場面」の 4B の台本の後（読み取りの場面の後）に、`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit` を流す。待ちの最大のような揺れる値があるため、合否の回は複数回流す。`bizCreateLarge` の前に、アプリのコンテナを作り直して前の `memory.peak` を消す（作り直す前にログを `$D` に残す）。MySQL の回のメモリの上限は 2688m（業務データの試験の値。上の「業務データの場面」の表）。
 - **流す順の見直しの案**（Intent 261025-deps-perf-carryover の FR4.6）: 前の Intent では、書き込みの場面の後に読み取りの場面を流したため、MySQL の `bizSearchFirst`・`bizSearchLast` が、書き込みで `biz_new` が約 524 MB に増えて表が MySQL のバッファープールを超えた状態で測られ、1回目だけ満たさなかった（作り直した3回目で満たした）。書き込みの後の読み取りは悪い側に寄る。次の順を提案する（Build and Test の計画で決める）。(1) 読み取りの場面を先に流す（上の 4B の台本）。(2) 書き込みの場面（`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`・`bizCreateLarge`）は、その後に流す。(3) 書き込みの場面の後に読み取りの値が要るときは、対象DB を作り直して（`perfu --profile "targetdb-$KIND" down -v` の後、2B から種を入れ直す）、読み取りを流し直す。この案は、読み取りの値を書き込みの影響から切り離す代わりに、対象DB の作り直しと種の入れ直し（数分）が1種類あたり1回増える。
-- **片付ける前に見るもの**（確かめの結果を見てから片付ける。NFR2.9）: 書き込みのプール（`pool="mastersmith-target-db-write"`。最初に借りるまで出ないため、書き込みを1回流した後に読む）の待ちの時間切れの累計と待ちの最大、アプリの `memory.peak`、対象DB のコンテナの OOMKilled と `memory.events` の `oom_kill`・`max`・`memory.stat` の `anon` の最大、WARN の件数、監査の行の数（`event_type LIKE 'BUSINESS_%'` の種類と結果ごと）、内部DB のファイルの大きさ。対象DB のメモリは「OOMKilled が false、かつ `oom_kill` が 0」で判断し、`anon` の最大が上限の 85% を超えたら依頼者に諮る（基盤の設計のレビューの R-04）。k6 のコンテナの使用量（`docker stats` の CPU・メモリ）も記録する（大きな本文の場面は k6 の側のメモリも使う）。
+- **片付ける前に見るもの**（確かめの結果を見てから片付ける。NFR2.9）: 書き込みのプール（`pool="mastersmith-target-db-write"`。最初に借りるまで出ないため、書き込みを1回流した後に読む）の待ちの時間切れの累計と待ちの最大、アプリの `memory.peak`、対象DB のコンテナの OOMKilled と `memory.events` の `oom_kill`・`max`・`memory.stat` の `anon` の最大、WARN の件数、監査の行の数（`event_type LIKE 'BUSINESS_%'` の種類と結果ごと）、内部DB のファイルの大きさ。対象DB のメモリは「OOMKilled が false、かつ `oom_kill` が 0」で判断し、`anon` の最大が上限の 85% を超えたら依頼者に諮る（基盤の設計のレビューの R-04）。k6 のコンテナの使用量（`docker stats` の CPU・メモリ）も記録する（大きな本文の場面は k6 の側のメモリも使う）。（対象DB の `anon` の最大は Intent 261027-perf-targets-review で 92% 以下の合格の条件に改めた。「性能・資源の目標の見直し（Intent 261027-perf-targets-review）」の節を見る）
 - **本文の上限**: 作成・更新の本文の上限は 4 MiB（4,194,304 バイト）。k6 の `JSON.stringify` は日本語や 4 バイトの字を `\u` でエスケープせずに送るため、`bizCreateLarge` の本文は約 3.9 MB に収まる。字を `\uXXXX` でエスケープする作り方の送り手では、4 バイトの字が 12 バイトになり、同じ値でも 413 `PAYLOAD_TOO_LARGE` になる（NFR 設計のレビューの R-09）。
 
 ```bash
@@ -1318,3 +1318,42 @@ curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?ta
 #   SELECT event_type, result, failure_reason, COUNT(*) FROM audit_events WHERE event_type LIKE 'BUSINESS_%'
 #     GROUP BY event_type, result, failure_reason
 ```
+
+## 性能・資源の目標の見直し（Intent 261027-perf-targets-review）
+
+前の Intent（261016-business-data-views、261015-deps-ui-carryover）で Not Met だった目標の線を、依頼者の決定で見直した。ここは見直した後の線と測り方の入口で、上の節に書いた前の Intent の結果の文は書き換えていない。線を緩めても、`checks` の率 1・`OOMKilled` が false・`oom_kill` が 0 などの正しさの条件は変えない。
+
+### (a) 緩めた線と変えない線
+
+| 対象 | 前の線 | 今の線 | 理由 |
+|---|---|---|---|
+| `bizSearchContains`（部分一致）の p95（`iteration_duration`） | 1000 ms 未満 | 3000 ms 未満 | MySQL・MariaDB の部分一致は索引を使えず、1回の検索で表の全部を2回読むため |
+| `bizSearchLast`・`bizSearchLastSorted`（末尾に近いページ）の p95 | 1000 ms 未満 | 2000 ms 未満 | 深い OFFSET は読み飛ばす行の分だけ重くなるため |
+| `dslMixed` の `memory.peak` / `memory.max` | 90% 未満 | 95% 未満 | 内訳は回収できるページキャッシュを含む（前の Intent の記録）ため |
+| 対象DB の `anon` の最大 / `memory.max` | 参考の線 85%（超えたら諮る） | 92% 以下（新設の合格の条件） | 前回の最大は MySQL 90.3%・MariaDB 87.7% |
+
+- **変えない線**: `bizSearchFirst`・`bizDetail`・`bizDefinition` の p95 は 1000 ms 未満のまま。`bizSearchWide` と書き込みの場面、`dslMixed` の `anon` 85%（アプリのコンテナ。`anon_max_ratio` の物差し）、すべての場面の `checks` の率 1 も変えない。DB の種類（PostgreSQL・MySQL・MariaDB）で線は分けない。
+- **対象DB の合格の条件**（新設）: `OOMKilled` が false、`oom_kill` が 0、`anon` の最大が 92% 以下。分母は測るときの `memory.max`。前の合格の条件は前の 2 つだけで、85% は超えたら依頼者に諮る参考の線だった。
+- **前の線との対応**: 台本の `thresholdsFor`（`perf/k6/scenarios.js`）の表 `BIZ_P95_LIMIT_MS` が p95 の線を持つ。`perf/dsl-mixed-memory.sh` の `summarize` は `judge`（95%）に `judge_090`（前の線 90%）を並べて出す。測り直しでは、前の線の判定も結果の表に並べて記録する。
+
+### (b) 測り方
+
+- 合否の回は 2 回流し、悪い側の値で判定する。`dslMixed` の `memory.peak` は 2 回の差が 1 ポイント以上のとき 3 回目を足し、3 回の最悪値で判定する。対象DB の `anon` は合否の 2 回の最悪値で判定する。
+- 読み取りの場面を先に流し、書き込みの場面はその後に流す（書き込みで表が増えると読み取りが悪い側に寄る。上の「流す順の見直しの案」）。
+- 種を入れた後は、目印の語の当たりと最長の文字数、表の大きさを数えてから流す（文字の組の誤りで 0 件になった前例がある）。
+- 測る前に WAR の SHA-256 を記録して 1 つに決める。配備したイメージと手元の WAR が違うときは依頼者に諮る。
+
+### (c) 線の台本と判定の試し
+
+```
+# 場面ごとの閾値を k6 inspect で確かめる（アプリ・対象DB には触れない。Docker が必要）
+source perf/versions.env
+docker run --rm -e SCENARIO=bizSearchContains -v "$PWD/perf/k6:/scripts:ro" "$K6_IMAGE" \
+  inspect --include-system-env-vars /scripts/scenarios.js | jq '.thresholds'
+# 期待の表との照合（1件でも外れたら終了コード 1）
+bash perf/k6/thresholds-test.sh
+# memory.peak の判定（judge・judge_090）と anon_max_ratio の出力の照合（Docker は使わない）
+bash perf/dsl-mixed-memory-test.sh
+```
+
+`--include-system-env-vars` を付けないと場面の名前が `undefined` になり、確かめにならない。線を変えたときは `perf/k6/thresholds-test.sh` の期待の表も合わせる。
