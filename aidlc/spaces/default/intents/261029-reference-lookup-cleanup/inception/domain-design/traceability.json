@@ -1,0 +1,115 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": [
+    "US1.1",
+    "US1.2",
+    "US1.3",
+    "US1.4",
+    "US1.5",
+    "US2.1",
+    "US2.2",
+    "US2.3",
+    "US2.4",
+    "US2.5",
+    "US3.1",
+    "US3.2",
+    "US3.3",
+    "US3.4",
+    "US3.5",
+    "US4.1",
+    "US4.2",
+    "US4.3"
+  ],
+  "coverage": [
+    {
+      "id": "US1.1",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData, BusinessDataScreens"
+    },
+    {
+      "id": "US1.2",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData, BusinessDataScreens"
+    },
+    {
+      "id": "US1.3",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData, BusinessDataScreens"
+    },
+    {
+      "id": "US1.4",
+      "status": "OK",
+      "target": "ReferenceLookup, RowSqlGateway, TargetDb"
+    },
+    {
+      "id": "US1.5",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData, BusinessDataScreens"
+    },
+    {
+      "id": "US2.1",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData, ApiClient"
+    },
+    {
+      "id": "US2.2",
+      "status": "OK",
+      "target": "BusinessDataScreens, ApiClient, ReferenceLookup"
+    },
+    {
+      "id": "US2.3",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessDataScreens"
+    },
+    {
+      "id": "US2.4",
+      "status": "OK",
+      "target": "BusinessDataScreens"
+    },
+    {
+      "id": "US2.5",
+      "status": "OK",
+      "target": "BusinessDataScreens, BusinessData, ReferenceLookup"
+    },
+    {
+      "id": "US3.1",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData"
+    },
+    {
+      "id": "US3.2",
+      "status": "OK",
+      "target": "ReferenceLookup, BusinessData"
+    },
+    {
+      "id": "US3.3",
+      "status": "OK",
+      "target": "BusinessData, AuditLog"
+    },
+    {
+      "id": "US3.4",
+      "status": "OK",
+      "target": "BusinessData"
+    },
+    {
+      "id": "US3.5",
+      "status": "OK",
+      "target": "ReferenceLookup, TargetDb, RowSqlGateway"
+    },
+    {
+      "id": "US4.1",
+      "status": "OK",
+      "target": "PerfEvidenceRedactor"
+    },
+    {
+      "id": "US4.2",
+      "status": "Deferred",
+      "target": "部品なし（compose.yaml と手順の設定。Code Generation と Deployment Execution で扱う）"
+    },
+    {
+      "id": "US4.3",
+      "status": "Deferred",
+      "target": "部品なし（perf の文書。Code Generation で扱う）"
+    }
+  ]
+}
