@@ -34,6 +34,8 @@
 ## Runtime State
 - **Revision Count**: 3
 
+- **Parked**: 2026-10-29T15:41:35Z
+- **Parked At Stage**: units-generation
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -95,7 +97,7 @@ Per unit: [TBD]
 - **Current Stage**: units-generation
 - **Next Stage**: contract-design
 - **Status**: Running
-- **Last Updated**: 2026-10-29T15:40:50Z
+- **Last Updated**: 2026-10-29T15:41:35Z
 
 ## Session Resume Point
 - **Last Completed Stage**: domain-design
