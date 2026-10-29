@@ -22,3 +22,9 @@
 ## 記録
 
 `evidence/remeasure-results.md` に、条件・場面×DB×回の p95・新旧の線の Met/Not Met・前回の値との比較を書く。`test-results.md` の Target Verification Matrix にも写す。Not Met は緩め直さず、持ち越し先を依頼者に諮る。
+
+
+## k6 の結果ファイルを記録に置くとき（追記）
+
+- k6 の summary json には使い捨ての環境のアクセストークン（JWT、`eyJ…`）が入る。記録（`evidence/`）に置く前に、`eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+` を `[REDACTED-JWT]` に置き換え、置いた後に同じ形の検索が 0 件であることを件数で確かめる。
+- 資格情報の確認は `token` の語だけでなく、この形でも探す。コミットの前に `gitleaks git --redact --config .gitleaks.toml --log-opts=HEAD .` ではなく、`gitleaks dir` で作業ツリーも流す（`verify` の `gitleaksScan` は履歴を見るため、コミット前の証拠ファイルは検査されない）。
