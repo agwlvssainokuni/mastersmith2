@@ -60,7 +60,12 @@ Intent 261027-perf-targets-review。流れは `operation/deployment-pipeline/cd-
 - `main`（`94538ef`）は `develop` の祖先で、fast-forward できる。
 - WAR を作ったコミットと `develop` の先頭の差は `aidlc/`・`perf/`・`.github/dependabot.yml` だけ。アプリのコードは `main` と同一。
 
-（取り込みの結果は、依頼者の承認のあとに追記する）
+### 4.3 取り込みの結果
+
+- 依頼者の承認（2026-10-29）を得て、`main` を `94538ef` から `d797ef7`（配備の記録のコミット）へ fast-forward した（`git merge --ff-only develop`）。`main` と `develop` は同じコミット `d797ef7` を指す。タグは付けていない。
+- `aidlc/` の外の `main` との差は、`perf/`（README・`dsl-mixed-memory.sh`・`k6/scenarios.js`・新しいテスト 2 本）と `.github/dependabot.yml` の 6 ファイルだけで、アプリのコードは `main` の前の先頭と同一。配備した WAR（`ff50498b…`）と `main` のアプリのコードはそろっている。
+- 取り込みの前の CI: `805db12`（2 回目の試行で success）。`d797ef7` は記録だけのコミットで、push の後に CI が動く。
+- `origin` への push は依頼者が行う（`git push origin develop main`）。`origin/main` は `94538ef`、`origin/develop` は `805db12` のまま（この記録の時点）。
 
 ## Sources
 
