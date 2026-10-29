@@ -1,4 +1,4 @@
-# デザインシステムの対応 — reference-lookup-cleanup
+# デザインシステムの対応 — reference-lookup-cleanup（確認の指摘を反映）
 
 出典: `mockups.md`・`interaction-spec.md`。部品の口は、報告ではなく固定先（`vendor/make-you-chic-ui` の `ecb07e9`）のソース（`packages/make-you-chic-ui/src/components/`）を読んで確かめた（`team.md` の Way of Working）。
 
