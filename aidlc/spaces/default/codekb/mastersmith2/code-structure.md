@@ -1,6 +1,6 @@
 # コードの構成（mastersmith2）
 
-> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。`businessdata` と `targetdb` の合計 156 ファイル（`git ls-files`）を再確認し、他のパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。`perf/` の構成（`biz/`・`lib/`・`k6/`・`ui/` ほか）を足した。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
+> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata`・`dsl`・`targetdb`・`role` の選択肢に関わる型の位置と、`frontend/src/features/tables` の構成（約 5,300 行、テストを含む）と `frontend/src/shared` の一覧を確かめて足した。ほかのパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
 
 ## リポジトリの最上位
 
@@ -11,7 +11,7 @@
 | `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `ecb07e9`） |
 | `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`、0.1.0） |
 | `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）ほか |
-| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2595 行、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1320 行） |
+| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 約 2,600 行、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 約 1,360 行）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
 | `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
 | `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
 | 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`README.md` |
@@ -48,6 +48,13 @@
 - `businessdata/web/`: `BusinessDataReadController`・`BusinessDataWriteController`・`BusinessDataPaths`、要求・応答の `record`（`RowPageResponse`・`SearchRequest` ほか）。
 - `businessdata/domain/`: `PageRequest`（ページの大きさ 20・50・100）、`ContainsPattern`、`SearchRequestValidator`、`TableAccessView`、`ReadRejection`、`BusinessDataChangedEvent` ほか。
 - `targetdb/config/`: `TargetDataSourceConfig`（読み取り）・`TargetWriteDataSourceConfig`（書き込み）・`TargetDbProperties`（`Pool`・`QueryTimeout`・`Write`）・`TargetDbSettings`・`TargetDbUsableCondition`。`targetdb/service/`: `TargetReadAccess`・`JdbcTargetReadAccess`・`TargetWriteAccess`・`JdbcTargetWriteAccess`・`TargetSchemaReader`・`JdbcTargetSchemaReader`。
+
+## 選択肢（REFERENCE・LOOKUP）に関わる型の位置（K-74、2026-10-29）
+
+- DSL の型: `dsl/domain/{OptionSource,OptionSourceKind,FormPart,LookupSearchItem,LookupListItem}`。写し: `dsl/service/DslModelMapper`（160〜180 行）。検証: `dsl/validate/DslSemanticValidator`（選択肢の節は 230〜290・375〜380 行）。スキーマ: `resources/dsl/dsl-schema-v2.json`（`options` は 271〜335 行、`formPart` の `lookup` は 160 行）。生成: `dslmanage/generate/DslTreeBuilder.reference()`（241〜250 行、REFERENCE だけ）。
+- 業務データ側: `businessdata/domain/ColumnWriteRulesFactory`（`lookup` → `text` の置き換え、`choices()`）・`ColumnWriteRules`・`SearchOperatorPolicy`・`TableAccessPolicy`、応答は `businessdata/web/{ColumnDefinitionResponse,OptionResponse}`。外部キー違反の写し先は `RowWriteFailureReason` → `WriteRejection` → `BusinessDataWriteService`（245〜292 行）。
+- 画面側: `frontend/src/features/tables/BusinessDataFormPage.tsx`（部品の選び方、780〜870 行）・`SearchPanel.tsx`・`BusinessDataTable.tsx`・`businessDataTypes.ts`。共有部品 `frontend/src/shared/`: `api-client`・`format`・`modal`・`null-value`・`page-size`・`paging`・`row-actions`・`scroll-region`・`slow-notice`・`tree`・`unsaved-guard`・`validation`。
+- 境界の検査の位置: `backend/src/test/java/cherry/mastersmith/businessdata/` の `BusinessDataBoundaryArchitectureTest`（許可の一覧 `allowedDependencies` と `ALLOWED_STATEMENT_OWNERS`）、`targetdb` の `TargetDbBoundaryArchitectureTest`、`role` の `RoleBoundaryArchitectureTest`。今回はテストの本体を読まず、許可の一覧とファイル名の検索だけ。
 
 ## 層と型の決まり（`team.md` の Code Style と一致する形）
 

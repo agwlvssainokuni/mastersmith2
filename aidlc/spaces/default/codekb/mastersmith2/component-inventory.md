@@ -2,10 +2,10 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし）。
-- 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で、今回の範囲の4部品（`businessdata`・`targetdb`・`build-and-verify`・`perf-and-monitoring`）を更新した。ほかの部品の記述は前回（2026-10-25、`261025-deps-perf-carryover`）のまま。前回までの K-1〜K-61 の本文はここに残していない。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし。新しい部品は足していない）。
+- 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
-- 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 4 個（`businessdata`・`targetdb`・`build-and-verify`・`perf-and-monitoring`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `frontend-feature-tables` は今回は流し読みに下がった。
+- 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -83,11 +83,15 @@
 - 場所: `targetdb/{config,domain,repository,service}`（43 ファイル、web なし）
 - 責務: 対象DB への接続とスキーマの読み取り。読み取り専用のプール `targetDataSource`（既定の候補にしない、既定の上限 10、借りる待ち 3 秒）と、設定が揃うときだけ作る書き込みのプール（`TargetWriteDataSourceConfig`、`write.pool.maximumSize`）。貸し出しの口 `TargetReadAccess.withRead(ReadPurpose, …)`・`TargetWriteAccess`。目的 `ReadPurpose` は `GENERATE`・`COMPARE`・`LIST`・`DETAIL`、時間の上限は `TargetDbProperties.QueryTimeout`。K-63 の持ち主（本文は `architecture.md`）。
 - 今回読んだもの: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`・`domain/ReadPurpose.java`（読み取りのプールの既定 10、書き込みのプールの既定 5 を `TargetDbProperties` で確かめた）、`service/JdbcTargetReadAccess.java` の接続の返し方（`evictConnection`）。ほかはクラスの一覧による。
+- 今回（2026-10-29）の読み: `ReadPurpose`・`TargetDbProperties.QueryTimeout`・読み取りの口の署名だけ（署名レベル）。参照先の選択肢の読み取りに専用の `ReadPurpose` が要るかは未決（K-75）。`targetdb` に手を入れると `TargetDbBoundaryArchitectureTest` の許可に触れうる。
 - 依存: なし（ほかの機能を import しない） ／ 状態: at-risk（K-63） ／ 読みの深さ: 深い（一部）
 
 ### dsl
 
-- 場所: `dsl/{domain,parse,service,validate}`（64 ファイル）と `resources/dsl/` ／ 責務: DSL の型・安全な読み込み・検証・適用中のモデルの提供口 `ActiveDslModelProvider`。DSL の型（`dsl/domain`）に索引の情報は無い（`index` の語の grep で 0 件、K-65）。 ／ 依存: なし ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `dsl/{domain,parse,service,validate}`（64 ファイル）と `resources/dsl/` ／ 責務: DSL の型・安全な読み込み・検証・適用中のモデルの提供口 `ActiveDslModelProvider`。DSL の型（`dsl/domain`）に索引の情報は無い（`index` の語の grep で 0 件、K-65）。
+- 選択肢の型（K-74）: `OptionSource`（FIXED・REFERENCE・LOOKUP。種類ごとの必須をコンストラクターで検査）、`OptionSourceKind`、`FormPart`（`LOOKUP` を含む）、`LookupSearchItem`・`LookupListItem`。`DslModelMapper`（160〜180 行）が写し、`DslSemanticValidator`（230〜290・375〜380 行）が `select`・`radio` は FIXED か REFERENCE、`lookup` は LOOKUP のみ、参照先の table・column の実在（同じスキーマの中）を照合する。`resources/dsl/dsl-schema-v2.json`（271〜335 行が `options`）。
+- 今回読んだもの: 上の選択肢の型・`DslModelMapper`・`DslSemanticValidator` の選択肢の節・`dsl-schema-v2.json` の `options` の節。
+- 依存: なし ／ 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### dslmanage
 
@@ -95,7 +99,9 @@
 
 ### role
 
-- 場所: `role/{domain,repository,service,store,transfer,web}`（143 ファイル） ／ 責務: ロールと権限の設定、割り当て、作業ロール、実効の権限の解決（`EffectivePermissionResolver`）、権限の YAML の入れ出し。 ／ 依存: `common`・`dsl`・`group`・`user`。依存されてよいのは `audit`・`navigation`・`businessdata`（`RoleBoundaryArchitectureTest`） ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `role/{domain,repository,service,store,transfer,web}`（143 ファイル） ／ 責務: ロールと権限の設定、割り当て、作業ロール、実効の権限の解決（`EffectivePermissionResolver`）、権限の YAML の入れ出し。 ／ 依存: `common`・`dsl`・`group`・`user`。依存されてよいのは `audit`・`navigation`・`businessdata`（`RoleBoundaryArchitectureTest`）
+- 今回読んだもの: `domain/PermissionSnapshot` の公開の口（`main(schemaName, tableName, columnName)` は 132 行、`create` ほか）。参照先のテーブル・カラムごとに実効の権限を引ける（K-75）。`role` に手を入れると `RoleBoundaryArchitectureTest` の許可の一覧に触れうる（緩める場合は計画に明記して依頼者の承認）。
+- 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### group
 
@@ -112,7 +118,9 @@
 - 今回読んだもの（前回の読みを今回も再確認した範囲を含む）: `repository/RowSqlBuilder.java`（`where`・`count`・`page`）・`repository/RowSqlExecutor.java`（`search`）・`service/BusinessDataReadService.java`（`search`）・`web/RowPageResponse.java`・`web/BusinessDataReadController.java`・`web/BusinessDataWriteController.java`・`web/BusinessDataPaths.java`・`domain/PageRequest.java`・`domain/ContainsPattern.java`。書き込み側と `domain` の大半は読んでいない。
 - K-65: `RowDialect` の実装は `MysqlFamilyRowDialect`（MySQL と MariaDB の共通）と `PostgresRowDialect` の 2 つで、MySQL と MariaDB で別の最適化をするには切り方の見直しが要る（見立て）。`web`・`domain` に索引を案内する部品は見当たらない（クラス一覧と grep による）。
 - 依存: `common`・`dsl`・`role`（`role.service`・`role.domain` だけ）・`targetdb`。依存されるのは `audit`（`businessdata.domain` だけ）。境界テストは `BusinessDataBoundaryArchitectureTest`（`RowSqlExecutor` だけが JDBC の接続から文を作る、読み取り側はトランザクションと `JdbcTemplate` を使わない、など）。
-- 状態: at-risk（K-62・K-64・K-65） ／ 読みの深さ: 深い（一部）
+- 今回（2026-10-29）の読み（K-74・K-75）: `domain/ColumnWriteRulesFactory`（48・106〜113 行）・`domain/ColumnWriteRules`（80 行）・`domain/SearchOperatorPolicy`・`domain/BusinessDataFieldErrorReason`・`domain/RowWriteFailureReason`・`domain/WriteRejection` の `REFERENCE_NOT_FOUND`、`domain/TableAccessPolicy`（64 行で `ColumnWriteRulesFactory.create` を呼ぶ）、`web/ColumnDefinitionResponse`・`web/OptionResponse`、`service/TableAccessResolver`（94〜170 行）、`service/BusinessDataWriteService`（245〜292 行の外部キー違反の写し）、`domain/PageRequest`・`domain/SearchRequestValidator`、境界テストの許可の一覧。`ColumnWriteRulesFactory` が `lookup` を `text` に置き換えているのは前の Intent の意図的な暫定。
+- 今回の Intent への意味: 参照先の読み取りを `businessdata` の内側に置く限り、`BusinessDataBoundaryArchitectureTest` の許可の一覧（`targetdb.service/domain`・`role.service/domain`・`dsl.domain/service`・`common` など）は緩めずに済む見込み（未検証）。SpotBugs の `SQL_` 除外は `RowSqlExecutor` のメソッド単位（`search`・`detail`・`precheckUnique`・`insert`・`update` ほか）で個別に書かれており、新しいメソッドで SQL を組むと除外の追加（計画に明記して承認）か、既存の `search`・`detail` の再利用が要る（K-80）。
+- 状態: at-risk（K-62・K-64・K-65・K-74・K-75） ／ 読みの深さ: 深い（一部）
 
 ### backend-test-support
 
@@ -178,10 +186,11 @@
 
 ### frontend-feature-tables
 
-- 場所: `features/tables/`（業務データの画面）
-- 責務: 一覧（`BusinessDataListPage`・`BusinessDataTable`・`SearchPanel`・`listPaging.ts`・`listState.ts`）、詳細（`BusinessDataDetailPage`）、作成と更新（`BusinessDataFormPage`）、削除の確かめ、API の呼び出し（`businessDataApi.ts`）、制限の通知（`RestrictionNotice`）。件数は `page.total`（数値）をそのまま表示とページ送りに使う（K-64、本文は `api-documentation.md`）。
-- 前回読んだもの: `BusinessDataListPage.tsx`（207〜225 行の件数とページの範囲の外れ）・`BusinessDataTable.tsx`（213・251 行）。今回は読んでいない。
-- 状態: at-risk（K-64） ／ 読みの深さ: 流し読み（前回は深い（一部）。今回の範囲の外のため降格）
+- 場所: `features/tables/`（業務データの画面。テストを含め約 5,300 行）
+- 責務: 一覧（`BusinessDataListPage`・`BusinessDataTable`・`SearchPanel`・`listPaging.ts`・`listState.ts`）、詳細（`BusinessDataDetailPage`）、作成と更新（`BusinessDataFormPage`）、削除の確かめ（`DeleteConfirmModal`）、API の呼び出し（`businessDataApi.ts`）、状態（`businessDataStore.ts`・`useRowSearch`・`useRowDetail`・`useRowWrite`・`useTableDefinition`）、制限の通知（`RestrictionNotice`）、型（`businessDataTypes.ts`）。件数は `page.total`（数値）をそのまま表示とページ送りに使う（K-64、本文は `api-documentation.md`）。
+- 今回の読み（K-76）: 構成の一覧、`BusinessDataFormPage.tsx` の部品の選び方（780〜870 行。`choices` と `formPart` だけで部品を決める）、`SearchPanel`（EQUALS・CONTAINS・RANGE・CHOICE の入力）、`businessDataTypes.ts` の頭。REFERENCE・LOOKUP のための部品（選択肢の読み込み・ピッカー）は無い。
+- 流用の候補（未検証の仮説）: 参照ピッカー用に `shared/modal`（Modal）・`BusinessDataTable`（表）・`SearchPanel`（検索）の形が近い。共有の置き場は `shared/{paging,page-size,scroll-region,modal,tree,unsaved-guard,validation}`。`team.md` により、make-you-chic-ui に無い部品が要るときは設計の段で足りない点を一覧にして上流へ先に依頼する（固定先 `ecb07e9`。使える部品の一覧は今回読んでいない）。
+- 状態: at-risk（K-64・K-76） ／ 読みの深さ: 深い（一部）。テストの本体と `frontend/e2e/` は名前の検索だけ
 
 ### frontend-feature-registration
 
@@ -207,18 +216,20 @@
 
 ### build-and-verify
 
-- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回読んだのは `backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`.github/dependabot.yml`）
+- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
 - 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。
-- 今回読んだもの: `gradle/libs.versions.toml`・`backend/build.gradle.kts` の `packagesJudgedByTotal` と jacoco の規則・`backend/gradle.lockfile` の版・`.github/dependabot.yml`・`frontend/package.json`。`vitest.config.ts`・`ci.yml` は今回読んでいない（前回の記録による）。
+- 今回読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は現在 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
 - 状態: healthy（K-66 の見直しは Spring Boot 4.1.2 で済み、固定は appender と networknt の2つ。開いている Dependabot の PR は未確認） ／ 読みの深さ: 深い（一部）
 
 ### container-runtime
 
-- 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md` ／ 責務: WAR をコピーするだけのイメージ、`app` と profile で起動する監視・メールの受け手・見本の対象DB。読み取りのプールの環境変数は `.env.example` 66〜67 行（値は表示していない。`.env` は開いていない）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md` ／ 責務: WAR をコピーするだけのイメージ、`app` と profile で起動する監視・メールの受け手・見本の対象DB。読み取りのプールの環境変数は `.env.example` 66〜67 行（値は表示していない。`.env` は開いていない）。
+- 今回読んだもの（K-78）: `compose.yaml` の `image:` 行だけ（otel-lgtm は `grafana/otel-lgtm:0.38.0@sha256:75cdf892…`（83 行）、Mailpit は `axllent/mailpit:v1.32.0@sha256:0790692b…`（121 行）。ほか otel-collector 0.163.2・postgres 18.6・mysql 26.10.0・mariadb 13.0.2）と、`README.md` の Mailpit・E2E に関わる記述の検索。動いているコンテナは `docker ps` / `docker images` の一覧での事実で、ダイジェストの一致は未検証。
+- 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### perf-and-monitoring
 
 - 場所: `perf/`・`docker/`
 - 責務: k6 の負荷の試験と使い捨ての環境、手元の監視、見本の対象DB。biz の場面は `bizSearchFirst`・`bizSearchContains`・`bizSearchLast`・`bizSearchLastSorted`・`bizDetail`・`bizSearchWide`（`perf/k6/scenarios.js` 160〜165 行）。種は `perf/biz/make-biz-seed.sh`（`biz_item` は 100 カラム × 既定 100,000 行、`c_001` に索引なし）、DSL は `perf/make-biz-dsl.mjs`、環境は `docker/perf/compose.yaml`。K-67〜K-71・K-73 と K-68 の持ち主（本文は `code-quality-assessment.md`）。`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`、`perf/ui/` を含む。
-- 今回読んだもの: `perf/k6/scenarios.js` の `thresholdsFor`・biz の場面の説明部・場面の関数の位置、`perf/README.md` の `memory.peak`・`anon` の記述箇所と対象DB の資源の表、`perf/dsl-mixed-memory.sh`、`perf/versions.env`、`docker/perf/compose.yaml` の資源の上限と対象DB のイメージ。
-- 状態: at-risk（K-69〜K-71・K-73。性能・資源の目標の見直し対象） ／ 読みの深さ: 深い（一部）
+- 今回（2026-10-29）読んだもの（K-77）: `perf/README.md` の見出しの構成と「性能・資源の目標の見直し」の節（1322 行以降が今の線）、`perf/k6/scenarios.js` の閾値と `setup()`（`handleSummary` は未使用）、`perf/versions.env`、`docker/perf/compose.yaml` の `image:` 行。k6 の呼び出し（`--summary-export`）は README に約 15 か所と `perf/dsl-mixed-memory.sh` 312 行。前回までに読んだ `thresholdsFor` などは今回は再読していない（前回の記録による）。
+- 状態: at-risk（K-69〜K-71・K-73・K-77） ／ 読みの深さ: 深い（一部）

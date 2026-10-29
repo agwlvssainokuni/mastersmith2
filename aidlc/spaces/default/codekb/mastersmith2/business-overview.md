@@ -1,6 +1,6 @@
 # 業務の概要（mastersmith2）
 
-> 2026-10-28、Intent `261027-perf-targets-review`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `bb7e9ce`）で更新した。既存の散文は残し、今回の範囲（perf・`businessdata`・`targetdb`・ビルドと依存の版・Dependabot）の節を更新・拡張した。深く読んだのは今回の範囲だけで、それ以外は前回（`261025-deps-perf-carryover`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
+> 2026-10-29、Intent `261029-reference-lookup-cleanup`（Standard・brownfield）の Reverse Engineering（Focused scan、記録のコミット `15a25aa`）で更新した。既存の散文と前回の所見の一覧は残し、今回の範囲（業務データの選択肢 REFERENCE・LOOKUP、`dsl` の選択肢の型、`targetdb`・`role` の口、`frontend/src/features/tables`、perf の JWT、コンテナの版、i18next の2件）の所見 K-74〜K-80 を足した。深く読んだのは今回の範囲だけで、それ以外は前回（`261027-perf-targets-review`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
 
 ## 何をするアプリか
 
@@ -21,11 +21,25 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-## 所見の一覧（K-62〜K-73）
+## 所見の一覧（K-62〜K-80）
 
-番号は前回の K-61 から続く。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-73 は前回まで、K-74〜K-80 が今回）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261027-perf-targets-review）の主題
+### 今回（Intent 261029-reference-lookup-cleanup）の主題
+
+業務データの選択肢の他テーブル参照（REFERENCE）と参照ピッカー（LOOKUP）の本実装（前の Intent `261016-business-data-views` で意図的に先送りした部分）と、持ち越しの片付け（perf の JWT の自動の伏せ字、コンテナの版、Dependabot の i18next 系2件）。今回の範囲の事実はここに一覧し、本文は持ち主の文書に1回だけ書く。「未検証」と書いた項目は、要件定義・設計の段で確かめる仮説である。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-74 | REFERENCE・LOOKUP は DSL（JSON Schema・モデル・意味の検証・既定の DSL の生成）までは完成しているが、業務データでは `ColumnWriteRulesFactory` が `lookup` を `text` に置き換え、選択肢は FIXED だけを返す（前の Intent の意図的な暫定 BR3.7）。定義の応答にも参照先の情報を載せる欄が無い | `businessdata`・`dsl` | `architecture.md`（Interaction Diagrams 4）・`api-documentation.md` |
+| K-75 | 参照先の行を読む専用の API は無い。権限の引き口 `PermissionSnapshot.main(schema, table, column)`・`TableAccessResolver`・`RowSqlExecutor.search/detail` が流用の候補（未検証の仮説）。読み取りの目的 `ReadPurpose` の新設要否・参照先の権限が NONE のときの扱い・件数の上限は設計の判断 | `businessdata`・`role`・`targetdb` | `architecture.md`（Interaction Diagrams 4） |
+| K-76 | 画面の流用点: `SearchPanel`・`BusinessDataTable`・`BusinessDataFormPage` の部品の選び方（formPart の分岐）・`shared/modal`。参照ピッカーに近い形だが未検証。make-you-chic-ui に無い部品は先に上流へ依頼する（`team.md`） | `frontend-feature-tables` | `component-inventory.md` |
+| K-77 | perf の k6 の summary json に使い捨ての環境の JWT が `setup_data` として出る。自動の伏せ字の仕組みは `perf/` にも README にも無く、決まりは `project.md` の記述だけ（手で置換） | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-78 | コンテナの版の固定先が分散している。`compose.yaml` の lgtm 0.38.0・Mailpit v1.32.0 のタグは動いている（または止まっている）コンテナと一致して見えるが、ダイジェストの一致は未検証 | `container-runtime`・`perf-and-monitoring` | `dependencies.md`・`technology-stack.md` |
+| K-79 | Dependabot の i18next 系2件（#81、#82）は patch。画面での使い方は狭く影響は小さい見込み（未検証）。`dependabot.yml` の npm の `ignore` はこの2件を妨げない | `build-and-verify`・`frontend-app-layout-i18n` | `dependencies.md` |
+| K-80 | 境界テスト・関門の確かめ: 参照先の読み取りを `businessdata` の内側に置く限り `BusinessDataBoundaryArchitectureTest` の許可は緩めずに済む見込み。`SQL_` の SpotBugs 除外は `RowSqlExecutor` のメソッド単位のため、新しい SQL のメソッドは除外の追加（計画に明記して承認）か既存の `search`／`detail` の再利用が要る | `businessdata`・`build-and-verify` | `code-quality-assessment.md` |
+
+### 前の Intent（261027-perf-targets-review）の所見（今回は再確認していない範囲を含む）
 
 性能・資源の目標（k6 の応答時間の線、`memory.peak`・`anon` の物差し）の見直しと、Dependabot の知らせの洗い出し。bugfix のため `backend/src/main` を変える見込みは低い。物差しを変えるのは、`team.md` により要件定義で依頼者が明示に決めたときだけで、変えた後も1回は前の物差しの値を並べて記録する（緩和の決定は 2026-10-28 に出ている。値と対象は要件定義で記録する）。
 
@@ -35,7 +49,7 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | K-70 | `memory.peak`・`anon` の物差しの記述箇所（`perf/README.md` と `perf/dsl-mixed-memory.sh`）と現行の判定（peak/max < 0.9、anon に替えない） | `perf-and-monitoring` | `code-quality-assessment.md` |
 | K-71 | `docker/perf/compose.yaml` の資源の上限の既定と、`perf/README.md` の運用値（MySQL 2304m・2688m など）が食い違う | `perf-and-monitoring` | `code-quality-assessment.md` |
 | K-72 | Dependabot の現状: ignore は gradle 2件・npm 1件・docker 1件、groups 未使用。Tomcat・Jackson の上書きは外れて Spring Boot 4.1.2 の管理の版になっている。開いている PR は未確認 | `build-and-verify` | `dependencies.md`（一覧）・`technology-stack.md`（版） |
-| K-73 | `perf/README.md`（1320 行）・`perf/k6/scenarios.js`（2595 行）が大きく、同じ指標に前の Intent の結果と現行の判定が混在して、どの値が基準か読み取りにくい | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-73 | `perf/README.md`（1,359 行。2026-10-29 に再計測）・`perf/k6/scenarios.js`（2595 行）が大きく、同じ指標に前の Intent の結果と現行の判定が混在して、どの値が基準か読み取りにくい | `perf-and-monitoring` | `code-quality-assessment.md` |
 
 ### 前の Intent（261025-deps-perf-carryover）から続く所見（今回は再確認した範囲のみ更新）
 
@@ -53,5 +67,5 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 
 ## Sources
 
-- 開発担当の調査: `aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
+- 開発担当の調査: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
 - アーキテクトが読み取りで確かめ直したもの: `reverse-engineering-timestamp.md` の「確かめ方」

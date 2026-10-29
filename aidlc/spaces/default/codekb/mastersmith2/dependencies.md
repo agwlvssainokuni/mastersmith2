@@ -1,6 +1,6 @@
 # 依存関係（mastersmith2）
 
-> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による（今回は `businessdata`・`targetdb` の境界を読んだが依存の先は変わっていない）。Dependabot の現状（K-66・K-72）の本文はこの文書に書いた。
+> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による。今回は `businessdata` の境界テストの許可の一覧と `dependabot.yml` の全文を読み、Dependabot の i18next 系2件（K-79）とコンテナの版の固定先（K-78）を足した。K-66・K-72 の記述は前回（2026-10-28）のまま、`dependabot.yml` で再確認した範囲だけ更新した。
 
 ## 機能の間の依存（バックエンド）
 
@@ -24,6 +24,7 @@
 | `config` | `common` | 全体の `ArchitectureTest` |
 
 - 依存される側の制限: `role` に依存してよいのは `audit`（`role.domain`）・`navigation`・`businessdata`（`role.service`・`role.domain`）だけ（`RoleBoundaryArchitectureTest` 129 行の `@DisplayName`）。`businessdata` に依存してよいのは `audit` の `businessdata.domain`（出来事と理由）だけ（`BusinessDataBoundaryArchitectureTest` 174 行）。`targetdb` の外から `targetdb.config`・`targetdb.repository` に依存しない（前回の記録）。
+- `BusinessDataBoundaryArchitectureTest` の `allowedDependencies`（2026-10-29 に読んだ）は `businessdata` の依存先を `targetdb.service/domain`・`role.service/domain`・`dsl.domain/service`・`common` などに限る。参照先の読み取りを `businessdata` の内側に置く限り緩める必要は無い見込み（未検証、K-80）。`targetdb` に手を入れると `TargetDbBoundaryArchitectureTest`、`role` に手を入れると `RoleBoundaryArchitectureTest` の許可の一覧に触れうる（緩める場合は計画に明記して依頼者の承認）。
 - 逆向きの知らせは Spring の出来事（監査は `audit` が各機能の `domain` の出来事の型を import して受ける）。
 
 ## 画面の依存
@@ -54,6 +55,19 @@
   - docker: `eclipse-temurin` の大きな版だけを見送る（JDK をビルド・CI とそろえて上げるとき）。
   - Dependabot が見ない固定先（手でそろえる）: `docker/perf/compose.yaml`、`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`、`perf/versions.env`（k6・JRE）、`perf/README.md`、`README.md`、`docker/hikari-pool.sh`。
   - `team.md` の受け方: Dependabot の PR は GitHub の画面でマージせず、手元で版と lockfile をまとめて更新し `./gradlew verify` を通してから `develop` に統合し、PR は閉じる。重大度 High 以上は次の Bolt の前に取り込む。見送りを足すときは理由と外す時期を同じファイルのコメントに書く。
+- 再確認（2026-10-29）: `dependabot.yml` の npm の `ignore` は `typescript` の大きな版だけで、i18next 系の patch 2件を妨げない。
+
+**K-79 Dependabot の i18next 系2件（#81、#82）（`build-and-verify`・`frontend-app-layout-i18n`）**
+
+- 確かめた事実（開発担当の調査）:
+  - i18next は `package.json` が `^26.5.5`、lockfile が 26.5.10。#81 は 26.5.10 → 26.5.11。react-i18next は `package.json` が `^17.1.2`、lockfile が 17.1.8。#82 は 17.1.8 → 17.1.9。どちらも patch。
+  - 画面での使い方は狭い: `useTranslation` を 21 ファイルが使い、`I18nextProvider` は `app/i18n/I18nProvider.tsx` の1か所、`i18next` 本体の import は `app/i18n/i18n.ts` の1か所だけ。
+  - `team.md` の決まりで、PR は GitHub の画面でマージせず、手元で `package.json`・lockfile を更新して `./gradlew verify` を通してから `develop` に統合し、PR は閉じる。
+- 未検証: 2件のリリースノートは読んでいない。影響は小さい見込みだが、画面の文言の切り替え全体に効くため `verify`（画面のテスト）で確かめる。
+
+**K-78 コンテナの版の固定先（`container-runtime`・`perf-and-monitoring`）**
+
+- 事実は `technology-stack.md` の「手元の運用」に書いた（固定先の一覧と、動いているコンテナのタグが `compose.yaml` と一致して見えること）。ダイジェストの一致は未検証。固定先が複数のファイルに分散するため、上げるときは `dependabot.yml` のコメントの一覧どおりにそろえる（`team.md`）。
 - 未確認: 今開いている Dependabot の PR の一覧と重大度（`gh` を使っていないため。後の段で確かめる）。
 
 ## Sources

@@ -1,6 +1,6 @@
 # API（mastersmith2）
 
-> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で更新した。今回は `businessdata` の `web`・`service` を読み、`RowPageResponse.total` が `long` のままであること（K-64）を再確認した。画面の件数の表示と他の口は前回（`261025-deps-perf-carryover`）の記録による。ほかの口の一覧は前回の記録（`261016-business-data-views`、`@RestController` と `@ApiAccess` と道の定数の検索による）で、今回は数え直していない。所見の本文はこの文書に K-64 を書いた。
+> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata/web` の定義の応答（`ColumnDefinitionResponse`・`OptionResponse`）と道の定数を読み、選択肢の REFERENCE・LOOKUP の情報を載せる欄が無いこと（K-74）を記録した。K-64（件数 `total`）は前回（`261027-perf-targets-review`）の記述のまま。ほかの口の一覧は前回の記録で、今回は数え直していない。
 
 ## 外部の API（REST、Spring MVC、JSON）
 
@@ -31,6 +31,14 @@
 - 6 口とも `@ApiAccess(ApiAccessLevel.AUTHENTICATED)`（`BusinessDataReadController` 50 行、`BusinessDataWriteController` 54 行）。権限はサービスの層がテーブルごとに判定する。
 - 一覧の応答 `RowPageResponse`（`businessdata/web/RowPageResponse.java` 22〜58 行）は `definitionId`・`definitionChanged`・`items`・`page`（`long`）・`size`（`int`）・`total`（`long`）。`toString` は件数だけを出す。
 
+**K-74（API 側の事実）定義の応答は選択肢を FIXED のものだけ返し、REFERENCE・LOOKUP の情報を載せる欄が無い（`businessdata`）**
+
+- 確かめた事実（開発担当の調査）:
+  - `POST /api/tables/definition` の応答の `ColumnDefinitionResponse` は、カラムごとに `formPart` と `choices`（`OptionResponse` の一覧）を持つ。`OptionResponse` は `value` と `label`（`DisplayName`）だけ（アーキテクトが読み直した）。参照先の table・valueColumn・labelColumn・lookupSearch・lookupList を載せる欄は無い。
+  - `choices` は DSL の `source: FIXED` の選択肢だけ。REFERENCE・LOOKUP のカラムの `formPart` は、LOOKUP が `text` に置き換わった値で返る（`architecture.md` の Interaction Diagrams 4）。
+  - 参照先の行を読む専用の API は無い。検索 API（`POST /api/tables/rows/search`）の対象は1つのテーブルで、参照先の表を指定する形ではない。参照の外部キー違反だけは書き込みの応答に 409 `BUSINESS_REFERENCE_NOT_FOUND`（フィールドの誤り）として出る。
+- 未検証の仮説: 参照先の選択肢やピッカーの一覧を出すには、定義の応答に参照先の情報を足すか、参照先を読む新しい API（1〜2本）を足す。どちらも `team.md` の「業務データの機能」の必須のテスト（API ごとの 401・403・200、カラムの出し分け、IDOR など）が当たる。口の数（今は 6）が増える。
+
 **K-64 件数 `total` は確定した `long` だけで、「多数」を表す値を持てる形が API・サービス・画面のどこにも無い（`businessdata`・`frontend-feature-tables`）**
 
 - 確かめた事実:
@@ -56,4 +64,5 @@
 
 ## Sources
 
+- 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の APIs Discovered）と `OptionResponse.java`（アーキテクト、2026-10-29）。
 - `businessdata/web/BusinessDataReadController.java`・`BusinessDataWriteController.java`・`BusinessDataPaths.java`・`RowPageResponse.java`、`BusinessDataListPage.tsx`（アーキテクト、2026-10-25）と開発担当の APIs Discovered・K-64。

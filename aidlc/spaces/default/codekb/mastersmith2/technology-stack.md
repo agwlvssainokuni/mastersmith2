@@ -1,6 +1,6 @@
 # 技術の構成（mastersmith2）
 
-> 2026-10-28（記録のコミット `bb7e9ce`）の Intent `261027-perf-targets-review` の Focused scan で、`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`docker/perf/compose.yaml` の版を読み直して更新した。`Dockerfile`・`vendor/` は前回（2026-10-25）の値のまま。所見 K-66 の本文はこの文書に書いた。
+> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回読み直したのは `frontend/package.json`（i18next 系）と `compose.yaml`・`docker/perf/compose.yaml` の `image:` 行、`perf/versions.env`、`backend/build.gradle.kts` の一部だけ。バックエンドの版の表・検査の道具の表は前回（2026-10-28、`gradle/libs.versions.toml`・`backend/gradle.lockfile` の再読）のまま。`Dockerfile`・`vendor/` は前々回（2026-10-25）の値のまま。所見 K-66 の本文はこの文書、K-78 の事実を「手元の運用」に足した。
 
 ## 言語と実行環境
 
@@ -35,7 +35,7 @@
 |---|---|---|
 | React | ^19.2.8（`react-dom` も同じ） | 画面 |
 | react-router | ^8.5.0 | 振り分け |
-| i18next / react-i18next | ^26.5.5 / ^17.1.2 | 日英の文言 |
+| i18next / react-i18next | ^26.5.5 / ^17.1.2（`package.json`。lockfile は 26.5.10 / 17.1.8。2026-10-29 に確かめた） | 日英の文言。Dependabot #81（i18next 26.5.10 → 26.5.11）・#82（react-i18next 17.1.8 → 17.1.9）は patch（K-79、`dependencies.md`） |
 | Vite | ^8.3.5 | ビルドと開発のサーバー |
 | make-you-chic-ui | サブモジュール `ecb07e9` | デザインシステム |
 
@@ -76,6 +76,9 @@
 - ほかの Spring Boot が管理する部品の版は lockfile で確かめた: Hibernate 7.4.13.Final、HikariCP 7.0.2、Flyway 12.4.0、H2 2.4.240、OpenTelemetry SDK 1.62.0。H2 を上げるときは `-Dh2.compactThreads=1` の要否を見直す（`project.md` の Tech Stack）。
 
 ## 手元の運用
+
+- コンテナの版の固定先（K-78、2026-10-29 に `image:` 行を読んだ）: `compose.yaml` は otel-lgtm `grafana/otel-lgtm:0.38.0@sha256:75cdf892…`（83 行）、Mailpit `axllent/mailpit:v1.32.0@sha256:0790692b…`（121 行）、otel-collector 0.163.2、postgres 18.6、mysql 26.10.0、mariadb 13.0.2。`docker/perf/compose.yaml` の postgres・mysql・mariadb・Mailpit は `compose.yaml` と同じ版とダイジェスト（lgtm と collector は無い）。ほかの固定先は `backend/.../TargetDbImages.java`、`perf/versions.env`（k6・JRE）、`docker/hikari-pool.sh`（jdk）、`README.md`（Mailpit）、`perf/README.md`（lgtm、433 行ほか）に分散し、一覧は `.github/dependabot.yml` のコメントにある。
+- 動いているコンテナ（`docker ps -a` / `docker images` の一覧、開発担当の読み取り）: Mailpit は `axllent/mailpit:v1.32.0` で稼働中（`compose.yaml` と同じタグ）、lgtm のコンテナ `mastersmith-lgtm-1` は `grafana/otel-lgtm:0.38.0` で停止中、ローカルのイメージ一覧には `grafana/otel-lgtm:0.34.0` も残る。タグは `compose.yaml` と一致して見え、ずれは今は見えない。**ダイジェストの一致は `docker inspect` を使っていないため未検証。**
 
 - 負荷の試験の使い捨ての環境（`docker/perf/compose.yaml`）の対象DB は postgres 18.6・mysql 26.10.0・mariadb 13.0.2・Mailpit v1.32.0（いずれもダイジェストで固定）。
 - 監視は `grafana/otel-lgtm` と OpenTelemetry Collector を compose の profile で起動し、警報とダッシュボードは `docker/monitoring/` のファイルで持つ。メールの受け手（Mailpit）と見本の対象DB も compose の profile（前回の記録）。
