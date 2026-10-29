@@ -284,7 +284,7 @@
     {
       "id": "NFR2",
       "status": "Deferred",
-      "target": "performance-validation"
+      "target": "performance-validation（受け皿のストーリーは US3.5。場面・線・DB は AC3.5.4。実測は Performance Validation）"
     },
     {
       "id": "NFR3",
@@ -299,7 +299,7 @@
     {
       "id": "NFR5",
       "status": "Deferred",
-      "target": "code-generation, build-and-test"
+      "target": "code-generation, build-and-test（受け皿のストーリーは US3.5 と US2.5。実測は code-generation と build-and-test）"
     },
     {
       "id": "NFR6",

@@ -1,4 +1,4 @@
-# ペルソナ — reference-lookup-cleanup（最終版）
+# ペルソナ — reference-lookup-cleanup（最終版・確認の指摘を反映）
 
 出典: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/requirements-analysis/requirements.md` の Intent の分析、ストーリーの質問 Q1（P1・P2・P3 を前の Intent 261016-business-data-views から引き継ぎ、P4 を足す）。
 

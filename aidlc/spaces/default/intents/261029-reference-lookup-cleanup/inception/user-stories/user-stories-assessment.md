@@ -1,4 +1,4 @@
-# ユーザーストーリーの要否（reference-lookup-cleanup、最終版）
+# ユーザーストーリーの要否（reference-lookup-cleanup、最終版・確認の指摘を反映）
 
 ## 判定
 
