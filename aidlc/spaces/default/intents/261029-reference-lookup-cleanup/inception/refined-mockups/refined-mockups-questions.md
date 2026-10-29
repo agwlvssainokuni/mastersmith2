@@ -1,0 +1,70 @@
+# Refined Mockups — 質問（Intent 261029-reference-lookup-cleanup）
+
+classic の範囲で Ideation のラフな画面イメージ（wireframes・user-flow）が無いため、画面イメージはストーリー（`aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/user-stories/stories.md`）と要件から直接作ります。ストーリーで決まっていない画面の組み立てだけを尋ねます。
+
+## 決まっていること（質問しません）
+
+- WCAG 2.1 AA。キーボードだけ・読み上げでも使える。axe は、展開した状態・長い名前・誤り状態・ブランドカラーとテーマの全組で行う（AC2.4.x、NFR4）。
+- ピッカーは「条件を入れて検索すると一覧（1ページ 20 件・ページ送り）が出て、1 行を選ぶと閉じて値が入り、ラベルが入力欄の隣に出る」。開いた直後は何も出さず、条件の入力を促す。単一選択のみ（Q3 の答え）。
+- 権限を欠く項目は入力不可にし、すでに入っている値だけを表示する。権限不足と「候補が多い」の文言は分ける（AC1.2.x・AC1.3.x）。
+- 一覧・詳細の画面は変えない（US3.4）。
+- 画面の文言は日本語と英語の両方。既定は日本語。
+- 部品は make-you-chic-ui の既存の部品を使う。固定先（`ecb07e9`）のソースで、Modal（`initialFocusRef`・`finalFocusRef`・`closeOnBackdropClick`・`role`・重ねて開く）、Table（`render` で列の中に部品を置ける、ページ送り、`labels`）、FormField、TextInput、Select、Alert、Toast、Button があることを確かめた。
+
+## Q1: ピッカーのダイアログの組み立て
+A. 大きめの Modal（`size="lg"`）。上に検索条件（`lookupSearch` の項目ごとに入力と、演算子が選べるときは演算子）と「検索」ボタン、下に Table（`lookupList` のカラム。各行の右端に「選ぶ」ボタンの列、ページ送り）を置く
+B. 検索条件だけの小さな Modal にし、結果は同じ Modal の中のリスト（表ではなく縦の一覧）で出す
+X. Other (please specify)
+
+[Answer]: A
+
+## Q2: ダイアログの背景をクリックしたとき
+A. 閉じない（`closeOnBackdropClick={false}`）。「閉じる」ボタンと Escape だけで閉じる。入れた検索条件を、うっかりのクリックで失わない
+B. 閉じる（既定）。閉じても入力欄の値は変わらないが、入れた検索条件は消える
+X. Other (please specify)
+
+[Answer]: A
+
+## Q3: 選んだ値の見せ方
+A. 入力欄は読み取り専用のテキスト欄で、選んだ行のラベルと値を並べて出す（例: 山田商事 (C001)）。右に「選ぶ…」ボタン、NULL を許す項目では「クリア」ボタンも置く
+B. 入力欄は置かず、ラベルを文字で出し、その下に「選ぶ…」ボタンを置く
+X. Other (please specify)
+
+[Answer]: A
+
+## Q4: 権限を欠いて入力不可になった項目の見せ方（REFERENCE・LOOKUP 共通）
+A. 読み取り専用のテキスト欄に、保存されている値そのものを出し、欄の下に説明文「参照先を読む権限がないため変更できません」を置く（`aria-readonly`・説明文は `aria-describedby` で結ぶ。値は読み上げで確かめられる）
+B. 無効（`disabled`）の Select／入力欄にして、説明文は項目名の横のアイコンのツールチップに出す（ツールチップは読み上げやキーボードで届きにくい）
+X. Other (please specify)
+
+[Answer]: A
+
+## Q5: 「候補が多いため選べない」案内（201 件以上で LOOKUP が無い REFERENCE の項目）の場所
+A. 項目の下に、権限不足とは別の説明文を置く（「候補が多いため選べません。管理者に、検索（ピッカー）への切り替えを依頼してください」）。項目は入力不可で、既存の値は値のみ表示する
+B. フォームの上に Alert（情報）でまとめて出し、項目には印だけ付ける
+X. Other (please specify)
+
+[Answer]: A
+
+## Q6: 狭い画面（375px）でのピッカー
+A. Modal は画面の幅に収め、一覧の Table は Modal の中で横にスクロールする（スクロールの領域にキーボードのフォーカスとラベル）。既存の Table を使い回す
+B. 狭い画面では、行を縦のカードの一覧に切り替える（Table とは別に作る）
+X. Other (please specify)
+
+[Answer]: A
+
+## Consolidated Summary Confirmation
+
+- Q1: ピッカーは大きめの Modal（`size="lg"`）。上に検索条件と「検索」ボタン、下に Table（`lookupList` のカラム、各行の右端に「選ぶ」ボタンの列、ページ送り）
+- Q2: ダイアログの背景をクリックしても閉じない（`closeOnBackdropClick={false}`）。「閉じる」ボタンと Escape だけで閉じる
+- Q3: 選んだ値は読み取り専用のテキスト欄にラベルと値を並べて出す（例: 山田商事 (C001)）。右に「選ぶ…」ボタン、NULL を許す項目では「クリア」ボタンも置く
+- Q4: 権限を欠いて入力不可になった項目（REFERENCE・LOOKUP 共通）は、保存されている値そのものを読み取り専用の欄に出し、下に「参照先を読む権限がないため変更できません」の説明文を置く
+- Q5: 「候補が多いため選べない」案内は、項目の下に、権限不足とは別の説明文で置く（「候補が多いため選べません。管理者に、検索（ピッカー）への切り替えを依頼してください」）。項目は入力不可で、既存の値は値のみ表示する
+- Q6: 狭い画面（375px）では、Modal を画面の幅に収め、一覧の Table は Modal の中で横にスクロールする（スクロールの領域にキーボードのフォーカスとラベル）。既存の Table を使い回す
+
+Does this all look correct before I generate the artifact?
+
+- Looks correct
+- Request changes
+
+[Answer]: Looks correct
