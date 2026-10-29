@@ -1,6 +1,6 @@
 # Discovered Rules
 
-依頼者が今回のインタビュー（Q5・Q8・Q9）で確かめた固い制約は次の1つだけである。既存の確定済みの固い制約（`project.md` の Mandated・Forbidden）は新しく足さない。
+依頼者が今回のインタビュー（Q5・Q9）で確かめた固い制約は次の1つだけである。既存の確定済みの固い制約（`project.md` の Mandated・Forbidden）は新しく足さない。
 
 ## Mandated
 

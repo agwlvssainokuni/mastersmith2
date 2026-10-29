@@ -1,6 +1,5 @@
 # Team Practices
 
-
 ## Way of Working
 
 - 私たちは依頼者1名とAIで開発する。レビューと承認は依頼者が行う。

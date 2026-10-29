@@ -874,3 +874,275 @@
 **Tool**: Bash
 
 ---
+
+## Practices Discovered
+**Timestamp**: 2026-10-29T13:29:39Z
+**Event**: PRACTICES_DISCOVERED
+**Sources Scanned**: git log, ci.yml, dependabot.yml, compose.yaml, perf/, codekb
+**Drafts**: team-practices.md, discovered-rules.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:29:46Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-29T13:29:57Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Learnings: keep candidates c1-c3? Anything to add for next time?
+**Options**: Nothing to add,Add a note,Save candidates c1-c3 to project rules
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-29T13:30:01Z
+**Event**: HUMAN_TURN
+**Session**: 24650b9b-4cae-48b8-970d-62354ecfd698
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:30:05Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Question Answered
+**Timestamp**: 2026-10-29T13:30:06Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Nothing to add
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-29T13:30:13Z
+**Event**: HUMAN_TURN
+**Session**: 24650b9b-4cae-48b8-970d-62354ecfd698
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:30:24Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-29T13:30:28Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Does this all look correct before I generate the artifact?
+**Options**: Looks correct,Request changes
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/practices-discovery-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-29T13:30:38Z
+**Event**: HUMAN_TURN
+**Session**: 24650b9b-4cae-48b8-970d-62354ecfd698
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:30:52Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Summary Confirmation Recorded
+**Timestamp**: 2026-10-29T13:30:55Z
+**Event**: SUMMARY_CONFIRMATION_RECORDED
+**Stage**: practices-discovery
+**Details**: Looks correct
+**Checkpoint**: Consolidated Summary Confirmation
+**Questions File**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/practices-discovery-questions.md
+**Questions SHA-256**: e8c3028d46973e5bd288ebf2daa3057b1e652f0df0c47948e3c5a08d051e6ad4
+**Hash Scope**: confirmed-content-v1
+**Summary Authorization Id**: 6deb928051d86ff84076f0ff76ff8ff9eb7c73bd73c4a7f173ae76522fc332e2
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:00Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-29T13:31:13Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/team-practices.md
+**Context**: inception > practices-discovery > team-practices.md
+**Summary Authorization Id**: 6deb928051d86ff84076f0ff76ff8ff9eb7c73bd73c4a7f173ae76522fc332e2
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:13Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-29T13:31:13Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/evidence.md
+**Context**: inception > practices-discovery > evidence.md
+**Summary Authorization Id**: 6deb928051d86ff84076f0ff76ff8ff9eb7c73bd73c4a7f173ae76522fc332e2
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-29T13:31:14Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/discovered-rules.md
+**Context**: inception > practices-discovery > discovered-rules.md
+**Summary Authorization Id**: 6deb928051d86ff84076f0ff76ff8ff9eb7c73bd73c4a7f173ae76522fc332e2
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:15Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Edit
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-10-29T13:31:16Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/practices-discovery/practices-discovery-timestamp.md
+**Context**: inception > practices-discovery > practices-discovery-timestamp.md
+**Summary Authorization Id**: 6deb928051d86ff84076f0ff76ff8ff9eb7c73bd73c4a7f173ae76522fc332e2
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:20Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-10-29T13:31:21Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: practices-discovery
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-29T13:31:30Z
+**Event**: HUMAN_TURN
+**Session**: 24650b9b-4cae-48b8-970d-62354ecfd698
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:31:35Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Practices Affirmed
+**Timestamp**: 2026-10-29T13:31:38Z
+**Event**: PRACTICES_AFFIRMED
+**Affirming User**: agwlvssainokuni
+**Sections Written**: Way of Working, Walking Skeleton, Testing Posture, Deployment, Code Style
+**Mandated Rules Appended**: 0
+**Forbidden Rules Appended**: 1
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-10-29T13:31:38Z
+**Event**: GATE_APPROVED
+**Stage**: practices-discovery
+**User Input**: Approve
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-10-29T13:31:38Z
+**Event**: STAGE_COMPLETED
+**Stage**: practices-discovery
+**Validation Basis**: {"graphContract":"sha256:886af627a0fea6d271a662e4a54b4c5993ecee715d6144d46d4a58c2bc3d19bb","inputs":[{"artifact":"architecture","contentHash":"sha256:ea20cb3eca51629bbcff178dc4d6c4558cda9b48c2e859b53d1a82cc091172c0","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:0d9400075695a0e04aef9ddeddb79c954852a0f750d017142ab981b8f916372a"},{"artifact":"business-overview","contentHash":"sha256:633f78e20de956d9975086d9f0428524da43de508e867e54eb7193a783db8075","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:015edc378898d16f8aa28afe3cd586c331008fed7d0063dd68a041b80ccae663"},{"artifact":"code-quality-assessment","contentHash":"sha256:ec04df2c4d6c753e741fa3aed5eaab9f92110e3482321f6682ceb28aa3ad6388","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:a491589c711c78fbd81e2bf7ab440ffb0b3a87a3eb12c02d7f47d091ddc16e8d"},{"artifact":"code-structure","contentHash":"sha256:9da522308f860c2b1020009a0f8edae5295fb353bd84ae63464afcd6907bcd2c","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:c3f18b3a8565e0ae439774a8c5861cd866636d77091d764f4edd531758e1fb17"},{"artifact":"dependencies","contentHash":"sha256:6a02b79d02468ec0abbef7a871d700f7263be0f0d38a73069bbe2be6d7be2a2d","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:3209299928007f9f9f6a9e0602414d49f184fe0487ed158c9d9ec0a41612d407"},{"artifact":"technology-stack","contentHash":"sha256:8af0dfba40cd6deac8ee1cc59434fec27e97482879667baac4bafeae89df1a33","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:ead7e4790a54c4614ee1e1a7e6e448734c5322ae227732ce4dca2c7d14e278ae"}],"outputs":[{"artifact":"discovered-rules","contentHash":"sha256:010ab3bfe9c05c1301ade082b39273929db0c0dca83e5bfb04d376f0f174535b","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:95d3975b838813e3964aff2bbc1f465dc189a3348a1da40217ad68e53f89af22"},{"artifact":"evidence","contentHash":"sha256:a5d1cd9bc6a7d5b8b6c85f30acead290b1b3bea9e854cceb2bae94c9912249ea","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:8ee67517b01a5c78b5009f723782809dd0f2ae8dc9b5748ec123a46a8383460a"},{"artifact":"practices-discovery-timestamp","contentHash":"sha256:1eff1f27525113b7658a22a77da549093a364b9cdd1ad49947272882ceb862d1","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:d930f3ca00589d90aaccf2b9d17cc242d169b58feefaf36665e3ad2bad63b2c3"},{"artifact":"team-practices","contentHash":"sha256:0e9d87998715639611569c93b1ea17dca0f37ca0505a47e39f55f9ebcf1e76c8","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:c5f150d4c24d3e6d0666b7b0c849bfe115ab69d7fd8d3047e0c842a2c2ffc794"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Practices Discovery approved by gate
+**Tokens In**: 150
+**Tokens Out**: 59866
+**Cache Read**: 26966302
+**Cache Write**: 1553464
+**Cost USD**: 15.02
+**By Model**: sonnet-5=15.02
+**By Agent**: main=7.27; aidlc-pipeline-deploy-agent=3.37; aidlc-quality-agent=1.54; aidlc-developer-agent=1.43; aidlc-devsecops-agent=1.42
+**Tokens By Model**: sonnet-5=150/59.9k/27M/1.6M
+**Tokens By Agent**: main=100/28.7k/20.9M/91.9k; aidlc-pipeline-deploy-agent=24/14.1k/3M/599.9k; aidlc-quality-agent=10/5.3k/1.2M/291.5k; aidlc-developer-agent=8/5.7k/899.7k/287.7k; aidlc-devsecops-agent=8/6.1k/895k/282.4k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-10-29T13:31:39Z
+**Event**: STAGE_STARTED
+**Stage**: requirements-analysis
+**Agent**: aidlc-product-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-10-29T13:31:53Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: 
+**Agent ID**: ab8aa76e43f416be4
+**Message**: コミットして
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-29T13:31:56Z
+**Event**: HUMAN_TURN
+**Session**: 24650b9b-4cae-48b8-970d-62354ecfd698
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-29T13:32:01Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---

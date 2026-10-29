@@ -1,4 +1,4 @@
-# Evidence（初稿）
+# Evidence（最終）
 
 ## 調べたこと
 - `git log`（直近 15 件）: develop 上で Intent ごとに記録のコミットと作業のコミットが並ぶ。Intent の最後に main へ fast-forward する運用（`2eadc0a` main への取り込みの結果を記録）。team.md の Way of Working と合う。

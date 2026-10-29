@@ -248,6 +248,7 @@
 - NEVER 業務データの SQL に、利用者の入力（スキーマ名・テーブル名・カラム名・並べ替えの列・検索の値）を文字列のまま組み込まない（識別子は適用中の DSL にある名前と照らしてから引用し、値はバインド変数で渡す） (affirmed 2026-10-18)
 - NEVER 業務データの行の値（主キーの値を含む）を、アプリのログ・トレースの属性・エラー応答に含めない (affirmed 2026-10-18)
 - NEVER アクセシビリティの検査の規則を外して（`disableRules`・規則の絞り込み・要素の `exclude` など）axe の違反を通さない (affirmed 2026-10-18)
+- NEVER 認証の値（JWT・リフレッシュトークン・Authorization ヘッダー）を、伏せずに負荷の試験（perf）の記録へ置かない (affirmed 2026-10-29)
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->

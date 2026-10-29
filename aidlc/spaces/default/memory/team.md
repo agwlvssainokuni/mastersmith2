@@ -24,6 +24,7 @@
 - `origin` への `git push` は依頼者自身が行う。AI はプッシュしない。
 - GitHub のリポジトリは公開（public）である。公開されて困る情報（秘密情報・個人情報）をコミットしない前提で運用する。
 
+
 ## Walking Skeleton
 
 - 私たちは walking skeleton の特別な手順を行わない（スコープファイルが `skeleton: on` を宣言していても、この方針が優先する）。最初の Bolt も他の Bolt と同じ流れで進め、最初の Bolt だけを単独で実行して承認を待つ、という特別な関門は設けない。
@@ -37,6 +38,7 @@
   - 共通のエラー応答の仕組み（Code Style の `@RestControllerAdvice` と Problem Details）
   - 同じ検査が CI（GitHub Actions）上でも通ること
 - 骨格が既にある場合は、この一式が維持されていることを前提に、各 Bolt を通常どおり進める。
+
 
 ## Testing Posture
 
@@ -141,6 +143,21 @@
 
 - 内部DB（組み込みの H2）を使うテストは、コンテナではなく本番と同じ組み込みの H2 で行う。Testcontainers は、コンテナで動かす対象DB（後続 Intent D・E で扱う業務DB）のテストに使う。Walking Skeleton の「DB を使うテスト1件以上（本番と同じ種類の DB をコンテナで起動する）」も、内部DBについてはこの読み方とする。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:nfr-requirements:bb1f2f3e98692eeea477da5f229ae3fff34cb064a2feea6ef405a3b7c61b99b7 -->
 
+- 他テーブル参照（REFERENCE・LOOKUP）の機能では、次のテストを必ず書く（業務データの一覧・詳細と同じ扱い）。参照先の権限の当て方（参照元の権限だけを持ち参照先の権限を欠く利用者の結果）は要件定義で決め、決めた動作を明示したテストにする。具体的な上限の値は設計の段で決め、決めた値の境界で確かめる。
+  - (a) 参照先の読み取りの認可: 参照先を読む API は、未認証（401）・要る権限だけを欠く利用者（403）・権限あり（200）をサーバー側のテストで、パラメーターを使う表として確かめる。参照元の権限だけを持ち参照先の権限を欠く利用者には、選択肢を返さない（参照先の主権限が NONE のカラムも応答に含めない）。選択肢の取り出しの件数と検索の上限を置き、上限の境界（上限ちょうどは受け付け、超えると拒否）と対象DB の時間切れの応答を確かめる。
+  - (b) 識別子の照合: 参照先のスキーマ・テーブル・値のカラム・表示のカラム・検索の列は、読み出しのたびに適用中の DSL の名前と照らす。DSL に無い名前に差し替えた要求は拒否され、状態が変わらないこと。
+  - (c) 件数と時間切れ: 選択肢・ピッカーの取り出しの件数の上限と、JDBC の取り出しの上限を置き、上限を超える行を内部で読まないこと。
+  - (d) 漏えい: 参照先の行の値・ラベル・主キーの値と対象DB の接続情報が、アプリのログ（TRACE を有効にした `XxxSecretLeakIT`）・トレースの属性・エラー応答に含まれないこと。参照の値を道（URL）に載せない。
+  - (e) 検索のエスケープ: ピッカーの部分一致の検索で、`%`・`_`・エスケープの文字が一致の条件として働かないこと。
+  - (f) 画面に出す値: ラベルと値を信頼できない入力として扱い、`<script>`・`<img onerror>`・`"`・`'`・`javascript:` を含めても、文字として出る（HTML として描かない、リンクの先にしない）こと。
+  - (g) 参照元の書き込みでの検証: 参照先に存在しない値、権限の無い参照先の値、他の参照先を指す差し替え（IDOR）は拒否され、状態が変わらないこと。
+  - (h) 参照先の主キーの形: 複合の主キー・主キーの無いテーブル・ビュー・自己参照のときの扱いを、決めた側の動作を明示したテストにする。
+  - (i) 3種類の対象DB: 選択肢の取り出しを MySQL・MariaDB・PostgreSQL のすべてで結合テストで確かめる。識別子の大文字と小文字・引用符・NULL の並びと、境界の値を含める。
+  - (j) 接続の数: 選択肢の取り出しが1要求で使う対象DB の接続と内部DB の接続の数を、既存の `*ConnectionUsageIT` と同じ形の結合テストで決定的に確かめる。
+  - (k) 境界テストの許可の一覧: `java.sql.Connection` の `prepareStatement`・`createStatement` を呼んでよい場所、SpotBugs の除外、既存の境界テストが、参照先の本実装の前後で緩まず変わらないこと。
+- 参照ピッカー（LOOKUP）の画面の E2E を、この Intent の機能の代表の流れとして1本足す。流れは、自分で作った参照先と参照元の前提（利用者・役割・専用のスキーマの行）だけを対象にし、見本の行と初期管理者を変えない。axe は、ピッカーを開いた状態・長い名前で、ブランドカラーとテーマのすべての組について行う。ピッカーが make-you-chic-ui の部品でないときは、キーボード操作と `aria` の属性を画面のテストで確かめる。参照先の権限を欠く利用者の確かめは E2E ではなく結合テストで行う。i18next 系の更新と既存の E2E の書き換えは本数に数えない。
+- 負荷の試験（k6 の `--summary-export` など）の結果に入る認証の値（JWT・リフレッシュトークン・Authorization ヘッダー）を伏せる仕組みを入れるときは、仕組みそのものに伏せ字のテスト（JWT の形が残らない、すでに伏せた入力に流しても結果が変わらない（冪等）、入れ子の JSON・配列・長い文字列の中でも伏せる、JWT 以外の値（数値・場面名）を壊さない）を付け、`./gradlew verify` と CI に入れる。記録（`evidence/`）に置いたものには `gitleaks dir` を流して確かめる。仕組みの置き場は設計の段で決める。
+
 ## Change Control
 
 <!-- Affirmed by the team. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -162,6 +179,8 @@
 - 構造化ログの外部エクスポートは既定で無効とし、配備の設定で環境ごとに有効化を切り替える。
 
 - フロントエンドの依存関係の脆弱性は、実行時に使うもの（dependencies、推移依存を含む）は重大度 High 以上で統合を止める。開発時にだけ使うもの（devDependencies）は警告にとどめる。ただし、悪意のあるパッケージ（OSV の MAL- で始まるもの）と、成果物を作る道具（Vite・Rollup・esbuild・TypeScript など）の High 以上は止める。対象の道具の一覧は config/npm-build-tools.txt に置く。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:code-generation:28ae755ce1652f5d951107b80eaa36eae9ddbf6708f8f0f5b2fcbd0a6f540185 -->
+
+- コンテナ（Mailpit・otel-lgtm など）を入れ替えた後は、毎回 `docker inspect` でコンテナのイメージの版とダイジェスト（`RepoDigests`）が `compose.yaml` の記述と一致することを確かめ、食い違うときは `--force-recreate --no-deps` で作り直す。止まっているコンテナは作り直されず、古い版が残ることがあるため。
 
 ## Code Style
 
@@ -238,6 +257,7 @@
 - npm でパッケージを入れるときは、パッケージのスクリプトを動かさない（`frontend/.npmrc` に `ignore-scripts=true`）。悪意のあるパッケージ（OSV の `MAL-`）の判定が、入れてビルドとテストで動かした後の OSV-Scanner になるのを補うため。
 - Gradle の依存の取得元は Maven Central だけに固定する（`settings.gradle.kts` の `RepositoriesMode.FAIL_ON_PROJECT_REPOS`）。Maven Central に無い自前の Mustache エンジン java-mustache-processor（Apache License 2.0）は、Git サブモジュールとして `vendor/java-mustache-processor` に取り込み、Gradle の composite build で組む。サブモジュールで取り込む点は make-you-chic-ui と同じだが、make-you-chic-ui は npm の `file:` の依存であり、Gradle の composite build はこのリポジトリで初めての形である。中身はこのリポジトリから直接変更しない（`project.md` の Forbidden）。
 - java-mustache-processor の版は、サブモジュールの固定先のコミットで固定する。取り込んでも、取得元を Maven Central だけに固定する決まりは崩さない。部品の推移依存も lockfile（`backend/gradle.lockfile`）と依存関係の脆弱性検査（OSV-Scanner）の対象に含める。最初に取り込んだ Bolt で、推移依存（`slf4j-api`）が lockfile に載り OSV-Scanner の対象になることを確かめた（部品そのものは lockfile に載らず、版はサブモジュールの固定先で固める）。固定先を更新して推移依存が変わるときは、lockfile と OSV-Scanner の対象に載ることを確かめ直す。
+- 他テーブル参照の選択肢を読む SQL は、既存の `RowSqlExecutor`・`RowDialect` の実装に足す形を既定とする。新しいクラスを作るときだけ、コード生成の計画に明記して依頼者の承認を得る。どちらの場合も、既存の境界テスト（ArchUnit）と SpotBugs の除外は緩めない。
 ## Forbidden
 
 <!-- Team-specific forbidden patterns -->
