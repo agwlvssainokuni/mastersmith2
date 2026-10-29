@@ -1,0 +1,416 @@
+{
+  "stage": "functional-design",
+  "unit": "u1-reference-read",
+  "upstream_ids": [
+    "AC1.4.2",
+    "AC1.4.7",
+    "AC2.1.15",
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.2.1",
+    "AC1.1.10",
+    "AC2.3.3",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.3.3",
+    "AC1.3.6",
+    "AC1.2.5",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC1.3.7",
+    "AC1.3.8",
+    "AC1.4.1",
+    "AC1.4.3",
+    "AC1.4.4",
+    "AC1.4.5",
+    "AC1.4.6",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.11",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.1.14",
+    "AC2.1.16",
+    "AC2.3.1",
+    "AC2.3.2",
+    "AC2.3.4",
+    "AC3.4.1",
+    "AC3.4.2",
+    "AC3.4.3",
+    "AC3.4.4",
+    "AC3.4.5",
+    "AC3.5.1",
+    "AC3.5.2",
+    "AC3.5.3",
+    "AC3.5.4",
+    "AC3.5.5",
+    "AC2.3.5"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.4.2",
+      "status": "OK",
+      "target": "BR10.1・BR10.2・BR10.3・BR10.4・BR9.6（定義・検索・ラベル・確かめの口の4つの経路）"
+    },
+    {
+      "id": "AC1.4.7",
+      "status": "OK",
+      "target": "BR11.2・BR11.3"
+    },
+    {
+      "id": "AC2.1.15",
+      "status": "OK",
+      "target": "BR10.3"
+    },
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "BR4.1・BR4.2・BR4.8（部分: 選択肢の値・ラベル・並び。画面の表示は u3-reference-screens）"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "BR4.2・BR7.5（部分: NULL の並びと値の除外。値の表示は u3-reference-screens）"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "BR4.3・BR4.8（部分: 選択肢と状態を返す。選んだ状態の表示は u3-reference-screens、更新を妨げないのは u2-reference-write-check）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "BR1.5・BR8.4・BR8.5・BR10.2（部分: 定義の取得ごとの 503。やり直しの表示は u3-reference-screens）"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "BR8.2・BR8.4・BR4.7"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "BR4.5（部分: 空の選択肢で誤りにしない。文言は u3-reference-screens、NOT NULL の保存は u2-reference-write-check）"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "u3-reference-screens（読み込み中の表示）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "u3-reference-screens（長いラベル・同じラベルの見せ方）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "BR2.3・BR4.2・BR4.3・BR7.2・BR11.4"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "BR4.3"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "u3-reference-screens（文字として描く）"
+    },
+    {
+      "id": "AC2.3.3",
+      "status": "Deferred",
+      "target": "u3-reference-screens（文字として描く）"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "BR4.3・BR1.6（固定した印は項目の状態 TOO_MANY）"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "BR4.6"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "BR4.3（部分: TOO_MANY の状態。入力不可と文言は u3-reference-screens）"
+    },
+    {
+      "id": "AC1.3.3",
+      "status": "Deferred",
+      "target": "u3-reference-screens（入力不可と値だけの表示）"
+    },
+    {
+      "id": "AC1.3.6",
+      "status": "Deferred",
+      "target": "u3-reference-screens（入力不可の説明と aria）"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "OK",
+      "target": "BR8.6・BR4.2"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "BR1.1・BR3.1・BR3.6"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "BR3.1・BR3.6"
+    },
+    {
+      "id": "AC1.3.4",
+      "status": "OK",
+      "target": "BR3.6・BR5.1"
+    },
+    {
+      "id": "AC1.3.5",
+      "status": "OK",
+      "target": "BR3.6・BR1.3・BR6.4・BR12.1（部分: (1) 定義・(2) 検索とラベル・(4)(5) 一覧と詳細。(3) 作成・更新の誤りは u2-reference-write-check）"
+    },
+    {
+      "id": "AC1.3.7",
+      "status": "Deferred",
+      "target": "u3-reference-screens（読み上げとフォーカス）"
+    },
+    {
+      "id": "AC1.3.8",
+      "status": "OK",
+      "target": "BR3.4"
+    },
+    {
+      "id": "AC1.4.1",
+      "status": "OK",
+      "target": "BR2.1・BR2.3"
+    },
+    {
+      "id": "AC1.4.3",
+      "status": "OK",
+      "target": "BR10.2・BR8.7"
+    },
+    {
+      "id": "AC1.4.4",
+      "status": "OK",
+      "target": "BR2.4・BR4.4・BR6.3・BR9.4・BR7.6"
+    },
+    {
+      "id": "AC1.4.5",
+      "status": "OK",
+      "target": "BR7.1・BR7.4・BR6.2・BR9.3・BR5.6・BR7.6"
+    },
+    {
+      "id": "AC1.4.6",
+      "status": "OK",
+      "target": "BR10.1"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "BR2.1・BR1.4"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "BR5.7・BR5.9・BR3.5"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "BR5.7・BR1.4・BR8.6"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "BR1.4・BR5.4"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "BR6.1・BR6.3・BR2.5"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "OK",
+      "target": "BR1.4"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "OK",
+      "target": "BR5.5"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "OK",
+      "target": "BR3.2・BR5.3・BR3.5（部分: サーバー側。条件を入力に出さない画面は u3-reference-screens）"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "OK",
+      "target": "BR1.3・BR6.4"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "BR5.3・BR1.3"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "OK",
+      "target": "BR1.2・BR1.3・BR3.3・BR3.4"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "OK",
+      "target": "BR3.4"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "OK",
+      "target": "BR8.1・BR1.5・BR10.2"
+    },
+    {
+      "id": "AC2.1.14",
+      "status": "OK",
+      "target": "BR11.1"
+    },
+    {
+      "id": "AC2.1.16",
+      "status": "OK",
+      "target": "BR2.3・BR5.8・BR7.2・BR11.4"
+    },
+    {
+      "id": "AC2.3.1",
+      "status": "OK",
+      "target": "BR6.3（部分: ラベルの1件読み。入力欄の隣の表示は u3-reference-screens）"
+    },
+    {
+      "id": "AC2.3.2",
+      "status": "OK",
+      "target": "BR6.2・BR6.4・BR1.3（部分: 行が無い・読めないを区別しない応答。値だけの表示は u3-reference-screens）"
+    },
+    {
+      "id": "AC2.3.4",
+      "status": "OK",
+      "target": "BR12.1"
+    },
+    {
+      "id": "AC3.4.1",
+      "status": "OK",
+      "target": "BR12.4"
+    },
+    {
+      "id": "AC3.4.2",
+      "status": "OK",
+      "target": "BR4.1・BR12.1"
+    },
+    {
+      "id": "AC3.4.3",
+      "status": "OK",
+      "target": "BR12.3・BR12.1（部分: 応答は足すだけ。既存の画面のテストに流す確かめは u3-reference-screens）"
+    },
+    {
+      "id": "AC3.4.4",
+      "status": "OK",
+      "target": "BR12.3"
+    },
+    {
+      "id": "AC3.4.5",
+      "status": "Deferred",
+      "target": "u3-reference-screens（入力不可の見た目が一覧・詳細に漏れない）"
+    },
+    {
+      "id": "AC3.5.1",
+      "status": "OK",
+      "target": "BR8.2（部分: 選択肢と検索。保存前の確かめの接続は u2-reference-write-check）"
+    },
+    {
+      "id": "AC3.5.2",
+      "status": "OK",
+      "target": "BR8.3"
+    },
+    {
+      "id": "AC3.5.3",
+      "status": "OK",
+      "target": "BR8.1・BR1.5・BR9.5（部分: 選択肢・検索・ラベル。保存前の確かめの 503 は u2-reference-write-check）"
+    },
+    {
+      "id": "AC3.5.4",
+      "status": "Deferred",
+      "target": "performance-validation（場面と行数は NFR 要件・NFR 設計、台本は Build and Test、測定は Performance Validation。測るまで Unverified）"
+    },
+    {
+      "id": "AC3.5.5",
+      "status": "Deferred",
+      "target": "code-generation・build-and-test（カバレッジの実測。:backend:cleanTest :backend:cleanIntegrationTest を付けて測る）"
+    },
+    {
+      "id": "AC2.3.5",
+      "status": "N/A",
+      "target": "初稿の ID（stories.md の「群2 の ID の対応」の表）。最終版の AC2.1.10〜AC2.1.12 で追う"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR1.7",
+      "status": "N/A",
+      "target": "読み取りを監査に残さない決まり（FR3.4、契約 C4）。この単位の受け入れ基準には対応が無く、保存前の確かめの監査は u2-reference-write-check の AC3.3.3 が受ける"
+    },
+    {
+      "id": "BR2.2",
+      "status": "N/A",
+      "target": "写しを1要求1回にし参照元と参照先で共有する技術の決まり（契約 C6、FR1.4）。受け入れ基準は BR3.4（AC1.3.8・AC2.1.12）が受ける"
+    },
+    {
+      "id": "BR5.2",
+      "status": "N/A",
+      "target": "検索を LOOKUP だけに受け付ける契約 C2 の決まり。受け入れ基準は同じ応答の BR1.3（AC2.1.11）が受ける"
+    },
+    {
+      "id": "BR7.3",
+      "status": "N/A",
+      "target": "ラベルを既存の一覧の文字数の上限で切る決まり（Q2: A、TP）。対応する受け入れ基準は無く、上限の見直しは NFR 設計（functional-spec.md の 10節）"
+    },
+    {
+      "id": "BR9.1",
+      "status": "N/A",
+      "target": "u2-reference-write-check が呼ぶ確かめの口の入出力（契約 C1、ADR-003）。受け入れ基準は u2-reference-write-check の AC3.1.x・AC3.2.x が受ける"
+    },
+    {
+      "id": "BR9.2",
+      "status": "N/A",
+      "target": "確かめの口の権限の決まり（FR3.1、契約 C1）。受け入れ基準は u2-reference-write-check の AC3.1.3・AC3.1.4 が受ける"
+    },
+    {
+      "id": "BR9.7",
+      "status": "N/A",
+      "target": "u2-reference-write-check が呼ぶ2つ目の口 countState の入出力（契約 C1 に足した口、functional-spec.md の 8節 D7）。候補が多い必須の項目の拒否の受け入れ基準は u2-reference-write-check が受ける"
+    },
+    {
+      "id": "BR12.2",
+      "status": "N/A",
+      "target": "formPart を purpose が CREATE・UPDATE のときだけ DSL の値で返す互換の決まり（FR2.1、契約 C2・C3、functional-spec.md の 8節 D2）。画面の受け入れ基準は u3-reference-screens が受ける"
+    }
+  ]
+}

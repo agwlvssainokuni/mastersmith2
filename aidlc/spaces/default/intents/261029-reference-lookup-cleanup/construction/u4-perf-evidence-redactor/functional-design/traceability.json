@@ -1,0 +1,32 @@
+{
+  "stage": "functional-design",
+  "unit": "u4-perf-evidence-redactor",
+  "upstream_ids": [
+    "AC4.1.1",
+    "AC4.1.5",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9"
+  ],
+  "coverage": [
+    { "id": "AC4.1.1", "status": "OK", "target": "BR1.1, BR1.2, BR1.3, BR1.4, BR1.5" },
+    { "id": "AC4.1.5", "status": "OK", "target": "BR5.1, BR5.4, BR1.2, BR1.6, BR1.7" },
+    { "id": "AC4.1.2", "status": "OK", "target": "BR2.1" },
+    { "id": "AC4.1.3", "status": "OK", "target": "BR2.2, BR3.3, BR3.4" },
+    { "id": "AC4.1.4", "status": "OK", "target": "BR3.1, BR3.4" },
+    { "id": "AC4.1.6", "status": "OK", "target": "BR5.3, BR4.3" },
+    { "id": "AC4.1.7", "status": "OK", "target": "BR4.1, BR4.2" },
+    { "id": "AC4.1.8", "status": "OK", "target": "BR6.1, BR1.8, BR3.4" },
+    { "id": "AC4.1.9", "status": "OK", "target": "BR6.2, BR6.1, BR1.7" }
+  ],
+  "reverse": [
+    { "id": "BR2.4", "status": "N/A", "target": "追加の質問 F1: A で足した setup_data の伏せ字（BR1.7）を置換と独立に確かめる検査（FR5.2）。ストーリーの M2: B との差として functional-spec.md 10節に記録" },
+    { "id": "BR2.3", "status": "N/A", "target": "表示に値を出さない横断の決まり（FR5.5・project.md Forbidden）。AC4.1.2〜AC4.1.4・AC4.1.7 の失敗の表示を支える" },
+    { "id": "BR3.2", "status": "N/A", "target": "契約 C7 の呼び方とテキストの置換の口（--text）の引数の確かめ（NFR8）。AC4.1.7 の唯一の入口を支える" },
+    { "id": "BR5.2", "status": "N/A", "target": "境界と失敗の例のテスト（FR5.3）。AC4.1.1〜AC4.1.4・AC4.1.7 と、テキストの置換の口（AC4.1.8）の境界を確かめる" }
+  ]
+}

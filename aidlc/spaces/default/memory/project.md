@@ -118,6 +118,8 @@
 - コード生成の段の承認の場は、最後のコードのコミットの後、記録だけのコミット（aidlc/ の下だけ）を積む前に開く。user-admin で R2・R3・R4 と承認の場の記録のコミットが先頭に続き、aidlc/ の外のコードの作業が見えないとして承認の場が断られた（REQUIRED_SOURCE_WORK_MISSING）。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:82a48423a89edaac5d5346295acd928c13c5ebc6b48abe2741f6c6f687196578 -->
 - squash の統合の前に、監査ログを含む aidlc/ の未コミットの変更をコミットしておく。user-admin の U3 の小さな直しの統合で git restore --source=HEAD -- aidlc/ を使い、未コミットの監査ログの追記（承認の場の断りと問いと答えの記録）を消して戻せなかった。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:6134b387e5869328fae2d8bafc2131cf7bf2251f06efa3069d5c9bc4c620406e -->
 - コード生成のコミットは計画の手順ごとではなく、import の向きを確かめて場所・機能ごとに区切り、最初のコミットの時点で型の検査（コンパイル）が通ることを確かめる（role-menu の B1・B3・B8・B9 で計画の手順ごとの区切りがビルドの通らない区切りになり、場所ごとに変えた）。コミットの提案は確かめたい点の問いとは別に、積む前に必ず尋ねる（B5 で確かめたい点の答えの後に承認なしで C1 を積んだ）。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:1a3edd202ea8b42358822afbf8772db989401c8b6f89d39b7877d0ac0500d441 -->
+- 段の成果物の初稿ができた時と、段を承認した時は、コミットの可否を尋ねずに、その段の成果物と記録をコミットする（依頼者の指示）。それ以外の時のコミットは、これまでどおり提案して承認を得る。 (learned 2026-10-29) <!-- cid:261029-reference-lookup-cleanup:functional-design:03f6ea181d8da001a0e79d9eb79d6ade0d3faf856cbd5b89724b71612116b30f -->
+
 ## Deployment
 
 <!-- Project-specific specialisation. -->
