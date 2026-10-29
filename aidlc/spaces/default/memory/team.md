@@ -269,3 +269,4 @@
 ## Corrections
 
 <!-- Self-learning loop appends here. -->
+- 依頼者に選択肢で尋ねるときは、選ぶ前に、推奨する選択肢とその理由を添える（推奨を答えの後に伝えない）。 (learned 2026-10-29) <!-- cid:261029-reference-lookup-cleanup:units-generation:e9ce29f8025edaf74f4c9c01bf6ad16fa14a39d4fd8f381b20d6a7c66ca56baf -->
