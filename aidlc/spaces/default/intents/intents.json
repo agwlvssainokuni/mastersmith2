@@ -117,5 +117,12 @@
     "dirName": "261027-perf-targets-review",
     "scope": "bugfix",
     "status": "complete"
+  },
+  {
+    "uuid": "01a187ba-f2a1-7f01-8bca-bb0801ee3112",
+    "slug": "reference-lookup-cleanup",
+    "dirName": "261029-reference-lookup-cleanup",
+    "scope": "classic",
+    "status": "in-flight"
   }
 ]

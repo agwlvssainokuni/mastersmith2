@@ -1,0 +1,1 @@
+"業務データの他テーブル参照（REFERENCE の選択肢と LOOKUP の参照ピッカー）を入れる。あわせて、Dependabot の #81（i18next）・#82（react-i18next）を取り込み、k6 の結果から JWT を自動で伏せる仕組みを perf に入れる。動いている Mailpit・otel-lgtm のコンテナを compose.yaml の版にそろえ、perf/README.md と k6 の台本を、どの値が基準か読み取りやすい構成に整理する。"
