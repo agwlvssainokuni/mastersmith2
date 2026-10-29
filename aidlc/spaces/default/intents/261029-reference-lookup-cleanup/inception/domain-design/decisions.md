@@ -1,6 +1,6 @@
 # 設計の決定の記録（Domain Design）— reference-lookup-cleanup
 
-形式は ADR（Context・Decision・Consequences・Alternatives Rejected）。出典の Q は `domain-design-questions.md`。
+形式は ADR（Context・Decision・Consequences・Alternatives Rejected）で、番号は ADR-001 から順に振る。出典の Q は `domain-design-questions.md`。
 
 ## ADR-001: 参照先を読む処理を、新しい論理の部品 `ReferenceLookup` にする
 
