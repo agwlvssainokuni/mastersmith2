@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readSync } from "node:fs";
 import {
   colorEnabled,
@@ -6,6 +7,7 @@ import {
   fixLabel,
   heading,
 } from "./aidlc-color.ts";
+import { aidlcInvocation } from "./aidlc-runtime-paths.ts";
 
 export const ROUTE_NAMESPACE_DECLARATIONS = {
   public: { trustedPrefix: false },
@@ -37,9 +39,98 @@ export function trustedCommand(suffix = ""): string {
   return suffix ? `${TRUSTED_COMMAND_PREFIX} ${suffix}` : TRUSTED_COMMAND_PREFIX;
 }
 
+// The hash Codex records in [hooks.state] when a person trusts one hook. The
+// identity is {event_name: <snake>, matcher: <the group's, when it has one>,
+// hooks: [{async: false, command, timeout: <seconds>, type: "command"}]} as
+// sorted compact JSON, then sha256 (checked against the hashes Codex 0.160.0
+// wrote after "Trust all"). The shipped trust seed and the doctor both hash
+// through here, so they count what Codex trusts.
+export function codexHookTrustHash(
+  eventName: string,
+  command: string,
+  timeout: number,
+  matcher?: string,
+): string {
+  const identity = {
+    event_name: eventName,
+    ...(matcher === undefined ? {} : { matcher }),
+    hooks: [{ async: false, command, timeout, type: "command" }],
+  };
+  const sortKeys = (value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(sortKeys);
+    if (value !== null && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      return Object.fromEntries(Object.keys(record).sort().map((key) => [key, sortKeys(record[key])]));
+    }
+    return value;
+  };
+  return `sha256:${createHash("sha256").update(JSON.stringify(sortKeys(identity)), "utf-8").digest("hex")}`;
+}
+
+// The Cursor CLI permission for the trusted prefix. Cursor reads only the
+// first token as a Shell entry's command base, and the rest after a colon as
+// an argument glob, so `Shell(aidlc engine *)` would name no command at all.
+export function cursorTrustedShell(): string {
+  const [command, ...rest] = TRUSTED_COMMAND_TOKENS;
+  return `Shell(${command}:${[...rest, "*"].join(" ")})`;
+}
+
 // Lightweight dispatcher grammar. aidlc-lib.ts retains the same public
 // workspace helpers for methodology callers; keeping this copy in the existing
 // command module avoids loading the full methodology graph at CLI startup.
+// --- Hook groups: one process for the checks before a tool call -------------
+//
+// A host that registers several hooks for one event starts each as its own
+// process, and each one loads the whole engine before its self-filter decides
+// there is nothing to do. On Claude Code a shell call started four guard
+// processes that way, and on a small machine with several helpers in flight
+// those loads reached gigabytes and ended runs mid-stage (#2066). So the
+// settings.json rows for the four checks are ONE row calling
+// `engine hook guard-tool-call`, and the dispatcher runs these members in its
+// own process. Each member keeps the matcher its own row had, as a regular
+// expression over the tool name, so a tool reaches exactly the checks it
+// reached before: reads and searches go to the three that read, while only a
+// write, a shell command or a dispatch reaches the plan-approval guard. The
+// group is a registration, not a check: it decides nothing itself.
+//
+// The doctor reads this table too (aidlc-utility.ts), to check that every
+// member's hook file ships and to treat drift on the row as flow-altering, so
+// the row and the files it stands for cannot drift apart.
+export const PRE_TOOL_USE_GROUP_TARGET = "guard-tool-call";
+
+export interface HookGroupMember {
+  /** The hook's name, as `engine hook <name>` and `aidlc-<name>.ts`. */
+  readonly hook: string;
+  /** The tools this member runs for. */
+  readonly matcher: string;
+}
+
+const READ_WRITE_OR_SHELL =
+  "^(?:Read|NotebookRead|Edit|MultiEdit|Write|NotebookEdit|LS|Glob|Grep|Bash)$";
+const WRITE_SHELL_OR_DISPATCH =
+  "^(?:Edit|MultiEdit|Write|NotebookEdit|Bash|Task|Agent)$";
+
+const HOOK_GROUPS: Readonly<Record<string, ReadonlyArray<HookGroupMember>>> = {
+  [PRE_TOOL_USE_GROUP_TARGET]: [
+    { hook: "state-transition-guard", matcher: READ_WRITE_OR_SHELL },
+    { hook: "reviewer-scope", matcher: READ_WRITE_OR_SHELL },
+    { hook: "review-freeze", matcher: READ_WRITE_OR_SHELL },
+    { hook: "plan-approval-guard", matcher: WRITE_SHELL_OR_DISPATCH },
+  ],
+};
+
+/** The hooks this registration runs, in order, or null when it is not a group. */
+export function hookGroupMembers(
+  target: string,
+): ReadonlyArray<HookGroupMember> | null {
+  return Object.hasOwn(HOOK_GROUPS, target) ? HOOK_GROUPS[target] : null;
+}
+
+/** The hook names every group stands for, for a reader that checks files. */
+export function hookGroupMemberNames(target: string): string[] {
+  return (hookGroupMembers(target) ?? []).map((member) => member.hook);
+}
+
 export const PINNED_TOP_LEVEL_ROUTES = [
   "next",
   "continue",
@@ -57,8 +148,40 @@ export const PINNED_TOP_LEVEL_ROUTES = [
 
 export const PINNED_SYSTEM_GROUPS = ["workspace-sync"] as const;
 
+// The sections `aidlc config <section>` takes (aidlc-init.ts reads them).
+export const CONFIG_SECTIONS = ["models", "runtime", "providers", "trust", "flags", "project"] as const;
+
+/**
+ * The flags `next` takes with no value. NEXT_FLAGS in aidlc-lib.ts takes them
+ * from here, and the dispatcher, which does not load that module, reads the
+ * same list where it finds the person's words on a `next` line.
+ */
+export const NEXT_VALUELESS_FLAGS: ReadonlySet<string> = new Set([
+  "--resume",
+  "--single",
+  "--new-intent",
+  "--new-scope",
+  "--continue",
+  "--change",
+  "--every-unit",
+  // Retired, still taken so the token never becomes task text.
+  "--init",
+  "--force",
+]);
+
+/**
+ * Whether the token after a flag on a `next` line is that flag's value rather
+ * than a word of the person's: the next token that is not flag-shaped, unless
+ * `next` takes the flag with no value.
+ */
+export function nextFlagTakesFollowing(flag: string, following: string | undefined): boolean {
+  return following !== undefined && !following.startsWith("-") && !NEXT_VALUELESS_FLAGS.has(flag);
+}
+
 const LAUNCHER_FLAG_VALUES = new Set(["--project-dir"]);
-const LAUNCHER_GLOBAL_FLAGS = new Set([
+// The dispatcher's global flags: `aidlc` drops them wherever they appear
+// before `--`, then routes what remains.
+export const LAUNCHER_GLOBAL_FLAGS: ReadonlySet<string> = new Set([
   "--json",
   "--quiet",
   "--no-color",
@@ -94,17 +217,31 @@ export function launcherRouteUsesPin(argv: readonly string[]): boolean {
 
 type DispatcherWorkspaceNoun = "intent" | "space";
 
-const DISPATCHER_INTENT_VERBS = new Set(["list", "switch", "create"]);
-const DISPATCHER_SPACE_VERBS = new Set(["list", "switch", "create"]);
-const DISPATCHER_RESERVED_FUTURE = new Set([
+const DISPATCHER_INTENT_VERBS = new Set([
+  "list",
+  "switch",
+  "create",
   "archive",
-  "rename",
-  "show",
-  "birth",
+  "unarchive",
+  "add-repo",
+  "remove-repo",
+  "set-repos",
+  "add-checkout",
+  "remove-checkout",
 ]);
+const DISPATCHER_SPACE_VERBS = new Set(["list", "switch", "create"]);
+
+type DispatcherIntentLifecycleVerb = "archive" | "unarchive";
+type DispatcherIntentRepoVerb = "add-repo" | "remove-repo" | "set-repos" | "add-checkout" | "remove-checkout";
 
 export type DispatcherWorkspaceCommand =
-  | { kind: "list"; noun: DispatcherWorkspaceNoun; json: boolean }
+  | { kind: "list"; noun: DispatcherWorkspaceNoun; json: boolean; all?: true }
+  | {
+      kind: DispatcherIntentLifecycleVerb | DispatcherIntentRepoVerb;
+      noun: "intent";
+      name: string;
+      rest: string[];
+    }
   | {
       kind: "switch";
       noun: DispatcherWorkspaceNoun;
@@ -123,11 +260,13 @@ export type DispatcherWorkspaceCommand =
 
 function missingDispatcherWorkspaceName(
   noun: DispatcherWorkspaceNoun,
-  verb: "switch" | "create" | "space-create",
+  verb: "switch" | "create" | "space-create" | DispatcherIntentLifecycleVerb | DispatcherIntentRepoVerb,
 ): DispatcherWorkspaceCommand {
   const usage = verb === "space-create"
     ? "space-create <name>"
-    : `${noun} ${verb} <name>`;
+    : `${noun} ${verb} ${
+      verb === "add-checkout" || verb === "remove-checkout" ? "<path>" : verb === "set-repos" ? "<name,...|--all>" : "<name>"
+    }`;
   return {
     kind: "error",
     noun,
@@ -139,6 +278,36 @@ function isDispatcherWorkspaceNoun(
   token: string | undefined,
 ): token is DispatcherWorkspaceNoun {
   return token === "intent" || token === "space";
+}
+
+function isDispatcherIntentLifecycleVerb(
+  token: string | undefined,
+): token is DispatcherIntentLifecycleVerb {
+  return token === "archive" || token === "unarchive";
+}
+
+function isDispatcherIntentRepoVerb(
+  token: string | undefined,
+): token is DispatcherIntentRepoVerb {
+  return token === "add-repo" || token === "remove-repo" || token === "set-repos" || token === "add-checkout" ||
+    token === "remove-checkout";
+}
+
+// `intent list [--json] [--all]` / `space list [--json]`: the flags may appear
+// in either order after the verb. `--all` (intents only) includes archived
+// records, which the default listing hides.
+function dispatcherWorkspaceList(
+  noun: DispatcherWorkspaceNoun,
+  tokens: string[],
+): DispatcherWorkspaceCommand {
+  const flags = tokens.slice(2);
+  const command: DispatcherWorkspaceCommand = {
+    kind: "list",
+    noun,
+    json: flags.includes("--json"),
+  };
+  if (noun === "intent" && flags.includes("--all")) command.all = true;
+  return command;
 }
 
 export function parseDispatcherWorkspaceCommand(
@@ -155,36 +324,39 @@ export function parseDispatcherWorkspaceCommand(
   const noun = head;
   const verbOrName = tokens[1];
   if (verbOrName === undefined) return { kind: "list", noun, json: false };
-  if (verbOrName === "--json") return { kind: "list", noun, json: true };
+  if (verbOrName === "--json" || (noun === "intent" && verbOrName === "--all")) {
+    return dispatcherWorkspaceList(noun, [tokens[0], "list", ...tokens.slice(1)]);
+  }
   if (verbOrName === "help" || verbOrName === "-h") {
     return { kind: "help", noun };
   }
-  if (DISPATCHER_RESERVED_FUTURE.has(verbOrName)) {
-    return {
-      kind: "error",
-      noun,
-      message:
-        `${noun} ${verbOrName} is reserved for a future workspace verb and is not implemented yet. ` +
-        `Use ${noun} switch ${verbOrName} to select an existing record with that name.`,
-    };
-  }
   if (noun === "intent") {
-    if (verbOrName === "list") return { kind: "list", noun, json: tokens[2] === "--json" };
+    if (verbOrName === "list") return dispatcherWorkspaceList(noun, tokens);
     if (verbOrName === "switch") {
       const name = tokens[2];
-      return name === undefined
+      // At a shell there is no agent to hand extra words to, so they are a
+      // usage error here, never dropped in silence.
+      return name === undefined || tokens.length > 3
         ? missingDispatcherWorkspaceName(noun, "switch")
         : { kind: "switch", noun, name, explicit: true };
     }
     if (verbOrName === "create") {
       return { kind: "create-intent", noun, rest: tokens.slice(2) };
     }
+    if (isDispatcherIntentLifecycleVerb(verbOrName) || isDispatcherIntentRepoVerb(verbOrName)) {
+      const name = tokens[2];
+      return name === undefined || (name.startsWith("--") && !(verbOrName === "set-repos" && name === "--all"))
+        ? missingDispatcherWorkspaceName(noun, verbOrName)
+        : { kind: verbOrName, noun, name, rest: tokens.slice(3) };
+    }
   }
   if (noun === "space") {
-    if (verbOrName === "list") return { kind: "list", noun, json: tokens[2] === "--json" };
+    if (verbOrName === "list") return dispatcherWorkspaceList(noun, tokens);
     if (verbOrName === "switch") {
       const name = tokens[2];
-      return name === undefined
+      // At a shell there is no agent to hand extra words to, so they are a
+      // usage error here, never dropped in silence.
+      return name === undefined || tokens.length > 3
         ? missingDispatcherWorkspaceName(noun, "switch")
         : { kind: "switch", noun, name, explicit: true };
     }
@@ -201,6 +373,7 @@ export function parseDispatcherWorkspaceCommand(
   ) {
     return { kind: "error", noun, message: `invalid ${noun} command` };
   }
+  if (tokens.length > 2) return missingDispatcherWorkspaceName(noun, "switch");
   return { kind: "switch", noun, name: verbOrName, explicit: false };
 }
 
@@ -208,8 +381,22 @@ export function dispatcherWorkspaceUtilityArgv(
   command: DispatcherWorkspaceCommand,
 ): string[] | null {
   switch (command.kind) {
-    case "list":
-      return command.json ? [command.noun, "--json"] : [command.noun];
+    case "list": {
+      const argv: string[] = [command.noun];
+      if (command.json) argv.push("--json");
+      if (command.all) argv.push("--all");
+      return argv;
+    }
+    case "archive":
+    case "unarchive":
+    case "add-repo":
+    case "remove-repo":
+    case "set-repos":
+    case "add-checkout":
+    case "remove-checkout":
+      // Lifecycle and repo verbs forward verbatim, trailing flags included:
+      // `intent archive <name> --reason <text>`.
+      return [command.noun, command.kind, command.name, ...command.rest];
     case "switch":
       return command.explicit
         ? [command.noun, "switch", command.name]
@@ -356,6 +543,13 @@ export function scanNamespaceInvocations(
   return invocations;
 }
 
+// Every spelling of a human-presence switch gets this refusal: the dispatcher's
+// `config set guard.human-presence` and the utility's `--guard.human-presence`.
+export const HUMAN_PRESENCE_NO_SWITCH =
+  "Human presence cannot be switched off: it is how AIDLC knows an approval or an answer came from a real person, " +
+  "so reply in the chat yourself. For a supervised session where nobody can reply, launch the CLI with " +
+  "AIDLC_SKIP_HUMAN_PRESENCE_GUARD=1 set.";
+
 export const EXIT = {
   ok: 0,
   failure: 1,
@@ -463,9 +657,14 @@ export function success(message: string, data?: unknown): CommandResult {
 // indistinguishable from a cancelled prompt. This reader returns `""` for an
 // empty line and `null` only when the input is closed (EOF), so callers can
 // treat Enter as "accept the default" and EOF as "cancel". It reads one byte at
-// a time so nothing past the newline is consumed from the input.
-export function readTerminalLine(label: string, fd = 0): string | null {
-  process.stdout.write(`${label} `);
+// a time so nothing past the newline is consumed from the input. A command
+// whose stdout carries its JSON result asks on stderr.
+export function readTerminalLine(
+  label: string,
+  fd = 0,
+  out: { write(text: string): unknown } = process.stdout,
+): string | null {
+  out.write(`${label} `);
   const bytes: number[] = [];
   const byte = Buffer.alloc(1);
   let sawNewline = false;
@@ -496,4 +695,20 @@ export function readTerminalLine(label: string, fd = 0): string | null {
   }
   if (sawEof && bytes.length === 0) return null;
   return Buffer.from(bytes).toString("utf-8").replace(/\r$/, "");
+}
+
+// Plugin Markdown is projected at compose/sync time, not by the packager, so it
+// gets the same invocation tokens core prose does, for the channel this tree
+// was projected for (native `aidlc`, or the copy channel's bun dispatcher).
+export function projectInvocationTokens(text: string, harnessDir: string): string {
+  const invoke = aidlcInvocation();
+  const toolPrefix = invoke === "aidlc" ? `${TRUSTED_COMMAND_PREFIX} ` : `bun ${harnessDir}/tools/`;
+  // Token names are assembled, not written whole: the packager would otherwise
+  // project the literals in this file's own source.
+  const token = (name: string): string => `{{${name}}}`;
+  return text
+    .replaceAll(token("HARNESS_DIR"), harnessDir)
+    .replaceAll(token("INVOKE"), invoke)
+    .replaceAll(token("TOOL_PREFIX"), toolPrefix)
+    .replaceAll(token("TRUSTED_NAMESPACE"), TRUSTED_ROUTE_NAMESPACE);
 }

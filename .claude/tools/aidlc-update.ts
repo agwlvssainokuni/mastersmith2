@@ -2,11 +2,18 @@ import { existsSync, readFileSync, rmSync } from "node:fs";
 import { relative } from "node:path";
 import { AIDLC_VERSION } from "./aidlc-version.ts";
 import {
-  machineTransactionRoot,
+  compareVersions,
+  isReleaseChannel,
+  PREVIEW_CHANNEL,
+  type ReleaseChannel,
   requireVersion,
-} from "./aidlc-install-paths.ts";
+  STABLE_CHANNEL,
+  versionChannel,
+} from "./aidlc-channel.ts";
+import { machineTransactionRoot } from "./aidlc-install-paths.ts";
 import {
   type MachineConfig,
+  readMachineChannel,
   readMachineConfig,
   resolvedReleaseSettings,
   updateCachePath,
@@ -14,6 +21,7 @@ import {
 import {
   fetchReleaseMetadata,
   ReleaseUnavailableError,
+  resolvePreviewVersion,
 } from "./aidlc-release.ts";
 import {
   executePlan,
@@ -22,13 +30,17 @@ import {
 } from "./aidlc-transaction.ts";
 import { aidlcInvocation } from "./aidlc-runtime-paths.ts";
 
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const CACHE_TTL_MS = 24 * HOUR_MS;
 
 export type UpdateCache = {
   schemaVersion: 1;
   checkedAt: string;
   latestVersion: string;
   releaseDate: string;
+  // Caches written before release channels existed carry no channel and
+  // describe the stable stream.
+  channel?: ReleaseChannel;
 };
 
 export type UpdateState = {
@@ -42,27 +54,19 @@ export type UpdateState = {
     | "absent"
     | "invalid-config";
   currentVersion: string;
+  channel: ReleaseChannel;
   latestVersion?: string;
   checkedAt?: string;
   stale?: boolean;
   message: string;
 };
 
-function compareSemver(left: string, right: string): number {
-  const a = requireVersion(left).split(".").map(Number);
-  const b = requireVersion(right).split(".").map(Number);
-  for (let index = 0; index < 3; index++) {
-    if (a[index] !== b[index]) return a[index] < b[index] ? -1 : 1;
-  }
-  return 0;
-}
-
 function validateCache(value: unknown): UpdateCache {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new Error("update cache must be a JSON object");
   }
   const record = value as Record<string, unknown>;
-  const allowed = new Set(["schemaVersion", "checkedAt", "latestVersion", "releaseDate"]);
+  const allowed = new Set(["schemaVersion", "checkedAt", "latestVersion", "releaseDate", "channel"]);
   const unknown = Object.keys(record).filter((key) => !allowed.has(key));
   if (unknown.length > 0) {
     throw new Error(`update cache contains unknown key(s): ${unknown.join(", ")}`);
@@ -73,11 +77,15 @@ function validateCache(value: unknown): UpdateCache {
     !Number.isFinite(Date.parse(record.checkedAt)) ||
     typeof record.latestVersion !== "string" ||
     typeof record.releaseDate !== "string" ||
-    !/^\d{4}-\d{2}-\d{2}$/.test(record.releaseDate)
+    !/^\d{4}-\d{2}-\d{2}$/.test(record.releaseDate) ||
+    (record.channel !== undefined && !isReleaseChannel(record.channel))
   ) {
     throw new Error("update cache has an invalid schema");
   }
   requireVersion(record.latestVersion);
+  if (versionChannel(record.latestVersion) !== (record.channel ?? STABLE_CHANNEL)) {
+    throw new Error("update cache version does not belong to its channel");
+  }
   return record as UpdateCache;
 }
 
@@ -87,31 +95,79 @@ export function readUpdateCache(): UpdateCache | null {
   return validateCache(JSON.parse(readFileSync(path, "utf-8")));
 }
 
+// The two ways on from a release newer than the newest one the machine
+// follows: back to that channel's newest (only when the person asks, since a
+// plain update never installs an older release), or, from a release of the
+// other channel, follow that channel instead.
+export function channelWays(follows: ReleaseChannel, running: ReleaseChannel, latest?: string): string {
+  const back = `To go back to ${follows}${latest ? ` ${latest}` : ""}: aidlc update --channel ${follows}.`;
+  if (running === follows) return back;
+  const kept = running === PREVIEW_CHANNEL ? "previews" : `${running} releases`;
+  return `${back} To keep getting ${kept}: aidlc config --channel ${running}.`;
+}
+
+// Doctor reads the cache without refreshing it off a terminal, and its report
+// gets copied on, so a version from an old check carries the check's age
+// rather than reading as today's latest.
+function checkedAgo(checkedAt: string, now = Date.now()): string {
+  const hours = Math.floor(Math.max(0, now - Date.parse(checkedAt)) / HOUR_MS);
+  const days = Math.floor(hours / 24);
+  return days > 0
+    ? `checked ${days} day${days === 1 ? "" : "s"} ago`
+    : hours > 0
+    ? `checked ${hours} hour${hours === 1 ? "" : "s"} ago`
+    : "checked less than an hour ago";
+}
+
+function latestKnown(channel: ReleaseChannel, latestVersion: string, checkedAt: string, now = Date.now()): string {
+  const channelWord = channel === STABLE_CHANNEL ? "" : `${channel} `;
+  return `latest known ${channelWord}${latestVersion}, ${checkedAgo(checkedAt, now)}`;
+}
+
+// The machine is "behind" only when the channel's newest release is newer than
+// the running binary: a plain `update` never installs an older one. A binary of
+// the other channel that is newer says so, with both ways on. An old check
+// still proves "behind" (releases only get newer), but not which one is newest.
 function cacheState(cache: UpdateCache, now = Date.now()): UpdateState {
+  const channel = cache.channel ?? STABLE_CHANNEL;
+  const binaryChannel = versionChannel(AIDLC_VERSION);
   const stale = now - Date.parse(cache.checkedAt) >= CACHE_TTL_MS;
-  const behind = compareSemver(AIDLC_VERSION, cache.latestVersion) < 0;
+  const switching = binaryChannel !== channel;
+  const behind = compareVersions(AIDLC_VERSION, cache.latestVersion) < 0;
+  // Stable messages keep their pre-channel wording; preview names its channel.
+  const channelWord = channel === STABLE_CHANNEL ? "" : `${channel} `;
+  const age = stale ? `, ${checkedAgo(cache.checkedAt, now)}` : "";
   return {
     state: behind ? "behind" : stale ? "stale" : "current",
     currentVersion: AIDLC_VERSION,
+    channel,
     latestVersion: cache.latestVersion,
     checkedAt: cache.checkedAt,
     stale,
-    message: behind
-      ? `binary ${AIDLC_VERSION}, latest ${cache.latestVersion}`
+    message: switching && behind
+      ? `binary ${AIDLC_VERSION} (${binaryChannel}), ${channel} channel newest${stale ? " known" : ""} ${cache.latestVersion}${age}; update switches channels`
+      : switching
+      ? `You're on ${AIDLC_VERSION}, newer than the latest${stale ? " known" : ""} ${channel} ${cache.latestVersion}${age}. ` +
+        channelWays(channel, binaryChannel, stale ? undefined : cache.latestVersion)
       : stale
-      ? `binary ${AIDLC_VERSION}; update cache is stale`
-      : `binary ${AIDLC_VERSION} is latest`,
+      ? `binary ${AIDLC_VERSION}, ${latestKnown(channel, cache.latestVersion, cache.checkedAt, now)}`
+      : behind
+      ? `binary ${AIDLC_VERSION}, latest ${channelWord}${cache.latestVersion}`
+      : `binary ${AIDLC_VERSION} is ${channelWord ? `the latest ${channelWord}release` : "latest"}`,
   };
 }
 
-export function cachedUpdateState(): UpdateState {
+export function cachedUpdateState(requested?: ReleaseChannel): UpdateState {
   let config: MachineConfig;
+  let channel: ReleaseChannel;
   try {
     config = readMachineConfig();
+    channel = requested ?? readMachineChannel();
   } catch (error) {
     return {
       state: "invalid-config",
       currentVersion: AIDLC_VERSION,
+      channel: requested ?? STABLE_CHANNEL,
       message: error instanceof Error ? error.message : String(error),
     };
   }
@@ -119,6 +175,7 @@ export function cachedUpdateState(): UpdateState {
     return {
       state: "disabled",
       currentVersion: AIDLC_VERSION,
+      channel,
       message: "update checks disabled by global config",
     };
   }
@@ -130,13 +187,17 @@ export function cachedUpdateState(): UpdateState {
     return {
       state: "unavailable",
       currentVersion: AIDLC_VERSION,
+      channel,
       message: "update cache is invalid",
     };
   }
-  if (cache) return cacheState(cache);
+  // A cache written for the other channel describes a stream this machine no
+  // longer follows; it is not evidence about the selected channel.
+  if (cache && (cache.channel ?? STABLE_CHANNEL) === channel) return cacheState(cache);
   return {
     state: settings.offline ? "offline" : "absent",
     currentVersion: AIDLC_VERSION,
+    channel,
     message: settings.offline ? "update check unavailable while offline" : "update cache is absent",
   };
 }
@@ -144,7 +205,7 @@ export function cachedUpdateState(): UpdateState {
 export function cachedUpdateNotice(): string | null {
   const state = cachedUpdateState();
   return state.state === "behind" && state.latestVersion
-    ? `Update available: aidlc ${state.latestVersion} (current ${AIDLC_VERSION}). Update with: ${aidlcInvocation()} update`
+    ? `Update available: aidlc ${state.latestVersion} (current ${AIDLC_VERSION}, ${state.channel} channel). Update with: ${aidlcInvocation()} update`
     : null;
 }
 
@@ -154,58 +215,72 @@ export async function refreshUpdateState(
     offline?: boolean;
     baseUrl?: string;
     caBundle?: string;
+    channel?: ReleaseChannel;
+    apiUrl?: string;
   } = {},
 ): Promise<UpdateState> {
+  const deadline = performance.now() + timeoutMs;
+  const remainingBudget = (): number => {
+    const remaining = Math.ceil(deadline - performance.now());
+    if (remaining <= 0) throw new ReleaseUnavailableError("update refresh timed out");
+    return remaining;
+  };
   let config: MachineConfig;
+  let channel: ReleaseChannel;
   try {
     config = readMachineConfig();
+    channel = overrides.channel ?? readMachineChannel();
   } catch (error) {
     return {
       state: "invalid-config",
       currentVersion: AIDLC_VERSION,
+      channel: overrides.channel ?? STABLE_CHANNEL,
       message: error instanceof Error ? error.message : String(error),
     };
   }
-  if (config["update-check"] === false) return cachedUpdateState();
+  if (config["update-check"] === false) return cachedUpdateState(channel);
   const settings = resolvedReleaseSettings(overrides);
   if (settings.offline) {
     return {
       state: "offline",
       currentVersion: AIDLC_VERSION,
+      channel,
       message: "update check unavailable while offline",
     };
   }
   let release: Awaited<ReturnType<typeof fetchReleaseMetadata>> | null = null;
   try {
+    const version = channel === PREVIEW_CHANNEL
+      ? await resolvePreviewVersion({
+          baseUrl: settings.baseUrl,
+          apiUrl: overrides.apiUrl,
+          caBundle: settings.caBundle,
+          timeoutMs: remainingBudget(),
+        })
+      : undefined;
     release = await fetchReleaseMetadata({
+      version,
       offline: settings.offline,
       baseUrl: settings.baseUrl,
       caBundle: settings.caBundle,
-      metadataTimeoutMs: timeoutMs,
+      metadataTimeoutMs: remainingBudget(),
+      verifyProvenance: false,
     });
     const cache: UpdateCache = validateCache({
       schemaVersion: 1,
       checkedAt: new Date().toISOString(),
       latestVersion: release.manifest.version,
       releaseDate: release.manifest.date,
+      channel,
     });
-    const previousCache = (() => {
-      try {
-        return readUpdateCache();
-      } catch {
-        return null;
-      }
-    })();
+    // Only the installed binary is a trusted regression floor, and only within
+    // its channel. The advisory cache has no provenance: a forged future id
+    // must not prevent recovery when the mirror serves the real latest again.
     if (
-      compareSemver(cache.latestVersion, AIDLC_VERSION) < 0 ||
-      previousCache &&
-        compareSemver(cache.latestVersion, previousCache.latestVersion) < 0
+      versionChannel(AIDLC_VERSION) === channel &&
+      compareVersions(cache.latestVersion, AIDLC_VERSION) < 0
     ) {
-      throw new Error(
-        `release metadata regressed from ${
-          previousCache?.latestVersion ?? AIDLC_VERSION
-        } to ${cache.latestVersion}`,
-      );
+      throw new Error("release metadata is older than the installed version");
     }
     const path = updateCachePath();
     const root = machineTransactionRoot();
@@ -221,21 +296,39 @@ export async function refreshUpdateState(
     });
     return cacheState(cache);
   } catch (error) {
-    const previous = cachedUpdateState();
-    if (previous.state === "behind" || previous.state === "current" || previous.state === "stale") {
+    const previous = cachedUpdateState(channel);
+    if (
+      (previous.state === "behind" || previous.state === "current" || previous.state === "stale") &&
+      previous.latestVersion && previous.checkedAt
+    ) {
       return {
         ...previous,
         state: "unavailable",
-        message:
-          `update refresh unavailable; cached version ${previous.latestVersion} is stale or unverifiable`,
+        message: `could not check for a newer release; binary ${AIDLC_VERSION}, ${
+          latestKnown(previous.channel, previous.latestVersion, previous.checkedAt)
+        }`,
       };
+    }
+    // Parser and transport errors can contain mirror-controlled text. Preserve
+    // actionable discovery guidance using internal codes, never error.message.
+    let message = "update refresh unavailable; release metadata could not be checked";
+    if (error instanceof ReleaseUnavailableError) {
+      if (error.code === "preview-api-required") {
+        message = "update refresh unavailable; pass --release-api-url or set AIDLC_RELEASE_API_URL for this mirror";
+      } else if (error.code === "preview-unpublished") {
+        message = `update refresh unavailable; no ${PREVIEW_CHANNEL} release is published`;
+      } else if (error.code === "preview-list-too-large") {
+        message =
+          `update refresh unavailable; the ${PREVIEW_CHANNEL} release list is too large to ` +
+          `download. To update now, run \`aidlc update --version <id>\` with a ` +
+          `${PREVIEW_CHANNEL} id from https://github.com/awslabs/aidlc-workflows/releases`;
+      }
     }
     return {
       state: "unavailable",
       currentVersion: AIDLC_VERSION,
-      message: error instanceof ReleaseUnavailableError
-        ? error.message
-        : `update refresh failed: ${error instanceof Error ? error.message : String(error)}`,
+      channel,
+      message,
     };
   } finally {
     if (release?.cleanup) rmSync(release.cleanup, { recursive: true, force: true });

@@ -4,8 +4,8 @@ description: >
   Read-only session cost view. Prints deterministic aggregates for the
   current workflow — duration, stage outcomes, memory entries, sensor
   firings, learnings captured — sourced entirely from
-  `aidlc-runtime.ts summary`. Never mutates workflow state, never emits
-  audit events, never writes files.
+  `aidlc engine runtime summary`. Never mutates workflow state,
+  never emits audit events, never writes files.
 argument-hint: ""
 user-invocable: true
 classification: read-only
@@ -67,7 +67,7 @@ Otherwise parse the JSON. The shape is:
   "stages":   { "total": N, "approved": N, "failed": N, "pending": N },
   "by_phase": { "<phase>": { "total": N, "approved": N, "failed": N, "pending": N }, ... },
   "memory":   { "total": N, "interpretations": N, "deviations": N, "tradeoffs": N, "open_questions": N },
-  "sensors":  { "total": N, "passed": N, "failed": N, "budget_override": N, "incomplete": N },
+  "sensors":  { "total": N, "passed": N, "failed": N, "could_not_run": N, "budget_override": N, "incomplete": N },
   "learnings":{ "from_orchestrator": N, "from_user_addition": N }
 }
 ```
@@ -106,6 +106,7 @@ Sensors
   Fired:            {sensors.total}
   Passed:           {sensors.passed}
   Failed:           {sensors.failed}
+  Could not run:    {sensors.could_not_run}
   Budget-override:  {sensors.budget_override}
   Incomplete:       {sensors.incomplete}
 

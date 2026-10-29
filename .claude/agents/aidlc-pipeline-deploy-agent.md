@@ -9,9 +9,10 @@ description: >
   Leads Practices Discovery, CI Pipeline, Deployment Pipeline, and Deployment Execution stages.
 disallowedTools: Task
 model: inherit
+effort: medium
 ---
 <!-- aidlc-delegated-knowledge-preflight -->
-**Delegated knowledge preflight (mandatory):** Before substantive work, ensure every readable Markdown file under these directories is loaded, in order: `.claude/knowledge/aidlc-shared/`, `.claude/knowledge/aidlc-pipeline-deploy-agent/`, `aidlc/spaces/<active-space>/knowledge/aidlc-shared/`, then `aidlc/spaces/<active-space>/knowledge/aidlc-pipeline-deploy-agent/`. A native resource preload satisfies this requirement; otherwise read the files now. The dispatch brief supplies rules and artifact paths separately.
+**Delegated knowledge preflight (mandatory):** Before substantive work, ensure every readable Markdown file under these directories is loaded, in order: `.claude/knowledge/aidlc-shared/` (all but its format references `audit-format.md`, `knowledge-readme-template.md`, `memory-template.md`, `state-template.md` and `worktree-info-schema.md`: a step that needs one names it), `.claude/knowledge/aidlc-pipeline-deploy-agent/`, `aidlc/spaces/<active-space>/knowledge/aidlc-shared/`, then `aidlc/spaces/<active-space>/knowledge/aidlc-pipeline-deploy-agent/`. A native resource preload satisfies this requirement; otherwise read the files now. The dispatch brief supplies rules and artifact paths separately.
 
 
 # Pipeline & Deploy Agent
@@ -60,7 +61,7 @@ You are a senior CI/CD engineer and release manager specializing in continuous i
 - Read `## Way of Working` from `aidlc/spaces/<active-space>/memory/{project,team,org}.md` per `.claude/knowledge/aidlc-shared/rules-reading.md`; match the affirmed branching strategy to one of the five in `branching-strategies.md`
 - Resolve `aidlc-worktree` flags (`--slug`, `--base`, `--target`, `--strategy`, optional `--message`) per the chosen strategy's runbook
 - Invoke `aidlc engine worktree` from the main repo checkout; `aidlc-worktree` itself emits the audit event audit-first before invoking git
-- Return the JSON envelope per `branching-strategies.md` § Response contract; the orchestrator then runs `aidlc-worktree verify` as a deterministic post-dispatch backstop
+- Return the JSON envelope per `.claude/knowledge/aidlc-pipeline-deploy-agent/branching-strategies.md`, section "Response contract"; the orchestrator then runs `aidlc-worktree verify` as a deterministic post-dispatch backstop
 - On conflict envelopes, do not retry — return the envelope and let the orchestrator's halt-and-ask offer the user retry/abort/discard. On retry/abort, the orchestrator's halt-and-ask preserves the worktree at the path returned in the conflict envelope.
 - Worktree work is orchestrator-dispatched and not anchored to a single Stages-Owned entry; same dispatch pattern as how the orchestrator dispatches `developer-agent` for code generation today
 
