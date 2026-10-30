@@ -1,0 +1,206 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-reference-write-check",
+  "upstream_ids": [
+    "NFR2.21",
+    "NFR2.25",
+    "NFR5.23",
+    "NFR2.26",
+    "NFR2.28",
+    "NFR2.27",
+    "NFR2.22",
+    "NFR2.24",
+    "NFR2.23",
+    "NFR1.21",
+    "NFR1.31",
+    "NFR5.21",
+    "NFR5.22",
+    "NFR1.32",
+    "NFR1.23",
+    "NFR1.22",
+    "NFR1.26",
+    "NFR1.24",
+    "NFR1.25",
+    "NFR1.30",
+    "NFR1.28",
+    "NFR1.29",
+    "NFR3.21",
+    "NFR3.23",
+    "NFR3.22",
+    "NFR3.24",
+    "NFR3.27",
+    "NFR6.21",
+    "NFR7.21",
+    "NFR7.22",
+    "NFR3.25",
+    "NFR3.26",
+    "NFR9.21"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.21",
+      "status": "OK",
+      "target": "infrastructure-specification.md 4節（使い捨ての環境: 読み取りのプール 5・書き込みのプール 5、種と DSL の追加、流す順）と monitoring-design.md 4節の SLI。合否は Performance Validation の k6（測るまで Unverified）"
+    },
+    {
+      "id": "NFR2.25",
+      "status": "Deferred",
+      "target": "Deferred: Performance Validation（測るまで Unverified、目標と物差しを変えない。monitoring-design.md 4節）"
+    },
+    {
+      "id": "NFR5.23",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（cleanTest を付けた verify と CI の検査の job の時間を U1 の後と並べて記録、42 分を超えたら諮る）。実測は Code Generation・Build and Test"
+    },
+    {
+      "id": "NFR2.26",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。U1 の口の 201 行の上限を緩めない）"
+    },
+    {
+      "id": "NFR2.28",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。参照ごとに順に呼ぶ）"
+    },
+    {
+      "id": "NFR2.27",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（アプリのコンテナ 2g・ヒープの設定を変えない。1要求の残る量 約 4 MB）"
+    },
+    {
+      "id": "NFR2.22",
+      "status": "OK",
+      "target": "infrastructure-specification.md 4.2（参照元の表と DSL の options を U1 の分の後に足す、権限の文より前に作る、空の確かめ）・4.3（種の後の表の大きさ）。台本は Code Generation・Build and Test"
+    },
+    {
+      "id": "NFR2.24",
+      "status": "OK",
+      "target": "infrastructure-specification.md 4.4（U1 の読み取りの場面の後に流す、caffeinate -dims・pmset、配備したアプリを止める）"
+    },
+    {
+      "id": "NFR2.23",
+      "status": "OK",
+      "target": "infrastructure-specification.md 4.2（biz_new の ref_id に参照の options を足さない）・4.4（既存の書き込みの場面を並べて流す）と monitoring-design.md 4節"
+    },
+    {
+      "id": "NFR1.21",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。同じ権限の写しで判定）"
+    },
+    {
+      "id": "NFR1.31",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。jqwik の性質ベースのテスト）"
+    },
+    {
+      "id": "NFR5.21",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation・Build and Test（パッケージごとの下限の実測。関門は cicd-pipeline.md 1節の段 2・段 6）"
+    },
+    {
+      "id": "NFR5.22",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節の段 6（businessdata.service・businessdata.domain は packagesJudgedByTotal に無い。計画で突き合わせる）"
+    },
+    {
+      "id": "NFR1.32",
+      "status": "OK",
+      "target": "monitoring-design.md 5節（BusinessDataWriteService のロガーの診断の WARN が1行、GlobalExceptionHandler の変換の WARN は別の行、Loki での見分け）。WARN の行とテストは Code Generation"
+    },
+    {
+      "id": "NFR1.23",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。参照先は写しの DSL から引く）"
+    },
+    {
+      "id": "NFR1.22",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。3つの場合の同一の応答）"
+    },
+    {
+      "id": "NFR1.26",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。必須の参照項目の升目）"
+    },
+    {
+      "id": "NFR1.24",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（SpotBugs の SQL_ の除外と境界テストを緩めない、prepareStatement・createStatement の場所を増やさない）"
+    },
+    {
+      "id": "NFR1.25",
+      "status": "OK",
+      "target": "monitoring-design.md 5節（ログ・トレースに名前・値・接続先・例外のメッセージを出さない）と cicd-pipeline.md 6節（k6 の結果の伏せ字）。toString の伏せ字と漏えいのテストは Code Generation"
+    },
+    {
+      "id": "NFR1.30",
+      "status": "OK",
+      "target": "monitoring-design.md 1節（監査の行 FAILURE・BUSINESS_REFERENCE_NOT_FOUND を調べる所）と infrastructure-specification.md 3節（内部DB に移行を足さない、対象DB の接続を返した後の別の短いトランザクション）"
+    },
+    {
+      "id": "NFR1.28",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節の段 2（3種類の対象DB の結合テストを verify の中で Testcontainers で毎回、CI も同じ）"
+    },
+    {
+      "id": "NFR1.29",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節の段 2・2節（テストだけの差し込み口 PausingTargetWriteAccess は src/test に置き本番に入らない、上限つきの待ちで CI を止めない）"
+    },
+    {
+      "id": "NFR3.21",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3節（読み取り 0〜1・書き込み 1、2本を同時に持たない、プールの上限を変えない）・5節"
+    },
+    {
+      "id": "NFR3.23",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3節（既定 10・5 を変えない）・4.1（使い捨ての環境で読み取り 5・書き込み 5、2つのプールの時間切れの累計の記録、上限を下げた場面を置かない）と monitoring-design.md 1節（id 44・45）"
+    },
+    {
+      "id": "NFR3.22",
+      "status": "OK",
+      "target": "infrastructure-specification.md 3節（内部DB は ⑩・⑪ の間は接続を持たない、移行を足さない）"
+    },
+    {
+      "id": "NFR3.24",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（U1 の MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE、既定 5s。U2 は設定を足さない）"
+    },
+    {
+      "id": "NFR3.27",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。外部キーの違反の変換を最後の守りにする、待ち合わせのテスト T-G1・T-G2）"
+    },
+    {
+      "id": "NFR6.21",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト・単体テスト。新しい code を作らない。T-C2）"
+    },
+    {
+      "id": "NFR7.21",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節・3節（移行・保存を足さない）と cicd-pipeline.md 4節（戻しはイメージだけ、.env を変えない）"
+    },
+    {
+      "id": "NFR7.22",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節の段 3（既存の業務データの E2E を統合の前に流す）・3節（スモークテストで参照の無い作成・更新・削除が今と同じ）"
+    },
+    {
+      "id": "NFR3.25",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節（U1 の MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL、既定 10s を共有。別々には変えられない）"
+    },
+    {
+      "id": "NFR3.26",
+      "status": "OK",
+      "target": "monitoring-design.md 1節・3節（⑩ の 503 は既存の ms-biz-target-db と id 42、MISMATCH の 409 は id 43、診断の WARN のキー）。写しの作りは Code Generation"
+    },
+    {
+      "id": "NFR9.21",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（新しい依存・コンテナのイメージを足さない）と cicd-pipeline.md 1節の段 2（lockfile と OSV-Scanner の対象は変わらない）"
+    }
+  ]
+}

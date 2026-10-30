@@ -1,0 +1,152 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u3-reference-screens",
+  "upstream_ids": [
+    "NFR2.41",
+    "NFR2.45",
+    "NFR2.42",
+    "NFR2.43",
+    "NFR2.44",
+    "NFR4.44",
+    "NFR1.41",
+    "NFR1.47",
+    "NFR4.41",
+    "NFR4.45",
+    "NFR5.41",
+    "NFR5.43",
+    "NFR6.41",
+    "NFR6.42",
+    "NFR7.41",
+    "NFR9.41",
+    "NFR1.42",
+    "NFR1.43",
+    "NFR1.44",
+    "NFR1.45",
+    "NFR1.46",
+    "NFR4.43",
+    "NFR4.42",
+    "NFR5.42"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest の待つ間と答えの後の表示の確かめ）、monitoring-design.md 4節（画面の時間の目標なし）"
+    },
+    {
+      "id": "NFR2.45",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（E2E・verify・CI の時間の記録と 1.5 倍・42 分の線）"
+    },
+    {
+      "id": "NFR2.42",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2節・3節（参照の API と読み取りのプール、同時 3 本）、monitoring-design.md 1節（U1 のパネル id 46）"
+    },
+    {
+      "id": "NFR2.43",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（radio 200 件の部品のテスト）・2節（E2E 195 の状態 12）"
+    },
+    {
+      "id": "NFR2.44",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 大きさ・4節（Vite の manifest の一時の手順）、cicd-pipeline.md 1節 段9"
+    },
+    {
+      "id": "NFR4.44",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（E2E 195 を e2eTest で統合の前に流す・axe の規則を外さない・状態 7 を先に）、infrastructure-specification.md 2節（見本の PG 127.0.0.1:15432・実行のスキーマの表と行・共有の DSL）"
+    },
+    {
+      "id": "NFR1.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）・段2（oxlint の react/no-danger）"
+    },
+    {
+      "id": "NFR1.47",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節・7節（資格情報はプロセスの環境変数・報告の部品・businessValue）"
+    },
+    {
+      "id": "NFR4.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（user-event のキーボード）・2節（E2E 190）"
+    },
+    {
+      "id": "NFR4.45",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）・2節（E2E 195 の状態 7・8、状態 7 の axe を先に）"
+    },
+    {
+      "id": "NFR5.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）・段7（カバレッジの thresholds）"
+    },
+    {
+      "id": "NFR5.43",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（190 の1本・195 は数えない・180 の確かめ）、infrastructure-specification.md 2節（共有の DSL を support/ へ）"
+    },
+    {
+      "id": "NFR6.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（日本語と英語の鍵の確かめ）"
+    },
+    {
+      "id": "NFR6.42",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（誤りの文の鍵）"
+    },
+    {
+      "id": "NFR7.41",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（reference を含む定義の見本を既存の画面のテストに流す）、cicd-pipeline.md 5節（戻したときの画面の形）"
+    },
+    {
+      "id": "NFR9.41",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 依存（npm の依存なし・固定先 4c63d11・ignore-scripts）、cicd-pipeline.md 1節 段8（OSV-Scanner）"
+    },
+    {
+      "id": "NFR1.42",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 置き場（ブラウザの保存を使わない）・網（道に出さない）、monitoring-design.md 5節（画面のログを出さない）"
+    },
+    {
+      "id": "NFR1.43",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節 網・3節（契約 C2 の固定の道）、monitoring-design.md 5節（トレースの道の属性に値が入らない）"
+    },
+    {
+      "id": "NFR1.44",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（定義の印だけで部品を選ぶ確かめ）、infrastructure-specification.md 3節（判定はサーバー側）"
+    },
+    {
+      "id": "NFR1.45",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（写しの単体テスト）、monitoring-design.md 3節（写しの失敗はサーバー側に現れない範囲として受け入れ）"
+    },
+    {
+      "id": "NFR1.46",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（403・409・503 の文の確かめ）、monitoring-design.md 3節（画面の失敗と道・状態コードの対応）"
+    },
+    {
+      "id": "NFR4.43",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（画面部品ごとの vitest-axe）"
+    },
+    {
+      "id": "NFR4.42",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（名前と状態の知らせ）"
+    },
+    {
+      "id": "NFR5.42",
+      "status": "OK",
+      "target": "cicd-pipeline.md 1節 段5（Vitest）（fast-check の性質ベースのテスト）"
+    }
+  ]
+}

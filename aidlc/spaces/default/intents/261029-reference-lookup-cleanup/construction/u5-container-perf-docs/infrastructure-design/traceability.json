@@ -1,0 +1,86 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u5-container-perf-docs",
+  "upstream_ids": [
+    "NFR8.81",
+    "NFR8.90",
+    "NFR9.81",
+    "NFR9.82",
+    "NFR5.81",
+    "NFR8.86",
+    "NFR8.87",
+    "NFR8.85",
+    "NFR8.82",
+    "NFR8.84",
+    "NFR8.83",
+    "NFR8.88",
+    "NFR8.89"
+  ],
+  "coverage": [
+    {
+      "id": "NFR8.81",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節 G1（A0 の了承を最初の関門）・infrastructure-specification.md 2.2節（Mailpit はボリュームを持たずメールが消える）"
+    },
+    {
+      "id": "NFR8.90",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節 G6（5.6節 Q3〜Q7・5.7節）・infrastructure-specification.md 5節（本文と履歴の分け方、写しはリポジトリの外）"
+    },
+    {
+      "id": "NFR9.81",
+      "status": "OK",
+      "target": "infrastructure-specification.md 5節（compose.yaml・docker/perf/compose.yaml・perf/versions.env・lockfile を変えない）・cicd-pipeline.md 1節・3節 G7"
+    },
+    {
+      "id": "NFR9.82",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2節（dependabot.yml の固定先の一覧を変えず、perf/README.md の grafana/otel-lgtm と compose.yaml の一致を整理の後に確かめる）・infrastructure-specification.md 5節"
+    },
+    {
+      "id": "NFR5.81",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節 G8（DOCKER_HOST 付きの ./gradlew verify、E2E は流さない）・1節（squash）・4節（CI は変えない）"
+    },
+    {
+      "id": "NFR8.86",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節「秘密の扱い」・cicd-pipeline.md 3節 G2（gitleaks dir 0 件・Config.Env と eyJ の検索 0 件）・6節"
+    },
+    {
+      "id": "NFR8.87",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節 G4（K6_IMAGE の docker run --rm・--env-file なしの k6 inspect で thresholds と場面の名前の集合の差が空）・infrastructure-specification.md 5節"
+    },
+    {
+      "id": "NFR8.85",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2.2節（lgtm は確かめの後に止める）・monitoring-design.md 冒頭・cicd-pipeline.md 5.1節（A9 で lgtm が止まっていること）"
+    },
+    {
+      "id": "NFR8.82",
+      "status": "OK",
+      "target": "infrastructure-specification.md 1節（--force-recreate --no-deps・profile）・2.1節（前後のイメージと index のダイジェスト）・3節（ボリュームの引き継ぎ）・4節（VM の空きメモリの関門）、monitoring-design.md 1節・2節（RepoDigests の照合・/api/health・uid ごとに 1 件・R1〜R5）"
+    },
+    {
+      "id": "NFR8.84",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2.1節・2.2節（Mailpit の受信の確かめ、アプリは止まっていたときだけ起動し元へ戻す）・monitoring-design.md 1節（Mailpit の受信・アプリの起動）"
+    },
+    {
+      "id": "NFR8.83",
+      "status": "OK",
+      "target": "infrastructure-specification.md 2.3節（0.34.0 を戻し先に残す、prune を行わない、A1 と A9 の docker image ls の比べ）・cicd-pipeline.md 5.1節・5.2節"
+    },
+    {
+      "id": "NFR8.88",
+      "status": "OK",
+      "target": "infrastructure-specification.md 5節（thresholdsFor と直前の定数の区画、thresholds-test.sh・dsl-mixed-memory.sh はコメントだけ）・cicd-pipeline.md 3節 G4・G5・monitoring-design.md 4節（線の値を変えない）"
+    },
+    {
+      "id": "NFR8.89",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節 G3（B0: U4 の統合の後）・G6（5.6節 Q1・Q2・5.7節 L3）・infrastructure-specification.md 6節（perf/README.md の共有の境界）"
+    }
+  ]
+}

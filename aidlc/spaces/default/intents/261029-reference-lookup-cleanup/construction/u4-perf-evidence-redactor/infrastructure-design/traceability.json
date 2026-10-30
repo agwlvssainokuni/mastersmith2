@@ -1,0 +1,122 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-perf-evidence-redactor",
+  "upstream_ids": [
+    "NFR8.61",
+    "NFR8.71",
+    "NFR5.61",
+    "NFR5.63",
+    "NFR9.61",
+    "NFR9.65",
+    "NFR7.61",
+    "NFR6.61",
+    "NFR8.62",
+    "NFR8.63",
+    "NFR8.68",
+    "NFR8.66",
+    "NFR8.69",
+    "NFR8.70",
+    "NFR8.64",
+    "NFR8.65",
+    "NFR8.67",
+    "NFR5.62",
+    "NFR9.64"
+  ],
+  "coverage": [
+    {
+      "id": "NFR8.61",
+      "status": "Deferred",
+      "target": "コード生成（LC10 の README の節。唯一の入口と2つの呼び方は手順の決まりで、パイプラインの関門ではない。cicd-pipeline.md 7節）"
+    },
+    {
+      "id": "NFR8.71",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節・2.3節（テストのソースの JWT の形は verifySecurity の既存の gitleaksScan と、作業フォルダの evidence を見る perfEvidenceScan とは別に、コード生成の検索で確かめる。gitleaksScan は CI でも流れる）"
+    },
+    {
+      "id": "NFR5.61",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（verifyUnitTest の frontendTest・verifyCoverage の frontendCoverage で性質のテストが流れる）・3節（失敗は種と道と回数だけで再現、反例の値を出さない）"
+    },
+    {
+      "id": "NFR5.63",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節・2.4節（道具のテストは frontendTest で毎回流れ、CI は同じ ./gradlew verify を呼ぶ。ワークフローは変えない）。passed の件数の記録は Build and Test（7節）"
+    },
+    {
+      "id": "NFR9.61",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.2節（perfEvidenceScan は checkToolchain だけに依存し frontendInstall・vendorBuild に依存しない。2.4節 新しい Actions・道具を足さない）"
+    },
+    {
+      "id": "NFR9.65",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（verifyLicense の段。道具のファイルをライセンスヘッダーの検査に入れる方法はコード生成の計画 P6）"
+    },
+    {
+      "id": "NFR7.61",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.2節（perfEvidenceScan は C7 の既存の呼び方を使わず、足す --scan の口だけを固定の引数で呼ぶ）。呼び方を変えないことの確かめは道具のテスト（verifyUnitTest の frontendTest、2.1節）"
+    },
+    {
+      "id": "NFR6.61",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.2節（Exec の既定で終わりのコード 1・2・4 を失敗にし、isIgnoreExitValue を付けず読み替えない）・3節（コードごとの見立て）"
+    },
+    {
+      "id": "NFR8.62",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（置換の仕組みのテストが verifyUnitTest の frontendTest と verifyCoverage の frontendCoverage で毎回流れ、CI も同じ verify）。置換そのものは道具の中の決まりで、パイプラインの資源は足さない"
+    },
+    {
+      "id": "NFR8.63",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（残存の検査の仕組みのテストが verifyUnitTest の frontendTest で毎回流れる）。同じ形の定数を使う evidence の検査は verifySecurity の perfEvidenceScan（2.2節）"
+    },
+    {
+      "id": "NFR8.68",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節・2.2節（verifySecurity の一員 perfEvidenceScan が node perf/<道具>.mjs --scan aidlc を毎回流す、UP-TO-DATE で飛ばさない）・2.3節（既存の安全の検査との並び）・2.4節（CI でも同じ）・2.5節（手元と CI の範囲の差）・5節（導入の前の一度の実行）"
+    },
+    {
+      "id": "NFR8.66",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（上限超えはコード 2 で verifySecurity を止める）・2.3節（64 MiB に近い入力の所要時間はコード生成で記録）・3節"
+    },
+    {
+      "id": "NFR8.69",
+      "status": "Deferred",
+      "target": "コード生成（README の置いた後の手順）と Build and Test（実際の summary json で --scan と gitleaks dir が 0 件）。gitleaks dir は verify と CI に入れない（cicd-pipeline.md 2.3節・7節、security-design.md 13節の未決の点）"
+    },
+    {
+      "id": "NFR8.70",
+      "status": "Deferred",
+      "target": "コード生成（perf/k6/scenarios.js の読み取りでの確かめと README の台本の決まり）。パイプラインの関門ではない（cicd-pipeline.md 7節）"
+    },
+    {
+      "id": "NFR8.64",
+      "status": "OK",
+      "target": "cicd-pipeline.md 3節（表示は報告の部品だけを通り、Gradle の Exec が流す手元と CI のログにも値と断片が出ない。見立ては件数と位置とパスだけで行う）"
+    },
+    {
+      "id": "NFR8.65",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（一時ファイルと書き出しの守りのテストが verifyUnitTest の frontendTest で流れる）・2.2節（--scan は書き出さない）"
+    },
+    {
+      "id": "NFR8.67",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.2節（タスクは固定の引数 --scan aidlc だけを渡す）・2.1節（引数と出力のパスの守りのテストが verifyUnitTest の frontendTest で流れる）"
+    },
+    {
+      "id": "NFR5.62",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節（verifyUnitTest の frontendTest・verifyCoverage の frontendCoverage。置き場と vitest.config.ts の include・coverage.include はコード生成の計画 P1〜P5）・2.4節（CI も同じ verify）"
+    },
+    {
+      "id": "NFR9.64",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.1節・2.2節（checkToolchain が手元で Node 24 を確かめる）・2.4節（CI は setup-node の node-version 24。版の変更なし）"
+    }
+  ]
+}
