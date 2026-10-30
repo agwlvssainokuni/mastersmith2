@@ -88,4 +88,13 @@ class BusinessDataProblemTypeCatalogTest {
         assertThat(BusinessDataProblemTypes.BUSINESS_ROW_OPERATION_NOT_ALLOWED.resolution())
                 .isNull();
     }
+
+    @Test
+    @DisplayName("other table references add no code: still 13 codes with the same statuses (T-C3, NFR6.1)")
+    void referencesAddNoCode() {
+        // Intent 261029-reference-lookup-cleanup の U1 は新しい code を作らず、参照先の失敗を既存の code に写す（BR1.5・BR1.6）。
+        assertThat(types).hasSize(13);
+        assertThat(types.stream().collect(Collectors.groupingBy(ProblemType::status, Collectors.counting())))
+                .containsExactlyInAnyOrderEntriesOf(Map.of(404, 3L, 409, 8L, 503, 2L));
+    }
 }

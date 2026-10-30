@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,5 +139,55 @@ class RowDialectTest {
         assertThat(MYSQL.readsTemporalAsText()).isTrue();
         assertThat(MARIADB.readsTemporalAsText()).isTrue();
         assertThat(POSTGRES.readsTemporalAsText()).isFalse();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.EnumSource(DatabaseProduct.class)
+    @DisplayName("the length condition counts characters with CHAR_LENGTH on every database")
+    void lengthWithin(DatabaseProduct product) {
+        assertThat(RowDialect.of(product).lengthWithin("t.\"v\"", 10_000)).isEqualTo("CHAR_LENGTH(t.\"v\") <= 10000");
+    }
+
+    @Test
+    @DisplayName("the sort expression takes the first 100 characters of text and keeps other types as they are")
+    void sortExpression() {
+        assertThat(POSTGRES.sortExpression(
+                        "\"v\"",
+                        cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.access(
+                                cherry.mastersmith.businessdata.domain.ValueType.STRING, "varchar")))
+                .isEqualTo("SUBSTRING(\"v\", 1, 100)");
+        assertThat(MYSQL.sortExpression(
+                        "`v`",
+                        cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.access(
+                                cherry.mastersmith.businessdata.domain.ValueType.STRING, "varchar")))
+                .isEqualTo("SUBSTRING(`v`, 1, 100)");
+        assertThat(POSTGRES.sortExpression(
+                        "\"v\"",
+                        cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.access(
+                                cherry.mastersmith.businessdata.domain.ValueType.OTHER, "uuid")))
+                .isEqualTo("SUBSTRING(CAST(\"v\" AS TEXT), 1, 100)");
+        assertThat(MARIADB.sortExpression(
+                        "`v`",
+                        cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.access(
+                                cherry.mastersmith.businessdata.domain.ValueType.OTHER, "json")))
+                .isEqualTo("SUBSTRING(" + MARIADB.castToText("`v`") + ", 1, 100)");
+        for (cherry.mastersmith.businessdata.domain.ValueType type : List.of(
+                cherry.mastersmith.businessdata.domain.ValueType.INTEGER,
+                cherry.mastersmith.businessdata.domain.ValueType.BIG_INTEGER,
+                cherry.mastersmith.businessdata.domain.ValueType.DECIMAL,
+                cherry.mastersmith.businessdata.domain.ValueType.BOOLEAN,
+                cherry.mastersmith.businessdata.domain.ValueType.DATE,
+                cherry.mastersmith.businessdata.domain.ValueType.DATETIME,
+                cherry.mastersmith.businessdata.domain.ValueType.DATETIME_TZ,
+                cherry.mastersmith.businessdata.domain.ValueType.TIME,
+                cherry.mastersmith.businessdata.domain.ValueType.TIME_TZ)) {
+            for (RowDialect dialect : List.of(POSTGRES, MYSQL, MARIADB)) {
+                assertThat(dialect.sortExpression(
+                                "c",
+                                cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.access(type, "x")))
+                        .as(type + " はカラムのまま")
+                        .isEqualTo("c");
+            }
+        }
     }
 }

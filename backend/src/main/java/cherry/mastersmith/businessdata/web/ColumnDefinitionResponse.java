@@ -17,9 +17,13 @@ package cherry.mastersmith.businessdata.web;
 
 import cherry.mastersmith.businessdata.domain.ColumnAccess;
 import cherry.mastersmith.businessdata.domain.ColumnValidation;
+import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
+import cherry.mastersmith.businessdata.domain.ReferenceField;
 import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.dsl.domain.DisplayName;
+import cherry.mastersmith.dsl.domain.FormPart;
 import cherry.mastersmith.dsl.domain.ListFormat;
+import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
 
@@ -37,7 +41,8 @@ import java.util.List;
  * @param editableOnCreate 作成で入力できるか
  * @param editableOnUpdate 更新で入力できるか
  * @param masked password のカラムか
- * @param formPart フォーム部品（検証の材料。{@code lookup} は {@code text}）
+ * @param formPart フォーム部品（検証の材料。{@code lookup} は {@code text}。ただし用途が作成・更新の定義では DSL の値の
+ *     {@code lookup} のまま返す。Intent 261029-reference-lookup-cleanup の U1、BR12.1・BR12.2、契約との差 D2）
  * @param required 必須か（書けないカラムは偽）
  * @param nullable NULL を許すか（DB の値のまま）
  * @param minLength 文字数の下限（STRING だけ。ほかは null）
@@ -48,6 +53,8 @@ import java.util.List;
  * @param max 値の上限（数の型だけ。ほかは null）
  * @param choices 固定の選択肢（select・radio だけ。ほかは空）
  * @param hasPattern 正規表現の検証があるか（式そのものは返さない）
+ * @param reference 参照の項目（Intent 261029-reference-lookup-cleanup の U1。用途が作成・更新で参照のカラムのときだけ。ほかは
+ *     {@code null}。BR12.1・BR12.3）
  */
 public record ColumnDefinitionResponse(
         String column,
@@ -68,16 +75,38 @@ public record ColumnDefinitionResponse(
         @JsonInclude(JsonInclude.Include.ALWAYS) String min,
         @JsonInclude(JsonInclude.Include.ALWAYS) String max,
         List<OptionResponse> choices,
-        boolean hasPattern) {
+        boolean hasPattern,
+        @JsonInclude(JsonInclude.Include.ALWAYS) ReferenceFieldResponse reference) {
 
     /**
-     * カラムの見せ方から作る。
+     * カラムの見せ方から作る（用途が VIEW の形。{@code reference} は {@code null}）。
      *
      * @param column カラム
      * @return 応答の項目
      */
     static ColumnDefinitionResponse from(ColumnAccess column) {
+        return from(column, DefinitionPurpose.VIEW, null);
+    }
+
+    /**
+     * カラムの見せ方と参照の項目から作る。
+     *
+     * @param column カラム
+     * @param purpose 用途
+     * @param reference 参照の項目（参照でないカラム・VIEW では null）
+     * @return 応答の項目
+     */
+    static ColumnDefinitionResponse from(ColumnAccess column, DefinitionPurpose purpose, ReferenceField reference) {
         ColumnValidation v = column.validation();
+        // 作成・更新の定義では、LOOKUP の参照のカラムの formPart を DSL の値の lookup で返す（D2。DSL の検証で lookup の部品と
+        // LOOKUP の出どころは対になる）。VIEW では今のまま text。
+        String formPart = v == null ? null : v.formPart().dslName();
+        if (formPart != null
+                && purpose.readsReferences()
+                && reference != null
+                && reference.kind() == OptionSourceKind.LOOKUP) {
+            formPart = FormPart.LOOKUP.dslName();
+        }
         return new ColumnDefinitionResponse(
                 column.column(),
                 column.displayName(),
@@ -87,7 +116,7 @@ public record ColumnDefinitionResponse(
                 column.editableOnCreate(),
                 column.editableOnUpdate(),
                 column.masked(),
-                v == null ? null : v.formPart().dslName(),
+                formPart,
                 v != null && v.required(),
                 v != null && v.nullable(),
                 v == null ? null : v.minLength(),
@@ -99,6 +128,7 @@ public record ColumnDefinitionResponse(
                 v == null
                         ? List.of()
                         : v.choices().stream().map(OptionResponse::from).toList(),
-                v != null && v.hasPattern());
+                v != null && v.hasPattern(),
+                reference == null ? null : ReferenceFieldResponse.from(reference));
     }
 }

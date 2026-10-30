@@ -20,7 +20,10 @@ package cherry.mastersmith.targetdb.domain;
  * 全体の上限は、生成・照合のどちらにも無い（照合の全体の上限は作らない。NFR 設計の承認の場の決定 B）。
  *
  * <p>業務データの読み取り（Intent 261016-business-data-views の U1、BR8.2・NFR4.4）の一覧と詳細の目的を足した。スキーマの読み取り
- * （{@code TargetSchemaReader}）は生成・照合だけを使い、業務データの読み取りの口（{@code TargetReadAccess}）は一覧・詳細だけを使う。
+ * （{@code TargetSchemaReader}）は生成・照合だけを使い、業務データの読み取りの口（{@code TargetReadAccess}）は一覧・詳細・参照先を使う。
+ *
+ * <p>他テーブル参照の参照先の読み取り（Intent 261029-reference-lookup-cleanup の U1、BR8.1・契約 C5）の目的を足した。定義の取得で
+ * 参照先を読むときだけ、全体の上限（{@code TargetReadAccess#referenceReadTotal()}）が別にある。
  */
 public enum ReadPurpose {
     /** 既定の DSL の生成（U3）。問い合わせ1回の上限は既定 20 秒。 */
@@ -30,5 +33,7 @@ public enum ReadPurpose {
     /** 業務データの一覧（件数とページのそれぞれ）。問い合わせ1回の上限は既定 5 秒。 */
     LIST,
     /** 業務データの詳細。問い合わせ1回の上限は既定 5 秒。 */
-    DETAIL
+    DETAIL,
+    /** 他テーブル参照の参照先（選択肢・検索・ラベル・保存前の確かめ）。問い合わせ1回の上限は既定 5 秒。 */
+    REFERENCE
 }

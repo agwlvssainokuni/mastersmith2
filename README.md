@@ -649,6 +649,8 @@ docker compose up -d --wait                              # app が healthy に�
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` | `5s` | 照合で、問い合わせ1回の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST` | `5s` | 業務データの一覧で、問い合わせ1回（件数・ページのそれぞれ）の待ちの上限（1 秒以上） |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL` | `5s` | 業務データの詳細で、問い合わせ1回の待ちの上限（1 秒以上） |
+| `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE` | `5s` | 他テーブル参照の参照先（選択肢・検索・ラベル・保存前の確かめ）で、問い合わせ1回の待ちの上限（1 秒以上。Intent 261029-reference-lookup-cleanup の U1）。1 秒未満は対象DB 全体が使えなくなる |
+| `MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL` | `10s` | 定義の取得（作成・更新の用途）で参照先の選択肢を読む全体の待ちの上限（1 秒以上）。最後の文は切り上げのため最大 1 秒未満超えうる。1 秒未満は対象DB 全体が使えなくなる |
 | `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE` | `5s` | 業務データの書き込みで、文1回（事前の問い合わせ・書き込みの文・違反の後の確かめのそれぞれ）の待ちの上限（1 秒以上。Intent 261016-business-data-views の U2）。書き込みのドライバーの通信の待ちはこの値 + 5 秒 |
 | `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` | `10` | 対象DB の接続の数の上限（内部DB のプールとは別） |
 | `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` | `60s` | 使っていない対象DB の接続を閉じるまでの時間（10 秒以上。書き込みの接続と共用） |
@@ -751,7 +753,7 @@ docker compose rm -f mailpit                   # 消す（受けたメールも�
 
 | 道 | すること |
 |---|---|
-| `POST /api/tables/definition` | テーブルの定義（一覧・詳細に出すカラム、検索の項目、並べ替えられるカラム、許す操作）。対象DB には接続しません |
+| `POST /api/tables/definition` | テーブルの定義（一覧・詳細に出すカラム、検索の項目、並べ替えられるカラム、許す操作）。本文の任意の `purpose`（`VIEW`・`CREATE`・`UPDATE`。無ければ `VIEW`）が `VIEW` なら対象DB には接続しません。`purpose` が `CREATE`・`UPDATE` で参照の項目（他テーブル参照の `REFERENCE`）があるときだけ、読み取りの接続を1本借りて参照先の選択肢を読みます（Intent 261029-reference-lookup-cleanup の U1。各カラムの `reference` に状態・選択肢・ピッカーの情報を載せます） |
 | `POST /api/tables/rows/search` | 一覧（条件・並べ替え・ページ。1ページは 20・50・100 件、全体の件数を含む）。文字の値は一覧では 100 字で切り、切ったカラムを示します |
 | `POST /api/tables/rows/get` | 主キーで1行の詳細（文字の値は 10,000 字で切ります） |
 

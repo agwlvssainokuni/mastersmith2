@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldError;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldErrorReason;
+import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
 import cherry.mastersmith.businessdata.domain.RequestedDefinitionId;
 import cherry.mastersmith.businessdata.domain.RowRecord;
@@ -104,7 +105,8 @@ class BusinessDataReadControllerTest {
     @Test
     @DisplayName("the definition carries the read items and the validation items of every column (U2, BR14.1)")
     void definition() {
-        when(service.definition(eq(42L), any())).thenReturn(new DefinitionResult.Found(VIEW, true));
+        when(service.definition(eq(42L), any(), eq(DefinitionPurpose.VIEW)))
+                .thenReturn(new DefinitionResult.Found(VIEW, true));
 
         TableDefinitionResponse response = controller.definition(
                 new DefinitionRequest("sample", "item", new DefinitionIdBody(BusinessDataDslFixture.HASH, 7L)));
@@ -112,7 +114,8 @@ class BusinessDataReadControllerTest {
         verify(service)
                 .definition(
                         42L,
-                        new TableQuery("sample", "item", new RequestedDefinitionId(BusinessDataDslFixture.HASH, 7L)));
+                        new TableQuery("sample", "item", new RequestedDefinitionId(BusinessDataDslFixture.HASH, 7L)),
+                        DefinitionPurpose.VIEW);
         assertThat(response.definitionChanged()).isTrue();
         assertThat(response.definitionId()).isEqualTo(new DefinitionIdBody(BusinessDataDslFixture.HASH, 7L));
         assertThat(response.listColumns())
@@ -305,5 +308,113 @@ class BusinessDataReadControllerTest {
                 .isEqualTo("/api/tables/rows/search");
         assertThat(BusinessDataWebConfig.businessDataGetBodyLimitRoute().maxBytes())
                 .isEqualTo(65_536L);
+    }
+
+    @ParameterizedTest(name = "purpose \"{0}\"")
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"create", "DELETE", "", " VIEW", "view"})
+    @DisplayName("a purpose outside VIEW, CREATE and UPDATE is 400 before the service is called (BR1.1)")
+    void unknownPurposeIs400(String purpose) {
+        assertThatThrownBy(() -> controller.definition(new DefinitionRequest("sample", "item", null, purpose)))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getProblemType().status()).isEqualTo(400);
+                    assertThat(e.getProblemType().code()).isEqualTo("VALIDATION_FAILED");
+                    assertThat(e.getProperties()).containsOnlyKeys("definitionChanged");
+                });
+        org.mockito.Mockito.verifyNoInteractions(service);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.EnumSource(DefinitionPurpose.class)
+    @DisplayName("each purpose is passed to the service and a missing purpose is VIEW")
+    void purposeIsPassed(DefinitionPurpose purpose) {
+        when(service.definition(eq(42L), any(), eq(purpose)))
+                .thenReturn(new DefinitionResult.Found(VIEW, false, purpose, Map.of()));
+
+        controller.definition(new DefinitionRequest("sample", "item", null, purpose.name()));
+        if (purpose == DefinitionPurpose.VIEW) {
+            controller.definition(new DefinitionRequest("sample", "item", null));
+        }
+
+        verify(service, org.mockito.Mockito.times(purpose == DefinitionPurpose.VIEW ? 2 : 1))
+                .definition(eq(42L), any(), eq(purpose));
+    }
+
+    @Test
+    @DisplayName("reference fields go to their columns, other columns carry reference null, and lookups say lookup")
+    void referencesInTheResponse() {
+        cherry.mastersmith.businessdata.domain.ReferenceField choices =
+                cherry.mastersmith.businessdata.domain.ReferenceField.choices(
+                        List.of(new cherry.mastersmith.businessdata.domain.ReferenceOption("1", null)));
+        cherry.mastersmith.businessdata.domain.ReferenceField lookup =
+                cherry.mastersmith.businessdata.domain.ReferenceField.lookup(
+                        new cherry.mastersmith.businessdata.domain.PickerInfo(
+                                List.of(new cherry.mastersmith.businessdata.domain.PickerSearchField(
+                                        "n",
+                                        new cherry.mastersmith.dsl.domain.DisplayName("名", "Name"),
+                                        cherry.mastersmith.businessdata.domain.SearchMode.CONTAINS,
+                                        ValueType.STRING)),
+                                List.of(new cherry.mastersmith.businessdata.domain.PickerListColumn(
+                                        "n",
+                                        new cherry.mastersmith.dsl.domain.DisplayName("名", "Name"),
+                                        ValueType.STRING))));
+        when(service.definition(eq(42L), any(), eq(DefinitionPurpose.CREATE)))
+                .thenReturn(new DefinitionResult.Found(
+                        VIEW, false, DefinitionPurpose.CREATE, Map.of("code", choices, "name", lookup)));
+
+        TableDefinitionResponse response =
+                controller.definition(new DefinitionRequest("sample", "item", null, "CREATE"));
+
+        ColumnDefinitionResponse code = response.listColumns().get(0);
+        ColumnDefinitionResponse name = response.listColumns().get(1);
+        assertThat(code.reference().kind()).isEqualTo(cherry.mastersmith.dsl.domain.OptionSourceKind.REFERENCE);
+        assertThat(code.reference().options()).singleElement().satisfies(o -> {
+            assertThat(o.value()).isEqualTo("1");
+            assertThat(o.label()).isNull();
+            assertThat(o.toString()).doesNotContain("\"1\"").contains("***");
+        });
+        assertThat(code.reference().picker()).isNull();
+        assertThat(code.formPart()).isEqualTo("text");
+        assertThat(name.reference().options()).isNull();
+        assertThat(name.reference().picker().searchFields())
+                .singleElement()
+                .satisfies(f ->
+                        assertThat(f.operator()).isEqualTo(cherry.mastersmith.businessdata.domain.SearchMode.CONTAINS));
+        assertThat(name.reference().picker().listColumns())
+                .singleElement()
+                .satisfies(f -> assertThat(f.operator()).isNull());
+        assertThat(name.formPart()).as("作成・更新では lookup のまま（D2）").isEqualTo("lookup");
+        assertThat(response.detailColumns().get(2).reference()).isNull();
+        assertThat(code.reference().toString()).contains("options=1").doesNotContain("value=1");
+    }
+
+    @Test
+    @DisplayName("VIEW keeps the text form part and reference null on every column (BR12.1)")
+    void viewKeepsTheOldShape() {
+        when(service.definition(eq(42L), any(), eq(DefinitionPurpose.VIEW)))
+                .thenReturn(new DefinitionResult.Found(VIEW, false));
+
+        TableDefinitionResponse response = controller.definition(new DefinitionRequest("sample", "item", null));
+
+        assertThat(response.listColumns()).allSatisfy(c -> {
+            assertThat(c.reference()).isNull();
+            assertThat(c.formPart()).isEqualTo("text");
+        });
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+        "TARGET_DB_TIMEOUT, 503, BUSINESS_TARGET_DB_TIMEOUT",
+        "TARGET_DB_UNAVAILABLE, 503, BUSINESS_TARGET_DB_UNAVAILABLE",
+        "TARGET_DB_MISMATCH, 409, BUSINESS_TARGET_DB_MISMATCH"
+    })
+    @DisplayName("a reference read failure of the definition becomes the existing code")
+    void definitionFailures(ReadRejection rejection, int status, String code) {
+        when(service.definition(eq(42L), any(), eq(DefinitionPurpose.UPDATE))).thenReturn(ReadRejected.of(rejection));
+
+        assertThatThrownBy(() -> controller.definition(new DefinitionRequest("sample", "item", null, "UPDATE")))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getProblemType().status()).isEqualTo(status);
+                    assertThat(e.getProblemType().code()).isEqualTo(code);
+                });
     }
 }

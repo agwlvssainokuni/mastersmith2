@@ -99,12 +99,19 @@ mastersmith:
       compare: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE:5s}
       # 問い合わせ1回の待ちの上限（業務データの一覧。件数とページの問い合わせのそれぞれに付ける）
       list: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST:5s}
-      # 問い合わせ1回の待ちの上限（業務データの詳細）。読み取りのドライバーの通信の待ちは、生成・照合・一覧・詳細の4つの上限の
-      # 最も長いもの + 5 秒
+      # 問い合わせ1回の待ちの上限（業務データの詳細）。読み取りのドライバーの通信の待ちは、生成・照合・一覧・詳細・参照先の5つの
+      # 上限の最も長いもの + 5 秒
       detail: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL:5s}
+      # 問い合わせ1回の待ちの上限（他テーブル参照の参照先の選択肢・検索・ラベル・保存前の確かめ。Intent 261029-reference-lookup-cleanup
+      # の U1）。1 秒以上。1 秒未満は項目の名前だけを WARN で出し、対象DB 全体を使わない（起動は続く）
+      reference: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE:5s}
       # 書き込みの文1回の待ちの上限（事前の問い合わせ・書き込みの文・違反の後の確かめのそれぞれに付ける。U2）。書き込みのドライバーの
       # 通信の待ちは、この値 + 5 秒（読み取りの通信の待ちには入れない）
       write: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE:5s}
+    # 定義の取得（作成・更新の用途）で参照先の選択肢を読む全体の待ちの上限（Intent 261029-reference-lookup-cleanup の U1）。1 秒以上。
+    # 1 秒未満は項目の名前だけを WARN で出し、対象DB 全体を使わない（起動は続く）。最後の文は切り上げのため最大 1 秒未満この値を
+    # 超えうるため、最悪は約 11 秒（既定）＋ 権限の写しの読み取り ＋ 接続を借りる待ち（最大 3 秒）
+    reference-read-total: ${MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL:10s}
     pool:
       # 対象DB の読み取りの接続の数の上限（内部DB の接続とは別）
       maximum-size: ${MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE:10}

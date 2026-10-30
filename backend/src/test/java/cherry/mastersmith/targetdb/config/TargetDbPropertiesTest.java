@@ -19,8 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
 /** 対象DB の設定の型の単体テスト（BR1.4、NFR4.2）。 */
 class TargetDbPropertiesTest {
@@ -33,7 +36,7 @@ class TargetDbPropertiesTest {
         String username = "user" + TestDatabase.randomSecret();
         String password = TestDatabase.randomSecret();
         TargetDbProperties properties = new TargetDbProperties(
-                "postgresql", host, "15432", database, "app", username, password, null, null, null, null);
+                "postgresql", host, "15432", database, "app", username, password, null, null, null, null, null);
 
         String text = properties.toString();
 
@@ -53,7 +56,7 @@ class TargetDbPropertiesTest {
     @DisplayName("toString marks an empty password as empty without printing any value")
     void toStringShowsEmpty() {
         TargetDbProperties properties =
-                new TargetDbProperties(null, "", null, null, null, null, "", null, null, null, null);
+                new TargetDbProperties(null, "", null, null, null, null, "", null, null, null, null, null);
 
         assertThat(properties.toString()).contains("password=(empty)").contains("host=(empty)");
     }
@@ -62,7 +65,7 @@ class TargetDbPropertiesTest {
     @DisplayName("timeouts and the pool fall back to the defaults when the values are empty")
     void defaults() {
         TargetDbProperties properties =
-                new TargetDbProperties(null, null, null, null, null, null, null, null, null, null, null);
+                new TargetDbProperties(null, null, null, null, null, null, null, null, null, null, null, null);
 
         assertThat(properties.connectTimeout()).isEqualTo(Duration.ofSeconds(3));
         assertThat(properties.queryTimeout().generate()).isEqualTo(Duration.ofSeconds(20));
@@ -78,7 +81,7 @@ class TargetDbPropertiesTest {
     @DisplayName("the list and detail limits fall back to 5 seconds one by one and count for the longest limit")
     void listAndDetailDefaults() {
         TargetDbProperties.QueryTimeout partial =
-                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(7), null, null);
+                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(7), null, null, null);
 
         assertThat(partial.list()).isEqualTo(Duration.ofSeconds(7));
         assertThat(partial.detail()).isEqualTo(Duration.ofSeconds(5));
@@ -87,6 +90,7 @@ class TargetDbPropertiesTest {
                                 Duration.ofSeconds(3),
                                 Duration.ofSeconds(30),
                                 Duration.ofSeconds(4),
+                                null,
                                 null)
                         .longest())
                 .isEqualTo(Duration.ofSeconds(30));
@@ -95,6 +99,7 @@ class TargetDbPropertiesTest {
                                 Duration.ofSeconds(3),
                                 Duration.ofSeconds(4),
                                 Duration.ofSeconds(21),
+                                null,
                                 null)
                         .longest())
                 .isEqualTo(Duration.ofSeconds(21));
@@ -116,6 +121,7 @@ class TargetDbPropertiesTest {
                 null,
                 null,
                 null,
+                null,
                 new TargetDbProperties.Write(username, password, null));
 
         assertThat(properties.toString())
@@ -132,7 +138,7 @@ class TargetDbPropertiesTest {
     @DisplayName("the write settings fall back to empty credentials, a pool of 5 and a 5 second statement limit")
     void writeDefaults() {
         TargetDbProperties properties =
-                new TargetDbProperties(null, null, null, null, null, null, null, null, null, null, null);
+                new TargetDbProperties(null, null, null, null, null, null, null, null, null, null, null, null);
 
         assertThat(properties.write().username()).isNull();
         assertThat(properties.write().password()).isNull();
@@ -143,16 +149,56 @@ class TargetDbPropertiesTest {
     }
 
     @Test
-    @DisplayName("the longest limit covers only the four read purposes and ignores the write limit")
+    @DisplayName("the longest limit covers only the read purposes and ignores the write limit")
     void longestIgnoresTheWriteLimit() {
         TargetDbProperties.QueryTimeout timeouts = new TargetDbProperties.QueryTimeout(
                 Duration.ofSeconds(20),
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(5),
+                null,
                 Duration.ofSeconds(60));
 
         assertThat(timeouts.write()).isEqualTo(Duration.ofSeconds(60));
         assertThat(timeouts.longest()).isEqualTo(Duration.ofSeconds(20));
+    }
+
+    @Test
+    @DisplayName("the reference limit defaults to 5 seconds and the reference read total to 10 seconds")
+    void referenceDefaults() {
+        TargetDbProperties properties =
+                new TargetDbProperties(null, null, null, null, null, null, null, null, null, null, null, null);
+
+        assertThat(properties.queryTimeout().reference()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(properties.referenceReadTotal()).isEqualTo(Duration.ofSeconds(10));
+        assertThat(new TargetDbProperties.QueryTimeout(null, null, null, null, null, null).reference())
+                .isEqualTo(Duration.ofSeconds(5));
+        assertThat(properties.toString()).contains("referenceReadTotal=PT10S");
+    }
+
+    @Test
+    @DisplayName("the reference limit counts for the longest read limit")
+    void longestIncludesTheReferenceLimit() {
+        TargetDbProperties.QueryTimeout timeouts = new TargetDbProperties.QueryTimeout(
+                null, null, null, null, Duration.ofSeconds(30), Duration.ofSeconds(60));
+
+        assertThat(timeouts.longest()).isEqualTo(Duration.ofSeconds(30));
+    }
+
+    @Test
+    @DisplayName("both reference settings are bound from their setting keys and default when absent")
+    void bindsReferenceSettings() {
+        Binder changed = new Binder(new MapConfigurationPropertySource(Map.of(
+                "mastersmith.target-db.query-timeout.reference", "8s",
+                "mastersmith.target-db.reference-read-total", "15s")));
+        Binder absent = new Binder(new MapConfigurationPropertySource(Map.of("mastersmith.target-db.type", "mysql")));
+
+        TargetDbProperties bound = changed.bindOrCreate(TargetDbProperties.PREFIX, TargetDbProperties.class);
+        TargetDbProperties defaults = absent.bindOrCreate(TargetDbProperties.PREFIX, TargetDbProperties.class);
+
+        assertThat(bound.queryTimeout().reference()).isEqualTo(Duration.ofSeconds(8));
+        assertThat(bound.referenceReadTotal()).isEqualTo(Duration.ofSeconds(15));
+        assertThat(defaults.queryTimeout().reference()).isEqualTo(Duration.ofSeconds(5));
+        assertThat(defaults.referenceReadTotal()).isEqualTo(Duration.ofSeconds(10));
     }
 }

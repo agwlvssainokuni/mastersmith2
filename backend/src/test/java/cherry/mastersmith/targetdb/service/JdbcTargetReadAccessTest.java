@@ -42,6 +42,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransientConnectionException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -67,7 +68,7 @@ class JdbcTargetReadAccessTest {
 
     private static TargetDbSettings usable() {
         return TargetDbSettings.inspect(new TargetDbProperties(
-                "mysql", HOST, "3306", "business", "sales", "reader", PASSWORD, null, null, null, null));
+                "mysql", HOST, "3306", "business", "sales", "reader", PASSWORD, null, null, null, null, null));
     }
 
     @BeforeEach
@@ -249,6 +250,41 @@ class JdbcTargetReadAccessTest {
             });
             assertThat(event.getFormattedMessage()).doesNotContain(HOST);
         });
+    }
+
+    @Test
+    @DisplayName("the reference purpose lends the connection with its 5 second limit")
+    void lendsForReference() throws SQLException {
+        AtomicReference<TargetReadSession> lent = new AtomicReference<>();
+
+        TargetReadOutcome<String> outcome = access.withRead(ReadPurpose.REFERENCE, session -> {
+            lent.set(session);
+            return "参照先";
+        });
+
+        assertThat(outcome).isEqualTo(new TargetReadOutcome.Done<>("参照先"));
+        assertThat(lent.get().queryTimeoutSeconds()).isEqualTo(5);
+        assertThat(lent.get().connection()).isSameAs(connection);
+        verify(connection).setNetworkTimeout(any(Executor.class), eq(10_000));
+        verify(connection).close();
+    }
+
+    @Test
+    @DisplayName("the reference read total comes from a usable setting and is refused otherwise")
+    void referenceReadTotal() {
+        assertThat(access.referenceReadTotal()).isEqualTo(Duration.ofSeconds(10));
+
+        JdbcTargetReadAccess notConfigured =
+                new JdbcTargetReadAccess(new TargetDbSettings.NotConfigured(), Optional.of(dataSource));
+        JdbcTargetReadAccess invalid = new JdbcTargetReadAccess(
+                new TargetDbSettings.Invalid(List.of(TargetDbSettings.REFERENCE_READ_TOTAL)), Optional.of(dataSource));
+        try {
+            assertThatThrownBy(notConfigured::referenceReadTotal).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(invalid::referenceReadTotal).isInstanceOf(IllegalStateException.class);
+        } finally {
+            notConfigured.close();
+            invalid.close();
+        }
     }
 
     private static <T> T fail() {

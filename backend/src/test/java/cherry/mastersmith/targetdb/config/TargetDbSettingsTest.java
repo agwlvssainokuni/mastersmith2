@@ -37,7 +37,8 @@ class TargetDbSettingsTest {
 
     private static TargetDbProperties properties(
             String type, String host, String port, String database, String schema, String username, String password) {
-        return new TargetDbProperties(type, host, port, database, schema, username, password, null, null, null, null);
+        return new TargetDbProperties(
+                type, host, port, database, schema, username, password, null, null, null, null, null);
     }
 
     private static TargetDbProperties valid() {
@@ -72,6 +73,8 @@ class TargetDbSettingsTest {
             assertThat(usable.queryTimeout(ReadPurpose.COMPARE)).isEqualTo(Duration.ofSeconds(5));
             assertThat(usable.queryTimeout(ReadPurpose.LIST)).isEqualTo(Duration.ofSeconds(5));
             assertThat(usable.queryTimeout(ReadPurpose.DETAIL)).isEqualTo(Duration.ofSeconds(5));
+            assertThat(usable.queryTimeout(ReadPurpose.REFERENCE)).isEqualTo(Duration.ofSeconds(5));
+            assertThat(usable.referenceReadTotal()).isEqualTo(Duration.ofSeconds(10));
             assertThat(usable.toString()).doesNotContain(PASSWORD).doesNotContain("target-db.internal");
         });
         assertThat(TargetDbSettings.inspect(
@@ -149,7 +152,13 @@ class TargetDbSettingsTest {
                 PASSWORD,
                 Duration.ofMillis(100),
                 new TargetDbProperties.QueryTimeout(
-                        Duration.ofMillis(500), Duration.ZERO, Duration.ofMillis(999), Duration.ofMillis(500), null),
+                        Duration.ofMillis(500),
+                        Duration.ZERO,
+                        Duration.ofMillis(999),
+                        Duration.ofMillis(500),
+                        null,
+                        null),
+                null,
                 new TargetDbProperties.Pool(0, Duration.ofSeconds(5)),
                 null);
 
@@ -204,10 +213,10 @@ class TargetDbSettingsTest {
     @Test
     @DisplayName("the list and detail limits accept exactly one second and reject anything shorter by item name only")
     void listAndDetailLimitBoundary() {
-        TargetDbProperties oneSecond = withQueryTimeout(
-                new TargetDbProperties.QueryTimeout(null, null, Duration.ofSeconds(1), Duration.ofSeconds(1), null));
-        TargetDbProperties tooShort = withQueryTimeout(
-                new TargetDbProperties.QueryTimeout(null, null, Duration.ofMillis(500), Duration.ofMillis(999), null));
+        TargetDbProperties oneSecond = withQueryTimeout(new TargetDbProperties.QueryTimeout(
+                null, null, Duration.ofSeconds(1), Duration.ofSeconds(1), null, null));
+        TargetDbProperties tooShort = withQueryTimeout(new TargetDbProperties.QueryTimeout(
+                null, null, Duration.ofMillis(500), Duration.ofMillis(999), null, null));
 
         assertThat(TargetDbSettings.inspect(oneSecond))
                 .isInstanceOfSatisfying(TargetDbSettings.Usable.class, usable -> {
@@ -220,8 +229,80 @@ class TargetDbSettingsTest {
                 .noneMatch(item -> item.contains("500") || item.contains("999"));
     }
 
+    @Test
+    @DisplayName("the reference limits are read from the setting and accept exactly one second")
+    void referenceLimitsOfOneSecond() {
+        TargetDbProperties changed = withReference(Duration.ofSeconds(7), Duration.ofSeconds(12));
+        TargetDbProperties oneSecond = withReference(Duration.ofSeconds(1), Duration.ofSeconds(1));
+
+        assertThat(TargetDbSettings.inspect(changed)).isInstanceOfSatisfying(TargetDbSettings.Usable.class, usable -> {
+            assertThat(usable.queryTimeout(ReadPurpose.REFERENCE)).isEqualTo(Duration.ofSeconds(7));
+            assertThat(usable.referenceReadTotal()).isEqualTo(Duration.ofSeconds(12));
+        });
+        assertThat(TargetDbSettings.inspect(oneSecond))
+                .isInstanceOfSatisfying(TargetDbSettings.Usable.class, usable -> {
+                    assertThat(usable.queryTimeout(ReadPurpose.REFERENCE)).isEqualTo(Duration.ofSeconds(1));
+                    assertThat(usable.referenceReadTotal()).isEqualTo(Duration.ofSeconds(1));
+                });
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"PT0S", "PT-1S", "PT0.5S", "PT0.999S"})
+    @DisplayName("a reference limit or reference read total shorter than one second is invalid by item name only")
+    void referenceLimitsShorterThanOneSecond(String text) {
+        Duration tooShort = Duration.parse(text);
+
+        assertThat(problems(withReference(tooShort, null)))
+                .containsExactly("mastersmith.target-db.query-timeout.reference");
+        assertThat(problems(withReference(null, tooShort)))
+                .containsExactly("mastersmith.target-db.reference-read-total");
+        assertThat(problems(withReference(tooShort, tooShort)))
+                .containsExactly(
+                        "mastersmith.target-db.query-timeout.reference", "mastersmith.target-db.reference-read-total");
+    }
+
+    @Test
+    @DisplayName(
+            "a too short reference read total logs one warning with the item name only and does not stop the start")
+    void referenceReadTotalWarningHasNoValue() {
+        TargetDbProperties properties = withReference(null, Duration.ofMillis(500));
+
+        try (LogEvents events = LogEvents.capture(TargetDataSourceConfig.class)) {
+            TargetDbSettings settings = new TargetDataSourceConfig().targetDbSettings(properties);
+
+            assertThat(settings).isInstanceOf(TargetDbSettings.Invalid.class);
+            assertThat(events.list()).singleElement().satisfies(event -> {
+                assertThat(event.getLevel()).isEqualTo(Level.WARN);
+                assertThat(event.getKeyValuePairs()).singleElement().satisfies(pair -> {
+                    assertThat(pair.key).isEqualTo("items");
+                    assertThat(pair.value).isEqualTo("mastersmith.target-db.reference-read-total");
+                });
+                assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                        .doesNotContain("500")
+                        .doesNotContain("PT0.5S")
+                        .doesNotContain(PASSWORD);
+            });
+        }
+    }
+
     private static TargetDbProperties withQueryTimeout(TargetDbProperties.QueryTimeout queryTimeout) {
         return new TargetDbProperties(
-                "postgresql", "h", "5432", "d", "s", "u", PASSWORD, null, queryTimeout, null, null);
+                "postgresql", "h", "5432", "d", "s", "u", PASSWORD, null, queryTimeout, null, null, null);
+    }
+
+    private static TargetDbProperties withReference(Duration reference, Duration referenceReadTotal) {
+        return new TargetDbProperties(
+                "postgresql",
+                "h",
+                "5432",
+                "d",
+                "s",
+                "u",
+                PASSWORD,
+                null,
+                new TargetDbProperties.QueryTimeout(null, null, null, null, reference, null),
+                referenceReadTotal,
+                null,
+                null);
     }
 }

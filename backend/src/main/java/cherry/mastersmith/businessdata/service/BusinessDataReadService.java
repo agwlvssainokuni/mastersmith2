@@ -16,6 +16,7 @@
 package cherry.mastersmith.businessdata.service;
 
 import cherry.mastersmith.businessdata.domain.AllowedOperation;
+import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
 import cherry.mastersmith.businessdata.domain.KeyInput;
 import cherry.mastersmith.businessdata.domain.KeyValidation;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
@@ -33,6 +34,7 @@ import cherry.mastersmith.targetdb.domain.ReadPurpose;
 import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
 import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -59,6 +61,8 @@ public class BusinessDataReadService {
 
     private final RowSqlExecutor executor;
 
+    private final ReferenceLookup references;
+
     private final ColumnValueCodec codec = new ColumnValueCodec();
 
     /**
@@ -67,26 +71,46 @@ public class BusinessDataReadService {
      * @param resolver 判定の材料を作る口
      * @param readAccess 業務データの読み取りの口
      * @param executor 行の SQL の部品
+     * @param references 他テーブル参照の読み取りの流れ（Intent 261029-reference-lookup-cleanup の U1）
      */
-    public BusinessDataReadService(TableAccessResolver resolver, TargetReadAccess readAccess, RowSqlExecutor executor) {
+    public BusinessDataReadService(
+            TableAccessResolver resolver,
+            TargetReadAccess readAccess,
+            RowSqlExecutor executor,
+            ReferenceLookup references) {
         this.resolver = resolver;
         this.readAccess = readAccess;
         this.executor = executor;
+        this.references = references;
     }
 
     /**
-     * テーブルの定義を返す（対象DB に接続しない。BR8.4）。
+     * テーブルの定義を返す。用途が VIEW なら対象DB に接続しない（BR8.4）。作成・更新の用途では、参照の項目のために参照先を読む
+     * （Intent 261029-reference-lookup-cleanup の U1、BR4.1。読む REFERENCE があるときだけ接続を1本借りる）。対象DB の失敗は既存の
+     * code に写し、定義の取得ごと失敗にする（BR1.5）。
      *
      * @param userId 利用者 ID（要求の文脈から読んだもの）
      * @param query 要求が指すテーブル
+     * @param purpose 用途
      * @return 定義、または拒否
      */
-    public DefinitionResult definition(long userId, TableQuery query) {
+    public DefinitionResult definition(long userId, TableQuery query, DefinitionPurpose purpose) {
         TableAccessResolution resolution = resolver.resolve(userId, query);
-        return switch (resolution) {
-            case TableAccessResolution.Rejected rejected -> ReadRejected.of(rejected.rejection());
-            case TableAccessResolution.Resolved resolved ->
-                new DefinitionResult.Found(resolved.view(), changed(resolved.view(), query));
+        if (resolution instanceof TableAccessResolution.Rejected rejected) {
+            return ReadRejected.of(rejected.rejection());
+        }
+        TableAccessResolution.Resolved resolved = (TableAccessResolution.Resolved) resolution;
+        boolean changed = changed(resolved.view(), query);
+        return switch (references.definitionReferences(resolved, purpose)) {
+            case ReferenceLookup.DefinitionReferences.Read read ->
+                new DefinitionResult.Found(resolved.view(), changed, purpose, read.fields());
+            case ReferenceLookup.DefinitionReferences.Failed failed ->
+                ReadRejected.of(
+                        switch (failed.reason()) {
+                            case TIMEOUT -> ReadRejection.TARGET_DB_TIMEOUT;
+                            case UNAVAILABLE -> ReadRejection.TARGET_DB_UNAVAILABLE;
+                            case MISMATCH -> ReadRejection.TARGET_DB_MISMATCH;
+                        });
         };
     }
 
@@ -111,7 +135,8 @@ public class BusinessDataReadService {
         }
         SearchValidation.Valid valid = (SearchValidation.Valid) validation;
         TargetReadOutcome<RowSearchResult> outcome = readAccess.withRead(
-                ReadPurpose.LIST, session -> executor.search(session, view, valid.conditions(), valid.page()));
+                ReadPurpose.LIST,
+                session -> executor.search(session, view, valid.conditions(), valid.page(), Optional.empty()));
         return switch (outcome) {
             case TargetReadOutcome.NotConfigured<RowSearchResult> notConfigured ->
                 unavailable(ReadPurpose.LIST, "NOT_CONFIGURED", null, null, null);
@@ -128,6 +153,8 @@ public class BusinessDataReadService {
                         new SearchResult.Found(
                                 view, valid.page().page(), valid.page().size(), page.total(), page.rows(), changed);
                     case RowSearchResult.Failed failed -> failure(ReadPurpose.LIST, failed.failure(), changed);
+                    // 参照先の指定を渡していないため来ない（来たら想定外の 500）。
+                    case RowSearchResult.Rows rows -> throw new BusinessDataUnexpectedException();
                 };
         };
     }

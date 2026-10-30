@@ -185,51 +185,51 @@ U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1
 
 ### B1 U1 前半
 
-- [ ] **Step 1: 準備**（ストーリー: 全体）
+- [x] **Step 1: 準備**（ストーリー: 全体）
   - `develop` が最新で作業フォルダに未コミットの変更が無い（`aidlc/` の記録は先にコミットしてある）ことを確かめ、`git switch -c feature/261029-reference-lookup-cleanup-b1 develop` を作る。
   - E2E の報告（`frontend/playwright-report`・`frontend/test-results`）など git の対象外の生成物を消す（`project.md` の学び）。
   - Dependabot の #81・#82 の取り込みが `develop` に入っていることを確かめる。
-- [ ] **Step 2: テストの実行の口の確かめ**（Testing Contract の runner_step）
+- [x] **Step 2: テストの実行の口の確かめ**（Testing Contract の runner_step）
   - `./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.config.TargetDbSettingsTest'` と、上の環境変数を付けた `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.PostgresBusinessDataReadIT'` が今のまま通ることを確かめ、`unit-test-instructions.md` のコマンドが流せることを記録する。
   - 3.4節の突き合わせを確かめる。
-- [ ] **Step 3: targetdb の実装（設定と読み取りの口）**（US3.5、BR8.1、NFR3.4・NFR3.5、T-T4、U1 R-05）
+- [x] **Step 3: targetdb の実装（設定と読み取りの口）**（US3.5、BR8.1、NFR3.4・NFR3.5、T-T4、U1 R-05）
   - `ReadPurpose.REFERENCE`、`TargetDbProperties`（`QueryTimeout.reference` 既定 5s・`longest()` に入れる、`referenceReadTotal` 既定 10s）、`TargetDbSettings`（点検・`case REFERENCE`・`Usable.referenceReadTotal()`）、`TargetReadAccess.referenceReadTotal()`（説明文に「`withRead` の work の中でだけ呼ぶ。`Usable` でないときは `IllegalStateException`」）、`JdbcTargetReadAccess`（`REFERENCE` を受け付ける、`referenceReadTotal()` の実装）、`FakeBusinessDataPorts`。
   - `backend/src/main/resources/application.yaml`: `query-timeout:` の `detail` と `write` の間に `reference: ${MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE:5s}`、`query-timeout:` の後に `reference-read-total: ${MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL:10s}`。コメントに範囲（1 秒以上）、最悪の値（約 11 秒＋写しの読み取り＋借りる待ち最大 3 秒）、「4つの上限」を「5つの上限」に直す。
   - `.env.example`: `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL` の次にコメントアウトした2行と説明。「読み取りの全体の上限は無い」を「参照先を読む定義の取得だけは全体の上限がある（既定 10s）」に直す。1 秒未満では対象DB 全体が使えなくなることを書く（R-01）。
   - `README.md` の環境変数の表に2行（既定・1 秒以上・何の上限か）。
-- [ ] **Step 4: targetdb のテスト**（T-T4）
+- [x] **Step 4: targetdb のテスト**（T-T4）
   - `TargetDbPropertiesTest`: 既定 5s・10s、結び付けで変えた値、`longest()` が `reference` を含む（`reference` を 30s にすると最長が 30s）。
   - `TargetDbSettingsTest`: `reference`・`referenceReadTotal` の 0・負・`500ms` で `Invalid` と項目名、ちょうど 1 秒は `Usable`、WARN に値が出ない、`queryTimeout(REFERENCE)` が `reference` を返す。
   - `JdbcTargetReadAccessTest`: `REFERENCE` を受け付け上限が 5 秒の session が渡る、`referenceReadTotal()` が `Usable` の値を返す、`NotConfigured`・`Invalid` で `IllegalStateException`（R-05 の1件）。
   - 4節の8つのテストの構成子を直す。`./gradlew :backend:test --tests 'cherry.mastersmith.targetdb.*'` と `:backend:integrationTest --tests 'cherry.mastersmith.targetdb.config.*'` を流して通す。
-- [ ] **Step 5: businessdata.domain の実装（B1 の分）**（US1.1〜US1.4・US3.4、BR2.4・BR2.5・BR3.1・BR3.2・BR3.5・BR3.6・BR4.2〜BR4.4・BR5.1・BR7.6・BR8.4・BR9.5・BR10.1・BR11.4）
+- [x] **Step 5: businessdata.domain の実装（B1 の分）**（US1.1〜US1.4・US3.4、BR2.4・BR2.5・BR3.1・BR3.2・BR3.5・BR3.6・BR4.2〜BR4.4・BR5.1・BR7.6・BR8.4・BR9.5・BR10.1・BR11.4）
   - 3.1節の B1 の型。`ReferencePolicy` に `accessOf`・`usableSearchFields`・`distinctByValue`・`fixedOrder`・`sameReferenceValue`。`ReferenceReadDeadline`（`start`・`narrow`・`MIN_REMAINING`）、`ReferenceReadFailure`（`of(RowQueryFailure)`・`budgetExceeded()`）、`ReferenceFailureReason`。
-- [ ] **Step 6: businessdata.domain のテスト（B1 の分）**
+- [x] **Step 6: businessdata.domain のテスト（B1 の分）**
   - `ReferencePolicyTest`（各欠ける条件で `NO_PERMISSION`、バイナリ・password の値のカラム、LOOKUP のラベルのカラムの選び方 BR2.5、条件の選び方 BR3.2、並びの組み立て、ラベルと値が同じカラムで重ねない）。
   - `ReferencePolicyPropertyTest`（jqwik、失敗の種を記録: 権限を足しても `AVAILABLE` が `NO_PERMISSION` にならない、NONE の列が条件と一覧に出ない、出力の値に重なりが無く最初の出現の順を保つ、`sameReferenceValue` が反射的・対称的、大文字と小文字・末尾の空白の違いは一致しない、`1.0` と `1` は一致する）。
   - `ReferenceReadDeadlineTest`（T-T2: 注入した時計で残り 0.5 秒 → 空、1.0 秒 → 上限 1、2.3 秒 → min(5, 3) = 3、同じ接続と壊れた印を共有）と `ReferenceReadDeadlinePropertyTest`（絞った上限が 1 以上で session の上限を超えない）。
   - `ReferenceReadFailureTest`（T-S1: 理由の写し、`INVALID_VALUE`・`UNEXPECTED` は `IllegalArgumentException`、`budgetExceeded()` の形、`toString` にメッセージが無い）。
   - 値を持つ型の `toString` の伏せ字のテスト（BR10.1）。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.domain.*'` を流して通す。
-- [ ] **Step 7: repository の実装**（BR4.2・BR7.3・BR8.6・BR11.2・BR11.4・BR12.4、NFR2.6〜NFR2.8、F1: A）
+- [x] **Step 7: repository の実装**（BR4.2・BR7.3・BR8.6・BR11.2・BR11.4・BR12.4、NFR2.6〜NFR2.8、F1: A）
   - `RowDialect.lengthWithin`・`sortExpression`（STRING・OTHER は先頭 100 字、ほかはカラムのまま）を両方の方言に。
   - `RowSqlBuilder`: 指定があるとき、値のカラムを `SUBSTRING(…,1,10001)`、表示の列を `selectExpression(…, LIST_TEXT_LIMIT)`（バイナリ・password は選ばない）、`IS NOT NULL` と長さの条件、固定の並び（`sortExpression` を `orderTerm` に渡す）、主キーで結ぶ形・結ばない形、`LIMIT ? OFFSET ?`。
   - `RowSqlExecutor.search`: 指定があるとき件数の文を作らず、`setMaxRows` に読む行を当て、`RowSearchResult.Rows` を返す。文ごとの上限は今までどおり `session.queryTimeoutSeconds()`。
-- [ ] **Step 8: repository のテスト**
+- [x] **Step 8: repository のテスト**
   - `RowDialectTest`（2つの口を両方の方言・型ごとに）、`RowSqlExecutorTest`（指定なしの文が今と同じ文字であること〈BR12.4〉、指定ありの文の `LIMIT`・並び・長さの条件・`SUBSTRING 10001`・件数の文が無いこと、`setMaxRows` が 201、識別子は既知の名前の一覧だけで引用され `'`・`"`・`;`・`--`・バッククォート・改行の名前は文を作らずに失敗する）。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.repository.*'` を流して通す。
-- [ ] **Step 9: service の実装（定義の分）**（US1.1〜US1.3・US3.4・US3.5、BR1.1・BR1.5・BR2.1〜BR2.3・BR3.3・BR3.4・BR4.1〜BR4.7・BR8.2〜BR8.5・BR8.7・BR12.1）
+- [x] **Step 9: service の実装（定義の分）**（US1.1〜US1.3・US3.4・US3.5、BR1.1・BR1.5・BR2.1〜BR2.3・BR3.3・BR3.4・BR4.1〜BR4.7・BR8.2〜BR8.5・BR8.7・BR12.1）
   - `TableAccessResolver`: 写しを `Resolved` と一緒に返し、同じ写しで参照先の判定の材料を作る口を足す（内部DB の接続は写しの後に返す）。
   - `ReferenceLookup`（定義の分）: 参照の項目ごとに `ReferenceTarget`、入力できないカラムは `NO_PERMISSION`、`accessOf`、LOOKUP のピッカーの情報、REFERENCE が1つ以上あるときだけ `withRead(REFERENCE, …)` を1回、その中で `ReferenceReadDeadline.start(clock, readAccess.referenceReadTotal())` と文ごとの `narrow`、同じ参照先は1回、201 行目で `TOO_MANY`、同じ値を落とす、失敗の後は読まない、診断の WARN を1行（`purpose`・`reason`・`sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded`）。`Clock` は既存の bean を注入する。
   - `BusinessDataReadService.definition` に `purpose` を通し、`VIEW` では今と同じ。失敗を既存の code（`TIMEOUT`・`UNAVAILABLE`・`MISMATCH`）に写す。
-- [ ] **Step 10: service のテスト（定義の分）**
+- [x] **Step 10: service のテスト（定義の分）**
   - `ReferenceLookupTest`（差し替えの口と `SteppingClock`）: `VIEW` で読まない、入力できないカラムは読まず `NO_PERMISSION`、LOOKUP は対象DB を読まない、REFERENCE が 0 なら借りない、同じ参照先は1回、200・201 行、失敗の後に残りを読まず壊れた印、T-T3（3つの2つ目で締め切り → 3つ目を読まず `TIMEOUT`・`budgetExceeded`）、WARN がちょうど1行で値が無い。
   - `TableAccessResolverTest`・`BusinessDataReadServiceTest` を直し、写しを1回だけ取ることを足す。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.service.*'` を流して通す。
-- [ ] **Step 11: web の実装（定義の分）**（BR1.1・BR4.8・BR12.1〜BR12.3、D2）
+- [x] **Step 11: web の実装（定義の分）**（BR1.1・BR4.8・BR12.1〜BR12.3、D2）
   - `DefinitionRequest` に任意の `purpose`（列挙に無い値は 400 `VALIDATION_FAILED`）、`ColumnDefinitionResponse.reference`、3.1節の応答の型、`formPart` の扱い（D2）。
   - `README.md` の「業務データの読み取りの API」の節の定義の行に「`purpose` が `CREATE`・`UPDATE` で参照の項目があるときだけ読み取りの接続を1本借りる」を足す。
-- [ ] **Step 12: web のテストと定義の結合テスト**（T-B1〜T-B3・T-B6・T-B8・T-B9・T-B10 の定義の分、T-T1・T-F1・T-C1〜T-C3、(c)(h)(i)(j) の定義の分）
+- [x] **Step 12: web のテストと定義の結合テスト**（T-B1〜T-B3・T-B6・T-B8・T-B9・T-B10 の定義の分、T-T1・T-F1・T-C1〜T-C3、(c)(h)(i)(j) の定義の分）
   - `BusinessDataReadControllerTest`（`purpose` の読み取り・400）、`ColumnDefinitionWriteItemsConsistencyTest` を通す。
   - `AbstractReferenceReadIT` と `PostgresReferenceReadIT`・`MysqlReferenceReadIT`・`MariadbReferenceReadIT`（クラスごとに一意の名前のスキーマ〈MySQL・MariaDB はデータベース〉を作って消す。`ReferenceTables`）: 参照先 199・200・201・10,000 行、長い値が混ざる 200・201 行（T-B2・T-B3）、値 10,000・10,001 字（半角・日本語・補助面）と 100・101 字の値が切れない、ラベル 100・101 字、NULL のラベルは最後・NULL の値は除く、BIGINT の最大・桁の多い DECIMAL、引用符を含む名前、同じ値の行、複合の主キー・主キーの無い表・ビュー・自己参照、先頭 100 字が同じ行の並び（T-B8）、2,000 行に約 10,000 字の 200 行（T-B9、1クラスで1回作る）、`<script>` などの値とラベルが同じ文字列で返る、`NO_PERMISSION` で 200（AC1.3.1）。
   - `ReferenceConnectionUsageIT`（定義の分。REFERENCE 0・1・3・5 個、同じ参照先を指す2項目で文 1、`VIEW` で借りない、一覧・詳細の文の数が今と同じ〈T-C2〉、応答しない対象DB を待つ間の内部DB の使用中が 0）。

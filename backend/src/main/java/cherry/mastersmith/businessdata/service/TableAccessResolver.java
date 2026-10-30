@@ -21,6 +21,7 @@ import cherry.mastersmith.businessdata.domain.KnownIdentifiers;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
 import cherry.mastersmith.businessdata.domain.TableAccessInput;
 import cherry.mastersmith.businessdata.domain.TableAccessPolicy;
+import cherry.mastersmith.businessdata.domain.TableAccessView;
 import cherry.mastersmith.businessdata.domain.TableQuery;
 import cherry.mastersmith.businessdata.repository.ColumnValueCodec;
 import cherry.mastersmith.dsl.domain.DslColumn;
@@ -100,6 +101,50 @@ public class TableAccessResolver {
         if (tableMain == MainPermission.NONE) {
             return new TableAccessResolution.Rejected(ReadRejection.ACCESS_DENIED);
         }
+        return new TableAccessResolution.Resolved(
+                viewOf(snapshot, dsl.get(), dslHash.get(), schema.get(), table, tableMain), snapshot);
+    }
+
+    /**
+     * 参照先のテーブルの判定の材料を、参照元と同じ写しで作る（Intent 261029-reference-lookup-cleanup の U1、BR2.2・BR2.3）。写しを
+     * 取り直さず、内部DB にも対象DB にも接続しない。参照先は参照元と同じスキーマに限る。
+     *
+     * @param snapshot 参照元の判定で取った写し
+     * @param schemaName 参照先のスキーマ（参照元のスキーマ）
+     * @param tableName 参照先のテーブル（DSL の {@code options.table}）
+     * @return 判定の材料（DSL が無い・DSL に無い名前・テーブルが NONE なら空）
+     */
+    public Optional<TableAccessView> referenceView(PermissionSnapshot snapshot, String schemaName, String tableName) {
+        Optional<DslModel> dsl = snapshot.dsl();
+        Optional<String> dslHash = snapshot.dslHash();
+        if (dsl.isEmpty() || dslHash.isEmpty()) {
+            return Optional.empty();
+        }
+        Optional<DslSchema> schema = dsl.get().schemas().stream()
+                .filter(s -> s.name().equals(schemaName))
+                .findFirst();
+        DslTable table = schema.isEmpty() || tableName == null
+                ? null
+                : schema.get().tables().get(tableName);
+        if (table == null) {
+            return Optional.empty();
+        }
+        MainPermission tableMain = snapshot.main(schema.get().name(), table.name(), null);
+        if (tableMain == MainPermission.NONE) {
+            return Optional.empty();
+        }
+        return Optional.of(viewOf(snapshot, dsl.get(), dslHash.get(), schema.get(), table, tableMain));
+    }
+
+    /** 写しと写しの DSL のテーブルから判定の材料を作る（テーブルの主権限は READ 以上）。 */
+    private TableAccessView viewOf(
+            PermissionSnapshot snapshot,
+            DslModel dsl,
+            String dslHash,
+            DslSchema schema,
+            DslTable table,
+            MainPermission tableMain) {
+        String schemaName = schema.name();
         Optional<DatabaseProduct> product = readAccess.product();
         Map<String, MainPermission> columnMain = new HashMap<>();
         Map<String, ColumnKind> kinds = new HashMap<>();
@@ -108,19 +153,19 @@ public class TableAccessResolver {
             kinds.put(column.name(), ColumnValueCodec.kind(product, column));
         }
         Set<String> schemaNames = new LinkedHashSet<>();
-        dsl.get().schemas().forEach(s -> schemaNames.add(s.name()));
+        dsl.schemas().forEach(s -> schemaNames.add(s.name()));
         KnownIdentifiers names = new KnownIdentifiers(
-                schemaNames, schema.get().tables().keySet(), table.columns().keySet());
+                schemaNames, schema.tables().keySet(), table.columns().keySet());
         // 違反の後の確かめに使う、外部キーの参照先（同じスキーマ）の DSL のカラムの名前（U2 の BR6.2）。
         Map<String, Set<String>> referencedColumns = new HashMap<>();
         table.foreignKeys().forEach(key -> {
-            DslTable referenced = schema.get().tables().get(key.referencedTable());
+            DslTable referenced = schema.tables().get(key.referencedTable());
             if (referenced != null) {
                 referencedColumns.put(referenced.name(), referenced.columns().keySet());
             }
         });
         DefinitionId definitionId = new DefinitionId(
-                dslHash.get(), snapshot.workRole().map(WorkRoleRef::roleId).orElse(null));
+                dslHash, snapshot.workRole().map(WorkRoleRef::roleId).orElse(null));
         TableAccessInput input = new TableAccessInput(
                 schemaName,
                 table,
@@ -134,6 +179,6 @@ public class TableAccessResolver {
                 writeAccess.product().isPresent(),
                 names,
                 referencedColumns);
-        return new TableAccessResolution.Resolved(TableAccessPolicy.evaluate(input));
+        return TableAccessPolicy.evaluate(input);
     }
 }

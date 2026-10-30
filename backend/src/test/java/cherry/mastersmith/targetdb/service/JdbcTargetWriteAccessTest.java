@@ -93,7 +93,8 @@ class JdbcTargetWriteAccessTest {
                 "reader",
                 "p",
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, null, null, Duration.ofSeconds(4)),
+                new TargetDbProperties.QueryTimeout(null, null, null, null, null, Duration.ofSeconds(4)),
+                null,
                 null,
                 new TargetDbProperties.Write("writer", TestDatabase.randomSecret(), null));
         return TargetDbWriteSettings.inspect(TargetDbSettings.inspect(properties), properties);

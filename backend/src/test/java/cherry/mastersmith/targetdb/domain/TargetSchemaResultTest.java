@@ -89,6 +89,11 @@ class TargetSchemaResultTest {
         assertThat(DatabaseProduct.fromSetting("")).isEmpty();
         assertThat(DatabaseProduct.fromSetting(null)).isEmpty();
         assertThat(ReadPurpose.values())
-                .containsExactly(ReadPurpose.GENERATE, ReadPurpose.COMPARE, ReadPurpose.LIST, ReadPurpose.DETAIL);
+                .containsExactly(
+                        ReadPurpose.GENERATE,
+                        ReadPurpose.COMPARE,
+                        ReadPurpose.LIST,
+                        ReadPurpose.DETAIL,
+                        ReadPurpose.REFERENCE);
     }
 }

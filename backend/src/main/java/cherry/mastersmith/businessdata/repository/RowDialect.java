@@ -121,6 +121,36 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
     }
 
     /**
+     * 値の長さ（文字の数。コードポイント）が上限以下である条件の式を返す（Intent 261029-reference-lookup-cleanup の U1、NFR2.8、
+     * performance-design.md 1.1・1.2）。3種類の DB で {@code CHAR_LENGTH} が文字で数えることを試しで確かめた。上限は SQL の中の定数で、
+     * 利用者の入力を入れない。
+     *
+     * @param valueExpression 値の式（OTHER は文字にした式）
+     * @param maxChars 長さの上限
+     * @return 条件の式
+     */
+    default String lengthWithin(String valueExpression, int maxChars) {
+        return "CHAR_LENGTH(" + valueExpression + ") <= " + maxChars;
+    }
+
+    /**
+     * 参照先の固定の並びの項に使う式を返す（Intent 261029-reference-lookup-cleanup の U1、F1: A、performance-design.md 2節）。文字の型
+     * （STRING と、文字にして読む OTHER）は先頭の {@link ColumnValueCodec#LIST_TEXT_LIMIT} 字で並べ（MySQL の並べ替えの領域の不足
+     * 1038 を起こさないため）、ほかの型はカラムのまま。NULL を最後にする書き方は {@link #orderTerm} に任せる。
+     *
+     * @param columnRef 引用したカラムの参照
+     * @param column カラム
+     * @return 並びの式
+     */
+    default String sortExpression(String columnRef, ColumnAccess column) {
+        return switch (column.valueType()) {
+            case STRING -> "SUBSTRING(" + columnRef + ", 1, " + ColumnValueCodec.LIST_TEXT_LIMIT + ")";
+            case OTHER -> "SUBSTRING(" + castToText(columnRef) + ", 1, " + ColumnValueCodec.LIST_TEXT_LIMIT + ")";
+            default -> columnRef;
+        };
+    }
+
+    /**
      * 主キーの値を選ぶ式を返す（切らない。OTHER は文字にする）。
      *
      * @param columnRef 引用したカラムの参照

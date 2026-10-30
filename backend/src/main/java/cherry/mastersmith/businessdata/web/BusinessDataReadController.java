@@ -16,6 +16,7 @@
 package cherry.mastersmith.businessdata.web;
 
 import cherry.mastersmith.businessdata.domain.BusinessDataProblemTypes;
+import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
 import cherry.mastersmith.businessdata.domain.TableQuery;
 import cherry.mastersmith.businessdata.service.BusinessDataReadService;
 import cherry.mastersmith.businessdata.service.DefinitionResult;
@@ -89,8 +90,13 @@ public class BusinessDataReadController {
     public TableDefinitionResponse definition(@RequestBody DefinitionRequest body) {
         TableQuery query =
                 new TableQuery(body.schema(), body.table(), DefinitionIdBody.toRequested(body.definitionId()));
-        return switch (service.definition(context.currentUserId(), query)) {
-            case DefinitionResult.Found found -> TableDefinitionResponse.from(found.view(), found.definitionChanged());
+        // 本文の形（用途の列挙）を、DSL を見る前に確かめる（BR1.1 の ②）。
+        DefinitionPurpose purpose =
+                body.toPurpose().orElseThrow(() -> BusinessDataFieldErrors.of(java.util.List.of(), false));
+        return switch (service.definition(context.currentUserId(), query, purpose)) {
+            case DefinitionResult.Found found ->
+                TableDefinitionResponse.from(
+                        found.view(), found.definitionChanged(), found.purpose(), found.references());
             case ReadRejected rejected -> throw toException(rejected);
         };
     }

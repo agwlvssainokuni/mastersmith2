@@ -32,10 +32,14 @@ import static org.mockito.Mockito.when;
 import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ColumnKind;
 import cherry.mastersmith.businessdata.domain.PageRequest;
+import cherry.mastersmith.businessdata.domain.ReferencePolicy;
+import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
+import cherry.mastersmith.businessdata.domain.ReferenceTarget;
 import cherry.mastersmith.businessdata.domain.RowKey;
 import cherry.mastersmith.businessdata.domain.RowQueryFailureReason;
 import cherry.mastersmith.businessdata.domain.RowQueryStage;
 import cherry.mastersmith.businessdata.domain.SearchCondition;
+import cherry.mastersmith.businessdata.domain.SortKey;
 import cherry.mastersmith.businessdata.domain.TableAccessView;
 import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture;
@@ -55,6 +59,7 @@ import java.sql.SQLTimeoutException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -130,8 +135,8 @@ class RowSqlExecutorTest {
         when(secondResult.getString(3)).thenReturn("ペン");
         when(secondResult.getBigDecimal(4)).thenReturn(new BigDecimal("1.50"));
 
-        RowSearchResult result =
-                executor.search(session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(2, 20, null));
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(2, 20, null), Optional.empty());
 
         InOrder order = inOrder(connection, first, second);
         order.verify(connection)
@@ -175,7 +180,8 @@ class RowSqlExecutorTest {
         when(firstResult.getLong(1)).thenReturn(1L);
         when(secondResult.next()).thenReturn(false);
 
-        executor.search(session(DatabaseProduct.MYSQL), VIEW, List.of(), new PageRequest(1, 50, null));
+        executor.search(
+                session(DatabaseProduct.MYSQL), VIEW, List.of(), new PageRequest(1, 50, null), Optional.empty());
 
         // タイムゾーンは接続を作るときの初期化の文で付けるため、貸し出しの始めの文は流さない（U2 の D5: A）。
         verify(connection, never()).createStatement();
@@ -197,8 +203,8 @@ class RowSqlExecutorTest {
         when(firstResult.next()).thenReturn(true);
         when(firstResult.getLong(1)).thenReturn(40L);
 
-        RowSearchResult result =
-                executor.search(session(DatabaseProduct.POSTGRESQL), VIEW, List.of(), new PageRequest(3, 20, null));
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL), VIEW, List.of(), new PageRequest(3, 20, null), Optional.empty());
 
         assertThat(result).isEqualTo(new RowSearchResult.Page(40L, List.of()));
         verify(connection, times(1)).prepareStatement(anyString());
@@ -209,7 +215,7 @@ class RowSqlExecutorTest {
     void timeoutMarksTheConnectionBroken() throws SQLException {
         TargetReadSession timedOut = session(DatabaseProduct.POSTGRESQL);
         when(first.executeQuery()).thenThrow(new SQLTimeoutException("cancel", "57014"));
-        executor.search(timedOut, VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        executor.search(timedOut, VIEW, CONDITIONS, new PageRequest(1, 20, null), Optional.empty());
         assertThat(timedOut.isBroken()).isTrue();
 
         TargetReadSession lost = session(DatabaseProduct.MYSQL);
@@ -220,7 +226,7 @@ class RowSqlExecutorTest {
 
         TargetReadSession mismatch = session(DatabaseProduct.POSTGRESQL);
         doThrow(new SQLException("no table", "42P01", 0)).when(first).executeQuery();
-        executor.search(mismatch, VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        executor.search(mismatch, VIEW, CONDITIONS, new PageRequest(1, 20, null), Optional.empty());
         assertThat(mismatch.isBroken()).isFalse();
     }
 
@@ -235,8 +241,8 @@ class RowSqlExecutorTest {
         when(secondResult.next()).thenReturn(true, false);
         when(secondResult.getString(1)).thenReturn("x".repeat(101));
 
-        RowSearchResult result =
-                executor.search(session(DatabaseProduct.POSTGRESQL), view, List.of(), new PageRequest(1, 20, null));
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL), view, List.of(), new PageRequest(1, 20, null), Optional.empty());
 
         verify(connection)
                 .prepareStatement("SELECT SUBSTRING(\"text\", 1, 101) FROM \"sample\".\"log\" LIMIT ? OFFSET ?");
@@ -253,8 +259,8 @@ class RowSqlExecutorTest {
         List<SearchCondition> forged =
                 List.of(SearchCondition.equalTo("name\"; DROP TABLE item; --", new BoundValue(ValueType.STRING, "x")));
 
-        RowSearchResult result =
-                executor.search(session(DatabaseProduct.MYSQL), VIEW, forged, new PageRequest(1, 20, null));
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.MYSQL), VIEW, forged, new PageRequest(1, 20, null), Optional.empty());
 
         assertThat(result).isInstanceOfSatisfying(RowSearchResult.Failed.class, failed -> {
             assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.UNEXPECTED);
@@ -269,8 +275,8 @@ class RowSqlExecutorTest {
     void countTimeout() throws SQLException {
         when(first.executeQuery()).thenThrow(new SQLTimeoutException("cancel ペン", "57014"));
 
-        RowSearchResult result =
-                executor.search(session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(1, 20, null), Optional.empty());
 
         assertThat(result).isInstanceOfSatisfying(RowSearchResult.Failed.class, failed -> {
             assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.TIMEOUT);
@@ -288,8 +294,8 @@ class RowSqlExecutorTest {
         org.mockito.Mockito.doThrow(new IllegalStateException("bad"))
                 .when(first)
                 .setString(anyInt(), anyString());
-        RowSearchResult bind =
-                executor.search(session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(1, 20, null));
+        RowSearchResult bind = executor.search(
+                session(DatabaseProduct.POSTGRESQL), VIEW, CONDITIONS, new PageRequest(1, 20, null), Optional.empty());
         assertThat(((RowSearchResult.Failed) bind).failure()).satisfies(f -> {
             assertThat(f.reason()).isEqualTo(RowQueryFailureReason.UNEXPECTED);
             assertThat(f.exceptionClass()).isEqualTo("java.lang.IllegalStateException");
@@ -388,5 +394,175 @@ class RowSqlExecutorTest {
                     .containsKeys("code", "name", "price", "memo")
                     .containsEntry("memo", null);
         });
+    }
+    /** 参照先のテーブル（Intent 261029-reference-lookup-cleanup の U1）。id は主キーの整数。 */
+    private static final DslTable DEPT = table(
+            "dept",
+            false,
+            List.of("id"),
+            column("id").dbType("int4").build(),
+            column("code").build(),
+            column("name").build(),
+            column("pw").form(FormPart.PASSWORD).build());
+
+    private static final TableAccessView DEPT_VIEW =
+            BusinessDataDslFixture.view(DEPT, MainPermission.READ, Map.of("id", kind(ValueType.INTEGER)));
+
+    private static ReferenceReadSpec optionsSpec(String value, String label) {
+        ReferenceTarget target = ReferenceTarget.from(
+                        "sample",
+                        new cherry.mastersmith.dsl.domain.OptionSource(
+                                cherry.mastersmith.dsl.domain.OptionSourceKind.REFERENCE,
+                                List.of(),
+                                "dept",
+                                value,
+                                label,
+                                List.of(),
+                                List.of()))
+                .orElseThrow();
+        return ReferencePolicy.optionsSpec(target, DEPT_VIEW);
+    }
+
+    @Test
+    @DisplayName("PostgreSQL reads reference options in one statement without a count, by length and fixed order")
+    void postgresReferenceShape() throws SQLException {
+        when(firstResult.next()).thenReturn(true, true, false);
+        when(firstResult.getString(1)).thenReturn("C01", "C02");
+        when(firstResult.getString(2)).thenReturn("営業", (String) null);
+
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL),
+                DEPT_VIEW,
+                List.of(),
+                null,
+                Optional.of(optionsSpec("code", "name")));
+
+        verify(connection, times(1)).prepareStatement(anyString());
+        verify(connection)
+                .prepareStatement("SELECT SUBSTRING(t.\"code\", 1, 10001), SUBSTRING(t.\"name\", 1, 101)"
+                        + " FROM \"sample\".\"dept\" t JOIN (SELECT \"id\" FROM \"sample\".\"dept\""
+                        + " WHERE \"code\" IS NOT NULL AND CHAR_LENGTH(\"code\") <= 10000"
+                        + " ORDER BY SUBSTRING(\"name\", 1, 100) ASC NULLS LAST, SUBSTRING(\"code\", 1, 100) ASC NULLS LAST,"
+                        + " \"id\" ASC NULLS LAST LIMIT ? OFFSET ?) p ON t.\"id\" = p.\"id\""
+                        + " ORDER BY SUBSTRING(t.\"name\", 1, 100) ASC NULLS LAST, SUBSTRING(t.\"code\", 1, 100) ASC NULLS LAST,"
+                        + " t.\"id\" ASC NULLS LAST");
+        verify(first).setQueryTimeout(5);
+        verify(first).setMaxRows(201);
+        verify(first).setLong(1, 201L);
+        verify(first).setLong(2, 0L);
+        assertThat(result).isInstanceOfSatisfying(RowSearchResult.Rows.class, rows -> {
+            assertThat(rows.rows()).hasSize(2);
+            assertThat(rows.rows().get(0).key().values()).containsExactly(Map.entry("code", "C01"));
+            assertThat(rows.rows().get(0).values().values()).containsExactly(Map.entry("name", "営業"));
+            assertThat(rows.rows().get(1).values().values().get("name")).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("MySQL reads reference options with IS NULL ordering on the first 100 characters")
+    void mysqlReferenceShape() throws SQLException {
+        when(firstResult.next()).thenReturn(false);
+
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.MYSQL), DEPT_VIEW, List.of(), null, Optional.of(optionsSpec("id", "name")));
+
+        verify(connection)
+                .prepareStatement("SELECT t.`id`, SUBSTRING(t.`name`, 1, 101) FROM `sample`.`dept` t"
+                        + " JOIN (SELECT `id` FROM `sample`.`dept` WHERE `id` IS NOT NULL"
+                        + " ORDER BY SUBSTRING(`name`, 1, 100) IS NULL ASC, SUBSTRING(`name`, 1, 100) ASC,"
+                        + " `id` IS NULL ASC, `id` ASC LIMIT ? OFFSET ?) p ON t.`id` = p.`id`"
+                        + " ORDER BY SUBSTRING(t.`name`, 1, 100) IS NULL ASC, SUBSTRING(t.`name`, 1, 100) ASC,"
+                        + " t.`id` IS NULL ASC, t.`id` ASC");
+        assertThat(result).isEqualTo(new RowSearchResult.Rows(List.of()));
+    }
+
+    @Test
+    @DisplayName(
+            "a reference on a table without a primary key is read without the join and keeps value and label order")
+    void referenceWithoutPrimaryKey() throws SQLException {
+        DslTable log =
+                table("log", false, List.of(), column("v").build(), column("l").build());
+        TableAccessView view = BusinessDataDslFixture.view(log, MainPermission.READ, Map.of());
+        ReferenceReadSpec spec = new ReferenceReadSpec(
+                "v",
+                List.of("l", "missing", "v"),
+                true,
+                List.of(new SortKey("l", SortDirection.ASC), new SortKey("v", SortDirection.ASC)),
+                false,
+                21,
+                40,
+                10_000);
+        when(firstResult.next()).thenReturn(false);
+
+        executor.search(session(DatabaseProduct.POSTGRESQL), view, List.of(), null, Optional.of(spec));
+
+        verify(connection)
+                .prepareStatement(
+                        "SELECT SUBSTRING(\"v\", 1, 10001), SUBSTRING(\"l\", 1, 101), SUBSTRING(\"v\", 1, 101)"
+                                + " FROM \"sample\".\"log\" WHERE \"v\" IS NOT NULL AND CHAR_LENGTH(\"v\") <= 10000"
+                                + " ORDER BY SUBSTRING(\"l\", 1, 100) ASC NULLS LAST, SUBSTRING(\"v\", 1, 100) ASC NULLS LAST"
+                                + " LIMIT ? OFFSET ?");
+        verify(first).setMaxRows(21);
+        verify(first).setLong(1, 21L);
+        verify(first).setLong(2, 40L);
+    }
+
+    @Test
+    @DisplayName("without a reference spec the list statements stay exactly as before")
+    void noSpecKeepsTheListStatements() throws SQLException {
+        when(firstResult.next()).thenReturn(true);
+        when(firstResult.getLong(1)).thenReturn(0L);
+
+        executor.search(
+                session(DatabaseProduct.POSTGRESQL), VIEW, List.of(), new PageRequest(1, 20, null), Optional.empty());
+
+        verify(connection).prepareStatement("SELECT COUNT(*) FROM \"sample\".\"item\"");
+        verify(connection, times(1)).prepareStatement(anyString());
+    }
+
+    @Test
+    @DisplayName(
+            "a reference value column that is not readable or quotes, semicolons and newlines in names prepare nothing")
+    void referenceUnknownNames() throws SQLException {
+        for (String forged : List.of("pw", "code'", "code\"", "code;", "code--", "co`de", "code\nname", "missing")) {
+            ReferenceReadSpec spec = new ReferenceReadSpec(forged, List.of(), true, List.of(), false, 201, 0, 10_000);
+
+            RowSearchResult result =
+                    executor.search(session(DatabaseProduct.MYSQL), DEPT_VIEW, List.of(), null, Optional.of(spec));
+
+            assertThat(result).isInstanceOfSatisfying(RowSearchResult.Failed.class, failed -> {
+                assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.UNEXPECTED);
+                assertThat(failed.failure().stage()).isEqualTo(RowQueryStage.BIND);
+            });
+        }
+        ReferenceReadSpec forgedOrder = new ReferenceReadSpec(
+                "code",
+                List.of(),
+                true,
+                List.of(new SortKey("name; DROP TABLE dept", SortDirection.ASC)),
+                false,
+                1,
+                0,
+                10);
+        assertThat(executor.search(
+                        session(DatabaseProduct.POSTGRESQL), DEPT_VIEW, List.of(), null, Optional.of(forgedOrder)))
+                .isInstanceOf(RowSearchResult.Failed.class);
+        verify(connection, never()).prepareStatement(anyString());
+    }
+
+    @Test
+    @DisplayName("a reference timeout marks the connection broken and keeps no message")
+    void referenceTimeout() throws SQLException {
+        when(first.executeQuery()).thenThrow(new SQLTimeoutException("cancel 営業", "57014"));
+        TargetReadSession session = session(DatabaseProduct.POSTGRESQL);
+
+        RowSearchResult result =
+                executor.search(session, DEPT_VIEW, List.of(), null, Optional.of(optionsSpec("code", "name")));
+
+        assertThat(result).isInstanceOfSatisfying(RowSearchResult.Failed.class, failed -> {
+            assertThat(failed.failure().reason()).isEqualTo(RowQueryFailureReason.TIMEOUT);
+            assertThat(failed.toString()).doesNotContain("営業");
+        });
+        assertThat(session.isBroken()).isTrue();
     }
 }

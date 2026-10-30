@@ -43,7 +43,8 @@ class TargetDbWriteSettingsTest {
                 type == null ? null : "reader",
                 type == null ? null : "reader-password",
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, null, null, writeTimeout),
+                new TargetDbProperties.QueryTimeout(null, null, null, null, null, writeTimeout),
+                null,
                 null,
                 new TargetDbProperties.Write(writeUsername, writePassword, new TargetDbProperties.WritePool(poolSize)));
     }

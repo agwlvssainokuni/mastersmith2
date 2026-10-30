@@ -39,7 +39,7 @@ class TargetDataSourceConfigTest {
 
     private static TargetDbSettings.Usable usable(String type, String port) {
         TargetDbProperties properties = new TargetDbProperties(
-                type, "target-db", port, "business", "sales", USERNAME, PASSWORD, null, null, null, null);
+                type, "target-db", port, "business", "sales", USERNAME, PASSWORD, null, null, null, null, null);
         return (TargetDbSettings.Usable) TargetDbSettings.inspect(properties);
     }
 
@@ -133,7 +133,8 @@ class TargetDataSourceConfigTest {
                 USERNAME,
                 PASSWORD,
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, list, detail, null),
+                new TargetDbProperties.QueryTimeout(null, null, list, detail, null, null),
+                null,
                 null,
                 null);
     }
@@ -204,7 +205,8 @@ class TargetDataSourceConfigTest {
                 USERNAME,
                 PASSWORD,
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, null, null, Duration.ofSeconds(90)),
+                new TargetDbProperties.QueryTimeout(null, null, null, null, null, Duration.ofSeconds(90)),
+                null,
                 null,
                 null);
 

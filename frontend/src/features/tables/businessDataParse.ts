@@ -183,6 +183,10 @@ function parseValidation(value: Json): Partial<ColumnDefinition> | Invalid {
     }
     result.choices = choices
   }
+  // 他テーブル参照の項目は、中身の確かめを足すまで届いた値をそのまま写す（画面はまだ使わない）
+  if (value.reference !== undefined) {
+    result.reference = value.reference
+  }
   return result
 }
 

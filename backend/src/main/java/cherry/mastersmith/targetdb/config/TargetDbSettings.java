@@ -66,6 +66,12 @@ public sealed interface TargetDbSettings {
     /** 業務データの詳細の問い合わせの待ちの項目の名前。 */
     String QUERY_TIMEOUT_DETAIL = TargetDbProperties.PREFIX + ".query-timeout.detail";
 
+    /** 参照先の問い合わせの待ちの項目の名前（Intent 261029-reference-lookup-cleanup の U1）。 */
+    String QUERY_TIMEOUT_REFERENCE = TargetDbProperties.PREFIX + ".query-timeout.reference";
+
+    /** 定義の取得で参照先を読む全体の待ちの項目の名前（Intent 261029-reference-lookup-cleanup の U1）。 */
+    String REFERENCE_READ_TOTAL = TargetDbProperties.PREFIX + ".reference-read-total";
+
     /** プールの接続の数の上限の項目の名前。 */
     String POOL_MAXIMUM_SIZE = TargetDbProperties.PREFIX + ".pool.maximum-size";
 
@@ -133,7 +139,18 @@ public sealed interface TargetDbSettings {
                 case COMPARE -> properties.queryTimeout().compare();
                 case LIST -> properties.queryTimeout().list();
                 case DETAIL -> properties.queryTimeout().detail();
+                case REFERENCE -> properties.queryTimeout().reference();
             };
+        }
+
+        /**
+         * 定義の取得で参照先を読む全体の待ちの上限を返す（Intent 261029-reference-lookup-cleanup の U1、NFR3.5）。点検を通った値の
+         * ため 1 秒以上。
+         *
+         * @return 全体の待ちの上限
+         */
+        public Duration referenceReadTotal() {
+            return properties.referenceReadTotal();
         }
     }
 
@@ -206,6 +223,14 @@ public sealed interface TargetDbSettings {
         }
         if (properties.queryTimeout().detail().getSeconds() < 1) {
             problems.add(QUERY_TIMEOUT_DETAIL);
+        }
+        if (properties.queryTimeout().reference().getSeconds() < 1) {
+            problems.add(QUERY_TIMEOUT_REFERENCE);
+        }
+        // 1 秒未満では、定義の取得の締め切りで最初の文の前に残りが 1 秒未満となり、参照先を読む定義の取得がすべて 503 になるため、
+        // ほかの待ちと同じく点検で対象DB を使わない（起動は続く。reliability-design.md 1.2・レビュー R-01）。
+        if (properties.referenceReadTotal().getSeconds() < 1) {
+            problems.add(REFERENCE_READ_TOTAL);
         }
         if (properties.pool().maximumSize() < 1) {
             problems.add(POOL_MAXIMUM_SIZE);

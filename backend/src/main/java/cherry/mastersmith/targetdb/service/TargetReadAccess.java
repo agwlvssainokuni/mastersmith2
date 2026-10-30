@@ -19,6 +19,7 @@ import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import cherry.mastersmith.targetdb.domain.ReadPurpose;
 import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
 import cherry.mastersmith.targetdb.domain.TargetReadSession;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -34,7 +35,8 @@ public interface TargetReadAccess {
     /**
      * 接続を1本借りて処理に貸す。
      *
-     * @param purpose 目的（{@link ReadPurpose#LIST} か {@link ReadPurpose#DETAIL}。スキーマの読み取りの目的は受け付けない）
+     * @param purpose 目的（{@link ReadPurpose#LIST}・{@link ReadPurpose#DETAIL}・{@link ReadPurpose#REFERENCE}。スキーマの読み取りの
+     *     目的は受け付けない）
      * @param work 貸し出しの間だけ接続を使う処理（接続を保存しない・戻り値にしない）
      * @param <T> 処理の結果の型
      * @return 処理を呼んで終えた・設定が無い・接続を借りられない のどれか
@@ -50,4 +52,16 @@ public interface TargetReadAccess {
      * @return DB の種類（設定が無ければ空）
      */
     Optional<DatabaseProduct> product();
+
+    /**
+     * 定義の取得で参照先を読む全体の待ちの上限を返す（Intent 261029-reference-lookup-cleanup の U1、NFR3.5・reliability-design.md
+     * 5.1）。{@code businessdata} は {@code targetdb.config} に依存できないため、この口で受け渡す。
+     *
+     * <p>{@link #withRead} の処理（work）の中でだけ呼ぶ。そこでは設定が「使える」ことが決まっている。設定が「使える」でないとき
+     * （使わない・不正）に呼ぶのは呼び出し側の誤りで、{@link IllegalStateException} を投げる（NFR 設計 U1 のレビュー R-05）。
+     *
+     * @return 全体の待ちの上限（1 秒以上）
+     * @throws IllegalStateException 設定が「使える」でないとき
+     */
+    Duration referenceReadTotal();
 }

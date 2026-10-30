@@ -35,6 +35,8 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param password 接続のパスワード（秘密。文字列にするときは有無だけ。BR1.4）
  * @param connectTimeout 接続の待ちの上限（既定 3 秒）
  * @param queryTimeout 問い合わせ1回の待ちの上限（目的ごと）
+ * @param referenceReadTotal 定義の取得で参照先（他テーブル参照の REFERENCE の選択肢）を読む全体の待ちの上限（既定 10 秒。1 秒以上。
+ *     Intent 261029-reference-lookup-cleanup の U1、NFR3.5・Q2: A）。文1回の上限ではないため {@link QueryTimeout} には入れない
  * @param pool 接続のプールの設定
  * @param write 書き込みの接続の設定（Intent 261016-business-data-views の U2、BR9.1。接続先は読み取りの設定をそのまま使い、資格情報と
  *     プールだけを足す）
@@ -50,6 +52,7 @@ public record TargetDbProperties(
         String password,
         @DefaultValue("3s") Duration connectTimeout,
         @DefaultValue QueryTimeout queryTimeout,
+        @DefaultValue("10s") Duration referenceReadTotal,
         @DefaultValue Pool pool,
         @DefaultValue Write write) {
 
@@ -59,10 +62,14 @@ public record TargetDbProperties(
     /** 接続の待ちの既定値。 */
     static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(3);
 
+    /** 参照先を読む全体の待ちの既定値。 */
+    static final Duration DEFAULT_REFERENCE_READ_TOTAL = Duration.ofSeconds(10);
+
     /** 空の値（環境変数の値が空など）で null になった項目を既定値にする。 */
     public TargetDbProperties {
         connectTimeout = connectTimeout == null ? DEFAULT_CONNECT_TIMEOUT : connectTimeout;
-        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null, null, null, null) : queryTimeout;
+        queryTimeout = queryTimeout == null ? new QueryTimeout(null, null, null, null, null, null) : queryTimeout;
+        referenceReadTotal = referenceReadTotal == null ? DEFAULT_REFERENCE_READ_TOTAL : referenceReadTotal;
         pool = pool == null ? new Pool(null, null) : pool;
         write = write == null ? new Write(null, null, null) : write;
     }
@@ -74,6 +81,8 @@ public record TargetDbProperties(
      * @param compare 照合のとき（既定 5 秒）
      * @param list 業務データの一覧のとき（件数とページのそれぞれ。既定 5 秒。Intent 261016-business-data-views の NFR4.4）
      * @param detail 業務データの詳細のとき（既定 5 秒。NFR4.4）
+     * @param reference 他テーブル参照の参照先の読み取りのとき（選択肢・検索・ラベル・保存前の確かめ。既定 5 秒。Intent
+     *     261029-reference-lookup-cleanup の U1、NFR3.4）
      * @param write 業務データの書き込みの文1回のとき（事前の問い合わせ・書き込みの文・違反の後の確かめ。既定 5 秒。U2 の NFR4.4・
      *     BR9.5）。読み取りのプールの通信の待ち（{@link #longest()}）には入れない
      */
@@ -82,6 +91,7 @@ public record TargetDbProperties(
             @DefaultValue("5s") Duration compare,
             @DefaultValue("5s") Duration list,
             @DefaultValue("5s") Duration detail,
+            @DefaultValue("5s") Duration reference,
             @DefaultValue("5s") Duration write) {
 
         /** 空の値で null になった項目を既定値にする。 */
@@ -90,19 +100,21 @@ public record TargetDbProperties(
             compare = compare == null ? Duration.ofSeconds(5) : compare;
             list = list == null ? Duration.ofSeconds(5) : list;
             detail = detail == null ? Duration.ofSeconds(5) : detail;
+            reference = reference == null ? Duration.ofSeconds(5) : reference;
             write = write == null ? Duration.ofSeconds(5) : write;
         }
 
         /**
-         * 読み取りの4つの目的のうち、最も長い上限を返す（読み取りのプールのドライバーの通信の待ちの計算に使う。BR8.2、基盤の設計の
+         * 読み取りの5つの目的（生成・照合・一覧・詳細・参照先）のうち、最も長い上限を返す（読み取りのプールのドライバーの通信の待ちの計算に使う。BR8.2、基盤の設計の
          * レビュー R-01）。書き込みの上限は入れない（書き込みのプールは専用で、通信の待ちを書き込みの上限から別に計算する。U2 の基盤の
-         * 設計 2.1）。
+         * 設計 2.1）。参照先の上限は、20 秒より長くしたときに通信の待ちが問い合わせの上限より先に切れないよう入れる（Intent
+         * 261029-reference-lookup-cleanup の U1、reliability-design.md 1.1）。
          *
          * @return 最も長い上限
          */
         public Duration longest() {
             Duration longest = generate;
-            for (Duration value : new Duration[] {compare, list, detail}) {
+            for (Duration value : new Duration[] {compare, list, detail, reference}) {
                 if (value.compareTo(longest) > 0) {
                     longest = value;
                 }
@@ -180,6 +192,7 @@ public record TargetDbProperties(
                 + ", password=" + presence(password)
                 + ", connectTimeout=" + connectTimeout
                 + ", queryTimeout=" + queryTimeout
+                + ", referenceReadTotal=" + referenceReadTotal
                 + ", pool=" + pool
                 + ", write=" + write + "]";
     }

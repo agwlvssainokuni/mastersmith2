@@ -89,7 +89,7 @@ public class JdbcTargetReadAccess implements TargetReadAccess {
     public <T> TargetReadOutcome<T> withRead(ReadPurpose purpose, Function<TargetReadSession, T> work) {
         Objects.requireNonNull(purpose, "purpose は必須です");
         Objects.requireNonNull(work, "work は必須です");
-        if (purpose != ReadPurpose.LIST && purpose != ReadPurpose.DETAIL) {
+        if (purpose != ReadPurpose.LIST && purpose != ReadPurpose.DETAIL && purpose != ReadPurpose.REFERENCE) {
             throw new IllegalArgumentException("業務データの読み取りの目的ではありません");
         }
         if (!(settings instanceof TargetDbSettings.Usable usable) || dataSource.isEmpty()) {
@@ -131,6 +131,14 @@ public class JdbcTargetReadAccess implements TargetReadAccess {
     @Override
     public Optional<DatabaseProduct> product() {
         return settings instanceof TargetDbSettings.Usable usable ? Optional.of(usable.product()) : Optional.empty();
+    }
+
+    @Override
+    public Duration referenceReadTotal() {
+        if (!(settings instanceof TargetDbSettings.Usable usable)) {
+            throw new IllegalStateException("対象DB の設定が使える状態ではありません");
+        }
+        return usable.referenceReadTotal();
     }
 
     /** Bean を閉じるときに、通信の待ちの実行の口を止める。 */

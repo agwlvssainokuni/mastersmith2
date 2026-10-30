@@ -16,6 +16,7 @@
 package cherry.mastersmith.businessdata.testsupport;
 
 import cherry.mastersmith.businessdata.domain.PageRequest;
+import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
 import cherry.mastersmith.businessdata.domain.RowKey;
 import cherry.mastersmith.businessdata.domain.RowValues;
 import cherry.mastersmith.businessdata.domain.SearchCondition;
@@ -45,6 +46,7 @@ import cherry.mastersmith.targetdb.domain.WriteStep;
 import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import cherry.mastersmith.targetdb.service.TargetWriteAccess;
 import java.sql.Connection;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -210,6 +212,18 @@ public final class FakeBusinessDataPorts {
             calls.add("product");
             return product;
         }
+
+        /** 参照先を読む全体の待ちの上限（本物の既定 10 秒）。 */
+        public Duration referenceReadTotal = Duration.ofSeconds(10);
+
+        /** 本物と同じく、設定が使えない形（{@link Mode#NOT_CONFIGURED}）では {@link IllegalStateException} を投げる。 */
+        @Override
+        public Duration referenceReadTotal() {
+            if (mode == Mode.NOT_CONFIGURED) {
+                throw new IllegalStateException("対象DB の設定が使える状態ではありません");
+            }
+            return referenceReadTotal;
+        }
     }
 
     /** 行の SQL の部品の偽物。 */
@@ -227,12 +241,35 @@ public final class FakeBusinessDataPorts {
         /** 受け取ったページ。 */
         public PageRequest page;
 
+        /** 受け取った参照先の読み取りの指定（一覧と検索では空）。 */
+        public List<Optional<ReferenceReadSpec>> references = new ArrayList<>();
+
+        /** 受け取った session（参照先の読み取りで、締め切りで絞った上限を確かめる）。 */
+        public List<TargetReadSession> sessions = new ArrayList<>();
+
+        /** 参照先の読み取りの答え（呼ばれた順。尽きたら空の行）。 */
+        public java.util.Deque<RowSearchResult> referenceResults = new java.util.ArrayDeque<>();
+
+        /** 参照先の読み取りのたびに呼ぶ処理（時計を進めるなど）。 */
+        public Runnable onReference = () -> {};
+
         @Override
         public RowSearchResult search(
-                TargetReadSession session, TableAccessView view, List<SearchCondition> conditions, PageRequest page) {
+                TargetReadSession session,
+                TableAccessView view,
+                List<SearchCondition> conditions,
+                PageRequest page,
+                Optional<ReferenceReadSpec> reference) {
             calls.add("search");
             this.conditions = conditions;
             this.page = page;
+            this.references.add(reference);
+            this.sessions.add(session);
+            if (reference.isPresent()) {
+                onReference.run();
+                RowSearchResult next = referenceResults.poll();
+                return next != null ? next : new RowSearchResult.Rows(List.of());
+            }
             return searchResult;
         }
 

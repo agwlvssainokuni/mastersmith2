@@ -18,6 +18,7 @@ package cherry.mastersmith.businessdata.repository;
 import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ColumnWriteRules;
 import cherry.mastersmith.businessdata.domain.PageRequest;
+import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
 import cherry.mastersmith.businessdata.domain.RowKey;
 import cherry.mastersmith.businessdata.domain.RowQueryFailure;
 import cherry.mastersmith.businessdata.domain.RowQueryFailureReason;
@@ -69,19 +70,53 @@ public class RowSqlExecutor {
     /**
      * 一覧と検索を読む（件数とページ。BR5.6〜BR5.8）。件数が読み飛ばす行の数以下なら、行を読まずに空のページを返す。
      *
+     * <p>参照先の読み取りの指定（Intent 261029-reference-lookup-cleanup の U1、BR11.2・BR11.4）があるときは、件数の文を作らず、指定の
+     * 値のカラム・表示の列・NULL の除外・長さの条件・固定の並び・読む行・読み飛ばす数で1文だけ流し、{@link RowSearchResult.Rows} を
+     * 返す（{@code page} は使わない）。指定が無いときは今までと同じ文（BR12.4）。どちらも文ごとの上限は
+     * {@code session.queryTimeoutSeconds()}（参照先では呼ぶ側が締め切りで絞った session を渡す。BR8.4）。
+     *
      * @param session 貸し出し中の接続
      * @param view 判定の材料
      * @param conditions 型として読んだ条件
-     * @param page ページの指定
-     * @return 件数とページ、または失敗
+     * @param page ページの指定（参照先の読み取りでは使わない。null でよい）
+     * @param reference 参照先の読み取りの指定（一覧と検索では空）
+     * @return 件数とページ・件数を数えない行、または失敗
      */
     public RowSearchResult search(
-            TargetReadSession session, TableAccessView view, List<SearchCondition> conditions, PageRequest page) {
+            TargetReadSession session,
+            TableAccessView view,
+            List<SearchCondition> conditions,
+            PageRequest page,
+            Optional<ReferenceReadSpec> reference) {
         RowDialect dialect = RowDialect.of(session.product());
         RowQueryStage stage = RowQueryStage.BIND;
         try {
             RowSqlBuilder builder = new RowSqlBuilder(dialect, view);
             RowSqlBuilder.Where where = builder.where(conditions);
+            if (reference.isPresent()) {
+                ReferenceReadSpec spec = reference.get();
+                RowSqlBuilder.Query rows = builder.referencePage(builder.referenceWhere(where, spec), spec);
+                List<RowRecord> records = new ArrayList<>();
+                try (PreparedStatement statement = session.connection().prepareStatement(rows.sql())) {
+                    statement.setQueryTimeout(session.queryTimeoutSeconds());
+                    statement.setMaxRows(spec.maxRows());
+                    int next = bindAll(statement, 1, rows.values(), dialect);
+                    statement.setLong(next, spec.maxRows());
+                    statement.setLong(next + 1, spec.offset());
+                    stage = RowQueryStage.EXECUTE;
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        stage = RowQueryStage.READ;
+                        while (resultSet.next()) {
+                            RowRead read = readRow(resultSet, rows.selected(), dialect);
+                            if (read instanceof RowRead.Unreadable unreadable) {
+                                return new RowSearchResult.Failed(unreadable.failure());
+                            }
+                            records.add(((RowRead.Read) read).row());
+                        }
+                    }
+                }
+                return new RowSearchResult.Rows(records);
+            }
             RowSqlBuilder.Query count = builder.count(where);
             RowSqlBuilder.Query rows = builder.page(where, view.orderKeys(page.sortKey()));
             long total;

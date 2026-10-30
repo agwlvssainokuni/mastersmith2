@@ -38,6 +38,20 @@ public sealed interface RowSearchResult {
     }
 
     /**
+     * 件数を数えずに読めた（参照先の読み取り。Intent 261029-reference-lookup-cleanup の U1、BR11.4）。行の主キーの側に値のカラムの値
+     * （切らない）を、値の側に表示の列（一覧の上限で切る）を持つ。
+     *
+     * @param rows 読んだ行（読む行の上限まで）
+     */
+    record Rows(List<RowRecord> rows) implements RowSearchResult {
+
+        /** 一覧を変更できないものにする。 */
+        public Rows {
+            rows = List.copyOf(rows);
+        }
+    }
+
+    /**
      * 失敗した。
      *
      * @param failure 失敗

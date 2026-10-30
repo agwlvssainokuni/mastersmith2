@@ -147,4 +147,38 @@ class TableAccessResolverTest {
         assertThat(view.column("code").orElseThrow().valueType()).isEqualTo(ValueType.INTEGER);
         assertThat(view.column("name").orElseThrow().valueType()).isEqualTo(ValueType.STRING);
     }
+
+    @Test
+    @DisplayName("the resolution carries the snapshot it took once and target views reuse it without reading again")
+    void referenceViewReusesTheSnapshot() {
+        TableAccessResolution.Resolved resolved = (TableAccessResolution.Resolved) resolve("sample", "item");
+        long snapshots =
+                ports.calls.stream().filter(c -> c.startsWith("snapshotFor")).count();
+
+        Optional<TableAccessView> log = resolver.referenceView(resolved.snapshot(), "sample", "log");
+
+        assertThat(resolved.snapshot()).isSameAs(ports.resolver.snapshot);
+        assertThat(resolved.toString()).doesNotContain("PermissionSnapshot");
+        assertThat(log).hasValueSatisfying(v -> assertThat(v.table()).isEqualTo("log"));
+        assertThat(ports.calls.stream().filter(c -> c.startsWith("snapshotFor")).count())
+                .as("写しは取り直さない")
+                .isEqualTo(snapshots)
+                .isEqualTo(1L);
+        assertThat(resolver.referenceView(resolved.snapshot(), "sample", "secret"))
+                .as("NONE")
+                .isEmpty();
+        assertThat(resolver.referenceView(resolved.snapshot(), "sample", "nowhere"))
+                .as("DSL に無い")
+                .isEmpty();
+        assertThat(resolver.referenceView(resolved.snapshot(), "other", "log"))
+                .as("別のスキーマ")
+                .isEmpty();
+        assertThat(resolver.referenceView(resolved.snapshot(), "sample", null)).isEmpty();
+        assertThat(resolver.referenceView(
+                        PermissionSnapshot.of(BusinessDataServiceFixture.WORK_ROLE, null, null, Map.of()),
+                        "sample",
+                        "log"))
+                .as("DSL が無い")
+                .isEmpty();
+    }
 }

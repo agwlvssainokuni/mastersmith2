@@ -65,6 +65,7 @@ export function fixtureColumn(
     editableOnUpdate: false,
     masked: false,
     formPart: null,
+    reference: null,
     required: false,
     nullable: true,
     minLength: null,

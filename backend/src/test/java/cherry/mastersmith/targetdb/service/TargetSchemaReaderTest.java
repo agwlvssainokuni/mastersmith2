@@ -78,7 +78,18 @@ class TargetSchemaReaderTest {
 
     private static TargetDbSettings usable(TargetDbProperties.QueryTimeout queryTimeout) {
         return TargetDbSettings.inspect(new TargetDbProperties(
-                "postgresql", HOST, "5432", "business", "sales", USERNAME, PASSWORD, null, queryTimeout, null, null));
+                "postgresql",
+                HOST,
+                "5432",
+                "business",
+                "sales",
+                USERNAME,
+                PASSWORD,
+                null,
+                queryTimeout,
+                null,
+                null,
+                null));
     }
 
     private JdbcTargetSchemaReader reader() {
@@ -167,7 +178,12 @@ class TargetSchemaReaderTest {
     @DisplayName("configured per-query limits are applied per purpose")
     void configuredPerQueryLimits() throws SQLException {
         TargetDbSettings settings = usable(new TargetDbProperties.QueryTimeout(
-                Duration.ofSeconds(30), Duration.ofSeconds(7), Duration.ofSeconds(9), Duration.ofSeconds(11), null));
+                Duration.ofSeconds(30),
+                Duration.ofSeconds(7),
+                Duration.ofSeconds(9),
+                Duration.ofSeconds(11),
+                null,
+                null));
 
         new JdbcTargetSchemaReader(settings, Optional.of(dataSource)).readSchema(ReadPurpose.COMPARE);
         verify(statement, times(4)).setQueryTimeout(7);

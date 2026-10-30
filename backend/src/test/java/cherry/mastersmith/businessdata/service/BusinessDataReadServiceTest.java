@@ -22,6 +22,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldError;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldErrorReason;
+import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
 import cherry.mastersmith.businessdata.domain.KeyInput;
 import cherry.mastersmith.businessdata.domain.RawCondition;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
@@ -66,10 +67,12 @@ class BusinessDataReadServiceTest {
     void setUp() {
         ports = new FakeBusinessDataPorts();
         ports.resolver.snapshot = BusinessDataServiceFixture.snapshot();
+        TableAccessResolver resolver = new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess);
         service = new BusinessDataReadService(
-                new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess),
+                resolver,
                 ports.readAccess,
-                ports.executor);
+                ports.executor,
+                new ReferenceLookup(resolver, ports.readAccess, ports.executor, java.time.Clock.systemUTC()));
     }
 
     private static SearchInput validSearch() {
@@ -136,10 +139,12 @@ class BusinessDataReadServiceTest {
     @Test
     @DisplayName("definitionChanged is set on success and on 400 only")
     void definitionChanged() {
-        assertThat(((DefinitionResult.Found) service.definition(1L, new TableQuery("sample", "item", OLD)))
+        assertThat(((DefinitionResult.Found)
+                                service.definition(1L, new TableQuery("sample", "item", OLD), DefinitionPurpose.VIEW))
                         .definitionChanged())
                 .isTrue();
-        assertThat(((DefinitionResult.Found) service.definition(1L, new TableQuery("sample", "item", CURRENT)))
+        assertThat(((DefinitionResult.Found) service.definition(
+                                1L, new TableQuery("sample", "item", CURRENT), DefinitionPurpose.VIEW))
                         .definitionChanged())
                 .isFalse();
         ReadRejected invalid =

@@ -19,6 +19,7 @@ import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ColumnAccess;
 import cherry.mastersmith.businessdata.domain.ContainsPattern;
 import cherry.mastersmith.businessdata.domain.KnownIdentifiers;
+import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
 import cherry.mastersmith.businessdata.domain.RowKey;
 import cherry.mastersmith.businessdata.domain.SearchCondition;
 import cherry.mastersmith.businessdata.domain.SortKey;
@@ -170,6 +171,114 @@ final class RowSqlBuilder {
                 + where.sql() + orderBy(keys, "") + " LIMIT ? OFFSET ?) " + INNER + " ON " + on
                 + orderBy(keys, prefix);
         return new Query(sql, selected, where.values());
+    }
+
+    /**
+     * 参照先の読み取りの WHERE の句（Intent 261029-reference-lookup-cleanup の U1、BR4.2・BR11.4、performance-design.md 1.1）。検索の
+     * 条件の句に、値のカラムの {@code IS NOT NULL}（指定のとき）と、文字の型の値の長さの条件を AND で足す。
+     *
+     * @param base 検索の条件の句
+     * @param spec 参照先の読み取りの指定
+     * @return 句
+     */
+    Where referenceWhere(Where base, ReferenceReadSpec spec) {
+        ColumnAccess value = referenceValueColumn(spec);
+        String ref = column(value.column());
+        List<String> terms = new ArrayList<>();
+        if (spec.excludeNullValue()) {
+            terms.add(ref + " IS NOT NULL");
+        }
+        if (value.valueType() == ValueType.STRING) {
+            terms.add(dialect.lengthWithin(ref, spec.maxValueLength()));
+        } else if (value.valueType() == ValueType.OTHER) {
+            terms.add(dialect.lengthWithin(dialect.castToText(ref), spec.maxValueLength()));
+        }
+        if (terms.isEmpty()) {
+            return base;
+        }
+        String added = String.join(" AND ", terms);
+        String sql = base.sql().isEmpty() ? " WHERE " + added : base.sql() + " AND " + added;
+        return new Where(sql, base.values());
+    }
+
+    /**
+     * 参照先の読み取りの文（Intent 261029-reference-lookup-cleanup の U1、BR7.3・BR11.4、performance-design.md 1.2）。値のカラムを
+     * 主キーの値の側（{@code Selected.key} が真）に {@code SUBSTRING(…,1,上限+1)} で、表示の列を一覧の上限で切って選び、固定の並びを
+     * 先頭の 100 字の項で付ける。主キーのある参照先は既存の {@link #page} と同じく主キーで結ぶ形、無い参照先は結ばない形。末尾に
+     * {@code LIMIT ? OFFSET ?} を置く。件数の文は作らない。
+     *
+     * @param where {@link #referenceWhere} の句
+     * @param spec 参照先の読み取りの指定
+     * @return 文
+     */
+    Query referencePage(Where where, ReferenceReadSpec spec) {
+        List<String> primaryKey = view.primaryKey();
+        boolean joined = !primaryKey.isEmpty();
+        String prefix = joined ? OUTER + "." : "";
+        List<Selected> selected = referenceSelection(spec, prefix);
+        String select = "SELECT "
+                + String.join(", ", selected.stream().map(Selected::expression).toList());
+        if (!joined) {
+            return new Query(
+                    select + " FROM " + table + where.sql() + referenceOrderBy(spec, "") + " LIMIT ? OFFSET ?",
+                    selected,
+                    where.values());
+        }
+        String innerColumns =
+                String.join(", ", primaryKey.stream().map(this::column).toList());
+        StringJoiner on = new StringJoiner(" AND ");
+        for (String key : primaryKey) {
+            on.add(OUTER + "." + column(key) + " = " + INNER + "." + column(key));
+        }
+        String sql = select + " FROM " + table + " " + OUTER + " JOIN (SELECT " + innerColumns + " FROM " + table
+                + where.sql() + referenceOrderBy(spec, "") + " LIMIT ? OFFSET ?) " + INNER + " ON " + on
+                + referenceOrderBy(spec, prefix);
+        return new Query(sql, selected, where.values());
+    }
+
+    /** 参照先の読み取りで選ぶ列（値のカラムを先頭に。表示の列は判定の材料にあり値を読むものだけ。BR3.5・BR7.4）。 */
+    private List<Selected> referenceSelection(ReferenceReadSpec spec, String prefix) {
+        ColumnAccess value = referenceValueColumn(spec);
+        List<Selected> selected = new ArrayList<>();
+        selected.add(new Selected(
+                value,
+                dialect.selectExpression(prefix + column(value.column()), value, spec.maxValueLength()),
+                true,
+                spec.maxValueLength()));
+        for (String name : spec.displayColumns()) {
+            view.column(name)
+                    .filter(ColumnAccess::readsValue)
+                    .ifPresent(display -> selected.add(new Selected(
+                            display,
+                            dialect.selectExpression(
+                                    prefix + column(display.column()), display, ColumnValueCodec.LIST_TEXT_LIMIT),
+                            false,
+                            ColumnValueCodec.LIST_TEXT_LIMIT)));
+        }
+        return selected;
+    }
+
+    /** 値のカラム（判定の材料にあり値を読むもの。無ければ問い合わせをせずに想定外の失敗）。 */
+    private ColumnAccess referenceValueColumn(ReferenceReadSpec spec) {
+        return view.column(spec.valueColumn())
+                .filter(ColumnAccess::readsValue)
+                .orElseThrow(() -> new IllegalArgumentException("参照先の値のカラムを読めません"));
+    }
+
+    /** 固定の並び（文字の型は先頭の 100 字の項。判定の材料に無い主キーのカラムはカラムのまま。F1: A）。 */
+    private String referenceOrderBy(ReferenceReadSpec spec, String prefix) {
+        if (spec.order().isEmpty()) {
+            return "";
+        }
+        List<String> terms = new ArrayList<>();
+        for (SortKey key : spec.order()) {
+            String ref = prefix + column(key.column());
+            String expression = view.column(key.column())
+                    .map(c -> dialect.sortExpression(ref, c))
+                    .orElse(ref);
+            terms.add(dialect.orderTerm(expression, key.direction()));
+        }
+        return " ORDER BY " + String.join(", ", terms);
     }
 
     /** 詳細の文（主キーの条件、最大2行。BR6.3）。 */

@@ -53,7 +53,8 @@ class TargetWriteDataSourceConfigTest {
                 READ_USERNAME,
                 "reader-password",
                 null,
-                new TargetDbProperties.QueryTimeout(null, null, null, null, writeTimeout),
+                new TargetDbProperties.QueryTimeout(null, null, null, null, null, writeTimeout),
+                null,
                 null,
                 new TargetDbProperties.Write(
                         WRITE_USERNAME, WRITE_PASSWORD, new TargetDbProperties.WritePool(poolSize)));

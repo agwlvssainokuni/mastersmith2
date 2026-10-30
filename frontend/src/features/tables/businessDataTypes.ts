@@ -125,6 +125,8 @@ export interface ColumnDefinition {
   max?: string | null
   choices?: readonly Choice[]
   hasPattern?: boolean
+  /** 他テーブル参照の項目（契約 C2。参照でないカラムと用途 VIEW では null。中身の型は参照の画面を作るときに決める） */
+  reference?: unknown
 }
 
 /** 検索の項目（契約 C2 の SearchField） */
