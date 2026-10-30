@@ -1413,3 +1413,65 @@ bash perf/dsl-mixed-memory-test.sh
 ```
 
 `--include-system-env-vars` を付けないと場面の名前が `undefined` になり、確かめにならない。線を変えたときは `perf/k6/thresholds-test.sh` の期待の表も合わせる。
+
+## 記録（evidence/）に置く前の伏せ字
+
+k6 の結果を記録の置き場（名前が `evidence` のディレクトリ。Intent の記録の下）に置くときは、必ず伏せ字の道具 `perf/redact-k6-evidence.mjs` を通す。道具は Node の組み込みだけを使い、依存を足さない。
+
+### 伏せる対象
+
+- k6 の summary json（`--summary-export` の出力）。JWT の形（`eyJ` で始まる base64url の 3 区間を `.` でつないだもの。直前が英数字のものは除く）は、値・配列の要素・キー名・長い文字列のどこにあっても `[REDACTED-JWT]` に置き換える。
+- `setup()` の返す値（summary json の上の階層の `setup_data`）の下の文字列は、JWT の形かどうかにかかわらずすべて `[REDACTED-SETUP]` に置き換える。数・真偽・null と、キー・配列の形は残る。
+- 置き換えの後に、置換とは別の検査で JWT の形が残っていないこと（JSON の口では `setup_data` の下に伏せていない文字列が無いことも）を確かめ、1 件でもあれば何も書かずに止まる。
+
+### 記録に置く唯一の入口
+
+summary json と、k6 の標準出力・ログは、次の 2 つの呼び方でだけ置く。`cp`・手での編集・エディタでの貼り付けで置かない（手で置いた JWT の形は、`./gradlew verify` の安全の検査の段の `perfEvidenceScan` で落ちる。JWT の形でない秘密は拾えない）。
+
+```sh
+# summary json（JSON の口）
+node perf/redact-k6-evidence.mjs build/perf-results/<場面>.json <記録の置き場>/evidence/<場面>.json
+# 標準出力・ログ（テキストの口）
+node perf/redact-k6-evidence.mjs --text build/perf-results/<場面>.log <記録の置き場>/evidence/<場面>.log
+```
+
+| 終わりのコード | 意味 |
+|---|---|
+| 0 | 成功（置き換えた件数と出力のパスだけを表示する） |
+| 1 | 呼び出しの誤り（引数の数・出力の置き場が `evidence` の下でない・出力の親が無い・入力と出力が同じ・テキストの口に `.json` の出力や summary json を渡した） |
+| 2 | 入力の誤り（無い・読めない・空・空白だけ・UTF-8 でない・JSON でない・入れ子が深すぎる・64 MiB を超える。テキストの口は NUL を含むもの） |
+| 3 | キーの名前を置き換えると同じオブジェクトの中で名前が重なる |
+| 4 | 置き換えの後の検査で JWT の形（または伏せていない `setup_data` の文字列）が残っていた |
+| 5 | 書き出しの失敗 |
+
+- どの失敗でも、出力のパスは起動の前のまま（無ければ無いまま）で、一時ファイルは残らない。表示には件数・パス・位置・道だけを出し、見つけた値は出さない。
+
+### summary json の対象外（標準出力とログ）
+
+- k6 の標準出力とログは、使い捨ての置き場（git の対象外の `build/perf-results`）にいったん受ける。例: `docker run … "$K6_IMAGE" run … /scripts/scenarios.js > build/perf-results/<場面>.log 2>&1`
+- 記録に置くときは、上の「テキストの口」で置く。中身全体に JSON の口と同じ置き換えを当て、改行（LF・CRLF）・末尾の改行・先頭の BOM はそのまま残す。`setup_data` の伏せ字は当たらない。
+- テキストの口は、出力の拡張子が `.json` のもの（summary json は JSON の口で置く）と、上の階層に `setup_data` を持つ JSON の入力を受け付けない（終わりのコード 1）。
+
+### 置いた後の確かめ
+
+置いたら、次の 2 つでどちらも 0 件であることを確かめてから、記録のコミットを提案する。
+
+```sh
+node perf/redact-k6-evidence.mjs --scan <記録の置き場>/evidence
+gitleaks dir --redact --no-banner --config .gitleaks.toml --exit-code 1 <記録の置き場>/evidence
+```
+
+- `--scan` は、根の下の名前が `evidence` のディレクトリの下のすべてのファイル（`.` で始まる名前を含む）の中身とパスに JWT の形が無いかを調べる。終わりのコードは 0（なし）・1（根が無い）・2（読めない・上限を超える・NUL を含むテキストのファイル）・4（JWT の形を見つけた）。記号のリンクはたどらず、パスだけを表示する。
+- NUL を含んでよいのは、バイナリの拡張子の一覧（`.png`・`.jpg`・`.jpeg`・`.gif`・`.webp`・`.svgz`・`.gz`・`.zip`・`.pdf` の 9 つ）のファイルだけ。これらも JWT の形がそのまま入っていないかは調べる。一覧に足すときは、理由を書いて依頼者の承認を得てから、道具の定数とテストを変える。
+- `./gradlew verify` の安全の検査の段（`perfEvidenceScan`）は、`aidlc` の下のすべての記録に同じ検査を毎回当てる。`gitleaks dir` は verify に入っていないため、この手順で流す。
+
+### 台本の決まり
+
+- 秘密の値（トークン・Cookie・Authorization ヘッダー・招待のトークン・パスワード）は、`setup()` の返す値か VU ごとの状態にだけ持つ。タグの値・check の名前・指標の名前・group の名前と、`console.log`・`fail()` の文言には固定の名前と件数だけを使う。
+- JWT の形でない秘密は、置き換えでも `--scan` でも拾えない。この決まりと `gitleaks dir` に頼る。
+- 今の台本（`perf/k6/scenarios.js`）を読み取りで確かめた結果: リフレッシュトークンの Cookie（`mastersmith_refresh`）は VU ごとの状態にだけ持ち、Authorization ヘッダーは要求のたびに組み立てるため、どちらも summary json に入らない。`setup()` が返すトークンは `setup_data` に入り、`[REDACTED-SETUP]` に置き換わる。`console.log` は件数・VU の番号・試験用の宛先（`example.com`）だけを出す。
+
+### 一時ファイル
+
+- 道具は、出力と同じディレクトリに一時ファイル `.<出力の名前>.<プロセス番号>.<乱数 8 桁の 16 進>.tmp` を作って書き、書き終えてから出力の名前に替える。失敗・中断（`Ctrl+C`・`SIGTERM`）では消す。
+- 強制の終了（`kill -9` など）で残ったときは、中身は検査を通った伏せ済みのものだが、`ls -a` で確かめて `rm` で消す（コミットしない）。`--scan` はこの名前のファイルも調べる。

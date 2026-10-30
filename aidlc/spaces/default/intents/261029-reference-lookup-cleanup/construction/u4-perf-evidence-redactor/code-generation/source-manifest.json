@@ -1,0 +1,28 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-perf-evidence-redactor",
+  "version": 1,
+  "writes": [
+    {
+      "path": "build.gradle.kts"
+    },
+    {
+      "path": "frontend/scripts/check-license-header.mjs"
+    },
+    {
+      "path": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "path": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "path": "frontend/src/perfEvidenceScan.test.ts"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/redact-k6-evidence.mjs"
+    }
+  ]
+}

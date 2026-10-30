@@ -1,0 +1,338 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-perf-evidence-redactor",
+  "upstream_ids": [
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.1.6",
+    "AC4.1.7",
+    "AC4.1.8",
+    "AC4.1.9",
+    "NFR5.61",
+    "NFR5.62",
+    "NFR5.63",
+    "NFR6.61",
+    "NFR7.61",
+    "NFR8.61",
+    "NFR8.62",
+    "NFR8.63",
+    "NFR8.64",
+    "NFR8.65",
+    "NFR8.66",
+    "NFR8.67",
+    "NFR8.68",
+    "NFR8.69",
+    "NFR8.70",
+    "NFR8.71",
+    "NFR9.61",
+    "NFR9.62",
+    "NFR9.63",
+    "NFR9.64",
+    "NFR9.65",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR1.5",
+    "BR1.6",
+    "BR1.7",
+    "BR1.8",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR4.1",
+    "BR4.2",
+    "BR4.3",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR5.4",
+    "BR6.1",
+    "BR6.2"
+  ],
+  "coverage": [
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts（例と性質 (1)〜(5)）・frontend/src/perfEvidenceRedactorCli.test.ts（コード 3）"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts（findResidual・findUnredactedSetup の例）・frontend/src/perfEvidenceRedactorCli.test.ts（checkAndWrite のコード 4）"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（コード 1〜5 の出力のパスの前後と一時ファイル、中断の片付け）"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（コード 1・2、64 MiB の境界）・frontend/src/perfEvidenceScan.test.ts（上限＋1 バイト）"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts（性質 (1)〜(5)・(t1)〜(t3)・定義の突き合わせ、assertProperty の種と道）"
+    },
+    {
+      "id": "AC4.1.6",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md 11節 H2・H4。手元では 3 ファイル 115 件 passed・skipped と todo 0）"
+    },
+    {
+      "id": "AC4.1.7",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceScan.test.ts・build.gradle.kts（perfEvidenceScan を verifySecurity に入れた）・perf/README.md（唯一の入口）"
+    },
+    {
+      "id": "AC4.1.8",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（テキストの口）・frontend/src/perfEvidenceRedactor.test.ts（(t1)〜(t3)）・perf/README.md（標準出力とログの節）"
+    },
+    {
+      "id": "AC4.1.9",
+      "status": "OK",
+      "target": "perf/README.md（台本の決まりと読み取りの結果）・generation-notes.md 5節"
+    },
+    {
+      "id": "NFR5.61",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts（assertProperty が seed・counterexamplePath・numRuns だけを出す）"
+    },
+    {
+      "id": "NFR5.62",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md 11節 H2・H3。手元の verify の frontendTest で流れた）"
+    },
+    {
+      "id": "NFR5.63",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts を変えず、道具だけのカバレッジ 行 94.2%・分岐 90.61%（code-summary.md）"
+    },
+    {
+      "id": "NFR6.61",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts・frontend/src/perfEvidenceScan.test.ts（終わりのコード 0〜5 の例と子のプロセスの例）"
+    },
+    {
+      "id": "NFR7.61",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（引数 2 つの JSON の口・字下げ 2・LF・末尾の改行）"
+    },
+    {
+      "id": "NFR8.61",
+      "status": "OK",
+      "target": "perf/README.md（記録に置く唯一の入口と 2 つの呼び方）"
+    },
+    {
+      "id": "NFR8.62",
+      "status": "OK",
+      "target": "perf/redact-k6-evidence.mjs（redactJwt・redactTree）・frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "NFR8.63",
+      "status": "OK",
+      "target": "perf/redact-k6-evidence.mjs（findResidual・findUnredactedSetup・checkAndWrite）・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "NFR8.64",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md 11節 H1。報告の部品の例のテストは frontend/src/perfEvidenceRedactorCli.test.ts・frontend/src/perfEvidenceScan.test.ts で OK）"
+    },
+    {
+      "id": "NFR8.65",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（出力のパスと一時ファイルの前後、rename の失敗、中断）"
+    },
+    {
+      "id": "NFR8.66",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts・frontend/src/perfEvidenceScan.test.ts（MAX_INPUT_BYTES の境界）"
+    },
+    {
+      "id": "NFR8.67",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts（引数・出力の置き場・同じファイル・記号のリンクのコード 1）"
+    },
+    {
+      "id": "NFR8.68",
+      "status": "OK",
+      "target": "build.gradle.kts（perfEvidenceScan）・frontend/src/perfEvidenceScan.test.ts。CI での確かめは Build and Test（11節 H3）"
+    },
+    {
+      "id": "NFR8.69",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md 11節 H4。手順は perf/README.md）"
+    },
+    {
+      "id": "NFR8.70",
+      "status": "OK",
+      "target": "perf/README.md（台本の決まり）・generation-notes.md 5節（読み取りの確かめ）"
+    },
+    {
+      "id": "NFR8.71",
+      "status": "OK",
+      "target": "完成した JWT の形の検索 0 件と gitleaks dir 0 件（generation-notes.md 1節 Step 19）。統合の後の検索は Build and Test（11節 H6）"
+    },
+    {
+      "id": "NFR9.61",
+      "status": "OK",
+      "target": "perf/redact-k6-evidence.mjs（import は node: だけ）"
+    },
+    {
+      "id": "NFR9.62",
+      "status": "OK",
+      "target": "frontend/package.json・package-lock.json に差なし"
+    },
+    {
+      "id": "NFR9.63",
+      "status": "OK",
+      "target": "frontend/.npmrc に差なし（ignore-scripts のまま）"
+    },
+    {
+      "id": "NFR9.64",
+      "status": "OK",
+      "target": "perf/redact-k6-evidence.mjs（Node 24 の組み込みの口だけ）"
+    },
+    {
+      "id": "NFR9.65",
+      "status": "OK",
+      "target": "perf/redact-k6-evidence.mjs（ライセンスヘッダー）・frontend/scripts/check-license-header.mjs（perf/ の .mjs・.js を検査）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR1.8",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts・frontend/src/perfEvidenceScan.test.ts"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceScan.test.ts・build.gradle.kts"
+    },
+    {
+      "id": "BR4.3",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md 11節 H4。手順は perf/README.md）"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts・frontend/src/perfEvidenceScan.test.ts"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "build.gradle.kts（frontendTest に入る置き場。条件で飛ばす仕組みなし）"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "frontend/src/perfEvidenceRedactor.test.ts・frontend/src/perfEvidenceRedactorCli.test.ts"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "perf/README.md"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "perf/README.md・generation-notes.md 5節"
+    }
+  ]
+}

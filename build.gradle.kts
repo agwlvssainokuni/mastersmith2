@@ -213,6 +213,36 @@ val frontendBundleSize =
         dependsOn(frontendBuild)
     }
 
+// ---- perf の伏せ字の道具（perf/redact-k6-evidence.mjs） ----
+// 道具は frontend/ の外にあるため、frontend/package.json を変えずに、画面と同じ設定のファイルで Prettier と oxlint を呼ぶ
+// （Intent 261029-reference-lookup-cleanup の U4。対象は道具のファイルだけで、ほかの perf/*.mjs には広げない）。
+val perfRedactorTool = "perf/redact-k6-evidence.mjs"
+val perfToolFormatCheck =
+    tasks.register<Exec>("perfToolFormatCheck") {
+        description = "perf の伏せ字の道具のフォーマットを確かめる（Prettier。画面と同じ設定）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(frontendInstall)
+        commandLine(
+            frontendDir.file("node_modules/.bin/prettier").asFile.absolutePath,
+            "--check",
+            "--config",
+            "frontend/.prettierrc.json",
+            perfRedactorTool,
+        )
+    }
+val perfToolLint =
+    tasks.register<Exec>("perfToolLint") {
+        description = "perf の伏せ字の道具のリンタを実行する（oxlint。画面と同じ設定）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(frontendInstall)
+        commandLine(
+            frontendDir.file("node_modules/.bin/oxlint").asFile.absolutePath,
+            "-c",
+            "frontend/.oxlintrc.json",
+            perfRedactorTool,
+        )
+    }
+
 // ---- 安全の検査 ----
 
 val gitleaksScan =
@@ -221,6 +251,15 @@ val gitleaksScan =
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         doFirst { requireTool("gitleaks") }
         commandLine("gitleaks", "git", "--redact", "--no-banner", "--config", ".gitleaks.toml", "--exit-code", "1", ".")
+    }
+
+val perfEvidenceScan =
+    tasks.register<Exec>("perfEvidenceScan") {
+        description = "aidlc/ の下の記録（evidence/）に JWT の形などが残っていないかを調べる（見つかれば失敗）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(checkToolchain)
+        // 入力・出力を宣言しない（毎回流れる）。終わりのコード 0 以外（2 入力の誤り・4 検出など）で失敗する。
+        commandLine("node", perfRedactorTool, "--scan", "aidlc")
     }
 
 val osvReport = layout.buildDirectory.file("reports/osv-scanner/osv.json")
@@ -353,14 +392,23 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyFormat",
-            "1 フォーマット（Spotless・Prettier）",
-            listOf(tasks.named("spotlessCheck"), backendProject.tasks.named("spotlessCheck"), frontendFormatCheck),
+            "1 フォーマット（Spotless・Prettier。Prettier は画面と perf の伏せ字の道具）",
+            listOf(
+                tasks.named("spotlessCheck"),
+                backendProject.tasks.named("spotlessCheck"),
+                frontendFormatCheck,
+                perfToolFormatCheck,
+            ),
         ),
-        Triple("verifyLint", "2 リンタ（oxlint・ESLint・Stylelint）", listOf(frontendLint, frontendLintCss)),
+        Triple(
+            "verifyLint",
+            "2 リンタ（oxlint・ESLint・Stylelint。oxlint は画面と perf の伏せ字の道具）",
+            listOf(frontendLint, frontendLintCss, perfToolLint),
+        ),
         Triple(
             "verifyLicense",
-            "3 ライセンスヘッダー（画面は check-license-header.mjs。Java と Gradle の Kotlin DSL とバックエンドのメールのテンプレート" +
-                "（Mustache のコメントの形）は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）",
+            "3 ライセンスヘッダー（画面と perf/ の .mjs・.js は check-license-header.mjs。Java と Gradle の Kotlin DSL と" +
+                "バックエンドのメールのテンプレート（Mustache のコメントの形）は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）",
             listOf(frontendLicenseCheck),
         ),
         Triple(
@@ -386,8 +434,9 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifySecurity",
-            "8 安全の検査（SpotBugs＋FindSecBugs、OSV-Scanner、Gitleaks。重大度 High 以上で失敗）",
-            listOf(backendProject.tasks.named("spotbugsGate"), osvScan, gitleaksScan),
+            "8 安全の検査（SpotBugs＋FindSecBugs・OSV-Scanner・Gitleaks は重大度 High 以上で失敗。" +
+                "記録（evidence/）の JWT の形の検査は 1 件でも失敗）",
+            listOf(backendProject.tasks.named("spotbugsGate"), osvScan, gitleaksScan, perfEvidenceScan),
         ),
         Triple(
             "verifyArtifact",

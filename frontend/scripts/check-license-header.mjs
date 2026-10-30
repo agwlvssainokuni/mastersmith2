@@ -14,21 +14,25 @@
  * limitations under the License.
  */
 //
-// フロントエンドのソースファイルの先頭に Apache License 2.0 のヘッダーがあるかを確かめる。
+// フロントエンドのソースファイルと perf/ の Node のスクリプトの先頭に Apache License 2.0 のヘッダーがあるかを確かめる。
 // ヘッダーのひな形はリポジトリのルートの config/license-header.txt（Spotless と共通）。
-// - TS・TSX・JS・MJS・CJS・CSS: `/* ... */` の形（`/** ... */` は認めない）
-// - HTML: `<!-- ... -->` の形
-// ヘッダーが無い・形が違うファイルを示して、終了コード 1 で失敗させる。
+// - frontend/ の TS・TSX・JS・MJS・CJS・CSS: `/* ... */` の形（`/** ... */` は認めない）
+// - frontend/ の HTML: `<!-- ... -->` の形
+// - perf/ の MJS・JS: `/* ... */` の形（.sh・.md・.env などは対象にしない）
+// ヘッダーが無い・形が違うファイルを、リポジトリのルートからの相対のパスで示して、終了コード 1 で失敗させる。
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const templatePath = path.resolve(frontendRoot, '..', 'config', 'license-header.txt')
+const repoRoot = path.resolve(frontendRoot, '..')
+const perfRoot = path.join(repoRoot, 'perf')
+const templatePath = path.join(repoRoot, 'config', 'license-header.txt')
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', 'playwright-report', 'test-results'])
 const BLOCK_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.css'])
 const HTML_EXTENSIONS = new Set(['.html'])
+const PERF_EXTENSIONS = new Set(['.mjs', '.js'])
 
 /**
  * ひな形の行から、コメントの形ごとの期待するヘッダーを作る。
@@ -66,9 +70,10 @@ export function checkContent(fileName, content, expected) {
 /**
  * 対象のファイルを集める。
  * @param {string} dir 探すディレクトリ
+ * @param {(ext: string) => boolean} accepts 対象にする拡張子か
  * @returns {string[]} ファイルの絶対パス
  */
-function collectFiles(dir) {
+function collectFiles(dir, accepts) {
   const result = []
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name) || name.startsWith('.')) {
@@ -76,11 +81,8 @@ function collectFiles(dir) {
     }
     const full = path.join(dir, name)
     if (statSync(full).isDirectory()) {
-      result.push(...collectFiles(full))
-    } else if (
-      BLOCK_EXTENSIONS.has(path.extname(name)) ||
-      HTML_EXTENSIONS.has(path.extname(name))
-    ) {
+      result.push(...collectFiles(full, accepts))
+    } else if (accepts(path.extname(name))) {
       result.push(full)
     }
   }
@@ -94,10 +96,14 @@ function main() {
     .split('\n')
   const expected = buildExpectedHeaders(lines)
   const problems = []
-  for (const file of collectFiles(frontendRoot)) {
+  const files = [
+    ...collectFiles(frontendRoot, (ext) => BLOCK_EXTENSIONS.has(ext) || HTML_EXTENSIONS.has(ext)),
+    ...collectFiles(perfRoot, (ext) => PERF_EXTENSIONS.has(ext)),
+  ]
+  for (const file of files) {
     const reason = checkContent(file, readFileSync(file, 'utf8'), expected)
     if (reason) {
-      problems.push(`${path.relative(frontendRoot, file)}: ${reason}`)
+      problems.push(`${path.relative(repoRoot, file)}: ${reason}`)
     }
   }
   if (problems.length > 0) {
