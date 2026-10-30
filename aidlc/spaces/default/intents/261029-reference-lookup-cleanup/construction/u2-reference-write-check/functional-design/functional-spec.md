@@ -79,14 +79,14 @@ NOT NULL のカラム（必須の参照項目）:
 | NULL | 空 | 409 / `NOT_EDITABLE_NOT_NULL` | 409 / `NOT_EDITABLE_NOT_NULL` | 400 / `REQUIRED`（REQUIRED あり）・`NOT_NULL`（なし） |
 | 本文に無い | 空 | 409 / `NOT_EDITABLE_NOT_NULL` | 409 / `NOT_EDITABLE_NOT_NULL` | 400 / `REQUIRED`（REQUIRED あり）。REQUIRED なしは既存の流れのまま保存へ（DB の NOT NULL 違反の既存の変換） |
 
-NULL を許すカラム（必須の参照項目ではない。状態は `check` の結果にだけ効く。LOOKUP は TOO_MANY にならない）:
+NULL を許すカラム（必須の参照項目ではない。U2 は `countState` を呼ばず、件数を読まない。分かれ目は参照先を読めるかだけで、それは `check` の結果にだけ効く）:
 
-| 本文 | 空か値か | NO_PERMISSION | TOO_MANY | AVAILABLE |
-|---|---|---|---|---|
-| `""`（REQUIRED あり） | 空 | 400 / `REQUIRED`（⑨。対象DB を読まない） | 同左 | 同左 |
-| `""`（文字でない型・REQUIRED なし） | 空 | 400 / `INVALID_VALUE`（⑨） | 同左 | 同左 |
-| `""`（文字の型・REQUIRED なし） | 値 | 409 / `REFERENCE_NOT_FOUND`（`check` は問い合わせない） | `check`: 完全一致の行があれば保存、無ければ 409 / `REFERENCE_NOT_FOUND`（件数では拒否しない。D5） | 同左（TOO_MANY と同じ） |
-| NULL | — | 確かめずに保存（REQUIRED ありは 400 / `REQUIRED`） | 同左 | 同左 |
+| 本文 | 空か値か | 参照先を読めない（NO_PERMISSION） | 参照先を読める（件数は読まない。件数がいくつでも同じ） |
+|---|---|---|---|
+| `""`（REQUIRED あり） | 空 | 400 / `REQUIRED`（⑨。対象DB を読まない） | 同左 |
+| `""`（文字でない型・REQUIRED なし） | 空 | 400 / `INVALID_VALUE`（⑨） | 同左 |
+| `""`（文字の型・REQUIRED なし） | 値 | 409 / `REFERENCE_NOT_FOUND`（`check` は問い合わせない） | `check`: 完全一致の行があれば保存、無ければ 409 / `REFERENCE_NOT_FOUND`（件数では拒否しない。D5） |
+| NULL | — | 確かめずに保存（REQUIRED ありは 400 / `REQUIRED`） | 同左 |
 
 更新は必須の参照項目の行き止まりを当てず（BR3.7）、`""` は上の NULL を許すカラムの表と同じく ⑨ の結果に従う。値が更新前と同じなら確かめない（BR2.4）。
 

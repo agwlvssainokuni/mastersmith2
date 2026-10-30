@@ -1,0 +1,62 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-perf-evidence-redactor",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "参照先の読み取りの API のセキュリティで、この単位は API・権限の判定を持たない（この単位のセキュリティは NFR8.61〜NFR8.71）"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "業務データの API の応答時間で、この単位は API を持たない library（入力の大きさの上限は NFR8.66）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "対象DB の接続の数で、この単位は DB に接続しない"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "ピッカーのアクセシビリティで、この単位は画面を持たない"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.61, NFR5.62, NFR5.63"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.61"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.61"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.61, NFR8.62, NFR8.63, NFR8.64, NFR8.65, NFR8.66, NFR8.67, NFR8.68, NFR8.69, NFR8.70, NFR8.71"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.61, NFR9.62, NFR9.63, NFR9.64, NFR9.65"
+    }
+  ]
+}

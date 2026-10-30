@@ -1,0 +1,62 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u3-reference-screens",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "NFR1.41, NFR1.42, NFR1.43, NFR1.44, NFR1.45, NFR1.46, NFR1.47（部分: 画面の側。権限の判定・SQL・ログ・トレースはサーバーの単位 U1・U2）"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "NFR2.41, NFR2.42, NFR2.43, NFR2.44, NFR2.45（部分: 画面の側の要求の数・規模・初回の JavaScript・時間の記録。API の応答時間は U1 の k6）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "この単位は対象DB・内部DB の接続を持たない。1要求の接続の数は U1・U2 の結合テストの受け持ち（画面の要求の数は NFR2.42）"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "NFR4.41, NFR4.42, NFR4.43, NFR4.44, NFR4.45"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.41, NFR5.42, NFR5.43（部分: 画面のテストと E2E。サーバーのカバレッジと結合テストは U1・U2）"
+    },
+    {
+      "id": "NFR6",
+      "status": "OK",
+      "target": "NFR6.41, NFR6.42（部分: 画面の文言。code の固定はサーバーの単位）"
+    },
+    {
+      "id": "NFR7",
+      "status": "OK",
+      "target": "NFR7.41（部分: 定義の応答に足す欄を画面が読み落としても壊れないこと。DSL・内部DB のスキーマは触れない）"
+    },
+    {
+      "id": "NFR8",
+      "status": "N/A",
+      "target": "コンテナの入れ替えと k6 の結果の JWT の伏せ字の要件で、画面の単位は触れない。U4・U5 の受け持ち"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.41"
+    }
+  ]
+}

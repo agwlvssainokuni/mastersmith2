@@ -342,7 +342,7 @@ rules:
     source: FR5.4・AC4.1.8・AC4.1.9
 
   - id: BR6.2
-    statement: k6 の台本は、秘密の値（トークン・Cookie・Authorization ヘッダー・招待のトークン・パスワード）を、setup_data の外に出る所（タグの値・check の名前・指標の名前・group の名前）に入れない
+    statement: k6 の台本は、秘密の値（トークン・Cookie・Authorization ヘッダー・招待のトークン・パスワード）を、setup_data の外に出る所（タグの値・check の名前・指標の名前・group の名前）と標準出力・ログ（console.log の行・誤りの文）に入れない
     category: constraint
     applies_to: perf/k6/scenarios.js（今とこれから足す場面）
     trigger: 場面を足す・変えるとき
@@ -351,6 +351,8 @@ rules:
       指標・タグ・check・group の名前（metrics・root_group。伏せない）である。
       秘密の値は setup_data か VU ごとの状態（setup の外）にだけ持ち、タグの値・check の名前などには固定の名前だけを使う。
       リフレッシュトークンの Cookie は VU ごとの状態にだけ持ち、Authorization ヘッダーは要求のたびに組み立てる（今の台本の形）。
+      秘密の値を console.log や誤りの文で標準出力・ログに出さない（テキストの置換の口 BR1.8 は JWT の形だけを替え、
+      JWT の形でない秘密は置換でも evidence の検査 BR4.2 でも拾えないため。置いた後の gitleaks dir BR4.3 と合わせて守る）。
       IF 秘密の値を setup_data の外に出す必要が出た THEN 置換の対象を広げるかを依頼者に諮る（AC4.1.9）
     violation: 依頼者に諮るまで、その場面の結果を記録に置かない
     source: AC4.1.9・FR5.5・追加の質問 F1: A
@@ -384,4 +386,4 @@ rules:
 | BR5.3 | policy | テストは verify と CI で毎回、飛ばさない | AC4.1.6 |
 | BR5.4 | validation | テキストの置換の口の 3 つの性質（残存 0 件・冪等・JWT の無いテキストは不変）と種の記録 | AC4.1.5・AC4.1.8・R-01 |
 | BR6.1 | policy | perf/README.md の節の中身 | FR5.4・AC4.1.8 |
-| BR6.2 | constraint | 台本は秘密の値を setup_data の外（タグ・check・指標・group の名前）に出さない | AC4.1.9・F1: A |
+| BR6.2 | constraint | 台本は秘密の値を setup_data の外（タグ・check・指標・group の名前）と標準出力・ログに出さない | AC4.1.9・F1: A |

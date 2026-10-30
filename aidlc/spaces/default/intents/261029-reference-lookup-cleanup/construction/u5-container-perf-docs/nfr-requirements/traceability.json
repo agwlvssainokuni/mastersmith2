@@ -1,0 +1,62 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-container-perf-docs",
+  "upstream_ids": [
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5",
+    "NFR6",
+    "NFR7",
+    "NFR8",
+    "NFR9"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1",
+      "status": "N/A",
+      "target": "参照先の読み取りの API のセキュリティで、この単位は API・権限の判定を持たない（この単位のセキュリティは NFR8.81〜NFR8.90・NFR9.81〜NFR9.82）"
+    },
+    {
+      "id": "NFR2",
+      "status": "N/A",
+      "target": "選択肢・ピッカーの応答時間で、この単位は API を持たない packaging（合否の線の値は変えない。NFR8.87・NFR8.88）"
+    },
+    {
+      "id": "NFR3",
+      "status": "N/A",
+      "target": "対象DB の接続の数で、この単位は DB に接続しない"
+    },
+    {
+      "id": "NFR4",
+      "status": "N/A",
+      "target": "ピッカーのアクセシビリティで、この単位は画面を持たない"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "NFR5.81"
+    },
+    {
+      "id": "NFR6",
+      "status": "N/A",
+      "target": "画面の文言と誤りの code の多言語で、この単位は画面・API を持たない"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "DSL と内部DB のスキーマ・定義の応答の互換で、この単位はそれらに触れない"
+    },
+    {
+      "id": "NFR8",
+      "status": "OK",
+      "target": "NFR8.81, NFR8.82, NFR8.83, NFR8.84, NFR8.85, NFR8.86, NFR8.87, NFR8.88, NFR8.89, NFR8.90"
+    },
+    {
+      "id": "NFR9",
+      "status": "OK",
+      "target": "NFR9.81, NFR9.82"
+    }
+  ]
+}
