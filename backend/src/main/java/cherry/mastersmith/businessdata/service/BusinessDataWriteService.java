@@ -24,8 +24,21 @@ import cherry.mastersmith.businessdata.domain.BusinessDataFieldError;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldErrorReason;
 import cherry.mastersmith.businessdata.domain.ColumnAccess;
 import cherry.mastersmith.businessdata.domain.DeadlinePatternMatcher;
+import cherry.mastersmith.businessdata.domain.PreviousReferenceValues;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
+import cherry.mastersmith.businessdata.domain.ReferenceCheckItem;
+import cherry.mastersmith.businessdata.domain.ReferenceCountState;
+import cherry.mastersmith.businessdata.domain.ReferenceFailureReason;
+import cherry.mastersmith.businessdata.domain.ReferenceReadDeadline;
+import cherry.mastersmith.businessdata.domain.ReferenceReadFailure;
+import cherry.mastersmith.businessdata.domain.ReferenceStatus;
+import cherry.mastersmith.businessdata.domain.ReferenceStepOutcome;
+import cherry.mastersmith.businessdata.domain.ReferenceTarget;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
+import cherry.mastersmith.businessdata.domain.ReferenceWritePolicy;
+import cherry.mastersmith.businessdata.domain.RequiredReferenceState;
 import cherry.mastersmith.businessdata.domain.RowKey;
+import cherry.mastersmith.businessdata.domain.RowRecord;
 import cherry.mastersmith.businessdata.domain.RowValues;
 import cherry.mastersmith.businessdata.domain.RowWriteFailure;
 import cherry.mastersmith.businessdata.domain.RowWriteFailureReason;
@@ -40,23 +53,33 @@ import cherry.mastersmith.businessdata.domain.WriteRequestValidator;
 import cherry.mastersmith.businessdata.domain.WriteValidation;
 import cherry.mastersmith.businessdata.repository.ColumnValueCodec;
 import cherry.mastersmith.businessdata.repository.RowChangeResult;
+import cherry.mastersmith.businessdata.repository.RowDetailResult;
 import cherry.mastersmith.businessdata.repository.RowInsertResult;
 import cherry.mastersmith.businessdata.repository.RowInspectResult;
 import cherry.mastersmith.businessdata.repository.RowPrecheckResult;
 import cherry.mastersmith.businessdata.repository.RowSqlExecutor;
+import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import cherry.mastersmith.role.domain.MainPermission;
+import cherry.mastersmith.targetdb.domain.ReadPurpose;
+import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
+import cherry.mastersmith.targetdb.domain.TargetReadSession;
 import cherry.mastersmith.targetdb.domain.TargetWriteFailure;
 import cherry.mastersmith.targetdb.domain.TargetWriteOutcome;
 import cherry.mastersmith.targetdb.domain.TargetWriteSession;
 import cherry.mastersmith.targetdb.domain.TargetWriteStage;
 import cherry.mastersmith.targetdb.domain.WriteStep;
+import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import cherry.mastersmith.targetdb.service.TargetWriteAccess;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -77,6 +100,13 @@ import org.springframework.stereotype.Service;
  *
  * <p>監査の出来事は、書き込みの口から戻った後（対象DB の接続を返した後）か、⑥ で拒んだ直後に出す（BR11.1）。⑥ を残すのは、その操作の
  * 補助権限を持つ人の拒否だけ（NFR4.14）。
+ *
+ * <p>作成・更新では、⑨ と書き込みの口の間に保存前の参照の段を置く（Intent 261029-reference-lookup-cleanup の U2、BR1.1〜BR1.4。
+ * この文書では U2 の機能設計に合わせて「⑩ 保存前の参照の段」、書き込みを「⑪」と呼ぶ）。読むものがあるときだけ {@code REFERENCE} の
+ * 目的で読み取りの接続を1回借り、全体の締め切りで絞った session で更新前の行・必須の参照項目の状態・参照の確かめを順に読み、返して
+ * から書き込みの接続を借りる（BR4.1）。⑩ の対象DB の失敗では、このクラスのロガーで診断の WARN を1行（キーは {@code purpose}
+ * {@code =REFERENCE}・{@code stage}・{@code reason}・あるときだけ {@code sqlState}・{@code vendorCode}・{@code exceptionClass}・
+ * {@code budgetExceeded}）だけ出す（NFR1.32）。参照の拒否と 400 は WARN を出さない。
  */
 @Service
 public class BusinessDataWriteService {
@@ -84,11 +114,18 @@ public class BusinessDataWriteService {
     /** ログの目的の値。 */
     static final String PURPOSE = "WRITE";
 
+    /** 保存前の参照の段のログの目的の値（observability-design.md 2.1）。 */
+    static final String REFERENCE_PURPOSE = "REFERENCE";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessDataWriteService.class);
 
     private final TableAccessResolver resolver;
 
+    private final TargetReadAccess readAccess;
+
     private final TargetWriteAccess writeAccess;
+
+    private final ReferenceLookup lookup;
 
     private final RowSqlExecutor executor;
 
@@ -104,19 +141,25 @@ public class BusinessDataWriteService {
      * 作る。
      *
      * @param resolver 判定の材料を作る口
+     * @param readAccess 業務データの読み取りの口（保存前の参照の段）
      * @param writeAccess 業務データの書き込みの口
+     * @param lookup 他テーブル参照の確かめの口（U1 の {@code check}・{@code countState}）
      * @param executor 行の SQL の部品
      * @param events 出来事の発行
-     * @param clock 出来事の日時と pattern の締め切りの時計
+     * @param clock 出来事の日時・pattern の締め切り・保存前の参照の段の締め切りの時計
      */
     public BusinessDataWriteService(
             TableAccessResolver resolver,
+            TargetReadAccess readAccess,
             TargetWriteAccess writeAccess,
+            ReferenceLookup lookup,
             RowSqlExecutor executor,
             ApplicationEventPublisher events,
             Clock clock) {
         this.resolver = resolver;
+        this.readAccess = readAccess;
         this.writeAccess = writeAccess;
+        this.lookup = lookup;
         this.executor = executor;
         this.events = events;
         this.clock = clock;
@@ -140,7 +183,8 @@ public class BusinessDataWriteService {
         if (resolution instanceof TableAccessResolution.Rejected rejected) {
             return WriteResult.Rejected.of(fromRead(rejected.rejection()));
         }
-        TableAccessView view = ((TableAccessResolution.Resolved) resolution).view();
+        TableAccessResolution.Resolved resolved = (TableAccessResolution.Resolved) resolution;
+        TableAccessView view = resolved.view();
         // ⑤ 定義の識別が無い・今と違う（書き込みは識別を必須にする。BR1.5）。
         if (request.query().definitionId() == null
                 || view.definitionId().changedFrom(request.query().definitionId())) {
@@ -161,14 +205,32 @@ public class BusinessDataWriteService {
         if (!view.writeConfigured() || !view.allows(operation.allowedOperation())) {
             return WriteResult.Rejected.of(WriteRejection.WRITE_NOT_CONFIGURED);
         }
-        // ⑨ 入力の誤り（BR2〜BR4）。
-        WriteValidation validation =
-                WriteRequestValidator.validate(view, operation, request.key(), request.values(), codec, matcher);
+        // 参照のカラムと参照先（DSL から引く。対象DB を読まない。U2 の BR2.1）。
+        Map<String, ReferenceTarget> targets =
+                operation == WriteOperation.DELETE ? Map.of() : lookup.writeTargets(resolved);
+        Map<String, ReferenceStatus> required = requiredReferences(resolved, operation, targets);
+        // ⑨ 入力の誤り（BR2〜BR4。作成の必須の参照項目の空の誤りは保留する。U2 の BR3.6）。
+        WriteValidation validation = WriteRequestValidator.validate(
+                view, operation, request.key(), request.values(), codec, matcher, holdOf(required));
         if (validation instanceof WriteValidation.Invalid invalid) {
             return new WriteResult.Rejected(WriteRejection.VALIDATION_FAILED, invalid.errors());
         }
         WriteValidation.Valid valid = (WriteValidation.Valid) validation;
-        // ⑩ 書き込みの口を1回だけ呼ぶ。
+        // ⑩ 保存前の参照の段（U2 の BR1.1〜BR1.4。読むものが無ければ接続を借りない）。
+        if (operation != WriteOperation.DELETE) {
+            Optional<ReferenceStepOutcome> step = referenceStep(resolved, operation, valid, targets, required);
+            if (step.isPresent() && !(step.get() instanceof ReferenceStepOutcome.Proceed)) {
+                return reject(
+                        userId,
+                        view,
+                        operation,
+                        valid,
+                        ReferenceWritePolicy.rejectionOf(step.get()),
+                        ReferenceWritePolicy.fieldErrorsOf(step.get()),
+                        origin);
+            }
+        }
+        // ⑪ 書き込みの口を1回だけ呼ぶ。
         TargetWriteOutcome<Attempt> outcome = writeAccess.withWrite(session -> work(session, view, operation, valid));
         Attempt attempt = attemptOf(outcome);
         if (attempt instanceof Attempt.Unexpected unexpected) {
@@ -181,6 +243,320 @@ public class BusinessDataWriteService {
             throw new BusinessDataUnexpectedException();
         }
         return finish(userId, view, operation, valid, attempt, origin);
+    }
+
+    /**
+     * 作成の必須の参照項目（参照のカラムで、作成で入力でき、NULL を許さないもの。U2 の BR3.1）と、参照先を読めるか（同じ写しで判定。
+     * 対象DB を読まない）。並びは DSL の並び。作成でなければ空。
+     */
+    private Map<String, ReferenceStatus> requiredReferences(
+            TableAccessResolution.Resolved resolved, WriteOperation operation, Map<String, ReferenceTarget> targets) {
+        Map<String, ReferenceStatus> required = new LinkedHashMap<>();
+        if (operation != WriteOperation.CREATE) {
+            return required;
+        }
+        TableAccessView view = resolved.view();
+        targets.forEach((column, target) -> {
+            boolean editable =
+                    view.column(column).map(ColumnAccess::editableOnCreate).orElse(false);
+            boolean notNull =
+                    view.writeRules(column).map(rules -> !rules.nullable()).orElse(false);
+            if (editable && notNull) {
+                required.put(column, lookup.accessOf(resolved, target));
+            }
+        });
+        return required;
+    }
+
+    /** ⑨ で保留するカラム（必須の参照項目）と、ほかに誤りがあれば保留した誤りを落とすカラム（読めない参照先。U2 の BR3.6）。 */
+    private static WriteRequestValidator.Hold holdOf(Map<String, ReferenceStatus> required) {
+        Set<String> dropped = new HashSet<>();
+        required.forEach((column, status) -> {
+            if (status == ReferenceStatus.NO_PERMISSION) {
+                dropped.add(column);
+            }
+        });
+        return new WriteRequestValidator.Hold(required.keySet(), dropped);
+    }
+
+    /**
+     * ⑩ 保存前の参照の段（U2 の BR1.2〜BR1.4・BR2・BR3・BR4）。読むものが無ければ接続を借りずに空を返す。読むものがあれば
+     * {@code REFERENCE} の目的で読み取りの接続を1回借り、中の結果を例外を投げずに返す。借りられない・失敗は診断の WARN を1行出す。
+     *
+     * @return ⑩ の結果（読むものが無ければ空）
+     * @throws BusinessDataUnexpectedException 想定外の失敗（メッセージも原因も持たない）
+     */
+    private Optional<ReferenceStepOutcome> referenceStep(
+            TableAccessResolution.Resolved resolved,
+            WriteOperation operation,
+            WriteValidation.Valid valid,
+            Map<String, ReferenceTarget> targets,
+            Map<String, ReferenceStatus> required) {
+        Map<String, TypedValue> bodyReferences = new LinkedHashMap<>();
+        for (TypedValue value : valid.values()) {
+            if (targets.containsKey(value.column()) && value.value().value() != null) {
+                bodyReferences.put(value.column(), value);
+            }
+        }
+        if (bodyReferences.isEmpty() && required.isEmpty()) {
+            // 読むものが無ければ借りない（U2 の BR1.2）。
+            return Optional.empty();
+        }
+        TargetReadOutcome<Optional<ReferenceStepOutcome>> outcome =
+                readAccess.withRead(ReadPurpose.REFERENCE, session -> {
+                    try {
+                        return Optional.of(
+                                operation == WriteOperation.CREATE
+                                        ? createStep(session, resolved, valid, targets, required, bodyReferences)
+                                        : updateStep(session, resolved, valid, targets, bodyReferences));
+                    } catch (BusinessDataUnexpectedException e) {
+                        // 写さない失敗（INVALID_VALUE・UNEXPECTED）は口の外で想定外にする（reliability-design.md 2節）。
+                        return Optional.empty();
+                    }
+                });
+        ReferenceStepOutcome step =
+                switch (outcome) {
+                    case TargetReadOutcome.NotConfigured<Optional<ReferenceStepOutcome>> notConfigured -> {
+                        warnReference(
+                                ReferenceStepOutcome.Stage.BORROW,
+                                ReferenceFailureReason.UNAVAILABLE,
+                                null,
+                                null,
+                                null,
+                                false);
+                        // 例外の値が無いため失敗の値を作らず、借りられないときと同じ拒否にする（reliability-design.md 2節）。
+                        yield new ReferenceStepOutcome.Failed(
+                                new ReferenceReadFailure(
+                                        ReferenceFailureReason.UNAVAILABLE,
+                                        null,
+                                        null,
+                                        TargetReadOutcome.NotConfigured.class.getName(),
+                                        false),
+                                ReferenceStepOutcome.Stage.BORROW);
+                    }
+                    case TargetReadOutcome.Unavailable<Optional<ReferenceStepOutcome>> unavailable -> {
+                        warnReference(
+                                ReferenceStepOutcome.Stage.BORROW,
+                                ReferenceFailureReason.UNAVAILABLE,
+                                unavailable.sqlState(),
+                                unavailable.vendorCode(),
+                                unavailable.exceptionClass(),
+                                false);
+                        yield new ReferenceStepOutcome.Failed(
+                                new ReferenceReadFailure(
+                                        ReferenceFailureReason.UNAVAILABLE,
+                                        unavailable.sqlState(),
+                                        unavailable.vendorCode(),
+                                        unavailable.exceptionClass(),
+                                        false),
+                                ReferenceStepOutcome.Stage.BORROW);
+                    }
+                    case TargetReadOutcome.Done<Optional<ReferenceStepOutcome>> done -> {
+                        ReferenceStepOutcome value = done.value().orElseThrow(BusinessDataUnexpectedException::new);
+                        if (value instanceof ReferenceStepOutcome.Failed failed) {
+                            ReferenceReadFailure f = failed.failure();
+                            warnReference(
+                                    failed.stage(),
+                                    f.reason(),
+                                    f.sqlState(),
+                                    f.vendorCode(),
+                                    f.exceptionClass(),
+                                    f.budgetExceeded());
+                        }
+                        yield value;
+                    }
+                };
+        return Optional.of(step);
+    }
+
+    /**
+     * 作成の ⑩（借りた接続の中）。必須の参照項目の状態（REFERENCE は参照先ごとに1回の {@code countState}、LOOKUP と読めない参照先は
+     * 問い合わせない。U2 の BR3.2・BR4.7）→ 確かめ（DSL の並びで {@code check} を順に。BR2.2・BR2.7）。失敗はその場で止める（BR4.5）。
+     */
+    private ReferenceStepOutcome createStep(
+            TargetReadSession session,
+            TableAccessResolution.Resolved resolved,
+            WriteValidation.Valid valid,
+            Map<String, ReferenceTarget> targets,
+            Map<String, ReferenceStatus> required,
+            Map<String, TypedValue> bodyReferences) {
+        ReferenceReadDeadline deadline = ReferenceReadDeadline.start(clock, readAccess.referenceReadTotal());
+        List<ReferenceStepOutcome> partials = new ArrayList<>();
+        Map<String, ReferenceStatus> countByTarget = new HashMap<>();
+        Set<String> toCheckRequired = new HashSet<>();
+        for (Map.Entry<String, ReferenceStatus> entry : required.entrySet()) {
+            String column = entry.getKey();
+            ReferenceTarget target = targets.get(column);
+            ReferenceStatus status = entry.getValue();
+            if (status == ReferenceStatus.AVAILABLE && target.kind() == OptionSourceKind.REFERENCE) {
+                String key = target.schema() + "\u0000" + target.table() + "\u0000" + target.valueColumn();
+                ReferenceStatus counted = countByTarget.get(key);
+                if (counted == null) {
+                    Optional<TargetReadSession> narrowed = deadline.narrow(session);
+                    if (narrowed.isEmpty()) {
+                        return new ReferenceStepOutcome.Failed(
+                                ReferenceReadFailure.ofBudgetExceeded(), ReferenceStepOutcome.Stage.COUNT_STATE);
+                    }
+                    ReferenceCountState state = lookup.countState(resolved, column, narrowed.get());
+                    if (state instanceof ReferenceCountState.Failed failed) {
+                        return new ReferenceStepOutcome.Failed(
+                                failed.failure(), ReferenceStepOutcome.Stage.COUNT_STATE);
+                    }
+                    counted = ReferenceWritePolicy.statusOf(state);
+                    countByTarget.put(key, counted);
+                }
+                status = counted;
+            }
+            boolean hasValue = bodyReferences.containsKey(column);
+            List<BusinessDataFieldError> held =
+                    valid.held().stream().filter(e -> e.field().equals(column)).toList();
+            RequiredReferenceState state = new RequiredReferenceState(
+                    column,
+                    status,
+                    hasValue ? RequiredReferenceState.BodyState.VALUE : RequiredReferenceState.BodyState.EMPTY);
+            ReferenceWritePolicy.RequiredDecision decision = ReferenceWritePolicy.decide(state, !held.isEmpty());
+            if (decision == ReferenceWritePolicy.RequiredDecision.CHECK) {
+                toCheckRequired.add(column);
+            } else {
+                partials.add(ReferenceWritePolicy.ofDecision(column, decision, held));
+            }
+        }
+        List<ReferenceCheckItem> items = new ArrayList<>();
+        for (Map.Entry<String, ReferenceTarget> entry : targets.entrySet()) {
+            String column = entry.getKey();
+            TypedValue value = bodyReferences.get(column);
+            if (value == null) {
+                continue;
+            }
+            if (required.containsKey(column) && !toCheckRequired.contains(column)) {
+                continue;
+            }
+            items.add(new ReferenceCheckItem(
+                    column,
+                    entry.getValue(),
+                    new ReferenceValue(ColumnValueCodec.format(value.value())),
+                    required.containsKey(column)
+                            ? ReferenceCheckItem.Origin.CREATE_REQUIRED
+                            : ReferenceCheckItem.Origin.CREATE));
+        }
+        return check(session, resolved, deadline, items, partials);
+    }
+
+    /**
+     * 更新の ⑩（借りた接続の中）。同じ締め切りで絞った session で更新前の行を読み（0 行・2行以上は参照の拒否より先。U2 の BR2.6）、
+     * 値が変わった NULL でない参照だけを確かめる（BR2.4・BR2.5）。
+     */
+    private ReferenceStepOutcome updateStep(
+            TargetReadSession session,
+            TableAccessResolution.Resolved resolved,
+            WriteValidation.Valid valid,
+            Map<String, ReferenceTarget> targets,
+            Map<String, TypedValue> bodyReferences) {
+        ReferenceReadDeadline deadline = ReferenceReadDeadline.start(clock, readAccess.referenceReadTotal());
+        Optional<TargetReadSession> narrowed = deadline.narrow(session);
+        if (narrowed.isEmpty()) {
+            return new ReferenceStepOutcome.Failed(
+                    ReferenceReadFailure.ofBudgetExceeded(), ReferenceStepOutcome.Stage.PREVIOUS_ROW);
+        }
+        TableAccessView view = resolved.view();
+        PreviousReferenceValues previous;
+        switch (executor.detail(narrowed.get(), view, valid.key())) {
+            case RowDetailResult.Found found -> previous = previousValues(view, found.row(), bodyReferences);
+            case RowDetailResult.NotFound notFound -> {
+                return new ReferenceStepOutcome.RowMissing(WriteRejection.ROW_NOT_FOUND);
+            }
+            case RowDetailResult.NotUnique notUnique -> {
+                return new ReferenceStepOutcome.RowMissing(WriteRejection.ROW_NOT_UNIQUE);
+            }
+            case RowDetailResult.Failed failed -> {
+                try {
+                    return new ReferenceStepOutcome.Failed(
+                            ReferenceReadFailure.of(failed.failure()), ReferenceStepOutcome.Stage.PREVIOUS_ROW);
+                } catch (IllegalArgumentException e) {
+                    throw new BusinessDataUnexpectedException();
+                }
+            }
+        }
+        List<ReferenceCheckItem> items = new ArrayList<>();
+        for (Map.Entry<String, ReferenceTarget> entry : targets.entrySet()) {
+            TypedValue value = bodyReferences.get(entry.getKey());
+            if (value == null
+                    || ReferenceWritePolicy.unchanged(
+                            previous.previous(entry.getKey()).orElse(null), value.value())) {
+                continue;
+            }
+            items.add(new ReferenceCheckItem(
+                    entry.getKey(),
+                    entry.getValue(),
+                    new ReferenceValue(ColumnValueCodec.format(value.value())),
+                    ReferenceCheckItem.Origin.UPDATE_CHANGED));
+        }
+        return check(session, resolved, deadline, items, new ArrayList<>());
+    }
+
+    /** 更新前の行から、本文に入っている参照のカラムの値を読む（切られた・読めない値は持たない。U2 の BR2.5）。 */
+    private PreviousReferenceValues previousValues(
+            TableAccessView view, RowRecord row, Map<String, TypedValue> bodyReferences) {
+        Map<String, BoundValue> readable = new LinkedHashMap<>();
+        for (String column : bodyReferences.keySet()) {
+            String text;
+            if (row.values().values().containsKey(column)) {
+                if (row.values().truncatedColumns().contains(column)) {
+                    continue;
+                }
+                text = row.values().values().get(column);
+            } else if (row.key() != null && row.key().values().containsKey(column)) {
+                text = row.key().values().get(column);
+            } else {
+                continue;
+            }
+            Optional<ColumnAccess> access = view.column(column);
+            if (text == null || access.isEmpty()) {
+                continue;
+            }
+            codec.read(access.get(), text).ifPresent(value -> readable.put(column, value));
+        }
+        return new PreviousReferenceValues(readable);
+    }
+
+    /** 確かめる参照を順に {@code check} に渡す（各文の前に締め切りで絞る。失敗でその場で止める。U2 の BR2.7・BR4.5）。 */
+    private ReferenceStepOutcome check(
+            TargetReadSession session,
+            TableAccessResolution.Resolved resolved,
+            ReferenceReadDeadline deadline,
+            List<ReferenceCheckItem> items,
+            List<ReferenceStepOutcome> partials) {
+        for (ReferenceCheckItem item : items) {
+            Optional<TargetReadSession> narrowed = deadline.narrow(session);
+            if (narrowed.isEmpty()) {
+                return new ReferenceStepOutcome.Failed(
+                        ReferenceReadFailure.ofBudgetExceeded(), ReferenceStepOutcome.Stage.CHECK);
+            }
+            ReferenceStepOutcome partial = ReferenceWritePolicy.ofCheck(
+                    item.column(), lookup.check(resolved, item.column(), item.value(), narrowed.get()));
+            if (partial instanceof ReferenceStepOutcome.Failed) {
+                return partial;
+            }
+            partials.add(partial);
+        }
+        return ReferenceWritePolicy.combine(partials);
+    }
+
+    /** ⑩ の拒否を応答にする（監査は読み取りの接続を返した後。400 は残さない。U2 の BR1.4・BR5.1〜BR5.3）。 */
+    private WriteResult reject(
+            long userId,
+            TableAccessView view,
+            WriteOperation operation,
+            WriteValidation.Valid valid,
+            WriteRejection rejection,
+            List<BusinessDataFieldError> fieldErrors,
+            WriteOrigin origin) {
+        Optional<BusinessDataAuditReason> reason = BusinessDataAuditReason.of(rejection);
+        if (reason.isPresent()) {
+            Map<String, String> key = operation == WriteOperation.CREATE ? Map.of() : keyText(valid.key());
+            publish(userId, view, operation, reason.get(), key, origin);
+        }
+        return new WriteResult.Rejected(rejection, fieldErrors);
     }
 
     /** 書き込みの口に渡す処理（例外を投げずに答えを返す）。 */
@@ -493,6 +869,30 @@ public class BusinessDataWriteService {
                 .addKeyValue("vendorCode", vendorCode)
                 .addKeyValue("exceptionClass", exceptionClass)
                 .log("対象DB の業務データを書き込めませんでした");
+    }
+
+    /** ⑩ の診断の WARN を1行だけ出す（キーと値だけ。名前・値・メッセージを出さない。U2 の NFR1.32）。 */
+    private static void warnReference(
+            ReferenceStepOutcome.Stage stage,
+            ReferenceFailureReason reason,
+            String sqlState,
+            Integer vendorCode,
+            String exceptionClass,
+            boolean budgetExceeded) {
+        var log = LOGGER.atWarn()
+                .addKeyValue("purpose", REFERENCE_PURPOSE)
+                .addKeyValue("stage", stage)
+                .addKeyValue("reason", reason);
+        if (sqlState != null) {
+            log = log.addKeyValue("sqlState", sqlState);
+        }
+        if (vendorCode != null) {
+            log = log.addKeyValue("vendorCode", vendorCode);
+        }
+        if (exceptionClass != null) {
+            log = log.addKeyValue("exceptionClass", exceptionClass);
+        }
+        log.addKeyValue("budgetExceeded", budgetExceeded).log("保存の前に対象DB の参照先を読めませんでした");
     }
 
     /** 書き込みの口の中の処理の結果（口の外へは値を伏せた形で戻す）。 */

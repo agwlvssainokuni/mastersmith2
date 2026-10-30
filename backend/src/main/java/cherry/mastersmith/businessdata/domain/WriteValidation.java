@@ -26,18 +26,32 @@ public sealed interface WriteValidation {
      *
      * @param values 型つきの値（送った順。作成は送ったカラムだけ、更新は変えたカラムだけ、削除は空）
      * @param key 型として読んだ主キー（更新・削除。作成では null）
+     * @param held 保留した誤り（作成の必須の参照項目の空の誤り。Intent 261029-reference-lookup-cleanup の U2、BR3.6。保留が無ければ
+     *     空）
      */
-    record Valid(List<TypedValue> values, RowKey key) implements WriteValidation {
+    record Valid(List<TypedValue> values, RowKey key, List<BusinessDataFieldError> held) implements WriteValidation {
 
         /** 一覧を変更できないものにする。 */
         public Valid {
             values = List.copyOf(values);
+            held = held == null ? List.of() : List.copyOf(held);
         }
 
-        /** カラムの数だけを出す。 */
+        /**
+         * 保留した誤りの無い結果を作る。
+         *
+         * @param values 型つきの値
+         * @param key 型として読んだ主キー
+         */
+        public Valid(List<TypedValue> values, RowKey key) {
+            this(values, key, List.of());
+        }
+
+        /** カラムの数だけを出す（保留した誤りがあるときだけ、その数を足す）。 */
         @Override
         public String toString() {
-            return "Valid[values=" + values.size() + ", key=" + key + "]";
+            return "Valid[values=" + values.size() + ", key=" + key + (held.isEmpty() ? "" : ", held=" + held.size())
+                    + "]";
         }
     }
 

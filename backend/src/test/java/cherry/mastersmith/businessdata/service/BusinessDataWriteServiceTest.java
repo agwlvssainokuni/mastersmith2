@@ -107,12 +107,16 @@ class BusinessDataWriteServiceTest {
     @BeforeEach
     void setUp() {
         ports.resolver.snapshot = snapshot(MainPermission.FULL, true, true, Map.of());
+        TableAccessResolver resolver = new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess);
+        Clock clock = Clock.fixed(Instant.parse("2026-10-20T00:00:00Z"), ZoneOffset.UTC);
         service = new BusinessDataWriteService(
-                new TableAccessResolver(ports.resolver, ports.readAccess, ports.writeAccess),
+                resolver,
+                ports.readAccess,
                 ports.writeAccess,
+                new ReferenceLookup(resolver, ports.readAccess, ports.executor, clock),
                 ports.executor,
                 ports.publisher,
-                Clock.fixed(Instant.parse("2026-10-20T00:00:00Z"), ZoneOffset.UTC));
+                clock);
     }
 
     private static PermissionSnapshot snapshot(

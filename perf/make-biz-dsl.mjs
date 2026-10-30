@@ -28,6 +28,9 @@
 //   biz_code200・biz_code201: REFERENCE の参照先（code・name。ちょうど 200 行と 201 行）。
 //   biz_refsrc200・biz_refsrc201: code が biz_code200・biz_code201 を指す REFERENCE（値 code・ラベル name。部品は select）。
 //   biz_refpick: item_id が biz_item を指す LOOKUP（値 id・ラベル c_007。検索は id の完全一致と c_010 の部分一致、一覧は c_007・c_001）。
+// 他テーブル参照の保存前の確かめの場面（Intent 261029-reference-lookup-cleanup の U2、Bolt B3。NFR2.21〜NFR2.24）:
+//   biz_refcreate: 主キー id は自動の採番で必須にしない、code は biz_code200 を指す NOT NULL の REFERENCE（値 code・ラベル name。
+//                  部品は select）。biz_new の ref_id には参照の options を足さない（NFR2.23）。
 // メニューは表を1つずつ指す。Node の標準の部品だけを使い、指定した出力のファイル（build/ の下など）にだけ書く。
 //   node perf/make-biz-dsl.mjs <postgres|mysql|mariadb> <出力のファイル>
 import { writeFileSync } from 'node:fs'
@@ -171,6 +174,7 @@ const TABLES = [
   ['biz_refsrc200', '参照元の表（200 行の参照先）'],
   ['biz_refsrc201', '参照元の表（201 行の参照先）'],
   ['biz_refpick', '参照元の表（ピッカー）'],
+  ['biz_refcreate', '参照元の表（保存前の確かめ）'],
 ]
 
 push(0, '# 業務データの負荷の試験の DSL（perf/make-biz-dsl.mjs で作った。値はすべて架空）')
@@ -302,6 +306,27 @@ table('biz_refpick', TABLES[9][1], ['id'], () => {
         { column: 'c_001', order: 2 },
       ],
     },
+  })
+})
+
+// 他テーブル参照の保存前の確かめの場面の表（U2）
+table('biz_refcreate', TABLES[10][1], ['id'], () => {
+  column('id', '番号', typeOf('int', 0), {
+    nullable: false,
+    required: false,
+    search: 'EQUALS',
+    order: 1,
+    sortable: true,
+    defaultSort: 'ASC',
+  })
+  column('code', 'コード', typeOf('varchar', 0), {
+    nullable: false,
+    search: null,
+    order: 2,
+    sortable: false,
+    defaultSort: null,
+    formPart: 'select',
+    options: { source: 'REFERENCE', table: 'biz_code200', valueColumn: 'code', labelColumn: 'name' },
   })
 })
 

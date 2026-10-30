@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -63,11 +64,43 @@ public final class WriteRequestValidator {
             WriteValues values,
             ColumnValueReader reader,
             DeadlinePatternMatcher matcher) {
+        return validate(view, operation, key, values, reader, matcher, Hold.NONE);
+    }
+
+    /**
+     * 作成の必須の参照項目の空の誤りを保留して要求を確かめる（Intent 261029-reference-lookup-cleanup の U2、BR3.6）。
+     *
+     * <p>保留するのは、作成で {@link Hold#columns()} のカラムが空（本文に無い・null・空文字列）のときに出る {@code REQUIRED}・
+     * {@code NOT_NULL}・{@code INVALID_VALUE} の誤りだけ（空でない不正な値の誤りは保留しない）。ほかのカラムに誤りがあれば、
+     * {@link Hold#droppedOnInvalid()} のカラムの保留した誤りを落とし、残りの保留した誤りを元の位置に並べて
+     * {@link WriteValidation.Invalid} を返す。保留した誤りしか無ければ、{@link WriteValidation.Valid#held()} に入れて返す。更新・削除では
+     * 保留しない。
+     *
+     * @param view 判定の材料（その操作が許されるもの）
+     * @param operation 操作
+     * @param key 本文の主キー（更新・削除）
+     * @param values 本文の値（作成・更新）
+     * @param reader 文字をカラムの型として読む口
+     * @param matcher 締め切りつきの正規表現の照合
+     * @param hold 保留するカラム
+     * @return 確かめの結果
+     */
+    public static WriteValidation validate(
+            TableAccessView view,
+            WriteOperation operation,
+            KeyInput key,
+            WriteValues values,
+            ColumnValueReader reader,
+            DeadlinePatternMatcher matcher,
+            Hold hold) {
         Objects.requireNonNull(view, "view は必須です");
         Objects.requireNonNull(operation, "operation は必須です");
         Objects.requireNonNull(reader, "reader は必須です");
         Objects.requireNonNull(matcher, "matcher は必須です");
+        Objects.requireNonNull(hold, "hold は必須です");
+        Hold active = operation == WriteOperation.CREATE ? hold : Hold.NONE;
         List<BusinessDataFieldError> errors = new ArrayList<>();
+        List<BusinessDataFieldError> heldErrors = new ArrayList<>();
         RowKey rowKey = null;
         if (operation != WriteOperation.CREATE) {
             KeyValidation keyValidation = SearchRequestValidator.validateKey(view, key, reader);
@@ -96,7 +129,12 @@ public final class WriteRequestValidator {
                 }
                 switch (check(column.get(), rules.get(), entry.getValue(), reader, matcher, dslHash, budget)) {
                     case Checked.Ok ok -> typed.add(ok.value());
-                    case Checked.Error error -> errors.add(error.error());
+                    case Checked.Error error -> {
+                        errors.add(error.error());
+                        if (active.holds(name, entry.getValue(), error.error().reason())) {
+                            heldErrors.add(error.error());
+                        }
+                    }
                 }
             }
         }
@@ -108,14 +146,56 @@ public final class WriteRequestValidator {
                         && rules.get().required()
                         && !values.values().containsKey(column.column())) {
                     // DB 由来・人が足した必須のどちらも、作成で送られなければ誤りにする（BR3.3、機能設計の X5）。
-                    errors.add(new BusinessDataFieldError(column.column(), BusinessDataFieldErrorReason.REQUIRED));
+                    BusinessDataFieldError error =
+                            new BusinessDataFieldError(column.column(), BusinessDataFieldErrorReason.REQUIRED);
+                    errors.add(error);
+                    if (active.columns().contains(column.column())) {
+                        heldErrors.add(error);
+                    }
                 }
             }
         }
-        if (!errors.isEmpty()) {
-            return new WriteValidation.Invalid(errors);
+        if (errors.size() > heldErrors.size()) {
+            // ほかに誤りがあれば、読めない参照先のカラムの保留した誤りを落とし、残りを元の位置のまま返す（BR3.6）。
+            List<BusinessDataFieldError> shown = new ArrayList<>();
+            for (BusinessDataFieldError error : errors) {
+                boolean dropped = heldErrors.stream().anyMatch(h -> h == error)
+                        && active.droppedOnInvalid().contains(error.field());
+                if (!dropped) {
+                    shown.add(error);
+                }
+            }
+            return new WriteValidation.Invalid(shown);
         }
-        return new WriteValidation.Valid(typed, rowKey);
+        return new WriteValidation.Valid(typed, rowKey, heldErrors);
+    }
+
+    /**
+     * 作成の必須の参照項目の空の誤りを保留するカラム（Intent 261029-reference-lookup-cleanup の U2、BR3.6）。
+     *
+     * @param columns 保留するカラム（作成の必須の参照項目）
+     * @param droppedOnInvalid ほかに誤りがあるときに保留した誤りを落とすカラム（参照先が読めない {@code NO_PERMISSION} のもの）
+     */
+    public record Hold(Set<String> columns, Set<String> droppedOnInvalid) {
+
+        /** 何も保留しない。 */
+        public static final Hold NONE = new Hold(Set.of(), Set.of());
+
+        /** 集合を変更できないものにする。 */
+        public Hold {
+            columns = Set.copyOf(Objects.requireNonNull(columns, "columns は必須です"));
+            droppedOnInvalid = Set.copyOf(Objects.requireNonNull(droppedOnInvalid, "droppedOnInvalid は必須です"));
+        }
+
+        /** 本文の値が空（null・空文字列）のときに出た、空の誤りだけを保留する。 */
+        boolean holds(String column, String text, BusinessDataFieldErrorReason reason) {
+            boolean empty = text == null || text.isEmpty();
+            return columns.contains(column)
+                    && empty
+                    && (reason == BusinessDataFieldErrorReason.REQUIRED
+                            || reason == BusinessDataFieldErrorReason.NOT_NULL
+                            || reason == BusinessDataFieldErrorReason.INVALID_VALUE);
+        }
     }
 
     private static boolean editable(ColumnAccess column, WriteOperation operation) {

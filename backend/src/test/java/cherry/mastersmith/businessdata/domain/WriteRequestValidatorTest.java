@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -405,5 +406,109 @@ class WriteRequestValidatorTest {
                         CODEC,
                         new DeadlinePatternMatcher(Clock.systemUTC()))))
                 .containsExactly(new BusinessDataFieldError("k", BusinessDataFieldErrorReason.INVALID_VALUE));
+    }
+
+    // ── 作成の必須の参照項目の空の誤りの保留（Intent 261029-reference-lookup-cleanup の U2、BR3.6） ──
+
+    private static WriteValidation createHeld(Map<String, String> values, Set<String> held, Set<String> dropped) {
+        return WriteRequestValidator.validate(
+                view(),
+                WriteOperation.CREATE,
+                null,
+                new WriteValues(values),
+                CODEC,
+                new DeadlinePatternMatcher(Clock.systemUTC()),
+                new WriteRequestValidator.Hold(held, dropped));
+    }
+
+    private static Map<String, String> withManual(String... pairs) {
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("manual", "x");
+        for (int i = 0; i < pairs.length; i += 2) {
+            values.put(pairs[i], pairs[i + 1]);
+        }
+        return values;
+    }
+
+    @Test
+    @DisplayName("an absent, null or empty required column is held and the result is Valid with the held error")
+    void holdsEmptyRequired() {
+        for (Map<String, String> values : List.of(withManual(), withManual("name", null), withManual("name", ""))) {
+            WriteValidation result = createHeld(values, Set.of("name"), Set.of());
+
+            assertThat(result).isInstanceOf(WriteValidation.Valid.class);
+            assertThat(((WriteValidation.Valid) result).held())
+                    .containsExactly(new BusinessDataFieldError("name", BusinessDataFieldErrorReason.REQUIRED));
+        }
+    }
+
+    @Test
+    @DisplayName("an empty non string value and a null in a NOT NULL column are held, a non empty bad value is not")
+    void holdsOnlyEmptyErrors() {
+        WriteValidation emptyNumber = createHeld(required("qty", ""), Set.of("qty"), Set.of());
+        WriteValidation nullStrict = createHeld(required("strict", null), Set.of("strict"), Set.of());
+        WriteValidation badNumber = createHeld(required("qty", "abc"), Set.of("qty"), Set.of());
+
+        assertThat(((WriteValidation.Valid) emptyNumber).held())
+                .containsExactly(new BusinessDataFieldError("qty", BusinessDataFieldErrorReason.INVALID_VALUE));
+        assertThat(((WriteValidation.Valid) nullStrict).held())
+                .containsExactly(new BusinessDataFieldError("strict", BusinessDataFieldErrorReason.NOT_NULL));
+        assertThat(badNumber)
+                .isEqualTo(new WriteValidation.Invalid(
+                        List.of(new BusinessDataFieldError("qty", BusinessDataFieldErrorReason.INVALID_VALUE))));
+    }
+
+    @Test
+    @DisplayName("an empty string in a string column without REQUIRED is a value and nothing is held")
+    void emptyStringIsAValue() {
+        WriteValidation result = createHeld(required("strict", ""), Set.of("strict"), Set.of());
+
+        WriteValidation.Valid valid = (WriteValidation.Valid) result;
+        assertThat(valid.held()).isEmpty();
+        assertThat(valid.values()).anySatisfy(v -> {
+            assertThat(v.column()).isEqualTo("strict");
+            assertThat(v.value().value()).isEqualTo("");
+        });
+    }
+
+    @Test
+    @DisplayName("with another error the dropped held errors disappear and the others stay at their position")
+    void otherErrorsDropNoPermissionHolds() {
+        WriteValidation result = createHeld(withManual("qty", "", "memo", "x"), Set.of("name", "qty"), Set.of("name"));
+
+        assertThat(errors(result))
+                .containsExactly(
+                        new BusinessDataFieldError("qty", BusinessDataFieldErrorReason.INVALID_VALUE),
+                        new BusinessDataFieldError("memo", BusinessDataFieldErrorReason.TOO_SHORT));
+    }
+
+    @Test
+    @DisplayName("with another error a held error of a readable target is listed as REQUIRED")
+    void otherErrorsKeepAvailableHolds() {
+        WriteValidation result = createHeld(withManual("memo", "x"), Set.of("name"), Set.of());
+
+        assertThat(errors(result))
+                .containsExactly(
+                        new BusinessDataFieldError("memo", BusinessDataFieldErrorReason.TOO_SHORT),
+                        new BusinessDataFieldError("name", BusinessDataFieldErrorReason.REQUIRED));
+    }
+
+    @Test
+    @DisplayName("an update holds nothing and the six argument form holds nothing")
+    void updateAndOldFormHoldNothing() {
+        WriteValidation update = WriteRequestValidator.validate(
+                view(),
+                WriteOperation.UPDATE,
+                new KeyInput(Map.of("id", "1")),
+                new WriteValues(one("name", "")),
+                CODEC,
+                new DeadlinePatternMatcher(Clock.systemUTC()),
+                new WriteRequestValidator.Hold(Set.of("name"), Set.of()));
+        WriteValidation oldForm = validate(WriteOperation.CREATE, Map.of(), withManual());
+
+        assertThat(errors(update))
+                .containsExactly(new BusinessDataFieldError("name", BusinessDataFieldErrorReason.REQUIRED));
+        assertThat(errors(oldForm))
+                .containsExactly(new BusinessDataFieldError("name", BusinessDataFieldErrorReason.REQUIRED));
     }
 }

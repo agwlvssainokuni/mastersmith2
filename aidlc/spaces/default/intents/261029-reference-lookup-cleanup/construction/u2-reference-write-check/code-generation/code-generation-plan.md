@@ -181,41 +181,41 @@ web の層（`BusinessDataWriteController` の写し）は変えない見込み�
 
 ### B3 U2 保存前の参照先の確かめ
 
-- [ ] **Step 1: 準備**（ストーリー: 全体）
+- [x] **Step 1: 準備**（ストーリー: 全体）
   - `develop` に 549d38b（B1）・b048ec1（B2）・13883f6（B5）があり、作業フォルダに未コミットの変更が無い（`aidlc/` の記録は先にコミットしてある）ことを確かめ、`git switch -c feature/261029-reference-lookup-cleanup-b3 develop` を作る。
   - E2E の報告（`frontend/playwright-report`・`frontend/test-results`）など git の対象外の生成物を消す（`project.md`）。
   - 4節の検索（`NOT_EDITABLE_NOT_NULL`、既存の書き込みのテストの DSL に参照の options が無いこと）を確かめ直す。
-- [ ] **Step 2: テストの実行の口の確かめ**（Testing Contract の runner_step）
+- [x] **Step 2: テストの実行の口の確かめ**（Testing Contract の runner_step）
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.service.BusinessDataWriteServiceTest'` と、上の環境変数を付けた `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.PostgresBusinessDataWriteIT'` が今のまま通ることを確かめ、`unit-test-instructions.md` のコマンドが流せることを記録する。3.4節の突き合わせを確かめる。
-- [ ] **Step 3: businessdata.domain の実装**（US1.5・US3.1・US3.2、BR2.3・BR2.5・BR3.1〜BR3.6・BR1.3・BR1.4・BR4.4・BR7.1）
+- [x] **Step 3: businessdata.domain の実装**（US1.5・US3.1・US3.2、BR2.3・BR2.5・BR3.1〜BR3.6・BR1.3・BR1.4・BR4.4・BR7.1）
   - 3.1節の domain の型と `ReferenceWritePolicy`。3.2節の `WriteRequestValidator` の多重定義と `WriteValidation.Valid.held`。
   - `ReferenceWritePolicy` の結果の写し: `FOUND` → 次へ、`NOT_FOUND_OR_DENIED` → `REFERENCE_NOT_FOUND`、必須の参照項目の `NO_PERMISSION`・`TOO_MANY` は値ありで `REFERENCE_NOT_FOUND`・空で `NOT_EDITABLE_NOT_NULL`（`field` はカラムの名前）、`AVAILABLE` の空は保留した誤りを戻す（無ければ進む）。まとめの順は 失敗 → 行が無い → 400 → 409 → 進む。`ReferenceFailureReason` の写し（`TIMEOUT` → `TARGET_DB_TIMEOUT`、`UNAVAILABLE` → `TARGET_DB_UNAVAILABLE`、`MISMATCH` → `TARGET_DB_MISMATCH`）は既定の枝を置かない。
-- [ ] **Step 4: businessdata.domain のテスト**
+- [x] **Step 4: businessdata.domain のテスト**
   - `ReferenceWritePolicyTest`（functional-spec.md 4.3節の2つの表の升目すべて、BR2.5 の `"007"`/`"7"`・`1.0`/`1`・大文字と小文字・末尾の空白・切られた更新前の値、まとめの順、写しの網羅）。
   - `ReferenceWritePolicyPropertyTest`（jqwik、NFR1.31。失敗の種を記録: 比べ方の反射・対称、同じ値は確かめない・違う値は必ず確かめる、`NO_PERMISSION`・`TOO_MANY` で値があれば必ず拒否、権限を足しても〈`NO_PERMISSION` → `AVAILABLE`〉保存できる組が減らない、`FAILED` があれば拒否より先にその code、`NOT_FOUND_OR_DENIED` は必ず `REFERENCE_NOT_FOUND`）。
   - `ReferenceWriteTypesTest`（3つの値を持つ型の `toString` に値が無い）。
   - `WriteRequestValidatorTest` に足す（保留: 本文に無い・null・`""`〈REQUIRED あり・文字でない型〉は保留、文字の型で REQUIRED なしの `""` は値として通る、空でない不正な値〈`abc` の整数〉は保留しない、ほかに誤りがあれば `droppedOnInvalid` の保留を落とし残りを並べる、保留だけなら `Valid` の `held`、更新では保留しない）。`WriteRequestValidatorPropertyTest` に1件（保留は保留の対象のカラムの誤りだけを動かし、ほかのカラムの誤りを変えない）。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.domain.*'` を流して通す。
-- [ ] **Step 5: service の実装**（US1.5・US3.1〜US3.3・US3.5 の部分、BR1.1〜BR1.4・BR2.1〜BR2.7・BR3.1〜BR3.7・BR4.1〜BR4.7・BR5.1〜BR5.3・BR7.1・BR7.2、NFR1.21〜NFR1.23・NFR1.26・NFR1.30・NFR1.32・NFR2.26・NFR2.28・NFR3.21・NFR3.22・NFR3.24〜NFR3.26）
+- [x] **Step 5: service の実装**（US1.5・US3.1〜US3.3・US3.5 の部分、BR1.1〜BR1.4・BR2.1〜BR2.7・BR3.1〜BR3.7・BR4.1〜BR4.7・BR5.1〜BR5.3・BR7.1・BR7.2、NFR1.21〜NFR1.23・NFR1.26・NFR1.30・NFR1.32・NFR2.26・NFR2.28・NFR3.21・NFR3.22・NFR3.24〜NFR3.26）
   - `ReferenceLookup.writeTargets`・`accessOf`（3.2節）。
   - `BusinessDataWriteService`:
     - ⑨ の前（作成だけ）: `writeTargets` から必須の参照項目（参照のカラム・`editableOnCreate`・`nullable` が偽）を決め、`accessOf` が `NO_PERMISSION` のものを `droppedOnInvalid` にして `Hold` を作り、多重定義の `validate` を呼ぶ。
     - ⑩: 読むものが無ければ借りない（BR1.2）。あれば `readAccess.withRead(ReadPurpose.REFERENCE, session -> …)` を1回。中で最初の読み取りの前に `ReferenceReadDeadline.start(clock, readAccess.referenceReadTotal())`、各読み取りの前に `narrow`（空なら流さず `ReferenceReadFailure.ofBudgetExceeded()`）。更新は `executor.detail` で更新前の行（0 行 → `ROW_NOT_FOUND`、2行以上 → `ROW_NOT_UNIQUE`、失敗は `ReferenceReadFailure.of`。`INVALID_VALUE`・`UNEXPECTED` は想定外）を読み、本文の参照の値と比べて変わった NULL でないものだけを確かめる。作成は必須の参照項目の状態（REFERENCE は `countState` を参照先の鍵ごとに1回、LOOKUP も同じ口で問い合わせなし）を決め、確かめる参照（NULL でない値の参照＋使える必須の参照項目の値）を DSL の並びで `check` に順に渡す（値は `ColumnValueCodec.format` で `ReferenceValue` にする。BR4.6）。`FAILED` でその場で止める。中の結果は例外を投げずに `ReferenceStepOutcome` で返す。
     - `withRead` の外: `NotConfigured`・`Unavailable` は `UNAVAILABLE`（`stage=BORROW`）。`Failed` は `BusinessDataWriteService` のロガーで診断の WARN を1行（`purpose=REFERENCE`・`stage`・`reason`・あるときだけ `sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded`。名前・値・メッセージを出さない）。409 と 400 は WARN を出さない。
     - 拒否は読み取りの接続を返した後に、既存の `BusinessDataAuditReason.of` と `publish`（作成は空の detail、更新は参照元の主キーだけ）。400 は監査に残さない。`Proceed` のときだけ既存の `withWrite` を呼ぶ（2本を同時に持たない。BR4.1）。
-- [ ] **Step 6: service のテスト**
+- [x] **Step 6: service のテスト**
   - `BusinessDataWriteServiceTest` の構成子を直す（4節）。
   - `BusinessDataWriteReferenceTest`（差し替えの口・`SteppingClock`）: 判定の順（⑨ の誤りで対象DB を読まない、更新前の行が無いのが参照の拒否より先、400 が 409 より先）、参照の無い作成・更新で借りない、必須の参照項目の升目、同じ参照先の `countState` は1回、`NO_PERMISSION` の値で `check` の文を流さない、すべての拒否を並べる、値の変わらない参照を確かめない、T-T3（参照 3 つで2つ目の前に締め切り → 3つ目を流さず 503・書き込みを借りない）、T-F2（2つ目の失敗で3つ目を流さない）、失敗の写しと WARN がちょうど1行・拒否で 0 行、監査の出来事の数と理由と detail、`ofBudgetExceeded` の `budgetExceeded=true`。
   - `ReferenceLookupTest` に足す（`writeTargets` の並びと FIXED を含めない、`accessOf` が対象DB を読まない）。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.service.*'` を流して通す。
-- [ ] **Step 7: web の確かめと文書**（AC3.1.2・AC1.5.2、C3）
+- [x] **Step 7: web の確かめと文書**（AC3.1.2・AC1.5.2、C3）
   - `BusinessDataWriteControllerTest` に2件（`REFERENCE_NOT_FOUND` の拒否が 409 `BUSINESS_REFERENCE_NOT_FOUND` と、カラムの名前の `field`・`NOT_EDITABLE_NOT_NULL` の項目の誤りをそのまま写す）。本体は変えない（3.2節）。
   - `README.md` の書き込みの API の失敗の code の行（3.2節、9節 Q5）。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.web.BusinessDataWriteControllerTest'` と境界テスト（`unit-test-instructions.md` 3.2）を流して通す。
-- [ ] **Step 8: テストの部品**（NFR1.29、9節 Q2）
+- [x] **Step 8: テストの部品**（NFR1.29、9節 Q2）
   - `ReferenceTables` に書き込みの組を足す（9節 Q2 の推奨 A。参照先〈`v` の一意の索引つき〉と、外部キーのある参照元・外部キーの無い参照元、必須〈NOT NULL〉の REFERENCE・LOOKUP、NULL を許す参照、同じ参照先を指す2つの必須の参照項目、自己参照・複合の主キー・主キーの無い表・ビュー・一意でない `valueColumn` の参照先、参照 3・5 個の参照元、眠る関数を含むビューの参照先）。表はクラスごとの一意のスキーマに作って消し、書き込みのアカウントで書く（`BusinessDataSampleSchema` の `writer()`）。値は架空。
   - `PausingTargetWriteAccess`・`PausingWriteAccessConfig`（reliability-design.md 4.1 のとおり。上限 20 秒、上限切れは元の `withWrite` を呼ばずに例外で終え失敗の印を残す、`product()` は止めない）。
-- [ ] **Step 9: 3種類の対象DB の結合テスト**（(g)(h)(i)、NFR1.21〜NFR1.24・NFR1.26〜NFR1.29・NFR2.26・NFR2.27・NFR3.27、AC3.1.1〜AC3.1.6・AC3.2.1〜AC3.2.6・AC1.5.2〜AC1.5.4）
+- [x] **Step 9: 3種類の対象DB の結合テスト**（(g)(h)(i)、NFR1.21〜NFR1.24・NFR1.26〜NFR1.29・NFR2.26・NFR2.27・NFR3.27、AC3.1.1〜AC3.1.6・AC3.2.1〜AC3.2.6・AC1.5.2〜AC1.5.4）
   - `AbstractReferenceWriteIT` と `PostgresReferenceWriteIT`・`MysqlReferenceWriteIT`・`MariadbReferenceWriteIT`。書いた後の値はアプリとは別の接続で読み直す。
     - 作成: ある値で 201、無い値で 409（行が増えない）、読めない参照先の値と無い値が同じ応答、他の参照先にだけある値で 409（IDOR）、DSL に無いカラムを足すと 400 `NOT_ALLOWED`、2つの拒否を並べる、NULL を許す参照の NULL は確かめずに保存。
     - 必須の参照項目の升目（functional-spec.md 4.3節。パラメーターの表）。
@@ -226,7 +226,7 @@ web の層（`BusinessDataWriteController` の写し）は変えない見込み�
     - 長さの境界（NFR2.27）: 10,000 字の値は保存でき、10,001 字の値の行しか無ければ 409。
     - すき間（T-G1・T-G2、NFR1.29・NFR3.27、外部キーのある参照先）: アプリは `PausingWriteAccessConfig` と `CountingDataSourceConfig` を足して起動する。T-G1 は作成を止め、止めた時点で読み取りの使用中 0・読み取りを借りた回数 1・書き込みを借りた回数 0、別の接続で参照先の行を消して進め、409（`field` は参照のカラム）で行が増えない。T-G2 は行 R が参照 X を指し、**R の参照でない別のカラムの新しい値と、更新前と同じ値の参照 X だけを送る更新**（ほかの参照を含めない。R-04）を止め、同じ数の確かめの後に別の接続で R の参照を Y に変えて X を消し、進めて 409、R は別の接続が変えた形のまま。止める前に流れた文は、MySQL・MariaDB は `StatementLog` で `detail` だけ（`check` が無い）、PostgreSQL は読み取りを借りた回数 1 と Step 6 の単体テストで補う。
   - 上の環境変数を付けて `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.*ReferenceWriteIT'` を流して通す。
-- [ ] **Step 10: 横断の結合テスト**（(a) の書き込み側・(d)・(j)、NFR1.21・NFR1.25・NFR1.30・NFR1.32・NFR3.21〜NFR3.26・NFR6.21・NFR7.22、AC3.1.8・AC3.2.7・AC3.3.1〜AC3.3.3・AC3.5.1〜AC3.5.3）
+- [x] **Step 10: 横断の結合テスト**（(a) の書き込み側・(d)・(j)、NFR1.21・NFR1.25・NFR1.30・NFR1.32・NFR3.21〜NFR3.26・NFR6.21・NFR7.22、AC3.1.8・AC3.2.7・AC3.3.1〜AC3.3.3・AC3.5.1〜AC3.5.3）
   - `ReferenceWriteAuthorizationApiIT`（PostgreSQL。パラメーターの表: 参照元は FULL で、参照先の表が読めない・`valueColumn` が NONE・参照先の表が DSL から消えた、の要る権限だけを欠く利用者の作成・更新が 409 で状態が変わらない。作業ロールを切り替えた直後の次の要求で結果が切り替わる。既存の 401・403 の順が変わらない）。
   - `ReferenceWriteConnectionUsageIT`（PostgreSQL と MySQL。`CountingDataSourceConfig`: 参照 0・1・3・5 個の作成、値の変わらない更新・変わった更新、拒否・TIMEOUT・UNAVAILABLE で読み取り・書き込みを借りた回数と `peerInUseAtBorrow` 0、同じ参照先の2つの必須の参照項目で `countState` の文が1回〈MySQL の `StatementLog`〉、参照の無い作成・更新・削除は今と同じ数、応答しない対象DB を待つ間の内部DB の使用中 0）。
   - `ReferenceWriteTimeoutIT`（3種類）: **T-T1 は眠る関数を含むビューを参照先にした作成・更新で 503 `BUSINESS_TARGET_DB_TIMEOUT`**（行が保存されない・書き込みを借りない）、`SilentServer` では 503 `BUSINESS_TARGET_DB_UNAVAILABLE`（5節）、T-F1（接続の失敗・借りられない・読み取りの設定が無い・型の食い違いで 2節の表のとおり）、T-F2（参照 3 つの2つ目を眠るビューにして3つ目が流れない。MySQL・MariaDB は `StatementLog`）。応答とログに例外の文・接続先・資格情報が無い。
@@ -235,7 +235,7 @@ web の層（`BusinessDataWriteController` の写し）は変えない見込み�
   - `ReferenceWriteAuditIT`（PostgreSQL。拒否で `FAILURE`・`BUSINESS_REFERENCE_NOT_FOUND` が1行〈作成は空の detail、更新は主キーだけ〉、成功は今と同じ、400 は残らない、TIMEOUT・UNAVAILABLE・MISMATCH は既存の写し、確かめの読み取りは残らない、参照の無い作成・更新の監査は今と同じ）。
   - T-C1・T-C2: 4節の既存の書き込みの結合テスト・`BusinessDataConnectionUsageIT`・`BusinessDataProblemTypeCatalogTest`・U1 の `*Reference*IT` を変えずに通す。T-C3: 移行ファイルと DSL の JSON Schema に差が無い。
   - 上の環境変数を付けて `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.*ReferenceWrite*IT' --tests 'cherry.mastersmith.businessdata.web.*BusinessDataWrite*IT' --tests 'cherry.mastersmith.businessdata.web.BusinessDataConnectionUsageIT' --tests 'cherry.mastersmith.businessdata.web.*Reference*IT'` を流して通す。
-- [ ] **Step 11: perf の種・DSL・k6 の場面と README**（AC3.5.4 の準備、NFR2.21〜NFR2.24、基盤の設計 4.2〜4.4・R-02・R-03）
+- [x] **Step 11: perf の種・DSL・k6 の場面と README**（AC3.5.4 の準備、NFR2.21〜NFR2.24、基盤の設計 4.2〜4.4・R-02・R-03）
   - `perf/biz/make-biz-seed.sh`: U1 の表の後・最後の GRANT の前に、参照元の表（仮の名前 `biz_refcreate`。`biz_new` と同じ書き方の自動の採番の主キーと、`biz_code200` の `code` を指す NOT NULL の `code`。行は入れない。外部キーは置かない）を3種類で同じ形に足す。新しい GRANT の文は足さない。`COUNTS` に `biz_refcreate` を足す（9節 Q3）。
   - `perf/make-biz-dsl.mjs`: `biz_refcreate` の `code` に REFERENCE の options（`biz_code200`、値 `code`・ラベル `name`、部品 `select`）。`biz_new` の `ref_id` には参照の options を足さない（NFR2.23）。
   - `perf/k6/scenarios.js`: `refCreateChecked`（10 VU・`BIZ_DURATION` 3 分の constant-vus、1回の繰り返しに要求1つで待ちなし、値は `K1`〜`K200` を順に回す、201 を `checks` で確かめる、トークンは `setup()`、setup は前の場面に頼らず書き込みのロール〈`biz_refcreate` を FULL・CREATE、`biz_code200` を READ〉と作業ロールを用意し、定義〈`purpose: CREATE`〉で書き込みが使え参照の状態が `AVAILABLE` であることを確かめる）。閾値は `iteration_duration{scenario:refCreateChecked}` の p(95)<1000 と `checks` の rate==1（既存の場面の閾値は変えない）。`perf/k6/thresholds-test.sh` の期待の表に足す。

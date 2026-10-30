@@ -33,6 +33,7 @@ import cherry.mastersmith.businessdata.domain.ReferenceRow;
 import cherry.mastersmith.businessdata.domain.ReferenceRows;
 import cherry.mastersmith.businessdata.domain.ReferenceRowsQuery;
 import cherry.mastersmith.businessdata.domain.ReferenceStatus;
+import cherry.mastersmith.businessdata.domain.ReferenceTarget;
 import cherry.mastersmith.businessdata.domain.ReferenceValue;
 import cherry.mastersmith.businessdata.domain.RowQueryFailure;
 import cherry.mastersmith.businessdata.domain.RowQueryFailureReason;
@@ -801,5 +802,37 @@ class ReferenceLookupTest {
 
         assertThat(result).isInstanceOf(ReferenceRowsResult.Found.class);
         assertThat(result.toString()).doesNotContain(SECRET_LABEL).doesNotContain("ラベル");
+    }
+
+    // ── U2 の保存前の確かめに向けた口（Intent 261029-reference-lookup-cleanup の U2、計画の 9節 Q1） ──
+
+    @Test
+    @DisplayName("writeTargets lists only reference and lookup columns in the DSL order without reading")
+    void writeTargetsInOrder() {
+        Map<String, ReferenceTarget> targets = lookup.writeTargets(source());
+
+        assertThat(targets.keySet())
+                .containsExactly("dept_code", "dept_alt", "team_id", "shop_id", "dept_pick", "hidden_ref", "ro_ref");
+        assertThat(targets.get("dept_pick").kind()).isEqualTo(OptionSourceKind.LOOKUP);
+        assertThat(targets.get("team_id").valueColumn()).isEqualTo("id");
+        assertThat(withReads()).isZero();
+        assertThat(ports.calls).doesNotContain("search");
+    }
+
+    @Test
+    @DisplayName("accessOf answers with the same snapshot and never reads the target database")
+    void accessOfReadsNothing() {
+        TableAccessResolution.Resolved source = source();
+        Map<String, ReferenceTarget> targets = lookup.writeTargets(source);
+        long snapshots =
+                ports.calls.stream().filter(c -> c.startsWith("snapshotFor")).count();
+
+        assertThat(lookup.accessOf(source, targets.get("dept_code"))).isEqualTo(ReferenceStatus.AVAILABLE);
+        assertThat(lookup.accessOf(source, targets.get("hidden_ref"))).isEqualTo(ReferenceStatus.NO_PERMISSION);
+        assertThat(ports.calls.stream().filter(c -> c.startsWith("snapshotFor")).count())
+                .as("写しを取り直さない")
+                .isEqualTo(snapshots);
+        assertThat(withReads()).isZero();
+        assertThat(ports.calls).doesNotContain("search");
     }
 }

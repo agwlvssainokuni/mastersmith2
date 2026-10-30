@@ -1375,6 +1375,46 @@ caffeinate -dims zsh "$D/ref-run.sh" "$D" "$KIND"
 # 結果の json を記録（evidence/）に置く前に、JWT の形（eyJ…）を伏せ、gitleaks dir で確かめる（project.md の学び）
 ```
 
+## 他テーブル参照の保存前の確かめの場面（Intent 261029-reference-lookup-cleanup の U2）
+
+`perf/k6/scenarios.js` の `refCreateChecked` を、上の「他テーブル参照の読み取りの場面」と同じ使い捨ての環境で、対象DB の種類ごとに流す。目標の出典は `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u2-reference-write-check/` の `nfr-requirements/performance-requirements.md`（NFR2.21〜NFR2.24）と `infrastructure-design/infrastructure-specification.md`（4.2〜4.4節）。Code Generation（B3 の Step 11）では、種と DSL の台本の構文と、`k6 inspect --include-system-env-vars` で場面と閾値の名前を確かめ、`perf/k6/thresholds-test.sh` で線を照らしただけ。種の流し込みと試し走りは Build and Test、3種類の判定は Performance Validation。
+
+| 場面 | すること（1回の繰り返しに要求1つ。待ちなし） | 判定（閾値は緩めない） |
+|---|---|---|
+| `refCreateChecked` | `biz_refcreate` の作成（`POST /api/tables/rows`）。必須（NOT NULL）の参照項目 `code`（`biz_code200` の `code` を指す REFERENCE）に `K1`〜`K200` を VU と繰り返しの番号で回して入れる。保存前の確かめ（必須の参照項目の状態の読み取りと、値の確かめ）を通って 201 | `iteration_duration{scenario:refCreateChecked}` の p95 < 1000 ms と `checks` の率 1 |
+
+- **足す順**: U1 の表の後、最後の GRANT の前に、種の台本が参照元 `biz_refcreate`（自動の採番の主キー `id`・NOT NULL の `code`。行は入れない。外部キーは置かない）を3種類で同じ形に作る。新しい GRANT の文は足さない（最後の GRANT に入る）。DSL（`make-biz-dsl.mjs`）にも同じ形を書く。`biz_new` の `ref_id` には参照の options を足さない（既存の書き込みの場面の結果を変えないため。NFR2.23）。
+- **setup の前提**（前の場面の状態に頼らない）: setup でロール `perf-biz-refwriter`（スキーマ `bizperf` を READ、`biz_refcreate` を FULL・CREATE、`biz_code200` を READ）を用意して試験用の利用者に割り当て、1人ずつログインして作業ロールを保存し、`biz_refcreate` の定義（`purpose` は `CREATE`）で書き込みが使え `code` の参照の状態が `AVAILABLE` であることを確かめてから始める。書き込みの設定（`MASTERSMITH_TARGET_DB_WRITE_*`）は上の「業務データの書き込みの場面」と同じく、アプリの一時の環境ファイルに置く。DSL の適用は `bizPrepare` が行う（先に流す）。作った行と監査は使い捨ての環境に残る。
+- **種の後の確かめ**（基盤の設計 R-03）: 種の台本の最後の行の数の出力で、参照先 `biz_code200` が 200 行、`biz_refcreate` が **0 行**であることを確かめてから流す（前の回の行が残っていると、作成の重さの条件がそろわない）。MySQL・MariaDB の種は `--default-character-set=utf8mb4` で流す。
+- **流す順**（`infrastructure-specification.md` 4.4）: 対象DB の種類ごとに、(1) 上の U1 の読み取りの場面、(2) `refCreateChecked`、(3) 既存の書き込みの場面（「業務データの書き込みの場面」）。書き込みで表が増えると読み取りが悪い側に寄るため。
+- **2つのプールの待ちの時間切れ**: 場面の前と後で、使い捨てのアプリの `/actuator/metrics/hikaricp.connections.timeout` を、読み取りのプール（`pool=mastersmith-target-db`）と書き込みのプール（`pool=mastersmith-target-db-write`）の両方で読み、累計の差を記録する（保存前の確かめは読み取りの接続を返してから書き込みの接続を借りる）。
+- **読み取りのプールの上限は 5**（上の U1 の節と同じ設定・中止の条件で流す）。前の Intent の書き込みの場面の値と並べて読むときは、**読み取りのプールの上限が 10 から 5 に変わった**ことを結果の表に書く（基盤の設計 R-02。上限 10 の回も流すかは Build and Test の計画で決める）。
+- **判定**: `iteration_duration`（単調な時計）で判定し、`http_req_duration{name:refCreateChecked}` は並べて記録するだけ。503 は `checks` の率 1 を下回って不合格になる。満たさなくても目標と物差しを緩めず、Not Met として依頼者に諮る。
+- 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる。結果の json を記録（`evidence/`）に置く前に、下の「記録（evidence/）に置く前の伏せ字」の道具を通し、`gitleaks dir` で確かめる。
+
+```bash
+# 前提: 上の「他テーブル参照の読み取りの場面」の ref-run.sh を流した後（D・KIND・k6r と同じ一時の環境ファイルを使う）
+cat > "$D/refw-run.sh" <<'EOR'
+D="$1"; KIND="$2"
+k6r() {   # 上の ref-run.sh と同じ
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/biz-data:/data:ro" \
+    "$K6_IMAGE" \
+    run --quiet --summary-export=/out/ref-$KIND-$name.json /scripts/scenarios.js
+}
+for pool in mastersmith-target-db mastersmith-target-db-write; do
+  curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?tag=pool:$pool" > "$D/refw-$KIND-$pool-timeout-before.json"
+done
+k6r refCreateChecked -e SCENARIO=refCreateChecked
+for pool in mastersmith-target-db mastersmith-target-db-write; do
+  curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?tag=pool:$pool" > "$D/refw-$KIND-$pool-timeout-after.json"
+done
+EOR
+caffeinate -dims zsh "$D/refw-run.sh" "$D" "$KIND"
+# 試し走りのときは -e VUS=1 -e BIZ_DURATION=10s を足す
+```
+
 ## 性能・資源の目標の見直し（Intent 261027-perf-targets-review）
 
 前の Intent（261016-business-data-views、261015-deps-ui-carryover）で Not Met だった目標の線を、依頼者の決定で見直した。ここは見直した後の線と測り方の入口で、上の節に書いた前の Intent の結果の文は書き換えていない。線を緩めても、`checks` の率 1・`OOMKilled` が false・`oom_kill` が 0 などの正しさの条件は変えない。

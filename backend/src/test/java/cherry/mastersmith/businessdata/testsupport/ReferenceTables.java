@@ -491,4 +491,346 @@ public final class ReferenceTables {
         settings.putAll(overrides);
         return settings;
     }
+
+    // ── 書き込みの組（Intent 261029-reference-lookup-cleanup の U2、計画の Step 8、9節 Q2: A） ──
+
+    /** 参照先（{@code v} に一意の索引）。行の値: V1・V2・V3・K1・007・{@link #W_TRICKY}。 */
+    public static final String W_TGT = "wt_tgt";
+
+    /** BIGINT の値の参照先（1・7・{@link #BIG_MAX}）。 */
+    public static final String W_NUM = "wt_num";
+
+    /** 桁の多い小数の値の参照先（1・{@link #BIG_DECIMAL}）。 */
+    public static final String W_DEC = "wt_dec";
+
+    /** 読めない（NONE）参照先（H1）。 */
+    public static final String W_HIDDEN = "wt_hidden";
+
+    /** 候補が 201 行の参照先（M00001〜M00201）。 */
+    public static final String W_MANY = "wt_many";
+
+    /** 10,000 字の値（a の繰り返し）と 10,001 字の値（b の繰り返し）だけの参照先。 */
+    public static final String W_LONG = "wt_long";
+
+    /** 複合の主キーの参照先（値のカラム b は一意でない）。 */
+    public static final String W_COMP = "wt_comp";
+
+    /** 主キーの無い参照先。 */
+    public static final String W_NOKEY = "wt_nokey";
+
+    /** 参照先のビュー（{@link #W_TGT} の写し）。 */
+    public static final String W_VIEW = "wt_vw";
+
+    /** 値のカラムが一意でない参照先（K が2行）。 */
+    public static final String W_DUP = "wt_dup";
+
+    /** 参照元（外部キー {@code ref_fk} → {@link #W_TGT}.v と、外部キーの無い参照のカラム）。 */
+    public static final String WS_MAIN = "ws_main";
+
+    /** 必須の参照項目（REQUIRED あり）→ {@link #W_TGT}。 */
+    public static final String WS_REQ_OK = "ws_req_ok";
+
+    /** 必須の参照項目（文字の型・REQUIRED なし）→ {@link #W_TGT}。 */
+    public static final String WS_REQ_STR = "ws_req_str";
+
+    /** 必須の参照項目（BIGINT・REQUIRED なし）→ {@link #W_NUM}。 */
+    public static final String WS_REQ_INT = "ws_req_int";
+
+    /** 必須の参照項目（REQUIRED あり）→ {@link #W_MANY}（TOO_MANY）。 */
+    public static final String WS_REQ_MANY = "ws_req_many";
+
+    /** 必須の参照項目（REQUIRED あり）→ {@link #W_HIDDEN}（NO_PERMISSION）。 */
+    public static final String WS_REQ_HID = "ws_req_hid";
+
+    /** 必須の LOOKUP（REQUIRED あり）→ {@link #W_TGT}。 */
+    public static final String WS_REQ_PICK = "ws_req_pick";
+
+    /** 同じ参照先 {@link #W_MANY} を指す2つの必須の参照項目（REQUIRED あり）。 */
+    public static final String WS_REQ_TWO = "ws_req_two";
+
+    /** NULL を許す参照を 5 つ持つ参照元（r1〜r5 → {@link #W_TGT}）。 */
+    public static final String WS_FIVE = "ws_five";
+
+    /** 引用符・{@code ;}・{@code --}・バッククォートを含む参照先の値。 */
+    public static final String W_TRICKY = "it's \"q\"; --`x`";
+
+    /** 外部キー（{@code ref_fk}）の名前の一部（DSL の外部キーと対応）。 */
+    public static final String FK_COLUMN = "ref_fk";
+
+    private String bigintSql() {
+        return "BIGINT";
+    }
+
+    private String decimalSql() {
+        return postgres() ? "NUMERIC(38,10)" : "DECIMAL(38,10)";
+    }
+
+    private String literal(String value) {
+        return "'" + value.replace("'", "''") + "'";
+    }
+
+    /** 書き込みの組の表・ビュー・行を作る（管理者で流し、読み取り・書き込みのアカウントに権限を与える）。 */
+    public void createWrite() {
+        List<String> sql = new ArrayList<>();
+        sql.add("CREATE TABLE %s" + W_TGT
+                + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(40) NOT NULL UNIQUE, l VARCHAR(50) NULL)");
+        sql.add("INSERT INTO %s" + W_TGT + " (id, v, l) VALUES (1, 'V1', '一'), (2, 'V2', '二'), (3, 'V3', '三'),"
+                + " (4, 'K1', 'け'), (5, '007', 'ぜろ'), (6, " + literal(W_TRICKY) + ", '記号')");
+        sql.add("CREATE TABLE %s" + W_NUM + " (id INTEGER NOT NULL PRIMARY KEY, v " + bigintSql()
+                + " NOT NULL UNIQUE, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_NUM + " (id, v, l) VALUES (1, 1, 'one'), (2, 7, 'seven'), (3, " + BIG_MAX
+                + ", 'max')");
+        sql.add("CREATE TABLE %s" + W_DEC + " (id INTEGER NOT NULL PRIMARY KEY, v " + decimalSql()
+                + " NOT NULL UNIQUE, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_DEC + " (id, v, l) VALUES (1, 1, 'one'), (2, " + BIG_DECIMAL + ", 'big')");
+        sql.add("CREATE TABLE %s" + W_HIDDEN
+                + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NOT NULL UNIQUE, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_HIDDEN + " (id, v, l) VALUES (1, 'H1', '秘')");
+        sql.add("CREATE TABLE %s" + W_MANY
+                + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
+        sql.addAll(rows(W_MANY, 201, 0, i -> "'M" + pad(i) + "', 'm" + pad(i) + "'"));
+        sql.add("CREATE TABLE %s" + W_LONG + " (id INTEGER NOT NULL PRIMARY KEY, v " + textSql()
+                + " NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_LONG + " (id, v, l) VALUES (1, " + repeat("a", 10_000) + ", 'a'), (2, "
+                + repeat("b", 10_001) + ", 'b')");
+        sql.add("CREATE TABLE %s" + W_COMP
+                + " (a INTEGER NOT NULL, b VARCHAR(20) NOT NULL, l VARCHAR(20) NULL, PRIMARY KEY (a, b))");
+        sql.add("INSERT INTO %s" + W_COMP + " (a, b, l) VALUES (1, 'B1', 'x'), (2, 'B1', 'y')");
+        sql.add("CREATE TABLE %s" + W_NOKEY + " (v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_NOKEY + " (v, l) VALUES ('N1', 'n')");
+        sql.add("CREATE VIEW %s" + W_VIEW + " AS SELECT id, v, l FROM %s" + W_TGT);
+        sql.add("CREATE TABLE %s" + W_DUP
+                + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %s" + W_DUP + " (id, v, l) VALUES (1, 'K', 'a'), (2, 'K', 'b')");
+        sql.add("CREATE TABLE %s" + WS_MAIN + " (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(50) NULL,"
+                + " ref_fk VARCHAR(40) NULL, ref VARCHAR(40) NULL, num_ref " + bigintSql() + " NULL,"
+                + " int_ref INTEGER NULL, dec_ref " + decimalSql() + " NULL, hid_ref VARCHAR(20) NULL,"
+                + " long_ref " + textSql() + " NULL, comp_ref VARCHAR(20) NULL, nokey_ref VARCHAR(20) NULL,"
+                + " view_ref VARCHAR(40) NULL, dup_ref VARCHAR(20) NULL, self_ref INTEGER NULL,"
+                + " pick_ref VARCHAR(40) NULL,"
+                + " CONSTRAINT ws_main_ref_fk FOREIGN KEY (ref_fk) REFERENCES %s" + W_TGT + " (v))");
+        for (String req : List.of(WS_REQ_OK, WS_REQ_STR, WS_REQ_MANY, WS_REQ_HID, WS_REQ_PICK)) {
+            sql.add("CREATE TABLE %s" + req
+                    + " (id INTEGER NOT NULL PRIMARY KEY, req VARCHAR(40) NOT NULL, memo VARCHAR(20) NULL)");
+        }
+        sql.add("CREATE TABLE %s" + WS_REQ_INT + " (id INTEGER NOT NULL PRIMARY KEY, req " + bigintSql()
+                + " NOT NULL, memo VARCHAR(20) NULL)");
+        sql.add("CREATE TABLE %s" + WS_REQ_TWO + " (id INTEGER NOT NULL PRIMARY KEY, a VARCHAR(20) NOT NULL,"
+                + " b VARCHAR(20) NOT NULL)");
+        sql.add("CREATE TABLE %s" + WS_FIVE + " (id INTEGER NOT NULL PRIMARY KEY, r1 VARCHAR(40) NULL,"
+                + " r2 VARCHAR(40) NULL, r3 VARCHAR(40) NULL, r4 VARCHAR(40) NULL, r5 VARCHAR(40) NULL)");
+        sample.addObjects(sql.toArray(String[]::new));
+    }
+
+    private static DslColumn required(String name, String dbType, OptionSource options, boolean requiredRule) {
+        BusinessDataDslFixture.ColumnBuilder builder = column(name)
+                .dbType(dbType)
+                .form(options.source() == OptionSourceKind.LOOKUP ? FormPart.LOOKUP : FormPart.SELECT)
+                .options(options)
+                .nullable(false);
+        if (requiredRule) {
+            builder = builder.validation(
+                    cherry.mastersmith.dsl.domain.ValidationType.REQUIRED,
+                    cherry.mastersmith.dsl.domain.ValidationOrigin.DB);
+        }
+        return builder.build();
+    }
+
+    private static OptionSource lookupOf(String table) {
+        return new OptionSource(
+                OptionSourceKind.LOOKUP,
+                List.of(),
+                table,
+                "v",
+                null,
+                List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)),
+                List.of(new LookupListItem("l", 1)));
+    }
+
+    /**
+     * 書き込みの組の DSL のテーブルを返す（見本のスキーマの {@code model(...)} に足す）。
+     *
+     * @return テーブル
+     */
+    public DslTable[] writeTables() {
+        String bigint = postgres() ? "int8" : "bigint";
+        String decimal = postgres() ? "numeric" : "decimal";
+        List<DslTable> tables = new ArrayList<>();
+        tables.add(target(W_TGT, List.of("id"), "varchar", "varchar"));
+        tables.add(target(W_NUM, List.of("id"), bigint, "varchar"));
+        tables.add(table(
+                W_DEC,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                column("v").dbType(decimal).decimal(38, 10).build(),
+                column("l").build()));
+        tables.add(target(W_HIDDEN, List.of("id"), "varchar", "varchar"));
+        tables.add(target(W_MANY, List.of("id"), "varchar", "varchar"));
+        tables.add(target(W_LONG, List.of("id"), text(), "varchar"));
+        tables.add(table(
+                W_COMP,
+                false,
+                List.of("a", "b"),
+                column("a").dbType(integer()).build(),
+                column("b").build(),
+                column("l").build()));
+        tables.add(table(
+                W_NOKEY, false, List.of(), column("v").build(), column("l").build()));
+        tables.add(table(
+                W_VIEW,
+                true,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                column("v").build(),
+                column("l").build()));
+        tables.add(target(W_DUP, List.of("id"), "varchar", "varchar"));
+        tables.add(BusinessDataDslFixture.tableWithForeignKeys(
+                WS_MAIN,
+                List.of("id"),
+                List.of(new cherry.mastersmith.dsl.domain.DslForeignKey(List.of(FK_COLUMN), W_TGT, List.of("v"))),
+                column("id").dbType(integer()).nullable(false).build(),
+                column("name").length(50).build(),
+                ref(FK_COLUMN, reference(W_TGT, "v", "l")),
+                ref("ref", reference(W_TGT, "v", "l")),
+                column("num_ref")
+                        .dbType(bigint)
+                        .form(FormPart.SELECT)
+                        .options(reference(W_NUM, "v", "l"))
+                        .build(),
+                column("int_ref")
+                        .dbType(integer())
+                        .form(FormPart.SELECT)
+                        .options(reference(W_NUM, "v", "l"))
+                        .build(),
+                column("dec_ref")
+                        .dbType(decimal)
+                        .decimal(38, 10)
+                        .form(FormPart.SELECT)
+                        .options(reference(W_DEC, "v", "l"))
+                        .build(),
+                ref("hid_ref", reference(W_HIDDEN, "v", "l")),
+                column("long_ref")
+                        .dbType(text())
+                        .form(FormPart.SELECT)
+                        .options(reference(W_LONG, "v", "l"))
+                        .build(),
+                ref("comp_ref", reference(W_COMP, "b", "l")),
+                ref("nokey_ref", reference(W_NOKEY, "v", "l")),
+                ref("view_ref", reference(W_VIEW, "v", "l")),
+                ref("dup_ref", reference(W_DUP, "v", "l")),
+                column("self_ref")
+                        .dbType(integer())
+                        .form(FormPart.SELECT)
+                        .options(reference(WS_MAIN, "id", "name"))
+                        .build(),
+                column("pick_ref")
+                        .form(FormPart.LOOKUP)
+                        .options(lookupOf(W_TGT))
+                        .build()));
+        tables.add(reqTable(WS_REQ_OK, required("req", "varchar", reference(W_TGT, "v", "l"), true)));
+        tables.add(reqTable(WS_REQ_STR, required("req", "varchar", reference(W_TGT, "v", "l"), false)));
+        tables.add(reqTable(WS_REQ_INT, required("req", bigint, reference(W_NUM, "v", "l"), false)));
+        tables.add(reqTable(WS_REQ_MANY, required("req", "varchar", reference(W_MANY, "v", "l"), true)));
+        tables.add(reqTable(WS_REQ_HID, required("req", "varchar", reference(W_HIDDEN, "v", "l"), true)));
+        tables.add(reqTable(WS_REQ_PICK, required("req", "varchar", lookupOf(W_TGT), true)));
+        tables.add(table(
+                WS_REQ_TWO,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).nullable(false).build(),
+                required("a", "varchar", reference(W_MANY, "v", "l"), true),
+                required("b", "varchar", reference(W_MANY, "v", "l"), true)));
+        tables.add(table(
+                WS_FIVE,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).nullable(false).build(),
+                ref("r1", reference(W_TGT, "v", "l")),
+                ref("r2", reference(W_TGT, "v", "l")),
+                ref("r3", reference(W_TGT, "v", "l")),
+                ref("r4", reference(W_TGT, "v", "l")),
+                ref("r5", reference(W_TGT, "v", "l"))));
+        return tables.toArray(DslTable[]::new);
+    }
+
+    private DslTable reqTable(String name, DslColumn req) {
+        return table(
+                name,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).nullable(false).build(),
+                req,
+                column("memo").length(20).build());
+    }
+
+    /**
+     * スキーマを FULL（補助権限 CREATE・DELETE あり）にし、{@link #W_HIDDEN} だけを NONE にし、与えた上書きを足した設定を返す。
+     *
+     * @param overrides 上書き（無ければ空）
+     * @return 設定
+     */
+    public Map<PermissionTarget, PermissionValues> writeSettings(Map<PermissionTarget, PermissionValues> overrides) {
+        Map<PermissionTarget, PermissionValues> settings = new LinkedHashMap<>();
+        settings.put(PermissionTarget.schema(sample.schema()), new PermissionValues(MainPermission.FULL, true, true));
+        settings.put(
+                PermissionTarget.table(sample.schema(), W_HIDDEN),
+                new PermissionValues(MainPermission.NONE, null, null));
+        settings.putAll(overrides);
+        return settings;
+    }
+
+    /** 眠る関数を含むビュー（{@link #W_TGT} の写しで、値のカラムを読むと 8 秒眠る）。 */
+    public static final String W_SLOW = "wt_slow";
+
+    /** 眠るビューを参照する参照元（a → {@link #W_SLOW}）。 */
+    public static final String WS_SLOW = "ws_slow";
+
+    /** DSL にあり対象DB に無いカラムを参照する参照元（m → other の ghost）。 */
+    public static final String WS_MM = "ws_mm";
+
+    /** 書き込みの組に、時間切れと食い違いを起こす表を足す（{@link #createWrite()} の後に呼ぶ）。 */
+    public void createFailing() {
+        String sleep = postgres() ? "pg_sleep(8)::text" : "CAST(SLEEP(8) AS CHAR)";
+        sample.addObjects(
+                "CREATE VIEW %s" + W_SLOW + " AS SELECT id, " + sleep + " AS v, l FROM %s" + W_TGT,
+                "CREATE TABLE %s" + WS_SLOW + " (id INTEGER NOT NULL PRIMARY KEY, a VARCHAR(40) NULL)",
+                "CREATE TABLE %s" + WS_MM + " (id INTEGER NOT NULL PRIMARY KEY, m VARCHAR(40) NULL)");
+    }
+
+    /**
+     * 書き込みの組と、時間切れ・食い違いを起こす表の DSL のテーブルを返す（見本の {@code other} を ghost のカラムつきで置き換える）。
+     *
+     * @return テーブル
+     */
+    public DslTable[] failingTables() {
+        List<DslTable> tables = new ArrayList<>(List.of(writeTables()));
+        tables.add(table(
+                W_SLOW,
+                true,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                column("v").build(),
+                column("l").build()));
+        tables.add(table(
+                WS_SLOW,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                ref("a", reference(W_SLOW, "v", "l"))));
+        tables.add(table(
+                WS_MM,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                ref("m", reference(BusinessDataSampleSchema.OTHER, "ghost", "title"))));
+        tables.add(table(
+                BusinessDataSampleSchema.OTHER,
+                false,
+                List.of("id"),
+                column("id").dbType(integer()).build(),
+                column("title").build(),
+                column("ghost").build()));
+        return tables.toArray(DslTable[]::new);
+    }
 }

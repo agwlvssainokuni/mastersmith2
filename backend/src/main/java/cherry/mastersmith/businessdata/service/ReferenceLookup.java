@@ -464,6 +464,46 @@ public class ReferenceLookup {
     }
 
     /**
+     * 保存前の確かめに向けた口（Intent 261029-reference-lookup-cleanup の U2、計画の 9節 Q1）。参照元のテーブルの REFERENCE・LOOKUP
+     * のカラムと参照先を、判定の材料のカラムの並び（DSL の並び）で返す。参照先は同じ写しの DSL から引き、FIXED と参照でないカラムを
+     * 含めない。対象DB を読まない。
+     *
+     * @param source 参照元の判定の材料と写し
+     * @return カラムの名前ごとの参照先（並びを保つ。変更できない）
+     */
+    public Map<String, ReferenceTarget> writeTargets(TableAccessResolution.Resolved source) {
+        Objects.requireNonNull(source, "source は必須です");
+        Optional<DslTable> table = dslTable(source);
+        if (table.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, ReferenceTarget> targets = new LinkedHashMap<>();
+        for (ColumnAccess column : source.view().columns()) {
+            DslColumn dsl = table.get().columns().get(column.column());
+            if (dsl != null) {
+                ReferenceTarget.from(source.view().schema(), dsl.options())
+                        .ifPresent(target -> targets.put(column.column(), target));
+            }
+        }
+        return java.util.Collections.unmodifiableMap(targets);
+    }
+
+    /**
+     * 参照先を読めるかを、参照元と同じ写しで判定する（Intent 261029-reference-lookup-cleanup の U2、計画の 9節 Q1、BR3.2）。対象DB を
+     * 読まない。
+     *
+     * @param source 参照元の判定の材料と写し
+     * @param target 参照先（{@link #writeTargets} で引いたもの）
+     * @return {@link ReferenceStatus#AVAILABLE} か {@link ReferenceStatus#NO_PERMISSION}
+     */
+    public ReferenceStatus accessOf(TableAccessResolution.Resolved source, ReferenceTarget target) {
+        Objects.requireNonNull(source, "source は必須です");
+        Objects.requireNonNull(target, "target は必須です");
+        return ReferencePolicy.accessOf(
+                target, resolver.referenceView(source.snapshot(), target.schema(), target.table()));
+    }
+
+    /**
      * 検索 API の ③ の判定（BR1.3・BR3.3・BR6.1）。写しを1回取り、参照元のテーブル・カラムを DSL と照らし、参照元のカラムの主権限が
      * FULL で、参照先が {@code AVAILABLE} のときだけ参照先を返す。
      */

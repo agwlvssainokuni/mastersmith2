@@ -234,4 +234,43 @@ class BusinessDataWriteControllerTest {
         assertThat(new RowDeleteRequest("sample", "item", DEFINITION, null).toString())
                 .isEqualTo("RowDeleteRequest[schema=sample, table=item, keyColumns=0]");
     }
+
+    @org.junit.jupiter.api.DisplayName(
+            "a reference rejection before saving is 409 BUSINESS_REFERENCE_NOT_FOUND with every field error as is")
+    @Test
+    void referenceRejectionBeforeSaving() {
+        BusinessException e = controller.toException(new WriteResult.Rejected(
+                WriteRejection.REFERENCE_NOT_FOUND,
+                List.of(
+                        new BusinessDataFieldError("dept_code", BusinessDataFieldErrorReason.REFERENCE_NOT_FOUND),
+                        new BusinessDataFieldError("team_id", BusinessDataFieldErrorReason.REFERENCE_NOT_FOUND))));
+
+        assertThat(e.getProblemType().code()).isEqualTo("BUSINESS_REFERENCE_NOT_FOUND");
+        assertThat(e.getProblemType().status()).isEqualTo(409);
+        assertThat(e.getProperties())
+                .containsEntry(
+                        "fieldErrors",
+                        List.of(
+                                Map.of("field", "dept_code", "reason", "REFERENCE_NOT_FOUND"),
+                                Map.of("field", "team_id", "reason", "REFERENCE_NOT_FOUND")));
+    }
+
+    @org.junit.jupiter.api.DisplayName(
+            "a required reference dead end keeps the column name in NOT_EDITABLE_NOT_NULL next to the empty field form")
+    @Test
+    void requiredReferenceDeadEnd() {
+        BusinessException deadEnd = controller.toException(new WriteResult.Rejected(
+                WriteRejection.REFERENCE_NOT_FOUND,
+                List.of(new BusinessDataFieldError("dept_code", BusinessDataFieldErrorReason.NOT_EDITABLE_NOT_NULL))));
+        BusinessException dbNotNull = controller.toException(new WriteResult.Rejected(
+                WriteRejection.SAVE_REJECTED,
+                List.of(new BusinessDataFieldError("", BusinessDataFieldErrorReason.NOT_EDITABLE_NOT_NULL))));
+
+        assertThat(deadEnd.getProblemType().code()).isEqualTo("BUSINESS_REFERENCE_NOT_FOUND");
+        assertThat(deadEnd.getProperties())
+                .containsEntry("fieldErrors", List.of(Map.of("field", "dept_code", "reason", "NOT_EDITABLE_NOT_NULL")));
+        assertThat(dbNotNull.getProperties())
+                .as("既存の DB の NOT NULL 違反の写しは field が空のまま")
+                .containsEntry("fieldErrors", List.of(Map.of("field", "", "reason", "NOT_EDITABLE_NOT_NULL")));
+    }
 }

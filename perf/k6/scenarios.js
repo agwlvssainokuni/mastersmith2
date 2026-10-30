@@ -200,6 +200,14 @@
 //   refPickerEquals     biz_refpick の item_id のピッカーで id の完全一致（VU と繰り返しの番号で値を回す。200 で1行）
 //   refLabel            同じピッカーのラベルの1件読み（値を回す。200 で1行・page は null）
 //   refPickerContains   同じピッカーで c_010 の部分一致（目印の語。200 で 20 行・hasNext が真）
+// 他テーブル参照の保存前の確かめの場面（Intent 261029-reference-lookup-cleanup の U2 u2-reference-write-check、Bolt B3。手順は
+// perf/README.md の「他テーブル参照の保存前の確かめの場面」）。ID は construction/u2-reference-write-check/nfr-requirements/ の
+// performance-requirements.md（NFR2.21〜NFR2.24）と infrastructure-design/infrastructure-specification.md（4.2〜4.4節）。種は
+// perf/biz/make-biz-seed.sh（biz_refcreate）、DSL は perf/make-biz-dsl.mjs。setup は前の場面の状態に頼らず、ロール REF_WRITER_ROLE_NAME
+// （スキーマ bizperf を READ、biz_refcreate を FULL・CREATE、biz_code200 を READ）を用意して試験用の利用者に割り当て、1人ずつログインして
+// 作業ロールを保存し、定義（purpose CREATE）で書き込みが使え参照の項目の状態が AVAILABLE であることを確かめてから始める。1回の繰り返しに
+// 要求1つで待ちを置かない。判定は iteration_duration{scenario:refCreateChecked} の p95 < 1000 ms と checks の率 1。10 VU・3 分。
+//   refCreateChecked    biz_refcreate の作成（必須の参照項目 code に K1〜K200 を順に回して入れる。保存前の確かめを通って 201）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -473,6 +481,11 @@ const REF_CODE_COLUMN = 'code'
 const REF_PICK_COLUMN = 'item_id'
 const REF_OPTIONS = 200
 const REF_PAGE_SIZE = 20
+// 他テーブル参照の保存前の確かめの場面（Intent 261029-reference-lookup-cleanup の U2）
+const REF_WRITE_SCENARIOS = ['refCreateChecked']
+const REF_WRITER_ROLE_NAME = __ENV.REF_WRITER_ROLE_NAME || 'perf-biz-refwriter'
+const REF_CREATE_SOURCE = 'biz_refcreate'
+const REF_CREATE_TARGET = 'biz_code200'
 
 // 監視の確かめの場面（monitorLight）。1 VU で、繰り返しごとに 1〜2 秒待つ
 const MONITOR_DURATION = __ENV.MONITOR_DURATION || '5m'
@@ -509,7 +522,7 @@ function scenariosFor(name) {
   if (BIZ_WRITE_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
   }
-  if (REF_SCENARIOS.includes(name)) {
+  if (REF_SCENARIOS.includes(name) || REF_WRITE_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
   }
   if (NAV_SCENARIOS.includes(name)) {
@@ -640,6 +653,14 @@ function thresholdsFor(name) {
       [`http_req_duration{name:${name}}`]: ['max>=0'],
     }
   }
+  // Intent 261029-reference-lookup-cleanup の U2（NFR2.21）。U1 と同じ判定。変えたときは perf/k6/thresholds-test.sh の期待の表も合わせる。
+  if (REF_WRITE_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['max>=0'],
+    }
+  }
   if (NAV_SCENARIOS.includes(name)) {
     return {
       [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
@@ -706,6 +727,7 @@ if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) options.setup
 if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // 他テーブル参照の読み取りの場面は、setup でロール・割り当て・作業ロール・トークンを API で用意する
 if (REF_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+if (REF_WRITE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -765,6 +787,7 @@ export function setup() {
   if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) setupBusinessData(tokens)
   if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) setupBusinessDataWrite(tokens)
   if (REF_SCENARIOS.includes(SCENARIO)) setupReference(tokens)
+  if (REF_WRITE_SCENARIOS.includes(SCENARIO)) setupReferenceWrite(tokens)
   return tokens
 }
 
@@ -2633,6 +2656,61 @@ function refPickerContains(data) {
   })
 }
 
+// 他テーブル参照の保存前の確かめの場面の用意（U2）。前の場面の状態に頼らず、ロールの用意・割り当て・作業ロールの保存・トークンを
+// 自分で行い、定義（purpose CREATE）で書き込みが使え参照の項目の状態が AVAILABLE であることを確かめる（DSL の適用は bizPrepare が行う）。
+function setupReferenceWrite(data) {
+  if (VUS > BIZ_USER_COUNT) fail(`VUS（${VUS}）が試験用の利用者の数 BIZ_USER_COUNT（${BIZ_USER_COUNT}）を超えています`)
+  const operator = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  const operatorHeaders = roleHeaders(operator)
+  const roleId =
+    roleIdByName(operator, REF_WRITER_ROLE_NAME) || roleCreate(operator, REF_WRITER_ROLE_NAME, 'refWriteSetup')
+  bizSavePermission(operatorHeaders, roleId, null, 'READ', null, null)
+  bizSavePermission(operatorHeaders, roleId, REF_CREATE_SOURCE, 'FULL', true, null)
+  bizSavePermission(operatorHeaders, roleId, REF_CREATE_TARGET, 'READ', null, null)
+  const ids = idsBySearch(operatorHeaders, 'perf-biz-')
+  data.bizTokens = {}
+  for (let vu = 1; vu <= VUS; vu++) {
+    const userId = ids[bizUserEmail(vu)]
+    if (!userId) fail(`試験用の利用者 ${bizUserEmail(vu)} がいません（perf/README.md の手順で入れてください）`)
+    roleAssignEnsured(operator, roleId, { userId })
+    // 1人ずつログインする（ロックの状態の行を作る。project.md の学び）
+    const token = tokenOf(login(bizUserEmail(vu), USER_PASSWORD))
+    const switched = jsonPut(`${BASE}/api/me/work-role`, { roleId }, roleHeaders(token), 'refWriteSetup')
+    if (switched.status !== 204) fail(`作業ロールを保存できませんでした: ${switched.status} ${codeOf(switched)}`)
+    data.bizTokens[vu] = token
+  }
+  const definition = refDefinitionRequest(roleHeaders(data.bizTokens[1]), REF_CREATE_SOURCE, 'refWriteSetup')
+  if (definition.status !== 200) {
+    fail(`参照元の定義を読めませんでした: ${definition.status} ${codeOf(definition)}（先に bizPrepare を流してください）`)
+  }
+  const operations = definition.json('operations') || []
+  if (!definition.json('writeConfigured') || !operations.includes('CREATE')) {
+    fail('書き込みが使えません（アプリの一時の環境ファイルの MASTERSMITH_TARGET_DB_WRITE_* と、書き込みのロールを確かめてください）')
+  }
+  const field = refFieldOf(definition, REF_CODE_COLUMN)
+  if (!field || field.status !== 'AVAILABLE') {
+    fail(`参照の項目の状態が AVAILABLE ではありません（種の台本と DSL を確かめてください）: ${field ? field.status : 'null'}`)
+  }
+  data.refDefinitionId = definition.json('definitionId')
+}
+
+// 保存前の確かめつきの作成（必須の参照項目 code に K1〜K200 を順に回す。参照先にあるため 201）
+function refCreateChecked(data) {
+  const n = ((exec.vu.idInTest * 7919 + exec.vu.iterationInScenario) % REF_OPTIONS) + 1
+  const res = jsonPost(
+    `${BIZ_API}/rows`,
+    {
+      schema: BIZ_SCHEMA,
+      table: REF_CREATE_SOURCE,
+      definitionId: data.refDefinitionId,
+      values: { [REF_CODE_COLUMN]: `K${n}` },
+    },
+    bizHeaders(data),
+    'refCreateChecked',
+  )
+  check(res, { 'refCreateChecked 201': (r) => r.status === 201 })
+}
+
 const USER_SCENARIOS = {
   monitorLight,
   preferencesGet,
@@ -2699,6 +2777,7 @@ const USER_SCENARIOS = {
   refPickerEquals,
   refLabel,
   refPickerContains,
+  refCreateChecked,
 }
 
 export default function (tokens) {

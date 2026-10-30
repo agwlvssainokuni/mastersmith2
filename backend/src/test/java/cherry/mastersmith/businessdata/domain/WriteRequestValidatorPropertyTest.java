@@ -25,11 +25,16 @@ import cherry.mastersmith.dsl.domain.ValidationType;
 import cherry.mastersmith.role.domain.MainPermission;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import net.jqwik.api.Arbitraries;
+import net.jqwik.api.Arbitrary;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Label;
 import net.jqwik.api.Property;
+import net.jqwik.api.Provide;
 import net.jqwik.api.constraints.IntRange;
 import net.jqwik.api.constraints.StringLength;
 
@@ -116,5 +121,68 @@ class WriteRequestValidatorPropertyTest {
         assertThat(update(view, "r", value))
                 .isEqualTo(new WriteValidation.Invalid(
                         List.of(new BusinessDataFieldError("r", BusinessDataFieldErrorReason.NOT_ALLOWED))));
+    }
+
+    @Provide
+    Arbitrary<String> heldTexts() {
+        return Arbitraries.of("", "abc", "1", "x", "xy", "-3").injectNull(0.2);
+    }
+
+    @Property
+    @Label("holding moves only the errors of the held column and never changes the errors of other columns")
+    void holdMovesOnlyHeldColumn(@ForAll("heldTexts") String qty, @ForAll("heldTexts") String memo) {
+        DslTable table = BusinessDataDslFixture.table(
+                "t",
+                false,
+                List.of("id"),
+                column("id").dbType("int4").build(),
+                column("qty").dbType("int4").nullable(false).build(),
+                column("memo")
+                        .dbType("varchar")
+                        .validation(ValidationType.MIN_LENGTH, "2")
+                        .build());
+        TableAccessView view = TableAccessPolicy.evaluate(BusinessDataDslFixture.input(
+                table,
+                MainPermission.FULL,
+                Map.of("id", MainPermission.FULL, "qty", MainPermission.FULL, "memo", MainPermission.FULL),
+                Map.of(
+                        "id", new ColumnKind(ValueType.INTEGER, true),
+                        "qty", new ColumnKind(ValueType.INTEGER, true)),
+                true,
+                true,
+                true));
+        Map<String, String> values = new LinkedHashMap<>();
+        values.put("qty", qty);
+        values.put("memo", memo);
+
+        WriteValidation plain = create(view, values, WriteRequestValidator.Hold.NONE);
+        WriteValidation held = create(view, values, new WriteRequestValidator.Hold(Set.of("qty"), Set.of()));
+
+        assertThat(errorsBut(held, "qty")).isEqualTo(errorsBut(plain, "qty"));
+        assertThat(errorsOf(plain, "qty")).containsAll(errorsOf(held, "qty"));
+    }
+
+    private static WriteValidation create(
+            TableAccessView view, Map<String, String> values, WriteRequestValidator.Hold hold) {
+        return WriteRequestValidator.validate(
+                view,
+                WriteOperation.CREATE,
+                null,
+                new WriteValues(values),
+                new ColumnValueCodec(),
+                new DeadlinePatternMatcher(Clock.systemUTC()),
+                hold);
+    }
+
+    private static List<BusinessDataFieldError> all(WriteValidation validation) {
+        return validation instanceof WriteValidation.Invalid invalid ? invalid.errors() : List.of();
+    }
+
+    private static List<BusinessDataFieldError> errorsBut(WriteValidation validation, String column) {
+        return all(validation).stream().filter(e -> !e.field().equals(column)).toList();
+    }
+
+    private static List<BusinessDataFieldError> errorsOf(WriteValidation validation, String column) {
+        return all(validation).stream().filter(e -> e.field().equals(column)).toList();
     }
 }
