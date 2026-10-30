@@ -25,7 +25,7 @@
 
 U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1（`ReferenceReadDeadline`・`ReferenceReadFailure`・`ReferenceFailureReason`・`TargetReadAccess.referenceReadTotal()`）と B2（`ReferenceCheckResult.Failed(ReferenceReadFailure)`・`ReferenceCountState.Failed(ReferenceReadFailure)`・`ReferenceLookup.check`・`ReferenceLookup.countState`）で `develop` に統合した後に** B3 を始める。名前と置き場は NFR 設計の `reliability-design.md` 5節・`logical-components.md` 5節のとおりで、変えない。`ReferenceReadDeadline.narrow` の単体テスト（T-T2）は U1 が持ち、U2 では重ねない。U2 の計画もこの順を前提にする。
 
-## 2. Testing Contract
+## Testing Contract
 
 （下の JSON の塊は `aidlc engine testing-posture render` の出力の `## Testing Contract` の塊を、一字も変えずに写したもの。）
 

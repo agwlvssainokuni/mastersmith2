@@ -36771,3 +36771,125 @@
 **Tool**: Bash
 
 ---
+
+## Artifact Updated
+**Timestamp**: 2026-10-30T08:46:26Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u1-reference-read/code-generation/code-generation-plan.md
+**Context**: construction > u1-reference-read > code-generation > code-generation-plan.md
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-30T08:46:28Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Plan Approval Skipped
+**Timestamp**: 2026-10-30T08:46:33Z
+**Event**: PLAN_APPROVAL_SKIPPED
+**Stage**: code-generation
+**Details**: Plan approval off
+**Checkpoint**: plan-approval
+**Plan Target**: unit:u1-reference-read
+**Intent**: 01a187ba-f2a1-7f01-8bca-bb0801ee3112
+**Directive Epoch**: sha256:ab045132b94ae920e0e75188e6a351e7c140890bdaf23c0ea04b59b0904a3274
+**Run floor**: STAGE_STARTED:2026-10-30T08:26:01Z#1
+**Approval Fingerprint**: sha256:v3:9d1b19ddb2594382ee52e113bccc05c2b8e9ead1ee7153ca8970781c6a8b4416
+**Questions File**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u1-reference-read/code-generation/code-generation-questions.md
+**Questions SHA-256**: 14574cc27845d58ccce87d38fbeb36460f072c48d2d9e0e918435e758b587eb6
+**Prompt SHA-256**: 452559ca0176df39e11628f000d455c031c4fab383ceebe74864f6d8785743c0
+**Source**: env AIDLC_DISABLE_PLAN_APPROVAL_GUARD
+**Unit**: u1-reference-read
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-30T08:46:47Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Human Turn
+**Timestamp**: 2026-10-30T09:14:06Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. B2 で書く（推奨）","A. 書かない（推奨）","A. そうする（推奨）","A. 認める（推奨）"]
+**Message Id**: 1f764142
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-30T09:14:06Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: U1 Q1. k6 の場面・試験用のデータ・ DSL を、どの段で書きますか？
+**Reply**: A. B2 で書く（推奨）
+**Options**: ["A. B2 で書く（推奨）","B. Build and Test で書く"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-30T09:14:06Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: U1 Q2. ダッシュボードの参照の API のパネル 2 つを、この段で書きますか？
+**Reply**: A. 書かない（推奨）
+**Options**: ["A. 書かない（推奨）","B. 仮の式で書く"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-30T09:14:06Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: U1 Q3. B1 を verify と E2E を通して先に develop へ統合し、U1 のコードのレビューは B2 の後に 1 回で受けますか？
+**Reply**: A. そうする（推奨）
+**Options**: ["A. そうする（推奨）","B. B2 まで統合しない"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-10-30T09:14:06Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: U1 Q4・Q5. 検索の API は既存の BusinessDataReadController に足し、計画の新しいクラスと口（ReferenceLookup・ReferencePolicy・継ぎ目の型、RowDialect の 2 つの口、RowSqlExecutor.search の引数の追加など。SQL の部品は増やさない）を認めますか？
+**Reply**: A. 認める（推奨）
+**Options**: ["A. 認める（推奨）","B. 検索は新しいコントローラーに"]
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-30T09:14:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Guard Disabled
+**Timestamp**: 2026-10-30T09:14:14Z
+**Event**: GUARD_DISABLED
+**Guard**: plan-approval-guard
+**Tool**: Bash
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-10-30T09:14:18Z
+**Event**: DECISION_RECORDED
+**Stage**: code-generation
+**Decision**: U1 plan section 9: Q1 A (k6/seed/DSL in B2), Q2 A (no dashboard panels now), Q3 A (integrate B1 first, single U1 code review after B2), Q4/Q5 A (search API in BusinessDataReadController; new classes and hooks approved, no new SQL class)
+**Options**: A,B
+**Unit**: u1-reference-read
+**Message Id**: 1f764142
+
+---
