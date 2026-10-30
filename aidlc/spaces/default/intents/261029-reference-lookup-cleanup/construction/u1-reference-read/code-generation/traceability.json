@@ -1,0 +1,1046 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-reference-read",
+  "upstream_ids": [
+    "AC1.4.2",
+    "AC1.4.7",
+    "AC2.1.15",
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.2.1",
+    "AC1.1.10",
+    "AC2.3.3",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.3.3",
+    "AC1.3.6",
+    "AC1.2.5",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC1.3.7",
+    "AC1.3.8",
+    "AC1.4.1",
+    "AC1.4.3",
+    "AC1.4.4",
+    "AC1.4.5",
+    "AC1.4.6",
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.1.6",
+    "AC2.1.7",
+    "AC2.1.8",
+    "AC2.1.11",
+    "AC2.1.9",
+    "AC2.1.10",
+    "AC2.1.12",
+    "AC2.1.13",
+    "AC2.1.14",
+    "AC2.1.16",
+    "AC2.3.1",
+    "AC2.3.2",
+    "AC2.3.4",
+    "AC3.4.1",
+    "AC3.4.2",
+    "AC3.4.3",
+    "AC3.4.4",
+    "AC3.4.5",
+    "AC3.5.1",
+    "AC3.5.2",
+    "AC3.5.3",
+    "AC3.5.4",
+    "AC3.5.5",
+    "AC2.3.5",
+    "NFR2.1",
+    "NFR2.5",
+    "NFR5.3",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.3",
+    "NFR2.4",
+    "NFR3.5",
+    "NFR1.1",
+    "NFR1.14",
+    "NFR1.15",
+    "NFR2.6",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR3.1",
+    "NFR3.4",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR7.1",
+    "NFR7.3",
+    "NFR9.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR2.8",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR1.13",
+    "NFR2.7",
+    "NFR3.2",
+    "NFR3.6",
+    "NFR7.2",
+    "BR1.1",
+    "BR1.5",
+    "BR1.2",
+    "BR1.4",
+    "BR1.3",
+    "BR5.6",
+    "BR6.4",
+    "BR3.1",
+    "BR5.2",
+    "BR5.3",
+    "BR6.2",
+    "BR8.4",
+    "BR10.2",
+    "BR1.6",
+    "BR1.7",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR2.4",
+    "BR4.4",
+    "BR6.3",
+    "BR9.4",
+    "BR2.5",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR3.5",
+    "BR3.6",
+    "BR4.1",
+    "BR4.2",
+    "BR11.4",
+    "BR8.6",
+    "BR4.3",
+    "BR7.6",
+    "BR4.5",
+    "BR4.6",
+    "BR4.7",
+    "BR4.8",
+    "BR7.2",
+    "BR7.3",
+    "BR7.5",
+    "BR5.1",
+    "BR5.4",
+    "BR5.5",
+    "BR7.1",
+    "BR5.7",
+    "BR5.8",
+    "BR5.9",
+    "BR6.1",
+    "BR9.3",
+    "BR7.4",
+    "BR8.1",
+    "BR8.2",
+    "BR8.3",
+    "BR8.5",
+    "BR8.7",
+    "BR9.1",
+    "BR9.7",
+    "BR9.2",
+    "BR9.5",
+    "BR9.6",
+    "BR10.1",
+    "BR10.3",
+    "BR10.4",
+    "BR11.1",
+    "BR11.2",
+    "BR11.3",
+    "BR12.4",
+    "BR12.1",
+    "BR12.2",
+    "BR12.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "AC1.4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "AC2.1.15",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTraceExposureIT.java"
+    },
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 読み込み中の表示。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 長いラベル・同じラベルの見せ方。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 値とラベルを文字として描く。サーバーが同じ文字列で返すことは AbstractReferenceReadIT の T-B10。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC2.3.3",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: ラベルを文字として描く。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.3.3",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 入力不可と値だけの表示。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.3.6",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 入力不可の説明と aria。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "AC1.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "AC1.3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC1.3.7",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 読み上げとフォーカス。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.3.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC1.4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "AC1.4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "AC1.4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC1.4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceTypesTest.java"
+    },
+    {
+      "id": "AC2.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceRowsRequestValidatorTest.java"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceRequestLimitIT.java"
+    },
+    {
+      "id": "AC2.1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC2.1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "AC2.1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "AC2.1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC2.1.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "AC2.1.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "AC2.1.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "id": "AC2.1.16",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC2.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "AC2.3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC3.4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "AC3.4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC3.4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC3.4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "AC3.4.5",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面: 入力不可の見た目が一覧・詳細に漏れない。U1 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC3.5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "AC3.5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "AC3.5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "AC3.5.4",
+      "status": "Deferred",
+      "target": "performance-validation（3種類の対象DB での応答時間の測定。場面は perf/k6/scenarios.js・種は perf/biz/make-biz-seed.sh・DSL は perf/make-biz-dsl.mjs・手順は perf/README.md に Code Generation で用意し、k6 inspect と thresholds-test.sh だけを確かめた。試し走りは Build and Test、3種類の判定は Performance Validation。測るまで Unverified）"
+    },
+    {
+      "id": "AC3.5.5",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "AC2.3.5",
+      "status": "N/A",
+      "target": "初稿の ID（stories.md の「群2 の ID の対応」の表）。最終版の AC2.1.10〜AC2.1.12 で追う（機能設計の traceability と同じ）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "Deferred",
+      "target": "performance-validation（p95 の線 1,000 ms・部分一致 3,000 ms と checks の率 1。場面は perf/k6/scenarios.js・種は perf/biz/make-biz-seed.sh・DSL は perf/make-biz-dsl.mjs・手順は perf/README.md に Code Generation で用意し、k6 inspect と thresholds-test.sh だけを確かめた。試し走りは Build and Test、3種類の判定は Performance Validation。測るまで Unverified）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "Deferred",
+      "target": "performance-validation（Met・Not Met・Unverified の記録と、目標と物差しを緩めないこと。場面は perf/k6/scenarios.js・種は perf/biz/make-biz-seed.sh・DSL は perf/make-biz-dsl.mjs・手順は perf/README.md に Code Generation で用意し、k6 inspect と thresholds-test.sh だけを確かめた。試し走りは Build and Test、3種類の判定は Performance Validation。測るまで Unverified）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "Deferred",
+      "target": "build-and-test（B1 の verify 23分28秒・CI 32分25秒、B2 の verify 23分34秒は code-summary.md に記録済み。B2 の CI〈b048ec1〉の検査の job の時間と、Build and Test の verify・CI の時間の記録が残る）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "Deferred",
+      "target": "performance-validation（3種類の対象DB を1種類ずつ・読み取りのプールの上限 5 で流す判定。上限 5 の行と中止の条件は perf/README.md に書いた。場面は perf/k6/scenarios.js・種は perf/biz/make-biz-seed.sh・DSL は perf/make-biz-dsl.mjs・手順は perf/README.md に Code Generation で用意し、k6 inspect と thresholds-test.sh だけを確かめた。試し走りは Build and Test、3種類の判定は Performance Validation。測るまで Unverified）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "Deferred",
+      "target": "build-and-test（種の表 biz_code200・biz_code201・参照元の3つの表は perf/biz/make-biz-seed.sh に書いた。3種類で種を流し込み、行の数〈200・201・100,000〉と目印の当たりを確かめるのは Build and Test。この段では bash -n と出力の目読だけ）"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceReadDeadlineTest.java"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "NFR1.14",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyPropertyTest.java"
+    },
+    {
+      "id": "NFR1.15",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "Deferred",
+      "target": "observability-setup（ダッシュボードのパネル 46・47 と区画の説明。基盤の設計 R-02 と計画の Q2: A のとおり、uri を確かめてから Observability Setup が書く。この段では mastersmith-overview.json を変えていない）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbSettingsTest.java"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "Deferred",
+      "target": "observability-setup（既存の警報 ms-biz-target-db が新しい道と定義の道の 503 で firing になることを、使い捨ての環境で対象DB を止めて確かめる。警報は変えていない）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "backend/src/main/resources/dsl/dsl-schema-v2.json"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "backend/gradle.lockfile"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceRequestLimitIT.java"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "NFR1.13",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceRowsRequestValidatorTest.java"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR5.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR6.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR8.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceReadDeadlineTest.java"
+    },
+    {
+      "id": "BR10.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTimeoutIT.java"
+    },
+    {
+      "id": "BR1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataProblemTypeCatalogTest.java"
+    },
+    {
+      "id": "BR1.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/TableAccessResolverTest.java"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyPropertyTest.java"
+    },
+    {
+      "id": "BR6.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR9.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceAuthorizationApiIT.java"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyPropertyTest.java"
+    },
+    {
+      "id": "BR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR11.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceTypesTest.java"
+    },
+    {
+      "id": "BR8.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR7.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyPropertyTest.java"
+    },
+    {
+      "id": "BR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR4.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR7.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR5.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR5.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR5.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR5.9",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR9.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR7.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferencePolicyTest.java"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/service/JdbcTargetReadAccessTest.java"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "BR8.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "BR8.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR8.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR9.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR9.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "id": "BR9.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSecretLeakIT.java"
+    },
+    {
+      "id": "BR10.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceTypesTest.java"
+    },
+    {
+      "id": "BR10.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceTraceExposureIT.java"
+    },
+    {
+      "id": "BR10.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceSameResponseIT.java"
+    },
+    {
+      "id": "BR11.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/ApiAccessArchitectureTest.java"
+    },
+    {
+      "id": "BR11.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "id": "BR11.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java"
+    },
+    {
+      "id": "BR12.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceConnectionUsageIT.java"
+    },
+    {
+      "id": "BR12.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR12.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    },
+    {
+      "id": "BR12.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceReadIT.java"
+    }
+  ]
+}

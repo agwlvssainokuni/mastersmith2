@@ -280,9 +280,9 @@ U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1
   - `perf/k6/scenarios.js`: `refDefinition200`・`refDefinition201`・`refPickerEquals`・`refLabel`・`refPickerContains`（1回の繰り返しに要求1つ、待ちなし、トークンは `setup()`、setup は前の場面の状態に頼らない、p95 の線は 1,000 ms・部分一致 3,000 ms を今の `thresholdsFor` の仕組みに足す）。`perf/k6/thresholds-test.sh` の期待の表に5つの場面を足す。
   - `perf/README.md` に U1 の場面の手順: 一時の環境ファイル `app-targetdb.env` に `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5` を足す行、流す前に使い捨てのアプリの `/actuator/metrics/hikaricp.connections.max`（`pool=mastersmith-target-db`）を読み、**5 でなければ U1 の場面を流さず中止し、一時の環境ファイルを直して使い捨てのアプリを起動し直す**条件、種を入れた後の行の数（200・201・100,000）と目印の当たりの数の確かめ（MySQL は `--default-character-set=utf8mb4`）、流す順（U1 の読み取り → U2 の作成 → 深いページの参考）、`caffeinate -dims` と `pmset -g log`。
   - 確かめ: `bash -n perf/biz/make-biz-seed.sh`、`node --check perf/make-biz-dsl.mjs`、`bash perf/k6/thresholds-test.sh`、場面ごとに `SCENARIO=<名前> k6 inspect --include-system-env-vars perf/k6/scenarios.js` で場面と閾値の名前。種の流し込みと場面の実行は Build and Test。
-- [ ] **Step 23: B2 の確かめと統合**
+- [x] **Step 23: B2 の確かめと統合**
   - Step 13 と同じ（`verify` の時間・カバレッジ・`spotbugsGate`・3.3節の差・lockfile と移行の差、E2E の全件、コミットの提案、squash の統合、CI の試行ごとの確かめ）。
-- [ ] **Step 24: 文書と追跡**
+- [x] **Step 24: 文書と追跡**
   - `README.md`・`.env.example`・`perf/README.md` の記述が実装と合うことを読み直す。2つの Bolt の `verify` の時間・カバレッジの値・計画との差を、指揮役がまとめる `code-summary.md` の材料として残す。U1 のコードのレビューは B2 の後に U1 全体（B1・B2）を1回で受ける（9節の Q3）。
 
 ## 7. コミットの区切り（提案の件名。積む前に依頼者の承認を得る）
