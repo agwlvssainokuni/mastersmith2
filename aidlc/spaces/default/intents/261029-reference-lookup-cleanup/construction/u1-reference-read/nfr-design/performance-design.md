@@ -133,4 +133,5 @@ EXPLAIN の読み: 選択肢とピッカーは、並びがラベルから始ま�
 - **Code Generation**: `RowDialect` の2つの口と `ReferenceReadSpec` の足す項目の実装、1.3節と2節の結合テスト（`reliability-design.md` 4節の一覧）。
 - **Build and Test**: k6 の場面と種の台本、深いページのピッカーの参考の値。
 - **Performance Validation**: NFR2.1・NFR2.3 の合否。
-- **Feedback & Optimization**（F2: A）: 既存の業務データの一覧で、DSL で `sortable` にした長い文字のカラムで並べると、MySQL で同じ 1038 になり 500 を返しうる（試しからの見立てで、一覧そのものでは確かめていない）。直すかは後の Intent の要件で決める。
+- **Build and Test**（レビュー R-04）: 既存の業務データの一覧で、DSL で `sortable` にした長い文字のカラムで並べると、MySQL で同じ 1038 になり 500 を返しうる（試しからの見立てで、一覧そのものでは確かめていない）。この再現を1回確かめて記録する持ち主を Build and Test とする（`logical-components.md` 6節）。
+- **Feedback & Optimization**（F2: A）: Build and Test の結果を振り返りに載せる。直すかは後の Intent の要件で決める。

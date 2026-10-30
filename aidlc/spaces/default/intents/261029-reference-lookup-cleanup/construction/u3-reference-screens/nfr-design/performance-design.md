@@ -32,21 +32,34 @@ U3（作成・更新の画面の参照の部品とピッカーのダイアログ
 - 理由: 使い捨ての環境の読み取りのプールの上限は 5（U1 の `performance-design.md`）。1人の画面が5本を使い切らず、ほかの利用者の分を残す。LOOKUP の項目は1つの表で多くても数個で、待ちは `refLabel` の時間（索引あり 0.5 ms 前後、U1 の試し）の数倍に収まる見込み。
 - 失敗（403・503・通信の失敗・写しの失敗）は、その項目を値だけにし（D18）、枠を空けて次を送る。失敗で列を止めない。
 - 画面を離れた・定義を読み直した（`reload`・`retry`）ときは、世代を進め、列に残った項目を送らずに捨て、送った要求の答えも捨てる。
+- **列（`queue`）と送っている数（`inFlight`）は世代ごとの閉じた状態にする**（レビューの R-01）。世代を始めるたびに、その世代だけの `queue`・`inFlight`・`AbortController` を新しく作り、`pump` はその世代の値だけを読み書きする。フックの全体で共有する `inFlight` を置かない。そのため、古い世代の要求が後から答えても新しい世代の数は動かず、新しい世代は 0 本から先頭の 3 本を送れる。
+- **古い世代の送った要求は `AbortController` で取り消す**（R-01 の推奨の形）。世代を進めるとき（読み直し・画面を離れる・部品が外れる）に古い世代の `abort()` を呼ぶ。取り消した要求は `apiRequest` が通信の失敗（`networkError`）として投げるが、世代が違うため答えとして使わず、失敗の文も出さない（`.catch` でも世代を見る）。
+  - そのため L1 の `getReferenceLabel`（とその中の `postWithinLimit`）に、任意の `signal`（`AbortSignal`）の引数を足し、`apiRequest` の `init` にそのまま渡す。`apiFetch` は `init` を `send` に渡すため、401 の後の送り直しにも同じ `signal` が効く。ほかの呼び出し（検索・保存）は `signal` を渡さず、今の振る舞いを変えない。
+  - 重なりの見積もり: 取り消しで画面の側の待ちは止まるが、サーバーがすでに受けた問い合わせはその場で止まらないことがある。ただしラベルの1件読みは主キーの照合の1件で短く（U1 の試しで 0.5 ms 前後、上限は U1 の問い合わせの時間の上限）、読み直しの直後の短い間だけ古い世代の最大 3 本と新しい世代の 3 本が重なりうる。読み取りのプール（使い捨ての環境で上限 5）を借りる待ちは 3 秒まであり、この短い重なりで 503 になる見込みは小さいため、これ以上の手当て（新しい世代を古い世代の答えまで待たせる形）は置かない。
 
 ```text
 // 説明のための擬似コード（名前は Code Generation で決める）
-queue = 値のある AVAILABLE の LOOKUP の項目（定義の順）
-inFlight = 0; gen = 現在の世代
-pump():
-  while inFlight < LABEL_READ_CONCURRENCY かつ queue が空でない:
-    item = queue.shift(); inFlight += 1
-    getReferenceLabel(item.source, item.value)
-      .then(label → gen が同じなら labels[item] = label)
-      .catch(() → gen が同じなら labels[item] = null)
-      .finally(() → gen が同じなら { inFlight -= 1; loading から item を外す; pump() })
+startGeneration():
+  current?.controller.abort()           // 古い世代の送った要求を取り消す
+  g = { id: 次の番号,
+        queue: 値のある AVAILABLE の LOOKUP の項目（定義の順）,
+        inFlight: 0,
+        controller: new AbortController() }
+  current = g
+  pump(g)
+pump(g):
+  while g.inFlight < LABEL_READ_CONCURRENCY かつ g.queue が空でない:
+    item = g.queue.shift(); g.inFlight += 1
+    getReferenceLabel(item.source, item.value, g.controller.signal)
+      .then(label → current === g なら labels[item] = label)
+      .catch(() → current === g なら labels[item] = null)   // 取り消しは current !== g で捨てる
+      .finally(() → { g.inFlight -= 1;                        // 世代の中の数は常に減らす
+                      current === g なら { loading から item を外す; pump(g) } })
+離れる・部品が外れる: current?.controller.abort(); current = null
 ```
 
-- 確かめ（`useReferenceLabels.test.tsx`）: 手で解く Promise で、(1) 項目 3 つ（上限ちょうど）で 3 本が同時に出る、(2) 項目 4 つ（上限を超える）で最初は 3 本だけ出て、1本が答えると4本目が出る、(3) 答えの順が送った順と違っても各項目に正しいラベルが入る、(4) 失敗でも次が出る、(5) 離れた後は残りを送らず答えも捨てる。REFERENCE の項目と値が空の項目は列に入らない。
+- 確かめ（`useReferenceLabels.test.tsx`）: 手で解く Promise で、(1) 項目 3 つ（上限ちょうど）で 3 本が同時に出る、(2) 項目 4 つ（上限を超える）で最初は 3 本だけ出て、1本が答えると4本目が出る、(3) 答えの順が送った順と違っても各項目に正しいラベルが入る、(4) 失敗でも次が出る、(5) 離れた後は残りを送らず答えも捨てる、(6) **3 本が飛んでいる最中に読み直す（`reload`）と、古い世代の 3 本の `signal` が取り消され（`aborted` が真）、新しい世代の列が先頭から 3 本だけ送られ、新しい世代の1本が答えると4本目が出る。古い世代の要求をその後に解いても（成功・失敗とも）新しい世代のラベルと送る数が変わらない**。REFERENCE の項目と値が空の項目は列に入らない。
+- `businessDataApi.test.ts` に、`getReferenceLabel` に渡した `signal` が `fetch` の `init` に届くことを足す。
 
 ### 2.2 そのほかの要求
 
@@ -101,11 +114,12 @@ for root in roots:
 1. **ラベルの1件読みの「互いに待たない」（機能設計の D18）**: 同時に 3 本までとし、4本目からは前の答えを待つ（Q2: A）。D18 の「フォームの表示・入力・保存を止めない」は変わらない（待つのはラベルの読み込みだけ）。
 2. **200 件の `radio` の確かめ（NFR 要件の NFR2.43「見た目と時間は NFR 設計で確かめる」）**: 時間は測らず、部品のテストの構造とキーボードの確かめと、E2E 195 の axe にした（Q3: A）。見た目は axe と 375px のはみ出しの確かめで見る。
 3. **E2E 195 の状態の数**: NFR 要件の NFR4.44 の状態（入力不可の2つの理由を分けて数えて 10 個）に、`radio` 200 件を足し、作成の必須の入力不可を「開いた直後」と「保存を押した後」の2つに分けて、12 個に増えた（`security-design.md` の 3.4）。NFR2.45 の 1.5 倍の線で時間を見る。
+4. **ラベルの1件読みの呼び出しの形（機能設計の `frontend-components.md` の API の呼び出し）**: `getReferenceLabel` に任意の `signal` の引数を足した（2.1、レビューの R-01）。省けば今までと同じ振る舞いで、検索と保存の呼び出しは変えない。
 
 ## 後の段に回すこと
 
 - **Code Generation**:
-  - `LABEL_READ_CONCURRENCY` の名前と置き場を決め、2.1 の5つの確かめを書く。
+  - `LABEL_READ_CONCURRENCY` の名前と置き場を決め、2.1 の6つの確かめと `signal` の受け渡しの確かめを書く。世代ごとの閉じた状態と `AbortController` の取り消しを作る（R-01）。
   - 4節の一時の手順で、Bolt の前と後の値を記録する。
   - 5節の時間を記録する。変更の前の E2E の全体の時間を最初の実行で測る。
 - **Build and Test**: E2E の全体・`verify`・CI の時間の記録（NFR2.45）、`features/tables` のカバレッジの値。
@@ -124,7 +138,8 @@ for root in roots:
 - 機能設計: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u3-reference-screens/functional-design/functional-spec.md`（D1・D2・D6・D18・D23〜D25・D29、9節）、`frontend-components.md`（4.5節・7節）
 - U1 の NFR 設計: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u1-reference-read/nfr-design/performance-design.md`（k6 の場面、読み取りのプール 5、F1: A）
 - 契約: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/contract-design/contract-summary.md`（C2・C3）
-- コード（読み取りだけ）: `frontend/src/features/tables/BusinessDataFormPage.tsx`（839〜848 行の `RadioGroup`）、`frontend/src/shared/slow-notice/useSlowNotice.ts`、`frontend/scripts/check-bundle-size.mjs`、`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/RadioGroup/RadioGroup.tsx`（固定先 `4c63d11`、62〜110 行）、`frontend/node_modules/@testing-library/user-event`（14.6.8、`keydown.js` の `walkRadio`）
+- レビュー: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u3-reference-screens/nfr-design/reviews/review-01.md`（R-01。承認の場で依頼者が直すと決めた）
+- コード（読み取りだけ）: `frontend/src/features/tables/businessDataApi.ts`（75〜90 行の `postWithinLimit`）、`frontend/src/shared/api-client/apiClient.ts`（135〜168 行の `apiFetch`・`apiRequest`。`init` を送り直しにも渡し、投げた例外を `networkError` に替える）、`frontend/src/features/tables/BusinessDataFormPage.tsx`（839〜848 行の `RadioGroup`）、`frontend/src/shared/slow-notice/useSlowNotice.ts`、`frontend/scripts/check-bundle-size.mjs`、`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/RadioGroup/RadioGroup.tsx`（固定先 `4c63d11`、62〜110 行）、`frontend/node_modules/@testing-library/user-event`（14.6.8、`keydown.js` の `walkRadio`）
 - 書き方の手本: `aidlc/spaces/default/intents/261016-business-data-views/construction/u3-businessdata-screens/nfr-design/performance-design.md`
 - 決まり: `aidlc/spaces/default/memory/team.md`（Testing Posture）、`aidlc/spaces/default/memory/project.md`（学び: `caffeinate`・`pmset`）
 

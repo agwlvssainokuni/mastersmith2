@@ -56,17 +56,17 @@
     {
       "id": "NFR4.45",
       "status": "OK",
-      "target": "security-design.md 2節（Q1: A。開いた直後は helperText、保存を押した後は error。FormField のソースで確かめ依頼不要）と 3.4 の状態 7・8 でそろえた"
+      "target": "security-design.md 2節（Q1: A。開いた直後は helperText、保存を押した後は error。FormField のソースで確かめ依頼不要）・承認の場の決定（説明文の色を受け入れた、R-03）と 3.4 の状態 7・8 でそろえた"
     },
     {
       "id": "NFR5.41",
       "status": "OK",
-      "target": "security-design.md 4節（足した確かめ・手で解く Promise・waitFor）"
+      "target": "security-design.md 4節（足した確かめ・手で解く Promise・waitFor・2.5 の結び付けの確かめ・読み直しの確かめ）"
     },
     {
       "id": "NFR5.43",
       "status": "OK",
-      "target": "security-design.md 4節・3.4（190 を1本・195 は数えない・共有の DSL と 180 の確かめ・前提の行）"
+      "target": "security-design.md 4節・3.4（190 を1本・195 は数えない・共有の DSL と 180 の確かめ・前提の行・初期管理者と見本の行を変えない（R-04））"
     },
     {
       "id": "NFR6.41",
@@ -91,7 +91,7 @@
     {
       "id": "NFR2.42",
       "status": "OK",
-      "target": "performance-design.md 2節（Q2: A。ラベルの1件読みは同時に 3 本まで・世代で捨てる）・logical-components.md L4・L5"
+      "target": "performance-design.md 2節（Q2: A。ラベルの1件読みは同時に 3 本まで・列と送る数は世代ごとの閉じた状態・古い世代は AbortController で取り消す（R-01））・logical-components.md L1・L4・L5"
     },
     {
       "id": "NFR2.43",
@@ -131,17 +131,17 @@
     {
       "id": "NFR4.42",
       "status": "OK",
-      "target": "security-design.md 3.2（見える文字で始まる名前・role の使い分け）"
+      "target": "security-design.md 3.2（見える文字で始まる名前・role の使い分け）・2.5（ReferenceSelectField・LookupField の aria-describedby と aria-invalid の受け手、R-02）"
     },
     {
       "id": "NFR4.43",
       "status": "OK",
-      "target": "security-design.md 3.3（部品ごとと状態ごとの vitest-axe）"
+      "target": "security-design.md 3.3（部品ごとと状態ごとの vitest-axe）・2.5（結び付けの受け手の確かめ、R-02）"
     },
     {
       "id": "NFR4.44",
       "status": "OK",
-      "target": "security-design.md 3.4（12 の状態・組・375px・差し替えの shapeCompare・前提の行）"
+      "target": "security-design.md 3.4（12 の状態・組・375px・差し替えの shapeCompare・前提の行・自分で作った前提だけを使い保存を起こさない（R-04））・承認の場の決定と後の段に回すこと（状態 7 の color-contrast、R-03）"
     },
     {
       "id": "NFR5.42",

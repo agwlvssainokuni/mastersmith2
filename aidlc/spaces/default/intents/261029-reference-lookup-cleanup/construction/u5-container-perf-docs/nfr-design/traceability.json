@@ -20,12 +20,12 @@
     {
       "id": "NFR8.81",
       "status": "OK",
-      "target": "security-design.md 2.1節 A0（了承を最初の関門にし、日時と答えを記録）"
+      "target": "security-design.md 2.1節 A0 (i)（了承を最初の関門にし、項目ごとの日時と答えを記録）"
     },
     {
       "id": "NFR8.82",
       "status": "OK",
-      "target": "security-design.md 2.1節 A1〜A6・A8、2.2節、2.4節（index のダイジェストと RepoDigests の照合）、2.6節（/api/health とダッシュボードの件数）"
+      "target": "security-design.md 2.1節 A0 (ii)・A1（docker ps -a）〜A6・A8、2.2節、2.4節（index のダイジェストと RepoDigests の照合）、2.6節（/api/health とダッシュボードの uid ごとに 1 件）、2.8節（VM の空きメモリ）、4.1節（R1〜R5 の戻し）"
     },
     {
       "id": "NFR9.81",
@@ -50,22 +50,22 @@
     {
       "id": "NFR8.88",
       "status": "OK",
-      "target": "security-design.md 5.4節・5.5節（grep の線を名前と値の組で比べる、thresholdsFor との一致、thresholds-test.sh の終了コード）"
+      "target": "security-design.md 5.2.2節（1 か所の範囲）・5.4節・5.5節（grep の線を名前と値の組で比べる、全場面と期待の表の 7 場面の一致、thresholds-test.sh の終了コード）"
     },
     {
       "id": "NFR8.89",
       "status": "OK",
-      "target": "security-design.md 5.1節・5.2節・5.6節 Q1・Q2（U4 の統合を関門にし見出しと直接置く手順の件数）"
+      "target": "security-design.md 5.1節・5.2節・5.6節 Q1・Q2・5.7節 L3（U4 の統合を関門にし見出しと直接置く手順の件数、U4 の節の行が本文に残ること）"
     },
     {
       "id": "NFR8.90",
       "status": "OK",
-      "target": "security-design.md 5.2節・5.6節 Q3〜Q5・Q7（履歴の章に今の文だけを移す、検索と gitleaks dir の件数）"
+      "target": "security-design.md 5.2節・5.2.1節（本文と履歴の分け方）・5.6節 Q3〜Q5・Q7（gitleaks dir を流した指摘 0 件）・5.7節（行の集合の突き合わせ）"
     },
     {
       "id": "NFR8.84",
       "status": "OK",
-      "target": "security-design.md 2.5節（127.0.0.1:1025 へ example.com で送り API で件数）・2.7節（アプリの起動確認と元の状態への戻し）"
+      "target": "security-design.md 2.1節 A0 (iii)（アプリの起動の了承）、2.5節（127.0.0.1:1025 へ example.com で送り API で件数）・2.7節（起動を既定にした確かめ、救済の WARN の件数、元の状態への戻し、省くときの理由）"
     },
     {
       "id": "NFR8.85",
@@ -80,7 +80,7 @@
     {
       "id": "NFR5.81",
       "status": "OK",
-      "target": "security-design.md 7節（verify を関門、E2E は流さない、squash）と 5.2節（scenarios の形を変えない）"
+      "target": "security-design.md 7節（verify を関門、E2E は流さない、squash）と 5.2節・5.2.2節（scenarios の形と場面の名前を変えない）"
     }
   ]
 }

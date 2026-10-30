@@ -32,10 +32,20 @@
 | `vendorCode` | 業者の番号 |
 | `exceptionClass` | 例外のクラスの名前 |
 
-- 出さないもの: スキーマ・テーブル・カラムの名前、値・ラベル・セル、接続先、例外のメッセージ（既存の `RowQueryFailure` はメッセージを持たない）。
+- 値の出どころ: `sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded` は、メッセージを捨てた失敗の値 `ReferenceReadFailure`（`businessdata.domain`。`reliability-design.md` 5.2）から出す。`check`・`countState` の `FAILED` も同じ値を持ち、U2 が自分の診断の WARN に出す（U2 から受けた継ぎ目）。`check`・`countState` の中では WARN を出さない（BR9.6。出すのは写す側の U2）。
+- 出さないもの: スキーマ・テーブル・カラムの名前、値・ラベル・セル、接続先、例外のメッセージ（既存の `RowQueryFailure` と `ReferenceReadFailure` はメッセージを持たない）。
 - 想定外（`UNEXPECTED`、500）は既存の `@RestControllerAdvice` が ERROR で出す（既存のまま）。MySQL の 1038 はこの単位の設計では起きない（`performance-design.md` 2節）が、起きたときは `exceptionClass` と `sqlState=HY001`・`vendorCode=1038` で見分けられる。
 - 読み取りは監査に残さない（BR1.7）。
 - `budgetExceeded` を足すため、全体の上限と文1回の上限のどちらで切れたかをログで見分けられる。応答の code は同じ（新しい code を作らない）。
+
+### 2.1 1つの失敗のログの行の数（レビュー R-03）
+
+コードで確かめた今の 503 の経路は次のとおり。
+
+- 既存の業務データの読み取りでは、`BusinessDataReadService` が `failure`・`unavailable` の中で診断の WARN を1行（キー `purpose`・`reason`・`sqlState`・`vendorCode`・`exceptionClass`、ロガーは `BusinessDataReadService`）出し、web の層が結果の型を `BusinessException` に写す。`GlobalExceptionHandler.handleBusiness` は `log(ex, type, true)` で、すべての `BusinessException` に変換の WARN を1行（キー `code`・`status`・`exceptionType` だけ。値・メッセージ・スタックトレースなし、ロガーは `GlobalExceptionHandler`）出す。つまり今の 503 でも、1つの失敗に診断の行と変換の行の2種類が1行ずつ出る。
+- 参照の読み取りも同じ形にする。診断の WARN は `ReferenceLookup` の失敗を code に写す1か所だけで1行出し（`RowSqlExecutor`・`RowSqlFailureClassifier`・`ReferenceReadDeadline`・`check`・`countState` は出さない）、web の層は出さない。`GlobalExceptionHandler` は全機能で共有するため変えず、変換の WARN はそのまま出る。
+- そのため「同じ失敗のログは1回」を、**`ReferenceLookup` のロガーの診断の WARN が、1つの失敗についてちょうど1行**と読み、`GlobalExceptionHandler` のロガーの変換の WARN は既存の別の種類の行として数える。U2 の診断の WARN の読み方（U2 の `observability-design.md` 2.2、依頼者が受け入れた読み方）と同じ。Code Style の「変換する境界で1回だけ」は、例外を捕まえて値や原因を出すログ（ERROR・スタックトレース付き）を重ねないことと読み、この2行はどちらも値・メッセージを持たない。
+- 確かめ: 時間切れ・接続の失敗・型の食い違い・全体の上限の各経路で、要求1件の後の `ReferenceLookup` のロガーの WARN がちょうど1行（0・2 行以上で失敗）、`GlobalExceptionHandler` のロガーの WARN が1行で値・メッセージの目印が無いことを数える（`ReferenceSecretLeakIT` の中。既存の `BusinessDataWriteSecretLeakIT` と同じくロガーで絞って数える）。
 
 ## 3. トレース
 
@@ -59,6 +69,7 @@
 | 上流 | 差 | 扱い |
 |---|---|---|
 | 機能設計 BR8.7（WARN のキー） | 全体の上限の超過を見分ける `budgetExceeded` を足した | ログの項目を足すだけで、値は出さない。応答は変えない |
+| Code Style「例外のログは変換する境界で1回だけ」 | 診断の WARN（`ReferenceLookup`）と既存の変換の WARN（`GlobalExceptionHandler`）の2種類が1行ずつ出る | 2.1節。診断の行がちょうど1行と読む（U2 と同じ読み方、レビュー R-03） |
 
 ## 後の段に回すこと
 

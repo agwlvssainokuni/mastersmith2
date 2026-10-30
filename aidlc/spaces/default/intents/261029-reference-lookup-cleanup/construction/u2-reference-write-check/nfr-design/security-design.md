@@ -51,7 +51,7 @@
 | `ReferenceValue`（U1）・`TypedValue`（既存） | 値 | 既存のとおり伏せる |
 
 - `TraceAspect` は `web`・`service`・`domain`・`repository` の引数と戻り値を TRACE に文字列で出すため、⑩ の内部の部品の引数・戻り値はすべて上の型で渡し、汎用の `Map` のまま層をまたがない（`team.md` の Code Style）。
-- JDBC の例外のメッセージは、U1 の口と既存の `RowSqlExecutor` がすでに捨てた形（`RowQueryFailure` と同じ、`sqlState`・`vendorCode`・`exceptionClass` だけ）で受ける。
+- JDBC の例外のメッセージは、U1 の口と既存の `RowSqlExecutor` がすでに捨てた形で受ける。U1 の口の失敗は `ReferenceReadFailure`（`businessdata.domain`。`reason`・`sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded` だけで、メッセージ・行の値を持たない）、更新前の行の `detail` の失敗は既存の `RowQueryFailure` を `ReferenceReadFailure.of` で写して受ける（`reliability-design.md` 2節）。
 
 ### 4.2 ログ・応答・監査・トレース
 
@@ -94,7 +94,7 @@ jqwik の対象の純粋な関数（`businessdata.domain`）と性質:
 | 上流 | 差 | 扱い |
 |---|---|---|
 | NFR 要件 NFR1.29（差し込み口の例「`ReferenceLookup` を包む部品」） | `TargetWriteAccess` の Bean を包む部品にした | `reliability-design.md` 4節。作成と更新の両方で止められ、`ReferenceLookup` を包むと更新の「変わらない」の経路で止められないため |
-| NFR 要件 NFR1.32（同じ失敗について WARN がちょうど1行） | 診断の WARN（`BusinessDataWriteService` のロガー）をちょうど1行とし、既存の `GlobalExceptionHandler` がすべての業務の誤りに出す変換の WARN（`code`・`status` だけ）は残す | `observability-design.md` 2節。承認の場で確かめる |
+| NFR 要件 NFR1.32（同じ失敗について WARN がちょうど1行） | U2 の業務処理のロガー（`BusinessDataWriteService` のロガー）の診断の WARN をちょうど1行とし、既存の `GlobalExceptionHandler` がすべての業務の誤りに出す変換の WARN（`code`・`status` だけ）は別の行として残す | `observability-design.md` 2節。依頼者が承認の場で受け入れた（`observability-design.md`「承認の場の決定」） |
 
 ## 後の段に回すこと
 

@@ -33,24 +33,24 @@
 | `purpose` | ⑩ の目的の値（候補 `REFERENCE`。既存の書き込みの `WRITE` と見分ける。名前はコード生成で決める） |
 | `stage` | どの読み取りか（候補 `BORROW`・`PREVIOUS_ROW`・`COUNT_STATE`・`CHECK`。既存の書き込みの WARN にもあるキー） |
 | `reason` | `TIMEOUT`・`UNAVAILABLE`・`MISMATCH` |
-| `sqlState`・`vendorCode`・`exceptionClass` | 例外の値（無ければ出さない） |
-| `budgetExceeded` | 全体の上限で流さずに止めたときだけ `true`（U1 と同じ） |
+| `sqlState`・`vendorCode`・`exceptionClass` | `ReferenceReadFailure` の同じ名前の値（無ければ出さない） |
+| `budgetExceeded` | `ReferenceReadFailure.budgetExceeded()` の値。全体の上限で流さずに止めたときだけ `true`（U1 と同じ） |
 
 - 出さないもの: スキーマ・テーブル・カラムの名前、参照の値・行の値、接続先、例外のメッセージ。
-- `sqlState` などを出すには、U1 の `check`・`countState` の `FAILED` が、理由に加えてメッセージを捨てた失敗の値（既存の `RowQueryFailure` と同じ `sqlState`・`vendorCode`・`exceptionClass`）を持つ必要がある（上流との差）。
+- `reason`・`sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded` は、U1 の `ReferenceCheckResult.Failed(ReferenceReadFailure failure)`・`ReferenceCountState.Failed(ReferenceReadFailure failure)` の `failure()`（`cherry.mastersmith.businessdata.domain.ReferenceReadFailure`。メッセージ・行の値を持たない）から取る。更新前の行の `detail` の失敗は、既存の `RowQueryFailure` を `ReferenceReadFailure.of` で写してから同じ形で出す。借りられない・読み取りの設定が無いときは例外の値が無いため、`reason=UNAVAILABLE` と `stage=BORROW` だけを出す。U1 はこの形を同じ段の直しで受け入れた（U1 の `reliability-design.md` 5.2・`logical-components.md` 5節）。
 - 参照の拒否（409 `BUSINESS_REFERENCE_NOT_FOUND`）と 400 は、この診断の WARN を出さない（既存の業務の誤りと同じ）。
 
 ### 2.2 既存の変換の WARN との関係
 
 - `GlobalExceptionHandler` は、すべての `BusinessException` について、変換の WARN を1行（キーは `code`・`status`・`exceptionType` だけ。値・メッセージを出さない）出す。これは今の書き込みの 503 でも同じで、`GlobalExceptionHandler` は全機能で共有するため変えない。
-- そのため NFR1.32 の「WARN の行がちょうど1行」は、**同じ失敗についての診断の WARN（`BusinessDataWriteService` のロガー）がちょうど1行**と読み、変換の WARN（`GlobalExceptionHandler` のロガー）は別の種類の行として数える（上流との差。承認の場で確かめる）。既存の `BusinessDataWriteSecretLeakIT` もロガーで絞って数えている。
+- そのため NFR1.32 の「WARN の行がちょうど1行」は、**同じ失敗についての U2 の業務処理のロガー（`BusinessDataWriteService` のロガー）の診断の WARN がちょうど1行**と読み、`GlobalExceptionHandler` の変換の WARN は既存の別の行として数える（依頼者が承認の場で受け入れた読み方。「承認の場の決定」）。既存の `BusinessDataWriteSecretLeakIT` もロガーで絞って数えている。
 - ⑩ の失敗は、書き込みの口の中の結果（`Attempt`）の経路を通さずに応答にするため、既存の `finish` の WARN（`purpose=WRITE`）と重ならない。
 
 ### 2.3 確かめのテスト
 
 | テスト | 期待 |
 |---|---|
-| 時間切れ・接続の失敗・型の食い違い・全体の上限の各経路で、要求1件の後の `BusinessDataWriteService` のロガーの WARN を数える | ちょうど1行（0・2 行以上で失敗）。`purpose` は ⑩ の値で、`WRITE` の行が無い |
+| NFR1.32 の確かめ: 時間切れ・接続の失敗・型の食い違い・全体の上限の各経路で、要求1件の後の `BusinessDataWriteService` のロガーの WARN を数える | 診断の WARN がちょうど1行（0・2 行以上で失敗）。`purpose` は ⑩ の値で、`WRITE` の行が無い |
 | 同じ経路で `GlobalExceptionHandler` のロガーの WARN を数える | 1行（既存の形）で、値・メッセージの目印が無い |
 | キーの一覧 | 診断の行のキーは 2.1 の一覧だけ（`security-design.md` 4.3 の漏えいのテストの中） |
 | 参照の拒否・400 | 診断の WARN が 0 行 |
@@ -69,9 +69,14 @@
 
 | 上流 | 差 | 扱い |
 |---|---|---|
-| NFR 要件 NFR1.32（同じ失敗について WARN がちょうど1行） | 診断の WARN をちょうど1行とし、既存の `GlobalExceptionHandler` の変換の WARN は残す | 2.2。全機能で共有する部品を変えないため。承認の場で確かめる |
+| NFR 要件 NFR1.32（同じ失敗について WARN がちょうど1行） | U2 の業務処理のロガーの診断の WARN をちょうど1行とし、既存の `GlobalExceptionHandler` の変換の WARN は別の行として残す | 2.2。全機能で共有する部品を変えないため。依頼者が承認の場で受け入れた（「承認の場の決定」） |
 | NFR 要件 NFR1.32（キーは目的・reason・sqlState・vendorCode・exceptionClass） | 既存の書き込みの WARN と同じく `stage` を足し、U1 と同じく `budgetExceeded` を足した | 値は出さない |
-| U1 の機能設計 BR9.5（`FAILED` は理由を保つ） | `FAILED` に、メッセージを捨てた失敗の値（`sqlState`・`vendorCode`・`exceptionClass`）も持たせる | U1 のコード生成の継ぎ目として渡す。持たせないときは `sqlState` などを出せない |
+| U1 の機能設計 BR9.5（`FAILED` は理由を保つ） | `Failed(ReferenceReadFailure failure)` の失敗の値（`reason`・`sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded`）からキーを取る | U1 が同じ段の直しで受け入れた継ぎ目（U1 の `reliability-design.md` 5節「U2 から受けた継ぎ目」・`logical-components.md` 5節、レビュー R-01） |
+
+## 承認の場の決定
+
+- レビュー R-02: 依頼者は、NFR1.32 の「同じ失敗について WARN がちょうど1行」を「U2 の業務処理のロガー（`BusinessDataWriteService` のロガー）の診断の WARN がちょうど1行で、`GlobalExceptionHandler` の変換の WARN は既存の別の行」と読む形を受け入れた。NFR1.32 の確かめ方は「診断の WARN がちょうど1行」（2.3 の1行目）とし、`traceability.json` の NFR1.32 の target にこの読み方を含めた。
+- レビュー R-01: U1 が継ぎ目を受け入れたため、2.1 のキーは `ReferenceReadFailure` から必ず出せる。キーを緩める代わりの手は置かない。
 
 ## 後の段に回すこと
 

@@ -15,7 +15,14 @@
     "NFR8.71",
     "NFR5.61",
     "NFR5.62",
-    "NFR5.63"
+    "NFR5.63",
+    "NFR9.61",
+    "NFR9.62",
+    "NFR9.63",
+    "NFR9.64",
+    "NFR9.65",
+    "NFR7.61",
+    "NFR6.61"
   ],
   "coverage": [
     {
@@ -87,6 +94,41 @@
       "id": "NFR5.63",
       "status": "OK",
       "target": "logical-components.md 4節 P5・P6（coverage.include の扱いと理由、下限と除外を変えない、リンタ・型・ライセンスヘッダー・フォーマットの検査への入れ方をコード生成の計画の義務とする）"
+    },
+    {
+      "id": "NFR9.61",
+      "status": "OK",
+      "target": "logical-components.md 1節（perf/ に置く Node の 1 ファイル、node: の組み込みだけを読み込み依存を足さない）・security-design.md 11節（組み込みの JSON の口の深さの限りを依存を足さずに扱う）"
+    },
+    {
+      "id": "NFR9.62",
+      "status": "OK",
+      "target": "logical-components.md 1節 LC9（frontend/ の既存の Vitest の単体テスト）・security-design.md 7.1節・7.3節（既存の fast-check の fc.check で書き、新しい devDependencies を足さない）"
+    },
+    {
+      "id": "NFR9.63",
+      "status": "OK",
+      "target": "logical-components.md 1節（道具が読み込むのは node: の組み込みだけで、npm の依存の取り込みを要しない）・2節（関数の口はテストだけが使う）・security-design.md 5.1節（呼び方は node だけで、lockfile と .npmrc に触れない）"
+    },
+    {
+      "id": "NFR9.64",
+      "status": "OK",
+      "target": "logical-components.md 1節（Node 24 の組み込みの口だけを使う）・3節（checkToolchain の Node 24 で verify から呼ぶ）"
+    },
+    {
+      "id": "NFR9.65",
+      "status": "OK",
+      "target": "logical-components.md 1節（道具のファイルの先頭のライセンスヘッダー）・4節 P6（ライセンスヘッダーの検査への入れ方をコード生成の計画の義務とする）・security-design.md 12節"
+    },
+    {
+      "id": "NFR7.61",
+      "status": "OK",
+      "target": "security-design.md 5.1節（JSON の口は契約 C7 の引数 2 つの呼び方を変えず、--text と evidence の検査の口を足す）・logical-components.md 2節（口の一覧）"
+    },
+    {
+      "id": "NFR6.61",
+      "status": "OK",
+      "target": "security-design.md 5.4節（終わりのコード 0〜5 の意味を 3 つの口で固定し新しいコードを足さない）・logical-components.md 2節（口ごとの終わりのコード）"
     }
   ]
 }

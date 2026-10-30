@@ -18,10 +18,11 @@
 | `WriteRequestValidator` | `businessdata.domain` | 既存 | 必須の参照項目の空の誤りの保留（BR3.6）。純粋な関数のまま |
 | 判定の純粋な関数（値の比べ方・必須の参照項目の結果・確かめの結果の写し） | `businessdata.domain` | 新規 | jqwik の対象（`security-design.md` 6節） |
 | 値を持つ型（`ReferenceCheckItem`・`PreviousReferenceValues`・`ReferenceStepOutcome`） | `businessdata.domain` | 新規 | `toString` で値を伏せる |
-| 参照の読み取りの締め切り（仮の名前） | `businessdata.domain`（候補） | U1 が作る | U1 の定義の取得と ⑩ で共有する。設定 `referenceReadTotal`（U1 の設定の扱いに従う） |
-| `ReferenceLookup`（`check`・`countState`） | `businessdata.service` | U1 | U2 は呼ぶだけ。`FAILED` に失敗の値（`sqlState` など）を持たせる（`observability-design.md` 上流との差） |
+| `ReferenceReadDeadline` | `businessdata.domain` | U1 が作る | U1 の定義の取得と ⑩ で共有する。`start(Clock, Duration)`・`narrow(TargetReadSession)`。全体の上限は `TargetReadAccess.referenceReadTotal()` から受ける（設定の扱いは U1 に従う）。更新前の行の `detail` も同じ締め切りで絞る（`reliability-design.md` 1.2） |
+| `ReferenceReadFailure`・`ReferenceFailureReason` | `businessdata.domain` | U1 が作る | ⑩ の失敗の写し（3つの理由 → 503・409）と診断の WARN のキーに使う。`detail` の `RowQueryFailure` も `of` で写す（`reliability-design.md` 2節、`observability-design.md` 2.1） |
+| `ReferenceLookup`（`check`・`countState`） | `businessdata.service` | U1 | U2 は呼ぶだけ。失敗は `ReferenceCheckResult.Failed(ReferenceReadFailure)`・`ReferenceCountState.Failed(ReferenceReadFailure)` で受ける |
 | `RowSqlExecutor` | `businessdata.repository` | 既存 | 更新前の行は既存の `detail`。新しい SQL のメソッドは作らない |
-| `TargetReadAccess`・`TargetWriteAccess`・`TargetReadSession` | `targetdb.service`・`targetdb.domain` | 既存（`ReadPurpose.REFERENCE` は U1） | 変えない |
+| `TargetReadAccess`・`TargetWriteAccess`・`TargetReadSession` | `targetdb.service`・`targetdb.domain` | 既存（`ReadPurpose.REFERENCE` と `TargetReadAccess.referenceReadTotal()` は U1） | U2 は変えない。`businessdata` は `targetdb.config` に依存できないため、全体の上限は `referenceReadTotal()` だけから受ける |
 | `GlobalExceptionHandler` | `common.error.web` | 既存 | 変えない（変換の WARN は既存のまま） |
 | テストだけの差し込み口 `PausingTargetWriteAccess`・`PausingWriteAccessConfig` | `src/test` の `businessdata/testsupport` | 新規（テストだけ） | `jdbcTargetWriteAccess` の Bean を包み、`withWrite` の入口で待ち合わせる（`reliability-design.md` 4節） |
 
@@ -72,11 +73,11 @@ flowchart LR
 
 | 上流 | 差 | 扱い |
 |---|---|---|
-| U1 の `logical-components.md`（締め切りは `ReferenceLookup` が持つ） | 締め切りの部品を `businessdata` の中から共有して使う | `reliability-design.md` 1.2 |
-| U1 の機能設計 BR9.5（`FAILED` は理由を保つ） | 失敗の値も持たせる | `observability-design.md` 2.1 |
+| U1 の機能設計 5節（締め切りは `ReferenceLookup` が持つ） | `businessdata.domain` の `ReferenceReadDeadline` を ⑩ から使う | U1 が同じ段の直しで受け入れた継ぎ目（U1 の `logical-components.md` 5節・`reliability-design.md` 5.1、レビュー R-01）。`reliability-design.md` 1.2 |
+| U1 の機能設計 BR9.5（`FAILED` は理由を保つ） | `FAILED` は `ReferenceReadFailure`（理由と `sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded`）を持つ | 同上（U1 の `reliability-design.md` 5.2）。`observability-design.md` 2.1 |
 | 機能設計 `functional-spec.md` 5節（中の部品の表） | テストだけの差し込み口の部品を足した | 本番の部品は変わらない |
 
 ## 後の段に回すこと
 
 - **Infrastructure Design**: 新しい設定は無い（U1 の設定を使う）。手元の監視の区画も足さない。
-- **Code Generation**: 1節の部品の実装と承認。U1 の締め切りの部品と `FAILED` の形を、U1 のコード生成の結果に合わせる。
+- **Code Generation**: 1節の部品の実装と承認。U1 の `ReferenceReadDeadline`・`ReferenceReadFailure`・`ReferenceFailureReason` と `Failed(ReferenceReadFailure)` の形を、U1 の文書（5節）の名前のまま使う。
