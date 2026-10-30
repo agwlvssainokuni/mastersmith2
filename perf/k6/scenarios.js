@@ -186,6 +186,20 @@
 //                       10 VU で書き込みのプールの上限 5 に必ず届く（NFR2.7）。10 VU・3 分
 //   bizCreateLarge      4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの文字。NFR2.8 のメモリの確かめ）。10 VU ×
 //                       BIZ_LARGE_ITERATIONS 回。流す前にアプリのコンテナを作り直して前の memory.peak を消す
+// 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1 u1-reference-read、Bolt B2。手順は perf/README.md の
+// 「他テーブル参照の読み取りの場面」）。ID は construction/u1-reference-read/nfr-requirements/ の performance-requirements.md（NFR2.1〜NFR2.4）
+// と infrastructure-design/infrastructure-specification.md（4節）。種は perf/biz/make-biz-seed.sh（biz_code200・biz_code201・biz_refsrc200・
+// biz_refsrc201・biz_refpick）、DSL は perf/make-biz-dsl.mjs。setup は前の場面の状態に頼らず、ロール REF_ROLE_NAME（スキーマ bizperf を READ、
+// 参照元の3つの表を FULL）を用意して試験用の利用者 perf-biz-01〜に割り当て、1人ずつログインして作業ロールを保存し、トークンを VU の
+// 数だけ取り、参照元の定義（purpose CREATE）で参照の項目の状態がそろっていることを確かめてから始める（DSL の適用は bizPrepare が行う）。
+// どの場面も1回の繰り返しに要求1つで、繰り返しの中に待ちを置かない。判定は iteration_duration{scenario:…} の p95 < 1000 ms
+// （refPickerContains だけ 3000 ms）と checks の率 1（http_req_duration{name:…} は並べて記録）。10 VU（VUS）・3 分（BIZ_DURATION）の
+// constant-vus。使い捨てのアプリの対象DB の読み取りのプールの上限は 5 で流す（README の中止の条件）。値はすべて架空で、出力しない。
+//   refDefinition200    biz_refsrc200 の定義（purpose CREATE。参照先ちょうど 200 行の選択肢つき、200 で選択肢 200 件）
+//   refDefinition201    biz_refsrc201 の定義（purpose CREATE。参照先 201 行で TOO_MANY、選択肢なし）
+//   refPickerEquals     biz_refpick の item_id のピッカーで id の完全一致（VU と繰り返しの番号で値を回す。200 で1行）
+//   refLabel            同じピッカーのラベルの1件読み（値を回す。200 で1行・page は null）
+//   refPickerContains   同じピッカーで c_010 の部分一致（目印の語。200 で 20 行・hasNext が真）
 import http from 'k6/http'
 import exec from 'k6/execution'
 import { check, fail, sleep } from 'k6'
@@ -446,6 +460,19 @@ const BIZ_LARGE_CHARS = 10000
 const BIZ_LARGE_VALUE = SCENARIO === 'bizCreateLarge' ? '\u{2000B}'.repeat(BIZ_LARGE_CHARS) : null
 // 違反の道の場面は 409 を期待の状態コードとして宣言する（http_req_failed に数えない）
 if (SCENARIO === 'bizWritePoolLimit') http.setResponseCallback(http.expectedStatuses(409))
+// 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1）。後の単位（U2）の場面も ref で始める。
+const REF_SCENARIOS = ['refDefinition200', 'refDefinition201', 'refPickerEquals', 'refLabel', 'refPickerContains']
+// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000（NFR2.1。部分一致は前の Intent で依頼者が決めた 3000 ms）
+const REF_P95_LIMIT_MS = { refPickerContains: 3000 }
+const REF_ROLE_NAME = __ENV.REF_ROLE_NAME || 'perf-biz-ref'
+// 種の台本と DSL が作る参照元の表とカラム
+const REF_SOURCE_200 = 'biz_refsrc200'
+const REF_SOURCE_201 = 'biz_refsrc201'
+const REF_PICK_SOURCE = 'biz_refpick'
+const REF_CODE_COLUMN = 'code'
+const REF_PICK_COLUMN = 'item_id'
+const REF_OPTIONS = 200
+const REF_PAGE_SIZE = 20
 
 // 監視の確かめの場面（monitorLight）。1 VU で、繰り返しごとに 1〜2 秒待つ
 const MONITOR_DURATION = __ENV.MONITOR_DURATION || '5m'
@@ -480,6 +507,9 @@ function scenariosFor(name) {
     return { [name]: { executor: 'per-vu-iterations', vus: VUS, iterations: BIZ_LARGE_ITERATIONS, maxDuration: '10m' } }
   }
   if (BIZ_WRITE_SCENARIOS.includes(name)) {
+    return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
+  }
+  if (REF_SCENARIOS.includes(name)) {
     return { [name]: { executor: 'constant-vus', vus: VUS, duration: BIZ_DURATION } }
   }
   if (NAV_SCENARIOS.includes(name)) {
@@ -601,6 +631,15 @@ function thresholdsFor(name) {
       [`http_req_duration{name:${name}}`]: ['max>=0'],
     }
   }
+  // Intent 261029-reference-lookup-cleanup の U1（NFR2.1・NFR2.2）。業務データの場面と同じ判定。変えたときは perf/k6/thresholds-test.sh の
+  // 期待の表も合わせる。
+  if (REF_SCENARIOS.includes(name)) {
+    return {
+      [`iteration_duration{scenario:${name}}`]: [`p(95)<${REF_P95_LIMIT_MS[name] ?? 1000}`],
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['max>=0'],
+    }
+  }
   if (NAV_SCENARIOS.includes(name)) {
     return {
       [`iteration_duration{scenario:${name}}`]: ['p(95)<1000'],
@@ -665,6 +704,8 @@ if (SCENARIO === 'navPrepare' || SCENARIO === 'navMenuBaseline') options.setupTi
 if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 // 業務データの書き込みの場面は、setup でロール・割り当て・作業ロール・トークンと、更新・削除の行を API で作る
 if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
+// 他テーブル参照の読み取りの場面は、setup でロール・割り当て・作業ロール・トークンを API で用意する
+if (REF_SCENARIOS.includes(SCENARIO)) options.setupTimeout = '10m'
 
 function userEmail(n) {
   return `perf-user${String(n).padStart(2, '0')}@example.test`
@@ -723,6 +764,7 @@ export function setup() {
   if (SCENARIO === 'navPrepare' || NAV_SCENARIOS.includes(SCENARIO)) setupNavigation(tokens)
   if (SCENARIO === 'bizPrepare' || BIZ_SCENARIOS.includes(SCENARIO)) setupBusinessData(tokens)
   if (BIZ_WRITE_SCENARIOS.includes(SCENARIO)) setupBusinessDataWrite(tokens)
+  if (REF_SCENARIOS.includes(SCENARIO)) setupReference(tokens)
   return tokens
 }
 
@@ -2475,6 +2517,122 @@ function bizCreateLarge(data) {
   check(res, { 'bizCreateLarge 201': (r) => r.status === 201 })
 }
 
+// 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1、B2）。どの場面も1回の繰り返しに要求1つで、要求の名前
+// （name のタグ）は場面の名前と同じ。値・ラベルは出力しない（状態コードと件数だけを checks で見る）。
+function refDefinitionRequest(headers, table, name) {
+  return jsonPost(`${BIZ_API}/definition`, { schema: BIZ_SCHEMA, table, purpose: 'CREATE' }, headers, name)
+}
+
+function refRowsRequest(headers, body, name) {
+  return jsonPost(`${BIZ_API}/reference/rows`, { schema: BIZ_SCHEMA, table: REF_PICK_SOURCE, column: REF_PICK_COLUMN, ...body }, headers, name)
+}
+
+// 定義の応答から、参照のカラムの reference を引く（無ければ null）
+function refFieldOf(res, column) {
+  const columns = res.json('detailColumns') || []
+  const found = columns.find((c) => c.column === column)
+  return found ? found.reference : null
+}
+
+// VU と繰り返しの番号から biz_item の主キーの値を決める（1〜BIZ_ROWS。bizDetail と同じ回し方）
+function refItemId() {
+  return String(((exec.vu.idInTest * 7919 + exec.vu.iterationInScenario * 104729) % BIZ_ROWS) + 1)
+}
+
+// 他テーブル参照の読み取りの場面の用意。前の場面の状態に頼らず、ロールの用意・割り当て・作業ロールの保存・トークンを自分で行い、
+// 参照元の定義（purpose CREATE）で参照の項目の状態がそろっていることを確かめる（NFR2.2、project.md の学び）。DSL の適用は bizPrepare が行う。
+function setupReference(data) {
+  if (VUS > BIZ_USER_COUNT) fail(`VUS（${VUS}）が試験用の利用者の数 BIZ_USER_COUNT（${BIZ_USER_COUNT}）を超えています`)
+  const operator = tokenOf(login(roleOperatorEmail(), USER_PASSWORD))
+  const operatorHeaders = roleHeaders(operator)
+  const roleId = roleIdByName(operator, REF_ROLE_NAME) || roleCreate(operator, REF_ROLE_NAME, 'refSetup')
+  bizSavePermission(operatorHeaders, roleId, null, 'READ', null, null)
+  // 参照元のカラムは FULL でないと参照先を読まない（BR3.3）
+  for (const table of [REF_SOURCE_200, REF_SOURCE_201, REF_PICK_SOURCE]) {
+    bizSavePermission(operatorHeaders, roleId, table, 'FULL', null, null)
+  }
+  const ids = idsBySearch(operatorHeaders, 'perf-biz-')
+  data.bizTokens = {}
+  for (let vu = 1; vu <= VUS; vu++) {
+    const userId = ids[bizUserEmail(vu)]
+    if (!userId) fail(`試験用の利用者 ${bizUserEmail(vu)} がいません（perf/README.md の手順で入れてください）`)
+    roleAssignEnsured(operator, roleId, { userId })
+    // 1人ずつログインする（ロックの状態の行を作る。project.md の学び）
+    const token = tokenOf(login(bizUserEmail(vu), USER_PASSWORD))
+    const switched = jsonPut(`${BASE}/api/me/work-role`, { roleId }, roleHeaders(token), 'refSetup')
+    if (switched.status !== 204) fail(`作業ロールを保存できませんでした: ${switched.status} ${codeOf(switched)}`)
+    data.bizTokens[vu] = token
+  }
+  const headers = roleHeaders(data.bizTokens[1])
+  const expect = [
+    [REF_SOURCE_200, REF_CODE_COLUMN, 'AVAILABLE'],
+    [REF_SOURCE_201, REF_CODE_COLUMN, 'TOO_MANY'],
+    [REF_PICK_SOURCE, REF_PICK_COLUMN, 'AVAILABLE'],
+  ]
+  for (const [table, column, status] of expect) {
+    const res = refDefinitionRequest(headers, table, 'refSetup')
+    if (res.status !== 200) {
+      fail(`参照元の定義を読めませんでした: ${res.status} ${codeOf(res)}（先に bizPrepare を流してください）`)
+    }
+    const field = refFieldOf(res, column)
+    if (!field || field.status !== status) {
+      fail(`参照の項目の状態が ${status} ではありません（種の台本と DSL を確かめてください）: ${field ? field.status : 'null'}`)
+    }
+  }
+}
+
+function refDefinition200(data) {
+  const res = refDefinitionRequest(bizHeaders(data), REF_SOURCE_200, 'refDefinition200')
+  check(res, {
+    'refDefinition200 200': (r) => {
+      if (r.status !== 200) return false
+      const field = refFieldOf(r, REF_CODE_COLUMN)
+      return field !== null && field.status === 'AVAILABLE' && field.options.length === REF_OPTIONS
+    },
+  })
+}
+
+function refDefinition201(data) {
+  const res = refDefinitionRequest(bizHeaders(data), REF_SOURCE_201, 'refDefinition201')
+  check(res, {
+    'refDefinition201 200': (r) => {
+      if (r.status !== 200) return false
+      const field = refFieldOf(r, REF_CODE_COLUMN)
+      return field !== null && field.status === 'TOO_MANY' && !field.options
+    },
+  })
+}
+
+function refPickerEquals(data) {
+  const res = refRowsRequest(
+    bizHeaders(data),
+    { conditions: [{ column: 'id', value: refItemId() }], page: 1 },
+    'refPickerEquals',
+  )
+  check(res, {
+    'refPickerEquals 200': (r) => r.status === 200 && r.json('rows').length === 1 && r.json('hasNext') === false,
+  })
+}
+
+function refLabel(data) {
+  const res = refRowsRequest(bizHeaders(data), { value: refItemId() }, 'refLabel')
+  check(res, {
+    'refLabel 200': (r) => r.status === 200 && r.json('rows').length === 1 && r.json('page') === null,
+  })
+}
+
+function refPickerContains(data) {
+  const res = refRowsRequest(
+    bizHeaders(data),
+    { conditions: [{ column: BIZ_CONTAINS_COLUMN, value: BIZ_CONTAINS_VALUE }], page: 1 },
+    'refPickerContains',
+  )
+  check(res, {
+    'refPickerContains 200': (r) =>
+      r.status === 200 && r.json('rows').length === REF_PAGE_SIZE && r.json('hasNext') === true,
+  })
+}
+
 const USER_SCENARIOS = {
   monitorLight,
   preferencesGet,
@@ -2536,6 +2694,11 @@ const USER_SCENARIOS = {
   bizDelete,
   bizWritePoolLimit,
   bizCreateLarge,
+  refDefinition200,
+  refDefinition201,
+  refPickerEquals,
+  refLabel,
+  refPickerContains,
 }
 
 export default function (tokens) {

@@ -19,6 +19,13 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.table;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.businessdata.domain.ReferenceCheckResult;
+import cherry.mastersmith.businessdata.domain.ReferenceCountState;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
+import cherry.mastersmith.businessdata.domain.TableQuery;
+import cherry.mastersmith.businessdata.service.ReferenceLookup;
+import cherry.mastersmith.businessdata.service.TableAccessResolution;
+import cherry.mastersmith.businessdata.service.TableAccessResolver;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp.Target;
@@ -40,6 +47,9 @@ import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
+import cherry.mastersmith.targetdb.domain.ReadPurpose;
+import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
+import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import cherry.mastersmith.targetdb.testsupport.ContainerRuntimeCheck;
 import cherry.mastersmith.targetdb.testsupport.SilentServer;
 import java.net.http.HttpResponse;
@@ -62,9 +72,10 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * 定義の取得で参照先を読むときの接続の数を、決定的に確かめる結合テスト（Intent 261029-reference-lookup-cleanup の U1、Step 12、
- * BR8.2・BR8.3・BR4.7、T-C2、(j) の定義の分。既存の {@code BusinessDataConnectionUsageIT} と同じ形）。PostgreSQL と MySQL の
- * コンテナ。文の数は MySQL の一般ログ（{@link StatementLog}）で数える。
+ * 定義の取得・参照先の検索・ラベルの1件読み・保存前の確かめの口で参照先を読むときの接続の数を、決定的に確かめる結合テスト（Intent
+ * 261029-reference-lookup-cleanup の U1、B1 の Step 12 と B2 の Step 21、BR8.2・BR8.3・BR4.7・BR9.1・BR9.7、T-C2、(j)。既存の
+ * {@code BusinessDataConnectionUsageIT} と同じ形）。PostgreSQL と MySQL のコンテナ。文の数は MySQL の一般ログ（{@link StatementLog}）で
+ * 数える。
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(ContainerRuntimeCheck.class)
@@ -314,6 +325,164 @@ class ReferenceConnectionUsageIT {
             assertThat(HttpTestClient.json(response)).containsEntry("code", "BUSINESS_TARGET_DB_UNAVAILABLE");
             assertThat(target.peerInUseAtBorrow()).as("対象DB を待つ間に内部DB を借りていない").isZero();
             assertThat(internal.inUse()).isZero();
+        }
+    }
+
+    // ── B2: 検索・ラベルの1件読み・確かめの口 ──
+
+    /** 検索・ラベルの1件読みの本文（DB の種類ごとの環境で作る）。 */
+    private static Map<String, Object> rowsBody(Env env, String kind) {
+        return switch (kind) {
+            case "search" ->
+                env.sample()
+                        .body(
+                                "srclookup",
+                                "column",
+                                "p",
+                                "conditions",
+                                List.of(Map.of("column", "l", "value", "l")),
+                                "page",
+                                1);
+            case "label" -> env.sample().body("src1", "column", "a", "value", "v1");
+            default -> throw new IllegalArgumentException(kind);
+        };
+    }
+
+    static Stream<Arguments> rowsOnBoth() {
+        return Stream.of("search", "label")
+                .flatMap(kind -> Stream.of(DatabaseProduct.POSTGRESQL, DatabaseProduct.MYSQL)
+                        .map(product -> Arguments.of(kind, product)));
+    }
+
+    @ParameterizedTest(name = "{0} on {1}")
+    @MethodSource("rowsOnBoth")
+    @DisplayName("a search and a label read borrow the target once and run one statement, after the internal database")
+    void connectionsPerRowsRequest(String kind, DatabaseProduct product) {
+        Env env = product == DatabaseProduct.POSTGRESQL ? postgres : mysql;
+        CountingDataSource internal = counter(env.app(), "dataSource");
+        CountingDataSource target = counter(env.app(), "targetDataSource");
+        internal.pairWith(target);
+        env.app().post(BusinessDataPaths.REFERENCE_ROWS, env.member().token(), rowsBody(env, kind));
+        internal.reset();
+        target.reset();
+
+        HttpResponse<String> response;
+        List<String> reached = null;
+        if (product == DatabaseProduct.MYSQL) {
+            try (StatementLog log = new StatementLog(env.sample().database())) {
+                String mark = log.mark();
+                response = env.app()
+                        .post(BusinessDataPaths.REFERENCE_ROWS, env.member().token(), rowsBody(env, kind));
+                reached = log.queriesSince(mark, env.sample().reader());
+            }
+        } else {
+            response = env.app()
+                    .post(BusinessDataPaths.REFERENCE_ROWS, env.member().token(), rowsBody(env, kind));
+        }
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        assertThat((List<Object>) HttpTestClient.json(response).get("rows")).isNotEmpty();
+        assertThat(internal.peak()).as("内部DB の同時の最大").isEqualTo(1);
+        assertThat(target.borrows()).as("対象DB の貸し出し").isEqualTo(1);
+        assertThat(target.peerInUseAtBorrow()).as("対象DB を借りるときに内部DB を借りていない").isZero();
+        assertThat(internal.peerInUseAtBorrow()).as("対象DB を借りている間に内部DB を借りない").isZero();
+        assertThat(internal.inUse()).isZero();
+        assertThat(target.inUse()).isZero();
+        if (reached != null) {
+            assertThat(reached.stream().filter(q -> q.startsWith("SELECT")).toList())
+                    .as("件数の文を流さず1つだけ " + reached)
+                    .hasSize(1);
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.EnumSource(
+            value = DatabaseProduct.class,
+            names = {"POSTGRESQL", "MYSQL"})
+    @DisplayName("check and countState use only the connection they are given and run one statement each")
+    void checkAndCountStateUseTheGivenConnection(DatabaseProduct product) {
+        Env env = product == DatabaseProduct.POSTGRESQL ? postgres : mysql;
+        CountingDataSource target = counter(env.app(), "targetDataSource");
+        TableAccessResolution.Resolved source = (TableAccessResolution.Resolved) env.app()
+                .bean(TableAccessResolver.class)
+                .resolve(env.member().userId(), new TableQuery(env.sample().schema(), "src3", null));
+        ReferenceLookup lookup = env.app().bean(ReferenceLookup.class);
+        TargetReadAccess readAccess = env.app().bean(TargetReadAccess.class);
+        target.reset();
+
+        List<String> reached = null;
+        TargetReadOutcome<List<Object>> outcome;
+        if (product == DatabaseProduct.MYSQL) {
+            try (StatementLog log = new StatementLog(env.sample().database())) {
+                String mark = log.mark();
+                outcome = readAccess.withRead(
+                        ReadPurpose.REFERENCE,
+                        session -> List.of(
+                                lookup.check(source, "a", new ReferenceValue("v1"), session),
+                                lookup.check(source, "b", new ReferenceValue("zz"), session),
+                                lookup.countState(source, "c", session)));
+                reached = log.queriesSince(mark, env.sample().reader());
+            }
+        } else {
+            outcome = readAccess.withRead(
+                    ReadPurpose.REFERENCE,
+                    session -> List.of(
+                            lookup.check(source, "a", new ReferenceValue("v1"), session),
+                            lookup.check(source, "b", new ReferenceValue("zz"), session),
+                            lookup.countState(source, "c", session)));
+        }
+
+        assertThat(((TargetReadOutcome.Done<List<Object>>) outcome).value())
+                .containsExactly(
+                        new ReferenceCheckResult.Found(),
+                        new ReferenceCheckResult.NotFoundOrDenied(),
+                        new ReferenceCountState.Available());
+        assertThat(target.borrows()).as("呼び出し側が借りた1回だけ").isEqualTo(1);
+        assertThat(target.inUse()).isZero();
+        if (reached != null) {
+            assertThat(reached.stream().filter(q -> q.startsWith("SELECT")).toList())
+                    .as("呼ぶごとに 1 文 " + reached)
+                    .hasSize(3);
+        }
+    }
+
+    @Test
+    @DisplayName("a search and a label read on a silent target hold no internal connection and answer 503")
+    void silentTargetForRows() throws Exception {
+        Target base = postgres.sample().target();
+        try (SilentServer silent = SilentServer.start()) {
+            BusinessDataTestApp app = BusinessDataTestApp.start(
+                    dir.resolve("silent-rows"),
+                    new Target(
+                            base.product(),
+                            "127.0.0.1",
+                            silent.port(),
+                            base.database(),
+                            base.schema(),
+                            base.user(),
+                            base.password()),
+                    new Class<?>[] {CountingDataSourceConfig.class});
+            closeables.add(app);
+            app.installDsl(model(postgres.sample()));
+            Actor member = app.reader(settings(postgres.sample()));
+            Env env = new Env(postgres.sample(), app, member);
+            CountingDataSource internal = counter(app, "dataSource");
+            CountingDataSource target = counter(app, "targetDataSource");
+            internal.pairWith(target);
+
+            for (String kind : List.of("search", "label")) {
+                internal.reset();
+                target.reset();
+                HttpResponse<String> response =
+                        app.post(BusinessDataPaths.REFERENCE_ROWS, member.token(), rowsBody(env, kind));
+
+                assertThat(response.statusCode()).as(response.body()).isEqualTo(503);
+                assertThat(HttpTestClient.json(response)).containsEntry("code", "BUSINESS_TARGET_DB_UNAVAILABLE");
+                assertThat(target.peerInUseAtBorrow())
+                        .as("対象DB を待つ間に内部DB を借りていない")
+                        .isZero();
+                assertThat(internal.inUse()).isZero();
+            }
         }
     }
 }

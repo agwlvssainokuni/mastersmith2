@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# 業務データの読み取りの場面の p95 の線の試し（Intent 261027-perf-targets-review の FR1.1・FR1.4・FR2.6）。
+# 業務データの読み取りの場面の p95 の線の試し（Intent 261027-perf-targets-review の FR1.1・FR1.4・FR2.6）と、他テーブル参照の読み取りの
+# 場面（Intent 261029-reference-lookup-cleanup の U1、NFR2.1）の線の試し。
 # k6 の inspect（台本を読み込むだけ。アプリ・対象DB・ネットワークには触れない）で場面ごとの閾値を取り出し、期待の表と照らす。
 # 場面名の取り違えで緩み過ぎた場面が無いことも、表の全件の一致で確かめる。
 #
@@ -44,6 +45,11 @@ CASES=(
   "bizDetail|p(95)<1000"
   "bizDefinition|p(95)<1000"
   "bizSearchWide|max>=0"
+  "refDefinition200|p(95)<1000"
+  "refDefinition201|p(95)<1000"
+  "refPickerEquals|p(95)<1000"
+  "refLabel|p(95)<1000"
+  "refPickerContains|p(95)<3000"
 )
 
 fail=0

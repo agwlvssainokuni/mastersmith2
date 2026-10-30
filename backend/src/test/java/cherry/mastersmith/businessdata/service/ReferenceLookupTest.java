@@ -22,11 +22,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import ch.qos.logback.classic.Level;
 import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
+import cherry.mastersmith.businessdata.domain.ReferenceCheckResult;
+import cherry.mastersmith.businessdata.domain.ReferenceCondition;
+import cherry.mastersmith.businessdata.domain.ReferenceCountState;
 import cherry.mastersmith.businessdata.domain.ReferenceFailureReason;
 import cherry.mastersmith.businessdata.domain.ReferenceField;
 import cherry.mastersmith.businessdata.domain.ReferenceOption;
 import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
+import cherry.mastersmith.businessdata.domain.ReferenceRow;
+import cherry.mastersmith.businessdata.domain.ReferenceRows;
+import cherry.mastersmith.businessdata.domain.ReferenceRowsQuery;
 import cherry.mastersmith.businessdata.domain.ReferenceStatus;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
 import cherry.mastersmith.businessdata.domain.RowQueryFailure;
 import cherry.mastersmith.businessdata.domain.RowQueryFailureReason;
 import cherry.mastersmith.businessdata.domain.RowQueryStage;
@@ -51,6 +58,7 @@ import cherry.mastersmith.role.domain.PermissionSnapshot;
 import cherry.mastersmith.role.domain.PermissionTarget;
 import cherry.mastersmith.role.domain.PermissionValues;
 import cherry.mastersmith.role.domain.WorkRoleRef;
+import cherry.mastersmith.targetdb.domain.TargetReadSession;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -137,7 +145,40 @@ class ReferenceLookupTest {
     private static final DslTable HIDDEN =
             table("hidden", false, List.of("id"), column("id").build());
 
-    private static final DslModel DSL = BusinessDataDslFixture.model("sample", ORDERS, DEPT, TEAM, SHOP, HIDDEN);
+    /** 検索 API と確かめの口の参照元（B2）。team_pick は整数の EQUALS と文字の CONTAINS を持つ LOOKUP。 */
+    private static final DslTable PICKS = table(
+            "picks",
+            false,
+            List.of("id"),
+            column("id").dbType("int4").build(),
+            column("team_pick")
+                    .form(FormPart.LOOKUP)
+                    .options(new OptionSource(
+                            OptionSourceKind.LOOKUP,
+                            List.of(),
+                            "team",
+                            "id",
+                            null,
+                            List.of(
+                                    new LookupSearchItem("id", SearchOperator.EQUALS),
+                                    new LookupSearchItem("label", SearchOperator.CONTAINS)),
+                            List.of(new LookupListItem("label", 1), new LookupListItem("id", 2))))
+                    .build(),
+            column("price_ref")
+                    .form(FormPart.SELECT)
+                    .options(reference("prices", "amount", "name"))
+                    .build());
+
+    /** 小数の値のカラムを持つ参照先（B2 の厳密な一致の確かめ）。 */
+    private static final DslTable PRICES = table(
+            "prices",
+            false,
+            List.of("amount"),
+            column("amount").dbType("numeric").build(),
+            column("name").build());
+
+    private static final DslModel DSL =
+            BusinessDataDslFixture.model("sample", ORDERS, DEPT, TEAM, SHOP, HIDDEN, PICKS, PRICES);
 
     private FakeBusinessDataPorts ports;
 
@@ -441,5 +482,324 @@ class ReferenceLookupTest {
                     assertThat(found.references()).containsKey("dept_code");
                     assertThat(found.toString()).doesNotContain("ラベルD1");
                 });
+    }
+
+    // ── B2: 検索・ラベルの1件読み・確かめの口 ──
+
+    private static ReferenceRowsQuery searchQuery(String column, long page, ReferenceCondition... conditions) {
+        return ReferenceRowsQuery.search("sample", "picks", column, List.of(conditions), page);
+    }
+
+    private static ReferenceRowsQuery labelQuery(String table, String column, String value) {
+        return ReferenceRowsQuery.label("sample", table, column, new ReferenceValue(value));
+    }
+
+    /** ピッカーの行（値・ラベル・一覧の列 id）を作る。 */
+    private static RowSearchResult teamRows(int size) {
+        List<RowRecord> records = new ArrayList<>();
+        for (int i = 1; i <= size; i++) {
+            Map<String, String> values = new LinkedHashMap<>();
+            values.put("label", "班" + i);
+            values.put("id", Integer.toString(i));
+            records.add(new RowRecord(
+                    new RowValues(Map.of("id", Integer.toString(i)), Set.of()), new RowValues(values, Set.of())));
+        }
+        return new RowSearchResult.Rows(records);
+    }
+
+    private static TargetReadSession session() {
+        return new TargetReadSession(
+                cherry.mastersmith.targetdb.domain.DatabaseProduct.POSTGRESQL,
+                org.mockito.Mockito.mock(java.sql.Connection.class),
+                5);
+    }
+
+    private static RowSearchResult failed(RowQueryFailureReason reason) {
+        return new RowSearchResult.Failed(
+                new RowQueryFailure(reason, RowQueryStage.EXECUTE, "57014", 0, "org.postgresql.util.PSQLException"));
+    }
+
+    @Test
+    @DisplayName("each 403 case of the search answers Denied without borrowing a connection")
+    void searchDeniedCasesReadNothing() {
+        ReferenceCondition name = new ReferenceCondition("label", "班");
+        List<ReferenceRowsQuery> denied = List.of(
+                ReferenceRowsQuery.search("sample", "nothere", "team_pick", List.of(name), 1),
+                ReferenceRowsQuery.search("other", "picks", "team_pick", List.of(name), 1),
+                ReferenceRowsQuery.search("sample", "picks", "nothere", List.of(name), 1),
+                ReferenceRowsQuery.search("sample", "orders", "memo", List.of(name), 1),
+                ReferenceRowsQuery.search("sample", "orders", "dept_code", List.of(name), 1),
+                ReferenceRowsQuery.search("sample", "orders", "hidden_ref", List.of(name), 1),
+                ReferenceRowsQuery.search("sample", "orders", "ro_ref", List.of(name), 1),
+                searchQuery("team_pick", 1, new ReferenceCondition("secret", "x")),
+                searchQuery("team_pick", 1, name, new ReferenceCondition("Label", "")),
+                searchQuery(
+                        "team_pick",
+                        1,
+                        new ReferenceCondition("label", "x"),
+                        new ReferenceCondition("nothere", "abc")));
+
+        for (ReferenceRowsQuery query : denied) {
+            assertThat(lookup.search(1L, query)).as(query.toString()).isEqualTo(new ReferenceRowsResult.Denied());
+        }
+        Map<PermissionTarget, PermissionValues> readOnly = new LinkedHashMap<>();
+        readOnly.put(PermissionTarget.schema("sample"), new PermissionValues(MainPermission.FULL, true, true));
+        readOnly.put(
+                PermissionTarget.column("sample", "picks", "team_pick"),
+                new PermissionValues(MainPermission.READ, null, null));
+        ports.resolver.snapshot =
+                PermissionSnapshot.of(new WorkRoleRef(7L, "営業"), DSL, BusinessDataDslFixture.HASH, readOnly);
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1, name)))
+                .as("参照元のカラムが FULL でない")
+                .isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(lookup.label(1L, labelQuery("picks", "team_pick", "1"))).isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(withReads()).isZero();
+        assertThat(ports.calls).doesNotContain("search");
+    }
+
+    @Test
+    @DisplayName("without an applied DSL the search and the label are Denied, not 404")
+    void noDslIsDenied() {
+        ports.resolver.snapshot = PermissionSnapshot.of(
+                new WorkRoleRef(7L, "営業"),
+                null,
+                null,
+                Map.of(PermissionTarget.schema("sample"), new PermissionValues(MainPermission.FULL, true, true)));
+
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1, new ReferenceCondition("label", "x"))))
+                .isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(lookup.label(1L, labelQuery("picks", "team_pick", "1"))).isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(withReads()).isZero();
+    }
+
+    @Test
+    @DisplayName("an EQUALS value that is not of the column type is 400 INVALID_VALUE, after every 403 check")
+    void equalsValueTypeIs400() {
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1, new ReferenceCondition("id", "abc"))))
+                .isEqualTo(new ReferenceRowsResult.InvalidValue("id"));
+        assertThat(lookup.search(
+                        1L,
+                        searchQuery(
+                                "team_pick",
+                                1,
+                                new ReferenceCondition("id", "abc"),
+                                new ReferenceCondition("nothere", ""))))
+                .as("名前の 403 が値の型の 400 より先")
+                .isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(withReads()).isZero();
+    }
+
+    @Test
+    @DisplayName("a search borrows once, runs one statement of 21 rows from the offset and returns 20 rows and hasNext")
+    void searchPage() {
+        ports.executor.referenceResults.add(teamRows(21));
+
+        ReferenceRowsResult result = lookup.search(
+                1L,
+                searchQuery("team_pick", 3, new ReferenceCondition("label", "班"), new ReferenceCondition("id", "")));
+
+        assertThat(withReads()).isEqualTo(1);
+        assertThat(ports.calls.stream().filter("search"::equals)).hasSize(1);
+        ReferenceReadSpec spec = ports.executor.references.get(0).orElseThrow();
+        assertThat(spec.maxRows()).isEqualTo(21);
+        assertThat(spec.offset()).isEqualTo(40);
+        assertThat(spec.count()).isFalse();
+        assertThat(ports.executor.conditions)
+                .as("空の条件は使わない")
+                .singleElement()
+                .satisfies(c ->
+                        assertThat(c.mode()).isEqualTo(cherry.mastersmith.businessdata.domain.SearchMode.CONTAINS));
+        assertThat(result).isInstanceOfSatisfying(ReferenceRowsResult.Found.class, found -> {
+            assertThat(found.rows().rows()).hasSize(20);
+            assertThat(found.rows().hasNext()).isTrue();
+            assertThat(found.rows().page()).isEqualTo(3L);
+            ReferenceRow first = found.rows().rows().get(0);
+            assertThat(first.value()).isEqualTo("1");
+            assertThat(first.label()).isEqualTo("班1");
+            assertThat(first.cells()).containsExactly("班1", "1");
+        });
+
+        ports.executor.referenceResults.add(teamRows(20));
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1, new ReferenceCondition("id", "7"))))
+                .isInstanceOfSatisfying(ReferenceRowsResult.Found.class, found -> {
+                    assertThat(found.rows().hasNext()).isFalse();
+                    assertThat(found.rows().rows()).hasSize(20);
+                });
+        assertThat(ports.executor.conditions)
+                .singleElement()
+                .satisfies(c -> assertThat(c.value().value()).isEqualTo(7L));
+        ports.executor.referenceResults.add(teamRows(0));
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1_000_000, new ReferenceCondition("label", "x"))))
+                .isEqualTo(new ReferenceRowsResult.Found(ReferenceRows.search(List.of(), 1_000_000, false)));
+    }
+
+    @Test
+    @DisplayName("a label read works for both kinds, returns the first row and is Denied when no row or no type")
+    void labelRead() {
+        ports.executor.referenceResults.add(rows("code", "name", "D1", "D1"));
+        assertThat(lookup.label(1L, labelQuery("orders", "dept_code", "D1")))
+                .isEqualTo(
+                        new ReferenceRowsResult.Found(ReferenceRows.label(new ReferenceRow("D1", "ラベルD1", List.of()))));
+        assertThat(ports.executor.references.get(0).orElseThrow().maxRows()).isEqualTo(1);
+        assertThat(ports.executor.conditions)
+                .singleElement()
+                .satisfies(c -> assertThat(c.column()).isEqualTo("code"));
+
+        ports.executor.referenceResults.add(teamRows(1));
+        assertThat(lookup.label(1L, labelQuery("picks", "team_pick", "1")))
+                .isInstanceOf(ReferenceRowsResult.Found.class);
+
+        ports.executor.referenceResults.add(teamRows(0));
+        assertThat(lookup.label(1L, labelQuery("picks", "team_pick", "2")))
+                .as("行が無ければ 403 の同じ応答")
+                .isEqualTo(new ReferenceRowsResult.Denied());
+
+        long searches = ports.calls.stream().filter("search"::equals).count();
+        assertThat(lookup.label(1L, labelQuery("picks", "team_pick", "abc")))
+                .as("型として読めない値は問い合わせずに 403")
+                .isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(lookup.label(1L, labelQuery("orders", "hidden_ref", "1")))
+                .isEqualTo(new ReferenceRowsResult.Denied());
+        assertThat(ports.calls.stream().filter("search"::equals).count()).isEqualTo(searches);
+    }
+
+    @Test
+    @DisplayName("search and label failures map to the reason with exactly one warning, and an unexpected one throws")
+    void searchFailures() {
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.TIMEOUT));
+        try (LogEvents events = LogEvents.capture(ReferenceLookup.class)) {
+            assertThat(lookup.search(1L, searchQuery("team_pick", 1, new ReferenceCondition("label", SECRET_LABEL))))
+                    .isEqualTo(new ReferenceRowsResult.Failed(ReferenceFailureReason.TIMEOUT));
+            assertThat(events.list())
+                    .singleElement()
+                    .satisfies(event -> assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                            .contains("REFERENCE", "TIMEOUT", "57014")
+                            .doesNotContain(SECRET_LABEL)
+                            .doesNotContain("team"));
+        }
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.READ_CONVERSION));
+        assertThat(lookup.label(1L, labelQuery("orders", "dept_code", "D1")))
+                .isEqualTo(new ReferenceRowsResult.Failed(ReferenceFailureReason.MISMATCH));
+        ports.readAccess.mode = FakeBusinessDataPorts.Mode.UNAVAILABLE;
+        assertThat(lookup.label(1L, labelQuery("orders", "dept_code", "D1")))
+                .isEqualTo(new ReferenceRowsResult.Failed(ReferenceFailureReason.UNAVAILABLE));
+        ports.readAccess.mode = FakeBusinessDataPorts.Mode.NOT_CONFIGURED;
+        assertThat(lookup.search(1L, searchQuery("team_pick", 1, new ReferenceCondition("label", "x"))))
+                .isEqualTo(new ReferenceRowsResult.Failed(ReferenceFailureReason.UNAVAILABLE));
+        ports.readAccess.mode = FakeBusinessDataPorts.Mode.DONE;
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.UNEXPECTED));
+        assertThatThrownBy(() -> lookup.label(1L, labelQuery("orders", "dept_code", "D1")))
+                .isInstanceOf(BusinessDataUnexpectedException.class);
+    }
+
+    @Test
+    @DisplayName("check reads nothing for a non reference, an unreadable target or an untyped value")
+    void checkWithoutQuery() {
+        TargetReadSession session = session();
+
+        assertThat(lookup.check(source(), "memo", new ReferenceValue("x"), session))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(lookup.check(source(), "hidden_ref", new ReferenceValue("1"), session))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(lookup.check(picks(), "price_ref", new ReferenceValue("abc"), session))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(ports.calls).doesNotContain("search");
+    }
+
+    private TableAccessResolution.Resolved picks() {
+        return (TableAccessResolution.Resolved) resolver.resolve(1L, new TableQuery("sample", "picks", null));
+    }
+
+    @Test
+    @DisplayName("check compares the typed value strictly: case and trailing spaces differ, 1.0 equals 1")
+    void checkIsStrict() {
+        TargetReadSession session = session();
+        ports.executor.referenceResults.add(rows("code", "name", "ABC", "abc "));
+        assertThat(lookup.check(source(), "dept_code", new ReferenceValue("abc"), session))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        ports.executor.referenceResults.add(rows("code", "name", "ABC", "abc"));
+        assertThat(lookup.check(source(), "dept_code", new ReferenceValue("abc"), session))
+                .isEqualTo(new ReferenceCheckResult.Found());
+        ports.executor.referenceResults.add(rows("amount", "name", "1"));
+        assertThat(lookup.check(picks(), "price_ref", new ReferenceValue("1.0"), session))
+                .isEqualTo(new ReferenceCheckResult.Found());
+        ports.executor.referenceResults.add(rows("code", "name"));
+        assertThat(lookup.check(source(), "dept_pick", new ReferenceValue("D1"), session))
+                .as("LOOKUP も確かめる")
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+
+        assertThat(withReads()).as("自分では借りない").isZero();
+        assertThat(ports.executor.sessions).allSatisfy(s -> assertThat(s).isSameAs(session));
+        assertThat(ports.executor.references)
+                .allSatisfy(spec -> assertThat(spec.orElseThrow().maxRows()).isEqualTo(201));
+        assertThat(ports.executor.references.get(0).orElseThrow().displayColumns())
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("check compares only the first 200 rows and keeps the failure value")
+    void checkLimitsAndFailures() {
+        TargetReadSession session = session();
+        String[] values = new String[201];
+        for (int i = 0; i < 200; i++) {
+            values[i] = "X" + i;
+        }
+        values[200] = "abc";
+        ports.executor.referenceResults.add(rows("code", "name", values));
+        assertThat(lookup.check(source(), "dept_code", new ReferenceValue("abc"), session))
+                .as("201 行目はまだあるかを知るためだけで比べない")
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.TIMEOUT));
+        try (LogEvents events = LogEvents.capture(ReferenceLookup.class)) {
+            assertThat(lookup.check(source(), "dept_code", new ReferenceValue("abc"), session))
+                    .isInstanceOfSatisfying(ReferenceCheckResult.Failed.class, f -> {
+                        assertThat(f.failure().reason()).isEqualTo(ReferenceFailureReason.TIMEOUT);
+                        assertThat(f.failure().sqlState()).isEqualTo("57014");
+                        assertThat(f.failure().budgetExceeded()).isFalse();
+                    });
+            assertThat(events.list()).as("check は WARN を出さない（写す U2 が出す）").isEmpty();
+        }
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.INVALID_VALUE));
+        assertThatThrownBy(() -> lookup.check(source(), "dept_code", new ReferenceValue("abc"), session))
+                .isInstanceOf(BusinessDataUnexpectedException.class);
+    }
+
+    @Test
+    @DisplayName("countState answers NO_PERMISSION, AVAILABLE for lookups, 200 AVAILABLE, 201 TOO_MANY and FAILED")
+    void countState() {
+        TargetReadSession session = session();
+        assertThat(lookup.countState(source(), "memo", session)).isEqualTo(new ReferenceCountState.NoPermission());
+        assertThat(lookup.countState(source(), "hidden_ref", session))
+                .isEqualTo(new ReferenceCountState.NoPermission());
+        assertThat(lookup.countState(source(), "dept_pick", session)).isEqualTo(new ReferenceCountState.Available());
+        assertThat(ports.calls).doesNotContain("search");
+
+        ports.executor.referenceResults.add(count("code", 200));
+        assertThat(lookup.countState(source(), "dept_code", session)).isEqualTo(new ReferenceCountState.Available());
+        ports.executor.referenceResults.add(count("code", 201));
+        assertThat(lookup.countState(source(), "dept_code", session)).isEqualTo(new ReferenceCountState.TooMany());
+        ports.executor.referenceResults.add(failed(RowQueryFailureReason.UNAVAILABLE));
+        try (LogEvents events = LogEvents.capture(ReferenceLookup.class)) {
+            assertThat(lookup.countState(source(), "dept_code", session))
+                    .isInstanceOfSatisfying(
+                            ReferenceCountState.Failed.class,
+                            f -> assertThat(f.failure().reason()).isEqualTo(ReferenceFailureReason.UNAVAILABLE));
+            assertThat(events.list()).isEmpty();
+        }
+        assertThat(ports.executor.references)
+                .allSatisfy(spec -> assertThat(spec.orElseThrow().maxRows()).isEqualTo(201));
+        assertThat(ports.executor.conditions).isEmpty();
+        assertThat(withReads()).isZero();
+    }
+
+    @Test
+    @DisplayName("the results of the new ports print no value")
+    void resultsHideValues() {
+        ports.executor.referenceResults.add(rows("code", "name", SECRET_LABEL));
+        ReferenceRowsResult result = lookup.label(1L, labelQuery("orders", "dept_code", SECRET_LABEL));
+
+        assertThat(result).isInstanceOf(ReferenceRowsResult.Found.class);
+        assertThat(result.toString()).doesNotContain(SECRET_LABEL).doesNotContain("ラベル");
     }
 }

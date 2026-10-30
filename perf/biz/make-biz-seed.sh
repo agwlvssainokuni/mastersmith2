@@ -22,6 +22,12 @@
 #   biz_ref   外部キーの参照先（主キー id の 1〜100 の 100 行）
 #   biz_new   100 カラム（自動の採番の主キー id・一意の制約のある u_code・biz_ref を指す外部キー ref_id・文字の n_001〜n_097）。
 #             行は入れない（bizCreate・bizCreateLarge が作り、bizUpdate・bizDelete は setup で自分の行を作る）
+# 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1、Bolt B2。NFR2.4）の表も作る。
+#   biz_code200・biz_code201  REFERENCE の参照先のコードの表（主キー id・短い文字のコード code・短い文字の名前 name）。
+#             ちょうど 200 行と 201 行（refDefinition200 は選択肢 200 件、refDefinition201 は TOO_MANY）
+#   biz_refsrc200・biz_refsrc201  それぞれを REFERENCE で指すカラム code を持つ参照元（10 行。定義の取得は行を読まない）
+#   biz_refpick  biz_item を LOOKUP で指すカラム item_id を持つ参照元（10 行。ピッカーの検索とラベルの1件読みの場面）
+#   後の単位（U2）が足す表も、この後・最後の GRANT の前に足す（GRANT ON ALL TABLES に入るため）。
 # 読み取りだけのアカウント mastersmith_reader（対象DB の初期化の台本が作る）に、bizperf の読み取りの権限を与える。書き込みの
 # アカウント mastersmith_writer（同じく 03-writer-account.sh が作る）に、bizperf の行の操作（PG は sequence の USAGE も）を与える。
 # 値はすべて架空で、行の番号 n とカラムの番号 i だけから決まる（乱数を使わない。何度流しても同じ行になる）。
@@ -265,6 +271,22 @@ done
 echo "  CONSTRAINT fk_biz_new_ref FOREIGN KEY (ref_id) REFERENCES ${P}biz_ref (id)"
 echo ");"
 
+# 他テーブル参照の読み取りの場面の表（U1。値は行の番号だけから決まる架空の値）
+for count in 200 201; do
+  echo "CREATE TABLE ${P}biz_code${count} (id INTEGER NOT NULL PRIMARY KEY, code VARCHAR(40) NULL, name VARCHAR(40) NULL);"
+  echo "INSERT INTO ${P}biz_code${count} (id, code, name) SELECT n, $(concat "'K'" "$(str n)"), $(concat "'区分 '" "$(str n)")" \
+    "FROM ($(numbers "${count}")) AS src;"
+  echo "CREATE TABLE ${P}biz_refsrc${count} (id INTEGER NOT NULL PRIMARY KEY, code VARCHAR(40) NULL);"
+  echo "INSERT INTO ${P}biz_refsrc${count} (id, code) SELECT n, $(concat "'K'" "$(str n)") FROM ($(numbers 10)) AS src;"
+done
+echo "CREATE TABLE ${P}biz_refpick (id INTEGER NOT NULL PRIMARY KEY, item_id BIGINT NULL);"
+echo "INSERT INTO ${P}biz_refpick (id, item_id) SELECT n, n FROM ($(numbers 10)) AS src;"
+
+# 行の数（表ごと）を出す問い合わせ（NFR2.1・U1 の NFR2.4 の記録）
+COUNTS="SELECT 'biz_item' AS t, COUNT(*) FROM bizperf.biz_item UNION ALL SELECT 'biz_pair', COUNT(*) FROM bizperf.biz_pair \
+UNION ALL SELECT 'biz_wide', COUNT(*) FROM bizperf.biz_wide UNION ALL SELECT 'biz_ref', COUNT(*) FROM bizperf.biz_ref \
+UNION ALL SELECT 'biz_code200', COUNT(*) FROM bizperf.biz_code200 UNION ALL SELECT 'biz_code201', COUNT(*) FROM bizperf.biz_code201;"
+
 if ${pg}; then
   echo "ANALYZE bizperf.biz_item;"
   echo "ANALYZE bizperf.biz_pair;"
@@ -275,13 +297,11 @@ if ${pg}; then
   echo "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA bizperf TO mastersmith_writer;"
   echo "GRANT USAGE ON ALL SEQUENCES IN SCHEMA bizperf TO mastersmith_writer;"
   # 行の数（表ごと）を出す（NFR2.1 の記録）
-  echo "SELECT 'biz_item' AS t, COUNT(*) FROM bizperf.biz_item UNION ALL SELECT 'biz_pair', COUNT(*) FROM bizperf.biz_pair" \
-    "UNION ALL SELECT 'biz_wide', COUNT(*) FROM bizperf.biz_wide UNION ALL SELECT 'biz_ref', COUNT(*) FROM bizperf.biz_ref;"
+  echo "${COUNTS}"
 else
   echo "DROP TABLE bizperf.seq_digit;"
   echo "ANALYZE TABLE bizperf.biz_item, bizperf.biz_pair, bizperf.biz_wide;"
   echo "GRANT SELECT, SHOW VIEW ON bizperf.* TO 'mastersmith_reader'@'%';"
   echo "GRANT SELECT, INSERT, UPDATE, DELETE ON bizperf.* TO 'mastersmith_writer'@'%';"
-  echo "SELECT 'biz_item' AS t, COUNT(*) FROM bizperf.biz_item UNION ALL SELECT 'biz_pair', COUNT(*) FROM bizperf.biz_pair" \
-    "UNION ALL SELECT 'biz_wide', COUNT(*) FROM bizperf.biz_wide UNION ALL SELECT 'biz_ref', COUNT(*) FROM bizperf.biz_ref;"
+  echo "${COUNTS}"
 fi

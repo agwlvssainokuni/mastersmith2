@@ -57,6 +57,27 @@ public final class ReferenceTables {
     /** 先頭 100 字が同じ並び・長いラベルの 2,000 行・信頼できない値・読めない参照先・LOOKUP を参照する参照元。 */
     public static final String SRC_MISC = "src_misc";
 
+    /** LOOKUP のピッカー（行の数の境界・エスケープ・値の型・長いラベル）と、厳密な一致の確かめの参照元（B2）。 */
+    public static final String SRC_PICK = "src_pick";
+
+    /** 検索 API の認可・同じ応答・上限・漏えい・トレースの結合テストの小さな参照元（B2。{@link #createApi()}）。 */
+    public static final String SRC_API = "src_api";
+
+    /** 小さな参照先（B2）。 */
+    public static final String TGT = "tgt";
+
+    /** 小さな参照先の値の目印（B2。漏えいの確かめ）。 */
+    public static final String VALUE_MARK = "zz-ref-value-5e1a";
+
+    /** 小さな参照先のラベルの目印（B2）。 */
+    public static final String LABEL_MARK = "zz-ref-label-93bd";
+
+    /** 小さな参照先の一覧の列の目印（B2）。 */
+    public static final String CELL_MARK = "zz-ref-cell-71f0";
+
+    /** 小さな参照先の検索の列の目印（B2）。 */
+    public static final String SEARCH_MARK = "zz-ref-search-2c48";
+
     /** 引用符・{@code ;}・{@code --} を含む参照先のテーブルの名前。 */
     public static final String QUOTED = "q'r\"e;f--";
 
@@ -177,6 +198,31 @@ public final class ReferenceTables {
         sql.add("INSERT INTO %sxss (id, v, l) VALUES (1, '" + XSS_VALUE + "', '" + XSS_LABEL.replace("'", "''") + "')");
         sql.add("CREATE TABLE %ssecret (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
         sql.add("INSERT INTO %ssecret (id, v, l) VALUES (1, 'S1', '社外秘')");
+        // ピッカーの行の数の境界（B2、T-B5）。目印の語ごとに 20・21・40・41 行と、10,000 字を超える値の行を2つずつ。
+        sql.add("CREATE TABLE %spick (id INTEGER NOT NULL PRIMARY KEY, v " + textSql() + " NULL, l VARCHAR(50) NULL)");
+        String[] groups = {"A20", "B21", "C40", "D41"};
+        int[] sizes = {20, 21, 40, 41};
+        for (int g = 0; g < groups.length; g++) {
+            String group = groups[g];
+            sql.addAll(
+                    rows("pick", sizes[g], g * 100, i -> "'P" + group + pad(i) + "', '" + group + "-" + pad(i) + "'"));
+            for (int k = 0; k < 2; k++) {
+                sql.add("INSERT INTO %spick (id, v, l) VALUES (" + (900 + g * 10 + k) + ", " + repeat("z", 10_001)
+                        + ", '" + group + "-L" + k + "')");
+            }
+        }
+        // 部分一致のエスケープ（B2、(e)）。MySQL・MariaDB の文字の書き方ではバックスラッシュを重ねる。
+        String backslash = postgres() ? "\\" : "\\\\";
+        sql.add("CREATE TABLE %sesc (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %sesc (id, v, l) VALUES (1, 'e1', '50%off'), (2, 'e2', '50Xoff'), (3, 'e3', 'a_b'),"
+                + " (4, 'e4', 'aXb'), (5, 'e5', 'c" + backslash + "d'), (6, 'e6', 'cXd')");
+        // 末尾の空白だけが違う値（MariaDB の PAD SPACE。T-B7）と、大文字と小文字だけが違う値（B2）。
+        sql.add("CREATE TABLE %spad (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(10001) NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %spad (id, v, l) VALUES (1, 'x', 'px'), (2, CONCAT('x', " + repeat(" ", 9_999)
+                + "), 'p9999'), (3, CONCAT('x', " + repeat(" ", 10_000) + "), 'p10000')");
+        sql.add("CREATE TABLE %scs (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL, l VARCHAR(20) NULL)");
+        sql.add("INSERT INTO %scs (id, v, l) VALUES (1, 'ABC', 'big')");
+        sql.add("CREATE TABLE %s" + SRC_PICK + " (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(50) NULL)");
         for (String source : List.of(SRC_COUNTS, SRC_LENGTHS, SRC_SHAPES, SRC_MISC)) {
             sql.add("CREATE TABLE %s" + source + " (id INTEGER NOT NULL PRIMARY KEY, name VARCHAR(50) NULL)");
         }
@@ -273,6 +319,19 @@ public final class ReferenceTables {
                 column("id").dbType(integer()).build(),
                 column("v").build(),
                 column("l").build()));
+        tables.add(target("pick", List.of("id"), text(), "varchar"));
+        for (String name : List.of("esc", "pad", "cs")) {
+            tables.add(target(name, List.of("id"), "varchar", "varchar"));
+        }
+        tables.add(source(
+                SRC_PICK,
+                lookup("pick", "pick", List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)), "l", "v"),
+                lookup("esc", "esc", List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)), "l"),
+                lookup("numpick", "nums", List.of(new LookupSearchItem("v", SearchOperator.EQUALS)), "l"),
+                lookup("intpick", "r199", List.of(new LookupSearchItem("id", SearchOperator.EQUALS)), "l", "id"),
+                lookup("widepick", "wide", List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)), "l"),
+                ref("padref", reference("pad", "v", "l")),
+                ref("csref", reference("cs", "v", "l"))));
         tables.add(source(
                 SRC_COUNTS,
                 ref("c199", reference("r199", "v", "l")),
@@ -314,6 +373,18 @@ public final class ReferenceTables {
         return tables.toArray(DslTable[]::new);
     }
 
+    /** LOOKUP の参照のカラム（値のカラムは {@code v}、ラベルは一覧の最初の列）。 */
+    private static DslColumn lookup(String name, String table, List<LookupSearchItem> search, String... list) {
+        List<LookupListItem> items = new ArrayList<>();
+        for (int i = 0; i < list.length; i++) {
+            items.add(new LookupListItem(list[i], i + 1));
+        }
+        return column(name)
+                .form(FormPart.LOOKUP)
+                .options(new OptionSource(OptionSourceKind.LOOKUP, List.of(), table, "v", null, search, items))
+                .build();
+    }
+
     private DslTable source(String name, DslColumn... references) {
         List<DslColumn> columns = new ArrayList<>();
         columns.add(column("id").dbType(integer()).build());
@@ -333,6 +404,91 @@ public final class ReferenceTables {
         settings.put(
                 PermissionTarget.table(sample.schema(), "secret"),
                 new PermissionValues(MainPermission.NONE, null, null));
+        return settings;
+    }
+
+    // ── 小さな参照元と参照先（B2。検索 API の認可・同じ応答・上限・漏えい・トレース） ──
+
+    /** 小さな参照先・参照元の表と行を作る（{@link #create()} とは別に、軽い結合テストで使う）。 */
+    public void createApi() {
+        String binary = postgres() ? "BYTEA" : "LONGBLOB";
+        sample.addObjects(
+                "CREATE TABLE %s" + TGT + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(40) NULL, l VARCHAR(40) NULL,"
+                        + " x VARCHAR(40) NULL, s VARCHAR(40) NULL, n INTEGER NULL)",
+                "INSERT INTO %s" + TGT + " (id, v, l, x, s, n) VALUES (1, 'V1', 'L1', 'X1', 'S1', 1),"
+                        + " (2, 'V2', 'L2', 'X2', 'S2', 2), (3, '" + VALUE_MARK + "', '" + LABEL_MARK + "', '"
+                        + CELL_MARK + "', '" + SEARCH_MARK + "', 3)",
+                "CREATE TABLE %stgtbin (id INTEGER NOT NULL PRIMARY KEY, v " + binary + " NULL, l VARCHAR(40) NULL)",
+                "CREATE TABLE %stgtpw (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(40) NULL, l VARCHAR(40) NULL)",
+                "INSERT INTO %stgtpw (id, v, l) VALUES (1, 'W1', 'L1')",
+                "CREATE TABLE %s" + SRC_API + " (id INTEGER NOT NULL PRIMARY KEY, memo VARCHAR(40) NULL)");
+    }
+
+    /**
+     * 小さな参照先・参照元の DSL のテーブルを返す。参照元 {@link #SRC_API} のカラム: {@code pick}（LOOKUP。検索は {@code s}・{@code n}
+     * の完全一致、一覧は {@code l}・{@code x}）、{@code ref}（REFERENCE）、{@code pickbin}（値がバイナリ）、{@code pickpw}（値が
+     * password）、{@code refnum}（値が整数の REFERENCE）、{@code memo}（参照でない）。
+     *
+     * @return テーブル
+     */
+    public DslTable[] apiTables() {
+        String binary = postgres() ? "bytea" : "longblob";
+        return new DslTable[] {
+            table(
+                    TGT,
+                    false,
+                    List.of("id"),
+                    column("id").dbType(integer()).build(),
+                    column("v").build(),
+                    column("l").build(),
+                    column("x").build(),
+                    column("s").build(),
+                    column("n").dbType(integer()).build()),
+            table(
+                    "tgtbin",
+                    false,
+                    List.of("id"),
+                    column("id").dbType(integer()).build(),
+                    column("v").dbType(binary).build(),
+                    column("l").build()),
+            table(
+                    "tgtpw",
+                    false,
+                    List.of("id"),
+                    column("id").dbType(integer()).build(),
+                    column("v").form(FormPart.PASSWORD).build(),
+                    column("l").build()),
+            table(
+                    SRC_API,
+                    false,
+                    List.of("id"),
+                    column("id").dbType(integer()).build(),
+                    column("memo").build(),
+                    lookup(
+                            "pick",
+                            TGT,
+                            List.of(
+                                    new LookupSearchItem("s", SearchOperator.EQUALS),
+                                    new LookupSearchItem("n", SearchOperator.EQUALS)),
+                            "l",
+                            "x"),
+                    ref("ref", reference(TGT, "v", "l")),
+                    ref("refnum", reference(TGT, "n", "l")),
+                    lookup("pickbin", "tgtbin", List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)), "l"),
+                    lookup("pickpw", "tgtpw", List.of(new LookupSearchItem("l", SearchOperator.CONTAINS)), "l"))
+        };
+    }
+
+    /**
+     * スキーマを FULL（補助権限 CREATE・DELETE あり）にし、与えた上書きを足した設定を返す。
+     *
+     * @param overrides 上書き（無ければ空）
+     * @return 設定
+     */
+    public Map<PermissionTarget, PermissionValues> apiSettings(Map<PermissionTarget, PermissionValues> overrides) {
+        Map<PermissionTarget, PermissionValues> settings = new LinkedHashMap<>();
+        settings.put(PermissionTarget.schema(sample.schema()), new PermissionValues(MainPermission.FULL, true, true));
+        settings.putAll(overrides);
         return settings;
     }
 }

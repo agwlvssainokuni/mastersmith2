@@ -243,26 +243,26 @@ U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1
 
 ### B2 U1 後半
 
-- [ ] **Step 14: 準備**
+- [x] **Step 14: 準備**
   - B1 の統合と CI の確かめの後、`git switch -c feature/261029-reference-lookup-cleanup-b2 develop`。E2E の報告を消す。
-- [ ] **Step 15: businessdata.domain の実装（B2 の分）**（US2.1・US2.3、BR1.3・BR1.4・BR5.3〜BR5.9・BR6.1〜BR6.4・BR7.1・BR9.1〜BR9.7・BR10.1）
+- [x] **Step 15: businessdata.domain の実装（B2 の分）**（US2.1・US2.3、BR1.3・BR1.4・BR5.3〜BR5.9・BR6.1〜BR6.4・BR7.1・BR9.1〜BR9.7・BR10.1）
   - 3.1節の B2 の型。`ReferenceCheckResult`（`Found`・`NotFoundOrDenied`・`Failed(ReferenceReadFailure)`）、`ReferenceCountState`（`Available`・`TooMany`・`NoPermission`・`Failed(ReferenceReadFailure)`）。`ReferenceRowsRequestValidator`（BR1.4: 名前の欠け、`conditions` と `value` の両方・どちらも無い、条件のカラムの欠け・重なり、空でない条件の値が無い、1,000 文字、ページ 1〜1,000,000。DSL を見ない）。
-- [ ] **Step 16: businessdata.domain のテスト（B2 の分）**
+- [x] **Step 16: businessdata.domain のテスト（B2 の分）**
   - `ReferenceRowsRequestValidatorTest`（境界: 値 1,000・1,001 文字〈コードポイント〉、ページ 0・1・1,000,000・1,000,001、両方・どちらも無い、重なり、空の条件だけ）と `ReferenceRowsRequestValidatorPropertyTest`（jqwik: 知らない項目で結果が変わらない、上限以下の値は形の誤りにならない）、結果の型と値の型の `toString` の伏せ字。
-- [ ] **Step 17: repository の実装とテスト（B2 の分）**（BR5.5・BR5.7・BR6.3・BR8.6・BR9.4）
+- [x] **Step 17: repository の実装とテスト（B2 の分）**（BR5.5・BR5.7・BR6.3・BR8.6・BR9.4）
   - 指定に値の一致の条件（`comparisonTarget = ?`）と `CONTAINS` の既存の書き方を通し、ピッカーは `LIMIT 21 OFFSET (page-1)*20`、ラベルは 1、`check` は 201。
   - `RowSqlExecutorTest` に文の形と `setMaxRows` を足し、`./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.repository.*'` を流して通す。
-- [ ] **Step 18: service の実装（B2 の分）**（BR1.2・BR1.3・BR1.5・BR3.3・BR5.2〜BR5.9・BR6.1〜BR6.4・BR7.1・BR9.1〜BR9.7）
+- [x] **Step 18: service の実装（B2 の分）**（BR1.2・BR1.3・BR1.5・BR3.3・BR5.2〜BR5.9・BR6.1〜BR6.4・BR7.1・BR9.1〜BR9.7）
   - `ReferenceLookup.search`・`label`（写しを1回、同じ応答の 403、`EQUALS` の値の型の 400 `INVALID_VALUE`、1回借りて文1つ、20 件と 21 行目、ラベルの行が無ければ 403）。
   - `ReferenceLookup.check`・`countState`（U2 が借りた接続を受け、自分で借りない。`check` は 200 行まで型つきの厳密な一致、`countState` は選択肢と同じ読み方。WARN を出さない。値をログに出さない）。`ReferenceRowsResult`。
-- [ ] **Step 19: service のテスト（B2 の分）**
+- [x] **Step 19: service のテスト（B2 の分）**
   - `ReferenceLookupTest` に足す: 403 の各場合で対象DB に問い合わせない、`EQUALS` の値の型の 400、REFERENCE に検索は 403、`check` の各場合（参照でない・`NO_PERMISSION`・型として読めない値は問い合わせない、厳密に一致しない行だけ・10,001 字の行だけなら `NOT_FOUND_OR_DENIED`）、`countState` の4つの場合と `Failed` の理由・壊れた印。
   - `./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.service.*'` を流して通す。
-- [ ] **Step 20: web の実装（B2 の分）**（BR1.2〜BR1.4・BR10.3・BR10.4・BR11.1、NFR1.4・NFR1.13）
+- [x] **Step 20: web の実装（B2 の分）**（BR1.2〜BR1.4・BR10.3・BR10.4・BR11.1、NFR1.4・NFR1.13）
   - `BusinessDataReadController` に `POST /api/tables/reference/rows`（`BusinessDataPaths.REFERENCE_ROWS`）を足す。伏せる要求の型で受け、結果の型を `switch` で尽くして `BusinessException` に写す。403 は `fieldErrors` なしの同じ本文。
   - `BusinessDataWebConfig` に本文の上限 65,536 バイトの道を足す。
   - `README.md` の「業務データの読み取りの API」の道の表に `POST /api/tables/reference/rows` を足す。
-- [ ] **Step 21: web のテストと検索・ラベル・確かめの結合テスト**（(a)〜(e)・(i)・(j)・(k)、T-B4〜T-B9 の残り、T-T1・T-F1 の残り、NFR1.2・NFR1.5・NFR1.15）
+- [x] **Step 21: web のテストと検索・ラベル・確かめの結合テスト**（(a)〜(e)・(i)・(j)・(k)、T-B4〜T-B9 の残り、T-T1・T-F1 の残り、NFR1.2・NFR1.5・NFR1.15）
   - `BusinessDataReadControllerTest` に、形の 400 が 403 より前、写しの各場合。
   - `ReferenceAuthorizationApiIT`（パラメーターの表: 401、要る権限だけを欠く利用者〈参照元のカラムが FULL でない・参照先の表が読めない・値のカラムが NONE・ラベルのカラムが NONE・一覧の列が NONE・使える条件が残らない〉と値のカラムがバイナリ・password の形で 403、権限ありで 200、停止中は 401、作業ロールの切り替え・割り当ての変更の直後の次の要求で切り替わる）。
   - `ReferenceSameResponseIT`（403 の各場合〈権限の欠け・DSL に無い名前・参照でないカラム・REFERENCE に検索・`searchFields` に無いカラム・型として読めないラベルの値・行が無いラベル〉の状態コード・`code`・本文の構造とメッセージが同一、判定の順の表、差し替えた要求で SQL が1つも流れない〈(b)〉）。
@@ -274,7 +274,7 @@ U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1
   - `ReferenceTraceExposureIT`（外部へ送る設定を有効にして、道の属性が固定の道で値が無い）。
   - `ApiAccessArchitectureTest`・境界テストを変えずに通す。
   - 上の環境変数を付けて `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.*Reference*IT'` を流して通す。
-- [ ] **Step 22: perf の種・DSL・k6 の場面と README**（US3.5 の AC3.5.4 の準備、NFR2.1〜NFR2.4、基盤の設計 4節・R-03）
+- [x] **Step 22: perf の種・DSL・k6 の場面と README**（US3.5 の AC3.5.4 の準備、NFR2.1〜NFR2.4、基盤の設計 4節・R-03）
   - `perf/biz/make-biz-seed.sh`: 3種類の DB で同じ形の REFERENCE の参照先（ちょうど 200 行・201 行の短い文字のコード。行の番号だけから決まる架空の値）と参照元の小さな表、読み取りのアカウントへの `SELECT`。
   - `perf/make-biz-dsl.mjs`: REFERENCE（200 行・201 行の表を指す2つ）と LOOKUP（`biz_item`、検索の列 `c_010`）の options。
   - `perf/k6/scenarios.js`: `refDefinition200`・`refDefinition201`・`refPickerEquals`・`refLabel`・`refPickerContains`（1回の繰り返しに要求1つ、待ちなし、トークンは `setup()`、setup は前の場面の状態に頼らない、p95 の線は 1,000 ms・部分一致 3,000 ms を今の `thresholdsFor` の仕組みに足す）。`perf/k6/thresholds-test.sh` の期待の表に5つの場面を足す。

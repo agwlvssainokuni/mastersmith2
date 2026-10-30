@@ -119,3 +119,82 @@
 - E2E の全件をもう一度: 256 件すべて通過（13.1 分）。流した間に Sleep・DarkWake は無かった。
 - B1 の統合: develop へ squash（549d38b）。作業ブランチは消した。依頼者が push。
 - CI（run 41050809643、549d38b）: 1回目の試行で success。検査の job「./gradlew verify」は 11:49:14Z〜12:21:39Z の 32分25秒（42 分の線の内）。再実行は無い。
+
+## B2 の生成（Step 14〜21 の依頼。B1 の統合 549d38b の後、ブランチ feature/261029-reference-lookup-cleanup-b2）
+
+### Step 14
+
+- ブランチは指揮役が作った `feature/261029-reference-lookup-cleanup-b2` の上。`frontend/test-results`（git の対象外）が残っていたため消した。`frontend/playwright-report` は無かった。
+
+### Step 15・16（businessdata.domain、B2 の分）
+
+- 足したクラス（計画 3.1節の B2 の型）: `ReferenceValue`・`ReferenceCondition`・`ReferenceRowsQuery`（種類は入れ子の列挙 `Mode { SEARCH, VALUE }`。新しい外のクラスは足していない）・`ReferenceRow`・`ReferenceRows`・`ReferenceCheckResult`（`Found`・`NotFoundOrDenied`・`Failed(ReferenceReadFailure)`）・`ReferenceCountState`（`Available`・`TooMany`・`NoPermission`・`Failed(ReferenceReadFailure)`）・`ReferenceRowsRequestValidator`。
+- 計画の幅の中で決めたこと:
+  - `ReferenceRowsRequestValidator.validate` は確かめる前の条件を既存の `RawCondition` で受け、誤りを区別せず `Optional.empty()` で返す（400 は `fieldErrors` を付けないため）。名前は「無い（null）」だけを形の誤りにし、空の文字は DSL の照合（403）に回す。条件の値の null は空の値として扱う。値が空の条件も `ReferenceRowsQuery` に残し、業務処理の層で `searchFields` と照らす（空の条件のカラムでも DSL に無ければ 403。SQL には使わない。BR5.3・BR5.4）。
+  - `ReferenceReadSpec` に `picker`（21 行・読み飛ばす数）・`label`（1 行）・`check`（201 行・出すのは値のカラムだけ）の作り方と定数 `PICKER_ROWS`・`LABEL_ROWS`・`CHECK_COMPARED_ROWS`（200）・`CHECK_ROWS`（201）を、`ReferencePolicy` に `pickerSpec`・`labelSpec`・`checkSpec` を足した（表示の列はラベル → 一覧の列の順、読めない列・password・バイナリを選ばず重ねない）。
+  - jqwik の「知らない項目で結果が変わらない」は、確かめの関数が名前の中身を見ない性質（任意の名前で、決まった名前と同じ結果）として書いた。本文の JSON の知らない項目が捨てられることは `ReferenceSameResponseIT` の結合テストで確かめた。
+- テスト: `ReferenceRowsRequestValidatorTest` 20 件・`ReferenceRowsRequestValidatorPropertyTest`（jqwik）2 件・`ReferencePolicyTest` に 2 件。`./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.domain.*'`: 188 件・失敗 0。jqwik の失敗は無く、記録する種は無い。
+
+### Step 17（repository）
+
+- 本体の変更は要らなかった: 既存の `RowSqlExecutor.search` は、指定（`ReferenceReadSpec`）があるときも検索の条件の句（`RowSqlBuilder.where`）を先に組み、その後に `IS NOT NULL` と長さの条件を AND で足すため、値の一致（`comparisonTarget = ?`）と `CONTAINS` の既存の書き方（`LIKE ? ESCAPE '!'`）がそのまま通る。計画の「実装とテスト」のうち、テストだけを足した。
+- `RowSqlExecutorTest` に 2 件（ピッカー: エスケープした `CONTAINS` と `EQUALS` のバインド、`setMaxRows` 21・`LIMIT 21 OFFSET 40`、password の列を選ばない／ラベルの1件読みと `check`: 型つきの値のバインド、`setMaxRows` 1 と 201、`check` は値のカラムだけを選ぶ）。`./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.repository.*'` は失敗 0（`RowSqlExecutorTest` 20 件）。
+
+### Step 18・19（service）
+
+- `ReferenceLookup` に `search(userId, query)`・`label(userId, query)`・`check(source, column, value, session)`・`countState(source, column, session)` を足した。結果の型 `ReferenceRowsResult`（`Found`・`Denied`・`InvalidValue(column)`・`Failed(reason)`）は service に置いた（計画 3.1節）。
+- 計画の幅の中で決めたこと:
+  - 検索・ラベルは、写しを1回取り（`TableAccessResolver.resolve`）、DSL が無い・名前が無い・参照元のテーブルが NONE・参照元のカラムが FULL でない・参照でない・`accessOf` が NO_PERMISSION をすべて `Denied` にする。検索は REFERENCE なら `Denied`、条件のカラムをすべて `searchFields` と照らしてから（403）値を型として読む（400）。`CONTAINS` の値も既存の型の読み取り（文字）を通す。
+  - 検索・ラベルは文が1つのため全体の締め切り（`ReferenceReadDeadline`）を使わず、`REFERENCE` の文の上限だけで流す（reliability-design.md 1.3 の最後の行のとおり）。
+  - 診断の WARN は定義の取得と同じ1行（`purpose`・`reason`・あれば `sqlState`・`vendorCode`・`exceptionClass`・`budgetExceeded`）を、検索・ラベルの失敗を写す所で出す（B1 の `fail` を `warn` に切り出して共有）。`check`・`countState` は WARN を出さない。
+  - `check`・`countState` は U2 が借りた（締め切りで絞った）`TargetReadSession` を受け、自分では借りない。`ReferenceReadFailure.of` が `IllegalArgumentException` を投げる理由（`INVALID_VALUE`・`UNEXPECTED`）は `BusinessDataUnexpectedException` を投げる（reliability-design.md 5.2）。U2 の `withRead` の中で投げると、既存の `JdbcTargetReadAccess` が `TargetReadUnexpectedException`（500）に包む。
+  - `check` の参照元の材料は `TableAccessResolution.Resolved`（同じ写し）で受ける。参照元のカラムが書けるかは見ない（BR9.2・BR9.7 のとおり U2 が先に判定する）。
+- テスト: `ReferenceLookupTest` に 11 件（403 の各場合で借りない、DSL が無い、`EQUALS` の型の 400 と 403 が先、21 行で `hasNext`・空の条件を使わない・最後のページの後、ラベル（両方の種類・最初の行・行が無い・型として読めない）、失敗の写しと WARN 1 行、`check` の問い合わせない場合・厳密な一致（大文字と小文字・末尾の空白・1.0 と 1）・201 行目を比べない・失敗の値・WARN を出さない、`countState` の4つの場合）。参照元の表 `picks`・参照先 `prices` をテストの DSL に足した。`./gradlew :backend:test --tests 'cherry.mastersmith.businessdata.service.*'`: 74 件・失敗 0（`ReferenceLookupTest` 22 件）。
+
+### Step 20（web）
+
+- 検索 API は計画の Q4: A どおり既存の `BusinessDataReadController` に `referenceRows` を足した（クラスの `@ApiAccess(AUTHENTICATED)` に入る）。構成子に `ReferenceLookup` を足したため、`BusinessDataReadControllerTest` の構成子の呼び方を直した（計画 4節の一覧にあるテスト）。
+- 形の 400 は `fieldErrors` も `definitionChanged` も付けない `VALIDATION_FAILED`（この API には定義の識別が無いため）、値の型の 400 は `fieldErrors`（カラムと `INVALID_VALUE`）だけを付ける（`BusinessDataFieldErrors.withFieldErrors`）。403 は共通の `ACCESS_DENIED` を付け足しなしで返す。
+- 応答の `page`・`label`・`cells` は既存の `ReferenceOptionResponse` と同じく `@JsonInclude(ALWAYS)` で、null でも欄を出す（ラベルの1件読みの `page: null`）。
+- `BusinessDataPaths.REFERENCE_ROWS`、`BusinessDataWebConfig` に本文の上限 65,536 バイトの道、`README.md` の読み取りの API の表に1行（と「3本」を「4本」に）。
+- **計画の 4節の一覧に無いテストの変更（記録）**: `common/testsupport/ApiEndpointCounts.MIN_ENDPOINTS` を 72 から 73 に上げた（ファイルの説明の「口を足したら、この値も今の数に上げる」の決まりと、依頼の「新しい API を API の分類の網羅のテストに登録する」による。分類そのものはクラスの印で網羅され、`ApiAccessArchitectureTest`・`ApiAccessConsistencyIT` は変えずに通った）。
+
+### Step 21（web のテストと結合テスト）
+
+- `BusinessDataReadControllerTest` に 6 件（形の 400 が業務処理を呼ぶ前、検索とラベルの振り分けと利用者 ID、403 の同じ応答、`INVALID_VALUE` の 400、失敗の写し3つ、伏せ字と本文の上限の道）。
+- `ReferenceTables`（testsupport）に足した: ピッカーの表 `pick`（20・21・40・41 行と 10,001 字の値の行）、エスケープの表 `esc`、末尾の空白の表 `pad`、大文字の表 `cs`、参照元 `SRC_PICK`（LOOKUP 5つと REFERENCE 2つ）。あわせて軽い結合テスト用の小さな組（`createApi()`・`apiTables()`・`apiSettings()`。参照先 `tgt`・`tgtbin`・`tgtpw`、参照元 `SRC_API` の `pick`・`ref`・`refnum`・`pickbin`・`pickpw`・`memo`）を同じクラスに足した（新しいテストの部品のクラスは足していない）。
+- 結合テスト（環境変数と `caffeinate -dims` を付けた）:
+  - `AbstractReferenceReadIT` に 11 件（3種類）: T-B5、(e)、`EQUALS` の型（BIGINT の最大・`0001`・整数、読めない値の 400）、ラベルの DB の比べ方（PostgreSQL は区別、MySQL・MariaDB は区別しない照合で別の大文字・小文字の行のラベル）、(h) と (f) のラベル、`check` の厳密な一致・T-B7（PAD SPACE）・T-B6・(h)、T-B4、T-B9 の残りの経路。`PostgresReferenceReadIT`・`MysqlReferenceReadIT`・`MariadbReferenceReadIT` は各 23 件・失敗 0。
+  - 新しい `ReferenceAuthorizationApiIT` 24 件、`ReferenceSameResponseIT` 3 件、`ReferenceRequestLimitIT` 8 件、`ReferenceSecretLeakIT` 1 件、`ReferenceTraceExposureIT` 1 件。`ReferenceConnectionUsageIT` は 25 件（B2 で 7 件を足した）、`ReferenceTimeoutIT` は 17 件（B2 で 7 件を足した）。すべて失敗 0。`ApiAccessConsistencyIT` 5 件も失敗 0。
+- 確かめの口（`check`・`countState`）は U2 がまだ呼ばないため、結合テストではアプリの部品（`TableAccessResolver`・`TargetReadAccess`・`ReferenceLookup`）を Bean で取り出し、U2 と同じく `withRead(REFERENCE, …)` の中で呼んだ。
+- `ReferenceTraceExposureIT` は既存の `BusinessDataTraceExposureIT` と同じく、テストだけのスパンの集め手で終わったスパンの属性を集める形にした（外部へ送る設定そのものは有効にしていない。計画の文「外部へ送る設定を有効にして」との差。既存の確かめの形に合わせた）。
+- `ReferenceSecretLeakIT` の失敗の経路は、接続を拒む対象DB（定義・検索・ラベルの 503 UNAVAILABLE）、対象DB に無い一覧の列（検索・ラベルの 409 MISMATCH）、眠るビュー（検索の 503 TIMEOUT）の6要求で、要求ごとに `ReferenceLookup` の WARN 1 行と `GlobalExceptionHandler` の WARN 1 行を数えた。全体の上限で止める経路（`budgetExceeded`）は時間に合否を預けないため単体テスト（T-T3）だけで確かめている。
+- 境界テスト（ArchUnit）・`backend/config/spotbugs-exclude.xml`・移行ファイル・DSL の JSON Schema・lockfile に差は無い。`packagesJudgedByTotal` の7パッケージに触れていない。
+- 回帰の確かめ（verify ではない）: `:backend:spotbugsGate` と、`:backend:test --tests 'cherry.mastersmith.businessdata.*' --tests 'cherry.mastersmith.targetdb.*' --tests '*ArchitectureTest' --tests 'cherry.mastersmith.ApiAccessRulesTest'`、`:backend:integrationTest --tests 'cherry.mastersmith.businessdata.*' --tests 'cherry.mastersmith.ApiAccessConsistencyIT'` を一度に流し、成功（8分36秒）。単体 79 クラス 766 件・失敗 0、結合 31 クラス 371 件・失敗 0（SKIPPED 10 は前からの DB の種類ごとの `assumeTrue`）。`spotbugsGate` に新しい `SQL_` の指摘は無い。
+- Step 14〜21 にチェックを付けた。コミットはしていない（依頼の決まり）。Step 22（perf）以降は行っていない。
+
+### 依頼者の決定（B2 の Step 14〜21 の差）
+
+- 依頼者は次の3つを受け入れた（依頼者の決定）: (1) `ApiEndpointCounts.MIN_ENDPOINTS` を 73 に上げたこと、(2) `ReferenceTraceExposureIT` を既存の `BusinessDataTraceExposureIT` と同じテストだけのスパンの集め手の形にしたこと（外部へ送る設定は有効にしない。計画の文との差）、(3) Step 17 は repository の本体を変えずテストだけを足したこと。
+- コミット: 385b244（C1 と C2 をまとめたもの。この時点でコンパイルが通ることを指揮役が確かめた）、6e54229（C3）。
+
+## B2 の Step 22（perf の種・DSL・k6 の場面と README）
+
+- 種（`perf/biz/make-biz-seed.sh`）: `biz_code200`・`biz_code201`（`id`・`code`〈`K1` の形〉・`name`〈`区分 1` の形〉、ちょうど 200 行と 201 行）、参照元 `biz_refsrc200`・`biz_refsrc201`（`code`、10 行）、`biz_refpick`（`item_id`、10 行）を、`biz_new` の後・最後の GRANT（`ON ALL TABLES`・`bizperf.*`）の前に足した。値は行の番号だけから決まる。最後の行の数の出力に `biz_code200`・`biz_code201` を足した（出力の問い合わせを変数 `COUNTS` にまとめた）。U2 の表も同じ位置に足せる（説明の頭に書いた）。
+- DSL（`perf/make-biz-dsl.mjs`）: 同じ5つの表と、REFERENCE（`code` → `biz_code200`・`biz_code201`、値 `code`・ラベル `name`、部品 `select`）・LOOKUP（`item_id` → `biz_item`、値 `id`・ラベル `c_007`、検索は `id` の EQUALS と `c_010` の CONTAINS、一覧は `c_007`・`c_001`、部品 `lookup`）の options。メニューも 10 項目に増える。`column()` に `formPart` と `options` を受ける項目を足した（既存の表の出力は変わらない）。
+- **計画の幅の中で決めたこと（基盤の設計 4.2 の「参照元の表」は1つの表の書き方）**: 参照元を3つの表（`biz_refsrc200`・`biz_refsrc201`・`biz_refpick`）に分けた。1つの表に REFERENCE を2つ置くと、定義の取得が1要求で 200 行と 201 行の両方を読み、`refDefinition200` と `refDefinition201` が同じ要求になって見分けられないため（基盤の設計は「名前と列の形は Code Generation で決める」としている）。
+- k6（`perf/k6/scenarios.js`）: `refDefinition200`・`refDefinition201`・`refPickerEquals`・`refLabel`・`refPickerContains`（10 VU・`BIZ_DURATION` 3 分の constant-vus、1回の繰り返しに要求1つ、待ちなし）。setup `setupReference` は前の場面に頼らず、ロール `perf-biz-ref`（スキーマ READ、参照元の3つの表を FULL。参照元のカラムが FULL でないと参照先を読まないため）の用意・割り当て・作業ロールの保存・トークンを行い、3つの定義の参照の項目の状態（AVAILABLE・TOO_MANY・AVAILABLE）を確かめる。閾値は `thresholdsFor` に足した `REF_P95_LIMIT_MS`（`refPickerContains` だけ 3000、ほかは 1000）。既存の場面の閾値は変えていない。
+- `perf/k6/thresholds-test.sh` の期待の表に5つの場面を足した。
+- `perf/README.md` に「他テーブル参照の読み取りの場面」の節: 場面の表、データ、setup の前提、アプリの一時の環境ファイル `app-targetdb.env` に `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5` を足す行、暖めの後に `hikaricp.connections.max`（`pool=mastersmith-target-db`）を読み **5 でなければ中止する** 条件（台本の中でも止める）、比べる相手（上限 5 で流した Intent 261016 の結果。直前の 261025・261027 は 10 のため相手にしない。どれと並べるかは Build and Test で依頼者に確かめる）、流す順（U1 の読み取り → U2 → 深いページの参考）、種の確かめ（200・201・100,000 と目印、MySQL・MariaDB は utf8mb4）、`caffeinate -dims` と `pmset -g log`、記録に置く前の JWT の伏せ字と gitleaks。
+- 確かめ（アプリ・対象DB・使い捨ての環境には触れていない。負荷の試験は流していない）:
+  - `bash -n perf/biz/make-biz-seed.sh`・`node --check perf/make-biz-dsl.mjs`・`node --check perf/k6/scenarios.js`: どれも通った。3種類で種の SQL と DSL を出力して、足した文と options の形を読んだ（DSL は作業用の一時の場所に出しただけで、リポジトリには置いていない）。DSL の適用での検証は Build and Test の `bizPrepare` で行われる。
+  - 場面ごとに `docker run --rm -e SCENARIO=<名前> … "$K6_IMAGE" inspect --include-system-env-vars /scripts/scenarios.js`（`perf/versions.env` の `K6_IMAGE`、`--env-file` なし）: 5つの場面とも constant-vus・10 VU・3m0s、閾値は `iteration_duration{scenario:<名前>}` が p(95)<1000（`refPickerContains` は p(95)<3000）、`checks{scenario:<名前>}` が rate==1、`http_req_duration{name:<名前>}` が max>=0、`setupTimeout` 10m0s。既存の `bizSearchFirst`・`bizCreate`・`navMenu` の閾値も変わっていないことを見た。
+  - `bash perf/k6/thresholds-test.sh`: 12 件すべて ok、終了コード 0。
+- Step 22 にチェックを付けた。コミットはしていない。
+- 依頼者の決定（B2 の Step 22）: perf の参照元を3つの表（biz_refsrc200・biz_refsrc201・biz_refpick）に分けた形を受け入れた（基盤の設計 4.2 の「参照元の表」1つとの差）。
+
+## B2 の確かめと統合 — 指揮役の記録
+
+- コミット: 385b244（計画の C1 と C2 をまとめた。同じファイルに混ざり、分けるとコンパイルが通らないため）、6e54229（C3）、fde2b2e（C4）。385b244 の時点でコンパイルが通ることを確かめた。
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（colima の環境変数・`caffeinate -dims`）: 成功、23分34秒。単体 2,748 件・結合 1,523 件、失敗 0。SKIPPED 10 件は DB の種類ごとの前からの `assumeTrue`。
+- E2E の全件: 256 件すべて通過（12.9 分）。verify と E2E を流した 22:37〜23:13 に Sleep・DarkWake は無かった。

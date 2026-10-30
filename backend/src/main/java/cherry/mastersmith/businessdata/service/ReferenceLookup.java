@@ -15,8 +15,14 @@
  */
 package cherry.mastersmith.businessdata.service;
 
+import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ColumnAccess;
 import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
+import cherry.mastersmith.businessdata.domain.PickerListColumn;
+import cherry.mastersmith.businessdata.domain.PickerSearchField;
+import cherry.mastersmith.businessdata.domain.ReferenceCheckResult;
+import cherry.mastersmith.businessdata.domain.ReferenceCondition;
+import cherry.mastersmith.businessdata.domain.ReferenceCountState;
 import cherry.mastersmith.businessdata.domain.ReferenceFailureReason;
 import cherry.mastersmith.businessdata.domain.ReferenceField;
 import cherry.mastersmith.businessdata.domain.ReferenceOption;
@@ -24,10 +30,18 @@ import cherry.mastersmith.businessdata.domain.ReferencePolicy;
 import cherry.mastersmith.businessdata.domain.ReferenceReadDeadline;
 import cherry.mastersmith.businessdata.domain.ReferenceReadFailure;
 import cherry.mastersmith.businessdata.domain.ReferenceReadSpec;
+import cherry.mastersmith.businessdata.domain.ReferenceRow;
+import cherry.mastersmith.businessdata.domain.ReferenceRows;
+import cherry.mastersmith.businessdata.domain.ReferenceRowsQuery;
 import cherry.mastersmith.businessdata.domain.ReferenceStatus;
 import cherry.mastersmith.businessdata.domain.ReferenceTarget;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
+import cherry.mastersmith.businessdata.domain.RowQueryFailure;
 import cherry.mastersmith.businessdata.domain.RowRecord;
+import cherry.mastersmith.businessdata.domain.SearchCondition;
+import cherry.mastersmith.businessdata.domain.SearchMode;
 import cherry.mastersmith.businessdata.domain.TableAccessView;
+import cherry.mastersmith.businessdata.domain.TableQuery;
 import cherry.mastersmith.businessdata.repository.ColumnValueCodec;
 import cherry.mastersmith.businessdata.repository.RowSearchResult;
 import cherry.mastersmith.businessdata.repository.RowSqlExecutor;
@@ -35,12 +49,14 @@ import cherry.mastersmith.dsl.domain.DslColumn;
 import cherry.mastersmith.dsl.domain.DslSchema;
 import cherry.mastersmith.dsl.domain.DslTable;
 import cherry.mastersmith.dsl.domain.OptionSourceKind;
+import cherry.mastersmith.role.domain.MainPermission;
 import cherry.mastersmith.targetdb.domain.ReadPurpose;
 import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
 import cherry.mastersmith.targetdb.domain.TargetReadSession;
 import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,8 +67,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * 他テーブル参照の読み取りの流れ（Intent 261029-reference-lookup-cleanup の U1、ADR-001、functional-spec.md 4節・5節）。この Bolt
- * （B1）では定義の取得の参照の項目（REFERENCE の選択肢・LOOKUP のピッカーの情報）を受け持つ。
+ * 他テーブル参照の読み取りの流れ（Intent 261029-reference-lookup-cleanup の U1、ADR-001、functional-spec.md 4節・5節）。定義の取得の
+ * 参照の項目（REFERENCE の選択肢・LOOKUP のピッカーの情報。B1）と、参照先の検索 API の検索・ラベルの1件読み、U2 が保存の前に呼ぶ
+ * 確かめの口 {@link #check}・{@link #countState}（B2）を受け持つ。
  *
  * <p>参照先は参照元のカラムの DSL の options から引き（BR2.1）、参照先の判定の材料は参照元の判定で取った写しで作る（BR2.2）。REFERENCE
  * で読める項目があるときだけ、{@code REFERENCE} の目的で対象DB の読み取りの接続を1回借り（BR8.2）、その中で全体の締め切り
@@ -61,7 +78,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>対象DB の失敗を写す所で、診断の WARN を1行だけ出す（キー {@code purpose}・{@code reason}・{@code sqlState}・
  * {@code vendorCode}・{@code exceptionClass}・{@code budgetExceeded}。名前・値・メッセージを出さない。BR8.7・observability-design.md
- * 2節）。
+ * 2節）。検索・ラベルの1件読みも同じ1行を出す。{@link #check}・{@link #countState} は WARN を出さない（写す U2 が出す。BR9.6）。
  */
 @Service
 public class ReferenceLookup {
@@ -259,6 +276,295 @@ public class ReferenceLookup {
                 options, option -> codec.read(value, option.value()).orElse(null)));
     }
 
+    /**
+     * ピッカーの検索（判定の順の ③〜⑤。BR1.2・BR1.3・BR5.2〜BR5.9）。写しを1回取り、参照元のカラムが LOOKUP で FULL、参照先が
+     * {@code AVAILABLE} で、条件のカラムがすべて {@code searchFields} にあるときだけ、{@code REFERENCE} の目的で接続を1回借りて文を
+     * 1つ流す（件数を数えない。BR8.2）。値が空の条件は SQL に使わない（BR5.4）。
+     *
+     * @param userId 利用者 ID（要求の文脈から読んだもの）
+     * @param query 本文の形を確かめた検索の要求
+     * @return 行・同じ応答の拒否・値の型の誤り・失敗
+     * @throws BusinessDataUnexpectedException 想定外の失敗（メッセージも原因も持たない）
+     */
+    public ReferenceRowsResult search(long userId, ReferenceRowsQuery query) {
+        Objects.requireNonNull(query, "query は必須です");
+        if (query.mode() != ReferenceRowsQuery.Mode.SEARCH) {
+            throw new IllegalArgumentException("検索の要求ではありません");
+        }
+        Optional<Located> located = locateForApi(userId, query);
+        if (located.isEmpty() || located.get().target().kind() != OptionSourceKind.LOOKUP) {
+            // REFERENCE に検索は送れない（BR5.2）。
+            return new ReferenceRowsResult.Denied();
+        }
+        ReferenceTarget target = located.get().target();
+        TableAccessView view = located.get().view();
+        Map<String, PickerSearchField> fields = new HashMap<>();
+        ReferencePolicy.usableSearchFields(target, view).forEach(f -> fields.put(f.column(), f));
+        // 条件のカラムの照合（403）を、値の型の読み取り（400）より先にすべて行う（BR1.2 の ③ → ④）。
+        for (ReferenceCondition condition : query.conditions()) {
+            if (!fields.containsKey(condition.column())) {
+                return new ReferenceRowsResult.Denied();
+            }
+        }
+        List<SearchCondition> conditions = new ArrayList<>();
+        for (ReferenceCondition condition : query.conditions()) {
+            if (condition.isEmpty()) {
+                continue;
+            }
+            PickerSearchField field = fields.get(condition.column());
+            ColumnAccess column = view.column(field.column()).orElseThrow(BusinessDataUnexpectedException::new);
+            Optional<BoundValue> value = codec.read(column, condition.value());
+            if (value.isEmpty()) {
+                return new ReferenceRowsResult.InvalidValue(field.column());
+            }
+            conditions.add(
+                    field.operator() == SearchMode.EQUALS
+                            ? SearchCondition.equalTo(field.column(), value.get())
+                            : SearchCondition.contains(field.column(), value.get()));
+        }
+        ReferenceReadSpec spec = ReferencePolicy.pickerSpec(target, view, query.offset());
+        List<PickerListColumn> listColumns =
+                ReferencePolicy.pickerOf(target, view).listColumns();
+        return readRows(view, conditions, spec, rows -> {
+            List<ReferenceRow> page = new ArrayList<>();
+            for (RowRecord row : rows.subList(0, Math.min(rows.size(), ReferenceRowsQuery.PAGE_SIZE))) {
+                List<String> cells = new ArrayList<>();
+                listColumns.forEach(c -> cells.add(row.values().values().get(c.column())));
+                page.add(new ReferenceRow(
+                        valueOf(row, target), row.values().values().get(target.labelColumn()), cells));
+            }
+            return new ReferenceRowsResult.Found(
+                    ReferenceRows.search(page, query.page(), rows.size() > ReferenceRowsQuery.PAGE_SIZE));
+        });
+    }
+
+    /**
+     * ラベルの1件読み（判定の順の ③・⑤・⑥。BR6.1〜BR6.4）。REFERENCE・LOOKUP の両方を検索と同じ権限の判定で受け付け、値を値の
+     * カラムの型に変えられなければ問い合わせずに 403 の同じ応答にする。一致は DB の比べ方に従い、並びの最初の1行のラベルを返す。行が
+     * 無ければ 403 の同じ応答。
+     *
+     * @param userId 利用者 ID（要求の文脈から読んだもの）
+     * @param query 本文の形を確かめたラベルの1件読みの要求
+     * @return 1行・同じ応答の拒否・失敗
+     * @throws BusinessDataUnexpectedException 想定外の失敗（メッセージも原因も持たない）
+     */
+    public ReferenceRowsResult label(long userId, ReferenceRowsQuery query) {
+        Objects.requireNonNull(query, "query は必須です");
+        if (query.mode() != ReferenceRowsQuery.Mode.VALUE) {
+            throw new IllegalArgumentException("ラベルの1件読みの要求ではありません");
+        }
+        Optional<Located> located = locateForApi(userId, query);
+        if (located.isEmpty()) {
+            return new ReferenceRowsResult.Denied();
+        }
+        ReferenceTarget target = located.get().target();
+        TableAccessView view = located.get().view();
+        Optional<BoundValue> value = typedValue(located.get(), query.value());
+        if (value.isEmpty()) {
+            return new ReferenceRowsResult.Denied();
+        }
+        return readRows(
+                view,
+                List.of(SearchCondition.equalTo(target.valueColumn(), value.get())),
+                ReferencePolicy.labelSpec(target, view),
+                rows -> rows.isEmpty()
+                        ? new ReferenceRowsResult.Denied()
+                        : new ReferenceRowsResult.Found(ReferenceRows.label(new ReferenceRow(
+                                valueOf(rows.get(0), target),
+                                rows.get(0).values().values().get(target.labelColumn()),
+                                List.of()))));
+    }
+
+    /**
+     * 保存前の確かめの口（契約 C1 の {@code check}、BR9.1〜BR9.6）。U2 が {@code REFERENCE} の目的で借りた接続（締め切りで絞った
+     * もの）を受け、自分では借りない。参照でないカラム・読めない参照先・型として読めない値は問い合わせずに {@code NotFoundOrDenied}。
+     * DB の比べ方で値の一致する行を 201 行まで読み、最初の 200 行の中に型つきの値として厳密に一致する行があるときだけ {@code Found}。
+     * WARN を出さず、値をログに出さない。
+     *
+     * @param source 参照元の判定の材料と写し（U2 が取ったもの）
+     * @param column 参照元のカラム
+     * @param value 確かめる値
+     * @param session U2 が借りた読み取りの接続
+     * @return 結果
+     * @throws BusinessDataUnexpectedException 想定外の失敗（メッセージも原因も持たない）
+     */
+    public ReferenceCheckResult check(
+            TableAccessResolution.Resolved source, String column, ReferenceValue value, TargetReadSession session) {
+        Objects.requireNonNull(source, "source は必須です");
+        Objects.requireNonNull(column, "column は必須です");
+        Objects.requireNonNull(value, "value は必須です");
+        Objects.requireNonNull(session, "session は必須です");
+        Optional<Located> located = locate(source, column);
+        if (located.isEmpty()) {
+            return new ReferenceCheckResult.NotFoundOrDenied();
+        }
+        ReferenceTarget target = located.get().target();
+        TableAccessView view = located.get().view();
+        Optional<BoundValue> typed = typedValue(located.get(), value);
+        if (typed.isEmpty()) {
+            return new ReferenceCheckResult.NotFoundOrDenied();
+        }
+        ColumnAccess valueColumn = view.column(target.valueColumn()).orElseThrow(BusinessDataUnexpectedException::new);
+        RowSearchResult result = executor.search(
+                session,
+                view,
+                List.of(SearchCondition.equalTo(target.valueColumn(), typed.get())),
+                null,
+                Optional.of(ReferencePolicy.checkSpec(target, view)));
+        return switch (result) {
+            case RowSearchResult.Rows rows -> {
+                List<RowRecord> compared =
+                        rows.rows().subList(0, Math.min(rows.rows().size(), ReferenceReadSpec.CHECK_COMPARED_ROWS));
+                boolean found = compared.stream()
+                        .map(row ->
+                                codec.read(valueColumn, valueOf(row, target)).orElse(null))
+                        .anyMatch(read -> ReferencePolicy.sameReferenceValue(typed.get(), read));
+                yield found ? new ReferenceCheckResult.Found() : new ReferenceCheckResult.NotFoundOrDenied();
+            }
+            case RowSearchResult.Failed failed -> new ReferenceCheckResult.Failed(failureOf(failed.failure()));
+            case RowSearchResult.Page page -> throw new BusinessDataUnexpectedException();
+        };
+    }
+
+    /**
+     * U2 に向けた2つ目の口（BR9.7、機能設計の D7）。U2 が借りた接続を受け、自分では借りない。参照でない・読めない参照先は問い合わせ
+     * ずに {@code NoPermission}、LOOKUP は数えず {@code Available}、REFERENCE は選択肢と同じ読み方で 201 行まで読み、201 行目が
+     * あれば {@code TooMany}。WARN を出さず、値・ラベルを返さない。
+     *
+     * @param source 参照元の判定の材料と写し（U2 が取ったもの）
+     * @param column 参照元のカラム
+     * @param session U2 が借りた読み取りの接続
+     * @return 結果
+     * @throws BusinessDataUnexpectedException 想定外の失敗（メッセージも原因も持たない）
+     */
+    public ReferenceCountState countState(
+            TableAccessResolution.Resolved source, String column, TargetReadSession session) {
+        Objects.requireNonNull(source, "source は必須です");
+        Objects.requireNonNull(column, "column は必須です");
+        Objects.requireNonNull(session, "session は必須です");
+        Optional<Located> located = locate(source, column);
+        if (located.isEmpty()) {
+            return new ReferenceCountState.NoPermission();
+        }
+        ReferenceTarget target = located.get().target();
+        if (target.kind() == OptionSourceKind.LOOKUP) {
+            return new ReferenceCountState.Available();
+        }
+        TableAccessView view = located.get().view();
+        RowSearchResult result =
+                executor.search(session, view, List.of(), null, Optional.of(ReferencePolicy.optionsSpec(target, view)));
+        return switch (result) {
+            case RowSearchResult.Rows rows ->
+                rows.rows().size() >= ReferenceReadSpec.OPTION_ROWS
+                        ? new ReferenceCountState.TooMany()
+                        : new ReferenceCountState.Available();
+            case RowSearchResult.Failed failed -> new ReferenceCountState.Failed(failureOf(failed.failure()));
+            case RowSearchResult.Page page -> throw new BusinessDataUnexpectedException();
+        };
+    }
+
+    /**
+     * 検索 API の ③ の判定（BR1.3・BR3.3・BR6.1）。写しを1回取り、参照元のテーブル・カラムを DSL と照らし、参照元のカラムの主権限が
+     * FULL で、参照先が {@code AVAILABLE} のときだけ参照先を返す。
+     */
+    private Optional<Located> locateForApi(long userId, ReferenceRowsQuery query) {
+        TableAccessResolution resolution =
+                resolver.resolve(userId, new TableQuery(query.schema(), query.table(), null));
+        if (!(resolution instanceof TableAccessResolution.Resolved resolved)) {
+            return Optional.empty();
+        }
+        boolean full = resolved.view()
+                .column(query.column())
+                .map(c -> c.main() == MainPermission.FULL)
+                .orElse(false);
+        return full ? locate(resolved, query.column()) : Optional.empty();
+    }
+
+    /** 参照元のカラムの DSL の options から参照先を引き、同じ写しで判定して {@code AVAILABLE} のときだけ返す（BR2.1〜BR2.3・BR3.1）。 */
+    private Optional<Located> locate(TableAccessResolution.Resolved source, String column) {
+        DslColumn dsl = dslTable(source).map(t -> t.columns().get(column)).orElse(null);
+        Optional<ReferenceTarget> target = dsl == null
+                ? Optional.empty()
+                : ReferenceTarget.from(source.view().schema(), dsl.options());
+        if (target.isEmpty()) {
+            return Optional.empty();
+        }
+        ReferenceTarget t = target.get();
+        Optional<TableAccessView> view = resolver.referenceView(source.snapshot(), t.schema(), t.table());
+        if (ReferencePolicy.accessOf(t, view) != ReferenceStatus.AVAILABLE) {
+            return Optional.empty();
+        }
+        return Optional.of(new Located(t, view.get()));
+    }
+
+    /** 値を値のカラムの DSL の型に変える（変えられなければ空。BR7.1）。 */
+    private Optional<BoundValue> typedValue(Located located, ReferenceValue value) {
+        return located.view()
+                .column(located.target().valueColumn())
+                .flatMap(column -> codec.read(column, value.value()));
+    }
+
+    /** 読んだ行の値のカラムの値（切らない側。来ないはずの欠けは想定外）。 */
+    private static String valueOf(RowRecord row, ReferenceTarget target) {
+        String value = row.key() == null ? null : row.key().values().get(target.valueColumn());
+        if (value == null) {
+            throw new BusinessDataUnexpectedException();
+        }
+        return value;
+    }
+
+    /** 失敗を写す（INVALID_VALUE・UNEXPECTED は写さず想定外。reliability-design.md 5.2）。 */
+    private static ReferenceReadFailure failureOf(RowQueryFailure failure) {
+        try {
+            return ReferenceReadFailure.of(failure);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessDataUnexpectedException();
+        }
+    }
+
+    /** 検索・ラベルの1件読みの接続を1回借りて文を1つ流し、結果を写す（失敗は診断の WARN を1行。BR1.5・BR8.7）。 */
+    private ReferenceRowsResult readRows(
+            TableAccessView view,
+            List<SearchCondition> conditions,
+            ReferenceReadSpec spec,
+            java.util.function.Function<List<RowRecord>, ReferenceRowsResult> found) {
+        TargetReadOutcome<RowSearchResult> outcome = readAccess.withRead(
+                ReadPurpose.REFERENCE, session -> executor.search(session, view, conditions, null, Optional.of(spec)));
+        return switch (outcome) {
+            case TargetReadOutcome.NotConfigured<RowSearchResult> notConfigured -> {
+                warn(ReferenceFailureReason.UNAVAILABLE, null, null, null, false);
+                yield new ReferenceRowsResult.Failed(ReferenceFailureReason.UNAVAILABLE);
+            }
+            case TargetReadOutcome.Unavailable<RowSearchResult> unavailable -> {
+                warn(
+                        ReferenceFailureReason.UNAVAILABLE,
+                        unavailable.sqlState(),
+                        unavailable.vendorCode(),
+                        unavailable.exceptionClass(),
+                        false);
+                yield new ReferenceRowsResult.Failed(ReferenceFailureReason.UNAVAILABLE);
+            }
+            case TargetReadOutcome.Done<RowSearchResult> done ->
+                switch (done.value()) {
+                    case RowSearchResult.Rows rows -> found.apply(rows.rows());
+                    case RowSearchResult.Failed failed -> {
+                        ReferenceReadFailure f = failureOf(failed.failure());
+                        warn(f.reason(), f.sqlState(), f.vendorCode(), f.exceptionClass(), f.budgetExceeded());
+                        yield new ReferenceRowsResult.Failed(f.reason());
+                    }
+                    case RowSearchResult.Page page -> throw new BusinessDataUnexpectedException();
+                };
+        };
+    }
+
+    /**
+     * 照らした参照先と、その判定の材料（{@code AVAILABLE} のもの）。
+     *
+     * @param target 参照先
+     * @param view 参照先のテーブルの判定の材料
+     */
+    private record Located(ReferenceTarget target, TableAccessView view) {}
+
     private Optional<DslTable> dslTable(TableAccessResolution.Resolved source) {
         return source.snapshot()
                 .dsl()
@@ -276,6 +582,17 @@ public class ReferenceLookup {
             Integer vendorCode,
             String exceptionClass,
             boolean budgetExceeded) {
+        warn(reason, sqlState, vendorCode, exceptionClass, budgetExceeded);
+        return new DefinitionReferences.Failed(reason);
+    }
+
+    /** 診断の WARN を1行だけ出す（キーと値だけ。名前・値・メッセージを出さない。BR8.7）。 */
+    private static void warn(
+            ReferenceFailureReason reason,
+            String sqlState,
+            Integer vendorCode,
+            String exceptionClass,
+            boolean budgetExceeded) {
         var log = LOGGER.atWarn().addKeyValue("purpose", ReadPurpose.REFERENCE).addKeyValue("reason", reason);
         if (sqlState != null) {
             log = log.addKeyValue("sqlState", sqlState);
@@ -287,7 +604,6 @@ public class ReferenceLookup {
             log = log.addKeyValue("exceptionClass", exceptionClass);
         }
         log.addKeyValue("budgetExceeded", budgetExceeded).log("対象DB の参照先を読めませんでした");
-        return new DefinitionReferences.Failed(reason);
     }
 
     /**

@@ -550,6 +550,121 @@ class RowSqlExecutorTest {
         verify(connection, never()).prepareStatement(anyString());
     }
 
+    private static ReferenceTarget lookupTarget() {
+        return ReferenceTarget.from(
+                        "sample",
+                        new cherry.mastersmith.dsl.domain.OptionSource(
+                                cherry.mastersmith.dsl.domain.OptionSourceKind.LOOKUP,
+                                List.of(),
+                                "dept",
+                                "code",
+                                null,
+                                List.of(new cherry.mastersmith.dsl.domain.LookupSearchItem(
+                                        "name", SearchOperator.CONTAINS)),
+                                List.of(
+                                        new cherry.mastersmith.dsl.domain.LookupListItem("name", 1),
+                                        new cherry.mastersmith.dsl.domain.LookupListItem("pw", 2),
+                                        new cherry.mastersmith.dsl.domain.LookupListItem("id", 3))))
+                .orElseThrow();
+    }
+
+    @Test
+    @DisplayName(
+            "the picker passes an escaped CONTAINS and an EQUALS as bound values and reads 21 rows from the offset")
+    void pickerShape() throws SQLException {
+        when(firstResult.next()).thenReturn(true, false);
+        when(firstResult.getString(1)).thenReturn("C01");
+        when(firstResult.getString(2)).thenReturn("営業");
+        when(firstResult.getLong(3)).thenReturn(7L);
+        List<SearchCondition> conditions = List.of(
+                SearchCondition.contains("name", new BoundValue(ValueType.STRING, "50%_\\")),
+                SearchCondition.equalTo("id", new BoundValue(ValueType.INTEGER, 7L)));
+
+        RowSearchResult result = executor.search(
+                session(DatabaseProduct.POSTGRESQL),
+                DEPT_VIEW,
+                conditions,
+                null,
+                Optional.of(ReferencePolicy.pickerSpec(lookupTarget(), DEPT_VIEW, 40)));
+
+        verify(connection, times(1)).prepareStatement(anyString());
+        verify(connection)
+                .prepareStatement("SELECT SUBSTRING(t.\"code\", 1, 10001), SUBSTRING(t.\"name\", 1, 101), t.\"id\""
+                        + " FROM \"sample\".\"dept\" t JOIN (SELECT \"id\" FROM \"sample\".\"dept\""
+                        + " WHERE \"name\" LIKE ? ESCAPE '!' AND \"id\" = ? AND \"code\" IS NOT NULL"
+                        + " AND CHAR_LENGTH(\"code\") <= 10000"
+                        + " ORDER BY SUBSTRING(\"name\", 1, 100) ASC NULLS LAST, SUBSTRING(\"code\", 1, 100) ASC NULLS LAST,"
+                        + " \"id\" ASC NULLS LAST LIMIT ? OFFSET ?) p ON t.\"id\" = p.\"id\""
+                        + " ORDER BY SUBSTRING(t.\"name\", 1, 100) ASC NULLS LAST, SUBSTRING(t.\"code\", 1, 100) ASC NULLS LAST,"
+                        + " t.\"id\" ASC NULLS LAST");
+        verify(first).setString(1, "%50!%!_\\%");
+        verify(first).setLong(2, 7L);
+        verify(first).setMaxRows(21);
+        verify(first).setLong(3, 21L);
+        verify(first).setLong(4, 40L);
+        assertThat(result).isInstanceOfSatisfying(RowSearchResult.Rows.class, rows -> {
+            assertThat(rows.rows().get(0).key().values()).containsExactly(Map.entry("code", "C01"));
+            assertThat(rows.rows().get(0).values().values())
+                    .as("password の列は選ばない")
+                    .containsOnly(Map.entry("name", "営業"), Map.entry("id", "7"));
+        });
+    }
+
+    @Test
+    @DisplayName("the label read and the check bind the typed value and read 1 and 201 rows with setMaxRows")
+    void labelAndCheckShapes() throws SQLException {
+        ReferenceTarget target = ReferenceTarget.from(
+                        "sample",
+                        new cherry.mastersmith.dsl.domain.OptionSource(
+                                cherry.mastersmith.dsl.domain.OptionSourceKind.REFERENCE,
+                                List.of(),
+                                "dept",
+                                "id",
+                                "name",
+                                List.of(),
+                                List.of()))
+                .orElseThrow();
+        List<SearchCondition> value = List.of(SearchCondition.equalTo("id", new BoundValue(ValueType.INTEGER, 42L)));
+        when(firstResult.next()).thenReturn(false);
+        when(secondResult.next()).thenReturn(false);
+
+        executor.search(
+                session(DatabaseProduct.MYSQL),
+                DEPT_VIEW,
+                value,
+                null,
+                Optional.of(ReferencePolicy.labelSpec(target, DEPT_VIEW)));
+        executor.search(
+                session(DatabaseProduct.MYSQL),
+                DEPT_VIEW,
+                value,
+                null,
+                Optional.of(ReferencePolicy.checkSpec(target, DEPT_VIEW)));
+
+        verify(connection)
+                .prepareStatement("SELECT t.`id`, SUBSTRING(t.`name`, 1, 101) FROM `sample`.`dept` t"
+                        + " JOIN (SELECT `id` FROM `sample`.`dept` WHERE `id` = ? AND `id` IS NOT NULL"
+                        + " ORDER BY SUBSTRING(`name`, 1, 100) IS NULL ASC, SUBSTRING(`name`, 1, 100) ASC,"
+                        + " `id` IS NULL ASC, `id` ASC LIMIT ? OFFSET ?) p ON t.`id` = p.`id`"
+                        + " ORDER BY SUBSTRING(t.`name`, 1, 100) IS NULL ASC, SUBSTRING(t.`name`, 1, 100) ASC,"
+                        + " t.`id` IS NULL ASC, t.`id` ASC");
+        verify(connection)
+                .prepareStatement("SELECT t.`id` FROM `sample`.`dept` t"
+                        + " JOIN (SELECT `id` FROM `sample`.`dept` WHERE `id` = ? AND `id` IS NOT NULL"
+                        + " ORDER BY SUBSTRING(`name`, 1, 100) IS NULL ASC, SUBSTRING(`name`, 1, 100) ASC,"
+                        + " `id` IS NULL ASC, `id` ASC LIMIT ? OFFSET ?) p ON t.`id` = p.`id`"
+                        + " ORDER BY SUBSTRING(t.`name`, 1, 100) IS NULL ASC, SUBSTRING(t.`name`, 1, 100) ASC,"
+                        + " t.`id` IS NULL ASC, t.`id` ASC");
+        verify(first).setLong(1, 42L);
+        verify(first).setMaxRows(1);
+        verify(first).setLong(2, 1L);
+        verify(first).setLong(3, 0L);
+        verify(second).setLong(1, 42L);
+        verify(second).setMaxRows(201);
+        verify(second).setLong(2, 201L);
+        verify(second).setLong(3, 0L);
+    }
+
     @Test
     @DisplayName("a reference timeout marks the connection broken and keeps no message")
     void referenceTimeout() throws SQLException {

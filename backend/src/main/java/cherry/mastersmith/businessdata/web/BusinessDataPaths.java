@@ -36,5 +36,8 @@ public final class BusinessDataPaths {
     /** 削除（POST）。U2。 */
     public static final String DELETE = BASE + "/rows/delete";
 
+    /** 参照先の検索とラベルの1件読み（POST）。Intent 261029-reference-lookup-cleanup の U1（BR10.3。値は本文で運ぶ）。 */
+    public static final String REFERENCE_ROWS = BASE + "/reference/rows";
+
     private BusinessDataPaths() {}
 }

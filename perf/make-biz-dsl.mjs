@@ -24,7 +24,11 @@
 //   biz_ref:  外部キーの参照先（U2 の書き込みの場面）。
 //   biz_new:  100 カラムの書き込みの表（U2）。主キー id は自動の採番で必須にしない、u_code は unique、ref_id は biz_ref を指す外部キー、
 //             n_001〜n_097 は文字の長い型（bizCreateLarge で 10,000 字ずつ入れる）。
-// メニューは5つの表を1つずつ指す。Node の標準の部品だけを使い、指定した出力のファイル（build/ の下など）にだけ書く。
+// 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1、Bolt B2。NFR2.4）:
+//   biz_code200・biz_code201: REFERENCE の参照先（code・name。ちょうど 200 行と 201 行）。
+//   biz_refsrc200・biz_refsrc201: code が biz_code200・biz_code201 を指す REFERENCE（値 code・ラベル name。部品は select）。
+//   biz_refpick: item_id が biz_item を指す LOOKUP（値 id・ラベル c_007。検索は id の完全一致と c_010 の部分一致、一覧は c_007・c_001）。
+// メニューは表を1つずつ指す。Node の標準の部品だけを使い、指定した出力のファイル（build/ の下など）にだけ書く。
 //   node perf/make-biz-dsl.mjs <postgres|mysql|mariadb> <出力のファイル>
 import { writeFileSync } from 'node:fs'
 
@@ -87,7 +91,7 @@ function column(name, ja, type, opts) {
   push(14, `precision: ${type.db.precision ?? 'null'}`)
   push(14, `scale: ${type.db.scale ?? 'null'}`)
   push(14, `nullable: ${opts.nullable}`)
-  push(12, `formPart: ${type.formPart}`)
+  push(12, `formPart: ${opts.formPart ?? type.formPart}`)
   push(12, 'search:')
   push(14, `enabled: ${opts.search !== null}`)
   push(14, `operator: ${opts.search ?? 'null'}`)
@@ -117,7 +121,23 @@ function column(name, ja, type, opts) {
       push(14, '  origin: DB')
     }
   }
-  push(12, 'options: null')
+  if (!opts.options) {
+    push(12, 'options: null')
+    return
+  }
+  // 他テーブル参照の options（U1）。REFERENCE は table・valueColumn・labelColumn、LOOKUP は加えて lookupSearch・lookupList
+  const o = opts.options
+  push(12, 'options:')
+  push(14, `source: ${o.source}`)
+  push(14, `table: ${o.table}`)
+  push(14, `valueColumn: ${o.valueColumn}`)
+  if (o.labelColumn) push(14, `labelColumn: ${o.labelColumn}`)
+  if (o.source === 'LOOKUP') {
+    push(14, 'lookupSearch:')
+    for (const item of o.lookupSearch) push(16, `- { column: ${item.column}, operator: ${item.operator} }`)
+    push(14, 'lookupList:')
+    for (const item of o.lookupList) push(16, `- { column: ${item.column}, order: ${item.order} }`)
+  }
 }
 
 function table(name, ja, primaryKey, columns, foreignKeys = []) {
@@ -146,6 +166,11 @@ const TABLES = [
   ['biz_wide', '幅の広い表'],
   ['biz_ref', '参照先の表'],
   ['biz_new', '書き込みの試験の表'],
+  ['biz_code200', '参照先のコードの表（200 行）'],
+  ['biz_code201', '参照先のコードの表（201 行）'],
+  ['biz_refsrc200', '参照元の表（200 行の参照先）'],
+  ['biz_refsrc201', '参照元の表（201 行の参照先）'],
+  ['biz_refpick', '参照元の表（ピッカー）'],
 ]
 
 push(0, '# 業務データの負荷の試験の DSL（perf/make-biz-dsl.mjs で作った。値はすべて架空）')
@@ -231,6 +256,54 @@ table(
   },
   [{ columns: ['ref_id'], referencedTable: 'biz_ref', referencedColumns: ['id'] }],
 )
+
+// 他テーブル参照の読み取りの場面の表（U1）
+for (const [index, count] of [[5, 200], [6, 201]]) {
+  table(`biz_code${count}`, TABLES[index][1], ['id'], () => {
+    column('id', '番号', typeOf('int', 0), { nullable: false, search: 'EQUALS', order: 1, sortable: true, defaultSort: 'ASC' })
+    column('code', 'コード', typeOf('varchar', 0), { nullable: true, search: null, order: 2, sortable: false, defaultSort: null })
+    column('name', '名前', typeOf('varchar', 0), { nullable: true, search: null, order: 3, sortable: false, defaultSort: null })
+  })
+}
+for (const [index, count] of [[7, 200], [8, 201]]) {
+  table(`biz_refsrc${count}`, TABLES[index][1], ['id'], () => {
+    column('id', '番号', typeOf('int', 0), { nullable: false, search: 'EQUALS', order: 1, sortable: true, defaultSort: 'ASC' })
+    column('code', 'コード', typeOf('varchar', 0), {
+      nullable: true,
+      search: null,
+      order: 2,
+      sortable: false,
+      defaultSort: null,
+      formPart: 'select',
+      options: { source: 'REFERENCE', table: `biz_code${count}`, valueColumn: 'code', labelColumn: 'name' },
+    })
+  })
+}
+table('biz_refpick', TABLES[9][1], ['id'], () => {
+  column('id', '番号', typeOf('int', 0), { nullable: false, search: 'EQUALS', order: 1, sortable: true, defaultSort: 'ASC' })
+  column('item_id', '品目', typeOf('bigint', 0), {
+    nullable: true,
+    search: null,
+    order: 2,
+    sortable: false,
+    defaultSort: null,
+    formPart: 'lookup',
+    options: {
+      source: 'LOOKUP',
+      table: 'biz_item',
+      valueColumn: 'id',
+      labelColumn: 'c_007',
+      lookupSearch: [
+        { column: 'id', operator: 'EQUALS' },
+        { column: 'c_010', operator: 'CONTAINS' },
+      ],
+      lookupList: [
+        { column: 'c_007', order: 1 },
+        { column: 'c_001', order: 2 },
+      ],
+    },
+  })
+})
 
 const result = lines.join('\n') + '\n'
 writeFileSync(output, result)

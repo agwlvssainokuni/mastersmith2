@@ -295,6 +295,56 @@ class ReferencePolicyTest {
     }
 
     @Test
+    @DisplayName("the picker spec reads 21 rows from the offset with the label and list columns, without duplicates")
+    void pickerSpec() {
+        ReferenceTarget target = lookup(
+                "name",
+                List.of(new LookupSearchItem("name", SearchOperator.CONTAINS)),
+                List.of(
+                        new LookupListItem("code", 1),
+                        new LookupListItem("name", 2),
+                        new LookupListItem("secret", 3),
+                        new LookupListItem("blob", 4)));
+
+        ReferenceReadSpec spec = ReferencePolicy.pickerSpec(target, readable().orElseThrow(), 40);
+
+        assertThat(spec.valueColumn()).isEqualTo("id");
+        assertThat(spec.displayColumns())
+                .as("ラベルを先に、一覧の列を順に。password・バイナリは選ばず重ねない")
+                .containsExactly("name", "code");
+        assertThat(spec.maxRows()).isEqualTo(21);
+        assertThat(spec.offset()).isEqualTo(40);
+        assertThat(spec.excludeNullValue()).isTrue();
+        assertThat(spec.count()).isFalse();
+        assertThat(spec.order()).extracting(SortKey::column).containsExactly("name", "id");
+        assertThat(ReferencePolicy.pickerSpec(target, view(MainPermission.READ, Map.of("code", MainPermission.NONE)), 0)
+                        .displayColumns())
+                .as("判定の材料に無い列は選ばない（BR3.5 の守り）")
+                .containsExactly("name");
+    }
+
+    @Test
+    @DisplayName("the label spec reads one row with the label and the check spec reads 201 rows of the value only")
+    void labelAndCheckSpecs() {
+        ReferenceReadSpec label =
+                ReferencePolicy.labelSpec(reference("code", "name"), readable().orElseThrow());
+        ReferenceReadSpec masked = ReferencePolicy.labelSpec(
+                reference("code", "secret"), readable().orElseThrow());
+        ReferenceReadSpec check =
+                ReferencePolicy.checkSpec(reference("code", "name"), readable().orElseThrow());
+
+        assertThat(label.maxRows()).isEqualTo(1);
+        assertThat(label.displayColumns()).containsExactly("name");
+        assertThat(label.order()).extracting(SortKey::column).containsExactly("name", "code", "id");
+        assertThat(masked.displayColumns()).as("password のラベルは読まない").isEmpty();
+        assertThat(check.maxRows()).isEqualTo(201);
+        assertThat(check.displayColumns()).isEmpty();
+        assertThat(check.excludeNullValue()).isTrue();
+        assertThat(check.order()).extracting(SortKey::column).containsExactly("name", "code", "id");
+        assertThat(ReferenceReadSpec.CHECK_COMPARED_ROWS).isEqualTo(200);
+    }
+
+    @Test
     @DisplayName("distinct by value keeps the first row of each strictly equal value in order")
     void distinctByValue() {
         record Row(String label, BoundValue value) {}

@@ -1319,6 +1319,62 @@ curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?ta
 #     GROUP BY event_type, result, failure_reason
 ```
 
+## 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1）
+
+`perf/k6/scenarios.js` の他テーブル参照の読み取りの場面を、上の「業務データの場面」と同じ使い捨ての環境で、対象DB の種類ごとに流す。目標の出典は `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u1-reference-read/` の `nfr-requirements/performance-requirements.md`（NFR2.1〜NFR2.5）・`scalability-requirements.md`（NFR3.3）と、`infrastructure-design/infrastructure-specification.md`（4節）・`nfr-design/performance-design.md`（6節）。Code Generation（B2 の Step 22）では、種と DSL の台本の構文と、`k6 inspect --include-system-env-vars` で場面と閾値の名前を確かめ、`perf/k6/thresholds-test.sh` で線を照らしただけ。種の流し込みと試し走りは Build and Test、3種類の判定は Performance Validation。
+
+| 場面 | すること（1回の繰り返しに要求1つ） | 判定（閾値は緩めない） |
+|---|---|---|
+| `refDefinition200` | `biz_refsrc200` の定義（`POST /api/tables/definition`、`purpose` は `CREATE`）。参照先 `biz_code200` のちょうど 200 行を選択肢として読む（200 で `code` の `reference.status` が `AVAILABLE`・選択肢 200 件） | `iteration_duration{scenario:<名前>}` の p95 < 1000 ms と `checks` の率 1 |
+| `refDefinition201` | `biz_refsrc201` の定義（`purpose` は `CREATE`）。参照先 `biz_code201` の 201 行目を読んで `TOO_MANY`（選択肢なし） | 同上 |
+| `refPickerEquals` | `biz_refpick` の `item_id`（`biz_item` を指す LOOKUP）のピッカーで、`id` の完全一致（`POST /api/tables/reference/rows`。VU と繰り返しの番号で値を回す。200 で1行） | 同上 |
+| `refLabel` | 同じピッカーのラベルの1件読み（`value` に `id` を回して送る。200 で1行・`page` は null） | 同上 |
+| `refPickerContains` | 同じピッカーで `c_010` の部分一致（目印の語。表の全部を読む形。200 で 20 行・`hasNext` が真） | p95 < **3000** ms（前の Intent で依頼者が決めた部分一致の線）と `checks` の率 1 |
+
+- **データ**（値はすべて架空。行の番号だけから決まる）: 種の台本（`make-biz-seed.sh`）が、REFERENCE の参照先 `biz_code200`・`biz_code201`（主キー `id`・コード `code`（`K1` の形）・名前 `name`。ちょうど 200 行と 201 行）と、参照元 `biz_refsrc200`・`biz_refsrc201`（`code` が参照のカラム）・`biz_refpick`（`item_id` が `biz_item` を指す LOOKUP。値 `id`・ラベル `c_007`、検索は `id` の完全一致と `c_010` の部分一致、一覧は `c_007`・`c_001`）を各 10 行で作る。新しい表も最後の GRANT（読み取りのアカウントの `SELECT`）に入る。DSL（`make-biz-dsl.mjs`）にも同じ形を書く。種と DSL は同時に変える。後の単位（U2）が足す表も、同じ台本の最後の GRANT の前に足す。
+- **setup の前提**（前の場面の状態に頼らない）: どの場面も、setup でロール `perf-biz-ref`（スキーマ `bizperf` を READ、参照元の3つの表を FULL。参照元のカラムが FULL でないと参照先を読まないため）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、3つの参照元の定義（`purpose` は `CREATE`）で参照の項目の状態（`AVAILABLE`・`TOO_MANY`・`AVAILABLE`）がそろっていることを確かめてから始める。DSL の適用は `bizPrepare` が行う（先に流す）。どれも使い捨ての環境の監査に残る。
+- **読み取りのプールの上限は 5**（NFR2.3、`infrastructure-specification.md` 4.1）: 上の「業務データの場面」の 1B の後、アプリを起動する前に、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5` を足す（`docker/perf/compose.yaml` は変えない。既定は 10 で、書き忘れるとプールが尽きる形の確かめが成り立たないまま合格しうる）。参照の2つの設定（`MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE`・`MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL`）は書かない（既定の 5s・10s で流す）。
+- **中止の条件**（R-03）: 流す前に、使い捨てのアプリの `/actuator/metrics/hikaricp.connections.max`（`pool=mastersmith-target-db`）を読み、**5 でなければ U1 の場面を流さずに中止する**。一時の環境ファイルを直し、使い捨てのアプリを起動し直してから読み直す。プールは最初に借りるときに作られるため、指標は下の台本の暖め（判定に数えない1回）の後に読む。
+- **比べる相手**: 読み取りのプールの上限 5 で流した前の結果は Intent 261016-business-data-views の Performance Validation（`bizSearchContains` など）。直前の Intent（261025・261027）は上限 10 で流しているため、並べて読む相手にしない。どの結果と並べるかは Build and Test の計画で依頼者に確かめる。
+- **流す順**（`infrastructure-specification.md` 4.4）: 対象DB の種類ごとに、(1) この節の U1 の読み取りの場面を先に流す（書き込みの場面の後に読み取りを流すと、表が大きくなって読み取りの結果が悪い側に寄る）、(2) その後に U2 の保存前の確かめつきの作成の場面（`ref` で始まる名前）、(3) 深いページのピッカー（PostgreSQL で 1,000 ページ目）を参考に1回（判定の対象の外）。上の「業務データの場面」の読み取りの場面・「業務データの書き込みの場面」と同じ回に流すときも、書き込みの場面はこの節の場面の後に置く。
+- **種を入れた後の確かめ**（NFR2.4）: 表ごとの行の数（`biz_code200` 200・`biz_code201` 201・`biz_item` 100,000。種の台本の最後の行に出る）と、上の 2B' の目印の語の当たりの数（0 でないこと）を数えてから流す。MySQL・MariaDB の種は `--default-character-set=utf8mb4` で流す（上の 2B のとおり）。表の大きさは上の「業務データの場面」の 3 の決まり（プールの 80% 以内）で測る（足す表は数百 KB の見込みで、値は変わらない見込み）。
+- **判定**: 業務データの場面と同じく、`iteration_duration`（単調な時計）で判定し、`http_req_duration{name:…}` は並べて記録するだけ。503（時間切れ・借りられない）は `checks` の率 1 を下回って不合格になる。満たさなくても目標と物差しを緩めず、Not Met として依頼者に諮る（NFR2.3・NFR2.5）。
+- 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる。試験の間は配備したアプリを止め、MySQL・MariaDB の回では手元の監視（lgtm）を動かさない（上の「業務データの場面」と同じ）。
+
+```bash
+# 前提: 上の「業務データの場面」の 1B を済ませた後（D・KIND・perfu を同じシェルで使う）。アプリを起動する前に、読み取りのプールの
+#       上限 5 の行をアプリの一時の環境ファイルに足す（秘密ではない値）
+( umask 077; printf 'MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5\n' >> "$D/app-targetdb.env" )
+# 2B・2B'・3B・4B の DSL の用意と bizPrepare は上と同じ（種の台本が U1 の表も作る）。種の行の数の出力で biz_code200 が 200・
+# biz_code201 が 201 であることを確かめる
+cat > "$D/ref-run.sh" <<'EOR'
+D="$1"; KIND="$2"
+k6r() {   # 上の 4B と同じ（結果の名前 と k6 に渡す -e の組）
+  local name="$1"; shift
+  docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" "$@" \
+    -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" -v "$PWD/build/perf-results/biz-data:/data:ro" \
+    "$K6_IMAGE" \
+    run --quiet --summary-export=/out/ref-$KIND-$name.json /scripts/scenarios.js
+}
+# 暖め（判定に数えない。プールを作るための1回）
+k6r warmup -e SCENARIO=refPickerEquals -e VUS=1 -e BIZ_DURATION=5s
+# 中止の条件: 読み取りのプールの上限が 5 でなければ、U1 の場面を流さない
+max=$(curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max?tag=pool:mastersmith-target-db" | jq '.measurements[0].value')
+if [ "$max" != "5" ] && [ "$max" != "5.0" ]; then
+  echo "読み取りのプールの上限が 5 ではありません（$max）。中止します。一時の環境ファイルを直し、使い捨てのアプリを起動し直してください。" >&2
+  exit 1
+fi
+for s in refDefinition200 refDefinition201 refPickerEquals refLabel refPickerContains; do
+  curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?tag=pool:mastersmith-target-db" > "$D/ref-$KIND-$s-timeout-before.json"
+  k6r $s -e SCENARIO=$s
+  curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?tag=pool:mastersmith-target-db" > "$D/ref-$KIND-$s-timeout-after.json"
+done
+EOR
+caffeinate -dims zsh "$D/ref-run.sh" "$D" "$KIND"
+# 試し走りのときは、k6r の各場面に -e VUS=1 -e BIZ_DURATION=10s を足す
+# 結果の json を記録（evidence/）に置く前に、JWT の形（eyJ…）を伏せ、gitleaks dir で確かめる（project.md の学び）
+```
+
 ## 性能・資源の目標の見直し（Intent 261027-perf-targets-review）
 
 前の Intent（261016-business-data-views、261015-deps-ui-carryover）で Not Met だった目標の線を、依頼者の決定で見直した。ここは見直した後の線と測り方の入口で、上の節に書いた前の Intent の結果の文は書き換えていない。線を緩めても、`checks` の率 1・`OOMKilled` が false・`oom_kill` が 0 などの正しさの条件は変えない。

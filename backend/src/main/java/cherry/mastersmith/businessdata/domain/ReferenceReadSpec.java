@@ -78,6 +78,56 @@ public record ReferenceReadSpec(
         return new ReferenceReadSpec(valueColumn, displayColumns, true, order, false, OPTION_ROWS, 0, MAX_VALUE_LENGTH);
     }
 
+    /** ピッカーの検索で読む行の上限（1ページ 20 件と、次の有無を知るための 21 行目。BR5.7・BR8.6）。 */
+    public static final int PICKER_ROWS = ReferenceRowsQuery.PAGE_SIZE + 1;
+
+    /** ラベルの1件読みで読む行の上限（BR6.3・BR8.6）。 */
+    public static final int LABEL_ROWS = 1;
+
+    /** 保存前の確かめ（{@code check}）で比べる行の数（BR9.4）。 */
+    public static final int CHECK_COMPARED_ROWS = ReferenceField.MAX_OPTIONS;
+
+    /** 保存前の確かめ（{@code check}）で読む行の上限（比べる 200 行と、まだあるかを知るだけの 1 行。BR8.6・BR9.4）。 */
+    public static final int CHECK_ROWS = CHECK_COMPARED_ROWS + 1;
+
+    /**
+     * ピッカーの検索の指定を作る（値が NULL の行を除く・件数の文を流さない・21 行・{@code (page-1)×20} を読み飛ばす。BR5.7・BR5.8）。
+     *
+     * @param valueColumn 値のカラム
+     * @param displayColumns ラベルのカラムと一覧の列（バイナリ・password は入れない）
+     * @param order 固定の並び
+     * @param offset 読み飛ばす行の数
+     * @return 指定
+     */
+    public static ReferenceReadSpec picker(
+            String valueColumn, List<String> displayColumns, List<SortKey> order, int offset) {
+        return new ReferenceReadSpec(
+                valueColumn, displayColumns, true, order, false, PICKER_ROWS, offset, MAX_VALUE_LENGTH);
+    }
+
+    /**
+     * ラベルの1件読みの指定を作る（値の一致の条件は呼ぶ側が渡す。1行・読み飛ばさない。BR6.3）。
+     *
+     * @param valueColumn 値のカラム
+     * @param displayColumns ラベルのカラム（バイナリ・password なら空）
+     * @param order 固定の並び
+     * @return 指定
+     */
+    public static ReferenceReadSpec label(String valueColumn, List<String> displayColumns, List<SortKey> order) {
+        return new ReferenceReadSpec(valueColumn, displayColumns, true, order, false, LABEL_ROWS, 0, MAX_VALUE_LENGTH);
+    }
+
+    /**
+     * 保存前の確かめの指定を作る（出すのは値のカラムだけ・201 行・読み飛ばさない。値の一致の条件は呼ぶ側が渡す。BR9.4）。
+     *
+     * @param valueColumn 値のカラム
+     * @param order 固定の並び
+     * @return 指定
+     */
+    public static ReferenceReadSpec check(String valueColumn, List<SortKey> order) {
+        return new ReferenceReadSpec(valueColumn, List.of(), true, order, false, CHECK_ROWS, 0, MAX_VALUE_LENGTH);
+    }
+
     /** カラムの名前と数だけを出す（値を持たない）。 */
     @Override
     public String toString() {

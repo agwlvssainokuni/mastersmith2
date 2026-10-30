@@ -31,6 +31,11 @@ import cherry.mastersmith.businessdata.domain.BusinessDataFieldError;
 import cherry.mastersmith.businessdata.domain.BusinessDataFieldErrorReason;
 import cherry.mastersmith.businessdata.domain.DefinitionPurpose;
 import cherry.mastersmith.businessdata.domain.ReadRejection;
+import cherry.mastersmith.businessdata.domain.ReferenceFailureReason;
+import cherry.mastersmith.businessdata.domain.ReferenceRow;
+import cherry.mastersmith.businessdata.domain.ReferenceRows;
+import cherry.mastersmith.businessdata.domain.ReferenceRowsQuery;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
 import cherry.mastersmith.businessdata.domain.RequestedDefinitionId;
 import cherry.mastersmith.businessdata.domain.RowRecord;
 import cherry.mastersmith.businessdata.domain.RowValues;
@@ -40,6 +45,8 @@ import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.businessdata.service.BusinessDataReadService;
 import cherry.mastersmith.businessdata.service.DefinitionResult;
 import cherry.mastersmith.businessdata.service.ReadRejected;
+import cherry.mastersmith.businessdata.service.ReferenceLookup;
+import cherry.mastersmith.businessdata.service.ReferenceRowsResult;
 import cherry.mastersmith.businessdata.service.RowReadResult;
 import cherry.mastersmith.businessdata.service.SearchResult;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture;
@@ -90,16 +97,19 @@ class BusinessDataReadControllerTest {
 
     private BusinessDataReadService service;
 
+    private ReferenceLookup references;
+
     private BusinessDataReadController controller;
 
     @BeforeEach
     void setUp() {
         service = mock(BusinessDataReadService.class);
+        references = mock(ReferenceLookup.class);
         BusinessDataRequestContext context = mock(BusinessDataRequestContext.class);
         when(context.currentUserId()).thenReturn(42L);
         ProblemTypeRegistry registry = mock(ProblemTypeRegistry.class);
         when(registry.findByCode("ACCESS_DENIED")).thenReturn(Optional.of(ACCESS_DENIED));
-        controller = new BusinessDataReadController(service, context, registry);
+        controller = new BusinessDataReadController(service, references, context, registry);
     }
 
     @Test
@@ -294,7 +304,8 @@ class BusinessDataReadControllerTest {
         ProblemTypeRegistry empty = mock(ProblemTypeRegistry.class);
         when(empty.findByCode(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new BusinessDataReadController(service, mock(BusinessDataRequestContext.class), empty))
+        assertThatThrownBy(() -> new BusinessDataReadController(
+                        service, references, mock(BusinessDataRequestContext.class), empty))
                 .isInstanceOf(IllegalStateException.class);
         assertThatThrownBy(() -> new BusinessDataRequestContext(empty)).isInstanceOf(IllegalStateException.class);
     }
@@ -416,5 +427,158 @@ class BusinessDataReadControllerTest {
                     assertThat(e.getProblemType().status()).isEqualTo(status);
                     assertThat(e.getProblemType().code()).isEqualTo(code);
                 });
+    }
+
+    // ── 参照先の検索とラベルの1件読み（Intent 261029-reference-lookup-cleanup の U1、B2） ──
+
+    private static ReferenceRowsRequest searchBody(String column, String value, Object page) {
+        return new ReferenceRowsRequest(
+                "sample",
+                "orders",
+                "pick",
+                List.of(new ReferenceConditionRequest(column, value)),
+                page == null ? null : new BigDecimal(page.toString()),
+                null);
+    }
+
+    private static ReferenceRowsRequest labelBody(String value) {
+        return new ReferenceRowsRequest("sample", "orders", "pick", null, null, value);
+    }
+
+    @Test
+    @DisplayName("a format error is 400 without field errors before the lookup is called (BR1.2 step 2 before step 3)")
+    void referenceFormatErrorComesFirst() {
+        List<ReferenceRowsRequest> malformed = List.of(
+                new ReferenceRowsRequest(null, "orders", "pick", null, null, "1"),
+                new ReferenceRowsRequest(
+                        "sample",
+                        "orders",
+                        "pick",
+                        List.of(new ReferenceConditionRequest("l", "x")),
+                        BigDecimal.ONE,
+                        "1"),
+                new ReferenceRowsRequest("sample", "orders", "pick", null, null, null),
+                searchBody("l", "", 1),
+                searchBody("l", "x", 0),
+                searchBody("l", "x", null),
+                searchBody("l", "あ".repeat(1_001), 1),
+                labelBody("1".repeat(1_001)));
+
+        for (ReferenceRowsRequest body : malformed) {
+            assertThatThrownBy(() -> controller.referenceRows(body))
+                    .as(body.toString())
+                    .isInstanceOfSatisfying(BusinessException.class, e -> {
+                        assertThat(e.getProblemType().code()).isEqualTo("VALIDATION_FAILED");
+                        assertThat(e.getProperties()).isEmpty();
+                    });
+        }
+        org.mockito.Mockito.verifyNoInteractions(references);
+    }
+
+    @Test
+    @DisplayName("a search goes to search and a value goes to label with the user from the request context")
+    void referenceRowsRouting() {
+        ReferenceRows page =
+                ReferenceRows.search(List.of(new ReferenceRow("7", null, java.util.Arrays.asList("班", null))), 2, true);
+        when(references.search(eq(42L), any())).thenReturn(new ReferenceRowsResult.Found(page));
+        when(references.label(eq(42L), any()))
+                .thenReturn(new ReferenceRowsResult.Found(ReferenceRows.label(new ReferenceRow("7", "班", List.of()))));
+
+        ReferenceRowsResponse searched = controller.referenceRows(searchBody("l", "班", 2));
+        ReferenceRowsResponse labeled = controller.referenceRows(labelBody("7"));
+
+        verify(references)
+                .search(
+                        42L,
+                        ReferenceRowsQuery.search(
+                                "sample",
+                                "orders",
+                                "pick",
+                                List.of(new cherry.mastersmith.businessdata.domain.ReferenceCondition("l", "班")),
+                                2));
+        verify(references).label(42L, ReferenceRowsQuery.label("sample", "orders", "pick", new ReferenceValue("7")));
+        assertThat(searched.page()).isEqualTo(2L);
+        assertThat(searched.hasNext()).isTrue();
+        assertThat(searched.rows()).singleElement().satisfies(row -> {
+            assertThat(row.value()).isEqualTo("7");
+            assertThat(row.label()).isNull();
+            assertThat(row.cells()).containsExactly("班", null);
+        });
+        assertThat(labeled.page()).isNull();
+        assertThat(labeled.hasNext()).isFalse();
+        assertThat(labeled.rows())
+                .singleElement()
+                .satisfies(row -> assertThat(row.cells()).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Denied is the same 403 ACCESS_DENIED without field errors for search and label")
+    void referenceDenied() {
+        when(references.search(eq(42L), any())).thenReturn(new ReferenceRowsResult.Denied());
+        when(references.label(eq(42L), any())).thenReturn(new ReferenceRowsResult.Denied());
+
+        for (ReferenceRowsRequest body : List.of(searchBody("l", "x", 1), labelBody("1"))) {
+            assertThatThrownBy(() -> controller.referenceRows(body))
+                    .isInstanceOfSatisfying(BusinessException.class, e -> {
+                        assertThat(e.getProblemType()).isSameAs(ACCESS_DENIED);
+                        assertThat(e.getProperties()).isEmpty();
+                    });
+        }
+    }
+
+    @Test
+    @DisplayName("an invalid value is 400 with the column and INVALID_VALUE only")
+    void referenceInvalidValue() {
+        when(references.search(eq(42L), any())).thenReturn(new ReferenceRowsResult.InvalidValue("id"));
+
+        assertThatThrownBy(() -> controller.referenceRows(searchBody("id", "abc", 1)))
+                .isInstanceOfSatisfying(BusinessException.class, e -> {
+                    assertThat(e.getProblemType().code()).isEqualTo("VALIDATION_FAILED");
+                    assertThat(e.getProperties())
+                            .containsOnlyKeys("fieldErrors")
+                            .extractingByKey("fieldErrors")
+                            .isEqualTo(List.of(Map.of("field", "id", "reason", "INVALID_VALUE")));
+                    assertThat(e.getProperties().toString()).doesNotContain("abc");
+                });
+    }
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+        "TIMEOUT, BUSINESS_TARGET_DB_TIMEOUT",
+        "UNAVAILABLE, BUSINESS_TARGET_DB_UNAVAILABLE",
+        "MISMATCH, BUSINESS_TARGET_DB_MISMATCH"
+    })
+    @DisplayName("each failure reason maps to the existing code")
+    void referenceFailures(ReferenceFailureReason reason, String code) {
+        when(references.label(eq(42L), any())).thenReturn(new ReferenceRowsResult.Failed(reason));
+
+        assertThatThrownBy(() -> controller.referenceRows(labelBody("1")))
+                .isInstanceOfSatisfying(
+                        BusinessException.class,
+                        e -> assertThat(e.getProblemType().code()).isEqualTo(code));
+    }
+
+    @Test
+    @DisplayName("the request and response types hide values and the body limit covers the new path")
+    void referenceTypesHideValues() {
+        String secret = "社外秘の値";
+        ReferenceRowsRequest search = searchBody("l", secret, 1);
+        ReferenceRowsRequest label = labelBody(secret);
+        ReferenceRowsResponse response = ReferenceRowsResponse.from(
+                ReferenceRows.search(List.of(new ReferenceRow(secret, secret, List.of(secret))), 1, false));
+
+        assertThat(List.of(
+                        search.toString(),
+                        label.toString(),
+                        response.toString(),
+                        response.rows().toString()))
+                .allSatisfy(text -> assertThat(text).doesNotContain(secret));
+        assertThat(search.toString()).contains("column=pick", "conditions=1");
+        assertThat(BusinessDataWebConfig.businessDataReferenceRowsBodyLimitRoute()
+                        .path())
+                .isEqualTo("/api/tables/reference/rows");
+        assertThat(BusinessDataWebConfig.businessDataReferenceRowsBodyLimitRoute()
+                        .maxBytes())
+                .isEqualTo(65_536L);
     }
 }

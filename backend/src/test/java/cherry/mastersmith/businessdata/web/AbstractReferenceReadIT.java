@@ -18,22 +18,35 @@ package cherry.mastersmith.businessdata.web;
 import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SRC_COUNTS;
 import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SRC_LENGTHS;
 import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SRC_MISC;
+import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SRC_PICK;
 import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SRC_SHAPES;
 import static cherry.mastersmith.businessdata.testsupport.ReferenceTables.SUPPLEMENTARY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cherry.mastersmith.businessdata.domain.ReferenceCheckResult;
+import cherry.mastersmith.businessdata.domain.ReferenceCountState;
+import cherry.mastersmith.businessdata.domain.ReferenceValue;
+import cherry.mastersmith.businessdata.domain.TableQuery;
+import cherry.mastersmith.businessdata.service.ReferenceLookup;
+import cherry.mastersmith.businessdata.service.TableAccessResolution;
+import cherry.mastersmith.businessdata.service.TableAccessResolver;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataSampleSchema;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
 import cherry.mastersmith.businessdata.testsupport.ReferenceTables;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.role.testsupport.RoleActors.Actor;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
+import cherry.mastersmith.targetdb.domain.ReadPurpose;
+import cherry.mastersmith.targetdb.domain.TargetReadOutcome;
+import cherry.mastersmith.targetdb.domain.TargetReadSession;
+import cherry.mastersmith.targetdb.service.TargetReadAccess;
 import cherry.mastersmith.targetdb.testsupport.ContainerRuntimeCheck;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -43,8 +56,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * 定義の取得の参照の項目を、3種類の対象DB で確かめる共通の結合テスト（Intent 261029-reference-lookup-cleanup の U1、Step 12、
- * T-B1〜T-B3・T-B6・T-B8・T-B9・T-B10 の定義の分、(c)(h)(i) の定義の分、AC1.3.1）。子のクラスで DB の種類を決める。
+ * 定義の取得の参照の項目と、参照先の検索・ラベルの1件読み・保存前の確かめの口（{@code check}・{@code countState}）を、3種類の対象DB で
+ * 確かめる共通の結合テスト（Intent 261029-reference-lookup-cleanup の U1。B1 の Step 12 の T-B1〜T-B3・T-B6・T-B8・T-B9・T-B10 の定義の
+ * 分、B2 の Step 21 の T-B4〜T-B7・T-B9 の残り、(c)(e)(h)(i)、AC1.3.1）。子のクラスで DB の種類を決める。確かめの口は U2 がまだ呼ばない
+ * ため、アプリの部品（解決の口・読み取りの口・{@link ReferenceLookup}）を直接呼ぶ。
  *
  * <p>表はクラスごとに一意の名前のスキーマ（MySQL・MariaDB はデータベース）に作り、終わったら消す（{@link BusinessDataSampleSchema}）。
  * アプリは読み取りだけのアカウントで対象DB を読む。値はすべて架空。
@@ -307,5 +322,243 @@ abstract class AbstractReferenceReadIT {
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
         assertThat(HttpTestClient.json(response)).containsEntry("code", "VALIDATION_FAILED");
+    }
+
+    // ── B2: 検索・ラベルの1件読み・確かめの口 ──
+
+    private HttpResponse<String> rowsResponse(Map<String, Object> body) {
+        return app.post(BusinessDataPaths.REFERENCE_ROWS, member.token(), body);
+    }
+
+    private List<Map<String, Object>> pageRows(Map<String, Object> page) {
+        return (List<Map<String, Object>>) page.get("rows");
+    }
+
+    private Map<String, Object> search(String column, String conditionColumn, String value, int page) {
+        HttpResponse<String> response = rowsResponse(sample.body(
+                SRC_PICK,
+                "column",
+                column,
+                "conditions",
+                List.of(Map.of("column", conditionColumn, "value", value)),
+                "page",
+                page));
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        return HttpTestClient.json(response);
+    }
+
+    private HttpResponse<String> labelResponse(String table, String column, String value) {
+        return rowsResponse(sample.body(table, "column", column, "value", value));
+    }
+
+    private Object label(String table, String column, String value) {
+        HttpResponse<String> response = labelResponse(table, column, value);
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        Map<String, Object> json = HttpTestClient.json(response);
+        assertThat(json).containsEntry("page", null).containsEntry("hasNext", false);
+        return pageRows(json).get(0).get("label");
+    }
+
+    /** アプリの部品で写しを取り、REFERENCE の目的で借りた接続の中で確かめの口を呼ぶ（U2 と同じ呼び方）。 */
+    private <T> T withReference(String table, BiFunction<TableAccessResolution.Resolved, TargetReadSession, T> work) {
+        TableAccessResolution.Resolved source = (TableAccessResolution.Resolved) app.bean(TableAccessResolver.class)
+                .resolve(member.userId(), new TableQuery(sample.schema(), table, null));
+        TargetReadOutcome<T> outcome = app.bean(TargetReadAccess.class)
+                .withRead(ReadPurpose.REFERENCE, session -> work.apply(source, session));
+        assertThat(outcome).isInstanceOf(TargetReadOutcome.Done.class);
+        return ((TargetReadOutcome.Done<T>) outcome).value();
+    }
+
+    private ReferenceCheckResult check(String table, String column, String value) {
+        ReferenceLookup lookup = app.bean(ReferenceLookup.class);
+        return withReference(
+                table, (source, session) -> lookup.check(source, column, new ReferenceValue(value), session));
+    }
+
+    private ReferenceCountState countState(String table, String column) {
+        ReferenceLookup lookup = app.bean(ReferenceLookup.class);
+        return withReference(table, (source, session) -> lookup.countState(source, column, session));
+    }
+
+    @Test
+    @DisplayName(
+            "the picker returns 20 rows a page and hasNext only when a 21st row exists, long values left out (T-B5)")
+    void pickerPages() {
+        Map<String, Object> a20 = search("pick", "l", "A20-", 1);
+        assertThat(pageRows(a20)).hasSize(20);
+        assertThat(a20).containsEntry("hasNext", false).containsEntry("page", 1);
+        assertThat(pageRows(a20).get(0))
+                .containsEntry("value", "PA2000001")
+                .containsEntry("label", "A20-00001")
+                .containsEntry("cells", List.of("A20-00001", "PA2000001"));
+
+        assertThat(search("pick", "l", "B21-", 1)).containsEntry("hasNext", true);
+        assertThat(pageRows(search("pick", "l", "B21-", 2))).singleElement();
+        assertThat(search("pick", "l", "C40-", 2)).containsEntry("hasNext", false);
+        assertThat(pageRows(search("pick", "l", "C40-", 2))).hasSize(20);
+        assertThat(search("pick", "l", "D41-", 2)).containsEntry("hasNext", true);
+        Map<String, Object> last = search("pick", "l", "D41-", 3);
+        assertThat(pageRows(last)).singleElement();
+        assertThat(last).containsEntry("hasNext", false);
+        Map<String, Object> after = search("pick", "l", "D41-", 4);
+        assertThat(pageRows(after)).isEmpty();
+        assertThat(after).containsEntry("hasNext", false);
+        for (String group : List.of("A20-", "B21-", "C40-", "D41-")) {
+            for (int page = 1; page <= 3; page++) {
+                assertThat(pageRows(search("pick", "l", group, page)))
+                        .as("10,000 字を超える値の行は入らない")
+                        .allSatisfy(row -> assertThat((String) row.get("value")).startsWith("P"));
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("%, _ and the backslash in a partial match are taken as characters (e)")
+    void containsEscapes() {
+        assertThat(pageRows(search("esc", "l", "50%", 1)))
+                .extracting(r -> r.get("value"))
+                .containsExactly("e1");
+        assertThat(pageRows(search("esc", "l", "%", 1)))
+                .extracting(r -> r.get("value"))
+                .containsExactly("e1");
+        assertThat(pageRows(search("esc", "l", "a_b", 1)))
+                .extracting(r -> r.get("value"))
+                .containsExactly("e3");
+        assertThat(pageRows(search("esc", "l", "c\\d", 1)))
+                .extracting(r -> r.get("value"))
+                .containsExactly("e5");
+    }
+
+    @Test
+    @DisplayName("an EQUALS value is read as the column type: big integers and integers match, a non number is 400")
+    void equalsTypes() {
+        assertThat(pageRows(search("numpick", "v", ReferenceTables.BIG_MAX, 1)))
+                .extracting(r -> r.get("label"))
+                .containsExactly("max");
+        assertThat(pageRows(search("numpick", "v", "0001", 1)))
+                .extracting(r -> r.get("label"))
+                .containsExactly("one");
+        assertThat(pageRows(search("intpick", "id", "5", 1)))
+                .singleElement()
+                .satisfies(r ->
+                        assertThat(r).containsEntry("value", "V00005").containsEntry("cells", List.of("L00005", "5")));
+        for (Object[] bad : new Object[][] {{"numpick", "v", "abc"}, {"intpick", "id", "1.5"}}) {
+            HttpResponse<String> response = rowsResponse(sample.body(
+                    SRC_PICK,
+                    "column",
+                    bad[0],
+                    "conditions",
+                    List.of(Map.of("column", bad[1], "value", bad[2])),
+                    "page",
+                    1));
+            assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+            assertThat(HttpTestClient.json(response))
+                    .containsEntry("code", "VALIDATION_FAILED")
+                    .containsEntry("fieldErrors", List.of(Map.of("field", bad[1], "reason", "INVALID_VALUE")));
+        }
+    }
+
+    @Test
+    @DisplayName("the label read follows the database comparison: a case-insensitive collation may return another case")
+    void labelFollowsTheCollation() {
+        Object lower = label(SRC_SHAPES, "dup", "k");
+        if (product() == DatabaseProduct.POSTGRESQL) {
+            assertThat(lower).as("PostgreSQL は大文字と小文字を区別する").isEqualTo("c");
+        } else {
+            assertThat(lower).as("MySQL・MariaDB の既定の照合は区別しない（並びの最初の行のラベル）").isEqualTo("a");
+        }
+        assertThat(label(SRC_SHAPES, "dup", "K")).isEqualTo("a");
+        HttpResponse<String> missing = labelResponse(SRC_SHAPES, "dup", "zz");
+        assertThat(missing.statusCode()).as("行が無ければ 403").isEqualTo(403);
+        assertThat(HttpTestClient.json(missing)).containsEntry("code", "ACCESS_DENIED");
+    }
+
+    @Test
+    @DisplayName(
+            "labels are read for composite keys, tables without keys, views, self references and odd values (h, f)")
+    void labelShapes() {
+        assertThat(label(SRC_SHAPES, "comp", "B1")).isEqualTo("one");
+        assertThat(label(SRC_SHAPES, "nokey", "N1")).isEqualTo("n");
+        assertThat(label(SRC_SHAPES, "view", "V00001")).isEqualTo("L00001");
+        assertThat(label(SRC_SHAPES, "parent", "1")).isEqualTo("親");
+        assertThat(label(SRC_SHAPES, "num", ReferenceTables.BIG_MAX)).isEqualTo("max");
+        assertThat(label(SRC_SHAPES, "dec", "1.500")).isEqualTo("x");
+        assertThat(label(SRC_SHAPES, "quoted", "it's")).isEqualTo("say \"hi\"");
+        assertThat(label(SRC_MISC, "xss", ReferenceTables.XSS_VALUE)).isEqualTo(ReferenceTables.XSS_LABEL);
+        assertThat(labelResponse(SRC_SHAPES, "num", "abc").statusCode())
+                .as("型として読めない値は 403")
+                .isEqualTo(403);
+    }
+
+    @Test
+    @DisplayName("check matches strictly: case, trailing spaces and long values differ, 1.0 equals 1 on every database")
+    void checkIsStrict() {
+        assertThat(check(SRC_SHAPES, "dup", "k")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "dup", "K")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "dup", "K ")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_PICK, "csref", "abc")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_PICK, "csref", "ABC")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "dec", "1.500")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "dec", "1.6")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_SHAPES, "num", "abc")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+    }
+
+    @Test
+    @DisplayName("check on trailing spaces gives the same answer on every database, including MariaDB PAD SPACE (T-B7)")
+    void checkPadSpace() {
+        assertThat(check(SRC_PICK, "padref", "x")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_PICK, "padref", "x" + " ".repeat(9_999))).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_PICK, "padref", "x" + " ".repeat(10_000)))
+                .as("10,001 字の行は長さの条件で外れる")
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_PICK, "padref", "x ")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+    }
+
+    @Test
+    @DisplayName("check finds values of 10,000 characters and not of 10,001, and whole values over 100 (T-B6, BR7.3)")
+    void checkLengths() {
+        assertThat(check(SRC_LENGTHS, "edge", "a".repeat(10_000))).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_LENGTHS, "edge", "あ".repeat(10_000))).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_LENGTHS, "edge", SUPPLEMENTARY.repeat(10_000)))
+                .isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_LENGTHS, "edge", "a".repeat(10_001)))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_LENGTHS, "edge", SUPPLEMENTARY.repeat(10_001)))
+                .isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+        assertThat(check(SRC_LENGTHS, "edge", "c".repeat(101))).isEqualTo(new ReferenceCheckResult.Found());
+    }
+
+    @Test
+    @DisplayName("check reads composite keys, tables without keys, views and self references (h)")
+    void checkShapes() {
+        assertThat(check(SRC_SHAPES, "comp", "B2")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "nokey", "N2")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "view", "V00199")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_SHAPES, "parent", "2")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(check(SRC_MISC, "secret", "S1")).isEqualTo(new ReferenceCheckResult.NotFoundOrDenied());
+    }
+
+    @Test
+    @DisplayName("countState is AVAILABLE at 200 and TOO_MANY at 201 with long values mixed in (T-B4)")
+    void countStates() {
+        assertThat(countState(SRC_LENGTHS, "m200")).isEqualTo(new ReferenceCountState.Available());
+        assertThat(countState(SRC_LENGTHS, "m201")).isEqualTo(new ReferenceCountState.TooMany());
+        assertThat(countState(SRC_COUNTS, "c199")).isEqualTo(new ReferenceCountState.Available());
+        assertThat(countState(SRC_COUNTS, "c10000")).isEqualTo(new ReferenceCountState.TooMany());
+        assertThat(countState(SRC_MISC, "secret")).isEqualTo(new ReferenceCountState.NoPermission());
+        assertThat(countState(SRC_PICK, "pick")).isEqualTo(new ReferenceCountState.Available());
+    }
+
+    @Test
+    @DisplayName("2,000 rows with 200 long labels work for the picker, the label, check and countState (T-B9)")
+    void longLabelsOnEveryPath() {
+        Map<String, Object> page = search("widepick", "l", "長", 1);
+        assertThat(pageRows(page)).hasSize(20);
+        assertThat(page).containsEntry("hasNext", true);
+        assertThat(pageRows(page))
+                .allSatisfy(row -> assertThat(row.get("label")).isEqualTo("長".repeat(100)));
+        assertThat(label(SRC_MISC, "wide", "W00010")).isEqualTo("長".repeat(100));
+        assertThat(check(SRC_MISC, "wide", "W00010")).isEqualTo(new ReferenceCheckResult.Found());
+        assertThat(countState(SRC_MISC, "wide")).isEqualTo(new ReferenceCountState.TooMany());
     }
 }

@@ -27,9 +27,10 @@ public final class ApiEndpointCounts {
     /**
      * 今ある API の口の数（2026-10-20 の時点。Intent 261016-business-data-views の U1 で読み取りの3本、U2 で書き込みの3本を足した。静的な
      * 検査の {@code ApiAccessRules.endpointKeys} で数えた）。Intent 261025-deps-perf-carryover の FR3.3 で
-     * {@code GET /api/me/table-access} を外したため 73 から 72 に下げた（口を外したときだけ下げる決まり）。
+     * {@code GET /api/me/table-access} を外したため 73 から 72 に下げた（口を外したときだけ下げる決まり）。Intent
+     * 261029-reference-lookup-cleanup の U1（B2）で {@code POST /api/tables/reference/rows} を足したため 73 に上げた。
      */
-    public static final int MIN_ENDPOINTS = 72;
+    public static final int MIN_ENDPOINTS = 73;
 
     private ApiEndpointCounts() {}
 }

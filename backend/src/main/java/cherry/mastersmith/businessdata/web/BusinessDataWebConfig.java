@@ -21,7 +21,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 業務データの読み取りと書き込みの API の画面入出力の設定（NFR4.5、security-design.md の 6節。U2 の NFR4.9）。読み取りの3本と削除の道ごとに
+ * 業務データの読み取りと書き込みの API の画面入出力の設定（NFR4.5、security-design.md の 6節。U2 の NFR4.9）。読み取りの3本と削除と、参照先の
+ * 検索（Intent 261029-reference-lookup-cleanup の U1、NFR1.4）の道ごとに
  * 本文の上限 64 KB、作成・更新の道に 4 MiB を共通の本文の上限の仕組みに渡す（超えたら 413 {@code PAYLOAD_TOO_LARGE}。認証と認可の後、コントローラーの前に確かめるため、413 が 400 より先に出る）。
  * {@code common.web} の本体は変えない。
  */
@@ -98,5 +99,16 @@ public class BusinessDataWebConfig {
     public static RequestBodyLimitRoute businessDataDeleteBodyLimitRoute() {
         return new RequestBodyLimitRoute(
                 "POST", BusinessDataPaths.DELETE, MAX_BODY_BYTES, CommonProblemTypes.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * 参照先の検索とラベルの1件読みの道の本文の上限（64 KB。Intent 261029-reference-lookup-cleanup の U1、NFR1.4）。
+     *
+     * @return 道ごとの本文の上限
+     */
+    @Bean
+    public static RequestBodyLimitRoute businessDataReferenceRowsBodyLimitRoute() {
+        return new RequestBodyLimitRoute(
+                "POST", BusinessDataPaths.REFERENCE_ROWS, MAX_BODY_BYTES, CommonProblemTypes.PAYLOAD_TOO_LARGE);
     }
 }

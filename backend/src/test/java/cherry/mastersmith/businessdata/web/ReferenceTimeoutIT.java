@@ -56,8 +56,9 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 /**
- * 定義の取得で参照先を読むときの時間切れ・失敗の code（Intent 261029-reference-lookup-cleanup の U1、Step 12、BR1.5・BR8.4・BR8.7・
- * BR10.2、reliability-design.md 2節）。
+ * 定義の取得・参照先の検索・ラベルの1件読みで参照先を読むときの時間切れ・失敗の code（Intent 261029-reference-lookup-cleanup の U1、
+ * B1 の Step 12 と B2 の Step 21、BR1.5・BR8.4・BR8.7・BR10.2、reliability-design.md 2節、T-T1・T-F1）。検索とラベルの1件読みは文が1つ
+ * だけのため全体の上限を使わず、文の上限（5 秒）だけで切れる。
  *
  * <ul>
  *   <li>本物の遅い問い合わせ（3種類の DB の眠る関数を含むビュー）: 文の上限で 503 {@code BUSINESS_TARGET_DB_TIMEOUT}。全体の上限を 2 秒に
@@ -127,7 +128,20 @@ class ReferenceTimeoutIT {
                         false,
                         List.of("id"),
                         column("id").dbType(integer).build(),
-                        ref("a", SLOW, "v", "l")),
+                        ref("a", SLOW, "v", "l"),
+                        // 検索とラベルの1件読みの時間切れ（B2）。定義では LOOKUP は対象DB を読まない。
+                        column("p")
+                                .form(FormPart.LOOKUP)
+                                .options(new OptionSource(
+                                        OptionSourceKind.LOOKUP,
+                                        List.of(),
+                                        SLOW,
+                                        "v",
+                                        null,
+                                        List.of(new cherry.mastersmith.dsl.domain.LookupSearchItem(
+                                                "l", cherry.mastersmith.dsl.domain.SearchOperator.CONTAINS)),
+                                        List.of(new cherry.mastersmith.dsl.domain.LookupListItem("l", 1))))
+                                .build()),
                 table(
                         "src_mismatch",
                         false,
@@ -287,6 +301,85 @@ class ReferenceTimeoutIT {
                             .statusCode())
                     .as("VIEW は対象DB に接続しない")
                     .isEqualTo(200);
+        }
+    }
+
+    // ── B2: 検索・ラベルの1件読み ──
+
+    private static Timed rows(BusinessDataTestApp app, Actor member, Map<String, Object> body) {
+        long start = System.nanoTime();
+        HttpResponse<String> response = app.post(BusinessDataPaths.REFERENCE_ROWS, member.token(), body);
+        return new Timed(response, Duration.ofNanos(System.nanoTime() - start));
+    }
+
+    private static Map<String, Object> slowSearch(BusinessDataSampleSchema sample) {
+        return sample.body(
+                "src_slow", "column", "p", "conditions", List.of(Map.of("column", "l", "value", "見")), "page", 1);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(DatabaseProduct.class)
+    @DisplayName("a slow target makes the search and the label read 503 TIMEOUT by the 5 second statement limit")
+    void slowRows(DatabaseProduct product, CapturedOutput output) {
+        Env env = envs.get(product);
+
+        Timed search = rows(env.app(), env.member(), slowSearch(env.sample()));
+        Timed label = rows(env.app(), env.member(), env.sample().body("src_slow", "column", "a", "value", "x"));
+
+        for (Timed timed : List.of(search, label)) {
+            assertProblem(
+                    timed,
+                    503,
+                    "BUSINESS_TARGET_DB_TIMEOUT",
+                    Duration.ofSeconds(10),
+                    env.sample().target());
+            assertThat(timed.elapsed()).as("文の上限 5 秒").isGreaterThanOrEqualTo(Duration.ofSeconds(4));
+        }
+        assertNoDriverMessages(output, env.sample().target());
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(DatabaseProduct.class)
+    @DisplayName("a label column missing from the target database makes the label read 409 MISMATCH")
+    void mismatchRows(DatabaseProduct product, CapturedOutput output) {
+        Env env = envs.get(product);
+
+        Timed label = rows(env.app(), env.member(), env.sample().body("src_mismatch", "column", "a", "value", "見本"));
+
+        assertProblem(
+                label,
+                409,
+                "BUSINESS_TARGET_DB_MISMATCH",
+                Duration.ofSeconds(5),
+                env.sample().target());
+        assertNoDriverMessages(output, env.sample().target());
+    }
+
+    @Test
+    @DisplayName("a silent target makes the search and the label read 503 UNAVAILABLE by the borrow limit")
+    void silentRows() {
+        BusinessDataSampleSchema sample = envs.get(DatabaseProduct.POSTGRESQL).sample();
+        Target base = sample.target();
+        try (SilentServer silent = SilentServer.start()) {
+            BusinessDataTestApp app = BusinessDataTestApp.start(
+                    dir.resolve("silent-rows"),
+                    new Target(
+                            base.product(),
+                            "127.0.0.1",
+                            silent.port(),
+                            base.database(),
+                            base.schema(),
+                            base.user(),
+                            base.password()));
+            closeables.add(app);
+            app.installDsl(model(sample));
+            Actor member = app.reader(settings(sample));
+
+            Timed search = rows(app, member, slowSearch(sample));
+            Timed label = rows(app, member, sample.body("src_slow", "column", "a", "value", "x"));
+
+            assertProblem(search, 503, "BUSINESS_TARGET_DB_UNAVAILABLE", Duration.ofSeconds(8), base);
+            assertProblem(label, 503, "BUSINESS_TARGET_DB_UNAVAILABLE", Duration.ofSeconds(8), base);
         }
     }
 }

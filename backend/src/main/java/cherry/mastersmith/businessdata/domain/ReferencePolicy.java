@@ -161,6 +161,55 @@ public final class ReferencePolicy {
     }
 
     /**
+     * ピッカーの検索の指定を作る（BR5.7・BR5.8・BR5.9・BR7.3・BR7.4）。表示の列はラベルのカラムと一覧の列（{@code order} の順）で、
+     * 判定の材料に無いカラム（NONE を含む）とバイナリ・password を選ばず、重ねない（BR3.5 の守り）。
+     *
+     * @param target 参照先（LOOKUP）
+     * @param view 参照先のテーブルの判定の材料
+     * @param offset 読み飛ばす行の数
+     * @return 指定
+     */
+    public static ReferenceReadSpec pickerSpec(ReferenceTarget target, TableAccessView view, int offset) {
+        List<String> display = new ArrayList<>();
+        addReadable(display, view, target.labelColumn());
+        for (LookupListItem item : target.lookupList()) {
+            addReadable(display, view, item.column());
+        }
+        return ReferenceReadSpec.picker(target.valueColumn(), display, fixedOrder(target, view), offset);
+    }
+
+    /**
+     * ラベルの1件読みの指定を作る（BR6.3）。表示の列はラベルのカラムだけ（バイナリ・password は選ばない）。
+     *
+     * @param target 参照先（REFERENCE・LOOKUP）
+     * @param view 参照先のテーブルの判定の材料
+     * @return 指定
+     */
+    public static ReferenceReadSpec labelSpec(ReferenceTarget target, TableAccessView view) {
+        List<String> display = new ArrayList<>();
+        addReadable(display, view, target.labelColumn());
+        return ReferenceReadSpec.label(target.valueColumn(), display, fixedOrder(target, view));
+    }
+
+    /**
+     * 保存前の確かめの指定を作る（出すのは値のカラムだけ。BR9.4）。
+     *
+     * @param target 参照先
+     * @param view 参照先のテーブルの判定の材料
+     * @return 指定
+     */
+    public static ReferenceReadSpec checkSpec(ReferenceTarget target, TableAccessView view) {
+        return ReferenceReadSpec.check(target.valueColumn(), fixedOrder(target, view));
+    }
+
+    private static void addReadable(List<String> display, TableAccessView view, String column) {
+        view.column(column)
+                .filter(ColumnAccess::readsValue)
+                .filter(c -> !display.contains(c.column()))
+                .ifPresent(c -> display.add(c.column()));
+    }
+
+    /**
      * 同じ値の2行目以降を落とす（BR4.4）。並びの順に見て、すでに出した値と {@link #sameReferenceValue} で同じ値の行を落とし、
      * 最初の出現の順を保つ。型として読めない値（null）は何とも一致しないため落とさない。
      *
