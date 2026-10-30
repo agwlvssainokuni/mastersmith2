@@ -117,3 +117,5 @@
 - E2E の1回目: 256 件中 1 件失敗（180 の手順 6「見本と本物の応答の形」）。定義の応答のカラムに足した `reference`（参照でないカラムは null）が画面の E2E の見本に無かったため。依頼者の決定 A で、画面の型 `ColumnDefinition` に任意の `reference?: unknown` を、E2E の見本 `fixtureColumn` に `reference: null` を足した（計画との差。本来は U3 の作業）。
 - その後の `verify`（画面の部品だけが流れ直る）で `businessDataFixtures.test.ts` の2件が失敗。画面の読み込みの部品 `parseValidation` が `reference` を落とすため。読み込みの部品で `reference` を届いたまま写す形にした（画面はまだ使わない。中身の確かめは U3 で足す）。直した後の `verify` は成功（3分16秒、画面のテスト 1,977 件）。
 - E2E の全件をもう一度: 256 件すべて通過（13.1 分）。流した間に Sleep・DarkWake は無かった。
+- B1 の統合: develop へ squash（549d38b）。作業ブランチは消した。依頼者が push。
+- CI（run 41050809643、549d38b）: 1回目の試行で success。検査の job「./gradlew verify」は 11:49:14Z〜12:21:39Z の 32分25秒（42 分の線の内）。再実行は無い。

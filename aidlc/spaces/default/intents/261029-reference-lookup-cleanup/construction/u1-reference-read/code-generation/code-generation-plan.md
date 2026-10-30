@@ -236,7 +236,7 @@ U2（Bolt B3）は、U1 が作る次の型と口に依存する。どれも **B1
   - `ReferenceTimeoutIT`（定義の分。`SilentServer` で 503 `BUSINESS_TARGET_DB_TIMEOUT`、応答とログに例外のメッセージが無い。型の食い違いで 409）。
   - T-C1: `purpose` を送らない応答が `reference: null` を除いて今と同じ。既存の `*BusinessDataReadIT` を変えずに通す。T-C3: `BusinessDataProblemTypeCatalogTest` に code の数と状態コードの組が変わらない確かめを足す。
   - 上の環境変数を付けて `./gradlew :backend:integrationTest --tests 'cherry.mastersmith.businessdata.web.*Reference*IT' --tests 'cherry.mastersmith.businessdata.web.*BusinessDataRead*IT'` を流して通す。
-- [ ] **Step 13: B1 の確かめと統合**
+- [x] **Step 13: B1 の確かめと統合**
   - `./gradlew spotlessApply` の後、時間を測って `caffeinate -dims` で `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（上の環境変数を付ける）。SKIPPED の対象DB のテストが無いこと、パッケージごとのカバレッジ（3.4節の7パッケージ）、`spotbugsGate`、3.3節の差が空、lockfile・移行ファイル・DSL の JSON Schema に差が無いことを確かめ、時間とカバレッジの値を記録する。42 分を超えたら依頼者に諮る（NFR5.3）。
   - 見本の対象DB（PostgreSQL）を起動して `./gradlew e2eTest` の全件を流す（業務データの `src/main` に触れるため。`team.md`）。
   - コミットは区切りごとに依頼者に提案し、承認を得てから積む（7節）。`aidlc/` の未コミットの変更を先にコミットしてから、`develop` へ squash で統合し、ブランチを消す。`git push` は依頼者が行う。push の後の CI を試行ごと（`gh run view --json attempt,jobs`）に確かめ、検査の job の時間を記録する。
