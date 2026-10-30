@@ -1,0 +1,86 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-container-perf-docs",
+  "upstream_ids": [
+    "NFR8.81",
+    "NFR8.82",
+    "NFR9.81",
+    "NFR8.83",
+    "NFR8.86",
+    "NFR8.87",
+    "NFR8.88",
+    "NFR8.89",
+    "NFR8.90",
+    "NFR8.84",
+    "NFR8.85",
+    "NFR9.82",
+    "NFR5.81"
+  ],
+  "coverage": [
+    {
+      "id": "NFR8.81",
+      "status": "OK",
+      "target": "security-design.md 2.1節 A0（了承を最初の関門にし、日時と答えを記録）"
+    },
+    {
+      "id": "NFR8.82",
+      "status": "OK",
+      "target": "security-design.md 2.1節 A1〜A6・A8、2.2節、2.4節（index のダイジェストと RepoDigests の照合）、2.6節（/api/health とダッシュボードの件数）"
+    },
+    {
+      "id": "NFR9.81",
+      "status": "OK",
+      "target": "security-design.md 6節（依存・イメージの行・versions.env を変えない、差で確かめる）"
+    },
+    {
+      "id": "NFR8.83",
+      "status": "OK",
+      "target": "security-design.md 2.1節 A1・A9、4.2節（prune を行わず前後の docker image ls を比べる）"
+    },
+    {
+      "id": "NFR8.86",
+      "status": "OK",
+      "target": "security-design.md 2.3節・3節（--format で取り出す項目を限る、記録しないもの、gitleaks dir 0 件）"
+    },
+    {
+      "id": "NFR8.87",
+      "status": "OK",
+      "target": "security-design.md 5.3節（K6_IMAGE の docker run --rm・--env-file なし、thresholds と scenarios だけを外の置き場で比べる）"
+    },
+    {
+      "id": "NFR8.88",
+      "status": "OK",
+      "target": "security-design.md 5.4節・5.5節（grep の線を名前と値の組で比べる、thresholdsFor との一致、thresholds-test.sh の終了コード）"
+    },
+    {
+      "id": "NFR8.89",
+      "status": "OK",
+      "target": "security-design.md 5.1節・5.2節・5.6節 Q1・Q2（U4 の統合を関門にし見出しと直接置く手順の件数）"
+    },
+    {
+      "id": "NFR8.90",
+      "status": "OK",
+      "target": "security-design.md 5.2節・5.6節 Q3〜Q5・Q7（履歴の章に今の文だけを移す、検索と gitleaks dir の件数）"
+    },
+    {
+      "id": "NFR8.84",
+      "status": "OK",
+      "target": "security-design.md 2.5節（127.0.0.1:1025 へ example.com で送り API で件数）・2.7節（アプリの起動確認と元の状態への戻し）"
+    },
+    {
+      "id": "NFR8.85",
+      "status": "OK",
+      "target": "security-design.md 2.1節 A7（確かめの後に止め一覧に無いことを記録）"
+    },
+    {
+      "id": "NFR9.82",
+      "status": "OK",
+      "target": "security-design.md 5.2節・5.6節 Q6（固定先の版とダイジェストを変えず compose.yaml と照らす）"
+    },
+    {
+      "id": "NFR5.81",
+      "status": "OK",
+      "target": "security-design.md 7節（verify を関門、E2E は流さない、squash）と 5.2節（scenarios の形を変えない）"
+    }
+  ]
+}

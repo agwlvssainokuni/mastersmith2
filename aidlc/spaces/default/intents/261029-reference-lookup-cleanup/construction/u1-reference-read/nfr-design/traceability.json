@@ -1,0 +1,254 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-reference-read",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR2.5",
+    "NFR5.3",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.3",
+    "NFR2.4",
+    "NFR3.5",
+    "NFR1.1",
+    "NFR1.14",
+    "NFR1.15",
+    "NFR2.6",
+    "NFR2.9",
+    "NFR2.10",
+    "NFR3.1",
+    "NFR3.4",
+    "NFR3.7",
+    "NFR3.8",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR7.1",
+    "NFR7.3",
+    "NFR9.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR2.8",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR1.10",
+    "NFR1.11",
+    "NFR1.12",
+    "NFR1.13",
+    "NFR2.7",
+    "NFR3.2",
+    "NFR3.6",
+    "NFR7.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "performance-design.md 3節 時間の見込み（試しの値）・6節 測り方"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "performance-design.md 6節（Performance Validation まで Unverified）・後の段に回すこと"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "performance-design.md 6節 測り方（verify の時間）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "performance-design.md 6節 測り方（NFR2.2 の判定の決まりのまま）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "performance-design.md 6節・scalability-design.md 3節（読み取りのプール 5）・6節"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "scalability-design.md 3節 同時の数（上限を下げた k6 の場面を置かない理由の確定）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "performance-design.md 6節（種の 200・201 行の表、c_010 の参考の場面）"
+    },
+    {
+      "id": "NFR3.5",
+      "status": "OK",
+      "target": "reliability-design.md 1.2節 設定（Q2: A）・1.3節 締め切りと最悪の値 約 11 秒・4節 T-T2〜T-T4"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "security-design.md 2節 権限の判定・6節 (a)"
+    },
+    {
+      "id": "NFR1.14",
+      "status": "OK",
+      "target": "security-design.md 6節 性質ベース・logical-components.md 1節 domain"
+    },
+    {
+      "id": "NFR1.15",
+      "status": "OK",
+      "target": "observability-design.md 2節 ログの設計"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "performance-design.md 1.2節・1.3節 数え方・scalability-design.md 4節・reliability-design.md 4節 T-B1〜T-B5"
+    },
+    {
+      "id": "NFR2.9",
+      "status": "OK",
+      "target": "scalability-design.md 1節・4節（REFERENCE の数の上限を置かず全体の上限で抑える）"
+    },
+    {
+      "id": "NFR2.10",
+      "status": "OK",
+      "target": "observability-design.md 1節・4節 指標と目盛り"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "scalability-design.md 2節 接続の使い方"
+    },
+    {
+      "id": "NFR3.4",
+      "status": "OK",
+      "target": "reliability-design.md 1.1節・4節 T-T1・T-T4"
+    },
+    {
+      "id": "NFR3.7",
+      "status": "OK",
+      "target": "reliability-design.md 2節 失敗の分け方・4節 T-F1"
+    },
+    {
+      "id": "NFR3.8",
+      "status": "OK",
+      "target": "observability-design.md 1節（ms-biz-target-db）・5節"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "security-design.md 6節 カバレッジ"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "security-design.md 6節 カバレッジ（packagesJudgedByTotal との突き合わせ）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "reliability-design.md 2節（新しい code を作らない）・4節 T-C3"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "reliability-design.md 3節 互換"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "reliability-design.md 3節 互換・4節 T-C2・scalability-design.md 2節"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "logical-components.md 1節（新しい依存を足さない）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "security-design.md 2節 403 の同一性・6節"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "security-design.md 3節 SQL の組み立て・6節 (b)"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "security-design.md 4節 入力と読む量の上限"
+    },
+    {
+      "id": "NFR2.8",
+      "status": "OK",
+      "target": "performance-design.md 1.1節〜1.3節・5節 メモリ（試し 3.9 MB）・scalability-design.md 5節・reliability-design.md 4節 T-B2〜T-B6"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "security-design.md 5節 漏えいの防ぎ・6節 (d)"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "security-design.md 5節（RowQueryFailure でメッセージを捨てる）・reliability-design.md 4節 T-T1"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "security-design.md 3節（ContainsPattern）・6節 (e)"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "security-design.md 1節 出口・6節 (f)"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "security-design.md 4節 値の長さ・6節 (g)・reliability-design.md 4節 T-B6"
+    },
+    {
+      "id": "NFR1.10",
+      "status": "OK",
+      "target": "security-design.md 6節 (h)・reliability-design.md 4節 T-B9"
+    },
+    {
+      "id": "NFR1.11",
+      "status": "OK",
+      "target": "security-design.md 6節 (i)・reliability-design.md 4節 T-B7・T-B8・T-B9・performance-design.md 2節"
+    },
+    {
+      "id": "NFR1.12",
+      "status": "OK",
+      "target": "security-design.md 3節（search だけ・SpotBugs の除外を足さない）・6節 (k)・logical-components.md 1節"
+    },
+    {
+      "id": "NFR1.13",
+      "status": "OK",
+      "target": "security-design.md 1節 入口・6節 API の分類"
+    },
+    {
+      "id": "NFR2.7",
+      "status": "OK",
+      "target": "scalability-design.md 4節 表示の長さ・reliability-design.md 4節 T-B10"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "scalability-design.md 2節（内部DB を返してから借りる）"
+    },
+    {
+      "id": "NFR3.6",
+      "status": "OK",
+      "target": "reliability-design.md 2節 失敗の後・4節 T-T3"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "reliability-design.md 3節 互換・4節 T-C1"
+    }
+  ]
+}

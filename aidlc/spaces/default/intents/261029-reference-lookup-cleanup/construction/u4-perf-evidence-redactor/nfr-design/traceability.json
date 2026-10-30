@@ -1,0 +1,92 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-perf-evidence-redactor",
+  "upstream_ids": [
+    "NFR8.66",
+    "NFR8.61",
+    "NFR8.62",
+    "NFR8.68",
+    "NFR8.69",
+    "NFR8.63",
+    "NFR8.64",
+    "NFR8.65",
+    "NFR8.67",
+    "NFR8.70",
+    "NFR8.71",
+    "NFR5.61",
+    "NFR5.62",
+    "NFR5.63"
+  ],
+  "coverage": [
+    {
+      "id": "NFR8.66",
+      "status": "OK",
+      "target": "security-design.md 5.2節（定数 MAX_INPUT_BYTES 64 MiB、stat で読む前に判定、ちょうどは受け＋1 バイトでコード 2）・8.2節（evidence の検査で上限超えをパスと大きさだけ表示して失敗）・7.2節（境界の例のテスト）"
+    },
+    {
+      "id": "NFR8.61",
+      "status": "OK",
+      "target": "security-design.md 9節（README の唯一の入口と2つの呼び方、cp で置く手順を書かない）・logical-components.md 2節と LC10"
+    },
+    {
+      "id": "NFR8.62",
+      "status": "OK",
+      "target": "security-design.md 2.1節（共有の形の定数と redactJwt、冪等の根拠）・2.2節（JSON の木の明示の積み上げ、setup_data の伏せ字、キーの衝突）・2.3節（テキストの口は同じ関数を全体に1回）・logical-components.md LC1・LC3"
+    },
+    {
+      "id": "NFR8.68",
+      "status": "OK",
+      "target": "security-design.md 8節（evidence の下の通常のファイル全部、NUL はファイル全体で判定、バイナリの拡張子の一覧 9 つ以外の NUL 混じりは失敗 Q1: A、飛ばしたパスの表示、導入の前の一度の実行）・logical-components.md 3節（verifySecurity の perfEvidenceScan）"
+    },
+    {
+      "id": "NFR8.69",
+      "status": "OK",
+      "target": "security-design.md 9節（置いた後に --scan と gitleaks dir を流し 0 件でコミットを提案する手順。実際の summary json での確かめは Build and Test、12節）"
+    },
+    {
+      "id": "NFR8.63",
+      "status": "OK",
+      "target": "security-design.md 3節（置換を呼ばない findResidual と findUnredactedSetup を書き出す直前に当て、見つかれば一時ファイルを作る前にコード 4）・logical-components.md LC2"
+    },
+    {
+      "id": "NFR8.64",
+      "status": "OK",
+      "target": "security-design.md 4節（報告の部品だけを通す、パスと道は redactJwt を通す、実行環境の文言を出さず位置の数字だけ、性質のテストは種と道だけ）・logical-components.md LC5"
+    },
+    {
+      "id": "NFR8.65",
+      "status": "OK",
+      "target": "security-design.md 5.3節（同じディレクトリの一時ファイルを wx で作り名前を替える、失敗と中断で消す）・6節（失敗の時点ごとの出力と一時ファイルの状態）"
+    },
+    {
+      "id": "NFR8.67",
+      "status": "OK",
+      "target": "security-design.md 5.1節（口ごとの引数、出力の親を realpath で解いて evidence を求める、入力と出力が同じならコード 1）・2.3節（.json の出力と summary json の入力はコード 1、空・不正な UTF-8・NUL はコード 2）"
+    },
+    {
+      "id": "NFR8.70",
+      "status": "OK",
+      "target": "security-design.md 9節（README の台本の決まり）・10節（残る穴の守り）・12節（コード生成で scenarios.js を読み取りで確かめる）"
+    },
+    {
+      "id": "NFR8.71",
+      "status": "OK",
+      "target": "security-design.md 7.1節（JWT の形は実行の時に組み立てる手伝いの関数だけから作る）・12節（テストのソースの検索）・logical-components.md 4節"
+    },
+    {
+      "id": "NFR5.61",
+      "status": "OK",
+      "target": "security-design.md 7.2節（性質 (1)〜(5)・(t1)〜(t3) と team.md の伏せ字のテストの対応）・7.3節（fc.check で種と道だけを表示）"
+    },
+    {
+      "id": "NFR5.62",
+      "status": "OK",
+      "target": "security-design.md 7.4節・logical-components.md 4節 P1〜P4・P7（テストのパス、include の変更、道具の読み込み、node の環境、型の手当てをコード生成の計画の義務とする。passed の件数は Build and Test）"
+    },
+    {
+      "id": "NFR5.63",
+      "status": "OK",
+      "target": "logical-components.md 4節 P5・P6（coverage.include の扱いと理由、下限と除外を変えない、リンタ・型・ライセンスヘッダー・フォーマットの検査への入れ方をコード生成の計画の義務とする）"
+    }
+  ]
+}
