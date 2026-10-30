@@ -10,6 +10,7 @@
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 - 2026-10-30T00:00:00Z — 機能設計の traceability.json の AC3.5.1〜AC3.5.4 の行の追加は、まずシェルの JSON の書き換えで行い、その後に Edit で触り直した（依頼の「Write・Edit だけ」との差。中身は同じ）。センサーは通過。
+- 2026-10-30T00:30:00Z — 承認の場の Request Changes（依頼者の決定: 各指摘の提案どおり）で R-01〜R-05 を直した。新しい ID は足さず、既存の NFR1.22・NFR1.29・NFR2.22・NFR1.32 と「測らない範囲」「後の段に回すこと」を直した。ログの出し場所は、対象DB の例外を結果の型に変える境界の1か所に決めた（NFR1.32 の持ち主に NFR 設計を足した）。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->

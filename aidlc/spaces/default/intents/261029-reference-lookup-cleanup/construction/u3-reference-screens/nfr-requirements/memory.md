@@ -9,6 +9,7 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-10-30T01:00:00Z — 承認の場の Request Changes（依頼者の決定: 各指摘の提案どおり）で直した。NFR5.43 を D39 に合わせ（共有の見本の DSL に参照の表を足す・E2E 180 の全件の通過・本数に数えない・初期管理者と見本の行は変えない）、NFR2.44 に業務データの画面の chunk の測り方（manifest.json の `src/features/tables/` の項目と imports を gzip で合計）を足し、NFR4.45 に読み上げの決めの後で NFR4.44 の状態の一覧を確かめ直すことを足した。枝番は変えていない。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->

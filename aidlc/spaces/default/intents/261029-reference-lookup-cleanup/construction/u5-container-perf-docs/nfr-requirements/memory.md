@@ -10,6 +10,7 @@
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 - 2026-10-30T00:00:00Z — 依頼の文の `perf/thresholds-test.sh` は実際には `perf/k6/thresholds-test.sh` にあり、`./gradlew verify` に入っていないため、整理の後に手で流して記録する要件（NFR8.88）にした。
+- 2026-10-30T00:30:00Z — 承認の場の Request Changes（依頼者の決定: 指摘ごとの提案どおりに直す）で、k6 inspect の流し方を K6_IMAGE の docker run（--env-file なし）に固定し閾値と場面の定義だけを比べる形（NFR8.87）、dsl-mixed-memory.sh と README の線の値の前後の差（NFR8.88）、作り直しの前後の docker image ls（NFR8.83）、入れ替えの前のコンテナの確かめと停止・lgtm のボリュームの引き継ぎの確かめと 0.34.0 への戻し（NFR8.82）、README の整理の後の検索（NFR8.89）、アプリが止まっていたときは起動して確かめる既定（NFR8.84）を足した。ID は増やしていない。
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->

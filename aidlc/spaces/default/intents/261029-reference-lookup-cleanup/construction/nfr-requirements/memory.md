@@ -36,6 +36,14 @@
 - 2026-10-30T00:00:00Z — 全体の上限 10 秒の締め切りは、U1 と同じく ⑩ の最初の読み取りの前に決め、接続を借りる待ちは含めない（最悪約 11 秒＋前の待ち）と読んだ。
 <!-- aidlc-wave-memory:u2-reference-write-check:2cd382bdca349cfd2fdefaa861805e7d57f54e20046b9935e0aa312a42828763 -->
 
+
+- 2026-10-30T00:00:00Z — ui の単位のため成果物は performance・security・tech-stack・traceability の4つ。NFR1・NFR4〜NFR7・NFR9 を security-requirements.md に節で分けて書き、NFR3（接続）と NFR8（運用）は N/A とした。枝番は .41 から（NFR1.41〜1.47・2.41〜2.45・4.41〜4.45・5.41〜5.43・6.41〜6.42・7.41・9.41、計 29）。
+<!-- aidlc-wave-memory:u3-reference-screens:932cc04f0f5a8934ddaa46834f94cb844c553d2dbceae885a8360c334063e465 -->
+
+
+- 2026-10-30T00:00:00Z — Q1: A により画面の側の時間の目標は置かず、NFR2.41 は「検索中」→結果の切り替えを画面のテストで確かめる要件にした。
+<!-- aidlc-wave-memory:u3-reference-screens:ebaae2a89bc6976b84add7af056c98954465773e024e7ec88be279b780370b8b -->
+
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
@@ -54,6 +62,26 @@
 
 - 2026-10-30T00:00:00Z — 機能設計の traceability.json の AC3.5.1〜AC3.5.4 の行の追加は、まずシェルの JSON の書き換えで行い、その後に Edit で触り直した（依頼の「Write・Edit だけ」との差。中身は同じ）。センサーは通過。
 <!-- aidlc-wave-memory:u2-reference-write-check:93b857c99c53b390ae756da5d04c33e4a6192a87352217d44abaf0511b8fcc5b -->
+
+
+- 2026-10-30T01:00:00Z — NFR 要件の承認の場の Request Changes（依頼者の決定: 指摘の示した直しを採る）で、NFR5.62・NFR5.63 にテストの置き場と vitest.config.ts の include・coverage.include の扱いをコード生成の計画で明記することと Build and Test での passed の件数の記録を、NFR8.68 に NUL で飛ばしたファイルのパスの表示とテキストの拡張子（.json・.md・.txt・.log・.tsv）なら失敗にすることを足した。後者は機能設計の BR4.2 を狭める変更で、機能設計の文書は書き換えていない。
+<!-- aidlc-wave-memory:u4-perf-evidence-redactor:e6e9f0be1e85f8dca88925bd10a00391ff122bcd2d025c1fd70ae3ae84fe3bed -->
+
+
+- 2026-10-30T00:20:00Z — 承認の場の Request Changes（依頼者の決定: 各指摘の提案どおり）で直した: 読み取り側の値の長さの上限（10,001 文字に切って読み、10,000 文字を超える行を選択肢・ピッカーから外し check で無いとする。F1: A）を NFR2.8 の要件にし先送りをやめた（機能設計 BR7.3 との差を補足に記録）、perf の読み取りのプールを前の Intent と同じ 5 に固定し MySQL・MariaDB の部分一致が線を超えうることと緩めずに諮ることを NFR2.3・NFR3.3 に書いた、NFR1.1 の 403 の利用者にラベルのカラム NONE・使える検索の条件なし・valueColumn がバイナリか password を足した、NFR3.5 に時間切れの最悪約 11 秒と k6 の p95 の対象外を書いた。
+<!-- aidlc-wave-memory:u1-reference-read:cb8a0d412691260de03c22ab3565e06d740b40474f602239e36bb52b1324ebb5 -->
+
+
+- 2026-10-30T00:30:00Z — 承認の場の Request Changes（依頼者の決定: 各指摘の提案どおり）で R-01〜R-05 を直した。新しい ID は足さず、既存の NFR1.22・NFR1.29・NFR2.22・NFR1.32 と「測らない範囲」「後の段に回すこと」を直した。ログの出し場所は、対象DB の例外を結果の型に変える境界の1か所に決めた（NFR1.32 の持ち主に NFR 設計を足した）。
+<!-- aidlc-wave-memory:u2-reference-write-check:38cb994c743cc5fc873707d715ff68e960d8fb730201f662dd5dbc3f25a4bab8 -->
+
+
+- 2026-10-30T00:30:00Z — 承認の場の Request Changes（依頼者の決定: 指摘ごとの提案どおりに直す）で、k6 inspect の流し方を K6_IMAGE の docker run（--env-file なし）に固定し閾値と場面の定義だけを比べる形（NFR8.87）、dsl-mixed-memory.sh と README の線の値の前後の差（NFR8.88）、作り直しの前後の docker image ls（NFR8.83）、入れ替えの前のコンテナの確かめと停止・lgtm のボリュームの引き継ぎの確かめと 0.34.0 への戻し（NFR8.82）、README の整理の後の検索（NFR8.89）、アプリが止まっていたときは起動して確かめる既定（NFR8.84）を足した。ID は増やしていない。
+<!-- aidlc-wave-memory:u5-container-perf-docs:9208f4d66014389662295de30feaccdaed86940cf63013fde72a16cdfb2920f1 -->
+
+
+- 2026-10-30T01:00:00Z — 承認の場の Request Changes（依頼者の決定: 各指摘の提案どおり）で直した。NFR5.43 を D39 に合わせ（共有の見本の DSL に参照の表を足す・E2E 180 の全件の通過・本数に数えない・初期管理者と見本の行は変えない）、NFR2.44 に業務データの画面の chunk の測り方（manifest.json の `src/features/tables/` の項目と imports を gzip で合計）を足し、NFR4.45 に読み上げの決めの後で NFR4.44 の状態の一覧を確かめ直すことを足した。枝番は変えていない。
+<!-- aidlc-wave-memory:u3-reference-screens:855c2d4ac651458daeb752ca1acab2ab34b7a91fb912f416d9efd1b7d1104782 -->
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
@@ -85,3 +113,6 @@
 
 - 2026-10-30T00:00:00Z — 外部キーの無い参照先では確かめと保存の間のすき間を守るものが無い。既知の制約として受け入れる形で書いたため、承認の場で確かめたい。
 <!-- aidlc-wave-memory:u2-reference-write-check:2dd77e552fbac5f8e6d22a265d8c0a02eda5d4df2cebbb125cd4db2897733d2e -->
+
+- 2026-10-30T00:00:00Z — NFR 設計に回した論点: 作成の画面を開いた直後の D13 の誤りの role="alert" の読み上げ（NFR4.45）、ラベルの1件読みの同時の数、200 件の radio の描画、検索の「時間がかかっています」の知らせ（NFR2.42・NFR2.43）。
+<!-- aidlc-wave-memory:u3-reference-screens:dbbf099b230dfe566d98bdf3cdf16bab9d72906ed600f1e39bc3068cf768b63b -->
