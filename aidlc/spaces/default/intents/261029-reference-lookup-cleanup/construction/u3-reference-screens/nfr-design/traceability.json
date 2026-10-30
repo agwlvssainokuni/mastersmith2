@@ -1,0 +1,152 @@
+{
+  "stage": "nfr-design",
+  "unit": "u3-reference-screens",
+  "upstream_ids": [
+    "NFR1.41",
+    "NFR1.47",
+    "NFR2.41",
+    "NFR2.45",
+    "NFR4.41",
+    "NFR4.45",
+    "NFR5.41",
+    "NFR5.43",
+    "NFR6.41",
+    "NFR6.42",
+    "NFR7.41",
+    "NFR9.41",
+    "NFR2.42",
+    "NFR2.43",
+    "NFR2.44",
+    "NFR1.42",
+    "NFR1.43",
+    "NFR1.44",
+    "NFR1.45",
+    "NFR1.46",
+    "NFR4.42",
+    "NFR4.43",
+    "NFR4.44",
+    "NFR5.42"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.41",
+      "status": "OK",
+      "target": "security-design.md 1.1（文字で描く・XSS の見本の共有）"
+    },
+    {
+      "id": "NFR1.47",
+      "status": "OK",
+      "target": "security-design.md 1.7（SECRET_ENV_NAMES・recordSecretValues の businessValue）・logical-components.md L9"
+    },
+    {
+      "id": "NFR2.41",
+      "status": "OK",
+      "target": "performance-design.md 1節（Q4: A。検索中だけ・useSlowNotice を使わない・待つ間の aria-busy）"
+    },
+    {
+      "id": "NFR2.45",
+      "status": "OK",
+      "target": "performance-design.md 5節（caffeinate・pmset、1.5 倍の線、verify と CI の時間）"
+    },
+    {
+      "id": "NFR4.41",
+      "status": "OK",
+      "target": "security-design.md 3.1（Modal のフォーカス・readOnly・radio のキーボード）"
+    },
+    {
+      "id": "NFR4.45",
+      "status": "OK",
+      "target": "security-design.md 2節（Q1: A。開いた直後は helperText、保存を押した後は error。FormField のソースで確かめ依頼不要）と 3.4 の状態 7・8 でそろえた"
+    },
+    {
+      "id": "NFR5.41",
+      "status": "OK",
+      "target": "security-design.md 4節（足した確かめ・手で解く Promise・waitFor）"
+    },
+    {
+      "id": "NFR5.43",
+      "status": "OK",
+      "target": "security-design.md 4節・3.4（190 を1本・195 は数えない・共有の DSL と 180 の確かめ・前提の行）"
+    },
+    {
+      "id": "NFR6.41",
+      "status": "OK",
+      "target": "security-design.md 5節（messages.ts の日英・この段で鍵を足さない）"
+    },
+    {
+      "id": "NFR6.42",
+      "status": "OK",
+      "target": "security-design.md 5節（code・reason から文を選ぶ・知らない code は汎用の文）"
+    },
+    {
+      "id": "NFR7.41",
+      "status": "OK",
+      "target": "security-design.md 6節（一覧・詳細は reference を読まない・知らない値は入力不可）"
+    },
+    {
+      "id": "NFR9.41",
+      "status": "OK",
+      "target": "security-design.md 7節（依存を足さない・make-you-chic-ui への依頼なし）"
+    },
+    {
+      "id": "NFR2.42",
+      "status": "OK",
+      "target": "performance-design.md 2節（Q2: A。ラベルの1件読みは同時に 3 本まで・世代で捨てる）・logical-components.md L4・L5"
+    },
+    {
+      "id": "NFR2.43",
+      "status": "OK",
+      "target": "performance-design.md 3節（Q3: A。200 件の radio は部品のテストと E2E 195 の状態 12、時間の目標なし）"
+    },
+    {
+      "id": "NFR2.44",
+      "status": "OK",
+      "target": "performance-design.md 4節（lazy を保つ・check-bundle-size.mjs は変えず chunk は一時の手順で測る）"
+    },
+    {
+      "id": "NFR1.42",
+      "status": "OK",
+      "target": "security-design.md 1.2（値を置かない場所の表）・logical-components.md L6・L9"
+    },
+    {
+      "id": "NFR1.43",
+      "status": "OK",
+      "target": "security-design.md 1.3（固定の道と本文）・logical-components.md L1"
+    },
+    {
+      "id": "NFR1.44",
+      "status": "OK",
+      "target": "security-design.md 1.4（chooseFieldKind・入力不可の値を本文から外す）・logical-components.md L3・L7"
+    },
+    {
+      "id": "NFR1.45",
+      "status": "OK",
+      "target": "security-design.md 1.5（unknown で受けて写す・安全側に倒す）・logical-components.md L2"
+    },
+    {
+      "id": "NFR1.46",
+      "status": "OK",
+      "target": "security-design.md 1.6（referenceErrorKey と決めた文）"
+    },
+    {
+      "id": "NFR4.42",
+      "status": "OK",
+      "target": "security-design.md 3.2（見える文字で始まる名前・role の使い分け）"
+    },
+    {
+      "id": "NFR4.43",
+      "status": "OK",
+      "target": "security-design.md 3.3（部品ごとと状態ごとの vitest-axe）"
+    },
+    {
+      "id": "NFR4.44",
+      "status": "OK",
+      "target": "security-design.md 3.4（12 の状態・組・375px・差し替えの shapeCompare・前提の行）"
+    },
+    {
+      "id": "NFR5.42",
+      "status": "OK",
+      "target": "security-design.md 4節（fast-check は機能設計 D37 のまま・種の記録・thresholds）"
+    }
+  ]
+}
