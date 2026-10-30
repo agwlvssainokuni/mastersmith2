@@ -14,7 +14,7 @@ U5 で扱う「指標」は、lgtm と Mailpit が起きたかを見分ける確
 | ダッシュボードの読み込み | `docker/monitoring/dashboards/` のファイルごとの `uid`（今は `mastersmith-overview` の 1 つ）を Grafana の検索の API（形は仮: `/api/search?dashboardUIDs=<uid>`、匿名の Viewer）で数える | ファイルごとにちょうど 1 件 | ファイルの差し込み（provisioning）がボリュームの引き継ぎの後も働くことを見る。イメージが自前で持つダッシュボードは合否に入れない（全体の件数は参考の記録だけ） |
 | イメージの照合 | `docker inspect --format '{{.Config.Image}}'`・`{{.Image}}` と `docker image inspect --format '{{json .RepoDigests}}'` | タグが `compose.yaml` と同じで、`RepoDigests` のどれかが index のダイジェストで終わる | `team.md` の Deployment（入れ替えた後は毎回 `RepoDigests` を照らす）。判定は全体の文字列で行い、記録は先頭 12 文字でよい（2.4節） |
 | Mailpit の受信 | `127.0.0.1:1025` へ `example.com` の宛先で 1 通、`127.0.0.1:8025` の API で目印の語の件数 | 1 以上 | 受け手として作り直せたことを見る（2.5節） |
-| VM の空きメモリ | `colima ssh -- free -m` の `available` と `docker stats --no-stream` の名前と使用量 | 基準（仮: 1792 MiB）以上 | lgtm（上限 1536m）を作り直す前の関門（infrastructure-specification.md 4節） |
+| VM の空きメモリ | `colima ssh -- free -m` の `available` と `docker stats --no-stream` の名前と使用量 | 基準（仮: 1792 MiB）以上 | lgtm（上限 1536m）を作り直す前の関門（infrastructure-specification.md 4節）。記録には VM の合計（`total`）と A5a の実測値を含め、止めるものが尽きても足りなければ依頼者に諮る |
 | アプリの起動 | `/actuator/health` の状態コードと `status`、起動のログの救済の WARN の件数 | 200・`UP` | 確かめの相手が起きていること（2.7節）。起動を省いたときは理由を記録する |
 
 ## 2. lgtm の健全性の確かめの流れ
@@ -24,7 +24,7 @@ U5 で扱う「指標」は、lgtm と Mailpit が起きたかを見分ける確
 | 1 | イメージの照合（0.38.0 と index のダイジェスト） | `--force-recreate --no-deps` で作り直して確かめ直す。それでも一致しなければ戻し（R1） |
 | 2 | `/api/health` が 200・`database` が `ok` | 戻し（R1） |
 | 3 | ファイルの `uid` ごとに 1 件 | 戻し（R1） |
-| R2・R4 | 戻しの後も同じ 3 つ（照らす正は 0.34.0 のタグと A1 で記録した ID） | R2 で通らなければ R3（ボリュームを作り直す）、R4 で通らなければ R5（止めて記録し諮る） |
+| R2・R4 | 戻しの後も同じ 3 つ（照らす正は 0.34.0 のタグと A1 で記録した ID。A1 で `RepoDigests` を記録できていれば、それも併せて照らす。空のときは ID の一致を根拠とし、その旨を記録する。infrastructure-specification.md 2.3節） | R2 で通らなければ R3（ボリュームを作り直す）、R4 で通らなければ R5（止めて記録し諮る） |
 
 - `uid` は実行のときにファイルから読み、この文書の値を写して使わない（ダッシュボードのファイルが増えても同じ形で確かめるため）。
 - 応答の本文は記録しない。状態コード・`uid`・件数・判定だけを書く（security-design.md 3.1節・3.2節）。

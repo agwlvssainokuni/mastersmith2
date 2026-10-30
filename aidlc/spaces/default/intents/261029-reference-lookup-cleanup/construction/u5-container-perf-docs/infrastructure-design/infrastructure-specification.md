@@ -22,12 +22,12 @@
 
 ### 2.1 入れ替えの前と後
 
-「前」は、作業の時点で手元に残っているコンテナの形で、実行の A1 で `docker ps -a` と `docker inspect --format` で記録して決まる（この文書では値を決めない）。「後」は `compose.yaml` の今の値で、作り直しの照らす正である。
+「前」は、作業の時点で手元に残っているコンテナの形で、実行の A1 で `docker ps -a` と `docker inspect --format` で記録して決まる（この文書では値を決めない）。下の表の「前」の列は事実ではなく見立てで、A1 の記録で確定する。A1 の記録が見立てと違うときは、A2・A4・A8（止まっていたものは起こさない）の分岐を A1 の記録に従って選ぶ。「後」は `compose.yaml` の今の値で、作り直しの照らす正である。
 
-| Service | Role | 前（作業の時点で残る形） | 後（`compose.yaml` の正） | 確かめ |
+| Service | Role | 前（見立て（A1 で確定）） | 後（`compose.yaml` の正） | 確かめ |
 |---|---|---|---|---|
-| Mailpit（サービス `mailpit`） | 手元でメールを受けて画面で見せるだけの受け手（SMTP・HTTP） | 動いている。イメージは `compose.yaml` より古いものでありうる（タグとダイジェストは A1 で記録する） | `axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498`（複数アーキテクチャの index のダイジェスト） | `RepoDigests` に index のダイジェストが含まれる（security-design.md 2.4節）。`127.0.0.1:1025` へ `example.com` の宛先で 1 通送り、`127.0.0.1:8025` の API で件数 1 以上（2.5節） |
-| otel-lgtm（サービス `lgtm`） | 手元の監視（OTLP の受け手・Prometheus・Loki・Tempo・Grafana を 1 つにしたもの） | 止まっている。イメージは `grafana/otel-lgtm:0.34.0`（A1 で ID を記録する。無ければ記録して依頼者に諮る） | `grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084`（index のダイジェスト） | `RepoDigests` の照合、Grafana の `/api/health` が 200 で `database` が `ok`、ダッシュボードのファイルの `uid` ごとにちょうど 1 件（monitoring-design.md 2節） |
+| Mailpit（サービス `mailpit`） | 手元でメールを受けて画面で見せるだけの受け手（SMTP・HTTP） | 見立て: 動いている。イメージは `compose.yaml` より古いものでありうる（タグとダイジェストは A1 で記録する） | `axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498`（複数アーキテクチャの index のダイジェスト） | `RepoDigests` に index のダイジェストが含まれる（security-design.md 2.4節）。`127.0.0.1:1025` へ `example.com` の宛先で 1 通送り、`127.0.0.1:8025` の API で件数 1 以上（2.5節） |
+| otel-lgtm（サービス `lgtm`） | 手元の監視（OTLP の受け手・Prometheus・Loki・Tempo・Grafana を 1 つにしたもの） | 見立て: 止まっている。イメージは `grafana/otel-lgtm:0.34.0`（A1 で ID と、あれば `RepoDigests` を記録する。無ければ記録して依頼者に諮る） | `grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084`（index のダイジェスト） | `RepoDigests` の照合、Grafana の `/api/health` が 200 で `database` が `ok`、ダッシュボードのファイルの `uid` ごとにちょうど 1 件（monitoring-design.md 2節） |
 
 ### 2.2 各サービスの設定（変えないもの）
 
@@ -42,7 +42,8 @@
 
 | 戻し先 | 形 | 使う条件 | 残し方 |
 |---|---|---|---|
-| `grafana/otel-lgtm:0.34.0`（手元のイメージ） | A1 で ID を記録したイメージを、`compose.yaml` を書き換えずに作り直しのときだけ指す（仮: リポジトリの外の一時の上書きのファイルを `-f` で重ねる。戻しの後に消して記録する） | lgtm の照合か、`/api/health`・`uid` の確かめが通らないとき（security-design.md 4.1節 R1〜R5） | この単位では `docker image rm`・`docker image prune`・`docker system prune` を行わない。A1 と A9 の `docker image ls` を並べ、0.34.0 が残っていることを判定して記録する（4.2節） |
+| `grafana/otel-lgtm:0.34.0`（手元のイメージ） | A1 で ID（と、あれば `RepoDigests`）を記録したイメージを、`compose.yaml` を書き換えずに作り直しのときだけ指す（仮: リポジトリの外の一時の上書きのファイルを `-f` で重ねる。戻しの後に消して記録する） | lgtm の照合か、`/api/health`・`uid` の確かめが通らないとき（security-design.md 4.1節 R1〜R5） | この単位では `docker image rm`・`docker image prune`・`docker system prune` を行わない。A1 と A9 の `docker image ls` を並べ、0.34.0 が残っていることを判定して記録する（4.2節） |
+| （戻し先の同一性） | R2・R4 で作り直した後、コンテナのイメージ ID が A1 で記録した ID と一致することを照らし、A1 で `RepoDigests` を記録できていれば、その値がコンテナのイメージの `RepoDigests` に含まれることも併せて照らす（`team.md` の Deployment の「版のタグとダイジェストで固定」に合わせる）。A1 で `RepoDigests` が空だった（手元で作られた・取り込みの経緯で付かない）ときは、ID の一致を同一性の根拠とし、その旨を記録する | R2・R4 | — |
 | Mailpit の前のイメージ | 戻しには使わない（ボリュームを持たず、失うのは了承済みのメールだけ） | — | 消さずに残す（A9 の比べの対象） |
 
 ## 3. lgtm のボリュームの引き継ぎ
@@ -62,7 +63,8 @@
 | 同時に動きうるもの | アプリ（既定 2g）・lgtm（1536m）・Mailpit（256m）・対象DB の見本（512m〜768m） | `compose.yaml` |
 | 基準（仮） | `colima ssh -- free -m` の `available` が 1792 MiB（lgtm の上限 1536 MiB＋余裕 256 MiB）以上。値はコード生成の計画で決める | security-design.md 2.8節 |
 | 足りないとき | アプリ以外を、使い捨ての環境 → 対象DB の見本 → Mailpit（A4 の後）の順に 1 つずつ止めて確かめ直す。止めるものが無くなっても足りなければ A5b に進まず依頼者に諮る | security-design.md 2.8節 |
-| 記録 | `available` の値・基準・判定・止めたコンテナの名前だけ | security-design.md 3.1節 |
+| 記録 | VM の合計メモリ（`free -m` の `total`）・A5a で読んだ `available` の実測値・基準・判定・止めたコンテナの名前だけ | security-design.md 3.1節。VM の合計は R-03 の承認の場の決定で足した |
+| コード生成の計画への写し | 基準の値を計画で決めるときは、VM の合計と A5a の実測値を記録に含めることと、上の「足りないとき」の手順（アプリ以外を、使い捨ての環境 → 対象DB の見本 → Mailpit（A4 の後）の順に 1 つずつ止めて確かめ直す。止めるものが無くなっても足りなければ A5b に進まず依頼者に諮る）を、計画の義務としてこのままの文で写す | 承認の場の決定（R-03） |
 
 ## 5. 触れる perf の文書と台本
 
@@ -98,10 +100,20 @@
 
 | 段 | 回すこと |
 |---|---|
-| コード生成（計画） | A0〜A9・R1〜R5・B0〜B4 の実際のコマンドの列。VM の空きの基準の値。0.34.0 を指す一時の上書きのファイルの形と置き場。記録のファイルの置き場と名前。外の置き場の名前 |
+| コード生成（計画） | A0〜A9・R1〜R5・B0〜B4 の実際のコマンドの列。VM の空きの基準の値（VM の合計と A5a の実測値を記録に含め、4節の「足りないとき」の手順をそのまま写す）。R2・R4 の照合に、A1 で記録した `RepoDigests` があれば併せて照らす手順（2.3節）。0.34.0 を指す一時の上書きのファイルの形と置き場。記録のファイルの置き場と名前。外の置き場の名前 |
 | コード生成 | 依頼者の了承（A0）の後の入れ替えの実行と記録、perf の整理と前後の比べ。戻した（R1〜R5）ときは `code-summary.md` に書く |
 | Build and Test | 整理した `thresholdsFor` に k6 の新しい場面の線を足して流す |
 | Observability Setup（後の Intent を含む） | R3 でボリュームを作り直したとき、または R5 で止めたときの、手元の監視の確かめ直し |
+
+## 9. 承認の場の決定
+
+段の承認の場で、依頼者は Request Changes を選び、レビュー（`reviews/review-01.md`）の Minor 3 件のすべてについて、指摘の直し方のとおりに直すと決めた。
+
+| 指摘 | 決定 | 直した場所 |
+|---|---|---|
+| R-01（2.1節の「前」の断定） | 「前」の列を「見立て（A1 で確定）」と明記し、A1 の記録が違うときは A1 に従って A2・A4・A8 の分岐を選ぶと書く | 2.1節 |
+| R-02（戻し先の同一性） | R2・R4 の照合に、A1 で記録した `RepoDigests` があれば併せて照らすことを足す（空のときは ID の一致を根拠とし、その旨を記録する） | 2.1節・2.3節・8節、monitoring-design.md 1節の R2・R4 の行 |
+| R-03（VM のメモリの関門） | 記録に VM の合計と A5a の実測値を含め、尽きたときに依頼者に諮る手順をコード生成の計画の義務としてそのまま写す | 4節・8節、monitoring-design.md の VM の空きメモリの行 |
 
 ## Assumptions & Open Questions
 

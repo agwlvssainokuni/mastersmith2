@@ -93,7 +93,7 @@ U1 の 4節（使い捨てのアプリ・種・対象DB のメモリ・流す順
 |---|---|---|
 | 1 | U1 の読み取りの場面（U1 の 4.4 の 1） | 書き込みの後の読み取りは悪い側に寄る |
 | 2 | `refCreateChecked` | U2 の合否の場面（NFR2.21・NFR2.22） |
-| 3 | 既存の書き込みの場面（`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`、その後に `bizCreateLarge`） | 参照の無い作成・更新が遅くならないことを並べて記録する（NFR2.23）。`bizCreateLarge` の前はアプリのコンテナを作り直して `memory.peak` を消す（既存の手順） |
+| 3 | 既存の書き込みの場面（`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`、その後に `bizCreateLarge`） | 参照の無い作成・更新が遅くならないことを並べて記録する（NFR2.23）。前の Intent の値と並べるときは、読み取りのプールの上限が前の Intent の回の 10 から今回の 5 に変わっていること（4.1）を記録に書く。既存の書き込みの場面だけを上限 10 の回でも1回流すかは、Build and Test の計画で決める。`bizCreateLarge` の前はアプリのコンテナを作り直して `memory.peak` を消す（既存の手順） |
 | 4 | 書き込みの後に読み取りの値が要るときは、対象DB を作り直して種を入れ直す | `perf/README.md` の見直しの案 |
 
 `refCreateChecked` と既存の書き込みの場面の前後（2 と 3）は、どちらも書き込みのため入れ替えてもよい。決めるのは Build and Test の計画。台本全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったことを確かめる。試験の間は配備したアプリを止める。
@@ -117,7 +117,17 @@ U1 の 4節（使い捨てのアプリ・種・対象DB のメモリ・流す順
 
 ## 後の段に回すこと
 
-- **Code Generation（B3）**: 4.2 の参照元の表と DSL の options（U1 の分の後に足す。権限の文より前に作る）、`perf/k6/scenarios.js` の `refCreateChecked`、`perf/README.md` に U2 の場面の手順（流す順・2つのプールの時間切れの記録・参照元の表が空の確かめ）を足す。
-- **Build and Test**: 場面の名前の確定、`k6 inspect --include-system-env-vars`、短い試し走り（1 VU・10 秒）、種を入れた後の表の大きさ、流す順の決定。
+- **Code Generation（B3）**: 4.2 の参照元の表と DSL の options（U1 の分の後に足す。権限の文より前に作る）、`perf/k6/scenarios.js` の `refCreateChecked`、`perf/README.md` に U2 の場面の手順（流す順・2つのプールの時間切れの記録・参照元の表が空の確かめ）を足す。参照元の表が空であることの確かめは、`perf/biz/make-biz-seed.sh` の最後の行の数を出す SELECT（今は `biz_item`・`biz_pair`・`biz_wide`・`biz_ref` の4表に固定）に参照元の表を足すか、`perf/README.md` に空の確かめのコマンドを書くかのどちらかで行う（レビューの R-03）。
+- **Build and Test**: 場面の名前の確定、`k6 inspect --include-system-env-vars`、短い試し走り（1 VU・10 秒）、種を入れた後の表の大きさ、流す順の決定、既存の書き込みの場面を読み取りのプールの上限 10 の回でも1回流すか（4.4 の 3、レビューの R-02）。
 - **Performance Validation**: NFR2.21 の合否（3種類の DB）、2つのプールの時間切れの累計、`bizCreate`・`bizUpdate`・`bizWritePoolLimit` を前の Intent の結果と並べる（NFR2.23）。
 - **Deployment Pipeline**: `cicd-pipeline.md` 3節・4節（`.env` を変えない、戻しはイメージだけ）を前の Intent の配備の手順に重ねる。
+
+## 承認の場の決定
+
+段の承認の場で依頼者は Request Changes を選び、この単位のレビュー（`reviews/review-01.md`、READY、Minor 3件）の指摘をすべて、示された直し方どおりに直すと決めた。
+
+| 指摘 | 直した所 |
+|---|---|
+| R-01 | `traceability.json` の `upstream_ids` と `coverage` に NFR2.29・NFR3.28（OK、`monitoring-design.md` 1節・3節・6節、確かめは Observability Setup）と NFR1.27（Deferred、Code Generation）を足した。センサーが作った `upstream_ids` の一覧から漏れていたため |
+| R-02 | 4.4 の 3 に、前の Intent の値と並べるときに読み取りのプールの上限が 10 から 5 に変わったことを記録に書くこと、上限 10 の回も流すかは Build and Test の計画で決めることを足した |
+| R-03 | 「後の段に回すこと」の Code Generation（B3）に、行の数を出す SELECT に参照元の表を足すか README に空の確かめのコマンドを書くことを足した |

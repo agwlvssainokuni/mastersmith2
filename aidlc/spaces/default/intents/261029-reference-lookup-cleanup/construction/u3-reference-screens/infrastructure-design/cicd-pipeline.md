@@ -28,7 +28,7 @@ U3 を統合して配備するまでの流れ。CI の仕組みと配備の手�
 | 流し方 | `./gradlew e2eTest`（`:backend:bootWar` に依存して WAR を作り、Playwright の `webServer` で起動。`workers: 1`・`fullyParallel: false` で全ファイルを順に流す）。ファイルを選ぶときは `-Pe2e.files=e2e/190-reference-picker-flow.e2e.ts,e2e/195-reference-picker-accessibility.e2e.ts` |
 | 前提 | colima（`DOCKER_HOST`）、`npx playwright install chromium`、Mailpit（`docker compose --profile mail up -d mailpit`）、見本の PostgreSQL を上乗せの compose で `127.0.0.1:15432` に開く（`infrastructure-specification.md` 2節）。`e2eTest` は届かなければ起動の手順を示して失敗し、起動・停止はしない |
 | 流す時点 | U3 は frontend の本体（`frontend/src` のテスト以外）に触れるため、**統合の前**に E2E の全件を流して通す（`team.md` の Way of Working）。あわせて Build and Test（Intent の最後）とリリース（`main` への取り込み）の前にも流す |
-| 180 の確かめ | 共有の DSL を `support/` へ移して参照の表を足すため、180 の全件が通ることを同じ実行で確かめる |
+| 180 の確かめ | 共有の DSL を `support/` へ移して参照の表を足すため、180 の全件が通ることを同じ実行で確かめる。足す表とメニューが 180 の確かめ（メニューの名前での探し方・表の見出しなど）に響かないことを Code Generation の確認項目に入れる（`infrastructure-specification.md` 2節、R-02） |
 | 資格情報 | 実行のスキーマの一時のロールの資格情報は `e2eTest` のプロセスの環境変数だけで渡し、`webServer.env` に置かない。報告の部品（`playwright-secret-check-reporter.ts`）が json の報告と `test-results/` を検索する。190 の参照先のラベルを `businessValue` として値のファイルに書く（U3-NFR1.47） |
 | 保存を起こさない確かめ | 195 の差し替えで作る状態（4〜9・12）が作成・更新の POST を差し替えの外へ出していないことを、Playwright の要求の記録で数える（`security-design.md` 3.4、R-04） |
 | axe | 規則と要素を外さない（`project.md` の Forbidden）。状態 7 の axe を先に流し、`color-contrast` が出た組があれば make-you-chic-ui への依頼の要否を依頼者に諮る（R-03） |
@@ -60,8 +60,9 @@ U3 を統合して配備するまでの流れ。CI の仕組みと配備の手�
 |---|---|
 | 配備の形 | 既存の手順のまま。WAR を作り（`./gradlew :backend:bootWar`）、`mastersmith:local` のイメージを作り直して `app` のコンテナを入れ替える。入れ替えの後に `docker inspect` でコンテナのイメージ ID と `mastersmith:local` の ID の一致を確かめ、食い違えば `--force-recreate --no-deps`（`project.md` の学び） |
 | U3 の分の差 | 画面の静的なファイルだけ。移行・`.env`・compose の変更は無い。ヘルスチェックとスモークテストの中身は U1・U2 と合わせて Deployment Pipeline で決める |
-| 戻し | **イメージだけの戻し**（直前の版のイメージで `app` を作り直す）。U3 の分は DB の形と設定を変えないため、内部DB の複写を戻す必要が無い |
-| 戻しの注意 | 直前の版の画面は参照の部品を持たないため、戻すと作成・更新の画面の参照のカラムは前の形（文字の入力）に戻る。U1・U2 のサーバー側を同時に戻すかは、Intent の全体の戻しの手順（Deployment Pipeline）で決める |
+| 戻しの単位 | 画面の静的なファイルは U1・U2 のサーバー側と同じ実行可能 WAR（`backend/build.gradle.kts` の `bootWar` が `frontend/dist` を同梱）に入り、イメージも1つ（`mastersmith:local`）のため、**戻しは WAR とイメージの単位で U1・U2・U3 が必ず一緒に戻る**。U3 だけを戻す・U1・U2 のサーバー側だけを残す、という戻し方は無い |
+| 戻し | 直前の版のイメージで `app` を作り直す。U3 の分は DB の形と設定を変えないが、U1・U2 の分に移行・`.env` の差があればイメージだけの戻しでは足りない。U1・U2 の移行・`.env` の差を踏まえた戻しの手順（内部DB の複写を戻すか、`.env` を戻すかを含む）は、Deployment Pipeline で Intent の全体の手順として一本にまとめる |
+| 戻しの注意 | 直前の版の画面は参照の部品を持たないため、戻すと作成・更新の画面の参照のカラムは前の形（文字の入力）に戻り、同時に U1・U2 のサーバー側も前の版に戻る |
 
 ## 6. 環境の昇格
 
@@ -85,7 +86,14 @@ U3 を統合して配備するまでの流れ。CI の仕組みと配備の手�
 
 - **Code Generation**: 2節の前提で 190・195 を書き、統合の前に E2E の全件を流して通す。変更の前の E2E の全体の時間を最初の実行で測る。chunk の大きさを前と後で記録する。状態 7 の axe を先に流す（R-03）。
 - **Build and Test**: E2E の全件の通過と 195 の違反 0 件の件数、axe-core の版が lockfile で1つにそろっていること、`verify`・CI・E2E の時間、`features/tables` のカバレッジの値。
-- **Deployment Pipeline**: U3 の分の差（画面だけ・イメージだけの戻し・戻したときの画面の形）を U1・U2 の差と合わせて手順にする。
+- **Deployment Pipeline**: U1・U2・U3 は同じ WAR とイメージで一緒に戻るため、U1・U2 の移行・`.env` の差を踏まえた戻しの手順を Intent の全体で一本にまとめる。U3 の分の差（画面の静的なファイルだけ・戻したときの画面の形）をそこに入れる。
+
+## 承認の場の決定
+
+依頼者は Infrastructure Design の承認の場で Request Changes を選び、レビュー（`reviews/review-01.md`）の指摘 R-01〜R-04 の直し方をすべてそのまま当てると決めた。この文書には次を当てた。
+
+- R-01: 5節の戻しを、WAR とイメージの単位で U1・U2・U3 が必ず一緒に戻る形に書き直し、U1・U2 の移行・`.env` の差を踏まえた戻しの手順は Deployment Pipeline で一本にまとめると書いた。
+- R-02: 2節の 180 の確かめに、足す表とメニューが 180 の確かめに響かないことを Code Generation の確認項目に入れると書いた（判定の仕方は `infrastructure-specification.md` 2節）。
 
 ## Sources
 

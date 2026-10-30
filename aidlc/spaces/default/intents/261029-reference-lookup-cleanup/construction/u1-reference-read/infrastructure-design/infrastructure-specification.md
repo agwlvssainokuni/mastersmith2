@@ -50,6 +50,8 @@ U1（参照先の読み取り）が要る基盤を、配備（開発者の PC �
 | 1 秒未満（`0`・負の値・`500ms`） | 起動は続く。`TargetDbSettings` の点検で `Invalid` になり対象DB を使わない（業務データの読み書き・DSL の生成と照合が使えない）。WARN には項目名（`QUERY_TIMEOUT_REFERENCE`・`REFERENCE_READ_TOTAL`）だけを出し、値は出さない | `.env` の該当の行を消す（または 1 秒以上に直す）。`.env` を開いて値を表示せず、項目名の有無で確かめる。アプリのコンテナを作り直す（`--force-recreate --no-deps`）。イメージは替えない |
 | `Duration` として読めない（`abc` など） | 既存の時間の設定と同じく、結び付けで起動が止まる | 同じく `.env` の行を直してから起動し直す |
 
+1 秒未満の値は、任意の調整用の設定の打ち間違いでも業務データの読み書き全体に及ぶ。そのため配備では、点検の WARN の項目名の確かめに加えて、既存の業務データの一覧が 200 で返ることを必ず確かめる（`cicd-pipeline.md` 3節の順 5・順 6。R-01）。警報は足さない。
+
 どちらの設定も秘密ではない。資格情報・接続先は今の `MASTERSMITH_TARGET_DB_*` のまま増えない（`project.md` の Forbidden・Mandated）。
 
 ## 3. 基盤のサービス
@@ -72,7 +74,7 @@ U1（参照先の読み取り）が要る基盤を、配備（開発者の PC �
 | 項目 | 値 | 渡し方 |
 |---|---|---|
 | 読み取りのプールの上限 | **5**（NFR2.3） | 一時の環境ファイル `app-targetdb.env`（`MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE`）に `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5` を足す。`docker/perf/compose.yaml` は変えない。`perf/README.md` の今の手順は書いていない（既定 10 で動く）ため、U1 の場面の手順に明示して足す（5節の上流との差） |
-| 流す前の確かめ | 上限が 5 であること | 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics/hikaricp.connections.max`（`pool=mastersmith-target-db`）で読む。配備したアプリの公開の範囲は変えない |
+| 流す前の確かめ | 上限が 5 であること。**5 でなければ U1 の場面を流さない（中止し、一時の環境ファイルを直して使い捨てのアプリを起動し直す）**（R-03。書き忘れると既定の 10 で流れ、NFR2.3 のプールが尽きる形の確かめが成り立たないまま合格しうるため） | 使い捨てのアプリにだけ `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,metrics` を渡し、`/actuator/metrics/hikaricp.connections.max`（`pool=mastersmith-target-db`）で読む。配備したアプリの公開の範囲は変えない。Code Generation で `perf/README.md` に 5 の行を足すとき、この中止の条件を同じ手順に明記する |
 | 記録 | 待ちの時間切れの累計（`hikaricp.connections.timeout`）の前後の差、借りるまでの待ちの最大 | `scalability-design.md` 3節 |
 | 参照の2つの設定 | 既定（5s・10s）のまま | 一時の環境ファイルに書かない |
 | コンテナの上限 | CPU 4・メモリ 2g（配備と同じ） | `perf/README.md` のとおり export |
@@ -130,7 +132,17 @@ U1（参照先の読み取り）が要る基盤を、配備（開発者の PC �
 
 ## 後の段に回すこと
 
-- **Code Generation**: 2.1・2.2 の `application.yaml`・`.env.example`・`README.md` の追記（設定の型と点検は `logical-components.md` 1節の部品）。4.2 の種と DSL の台本（`make-biz-seed.sh`・`make-biz-dsl.mjs`）と k6 の場面（`perf/k6/scenarios.js`）、`perf/README.md` に U1 の場面の手順（プールの上限 5 の行を一時の環境ファイルに足す・流す前の確かめ・流す順）を足す。
+- **Code Generation**: 2.1・2.2 の `application.yaml`・`.env.example`・`README.md` の追記（設定の型と点検は `logical-components.md` 1節の部品）。4.2 の種と DSL の台本（`make-biz-seed.sh`・`make-biz-dsl.mjs`）と k6 の場面（`perf/k6/scenarios.js`）、`perf/README.md` に U1 の場面の手順（プールの上限 5 の行を一時の環境ファイルに足す・流す前の確かめ・`hikaricp.connections.max` が 5 でなければ場面を流さない中止の条件・流す順）を足す（R-03）。
 - **Build and Test**: 種を入れた後の行の数・目印・表の大きさの確かめ（4.2・4.3）、`k6 inspect` での場面の確かめ、比べる相手（Intent 261016 の 5 の結果）を依頼者に確かめる。
 - **Performance Validation**: 4.1 のプールの上限 5 の確かめと待ちの時間切れの累計の記録、NFR2.1・NFR2.3 の合否。
-- **Deployment Pipeline**: 配備の手順に、新しい設定が既定で動くこと（`.env` に足さない）と、戻しがイメージだけで済むことを書く（`cicd-pipeline.md` 4節）。見本の対象DB に参照の項目を持つ表を足すかは、U3 の画面のスモークテストと合わせて決める。
+- **Deployment Pipeline**: 配備の手順に、新しい設定が既定で動くこと（`.env` に足さない）と、戻しがイメージだけで済むことを書く（`cicd-pipeline.md` 4節）。点検の WARN の確かめと既存の業務データの一覧の 200 の確かめを手順書とスモークテストに必ず入れる（R-01）。見本の対象DB に参照の項目を持つ表を足すかは、U3 の画面のスモークテストと合わせて決める。
+
+## 承認の場の決定
+
+段の承認の場で、依頼者は Request Changes を選び、レビュー（`reviews/review-01.md`）の3つの Minor の指摘をすべて示された直し方で直すと決めた。
+
+| 指摘 | 決定 | 反映した場所 |
+|---|---|---|
+| R-01（2つの設定の 1 秒未満の値で対象DB 全体が使えなくなり、検知が点検の WARN だけ） | 配備の手順書とスモークテストで、点検の WARN の項目名の確かめに加えて、既存の業務データの一覧が 200 で返ることを必ず確かめる。新しい警報は足さない判断は保つ | 2.3 の表の後の注記、後の段に回すことの Deployment Pipeline、`cicd-pipeline.md` 3節の順 5・順 6 |
+| R-02（パネル 46・47 の `uri` の値が未確認） | パネルの説明に定義の取得が `VIEW` を含むことを書いたまま、式は Observability Setup で `uri` の実際の値を確かめるまで仮とする | `monitoring-design.md` 2節・6節・「承認の場の決定」 |
+| R-03（perf の読み取りのプール 5 の書き忘れで既定 10 で流れうる） | Code Generation で `perf/README.md` に 5 の行を手順として足すとき、`hikaricp.connections.max` が 5 でなければ場面を流さない（中止する）条件を明記する。比べる相手（5 で流した Intent 261016）の選び方は Build and Test で依頼者に確かめる記述を保つ | 4.1 の「流す前の確かめ」、後の段に回すことの Code Generation（Build and Test の行は変えない） |

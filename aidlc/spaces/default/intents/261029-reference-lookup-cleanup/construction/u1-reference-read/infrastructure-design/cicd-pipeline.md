@@ -40,8 +40,10 @@ U1 を統合して配備するまでの流れ。CI の仕組みと配備の手�
 | 2 | 内部DB の移行が無いため、配備の前の内部DB の複写は必須ではない（取るかは Deployment Pipeline で決める） | — |
 | 3 | WAR を作り直し、SHA-256 を記録する | WAR の中の `application.yaml` に2つの鍵と既定があること |
 | 4 | `docker compose up -d --build app`。入れ替えの後に `docker inspect` でコンテナのイメージ ID と `mastersmith:local` の ID が一致するかを確かめ、食い違えば `--force-recreate --no-deps` で作り直す | `project.md` の学び |
-| 5 | ヘルスチェック（`/actuator/health` の 200、compose の healthy） | 起動のログに `QUERY_TIMEOUT_REFERENCE`・`REFERENCE_READ_TOTAL` の点検の WARN が無いこと（項目名で数え、値は出さない） |
-| 6 | スモークテスト | 既存の業務データの一覧・詳細が今と同じに動く（U1 は一覧・詳細に参照先を読ませない。NFR7.3）。参照の読み取りの確かめは U3 の画面と合わせて Deployment Pipeline で決める |
+| 5 | ヘルスチェック（`/actuator/health` の 200、compose の healthy） | 起動のログに `QUERY_TIMEOUT_REFERENCE`・`REFERENCE_READ_TOTAL` の点検の WARN が無いこと（項目名で数え、値は出さない）。あわせて、既存の業務データの一覧が 200 で返ることを必ず確かめる（2つの設定の誤りで点検が `Invalid` になると、参照だけでなく対象DB 全体が使えなくなるため。ヘルスチェックの 200 だけでは見分けられない。R-01） |
+| 6 | スモークテスト | 既存の業務データの一覧が 200 で返ること（順 5 と同じ確かめを、スモークテストの最初の項目として必ず入れる。R-01）と、一覧・詳細が今と同じに動くこと（U1 は一覧・詳細に参照先を読ませない。NFR7.3）。参照の読み取りの確かめは U3 の画面と合わせて Deployment Pipeline で決める |
+
+設定の誤りを知らせる警報は足さない（`monitoring-design.md` 3節の判断を保つ）。検知は順 5・順 6 の確かめで行う。
 
 配備の戦略は、1つのコンテナを入れ替える形（ブルーグリーン・カナリアは使わない。1インスタンスで配備先が手元のため）。
 
@@ -77,4 +79,13 @@ U1 を統合して配備するまでの流れ。CI の仕組みと配備の手�
 
 - **Code Generation**: U1 の Bolt の計画に、統合の前の `verify` と E2E、`verify` の時間の記録を入れる。
 - **Build and Test**: NFR5.3 の時間の記録、CI の試行ごとの確かめ。
-- **Deployment Pipeline**: 3節・4節を前の Intent の配備の手順に重ねて差だけを書く。スモークテストの参照の項目の確かめ（U3 と合わせる）、配備の前の内部DB の複写と戻しの練習を行うか。
+- **Deployment Pipeline**: 3節・4節を前の Intent の配備の手順に重ねて差だけを書く。配備の手順書とスモークテストに、点検の WARN の項目名の確かめと、既存の業務データの一覧の 200 の確かめを必ず入れる（R-01）。スモークテストの参照の項目の確かめ（U3 と合わせる）、配備の前の内部DB の複写と戻しの練習を行うか。
+
+## 承認の場の決定
+
+段の承認の場で、依頼者は Request Changes を選び、レビュー（`reviews/review-01.md`）の3つの Minor の指摘をすべて示された直し方で直すと決めた。この文書に関わるのは R-01。
+
+| 指摘 | 決定 | 反映した場所 |
+|---|---|---|
+| R-01（2つの設定の誤りで対象DB 全体が使えなくなり、検知が点検の WARN だけ） | 配備の手順とスモークテストで、点検の WARN の項目名の確かめに加えて、既存の業務データの一覧が 200 で返ることを必ず確かめる。新しい警報は足さない判断は保つ | 3節の順 5・順 6 と表の後の注記、後の段に回すことの Deployment Pipeline、`infrastructure-specification.md` 2.3 |
+| R-02・R-03 | `monitoring-design.md`・`infrastructure-specification.md` で直した | 各文書の「承認の場の決定」 |

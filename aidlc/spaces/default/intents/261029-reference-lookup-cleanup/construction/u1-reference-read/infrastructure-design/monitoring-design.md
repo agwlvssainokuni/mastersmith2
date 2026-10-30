@@ -31,6 +31,8 @@ NFR 設計の監視の考え（`observability-design.md`）を、手元の監視
 | 46 | 参照の API の要求の数（1 時間） | timeseries、`gridPos` x 0・y 106・w 8・h 8 | `sum by (method, uri, status) (increase(http_server_requests_milliseconds_count{service_name="mastersmith",uri=~"/api/tables/(definition\|reference/rows)"}[1h]))` | 定義の取得（`POST /api/tables/definition`。選択肢を読む `purpose` の `CREATE`・`UPDATE` と、読まない `VIEW` を合わせた数）と、ピッカーの検索・ラベルの1件読み（`POST /api/tables/reference/rows`。2つは同じ道）の要求の数。`purpose` と検索かラベルかは本文にあり、指標では分けられない |
 | 47 | 参照の API の 503 の件数（1 時間） | timeseries、`gridPos` x 8・y 106・w 8・h 8 | `sum by (method, uri) (increase(http_server_requests_milliseconds_count{service_name="mastersmith",uri=~"/api/tables/(definition\|reference/rows)",status="503"}[1h])) or on() vector(0)` | 対象DB に届かない・答えない（`UNAVAILABLE`・`TIMEOUT`、全体の上限の超過を含む）。code は指標のラベルに無いため、見分けはログの WARN のキー `reason`・`budgetExceeded` で行う。警報 `ms-biz-target-db` が同じ 503 を 5 分の窓で数える |
 
+パネル 46・47 の式は**仮のもの**とする。`uri` のラベルの値（`/api/tables/definition`・`/api/tables/reference/rows`）は新しい道がまだ無いため確かめておらず、Observability Setup で使い捨てのアプリの実際の値を確かめてから式を確定して `mastersmith-overview.json` に書く（6節の順 1。R-02）。値が違えば式の `uri` の条件をその値に直す。説明の「定義の取得は `VIEW` を含む」（参照だけの量・失敗とは言い切れない）は、確定した後も残す。
+
 表の中の `\|` は Markdown の表のための書き方で、JSON の式の中では `|` 1つ（`uri=~"/api/tables/(definition|reference/rows)"`）。
 
 既存のパネルの説明の直し:
@@ -76,7 +78,7 @@ NFR 設計の監視の考え（`observability-design.md`）を、手元の監視
 
 | 順 | 確かめ |
 |---|---|
-| 1 | 書く前に使い捨てのアプリで、`uri` のラベルの値（`/api/tables/definition`・`/api/tables/reference/rows`）と `+Inf` 以外のバケット（`le`）を確かめる |
+| 1 | 書く前に使い捨てのアプリで、`uri` のラベルの値（`/api/tables/definition`・`/api/tables/reference/rows`）と `+Inf` 以外のバケット（`le`）を確かめる。確かめた値で 2節のパネル 46・47 の仮の式を確定する（R-02） |
 | 2 | 要求は指標の送信の周期（1 分）を複数またいで、待ちを入れた少ない数で送る（負荷の試験の場面ではなく。lgtm の受け手がメモリの上限で止まった学び） |
 | 3 | 2節の2つのパネルと既存の id 40〜44 の式を流し、新しい道の系列が入ることを確かめる |
 | 4 | 使い捨ての環境で対象DB を止め、新しい道と定義の道の 503 で `ms-biz-target-db` が firing になることを確かめる。`docker pause` では借りる待ちの `UNAVAILABLE` になり、`TIMEOUT` は問い合わせの最中に止めないと起きない |
@@ -97,3 +99,12 @@ NFR 設計の監視の考え（`observability-design.md`）を、手元の監視
 - **Observability Setup**: 6節の確かめ、2節の2つのパネルと既存の説明の直しを `mastersmith-overview.json` に書く（名前を確かめてから）、3,000 ms のバケットの要否を依頼者に諮る、Loki の問い合わせのキーの確かめ。
 - **Code Generation**: 診断の WARN の1行とそのテスト（`ReferenceSecretLeakIT` の中。`observability-design.md` 2.1）。
 - **Incident Response**: 参照の 503 の見分け方（ログの `reason`・`budgetExceeded`）を手順書に足す。
+
+## 承認の場の決定
+
+段の承認の場で、依頼者は Request Changes を選び、レビュー（`reviews/review-01.md`）の3つの Minor の指摘をすべて示された直し方で直すと決めた。この文書に関わるのは R-02。
+
+| 指摘 | 決定 | 反映した場所 |
+|---|---|---|
+| R-02（パネル 46・47 の `uri` の値が未確認、定義の道は `VIEW` を含む） | パネルの説明に定義の取得が `VIEW` を含むことを書いたまま、式は Observability Setup で `uri` の実際の値を確かめるまで仮とする | 2節の表の後の注記、6節の順 1 |
+| R-01・R-03 | `cicd-pipeline.md`・`infrastructure-specification.md` で直した（新しい警報は足さない判断は 3節のまま） | 各文書の「承認の場の決定」 |

@@ -26,14 +26,14 @@ U3（作成・更新の画面の参照の部品とピッカーのダイアログ
 | 見本の対象DB（compose の `targetdb-postgres`） | database（E2E の前提） | 既存の見本の PostgreSQL を、上乗せ `docker/e2e/compose.targetdb-port.yaml` で `127.0.0.1:${E2E_TARGETDB_PORT:-15432}` に開けておく。`./gradlew e2eTest` は起動・停止しない（届かなければ起動の手順を示して失敗する。`build.gradle.kts` の `checkE2eTargetDb`） | 確かめた: 上乗せの compose は `targetdb-postgres` の `5432` を `127.0.0.1:15432` に出すだけ。起動は `docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml --profile targetdb-postgres up -d targetdb-postgres` |
 | メールの受け手（Mailpit） | E2E の前提（既存） | `docker compose --profile mail up -d mailpit`。`e2eTest` は `http://127.0.0.1:8025/api/v1/info` に届くかを先に確かめる | U3 の流れはメールを使わないが、`e2eTest` は全件の前提として確かめる（既存のまま） |
 | E2E の実行のスキーマと一時のロール | E2E の前提（既存の仕組みに表を足す） | `e2eTest` が実行ごとに `e2e_biz_<印>` のスキーマと読み取り・書き込みの一時のロール（2 時間で失効）を作り、`frontend/e2e/support/businessDataSchema.sql` を1つのトランザクションで流す。付与は表を作った後に `ON ALL TABLES IN SCHEMA` で行うため、足した表にも読み取りは `SELECT`、書き込みは `SELECT・INSERT・UPDATE・DELETE` が付く。終わったら `e2eTargetDbCleanup` が名前で消す | U3 は同じ SQL のファイルに、参照先の顧客の表 3 行・商品の表 25 行（1行は 100 文字以上で `<` を含む名前、1行は2語以上の架空の品名）・参照元の注文の表を足す（`security-design.md` 3.4、D39）。値はすべて架空。スキーマ・ロール・資格情報の作り方は変えない |
-| E2E の共有の DSL | E2E の前提 | 今は 180 のファイルの中の `flowDsl`（版 2、実行のスキーマの表1つとメニュー1つ）。D39 で `frontend/e2e/support/` の1つの DSL に移し、参照の表（REFERENCE・LOOKUP のカラムを持つ注文の表と、参照先の顧客・商品の表）を足す。180 と 190・195 は、流れの前の API の準備で、適用されていなければ投入・適用する | 適用中の DSL は全 E2E で共有され 180 が自分の DSL を適用するため、190・195 は前のファイルの状態に頼らない（`team.md`）。初期管理者・見本の行・配備した環境の DSL は変えない。180 の全件が通ることを確かめる（U3-NFR5.43） |
+| E2E の共有の DSL | E2E の前提 | 今は 180 のファイルの中の `flowDsl`（版 2、実行のスキーマの表1つとメニュー1つ）。D39 で `frontend/e2e/support/` の1つの DSL に移し、参照の表（REFERENCE・LOOKUP のカラムを持つ注文の表と、参照先の顧客・商品の表）を足す。180 と 190・195 は、流れの前の API の準備で、**適用済みかを判定せず、毎回その実行の共有の DSL を投入（`POST /api/admin/dsl/preview?source=PASTE`）して適用（`POST /api/admin/dsl/apply`）する**（今の 180 と同じ形）。判定しない理由: 共有の DSL は表とメニューの名前にファイルごとの印（`tag`）を入れるため、今の状態の API（`DslAdminController` の `status`）が返す適用中の `dslHash` と比べても前のファイルの DSL とは一致せず、比べる手間に見合わない。毎回適用すれば前のファイルの状態に頼らずに済む | 適用中の DSL は全 E2E で共有される状態で、各ファイルの適用はそれを置き換える。書き換えるのは「適用中の DSL」（と投入・適用の監査の行）だけで、**初期管理者の役割・権限・状態と、見本の対象DB の行・見本の DSL（共有の DSL の外のもの）には触れない**。190・195 の役割と利用者は各ファイルで自分で作る（`team.md`）。180 の全件が通ることを確かめる（U3-NFR5.43） |
 
 ## 3. Shared Infrastructure
 
 | Shared Resource | Owner Unit | Consumer Units | Access Boundary |
 |---|---|---|---|
 | 参照の API（`POST /api/tables/reference/rows`・定義の取得の `purpose`） | U1 | U3 | 契約 C2。画面は道を固定で使い、値は本文だけに置く。権限の判定はサーバー側（U3-NFR1.44） |
-| 作成・更新の API の拒否の形（409 `REFERENCE_NOT_FOUND`） | U2 | U3 | 契約 C3。画面は決めた1つの文だけを出す（U3-NFR1.46） |
+| 作成・更新の API の拒否の形（409、問題の code は `BUSINESS_REFERENCE_NOT_FOUND`、項目の誤りの `reason` は `REFERENCE_NOT_FOUND`） | U2 | U3 | 契約 C3。画面は決めた1つの文だけを出す（U3-NFR1.46）。code（応答の `code`）と `reason`（項目の誤りごとの理由）は別のものとして扱う |
 | 対象DB の読み取りのプール | 既存（`targetdb`）、参照の読み取りは U1 | U1・U3 の要求（間接） | U3 は1画面で同時 3 本まで。プールそのものには触れない |
 | E2E の実行のスキーマ（`businessDataSchema.sql`）と共有の DSL | 既存（Intent 261016-business-data-views の U3） | 180・190・195 | 足すだけ。既存の `e2e_item` の表と 180 の流れを変えない。180 の全件が通ることを確かめる |
 | 業務データの画面の chunk | 既存（`features/tables`） | U3 の部品 L1〜L8 | 入口に入れない（`registration.ts` の `lazy` を保つ） |
@@ -47,9 +47,11 @@ U3（作成・更新の画面の参照の部品とピッカーのダイアログ
 | 入力 | `npm run build`（`frontendBuild`）の後の `frontend/dist/.vite/manifest.json` |
 | 入口の値 | `check-bundle-size.mjs` の出力（入口から静的な `imports` をたどった `.js` の gzip の合計） |
 | 起点 | キーが `src/features/tables/` で始まり `isDynamicEntry` が真の項目 |
+| 起点の確かめ | manifest のキーの形は実際のビルドでまだ確かめていない。最初の測定（U3 の Bolt の前）で、起点が1つ以上取れ、そのキーが `registration.ts` の `lazy` で読む画面のファイルに当たることを確かめる。取れない・別のファイルに当たるときは、キーの形（相対の道・`src/` の有無など）に合わせて起点の条件を直してから測り、直した条件を記録する |
 | 数える範囲 | 起点から静的な `imports` をたどったファイルから、入口のファイルを除いた `.js`。同じファイルは全体の合計で1回だけ数える |
-| 数え方 | 入口と同じ `gzipSync` |
-| 記録 | 入口の値、起点ごとの値と合計を、前と後で。置き場はコード生成の `code-summary.md` |
+| CSS（別枠） | 同じたどり方で集めた項目の manifest の `css` 配列の `.css` を、入口の分を除いて別枠で数える（`.js` の合計に混ぜない）。`check-bundle-size.mjs` は `.css` を数えないため、U3 が部品ごとの CSS を足した分はこの別枠で見る |
+| 数え方 | 入口と同じ `gzipSync`（`.js` と `.css` の両方） |
+| 記録 | 入口の値、起点ごとの `.js` の値と合計、`.css` の別枠の合計を、前と後で。置き場はコード生成の `code-summary.md` |
 | 線 | 置かない（記録だけ）。入口の 500 KB の警告は既存のまま |
 
 ## 上流との差
@@ -58,14 +60,23 @@ U3（作成・更新の画面の参照の部品とピッカーのダイアログ
 
 | 上流 | 差 | 扱い |
 |---|---|---|
-| 機能設計 D39（「DSL は E2E 180 と 190 で共有する見本（`frontend/e2e/support/` に置く1つの DSL）」） | 今の 180 の DSL は `support/` ではなく 180 のファイルの中の `flowDsl` にある（読み取りで確かめた）。共有するには `support/` へ移す作業が要る | Code Generation で移し、180 の全件が通ることを確かめる。180 の振る舞いは変えない |
+| 機能設計 D39（「DSL は E2E 180 と 190 で共有する見本（`frontend/e2e/support/` に置く1つの DSL）」） | 今の 180 の DSL は `support/` ではなく 180 のファイルの中の `flowDsl` にある（読み取りで確かめた）。共有するには `support/` へ移す作業が要る | Code Generation で移し、180 の全件が通ることを確かめる。移すと 180 が投入・適用する DSL の中身（表とメニューの数）が変わるため、足す表とメニューが 180 の確かめに響かないことを確認項目にする（後の段に回すこと） |
 | 機能設計 D39 と `frontend-components.md` 8.1（190 だけが DSL を準備する書き方） | 195 も本物の応答の状態（1〜3・10・11）を使うため、190 と同じく適用されていなければ投入・適用する | 195 は流れの本数に数えない（U3-NFR5.43）。前のファイルの状態に頼らない決まり（`team.md`）に合わせた |
 
 ## 後の段に回すこと
 
-- **Code Generation**: `businessDataSchema.sql` に顧客・商品・注文の表と行を足す（行の目印は既存の `E2E-BIZ-MARK` の扱いに合わせ、報告の確かめに使えるようにする）。180 の DSL を `frontend/e2e/support/` へ移して参照の表を足す。4節の一時の手順で前と後の値を記録する。`frontend/package.json`・`package-lock.json` に新しいパッケージが無いことを記録する。
+- **Code Generation**: `businessDataSchema.sql` に顧客・商品・注文の表と行を足す（行の目印は既存の `E2E-BIZ-MARK` の扱いに合わせ、報告の確かめに使えるようにする）。180 の DSL を `frontend/e2e/support/` へ移して参照の表を足す。その際の確認項目: (1) 180 はメニューを名前（`getByRole('link', { name: menuLabel })`）で探し、表の見出し（`tables-heading`・`tables-form-heading`）を `tableLabel` で確かめるため、足す表とメニューの名前が 180 の `menuLabel`・`tableLabel` を含まない・重ならないこと、(2) 180 の確かめが表やメニューの件数に頼っていないこと（頼るものがあれば足す分を差し引く形に直す）、(3) 180 のロールの権限が足す表に広がらず、180 の流れの結果が変わらないこと。180・190・195 は2節のとおり毎回投入・適用し、初期管理者と見本の DSL・行に触れない。4節の一時の手順で前と後の値を記録し、最初の測定で起点のキーを確かめる。`frontend/package.json`・`package-lock.json` に新しいパッケージが無いことを記録する。
 - **Build and Test**: E2E の全件（180 を含む）の通過、chunk の値の記録の有無の確かめ。
-- **Deployment Pipeline・Deployment Execution**: U3 だけの差は画面の静的なファイルで、移行・`.env` の変更は無い（U3 の分）。手順は U1・U2 の差と合わせて決める。
+- **Deployment Pipeline・Deployment Execution**: U3 だけの差は画面の静的なファイルで、移行・`.env` の変更は無い（U3 の分）。ただし画面は U1・U2 と同じ WAR とイメージに入るため、戻しは U1・U2・U3 が必ず一緒になる。U1・U2 の移行・`.env` の差を踏まえた戻しの手順は Deployment Pipeline で一本にまとめる（`cicd-pipeline.md` 5節）。
+
+## 承認の場の決定
+
+依頼者は Infrastructure Design の承認の場で Request Changes を選び、レビュー（`reviews/review-01.md`）の指摘 R-01〜R-04 の直し方をすべてそのまま当てると決めた。この文書には次を当てた。
+
+- R-01: 後の段に回すことの Deployment Pipeline に、U1・U2・U3 が一緒に戻ることと、戻しの手順を一本にまとめることを書いた（本体は `cicd-pipeline.md` 5節）。
+- R-02: 2節の共有の DSL で「適用済みか」を判定せず毎回投入・適用すると決め（理由: ファイルごとの印で `dslHash` が一致しない）、書き換える共有の状態に初期管理者の権限・見本の DSL と行が入らないことを書いた。180 の確かめに響かないことを Code Generation の確認項目に入れた。
+- R-03: 4節に `.css`（manifest の `css` 配列）の別枠の記録と、最初の測定で起点のキーを確かめ、取れなければ手順を直すことを足した。
+- R-04: 3節で問題の code `BUSINESS_REFERENCE_NOT_FOUND` と項目の誤りの `reason` `REFERENCE_NOT_FOUND` を分けて書いた。
 
 ## Sources
 

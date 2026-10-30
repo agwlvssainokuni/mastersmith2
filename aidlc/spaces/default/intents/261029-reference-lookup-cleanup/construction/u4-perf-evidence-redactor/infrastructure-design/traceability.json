@@ -30,18 +30,18 @@
     },
     {
       "id": "NFR8.71",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節・2.3節（テストのソースの JWT の形は verifySecurity の既存の gitleaksScan と、作業フォルダの evidence を見る perfEvidenceScan とは別に、コード生成の検索で確かめる。gitleaksScan は CI でも流れる）"
+      "status": "Deferred",
+      "target": "コード生成のレビューでのテストのソースの検索（完成した JWT の形が無いこと）と Build and Test。既存の gitleaksScan（cicd-pipeline.md 2.3節、CI でも流れる）は補助の守りで、必ず検出する保証は無いため、この段の設計が満たす内容とはしない"
     },
     {
       "id": "NFR5.61",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（verifyUnitTest の frontendTest・verifyCoverage の frontendCoverage で性質のテストが流れる）・3節（失敗は種と道と回数だけで再現、反例の値を出さない）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P5 でテストの置き場・include・coverage.include を決め、passed 1 件以上を確かめる）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節（verifyUnitTest の frontendTest・verifyCoverage の frontendCoverage）・3節（失敗は種と道と回数だけで再現、反例の値を出さない）"
     },
     {
       "id": "NFR5.63",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節・2.4節（道具のテストは frontendTest で毎回流れ、CI は同じ ./gradlew verify を呼ぶ。ワークフローは変えない）。passed の件数の記録は Build and Test（7節）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P4 で置き場と include を決め、passed 1 件以上・skipped と todo 0 件を確かめる）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節・2.4節（CI は同じ ./gradlew verify、ワークフローは変えない）。passed の件数の記録は Build and Test（7節）"
     },
     {
       "id": "NFR9.61",
@@ -50,8 +50,8 @@
     },
     {
       "id": "NFR9.65",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（verifyLicense の段。道具のファイルをライセンスヘッダーの検査に入れる方法はコード生成の計画 P6）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P6 で道具とテストのファイルをライセンスヘッダーの検査の対象に入れる方法を決める）。前提: 計画で verifyLicense の検査の対象に道具とテストのファイルが入ること。入るまでは、この段の設計が満たすとは言えない。前提が満たされた後の形は cicd-pipeline.md 2.1節（1〜4 の段）"
     },
     {
       "id": "NFR7.61",
@@ -65,13 +65,13 @@
     },
     {
       "id": "NFR8.62",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（置換の仕組みのテストが verifyUnitTest の frontendTest と verifyCoverage の frontendCoverage で毎回流れ、CI も同じ verify）。置換そのものは道具の中の決まりで、パイプラインの資源は足さない"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P5）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節（置換の仕組みのテストが verifyUnitTest の frontendTest と verifyCoverage の frontendCoverage で毎回流れ、CI も同じ verify）。置換そのものは道具の中の決まりで、パイプラインの資源は足さない"
     },
     {
       "id": "NFR8.63",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（残存の検査の仕組みのテストが verifyUnitTest の frontendTest で毎回流れる）。同じ形の定数を使う evidence の検査は verifySecurity の perfEvidenceScan（2.2節）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P4）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節（残存の検査の仕組みのテストが frontendTest で流れる）。同じ形の定数を使う evidence の検査は verifySecurity の perfEvidenceScan（2.2節）"
     },
     {
       "id": "NFR8.68",
@@ -100,18 +100,18 @@
     },
     {
       "id": "NFR8.65",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（一時ファイルと書き出しの守りのテストが verifyUnitTest の frontendTest で流れる）・2.2節（--scan は書き出さない）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P4）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節（一時ファイルと書き出しの守りのテストが frontendTest で流れる）・2.2節（--scan は書き出さない）"
     },
     {
       "id": "NFR8.67",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.2節（タスクは固定の引数 --scan aidlc だけを渡す）・2.1節（引数と出力のパスの守りのテストが verifyUnitTest の frontendTest で流れる）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P4）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節（引数と出力のパスの守りのテストが frontendTest で流れる）・2.2節（タスクは固定の引数 --scan aidlc だけを渡す）"
     },
     {
       "id": "NFR5.62",
-      "status": "OK",
-      "target": "cicd-pipeline.md 2.1節（verifyUnitTest の frontendTest・verifyCoverage の frontendCoverage。置き場と vitest.config.ts の include・coverage.include はコード生成の計画 P1〜P5）・2.4節（CI も同じ verify）"
+      "status": "Deferred",
+      "target": "コード生成（計画 P1〜P5 で置き場と vitest.config.ts の include・coverage.include を決める）。前提: コード生成の計画で、テストの置き場を frontend/vitest.config.ts の unit の include に当たる道に選び（include を足す場合を含む）、fast-check を解決できる形にすること（logical-components.md 4節 P1〜P7）。この前提が満たされるまで、テストが frontendTest で流れるとは言えない（一件も流れなくても verify は成功するため）。 前提が満たされた後の形は cicd-pipeline.md 2.1節・2.4節（CI も同じ verify）"
     },
     {
       "id": "NFR9.64",

@@ -34,7 +34,10 @@
     "NFR7.22",
     "NFR3.25",
     "NFR3.26",
-    "NFR9.21"
+    "NFR9.21",
+    "NFR2.29",
+    "NFR3.28",
+    "NFR1.27"
   ],
   "coverage": [
     {
@@ -201,6 +204,21 @@
       "id": "NFR9.21",
       "status": "OK",
       "target": "infrastructure-specification.md 1節（新しい依存・コンテナのイメージを足さない）と cicd-pipeline.md 1節の段 2（lockfile と OSV-Scanner の対象は変わらない）"
+    },
+    {
+      "id": "NFR2.29",
+      "status": "OK",
+      "target": "monitoring-design.md 1節・3節・6節（既存の業務データの区画と警報に入り、区画と警報を足さない）。確かめは Observability Setup。センサーが作った upstream_ids の一覧から漏れていたため足した（レビューの R-01）"
+    },
+    {
+      "id": "NFR3.28",
+      "status": "OK",
+      "target": "monitoring-design.md 1節・3節・6節（⑩ の 503 は既存の ms-biz-target-db で拾い、新しい警報を足さない）。確かめは Observability Setup。センサーが作った upstream_ids の一覧から漏れていたため足した（レビューの R-01）"
+    },
+    {
+      "id": "NFR1.27",
+      "status": "Deferred",
+      "target": "Deferred: Code Generation（アプリの中の作りで基盤の資源・設定は要らない。参照先の形は U1 の check の読み方に従い、自己参照の作成は 409。確かめは cicd-pipeline.md 1節の段 2 の ./gradlew verify の結合テスト）。センサーが作った upstream_ids の一覧から漏れていたため足した（レビューの R-01）"
     }
   ]
 }

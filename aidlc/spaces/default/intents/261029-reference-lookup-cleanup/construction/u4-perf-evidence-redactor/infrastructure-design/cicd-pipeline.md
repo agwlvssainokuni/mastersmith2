@@ -26,9 +26,9 @@
 | verify の段 | 足す・使うもの | 何を止めるか | 失敗の条件 | CI |
 |---|---|---|---|---|
 | 0 `verifyPrepare` | 既存の `checkToolchain` を使う（足さない） | Node 24 が無いまま道具を動かすこと | 既存のとおり | 同じ |
-| 1〜4（フォーマット・リンタ・ライセンスヘッダー・ビルド） | 道具のファイルとテストのファイルを各検査の対象に入れる方法は、コード生成の計画の義務（`logical-components.md` 4節 P6・P7） | 書式・リンタ・ヘッダー・型の誤り | 既存のとおり | 同じ |
-| 5 `verifyUnitTest` | 道具の仕組みのテスト（性質のテストと例のテスト）が `frontendTest` の中で流れる。新しいタスクは足さない | 伏せ字・残存の検査・evidence の検査の仕組みの退行 | テストの失敗（`vitest run` の非 0） | 同じ |
-| 7 `verifyCoverage` | `frontendCoverage` が同じテストをもう一度流す。下限（行 80%・分岐 70%）と除外は変えない。道具の `.mjs` を `coverage.include` に入れるかはコード生成の計画で書く（P5） | 同上と、入れた場合の下限 | 既存のとおり | 同じ |
+| 1〜4（フォーマット・リンタ・ライセンスヘッダー・ビルド） | 道具のファイルとテストのファイルを各検査の対象に入れる方法は、コード生成の計画の義務（`logical-components.md` 4節 P6・P7）。前提: 計画で各検査（特にライセンスヘッダーの検査）の対象に入れること。入るまでは、これらの段が道具を守るとは言えない | 書式・リンタ・ヘッダー・型の誤り | 既存のとおり | 同じ |
+| 5 `verifyUnitTest` | 前提: コード生成の計画で、テストの置き場を `vitest.config.ts` の `unit` の `include` に当たる道に選び（`include` を足す場合を含む）、fast-check を解決できる形にすること（P1〜P4）。この前提が満たされたときにだけ、道具の仕組みのテスト（性質のテストと例のテスト）が `frontendTest` の中で流れる。今の `include` に `perf/` は入っておらず、テストが一件も流れなくても verify は成功するため、この段では「流れる」とは言わない。新しいタスクは足さない | （前提が満たされたとき）伏せ字・残存の検査・evidence の検査の仕組みの退行 | テストの失敗（`vitest run` の非 0） | 同じ |
+| 7 `verifyCoverage` | 5 と同じ前提のもとで、`frontendCoverage` が同じテストをもう一度流す。下限（行 80%・分岐 70%）と除外は変えない。道具の `.mjs` を `coverage.include` に入れるかはコード生成の計画で書く（P5） | 同上と、入れた場合の下限 | 既存のとおり | 同じ |
 | 8 `verifySecurity` | 新しいタスク `perfEvidenceScan`（仮）を一員に足す | 作業フォルダの `aidlc/` の下の `evidence/` に JWT の形・飛ばしてはいけない NUL 混じり・上限超え・読めないファイルが残ること | 道具の終わりのコード 1・2・4（すべて非 0） | 同じ |
 | 9 `verifyArtifact` | 変えない（道具は WAR に入らない） | — | — | 同じ |
 
@@ -41,15 +41,14 @@ val perfEvidenceScan = tasks.register<Exec>("perfEvidenceScan") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     dependsOn(checkToolchain)
     commandLine("node", "perf/<道具>.mjs", "--scan", "aidlc")
-    outputs.upToDateWhen { false }
 }
 // verifyStages の verifySecurity の一覧: spotbugsGate, osvScan, gitleaksScan, perfEvidenceScan
 ```
 
 - 依存: `checkToolchain` だけ。`frontendInstall`・`vendorBuild` には依存しない（道具は Node の組み込みだけを読む。NFR9.61）。単独で `./gradlew perfEvidenceScan` としても流せる。
-- 毎回流す: 入力と出力を宣言せず、`UP-TO-DATE` で飛ばさない。git の対象外・まだコミットしていないファイルも、作業フォルダの上のものを毎回調べるため（L-c）。
+- 毎回流す: 入力と出力を宣言せず、`UP-TO-DATE` で飛ばさない（出力を宣言しない `Exec` は元々 `UP-TO-DATE` にならないため、`outputs.upToDateWhen { false }` は付けない）。git の対象外・まだコミットしていないファイルも、作業フォルダの上のものを毎回調べるため（L-c）。
 - 失敗の扱い: `Exec` の既定（`isIgnoreExitValue` を付けない）で、終わりのコードが 0 以外ならタスクが失敗する。検査の口が返すのは 0・1・2・4 だけで（3・5 は使わない。`security-design.md` 5.4節）、1（根が無い・引数の誤り）・2（入力の誤り）・4（残存の検出）のどれでも verify が失敗する。`osvScan` のように終わりのコードを Gradle の側で読み替えることはしない。
-- 説明の文言: `verifySecurity` の段の説明（「8 安全の検査（SpotBugs＋FindSecBugs、OSV-Scanner、Gitleaks。…）」）に、evidence の検査を足す。
+- `build.gradle.kts` で変える所は 2 か所: (1) `verifyStages` の `verifySecurity` の一員の一覧（今の `spotbugsGate`・`osvScan`・`gitleaksScan`）に `perfEvidenceScan` を足す。(2) `verifySecurity` の段の説明の文言（「8 安全の検査（SpotBugs＋FindSecBugs、OSV-Scanner、Gitleaks。…）」）に、evidence の検査を足す。コード生成の計画には、この 2 か所の両方を変えることを書く。
 
 ### 2.3 既存の安全の検査との並び
 
@@ -77,7 +76,7 @@ val perfEvidenceScan = tasks.register<Exec>("perfEvidenceScan") {
 
 ## 3. 失敗したときの見立て（値を表示しない）
 
-- 表示は道具の報告の部品（LC5）だけを通る。出るのは、決めた文言・件数・位置（行と桁、またはバイトの位置）・パス（`redactJwt` を通した後のもの）だけで、値とその断片は出ない（NFR8.64）。Gradle の `Exec` は道具の標準出力・標準エラーをそのまま流すため、手元のログと CI のログにも値は出ない。
+- 表示は道具の報告の部品（LC5）だけを通る。出るのは、決めた文言・件数・位置（行と桁、またはバイトの位置）・パス（`redactJwt` を通した後のもの）だけで、値とその断片は出ない（NFR8.64）。Gradle の `Exec` は道具の標準出力・標準エラーをそのまま流すため、手元のログと CI のログにも値は出ない見込み。ただしこの段では、Gradle の失敗の要約（`Process 'command node' finished with non-zero exit value …` など）を含めて実際のログに値が出ないことまでは確かめておらず、根拠は報告の部品のテスト（NFR8.64）による。実際の出力での確かめは Build and Test の項目に加える（7節）。
 - 見立ての手順:
 
 | 終わりのコード | 表示に出るもの | 見立てと直し方 |
@@ -114,10 +113,18 @@ val perfEvidenceScan = tasks.register<Exec>("perfEvidenceScan") {
 
 | 段 | 回すこと |
 |---|---|
-| コード生成（計画） | タスク名・道具のファイル名・旗の名前の確定。`logical-components.md` 4節 P1〜P7（テストの置き場、`vitest.config.ts` の `include`・`coverage.include`、検査の対象への入れ方、型の手当て）。`verifySecurity` の説明の文言の変更 |
-| コード生成 | 5節の 2 の一度の単独の実行と件数の記録、64 MiB に近い入力での `--scan` の所要時間の記録、組み込んだ後の `./gradlew verify` の通過 |
-| Build and Test | `perfEvidenceScan` が手元の verify と CI で流れて成功したこと（CI は試行ごと）、U4 のテストのファイルごとの passed の件数（skipped・todo 0）、verify と CI の時間（42 分の線） |
+| コード生成（計画） | タスク名・道具のファイル名・旗の名前の確定。`logical-components.md` 4節 P1〜P7（テストの置き場を `include` に当たる道に選ぶこと、`vitest.config.ts` の `include`・`coverage.include`、ライセンスヘッダーなど各検査の対象への入れ方、型の手当て）。これが 2.1節の前提で、traceability.json で Deferred にした NFR5.61・5.62・5.63・8.62・8.63・8.65・8.67・9.65 の持ち主。`build.gradle.kts` の `verifySecurity` の一員の一覧と段の説明の文言の両方の変更（2.2節） |
+| コード生成 | 5節の 2 の一度の単独の実行と件数の記録、64 MiB に近い入力での `--scan` の所要時間の記録、組み込んだ後の `./gradlew verify` の通過。レビューでテストのソースを検索し、完成した JWT の形が無いことを確かめる（NFR8.71） |
+| Build and Test | `perfEvidenceScan` が手元の verify と CI で流れて成功したこと（CI は試行ごと）、U4 のテストのファイルごとの passed の件数（skipped・todo 0）、verify と CI の時間（42 分の線）、テストのソースに完成した JWT の形が無いことの確かめ（NFR8.71）。あわせて、わざと残存を作った 1 回の verify: 作業フォルダの `aidlc/` の下の `evidence/` に、架空の JWT の形のテスト用の値（本物のトークンは使わない）を入れたファイルを一時に置き、`./gradlew verify`（または `perfEvidenceScan`）が終わりのコード 4 で失敗すること、Gradle の失敗の要約を含む出力に値とその断片が出ていないことを確かめる。このファイルはコミットせず、確かめた後に消し、消したことと `git status` に残っていないことを記録する |
 | 未決のまま（承認の場） | `gitleaks dir` を verify に入れるか、バイナリの先頭のバイトを確かめるか（`security-design.md` 13節）。この文書はどちらも入れない形で書いた |
+
+## 8. 承認の場の決定
+
+- 承認の場で依頼者は Request Changes を選び、レビュー（`reviews/review-01.md`）の R-01〜R-04 の示した直しをすべて当てることに決めた。直した中身は次のとおり。
+  - R-01（Major）: traceability.json の NFR5.61・NFR5.62・NFR5.63・NFR8.62・NFR8.63・NFR8.65・NFR8.67・NFR9.65 を Deferred にし、持ち主をコード生成（テストの置き場・`vitest.config.ts` の `include`・`coverage.include`・ライセンスヘッダーの検査への入れ方を決める計画 P1〜P7）とした。target に前提（計画で `include` に当たる置き場を選ぶこと、検査の対象に入れること）を書いた。2.1節の表も同じ前提つきの書き方にそろえた。
+  - R-02（Minor）: NFR8.71 を Deferred（コード生成のレビューでの検索と Build and Test）にした。
+  - R-03（Minor）: 2.2節の断片から冗長な `outputs.upToDateWhen { false }` を外し、`build.gradle.kts` で `verifySecurity` の一員の一覧と段の説明の文言の両方を変えることを計画に書くと明記した。
+  - R-04（Minor）: 7節の Build and Test の項目に、架空の JWT の形のテスト用の値でわざと残存を作った 1 回の verify（出力に値が出ないことの確かめ、ファイルはコミットせず確かめた後に消す）を加え、3節にその位置づけを書いた。
 
 ## Sources
 

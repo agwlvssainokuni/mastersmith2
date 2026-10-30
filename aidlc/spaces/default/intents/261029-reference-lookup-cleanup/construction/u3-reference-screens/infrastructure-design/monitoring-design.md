@@ -13,7 +13,7 @@ U3 は画面だけの単位で、画面の側には監視を足さない（`infr
 | 参照の API の要求の数（道・方法・状態コードごと） | U1 の新しいパネル id 46（`http_server_requests_milliseconds_count`、`uri=~"/api/tables/(definition\|reference/rows)"`） | なし（量を見る） | U3 の画面の要求の量（作成・更新の画面を開くたびの定義の取得1回、ラベルの1件読み、ピッカーの検索）がここに入る。ラベルの1件読みとピッカーの検索は同じ道のため指標では分けられない（U1 の決め） |
 | 参照の API の 503 の数 | U1 の新しいパネル id 47 | 1 件でも（警報は既存の `ms-biz-target-db`） | ピッカーの「検索できません」・ラベルが値だけになる・作成と更新の画面が開けない、の原因になる |
 | 参照の API の 4xx（400・403）の数 | U1 のパネル id 46 の `status` の内訳 | なし（調べるときに見る） | 403 は権限を欠く利用者の検索（画面は1つの文）・ラベルの1件読み（画面は値だけ）。400 は画面の確かめを通った後のサーバーの拒否で、平常では少ないはず |
-| 作成・更新の 409 の数 | 既存の業務データの区画（`uri=~"/api/tables/.*"` の要求の数の状態コードの内訳） | なし | 保存の `REFERENCE_NOT_FOUND`（U2）。code は指標のラベルに無いため、見分けは監査とログで行う（3節） |
+| 作成・更新の 409 の数 | 既存の業務データの区画（`uri=~"/api/tables/.*"` の要求の数の状態コードの内訳） | なし | 保存の拒否（U2。問題の code は `BUSINESS_REFERENCE_NOT_FOUND`、項目の誤りの `reason` は `REFERENCE_NOT_FOUND`）。code は指標のラベルに無いため、見分けは監査とログで行う（3節） |
 | 初回の JavaScript（入口）と業務データの画面の chunk の大きさ | ビルドの時点（`check-bundle-size.mjs`、一時の手順の manifest の測り。`infrastructure-specification.md` 4節） | 入口は 500 KB で警告（既存）。chunk は線なし | 実行の時点の監視ではなく、ビルドの記録で見る（U3-NFR2.44） |
 
 ## 2. Alerts
@@ -34,7 +34,7 @@ U3 は画面だけの単位で、画面の側には監視を足さない（`infr
 | 作成・更新の画面が開けない（定義の読み込みの失敗） | `POST /api/tables/definition` の 503 | U1 のパネル id 47、警報 `ms-biz-target-db`、ログの `ReferenceLookup` の WARN（`reason`） | 残らない（読み取り） |
 | ラベルが値だけになる（ラベルの1件読みの失敗） | `POST /api/tables/reference/rows` の 403・503 | パネル id 46・47 | 残らない（参照の読み取りは監査に残さない。U1 の BR1.7） |
 | ピッカーの「検索できません」 | `POST /api/tables/reference/rows` の 403・503・400 | パネル id 46・47 | 残らない |
-| 保存の「選べない値です」 | `POST /api/tables/rows`・`PATCH /api/tables/rows` の 409 `REFERENCE_NOT_FOUND` | 業務データの区画の状態コードの内訳と、監査の行（U2 の契約 C4） | 残る（U2 の決め。監査の見分けは Incident Response の手順書に合わせる） |
+| 保存の「選べない値です」 | `POST /api/tables/rows`・`PATCH /api/tables/rows` の 409（問題の code `BUSINESS_REFERENCE_NOT_FOUND`、項目の誤りの `reason` `REFERENCE_NOT_FOUND`） | 業務データの区画の状態コードの内訳と、監査の行（U2 の契約 C4） | 残る（U2 の決め。監査の見分けは Incident Response の手順書に合わせる） |
 | 画面の写しの失敗（応答の形の崩れ）・ブラウザの中の例外 | サーバー側には現れない（応答は 200） | 見えない。画面は通信の失敗か入力不可に倒す（`security-design.md` 1.5） | 残らない |
 | 画面の側の待ち（同時 3 本の列） | 要求の数が短い間に3本ずつ並ぶだけ | パネル id 46 の量 | 残らない |
 
@@ -70,6 +70,10 @@ U3 は画面だけの単位で、画面の側には監視を足さない（`infr
 
 - **Observability Setup**: U1 のパネル id 46・47 を確かめるときに、画面からの操作（作成・更新の画面を開く・ピッカーで検索する）でも系列が入ることを1回見る（任意。要求は待ちを入れた少ない数で送る）。
 - **Incident Response**: 利用者からの「選べない」「検索できない」の問い合わせを、3節の表で道と状態コードに結び付ける手順を、U1・U2 の見分け方と合わせて書く。
+
+## 承認の場の決定
+
+依頼者は Infrastructure Design の承認の場で Request Changes を選び、レビュー（`reviews/review-01.md`）の指摘 R-01〜R-04 の直し方をすべてそのまま当てると決めた。この文書には R-04 を当て、1節と3節で問題の code `BUSINESS_REFERENCE_NOT_FOUND`（応答の `code`）と項目の誤りの `reason` `REFERENCE_NOT_FOUND` を分けて書いた。
 
 ## Sources
 
