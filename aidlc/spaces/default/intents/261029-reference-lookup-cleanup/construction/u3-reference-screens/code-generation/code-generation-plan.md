@@ -273,13 +273,13 @@ U1 の B1 が仮に足した `reference?: unknown`（`businessDataTypes.ts` 129 
   - `support/referenceFixtures.ts`（差し替えの見本。型は画面の型を付ける）と `support/referenceFixtures.test.ts`。195 の中で本物の定義・検索の応答を取り、差し替えの見本と `shapeCompare` で形を比べる（X-3）。
   - 12 の状態（1 開いた直後・2 結果・3 0 件・4 検索の失敗・5 権限不足・6 候補が多い・7 開いた直後の必須・8 保存を押した後・9 保存の 409・10 長い名前・11 2語以上・12 `radio` 200 件）を、1件のテストで1つの組について順に作って axe を流す形にし、`DISPLAY_COMBOS` の 20 組で流す。375px では開いたダイアログの矩形が画面の中に収まり、画面全体が横にスクロールしないことを `overflow.ts` で確かめる（状態 10・12 も）。
   - 差し替えで作る状態（4〜9・12）は保存を起こさないことを、Playwright の要求の記録で作成・更新の POST が差し替えの外へ出ていないと数えて確かめる（R-04）。既知の違反の一覧は使わない（空のまま。どの違反も失敗）。
-- [ ] **Step 16: B4 の確かめ**（NFR2.44・NFR2.45、`cicd-pipeline.md` 3節）
+- [x] **Step 16: B4 の確かめ**（NFR2.44・NFR2.45、`cicd-pipeline.md` 3節）
   - `cd frontend && npx prettier --write .` の後、時間を測って `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（上の環境変数を付ける）。SKIPPED の対象DB のテストが無いこと、frontend のカバレッジの `thresholds` が通ること（`features/tables` の値は Build and Test で記録）を確かめ、時間を U2 の後の値と並べて記録する。42 分を超えたら依頼者に諮る。
   - Mailpit と見本の PostgreSQL を起動し、`caffeinate -dims ./gradlew e2eTest` で E2E の全件（180 を含む）を流し、件数と全体・190・195 の時間を記録する。全体が変更の前の 1.5 倍を超えたら、ファイルごとの時間を記録して 195 の組と状態の分け方を依頼者に諮る（上限で落とさない）。
   - chunk の大きさ（後）を Step 2 と同じ手順で測り、前と並べて `code-summary.md` の材料に書く（条件を直したときはその条件も同じ所に。R-06）。
-- [ ] **Step 17: コミットと統合**
+- [x] **Step 17: コミットと統合**
   - コミットは8節の区切りごとに依頼者に提案し、承認を得てから積む。`aidlc/` の未コミットの変更を先にコミットしてから、`develop` へ squash で統合し、ブランチを消す。`git push` は依頼者が行う。push の後の CI を試行ごと（`gh run view --json attempt,jobs`）に確かめ、検査の job の時間を記録する。
-- [ ] **Step 18: 文書と追跡**
+- [x] **Step 18: 文書と追跡**
   - `verify`・E2E・chunk の値と計画との差を、指揮役がまとめる `code-summary.md` の材料として残す。`traceability.json` は、機能設計の AC と NFR 設計の NFRx.y の行を手順とテストに結び、U1・U2 の受け持ちの AC は機能設計どおり `Deferred`、`features/tables` のカバレッジ・`verify` と CI の時間（NFR2.45）は Build and Test へ `Deferred` にする。README は変えない（E2E の流し方は今の記述のまま当てはまる）。
 
 ## 8. コミットの区切り（提案の件名。積む前に依頼者の承認を得る）
@@ -327,3 +327,183 @@ U1 の B1 が仮に足した `reference?: unknown`（`businessDataTypes.ts` 129 
 - [assumption] テストの件数（Summary）は見積もりで、実際の数は Build and Test で実測する。
 - [assumption] `reference` の `kind` に `FIXED` は届かない（U1 は `REFERENCE`・`LOOKUP` だけを載せる）。届いても D3 の「知らない `kind`」として入力不可に倒す。
 - [assumption] 必須の参照項目の判定は `nullable` が偽で行う（U2 の引き継ぎ。機能設計の Assumptions のとおり）。
+
+## 承認の場の Request Changes の直し（直しの Bolt B7）
+
+Code Generation の段の承認の場で、依頼者が Request Changes を選んだ（全5単位は統合済み、最後のコードのコミットは `a3099f8`）。依頼者の言葉（そのまま）:
+
+> 直しの Bolt で直す: U3 R-01（必須の判定を isRequiredColumn に一本化）・U3 R-02（LookupField の欄への結び付け）・U5 R-01・R-02（今の基準の一覧の抜けと本文の前の値、1297 行は台本の線を確かめてから依頼者が決める）・U2 R-01（想定外の WARN）・U2 R-03（参照元が 0 行の確かめ）・U4 R-04（コード 2 の対処の案内）・U5 R-05（参照の書き方）。残りは Build and Test で扱う。U5 R-03 は読み替えを受け入れ、注記を対応表に書く。
+
+この節は上の承認済みの節（1〜9 節・Testing Contract）を書き換えず、直しの Bolt B7 の手順だけを足す。指摘の本文は各単位の `code-generation/reviews/review-01.md`。方法は上の Testing Contract のとおり test-after（層ごとに実装を書き、同じ Bolt の中でその層のテストを書いて流し、通ってから次の層へ）。
+
+### B7.1 前提と範囲
+
+- 作業は `develop` から作る短命のブランチ `fix/261029-reference-lookup-cleanup-review` で行い、`develop` へ squash（1コミット）で戻す（`team.md`）。サブモジュールの固定先の更新は無い。make-you-chic-ui（固定先 `4c63d11`）の中身は変えない。
+- 触れる場所: frontend の本体（`frontend/src/features/tables/` の `formValidation.ts`・`BusinessDataFormPage.tsx`・`references/ReferenceSelectField.tsx`・`references/LookupField.tsx`）と業務データの機能の `src/main`（`backend/.../businessdata/service/`）。どちらも統合の前に E2E の全件を流す対象（`team.md` の Way of Working）。backend を変えるため、`verify` は `:backend:cleanTest :backend:cleanIntegrationTest` を付けて流す。
+- 変えない: DSL の書式・JSON Schema・移行・API の形と状態コード（⑩ の想定外は今と同じ 500）・`ReferenceFailureReason` の値・ArchUnit の境界テスト・`spotbugs-exclude.xml`・lockfile・`frontend/package.json`・k6 の台本の閾値（`perf/k6/scenarios.js`）と `perf/dsl-mixed-memory.sh` の判定の値・`packagesJudgedByTotal`。承認済みの設計の文書も書き換えない（差は各単位の `code-summary.md` に書く。`project.md`）。
+- 業務データの行の値・参照先のラベル・接続情報を、ログ・テストの説明文・`data-testid`・記録に置かない（`project.md` の Forbidden）。
+- 計画を書く前に読み取りで確かめた事実（この節の手順の前提）:
+  - **F-1（U3 R-02）**: vendor の `FormField`（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/FormField/FormField.tsx`）は、`id`・`aria-describedby`・`aria-invalid` を直下の子へ props で渡すのではなく、`FormFieldContext` で配る。`useFieldProps`（同じフォルダ）が文脈から `id`（`fieldId`）・`aria-describedby`（誤りの id と説明文の id）・`aria-invalid` を作り、`TextInput` は自分の props の前にそれを広げる。文脈を読むのは `TextInput`・`Select`・`RadioGroup`・`Textarea`・`Checkbox`・`Switch` で、`Button` は読まない。そのため `LookupField` の `<div className="tables-lookup">` の中の `TextInput` にも届き、「選ぶ…」「クリア」のボタンには付かない見込み。手順ではこれをテストで裏付け、外れたときだけ欄へ明示で渡す。
+  - **F-2（U3 R-01）**: 必須の判定は、`referenceField.ts` の `isRequiredColumn`（`nullable === false || required === true`）と、`column.required === true` だけを見る箇所（`ReferenceSelectField.tsx` 60 行の印・`aria-required`・94 行の「（選ばない）」の出し分け、`LookupField.tsx` の `FormField` の `label`、`formValidation.ts` の `validateValue` 157 行・`validateForm` 231 行、`BusinessDataFormPage.tsx` の `validateOnBlur` 341 行）に分かれている。
+  - **F-3（U2 R-01）**: `BusinessDataWriteService.referenceStep` は、読み取りの口の中で `BusinessDataUnexpectedException` を捕まえて空にし（312〜315 行）、口の外で `orElseThrow` する（355 行）だけで、診断の WARN を出さない。例外は `ReferenceLookup.failureOf`（`RowQueryFailure` の `INVALID_VALUE`・`UNEXPECTED` を写せないとき）と同じクラスの中の値の欠け（547 行付近）で投げられ、メッセージも原因も持たないため、口の外では `sqlState`・`vendorCode`・`exceptionClass` が分からない。`RowQueryFailure` は `stage`・`sqlState`・`vendorCode`・`exceptionClass` を持つ。
+  - **F-4（U2 R-03）**: `perf/biz/make-biz-seed.sh` は SQL を標準出力に出すだけで、自分では流さない。スキーマ（MySQL・MariaDB はデータベース）`bizperf` を毎回消して作り直し（197〜203 行）、`biz_refcreate` には行を入れない。種の直後に 0 行でないことは今の台本では起きないが、`refCreateChecked` を流した後に種を入れ直さずにもう一度流すと、前の回の行が残る。
+  - **F-5（U5 R-01 の 1297 行。下の Step 30）**: 台本が判定する線を読んだ結果は Step 30 に書く。
+
+### B7.2 手順
+
+- [ ] **Step 19: 準備**（全体）
+  - `aidlc/` の未コミットの変更（承認の場の記録・この節）を先に `develop` にコミットしてから、`develop` の先頭（`a3099f8` の後の記録のコミット）からブランチ `fix/261029-reference-lookup-cleanup-review` を作る。始めのコミットを `code-summary.md` の材料に書く。
+  - git の対象外の生成物（`frontend/playwright-report`・`frontend/test-results`）を先に消す（`project.md`）。
+  - 変える型・関数を使っている既存のテストを検索で洗い出す（`project.md`）: `isRequiredColumn`・`validateValue`・`validateForm`・`validateOnBlur`・`tables.form.unselected`・`tables.form.required` を使うテストと E2E（`frontend/e2e/180`・`190`・`195` の欄の名前での探し方を含む）、`referenceStep`・`warnReference`・`BusinessDataUnexpectedException` を使う backend のテスト（`BusinessDataWriteReferenceTest`・`BusinessDataWriteServiceTest`・`ReferenceWriteSecretLeakIT`・`ReferenceLookupTest`）。結果を影響の範囲として `generation-notes.md` に書く。
+
+- [ ] **Step 20: U2 R-01 の実装（業務処理の層）**（U2 の NFR1.32・`reliability-design.md` 2節）
+  - 指摘: ⑩（保存の前の参照の確かめ）の想定外の失敗で診断の WARN が出ず、⑪ の想定外（`warn(..."UNEXPECTED"...)`）と非対称。
+  - 直し: ⑩ の想定外を、例外で値を失う形から、値を持たない診断の材料（`stage`・`sqlState`・`vendorCode`・`exceptionClass`）を口の外へ運ぶ形に変える。書き込みの確かめの経路（`ReferenceLookup` の 424・461 行の `failureOf` と、値の欠け）だけを対象にし、U1 の読み取りの API の経路（591 行付近の検索・ラベル）は変えない。口の外で WARN を**1行だけ**出す: キーは `purpose=REFERENCE`・`stage`・`reason=UNEXPECTED`・`sqlState`・`vendorCode`・`exceptionClass`（無いキーは出さない。`budgetExceeded` は今の `warnReference` と同じく `false` を付けてよい）。名前・値・メッセージは出さない。その後は今と同じく `BusinessDataUnexpectedException` を投げて 500 にし、書き込みの口は借りず、監査も今と同じ（想定外は残さない）。
+  - 型の置き場は `businessdata.service` の中（`ReferenceStepOutcome` に想定外の場合を足すか、確かめの結果の型に足すかは、`sealed` の `switch` が場合を尽くす形を保つ方を選び、選んだ方を `generation-notes.md` に書く）。`ReferenceFailureReason` に `UNEXPECTED` は足さない（HTTP の写しに使う値のため）。`reason` のキーの値は ⑪ と同じ文字 `UNEXPECTED`。
+  - 触れるファイル: `backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java`、`.../service/ReferenceLookup.java`（と、場合を足すなら `ReferenceStepOutcome`・確かめの結果の型）。
+  - 確かめ: `./gradlew :backend:compileJava :backend:spotlessCheck`。
+
+- [ ] **Step 21: U2 R-01 のテスト**
+  - `BusinessDataWriteReferenceTest` に足す（既存の WARN を数える形 T-F2 と同じ `ListAppender`）: (1) 確かめの読み取りが `INVALID_VALUE` の `RowQueryFailure` を返すとき、(2) `UNEXPECTED` を返すとき、(3) 値の欠けのとき、の3件で、WARN がちょうど1行・レベル WARN・キーの集合が `purpose`・`stage`・`reason`・`sqlState`・`vendorCode`・`exceptionClass`（と `budgetExceeded`）の範囲で、`purpose=REFERENCE`・`reason=UNEXPECTED`、(1)(2) は `sqlState`・`vendorCode`・`exceptionClass` が入力の値と一致、(3) は値の無いキーを出さない。整形した本文とキーの値のどれにも、送った参照の値・カラムの名前・テーブルの名前が含まれない。例外は `BusinessDataUnexpectedException`（メッセージ・原因なし）で、書き込みの口が呼ばれず、監査の出来事が出ない。
+  - 既存の T-F2（2つ目の確かめの失敗で WARN 1行）と BR2.7（拒否では WARN 0 行）が変わらず通る。
+  - 流す: `./gradlew :backend:test --tests '*BusinessDataWriteReferenceTest' --tests '*BusinessDataWriteServiceTest' --tests '*ReferenceLookupTest'` と `./gradlew :backend:integrationTest --tests '*ReferenceWriteSecretLeakIT'`（対象DB のコンテナが要る。下の環境変数）。
+
+- [ ] **Step 22: U3 R-01 の実装（検証の純粋な関数の層）**（D13・D21、U2 の D4）
+  - 指摘: 必須の判定が `isRequiredColumn` と `required` だけの2通りあり、NULL 不可で `required` が偽の REFERENCE の項目に「（選ばない）」が出て、印も付かず、保存で初めてサーバーの 400 `REQUIRED` で止まる。
+  - 直し: **参照の項目（`column.reference !== null`）に限り**、必須を `isRequiredColumn` で判定する。`formValidation.ts` の `validateValue`（空の値を `REQUIRED` にする条件）と `validateForm`（作成で値が無いときの `REQUIRED`）を、参照の項目では `isRequiredColumn` で見る。参照でない項目の判定（`required === true` だけ）は変えない（既存の画面とサーバーの `WriteRequestValidator` の今の対応を崩さないため。変えないことを下のテストで固定する）。`isRequiredColumn` の置き場は今の `references/referenceField.ts` のままとし、`formValidation.ts` から読む向き（純粋な関数どうし）で import の循環が無いことを確かめる。循環になるときは `isRequiredColumn` を `formValidation.ts` 側の小さな純粋な関数に移し、`referenceField.ts` はそれを読む形にする。
+  - 触れるファイル: `frontend/src/features/tables/formValidation.ts`（と、移すなら `references/referenceField.ts`）。
+  - 確かめ: `cd frontend && npm run typecheck`。
+
+- [ ] **Step 23: U3 R-01 の検証の層のテスト**
+  - `formValidation.test.ts` に足す: NOT NULL で `required: false` の REFERENCE の項目（`reference` は `AVAILABLE`）について、(1) 作成で値が無いと `REQUIRED`、(2) 空の値（`''`・`null`）を送ると `REQUIRED`、(3) 値が入れば誤りなし、(4) 更新で値を変えなければ誤りなし。同じ形の LOOKUP の項目でも (1)(2)。比べとして、NOT NULL で `required: false` の**参照でない**文字の項目は今の結果のまま（作成で値が無くても `REQUIRED` にならない、`null` は `NOT_NULL`）であることを1件。`nullable: true`・`required: false` の参照の項目は必須にならないことを1件。
+  - fast-check の性質ベースのテストを1件足す: 参照の項目で `nullable`・`required` の任意の組について、`validateValue(column, '')` が `REQUIRED` を返すことと `isRequiredColumn(column)` が真であることが一致する（種を記録する）。
+  - `referenceField.test.ts` の `isRequiredColumn` の既存のテストが通ることを確かめる（移した場合は移した先にテストを移す）。
+  - 流す: `cd frontend && npx vitest run src/features/tables/formValidation.test.ts src/features/tables/references/referenceField.test.ts`。
+
+- [ ] **Step 24: U3 R-01・R-02 の実装（部品と画面の層）**
+  - `ReferenceSelectField.tsx`: `required` を `isRequiredColumn(column)` にし、必須の印（`tables.form.required` を足した `label`）・`aria-required`・「（選ばない）」を出さない条件（必須で値が入っているとき。今の既存の select と同じ規則）をそれでそろえる。radio は今どおり「（選ばない）」を置かない。0 件の説明文（D9）は今どおり。
+  - `LookupField.tsx`: `label` を必須なら印を足した形（`ReferenceSelectField` と同じ書き方）にし、欄の `TextInput` に `aria-required` を付ける（必須のときだけ）。「クリア」の出し分け（`clearable`。今は `isRequiredColumn` で決める側）は変えない。F-1 のとおり結び付けは文脈で欄に届く見込みのため、欄へ `id`・`aria-describedby`・`aria-invalid` を明示で渡すことはしない。Step 25 のテストで届かないと分かったときだけ、`useFieldProps` を欄の側で使う形（vendor が公開している口に限る。公開していなければ `FormField` の外に結び付けを書かず依頼者に諮る）で明示に渡す。コメント（「欄だけが受ける」）を「FormField の文脈で欄の TextInput だけが受け、ボタンは受けない」と事実に合わせて直す。
+  - `BusinessDataFormPage.tsx`: `validateOnBlur`（341 行）の「作成で値が無いときの `REQUIRED`」を、参照の項目では `isRequiredColumn` で見る（Step 22 の `validateForm` と同じ条件。可能なら同じ純粋な関数を呼ぶ形にして条件を1か所にする）。参照でない項目の描画（880 行以降の `required`）は変えない。
+  - 触れるファイル: `frontend/src/features/tables/references/ReferenceSelectField.tsx`・`references/LookupField.tsx`・`BusinessDataFormPage.tsx`。
+  - 確かめ: `cd frontend && npm run typecheck && npm run lint`。
+
+- [ ] **Step 25: U3 R-01・R-02 の部品と画面の層のテスト**
+  - `ReferenceSelectField.test.tsx` に足す（NOT NULL で `required: false` の REFERENCE の項目）: 必須の印がラベルに付く・`aria-required="true"`・値が入っているとき「（選ばない）」の選択肢が無い・値が空のときは「（選ばない）」が置かれる（今の select の規則）。`nullable: true`・`required: false` では印も `aria-required` も無く「（選ばない）」がある。vitest-axe を1件（必須の形）。
+  - `LookupField.test.tsx` に足す（R-01）: NOT NULL で `required: false` の LOOKUP の項目で、ラベルに必須の印・欄に `aria-required="true"`。（R-02）`getByLabelText(<ラベル>)` が欄の `TextInput`（`data-testid="tables-lookup-value-c<n>"`）を返すこと（`label` の `for` と欄の `id` の一致）。誤りを渡したとき、欄の `aria-invalid="true"` と `aria-describedby` が誤りの文の要素の `id` を指し、その要素の文字が誤りの文であること。誤りが無く値が空のとき、`aria-describedby` が説明文（`tables.reference.lookupHint`）の要素の `id` を指し、`aria-invalid` が無いこと。値が入ると `aria-describedby` が無いこと。「選ぶ…」「クリア」のボタンに `aria-describedby`・`aria-invalid` が付かないこと。vitest-axe を1件（誤りの状態）。
+  - `BusinessDataFormPage.test.tsx` に足す: NOT NULL で `required: false` の REFERENCE の項目を持つ作成の画面で、(1) 選ばずに欄から離れると `REQUIRED` の文が欄に結ばれる（`waitFor` で待つ）、(2) 選ばずに保存を押すと要求を送らず誤りのまとめへフォーカスが移る、(3) 選んでから保存すると本文にその値が入る。同じ形の LOOKUP の項目で (2)。参照でない NOT NULL・`required: false` の項目の今の振る舞いが変わらないことを1件。
+  - 既存のテストで「（選ばない）」の有無や必須の印に頼るものが落ちたときは、見本の `required`・`nullable` が NOT NULL・`required: false` の組かを確かめ、新しい規則での期待に直す（直した件と理由を `generation-notes.md` に書く）。
+  - 流す: `cd frontend && npx vitest run src/features/tables/references src/features/tables/BusinessDataFormPage.test.tsx src/features/tables/formValidation.test.ts`。
+
+- [ ] **Step 26: E2E への影響の確かめ**（R-01 の印と「（選ばない）」の変化）
+  - `frontend/e2e/support/businessDataDsl.ts`・`businessDataSchema.sql` の注文の表の参照のカラム（顧客・商品）の `nullable` と `required` を読み、190・195・180 が欄をラベルの名前（`getByLabel`・`getByRole` の `name`）で探す箇所と、「（選ばない）」を選ぶ・数える箇所を洗い出す。必須の印が名前に加わって探し方が外れる・「（選ばない）」が無くなる箇所があれば、新しい規則に合わせて E2E を直す（既存の E2E の書き換えで、本数に数えない）。195 の状態 7・8（作成の必須の入力不可）の axe と `role="alert"` の確かめは変えない。
+  - 直したかどうかと箇所を `generation-notes.md` に書く。E2E の全件は Step 35 で流す。
+
+- [ ] **Step 27: frontend の手元の確かめ**
+  - `cd frontend && npm run format:check && npm run lint && npm run lint:css && npm run typecheck`、ライセンスヘッダーの検査、`features/tables` のテストの全件（`unit-test-instructions.md` 3.3）。`git diff --stat develop -- frontend/package.json frontend/package-lock.json` が空。
+
+- [ ] **Step 28: U2 R-03（参照元が 0 行の確かめ）**（基盤の設計 R-03、U2 の NFR2.24）
+  - 指摘: 種の後の `biz_refcreate` の 0 行を、出力を人が読むことにだけ頼っている。
+  - 直し（F-4 のとおり台本は流す道具ではないため、流れた先の DB で失敗させる形にする）: `make-biz-seed.sh` が出す SQL の最後（行の数の出力の後）に、`biz_refcreate` が 0 行でなければ誤りで止まる文を足す。PostgreSQL は `DO` の塊で `RAISE EXCEPTION`（`ON_ERROR_STOP` で `psql` が 0 でない終了になる）、MySQL・MariaDB は 0 行でないときだけ誤りになる問い合わせ（例: 0 でなければ2行を返す副問い合わせを1つの値として比べ、`Subquery returns more than 1 row` で止まる形。`mysql`・`mariadb` の道具はバッチで誤りがあると 0 でない終了になる）。誤りの文に行の値を出さない（数も出さず「0 行でない」とだけ）。台本は毎回スキーマを作り直すため、この確かめは今は必ず通り、作り直しをやめる・行を入れる変更が入ったときに止める守りになる。
+  - あわせて `perf/README.md` の U2 の節の「種の後の確かめ」（今の 1434 行）に1行足す: `refCreateChecked` は流すたびに `biz_refcreate` に行を作るため、**流す前に毎回**種から入れ直す（または 2B' と同じ形で `SELECT COUNT(*) FROM bizperf.biz_refcreate` を流し、0 でなければ種から作り直す）。種の台本の最後の確かめで止まったときは、前の回の行が残っているので種から入れ直す。
+  - 触れるファイル: `perf/biz/make-biz-seed.sh`・`perf/README.md`。
+  - テスト: `bash -n perf/biz/make-biz-seed.sh`、`shellcheck`（入っていれば）、3種類それぞれで台本の出力に確かめの文が1つだけあり行の数の出力より後にあることを `grep` で確かめる。見本の PostgreSQL（E2E と同じ `targetdb-postgres`）が動いていれば、出力を流して終了コード 0 を確かめ、続けて `biz_refcreate` に1行入れてから確かめの文だけを流して 0 でない終了になることを確かめ、`bizperf` を消して片付ける（配備したアプリの対象DB の業務の表には触れない。消すのは台本が作る `bizperf` だけ）。MySQL・MariaDB は Build and Test の試し走りで確かめる（使い捨ての環境を起こすため）と `generation-notes.md` に書く。
+  - 決めかねる点: 確かめの文を台本に足さず README の手順だけにする案もある（台本が毎回作り直すため）。推奨は台本に足す（人が読むことに頼らない、という指摘の趣旨に合い、行の値を出さずに済む）。
+
+- [ ] **Step 29: U4 R-04（コード 2 で止まったときの案内）**
+  - `perf/README.md` の `--scan` の説明（今の 1541 行）の後に1行足す: 終了コード 2 で止まったとき（読めない・64 MiB を超える・NUL を含むテキストのファイル）は、表示されたパスのファイルを記録の置き場から外す（記録に要らないものは消す。要るものは置き場の外へ移す）か、バイナリとして扱ってよい種類なら理由を書いて許可の一覧に足すよう依頼者に諮る（一覧への追加は依頼者の承認が要る、という今の記述と合わせる）。外した後に `--scan` を流し直して 0 を確かめる。
+  - 触れるファイル: `perf/README.md`。道具（`perf/redact-k6-evidence.mjs`）は変えない。
+  - 確かめ: Step 33 の README の検索（Q1〜Q7）に含める。
+
+- [ ] **Step 30: U5 R-01 の 1297 行の事実と決定（依頼者の決定が要る）**
+  - 指摘: 整理の前の 1297 行（今の `perf/README.md` 1343 行、`bizCreateLarge` の行）の「`memory.peak` の線は 95% 未満に緩めた（履歴 H54）」が、目標の見直しの「変えない線」（H66: `bizSearchWide` と書き込みの場面は変えない）と食い違う。
+  - 台本が判定している線（読み取りで確かめた事実）:
+    1. `perf/k6/scenarios.js` の `thresholdsFor`（629〜645 行）: `bizSearchWide`・`bizCreateLarge` の判定は `checks{scenario:<場面>}` `rate==1` だけで、`iteration_duration`・`http_req_duration` は `max>=0`（記録だけ）。k6 はメモリを判定しない。書き込みの場面（`bizCreate`・`bizUpdate`・`bizDelete`・`bizWritePoolLimit`）も p95 と `checks` だけ。
+    2. `perf/dsl-mixed-memory.sh` の `summarize`（156〜188 行）: `memory.peak / memory.max` を判定するのは `dslMixed` の1回の測りだけで、`judge`（< 0.95）と `judge_090`（< 0.9、前の線を並べる）を出す。`bizSearchWide`・`bizCreateLarge`・書き込みの場面の `memory.peak` を読む台本・判定は無い（README の手順の `docker exec … cat /sys/fs/cgroup/memory.peak` を人が読む）。`perf/dsl-mixed-memory-test.sh`・`perf/k6/thresholds-test.sh` もこの2つの線だけを照らす。
+    3. 線の決定の記録: Intent 261027-perf-targets-review の要件 FR1.2 は「`dslMixed` の `memory.peak` ÷ 2g の線を 90% 未満から 95% 未満に緩める」だけで、`bizSearchWide`・`bizCreateLarge` の `memory.peak` は含まない。同じ Intent が README に書いた H65 の表も `memory.peak` は `dslMixed` の行だけで、H66 は「`bizSearchWide` と書き込みの場面 … も変えない」と書く。
+    4. 1343 行の「95% 未満に緩めた」の注記は、同じ Intent のコミット `805db12` が `bizCreateLarge` の行に足したもので、要件の裏付けが無い。その Intent の Build and Test は書き込みの場面を流していない（同じ要件の FR2.5）ため、この注記で判定した結果も無い。
+    5. よって、今の線は台本では誰も判定しておらず、承認済みの要件の上では `bizSearchWide`（Intent 261016-business-data-views の U1 の NFR2.5）・`bizCreateLarge`（同じ U2 の NFR2.8）とも「アプリのコンテナの `memory.peak` が上限 2g の 90% 未満」。
+  - 依頼者に尋ねる（この Step の答えが出るまで Step 32 の 1343 行の直しを始めない。ほかの Step は進めてよい）:
+    - **A（推奨）**: 90% 未満が今の線。1343 行の注記の「95% 未満に緩めた」を取り消し（本文の線の文は 90% 未満のまま）、取り消した事実を履歴に新しい項目として書く（`805db12` で足した注記で、FR1.2・H66 と食い違うため取り消した。H54 は書き換えず、その項目から新しい項目を指す）。「今の基準の一覧」の「k6 の外の線」に `bizSearchWide`・`bizCreateLarge` の `memory.peak` / `memory.max` < 0.9（線の値を持つ場所は「この表（合格の条件）」）を足す。理由: 承認済みの要件と同じ Intent の「変えない線」の記録に合い、目標を記録なしに緩めない（`project.md`・`team.md` の物差しの決まり）。
+    - **B**: `bizCreateLarge`（と `bizSearchWide`）も 95% 未満に緩めたことにする。目標の緩和になるため、直しの Bolt の中では決めず、要件としての決定（理由と前の線を並べる記録）を Build and Test か次の Intent の要件定義で取ってから README を直す。それまでは A と同じく本文と一覧を 90% にそろえる。
+    - **X. Other (please specify)**
+  - 答えは記録の手順（質問のファイルと答えの記録）に従って指揮役が依頼者に尋ねる。
+  - **依頼者の決定（2026-10-31）: B**。`bizCreateLarge`・`bizSearchWide` の `memory.peak` も 95% 未満に緩める方向とする。目標の緩和のため、この直しの Bolt では README を 95% にせず、要件としての決定（理由と前の線を並べる記録）を Build and Test の質問で取る。それまでは本文と「今の基準の一覧」を 90% 未満にそろえ、1343 行の「95% 未満に緩めた」の注記は「緩和は未決（Build and Test で要件として決める）」に直す。H54 は書き換えず、新しい履歴の項目に経緯を書く。
+  - あわせて Step 28 は依頼者の決定 A（台本に確かめの文を足す）。
+
+- [ ] **Step 31: U5 R-01 の線の値を含む行の洗い出し（機械の確かめ）**
+  - `perf/README.md` の本文（「今の基準の一覧」の後から「## 履歴」の前まで）で、線の値に見える行を機械で全部取り出す。取り出す形（どれかに当たる行）: `memory.peak`・`anon`・`memory.max` を含む行、`[0-9.]+ ?%`、`[0-9,]+ ?ms`、`p\(95\)`、`< ?0\.[0-9]`、`(未満|以下|以内)` の前に数がある行。結果の行（行番号と本文）を作業の置き場（リポジトリの外）に保存する。書いた時点の試しで、この形に当たる本文の行は 47 行（例: 586・715・869 行の接続の待ちの最大 20 ms、910・994 行の前の線、1193 行の `bizSearchWide`、1212 行のプールの大きさの決め方 80%、1343 行の `bizCreateLarge`）。
+  - 1行ずつ次のどれかに分け、表（行・分け方・一覧の行または履歴の番号・理由）を `perf-docs-check-record.md` の新しい節に書く: (a) 今の合否の線 → 「今の基準の一覧」の行と1対1で対応させる（無ければ Step 32 で足す）、(b) 前の線・過去の合否の文 → 履歴へ移す、(c) 線ではない（測った値・大きさの決め方・説明）→ 本文に残し、理由を書く。
+  - 決めかねる行（例: 接続の待ちの最大 20 ms が今も合否の線か、過去の Intent の測り直しだけの線か）は、出典の Intent の要件と台本（`perf/k6/scenarios.js` に判定があるか）を読んで決め、それでも決まらなければ Step 30 と一緒に依頼者に尋ねる一覧にする（推奨と理由を添える）。
+
+- [ ] **Step 32: U5 R-01・R-02・R-05 の README の直し**
+  - (R-01) Step 31 の (a) で一覧に無い線を「今の基準の一覧」（k6 の閾値の表か「k6 の外の線」の表）に足す。少なくとも Step 30 の答えに従った `bizSearchWide`・`bizCreateLarge` の `memory.peak` の行。1343 行の注記を Step 30 の答えに合わせて直す。
+  - (R-02) 1214 行の「MySQL（2304m）の回の上限の合計 … 2048 + 2304 + 512 + 256 = 5,120 MiB」を、今の値で計算し直す（2048 + 2688 + 512 + 256 = 5,504 MiB）。直す前に `docker/perf/compose.yaml` の perf のアプリ・見本の PG・Mailpit の上限の既定と表（1205 行の 2688m）を読み、各項の値が今も正しいかを確かめる。「docker から見える量 約 5,910 MiB に収まる」は過去に測った値のため、測った時点の出典（履歴の番号）を付け、5,504 MiB でも収まること（余り約 406 MiB）を書く。2304m の元の計算の文は履歴へ移す。推奨は「本文は今の値で直し、元の文を履歴へ」（走らせる人が今の余裕を読めるため）。U5 の `code-summary.md` 8節の推奨（履歴へ移し本文には今の値だけ）とは、本文に今の値の計算を残す点で違うことを差として書く。
+  - (R-02) 910 行（FR9.4 の合否の文の前の線 90%）と 994 行（BR3.1・BR3.5 の `memory.peak / memory.max < 0.9`）の前の線の合否の文を履歴へ移し、本文には今の線（0.95 未満）と「今の基準の一覧」への参照だけを残す。Step 31 の (b) に分けたほかの行も同じく移す。
+  - (R-05) 連続する参照「（履歴 Hn）（履歴 Hm）」を「（履歴 Hn・Hm）」にまとめる（今の 860・1102・1182・1335・1349・1370・1426 行。Step 31 と同じく機械で `（履歴 H[0-9]+）（履歴` を数えて 0 にする）。1264 行のコメント「前例は（履歴 H50）。）」の括弧の二重を直す（コマンドの行は変えない）。
+  - 移した行には、前の章立てと同じく履歴の番号を振り、本文の元の場所から参照を残す（U5 の B6 の形）。コードブロックの中のコマンドの行は変えない（コメントだけを直す）。
+  - 触れるファイル: `perf/README.md` だけ。台本は変えない。
+
+- [ ] **Step 33: U5 の確かめの流し直し**
+  - U5 の `unit-test-instructions.md` 2.3〜2.6 のとおり、CB5（k6 の外の線の組。今の値で `pairs-after.tsv` を作り直す。足した `memory.peak` の行を含む）・CB6（`k6 inspect` の thresholds と「今の基準の一覧」の照合、78 場面・過不足 0）・CB9〜CB12（行の集合の突き合わせ L1〜L4。今回の直しの前の README を「前」として取り出し直す）・Q1〜Q7（見出し・本文の Intent の名前と日付の検索・`gitleaks dir` など）を流し直す。U5 の作業の置き場（`$B`。`check-list.mjs` などの道具）が残っていなければ、同じ手順書から作り直す。
+  - 新しい確かめ CB22: Step 31 の取り出しを直した後の README に流し直し、(a) に分けた行がすべて一覧の行と対応し、(b) に分けた行が本文に残っておらず、本文に残る線の値を含む行が (a)・(c) だけであることを確かめる（対応の無い行が 0 件）。あわせて `（履歴 H[0-9]+）（履歴` が 0 件、`。）` を含む行がコメントの括弧の二重でないこと。
+  - 結果を `perf-docs-check-record.md` に新しい節として足す（前の節は書き換えない）。
+
+- [ ] **Step 34: 追跡の直し**（U5 R-01・R-02・R-03）
+  - U5 の `traceability.json`: AC4.2.2・AC4.2.4 の note に「作り直しなしの読み替え（依頼者が承認の場で受け入れた）。結果の照合を作り直しの後ではなく今のコンテナに当てた」を、NFR8.84 の note に「救済の WARN は未計測（作り直し・起動をしていないため）。読み替えを依頼者が受け入れた」を、OK の判定ではなく注記として足す（status は依頼者の受け入れのとおり OK のまま）。AC4.3.1 の note に Step 31・33 の確かめの範囲（本文の線の値を含む行を一覧と突き合わせた件数）を、AC4.3.2 の note に前の線の文を履歴へ移したことを足す。
+  - U2・U3 の `traceability.json`: 直しで足したテストを、当たる行（U2 の NFR1.32 の WARN、U3 の D13・D21・必須の判定と D 番号のアクセシビリティの行）の note に足す。行の status は変えない。
+  - U4 の `traceability.json`: R-04 の README の行は note に足すだけ。
+
+- [ ] **Step 35: B7 の確かめ**
+  - `cd frontend && npx prettier --write .` の後、時間を測って `caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡す。`project.md`）。対象DB のテストに SKIPPED が無いこと、`businessdata.service` のパッケージごとの下限、frontend のカバレッジの `thresholds` が通ることを確かめ、時間を前の値（U3 の B4 の後）と並べて記録する。42 分を超えたら依頼者に諮る。流す前に `pmset -g assertions`、流した後に `pmset -g log` で眠りが無いことを確かめる。
+  - Mailpit と見本の PostgreSQL を起動し、`caffeinate -dims ./gradlew e2eTest` で E2E の全件（180・190・195 を含む）を流し、件数と時間を記録する。報告の json に資格情報・接続先・トークンが無いことを確かめる。
+  - backend のカバレッジは `jacocoTestReport.xml` から `businessdata.service` の値を読んで記録する。
+
+- [ ] **Step 36: コミットと統合**
+  - コミットは場所・単位ごとに区切り、各コミットの時点で型の検査・コンパイルが通ることを確かめる（`project.md`）。積む前に区切りごとに依頼者に提案して承認を得る（下の B7.3）。
+  - `aidlc/` の未コミットの変更を先にコミットしてから、`develop` へ squash で統合し、ブランチを消す。`git push` は依頼者が行う。push の後の CI を試行ごと（`gh run view --json attempt,jobs`）に確かめ、再実行で通ったものは1回目の失敗とテストも書き、検査の job の時間を記録する。
+  - 段の承認の場は、squash の統合のコミットの後、記録だけのコミット（`aidlc/` の下だけ）を積む前に開く（`project.md`）。
+
+- [ ] **Step 37: 文書と引き継ぎ**
+  - 各単位の `code-summary.md`（U2・U3・U4・U5）に「直しの Bolt B7」の節を足す（前の節は書き換えない）: 直した指摘、変えたファイル、足したテスト、Step 30 の決定と README の直し、計画との差、`verify`・E2E・CI の値。U3 の `code-summary.md` 5.2 の「担当が決めた細かい点」の `isRequiredColumn` の項には、B7 で必須の判定を参照の項目に限って一本化したことを足す。
+  - 下の B7.4 の Build and Test へ回す一覧を、各単位の `code-summary.md` の引き継ぎの節に写す。
+
+### B7.3 コミットの区切り（提案の件名。積む前に依頼者の承認を得る）
+
+import の向き: backend（業務処理）→ frontend（検証の純粋な関数 → 部品・画面 → E2E）→ perf の台本と文書 → 記録。
+
+| 区切り | 件名（案） | 中身 |
+|---|---|---|
+| R1 | 保存の前の参照の確かめの想定外の失敗に、値を含まない診断の WARN を1行出す | Step 20・21（backend だけ。`:backend:compileJava` と単体テストが通る） |
+| R2 | 参照の項目の必須の判定を、NULL を許さない項目を含む形にそろえる | Step 22・23（`formValidation.ts` と、移すなら `referenceField.ts`。`npm run typecheck` が通る） |
+| R3 | 参照の選択肢とピッカーの欄の必須の印と結び付けをそろえ、テストを足す | Step 24〜26（部品・画面・E2E の直し） |
+| R4 | 負荷の試験の種に参照元が 0 行の確かめを足し、手順書に案内を足す | Step 28・29（`perf/biz/make-biz-seed.sh`・`perf/README.md` の U2・U4 の行） |
+| R5 | 負荷の試験の手順書の今の基準の一覧に抜けた線を足し、前の値と参照の書き方を直す | Step 30〜32（`perf/README.md` の U5 の行） |
+| 記録 | 直しの Bolt B7 の確かめの記録と追跡（Intent 261029-reference-lookup-cleanup） | Step 33・34・37（`aidlc/` の下だけ。承認の場の後に積む） |
+| 統合 | 承認の場の指摘を直す（Intent 261029-reference-lookup-cleanup の直しの Bolt B7） | squash（R1〜R5） |
+
+### B7.4 Build and Test へ回すもの（この Bolt では直さない）
+
+依頼者の決定「残りは Build and Test で扱う」のとおり。持ち主はどれも Build and Test（指揮役が質問と記録をまとめ、直しが要るものはその段の中で依頼者に諮る）。
+
+| 単位 | 指摘 | Build and Test で扱うこと |
+|---|---|---|
+| U1 | R-01 | U2 の設計の T-T1（応答しない相手は TIMEOUT）と実装（UNAVAILABLE）の差が、U2 のテストと記録で UNAVAILABLE に読み替えられているかを確かめて記録する |
+| U1 | R-02 | `ReferenceTimeoutIT` の経過時間の上限が CI で不安定でないかを、B7 の後の CI の試行ごとの結果で確かめる。落ちたら `team.md` の不安定なテストの決まりで扱う |
+| U1 | R-03 | `traceability.json` の NFR2.2（試し走りは Build and Test）・NFR5.1（B1・B2 のパッケージごとの実測）を、その段の実測で補って記録する |
+| U1 | R-04 | perf の「深いページのピッカー（1,000 ページ目）」の手順を、場面に足すか手順から外すかを質問で決める |
+| U2 | R-02 | 接続の数の確かめに MariaDB と内部DB の借りた回数を足すか、足さない理由を差として記録するかを決める |
+| U2 | R-04 | NFR5.21 のカバレッジを実測で記録する（`businessdata.domain`・`service`。B7 で service を変えるため B7 の後の値） |
+| U3 | R-03 | 使っていない文言の鍵 `tables.reference.loading`（日英）の扱いを決める |
+| U3 | R-04 | E2E 190・195 と 180 の差分、日英の鍵の漏れ、バックエンドの DTO との照合を確かめ、B4（`711ddd0`）と B7 の CI を試行ごとに記録する |
+| U4 | R-01 | README の「別の検査」の書き方（同じ形の定義を使うこと）を直すかを決める |
+| U4 | R-02 | 道具のカバレッジが `verify` の下限の外にあることの記録と、`coverage.include` に足すかの検討 |
+| U4 | R-03 | 道具に当たらない検査（ESLint・型の検査）の一覧と理由を記録する |
+
+U5 R-03 は依頼者が読み替えを受け入れたため、Step 34 の注記だけで閉じる。U5 R-04（B6 の CI の試行ごとの記録）は U5 の `code-summary.md` 7節のとおり Build and Test の引き継ぎに残る。
+
+### B7.5 Assumptions & Open Questions（この節の分）
+
+- [assumption] Step 30 の答えは推奨の A を前提に Step 32・34 を書いた。B のときは本文と一覧を 90% のままにして、緩和の決定の手続きを Build and Test の質問に足す。
+- [assumption] F-1 のとおり `FormField` の結び付けは文脈で欄に届くため、R-02 は部品の直しではなくテストの追加とコメントの直しで閉じる見込み。テストで届かないと分かったときだけ欄へ明示で渡す。
+- [assumption] 参照でない項目の必須の判定（`required` だけ）は変えない。R-01 の範囲は参照の項目に限る（指摘の対象と U2 の引き継ぎの必須の判定の範囲）。
+- Step 31 で今の合否の線か決まらない行が出たときは、Step 30 と一緒に依頼者に尋ねる。

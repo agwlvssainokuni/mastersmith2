@@ -1,0 +1,547 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-reference-screens",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.1.6",
+    "AC1.1.7",
+    "AC1.1.8",
+    "AC1.1.9",
+    "AC1.2.1",
+    "AC1.1.10",
+    "AC2.2.9",
+    "AC2.3.3",
+    "AC1.2.2",
+    "AC1.2.3",
+    "AC1.2.4",
+    "AC1.3.3",
+    "AC1.3.6",
+    "AC1.2.5",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC1.3.7",
+    "AC1.3.8",
+    "AC1.5.1",
+    "AC1.5.2",
+    "AC1.5.3",
+    "AC1.5.4",
+    "AC2.2.5",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.6",
+    "AC2.2.7",
+    "AC2.2.8",
+    "AC2.2.10",
+    "AC2.2.11",
+    "AC2.3.1",
+    "AC2.3.2",
+    "AC2.3.4",
+    "AC2.4.1",
+    "AC2.4.2",
+    "AC2.4.3",
+    "AC2.4.4",
+    "AC2.4.5",
+    "AC2.4.6",
+    "AC2.5.1",
+    "AC2.5.2",
+    "AC2.5.3",
+    "AC2.5.4",
+    "AC2.3.5",
+    "NFR1.41",
+    "NFR1.47",
+    "NFR2.41",
+    "NFR2.45",
+    "NFR4.41",
+    "NFR4.45",
+    "NFR5.41",
+    "NFR5.43",
+    "NFR6.41",
+    "NFR6.42",
+    "NFR7.41",
+    "NFR9.41",
+    "NFR2.42",
+    "NFR2.43",
+    "NFR2.44",
+    "NFR1.42",
+    "NFR1.43",
+    "NFR1.44",
+    "NFR1.45",
+    "NFR1.46",
+    "NFR4.42",
+    "NFR4.43",
+    "NFR4.44",
+    "NFR5.42"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
+      "note": "options をサーバーの並びのまま「ラベル (値)」で描く。並び・3種類の DB は U1"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
+      "note": "ラベルが null の選択肢は値を出す（optionText）。NULL の並びと除外は U1"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "保存済みの値を選ぶ・options に無ければ値だけの選択肢・変えなければ本文に入れない（formDiff の lockedColumns と併せて）"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "定義の取得の 503 で問題の表示とやり直し（D4）。JDBC の文を出さないことは U1"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "Deferred",
+      "target": "U1 u1-reference-read の Code Generation（統合済み B1 549d38b・B2 b048ec1）",
+      "note": "定義の取得の読み取りの接続の借りる回数はサーバー側の受け持ち。画面は定義の要求を1回送るだけ"
+    },
+    {
+      "id": "AC1.1.6",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
+      "note": "0 件の説明文。空の選択肢を誤りにしないことは U1"
+    },
+    {
+      "id": "AC1.1.7",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "選択肢は定義と一緒に届き、読み込みの間は aria-busy で入力を出さない"
+    },
+    {
+      "id": "AC1.1.8",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/referenceField.test.ts",
+      "note": "「ラベル (値)」で同名を見分ける（optionText）。長いラベルの折り返しは ReferenceSelectField と E2E 195 の状態 10"
+    },
+    {
+      "id": "AC1.1.9",
+      "status": "Deferred",
+      "target": "U1 u1-reference-read の Code Generation（統合済み B1 549d38b・B2 b048ec1）",
+      "note": "名前の大文字小文字・引用符・境界の値と件数 199・200・201 の3種類の DB の結合テスト"
+    },
+    {
+      "id": "AC1.2.1",
+      "status": "Deferred",
+      "target": "U1 u1-reference-read の Code Generation（統合済み B1 549d38b・B2 b048ec1）",
+      "note": "199・200 件で全件、201 件で TOO_MANY にする判定"
+    },
+    {
+      "id": "AC1.1.10",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
+      "note": "選択肢のラベルと値を文字で描く。XSS の見本は testing/referenceSamples.ts を AC2.2.9・AC2.3.3 と共有"
+    },
+    {
+      "id": "AC2.2.9",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "ダイアログの行を文字で描く（共有の XSS の見本）"
+    },
+    {
+      "id": "AC2.3.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupField.test.tsx",
+      "note": "入力欄の隣のラベルを文字で描く（共有の XSS の見本）"
+    },
+    {
+      "id": "AC1.2.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "TOO_MANY は入力不可で権限不足と別の文。201 件目の判定は U1"
+    },
+    {
+      "id": "AC1.2.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceColumnField.test.tsx",
+      "note": "TOO_MANY の項目のほかは通常の部品で出す。定義の取得を失敗にしないことは U1"
+    },
+    {
+      "id": "AC1.2.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "入力不可で保存済みの値だけ・管理者への依頼の文"
+    },
+    {
+      "id": "AC1.3.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "読み取り専用の欄に保存済みの値そのもの、ラベルを出さない"
+    },
+    {
+      "id": "AC1.3.6",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "readOnly・aria-readonly・aria-describedby の説明文"
+    },
+    {
+      "id": "AC1.2.5",
+      "status": "Deferred",
+      "target": "U1 u1-reference-read の Code Generation（統合済み B1 549d38b・B2 b048ec1）",
+      "note": "読む行を 201 件までにする取り出しの上限"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/referenceField.test.ts",
+      "note": "chooseFieldKind: NO_PERMISSION は入力不可と権限の説明、用途で入力できないカラムを先に見る。印の判定は U1"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/referenceField.test.ts",
+      "note": "LOOKUP の NO_PERMISSION はピッカーを出さない。カラムの NONE の判定は U1"
+    },
+    {
+      "id": "AC1.3.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "LOOKUP も同じ見せ方で参照先の表の名前を出さない。応答に名前を載せないことは U1"
+    },
+    {
+      "id": "AC1.3.5",
+      "status": "Deferred",
+      "target": "U1 u1-reference-read・U2 u2-reference-write-check の Code Generation（統合済み）",
+      "note": "応答にラベルが含まれないことのサーバー側の確かめ。画面は D34 で値を外へ出さない"
+    },
+    {
+      "id": "AC1.3.7",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx",
+      "note": "disabled にせず Tab で止まり、説明文に結ぶ"
+    },
+    {
+      "id": "AC1.3.8",
+      "status": "OK",
+      "target": "frontend/src/features/tables/useTableDefinition.test.tsx",
+      "note": "作成・更新は purpose つきで毎回読み、記憶を読み書きしない（X-2）。出し分けの判定は U1"
+    },
+    {
+      "id": "AC1.5.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "開いた直後から helperText で理由、保存を押すと送らずに error（role=\"alert\"）と誤りのまとめ（D13）"
+    },
+    {
+      "id": "AC1.5.2",
+      "status": "Deferred",
+      "target": "U2 u2-reference-write-check の Code Generation（統合済み B3 f35b7b8）",
+      "note": "本文に値・空が来たときの 409 の拒否はサーバー側。画面は D13 で送らず D32 で文を出す"
+    },
+    {
+      "id": "AC1.5.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/referenceField.test.ts",
+      "note": "LOOKUP の NO_PERMISSION の必須の項目も isBlockedRequired で同じ扱い。作成の拒否は U2"
+    },
+    {
+      "id": "AC1.5.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "更新では誤りを出さず説明文だけ、値を本文に入れない（D14・D15）。更新の成功は U2"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/pickerSearch.test.ts",
+      "note": "空の条件では送らず「条件を入れてください」（validatePickerInputs）"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "開いた直後は条件の入力と初期の案内、valueType から入力の部品を選ぶ"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "listColumns の順・1ページ 20 件・ページ送り・件数の読み上げ（pickerPaging は pickerSearch.test.ts）"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "行の「選ぶ」で閉じて値とラベルを入れる"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "0 件の文を初期・空の条件の文と分ける、2ページ目以降の 0 件は「前のページへ」だけ"
+    },
+    {
+      "id": "AC2.2.6",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "検索中の表示と二重押しの防止、失敗で条件を保って再度検索（409 も含む）"
+    },
+    {
+      "id": "AC2.2.7",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupField.test.tsx",
+      "note": "「選ぶ…」で開き直す、NULL を許す項目に「クリア」（値が空なら押せない）"
+    },
+    {
+      "id": "AC2.2.8",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "閉じる・Escape で値を変えない、背景のクリックで閉じない"
+    },
+    {
+      "id": "AC2.2.10",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "長い名前は折り返し全文を DOM に残す。E2E 195 の状態 10 でも確かめた"
+    },
+    {
+      "id": "AC2.2.11",
+      "status": "OK",
+      "target": "frontend/src/features/tables/problemMessage.test.ts",
+      "note": "referenceErrorKey で業務の言葉と項目で伝え、DB の文・内部の語・参照先の名前を出さない"
+    },
+    {
+      "id": "AC2.3.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/useReferenceLabels.test.tsx",
+      "note": "更新の画面でラベルを1件読み（parseReferenceLabel）、同時 3 本まで"
+    },
+    {
+      "id": "AC2.3.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/useReferenceLabels.test.tsx",
+      "note": "403 などで値だけを出し、更新を止めない"
+    },
+    {
+      "id": "AC2.3.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataListPage.test.tsx",
+      "note": "一覧は参照を含む定義でもラベルを読まない（詳細は BusinessDataDetailPage.test.tsx）。一覧・詳細の定義で参照先を読まないことは U1"
+    },
+    {
+      "id": "AC2.4.1",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "開く・条件・Enter で検索・行を選ぶ・閉じるをキーボードだけで"
+    },
+    {
+      "id": "AC2.4.2",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "開いたら最初の条件へ、閉じたら「選ぶ…」へ"
+    },
+    {
+      "id": "AC2.4.3",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "見出しの名前、件数の変化を aria-live、行ごとの「選ぶ」"
+    },
+    {
+      "id": "AC2.4.4",
+      "status": "OK",
+      "target": "frontend/e2e/195-reference-picker-accessibility.e2e.ts",
+      "note": "12 の状態 × 20 組 = 240 回の axe、違反 0 件、規則を外さない"
+    },
+    {
+      "id": "AC2.4.5",
+      "status": "OK",
+      "target": "frontend/e2e/195-reference-picker-accessibility.e2e.ts",
+      "note": "375px の6組でダイアログが表示の中に収まる（18 回）、横のはみ出し無し"
+    },
+    {
+      "id": "AC2.4.6",
+      "status": "OK",
+      "target": "frontend/src/features/tables/messages.test.ts",
+      "note": "日英の鍵の集合の一致（足した鍵は messages.ts）"
+    },
+    {
+      "id": "AC2.5.1",
+      "status": "OK",
+      "target": "frontend/e2e/190-reference-picker-flow.e2e.ts",
+      "note": "代表の流れ1本: キーボードで開いて検索して選び、保存し、更新の画面で同じラベル"
+    },
+    {
+      "id": "AC2.5.2",
+      "status": "OK",
+      "target": "frontend/e2e/support/referenceSetup.ts",
+      "note": "利用者・ロール・共有の DSL を自作し初期管理者・見本の行を変えない（表と行は support/businessDataSchema.sql・businessDataDsl.ts）"
+    },
+    {
+      "id": "AC2.5.3",
+      "status": "OK",
+      "target": "frontend/e2e/190-reference-picker-flow.e2e.ts",
+      "note": "資格情報はプロセスの環境変数、報告の json を文字列で検索"
+    },
+    {
+      "id": "AC2.5.4",
+      "status": "OK",
+      "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
+      "note": "権限を欠く場合は部品のテストで入力不可・値だけ・理由（E2E ではない）"
+    },
+    {
+      "id": "AC2.3.5",
+      "status": "N/A",
+      "target": "初稿の ID",
+      "note": "stories.md の「群2 の ID の対応」の表にだけ現れる。今の US2.3 は AC2.3.1〜AC2.3.4（機能設計の traceability.json と同じ扱い）"
+    },
+    {
+      "id": "NFR1.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/testing/referenceSamples.ts",
+      "note": "XSS の見本を選択肢・ダイアログ・ラベルの3つのテストで共有し文字で描く"
+    },
+    {
+      "id": "NFR1.47",
+      "status": "OK",
+      "target": "frontend/e2e/190-reference-picker-flow.e2e.ts",
+      "note": "recordSecretValues の businessValue と報告の部品の検索"
+    },
+    {
+      "id": "NFR2.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "検索中だけの表示・useSlowNotice を使わない・待つ間の aria-busy"
+    },
+    {
+      "id": "NFR2.45",
+      "status": "Deferred",
+      "target": "Build and Test",
+      "note": "CI の検査の job の時間（B4 の CI 711ddd0 は確認中）。verify 27分48秒と E2E 14.4 分（前 13.1 分・1.5 倍の線 19.7 分の内）は code-summary.md 3節に記録した"
+    },
+    {
+      "id": "NFR4.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx",
+      "note": "Modal のフォーカス・readOnly・radio のキーボード（radio は ReferenceSelectField.test.tsx）"
+    },
+    {
+      "id": "NFR4.45",
+      "status": "OK",
+      "target": "frontend/e2e/195-reference-picker-accessibility.e2e.ts",
+      "note": "状態 7（helperText）を先に 20 組で流し color-contrast 0 件、状態 8 で role=\"alert\""
+    },
+    {
+      "id": "NFR5.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/useReferenceLabels.test.tsx",
+      "note": "手で解く Promise・waitFor・世代の読み直し（R-05 の確かめ (6) を含む）"
+    },
+    {
+      "id": "NFR5.43",
+      "status": "OK",
+      "target": "frontend/e2e/support/businessDataDsl.ts",
+      "note": "190 を1本足し 195 は数えない、180 の DSL を共有へ移し流れと確かめは変えない"
+    },
+    {
+      "id": "NFR6.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/messages.ts",
+      "note": "日英の文言の鍵（tables.reference.*・tables.picker.*）"
+    },
+    {
+      "id": "NFR6.42",
+      "status": "OK",
+      "target": "frontend/src/features/tables/problemMessage.ts",
+      "note": "code・reason から文を選ぶ、知らない code は汎用の文"
+    },
+    {
+      "id": "NFR7.41",
+      "status": "OK",
+      "target": "frontend/src/features/tables/businessDataParse.test.ts",
+      "note": "知らない kind・status は入力不可に倒す、一覧・詳細は reference を読まない"
+    },
+    {
+      "id": "NFR9.41",
+      "status": "OK",
+      "target": "frontend/package.json",
+      "note": "変えていない（git diff が空）。npm の依存を足さず make-you-chic-ui への依頼も無い"
+    },
+    {
+      "id": "NFR2.42",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/useReferenceLabels.ts",
+      "note": "LABEL_READ_CONCURRENCY = 3、世代ごとの閉じた状態と AbortController（テストは useReferenceLabels.test.tsx）"
+    },
+    {
+      "id": "NFR2.43",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
+      "note": "200 件の radio を1つのグループで矢印キーでたどる。E2E 195 の状態 12 でも axe"
+    },
+    {
+      "id": "NFR2.44",
+      "status": "OK",
+      "target": "frontend/src/features/tables/registration.test.ts",
+      "note": "lazy を保つ確かめが通過。chunk の大きさ（入口 165.1→166.4 KB、起点の合計 23.5→28.3 KB）は code-summary.md 4節"
+    },
+    {
+      "id": "NFR1.42",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupPickerDialog.tsx",
+      "note": "値を data-testid・id・title・ブラウザの保存・道に置かない（印は位置の番号だけ）"
+    },
+    {
+      "id": "NFR1.43",
+      "status": "OK",
+      "target": "frontend/src/features/tables/businessDataApi.ts",
+      "note": "固定の道 BUSINESS_DATA_PATHS.referenceRows と本文で運ぶ（テストは businessDataApi.test.ts）"
+    },
+    {
+      "id": "NFR1.44",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/referenceField.ts",
+      "note": "chooseFieldKind で定義の印だけから部品を選び、入力不可の値を本文から外す（lockedReferenceColumns）"
+    },
+    {
+      "id": "NFR1.45",
+      "status": "OK",
+      "target": "frontend/src/features/tables/businessDataParse.ts",
+      "note": "unknown で受けて写し、崩れは通信の失敗・知らない値は安全側（X-1）"
+    },
+    {
+      "id": "NFR1.46",
+      "status": "OK",
+      "target": "frontend/src/features/tables/problemMessage.test.ts",
+      "note": "referenceErrorKey と決めた文（403・409・503）"
+    },
+    {
+      "id": "NFR4.42",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/LookupField.test.tsx",
+      "note": "見える文字で始まる名前、aria-describedby と aria-invalid の受け手（R-02）"
+    },
+    {
+      "id": "NFR4.43",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/ReferenceColumnField.test.tsx",
+      "note": "部品ごとと状態ごとの vitest-axe（部品・フックの8ファイルで 16 件）"
+    },
+    {
+      "id": "NFR4.44",
+      "status": "OK",
+      "target": "frontend/e2e/support/referenceFixtures.ts",
+      "note": "195 の差し替えの見本と本物の応答の shapeCompare（違い 0 件、X-3）、保存を起こさない（R-04）"
+    },
+    {
+      "id": "NFR5.42",
+      "status": "OK",
+      "target": "frontend/src/features/tables/references/pickerSearch.test.ts",
+      "note": "fast-check の性質ベースのテスト（referenceField.test.ts・formDiff.property.test.ts・businessDataParse.property.test.ts にも）。失敗なし、種の記録なし。features/tables のカバレッジの値は Build and Test"
+    }
+  ]
+}

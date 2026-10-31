@@ -1,0 +1,154 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-reference-screens",
+  "version": 1,
+  "writes": [
+    {
+      "path": "frontend/e2e/180-business-data-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/190-reference-picker-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/195-reference-picker-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataDsl.ts"
+    },
+    {
+      "path": "frontend/e2e/support/businessDataSchema.sql"
+    },
+    {
+      "path": "frontend/e2e/support/referenceFixtures.test.ts"
+    },
+    {
+      "path": "frontend/e2e/support/referenceFixtures.ts"
+    },
+    {
+      "path": "frontend/e2e/support/referenceSetup.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataDetailPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataFormPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataFormPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/BusinessDataListPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataApi.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataParse.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/businessDataTypes.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.property.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formDiff.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formValidation.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/formValidation.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/problemMessage.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/problemMessage.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/LookupField.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/LookupField.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/LookupPickerDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/LookupPickerDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReadonlyReferenceField.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReadonlyReferenceField.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReferenceColumnField.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReferenceColumnField.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/ReferenceSelectField.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/pickerSearch.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/pickerSearch.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/reference.css"
+    },
+    {
+      "path": "frontend/src/features/tables/references/referenceField.test.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/referenceField.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/useLookupSearch.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/references/useReferenceLabels.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/references/useReferenceLabels.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/referenceSamples.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/renderReference.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/testing/sampleDefinition.ts"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableDefinition.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/tables/useTableDefinition.ts"
+    }
+  ]
+}

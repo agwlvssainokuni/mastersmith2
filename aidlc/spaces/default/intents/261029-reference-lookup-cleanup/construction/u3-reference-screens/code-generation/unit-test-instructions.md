@@ -188,3 +188,114 @@ caffeinate -dims ./gradlew e2eTest \
 - fast-check の失敗の種（あれば）。
 - E2E の件数と時間（全体・190・195）、状態 7 の axe の組の数と違反の件数（Step 13）。
 - `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` の時間（Step 16）。
+
+## 8. 承認の場の Request Changes の直し（直しの Bolt B7）
+
+計画の「承認の場の Request Changes の直し（直しの Bolt B7）」の Step 19〜37 の確かめ。上の 1〜7 節の決まり（道具・差し替え・テストのデータ・説明文は英語）はそのまま当てる。層ごとに実装の後でその層のテストを流し、通ってから次へ進む（test-after）。
+
+### 8.1 前提
+
+- ブランチ `fix/261029-reference-lookup-cleanup-review`。始める前に `frontend/playwright-report`・`frontend/test-results` を消す。
+- backend の結合テストと `verify` は、README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡して流す（渡さないと対象DB のテストが SKIPPED になる）。長い実行は `caffeinate -dims` で包み、前に `pmset -g assertions`、後に `pmset -g log | grep -E ' (Sleep|DarkWake|Wake) ' | tail -n 20` で眠りが無いことを確かめる。
+
+### 8.2 U2 R-01（⑩ の想定外の診断の WARN。計画の Step 20・21）
+
+```bash
+./gradlew :backend:compileJava :backend:spotlessCheck
+./gradlew :backend:test --tests '*BusinessDataWriteReferenceTest' --tests '*BusinessDataWriteServiceTest' --tests '*ReferenceLookupTest'
+caffeinate -dims ./gradlew :backend:integrationTest --tests '*ReferenceWriteSecretLeakIT'
+```
+
+期待: 足した3件（`INVALID_VALUE`・`UNEXPECTED`・値の欠け）で WARN がちょうど1行、`purpose=REFERENCE`・`reason=UNEXPECTED`、`sqlState`・`vendorCode`・`exceptionClass` が入力と一致（値の欠けでは無いキーを出さない）、本文とキーの値に参照の値・カラム名・テーブル名が無い、例外は `BusinessDataUnexpectedException`、書き込みの口と監査が呼ばれない。既存の T-F2（WARN 1行）と BR2.7（拒否で WARN 0行）が通る。
+
+### 8.3 U3 R-01（必須の判定の一本化。計画の Step 22〜25）
+
+```bash
+cd frontend
+npm run typecheck
+# 検証の純粋な関数（Step 23）
+npx vitest run src/features/tables/formValidation.test.ts src/features/tables/references/referenceField.test.ts
+# 部品と画面（Step 25）
+npx vitest run src/features/tables/references src/features/tables/BusinessDataFormPage.test.tsx src/features/tables/formValidation.test.ts
+```
+
+期待: NOT NULL で `required: false` の REFERENCE・LOOKUP の項目が、作成で値が無い・空の値で `REQUIRED`、必須の印と `aria-required="true"` が付き、値が入った select に「（選ばない）」が無い。`nullable: true`・`required: false` の参照の項目と、参照でない NOT NULL・`required: false` の項目は今の振る舞いのまま。fast-check の性質（参照の項目で `validateValue(column, '') === 'REQUIRED'` と `isRequiredColumn(column)` が一致）が通り、失敗したら種を記録する。欄から離れたときの誤りは `waitFor` で待って確かめる。
+
+### 8.4 U3 R-02（LookupField の欄への結び付け。計画の Step 25）
+
+`LookupField.test.tsx` で次を確かめる（vendor の `FormField` は `FormFieldContext` で配り、`TextInput` が `useFieldProps` で受ける。`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/FormField/`）:
+
+- `getByLabelText(<ラベル>)` が `tables-lookup-value-c<n>` の欄を返す。
+- 誤りがあるとき、欄の `aria-invalid="true"`、`aria-describedby` が誤りの文の要素の `id` を指す。
+- 誤りが無く値が空のとき、`aria-describedby` が説明文の要素の `id` を指し、`aria-invalid` が無い。値が入ると `aria-describedby` が無い。
+- 「選ぶ…」「クリア」のボタンに `aria-describedby`・`aria-invalid` が無い。
+- vitest-axe（誤りの状態・必須の形）で違反 0 件。
+
+どれかが届かないと分かったときだけ部品を直し（計画の Step 24 の条件）、直した後に同じテストを流し直す。
+
+### 8.5 frontend の手元の確かめと E2E への影響（計画の Step 26・27）
+
+```bash
+cd frontend && npm run format:check && npm run lint && npm run lint:css && npm run typecheck
+npm run license:check   # ライセンスヘッダー（scripts/check-license-header.mjs）
+npx vitest run src/features/tables
+git diff --stat develop -- package.json package-lock.json   # 空
+# E2E の欄の探し方と「（選ばない）」に頼る箇所の洗い出し（直すかを決める材料）
+grep -n "getByLabel\|getByRole('combobox'\|unselected\|選ばない" e2e/180-*.e2e.ts e2e/190-*.e2e.ts e2e/195-*.e2e.ts
+```
+
+### 8.6 U2 R-03（参照元が 0 行の確かめ。計画の Step 28）
+
+```bash
+bash -n perf/biz/make-biz-seed.sh
+command -v shellcheck > /dev/null && shellcheck perf/biz/make-biz-seed.sh
+for k in postgres mysql mariadb; do
+  printf '%s\t' "$k"; ./perf/biz/make-biz-seed.sh "$k" 10 | grep -c '<足した確かめの文の目印>'   # どれも 1
+done
+```
+
+見本の PostgreSQL（`targetdb-postgres`）が動いているときだけ、計画の Step 28 のとおり、出力を流して終了コード 0、`biz_refcreate` に1行入れた後に確かめの文だけを流して 0 でない終了、`bizperf` を消して片付ける（消すのは台本が作る `bizperf` だけ。誤りの文に行の値と数が出ないことも見る）。MySQL・MariaDB の流し込みは Build and Test の試し走りで確かめる。
+
+### 8.7 U4 R-04・U5 R-01・R-02・R-05（README。計画の Step 29〜33）
+
+- Step 31 の取り出し（本文 = 「今の基準の一覧」の後から `## 履歴` の前まで）:
+
+```bash
+h=$(grep -n '^## 履歴' perf/README.md | head -1 | cut -d: -f1)
+awk -v h="$h" 'NR < h { print NR "\t" $0 }' perf/README.md \
+  | grep -E 'memory\.peak|memory\.max|anon|[0-9.]+ ?%|[0-9,]+ ?ms|p\(95\)|< ?0\.[0-9]|[0-9][^ ]* ?(未満|以下|以内)' \
+  > "$B/threshold-lines.tsv"   # $B はリポジトリの外の作業の置き場（U5 の手順書と同じ）
+wc -l "$B/threshold-lines.tsv"
+```
+
+  1行ずつ (a) 今の線（一覧の行と対応）・(b) 前の線（履歴へ）・(c) 線ではない（理由）に分けた表を `u5-container-perf-docs/code-generation/perf-docs-check-record.md` の新しい節に書く。
+- 直した後の確かめ: U5 の `unit-test-instructions.md` 2.3〜2.6 の CB5・CB6・CB9〜CB12・Q1〜Q7 を流し直す（CB9〜CB12 の「前」は B7 の直しの前の README）。新しい CB22:
+
+```bash
+# 取り出しを流し直し、(a) の行がすべて一覧と対応し、(b) の行が本文に無く、分けていない行が 0 件
+# 連続する参照と括弧の二重
+grep -c '（履歴 H[0-9]*）（履歴' perf/README.md   # 0
+grep -n '。）' perf/README.md                     # コメントの括弧の二重が無い（残る行は文の終わりとして正しいかを1行ずつ見る）
+grep -n 'コード 2\|終了コード 2' perf/README.md   # U4 R-04 の案内の行がある
+gitleaks dir --redact --no-banner --config .gitleaks.toml --exit-code 1 perf/README.md; echo "Q7 rc=$?"   # 0
+```
+
+- 1214 行の直しの前に `docker/perf/compose.yaml` の上限の既定を読み、計算の各項（perf のアプリ・MySQL・見本の PG・Mailpit）が今の値と一致することを確かめる。
+
+### 8.8 B7 の全体の確かめ（計画の Step 35）
+
+```bash
+cd frontend && npx prettier --write . && cd ..
+time caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify
+caffeinate -dims ./gradlew e2eTest   # Mailpit と見本の PostgreSQL を起動してから
+```
+
+期待: SKIPPED の対象DB のテストが無い、`businessdata.service` のパッケージごとの下限（行 80%・分岐 70%）と frontend の `thresholds` が通る、E2E の全件（180・190・195 を含む）が通る、E2E の報告の json に資格情報・接続先・トークンが無い。
+
+### 8.9 記録すること
+
+- 各コマンドの件数と結果、`verify` の時間（U3 の B4 の後の値と並べる）、E2E の件数と時間、`businessdata.service` のカバレッジ（`jacocoTestReport.xml`）。
+- fast-check の失敗の種（あれば）。
+- Step 26 で直した E2E の箇所（無ければ無いこと）、R-02 で部品を直したか（テストだけで閉じたか）。
+- Step 30 の依頼者の答えと、それに合わせた README の直し。Step 31 の分け方の表と CB22 の結果（`perf-docs-check-record.md`）。
+- push の後の CI の試行ごとの結果と検査の job の時間。
