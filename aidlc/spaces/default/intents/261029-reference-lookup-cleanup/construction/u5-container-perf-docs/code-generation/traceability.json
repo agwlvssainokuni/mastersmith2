@@ -1,0 +1,162 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-container-perf-docs",
+  "upstream_ids": [
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.3.1",
+    "AC4.3.2",
+    "AC4.3.3",
+    "AC4.3.4",
+    "NFR8.81",
+    "NFR8.82",
+    "NFR9.81",
+    "NFR8.83",
+    "NFR8.86",
+    "NFR8.87",
+    "NFR8.88",
+    "NFR8.89",
+    "NFR8.90",
+    "NFR8.84",
+    "NFR8.85",
+    "NFR9.82",
+    "NFR5.81"
+  ],
+  "coverage": [
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "A0 の了承 (i)〜(iii) の日時と項目ごとの答え。作り直しは行わなかった（依頼者の決定）"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "compose.yaml",
+      "note": "CA1・CA4: Mailpit（121 行）・lgtm（83 行）の Config.Image と RepoDigests が compose.yaml の版と index のダイジェストに一致（container-swap-record.md）。A1 の時点で既にそろっていたため --force-recreate は行わず（依頼者の決定 A）、照合を今のコンテナに当てた。Given の「作り直したとき」との差は code-summary.md に記録"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA11: 0.34.0 の lgtm（b966ea107831）と前の Mailpit のイメージ 2 つの ID が残る。rm・prune は行っていない"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA2: Mailpit の /api/v1/info 200、example.com 宛て 1 通の受信 1 件。CA8: アプリの /actuator/health 200・UP。作り直しの後ではなく今のコンテナに当てた（依頼者の決定 A）"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA7: 01:37:28Z に lgtm を止め、docker ps に無いことを確かめた"
+    },
+    {
+      "id": "AC4.3.1",
+      "status": "OK",
+      "target": "perf/README.md",
+      "note": "冒頭の「今の基準の一覧」（k6 の表 28 行で 78 場面・k6 の外の表 6 行）。CB6 で inspect の thresholds と 78 場面一致・過不足 0（perf-docs-check-record.md 4節）"
+    },
+    {
+      "id": "AC4.3.2",
+      "status": "OK",
+      "target": "perf/README.md",
+      "note": "末尾の「履歴」の章。CB17: 本文の Intent の名前・日付の検索 0 件、CB9〜CB12 の行の集合の突き合わせ合格（perf-docs-check-record.md 5〜6節）"
+    },
+    {
+      "id": "AC4.3.3",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js",
+      "note": "線の値の定数 USER_THRESHOLDS・BIZ_P95_LIMIT_MS・REF_P95_LIMIT_MS を thresholdsFor の直前の 1 区画に集めた。CB5（組の前 12 が後にあり値の違い 0）・CB6・CB7（thresholds-test.sh 終了コード 0、ok 13）・CB8"
+    },
+    {
+      "id": "AC4.3.4",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js",
+      "note": "CB3・CB4: 78 場面ごとの k6 inspect --include-system-env-vars の thresholds・scenarios と終了コードの diff -r が空、場面の名前の集合の差 0"
+    },
+    {
+      "id": "NFR8.81",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "A0 の了承の記録"
+    },
+    {
+      "id": "NFR8.82",
+      "status": "OK",
+      "target": "compose.yaml",
+      "note": "CA1・CA3（available 4740 MiB、基準 1792 MiB 以上）・CA4〜CA6・CA9（状態が A1 と同じ）。A2・A3・A5b・R1〜R5 は作り直しを行わなかったため行っていない"
+    },
+    {
+      "id": "NFR9.81",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js",
+      "note": "CB20: 差は perf/README.md・perf/k6/scenarios.js・perf/k6/thresholds-test.sh・perf/dsl-mixed-memory.sh だけ。新しい依存・イメージなし。scenarios.js のコメントの外の行の多重集合は develop と同じ"
+    },
+    {
+      "id": "NFR8.83",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA11: 戻し先と前の版のイメージの ID の残存"
+    },
+    {
+      "id": "NFR8.86",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA12・CB21: 入れ替えと整理の記録に gitleaks dir 0 件、環境変数の項目名・JWT の形 0 件"
+    },
+    {
+      "id": "NFR8.87",
+      "status": "OK",
+      "target": "perf/k6/scenarios.js",
+      "note": "CB2〜CB4。--env-file なしの docker run で inspect、出力は外の置き場（~/.mastersmith-b6/）だけに置き、確かめの後に消した"
+    },
+    {
+      "id": "NFR8.88",
+      "status": "OK",
+      "target": "perf/k6/thresholds-test.sh",
+      "note": "CB5〜CB8（thresholds-test.sh・dsl-mixed-memory-test.sh 終了コード 0）"
+    },
+    {
+      "id": "NFR8.89",
+      "status": "OK",
+      "target": "perf/README.md",
+      "note": "CB1・CB11・CB13・CB14: U4 の節の見出し 7 つが各 1 件、evidence/ へ直接置く手順 0 件"
+    },
+    {
+      "id": "NFR8.90",
+      "status": "OK",
+      "target": "perf/README.md",
+      "note": "CB9〜CB12・CB15〜CB17・CB19。CB16 は Q1: A の読み方（example.com・example.test 以外のメールアドレス 0 件）"
+    },
+    {
+      "id": "NFR8.84",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA2（宛先は example.com だけ）・CA8（アプリは動いていたため起動は不要。救済の WARN は数えていない）"
+    },
+    {
+      "id": "NFR8.85",
+      "status": "OK",
+      "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
+      "note": "CA7: lgtm を止めた時刻の記録"
+    },
+    {
+      "id": "NFR9.82",
+      "status": "OK",
+      "target": "compose.yaml",
+      "note": "CB18: perf/README.md の @sha256: の固定先 2 件が前後で同じ、grafana/otel-lgtm・axllent/mailpit が compose.yaml・README.md・docker/perf/compose.yaml と同じ"
+    },
+    {
+      "id": "NFR5.81",
+      "status": "OK",
+      "target": "build.gradle.kts",
+      "note": "Step 27: ./gradlew verify 終了コード 0（186 秒）。:backend:test・:backend:integrationTest は入力が変わらず UP-TO-DATE（前の成功の結果を使った）"
+    }
+  ]
+}

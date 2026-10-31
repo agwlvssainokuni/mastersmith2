@@ -160,9 +160,9 @@
 
 ### 記録と統合（指揮役）
 
-- [ ] **Step 28**（**依頼者の承認が要る**）: コミット C2・C3 を提案し、承認を得てから積む（5節）。
-- [ ] **Step 29**（**依頼者の承認が要る**）: `develop` へ squash で統合する（日本語の件名で Bolt の内容が分かるもの）。統合の前に `aidlc/` の未コミットの変更（監査の記録を含む）をコミットしておく。統合の後に作業ブランチを消す。`git push` は依頼者が行う。
-- [ ] **Step 30**: この段の Step 5 の成果物（`code-summary.md`・`source-manifest.json`・`traceability.json`）を書く。`source-manifest.json` には Step 25 の差のファイル（`aidlc/` の外）を載せる。戻し（R1〜R5）・迷う行・計画との差・流さなかった確かめ（E2E）と理由を `code-summary.md` に書く。
+- [x] **Step 28**（**依頼者の承認が要る**）: コミット C2・C3 を提案し、承認を得てから積む（5節）。
+- [x] **Step 29**（**依頼者の承認が要る**）: `develop` へ squash で統合する（日本語の件名で Bolt の内容が分かるもの）。統合の前に `aidlc/` の未コミットの変更（監査の記録を含む）をコミットしておく。統合の後に作業ブランチを消す。`git push` は依頼者が行う。
+- [x] **Step 30**: この段の Step 5 の成果物（`code-summary.md`・`source-manifest.json`・`traceability.json`）を書く。`source-manifest.json` には Step 25 の差のファイル（`aidlc/` の外）を載せる。戻し（R1〜R5）・迷う行・計画との差・流さなかった確かめ（E2E）と理由を `code-summary.md` に書く。
 
 ## 4. 確かめの一覧（機械の確かめ。合否は終了コードと件数）
 

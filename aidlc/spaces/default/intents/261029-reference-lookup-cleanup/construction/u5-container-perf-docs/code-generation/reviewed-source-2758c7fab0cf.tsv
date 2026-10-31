@@ -1,0 +1,5 @@
+manifest	b9e0156cd7143ec7d8b686df680c7cfa51a427b86aca32fb32f7623531d9f016	-
+	perf/README.md	100644	c463f32854d9bc7123d1a237ab4d8ad6023b83c754baf2c24a77ca003f7bcd5f
+	perf/dsl-mixed-memory.sh	100755	484a6bc1fd3cbfb89a36cce0b48d007c3f5696deee6cce1636320fb7dde64e24
+	perf/k6/scenarios.js	100644	ad6d94ad511ce76caa9f6a6a1fdf55691e21106e712af2431e05d34bd46cbc6b
+	perf/k6/thresholds-test.sh	100755	9cf67d60276969eba35e9cdd820d4ea1a8c7221e2eef05ca4ad784308ece9c3b

@@ -1,0 +1,11 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-container-perf-docs",
+  "version": 1,
+  "writes": [
+    { "path": "perf/README.md" },
+    { "path": "perf/dsl-mixed-memory.sh" },
+    { "path": "perf/k6/scenarios.js" },
+    { "path": "perf/k6/thresholds-test.sh" }
+  ]
+}
