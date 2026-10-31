@@ -58,6 +58,14 @@ import org.junit.jupiter.api.io.TempDir;
 @ExtendWith(ContainerRuntimeCheck.class)
 class ReferenceSameResponseIT {
 
+    /**
+     * 整数のカラム {@code n} として読めない検索の値で、応答の本文に返らないことを確かめる目印。
+     *
+     * <p>16進に無い文字（{@code z}・{@code q}・{@code -} など）を含めるため、応答の乱数のトレースID（32 桁の16進）や type の URL の
+     * 番号に偶然に当たらない（前の {@code "abc"} は CI の run 41161783903 でトレースID {@code …63541abc} に当たって落ちた）。
+     */
+    private static final String NOT_A_NUMBER_MARK = "zq-sentinel-not-a-number";
+
     private final BusinessDataSampleSchema sample = new BusinessDataSampleSchema(DatabaseProduct.POSTGRESQL);
 
     private BusinessDataTestApp app;
@@ -185,9 +193,9 @@ class ReferenceSameResponseIT {
         HttpResponse<String> tooLongUnknown =
                 post(member, labelBody("no_such", "no_such", "no_such", "x".repeat(1_001)));
         List<Map<String, Object>> unknownAndBadType =
-                List.of(Map.of("column", "no_such", "value", "x"), Map.of("column", "n", "value", "abc"));
+                List.of(Map.of("column", "no_such", "value", "x"), Map.of("column", "n", "value", NOT_A_NUMBER_MARK));
         HttpResponse<String> namesBeforeType = post(member, searchBody(schema, SRC_API, "pick", unknownAndBadType));
-        HttpResponse<String> badType = post(member, searchBody(schema, SRC_API, "pick", cond("n", "abc")));
+        HttpResponse<String> badType = post(member, searchBody(schema, SRC_API, "pick", cond("n", NOT_A_NUMBER_MARK)));
 
         for (HttpResponse<String> response : List.of(formatFirst, tooLongUnknown)) {
             assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
@@ -199,7 +207,7 @@ class ReferenceSameResponseIT {
         assertThat(badType.statusCode()).as(badType.body()).isEqualTo(400);
         assertThat(HttpTestClient.json(badType))
                 .containsEntry("fieldErrors", List.of(Map.of("field", "n", "reason", "INVALID_VALUE")));
-        assertThat(badType.body()).doesNotContain("abc");
+        assertThat(badType.body()).doesNotContain(NOT_A_NUMBER_MARK);
     }
 
     @Test
