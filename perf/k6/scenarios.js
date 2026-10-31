@@ -251,38 +251,6 @@ const TOKEN_LENGTH = 43
 const TOKEN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
 // 招待のメールの本文のリンク（ベース URL ＋ /register#token= ＋ トークン）
 const TOKEN_IN_MAIL = /\/register#token=([A-Za-z0-9_-]{43})/
-// 場面ごとの p95 の閾値（ミリ秒）。キーは要求のタグ name。
-const USER_THRESHOLDS = {
-  preferencesGet: { preferencesGet: 1000 },
-  preferencesSave: { preferencesSave: 1000 },
-  preferencesInvalid: { preferencesInvalid: 1000 },
-  passwordChange: { passwordChange: 2000 },
-  passwordMismatch: { passwordMismatch: 1000 },
-  passwordInvalid: { passwordInvalid: 1000 },
-  invite: { invite: 5000 },
-  invitationResend: { invitationResend: 5000 },
-  invitationList: { invitationListFirst: 1000, invitationListLast: 1000 },
-  invitationCancel: { invitationCancel: 1000 },
-  registrationVerify: {
-    registrationVerify: 1000,
-    registrationVerifyMalformed: 1000,
-    registrationVerifyNotFound: 1000,
-  },
-  registrationComplete: { registrationComplete: 1000 },
-  registrationInvalid: { registrationInvalid: 1000 },
-  registrationRejected: { registrationRejectedNotFound: 1000, registrationRejectedMalformed: 1000 },
-  userAdminList: { userAdminList: 1000 },
-  userAdminProfile: { userAdminProfile: 1000, userAdminProfileInvalid: 1000 },
-  userAdminOps: {
-    userAdminGrant: 1000,
-    userAdminRevoke: 1000,
-    userAdminSuspend: 1000,
-    userAdminResume: 1000,
-    userAdminReset: 1000,
-  },
-  userAdminSuspendWorst: { userAdminSuspendWorst: 1000 },
-  userAdminPool: {},
-}
 // 利用者の管理の場面（Intent 260930-user-admin の U3）
 const USER_ADMIN_API = `${BASE}/api/admin/users`
 const USER_ADMIN_SCENARIOS = [
@@ -434,8 +402,6 @@ const BIZ_SCENARIOS = [
   'bizDetail',
   'bizSearchWide',
 ]
-// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000。bizSearchWide は応答時間を記録だけにする（thresholdsFor）。
-const BIZ_P95_LIMIT_MS = { bizSearchContains: 3000, bizSearchLast: 2000, bizSearchLastSorted: 2000 }
 // 場面の長さ（トークンの有効期限 5 分より短くする）
 const BIZ_DURATION = __ENV.BIZ_DURATION || '3m'
 // 種の台本（perf/biz/make-biz-seed.sh）と DSL（perf/make-biz-dsl.mjs）が作るスキーマ・表・カラム
@@ -470,8 +436,6 @@ const BIZ_LARGE_VALUE = SCENARIO === 'bizCreateLarge' ? '\u{2000B}'.repeat(BIZ_L
 if (SCENARIO === 'bizWritePoolLimit') http.setResponseCallback(http.expectedStatuses(409))
 // 他テーブル参照の読み取りの場面（Intent 261029-reference-lookup-cleanup の U1）。後の単位（U2）の場面も ref で始める。
 const REF_SCENARIOS = ['refDefinition200', 'refDefinition201', 'refPickerEquals', 'refLabel', 'refPickerContains']
-// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000（NFR2.1。部分一致は前の Intent で依頼者が決めた 3000 ms）
-const REF_P95_LIMIT_MS = { refPickerContains: 3000 }
 const REF_ROLE_NAME = __ENV.REF_ROLE_NAME || 'perf-biz-ref'
 // 種の台本と DSL が作る参照元の表とカラム
 const REF_SOURCE_200 = 'biz_refsrc200'
@@ -562,6 +526,46 @@ function scenariosFor(name) {
   }
   return { [name]: { executor: 'constant-vus', vus: VUS, duration: DURATION } }
 }
+
+// 合否の線の区画: 合否の線の値を持つ場所は、この区画（下の 3 つの定数 USER_THRESHOLDS・BIZ_P95_LIMIT_MS・REF_P95_LIMIT_MS と
+// thresholdsFor）だけ。線を変えたときは、perf/k6/thresholds-test.sh の期待の表（CASES）と perf/README.md の「今の基準の一覧」も
+// 合わせて直す。定数は options の評価（thresholdsFor(SCENARIO) の呼び出し）より前に宣言する。
+// 場面ごとの p95 の閾値（ミリ秒）。キーは要求のタグ name。
+const USER_THRESHOLDS = {
+  preferencesGet: { preferencesGet: 1000 },
+  preferencesSave: { preferencesSave: 1000 },
+  preferencesInvalid: { preferencesInvalid: 1000 },
+  passwordChange: { passwordChange: 2000 },
+  passwordMismatch: { passwordMismatch: 1000 },
+  passwordInvalid: { passwordInvalid: 1000 },
+  invite: { invite: 5000 },
+  invitationResend: { invitationResend: 5000 },
+  invitationList: { invitationListFirst: 1000, invitationListLast: 1000 },
+  invitationCancel: { invitationCancel: 1000 },
+  registrationVerify: {
+    registrationVerify: 1000,
+    registrationVerifyMalformed: 1000,
+    registrationVerifyNotFound: 1000,
+  },
+  registrationComplete: { registrationComplete: 1000 },
+  registrationInvalid: { registrationInvalid: 1000 },
+  registrationRejected: { registrationRejectedNotFound: 1000, registrationRejectedMalformed: 1000 },
+  userAdminList: { userAdminList: 1000 },
+  userAdminProfile: { userAdminProfile: 1000, userAdminProfileInvalid: 1000 },
+  userAdminOps: {
+    userAdminGrant: 1000,
+    userAdminRevoke: 1000,
+    userAdminSuspend: 1000,
+    userAdminResume: 1000,
+    userAdminReset: 1000,
+  },
+  userAdminSuspendWorst: { userAdminSuspendWorst: 1000 },
+  userAdminPool: {},
+}
+// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000。bizSearchWide は応答時間を記録だけにする（thresholdsFor）。
+const BIZ_P95_LIMIT_MS = { bizSearchContains: 3000, bizSearchLast: 2000, bizSearchLastSorted: 2000 }
+// 場面ごとの p95 の上限（ミリ秒）。ここに無い場面は 1000（NFR2.1。部分一致は前の Intent で依頼者が決めた 3000 ms）
+const REF_P95_LIMIT_MS = { refPickerContains: 3000 }
 
 // U4 の NFR1.10（今の状態・履歴・破棄・適用の 95% が 1 秒以内）。重なりの失敗（dslMixed）は率で見る。
 function thresholdsFor(name) {

@@ -156,6 +156,7 @@ complete_rows() {
 # まとめを出す（合否は memory.peak / memory.max < 0.95 だけ（Intent 261027-perf-targets-review の FR1.2 で 0.9 から緩めた）。
 # 前の線 0.9 での判定は judge_090 に並べて出す（FR1.5）。並べる値は peak の時の内訳・anon の最大の割合・file と内部DB の
 # ファイルの伸び）。引数: TSV の置き場 peak.txt の置き場（無ければ /dev/null。比は NA になる）。
+# 線の値（0.95・前の線 0.9）は perf/README.md の「今の基準の一覧」の「k6 の外の線」の表と同じ値にする（変えたときは両方を直す）。
 summarize() {
   local tsv=$1 peakfile=$2 all complete
   all=$(awk 'END { print NR }' "${tsv}")

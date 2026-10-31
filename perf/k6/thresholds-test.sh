@@ -37,6 +37,8 @@ command -v jq > /dev/null 2>&1 || {
 }
 
 # 期待の表: 場面名|iteration_duration の閾値
+# 線の値を持つ場所は perf/k6/scenarios.js の「合否の線の区画」（thresholdsFor と、その直前の線の値の定数）だけ。この表は
+# その写しで、perf/README.md の「今の基準の一覧」とも同じ値にする（線を変えたときは 3 か所を合わせて直す）。
 CASES=(
   "bizSearchFirst|p(95)<1000"
   "bizSearchContains|p(95)<3000"
