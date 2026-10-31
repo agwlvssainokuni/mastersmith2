@@ -241,11 +241,11 @@ web の層（`BusinessDataWriteController` の写し）は変えない見込み�
   - `perf/k6/scenarios.js`: `refCreateChecked`（10 VU・`BIZ_DURATION` 3 分の constant-vus、1回の繰り返しに要求1つで待ちなし、値は `K1`〜`K200` を順に回す、201 を `checks` で確かめる、トークンは `setup()`、setup は前の場面に頼らず書き込みのロール〈`biz_refcreate` を FULL・CREATE、`biz_code200` を READ〉と作業ロールを用意し、定義〈`purpose: CREATE`〉で書き込みが使え参照の状態が `AVAILABLE` であることを確かめる）。閾値は `iteration_duration{scenario:refCreateChecked}` の p(95)<1000 と `checks` の rate==1（既存の場面の閾値は変えない）。`perf/k6/thresholds-test.sh` の期待の表に足す。
   - `perf/README.md` に「他テーブル参照の保存前の確かめの場面」の節: 足す順（U1 の後）、種の後の確かめ（参照先 200 行と `biz_refcreate` が 0 行。MySQL・MariaDB は `--default-character-set=utf8mb4`）、流す順（U1 の読み取りの場面 → `refCreateChecked` → 既存の書き込みの場面）、2つのプールの待ちの時間切れの累計（`hikaricp.connections.timeout` の `pool=mastersmith-target-db`・`mastersmith-target-db-write`）の前後の差、前の Intent の値と並べるときに読み取りのプールの上限が 10 から 5 に変わったことを書く（R-02）、`caffeinate -dims` と `pmset -g log`、記録に置く前の伏せ字（U4 の入口）。
   - 確かめ: `bash -n perf/biz/make-biz-seed.sh`、`node --check perf/make-biz-dsl.mjs`、`node --check perf/k6/scenarios.js`、`bash perf/k6/thresholds-test.sh`、`SCENARIO=refCreateChecked` の `k6 inspect --include-system-env-vars`。種の流し込みと場面の実行は Build and Test。
-- [ ] **Step 12: B3 の確かめと統合**
+- [x] **Step 12: B3 の確かめと統合**
   - `./gradlew spotlessApply` の後、時間を測って `caffeinate -dims` で `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（上の環境変数を付ける）。SKIPPED の対象DB のテストが無いこと、パッケージごとのカバレッジ（3.4節の2パッケージ）、`spotbugsGate`、3.3節の差が空、lockfile・移行ファイル・DSL の JSON Schema に差が無いことを確かめ、時間とカバレッジの値を U1 の後の値（23分34秒）と並べて記録する。42 分を超えたら依頼者に諮る（NFR5.23）。
   - 見本の対象DB（PostgreSQL）を起動して `./gradlew e2eTest` の全件を流す（業務データの `src/main` に触れるため。`team.md`）。
   - コミットは区切りごとに依頼者に提案し、承認を得てから積む（7節）。`aidlc/` の未コミットの変更を先にコミットしてから、`develop` へ squash で統合し、ブランチを消す。`git push` は依頼者が行う。push の後の CI を試行ごと（`gh run view --json attempt,jobs`）に確かめ、検査の job の時間を記録する。
-- [ ] **Step 13: 文書と追跡**
+- [x] **Step 13: 文書と追跡**
   - `README.md`・`perf/README.md` の記述が実装と合うことを読み直す。`verify` の時間・カバレッジ・計画との差を、指揮役がまとめる `code-summary.md` の材料として残す。`traceability.json` に NFR2.29・NFR3.28（`Deferred`、Observability Setup）・NFR1.27（`OK`）の行が載ることを確かめる（5節）。AC1.5.1・AC3.1.7 は U3 へ `Deferred`、AC3.5.4・NFR2.21・NFR2.25 は Performance Validation へ `Deferred`、NFR2.22〜NFR2.24 は Build and Test・Performance Validation へ `Deferred`。
 
 ## 7. コミットの区切り（提案の件名。積む前に依頼者の承認を得る）

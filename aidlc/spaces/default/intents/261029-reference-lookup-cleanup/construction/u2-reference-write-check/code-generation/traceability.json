@@ -1,0 +1,628 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-reference-write-check",
+  "upstream_ids": [
+    "AC3.3.2",
+    "AC3.2.1",
+    "AC1.5.1",
+    "AC1.5.2",
+    "AC3.1.3",
+    "AC1.5.3",
+    "AC1.5.4",
+    "AC3.1.1",
+    "AC3.1.2",
+    "AC3.1.4",
+    "AC3.1.5",
+    "AC3.1.6",
+    "AC3.1.7",
+    "AC3.1.8",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.2.6",
+    "AC3.2.7",
+    "AC3.3.1",
+    "AC3.3.3",
+    "NFR2.21",
+    "NFR2.25",
+    "NFR5.23",
+    "NFR2.22",
+    "NFR2.23",
+    "NFR2.24",
+    "NFR3.21",
+    "NFR3.25",
+    "NFR3.24",
+    "NFR2.28",
+    "NFR1.21",
+    "NFR1.31",
+    "NFR1.32",
+    "NFR2.26",
+    "NFR2.29",
+    "NFR3.23",
+    "NFR3.27",
+    "NFR3.28",
+    "NFR5.21",
+    "NFR5.22",
+    "NFR6.21",
+    "NFR7.21",
+    "NFR7.22",
+    "NFR9.21",
+    "NFR1.22",
+    "NFR1.23",
+    "NFR1.24",
+    "NFR1.25",
+    "NFR1.26",
+    "NFR1.27",
+    "NFR1.28",
+    "NFR1.29",
+    "NFR1.30",
+    "NFR2.27",
+    "NFR3.22",
+    "NFR3.26",
+    "BR1.1",
+    "BR3.6",
+    "BR1.2",
+    "BR3.1",
+    "BR1.3",
+    "BR2.6",
+    "BR3.5",
+    "BR1.4",
+    "BR2.1",
+    "BR2.2",
+    "BR3.2",
+    "BR4.4",
+    "BR2.3",
+    "BR2.4",
+    "BR2.5",
+    "BR4.3",
+    "BR2.7",
+    "BR4.5",
+    "BR3.3",
+    "BR3.4",
+    "BR3.7",
+    "BR4.1",
+    "BR4.7",
+    "BR4.2",
+    "BR5.1",
+    "BR7.1",
+    "BR4.6",
+    "BR5.2",
+    "BR5.3",
+    "BR6.1",
+    "BR6.2",
+    "BR7.2"
+  ],
+  "coverage": [
+    {
+      "id": "AC3.3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java",
+      "note": "監査の行の全部の列に架空の目印が無いこと（ReferenceWriteAuditIT も detail を確かめる）"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged"
+    },
+    {
+      "id": "AC1.5.1",
+      "status": "Deferred",
+      "target": "u3-reference-screens（画面の文言と送信の前の項目の誤り。U2 は画面を持たない。機能設計の traceability と同じ持ち主）"
+    },
+    {
+      "id": "AC1.5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "requiredGrid（機能仕様 4.3 の升目）"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "unreadableIsLikeMissing（状態コード・code・構造・メッセージの同一）"
+    },
+    {
+      "id": "AC1.5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "requiredGrid の LOOKUP の行"
+    },
+    {
+      "id": "AC1.5.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged（読めない必須の参照項目の値が変わらない更新）"
+    },
+    {
+      "id": "AC3.1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "createWithExistingValues（別の接続で読み直す）"
+    },
+    {
+      "id": "AC3.1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "createWithMissingValue"
+    },
+    {
+      "id": "AC3.1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "unreadableIsLikeMissing の IDOR と notAllowedAndAllRejections"
+    },
+    {
+      "id": "AC3.1.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "nullIsNotChecked"
+    },
+    {
+      "id": "AC3.1.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "T-G1 createGap（3種類の対象DB、PausingTargetWriteAccess で待ち合わせ）"
+    },
+    {
+      "id": "AC3.1.7",
+      "status": "Deferred",
+      "target": "u3-reference-screens（項目の近くの誤り・フォーカス・aria-describedby。U2 は画面を持たない）"
+    },
+    {
+      "id": "AC3.1.8",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTimeoutIT.java",
+      "note": "T-T1・T-F1（503、保存されない、例外の文が出ない）"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged（変わった参照だけ確かめる）"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyPropertyTest.java",
+      "note": "型つきの値の比べ方の性質（IT の sameValueOtherForm も）"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged の宙に浮いた参照と T-G2 updateGap"
+    },
+    {
+      "id": "AC3.2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "missingRowFirst"
+    },
+    {
+      "id": "AC3.2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "updatesRejectionsAndDeletes（読み取り1本・書き込みは確かめの後）"
+    },
+    {
+      "id": "AC3.3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "createRejection・updateRejection"
+    },
+    {
+      "id": "AC3.3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "checksAreNotAudited"
+    },
+    {
+      "id": "NFR2.21",
+      "status": "Deferred",
+      "target": "performance-validation（refCreateChecked の iteration_duration の p95 < 1,000 ms と checks の率 1。測っていないため OK にしない。場面は perf/k6/scenarios.js）"
+    },
+    {
+      "id": "NFR2.25",
+      "status": "Deferred",
+      "target": "performance-validation（NFR2.21 を測るまで Unverified とし、目標と物差しを緩めない）"
+    },
+    {
+      "id": "NFR5.23",
+      "status": "Deferred",
+      "target": "build-and-test（この段の verify は 26分48秒を記録済み。CI の検査の job の時間は f35b7b8 の CI の確認後に Build and Test で記録）"
+    },
+    {
+      "id": "NFR2.22",
+      "status": "Deferred",
+      "target": "build-and-test・performance-validation（refCreateChecked の種の流し込みと試し走りは Build and Test、3種類の判定は Performance Validation。この段は perf/k6/scenarios.js の構文と k6 inspect の確かめまで）"
+    },
+    {
+      "id": "NFR2.23",
+      "status": "Deferred",
+      "target": "build-and-test・performance-validation（既存の書き込みの場面の意味を保つこと。perf/make-biz-dsl.mjs で biz_new の ref_id を参照にしていないことはこの段で確かめ済み、結果の比べは負荷の試験で）"
+    },
+    {
+      "id": "NFR2.24",
+      "status": "Deferred",
+      "target": "build-and-test・performance-validation（iteration_duration で判定する決まり。閾値は perf/k6/thresholds-test.sh で照らし済み、実測は負荷の試験で）"
+    },
+    {
+      "id": "NFR3.21",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "createsBorrowAtMostOneRead"
+    },
+    {
+      "id": "NFR3.25",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "T-T3 全体の上限 10 秒（SteppingClock、ofBudgetExceeded）"
+    },
+    {
+      "id": "NFR3.24",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTimeoutIT.java",
+      "note": "REFERENCE の目的の問い合わせの時間の上限で 503 TIMEOUT（眠るビュー）"
+    },
+    {
+      "id": "NFR2.28",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "参照ごとに順に check を呼び、失敗でその場で止める"
+    },
+    {
+      "id": "NFR1.21",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuthorizationApiIT.java",
+      "note": "参照先の権限だけを欠く利用者は 409、持つ利用者は保存"
+    },
+    {
+      "id": "NFR1.31",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyPropertyTest.java",
+      "note": "jqwik の性質ベースのテスト"
+    },
+    {
+      "id": "NFR1.32",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java",
+      "note": "診断の WARN がちょうど1行、GlobalExceptionHandler の WARN が1行"
+    },
+    {
+      "id": "NFR2.26",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "U1 の口の上限（201 行）を使い緩めない"
+    },
+    {
+      "id": "NFR2.29",
+      "status": "Deferred",
+      "target": "observability-setup（作成・更新の道は既存の業務データの区画に入り、新しい区画・警報は足さない。基盤の設計の承認の場 R-01）"
+    },
+    {
+      "id": "NFR3.23",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "1要求で同時に持つ対象DB の接続は1本。プールの設定は変えていない（アプリの既定は読み取り 10・書き込み 5。負荷の試験の使い捨ての環境は U1 の決めた読み取り 5）"
+    },
+    {
+      "id": "NFR3.27",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "T-G1・T-G2（書き込みの段の扱いは変えない）"
+    },
+    {
+      "id": "NFR3.28",
+      "status": "Deferred",
+      "target": "observability-setup（保存前の確かめの 503 を既存の警報 ms-biz-target-db で拾うことの確かめ。基盤の設計の承認の場 R-01）"
+    },
+    {
+      "id": "NFR5.21",
+      "status": "OK",
+      "target": "backend/build.gradle.kts",
+      "note": "全体とパッケージごとの下限（行 80%・分岐 70%）の関門。f35b7b8 の前の作業ブランチの verify（cleanTest つき）が関門を通った。値は Build and Test で記録"
+    },
+    {
+      "id": "NFR5.22",
+      "status": "OK",
+      "target": "backend/build.gradle.kts",
+      "note": "packagesJudgedByTotal の一覧に触れていない（businessdata.domain・businessdata.service だけ）"
+    },
+    {
+      "id": "NFR6.21",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteControllerTest.java",
+      "note": "既存の code と項目の誤りの理由の写し"
+    },
+    {
+      "id": "NFR7.21",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteControllerTest.java",
+      "note": "API の道と本文の形は変えず、拒否の応答だけが増える"
+    },
+    {
+      "id": "NFR7.22",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "参照の無い作成・更新・削除は読み取りの接続を借りない"
+    },
+    {
+      "id": "NFR9.21",
+      "status": "OK",
+      "target": "backend/gradle.lockfile",
+      "note": "依存を足していない（lockfile・libs.versions.toml に差が無い）"
+    },
+    {
+      "id": "NFR1.22",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "unreadableIsLikeMissing"
+    },
+    {
+      "id": "NFR1.23",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuthorizationApiIT.java",
+      "note": "targetRemovedFromTheDsl（参照先は権限の写しの DSL から引く）"
+    },
+    {
+      "id": "NFR1.24",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "valuesAreNotSql"
+    },
+    {
+      "id": "NFR1.25",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java",
+      "note": "TRACE を有効にした漏えいの確かめ（トレースは ReferenceWriteTraceExposureIT）"
+    },
+    {
+      "id": "NFR1.26",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "requiredGrid"
+    },
+    {
+      "id": "NFR1.27",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "targetShapes（(h)、500 にならない）"
+    },
+    {
+      "id": "NFR1.28",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "comparisonAndTypes（3種類の対象DB）"
+    },
+    {
+      "id": "NFR1.29",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "T-G1・T-G2"
+    },
+    {
+      "id": "NFR1.30",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "拒否の FAILURE と確かめの読み取りを残さない"
+    },
+    {
+      "id": "NFR2.27",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "lengthBoundary"
+    },
+    {
+      "id": "NFR3.22",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "権限の写しの後に内部DB の接続を返してから借りる（T-G1・T-G2 で止めた時点の内部DB の使用中 0 も確かめる）"
+    },
+    {
+      "id": "NFR3.26",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTimeoutIT.java",
+      "note": "T-F2（2つ目の失敗で3つ目を流さない、書き込みを借りない）"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "判定の順（⑨ の誤りで対象DB を読まない、400 が 409 より先）"
+    },
+    {
+      "id": "BR3.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorTest.java",
+      "note": "Hold による必須の参照項目の空の誤りの保留"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "読むものが無ければ借りない"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyTest.java",
+      "note": "decide の升目"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyTest.java",
+      "note": "combine の順（失敗 → 行が無い → 400 → 409）"
+    },
+    {
+      "id": "BR2.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "missingRowFirst"
+    },
+    {
+      "id": "BR3.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyTest.java",
+      "note": "decide（使える必須の参照項目は既存の検証の結果）"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "新しい code を作らず既存の写しを使う"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuthorizationApiIT.java",
+      "note": "targetRemovedFromTheDsl"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "作成は NULL でない参照をすべて確かめる"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "requiredGrid"
+    },
+    {
+      "id": "BR4.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "check の結果の写し"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyPropertyTest.java",
+      "note": "NULL と空の扱い"
+    },
+    {
+      "id": "BR2.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged"
+    },
+    {
+      "id": "BR2.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyPropertyTest.java",
+      "note": "型つきの値で比べ、違えば確かめる（安全側）"
+    },
+    {
+      "id": "BR4.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "targetShapes（U1 の check の FOUND）"
+    },
+    {
+      "id": "BR2.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "notAllowedAndAllRejections（拒否をすべて DSL の並びで並べる）"
+    },
+    {
+      "id": "BR4.5",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTimeoutIT.java",
+      "note": "T-F2"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "requiredGrid（NO_PERMISSION・TOO_MANY）"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorTest.java",
+      "note": "NOT_EDITABLE_NOT_NULL の項目の誤り"
+    },
+    {
+      "id": "BR3.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "updateChecksOnlyChanged（更新では必須の参照項目の状態を問わない）"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "読み取りを返してから書き込みを借りる"
+    },
+    {
+      "id": "BR4.7",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "sameTargetCountedOnce"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "内部DB の接続を持ったまま対象DB を待たない"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "createRejection"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java",
+      "note": "値を伏せる・JDBC のメッセージを出さない"
+    },
+    {
+      "id": "BR4.6",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java",
+      "note": "ColumnValueCodec.format で ReferenceValue にする"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "作成は空の detail、更新は主キーだけ"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java",
+      "note": "checksAreNotAudited"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "T-G1 createGap"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java",
+      "note": "参照の無い要求は今のまま（ReferenceWriteAuditIT も）"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java",
+      "note": "unreadableIsLikeMissing"
+    }
+  ]
+}

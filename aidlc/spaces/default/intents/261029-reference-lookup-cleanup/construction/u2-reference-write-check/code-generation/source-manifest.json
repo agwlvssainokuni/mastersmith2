@@ -1,0 +1,118 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-reference-write-check",
+  "version": 1,
+  "writes": [
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/PreviousReferenceValues.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ReferenceCheckItem.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ReferenceStepOutcome.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicy.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/RequiredReferenceState.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteRequestValidator.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/WriteValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/service/ReferenceLookup.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWritePolicyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/ReferenceWriteTypesTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/domain/WriteRequestValidatorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/service/ReferenceLookupTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/PausingTargetWriteAccess.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/PausingWriteAccessConfig.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/ReferenceTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractReferenceWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/BusinessDataWriteControllerTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MariadbReferenceWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/MysqlReferenceWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/PostgresReferenceWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuditIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteAuthorizationApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteConnectionUsageIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTimeoutIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteTraceExposureIT.java"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/biz/make-biz-seed.sh"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/k6/thresholds-test.sh"
+    },
+    {
+      "path": "perf/make-biz-dsl.mjs"
+    }
+  ]
+}
