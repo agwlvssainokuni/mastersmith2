@@ -162,3 +162,37 @@ describe('ReferenceSelectField', () => {
     expect(await axe(second.view.container)).toHaveNoViolations()
   })
 })
+
+// 直しの Bolt B7（U3 R-01）: NULL を許さない項目は REQUIRED の規則が無くても必須として描く
+describe('ReferenceSelectField for a NOT NULL column without the REQUIRED rule', () => {
+  const notNull = () => column(SAMPLE_OPTIONS, { nullable: false, required: false })
+
+  it('marks the label as required, sets aria-required and omits the unselected option with a value', async () => {
+    renderField({ column: notNull(), value: 'C001' })
+    const select = await screen.findByRole('combobox', { name: '顧客 *必須' })
+    expect(select).toHaveAttribute('aria-required', 'true')
+    expect(within(select).queryByRole('option', { name: '（選ばない）' })).toBeNull()
+  })
+
+  it('keeps the unselected option while the value is empty', async () => {
+    renderField({ column: notNull(), value: '' })
+    const select = await screen.findByRole('combobox', { name: '顧客 *必須' })
+    expect(within(select).getAllByRole('option')[0]).toHaveTextContent('（選ばない）')
+  })
+
+  it('has no mark, no aria-required and the unselected option for a nullable column', async () => {
+    renderField({
+      column: column(SAMPLE_OPTIONS, { nullable: true, required: false }),
+      value: 'C001',
+    })
+    const select = await screen.findByRole('combobox', { name: '顧客' })
+    expect(select).not.toHaveAttribute('aria-required')
+    expect(within(select).getByRole('option', { name: '（選ばない）' })).toBeInTheDocument()
+  })
+
+  it('has no accessibility violations in the required form', async () => {
+    const { view } = renderField({ column: notNull(), value: 'C001' })
+    await screen.findByRole('combobox')
+    expect(await axe(view.container)).toHaveNoViolations()
+  })
+})

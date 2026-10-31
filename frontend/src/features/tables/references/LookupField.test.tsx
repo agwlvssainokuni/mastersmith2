@@ -130,3 +130,69 @@ describe('LookupField', () => {
     expect(await axe(second.view.container)).toHaveNoViolations()
   })
 })
+
+// 直しの Bolt B7（U3 R-01・R-02）: 必須の印と、FormField の文脈による欄への結び付け
+describe('LookupField required mark and field binding', () => {
+  it('marks a required field (not clearable) and sets aria-required on the field (R-01)', async () => {
+    renderField({ clearable: false })
+    const input = await screen.findByRole('textbox', { name: '商品 *必須' })
+    expect(input).toHaveAttribute('aria-required', 'true')
+    expect(input).toHaveAttribute('data-testid', 'tables-lookup-value-c4')
+  })
+
+  it('has no mark and no aria-required for a clearable field', async () => {
+    renderField({ clearable: true })
+    const input = await screen.findByRole('textbox', { name: '商品' })
+    expect(input).not.toHaveAttribute('aria-required')
+  })
+
+  it('returns the field for the label text through the label for attribute (R-02)', async () => {
+    renderField({ clearable: false })
+    const input = await screen.findByLabelText('商品 *必須')
+    expect(input).toHaveAttribute('data-testid', 'tables-lookup-value-c4')
+    const label = document.querySelector(`label[for="${input.id}"]`)
+    expect(label).not.toBeNull()
+    expect(label).toHaveTextContent('商品 *必須')
+  })
+
+  it('points aria-describedby at the error text and sets aria-invalid on the field only (R-02)', async () => {
+    renderField({ clearable: false, error: '値を選んでください' })
+    const input = await screen.findByTestId('tables-lookup-value-c4')
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    const describedBy = input.getAttribute('aria-describedby') ?? ''
+    const described = describedBy
+      .split(' ')
+      .filter((id) => id !== '')
+      .map((id) => document.getElementById(id))
+    expect(described.length).toBeGreaterThan(0)
+    expect(described.some((element) => element?.textContent === '値を選んでください')).toBe(true)
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).not.toHaveAttribute('aria-describedby')
+      expect(button).not.toHaveAttribute('aria-invalid')
+    }
+  })
+
+  it('points aria-describedby at the hint while empty and drops it once a value is set (R-02)', async () => {
+    const first = renderField({ value: '' })
+    const empty = await screen.findByTestId('tables-lookup-value-c4')
+    expect(empty).not.toHaveAttribute('aria-invalid')
+    const hintId = empty.getAttribute('aria-describedby') ?? ''
+    expect(hintId).not.toBe('')
+    expect(document.getElementById(hintId)).toHaveTextContent('検索して選びます')
+    first.view.unmount()
+    renderField({ value: 'P001', label: 'x' })
+    const filled = await screen.findByTestId('tables-lookup-value-c4')
+    expect(filled).not.toHaveAttribute('aria-describedby')
+    expect(filled).not.toHaveAttribute('aria-invalid')
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).not.toHaveAttribute('aria-describedby')
+      expect(button).not.toHaveAttribute('aria-invalid')
+    }
+  })
+
+  it('has no accessibility violations for a required field with an error', async () => {
+    const { view } = renderField({ clearable: false, error: '値を選んでください' })
+    await screen.findByRole('textbox')
+    expect(await axe(view.container)).toHaveNoViolations()
+  })
+})

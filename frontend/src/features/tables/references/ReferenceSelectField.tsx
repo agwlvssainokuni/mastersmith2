@@ -17,6 +17,8 @@
 // REFERENCE の選択（M1。Intent 261029-reference-lookup-cleanup の U3、D6〜D10、frontend-components.md の 4.1）。
 // - 選択肢は reference.options から作り、文は「ラベル (値)」（ラベルが null なら値だけ）。並べ直さない。文字として描く。
 // - select の「（選ばない）」の扱いは既存の select と同じ（必須で値が入っていれば置かない）。radio は置かない。
+// - 必須は isRequiredColumn（NULL を許さないか required が真）で決め、印・aria-required・「（選ばない）」の出し分けをそろえる
+//   （直しの Bolt B7、U3 R-01）。
 // - 更新で保存済みの値が options に無いときは、値だけの選択肢を先頭に足す（D8）。
 // - 0 件のときは「（選ばない）」だけの select と説明文、必須なら続けて必須の文（D9）。
 // - 状態は持たない（値は作成・更新の画面のフォームの状態）。
@@ -57,7 +59,7 @@ export function ReferenceSelectField({
   onBlur,
 }: ReferenceSelectFieldProps) {
   const { t } = useTranslation()
-  const required = column.required === true
+  const required = isRequiredColumn(column)
   const label = required ? `${name} ${t('tables.form.required')}` : name
   const options = column.reference?.options ?? []
   const choices = options.map((option) => ({ value: option.value, label: optionText(option) }))
@@ -71,7 +73,7 @@ export function ReferenceSelectField({
   const hints: string[] = []
   if (options.length === 0) {
     hints.push(t('tables.reference.noOptions'))
-    if (isRequiredColumn(column)) {
+    if (required) {
       hints.push(t('tables.reference.noOptionsRequired'))
     }
   }

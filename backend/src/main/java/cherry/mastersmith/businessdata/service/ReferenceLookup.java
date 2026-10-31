@@ -421,7 +421,7 @@ public class ReferenceLookup {
                         .anyMatch(read -> ReferencePolicy.sameReferenceValue(typed.get(), read));
                 yield found ? new ReferenceCheckResult.Found() : new ReferenceCheckResult.NotFoundOrDenied();
             }
-            case RowSearchResult.Failed failed -> new ReferenceCheckResult.Failed(failureOf(failed.failure()));
+            case RowSearchResult.Failed failed -> new ReferenceCheckResult.Failed(writeFailureOf(failed.failure()));
             case RowSearchResult.Page page -> throw new BusinessDataUnexpectedException();
         };
     }
@@ -458,7 +458,7 @@ public class ReferenceLookup {
                 rows.rows().size() >= ReferenceReadSpec.OPTION_ROWS
                         ? new ReferenceCountState.TooMany()
                         : new ReferenceCountState.Available();
-            case RowSearchResult.Failed failed -> new ReferenceCountState.Failed(failureOf(failed.failure()));
+            case RowSearchResult.Failed failed -> new ReferenceCountState.Failed(writeFailureOf(failed.failure()));
             case RowSearchResult.Page page -> throw new BusinessDataUnexpectedException();
         };
     }
@@ -559,6 +559,20 @@ public class ReferenceLookup {
             return ReferenceReadFailure.of(failure);
         } catch (IllegalArgumentException e) {
             throw new BusinessDataUnexpectedException();
+        }
+    }
+
+    /**
+     * 保存の前の確かめの口（{@link #check}・{@link #countState}）の失敗を写す。写さない理由（INVALID_VALUE・UNEXPECTED）は、値を含まない
+     * 手がかり（SQLState・業者の番号・例外のクラスの名前）を持つ想定外にし、U2 が口の外で診断の WARN を出せるようにする（直しの Bolt B7、
+     * U2 の NFR1.32）。読み取りの API の経路は {@link #failureOf} のまま変えない。
+     */
+    private static ReferenceReadFailure writeFailureOf(RowQueryFailure failure) {
+        try {
+            return ReferenceReadFailure.of(failure);
+        } catch (IllegalArgumentException e) {
+            throw BusinessDataUnexpectedException.withDiagnosis(
+                    failure.sqlState(), failure.vendorCode(), failure.exceptionClass());
         }
     }
 

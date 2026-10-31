@@ -117,6 +117,9 @@ public class BusinessDataWriteService {
     /** 保存前の参照の段のログの目的の値（observability-design.md 2.1）。 */
     static final String REFERENCE_PURPOSE = "REFERENCE";
 
+    /** ⑩ の想定外の WARN の {@code reason}（⑪ の想定外と同じ文字。{@link ReferenceFailureReason} には足さない）。 */
+    static final String UNEXPECTED_REASON = "UNEXPECTED";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessDataWriteService.class);
 
     private final TableAccessResolver resolver;
@@ -302,21 +305,23 @@ public class BusinessDataWriteService {
             // 読むものが無ければ借りない（U2 の BR1.2）。
             return Optional.empty();
         }
-        TargetReadOutcome<Optional<ReferenceStepOutcome>> outcome =
-                readAccess.withRead(ReadPurpose.REFERENCE, session -> {
-                    try {
-                        return Optional.of(
-                                operation == WriteOperation.CREATE
-                                        ? createStep(session, resolved, valid, targets, required, bodyReferences)
-                                        : updateStep(session, resolved, valid, targets, bodyReferences));
-                    } catch (BusinessDataUnexpectedException e) {
-                        // 写さない失敗（INVALID_VALUE・UNEXPECTED）は口の外で想定外にする（reliability-design.md 2節）。
-                        return Optional.empty();
-                    }
-                });
+        TargetReadOutcome<StepAttempt> outcome = readAccess.withRead(ReadPurpose.REFERENCE, session -> {
+            try {
+                return new StepAttempt.Completed(
+                        operation == WriteOperation.CREATE
+                                ? createStep(session, resolved, valid, targets, required, bodyReferences)
+                                : updateStep(session, resolved, valid, targets, bodyReferences));
+            } catch (StageUnexpected e) {
+                // 写さない失敗（INVALID_VALUE・UNEXPECTED）と値の欠けは、値を含まない手がかりだけを口の外へ運び、口の外で
+                // 想定外にする（reliability-design.md 2節、直しの Bolt B7）。
+                return new StepAttempt.Unexpected(e.stage, e.sqlState, e.vendorCode, e.exceptionClass);
+            } catch (BusinessDataUnexpectedException e) {
+                return new StepAttempt.Unexpected(null, e.sqlState(), e.vendorCode(), e.exceptionClass());
+            }
+        });
         ReferenceStepOutcome step =
                 switch (outcome) {
-                    case TargetReadOutcome.NotConfigured<Optional<ReferenceStepOutcome>> notConfigured -> {
+                    case TargetReadOutcome.NotConfigured<StepAttempt> notConfigured -> {
                         warnReference(
                                 ReferenceStepOutcome.Stage.BORROW,
                                 ReferenceFailureReason.UNAVAILABLE,
@@ -334,7 +339,7 @@ public class BusinessDataWriteService {
                                         false),
                                 ReferenceStepOutcome.Stage.BORROW);
                     }
-                    case TargetReadOutcome.Unavailable<Optional<ReferenceStepOutcome>> unavailable -> {
+                    case TargetReadOutcome.Unavailable<StepAttempt> unavailable -> {
                         warnReference(
                                 ReferenceStepOutcome.Stage.BORROW,
                                 ReferenceFailureReason.UNAVAILABLE,
@@ -351,8 +356,22 @@ public class BusinessDataWriteService {
                                         false),
                                 ReferenceStepOutcome.Stage.BORROW);
                     }
-                    case TargetReadOutcome.Done<Optional<ReferenceStepOutcome>> done -> {
-                        ReferenceStepOutcome value = done.value().orElseThrow(BusinessDataUnexpectedException::new);
+                    case TargetReadOutcome.Done<StepAttempt> done -> {
+                        ReferenceStepOutcome value =
+                                switch (done.value()) {
+                                    case StepAttempt.Completed completed -> completed.outcome();
+                                    case StepAttempt.Unexpected unexpected -> {
+                                        // ⑪ の想定外と同じく、値を含まない手がかりの WARN を1行出してから 500 にする（U2 の NFR1.32）。
+                                        warnReference(
+                                                unexpected.stage(),
+                                                UNEXPECTED_REASON,
+                                                unexpected.sqlState(),
+                                                unexpected.vendorCode(),
+                                                unexpected.exceptionClass(),
+                                                false);
+                                        throw new BusinessDataUnexpectedException();
+                                    }
+                                };
                         if (value instanceof ReferenceStepOutcome.Failed failed) {
                             ReferenceReadFailure f = failed.failure();
                             warnReference(
@@ -397,7 +416,10 @@ public class BusinessDataWriteService {
                         return new ReferenceStepOutcome.Failed(
                                 ReferenceReadFailure.ofBudgetExceeded(), ReferenceStepOutcome.Stage.COUNT_STATE);
                     }
-                    ReferenceCountState state = lookup.countState(resolved, column, narrowed.get());
+                    TargetReadSession counting = narrowed.get();
+                    ReferenceCountState state = atStage(
+                            ReferenceStepOutcome.Stage.COUNT_STATE,
+                            () -> lookup.countState(resolved, column, counting));
                     if (state instanceof ReferenceCountState.Failed failed) {
                         return new ReferenceStepOutcome.Failed(
                                 failed.failure(), ReferenceStepOutcome.Stage.COUNT_STATE);
@@ -473,7 +495,11 @@ public class BusinessDataWriteService {
                     return new ReferenceStepOutcome.Failed(
                             ReferenceReadFailure.of(failed.failure()), ReferenceStepOutcome.Stage.PREVIOUS_ROW);
                 } catch (IllegalArgumentException e) {
-                    throw new BusinessDataUnexpectedException();
+                    throw new StageUnexpected(
+                            ReferenceStepOutcome.Stage.PREVIOUS_ROW,
+                            failed.failure().sqlState(),
+                            failed.failure().vendorCode(),
+                            failed.failure().exceptionClass());
                 }
             }
         }
@@ -532,8 +558,12 @@ public class BusinessDataWriteService {
                 return new ReferenceStepOutcome.Failed(
                         ReferenceReadFailure.ofBudgetExceeded(), ReferenceStepOutcome.Stage.CHECK);
             }
+            TargetReadSession checking = narrowed.get();
             ReferenceStepOutcome partial = ReferenceWritePolicy.ofCheck(
-                    item.column(), lookup.check(resolved, item.column(), item.value(), narrowed.get()));
+                    item.column(),
+                    atStage(
+                            ReferenceStepOutcome.Stage.CHECK,
+                            () -> lookup.check(resolved, item.column(), item.value(), checking)));
             if (partial instanceof ReferenceStepOutcome.Failed) {
                 return partial;
             }
@@ -871,18 +901,22 @@ public class BusinessDataWriteService {
                 .log("対象DB の業務データを書き込めませんでした");
     }
 
-    /** ⑩ の診断の WARN を1行だけ出す（キーと値だけ。名前・値・メッセージを出さない。U2 の NFR1.32）。 */
+    /**
+     * ⑩ の診断の WARN を1行だけ出す（キーと値だけ。名前・値・メッセージを出さない。U2 の NFR1.32）。{@code reason} は
+     * {@link ReferenceFailureReason} か想定外の {@link #UNEXPECTED_REASON}。値の無いキー（{@code stage} を含む）は出さない。
+     */
     private static void warnReference(
             ReferenceStepOutcome.Stage stage,
-            ReferenceFailureReason reason,
+            Object reason,
             String sqlState,
             Integer vendorCode,
             String exceptionClass,
             boolean budgetExceeded) {
-        var log = LOGGER.atWarn()
-                .addKeyValue("purpose", REFERENCE_PURPOSE)
-                .addKeyValue("stage", stage)
-                .addKeyValue("reason", reason);
+        var log = LOGGER.atWarn().addKeyValue("purpose", REFERENCE_PURPOSE);
+        if (stage != null) {
+            log = log.addKeyValue("stage", stage);
+        }
+        log = log.addKeyValue("reason", reason);
         if (sqlState != null) {
             log = log.addKeyValue("sqlState", sqlState);
         }
@@ -893,6 +927,49 @@ public class BusinessDataWriteService {
             log = log.addKeyValue("exceptionClass", exceptionClass);
         }
         log.addKeyValue("budgetExceeded", budgetExceeded).log("保存の前に対象DB の参照先を読めませんでした");
+    }
+
+    /** 確かめの口を呼び、想定外の失敗に起きた読み取り（{@code stage}）を付けて投げ直す（値は持たない）。 */
+    private static <T> T atStage(ReferenceStepOutcome.Stage stage, java.util.function.Supplier<T> call) {
+        try {
+            return call.get();
+        } catch (BusinessDataUnexpectedException e) {
+            throw new StageUnexpected(stage, e.sqlState(), e.vendorCode(), e.exceptionClass());
+        }
+    }
+
+    /**
+     * ⑩ の借りた接続の中の想定外の失敗に、起きた読み取りと値を含まない手がかりを付けたもの（口の外へ運ぶだけ。メッセージも原因も持たず、
+     * スタックトレースも取らない）。
+     */
+    private static final class StageUnexpected extends RuntimeException {
+
+        @java.io.Serial
+        private static final long serialVersionUID = 1L;
+
+        private final ReferenceStepOutcome.Stage stage;
+        private final String sqlState;
+        private final Integer vendorCode;
+        private final String exceptionClass;
+
+        StageUnexpected(ReferenceStepOutcome.Stage stage, String sqlState, Integer vendorCode, String exceptionClass) {
+            super(null, null, false, false);
+            this.stage = stage;
+            this.sqlState = sqlState;
+            this.vendorCode = vendorCode;
+            this.exceptionClass = exceptionClass;
+        }
+    }
+
+    /** ⑩ の借りた接続の中の処理の結果（口の外へは値を含まない形で戻す）。 */
+    private sealed interface StepAttempt {
+
+        /** 確かめの段を終えた（拒否・失敗を含む）。 */
+        record Completed(ReferenceStepOutcome outcome) implements StepAttempt {}
+
+        /** 想定外の失敗（値を含まない手がかりだけ。無いものは null）。 */
+        record Unexpected(ReferenceStepOutcome.Stage stage, String sqlState, Integer vendorCode, String exceptionClass)
+                implements StepAttempt {}
     }
 
     /** 書き込みの口の中の処理の結果（口の外へは値を伏せた形で戻す）。 */

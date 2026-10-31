@@ -19,6 +19,7 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture.table;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -646,8 +647,107 @@ class BusinessDataWriteReferenceTest {
                 null,
                 "java.lang.IllegalStateException"));
 
-        assertThatThrownBy(() -> update(body("team_id", "7"))).isInstanceOf(BusinessDataUnexpectedException.class);
+        try (LogEvents logs = LogEvents.capture(BusinessDataWriteService.class)) {
+            assertThatThrownBy(() -> update(body("team_id", "7"))).isInstanceOf(BusinessDataUnexpectedException.class);
+            assertThat(logs.list()).singleElement().satisfies(event -> {
+                Map<String, Object> keys = keyValues(event);
+                assertThat(String.valueOf(keys.get("stage"))).isEqualTo("PREVIOUS_ROW");
+                assertThat(String.valueOf(keys.get("reason"))).isEqualTo("UNEXPECTED");
+                assertThat(keys.get("exceptionClass")).isEqualTo("java.lang.IllegalStateException");
+                assertThat(keys).doesNotContainKeys("sqlState", "vendorCode");
+            });
+        }
         assertThat(writes()).isZero();
+    }
+
+    /** 写さない理由の失敗（SQLState・業者の番号・例外のクラスの名前を T-F2 と違う値にして、写したことを見分ける）。 */
+    private static RowSearchResult unmapped(RowQueryFailureReason reason) {
+        return new RowSearchResult.Failed(
+                new RowQueryFailure(reason, RowQueryStage.READ, "22P02", 7, "org.postgresql.util.PSQLException"));
+    }
+
+    /** ⑩ の想定外の後に、500 の例外がメッセージも原因も持たず、書き込みの口も監査の出来事も無いことを確かめる。 */
+    private void assertUnexpectedWithoutSideEffects(Throwable thrown) {
+        assertThat(thrown).isInstanceOf(BusinessDataUnexpectedException.class);
+        assertThat(thrown.getMessage()).isNull();
+        assertThat(thrown.getCause()).isNull();
+        assertThat(writes()).isZero();
+        assertThat(events()).as("想定外は監査に残さない").isEmpty();
+    }
+
+    /** ⑩ の想定外の WARN を確かめる（値・カラムの名前・テーブルの名前を含まない）。 */
+    private static void assertUnexpectedWarning(ILoggingEvent event, String stage, boolean withDiagnosis) {
+        assertThat(event.getLevel()).isEqualTo(Level.WARN);
+        assertThat(event.getThrowableProxy()).isNull();
+        if (withDiagnosis) {
+            assertThat(event.getKeyValuePairs())
+                    .extracting(p -> p.key)
+                    .containsExactly(
+                            "purpose", "stage", "reason", "sqlState", "vendorCode", "exceptionClass", "budgetExceeded");
+        } else {
+            assertThat(event.getKeyValuePairs())
+                    .extracting(p -> p.key)
+                    .containsExactly("purpose", "stage", "reason", "budgetExceeded");
+        }
+        Map<String, Object> keys = keyValues(event);
+        assertThat(keys.get("purpose")).isEqualTo("REFERENCE");
+        assertThat(String.valueOf(keys.get("stage"))).isEqualTo(stage);
+        assertThat(String.valueOf(keys.get("reason"))).isEqualTo("UNEXPECTED");
+        assertThat(keys.get("budgetExceeded")).isEqualTo(false);
+        if (withDiagnosis) {
+            assertThat(keys.get("sqlState")).isEqualTo("22P02");
+            assertThat(keys.get("vendorCode")).isEqualTo(7);
+            assertThat(keys.get("exceptionClass")).isEqualTo("org.postgresql.util.PSQLException");
+        }
+        assertThat(event.getFormattedMessage() + event.getKeyValuePairs())
+                .doesNotContain(SECRET)
+                .doesNotContain("orders")
+                .doesNotContain("dept");
+    }
+
+    @Test
+    @DisplayName("B7 U2 R-01: an INVALID_VALUE check failure logs one unexpected warning with its diagnosis and is 500")
+    void invalidValueCheckFailureWarnsOnce() {
+        ports.executor.detailResult = previous(body("dept_code", "D0"));
+        ports.executor.referenceResults.add(unmapped(RowQueryFailureReason.INVALID_VALUE));
+
+        try (LogEvents logs = LogEvents.capture(BusinessDataWriteService.class)) {
+            Throwable thrown = catchThrowable(() -> update(body("dept_code", SECRET)));
+
+            assertUnexpectedWithoutSideEffects(thrown);
+            assertThat(logs.list()).singleElement().satisfies(event -> assertUnexpectedWarning(event, "CHECK", true));
+        }
+    }
+
+    @Test
+    @DisplayName("B7 U2 R-01: an UNEXPECTED required state failure logs one unexpected warning with its diagnosis")
+    void unexpectedCountStateFailureWarnsOnce() {
+        ports.executor.referenceResults.add(unmapped(RowQueryFailureReason.UNEXPECTED));
+
+        try (LogEvents logs = LogEvents.capture(BusinessDataWriteService.class)) {
+            Throwable thrown = catchThrowable(() -> create("orders", body("dept_code", SECRET, "dept_alt", SECRET)));
+
+            assertUnexpectedWithoutSideEffects(thrown);
+            assertThat(logs.list())
+                    .singleElement()
+                    .satisfies(event -> assertUnexpectedWarning(event, "COUNT_STATE", true));
+        }
+        assertThat(specKinds()).as("想定外の後に check を流さない").containsExactly(OPTIONS);
+    }
+
+    @Test
+    @DisplayName("B7 U2 R-01: a read row without its value logs one unexpected warning without absent diagnosis keys")
+    void missingValueWarnsWithoutDiagnosis() {
+        ports.executor.detailResult = previous(body("dept_code", "D0"));
+        ports.executor.referenceResults.add(new RowSearchResult.Rows(
+                List.of(new RowRecord(new RowValues(Map.of(), Set.of()), new RowValues(Map.of(), Set.of())))));
+
+        try (LogEvents logs = LogEvents.capture(BusinessDataWriteService.class)) {
+            Throwable thrown = catchThrowable(() -> update(body("dept_code", SECRET)));
+
+            assertUnexpectedWithoutSideEffects(thrown);
+            assertThat(logs.list()).singleElement().satisfies(event -> assertUnexpectedWarning(event, "CHECK", false));
+        }
     }
 
     @Test

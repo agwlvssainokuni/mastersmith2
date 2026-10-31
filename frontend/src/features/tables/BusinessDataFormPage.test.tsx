@@ -858,3 +858,98 @@ describe('BusinessDataFormPage references', () => {
     expect(definitionCount).toBe(2)
   })
 })
+
+// 直しの Bolt B7（U3 R-01）: NULL を許さない参照の項目は、REQUIRED の規則が無くても画面で必須として止める
+const NOT_NULL_REF_COLUMNS = [
+  REF_COLUMNS[0],
+  wireColumn('customer', {
+    displayName: { ja: '顧客', en: 'Customer' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'select',
+    required: false,
+    nullable: false,
+    reference: wireReference(),
+  }),
+  wireColumn('memo', {
+    displayName: { ja: 'メモ', en: 'Memo' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'text',
+    required: false,
+    nullable: false,
+  }),
+]
+
+const NOT_NULL_LOOKUP_COLUMNS = [
+  REF_COLUMNS[0],
+  wireColumn('product', {
+    displayName: { ja: '商品', en: 'Product' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'lookup',
+    required: false,
+    nullable: false,
+    reference: wireLookup(),
+  }),
+]
+
+describe('BusinessDataFormPage NOT NULL references without the REQUIRED rule', () => {
+  it('binds REQUIRED to the select when it is left without a choice', async () => {
+    const user = userEvent.setup()
+    renderTablesDataRouter(NEW_ROUTE, refResponder(created(), { columns: NOT_NULL_REF_COLUMNS }))
+    const customer = await screen.findByRole('combobox', { name: '顧客 *必須' })
+    expect(customer).toHaveAttribute('aria-required', 'true')
+    await user.click(customer)
+    await user.tab()
+    await waitFor(() => expect(customer).toHaveAttribute('aria-invalid', 'true'))
+    expect(customer).toHaveAccessibleDescription('入力してください。')
+  })
+
+  it('does not send a create without a choice and focuses the summary', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTablesDataRouter(
+      NEW_ROUTE,
+      refResponder(created(), { columns: NOT_NULL_REF_COLUMNS }),
+    )
+    await user.type(await screen.findByRole('textbox', { name: /^注文番号/ }), 'O9')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const summary = await screen.findByTestId('tables-form-summary')
+    await waitFor(() => expect(summary).toHaveFocus())
+    expect(summary).toHaveTextContent('顧客: 入力してください。')
+    expect(summary).not.toHaveTextContent('メモ')
+    expect(writes(calls)).toHaveLength(0)
+  })
+
+  it('sends the chosen value and keeps the old behavior of a NOT NULL column that is not a reference', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTablesDataRouter(
+      NEW_ROUTE,
+      refResponder(created({ code: 'O9' }), { columns: NOT_NULL_REF_COLUMNS }),
+    )
+    const memo = await screen.findByRole('textbox', { name: 'メモ' })
+    expect(memo).not.toHaveAttribute('aria-required')
+    await user.type(screen.getByRole('textbox', { name: /^注文番号/ }), 'O9')
+    await user.selectOptions(screen.getByRole('combobox', { name: '顧客 *必須' }), 'C003')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ code: 'O9', customer: 'C003' })
+  })
+
+  it('does not send a create without a picked lookup value and focuses the summary', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTablesDataRouter(
+      NEW_ROUTE,
+      refResponder(created(), { columns: NOT_NULL_LOOKUP_COLUMNS }),
+    )
+    const product = await screen.findByRole('textbox', { name: '商品 *必須' })
+    expect(product).toHaveAttribute('aria-required', 'true')
+    expect(screen.queryByRole('button', { name: /クリア/ })).toBeNull()
+    await user.type(screen.getByRole('textbox', { name: /^注文番号/ }), 'O9')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const summary = await screen.findByTestId('tables-form-summary')
+    await waitFor(() => expect(summary).toHaveFocus())
+    expect(summary).toHaveTextContent('商品: 入力してください。')
+    expect(writes(calls)).toHaveLength(0)
+  })
+})

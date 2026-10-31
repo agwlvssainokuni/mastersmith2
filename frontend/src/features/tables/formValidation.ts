@@ -23,10 +23,13 @@
 // - 数・範囲は文字のまま比べ、数に直さない（桁を失わない）。min・max の形が読めなければ範囲は当てない（サーバーに任せる）。
 // - 入力不可の参照の項目（Intent 261029-reference-lookup-cleanup の U3、D15・X-5）は任意の最後の引数で渡し、検証の対象にしない
 //   （作成の必須の入力不可の項目の誤り D13 は画面が別に足す）。渡さなければ今と同じ結果。
+// - 必須の判定（isRequiredInput）は、参照の項目（reference がある項目）に限り isRequiredColumn（NULL を許さないか required が真）
+//   で見る。参照でない項目は今どおり required だけを見る（Intent 261029-reference-lookup-cleanup の直しの Bolt B7、U3 R-01）。
 import { countCodePoints } from '../../shared/validation/codePoints'
 import { MAX_WRITE_VALUE_LENGTH } from './businessDataLimits'
 import type { CellValue, ColumnDefinition, RowValues } from './businessDataTypes'
 import { NO_LOCKED, isBooleanInput, isEditable, type FormMode } from './formDiff'
+import { isRequiredColumn } from './references/referenceField'
 
 /** 画面の検証の誤りの理由（サーバーの BusinessDataFieldErrorReason の一部） */
 export type FormErrorReason =
@@ -144,6 +147,19 @@ function readable(column: ColumnDefinition, text: string): boolean {
 }
 
 /**
+ * 値を入れなければならない項目か（空の値・作成で値が無いときに REQUIRED にする条件）。参照の項目は isRequiredColumn
+ * （NULL を許さないか required が真）、参照でない項目は required だけで見る（直しの Bolt B7、U3 R-01）。
+ *
+ * @param column カラムの定義
+ */
+export function isRequiredInput(column: ColumnDefinition): boolean {
+  if (column.reference !== undefined && column.reference !== null) {
+    return isRequiredColumn(column)
+  }
+  return column.required === true
+}
+
+/**
  * 送る値1つを確かめる（U2 の WriteRequestValidator.check と同じ順。最初に当たった誤りだけ）。
  *
  * @param column カラムの定義
@@ -154,7 +170,7 @@ export function validateValue(
   value: CellValue,
 ): FormErrorReason | undefined {
   const empty = value === null || value === ''
-  if (empty && column.required === true) {
+  if (empty && isRequiredInput(column)) {
     return 'REQUIRED'
   }
   if (value === null) {
@@ -228,7 +244,7 @@ export function validateForm(
       if (reason !== undefined) {
         entries.push([column.column, reason])
       }
-    } else if (mode === 'create' && column.required === true) {
+    } else if (mode === 'create' && isRequiredInput(column)) {
       entries.push([column.column, 'REQUIRED'])
     }
   }

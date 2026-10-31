@@ -15,17 +15,22 @@
  */
 //
 // 作成・更新のフォームの画面の検証のテスト（Intent 261016-business-data-views の U3 の L5、計画 Step 29、D21）。
+// fast-check は、失敗したときに seed と path を出力に示す。再現はその値を fc.assert の第2引数に一時的に書いて行い、
+// seed を記録に残す（team.md の Testing Posture）。
+import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { parseColumnDefinition } from './businessDataParse'
 import type { ColumnDefinition } from './businessDataTypes'
 import {
   compareDecimalText,
   effectiveMaxLength,
+  isRequiredInput,
   validateForm,
   validateValue,
 } from './formValidation'
+import { isRequiredColumn } from './references/referenceField'
 import { wireColumn } from './testing/businessDataSamples'
-import { wireBlocked } from './testing/referenceSamples'
+import { wireBlocked, wireLookup, wireReference } from './testing/referenceSamples'
 
 function column(name: string, overrides: Record<string, unknown> = {}): ColumnDefinition {
   const parsed = parseColumnDefinition(
@@ -139,5 +144,84 @@ describe('validateForm with locked reference columns', () => {
   it('does not check a locked column and keeps the old result without the argument', () => {
     expect(validateForm([blocked], 'create', {}, [], new Set(['product']))).toEqual({})
     expect(validateForm([blocked], 'create', {})).toEqual({ product: 'REQUIRED' })
+  })
+})
+
+// Intent 261029-reference-lookup-cleanup の直しの Bolt B7（U3 R-01）: 参照の項目の必須は isRequiredColumn で見る
+describe('required reference columns that are NOT NULL without the REQUIRED rule', () => {
+  const reference = column('customer', {
+    formPart: 'select',
+    required: false,
+    nullable: false,
+    reference: wireReference(),
+  })
+  const lookup = column('product', {
+    formPart: 'lookup',
+    required: false,
+    nullable: false,
+    reference: wireLookup(),
+  })
+
+  it('reports REQUIRED on a create that does not send a reference value', () => {
+    expect(isRequiredInput(reference)).toBe(true)
+    expect(validateForm([reference], 'create', {})).toEqual({ customer: 'REQUIRED' })
+  })
+
+  it('reports REQUIRED for an empty or null reference value', () => {
+    expect(validateValue(reference, '')).toBe('REQUIRED')
+    expect(validateValue(reference, null)).toBe('REQUIRED')
+    expect(validateForm([reference], 'create', { customer: '' })).toEqual({ customer: 'REQUIRED' })
+  })
+
+  it('accepts a reference value and an update that does not change it', () => {
+    expect(validateValue(reference, 'C001')).toBeUndefined()
+    expect(validateForm([reference], 'create', { customer: 'C001' })).toEqual({})
+    expect(validateForm([reference], 'update', {})).toEqual({})
+  })
+
+  it('treats a NOT NULL lookup column the same way', () => {
+    expect(validateForm([lookup], 'create', {})).toEqual({ product: 'REQUIRED' })
+    expect(validateValue(lookup, '')).toBe('REQUIRED')
+    expect(validateValue(lookup, null)).toBe('REQUIRED')
+  })
+
+  it('keeps the old result for a NOT NULL column that is not a reference', () => {
+    const plain = column('memo', { required: false, nullable: false })
+    expect(isRequiredInput(plain)).toBe(false)
+    expect(validateForm([plain], 'create', {})).toEqual({})
+    expect(validateValue(plain, null)).toBe('NOT_NULL')
+    expect(validateValue(plain, '')).toBeUndefined()
+  })
+
+  it('does not make a nullable reference column without the REQUIRED rule required', () => {
+    const optional = column('team', {
+      formPart: 'select',
+      required: false,
+      nullable: true,
+      reference: wireReference(),
+    })
+    expect(isRequiredInput(optional)).toBe(false)
+    expect(validateForm([optional], 'create', {})).toEqual({})
+    expect(validateValue(optional, '')).toBeUndefined()
+    expect(validateValue(optional, null)).toBeUndefined()
+  })
+
+  it('agrees with isRequiredColumn for every nullable and required pair of a reference column', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(true, false),
+        fc.constantFrom(true, false),
+        fc.constantFrom('select', 'lookup'),
+        (nullable, required, formPart) => {
+          const target = column('ref', {
+            formPart,
+            nullable,
+            required,
+            reference: formPart === 'lookup' ? wireLookup() : wireReference(),
+          })
+          expect(validateValue(target, '') === 'REQUIRED').toBe(isRequiredColumn(target))
+        },
+      ),
+    )
   })
 })

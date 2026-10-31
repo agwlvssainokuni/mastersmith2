@@ -79,7 +79,7 @@ import {
   type FormInputs,
   type FormMode,
 } from './formDiff'
-import { effectiveMaxLength, validateForm, validateValue } from './formValidation'
+import { effectiveMaxLength, isRequiredInput, validateForm, validateValue } from './formValidation'
 import {
   fieldErrorMessageKey,
   needsDefinitionReload,
@@ -338,7 +338,8 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       let reason: string | undefined
       if (Object.hasOwn(values, column.column)) {
         reason = validateValue(column, values[column.column])
-      } else if (mode === 'create' && column.required === true) {
+      } else if (mode === 'create' && isRequiredInput(column)) {
+        // 参照の項目は isRequiredColumn で見る（validateForm と同じ条件。直しの Bolt B7、U3 R-01）
         reason = 'REQUIRED'
       }
       setFieldErrors((previous) => {

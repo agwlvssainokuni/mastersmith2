@@ -17,7 +17,10 @@
 // LOOKUP の項目（M4。Intent 261029-reference-lookup-cleanup の U3、D16〜D20、frontend-components.md の 4.3）。
 // - 読み取り専用の欄に「ラベル (値)」（ラベルが無ければ値、値が空なら空）。ラベルの読み込みの間は欄に aria-busy。
 // - 「選ぶ…」と、NULL を許し必須でない項目だけ「クリア」。読み上げの名前は見える文字で始める（D17、WCAG 2.5.3）。
-// - FormField の結び付け（id・aria-describedby・aria-invalid）は欄だけが受ける（Button は受けない。R-02）。
+// - FormField の結び付け（id・aria-describedby・aria-invalid）は、FormField の文脈（FormFieldContext）で欄の TextInput だけが
+//   受け、ボタンは受けない（Button は文脈を読まない。R-02）。
+// - 必須（NULL を許さないか required が真。clearable の逆）なら、ラベルに必須の印を足し、欄に aria-required を付ける
+//   （ReferenceSelectField と同じ書き方。直しの Bolt B7、U3 R-01）。
 // - 選んだら値とラベルを入れ、「クリア」は値とラベルを消して欄へフォーカスを移す（D19）。保存中は押せない（D20）。
 // - ダイアログは開いている間だけ描き、開くたびに作り直す（D21）。
 import { Button, FormField, TextInput } from 'make-you-chic-ui'
@@ -39,7 +42,7 @@ export interface LookupFieldProps {
   /** 選んだ行・読めたラベル。無ければ null（値だけを出す） */
   label: string | null
   labelLoading: boolean
-  /** NULL を許し必須でない項目だけ「クリア」を出す */
+  /** NULL を許し必須でない項目だけ「クリア」を出す（isRequiredColumn の否定。偽なら必須の印を付ける） */
   clearable: boolean
   error: string | undefined
   /** 保存中 */
@@ -68,6 +71,8 @@ export function LookupField({
   const [open, setOpen] = useState(false)
   const openRef = useRef<HTMLButtonElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const required = !clearable
+  const fieldLabel = required ? `${name} ${t('tables.form.required')}` : name
   const text = value === '' ? '' : optionText({ value, label })
   const dialogProps: LookupPickerDialogProps = {
     name,
@@ -84,7 +89,7 @@ export function LookupField({
   return (
     <>
       <FormField
-        label={name}
+        label={fieldLabel}
         error={error}
         helperText={value === '' ? t('tables.reference.lookupHint') : undefined}
       >
@@ -96,6 +101,7 @@ export function LookupField({
             readOnly
             aria-readonly="true"
             aria-busy={labelLoading ? true : undefined}
+            aria-required={required ? true : undefined}
             autoComplete="off"
             data-testid={`tables-lookup-value-c${index}`}
           />

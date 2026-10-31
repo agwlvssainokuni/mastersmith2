@@ -319,3 +319,14 @@ else
   echo "GRANT SELECT, INSERT, UPDATE, DELETE ON bizperf.* TO 'mastersmith_writer'@'%';"
   echo "${COUNTS}"
 fi
+
+# 参照元 biz_refcreate が 0 行であることを、流れた先の DB で確かめる（U2 R-03。人が出力を読むことに頼らない）。0 行でなければ
+# 誤りで止め（PG は ON_ERROR_STOP で psql が、MySQL・MariaDB はバッチの誤りで mysql・mariadb の道具が 0 でない終了になる）、
+# 誤りの文に行の値も数も出さない。台本は毎回スキーマを作り直すため今は必ず通り、作り直しをやめる・行を入れる変更が入ったときに止める
+# 守り。目印は biz_refcreate_must_be_empty（手順書の確かめで数える）。
+if ${pg}; then
+  echo 'DO $$ BEGIN IF (SELECT COUNT(*) FROM bizperf.biz_refcreate) <> 0 THEN RAISE EXCEPTION '"'"'biz_refcreate_must_be_empty: biz_refcreate が 0 行ではありません。種から入れ直してください'"'"'; END IF; END $$;'
+else
+  # 0 行でなければ2行を返す副問い合わせを1つの値として比べ、Subquery returns more than 1 row（1242）で止まる。
+  echo "SELECT (SELECT 1 FROM bizperf.biz_refcreate HAVING COUNT(*) <> 0 UNION ALL SELECT 2 FROM bizperf.biz_refcreate HAVING COUNT(*) <> 0) IS NULL AS biz_refcreate_must_be_empty;"
+fi
