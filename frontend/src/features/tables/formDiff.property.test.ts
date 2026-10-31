@@ -131,3 +131,28 @@ describe('formValidation properties', () => {
     )
   })
 })
+
+// Intent 261029-reference-lookup-cleanup の U3（D15・X-5）
+describe('formDiff locked columns property', () => {
+  it('never puts a locked column into the body', () => {
+    fc.assert(
+      fc.property(
+        names,
+        fc.constantFrom<'create' | 'update'>('create', 'update'),
+        fc.array(fc.string(), { minLength: 6, maxLength: 6 }),
+        fc.array(fc.boolean(), { minLength: 6, maxLength: 6 }),
+        (columnNames, mode, values, lockFlags) => {
+          const columns = columnNames.map((name) => column(name))
+          const locked = new Set(columnNames.filter((_, index) => lockFlags[index]))
+          const current = Object.fromEntries(
+            columnNames.map((name, index) => [name, values[index]]),
+          )
+          const body = diffForm(columns, mode, {}, current, [], locked)
+          for (const name of locked) {
+            expect(Object.hasOwn(body, name)).toBe(false)
+          }
+        },
+      ),
+    )
+  })
+})

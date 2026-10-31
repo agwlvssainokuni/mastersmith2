@@ -182,11 +182,54 @@ const ja: Record<string, string> = {
   'tables.error.PATTERN_MISMATCH': '決められた形に合いません。',
   'tables.error.PATTERN_TIMEOUT': '形の確かめに時間がかかりすぎました。値を短くしてください。',
   'tables.error.DUPLICATE': '同じ値がすでにあります。',
-  'tables.error.REFERENCE_NOT_FOUND': '参照先に無い値です。',
+  'tables.error.REFERENCE_NOT_FOUND': '選べない値です。選び直してください',
   'tables.error.NOT_NULL': '値を空にできません。',
   'tables.error.NOT_EDITABLE_NOT_NULL':
     'このテーブルの作成には、入力できない項目の値が要ります。管理者に確かめてください。',
   'tables.error.NO_CHANGE': '変えた項目がありません。',
+
+  // 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 5節、D36）
+  'tables.reference.noPermission': '参照先を読む権限がないため変更できません',
+  'tables.reference.tooMany':
+    '候補が多いため選べません。管理者に、検索（ピッカー）への切り替えを依頼してください',
+  'tables.reference.requiredBlocked.permission':
+    '必須の参照項目に値を入れられません。参照先を読む権限がないためです。管理者に権限を依頼してください',
+  'tables.reference.requiredBlocked.tooMany':
+    '必須の参照項目に値を入れられません。候補が多いためです。管理者に、検索（ピッカー）への切り替えを依頼してください',
+  'tables.reference.noOptions': '選べる候補がありません',
+  'tables.reference.noOptionsRequired': 'この項目は必須のため、候補が入るまで保存できません',
+  'tables.reference.lookupHint': '検索して選びます',
+  'tables.reference.loading': '読み込んでいます',
+  'tables.reference.open': '選ぶ…',
+  'tables.reference.openName': '選ぶ…（{{field}}）',
+  'tables.reference.clear': 'クリア',
+  'tables.reference.clearName': 'クリア（{{field}}）',
+  'tables.picker.title': '{{field}}を選ぶ',
+  'tables.picker.close': '閉じる',
+  'tables.picker.operator.EQUALS': '{{name}}（一致）',
+  'tables.picker.operator.CONTAINS': '{{name}}（部分一致）',
+  'tables.picker.unspecified': '（指定しない）',
+  'tables.picker.search': '検索',
+  'tables.picker.initial': '条件を入れて「検索」を押してください',
+  'tables.picker.emptyCondition': '条件を入れてください',
+  'tables.picker.tooLong': '1,000 文字以内で入れてください',
+  'tables.picker.invalidValue': 'この条件には、この形の値を入れられません',
+  'tables.picker.searching': '検索中',
+  'tables.picker.noResults': '該当する行がありません',
+  'tables.picker.pageEmpty': 'このページには行がありません',
+  'tables.picker.previousPage': '前へ',
+  'tables.picker.nextPage': '次へ',
+  'tables.picker.backPage': '前のページへ',
+  'tables.picker.pageStatusMore': '{{page}} ページ目（続きがあります）',
+  'tables.picker.pageStatusLast': '{{page}} ページ目（ここまで）',
+  'tables.picker.rangeMore': '{{from}}〜{{to}} 件目を表示しています。続きがあります',
+  'tables.picker.rangeLast': '{{from}}〜{{to}} 件目を表示しています。これで最後です',
+  'tables.picker.failed': '検索できませんでした。もう一度検索してください',
+  'tables.picker.retry': '再度検索',
+  'tables.picker.denied': 'この項目の候補を検索できません。画面を開き直してください',
+  'tables.picker.results': '{{field}}の検索結果',
+  'tables.picker.selectColumn': '選ぶ',
+  'tables.picker.selectRow': '{{label}}を選ぶ',
 }
 
 const en: Record<string, string> = {
@@ -350,11 +393,56 @@ const en: Record<string, string> = {
   'tables.error.PATTERN_MISMATCH': 'The value does not match the required format.',
   'tables.error.PATTERN_TIMEOUT': 'Checking the format took too long. Please shorten the value.',
   'tables.error.DUPLICATE': 'This value already exists.',
-  'tables.error.REFERENCE_NOT_FOUND': 'This value does not exist in the referenced data.',
+  'tables.error.REFERENCE_NOT_FOUND': 'This value cannot be selected. Please choose again',
   'tables.error.NOT_NULL': 'This value cannot be empty.',
   'tables.error.NOT_EDITABLE_NOT_NULL':
     'Creating a row in this table requires values for fields you cannot enter. Contact your administrator.',
   'tables.error.NO_CHANGE': 'No fields were changed.',
+
+  // 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 5節、D36）
+  'tables.reference.noPermission':
+    'You cannot change this because you do not have permission to read the referenced data',
+  'tables.reference.tooMany':
+    'There are too many options to choose from. Ask an administrator to switch this field to the search picker',
+  'tables.reference.requiredBlocked.permission':
+    'This required reference cannot be filled because you do not have permission to read the referenced data. Ask an administrator for permission',
+  'tables.reference.requiredBlocked.tooMany':
+    'This required reference cannot be filled because there are too many options. Ask an administrator to switch this field to the search picker',
+  'tables.reference.noOptions': 'No options available',
+  'tables.reference.noOptionsRequired':
+    'This field is required, so you cannot save until options are available',
+  'tables.reference.lookupHint': 'Search to choose a value',
+  'tables.reference.loading': 'Loading',
+  'tables.reference.open': 'Select…',
+  'tables.reference.openName': 'Select… ({{field}})',
+  'tables.reference.clear': 'Clear',
+  'tables.reference.clearName': 'Clear ({{field}})',
+  'tables.picker.title': 'Select {{field}}',
+  'tables.picker.close': 'Close',
+  'tables.picker.operator.EQUALS': '{{name}} (equals)',
+  'tables.picker.operator.CONTAINS': '{{name}} (contains)',
+  'tables.picker.unspecified': '(not specified)',
+  'tables.picker.search': 'Search',
+  'tables.picker.initial': 'Enter a condition and press Search',
+  'tables.picker.emptyCondition': 'Enter at least one condition',
+  'tables.picker.tooLong': 'Enter 1,000 characters or fewer',
+  'tables.picker.invalidValue': 'This value is not valid for this condition',
+  'tables.picker.searching': 'Searching',
+  'tables.picker.noResults': 'No matching rows',
+  'tables.picker.pageEmpty': 'There are no rows on this page',
+  'tables.picker.previousPage': 'Previous',
+  'tables.picker.nextPage': 'Next',
+  'tables.picker.backPage': 'Go to the previous page',
+  'tables.picker.pageStatusMore': 'Page {{page}} (more rows follow)',
+  'tables.picker.pageStatusLast': 'Page {{page}} (last page)',
+  'tables.picker.rangeMore': 'Showing rows {{from}} to {{to}}. More rows follow',
+  'tables.picker.rangeLast': 'Showing rows {{from}} to {{to}}. This is the last page',
+  'tables.picker.failed': 'Search failed. Please search again',
+  'tables.picker.retry': 'Search again',
+  'tables.picker.denied': 'You cannot search options for this field. Please reopen the screen',
+  'tables.picker.results': 'Search results for {{field}}',
+  'tables.picker.selectColumn': 'Select',
+  'tables.picker.selectRow': 'Select {{label}}',
 }
 
 /** 業務データの画面の文言 */

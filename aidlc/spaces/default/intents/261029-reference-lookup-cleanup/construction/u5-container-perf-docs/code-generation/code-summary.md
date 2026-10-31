@@ -57,7 +57,7 @@
 - この段で流さなかったもの:
   - E2E（`./gradlew e2eTest`）: この Bolt は文書・台本のコメントと宣言の場所・`aidlc/` だけを変え、frontend の本体と認証・権限・業務データの `src/main` に触れないため（`team.md` の Way of Working、計画 1節）。Intent の最後の Build and Test で 1 回流す。
   - 負荷の試験（k6 の `run`）: 流していない（`inspect` だけ）。線の値を変えていないため。
-- B6 の CI（c91d831）: 確認中
+- B6 の CI（c91d831）: run 41157941909、1回目の試行で success、検査の job 37分45秒（42 分の線の内）、再実行なし。間の f1f3c2a（記録だけ）の run 41157419805 も1回目で success（36分3秒）
 
 ## 5. 計画・設計との差（依頼者の決定を含む）
 

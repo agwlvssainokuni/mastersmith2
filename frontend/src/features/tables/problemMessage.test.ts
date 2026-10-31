@@ -25,10 +25,13 @@ import {
   readProblemMessageKey,
   writeProblemKind,
   writeProblemMessageKey,
+  referenceErrorKey,
 } from './problemMessage'
 import { tablesMessages } from './messages'
 import { NOT_SAVED_CODES } from './writeOutcome'
 import { sampleDefinition } from './testing/sampleDefinition'
+import { lookupField, referenceField } from './testing/referenceSamples'
+import type { ColumnDefinition } from './businessDataTypes'
 
 function problem(
   status: number,
@@ -165,5 +168,54 @@ describe('problemMessage writes (B6)', () => {
       definitionChanged: false,
     }
     expect(needsDefinitionReload(problem, sampleDefinition())).toBe(false)
+  })
+})
+
+// Intent 261029-reference-lookup-cleanup の U3（D31・D32、R-05）
+describe('referenceErrorKey', () => {
+  const base: ColumnDefinition = {
+    column: 'customer',
+    displayName: { ja: '顧客', en: 'Customer' },
+    valueType: 'STRING',
+    listFormat: null,
+    width: null,
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    masked: false,
+    formPart: 'select',
+    required: false,
+    nullable: false,
+    reference: referenceField({ status: 'NO_PERMISSION', options: [] }),
+  }
+
+  it.each([
+    ['REQUIRED', 'create', 'tables.reference.requiredBlocked.permission'],
+    ['NOT_EDITABLE_NOT_NULL', 'update', 'tables.reference.requiredBlocked.permission'],
+    ['REFERENCE_NOT_FOUND', 'create', 'tables.error.REFERENCE_NOT_FOUND'],
+    ['TOO_LONG', 'create', 'tables.error.TOO_LONG'],
+  ] as const)('uses the blocked text for %s on a readonly reference (%s)', (reason, mode, key) => {
+    expect(referenceErrorKey(base, reason, mode)).toBe(key)
+  })
+
+  it('uses the too-many text for a reference with too many options', () => {
+    const tooMany = { ...base, reference: lookupField({ status: 'TOO_MANY', picker: null }) }
+    expect(referenceErrorKey(tooMany, 'REQUIRED', 'create')).toBe(
+      'tables.reference.requiredBlocked.tooMany',
+    )
+  })
+
+  it('keeps the existing text for columns that cannot be entered and for available references', () => {
+    expect(referenceErrorKey({ ...base, editableOnCreate: false }, 'REQUIRED', 'create')).toBe(
+      'tables.error.REQUIRED',
+    )
+    expect(referenceErrorKey(base, 'NOT_EDITABLE_NOT_NULL', 'update', ['customer'])).toBe(
+      'tables.error.NOT_EDITABLE_NOT_NULL',
+    )
+    expect(referenceErrorKey({ ...base, reference: referenceField() }, 'REQUIRED', 'create')).toBe(
+      'tables.error.REQUIRED',
+    )
+    expect(referenceErrorKey({ ...base, reference: null }, 'REQUIRED', 'create')).toBe(
+      'tables.error.REQUIRED',
+    )
   })
 })

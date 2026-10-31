@@ -21,10 +21,12 @@
 //   10,000（MAX_WRITE_VALUE_LENGTH）の短い方。
 // - pattern は画面で当てない（保存のときのサーバーの誤りを入力に出す）。判定はサーバーを正とする。
 // - 数・範囲は文字のまま比べ、数に直さない（桁を失わない）。min・max の形が読めなければ範囲は当てない（サーバーに任せる）。
+// - 入力不可の参照の項目（Intent 261029-reference-lookup-cleanup の U3、D15・X-5）は任意の最後の引数で渡し、検証の対象にしない
+//   （作成の必須の入力不可の項目の誤り D13 は画面が別に足す）。渡さなければ今と同じ結果。
 import { countCodePoints } from '../../shared/validation/codePoints'
 import { MAX_WRITE_VALUE_LENGTH } from './businessDataLimits'
 import type { CellValue, ColumnDefinition, RowValues } from './businessDataTypes'
-import { isBooleanInput, isEditable, type FormMode } from './formDiff'
+import { NO_LOCKED, isBooleanInput, isEditable, type FormMode } from './formDiff'
 
 /** 画面の検証の誤りの理由（サーバーの BusinessDataFieldErrorReason の一部） */
 export type FormErrorReason =
@@ -207,16 +209,18 @@ export function validateValue(
  * @param mode 作成か更新か
  * @param values 送る値（diffForm の結果）
  * @param truncatedColumns 先頭だけを受けたカラム
+ * @param lockedColumns 入力不可の参照の項目（X-5）
  */
 export function validateForm(
   columns: readonly ColumnDefinition[],
   mode: FormMode,
   values: RowValues,
   truncatedColumns: readonly string[] = [],
+  lockedColumns: ReadonlySet<string> = NO_LOCKED,
 ): FormErrors {
   const entries: [string, FormErrorReason][] = []
   for (const column of columns) {
-    if (!isEditable(column, mode, truncatedColumns)) {
+    if (!isEditable(column, mode, truncatedColumns) || lockedColumns.has(column.column)) {
       continue
     }
     if (Object.hasOwn(values, column.column)) {

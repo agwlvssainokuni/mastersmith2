@@ -20,7 +20,9 @@
 // - 知らない code は、状態コードの区分（4xx・5xx）ごとの決まった文に写す。通信の失敗は「読み込めませんでした」。
 // - needsDefinitionReload: definitionChanged が true か、fieldErrors の field が今の定義の項目に無ければ true（F6 を行う）。
 //   field が空の文字の誤りは画面に結べない誤りで、「今の定義に無い」の判定から外す（U2 の G6・U1 の NOT_ALLOWED）。
-import type { BusinessProblem, TableDefinition } from './businessDataTypes'
+import type { BusinessProblem, ColumnDefinition, TableDefinition } from './businessDataTypes'
+import type { FormMode } from './formDiff'
+import { chooseFieldKind } from './references/referenceField'
 
 /** 読み取りの失敗の種類（S6 の表示と一覧の上の文） */
 export type ReadProblemKind =
@@ -120,6 +122,43 @@ export const FIELD_ERROR_REASONS = [
 export function fieldErrorMessageKey(reason: string): string {
   const known = (FIELD_ERROR_REASONS as readonly string[]).includes(reason)
   return `tables.error.${known ? reason : 'INVALID_VALUE'}`
+}
+
+/**
+ * 作成の必須の入力不可の参照の項目の文の鍵（D13。理由ごと）。
+ *
+ * @param reason 入力不可の理由
+ */
+export function requiredBlockedMessageKey(reason: 'permission' | 'too-many'): string {
+  return reason === 'too-many'
+    ? 'tables.reference.requiredBlocked.tooMany'
+    : 'tables.reference.requiredBlocked.permission'
+}
+
+/**
+ * 保存の項目の誤りの文の鍵（Intent 261029-reference-lookup-cleanup の U3、D31・D32）。入力不可の参照の項目
+ * （その用途で入力できるカラムで、定義の状態が NO_PERMISSION・TOO_MANY）の REQUIRED・NOT_EDITABLE_NOT_NULL は D13 の
+ * 理由ごとの文、ほかは既存の文（REFERENCE_NOT_FOUND は差し替えた既存の鍵）。用途で入力できないカラムは既存の文のまま。
+ *
+ * @param column カラムの定義
+ * @param reason 項目の誤りの理由
+ * @param mode 作成か更新か
+ * @param truncated 更新で先頭だけを受けたカラム
+ */
+export function referenceErrorKey(
+  column: ColumnDefinition,
+  reason: string,
+  mode: FormMode,
+  truncated: readonly string[] = [],
+): string {
+  const kind = chooseFieldKind(column, mode, truncated)
+  if (
+    kind.kind === 'reference-readonly' &&
+    (reason === 'REQUIRED' || reason === 'NOT_EDITABLE_NOT_NULL')
+  ) {
+    return requiredBlockedMessageKey(kind.reason)
+  }
+  return fieldErrorMessageKey(reason)
 }
 
 /** 今の定義が知っている項目の名前（検索の項目・カラム・並べ替え・主キー） */

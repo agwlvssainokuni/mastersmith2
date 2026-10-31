@@ -19,8 +19,14 @@
 // seed を記録に残す（team.md の Testing Posture）。
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { parseRowDetail, parseRowPage, parseTableDefinition } from './businessDataParse'
+import {
+  parseReference,
+  parseRowDetail,
+  parseRowPage,
+  parseTableDefinition,
+} from './businessDataParse'
 import { SAMPLE_REF, wireDetail, wirePage, wireRow } from './testing/businessDataSamples'
+import { wireLookup, wireReference } from './testing/referenceSamples'
 
 /** 任意の JSON の値 */
 const anyJson = fc.jsonValue()
@@ -82,6 +88,20 @@ describe('businessDataParse properties', () => {
         expect(detail).toBeDefined()
         expect(Object.hasOwn(detail?.values ?? {}, column)).toBe(true)
         expect(detail?.values[column]).toBe(value)
+      }),
+    )
+  })
+
+  // Intent 261029-reference-lookup-cleanup の U3（D3）: 知らない status は入力不可に倒す
+  it('never throws on any reference status and keeps the status one of the three known values', () => {
+    fc.assert(
+      fc.property(fc.boolean(), fc.oneof(fc.string(), anyJson), (lookup, status) => {
+        const body = lookup ? wireLookup({ status }) : wireReference({ status })
+        const result = parseReference(body)
+        expect(
+          result === undefined ||
+            ['AVAILABLE', 'NO_PERMISSION', 'TOO_MANY'].includes(result.status),
+        ).toBe(true)
       }),
     )
   })

@@ -20,6 +20,7 @@ import { parseColumnDefinition } from './businessDataParse'
 import type { ColumnDefinition } from './businessDataTypes'
 import { diffForm, hasFormChanges, initialInputs, toInputValue } from './formDiff'
 import { wireColumn } from './testing/businessDataSamples'
+import { wireBlocked, wireReference } from './testing/referenceSamples'
 
 function column(name: string, overrides: Record<string, unknown> = {}): ColumnDefinition {
   const parsed = parseColumnDefinition(
@@ -141,5 +142,37 @@ describe('formDiff', () => {
 
   it('keeps masked values out of the first input value', () => {
     expect(toInputValue(columns[5], 'anything')).toBe('')
+  })
+})
+
+// Intent 261029-reference-lookup-cleanup の U3（D15・X-5）
+describe('formDiff with locked reference columns', () => {
+  const referenceColumns = [
+    column('customer', { formPart: 'select', reference: wireReference() }),
+    column('product', { formPart: 'select', reference: wireBlocked('REFERENCE', 'TOO_MANY') }),
+  ]
+  const locked = new Set(['product'])
+
+  it('does not send a locked column and gives the same result without the argument', () => {
+    const initial = initialInputs(referenceColumns, 'update', { customer: 'C001', product: 'P001' })
+    const current = { ...initial, customer: 'C002', product: 'P999' }
+    expect(diffForm(referenceColumns, 'update', initial, current, [], locked)).toEqual({
+      customer: 'C002',
+    })
+    expect(diffForm(referenceColumns, 'update', initial, current)).toEqual({
+      customer: 'C002',
+      product: 'P999',
+    })
+    const created = { customer: 'C001', product: 'P001' }
+    expect(diffForm(referenceColumns, 'create', {}, created, [], locked)).toEqual({
+      customer: 'C001',
+    })
+  })
+
+  it('does not count a change of a locked column', () => {
+    const initial = { customer: 'C001', product: 'P001' }
+    const current = { customer: 'C001', product: 'P999' }
+    expect(hasFormChanges(referenceColumns, 'update', initial, current, [], locked)).toBe(false)
+    expect(hasFormChanges(referenceColumns, 'update', initial, current)).toBe(true)
   })
 })

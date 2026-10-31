@@ -24,8 +24,10 @@ import {
   createRow,
   deleteRow,
   getDefinition,
+  getReferenceLabel,
   getRow,
   postWithinLimit,
+  searchReferenceRows,
   searchRows,
   updateRow,
 } from './businessDataApi'
@@ -39,6 +41,7 @@ import {
   wirePage,
   wireRow,
 } from './testing/businessDataSamples'
+import { SAMPLE_SOURCE, pickerRow, wireLabel, wireRowsPage } from './testing/referenceSamples'
 
 let fetchMock: ReturnType<typeof vi.fn>
 
@@ -276,5 +279,103 @@ describe('businessDataApi writes', () => {
       problem: { status: 413, code: 'PAYLOAD_TOO_LARGE' },
     })
     expect(fetchMock.mock.calls.length).toBe(calls)
+  })
+})
+
+describe('businessDataApi reference calls (Intent 261029-reference-lookup-cleanup U3)', () => {
+  it('adds the purpose to the definition body only when given', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, wireDefinition()))
+    await getDefinition(SAMPLE_REF, undefined, 'CREATE')
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      schema: 'shop',
+      table: 'item',
+      purpose: 'CREATE',
+    })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, wireDefinition()))
+    await getDefinition(SAMPLE_REF, SAMPLE_DEFINITION_ID, 'UPDATE')
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      schema: 'shop',
+      table: 'item',
+      definitionId: SAMPLE_DEFINITION_ID,
+      purpose: 'UPDATE',
+    })
+  })
+
+  it('sends the search conditions and page only in the body and skips empty values', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, wireRowsPage([pickerRow(0)], 2, false)))
+    const page = await searchReferenceRows(
+      SAMPLE_SOURCE,
+      [
+        { column: 'code', value: '' },
+        { column: 'name', value: '%_ 椅子' },
+      ],
+      2,
+    )
+    expect(page.rows).toHaveLength(1)
+    const { path, init } = lastCall()
+    expect(path).toBe('/api/tables/reference/rows')
+    expect(path).not.toContain('?')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({
+      schema: 'shop',
+      table: 'order',
+      column: 'product',
+      conditions: [{ column: 'name', value: '%_ 椅子' }],
+      page: 2,
+    })
+    expect(init.signal ?? undefined).toBeUndefined()
+  })
+
+  it('treats a search body with page null as a network failure', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, wireLabel('P001', 'x')))
+    await expect(
+      searchReferenceRows(SAMPLE_SOURCE, [{ column: 'code', value: 'P' }], 1),
+    ).rejects.toEqual(expect.objectContaining({ kind: 'network' }))
+  })
+
+  it('sends the value only in the body of the label request and passes the signal to fetch', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, wireLabel('P001', '<b>椅子</b>')))
+    const controller = new AbortController()
+    const label = await getReferenceLabel(SAMPLE_SOURCE, 'P/001 #', controller.signal)
+    expect(label).toEqual({ value: 'P001', label: '<b>椅子</b>' })
+    const { path, init } = lastCall()
+    expect(path).toBe(BUSINESS_DATA_PATHS.referenceRows)
+    expect(path).not.toContain('P')
+    expect(JSON.parse(String(init.body))).toEqual({
+      schema: 'shop',
+      table: 'order',
+      column: 'product',
+      value: 'P/001 #',
+    })
+    expect(init.signal).toBe(controller.signal)
+  })
+
+  it('turns a label body with no rows or two rows into a network failure', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { rows: [], page: null, hasNext: false }))
+    await expect(getReferenceLabel(SAMPLE_SOURCE, 'P001')).rejects.toEqual(
+      expect.objectContaining({ kind: 'network' }),
+    )
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        rows: [
+          { value: 'a', label: null, cells: [] },
+          { value: 'b', label: null, cells: [] },
+        ],
+        page: null,
+        hasNext: false,
+      }),
+    )
+    await expect(getReferenceLabel(SAMPLE_SOURCE, 'P001')).rejects.toEqual(
+      expect.objectContaining({ kind: 'network' }),
+    )
+  })
+
+  it('throws the api error of a 403 label request', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(403, { status: 403, code: 'ACCESS_DENIED', title: 'Forbidden' }),
+    )
+    await expect(getReferenceLabel(SAMPLE_SOURCE, 'P001')).rejects.toEqual(
+      expect.objectContaining({ kind: 'response', status: 403 }),
+    )
   })
 })

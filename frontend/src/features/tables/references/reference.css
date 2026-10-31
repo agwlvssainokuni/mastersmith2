@@ -1,0 +1,68 @@
+/*
+ * Copyright 2026 agwlvssainokuni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/*
+ * 参照の部品の並び（Intent 261029-reference-lookup-cleanup の U3、D16・D25・D30）。
+ * make-you-chic-ui の部品の内側のクラスは指さず、このファイルのクラスだけで並べる。長い名前は折り返して全文を残す。
+ */
+.tables-lookup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+}
+
+.tables-lookup-input {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.tables-lookup-buttons {
+  display: flex;
+  gap: var(--space-2, 0.5rem);
+}
+
+.tables-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 0.75rem);
+  min-width: 0;
+}
+
+.tables-picker-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3, 0.75rem);
+}
+
+.tables-picker-actions,
+.tables-picker-problem {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 0.5rem);
+  align-items: center;
+}
+
+.tables-picker-cell {
+  overflow-wrap: anywhere;
+}
+
+/* 375px の幅では条件を縦に並べる（D30） */
+@media (width <= 480px) {
+  .tables-picker-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

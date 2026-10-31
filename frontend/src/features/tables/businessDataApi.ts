@@ -25,12 +25,21 @@
 // - 書き込みの3本（B6）は、例外を投げずに結果を「保存した」「保存されていない」「分からない」に分けて返す（writeOutcome.ts）。
 //   definitionId は必ず送る（無いと 409 BUSINESS_DEFINITION_CHANGED。U2 の G12）。本文の上限は作成・更新が 4,194,304 バイト、
 //   削除が 65,536 バイト。上限を超えたら送らずに「保存されていない」（413）にする。
+// - 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 3.3）: 定義の用途（purpose）、
+//   参照先の検索とラベルの1件読み。参照元の名前・条件の値・ラベルを引く値は本文だけに置く。ラベルの1件読みだけが
+//   取り消しの signal を受ける（performance-design.md 2.1・R-01）。
 import type { TableRef } from '../../app/navigation/tablePlaceholderPath'
 import { apiRequest } from '../../shared/api-client/apiClient'
 import { networkError, type ApiResponseError } from '../../shared/api-client/apiError'
 import { utf8ByteLength } from '../../shared/validation/codePoints'
 import { MAX_READ_BODY_BYTES, MAX_WRITE_BODY_BYTES } from './businessDataLimits'
-import { parseRowDetail, parseRowPage, parseTableDefinition } from './businessDataParse'
+import {
+  parseReferenceLabel,
+  parseReferenceRowPage,
+  parseRowDetail,
+  parseRowPage,
+  parseTableDefinition,
+} from './businessDataParse'
 import {
   classifyWriteFailure,
   classifyWriteSuccess,
@@ -39,7 +48,12 @@ import {
 } from './writeOutcome'
 import type {
   DefinitionId,
+  DefinitionPurpose,
   PageSize,
+  ReferenceCondition,
+  ReferenceLabel,
+  ReferenceRowPage,
+  ReferenceSource,
   RowDetail,
   RowKey,
   RowPage,
@@ -58,6 +72,8 @@ export const BUSINESS_DATA_PATHS = {
   rows: '/api/tables/rows',
   /** 削除（POST）。U2 */
   delete: '/api/tables/rows/delete',
+  /** 参照先の検索とラベルの1件読み（POST）。Intent 261029-reference-lookup-cleanup の U1 */
+  referenceRows: '/api/tables/reference/rows',
 } as const
 
 /** 本文の上限を超えたときの失敗（サーバーの 413 と同じ形） */
@@ -71,11 +87,13 @@ export function payloadTooLargeError(): ApiResponseError {
  * @param path API の道
  * @param payload 送る本文
  * @param limit 本文の上限（バイト）
+ * @param signal 取り消しの合図（ラベルの1件読みだけが渡す。無ければ今までと同じ）
  */
 export async function postWithinLimit(
   path: string,
   payload: unknown,
   limit: number,
+  signal?: AbortSignal,
 ): Promise<unknown> {
   const body = JSON.stringify(payload)
   if (utf8ByteLength(body) > limit) {
@@ -85,6 +103,7 @@ export async function postWithinLimit(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body,
+    ...(signal === undefined ? {} : { signal }),
   })
   try {
     return (await response.json()) as unknown
@@ -106,17 +125,77 @@ function orNetworkError<T>(value: T | undefined): T {
  *
  * @param ref スキーマ名とテーブル名
  * @param definitionId 記憶にある定義の識別（あれば送り、変わっていれば definitionChanged が true で返る）
+ * @param purpose 用途（作成・更新の画面だけが付ける。無ければ今の本文のまま。D1）
  */
 export async function getDefinition(
   ref: TableRef,
   definitionId?: DefinitionId,
+  purpose?: DefinitionPurpose,
 ): Promise<TableDefinition> {
-  const payload =
-    definitionId === undefined
-      ? { schema: ref.schemaName, table: ref.tableName }
-      : { schema: ref.schemaName, table: ref.tableName, definitionId }
+  const payload = {
+    schema: ref.schemaName,
+    table: ref.tableName,
+    ...(definitionId === undefined ? {} : { definitionId }),
+    ...(purpose === undefined ? {} : { purpose }),
+  }
   const body = await postWithinLimit(BUSINESS_DATA_PATHS.definition, payload, MAX_READ_BODY_BYTES)
   return orNetworkError(parseTableDefinition(body, ref))
+}
+
+/**
+ * 参照先を検索する（ピッカー。D22〜D27）。値が空の条件は送らない。
+ *
+ * @param source 参照元のスキーマ・テーブル・カラム
+ * @param conditions 検索の条件
+ * @param page ページ（1 から）
+ */
+export async function searchReferenceRows(
+  source: ReferenceSource,
+  conditions: readonly ReferenceCondition[],
+  page: number,
+): Promise<ReferenceRowPage> {
+  const payload = {
+    schema: source.schemaName,
+    table: source.tableName,
+    column: source.column,
+    conditions: conditions
+      .filter((condition) => condition.value !== '')
+      .map((condition) => ({ column: condition.column, value: condition.value })),
+    page,
+  }
+  const body = await postWithinLimit(
+    BUSINESS_DATA_PATHS.referenceRows,
+    payload,
+    MAX_READ_BODY_BYTES,
+  )
+  return orNetworkError(parseReferenceRowPage(body))
+}
+
+/**
+ * 参照先のラベルを1件読む（D18）。写せなければ（0件・2件以上・形の崩れ）通信の失敗にする。
+ *
+ * @param source 参照元のスキーマ・テーブル・カラム
+ * @param value 保存されている値
+ * @param signal 取り消しの合図（画面を離れた・読み直したとき）
+ */
+export async function getReferenceLabel(
+  source: ReferenceSource,
+  value: string,
+  signal?: AbortSignal,
+): Promise<ReferenceLabel> {
+  const payload = {
+    schema: source.schemaName,
+    table: source.tableName,
+    column: source.column,
+    value,
+  }
+  const body = await postWithinLimit(
+    BUSINESS_DATA_PATHS.referenceRows,
+    payload,
+    MAX_READ_BODY_BYTES,
+    signal,
+  )
+  return orNetworkError(parseReferenceLabel(body))
 }
 
 /** 一覧と検索の要求 */

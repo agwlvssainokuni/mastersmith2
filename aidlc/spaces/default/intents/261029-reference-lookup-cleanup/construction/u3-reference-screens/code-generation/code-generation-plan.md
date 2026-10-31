@@ -198,36 +198,36 @@ U1 の B1 が仮に足した `reference?: unknown`（`businessDataTypes.ts` 129 
 
 ### B4 U3 参照の画面
 
-- [ ] **Step 1: 準備**（ストーリー: 全体）
+- [x] **Step 1: 準備**（ストーリー: 全体）
   - `develop` に 549d38b（B1）・b048ec1（B2）・f35b7b8（B3）があり、作業フォルダに未コミットの変更が無い（`aidlc/` の記録は先にコミットしてある）ことを確かめ、`git switch -c feature/261029-reference-lookup-cleanup-b4 develop` を作る。
   - E2E の報告（`frontend/playwright-report`・`frontend/test-results`）など git の対象外の生成物を消す（`project.md`）。
   - 3節の検索（`reference`・`'lookup'`・`FORM_PARTS`・`LoadDefinition`・`getDefinition`・`flowDsl`・定義の要求の数を数えるテスト）を確かめ直し、増えたものがあれば表に足す。
-- [ ] **Step 2: テストの実行の口の確かめと、変更の前の測り**（Testing Contract の runner_step、NFR2.44・NFR2.45、基盤の設計 4節）
+- [x] **Step 2: テストの実行の口の確かめと、変更の前の測り**（Testing Contract の runner_step、NFR2.44・NFR2.45、基盤の設計 4節）
   - `unit-test-instructions.md` 3.1 のコマンド（既存の `businessDataParse.test.ts`・`BusinessDataFormPage.test.tsx`・`useTableDefinition.test.tsx`）が今のまま通ることを確かめ、流せることを記録する。
   - chunk の大きさ（前）: `./gradlew frontendBuild` の後、リポジトリの外（ホームの下の一時の場所）に置いた node の数行（`performance-design.md` 4節の擬似コード、`gzipSync`）で、入口の値（`check-bundle-size.mjs` の出力）・起点（キーが `src/features/tables/` で始まり `isDynamicEntry` が真）ごとの `.js` と合計・`.css` の別枠の合計を測る。**最初に起点が1つ以上取れ、そのキーが `registration.ts` の `lazy` で読む画面のファイルに当たることを確かめる。取れない・別のファイルに当たるときは、起点の条件をキーの形に合わせて直してから測り、直した条件を測った値と同じ `code-summary.md` の材料に書く**（基盤の設計 4節の「記録」の行。R-06）。スクリプトはリポジトリに足さない。
   - E2E の全体の時間（前。6節 Q3 が A のとき）: Mailpit と見本の PostgreSQL（上乗せの compose で `127.0.0.1:15432`）を起動して、`develop` の今の形で `caffeinate -dims ./gradlew e2eTest` を流し、件数と時間を記録する。
-- [ ] **Step 3: 受け渡しの層の実装**（US1.1・US1.2・US1.3・US2.2・US2.3、D1〜D3・D18・D22・D25・D35、NFR1.43・NFR1.45・NFR2.42・NFR7.41、X-1・X-2）
+- [x] **Step 3: 受け渡しの層の実装**（US1.1・US1.2・US1.3・US2.2・US2.3、D1〜D3・D18・D22・D25・D35、NFR1.43・NFR1.45・NFR2.42・NFR7.41、X-1・X-2）
   - `businessDataTypes.ts`: `REFERENCE_KINDS`・`ReferenceKind`・`ReferenceStatus`・`ReferenceOption`・`PickerSearchField`・`PickerListColumn`・`PickerInfo`・`ReferenceField`・`DefinitionPurpose`・`ReferenceRow`・`ReferenceRowPage`・`ReferenceLabel`・`ReferenceSource` を足し、`ColumnDefinition.reference` を `ReferenceField | null`（任意）にする。`FORM_PARTS` に `lookup` を足し、58 行のコメントを直す。`any`・`enum`・`export default` を使わない。
   - `businessDataParse.ts`: 仮の写しを `parseReference` に置き換える（1.1節の本物の形、X-1、D3。知らない `status`・`kind` は `NO_PERMISSION` に倒す。`valueType` の欠け・語彙の外は形の崩れ。`formPart` が `lookup` で `reference` が `null`・欠け・`REFERENCE` の組は形の崩れ）。`parseReferenceRowPage`（`page` は 1〜`MAX_PAGE` の整数、`cells` は文字か `null` の並び）と `parseReferenceLabel`（`rows` がちょうど1件で `value` が文字・`label` が文字か `null`。`page`・`hasNext`・`cells` は見ない）を足す。
   - `businessDataApi.ts`: `BUSINESS_DATA_PATHS.referenceRows`、`getDefinition(ref, definitionId?, purpose?)`（`purpose` があれば本文に足す）、`searchReferenceRows(source, conditions, page)`、`getReferenceLabel(source, value, signal?)` を足す。`postWithinLimit` に任意の `signal` を足して `apiRequest` の `init` に渡す（ほかの呼び出しは渡さない。R-01）。本文の上限は `MAX_READ_BODY_BYTES`。値を道・問い合わせ・`console` に置かない。
   - `useTableDefinition.ts`: 3番目の引数 `purpose?`（X-2）。`purpose` があるときは `businessDataStore` を読まず書かず（D2）、`reload` の `staleId` は最後に読めた定義の識別から取り、`reload`・`retry` は同じ `purpose` で読む。
-- [ ] **Step 4: 受け渡しの層のテスト**
+- [x] **Step 4: 受け渡しの層のテスト**
   - `businessDataParse.test.ts` に足す・直す（3節）: `reference` の正しい形（REFERENCE・LOOKUP、`options`・`picker` の欠けの読み）・`null`・形の崩れ・知らない `status` と `kind`（`FIXED` を含む）・`valueType` の欠けと語彙の外・`lookup` と `reference` の組。検索の写し（正しい形、`page` が `null`・0・小数は崩れ）。ラベルの写し（U1 の成功の応答 `rows` 1件・`cells` 空・`page: null`・`hasNext: false` からラベル、`label` が `null`、`page` が数でも受ける、0 件・2 件・`value` が文字でない は失敗。R-01）。
   - `businessDataParse.property.test.ts` に1件（fast-check: `reference` の `status` にどの文字を入れても写しが投げず、結果は既知の3つのどれか。種を記録）。
   - `businessDataApi.test.ts` に足す: `purpose` の有無と本文、`searchReferenceRows`・`getReferenceLabel` の道が固定の文字列で本文に値が入り問い合わせが無い、空の条件を送らない、`signal` が `fetch` の `init` に届く、ラベルの写しの失敗が通信の失敗になる。
   - `useTableDefinition.test.tsx` に足す: `purpose` つきで記憶を読まず書かない、`reload`・`retry` が同じ `purpose` で読む。既存の件は変えずに通す。
   - `unit-test-instructions.md` 3.2 の「受け渡し」のコマンドで流し、通ってから次へ。
-- [ ] **Step 5: 純粋な関数の実装**（US1.1〜US1.3・US1.5・US2.2・US2.4、D5〜D9・D12〜D15・D22〜D26・D31・D32、NFR1.44・NFR1.46、X-5）
+- [x] **Step 5: 純粋な関数の実装**（US1.1〜US1.3・US1.5・US2.2・US2.4、D5〜D9・D12〜D15・D22〜D26・D31・D32、NFR1.44・NFR1.46、X-5）
   - `reference/referenceField.ts`: `chooseFieldKind(column, mode, truncated)`（D5 の順。**入力できないカラムを `reference.status` より先に見る**。R-05 の引き継ぎ）、`optionText`（「ラベル (値)」、`null` は値）、`readonlyReason`（`permission`・`too-many`）、`isReadonlyReference`。
   - `reference/pickerSearch.ts`: `searchInputFor(field)`（D22 の `valueType` と演算子の表。既存の `FieldInput` の `type`・`inputMode`・`step`・説明文の鍵と同じ。`BOOLEAN` は「（指定しない）」・真・偽の `Select`、`CONTAINS` は常に文字）、`buildPickerConditions`（空の値を送らない。送る値の書き方は `searchConditions.ts` と同じ）、`validatePickerInputs`（すべて空・1,000 コードポイントを超える・`EQUALS` で `isReadableAs` が偽。`codePoints.ts` で数える）、`pickerPaging(page, rowCount, hasNext)`（D25・D26。行が1件以上は `table` と `totalCount`・文の鍵、0 件は `empty` と `backTo`）。
   - `problemMessage.ts`: `referenceErrorKey(column, reason, mode, truncated)`（入力不可の参照の項目の `REQUIRED`・`NOT_EDITABLE_NOT_NULL` は D13 の理由ごとの鍵、`REFERENCE_NOT_FOUND` は既存の鍵、そのほかと入力できないカラムは `fieldErrorMessageKey` のまま）。`writeProblemKind` は変えない。
   - `formDiff.ts`・`formValidation.ts`: X-5 の任意の引数。無ければ今と同じ結果。
-- [ ] **Step 6: 純粋な関数のテスト**
+- [x] **Step 6: 純粋な関数のテスト**
   - `reference/referenceField.test.ts`: D5 の表の全行（作成・更新、`truncatedColumns`）、`optionText` の XSS の見本、`referenceErrorKey` の組み合わせ（`problemMessage.test.ts` に足す）。fast-check（種を記録）: `AVAILABLE` 以外では入力の部品を返さない、入力できないカラムではどの `status` でも既存の読み取りを返し権限の文言の部品を返さない（R-05）、`optionText` は `<`・`"`・`'` を含んでも文字のまま。
   - `reference/pickerSearch.test.ts`: `searchInputFor` の表（12 の `valueType` と `CONTAINS`）、空の条件、1,000・1,001 コードポイント（サロゲートの組を1つと数える）、`EQUALS` の読めない値。fast-check: 組み立てた条件に空の値が入らない、`pickerPaging` の (1)〜(3)（`frontend-components.md` 7節。`hasNext` が真なら rowCount は 20、`Table` と同じ `computeTotalPages` の式で総ページが page＋1 か page に等しい）。
   - `formDiff.test.ts`・`formValidation.test.ts` に足す（入力不可の参照の項目は本文に入らず、検証の対象にならない。引数が無ければ今と同じ）。`formDiff.property.test.ts` に1件（`lockedColumns` のカラムは本文に出ない）。
   - 3.2 の「純粋な関数」のコマンドで流し、通ってから次へ。
-- [ ] **Step 7: 文言・フック・部品の実装**（US1.1〜US1.3・US1.5・US2.2〜US2.4、D6〜D30・D34・D36、NFR1.41・NFR1.42・NFR2.41〜NFR2.43・NFR4.41〜NFR4.43・NFR4.45・NFR6.41）
+- [x] **Step 7: 文言・フック・部品の実装**（US1.1〜US1.3・US1.5・US2.2〜US2.4、D6〜D30・D34・D36、NFR1.41・NFR1.42・NFR2.41〜NFR2.43・NFR4.41〜NFR4.43・NFR4.45・NFR6.41）
   - `messages.ts`: `frontend-components.md` 5節の鍵を日英の両方に足し、`tables.error.REFERENCE_NOT_FOUND` の文を差し替える（D31）。補間の `escapeValue` を切らない。
   - `reference/useReferenceLabels.ts`: `performance-design.md` 2.1 の形（値のある `AVAILABLE` の LOOKUP の項目を定義の順に、同時に `LABEL_READ_CONCURRENCY = 3` 本まで、世代ごとに閉じた `queue`・`inFlight`・`AbortController`、世代を進めるときに古い世代を `abort()`、`.finally` では世代の中の数を必ず減らし、**今の世代のときだけ `pump` を呼ぶ**（R-05）、失敗はすべて `null`、状態は React の状態だけ）。
   - `reference/useLookupSearch.ts`: `PickerState`（`frontend-components.md` 4.4）、開くたびに作り直す、世代で古い答え・閉じた後の答えを捨てる、検索中のページ送りの押下を捨てる、400 の `INVALID_VALUE` で `searchFields` にあるカラムだけを条件の誤りにし、ほかの 400 は `failed`、403 は `denied`、409 `BUSINESS_TARGET_DB_MISMATCH` は `failed`（`mismatch`）、ほかは `failed`（`retry`）。`useSlowNotice` を使わない（Q4: A）。
@@ -237,7 +237,7 @@ U1 の B1 が仮に足した `reference?: unknown`（`businessDataTypes.ts` 129 
   - `reference/LookupPickerDialog.tsx`（D21〜D30。`Modal` の `size="lg"`・`closeOnBackdropClick={false}`・`initialFocusRef`・`finalFocusRef`・`closeLabel`。条件と「検索」を1つの `<form>`。結果は `ScrollRegion` で包んだ `Table`、1列目「選ぶ」、列の鍵は `select`・`c0`〜、`getRowId` は `r0`〜。`pickerPaging` の `empty` では `Table` を描かない。状態の文の `role` は 3.2 のとおり、件数の変化は `aria-live="polite"`）。
   - `reference/ReferenceColumnField.tsx`（X-4）と `reference/reference.css`（長い名前の折り返し `overflow-wrap: anywhere`、375px で条件を縦に並べる。make-you-chic-ui の部品の内側のクラスを指さない）。
   - `testing/referenceSamples.ts` と `testing/sampleDefinition.ts` の口（2節）。
-- [ ] **Step 8: 文言・フック・部品のテスト**（`frontend-components.md` 7節、`security-design.md` 2.4・2.5・4節、`performance-design.md` 2.1・3節）
+- [x] **Step 8: 文言・フック・部品のテスト**（`frontend-components.md` 7節、`security-design.md` 2.4・2.5・4節、`performance-design.md` 2.1・3節）
   - `reference/useReferenceLabels.test.tsx`: 手で解く Promise で (1) 項目 3 つで 3 本が同時、(2) 項目 4 つで最初は 3 本・1本が答えると4本目、(3) 答えの順が違っても正しいラベル、(4) 失敗でも次が出る、(5) 離れた後は残りを送らず答えも捨てる、(6) 3 本が飛んでいる最中の読み直しで古い世代の3本の `signal` が `aborted`、新しい世代は先頭から3本だけ送り1本が答えると4本目、古い世代の要求を後から解いても新しい世代のラベルと送る数が変わらない。**(6) に足す（R-05）: 5 項目で読み直したとき、古い世代の列の4・5項目目の要求は、古い世代の要求をすべて解いた後も一度も送られない**。REFERENCE と値が空の項目は列に入らない、`page: null` の 200 の応答でラベルが出る、403・503・写しの失敗で `null`。
   - `reference/ReferenceSelectField.test.tsx`: 「ラベル (値)」と値だけ、値だけの選択肢（D8）、0 件と必須の文（D9）、XSS の見本、`radio` 200 件（同じ `name`・全文の名前・Tab で群に入り矢印のキーで 1〜200 件目へ移れる）、結び付けの受け手（`select`・`fieldset`）の `aria-describedby`・`aria-invalid`（R-02）、vitest-axe（`select`・`radio` 200 件）。
   - `reference/ReadonlyReferenceField.test.tsx`: `readOnly`・`aria-readonly`・`disabled` でない、権限・候補が多いの文と `aria-describedby`、作成の必須で開いた直後は D13 の文が `helperText`・`role="alert"` が無い・`aria-invalid` が無い、`error` を渡すと誤りの `id` を指し `aria-invalid` が付く、vitest-axe（権限・候補が多い・開いた直後・保存を押した後の4つ）。
@@ -246,30 +246,30 @@ U1 の B1 が仮に足した `reference?: unknown`（`businessDataTypes.ts` 129 
   - `reference/ReferenceColumnField.test.tsx`: 選び分けの表を1件ずつ描いて部品が当たる、vitest-axe 1件。
   - `messages.test.ts` は変えずに日英の鍵の一致を確かめる。英語に切り替えた部品のテストを1件（`LookupPickerDialog`）。
   - 3.2 の「部品」のコマンドで流し、通ってから次へ。
-- [ ] **Step 9: 作成・更新の画面への組み込み**（US1.1〜US1.3・US1.5・US2.3、D1・D2・D4・D5・D13〜D15・D18・D31〜D35、AC3.1.7・AC3.4.5、NFR1.44・NFR4.45・NFR7.41）
+- [x] **Step 9: 作成・更新の画面への組み込み**（US1.1〜US1.3・US1.5・US2.3、D1・D2・D4・D5・D13〜D15・D18・D31〜D35、AC3.1.7・AC3.4.5、NFR1.44・NFR4.45・NFR7.41）
   - `BusinessDataFormPage.tsx`: `useTableDefinition(ref, getDefinition, mode === 'create' ? 'CREATE' : 'UPDATE')`。カラムごとに `ReferenceColumnField` で描く。入力不可の参照の項目の集合を作り、`diffForm`・`hasFormChanges`・`validateForm` に渡す（D15）。保存の前の検証で作成の必須の入力不可の項目を D13 の文の誤りにし、誤りのまとめへフォーカスを移して要求を送らない（D13）。項目の誤りの文は `referenceErrorKey` で選ぶ（D31・D32）。入力不可の参照の項目も誤りを結べる項目に含める。LOOKUP のラベルを `useReferenceLabels` と画面の状態に持ち、選んだ行のラベルを入れる（D18・D19）。定義の読み直し（F6）の後も入力できる参照の値は残し、入力不可に変わった項目の入力は捨てる（D35）。一覧・詳細の画面は変えない。
-- [ ] **Step 10: 作成・更新の画面のテスト**
+- [x] **Step 10: 作成・更新の画面のテスト**
   - `BusinessDataFormPage.test.tsx` に足す（`frontend-components.md` 7節の行のすべて）: 作成は `CREATE`・更新は `UPDATE`、用途で入力できない参照のカラムが既存の「入力できない」の表示（R-05）、定義の 503 で「開けない・つながらない」、入力不可の参照の項目を本文に入れない、作成の必須の入力不可で開いた直後は説明文で `role="alert"` が無く保存を押すと送らずまとめへ・項目は `error`（`security-design.md` 2.4）、更新では D13 の文が出ない、409 `REFERENCE_NOT_FOUND`・`NOT_EDITABLE_NOT_NULL`・400 `REQUIRED` の文と結び付け、保存の 503 の表示が今と同じ、LOOKUP の選択とクリアと更新のラベル、入力不可・値だけ・理由の表示を1件（AC2.5.4）、vitest-axe（開いた直後・保存を押した後）。
   - AC3.4.3: `sampleDefinition` の `reference` を含む見本を既存の一覧・詳細・作成・更新の画面のテストの見本として1件ずつ流しても通る（一覧・詳細に入力不可の見た目・ラベルの読み込みが出ない。AC3.4.5）。
   - 3節の既存のテスト（定義の要求の数）を流し、`purpose` の分だけ期待を直す。
   - 3.2 の「画面」のコマンドで流す。
-- [ ] **Step 11: 画面の層の手元の確かめ**（NFR1.41・NFR1.42・NFR2.44・NFR9.41）
+- [x] **Step 11: 画面の層の手元の確かめ**（NFR1.41・NFR1.42・NFR2.44・NFR9.41）
   - `cd frontend && npm run format:check && npm run lint && npm run lint:css && npm run typecheck`、ライセンスヘッダーの検査、`unit-test-instructions.md` 3.3 の `features/tables` のテストの全件。
   - コードの検索: `dangerouslySetInnerHTML`・`localStorage`・`sessionStorage`・`indexedDB`・`console.` が `reference/` に無く、`businessDataStore` を `purpose` つきの経路で呼んでいない。
   - `git diff --stat develop -- frontend/package.json frontend/package-lock.json` が空（新しいパッケージが無い）。`registration.test.ts`（`lazy`）が通る。
-- [ ] **Step 12: E2E の共有の DSL と前提の表**（AC2.5.2、D39、基盤の設計 2節・R-02・R-05、NFR5.43）
+- [x] **Step 12: E2E の共有の DSL と前提の表**（AC2.5.2、D39、基盤の設計 2節・R-02・R-05、NFR5.43）
   - `support/businessDataSchema.sql` に、参照先の顧客の表（3 行）・商品の表（25 行。1行は 100 文字以上で `<` を含む名前、1行は2語以上の架空の品名。ほかの行の名前に `E2E-BIZ-MARK` の目印を含める）・参照元の注文の表（顧客・商品のカラムを持つ。行は少数）を足す。値はすべて架空。既存の `e2e_item` と付与の形は変えない。
   - `support/businessDataDsl.ts` に 180 の `flowDsl` を移し、`e2e_item`（今の中身のまま）に加えて、注文の表（顧客のカラムは `formPart: select`・`options.source: REFERENCE`、商品のカラムは `formPart: lookup`・`options.source: LOOKUP`・`lookupSearch`（商品コード `EQUALS`・品名 `CONTAINS`）・`lookupList`）、顧客・商品の表とそのメニューを足す。表とメニューの名前はファイルごとの印（`tag`）を入れ、**180 の `menuLabel`・`tableLabel` の文字を含まない・重ならない**名前（例「E2ER 注文 …」）にする。
   - 180 は import を替えるだけにする。確認項目: (1) 足す表・メニューの名前が 180 の `menuLabel`・`tableLabel` を含まない（`getByRole('link', { name })` の部分一致に当たらない）、(2) 180 の確かめが表・メニューの件数に頼っていない（頼るものがあれば足す分を差し引く形に直す）、(3) 180 のロールの権限は `e2e_item` の範囲だけで、足す表に広がらない。
   - 共有の DSL の投入・適用は各ファイルの流れの前の API の準備で毎回行い、適用済みかを判定しない（R-02）。**最後に流れたファイルの DSL が適用中のまま残ってよい**ことを `businessDataDsl.ts` のコメントに書く（R-05）。初期管理者・見本の DSL・見本の行に触れない。
-- [ ] **Step 13: E2E 195 の状態 7 を先に流す**（R-03、NFR4.45、`security-design.md` 2.3・承認の場の決定）
+- [x] **Step 13: E2E 195 の状態 7 を先に流す**（R-03、NFR4.45、`security-design.md` 2.3・承認の場の決定）
   - 195 のうち、準備（自作の利用者・ロール・共有の DSL の適用）と状態 7（作成の必須の入力不可・開いた直後。定義の差し替え）だけを先に書き、`DISPLAY_COMBOS` のすべての組（375px を含む）で axe を流す（`-Pe2e.files=e2e/195-reference-picker-accessibility.e2e.ts`）。あわせて `role="alert"` の要素が無いことを確かめる。
   - **`color-contrast` の違反が出た組があれば、ここで止めて依頼者に make-you-chic-ui への依頼の要否を諮る**。規則・要素を外さない。違反が無ければ次へ進み、結果（組の数と違反 0 件）を記録する。
-- [ ] **Step 14: E2E 190（代表の流れ 1本）**（US2.5、AC2.5.1〜AC2.5.3、F8、NFR1.47・NFR5.43）
+- [x] **Step 14: E2E 190（代表の流れ 1本）**（US2.5、AC2.5.1〜AC2.5.3、F8、NFR1.47・NFR5.43）
   - `190-reference-picker-flow.e2e.ts`: F8 の 1〜7。準備（API）で自作の利用者と自作のロール（注文は FULL・作成あり、顧客・商品は READ）を作って割り当て、共有の DSL を投入・適用する。ログイン → メニューから注文の表の作成 → 顧客の選択肢を1つ選ぶ → 商品の「選ぶ…」をキーボードで開き、条件を入れて Enter → キーボードで行の「選ぶ」→ 欄の「ラベル (値)」→ 保存（Enter）→ 作った行の更新の画面で同じラベル。
   - 資格情報はプロセスの環境変数で受け、`webServer.env` に置かない。利用者の値・実行の印と、参照先のラベル・作った行の値を `recordSecretValues`（`email`・`password`・`displayName`・`runTag`・`businessValue`）で値のファイルに書く。`test.step` の題・注記・添付に行の値を入れない。初期管理者・見本の行を変えない。
   - 終わりに報告の json を文字列で検索し、資格情報・接続先・トークンが無いことを報告の部品で確かめる。
-- [ ] **Step 15: E2E 195 の残りの状態**（US2.4、AC2.4.4・AC2.4.5、NFR2.43・NFR4.44、`security-design.md` 3.4、R-04、X-3）
+- [x] **Step 15: E2E 195 の残りの状態**（US2.4、AC2.4.4・AC2.4.5、NFR2.43・NFR4.44、`security-design.md` 3.4、R-04、X-3）
   - `support/referenceFixtures.ts`（差し替えの見本。型は画面の型を付ける）と `support/referenceFixtures.test.ts`。195 の中で本物の定義・検索の応答を取り、差し替えの見本と `shapeCompare` で形を比べる（X-3）。
   - 12 の状態（1 開いた直後・2 結果・3 0 件・4 検索の失敗・5 権限不足・6 候補が多い・7 開いた直後の必須・8 保存を押した後・9 保存の 409・10 長い名前・11 2語以上・12 `radio` 200 件）を、1件のテストで1つの組について順に作って axe を流す形にし、`DISPLAY_COMBOS` の 20 組で流す。375px では開いたダイアログの矩形が画面の中に収まり、画面全体が横にスクロールしないことを `overflow.ts` で確かめる（状態 10・12 も）。
   - 差し替えで作る状態（4〜9・12）は保存を起こさないことを、Playwright の要求の記録で作成・更新の POST が差し替えの外へ出ていないと数えて確かめる（R-04）。既知の違反の一覧は使わない（空のまま。どの違反も失敗）。

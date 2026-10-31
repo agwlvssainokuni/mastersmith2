@@ -55,7 +55,10 @@ export const LIST_FORMATS = [
 ] as const
 export type ListFormat = (typeof LIST_FORMATS)[number]
 
-/** フォーム部品（`lookup` はサーバーが `text` で返すため含めない。機能設計の承認の場の U3 R-09） */
+/**
+ * フォーム部品。`lookup` は用途（CREATE・UPDATE）つきの定義で LOOKUP の参照の項目にだけ届く（Intent
+ * 261029-reference-lookup-cleanup の U3 の D3）。`reference` が無い・REFERENCE の組の `lookup` は形の崩れ（D5）。
+ */
 export const FORM_PARTS = [
   'text',
   'textarea',
@@ -67,6 +70,7 @@ export const FORM_PARTS = [
   'datetime',
   'number',
   'password',
+  'lookup',
 ] as const
 export type FormPart = (typeof FORM_PARTS)[number]
 
@@ -125,8 +129,96 @@ export interface ColumnDefinition {
   max?: string | null
   choices?: readonly Choice[]
   hasPattern?: boolean
-  /** 他テーブル参照の項目（契約 C2。参照でないカラムと用途 VIEW では null。中身の型は参照の画面を作るときに決める） */
-  reference?: unknown
+  /** 他テーブル参照の項目（契約 C2。参照でないカラムと用途 VIEW では null。U3 の D3） */
+  reference?: ReferenceField | null
+}
+
+// ---- 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 3節） ----
+
+/** 参照の種類（backend の OptionSourceKind のうち参照に載るもの） */
+export const REFERENCE_KINDS = ['REFERENCE', 'LOOKUP'] as const
+export type ReferenceKind = (typeof REFERENCE_KINDS)[number]
+
+/** 参照の状態（backend の ReferenceStatus。知らない値は写しで NO_PERMISSION に倒す。D3） */
+export const REFERENCE_STATUSES = ['AVAILABLE', 'NO_PERMISSION', 'TOO_MANY'] as const
+export type ReferenceStatus = (typeof REFERENCE_STATUSES)[number]
+
+/** 選択肢（参照先の値と labelColumn の値。日英の表示名ではない） */
+export interface ReferenceOption {
+  value: string
+  /** NULL は null */
+  label: string | null
+}
+
+/** ピッカーの検索の条件（演算子は EQUALS・CONTAINS だけが届く。U1 の D6） */
+export interface PickerSearchField {
+  column: string
+  displayName: LocalizedText
+  operator: 'EQUALS' | 'CONTAINS'
+  /** 既存のカラムの valueType と同じ語彙。入力の部品を選ぶ（D22） */
+  valueType: ValueType
+}
+
+/** ピッカーの結果の列 */
+export interface PickerListColumn {
+  column: string
+  displayName: LocalizedText
+  /** 同じ語彙。形の確かめに使い、セルは文字のまま出す（D25） */
+  valueType: ValueType
+}
+
+/** ピッカーの情報 */
+export interface PickerInfo {
+  searchFields: readonly PickerSearchField[]
+  listColumns: readonly PickerListColumn[]
+}
+
+/** 参照の項目（契約 C2 の reference） */
+export interface ReferenceField {
+  kind: ReferenceKind
+  status: ReferenceStatus
+  /** REFERENCE・AVAILABLE のときだけ中身がある（ほかは空。X-1） */
+  options: readonly ReferenceOption[]
+  /** LOOKUP・AVAILABLE のときだけ値がある（ほかは null。X-1） */
+  picker: PickerInfo | null
+}
+
+/** 定義を読む用途（一覧・詳細は付けない。D1） */
+export const DEFINITION_PURPOSES = ['CREATE', 'UPDATE'] as const
+export type DefinitionPurpose = (typeof DEFINITION_PURPOSES)[number]
+
+/** 参照先の1行 */
+export interface ReferenceRow {
+  value: string
+  label: string | null
+  /** listColumns の並びの値（ラベルの1件読みでは空） */
+  cells: readonly CellValue[]
+}
+
+/** 検索の応答（page は 1 以上の数） */
+export interface ReferenceRowPage {
+  rows: readonly ReferenceRow[]
+  page: number
+  hasNext: boolean
+}
+
+/** ラベルの1件読みの応答から取り出す値（D18） */
+export interface ReferenceLabel {
+  value: string
+  label: string | null
+}
+
+/** 参照元のスキーマ・テーブル・カラム（参照先の API に本文で送る） */
+export interface ReferenceSource {
+  schemaName: string
+  tableName: string
+  column: string
+}
+
+/** ピッカーの検索の条件（送る形。値は空でないものだけ） */
+export interface ReferenceCondition {
+  column: string
+  value: string
 }
 
 /** 検索の項目（契約 C2 の SearchField） */

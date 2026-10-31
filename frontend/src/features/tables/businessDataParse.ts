@@ -17,7 +17,8 @@
 // 業務データの API の応答を unknown から型へ写す純粋な関数（Intent 261016-business-data-views の U3 の L2、D5、
 // U3-NFR4.24、計画 1.5）。
 // - 例外を投げず、形が違えば undefined を返す（画面は通信の失敗の表示にする）。行の値を含む Error を作らない（NFR4.2）。
-// - 列挙はすべて既知の一覧と照らす。知らない値（`lookup` を含む）は形の崩れ。
+// - 列挙はすべて既知の一覧と照らす。知らない値は形の崩れ（参照の status・kind だけは入力不可に倒す。Intent
+//   261029-reference-lookup-cleanup の U3 の D3）。
 // - 値は文字か null のまま写し、数に直さない（BIGINT・DECIMAL の桁を失わない）。
 // - 写すのは型の項目だけ。知らない項目は無視する。カラムの名前は利用者の入力（DSL）のため、写すときは
 //   Object.fromEntries で作り（`__proto__` などの名前でも物の形を変えない）、読むときは Object.hasOwn で確かめる。
@@ -29,10 +30,21 @@ import {
   LIST_FORMATS,
   OPERATIONS,
   PAGE_SIZES,
+  REFERENCE_KINDS,
+  REFERENCE_STATUSES,
   RESTRICTION_REASONS,
   SEARCH_OPERATORS,
   SORT_DIRECTIONS,
   VALUE_TYPES,
+  type PickerInfo,
+  type PickerListColumn,
+  type PickerSearchField,
+  type ReferenceField,
+  type ReferenceLabel,
+  type ReferenceOption,
+  type ReferenceRow,
+  type ReferenceRowPage,
+  type ReferenceStatus,
   type BusinessFieldError,
   type BusinessProblem,
   type CellValue,
@@ -183,11 +195,184 @@ function parseValidation(value: Json): Partial<ColumnDefinition> | Invalid {
     }
     result.choices = choices
   }
-  // 他テーブル参照の項目は、中身の確かめを足すまで届いた値をそのまま写す（画面はまだ使わない）
   if (value.reference !== undefined) {
-    result.reference = value.reference
+    const reference = value.reference === null ? null : parseReference(value.reference)
+    if (reference === undefined) {
+      return INVALID
+    }
+    result.reference = reference
+  }
+  // `lookup` は LOOKUP の参照の項目にだけ届く。reference が無い・REFERENCE の組は届かない形（D5・D3）。
+  if (
+    result.formPart === 'lookup' &&
+    (result.reference === undefined ||
+      result.reference === null ||
+      (isObject(value.reference) && value.reference.kind === 'REFERENCE'))
+  ) {
+    return INVALID
   }
   return result
+}
+
+// ---- 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、D3・D18・X-1） ----
+
+/** ピッカーの1ページの行の数（U1 の D1） */
+export const PICKER_PAGE_SIZE = 20
+
+function parseReferenceOption(value: unknown): ReferenceOption | undefined {
+  if (!isObject(value) || typeof value.value !== 'string') {
+    return undefined
+  }
+  const label = nullable(value.label, isString)
+  return label === INVALID ? undefined : { value: value.value, label }
+}
+
+function parsePickerSearchField(value: unknown): PickerSearchField | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const displayName = parseText(value.displayName)
+  if (
+    typeof value.column !== 'string' ||
+    displayName === undefined ||
+    (value.operator !== 'EQUALS' && value.operator !== 'CONTAINS') ||
+    !oneOf(VALUE_TYPES, value.valueType)
+  ) {
+    return undefined
+  }
+  return {
+    column: value.column,
+    displayName,
+    operator: value.operator,
+    valueType: value.valueType,
+  }
+}
+
+/** 結果の列（operator は本文に無い。届いても読まない。X-1） */
+function parsePickerListColumn(value: unknown): PickerListColumn | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const displayName = parseText(value.displayName)
+  if (
+    typeof value.column !== 'string' ||
+    displayName === undefined ||
+    !oneOf(VALUE_TYPES, value.valueType)
+  ) {
+    return undefined
+  }
+  return { column: value.column, displayName, valueType: value.valueType }
+}
+
+function parsePickerInfo(value: unknown): PickerInfo | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const searchFields = parseList(value.searchFields, parsePickerSearchField)
+  const listColumns = parseList(value.listColumns, parsePickerListColumn)
+  if (searchFields === undefined || listColumns === undefined) {
+    return undefined
+  }
+  return { searchFields, listColumns }
+}
+
+/**
+ * カラムの参照の項目を写す。形が違えば undefined（通信の失敗）。
+ * - `options`・`picker` は null のとき本文に無い（NON_NULL）。欠けは空の並び・null と読み、REFERENCE・AVAILABLE の
+ *   `options` の欠けと LOOKUP・AVAILABLE の `picker` の欠けだけを形の崩れにする（X-1）。
+ * - 知らない `status` は NO_PERMISSION に倒す。知らない `kind`（`FIXED` を含む）も同じく入力不可にする（D3）。
+ *
+ * @param value 参照の項目の本文
+ */
+export function parseReference(value: unknown): ReferenceField | undefined {
+  if (!isObject(value)) {
+    return undefined
+  }
+  const knownKind = oneOf(REFERENCE_KINDS, value.kind)
+  const knownStatus = oneOf(REFERENCE_STATUSES, value.status)
+  const options =
+    value.options === undefined || value.options === null
+      ? null
+      : parseList(value.options, parseReferenceOption)
+  const picker =
+    value.picker === undefined || value.picker === null ? null : parsePickerInfo(value.picker)
+  if (options === undefined || picker === undefined) {
+    return undefined
+  }
+  const available = knownStatus && value.status === 'AVAILABLE'
+  if (knownKind && available && value.kind === 'REFERENCE' && options === null) {
+    return undefined
+  }
+  if (knownKind && available && value.kind === 'LOOKUP' && picker === null) {
+    return undefined
+  }
+  if (!knownKind) {
+    // 知らない種類は参照の入力として扱わず、権限不足と同じ入力不可にする（D3）。
+    return { kind: 'REFERENCE', status: 'NO_PERMISSION', options: [], picker: null }
+  }
+  return {
+    kind: value.kind as ReferenceField['kind'],
+    status: knownStatus ? (value.status as ReferenceStatus) : 'NO_PERMISSION',
+    options: options ?? [],
+    picker,
+  }
+}
+
+function parseReferenceRow(value: unknown): ReferenceRow | undefined {
+  if (!isObject(value) || typeof value.value !== 'string') {
+    return undefined
+  }
+  const label = nullable(value.label, isString)
+  const cells = parseList(value.cells, (item) =>
+    typeof item === 'string' || item === null ? { item } : undefined,
+  )
+  if (label === INVALID || cells === undefined) {
+    return undefined
+  }
+  return { value: value.value, label, cells: cells.map(({ item }) => item) }
+}
+
+/**
+ * 参照先の検索の応答を写す。形が違えば undefined。page は 1〜MAX_PAGE の整数（null は形の崩れ）、行は 20 件まで、
+ * hasNext が真なら行はちょうど 20 件（ページ送りの総ページを今のページより小さくしない。D25）。
+ *
+ * @param body 応答の本文
+ */
+export function parseReferenceRowPage(body: unknown): ReferenceRowPage | undefined {
+  if (!isObject(body)) {
+    return undefined
+  }
+  const rows = parseList(body.rows, parseReferenceRow)
+  if (
+    rows === undefined ||
+    !isSafeNonNegativeInteger(body.page) ||
+    body.page < 1 ||
+    body.page > MAX_PAGE ||
+    typeof body.hasNext !== 'boolean' ||
+    rows.length > PICKER_PAGE_SIZE ||
+    (body.hasNext && rows.length !== PICKER_PAGE_SIZE)
+  ) {
+    return undefined
+  }
+  return { rows, page: body.page, hasNext: body.hasNext }
+}
+
+/**
+ * ラベルの1件読みの応答を写す（検索の写しと別。D18・R-01）。page・hasNext・cells は見ず、rows がちょうど1件で
+ * value（文字）・label（文字か null）の形が正しいことだけを確かめる。
+ *
+ * @param body 応答の本文
+ */
+export function parseReferenceLabel(body: unknown): ReferenceLabel | undefined {
+  if (!isObject(body) || !Array.isArray(body.rows) || body.rows.length !== 1) {
+    return undefined
+  }
+  const row: unknown = body.rows[0]
+  if (!isObject(row) || typeof row.value !== 'string') {
+    return undefined
+  }
+  const label = nullable(row.label, isString)
+  return label === INVALID ? undefined : { value: row.value, label }
 }
 
 /**
@@ -277,7 +462,7 @@ function parseSortKey(value: unknown): SortKey | undefined {
 /**
  * 入力にするカラム（作成か更新で入力できる詳細のカラム）が、フォームを作る材料を持つか（機能設計の承認の場の U2 R-07・U3 R-09、
  * D19、U3-NFR4.24）。formPart・required・nullable のどれかが欠ければ形の崩れ（黙って文字の入力にしない）。
- * 入力にしないカラムの `formPart: null` は正しい形。知らない formPart（`lookup` を含む）は parseValidation が先に弾く。
+ * 入力にしないカラムの `formPart: null` は正しい形。知らない formPart と、参照の無い `lookup` は parseValidation が先に弾く。
  *
  * @param column 写したカラムの定義
  */

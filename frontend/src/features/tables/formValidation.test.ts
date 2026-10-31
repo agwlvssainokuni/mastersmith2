@@ -25,6 +25,7 @@ import {
   validateValue,
 } from './formValidation'
 import { wireColumn } from './testing/businessDataSamples'
+import { wireBlocked } from './testing/referenceSamples'
 
 function column(name: string, overrides: Record<string, unknown> = {}): ColumnDefinition {
   const parsed = parseColumnDefinition(
@@ -122,5 +123,21 @@ describe('formValidation', () => {
     expect(Object.is(compareDecimalText('-1.50', '-1.5'), 0)).toBe(true)
     expect(compareDecimalText('-28', '-27')).toBe(-1)
     expect(compareDecimalText('-27', '-28')).toBe(1)
+  })
+})
+
+// Intent 261029-reference-lookup-cleanup の U3（D15・X-5）
+describe('validateForm with locked reference columns', () => {
+  const blocked = column('product', {
+    editableOnCreate: true,
+    formPart: 'select',
+    required: true,
+    nullable: false,
+    reference: wireBlocked('REFERENCE', 'NO_PERMISSION'),
+  })
+
+  it('does not check a locked column and keeps the old result without the argument', () => {
+    expect(validateForm([blocked], 'create', {}, [], new Set(['product']))).toEqual({})
+    expect(validateForm([blocked], 'create', {})).toEqual({ product: 'REQUIRED' })
   })
 })

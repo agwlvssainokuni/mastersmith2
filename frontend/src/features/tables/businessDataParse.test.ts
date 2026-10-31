@@ -21,6 +21,9 @@ import {
   parseBusinessProblem,
   parseColumnDefinition,
   parseCreatedKey,
+  parseReference,
+  parseReferenceLabel,
+  parseReferenceRowPage,
   parseRowDetail,
   parseRowPage,
   parseTableDefinition,
@@ -33,6 +36,17 @@ import {
   wirePage,
   wireRow,
 } from './testing/businessDataSamples'
+import {
+  SAMPLE_OPTIONS,
+  SAMPLE_PICKER,
+  pickerRow,
+  wireBlocked,
+  wireLabel,
+  wireLookup,
+  wirePicker,
+  wireReference,
+  wireRowsPage,
+} from './testing/referenceSamples'
 
 describe('parseTableDefinition', () => {
   it('copies a well-formed definition including the fields added by U1', () => {
@@ -95,7 +109,7 @@ describe('parseTableDefinition', () => {
 })
 
 describe('parseColumnDefinition', () => {
-  it('rejects the lookup form part and unknown value types or formats', () => {
+  it('rejects the lookup form part without a reference and unknown value types or formats', () => {
     expect(parseColumnDefinition(wireColumn('c', { formPart: 'lookup' }))).toBeUndefined()
     expect(parseColumnDefinition(wireColumn('c', { formPart: 'rich' }))).toBeUndefined()
     expect(parseColumnDefinition(wireColumn('c', { valueType: 'JSON' }))).toBeUndefined()
@@ -230,7 +244,7 @@ describe('businessDataParse write material (B6)', () => {
   it.each([
     ['formPart is null', { formPart: null }],
     ['formPart is missing', { formPart: undefined }],
-    ['formPart is lookup', { formPart: 'lookup' }],
+    ['formPart is lookup without a reference', { formPart: 'lookup' }],
     ['formPart is unknown', { formPart: 'slider' }],
     ['required is missing', { required: undefined }],
     ['nullable is missing', { nullable: undefined }],
@@ -255,5 +269,245 @@ describe('businessDataParse write material (B6)', () => {
     expect(parseCreatedKey({ key: {} })).toBeNull()
     expect(parseCreatedKey({ key: { code: 1 } })).toBeNull()
     expect(parseCreatedKey('text')).toBeNull()
+  })
+})
+
+describe('parseReference (Intent 261029-reference-lookup-cleanup U3, D3, X-1)', () => {
+  it('copies a REFERENCE field whose picker is missing from the body', () => {
+    expect(parseReference(wireReference())).toEqual({
+      kind: 'REFERENCE',
+      status: 'AVAILABLE',
+      options: SAMPLE_OPTIONS,
+      picker: null,
+    })
+  })
+
+  it('copies a LOOKUP field whose options and list operators are missing from the body', () => {
+    expect(parseReference(wireLookup())).toEqual({
+      kind: 'LOOKUP',
+      status: 'AVAILABLE',
+      options: [],
+      picker: SAMPLE_PICKER,
+    })
+  })
+
+  it.each([
+    ['REFERENCE', 'NO_PERMISSION'],
+    ['REFERENCE', 'TOO_MANY'],
+    ['LOOKUP', 'NO_PERMISSION'],
+    ['LOOKUP', 'TOO_MANY'],
+  ] as const)('reads a blocked %s field (%s) without options or picker', (kind, status) => {
+    expect(parseReference(wireBlocked(kind, status))).toEqual({
+      kind,
+      status,
+      options: [],
+      picker: null,
+    })
+  })
+
+  it('turns an unknown status into NO_PERMISSION', () => {
+    expect(parseReference(wireReference({ status: 'LATER' }))?.status).toBe('NO_PERMISSION')
+    expect(parseReference(wireLookup({ status: 'available' }))?.status).toBe('NO_PERMISSION')
+  })
+
+  it.each(['FIXED', 'OTHER', 1])(
+    'turns an unknown kind (%s) into an input that cannot be changed',
+    (kind) => {
+      expect(parseReference(wireReference({ kind }))).toEqual({
+        kind: 'REFERENCE',
+        status: 'NO_PERMISSION',
+        options: [],
+        picker: null,
+      })
+    },
+  )
+
+  it.each([
+    ['REFERENCE AVAILABLE without options', wireReference({ options: undefined })],
+    ['LOOKUP AVAILABLE without picker', wireLookup({ picker: undefined })],
+    [
+      'an option value that is not a string',
+      wireReference({ options: [{ value: 1, label: 'a' }] }),
+    ],
+    ['an option label that is a number', wireReference({ options: [{ value: 'a', label: 1 }] })],
+    [
+      'a search field without valueType',
+      wireLookup({
+        picker: {
+          ...wirePicker(),
+          searchFields: [{ column: 'c', displayName: { ja: 'c', en: 'c' }, operator: 'EQUALS' }],
+        },
+      }),
+    ],
+    [
+      'a search field with an unknown valueType',
+      wireLookup({
+        picker: {
+          ...wirePicker(),
+          searchFields: [
+            {
+              column: 'c',
+              displayName: { ja: 'c', en: 'c' },
+              operator: 'EQUALS',
+              valueType: 'JSON',
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'a search field with the RANGE operator',
+      wireLookup({
+        picker: {
+          ...wirePicker(),
+          searchFields: [
+            {
+              column: 'c',
+              displayName: { ja: 'c', en: 'c' },
+              operator: 'RANGE',
+              valueType: 'STRING',
+            },
+          ],
+        },
+      }),
+    ],
+    [
+      'a list column with an unknown valueType',
+      wireLookup({
+        picker: {
+          ...wirePicker(),
+          listColumns: [{ column: 'c', displayName: { ja: 'c', en: 'c' }, valueType: 'X' }],
+        },
+      }),
+    ],
+    ['a picker that is not an object', wireLookup({ picker: 'x' })],
+    ['a non object', 'REFERENCE'],
+  ])('treats %s as a broken shape', (_name, body) => {
+    expect(parseReference(body)).toBeUndefined()
+  })
+
+  it('ignores an operator on a list column', () => {
+    const picker = {
+      ...wirePicker(),
+      listColumns: [
+        { column: 'c', displayName: { ja: 'c', en: 'c' }, operator: 'EQUALS', valueType: 'STRING' },
+      ],
+    }
+    expect(parseReference(wireLookup({ picker }))?.picker?.listColumns).toEqual([
+      { column: 'c', displayName: { ja: 'c', en: 'c' }, valueType: 'STRING' },
+    ])
+  })
+
+  it('reads reference through parseColumnDefinition, including null and the lookup combinations', () => {
+    expect(parseColumnDefinition(wireColumn('c', { reference: null }))?.reference).toBeNull()
+    expect(
+      parseColumnDefinition(wireColumn('c', { reference: wireReference(), formPart: 'select' }))
+        ?.reference?.kind,
+    ).toBe('REFERENCE')
+    expect(
+      parseColumnDefinition(wireColumn('c', { formPart: 'lookup', reference: wireLookup() }))
+        ?.formPart,
+    ).toBe('lookup')
+    expect(
+      parseColumnDefinition(
+        wireColumn('c', { formPart: 'lookup', reference: wireBlocked('LOOKUP', 'TOO_MANY') }),
+      )?.reference?.status,
+    ).toBe('TOO_MANY')
+    expect(
+      parseColumnDefinition(wireColumn('c', { formPart: 'lookup', reference: null })),
+    ).toBeUndefined()
+    expect(
+      parseColumnDefinition(wireColumn('c', { formPart: 'lookup', reference: wireReference() })),
+    ).toBeUndefined()
+    expect(
+      parseColumnDefinition(wireColumn('c', { reference: wireReference({ options: 'x' }) })),
+    ).toBeUndefined()
+  })
+})
+
+describe('parseReferenceRowPage', () => {
+  it('copies rows with null labels and null cells', () => {
+    const rows = [pickerRow(0), pickerRow(1, { label: null, cells: ['P002', null, null] })]
+    expect(parseReferenceRowPage(wireRowsPage(rows, 3, false))).toEqual({
+      rows,
+      page: 3,
+      hasNext: false,
+    })
+  })
+
+  it('accepts twenty rows with hasNext', () => {
+    const rows = Array.from({ length: 20 }, (_, index) => pickerRow(index))
+    expect(parseReferenceRowPage(wireRowsPage(rows, 1, true))?.hasNext).toBe(true)
+  })
+
+  it.each([
+    ['page null', { ...wireRowsPage([pickerRow(0)]), page: null }],
+    ['page 0', wireRowsPage([pickerRow(0)], 0)],
+    ['page 1.5', wireRowsPage([pickerRow(0)], 1.5)],
+    ['page above the maximum', wireRowsPage([pickerRow(0)], 1_000_001)],
+    ['hasNext missing', { rows: [], page: 1 }],
+    ['hasNext with fewer than twenty rows', wireRowsPage([pickerRow(0)], 1, true)],
+    [
+      'more than twenty rows',
+      wireRowsPage(
+        Array.from({ length: 21 }, (_, i) => pickerRow(i)),
+        1,
+      ),
+    ],
+    [
+      'a cell that is a number',
+      { rows: [{ value: 'a', label: null, cells: [1] }], page: 1, hasNext: false },
+    ],
+    ['cells missing', { rows: [{ value: 'a', label: null }], page: 1, hasNext: false }],
+    [
+      'a value that is not a string',
+      { rows: [{ value: 1, label: null, cells: [] }], page: 1, hasNext: false },
+    ],
+  ])('treats %s as a broken shape', (_name, body) => {
+    expect(parseReferenceRowPage(body)).toBeUndefined()
+  })
+})
+
+describe('parseReferenceLabel (R-01)', () => {
+  it('reads the label from the U1 success body with page null, no next and empty cells', () => {
+    expect(parseReferenceLabel(wireLabel('P001', '商品 1'))).toEqual({
+      value: 'P001',
+      label: '商品 1',
+    })
+  })
+
+  it('reads a null label and does not look at page, hasNext or cells', () => {
+    expect(parseReferenceLabel(wireLabel('P001', null))).toEqual({ value: 'P001', label: null })
+    expect(
+      parseReferenceLabel({
+        rows: [{ value: 'P001', label: 'x', cells: 'broken' }],
+        page: 7,
+        hasNext: true,
+      }),
+    ).toEqual({ value: 'P001', label: 'x' })
+  })
+
+  it.each([
+    ['no rows', { rows: [], page: null, hasNext: false }],
+    [
+      'two rows',
+      {
+        rows: [
+          { value: 'a', label: null },
+          { value: 'b', label: null },
+        ],
+        page: null,
+        hasNext: false,
+      },
+    ],
+    [
+      'a value that is not a string',
+      { rows: [{ value: 1, label: null }], page: null, hasNext: false },
+    ],
+    ['a label that is a number', { rows: [{ value: 'a', label: 2 }], page: null, hasNext: false }],
+    ['rows missing', { page: null, hasNext: false }],
+    ['a non object', null],
+  ])('fails on %s', (_name, body) => {
+    expect(parseReferenceLabel(body)).toBeUndefined()
   })
 })

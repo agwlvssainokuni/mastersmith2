@@ -23,6 +23,8 @@
 // - 更新: 変えたカラムだけを送る。空にしたカラムは、文字の型（STRING）なら ''、ほかの型なら null。
 // - masked（password）: 空で始め、値を入れたときだけ送る（作成・更新とも）。
 // - 日時（DATETIME・DATETIME_TZ）は秒まで（datetime-local の値に秒が無ければ ':00' を足す）。DATETIME_TZ は '+00:00' を付ける。
+// - 入力不可の参照の項目（Intent 261029-reference-lookup-cleanup の U3、D15・X-5）は、任意の最後の引数 lockedColumns で渡し、
+//   入力できないカラムと同じに扱う（本文に入れず、変更の有無にも数えない）。渡さなければ今と同じ結果。
 import type { CellValue, ColumnDefinition, RowValues } from './businessDataTypes'
 
 /** フォームの種類 */
@@ -30,6 +32,9 @@ export type FormMode = 'create' | 'update'
 
 /** フォームの入力の値（カラムの名前ごと） */
 export type FormInputs = Readonly<Record<string, string>>
+
+/** 入力不可の参照の項目が無いとき（既定の引数） */
+export const NO_LOCKED: ReadonlySet<string> = new Set()
 
 /** 真偽値の入力（checkbox・switch）か */
 export function isBooleanInput(column: ColumnDefinition): boolean {
@@ -127,6 +132,7 @@ function inputOf(inputs: FormInputs, column: string): string {
  * @param initial 初めの入力の値
  * @param current 今の入力の値
  * @param truncatedColumns 先頭だけを受けたカラム
+ * @param lockedColumns 入力不可の参照の項目（X-5）
  */
 export function diffForm(
   columns: readonly ColumnDefinition[],
@@ -134,10 +140,11 @@ export function diffForm(
   initial: FormInputs,
   current: FormInputs,
   truncatedColumns: readonly string[] = [],
+  lockedColumns: ReadonlySet<string> = NO_LOCKED,
 ): RowValues {
   const entries: [string, CellValue][] = []
   for (const column of columns) {
-    if (!isEditable(column, mode, truncatedColumns)) {
+    if (!isEditable(column, mode, truncatedColumns) || lockedColumns.has(column.column)) {
       continue
     }
     const now = inputOf(current, column.column)
@@ -159,17 +166,19 @@ export function diffForm(
   return Object.fromEntries(entries)
 }
 
-/** 変更があるか（未保存の確かめに使う。作成でも初めの値と比べる） */
+/** 変更があるか（未保存の確かめに使う。作成でも初めの値と比べる。入力不可の参照の項目は数えない） */
 export function hasFormChanges(
   columns: readonly ColumnDefinition[],
   mode: FormMode,
   initial: FormInputs,
   current: FormInputs,
   truncatedColumns: readonly string[] = [],
+  lockedColumns: ReadonlySet<string> = NO_LOCKED,
 ): boolean {
   return columns.some(
     (column) =>
       isEditable(column, mode, truncatedColumns) &&
+      !lockedColumns.has(column.column) &&
       inputOf(initial, column.column) !== inputOf(current, column.column),
   )
 }

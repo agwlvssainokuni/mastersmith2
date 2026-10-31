@@ -37,6 +37,14 @@ import {
   type DataRouterResponder,
   type RecordedRequest,
 } from './testing/renderTablesDataRouter'
+import {
+  wireBlocked,
+  wireLabel,
+  wireLookup,
+  wireReference,
+  wireRowsPage,
+  pickerRow,
+} from './testing/referenceSamples'
 
 const QUERY = '?schema=shop&table=item&item=0.1'
 const NEW_ROUTE = `/tables/new${QUERY}`
@@ -544,5 +552,309 @@ describe('BusinessDataFormPage leaving while saving (R-01)', () => {
     await user.click(screen.getByRole('menuitem', { name: '経理' }))
     await user.click(await screen.findByTestId('tables-leave-go'))
     await answerAfterLeaving(answer, router, calls, written(), '更新しました。')
+  })
+})
+
+// ---- 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md 7節、D1・D4・D5・D13〜D15・D18・
+// D19・D31〜D35、AC2.5.4、R-05、security-design.md 2.4）----
+
+const REF_COLUMNS = [
+  wireColumn('code', {
+    displayName: { ja: '注文番号', en: 'Order' },
+    editableOnCreate: true,
+    formPart: 'text',
+    required: true,
+    nullable: false,
+    maxLength: 20,
+  }),
+  wireColumn('customer', {
+    displayName: { ja: '顧客', en: 'Customer' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'select',
+    reference: wireReference(),
+  }),
+  wireColumn('product', {
+    displayName: { ja: '商品', en: 'Product' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'lookup',
+    reference: wireLookup(),
+  }),
+  wireColumn('region', {
+    displayName: { ja: '地域', en: 'Region' },
+    editableOnCreate: true,
+    editableOnUpdate: true,
+    formPart: 'select',
+    nullable: false,
+    reference: wireBlocked('REFERENCE', 'NO_PERMISSION'),
+  }),
+  wireColumn('owner', {
+    displayName: { ja: '担当', en: 'Owner' },
+    editableOnCreate: false,
+    editableOnUpdate: false,
+    reference: wireBlocked('REFERENCE', 'NO_PERMISSION'),
+  }),
+]
+
+const REF_VALUES = { code: 'O1', customer: 'C001', product: 'P001', region: 'R9', owner: 'U1' }
+
+function refResponder(
+  write: WriteAnswer,
+  options: {
+    definition?: (request: RecordedRequest) => { status: number; body: unknown }
+    columns?: unknown[]
+    label?: (request: RecordedRequest) => { status: number; body: unknown }
+  } = {},
+): DataRouterResponder {
+  return (request) => {
+    if (request.path === BUSINESS_DATA_PATHS.definition) {
+      return (
+        options.definition?.(request) ?? {
+          status: 200,
+          body: wireDefinition({ ...WRITABLE, detailColumns: options.columns ?? REF_COLUMNS }),
+        }
+      )
+    }
+    if (request.path === BUSINESS_DATA_PATHS.get) {
+      return {
+        status: 200,
+        body: wireDetail('O1', { key: { code: 'O1' }, values: REF_VALUES }),
+      }
+    }
+    if (request.path === BUSINESS_DATA_PATHS.referenceRows) {
+      if (request.body.value !== undefined) {
+        return (
+          options.label?.(request) ?? { status: 200, body: wireLabel('P001', '青い 木製の椅子') }
+        )
+      }
+      return { status: 200, body: wireRowsPage([pickerRow(4)], 1, false) }
+    }
+    if (request.path === BUSINESS_DATA_PATHS.rows) {
+      return write(request)
+    }
+    return { status: 404, body: {} }
+  }
+}
+
+function renderRefEdit(write: WriteAnswer, options: Parameters<typeof refResponder>[1] = {}) {
+  const rowToken = putRowKey({ code: 'O1' }, SALES.roleId)
+  return renderTablesDataRouter(EDIT_ROUTE, refResponder(write, options), { state: { rowToken } })
+}
+
+const BLOCKED_PERMISSION =
+  '必須の参照項目に値を入れられません。参照先を読む権限がないためです。管理者に権限を依頼してください'
+
+describe('BusinessDataFormPage references', () => {
+  it('reads the definition with CREATE on the create screen and UPDATE on the update screen', async () => {
+    const first = renderTablesDataRouter(NEW_ROUTE, refResponder(created()))
+    await screen.findByRole('heading', { name: '商品を作成' })
+    const definitionCalls = first.calls.filter((c) => c.path === BUSINESS_DATA_PATHS.definition)
+    expect(definitionCalls.map((c) => c.body.purpose)).toEqual(['CREATE'])
+    first.view.unmount()
+    clearBusinessDataStore()
+    const second = renderRefEdit(written)
+    await screen.findByTestId('tables-form-heading')
+    expect(
+      second.calls
+        .filter((c) => c.path === BUSINESS_DATA_PATHS.definition)
+        .map((c) => c.body.purpose),
+    ).toEqual(['UPDATE'])
+  })
+
+  it('shows a column that cannot be entered as the existing readonly display without the permission text (R-05)', async () => {
+    renderRefEdit(written)
+    await screen.findByRole('combobox', { name: '顧客' })
+    const owner = screen.getByText('担当').closest('div')
+    expect(owner).toHaveClass('tables-form-readonly')
+    expect(owner).toHaveTextContent('U1')
+    expect(screen.queryAllByText('参照先を読む権限がないため変更できません')).toHaveLength(1)
+  })
+
+  it('shows the problem view and no form when the definition fails with 503 (D4)', async () => {
+    renderTablesDataRouter(
+      NEW_ROUTE,
+      refResponder(created(), {
+        definition: () => ({
+          status: 503,
+          body: { status: 503, code: 'BUSINESS_TARGET_DB_UNAVAILABLE' },
+        }),
+      }),
+    )
+    expect(await screen.findByTestId('tables-problem')).toBeInTheDocument()
+    expect(screen.queryByTestId('tables-form-fields')).toBeNull()
+  })
+
+  it('shows the blocked required text as a helper on opening, then blocks the save and focuses the summary', async () => {
+    const user = userEvent.setup()
+    const { calls, view } = renderTablesDataRouter(NEW_ROUTE, refResponder(created()))
+    const region = await screen.findByRole('textbox', { name: '地域' })
+    expect(region).toHaveAccessibleDescription(BLOCKED_PERMISSION)
+    expect(region).not.toHaveAttribute('aria-invalid')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(await axe(view.container)).toHaveNoViolations()
+
+    await user.type(screen.getByRole('textbox', { name: /^注文番号/ }), 'O9')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const summary = await screen.findByTestId('tables-form-summary')
+    await waitFor(() => expect(summary).toHaveFocus())
+    expect(summary).toHaveTextContent(`地域: ${BLOCKED_PERMISSION}`)
+    expect(region).toHaveAttribute('aria-invalid', 'true')
+    expect(writes(calls)).toHaveLength(0)
+    expect(await axe(view.container)).toHaveNoViolations()
+  })
+
+  it('does not show the blocked text on the update screen and does not send readonly references', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderRefEdit(written)
+    const region = await screen.findByRole('textbox', { name: '地域' })
+    expect(region).toHaveValue('R9')
+    expect(region).toHaveAccessibleDescription('参照先を読む権限がないため変更できません')
+    await user.selectOptions(screen.getByRole('combobox', { name: '顧客' }), 'C003')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ customer: 'C003' })
+  })
+
+  it.each([
+    [
+      'REFERENCE_NOT_FOUND on the select',
+      409,
+      'BUSINESS_REFERENCE_NOT_FOUND',
+      'customer',
+      'REFERENCE_NOT_FOUND',
+      '顧客: 選べない値です。選び直してください',
+    ],
+    [
+      'NOT_EDITABLE_NOT_NULL on a readonly reference',
+      409,
+      'BUSINESS_REFERENCE_NOT_FOUND',
+      'region',
+      'NOT_EDITABLE_NOT_NULL',
+      `地域: ${BLOCKED_PERMISSION}`,
+    ],
+    [
+      'REQUIRED on a readonly reference',
+      400,
+      'VALIDATION_FAILED',
+      'region',
+      'REQUIRED',
+      `地域: ${BLOCKED_PERMISSION}`,
+    ],
+  ])('shows %s bound to the field', async (_name, status, code, field, reason, text) => {
+    const user = userEvent.setup()
+    renderRefEdit(() => ({
+      status,
+      body: { status, code, fieldErrors: [{ field, reason }] },
+    }))
+    await user.selectOptions(await screen.findByRole('combobox', { name: '顧客' }), 'C003')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const summary = await screen.findByTestId('tables-form-summary')
+    expect(summary).toHaveTextContent(text)
+    await waitFor(() => expect(summary).toHaveFocus())
+  })
+
+  it('keeps the existing unsaved text for a 503 save', async () => {
+    const user = userEvent.setup()
+    renderRefEdit(() => ({
+      status: 503,
+      body: { status: 503, code: 'BUSINESS_TARGET_DB_UNAVAILABLE' },
+    }))
+    await user.selectOptions(await screen.findByRole('combobox', { name: '顧客' }), 'C003')
+    await user.click(screen.getByTestId('tables-form-save'))
+    expect(await screen.findByTestId('tables-form-notice')).toHaveTextContent('保存されていません')
+  })
+
+  it('reads the stored lookup label, then picks and clears with the picker and sends the value', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderRefEdit(written)
+    const product = await screen.findByRole('textbox', { name: '商品' })
+    await waitFor(() => expect(product).toHaveValue('青い 木製の椅子 (P001)'))
+    const labelCall = calls.find((c) => c.path === BUSINESS_DATA_PATHS.referenceRows)
+    expect(labelCall?.body).toEqual({
+      schema: 'shop',
+      table: 'item',
+      column: 'product',
+      value: 'P001',
+    })
+
+    await user.click(screen.getByRole('button', { name: '選ぶ…（商品）' }))
+    await user.type(await screen.findByRole('textbox', { name: '商品コード（一致）' }), 'P{Enter}')
+    await user.click(await screen.findByRole('button', { name: '商品 5を選ぶ' }))
+    await waitFor(() => expect(product).toHaveValue('商品 5 (P005)'))
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ product: 'P005' })
+  })
+
+  it('shows the value alone when the label cannot be read', async () => {
+    renderRefEdit(written, {
+      label: () => ({ status: 403, body: { status: 403, code: 'ACCESS_DENIED' } }),
+    })
+    const product = await screen.findByRole('textbox', { name: '商品' })
+    await waitFor(() => expect(product).not.toHaveAttribute('aria-busy'))
+    expect(product).toHaveValue('P001')
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('shows a readonly reference with the value alone and the reason (AC2.5.4)', async () => {
+    renderRefEdit(written, {
+      columns: [
+        REF_COLUMNS[0],
+        wireColumn('product', {
+          displayName: { ja: '商品', en: 'Product' },
+          editableOnCreate: true,
+          editableOnUpdate: true,
+          formPart: 'lookup',
+          reference: wireBlocked('LOOKUP', 'TOO_MANY'),
+        }),
+      ],
+    })
+    const product = await screen.findByRole('textbox', { name: '商品' })
+    expect(product).toHaveValue('P001')
+    expect(product).toHaveAttribute('readonly')
+    expect(product).toHaveAccessibleDescription(
+      '候補が多いため選べません。管理者に、検索（ピッカー）への切り替えを依頼してください',
+    )
+    expect(screen.queryByRole('button', { name: /選ぶ…/ })).toBeNull()
+  })
+
+  it('discards the input of a reference that became readonly after the definition changed (D35)', async () => {
+    const user = userEvent.setup()
+    let definitionCount = 0
+    renderRefEdit(
+      () => ({
+        status: 409,
+        body: { status: 409, code: 'BUSINESS_DEFINITION_CHANGED', definitionChanged: true },
+      }),
+      {
+        definition: (request) => {
+          definitionCount += 1
+          const columns =
+            definitionCount === 1
+              ? REF_COLUMNS
+              : REF_COLUMNS.map((column) =>
+                  column.column === 'customer'
+                    ? { ...column, reference: wireBlocked('REFERENCE', 'TOO_MANY') }
+                    : column,
+                )
+          expect(request.body.purpose).toBe('UPDATE')
+          return {
+            status: 200,
+            body: wireDefinition({
+              ...WRITABLE,
+              detailColumns: columns,
+              definitionId: { dslHash: `h${definitionCount}`, workRoleId: 1 },
+            }),
+          }
+        },
+      },
+    )
+    await user.selectOptions(await screen.findByRole('combobox', { name: '顧客' }), 'C003')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const customer = await screen.findByRole('textbox', { name: '顧客' })
+    expect(customer).toHaveValue('C001')
+    expect(await screen.findByTestId('tables-form-notice')).toBeInTheDocument()
+    expect(definitionCount).toBe(2)
   })
 })

@@ -22,6 +22,9 @@
 // - 道の引数が無ければ要求を送らずに「テーブルが見つかりません」（F1 の 1）。
 // - 403 の後は業務のメニューと作業ロールを読み直す（F8）。業務データの API は送り直さない（U3-NFR8.7）。
 // - 決まった間隔の読み直し・自動の再送はしない。世代で古い答えと画面を離れた後の答えを捨てる。
+// - 用途（purpose。作成・更新の画面だけが渡す）があるときは、開くたびに用途つきで読み、記憶を読まず書かない（Intent
+//   261029-reference-lookup-cleanup の U3 の D1・D2・X-2）。reload の staleId は最後に読めた定義の識別から取り、reload・retry は
+//   同じ用途で読む。
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import type { TableRef } from '../../app/navigation/tablePlaceholderPath'
 import { getDefinition } from './businessDataApi'
@@ -31,7 +34,7 @@ import {
   readTableEntry,
   saveDefinition,
 } from './businessDataStore'
-import type { DefinitionId, TableDefinition } from './businessDataTypes'
+import type { DefinitionId, DefinitionPurpose, TableDefinition } from './businessDataTypes'
 import {
   toReadFailure,
   useForbiddenFollowUp,
@@ -43,6 +46,7 @@ import {
 export type LoadDefinition = (
   ref: TableRef,
   definitionId?: DefinitionId,
+  purpose?: DefinitionPurpose,
 ) => Promise<TableDefinition>
 
 /** 定義の状態 */
@@ -71,10 +75,12 @@ interface Result {
  *
  * @param ref 道の引数のスキーマ名とテーブル名（無ければ null）
  * @param load 定義を読む関数（テストで差し替える）
+ * @param purpose 用途（作成・更新の画面だけが渡す。あれば記憶を読まず書かない）
  */
 export function useTableDefinition(
   ref: TableRef | null,
   load: LoadDefinition = getDefinition,
+  purpose?: DefinitionPurpose,
 ): TableDefinitionState {
   const { settled, roleId } = useWorkRoleKey()
   const followUp = useForbiddenFollowUp()
@@ -82,12 +88,14 @@ export function useTableDefinition(
   const [attempt, setAttempt] = useState(0)
   const generation = useRef(0)
   const staleId = useRef<DefinitionId | undefined>(undefined)
+  // 用途つきの読み込みで最後に読めた定義の識別（reload の staleId に使う）
+  const lastReadId = useRef<DefinitionId | undefined>(undefined)
 
   const schemaName = ref?.schemaName
   const tableName = ref?.tableName
-  const key = JSON.stringify([schemaName, tableName, settled, roleId, attempt])
+  const key = JSON.stringify([schemaName, tableName, settled, roleId, attempt, purpose ?? null])
   const cached =
-    settled && schemaName !== undefined && tableName !== undefined
+    purpose === undefined && settled && schemaName !== undefined && tableName !== undefined
       ? readTableEntry({ schemaName, tableName }, roleId).definition
       : null
 
@@ -97,12 +105,18 @@ export function useTableDefinition(
     const storeGeneration = currentStoreGeneration()
     const previousId = staleId.current
     staleId.current = undefined
-    load(target, previousId).then(
+    const pending =
+      purpose === undefined ? load(target, previousId) : load(target, previousId, purpose)
+    pending.then(
       (definition) => {
         if (generation.current !== mine) {
           return
         }
-        saveDefinition(target, roleId, definition, storeGeneration)
+        if (purpose === undefined) {
+          saveDefinition(target, roleId, definition, storeGeneration)
+        } else {
+          lastReadId.current = definition.definitionId
+        }
         setResult({ key: requestKey, definition, failure: null })
       },
       (error: unknown) => {
@@ -134,11 +148,16 @@ export function useTableDefinition(
     if (schemaName === undefined || tableName === undefined) {
       return
     }
+    if (purpose !== undefined) {
+      staleId.current = lastReadId.current
+      setAttempt((value) => value + 1)
+      return
+    }
     const current = readTableEntry({ schemaName, tableName }, roleId).definition
     staleId.current = current?.definitionId
     forgetDefinition({ schemaName, tableName })
     setAttempt((value) => value + 1)
-  }, [schemaName, tableName, roleId])
+  }, [schemaName, tableName, roleId, purpose])
 
   const retry = useCallback(() => setAttempt((value) => value + 1), [])
 

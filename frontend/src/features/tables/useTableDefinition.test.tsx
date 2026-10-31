@@ -28,7 +28,7 @@ import {
   resetDisplayTestState,
 } from '../../app/testing/renderWithProviders'
 import { clearBusinessDataStore, readTableEntry } from './businessDataStore'
-import type { DefinitionId, TableDefinition } from './businessDataTypes'
+import type { DefinitionId, DefinitionPurpose, TableDefinition } from './businessDataTypes'
 import { sampleDefinition } from './testing/sampleDefinition'
 import { SAMPLE_REF } from './testing/businessDataSamples'
 import { ONE_ROLE, tableFrame } from './testing/tableProviders'
@@ -46,12 +46,13 @@ function forbidden() {
 
 function render(
   ref: TableRef | null,
-  load: (ref: TableRef, id?: DefinitionId) => Promise<TableDefinition>,
+  load: (ref: TableRef, id?: DefinitionId, purpose?: DefinitionPurpose) => Promise<TableDefinition>,
   roles: (WorkRoleState | Deferred<WorkRoleState>)[] = [ONE_ROLE],
+  purpose?: DefinitionPurpose,
 ) {
   const latest: { state: TableDefinitionState | null } = { state: null }
   function Probe({ target }: { target: TableRef | null }) {
-    const state = useTableDefinition(target, load)
+    const state = useTableDefinition(target, load, purpose)
     useEffect(() => {
       latest.state = state
     })
@@ -141,5 +142,46 @@ describe('useTableDefinition', () => {
     expect(readTableEntry(SAMPLE_REF, ACCOUNTING.roleId).definition?.definitionId.workRoleId).toBe(
       2,
     )
+  })
+
+  // Intent 261029-reference-lookup-cleanup の U3（D1・D2・X-2）
+  it('loads with the purpose every time and neither reads nor writes the stored definition', async () => {
+    const viewLoad = vi.fn(() => Promise.resolve(sampleDefinition()))
+    const view = render(SAMPLE_REF, viewLoad)
+    await waitFor(() => expect(view.latest.state?.status).toBe('ready'))
+    view.view.unmount()
+    expect(readTableEntry(SAMPLE_REF, SALES.roleId).definition).not.toBeNull()
+
+    const purposed = sampleDefinition({ displayName: { ja: '作成用', en: 'For create' } })
+    const load = vi.fn(() => Promise.resolve(purposed))
+    const first = render(SAMPLE_REF, load, [ONE_ROLE], 'CREATE')
+    await waitFor(() => expect(first.latest.state?.definition?.displayName.ja).toBe('作成用'))
+    expect(load).toHaveBeenCalledWith(SAMPLE_REF, undefined, 'CREATE')
+    expect(readTableEntry(SAMPLE_REF, SALES.roleId).definition?.displayName.ja).toBe('商品')
+    first.view.unmount()
+
+    const second = render(SAMPLE_REF, load, [ONE_ROLE], 'CREATE')
+    await waitFor(() => expect(second.latest.state?.status).toBe('ready'))
+    expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  it('reloads and retries with the same purpose and the last read definition id', async () => {
+    const changedId = { dslHash: 'changed', workRoleId: 1 }
+    const load = vi
+      .fn<
+        (ref: TableRef, id?: DefinitionId, purpose?: DefinitionPurpose) => Promise<TableDefinition>
+      >()
+      .mockResolvedValueOnce(sampleDefinition())
+      .mockRejectedValueOnce({ kind: 'network' })
+      .mockResolvedValueOnce(sampleDefinition({ definitionId: changedId }))
+    const { latest } = render(SAMPLE_REF, load, [ONE_ROLE], 'UPDATE')
+    await waitFor(() => expect(latest.state?.status).toBe('ready'))
+    act(() => latest.state?.reload())
+    await waitFor(() => expect(latest.state?.failure?.kind).toBe('network'))
+    expect(load).toHaveBeenLastCalledWith(SAMPLE_REF, sampleDefinition().definitionId, 'UPDATE')
+    act(() => latest.state?.retry())
+    await waitFor(() => expect(latest.state?.definition?.definitionId).toEqual(changedId))
+    expect(load).toHaveBeenLastCalledWith(SAMPLE_REF, undefined, 'UPDATE')
+    expect(readTableEntry(SAMPLE_REF, SALES.roleId).definition).toBeNull()
   })
 })

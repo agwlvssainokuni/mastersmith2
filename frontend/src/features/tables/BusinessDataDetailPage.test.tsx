@@ -31,6 +31,7 @@ import {
   wireRow,
 } from './testing/businessDataSamples'
 import { renderTablesScreen, type Responder } from './testing/renderTablesScreen'
+import { referenceDefinitionOverrides } from './testing/sampleDefinition'
 
 const ROUTE = '/tables?schema=shop&table=item&item=0.1'
 const LONG = '長い値'.repeat(3334)
@@ -200,5 +201,41 @@ describe('BusinessDataDetailPage', () => {
     await openRow()
     await screen.findByRole('heading', { level: 1, name: '商品: A01' })
     expect(await axe(view.container)).toHaveNoViolations()
+  })
+})
+
+// Intent 261029-reference-lookup-cleanup の U3（AC3.4.3・AC3.4.5）: 参照の項目を含む定義でも詳細は今のまま
+describe('BusinessDataDetailPage with references', () => {
+  it('shows a definition with reference columns without the readonly look or label requests', async () => {
+    const { calls } = renderTablesScreen(ROUTE, (path, body) => {
+      if (path === BUSINESS_DATA_PATHS.definition) {
+        return { status: 200, body: wireDefinition(referenceDefinitionOverrides()) }
+      }
+      if (path === BUSINESS_DATA_PATHS.search) {
+        return { status: 200, body: wirePage([wireRow('A01')]) }
+      }
+      if (path === BUSINESS_DATA_PATHS.get) {
+        return {
+          status: 200,
+          body: wireDetail((body.key as { code: string }).code, {
+            values: {
+              code: 'A01',
+              name: '椅子',
+              price: '1200',
+              customer: 'C001',
+              product: 'P001',
+              region: 'R1',
+            },
+          }),
+        }
+      }
+      return { status: 404, body: {} }
+    })
+    await openRow()
+    const list = await screen.findByTestId('tables-detail')
+    expect(within(list).getByText('P001')).toBeInTheDocument()
+    expect(document.querySelector('[readonly], [data-testid^="tables-lookup"]')).toBeNull()
+    expect(calls.some((call) => call.path === BUSINESS_DATA_PATHS.referenceRows)).toBe(false)
+    expect(calls.every((call) => call.body.purpose === undefined)).toBe(true)
   })
 })

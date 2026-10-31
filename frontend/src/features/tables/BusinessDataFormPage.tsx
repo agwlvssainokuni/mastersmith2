@@ -32,6 +32,11 @@
 // - 作業ロールが変わったら（D2: A）、同じテーブルの一覧へ置き換えて移る。変更のある間は、作業ロールの切り替えの前に確かめる（D25a）。
 // - 定義が変わったら（F6）、今も入力できるカラムの入力だけを残し、入力できなくなったカラムの変更を捨てて知らせる。
 // - 入力には autocomplete="off"（password は new-password）を付ける。行の値を data-testid・id・document.title に入れない。
+// - 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、D1・D2・D5・D13〜D15・D18・D19・D31〜D35）:
+//   定義は用途（作成 CREATE・更新 UPDATE）つきで開くたびに読む。カラムごとの部品は ReferenceColumnField（chooseFieldKind）で
+//   選ぶ。入力不可の参照の項目は送る本文・変更の有無・画面の検証から外し（D15）、作成の必須の入力不可の項目は保存の前の
+//   検証で D13 の文の誤りにして送らない。項目の誤りの文は referenceErrorKey で選ぶ（D31・D32）。LOOKUP のラベルは
+//   useReferenceLabels と画面の状態に持つ（D18・D19）。定義の読み直しの後は、入力不可に変わった項目の入力を捨てる（D35）。
 import {
   Alert,
   Button,
@@ -45,7 +50,7 @@ import {
   TextInput,
   useToast,
 } from 'make-you-chic-ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
@@ -54,6 +59,7 @@ import { useWorkRole } from '../../app/work-role/WorkRoleProvider'
 import { NullValue } from '../../shared/null-value/NullValue'
 import { LeaveConfirmDialog } from '../../shared/unsaved-guard/LeaveConfirmDialog'
 import { useUnsavedGuard } from '../../shared/unsaved-guard/useUnsavedGuard'
+import { getDefinition } from './businessDataApi'
 import { putRowKey } from './businessDataStore'
 import type {
   BusinessFieldError,
@@ -78,9 +84,17 @@ import {
   fieldErrorMessageKey,
   needsDefinitionReload,
   readProblemMessageKey,
+  referenceErrorKey,
   writeProblemKind,
   writeProblemMessageKey,
 } from './problemMessage'
+import { ReferenceColumnField } from './references/ReferenceColumnField'
+import {
+  chooseFieldKind,
+  isBlockedRequired,
+  lockedReferenceColumns,
+} from './references/referenceField'
+import { useReferenceLabels, type LabelItem } from './references/useReferenceLabels'
 import { rowLabelParts, rowLabelText } from './rowLabel'
 import { useForbiddenFollowUp, useTableRefFromSearch, useWorkRoleKey } from './tableHookSupport'
 import { localizedName, useValueTexts } from './tablesText'
@@ -159,7 +173,11 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   const { registerSwitchGuard } = useWorkRole()
   const followUp = useForbiddenFollowUp()
   const token = mode === 'update' ? readRowToken(location.state) : undefined
-  const definitionState = useTableDefinition(ref)
+  const definitionState = useTableDefinition(
+    ref,
+    getDefinition,
+    mode === 'create' ? 'CREATE' : 'UPDATE',
+  )
   const { definition, reload: reloadDefinition } = definitionState
   const [definitionChanged, setDefinitionChanged] = useState(false)
   const onDefinitionStale = useCallback(() => {
@@ -177,6 +195,8 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   const [summaryFocus, setSummaryFocus] = useState(0)
   const [switchPrompt, setSwitchPrompt] = useState<((allowed: boolean) => void) | null>(null)
   const [startRoleId, setStartRoleId] = useState<number | null | undefined>(undefined)
+  /** LOOKUP で選んだ行のラベル（カラムごと。クリアは null。D19） */
+  const [picked, setPicked] = useState<Readonly<Record<string, string | null>>>({})
   const headingRef = useRef<HTMLHeadingElement | null>(null)
   const summaryRef = useRef<HTMLDivElement | null>(null)
   const fieldsRef = useRef<HTMLDivElement | null>(null)
@@ -209,9 +229,11 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     } else if (form.definitionKey !== key) {
       const initial = initialInputs(definition.detailColumns, mode, row?.values ?? {}, truncated)
       const current: Record<string, string> = { ...initial }
+      // 入力不可の参照の項目に変わったカラムの入力も捨てる（D35）
+      const nowLocked = lockedReferenceColumns(definition.detailColumns, mode, truncated)
       let discarded = false
       for (const [column, value] of Object.entries(form.current)) {
-        if (Object.hasOwn(initial, column)) {
+        if (Object.hasOwn(initial, column) && !nowLocked.has(column)) {
           current[column] = value
         } else if (value !== form.initial[column]) {
           discarded = true
@@ -225,10 +247,36 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   }
 
   const columns = definition?.detailColumns ?? NO_COLUMNS
+  // 入力不可の参照の項目（送る本文・変更の有無・画面の検証から外す。D15）
+  const locked = useMemo(
+    () => lockedReferenceColumns(columns, mode, truncated),
+    [columns, mode, truncated],
+  )
   const dirty =
     form !== null &&
     !forbidden &&
-    hasFormChanges(columns, mode, form.initial, form.current, truncated)
+    hasFormChanges(columns, mode, form.initial, form.current, truncated, locked)
+
+  // 更新の画面の LOOKUP の保存済みの値のラベル（D18）。定義の読み直しで世代を進める。
+  const labelItems = useMemo<LabelItem[]>(() => {
+    if (mode !== 'update' || definition === null || ref === null || form === null) {
+      return []
+    }
+    return columns
+      .filter(
+        (column) =>
+          chooseFieldKind(column, mode, truncated).kind === 'lookup' &&
+          Object.hasOwn(form.initial, column.column) &&
+          form.initial[column.column] !== '',
+      )
+      .map((column) => ({
+        column: column.column,
+        source: { schemaName: ref.schemaName, tableName: ref.tableName, column: column.column },
+        value: form.initial[column.column],
+      }))
+  }, [mode, definition, ref, form, columns, truncated])
+  const labelKey = labelItems.length === 0 || form === null ? '' : form.definitionKey
+  const referenceLabels = useReferenceLabels(labelItems, labelKey)
   const discard = useCallback(() => {
     setForm((previous) =>
       previous === null ? previous : { ...previous, current: previous.initial },
@@ -286,7 +334,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       if (form === null) {
         return
       }
-      const values = diffForm(columns, mode, form.initial, form.current, truncated)
+      const values = diffForm(columns, mode, form.initial, form.current, truncated, locked)
       let reason: string | undefined
       if (Object.hasOwn(values, column.column)) {
         reason = validateValue(column, values[column.column])
@@ -303,7 +351,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
         return next
       })
     },
-    [form, columns, mode, truncated],
+    [form, columns, mode, truncated, locked],
   )
 
   /** 保存されていない結果を画面に出す */
@@ -429,11 +477,19 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     if (form === null || definition === null) {
       return
     }
-    const values = diffForm(columns, mode, form.initial, form.current, truncated)
+    const values = diffForm(columns, mode, form.initial, form.current, truncated, locked)
     if (Object.keys(values).length === 0) {
       return
     }
-    const errors = validateForm(columns, mode, values, truncated)
+    const errors: Record<string, string> = {
+      ...validateForm(columns, mode, values, truncated, locked),
+    }
+    // 作成の必須の入力不可の参照の項目は、送らずに D13 の文の誤りにする（送信の前に示す）
+    for (const column of columns) {
+      if (isBlockedRequired(column, mode, truncated)) {
+        errors[column.column] = 'REQUIRED'
+      }
+    }
     const entries = Object.entries(errors)
     if (entries.length > 0) {
       setFieldErrors(
@@ -450,7 +506,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     }
     setNotice(null)
     send(values)
-  }, [form, definition, columns, mode, truncated, unknown, send])
+  }, [form, definition, columns, mode, truncated, locked, unknown, send])
 
   const sendAgain = useCallback(() => {
     setMaybeOpen(false)
@@ -458,8 +514,8 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       return
     }
     setNotice(null)
-    send(diffForm(columns, mode, form.initial, form.current, truncated))
-  }, [form, columns, mode, truncated, send])
+    send(diffForm(columns, mode, form.initial, form.current, truncated, locked))
+  }, [form, columns, mode, truncated, locked, send])
 
   const stay = useCallback(() => {
     if (guard.blocked) {
@@ -483,11 +539,16 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   }, [guard, switchPrompt, markClean])
 
   const errorText = useCallback(
-    (error: BusinessFieldError): string =>
-      error.reason === 'PATTERN_MISMATCH' && error.message !== undefined
-        ? localizedName(error.message, language, t(fieldErrorMessageKey(error.reason)))
-        : t(fieldErrorMessageKey(error.reason)),
-    [language, t],
+    (error: BusinessFieldError, column?: ColumnDefinition): string => {
+      const key =
+        column === undefined
+          ? fieldErrorMessageKey(error.reason)
+          : referenceErrorKey(column, error.reason, mode, truncated)
+      return error.reason === 'PATTERN_MISMATCH' && error.message !== undefined
+        ? localizedName(error.message, language, t(key))
+        : t(key)
+    },
+    [language, t, mode, truncated],
   )
 
   let body: React.JSX.Element
@@ -541,7 +602,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     const tableName = localizedName(definition.displayName, language, definition.table)
     const label =
       row === null ? '' : rowLabelText(rowLabelParts(definition, row.values, texts), texts)
-    const changed = hasFormChanges(columns, mode, form.initial, form.current, truncated)
+    const changed = hasFormChanges(columns, mode, form.initial, form.current, truncated, locked)
     const errorEntries = Object.entries(fieldErrors)
     body = (
       <>
@@ -593,7 +654,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
                           ?.focus()
                       }
                     >
-                      {`${name}: ${errorText(error)}`}
+                      {`${name}: ${errorText(error, target)}`}
                     </button>
                   </li>
                 )
@@ -628,10 +689,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
         <div ref={fieldsRef} className="tables-form-fields" data-testid="tables-form-fields">
           {columns.map((column, index) => {
             const name = localizedName(column.displayName, language, column.column)
-            if (!isEditable(column, mode, truncated)) {
-              if (mode === 'create') {
-                return null
-              }
+            const renderLocked = () => {
               const value: CellValue | undefined =
                 row !== null && Object.hasOwn(row.values, column.column)
                   ? row.values[column.column]
@@ -658,26 +716,54 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
             const error = Object.hasOwn(fieldErrors, column.column)
               ? fieldErrors[column.column]
               : undefined
+            const errorMessage = error === undefined ? undefined : errorText(error, column)
+            const value = Object.hasOwn(form.current, column.column)
+              ? form.current[column.column]
+              : ''
+            const pickedLabel = Object.hasOwn(picked, column.column)
             return (
-              <div
+              <ReferenceColumnField
                 key={column.column}
-                className="tables-form-field"
-                data-testid={`tables-form-field-c${index}`}
-              >
-                <FieldInput
-                  column={column}
-                  index={index}
-                  name={name}
-                  mode={mode}
-                  value={
-                    Object.hasOwn(form.current, column.column) ? form.current[column.column] : ''
+                column={column}
+                index={index}
+                name={name}
+                mode={mode}
+                truncated={truncated}
+                table={ref ?? { schemaName: '', tableName: '' }}
+                value={value}
+                initialValue={
+                  Object.hasOwn(form.initial, column.column) ? form.initial[column.column] : ''
+                }
+                error={errorMessage}
+                disabled={write.saving}
+                lookupLabel={
+                  pickedLabel
+                    ? picked[column.column]
+                    : (referenceLabels.labels[column.column] ?? null)
+                }
+                lookupLabelLoading={!pickedLabel && referenceLabels.loading.has(column.column)}
+                onChange={(next, label) => {
+                  setInput(column.column, next)
+                  if (label !== undefined) {
+                    setPicked((previous) => ({ ...previous, [column.column]: label }))
                   }
-                  error={error === undefined ? undefined : errorText(error)}
-                  disabled={write.saving}
-                  onChange={(value) => setInput(column.column, value)}
-                  onBlur={() => validateOnBlur(column)}
-                />
-              </div>
+                }}
+                onBlur={() => validateOnBlur(column)}
+                renderLocked={renderLocked}
+                renderPlain={() => (
+                  <FieldInput
+                    column={column}
+                    index={index}
+                    name={name}
+                    mode={mode}
+                    value={value}
+                    error={errorMessage}
+                    disabled={write.saving}
+                    onChange={(next) => setInput(column.column, next)}
+                    onBlur={() => validateOnBlur(column)}
+                  />
+                )}
+              />
             )
           })}
         </div>

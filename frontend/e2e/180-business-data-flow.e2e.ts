@@ -18,7 +18,8 @@
 // logical-components.md の L10、基盤の設計 cicd-pipeline.md 3.4）。この Intent の業務データの E2E の1本（team.md）。
 // - 対象DB は本物の見本の PostgreSQL の実行のスキーマ（./gradlew e2eTest が E2E_BIZ_SCHEMA を作り、表 e2e_item と架空の
 //   行 25 件を置き、一時の読み取りと書き込みのロールを WAR に渡す。frontend/e2e/support/businessDataSchema.sql）。
-// - 前提を自分で作り、前のテストの状態に頼らない。DSL（E2EB_ の版 2。実行のスキーマの表1つとメニュー1つ）を投入して適用し、
+// - 前提を自分で作り、前のテストの状態に頼らない。DSL（E2EB_ の版 2。実行のスキーマの表とメニュー。190・195 と共有する
+//   support/businessDataDsl.ts。Intent 261029-reference-lookup-cleanup の U3 で移した）を投入して適用し、
 //   ロール（E2EB_ROLE_<印>。表は FULL・作成・削除あり）と利用者を作って割り当てる。初期管理者の状態とロールは変えない。
 //   後始末はしない（適用した DSL も残る。180 より後のファイルは適用中の DSL に頼らない。計画 1.4）。
 // - 流れ: ログイン → メニュー → 一覧（25 件。ページ送りで 21〜25 件）→ 検索 → 作成 → 詳細 → 更新 → 削除の確かめ →
@@ -28,6 +29,7 @@
 // - 行の値は架空の値だけ。作った行の値は目印（E2E-BIZ-MARK）を付け、値のファイル（businessValue）に書く。test.step の題・
 //   注記・添付に値を入れない。資格情報はプロセスの環境変数で受け、webServer.env に置かない。
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { businessDataDsl, ITEM_TABLE } from './support/businessDataDsl'
 import { fixturePage, longDetail, tableDefinitionFor } from './support/businessDataFixtures'
 import { requestAdminAccessToken } from './support/invitationSeed'
 import {
@@ -49,7 +51,7 @@ import { newUserAdminRunTag } from './support/userAdminRun'
 test.use({ trace: e2eTraceMode() })
 
 /** 表の名前（businessDataSchema.sql と同じ） */
-const TABLE = 'e2e_item'
+const TABLE = ITEM_TABLE
 
 /** null を許す項目（見本と本物のどちらかが null でもよい） */
 const NULLABLE = new Set([
@@ -88,62 +90,6 @@ function withoutColumnMaps(value: unknown, broken: string[], at = ''): unknown {
       return [name, withoutColumnMaps(item, broken, at === '' ? name : `${at}.${name}`)]
     }),
   )
-}
-
-/** 版 2 の DSL（実行のスキーマの表1つ。カラムは businessDataSchema.sql と同じ） */
-function flowDsl(schema: string, tableLabel: string, menuLabel: string): string {
-  const quoted = (value: string) => JSON.stringify(value)
-  return `version: 2
-menus:
-  - label: { ja: ${quoted(menuLabel)}, en: ${quoted(menuLabel)} }
-    table: { schema: ${schema}, name: ${TABLE} }
-schemas:
-  ${schema}:
-    label: { ja: ${quoted(schema)}, en: ${quoted(schema)} }
-    tables:
-      ${TABLE}:
-        label: { ja: ${quoted(tableLabel)}, en: ${quoted(tableLabel)} }
-        view: false
-        primaryKey: [item_code]
-        foreignKeys: []
-        columns:
-          item_code:
-            label: { ja: 品目コード, en: Item code }
-            dbType: { name: varchar, length: 20, precision: null, scale: null, nullable: false }
-            formPart: text
-            search: { enabled: true, operator: EQUALS, collapsed: false }
-            list: { visible: true, order: 1, sortable: true }
-            detail: { visible: true }
-            validations:
-              - { type: required, origin: DB }
-              - { type: maxLength, value: 20, origin: DB }
-          item_name:
-            label: { ja: 品目名, en: Item name }
-            dbType: { name: varchar, length: 50, precision: null, scale: null, nullable: false }
-            formPart: text
-            search: { enabled: true, operator: CONTAINS, collapsed: false }
-            list: { visible: true, order: 2, sortable: true }
-            detail: { visible: true }
-            validations:
-              - { type: required, origin: DB }
-              - { type: maxLength, value: 50, origin: DB }
-          quantity:
-            label: { ja: 数量, en: Quantity }
-            dbType: { name: int4, length: null, precision: null, scale: null, nullable: true }
-            formPart: number
-            search: { enabled: false, collapsed: false }
-            list: { visible: true, order: 3, sortable: true }
-            detail: { visible: true }
-            validations: []
-          note:
-            label: { ja: 備考, en: Note }
-            dbType: { name: text, length: null, precision: null, scale: null, nullable: true }
-            formPart: textarea
-            search: { enabled: false, collapsed: false }
-            list: { visible: true, order: 4, sortable: false }
-            detail: { visible: true }
-            validations: []
-`
 }
 
 /** トークンつきで POST し、JSON を読む（状態コードを確かめる） */
@@ -196,7 +142,7 @@ test.describe('180 business data flow', () => {
     await test.step('1. apply the DSL of the run schema', async () => {
       const preview = await request.post('/api/admin/dsl/preview?source=PASTE', {
         headers: { ...auth, 'Content-Type': 'application/yaml' },
-        data: flowDsl(schema, tableLabel, menuLabel),
+        data: businessDataDsl(schema, { itemTable: tableLabel, itemMenu: menuLabel }, tag),
       })
       expect(preview.status(), 'DSL の投入の状態コード').toBe(201)
       const { previewId } = (await preview.json()) as { previewId: string }
