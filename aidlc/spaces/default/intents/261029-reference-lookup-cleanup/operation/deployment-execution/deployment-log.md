@@ -266,6 +266,7 @@ git rev-parse --short=8 main develop                                # 同じ
 - 前の記録: `aidlc/spaces/default/intents/261027-perf-targets-review/operation/deployment-execution/`
 - 実行したコマンドの出力（`docker inspect`・`docker logs`・`/actuator/health`・`gh run view`・複写の読み取り）と依頼者の報告
 - `deployment-execution-questions.md`（Q1〜Q5）
+- `construction/build-and-test/test-results.md`（配備する版の手元の verify・E2E・CI の結果。配備の前の k6 を流さない差（Q2: B）の根拠の試し走りの記録）
 - リポジトリ: `Dockerfile`、`compose.yaml`、`backend/src/main/resources/application.yaml`、`backend/src/main/resources/db/migration/`、`backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDbSettings.java`・`TargetDataSourceConfig.java`、`backend/src/main/java/cherry/mastersmith/user/service/InitialAdminInitializer.java`、`frontend/src/features/tables/messages.ts`・`businessDataApi.ts`
 
 ## Assumptions & Open Questions
