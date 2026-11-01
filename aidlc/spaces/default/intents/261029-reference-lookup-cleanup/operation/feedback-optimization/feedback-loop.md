@@ -133,6 +133,11 @@ Q1: A の案は、次の Intent を「N2〜N6 から要件定義で選ぶ機能�
 4. **次にアプリを作り直す配備の前に、依頼者が `.env` の中身を確かめる**（X2）。
 5. 次の Intent の範囲の決定（2.2 の束と順の案）。
 
+### 7.1 段の承認の後の実施の記録（2026-11-01）
+
+- `be6e61c5` の後の CI: `de55a0c1`・`2e2168fe`・`395cf207`・`04d06fea`・`afe8aa45`（検査の job 12:06:58Z〜12:43:17Z、36分19秒）は、どれも1回目の試行で成功。`96011fe0` の run は、後の push（`d134ae91`・`80e1ec8c`）で始まる前に取り消され（cancelled）、`80e1ec8c` の run で確かめる扱いとした。`88d053e8`・`cc111655`・`9a4a0b90`・`d134ae91` は単独の run を持たず、まとめて push された先頭の run で確かめたと読む。
+- **決まりとの差**: 依頼者の決定（B）で、`80e1ec8c` の CI（12:43:21Z に開始）が終わる前に、`develop` を `main` へ fast-forward で取り込んだ（`main` = `80e1ec8c`）。`project.md` の「main への取り込みの前に、前の取り込みの後のすべてのコミットの CI を試行ごとに確かめる」との差。`afe8aa45` の後のコミットは `aidlc/` の下の記録だけで、約 30 分早める代わりに、`80e1ec8c` の CI は取り込みの後に確かめる。落ちたときは依頼者に相談する。
+
 ## Sources
 
 - `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/feedback-optimization/feedback-optimization-questions.md`（Q1〜Q4: A と X2 の追加の確認）
