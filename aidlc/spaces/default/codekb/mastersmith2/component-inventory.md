@@ -3,6 +3,7 @@
 ## 読み方
 
 - 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし。新しい部品は足していない）。
+- 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、`build-and-verify`・`container-runtime`・`perf-and-monitoring`・`businessdata` の記述に今回の読み（K-81〜K-93）を足し、`frontend-e2e`・`make-you-chic-ui` の数と固定先を直した。今回の `analyzed.components` はこの4つ。ID は 48 個のまま。
 - 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
 - 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。
@@ -120,7 +121,8 @@
 - 依存: `common`・`dsl`・`role`（`role.service`・`role.domain` だけ）・`targetdb`。依存されるのは `audit`（`businessdata.domain` だけ）。境界テストは `BusinessDataBoundaryArchitectureTest`（`RowSqlExecutor` だけが JDBC の接続から文を作る、読み取り側はトランザクションと `JdbcTemplate` を使わない、など）。
 - 今回（2026-10-29）の読み（K-74・K-75）: `domain/ColumnWriteRulesFactory`（48・106〜113 行）・`domain/ColumnWriteRules`（80 行）・`domain/SearchOperatorPolicy`・`domain/BusinessDataFieldErrorReason`・`domain/RowWriteFailureReason`・`domain/WriteRejection` の `REFERENCE_NOT_FOUND`、`domain/TableAccessPolicy`（64 行で `ColumnWriteRulesFactory.create` を呼ぶ）、`web/ColumnDefinitionResponse`・`web/OptionResponse`、`service/TableAccessResolver`（94〜170 行）、`service/BusinessDataWriteService`（245〜292 行の外部キー違反の写し）、`domain/PageRequest`・`domain/SearchRequestValidator`、境界テストの許可の一覧。`ColumnWriteRulesFactory` が `lookup` を `text` に置き換えているのは前の Intent の意図的な暫定。
 - 今回の Intent への意味: 参照先の読み取りを `businessdata` の内側に置く限り、`BusinessDataBoundaryArchitectureTest` の許可の一覧（`targetdb.service/domain`・`role.service/domain`・`dsl.domain/service`・`common` など）は緩めずに済む見込み（未検証）。SpotBugs の `SQL_` 除外は `RowSqlExecutor` のメソッド単位（`search`・`detail`・`precheckUnique`・`insert`・`update` ほか）で個別に書かれており、新しいメソッドで SQL を組むと除外の追加（計画に明記して承認）か、既存の `search`・`detail` の再利用が要る（K-80）。
-- 状態: at-risk（K-62・K-64・K-65・K-74・K-75） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-01）の読み（K-91・K-92）: `service/BusinessDataWriteService.java`（225〜255・320〜385・795〜935 行。書き込みと参照の段の WARN）、`repository/RowSqlBuilder.java`（`page`・`orderBy`）、`repository/RowDialect.java`（`sortExpression`）。ファイル数は 149（`find`）。SpotBugs の `SQL_` の除外は `RowSqlExecutor` の `search`・`detail`・`precheckUnique`・`insert`・`update`・`delete`・`inspectViolation`（`spotbugs-exclude.xml` 47〜62 行）。
+- 状態: at-risk（K-62・K-64・K-65・K-74・K-75・K-91・K-92） ／ 読みの深さ: 深い（一部）
 
 ### backend-test-support
 
@@ -202,11 +204,11 @@
 
 ### frontend-e2e
 
-- 場所: `frontend/e2e/`（`*.e2e.ts` 20 本、010〜185、と `support/`） ／ 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。業務データは 180（流れ）と 185（アクセシビリティ）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `frontend/e2e/`（`*.e2e.ts` 22 本、010〜195、と `support/`。2026-11-01 に数えた） ／ 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。業務データは 180（流れ）と 185（アクセシビリティ）、参照ピッカーは 190（流れ）と 195（アクセシビリティ）。axe は `support/axe.ts` が `axe-core/axe.min.js` を読み、WCAG 2.0・2.1 の A・AA の規則で検査する。起動の引数に `-Dh2.compactThreads=1`（`playwright.config.ts` 137 行、K-85）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ### make-you-chic-ui
 
-- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `ecb07e9248af9f1203a0bd2d79673d35547a4416`）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `cab42074cf040e3c03127db8c92582cc329f934d`。2026-11-01 の `git submodule status`。前回の記録 `ecb07e9` から進んでいる。K-86）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ### java-mustache-processor
 
@@ -219,17 +221,20 @@
 - 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
 - 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。
 - 今回読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は現在 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
-- 状態: healthy（K-66 の見直しは Spring Boot 4.1.2 で済み、固定は appender と networknt の2つ。開いている Dependabot の PR は未確認） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-01）読んだもの（K-81・K-84・K-85・K-87・K-90）: `settings.gradle.kts`・`build.gradle.kts`（全文。`checkToolchain` の Node 24 の強制、verify の 10 段、perf の道具の Prettier と oxlint、E2E の見本の PG の準備と片付け）・`backend/build.gradle.kts`（全文）・`gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`（9.8.2）・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`.npmrc`・`vite.config.ts`・`vitest.setup.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（どちらも全文）。版と固定先の一覧は `technology-stack.md`。
+- 状態: at-risk（K-81: Node 26 への引き上げで `engines`・`checkToolchain`・CI・README を同時にそろえる必要。K-90） ／ 読みの深さ: 深い（一部）
 
 ### container-runtime
 
 - 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md` ／ 責務: WAR をコピーするだけのイメージ、`app` と profile で起動する監視・メールの受け手・見本の対象DB。読み取りのプールの環境変数は `.env.example` 66〜67 行（値は表示していない。`.env` は開いていない）。
 - 今回読んだもの（K-78）: `compose.yaml` の `image:` 行だけ（otel-lgtm は `grafana/otel-lgtm:0.38.0@sha256:75cdf892…`（83 行）、Mailpit は `axllent/mailpit:v1.32.0@sha256:0790692b…`（121 行）。ほか otel-collector 0.163.2・postgres 18.6・mysql 26.10.0・mariadb 13.0.2）と、`README.md` の Mailpit・E2E に関わる記述の検索。動いているコンテナは `docker ps` / `docker images` の一覧での事実で、ダイジェストの一致は未検証。
-- 状態: healthy ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-01）読んだもの（K-82・K-83・K-88・K-93）: `Dockerfile`（全文）、`compose.yaml` の `image:`・profile・`mem_limit` の行、`README.md` の見出しの一覧と「前提の道具」「取得と準備」、版の固定の行の grep。手元のイメージの一覧は見ていない（K-93）。
+- 状態: at-risk（K-88: README の最新化。K-93） ／ 読みの深さ: 深い（一部）
 
 ### perf-and-monitoring
 
 - 場所: `perf/`・`docker/`
 - 責務: k6 の負荷の試験と使い捨ての環境、手元の監視、見本の対象DB。biz の場面は `bizSearchFirst`・`bizSearchContains`・`bizSearchLast`・`bizSearchLastSorted`・`bizDetail`・`bizSearchWide`（`perf/k6/scenarios.js` 160〜165 行）。種は `perf/biz/make-biz-seed.sh`（`biz_item` は 100 カラム × 既定 100,000 行、`c_001` に索引なし）、DSL は `perf/make-biz-dsl.mjs`、環境は `docker/perf/compose.yaml`。K-67〜K-71・K-73 と K-68 の持ち主（本文は `code-quality-assessment.md`）。`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`、`perf/ui/` を含む。
 - 今回（2026-10-29）読んだもの（K-77）: `perf/README.md` の見出しの構成と「性能・資源の目標の見直し」の節（1322 行以降が今の線）、`perf/k6/scenarios.js` の閾値と `setup()`（`handleSummary` は未使用）、`perf/versions.env`、`docker/perf/compose.yaml` の `image:` 行。k6 の呼び出し（`--summary-export`）は README に約 15 か所と `perf/dsl-mixed-memory.sh` 312 行。前回までに読んだ `thresholdsFor` などは今回は再読していない（前回の記録による）。
-- 状態: at-risk（K-69〜K-71・K-73・K-77） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-01）読んだもの（K-83・K-89・K-90）: `perf/README.md` の見出しの一覧と「## 履歴」の節（1563〜1753 行）、`perf/versions.env`、`perf/redact-k6-evidence.mjs` の先頭（口と定数）、`docker/perf/compose.yaml`・`docker/e2e/compose.targetdb-port.yaml`・`docker/hikari-pool.sh` の版の行。`perf/k6/scenarios.js`（2,848 行）と `docker/` の残りは一覧と grep だけ。
+- 状態: at-risk（K-69〜K-71・K-73・K-77・K-89・K-90） ／ 読みの深さ: 深い（一部）

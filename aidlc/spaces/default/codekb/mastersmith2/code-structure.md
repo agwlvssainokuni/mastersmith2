@@ -1,20 +1,22 @@
 # コードの構成（mastersmith2）
 
-> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata`・`dsl`・`targetdb`・`role` の選択肢に関わる型の位置と、`frontend/src/features/tables` の構成（約 5,300 行、テストを含む）と `frontend/src/shared` の一覧を確かめて足した。ほかのパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
+> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、リポジトリの最上位の表（サブモジュールの固定先・E2E の本数・`perf/` と `docker/` の中身・版の定義のファイル）を今の値に直した。パッケージのファイル数は前回までの数のまま（今回は数え直していない。`businessdata` は 2026-11-01 に 149 ファイル）。
+>
+> 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata`・`dsl`・`targetdb`・`role` の選択肢に関わる型の位置と、`frontend/src/features/tables` の構成（約 5,300 行、テストを含む）と `frontend/src/shared` の一覧を確かめて足した。ほかのパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
 
 ## リポジトリの最上位
 
 | 場所 | 中身 |
 |---|---|
 | `backend/` | Java のアプリ（Gradle、実行可能 WAR）。Java のパッケージ配下に 16 パッケージ（下表）。`git ls-files backend/src/main` は 867、`backend/src/test` は 669（リソースを含む） |
-| `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）・`e2e/`（58 ファイル、`*.e2e.ts` は 20 本） |
-| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `ecb07e9`） |
+| `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）（前回までの数）・`e2e/`（`*.e2e.ts` は 22 本、010〜195、2026-11-01）・`scripts/`（`check-license-header.mjs`・`check-bundle-size.mjs`）。設定は `package.json`・`.npmrc`（`engine-strict`・`ignore-scripts`）・`vite.config.ts`・`vitest.config.ts`・`vitest.setup.ts`・`playwright.config.ts`・`eslint.config.js`・`tsconfig.json` |
+| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `cab4207`、2026-11-01） |
 | `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`、0.1.0） |
-| `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB）ほか |
-| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 約 2,600 行、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 約 1,360 行）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
+| `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB の初期化。種類ごとに表・読み取り・書き込みのアカウント）・`e2e/`（E2E の見本の PG の番号を開ける上乗せ）・`jmx/` と `hikari-pool.sh`（接続のプールの詰め直しの道具）・`check-container-limits.sh`（約 3,900 行） |
+| `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2,848 行（2026-11-01）、伏せ字の道具 `perf/redact-k6-evidence.mjs`（907 行、K-90）、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1,753 行、2026-11-01。K-89）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
 | `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
 | `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
-| 最上位のファイル | `settings.gradle.kts`・`build.gradle.kts`・`gradle/libs.versions.toml`・`Dockerfile`・`compose.yaml`・`.env.example`・`README.md` |
+| 最上位のファイル | `settings.gradle.kts`・`settings-gradle.lockfile`・`build.gradle.kts`・`gradle/libs.versions.toml`・`gradle/wrapper/`（Gradle 9.8.2）・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitmodules`・`.gitleaks.toml`・`.pre-commit-config.yaml`・`.editorconfig`・`.gitattributes`・`.dockerignore`・`README.md`（1,678 行） |
 | `aidlc/` | AI-DLC の記録（コードではない） |
 
 ## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
@@ -68,8 +70,9 @@
 - `app/`: 骨組み（`registry/`・`navigation/`・`layout/`・`i18n/`・`routing/`・`work-role/` ほか）。
 - `shared/`: 機能をまたぐ部品（`api-client/`・`format/`・`modal/`・`null-value/`・`page-size/`・`paging/`・`row-actions/`・`scroll-region/`・`slow-notice/`・`tree/`・`unsaved-guard/`・`validation/`）。
 - `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`。業務データの画面は `tables`（一覧 `BusinessDataListPage`・詳細・作成/更新の `BusinessDataFormPage`・表 `BusinessDataTable`・検索 `SearchPanel`・ページの計算 `listPaging.ts`・API の呼び出し `businessDataApi.ts`）。
-- テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜185、20 本）と `support/`。
+- テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜195、22 本。2026-11-01）と `support/`。
 
 ## Sources
 
+- 2026-11-01: `ls`・`wc`・`git submodule status`（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。
 - `find`・`ls`・`git ls-files` の数（アーキテクト、2026-10-25）と開発担当の Packages Found。

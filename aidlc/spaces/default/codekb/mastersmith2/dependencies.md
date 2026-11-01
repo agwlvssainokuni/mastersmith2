@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による。今回は `businessdata` の境界テストの許可の一覧と `dependabot.yml` の全文を読み、Dependabot の i18next 系2件（K-79）とコンテナの版の固定先（K-78）を足した。K-66・K-72 の記述は前回（2026-10-28）のまま、`dependabot.yml` で再確認した範囲だけ更新した。
+> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`.gitmodules`・`git submodule status`・`.github/dependabot.yml` の全文を読み、サブモジュールの固定先（K-86）・Dependabot の `ignore` の現状（K-87）・コンテナの版の固定先（K-83）を更新した。機能の間の依存の表は前々回（2026-10-25）の `import` の検索のまま（今回は再確認していない）。
+>
+> 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による。今回は `businessdata` の境界テストの許可の一覧と `dependabot.yml` の全文を読み、Dependabot の i18next 系2件（K-79）とコンテナの版の固定先（K-78）を足した。K-66・K-72 の記述は前回（2026-10-28）のまま、`dependabot.yml` で再確認した範囲だけ更新した。
 
 ## 機能の間の依存（バックエンド）
 
@@ -42,11 +44,30 @@
 
 | 依存 | 今の固定 | メモ |
 |---|---|---|
-| `vendor/make-you-chic-ui` | `ecb07e9248af9f1203a0bd2d79673d35547a4416`（前回の `git submodule status`。今回は読んでいない） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は 1 件（3112 行付近。どのパッケージかは未確認）。固定先を上げるときは `team.md` の手順で増減を確かめる |
-| `vendor/java-mustache-processor` | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（0.1.0） | 今回の Intent では触れない見込み |
+| `vendor/make-you-chic-ui` | `cab42074cf040e3c03127db8c92582cc329f934d`（2026-11-01 の `git submodule status`。前回の記録 `ecb07e9` から進んでいる） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は 1 件（3112 行付近。どのパッケージかは未確認）。固定先を上げるときは `team.md` の手順で増減を確かめる |
+| `vendor/java-mustache-processor` | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（0.1.0。2026-11-01 も同じ） | Gradle の composite build（`settings.gradle.kts` の `includeBuild`）。版は `libs.versions.toml` の `cherry-mustache = "0.1.0"` と固定先の両方。上げるときは両方と、推移依存が lockfile と OSV-Scanner の対象に載ることを確かめ直す（`team.md`） |
 | `axe-core`（npm、dev） | `^4.14.0` | 以前の `>= 4.14.0` の見送りは外れている（`dependabot.yml` 65 行のコメント） |
 
-**K-66・K-72 Dependabot の現状（`.github/dependabot.yml`、2026-10-28 に再読）**
+**K-86 サブモジュールの固定先（2026-11-01）（`make-you-chic-ui`・`java-mustache-processor`）**
+
+- 確かめた事実: `.gitmodules` の取得元は `https://github.com/agwlvssainokuni/make-you-chic-ui` と `https://github.com/agwlvssainokuni/java-mustache-processor`。`git submodule status` は make-you-chic-ui が `cab4207`（`remotes/origin/HEAD`）、java-mustache-processor が `8d44c36`（`0.1.0`）。
+- README の食い違い: `README.md` 37 行は「make-you-chic-ui の固定先は `ecb07e9`」と経緯の連なり（`edb1f94` → … → `ecb07e9`、10 段）を書くが、実際の固定先は `cab4207`。前の Intent の後に上げた記録が README に入っていない。
+- 未検証: `vendor/` の中は今回読んでいない。A2（make-you-chic-ui の lockfile の `braces` 3.0.3。前の Intent の時点で上流 `cab4207` も 3.0.3）と A3（依頼（5）: 1ページの件数の選択と横のスクロールの領域。自前の `ScrollRegion`・`PageSizeSelect` を使い続けている）は、上流のソースを読み取りの `git fetch`・`git show` で確かめてから固定先を上げる（`team.md`）。`hasInstallScript` の増減も同じ時に確かめる。frontend の lockfile にも `braces` 3.0.3 がある（`fsevents` だけが `hasInstallScript`）。
+
+**K-87 Dependabot の `ignore` の現状（2026-11-01 に全文を再読。K-66・K-72 の後継）**
+
+| エコシステム | `ignore` | 理由（コメント） | 外す時期（コメント） |
+|---|---|---|---|
+| gradle | `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0`（すべて） | 管理の OpenTelemetry 1.62.0 と食い違う | 管理の OpenTelemetry が 1.63 以上 |
+| gradle | `com.networknt:json-schema-validator`（すべて） | 3.0.7 以降は Jackson を 3.2 系に引き上げる | 管理の Jackson が 3.2 系以上 |
+| npm | `typescript` の大きな版 | `@typescript-eslint/*` の peer が `<6.1.0` | `@typescript-eslint/*` が TypeScript 7 を受け付けたとき |
+| docker | `eclipse-temurin` の大きな版 | JDK をビルド・CI とそろえる | JDK をそろえて上げるとき |
+| docker-compose | `otel/opentelemetry-collector` の `0.163.2-386` | linux/386 だけのイメージ | タグの付け方が変わったとき。collector を上げると新しい `-386` の提案が来うる |
+
+- gradle の項は `exclude-paths: vendor/**`。github-actions の項に `ignore` は無い。Jackson の `ignore` は無い（上書きも無い。`technology-stack.md` の K-85）。
+- `axe-core` は `ignore` に入れず、更新は版と lockfile だけでも E2E の全件と vitest-axe を流す例外の手順（`dependabot.yml` 60〜65 行のコメント）。
+
+**K-66・K-72 Dependabot の現状（`.github/dependabot.yml`、2026-10-28 に再読。2026-11-01 は上の K-87 を正とする）**
 
 - 確かめた事実:
   - エコシステムは gradle・npm（`/frontend`）・github-actions・docker・docker-compose の5つ（いずれも weekly、`open-pull-requests-limit: 10`）。`groups` は使っていない。
@@ -59,17 +80,20 @@
 
 **K-79 Dependabot の i18next 系2件（#81、#82）（`build-and-verify`・`frontend-app-layout-i18n`）**
 
+- 2026-11-01 の追記: `frontend/package.json` は i18next `^26.5.11`・react-i18next `^17.1.9`、lockfile も 26.5.11・17.1.9 で、2件は取り込み済み。
+
 - 確かめた事実（開発担当の調査）:
   - i18next は `package.json` が `^26.5.5`、lockfile が 26.5.10。#81 は 26.5.10 → 26.5.11。react-i18next は `package.json` が `^17.1.2`、lockfile が 17.1.8。#82 は 17.1.8 → 17.1.9。どちらも patch。
   - 画面での使い方は狭い: `useTranslation` を 21 ファイルが使い、`I18nextProvider` は `app/i18n/I18nProvider.tsx` の1か所、`i18next` 本体の import は `app/i18n/i18n.ts` の1か所だけ。
   - `team.md` の決まりで、PR は GitHub の画面でマージせず、手元で `package.json`・lockfile を更新して `./gradlew verify` を通してから `develop` に統合し、PR は閉じる。
 - 未検証: 2件のリリースノートは読んでいない。影響は小さい見込みだが、画面の文言の切り替え全体に効くため `verify`（画面のテスト）で確かめる。
 
-**K-78 コンテナの版の固定先（`container-runtime`・`perf-and-monitoring`）**
+**K-78 コンテナの版の固定先（`container-runtime`・`perf-and-monitoring`）** — 2026-11-01 の一覧は `technology-stack.md` の「版の固定先」（K-83）を正とする。
 
 - 事実は `technology-stack.md` の「手元の運用」に書いた（固定先の一覧と、動いているコンテナのタグが `compose.yaml` と一致して見えること）。ダイジェストの一致は未検証。固定先が複数のファイルに分散するため、上げるときは `dependabot.yml` のコメントの一覧どおりにそろえる（`team.md`）。
 - 未確認: 今開いている Dependabot の PR の一覧と重大度（`gh` を使っていないため。後の段で確かめる）。
 
 ## Sources
 
+- 2026-11-01: `.gitmodules`・`git submodule status`・`settings.gradle.kts`・`.github/dependabot.yml`（全文）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - `import` の検索（前回: `businessdata`・`audit`）、境界テストの `@DisplayName`、`git submodule status`（前回）、`.github/dependabot.yml`（今回）。

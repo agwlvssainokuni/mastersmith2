@@ -1,10 +1,12 @@
 # コードの品質（mastersmith2）
 
-> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回の範囲の事実（`packagesJudgedByTotal`、境界テストの許可の一覧、SpotBugs の除外の形、perf の JWT）を読み直し、所見 K-77・K-80 を足した（本文はこの文書）。K-67〜K-73 は前回（`261027-perf-targets-review`）の記述のまま（今回は `perf/README.md` と `scenarios.js` の一部だけ読み、行数と構成を更新した）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
+> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`・`README.md`・`perf/README.md` の構成・perf の伏せ字の道具・`businessdata` の一部を読み、所見 K-88〜K-91 を足した（本文はこの文書）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
+>
+> 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回の範囲の事実（`packagesJudgedByTotal`、境界テストの許可の一覧、SpotBugs の除外の形、perf の JWT）を読み直し、所見 K-77・K-80 を足した（本文はこの文書）。K-67〜K-73 は前回（`261027-perf-targets-review`）の記述のまま（今回は `perf/README.md` と `scenarios.js` の一部だけ読み、行数と構成を更新した）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
 
 ## テスト
 
-- 置き場: `backend/src/test/java/cherry/mastersmith/`（機能ごと、単体 `XxxTest`・結合 `XxxIT`、機能ごとの `testsupport/`）、`frontend/src/**/*.test.ts(x)`（対象と同じ場所）、`frontend/e2e/`（`*.e2e.ts` 20 本、`./gradlew e2eTest`、`verify` と CI の外）。
+- 置き場: `backend/src/test/java/cherry/mastersmith/`（機能ごと、単体 `XxxTest`・結合 `XxxIT`、機能ごとの `testsupport/`）、`frontend/src/**/*.test.ts(x)`（対象と同じ場所）、`frontend/e2e/`（`*.e2e.ts` 22 本（010〜195、2026-11-01 に数えた）、`./gradlew e2eTest`、`verify` と CI の外）。
 - 道具: JUnit 5・Spring Boot Test・Testcontainers（MySQL・MariaDB・PostgreSQL）・jqwik・ArchUnit／Vitest・Testing Library・user-event・vitest-axe・fast-check／Playwright と axe-core。
 - 境界の構造の検査（ArchUnit）は 19 ファイル（`find` で数えた）: `ArchitectureTest`・`ApiAccessArchitectureTest` と、`access`・`appearance`・`audit`・`auth`・`businessdata`・`dsl`・`dslmanage`（2つ）・`group`・`invitation`・`mail`・`navigation`・`role`・`targetdb`（`TargetDbBoundaryArchitectureTest` と `ExtensionOrderArchitectureTest`）・`user`・`useradmin`。`businessdata` の境界テストの `@DisplayName` から読める規則: 読み取り側はトランザクションと `JdbcTemplate` を使わない、`RowSqlExecutor` だけが JDBC の接続から文を作る、`businessdata.repository` は `targetdb.service` に依存しない、`businessdata` に依存してよいのは `audit` の `domain` だけ。
 - `businessdata` のテストは `domain`・`repository`（`RowSqlExecutorTest`・`RowDialectTest`・`RowSqlFailureClassifierTest` など）・`service`・`testsupport`（`CountingDataSource` など）に分かれる（ファイル名の一覧のみ。中身は読んでいない）。
@@ -23,7 +25,7 @@
 
 ## CI と依存
 
-- `.github/workflows/ci.yml`（ジョブ `./gradlew verify` の `timeout-minutes: 60`。actions はコミットの SHA で固定。構成だけ読んだ）。
+- `.github/workflows/ci.yml`（2026-11-01 に全文を読んだ）: `develop` への push と `v*` のタグと手動で動く。ジョブ `verify`（`ubuntu-latest`・`timeout-minutes: 60`）はサブモジュールごと全履歴を取得し、JDK 25・Node 24・Gradle を用意し、Gitleaks 8.30.1 と OSV-Scanner 2.6.0 を版と SHA-256 で確かめて入れ、`./gradlew verify` を流し、WAR を 30 日保存する。ジョブ `release`（タグのとき）は WAR を GitHub のリリースに添付する。actions はコミットの SHA で固定（版は `technology-stack.md`）。
 - `.github/dependabot.yml`: 見送り（`ignore`）は gradle の2件（appender・networknt）・npm の `typescript` の大きな版・docker の `eclipse-temurin` の大きな版（K-66・K-72、本文は `dependencies.md`）。Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java`・`perf/README.md` の grafana/k6 など）は手でそろえる運用で、`dependabot.yml` のコメントに列挙している。
 
 ## 静的解析の除外と境界テストの形（K-80、2026-10-29）
@@ -34,13 +36,50 @@
 
 ## ドキュメント
 
-- Javadoc・コメントは日本語で、要件・設計の ID（BR・NFR・契約の番号）と Intent の名前を細かく引く。`frontend/src/features/README.md` に機能の作り方の決まり、`perf/README.md` に負荷の試験の手順（約 1,360 行）。
+- Javadoc・コメントは日本語で、要件・設計の ID（BR・NFR・契約の番号）と Intent の名前を細かく引く。`frontend/src/features/README.md` に機能の作り方の決まり、`perf/README.md` に負荷の試験の手順（1,753 行、2026-11-01）。
+
+**K-88 README.md に経緯が溜まっている（2026-11-01）（`build-and-verify`・`container-runtime`）**
+
+- 確かめた事実（`grep` と見出しの一覧による）:
+  - 1,678 行・`##` と `###` の見出しが約 90。そのうち 25 個が見出しの名前に Intent・単位（U1〜U8）・Bolt を含む（例: 「メール（U1）」「監査ログ（U4）」「業務データの読み取りの API（Intent 261016-business-data-views の U1）」「ロールと権限の API（Intent 261004-role-menu の U4、Bolt B4・B5・B6）」）。
+  - 本文で Intent・単位・Bolt・履歴を引く行は 164。
+  - 節が機能の別でなく作った順に並ぶ（609 行の「環境変数」の後に、メール・対象DB・DSL・管理の画面・利用者の管理・グループ・ロール・メニュー・骨組み・外部エクスポート・監視・警報・プロキシ・Flyway・アクセス制御・例外のログ・監査・プリファレンス・招待・画面の各単位が続く）。
+  - 骨格の時点の説明が残る: 5 行「現在の内容はアプリの骨格（U1）です」、1608〜1634 行「後の単位（U2・U3・U4）が使う差し込み口」。
+  - 「契約との差」の節が3つ（1457・1487・1604 行）。契約の文書（`aidlc/` の下）との差の記録で、使い方の説明ではない。
+  - 37 行に make-you-chic-ui の固定先の経緯の連なり（10 段）。値も古い（`ecb07e9`、実際は `cab4207`。K-86）。
+  - 版の固定の値（Temurin の jre 7 か所・jdk・Mailpit）を手順の中に直接書く（`technology-stack.md` の「版の固定先」）。
+- 見立て: 使い方（前提・準備・検査・起動・運用・設定・API の一覧）と経緯（Intent ごとの決定・契約との差）を分け、経緯は `aidlc/` の記録へ移すか削るのが今回の「最新化」の中心。版の値の行を減らすと、上げるときにそろえる場所も減る。どこまで削るかは要件定義で決める。
+
+**K-89 perf/README.md に経緯が溜まっている（2026-11-01）（`perf-and-monitoring`）**
+
+- 確かめた事実:
+  - 1,753 行。1〜60 行が今の基準の一覧、60〜1470 行が場面ごとの手順、1470〜1562 行が線の測り方・記録の前の伏せ字、1563〜1753 行（約 190 行）が「## 履歴」（見出しの対応表と H1〜H65 前後の番号付きの経緯。前の Intent で本文から移した）。
+  - 本文で Intent・単位・Bolt・履歴を引く行は 139（「履歴」の節を含む）。
+  - 手順の番号が継ぎ足しの形（`0・1`・`1'`・`1''`・`2''`・`3''''`・`3G'`・`3R'`・`2B'` など）で、場面の節ごとに「上の手順の 0・1 と同じ」と前の節を引く。
+  - k6・JRE のイメージは `perf/versions.env` に一本化済み（`"$K6_IMAGE"` で読む）。JDK（130 行）と lgtm（486 行）は本文に直接書く。
+- 見立て: 「履歴」の節は手順を流すのに要らず、記録の場所（`aidlc/`）への参照に置き換えられる。手順の番号の継ぎ足しは、共通の準備を1節にまとめると減る。どこまで直すかは要件定義で決める。
+
+**K-90 perf の伏せ字の道具の検査の抜け（T1・T2、2026-11-01）（`perf-and-monitoring`・`build-and-verify`）**
+
+- 確かめた事実:
+  - 道具は `perf/redact-k6-evidence.mjs`（907 行、Node の組み込みだけに依る。口は JSON・テキスト・`--scan` の3つ、終わりのコード 0〜5）。
+  - テストは `frontend/src/perfEvidenceRedactor.test.ts`・`perfEvidenceRedactorCli.test.ts`・`perfEvidenceScan.test.ts` の3つ（名前の grep だけ。中身は読んでいない）で、Vitest（`verify` の 5・7 の段）に流れる。
+  - `frontend/vitest.config.ts` の `coverage.include` は `src/**/*.{ts,tsx}` だけ（61 行）のため、道具の `.mjs` はカバレッジの計測と `thresholds`（80・70）の判定に入らない（T1。前の Intent の Build and Test の実測は行 94.2%・分岐 90.61%）。
+  - `build.gradle.kts` は道具に Prettier（`perfToolFormatCheck`）と oxlint（`perfToolLint`）だけを当て、ESLint と `tsc` は当てない（T2）。ライセンスヘッダーは `check-license-header.mjs` が `perf/` の `.mjs`・`.js` も見る。`verify` の 8 の段の `perfEvidenceScan` は `aidlc/` の記録を毎回調べる。
+- 見立て（未検証）: `coverage.include` に道具を足すと、全体の合計の `thresholds` に道具の値が混ざる。ESLint の設定（`frontend/eslint.config.js`）と `tsconfig.json` は `frontend/` の中を前提にしていると見られ、`perf/` に当てる形は設計で決める（どちらのファイルも今回は読んでいない）。
+
+**K-91 書き込みの参照の段の `stage` の無い WARN（T3、2026-11-01）（`businessdata`）**
+
+- 確かめた事実: `BusinessDataWriteService.warnReference`（908〜931 行）は `stage`・`sqlState`・`vendorCode`・`exceptionClass` が null のときそのキーを出さない。呼び出しは4か所（325・343・365・377 行）で、借りられない2つは `Stage.BORROW` を渡す。365 行（`StepAttempt.Unexpected`）は `unexpected.stage()` を渡し、これが null の経路では「保存の前に対象DB の参照先を読めませんでした」の WARN が `stage` 無しで出る。値（行・名前・メッセージ）は出ない。
+- 未検証: `StepAttempt.Unexpected` の `stage` が null になる経路（`atStage` で包まれていない想定外の失敗か）は読んでいない。直す形（`stage` を必ず持たせる・`UNKNOWN` を出す）は設計で決める。
 
 ## 技術的負債
 
 - 一覧の `COUNT(*)` が上限なしで、MySQL・MariaDB の部分一致・深い OFFSET が重い（K-62、本文は `architecture.md`）。読み取りのプールは小さい（K-63）。件数の型が「多数」を持てない（K-64、本文は `api-documentation.md`）。
 - 固定している部品の見直しは Spring Boot 4.1.2 で済み、Tomcat・Jackson の上書きは外れた。appender と networknt の固定が残る（K-66）。
-- 負荷の試験の台本・手順書が大きい（K-73）。
+- 負荷の試験の台本・手順書が大きい（K-73。2026-11-01 の構成は K-89）。README.md の経緯（K-88）。
+- 版の固定先が分散している（K-81〜K-84、`technology-stack.md`）。Node 26 への引き上げは `engines`・`checkToolchain`・CI・README を同時にそろえる必要がある。
+- perf の伏せ字の道具の検査の抜け（K-90）と、`stage` の無い WARN（K-91）。
 - 全体の合計で判定する7パッケージが残る（上記）。
 - `ColumnWriteRulesFactory` が `formPart: lookup` を `text` に落とし、REFERENCE・LOOKUP の選択肢を検証から外している暫定（K-74）。
 - k6 の summary json に JWT が出るのに、自動の伏せ字の仕組みが無い（K-77）。
@@ -103,5 +142,6 @@
 
 ## Sources
 
+- 2026-11-01: 開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`（Technical Debt Signals の TD-1〜TD-14）。`README.md`・`perf/README.md` の見出しの一覧と grep の件数、`build.gradle.kts`・`.github/workflows/ci.yml`・`BusinessDataWriteService.java` の該当行。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`、2026-10-28 と前回）の Test Coverage・Code Quality Indicators・Technical Debt Signals・K-67〜K-73。
 - アーキテクトの確かめ直し（今回: `backend/build.gradle.kts` の jacoco の規則、`perf/k6/scenarios.js` の `thresholdsFor`、`perf/README.md` の 1150〜1164 行、`docker/perf/compose.yaml`。前回: `frontend/vitest.config.ts`・`perf/README.md` の 1003〜1021 行・ArchUnit のファイル数）。

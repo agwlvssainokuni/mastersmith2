@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata/web` の定義の応答（`ColumnDefinitionResponse`・`OptionResponse`）と道の定数を読み、選択肢の REFERENCE・LOOKUP の情報を載せる欄が無いこと（K-74）を記録した。K-64（件数 `total`）は前回（`261027-perf-targets-review`）の記述のまま。ほかの口の一覧は前回の記録で、今回は数え直していない。
+> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan では API を読み直していない（今回の Intent は依存の版・文書・小さな直しで、API を変えない見込み）。以下は前回（2026-10-29）以前の記録のまま。
+>
+> 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata/web` の定義の応答（`ColumnDefinitionResponse`・`OptionResponse`）と道の定数を読み、選択肢の REFERENCE・LOOKUP の情報を載せる欄が無いこと（K-74）を記録した。K-64（件数 `total`）は前回（`261027-perf-targets-review`）の記述のまま。ほかの口の一覧は前回の記録で、今回は数え直していない。
 
 ## 外部の API（REST、Spring MVC、JSON）
 
@@ -64,5 +66,6 @@
 
 ## Sources
 
+- 2026-11-01: 読み直しなし（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md` の APIs Discovered）。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の APIs Discovered）と `OptionResponse.java`（アーキテクト、2026-10-29）。
 - `businessdata/web/BusinessDataReadController.java`・`BusinessDataWriteController.java`・`BusinessDataPaths.java`・`RowPageResponse.java`、`BusinessDataListPage.tsx`（アーキテクト、2026-10-25）と開発担当の APIs Discovered・K-64。

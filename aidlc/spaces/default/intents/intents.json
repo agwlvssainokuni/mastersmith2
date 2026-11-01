@@ -124,5 +124,13 @@
     "dirName": "261029-reference-lookup-cleanup",
     "scope": "classic",
     "status": "complete"
+  },
+  {
+    "uuid": "01a19748-4649-7d4a-94a0-2c44c14ff40e",
+    "slug": "maintenance-update",
+    "dirName": "261101-maintenance-update",
+    "scope": "bugfix",
+    "status": "in-flight",
+    "request": "b865c771"
   }
 ]

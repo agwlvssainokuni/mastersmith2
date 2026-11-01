@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回深く読んだのは `businessdata`（選択肢・書き込みの規則・検索の演算子・定義の応答）・`dsl`（選択肢の型）・`targetdb`（署名レベル）・`role`（`PermissionSnapshot` の口）。Interaction Diagrams に 4（業務データの選択肢 REFERENCE・LOOKUP の現状）を足し、所見 K-74・K-75 を書いた。K-62・K-63 は前回（`261027-perf-targets-review`）の記述のまま（今回は再確認していない）。ほかは前回以前の記録による。
+> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。アーキテクチャそのものは今回読み直していない。`businessdata` の一覧の並べ替えの文（`RowSqlBuilder.page`・`orderBy`）と参照先の並び（`RowDialect.sortExpression`）を読み、所見 K-92（P1）を Improvement Opportunities に足した。図と散文は前回（2026-10-29）以前の記録による。
+>
+> 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回深く読んだのは `businessdata`（選択肢・書き込みの規則・検索の演算子・定義の応答）・`dsl`（選択肢の型）・`targetdb`（署名レベル）・`role`（`PermissionSnapshot` の口）。Interaction Diagrams に 4（業務データの選択肢 REFERENCE・LOOKUP の現状）を足し、所見 K-74・K-75 を書いた。K-62・K-63 は前回（`261027-perf-targets-review`）の記述のまま（今回は再確認していない）。ほかは前回以前の記録による。
 
 ## System Overview
 
@@ -190,7 +192,9 @@ sequenceDiagram
 - 一覧の `COUNT(*)` が表の全部を読みうる（K-62）。読み取りのプールの既定は 10 に上がっている（K-63。それでも MySQL・MariaDB の部分一致では借りる待ちが出る見込み）。どちらも MySQL・MariaDB の部分一致で効く見込み（前回の測定の記録による）。
 - REFERENCE・LOOKUP の本実装（K-74・K-75）。参照先を読む経路を `businessdata` の内側に置くか、権限と上限の扱いをどう決めるかが設計の中心。
 - 件数が確定した数だけを持つ型（K-64）。「多数」と出す案には API・画面・テスト・perf の判定への波及がある。
+- **K-92 一覧の並べ替えと MySQL の 1038（P1、2026-11-01）**: 参照先の読み取りの並び（`RowSqlBuilder.referenceOrderBy` → `RowDialect.sortExpression`、145〜151 行）は、文字の型を先頭 `ColumnValueCodec.LIST_TEXT_LIMIT` 字の `SUBSTRING` にして並べ、MySQL の並べ替えの領域の不足（1038）を避ける。業務データの一覧のページの文（`RowSqlBuilder.page`、150〜173 行）は、主キーのあるテーブルでは主キーだけを内側の問い合わせで並べて `LIMIT ? OFFSET ?` で取り、外側でつなぐ。その並びの `orderBy`（337〜347 行）はカラムをそのまま `RowDialect.orderTerm` に渡す（切らない）。前の Intent の Build and Test（2,000 行・200 行が 10,000 字・1ページ 20 件）では 1038 は再現しなかった。見立て（未検証）: 並べ替えの列が長い文字で、深い `OFFSET` か大きいページのとき、内側の並べ替えが領域を超えうる。NFR 設計の捨ての試しで確かめ、直すか（一覧の並びも `sortExpression` に寄せるか）を要件で決める。
 
 ## Sources
 
+- 2026-11-01: `RowSqlBuilder.java`（140〜180・330〜348 行）・`RowDialect.java`（110〜160 行）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の K-74・K-75。前回: K-62・K-63 の事実と見立て）と、アーキテクトの確かめ直し（`reverse-engineering-timestamp.md`）。

@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-10-29、Intent `261029-reference-lookup-cleanup`（Standard・brownfield）の Reverse Engineering（Focused scan、記録のコミット `15a25aa`）で更新した。既存の散文と前回の所見の一覧は残し、今回の範囲（業務データの選択肢 REFERENCE・LOOKUP、`dsl` の選択肢の型、`targetdb`・`role` の口、`frontend/src/features/tables`、perf の JWT、コンテナの版、i18next の2件）の所見 K-74〜K-80 を足した。深く読んだのは今回の範囲だけで、それ以外は前回（`261027-perf-targets-review`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
+> 2026-11-01、Intent `261101-maintenance-update`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `6079f13`）で更新した。今回は版の定義と固定先・検査の道具・README と perf/README の構成・`businessdata` の一部（P1・T3）だけを読み、所見 K-81〜K-93 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
+>
+> 前回の記録: 2026-10-29、Intent `261029-reference-lookup-cleanup`（Standard・brownfield）の Reverse Engineering（Focused scan、記録のコミット `15a25aa`）で更新した。既存の散文と前回の所見の一覧は残し、今回の範囲（業務データの選択肢 REFERENCE・LOOKUP、`dsl` の選択肢の型、`targetdb`・`role` の口、`frontend/src/features/tables`、perf の JWT、コンテナの版、i18next の2件）の所見 K-74〜K-80 を足した。深く読んだのは今回の範囲だけで、それ以外は前回（`261027-perf-targets-review`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
 
 ## 何をするアプリか
 
@@ -21,11 +23,31 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-## 所見の一覧（K-62〜K-80）
+## 所見の一覧（K-62〜K-93）
 
-番号は K-61 から続く（K-62〜K-73 は前回まで、K-74〜K-80 が今回）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-80 は前回まで、K-81〜K-93 が今回 2026-11-01）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261029-reference-lookup-cleanup）の主題
+### 今回（Intent 261101-maintenance-update）の主題
+
+メンテナンスの Intent。依存の最新化（Java 25 系の最新、Node 24 → 26、サブモジュール2つ、GitHub Actions、コンテナのイメージ、検査の道具、Gradle の Wrapper、Spring Boot と連動する固定の見直し、`dependabot.yml` の `ignore` の見直し）、古いコンテナのイメージの片付け、前の Intent の小さな直し（P1・T1〜T3・A2・A3）、README.md と perf/README.md の最新化。今回はコードの振る舞いではなく、版がどこに何か所書かれているかと文書の構成を主に読んだ。「未検証」の項目は要件定義・設計の段で確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-81 | Node の版が6つのファイル・10 か所に散らばり、`engines` の `<25` と `build.gradle.kts` 95 行の `startsWith("v24.")` が Node 26 を拒む。`test` の `NODE_OPTIONS=--no-experimental-webstorage` が Node 26 で使えるかは未検証 | `build-and-verify` | `technology-stack.md`（版の固定先） |
+| K-82 | Java 25 と Temurin の JRE・JDK のイメージの固定先（toolchain・CI・Dockerfile・`perf/versions.env`・`docker/hikari-pool.sh`・README・perf/README）。JDK のイメージは Dependabot の知らせが来ない | `build-and-verify`・`container-runtime` | `technology-stack.md`（版の固定先） |
+| K-83 | コンテナのイメージ（対象DB 3種・Mailpit・lgtm・collector・k6）の固定先が `compose.yaml`・`docker/perf/compose.yaml`・`TargetDbImages.java`・README・perf/README・`perf/versions.env` に分かれる（K-78 の後継）。今の値どうしは一致 | `container-runtime`・`perf-and-monitoring` | `technology-stack.md`（版の固定先）・`dependencies.md` |
+| K-84 | 検査の道具の版: Gitleaks は `ci.yml`・`.pre-commit-config.yaml`・README、OSV-Scanner は `ci.yml`・README。Gradle Wrapper 9.8.2、Actions は SHA で固定、Playwright のブラウザは `@playwright/test` と同じ版 | `build-and-verify` | `technology-stack.md`（版の固定先） |
+| K-85 | Spring Boot と連動する固定: **Jackson の BOM の上書きは既に無い**（lockfile の 3.1.7 は管理の版）。appender 2.28.1-alpha と networknt 3.0.6 は残り、H2 の `-Dh2.compactThreads=1` は3か所 | `build-and-verify` | `technology-stack.md`（K-85） |
+| K-86 | サブモジュールの固定先は make-you-chic-ui `cab4207`・java-mustache-processor `8d44c36`（0.1.0）。README 37 行は `ecb07e9` のまま古い。A2（`braces` 3.0.3）と A3（依頼（5））は上流のソースで確かめる必要がある | `make-you-chic-ui`・`java-mustache-processor` | `dependencies.md` |
+| K-87 | `dependabot.yml` の `ignore` は5つ（appender・networknt・`typescript` の大きな版・`eclipse-temurin` の大きな版・collector の `0.163.2-386`）。見直しの外す時期はコメントにある | `build-and-verify` | `dependencies.md` |
+| K-88 | README.md（1,678 行）に経緯が溜まっている: 見出しの 25 個が Intent・単位・Bolt を名前に含み、本文の経緯の参照は 164 か所、「契約との差」3節、骨格の時点の説明（5 行・1608〜1634 行） | `build-and-verify`・`container-runtime` | `code-quality-assessment.md` |
+| K-89 | perf/README.md（1,753 行）の末尾の「## 履歴」（1563〜1753 行、約 190 行）と本文の経緯の参照 139 か所、継ぎ足しの手順の番号 | `perf-and-monitoring` | `code-quality-assessment.md` |
+| K-90 | T1・T2: perf の伏せ字の道具のカバレッジは Vitest の `coverage.include`（`src/` だけ）の外で、ESLint と `tsc` も当たらない（Prettier と oxlint だけ） | `perf-and-monitoring`・`build-and-verify` | `code-quality-assessment.md` |
+| K-91 | T3: `BusinessDataWriteService.warnReference` は `stage` が null のときキーを出さず、`StepAttempt.Unexpected` の経路で `stage` の無い WARN になりうる（値は出ない） | `businessdata` | `code-quality-assessment.md` |
+| K-92 | P1: 参照先の並びは文字の型を `SUBSTRING` で切って 1038 を避けるが、業務データの一覧の `page` の並べ替えはカラムのまま `LIMIT ? OFFSET ?`。深いページで 1038 が起きるかは未検証 | `businessdata` | `architecture.md` |
+| K-93 | 古いコンテナのイメージ・ボリュームの片付けの対象は、今回は一覧していない（docker の操作をしない決まり） | `container-runtime` | `technology-stack.md`（手元の運用） |
+
+### 前の Intent（261029-reference-lookup-cleanup）の所見（今回は再確認していない）
 
 業務データの選択肢の他テーブル参照（REFERENCE）と参照ピッカー（LOOKUP）の本実装（前の Intent `261016-business-data-views` で意図的に先送りした部分）と、持ち越しの片付け（perf の JWT の自動の伏せ字、コンテナの版、Dependabot の i18next 系2件）。今回の範囲の事実はここに一覧し、本文は持ち主の文書に1回だけ書く。「未検証」と書いた項目は、要件定義・設計の段で確かめる仮説である。
 
@@ -67,5 +89,6 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 
 ## Sources
 
-- 開発担当の調査: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
+- 開発担当の調査（2026-11-01）: `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
+- 開発担当の調査（前回まで）: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
 - アーキテクトが読み取りで確かめ直したもの: `reverse-engineering-timestamp.md` の「確かめ方」
