@@ -51,8 +51,8 @@
 | 対象DB のコンテナ | `anon` の最大 / `memory.max`（分母は測るときの `memory.max`） | 92% 以下 | この表（合格の条件） |
 | 対象DB のコンテナ | `OOMKilled` | false | この表（合格の条件） |
 | 対象DB のコンテナ | `oom_kill` | 0 | この表（合格の条件） |
-| `bizSearchWide` | アプリのコンテナの `memory.peak` / `memory.max` | < 0.9 | この表（合格の条件。95% 未満に緩めるかは未決で、Build and Test で要件として決める。履歴 H69） |
-| `bizCreateLarge` | アプリのコンテナの `memory.peak` / `memory.max` | < 0.9 | この表（合格の条件。95% 未満に緩めるかは未決で、Build and Test で要件として決める。履歴 H69） |
+| `bizSearchWide` | アプリのコンテナの `memory.peak` / `memory.max` | < 0.9 | この表（合格の条件。90% 未満で確定（実測が線から遠く、緩める理由が無い。Build and Test の決定）。履歴 H69・H75） |
+| `bizCreateLarge` | アプリのコンテナの `memory.peak` / `memory.max` | < 0.9 | この表（合格の条件。90% 未満で確定（実測が線から遠く、緩める理由が無い。Build and Test の決定）。履歴 H69・H75） |
 | `groupPoolLimit`（合否の回: 上限 11・`VUS=5`・2 分） | `hikaricp.connections.acquire` の `MAX` の最大（ミリ秒にそろえる） | < 20 ms | この表（合格の条件。時間切れの累計の増分 0・`groupPoolLimit_500` 0 件とあわせて） |
 | `rolePoolLimit`（合否の回: 上限 11・`VUS=5`・2 分） | `hikaricp.connections.acquire` の `MAX` の最大（ミリ秒にそろえる） | < 20 ms | この表（合格の条件。時間切れの累計の増分 0・`rolePoolLimit_500` 0 件とあわせて） |
 | `userAdminPoolLimit`（上限 4・`VUS=12`・5 分） | 待ちの時間切れの累計の増分、または `hikaricp.connections.acquire` の `MAX` の最大（上限に届いたこと） | 増分 1 以上、または 1,000 ms 以上 | この表（合格の条件。警報3件が `firing` になることとあわせて） |
@@ -1195,7 +1195,7 @@ perfu logs app 2>&1 | grep '"level":"\(WARN\|ERROR\)"' | grep -c 't_0'
 | `bizSearchLast` | 主キーの順の最後のページ（読み飛ばす行の数が多い形。ページの番号は setup が全体の件数から決める） | 同上（同じく p95 の線を 2000 ms に緩めた（履歴 H44）。「今の基準の一覧」を見る） |
 | `bizSearchLastSorted` | 索引の無い `c_001` で並べ替えた最後のページ（NFR 設計のレビュー R-05。計画の D2: A。悪い側の条件のまま測り、目標を超えたら Not Met として扱いを諮る） | 同上（同じく p95 の線を 2000 ms に緩めた（履歴 H45）。「今の基準の一覧」を見る） |
 | `bizDetail` | 主キーで1行の詳細（`POST /api/tables/rows/get`。VU と繰り返しの番号で行を回し、2,000,000 字の値の行も含む） | 同上 |
-| `bizSearchWide` | `biz_wide` の1ページ目（100 件 × 100 カラム × 100 字、およそ 3 MB）。メモリの確かめの場面 | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.5。95% 未満に緩めるかは未決（履歴 H69）。`memory.stat` の `anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（対象DB の `anon` の線は 92% 以下の合格の条件に改めた（履歴 H46）。「今の基準の一覧」を見る） |
+| `bizSearchWide` | `biz_wide` の1ページ目（100 件 × 100 カラム × 100 字、およそ 3 MB）。メモリの確かめの場面 | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.5。90% 未満で確定（実測が線から遠く、緩める理由が無い。Build and Test の決定。履歴 H69・H75）。`memory.stat` の `anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（対象DB の `anon` の線は 92% 以下の合格の条件に改めた（履歴 H46）。「今の基準の一覧」を見る） |
 
 - **データ**（値はすべて架空。使った規模は結果に記録する）:
   - 種は `perf/biz/make-biz-seed.sh <postgres|mysql|mariadb> [行の数]` が SQL を標準出力に出す（乱数を使わず、行の番号とカラムの番号だけから決まる）。スキーマ `bizperf`（MySQL・MariaDB ではデータベース）に、`biz_item`（主キー `id` と `c_001`〜`c_099` の 100 カラム、既定 100,000 行）・`biz_pair`（複合の主キー、1,000 行）・`biz_wide`（主キー `id` と 100 字を超える文字の `w_001`〜`w_099`、200 行）を作り、`mastersmith_reader` に読み取りの権限を与え、最後に表ごとの行の数を出す（NFR2.1 の記録）。
@@ -1345,7 +1345,7 @@ unset MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL MASTERSMITH_PERF_TARGETDB_MYSQ
 | `bizUpdate` | 更新（VU ごとに setup で作った別の行の `n_001` を変える。同じ行の排他の待ちを混ぜない）。10 VU・3 分 | 同上 |
 | `bizDelete` | 削除（setup で `ITERATIONS` 件（既定 100）の行を作り、1回に1行を消す） | 同上 |
 | `bizWritePoolLimit` | 参照先に無い `ref_id` での作成（外部キーの違反 → セーブポイントへの戻し → 同じ接続での確かめ。最も長く接続を持つ道）。10 VU で書き込みのプールの上限 5 に必ず届く。409 `BUSINESS_REFERENCE_NOT_FOUND` を正しい答えとして数える（期待の状態コード）。10 VU・3 分 | 同上（NFR2.7） |
-| `bizCreateLarge` | 4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの架空の字、約 3.9 MB）。10 VU × `BIZ_LARGE_ITERATIONS` 回（既定 3） | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.8。`anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（`memory.peak` の線を 95% 未満に緩めるかは未決で、Build and Test で要件として決める。それまでは 90% 未満（履歴 H54・H69）。「今の基準の一覧」を見る） |
+| `bizCreateLarge` | 4 MiB 近い本文の作成（97 カラム × 10,000 字の 4 バイトの架空の字、約 3.9 MB）。10 VU × `BIZ_LARGE_ITERATIONS` 回（既定 3） | アプリのコンテナの `memory.peak` が上限 2g の 90% 未満（NFR2.8。`anon` の最大も並べる）と `checks` の率 1。応答時間は記録だけ（`memory.peak` の線は 90% 未満で確定（実測が線から遠く、緩める理由が無い。Build and Test の決定。履歴 H54・H69・H75）。「今の基準の一覧」を見る） |
 
 - **データ**: 種の台本（`make-biz-seed.sh`）が、`biz_ref`（参照先、100 行）と `biz_new`（自動の採番の主キー `id`・一意の制約のある `u_code`・`biz_ref` を指す外部キー `ref_id`・文字の `n_001`〜`n_097` の 100 カラム、行は入れない）を作り、書き込みのアカウント `mastersmith_writer`（対象DB の初期化の台本 `03-writer-account.sh` が作る）に `bizperf` の行の操作（PG は sequence の USAGE も）を与える。DSL（`make-biz-dsl.mjs`）にも同じ形の2つの表を書く。値はすべて架空。
 - **setup の前提**（前の場面の状態に頼らない）: どの書き込みの場面も、setup で書き込みのロール `perf-biz-writer`（スキーマ `bizperf` を READ、`biz_new`・`biz_ref` を FULL と CREATE・DELETE）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、`biz_new` の定義で書き込みが使える（`writeConfigured` と CREATE・UPDATE・DELETE）ことを確かめる。DSL の適用は `bizPrepare` が行う（先に流す）。`bizUpdate` は VU ごとに1行、`bizDelete` は `ITERATIONS` 件の行を、setup が API で作る。どれも使い捨ての環境の監査に残る。
@@ -1386,8 +1386,8 @@ curl -s "http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.timeout?ta
 - **setup の前提**（前の場面の状態に頼らない）: どの場面も、setup でロール `perf-biz-ref`（スキーマ `bizperf` を READ、参照元の3つの表を FULL。参照元のカラムが FULL でないと参照先を読まないため）を用意して試験用の利用者 `perf-biz-01`〜に割り当て、1人ずつログインして作業ロールを保存し、3つの参照元の定義（`purpose` は `CREATE`）で参照の項目の状態（`AVAILABLE`・`TOO_MANY`・`AVAILABLE`）がそろっていることを確かめてから始める。DSL の適用は `bizPrepare` が行う（先に流す）。どれも使い捨ての環境の監査に残る。
 - **読み取りのプールの上限は 5**（NFR2.3、`infrastructure-specification.md` 4.1）: 上の「業務データの場面」の 1B の後、アプリを起動する前に、アプリの一時の環境ファイルに `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE=5` を足す（`docker/perf/compose.yaml` は変えない。既定は 10 で、書き忘れるとプールが尽きる形の確かめが成り立たないまま合格しうる）。参照の2つの設定（`MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE`・`MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL`）は書かない（既定の 5s・10s で流す）。
 - **中止の条件**（R-03）: 流す前に、使い捨てのアプリの `/actuator/metrics/hikaricp.connections.max`（`pool=mastersmith-target-db`）を読み、**5 でなければ U1 の場面を流さずに中止する**。一時の環境ファイルを直し、使い捨てのアプリを起動し直してから読み直す。プールは最初に借りるときに作られるため、指標は下の台本の暖め（判定に数えない1回）の後に読む。
-- **比べる相手**: どの結果と並べるかは Build and Test の計画で依頼者に確かめる（履歴 H61）。
-- **流す順**（`infrastructure-specification.md` 4.4）: 対象DB の種類ごとに、(1) この節の U1 の読み取りの場面を先に流す（書き込みの場面の後に読み取りを流すと、表が大きくなって読み取りの結果が悪い側に寄る）、(2) その後に U2 の保存前の確かめつきの作成の場面（`ref` で始まる名前）、(3) 深いページのピッカー（PostgreSQL で 1,000 ページ目）を参考に1回（判定の対象の外）。上の「業務データの場面」の読み取りの場面・「業務データの書き込みの場面」と同じ回に流すときも、書き込みの場面はこの節の場面の後に置く。
+- **比べる相手**: 業務データの読み取り・書き込みの上限 5 の今の設定で測った前の結果（業務データの場面の Performance Validation の結果）と並べる。上限 10 の回は流さない（履歴 H61）。
+- **流す順**（`infrastructure-specification.md` 4.4）: 対象DB の種類ごとに、(1) この節の U1 の読み取りの場面を先に流す（書き込みの場面の後に読み取りを流すと、表が大きくなって読み取りの結果が悪い側に寄る）、(2) その後に U2 の保存前の確かめつきの作成の場面（`ref` で始まる名前）。深いページのピッカーの参考の測りは置かない（履歴 H76）。上の「業務データの場面」の読み取りの場面・「業務データの書き込みの場面」と同じ回に流すときも、書き込みの場面はこの節の場面の後に置く。
 - **種を入れた後の確かめ**（NFR2.4）: 表ごとの行の数（`biz_code200` 200・`biz_code201` 201・`biz_item` 100,000。種の台本の最後の行に出る）と、上の 2B' の目印の語の当たりの数（0 でないこと）を数えてから流す。MySQL・MariaDB の種は `--default-character-set=utf8mb4` で流す（上の 2B のとおり）。表の大きさは上の「業務データの場面」の 3 の決まり（プールの 80% 以内）で測る（足す表は数百 KB の見込みで、値は変わらない見込み）。
 - **判定**: 業務データの場面と同じく、`iteration_duration`（単調な時計）で判定し、`http_req_duration{name:…}` は並べて記録するだけ。503（時間切れ・借りられない）は `checks` の率 1 を下回って不合格になる。満たさなくても目標と物差しを緩めず、Not Met として依頼者に諮る（NFR2.3・NFR2.5）。
 - 台本の全体を `caffeinate -dims` で包み、流した後に `pmset -g log` で眠りが無かったかを確かめる。試験の間は配備したアプリを止め、MySQL・MariaDB の回では手元の監視（lgtm）を動かさない（上の「業務データの場面」と同じ）。
@@ -1505,7 +1505,7 @@ k6 の結果を記録の置き場（名前が `evidence` のディレクトリ�
 
 - k6 の summary json（`--summary-export` の出力）。JWT の形（`eyJ` で始まる base64url の 3 区間を `.` でつないだもの。直前が英数字のものは除く）は、値・配列の要素・キー名・長い文字列のどこにあっても `[REDACTED-JWT]` に置き換える。
 - `setup()` の返す値（summary json の上の階層の `setup_data`）の下の文字列は、JWT の形かどうかにかかわらずすべて `[REDACTED-SETUP]` に置き換える。数・真偽・null と、キー・配列の形は残る。
-- 置き換えの後に、置換とは別の検査で JWT の形が残っていないこと（JSON の口では `setup_data` の下に伏せていない文字列が無いことも）を確かめ、1 件でもあれば何も書かずに止まる。
+- 置き換えの後に、書き出す直前の文字列に JWT の形が残っていないこと（JSON の口では `setup_data` の下に伏せていない文字列が無いことも）を確かめ、1 件でもあれば何も書かずに止まる。この残りの検査は置換と別の経路（置き換えた後の文字列をもう一度読む）で動くが、JWT の形の定義は置換と同じ1つの関数（`scanJwtShapes`）を使う。そのため定義の誤りは置換と検査の両方に同じく及び、この検査では見つけられない。共通の定義そのものは、テスト（`frontend/src/perfEvidenceRedactor.test.ts`）の中に置いた正規表現との突き合わせ（性質ベースのテスト）で守っている。
 
 ### 記録に置く唯一の入口
 
@@ -1746,3 +1746,8 @@ gitleaks dir --redact --no-banner --config .gitleaks.toml --exit-code 1 <記録�
 - **H72**: 書き込みの場面の対象DB のメモリの前の判断（H67 の前の参考の線）: 「`anon` の最大が上限の 85% を超えたら依頼者に諮る（基盤の設計のレビューの R-04）」
 - **H73**: VM の余裕の前の計算（MySQL の上限が 2304m だったときの値。H47 で 2688m に上げた）: 「MySQL（2304m）の回の上限の合計は perf のアプリ 2048 + MySQL 2304 + 見本の PG 512 + Mailpit 256 = 5,120 MiB（docker から見える量 約 5,910 MiB に収まる）」。docker から見える量 約 5,910 MiB は、Intent 261016-business-data-views の U1 の基盤の設計の時点（VM は CPU 4・メモリ 6GiB）で測った値。
 - **H74**: `dslMixed` の `memory.peak` と `memory.stat` の記録の試しの2回（H2 の `RETENTION_TIME=0`、Intent 261016-business-data-views の U5）の効き目の前の目安: 「効いたか（2回とも 0.9 未満か）」。直しの Bolt B7 で、依頼者の決定 A（Intent 261029-reference-lookup-cleanup、メッセージ eac44a47）により、本文は今の線（0.95 未満）で読む形にした。
+
+### Build and Test で決めたことと外した手順（Intent 261029-reference-lookup-cleanup）
+
+- **H75**: `bizSearchWide`・`bizCreateLarge` の `memory.peak` の線（H69 の続き）: Intent 261029-reference-lookup-cleanup の Build and Test の質問（Q5: B）で、依頼者は 95% 未満に緩める方向（Code Generation の承認の場の決定 B）を取り下げ、承認済みの要件（Intent 261016-business-data-views の U1 の NFR2.5・U2 の NFR2.8）のとおり 90% 未満で確定した。理由は、実測が線から遠く緩める理由が無いため（Intent 261016-business-data-views の Performance Validation で `bizSearchWide` は最大 969.7 MiB（47.3%）、`bizCreateLarge` は最大 886.5 MiB（43.3%））。`dslMixed` の緩和の理由（回収できるページキャッシュが `memory.peak` を押し上げて線を超える）は、この2つの場面では線に近づいた実測が無いため当てはまらない。物差しと線は変えていないため、前の物差しを並べる記録は要らない。本文と「今の基準の一覧」の注記「95% 未満に緩めるかは未決で、Build and Test で要件として決める」を「90% 未満で確定」に直した。H54・H69 は書き換えていない。
+- **H76**: 他テーブル参照の読み取りの場面の流す順から外した手順: 「(3) 深いページのピッカー（PostgreSQL で 1,000 ページ目）を参考に1回（判定の対象の外）」。Intent 261029-reference-lookup-cleanup の Build and Test の質問（Q6: A）で外した。`perf/k6/scenarios.js` のピッカーの場面は `page: 1` に固定で、ページを変える環境変数も手順も無く、書いたとおりに流せなかった。合否の目標の無い参考の測りで、深い OFFSET の重さは `bizSearchLast`・`bizSearchLastSorted` で測っている。深いページのピッカーの測りが要るかは、後の Intent の要件で決める。

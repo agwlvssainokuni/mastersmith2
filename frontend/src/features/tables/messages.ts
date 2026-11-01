@@ -199,7 +199,6 @@ const ja: Record<string, string> = {
   'tables.reference.noOptions': '選べる候補がありません',
   'tables.reference.noOptionsRequired': 'この項目は必須のため、候補が入るまで保存できません',
   'tables.reference.lookupHint': '検索して選びます',
-  'tables.reference.loading': '読み込んでいます',
   'tables.reference.open': '選ぶ…',
   'tables.reference.openName': '選ぶ…（{{field}}）',
   'tables.reference.clear': 'クリア',
@@ -412,7 +411,6 @@ const en: Record<string, string> = {
   'tables.reference.noOptionsRequired':
     'This field is required, so you cannot save until options are available',
   'tables.reference.lookupHint': 'Search to choose a value',
-  'tables.reference.loading': 'Loading',
   'tables.reference.open': 'Select…',
   'tables.reference.openName': 'Select… ({{field}})',
   'tables.reference.clear': 'Clear',
