@@ -129,3 +129,67 @@
 - コミット: 491e57a（C1）・3a286ed（C2）・a4ea6bd（C3）・f63f2d4（C4）・c0d65a7（C5）。各区切りで、後の区切りの変更を外して `npm run typecheck` が通ることを確かめた。
 - `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`（colima の環境変数・`caffeinate -dims`）: 成功、27分48秒。バックエンドの単体 2,804 件・結合 1,652 件、画面 2,291 件、失敗 0。
 - E2E の全件（`references/` に替えた後）: 277 件すべて通過（14.4 分。変更の前の 13.1 分の 1.5 倍の線 19.7 分の内）。流した 12:11〜12:53 に Sleep・DarkWake は無かった。
+
+## 直しの Bolt B7（承認の場の Request Changes の直し。計画の Step 19〜37）— 開発担当の記録
+
+前の節は書き換えていない。ブランチ `fix/261029-reference-lookup-cleanup-review`（先頭 `aa6883c`。Step 19 の記録のコミットとブランチの作成、E2E の出力の削除は指揮役が済ませた）。コミット・push・`./gradlew verify` の全体・`e2eTest` は行っていない（指揮役が行う）。
+
+### 依頼者の決定
+
+- **Step 30: B**。`bizCreateLarge`・`bizSearchWide` の `memory.peak` も 95% 未満に緩める方向。目標の緩和のため、この Bolt では README を 95% にせず、要件としての決定（理由と前の線を並べる記録）を Build and Test の質問で取る。それまでは本文と「今の基準の一覧」を 90% 未満にそろえ（一覧に `< 0.9` の 2 行を足した）、前の 1343 行の「95% 未満に緩めた」の注記を「緩めるかは未決で、Build and Test で要件として決める。それまでは 90% 未満」に直した。経緯は新しい履歴の項目 H69（`805db12` が要件の裏付けなく足した注記で、FR1.2・H66 と食い違う）。H54 は書き換えていない。
+- **Step 28: A**（台本に確かめの文を足し、README に 1 行足す）。
+
+### Step 19: 影響の範囲（検索の結果）
+
+- 画面: `isRequiredColumn`・`validateValue`・`validateForm`・`validateOnBlur`・`tables.form.unselected`・`tables.form.required` を使うのは `formValidation.ts`（と test）・`formDiff.property.test.ts`・`messages.ts`・`BusinessDataFormPage.tsx`・`references/referenceField.ts`・`references/ReferenceSelectField.tsx`・`references/ReferenceColumnField.tsx`。直した後も既存のテストは1件も落ちなかった（見本の参照の項目はどれも `nullable` が真か `required` が真で、新しい規則で結果が変わらないため）。
+- E2E: 180・190・195 は欄を `getByRole` の `name` で探す（Playwright の既定は部分一致のため、名前に必須の印が加わっても外れない）。E2E の注文の表（`support/businessDataDsl.ts`・`businessDataSchema.sql`・`support/referenceFixtures.ts`）の参照のカラムは、195 の状態 7・8（`blocked-required`）を除いて `nullable` が真で `required` が偽のため、印も「（選ばない）」も変わらない。状態 7・8 は入力不可の表示（`ReadonlyReferenceField`）で、この直しの部品を通らない。**E2E は直していない**（Step 26）。
+- バックエンド: `referenceStep`・`warnReference`・`BusinessDataUnexpectedException` を使うテストは `BusinessDataWriteReferenceTest`・`BusinessDataWriteServiceTest`・`ReferenceLookupTest`・`BusinessDataReadServiceTest`。`ReferenceLookupTest` は `check`・`countState` の写さない失敗で `BusinessDataUnexpectedException` を期待するため、その形を保った。
+
+### Step 20・21: U2 R-01（⑩ の想定外の診断の WARN）
+
+- 型の置き方（計画の「選んだ方を書く」）: `ReferenceStepOutcome`（domain）にも確かめの結果の型（`ReferenceCheckResult`・`ReferenceCountState`、domain）にも場合を足さず、`BusinessDataWriteService` の中に口の中の結果の `sealed interface StepAttempt`（`Completed`・`Unexpected`）を置いた。口の外の `switch` が場合を尽くす形を保ち、domain の型を `switch` している既存の場所（`ReferenceWritePolicy` など）とテストを変えずに済むため。どちらも計画の「置き場は `businessdata.service` の中」に合う。
+- 手がかりの運び方: `BusinessDataUnexpectedException`（`final`）に、値を含まない手がかり（`sqlState`・`vendorCode`・`exceptionClass`）を持つ作り方 `withDiagnosis`（パッケージの中だけ）と読み出しを足した。メッセージも原因も持たないことは変えていない。`ReferenceLookup` は書き込みの確かめの口（`check`・`countState`）の写さない失敗だけを `writeFailureOf` で手がかりつきにし、読み取りの API の経路（`failureOf`、検索・ラベル）は変えていない。値の欠け（`valueOf`）は手がかりの無い今の例外のまま。
+- 起きた読み取り（`stage`）: 口の中で `check` は `CHECK`、`countState` は `COUNT_STATE` で包み（`atStage`）、手がかりと一緒に `StepAttempt.Unexpected` に写す。口の外で `warnReference` を1回だけ呼び（`reason` は文字 `UNEXPECTED`。`ReferenceFailureReason` には足していない）、今と同じく `BusinessDataUnexpectedException`（手がかりなし）を投げる。書き込みの口は借りず、監査も出さない。
+- **計画との差（範囲を少し広げた）**: 更新前の行の写さない失敗（`updateStep` の `RowDetailResult.Failed` で `INVALID_VALUE`・`UNEXPECTED`）も同じ ⑩ の想定外のため、`stage=PREVIOUS_ROW` と手がかりで WARN を1行出すようにした（計画が挙げたのは `check`・`countState` の写さない失敗と値の欠けだけ）。ほかに ⑩ の中で投げられる手がかりの無い想定外（来ないはずの形）も、`stage` が分からなければキーを出さずに WARN を1行出す。既存の `unexpectedPreviousRow` のテストに WARN の確かめを足した。
+- テスト（`BusinessDataWriteReferenceTest` に 3 件、既存 1 件に確かめを足した）: `INVALID_VALUE` の `check`（`stage=CHECK`、手がかり一致）・`UNEXPECTED` の `countState`（`stage=COUNT_STATE`、手がかり一致、後の `check` を流さない）・値の欠け（`stage=CHECK`、`sqlState`・`vendorCode`・`exceptionClass` のキーなし）。どれも WARN がちょうど1行・キーの並びが `purpose`・`stage`・`reason`（・`sqlState`・`vendorCode`・`exceptionClass`）・`budgetExceeded`、`purpose=REFERENCE`・`reason=UNEXPECTED`、本文とキーに送った値・`orders`・`dept` が無い、例外は `BusinessDataUnexpectedException`（メッセージ・原因なし）、書き込みの口 0 回・監査の出来事 0 件。
+- 流した結果: `./gradlew :backend:test --tests '*BusinessDataWriteReferenceTest' --tests '*BusinessDataWriteServiceTest' --tests '*ReferenceLookupTest'` → 22・16・24 件、失敗 0（T-F2 と BR2.7 を含む）。`:backend:integrationTest --tests '*ReferenceWriteSecretLeakIT'`（colima の環境変数・`caffeinate -dims`）→ 1 件、失敗 0・SKIPPED 0。あわせて `--tests '*ArchitectureTest*' --tests '*BusinessData*'` の単体 228 件、失敗 0。`:backend:spotlessCheck`・`:backend:spotbugsGate` 通過（触れた 3 クラスの警告は直す前と同じ件数で、増えていない）。
+
+### Step 22〜25: U3 R-01・R-02（必須の判定と欄への結び付け）
+
+- `formValidation.ts` に `isRequiredInput`（参照の項目は `isRequiredColumn`、参照でない項目は `required === true`）を置き、`validateValue`（空の値の `REQUIRED`）・`validateForm`（作成で値が無いときの `REQUIRED`）と `BusinessDataFormPage.tsx` の `validateOnBlur` が同じ関数を呼ぶ形にして条件を1か所にした。`isRequiredColumn` は `references/referenceField.ts` のまま（`referenceField.ts` は `formValidation.ts` を読まず、import の循環は無い）。参照でない項目の判定と描画（`FieldInput`）は変えていない。
+- `ReferenceSelectField.tsx`: `required` を `isRequiredColumn(column)` にし、印・`aria-required`・「（選ばない）」の出し分けと 0 件の必須の文を同じ値にそろえた。
+- `LookupField.tsx`: 必須の印と欄の `aria-required` を足した。**計画との差**: 必須の値を新しい props で受けず、`clearable` の否定から決めた（呼ぶ側 `ReferenceColumnField.tsx` は `clearable={!isRequiredColumn(column)}` を渡しており、必須とクリアの出し分けが同じ判定の裏表のため。呼ぶ側のファイルを触らずに済む）。props の説明文にこの関係を書いた。
+- R-02（F-1 の裏付け）: `LookupField.test.tsx` の 6 件で、`getByLabelText` が欄（`tables-lookup-value-c4`）を返す（`label` の `for` と欄の `id` が一致）、誤りのとき欄だけに `aria-invalid="true"` と誤りの文を指す `aria-describedby`、値が空のとき説明文を指す `aria-describedby`（`aria-invalid` なし）、値が入ると `aria-describedby` なし、ボタンには両方とも付かないことを確かめた。どれも通ったため、**部品の結び付けは直していない**（コメントを事実に合わせて直しただけ。`useFieldProps` は使っていない）。
+- テストの件数: `formValidation.test.ts` 7 件（fast-check の性質 1 件を含む。失敗は無く、種の記録は無い）・`ReferenceSelectField.test.tsx` 4 件・`LookupField.test.tsx` 6 件・`BusinessDataFormPage.test.tsx` 4 件、合わせて 21 件を足した。欄から離れたときの誤りは `waitFor` で待って確かめた。直した既存のテストは無い。
+
+### Step 27: frontend の手元の確かめ
+
+- `npm run format:check`・`npm run lint`・`npm run lint:css`・`npm run typecheck`・`npm run license:check` すべて通過。`git diff --stat develop -- frontend/package.json frontend/package-lock.json` は空。
+- `npx vitest run src/features/tables`: 41 ファイル・517 件、失敗 0。画面のテストの全件 `npx vitest run`（`caffeinate -dims`）: 238 ファイル・2,312 件、失敗 0（B4 の後の 2,291 件 ＋ この Bolt の 21 件）、57.9 秒。
+
+### Step 28・29: U2 R-03・U4 R-04
+
+- `perf/biz/make-biz-seed.sh` の最後（行の数の出力の後）に、`biz_refcreate` が 0 行でなければ止まる文を足した（PG は `DO` の塊の `RAISE EXCEPTION`、MySQL・MariaDB は 0 行でなければ 2 行を返す副問い合わせを1つの値として比べ `Subquery returns more than 1 row` で止まる形）。目印は `biz_refcreate_must_be_empty`。確かめの結果は U5 の `perf-docs-check-record.md` 12.3節（見本の PostgreSQL で 0 行のとき終了コード 0、1 行のとき 3、`bizperf` を消して片付けた）。MySQL・MariaDB の流し込みは Build and Test の試し走りで確かめる。`shellcheck` はこの PC に無い。
+- `perf/README.md`: U2 の節に「流す前に毎回 0 行にする」の行、U4 の `--scan` の説明に終わりのコード 2 の対処の行を足した。道具（`perf/redact-k6-evidence.mjs`）は変えていない。
+
+### Step 30〜33: U5 R-01・R-02・R-05
+
+- 分け方の表・直し・確かめの結果（CB5・CB6・CB7・CB8・CB9〜CB12・CB22・Q1〜Q7、すべて合格）は U5 の `perf-docs-check-record.md` 12節に書いた。
+- **計画との差・担当の判断（依頼者に確かめたい）**:
+  1. 取り出した行は 73 行（計画の見込み 47 行より多い。正規表現は同じで、コードブロックの書式の `%` などにも当たった）。
+  2. 一覧に無かった今の線として、`bizSearchWide`・`bizCreateLarge`（Step 30 の B のとおり < 0.9）に加えて、`groupPoolLimit`・`rolePoolLimit` の合否の回の `acquire` の `MAX` の最大 < 20 ms と、`userAdminPoolLimit` の上限に届いたことの条件（時間切れの累計の増分 1 以上、または `acquire` の最大 1,000 ms 以上）の 3 行を k6 の外の表に足した。出典の設計（Intent 261004-role-menu の group・role の `nfr-design/scalability-design.md` 2節、Intent 261003-user-admin-followup の FR4）の線で、後の Intent で変えた記録が無く、台本（`scenarios.js`）は判定しない（人が読む）ため、`memory.peak` と同じく一覧の「k6 の外の線」に当たると判断した。
+  3. 決めかねて残した部分: 前の 994 行の試しの効き目の目安「2回とも 0.9 未満か」。推奨は、履歴へ移して効き目を今の線（0.95）で読む形にすること（前の線を本文に残さないという R-02 の趣旨に合うため）。ただし、試しは前の Intent の一度きりの比べで、今流す予定は無いため、本文に残しても害は小さい。
+  4. VM の余裕（前の 1214 行）は、計画の推奨どおり本文を今の値で計算し直し（2048 + 2688 + 512 + 256 = 5,504 MiB、余り約 406 MiB）、元の 2304m の計算を履歴 H73 へ移した。U5 の `code-summary.md` 8節の推奨（本文には今の値だけ）とは、本文に今の値の計算を残す点で違う。
+- 外の置き場は U5 の手順書の `~/.mastersmith-b6` ではなく `~/.mastersmith-b7`（権限 700）にした。確かめの後に消した。
+
+### Step 34: 追跡
+
+- U2: NFR1.32・NFR2.24、U3: AC1.1.1・AC1.5.1・NFR4.42、U4: AC4.1.4、U5: AC4.2.2・AC4.2.4・NFR8.84・AC4.3.1・AC4.3.2 の note に B7 の注記を足した。status は変えていない。
+
+### 記録の検査
+
+- `gitleaks dir --redact --no-banner --config .gitleaks.toml --exit-code 1` をこのファイル・U5 の `perf-docs-check-record.md`・U2〜U5 の `code-summary.md`・`perf/biz/make-biz-seed.sh` に流し、どれも終了コード 0（指摘 0 件）。JWT の形の検索もどれも 0 件。
+
+### 依頼者の決定の後の直し（依頼者のメッセージ eac44a47）
+
+- 上の Step 30〜33 の「依頼者に確かめたい」の 2・3 に答えが出た: 接続プールの3行は **A**（一覧に置いたまま）、前の 994 行の目安「2回とも 0.9 未満か」は **A**（履歴 H74 へ移し、本文は今の線 0.95 で読む）。`perf/README.md` を直し（R5 の範囲）、CB5・CB6〜CB12・CB22・Q1〜Q7 を流し直してすべて合格（U5 の `perf-docs-check-record.md` 12.5節）。R4 の2行のパッチは引き続き `git apply --cached --check` が通る。

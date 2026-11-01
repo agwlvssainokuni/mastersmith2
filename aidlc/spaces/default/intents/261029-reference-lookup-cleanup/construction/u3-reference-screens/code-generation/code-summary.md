@@ -102,7 +102,7 @@ backend・DSL の書式と JSON Schema・移行・`compose.yaml`・CI のワー�
 
 ### 5.2 担当が決めた細かい点
 
-- **必須の判定を `!nullable || required` にした**: 計画の `[assumption]`（`nullable` が偽だけ）より広い側。U2 の 400 `REQUIRED` は `required` からも出るため、画面で先に止める。
+- **必須の判定を `!nullable || required` にした**: 計画の `[assumption]`（`nullable` が偽だけ）より広い側。U2 の 400 `REQUIRED` は `required` からも出るため、画面で先に止める。（直しの Bolt B7 で、この判定を参照の項目に限って一本化した: 選択肢の印・`aria-required`・「（選ばない）」、ピッカーの印、作成の `REQUIRED`（`validateValue`・`validateForm`・欄から離れたとき）がどれも `isRequiredColumn` を見る。参照でない項目は今どおり `required` だけ。下の 8節）
 - **409 でも「再度検索」を出す**: D27 に 409 `BUSINESS_TARGET_DB_MISMATCH` の「再度検索」の決めが無かったため、503 と同じにした。400 の条件の誤りのときは検索の前の状態に戻して誤りを出す。
 - **値が空のとき「クリア」を押せなくした**: 消すものが無いため。
 - **ピッカーの検索の応答の形の崩れ**: 行が 20 件を超える、または `hasNext` が真なのに行がちょうど 20 件でないものを形の崩れにした（総ページが今のページより小さくならないため。D25 の式の前提）。`PICKER_PAGE_SIZE = 20` は写しの置き場に置いた。
@@ -142,3 +142,39 @@ backend・DSL の書式と JSON Schema・移行・`compose.yaml`・CI のワー�
 - **使っていない文言の鍵 `tables.reference.loading`**（日英）を残すか。推奨: 後の直しの Bolt で消す（今は害が無く、消すためだけに画面の本体を変えて E2E を流し直すのは手間に見合わないため）。
 - 承認済みの計画と `unit-test-instructions.md` のコマンドの道（`src/features/tables/reference/…`）は書き換えず、`references/` と読み替える扱いでよいか（`project.md` の「承認済みの文書は書き換えない」に合わせた）。
 - B4 の CI（711ddd0）は確認中で、失敗したときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う。
+
+## 8. 直しの Bolt B7（承認の場の Request Changes の直し）
+
+前の節は書き換えていない（5.2 の必須の判定の項に、B7 で一本化したことを 1 文足しただけ）。ブランチ `fix/261029-reference-lookup-cleanup-review`（始めは `aa6883c`）。詳しい記録は `generation-notes.md` の「直しの Bolt B7」の節。
+
+### 8.1 直した指摘
+
+- **U3 R-01（必須の判定の一本化）**: 参照の項目（`reference` がある項目）に限り、必須を `isRequiredColumn`（NULL を許さないか `required` が真）で見る形にそろえた。`formValidation.ts` に `isRequiredInput` を置き、`validateValue`・`validateForm`・`BusinessDataFormPage.tsx` の欄から離れたときの確かめが同じ関数を呼ぶ。`ReferenceSelectField.tsx` は印・`aria-required`・「（選ばない）」の出し分けを同じ値にそろえ、`LookupField.tsx` は必須の印と欄の `aria-required` を足した。参照でない項目の判定（`required` だけ）は変えていない（テストで固定した）。
+- **U3 R-02（LookupField の欄への結び付け）**: 計画の F-1 のとおり、vendor の `FormField` は文脈（`FormFieldContext`）で欄の `TextInput` だけに `id`・`aria-describedby`・`aria-invalid` を配り、ボタンは受けないことをテストで裏付けた。部品の結び付けは直していない（コメントを事実に合わせて直しただけ）。
+
+### 8.2 変えたファイル
+
+- 本体: `frontend/src/features/tables/formValidation.ts`・`BusinessDataFormPage.tsx`・`references/ReferenceSelectField.tsx`・`references/LookupField.tsx`
+- テスト: `frontend/src/features/tables/formValidation.test.ts`・`BusinessDataFormPage.test.tsx`・`references/ReferenceSelectField.test.tsx`・`references/LookupField.test.tsx`
+- E2E は直していない（180・190・195 の欄の探し方は部分一致で、E2E の注文の表の参照のカラムは `nullable` が真のため印も「（選ばない）」も変わらない。`generation-notes.md` の Step 19 の項）。
+
+### 8.3 足したテストと結果
+
+| ファイル | 足した件数 | 確かめたこと |
+|---|---|---|
+| `formValidation.test.ts` | 7（fast-check の性質 1 を含む） | NOT NULL・`required: false` の REFERENCE・LOOKUP で作成の値なし・空の値が `REQUIRED`、値ありと更新の値なしは誤りなし、参照でない項目と NULL を許す参照の項目は今のまま。性質: 参照の項目で `validateValue(column, '') === 'REQUIRED'` と `isRequiredColumn` が一致（失敗なし、種の記録なし） |
+| `ReferenceSelectField.test.tsx` | 4 | 必須の印・`aria-required`・値ありで「（選ばない）」なし、値が空なら「（選ばない）」あり、NULL を許す項目は印なし、axe（必須の形） |
+| `LookupField.test.tsx` | 6 | 必須の印と `aria-required`、`getByLabelText` が欄を返す、誤りの `aria-invalid`・`aria-describedby`、説明文の `aria-describedby`、ボタンに付かない、axe（誤りの状態） |
+| `BusinessDataFormPage.test.tsx` | 4 | 選ばずに離れると `REQUIRED` が欄に結ばれる（`waitFor`）、選ばずに保存で送らずまとめへフォーカス、選んで保存で本文に値、LOOKUP の同じ形で送らない、参照でない NOT NULL の項目は今のまま |
+
+- `npx vitest run src/features/tables`: 41 ファイル・517 件、失敗 0。画面のテストの全件: 238 ファイル・2,312 件（B4 の後の 2,291 件 ＋ 21 件）、失敗 0。
+- `npm run format:check`・`lint`・`lint:css`・`typecheck`・`license:check` 通過。`frontend/package.json`・`package-lock.json` の差は無い。
+- `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` と E2E の全件は指揮役が流す（Step 35）。
+
+### 8.4 計画との差
+
+- `LookupField` の必須を新しい props で受けず、`clearable` の否定から決めた（呼ぶ側は `clearable={!isRequiredColumn(column)}` を渡しており、必須とクリアの出し分けが同じ判定の裏表のため。`ReferenceColumnField.tsx` を触らずに済む）。
+
+### 8.5 Build and Test に引き継ぐこと
+
+計画 B7.4 の表のとおり（U3 の分: R-03 使っていない文言の鍵 `tables.reference.loading` の扱いを決める、R-04 E2E 190・195 と 180 の差分・日英の鍵の漏れ・バックエンドの DTO との照合と B4・B7 の CI の試行ごとの記録）。あわせて、B7 の verify・E2E の値（指揮役の Step 35）。

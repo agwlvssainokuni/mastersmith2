@@ -252,7 +252,8 @@
     {
       "id": "NFR2.24",
       "status": "Deferred",
-      "target": "build-and-test・performance-validation（iteration_duration で判定する決まり。閾値は perf/k6/thresholds-test.sh で照らし済み、実測は負荷の試験で）"
+      "target": "build-and-test・performance-validation（iteration_duration で判定する決まり。閾値は perf/k6/thresholds-test.sh で照らし済み、実測は負荷の試験で）",
+      "note": "直しの Bolt B7（U2 R-03）: 種の台本の最後に biz_refcreate が 0 行でなければ止まる確かめ（目印 biz_refcreate_must_be_empty）を足し、見本の PostgreSQL で 0 行で終了コード 0・1 行で 0 でない終了を確かめた。MySQL・MariaDB は Build and Test の試し走りで確かめる。"
     },
     {
       "id": "NFR3.21",
@@ -294,7 +295,7 @@
       "id": "NFR1.32",
       "status": "OK",
       "target": "backend/src/test/java/cherry/mastersmith/businessdata/web/ReferenceWriteSecretLeakIT.java",
-      "note": "診断の WARN がちょうど1行、GlobalExceptionHandler の WARN が1行"
+      "note": "診断の WARN がちょうど1行、GlobalExceptionHandler の WARN が1行。直しの Bolt B7（U2 R-01）: ⑩ の想定外（INVALID_VALUE・UNEXPECTED・値の欠け、更新前の行の写さない失敗）でも診断の WARN を1行出す。BusinessDataWriteReferenceTest の 3 件（invalidValueCheckFailureWarnsOnce・unexpectedCountStateFailureWarnsOnce・missingValueWarnsWithoutDiagnosis）と unexpectedPreviousRow の確かめを足した。"
     },
     {
       "id": "NFR2.26",

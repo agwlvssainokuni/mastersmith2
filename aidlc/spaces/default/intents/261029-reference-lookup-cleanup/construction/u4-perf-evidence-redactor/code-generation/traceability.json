@@ -81,7 +81,7 @@
       "id": "AC4.1.4",
       "status": "OK",
       "target": "frontend/src/perfEvidenceRedactorCli.test.ts",
-      "note": "frontend/src/perfEvidenceRedactorCli.test.ts（コード 1・2、64 MiB の境界）・frontend/src/perfEvidenceScan.test.ts（上限＋1 バイト）"
+      "note": "frontend/src/perfEvidenceRedactorCli.test.ts（コード 1・2、64 MiB の境界）・frontend/src/perfEvidenceScan.test.ts（上限＋1 バイト）。直しの Bolt B7（U4 R-04）: perf/README.md の --scan の説明に、終わりのコード 2 で止まったときの対処（記録の置き場から外す、または理由を書いて一覧に足すよう依頼者に諮る）を足した。道具は変えていない。"
     },
     {
       "id": "AC4.1.5",

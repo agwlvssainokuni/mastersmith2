@@ -85,7 +85,7 @@
       "id": "AC1.1.1",
       "status": "OK",
       "target": "frontend/src/features/tables/references/ReferenceSelectField.test.tsx",
-      "note": "options をサーバーの並びのまま「ラベル (値)」で描く。並び・3種類の DB は U1"
+      "note": "options をサーバーの並びのまま「ラベル (値)」で描く。並び・3種類の DB は U1。直しの Bolt B7（U3 R-01）: NULL を許さない参照の項目は required が偽でも必須（isRequiredColumn）として印・aria-required・「（選ばない）」を出し分ける。ReferenceSelectField.test.tsx・formValidation.test.ts（性質ベース 1 件を含む）に足した。"
     },
     {
       "id": "AC1.1.2",
@@ -235,7 +235,7 @@
       "id": "AC1.5.1",
       "status": "OK",
       "target": "frontend/src/features/tables/BusinessDataFormPage.test.tsx",
-      "note": "開いた直後から helperText で理由、保存を押すと送らずに error（role=\"alert\"）と誤りのまとめ（D13）"
+      "note": "開いた直後から helperText で理由、保存を押すと送らずに error（role=\"alert\"）と誤りのまとめ（D13）。直しの Bolt B7（U3 R-01）: 作成の必須の判定を参照の項目に限って isRequiredColumn にそろえた（validateValue・validateForm・欄から離れたとき）。BusinessDataFormPage.test.tsx に 4 件足した。"
     },
     {
       "id": "AC1.5.2",
@@ -523,7 +523,7 @@
       "id": "NFR4.42",
       "status": "OK",
       "target": "frontend/src/features/tables/references/LookupField.test.tsx",
-      "note": "見える文字で始まる名前、aria-describedby と aria-invalid の受け手（R-02）"
+      "note": "見える文字で始まる名前、aria-describedby と aria-invalid の受け手（R-02）。直しの Bolt B7（U3 R-02）: FormField の文脈で欄の TextInput だけが id・aria-describedby・aria-invalid を受けることを LookupField.test.tsx の 6 件で確かめた（部品の結び付けは直していない。必須の印と aria-required を足した）。"
     },
     {
       "id": "NFR4.43",

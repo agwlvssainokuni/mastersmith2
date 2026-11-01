@@ -36,7 +36,7 @@
       "id": "AC4.2.2",
       "status": "OK",
       "target": "compose.yaml",
-      "note": "CA1・CA4: Mailpit（121 行）・lgtm（83 行）の Config.Image と RepoDigests が compose.yaml の版と index のダイジェストに一致（container-swap-record.md）。A1 の時点で既にそろっていたため --force-recreate は行わず（依頼者の決定 A）、照合を今のコンテナに当てた。Given の「作り直したとき」との差は code-summary.md に記録"
+      "note": "CA1・CA4: Mailpit（121 行）・lgtm（83 行）の Config.Image と RepoDigests が compose.yaml の版と index のダイジェストに一致（container-swap-record.md）。A1 の時点で既にそろっていたため --force-recreate は行わず（依頼者の決定 A）、照合を今のコンテナに当てた。Given の「作り直したとき」との差は code-summary.md に記録。直しの Bolt B7（U5 R-03）: 作り直しなしの読み替え（依頼者が承認の場で受け入れた）。結果の照合を作り直しの後ではなく今のコンテナに当てた。"
     },
     {
       "id": "AC4.2.3",
@@ -48,7 +48,7 @@
       "id": "AC4.2.4",
       "status": "OK",
       "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
-      "note": "CA2: Mailpit の /api/v1/info 200、example.com 宛て 1 通の受信 1 件。CA8: アプリの /actuator/health 200・UP。作り直しの後ではなく今のコンテナに当てた（依頼者の決定 A）"
+      "note": "CA2: Mailpit の /api/v1/info 200、example.com 宛て 1 通の受信 1 件。CA8: アプリの /actuator/health 200・UP。作り直しの後ではなく今のコンテナに当てた（依頼者の決定 A）。直しの Bolt B7（U5 R-03）: 作り直しなしの読み替え（依頼者が承認の場で受け入れた）。結果の照合を作り直しの後ではなく今のコンテナに当てた。"
     },
     {
       "id": "AC4.2.5",
@@ -60,13 +60,13 @@
       "id": "AC4.3.1",
       "status": "OK",
       "target": "perf/README.md",
-      "note": "冒頭の「今の基準の一覧」（k6 の表 28 行で 78 場面・k6 の外の表 6 行）。CB6 で inspect の thresholds と 78 場面一致・過不足 0（perf-docs-check-record.md 4節）"
+      "note": "冒頭の「今の基準の一覧」（k6 の表 28 行で 78 場面・k6 の外の表 6 行）。CB6 で inspect の thresholds と 78 場面一致・過不足 0（perf-docs-check-record.md 4節）。直しの Bolt B7（U5 R-01）: 本文の線の値を含む行 73 行を取り出して (a) 32・(b) 3・(c) 38 に分け、(a) をすべて一覧の行と対応させた（一覧に無かった 5 行を k6 の外の表に足した。CB22 で対応の無い行 0。CB5 の組は前 161・後 166、CB6 は 78 場面一致）。perf-docs-check-record.md 12節。"
     },
     {
       "id": "AC4.3.2",
       "status": "OK",
       "target": "perf/README.md",
-      "note": "末尾の「履歴」の章。CB17: 本文の Intent の名前・日付の検索 0 件、CB9〜CB12 の行の集合の突き合わせ合格（perf-docs-check-record.md 5〜6節）"
+      "note": "末尾の「履歴」の章。CB17: 本文の Intent の名前・日付の検索 0 件、CB9〜CB12 の行の集合の突き合わせ合格（perf-docs-check-record.md 5〜6節）。直しの Bolt B7（U5 R-01・R-02）: 前の線の合否の文 3 つ（FR9.4 の 90%・BR3.1 の 0.9・書き込みの場面の対象DB の 85%）と前の値 2304m の計算を履歴へ移した（履歴 H70〜H73）。bizCreateLarge の注記は緩和を未決に直した（H69）。"
     },
     {
       "id": "AC4.3.3",
@@ -138,7 +138,7 @@
       "id": "NFR8.84",
       "status": "OK",
       "target": "aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/u5-container-perf-docs/code-generation/container-swap-record.md",
-      "note": "CA2（宛先は example.com だけ）・CA8（アプリは動いていたため起動は不要。救済の WARN は数えていない）"
+      "note": "CA2（宛先は example.com だけ）・CA8（アプリは動いていたため起動は不要。救済の WARN は数えていない）。直しの Bolt B7（U5 R-03）: 救済の WARN は未計測（作り直し・起動をしていないため）。読み替えを依頼者が受け入れた。"
     },
     {
       "id": "NFR8.85",

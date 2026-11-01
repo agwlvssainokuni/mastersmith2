@@ -91,3 +91,13 @@
 ## 10. Build and Test に引き継ぐこと
 
 計画 11節の H1〜H7 のとおり（わざと残存を作った 1 回の verify で実際の出力に値が出ないこと、ファイルごとの passed の件数、CI の試行ごとの記録、実際の summary json の `--scan` と `gitleaks dir`、verify と CI の時間、統合の後の検索、Intent の最後の E2E）。`traceability.json` では AC4.1.6・NFR5.62・NFR8.64・NFR8.69・BR4.3 を Deferred（Build and Test）にした。
+
+## 11. 直しの Bolt B7（承認の場の Request Changes の直し）
+
+前の節は書き換えていない。直しは U3 の計画の「承認の場の Request Changes の直し（直しの Bolt B7）」の Step 29 で、ブランチは `fix/261029-reference-lookup-cleanup-review`。
+
+- **U4 R-04（コード 2 で止まったときの案内）**: `perf/README.md` の `--scan` の説明の後に 1 行足した。終わりのコード 2（読めない・64 MiB を超える・NUL を含むテキストのファイル）で止まったときは、表示されたパスのファイルを記録の置き場から外す（要らないものは消し、要るものは置き場の外へ移す）か、バイナリとして扱ってよい種類なら理由を書いて一覧に足すよう依頼者に諮り、外した後に `--scan` を流し直して 0 を確かめる。
+- 変えたファイル: `perf/README.md`（U4 の節の 1 行）だけ。道具（`perf/redact-k6-evidence.mjs`）とテストは変えていない。
+- 確かめ: U5 の `perf-docs-check-record.md` 12.3節（Q1 の U4 の節の見出し 7 つ、Q2 の `evidence/` へ直接置く形 0 件、Q7 の `gitleaks dir` 終了コード 0、CB22 の案内の行 1 件）。
+- `traceability.json` の AC4.1.4 の note に注記を足した（status は変えていない）。
+- Build and Test に引き継ぐこと: 計画 B7.4 の表のとおり（U4 の分: R-01 README の「別の検査」の書き方、R-02 道具のカバレッジと `coverage.include`、R-03 道具に当たらない検査の一覧）。

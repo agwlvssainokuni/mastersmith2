@@ -111,3 +111,35 @@ jqwik の失敗は無く、記録する種は無い。businessdata の結合テ�
 ## 7. 依頼者に確かめたいこと
 
 新しく確かめたいことは無い。計画との差 3 つは依頼者が受け入れ済み（4節）。B3 の CI（f35b7b8）の結果は確認中で、失敗したときは `team.md` の「不安定なテストと CI の失敗」の決まりで扱う。
+
+## 8. 直しの Bolt B7（承認の場の Request Changes の直し）
+
+前の節は書き換えていない。直しは U3 の計画の「承認の場の Request Changes の直し（直しの Bolt B7）」の Step 20・21・28 で、ブランチは `fix/261029-reference-lookup-cleanup-review`（始めは `aa6883c`）。詳しい記録は U3 の `generation-notes.md` の「直しの Bolt B7」の節。
+
+### 8.1 直した指摘
+
+- **U2 R-01（⑩ の想定外の診断の WARN）**: 保存の前の参照の確かめ（⑩）の想定外の失敗でも、⑪ と同じく値を含まない診断の WARN を口の外で1行出してから 500 にする。キーは `purpose=REFERENCE`・`stage`・`reason=UNEXPECTED`・`sqlState`・`vendorCode`・`exceptionClass`（無いキーは出さない）・`budgetExceeded=false`。書き込みの口は借りず、監査も出さない（今と同じ）。
+  - 型: `BusinessDataWriteService` の中に口の中の結果の `sealed interface StepAttempt`（`Completed`・`Unexpected`）を置いた。domain の `ReferenceStepOutcome`・`ReferenceCheckResult`・`ReferenceCountState` と `ReferenceFailureReason` は変えていない。
+  - 手がかり: `BusinessDataUnexpectedException` に値を含まない手がかりを持つ作り方 `withDiagnosis`（パッケージの中だけ）を足した（メッセージ・原因なしは同じ）。`ReferenceLookup` は `check`・`countState` の写さない失敗だけを手がかりつきにし、読み取りの API の経路は変えていない。
+- **U2 R-03（参照元が 0 行の確かめ）**: `perf/biz/make-biz-seed.sh` の出す SQL の最後に、`biz_refcreate` が 0 行でなければ止まる文（目印 `biz_refcreate_must_be_empty`、値も数も出さない）を足し、`perf/README.md` の U2 の節に「流す前に毎回 0 行にする」の行を足した（依頼者の決定 A）。
+
+### 8.2 変えたファイル
+
+- 本体: `backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java`・`ReferenceLookup.java`・`BusinessDataUnexpectedException.java`
+- テスト: `backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java`
+- 台本と文書: `perf/biz/make-biz-seed.sh`・`perf/README.md`（U2 の節の 1 行）
+
+### 8.3 足したテストと結果
+
+- `BusinessDataWriteReferenceTest` に 3 件（`INVALID_VALUE` の確かめ・`UNEXPECTED` の必須の状態の読み取り・値の欠け）を足し、既存の `unexpectedPreviousRow` に WARN の確かめ（`stage=PREVIOUS_ROW`）を足した。
+- `:backend:test --tests '*BusinessDataWriteReferenceTest' --tests '*BusinessDataWriteServiceTest' --tests '*ReferenceLookupTest'`: 22・16・24 件、失敗 0（T-F2 の WARN 1 行と BR2.7 の拒否で WARN 0 行を含む）。`:backend:integrationTest --tests '*ReferenceWriteSecretLeakIT'`: 1 件、失敗 0・SKIPPED 0。`--tests '*ArchitectureTest*' --tests '*BusinessData*'`: 228 件、失敗 0。`spotlessCheck`・`spotbugsGate` 通過（触れたクラスの警告は直す前と同じ件数）。
+- 種の台本: `bash -n` 通過、3 種類の出力に目印の文が 1 つだけ行の数の出力の直後にある。見本の PostgreSQL で 0 行のとき終了コード 0、1 行のとき 3（誤りの文に値・数なし）、`bizperf` を消して片付けた。MySQL・MariaDB の流し込みは Build and Test の試し走りで確かめる。
+- `businessdata.service` のカバレッジは、指揮役の `:backend:cleanTest :backend:cleanIntegrationTest verify` の後に `jacocoTestReport.xml` から記録する（Step 35）。
+
+### 8.4 計画との差
+
+- 計画が挙げた ⑩ の想定外（`check`・`countState` の写さない失敗と値の欠け）に加えて、更新前の行の写さない失敗（`stage=PREVIOUS_ROW`）と、⑩ の中で投げられる手がかりの無い想定外（`stage` が分からなければキーを出さない）でも WARN を1行出すようにした。どれも ⑩ の想定外で、⑪ との非対称を残さないため。
+
+### 8.5 Build and Test に引き継ぐこと
+
+計画 B7.4 の表のとおり（U2 の分: R-02 接続の数の確かめに MariaDB と内部DB の借りた回数を足すか、R-04 NFR5.21 のカバレッジを B7 の後の値で記録する）。あわせて、種の台本の確かめの文を MySQL・MariaDB の試し走りで流す。
