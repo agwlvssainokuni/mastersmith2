@@ -1,0 +1,197 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "refCreateChecked 201": {
+        "name": "refCreateChecked 201",
+        "path": "::refCreateChecked 201",
+        "id": "fa830da55b5466495381ed6b54224d25",
+        "passes": 211086,
+        "fails": 0
+      }
+    }
+  },
+  "metrics": {
+    "http_req_duration{name:refCreateChecked}": {
+      "count": 211086,
+      "avg": 8.436407004742092,
+      "min": 2.930046,
+      "med": 8.0184855,
+      "p(90)": 11.7940685,
+      "p(95)": 13.25079175,
+      "p(99)": 16.912293899999995,
+      "max": 76.187877,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_waiting": {
+      "p(99)": 16.888485499999998,
+      "max": 340.753575,
+      "count": 211123,
+      "avg": 8.423410023407977,
+      "min": 1.884836,
+      "med": 7.991219,
+      "p(90)": 11.7652242,
+      "p(95)": 13.219344999999997
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "iteration_duration": {
+      "count": 211086,
+      "avg": 8.523435740191253,
+      "min": 2.992046,
+      "med": 8.1035065,
+      "p(90)": 11.897992,
+      "p(95)": 13.357143,
+      "p(99)": 17.02745565,
+      "max": 76.356668
+    },
+    "iterations": {
+      "count": 211086,
+      "rate": 1151.3835979789624
+    },
+    "checks{scenario:refCreateChecked}": {
+      "passes": 211086,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "http_req_blocked": {
+      "count": 211123,
+      "avg": 0.0033093006920130053,
+      "min": 0.000625,
+      "med": 0.001166,
+      "p(90)": 0.001667,
+      "p(95)": 0.002,
+      "p(99)": 0.08919499999999952,
+      "max": 5.016216
+    },
+    "data_sent": {
+      "count": 120514377,
+      "rate": 657354.2394969496
+    },
+    "http_req_duration": {
+      "p(99)": 16.92649176,
+      "max": 340.870033,
+      "count": 211123,
+      "avg": 8.450657916119937,
+      "min": 1.913628,
+      "med": 8.018341,
+      "p(90)": 11.794825800000002,
+      "p(95)": 13.2526754
+    },
+    "checks": {
+      "passes": 211086,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(95)": 13.252909949999996,
+      "p(99)": 16.92656222,
+      "max": 340.870033,
+      "count": 211110,
+      "avg": 8.45098527106243,
+      "min": 1.913628,
+      "med": 8.0184855,
+      "p(90)": 11.794925
+    },
+    "http_req_receiving": {
+      "count": 211123,
+      "avg": 0.020980664787824944,
+      "min": 0.00675,
+      "med": 0.016125,
+      "p(90)": 0.025458,
+      "p(95)": 0.030666,
+      "p(99)": 0.081042,
+      "max": 6.432294
+    },
+    "http_reqs": {
+      "count": 211123,
+      "rate": 1151.5854171101469
+    },
+    "http_req_connecting": {
+      "p(99)": 0.03792325999999828,
+      "max": 4.980341,
+      "count": 211123,
+      "avg": 0.0012857901933943712,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_tls_handshaking": {
+      "count": 211123,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0
+    },
+    "data_received": {
+      "count": 120927541,
+      "rate": 659607.8719163208
+    },
+    "iteration_duration{scenario:refCreateChecked}": {
+      "avg": 8.523435740191253,
+      "min": 2.992046,
+      "med": 8.1035065,
+      "p(90)": 11.897992,
+      "p(95)": 13.357143,
+      "p(99)": 17.02745565,
+      "max": 76.356668,
+      "count": 211086,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    },
+    "http_req_sending": {
+      "max": 5.761508,
+      "count": 211123,
+      "avg": 0.006267227924007451,
+      "min": 0.0025,
+      "med": 0.004167,
+      "p(90)": 0.009542,
+      "p(95)": 0.01125,
+      "p(99)": 0.020292
+    },
+    "http_req_failed": {
+      "passes": 13,
+      "fails": 211110,
+      "value": 0.00006157547969666971
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    }
+  },
+  "setup_data": {
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    },
+    "refDefinitionId": {
+      "dslHash": "[REDACTED-SETUP]",
+      "workRoleId": 3
+    }
+  }
+}

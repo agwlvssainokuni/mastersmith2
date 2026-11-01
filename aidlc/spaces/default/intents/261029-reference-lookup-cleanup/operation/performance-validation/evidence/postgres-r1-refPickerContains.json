@@ -1,0 +1,193 @@
+{
+  "root_group": {
+    "groups": {},
+    "checks": {
+      "refPickerContains 200": {
+        "path": "::refPickerContains 200",
+        "id": "d55493244cf8f0713b0fbe976f67611e",
+        "passes": 4733,
+        "fails": 0,
+        "name": "refPickerContains 200"
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "metrics": {
+    "checks": {
+      "passes": 4733,
+      "fails": 0,
+      "value": 1
+    },
+    "data_received": {
+      "rate": 45860.023661339816,
+      "count": 8431524
+    },
+    "iterations": {
+      "count": 4733,
+      "rate": 25.743328488316152
+    },
+    "http_req_sending": {
+      "min": 0.0035,
+      "med": 0.011332,
+      "p(90)": 0.0171648,
+      "p(95)": 0.019289,
+      "p(99)": 0.03805499999999995,
+      "max": 3.877626,
+      "count": 4773,
+      "avg": 0.014029816677142282
+    },
+    "http_req_failed": {
+      "passes": 14,
+      "fails": 4759,
+      "value": 0.002933165723863398
+    },
+    "http_req_blocked": {
+      "max": 2.592072,
+      "count": 4773,
+      "avg": 0.005780740624345235,
+      "min": 0.000792,
+      "med": 0.0025,
+      "p(90)": 0.003458,
+      "p(95)": 0.0044574,
+      "p(99)": 0.13349199999999992
+    },
+    "http_req_waiting": {
+      "min": 0.752732,
+      "med": 371.050692,
+      "p(90)": 462.18152660000004,
+      "p(95)": 495.3168223999999,
+      "p(99)": 582.4902034799998,
+      "max": 758.56826,
+      "count": 4773,
+      "avg": 377.9862830337326
+    },
+    "iteration_duration{scenario:refPickerContains}": {
+      "avg": 380.7377534612298,
+      "min": 138.091818,
+      "med": 371.915881,
+      "p(90)": 462.7879118,
+      "p(95)": 496.2642916,
+      "p(99)": 584.7514218399998,
+      "max": 758.847518,
+      "count": 4733,
+      "thresholds": {
+        "p(95)<3000": false
+      }
+    },
+    "http_reqs": {
+      "rate": 25.960893064596025,
+      "count": 4773
+    },
+    "http_req_tls_handshaking": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 4773
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    },
+    "vus_max": {
+      "min": 10,
+      "max": 10,
+      "value": 10
+    },
+    "http_req_duration{name:refPickerContains}": {
+      "p(99)": 584.5823201999998,
+      "max": 758.647584,
+      "count": 4733,
+      "avg": 380.5222801652235,
+      "min": 137.960371,
+      "med": 371.714148,
+      "p(90)": 462.6177622,
+      "p(95)": 495.81765959999996,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_connecting": {
+      "p(99)": 0.09060883999999983,
+      "max": 2.477252,
+      "count": 4773,
+      "avg": 0.002014809763251623,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "iteration_duration": {
+      "p(95)": 496.2642916,
+      "p(99)": 584.7514218399998,
+      "max": 758.847518,
+      "count": 4733,
+      "avg": 380.7377534612298,
+      "min": 138.091818,
+      "med": 371.915881,
+      "p(90)": 462.7879118
+    },
+    "http_req_duration": {
+      "med": 371.119088,
+      "p(90)": 462.25010199999997,
+      "p(95)": 495.3729418,
+      "p(99)": 582.5626441999998,
+      "max": 758.647584,
+      "count": 4773,
+      "avg": 378.0604425327891,
+      "min": 0.816098
+    },
+    "data_sent": {
+      "count": 2497197,
+      "rate": 13582.540179809344
+    },
+    "http_req_receiving": {
+      "p(95)": 0.08278179999999999,
+      "p(99)": 0.1528398399999999,
+      "max": 3.89498,
+      "count": 4773,
+      "avg": 0.060129682380054374,
+      "min": 0.009624,
+      "med": 0.050869,
+      "p(90)": 0.0699916
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(90)": 462.408098,
+      "p(95)": 495.5600836,
+      "p(99)": 583.2695307999998,
+      "max": 758.647584,
+      "count": 4759,
+      "avg": 379.1611686245015,
+      "min": 0.816098,
+      "med": 371.328395
+    },
+    "checks{scenario:refPickerContains}": {
+      "fails": 0,
+      "passes": 4733,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    }
+  },
+  "setup_data": {
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    }
+  }
+}
