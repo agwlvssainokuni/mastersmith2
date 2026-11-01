@@ -164,12 +164,11 @@ public class TargetDataSourceConfig {
      * @return 接続の URL
      */
     static String jdbcUrl(DatabaseProduct product, String host, int port, String database) {
-        String scheme =
-                switch (product) {
-                    case MYSQL -> "mysql";
-                    case MARIADB -> "mariadb";
-                    case POSTGRESQL -> "postgresql";
-                };
+        String scheme = switch (product) {
+            case MYSQL -> "mysql";
+            case MARIADB -> "mariadb";
+            case POSTGRESQL -> "postgresql";
+        };
         return "jdbc:" + scheme + "://" + host + ":" + port + "/" + database;
     }
 

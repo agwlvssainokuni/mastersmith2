@@ -109,15 +109,14 @@ public final class RoleTransferReader {
      */
     public static TransferErrors rejected(SafeYamlResult.Rejected rejected) {
         Objects.requireNonNull(rejected, "rejected");
-        TransferError.Reason reason =
-                switch (rejected.kind()) {
-                    case TOO_DEEP -> TransferError.Reason.TOO_DEEP;
-                    case TOO_MANY_ALIASES -> TransferError.Reason.TOO_MANY_ALIASES;
-                    case TAG_NOT_ALLOWED -> TransferError.Reason.TAG_NOT_ALLOWED;
-                    case DUPLICATE_KEY -> TransferError.Reason.DUPLICATE_KEY;
-                    case SYNTAX -> TransferError.Reason.SYNTAX;
-                    case TOO_LARGE -> throw new IllegalArgumentException("大きさの上限の超過は 413 で返します");
-                };
+        TransferError.Reason reason = switch (rejected.kind()) {
+            case TOO_DEEP -> TransferError.Reason.TOO_DEEP;
+            case TOO_MANY_ALIASES -> TransferError.Reason.TOO_MANY_ALIASES;
+            case TAG_NOT_ALLOWED -> TransferError.Reason.TAG_NOT_ALLOWED;
+            case DUPLICATE_KEY -> TransferError.Reason.DUPLICATE_KEY;
+            case SYNTAX -> TransferError.Reason.SYNTAX;
+            case TOO_LARGE -> throw new IllegalArgumentException("大きさの上限の超過は 413 で返します");
+        };
         return TransferErrors.of(new TransferError(reason, rejected.line(), rejected.column(), rejected.path()));
     }
 

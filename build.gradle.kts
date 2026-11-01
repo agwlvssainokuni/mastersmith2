@@ -69,8 +69,8 @@ val vendorDir = layout.projectDirectory.dir("vendor/make-you-chic-ui")
 /** 道具の入れ方の案内（README の「前提の道具」と同じ内容）。 */
 val toolGuides =
     mapOf(
-        "node" to "Node.js 24 を入れてください（例: brew install node@24、または nvm install 24）。",
-        "npm" to "Node.js 24 に付属する npm を使います（例: brew install node@24）。",
+        "node" to "Node.js 26 を入れてください（例: brew install node@26、または nvm install 26）。",
+        "npm" to "Node.js 26 に付属する npm を使います（例: brew install node@26）。",
         "gitleaks" to "Gitleaks を入れてください（例: brew install gitleaks）。",
         "osv-scanner" to "OSV-Scanner を入れてください（例: brew install osv-scanner）。",
         "git" to "Git を入れてください。",
@@ -87,13 +87,13 @@ fun requireTool(name: String) {
 
 val checkToolchain =
     tasks.register("checkToolchain") {
-        description = "Node.js 24 と npm・git があることを確かめる。"
+        description = "Node.js 26 と npm・git があることを確かめる。"
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         doLast {
             listOf("node", "npm", "git").forEach(::requireTool)
             val version = providers.exec { commandLine("node", "--version") }.standardOutput.asText.get().trim()
-            if (!version.startsWith("v24.")) {
-                throw GradleException("Node.js 24 が必要です（現在: $version）。${toolGuides["node"]}")
+            if (!version.startsWith("v26.")) {
+                throw GradleException("Node.js 26 が必要です（現在: $version）。${toolGuides["node"]}")
             }
         }
     }

@@ -107,18 +107,16 @@ class ReferenceAuthorizationApiIT {
         Stream.Builder<Arguments> rows = Stream.builder();
         for (Mode mode : Mode.values()) {
             for (Subject subject : Subject.values()) {
-                int status =
-                        switch (subject) {
-                            case ANONYMOUS, SUSPENDED -> 401;
-                            case FULL -> 200;
-                            default -> 403;
-                        };
-                String code =
-                        switch (status) {
-                            case 401 -> "AUTHENTICATION_REQUIRED";
-                            case 403 -> "ACCESS_DENIED";
-                            default -> null;
-                        };
+                int status = switch (subject) {
+                    case ANONYMOUS, SUSPENDED -> 401;
+                    case FULL -> 200;
+                    default -> 403;
+                };
+                String code = switch (status) {
+                    case 401 -> "AUTHENTICATION_REQUIRED";
+                    case 403 -> "ACCESS_DENIED";
+                    default -> null;
+                };
                 rows.add(Arguments.of(mode, subject, status, code));
             }
         }
@@ -128,38 +126,36 @@ class ReferenceAuthorizationApiIT {
     private Map<PermissionTarget, PermissionValues> settings(Subject subject) {
         String schema = sample.schema();
         PermissionValues none = new PermissionValues(MainPermission.NONE, null, null);
-        Map<PermissionTarget, PermissionValues> overrides =
-                switch (subject) {
-                    case SOURCE_COLUMN_READ ->
-                        Map.of(
-                                PermissionTarget.column(schema, SRC_API, "pick"),
-                                new PermissionValues(MainPermission.READ, null, null),
-                                PermissionTarget.column(schema, SRC_API, "pickbin"),
-                                new PermissionValues(MainPermission.READ, null, null),
-                                PermissionTarget.column(schema, SRC_API, "pickpw"),
-                                new PermissionValues(MainPermission.READ, null, null));
-                    case TARGET_TABLE_NONE -> Map.of(PermissionTarget.table(schema, TGT), none);
-                    case VALUE_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "v"), none);
-                    case LABEL_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "l"), none);
-                    case LIST_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "x"), none);
-                    case NO_USABLE_SEARCH ->
-                        Map.of(
-                                PermissionTarget.column(schema, TGT, "s"),
-                                none,
-                                PermissionTarget.column(schema, TGT, "n"),
-                                none);
-                    default -> Map.of();
-                };
+        Map<PermissionTarget, PermissionValues> overrides = switch (subject) {
+            case SOURCE_COLUMN_READ ->
+                Map.of(
+                        PermissionTarget.column(schema, SRC_API, "pick"),
+                        new PermissionValues(MainPermission.READ, null, null),
+                        PermissionTarget.column(schema, SRC_API, "pickbin"),
+                        new PermissionValues(MainPermission.READ, null, null),
+                        PermissionTarget.column(schema, SRC_API, "pickpw"),
+                        new PermissionValues(MainPermission.READ, null, null));
+            case TARGET_TABLE_NONE -> Map.of(PermissionTarget.table(schema, TGT), none);
+            case VALUE_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "v"), none);
+            case LABEL_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "l"), none);
+            case LIST_COLUMN_NONE -> Map.of(PermissionTarget.column(schema, TGT, "x"), none);
+            case NO_USABLE_SEARCH ->
+                Map.of(
+                        PermissionTarget.column(schema, TGT, "s"),
+                        none,
+                        PermissionTarget.column(schema, TGT, "n"),
+                        none);
+            default -> Map.of();
+        };
         return tables.apiSettings(overrides);
     }
 
     private HttpResponse<String> send(Mode mode, Subject subject, String token) {
-        String column =
-                switch (subject) {
-                    case BINARY_VALUE -> "pickbin";
-                    case PASSWORD_VALUE -> "pickpw";
-                    default -> "pick";
-                };
+        String column = switch (subject) {
+            case BINARY_VALUE -> "pickbin";
+            case PASSWORD_VALUE -> "pickpw";
+            default -> "pick";
+        };
         String searchColumn = column.equals("pick") ? "s" : "l";
         return mode == Mode.SEARCH
                 ? app.post(

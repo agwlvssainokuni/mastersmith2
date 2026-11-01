@@ -65,17 +65,15 @@ public class DefaultSafeYamlReader implements SafeYamlReader {
     }
 
     private static SafeYamlResult.Rejected reject(DslError error) {
-        SafeYamlRejectionKind kind =
-                switch (error.kind()) {
-                    case SIZE_LIMIT -> SafeYamlRejectionKind.TOO_LARGE;
-                    case DEPTH_LIMIT -> SafeYamlRejectionKind.TOO_DEEP;
-                    case ALIAS_LIMIT -> SafeYamlRejectionKind.TOO_MANY_ALIASES;
-                    case FORBIDDEN_TAG -> SafeYamlRejectionKind.TAG_NOT_ALLOWED;
-                    case DUPLICATE_KEY -> SafeYamlRejectionKind.DUPLICATE_KEY;
-                    case SYNTAX -> SafeYamlRejectionKind.SYNTAX;
-                    case UNSUPPORTED_VERSION, SEMANTIC ->
-                        throw new IllegalStateException("読み込みの段に無い誤りの種類です: " + error.kind());
-                };
+        SafeYamlRejectionKind kind = switch (error.kind()) {
+            case SIZE_LIMIT -> SafeYamlRejectionKind.TOO_LARGE;
+            case DEPTH_LIMIT -> SafeYamlRejectionKind.TOO_DEEP;
+            case ALIAS_LIMIT -> SafeYamlRejectionKind.TOO_MANY_ALIASES;
+            case FORBIDDEN_TAG -> SafeYamlRejectionKind.TAG_NOT_ALLOWED;
+            case DUPLICATE_KEY -> SafeYamlRejectionKind.DUPLICATE_KEY;
+            case SYNTAX -> SafeYamlRejectionKind.SYNTAX;
+            case UNSUPPORTED_VERSION, SEMANTIC -> throw new IllegalStateException("読み込みの段に無い誤りの種類です: " + error.kind());
+        };
         return new SafeYamlResult.Rejected(kind, error.line(), error.column(), error.path());
     }
 }

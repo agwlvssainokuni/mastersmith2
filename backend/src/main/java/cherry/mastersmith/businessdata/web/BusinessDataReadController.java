@@ -171,11 +171,10 @@ public class BusinessDataReadController {
         ReferenceRowsQuery query =
                 body.toQuery().orElseThrow(() -> new BusinessException(CommonProblemTypes.VALIDATION_FAILED));
         long userId = context.currentUserId();
-        ReferenceRowsResult result =
-                switch (query.mode()) {
-                    case SEARCH -> references.search(userId, query);
-                    case VALUE -> references.label(userId, query);
-                };
+        ReferenceRowsResult result = switch (query.mode()) {
+            case SEARCH -> references.search(userId, query);
+            case VALUE -> references.label(userId, query);
+        };
         return switch (result) {
             case ReferenceRowsResult.Found found -> ReferenceRowsResponse.from(found.rows());
             case ReferenceRowsResult.Denied denied -> throw new BusinessException(accessDenied);

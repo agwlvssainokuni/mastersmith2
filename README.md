@@ -8,8 +8,8 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 
 | 道具 | 版 | 入れ方の例（macOS） | 使う場面 |
 |---|---|---|---|
-| JDK | 25（Temurin） | `brew install --cask temurin@25`、または SDKMAN の `sdk install java 25.0.4-tem` | ビルド・テスト |
-| Node.js・npm | 24 | `brew install node@24`、または `nvm install 24` | 画面のビルド・テスト |
+| JDK | 25（Temurin） | `brew install --cask temurin@25`、または SDKMAN の `sdk install java 25.0.5.0+8-tem` | ビルド・テスト |
+| Node.js・npm | 26 | `brew install node@26`、または `nvm install 26` | 画面のビルド・テスト |
 | Gitleaks | 8.30.1 | `brew install gitleaks` | 秘密情報の検出（`./gradlew verify`） |
 | OSV-Scanner | 2.6.0 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`） |
 | Python と pre-commit | pre-commit 4.x | `brew install pre-commit` | コミットの前の検査 |

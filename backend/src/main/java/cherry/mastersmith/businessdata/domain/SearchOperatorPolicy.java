@@ -60,13 +60,12 @@ public final class SearchOperatorPolicy {
         if (masked || type == ValueType.BINARY) {
             return Optional.empty();
         }
-        SearchMode mode =
-                switch (search.operator()) {
-                    case EQUALS -> SearchMode.EQUALS;
-                    case CONTAINS -> SearchMode.CONTAINS;
-                    case RANGE -> SearchMode.RANGE;
-                    case CHOICE, IN -> SearchMode.CHOICE;
-                };
+        SearchMode mode = switch (search.operator()) {
+            case EQUALS -> SearchMode.EQUALS;
+            case CONTAINS -> SearchMode.CONTAINS;
+            case RANGE -> SearchMode.RANGE;
+            case CHOICE, IN -> SearchMode.CHOICE;
+        };
         List<OptionItem> choices = List.of();
         if (mode == SearchMode.CHOICE) {
             if (options != null && options.source() == OptionSourceKind.FIXED) {

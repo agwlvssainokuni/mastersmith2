@@ -209,38 +209,36 @@ class RoleAdminAuthorizationApiIT {
                 : null;
         Map<String, Object> before = state();
 
-        HttpResponse<String> response =
-                switch (endpoint) {
-                    case LIST -> api.list(token, "");
-                    case CREATE -> api.create(token, RoleFixtures.uniqueName("認可 作成"));
-                    case DETAIL -> api.detail(token, roleId);
-                    case RENAME -> api.rename(token, roleId, RoleFixtures.uniqueName("認可 改名"));
-                    case DELETE -> api.delete(token, emptyRole);
-                    case SCHEMAS -> api.schemas(token, roleId);
-                    case TABLES -> api.tables(token, roleId, "SALES");
-                    case COLUMNS -> api.columns(token, roleId, "SALES", "ORDER_LINE");
-                    case SAVE ->
-                        api.save(
-                                token,
-                                roleId,
-                                saveBody("SALES", null, List.of(entry("SALES", null, null, "READ", null, null))));
-                    case CLEAR ->
-                        api.clear(
-                                token,
-                                roleId,
-                                RoleApi.json(Map.of(
-                                        "targets", List.of(Map.of("schemaName", "SALES", "tableName", "GONE")))));
-                    case ASSIGNMENTS -> api.assignments(token, roleId);
-                    case ASSIGN_USER -> api.assignUser(token, roleId, freeUser);
-                    case ASSIGN_GROUP -> api.assignGroup(token, roleId, freeGroup);
-                    case UNASSIGN_USER -> api.unassignUser(token, roleId, assignedUser);
-                    case UNASSIGN_GROUP -> api.unassignGroup(token, roleId, assignedGroup);
-                    case GROUP_ROLES -> api.groupRoles(token, assignedGroup);
-                    case USER_ROLES -> api.userRoles(token, assignedUser);
-                    case TRANSFER_EXPORT -> api.export(token);
-                    case TRANSFER_CHECK -> api.check(token, transferYaml);
-                    case TRANSFER_APPLY -> api.apply(token, transferYaml, transferFingerprint);
-                };
+        HttpResponse<String> response = switch (endpoint) {
+            case LIST -> api.list(token, "");
+            case CREATE -> api.create(token, RoleFixtures.uniqueName("認可 作成"));
+            case DETAIL -> api.detail(token, roleId);
+            case RENAME -> api.rename(token, roleId, RoleFixtures.uniqueName("認可 改名"));
+            case DELETE -> api.delete(token, emptyRole);
+            case SCHEMAS -> api.schemas(token, roleId);
+            case TABLES -> api.tables(token, roleId, "SALES");
+            case COLUMNS -> api.columns(token, roleId, "SALES", "ORDER_LINE");
+            case SAVE ->
+                api.save(
+                        token,
+                        roleId,
+                        saveBody("SALES", null, List.of(entry("SALES", null, null, "READ", null, null))));
+            case CLEAR ->
+                api.clear(
+                        token,
+                        roleId,
+                        RoleApi.json(Map.of("targets", List.of(Map.of("schemaName", "SALES", "tableName", "GONE")))));
+            case ASSIGNMENTS -> api.assignments(token, roleId);
+            case ASSIGN_USER -> api.assignUser(token, roleId, freeUser);
+            case ASSIGN_GROUP -> api.assignGroup(token, roleId, freeGroup);
+            case UNASSIGN_USER -> api.unassignUser(token, roleId, assignedUser);
+            case UNASSIGN_GROUP -> api.unassignGroup(token, roleId, assignedGroup);
+            case GROUP_ROLES -> api.groupRoles(token, assignedGroup);
+            case USER_ROLES -> api.userRoles(token, assignedUser);
+            case TRANSFER_EXPORT -> api.export(token);
+            case TRANSFER_CHECK -> api.check(token, transferYaml);
+            case TRANSFER_APPLY -> api.apply(token, transferYaml, transferFingerprint);
+        };
 
         switch (subject) {
             case ADMIN -> assertThat(response.statusCode()).as(response.body()).isEqualTo(endpoint.success);

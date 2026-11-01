@@ -20,14 +20,15 @@
 java = "25"
 spring-boot = "4.1.2"
 spotless = "8.10.4"
-palantir-java-format = "2.98.0"
+palantir-java-format = "2.103.0"
 spotbugs-gradle-plugin = "6.5.13"
-spotbugs-tool = "4.10.4"
+spotbugs-tool = "4.10.5"
 findsecbugs = "1.14.0"
-jacoco = "0.8.15"
+jacoco = "0.8.16"
 logstash-logback-encoder = "9.0"
 # OpenTelemetry の logback 用の出力。Spring Boot が管理する OpenTelemetry（4.1.2 でも 1.62.0 のまま）に合う版に固定する。
 # Spring Boot 4.1.2 への引き上げで見直した結果、OpenTelemetry が 1.62.0 のままのため固定を残す（2.29 以降は api 1.63 以上を求める）。
+# 2026-11-01 に見直した結果も同じ（Spring Boot の最新の安定版は 4.1.2 のまま。appender の最新 2.33.1-alpha は api 1.67.0 を求める）。
 # 外す時期: Spring Boot の管理の OpenTelemetry が 1.63 以上になったとき（外部エクスポートを有効にして確かめる）。
 opentelemetry-instrumentation = "2.28.1-alpha"
 jqwik = "1.10.2"
@@ -36,12 +37,13 @@ archunit = "1.5.1"
 snakeyaml = "2.7"
 # DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
 # 固定する。Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、見直した結果この固定を残す。
+# 2026-11-01 に見直した結果も同じ（最新の 3.0.8 は Jackson 3.2.1 を求める）。
 # 外す時期: Spring Boot の管理の Jackson が 3.2 系以上になったとき。
 networknt-json-schema-validator = "3.0.6"
 # メールのテンプレートの描画（Intent 260925-user-management の U1）。自前の Mustache のエンジン java-mustache-processor の版。
-# 実体は Git サブモジュール vendor/java-mustache-processor（タグ 0.1.0、コミット 8d44c36）を composite build で組んだもので置き換える
+# 実体は Git サブモジュール vendor/java-mustache-processor（タグ 0.1.1、コミット d61ba6d）を composite build で組んだもので置き換える
 # （settings.gradle.kts）。サブモジュールの固定先を更新するときは、この版も合わせて見直す。
-cherry-mustache = "0.1.0"
+cherry-mustache = "0.1.1"
 # テスト用の SMTP の受け手（U1）。JVM の中で起動し、STARTTLS・SMTPS・認証・宛先の拒否を作れる。Apache License 2.0。
 subethasmtp = "7.2.2"
 

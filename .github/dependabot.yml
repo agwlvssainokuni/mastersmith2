@@ -34,11 +34,13 @@ updates:
     # 食い違い、外部エクスポートを有効にしたときに失敗するため。project.md の Tech Stack）。外部エクスポートが既定で無効の
     # ./gradlew verify ではこの失敗が現れず確かめられないため、すべての更新を知らせない。
     # Spring Boot 4.1.2 でも OpenTelemetry は 1.62.0 のままのため、固定を残した（Intent 261025-deps-perf-carryover の FR2.3）。
+    # 2026-11-01 にも見直し、Spring Boot の最新の安定版が 4.1.2 のまま（OpenTelemetry 1.62.0）のため残した（Intent 261101-maintenance-update）。
     # 外す時期: Spring Boot の管理の OpenTelemetry が 1.63 以上になったとき（外部エクスポートを有効にして確かめる）。
     #
     # networknt-json-schema-validator は 3.0.6 に固定している。3.0.7 以降はアプリ全体の Jackson を 3.2 系に引き上げ、Spring Boot の
     # 管理の 3.1 系から外れるため（project.md の学び、Intent 260928-quality-followup の G4: A）。すべての更新を知らせない。
-    # Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、固定を残した。
+    # Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、固定を残した。2026-11-01 にも見直し、同じ理由で残した
+    # （最新の 3.0.8 は Jackson 3.2.1 を求める。Intent 261101-maintenance-update）。
     # 外す時期: Spring Boot を上げて、Spring Boot の管理の Jackson が 3.2 系以上になったとき。
     #
     ignore:
@@ -53,6 +55,8 @@ updates:
     # typescript の大きな版の更新だけを知らせない。@typescript-eslint/* の peer が typescript の >=4.8.4 <6.1.0 で、7 系を
     # 取り込むと型の検査と ESLint が壊れうるため。@typescript-eslint/* 自体の更新は知らせる（ignore に入れない）。
     # 6 系の中の小さな更新は知らせる。
+    # 2026-11-01 に TypeScript 7.0.2 を試し、@typescript-eslint/parser 8.72.1（最新）の peer が >=4.8.4 <6.1.0 のままで
+    # 解決できないため残した（Intent 261101-maintenance-update の大きな版の見送りの判定基準 3「上流の未対応」）。
     # 外す時期: @typescript-eslint/* が TypeScript 7 を受け付けたとき。
     #
     # axe-core は ignore に入れない（Intent 261016-business-data-views の B7 で 4.14.0 に上げ、ignore を外した）。

@@ -219,14 +219,13 @@ public class BusinessDataReadService {
     /** 行の SQL の失敗を code に変える（BR1.8・BR8.5・BR8.6、D1: A）。 */
     private static ReadRejected failure(ReadPurpose purpose, RowQueryFailure failure, boolean changed) {
         warn(purpose, failure.reason().name(), failure.sqlState(), failure.vendorCode(), failure.exceptionClass());
-        ReadRejection rejection =
-                switch (failure.reason()) {
-                    case TIMEOUT -> ReadRejection.TARGET_DB_TIMEOUT;
-                    case UNAVAILABLE -> ReadRejection.TARGET_DB_UNAVAILABLE;
-                    case MISMATCH, READ_CONVERSION -> ReadRejection.TARGET_DB_MISMATCH;
-                    case INVALID_VALUE -> ReadRejection.VALIDATION_FAILED;
-                    case UNEXPECTED -> throw new BusinessDataUnexpectedException();
-                };
+        ReadRejection rejection = switch (failure.reason()) {
+            case TIMEOUT -> ReadRejection.TARGET_DB_TIMEOUT;
+            case UNAVAILABLE -> ReadRejection.TARGET_DB_UNAVAILABLE;
+            case MISMATCH, READ_CONVERSION -> ReadRejection.TARGET_DB_MISMATCH;
+            case INVALID_VALUE -> ReadRejection.VALIDATION_FAILED;
+            case UNEXPECTED -> throw new BusinessDataUnexpectedException();
+        };
         // definitionChanged は 400 にだけ付ける（BR9.2）。
         return new ReadRejected(rejection, List.of(), rejection == ReadRejection.VALIDATION_FAILED && changed);
     }

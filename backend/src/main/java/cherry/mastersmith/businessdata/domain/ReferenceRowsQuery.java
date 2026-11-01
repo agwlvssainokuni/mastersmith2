@@ -60,17 +60,16 @@ public record ReferenceRowsQuery(
         Objects.requireNonNull(column, "column は必須です");
         Objects.requireNonNull(mode, "mode は必須です");
         conditions = List.copyOf(conditions);
-        boolean ok =
-                switch (mode) {
-                    case SEARCH ->
-                        !conditions.isEmpty()
-                                && conditions.stream().anyMatch(c -> !c.isEmpty())
-                                && page != null
-                                && page >= 1
-                                && page <= PageRequest.MAX_PAGE
-                                && value == null;
-                    case VALUE -> conditions.isEmpty() && page == null && value != null;
-                };
+        boolean ok = switch (mode) {
+            case SEARCH ->
+                !conditions.isEmpty()
+                        && conditions.stream().anyMatch(c -> !c.isEmpty())
+                        && page != null
+                        && page >= 1
+                        && page <= PageRequest.MAX_PAGE
+                        && value == null;
+            case VALUE -> conditions.isEmpty() && page == null && value != null;
+        };
         if (!ok) {
             throw new IllegalArgumentException("検索とラベルの1件読みの組が食い違います");
         }

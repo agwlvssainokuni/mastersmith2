@@ -48,12 +48,11 @@ final class GroupFieldErrors {
      * @return 業務エラー
      */
     static BusinessException name(GroupNameValidation.Reason reason) {
-        FieldErrorReason fieldReason =
-                switch (reason) {
-                    case INVALID_BLANK -> FieldErrorReason.REQUIRED;
-                    case INVALID_TOO_LONG -> FieldErrorReason.TOO_LONG;
-                    case INVALID_CONTROL_CHARACTER -> FieldErrorReason.INVALID_CHARACTER;
-                };
+        FieldErrorReason fieldReason = switch (reason) {
+            case INVALID_BLANK -> FieldErrorReason.REQUIRED;
+            case INVALID_TOO_LONG -> FieldErrorReason.TOO_LONG;
+            case INVALID_CONTROL_CHARACTER -> FieldErrorReason.INVALID_CHARACTER;
+        };
         return validationFailed(NAME, fieldReason);
     }
 

@@ -319,72 +319,65 @@ public class BusinessDataWriteService {
                 return new StepAttempt.Unexpected(null, e.sqlState(), e.vendorCode(), e.exceptionClass());
             }
         });
-        ReferenceStepOutcome step =
-                switch (outcome) {
-                    case TargetReadOutcome.NotConfigured<StepAttempt> notConfigured -> {
-                        warnReference(
-                                ReferenceStepOutcome.Stage.BORROW,
+        ReferenceStepOutcome step = switch (outcome) {
+            case TargetReadOutcome.NotConfigured<StepAttempt> notConfigured -> {
+                warnReference(
+                        ReferenceStepOutcome.Stage.BORROW, ReferenceFailureReason.UNAVAILABLE, null, null, null, false);
+                // 例外の値が無いため失敗の値を作らず、借りられないときと同じ拒否にする（reliability-design.md 2節）。
+                yield new ReferenceStepOutcome.Failed(
+                        new ReferenceReadFailure(
                                 ReferenceFailureReason.UNAVAILABLE,
                                 null,
                                 null,
-                                null,
-                                false);
-                        // 例外の値が無いため失敗の値を作らず、借りられないときと同じ拒否にする（reliability-design.md 2節）。
-                        yield new ReferenceStepOutcome.Failed(
-                                new ReferenceReadFailure(
-                                        ReferenceFailureReason.UNAVAILABLE,
-                                        null,
-                                        null,
-                                        TargetReadOutcome.NotConfigured.class.getName(),
-                                        false),
-                                ReferenceStepOutcome.Stage.BORROW);
-                    }
-                    case TargetReadOutcome.Unavailable<StepAttempt> unavailable -> {
-                        warnReference(
-                                ReferenceStepOutcome.Stage.BORROW,
+                                TargetReadOutcome.NotConfigured.class.getName(),
+                                false),
+                        ReferenceStepOutcome.Stage.BORROW);
+            }
+            case TargetReadOutcome.Unavailable<StepAttempt> unavailable -> {
+                warnReference(
+                        ReferenceStepOutcome.Stage.BORROW,
+                        ReferenceFailureReason.UNAVAILABLE,
+                        unavailable.sqlState(),
+                        unavailable.vendorCode(),
+                        unavailable.exceptionClass(),
+                        false);
+                yield new ReferenceStepOutcome.Failed(
+                        new ReferenceReadFailure(
                                 ReferenceFailureReason.UNAVAILABLE,
                                 unavailable.sqlState(),
                                 unavailable.vendorCode(),
                                 unavailable.exceptionClass(),
+                                false),
+                        ReferenceStepOutcome.Stage.BORROW);
+            }
+            case TargetReadOutcome.Done<StepAttempt> done -> {
+                ReferenceStepOutcome value = switch (done.value()) {
+                    case StepAttempt.Completed completed -> completed.outcome();
+                    case StepAttempt.Unexpected unexpected -> {
+                        // ⑪ の想定外と同じく、値を含まない手がかりの WARN を1行出してから 500 にする（U2 の NFR1.32）。
+                        warnReference(
+                                unexpected.stage(),
+                                UNEXPECTED_REASON,
+                                unexpected.sqlState(),
+                                unexpected.vendorCode(),
+                                unexpected.exceptionClass(),
                                 false);
-                        yield new ReferenceStepOutcome.Failed(
-                                new ReferenceReadFailure(
-                                        ReferenceFailureReason.UNAVAILABLE,
-                                        unavailable.sqlState(),
-                                        unavailable.vendorCode(),
-                                        unavailable.exceptionClass(),
-                                        false),
-                                ReferenceStepOutcome.Stage.BORROW);
-                    }
-                    case TargetReadOutcome.Done<StepAttempt> done -> {
-                        ReferenceStepOutcome value =
-                                switch (done.value()) {
-                                    case StepAttempt.Completed completed -> completed.outcome();
-                                    case StepAttempt.Unexpected unexpected -> {
-                                        // ⑪ の想定外と同じく、値を含まない手がかりの WARN を1行出してから 500 にする（U2 の NFR1.32）。
-                                        warnReference(
-                                                unexpected.stage(),
-                                                UNEXPECTED_REASON,
-                                                unexpected.sqlState(),
-                                                unexpected.vendorCode(),
-                                                unexpected.exceptionClass(),
-                                                false);
-                                        throw new BusinessDataUnexpectedException();
-                                    }
-                                };
-                        if (value instanceof ReferenceStepOutcome.Failed failed) {
-                            ReferenceReadFailure f = failed.failure();
-                            warnReference(
-                                    failed.stage(),
-                                    f.reason(),
-                                    f.sqlState(),
-                                    f.vendorCode(),
-                                    f.exceptionClass(),
-                                    f.budgetExceeded());
-                        }
-                        yield value;
+                        throw new BusinessDataUnexpectedException();
                     }
                 };
+                if (value instanceof ReferenceStepOutcome.Failed failed) {
+                    ReferenceReadFailure f = failed.failure();
+                    warnReference(
+                            failed.stage(),
+                            f.reason(),
+                            f.sqlState(),
+                            f.vendorCode(),
+                            f.exceptionClass(),
+                            f.budgetExceeded());
+                }
+                yield value;
+            }
+        };
         return Optional.of(step);
     }
 

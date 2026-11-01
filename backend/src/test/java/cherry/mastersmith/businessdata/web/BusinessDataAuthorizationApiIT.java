@@ -102,12 +102,11 @@ class BusinessDataAuthorizationApiIT {
     @MethodSource("table")
     @DisplayName("each API is 401 without login or when suspended, 403 without the table and 200 with it")
     void authorization(Endpoint endpoint, Subject subject, int status, String code) {
-        MainPermission item =
-                switch (subject) {
-                    case FULL -> MainPermission.FULL;
-                    case ONLY_THIS_NONE -> MainPermission.NONE;
-                    default -> MainPermission.READ;
-                };
+        MainPermission item = switch (subject) {
+            case FULL -> MainPermission.FULL;
+            case ONLY_THIS_NONE -> MainPermission.NONE;
+            default -> MainPermission.READ;
+        };
         Actor member = app.reader(sample.settings(item));
         if (subject == Subject.SUSPENDED) {
             app.roleActors().suspend(member.userId());

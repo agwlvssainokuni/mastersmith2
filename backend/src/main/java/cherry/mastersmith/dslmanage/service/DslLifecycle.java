@@ -149,14 +149,13 @@ public class DslLifecycle {
     public PreviewView generate(DslRequestContext context) {
         long start = metrics.start();
         try {
-            DefaultDslResult.Generated generated =
-                    switch (generator.generate()) {
-                        case DefaultDslResult.Generated result -> result;
-                        case DefaultDslResult.TargetUnconfigured unconfigured ->
-                            throw new BusinessException(DslProblemTypes.TARGET_DB_UNCONFIGURED);
-                        case DefaultDslResult.TargetUnavailable unavailable ->
-                            throw new BusinessException(DslProblemTypes.TARGET_DB_UNAVAILABLE);
-                    };
+            DefaultDslResult.Generated generated = switch (generator.generate()) {
+                case DefaultDslResult.Generated result -> result;
+                case DefaultDslResult.TargetUnconfigured unconfigured ->
+                    throw new BusinessException(DslProblemTypes.TARGET_DB_UNCONFIGURED);
+                case DefaultDslResult.TargetUnavailable unavailable ->
+                    throw new BusinessException(DslProblemTypes.TARGET_DB_UNAVAILABLE);
+            };
             byte[] yamlBytes = generated.yamlBytes();
             DslModel model = readValid(yamlBytes);
             PreviewView view = place(yamlBytes, model, DslSource.GENERATED, DslOperationType.DSL_GENERATED, context);

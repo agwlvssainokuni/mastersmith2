@@ -201,12 +201,11 @@ class BusinessDataWriteAuthorizationApiIT {
             assertThat(HttpTestClient.json(response)).containsEntry("code", code);
             assertThat(writes.borrows()).as("拒んだ要求は書き込みの接続を借りない").isZero();
         }
-        long expected =
-                switch (endpoint) {
-                    case CREATE -> status == 201 ? 1 : 0;
-                    case UPDATE -> status == 200 ? 1 : 0;
-                    case DELETE -> status == 200 ? 0 : 1;
-                };
+        long expected = switch (endpoint) {
+            case CREATE -> status == 201 ? 1 : 0;
+            case UPDATE -> status == 200 ? 1 : 0;
+            case DELETE -> status == 200 ? 0 : 1;
+        };
         String where = endpoint == Endpoint.UPDATE ? "id = " + id + " AND name = '更新'" : "id = " + id;
         assertThat(rows(where)).as("別の接続で読み直す").isEqualTo(expected);
     }

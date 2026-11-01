@@ -152,15 +152,12 @@ class ReferenceWriteConnectionUsageIT {
         env.internal().reset();
         env.reads().reset();
         env.writes().reset();
-        HttpResponse<String> response =
-                switch (method) {
-                    case "create" ->
-                        env.app().post(BusinessDataPaths.ROWS, env.member().token(), body);
-                    case "update" ->
-                        env.app().patch(BusinessDataPaths.ROWS, env.member().token(), body);
-                    default ->
-                        env.app().post(BusinessDataPaths.DELETE, env.member().token(), body);
-                };
+        HttpResponse<String> response = switch (method) {
+            case "create" -> env.app().post(BusinessDataPaths.ROWS, env.member().token(), body);
+            case "update" ->
+                env.app().patch(BusinessDataPaths.ROWS, env.member().token(), body);
+            default -> env.app().post(BusinessDataPaths.DELETE, env.member().token(), body);
+        };
         assertThat(env.internal().peak()).as("内部DB の同時の最大").isLessThanOrEqualTo(1);
         assertThat(env.internal().inUse()).as("応答の後に内部DB を返している").isZero();
         assertThat(env.reads().inUse()).isZero();

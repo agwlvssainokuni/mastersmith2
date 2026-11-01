@@ -47,12 +47,11 @@ public record SearchCondition(
         Objects.requireNonNull(mode, "mode は必須です");
         Objects.requireNonNull(valueType, "valueType は必須です");
         values = List.copyOf(values == null ? List.of() : values);
-        boolean ok =
-                switch (mode) {
-                    case EQUALS, CONTAINS -> value != null && from == null && to == null && values.isEmpty();
-                    case RANGE -> value == null && (from != null || to != null) && values.isEmpty();
-                    case CHOICE -> value == null && from == null && to == null && !values.isEmpty();
-                };
+        boolean ok = switch (mode) {
+            case EQUALS, CONTAINS -> value != null && from == null && to == null && values.isEmpty();
+            case RANGE -> value == null && (from != null || to != null) && values.isEmpty();
+            case CHOICE -> value == null && from == null && to == null && !values.isEmpty();
+        };
         if (!ok) {
             throw new IllegalArgumentException("条件の値が演算子と合いません");
         }

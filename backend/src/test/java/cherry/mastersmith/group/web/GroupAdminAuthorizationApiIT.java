@@ -180,16 +180,15 @@ class GroupAdminAuthorizationApiIT {
         String token = tokenOf(subject);
         Map<String, Object> before = state(groupId);
 
-        HttpResponse<String> response =
-                switch (endpoint) {
-                    case LIST -> api.list(token, "");
-                    case CREATE -> api.create(token, GroupFixtures.uniqueName("認可 作成"));
-                    case DETAIL -> api.detail(token, groupId);
-                    case RENAME -> api.rename(token, groupId, GroupFixtures.uniqueName("認可 改名"));
-                    case DELETE -> api.delete(token, emptyGroup);
-                    case ADD_MEMBER -> api.addMember(token, groupId, addable.userId());
-                    case REMOVE_MEMBER -> api.removeMember(token, groupId, member.userId());
-                };
+        HttpResponse<String> response = switch (endpoint) {
+            case LIST -> api.list(token, "");
+            case CREATE -> api.create(token, GroupFixtures.uniqueName("認可 作成"));
+            case DETAIL -> api.detail(token, groupId);
+            case RENAME -> api.rename(token, groupId, GroupFixtures.uniqueName("認可 改名"));
+            case DELETE -> api.delete(token, emptyGroup);
+            case ADD_MEMBER -> api.addMember(token, groupId, addable.userId());
+            case REMOVE_MEMBER -> api.removeMember(token, groupId, member.userId());
+        };
 
         switch (subject) {
             case ADMIN -> assertThat(response.statusCode()).as(response.body()).isEqualTo(endpoint.success);

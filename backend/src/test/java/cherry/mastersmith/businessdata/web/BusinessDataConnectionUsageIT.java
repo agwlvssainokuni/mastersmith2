@@ -222,12 +222,11 @@ class BusinessDataConnectionUsageIT {
 
         HttpResponse<String> response = writes(call) ? write(env, call, warmDefinition) : send.apply(call);
 
-        int expectedStatus =
-                switch (call) {
-                    case CREATE -> 201;
-                    case CREATE_VIOLATION -> 409;
-                    default -> 200;
-                };
+        int expectedStatus = switch (call) {
+            case CREATE -> 201;
+            case CREATE_VIOLATION -> 409;
+            default -> 200;
+        };
         assertThat(response.statusCode()).as(response.body()).isEqualTo(expectedStatus);
         assertThat(other.borrows()).as("もう一方の対象DB の接続は借りない").isZero();
         assertThat(internal.peak()).as("内部DB の同時の最大").isEqualTo(internalPeak);

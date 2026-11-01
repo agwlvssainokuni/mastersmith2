@@ -124,12 +124,11 @@ class NavigationAuthorizationApiIT {
     @ParameterizedTest(name = "menu by {0} gives {1}")
     @MethodSource("table")
     void authorization(Subject subject, int status, String code, int items) {
-        MainPermission order =
-                switch (subject) {
-                    case FULL -> MainPermission.FULL;
-                    case ONLY_THIS_NONE -> MainPermission.NONE;
-                    default -> MainPermission.READ;
-                };
+        MainPermission order = switch (subject) {
+            case FULL -> MainPermission.FULL;
+            case ONLY_THIS_NONE -> MainPermission.NONE;
+            default -> MainPermission.READ;
+        };
         long roleId =
                 actors.role("SALES", Map.of("ORDER", order, "LINE", MainPermission.READ, "HEAD", MainPermission.READ));
         Actor member = actors.memberWithWorkRole(roleId);

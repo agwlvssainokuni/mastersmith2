@@ -172,14 +172,13 @@ class RoleMeAuthorizationApiIT {
         }
         String token = subject == Subject.ANONYMOUS ? null : member.token();
 
-        HttpResponse<String> response =
-                switch (endpoint) {
-                    case WORK_ROLE_READ -> api.workRole(token);
-                    case WORK_ROLE_SWITCH -> api.switchWorkRole(token, roleId);
-                    case MY_SCHEMAS -> api.mySchemas(token);
-                    case MY_TABLES -> api.myTables(token, "SALES");
-                    case MY_COLUMNS -> api.myColumns(token, "SALES", "ORDER_LINE");
-                };
+        HttpResponse<String> response = switch (endpoint) {
+            case WORK_ROLE_READ -> api.workRole(token);
+            case WORK_ROLE_SWITCH -> api.switchWorkRole(token, roleId);
+            case MY_SCHEMAS -> api.mySchemas(token);
+            case MY_TABLES -> api.myTables(token, "SALES");
+            case MY_COLUMNS -> api.myColumns(token, "SALES", "ORDER_LINE");
+        };
 
         if (subject == Subject.SIGNED_IN) {
             assertThat(response.statusCode()).as(response.body()).isEqualTo(endpoint.success);

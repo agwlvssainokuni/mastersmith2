@@ -327,14 +327,13 @@ public final class WriteRequestValidator {
 
     /** 秒の端数の要る桁の数（末尾の 0 を数えない）。 */
     private static int fractionDigits(Object raw) {
-        int nanos =
-                switch (raw) {
-                    case LocalDateTime v -> v.getNano();
-                    case OffsetDateTime v -> v.getNano();
-                    case LocalTime v -> v.getNano();
-                    case OffsetTime v -> v.getNano();
-                    default -> 0;
-                };
+        int nanos = switch (raw) {
+            case LocalDateTime v -> v.getNano();
+            case OffsetDateTime v -> v.getNano();
+            case LocalTime v -> v.getNano();
+            case OffsetTime v -> v.getNano();
+            default -> 0;
+        };
         if (nanos == 0) {
             return 0;
         }

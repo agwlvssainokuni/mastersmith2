@@ -92,12 +92,11 @@ public final class ReferencePolicy {
                 continue;
             }
             ColumnAccess c = column.get();
-            SearchMode mode =
-                    switch (item.operator()) {
-                        case EQUALS -> SearchMode.EQUALS;
-                        case CONTAINS -> c.valueType() == ValueType.STRING ? SearchMode.CONTAINS : null;
-                        case RANGE, CHOICE, IN -> null;
-                    };
+            SearchMode mode = switch (item.operator()) {
+                case EQUALS -> SearchMode.EQUALS;
+                case CONTAINS -> c.valueType() == ValueType.STRING ? SearchMode.CONTAINS : null;
+                case RANGE, CHOICE, IN -> null;
+            };
             if (mode != null) {
                 fields.add(new PickerSearchField(c.column(), c.displayName(), mode, c.valueType()));
             }

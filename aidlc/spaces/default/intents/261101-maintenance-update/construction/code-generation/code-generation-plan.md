@@ -64,15 +64,15 @@
 
 ### ② 実行環境と依存の更新（ブランチ `feature/261101-runtime-deps`、squash で統合）
 
-- [ ] **Step 6**（FR1.1・FR4.4）: Java 25 の最新のパッチ（toolchain・CI の `java-version`）と Gradle の wrapper を最新にする。`.github/workflows/ci.yml` の `actions/setup-java` は今 `distribution: temurin`・`java-version: "25"`（大きな版だけの指定で、CI の実行のたびに 25 系の最新のパッチが入る）。この形を保ち、CI の記録で入った版が Dockerfile の JRE と同じパッチであることを Build and Test で確かめる（依頼者の指示で確かめた点）（`./gradlew wrapper --gradle-version <最新>` を2回流して jar も更新）。
-- [ ] **Step 7**（FR2.1・FR2.2）: Node 26 の最新にする。上の表の Node の 10 か所をそろえる（`engines` は `>=26 <27`、`build.gradle.kts` の確かめは `v26.`、`.github/workflows/ci.yml` の `actions/setup-node` の `node-version: "24"` を `"26"` に、手順の名前「Node.js 24 を入れる」を「Node.js 26 を入れる」に）。`NODE_OPTIONS=--no-experimental-webstorage` を Node 26 で `npm test` に付けて動くかを確かめ、使えなければ同じ目的（jsdom の `localStorage` を Node の実験の Web Storage と取り違えない）の設定に直す。手元の Node を 26 に替えるのは依頼者の作業（`!` の付いたコマンドで依頼する）。
-- [ ] **Step 8**（FR3.1）: Spring Boot を最新の安定版にする（`gradle/libs.versions.toml`）。新しい BOM が管理する OpenTelemetry と Jackson の版を Maven Central の BOM の定義で確かめて記録する。
-- [ ] **Step 9**（FR4.1・FR4.5・FR4.7）: backend の Gradle の依存（SpotBugs と FindSecBugs・palantir-java-format を含む）を最新にし、`backend/gradle.lockfile`・`settings-gradle.lockfile` を更新する（`--write-locks`）。新しく増えた依存のライセンスを確かめる。
-- [ ] **Step 10**（FR3.2）: 連動する固定を1つずつ試す。(a) appender を外す（または最新にする）: 管理の OpenTelemetry が 1.63 以上なら最新の版にし、外部エクスポートの結合テスト（`OtlpLogExportIT` など）を含めて verify を流す。(b) networknt: 管理の Jackson が 3.2 系以上なら最新にする。(c) H2 の `-Dh2.compactThreads=1`: H2 の版が 2.4.240 から上がったときだけ、3か所から外して詰め直しの結合テスト（`H2Compaction*IT` など）を含めて verify を流す。上がらなければ残す。外せたものは `dependabot.yml` の `ignore` の行と `libs.versions.toml` のコメントも外し、外せなかったものは理由を書き直す。
-- [ ] **Step 11**（FR4.1〜FR4.6）: frontend の npm の依存を、大きな版を含めて最新にする（`npm outdated` で一覧し、`npm install`（`ignore-scripts=true` のまま）で更新、`package-lock.json` を更新）。`typescript` の大きな版も試す（FR4.3）。大きな版ごとに型の検査・リンタ・画面のテストを流し、崩れたら直す。上の判定基準に当たるものは見送って `ignore` に書く。`@playwright/test` を上げたらブラウザも同じ版にする。
-- [ ] **Step 12**（FR4.6）: axe-core が上がったら、vitest-axe と E2E の axe の両方を流し、新しい規則の違反があれば規則を外さずにすべて直す（make-you-chic-ui の部品なら依頼を出し、上げるのを見送る）。axe-core の版が lockfile で1つにそろっているかを確かめる。
-- [ ] **Step 13**（FR4.3）: `dependabot.yml` の `ignore` を見直す（`typescript` の大きな版は Step 11 の結果で外すか残す。`eclipse-temurin` の大きな版は残す。appender・networknt は Step 10 の結果）。
-- [ ] **Step 14**（NFR1〜NFR3・NFR5）: verify（clean 付き）と E2E を流し、カバレッジ（backend の全体とパッケージごと、frontend の全体）と verify の時間を記録する。通ったら `develop` へ squash で統合する。
+- [x] **Step 6**（FR1.1・FR4.4）: Java 25 の最新のパッチ（toolchain・CI の `java-version`）と Gradle の wrapper を最新にする。`.github/workflows/ci.yml` の `actions/setup-java` は今 `distribution: temurin`・`java-version: "25"`（大きな版だけの指定で、CI の実行のたびに 25 系の最新のパッチが入る）。この形を保ち、CI の記録で入った版が Dockerfile の JRE と同じパッチであることを Build and Test で確かめる（依頼者の指示で確かめた点）（`./gradlew wrapper --gradle-version <最新>` を2回流して jar も更新）。
+- [x] **Step 7**（FR2.1・FR2.2）: Node 26 の最新にする。上の表の Node の 10 か所をそろえる（`engines` は `>=26 <27`、`build.gradle.kts` の確かめは `v26.`、`.github/workflows/ci.yml` の `actions/setup-node` の `node-version: "24"` を `"26"` に、手順の名前「Node.js 24 を入れる」を「Node.js 26 を入れる」に）。`NODE_OPTIONS=--no-experimental-webstorage` を Node 26 で `npm test` に付けて動くかを確かめ、使えなければ同じ目的（jsdom の `localStorage` を Node の実験の Web Storage と取り違えない）の設定に直す。手元の Node を 26 に替えるのは依頼者の作業（`!` の付いたコマンドで依頼する）。
+- [x] **Step 8**（FR3.1）: Spring Boot を最新の安定版にする（`gradle/libs.versions.toml`）。新しい BOM が管理する OpenTelemetry と Jackson の版を Maven Central の BOM の定義で確かめて記録する。
+- [x] **Step 9**（FR4.1・FR4.5・FR4.7）: backend の Gradle の依存（SpotBugs と FindSecBugs・palantir-java-format を含む）を最新にし、`backend/gradle.lockfile`・`settings-gradle.lockfile` を更新する（`--write-locks`）。新しく増えた依存のライセンスを確かめる。
+- [x] **Step 10**（FR3.2）: 連動する固定を1つずつ試す。(a) appender を外す（または最新にする）: 管理の OpenTelemetry が 1.63 以上なら最新の版にし、外部エクスポートの結合テスト（`OtlpLogExportIT` など）を含めて verify を流す。(b) networknt: 管理の Jackson が 3.2 系以上なら最新にする。(c) H2 の `-Dh2.compactThreads=1`: H2 の版が 2.4.240 から上がったときだけ、3か所から外して詰め直しの結合テスト（`H2Compaction*IT` など）を含めて verify を流す。上がらなければ残す。外せたものは `dependabot.yml` の `ignore` の行と `libs.versions.toml` のコメントも外し、外せなかったものは理由を書き直す。
+- [x] **Step 11**（FR4.1〜FR4.6）: frontend の npm の依存を、大きな版を含めて最新にする（`npm outdated` で一覧し、`npm install`（`ignore-scripts=true` のまま）で更新、`package-lock.json` を更新）。`typescript` の大きな版も試す（FR4.3）。大きな版ごとに型の検査・リンタ・画面のテストを流し、崩れたら直す。上の判定基準に当たるものは見送って `ignore` に書く。`@playwright/test` を上げたらブラウザも同じ版にする。
+- [x] **Step 12**（FR4.6）: axe-core が上がったら、vitest-axe と E2E の axe の両方を流し、新しい規則の違反があれば規則を外さずにすべて直す（make-you-chic-ui の部品なら依頼を出し、上げるのを見送る）。axe-core の版が lockfile で1つにそろっているかを確かめる。
+- [x] **Step 13**（FR4.3）: `dependabot.yml` の `ignore` を見直す（`typescript` の大きな版は Step 11 の結果で外すか残す。`eclipse-temurin` の大きな版は残す。appender・networknt は Step 10 の結果）。
+- [x] **Step 14**（NFR1〜NFR3・NFR5）: verify（clean 付き）と E2E を流し、カバレッジ（backend の全体とパッケージごと、frontend の全体）と verify の時間を記録する。通ったら `develop` へ squash で統合する。
 
 ### ③ CI・コンテナのイメージ・道具（ブランチ `feature/261101-ci-images`、squash で統合）
 

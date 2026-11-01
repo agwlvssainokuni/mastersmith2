@@ -49,12 +49,11 @@ public record TransferChange(
         Objects.requireNonNull(before, "before");
         Objects.requireNonNull(after, "after");
         Objects.requireNonNull(reason, "reason");
-        boolean consistent =
-                switch (reason) {
-                    case ADDED -> before.isEmpty() && !after.isEmpty();
-                    case CHANGED -> !before.isEmpty() && !after.isEmpty() && !before.equals(after);
-                    case CLEARED -> !before.isEmpty() && after.isEmpty();
-                };
+        boolean consistent = switch (reason) {
+            case ADDED -> before.isEmpty() && !after.isEmpty();
+            case CHANGED -> !before.isEmpty() && !after.isEmpty() && !before.equals(after);
+            case CLEARED -> !before.isEmpty() && after.isEmpty();
+        };
         if (!consistent) {
             throw new IllegalArgumentException("前後の値と変わり方が合いません: " + reason);
         }

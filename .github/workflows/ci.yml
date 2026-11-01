@@ -54,10 +54,10 @@ jobs:
           distribution: temurin
           java-version: "25"
 
-      - name: Node.js 24 を入れる
+      - name: Node.js 26 を入れる
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          node-version: "26"
           cache: npm
           cache-dependency-path: |
             frontend/package-lock.json

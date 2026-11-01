@@ -59,14 +59,13 @@ public record ReferenceReadFailure(
      */
     public static ReferenceReadFailure of(RowQueryFailure failure) {
         Objects.requireNonNull(failure, "failure は必須です");
-        ReferenceFailureReason reason =
-                switch (failure.reason()) {
-                    case TIMEOUT -> ReferenceFailureReason.TIMEOUT;
-                    case UNAVAILABLE -> ReferenceFailureReason.UNAVAILABLE;
-                    case MISMATCH, READ_CONVERSION -> ReferenceFailureReason.MISMATCH;
-                    case INVALID_VALUE, UNEXPECTED ->
-                        throw new IllegalArgumentException("参照先の読み取りの失敗に写さない理由です: " + failure.reason());
-                };
+        ReferenceFailureReason reason = switch (failure.reason()) {
+            case TIMEOUT -> ReferenceFailureReason.TIMEOUT;
+            case UNAVAILABLE -> ReferenceFailureReason.UNAVAILABLE;
+            case MISMATCH, READ_CONVERSION -> ReferenceFailureReason.MISMATCH;
+            case INVALID_VALUE, UNEXPECTED ->
+                throw new IllegalArgumentException("参照先の読み取りの失敗に写さない理由です: " + failure.reason());
+        };
         return new ReferenceReadFailure(
                 reason, failure.sqlState(), failure.vendorCode(), failure.exceptionClass(), false);
     }

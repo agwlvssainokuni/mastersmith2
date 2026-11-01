@@ -75,12 +75,11 @@ class SafeYamlParserPropertyTest {
     }
 
     private static String join(List<String> lines, int separator) {
-        String lineBreak =
-                switch (Math.floorMod(separator, 3)) {
-                    case 0 -> "\n";
-                    case 1 -> "\r\n";
-                    default -> "\r";
-                };
+        String lineBreak = switch (Math.floorMod(separator, 3)) {
+            case 0 -> "\n";
+            case 1 -> "\r\n";
+            default -> "\r";
+        };
         return String.join(lineBreak, lines) + lineBreak;
     }
 

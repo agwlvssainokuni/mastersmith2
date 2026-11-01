@@ -69,12 +69,11 @@ class TargetDbSampleInitScriptIT {
 
     /** リポジトリの台本の置き場を、テストの作業ディレクトリ（backend）から上へたどって探す。 */
     private static Path scripts(DatabaseProduct product) {
-        String kind =
-                switch (product) {
-                    case POSTGRESQL -> "postgres";
-                    case MYSQL -> "mysql";
-                    case MARIADB -> "mariadb";
-                };
+        String kind = switch (product) {
+            case POSTGRESQL -> "postgres";
+            case MYSQL -> "mysql";
+            case MARIADB -> "mariadb";
+        };
         for (Path dir = Path.of("").toAbsolutePath(); dir != null; dir = dir.getParent()) {
             Path candidate = dir.resolve("docker").resolve("targetdb").resolve(kind);
             if (Files.isDirectory(candidate)) {
@@ -86,22 +85,21 @@ class TargetDbSampleInitScriptIT {
 
     private static JdbcDatabaseContainer<?> container(
             DatabaseProduct product, String admin, String reader, String writer, boolean withWriterScript) {
-        JdbcDatabaseContainer<?> container =
-                switch (product) {
-                    case POSTGRESQL ->
-                        new PostgreSQLContainer(TargetDbImages.postgres())
-                                .withDatabaseName("business")
-                                .withUsername("target_admin")
-                                .withPassword(admin);
-                    case MYSQL ->
-                        new MySQLContainer(TargetDbImages.mysql())
-                                .withDatabaseName("business")
-                                .withPassword(admin);
-                    case MARIADB ->
-                        new MariaDBContainer(TargetDbImages.mariadb())
-                                .withDatabaseName("business")
-                                .withPassword(admin);
-                };
+        JdbcDatabaseContainer<?> container = switch (product) {
+            case POSTGRESQL ->
+                new PostgreSQLContainer(TargetDbImages.postgres())
+                        .withDatabaseName("business")
+                        .withUsername("target_admin")
+                        .withPassword(admin);
+            case MYSQL ->
+                new MySQLContainer(TargetDbImages.mysql())
+                        .withDatabaseName("business")
+                        .withPassword(admin);
+            case MARIADB ->
+                new MariaDBContainer(TargetDbImages.mariadb())
+                        .withDatabaseName("business")
+                        .withPassword(admin);
+        };
         Path dir = scripts(product);
         String schema = "01-sample-schema.sql";
         container
@@ -121,12 +119,11 @@ class TargetDbSampleInitScriptIT {
     private static Connection connect(
             JdbcDatabaseContainer<?> container, DatabaseProduct product, String user, String password)
             throws SQLException {
-        String scheme =
-                switch (product) {
-                    case POSTGRESQL -> "postgresql";
-                    case MYSQL -> "mysql";
-                    case MARIADB -> "mariadb";
-                };
+        String scheme = switch (product) {
+            case POSTGRESQL -> "postgresql";
+            case MYSQL -> "mysql";
+            case MARIADB -> "mariadb";
+        };
         int port = container.getMappedPort(product == DatabaseProduct.POSTGRESQL ? 5432 : 3306);
         return DriverManager.getConnection(
                 "jdbc:" + scheme + "://" + container.getHost() + ":" + port + "/business", user, password);
