@@ -205,7 +205,7 @@ git rev-parse --short=8 main develop                                # 同じ
 - **スモークテスト**: S1〜S9 はすべて通過（`smoke-test-results.md`）。健全性は `health-check-report.md`。
 - **変わらないもの**: `.env`、内部DB のスキーマ（版 13）、見本の PG・Mailpit のコンテナ（作り直していない）。
 - **質問の答え**（`deployment-execution-questions.md`）: Q1 A・Q2 A・Q3 A・Q4 A・Q5 A。
-- **残り**: 順 11（記録のコミット）、順 13（`main` への取り込み）、順 14（結果の追記）、順 15（プッシュ）はこの記録の時点でまだ行っていない。
+- **残り**: 順 15（`git push origin develop main`）は依頼者が行う。順 11・13・14 は済んだ（この追記が順 14）。
 
 ## 2. 手順の記録
 
@@ -222,9 +222,9 @@ git rev-parse --short=8 main develop                                # 同じ
 | 8 | — | 4.1 の結果での合わせ直し | 不要（2.1 のとおり前提どおり） |
 | 9 | 05:01:29（T2）〜 | スモークテスト S2〜S8（依頼者、Q3: A で S2 を先に報告） | S2: 依頼者「表示に問題なし、予定外の操作なし」。S3〜S8: 依頼者「済んだ、問題なし」。AI の裏付けは `smoke-test-results.md` |
 | 10 | 05:09:27〜05:09:37 | `stop app` → 複写 → `start app` | 複写 `~/.mastersmith-backup/mastersmith-data-202611011409-after-reference-lookup-cleanup.tgz`（権限 600、39,772 バイト）。起動し直した後もイメージ ID が一致、healthy、200。数えの結果は 2.2（S9） |
-| 11 | — | 配備の記録のコミット | まだ（依頼者の承認の後） |
+| 11 | — | 配備の記録のコミット | `be6e61c5`（段の初稿のコミット。依頼者の決まりにより尋ねずにコミット）。依頼者が develop を push |
 | 12 | — | 試験用のタグの片付け（Q4: A） | `eab1676f26de` を使うコンテナ 0 件を確かめ、`docker rmi mastersmith:reference-lookup-cleanup`（Untagged・Deleted）。残る `mastersmith` のタグは `local`（`d8a467b60f6f`）・`pre-reference-lookup-cleanup`（`e0ede6ddd5c4`）と前の Intent までの戻し先 4 つ |
-| 13 | — | `main` への取り込み | まだ（Q4: A。CI を試行ごとに確かめ、依頼者の承認の後） |
+| 13 | — | `main` への取り込み | 前の main `d797ef74` の後のコミット 69 個（CI の run があるもの 39 個）の CI を試行ごとに確かめた。1回目で通らなかったのは `a75baec4`（1回目 `ReferenceSameResponseIT`、2回目 success）・`cf887ad8`（1回目 cancelled、2回目 success）・`e1e028d1`（2回とも Tooltip の時計の未処理の例外、`cb23466b` で直った）で、どれも記録済み。`5458e3eb`（run 41275399911、1回目 success、38分4秒）・`be6e61c5`（run 41277972068、1回目 success、36分55秒）。一覧に出た `154c27ba` の failure は前の Intent で amend して置き換えたコミットで、今の履歴に無い。依頼者の承認（メッセージ 6378a778）で `git fetch . develop:main` により main を `d797ef74` → `be6e61c5` に fast-forward |
 | 14・15 | — | 結果の追記・プッシュ | まだ |
 
 ### 2.1 配備の前の複写の数え（`cd-config.md` 4.1）
