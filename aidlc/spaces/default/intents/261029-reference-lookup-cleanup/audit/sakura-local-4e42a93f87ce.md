@@ -47434,3 +47434,273 @@
 **Agent ID**: aa3f865357541425b
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: f59bbe43
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: f59bbe43
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+**Duration ms**: 71
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: ed6002ad
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/quality-gates.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: ed6002ad
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/quality-gates.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 652723b1
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 652723b1
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-pipeline-questions.md
+**Duration ms**: 72
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 12e9fb0d
+**Sensor ID**: upstream-coverage
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 12e9fb0d
+**Sensor ID**: upstream-coverage
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+**Duration ms**: 71
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: 9e4a348d
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: 9e4a348d
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+**Duration ms**: 70
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: dca2c167
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/quality-gates.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: dca2c167
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/quality-gates.md
+**Duration ms**: 70
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: 639560c0
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: 639560c0
+**Sensor ID**: required-sections
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-pipeline-questions.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_FIRED
+**Fire id**: bd5dd58c
+**Sensor ID**: upstream-coverage
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: SENSOR_PASSED
+**Fire id**: bd5dd58c
+**Sensor ID**: upstream-coverage
+**Stage slug**: ci-pipeline
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md
+**Duration ms**: 71
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-01T04:14:30Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: ci-pipeline
+**Next Stage**: deployment-pipeline
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md=passed; required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/quality-gates.md=passed; required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-pipeline-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/construction/ci-pipeline/ci-config.md=passed
+**Open Decisions**: 0
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-01T04:21:32Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: c986752f
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T04:21:33Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: CI Pipeline はこれでよいですか？（推奨: Approve。CI の失敗は直り CI が通ったことまで確かめ、残る条件は持ち主の段が決まっているため）
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: GATE_APPROVED
+**Stage**: ci-pipeline
+**User Input**: Approve
+**Person Reply**: pushしました\nA. 流し直す（推奨）\nA. 30 分で再現を試みる（推奨）\nB4+A\nA. 依頼する（推奨）\n<pasted_content id="e2dc">\n# make-you-chic-ui からの回答（依頼7）\n\n宛先: MasterSmith（Intent 261029-reference-lookup-cleanup、CI Pipeline の段）\n対象: `Tooltip` の表示予約（300 ms の時計）が、部品が外されたときに取り消されない件\n\n## 結論\n\nご指摘の通りでした。`scheduleShow`（`onMouseEnter`・`onFocus`）が予約した時計を、部品が外されたとき（unmount）に取り消す後片付けが無く、`hide`（`onMouseLeave`・`onBlur`・Escape）を経由しない外され方だと予約が残っていました。ご提示いただいた形のとおり、`useEffect` の cleanup で取り消す後片付けを足しました。\n\n```tsx\nuseEffect(() => () => window.clearTimeout(showTimeoutRef.current), [])\n```\n\n## 変更点\n\n- `packages/make-you-chic-ui/src/components/Tooltip/Tooltip.tsx`\n  - 上記の後片付け用 `useEffect` を追加（表示の遅れ・ほかの振る舞いは変更していません）。\n- `packages/make-you-chic-ui/src/components/Tooltip/Tooltip.test.tsx`\n  - 偽の時計（`vi.useFakeTimers`）で、`mouseEnter` 直後／`focus` 直後それぞれに `unmount()` したとき、予約が残らない（`vi.getTimerCount()` が 0）こと、300 ms 進めても誤り・警告が出ないことを確認するテストを追加（2件）。\n\n## 確認した内容\n\n- 単体テスト: make-you-chic-ui 283件（追加の2件含む）、sample-app 17件、すべて成功。\n- oxlint / eslint / stylelint / tsc / 両パッケージのビルド（`make-you-chic-ui`・`sample-app`）、すべて成功。\n- 依頼いただいた再現の考え方（`fireEvent.mouseEnter`／`focus` の直後に `unmount()`）で、修正前は予約が残ること、修正後は残らないことを確認しています。\n\n## 固定先\n\n- コミット: `cab4207`（`main` に push 済み、`4c63d11` の次）\n- 変更はこの1件のみで、依存ライブラリの更新は含んでいません（`package-lock.json` に変更はありません）。\n\n## 依頼しないもの（今回の対応範囲外）として扱ったもの\n\n- Tooltip の表示の遅れ（300 ms）、およびそのほかの振る舞いの変更は行っていません。\n\n## 取り込みについて\n\n上流の `main` の `cab4207` を、御社の固定先更新の専用コミットで取り込んでいただく形で問題ありません。今回は依存ライブラリの変更を含まないため、`package-lock.json` の差分は生じません。\n\n`frontend/vitest.setup.ts` 側で入れていただいた「残った時計をテストごとに取り消す」後片付けは、今回の直しが入った後も害がないとのことですので、そのまま残していただいて問題ないと考えます。\n\n以上、ご確認よろしくお願いいたします。\n</pasted_content id="e2dc">\nA. 取り込んで統合する（推奨）\nA. 統合する（推奨）\npushしました\nApprove
+**Message Id**: c986752f
+**Message Ids**: 03d7f6fe,15f15751,9594abae,e4538e84,3532f601,58fa4ef4,86a3562b,8544fc5e,c986752f
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: STAGE_COMPLETED
+**Stage**: ci-pipeline
+**Validation Basis**: {"graphContract":"sha256:cf50c8b2fb3ea7495a9efd09328d978da763aab327fc8fe6b39fae75cdadfcd5","inputs":[{"artifact":"build-and-test-summary","contentHash":"sha256:eb4d76e8aae9dfe879ebeff16f2089f8484b4b59f4efc3298f4bb8f230154149","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:44a3067f31186f147d41f6969b64278b0423c5a5fee05b533f35fa7d70e90cdc"},{"artifact":"build-test-results","contentHash":"sha256:7a91154d68ed5d6ec985b39d95dfe262888de5a952c0029e3d2b431d3bbeb8b7","instanceCount":1,"presentCount":1,"producer":"build-and-test","required":true,"structureHash":"sha256:a91e0922b56f5ade152caa7cf240a7e1c0e382d7319b984d2283aa109f388e97"},{"artifact":"code-summary","contentHash":"sha256:c3730a0fd8e6dc156bada0132c131816f81fc000a204fb4f018cd7022bf434ca","instanceCount":5,"presentCount":5,"producer":"code-generation","required":true,"structureHash":"sha256:5600542b0797ab61dc5bb3f692dd14013d71adbad1e8f62e5c38c0c676f34320"}],"outputs":[{"artifact":"ci-config","contentHash":"sha256:f1c987989c901ec8d7ff5c4d882ab69d1b48354ea1e98dcb255e3d9648961437","instanceCount":1,"presentCount":1,"producer":"ci-pipeline","required":true,"structureHash":"sha256:d3940d79177f7e2c09ddc45eba76f3de82360bac987915821816ebf636c534bc"},{"artifact":"ci-pipeline-questions","contentHash":"sha256:c9a1df5ac3d76bc848c570087992543a0ccbe17a1bb8568df830fc34e665b5d5","instanceCount":1,"presentCount":1,"producer":"ci-pipeline","required":true,"structureHash":"sha256:de27abb6f0d8b67b1f98c5b491de8e6982a21e84725b241e7b74303b62d5cd3b"},{"artifact":"quality-gates","contentHash":"sha256:16847cfd2a1592cc6b50126301a9325d0ad0fb39c705449d1b72099130fac82e","instanceCount":1,"presentCount":1,"producer":"ci-pipeline","required":true,"structureHash":"sha256:bbf6ab6335d7d4deebd8e5bcc006b3d406fb3372ff5de519507ff5b3cc624bfe"}],"projectType":"brownfield","schema":3}
+**Details**: Stage CI Pipeline approved by gate
+**Tokens In**: 370
+**Tokens Out**: 138969
+**Cache Read**: 65731882
+**Cache Write**: 1574682
+**Cost USD**: 23.99
+**By Model**: opus-5-5=23.99
+**By Agent**: main=6.31; aidlc-pipeline-deploy-agent=9.11; aidlc-developer-agent=8.57
+**Tokens By Model**: opus-5-5=370/139k/65.7M/1.6M
+**Tokens By Agent**: main=128/27.5k/26.3M/63.1k; aidlc-pipeline-deploy-agent=102/62.2k/18M/851.7k; aidlc-developer-agent=140/49.3k/21.4M/659.8k
+
+---
+
+## Phase Completion
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: PHASE_COMPLETED
+**From phase**: construction
+**To phase**: operation
+**Stages completed**: 19
+
+---
+
+## Phase Verification
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: PHASE_VERIFIED
+**Phase boundary**: construction → operation
+
+---
+
+## Phase Start
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: PHASE_STARTED
+**Phase**: operation
+**Scope**: classic
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-01T04:21:36Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-pipeline
+**Agent**: aidlc-pipeline-deploy-agent
+**Answer Mode**: guide (reused from units-generation)
+
+---
+
+## Memory Empty
+**Timestamp**: 2026-11-01T04:21:37Z
+**Event**: MEMORY_EMPTY
+**Stage**: ci-pipeline
+
+---
