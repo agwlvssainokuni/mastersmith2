@@ -80,7 +80,7 @@ services:
   # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（README の「手元の監視」）。
   # 受け手・指標（Prometheus）・ログ（Loki）・トレース（Tempo）・画面（Grafana）を1つにした、手元の確認向けのコンテナ。
   lgtm:
-    image: grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084
+    image: grafana/otel-lgtm:0.38.1@sha256:0df9bc14142000b161344bd24caf6ddd319b7319055aedaf9b0692b125730af7
     profiles: [monitoring]
     ports:
       # Grafana の画面だけを開発者の PC の localhost に結び付ける。OTLP の受け口は PC に開かない。
