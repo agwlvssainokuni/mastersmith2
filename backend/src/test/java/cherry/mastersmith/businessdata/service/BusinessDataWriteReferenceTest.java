@@ -751,6 +751,25 @@ class BusinessDataWriteReferenceTest {
     }
 
     @Test
+    @DisplayName("T3: an unexpected failure outside a known read stage still logs the stage key with a fixed name")
+    void unexpectedWithoutKnownStageWarnsWithFixedStage() {
+        // 段の分からない想定外（StepAttempt.Unexpected の stage が null）の経路を、更新前の行の読み取りの口から
+        // 段を付けずに投げる形で作る（Intent 261101-maintenance-update の T3、FR9.4）。
+        ports.executor.onDetail = () -> {
+            throw new BusinessDataUnexpectedException();
+        };
+
+        try (LogEvents logs = LogEvents.capture(BusinessDataWriteService.class)) {
+            Throwable thrown = catchThrowable(() -> update(body("dept_code", SECRET)));
+
+            assertUnexpectedWithoutSideEffects(thrown);
+            assertThat(logs.list())
+                    .singleElement()
+                    .satisfies(event -> assertUnexpectedWarning(event, "UNKNOWN", false));
+        }
+    }
+
+    @Test
     @DisplayName("a delete never reads references")
     void deleteNeverReads() {
         WriteResult result = service.write(

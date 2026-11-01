@@ -303,3 +303,121 @@ Step 17 のうち、`develop` への squash の統合は指揮役が依頼者の
 - コミットは C1（`ci.yml`）・C2（コンテナのイメージ、README の OSV の行を含む）・C3（`dependabot.yml`）・C4（記録）に分け、`develop` へ squash で統合する。
 - Dependabot の PR #83・#84・#85 は、依頼者が push した後に、取り込んだコミットを書いたコメントを付けて閉じる。
 - E2E の上乗せで作り直した見本の PG の `127.0.0.1:15432` は、Build and Test の E2E が終わるまで開けておき、その後に上乗せ無しで作り直して閉じる。
+
+## ④ 小さな直し（ブランチ `fix/261101-small-fixes`、2026-11-02）
+
+`develop`（a29f6dbf）から `fix/261101-small-fixes` を作った。始める前に `./gradlew --stop`。
+
+### Step 18（P1、FR9.1）: 1038 が起きた → 承認の場の決定 Q-C により生成を止めた
+
+テストを書く前に、捨ての MySQL のコンテナ（`TargetDbImages.MYSQL_DIGEST` と同じイメージ、名前 `p1-probe-mysql`、確かめた後に消した）で、`RowSqlBuilder.page` が作る文と同じ形（内側で主キーだけを `ORDER BY c IS NULL ASC, c ASC[, id ASC] LIMIT ? OFFSET ?` で並べ、外側でつないで同じ並びで並べる）を流した。値は架空の文字（`LPAD` の番号＋同じ文字の繰り返し）だけ。
+
+- MySQL 26.10.0、`sort_buffer_size` 262,144（既定）、`max_sort_length` 1,024、照合順序 `utf8mb4_0900_ai_ci`（NO PAD のため、並べ替えのキーは `max_sort_length` で切られず値の全体の重みになる）。
+- **1038（`ERROR 1038 (HY001) Out of sort memory`）が起きた。** 起きるかどうかは `OFFSET`・1ページの件数・行の数に依らず、並べ替えのカラムの値1つの大きさで決まる（下の表。内側の主キーだけの問い合わせでも、外側だけでも起きる）。
+
+| 値（並べ替えのカラム） | 型 | 行の数 | 件数・OFFSET | 結果 |
+|---|---|---|---|---|
+| ひらがな 10,000 字（29,990 B・重み 20,000 B） | LONGTEXT | 2,000 | 100・0／1,900／1,999 | 起きない |
+| `a` 5,000〜16,000 字（重み 10,000〜32,000 B） | LONGTEXT | 300 | 100・200、20・0 | 起きない |
+| `a` 17,000 字以上（重み 34,000 B〜） | LONGTEXT | 300 | 100・200 | **起きる** |
+| 漢字 8,000 字（23,990 B・重み 31,990 B） | VARCHAR(10000) | 300 | 20・0 | **起きる** |
+| 漢字 10,000 字（29,990 B・重み 39,990 B） | LONGTEXT | 300・2,000 | 20・100 の各 OFFSET（0〜末尾） | **すべて起きる** |
+| 補助面の漢字 10,000 字（39,985 B） | LONGTEXT・VARCHAR(10000) | 2,000 | 100・1,900 | **起きる** |
+| 漢字 16,000 字（47,990 B） | VARCHAR(16000) | 300 | 100・200 | **起きる** |
+
+- 意味: アプリが書ける文字数の上限（`ColumnWriteRulesFactory.MAX_VALUE_LENGTH` = 10,000 字）の内でも、漢字などの文字（重み 4 B/字）がおよそ 8,000 字を超える値を持つカラムで一覧を並べ替えると、1ページ目から 1038 になる（境の正確な値は、値のバイト数と重みの両方に依るため決め切っていない）。アプリの外で入れた長い値（ラテン文字でおよそ 17,000 字以上）でも起きる。
+- アプリの応答（見立て、アプリを通しては流していない）: `RowSqlFailureClassifier.classify` は HY001・1038 を時間切れ・接続・不一致・値の型のどれにも当てないため `UNEXPECTED` に分ける（読み取りの段の失敗のため）。
+- 直し方の確かめ（同じ捨てのコンテナで）: 並べ替えの式を `SUBSTRING(c, 1, 100)` にすると、上の起きる組（漢字 8,000〜8,300 字、件数 100・OFFSET 200、600 KB の値）ですべて起きなかった。
+
+#### 直し方の案（依頼者に諮る）
+
+1. **案 A（推奨）**: 一覧の並び（`RowSqlBuilder.orderBy`）も、参照先の並びと同じ `RowDialect.sortExpression`（文字の型と OTHER を先頭 `LIST_TEXT_LIMIT` = 100 字の `SUBSTRING` にする）に寄せる。内側と外側の両方に当てる。主キーのあるテーブルは `orderKeys` が主キーを足すため、先頭 100 字が同じ行も主キーの順で決まり、ページの重なり・抜けは起きない。代わりに、先頭 100 字が同じ値どうしは 101 字目以降で並ばない（主キーの順になる）。3種類の DB で同じ式にでき、PostgreSQL・MariaDB の並びも同じ形になる（MariaDB での 1038 は確かめていない）。
+2. **案 B**: MySQL・MariaDB だけ、文字の型の並びを `SUBSTRING` で切る（PostgreSQL は今のまま全体で並べる）。DB の種類ごとの差は `MysqlFamilyRowDialect` に閉じる。並びの意味が DB で変わる。
+3. **案 C**: 対象DB の接続に `SET SESSION sort_buffer_size` を足す。値の大きさに上限が無いため、どの値で足りるかを決められず、接続ごとのメモリが増える（読み取りだけのアカウントで変えられるかも未確認）。勧めない。
+4. **案 D**: 文字の型（長い VARCHAR・TEXT）を並べ替えの対象から外す（DSL の検証で `sortable` を拒む）。既存の DSL を壊しうる。勧めない。
+
+どの案でも、追加する MySQL の結合テスト（仮の名前 `MysqlDeepPageSortIT`）で、漢字 10,000 字の値のカラムで並べ替えた一覧（件数 100・深い OFFSET）が、直す前は失敗し、直した後に 200 で返ることを記録する（計画の Step 18）。
+
+### 止めた範囲（止めた時点）
+
+- 止めた時点では Step 18〜22 のどれも終えておらず、コードの変更は無かった。捨ての MySQL のコンテナは消した。`app`・見本の PG・Mailpit は触っていない。
+
+### 依頼者の決定（2026-11-02）と再開
+
+- P1 は **案 A**（一覧の `RowSqlBuilder.orderBy` を、参照先の並びと同じ `RowDialect.sortExpression`（文字型と OTHER を先頭 100 字で切る）に揃え、内側と外側の両方に当てる。3種類の DB で同じ形）。T1〜T3 も同じブランチで再開してよい（決定 A）。
+
+### Step 18（P1）の再現と直し
+
+- 再現の結合テスト: `backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractDeepPageSortIT.java` と、DB の種類ごとの子のクラス `MysqlDeepPageSortIT`・`MariadbDeepPageSortIT`・`PostgresDeepPageSortIT`（既存の `*BusinessDataReadIT` と同じ形）。テストのクラスごとに名前の重ならないスキーマ（MySQL・MariaDB はデータベース）と読み取りだけのアカウントを作り、終わったら消す。
+- 確かめた範囲: 1,000 行。`body`（MySQL・MariaDB は `LONGTEXT`、PG は `TEXT`）は先頭5字の番号＋漢字で 10,000 字（アプリが書ける上限 `ColumnWriteRulesFactory.MAX_VALUE_LENGTH`。約 30 KB）。`same`（`VARCHAR(10000)`）は先頭 100 字が全行で同じで、101 字目以降が違う 10,000 字。1ページの件数の上限 100 で、1ページ目と最後のページ（10 ページ目、OFFSET 900）を昇順・降順で読む。値は架空の文字だけ。MySQL 26.10.0（`sort_buffer_size` 262,144・`utf8mb4_0900_ai_ci`）、MariaDB 13.0.2、PostgreSQL 18.6（どれも `TargetDbImages` の固定のイメージ）。
+- **直す前**（`:backend:integrationTest --tests '*DeepPageSortIT'`）: 9 件中 5 件が失敗。
+  - MySQL: 3 件すべて 500 `INTERNAL_ERROR`。テストの記録のログに `sqlState` HY001・`vendorCode` 1038 が 3 件（`BusinessDataReadService.failure` の `UNEXPECTED`）。**1038 による失敗と確かめた。**
+  - MariaDB: 長い値の昇順・降順の 2 件は通った（**1038 は起きない**）。先頭 100 字が同じ値のテスト 1 件は、全体の値の順に並んで失敗（案 A の決めた動作の確かめのため、直す前は落ちるのが正しい）。
+  - PostgreSQL: MariaDB と同じ（長い値の 2 件は通り、先頭 100 字が同じ値の 1 件が失敗）。
+- 直し: `RowSqlBuilder.orderBy` を、参照先の並びと共通の `sortedOrderBy`（`view.column` のあるカラムは `dialect.sortExpression`、無いカラムはカラムのまま）にした。`referenceOrderBy` も同じ関数を呼ぶ（振る舞いは前と同じ）。主キーは `TableAccessView.orderKeys` が足すため、先頭 100 字が同じ値どうしは主キーの昇順で決まり、ページの重なり・抜けは起きない。
+- 単体テスト: `RowSqlExecutorTest` に「文字のカラムで並べたページは内側と外側の両方で先頭 100 字の式で並べる」（MySQL の SQL の文字列）を 1 件足した。既存の SQL の文字列のテスト（`price`（DECIMAL）・`code`（主キー）の並び）は変わらず通る。
+- **直した後**: `*DeepPageSortIT` 9 件すべて通過。既存の `*BusinessDataReadIT`（3種類×18 件）・`*ReferenceReadIT`（3種類×23 件）もすべて通過（SKIPPED は前からの DB の種類の前提のもの）。
+- 並びの意味が変わる点に当たる既存のテストを洗い出した（`businessdata` のテストと E2E の並べ替え・長い値の検索）。先頭 100 字が同じ値を並べ替えて順を確かめる既存のテストは無く、期待を直したテストは無い。
+
+### Step 19（T1）
+
+- `frontend/vitest.config.ts` の `coverage.include` に `../perf/redact-k6-evidence.mjs`（定数 `PERF_EVIDENCE_REDACTOR`）を足し、frontend/ の外のファイルを計測するため `coverage.allowExternal: true` を足した。`thresholds`（行 80%・分岐 70%）と除外は変えていない。テストの置き場は `frontend/src/perfEvidenceRedactor.test.ts`・`perfEvidenceRedactorCli.test.ts`（unit のプロジェクトの `src/**/*.test.{ts,tsx}` に入っている）。
+- 道具のファイルが報告に載ることを確かめた（`perf/redact-k6-evidence.mjs` の行）。値は 2 つのテストだけ流したとき 行 73.49%・分岐 67.13%（CLI のテストの子のプロセスは計測されないため）、verify の全体のテストでは 行 94.23%・分岐 90.65%。
+
+### Step 20（T2）
+
+- ESLint: `frontend/eslint.config.js` に `perfToolRule`（`files: ['perf/redact-k6-evidence.mjs']`、Node の環境の大域の名前、`no-undef`・`no-unused-vars`・`no-eval`・`no-implied-eval`・`no-new-func`・export default の禁止）を足した。ESLint 10 は設定のファイルをリントするファイルの場所から探すため、リポジトリの根から `--config frontend/eslint.config.js` で呼ぶ（`basePath: '..'` は根の親を指して当たらなかったため使わない）。違反は `TextDecoder` の宣言の無い名前の 1 件で、Node の大域の名前として宣言して直した。規則が当たることは、違反を入れた標準入力で 5 つの規則が出ることで確かめた。
+- 型の検査（Q-B の案 A）: 道具に `// @ts-check` と JSDoc の型（`Env`・`Io`・`Out`・`PathNode`・`Position`・`ScanCounts`・`Slots`・`TreeWork`、表示の部品の型）を足し、`frontend/tsconfig.perf-tool.json`（`allowJs`・`checkJs`・`strict`・`noUnusedLocals` など、`types: ["node"]`、対象は道具のファイルだけ）で `tsc --noEmit` を当てる。始めは 147 件の型の誤り。振る舞いを変えない形で直した（`while (work.length > 0) { work.pop() }` を `for (let item = work.pop(); item !== undefined; …)` に、`redactTree` の一番上の入れ物を配列 `[undefined]` から `{}` に（`holder[0]` を返すのは同じ）、`stdout`・`stderr` を値を返さない形に、`errorCode` で `'code' in error` を確かめる形に）。呼び出し方は変えていない。伏せ字のテスト（79 件）と `eslintImportRules.test.ts` は通る。
+- 呼ばれるタスク: 新しい Gradle のタスク `perfToolEslint`（`verifyLint` の段）と `perfToolTypecheck`（`verifyBuild` の段）。どちらも `./gradlew verify` と CI（同じ `verify`）から流れる。
+
+### Step 21（T3）
+
+- 段の分からない想定外の経路を作るため、テストの偽物 `FakeBusinessDataPorts.Executor` に `onDetail`（詳細の読み取りのたびに呼ぶ処理）を足した。
+- `BusinessDataWriteReferenceTest` に「段の分からない想定外でも、WARN に stage のキーを固定の名前で出す」を足した。**直す前は失敗**（キーの一覧に `stage` が無い）。
+- 直し: `BusinessDataWriteService.warnReference` は `stage` を必ず出し、null のときは固定の名前 `UNKNOWN`（定数 `UNKNOWN_STAGE`）にする。`ReferenceStepOutcome.Stage` には足さない。値（行の値・参照先の値）は出さない。テストは `SECRET`・テーブルの名前がメッセージにもキーにも無いことも確かめる。**直した後は通過**（同じクラスの 24 件）。
+- WARN のキーを確かめている既存のテスト（`grep '"stage"'`）: `BusinessDataWriteReferenceTest`・`BusinessDataWriteServiceTest`・`ReferenceWriteSecretLeakIT`・`BusinessDataWriteSecretLeakIT`。stage の無い WARN を期待するものは無く、直しは要らなかった（verify ですべて通過）。
+
+### Step 22 の確かめ
+
+#### 眠りの確かめ
+
+- 流す前: 電源は AC（電池 100%）、`pmset -g assertions` は `PreventUserIdleSystemSleep 1`。各コマンドを `caffeinate -dims` で包んだ。
+- verify の間（06:26〜06:54）の `pmset -g log`: 種類は `Assertions` だけで、`Sleep`・`DarkWake`・`Wake` は 0 件。
+
+#### verify
+
+- 1 回目（06:26:13）は `checkToolchain` が `node` を起動できず 1 秒で失敗した（前から残っていた Gradle の作業プロセスの PATH の食い違いと見立て。`./gradlew --stop` の後に通った。コードは変えていない）。
+- コマンド: `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`
+- 2026-11-02 06:26:44〜06:53:04、**BUILD SUCCESSFUL in 26m 19s**（③ は 25m 55s）。
+- backend 単体: 304 クラス・2,809 件（失敗 0・SKIPPED 0。③ より 2 件多い: `RowSqlExecutorTest` と `BusinessDataWriteReferenceTest` の 1 件ずつ）。
+- backend 結合: 269 クラス・1,663 件（失敗 0・SKIPPED 10。③ より 3 クラス・9 件多い: `*DeepPageSortIT`。SKIPPED は ③ と同じ DB の種類の前提のもの）。
+- frontend: 238 ファイル・2,312 件（失敗 0）。
+- カバレッジ（backend、JaCoCo）: 全体 行 97.63%・分岐 91.35%。手を入れたパッケージ: `businessdata.repository` 行 96.31%・分岐 88.49%、`businessdata.service` 行 95.84%・分岐 89.10%（どちらも下限を満たす。`packagesJudgedByTotal` の一覧には無い）。
+- カバレッジ（frontend、道具のファイルを含む）: 全体 行 95.16%・分岐 90.37%（③ は 行 95.21%・分岐 90.36%）。道具のファイルは 行 94.23%・分岐 90.65%。
+- OSV-Scanner・SpotBugs・Gitleaks・evidence の検査を含め、統合を止める指摘は無し。
+
+#### E2E
+
+- コマンド: `caffeinate -dims ./gradlew e2eTest`（見本の PG は E2E の上乗せのまま動かしたものを使い、止めていない）。
+- 2026-11-02 06:53:28〜07:07:44、**BUILD SUCCESSFUL in 14m 15s**、Playwright **277 passed（14.2m）**、失敗 0（axe の検査を含む）。件数は ③ と同じ（E2E は足していない）。
+- 報告の確かめ: 残してはならない値の見つかった件数 0（値の種類 13・json の報告 1・添付 305）。流れが作ったスキーマとロールは e2eTest の片付けが消す。
+- 眠りの確かめ: E2E の間（06:53〜07:20）の `pmset -g log` は `Assertions` だけで、`Sleep`・`DarkWake`・`Wake` は 0 件。
+
+Step 22 のうち、`develop` への squash の統合は指揮役が依頼者の承認を得て行う（Step 22 の印は付けていない）。
+
+### 提案するコミットの区切り（④）
+
+最初のコミットの時点でコンパイルが通る形にする。
+
+- C1 業務データの一覧の並びを先頭 100 字に揃える（P1、不具合の直しと再現のテストを同じコミットに）: `RowSqlBuilder.java`・`RowSqlExecutorTest.java`・`AbstractDeepPageSortIT.java`・`MysqlDeepPageSortIT.java`・`MariadbDeepPageSortIT.java`・`PostgresDeepPageSortIT.java`
+- C2 参照の段の WARN に stage を必ず出す（T3、直しとテストを同じコミットに）: `BusinessDataWriteService.java`・`BusinessDataWriteReferenceTest.java`・`FakeBusinessDataPorts.java`
+- C3 perf の伏せ字の道具をカバレッジ・ESLint・型の検査の対象に入れる（T1・T2）: `perf/redact-k6-evidence.mjs`・`frontend/vitest.config.ts`・`frontend/eslint.config.js`・`frontend/tsconfig.perf-tool.json`・`build.gradle.kts`
+- C4 記録: `code-generation-plan.md`（Step 18〜21 の印）・`generation-notes.md`・監査の記録
+
+### 計画との差（④）
+
+- P1 は計画の「起きなければ閉じる」でなく、起きたため依頼者の決定 案 A で直した（計画どおりの分岐）。再現のテストは MySQL だけでなく 3種類の DB の子のクラスにした（既存の形と team.md の 3種類の決まりに合わせた）。
+- T1 で `coverage.allowExternal: true` を足した（frontend/ の外のファイルを計測するのに要る。計測の対象は include の一覧だけのまま）。
+- T2 の ESLint は frontend の `npm run lint`（`eslint .`）ではなく、新しい Gradle のタスク `perfToolEslint` から根で呼ぶ形にした（既存の `perfToolLint`・`perfToolFormatCheck` と同じ形）。
+- T2 の実験で一度 `sed -i.bak` で `frontend/eslint.config.js` を変えてすぐ元に戻した（決まりの「シェルで書かない」との差。最終の内容はファイルの道具で書いた）。
+- verify の 1 回目の `checkToolchain` の失敗（上）。

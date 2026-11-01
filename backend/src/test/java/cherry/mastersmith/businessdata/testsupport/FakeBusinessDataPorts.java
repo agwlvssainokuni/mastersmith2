@@ -273,9 +273,13 @@ public final class FakeBusinessDataPorts {
             return searchResult;
         }
 
+        /** 詳細の読み取りのたびに呼ぶ処理（想定外の例外を投げて、読み取りの段の分からない経路を作るなど）。 */
+        public Runnable onDetail = () -> {};
+
         @Override
         public RowDetailResult detail(TargetReadSession session, TableAccessView view, RowKey key) {
             calls.add("detail");
+            onDetail.run();
             return detailResult;
         }
 

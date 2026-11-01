@@ -82,11 +82,11 @@
 
 ### ④ 小さな直し（ブランチ `fix/261101-small-fixes`、squash で統合）
 
-- [ ] **Step 18**（FR9.1）: P1 の確かめ。MySQL の結合テストを1つ足す（`backend/src/test/java/cherry/mastersmith/businessdata/` の下、既存の MySQL の結合テストの形・名前の重ならないデータベースを作って消す決まりに従う）。長い文字（`TEXT`・長い `VARCHAR`）のカラムで並べ替えた一覧を、大きな `OFFSET` と1ページの件数の上限で読む。1038 が起きなければ、確かめた範囲（行の数・文字の長さ・`OFFSET`・件数・MySQL の版と `sort_buffer_size`）をテストの説明と `generation-notes.md` に書いて閉じる（テストは回帰の確かめとして残す）。起きたら、直し方の案（並べ替えのカラムを `SUBSTRING` で切る・索引のある列を加える など）を添えて生成を止め、依頼者に諮る。直したら同じテストが直す前に落ち、直した後に通ることを記録する。
-- [ ] **Step 19**（FR9.2）: T1。`frontend` の Vitest の `coverage.include` に `perf/redact-k6-evidence.mjs` を足し（今のテストの置き場と走らせ方を確かめ、テストが Vitest の対象に入っていることも確かめる）、全体の `thresholds`（行 80%・分岐 70%）を当てる。下限を下げる・除外を足すことはしない。
-- [ ] **Step 20**（FR9.3）: T2。ESLint の設定の対象に `perf/` の道具を足し（Node の環境のグローバル）、違反を直す。型の検査は、承認の場の決定（下の「確かめたいこと」Q-B）で当てる。
-- [ ] **Step 21**（FR9.4）: T3。`BusinessDataWriteService.warnReference` で `stage` が null になる経路（`StepAttempt.Unexpected`）を単体テストで起こし、WARN に区分のキーが出ることを確かめるテストを足してから直す（区分の値は固定の名前。行の値・参照先の値は出さない）。WARN のキーを確かめている既存のテスト（`*SecretLeakIT`・ログのキーの検索）を `grep` で洗い出して合わせる。
-- [ ] **Step 22**（NFR3）: verify（clean 付き）と E2E（`businessdata` の `src/main` に触れるため）を流し、通ったら `develop` へ squash で統合する。
+- [x] **Step 18**（FR9.1）: P1 の確かめ。MySQL の結合テストを1つ足す（`backend/src/test/java/cherry/mastersmith/businessdata/` の下、既存の MySQL の結合テストの形・名前の重ならないデータベースを作って消す決まりに従う）。長い文字（`TEXT`・長い `VARCHAR`）のカラムで並べ替えた一覧を、大きな `OFFSET` と1ページの件数の上限で読む。1038 が起きなければ、確かめた範囲（行の数・文字の長さ・`OFFSET`・件数・MySQL の版と `sort_buffer_size`）をテストの説明と `generation-notes.md` に書いて閉じる（テストは回帰の確かめとして残す）。起きたら、直し方の案（並べ替えのカラムを `SUBSTRING` で切る・索引のある列を加える など）を添えて生成を止め、依頼者に諮る。直したら同じテストが直す前に落ち、直した後に通ることを記録する。
+- [x] **Step 19**（FR9.2）: T1。`frontend` の Vitest の `coverage.include` に `perf/redact-k6-evidence.mjs` を足し（今のテストの置き場と走らせ方を確かめ、テストが Vitest の対象に入っていることも確かめる）、全体の `thresholds`（行 80%・分岐 70%）を当てる。下限を下げる・除外を足すことはしない。
+- [x] **Step 20**（FR9.3）: T2。ESLint の設定の対象に `perf/` の道具を足し（Node の環境のグローバル）、違反を直す。型の検査は、承認の場の決定（下の「確かめたいこと」Q-B）で当てる。
+- [x] **Step 21**（FR9.4）: T3。`BusinessDataWriteService.warnReference` で `stage` が null になる経路（`StepAttempt.Unexpected`）を単体テストで起こし、WARN に区分のキーが出ることを確かめるテストを足してから直す（区分の値は固定の名前。行の値・参照先の値は出さない）。WARN のキーを確かめている既存のテスト（`*SecretLeakIT`・ログのキーの検索）を `grep` で洗い出して合わせる。
+- [x] **Step 22**（NFR3）: verify（clean 付き）と E2E（`businessdata` の `src/main` に触れるため）を流し、通ったら `develop` へ squash で統合する。
 
 ### ⑤ README の書き直し（ブランチ `docs/261101-readme`、squash で統合）
 

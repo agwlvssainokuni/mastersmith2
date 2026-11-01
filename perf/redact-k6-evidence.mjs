@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// @ts-check
 //
 // k6 の結果に入る認証の値（JWT の形の文字列）を伏せてから記録（evidence/）に置く道具。依存は Node の組み込みだけ。
 //
@@ -25,11 +26,57 @@
 //   0 成功 / 1 呼び出しの誤り / 2 入力の誤り / 3 キーの衝突 / 4 残存の検出 / 5 書き出しの失敗
 //
 // 表示（標準出力・標準エラー）には、件数・パス・位置・道だけを出し、見つけた値とその前後の文字を出さない。
+//
+// 型は JSDoc で書き、frontend/tsconfig.perf-tool.json（allowJs・checkJs・strict）で tsc --noEmit の検査を当てる
+// （Gradle の perfToolTypecheck）。呼び出し方は変わらない。
 import { randomBytes } from 'node:crypto'
 import { promises as fsp } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+
+/**
+ * 道（親へのつながり）の 1 段。
+ * @typedef {{ up: PathNode | null, key: string | number }} PathNode
+ */
+
+/**
+ * 文字列の中の位置（行と桁は 1 始まり、offset は 0 始まり）。
+ * @typedef {{ line: number, column: number, offset: number }} Position
+ */
+
+/**
+ * 表示と読み書きの口。テストは一部だけを差し替える（差し替えない口は本物）。
+ * @typedef {object} Env
+ * @property {(line: string) => void} stdout 標準出力に 1 行出す
+ * @property {(line: string) => void} stderr 標準エラーに 1 行出す
+ * @property {(target: string) => Promise<import('node:fs').Stats>} stat 情報を読む
+ * @property {(target: string) => Promise<Buffer>} readFile 中身を読む
+ * @property {(target: string) => Promise<string>} realpath 実際のパスを読む
+ * @property {(target: string) => Promise<import('node:fs').Dirent[]>} readdir ディレクトリの中を読む
+ * @property {(target: string, flags: string) => Promise<import('node:fs/promises').FileHandle>} open 開く
+ * @property {(handle: import('node:fs/promises').FileHandle, data: Buffer) => Promise<void>} write 書く
+ * @property {(handle: import('node:fs/promises').FileHandle) => Promise<void>} close 閉じる
+ * @property {(from: string, to: string) => Promise<void>} rename 名前を替える
+ * @property {(target: string) => Promise<void>} unlink 消す
+ * @property {(cleanup: () => Promise<void>) => () => void} onSignal 片付けを登録し、外す関数を返す
+ */
+
+/**
+ * 差し替えの口（一部だけ）。
+ * @typedef {Partial<Env>} Io
+ */
+
+/**
+ * 表示だけの口。
+ * @typedef {Pick<Env, 'stdout' | 'stderr'>} Out
+ */
+
+/**
+ * evidence の検査の件数。
+ * @typedef {{ checked: number, binary: number, links: number, detections: number, detectionFiles: number,
+ *   errors: number }} ScanCounts
+ */
 
 /** JWT の形の置き換えの印 */
 export const JWT_MARK = '[REDACTED-JWT]'
@@ -69,19 +116,33 @@ const RUN = /[A-Za-z0-9_-]*/y
 /** base64url でない文字の続き */
 const GAP = /[^A-Za-z0-9_-]*/y
 
-/** 英数字か（JWT の形の直前に来てはいけない文字） */
+/**
+ * 英数字か（JWT の形の直前に来てはいけない文字）
+ * @param {number} c 文字の符号
+ * @returns {boolean} 英数字なら true
+ */
 function isAlnumCode(c) {
   return (c >= 0x30 && c <= 0x39) || (c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)
 }
 
-/** 位置 from から始まる base64url の文字の続きの終わり（続きが無ければ from） */
+/**
+ * 位置 from から始まる base64url の文字の続きの終わり（続きが無ければ from）
+ * @param {string} text 文字列
+ * @param {number} from 始まりの位置
+ * @returns {number} 終わりの位置
+ */
 function runEnd(text, from) {
   RUN.lastIndex = from
   RUN.test(text)
   return RUN.lastIndex
 }
 
-/** 位置 from から始まる base64url でない文字の続きの終わり */
+/**
+ * 位置 from から始まる base64url でない文字の続きの終わり
+ * @param {string} text 文字列
+ * @param {number} from 始まりの位置
+ * @returns {number} 終わりの位置
+ */
 function gapEnd(text, from) {
   GAP.lastIndex = from
   GAP.test(text)
@@ -101,6 +162,7 @@ function scanJwtShapes(text) {
   const n = text.length
   // nextEyj は、最後に探し始めた位置以降の最初の eyJ の位置（無ければ n）
   let nextEyj = -1
+  /** @param {number} from 探し始める位置 */
   const eyjAtOrAfter = (from) => {
     if (nextEyj < from) {
       const found = text.indexOf('eyJ', from)
@@ -184,19 +246,27 @@ export function findResidual(text) {
   return { count: spans.length, positions }
 }
 
-/** 値が配列でないオブジェクトか */
+/**
+ * 値が配列でないオブジェクトか
+ * @param {unknown} value 値
+ * @returns {value is Record<string, unknown>} 配列でないオブジェクトなら true
+ */
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
-/** 上の階層が setup_data を自分自身のキーとして持つか */
+/**
+ * 上の階層が setup_data を自分自身のキーとして持つか
+ * @param {unknown} value 値
+ * @returns {value is Record<string, unknown>} 持つなら true
+ */
 function hasTopLevelSetup(value) {
   return isPlainObject(value) && Object.hasOwn(value, 'setup_data')
 }
 
 /**
  * 道（親へのつながり）から表示の文字列を作る。キー名は JSON の文字列の形で書く。
- * @param {{ up: object | null, key: string | number } | null} node 道の末端
+ * @param {PathNode | null} node 道の末端
  * @returns {string} 例: $["setup_data"][0]
  */
 function pathText(node) {
@@ -207,7 +277,11 @@ function pathText(node) {
   return '$' + parts.reverse().join('')
 }
 
-/** 新しいオブジェクトに、元の並びのまま値の入れ物を作る（__proto__ のキーも自分自身の値として持つ） */
+/**
+ * 新しいオブジェクトに、元の並びのまま値の入れ物を作る（__proto__ のキーも自分自身の値として持つ）
+ * @param {Record<string, unknown>} target 入れ物を作るオブジェクト
+ * @param {string} key キー名
+ */
 function defineSlot(target, key) {
   Object.defineProperty(target, key, {
     value: undefined,
@@ -228,10 +302,12 @@ export function redactTree(value) {
   let replacedCount = 0
   let setupRedactedCount = 0
   const topLevelSetup = hasTopLevelSetup(value)
-  const holder = [undefined]
+  /** @type {Slots} */
+  const holder = {}
+  /** @type {TreeWork[]} */
   const work = [{ src: value, target: holder, slot: 0, inSetup: false, node: null }]
-  while (work.length > 0) {
-    const { src, target, slot, inSetup, node } = work.pop()
+  for (let item = work.pop(); item !== undefined; item = work.pop()) {
+    const { src, target, slot, inSetup, node } = item
     if (typeof src === 'string') {
       if (inSetup) {
         setupRedactedCount++
@@ -250,15 +326,20 @@ export function redactTree(value) {
     if (Array.isArray(src)) {
       const array = Array.from({ length: src.length })
       target[slot] = array
+      // 配列は番号の添字だけを書く入れ物として扱う
+      const slots = /** @type {Slots} */ (/** @type {unknown} */ (array))
       for (let i = src.length - 1; i >= 0; i--) {
-        work.push({ src: src[i], target: array, slot: i, inSetup, node: { up: node, key: i } })
+        work.push({ src: src[i], target: slots, slot: i, inSetup, node: { up: node, key: i } })
       }
       continue
     }
+    const record = /** @type {Record<string, unknown>} */ (src)
+    /** @type {Record<string, unknown>} */
     const object = {}
     target[slot] = object
+    /** @type {TreeWork[]} */
     const children = []
-    for (const key of Object.keys(src)) {
+    for (const key of Object.keys(record)) {
       const r = redactJwt(key)
       replacedCount += r.count
       if (Object.hasOwn(object, r.text)) {
@@ -267,7 +348,7 @@ export function redactTree(value) {
       defineSlot(object, r.text)
       const childInSetup = inSetup || (node === null && topLevelSetup && key === 'setup_data')
       children.push({
-        src: src[key],
+        src: record[key],
         target: object,
         slot: r.text,
         inSetup: childInSetup,
@@ -282,19 +363,31 @@ export function redactTree(value) {
 }
 
 /**
+ * 値を書く入れ物（オブジェクトか、番号の添字で書く配列）。
+ * @typedef {{ [key: string]: unknown }} Slots
+ */
+
+/**
+ * redactTree のたどりの 1 件。
+ * @typedef {{ src: unknown, target: Slots, slot: string | number, inSetup: boolean, node: PathNode | null }} TreeWork
+ */
+
+/**
  * 置換を通さずに、上の階層の setup_data の下に SETUP_MARK でない文字列が残っていないかを調べる（BR2.4）。
  * 件数と道（キー名は redactJwt を通したもの）だけを返す。
  * @param {unknown} tree JSON.parse した木
  * @returns {{ count: number, paths: string[] }} 件数と道
  */
 export function findUnredactedSetup(tree) {
+  /** @type {string[]} */
   const paths = []
   if (!hasTopLevelSetup(tree)) {
     return { count: 0, paths }
   }
+  /** @type {{ value: unknown, node: PathNode }[]} */
   const work = [{ value: tree.setup_data, node: { up: null, key: 'setup_data' } }]
-  while (work.length > 0) {
-    const { value, node } = work.pop()
+  for (let item = work.pop(); item !== undefined; item = work.pop()) {
+    const { value, node } = item
     if (typeof value === 'string') {
       if (value !== SETUP_MARK) {
         paths.push(pathText(node))
@@ -315,10 +408,17 @@ export function findUnredactedSetup(tree) {
 
 // ---- 層 2: 読み書きの守り・報告・JSON の口とテキストの口 ----
 
-/** 本物の表示と読み書き。テストは main・checkAndWrite の io で一部だけを差し替える */
+/**
+ * 本物の表示と読み書き。テストは main・checkAndWrite の io で一部だけを差し替える
+ * @type {Env}
+ */
 const REAL_IO = {
-  stdout: (line) => process.stdout.write(line + '\n'),
-  stderr: (line) => process.stderr.write(line + '\n'),
+  stdout: (line) => {
+    process.stdout.write(line + '\n')
+  },
+  stderr: (line) => {
+    process.stderr.write(line + '\n')
+  },
   stat: (target) => fsp.stat(target),
   readFile: (target) => fsp.readFile(target),
   realpath: (target) => fsp.realpath(target),
@@ -334,6 +434,7 @@ const REAL_IO = {
    * @returns {() => void} 登録を外す関数
    */
   onSignal: (cleanup) => {
+    /** @param {NodeJS.Signals} signal 受けた合図 */
     const listener = (signal) => {
       cleanup().finally(() => process.exit(signal === 'SIGINT' ? 130 : 143))
     }
@@ -346,28 +447,49 @@ const REAL_IO = {
   },
 }
 
-/** 差し替えの無い口を本物で埋める */
+/**
+ * 差し替えの無い口を本物で埋める
+ * @param {Io} io 差し替え
+ * @returns {Env} すべての口
+ */
 function withDefaults(io) {
   return { ...REAL_IO, ...io }
 }
 
-/** 表示する前のパス・道（JWT の形を伏せる） */
+/**
+ * 表示する前のパス・道（JWT の形を伏せる）
+ * @param {string} text パス・道
+ * @returns {string} 伏せた文字列
+ */
 function shown(text) {
   return redactJwt(text).text
 }
 
-/** ファイルの誤りの code だけを取り出す（文言は入力の名前を含みうるため出さない） */
+/**
+ * ファイルの誤りの code だけを取り出す（文言は入力の名前を含みうるため出さない）
+ * @param {unknown} error 誤り
+ * @returns {string} code（決めた形でなければ UNKNOWN）
+ */
 function errorCode(error) {
-  const code = error !== null && typeof error === 'object' ? error.code : undefined
+  const code =
+    error !== null && typeof error === 'object' && 'code' in error ? error.code : undefined
   return typeof code === 'string' && /^[A-Z0-9_]+$/.test(code) ? code : 'UNKNOWN'
 }
 
-/** 誤りの種類の名前だけを取り出す */
+/**
+ * 誤りの種類の名前だけを取り出す
+ * @param {unknown} error 誤り
+ * @returns {string} 種類の名前（決めた形でなければ Unknown）
+ */
 function errorName(error) {
   return error instanceof Error && /^[A-Za-z]+$/.test(error.name) ? error.name : 'Unknown'
 }
 
-/** JSON.parse の誤りの文言から位置の数だけを抜く（文言そのものは入力の断片を含むため出さない） */
+/**
+ * JSON.parse の誤りの文言から位置の数だけを抜く（文言そのものは入力の断片を含むため出さない）
+ * @param {unknown} error 誤り
+ * @returns {number | null} 位置（無ければ null）
+ */
 function jsonErrorPosition(error) {
   const found = error instanceof Error ? /position (\d+)/.exec(error.message) : null
   return found ? Number(found[1]) : null
@@ -379,6 +501,30 @@ const MAX_SHOWN_POSITIONS = 10
 /**
  * 決めた文言だけを表示する報告の部品。受けるのは件数・位置・パス・道・code だけで、パスと道は伏せてから出す。
  * 任意の文字列をそのまま出す口は持たない。
+ * @type {{
+ *   usage: (io: Out) => void,
+ *   textJsonOutput: (io: Out, file: string) => void,
+ *   outputParentMissing: (io: Out, file: string) => void,
+ *   outputNotEvidence: (io: Out, file: string) => void,
+ *   sameFile: (io: Out, file: string) => void,
+ *   inputUnreadable: (io: Out, file: string, code: string) => void,
+ *   inputNotFile: (io: Out, file: string) => void,
+ *   inputTooLarge: (io: Out, file: string, size: number) => void,
+ *   inputEmpty: (io: Out, file: string) => void,
+ *   inputNotUtf8: (io: Out, file: string) => void,
+ *   inputHasNul: (io: Out, file: string) => void,
+ *   inputNotJson: (io: Out, file: string, position: number | null) => void,
+ *   inputTooDeep: (io: Out, file: string) => void,
+ *   textGotSummary: (io: Out, file: string) => void,
+ *   collision: (io: Out, objectPath: string) => void,
+ *   outputNotJson: (io: Out) => void,
+ *   residual: (io: Out, count: number, positions: Position[]) => void,
+ *   setupResidual: (io: Out, count: number, paths: string[]) => void,
+ *   writeFailed: (io: Out, file: string, code: string) => void,
+ *   tempCleanupFailed: (io: Out, file: string, code: string) => void,
+ *   success: (io: Out, file: string, replaced: number, setupRedacted: number) => void,
+ *   unexpected: (io: Out, name: string) => void,
+ * }}
  */
 const REPORT = {
   usage: (io) =>
@@ -461,12 +607,13 @@ const REPORT = {
  * @param {string} text 書き出す文字列
  * @param {{ json: boolean }} options json のときは読み直した木の setup_data も確かめる
  * @param {string} outputPath 出力のパス
- * @param {object} [io] 表示と読み書きの差し替え
+ * @param {Io} [io] 表示と読み書きの差し替え
  * @returns {Promise<number>} 0 成功 / 4 残存の検出 / 5 書き出しの失敗
  */
 export async function checkAndWrite(text, options, outputPath, io = {}) {
   const env = withDefaults(io)
   const residual = findResidual(text)
+  /** @type {{ count: number, paths: string[] }} */
   let setup = { count: 0, paths: [] }
   if (options.json) {
     let reread
@@ -528,7 +675,10 @@ export async function checkAndWrite(text, options, outputPath, io = {}) {
 
 /**
  * 出力のパスを確かめ、置く先の絶対パスを返す（誤りなら null。表示は済ませる）。
- * @returns {Promise<string | null>}
+ * @param {Env} env 表示と読み書き
+ * @param {string} input 入力のパス
+ * @param {string} output 出力のパス
+ * @returns {Promise<string | null>} 置く先の絶対パス
  */
 async function resolveOutput(env, input, output) {
   let parent
@@ -564,7 +714,9 @@ async function resolveOutput(env, input, output) {
 
 /**
  * 入力のバイト列を上限の中で読む（誤りなら null。表示は済ませる）。
- * @returns {Promise<Buffer | null>}
+ * @param {Env} env 表示と読み書き
+ * @param {string} input 入力のパス
+ * @returns {Promise<Buffer | null>} バイト列
  */
 async function readInput(env, input) {
   let info
@@ -596,7 +748,12 @@ async function readInput(env, input) {
   return bytes
 }
 
-/** UTF-8 として厳しく読む（不正なバイトがあれば null） */
+/**
+ * UTF-8 として厳しく読む（不正なバイトがあれば null）
+ * @param {Buffer} bytes バイト列
+ * @param {boolean} keepBom 先頭の BOM を残すなら true
+ * @returns {string | null} 文字列
+ */
 function decodeUtf8(bytes, keepBom) {
   try {
     return new TextDecoder('utf-8', { fatal: true, ignoreBOM: keepBom }).decode(bytes)
@@ -605,7 +762,12 @@ function decodeUtf8(bytes, keepBom) {
   }
 }
 
-/** JSON の口（契約 C7）: summary json を置き換えて evidence/ に置く */
+/**
+ * JSON の口（契約 C7）: summary json を置き換えて evidence/ に置く
+ * @param {string[]} args 引数
+ * @param {Env} env 表示と読み書き
+ * @returns {Promise<number>} 終わりのコード
+ */
 async function jsonMode(args, env) {
   if (args.length !== 2) {
     REPORT.usage(env)
@@ -659,7 +821,12 @@ async function jsonMode(args, env) {
   return code
 }
 
-/** テキストの口: k6 の標準出力・ログを置き換えて evidence/ に置く（BR1.8・BR3.4） */
+/**
+ * テキストの口: k6 の標準出力・ログを置き換えて evidence/ に置く（BR1.8・BR3.4）
+ * @param {string[]} args 引数
+ * @param {Env} env 表示と読み書き
+ * @returns {Promise<number>} 終わりのコード
+ */
 async function textMode(args, env) {
   if (args.length !== 2) {
     REPORT.usage(env)
@@ -713,7 +880,7 @@ async function textMode(args, env) {
 /**
  * 道具の入口。
  * @param {string[]} argv 引数（node と道具のパスを除いたもの）
- * @param {object} [io] 表示と読み書きの差し替え（差し替えない口は本物）
+ * @param {Io} [io] 表示と読み書きの差し替え（差し替えない口は本物）
  * @returns {Promise<number>} 終わりのコード
  */
 export async function main(argv, io = {}) {
@@ -734,7 +901,22 @@ export async function main(argv, io = {}) {
 
 // ---- 層 3: evidence の検査の口 ----
 
-/** evidence の検査の表示（パスは根からの相対で、伏せてから出す） */
+/**
+ * evidence の検査の表示（パスは根からの相対で、伏せてから出す）
+ * @type {{
+ *   rootMissing: (io: Out, root: string) => void,
+ *   link: (io: Out, rel: string) => void,
+ *   binary: (io: Out, rel: string) => void,
+ *   pathDetection: (io: Out, rel: string, count: number) => void,
+ *   textDetection: (io: Out, rel: string, count: number, positions: Position[]) => void,
+ *   binaryDetection: (io: Out, rel: string, count: number, positions: Position[]) => void,
+ *   tooLarge: (io: Out, rel: string, size: number) => void,
+ *   unreadable: (io: Out, rel: string, code: string) => void,
+ *   notRegular: (io: Out, rel: string) => void,
+ *   nulText: (io: Out, rel: string) => void,
+ *   summary: (io: Out, counts: ScanCounts) => void,
+ * }}
+ */
 const SCAN_REPORT = {
   rootMissing: (io, root) => io.stderr(`調べる根のディレクトリがありません: ${shown(root)}`),
   link: (io, rel) => io.stdout(`リンク（たどらない）: ${shown(rel)}`),
@@ -777,7 +959,14 @@ const SCAN_REPORT = {
     ),
 }
 
-/** evidence の下の 1 つのファイルを調べる（8.2節の判定の順） */
+/**
+ * evidence の下の 1 つのファイルを調べる（8.2節の判定の順）
+ * @param {Env} env 表示と読み書き
+ * @param {string} full ファイルのパス
+ * @param {string} rel 根からの相対のパス
+ * @param {ScanCounts} counts 件数（足していく）
+ * @returns {Promise<void>}
+ */
 async function scanFile(env, full, rel, counts) {
   counts.checked++
   let found = 0
@@ -834,6 +1023,8 @@ async function scanFile(env, full, rel, counts) {
 /**
  * evidence の検査の口（BR4.2・NFR8.68）: 根の下の、名前がちょうど evidence のディレクトリの下のすべての通常のファイルの
  * 中身とパスに JWT の形が無いかを調べる。記号のリンクはたどらない。`.` で始まる名前（一時ファイル）も調べる。
+ * @param {string[]} args 引数
+ * @param {Env} env 表示と読み書き
  * @returns {Promise<number>} 0 なし / 1 呼び出しの誤り / 2 入力の誤り / 4 検出
  */
 async function scanMode(args, env) {
@@ -852,12 +1043,14 @@ async function scanMode(args, env) {
     SCAN_REPORT.rootMissing(env, rootArg)
     return 1
   }
+  /** @type {ScanCounts} */
   const counts = { checked: 0, binary: 0, links: 0, detections: 0, detectionFiles: 0, errors: 0 }
+  /** @type {{ dir: string, rel: string, inEvidence: boolean }[]} */
   const work = [
     { dir: rootArg, rel: '', inEvidence: path.basename(path.resolve(rootArg)) === 'evidence' },
   ]
-  while (work.length > 0) {
-    const { dir, rel, inEvidence } = work.pop()
+  for (let item = work.pop(); item !== undefined; item = work.pop()) {
+    const { dir, rel, inEvidence } = item
     let entries
     try {
       entries = await env.readdir(dir)

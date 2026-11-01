@@ -27,6 +27,13 @@
 import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config.ts'
 
+/**
+ * frontend/ の外にある、k6 の結果の JWT を伏せる道具（perf/redact-k6-evidence.mjs）。テストは src/perfEvidenceRedactor*.test.ts。
+ * 全体の下限（行 80%・分岐 70%）の対象に入れる（Intent 261101-maintenance-update の T1）。frontend/ の外のファイルを計測するため
+ * coverage.allowExternal を有効にする（計測の対象は include の一覧だけのまま）。
+ */
+const PERF_EVIDENCE_REDACTOR = '../perf/redact-k6-evidence.mjs'
+
 /** ほかのテストより先に、1つだけで流すテストのファイル */
 const ESLINT_CONFIG_TEST = 'src/eslintImportRules.test.ts'
 
@@ -58,7 +65,8 @@ export default mergeConfig(
       ],
       coverage: {
         provider: 'v8',
-        include: ['src/**/*.{ts,tsx}'],
+        allowExternal: true,
+        include: ['src/**/*.{ts,tsx}', PERF_EVIDENCE_REDACTOR],
         exclude: ['src/main.tsx', 'src/**/*.d.ts', 'src/**/*.test.{ts,tsx}'],
         reporter: ['text', 'html', 'json-summary'],
         reportsDirectory: 'coverage',

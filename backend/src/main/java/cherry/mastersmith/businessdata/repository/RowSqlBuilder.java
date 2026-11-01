@@ -267,11 +267,19 @@ final class RowSqlBuilder {
 
     /** 固定の並び（文字の型は先頭の 100 字の項。判定の材料に無い主キーのカラムはカラムのまま。F1: A）。 */
     private String referenceOrderBy(ReferenceReadSpec spec, String prefix) {
-        if (spec.order().isEmpty()) {
+        return sortedOrderBy(spec.order(), prefix);
+    }
+
+    /**
+     * 並びの句を、文字の型を先頭の {@link ColumnValueCodec#LIST_TEXT_LIMIT} 字に切った項で作る（{@link RowDialect#sortExpression}）。
+     * 判定の材料に無いカラム（主キーなど）はカラムのまま並べる。
+     */
+    private String sortedOrderBy(List<SortKey> keys, String prefix) {
+        if (keys.isEmpty()) {
             return "";
         }
         List<String> terms = new ArrayList<>();
-        for (SortKey key : spec.order()) {
+        for (SortKey key : keys) {
             String ref = prefix + column(key.column());
             String expression = view.column(key.column())
                     .map(c -> dialect.sortExpression(ref, c))
@@ -334,15 +342,12 @@ final class RowSqlBuilder {
         return selected;
     }
 
+    /**
+     * 一覧の並びの句。参照先の並びと同じく、文字の型は先頭の {@link ColumnValueCodec#LIST_TEXT_LIMIT} 字で並べる（Intent
+     * 261101-maintenance-update の P1、依頼者の決定 案 A）。値の全体で並べると、MySQL では値1つが大きいとき（漢字でおよそ 8,000 字を超える
+     * とき）に並べ替えの領域の不足（1038）で失敗するため。先頭が同じ値どうしは、{@code orderKeys} が足す主キーの順で決まる。
+     */
     private String orderBy(List<SortKey> keys, String prefix) {
-        if (keys.isEmpty()) {
-            return "";
-        }
-        return " ORDER BY "
-                + String.join(
-                        ", ",
-                        keys.stream()
-                                .map(k -> dialect.orderTerm(prefix + column(k.column()), k.direction()))
-                                .toList());
+        return sortedOrderBy(keys, prefix);
     }
 }

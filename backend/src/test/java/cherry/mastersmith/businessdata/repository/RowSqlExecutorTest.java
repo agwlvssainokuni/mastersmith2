@@ -198,6 +198,32 @@ class RowSqlExecutorTest {
     }
 
     @Test
+    @DisplayName("a page sorted by a string column orders by its first 100 characters inside and outside the join")
+    void stringSortUsesTheLeadingCharacters() throws SQLException {
+        // MySQL の 1038 を避ける（Intent 261101-maintenance-update の P1、案 A）。主キーは orderKeys が足し、カラムのまま並べる。
+        when(firstResult.next()).thenReturn(true);
+        when(firstResult.getLong(1)).thenReturn(1L);
+        when(secondResult.next()).thenReturn(false);
+
+        executor.search(
+                session(DatabaseProduct.MYSQL),
+                VIEW,
+                List.of(),
+                new PageRequest(1, 100, new SortKey("name", SortDirection.ASC)),
+                Optional.empty());
+
+        InOrder order = inOrder(connection);
+        order.verify(connection).prepareStatement("SELECT COUNT(*) FROM `sample`.`item`");
+        order.verify(connection)
+                .prepareStatement("SELECT t.`code`, t.`code`, SUBSTRING(t.`name`, 1, 101), t.`price`"
+                        + " FROM `sample`.`item` t JOIN (SELECT `code` FROM `sample`.`item`"
+                        + " ORDER BY SUBSTRING(`name`, 1, 100) IS NULL ASC, SUBSTRING(`name`, 1, 100) ASC,"
+                        + " `code` IS NULL ASC, `code` ASC LIMIT ? OFFSET ?) p"
+                        + " ON t.`code` = p.`code` ORDER BY SUBSTRING(t.`name`, 1, 100) IS NULL ASC,"
+                        + " SUBSTRING(t.`name`, 1, 100) ASC, t.`code` IS NULL ASC, t.`code` ASC");
+    }
+
+    @Test
     @DisplayName("a page at or beyond the total returns the count without preparing a second statement")
     void beyondTheLastPage() throws SQLException {
         when(firstResult.next()).thenReturn(true);

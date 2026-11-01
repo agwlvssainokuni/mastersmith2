@@ -120,6 +120,12 @@ public class BusinessDataWriteService {
     /** ⑩ の想定外の WARN の {@code reason}（⑪ の想定外と同じ文字。{@link ReferenceFailureReason} には足さない）。 */
     static final String UNEXPECTED_REASON = "UNEXPECTED";
 
+    /**
+     * ⑩ の WARN の {@code stage} の、起きた読み取りが分からない想定外のときの値（Intent 261101-maintenance-update の T3、FR9.4）。
+     * 固定の名前で、行の値・参照先の値を含まない。{@link ReferenceStepOutcome.Stage} には足さない。
+     */
+    static final String UNKNOWN_STAGE = "UNKNOWN";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(BusinessDataWriteService.class);
 
     private final TableAccessResolver resolver;
@@ -896,7 +902,8 @@ public class BusinessDataWriteService {
 
     /**
      * ⑩ の診断の WARN を1行だけ出す（キーと値だけ。名前・値・メッセージを出さない。U2 の NFR1.32）。{@code reason} は
-     * {@link ReferenceFailureReason} か想定外の {@link #UNEXPECTED_REASON}。値の無いキー（{@code stage} を含む）は出さない。
+     * {@link ReferenceFailureReason} か想定外の {@link #UNEXPECTED_REASON}。{@code stage} は必ず出し、起きた読み取りが分からない
+     * 想定外では固定の {@link #UNKNOWN_STAGE} にする（T3）。ほかの値の無いキーは出さない。
      */
     private static void warnReference(
             ReferenceStepOutcome.Stage stage,
@@ -905,11 +912,10 @@ public class BusinessDataWriteService {
             Integer vendorCode,
             String exceptionClass,
             boolean budgetExceeded) {
-        var log = LOGGER.atWarn().addKeyValue("purpose", REFERENCE_PURPOSE);
-        if (stage != null) {
-            log = log.addKeyValue("stage", stage);
-        }
-        log = log.addKeyValue("reason", reason);
+        var log = LOGGER.atWarn()
+                .addKeyValue("purpose", REFERENCE_PURPOSE)
+                .addKeyValue("stage", stage != null ? stage.name() : UNKNOWN_STAGE)
+                .addKeyValue("reason", reason);
         if (sqlState != null) {
             log = log.addKeyValue("sqlState", sqlState);
         }

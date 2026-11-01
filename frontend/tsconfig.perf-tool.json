@@ -1,0 +1,19 @@
+{
+  "//": "perf の伏せ字の道具（perf/redact-k6-evidence.mjs。JSDoc の型を持つ JavaScript）の型の検査だけの設定（Intent 261101-maintenance-update の T2、承認の場の Q-B の案 A）。Gradle の perfToolTypecheck が tsc --noEmit -p で呼ぶ。道具の呼び出し方は変えない。",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "types": ["node"]
+  },
+  "files": ["../perf/redact-k6-evidence.mjs"]
+}

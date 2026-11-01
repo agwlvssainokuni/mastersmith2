@@ -208,6 +208,49 @@ const businessDataConsoleRule = {
   },
 }
 
+/**
+ * perf の伏せ字の道具（perf/redact-k6-evidence.mjs。frontend/ の外の Node の道具）に当てる決まり（Intent
+ * 261101-maintenance-update の T2）。道具のファイルだけを対象にする（ほかの perf/*.mjs には広げない）。
+ * ESLint は設定のファイルをリントするファイルの場所から探すため、frontend/ の外の道具には、リポジトリの根から
+ * `--config frontend/eslint.config.js` を付けて呼ぶ（Gradle の perfToolEslint）。このとき files は根からの道で当たる（frontend/ の中で
+ * `eslint .` を流すときは、この決まりは当たらない）。Node の環境の大域の名前を宣言し、宣言の無い名前（no-undef）・使わない名前
+ * （no-unused-vars）・文字列をコードとして実行する書き方（no-eval・no-implied-eval・no-new-func）・export default を止める。
+ */
+const perfToolRule = {
+  files: ['perf/redact-k6-evidence.mjs'],
+  languageOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    globals: {
+      Buffer: 'readonly',
+      console: 'readonly',
+      globalThis: 'readonly',
+      process: 'readonly',
+      setTimeout: 'readonly',
+      clearTimeout: 'readonly',
+      setInterval: 'readonly',
+      clearInterval: 'readonly',
+      URL: 'readonly',
+      TextDecoder: 'readonly',
+      TextEncoder: 'readonly',
+    },
+  },
+  rules: {
+    'no-undef': 'error',
+    'no-unused-vars': 'error',
+    'no-eval': 'error',
+    'no-implied-eval': 'error',
+    'no-new-func': 'error',
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'ExportDefaultDeclaration',
+        message: 'export default は使わず、名前付きのエクスポートにしてください。',
+      },
+    ],
+  },
+}
+
 export default [
   { ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results'] },
   {
@@ -253,4 +296,5 @@ export default [
   ...featureImportRules,
   sharedImportRule,
   businessDataConsoleRule,
+  perfToolRule,
 ]

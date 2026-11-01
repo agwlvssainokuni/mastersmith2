@@ -243,6 +243,35 @@ val perfToolLint =
         )
     }
 
+// ESLint は設定のファイルをリントするファイルの場所から探すため、リポジトリの根から frontend/eslint.config.js を指定して呼ぶ
+// （設定の中の perf の道具の決まり。Node の環境の大域の名前・no-undef など。Intent 261101-maintenance-update の T2）。
+val perfToolEslint =
+    tasks.register<Exec>("perfToolEslint") {
+        description = "perf の伏せ字の道具に ESLint を当てる（Node の環境の決まり。frontend/eslint.config.js）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(frontendInstall)
+        commandLine(
+            frontendDir.file("node_modules/.bin/eslint").asFile.absolutePath,
+            "--config",
+            "frontend/eslint.config.js",
+            perfRedactorTool,
+        )
+    }
+
+// 型の検査は JSDoc の型と frontend/tsconfig.perf-tool.json（allowJs・checkJs・strict）で行う（承認の場の Q-B の案 A）。
+val perfToolTypecheck =
+    tasks.register<Exec>("perfToolTypecheck") {
+        description = "perf の伏せ字の道具の型を検査する（tsc --noEmit、JSDoc の型）。"
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        dependsOn(frontendInstall)
+        commandLine(
+            frontendDir.file("node_modules/.bin/tsc").asFile.absolutePath,
+            "--noEmit",
+            "-p",
+            "frontend/tsconfig.perf-tool.json",
+        )
+    }
+
 // ---- 安全の検査 ----
 
 val gitleaksScan =
@@ -402,8 +431,8 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyLint",
-            "2 リンタ（oxlint・ESLint・Stylelint。oxlint は画面と perf の伏せ字の道具）",
-            listOf(frontendLint, frontendLintCss, perfToolLint),
+            "2 リンタ（oxlint・ESLint・Stylelint。oxlint と ESLint は画面と perf の伏せ字の道具）",
+            listOf(frontendLint, frontendLintCss, perfToolLint, perfToolEslint),
         ),
         Triple(
             "verifyLicense",
@@ -413,11 +442,12 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyBuild",
-            "4 ビルド（Java のコンパイル、tsc --noEmit、Vite のビルド）",
+            "4 ビルド（Java のコンパイル、tsc --noEmit（画面と perf の伏せ字の道具）、Vite のビルド）",
             listOf(
                 backendProject.tasks.named("compileJava"),
                 backendProject.tasks.named("compileTestJava"),
                 frontendTypecheck,
+                perfToolTypecheck,
                 frontendBuild,
             ),
         ),
