@@ -47704,3 +47704,180 @@
 **Stage**: ci-pipeline
 
 ---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-01T04:24:13Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-pipeline-deploy-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-01T04:24:27Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a6007410f3d99a7ea
+**Message**: pushしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-01T04:25:06Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: typed
+**Message Id**: ad3ce230
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-01T04:25:24Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae1957044aac97051
+**Message**: 了解、待ちます
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-01T04:28:06Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-01T04:28:44Z
+**Event**: HOST_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-01T04:28:44Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-pipeline-deploy-agent
+**Agent ID**: a899901cdd766a95e
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-01T04:30:26Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. 既定の参照で確かめる（推奨）","B. 流さない（推奨）","A. 前と後の 2 回（推奨）","A. 消す（推奨）"]
+**Message Id**: 340b50ba
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T04:30:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q1 スモークテストの中身をどうしますか？（推奨: A。見本の PG に表を足さず、既定の DSL の参照で、作成・更新・削除の流れを実際の画面で確かめられるため）
+**Reply**: A. 既定の参照で確かめる（推奨）
+**Options**: ["A. 既定の参照で確かめる（推奨）","B. LOOKUP も確かめる","C. 起動の確かめと表示だけ"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T04:30:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q2 配備の前に k6 を流しますか？（推奨: B。判定の回は後の Performance Validation が持ち、戻しはイメージだけで済むため。前の Intent 261016 と同じ扱い）
+**Reply**: B. 流さない（推奨）
+**Options**: ["B. 流さない（推奨）","A. PostgreSQL で流す"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T04:30:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q3 内部DB の複写をどうしますか？（推奨: A。前の複写でスモークテストの前提を数え、後の複写で監査を確かめられ、どちらもバックアップを兼ねるため）
+**Reply**: A. 前と後の 2 回（推奨）
+**Options**: ["A. 前と後の 2 回（推奨）","B. 後の 1 回だけ","C. 取らない"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T04:30:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q4 試験用のイメージのタグ mastersmith:reference-lookup-cleanup をどうしますか？（推奨: A。Tooltip の直しを含まない版で、Performance Validation で取り違えないため）
+**Reply**: A. 消す（推奨）
+**Options**: ["A. 消す（推奨）","B. 残す"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-01T04:30:32Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A. 既定の参照で確かめる（推奨） / Q2: B. 流さない（推奨） / Q3: A. 前と後の 2 回（推奨） / Q4: A. 消す（推奨）
+**Message Id**: 340b50ba
+**Person Reply**: A. 既定の参照で確かめる（推奨）\nB. 流さない（推奨）\nA. 前と後の 2 回（推奨）\nA. 消す（推奨）
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-01T04:30:48Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a041b0aeb34b000ed
+**Message**: 了解、待ちます
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-01T04:32:13Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-01T04:32:56Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/deployment-pipeline/deployment-strategy.md
+**Context**: operation > deployment-pipeline > deployment-strategy.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-01T04:33:28Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/deployment-pipeline/rollback-runbook.md
+**Context**: operation > deployment-pipeline > rollback-runbook.md
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-01T04:34:00Z
+**Event**: HOST_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-01T04:34:00Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-pipeline-deploy-agent
+**Agent ID**: a899901cdd766a95e
+
+---
