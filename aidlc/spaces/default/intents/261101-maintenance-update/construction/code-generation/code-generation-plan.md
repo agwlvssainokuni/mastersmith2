@@ -56,11 +56,11 @@
 
 ### ① サブモジュールの固定先の更新（ブランチ `fix/261101-submodules`、fast-forward で統合）
 
-- [ ] **Step 1**（FR5.1・FR5.2）: `vendor/make-you-chic-ui` と `vendor/java-mustache-processor` の上流を `git fetch` で読み、上流の `main` の最新のコミットを確かめる。新しいコミットが上流の `main` から辿れること、make-you-chic-ui の `package-lock.json` の前後の差（増えた・変わったパッケージ、`hasInstallScript` の付いた項目の増減）を読み取りで確かめ、前後のハッシュとあわせて `generation-notes.md` に書く。`hasInstallScript` の項目が増えたら、ここで止めて依頼者に諮る。
-- [ ] **Step 2**（FR5.4）: A2（make-you-chic-ui の lockfile の `braces`）と A3（依頼（5）の1ページの件数の選択と横のスクロールの領域）が上流に公開されているかを、上流のソース（`git show`）で確かめて記録する。
-- [ ] **Step 3**（FR5.1・FR5.3）: 固定先を上げる専用のコミットを積む（固定先の更新だけ。依頼者の承認を得る）。java-mustache-processor の推移依存が変わったら `backend/gradle.lockfile` を更新し、OSV-Scanner の対象に載ることを確かめる。
-- [ ] **Step 4**（FR5.4）: A3 が公開されていれば、frontend の自前の `ScrollRegion`・`PageSizeSelect` を make-you-chic-ui の部品に置き換え、使っている画面のテスト（vitest-axe を含む）を直す。公開されていなければ見送りを記録する。
-- [ ] **Step 5**（NFR3）: verify（clean 付き）と E2E を流し、通ったら `develop` へ fast-forward で統合する（置き換えのコミットがあるときも同じブランチで fast-forward）。
+- [x] **Step 1**（FR5.1・FR5.2）: `vendor/make-you-chic-ui` と `vendor/java-mustache-processor` の上流を `git fetch` で読み、上流の `main` の最新のコミットを確かめる。新しいコミットが上流の `main` から辿れること、make-you-chic-ui の `package-lock.json` の前後の差（増えた・変わったパッケージ、`hasInstallScript` の付いた項目の増減）を読み取りで確かめ、前後のハッシュとあわせて `generation-notes.md` に書く。`hasInstallScript` の項目が増えたら、ここで止めて依頼者に諮る。
+- [x] **Step 2**（FR5.4）: A2（make-you-chic-ui の lockfile の `braces`）と A3（依頼（5）の1ページの件数の選択と横のスクロールの領域）が上流に公開されているかを、上流のソース（`git show`）で確かめて記録する。
+- [x] **Step 3**（FR5.1・FR5.3）: 固定先を上げる専用のコミットを積む（固定先の更新だけ。依頼者の承認を得る）。java-mustache-processor の推移依存が変わったら `backend/gradle.lockfile` を更新し、OSV-Scanner の対象に載ることを確かめる。
+- [x] **Step 4**（FR5.4）: A3 が公開されていれば、frontend の自前の `ScrollRegion`・`PageSizeSelect` を make-you-chic-ui の部品に置き換え、使っている画面のテスト（vitest-axe を含む）を直す。公開されていなければ見送りを記録する。
+- [x] **Step 5**（NFR3）: verify（clean 付き）と E2E を流し、通ったら `develop` へ fast-forward で統合する（置き換えのコミットがあるときも同じブランチで fast-forward）。
 
 ### ② 実行環境と依存の更新（ブランチ `feature/261101-runtime-deps`、squash で統合）
 
