@@ -70,7 +70,7 @@ services:
         max-file: "3"
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.163.2@sha256:63e5e8eccf4268be02388ba9f2dc36b80b5e47721291293411c0e83152d75bda
+    image: otel/opentelemetry-collector:0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750
     profiles: [observability]
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
@@ -80,7 +80,7 @@ services:
   # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（README の「手元の監視」）。
   # 受け手・指標（Prometheus）・ログ（Loki）・トレース（Tempo）・画面（Grafana）を1つにした、手元の確認向けのコンテナ。
   lgtm:
-    image: grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084
+    image: grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
     profiles: [monitoring]
     ports:
       # Grafana の画面だけを開発者の PC の localhost に結び付ける。OTLP の受け口は PC に開かない。
@@ -118,7 +118,7 @@ services:
   # （./gradlew e2eTest）から送るため（基盤の設計の Q1 A）。認証の無い画面をほかの端末から見せない。
   # ボリュームは置かない（コンテナを消すと受けたメールも消える。個人に関する値を残さない）。版はダイジェストで固定する。
   mailpit:
-    image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
     profiles: [mail]
     ports:
       - "127.0.0.1:8025:8025"
@@ -144,7 +144,7 @@ services:
   # docker image inspect で本来の Entrypoint と Cmd を確かめて合わせる。
   # 見本のスキーマと読み取りだけのアカウントは、初めて起動したときに docker/targetdb/<種類>/ の SQL と台本で作る。
   targetdb-postgres:
-    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    image: postgres:18.6@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81
     profiles: [targetdb-postgres]
     env_file:
       - path: .env.targetdb
@@ -165,7 +165,7 @@ services:
     restart: "no"
 
   targetdb-mysql:
-    image: mysql:26.10.0@sha256:f51c9c01c16b0eb5d81bb70ab7e7fcb3b96abc6a54114be3a94e8e569cae7815
+    image: mysql:26.10.0@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b
     profiles: [targetdb-mysql]
     env_file:
       - path: .env.targetdb
@@ -185,7 +185,7 @@ services:
     restart: "no"
 
   targetdb-mariadb:
-    image: mariadb:13.0.2@sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d
+    image: mariadb:13.0.2@sha256:f4054da26e3a9dd6c8b5cc97363e544408b15c0fb369d7359c25dc04826eb6e1
     profiles: [targetdb-mariadb]
     env_file:
       - path: .env.targetdb

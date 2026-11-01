@@ -75,7 +75,7 @@ updates:
   # 次のイメージは「版のタグ@sha256:ダイジェスト」の形で固定している。付けるダイジェストは、複数のアーキテクチャをまとめた
   # index（manifest list。linux/arm64 と linux/amd64 を含む）のもので、1つのアーキテクチャのイメージのダイジェストは使わない
   # （docker buildx imagetools inspect <タグ> の先頭の Digest を読み、Manifests に2つのアーキテクチャがあることを確かめる）。
-  #   - Dockerfile の eclipse-temurin:25.0.4.1_1-jre-noble（この docker の項が見る）
+  #   - Dockerfile の eclipse-temurin:25.0.5_8-jre-noble（この docker の項が見る）
   #   - compose.yaml の otel/opentelemetry-collector・grafana/otel-lgtm（下の docker-compose の項が見る）
   #   - 対象DB（mysql・mariadb・postgres）と Mailpit（前の Intent から固定している。下の docker-compose の項が見る）
   # Dependabot が見ない固定先: docker/perf/compose.yaml、backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java、
@@ -84,13 +84,16 @@ updates:
   # perf/README.md（eclipse-temurin の jdk・grafana/otel-lgtm）、README.md（eclipse-temurin の jre と jdk・Mailpit）、
   # docker/hikari-pool.sh（JDK_IMAGE の eclipse-temurin の jdk）。
   # eclipse-temurin の jdk は、Dependabot が見る固定先が無く知らせが来ないため、jre の知らせを受けたときに同じ版のタグ（-jdk-noble）で
-  # 揃える（Intent 261015-deps-ui-carryover で 25.0.4.1_1 に揃えた）。
+  # 揃える（Intent 261015-deps-ui-carryover で 25.0.4.1_1 に、Intent 261101-maintenance-update で 25.0.5_8 に揃えた）。
   # Intent 261025-deps-perf-carryover の B2 で、otel/opentelemetry-collector 0.163.2・axllent/mailpit v1.31.6（その後の B5 で v1.32.0）・grafana/otel-lgtm 0.37.0（その後の B6 で 0.38.0）を
   # 複数アーキテクチャの index のダイジェストで固定し、上の固定先（docker/perf/compose.yaml の Mailpit、README.md の Mailpit、
   # perf/README.md の grafana/otel-lgtm）を同じ版とダイジェストに揃えた（grep で旧い版が残っていないことを確かめた）。
   # grafana/k6 は perf/versions.env だけに固定していて、Dependabot の知らせが来ない。上げる時期は、Intent で依存の更新を行うとき
   # （その時点で公開されている最新の版をタグの一覧で確かめ、index のダイジェストで固定する。Intent 261015-deps-ui-carryover の FR1.2c）。
   # 知らせを受けてイメージを上げるときは、上の固定先も同じ版とダイジェストに手で揃える（grep でタグを探し、残りが無いことを確かめる）。
+  # Intent 261101-maintenance-update の Step 16 で、eclipse-temurin 25.0.5_8（jre・jdk）・otel/opentelemetry-collector 0.164.0・
+  # axllent/mailpit v1.33.0・grafana/otel-lgtm 0.39.0 に上げ、版の変わらない postgres 18.6・mysql 26.10.0・mariadb 13.0.2・
+  # grafana/k6 2.3.0 は、同じタグの組み直し（2026-10 下旬）の新しい index のダイジェストに揃えた。
   - package-ecosystem: docker
     directory: /
     schedule:
@@ -112,10 +115,11 @@ updates:
     schedule:
       interval: weekly
     # 見送る更新（Intent 261027-perf-targets-review の FR3.3・FR3.4、#80）。
-    # otel/opentelemetry-collector の「-386」を付けたタグ（0.163.2-386）は linux/386 だけのイメージで、arm64 と amd64 が無い
-    # （docker buildx imagetools inspect で確かめた）。手元の PC（arm64）で動かないため取り込まない。通常のタグ（0.163.2）の index とは別物。
+    # otel/opentelemetry-collector の「-386」を付けたタグ（今は 0.164.0-386）は linux/386 だけのイメージで、arm64 と amd64 が無い
+    # （docker buildx imagetools inspect で確かめた）。手元の PC（arm64）で動かないため取り込まない。通常のタグ（0.164.0）の index とは別物。
     # Dependabot は新しい版のたびに「-386」のタグを提案しうるため、そのつど版を足すか、PR を閉じる（前に #21 の 0.161.0-386 も同じ）。
+    # 通常のタグを 0.164.0 に上げたとき（Intent 261101-maintenance-update）に、対象を今のタグの 0.164.0-386 に合わせた。
     # 外す時期: 公式のタグの付け方が変わったとき、または通常のタグが更新の候補に戻ったとき。
     ignore:
       - dependency-name: "otel/opentelemetry-collector"
-        versions: ["0.163.2-386"]
+        versions: ["0.164.0-386"]

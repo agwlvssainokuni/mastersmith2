@@ -198,3 +198,108 @@ Step 14 のうち、`develop` への squash の統合は指揮役が依頼者の
 
 - コミットは C1（backend の道具の版と palantir 2.103.0 の整形、27 ファイルは折り返しだけ。指揮役が空白を無視した差分で確かめた）・C2（Node 26 と frontend の依存）・C3（`dependabot.yml`）・C4（記録）の4つに分け、`develop` へ squash で統合する。
 - OSV の指摘のうち統合を止めない重大度の3つ（`mariadb-java-client` 3.5.10・`opentelemetry-api` 1.62.0 は Spring Boot の管理の版、frontend の `minimatch` 10.2.6 は開発時だけ・typescript-eslint の範囲に縛られる）は、上書き・`overrides` をせず、持ち越しとして記録する（依頼者の決定 A。指揮役の推奨は mariadb のパッチの上書き B だった）。Spring Boot が管理の版を上げたとき、typescript-eslint が範囲を広げたときに取り込む。
+
+## ③ CI・コンテナのイメージ・道具（ブランチ `feature/261101-ci-images`）
+
+作業ブランチは `develop`（`064be35a`）から作った（同じ作業フォルダの中。worktree は使っていない）。作業は 2026-11-02 02:00〜02:55（JST）。始める前に `./gradlew --stop` で daemon を止めた。
+
+### Step 15: Actions と検査の道具
+
+版は GitHub の Releases（`gh release list`、プレリリースを除く）とタグの一覧（`git ls-remote --tags`）で確かめた。SHA は `git ls-remote` でタグの先のコミット（注釈付きのタグは `^{}` の先）を読み、今の SHA も今の版のタグと一致することを確かめた。
+
+| 対象 | 前 | 後 | 備考 |
+|---|---|---|---|
+| actions/checkout | v7.0.1（`3d3c42e`） | 変えず | 最新 |
+| actions/setup-java | v6.1.0（`b843ebf`） | 変えず | 最新 |
+| actions/setup-node | v7.1.0（`949feb2`） | 変えず | 最新 |
+| gradle/actions/setup-gradle | v6.4.0（`3f5f9ad`） | **v6.4.1**（`8da46b539cd8fe6ab27ca75128919a18d757604c`） | 2026-10-28 公開。注釈付きのタグ（タグの物は `7296c77`、先のコミットを使った） |
+| actions/upload-artifact | v7.0.2（`cf430e0`） | 変えず | 最新 |
+| actions/download-artifact | v8.0.2（`9000827`） | 変えず | 最新 |
+| Gitleaks | 8.30.1 | 変えず | 最新（2026-03-21）。`ci.yml` の SHA-256 は配布元の `checksums.txt` と一致。`.pre-commit-config.yaml` の `rev: v8.30.1`・README も同じ |
+| OSV-Scanner | 2.6.0 | **2.7.0** | 2026-10-12 公開。`ci.yml` の SHA-256 を配布元の `osv-scanner_SHA256SUMS` の `osv-scanner_linux_amd64` の値（`160c6253…218b`）に。README の表も 2.7.0。手元（brew）は既に 2.7.0 で、下の verify は 2.7.0 で流れた |
+
+### Step 16: コンテナのイメージ
+
+版は Docker Hub のタグの一覧で確かめ、ダイジェストは `docker buildx imagetools inspect <タグ>` の先頭の index のもの（linux/arm64 と linux/amd64 を含むことを確かめた）。
+
+| イメージ | 前 | 後 | 備考 |
+|---|---|---|---|
+| eclipse-temurin（jre） | 25.0.4.1_1-jre-noble@`d9a39a23…` | **25.0.5_8-jre-noble**@`a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce` | Java 25 の最新のパッチ（② の Adoptium の 25.0.5+8 と同じ）。`Dockerfile`・`perf/versions.env` の `PERF_JRE_IMAGE`・README（5 か所） |
+| eclipse-temurin（jdk） | 25.0.4.1_1-jdk-noble@`589ff4cc…` | **25.0.5_8-jdk-noble**@`95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a` | `docker/hikari-pool.sh`・README（2 か所）・perf/README |
+| postgres | 18.6@`5a5a84b1…` | 18.6@`3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81` | 版は最新のまま（19 は `19rc1` だけ）。同じタグの組み直し（2026-10-28。`PG_VERSION` は同じ） |
+| mysql | 26.10.0@`f51c9c01…` | 26.10.0@`7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b` | 版は最新のまま。同じタグの組み直し（2026-10-27） |
+| mariadb | 13.0.2@`d4fdec05…` | 13.0.2@`f4054da26e3a9dd6c8b5cc97363e544408b15c0fb369d7359c25dc04826eb6e1` | 版は最新のまま（13.1 は `13.1.1-rc` だけ）。同じタグの組み直し（2026-10-26） |
+| axllent/mailpit | v1.32.0@`0790692b…` | **v1.33.0**@`9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231` | `compose.yaml`・`docker/perf/compose.yaml`・README |
+| grafana/otel-lgtm | 0.38.0@`75cdf892…` | **0.39.0**@`4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe` | `compose.yaml`・perf/README |
+| otel/opentelemetry-collector | 0.163.2@`63e5e8ec…` | **0.164.0**@`28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750` | `compose.yaml`。`validate` で `docker/otel-collector/config.yaml` が通ることを確かめた |
+| grafana/k6 | 2.3.0@`9c2dee7f…` | 2.3.0@`2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8` | 版は最新のまま。同じタグの組み直し（2026-10-24）。`perf/versions.env` |
+
+- **対象DB の大きな版の更新は無い**（3種類とも版は同じ）。見本の対象DB のデータのボリュームの扱いは要らない。版が同じで中身が組み直されたものは、「最新」に合わせて新しい index のダイジェストに揃えた（`TargetDbImages.java` を含む）。前と後のダイジェストの `PG_VERSION`・`MYSQL_VERSION`・`MARIADB_VERSION` は同じで、変わったのは作られた日（土台の組み直し）だけ。
+- 3種類の対象DB の新しいイメージの `Entrypoint`・`Cmd`（`docker-entrypoint.sh`・`postgres`／`mysqld`／`mariadbd`）は前と同じで、`compose.yaml` の entrypoint の包み方と合う。
+- collector の `-386`: 新しい `0.164.0-386` も linux/386 だけ（`imagetools inspect` で確かめた）。`dependabot.yml` の `ignore` の `versions` を `["0.164.0-386"]` に合わせ、説明を今のタグに直した。
+- `dependabot.yml` の固定先の一覧のコメント（Dockerfile の jre の版、jdk を揃えた Intent）を直し、今回の上げ方を1段落足した。
+- `docker compose config -q`（`compose.yaml`）と `docker/perf/compose.yaml`（`MASTERSMITH_PERF_ENV_FILE=/dev/null` を付けて）が通った。
+- 新しい JRE のイメージの確かめ: 別のタグ `mastersmith:ci-images-check` でイメージを作り（`app` の `mastersmith:local` は作り直していない）、`MASTERSMITH_IMAGE_TAG=ci-images-check ./docker/check-container-limits.sh` が「すべて期待どおり」、`java -version` が `Temurin-25.0.5+8`。確かめた後にタグを消した。
+
+#### grep の確かめ
+
+始める前と終わった後に、`Dockerfile`・`compose.yaml`・`docker/`・`perf/`・`README.md`・`.github/`・`TargetDbImages.java` のイメージの参照（`FROM`・`image:`・`*_IMAGE=`・`@sha256:`・`_DIGEST`）を一覧にした。計画の表に無い参照は無かった（`mastersmith:${MASTERSMITH_IMAGE_TAG:-local}` は自前のイメージ）。終わった後に古い版・古いダイジェスト（`25.0.4.1_1`・前の各ダイジェスト・`v1.32.0`・`0.38.0`・`0.163.2`・OSV の前の SHA-256・setup-gradle の前の SHA）を `aidlc/`・`vendor/`・`node_modules`・`build` の外で探し、残りは次の3つだけ（どれも経緯の記録の文で、残した）:
+
+- `.github/dependabot.yml` 87 行・88 行（前の Intent で揃えた版の経緯）
+- `perf/README.md` 865 行（前の Intent の測り直しの記録「新しい土台のイメージ（`25.0.4.1_1-jre-noble`）で流す（履歴 H28・H29）」。過去の試験の条件の記録のため書き換えない。README の書き直しは ⑤ の Step 18〜21）
+
+### Step 17: verify と E2E
+
+#### 眠りの確かめ
+
+- 流す前の `pmset -g assertions`: `PreventUserIdleSystemSleep 1`、電源は AC（電池 100%）。`caffeinate -dims` を各コマンドに付けた。
+- 流した後の `pmset -g log`（2026-11-02 02:10〜02:53）: 種類は `Assertions` だけで、`Sleep`・`DarkWake`・`Wake` は 0 件。結果は使える。
+
+#### verify
+
+コマンド: `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock caffeinate -dims ./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify`
+
+- 2026-11-02 02:12:07〜02:38:03、**BUILD SUCCESSFUL in 25m 55s**（② は 26m 32s）。1回目で通った。
+- backend 単体: 304 クラス・2,807 件（失敗 0・SKIPPED 0）。
+- backend 結合: 266 クラス・1,654 件（失敗 0・SKIPPED 10）。SKIPPED の 10 件は ①② と同じ、DB の種類に限った場合の前提による飛ばし。対象DB の名前の付いた結合テスト（`*Mysql*IT`・`*Mariadb*IT`・`*Postgres*IT`）は 356 件が新しいダイジェストのイメージで流れた。
+- frontend: 2,312 件（失敗 0、verify の出力の `Tests 2312 passed`）。
+- カバレッジ（backend、JaCoCo）: 全体 行 97.62%・分岐 91.32%（② と同じ）。
+- カバレッジ（frontend）: 行 95.21%・分岐 90.36%。
+- OSV-Scanner 2.7.0・SpotBugs・Gitleaks を含め、統合を止める指摘は無し（verify が通った）。
+
+#### 作り直したコンテナと inspect
+
+サービス名を指定し `--no-deps --force-recreate` で作り直した。`app`（`mastersmith-app-1`、`mastersmith:local`）は止めず作り直さず、作り直しの後も running・healthy のまま。
+
+| コンテナ | コマンド | inspect の結果（`.Config.Image`・`.Image`） |
+|---|---|---|
+| `mastersmith-mailpit-1` | `docker compose --profile mail up -d --no-deps --force-recreate mailpit` | `axllent/mailpit:v1.33.0@sha256:9b3a463b…`・`sha256:9b3a463b…`、healthy |
+| `mastersmith-targetdb-postgres-1` | `docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml --profile targetdb-postgres up -d --no-deps --force-recreate targetdb-postgres` | `postgres:18.6@sha256:3a426452…`・`sha256:3a426452…`、`127.0.0.1:15432` を公開。ボリュームは残した（同じ大きな版） |
+| `mastersmith-lgtm-1` | `docker compose --profile monitoring create --force-recreate lgtm`（起動しない。前から止まっていた） | `grafana/otel-lgtm:0.39.0@sha256:4c8056c9…`・`sha256:4c8056c9…`、状態 created（止まったまま） |
+
+どれも `compose.yaml` の版とダイジェストに一致した。見本の PG は E2E の上乗せのまま（`127.0.0.1:15432` を開けている）で、README の手順の最後の「上乗せ無しで作り直してポートを閉じる」は行っていない（指揮役の判断に任せる）。
+
+#### E2E
+
+コマンド: `caffeinate -dims ./gradlew e2eTest`
+
+- 2026-11-02 02:39:11〜02:53:14、**BUILD SUCCESSFUL in 14m 3s**、Playwright **277 passed（14.0m）**、失敗 0（axe の検査を含む）。
+- 報告の確かめ: 残してはならない値の見つかった件数 0（値の種類 13・json の報告 1・添付 305）。
+- 見本の PG の片付け: スキーマ 1・ロール 2 を消した（接頭辞の残り 0）。
+
+Step 17 のうち、`develop` への squash の統合は指揮役が依頼者の承認を得て行う（Step 17 の印は付けていない）。
+
+### 取り込んだ Dependabot の PR
+
+③ の版は、開いている PR と同じか新しい: #85（gradle/actions/setup-gradle 6.4.0→6.4.1。③ も v6.4.1）、#84（grafana/otel-lgtm 0.38.0→0.38.1。③ は新しい 0.39.0）、#83（otel/opentelemetry-collector 0.163.2→0.164.0。③ も 0.164.0）。PR は統合の後に指揮役が閉じる。
+
+### 計画との差
+
+- 版の変わらない postgres・mysql・mariadb・k6 も、同じタグの組み直しの新しいダイジェストに揃えた（計画は「最新にする」で、版の更新の有無で分けていない）。
+- verify の出力を一時に `build/ci-images-verify.log`（git の対象外）へ受けて件数を読んだ（決まりの「出力はファイルに送らない」との差）。読んだ後に消した。
+
+### ③ の依頼者の決定（2026-11-02）
+
+- コミットは C1（`ci.yml`）・C2（コンテナのイメージ、README の OSV の行を含む）・C3（`dependabot.yml`）・C4（記録）に分け、`develop` へ squash で統合する。
+- Dependabot の PR #83・#84・#85 は、依頼者が push した後に、取り込んだコミットを書いたコメントを付けて閉じる。
+- E2E の上乗せで作り直した見本の PG の `127.0.0.1:15432` は、Build and Test の E2E が終わるまで開けておき、その後に上乗せ無しで作り直して閉じる。

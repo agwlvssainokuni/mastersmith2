@@ -127,7 +127,7 @@ docker compose up -d --wait
 docker compose -p mastersmith-perf -f docker/perf/compose.yaml up -d --wait
 
 # 2. イメージ（JRE）には jcmd が無いため、同じ版の JDK のイメージを、アプリのコンテナと PID の名前空間を共有して動かす（java は PID 1）
-nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc3f71aab462e7048a47a0d10edf57fbccde3fceea2281e610bf5880b4 jcmd 1 "$@"; }
+nmt() { docker run --rm --pid container:mastersmith-perf-app-1 -u 10001:10001 eclipse-temurin:25.0.5_8-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a jcmd 1 "$@"; }
 nmt VM.native_memory baseline
 
 # 3. k6 の場面（例: refresh）を別の端末で流しながら（その端末では D に同じ場所を入れる）、5 秒ごとに内訳とコンテナのメモリを記録する（コンテナが止まると終わる）
@@ -483,7 +483,7 @@ docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --
   -p 127.0.0.1:13000:3000 --memory 1536m \
   -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_AUTH_DISABLE_LOGIN_FORM=true \
   -v "$PWD/docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro" \
-  grafana/otel-lgtm:0.38.0@sha256:75cdf892daffadf3763ef61c16a6d7f8586216fce0b40bba7874a0b053121084
+  grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
 until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
 perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
 curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VALUE が 4 であること

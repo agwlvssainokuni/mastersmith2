@@ -32,8 +32,8 @@ concurrency:
 env:
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
-  OSV_SCANNER_VERSION: 2.6.0
-  OSV_SCANNER_SHA256: ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108
+  OSV_SCANNER_VERSION: 2.7.0
+  OSV_SCANNER_SHA256: 160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b
 
 jobs:
   verify:
@@ -64,7 +64,7 @@ jobs:
             vendor/make-you-chic-ui/package-lock.json
 
       - name: Gradle を用意する（キャッシュを使う）
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       - name: Gitleaks と OSV-Scanner を入れる（版と SHA-256 を固定）
         run: |

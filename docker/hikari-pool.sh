@@ -47,7 +47,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-readonly JDK_IMAGE=eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc3f71aab462e7048a47a0d10edf57fbccde3fceea2281e610bf5880b4
+readonly JDK_IMAGE=eclipse-temurin:25.0.5_8-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a
 readonly APP_UID=10001:10001
 readonly TOOL_SOURCE=docker/jmx/HikariPoolControl.java
 

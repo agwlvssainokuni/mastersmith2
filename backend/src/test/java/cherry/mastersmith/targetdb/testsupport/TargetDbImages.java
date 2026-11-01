@@ -35,7 +35,7 @@ public final class TargetDbImages {
     public static final String MYSQL_VERSION = "26.10.0";
 
     /** MySQL のイメージのダイジェスト。 */
-    public static final String MYSQL_DIGEST = "sha256:f51c9c01c16b0eb5d81bb70ab7e7fcb3b96abc6a54114be3a94e8e569cae7815";
+    public static final String MYSQL_DIGEST = "sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b";
 
     /**
      * MariaDB の版（13.0 の系列）。長く支援される版（11.8 の系列）に限る決まりを外し、Dependabot の更新を結合テストで確かめて
@@ -45,14 +45,14 @@ public final class TargetDbImages {
 
     /** MariaDB のイメージのダイジェスト。 */
     public static final String MARIADB_DIGEST =
-            "sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d";
+            "sha256:f4054da26e3a9dd6c8b5cc97363e544408b15c0fb369d7359c25dc04826eb6e1";
 
     /** PostgreSQL の版（18 の系列）。 */
     public static final String POSTGRES_VERSION = "18.6";
 
     /** PostgreSQL のイメージのダイジェスト。 */
     public static final String POSTGRES_DIGEST =
-            "sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722";
+            "sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81";
 
     private TargetDbImages() {}
 

@@ -66,7 +66,7 @@ services:
   # 管理者と読み取りのアカウントのパスワードは、リポジトリの外の一時の環境ファイル（MASTERSMITH_PERF_TARGETDB_ENV_FILE）から読む。
   # ヘルスチェックは TCP で確かめる（初期化の間の仮の起動は TCP を受け付けないため、初期化の終わりを待てる）。
   targetdb-postgres:
-    image: postgres:18.6@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
+    image: postgres:18.6@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81
     profiles: [targetdb-postgres]
     # 共有バッファー（既定 128MB は PostgreSQL の既定と同じ値）
     command:
@@ -93,7 +93,7 @@ services:
     restart: "no"
 
   targetdb-mysql:
-    image: mysql:26.10.0@sha256:f51c9c01c16b0eb5d81bb70ab7e7fcb3b96abc6a54114be3a94e8e569cae7815
+    image: mysql:26.10.0@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b
     profiles: [targetdb-mysql]
     # バッファープール（既定 128M は MySQL の既定と同じ値）
     command:
@@ -119,7 +119,7 @@ services:
     restart: "no"
 
   targetdb-mariadb:
-    image: mariadb:13.0.2@sha256:d4fdec0510ad498e4f3127da30a99df3745bd6d5e611ae6ac5f76403d9284a8d
+    image: mariadb:13.0.2@sha256:f4054da26e3a9dd6c8b5cc97363e544408b15c0fb369d7359c25dc04826eb6e1
     profiles: [targetdb-mariadb]
     # バッファープール（既定 128M は MariaDB の既定と同じ値）
     command:
@@ -147,7 +147,7 @@ services:
   # 使い捨てのアプリのコンテナからだけ SPRING_MAIL_HOST=mailpit・SPRING_MAIL_PORT=1025 で送る（一時の環境ファイルの行は perf/README.md）。
   # PC にポートを公開しない。ボリュームを置かない（コンテナを消すと受けたメールも消える）。外へ中継しない。
   mailpit:
-    image: axllent/mailpit:v1.32.0@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498
+    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
     profiles: [mail]
     mem_limit: 256m
     restart: "no"

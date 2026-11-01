@@ -76,9 +76,9 @@
 
 ### ③ CI・コンテナのイメージ・道具（ブランチ `feature/261101-ci-images`、squash で統合）
 
-- [ ] **Step 15**（FR6.1・FR4.5）: `.github/workflows/` の Actions を最新の版の SHA にし、版をコメントに書く。Gitleaks と OSV-Scanner を最新にし、`ci.yml` の版と SHA-256（配布元の checksums で確かめる）・`.pre-commit-config.yaml` の `rev` をそろえる。
-- [ ] **Step 16**（FR1.2・FR7.1・FR7.2）: コンテナのイメージを最新にする。`Dockerfile` の参照先（`FROM` の JRE のイメージ。依頼者の指示）を、Java 25 の最新のパッチの JRE のイメージにし、`perf/versions.env` の `PERF_JRE_IMAGE` と同じ版・ダイジェストにそろえる。始める前と終わった後に、`Dockerfile`・`compose.yaml`・`docker/`・`perf/`・`TargetDbImages.java` のイメージの参照（`FROM`・`image:`・`*_IMAGE=`・`@sha256:`）を `grep` で一覧にし、上の表に無い参照が無いこと・古い版が残っていないことを確かめる。JRE・JDK（Java 25 の最新のパッチ）、対象DB（postgres・mysql・mariadb）、Mailpit、otel-lgtm、otel-collector、k6。どれも版のタグと複数アーキテクチャの index のダイジェストで固定し、上の表の場所すべてをそろえる（`TargetDbImages.java` を含む）。対象DB は verify（3種類の結合テスト）で通らない版なら、通る中で最新の版にする。collector の `-386` のタグの `ignore` を今のタグに合わせる。
-- [ ] **Step 17**（FR7.3・NFR3）: verify（clean 付き）と E2E（見本の PG を新しいイメージで作り直す。サービス名を指定して `docker compose` を使い、ほかのサービスを作り直さない）を流す。入れ替えたコンテナ（Mailpit・lgtm・見本の PG）は `docker inspect` で版とダイジェストが `compose.yaml` と一致することを確かめる。通ったら `develop` へ squash で統合する。
+- [x] **Step 15**（FR6.1・FR4.5）: `.github/workflows/` の Actions を最新の版の SHA にし、版をコメントに書く。Gitleaks と OSV-Scanner を最新にし、`ci.yml` の版と SHA-256（配布元の checksums で確かめる）・`.pre-commit-config.yaml` の `rev` をそろえる。
+- [x] **Step 16**（FR1.2・FR7.1・FR7.2）: コンテナのイメージを最新にする。`Dockerfile` の参照先（`FROM` の JRE のイメージ。依頼者の指示）を、Java 25 の最新のパッチの JRE のイメージにし、`perf/versions.env` の `PERF_JRE_IMAGE` と同じ版・ダイジェストにそろえる。始める前と終わった後に、`Dockerfile`・`compose.yaml`・`docker/`・`perf/`・`TargetDbImages.java` のイメージの参照（`FROM`・`image:`・`*_IMAGE=`・`@sha256:`）を `grep` で一覧にし、上の表に無い参照が無いこと・古い版が残っていないことを確かめる。JRE・JDK（Java 25 の最新のパッチ）、対象DB（postgres・mysql・mariadb）、Mailpit、otel-lgtm、otel-collector、k6。どれも版のタグと複数アーキテクチャの index のダイジェストで固定し、上の表の場所すべてをそろえる（`TargetDbImages.java` を含む）。対象DB は verify（3種類の結合テスト）で通らない版なら、通る中で最新の版にする。collector の `-386` のタグの `ignore` を今のタグに合わせる。
+- [x] **Step 17**（FR7.3・NFR3）: verify（clean 付き）と E2E（見本の PG を新しいイメージで作り直す。サービス名を指定して `docker compose` を使い、ほかのサービスを作り直さない）を流す。入れ替えたコンテナ（Mailpit・lgtm・見本の PG）は `docker inspect` で版とダイジェストが `compose.yaml` と一致することを確かめる。通ったら `develop` へ squash で統合する。
 
 ### ④ 小さな直し（ブランチ `fix/261101-small-fixes`、squash で統合）
 
