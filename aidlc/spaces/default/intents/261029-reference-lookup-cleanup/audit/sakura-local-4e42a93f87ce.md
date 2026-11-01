@@ -50088,3 +50088,290 @@
 **Agent ID**: a1583e26dd10d43fb
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:45Z
+**Event**: SENSOR_FIRED
+**Fire id**: ddd78f9e
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:45Z
+**Event**: SENSOR_PASSED
+**Fire id**: ddd78f9e
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+**Duration ms**: 98
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:45Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6f4b691b
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-plan.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:45Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6f4b691b
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-plan.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:45Z
+**Event**: SENSOR_FIRED
+**Fire id**: f13c0c56
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/escalation-matrix.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_PASSED
+**Fire id**: f13c0c56
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/escalation-matrix.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: aa3c42a8
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-response-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_PASSED
+**Fire id**: aa3c42a8
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-response-questions.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: a4bcaf9f
+**Sensor ID**: upstream-coverage
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_PASSED
+**Fire id**: a4bcaf9f
+**Sensor ID**: upstream-coverage
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: e95de427
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_PASSED
+**Fire id**: e95de427
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+**Duration ms**: 71
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:46Z
+**Event**: SENSOR_FIRED
+**Fire id**: f12a7f8d
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-plan.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_PASSED
+**Fire id**: f12a7f8d
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-plan.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2bea3973
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/escalation-matrix.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2bea3973
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/escalation-matrix.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3f3d6609
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-response-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3f3d6609
+**Sensor ID**: required-sections
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-response-questions.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_FIRED
+**Fire id**: e1cb9a6a
+**Sensor ID**: upstream-coverage
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: SENSOR_PASSED
+**Fire id**: e1cb9a6a
+**Sensor ID**: upstream-coverage
+**Stage slug**: incident-response
+**Output path**: aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md
+**Duration ms**: 69
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-01T08:23:47Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: incident-response
+**Next Stage**: performance-validation
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md=passed; required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-plan.md=passed; required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/escalation-matrix.md=passed; required-sections@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/incident-response-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/incident-response/runbooks.md=passed
+**Open Decisions**: 0
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-01T08:24:28Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: 1b3a99ac
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-01T08:24:28Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Incident Response はこれでよいですか？（推奨: Approve。答えどおりの形で、確かめていない点は書き分けてあるため）
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-01T08:24:31Z
+**Event**: GATE_APPROVED
+**Stage**: incident-response
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: 1b3a99ac
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-01T08:24:31Z
+**Event**: STAGE_COMPLETED
+**Stage**: incident-response
+**Validation Basis**: {"graphContract":"sha256:314b8c29eef09464eb67d5ca2789cf90293cace25bab297f64cbbc3b889b2b04","inputs":[{"artifact":"alarms","contentHash":"sha256:a0bd01bb6c02cb0f4ddaefad3a85453d5419e211e014c3d491632db3b4c136ff","instanceCount":1,"presentCount":1,"producer":"observability-setup","required":true,"structureHash":"sha256:4cd3c89a35fd32a9ee150ea19896351db423900fc4950deb168f317dfaa0cd2c"},{"artifact":"dashboards","contentHash":"sha256:358b8e8992094fd3f18f702472f9b3655798a284614b1a9d6f36301c9ca30ca7","instanceCount":1,"presentCount":1,"producer":"observability-setup","required":true,"structureHash":"sha256:ea651bd6c82422b8133db19c3dbe527b634d154467c1575d5b59b0351ef1b17c"},{"artifact":"infrastructure-specification","contentHash":"sha256:b2ef1318b5b963e8edf4b48e70ec7b6c0926a1537b15b42ce83651b8766e6b28","instanceCount":4,"presentCount":4,"producer":"infrastructure-design","required":true,"structureHash":"sha256:386e31e171fcd437767285452a020ded3685b4918c4ab9388e9a87ff56643dc4"},{"artifact":"reliability-design","contentHash":"sha256:ae55091d3891edaf898f576360bd0ec3655b3d130d3d00c4950418c818ff1192","instanceCount":2,"presentCount":2,"producer":"nfr-design","required":true,"structureHash":"sha256:8125cf08ca45e0709419a3e7a139f49276ca40451cd380fbc6ec854b5ceea7d5"},{"artifact":"security-design","contentHash":"sha256:f8cc8da44e6e5036bd175ba8a7decf9bf1d46f0096e3f28bdbc8a42ae6438103","instanceCount":5,"presentCount":5,"producer":"nfr-design","required":true,"structureHash":"sha256:e0ce904a058b4e138acb36264d9bce10495e5de8d9242489b42d89cc080753cc"}],"outputs":[{"artifact":"escalation-matrix","contentHash":"sha256:9dfc7a51af2f75fd65d6f1c63341f36c9130effd1a2ddf141e56beb366d72079","instanceCount":1,"presentCount":1,"producer":"incident-response","required":true,"structureHash":"sha256:e08a8b7993f43328053ee4aa72d72352338e3283c58e66d500ba8f7358516648"},{"artifact":"incident-plan","contentHash":"sha256:c4216effd15ee86ffedfec6f7352f835bfecbc847b6c9a2ee0b16a862a7e8cac","instanceCount":1,"presentCount":1,"producer":"incident-response","required":true,"structureHash":"sha256:b1708b83919e75e1bd7af83fb440d76f988ad91d1dd179cd574c7d96083ff859"},{"artifact":"incident-response-questions","contentHash":"sha256:715c90ca34eeccb3b83f996922f6a693a2aa9b7651099ff7ba17e0d701476906","instanceCount":1,"presentCount":1,"producer":"incident-response","required":true,"structureHash":"sha256:0f4ab37495a72407f1b70c9552020481992f68515b8a13e1f1d9979ba2f9b911"},{"artifact":"runbooks","contentHash":"sha256:22289a7c7854090ba66f5744e78efb187a57e4134e6b3fbbfc45e77a906832a5","instanceCount":1,"presentCount":1,"producer":"incident-response","required":true,"structureHash":"sha256:e000820446bc8eb6f0c958bd667006fc3183a75987d4ac6cc68291574729ff15"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Incident Response approved by gate
+**Tokens In**: 106
+**Tokens Out**: 72478
+**Cache Read**: 22350672
+**Cache Write**: 511228
+**Cost USD**: 8.53
+**By Model**: opus-5-5=8.53
+**By Agent**: main=1.88; aidlc-operations-agent=6.65
+**Tokens By Model**: opus-5-5=106/72.5k/22.4M/511.2k
+**Tokens By Agent**: main=30/8.8k/7.8M/18.3k; aidlc-operations-agent=76/63.6k/14.5M/492.9k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-01T08:24:31Z
+**Event**: STAGE_STARTED
+**Stage**: performance-validation
+**Agent**: aidlc-quality-agent
+**Answer Mode**: guide (reused from units-generation)
+
+---
+
+## Memory Empty
+**Timestamp**: 2026-11-01T08:24:32Z
+**Event**: MEMORY_EMPTY
+**Stage**: incident-response
+
+---
