@@ -1,0 +1,188 @@
+{
+  "metrics": {
+    "vus": {
+      "value": 1,
+      "min": 1,
+      "max": 1
+    },
+    "iteration_duration{scenario:refCreateChecked}": {
+      "p(95)": 3.2489570999999997,
+      "p(99)": 4.5490372599999995,
+      "max": 41.375509,
+      "count": 3815,
+      "avg": 2.618447790039324,
+      "min": 2.23791,
+      "med": 2.488582,
+      "p(90)": 2.9470062,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(90)": 2.863338,
+      "p(95)": 3.1594884999999997,
+      "p(99)": 4.4633005,
+      "max": 288.816008,
+      "count": 3826,
+      "avg": 2.7017569100888625,
+      "min": 1.428815,
+      "med": 2.428914
+    },
+    "http_req_waiting": {
+      "max": 288.757966,
+      "count": 3826,
+      "avg": 2.6784918481442834,
+      "min": 1.402731,
+      "med": 2.4073725,
+      "p(90)": 2.830171,
+      "p(95)": 3.1207699999999994,
+      "p(99)": 4.424217499999999
+    },
+    "http_req_tls_handshaking": {
+      "count": 3826,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0
+    },
+    "data_sent": {
+      "count": 2180950,
+      "rate": 205724.3738851431
+    },
+    "checks": {
+      "passes": 3815,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration{name:refCreateChecked}": {
+      "p(95)": 3.1551017,
+      "p(99)": 4.447049139999999,
+      "max": 40.950377,
+      "count": 3815,
+      "avg": 2.553180314023593,
+      "min": 2.189952,
+      "med": 2.428956,
+      "p(90)": 2.8619628,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_blocked": {
+      "count": 3826,
+      "avg": 0.0029212477783586285,
+      "min": 0.000625,
+      "med": 0.001084,
+      "p(90)": 0.001667,
+      "p(95)": 0.001959,
+      "p(99)": 0.10923049999999987,
+      "max": 1.562151
+    },
+    "http_req_receiving": {
+      "p(90)": 0.026375,
+      "p(95)": 0.03298974999999999,
+      "p(99)": 0.04718825,
+      "max": 0.211296,
+      "count": 3826,
+      "avg": 0.018643256403554687,
+      "min": 0.008417,
+      "med": 0.016833
+    },
+    "vus_max": {
+      "value": 1,
+      "min": 1,
+      "max": 1
+    },
+    "http_req_sending": {
+      "p(99)": 0.017000249999999995,
+      "max": 0.089502,
+      "count": 3826,
+      "avg": 0.004621805541035069,
+      "min": 0.00225,
+      "med": 0.003833,
+      "p(90)": 0.007167,
+      "p(95)": 0.009667
+    },
+    "checks{scenario:refCreateChecked}": {
+      "passes": 3815,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "iteration_duration": {
+      "max": 41.375509,
+      "count": 3815,
+      "avg": 2.618447790039324,
+      "min": 2.23791,
+      "med": 2.488582,
+      "p(90)": 2.9470062,
+      "p(95)": 3.2489570999999997,
+      "p(99)": 4.5490372599999995
+    },
+    "iterations": {
+      "count": 3815,
+      "rate": 359.86083421069765
+    },
+    "http_reqs": {
+      "count": 3826,
+      "rate": 360.89844080999455
+    },
+    "http_req_duration": {
+      "med": 2.428914,
+      "p(90)": 2.863338,
+      "p(95)": 3.1594884999999997,
+      "p(99)": 4.4633005,
+      "max": 288.816008,
+      "count": 3826,
+      "avg": 2.7017569100888625,
+      "min": 1.428815
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 3826,
+      "value": 0
+    },
+    "data_received": {
+      "count": 2203633,
+      "rate": 207864.013020766
+    },
+    "http_req_connecting": {
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0.07264749999999995,
+      "max": 0.634386,
+      "count": 3826,
+      "avg": 0.001027047307893361
+    }
+  },
+  "setup_data": {
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]"
+    },
+    "refDefinitionId": {
+      "dslHash": "[REDACTED-SETUP]",
+      "workRoleId": 3
+    }
+  },
+  "root_group": {
+    "checks": {
+      "refCreateChecked 201": {
+        "fails": 0,
+        "name": "refCreateChecked 201",
+        "path": "::refCreateChecked 201",
+        "id": "fa830da55b5466495381ed6b54224d25",
+        "passes": 3815
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {}
+  }
+}
