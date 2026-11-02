@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。アーキテクチャそのものは今回読み直していない。`businessdata` の一覧の並べ替えの文（`RowSqlBuilder.page`・`orderBy`）と参照先の並び（`RowDialect.sortExpression`）を読み、所見 K-92（P1）を Improvement Opportunities に足した。図と散文は前回（2026-10-29）以前の記録による。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で更新した。業務データの日時の型の対応と接続の時差を読み、「日時の値の流れ」の節（K-94〜K-99）と Interaction Diagrams 5（日時の値の読み出しと保存）・6（サイドバーの区画とアイコンの決まり方。K-100・K-101）を足した。ほかの図と散文は前回以前の記録による。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。アーキテクチャそのものは今回読み直していない。`businessdata` の一覧の並べ替えの文（`RowSqlBuilder.page`・`orderBy`）と参照先の並び（`RowDialect.sortExpression`）を読み、所見 K-92（P1）を Improvement Opportunities に足した。図と散文は前回（2026-10-29）以前の記録による。
 >
 > 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回深く読んだのは `businessdata`（選択肢・書き込みの規則・検索の演算子・定義の応答）・`dsl`（選択肢の型）・`targetdb`（署名レベル）・`role`（`PermissionSnapshot` の口）。Interaction Diagrams に 4（業務データの選択肢 REFERENCE・LOOKUP の現状）を足し、所見 K-74・K-75 を書いた。K-62・K-63 は前回（`261027-perf-targets-review`）の記述のまま（今回は再確認していない）。ほかは前回以前の記録による。
 
@@ -69,6 +71,59 @@ flowchart LR
 - 要求ごとに: 画面 → アクセストークン → `auth` が署名と期限を確かめ主体を作る → 安全の決まり（`/api/**` の既定はログインだけ）→ controller → service → repository。
 - 業務データの要求: `BusinessDataReadController` / `BusinessDataWriteController`（`@ApiAccess(AUTHENTICATED)`）→ `BusinessDataReadService` / `BusinessDataWriteService` が `TableAccessResolver` で権限の写しを作り → `targetdb` の `TargetReadAccess.withRead(目的, …)` で読み取りの接続を借り → `RowSqlExecutor` が SQL を組み立てて実行する。権限の判定は API ごとにサーバー側で行う。
 - 監査は各機能の出来事を `audit` が確定の後に別のトランザクションで内部DB に追記する。
+
+## 日時の値の流れ（K-94〜K-99、2026-11-03）
+
+N6（日時のタイムゾーンの変換）の前提になる今の形。持ち主の文書はここで、ほかの文書からはこの節を指す。
+
+### K-94 型の対応（1か所）
+
+`businessdata/repository/ColumnValueCodec.valueType`（266〜330 行）が、DB の種類と DSL の型の名前（`RowDialect.baseName` で小文字にして `(` から後を落としたもの）から受け渡しの型 `ValueType` を決める。DB の種類が分からないときは3種類の結果がそろえばその型、違えば `OTHER`。
+
+| 対象DB | DSL の型の名前 | 受け渡しの型 | 読み方 | 書き方 |
+|---|---|---|---|---|
+| MySQL・MariaDB | `timestamp` | `DATETIME_TZ` | 文字で受けて `LocalDateTime` に読み、UTC とみなす（`MysqlFamilyRowDialect.readDateTimeTz`、94〜98 行） | UTC の `LocalDateTime` を `setObject`（89〜91 行） |
+| MySQL・MariaDB | `datetime` | `DATETIME` | 文字で受けて `LocalDateTime`（`readsTemporalAsText`） | `setObject(LocalDateTime)` |
+| MySQL・MariaDB | `date`・`time` | `DATE`・`TIME` | 文字で受けて `LocalDate`・`LocalTime` | `setObject` |
+| PostgreSQL | `timestamptz`・`timestamp with time zone` | `DATETIME_TZ` | `getObject(OffsetDateTime)` を UTC にそろえる | UTC の `OffsetDateTime` を `setObject` |
+| PostgreSQL | `timestamp`・`timestamp without time zone` | `DATETIME` | `getObject(LocalDateTime)` | `setObject(LocalDateTime)` |
+| PostgreSQL | `timetz`・`time with time zone` | `TIME_TZ` | `getObject(OffsetTime)` を UTC にそろえる。比べる左辺は `(列 AT TIME ZONE 'UTC')` | `setObject(OffsetTime)` |
+| PostgreSQL | `time`・`time without time zone`・`date` | `TIME`・`DATE` | `getObject(LocalTime・LocalDate)` | `setObject` |
+
+- 応答の文字の形（`ColumnValueCodec.format`・`readCell`）: `DATE` は `2026-03-08`、`DATETIME` は `2026-03-08T02:30:00`（端数は要る桁だけ）、`TIME` は `02:30:00`、`DATETIME_TZ` は `2026-03-08T02:30:00+00:00`、`TIME_TZ` は `02:30:00+00:00`。時差つきは必ず UTC。
+- 要求の文字の読み方（`read` → `parse`）: 時差つきは `Z`・`z`・`±hh:mm` を受け付けて UTC にそろえ、オフセットが無ければ UTC とみなす（`parseDateTimeTz`・`parseTimeTz`、437 行から）。時差の無い型は ISO の形だけ（`LocalDateTime.parse` など）。
+- 定義の応答（`web/ColumnDefinitionResponse`）は `valueType` と `listFormat` を返す。秒の端数の上限（`ColumnKind.fractionDigits`）は返さず、サーバーの検証（`WriteRequestValidator` の `TOO_MANY_DIGITS`）だけが使う。
+
+### K-95 接続と実行環境の時差
+
+- MySQL・MariaDB: 読み取りのプールは接続を作るときに1回 `SET time_zone = '+00:00'`（`targetdb/config/TargetDataSourceConfig.java` 61・150〜152 行）、書き込みのプールは同じく `SET time_zone = '+00:00', sql_mode = …STRICT_ALL_TABLES`（68 行、`TargetWriteDataSourceConfig.java` 113〜114 行）。`timestamp` の値はこの上で UTC の壁時計として読み書きされる。
+- PostgreSQL: セッションの時差を設定しない（`hikariConfig` は MySQL・MariaDB だけに初期化の文を付ける）。PgJDBC は接続の始めに JVM の既定の時差を送る見込み（未検証）。JVM の既定は `Dockerfile` 52 行の `-Duser.timezone=Asia/Tokyo`、`compose.yaml` 37 行の `TZ: Asia/Tokyo`、テストの JVM は `backend/build.gradle.kts` 118 行で同じ `Asia/Tokyo`（いずれも grep で確かめた）。`timestamptz` は `OffsetDateTime` で UTC にそろえるため影響しないが、`timestamp` との比べ・`CURRENT_TIMESTAMP` を `timestamp` の列に入れる既定値には効く（未検証）。
+- 時差の無い型（MySQL・MariaDB の `datetime`、PostgreSQL の `timestamp`）の値がどの時差の壁時計かは、アプリからは分からない。見本の対象DB（`docker/targetdb/{mysql,mariadb}/01-sample-schema.sql`）は `created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP`、PostgreSQL は `created_at TIMESTAMP WITH TIME ZONE … DEFAULT CURRENT_TIMESTAMP`。MySQL・MariaDB の `CURRENT_TIMESTAMP` はセッションの時差で決まるため、アプリから既定値で作った行（`+00:00`）と別の接続から作った行で意味が変わりうる（未検証）。
+
+### K-96 画面の見せ方と入れ方
+
+- 業務データ（`features/tables`）: `valueFormat.ts` の `formatCell` が、`DATE`・`DATETIME`・`TIME` は `T` を空白に替えるだけ、`DATETIME_TZ`・`TIME_TZ` はさらに末尾の `Z` を `+00:00` に替えるだけ（`formatTemporal` 69〜75 行・120〜126 行）。時差を直さない。表のセル・詳細・行のラベルはすべてこの関数を通る。
+- 入力: `BusinessDataFormPage.tsx` は `formPart` が `date` なら `type="date"`、`datetime` なら `type="datetime-local"`（`step=1`）、ほかは文字（945〜962 行）。`DATETIME_TZ` には案内「UTC で入れる」（`tables.form.utc`、894〜896 行）。`formDiff.ts` の `toWireValue`（115〜120 行）が秒を足し、`DATETIME_TZ` には `+00:00` を付けて送る。検索（`SearchPanel.tsx` の `inputAttributes`）は型で決め、`DATETIME`・`DATETIME_TZ` は `datetime-local`、`TIME`・`TIME_TZ` は `time`。`searchConditions.ts` は時差つきの範囲の向きを画面で判定しない（サーバーに任せる）。
+- ほかの画面（DSL の管理・招待・利用者の管理）: `shared/format/formatDateTime.ts` が UTC の日時を端末（または渡した）時差に直し、略号を添える（日本語は `2026-09-24 10:15 JST`）。業務データの画面とは別の系統。
+- 一覧の書式 `ListFormat` の `DATE`・`DATETIME`・`TIME` は DSL の値・定義の応答にあるが、画面は使わない（`valueFormat.ts` は真偽値と `NUMBER_GROUPED` だけを見る）。`dsl/domain/ListFormat.java` の頭は「書式の中身は画面の Intent で決める」のまま。
+- 利用者ごとの時差の設定は無い（表示の設定は言語・テーマ・文字の大きさ。`app/display-settings` は流し読み）。
+
+### K-97 値の往復で守るもの
+
+- 主キーの値（行を指す本文）・参照の値・検索の値・作成の応答の主キー（`RowSqlExecutor` 288 行の `ColumnValueCodec.format`）・監査に残す値（`BusinessDataWriteService` 458・516・825 行）は、サーバーの UTC の文字のまま往復する。画面は詳細の値をそのまま行の鍵に使う。
+- 表示だけを地方時に替えるなら、`formatCell` を替え、鍵・本文の値は替えない。入力も地方時にするなら、画面でオフセットを付けて送る（サーバーは `±hh:mm` を受け付けて UTC にそろえる）か、サーバーで直すかを設計で決める。`datetime-local` は時差を持たないため、端末の時差に従うなら夏時間の切り替えで無い時刻・二重の時刻が出うる（`Asia/Tokyo` には無い。未検証）。
+- 時差の無い型を変換の対象にするかは、K-95 の「どの壁時計か分からない」と合わせて要件で決める。
+
+### K-98 秒の端数と型の名前
+
+- `ColumnValueCodec.fractionDigits`: 型の名前の `(n)` → DSL の精度 → DB の種類の既定（PostgreSQL 6、MySQL・MariaDB 0）の順。既定の DSL の生成（`dslmanage/generate`）は MySQL・MariaDB の `DATA_TYPE`（例 `datetime`）だけを型の名前に写し、`targetdb/repository/MysqlSchemaQueries` は `DATETIME_PRECISION` を読まない（grep）。そのため `datetime(6)`・`timestamp(3)` の列でも、生成した DSL では端数の上限が 0 になり、端数つきの値の書き込みは `TOO_MANY_DIGITS` になる見込み（未検証）。
+- PostgreSQL の型の名前を手で `timestamp(3) with time zone` と書くと、`baseName` が `timestamp` を返し `DATETIME`（時差なし）になる。生成は `udt_name`（`timestamptz`）を書くため、手書きの DSL のときだけ。
+- 画面の更新の初めの値は `formDiff.ts` の `toDateTimeInput`（57〜64 行）で秒までに切られ、端数を落とす（変えなければ送らないため値は失わない）。
+
+### K-99 範囲の端
+
+- MySQL の `time` は 24 時間を超える値・負の値を持てるが、文字で受けて `LocalTime.parse` で読むため `CellValue.Unreadable` になる（`readCell`）。
+- MySQL の `year`・PostgreSQL の `interval` は `OTHER`（文字にして読むだけ。書けない）。MySQL・MariaDB の `timestamp` のゼロの日時は読めずに例外になる（`readDateTimeTz` の注記）。
 
 ## Interaction Diagrams
 
@@ -179,6 +234,57 @@ sequenceDiagram
   - 件数の取り方（K-62・K-64）を変えると、参照先の一覧の表示にも波及する。
 - 守るべき決まり: `project.md` の Forbidden（業務データの行の値・主キーの値をログ・トレース・エラー応答に含めない、SQL に利用者の入力を文字列で組み込まない）と Mandated（主権限 NONE のカラムは応答に含めない）は参照先の選択肢・ピッカーにも当たる。検索値・参照先の値は本文で運ぶ現行の方針（`/api/tables` の道に値を載せない）を保つ必要がある。
 
+### 5. 業務データの日時の値の読み出しと保存（K-94〜K-97、2026-11-03）
+
+```mermaid
+sequenceDiagram
+  participant UI as frontend-feature-tables
+  participant WC as BusinessData controllers
+  participant SV as BusinessData services
+  participant CD as ColumnValueCodec
+  participant DL as RowDialect
+  participant DB as target DB
+  UI->>WC: POST rows/get (key values in body)
+  WC->>SV: read row
+  SV->>CD: valueType from DB kind and DSL type
+  SV->>DB: SELECT via RowSqlExecutor
+  DB-->>DL: timestamp or timestamptz value
+  DL-->>CD: UTC OffsetDateTime
+  CD-->>SV: text with +00:00
+  SV-->>UI: values as UTC text
+  UI->>UI: formatCell shows UTC text, T replaced by space
+  UI->>UI: datetime-local input entered in UTC
+  UI->>WC: PATCH rows with value plus +00:00
+  WC->>SV: write request
+  SV->>CD: read text, offset to UTC
+  CD->>DL: bindDateTimeTz UTC
+  DL->>DB: UPDATE, MySQL session time_zone +00:00
+```
+
+文字の代わりの説明: 画面は行を指す値を本文で送る。サービスは DB の種類と DSL の型から受け渡しの型を決め、`RowSqlExecutor` で読む。時差つきの値は方言が UTC の `OffsetDateTime` にそろえ、codec が `+00:00` 付きの文字にして返す。画面はその文字の `T` を空白にして見せるだけで、時差は直さない。入力は `datetime-local` に UTC で入れ、`+00:00` を付けて送る。サーバーは文字をオフセットごと読んで UTC にそろえ、方言がバインドする。MySQL・MariaDB は接続の時差 `+00:00` の上で時差の無い日時として書く。時差の無い型は、どの段でも変換しない。
+
+### 6. サイドバーの区画とアイコンの決まり方（K-100・K-101、2026-11-03）
+
+```mermaid
+flowchart TD
+  DSLM["DSL menus: icon optional"] --> MF["navigation MenuFilter"]
+  ICL["allowed-icons.txt"] --> NIP["NavIconPolicy: unknown to list"]
+  NIP --> MF
+  MF --> RESP["GET /api/me/navigation: id label icon table navigable"]
+  RESP --> BNS["buildNavSections"]
+  REG["feature registration sidebarItems: icon optional"] --> BNS
+  ALW["allowedIcons.ts: 18 names"] --> RNI["resolveNavIcon: unknown to list"]
+  RNI --> BNS
+  BNS --> HOME["home section: icon home"]
+  BNS --> BIZ["business section"]
+  BNS --> ADM["admin section"]
+  HOME --> SHELL["AppShell Sidebar: IconName only"]
+  BIZ --> SHELL
+  ADM --> SHELL
+```
+
+文字の代わりの説明: 業務のメニューは、DSL の `menus` の `icon`（任意）をサーバーの `NavIconPolicy` が `allowed-icons.txt` と照らし、無い・一致しない名前を `list` にして応答に入れる。応答にテーブルかビューかの印は無い。画面の `buildNavSections` は、ホームの区画（`home` のアイコン）、業務の区画（応答の木）、管理の区画（機能の登録の `sidebarItems` の `section: ADMIN`）を作り、アイコンは `allowedIcons.ts` の 18 種と照らして無ければ `list` にする。管理の登録はどれも `icon` を置かないため、管理の項目はすべて `list` になる。make-you-chic-ui の Sidebar は `IconName` だけを描く。
+
 ## Key Design Decisions
 
 - 対象DB は読み取り専用の別のプールと、書き込み専用の別のプールに分ける。どちらも既定の候補にしない（Flyway・JPA が誤って使わない）。
@@ -194,7 +300,11 @@ sequenceDiagram
 - 件数が確定した数だけを持つ型（K-64）。「多数」と出す案には API・画面・テスト・perf の判定への波及がある。
 - **K-92 一覧の並べ替えと MySQL の 1038（P1、2026-11-01）**: 参照先の読み取りの並び（`RowSqlBuilder.referenceOrderBy` → `RowDialect.sortExpression`、145〜151 行）は、文字の型を先頭 `ColumnValueCodec.LIST_TEXT_LIMIT` 字の `SUBSTRING` にして並べ、MySQL の並べ替えの領域の不足（1038）を避ける。業務データの一覧のページの文（`RowSqlBuilder.page`、150〜173 行）は、主キーのあるテーブルでは主キーだけを内側の問い合わせで並べて `LIMIT ? OFFSET ?` で取り、外側でつなぐ。その並びの `orderBy`（337〜347 行）はカラムをそのまま `RowDialect.orderTerm` に渡す（切らない）。前の Intent の Build and Test（2,000 行・200 行が 10,000 字・1ページ 20 件）では 1038 は再現しなかった。見立て（未検証）: 並べ替えの列が長い文字で、深い `OFFSET` か大きいページのとき、内側の並べ替えが領域を超えうる。NFR 設計の捨ての試しで確かめ、直すか（一覧の並びも `sortExpression` に寄せるか）を要件で決める。
 
+- **N6 の作りの論点（K-94〜K-98、2026-11-03）**: 変換を画面だけで行うか（`formatCell`・入力の部品・検索の入力）、サーバーで行うか（`ColumnValueCodec`）、時差の基準を端末の時差にするか利用者・インスタンスの設定にするか、PostgreSQL のセッションの時差を MySQL・MariaDB とそろえるか、時差の無い型を対象にするか、`ListFormat` の日時の書式を今回決めるか。画面の二系統（`formatDateTime` と `formatCell`）を寄せるかも論点。
+- **画面の仕上げ（K-100〜K-104、2026-11-03）**: アイコンを足すには make-you-chic-ui の上流への依頼と固定先の更新が要り、写しの2か所（`allowedIcons.ts`・`allowed-icons.txt`）を直す。テーブルとビューでアイコンを変えるなら、応答に印を足す（`MenuFilter` で `DslTable.view` を引ける）か、DSL の `icon` に任せるかを決める。
+
 ## Sources
 
+- 2026-11-03: `ColumnValueCodec.java`・`RowDialect.java`・`MysqlFamilyRowDialect.java`・`PostgresRowDialect.java`・`TargetDataSourceConfig.java`・`navigation/`（`MenuFilter`・`NavIconPolicy`・`NavigationService`・`NavNodeResponse`）・`frontend/src/features/tables/{valueFormat,formDiff}.ts`・`frontend/src/app/navigation/buildNavSections.ts`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `RowSqlBuilder.java`（140〜180・330〜348 行）・`RowDialect.java`（110〜160 行）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の K-74・K-75。前回: K-62・K-63 の事実と見立て）と、アーキテクトの確かめ直し（`reverse-engineering-timestamp.md`）。

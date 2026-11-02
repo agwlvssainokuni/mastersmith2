@@ -132,5 +132,13 @@
     "scope": "bugfix",
     "status": "complete",
     "request": "b865c771"
+  },
+  {
+    "uuid": "01a19d1e-bf99-78cc-b15f-4b1ef8f2276c",
+    "slug": "timezone-ui-polish",
+    "dirName": "261102-timezone-ui-polish",
+    "scope": "classic",
+    "status": "in-flight",
+    "request": "d53dcec4"
   }
 ]

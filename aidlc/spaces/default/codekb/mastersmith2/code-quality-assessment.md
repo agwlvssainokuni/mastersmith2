@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`・`README.md`・`perf/README.md` の構成・perf の伏せ字の道具・`businessdata` の一部を読み、所見 K-88〜K-91 を足した（本文はこの文書）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、今回の範囲（日時の型・接続の時差・サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭）の技術的負債と、それを確かめているテストの置き場（ファイル名の grep）を足した。所見の本文は `architecture.md`（K-94〜K-99）と `code-structure.md`（K-100・K-102〜K-104）。テストの件数とカバレッジの実測の値は取っていない。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`・`README.md`・`perf/README.md` の構成・perf の伏せ字の道具・`businessdata` の一部を読み、所見 K-88〜K-91 を足した（本文はこの文書）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
 >
 > 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回の範囲の事実（`packagesJudgedByTotal`、境界テストの許可の一覧、SpotBugs の除外の形、perf の JWT）を読み直し、所見 K-77・K-80 を足した（本文はこの文書）。K-67〜K-73 は前回（`261027-perf-targets-review`）の記述のまま（今回は `perf/README.md` と `scenarios.js` の一部だけ読み、行数と構成を更新した）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
 
@@ -80,6 +82,13 @@
 - 負荷の試験の台本・手順書が大きい（K-73。2026-11-01 の構成は K-89）。README.md の経緯（K-88）。
 - 版の固定先が分散している（K-81〜K-84、`technology-stack.md`）。Node 26 への引き上げは `engines`・`checkToolchain`・CI・README を同時にそろえる必要がある。
 - perf の伏せ字の道具の検査の抜け（K-90）と、`stage` の無い WARN（K-91）。
+- **今回の範囲（2026-11-03）**:
+  - 業務データの時差つきの日時を UTC のまま見せ、UTC で入れさせている。ほかの画面は `shared/format/formatDateTime` で端末の時差に直しており、日時の見せ方が二系統（K-96）。`ListFormat` の日時の書式は値だけあって画面が使わない。
+  - 対象DB の接続の時差が MySQL・MariaDB（`+00:00`）と PostgreSQL（設定なし、JVM の既定に従う見込み）で違う（K-95）。
+  - 既定の DSL の生成が MySQL・MariaDB の日時の精度を写さず、端数の上限が 0 になる見込み（K-98、未検証）。手書きの PostgreSQL の `timestamp(n) with time zone` は時差なしと誤る。
+  - アイコンの名前の一覧が画面とサーバーの2か所にあり（テストで一致を確かめる）、管理の項目と生成した業務のメニューはすべて既定の `list`（K-100）。
+  - favicon が無く、`/favicon.ico` に HTML が返る見込み（K-102、未検証）。ホームと管理の仮の画面の中身が空（K-103・K-104）。
+  - テストの置き場（ファイル名の grep だけ、中身は読んでいない）: 日時はサーバーの `businessdata/repository/{ColumnValueCodecTest,RowDialectTest}`・`businessdata/domain/ValueTypesTest`・`businessdata/web/{AbstractBusinessDataReadIT,AbstractBusinessDataWriteIT}`（3種類の対象DB の結合テスト）・`targetdb/config/{TargetDataSourceConfigTest,TargetWriteDataSourceConfigTest}`・`dslmanage/generate/TypeCategoryMappingTest`、画面の `features/tables/{valueFormat,formDiff,formValidation,searchConditions,rowLabel.property,BusinessDataDetailPage}.test.*`。アイコンの `'list'` は `app/layout/ShellLayout.test.tsx`・`app/navigation/{buildNavSections,navigationApi,BusinessNavigationProvider}.test.*`・`app/registry/allowedNavIcons.test.ts` ほか。管理の仮の画面は `code-structure.md` の K-104 の一覧。
 - 全体の合計で判定する7パッケージが残る（上記）。
 - `ColumnWriteRulesFactory` が `formPart: lookup` を `text` に落とし、REFERENCE・LOOKUP の選択肢を検証から外している暫定（K-74）。
 - k6 の summary json に JWT が出るのに、自動の伏せ字の仕組みが無い（K-77）。
@@ -142,6 +151,7 @@
 
 ## Sources
 
+- 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（テストはファイル名の grep だけ）。
 - 2026-11-01: 開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`（Technical Debt Signals の TD-1〜TD-14）。`README.md`・`perf/README.md` の見出しの一覧と grep の件数、`build.gradle.kts`・`.github/workflows/ci.yml`・`BusinessDataWriteService.java` の該当行。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`、2026-10-28 と前回）の Test Coverage・Code Quality Indicators・Technical Debt Signals・K-67〜K-73。
 - アーキテクトの確かめ直し（今回: `backend/build.gradle.kts` の jacoco の規則、`perf/k6/scenarios.js` の `thresholdsFor`、`perf/README.md` の 1150〜1164 行、`docker/perf/compose.yaml`。前回: `frontend/vitest.config.ts`・`perf/README.md` の 1003〜1021 行・ArchUnit のファイル数）。

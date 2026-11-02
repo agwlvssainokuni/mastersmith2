@@ -1,6 +1,8 @@
 # コードの構成（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、リポジトリの最上位の表（サブモジュールの固定先・E2E の本数・`perf/` と `docker/` の中身・版の定義のファイル）を今の値に直した。パッケージのファイル数は前回までの数のまま（今回は数え直していない。`businessdata` は 2026-11-01 に 149 ファイル）。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、「画面の骨組みの仕上げ」の節（サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭。K-100・K-102〜K-104）と、日時の型の置き場の節を足した。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、リポジトリの最上位の表（サブモジュールの固定先・E2E の本数・`perf/` と `docker/` の中身・版の定義のファイル）を今の値に直した。パッケージのファイル数は前回までの数のまま（今回は数え直していない。`businessdata` は 2026-11-01 に 149 ファイル）。
 >
 > 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata`・`dsl`・`targetdb`・`role` の選択肢に関わる型の位置と、`frontend/src/features/tables` の構成（約 5,300 行、テストを含む）と `frontend/src/shared` の一覧を確かめて足した。ほかのパッケージのファイル数は前回（2026-10-25、`find` と `git ls-files`）の数のまま。所見の本文はこの文書には無く、場所は `business-overview.md` の一覧。
 
@@ -10,8 +12,8 @@
 |---|---|
 | `backend/` | Java のアプリ（Gradle、実行可能 WAR）。Java のパッケージ配下に 16 パッケージ（下表）。`git ls-files backend/src/main` は 867、`backend/src/test` は 669（リソースを含む） |
 | `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）（前回までの数）・`e2e/`（`*.e2e.ts` は 22 本、010〜195、2026-11-01）・`scripts/`（`check-license-header.mjs`・`check-bundle-size.mjs`）。設定は `package.json`・`.npmrc`（`engine-strict`・`ignore-scripts`）・`vite.config.ts`・`vitest.config.ts`・`vitest.setup.ts`・`playwright.config.ts`・`eslint.config.js`・`tsconfig.json` |
-| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `cab4207`、2026-11-01） |
-| `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `8d44c36`、0.1.0） |
+| `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `cae5fed`、2026-11-03 の `git submodule status`。K-105） |
+| `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03。K-105） |
 | `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB の初期化。種類ごとに表・読み取り・書き込みのアカウント）・`e2e/`（E2E の見本の PG の番号を開ける上乗せ）・`jmx/` と `hikari-pool.sh`（接続のプールの詰め直しの道具）・`check-container-limits.sh`（約 3,900 行） |
 | `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2,848 行（2026-11-01）、伏せ字の道具 `perf/redact-k6-evidence.mjs`（907 行、K-90）、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1,753 行、2026-11-01。K-89）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
 | `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
@@ -72,7 +74,43 @@
 - `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`。業務データの画面は `tables`（一覧 `BusinessDataListPage`・詳細・作成/更新の `BusinessDataFormPage`・表 `BusinessDataTable`・検索 `SearchPanel`・ページの計算 `listPaging.ts`・API の呼び出し `businessDataApi.ts`）。
 - テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜195、22 本。2026-11-01）と `support/`。
 
+## 日時の型の置き場（K-94〜K-99、2026-11-03）
+
+本文は `architecture.md` の「日時の値の流れ」。ファイルの位置だけをここに置く。
+
+- サーバー: 受け渡しの型 `businessdata/domain/ValueType.java`（`DATE`・`DATETIME`・`DATETIME_TZ`・`TIME`・`TIME_TZ` ほか 12 値）と `ColumnKind.java`（`fractionDigits`）、対応と読み書きの1か所 `businessdata/repository/ColumnValueCodec.java`（604 行）、DB の種類の差 `RowDialect.java`・`MysqlFamilyRowDialect.java`・`PostgresRowDialect.java`、接続の時差 `targetdb/config/TargetDataSourceConfig.java`・`TargetWriteDataSourceConfig.java`、生成の型の分類 `dslmanage/generate/TypeCategoryMapping.java`（日時は `datetime`・`timestamp`・`timestamptz`、時刻は `time`・`timetz`。初期値は日時が `formPart: datetime`・`list.format: DATETIME`、時刻が `formPart: text`・`list.format: TIME`、日付が `formPart: date`・`list.format: DATE`）、DSL の型 `dsl/domain/{DbType,FormPart,ListFormat}.java`。
+- 画面: 見せ方 `features/tables/valueFormat.ts`、入力の初めの値と送る形 `features/tables/formDiff.ts`、入力の部品 `features/tables/BusinessDataFormPage.tsx`（880〜965 行）、検索 `features/tables/SearchPanel.tsx`・`searchConditions.ts`、入力の確かめ `features/tables/formValidation.ts`、文言 `features/tables/messages.ts`（`tables.form.utc`）。別の系統の書式 `shared/format/formatDateTime.ts`（DSL・招待・利用者の管理が使う）。
+- テスト（ファイル名の grep だけ）: サーバーは `businessdata/repository/{ColumnValueCodecTest,RowDialectTest}`・`businessdata/domain/ValueTypesTest`・`businessdata/web/{AbstractBusinessDataReadIT,AbstractBusinessDataWriteIT}`・`businessdata/testsupport/{BusinessDataReadTables,BusinessDataWriteTables}`・`targetdb/config/{TargetDataSourceConfigTest,TargetWriteDataSourceConfigTest}`・`dslmanage/generate/TypeCategoryMappingTest`。画面は `features/tables/{valueFormat,formDiff,formValidation,searchConditions,rowLabel.property,BusinessDataDetailPage}.test.*`。
+
+## 画面の骨組みの仕上げ（K-100・K-102〜K-104、2026-11-03）
+
+### K-100 サイドバーのアイコン
+
+- 使えるアイコンは make-you-chic-ui の `Icon` の 18 種（`vendor/make-you-chic-ui/packages/make-you-chic-ui/src/components/Icon/registry.ts`: `menu`・`chevron-down`・`chevron-up`・`close`・`check`・`bell`・`user`・`search`・`edit`・`trash`・`download`・`settings`・`home`・`list`・`info`・`success`・`warning`・`danger`）。テーブル・ビュー・データベースらしい名前は無い。`SidebarNavItem.icon` の型は `IconName` で、ほかの絵は渡せない。
+- 写しは2か所: 画面の `app/registry/allowedIcons.ts`（`satisfies readonly IconName[]` と `ALL_ICONS_COVERED` で両方向を型で守る）と、サーバーの `backend/src/main/resources/navigation/allowed-icons.txt`（`AllowedNavIconList` が読み、`NavIconPolicy` が照らす）。一致は `app/registry/allowedNavIcons.test.ts` が確かめる。既定は `list`（`NavIconPolicy.DEFAULT_ICON`・`buildNavSections.ts` の `DEFAULT_ICON`）。
+- 管理の区画の項目は、機能の登録の `sidebarItems`（`section: 'ADMIN'`）から作る。7 件（`admin` 200「管理」・`dsl` 210・`invitation` 220・`useradmin` 230・`roleadmin` 240・`groupadmin` 250・`roletransfer` 260。数字は `order`）のどれも `icon` を置かないため、すべて `list`。`SidebarItemRegistration.icon` は任意の `IconName`（`app/registry/types.ts`）。
+- 業務のメニューは DSL の `menus[].icon`（任意、`dsl-schema-v2.json` 77 行）。既定の DSL の生成（`dslmanage/generate/DslTreeBuilder` 86〜95 行）は `icon` を書かないため、生成したままでは `list`。ホームの項目だけが `home`（`buildNavSections.ts`）。
+
+### K-102 アプリのアイコンとページの頭
+
+- `frontend/index.html` は `<title>MasterSmith</title>` だけで、favicon の `<link rel="icon">` が無い。`frontend/public/` も無い。画面ごとに `document.title` を変える処理は無い（grep）。
+- サーバーの `config/WebConfig.java`（流し読み）は、見つからない画面の URL に `index.html` を返す。`/favicon.ico` への要求には HTML が返る見込み（未検証）。
+- アプリの名前の文字 `app.name`（`MasterSmith`）はログインの画面（`app/layout/LoginLayout.tsx`）と登録の完了の画面だけが出す。アプリシェル（`ShellLayout.tsx` → make-you-chic-ui の `AppShell`）にはロゴ・アプリ名の口が無く、トップバーの `topbarStart`・`topbarEnd` の差し込み口だけ（今は `topbarEnd` に作業ロールの切り替え）。
+- SVG を置くときのライセンスヘッダーの検査の扱いは確かめていない。
+
+### K-103 ホームの画面
+
+- `app/pages/HomePage.tsx`（88 行）: 見出し「ホーム」と説明「MasterSmith へようこそ。左のメニューから機能を選んでください。」に、業務のメニューの状態で案内（未設定・作業ロールが無い・見てよいテーブルが無い・読み込みの失敗と［もう一度］）を足すだけ。業務のメニューがあるときは、見出しと1文だけになる。
+- 使える材料（骨組みの文脈）: `useBusinessNavigation()`（業務のメニューの木と状態）、`useWorkRole()`（作業ロール）、`useHasMyPermissions()`（自分の権限の画面の有無）、登録の一覧（`useFeatureRegistry` 相当。流し読み）。ホームの道 `/` は骨組みが持つ（`app/registry/validateRegistrations.ts` の `HOME_PATH`、`app/routing/AppRouter.tsx`）。
+
+### K-104 管理の仮の画面
+
+- `features/admin/`: `registration.ts`（道 `/admin`、`access: 'ADMIN'`、サイドバーの管理の区画の先頭 `order: 200`、ラベル「管理」＝区画の見出しと同じ名前）、`AdminAreaPage.tsx`（表示のたびに `GET /api/admin/check` を呼び、成功で `AdminPlaceholder`、403 は骨組みの `useAdminForbidden` に渡す、ほかの失敗は Alert）、`adminApi.ts`・`adminAreaStatus.ts`、`AdminPlaceholder.tsx`（見出し「管理」と「今後の管理機能はこの画面に加わります。現在は表示できる機能がありません。」）。
+- 頼っているもの: E2E の 030（`admin-area-page`・`admin-placeholder` と文言「今後の管理機能」、見出し「管理」）・130（サイドバーの項目「管理」を `SIDEBAR_ITEM` に使い、`/api/admin/check` を 403 に差し替える）・090（「管理」のリンクと `/admin` の道）と `e2e/support/userAdminDiagnostics.ts`。画面のテストは `app/layout/ShellLayout.test.tsx`・`app/routing/AppRouter.test.tsx`・`app/registry/validateRegistrations.test.ts`・`app/navigation/{navigationItems.test,buildNavSections.property.test}.ts`・`app/admin-forbidden/{AdminForbiddenProvider.test.tsx,forbiddenHeading.test.ts}`・`shared/api-client/adminForbidden.test.ts`・`features/{dsl,invitation,useradmin}/registration.test.tsx`（どれも grep の当たり。中身は読んでいない）。
+- サーバーの `access/web/AdminCheckController`（`GET /api/admin/check`、`@ApiAccess(ADMIN)`）は k6 の `monitorLight`（`perf/k6/scenarios.js`）と E2E 130 も使うため、画面を消しても API は残せる。管理の 403 の画面の見出し `adminForbidden.heading` も「管理」。
+
 ## Sources
 
+- 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（ファイルの読み取りと grep）。
 - 2026-11-01: `ls`・`wc`・`git submodule status`（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。
 - `find`・`ls`・`git ls-files` の数（アーキテクト、2026-10-25）と開発担当の Packages Found。

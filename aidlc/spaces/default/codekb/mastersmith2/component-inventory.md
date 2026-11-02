@@ -3,10 +3,11 @@
 ## 読み方
 
 - 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし。新しい部品は足していない）。
+- 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`targetdb`・`dsl`・`dslmanage`・`navigation`・`businessdata`・`frontend-app-core`・`frontend-registry`・`frontend-app-layout-i18n`・`frontend-feature-admin`・`frontend-feature-tables` の記述に今回の読み（K-94〜K-104）を足し、`make-you-chic-ui`・`java-mustache-processor` の固定先を直した（K-105）。今回の `analyzed.components` はこの 10 個。ID は 48 個のまま（増減なし）。前回まで深く読んだ `build-and-verify`・`container-runtime`・`perf-and-monitoring`・`role` は、今回は確かめていない（記述は前回以前のまま、流し読みの扱い）。
 - 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、`build-and-verify`・`container-runtime`・`perf-and-monitoring`・`businessdata` の記述に今回の読み（K-81〜K-93）を足し、`frontend-e2e`・`make-you-chic-ui` の数と固定先を直した。今回の `analyzed.components` はこの4つ。ID は 48 個のまま。
 - 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
-- 読みの深さ: 「深い（一部）」は今回深く読んだファイルを持つ部品で、`analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。
+- 読みの深さ: 「深い（一部）」は 2026-11-03 に深く読んだファイルを持つ部品で、`analyzed.components` の 10 個（上の行）。それより前の記録で「深い（一部）」と書いた部品のうち今回の 10 個に無いものは、今回は確かめていない。以下は前回（2026-10-29）の書き方: `analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -85,18 +86,22 @@
 - 責務: 対象DB への接続とスキーマの読み取り。読み取り専用のプール `targetDataSource`（既定の候補にしない、既定の上限 10、借りる待ち 3 秒）と、設定が揃うときだけ作る書き込みのプール（`TargetWriteDataSourceConfig`、`write.pool.maximumSize`）。貸し出しの口 `TargetReadAccess.withRead(ReadPurpose, …)`・`TargetWriteAccess`。目的 `ReadPurpose` は `GENERATE`・`COMPARE`・`LIST`・`DETAIL`、時間の上限は `TargetDbProperties.QueryTimeout`。K-63 の持ち主（本文は `architecture.md`）。
 - 今回読んだもの: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`・`domain/ReadPurpose.java`（読み取りのプールの既定 10、書き込みのプールの既定 5 を `TargetDbProperties` で確かめた）、`service/JdbcTargetReadAccess.java` の接続の返し方（`evictConnection`）。ほかはクラスの一覧による。
 - 今回（2026-10-29）の読み: `ReadPurpose`・`TargetDbProperties.QueryTimeout`・読み取りの口の署名だけ（署名レベル）。参照先の選択肢の読み取りに専用の `ReadPurpose` が要るかは未決（K-75）。`targetdb` に手を入れると `TargetDbBoundaryArchitectureTest` の許可に触れうる。
-- 依存: なし（ほかの機能を import しない） ／ 状態: at-risk（K-63） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-03）の読み（K-95・K-98）: `config/TargetDataSourceConfig.java` の全文。MySQL・MariaDB の読み取りのプールは接続を作るときに `SET time_zone = '+00:00'`（61・150〜152 行）、書き込みのプールは `SET time_zone = '+00:00', sql_mode = …STRICT_ALL_TABLES`（68 行。`TargetWriteDataSourceConfig.java` 113〜114 行は grep）。PostgreSQL には初期化の文を付けない（セッションの時差は JVM の既定に従う見込み、未検証）。`repository/MysqlSchemaQueries` は `DATETIME_PRECISION` を読まない（grep）。
+- 依存: なし（ほかの機能を import しない） ／ 状態: at-risk（K-63・K-95） ／ 読みの深さ: 深い（一部）
 
 ### dsl
 
 - 場所: `dsl/{domain,parse,service,validate}`（64 ファイル）と `resources/dsl/` ／ 責務: DSL の型・安全な読み込み・検証・適用中のモデルの提供口 `ActiveDslModelProvider`。DSL の型（`dsl/domain`）に索引の情報は無い（`index` の語の grep で 0 件、K-65）。
 - 選択肢の型（K-74）: `OptionSource`（FIXED・REFERENCE・LOOKUP。種類ごとの必須をコンストラクターで検査）、`OptionSourceKind`、`FormPart`（`LOOKUP` を含む）、`LookupSearchItem`・`LookupListItem`。`DslModelMapper`（160〜180 行）が写し、`DslSemanticValidator`（230〜290・375〜380 行）が `select`・`radio` は FIXED か REFERENCE、`lookup` は LOOKUP のみ、参照先の table・column の実在（同じスキーマの中）を照合する。`resources/dsl/dsl-schema-v2.json`（271〜335 行が `options`）。
 - 今回読んだもの: 上の選択肢の型・`DslModelMapper`・`DslSemanticValidator` の選択肢の節・`dsl-schema-v2.json` の `options` の節。
+- 今回（2026-11-03）の読み（K-94・K-96・K-100・K-101）: `domain/DbType`（名前・長さ・精度・小数の桁・NULL の可否。日時の精度の欄は無く `precision` を使う）・`FormPart`（`date`・`datetime` はあるが時刻の部品は無い）・`ListFormat`（`DATE`・`DATETIME`・`TIME` ほか。頭に「書式の中身は画面の Intent で決める」）・`DslColumn`・`DslTable`（`view` の印）・`DslMenuItem`（`icon` は任意の文字）・`TableRef`・`DslModel`（`findTable`）・`ListSetting`・`DetailSetting`。型の名前と部品の組み合わせ（例 `timestamp` に `formPart: text`）を意味の検証で縛っていない（`validate/DslSemanticValidator`・`service/DslModelMapper` の grep で日時の語が 0 件）。
 - 依存: なし ／ 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### dslmanage
 
-- 場所: `dslmanage/{domain,generate,repository,service,web}`（54 ファイル） ／ 責務: 既定の DSL の生成・投入・プレビュー・適用・履歴。対象DB のスキーマを `targetdb` で読む。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `dslmanage/{domain,generate,repository,service,web}`（54 ファイル） ／ 責務: 既定の DSL の生成・投入・プレビュー・適用・履歴。対象DB のスキーマを `targetdb` で読む。
+- 今回（2026-11-03）の読み（K-98・K-100）: `generate/TypeCategoryMapping.java`・`TypeCategory.java`。型の名前（MySQL・MariaDB は `DATA_TYPE`、PostgreSQL は `udt_name`）を分類し、日時（`datetime`・`timestamp`・`timestamptz`）は `formPart: datetime`・`list.format: DATETIME`・検索 RANGE、時刻（`time`・`timetz`）は `formPart: text`・`list.format: TIME`・検索 EQUALS、日付は `formPart: date`・`list.format: DATE`・検索 RANGE を初期値にする。日時の精度は DSL に写さない。`generate/DslTreeBuilder` はメニューに `icon` を書かない（86〜95 行、grep）。
+- 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### role
 
@@ -110,7 +115,9 @@
 
 ### navigation
 
-- 場所: `navigation/{domain,service,web}`（23 ファイル） ／ 責務: 適用中の DSL のメニューを作業ロールの権限で絞って渡す。テーブルの可否の問い合わせ。 ／ 依存: `auth`・`common`・`dsl`・`role` ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `navigation/{domain,service,web}`（23 ファイル） ／ 責務: 適用中の DSL のメニューを作業ロールの権限で絞って渡す（`GET /api/me/navigation`）。テーブルの可否の問い合わせの口 `GET /api/me/table-access` は前の Intent で消えている（`NavigationController` の注記）。 ／ 依存: `auth`・`common`・`dsl`・`role`
+- 今回（2026-11-03）の読み（K-100・K-101）: `domain/{NavNode,NavTableRef,NavIconPolicy,MenuFilter,NavigationMenu}`・`service/NavigationService`・`web/{NavNodeResponse,NavTableRefResponse,NavigationController}`。`MenuFilter` は純粋な関数で、子から先に絞り、テーブルの主権限が NONE でない項目だけを移れる項目にする。アイコンは `NavIconPolicy.iconOf`（許した名前と文字どおり照らし、外れは `list`）。応答にテーブルかビューかの印は無い。`service/AllowedNavIconList` は一覧だけ。
+- 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### businessdata
 
@@ -122,7 +129,8 @@
 - 今回（2026-10-29）の読み（K-74・K-75）: `domain/ColumnWriteRulesFactory`（48・106〜113 行）・`domain/ColumnWriteRules`（80 行）・`domain/SearchOperatorPolicy`・`domain/BusinessDataFieldErrorReason`・`domain/RowWriteFailureReason`・`domain/WriteRejection` の `REFERENCE_NOT_FOUND`、`domain/TableAccessPolicy`（64 行で `ColumnWriteRulesFactory.create` を呼ぶ）、`web/ColumnDefinitionResponse`・`web/OptionResponse`、`service/TableAccessResolver`（94〜170 行）、`service/BusinessDataWriteService`（245〜292 行の外部キー違反の写し）、`domain/PageRequest`・`domain/SearchRequestValidator`、境界テストの許可の一覧。`ColumnWriteRulesFactory` が `lookup` を `text` に置き換えているのは前の Intent の意図的な暫定。
 - 今回の Intent への意味: 参照先の読み取りを `businessdata` の内側に置く限り、`BusinessDataBoundaryArchitectureTest` の許可の一覧（`targetdb.service/domain`・`role.service/domain`・`dsl.domain/service`・`common` など）は緩めずに済む見込み（未検証）。SpotBugs の `SQL_` 除外は `RowSqlExecutor` のメソッド単位（`search`・`detail`・`precheckUnique`・`insert`・`update` ほか）で個別に書かれており、新しいメソッドで SQL を組むと除外の追加（計画に明記して承認）か、既存の `search`・`detail` の再利用が要る（K-80）。
 - 今回（2026-11-01）の読み（K-91・K-92）: `service/BusinessDataWriteService.java`（225〜255・320〜385・795〜935 行。書き込みと参照の段の WARN）、`repository/RowSqlBuilder.java`（`page`・`orderBy`）、`repository/RowDialect.java`（`sortExpression`）。ファイル数は 149（`find`）。SpotBugs の `SQL_` の除外は `RowSqlExecutor` の `search`・`detail`・`precheckUnique`・`insert`・`update`・`delete`・`inspectViolation`（`spotbugs-exclude.xml` 47〜62 行）。
-- 状態: at-risk（K-62・K-64・K-65・K-74・K-75・K-91・K-92） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-03）の読み（K-94・K-97〜K-99）: `repository/ColumnValueCodec.java`（全文、604 行）・`RowDialect.java`・`MysqlFamilyRowDialect.java`・`PostgresRowDialect.java`・`domain/ValueType.java`・`ColumnKind.java`・`web/ColumnDefinitionResponse.java`。日時の型の対応・読み書き・文字の形は `architecture.md` の「日時の値の流れ」。`WriteRequestValidator`（295〜345 行、秒の端数の `TOO_MANY_DIGITS`）・`ColumnWriteRulesFactory`（40〜80 行）は流し読み。
+- 状態: at-risk（K-62・K-64・K-65・K-74・K-75・K-91・K-92・K-94〜K-99） ／ 読みの深さ: 深い（一部）
 
 ### backend-test-support
 
@@ -132,15 +140,21 @@
 
 ### frontend-app-core
 
-- 場所: `main.tsx`・`app/`（骨組み）・`shared/` の一部 ／ 責務: 画面の起動、共通の画面、管理の API の 403 の画面への切り替え。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `main.tsx`・`app/`（骨組み）・`shared/` の一部・`frontend/index.html` ／ 責務: 画面の起動、共通の画面（ホーム・見つからない・起動の失敗）、管理の API の 403 の画面への切り替え、共通の日時の書式（`shared/format/formatDateTime.ts`）。
+- 今回（2026-11-03）の読み（K-96・K-102・K-103）: `app/pages/HomePage.tsx`（見出しと1文と、業務のメニューが空・失敗のときの案内だけ）、`shared/format/formatDateTime.ts`（UTC の日時を端末か渡した時差に直し略号を添える。DSL・招待・利用者の管理が使い、業務データは使わない）、`frontend/index.html`（`title` だけで favicon の `<link>` が無い）。
+- 状態: at-risk（K-96・K-102・K-103。今回の Intent で手を入れる見込み） ／ 読みの深さ: 深い（一部）
 
 ### frontend-registry
 
-- 場所: `app/registry/`・`app/navigation/` ／ 責務: `registration.ts` を置くだけで機能を読み込む仕組み、サイドバーの区画の組み立て、テーブルの道の組み立て。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `app/registry/`・`app/navigation/` ／ 責務: `registration.ts` を置くだけで機能を読み込む仕組み、サイドバーの区画の組み立て、テーブルの道の組み立て。
+- 今回（2026-11-03）の読み（K-100）: `registry/allowedIcons.ts`（make-you-chic-ui の 18 種の写し、型で両方向を守る）・`registry/types.ts`（`SidebarItemRegistration.icon` は任意、区画は `ADMIN` だけ）・`navigation/buildNavSections.ts`（ホーム・業務・管理の3区画、アイコンは `resolveNavIcon` で外れを `list`）・`navigation/navigationItems.ts`（管理の項目を `order` の順に選ぶ）。
+- 状態: at-risk（K-100。今回の Intent で手を入れる見込み） ／ 読みの深さ: 深い（一部）
 
 ### frontend-app-layout-i18n
 
-- 場所: `app/layout/`・`app/i18n/`・`app/routing/`・`app/work-role/` ／ 責務: AppShell の配置、表示言語、振り分け、作業ロールの切り替え。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `app/layout/`・`app/i18n/`・`app/routing/`・`app/work-role/` ／ 責務: AppShell の配置、表示言語、振り分け、作業ロールの切り替え。
+- 今回（2026-11-03）の読み（K-102）: `layout/ShellLayout.tsx`（AppShell に区画・開閉・文言・`topbarEnd` の作業ロール・ユーザーメニューを渡す。`topbarStart` は使っていない。ロゴの口は AppShell に無い）、`i18n/messages/ja.ts`（`app.name`・`home.*`・`nav.*`・`adminForbidden.*` の文言）。
+- 状態: healthy ／ 読みの深さ: 深い（一部）
 
 ### frontend-app-display-settings
 
@@ -156,7 +170,9 @@
 
 ### frontend-feature-admin
 
-- 場所: `features/admin/` ／ 責務: 管理の入口の画面。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `features/admin/`（本体 5 ファイル・CSS 1・テスト 5） ／ 責務: 管理の仮の画面（`/admin`、`access: 'ADMIN'`、サイドバーの管理の区画の先頭 `order: 200`・ラベル「管理」）。
+- 今回（2026-11-03）の読み（K-104）: `registration.ts`・`AdminAreaPage.tsx`（表示のたびに `GET /api/admin/check`）・`adminApi.ts`・`adminAreaStatus.ts`・`AdminPlaceholder.tsx`（「今後の管理機能はこの画面に加わります。現在は表示できる機能がありません。」）。頼っているテスト・E2E は `code-structure.md` の K-104。
+- 状態: at-risk（K-104。中身が空。今回の Intent で直すか廃止する見込み） ／ 読みの深さ: 深い（一部）
 
 ### frontend-feature-dsl
 
@@ -192,7 +208,8 @@
 - 責務: 一覧（`BusinessDataListPage`・`BusinessDataTable`・`SearchPanel`・`listPaging.ts`・`listState.ts`）、詳細（`BusinessDataDetailPage`）、作成と更新（`BusinessDataFormPage`）、削除の確かめ（`DeleteConfirmModal`）、API の呼び出し（`businessDataApi.ts`）、状態（`businessDataStore.ts`・`useRowSearch`・`useRowDetail`・`useRowWrite`・`useTableDefinition`）、制限の通知（`RestrictionNotice`）、型（`businessDataTypes.ts`）。件数は `page.total`（数値）をそのまま表示とページ送りに使う（K-64、本文は `api-documentation.md`）。
 - 今回の読み（K-76）: 構成の一覧、`BusinessDataFormPage.tsx` の部品の選び方（780〜870 行。`choices` と `formPart` だけで部品を決める）、`SearchPanel`（EQUALS・CONTAINS・RANGE・CHOICE の入力）、`businessDataTypes.ts` の頭。REFERENCE・LOOKUP のための部品（選択肢の読み込み・ピッカー）は無い。
 - 流用の候補（未検証の仮説）: 参照ピッカー用に `shared/modal`（Modal）・`BusinessDataTable`（表）・`SearchPanel`（検索）の形が近い。共有の置き場は `shared/{paging,page-size,scroll-region,modal,tree,unsaved-guard,validation}`。`team.md` により、make-you-chic-ui に無い部品が要るときは設計の段で足りない点を一覧にして上流へ先に依頼する（固定先 `ecb07e9`。使える部品の一覧は今回読んでいない）。
-- 状態: at-risk（K-64・K-76） ／ 読みの深さ: 深い（一部）。テストの本体と `frontend/e2e/` は名前の検索だけ
+- 今回（2026-11-03）の読み（K-96〜K-98）: `valueFormat.ts`（日時は `T` を空白に、時差つきは `Z` を `+00:00` にするだけで時差を直さない）・`formDiff.ts`（`toDateTimeInput` は秒までに切る、`toWireValue` は `DATETIME_TZ` に `+00:00` を付ける）・`searchConditions.ts`（型ごとの読み取りの式、時差つきの範囲の向きは画面で判定しない）・`SearchPanel.tsx` の `inputAttributes`・`BusinessDataFormPage.tsx` 880〜965 行（`datetime-local`・`date`、`DATETIME_TZ` に「UTC で入れる」）。`ListFormat` の日時の書式は使われていない。
+- 状態: at-risk（K-64・K-76・K-96〜K-98） ／ 読みの深さ: 深い（一部）。テストの本体と `frontend/e2e/` は名前の検索だけ
 
 ### frontend-feature-registration
 
@@ -208,11 +225,11 @@
 
 ### make-you-chic-ui
 
-- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `cab42074cf040e3c03127db8c92582cc329f934d`。2026-11-01 の `git submodule status`。前回の記録 `ecb07e9` から進んでいる。K-86）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `cae5fed185541b975dc56fb034dae3212d4c2247`。2026-11-03 の `git submodule status`。2026-11-01 の記録 `cab4207` から進んでいる。K-105）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `cab4207` の時点で `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。2026-11-03 は `packages/make-you-chic-ui/src/components/Icon/registry.ts`（18 種）と `AppShell/{AppShell,Topbar,Sidebar}.tsx` の props だけを読み取りで見た（`SidebarNavItem.icon` は `IconName`、AppShell の差し込み口は `topbarStart`・`topbarEnd`、ロゴの口は無い。K-100・K-102）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ### java-mustache-processor
 
-- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、固定先 `8d44c36`、0.1.0。Gradle の composite build） ／ 責務: メールのテンプレートの Mustache のエンジン。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03。2026-11-01 の記録 `8d44c36` から進んでいる。K-105。Gradle の composite build） ／ 責務: メールのテンプレートの Mustache のエンジン。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ## ビルド・実行環境
 

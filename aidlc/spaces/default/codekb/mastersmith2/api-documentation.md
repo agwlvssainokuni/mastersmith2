@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan では API を読み直していない（今回の Intent は依存の版・文書・小さな直しで、API を変えない見込み）。以下は前回（2026-10-29）以前の記録のまま。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、業務のメニューの口（`GET /api/me/navigation`、K-101）と、業務データの日時の値の形（K-94・K-97）の節を足した。口の数は数え直していない。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan では API を読み直していない（今回の Intent は依存の版・文書・小さな直しで、API を変えない見込み）。以下は前回（2026-10-29）以前の記録のまま。
 >
 > 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。今回は `businessdata/web` の定義の応答（`ColumnDefinitionResponse`・`OptionResponse`）と道の定数を読み、選択肢の REFERENCE・LOOKUP の情報を載せる欄が無いこと（K-74）を記録した。K-64（件数 `total`）は前回（`261027-perf-targets-review`）の記述のまま。ほかの口の一覧は前回の記録で、今回は数え直していない。
 
@@ -49,6 +51,18 @@
   - 画面のテスト（`BusinessDataListPage.test.tsx`・`listPaging.test.ts` ほか）と perf の台本（`bizSearchFirst` は「200 で 100 件・total が BIZ_ROWS」を確かめる。`perf/k6/scenarios.js` 160 行）が総数の数値に依っている。
 - 見立て（未検証）: 件数の型を数だけでなく「多数」を持てる形に広げるなら、応答の型・サービスの結果の型・画面のページ送りの判断・画面のテストの期待・perf の確かめが一続きで変わる。ページの文を実行するかの判断（`offset >= total`）にも総数を使っている（`RowSqlExecutor.search`）ため、数えない形では「最後のページかどうか」を別の方法で決める必要がある。
 
+### 今回深く読んだ口: 業務のメニュー（`GET /api/me/navigation`、K-101、2026-11-03）
+
+- 持ち主: `navigation/web/NavigationController`（`@ApiAccess(AUTHENTICATED)`、道の頭 `/api/me`）。主体は要求の文脈の利用者 ID だけ。監査に残さない。
+- 応答: `NavigationResponse`（`items` と、空のときの `emptyReason`: `NOT_CONFIGURED`・`NOTHING_VISIBLE`）。項目 `NavNodeResponse` は `id`（絞る前の DSL の木の位置の道、例 `2.0`）・`label`（日英の表示名）・`icon`（`NavIconPolicy` で `allowed-icons.txt` と照らした名前。無い・一致しないときは `list`）・`table`（移れる項目だけ。`schemaName`・`tableName`、エンコードしない）・`navigable`・`items`。
+- **K-101**: テーブルかビューかの印は無い。`MenuFilter`（`navigation/domain`）は `TableRef` の組と主権限の操作だけを受け、`DslTable` を見ない。`NavigationService` は適用中の `DslModel` を持つため、`DslModel.findTable(TableRef)` で `DslTable.view` を引いて項目に足すことはできる位置にある（未検証）。足すなら応答の型・画面の `navigationApi.ts` の読み取り（`icon`・`table` などを型で確かめている）・テストの見本がそろって変わる。
+
+### 業務データの日時の値の形（K-94・K-97、2026-11-03）
+
+- 定義の応答の `ColumnDefinitionResponse` は `valueType`（`DATE`・`DATETIME`・`DATETIME_TZ`・`TIME`・`TIME_TZ` ほか）と `listFormat`（`DATE`・`DATETIME`・`TIME` ほか、無ければ null）を返す。秒の端数の上限は返さない。
+- 行の値（一覧・詳細・作成の応答の主キー）: `DATE` は `YYYY-MM-DD`、`DATETIME` は `YYYY-MM-DDTHH:mm:ss[.f]`、`TIME` は `HH:mm:ss[.f]`、`DATETIME_TZ` は `YYYY-MM-DDTHH:mm:ss[.f]+00:00`、`TIME_TZ` は `HH:mm:ss[.f]+00:00`（どちらも UTC）。
+- 要求の値（検索・作成・更新・行を指す鍵・参照）: 同じ形。時差つきは `Z`・`±hh:mm` も受け付けて UTC にそろえ、オフセットが無ければ UTC とみなす。読めない値は入力の誤り。本文は `architecture.md` の「日時の値の流れ」。
+
 ## 画面の道（SPA）
 
 - 業務データ: `/tables` 配下（`frontend/src/features/tables/registration.ts`）。表の道を作る関数は1か所に閉じる（前回の決定）。メニューの業務の項目はこの道へ移る。
@@ -66,6 +80,7 @@
 
 ## Sources
 
+- 2026-11-03: `navigation/web/{NavigationController,NavNodeResponse,NavTableRefResponse}.java`・`navigation/domain/{MenuFilter,NavIconPolicy}.java`・`navigation/service/NavigationService.java`・`businessdata/web/ColumnDefinitionResponse.java`・`businessdata/repository/ColumnValueCodec.java`（開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-01: 読み直しなし（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md` の APIs Discovered）。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の APIs Discovered）と `OptionResponse.java`（アーキテクト、2026-10-29）。
 - `businessdata/web/BusinessDataReadController.java`・`BusinessDataWriteController.java`・`BusinessDataPaths.java`・`RowPageResponse.java`、`BusinessDataListPage.tsx`（アーキテクト、2026-10-25）と開発担当の APIs Discovered・K-64。

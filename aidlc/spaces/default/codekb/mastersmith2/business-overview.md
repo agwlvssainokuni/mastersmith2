@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-01、Intent `261101-maintenance-update`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `6079f13`）で更新した。今回は版の定義と固定先・検査の道具・README と perf/README の構成・`businessdata` の一部（P1・T3）だけを読み、所見 K-81〜K-93 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
+> 2026-11-03、Intent `261102-timezone-ui-polish`（classic・Standard）の Reverse Engineering（Focused scan、記録のコミット `fa0b01e`）で更新した。今回は業務データの日時の型の対応と接続の時差（`businessdata`・`targetdb`・`dsl`・`dslmanage` の一部）、業務のメニューとアイコン（`navigation`、画面の骨組みの `app/registry`・`app/navigation`）、ホーム・管理の仮の画面（`features/admin`）・ページの頭（`index.html`）だけを読み、所見 K-94〜K-105 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した。
+>
+> 前回の記録: 2026-11-01、Intent `261101-maintenance-update`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `6079f13`）で更新した。今回は版の定義と固定先・検査の道具・README と perf/README の構成・`businessdata` の一部（P1・T3）だけを読み、所見 K-81〜K-93 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
 >
 > 前回の記録: 2026-10-29、Intent `261029-reference-lookup-cleanup`（Standard・brownfield）の Reverse Engineering（Focused scan、記録のコミット `15a25aa`）で更新した。既存の散文と前回の所見の一覧は残し、今回の範囲（業務データの選択肢 REFERENCE・LOOKUP、`dsl` の選択肢の型、`targetdb`・`role` の口、`frontend/src/features/tables`、perf の JWT、コンテナの版、i18next の2件）の所見 K-74〜K-80 を足した。深く読んだのは今回の範囲だけで、それ以外は前回（`261027-perf-targets-review`）以前の記録による（`reverse-engineering-timestamp.md` の Scope of Analysis）。
 
@@ -23,11 +25,30 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-## 所見の一覧（K-62〜K-93）
+## 所見の一覧（K-62〜K-105）
 
-番号は K-61 から続く（K-62〜K-80 は前回まで、K-81〜K-93 が今回 2026-11-01）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-93 は前回まで、K-94〜K-105 が今回 2026-11-03）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261101-maintenance-update）の主題
+### 今回（Intent 261102-timezone-ui-polish）の主題
+
+N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・PostgreSQL の3種類の型を含む）と画面の仕上げ（アプリのアイコンと favicon、ホームの中身、管理の仮の画面、管理メニューと業務メニューのアイコン）。今回は、日時の値が対象DB から画面まで・画面から対象DB までどう流れるかと、サイドバー・ホーム・管理の仮の画面・ページの頭の今の形を読んだ。「未検証」の項目は要件定義・設計の段で確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-94 | 日時の型の対応は `ColumnValueCodec.valueType` の1か所。時差つきは MySQL・MariaDB の `timestamp` と PostgreSQL の `timestamptz`・`timetz` だけで、UTC にそろえ `+00:00` 付きの文字で返す。時差の無い型（`datetime`・`timestamp`・`date`・`time`）は DB の値のまま | `businessdata` | `architecture.md`（日時の値の流れ・Interaction Diagrams 5） |
+| K-95 | 接続の時差: MySQL・MariaDB は両方のプールで接続を作るときに `SET time_zone = '+00:00'`。PostgreSQL はセッションの時差を設定せず、JVM の既定（`Asia/Tokyo`）に従う見込み（未検証）。時差の無い型の値がどの時差の壁時計かはアプリから分からない | `targetdb`・`container-runtime` | `architecture.md`（日時の値の流れ） |
+| K-96 | 画面の日時の見せ方が二系統: 業務データは UTC の文字のまま（`T` を空白に）で「UTC で入れる」の案内つき入力、DSL・招待・利用者の管理は `shared/format/formatDateTime` で端末の時差に直す。`ListFormat` の `DATE`・`DATETIME`・`TIME` は画面で使われていない。利用者ごとの時差の設定は無い | `frontend-feature-tables`・`frontend-app-core` | `architecture.md`（日時の値の流れ） |
+| K-97 | 主キー・参照の値・検索の値・作成の応答の主キー・監査の値は UTC の文字のまま往復する。表示だけを替えるなら往復は変えない。入力を地方時にするならオフセットを付けて送る（サーバーは `±hh:mm` を受け付ける）か、どこで直すかを設計で決める | `businessdata`・`frontend-feature-tables` | `architecture.md`（日時の値の流れ） |
+| K-98 | 秒の端数: 既定の DSL の生成は MySQL・MariaDB の日時の精度を読まず、`datetime(6)` でも端数の上限 0 になる見込み（未検証）。手書きの `timestamp(3) with time zone` は DATETIME と誤る。更新の初めの値は端数を落とす | `businessdata`・`dslmanage`・`frontend-feature-tables` | `architecture.md`（日時の値の流れ） |
+| K-99 | 範囲の端: MySQL の `time` の 24 時間を超える値・負の値は読めない値（`Unreadable`）、MySQL の `year`・PostgreSQL の `interval` は `OTHER`（読み取りだけの文字） | `businessdata` | `architecture.md`（日時の値の流れ） |
+| K-100 | アイコンは make-you-chic-ui の 18 種だけで、テーブル・ビューらしい名前は無い。写しは画面の `allowedIcons.ts` とサーバーの `allowed-icons.txt` の2か所。管理の区画の 7 項目はどれも `icon` を置かず `list`、生成した DSL も `icon` を書かず `list` | `frontend-registry`・`navigation`・`make-you-chic-ui` | `code-structure.md`（画面の骨組みの仕上げ） |
+| K-101 | 業務のメニューの応答 `GET /api/me/navigation` はテーブルかビューかの印を持たない。`MenuFilter` は `DslModel.findTable` で `DslTable.view` を引ける位置にある | `navigation`・`dsl` | `api-documentation.md` |
+| K-102 | アプリのアイコン: `index.html` に favicon の `<link>` が無く `frontend/public/` も無い。見つからない画面の URL は `index.html` を返すため `/favicon.ico` に HTML が返る見込み（未検証）。`title` は `MasterSmith` に固定。AppShell にロゴの口は無く `topbarStart` だけ | `frontend-app-core`・`config`・`make-you-chic-ui` | `code-structure.md`（画面の骨組みの仕上げ） |
+| K-103 | ホームは見出しと1文の説明と、業務のメニューが空・読み込みの失敗のときの案内だけ。メニューがあるときは中身が実質空 | `frontend-app-core` | `code-structure.md`（画面の骨組みの仕上げ） |
+| K-104 | 管理の仮の画面（`/admin`）は確認の API を呼んで「今後の管理機能はこの画面に加わります」を出すだけ。管理の区画の先頭の項目「管理」（区画の見出しと同じ名前）。E2E 030・090・130 と単体テストの多くが頼る。`GET /api/admin/check` は k6 と E2E 130 も使う | `frontend-feature-admin`・`access` | `code-structure.md`（画面の骨組みの仕上げ） |
+| K-105 | サブモジュールの固定先が知識ベースの記録より進んでいる: make-you-chic-ui `cae5fed`、java-mustache-processor `d61ba6d`（`0.1.0-6`）。K-86 の値は古い | `make-you-chic-ui`・`java-mustache-processor` | `dependencies.md` |
+
+### 前の Intent（261101-maintenance-update）の所見（今回は再確認していない。K-86 の固定先は K-105 で訂正）
 
 メンテナンスの Intent。依存の最新化（Java 25 系の最新、Node 24 → 26、サブモジュール2つ、GitHub Actions、コンテナのイメージ、検査の道具、Gradle の Wrapper、Spring Boot と連動する固定の見直し、`dependabot.yml` の `ignore` の見直し）、古いコンテナのイメージの片付け、前の Intent の小さな直し（P1・T1〜T3・A2・A3）、README.md と perf/README.md の最新化。今回はコードの振る舞いではなく、版がどこに何か所書かれているかと文書の構成を主に読んだ。「未検証」の項目は要件定義・設計の段で確かめる。
 
@@ -89,6 +110,7 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 
 ## Sources
 
+- 開発担当の調査（2026-11-03）: `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-01）: `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（前回まで）: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）
 - アーキテクトが読み取りで確かめ直したもの: `reverse-engineering-timestamp.md` の「確かめ方」

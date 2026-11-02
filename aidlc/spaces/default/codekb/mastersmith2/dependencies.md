@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`.gitmodules`・`git submodule status`・`.github/dependabot.yml` の全文を読み、サブモジュールの固定先（K-86）・Dependabot の `ignore` の現状（K-87）・コンテナの版の固定先（K-83）を更新した。機能の間の依存の表は前々回（2026-10-25）の `import` の検索のまま（今回は再確認していない）。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`.gitmodules` と `git submodule status` を読み直し、サブモジュールの固定先を今の値に直した（K-105）。あわせて、今回の範囲の機能（`businessdata`・`navigation`）の依存の注記を足した。機能の間の依存の表そのものは前回までのまま（今回は `import` の検索をしていない）。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`.gitmodules`・`git submodule status`・`.github/dependabot.yml` の全文を読み、サブモジュールの固定先（K-86）・Dependabot の `ignore` の現状（K-87）・コンテナの版の固定先（K-83）を更新した。機能の間の依存の表は前々回（2026-10-25）の `import` の検索のまま（今回は再確認していない）。
 >
 > 前回の記録: 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で更新した。機能の間の依存の表は前回（2026-10-25）の `import` の検索による。今回は `businessdata` の境界テストの許可の一覧と `dependabot.yml` の全文を読み、Dependabot の i18next 系2件（K-79）とコンテナの版の固定先（K-78）を足した。K-66・K-72 の記述は前回（2026-10-28）のまま、`dependabot.yml` で再確認した範囲だけ更新した。
 
@@ -29,6 +31,8 @@
 - `BusinessDataBoundaryArchitectureTest` の `allowedDependencies`（2026-10-29 に読んだ）は `businessdata` の依存先を `targetdb.service/domain`・`role.service/domain`・`dsl.domain/service`・`common` などに限る。参照先の読み取りを `businessdata` の内側に置く限り緩める必要は無い見込み（未検証、K-80）。`targetdb` に手を入れると `TargetDbBoundaryArchitectureTest`、`role` に手を入れると `RoleBoundaryArchitectureTest` の許可の一覧に触れうる（緩める場合は計画に明記して依頼者の承認）。
 - 逆向きの知らせは Spring の出来事（監査は `audit` が各機能の `domain` の出来事の型を import して受ける）。
 
+- 今回の範囲（2026-11-03）: `businessdata` の日時の型の対応は `businessdata.repository`（`ColumnValueCodec`・`RowDialect`）の中に閉じ、`targetdb.domain.DatabaseProduct` と `dsl.domain`（`DslColumn`・`FormPart`）だけを読む。接続の時差は `targetdb.config` の初期化の文。`navigation` は `dsl.domain`（`DslMenuItem`・`TableRef`）と `role` の `PermissionSnapshot` を読み、アイコンの照合（`NavIconPolicy`）は自分の中に持つ。ビューの印を応答に足すなら `dsl.domain.DslModel.findTable` を読む形で、新しい依存は要らない見込み（未検証）。
+
 ## 画面の依存
 
 - 機能（`frontend/src/features/<featureId>/`、12 機能）どうしの import は ESLint の `no-restricted-imports` で止める。`src/shared/` から `src/app/`・`src/features/` を読むことも止める（前回の記録）。
@@ -44,9 +48,15 @@
 
 | 依存 | 今の固定 | メモ |
 |---|---|---|
-| `vendor/make-you-chic-ui` | `cab42074cf040e3c03127db8c92582cc329f934d`（2026-11-01 の `git submodule status`。前回の記録 `ecb07e9` から進んでいる） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は 1 件（3112 行付近。どのパッケージかは未確認）。固定先を上げるときは `team.md` の手順で増減を確かめる |
-| `vendor/java-mustache-processor` | `8d44c36b2bbaf36a35fe0ce397ac1c0fb7bc0ba4`（0.1.0。2026-11-01 も同じ） | Gradle の composite build（`settings.gradle.kts` の `includeBuild`）。版は `libs.versions.toml` の `cherry-mustache = "0.1.0"` と固定先の両方。上げるときは両方と、推移依存が lockfile と OSV-Scanner の対象に載ることを確かめ直す（`team.md`） |
+| `vendor/make-you-chic-ui` | `cae5fed185541b975dc56fb034dae3212d4c2247`（2026-11-03 の `git submodule status`。コミット `28dd694` で `cab4207` から上げた。K-105） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は `cab4207` の時点で 1 件（3112 行付近。どのパッケージかは未確認。`cae5fed` では数え直していない）。アイコンは `Icon` の 18 種だけ（K-100、`code-structure.md`）。固定先を上げるときは `team.md` の手順で増減を確かめる |
+| `vendor/java-mustache-processor` | `d61ba6dac8b4a1617ba72ee469ee0189683e42b4`（`0.1.0-6-gd61ba6d`。2026-11-03 の `git submodule status`。コミット `28dd694` で `8d44c36` から上げた。K-105） | Gradle の composite build（`settings.gradle.kts` の `includeBuild`）。版は `libs.versions.toml` 46 行の `cherry-mustache = "0.1.1"`（2026-11-03 に grep）と固定先の両方。上げるときは両方と、推移依存が lockfile と OSV-Scanner の対象に載ることを確かめ直す（`team.md`） |
 | `axe-core`（npm、dev） | `^4.14.0` | 以前の `>= 4.14.0` の見送りは外れている（`dependabot.yml` 65 行のコメント） |
+
+**K-105 サブモジュールの固定先の訂正（2026-11-03）（`make-you-chic-ui`・`java-mustache-processor`）**
+
+- 確かめた事実: `.gitmodules` の取得元は K-86 と同じ。`git submodule status` は make-you-chic-ui が `cae5fed`（`remotes/origin/HEAD`）、java-mustache-processor が `d61ba6d`（`0.1.0-6-gd61ba6d`）。どちらも Intent `261101-maintenance-update` のコミット `28dd694`（「サブモジュールの固定先を上げる（make-you-chic-ui cab4207→cae5fed、java-mustache-processor 8d44c36→d61ba6d（0.1.1））」、`git log` の読み取り）で上がった。知識ベースの K-86 の値（`cab4207`・`8d44c36`）はその前の値。
+- 今回の Intent への意味: make-you-chic-ui の `Icon` の名前は `cae5fed` でも 18 種（`registry.ts` を読み取りで確かめた）。テーブル・ビューのアイコンや、ロゴ・アプリ名の差し込み口が要るなら、`team.md` の手順で上流へ依頼し、固定先の更新の専用のコミットで取り込む（K-100・K-102）。
+- 未検証: `cae5fed` の lockfile の `hasInstallScript` の数、README の固定先の記述が `cae5fed` に直っているか（README は今回の範囲の外）。
 
 **K-86 サブモジュールの固定先（2026-11-01）（`make-you-chic-ui`・`java-mustache-processor`）**
 
@@ -95,5 +105,6 @@
 
 ## Sources
 
+- 2026-11-03: `.gitmodules`・`git submodule status`・`git log`（サブモジュールの2行）・`gradle/libs.versions.toml` の grep、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `.gitmodules`・`git submodule status`・`settings.gradle.kts`・`.github/dependabot.yml`（全文）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - `import` の検索（前回: `businessdata`・`audit`）、境界テストの `@DisplayName`、`git submodule status`（前回）、`.github/dependabot.yml`（今回）。

@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update`（bugfix・Minimal）の Focused scan で更新した。今回は版の定義と固定先（`gradle/`・`libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`perf/versions.env`・`.github/`・`README.md`）を読み直し、表の版を今の値にそろえ、所見 K-81・K-82・K-84・K-85・K-93 を足した（本文はこの文書）。版がどこに何か所書かれているかの一覧は、この文書の「版の固定先（K-81〜K-85）」の節だけに書く（ほかの文書はここを参照する）。前回（2026-10-29、`261029-reference-lookup-cleanup`）からの差は、画面の部品の版（React 19.3.1・react-router 8.5.1・i18next 26.5.11・react-i18next 17.1.9・oxlint 1.90.0）と make-you-chic-ui の固定先（`cab4207`）。
+> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、時差の設定の置き場（K-95）と make-you-chic-ui の固定先（K-105）だけを足した。版の表は前回（2026-11-01）のまま（今回は読み直していない）。
+>
+> 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update`（bugfix・Minimal）の Focused scan で更新した。今回は版の定義と固定先（`gradle/`・`libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`perf/versions.env`・`.github/`・`README.md`）を読み直し、表の版を今の値にそろえ、所見 K-81・K-82・K-84・K-85・K-93 を足した（本文はこの文書）。版がどこに何か所書かれているかの一覧は、この文書の「版の固定先（K-81〜K-85）」の節だけに書く（ほかの文書はここを参照する）。前回（2026-10-29、`261029-reference-lookup-cleanup`）からの差は、画面の部品の版（React 19.3.1・react-router 8.5.1・i18next 26.5.11・react-i18next 17.1.9・oxlint 1.90.0）と make-you-chic-ui の固定先（`cab4207`）。
 
 ## 言語と実行環境
 
@@ -46,7 +48,7 @@
 | react-router | ^8.5.1／8.5.1 | 振り分け |
 | i18next・react-i18next | ^26.5.11／26.5.11・^17.1.9／17.1.9 | 日英の文言（前の Intent の Dependabot #81・#82 は取り込み済み） |
 | Vite・@vitejs/plugin-react | ^8.3.5／8.3.5（rolldown 1.2.16）・^6.1.2 | ビルドと開発のサーバー |
-| make-you-chic-ui | サブモジュール `cab4207`（npm の `file:`） | デザインシステム（K-86、`dependencies.md`） |
+| make-you-chic-ui | サブモジュール `cae5fed`（npm の `file:`。2026-11-03。K-105） | デザインシステム（K-86・K-105、`dependencies.md`） |
 | @fontsource/noto-sans-jp・noto-serif-jp | ^5.3.1 | 書体 |
 
 ## テスト
@@ -121,6 +123,21 @@
 - 負荷の試験の使い捨ての環境（`docker/perf/compose.yaml`）の対象DB は postgres 18.6・mysql 26.10.0・mariadb 13.0.2・Mailpit v1.32.0（いずれもダイジェストで固定）。上限はアプリ CPU 4・メモリ 2g、対象DB は環境変数で替えられる（既定 512m・768m・512m）。
 - 監視は `grafana/otel-lgtm` と OpenTelemetry Collector を compose の profile で起動し、警報とダッシュボードは `docker/monitoring/` のファイルで持つ。メールの受け手（Mailpit）と見本の対象DB も compose の profile。E2E の見本の PostgreSQL は上乗せ `docker/e2e/compose.targetdb-port.yaml` で `127.0.0.1:15432` に開ける。
 
+## 時差の設定の置き場（K-95、2026-11-03）
+
+本文は `architecture.md` の「日時の値の流れ」。置き場だけをここに置く（すべて grep で確かめた）。
+
+| 置き場 | 値 | 効く先 |
+|---|---|---|
+| `Dockerfile` 52 行の `ENTRYPOINT` | `-Duser.timezone=Asia/Tokyo` | 配備した JVM（PgJDBC のセッションの時差もこれに従う見込み、未検証） |
+| `compose.yaml` 37 行 | `TZ: Asia/Tokyo` | 配備したコンテナ（Dockerfile とそろえる注記あり） |
+| `backend/build.gradle.kts` 118 行 | `systemProperty("user.timezone", "Asia/Tokyo")` | テストの JVM |
+| `targetdb/config/TargetDataSourceConfig.java` 61・68 行 | `SET time_zone = '+00:00'`（読み取り・書き込み） | MySQL・MariaDB の対象DB のセッション |
+| `frontend/src/shared/format/formatDateTime.ts` | 端末の時差（引数で渡せる） | DSL・招待・利用者の管理の画面の日時 |
+
+- アプリが保存する時刻（内部DB）は時差に依存しない時点（UTC）として扱う決まり（`project.md` の Corrections）。業務データの時差つきの値も UTC にそろえて受け渡す。画面で地方時に直す仕組みは業務データには無い（K-96）。
+
 ## Sources
 
+- 2026-11-03: `Dockerfile`・`compose.yaml`・`backend/build.gradle.kts` の時差の grep、`TargetDataSourceConfig.java`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`backend/gradle.lockfile`・`backend/build.gradle.kts`・`build.gradle.kts`・`frontend/package.json`・`frontend/package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`docker/hikari-pool.sh`・`perf/versions.env`・`.github/workflows/ci.yml`・`.github/dependabot.yml`・`README.md`（2026-11-01、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。`TargetDbImages.java`・`.pre-commit-config.yaml`・`frontend/playwright.config.ts` は版の行の grep だけ。
