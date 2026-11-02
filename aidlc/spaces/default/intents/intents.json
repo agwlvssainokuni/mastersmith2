@@ -130,7 +130,7 @@
     "slug": "maintenance-update",
     "dirName": "261101-maintenance-update",
     "scope": "bugfix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "b865c771"
   }
 ]
