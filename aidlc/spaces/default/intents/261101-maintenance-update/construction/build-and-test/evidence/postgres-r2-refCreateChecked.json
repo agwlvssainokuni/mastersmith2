@@ -1,0 +1,197 @@
+{
+  "root_group": {
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "refCreateChecked 201": {
+        "name": "refCreateChecked 201",
+        "path": "::refCreateChecked 201",
+        "id": "fa830da55b5466495381ed6b54224d25",
+        "passes": 219816,
+        "fails": 0
+      }
+    },
+    "name": ""
+  },
+  "metrics": {
+    "http_reqs": {
+      "count": 219854,
+      "rate": 1199.740204097763
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "http_req_duration{name:refCreateChecked}": {
+      "p(99)": 15.881632250000001,
+      "max": 69.992127,
+      "count": 219816,
+      "avg": 8.098606367821368,
+      "min": 2.711702,
+      "med": 7.717928499999999,
+      "p(90)": 11.359352000000001,
+      "p(95)": 12.730377249999997,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "iteration_duration{scenario:refCreateChecked}": {
+      "p(90)": 11.457957,
+      "p(95)": 12.841547249999998,
+      "p(99)": 15.994425199999998,
+      "max": 70.320507,
+      "count": 219816,
+      "avg": 8.184784868781092,
+      "min": 2.78812,
+      "med": 7.8010565,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    },
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 0.03863951999999821,
+      "max": 4.753602,
+      "count": 219854,
+      "avg": 0.001340877341326515,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0
+    },
+    "http_req_tls_handshaking": {
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 219854,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0
+    },
+    "http_req_failed": {
+      "fails": 219854,
+      "passes": 0,
+      "value": 0
+    },
+    "data_received": {
+      "count": 125927061,
+      "rate": 687182.2112200435
+    },
+    "checks": {
+      "passes": 219816,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(99)": 15.888518229999997,
+      "max": 310.148826,
+      "count": 219854,
+      "avg": 8.11195549114422,
+      "min": 1.060223,
+      "med": 7.7177215,
+      "p(90)": 11.360147300000001,
+      "p(95)": 12.73313565
+    },
+    "http_req_waiting": {
+      "p(99)": 15.85247869,
+      "max": 310.057075,
+      "count": 219854,
+      "avg": 8.08523579370843,
+      "min": 1.033847,
+      "med": 7.691181,
+      "p(90)": 11.3287417,
+      "p(95)": 12.69653805
+    },
+    "http_req_receiving": {
+      "p(95)": 0.030209,
+      "p(99)": 0.08696,
+      "max": 7.70785,
+      "count": 219854,
+      "avg": 0.02051302418423172,
+      "min": 0.006334,
+      "med": 0.015709,
+      "p(90)": 0.024959
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    },
+    "http_req_sending": {
+      "avg": 0.006206673251340539,
+      "min": 0.002375,
+      "med": 0.004042,
+      "p(90)": 0.009166,
+      "p(95)": 0.011,
+      "p(99)": 0.022,
+      "max": 6.765546,
+      "count": 219854
+    },
+    "iterations": {
+      "rate": 1199.5328386290623,
+      "count": 219816
+    },
+    "checks{scenario:refCreateChecked}": {
+      "passes": 219816,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "data_sent": {
+      "count": 125498121,
+      "rate": 684841.4916372945
+    },
+    "http_req_duration": {
+      "p(99)": 15.888518229999997,
+      "max": 310.148826,
+      "count": 219854,
+      "avg": 8.11195549114422,
+      "min": 1.060223,
+      "med": 7.7177215,
+      "p(90)": 11.360147300000001,
+      "p(95)": 12.73313565
+    },
+    "iteration_duration": {
+      "p(99)": 15.994425199999998,
+      "max": 70.320507,
+      "count": 219816,
+      "avg": 8.184784868781092,
+      "min": 2.78812,
+      "med": 7.8010565,
+      "p(90)": 11.457957,
+      "p(95)": 12.841547249999998
+    },
+    "http_req_blocked": {
+      "min": 0.000583,
+      "med": 0.001125,
+      "p(90)": 0.001708,
+      "p(95)": 0.002,
+      "p(99)": 0.08685426999999991,
+      "max": 4.787019,
+      "count": 219854,
+      "avg": 0.003270707633246242
+    }
+  },
+  "setup_data": {
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    },
+    "refDefinitionId": {
+      "workRoleId": 3,
+      "dslHash": "[REDACTED-SETUP]"
+    }
+  }
+}
