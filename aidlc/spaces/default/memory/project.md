@@ -251,6 +251,8 @@
 - NEVER 業務データの行の値（主キーの値を含む）を、アプリのログ・トレースの属性・エラー応答に含めない (affirmed 2026-10-18)
 - NEVER アクセシビリティの検査の規則を外して（`disableRules`・規則の絞り込み・要素の `exclude` など）axe の違反を通さない (affirmed 2026-10-18)
 - NEVER 認証の値（JWT・リフレッシュトークン・Authorization ヘッダー）を、伏せずに負荷の試験（perf）の記録へ置かない (affirmed 2026-10-29)
+- NEVER 自作の SVG（アプリのアイコン・favicon）に、スクリプト・イベントの属性（onload など）・外部の参照（外部の URL の href・読み込み）を入れない (affirmed 2026-11-02)
+
 ## Mandated
 
 <!-- Populated by practices-discovery affirmation gate. -->

@@ -16,7 +16,7 @@
 - make-you-chic-ui に無い部品（入れ子のサイドバーなど）が要るときは、設計の段で足りない点を一覧にし、make-you-chic-ui のリポジトリ側への追加を先に依頼する。取り込みは、その部品を使う Bolt の前に固定先の更新の専用のコミットで行い、統合は上の fast-forward の例外を使う。依頼が間に合わないときに frontend の側で自前で作る形へ切り替えるかは、その時点で依頼者に諮る。
 - make-you-chic-ui への依頼は、依頼ごとに文面を Intent の記録（`<record>/make-you-chic-ui-request-<n>.md`）に置く。業務データの一覧・詳細のように表や入力の部品を多く使う画面では、足りない点（表の並べ替え・ページ送りの英語の文言・行の操作・Topbar の利用者のメニューの名前など）を画面イメージの段（Refined Mockups）で一覧にし、機能設計の承認の前に依頼を出す。上流の対応は、報告ではなく上流のソース（読み取りだけの `git show` など）で確かめてから固定先を上げる。
 - プルリクエストは使わない。統合の前に、CI と同じ検査（フォーマット・リンタ・ライセンスヘッダー・ビルド・全テスト・カバレッジ下限・秘密情報の検出・静的解析・依存関係の脆弱性検査）をローカルで **1コマンド** で実行し、すべて通ってから統合する。これが統合前の関門であり、同じ検査をプッシュ前に自動実行するフック（pre-push）を置いてもよい。
-- 画面からの一連の操作のテスト（E2E、`./gradlew e2eTest`）を統合の前に流すかは、ブランチが変えたパスで決める。frontend の本体（`frontend/src` のテストのファイルを除くもの）か、認証・権限・業務データのパッケージ（`auth`・`access`・`role`・`group`・`navigation`・`common.security` と業務データの機能）の `src/main` に触れるブランチは、統合の前に E2E を流して通す。それ以外のブランチ（依存の版と lockfile の更新だけ、テストだけ、文書・`aidlc/` だけ）は `./gradlew verify` だけで統合し、Intent の最後（Build and Test）とリリースの前に E2E を1回流す。
+- 画面からの一連の操作のテスト（E2E、`./gradlew e2eTest`）を統合の前に流すかは、ブランチが変えたパスで決める。frontend の本体（`frontend/src` のテストのファイルを除くもの、`frontend/index.html`、`frontend/public/` のアイコン・favicon などの静的なファイル）か、認証・権限・業務データのパッケージ（`auth`・`access`・`role`・`group`・`navigation`・`common.security` と業務データの機能）の `src/main` に触れるブランチは、統合の前に E2E を流して通す。それ以外のブランチ（依存の版と lockfile の更新だけ、テストだけ、文書・`aidlc/` だけ）は `./gradlew verify` だけで統合し、Intent の最後（Build and Test）とリリースの前に E2E を1回流す。
 - Dependabot が作る更新のプルリクエスト（向き先は GitHub の既定のブランチの `develop`）は、依存の更新の知らせとして扱い、GitHub の画面でマージしない。手元で版と lockfile をまとめて更新し、1コマンドの検査（`./gradlew verify`）を通してから `develop` に統合し、プルリクエストは閉じる。重大度 High 以上の知らせは、次の Bolt に入る前に取り込む。
 - 依存関係の脆弱性の関門は、1コマンドの検査の中の OSV-Scanner とする（GitHub の Dependabot alerts は使っていない）。OSV-Scanner は `./gradlew verify` と CI を流したときにだけ働き、新しい脆弱性が公表された時点では知らせない。そのため、Dependabot の知らせを見送る依存（`.github/dependabot.yml` の `ignore`）の脆弱性には、次の `./gradlew verify` と CI の OSV-Scanner で気づく。更新を見送る依存を `ignore` に足すときは、見送る理由と外す時期を同じファイルのコメントに書く。
 - 統合前の1コマンドの検査は、コンテナの実行環境（colima）が動いていることを前提にする。コンテナの実行環境が無いときは、警告を出してコンテナで動かす対象DB のテストだけを飛ばす（黙って飛ばさない）。ただし、飛ばした状態では統合しない。警告が出たらコンテナの実行環境を起動して検査をやり直し、対象DB のテストも通ってから統合する。飛ばしてよいのは開発中の途中の実行だけとし、CI では必ず実行する。
@@ -24,6 +24,7 @@
 - `origin` への `git push` は依頼者自身が行う。AI はプッシュしない。
 - GitHub のリポジトリは公開（public）である。公開されて困る情報（秘密情報・個人情報）をコミットしない前提で運用する。
 
+- make-you-chic-ui への依頼の対象に、部品だけでなくアイコン（`Icon` の登録の名前）も含める。画面で使うアイコンのうち make-you-chic-ui に無いものは、画面イメージの段（Refined Mockups）で一覧にし、依頼の文面を `<record>/make-you-chic-ui-request-<n>.md` に置く。上流の対応を待つ間は、そのアイコンに頼らない単位を先に進めてよい。待ちが長引いて frontend の側で自前の SVG に代えるかは、その時点で依頼者に諮る。
 
 ## Walking Skeleton
 
@@ -38,7 +39,6 @@
   - 共通のエラー応答の仕組み（Code Style の `@RestControllerAdvice` と Problem Details）
   - 同じ検査が CI（GitHub Actions）上でも通ること
 - 骨格が既にある場合は、この一式が維持されていることを前提に、各 Bolt を通常どおり進める。
-
 
 ## Testing Posture
 
@@ -158,6 +158,18 @@
 - 参照ピッカー（LOOKUP）の画面の E2E を、この Intent の機能の代表の流れとして1本足す。流れは、自分で作った参照先と参照元の前提（利用者・役割・専用のスキーマの行）だけを対象にし、見本の行と初期管理者を変えない。axe は、ピッカーを開いた状態・長い名前で、ブランドカラーとテーマのすべての組について行う。ピッカーが make-you-chic-ui の部品でないときは、キーボード操作と `aria` の属性を画面のテストで確かめる。参照先の権限を欠く利用者の確かめは E2E ではなく結合テストで行う。i18next 系の更新と既存の E2E の書き換えは本数に数えない。
 - 負荷の試験（k6 の `--summary-export` など）の結果に入る認証の値（JWT・リフレッシュトークン・Authorization ヘッダー）を伏せる仕組みを入れるときは、仕組みそのものに伏せ字のテスト（JWT の形が残らない、すでに伏せた入力に流しても結果が変わらない（冪等）、入れ子の JSON・配列・長い文字列の中でも伏せる、JWT 以外の値（数値・場面名）を壊さない）を付け、`./gradlew verify` と CI に入れる。記録（`evidence/`）に置いたものには `gitleaks dir` を流して確かめる。仕組みの置き場は設計の段で決める。
 
+- 業務データの日時のタイムゾーンの変換を扱う機能では、次のテストを必ず書く（業務データの一覧・詳細と同じ扱い）。★印の項目は要件が未確定のため、要件定義で決めてからテストを書く。
+  - 3種類の対象DB と型: MySQL・MariaDB の `datetime`・`timestamp`・`date`・`time`、PostgreSQL の `timestamp`・`timestamptz`・`date`・`time`・`timetz` のすべてを、一覧・詳細・作成・更新（と検索・主キー・参照の値の往復）で結合テストで確かめる。
+  - 日付の変わり目: 変換で日付が変わる値（例: UTC の 15:00 が日本時間の翌日 0:00 になる値、月末・年末・うるう日）を含める。
+  - 夏時間のある地域と端数の時差: 夏時間の切り替わりの前後（存在しない時刻・重なる時刻）と、分の端数を持つ時差（`+05:45`・`+09:30`・`-03:30` など）を含める。★表示に使う時差を利用者ごとに選べるか（選べないなら、夏時間の地域の確かめは変換の部品の単体テストに限る）
+  - 秒の端数: 0・3・6 桁の端数が、読み・書き・往復で落ちたり丸められたりしないこと（K-98）。
+  - 範囲の端: MySQL の `timestamp` の上限（2038 年）・`time` の 24 時間を超える値・負の値など、読めない値の扱いを決めた側の動作で確かめる（K-99）。
+  - 往復: 読んだ値をそのまま更新に送っても、対象DB の値が変わらないこと（同時の更新の判定の値を含む）。
+  - 性質ベースのテスト: 変換の関数（サーバー側・画面側）は純粋な関数にし、jqwik・fast-check で性質（変換して戻すと元の時点に戻る、時差の無い型は時差を変えても値が変わらない など）を確かめる。
+- 日時を扱うテストは、実行する機械の既定のタイムゾーンに結果を預けない。バックエンドはテストの JVM の `user.timezone`（今は `Asia/Tokyo`）に頼る処理を変換の部品に持ち込まず、時差（`ZoneId`）と時計（`Clock`）を注入して確かめる。画面のテスト（Vitest）と E2E（Playwright の `timezoneId`）は時差を固定し、別の時差を確かめるテストはその時差を明示に指定する（手元は `Asia/Tokyo`、CI の機械は UTC のため）。
+- 画面を廃止する・移すことで既存の E2E を書き換える・消すときは、本数に数えない。ただし、その画面で確かめていた検査（例: 管理の仮の画面の E2E 030・090・130 の 403 の表示・アクセシビリティ・管理の権限の確認の API）は、別の画面か別のテストへ移して残し、移す前と後の件数を Build and Test で記録する。
+- Intent 261102-timezone-ui-polish（N6 と画面の仕上げを束ねたもの）で足す E2E は、N6 の日時の代表の流れ1本までとし、画面の仕上げ（アイコン・favicon・ホーム）は既存の E2E の書き換えと実際のブラウザの axe で確かめる（axe と表示の確かめは本数に数えない）。管理の仮の画面に新しい操作の流れを足すと決めたときは、要件定義で1本を足すかを決める。
+
 ## Change Control
 
 <!-- Affirmed by the team. Mode: strict or relaxed. Strict here holds for every intent and cannot be changed from chat. -->
@@ -182,6 +194,8 @@
 
 - コンテナ（Mailpit・otel-lgtm など）を入れ替えた後は、毎回 `docker inspect` でコンテナのイメージの版とダイジェスト（`RepoDigests`）が `compose.yaml` の記述と一致することを確かめ、食い違うときは `--force-recreate --no-deps` で作り直す。止まっているコンテナは作り直されず、古い版が残ることがあるため。
 
+- 実行時のタイムゾーンの設定（Dockerfile の `-Duser.timezone`・compose の `TZ`・テストの JVM の `user.timezone`・E2E の起動）を変えるときは、4か所を同じ値にそろえ、変えたことを配備の記録に書く（`-Dh2.compactThreads=1` と同じ扱い）。
+
 ## Code Style
 
 ### リポジトリ構成とビルド
@@ -198,6 +212,7 @@
 - 命名は言語の慣習に従う。Java はクラスが PascalCase、メソッドと変数が camelCase、定数が UPPER_SNAKE_CASE。TypeScript は camelCase、React の部品・画面は PascalCase のファイル名、フックは `useXxx`、Props は `XxxProps`。
 - ソースファイルの先頭の Apache License 2.0 ヘッダーは `/* ... */` の形式で書く（`/** ... */` は使わない）。ヘッダーの有無は CI で検査する（Java は Spotless の `licenseHeader`、TypeScript・CSS は検査スクリプト等）。
 - メールのテンプレート（Mustache）のライセンスヘッダーは、送るメールに出ない Mustache のコメント（`{{! ... }}`）で書く。HTML のコメント（`<!-- -->`）は受け手に届くため使わない。ライセンスヘッダーの検査の対象に、バックエンドのメールのテンプレートを加える。描いた本文にヘッダーが出ないことはテストで確かめる（Testing Posture を参照）。
+- 自作の SVG（アプリのアイコン・favicon など）は、先頭に HTML と同じ `<!-- ... -->` の形の Apache License 2.0 ヘッダーを置き、`frontend/scripts/check-license-header.mjs` の対象の拡張子に `.svg` を足す。favicon の `.ico`・`.png` などのバイナリはヘッダーを置けないため検査の対象の外とし、元の SVG から作る手順を README か記録に書く。SVG には `<script>`・イベントの属性（`onload` など）・外部の参照（外部の URL の `href`・読み込み）を入れない（固い制約は `project.md` の Forbidden）。
 
 ### バックエンド（Java）
 
@@ -223,7 +238,7 @@
 - 業務データの読み書きは、新しい機能のパッケージ（名前は設計の段で決める）に置き、自分の `<機能>BoundaryArchitectureTest` を足す。既存の `TargetDbBoundaryArchitectureTest`（書き込み・`JdbcTemplate`・`@Transactional` の禁止）と `RoleBoundaryArchitectureTest`（`role` に依存してよい相手）は、緩めずに足す形を先に検討し、緩める・依存してよい相手を足す必要があるときは、上の決まりどおりコード生成の計画に明記して依頼者の承認を得る。
 - 業務データの機能の code の定数は、ほかの機能と同じく機能の `XxxProblemTypes` と `XxxProblemTypeCatalog` に置き、403 は共通の `ACCESS_DENIED` を使い回す（重ねて定義しない）。
 - 業務データの SQL の DB の種類ごとの差（ページ送り・識別子の引用符・NULL の並びなど）は、repository の層の DB の種類ごとのクラス（既存の `SchemaQueries`・`MysqlSchemaQueries`・`PostgresSchemaQueries` の形）に閉じ、service の層は DB の種類で分岐しない。
-- 業務データの行の値は、DB の型ごとの対応を repository の層の1か所で決めて受け渡す。整数の長い型（`BIGINT` など）と小数（`DECIMAL`・`NUMERIC`）は文字列で渡し、日時はタイムゾーンを足さずに DB の値のまま渡す。バイナリと大きな文字列には上限を置く（値は設計の段で決める）。
+- 業務データの行の値は、DB の型ごとの対応を repository の層の1か所で決めて受け渡す。整数の長い型（`BIGINT` など）と小数（`DECIMAL`・`NUMERIC`）は文字列で渡す。日時のタイムゾーンの変換の形（どの型を、どこで、どの時差に直すか）は要件定義で決め、変換はサーバー側の1か所（今の `ColumnValueCodec`）と画面の側の1か所（`src/shared/format/`）に閉じる。JVM・ブラウザの既定のタイムゾーンを暗に使わず、時差を明示に渡す。バイナリと大きな文字列には上限を置く（値は設計の段で決める）。
 - 業務データの行の値（主キーの値を含む）を持つ型は、個人に関する値を持つ record と同じく `toString` を上書きして値を伏せる（`TraceAspect` が web・service・domain・repository の引数と戻り値を TRACE に出すため）。行を `Map` などの汎用の型のまま層をまたいで渡さない。JDBC の例外のメッセージは、行の値が入りうるため、エラー応答だけでなくアプリのログにも出さない（SQLState・業者のエラーの番号・例外のクラスの名前だけを出す）。主キーの値を道（URL）に置かないか、トレースの属性の道を道の雛形に置き換えるかは設計の段で決め、外部へ送る設定を有効にした結合テストと TRACE を有効にした `XxxSecretLeakIT` で確かめる（固い制約は `project.md` の Forbidden）。
 - 対象DB への問い合わせには、目的ごとの時間の上限を必ず付ける（今の `ReadPurpose` と `TargetDbProperties.QueryTimeout` の形に、一覧・詳細（と書き込み）の目的を足す。値は設計の段で決める）。
 - 対象DB へ書き込む場合（業務データの作成・更新・削除を範囲に入れる場合）は、書き込みの接続と資格情報を読み取りの接続（読み取りだけのアカウント）と分け、どちらも環境変数（`.env`）だけから受け取る（固い制約は `project.md` の Mandated）。対象DB のトランザクションは対象DB 用の別のトランザクションの管理者で業務処理の層に置き、内部DB の接続を持ったまま対象DB を待たない。監査など内部DB への書き込みは、対象DB の確定の後に別の短いトランザクションで行う。見本の対象DB に足す書き込みのアカウントとその権限は、README と見本の初期化に書く。

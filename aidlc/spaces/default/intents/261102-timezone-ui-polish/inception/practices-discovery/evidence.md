@@ -125,3 +125,7 @@ Walking Skeleton は変えていない。Testing Posture の `Methodology`（tes
 - K-95（PostgreSQL のセッションの時差が JVM の既定に従う）と、画面のテストの時差が固定されていないことは、どちらも見立てで未検証。I3・I4 の推奨はこの見立てに頼る。
 - I1 で Code Style の行を書き直すと、要件定義の前に「変換を1か所に閉じる」の形だけが先に決まる。具体の変換の形は要件定義の後に設計で書き足す必要がある（team.md の書き足しは次の Practices Discovery か学びの道で行う）。
 - 固い制約（Mandated・Forbidden）の新しい候補は、初稿の時点で依頼者が述べたものが無いため `None.` とした。I5 の SVG の安全の決まりは、面談の Q5 で依頼者が A を選んだため、統合で Forbidden に1行置いた（Mandated は `None.` のまま）。
+
+## 承認の後の直し（2026-11-03）
+
+- 承認の後の反映（`practices-promote`）で、`discovered-rules.md` の `## Mandated` の `None.`（新しい決まりが無いことの印）が、`aidlc/spaces/default/memory/project.md` の `## Mandated` の末尾に `None. (affirmed 2026-11-02)` という1行として写った。決まりとしての意味が無く読む人を迷わせるため、依頼者の承認（「はい、消してコミットして」）を得て、この1行と後の空行を手で消した。ほかの行は変えていない。
