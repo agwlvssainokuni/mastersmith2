@@ -39,7 +39,7 @@
 # 一時停止の間、内部DB を使う要求（ログイン・トークンの更新・監査の記録・DSL の操作・健全性の確認）は再開まで待つ。
 # 一時停止が約 30 秒を超えると、健全性の確認が 503 になり、コンテナが unhealthy になる（再開で戻る）。
 # compact は同時に1つだけ動く（この PC の上のロック）。途中で失敗・中断（Ctrl-C）しても、再開を必ず試みる。
-# 再開に失敗したときは、resume を試し、だめなら docker compose restart app で起動し直す（README の「内部DBのファイルの詰め直し」）。
+# 再開に失敗したときは、resume を試し、だめなら docker compose restart app で起動し直す（docs/internal-db.md の「内部DBのファイルの詰め直し」）。
 #
 # 終わりの値: 0 成功、1 詰め直していない・終わりを確かめられない（再開は済み）、2 使い方・前提の誤り、3 再開に失敗した。
 # 出力は接続の本数・ファイルの大きさ・時間だけで、秘密情報は含まない。
@@ -161,7 +161,7 @@ if { [ "${status}" -ne 0 ] && [ "${status}" -ne 2 ]; } || [ "${interrupted}" -ne
     resume_status=$?
     set -e
     if [ "${resume_status}" -ne 0 ]; then
-        echo "再開できませんでした。docker compose restart app で起動し直してください（README の「内部DBのファイルの詰め直し」）。" >&2
+        echo "再開できませんでした。docker compose restart app で起動し直してください（docs/internal-db.md の「内部DBのファイルの詰め直し」）。" >&2
         exit 3
     fi
     # 再開は済んだため、中断や想定の外の終わりの値（130 など）は「詰め直していない・終わりを確かめられない」（1）にそろえる。

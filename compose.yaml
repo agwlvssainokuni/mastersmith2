@@ -55,7 +55,7 @@ services:
     # アプリの穏やかな停止の待ち（30 秒）より長くする。
     stop_grace_period: 45s
     # CPU の上限は既定で 4（U2 の基盤の設計で U1 の「CPU 2」を上書き。照合の時間の目標は 4 が前提）。
-    # メモリの上限は既定で 2g（1g では高い負荷でメモリの上限で止まりうるため。README の「コンテナの資源の上限」）。
+    # メモリの上限は既定で 2g（1g では高い負荷でメモリの上限で止まりうるため。docs/deployment.md の「コンテナの資源の上限」）。
     # colima の VM が CPU 4・メモリ 6GiB に満たない PC では、.env の MASTERSMITH_CONTAINER_MEMORY で 1g などに下げる。
     # Docker の VM の CPU が 4 に満たない PC では、.env の MASTERSMITH_CONTAINER_CPUS で下げる。
     # JVM の設定（ヒープの割合など）は .env の MASTERSMITH_JAVA_OPTIONS で変える（Dockerfile の ENTRYPOINT）。
@@ -77,7 +77,7 @@ services:
       - ./docker/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
 
   # 手元の監視（Observability Setup で追加）。見たいときだけ profile monitoring で起動する。
-  # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（README の「手元の監視」）。
+  # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（docs/operations.md の「手元の監視」）。
   # 受け手・指標（Prometheus）・ログ（Loki）・トレース（Tempo）・画面（Grafana）を1つにした、手元の確認向けのコンテナ。
   lgtm:
     image: grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
@@ -101,7 +101,7 @@ services:
       - ./docker/monitoring/dashboards:/otel-lgtm/mastersmith-dashboards:ro
     # colima の VM（CPU 4・メモリ 6GiB）の中で、アプリ（上限 2GB）・見本の対象DB（512MB）と一緒に動かすための上限。
     # 900m では DSL の行を含むダッシュボードを開いたときに Grafana がメモリの上限で止められた（2026-09-25）ため 1536m にした。
-    # 負荷の試験の環境（上限 2GB）と同時に動かすと VM の上限に近づくため、負荷の試験の間は止める（README の「手元の監視」）。
+    # 負荷の試験の環境（上限 2GB）と同時に動かすと VM の上限に近づくため、負荷の試験の間は止める（docs/operations.md の「手元の監視」）。
     mem_limit: 1536m
     restart: "no"
     logging:

@@ -318,7 +318,7 @@ val osvScan =
     tasks.register<Exec>("osvScan") {
         description =
             "依存関係の脆弱性を OSV-Scanner で検査する（Gradle の lockfile・frontend と make-you-chic-ui の package-lock.json）。" +
-                "判定の決まりは README の「依存関係の脆弱性の判定」を参照。"
+                "判定の決まりは docs/verification.md の「依存関係の脆弱性の判定」を参照。"
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         val args = mutableListOf("osv-scanner", "scan", "source", "--format", "json")
         osvLockfiles.forEach { args += listOf("--lockfile", it) }
@@ -572,7 +572,7 @@ fun runTargetDbAdminSql(stage: String, script: String, singleTransaction: Boolea
         throw GradleException(
             "見本の PostgreSQL の「$stage」が失敗しました（終了コード ${result.exitCode}・誤りの件数 ${states.size}・" +
                 "SQLSTATE ${states.distinct().ifEmpty { listOf("なし") }.joinToString(",")}）。psql の誤りの出力は、" +
-                "一時のパスワードを含みうるため表示しません。README の「E2E の見本の PostgreSQL」の手順で確かめてください。",
+                "一時のパスワードを含みうるため表示しません。docs/verification.md の「E2E の見本の PostgreSQL」の手順で確かめてください。",
         )
     }
     return result.stdout.lines().map { it.trim() }.filter { it.isNotEmpty() }
@@ -613,7 +613,7 @@ fun checkE2eTargetDb() {
         throw GradleException(
             "見本の PostgreSQL（$e2eTargetDbService）が応答しません。E2E の前に " +
                 "docker compose -f compose.yaml -f docker/e2e/compose.targetdb-port.yaml --profile targetdb-postgres up -d targetdb-postgres " +
-                "で起動してください（.env.targetdb が要ります。README の「E2E の見本の PostgreSQL」）。",
+                "で起動してください（.env.targetdb が要ります。docs/verification.md の「E2E の見本の PostgreSQL」）。",
         )
     }
     // (b) PC の 127.0.0.1 の公開の番号に TCP で届くか（上乗せでの起動）。
@@ -639,7 +639,7 @@ fun checkE2eTargetDb() {
         throw GradleException(
             "見本の PostgreSQL の DB business で、PUBLIC に TEMPORARY が残っています。共有の見本の PG（配備したアプリも使う）を変える操作です。" +
                 "docker compose --profile targetdb-postgres exec -T targetdb-postgres psql -U target_admin -d business -v ON_ERROR_STOP=1 " +
-                "-c 'REVOKE TEMPORARY ON DATABASE business FROM PUBLIC' で取り上げてから流し直してください（README の U2 の手順と同じ）。",
+                "-c 'REVOKE TEMPORARY ON DATABASE business FROM PUBLIC' で取り上げてから流し直してください（docs/target-db.md の「既にある見本の DB に書き込みのアカウントを足す」の手順と同じ）。",
         )
     }
     // (d) 公開の番号から来る接続が trust に当たらず、誤ったパスワードで拒まれるか（基盤の設計のレビュー R-02）。
@@ -683,7 +683,7 @@ fun cleanupE2eTargetDbLeftovers() {
             "切った接続 ${countOf(lines, "terminated")}・残り $remaining）。",
     )
     if (remaining != 0) {
-        throw GradleException("E2E の見本の PG の前の残りを消しきれませんでした（残り $remaining）。README の手で消す手順で消してください。")
+        throw GradleException("E2E の見本の PG の前の残りを消しきれませんでした（残り $remaining）。docs/verification.md の手で消す手順で消してください。")
     }
 }
 
@@ -785,7 +785,7 @@ val e2eTargetDbCleanup =
                     "接頭辞の残り $remaining）。",
             )
             if (remaining != 0) {
-                throw GradleException("E2E の見本の PG に接頭辞のスキーマかロールが残っています（$remaining 件）。README の手で消す手順で消してください。")
+                throw GradleException("E2E の見本の PG に接頭辞のスキーマかロールが残っています（$remaining 件）。docs/verification.md の手で消す手順で消してください。")
             }
         }
     }
@@ -828,7 +828,7 @@ tasks.register<Exec>("e2eTest") {
         if (!reachable) {
             throw GradleException(
                 "メールの受け手（Mailpit、$mailpitInfoUrl）に届きません。E2E の前に " +
-                    "docker compose --profile mail up -d mailpit で起動してください（README の「メール（U1）」）。",
+                    "docker compose --profile mail up -d mailpit で起動してください（docs/mail.md の「メール」）。",
             )
         }
         // 業務データの E2E は見本の PostgreSQL を前提にする（team.md の Testing Posture。届かなければ手順を示して止める）。

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # 手元で試す対象DB（PostgreSQL）に、業務データの書き込みのアカウント mastersmith_writer を作り、権限を当てる（Intent
-# 261016-business-data-views の U2）。初めて起動したときに動き、既にあるボリュームには docker compose exec でこの台本を流す（README）。
+# 261016-business-data-views の U2）。初めて起動したときに動き、既にあるボリュームには docker compose exec でこの台本を流す（docs/target-db.md）。
 # 何度流しても同じ結果になる（無ければ作り、毎回パスワードと付与を当て直す）。
 #
 # 付与するスキーマ: sales（見本のスキーマ。ほかのスキーマを DSL に足すときは、同じ形の付与を足す）。

@@ -81,7 +81,8 @@ updates:
   # Dependabot が見ない固定先: docker/perf/compose.yaml、backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java、
   # perf/versions.env（grafana/k6 の K6_IMAGE と eclipse-temurin の jre の PERF_JRE_IMAGE。perf/README.md・perf/h2-shell.sh・
   # perf/dsl-mixed-memory.sh はここを読む。Intent 261025-deps-perf-carryover の FR3.6 で1か所にまとめた）、
-  # perf/README.md（eclipse-temurin の jdk・grafana/otel-lgtm）、README.md（eclipse-temurin の jre と jdk・Mailpit）、
+  # perf/README.md（eclipse-temurin の jdk・grafana/otel-lgtm）、docs/ の文書（docs/internal-db.md・docs/dsl.md・docs/operations.md の
+  # eclipse-temurin の jre と jdk、docs/mail.md の Mailpit。前は README.md にあった）、
   # docker/hikari-pool.sh（JDK_IMAGE の eclipse-temurin の jdk）。
   # eclipse-temurin の jdk は、Dependabot が見る固定先が無く知らせが来ないため、jre の知らせを受けたときに同じ版のタグ（-jdk-noble）で
   # 揃える（Intent 261015-deps-ui-carryover で 25.0.4.1_1 に、Intent 261101-maintenance-update で 25.0.5_8 に揃えた）。
@@ -109,7 +110,7 @@ updates:
   # compose.yaml のイメージ（手元でメールを見る受け手 Mailpit、手元の監視、見本の対象DB など。Intent 260925-user-management の U1）。
   # 見本の対象DB のイメージを上げるときは、結合テストのイメージの定数（TargetDbImages）と一緒に上げる。
   # どのイメージもダイジェストで固定している。上げるときは上の docker の項の「ダイジェストでのイメージの固定」の決まりに従い、
-  # Dependabot が見ない固定先（docker/perf/compose.yaml・TargetDbImages・perf/README.md・README.md）も手で揃える。
+  # Dependabot が見ない固定先（docker/perf/compose.yaml・TargetDbImages・perf/README.md・docs/ の文書）も手で揃える。
   - package-ecosystem: docker-compose
     directory: /
     schedule:

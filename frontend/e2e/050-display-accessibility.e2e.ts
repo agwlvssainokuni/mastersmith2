@@ -65,7 +65,7 @@ test.describe('050 display settings accessibility on the built WAR', () => {
       expect(unexpected, `${combo.name}: ${unexpected.join(' / ')}`).toEqual([])
       expect(
         known,
-        `${combo.name}: 既知の違反が一覧と違います（KNOWN_VIOLATIONS と README を見直す）`,
+        `${combo.name}: 既知の違反が一覧と違います（KNOWN_VIOLATIONS と docs/verification.md を見直す）`,
       ).toEqual(expectedKnown)
       expect(overflow.overflows, describeOverflow(combo.name, overflow)).toBe(false)
     })

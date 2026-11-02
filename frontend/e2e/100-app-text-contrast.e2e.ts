@@ -68,7 +68,7 @@ interface StateKnownViolation {
  * - 以前の2件（Tabs の選ばれたタブの文字が --color-primary、primary の Button の hover の文字が gray-900 で、一部の組で 4.5:1 に
  *   届かなかった）は、make-you-chic-ui の 077f5b4 で解消した（選ばれたタブは --color-primary-emphasis-text、hover の文字は
  *   --color-primary-hover-text＝白）。固定先を上げた後の 100 の実測で、2件とも当たらず、ほかの違反も出なかった。
- * - 新しく既知の制約を受け入れるときは、その組・状態・要素だけを載せ、README の既知の制約に書く。make-you-chic-ui が直したら外す。
+ * - 新しく既知の制約を受け入れるときは、その組・状態・要素だけを載せ、docs/appearance.md の既知の制約に書く。make-you-chic-ui が直したら外す。
  */
 const STATE_KNOWN_VIOLATIONS: readonly StateKnownViolation[] = []
 
@@ -158,7 +158,7 @@ async function checkState(page: Page, combo: DisplayCombo, state: ContrastState)
   expect(unexpected, `${combo.name} ${state}: ${unexpected.join(' / ')}`).toEqual([])
   expect(
     known.sort(),
-    `${combo.name} ${state}: 既知の違反が一覧と違います（STATE_KNOWN_VIOLATIONS と README を見直す）`,
+    `${combo.name} ${state}: 既知の違反が一覧と違います（STATE_KNOWN_VIOLATIONS と docs/appearance.md を見直す）`,
   ).toEqual(expectedKnown.sort())
 }
 

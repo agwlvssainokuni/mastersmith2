@@ -50,7 +50,7 @@ import org.testcontainers.utility.MountableFile;
  *   <li>(a) リポジトリの台本（01・02・03）を初期化の場所に写して起動し、書き込みのアカウント {@code mastersmith_writer} は見本の表の
  *       行の操作が通り、DDL（CREATE・DROP・ALTER・TRUNCATE・INDEX・VIEW・SCHEMA）と一時の表は拒まれ、読み取りのアカウントでは書けない
  *   <li>(b) 01・02 だけで起動し、03 を {@code exec} で2回流して同じ結果になり、パスワードを替えて流し直すと新しいパスワードで入れて
- *       古いパスワードでは入れない（既にあるボリュームへの足し方。README）
+ *       古いパスワードでは入れない（既にあるボリュームへの足し方。docs/target-db.md）
  * </ul>
  *
  * <p>パスワードはテストの中の乱数。値は環境変数で渡し、コマンド行に出さない。

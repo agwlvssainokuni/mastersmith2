@@ -1,0 +1,300 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR2.1",
+    "FR2.2",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR4.5",
+    "FR4.6",
+    "FR4.7",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR5.4",
+    "FR6.1",
+    "FR7.1",
+    "FR7.2",
+    "FR7.3",
+    "FR8.1",
+    "FR8.2",
+    "FR8.3",
+    "FR8.4",
+    "FR9.1",
+    "FR9.2",
+    "FR9.3",
+    "FR9.4",
+    "FR10.1",
+    "FR10.2",
+    "FR10.3",
+    "FR10.4",
+    "FR11.1",
+    "FR11.2",
+    "FR11.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4",
+    "NFR5"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml",
+      "note": "② Step 6。toolchain は 25 のまま（最新のパッチ 25.0.5+8 は大きな版の指定で入る）。.github/workflows/ci.yml の java-version \"25\" の形を保った。README の SDKMAN の識別子を 25.0.5.0+8-tem に"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "Dockerfile",
+      "note": "③ Step 16。JRE 25.0.5_8-jre-noble（Dockerfile・perf/versions.env）、JDK 25.0.5_8-jdk-noble（docker/hikari-pool.sh）。版のタグと index のダイジェストで固定"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "README.md",
+      "note": "②③で値を、⑤ Step 25・26 で文の書き直し（README.md・perf/README.md に 25.0.4 の残り 0 件）"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "frontend/package.json",
+      "note": "② Step 7。engines >=26 <27、build.gradle.kts の startsWith(\"v26.\")、ci.yml の node-version \"26\"、README の版と文（⑤ で「Node.js の版が 26 でない」に直した）"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "frontend/package.json",
+      "note": "② Step 7。NODE_OPTIONS=--no-experimental-webstorage が Node 26 で効くことを確かめ、設定は変えず"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml",
+      "note": "② Step 8。Spring Boot 4.1.2 が最新の安定版（変えず）。管理の OpenTelemetry 1.62.0・Jackson 3.1.7・H2 2.4.240"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml",
+      "note": "② Step 10。appender・networknt・h2.compactThreads=1 は外す条件に当たらず残した。理由と根拠を libs.versions.toml のコメントと .github/dependabot.yml の ignore に書き足した"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "gradle/libs.versions.toml",
+      "note": "対象の外（Jackson の BOM の上書きは無い）。Spring Boot の版が変わらず、Jackson も 3.1.7 のまま"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "frontend/package-lock.json",
+      "note": "② Step 9・11。backend/gradle.lockfile（SpotBugs 4.10.5・JaCoCo 0.8.16 の構成）・frontend の lockfile（eslint 10.14.0・i18next 26.6.0 など）を更新"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": ".github/dependabot.yml",
+      "note": "② Step 11・13。typescript 7.0.2 を判定基準 3（上流の未対応）で見送り、ignore に試した日と基準を書いた"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": ".github/dependabot.yml",
+      "note": "② Step 13・③ Step 16。typescript は試した上で残し、eclipse-temurin は残し、collector の -386 を 0.164.0-386 に合わせた"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "gradle/wrapper/gradle-wrapper.properties",
+      "note": "② Step 6。9.8.2 が最新（wrapper を2回流して差が無いことを確かめた）"
+    },
+    {
+      "id": "FR4.5",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml",
+      "note": "② Step 9・③ Step 15。OSV-Scanner 2.7.0（SHA-256 を配布元と照合）、Gitleaks 8.30.1 は最新（.pre-commit-config.yaml も同じ）、SpotBugs 4.10.5、palantir-java-format 2.103.0"
+    },
+    {
+      "id": "FR4.6",
+      "status": "OK",
+      "target": "frontend/package-lock.json",
+      "note": "② Step 12。axe-core は 4.14.0 のまま（最新）で lockfile に1つ。E2E 277 件と vitest-axe を含む画面のテストは通過"
+    },
+    {
+      "id": "FR4.7",
+      "status": "OK",
+      "target": "backend/gradle.lockfile",
+      "note": "② Step 9。新しい部品は増えていない（jspecify は既存の部品が spotbugs の構成に加わっただけ）"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/package-lock.json",
+      "note": "① Step 1・3。make-you-chic-ui cab4207→cae5fed、java-mustache-processor 8d44c36→d61ba6d（0.1.1）。固定先の更新の専用のコミット 28dd694b"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "vendor/make-you-chic-ui/package-lock.json",
+      "note": "① Step 1。上流の main から辿れること、lockfile の差（増えた1・変わった9）、hasInstallScript は fsevents の1件のまま増えず。記録は generation-notes.md"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "backend/gradle.lockfile",
+      "note": "① Step 3・5。推移依存 slf4j-api 2.0.20 は既に lockfile にあり変化なし。develop へ fast-forward"
+    },
+    {
+      "id": "FR5.4",
+      "status": "Deferred",
+      "target": "上流の公開待ち（A2 の braces は上流でも 3.0.3 のまま直った版なし、A3 の依頼（5）の口は cae5fed に無い。① Step 2・4）"
+    },
+    {
+      "id": "FR6.1",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml",
+      "note": "③ Step 15。setup-gradle を v6.4.1 の SHA に。ほかの Actions は最新"
+    },
+    {
+      "id": "FR7.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java",
+      "note": "③ Step 16。postgres 18.6・mysql 26.10.0・mariadb 13.0.2 は版が最新のまま、組み直しの新しいダイジェストに compose.yaml・docker/perf/compose.yaml とそろえた。verify の3種類の結合テストで通過"
+    },
+    {
+      "id": "FR7.2",
+      "status": "OK",
+      "target": "compose.yaml",
+      "note": "③ Step 16。Mailpit v1.33.0・otel-lgtm 0.39.0・collector 0.164.0、k6 2.3.0 の新しいダイジェスト（perf/versions.env）"
+    },
+    {
+      "id": "FR7.3",
+      "status": "OK",
+      "target": "compose.yaml",
+      "note": "③ Step 17。Mailpit・見本の PG・lgtm を --no-deps --force-recreate で作り直し、docker inspect で版とダイジェストが一致"
+    },
+    {
+      "id": "FR8.1",
+      "status": "OK",
+      "target": "README.md・docs/（12 ファイル）・perf/README.md",
+      "note": "⑤ Step 25・26。Intent・単位・Bolt の名前と経緯を外し、perf/README.md の「## 履歴」を消した。依頼者の決定 B（2026-11-02）で README.md を入口（概要・前提・最初の起動・文書の目次・ライセンス）にし、詳しい節を docs/ の主題ごとの 12 ファイルへ移した（中身は変えず、参照だけを移った先に直した）"
+    },
+    {
+      "id": "FR8.2",
+      "status": "OK",
+      "target": "README.md・docs/・perf/README.md",
+      "note": "⑤ Step 24・27。コードブロックのコマンドの行と大文字の名前の一覧を前後で比べた。README.md と docs/ を合わせた一覧は 5950d786 の README.md と、コマンドの行 236 行のうち参照の直しの1行（docs/deployment.md の戻し方のコメント「上のスモークテスト」→「README.md のスモークテスト」）だけが違い、名前の一覧は一致。perf/README.md の差は Intent の名前・Bolt の名前・履歴の参照の削除だけ（generation-notes.md の付録）"
+    },
+    {
+      "id": "FR8.3",
+      "status": "OK",
+      "target": "README.md",
+      "note": "⑤ Step 25。固定先を make-you-chic-ui cae5fed・java-mustache-processor d61ba6d（0.1.1）に直し、移り変わりの列は消した"
+    },
+    {
+      "id": "FR8.4",
+      "status": "OK",
+      "target": "build.gradle.kts・.env.example・.env.targetdb.example・.gitignore・compose.yaml・.github/dependabot.yml・backend/src/main/resources/application.yaml・docker/・perf/・frontend/e2e/",
+      "note": "⑤ Step 23・27。README の節を参照する箇所を、節が移った docs/ のファイルに直した（洗い出しは決定 B の後にやり直した。generation-notes.md の ⑤ の「決定 B」）。Flyway の V7・V8・V10〜V12 の「README の「戻し方」」は照合の値が変わるため触らず、README.md の文書の目次から docs/deployment.md の「戻し方」へたどれるようにした。frontend/src/shared/unsaved-guard/useUnsavedGuard.ts のコメント1か所は frontend の本体のため触らなかった。team.md の1か所（書き込みのアカウントを「README と見本の初期化に書く」）は直さずに依頼者に諮る"
+    },
+    {
+      "id": "FR9.1",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlBuilder.java",
+      "note": "④ Step 18。1038 が起き、依頼者の決定 案 A で一覧の並びを先頭 100 字にそろえた。再現のテストは backend/src/test/java/cherry/mastersmith/businessdata/web/MysqlDeepPageSortIT.java ほか3種類（直す前は MySQL 3 件が 500、直した後は 9 件通過）"
+    },
+    {
+      "id": "FR9.2",
+      "status": "OK",
+      "target": "frontend/vitest.config.ts",
+      "note": "④ Step 19。coverage.include に perf/redact-k6-evidence.mjs を足した（行 94.23%・分岐 90.65%）。下限と除外は変えず"
+    },
+    {
+      "id": "FR9.3",
+      "status": "OK",
+      "target": "frontend/eslint.config.js",
+      "note": "④ Step 20。ESLint の規則と、// @ts-check と JSDoc による型の検査（frontend/tsconfig.perf-tool.json）。Gradle のタスク perfToolEslint・perfToolTypecheck で verify と CI から流れる"
+    },
+    {
+      "id": "FR9.4",
+      "status": "OK",
+      "target": "backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java",
+      "note": "④ Step 21。stage が null のときは固定の名前 UNKNOWN を出す。テストは backend/src/test/java/cherry/mastersmith/businessdata/service/BusinessDataWriteReferenceTest.java（直す前は失敗、直した後は通過）"
+    },
+    {
+      "id": "FR10.1",
+      "status": "Deferred",
+      "target": "Build and Test（code-generation-plan.md の「Build and Test に引き継ぐこと」4）"
+    },
+    {
+      "id": "FR10.2",
+      "status": "Deferred",
+      "target": "Build and Test（同じ 4。線の表は perf/README.md の「今の基準の一覧」と一致し、⑤ の書き直しで値は変えていない）"
+    },
+    {
+      "id": "FR10.3",
+      "status": "Deferred",
+      "target": "Build and Test（同じ 4。伏せ字の道具と --scan・gitleaks dir・eyJ の検索）"
+    },
+    {
+      "id": "FR10.4",
+      "status": "Deferred",
+      "target": "Build and Test（同じ 4。線を割った場面だけ2回目を流す）"
+    },
+    {
+      "id": "FR11.1",
+      "status": "Deferred",
+      "target": "Deployment Pipeline・Deployment Execution（code-generation-plan.md の「Build and Test に引き継ぐこと」5）"
+    },
+    {
+      "id": "FR11.2",
+      "status": "Deferred",
+      "target": "Deployment Execution（同じ 5。古いイメージの片付け）"
+    },
+    {
+      "id": "FR11.3",
+      "status": "Deferred",
+      "target": "Deployment Execution（同じ 5。main への取り込み）"
+    },
+    {
+      "id": "NFR1",
+      "status": "OK",
+      "target": "backend/build.gradle.kts",
+      "note": "カバレッジの下限・除外・packagesJudgedByTotal は変えていない。frontend/vitest.config.ts の thresholds も同じ。⑤ の書き直しでも perf/README.md の線と物差しの値は変えていない"
+    },
+    {
+      "id": "NFR2",
+      "status": "OK",
+      "target": "frontend/.npmrc",
+      "note": "ignore-scripts=true のまま。①〜⑤ の verify の OSV-Scanner で High 以上なし（Moderate 3件は持ち越し、code-summary.md）"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "build.gradle.kts",
+      "note": "①〜④ は clean 付きの verify と E2E、⑤ は verify（文書と参照の直しだけ）を通してから統合"
+    },
+    {
+      "id": "NFR4",
+      "status": "OK",
+      "target": "Dockerfile",
+      "note": "画面の機能・API の応答の形・Flyway の移行は変えていない（P1 は一覧の並びの式だけ、T3 は WARN のキーだけ）。戻しは直前の版のイメージ"
+    },
+    {
+      "id": "NFR5",
+      "status": "OK",
+      "target": "build.gradle.kts",
+      "note": "verify の時間を記録（① 27m39s・② 26m32s・③ 25m55s・④ 26m19s・⑤ 26m31s）。CI の検査の job の時間は Build and Test で記録する"
+    }
+  ]
+}

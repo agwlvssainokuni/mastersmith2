@@ -90,16 +90,16 @@
 
 ### ⑤ README の書き直し（ブランチ `docs/261101-readme`、squash で統合）
 
-- [ ] **Step 23**（FR8.4）: README.md・perf/README.md の節の名前・番号を参照している箇所を、`aidlc/spaces/default/memory/`（`team.md`・`project.md`）・`.github/`・`docker/`・`perf/`・`frontend/`・`backend/` のコメントと文書から `grep` で洗い出し、一覧にする（`aidlc/spaces/default/intents/` の下の過去の記録は書き換えない）。
-- [ ] **Step 24**（FR8.2）: 書き直しの前に、README.md と perf/README.md が載せるコマンド（コードブロックの行）と環境変数の名前の一覧を取り出して保存する（`generation-notes.md` の付録）。
-- [ ] **Step 25**（FR8.1・FR8.3）: README.md を、今の手順と設定だけの形に書き直す。Intent・単位・Bolt の名前を見出しと本文から外し、経緯（「〜で足した」「前は〜だった」など）を消す。手順のコマンド・前提・値は変えない（①〜③で変わった版は新しい値）。make-you-chic-ui の固定先の記述を今の値に直す。読む順は「前提 → 起動と配備 → 運用（バックアップ・戻し・監視）→ 開発（検査・テスト・E2E）」を目安にする。
-- [ ] **Step 26**（FR8.1）: perf/README.md を同じ方針で書き直し、末尾の「## 履歴」を消す。合否の線と物差しの記述（下の表）は値を変えない。
-- [ ] **Step 27**（FR8.2・FR8.4）: 書き直しの後のコマンドと環境変数の名前の一覧を取り出して Step 24 と比べ、差（消した・足した・名前が変わった）がすべて意図したもの（版の更新・経緯だけの記述の削除）であることを確かめて記録する。Step 23 の参照が切れていれば、参照の側を直す（決まりの文書 `team.md`・`project.md` を直すときは、直す前に依頼者に諮る）。
+- [x] **Step 23**（FR8.4）: README.md・perf/README.md の節の名前・番号を参照している箇所を、`aidlc/spaces/default/memory/`（`team.md`・`project.md`）・`.github/`・`docker/`・`perf/`・`frontend/`・`backend/` のコメントと文書から `grep` で洗い出し、一覧にする（`aidlc/spaces/default/intents/` の下の過去の記録は書き換えない）。
+- [x] **Step 24**（FR8.2）: 書き直しの前に、README.md と perf/README.md が載せるコマンド（コードブロックの行）と環境変数の名前の一覧を取り出して保存する（`generation-notes.md` の付録）。
+- [x] **Step 25**（FR8.1・FR8.3）: README.md を、今の手順と設定だけの形に書き直す。Intent・単位・Bolt の名前を見出しと本文から外し、経緯（「〜で足した」「前は〜だった」など）を消す。手順のコマンド・前提・値は変えない（①〜③で変わった版は新しい値）。make-you-chic-ui の固定先の記述を今の値に直す。読む順は「前提 → 起動と配備 → 運用（バックアップ・戻し・監視）→ 開発（検査・テスト・E2E）」を目安にする。
+- [x] **Step 26**（FR8.1）: perf/README.md を同じ方針で書き直し、末尾の「## 履歴」を消す。合否の線と物差しの記述（下の表）は値を変えない。
+- [x] **Step 27**（FR8.2・FR8.4）: 書き直しの後のコマンドと環境変数の名前の一覧を取り出して Step 24 と比べ、差（消した・足した・名前が変わった）がすべて意図したもの（版の更新・経緯だけの記述の削除）であることを確かめて記録する。Step 23 の参照が切れていれば、参照の側を直す（決まりの文書 `team.md`・`project.md` を直すときは、直す前に依頼者に諮る）。
 - [ ] **Step 28**（NFR3）: verify（文書だけの変更のため clean なし）を流し、通ったら `develop` へ squash で統合する。
 
 ### 記録
 
-- [ ] **Step 29**: `code-summary.md`（版の前後・見送ったもの・固定の結果・P1・T1〜T3 の結果・計画との差）と `traceability.json`（FR・NFR ごとの状態と手順）を書く。
+- [x] **Step 29**: `code-summary.md`（版の前後・見送ったもの・固定の結果・P1・T1〜T3 の結果・計画との差）と `traceability.json`（FR・NFR ごとの状態と手順）を書く。
 
 ## Testing Contract
 

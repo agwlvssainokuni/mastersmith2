@@ -17,7 +17,7 @@
 // E2E の trace の設定の読み方を1か所に置く（Intent 260930-user-admin の U5、security-design.md 3.2・3.7）。
 // playwright.config.ts の use.trace と、110・120 の test.use({ trace: e2eTraceMode() }) が同じ読み方を使う。
 // - 既定は off（trace を残さない）。手元で調べるときだけ E2E_TRACE=on か retain-on-failure で有効にし、その実行は
-//   合否に使わず、見た後に frontend/test-results/ を消す（README の手順）。
+//   合否に使わず、見た後に frontend/test-results/ を消す（docs/verification.md の手順）。
 // - 決まった3つの外の値は、黙って off にせず、設定の読み込みで誤りにして止める。
 // - playwright.config.ts を読み込まない（adminLogin.ts が設定を読み込むため、循環させない）。
 // - 報告の部品と使い捨ての確かめの台本が Node の型の取り除き（--experimental-strip-types）でも読めるよう、Node の外の

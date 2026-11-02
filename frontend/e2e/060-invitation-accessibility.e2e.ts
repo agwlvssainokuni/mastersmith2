@@ -145,7 +145,7 @@ async function checkState(
   expect(unexpected, `${combo.name} ${state}: ${unexpected.join(' / ')}`).toEqual([])
   expect(
     known,
-    `${combo.name} ${state}: 既知の違反が一覧と違います（INVITATION_KNOWN_VIOLATIONS と README を見直す）`,
+    `${combo.name} ${state}: 既知の違反が一覧と違います（INVITATION_KNOWN_VIOLATIONS と docs/verification.md を見直す）`,
   ).toEqual(expectedKnown)
   expect(overflow.overflows, describeOverflow(`${combo.name} ${state}`, overflow)).toBe(false)
 }

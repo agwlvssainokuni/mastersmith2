@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # アプリの設定。秘密情報の値はここに書かず、環境変数の参照だけを置く。
-# 環境変数の一覧は README.md と .env.example を参照。
+# 環境変数の一覧は docs/configuration.md と .env.example を参照。
 
 mastersmith:
   web:
@@ -135,7 +135,7 @@ mastersmith:
     history-limit: ${MASTERSMITH_DSL_HISTORY_LIMIT:20}
   mail:
     # メールの差出人（U1）。SMTP の接続先・ポート・資格情報・暗号化・時間切れは Spring Boot の spring.mail.* で受け取る
-    # （環境変数 SPRING_MAIL_*。値はここに書かず、.env だけから渡す。README の「メール（U1）」を参照）。
+    # （環境変数 SPRING_MAIL_*。値はここに書かず、.env だけから渡す。docs/mail.md の「メール」を参照）。
     # 接続先（SPRING_MAIL_HOST）と差出人の両方がそろい、設定に不正が無いときだけメールを送る。無ければ送らない（起動は続く）。
     # 差出人のメールアドレス（小文字・前後に空白の無い形）
     from: ${MASTERSMITH_MAIL_FROM:}
@@ -186,7 +186,7 @@ spring:
   # 接続先は環境変数だけで切り替えられる。パスワードは環境変数で渡し、ここには書かない。
   # DEFRAG_ALWAYS=TRUE は、DB を閉じるとき（アプリの停止時）にファイルを詰め直す指定。DSL の本文（最大 10MB）の履歴は
   # 上限を超えた古い行を消しても、H2 のファイルは閉じるときに詰め直さないと縮まず、投入と適用を重ねるたびに大きくなる
-  # （起動し直しても縮まない）。MASTERSMITH_DB_URL で接続先を上書きするときも、この指定を付ける（README を参照）。
+  # （起動し直しても縮まない）。MASTERSMITH_DB_URL で接続先を上書きするときも、この指定を付ける（docs/configuration.md を参照）。
   datasource:
     url: ${MASTERSMITH_DB_URL:jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE}
     username: ${MASTERSMITH_DB_USERNAME:sa}
@@ -195,7 +195,7 @@ spring:
       pool-name: mastersmith-db
       # 接続の数の上限。既定は 30 で、環境変数 MASTERSMITH_DB_MAXIMUM_POOL_SIZE で変えられる。
       # ログインなどでは、確定の後の監査の記録が業務の接続（1本目）を持ったまま2本目を借りるため、
-      # 同時の要求の数がこの上限に達すると監査の記録が欠けうる（README の「監査ログ（U4）」の既知の制約）。
+      # 同時の要求の数がこの上限に達すると監査の記録が欠けうる（docs/operations.md の「監査ログ」の既知の制約）。
       maximum-pool-size: ${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}
       # 接続を借りる待ちの上限（ミリ秒）
       connection-timeout: 5000
@@ -203,7 +203,7 @@ spring:
       # H2 は接続が1本でも開いている間は詰め直さないため、運用の道具（docker/hikari-pool.sh の compact）が、プールの MBean
       # （com.zaxxer.hikari:type=Pool (mastersmith-db)。名前に上の pool-name が入る）の一時停止 → 接続の破棄 → 0 本を待つ → 再開
       # を呼ぶ。最後の接続が閉じたときに、接続先の DEFRAG_ALWAYS=TRUE に従って H2 が詰め直す（この指定が無いと縮まない）。
-      # 一時停止の間に内部DB を使う要求は、再開まで待たされる（接続を借りる待ちの上限 5 秒は効かない）。手順は README の
+      # 一時停止の間に内部DB を使う要求は、再開まで待たされる（接続を借りる待ちの上限 5 秒は効かない）。手順は docs/internal-db.md の
       # 「内部DBのファイルの詰め直し」を参照。
       # JMX は外に公開しない（遠隔の接続 com.sun.management.jmxremote.* は有効にしない）。操作できるのは、この PC で Docker を
       # 使え、同じ利用者の番号でアプリの JVM に attach できる人だけ。何もしなければ、今までと同じ動きになる。
@@ -394,7 +394,7 @@ logging:
     # 障害の調べ方: ErrorPathController の ERROR「想定外のエラーが起きました」が、原因の例外（スタックトレース付き）と応答と同じ
     #   traceId を持つ。応答（500 の Problem Details）の traceId で、その行を探す。
     # 代わりに失うもの: 応答を書き始めた後（確定した後）に例外がサーブレットの外へ出たときは /error へ回らないため、その例外は
-    #   このロガーでしか出ず、ログに残らなくなる（README の「例外のログ」を参照）。今のアプリの API は応答を流しながら書く形ではない。
+    #   このロガーでしか出ず、ログに残らなくなる（docs/operations.md の「例外のログ」を参照）。今のアプリの API は応答を流しながら書く形ではない。
     "[org.apache.catalina.core.ContainerBase.[Tomcat].[localhost].[/].[dispatcherServlet]]": OFF
     # Spring の JDBC の部品が文の引数の値を TRACE に出すログ（StatementCreatorUtils）は出さない（Intent 261004-role-menu の U4、
     #   security-design.md 4.3）。

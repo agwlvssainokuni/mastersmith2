@@ -28,7 +28,7 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 source "${ROOT}/perf/versions.env"
 
 if ! docker info > /dev/null 2>&1; then
-  echo "Docker が動いていません。colima start で起動し、README の DOCKER_HOST を渡してからやり直してください（飛ばしません）。" >&2
+  echo "Docker が動いていません。colima start で起動し、docs/target-db.md の DOCKER_HOST を渡してからやり直してください（飛ばしません）。" >&2
   exit 1
 fi
 command -v jq > /dev/null 2>&1 || {

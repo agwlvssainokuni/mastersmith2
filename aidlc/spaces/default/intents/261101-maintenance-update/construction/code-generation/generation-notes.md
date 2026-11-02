@@ -421,3 +421,213 @@ Step 22 のうち、`develop` への squash の統合は指揮役が依頼者の
 - T2 の ESLint は frontend の `npm run lint`（`eslint .`）ではなく、新しい Gradle のタスク `perfToolEslint` から根で呼ぶ形にした（既存の `perfToolLint`・`perfToolFormatCheck` と同じ形）。
 - T2 の実験で一度 `sed -i.bak` で `frontend/eslint.config.js` を変えてすぐ元に戻した（決まりの「シェルで書かない」との差。最終の内容はファイルの道具で書いた）。
 - verify の 1 回目の `checkToolchain` の失敗（上）。
+
+## ⑤ README の書き直し（ブランチ `docs/261101-readme`、2026-11-02）
+
+`develop`（`5950d786`）から `docs/261101-readme` を作った（同じ作業フォルダの中）。始める前の作業フォルダの未コミットの変更は、`.idea/misc.xml`（この作業の前から）と監査の記録・`.testing-brief.txt`（指揮役のもの）だけで、どれも触っていない。
+
+### Step 23（FR8.4）: README の節を参照している箇所
+
+`aidlc/spaces/default/memory/`・`.github/`・`docker/`・`perf/`・`frontend/`・`backend/` と根の設定のファイルを `grep "README"` で洗い出した（`node_modules`・`build`・`vendor`・`aidlc/spaces/default/intents/` の外）。節の名前を「」で参照しているもの:
+
+| 参照の側 | 参照している節 | 書き直しの後 |
+|---|---|---|
+| `.env.example`（20・25 行） | README「コンテナの資源の上限」 | そのまま当たる |
+| `.env.example`（38 行） | README「監査ログ（U4）」の既知の制約 | 切れた → 「監査ログ」に直した |
+| `.env.example`（158 行） | README「メール（U1）」 | 切れた → 「メール」に直した |
+| `.env.targetdb.example`（29 行） | README「対象DB」の節 | そのまま当たる |
+| `backend/src/main/resources/application.yaml`（138 行） | README「メール（U1）」 | 切れた → 「メール」に直した |
+| `backend/src/main/resources/application.yaml`（198 行） | README「監査ログ（U4）」の既知の制約 | 切れた → 「監査ログ」に直した |
+| `backend/src/main/resources/application.yaml`（397 行） | README「例外のログ」 | そのまま当たる |
+| `backend/src/main/resources/db/migration/V7・V8・V10・V11・V12`（コメント） | README「戻し方」 | そのまま当たる（移行のファイルは Flyway の照合の値が変わるため触らない） |
+| `build.gradle.kts`（69・321・575・616 行） | README「前提の道具」「依存関係の脆弱性の判定」「E2E の見本の PostgreSQL」 | そのまま当たる（「E2E の見本の PostgreSQL」は見出しの単位の名前を外して文字どおり一致） |
+| `build.gradle.kts`（642 行） | 「README の U2 の手順」 | 切れた → 「既にある見本の DB に書き込みのアカウントを足す」の手順に直した |
+| `build.gradle.kts`（831 行） | README「メール（U1）」 | 切れた → 「メール」に直した |
+| `build.gradle.kts`（686・788 行） | README の「手で消す手順」 | そのまま当たる |
+| `compose.yaml`（58・80・104 行） | README「コンテナの資源の上限」「手元の監視」 | そのまま当たる |
+| `docker/hikari-pool.sh`（42・164 行） | README「内部DBのファイルの詰め直し」 | そのまま当たる |
+| `docker/targetdb/*/03-writer-account.sh`・`backend/src/test/.../TargetDbSampleInitScriptIT.java` | 「README」（節の名前なし） | そのまま |
+| `settings.gradle.kts`（36 行）・`gradle/libs.versions.toml`（67・74 行） | README「取得と準備」「ライセンス」 | そのまま当たる |
+| `docker/perf/compose.yaml`・`perf/*.sh`・`perf/biz/make-biz-seed.sh`・`perf/lib/perf-db-url.sh`・`perf/k6/*` | perf/README「DSL の時間を測る」「業務データの場面」「今の基準の一覧」「k6 の外の線」「利用者の設定と招待の場面」「利用者の管理の場面」「接続プールの上限を下げて流す」「グループの管理の場面」「ロールの管理の場面」「他テーブル参照の保存前の確かめの場面」「(b) 節」「受け付ける形」「準備の台本」 | そのまま当たる（perf/README の見出しの名前は変えていない） |
+| `frontend/e2e/*.e2e.ts`・`frontend/e2e/support/traceMode.ts`・`frontend/src/shared/unsaved-guard/useUnsavedGuard.ts` | 「README を見直す」「README の既知の制約」など（節の名前なし） | そのまま |
+| `frontend/src/app/registry/types.ts` | `features/README.md` の節 | 別の文書（対象外） |
+| `aidlc/spaces/default/memory/team.md`・`project.md` | 「README の DOCKER_HOST」「README の手順」「perf/README.md」など（節の名前・番号の参照なし） | そのまま。**決まりの文書の直しは要らない** |
+
+### Step 24（FR8.2）: 書き直しの前の一覧
+
+書き直しの前の版は `5950d786` で、同じ一覧を git から取り直せる。取り出し方と、前の版の件数・指紋は付録 A に置いた。
+
+### Step 25（FR8.1・FR8.3）: README.md
+
+- 1,678 行 → 1,660 行。冒頭の説明（「アプリの骨格（U1）」）を今の機能の一覧に書き直した。
+- make-you-chic-ui の固定先の記述（`ecb07e9` と移り変わりの列）を、今の固定先（make-you-chic-ui `cae5fed`・java-mustache-processor `d61ba6d`（0.1.1））だけにした。
+- `./gradlew verify` の説明の「Node.js の版が 24 でない」を 26 に直した（② で値を上げたときの残り）。
+- 見出しと本文から、Intent の名前・単位（`（U1）`〜`（U8）`、`U2 が提供` など）・Bolt（B3〜B9）の名前を外した。単位の名前で機能を指していた所（差し込み口の表の「使う単位」の列、アクセス制御の表の「受け持つ単位」の列など）は機能の名前（認証・アクセス制御・監査ログ・招待 など）に置き換えた。
+- 経緯だけの記述を消した: 「以前は〜」「今までどおり」「〜で足しました」「後の単位の受け持ちです」、既知の違反が解消した経緯（E2E 050〜100 の注記、ブランドカラーのコントラストの節の「解消した既知の制約」）、3つの「契約との差」の節（招待と登録の完了は、今も効く形だけを「形の補足」として残した）、V7・V8 の移行の確かめの経緯、配備の段で決めるという記述。
+- 節の並びは大きく入れ替えていない（計画との差 1）。
+
+### Step 26（FR8.1）: perf/README.md
+
+- 1,753 行 → 1,558 行。末尾の「## 履歴」（見出しの対応の表と H1〜H76）を消し、本文からその節を指す「（履歴 Hnn）」の参照をすべて外した（冒頭の「過去の結果は履歴の章を見る」は、`aidlc/` の記録と git の履歴を指す文に直した）。
+- 単位の名前（`U2-NFR6.1` などの目標の ID の頭、`U1`〜`U5` の場面の呼び方）・Bolt の名前（B4〜B7）・Intent の名前を外し、場面の名前（ロールの管理の場面・参照の読み取りの場面 など）に置き換えた。`(a)`〜`(c)` の見出しの要件の ID も外した（`perf/dsl-mixed-memory.sh` が参照する「(b) 節」の見出しの頭 `(b)` は残した）。
+- 線の経緯の文（「〜に緩めた」「〜に改めた」「Build and Test の決定」）は、今の線の値だけを書く形にした。**合否の線と物差しの値は変えていない**（「今の基準の一覧」の表は、注記の経緯だけを外し、値と物差しは計画の「Build and Test に引き継ぐこと」の表と同じ）。
+- 例のタグ `mastersmith:<Intent の名前>` は `<試験の名前>` にした（Intent ごとに作る決まりの文も「試験ごと」に）。
+
+### Step 27（FR8.2・FR8.4）: 前後の比べと参照
+
+- コマンドの行（コードブロックの中の、コメントだけの行と空行を除いた行）: README.md は 236 行 → 236 行で**差なし**。perf/README.md は 679 行 → 679 行で、中身の変わった行は次の5か所だけ（どれも意図したもの）:
+  1. `docker build -t mastersmith:<Intent の名前> .   # 例: mastersmith:user-admin-followup` → `<試験の名前>`・例 `perf-run`（Intent の名前の削除）
+  2. `MASTERSMITH_IMAGE_TAG=<Intent の名前>` → `<試験の名前>`（同じ）
+  3. `zsh "$D/role-run.sh" "$D"   # B4・B5 の場面（上の手順）` → コメントを「ロールの管理の場面」に（Bolt の名前の削除）
+  4. `docker exec … memory.peak …   # …を参照）（履歴 H31）` → 末尾の「（履歴 H31）」を消した（履歴の参照の削除）
+  5. `zsh "$D/role-run.sh" "$D"   # ロールの管理の節の B4・B5 の場面（流すときだけ）` → 「ロールの管理の節の場面」（Bolt の名前の削除）
+  - ほかに、コードブロックの中のコメントだけの行「# 前例は履歴 H50 にある。」を前の行のコメントに寄せて消した（コメントだけの行のため、コマンドの行には数えない）。
+- 大文字の名前の一覧（`[A-Z][A-Z0-9]*_[A-Z0-9_]*[A-Z0-9]` の重なりを除いた一覧）: README.md は 240 → 240、perf/README.md は 117 → 117 で、**どちらも一致**（付録 B）。
+- Step 23 の切れた参照6か所を参照の側で直した（上の表）。`team.md`・`project.md` は直していない（直す必要が無い）。
+- 書き直しの後に、Intent・Bolt・単位の名前と古い版（`25.0.4`・`ecb07e9`・`v1.32`・`0.38.0`・`0.163`）を両方の README で探し、0 件を確かめた（例外: 「機能の Intent ごとに代表の流れを1本まで」は team.md の決まりの引用、`V7__u2_…` などは移行のファイルの名前）。
+
+### 書き直しの途中の誤りと戻し
+
+- 同じファイルへの `replace_all` を並べて送ったため、一部の置き換えが後の書き込みで上書きされて戻った（`（U1）` などが 53 か所のうち 35 か所残った）。1つずつ順に流し直して 0 件にした。ほかの直し（置き換えの対象が1か所のもの）は、並べて送った後に目印の文字列を数え、すべて残っていることを確かめた。
+- 行末の断片を空に置き換えると、その後の改行も一緒に消える動きがあり、README.md の見出しの後の空行が 13 か所、冒頭の段落の後の空行が1か所、perf/README.md のコードブロックの1行（`pmset -g log …`）が前の行とつながった。どれも戻し、見出しの直後の空行の抜けを前の版と比べて 0 件（コードブロックの中のコメントを除く）であること、コマンドの行の比べで上の5か所のほかに差が無いことを確かめた。
+
+### 計画との差（⑤）
+
+1. 節の並びは、計画の目安（前提 → 起動と配備 → 運用 → 開発）に大きく入れ替えず、今の並びのまま中身を書き直した。README は 1,600 行を超え、並べ替えると差が読めなくなり、コマンドの行の前後の比べと節の参照の確かめが難しくなるため。
+2. Step 24 の一覧は、全文を貼らず、取り出し方・前の版のコミット・件数・SHA-256（コマンドの行）と、名前の一覧（付録 B）で残した。
+3. 参照の直しで `backend/src/main/resources/application.yaml` のコメント2行を変えた（文書だけのブランチの例外。コードと設定の値は変えていない）。
+4. perf/README.md の目標の ID のうち、単位の名前を頭に持たないもの（`NFR2.7`・`NFR5.1` など、設計の記録の要件の ID）は残した。単位の名前（`U2-` など）を頭に持つ ID と、単位の名前を頭に持つ確かめの ID（`U4-STORAGE` など → `STORAGE`）は外した。
+5. **依頼者の決定 B（2026-11-02）**: 書き直しの後も README.md が 1,660 行・約 305 KB と重いままだったため、README.md を入口（概要・前提・最初の起動・文書の目次・ライセンス）にし、詳しい節を `docs/` の主題ごとのファイルに移した。計画の「節の並びを大きく変えない」との差。中身（コマンド・前提・設定の値・環境変数の名前）は変えず、移した先で切れる節の参照だけを直した（説明の文を短く書き直す案 C は選ばれていない）。詳細は下の「決定 B: README を入口にして docs/ へ分ける」。
+
+### Step 28（NFR3）: verify
+
+- 始める前に `./gradlew --stop`。電源は AC（電池 100%）、`pmset -g assertions` は `PreventUserIdleSystemSleep 1`。
+- コマンド: `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock caffeinate -dims ./gradlew verify`（文書だけのため clean なし）。
+- 2026-11-02 07:45:52〜08:12:29、**BUILD SUCCESSFUL in 26m 31s**（1回目で通過）。`application.yaml` のコメントを変えたため backend のテストも流れた（30 タスク実行・13 UP-TO-DATE）。初回の読み込みの JavaScript は 166.4 KB（gzip）で変わらず。
+- 間の `pmset -g log`（07:45〜08:13）: 種類は `Assertions` だけで、`Sleep`・`DarkWake`・`Wake` は 0 件。結果は使える。
+- Markdown は Prettier・ライセンスヘッダーの検査の対象に入っていない（`build.gradle.kts`・`frontend/package.json`・`.pre-commit-config.yaml` に `.md` の対象なし）。変えた `build.gradle.kts`・`application.yaml`・`.env.example` は verify の各段を通った。
+- E2E は流していない（文書と設定のコメントだけのブランチ。team.md の決まりで Build and Test で1回流す）。
+- `develop` への squash の統合は指揮役が依頼者の承認を得て行う（Step 28 の印は付けていない）。
+
+### 提案するコミットの区切り（⑤）
+
+- C1 README と perf/README の書き直し: `README.md`・`perf/README.md`
+- C2 README の節の参照を直す: `build.gradle.kts`・`.env.example`・`backend/src/main/resources/application.yaml`
+- C3 記録: `code-generation-plan.md`（Step 23〜27・29 の印）・`generation-notes.md`・`code-summary.md`・`traceability.json`・監査の記録
+- `.idea/misc.xml`（この作業の前からの変更）と `.testing-brief.txt` はどれにも入れない。
+- 決定 B の後の区切りは、下の「決定 B」の節の「提案するコミットの区切り（決定 B の後）」に置き換える。
+
+### 決定 B: README を入口にして docs/ へ分ける（2026-11-02）
+
+#### 分け方
+
+README.md の節の並び（`5950d786` からの書き直しの後のもの）を主題でまとめ、節の見出しの名前は変えずに移した（見出しの段は、`docs/deployment.md` と `docs/internal-db.md` に移した「コンテナでの起動と確認」の下の `###`・`####` だけを1段ずつ上げた）。各ファイルの先頭に H1 と、何の文書かの1行を置いた。`docs/README.md` は置かず、目次は README.md の「文書の目次」にした。
+
+| ファイル | 行 | 移した節 |
+|---|---|---|
+| `README.md` | 161 | 概要・前提の道具・取得と準備・開発時の起動・コンテナでの起動と確認（最初の起動。その下の小節は docs へ）・文書の目次（新しく足した）・ライセンス |
+| `docs/verification.md` | 252 | 1コマンドの検査・依存関係の脆弱性の判定・リリースの前の確かめ・ビルドした WAR での画面の確認（E2E）・E2E の見本の PostgreSQL・結果と報告 |
+| `docs/deployment.md` | 116 | 初期管理者の救済・戻し方・コンテナの資源の上限（既知の制約・設定の効き方の確かめ）・プロキシを置く配備・スキーマの変更（Flyway） |
+| `docs/internal-db.md` | 171 | 内部DBのバックアップと戻し方・内部DBの複写を数える・内部DBのファイルの詰め直し |
+| `docs/configuration.md` | 84 | 環境変数 |
+| `docs/mail.md` | 49 | メール（暗号化の方式・運用で設定しない値・Mailpit） |
+| `docs/target-db.md` | 151 | 対象DB（読み取りの API・書き込みの API・結合テスト・手元で試す対象DB・書き込みのアカウントを足す） |
+| `docs/dsl.md` | 142 | DSL の書式・既定の DSL の生成・DSL の管理の API（監査・指標とログ）・DSL の管理画面 |
+| `docs/users.md` | 160 | 利用者の管理の API・プリファレンスとパスワードの変更・招待と登録の完了・招待の管理の画面・登録の完了の画面・プリファレンスの画面 |
+| `docs/roles-and-permissions.md` | 177 | 「権限が無い」の扱い・グループ・ロールと権限（割り当てと作業ロール・権限の受け渡し）・業務のメニュー・受け渡しの画面・骨組みの画面・API のアクセス制御 |
+| `docs/operations.md` | 158 | 外部エクスポートの確かめ方・手元の監視・警報と対応の手順・例外のログ・監査ログ |
+| `docs/appearance.md` | 64 | インスタンスの見た目の設定・画面の表示の設定・ブランドカラーのコントラスト |
+| `docs/extension-points.md` | 30 | 機能が使う差し込み口 |
+
+- README.md: 1,660 行・304,503 バイト → 161 行・21,853 バイト。README.md と docs/ を合わせて 1,715 行・311,592 バイト（増えた分は各ファイルの H1・説明の1行・目次と、参照に足したファイルの名前）。
+- 移すたびに、元の行の範囲と移した先を `diff` で比べ、差が参照の直し（「」の前に `docs/…md` の・`README.md` の を足す、「上の・下の・次の節」を移った先の名前にする、「この README」→「この文書」）だけであることを確かめた（空行の差を除く）。
+
+#### 確かめ 1: コマンドの行と大文字の名前
+
+付録 A・B と同じ取り出し方で、`README.md` と `docs/*.md` を合わせた一覧を `5950d786` の README.md と比べた。
+
+- コマンドの行（コードブロックの中の、空行とコメントだけの行を除いた行）: 236 行 → 236 行。違うのは1行だけで、`docs/deployment.md` の戻し方の `MASTERSMITH_IMAGE_TAG=pre-dsl docker compose ps app` の行末のコメント「上のスモークテストを行う」→「README.md のスモークテストを行う」（スモークテストが README.md に残り、戻し方が docs に移ったための参照の直し。意図したもの）。前の担当の書き直しの差（README.md は 0 件）と合わせて、ほかの差は無い。コメントだけの行では、`README.md` の「2回目以降は…」の2行と `docs/deployment.md` の「今の内部DBのデータを複写する（次の節…）」の1行の参照を、移った先の名前に直した（比べの対象の外）。
+- 大文字の名前（`[A-Z][A-Z0-9]*_[A-Z0-9_]*[A-Z0-9]` の重なりを除いた一覧）: 前後とも 247 個で**一致**（付録 B の環境変数の名前を含む）。
+- 移さずに重なりをまとめたものは無い（README の中に同じ手順の繰り返しは見当たらず、移すだけにした）。
+- `docs/internal-db.md` の戻すときのコマンドの行末のコメント「戻し方の節の MASTERSMITH_IMAGE_TAG を付ける」は、コマンドの行を変えないため直さなかった（「戻し方」は `docs/deployment.md` にあり、README.md の目次からたどれる）。
+
+#### 確かめ 2: 参照の洗い出しのやり直し
+
+`git grep README`（`aidlc/spaces/default/intents/`・`vendor/`・`docs/`・`README.md`・`aidlc/spaces/default/codekb/`・`.claude/` の外）で洗い出し、節が docs に移ったものを移った先に直した。
+
+| 参照の側 | 直した先 |
+|---|---|
+| `.env.example`（20・25・38・158 行） | `docs/deployment.md`「コンテナの資源の上限」・`docs/operations.md`「監査ログ」・`docs/mail.md`「メール」 |
+| `.env.targetdb.example`（29 行） | `docs/target-db.md`「対象DB」 |
+| `.gitignore`（42 行） | `docs/internal-db.md` の手順 |
+| `compose.yaml`（58・80・104 行） | `docs/deployment.md`「コンテナの資源の上限」・`docs/operations.md`「手元の監視」 |
+| `docker/hikari-pool.sh`（42・164 行） | `docs/internal-db.md`「内部DBのファイルの詰め直し」 |
+| `docker/targetdb/*/03-writer-account.sh`（17 行、3つ） | `docs/target-db.md` |
+| `backend/src/main/resources/application.yaml`（16・138・189・198・206・397 行。コメントだけ） | `docs/configuration.md`・`docs/mail.md`・`docs/operations.md`・`docs/internal-db.md` |
+| `backend/src/test/java/cherry/mastersmith/targetdb/TargetDbSampleInitScriptIT.java`（53 行。コメントだけ） | `docs/target-db.md` |
+| `build.gradle.kts`（321・575・616・642・686・788・831 行。失敗の案内の文） | `docs/verification.md`・`docs/target-db.md`・`docs/mail.md` |
+| `.github/dependabot.yml`（84・112 行。手で揃える固定先の一覧） | `docs/` の文書（`docs/internal-db.md`・`docs/dsl.md`・`docs/operations.md` の eclipse-temurin、`docs/mail.md` の Mailpit）。89 行は過去の作業の記述のため変えていない |
+| `frontend/e2e/050・060・070・080・100`（失敗の文言とコメント）・`frontend/e2e/support/traceMode.ts` | `docs/verification.md`・`docs/appearance.md`（テストのファイルだけ。Prettier の確かめを通過） |
+| `perf/README.md`（115・831・1229 行） | `docs/deployment.md`「コンテナの資源の上限」・`docs/operations.md`「手元の監視（Grafana）」・`docs/target-db.md`「業務データの読み取りの API」 |
+| `perf/k6/thresholds-test.sh`（31 行） | `docs/target-db.md` の DOCKER_HOST |
+
+直さなかったもの:
+
+- `backend/src/main/resources/db/migration/V7・V8・V10・V11・V12` の「README の「戻し方」」: Flyway の照合の値が変わるため触らない。README.md の「文書の目次」の `docs/deployment.md` の行に「戻し方」を節の名前として置き、README からたどれるようにした。
+- `frontend/src/shared/unsaved-guard/useUnsavedGuard.ts`（33 行）の「README に書く」: frontend の本体（`frontend/src`）のため、触ると統合の前に E2E が要る（team.md の Way of Working）。中身は `docs/roles-and-permissions.md` の「未保存の確かめ」にある。指揮役に扱いを諮る。
+- `build.gradle.kts`（69 行「前提の道具」）・`settings.gradle.kts`（36 行「取得と準備」）・`gradle/libs.versions.toml`（67・74 行「ライセンス」）: README.md に残した節のため、そのまま当たる。
+- `perf/dsl-timing.sh`（121 行「README の手順で作ってください」）: イメージの作り方は README.md の「コンテナでの起動と確認」と perf/README.md の手順 0 の両方にあり、どちらを指しても当たるためそのまま。
+- `frontend/src/app/registry/types.ts`: `features/README.md` の参照（別の文書）。
+- **`aidlc/spaces/default/memory/team.md`（229 行）**: 「見本の対象DB に足す書き込みのアカウントとその権限は、README と見本の初期化に書く」。手順は `docs/target-db.md` に移ったため、文言が今の置き場と食い違う。決まりの文書のため**直さずに指揮役へ報告した**。
+- `aidlc/spaces/default/memory/project.md`（61 行ほか）: 「README の DOCKER_HOST と…」などは過去の学びの記録（出来事の記述）で、決まりの置き場を指すものではないため、直す必要は無いと読んだ（判断は指揮役に委ねる）。
+
+#### 確かめ 3: 検査の対象
+
+- `docs/*.md` は Prettier（`frontend/` の中だけ）・ライセンスヘッダーの検査（Java・Kotlin DSL・Mustache・画面のファイル）・リンタのどれの対象にも当たらない。README.md と同じ扱い（ライセンスヘッダーなし）にした。
+- 直した `frontend/e2e/*.ts` は `npx prettier --check` を通過。
+
+#### 確かめ 5: verify
+
+- 始める前に `./gradlew --stop`。電源は AC（電池 100%）。
+- コマンド: `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock caffeinate -dims ./gradlew verify`（clean なし）。
+- 2026-11-02 08:56〜09:23、**BUILD SUCCESSFUL in 26m 41s**（1回目で通過。43 タスク、33 実行・10 UP-TO-DATE）。初回の読み込みの JavaScript は 166.4 KB（gzip）で変わらず。
+- 間の `pmset -g log`（08:56〜09:40）の `Sleep`・`DarkWake`・`Wake` は 0 件。結果は使える。
+- E2E は流していない（frontend の本体と認証・権限・業務データの `src/main` に触れていない。テストのファイルと文書・設定のコメントだけ）。
+
+#### 提案するコミットの区切り（決定 B の後）
+
+- C1 README を入口にして docs/ へ分け、perf/README を書き直す: `README.md`・`docs/`（12 ファイル）・`perf/README.md`
+- C2 README の節の参照を移った先に直す: `.env.example`・`.env.targetdb.example`・`.gitignore`・`compose.yaml`・`.github/dependabot.yml`・`build.gradle.kts`・`backend/src/main/resources/application.yaml`・`backend/src/test/java/cherry/mastersmith/targetdb/TargetDbSampleInitScriptIT.java`・`docker/hikari-pool.sh`・`docker/targetdb/*/03-writer-account.sh`・`perf/k6/thresholds-test.sh`・`frontend/e2e/`（050・060・070・080・100・`support/traceMode.ts`）
+- C3 記録: `code-generation-plan.md`・`generation-notes.md`・`code-summary.md`・`traceability.json`・監査の記録
+- `.idea/misc.xml`（この作業の前からの変更）・`.testing-brief.txt`・`aidlc/.aidlc-subagent-inflight` はどれにも入れない。
+
+#### 確かめ 4: リンク
+
+- README.md と docs の中に Markdown のリンク（`[…](…)`）は無い（前から無い）。文書の間の参照は「`docs/…md` の「節の名前」」の形。
+- 一時の台本（リポジトリに残していない）で、README.md・docs/*.md・perf/README.md の「」の中の名前のうち、どれかのファイルの見出しと一致するものを拾い、前にファイルの名前があればそのファイルに、無ければ同じファイルにその見出しがあるかを照らした。切れた参照は 0 件（拾った 8 件は、サイドバーの項目の名前「DSL」、ダッシュボードの名前「MasterSmith」、「`docs/…md` の「A」の「B」」の続きの「B」で、どれも参照先は正しい）。
+
+## 付録 A: 書き直しの前のコマンドの行（Step 24）
+
+前の版は `5950d786`。コマンドの行は、コードブロック（行頭の空白の後に ```` ``` ```` で始まる行で囲む）の中の、空行とコメントだけの行（行頭の空白の後に `#`）を除いた行とし、次の形で取り出した（出力はファイルに書かず、比べはその場で `diff` に渡した）。
+
+```bash
+git show 5950d786:README.md | awk '/^[[:space:]]*```/{inb=!inb;next} inb && $0 !~ /^[[:space:]]*#/ && $0 !~ /^[[:space:]]*$/'
+```
+
+| ファイル | コマンドの行の数 | SHA-256（行を改行でつないだもの） | 大文字の名前の数 | SHA-256（名前の一覧） |
+|---|---|---|---|---|
+| README.md | 236 | `677c98569827f32b706183709ee1846a5b580cf883c3259057d529086047bc83` | 240 | `d4b2798fc5aa5fb92dd0c7e91f1a156c49c6b89b45726555022ade9c0c0dc8f8` |
+| perf/README.md | 679 | `7b88a5ef70b670580ef66437d3e769005756c96604d24365e51d532dcab323fd` | 117 | `f78d8c2d033c11cce3939cd64ec90e274450b6f2ff02c79a5fa9674baf6cbe7f` |
+
+## 付録 B: 書き直しの前の環境変数の名前（Step 24）
+
+大文字の名前の一覧のうち、環境変数として使う名前（接頭辞 `MASTERSMITH_`・`SPRING_`・`E2E_`・`PERF_`・`K6_`・`DOCKER_`・`TESTCONTAINERS_`・`MANAGEMENT_`・`LOGGING_`・`POSTGRES_`・`MYSQL_`・`MARIADB_`・`JAVA_`・`MONITOR_`・`BIZ_`・`ROLE_`（台本の変数）・`DSL_`（台本の変数）・`STORAGE_`・`BUSY_`）。監査の種類・code（`ROLE_ASSIGNED`・`DSL_BUSY` など）も同じ形のため一緒に並ぶ。書き直しの後も同じ一覧（差なし）。
+
+- README.md: `DOCKER_HOST` `E2E_PORT` `E2E_TARGETDB_PORT` `E2E_TRACE` `JAVA_TOOL_OPTIONS` `LOGGING_LEVEL_CHERRY_MASTERSMITH_COMMON_ERROR` `LOGGING_LEVEL_JAKARTA_MAIL` `LOGGING_LEVEL_ORG_ECLIPSE_ANGUS` `MANAGEMENT_HEALTH_MAIL_ENABLED` `MANAGEMENT_OPENTELEMETRY_TRACING_EXPORT_OTLP_ENDPOINT` `MARIADB_ROOT_PASSWORD` `MASTERSMITH_APPEARANCE_BRAND_COLOR` `MASTERSMITH_APPEARANCE_FONT_FAMILY` `MASTERSMITH_AUTH_ACCESS_TOKEN_TTL` `MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL` `MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` `MASTERSMITH_AUTH_LOCK_DURATION` `MASTERSMITH_AUTH_LOCK_THRESHOLD` `MASTERSMITH_AUTH_PASSWORD_BCRYPT_COST` `MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_CRON` `MASTERSMITH_AUTH_REFRESH_TOKEN_CLEANUP_RETENTION` `MASTERSMITH_AUTH_REFRESH_TOKEN_TTL` `MASTERSMITH_AUTH_SIGNING_KEY` `MASTERSMITH_CONTAINER_CPUS` `MASTERSMITH_CONTAINER_MEMORY` `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` `MASTERSMITH_DB_PASSWORD` `MASTERSMITH_DB_URL` `MASTERSMITH_DB_USERNAME` `MASTERSMITH_DSL_HISTORY_LIMIT` `MASTERSMITH_DSL_MAX_SUBMIT_SIZE` `MASTERSMITH_HEALTH_DB_TIMEOUT` `MASTERSMITH_IMAGE_TAG` `MASTERSMITH_INVITATION_CLEANUP_CRON` `MASTERSMITH_INVITATION_RETENTION` `MASTERSMITH_INVITATION_VALIDITY` `MASTERSMITH_JAVA_OPTIONS` `MASTERSMITH_MAIL_FROM` `MASTERSMITH_MAIL_FROM_NAME` `MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED` `MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT` `MASTERSMITH_SAMPLE_TARGETDB_ADMIN_PASSWORD` `MASTERSMITH_SAMPLE_TARGETDB_READER_PASSWORD` `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` `MASTERSMITH_TARGET_DB_CONNECT_TIMEOUT` `MASTERSMITH_TARGET_DB_DATABASE` `MASTERSMITH_TARGET_DB_HOST` `MASTERSMITH_TARGET_DB_PASSWORD` `MASTERSMITH_TARGET_DB_POOL_IDLE_TIMEOUT` `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` `MASTERSMITH_TARGET_DB_PORT` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_COMPARE` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_DETAIL` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_GENERATE` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_LIST` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_WRITE` `MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL` `MASTERSMITH_TARGET_DB_SCHEMA` `MASTERSMITH_TARGET_DB_TYPE` `MASTERSMITH_TARGET_DB_USERNAME` `MASTERSMITH_TARGET_DB_WRITE_PASSWORD` `MASTERSMITH_TARGET_DB_WRITE_POOL_MAXIMUM_SIZE` `MASTERSMITH_TARGET_DB_WRITE_USERNAME` `MASTERSMITH_TRACE_ENTER_MESSAGE` `MASTERSMITH_TRACE_EXCEPTION_MESSAGE` `MASTERSMITH_TRACE_EXIT_MESSAGE` `MASTERSMITH_TRACE_HIDE_PROXY_CLASS_NAMES` `MASTERSMITH_TRACE_LOG_EXCEPTION_STACK_TRACE` `MASTERSMITH_TRACE_USE_DYNAMIC_LOGGER` `MASTERSMITH_TRACING_SAMPLING_PROBABILITY` `MASTERSMITH_WEB_BASE_URL` `MASTERSMITH_WEB_MAX_REQUEST_BODY_SIZE` `MASTERSMITH_WEB_TRUST_FORWARDED_HEADERS` `MONITOR_BIZ` `MONITOR_DURATION` `MYSQL_PWD` `MYSQL_ROOT_PASSWORD` `POSTGRES_PASSWORD` `SPRING_MAIL_HOST` `SPRING_MAIL_PASSWORD` `SPRING_MAIL_PORT` `SPRING_MAIL_PROPERTIES_MAIL_DEBUG` `SPRING_MAIL_PROPERTIES_MAIL_SMTP_CONNECTIONTIMEOUT` `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED` `SPRING_MAIL_PROTOCOL` `SPRING_MAIL_SSL_ENABLED` `SPRING_MAIL_TEST_CONNECTION` `SPRING_MAIL_USERNAME` `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE`
+- perf/README.md: `BIZ_DURATION` `BIZ_LARGE_ITERATIONS` `BIZ_P95_LIMIT_MS` `BUSY_ATTEMPTS` `DSL_FILE` `DSL_HISTORY_MIN` `K6_IMAGE` `LOGGING_LEVEL_CHERRY_MASTERSMITH_AUDIT_SERVICE` `MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE` `MARIADB_ROOT_PASSWORD` `MASTERSMITH_AUTH_ACCESS_TOKEN_TTL` `MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD` `MASTERSMITH_AUTH_SIGNING_KEY` `MASTERSMITH_CONTAINER_CPUS` `MASTERSMITH_CONTAINER_MEMORY` `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` `MASTERSMITH_DB_URL` `MASTERSMITH_IMAGE_TAG` `MASTERSMITH_JAVA_OPTIONS` `MASTERSMITH_PERF_APP_TARGETDB_ENV_FILE` `MASTERSMITH_PERF_ENV_FILE` `MASTERSMITH_PERF_TARGETDB_ENV_FILE` `MASTERSMITH_PERF_TARGETDB_MARIADB_BUFFER_POOL` `MASTERSMITH_PERF_TARGETDB_MARIADB_MEMORY` `MASTERSMITH_PERF_TARGETDB_MYSQL_BUFFER_POOL` `MASTERSMITH_PERF_TARGETDB_MYSQL_MEMORY` `MASTERSMITH_PERF_TARGETDB_POSTGRES_MEMORY` `MASTERSMITH_PERF_TARGETDB_POSTGRES_SHARED_BUFFERS` `MASTERSMITH_SAMPLE_TARGETDB_WRITER_PASSWORD` `MASTERSMITH_TARGET_DB_DATABASE` `MASTERSMITH_TARGET_DB_PASSWORD` `MASTERSMITH_TARGET_DB_POOL_MAXIMUM_SIZE` `MASTERSMITH_TARGET_DB_QUERY_TIMEOUT_REFERENCE` `MASTERSMITH_TARGET_DB_REFERENCE_READ_TOTAL` `MASTERSMITH_TARGET_DB_TYPE` `MASTERSMITH_TARGET_DB_WRITE_PASSWORD` `MASTERSMITH_TARGET_DB_WRITE_USERNAME` `MONITOR_BIZ` `MONITOR_DURATION` `MYSQL_PWD` `MYSQL_ROOT_PASSWORD` `PERF_ADMIN_EMAIL` `PERF_ADMIN_PASSWORD` `PERF_DB_URL` `PERF_JRE_IMAGE` `PERF_PW_USER_COUNT` `PERF_UA_COUNT` `PERF_USER_COUNT` `PERF_USER_PASSWORD` `POSTGRES_PASSWORD` `ROLE_DURATION` `ROLE_LARGE_COUNT` `ROLE_LARGE_PREFIX` `ROLE_PREPARE_TOTAL` `ROLE_TREE_SCHEMA` `ROLE_TREE_TABLE` `ROLE_WORST_NAME` `ROLE_YAML_FILE` `SPRING_MAIL_HOST` `STORAGE_ROUNDS`
+
+### ⑤ の依頼者の決定（2026-11-02）
+
+- `aidlc/spaces/default/memory/team.md` 229 行の「見本の対象DB に足す書き込みのアカウントとその権限は、README と見本の初期化に書く」は変えない。「README」は README.md と、その目次からたどる `docs/` の一式を指すと読む（手順は `docs/target-db.md`）。
+- `frontend/src/shared/unsaved-guard/useUnsavedGuard.ts` 33 行のコメントの「README に書く」は、同じ読み方で今も当たるため直さない（直すと frontend の本体の変更として統合の前の E2E が要る）。
+- コミットは C1（README.md・docs/・perf/README.md）・C2（参照の直し）・C3（記録）に分け、`develop` へ squash で統合する。E2E は Build and Test で流す（E2E のファイルの変更はメッセージの文だけ）。
