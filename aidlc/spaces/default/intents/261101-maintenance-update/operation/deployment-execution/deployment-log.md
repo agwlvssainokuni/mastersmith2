@@ -11,7 +11,9 @@ Intent 261101-maintenance-update。流れは `operation/deployment-pipeline/cd-c
 - **スモークテスト**: S1〜S6 はすべて通過（`smoke-test-results.md`）。健全性は `health-check-report.md`。
 - **変わらないもの**: `.env`、内部DB のスキーマ（版 13）、見本の PG・Mailpit のコンテナ（作り直していない）。
 - **質問の答え**（`deployment-execution-questions.md`）: Q1 A・Q2 A。
-- **残り**: 順 12〜15（片付け・`main` への取り込み・結果の追記）と順 16（依頼者のプッシュ）。
+- **片付け**: 古いイメージ 14 個を消し、イメージは 17.35GB から 8.413GB になった（2.3）。
+- **`main`**: `80e1ec8c` → `f388fb8d`（fast-forward、タグなし）。
+- **残り**: 順 16（依頼者の `git push origin develop main`）。
 
 ## 2. 手順の記録
 
@@ -27,10 +29,12 @@ Intent 261101-maintenance-update。流れは `operation/deployment-pipeline/cd-c
 | 8 | — | 4.1 の結果での合わせ直し | 不要（2.1 のとおり前提どおり） |
 | 9 | 13:40 ごろ | スモークテスト S2〜S5（依頼者） | 依頼者「1: OK, 2: OK, 3: OK, 4: OK. ログアウトしました。」。Mailpit の基準は S4 の前に 58 通（12:17:44Z ごろ）。AI の裏付けは `smoke-test-results.md` |
 | 10 | 13:43:11〜13:43:21 | `stop app` → 複写 → `start app` | 複写 `~/.mastersmith-backup/mastersmith-data-202611022243-after-maintenance-update.tgz`（権限 600、41,109 バイト）。起動し直した後もイメージ ID が一致、healthy、restart 0。数えの結果は 2.2（S6） |
-| 11 | — | 配備の記録のコミット | 段の成果物の初稿として尋ねずにコミットする |
-| 12〜13 | — | 片付けの前後の `docker system df` と古いイメージの片付け | まだ |
-| 14 | — | `main` への取り込み | まだ。`origin/develop` は依頼者のプッシュで `3aa9db1e` になった |
-| 15・16 | — | 結果の追記・プッシュ | まだ |
+| 11 | — | 配備の記録のコミット | `f388fb8d`（段の成果物の初稿として尋ねずにコミット） |
+| 12 | 13:47 ごろ | 片付けの前の `docker system df` | イメージ 30 個・17.35GB（回収できる 11.78GB）、コンテナ 4、ボリューム 75 個・14.66GB、ビルドのキャッシュ 1.478GB |
+| 13 | 13:50 ごろ | 古いイメージの片付け（Q3: A、消す一覧は依頼者の承認 A） | `docker images --digests` と固定先（`compose.yaml`・`docker/perf/compose.yaml`・`Dockerfile`・`perf/versions.env`・`docker/hikari-pool.sh`・`docs/internal-db.md`・`TargetDbImages`）を照らして候補を作り直し、14 個（2.2 の表）を、使うコンテナが 0 件であることを1つずつ確かめてから `docker rmi` で消した。後の `docker system df` はイメージ 16 個・8.413GB（回収できる 3.459GB）、ボリューム 75 個・14.66GB（変わらず）、ビルドのキャッシュ 1.478GB。残る `mastersmith` のタグは `local`（`ffd2b8380460`）と戻し先 `pre-maintenance-update`（`d8a467b60f6f`）だけ。アプリ・見本の PG・Mailpit は動いたまま |
+| 14 | — | `main` への取り込み | まだ。前の取り込み `80e1ec8c` から `3aa9db1e` までの 18 コミットの CI は、run のあるもの（CI 9 個・Dependabot Updates 18 個）がすべて1回目で success（`3aa9db1e` は run 41443220675、検査の job 35 分 52 秒）。run の無い `7aaa8c39`・`dc21dfca`・`82987fde` は、まとめてプッシュされた先頭の `3aa9db1e` の run で確かめたと読む。依頼者のプッシュの後の `f388fb8d` の CI（run 41456414435）も1回目で success（検査の job 28 分 42 秒）。`main` が `f388fb8d` の祖先であることを確かめ、依頼者の承認（メッセージ 79b9a0e5）で `main` を `80e1ec8c` → `f388fb8d` に fast-forward した（`git update-ref` に前の値を付けて動かした）。タグは付けていない |
+| 15 | — | 片付けと取り込みの結果の追記 | `main` の後の `develop` だけのコミットで追記（依頼者の承認の後） |
+| 16 | — | プッシュ | 依頼者が `git push origin develop main` を行う |
 
 ### 2.1 配備の前の複写の数え（`cd-config.md` 4.1）
 
@@ -50,6 +54,26 @@ Intent 261101-maintenance-update。流れは `operation/deployment-pipeline/cd-c
 - `audit_events` の全体 314（`SUCCESS` 288・`FAILURE` 26）。差は `LOGIN_SUCCEEDED`・`INVITATION_ISSUED`・`INVITATION_CANCELLED`・`LOGGED_OUT` の各 1 件（内訳は `smoke-test-results.md` の 2節）。
 - 招待の行 3（招待中 0・使用済み 2・取り消し済み 1）、送信の成功 3・失敗 0。
 - 初期管理者・ロール・利用者・DSL の数は 2.1 と同じ。展開した作業ディレクトリは消した。
+
+### 2.3 片付けで消したイメージ（順 13）
+
+| 名前 | ID | 理由 |
+|---|---|---|
+| `eclipse-temurin`（名前なし） | `589ff4cc3f71`・`d9a39a236346` | 固定先は 25.0.5_8 の jdk `95e350ad1eb7`・jre `a98128a57de9`。`d9a39a236346` は戻し先の土台で、層は戻し先のイメージに残る |
+| `eclipse-temurin:25.0.4_7-jdk-noble`・`25.0.4_7-jre-noble` | `2feab631bffc`・`b573af9e3311` | 同上 |
+| `mysql` | `f51c9c01c16b`・`ade067ae2fb1` | 固定先は 26.10.0 `7b16ec7caa94` |
+| `mariadb` | `d4fdec0510ad` | 固定先は 13.0.2 `f4054da26e3a` |
+| `postgres` | `5a5a84b19854` | 固定先は 18.6 `3a4264520e12` |
+| `axllent/mailpit` | `0790692be935` | 固定先は v1.33.0 `9b3a463be153` |
+| `grafana/otel-lgtm` | `75cdf892daff` | 固定先は 0.39.0 `4c8056c9c05f` |
+| `otel/opentelemetry-collector:0.162.0` | `310a800ad69e` | 固定先は 0.164.0 `28b6d41ac51b` |
+| `grafana/k6:2.3.0` | `9c2dee7f8ed7` | 固定先は同じ 2.3.0 の `2dd4756ec6e1`（古いダイジェスト） |
+| `mastersmith:pre-reference-lookup-cleanup` | `e0ede6ddd5c4` | 前の前の戻し先 |
+| `mastersmith:perf-maintenance-update` | `0adebf1b4cb9` | Build and Test の試験用のタグ |
+
+- 残したもの: 固定していないイメージ（`alpine:3`・`busybox`・`curlimages/curl`・`otel/opentelemetry-collector-contrib:0.116.1`・`testcontainers/ryuk:0.14.0`）、`mastersmith:local`・`pre-maintenance-update`、名前の無いボリューム。
+- 見込みの候補（`cd-config.md` 6節）と同じ一覧になった。
+- **名前の無いボリューム（計画との差）**: `cd-config.md` 6節（要件の Q4: A）では残すとしていたが、片付けの後に依頼者の指示（「名前のないボリュームを削除して」）で消した。名前が 64 桁の16進数で、どのコンテナにも使われていない（`dangling=true`、`docker ps -a --filter volume=` 0 件）61 個を名前で指定して `docker volume rm` で消した（`docker volume prune` は使っていない）。名前のある 14 個（`mastersmith_mastersmith-data`・`mastersmith_mastersmith-monitoring`・`mastersmith_mastersmith-targetdb-postgres` と、ほかのプロジェクトのもの）は残した。ボリュームは 75 個・14.66GB から 14 個・2.088GB になった。アプリ・見本の PG・Mailpit は動いたまま。承認済みの記録は書き換えない。`mastersmith-lgtm-1` のコンテナ（Created のまま、固定先の 0.39.0）は消していない。
 
 ## 3. 計画との差・気づき
 
