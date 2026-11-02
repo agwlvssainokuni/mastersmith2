@@ -186,13 +186,13 @@
     {
       "id": "FR8.1",
       "status": "OK",
-      "target": "README.md・docs/（12 ファイル）・perf/README.md",
+      "target": "README.md",
       "note": "⑤ Step 25・26。Intent・単位・Bolt の名前と経緯を外し、perf/README.md の「## 履歴」を消した。依頼者の決定 B（2026-11-02）で README.md を入口（概要・前提・最初の起動・文書の目次・ライセンス）にし、詳しい節を docs/ の主題ごとの 12 ファイルへ移した（中身は変えず、参照だけを移った先に直した）"
     },
     {
       "id": "FR8.2",
       "status": "OK",
-      "target": "README.md・docs/・perf/README.md",
+      "target": "aidlc/spaces/default/intents/261101-maintenance-update/construction/code-generation/generation-notes.md",
       "note": "⑤ Step 24・27。コードブロックのコマンドの行と大文字の名前の一覧を前後で比べた。README.md と docs/ を合わせた一覧は 5950d786 の README.md と、コマンドの行 236 行のうち参照の直しの1行（docs/deployment.md の戻し方のコメント「上のスモークテスト」→「README.md のスモークテスト」）だけが違い、名前の一覧は一致。perf/README.md の差は Intent の名前・Bolt の名前・履歴の参照の削除だけ（generation-notes.md の付録）"
     },
     {
@@ -204,7 +204,7 @@
     {
       "id": "FR8.4",
       "status": "OK",
-      "target": "build.gradle.kts・.env.example・.env.targetdb.example・.gitignore・compose.yaml・.github/dependabot.yml・backend/src/main/resources/application.yaml・docker/・perf/・frontend/e2e/",
+      "target": "build.gradle.kts",
       "note": "⑤ Step 23・27。README の節を参照する箇所を、節が移った docs/ のファイルに直した（洗い出しは決定 B の後にやり直した。generation-notes.md の ⑤ の「決定 B」）。Flyway の V7・V8・V10〜V12 の「README の「戻し方」」は照合の値が変わるため触らず、README.md の文書の目次から docs/deployment.md の「戻し方」へたどれるようにした。frontend/src/shared/unsaved-guard/useUnsavedGuard.ts のコメント1か所は frontend の本体のため触らなかった。team.md の1か所（書き込みのアカウントを「README と見本の初期化に書く」）は直さずに依頼者に諮る"
     },
     {
