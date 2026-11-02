@@ -4144,3 +4144,329 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-02T12:07:16Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-02T12:07:21Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-02T12:08:26Z
+**Event**: HUMAN_TURN
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Origin**: person
+**Source**: picker
+**Picked**: ["A (Recommended)","A (Recommended)","A (Recommended)"]
+**Message Id**: 546f801e
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-02T12:08:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q1 配備の後のスモークテストで何を確かめますか？ 推奨は A です。今回変わったのは、メールのテンプレートの部品（0.1.1）・一覧の並び（R-01）・画面の部品で、A はそれぞれを配備した版で一度ずつ触ります。監査に残るのは、招待の発行と取り消しの2件とログインだけです。
+**Reply**: A (Recommended)
+**Options**: ["A (Recommended)","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-02T12:08:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q2 内部DB の複写はいつ取りますか？ 推奨は A です。配備の前の複写は入れ替えの停止に重ねられるため、止まる時間はほぼ増えません。配備の後の複写は、Q1 の A・C で監査の件数を数えるのに要ります。
+**Reply**: A (Recommended)
+**Options**: ["A (Recommended)","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-02T12:08:26Z
+**Event**: QUESTION_REPLIED
+**Session**: 1ce2d95d-5127-4a02-9381-0a760d3aaa7e
+**Question**: Q3 古いイメージを片付けるとき、候補をどの範囲から作りますか？（消す一覧は Deployment Execution で示して承認を得ます）推奨は A です。要件の「固定先から外れた古い版」に当たるのは、名前が固定先と同じイメージです。固定していないイメージ（alpine・busybox・curl・collector-contrib・ryuk）は、ほかのプロジェクトや道具が使うことがあります。
+**Reply**: A (Recommended)
+**Options**: ["A (Recommended)","B","C"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-02T12:08:30Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-02T12:08:34Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A, Q2: A, Q3: A
+**Message Id**: 546f801e
+**Person Reply**: A (Recommended)\nA (Recommended)\nA (Recommended)
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-02T12:10:07Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-02T12:10:44Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md
+**Context**: operation > deployment-pipeline > deployment-strategy.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-02T12:11:14Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md
+**Context**: operation > deployment-pipeline > rollback-runbook.md
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: 63f9bc70
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: 63f9bc70
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 71
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: 302963f7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: 302963f7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: cdb17375
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: cdb17375
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: 69bff802
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_PASSED
+**Fire id**: 69bff802
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:26Z
+**Event**: SENSOR_FIRED
+**Fire id**: ff56111e
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: ff56111e
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 83a2d1c7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 83a2d1c7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2fea1fee
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2fea1fee
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: fa14820b
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: fa14820b
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: d23616ed
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: d23616ed
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 72
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-02T12:11:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: ee4b775c
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-02T12:11:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: ee4b775c
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 69
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-02T12:11:28Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-pipeline
+**Next Stage**: deployment-execution
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md=passed; required-sections@aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-strategy.md=passed; required-sections@aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/rollback-runbook.md=passed; required-sections@aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/deployment-pipeline-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/261101-maintenance-update/operation/deployment-pipeline/cd-config.md=passed
+**Open Decisions**: 0
+
+---
