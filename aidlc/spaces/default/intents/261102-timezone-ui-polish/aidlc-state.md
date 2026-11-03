@@ -131,6 +131,12 @@
 
 
 
+- **Active Unit**: u4-business-data-time
+
+- **Unit Stage**: infrastructure-design
+
+- **Unit State**: in-progress
+
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -191,7 +197,7 @@
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-11-03T16:47:03Z
+- **Last Updated**: 2026-11-03T16:48:50Z
 
 - **Construction Autonomy Mode**: gated
 

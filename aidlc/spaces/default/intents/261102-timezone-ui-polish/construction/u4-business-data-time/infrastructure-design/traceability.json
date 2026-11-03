@@ -1,0 +1,14 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-business-data-time",
+  "upstream_ids": ["NFR2.1","NFR3.1","NFR6.1","NFR5.1","NFR4.2","NFR5.2","NFR5.3"],
+  "coverage": [
+    { "id": "NFR2.1", "status": "OK", "target": "infrastructure-specification.md Deployment (no new resource, +29 bytes per reference field) and monitoring-design.md Metrics (business-data p95 unchanged, 5xx 0); cicd-pipeline.md section 2 (ReferenceConnectionUsageIT) and section 4 H1 (k6 business-data scenarios, owner build-and-test)" },
+    { "id": "NFR3.1", "status": "OK", "target": "cicd-pipeline.md section 2 (vitest-axe per component) and section 4 H2, H5 (185 axe states, two-choice FormField check)" },
+    { "id": "NFR4.2", "status": "OK", "target": "infrastructure-specification.md Deployment (additive labelValueType, no DB or settings change, rollback by image only) and cicd-pipeline.md section 3.2" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md section 2 (unit, property, integration and leak tests; coverage floors; no new dependency) and monitoring-design.md Logs (toString without values)" },
+    { "id": "NFR5.2", "status": "N/A", "target": "test time zone handling needs no infrastructure (Playwright timezoneId and the four runtime time zone settings stay unchanged: infrastructure-specification.md Deployment)" },
+    { "id": "NFR5.3", "status": "OK", "target": "infrastructure-specification.md Infrastructure Services and Shared Infrastructure (e2e_event table in the E2E run schema, granted by the existing setup) and cicd-pipeline.md section 1 (E2E at the end of the Intent) and section 4 H2" },
+    { "id": "NFR6.1", "status": "N/A", "target": "screen text (ja/en) needs no infrastructure; it is verified by the unit tests in cicd-pipeline.md section 2" }
+  ]
+}
