@@ -35,6 +35,11 @@ import {
   useDisplaySettings,
 } from '../display-settings/DisplaySettingsProvider'
 import { resetDisplaySettings } from '../display-settings/displaySettingsStore'
+import { DisplayTimeZoneTestProvider } from '../display-settings/testing/DisplayTimeZoneTestProvider'
+import type {
+  DisplayTimeZoneActions,
+  DisplayTimeZoneState,
+} from '../display-settings/DisplayTimeZoneProvider'
 import { I18nProvider } from '../i18n/I18nProvider'
 import { resetLoginHandoff } from '../login-handoff/loginHandoff'
 import { LoginStateGate } from '../login-state/LoginStateGate'
@@ -57,6 +62,12 @@ export interface RenderOptions {
   languages?: readonly string[]
   /** 見た目の設定の読み取りの約束（既定は答え済み・当てる値なし） */
   appearance?: Promise<AppearanceResult>
+  /** 表示のタイムゾーン（既定は固定の Asia/Tokyo。Intent 261102-timezone-ui-polish の U2、D-P8） */
+  displayTimeZone?: {
+    timeZone?: string
+    state?: DisplayTimeZoneState
+    actions?: Partial<DisplayTimeZoneActions>
+  }
 }
 
 /**
@@ -122,6 +133,7 @@ export function renderWithProviders(ui: ReactElement, options: RenderOptions = {
     provider,
     languages = ['ja-JP'],
     appearance = resolvedAppearance(),
+    displayTimeZone = {},
   } = options
   stubBrowserLanguages(languages)
   // 前のテストの表示の設定の置き場を持ち越さない（ブラウザの保存の値は、次に読むときに読み直す）。
@@ -136,8 +148,10 @@ export function renderWithProviders(ui: ReactElement, options: RenderOptions = {
             >
               <FeatureRegistryProvider registrations={registrations}>
                 <AdminForbiddenProvider>
-                  {ui}
-                  <LocationProbe />
+                  <DisplayTimeZoneTestProvider {...displayTimeZone}>
+                    {ui}
+                    <LocationProbe />
+                  </DisplayTimeZoneTestProvider>
                 </AdminForbiddenProvider>
               </FeatureRegistryProvider>
             </LocalizedContent>

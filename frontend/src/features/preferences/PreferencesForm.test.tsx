@@ -43,6 +43,7 @@ function props(overrides: Partial<PreferencesFormProps> = {}): PreferencesFormPr
     setLanguage: vi.fn(),
     setTheme: vi.fn(),
     setFontSize: vi.fn(),
+    setDisplayTimeZone: vi.fn(),
     reset: vi.fn(),
     save: vi.fn(),
     dismissAlert: vi.fn(),

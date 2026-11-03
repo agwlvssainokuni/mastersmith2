@@ -76,6 +76,10 @@ public class User {
     @Column(name = "suspended", nullable = false)
     private boolean suspended;
 
+    /** 表示のタイムゾーンの名前（空は「ブラウザに合わせる」）。書くのは {@code user.repository} の保存の 1 文だけ。 */
+    @Column(name = "display_time_zone", length = 64, updatable = false)
+    private String displayTimeZone;
+
     /** JPA が使う。 */
     protected User() {}
 
@@ -189,6 +193,15 @@ public class User {
      */
     public boolean isSuspended() {
         return suspended;
+    }
+
+    /**
+     * 表示のタイムゾーンの名前を返す。
+     *
+     * @return 名前（未設定は null。「ブラウザに合わせる」）
+     */
+    public String getDisplayTimeZone() {
+        return displayTimeZone;
     }
 
     /**

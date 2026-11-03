@@ -43,7 +43,12 @@ import {
   prepareCombo,
   type DisplayCombo,
 } from './support/displayCombos'
-import { preferencesSample, preferencesValidationProblem } from './support/preferencesFixtures'
+import {
+  GETS_BY_DISTRIBUTION,
+  GETS_BY_PREFERENCES_SCREEN,
+  preferencesSample,
+  preferencesValidationProblem,
+} from './support/preferencesFixtures'
 import { openUserMenuItem } from './support/registeredUser'
 
 const PREFERENCES_PATH = '/api/me/preferences'
@@ -190,7 +195,9 @@ test.describe('100 app text contrast on the built WAR', () => {
         await openUserMenuItem(page, PREFERENCES_ITEM)
         await expect(page.getByTestId('preferences-save-button')).toBeVisible()
         await expectComboApplied(page, combo)
-        expect(preferences.gets, 'プリファレンスの答えの差し替え').toBe(1)
+        await expect
+          .poll(() => preferences.gets, 'プリファレンスの答えの差し替え（提供元 + 画面）')
+          .toBe(GETS_BY_DISTRIBUTION + GETS_BY_PREFERENCES_SCREEN)
       })
 
       await test.step('preferences choice error', async () => {

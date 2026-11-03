@@ -249,6 +249,56 @@ class UserSchemaIT {
     }
 
     @Test
+    @DisplayName(
+            "the V14 display_time_zone column is VARCHAR(64), nullable, without default, and existing rows are null")
+    void displayTimeZoneColumn() {
+        Map<String, Object> column = jdbc.queryForMap(
+                "SELECT DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT FROM INFORMATION_SCHEMA.COLUMNS"
+                        + " WHERE TABLE_NAME = 'USERS' AND COLUMN_NAME = 'DISPLAY_TIME_ZONE'");
+        List<Map<String, Object>> history = jdbc.queryForList(
+                "SELECT \"version\", \"success\" FROM \"flyway_schema_history\" WHERE \"version\" = '14'");
+        User saved = persist(uniqueEmail(), Instant.parse("2026-11-03T00:00:00Z"));
+
+        assertThat(column)
+                .containsEntry("DATA_TYPE", "CHARACTER VARYING")
+                .containsEntry("CHARACTER_MAXIMUM_LENGTH", 64L)
+                .containsEntry("IS_NULLABLE", "YES")
+                .containsEntry("COLUMN_DEFAULT", null);
+        assertThat(history).hasSize(1).allSatisfy(row -> assertThat(row).containsEntry("success", true));
+        assertThat(jdbc.queryForObject(
+                        "SELECT display_time_zone FROM users WHERE user_id = ?", String.class, saved.getUserId()))
+                .isNull();
+        assertThat(tx.execute(status -> entityManager.find(User.class, saved.getUserId()))
+                        .getDisplayTimeZone())
+                .isNull();
+    }
+
+    @Test
+    @DisplayName(
+            "the V14 migration file is a single ADD COLUMN statement without drops, other tables, indexes or constraints")
+    void displayTimeZoneMigrationIsOneStatement() throws Exception {
+        org.springframework.core.io.Resource[] found =
+                new org.springframework.core.io.support.PathMatchingResourcePatternResolver()
+                        .getResources("classpath:db/migration/V14__*.sql");
+        assertThat(found).hasSize(1);
+        String body;
+        try (java.io.InputStream in = found[0].getInputStream()) {
+            body = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        }
+        String statements = body.lines()
+                .filter(line -> !line.strip().startsWith("--"))
+                .reduce("", (a, b) -> a + " " + b)
+                .strip();
+
+        assertThat(statements).isEqualTo("ALTER TABLE users ADD COLUMN display_time_zone VARCHAR(64);");
+        assertThat(statements.toLowerCase(java.util.Locale.ROOT))
+                .doesNotContain("drop")
+                .doesNotContain("index")
+                .doesNotContain("constraint")
+                .doesNotContain("default");
+    }
+
+    @Test
     @DisplayName("created_at is stored as an instant and does not shift with the JVM time zone")
     void createdAtIsInstant() {
         assertThat(TimeZone.getDefault().toZoneId()).isEqualTo(ZoneId.of("Asia/Tokyo"));

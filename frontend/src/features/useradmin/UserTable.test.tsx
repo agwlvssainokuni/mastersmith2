@@ -25,7 +25,7 @@ import { LONG_EMAIL, rowsOf, sampleRows, SYMBOL_NAME, userOf } from './testing/f
 import { renderUserAdmin } from './testing/renderUserAdmin'
 import { UserTable, type UserTableProps } from './UserTable'
 
-/** 2026-10-03 10:00 JST */
+/** 2026-10-03 10:00 +09:00 */
 const NOW = new Date('2026-10-03T01:00:00Z')
 
 function renderTable(
@@ -40,8 +40,7 @@ function renderTable(
       onPageChange={props.onPageChange ?? (() => {})}
       busy={props.busy ?? false}
       label={props.label ?? '利用者の一覧'}
-      language={props.language ?? 'ja'}
-      timeZone="Asia/Tokyo"
+
       now={NOW}
       renderActions={
         props.renderActions ?? ((row: AdminUser) => <span>{`操作-${row.userId}`}</span>)
@@ -76,7 +75,7 @@ describe('UserTable', () => {
     expect(within(row(13)).getByText('利用停止')).toBeInTheDocument()
     expect(within(row(11)).getByText('有効')).toBeInTheDocument()
     expect(within(row(12)).getByText('ロック中')).toBeInTheDocument()
-    expect(within(row(12)).getByText('10:30 JST まで')).toBeInTheDocument()
+    expect(within(row(12)).getByText('10:30 +09:00 まで')).toBeInTheDocument()
     expect(within(row(12)).getByText('操作-12')).toBeInTheDocument()
   })
 
@@ -100,8 +99,8 @@ describe('UserTable', () => {
     renderTable({
       rows: [userOf({ userId: 1, locked: true, lockedUntil: '2026-10-04T01:30:00Z' })],
     })
-    expect(screen.getByText('2026-09-25 12:00 JST')).toBeInTheDocument()
-    expect(screen.getByText('2026-10-04 10:30 JST まで')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-25 12:00 +09:00')).toBeInTheDocument()
+    expect(screen.getByText('2026-10-04 10:30 +09:00 まで')).toBeInTheDocument()
   })
 
   it('shows the page status and the pager in the screen language', () => {
@@ -111,7 +110,7 @@ describe('UserTable', () => {
   })
 
   it('shows English text without the Japanese defaults of the table', () => {
-    renderTable({ rows: rowsOf(20, 21), total: 43, page: 2, language: 'en' }, ['en-US'])
+    renderTable({ rows: rowsOf(20, 21), total: 43, page: 2 }, ['en-US'])
     expect(screen.getByText('Page 2 of 3 (43 total)')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Previous' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument()

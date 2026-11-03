@@ -15,6 +15,7 @@
  */
 package cherry.mastersmith.user.service;
 
+import cherry.mastersmith.user.domain.DisplayTimeZoneInput;
 import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.PasswordChangeFailureReason;
 import cherry.mastersmith.user.domain.PasswordChangeValidation;
@@ -24,7 +25,6 @@ import cherry.mastersmith.user.domain.PasswordPolicy;
 import cherry.mastersmith.user.domain.Preferences;
 import cherry.mastersmith.user.domain.PreferencesValidation;
 import cherry.mastersmith.user.domain.RequestOrigin;
-import cherry.mastersmith.user.domain.User;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.time.Clock;
 import java.util.List;
@@ -100,16 +100,18 @@ public class UserPreferencesService {
      * @return 結果（{@link PreferencesResult.Ok} か {@link PreferencesResult.UserNotFound}）
      */
     public PreferencesResult getPreferences(long userId) {
-        Optional<Preferences> found = readOnlyTransaction.execute(
-                status -> userRepository.findById(userId).map(User::getPreferences));
+        Optional<PreferencesResult.Ok> found = readOnlyTransaction.execute(status -> userRepository
+                .findById(userId)
+                .map(user -> new PreferencesResult.Ok(user.getPreferences(), user.getDisplayTimeZone())));
         if (found == null || found.isEmpty()) {
             return new PreferencesResult.UserNotFound();
         }
-        return new PreferencesResult.Ok(found.get());
+        return found.get();
     }
 
     /**
-     * 本人の氏名と表示の設定の4つを、まとめて検証して置き換える（BR3.2〜BR3.5）。
+     * 本人の氏名と表示の設定の4つと表示のタイムゾーンを、まとめて検証して 1 つの文で置き換える（BR3.2〜BR3.5、BR2.3〜BR2.9）。
+     * 表示のタイムゾーンの項目が無い（{@link DisplayTimeZoneInput.Keep}）ときは、その列を書き換えない。誤りがあれば内部DB に触れない。
      *
      * @param userId 本人の利用者 ID
      * @param command 保存の入力
@@ -117,17 +119,24 @@ public class UserPreferencesService {
      */
     public PreferencesResult savePreferences(long userId, PreferencesCommand command) {
         List<FieldError> errors = PreferencesValidation.validate(
-                command.displayName(), command.language(), command.theme(), command.fontSize());
+                command.displayName(),
+                command.language(),
+                command.theme(),
+                command.fontSize(),
+                command.displayTimeZone());
         if (!errors.isEmpty()) {
             return new PreferencesResult.Invalid(errors);
         }
         Preferences preferences = PreferencesValidation.toPreferences(
                 command.displayName(), command.language(), command.theme(), command.fontSize());
-        Integer rows = transaction.execute(status -> userRepository.updatePreferences(userId, preferences));
-        if (rows == null || rows == 0) {
+        boolean change = !(command.displayTimeZone() instanceof DisplayTimeZoneInput.Keep);
+        String zone = command.displayTimeZone() instanceof DisplayTimeZoneInput.Text text ? text.value() : null;
+        Optional<UserRepository.SavedPreferences> saved =
+                transaction.execute(status -> userRepository.savePreferences(userId, preferences, change, zone));
+        if (saved == null || saved.isEmpty()) {
             return new PreferencesResult.UserNotFound();
         }
-        return new PreferencesResult.Ok(preferences);
+        return new PreferencesResult.Ok(preferences, saved.get().getDisplayTimeZone());
     }
 
     /**

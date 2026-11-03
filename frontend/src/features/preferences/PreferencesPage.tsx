@@ -60,6 +60,7 @@ export function PreferencesPage() {
         setLanguage={controller.setLanguage}
         setTheme={controller.setTheme}
         setFontSize={controller.setFontSize}
+        setDisplayTimeZone={controller.setDisplayTimeZone}
         reset={controller.reset}
         save={controller.save}
         dismissAlert={controller.dismissAlert}

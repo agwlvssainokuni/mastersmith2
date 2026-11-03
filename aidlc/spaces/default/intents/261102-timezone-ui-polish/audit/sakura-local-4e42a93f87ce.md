@@ -14196,3 +14196,889 @@
 **Unit**: u2-display-time-zone
 
 ---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-03T11:06:16Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-developer-agent
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-03T11:06:21Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: subagent
+**Stage**: code-generation
+**Tool**: Agent
+**Details**: dispatch of aidlc-developer-agent
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-03T11:06:22Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: plan-approval
+**Authority**: instruction
+**Grant**: none
+**Actor**: subagent
+**Stage**: code-generation
+**Tool**: Agent
+**Details**: dispatch of aidlc-developer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T11:06:39Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae558b4ab41202719
+**Message**: 進めて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T11:51:35Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: Waiting for the backend run to finish.
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T11:51:40Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T11:51:48Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ae0e79b3cb2ebf7cc
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:03:06Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: Waiting for the E2E subset.
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T12:03:47Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-summary.md
+**Context**: construction > u2-display-time-zone > code-generation > code-summary.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:04:07Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:04:07Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:04:22Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: 報告は SubagentHandback で送信済みです。この通知はタイマーの終了だけで、追加の作業はありません。
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:04:26Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a6b6373e9c6374a3b
+**Message**: 進めて
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:04:42Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:04:42Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:04:46Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a2b221f75971e1ec8
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:04Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: 報告は送信済みです。この通知はタイマーの終了だけなので、追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:05:17Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:17Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:29Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aa90efff18d4af32f
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:35Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: E2E の 080・100・110 は 42 件すべて通過しました（BUILD SUCCESSFUL、約 3.4 分）。取得の回数の定数（提供元 1 + 画面 1）は 080・100 の `expect.poll` で通っています。先に送った報告の「E2E は未確認」はこの結果で置き換わります。追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:05:37Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:47Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a2be3d52e4dd404a0
+**Message**: 進めて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:05:49Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:05:50Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:06:01Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: この通知はタイマー終了だけです。報告は送信済みで、追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:06:16Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:06:16Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:06:21Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a4f48d227dc9f94f0
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:09:27Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a6142be68876367b8
+**Message**: 日時のタイムゾーン変換とUI仕上げのIntentで、U1・U3・U6は統合済みです。いまはU2の実装を検証中で、verifyとE2E全件が終わるのを待ち、通ればコードレビューと承認に進みます。
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:11:53Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: これもタイマーの終了通知です。報告は送信済みで、追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:12:09Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:12:09Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:12:20Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a90f0a901b937d09f
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:13:04Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: この通知は、先に確認した E2E の成功（BUILD SUCCESSFUL、4 分 2 秒）と同じ内容です。報告は送信済みで、追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:13:20Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:13:20Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:13:32Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a255abc285e2c0936
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:15:43Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: タイマーの終了通知です。報告はすでに送信済みで、追加の作業はありません。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:15:57Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:15:57Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:16:10Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ac7b7119f48c7ff89
+**Message**: 進めて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:20:14Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a6d35cc6d9615ebec
+**Message**: 日時変換とUI仕上げのIntentで、U1・U3・U6は統合済みです。いまはU2の実装後の全体検査（verify、続けてE2E全件）の完了待ちで、通れば、レビュー、単位の承認、developへの統合へ進みます。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:24:48Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-03T12:25:25Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-summary.md
+**Context**: construction > u2-display-time-zone > code-generation > code-summary.md
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 55a9cd3e
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 55a9cd3e
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: f6d75d2e
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/unit-test-instructions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: f6d75d2e
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/unit-test-instructions.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3707c8ae
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3707c8ae
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-summary.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1ecf26b2
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1ecf26b2
+**Sensor ID**: required-sections
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/traceability.json
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-03T12:25:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 255039d9
+**Sensor ID**: traceability
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-03T12:25:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 255039d9
+**Sensor ID**: traceability
+**Stage slug**: code-generation
+**Unit**: u2-display-time-zone
+**Output path**: aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/traceability.json
+**Duration ms**: 77
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-03T12:25:29Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u6-app-icon-assets
+**Checkpoint**: review-receipt
+**Changed**: docs/verification.md
+**Recorded**: sha256:ede45394af17d9485c09a69374996159bfc95ecaaf355a2f0fab7205908fc6d5
+**Current**: sha256:4427cd1ec4de8230f97bcf5a08165f4abc9c7212178465e6bbf63d0df1d50692
+**Details**: docs/verification.md changed after the app icon assets Unit was reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-03T12:25:29Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u1-time-zone-conversion
+**Checkpoint**: review-receipt
+**Changed**: frontend/eslint.config.js
+**Recorded**: sha256:ab11927f1e33fb4f38ea66d67c37a39102c871bbdcd9c87b3ab35b195183170a
+**Current**: sha256:9b4717623ffea8c03503fa7fc1963ab5cf9534fd5ec0204128ea5cfb9200758c
+**Details**: frontend/eslint.config.js changed after the time zone conversion Unit was reviewed; carrying on.
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-03T12:25:30Z
+**Event**: REVIEW_REQUESTED
+**Stage**: code-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u2-display-time-zone
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2
+**Request Id**: review:48ea22a3e62df55e8458495b8c733377
+**Source Fingerprint**: 50fce22a8226925e5b68b27746c3b02f94dec4674f2b4031fdacf5ab071d9dda
+**Unit Source Fingerprint**: sha256:5b9078578fa7d5d121eff49b060df85601dbb3992806c44984f349a79f86abfb
+**Review File**: .aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.48ea22a3e62df55e8458495b8c733377.review.md
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-03T12:25:51Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-03T12:26:06Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:26:10Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a91add5a9fd1bfd4d
+**Message**: 進めて
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T12:29:43Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/.aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.48ea22a3e62df55e8458495b8c733377.review.md
+**Context**: .aidlc-engine > reviews > code-generation > units > u2-display-time-zone > a905895569abd6aa > 1.48ea22a3e62df55e8458495b8c733377.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:30:02Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: abf7207881d4d3eb6
+**Message**: **Reviewer:** aidlc-architecture-reviewer-agent\n\n判定は **READY** です（Critical 0 件・Major 1 件・Minor 6 件）。Read と検索だけで確かめ、テストは流していません。単体 2917・結合 1708・画面 2753・E2E 277 の件数は code-summary の記録を引用したものです。\n\nレビューは次のフ
+**Review File Digest**: .aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.48ea22a3e62df55e8458495b8c733377.review.md=3635fab5ee863c4b1610b641323bfe64c2c19315b72b1f49d66364460a2eeb31
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:30:06Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-03T12:30:53Z
+**Event**: HUMAN_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. この単位の中で直す（推奨）"]
+**Message Id**: 32a1f7e6
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-03T12:30:53Z
+**Event**: QUESTION_REPLIED
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Question**: U2 のコードのレビュー（READY、Major 1 件・Minor 6 件）の Major をどう扱いますか。\n\n【Major】管理の画面で時刻の「読み込み中」「読み込み失敗」の表示（淡い色の文と再読み込みの帯）を、実際のブラウザの axe で検査する E2E がありません。計画の Step 16（読み込み中・失敗・長い名前の axe、375px のはみ出し）が未実施です。jsdom の axe は色のコントラストを見ないため、淡い文のコントラストは未確認です。\n【Minor の主なもの】① traceability の AC1.2.4 が OK のまま（案内を足さない差の記録漏れ） ② StrictMode のテストがどちらの実装でも通る形 ③ 文の数を数えるテストが名前つき・null・無効な名前を数えていない ④ 100 ミリ秒の時計に頼るテストが通常の単体テストの群にあり、負荷で落ちた実績がある ⑤ 保存済みの名前が解釈できないとき、「ブラウザに合わせる」を選んでも null に戻せない ⑥ ブラウザの一覧と JDK の集合の一致を確かめる検査がない ⑦ code-summary の記述と計画の Step チェックの食い違い。\n\n推奨は A。理由: 淡い文のコントラストは過去の Intent でも実際のブラウザで初めて違反が出た例（Avatar や FormField）があり、計画で約束した確かめを省くと、Build and Test で見つかったときに戻りが大きい。直すのは E2E の状態の追加と記録の修正で、規則は外さない。
+**Reply**: A. この単位の中で直す（推奨）
+**Options**: ["A. この単位の中で直す（推奨）","B. Build and Test で確かめる","C. Minor も含めて全部直す"]
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-03T12:31:00Z
+**Event**: REVIEW_COMPLETED
+**Stage**: code-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u2-display-time-zone
+**Iteration**: 1
+**Verdict**: READY
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2
+**Artifact Fingerprint**: sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2
+**Request Id**: review:48ea22a3e62df55e8458495b8c733377
+**Request Source Fingerprint**: 50fce22a8226925e5b68b27746c3b02f94dec4674f2b4031fdacf5ab071d9dda
+**Source Fingerprint**: 50fce22a8226925e5b68b27746c3b02f94dec4674f2b4031fdacf5ab071d9dda
+**Source Listing**: sha256:8ff7d5d556b2c1604021157d32f5a17348c0436b6cfea9c6323ad9fa6330f181
+**Unit Source Fingerprint**: sha256:5b9078578fa7d5d121eff49b060df85601dbb3992806c44984f349a79f86abfb
+**Review Record**: .aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json
+**Review Record Digest**: sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:31:17Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aa1ec9f6934de6f30
+**Message**: 進めて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:39:20Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-developer-agent
+**Agent ID**: a887e2429602a105c
+**Message**: 指摘のうち、Major と Minor ①②⑦ を直しました。Major の状態は 120 の個別実行で、全組 axe 違反 0 件でした。レビュー本文のパスは存在せず、同じ内容の `code-generation/reviews/review-01.md` を読んで対応しました。\n\n**① Major(R-01): 管理の画面の axe**\n- `frontend/e2e/120-user-ad
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:39:22Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:39:46Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aa0149ad0bf1f7a50
+**Message**: 進めて
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:39:47Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Unit Started
+**Timestamp**: 2026-11-03T12:39:57Z
+**Event**: UNIT_STARTED
+**Stage**: code-generation
+**Unit**: u2-display-time-zone
+**Run floor**: WORKFLOW_STARTED:2026-11-02T16:36:49Z#1
+
+---
+
+## Unit Completed
+**Timestamp**: 2026-11-03T12:39:58Z
+**Event**: UNIT_COMPLETED
+**Stage**: code-generation
+**Unit**: u2-display-time-zone
+**Run floor**: WORKFLOW_STARTED:2026-11-02T16:36:49Z#1
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:40:14Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a50b6fe62b8034309
+**Message**: 進めて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:43:45Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: ab67cd2f12b8251ce
+**Message**: タイムゾーン変換と画面の仕上げの Intent で、U1・U3・U6 を統合済みで、いまは U2 の最終確認の検査（verify と E2E 全件）を流しています。終わり次第、結果を確認して単位の承認をお願いします。
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T12:57:58Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-03T12:58:14Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u2-display-time-zone
+**Checkpoint**: review-receipt
+**Changed**: (paths unavailable)
+**Recorded**: sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2
+**Current**: sha256:80ab40de19cd70d4fbe6758243dc01c759a27a0e80fce1c7b620420f071fd6ab
+**Details**: The display time zone Unit's Code Generation documents changed after they were reviewed; carrying on.
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-03T12:58:14Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: code-generation
+**Unit**: u2-display-time-zone
+**Checkpoint**: review-receipt
+**Changed**: frontend/e2e/120-user-admin-accessibility.e2e.ts, frontend/src/app/display-settings/DisplayTimeZoneProvider.test.tsx
+**Recorded**: sha256:5b9078578fa7d5d121eff49b060df85601dbb3992806c44984f349a79f86abfb
+**Current**: sha256:f1fc10fe52120455120135cab456bdadb5af2ce764ed25ed0be485f49e026c3f
+**Details**: The display time zone Unit's list of files changed after it was reviewed; carrying on.
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T12:58:16Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aaf65472ba6c73554
+**Message**: 続けて
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-03T13:01:21Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aaa46e854841cec4f
+**Message**: タイムゾーン変換とUI仕上げのIntentで、U1・U3・U6は統合済みです。いまU2の単位確認の検査が走っており、通れば承認をお願いして統合し、その後U4・U5に進みます。
+
+---
+
+## Checkpoint Verification Recorded
+**Timestamp**: 2026-11-03T13:01:57Z
+**Event**: CHECKPOINT_VERIFICATION_RECORDED
+**Unit**: u2-display-time-zone
+**Kind**: unit
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Verification Id**: aa0d3916-6f8c-47d1-bd85-389ad8ce44c4
+**Fingerprint**: sha256:ef0412f28aa0c221c5fb1d530fdf3b0b7696bdfdb1f7ed66a5c31835adecf105
+**Command SHA-256**: 994041e78b5c667318608e5bd7591d40c57921699fb67c7d21c4963d594d9110
+**Exit Code**: 0
+**Verified**: true
+**Run floor**: WORKFLOW_STARTED:2026-11-02T16:36:49Z#1
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-03T13:01:58Z
+**Event**: HOST_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-03T13:02:07Z
+**Event**: DECISION_RECORDED
+**Checkpoint**: Construction Unit Approval
+**Unit**: u2-display-time-zone
+**Kind**: unit
+**Stage**: code-generation
+**Fingerprint**: sha256:ef0412f28aa0c221c5fb1d530fdf3b0b7696bdfdb1f7ed66a5c31835adecf105
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Options**: Approve,Request Changes
+**Asked Evidence**: {"functional-design":["sha256:10225d11121f910f3e8179ee01cef16e9f77d7d1c00ec18b9342fc9a5c0cc219",null],"nfr-requirements":["sha256:1e863fba6f10ca52251ca91e0156597114a521a69ac557cd459bbfe7e532087d",null],"nfr-design":["sha256:6ed9ff4604124ce3538e78c18e7bb73a1fd0275876b5ea7f21100ecc1e3e5180",null],"infrastructure-design":["sha256:4c670a9c8c8083d68ff0b88164d32c9139cd82dd5a915ce932c994016ccb83b4",null],"code-generation":["sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2","sha256:5b9078578fa7d5d121eff49b060df85601dbb3992806c44984f349a79f86abfb"]}
+**Run floors**: {"functional-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","nfr-requirements":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","nfr-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","infrastructure-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","code-generation":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1"}
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-03T13:06:27Z
+**Event**: HUMAN_TURN
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Origin**: person
+**Source**: picker
+**Picked**: ["承認する（推奨）"]
+**Message Id**: f003afff
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-03T13:06:27Z
+**Event**: QUESTION_REPLIED
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**Question**: U2（利用者ごとの表示タイムゾーン）のコード生成を承認しますか。\n\n【結果】`./gradlew verify` 通過、`./gradlew e2eTest` は 277 件がすべて通過（直した後の値）。バックエンドは単体 2917 件・結合 1708 件で失敗 0、画面は 2753 件が通過（行 95.15%・分岐 90.5%）。助言のレビューは READY。レビューの Major（管理画面の読み込み中・失敗の axe）は直して、全組で違反 0 件を確かめました。\n【確かめたこと】保存の 1 文（更新と結果の取り出し）は通常の方法で成り立ち、文の数は変えず（GET 2・PUT 2・接続 1）、選択肢の組み立ては中央値 25.7 ミリ秒（目標 100）。\n【計画との差】(1) DisplayTimeZoneInput を user.service でなく user.domain に置いた。(2) Step 1 の変更前のカバレッジ基準は測っていない。(3) StrictMode のテストは外し、代わりの 3 つで確かめた。(4) 管理画面で axe を確かめたのは 360px（最も狭い組）で、375px ではない。\n【承認の場で決める点】AC1.2.4 との食い違い: 保存済みの名前を解釈できないとき、管理画面は案内を出さずブラウザのタイムゾーンで時刻を出します（時差の数字は付きます）。ストーリーは案内を求めています。計画の承認で推奨どおり「案内を足さない」を選んでいただいています。\n【持ち越し】Minor ③〜⑥（文の数のテストの範囲、100 ミリ秒の測りの置き場、「ブラウザに合わせる」へ戻す操作、ブラウザの一覧と JDK の一覧の一致の検査）は直さず、Build and Test で扱います。\n【確かめられていないこと】k6 の p95、実機でのログイン後の取得回数、CI の時間。\n\n推奨: 承認する。持ち越しの Minor は Build and Test で扱え、案内を足さない扱いは計画のときにあなたが選んだものです。
+**Reply**: 承認する（推奨）
+**Options**: ["承認する（推奨）","管理画面に案内を足すよう直す","変更を依頼する"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-03T13:06:35Z
+**Event**: GATE_APPROVED
+**Unit**: u2-display-time-zone
+**Stage**: code-generation
+**Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Stages**: functional-design, nfr-requirements, nfr-design, infrastructure-design, code-generation
+**Gate Scope**: unit-end
+**Checkpoint**: construction-unit
+**Fingerprint**: sha256:ef0412f28aa0c221c5fb1d530fdf3b0b7696bdfdb1f7ed66a5c31835adecf105
+**Run floor**: WORKFLOW_STARTED:2026-11-02T16:36:49Z#1
+**Run floors**: {"functional-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","nfr-requirements":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","nfr-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","infrastructure-design":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1","code-generation":"WORKFLOW_STARTED:2026-11-02T16:36:49Z#1"}
+**Verification Command SHA-256**: 994041e78b5c667318608e5bd7591d40c57921699fb67c7d21c4963d594d9110
+**Verification Id**: aa0d3916-6f8c-47d1-bd85-389ad8ce44c4
+**Approved Evidence**: {"functional-design":["sha256:10225d11121f910f3e8179ee01cef16e9f77d7d1c00ec18b9342fc9a5c0cc219",null],"nfr-requirements":["sha256:1e863fba6f10ca52251ca91e0156597114a521a69ac557cd459bbfe7e532087d",null],"nfr-design":["sha256:6ed9ff4604124ce3538e78c18e7bb73a1fd0275876b5ea7f21100ecc1e3e5180",null],"infrastructure-design":["sha256:4c670a9c8c8083d68ff0b88164d32c9139cd82dd5a915ce932c994016ccb83b4",null],"code-generation":["sha256:94a5c183b68ce3ef9d42d1f73f8a1f56a2c3c91ec2cce361d6e762a2455869a2","sha256:5b9078578fa7d5d121eff49b060df85601dbb3992806c44984f349a79f86abfb"]}
+**Session**: 83d10346-1a5e-4cf0-a084-e0909cf4af5f
+**User Input**: Approve
+**Person Reply**: 承認する（推奨）
+**Message Id**: f003afff
+**Review Finding Dispositions**: {"version":1,"dispositions":[{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-01","fingerprint":"sha256:138cfc130d1519d87102a6475ae6e1f72d6a6e1677055e26ca44f701b2ac7cd3","status":"Changed after review","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-02","fingerprint":"sha256:3baa3583d1da1586dc7facdf7e1f7c11ae7ecf100eae82e1c916ac97bb3e147f","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-03","fingerprint":"sha256:abd3f993896f67eb17197fa6951b63c60eb0c8116b0093435418d0f321efc408","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-04","fingerprint":"sha256:d4bb3940a0a5bb319faa0c2b7aec7eea35ebc52f1287f84aea4360819e6d9c36","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-05","fingerprint":"sha256:0b91f423616d6314d20eeaa7f7cddf7f2e3bcec70d1cfb842c4518b573f65a0d","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-06","fingerprint":"sha256:54bcd3f9a12b31595a282d51f61f1d360189c5508b4d403f434643894dd13fb9","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-07","fingerprint":"sha256:953e6d67bc292789c563762a75d70edc7bff09c882ec6b9d4afa6a06044da244","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md","id":"R-08","fingerprint":"sha256:0072a6a9acb4ed5b781430daa2b15d28885be7fce36fde4cb7fad65e78d13055","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/code-generation/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cb83effe4467d52debaf146b4f76c71387e1460791ce196d263734830e6947d6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/functional-design/functional-spec.md","id":"R-01","fingerprint":"sha256:b29ca303a1ca151c72f8e4f3fbb49a86500d5c3d56ebf3cdc41ba810947a706e","status":"Accepted risk","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:f8bb65497f1cb9cfbab56a5556e7b0f480576c39e0c3a5daf9e1107c07abebbc"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/functional-design/functional-spec.md","id":"R-02","fingerprint":"sha256:76f6dec2c95cd6a1c0c90b1f8ee892f43fc007e68d79bc08f832543ff6d4543f","status":"Accepted risk","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:f8bb65497f1cb9cfbab56a5556e7b0f480576c39e0c3a5daf9e1107c07abebbc"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/functional-design/functional-spec.md","id":"R-03","fingerprint":"sha256:025cdb2be50197fd3a3736a95b938865f71fa9e9a483d117e020c946295ec225","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:f8bb65497f1cb9cfbab56a5556e7b0f480576c39e0c3a5daf9e1107c07abebbc"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/functional-design/functional-spec.md","id":"R-04","fingerprint":"sha256:072d444c644211ee3c891663a1ed5a3317bd184950011a0ed83a09aab822915d","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:f8bb65497f1cb9cfbab56a5556e7b0f480576c39e0c3a5daf9e1107c07abebbc"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/functional-design/functional-spec.md","id":"R-05","fingerprint":"sha256:e82fd1f825d9d7dc936f56977451116e203ed81a6abb1540b7a5da37789b76ac","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/functional-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:f8bb65497f1cb9cfbab56a5556e7b0f480576c39e0c3a5daf9e1107c07abebbc"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/infrastructure-design/cicd-pipeline.md","id":"R-01","fingerprint":"sha256:ecc6b9fbc1fe3511f05ef91d3802dfde2c353005b41c62a01eee778b16899810","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/infrastructure-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cc1297015a6e56f5f504d5644d5d87823a541d48287b7f6376038b65d0d0bfe7"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/infrastructure-design/cicd-pipeline.md","id":"R-02","fingerprint":"sha256:424da253718f4eaa88ad1f1469be4b772519288b537f5572e4794721272749ee","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/infrastructure-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cc1297015a6e56f5f504d5644d5d87823a541d48287b7f6376038b65d0d0bfe7"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/infrastructure-design/cicd-pipeline.md","id":"R-03","fingerprint":"sha256:6ab967333880ee3c7d4ee5a160673c3e91f4d008ad3414d5b22a9d7b4119e121","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/infrastructure-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:cc1297015a6e56f5f504d5644d5d87823a541d48287b7f6376038b65d0d0bfe7"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-design/security-design.md","id":"R-01","fingerprint":"sha256:d788056c5deecebf539ee2ae1758e0536a6ac257d101ad44db814521787ccb73","status":"Accepted risk","decided_at_severity":"Major","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:6479638f7a99c2255399dbbad2959e858ed1199859f3bd9a554e06f3c2c731d4"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-design/security-design.md","id":"R-02","fingerprint":"sha256:7b0d478ae808b1c60cea2491aeebdee8d6e0a3db6029fbd6192089e9ef7477df","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:6479638f7a99c2255399dbbad2959e858ed1199859f3bd9a554e06f3c2c731d4"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-design/security-design.md","id":"R-03","fingerprint":"sha256:721f93419d7fb38e85599f8804b2d035ab56643b3d2f07bdc00381783b1f273f","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:6479638f7a99c2255399dbbad2959e858ed1199859f3bd9a554e06f3c2c731d4"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-design/security-design.md","id":"R-04","fingerprint":"sha256:f4148f9f3144562ee06b130260c82638330036c273ee3bb1e4a30b9ee75f4750","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-design/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:6479638f7a99c2255399dbbad2959e858ed1199859f3bd9a554e06f3c2c731d4"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-requirements/security-requirements.md","id":"R-01","fingerprint":"sha256:039624dc80d868836bdb4bd95a955906d17f9052fac3d36806c932365820f8d1","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:9972322c564376a78e004e415a6d821bb3735e0cfda2de37ada83745a6c506f6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-requirements/security-requirements.md","id":"R-02","fingerprint":"sha256:61832a99b1607ead293414f458a5a4715fd8195c3fd89a1c7a12a8fa8b471e02","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:9972322c564376a78e004e415a6d821bb3735e0cfda2de37ada83745a6c506f6"}},{"artifact":"aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/nfr-requirements/security-requirements.md","id":"R-03","fingerprint":"sha256:f52e04d121c01b642ab21f1c0518a2e46c0f2e621b704fe7353f4074513d2234","status":"Accepted risk","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/nfr-requirements/units/u2-display-time-zone/a905895569abd6aa/1.json","digest":"sha256:9972322c564376a78e004e415a6d821bb3735e0cfda2de37ada83745a6c506f6"}}]}
+
+---

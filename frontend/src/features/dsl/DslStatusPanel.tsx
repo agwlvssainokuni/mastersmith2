@@ -19,10 +19,9 @@
 // 適用中の DSL を今の書式（版 2）で読めないときは、注意（閉じるボタンなし）を出す（U2 dsl-v2 の BR7.2・F2）。
 // 起動時に深すぎるメニューの項目を落としたときも、数と上限の値の注意を出す（Intent 261015-deps-ui-carryover の FR3.2）。
 import { Alert, Button, Card } from 'make-you-chic-ui'
-import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { DslStatus, DslUser } from './api/types'
 import { DslHash } from './DslHash'
-import { formatDateTime } from '../../shared/format/formatDateTime'
+import { DisplayTime } from '../../app/display-settings/DisplayTime'
 import type { LoadState } from './loadState'
 import { useDslText, type DslText } from './useDslText'
 import './DslCommon.css'
@@ -46,8 +45,6 @@ export interface DslStatusPanelProps {
   onReadSchema: () => void
   /** もう一度読み込む */
   onRetry: () => void
-  /** 日時の時差（省略すると端末の時差） */
-  timeZone?: string
 }
 
 function userName(user: DslUser, t: DslText): string {
@@ -62,11 +59,8 @@ export function DslStatusPanel({
   generating,
   onReadSchema,
   onRetry,
-  timeZone,
 }: DslStatusPanelProps) {
   const t = useDslText()
-  const language = useDisplayLanguage()
-  const date = (iso: string) => formatDateTime(iso, language, timeZone)
 
   return (
     <Card className="dsl-status" data-testid="dsl-status-panel">
@@ -112,7 +106,7 @@ export function DslStatusPanel({
                     <span>
                       {t('dsl.status.appliedBy')} {userName(status.applied.by, t)}
                     </span>
-                    <span>{date(status.applied.at)}</span>
+                    <DisplayTime iso={status.applied.at} />
                   </span>
                 ) : (
                   t('dsl.status.noApplied')
@@ -133,7 +127,7 @@ export function DslStatusPanel({
                     <span>
                       {t('dsl.status.placedBy')} {userName(status.preview.by, t)}
                     </span>
-                    <span>{date(status.preview.at)}</span>
+                    <DisplayTime iso={status.preview.at} />
                   </span>
                 ) : (
                   t('dsl.status.noPreview')

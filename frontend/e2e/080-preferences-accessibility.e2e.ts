@@ -50,7 +50,12 @@ import {
 import { newRunTag, requestAdminAccessToken } from './support/invitationSeed'
 import { describeOverflow, measureHorizontalOverflow } from './support/overflow'
 import { watchPage } from './support/pageProblems'
-import { hasPreferencesShape, preferencesSample } from './support/preferencesFixtures'
+import {
+  GETS_BY_DISTRIBUTION,
+  GETS_BY_PREFERENCES_SCREEN,
+  hasPreferencesShape,
+  preferencesSample,
+} from './support/preferencesFixtures'
 import {
   createRegisteredUser,
   loginWithForm,
@@ -70,8 +75,11 @@ const PASSWORD_ITEM = 'パスワードの変更'
 const PREFERENCES_PATH = '/api/me/preferences'
 
 /** GET /api/me/preferences だけを見本の答えに差し替える（PUT は差し替えない）。差し替えた回数を返す。 */
-async function routePreferences(page: Page, body: Preferences): Promise<{ served: number }> {
-  const counter = { served: 0 }
+async function routePreferences(
+  page: Page,
+  body: Preferences,
+): Promise<{ served: number; body: Preferences }> {
+  const counter = { served: 0, body }
   await page.route(
     (url) => url.pathname === PREFERENCES_PATH,
     (route) => {
@@ -82,7 +90,7 @@ async function routePreferences(page: Page, body: Preferences): Promise<{ served
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(body),
+        body: JSON.stringify(counter.body),
       })
     },
   )
@@ -158,10 +166,16 @@ test.describe('080 preferences screens accessibility on the built WAR', () => {
 
       await test.step('open the preferences screen from the user menu', async () => {
         await loginAsAdmin(page)
+        // ログインの直後に、表示のタイムゾーンの提供元が 1 回だけ読む（画面を開く前）。
+        await expect
+          .poll(() => preferences.served, 'ログインの直後の取得（提供元）')
+          .toBe(GETS_BY_DISTRIBUTION)
         await openUserMenuItem(page, PREFERENCES_ITEM)
         await expect(saveButton).toBeVisible()
         await expectComboApplied(page, combo)
-        expect(preferences.served, 'プリファレンスの答えの差し替え').toBe(1)
+        await expect
+          .poll(() => preferences.served, 'プリファレンスの答えの差し替え（提供元 + 画面）')
+          .toBe(GETS_BY_DISTRIBUTION + GETS_BY_PREFERENCES_SCREEN)
       })
 
       await test.step('preferences ready', async () => {
@@ -190,6 +204,15 @@ test.describe('080 preferences screens accessibility on the built WAR', () => {
         await submitButton.click()
         await expect(page.getByTestId('preferences-password-current-input')).toBeFocused()
         await checkState(page, combo, 'password-invalid')
+      })
+
+      await test.step('preferences with a saved zone this browser cannot use', async () => {
+        // 保存済みの名前を今のブラウザが解釈できないときの警告（Alert）と、選択が「ブラウザに合わせる」に見えること。
+        preferences.body = preferencesSample(combo.theme, combo.fontSize, 'Mars/Olympus')
+        await openUserMenuItem(page, PREFERENCES_ITEM)
+        await expect(saveButton).toBeVisible()
+        await expect(page.getByTestId('preferences-time-zone-unresolvable')).toBeVisible()
+        await checkState(page, combo, 'preferences-zone-unresolvable')
       })
 
       await page.waitForLoadState('networkidle')

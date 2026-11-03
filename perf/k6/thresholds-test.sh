@@ -75,4 +75,39 @@ for c in "${CASES[@]}"; do
     fail=1
   fi
 done
+
+# op を持つ場面（Intent 261102-timezone-ui-polish の U2、NFR2.1.3・NFR2.1.4）。iteration_duration は op ごとに p(95)<1000、checks は rate==1、
+# http_req_duration は名前ごとに p(95)<1000。表は「場面名|op をカンマ区切り|要求の名前をカンマ区切り」。
+OP_CASES=(
+  "preferencesSaveTimeZone|set,clear,invalid|preferencesSaveTimeZone,preferencesSaveTimeZoneInvalid"
+)
+for c in "${OP_CASES[@]}"; do
+  name=${c%%|*}
+  rest=${c#*|}
+  ops=${rest%%|*}
+  names=${rest#*|}
+  out=''
+  for _ in 1 2; do
+    out=$(docker run --rm -e "SCENARIO=${name}" -v "${ROOT}/perf/k6:/scripts:ro" "${K6_IMAGE}" \
+      inspect --include-system-env-vars /scripts/scenarios.js 2> /dev/null) && break
+    out='{}'
+  done
+  ok=1
+  checks=$(jq -r --arg k "checks{scenario:${name}}" '.thresholds[$k] // [] | join(",")' <<< "${out}")
+  [ "${checks}" = "rate==1" ] || ok=0
+  for op in ${ops//,/ }; do
+    got=$(jq -r --arg k "iteration_duration{scenario:${name},op:${op}}" '.thresholds[$k] // [] | join(",")' <<< "${out}")
+    [ "${got}" = "p(95)<1000" ] || { ok=0; echo "FAIL ${name} op=${op}: iteration_duration 期待 p(95)<1000 実際 '${got}'" >&2; }
+  done
+  for n in ${names//,/ }; do
+    got=$(jq -r --arg k "http_req_duration{name:${n}}" '.thresholds[$k] // [] | join(",")' <<< "${out}")
+    [ "${got}" = "p(95)<1000" ] || { ok=0; echo "FAIL ${name} name=${n}: http_req_duration 期待 p(95)<1000 実際 '${got}'" >&2; }
+  done
+  if [ "${ok}" = 1 ]; then
+    echo "ok   ${name}: ops ${ops}, checks ${checks}, names ${names}"
+  else
+    echo "FAIL ${name}: checks 期待 rate==1 実際 '${checks}'" >&2
+    fail=1
+  fi
+done
 exit "${fail}"

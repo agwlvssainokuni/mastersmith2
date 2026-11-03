@@ -29,6 +29,7 @@ export const INITIAL_PREFERENCES: Preferences = {
   language: 'ja',
   theme: 'system',
   fontSize: 'md',
+  displayTimeZone: null,
 }
 
 /** 名前を付けた利用者の見本 */
@@ -37,6 +38,7 @@ export const NAMED_PREFERENCES: Preferences = {
   language: 'ja',
   theme: 'light',
   fontSize: 'md',
+  displayTimeZone: null,
 }
 
 /** トークンの更新（ログイン状態の復元）の API のパス */

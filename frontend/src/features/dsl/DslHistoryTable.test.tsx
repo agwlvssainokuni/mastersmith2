@@ -35,7 +35,6 @@ function renderTable(
     onRestore: vi.fn(),
     onDownloadApplied: vi.fn(),
     onRetry: vi.fn(),
-    timeZone: 'Asia/Tokyo',
     ...overrides,
   }
   return { props, ...renderDsl(<DslHistoryTable {...props} />, languages) }
@@ -46,12 +45,12 @@ describe('DslHistoryTable', () => {
     renderTable()
 
     const current = screen.getByTestId('dsl-history-row-revision-3')
-    expect(current).toHaveTextContent('2026-09-24 10:15 JST')
+    expect(current).toHaveTextContent('2026-09-24 10:15 +09:00')
     expect(current).toHaveTextContent('taro@example.com')
     expect(current).toHaveTextContent('3f9a1c000000…')
     expect(current).toHaveTextContent('適用中')
     const older = screen.getByTestId('dsl-history-row-revision-2')
-    expect(older).toHaveTextContent('2026-09-20 16:40 JST')
+    expect(older).toHaveTextContent('2026-09-20 16:40 +09:00')
     expect(older).toHaveTextContent('不明')
     expect(older).not.toHaveTextContent('適用中')
     const rows = screen.getAllByTestId(/^dsl-history-row-/)
@@ -66,7 +65,7 @@ describe('DslHistoryTable', () => {
     const { props } = renderTable()
 
     await user.click(
-      screen.getByRole('button', { name: '2026-09-20 16:40 JST の版をプレビューに戻す' }),
+      screen.getByRole('button', { name: '2026-09-20 16:40 +09:00 の版をプレビューに戻す' }),
     )
     await user.click(screen.getByRole('button', { name: '適用中の DSL をダウンロード' }))
 
@@ -107,7 +106,7 @@ describe('DslHistoryTable', () => {
     expect(screen.getByTestId('dsl-history-row-revision-2')).toHaveTextContent('Unknown')
     expect(
       screen.getByRole('button', {
-        name: 'Restore to preview the version of Sep 20, 2026, 16:40 GMT+9',
+        name: 'Restore to preview the version of 2026-09-20 16:40 +09:00',
       }),
     ).toBeInTheDocument()
   })

@@ -51,7 +51,7 @@ vi.mock('../../app/admin-forbidden/AdminForbiddenProvider', async (importOrigina
   }
 })
 
-/** 2026-10-03 10:00 JST */
+/** 2026-10-03 10:00 +09:00 */
 const NOW = new Date('2026-10-03T01:00:00Z')
 
 interface Deferred<T> {
@@ -142,7 +142,7 @@ interface RenderPageOptions {
 
 function renderPage(fake: FakeApi, options: RenderPageOptions = {}) {
   const { languages, withShell = false, admin = withShell } = options
-  return renderUserAdmin(<UserAdminPage api={fake.api} timeZone="Asia/Tokyo" now={() => NOW} />, {
+  return renderUserAdmin(<UserAdminPage api={fake.api} now={() => NOW} />, {
     languages,
     withShell,
     provider: admin ? adminProvider() : undefined,
@@ -1052,7 +1052,7 @@ describe('UserAdminPage privacy, language and accessibility', () => {
     await screen.findByRole('table', { name: 'User list' })
     expect(screen.getByRole('heading', { level: 1, name: 'Users' })).toBeInTheDocument()
     expect(screen.getByText('Page 1 of 1 (1 total)')).toBeInTheDocument()
-    expect(screen.getByText('Sep 25, 2026, 12:00 GMT+9')).toBeInTheDocument()
+    expect(screen.getByText('2026-09-25 12:00 +09:00')).toBeInTheDocument()
     await user.click(
       screen.getByRole('button', { name: 'Actions: 佐藤 花子 (sato.hanako@example.com)' }),
     )
@@ -1102,10 +1102,9 @@ describe('UserAdminPage privacy, language and accessibility', () => {
     for (const theme of ['light', 'dark'] as const) {
       for (const fontSize of FONT_SIZES) {
         const fake = fakeApi()
-        const view = renderUserAdmin(
-          <UserAdminPage api={fake.api} timeZone="Asia/Tokyo" now={() => NOW} />,
-          { preferences: { language: 'ja', theme, fontSize } },
-        )
+        const view = renderUserAdmin(<UserAdminPage api={fake.api} now={() => NOW} />, {
+          preferences: { language: 'ja', theme, fontSize },
+        })
         await rowsShown()
         // light は属性なし（DisplaySettingsProvider の applyHtmlAttributes）
         await waitFor(() =>

@@ -21,10 +21,9 @@
 // 閉じるボタンの名前は表示の言語に合わせる。本文は Modal がダイアログの説明（aria-describedby）として結ぶ。
 import { Button, Modal } from 'make-you-chic-ui'
 import { useEffect, useRef } from 'react'
-import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { PreviewRef } from './api/types'
 import type { ChangeCounts } from './diffCounts'
-import { formatDateTime } from '../../shared/format/formatDateTime'
+import { DisplayTime } from '../../app/display-settings/DisplayTime'
 import { useDslText } from './useDslText'
 import './DslConfirmDialog.css'
 
@@ -49,8 +48,6 @@ export interface DslConfirmDialogProps {
   confirm: DslConfirm | null
   onConfirm: () => void
   onCancel: () => void
-  /** 日時の時差（省略すると端末の時差） */
-  timeZone?: string
 }
 
 const OVERLAY_CLASS = 'mycui-modal-overlay'
@@ -62,14 +59,8 @@ const REPLACE_BODY: Record<ReplaceOperation, string> = {
 }
 
 /** 確かめる表示 */
-export function DslConfirmDialog({
-  confirm,
-  onConfirm,
-  onCancel,
-  timeZone,
-}: DslConfirmDialogProps) {
+export function DslConfirmDialog({ confirm, onConfirm, onCancel }: DslConfirmDialogProps) {
   const t = useDslText()
-  const language = useDisplayLanguage()
   const cancelRef = useRef<HTMLButtonElement>(null)
   const pressedOnBackdrop = useRef(false)
   const open = confirm !== null
@@ -124,11 +115,7 @@ export function DslConfirmDialog({
         {confirm.kind === 'replace' && (
           <>
             <p className="dsl-confirm-text">{t(REPLACE_BODY[confirm.operation])}</p>
-            <PreviewFacts
-              label={t('dsl.confirm.currentPreview')}
-              preview={confirm.preview}
-              at={formatDateTime(confirm.preview.at, language, timeZone)}
-            />
+            <PreviewFacts label={t('dsl.confirm.currentPreview')} preview={confirm.preview} />
           </>
         )}
         {confirm.kind === 'apply' && (
@@ -159,11 +146,7 @@ export function DslConfirmDialog({
         {confirm.kind === 'discard' && (
           <>
             <p className="dsl-confirm-text">{t('dsl.confirm.discardBody')}</p>
-            <PreviewFacts
-              label={t('dsl.confirm.currentPreview')}
-              preview={confirm.preview}
-              at={formatDateTime(confirm.preview.at, language, timeZone)}
-            />
+            <PreviewFacts label={t('dsl.confirm.currentPreview')} preview={confirm.preview} />
           </>
         )}
         <div className="dsl-confirm-actions">
@@ -191,11 +174,10 @@ export function DslConfirmDialog({
 interface PreviewFactsProps {
   label: string
   preview: PreviewRef
-  at: string
 }
 
 /** 今のプレビューの出どころ・置いた人・日時 */
-function PreviewFacts({ label, preview, at }: PreviewFactsProps) {
+function PreviewFacts({ label, preview }: PreviewFactsProps) {
   const t = useDslText()
   return (
     <dl className="dsl-confirm-facts" data-testid="dsl-confirm-preview">
@@ -208,7 +190,7 @@ function PreviewFacts({ label, preview, at }: PreviewFactsProps) {
           <span>
             {t('dsl.status.placedBy')} {preview.by.email ?? t('dsl.user.unknown')}
           </span>
-          <span>{at}</span>
+          <DisplayTime iso={preview.at} />
         </dd>
       </div>
     </dl>

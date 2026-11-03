@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -119,14 +120,30 @@ class UserRepositoryIT {
         assertThat(repository.findById(Long.MAX_VALUE)).isEmpty();
     }
 
+    /** 表示のタイムゾーンを書かない保存（前の版の画面と同じ 4 項目）。 */
+    private int keepZone(long id, Preferences preferences) {
+        return tx.execute(status -> repository.savePreferences(id, preferences, false, null))
+                .map(saved -> 1)
+                .orElse(0);
+    }
+
+    private Optional<UserRepository.SavedPreferences> savePrefs(
+            long id, Preferences preferences, boolean change, String zone) {
+        return tx.execute(status -> repository.savePreferences(id, preferences, change, zone));
+    }
+
+    private String zoneColumn(long id) {
+        return jdbc.queryForObject("SELECT display_time_zone FROM users WHERE user_id = ?", String.class, id);
+    }
+
     @Test
-    @DisplayName("updating the preferences rewrites only the four columns")
+    @DisplayName("saving the preferences without changing the zone rewrites only the four columns")
     void updatePreferencesTouchesOnlyFourColumns() {
         String email = "prefs-" + UUID.randomUUID() + "@example.com";
         long id = save(email, true).getUserId();
         Map<String, Object> before = row(id);
 
-        Integer rows = tx.execute(status -> repository.updatePreferences(id, CHANGED));
+        int rows = keepZone(id, CHANGED);
 
         Map<String, Object> after = row(id);
         assertThat(rows).isEqualTo(1);
@@ -163,7 +180,7 @@ class UserRepositoryIT {
     void hashUpdateKeepsPreferences() {
         String email = "keep-" + UUID.randomUUID() + "@example.com";
         long id = save(email, false).getUserId();
-        tx.execute(status -> repository.updatePreferences(id, CHANGED));
+        keepZone(id, CHANGED);
 
         tx.execute(status ->
                 repository.updatePasswordHashIfUnchanged(id, new PasswordHash(HASH), new PasswordHash("$2a$04$new3")));
@@ -174,11 +191,11 @@ class UserRepositoryIT {
     @Test
     @DisplayName("both updates of an unknown user change nothing and return zero")
     void unknownUser() {
-        Integer preferences = tx.execute(status -> repository.updatePreferences(Long.MAX_VALUE, CHANGED));
+        Optional<UserRepository.SavedPreferences> preferences = savePrefs(Long.MAX_VALUE, CHANGED, true, "Asia/Tokyo");
         Integer hash = tx.execute(status -> repository.updatePasswordHashIfUnchanged(
                 Long.MAX_VALUE, new PasswordHash(HASH), new PasswordHash("$2a$04$x")));
 
-        assertThat(preferences).isZero();
+        assertThat(preferences).isEmpty();
         assertThat(hash).isZero();
     }
 
@@ -187,11 +204,14 @@ class UserRepositoryIT {
     void readAfterUpdateSeesNewValues() {
         long id = save("ctx-" + UUID.randomUUID() + "@example.com", false).getUserId();
 
-        Preferences read = tx.execute(status -> {
+        // 保存の 1 文は結果を返す文のため持続化の文脈を空にしない。業務処理は保存の後に読み直さず、次のトランザクションで読む。
+        tx.execute(status -> {
             repository.findById(id).orElseThrow();
-            repository.updatePreferences(id, CHANGED);
-            return repository.findById(id).orElseThrow().getPreferences();
+            repository.savePreferences(id, CHANGED, true, "Asia/Tokyo");
+            return null;
         });
+        Preferences read =
+                tx.execute(status -> repository.findById(id).orElseThrow().getPreferences());
         String hash = tx.execute(status -> {
             repository.findById(id).orElseThrow();
             repository.updatePasswordHashIfUnchanged(id, new PasswordHash(HASH), new PasswordHash("$2a$04$new4"));
@@ -207,7 +227,7 @@ class UserRepositoryIT {
     void updateSuspendedTouchesOnlyTheSuspendedColumn() {
         String email = "suspend-" + UUID.randomUUID() + "@example.com";
         long id = save(email, true).getUserId();
-        tx.execute(status -> repository.updatePreferences(id, CHANGED));
+        keepZone(id, CHANGED);
         Map<String, Object> before = row(id);
 
         Integer suspended = tx.execute(status -> repository.updateSuspended(id, true));
@@ -279,5 +299,92 @@ class UserRepositoryIT {
 
         assertThat(repository.existsByRedactedEmail(new RedactedText(email.toUpperCase(java.util.Locale.ROOT))))
                 .isFalse();
+    }
+
+    @Test
+    @DisplayName("Keep leaves the zone column and returns the stored value")
+    void keepLeavesTheZone() {
+        long id = save("keep-zone-" + UUID.randomUUID() + "@example.com", false).getUserId();
+        savePrefs(id, CHANGED, true, "Asia/Kolkata");
+
+        Optional<UserRepository.SavedPreferences> saved = savePrefs(id, CHANGED, false, "America/New_York");
+
+        assertThat(saved).hasValueSatisfying(value -> {
+            assertThat(value.getUserId()).isEqualTo(id);
+            assertThat(value.getDisplayTimeZone()).isEqualTo("Asia/Kolkata");
+        });
+        assertThat(zoneColumn(id)).isEqualTo("Asia/Kolkata");
+    }
+
+    @Test
+    @DisplayName("Clear writes NULL and returns null, Set writes the name and returns it")
+    void clearAndSet() {
+        long id = save("set-zone-" + UUID.randomUUID() + "@example.com", false).getUserId();
+
+        Optional<UserRepository.SavedPreferences> set = savePrefs(id, CHANGED, true, "Asia/Tokyo");
+        assertThat(set)
+                .hasValueSatisfying(
+                        value -> assertThat(value.getDisplayTimeZone()).isEqualTo("Asia/Tokyo"));
+        assertThat(zoneColumn(id)).isEqualTo("Asia/Tokyo");
+
+        Optional<UserRepository.SavedPreferences> cleared = savePrefs(id, CHANGED, true, null);
+        assertThat(cleared)
+                .hasValueSatisfying(
+                        value -> assertThat(value.getDisplayTimeZone()).isNull());
+        assertThat(zoneColumn(id)).isNull();
+    }
+
+    @Test
+    @DisplayName("the five values are committed by the one statement and other columns stay")
+    void fiveValuesInOneStatement() {
+        long id = save("five-" + UUID.randomUUID() + "@example.com", true).getUserId();
+        Map<String, Object> before = row(id);
+
+        savePrefs(id, CHANGED, true, "Europe/London");
+
+        Map<String, Object> after = row(id);
+        assertThat(after)
+                .containsEntry("DISPLAY_NAME", "山田 花子")
+                .containsEntry("LANGUAGE", "en")
+                .containsEntry("THEME", "dark")
+                .containsEntry("FONT_SIZE", "lg");
+        assertThat(zoneColumn(id)).isEqualTo("Europe/London");
+        for (String column : new String[] {"EMAIL", "PASSWORD_HASH", "ADMIN_FLAG", "SUSPENDED"}) {
+            assertThat(after.get(column)).as(column).isEqualTo(before.get(column));
+        }
+        assertThat(((OffsetDateTime) after.get("CREATED_AT")).toInstant())
+                .isEqualTo(((OffsetDateTime) before.get("CREATED_AT")).toInstant());
+    }
+
+    @Test
+    @DisplayName("a name with quotes, semicolons, comment marks and newlines is bound as a value and stored as is")
+    void specialCharactersAreBound() {
+        long id = save("special-" + UUID.randomUUID() + "@example.com", false).getUserId();
+        Preferences special =
+                new Preferences("o'neil \"x\"; -- DROP TABLE users", Language.JA, Theme.LIGHT, FontSize.SM);
+
+        savePrefs(id, special, true, "Asia/Tokyo");
+
+        assertThat(row(id)).containsEntry("DISPLAY_NAME", "o'neil \"x\"; -- DROP TABLE users");
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM users WHERE user_id = ?", Integer.class, id))
+                .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName(
+            "an entity read after the save in the same transaction can still be read, and the column is not updatable by the entity")
+    void entityReadableAfterSave() {
+        long id = save("entity-" + UUID.randomUUID() + "@example.com", false).getUserId();
+
+        String zone = tx.execute(status -> {
+            repository.findById(id).orElseThrow();
+            repository.savePreferences(id, CHANGED, true, "Asia/Tokyo");
+            return zoneColumn(id);
+        });
+        String entityZone =
+                tx.execute(status -> repository.findById(id).orElseThrow().getDisplayTimeZone());
+
+        assertThat(zone).isEqualTo("Asia/Tokyo");
+        assertThat(entityZone).isEqualTo("Asia/Tokyo");
     }
 }

@@ -67,6 +67,10 @@ export const ja = {
   'display.fontSize.sm': '小',
   'display.fontSize.md': '標準',
   'display.fontSize.lg': '大',
+  'displayTime.loading': '読み込み中',
+  'displayTime.error': '時刻を表示できません',
+  'displayTime.errorBar': '表示のタイムゾーンを読み込めませんでした。時刻を表示できません。',
+  'displayTime.reload': 'もう一度読み込む',
 } as const satisfies Record<string, string>
 
 /** 骨組みの文言の鍵 */

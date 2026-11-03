@@ -17,6 +17,7 @@ package cherry.mastersmith.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import cherry.mastersmith.user.domain.DisplayTimeZoneInput;
 import cherry.mastersmith.user.domain.FieldError;
 import cherry.mastersmith.user.domain.FieldErrorReason;
 import cherry.mastersmith.user.domain.FontSize;
@@ -182,7 +184,7 @@ class UserPreferencesServiceTest {
         when(repository.findById(7L)).thenReturn(Optional.of(user(7)));
         when(repository.findById(8L)).thenReturn(Optional.empty());
 
-        assertThat(service.getPreferences(7)).isEqualTo(new PreferencesResult.Ok(STORED));
+        assertThat(service.getPreferences(7)).isEqualTo(new PreferencesResult.Ok(STORED, null));
         assertThat(service.getPreferences(8)).isEqualTo(new PreferencesResult.UserNotFound());
         verifyNoInteractions(publisher);
     }
@@ -190,7 +192,8 @@ class UserPreferencesServiceTest {
     @Test
     @DisplayName("saving with an error returns every field error and never touches the database")
     void saveInvalid() {
-        PreferencesResult result = service.savePreferences(7, new PreferencesCommand("", "EN", "dark", "md"));
+        PreferencesResult result =
+                service.savePreferences(7, command("", "EN", "dark", "md", new DisplayTimeZoneInput.Keep()));
 
         assertThat(result)
                 .isEqualTo(new PreferencesResult.Invalid(List.of(
@@ -199,26 +202,74 @@ class UserPreferencesServiceTest {
         verifyNoInteractions(repository, publisher);
     }
 
+    private static PreferencesCommand command(
+            String displayName, String language, String theme, String fontSize, DisplayTimeZoneInput zone) {
+        return new PreferencesCommand(displayName, language, theme, fontSize, zone);
+    }
+
+    /** 保存した後の 2 列（インターフェースの取り出し口の名前をそのまま成分の名前にした値）。 */
+    private record Saved(Long getUserId, String getDisplayTimeZone) implements UserRepository.SavedPreferences {}
+
+    private static UserRepository.SavedPreferences saved(String zone) {
+        return new Saved(7L, zone);
+    }
+
     @Test
-    @DisplayName("saving valid values updates the four columns once, returns the stripped values and publishes nothing")
+    @DisplayName(
+            "saving valid values with no zone item keeps the zone column, returns the stripped values and publishes nothing")
     void saveValid() {
         Preferences expected = new Preferences("山田 太郎", Language.EN, Theme.DARK, FontSize.LG);
-        when(repository.updatePreferences(7L, expected)).thenReturn(1);
+        when(repository.savePreferences(7L, expected, false, null)).thenReturn(Optional.of(saved("Asia/Tokyo")));
 
-        PreferencesResult result = service.savePreferences(7, new PreferencesCommand(" 山田 太郎　", "en", "dark", "lg"));
+        PreferencesResult result =
+                service.savePreferences(7, command(" 山田 太郎　", "en", "dark", "lg", new DisplayTimeZoneInput.Keep()));
 
-        assertThat(result).isEqualTo(new PreferencesResult.Ok(expected));
-        verify(repository, times(1)).updatePreferences(7L, expected);
+        assertThat(result).isEqualTo(new PreferencesResult.Ok(expected, "Asia/Tokyo"));
+        verify(repository, times(1)).savePreferences(7L, expected, false, null);
         verify(repository, never()).findById(anyLong());
         verifyNoInteractions(publisher);
     }
 
     @Test
+    @DisplayName("Clear writes null and Text writes the name, each with one statement")
+    void saveClearAndSet() {
+        Preferences expected = new Preferences("山田 太郎", Language.EN, Theme.DARK, FontSize.LG);
+        when(repository.savePreferences(7L, expected, true, null)).thenReturn(Optional.of(saved(null)));
+        when(repository.savePreferences(7L, expected, true, "America/New_York"))
+                .thenReturn(Optional.of(saved("America/New_York")));
+
+        assertThat(service.savePreferences(7, command("山田 太郎", "en", "dark", "lg", new DisplayTimeZoneInput.Clear())))
+                .isEqualTo(new PreferencesResult.Ok(expected, null));
+        assertThat(service.savePreferences(
+                        7, command("山田 太郎", "en", "dark", "lg", new DisplayTimeZoneInput.Text("America/New_York"))))
+                .isEqualTo(new PreferencesResult.Ok(expected, "America/New_York"));
+    }
+
+    @Test
+    @DisplayName("an invalid zone name or a non-text value never issues a statement and lists the zone error last")
+    void saveInvalidZone() {
+        PreferencesResult bad =
+                service.savePreferences(7, command("名前", "xx", "dark", "md", new DisplayTimeZoneInput.Text("+09:00")));
+        PreferencesResult notText = service.savePreferences(
+                7, command("名前", "ja", "dark", "md", new DisplayTimeZoneInput.NotText("NUMBER")));
+
+        assertThat(bad)
+                .isEqualTo(new PreferencesResult.Invalid(List.of(
+                        new FieldError("language", FieldErrorReason.INVALID_VALUE),
+                        new FieldError("displayTimeZone", FieldErrorReason.INVALID_VALUE))));
+        assertThat(notText)
+                .isEqualTo(new PreferencesResult.Invalid(
+                        List.of(new FieldError("displayTimeZone", FieldErrorReason.INVALID_VALUE))));
+        verifyNoInteractions(repository, publisher);
+    }
+
+    @Test
     @DisplayName("saving for a user row that is gone returns UserNotFound")
     void saveForMissingUser() {
-        when(repository.updatePreferences(eq(8L), any(Preferences.class))).thenReturn(0);
+        when(repository.savePreferences(eq(8L), any(Preferences.class), anyBoolean(), any()))
+                .thenReturn(Optional.empty());
 
-        assertThat(service.savePreferences(8, new PreferencesCommand("名前", "ja", "light", "sm")))
+        assertThat(service.savePreferences(8, command("名前", "ja", "light", "sm", new DisplayTimeZoneInput.Keep())))
                 .isEqualTo(new PreferencesResult.UserNotFound());
     }
 
@@ -359,7 +410,10 @@ class UserPreferencesServiceTest {
         assertThat(PasswordChangeCommand.of(CURRENT, NEW, NEW).toString())
                 .doesNotContain(CURRENT)
                 .doesNotContain(NEW);
-        assertThat(new PreferencesCommand("user@example.com", "ja", "system", "md").toString())
-                .doesNotContain("user@example.com");
+        assertThat(new PreferencesCommand(
+                                "user@example.com", "ja", "system", "md", new DisplayTimeZoneInput.Text("SECRET-ZONE"))
+                        .toString())
+                .doesNotContain("user@example.com")
+                .doesNotContain("SECRET-ZONE");
     }
 }

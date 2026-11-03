@@ -81,6 +81,35 @@ public final class MeApi {
     }
 
     /**
+     * プリファレンスを保存する（表示のタイムゾーンの項目つき。Intent 261102-timezone-ui-polish の U2）。
+     *
+     * @param accessToken アクセストークン（無ければ null）
+     * @param displayName 氏名
+     * @param language 言語
+     * @param theme テーマ
+     * @param fontSize 文字の大きさ
+     * @param displayTimeZone 表示のタイムゾーン（本文の値そのまま。null は明示の null、文字列でない型も渡せる）
+     * @param headers 足すヘッダー
+     * @return 応答
+     */
+    public HttpResponse<String> putPreferencesWithZone(
+            String accessToken,
+            String displayName,
+            String language,
+            String theme,
+            String fontSize,
+            Object displayTimeZone,
+            String... headers) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("displayName", displayName);
+        body.put("language", language);
+        body.put("theme", theme);
+        body.put("fontSize", fontSize);
+        body.put("displayTimeZone", displayTimeZone);
+        return putPreferencesRaw(accessToken, MAPPER.writeValueAsString(body), headers);
+    }
+
+    /**
      * プリファレンスの保存に、本文をそのまま送る。
      *
      * @param accessToken アクセストークン（無ければ null）

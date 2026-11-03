@@ -70,4 +70,8 @@ export const en: Record<MessageKey, string> = {
   'display.fontSize.sm': 'Small',
   'display.fontSize.md': 'Medium',
   'display.fontSize.lg': 'Large',
+  'displayTime.loading': 'Loading',
+  'displayTime.error': 'Time unavailable',
+  'displayTime.errorBar': 'The display time zone could not be loaded, so times cannot be shown.',
+  'displayTime.reload': 'Load again',
 }

@@ -39,12 +39,16 @@ export const ME_PREFERENCES_PATH = '/api/me/preferences'
 /** 自分のパスワードの変更の API のパス */
 export const ME_PASSWORD_PATH = '/api/me/password'
 
-/** 氏名と表示の設定の4つ（契約 C4 の Preferences） */
+/** 表示のタイムゾーンの名前の長さの上限（サーバーの列の長さと同じ） */
+export const MAX_TIME_ZONE_NAME_LENGTH = 64
+
+/** 氏名と表示の設定の4つと表示のタイムゾーン（契約 C4 の Preferences。displayTimeZone の null は「ブラウザに合わせる」） */
 export interface Preferences {
   displayName: string
   language: DisplayLanguage
   theme: ThemeChoice
   fontSize: FontSize
+  displayTimeZone: string | null
 }
 
 /** パスワードの変更の要求の3つ（契約 C4 の PasswordChangeRequest） */
@@ -55,7 +59,7 @@ export interface PasswordChangeInput {
 }
 
 /** プリファレンスの画面の項目の名前（C4 の項目名） */
-export type PreferencesField = 'displayName' | 'language' | 'theme' | 'fontSize'
+export type PreferencesField = 'displayName' | 'language' | 'theme' | 'fontSize' | 'displayTimeZone'
 
 /** パスワードの変更の画面の項目の名前（C4 の項目名） */
 export type PasswordField = 'currentPassword' | 'newPassword' | 'newPasswordConfirmation'
@@ -68,21 +72,28 @@ export class PreferencesShapeError extends Error {
   }
 }
 
-/** 本文を決めた4つだけの値にする。形が違えば PreferencesShapeError を投げる。 */
+/** 本文を決めた5つだけの値にする。形が違えば PreferencesShapeError を投げる。 */
 function toPreferences(body: unknown): Preferences {
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     throw new PreferencesShapeError()
   }
-  const { displayName, language, theme, fontSize } = body as Record<string, unknown>
+  const { displayName, language, theme, fontSize, displayTimeZone } = body as Record<
+    string,
+    unknown
+  >
   if (
     typeof displayName !== 'string' ||
     !isDisplayLanguage(language) ||
     !isThemeChoice(theme) ||
-    !isFontSize(fontSize)
+    !isFontSize(fontSize) ||
+    !(
+      displayTimeZone === null ||
+      (typeof displayTimeZone === 'string' && displayTimeZone.length <= MAX_TIME_ZONE_NAME_LENGTH)
+    )
   ) {
     throw new PreferencesShapeError()
   }
-  return { displayName, language, theme, fontSize }
+  return { displayName, language, theme, fontSize, displayTimeZone }
 }
 
 /** 成功の応答の本文を JSON として読み、形を確かめる。読めなければ PreferencesShapeError を投げる。 */
@@ -101,13 +112,14 @@ export async function getPreferences(): Promise<Preferences> {
   return readPreferences(await apiRequest(ME_PREFERENCES_PATH, { method: 'GET' }))
 }
 
-/** 自分の氏名と表示の設定の4つをまとめて保存する（`PUT /api/me/preferences`）。保存した4つを返す。 */
+/** 自分の氏名と表示の設定の5つをまとめて保存する（`PUT /api/me/preferences`）。保存した5つを返す。 */
 export async function savePreferences(prefs: Preferences): Promise<Preferences> {
   const body: Preferences = {
     displayName: prefs.displayName,
     language: prefs.language,
     theme: prefs.theme,
     fontSize: prefs.fontSize,
+    displayTimeZone: prefs.displayTimeZone,
   }
   const response = await apiRequest(ME_PREFERENCES_PATH, {
     method: 'PUT',

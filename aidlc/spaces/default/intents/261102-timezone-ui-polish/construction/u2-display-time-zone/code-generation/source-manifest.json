@@ -1,0 +1,316 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-display-time-zone",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/DisplayTimeZoneInput.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/PreferencesValidation.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/TimeZoneName.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/domain/User.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/PreferencesCommand.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/PreferencesResult.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/service/UserPreferencesService.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/web/MeController.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/web/PreferencesRequest.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/user/web/PreferencesResponse.java"
+    },
+    {
+      "path": "backend/src/main/resources/db/migration/V14__u2_display_time_zone.sql"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/audit/domain/AuditMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/DisplayTimeZoneInputTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/PreferencesValidationTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/TimeZoneNamePropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/domain/TimeZoneNameTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/DisplayTimeZoneMigrationCompatibilityIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserRepositoryIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/repository/UserSchemaIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/DisplayTimeZoneKeptByOtherUpdatesIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/PreferencesPartialUpdateIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/service/UserPreferencesServiceTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/testsupport/MeApi.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePreferencesApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePreferencesDisplayTimeZoneApiIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/MePreferencesQueryCountIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/PreferencesRequestTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/PreferencesSecretLeakIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/user/web/PreferencesTraceExposureIT.java"
+    },
+    {
+      "path": "docs/deployment.md"
+    },
+    {
+      "path": "docs/users.md"
+    },
+    {
+      "path": "docs/verification.md"
+    },
+    {
+      "path": "frontend/e2e/080-preferences-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/100-app-text-contrast.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/110-user-admin-flow.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/120-user-admin-accessibility.e2e.ts"
+    },
+    {
+      "path": "frontend/e2e/support/axe.ts"
+    },
+    {
+      "path": "frontend/e2e/support/preferencesFixtures.ts"
+    },
+    {
+      "path": "frontend/eslint-rules/timeZoneSelectors.js"
+    },
+    {
+      "path": "frontend/eslint.config.js"
+    },
+    {
+      "path": "frontend/playwright.config.ts"
+    },
+    {
+      "path": "frontend/src/app/App.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTime.css"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTime.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTime.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTimeZoneErrorBar.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTimeZoneProvider.test.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/DisplayTimeZoneProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/display-settings/browserTimeZone.test.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/browserTimeZone.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/decideDisplayTimeZone.test.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/decideDisplayTimeZone.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/displayTimeZoneApi.test.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/displayTimeZoneApi.ts"
+    },
+    {
+      "path": "frontend/src/app/display-settings/testing/DisplayTimeZoneTestProvider.tsx"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/en.ts"
+    },
+    {
+      "path": "frontend/src/app/i18n/messages/ja.ts"
+    },
+    {
+      "path": "frontend/src/app/testing/renderWithProviders.tsx"
+    },
+    {
+      "path": "frontend/src/eslintTimeZoneRule.test.ts"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslConfirmDialog.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslHistoryTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslHistoryTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/DslStatusPanel.tsx"
+    },
+    {
+      "path": "frontend/src/features/dsl/format.ts"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationList.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/invitation/InvitationList.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesForm.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/PreferencesPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/TimeZoneSelect.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/TimeZoneSelect.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/buildTimeZoneOptions.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/errorMessages.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/formChecks.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/messages.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/preferencesApi.test.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/preferencesApi.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/registration.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/testing/fixtures.ts"
+    },
+    {
+      "path": "frontend/src/features/preferences/testing/renderPreferences.tsx"
+    },
+    {
+      "path": "frontend/src/features/preferences/usePreferencesForm.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserAdminPage.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserTable.test.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/UserTable.tsx"
+    },
+    {
+      "path": "frontend/src/features/useradmin/lockedUntilInZone.test.ts"
+    },
+    {
+      "path": "frontend/src/features/useradmin/lockedUntilInZone.ts"
+    },
+    {
+      "path": "frontend/src/shared/format/formatInstantToMinutes.test.ts"
+    },
+    {
+      "path": "frontend/src/shared/format/formatInstantToMinutes.ts"
+    },
+    {
+      "path": "frontend/vitest.config.ts"
+    },
+    {
+      "path": "perf/README.md"
+    },
+    {
+      "path": "perf/k6/scenarios.js"
+    },
+    {
+      "path": "perf/k6/thresholds-test.sh"
+    }
+  ]
+}

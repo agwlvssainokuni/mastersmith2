@@ -140,11 +140,12 @@ class MePreferencesApiIT {
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(HttpTestClient.json(response))
-                .isEqualTo(Map.of(
-                        "displayName", TestUserAccounts.DISPLAY_NAME,
-                        "language", "ja",
-                        "theme", "system",
-                        "fontSize", "md"));
+                .containsOnlyKeys("displayName", "language", "theme", "fontSize", "displayTimeZone")
+                .containsEntry("displayName", TestUserAccounts.DISPLAY_NAME)
+                .containsEntry("language", "ja")
+                .containsEntry("theme", "system")
+                .containsEntry("fontSize", "md")
+                .containsEntry("displayTimeZone", null);
     }
 
     @Test
@@ -158,8 +159,13 @@ class MePreferencesApiIT {
         Map<String, Object> expected =
                 Map.of("displayName", "山田 花子", "language", "en", "theme", "dark", "fontSize", "lg");
         assertThat(saved.statusCode()).isEqualTo(200);
-        assertThat(HttpTestClient.json(saved)).isEqualTo(expected);
-        assertThat(HttpTestClient.json(me.getPreferences(token))).isEqualTo(expected);
+        assertThat(HttpTestClient.json(saved))
+                .containsOnlyKeys("displayName", "language", "theme", "fontSize", "displayTimeZone")
+                .containsAllEntriesOf(expected)
+                .containsEntry("displayTimeZone", null);
+        assertThat(HttpTestClient.json(me.getPreferences(token)))
+                .containsAllEntriesOf(expected)
+                .containsEntry("displayTimeZone", null);
         HttpResponse<String> login = auth.login(member.email(), AdminTestUsers.PASSWORD);
         assertThat(HttpTestClient.json(login).get("user"))
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
@@ -184,7 +190,9 @@ class MePreferencesApiIT {
         String token = AuthApi.accessToken(auth.login(email, password));
 
         assertThat(HttpTestClient.json(me.getPreferences(token)))
-                .isEqualTo(Map.of("displayName", email, "language", "ja", "theme", "system", "fontSize", "md"));
+                .containsAllEntriesOf(
+                        Map.of("displayName", email, "language", "ja", "theme", "system", "fontSize", "md"))
+                .containsEntry("displayTimeZone", null);
     }
 
     @Test

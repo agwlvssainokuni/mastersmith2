@@ -24,7 +24,7 @@
 import { Alert, Button } from 'make-you-chic-ui'
 import { useEffect, useId, useRef } from 'react'
 import { useAdminForbidden } from '../../app/admin-forbidden/AdminForbiddenProvider'
-import { useDisplaySettings } from '../../app/display-settings/DisplaySettingsProvider'
+import { DisplayTimeZoneErrorBar } from '../../app/display-settings/DisplayTimeZoneErrorBar'
 import { useApplyOwnProfile } from '../../app/display-settings/useApplyOwnProfile'
 import { userAdminApi, type UserAdminApi } from './api/userAdminApi'
 import { ConfirmActionDialog } from './ConfirmActionDialog'
@@ -41,8 +41,6 @@ import './UserAdminPage.css'
 export interface UserAdminPageProps {
   /** API の関数の集まり（テストで差し替える） */
   api?: UserAdminApi
-  /** 日時の時間帯（省略すると端末の時間帯。テストで固定する） */
-  timeZone?: string
   /** 今の時刻を返す関数（解除の予定の時刻が今日かの判定。テストで固定する） */
   now?: () => Date
 }
@@ -52,13 +50,8 @@ function currentTime(): Date {
 }
 
 /** 利用者の管理の画面 */
-export function UserAdminPage({
-  api = userAdminApi,
-  timeZone,
-  now = currentTime,
-}: UserAdminPageProps) {
+export function UserAdminPage({ api = userAdminApi, now = currentTime }: UserAdminPageProps) {
   const t = useUserAdminText()
-  const { language } = useDisplaySettings()
   const reportForbidden = useAdminForbidden()
   const applyOwnProfile = useApplyOwnProfile()
   const state = useUserAdmin({ api, t, reportForbidden, applyOwnProfile })
@@ -111,6 +104,7 @@ export function UserAdminPage({
   return (
     <div className="useradmin-page" data-testid="useradmin-page">
       <h1 className="useradmin-heading">{t('useradmin.title')}</h1>
+      <DisplayTimeZoneErrorBar />
       <UserSearchBox
         value={state.searchInput}
         error={state.searchError !== null ? t(state.searchError) : undefined}
@@ -190,8 +184,6 @@ export function UserAdminPage({
             onPageChange={state.goToPage}
             busy={listBusy}
             label={t('useradmin.list.heading')}
-            language={language}
-            timeZone={timeZone}
             now={now()}
             renderActions={(row) => (
               <UserRowActions

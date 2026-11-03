@@ -86,10 +86,7 @@ function fakeApi(overrides: Partial<DslApi> = {}) {
 function renderPage(api = fakeApi(), languages?: readonly string[]) {
   const save = vi.fn<(file: DslFile) => void>()
   const user = userEvent.setup()
-  const rendered = renderDsl(
-    <DslAdminPage api={api} save={save} timeZone="Asia/Tokyo" />,
-    languages,
-  )
+  const rendered = renderDsl(<DslAdminPage api={api} save={save} />, languages)
   return { api, save, user, ...rendered }
 }
 
@@ -97,15 +94,11 @@ function renderPage(api = fakeApi(), languages?: readonly string[]) {
 function renderInShell(api = fakeApi()) {
   const save = vi.fn<(file: DslFile) => void>()
   const user = userEvent.setup()
-  const rendered = renderDsl(
-    <DslAdminPage api={api} save={save} timeZone="Asia/Tokyo" />,
-    undefined,
-    {
-      withShell: true,
-      provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
-      registrations: [registration],
-    },
-  )
+  const rendered = renderDsl(<DslAdminPage api={api} save={save} />, undefined, {
+    withShell: true,
+    provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
+    registrations: [registration],
+  })
   return { api, save, user, ...rendered }
 }
 

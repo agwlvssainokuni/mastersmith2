@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 //
-// 表示の書式（BR5.10・BR6.3）。識別は先頭 12 文字、ファイルの大きさ。日時の書式 formatDateTime は、招待の管理の画面と
-// 共に使うため src/shared/format/formatDateTime.ts へ移した（U5 の機能設計の Q1 A）。
+// 表示の書式（BR5.10・BR6.3）。識別は先頭 12 文字、ファイルの大きさ。日時は管理の画面すべてで表示のタイムゾーンの時刻の欄の部品
+// （src/app/display-settings/DisplayTime.tsx。Intent 261102-timezone-ui-polish の U2）で描くため、ここには持たない。
 
 /** 画面に示す識別の長さ */
 export const SHORT_HASH_LENGTH = 12

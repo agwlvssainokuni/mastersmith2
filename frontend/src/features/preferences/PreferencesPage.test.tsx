@@ -253,6 +253,7 @@ describe('PreferencesPage alignment with the stored values (D2)', () => {
           language: 'en',
           theme: 'dark',
           fontSize: 'lg',
+          displayTimeZone: null,
         }),
       ],
     })
@@ -262,7 +263,13 @@ describe('PreferencesPage alignment with the stored values (D2)', () => {
     expect(html()).toHaveAttribute('data-theme', 'dark')
     expect(html()).toHaveAttribute('data-font-size', 'lg')
     expect(applied.calls).toEqual([
-      { displayName: '佐藤 花子', language: 'en', theme: 'dark', fontSize: 'lg' },
+      {
+        displayName: '佐藤 花子',
+        language: 'en',
+        theme: 'dark',
+        fontSize: 'lg',
+        displayTimeZone: null,
+      },
     ])
     expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement()
   })
@@ -337,6 +344,7 @@ describe('PreferencesPage saving (W7・W8)', () => {
       language: 'en',
       theme: 'light',
       fontSize: 'md',
+      displayTimeZone: null,
     }
     const server = start({ put: [jsonResponse(200, savedValues)] })
     await formReady()
@@ -361,6 +369,7 @@ describe('PreferencesPage saving (W7・W8)', () => {
       language: 'en',
       theme: 'light',
       fontSize: 'md',
+      displayTimeZone: null,
     })
     expect(applied.calls).toEqual([savedValues])
   })
@@ -610,5 +619,105 @@ describe('PreferencesPage secrets and personal values (NFR2.1)', () => {
     })()
     await formReady()
     expect(await axe(container)).toHaveNoViolations()
+  })
+})
+
+describe('PreferencesPage display time zone (BR2.15〜BR2.18)', () => {
+  const zoneSelect = () => screen.getByTestId('preferences-time-zone-select')
+
+  it('shows the saved name and tells the provider the saved name once the screen has loaded', async () => {
+    const applySaved = vi.fn()
+    const server = installFakeServer({
+      [REFRESH_PATH]: [sessionResponse(NAMED_PREFERENCES)],
+      [GET]: [jsonResponse(200, { ...NAMED_PREFERENCES, displayTimeZone: 'Asia/Kolkata' })],
+    })
+    renderPreferencesApp({ auth: AUTH, displayTimeZone: { actions: { applySaved } } })
+
+    await formReady()
+    expect(zoneSelect()).toHaveValue('Asia/Kolkata')
+    expect(applySaved).toHaveBeenCalledWith('Asia/Kolkata')
+    expect(server.requestsTo(ME_PREFERENCES_PATH, 'GET')).toHaveLength(1)
+  })
+
+  it('sends the chosen name and null for the browser choice, and tells the provider the saved answer', async () => {
+    const user = userEvent.setup()
+    const applySaved = vi.fn()
+    const server = installFakeServer({
+      [REFRESH_PATH]: [sessionResponse(NAMED_PREFERENCES)],
+      [GET]: [jsonResponse(200, NAMED_PREFERENCES)],
+      [PUT]: [
+        jsonResponse(200, { ...NAMED_PREFERENCES, displayTimeZone: 'America/New_York' }),
+        jsonResponse(200, NAMED_PREFERENCES),
+      ],
+    })
+    renderPreferencesApp({ auth: AUTH, displayTimeZone: { actions: { applySaved } } })
+    await formReady()
+    expect(zoneSelect()).toHaveValue('')
+
+    await user.selectOptions(zoneSelect(), 'America/New_York')
+    await user.click(saveButton())
+    await screen.findByText('保存しました')
+    await user.selectOptions(zoneSelect(), '')
+    await waitFor(() => expect(screen.getByRole('button', { name: '元に戻す' })).toBeEnabled())
+    await user.click(saveButton())
+    await waitFor(() => expect(server.requestsTo(ME_PREFERENCES_PATH, 'PUT')).toHaveLength(2))
+
+    const bodies = server.requestsTo(ME_PREFERENCES_PATH, 'PUT').map((r) => r.body)
+    expect(bodies[0]).toMatchObject({ displayTimeZone: 'America/New_York' })
+    expect(bodies[1]).toMatchObject({ displayTimeZone: null })
+    await waitFor(() => expect(applySaved).toHaveBeenLastCalledWith(null))
+    expect(applySaved).toHaveBeenCalledWith('America/New_York')
+  })
+
+  it('counts the zone as a change, and reverts it', async () => {
+    const user = userEvent.setup()
+    start({ session: NAMED_PREFERENCES })
+    await formReady()
+    expect(screen.getByRole('button', { name: '元に戻す' })).toBeDisabled()
+
+    await user.selectOptions(zoneSelect(), 'Asia/Tokyo')
+    expect(screen.getByRole('button', { name: '元に戻す' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: '元に戻す' }))
+
+    expect(zoneSelect()).toHaveValue('')
+  })
+
+  it('shows a server rejection of the zone under the field, keeps the choice and does not tell the provider', async () => {
+    const user = userEvent.setup()
+    const applySaved = vi.fn()
+    installFakeServer({
+      [REFRESH_PATH]: [sessionResponse(NAMED_PREFERENCES)],
+      [GET]: [jsonResponse(200, NAMED_PREFERENCES)],
+      [PUT]: [validationFailed([{ field: 'displayTimeZone', reason: 'INVALID_VALUE' }])],
+    })
+    renderPreferencesApp({ auth: AUTH, displayTimeZone: { actions: { applySaved } } })
+    await formReady()
+    applySaved.mockClear()
+
+    await user.selectOptions(zoneSelect(), 'America/New_York')
+    await user.click(saveButton())
+
+    expect(await screen.findByText('タイムゾーンを選び直してください')).toBeInTheDocument()
+    expect(zoneSelect()).toHaveValue('America/New_York')
+    await waitFor(() => expect(zoneSelect()).toHaveFocus())
+    expect(applySaved).not.toHaveBeenCalled()
+  })
+
+  it('disables the select while saving', async () => {
+    const user = userEvent.setup()
+    const answer = deferred()
+    installFakeServer({
+      [REFRESH_PATH]: [sessionResponse(NAMED_PREFERENCES)],
+      [GET]: [jsonResponse(200, NAMED_PREFERENCES)],
+      [PUT]: [answer.promise],
+    })
+    renderPreferencesApp({ auth: AUTH })
+    await formReady()
+
+    await user.click(saveButton())
+
+    await waitFor(() => expect(zoneSelect()).toBeDisabled())
+    answer.resolve(jsonResponse(200, NAMED_PREFERENCES))
+    await waitFor(() => expect(zoneSelect()).toBeEnabled())
   })
 })

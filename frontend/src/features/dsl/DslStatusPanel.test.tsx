@@ -35,7 +35,6 @@ function renderPanel(
     generating: false,
     onReadSchema: vi.fn(),
     onRetry: vi.fn(),
-    timeZone: 'Asia/Tokyo',
     ...overrides,
   }
   return { props, ...renderDsl(<DslStatusPanel {...props} />, languages) }
@@ -49,12 +48,12 @@ describe('DslStatusPanel', () => {
     expect(applied).toHaveTextContent('3f9a1c000000…')
     expect(applied).toHaveTextContent(hashOf('3f9a1c'))
     expect(applied).toHaveTextContent('taro@example.com')
-    expect(applied).toHaveTextContent('2026-09-24 10:15 JST')
+    expect(applied).toHaveTextContent('2026-09-24 10:15 +09:00')
     const preview = screen.getByTestId('dsl-status-preview')
     expect(preview).toHaveTextContent('8b02d4000000…')
     expect(preview).toHaveTextContent('アップロード')
     expect(preview).toHaveTextContent('hanako@example.com')
-    expect(preview).toHaveTextContent('2026-09-24 11:02 JST')
+    expect(preview).toHaveTextContent('2026-09-24 11:02 +09:00')
   })
 
   it('tells that nothing is applied and that there is no preview', () => {

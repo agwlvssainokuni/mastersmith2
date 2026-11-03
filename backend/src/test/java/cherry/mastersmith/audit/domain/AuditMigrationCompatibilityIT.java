@@ -58,11 +58,12 @@ class AuditMigrationCompatibilityIT {
      * 今の版の最後の移行の番号（クラスパスの移行をすべて当てたときの版）。Intent 261004-role-menu の B4 で V11 を足したため 11 に、B5 で
      * V12 を足したため 12 にした（依頼者の決定 B。移行を足すたびに、この値と {@link #MIGRATIONS_AFTER_PREVIOUS} を書き換える）。Intent
      * 261016-business-data-views の B4 で V13（監査の3列 target_schema・target_table・work_role_id）を足したため 13 にした。前の版
-     * （V1〜V9）との互換の確かめは、そのまま V13 の3列にも当てる（NFR 要件のレビューの R-06）。
+     * （V1〜V9）との互換の確かめは、そのまま V13 の3列にも当てる（NFR 要件のレビューの R-06）。Intent 261102-timezone-ui-polish の U2 で
+     * V14（利用者の表の表示のタイムゾーンの列）を足したため 14 にした（期待は緩めず、新しい最後の版に合わせるだけ）。
      */
-    private static final int CURRENT_LAST_VERSION = 13;
+    private static final int CURRENT_LAST_VERSION = 14;
 
-    /** 前の版の後に今の版が当てる移行の数（V10〜V13）。 */
+    /** 前の版の後に今の版が当てる移行の数（V10〜V14）。 */
     private static final int MIGRATIONS_AFTER_PREVIOUS = CURRENT_LAST_VERSION - PREVIOUS_LAST_VERSION;
 
     private static final Pattern VERSIONED = Pattern.compile("V(\\d+)__.+\\.sql");

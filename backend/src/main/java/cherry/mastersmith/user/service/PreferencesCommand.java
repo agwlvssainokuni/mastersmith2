@@ -15,6 +15,8 @@
  */
 package cherry.mastersmith.user.service;
 
+import cherry.mastersmith.user.domain.DisplayTimeZoneInput;
+
 /**
  * プリファレンスの保存の入力（検証する前の値。どれも null でもよい）。文字列化では氏名を伏せる（メソッドの呼び出しの追跡が業務処理の
  * 引数を文字列にするため）。
@@ -23,13 +25,15 @@ package cherry.mastersmith.user.service;
  * @param language 言語
  * @param theme テーマ
  * @param fontSize 文字の大きさ
+ * @param displayTimeZone 表示のタイムゾーン（3 状態。検証の前の値で、文字列化で中身を伏せる）
  */
-public record PreferencesCommand(String displayName, String language, String theme, String fontSize) {
+public record PreferencesCommand(
+        String displayName, String language, String theme, String fontSize, DisplayTimeZoneInput displayTimeZone) {
 
     /** 氏名を伏せて文字列にする。 */
     @Override
     public String toString() {
         return "PreferencesCommand[displayName=***, language=" + language + ", theme=" + theme + ", fontSize="
-                + fontSize + "]";
+                + fontSize + ", displayTimeZone=" + displayTimeZone + "]";
     }
 }

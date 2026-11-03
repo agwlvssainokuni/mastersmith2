@@ -15,6 +15,9 @@
  */
 package cherry.mastersmith.user.web;
 
+import cherry.mastersmith.user.domain.DisplayTimeZoneInput;
+import tools.jackson.databind.JsonNode;
+
 /**
  * プリファレンスの保存の要求（{@code PUT /api/me/preferences}、契約 C4 の Preferences）。
  *
@@ -26,13 +29,34 @@ package cherry.mastersmith.user.web;
  * @param language 言語（{@code ja}・{@code en}）
  * @param theme テーマ（{@code light}・{@code dark}・{@code system}）
  * @param fontSize 文字の大きさ（{@code sm}・{@code md}・{@code lg}）
+ * @param displayTimeZone 表示のタイムゾーン（Intent 261102-timezone-ui-polish の U2、BR2.3）。3 状態を見分けるため JSON の
+ *     ノードで受ける: 項目が無い（Java の {@code null}）・明示の {@code null}（{@code NullNode}）・値。文字列化で中身を伏せる
  */
-public record PreferencesRequest(String displayName, String language, String theme, String fontSize) {
+public record PreferencesRequest(
+        String displayName, String language, String theme, String fontSize, JsonNode displayTimeZone) {
+
+    /**
+     * 表示のタイムゾーンの 3 状態を業務処理の入力にする（検証の前の値。名前の検証は業務処理の層の名前の門が行う）。
+     *
+     * @return 項目が無ければ Keep、明示の null なら Clear、文字列なら Text、ほかの種類なら NotText（種類の名前だけを持つ）
+     */
+    public DisplayTimeZoneInput displayTimeZoneInput() {
+        if (displayTimeZone == null) {
+            return new DisplayTimeZoneInput.Keep();
+        }
+        if (displayTimeZone.isNull()) {
+            return new DisplayTimeZoneInput.Clear();
+        }
+        if (displayTimeZone.isString()) {
+            return new DisplayTimeZoneInput.Text(displayTimeZone.asString());
+        }
+        return new DisplayTimeZoneInput.NotText(displayTimeZone.getNodeType().name());
+    }
 
     /** 氏名を伏せて文字列にする。 */
     @Override
     public String toString() {
         return "PreferencesRequest[displayName=***, language=" + language + ", theme=" + theme + ", fontSize="
-                + fontSize + "]";
+                + fontSize + ", displayTimeZone=" + (displayTimeZone == null ? "absent" : "***") + "]";
     }
 }

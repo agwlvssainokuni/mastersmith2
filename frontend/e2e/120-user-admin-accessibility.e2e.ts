@@ -36,7 +36,7 @@
 // - Intent 261003-user-admin-followup: 表示を閉じた後に行の「操作」へフォーカスが戻ること（FR1.3）と、開いたメニューの矩形が
 //   表示の中に収まること（FR2.2。support/overflow.ts に測る関数を足した）を確かめる。G2 の観察として、言語の選択肢で Enter を
 //   押して送信したときのフォーカスの行き先を注記 edit-enter-focus に記録する（送信の後に行の「操作」へ戻ることだけを確かめる）。
-import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
+import { expect, test, type ConsoleMessage, type Page, type Route } from '@playwright/test'
 import { loginAsAdmin, openSidebarItem } from './support/adminLogin'
 import {
   expectNoBlockedWrites,
@@ -83,6 +83,8 @@ test.use({ trace: e2eTraceMode() })
 const SIDEBAR_ITEM = '利用者の管理'
 /** サイドバーのホームの項目 */
 const HOME_ITEM = 'ホーム'
+/** 表示のタイムゾーンを読む API の道（読み込み失敗の状態を作るため、中断した応答の表示も除く） */
+const ME_PREFERENCES_PATH = '/api/me/preferences'
 /** 一覧の API の道 */
 const LIST_PATH = '/api/admin/users'
 /** 止める操作の API の道の型 */
@@ -111,6 +113,8 @@ type InspectionState =
   | '10-empty-search'
   | '11-disabled-item-hover'
   | '11-disabled-item-focus'
+  | '12-time-zone-loading'
+  | '13-time-zone-error'
 
 /** 一覧の表の行 */
 function tableRows(page: Page) {
@@ -135,7 +139,7 @@ function watchExcludedConsole(page: Page): string[] {
     } catch {
       return
     }
-    if (isAdminApiPath(normalizeAdminPath(pathname))) {
+    if (isAdminApiPath(normalizeAdminPath(pathname)) || pathname === ME_PREFERENCES_PATH) {
       excludedTexts.push(`console: ${message.text()}`)
     }
   })
@@ -275,6 +279,19 @@ test.describe('120 user admin accessibility and screen time on the built WAR', (
           ? { status: 200, json: emptyListPage() }
           : { status: 200, json: inspectionListPage() }
       })
+      // 表示のタイムゾーンの読み取りを、読み込み中（応答を保留）にできる口。ふだんは本物の応答に通す（Intent
+      // 261102-timezone-ui-polish の U2、計画 Step 16・コードのレビューの R-01）。
+      const zone = { hold: false, held: [] as Route[], aborted: 0 }
+      await page.route(
+        (url) => url.pathname === ME_PREFERENCES_PATH,
+        async (preferencesRoute) => {
+          if (preferencesRoute.request().method() === 'GET' && zone.hold) {
+            zone.held.push(preferencesRoute)
+            return
+          }
+          await preferencesRoute.fallback()
+        },
+      )
       await prepareCombo(page, combo)
       await routeLoginPreferences(page, { theme: combo.theme, fontSize: combo.fontSize })
 
@@ -443,6 +460,34 @@ test.describe('120 user admin accessibility and screen time on the built WAR', (
         await expectInspectionList(page)
       })
 
+      await diagnostics.step(
+        'check the time column while the display time zone loads and fails',
+        async () => {
+          // 画面を読み込み直し、表示のタイムゾーンの読み取りを保留して「読み込み中」の淡い文を検査する。続けて読み取りを失敗させて
+          // 「読み込み失敗」の帯と淡い文を検査し、最後に「もう一度読み込む」で本物の応答に戻す。長い名前・長いメールアドレスの行は
+          // 一覧の見本が持つ。幅は組の幅（360px の組を含む）で、横のはみ出しも inspect が確かめる。
+          zone.hold = true
+          await page.reload()
+          await expect.poll(() => zone.held.length, '保留した読み取り').toBeGreaterThanOrEqual(1)
+          await expectInspectionList(page)
+          const note = page.locator('.display-time-note').first()
+          await expect(note).toHaveText('読み込み中')
+          await inspect(page, combo, '12-time-zone-loading')
+          for (const held of zone.held.splice(0)) {
+            zone.aborted += 1
+            await held.abort('failed')
+          }
+          zone.hold = false
+          await expect(page.getByTestId('display-time-zone-error')).toBeVisible()
+          await expect(note).toHaveText('時刻を表示できません')
+          await inspect(page, combo, '13-time-zone-error')
+          await page.getByTestId('display-time-zone-reload').click()
+          await expect(page.getByTestId('display-time-zone-error')).toBeHidden()
+          await expect(page.locator('time').first()).toBeVisible()
+          await expectInspectionList(page)
+        },
+      )
+
       await page.waitForLoadState('networkidle')
       const remaining = withoutExcluded(watch.problems, excludedTexts)
       test.info().annotations.push({
@@ -459,7 +504,7 @@ test.describe('120 user admin accessibility and screen time on the built WAR', (
       })
       expectNoBlockedWrites(route, combo.name)
       expect(excludedTexts.length, `${combo.name}: 除いた表示の件数`).toBeLessThanOrEqual(
-        route.failedReplies,
+        route.failedReplies + zone.aborted,
       )
       expect(watch.cspViolations, `${combo.name}: CSP の違反`).toEqual([])
       expect(remaining, `${combo.name}: 画面の問題`).toEqual([])

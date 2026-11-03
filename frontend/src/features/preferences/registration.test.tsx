@@ -124,7 +124,7 @@ describe('preferences feature registration', () => {
     const ja = registration.messages?.ja ?? {}
     const en = registration.messages?.en ?? {}
     expect(Object.keys(ja).sort()).toEqual(Object.keys(en).sort())
-    expect(Object.keys(ja)).toHaveLength(40)
+    expect(Object.keys(ja)).toHaveLength(45)
     for (const key of Object.keys(ja)) {
       expect(key.startsWith('preferences.')).toBe(true)
       expect(ja[key]?.trim()).toBeTruthy()

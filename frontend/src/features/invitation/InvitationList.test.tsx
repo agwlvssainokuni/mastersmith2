@@ -38,8 +38,6 @@ function renderList(
     resendingIds: new Set(),
     highlightedId: null,
     focusTarget: null,
-    language: languages[0]?.startsWith('en') ? 'en' : 'ja',
-    timeZone: 'Asia/Tokyo',
     onResend: vi.fn(),
     onRevoke: vi.fn(),
     onRetry: vi.fn(),
@@ -70,8 +68,8 @@ describe('InvitationList', () => {
     ])
     expect(screen.getByText('English')).toHaveAttribute('lang', 'en')
     expect(screen.getAllByText('日本語')[0]).toHaveAttribute('lang', 'ja')
-    expect(screen.getAllByText('2026-09-25 21:00 JST').length).toBeGreaterThan(0)
-    expect(screen.getAllByText('2026-09-26 21:00 JST').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('2026-09-25 21:00 +09:00').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('2026-09-26 21:00 +09:00').length).toBeGreaterThan(0)
     expect(screen.getByText('山田 花子')).toBeInTheDocument()
     expect(screen.getByText('（不明）')).toBeInTheDocument()
     expect(screen.getAllByText('送信済み')).toHaveLength(2)

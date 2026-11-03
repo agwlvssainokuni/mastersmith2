@@ -18,16 +18,18 @@
 // AC1.1.1・AC1.1.12、NFR3.3・NFR7.1・NFR8.2）。make-you-chic-ui の Table（ページ送りを含む）に、列の描き方だけを渡す。
 // - 行の値は決まった項目を1つずつ読んで描き、行を丸ごと広げて渡さない（応答に項目が加わっても出さない）。
 // - 管理者の印・状態・ロック中・「あなた」は色に加えて Badge の文字で示し、無い印は「—」（aria-hidden）と見えない「なし」。
-// - ロックの表示は応答の locked・lockedUntil のまま（画面の時計で判定しない）。日時は画面の言語と時間帯で書式にする。
+// - ロックの表示は応答の locked・lockedUntil のまま（画面の時計で判定しない）。日時は表示のタイムゾーン（提供元）で書式にする。
 // - Table の文言（labels）は画面の言語で渡し、既定の日本語に固定しない。getRowId は userId の文字列。
 // - Table にページ送りを押せなくする口が無いため、busy（読み直しの間）の押下は onPageChange の側で捨てる（D13 の (2)）。
 // - 長いメールアドレス・氏名は列の中で折り返す（切り詰めない）。表は包む要素の中で横に動く（RQ7 C）。
 import { Badge, Table, type TableColumn, type TableLabels } from 'make-you-chic-ui'
-import type { ReactNode } from 'react'
-import { formatDateTime, type FormatLanguage } from '../../shared/format/formatDateTime'
+import { useMemo, type ReactNode } from 'react'
+import { DisplayTime } from '../../app/display-settings/DisplayTime'
+import { useDisplayTimeZone } from '../../app/display-settings/DisplayTimeZoneProvider'
+import { useMessages } from '../../app/i18n/I18nProvider'
 import { PAGE_SIZE, type PagerDirection } from '../../shared/paging/paging'
 import type { AdminUser } from './api/types'
-import { formatLockedUntil } from './lockedUntil'
+import { lockedUntilInZone, todayIn } from './lockedUntilInZone'
 import { useUserAdminText } from './useUserAdminText'
 import './UserTable.css'
 
@@ -44,10 +46,6 @@ export interface UserTableProps {
   busy: boolean
   /** 表の名前（aria-label） */
   label: string
-  /** 画面の言語（日時の書式） */
-  language: FormatLanguage
-  /** 日時の時間帯（省略すると端末の時間帯。テストで固定する） */
-  timeZone?: string
   /** 今の時刻（解除の予定の時刻が今日かの判定。テストで固定する） */
   now: Date
   /** 行の「操作」を描く */
@@ -72,13 +70,25 @@ export function UserTable({
   onPageChange,
   busy,
   label,
-  language,
-  timeZone,
   now,
   renderActions,
 }: UserTableProps) {
   const t = useUserAdminText()
   const none = t('useradmin.none')
+  const zone = useDisplayTimeZone()
+  const base = useMessages()
+  // 「今日か」の比べに使う今日の日付は、1 ページにつき 1 回だけ求める（行ごとに整形し直さない。D-P10）。
+  const timeZone = zone.status === 'ready' ? zone.timeZone : null
+  const today = useMemo(() => (timeZone === null ? null : todayIn(now, timeZone)), [now, timeZone])
+  const lockedUntilText = (iso: string): string => {
+    if (zone.status === 'loading') {
+      return base('displayTime.loading')
+    }
+    if (zone.status === 'error') {
+      return base('displayTime.error')
+    }
+    return lockedUntilInZone(iso, zone.timeZone, today)
+  }
 
   const labels: TableLabels = {
     previousPage: t('useradmin.pager.prev'),
@@ -137,7 +147,7 @@ export function UserTable({
             {row.lockedUntil !== undefined && (
               <span className="useradmin-nowrap">
                 {t('useradmin.lock.until', {
-                  time: formatLockedUntil(row.lockedUntil, language, now, timeZone),
+                  time: lockedUntilText(row.lockedUntil),
                 })}
               </span>
             )}
@@ -151,7 +161,7 @@ export function UserTable({
       header: t('useradmin.column.registered'),
       render: (row) => (
         <span className="useradmin-nowrap">
-          {formatDateTime(row.registeredAt, language, timeZone)}
+          <DisplayTime iso={row.registeredAt} />
         </span>
       ),
     },

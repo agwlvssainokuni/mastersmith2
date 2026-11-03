@@ -156,6 +156,8 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 
 080 について:
 
+- 表示のタイムゾーン（Intent 261102-timezone-ui-polish の U2）: `GET /api/me/preferences` の取得の回数は、ログインの直後に表示のタイムゾーンの提供元が 1 回（`GETS_BY_DISTRIBUTION`）、プリファレンスの画面を開くと画面自身が 1 回（`GETS_BY_PREFERENCES_SCREEN`）で、080・100 は差し替えをログインの前に置くため、どちらも差し替えに当たる（合計 2 回。`expect.poll` で待って確かめる。`frontend/e2e/support/preferencesFixtures.ts` の定数）。見本は `preferencesSample(theme, fontSize, displayTimeZone = null)` の 5 項目で、`hasPreferencesShape` は 5 つ目（文字列か `null`）まで確かめる。080 には、保存済みの名前を今のブラウザが解釈できない見本（`Mars/Olympus`）の状態 `preferences-zone-unresolvable`（警告の Alert と、選択が「ブラウザに合わせる」に見えること）を 1 つ足した。ブラウザのタイムゾーンは Playwright の `timezoneId: 'Asia/Tokyo'` で明示に固定する。
+
 - 流れの確かめではないため、「機能の Intent ごとに代表の流れを1本まで」の本数に数えません。
 - 組ごとに、ログインの画面から初期管理者でログインし、ユーザーメニューの「プリファレンス」「パスワードの変更」から開きます。プリファレンスの画面は開いた時点に内部DB の値へ画面をそろえるため、組のテーマと文字の大きさは、`GET /api/me/preferences` の答えだけを見本（`frontend/e2e/support/preferencesFixtures.ts`、氏名は `検査 太郎`）に差し替え、そのそろえ（本物の `applyUserPreferences`）で当てます。ブランドカラーは 050 と同じく `/api/appearance` の差し替えです。`loginPreferences.ts` は使いません。
 - 画面の確かめの誤りの状態は、氏名を空にして「保存する」、3つを空のまま「変更する」で出します。検査では `PUT`・`POST /api/me/…` を送りません（送られていれば失敗）。
@@ -183,6 +185,8 @@ WAR をビルドし、一時ディレクトリの内部DBで起動して、`fron
 - 100 だけを流すときも Mailpit と見本の PG の起動が要ります（`./gradlew e2eTest -Pe2e.files=e2e/100-app-text-contrast.e2e.ts`）。
 
 110 について:
+
+- 表示のタイムゾーンの提供元はログインの直後に 1 回だけ読むため、利用者を停止した後の最初の 401 は、プリファレンスの画面を開いた後の画面自身の取得になる（待つのは待ち始めた以後の応答だけ。Intent 261102-timezone-ui-polish の U2）。
 
 - 利用者の管理の代表の流れの E2E です（120・130 は流れの本数に数えません）。前のファイルが作った状態に頼らず、利用者 U を招待と登録の完了の API で自分で作ります（`frontend/e2e/support/registeredUser.ts`。宛先は実行ごとに重ならない `u7-perf-<runTag>@example.com`、`runTag` は時刻と 16 文字の乱数の16進）。状態を変えるのは U だけで、初期管理者の印・停止・ロックは変えません。U は消しません（利用者を消す仕組みは無く、宛先は実行ごとに重なりません）。
 - 1 回の実行で招待を1件置き、Mailpit に1通届き、U と、招待・登録の完了・ログインの成功と失敗・失敗回数を戻す操作（変えるものが無い拒否の1件を含む）・利用停止と再開・アクセスの拒否の監査が一時の内部DB に残ります。

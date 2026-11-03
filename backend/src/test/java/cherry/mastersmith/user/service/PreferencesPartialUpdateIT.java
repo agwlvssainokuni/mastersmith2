@@ -18,6 +18,7 @@ package cherry.mastersmith.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.common.testsupport.TestDatabase;
+import cherry.mastersmith.user.domain.DisplayTimeZoneInput;
 import cherry.mastersmith.user.domain.RequestOrigin;
 import cherry.mastersmith.user.testsupport.TestPasswordChangeBarrier;
 import cherry.mastersmith.user.testsupport.TestUserAccounts;
@@ -85,7 +86,8 @@ class PreferencesPartialUpdateIT {
     @DisplayName("a preference save committed in the middle of a password change keeps both results")
     void overlappingSaveAndPasswordChangeKeepBoth() {
         long userId = newUser();
-        barrier.runOnce(() -> service.savePreferences(userId, new PreferencesCommand("重なった 保存", "en", "dark", "lg")));
+        barrier.runOnce(() -> service.savePreferences(
+                userId, new PreferencesCommand("重なった 保存", "en", "dark", "lg", new DisplayTimeZoneInput.Keep())));
 
         PasswordChangeResult result = service.changePassword(
                 userId,
@@ -109,8 +111,8 @@ class PreferencesPartialUpdateIT {
         long userId = newUser();
         Map<String, Object> before = row(userId);
 
-        PreferencesResult result =
-                service.savePreferences(userId, new PreferencesCommand("新しい 名前", "en", "dark", "xl"));
+        PreferencesResult result = service.savePreferences(
+                userId, new PreferencesCommand("新しい 名前", "en", "dark", "xl", new DisplayTimeZoneInput.Keep()));
 
         assertThat(result).isInstanceOf(PreferencesResult.Invalid.class);
         assertThat(row(userId)).isEqualTo(before);
@@ -121,8 +123,10 @@ class PreferencesPartialUpdateIT {
     void laterSaveWins() {
         long userId = newUser();
 
-        service.savePreferences(userId, new PreferencesCommand("先の 保存", "ja", "light", "sm"));
-        service.savePreferences(userId, new PreferencesCommand("後の 保存", "en", "dark", "lg"));
+        service.savePreferences(
+                userId, new PreferencesCommand("先の 保存", "ja", "light", "sm", new DisplayTimeZoneInput.Keep()));
+        service.savePreferences(
+                userId, new PreferencesCommand("後の 保存", "en", "dark", "lg", new DisplayTimeZoneInput.Keep()));
 
         assertThat(row(userId))
                 .containsEntry("DISPLAY_NAME", "後の 保存")

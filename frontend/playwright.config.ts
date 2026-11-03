@@ -126,6 +126,9 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${port}`,
     locale: 'ja-JP',
+    // ブラウザのタイムゾーンを明示に固定する（機械の既定に結果を預けない。手元は Asia/Tokyo、CI の機械は UTC のため。
+    // Intent 261102-timezone-ui-polish の U2）。
+    timezoneId: 'Asia/Tokyo',
     trace: traceMode,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

@@ -25,27 +25,31 @@ import cherry.mastersmith.user.domain.Preferences;
  * @param language 言語
  * @param theme テーマ
  * @param fontSize 文字の大きさ
+ * @param displayTimeZone 表示のタイムゾーンの名前（常に出す。未設定は null。個人に関する値ではないため文字列化に出す）
  */
-public record PreferencesResponse(String displayName, String language, String theme, String fontSize) {
+public record PreferencesResponse(
+        String displayName, String language, String theme, String fontSize, String displayTimeZone) {
 
     /**
-     * 4つの組から応答を作る。
+     * 4つの組と表示のタイムゾーンから応答を作る（名前は保存済みの値で、再検証しない）。
      *
      * @param preferences 4つの組
+     * @param displayTimeZone 表示のタイムゾーンの名前（未設定は null）
      * @return 応答
      */
-    public static PreferencesResponse from(Preferences preferences) {
+    public static PreferencesResponse from(Preferences preferences, String displayTimeZone) {
         return new PreferencesResponse(
                 preferences.displayName(),
                 preferences.language().value(),
                 preferences.theme().value(),
-                preferences.fontSize().value());
+                preferences.fontSize().value(),
+                displayTimeZone);
     }
 
     /** 氏名を伏せて文字列にする。 */
     @Override
     public String toString() {
         return "PreferencesResponse[displayName=***, language=" + language + ", theme=" + theme + ", fontSize="
-                + fontSize + "]";
+                + fontSize + ", displayTimeZone=" + displayTimeZone + "]";
     }
 }

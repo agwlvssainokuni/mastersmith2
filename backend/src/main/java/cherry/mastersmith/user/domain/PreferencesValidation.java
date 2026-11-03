@@ -39,7 +39,35 @@ public final class PreferencesValidation {
     /** 文字の大きさの項目の名前（契約 C4）。 */
     public static final String FONT_SIZE = "fontSize";
 
+    /** 表示のタイムゾーンの項目の名前（Intent 261102-timezone-ui-polish の U2、契約 C2）。 */
+    public static final String DISPLAY_TIME_ZONE = "displayTimeZone";
+
     private PreferencesValidation() {}
+
+    /**
+     * 4つに表示のタイムゾーンを加えた5つを検証する。誤りの並びは 氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン（BR2.4）。
+     *
+     * <p>{@link DisplayTimeZoneInput.Keep}・{@link DisplayTimeZoneInput.Clear} は誤りなし。{@link DisplayTimeZoneInput.NotText} と
+     * 名前の門を通らない {@link DisplayTimeZoneInput.Text} は {@code displayTimeZone} の {@link FieldErrorReason#INVALID_VALUE}。
+     *
+     * @param displayName 氏名
+     * @param language 言語
+     * @param theme テーマ
+     * @param fontSize 文字の大きさ
+     * @param displayTimeZone 表示のタイムゾーン（3 状態）
+     * @return 項目ごとの誤り（誤りが無ければ空）
+     */
+    public static List<FieldError> validate(
+            String displayName, String language, String theme, String fontSize, DisplayTimeZoneInput displayTimeZone) {
+        List<FieldError> errors = new ArrayList<>(validate(displayName, language, theme, fontSize));
+        Optional<FieldErrorReason> reason = switch (displayTimeZone) {
+            case DisplayTimeZoneInput.Keep _, DisplayTimeZoneInput.Clear _ -> Optional.empty();
+            case DisplayTimeZoneInput.Text text -> TimeZoneName.check(text.value());
+            case DisplayTimeZoneInput.NotText _ -> Optional.of(FieldErrorReason.INVALID_VALUE);
+        };
+        add(errors, DISPLAY_TIME_ZONE, reason);
+        return List.copyOf(errors);
+    }
 
     /**
      * 4つを検証する。

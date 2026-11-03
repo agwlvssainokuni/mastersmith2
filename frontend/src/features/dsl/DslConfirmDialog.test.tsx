@@ -40,7 +40,7 @@ function Harness({ confirm, onConfirm = vi.fn(), onCancel = vi.fn() }: HarnessPr
       </button>
       <DslConfirmDialog
         confirm={open ? confirm : null}
-        timeZone="Asia/Tokyo"
+
         onConfirm={() => {
           onConfirm()
           setOpen(false)
@@ -80,7 +80,7 @@ describe('DslConfirmDialog', () => {
       'DSL を投入すると、今のプレビューは投入した DSL に置き換わります',
     )
     expect(within(dialog).getByTestId('dsl-confirm-preview')).toHaveTextContent(
-      '出どころ アップロード置いた人 hanako@example.com2026-09-24 11:02 JST',
+      '出どころ アップロード置いた人 hanako@example.com2026-09-24 11:02 +09:00',
     )
     expect(within(dialog).getByRole('button', { name: '置き換える' })).toBeInTheDocument()
   })

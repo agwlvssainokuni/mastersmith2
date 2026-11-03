@@ -303,6 +303,8 @@ test.describe('110 user admin representative flow on the built WAR', () => {
         await expect(page.getByRole('menuitem', { name: '停止を解く', exact: true })).toBeVisible()
         await page.keyboard.press('Escape')
 
+        // 表示のタイムゾーンの提供元はログインの直後に 1 回だけ読むため、停止の後の最初の 401 は、プリファレンスの画面を開いた後の
+        // 画面自身の取得になる（待つのはこの行以後の応答だけ）。
         const preferences401 = userPage.waitForResponse(
           (response) => pathOf(response.url()) === PREFERENCES_API && response.status() === 401,
         )

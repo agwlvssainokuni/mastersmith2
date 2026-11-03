@@ -38,6 +38,7 @@ const PREFS: Preferences = {
   language: 'ja',
   theme: 'system',
   fontSize: 'md',
+  displayTimeZone: null,
 }
 const REFRESH_PATH = '/api/auth/session/refresh'
 
@@ -103,7 +104,7 @@ afterEach(() => {
 })
 
 describe('preferencesApi', () => {
-  it('sends GET, PUT with only the four values and POST with only the three passwords', async () => {
+  it('sends GET, PUT with only the five values and POST with only the three passwords', async () => {
     const sent = stubFetch(json(200, PREFS), json(200, PREFS), new Response(null, { status: 204 }))
     await getPreferences()
     await savePreferences({ ...PREFS, email: 'x@example.test' } as Preferences)
@@ -133,7 +134,7 @@ describe('preferencesApi', () => {
     expect(new Headers(sent[1]?.init.headers).get('Content-Type')).toBe('application/json')
   })
 
-  it('returns only the four values of a successful answer', async () => {
+  it('returns only the five values of a successful answer', async () => {
     stubFetch(json(200, { ...PREFS, email: 'leak@example.test', admin: true }))
     await expect(getPreferences()).resolves.toEqual(PREFS)
     stubFetch(json(200, { ...PREFS, displayName: '佐藤 花子', theme: 'dark', extra: 1 }))
@@ -150,6 +151,11 @@ describe('preferencesApi', () => {
       { ...PREFS, theme: 'Dark' },
       { ...PREFS, fontSize: 'xl' },
       { ...PREFS, displayName: 42 },
+      { ...PREFS, displayTimeZone: 9 },
+      { ...PREFS, displayTimeZone: true },
+      { ...PREFS, displayTimeZone: ['Asia/Tokyo'] },
+      { ...PREFS, displayTimeZone: 'a'.repeat(65) },
+      { displayName: 'x', language: 'ja', theme: 'light', fontSize: 'md' },
       { language: 'ja', theme: 'light', fontSize: 'md' },
       [PREFS],
       null,
@@ -160,6 +166,16 @@ describe('preferencesApi', () => {
     }
     stubFetch(new Response('not json', { status: 200 }))
     expect(await rejection(savePreferences(PREFS))).toBeInstanceOf(PreferencesShapeError)
+  })
+
+  it('reads and sends a saved zone name, and null as unset', async () => {
+    const saved: Preferences = { ...PREFS, displayTimeZone: 'Asia/Kolkata' }
+    const sent = stubFetch(json(200, saved), json(200, saved))
+    await expect(getPreferences()).resolves.toEqual(saved)
+    await expect(savePreferences(saved)).resolves.toEqual(saved)
+    expect(JSON.parse(String(sent[1]?.init.body))).toEqual(saved)
+    stubFetch(json(200, { ...PREFS, displayTimeZone: 'a'.repeat(64) }))
+    await expect(getPreferences()).resolves.toMatchObject({ displayTimeZone: 'a'.repeat(64) })
   })
 
   it('treats an empty 204 as a successful password change', async () => {

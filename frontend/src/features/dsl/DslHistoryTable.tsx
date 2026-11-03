@@ -18,10 +18,9 @@
 // 適用した日時・人・識別・状態・操作を示す。今適用中の版は「適用中」の文字（Badge）で示し、その行は適用中の DSL の
 // ダウンロード、ほかの行は「プレビューに戻す」を持つ。戻しのボタンの名前には、どの版かを含める。
 import { Alert, Badge, Button } from 'make-you-chic-ui'
-import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import type { HistoryEntry } from './api/types'
 import { DslHash } from './DslHash'
-import { formatDateTime } from '../../shared/format/formatDateTime'
+import { TimeValue, useDisplayTimeText } from '../../app/display-settings/DisplayTime'
 import type { LoadState } from './loadState'
 import { useDslText } from './useDslText'
 import './DslCommon.css'
@@ -36,8 +35,6 @@ export interface DslHistoryTableProps {
   onRestore: (entry: HistoryEntry) => void
   onDownloadApplied: () => void
   onRetry: () => void
-  /** 日時の時差（省略すると端末の時差） */
-  timeZone?: string
 }
 
 /** 適用の履歴 */
@@ -49,10 +46,9 @@ export function DslHistoryTable({
   onRestore,
   onDownloadApplied,
   onRetry,
-  timeZone,
 }: DslHistoryTableProps) {
   const t = useDslText()
-  const language = useDisplayLanguage()
+  const timeText = useDisplayTimeText()
 
   if (loadState === 'loading') {
     return (
@@ -90,10 +86,12 @@ export function DslHistoryTable({
         </thead>
         <tbody>
           {entries.map((entry) => {
-            const at = formatDateTime(entry.at, language, timeZone)
+            const at = timeText(entry.at)
             return (
               <tr key={entry.revisionId} data-testid={`dsl-history-row-${entry.revisionId}`}>
-                <td>{at}</td>
+                <td>
+                  <TimeValue iso={entry.at} text={at} />
+                </td>
                 <td>{entry.by.email ?? t('dsl.user.unknown')}</td>
                 <td>
                   <DslHash hash={entry.dslHash} />

@@ -26,12 +26,23 @@ import type { ProblemDetails } from '../../src/shared/api-client/apiError'
 /** 差し替えの答えの氏名（固定のテストの値） */
 export const SAMPLE_DISPLAY_NAME = '検査 太郎'
 
+/**
+ * GET /api/me/preferences の取得の回数（Intent 261102-timezone-ui-polish の U2、H7・RD6）。ログインの直後に表示のタイムゾーンの
+ * 提供元が 1 回読み、プリファレンスの画面を開くと画面自身が 1 回読む。080・100 は差し替えをログインの前に置くため、どちらも
+ * 差し替えに当たる。画面の移動・再描画・保存の成功では増えない。
+ */
+export const GETS_BY_DISTRIBUTION = 1
+
+/** プリファレンスの画面を開いたときの、画面自身の取得の回数 */
+export const GETS_BY_PREFERENCES_SCREEN = 1
+
 /** 組のテーマと文字の大きさを持つ見本（言語は ja） */
 export function preferencesSample(
   theme: Preferences['theme'],
   fontSize: Preferences['fontSize'],
+  displayTimeZone: Preferences['displayTimeZone'] = null,
 ): Preferences {
-  return { displayName: SAMPLE_DISPLAY_NAME, language: 'ja', theme, fontSize }
+  return { displayName: SAMPLE_DISPLAY_NAME, language: 'ja', theme, fontSize, displayTimeZone }
 }
 
 const LANGUAGES: readonly string[] = ['ja', 'en']
@@ -39,7 +50,7 @@ const THEMES: readonly string[] = ['light', 'dark', 'system']
 const FONT_SIZES: readonly string[] = ['sm', 'md', 'lg']
 
 /**
- * 本物の応答の項目の名前と値の型が見本と一致するか（項目は4つちょうど、氏名は文字列、3つの列挙は決めた値の中）。
+ * 本物の応答の項目の名前と値の型が見本と一致するか（項目は5つちょうど、氏名は文字列、3つの列挙は決めた値の中、5つ目は文字列か null）。
  * 値そのものは返さない。
  */
 export function hasPreferencesShape(body: unknown): boolean {
@@ -53,7 +64,8 @@ export function hasPreferencesShape(body: unknown): boolean {
     typeof record.displayName === 'string' &&
     LANGUAGES.includes(String(record.language)) &&
     THEMES.includes(String(record.theme)) &&
-    FONT_SIZES.includes(String(record.fontSize))
+    FONT_SIZES.includes(String(record.fontSize)) &&
+    (record.displayTimeZone === null || typeof record.displayTimeZone === 'string')
   )
 }
 

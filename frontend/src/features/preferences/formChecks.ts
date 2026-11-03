@@ -47,6 +47,7 @@ export const PREFERENCES_FIELDS: readonly PreferencesField[] = [
   'language',
   'theme',
   'fontSize',
+  'displayTimeZone',
 ]
 
 /** 並びの順に理由を集める。 */
@@ -67,7 +68,7 @@ function collect<F extends string>(
 }
 
 /**
- * プリファレンスのフォームを確かめる。氏名だけを共用の関数で確かめる（言語・テーマ・文字の大きさは選択肢から選ぶため、
+ * プリファレンスのフォームを確かめる。氏名だけを共用の関数で確かめる（言語・テーマ・文字の大きさ・表示のタイムゾーンは選択肢から選ぶため、
  * 画面の値はいつも許される値。W11 の2）。
  */
 export function checkPreferencesForm(form: { displayName: string }): FormCheck<PreferencesField> {

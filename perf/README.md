@@ -19,6 +19,7 @@
 | `dslLight` | `checks{scenario:<場面>}` `rate==1`・`iteration_duration{scenario:<場面>,op:history}` `p(95)<1000`・`iteration_duration{scenario:<場面>,op:status}` `p(95)<1000` | `http_req_duration{name:dslHistory}` `max>=0`・`http_req_duration{name:dslStatus}` `max>=0` | `thresholdsFor` |
 | `dslCycle` | `checks{scenario:<場面>}` `rate==1`・`iteration_duration{scenario:<場面>,op:apply}` `p(95)<1000`・`iteration_duration{scenario:<場面>,op:discard}` `p(95)<1000`・`iteration_duration{scenario:<場面>,op:history}` `p(95)<1000` | `http_req_duration{name:dslApply}` `max>=0`・`http_req_duration{name:dslDiscard}` `max>=0`・`http_req_duration{name:dslHistory}` `max>=0`・`http_req_duration{name:dslSubmit}` `max>=0`・`iteration_duration{scenario:<場面>,op:submit}` `max>=0` | `thresholdsFor` |
 | `dslMixed` | `checks{scenario:dslHeavy}` `rate==1`・`checks{scenario:logins}` `rate==1` | なし | `thresholdsFor` |
+| `preferencesSaveTimeZone` | `checks{scenario:<場面>}` `rate==1`・`iteration_duration{scenario:<場面>,op:set}`・`{op:clear}`・`{op:invalid}` それぞれ `p(95)<1000`・`http_req_duration{name:preferencesSaveTimeZone}` `p(95)<1000`・`http_req_duration{name:preferencesSaveTimeZoneInvalid}` `p(95)<1000` | なし | `thresholdsFor`（`PREFS_ZONE_OPS`。`thresholds-test.sh` の `OP_CASES` が確かめる） |
 | `preferencesGet`・`preferencesSave`・`preferencesInvalid`・`passwordMismatch`・`passwordInvalid`・`invitationCancel`・`registrationComplete`・`registrationInvalid`・`userAdminList`・`userAdminSuspendWorst` | `checks{scenario:<場面>}` `rate==1`・`http_req_duration{name:<場面>}` `p(95)<1000` | なし | `USER_THRESHOLDS`（`thresholdsFor` が読む） |
 | `passwordChange` | `checks{scenario:<場面>}` `rate==1`・`http_req_duration{name:<場面>}` `p(95)<2000` | なし | `USER_THRESHOLDS`（`thresholdsFor` が読む） |
 | `invite`・`invitationResend` | `checks{scenario:<場面>}` `rate==1`・`http_req_duration{name:<場面>}` `p(95)<5000` | なし | `USER_THRESHOLDS`（`thresholdsFor` が読む） |
@@ -251,6 +252,7 @@ k6d dslLight -e SCENARIO=dslLight -e VUS=10 -e DURATION=3m
 | `preferencesGet` | `GET /api/me/preferences`（200） | （`{name:preferencesGet}` の p95 1 秒） | `perf-user01`〜`10` を VU ごとに当てる |
 | `preferencesSave` | `PUT /api/me/preferences` の成功（200。テーマを回ごとに変える） | （p95 1 秒） | 同上 |
 | `preferencesInvalid` | 同じ API の入力の誤り（言語 `xx`、400 `VALIDATION_FAILED`） | （p95 1 秒） | 同上 |
+| `preferencesSaveTimeZone` | 表示のタイムゾーンつきの保存。繰り返しの番号を 3 で割った余りで `set`（`Asia/Tokyo`・`America/New_York`・`Asia/Kolkata` を回ごとに替える。200）・`clear`（`null`。200）・`invalid`（集合に無い名前。400 `VALIDATION_FAILED`）。`op` のタグを繰り返しの始めに入れる | （`iteration_duration{scenario:preferencesSaveTimeZone,op:<op>}` の p95 1 秒・`{name:preferencesSaveTimeZone}`・`{name:preferencesSaveTimeZoneInvalid}` の p95 1 秒） | `perf-user01`〜`10`。`setup` が10人の表示のタイムゾーンを `null` に消してから始める（前の場面の状態に頼らない） |
 | `passwordChange` | `POST /api/me/password` の成功（204） | （p95 **2 秒**） | 専用の `perf-pw01`〜`10` を VU ごとに1人（`VUS` 名以上。`PERF_PW_USER_COUNT`、既定 10）。変更の前後のパスワード（`PERF_USER_PASSWORD` と、その後ろに `-alt` を足した値）を交互に使う |
 | `passwordMismatch` | 今のパスワードの誤り（400 `PASSWORD_CURRENT_MISMATCH`。監査に1件ずつ残る） | （p95 1 秒） | `perf-user01`〜`10` |
 | `passwordInvalid` | 入力の誤り（新しいパスワードが短く確かめと違う、400 `VALIDATION_FAILED`） | （p95 1 秒） | 同上 |
@@ -294,7 +296,7 @@ perfc up -d --wait
 
 # 3'. 場面ごとに流す（caffeinate -dims で PC のスリープを防ぐ）。k6 は同じネットワークの中から app と mailpit に届く
 mkdir -p build/perf-results && chmod 777 build/perf-results
-for s in preferencesGet preferencesSave preferencesInvalid passwordChange passwordMismatch passwordInvalid \
+for s in preferencesGet preferencesSave preferencesInvalid preferencesSaveTimeZone passwordChange passwordMismatch passwordInvalid \
   invite invitationResend invitationList invitationCancel registrationVerify registrationComplete registrationInvalid registrationRejected; do
   caffeinate -dims docker run --rm --network mastersmith-perf_default --env-file "$D/k6.env" -e SCENARIO=$s -e DURATION=60s \
     -v "$PWD/perf/k6:/scripts:ro" -v "$PWD/build/perf-results:/out" "$K6_IMAGE" \

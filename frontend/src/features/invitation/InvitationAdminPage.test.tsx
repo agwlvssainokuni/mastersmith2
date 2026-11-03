@@ -101,12 +101,12 @@ function fakeApi(firstPage: InvitationPage = pageOf()): FakeApi {
 }
 
 function renderPage(fake: FakeApi, languages: readonly string[] = ['ja-JP']) {
-  return renderInvitation(<InvitationAdminPage api={fake.api} timeZone="Asia/Tokyo" />, languages)
+  return renderInvitation(<InvitationAdminPage api={fake.api} />, languages)
 }
 
 /** 画面を ShellLayout の中に、本物の登録と管理者のログイン状態で描く（S6 の確かめ用、U4 の R-03）。 */
 function renderInShell(fake: FakeApi) {
-  return renderInvitation(<InvitationAdminPage api={fake.api} timeZone="Asia/Tokyo" />, undefined, {
+  return renderInvitation(<InvitationAdminPage api={fake.api} />, undefined, {
     withShell: true,
     provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
     registrations: [registration],
@@ -877,7 +877,7 @@ describe('InvitationAdminPage language, privacy and accessibility', () => {
     await screen.findByRole('table', { name: 'Pending invitations' })
     expect(screen.getByRole('heading', { level: 1, name: 'User invitations' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Invite' })).toBeEnabled()
-    expect(screen.getAllByText('Sep 26, 2026, 21:00 GMT+9').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('2026-09-26 21:00 +09:00').length).toBeGreaterThan(0)
     const user = userEvent.setup()
     await user.click(
       screen.getByRole('button', { name: 'Resend the invitation to hanako@example.test' }),

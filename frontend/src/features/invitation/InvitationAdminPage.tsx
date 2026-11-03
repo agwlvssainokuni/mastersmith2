@@ -21,6 +21,7 @@
 import { Alert, Button } from 'make-you-chic-ui'
 import { useDisplaySettings } from '../../app/display-settings/DisplaySettingsProvider'
 import { invitationApi, type InvitationApi } from './api/invitationApi'
+import { DisplayTimeZoneErrorBar } from '../../app/display-settings/DisplayTimeZoneErrorBar'
 import { CancelConfirmDialog } from './CancelConfirmDialog'
 import { FailureNoticeText } from './FailureNoticeText'
 import { InvitationList } from './InvitationList'
@@ -33,12 +34,10 @@ import './InvitationAdminPage.css'
 export interface InvitationAdminPageProps {
   /** API の関数の集まり（テストで差し替える） */
   api?: InvitationApi
-  /** 日時の時差（省略すると端末の時差。テストで固定する） */
-  timeZone?: string
 }
 
 /** 招待の管理の画面 */
-export function InvitationAdminPage({ api = invitationApi, timeZone }: InvitationAdminPageProps) {
+export function InvitationAdminPage({ api = invitationApi }: InvitationAdminPageProps) {
   const t = useInvitationText()
   const { language } = useDisplaySettings()
   const state = useInvitationAdmin(api, t, language)
@@ -58,6 +57,7 @@ export function InvitationAdminPage({ api = invitationApi, timeZone }: Invitatio
           {t('invitation.action.invite')}
         </Button>
       </div>
+      <DisplayTimeZoneErrorBar />
       <InvitationUnavailableAlert list={state.list} />
       {state.failure !== null && (
         <div data-testid="invitation-failure-alert">
@@ -79,8 +79,6 @@ export function InvitationAdminPage({ api = invitationApi, timeZone }: Invitatio
         resendingIds={state.resendingIds}
         highlightedId={state.highlightedId}
         focusTarget={state.focusTarget}
-        language={language}
-        timeZone={timeZone}
         onResend={state.resend}
         onRevoke={state.requestCancel}
         onRetry={state.retry}

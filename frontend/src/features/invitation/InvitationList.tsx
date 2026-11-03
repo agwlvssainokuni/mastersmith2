@@ -24,8 +24,8 @@
 // Table の中の class・data-testid を探さず、render で描く要素への参照で当てる。
 import { Badge, Button, Table, type TableColumn, type TableLabels } from 'make-you-chic-ui'
 import { useEffect, useId, useRef, type FocusEvent } from 'react'
+import { DisplayTime } from '../../app/display-settings/DisplayTime'
 import { LANGUAGE_NAMES } from '../../app/display-settings/displaySettingsTypes'
-import { formatDateTime, type FormatLanguage } from '../../shared/format/formatDateTime'
 import type { Invitation, InvitationPage } from './api/types'
 import { resolveFocusTarget, type FocusTarget } from './focusTarget'
 import { PAGE_SIZE, pageRange, type PagerDirection } from '../../shared/paging/paging'
@@ -49,10 +49,6 @@ export interface InvitationListProps {
   highlightedId: number | null
   /** 次に一覧を描いた後に当てるフォーカス */
   focusTarget: FocusTarget | null
-  /** 画面の言語（日時の書式に使う） */
-  language: FormatLanguage
-  /** 日時の時差（省略すると端末の時差。テストで固定する） */
-  timeZone?: string
   onResend: (invitation: Invitation) => void
   onRevoke: (invitation: Invitation) => void
   onRetry: () => void
@@ -82,8 +78,6 @@ export function InvitationList({
   resendingIds,
   highlightedId,
   focusTarget,
-  language,
-  timeZone,
   onResend,
   onRevoke,
   onRetry,
@@ -187,7 +181,7 @@ export function InvitationList({
       header: t('invitation.column.invitedAt'),
       render: (row) => (
         <span className="invitation-nowrap">
-          {formatDateTime(row.invitedAt, language, timeZone)}
+          <DisplayTime iso={row.invitedAt} />
         </span>
       ),
     },
@@ -196,7 +190,7 @@ export function InvitationList({
       header: t('invitation.column.expiresAt'),
       render: (row) => (
         <span className="invitation-nowrap">
-          {formatDateTime(row.expiresAt, language, timeZone)}
+          <DisplayTime iso={row.expiresAt} />
         </span>
       ),
     },

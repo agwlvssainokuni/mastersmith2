@@ -58,19 +58,54 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByRedactedEmail(@Param("email") RedactedText email);
 
     /**
-     * 本人の氏名と表示の設定の4列だけを書き換える（BR3.3・BR3.4）。
+     * 本人の氏名と表示の設定の4列を書き換え、同じ文で表示のタイムゾーンを書き換えるか変えないかを決め、保存した後の2列を返す
+     * （BR3.3・BR3.4、Intent 261102-timezone-ui-polish の U2 の BR2.3・BR2.6・BR2.7、H2 の {@code FINAL TABLE (UPDATE ...)}）。
      *
-     * <p>値は4つの組（文字列化で氏名を伏せる型）で受け取る。メソッドの呼び出しの追跡が引数を文字列にするため、氏名（既存の利用者では
-     * メールアドレスと同じ値）を {@code String} のまま渡さない。
+     * <p>更新と結果の取り出しが 1 つの文で、5 項目が 1 つの文で確定する（内部DB の文の数は変えない。NFR2.1.2）。表示のタイムゾーンは
+     * {@code change} が真のときだけ {@code zone}（null なら空）に置き、偽のときは列を書き換えず今の値を返す。値は名前つきの束縛だけで
+     * 渡し、文字列を連結しない。氏名は4つの組（文字列化で氏名を伏せる型）で受け、SpEL の中でだけ取り出す。メソッドの呼び出しの追跡が
+     * 引数を文字列にするため、表示のタイムゾーンの名前は個人に関する値ではないがそのまま渡してよい。
+     *
+     * <p>{@code @Modifying} を付けない（結果を返す文のため）。持続化の文脈は書き換えないため、同じトランザクションで先に読み込んだ
+     * エンティティは古い値のままになる（呼び出し側はこの文の後に {@link #findById} で読み直さない）。
      *
      * @param userId 本人の利用者 ID
      * @param preferences 決まりに合う4つの組
-     * @return 書き換えた行の数（本人がいなければ 0）
+     * @param change 表示のタイムゾーンを書き換えるか（項目が無いときは偽）
+     * @param zone 書き換えるときの名前（空にするときは null）
+     * @return 保存した後の2列（本人がいなければ空）
      */
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.displayName = :#{#preferences.displayName()}, u.language = :#{#preferences.language()},"
-            + " u.theme = :#{#preferences.theme()}, u.fontSize = :#{#preferences.fontSize()} WHERE u.userId = :userId")
-    int updatePreferences(@Param("userId") long userId, @Param("preferences") Preferences preferences);
+    @Query(
+            value = "SELECT user_id AS \"userId\", display_time_zone AS \"displayTimeZone\" FROM FINAL TABLE ("
+                    + "UPDATE users SET display_name = :#{#preferences.displayName()},"
+                    + " language = :#{#preferences.language().value()}, theme = :#{#preferences.theme().value()},"
+                    + " font_size = :#{#preferences.fontSize().value()},"
+                    + " display_time_zone = CASE WHEN :change = TRUE THEN CAST(:zone AS VARCHAR(64))"
+                    + " ELSE display_time_zone END WHERE user_id = :userId)",
+            nativeQuery = true)
+    Optional<SavedPreferences> savePreferences(
+            @Param("userId") long userId,
+            @Param("preferences") Preferences preferences,
+            @Param("change") boolean change,
+            @Param("zone") String zone);
+
+    /** {@link #savePreferences} が返す保存した後の2列。 */
+    interface SavedPreferences {
+
+        /**
+         * 利用者 ID を返す。
+         *
+         * @return 利用者 ID
+         */
+        Long getUserId();
+
+        /**
+         * 保存した後の表示のタイムゾーンの名前を返す。
+         *
+         * @return 名前（空は null）
+         */
+        String getDisplayTimeZone();
+    }
 
     /**
      * 読んだときのハッシュのままなら、パスワードのハッシュだけを書き換える（BR4.3、{@code reliability-design.md} 2節の条件つきの更新）。

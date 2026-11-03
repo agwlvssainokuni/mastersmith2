@@ -26,6 +26,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import tsParser from '@typescript-eslint/parser'
 import reactHooks from 'eslint-plugin-react-hooks'
+import { ALL_TIME_ZONE_SYNTAX, BROWSER_TIME_ZONE_SYNTAX } from './eslint-rules/timeZoneSelectors.js'
 
 const FEATURES_DIR = join(dirname(fileURLToPath(import.meta.url)), 'src', 'features')
 
@@ -133,6 +134,21 @@ function readFeatures() {
 }
 
 const features = readFeatures()
+
+/** ブラウザのタイムゾーンを読む唯一のファイル（Intent 261102-timezone-ui-polish の U2、BR2.13） */
+const BROWSER_TIME_ZONE_FILE = 'src/app/display-settings/browserTimeZone.ts'
+
+/** 既存の構文の禁止の 2 つ（export default と enum）。フラットな設定は同じ規則を後の設定が置き換えるため、共有して書き足す */
+const BASE_SYNTAX = [
+  {
+    selector: 'ExportDefaultDeclaration',
+    message: 'export default は使わず、名前付きのエクスポートにしてください。',
+  },
+  {
+    selector: 'TSEnumDeclaration',
+    message: 'enum は使わず、文字列リテラルの union で表してください。',
+  },
+]
 
 /**
  * 機能 feature の中の深さ depth ちょうどのファイルの files の型（機能の直下が 0）。** を使わないため、深さが違う決まりどうしは
@@ -265,6 +281,8 @@ const businessDataConsoleRule = {
     // U3 が手を入れた骨組みの口（記憶を消す知らせ・作業ロールの切り替えの確かめ）。コードのレビューの R-06
     'src/app/login-state/**/*.{ts,tsx}',
     'src/app/work-role/**/*.{ts,tsx}',
+    // Intent 261102-timezone-ui-polish の U2 が足した表示のタイムゾーンの提供元（値を console に出さない）
+    'src/app/display-settings/**/*.{ts,tsx}',
   ],
   ignores: TEST_FILES,
   rules: {
@@ -344,17 +362,22 @@ export default [
     rules: {
       // 文字列をコードとして実行する setTimeout('...') などを禁じる（oxlint に無いセキュリティ系のルール）。
       'no-implied-eval': 'error',
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ExportDefaultDeclaration',
-          message: 'export default は使わず、名前付きのエクスポートにしてください。',
-        },
-        {
-          selector: 'TSEnumDeclaration',
-          message: 'enum は使わず、文字列リテラルの union で表してください。',
-        },
-      ],
+      'no-restricted-syntax': ['error', ...BASE_SYNTAX],
+    },
+  },
+  // 暗黙のタイムゾーン（ブラウザの既定）に頼る書き方を止める（Intent 261102-timezone-ui-polish の U2、H4・SD6）。
+  // 既存の 2 つの構文の禁止を含めて書く。ブラウザのタイムゾーンを読む唯一のファイルは S1・S2 を除く。テストのファイルは対象外。
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: [...TEST_FILES, BROWSER_TIME_ZONE_FILE],
+    rules: {
+      'no-restricted-syntax': ['error', ...BASE_SYNTAX, ...ALL_TIME_ZONE_SYNTAX],
+    },
+  },
+  {
+    files: [BROWSER_TIME_ZONE_FILE],
+    rules: {
+      'no-restricted-syntax': ['error', ...BASE_SYNTAX, ...BROWSER_TIME_ZONE_SYNTAX],
     },
   },
   ...featureImportRules,

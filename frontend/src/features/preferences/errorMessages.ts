@@ -64,6 +64,9 @@ const CHOICE_FIELDS: readonly PreferencesFormField[] = ['language', 'theme', 'fo
 const MESSAGE_KEYS: Readonly<
   Partial<Record<PreferencesFormField, Partial<Record<FieldReason, string>>>>
 > = {
+  displayTimeZone: {
+    invalidValue: 'preferences.timeZone.invalid',
+  },
   displayName: {
     required: 'preferences.displayName.required',
     tooLong: 'preferences.displayName.tooLong',

@@ -16,7 +16,7 @@
 //
 // プリファレンスのフォーム（functional-spec.md の W3〜W8・W12・W13、D9〜D11・D13・D14、frontend-components.md の 4節）。
 // - 項目は上から、氏名（FormField と TextInput）・言語・テーマと文字の大きさの案内・テーマ・文字の大きさ（make-you-chic-ui の
-//   RadioGroup に legend を渡して fieldset・legend で描く）・「元に戻す」・「保存する」。
+//   RadioGroup に legend を渡して fieldset・legend で描く）・表示のタイムゾーン（TimeZoneSelect）・「元に戻す」・「保存する」。
 // - RadioGroup は aria-describedby を外から受けないため、言語の案内と選択の誤りは legend の中に置き、テーマと文字の大きさの
 //   案内は2つのまとまりの前に1回だけ結び付けない文字として置く（10節の (b)、U6 と同じ置き方）。
 // - 送信中は「保存する」を loading（aria-disabled・aria-busy、フォーカスを保つ）、氏名を readOnly、「元に戻す」を disabled にする。
@@ -39,6 +39,7 @@ import {
 } from '../../app/display-settings/resolveDisplaySettings'
 import { useMessages } from '../../app/i18n/I18nProvider'
 import type { Preferences, PreferencesField } from './preferencesApi'
+import { TimeZoneSelect } from './TimeZoneSelect'
 import './PreferencesForm.css'
 
 /** テーマの選択肢の並び（OS に合わせる → ライト → ダーク。画面イメージ S4 のとおり） */
@@ -80,6 +81,7 @@ export interface PreferencesFormProps {
   setLanguage: (value: DisplayLanguage) => void
   setTheme: (value: ThemeChoice) => void
   setFontSize: (value: FontSize) => void
+  setDisplayTimeZone: (value: string | null) => void
   reset: () => void
   save: () => void
   dismissAlert: () => void
@@ -109,6 +111,7 @@ export function PreferencesForm({
   setLanguage,
   setTheme,
   setFontSize,
+  setDisplayTimeZone,
   reset,
   save,
   dismissAlert,
@@ -118,6 +121,7 @@ export function PreferencesForm({
   const languageRef = useRef<HTMLDivElement>(null)
   const themeRef = useRef<HTMLDivElement>(null)
   const fontSizeRef = useRef<HTMLDivElement>(null)
+  const timeZoneRef = useRef<HTMLSelectElement>(null)
   const saveRef = useRef<HTMLButtonElement>(null)
 
   // 描画の確定の後に、求められた要素へフォーカスを移す。送信の後には求められない（D10）。
@@ -134,6 +138,9 @@ export function PreferencesForm({
         break
       case 'fontSize':
         focusChoice(fontSizeRef.current)
+        break
+      case 'displayTimeZone':
+        timeZoneRef.current?.focus()
         break
       case 'save':
         saveRef.current?.focus()
@@ -245,6 +252,13 @@ export function PreferencesForm({
           }}
         />
       </div>
+      <TimeZoneSelect
+        ref={timeZoneRef}
+        value={form.displayTimeZone}
+        onChange={setDisplayTimeZone}
+        disabled={saving}
+        error={errorOf('displayTimeZone')}
+      />
       <div className="preferences-actions">
         <Button
           variant="secondary"

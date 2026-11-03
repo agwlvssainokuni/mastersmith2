@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
  * NFR4.3）。既存の {@code /api/} の既定のログイン必須に乗り、新しい公開の決まり・Origin の確かめは足さない（NFR4.4）。
  *
  * <ul>
- *   <li>{@code GET /api/me/preferences}: 200 と4つ（メールアドレス・管理者かを含めない）
+ *   <li>{@code GET /api/me/preferences}: 200 と5つ（4つと表示のタイムゾーン。メールアドレス・管理者かを含めない）
  *   <li>{@code PUT /api/me/preferences}: 200 と保存した4つ。入力の誤りは 400 {@code VALIDATION_FAILED}（{@code fieldErrors}）
  *   <li>{@code POST /api/me/password}: 204。入力の誤りは 400 {@code VALIDATION_FAILED}（{@code fieldErrors}）、今のパスワードの誤りは
  *       400 {@code PASSWORD_CURRENT_MISMATCH}
@@ -98,8 +98,8 @@ public class MeController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public PreferencesResponse savePreferences(@RequestBody PreferencesRequest body) {
-        PreferencesCommand command =
-                new PreferencesCommand(body.displayName(), body.language(), body.theme(), body.fontSize());
+        PreferencesCommand command = new PreferencesCommand(
+                body.displayName(), body.language(), body.theme(), body.fontSize(), body.displayTimeZoneInput());
         return toResponse(service.savePreferences(context.currentUserId(), command));
     }
 
@@ -127,7 +127,7 @@ public class MeController {
 
     private PreferencesResponse toResponse(PreferencesResult result) {
         return switch (result) {
-            case PreferencesResult.Ok ok -> PreferencesResponse.from(ok.preferences());
+            case PreferencesResult.Ok ok -> PreferencesResponse.from(ok.preferences(), ok.displayTimeZone());
             case PreferencesResult.Invalid invalid -> throw validationFailed(invalid.errors());
             case PreferencesResult.UserNotFound _ -> throw new BusinessException(context.authenticationRequired());
         };

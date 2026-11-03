@@ -99,4 +99,32 @@ class PreferencesValidationTest {
                 .contains("displayName=***")
                 .contains("language=ja");
     }
+
+    @Test
+    @DisplayName(
+            "the display time zone is the fifth field: Keep and Clear add no error, a bad name or a non-text value does")
+    void displayTimeZoneIsTheFifthField() {
+        assertThat(PreferencesValidation.validate("名前", "ja", "dark", "md", new DisplayTimeZoneInput.Keep()))
+                .isEmpty();
+        assertThat(PreferencesValidation.validate("名前", "ja", "dark", "md", new DisplayTimeZoneInput.Clear()))
+                .isEmpty();
+        assertThat(PreferencesValidation.validate(
+                        "名前", "ja", "dark", "md", new DisplayTimeZoneInput.Text("Asia/Tokyo")))
+                .isEmpty();
+        assertThat(PreferencesValidation.validate("名前", "ja", "dark", "md", new DisplayTimeZoneInput.Text("+09:00")))
+                .containsExactly(new FieldError("displayTimeZone", FieldErrorReason.INVALID_VALUE));
+        assertThat(PreferencesValidation.validate("名前", "ja", "dark", "md", new DisplayTimeZoneInput.NotText("NUMBER")))
+                .containsExactly(new FieldError("displayTimeZone", FieldErrorReason.INVALID_VALUE));
+    }
+
+    @Test
+    @DisplayName("the display time zone error comes after the four existing ones")
+    void displayTimeZoneErrorComesLast() {
+        List<FieldError> errors =
+                PreferencesValidation.validate("a".repeat(255), "EN", "", null, new DisplayTimeZoneInput.Text(""));
+
+        assertThat(errors)
+                .extracting(FieldError::field)
+                .containsExactly("displayName", "language", "theme", "fontSize", "displayTimeZone");
+    }
 }

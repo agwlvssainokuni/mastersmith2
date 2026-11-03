@@ -28,7 +28,7 @@ import { ToastProvider } from 'make-you-chic-ui'
 import { Suspense, type ReactElement } from 'react'
 import type { FeatureRegistration, LoginStateProvider } from '../../../app/registry/types'
 import { AppRouter } from '../../../app/routing/AppRouter'
-import { renderWithProviders } from '../../../app/testing/renderWithProviders'
+import { renderWithProviders, type RenderOptions } from '../../../app/testing/renderWithProviders'
 import { preferencesMessages } from '../messages'
 import { registration } from '../registration'
 
@@ -58,6 +58,8 @@ export interface RenderPreferencesAppOptions {
   languages?: readonly string[]
   /** ログイン状態の提供元（既定は auth の本物の提供元 auth.provider） */
   provider?: LoginStateProvider
+  /** 表示のタイムゾーンの提供元の差し込み（既定は固定の Asia/Tokyo。保存済みの名前を知らせる操作を確かめるときに渡す） */
+  displayTimeZone?: RenderOptions['displayTimeZone']
 }
 
 /**
@@ -70,6 +72,7 @@ export function renderPreferencesApp(options: RenderPreferencesAppOptions): Rend
     route = '/me/preferences',
     languages = ['ja-JP'],
     provider = auth.provider,
+    displayTimeZone,
   } = options
   auth.resetSession()
   return renderWithProviders(
@@ -78,7 +81,13 @@ export function renderPreferencesApp(options: RenderPreferencesAppOptions): Rend
         <AppRouter />
       </Suspense>
     </ToastProvider>,
-    { route, languages, provider, registrations: [registration, auth.registration] },
+    {
+      route,
+      languages,
+      provider,
+      registrations: [registration, auth.registration],
+      displayTimeZone,
+    },
   )
 }
 

@@ -54,6 +54,8 @@
 //   preferencesGet      自分の設定の取得（GET /api/me/preferences、200。NFR6.1 の p95 1 秒）
 //   preferencesSave     自分の設定の保存の成功（PUT /api/me/preferences、200。NFR6.2 の p95 1 秒）
 //   preferencesInvalid  自分の設定の保存の入力の誤り（400 VALIDATION_FAILED。NFR6.2 の p95 1 秒）
+//   preferencesSaveTimeZone  表示のタイムゾーンつきの保存（Intent 261102-timezone-ui-polish の U2、NFR2.1.3・NFR2.1.4）。
+//                       繰り返しの番号を 3 で割った余りで op（set・clear・invalid）を決め、op ごとに p95 1 秒で判定する
 //   passwordChange      パスワードの変更の成功（POST /api/me/password、204。NFR6.3 の p95 2 秒）。
 //                       専用の利用者 perf-pw01〜（VU ごとに1人）で、変更の前後のパスワードを交互に使う
 //   passwordMismatch    今のパスワードの誤り（400 PASSWORD_CURRENT_MISMATCH。NFR6.4 の p95 1 秒）
@@ -531,6 +533,12 @@ function scenariosFor(name) {
 // thresholdsFor）だけ。線を変えたときは、perf/k6/thresholds-test.sh の期待の表（CASES）と perf/README.md の「今の基準の一覧」も
 // 合わせて直す。定数は options の評価（thresholdsFor(SCENARIO) の呼び出し）より前に宣言する。
 // 場面ごとの p95 の閾値（ミリ秒）。キーは要求のタグ name。
+// 表示のタイムゾーンつきの保存の操作の名前（op のタグ。iteration_duration で操作ごとに判定する。USER_THRESHOLDS は op ごとの
+// iteration_duration を持てないため、ROLE_OPS と同じ「op を持つ場面」の形にする。Intent 261102-timezone-ui-polish の U2）
+const PREFS_ZONE_OPS = ['set', 'clear', 'invalid']
+// set で回ごとに替える名前（集合の中の名前）と、invalid で送る集合に無い名前
+const PREFS_ZONE_NAMES = ['Asia/Tokyo', 'America/New_York', 'Asia/Kolkata']
+const PREFS_ZONE_INVALID = 'Mars/Nowhere'
 const USER_THRESHOLDS = {
   preferencesGet: { preferencesGet: 1000 },
   preferencesSave: { preferencesSave: 1000 },
@@ -694,6 +702,16 @@ function thresholdsFor(name) {
       [`http_req_duration{name:${name}}`]: ['max>=0'],
     }
   }
+  // Intent 261102-timezone-ui-polish の U2（NFR2.1.3・NFR2.1.4）。op ごとの iteration_duration（単調な時計）と checks で判定する。
+  if (name === 'preferencesSaveTimeZone') {
+    const thresholds = {
+      [`checks{scenario:${name}}`]: ['rate==1'],
+      [`http_req_duration{name:${name}}`]: ['p(95)<1000'],
+      [`http_req_duration{name:${name}Invalid}`]: ['p(95)<1000'],
+    }
+    for (const op of PREFS_ZONE_OPS) thresholds[`iteration_duration{scenario:${name},op:${op}}`] = ['p(95)<1000']
+    return thresholds
+  }
   // Intent 260925-user-management の U2・U3（出典の ID は先頭のコメント）
   if (USER_THRESHOLDS[name]) {
     const thresholds = { [`checks{scenario:${name}}`]: ['rate==1'] }
@@ -784,6 +802,7 @@ export function setup() {
   }
   if (INVITATION_SETUP_SCENARIOS.includes(SCENARIO)) setupInvitations(tokens)
   if (USER_ADMIN_SCENARIOS.includes(SCENARIO)) setupUserAdmin(tokens)
+  if (SCENARIO === 'preferencesSaveTimeZone') setupPreferencesZone()
   if (GROUP_SCENARIOS.includes(SCENARIO)) setupGroups(tokens)
   if (ROLE_SCENARIOS.includes(SCENARIO)) setupRoles(tokens)
   if (ROLE_ONE_SHOT_SCENARIOS.includes(SCENARIO)) setupRoleTransfer(tokens)
@@ -1107,6 +1126,51 @@ function preferencesInvalid() {
     400: (r) => r.status === 400,
     VALIDATION_FAILED: (r) => codeOf(r) === 'VALIDATION_FAILED',
   })
+}
+
+// 表示のタイムゾーンつきの保存の用意: 試験用の利用者 10 人の表示のタイムゾーンを「ブラウザに合わせる」（null）に消してから始める
+// （前の場面が残した状態に頼らない）。今の値を読み、同じ値のまま 5 つ目だけを null にして保存する。
+function setupPreferencesZone() {
+  for (let n = 1; n <= 10; n++) {
+    const headers = { Authorization: `Bearer ${tokenOf(login(userEmail(n), USER_PASSWORD))}`, Origin: BASE }
+    const current = http.get(`${BASE}/api/me/preferences`, { headers, tags: { name: 'preferencesZoneSetupGet' } })
+    if (current.status !== 200) fail(`試験用の利用者 ${n} の設定を読めません: ${current.status}`)
+    const body = { ...current.json(), displayTimeZone: null }
+    const saved = jsonPut(`${BASE}/api/me/preferences`, body, headers, 'preferencesZoneSetupPut')
+    if (saved.status !== 200) fail(`試験用の利用者 ${n} の表示のタイムゾーンを消せません: ${saved.status}`)
+  }
+}
+
+// 表示のタイムゾーンつきの保存。繰り返しの番号を 3 で割った余りで op を決める（op のタグは繰り返しの始めに入れる）。
+function preferencesSaveTimeZone() {
+  const n = exec.vu.iterationInScenario
+  const op = PREFS_ZONE_OPS[n % PREFS_ZONE_OPS.length]
+  exec.vu.metrics.tags.op = op
+  const email = userEmail(((exec.vu.idInTest - 1) % 10) + 1)
+  const zone =
+    op === 'set'
+      ? PREFS_ZONE_NAMES[Math.floor(n / PREFS_ZONE_OPS.length) % PREFS_ZONE_NAMES.length]
+      : op === 'clear'
+        ? null
+        : PREFS_ZONE_INVALID
+  const body = { displayName: email, language: 'ja', theme: 'light', fontSize: 'md', displayTimeZone: zone }
+  const res = jsonPut(
+    `${BASE}/api/me/preferences`,
+    body,
+    preferenceUserAuth(),
+    op === 'invalid' ? 'preferencesSaveTimeZoneInvalid' : 'preferencesSaveTimeZone',
+  )
+  if (op === 'invalid') {
+    check(res, {
+      'invalid 400': (r) => r.status === 400,
+      'invalid VALIDATION_FAILED': (r) => codeOf(r) === 'VALIDATION_FAILED',
+    })
+  } else {
+    check(res, {
+      [`${op} 200`]: (r) => r.status === 200,
+      [`${op} zone`]: (r) => r.json('displayTimeZone') === zone,
+    })
+  }
 }
 
 // パスワードの変更の専用の利用者（perf-pw01〜）。試験全体で重ならない VU の番号で1人を当てる。
@@ -2720,6 +2784,7 @@ const USER_SCENARIOS = {
   preferencesGet,
   preferencesSave,
   preferencesInvalid,
+  preferencesSaveTimeZone,
   passwordChange,
   passwordMismatch,
   passwordInvalid,

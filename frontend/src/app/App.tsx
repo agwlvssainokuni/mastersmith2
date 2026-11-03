@@ -16,7 +16,8 @@
 // 画面の起動（WF5）。登録の読み込みと検査、ログイン状態、表示の設定、表示言語、URL ごとの振り分けをつなぐ。
 // ログイン状態を受けてから表示の設定を決め、その言語で文言を引くため、並びは
 // ThemeProvider → LoginStateGate → DisplaySettingsProvider → I18nProvider → FeatureRegistryProvider →
-// AdminForbiddenProvider（管理の画面の 403 の共通の扱い。Intent 260930-user-admin の U4）→ WorkRoleProvider →
+// AdminForbiddenProvider（管理の画面の 403 の共通の扱い。Intent 260930-user-admin の U4）→
+// DisplayTimeZoneProvider（利用者ごとの表示のタイムゾーン。Intent 261102-timezone-ui-polish の U2）→ WorkRoleProvider →
 // BusinessNavigationProvider（作業ロールと業務のメニュー。Intent 261004-role-menu の U7 の D2）とする（U4 の部品 1節）。
 // React Router のルーター（BrowserRouter など）は、呼び出し側（main.tsx・テスト）が外側に置く。
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'
@@ -27,6 +28,7 @@ import {
   DisplaySettingsProvider,
   useDisplaySettings,
 } from './display-settings/DisplaySettingsProvider'
+import { DisplayTimeZoneProvider } from './display-settings/DisplayTimeZoneProvider'
 import { baseMessageKeys } from './i18n/i18n'
 import { I18nProvider } from './i18n/I18nProvider'
 import { StandaloneLayout } from './layout/StandaloneLayout'
@@ -114,11 +116,13 @@ export function App({
                 {result.ok ? (
                   <FeatureRegistryProvider registrations={result.registrations}>
                     <AdminForbiddenProvider>
-                      <WorkRoleProvider>
-                        <BusinessNavigationProvider>
-                          <AppRouter />
-                        </BusinessNavigationProvider>
-                      </WorkRoleProvider>
+                      <DisplayTimeZoneProvider>
+                        <WorkRoleProvider>
+                          <BusinessNavigationProvider>
+                            <AppRouter />
+                          </BusinessNavigationProvider>
+                        </WorkRoleProvider>
+                      </DisplayTimeZoneProvider>
                     </AdminForbiddenProvider>
                   </FeatureRegistryProvider>
                 ) : (

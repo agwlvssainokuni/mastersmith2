@@ -28,8 +28,9 @@ public sealed interface PreferencesResult {
      * 読めた・保存した。
      *
      * @param preferences 保存されている（保存した）4つの組
+     * @param displayTimeZone 保存されている（保存した後の）表示のタイムゾーンの名前（未設定は null。個人に関する値ではない）
      */
-    record Ok(Preferences preferences) implements PreferencesResult {}
+    record Ok(Preferences preferences, String displayTimeZone) implements PreferencesResult {}
 
     /**
      * 入力の誤り（内部DB は変えていない。BR3.2）。

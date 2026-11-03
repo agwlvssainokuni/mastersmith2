@@ -231,13 +231,18 @@ export const PREFERENCES_KNOWN_VIOLATIONS: Readonly<
 > = {
   'preferences-ready': [],
   'preferences-invalid': [],
+  'preferences-zone-unresolvable': [],
   'password-ready': [],
   'password-invalid': [],
 }
 
 /** プリファレンスとパスワードの変更の画面の検査の状態 */
 export type PreferencesAxeState =
-  'preferences-ready' | 'preferences-invalid' | 'password-ready' | 'password-invalid'
+  | 'preferences-ready'
+  | 'preferences-invalid'
+  | 'preferences-zone-unresolvable'
+  | 'password-ready'
+  | 'password-invalid'
 
 /** 流れるべき規則のうち、結果に無いものを返す。 */
 export function missingRequiredRules(summary: AxeSummary): string[] {

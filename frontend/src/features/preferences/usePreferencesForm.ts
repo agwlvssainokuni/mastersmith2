@@ -27,6 +27,7 @@
 import { useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useDisplaySettings } from '../../app/display-settings/DisplaySettingsProvider'
+import { useDisplayTimeZoneActions } from '../../app/display-settings/DisplayTimeZoneProvider'
 import type {
   DisplayLanguage,
   FontSize,
@@ -86,25 +87,29 @@ export interface PreferencesController {
   setLanguage: (value: DisplayLanguage) => void
   setTheme: (value: ThemeChoice) => void
   setFontSize: (value: FontSize) => void
+  /** 表示のタイムゾーンを選ぶ（null は「ブラウザに合わせる」） */
+  setDisplayTimeZone: (value: string | null) => void
   reset: () => void
   save: () => void
   reload: () => void
   dismissAlert: () => void
 }
 
-/** 4つが同じか（文字列として比べる）。 */
+/** 5つが同じか（文字列として比べる）。 */
 function samePreferences(a: Preferences, b: Preferences): boolean {
   return (
     a.displayName === b.displayName &&
     a.language === b.language &&
     a.theme === b.theme &&
-    a.fontSize === b.fontSize
+    a.fontSize === b.fontSize &&
+    a.displayTimeZone === b.displayTimeZone
   )
 }
 
 /** プリファレンスの画面の状態と操作 */
 export function usePreferencesForm(): PreferencesController {
   const display = useDisplaySettings()
+  const { applySaved } = useDisplayTimeZoneActions()
   const t = useMessages()
   const toast = useToast()
 
@@ -126,10 +131,13 @@ export function usePreferencesForm(): PreferencesController {
   const shownSavedCount = useRef(0)
   /** 応答を受けた後（描画の外）で使う U4 の口（最新のログイン状態に結び付いたもの） */
   const displayRef = useRef(display)
+  /** 表示のタイムゾーンの提供元へ保存済みの名前を知らせる口（読み取りなしで切り替える。BR2.15・BR2.16） */
+  const applySavedRef = useRef(applySaved)
 
   useEffect(() => {
     displayRef.current = display
-  }, [display])
+    applySavedRef.current = applySaved
+  }, [display, applySaved])
 
   // 部品が付いているかの印は、描画の後の効果（useEffect）ではなく commit と同時に下りる useLayoutEffect で持つ。画面を離れた
   // 直後（新しい画面の DOM が置かれた直後）に答えが届いても、画面の状態を更新しないため（Intent 261025-deps-perf-carryover
@@ -168,6 +176,8 @@ export function usePreferencesForm(): PreferencesController {
           // 内部DB の値が正。開いた時点の値に画面をそろえる（D2。利用者の操作ではないため知らせない）。
           applied.applyUserPreferences(loaded)
         }
+        // 開いた時点の保存済みの名前を提供元に知らせる（読み取りなしで管理の画面の時刻を切り替える。BR2.15）。
+        applySavedRef.current(loaded.displayTimeZone)
         setState((current) => ({
           ...current,
           phase: 'ready',
@@ -239,6 +249,10 @@ export function usePreferencesForm(): PreferencesController {
     if (next !== undefined) {
       display.setPreview(next.theme, next.fontSize)
     }
+  }
+
+  const setDisplayTimeZone = (displayTimeZone: string | null) => {
+    updateForm({ displayTimeZone })
   }
 
   const reset = () => {
@@ -320,6 +334,7 @@ export function usePreferencesForm(): PreferencesController {
         busy.current = false
         // 内部DB は保存された。画面が無くても画面の値を内部DB にそろえる（W6 の3）。
         displayRef.current.applyUserPreferences(saved)
+        applySavedRef.current(saved.displayTimeZone)
         if (!mounted.current) {
           return
         }
@@ -376,6 +391,7 @@ export function usePreferencesForm(): PreferencesController {
     },
     setTheme,
     setFontSize,
+    setDisplayTimeZone,
     reset,
     save,
     reload,
