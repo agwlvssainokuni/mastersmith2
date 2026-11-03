@@ -1,0 +1,12 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-time-zone-conversion",
+  "upstream_ids": ["NFR1.4", "NFR1.5", "NFR5.1", "NFR5.2", "NFR2.1"],
+  "coverage": [
+    { "id": "NFR1.4", "status": "OK", "target": "cicd-pipeline.md section 2: ESLint override for the U1 files (no network, storage, DOM, console) in the lint gate; unit tests in the Vitest gate" },
+    { "id": "NFR1.5", "status": "OK", "target": "cicd-pipeline.md section 2: license header gate, build and type-check gate, OSV-Scanner gate (no dependency added)" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md section 2: Vitest and fast-check unit tests inside ./gradlew verify" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline.md section 2: Vitest unit tests with the time zone and locale fixed explicitly" },
+    { "id": "NFR2.1", "status": "OK", "target": "cicd-pipeline.md section 2 and 5: performance measurement inside the Vitest gate, median of several runs" }
+  ]
+}

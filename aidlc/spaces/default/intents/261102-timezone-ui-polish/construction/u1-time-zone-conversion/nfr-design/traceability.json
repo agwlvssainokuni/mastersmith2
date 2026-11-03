@@ -1,0 +1,36 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-time-zone-conversion",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.3",
+    "NFR6.1",
+    "NFR2.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.2",
+    "NFR2.2",
+    "NFR3.1",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.2"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "delivered by u6-app-icon-assets" },
+    { "id": "NFR1.3", "status": "N/A", "target": "delivered by u5-menu-icons-home" },
+    { "id": "NFR6.1", "status": "N/A", "target": "no screen text in this unit (delivered by u2, u4, u5)" },
+    { "id": "NFR2.1", "status": "OK", "target": "LC7.1 (Intl.DateTimeFormat reuse per time zone), LC7.2, LC7.3 in logical-components.md" },
+    { "id": "NFR5.1", "status": "OK", "target": "SD7.7 (required date-time tests) in security-design.md" },
+    { "id": "NFR5.2", "status": "OK", "target": "SD4.1, SD4.2, SD4.3 (explicit time zone, fixed locale) and SD5.1 (pure functions, closed cache) in security-design.md" },
+    { "id": "NFR1.4", "status": "OK", "target": "SD1.1-SD1.5 (input checks), SD2.1-SD2.2 (output as text), SD3.1-SD3.2 (no value leaves) in security-design.md" },
+    { "id": "NFR1.5", "status": "OK", "target": "SD6.1 (no new dependency), SD6.2 (source rules) in security-design.md" },
+    { "id": "NFR1.2", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR2.2", "status": "N/A", "target": "delivered by u5-menu-icons-home" },
+    { "id": "NFR3.1", "status": "N/A", "target": "no screen in this unit (delivered by u2, u4, u5, u6)" },
+    { "id": "NFR3.3", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR4.1", "status": "N/A", "target": "no persistent data in this unit (delivered by u2-display-time-zone)" },
+    { "id": "NFR4.2", "status": "N/A", "target": "delivered by u5-menu-icons-home" }
+  ]
+}

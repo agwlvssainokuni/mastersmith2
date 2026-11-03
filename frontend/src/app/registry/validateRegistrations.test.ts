@@ -329,7 +329,7 @@ describe('validateRegistrations for the sidebar section and icon', () => {
   })
 
   it('accepts every icon name of the allowed list', () => {
-    expect(ALLOWED_ICONS).toHaveLength(18)
+    expect(ALLOWED_ICONS).toHaveLength(24)
     for (const icon of ALLOWED_ICONS) {
       expect(problemsOf(withItem({ icon }))).toEqual([])
     }

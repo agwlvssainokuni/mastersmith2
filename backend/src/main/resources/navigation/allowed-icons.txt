@@ -33,3 +33,9 @@ info
 success
 warning
 danger
+mail
+users
+shield
+table
+view
+folder

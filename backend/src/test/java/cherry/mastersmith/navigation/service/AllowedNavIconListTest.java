@@ -115,7 +115,7 @@ class AllowedNavIconListTest {
     }
 
     @Test
-    @DisplayName("the bundled file skips its license header and holds the 18 names of make-you-chic-ui")
+    @DisplayName("the bundled file skips its license header and holds the 24 names of make-you-chic-ui")
     void bundledFile() {
         assertThat(new AllowedNavIconList().policy().allowed())
                 .containsExactlyInAnyOrder(
@@ -136,6 +136,12 @@ class AllowedNavIconListTest {
                         "info",
                         "success",
                         "warning",
-                        "danger");
+                        "danger",
+                        "mail",
+                        "users",
+                        "shield",
+                        "table",
+                        "view",
+                        "folder");
     }
 }

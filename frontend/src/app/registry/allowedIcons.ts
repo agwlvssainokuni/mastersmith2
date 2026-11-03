@@ -40,6 +40,12 @@ export const ALLOWED_ICONS = [
   'success',
   'warning',
   'danger',
+  'mail',
+  'users',
+  'shield',
+  'table',
+  'view',
+  'folder',
 ] as const satisfies readonly IconName[]
 
 type MissingIcons = Exclude<IconName, (typeof ALLOWED_ICONS)[number]>

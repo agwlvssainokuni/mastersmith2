@@ -187,6 +187,70 @@ const sharedImportRule = {
 }
 
 /**
+ * 日時変換の部品（Intent 261102-timezone-ui-polish の U1、src/shared/format/timeZone/。セキュリティの設計 SD3.2）。純粋な関数だけの
+ * 置き場として、通信・保存・DOM・console を使わず、画面の部品・通信の部品・他の機能へ依存しないことを、テストでないファイルに当てる。
+ * no-restricted-imports は上の sharedImportRule（src/shared/ 全体の決まり）と同じ files に重なるため、その決まりの patterns も含めて
+ * 書く（後の設定が前の同じ規則の設定を置き換えるため）。既存の formatDateTime.ts は別の関数で、この決まりの対象に入れない。
+ */
+const timeZoneConversionRules = {
+  files: ['src/shared/format/timeZone/**/*.ts'],
+  ignores: TEST_FILES,
+  rules: {
+    'no-restricted-globals': [
+      'error',
+      ...[
+        'console',
+        'fetch',
+        'XMLHttpRequest',
+        'WebSocket',
+        'localStorage',
+        'sessionStorage',
+        'indexedDB',
+        'document',
+        'window',
+        'navigator',
+      ].map((name) => ({
+        name,
+        message:
+          '日時変換の部品は、通信・保存・DOM・console・ブラウザの既定の値を使いません（値を外へ出さず、既定に頼らないため）。',
+      })),
+    ],
+    'no-restricted-imports': [
+      'error',
+      {
+        patterns: [
+          {
+            group: ['**/app', '**/app/**', '**/features', '**/features/**'],
+            message:
+              'src/shared/ は src/app/ と src/features/ を読まないでください。要る型や値は呼ぶ側から引数で受け取ってください。',
+          },
+          {
+            group: [
+              'react',
+              'react/*',
+              'react-dom',
+              'react-dom/*',
+              'react-i18next',
+              'react-router',
+              'react-router/*',
+              'i18next',
+              'make-you-chic-ui',
+              'make-you-chic-ui/*',
+              'node:*',
+              '**/api',
+              '**/api/**',
+              '**/formatDateTime',
+            ],
+            message:
+              '日時変換の部品は、通信・保存・画面の部品・既存の formatDateTime に依存しない純粋な関数だけにしてください。',
+          },
+        ],
+      },
+    ],
+  },
+}
+
+/**
  * 業務データの画面（Intent 261016-business-data-views の U3、計画 D10: A）で、主キー・行の値・検索の値を console に出さないよう、
  * src/features/tables/ と U3 が足した src/shared/ の部品、U3 が手を入れた src/app/login-state/・src/app/work-role/（コードのレビューの
  * R-06）に no-console を当てる（テストのファイルを除く）。規則を足すだけで緩めない。
@@ -295,6 +359,7 @@ export default [
   },
   ...featureImportRules,
   sharedImportRule,
+  timeZoneConversionRules,
   businessDataConsoleRule,
   perfToolRule,
 ]
