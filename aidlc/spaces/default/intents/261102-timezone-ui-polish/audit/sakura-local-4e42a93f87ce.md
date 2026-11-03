@@ -19427,3 +19427,107 @@
 **Message Id**: 97440ca8
 
 ---
+
+## Unit Started
+**Timestamp**: 2026-11-03T16:30:51Z
+**Event**: UNIT_STARTED
+**Stage**: nfr-requirements
+**Unit**: u4-business-data-time
+**Run floor**: WORKFLOW_STARTED:2026-11-02T16:36:49Z#1
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T16:31:23Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/nfr-requirements-questions.md
+**Context**: construction > u4-business-data-time > nfr-requirements > nfr-requirements-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-03T16:31:26Z
+**Event**: DECISION_RECORDED
+**Stage**: nfr-requirements
+**Decision**: Q1（u4-business-data-time）
+**Options**: |Q1 A: America/New_York で存在しない時刻・重なる時刻の2択まで通す|Q1 B: Asia/Tokyo で日付の変わり目と往復だけ
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-03T16:31:52Z
+**Event**: HUMAN_TURN
+**Session**: 22b631d2-e0f2-47d2-90b7-0710f3071186
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. 夏時間まで通す (推奨)"]
+**Message Id**: 8b820b3e
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-03T16:31:52Z
+**Event**: QUESTION_REPLIED
+**Session**: 22b631d2-e0f2-47d2-90b7-0710f3071186
+**Question**: [テスト] Q1. N6 の日時の代表の E2E（足せるのは1本）で、夏時間の地域と重なる時刻の2択まで通しますか。夏時間の判定は単体テスト（jsdom）でも確かめますが、実際のブラウザでの2択の操作と、保存した時点が正しいかは E2E でしか確かめられません。推奨は A です。1本で「保存 → 入力 → 時差つきの表示 → 往復」に加え、この Intent でいちばん壊れやすい夏時間の扱いを、実際のブラウザで通せます。
+**Reply**: A. 夏時間まで通す (推奨)
+**Options**: ["A. 夏時間まで通す (推奨)","B. 日付の変わり目だけ"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-03T16:31:56Z
+**Event**: QUESTION_ANSWERED
+**Stage**: nfr-requirements
+**Details**: Q1: A. 夏時間まで通す (推奨)
+**Person Reply**: manualにした\nautoにした\nok\nA. 夏時間まで通す (推奨)
+**Message Id**: 8b820b3e
+**Message Ids**: 41015754,c26d5e8c,97440ca8,8b820b3e
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-03T16:31:56Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/nfr-requirements-questions.md
+**Context**: construction > u4-business-data-time > nfr-requirements > nfr-requirements-questions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T16:32:45Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/performance-requirements.md
+**Context**: construction > u4-business-data-time > nfr-requirements > performance-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T16:33:40Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/security-requirements.md
+**Context**: construction > u4-business-data-time > nfr-requirements > security-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T16:34:00Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/tech-stack-decisions.md
+**Context**: construction > u4-business-data-time > nfr-requirements > tech-stack-decisions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-03T16:34:09Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u4-business-data-time/nfr-requirements/traceability.json
+**Context**: construction > u4-business-data-time > nfr-requirements > traceability.json
+
+---

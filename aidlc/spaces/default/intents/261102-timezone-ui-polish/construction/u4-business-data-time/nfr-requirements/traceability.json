@@ -1,0 +1,21 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u4-business-data-time",
+  "upstream_ids": ["NFR1.1","NFR1.2","NFR1.3","NFR2.1","NFR2.2","NFR3.1","NFR3.2","NFR3.3","NFR4.1","NFR4.2","NFR5.1","NFR5.2","NFR5.3","NFR6.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "delivered by u6-app-icon-assets (SVG safety; U4 adds no icons)" },
+    { "id": "NFR1.2", "status": "N/A", "target": "delivered by u2-display-time-zone (U4 only reads the display time zone)" },
+    { "id": "NFR1.3", "status": "N/A", "target": "delivered by u5-menu-icons-home (menu tableKind)" },
+    { "id": "NFR2.1", "status": "OK", "target": "NFR2.1.1, NFR2.1.2, NFR2.1.3, NFR2.1.4, NFR2.1.5" },
+    { "id": "NFR2.2", "status": "N/A", "target": "delivered by u5-menu-icons-home (home screen API)" },
+    { "id": "NFR3.1", "status": "OK", "target": "NFR3.1.1, NFR3.1.2, NFR3.1.3" },
+    { "id": "NFR3.2", "status": "N/A", "target": "delivered by u5-menu-icons-home and u6-app-icon-assets (U4 adds no icons)" },
+    { "id": "NFR3.3", "status": "N/A", "target": "delivered by u2-display-time-zone (time zone select)" },
+    { "id": "NFR4.1", "status": "N/A", "target": "delivered by u2-display-time-zone (U4 does not change the internal DB)" },
+    { "id": "NFR4.2", "status": "OK", "target": "NFR4.2.1" },
+    { "id": "NFR5.1", "status": "OK", "target": "NFR5.1.1, NFR5.1.2, NFR5.1.3, NFR5.1.4, NFR5.1.5, NFR5.1.6" },
+    { "id": "NFR5.2", "status": "OK", "target": "NFR5.2.1" },
+    { "id": "NFR5.3", "status": "OK", "target": "NFR5.3.1" },
+    { "id": "NFR6.1", "status": "OK", "target": "NFR6.1.1" }
+  ]
+}
