@@ -1,0 +1,39 @@
+{
+  "stage": "functional-design",
+  "unit": "u3-target-db-time",
+  "upstream_ids": ["AC2.1.1","AC2.1.2","AC2.1.3","AC2.1.4","AC2.1.5","AC2.1.6","AC2.1.7","AC2.2.1","AC2.2.2","AC2.2.3","AC2.2.4","AC2.5.1","AC2.5.2","AC2.5.3","AC2.5.4","AC2.5.5","AC5.1.1","AC5.1.2","AC5.1.3","AC5.1.4","AC5.1.5","AC5.3.1","AC5.3.2","AC5.3.3","AC5.3.4"],
+  "coverage": [
+    { "id": "AC2.1.1", "status": "N/A", "target": "delivered by u4-business-data-time（表示の変換は u1・u4。サーバー側は BR3.1・BR3.2 で UTC の時点を返すだけ）" },
+    { "id": "AC2.1.2", "status": "OK", "target": "BR3.1, BR3.2" },
+    { "id": "AC2.1.3", "status": "N/A", "target": "delivered by u4-business-data-time（選択肢の表示は u4。サーバー側の値は BR3.3・BR3.10 が正す）" },
+    { "id": "AC2.1.4", "status": "OK", "target": "BR3.3, BR3.4" },
+    { "id": "AC2.1.5", "status": "N/A", "target": "delivered by u1-time-zone-conversion（夏時間・端数の時差は画面の側の変換）" },
+    { "id": "AC2.1.6", "status": "OK", "target": "BR3.10, BR3.14" },
+    { "id": "AC2.1.7", "status": "OK", "target": "BR3.16" },
+    { "id": "AC2.2.1", "status": "OK", "target": "BR3.2" },
+    { "id": "AC2.2.2", "status": "OK", "target": "BR3.6" },
+    { "id": "AC2.2.3", "status": "OK", "target": "BR3.5, BR3.6" },
+    { "id": "AC2.2.4", "status": "OK", "target": "BR3.1, BR3.2" },
+    { "id": "AC2.5.1", "status": "N/A", "target": "delivered by u4-business-data-time（変えていない欄を送らないのは画面の側）" },
+    { "id": "AC2.5.2", "status": "OK", "target": "BR3.3, BR3.13" },
+    { "id": "AC2.5.3", "status": "OK", "target": "BR3.13" },
+    { "id": "AC2.5.4", "status": "N/A", "target": "delivered by u1-time-zone-conversion（重なる時刻は画面の側。サーバーは時点として受けるだけ）" },
+    { "id": "AC2.5.5", "status": "OK", "target": "BR3.5, BR3.6, BR3.7, BR3.13" },
+    { "id": "AC5.1.1", "status": "OK", "target": "BR3.1, BR3.2" },
+    { "id": "AC5.1.2", "status": "OK", "target": "BR3.3, BR3.8" },
+    { "id": "AC5.1.3", "status": "OK", "target": "BR3.7" },
+    { "id": "AC5.1.4", "status": "OK", "target": "BR3.18" },
+    { "id": "AC5.1.5", "status": "OK", "target": "BR3.18" },
+    { "id": "AC5.3.1", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "AC5.3.2", "status": "N/A", "target": "delivered by u5-menu-icons-home" },
+    { "id": "AC5.3.3", "status": "OK", "target": "BR3.16" },
+    { "id": "AC5.3.4", "status": "OK", "target": "BR3.19" }
+  ],
+  "reverse": [
+    { "id": "BR3.9", "status": "N/A", "target": "Q3: B で足した決まり（端数超過の拒否。要件 FR2.5 の保存の側）" },
+    { "id": "BR3.11", "status": "N/A", "target": "Q4: B で足した決まり（読めない形の書き込みの拒否）" },
+    { "id": "BR3.12", "status": "N/A", "target": "Q4: B で足した決まり（主キーが読めない行）" },
+    { "id": "BR3.15", "status": "N/A", "target": "技術の決まり（漏えいの防止）" },
+    { "id": "BR3.17", "status": "N/A", "target": "技術の決まり（JVM の既定のタイムゾーンに頼らない）" }
+  ]
+}

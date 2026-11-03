@@ -1,0 +1,12 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u3-target-db-time",
+  "upstream_ids": ["NFR1.4", "NFR1.5", "NFR5.1", "NFR5.2", "NFR2.1"],
+  "coverage": [
+    { "id": "NFR1.4", "status": "OK", "target": "cicd-pipeline.md section 2: SpotBugs SQL_ gate, ArchUnit boundary tests not loosened, integration tests on three target DBs (init, init failure, unreadable values, no leak); section 3: rollback of the connection init change; section 5: how to tell an init failure (handed to incident-response)" },
+    { "id": "NFR1.5", "status": "OK", "target": "cicd-pipeline.md section 2: format, license header, build and OSV-Scanner gates (no dependency added, lockfile and the four runtime time zone settings unchanged)" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md section 2: required date-time integration tests on MySQL, MariaDB and PostgreSQL containers inside ./gradlew verify; coverage gate and packagesJudgedByTotal handling" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline.md section 2: user.timezone invariance tests and no change to the four runtime time zone settings; section 3: image check after replacement" },
+    { "id": "NFR2.1", "status": "OK", "target": "cicd-pipeline.md section 2: worst-case conversion measurement (500 ms) in the unit test gate, connection and query count integration test, verify time record and existing p95 before-and-after record (NFR2.1.5, scenarios listed); section 5: stability of timing tests" }
+  ]
+}

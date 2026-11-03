@@ -1,0 +1,98 @@
+{
+  "stage": "nfr-design",
+  "unit": "u3-target-db-time",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR1.1",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.2",
+    "NFR2.2",
+    "NFR3.1",
+    "NFR3.3",
+    "NFR6.1",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR5.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "LC7.1-LC7.4 (format reuse, no extra queries, existing targets unchanged) in logical-components.md; SD1.1 (init once per connection) in security-design.md"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "SD7.3-SD7.7, SD7.9 (required date-time tests on three target DBs) in security-design.md"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "SD5.1, SD5.2 (no JVM default, user.timezone invariance), SD1.5 (four runtime settings unchanged) in security-design.md"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "N/A",
+      "target": "delivered by u6-app-icon-assets"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "N/A",
+      "target": "delivered by u5-menu-icons-home"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "SD1.1-SD1.4 (connection init, failure), SD2.1-SD2.5 (reads, unreadable values, sentinel re-read), SD3.1-SD3.5 (write input checks), SD4.1-SD4.3 (no leak) in security-design.md; LC1-LC6, LC8 in logical-components.md"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "SD6.1 (no new dependency), SD6.2 (source rules) in security-design.md"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "N/A",
+      "target": "delivered by u2-display-time-zone"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "N/A",
+      "target": "delivered by u5-menu-icons-home"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "no screen in this unit (delivered by screen units)"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "N/A",
+      "target": "no screen in this unit (delivered by screen units)"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "N/A",
+      "target": "no screen text in this unit (delivered by screen units)"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "delivered by u2 (this unit adds no column or table)"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "delivered by u5 (this unit does not change response shapes)"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "N/A",
+      "target": "delivered by u4-business-data-time (this unit adds no E2E)"
+    }
+  ]
+}
