@@ -46,6 +46,13 @@
 
 - **Construction Verification Command**: DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock ./gradlew verify
 
+- **Unit Ownership**: solo
+
+- **Skeleton Stance**: off
+
+
+
+
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -106,7 +113,7 @@
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-11-03T02:50:40Z
+- **Last Updated**: 2026-11-03T03:10:12Z
 
 ## Session Resume Point
 - **Last Completed Stage**: delivery-planning
