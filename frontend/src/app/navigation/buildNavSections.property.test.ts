@@ -24,7 +24,8 @@ import { ALLOWED_ICONS } from '../registry/allowedIcons'
 import type { FeatureRegistration, LoginState, SidebarItemRegistration } from '../registry/types'
 import { buildNavSections, type BuildNavInput } from './buildNavSections'
 import { addAncestors } from './navExpansion'
-import type { NavNode } from './navigationApi'
+import { resolveItemIcon } from './navIcon'
+import type { NavNode, NavTableKind } from './navigationApi'
 import { readTablePlaceholderParams } from './tablePlaceholderPath'
 
 const SCRIPT_URL = ['javascript', 'alert(1)'].join(':')
@@ -36,6 +37,7 @@ interface RawNode {
   table: { schemaName: string; tableName: string } | null
   navigable: boolean
   items: RawNode[]
+  tableKind: NavTableKind | null
 }
 
 const nameArb = fc.oneof(
@@ -68,6 +70,7 @@ function rawNodeArb(depth: number): fc.Arbitrary<RawNode> {
     icon: iconArb,
     table: tableArb,
     navigable: fc.boolean(),
+    tableKind: fc.constantFrom<NavTableKind | null>('TABLE', 'VIEW', null),
     items:
       depth >= 5
         ? fc.constant([])
@@ -268,6 +271,29 @@ describe('buildNavSections properties', () => {
       fc.property(inputArb, (values) => {
         for (const item of allItems(build(values).sections)) {
           expect(item.icon === undefined || allowed.has(item.icon)).toBe(true)
+        }
+      }),
+    )
+  })
+
+  it('3b. gives every business item the icon decided by resolveItemIcon (D10)', () => {
+    const flatten = (nodes: readonly NavNode[]): NavNode[] =>
+      nodes.flatMap((node) => [node, ...flatten(node.items)])
+    fc.assert(
+      fc.property(inputArb, (values) => {
+        const section = businessSection(build(values).sections)
+        const byId = new Map(flatten(values.tree).map((node) => [`biz:${node.id}`, node]))
+        for (const item of allItems(section === undefined ? [] : [section])) {
+          const source = byId.get(item.id)
+          if (source !== undefined) {
+            expect(item.icon).toBe(
+              resolveItemIcon({
+                icon: source.icon,
+                tableKind: source.tableKind,
+                navigable: source.navigable,
+              }),
+            )
+          }
         }
       }),
     )

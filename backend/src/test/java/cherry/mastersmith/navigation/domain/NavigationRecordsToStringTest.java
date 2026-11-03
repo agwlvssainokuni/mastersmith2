@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cherry.mastersmith.dsl.domain.DisplayName;
 import cherry.mastersmith.navigation.web.DisplayLabelResponse;
+import cherry.mastersmith.navigation.web.NavNodeResponse;
 import cherry.mastersmith.navigation.web.NavTableRefResponse;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -44,6 +46,25 @@ class NavigationRecordsToStringTest {
         assertThat(response.toString()).isEqualTo("DisplayLabelResponse[ja=***, en=***]");
         assertThat(label.ja()).isEqualTo("MARKER_JA");
         assertThat(response.en()).isEqualTo("MARKER_EN");
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName(
+            "the node and its response keep the same string form after adding the table kind")
+    void nodesDoNotShowTheTableKind() {
+        NavNode node = new NavNode(
+                "0",
+                DisplayLabel.of(LABEL),
+                "list",
+                new NavTableRef(SCHEMA, TABLE),
+                true,
+                List.of(),
+                NavTableKind.VIEW);
+        NavNodeResponse response = NavNodeResponse.from(node);
+
+        assertThat(node.toString()).isEqualTo("NavNode[id=0, navigable=true, items=0]");
+        assertThat(response.toString()).isEqualTo("NavNodeResponse[id=0, navigable=true, items=0]");
+        assertThat(response.tableKind()).isEqualTo("VIEW");
     }
 
     @Test

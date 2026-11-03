@@ -27,6 +27,7 @@ import java.util.List;
  * @param table 移れる項目のテーブルの組（移れない項目は null）
  * @param navigable 移れるか
  * @param items 子
+ * @param tableKind テーブルの種類（{@code TABLE}・{@code VIEW}。移れない項目と種類が分からない項目は null）
  */
 public record NavNodeResponse(
         String id,
@@ -34,7 +35,8 @@ public record NavNodeResponse(
         String icon,
         NavTableRefResponse table,
         boolean navigable,
-        List<NavNodeResponse> items) {
+        List<NavNodeResponse> items,
+        String tableKind) {
 
     /**
      * 項目から作る（子も同じく写す）。
@@ -49,7 +51,8 @@ public record NavNodeResponse(
                 node.icon(),
                 NavTableRefResponse.from(node.table()),
                 node.navigable(),
-                node.items().stream().map(NavNodeResponse::from).toList());
+                node.items().stream().map(NavNodeResponse::from).toList(),
+                node.tableKind() == null ? null : node.tableKind().name());
     }
 
     /** 位置の道・移れるか・子の数だけを出す（木を毎回文字列にしないため。計画の D-6）。 */

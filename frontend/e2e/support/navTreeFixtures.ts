@@ -57,12 +57,13 @@ function leaf(id: string, label: { ja: string; en: string }, table: string): Nav
     table: { schemaName: FRAME_SCHEMA, tableName: table },
     navigable: true,
     items: [],
+    tableKind: 'TABLE',
   }
 }
 
 /** 子を持つまとまり */
 function group(id: string, label: { ja: string; en: string }, items: NavNode[]): NavNode {
-  return { id, label, icon: 'menu', table: null, navigable: false, items }
+  return { id, label, icon: 'menu', table: null, navigable: false, items, tableKind: null }
 }
 
 /**

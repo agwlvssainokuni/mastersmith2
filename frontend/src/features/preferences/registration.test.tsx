@@ -23,7 +23,6 @@ import { baseMessageKeys } from '../../app/i18n/i18n'
 import { selectAdminSidebarItems, buildUserMenuItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
-import { registration as adminRegistration } from '../admin/registration'
 import { initializeAuthSession, resetAuthSession } from '../auth/authSession'
 import { loginStateProvider } from '../auth/loginStateProvider'
 import { registration as authRegistration } from '../auth/registration'
@@ -109,7 +108,6 @@ describe('preferences feature registration', () => {
       validateRegistrations(
         [
           authRegistration,
-          adminRegistration,
           dslRegistration,
           invitationRegistration,
           registrationRegistration,

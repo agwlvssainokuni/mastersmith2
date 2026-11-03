@@ -212,6 +212,61 @@ class MenuFilterPropertyTest {
         assertThat(after).containsAll(before);
     }
 
+    /** 種類の操作の見本（T1・T3・T5 はビュー、T2・T4 はテーブル、DSL に無い組は null）。 */
+    private static NavTableKind kindOf(String schema, String table) {
+        return switch (table) {
+            case "T1", "T3", "T5" -> NavTableKind.VIEW;
+            case "T2", "T4" -> NavTableKind.TABLE;
+            default -> null;
+        };
+    }
+
+    private static MenuFilterInput inputWithKinds(Mains mains) {
+        return new MenuFilterInput(mains::of, ICONS::iconOf, MenuFilterPropertyTest::kindOf);
+    }
+
+    @Property
+    @Label("(i) a table kind is set only on navigable items and equals the kind of its table")
+    void tableKindOnlyOnNavigableItems(@ForAll("menus") List<DslMenuItem> menus, @ForAll("mains") Mains mains) {
+        for (NavNode node : all(MenuFilter.filter(menus, inputWithKinds(mains)))) {
+            if (node.navigable()) {
+                assertThat(node.tableKind())
+                        .isEqualTo(
+                                kindOf(node.table().schemaName(), node.table().tableName()));
+            } else {
+                assertThat(node.tableKind()).isNull();
+            }
+        }
+    }
+
+    @Property
+    @Label("(j) raising a permission never changes the kind of an item that was already visible")
+    void raisingDoesNotChangeKinds(
+            @ForAll("menus") List<DslMenuItem> menus,
+            @ForAll("mains") Mains mains,
+            @ForAll("dslTables") TableRef raised) {
+        Map<TableRef, MainPermission> stronger = new HashMap<>(mains.values());
+        if (stronger.get(raised) == MainPermission.NONE) {
+            stronger.put(raised, MainPermission.READ);
+        }
+        Map<String, NavTableKind> before = kinds(MenuFilter.filter(menus, inputWithKinds(mains)));
+        Map<String, NavTableKind> after = kinds(MenuFilter.filter(menus, inputWithKinds(new Mains(stronger))));
+
+        before.forEach((id, kind) -> {
+            if (kind != null) {
+                assertThat(after).containsEntry(id, kind);
+            }
+        });
+    }
+
+    private static Map<String, NavTableKind> kinds(List<NavNode> roots) {
+        Map<String, NavTableKind> map = new HashMap<>();
+        for (NavNode node : all(roots)) {
+            map.put(node.id(), node.tableKind());
+        }
+        return map;
+    }
+
     @Provide
     Arbitrary<TableRef> dslTables() {
         return Arbitraries.of(DSL_TABLES);

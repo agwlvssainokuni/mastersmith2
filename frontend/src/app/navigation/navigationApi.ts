@@ -32,6 +32,9 @@ export interface LocalizedLabel {
   en: string
 }
 
+/** 移れる項目が指すテーブルの種類（種類が分からない・まとまりは null。D9） */
+export type NavTableKind = 'TABLE' | 'VIEW'
+
 /** 業務のメニューの項目（絞った後の木） */
 export interface NavNode {
   /** 絞る前の DSL の木での位置の道 */
@@ -43,6 +46,8 @@ export interface NavNode {
   table: TableRef | null
   navigable: boolean
   items: readonly NavNode[]
+  /** テーブルの種類。応答に無い・null・知らない値は null として読む（D9） */
+  tableKind: NavTableKind | null
 }
 
 /** 業務のメニューが空の理由 */
@@ -81,6 +86,11 @@ function parseTable(value: unknown): TableRef | null | undefined {
   return { schemaName: value.schemaName, tableName: value.tableName }
 }
 
+/** テーブルの種類を読む。TABLE・VIEW 以外（項目なし・null・知らない値）は null（応答を拒否しない。D9・D29） */
+function parseTableKind(value: unknown): NavTableKind | null {
+  return value === 'TABLE' || value === 'VIEW' ? value : null
+}
+
 function parseItems(value: unknown): NavNode[] | undefined {
   if (!Array.isArray(value)) {
     return undefined
@@ -110,7 +120,15 @@ function parseNode(value: unknown): NavNode | undefined {
   if (typeof icon !== 'string') {
     return undefined
   }
-  return { id: value.id, label, icon, table, navigable: value.navigable, items }
+  return {
+    id: value.id,
+    label,
+    icon,
+    table,
+    navigable: value.navigable,
+    items,
+    tableKind: parseTableKind(value.tableKind),
+  }
 }
 
 /**

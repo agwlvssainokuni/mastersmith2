@@ -164,7 +164,30 @@ class NavigationDslSwapIT {
                         .containsEntry("id", "0")
                         .containsEntry("label", Map.of("ja", "古い T0", "en", "古い T0-en"))
                         .containsEntry("navigable", true)
+                        .containsEntry("tableKind", "TABLE")
                         .containsEntry("table", Map.of("schemaName", "SALES", "tableName", "T0")));
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName(
+            "menu: the tree and the table kinds come from the same model even when the DSL is swapped while held")
+    void tableKindComesFromTheSameModelAsTheTree() throws Exception {
+        // 止める前の DSL では T0 はビュー。止めている間に T0 がテーブルの DSL に差し替えても、種類は木と同じ古いモデルの値
+        NavigationDslFixture.install(
+                holder,
+                List.of(NavigationModels.schemaWithViews("SALES", java.util.Set.of("T0"), "T0", "T1")),
+                List.of(
+                        NavigationModels.tableItem("古い T0", "SALES", "T0"),
+                        NavigationModels.tableItem("古い T1", "SALES", "T1")));
+
+        HttpResponse<String> response = swapWhileHeld(
+                Point.AFTER_DSL_READ,
+                () -> actors.navigation(member.token()),
+                List.of(NavigationModels.schema("SALES", "T0", "T1")),
+                "T0",
+                "T1");
+
+        assertThat(items(response)).extracting(item -> item.get("tableKind")).containsExactly("VIEW", "TABLE");
     }
 
     @Test

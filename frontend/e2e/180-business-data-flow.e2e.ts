@@ -216,7 +216,8 @@ test.describe('180 business data flow', () => {
 
     await test.step('4. open the list from the menu and page with the keyboard', async () => {
       await loginWithForm(page, user.email, user.password)
-      const menu = page.getByRole('link', { name: menuLabel })
+      // ホームの入口のカードにも同じ名前のリンクが並ぶため、サイドバー（ナビゲーションの領域）に絞る。
+      const menu = page.getByRole('navigation').getByRole('link', { name: menuLabel })
       await menu.focus()
       await page.keyboard.press('Enter')
       await expect(page.getByTestId('tables-heading')).toHaveText(tableLabel)

@@ -119,6 +119,16 @@ describe('decideRoute', () => {
     expect(decideRoute('/admin/no-such-page', withLogin, admin)).toEqual({ kind: 'NOT_FOUND' })
   })
 
+  it('shows not found for the abolished /admin path to a member and an administrator alike (U5 D24)', () => {
+    // 廃止した /admin は登録の道に無い。管理者でない人にも「権限が無い」の表示ではなく「見つからない」になる
+    expect(decideRoute('/admin', withLogin, member)).toEqual({ kind: 'NOT_FOUND' })
+    expect(decideRoute('/admin', withLogin, admin)).toEqual({ kind: 'NOT_FOUND' })
+    // 登録された管理の道を管理者でない人が開いたときの「権限が無い」の表示は今のまま
+    expect(decideRoute('/admin/users', withLogin, member)).toMatchObject({
+      kind: 'ADMIN_FORBIDDEN',
+    })
+  })
+
   it('treats admin=true without login as logged out', () => {
     expect(decideRoute('/admin/users', withLogin, { loggedIn: false, admin: true })).toEqual({
       kind: 'REDIRECT_TO_LOGIN',

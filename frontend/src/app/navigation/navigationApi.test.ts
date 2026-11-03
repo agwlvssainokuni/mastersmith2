@@ -87,7 +87,8 @@ describe('navigationApi', () => {
           icon: 'home',
           table: null,
           navigable: false,
-          items: [leafNode],
+          items: [{ ...leafNode, tableKind: null }],
+          tableKind: null,
         },
       ],
       emptyReason: null,
@@ -136,5 +137,29 @@ describe('navigationApi', () => {
     await expect(getNavigation()).rejects.toMatchObject({ kind: 'response', status: 500 })
     fetchMock.mockRejectedValueOnce(new TypeError('offline'))
     await expect(getNavigation()).rejects.toEqual(NETWORK)
+  })
+})
+
+describe('navigationApi tableKind (Intent 261102-timezone-ui-polish U5, D9)', () => {
+  const withKind = (extra: Record<string, unknown>) => ({
+    items: [{ ...leafNode, ...extra }],
+    emptyReason: null,
+  })
+
+  it.each([
+    ['TABLE', 'TABLE'],
+    ['VIEW', 'VIEW'],
+    [null, null],
+    ['SYNONYM', null],
+    ['table', null],
+    [7, null],
+  ])('reads tableKind %j as %j without rejecting the response', (raw, expected) => {
+    const parsed = parseNavigation(withKind({ tableKind: raw }))
+
+    expect(parsed?.items[0].tableKind).toBe(expected)
+  })
+
+  it('reads an item without tableKind as null (an old response)', () => {
+    expect(parseNavigation({ items: [leafNode], emptyReason: null })?.items[0].tableKind).toBeNull()
   })
 })

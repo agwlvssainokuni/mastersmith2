@@ -29,7 +29,6 @@ import type { PageWatch } from './pageProblems'
 const KNOWN_SCREEN_PATHS = [
   '/',
   '/login',
-  '/admin',
   '/admin/users',
   '/admin/invitations',
   '/admin/dsl',

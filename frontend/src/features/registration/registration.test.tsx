@@ -22,7 +22,6 @@ import { baseMessageKeys } from '../../app/i18n/i18n'
 import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
-import { registration as adminRegistration } from '../admin/registration'
 import { registration as authRegistration } from '../auth/registration'
 import { registration as dslRegistration } from '../dsl/registration'
 import { registration as invitationRegistration } from '../invitation/registration'
@@ -58,13 +57,7 @@ describe('registration feature', () => {
     expect(() => validateRegistrations([registration], baseMessageKeys)).not.toThrow()
     expect(() =>
       validateRegistrations(
-        [
-          authRegistration,
-          adminRegistration,
-          dslRegistration,
-          invitationRegistration,
-          registration,
-        ],
+        [authRegistration, dslRegistration, invitationRegistration, registration],
         baseMessageKeys,
       ),
     ).not.toThrow()

@@ -22,7 +22,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
 import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
-import { registration as adminRegistration } from '../admin/registration'
 import { registration as authRegistration } from '../auth/registration'
 import { registration as dslRegistration } from '../dsl/registration'
 import { registration as invitationRegistration } from '../invitation/registration'
@@ -45,13 +44,7 @@ describe('useradmin registration', () => {
     expect(() => validateRegistrations([registration], baseMessageKeys)).not.toThrow()
     expect(() =>
       validateRegistrations(
-        [
-          authRegistration,
-          adminRegistration,
-          dslRegistration,
-          invitationRegistration,
-          registration,
-        ],
+        [authRegistration, dslRegistration, invitationRegistration, registration],
         baseMessageKeys,
       ),
     ).not.toThrow()
@@ -64,17 +57,13 @@ describe('useradmin registration', () => {
       path: USER_ADMIN_PATH,
       order: 230,
       visibleWhen: 'ADMIN',
+      icon: 'user',
     })
     const entries = selectAdminSidebarItems(
-      [registration, invitationRegistration, dslRegistration, adminRegistration],
+      [registration, invitationRegistration, dslRegistration],
       { loggedIn: true, admin: true },
     )
-    expect(entries.map((entry) => entry.id)).toEqual([
-      'admin-area',
-      'dsl',
-      'invitation',
-      'useradmin',
-    ])
+    expect(entries.map((entry) => entry.id)).toEqual(['dsl', 'invitation', 'useradmin'])
     expect(selectAdminSidebarItems([registration], { loggedIn: true, admin: false })).toEqual([])
     expect(selectAdminSidebarItems([registration], { loggedIn: false, admin: false })).toEqual([])
   })

@@ -26,12 +26,28 @@ import java.util.function.UnaryOperator;
  * @param tableMain テーブルの組（スキーマの名前, テーブルの名前）から、テーブルの階層の実効の主権限を返す操作（本番は写しの
  *     {@code main(schema, table, null)}。DSL に無い組は NONE。null を返さない）
  * @param iconOf DSL の {@code icon}（null を含む）から、許した名前を返す操作（BR4.2）
+ * @param tableKindOf テーブルの組（スキーマの名前, テーブルの名前）から、テーブルの種類を返す操作（種類が分からないときは null を返してよい。
+ *     {@link MenuFilter} は移れる項目を作るときだけ呼ぶ）
  */
-public record MenuFilterInput(BiFunction<String, String, MainPermission> tableMain, UnaryOperator<String> iconOf) {
+public record MenuFilterInput(
+        BiFunction<String, String, MainPermission> tableMain,
+        UnaryOperator<String> iconOf,
+        BiFunction<String, String, NavTableKind> tableKindOf) {
 
-    /** 両方が必須であることを確かめる。 */
+    /**
+     * 種類の操作を持たない作り方（種類は常に null）。
+     *
+     * @param tableMain 主権限の操作
+     * @param iconOf アイコンの操作
+     */
+    public MenuFilterInput(BiFunction<String, String, MainPermission> tableMain, UnaryOperator<String> iconOf) {
+        this(tableMain, iconOf, (schema, table) -> null);
+    }
+
+    /** 3つとも必須であることを確かめる。 */
     public MenuFilterInput {
         Objects.requireNonNull(tableMain, "tableMain は必須です");
         Objects.requireNonNull(iconOf, "iconOf は必須です");
+        Objects.requireNonNull(tableKindOf, "tableKindOf は必須です");
     }
 }

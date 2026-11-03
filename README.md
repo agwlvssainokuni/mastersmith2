@@ -39,6 +39,8 @@ pre-commit install
 
 固定先は、make-you-chic-ui が `cae5fed`、java-mustache-processor が `d61ba6d`（タグ `0.1.1`）です（`git submodule status` で確かめられます）。固定先の移り変わりは git の履歴と `aidlc/` の記録にあります。画面はトップバーの文言を日本語と英語で渡し（`topbar.*` の鍵）、作業ロールの一覧の幅は Dropdown の既定に任せています。
 
+ホームとアイコン（Intent 261102-timezone-ui-polish の U5）: ホームは、作業ロールの 1 行と、業務の入口のカード（業務のメニューの最上位の項目）・管理の入口のカード（管理者だけ。サイドバーの管理の区画と同じ項目）を並べます。管理の仮の画面（`/admin`）は廃止しました（サーバーの確認 API `GET /api/admin/check` は残します）。業務の項目のアイコンは、メニューの定義の `icon`（許す一覧にあり、`list` でないもの）を先に使い、無ければメニューの応答の `tableKind` でテーブルは `table`・ビューは `view`、まとまりは `folder`、種類が分からない移れる項目は `list` にします（サイドバーとホームのカードで同じ規則）。許すアイコンの名前の一覧は 2 か所（サーバーの `backend/src/main/resources/navigation/allowed-icons.txt` と、画面の `frontend/src/app/registry/allowedIcons.ts`）にあり、make-you-chic-ui の `Icon` の登録の名前とそろえます。固定先を上げてアイコンが増減したときは、2 か所を同じ名前に直します（一致は `allowedNavIcons.test.ts`、画面の欠けは型の検査 `ALL_ICONS_COVERED` で気づけます）。
+
 どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
 ## 開発時の起動
@@ -92,7 +94,7 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 - 動いている版は、控えたコミットのハッシュで見分けます。イメージのタグは `local` のままです。
 - ブラウザで `http://localhost:8080/` を開き、ログイン画面が表示されることを確かめます。`.env` に `MASTERSMITH_WEB_BASE_URL`（招待を使うときに入れる。例 `http://localhost:8080`）を入れた環境では、その値と同じ URL で開きます。`http://127.0.0.1:8080/` で開くと、ログイン・更新・ログアウトの Origin の確かめが合わず 403 / `ORIGIN_NOT_ALLOWED` になり、警報 `ms-origin` の拒否の数が増えます。招待メールを見るときは、受け手（Mailpit）を `docker compose --profile mail up -d mailpit` で起動します（`docs/mail.md` の「手元でメールを見る」）。ヘルスチェックの応答が UP で、下のスモークテストが通るまで、配備の完了とはみなしません。
 - 初めての起動では、`.env` に `MASTERSMITH_AUTH_SIGNING_KEY` と初期管理者（`MASTERSMITH_AUTH_INITIAL_ADMIN_EMAIL`・`MASTERSMITH_AUTH_INITIAL_ADMIN_PASSWORD`）を入れておきます。起動のログに「初期管理者を作成しました」の INFO が出ることを確かめます（2回目以降の起動では作られません）。この INFO にはメールアドレスそのものは載らず、キー `maskedEmail` に伏せ字（先頭の1文字＋`***`＋`@`＋ドメイン、例 `a***@example.com`）だけが載ります。2回目以降の起動で、初期管理者が停止中・管理者の印なし・パスワードが設定と違う、のどれかに当たったときは、作る代わりに救済し、WARN「初期管理者を救済しました」が1行出ます（`docs/deployment.md` の「使える管理者がいなくなったとき（初期管理者の救済）」）。
-- 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、メニューの「管理」で管理者向け領域が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを `docs/operations.md` の「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
+- 配備の確認（スモークテスト、手で行う）: ログイン画面から初期管理者でログインし、ホームが表示されること、ホームの管理のカード（またはサイドバーの管理の区画）から管理の画面が開けること、ユーザーメニューのログアウトでログイン画面に戻ることを確かめます。あわせて、そのログインとログアウトの監査イベント2件（`LOGIN_SUCCEEDED`・`LOGGED_OUT`）が記録されていることを `docs/operations.md` の「監査ログの確かめ方」の手順で確かめ、`docker compose logs app` に ERROR が出ていないことを見ます。
 - 見本の対象DB をつないだ配備では、スモークテストに次を足します: サイドバーの「DSL」で DSL の管理画面を開き、今の状態が表示されること。「スキーマを読み込む」で見本の DB から既定の DSL が作られ、プレビューに `sales` のテーブルとビューが並ぶこと（「未設定」「接続できない」にならないこと）。その操作の監査イベント `DSL_GENERATED` が記録されていること。スモークテストの操作は監査ログに残り、消せません。
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。メッセージ（`message`）の中の改行は「 ⏎ 」（前後に空白を置いた U+23CE）に置き換えて出すため、Hibernate の起動の案内（ロガー `org.hibernate.orm.connections.pooling`）のような複数行のメッセージも1件が1行に収まります。スタックトレース（`exception`）の改行はそのままです。
 - 止めるときは `docker compose --profile targetdb-postgres down`（アプリと見本の対象DB を一緒に止めます。内部DB と見本の対象DB のデータはボリュームに残ります）。

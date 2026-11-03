@@ -34,3 +34,14 @@
 .shell-work-role-bar .work-role-switcher-trigger {
   max-width: 100%;
 }
+
+/*
+ * 上のバーのロゴ（Intent 261102-timezone-ui-polish の U5、D27）は飾りのため、狭い幅（480px 未満）では出さない。
+ * 480px 未満ではサイドバーと内容の領域の最小の幅の合計が表示の幅を超え、ロゴの分（24px + すきま）で横のスクロールが出るため
+ * （360px で 372px > 360px を実測）。畳むボタンとユーザーメニューは押せたままにする。
+ */
+@media (width < 480px) {
+  .mycui-topbar-logo {
+    display: none;
+  }
+}

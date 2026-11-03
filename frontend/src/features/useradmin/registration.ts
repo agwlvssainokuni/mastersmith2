@@ -49,6 +49,7 @@ export const registration: FeatureRegistration = {
       order: 230,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'user',
     },
   ],
   messages: userAdminMessages,

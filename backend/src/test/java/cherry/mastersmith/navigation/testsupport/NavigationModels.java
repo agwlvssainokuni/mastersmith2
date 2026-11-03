@@ -64,6 +64,31 @@ public final class NavigationModels {
     }
 
     /**
+     * スキーマを1つ作る。{@code viewNames} に挙げた名前はビュー、そのほかはテーブルとして定義する（各テーブルはカラム {@code ID} を1つ持つ）。
+     *
+     * @param name スキーマの名前
+     * @param viewNames ビューにするテーブルの名前
+     * @param tableNames テーブルの名前（この順。ビューを含めてよい）
+     * @return スキーマ
+     */
+    public static DslSchema schemaWithViews(String name, java.util.Set<String> viewNames, String... tableNames) {
+        return RoleDslFixture.schema(
+                name,
+                java.util.Arrays.stream(tableNames)
+                        .map(table -> {
+                            cherry.mastersmith.dsl.domain.DslTable base = RoleDslFixture.table(table, "ID");
+                            return new cherry.mastersmith.dsl.domain.DslTable(
+                                    base.name(),
+                                    base.label(),
+                                    viewNames.contains(table),
+                                    base.primaryKey(),
+                                    base.foreignKeys(),
+                                    base.columns());
+                        })
+                        .toArray(cherry.mastersmith.dsl.domain.DslTable[]::new));
+    }
+
+    /**
      * テーブルを指す項目を作る（アイコンは無し）。
      *
      * @param label 表示名（日本語。英語は「-en」を付けた値）

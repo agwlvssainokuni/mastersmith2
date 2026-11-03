@@ -114,7 +114,8 @@ test.describe('040 DSL administration on the built WAR', () => {
     await expect(page.getByTestId('home-page')).toBeVisible()
 
     // サイドバーの「DSL」から DSL の管理画面を開く。
-    const dslLink = page.getByRole('link', { name: 'DSL', exact: true })
+    // ホームの管理のカードにも同じ名前のリンクが並ぶため、サイドバー（ナビゲーションの領域）に絞る。
+    const dslLink = page.getByRole('navigation').getByRole('link', { name: 'DSL', exact: true })
     await expect(dslLink).toBeVisible()
     await dslLink.click()
     await expect(page).toHaveURL(/\/admin\/dsl$/)

@@ -46,6 +46,7 @@ export const registration: FeatureRegistration = {
       order: 250,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'users',
     },
   ],
   messages: groupAdminMessages,

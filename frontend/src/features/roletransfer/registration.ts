@@ -43,6 +43,7 @@ export const registration: FeatureRegistration = {
       order: 260,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'download',
     },
   ],
   messages: roleTransferMessages,

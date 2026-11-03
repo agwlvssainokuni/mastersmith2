@@ -17,8 +17,11 @@
 // ビルドした WAR で、管理の画面の「権限が無い」の表示（S6）を表示の設定の組ごとに実際のブラウザで確かめる
 // （Intent 260930-user-admin の U4。NFR7.3・NFR3.2・NFR9.5・NFR9.10、NFR 設計の logical-components.md 6節）。
 // - 流れの E2E ではないため、team.md の「機能の Intent ごとに代表の流れを1本まで」に数えない（NFR9.10）。
-// - 組ごとに1つのテスト（support/displayCombos.ts の 20 組）。初期管理者でログインし、サイドバーの「管理」から管理の入口を
-//   開く。管理の API は GET /api/admin/check の1本だけを 403・ACCESS_DENIED の見本（この中の定数。共有の support/ には
+// - Intent 261102-timezone-ui-polish の U5（D26）で、管理の仮の画面（/admin）を廃止したため、この確かめは DSL の管理の画面へ
+//   移した（件数は 20 組のまま、本数に数えない書き換え）。サーバー側の確認 API（GET /api/admin/check）は残るが、画面はもう
+//   呼ばない。
+// - 組ごとに1つのテスト（support/displayCombos.ts の 20 組）。初期管理者でログインし、サイドバーの「DSL」から DSL の管理の
+//   画面を開く。管理の API は GET /api/admin/dsl/ の下だけを 403・ACCESS_DENIED の見本（この中の定数。共有の support/ には
 //   置かない）に差し替える。ほかの管理の API と GET 以外の要求は差し替えず、送らないことを確かめる。
 // - 組のテーマ・文字の大きさと、上の帯の Avatar の頭文字が2文字になる架空の2語の氏名は、ログインと復元の本物の応答を
 //   1つの差し替え（support/loginPreferences.ts の displayName）で書き換えて当てる。サーバーの状態（初期管理者の印・氏名・
@@ -28,7 +31,7 @@
 //   続く（残る危険 R1 の形）。
 // - 管理者でない利用者が URL を開いたときの S6（ForbiddenByRoute）は、ここでは確かめない。E2E には初期管理者しか
 //   いないため、部品のテスト（AppRouter.test.tsx・decideRoute.test.ts）で確かめる。
-// - 差し替えた 403 に Chrome が出す「Failed to load resource:」の表示は、位置の URL が /api/admin/check のものだけを
+// - 差し替えた 403 に Chrome が出す「Failed to load resource:」の表示は、位置の URL が /api/admin/dsl/ の下のものだけを
 //   数えて引く（この中だけの扱い。共有の support/pageProblems.ts は変えない。logical-components.md 6.3）。
 // - 画面の時間は測らず、記録もしない（NFR9.3）。test.step の題・注記・添付に、氏名・メールアドレス・パスワード・
 //   トークンを入れない。注記に残すのは組の名前と件数・規則の名前・はみ出し・Avatar の文字の数だけ。
@@ -46,14 +49,14 @@ import { routeLoginPreferences } from './support/loginPreferences'
 import { describeOverflow, measureHorizontalOverflow } from './support/overflow'
 import { watchPage } from './support/pageProblems'
 
-/** 管理の入口の確かめの API */
-const ADMIN_CHECK_PATH = '/api/admin/check'
+/** DSL の管理の画面の読み込みの API の根（この下の GET を 403 の見本に差し替える） */
+const DSL_API_PREFIX = '/api/admin/dsl/'
 /** 管理の API の根 */
 const ADMIN_API_PREFIX = '/api/admin/'
 /** ログインの状態の読み直しの API */
 const REFRESH_PATH = '/api/auth/session/refresh'
-/** サイドバーの管理の入口の項目 */
-const SIDEBAR_ITEM = '管理'
+/** サイドバーの DSL の管理の項目 */
+const SIDEBAR_ITEM = 'DSL'
 /** 上の帯の Avatar の頭文字が2文字になる架空の2語の氏名（値は注記・添付・標準出力に出さない） */
 const TWO_WORD_NAME = 'Probe Sample'
 /** 403 の本文の detail の目印（個人に関する値でも秘密でもない固定の文字。画面に出ないことを確かめる） */
@@ -76,11 +79,11 @@ function pathOf(url: string): string {
   }
 }
 
-/** GET /api/admin/check だけを 403 の見本に差し替え、返した回数を数える。GET 以外は差し替えない。 */
+/** GET /api/admin/dsl/ の下だけを 403 の見本に差し替え、返した回数を数える。GET 以外は差し替えない。 */
 async function routeAdminCheck(page: Page): Promise<{ answered: number }> {
   const counter = { answered: 0 }
   await page.route(
-    (url) => url.pathname === ADMIN_CHECK_PATH,
+    (url) => url.pathname.startsWith(DSL_API_PREFIX),
     (route) => {
       if (route.request().method() !== 'GET') {
         return route.fallback()
@@ -103,7 +106,7 @@ function watchExcludedConsole(page: Page): string[] {
     if (message.type() !== 'error') {
       return
     }
-    if (pathOf(message.location().url) !== ADMIN_CHECK_PATH) {
+    if (!pathOf(message.location().url).startsWith(DSL_API_PREFIX)) {
       return
     }
     if (!message.text().startsWith('Failed to load resource:')) {
@@ -158,8 +161,8 @@ test.describe('130 admin forbidden view accessibility on the built WAR', () => {
         await expectComboApplied(page, combo)
       })
 
-      await test.step('open the admin area and wait for the reread of the login state', async () => {
-        // 読み直しの応答を待つ約束は、管理の入口を開く操作より前に作る（NFR 設計の承認の場の R-01）。
+      await test.step('open the DSL admin screen and wait for the reread of the login state', async () => {
+        // 読み直しの応答を待つ約束は、管理の画面を開く操作より前に作る（NFR 設計の承認の場の R-01）。
         const reread = page.waitForResponse(
           (response) =>
             pathOf(response.url()) === REFRESH_PATH &&

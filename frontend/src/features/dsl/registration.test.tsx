@@ -21,7 +21,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { baseMessageKeys } from '../../app/i18n/i18n'
 import { selectAdminSidebarItems } from '../../app/navigation/navigationItems'
 import { validateRegistrations } from '../../app/registry/validateRegistrations'
-import { registration as adminRegistration } from '../admin/registration'
 import { registration as authRegistration } from '../auth/registration'
 import { DSL_ERROR_CODES } from './failureMessage'
 import { DSL_ADMIN_PATH, registration } from './registration'
@@ -31,7 +30,7 @@ describe('dsl registration', () => {
   it('passes the checks of the application shell together with the other features', () => {
     expect(() => validateRegistrations([registration], baseMessageKeys)).not.toThrow()
     expect(() =>
-      validateRegistrations([authRegistration, adminRegistration, registration], baseMessageKeys),
+      validateRegistrations([authRegistration, registration], baseMessageKeys),
     ).not.toThrow()
   })
 
@@ -46,15 +45,19 @@ describe('dsl registration', () => {
     expect(DSL_ADMIN_PATH).toBe('/admin/dsl')
   })
 
-  it('shows the sidebar item to an administrator right after the administration item', () => {
-    expect(registration.sidebarItems?.[0]).toMatchObject({ order: 210, visibleWhen: 'ADMIN' })
-    const entries = selectAdminSidebarItems([registration, adminRegistration], {
+  it('shows the sidebar item to an administrator, with an edit icon', () => {
+    expect(registration.sidebarItems?.[0]).toMatchObject({
+      order: 210,
+      visibleWhen: 'ADMIN',
+      icon: 'edit',
+    })
+    const entries = selectAdminSidebarItems([registration], {
       loggedIn: true,
       admin: true,
     })
 
-    expect(entries.map((entry) => entry.id)).toEqual(['admin-area', 'dsl'])
-    expect(entries[1]).toMatchObject({ id: 'dsl', labelKey: 'dsl.nav.label', path: DSL_ADMIN_PATH })
+    expect(entries.map((entry) => entry.id)).toEqual(['dsl'])
+    expect(entries[0]).toMatchObject({ id: 'dsl', labelKey: 'dsl.nav.label', path: DSL_ADMIN_PATH })
   })
 
   it('hides the sidebar item from users without the administrator flag', () => {

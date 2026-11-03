@@ -211,6 +211,83 @@ class MenuFilterTest {
         assertThat(result).extracting(NavNode::icon).containsExactly("user", "list");
     }
 
+    private final List<String> kindAsked = new ArrayList<>();
+
+    private MenuFilterInput inputWithKinds(Map<String, NavTableKind> kinds) {
+        return new MenuFilterInput(
+                (schema, table) -> mains.getOrDefault(schema + "/" + table, MainPermission.NONE),
+                ICONS::iconOf,
+                (schema, table) -> {
+                    kindAsked.add(schema + "/" + table);
+                    return kinds.get(schema + "/" + table);
+                });
+    }
+
+    @Test
+    @DisplayName("a navigable item gets TABLE or VIEW, even with children, and a group gets null")
+    void tableKindIsSetOnNavigableItemsOnly() {
+        mains.put("SALES/ORDER", MainPermission.READ);
+        mains.put("SALES/V_ORDER", MainPermission.FULL);
+        mains.put("SALES/LINE", MainPermission.READ);
+
+        List<NavNode> result = MenuFilter.filter(
+                List.of(
+                        tableItem("受注", "ORDER", tableItem("明細", "LINE")),
+                        tableItem("ビュー", "V_ORDER"),
+                        group("まとまり", tableItem("明細2", "LINE"))),
+                inputWithKinds(Map.of(
+                        "SALES/ORDER", NavTableKind.TABLE,
+                        "SALES/V_ORDER", NavTableKind.VIEW,
+                        "SALES/LINE", NavTableKind.TABLE)));
+
+        assertThat(result).extracting(NavNode::tableKind).containsExactly(NavTableKind.TABLE, NavTableKind.VIEW, null);
+        assertThat(result.getFirst().items().getFirst().tableKind()).isEqualTo(NavTableKind.TABLE);
+        assertThat(result.get(2).items().getFirst().tableKind()).isEqualTo(NavTableKind.TABLE);
+    }
+
+    @Test
+    @DisplayName("an item stays when the kind operation returns null, and its kind is null")
+    void nullKindDoesNotDropTheItem() {
+        mains.put("SALES/ORDER", MainPermission.READ);
+
+        List<NavNode> result = MenuFilter.filter(List.of(tableItem("受注", "ORDER")), inputWithKinds(Map.of()));
+
+        assertThat(result).singleElement().satisfies(node -> {
+            assertThat(node.navigable()).isTrue();
+            assertThat(node.tableKind()).isNull();
+        });
+    }
+
+    @Test
+    @DisplayName("the kind operation is called exactly once per navigable item and never for dropped items or groups")
+    void kindOperationCallCount() {
+        mains.put("SALES/A", MainPermission.READ);
+        mains.put("SALES/B", MainPermission.FULL);
+
+        List<NavNode> result = MenuFilter.filter(
+                List.of(
+                        tableItem("A", "A", tableItem("隠す", "HIDDEN")),
+                        group("G", tableItem("B", "B")),
+                        group("空", tableItem("隠す2", "HIDDEN2")),
+                        tableItem("無い", "NOT_IN_DSL")),
+                inputWithKinds(Map.of("SALES/A", NavTableKind.TABLE, "SALES/B", NavTableKind.VIEW)));
+
+        assertThat(result).extracting(NavNode::id).containsExactly("0", "1");
+        assertThat(kindAsked).containsExactlyInAnyOrder("SALES/A", "SALES/B");
+    }
+
+    @Test
+    @DisplayName("the two-argument input never gives a table kind")
+    void inputWithoutKindOperation() {
+        mains.put("SALES/ORDER", MainPermission.READ);
+
+        assertThat(filter(tableItem("受注", "ORDER")))
+                .singleElement()
+                .satisfies(node -> assertThat(node.tableKind()).isNull());
+        assertThatThrownBy(() -> new MenuFilterInput((s, t) -> MainPermission.NONE, ICONS::iconOf, null))
+                .isInstanceOf(NullPointerException.class);
+    }
+
     @Test
     @DisplayName("an empty menu gives an empty result and the input is required")
     void emptyAndRequired() {

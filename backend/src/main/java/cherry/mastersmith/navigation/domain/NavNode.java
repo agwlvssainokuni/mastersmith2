@@ -30,9 +30,31 @@ import java.util.Objects;
  * @param table 移れる項目のテーブルの組（移れない項目は null）
  * @param navigable テーブルを指し、実効の主権限が READ・FULL のとき true
  * @param items 子（DSL の順。移れる項目では空を許す）
+ * @param tableKind テーブルの種類（移れる項目だけが持てる。移れない項目、および種類が分からない項目は null）
  */
 public record NavNode(
-        String id, DisplayLabel label, String icon, NavTableRef table, boolean navigable, List<NavNode> items) {
+        String id,
+        DisplayLabel label,
+        String icon,
+        NavTableRef table,
+        boolean navigable,
+        List<NavNode> items,
+        NavTableKind tableKind) {
+
+    /**
+     * 種類を持たない作り方（{@code tableKind} は null）。
+     *
+     * @param id 位置の道
+     * @param label 表示名の組
+     * @param icon アイコンの名前
+     * @param table テーブルの組
+     * @param navigable 移れるか
+     * @param items 子
+     */
+    public NavNode(
+            String id, DisplayLabel label, String icon, NavTableRef table, boolean navigable, List<NavNode> items) {
+        this(id, label, icon, table, navigable, items, null);
+    }
 
     /** 必須の値と形の決まりを確かめ、子を変更できない一覧にする。 */
     public NavNode {
@@ -46,6 +68,9 @@ public record NavNode(
         items = List.copyOf(Objects.requireNonNull(items, "items は必須です"));
         if (navigable != (table != null)) {
             throw new IllegalArgumentException("table は移れる項目だけが持ちます");
+        }
+        if (tableKind != null && !navigable) {
+            throw new IllegalArgumentException("tableKind は移れる項目だけが持ちます");
         }
         if (!navigable && items.isEmpty()) {
             throw new IllegalArgumentException("移れない項目（まとまり）は子を1つ以上持ちます");

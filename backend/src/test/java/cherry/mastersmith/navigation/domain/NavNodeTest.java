@@ -64,6 +64,25 @@ class NavNodeTest {
     }
 
     @Test
+    @DisplayName("only a navigable item can have a table kind, and the kind may be absent")
+    void tableKindShape() {
+        NavTableRef ref = new NavTableRef("SALES", "ORDER");
+
+        assertThat(new NavNode("0", LABEL, "list", ref, true, List.of(), NavTableKind.TABLE).tableKind())
+                .isEqualTo(NavTableKind.TABLE);
+        assertThat(new NavNode("0", LABEL, "list", ref, true, List.of(), NavTableKind.VIEW).tableKind())
+                .isEqualTo(NavTableKind.VIEW);
+        assertThat(new NavNode("0", LABEL, "list", ref, true, List.of(), null).tableKind())
+                .isNull();
+        assertThat(leaf("0").tableKind()).isNull();
+        assertThatThrownBy(() -> new NavNode("0", LABEL, "list", null, false, List.of(leaf("0.0")), NavTableKind.TABLE))
+                .isInstanceOf(IllegalArgumentException.class);
+        // 子を持つ移れる項目も種類を持てる
+        assertThat(new NavNode("0", LABEL, "list", ref, true, List.of(leaf("0.0")), NavTableKind.VIEW).tableKind())
+                .isEqualTo(NavTableKind.VIEW);
+    }
+
+    @Test
     @DisplayName("table references and labels check their values, and labels allow empty strings")
     void valueTypes() {
         assertThatThrownBy(() -> new NavTableRef("", "T")).isInstanceOf(IllegalArgumentException.class);

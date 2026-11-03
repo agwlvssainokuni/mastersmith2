@@ -31,6 +31,7 @@ import type { DisplayLanguage } from '../i18n/resolveLanguage'
 import { isAllowedIcon } from '../registry/allowedIcons'
 import type { FeatureRegistration, LoginState } from '../registry/types'
 import { HOME_PATH } from '../registry/validateRegistrations'
+import { resolveItemIcon } from './navIcon'
 import { BUSINESS_ID_PREFIX } from './navExpansion'
 import type { LocalizedLabel, NavigationResponse, NavNode } from './navigationApi'
 import { selectAdminSidebarItems } from './navigationItems'
@@ -159,7 +160,12 @@ function mapBusinessNode(
   const item: SidebarNavItem = {
     id,
     label: resolveNavLabel(node.label, input.language, node.table, untitled),
-    icon: resolveNavIcon(node.icon),
+    // 業務の項目は D10 の順で決める（管理の項目は登録の icon を resolveNavIcon で照らす）
+    icon: resolveItemIcon({
+      icon: node.icon,
+      tableKind: node.tableKind,
+      navigable: node.navigable,
+    }),
   }
   // 行きがけの順に並べるため、子を写す前に自分を移れる項目として置く（道を持つ項目は落ちない）。
   if (href !== undefined && table !== null) {

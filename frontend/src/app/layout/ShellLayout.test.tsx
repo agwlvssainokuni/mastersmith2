@@ -83,6 +83,23 @@ function registrations(logout: () => void): FeatureRegistration[] {
 
 const content = <p data-testid="shell-content">中身</p>
 
+describe('ShellLayout logo (Intent 261102-timezone-ui-polish U5 D27)', () => {
+  it('shows the application icon at the left end of the top bar as a decorative, non-interactive logo', async () => {
+    const { container } = renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
+      registrations: registrations(() => {}),
+      provider: fakeProvider({ loggedIn: true, admin: true, displayName: '管理者' }),
+    })
+    await screen.findByRole('navigation')
+
+    const logo = container.querySelector('.mycui-topbar-logo')
+    expect(logo).not.toBeNull()
+    const svg = logo?.querySelector('svg')
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(logo?.querySelector('a, button')).toBeNull()
+    expect(within(logo as HTMLElement).queryByRole('img')).toBeNull()
+  })
+})
+
 describe('ShellLayout', () => {
   it('lists home first and then the admin items in order', async () => {
     renderWithProviders(<ShellLayout>{content}</ShellLayout>, {
@@ -485,6 +502,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
       table: { schemaName: 'S', tableName: 'T1' },
       navigable: true,
       items: [],
+      tableKind: 'TABLE',
     }
     let node = leaf
     for (let depth = 4; depth >= 1; depth -= 1) {
@@ -495,6 +513,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
         table: null,
         navigable: false,
         items: [node],
+        tableKind: null,
       }
     }
     return [
@@ -506,6 +525,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
         table: { schemaName: 'S', tableName: 'T2' },
         navigable: true,
         items: [],
+        tableKind: 'VIEW',
       },
     ]
   }
@@ -646,15 +666,17 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
     expect(document.querySelectorAll('[aria-current="page"]')).toHaveLength(1)
   })
 
-  it('renders untrusted labels as text and replaces an unknown icon with list', async () => {
+  it('renders untrusted labels as text and replaces an unknown icon with the default of the item kind', async () => {
     renderShell()
     const item = await screen.findByTestId('sidebar-nav-biz:1')
     expect(item).toHaveTextContent('<script>alert(1)</script><img src=x onerror=alert(2)>&"\'')
     expect(document.querySelector('nav script, nav img')).toBeNull()
+    // 一覧に無い icon の group は D10 の手順 3 の folder、種類が VIEW の移れる項目は view になる
     expect(
-      within(screen.getByTestId('sidebar-nav-biz:0')).getByTestId('icon-list'),
+      within(screen.getByTestId('sidebar-nav-biz:0')).getByTestId('icon-folder'),
     ).toBeInTheDocument()
     expect(within(screen.getByTestId('sidebar-nav-biz:0')).queryByTestId('icon-skull')).toBeNull()
+    expect(within(item).getByTestId('icon-view')).toBeInTheDocument()
   })
 
   it('keeps the expanded groups across moves and stores only the ids', async () => {
@@ -728,6 +750,7 @@ describe('ShellLayout with the business menu (Intent 261004-role-menu U7)', () =
       table: { schemaName: 'S', tableName: 'BILL' },
       navigable: true,
       items: [],
+      tableKind: 'TABLE',
     }
     renderShell({
       navAnswers: [menu(deepTree()), menu([other])],

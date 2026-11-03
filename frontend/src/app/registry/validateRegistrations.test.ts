@@ -15,7 +15,6 @@
  */
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
-import { registration as adminRegistration } from '../../features/admin/registration'
 import { registration as dslRegistration } from '../../features/dsl/registration'
 import { registration as invitationRegistration } from '../../features/invitation/registration'
 import { registration as userAdminRegistration } from '../../features/useradmin/registration'
@@ -348,19 +347,11 @@ describe('validateRegistrations for the sidebar section and icon', () => {
     expect(problemsOf(withItem({}))).toEqual([])
   })
 
-  it('accepts the four sidebar items registered today in the ADMIN section', () => {
-    const registrations = [
-      adminRegistration,
-      dslRegistration,
-      invitationRegistration,
-      userAdminRegistration,
-    ]
-    expect(registrations.flatMap((r) => r.sidebarItems ?? []).map((item) => item.section)).toEqual([
-      'ADMIN',
-      'ADMIN',
-      'ADMIN',
-      'ADMIN',
-    ])
+  it('accepts the sidebar items registered today in the ADMIN section, each with its own icon', () => {
+    const registrations = [dslRegistration, invitationRegistration, userAdminRegistration]
+    const items = registrations.flatMap((r) => r.sidebarItems ?? [])
+    expect(items.map((item) => item.section)).toEqual(['ADMIN', 'ADMIN', 'ADMIN'])
+    expect(items.map((item) => item.icon)).toEqual(['edit', 'mail', 'user'])
     expect(problemsOf(registrations)).toEqual([])
   })
 })

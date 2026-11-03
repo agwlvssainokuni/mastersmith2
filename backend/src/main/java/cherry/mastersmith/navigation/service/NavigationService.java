@@ -16,10 +16,13 @@
 package cherry.mastersmith.navigation.service;
 
 import cherry.mastersmith.dsl.domain.ActiveDsl;
+import cherry.mastersmith.dsl.domain.DslModel;
+import cherry.mastersmith.dsl.domain.TableRef;
 import cherry.mastersmith.dsl.service.ActiveDslModelProvider;
 import cherry.mastersmith.navigation.domain.MenuFilter;
 import cherry.mastersmith.navigation.domain.MenuFilterInput;
 import cherry.mastersmith.navigation.domain.NavIconPolicy;
+import cherry.mastersmith.navigation.domain.NavTableKind;
 import cherry.mastersmith.navigation.domain.NavigationMenu;
 import cherry.mastersmith.role.domain.PermissionSnapshot;
 import cherry.mastersmith.role.service.EffectivePermissionResolver;
@@ -79,8 +82,14 @@ public class NavigationService {
         }
         barrier.afterDslRead();
         PermissionSnapshot snapshot = resolver.snapshotFor(userId);
-        MenuFilterInput input =
-                new MenuFilterInput((schema, table) -> snapshot.main(schema, table, null), icons::iconOf);
+        // 種類は、1回読んだ適用中の DSL から引く（新しい問い合わせを足さない。D3・D6）。DSL に無い組は null（D5）
+        DslModel model = present.model();
+        MenuFilterInput input = new MenuFilterInput(
+                (schema, table) -> snapshot.main(schema, table, null),
+                icons::iconOf,
+                (schema, table) -> model.findTable(new TableRef(schema, table))
+                        .map(t -> t.view() ? NavTableKind.VIEW : NavTableKind.TABLE)
+                        .orElse(null));
         return NavigationMenu.filtered(MenuFilter.filter(present.model().menus(), input));
     }
 }

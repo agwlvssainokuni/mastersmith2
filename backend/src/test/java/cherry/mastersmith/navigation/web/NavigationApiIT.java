@@ -186,7 +186,78 @@ class NavigationApiIT {
         assertThat(roots.get(2)).containsEntry("navigable", true);
         assertThat(navigableTables(body)).containsExactly("T0", "T3", "T4");
         assertThat(roots.getFirst().keySet())
-                .containsExactlyInAnyOrder("id", "label", "icon", "table", "navigable", "items");
+                .containsExactlyInAnyOrder("id", "label", "icon", "table", "navigable", "items", "tableKind");
+    }
+
+    @Test
+    @DisplayName(
+            "tableKind is TABLE or VIEW on navigable items, null on groups, and never on items the role cannot see")
+    void tableKindInResponse() {
+        NavigationDslFixture.install(
+                holder,
+                List.of(NavigationModels.schemaWithViews(
+                        "SALES", java.util.Set.of("V1", "V2"), "T0", "V1", "V2", "T3")),
+                List.of(
+                        NavigationModels.group(
+                                "まとまり",
+                                NavigationModels.tableItem("T0", "SALES", "T0"),
+                                NavigationModels.tableItem("V1", "SALES", "V1")),
+                        NavigationModels.tableItem(
+                                "V2", "SALES", "V2", NavigationModels.tableItem("T3", "SALES", "T3")),
+                        NavigationModels.tableItem("隠す", "SALES", "T3")));
+        long role = actors.role(
+                "SALES",
+                Map.of(
+                        "T0", MainPermission.READ,
+                        "V1", MainPermission.FULL,
+                        "V2", MainPermission.READ,
+                        "T3", MainPermission.NONE));
+        Actor member = actors.memberWithWorkRole(role);
+
+        Map<String, Object> body = ok(actors.navigation(member.token()));
+
+        List<Map<String, Object>> roots = items(body);
+        assertThat(roots).extracting(node -> node.get("id")).containsExactly("0", "1");
+        assertThat(roots.getFirst()).containsEntry("navigable", false).containsEntry("tableKind", null);
+        assertThat(items(roots.getFirst()))
+                .extracting(node -> node.get("tableKind"))
+                .containsExactly("TABLE", "VIEW");
+        // ビューで子を持つ移れる項目も種類を持つ
+        assertThat(roots.get(1)).containsEntry("navigable", true).containsEntry("tableKind", "VIEW");
+        // 見られない項目（T3 は NONE）は応答に出ず、印も付かない
+        assertThat(items(roots.get(1))).isEmpty();
+        assertThat(body.toString()).doesNotContain("隠す");
+    }
+
+    @Test
+    @DisplayName("a plain table item gets TABLE and keeps its other values")
+    void tableKindOfAPlainTable() {
+        NavigationDslFixture.install(
+                holder,
+                List.of(NavigationModels.schema("SALES", "T0")),
+                List.of(NavigationModels.tableItem("T0", "SALES", "T0")));
+        Actor member = actors.memberWithWorkRole(actors.role("SALES", Map.of("T0", MainPermission.READ)));
+
+        List<Map<String, Object>> roots = items(ok(actors.navigation(member.token())));
+
+        assertThat(roots)
+                .singleElement()
+                .satisfies(node ->
+                        assertThat(node).containsEntry("navigable", true).containsEntry("tableKind", "TABLE"));
+    }
+
+    @Test
+    @DisplayName("one more tableKind entry adds at most 22 bytes to an item in the response")
+    void responseSizeGrowthIsSmall() {
+        Actor member = actors.memberWithWorkRole(halfNoneRole());
+
+        String body = actors.navigation(member.token()).body();
+
+        // 項目ごとに ,"tableKind":"TABLE" か ,"tableKind":null のどちらか（最大 22 バイト）が増える
+        int nodes = body.split("\"navigable\":", -1).length - 1;
+        int added = body.split("\"tableKind\":", -1).length - 1;
+        assertThat(added).isEqualTo(nodes);
+        assertThat(",\"tableKind\":\"TABLE\"".length()).isLessThanOrEqualTo(22);
     }
 
     @Test

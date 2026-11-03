@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package cherry.mastersmith.navigation.domain;
 
-.admin-placeholder {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.admin-placeholder-heading {
-  margin: 0;
-  font-size: var(--font-size-xl);
-}
-
-.admin-placeholder-description {
-  margin: 0;
-  color: var(--color-text-muted);
+/**
+ * 移れるメニューの項目が指すテーブルの種類（{@code functional-spec.md} の D1・D2）。画面が業務の項目の既定のアイコンを決めるのに使う。
+ *
+ * <p>応答には名前（{@code TABLE}・{@code VIEW}）の文字列として載る。種類が分からない項目（まとまり・DSL に見つからないテーブル）は列挙の値を
+ * 持たず {@code null} で表す。
+ */
+public enum NavTableKind {
+    /** 実体のあるテーブル。 */
+    TABLE,
+    /** ビュー。 */
+    VIEW
 }

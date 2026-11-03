@@ -47,6 +47,7 @@ export const registration: FeatureRegistration = {
       order: 220,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'mail',
     },
   ],
   messages: invitationMessages,

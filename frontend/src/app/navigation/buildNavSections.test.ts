@@ -15,7 +15,7 @@
  */
 //
 // サイドバーの区画を作る関数の例のテスト（Intent 261004-role-menu の U7 の D10〜D15・D18・D20、L5、NFR1.1・NFR1.7）。
-import type { SidebarNavItem, SidebarNavSection } from 'make-you-chic-ui'
+import type { IconName, SidebarNavItem, SidebarNavSection } from 'make-you-chic-ui'
 import { describe, expect, it, vi } from 'vitest'
 import type { FeatureRegistration, LoginState } from '../registry/types'
 import { buildNavSections, type BuildNavInput, type BusinessMenuView } from './buildNavSections'
@@ -75,6 +75,7 @@ function node(id: string, extra: Partial<NavNode> = {}): NavNode {
     table: null,
     navigable: false,
     items: [],
+    tableKind: null,
     ...extra,
   }
 }
@@ -208,6 +209,39 @@ describe('buildNavSections', () => {
       'list',
       'list',
     ])
+  })
+
+  it('decides the business icon in the order of D10: specified icon, table kind, folder, list', () => {
+    const items = [
+      leaf('0', 'A', { icon: 'user', tableKind: 'VIEW' }),
+      leaf('1', 'B', { tableKind: 'TABLE' }),
+      leaf('2', 'C', { tableKind: 'VIEW', items: [leaf('2.0', 'D')] }),
+      node('3', { items: [leaf('3.0', 'E')] }),
+      leaf('4', 'F'),
+    ]
+    const section = build({ business: loaded(items) }).sections[1]
+    expect(section.items.map((i) => i.icon)).toEqual(['user', 'table', 'view', 'folder', 'list'])
+    expect(section.items[2].children?.map((i) => i.icon)).toEqual(['list'])
+  })
+
+  it('keeps a different registered icon for each admin item of the real six features', () => {
+    const icons = ['user', 'mail', 'users', 'shield', 'download', 'edit']
+    const registrations: FeatureRegistration[] = [
+      {
+        featureId: 'six',
+        sidebarItems: icons.map((icon, index) => ({
+          id: `item${index}`,
+          labelKey: 'x.nav',
+          path: `/admin/x${index}`,
+          order: 210 + index,
+          visibleWhen: 'ADMIN',
+          section: 'ADMIN',
+          icon: icon as IconName,
+        })),
+      },
+    ]
+    const admin = build({ registrations }).sections.find((s) => s.id === 'admin')
+    expect(admin?.items.map((i) => i.icon)).toEqual(icons)
   })
 
   it('marks home as current only at /', () => {

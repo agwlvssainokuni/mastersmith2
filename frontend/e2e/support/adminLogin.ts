@@ -31,7 +31,18 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await expect(page.getByTestId('home-page')).toBeVisible()
 }
 
-/** サイドバーのリンクを名前で押す。 */
+/**
+ * サイドバー（ナビゲーションの領域）のリンクを名前で押す。
+ * ホームの入口のカードに同じ名前のリンクが並ぶため、探す範囲をサイドバーに絞る（Intent 261102-timezone-ui-polish の U5）。
+ */
 export async function openSidebarItem(page: Page, name: string): Promise<void> {
-  await page.getByRole('link', { name, exact: true }).click()
+  await page.getByRole('navigation').getByRole('link', { name, exact: true }).click()
+}
+
+/**
+ * ホームの入口のカード（本文の領域のリンク）を名前で押す。サイドバーの同名のリンクと区別するため、本文（main）に絞る。
+ * 先にホームの画面が出ていること（loginAsAdmin の後）。
+ */
+export async function openHomeCard(page: Page, name: string): Promise<void> {
+  await page.getByTestId('home-page').getByRole('link', { name, exact: true }).click()
 }

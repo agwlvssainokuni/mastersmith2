@@ -230,18 +230,20 @@ test.describe('090 invitation to registration flow (E2E-1) on the built WAR', ()
             `${name} のリンク`,
           ).toHaveCount(0)
         }
-        // 管理者でない利用者が管理の画面を開くと、権限が無いときの表示（S6）になる（U4 の D6）。
-        for (const path of ['/admin/invitations', '/admin']) {
-          await page.goto(path)
-          await expect(
-            page.getByTestId('admin-forbidden-view'),
-            `${path} は権限が無いときの表示`,
-          ).toBeVisible()
-          await expect(
-            page.getByTestId('admin-forbidden-heading'),
-            `${path} の権限が無いときの見出し`,
-          ).toBeVisible()
-        }
+        // 管理者でない利用者が実在する管理の画面を開くと、権限が無いときの表示（S6）になる（U4 の D6）。
+        // 廃止した /admin は登録の道に無く、権限が無いときの表示ではなく「見つからない」になる（261102 の U5 の D24・D26）。
+        await page.goto('/admin/invitations')
+        await expect(
+          page.getByTestId('admin-forbidden-view'),
+          '/admin/invitations は権限が無いときの表示',
+        ).toBeVisible()
+        await expect(
+          page.getByTestId('admin-forbidden-heading'),
+          '/admin/invitations の権限が無いときの見出し',
+        ).toBeVisible()
+        await page.goto('/admin')
+        await expect(page.getByTestId('not-found-page'), '/admin は見つからない').toBeVisible()
+        await expect(page.getByTestId('admin-forbidden-view'), '/admin の権限の表示').toHaveCount(0)
       })
 
       await test.step('new user logs out', async () => {

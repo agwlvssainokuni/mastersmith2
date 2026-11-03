@@ -48,6 +48,7 @@ export const registration: FeatureRegistration = {
       order: 240,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'shield',
     },
   ],
   messages: roleAdminMessages,

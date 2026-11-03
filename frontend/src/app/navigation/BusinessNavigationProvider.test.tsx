@@ -48,6 +48,7 @@ function menu(name: string): NavigationResponse {
         table: { schemaName: 'S', tableName: name },
         navigable: true,
         items: [],
+        tableKind: 'TABLE',
       },
     ],
     emptyReason: null,

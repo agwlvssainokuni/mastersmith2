@@ -46,6 +46,7 @@ export const registration: FeatureRegistration = {
       order: 210,
       visibleWhen: 'ADMIN',
       section: 'ADMIN',
+      icon: 'edit',
     },
   ],
   messages: dslMessages,

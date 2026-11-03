@@ -20,7 +20,12 @@ export const en: Record<MessageKey, string> = {
   'app.name': 'MasterSmith',
   'login.heading': 'Sign in',
   'home.heading': 'Home',
-  'home.description': 'Welcome to MasterSmith. Choose a feature from the menu on the left.',
+  'home.description':
+    'Welcome to MasterSmith. Choose a feature below or from the menu on the left.',
+  'home.workRole': 'Work role: {{name}}',
+  'home.workRoleNone': 'Work role: none',
+  'home.section.business': 'Business',
+  'home.section.admin': 'Administration',
   'notFound.heading': 'Page not found',
   'notFound.description':
     'The page you are looking for does not exist or you are not allowed to view it.',

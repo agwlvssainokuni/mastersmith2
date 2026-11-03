@@ -45,6 +45,7 @@ import { buildNavSections } from '../navigation/buildNavSections'
 import { addAncestors, loadExpanded, pruneExpanded, saveExpanded } from '../navigation/navExpansion'
 import type { NavigationResponse } from '../navigation/navigationApi'
 import { buildUserMenuItems } from '../navigation/navigationItems'
+import { AppIcon } from '../../shared/app-icon/AppIcon'
 import { useFeatureRegistry } from '../registry/FeatureRegistryContext'
 import { WorkRoleSwitcher } from '../work-role/WorkRoleSwitcher'
 import './ShellLayout.css'
@@ -171,6 +172,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
 
   return (
     <AppShell
+      logo={<AppIcon size={24} />}
       navSections={sections}
       navExpandedIds={expandedIds}
       onNavExpandedChange={(ids) => setExpansion((prev) => ({ ...prev, ids: new Set(ids) }))}

@@ -288,6 +288,7 @@ export function wideNavigation(): NavigationResponse {
         table: { schemaName: WIDE_SCHEMA, tableName: WIDE_TABLE },
         navigable: true,
         items: [],
+        tableKind: 'TABLE',
       },
     ],
     emptyReason: null,

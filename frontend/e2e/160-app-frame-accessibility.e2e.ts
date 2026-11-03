@@ -107,6 +107,7 @@ type InspectionState =
   | 'work-role-menu-single'
   | 'work-role-menu-none'
   | 'sidebar-collapsed'
+  | 'home-cards'
 
 const [SALES, ACCOUNTING] = THREE_ROLES as [(typeof THREE_ROLES)[0], (typeof THREE_ROLES)[1]]
 
@@ -249,6 +250,38 @@ async function expectContainsCurrentMark(page: Page, suffix: RegExp): Promise<vo
   await expect(other).not.toHaveAccessibleName(suffix)
 }
 
+/**
+ * ホームの入口のカードと、サイドバーのアイコン・上のバーのロゴを確かめる（Intent 261102-timezone-ui-polish の U5。D21・D27・D31）。
+ * 業務のカード（長い名前を含む）と管理のカードが並び、アイコンが飾りで、ロゴが押せない飾りであること。
+ * 画面全体の横のはみ出しは、続けて呼ぶ inspect が確かめる。
+ */
+async function expectHomeEntrance(page: Page): Promise<void> {
+  await page.goto('/')
+  const business = page.getByTestId('home-business-section')
+  const admin = page.getByTestId('home-admin-section')
+  await expect(business).toBeVisible()
+  await expect(admin).toBeVisible()
+  await expect(business.getByRole('heading', { level: 2, name: '業務' })).toBeVisible()
+  await expect(admin.getByRole('heading', { level: 2, name: '管理' })).toBeVisible()
+  expect(await business.getByRole('link').count(), '業務のカードの数').toBeGreaterThan(0)
+  expect(await admin.getByRole('link').count(), '管理のカードの数').toBe(6)
+  // アイコンは飾り（読み上げから外れる）
+  for (const icon of await page.getByTestId('home-page').locator('svg').all()) {
+    await expect(icon).toHaveAttribute('aria-hidden', 'true')
+  }
+  // サイドバーの項目にもアイコンが付き、上のバーのロゴは押せない飾り
+  await expect(page.getByTestId('app-shell').locator('nav svg').first()).toBeVisible()
+  // ロゴは 480px 未満では出さない（横のはみ出しを避ける。ShellLayout.css）
+  const logo = page.locator('.mycui-topbar-logo')
+  const wide = (page.viewportSize()?.width ?? 0) >= 480
+  if (wide) {
+    await expect(logo.locator('svg')).toBeVisible()
+  } else {
+    await expect(logo).toBeHidden()
+  }
+  await expect(logo.locator('a, button')).toHaveCount(0)
+}
+
 /** 作業ロールのトリガー（作業ロールの入れ物の中の1つ） */
 function workRoleTrigger(page: Page) {
   return page.getByTestId('work-role-switcher').getByRole('button')
@@ -359,6 +392,11 @@ test.describe('160 app frame accessibility on the built WAR', () => {
         }
         await check('sidebar-5-levels-and-list', ['C5', 'C8', 'C9'])
         await expectSidebarContained(page, `${combo.name} sidebar`)
+      })
+
+      await test.step('home with the entrance cards, the sidebar icons and the logo', async () => {
+        await expectHomeEntrance(page)
+        await check('home-cards')
       })
 
       await test.step('work role menu with three roles', async () => {
@@ -477,6 +515,12 @@ test.describe('160 app frame widths, English and screen time', () => {
       await expect(switcher.getByRole('button')).toHaveAccessibleName('作業ロール: 営業')
       await inspect(page, label, 'sidebar-5-levels-and-list')
       await expectSidebarContained(page, `${label} sidebar`)
+      // ホームの入口のカード・ロゴは、狭い幅でも横のはみ出しを出さず、畳むボタンとユーザーメニューを押せたままにする
+      await expectHomeEntrance(page)
+      await inspect(page, label, 'home-cards')
+      await expect(page.getByTestId('sidebar-toggle')).toBeVisible()
+      await expect(page.locator('.mycui-topbar-user-trigger')).toBeVisible()
+      await openLeaf(page)
       await workRoleTrigger(page).click()
       await inspect(page, label, 'work-role-menu-3-roles')
       await expectContained(page, `${label} work-role-menu`)

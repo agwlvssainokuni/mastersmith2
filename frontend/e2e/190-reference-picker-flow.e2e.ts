@@ -56,7 +56,8 @@ test.describe('190 reference picker flow', () => {
 
     await test.step('1. log in and open the create screen of the order table from the menu', async () => {
       await loginWithForm(page, run.user.email, run.user.password)
-      const menu = page.getByRole('link', { name: run.labels.orderMenu })
+      // ホームの入口のカードにも同じ名前のリンクが並ぶため、サイドバー（ナビゲーションの領域）に絞る。
+      const menu = page.getByRole('navigation').getByRole('link', { name: run.labels.orderMenu })
       await menu.focus()
       await page.keyboard.press('Enter')
       await expect(page.getByTestId('tables-heading')).toHaveText(run.labels.orderTable)

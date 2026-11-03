@@ -86,7 +86,9 @@ public final class MenuFilter {
                 input.iconOf().apply(item.icon()),
                 visible ? new NavTableRef(table.schema(), table.name()) : null,
                 visible,
-                children);
+                children,
+                // 種類は移れる項目を作るときだけ問う（落とす項目・まとまりでは呼ばない。D2・D4）
+                visible ? input.tableKindOf().apply(table.schema(), table.name()) : null);
     }
 
     private static boolean isVisible(MainPermission main) {
