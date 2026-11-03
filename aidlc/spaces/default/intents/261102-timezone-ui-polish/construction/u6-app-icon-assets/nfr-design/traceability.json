@@ -1,0 +1,36 @@
+{
+  "stage": "nfr-design",
+  "unit": "u6-app-icon-assets",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR5.3",
+    "NFR2.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR2.2",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "SD1 (allowlist scan, mutation table SD1.6, scope SD1.9), SD2 (license header for .svg), SD3 (binary provenance and shape), SD4 (/favicon.ico via layers L1-L4), SD5 (login icon component) in security-design.md" },
+    { "id": "NFR3.1", "status": "OK", "target": "SD7.8 (real-browser axe, zero violations, no rule removed) and SD5.1 (icon inherits text color) in security-design.md" },
+    { "id": "NFR3.2", "status": "OK", "target": "SD5.1 (aria-hidden, focusable=false, no accessible name) and SD7.7 in security-design.md" },
+    { "id": "NFR5.3", "status": "OK", "target": "SD4.2 L4 and SD7.8 (existing E2E rewritten, no new flow, e2eTest before integration) in security-design.md" },
+    { "id": "NFR2.1", "status": "N/A", "target": "upstream NFR2.1 (query count) does not apply; the asset size limits are the U6-own requirement NFR2.1.1, designed in SD3, SD5.1 and SD7.3 (see difference 3 in security-design.md)" },
+    { "id": "NFR1.2", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR1.3", "status": "N/A", "target": "delivered by u5-menu-icons-home" },
+    { "id": "NFR2.2", "status": "N/A", "target": "delivered by u5-menu-icons-home" },
+    { "id": "NFR3.3", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR4.1", "status": "N/A", "target": "no table or column added in this unit (delivered by u2-display-time-zone)" },
+    { "id": "NFR4.2", "status": "N/A", "target": "no menu response change in this unit (delivered by u5-menu-icons-home)" },
+    { "id": "NFR5.1", "status": "N/A", "target": "no date-time handling in this unit (delivered by u3-target-db-time and u4-business-data-time)" },
+    { "id": "NFR5.2", "status": "N/A", "target": "no date-time handling in this unit (delivered by units that handle date-time)" },
+    { "id": "NFR6.1", "status": "N/A", "target": "no screen text added in this unit; the icon is decorative and has no name (delivered by u2, u4, u5)" }
+  ]
+}

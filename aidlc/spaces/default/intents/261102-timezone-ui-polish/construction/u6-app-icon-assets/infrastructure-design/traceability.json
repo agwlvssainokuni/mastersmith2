@@ -1,0 +1,12 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u6-app-icon-assets",
+  "upstream_ids": ["NFR1.1", "NFR3.1", "NFR3.2", "NFR5.3", "NFR2.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "cicd-pipeline.md section 2: svg:check (frontendSvgCheck in verifyLicense), .svg license header, dist:check (frontendDistCheck after frontendBuild), frontendBuild inputs of frontend/public, L1 integration test, verifyFaviconInWar in backend/build.gradle.kts (verifyArtifact); section 3: WAR check before deploy and smoke tests S1-S4; section 4: handoff H1-H11" },
+    { "id": "NFR3.1", "status": "OK", "target": "cicd-pipeline.md section 1 and section 4 H9: existing E2E rewritten with real-browser axe (no rule removed), e2eTest run before integration; smoke test S5-S6" },
+    { "id": "NFR3.2", "status": "OK", "target": "cicd-pipeline.md section 2 (unit test row: login icon is decorative, vitest-axe) and section 3.2 S5-S6" },
+    { "id": "NFR5.3", "status": "OK", "target": "cicd-pipeline.md section 1 (E2E row) and section 4 H9: no new E2E flow, e2eTest before integration because frontend/index.html and frontend/public are frontend body" },
+    { "id": "NFR2.1", "status": "N/A", "target": "upstream NFR2.1 (query count of date-time conversion) does not apply; the asset size limits (U6-own NFR2.1.1) are gated in cicd-pipeline.md section 2 (unit test and dist:check) and monitoring-design.md; no infrastructure needed" }
+  ]
+}
