@@ -1,0 +1,86 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-display-time-zone",
+  "upstream_ids": [
+    "NFR2.1",
+    "NFR1.2",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR6.1",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR3.1",
+    "NFR3.3",
+    "NFR2.3",
+    "NFR4.1",
+    "NFR4.3",
+    "NFR5.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR2.1",
+      "status": "Deferred",
+      "target": "Deferred (owner: build-and-test): the k6 measurements are not taken in this stage - the existing three scenes and the new scene preferencesSaveTimeZone (cicd-pipeline.md 2.4, 4 H6), the real-browser read count after login (E2E, cicd-pipeline.md 2.5) and the 400-option build timing in jsdom (measured in code-generation). Designed in this stage: scene registration, thresholds-test.sh and perf/README.md updated in the same change (cicd-pipeline.md 4 H6); no new resource, sizing unchanged (infrastructure-specification.md Deployment)"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "no new secret, environment variable or network path (infrastructure-specification.md Deployment: runtime settings unchanged); the save statement and the three unchanged entrances are verified by integration tests in the existing verify stage 6 (cicd-pipeline.md 2.1)"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "cicd-pipeline.md 2.2 (ESLint rule in verify stage 2, Linter unit test in stage 5, PreferencesSecretLeakIT and the external-export integration test in stage 6); monitoring-design.md (no value of the name in log, trace or metric; audit unchanged)"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "no new dependency (frontend/package.json, package-lock.json, backend/gradle.lockfile, config/npm-build-tools.txt unchanged: cicd-pipeline.md 2.6); layer and boundary tests kept (UserBoundaryArchitectureTest in stage 5)"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "message keys in ja and en are checked by the existing frontend tests in verify stage 5 (cicd-pipeline.md 2.1); no infrastructure resource is involved"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "required tests run in verify stages 5 and 6 (jqwik/JUnit for the name gate, integration tests for save/read/migration, Vitest/fast-check/vitest-axe for the screen): cicd-pipeline.md 2.1 table; per-package coverage floor and packagesJudgedByTotal check: cicd-pipeline.md 2.3"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "the four runtime time-zone settings (Dockerfile -Duser.timezone, compose TZ, test JVM user.timezone, E2E start) are not changed; Vitest and Playwright fix the zone explicitly: infrastructure-specification.md Deployment, cicd-pipeline.md 3.4 (confirmation by diff in deployment records)"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "axe: vitest-axe per component in verify stage 5; real-browser axe through the rewritten E2E for all brand colours and themes before integration (cicd-pipeline.md 2.5); no violation rule is disabled"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "keyboard-only selection and the 375px overflow check run in the rewritten E2E (cicd-pipeline.md 2.5) and in screen tests (verify stage 5)"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "no new metric, alert, dashboard or log field (monitoring-design.md); single-statement save and column-only migration add no capacity facet (infrastructure-specification.md Infrastructure Services); GET volume grows with login count, alert thresholds unchanged (monitoring-design.md Metrics)"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "V14 one ALTER, forward only, expand-only (infrastructure-specification.md Deployment, cicd-pipeline.md 3.1); compatibility IT (stage 6) and image-only rollback (cicd-pipeline.md 3.3); backup before the swap taken together with the stop for the swap (cicd-pipeline.md 3.2); smoke tests S1 to S8 (cicd-pipeline.md 3.4); handover items H1 to H12 (cicd-pipeline.md 4)"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "error state, reload and stale-answer rules are verified by screen unit tests (verify stage 5) and the rewritten E2E; no infrastructure resource is involved (cicd-pipeline.md 2.1, 2.5); smoke test S5 checks the screen against the real build"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "this unit adds no E2E flow; rewrites of 080, 100 and 110 and the axe states are not counted (cicd-pipeline.md 2.5); E2E runs before integration because frontend/src non-test files change (team.md Way of Working)"
+    }
+  ]
+}
