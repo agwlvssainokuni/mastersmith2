@@ -134,7 +134,13 @@ class RowDialectTest {
         assertThat(RowDialect.baseName("bigint(20) unsigned zerofill")).isEqualTo("bigint unsigned");
         assertThat(RowDialect.baseName("double(10,2) unsigned")).as("整数の型だけ").isEqualTo("double");
         assertThat(RowDialect.baseName("int(10)")).isEqualTo("int");
-        assertThat(RowDialect.baseName("timestamp(3) with time zone")).isEqualTo("timestamp");
+        // 桁つきの時差つきの型は時差の有無を残す（BR3.7。以前は "timestamp" になり、時差を持たない日時と読んでいた）。
+        assertThat(RowDialect.baseName("timestamp(3) with time zone")).isEqualTo("timestamp with time zone");
+        assertThat(RowDialect.baseName("time(3) with time zone")).isEqualTo("time with time zone");
+        assertThat(RowDialect.baseName("timestamp(3) without time zone")).isEqualTo("timestamp without time zone");
+        assertThat(RowDialect.baseName("timestamptz(3)")).isEqualTo("timestamptz");
+        assertThat(RowDialect.baseName("timetz(3)")).isEqualTo("timetz");
+        assertThat(RowDialect.baseName("datetime(6)")).isEqualTo("datetime");
         assertThat(POSTGRES.castToText("\"a\"")).isEqualTo("CAST(\"a\" AS TEXT)");
         assertThat(MYSQL.readsTemporalAsText()).isTrue();
         assertThat(MARIADB.readsTemporalAsText()).isTrue();
@@ -189,5 +195,80 @@ class RowDialectTest {
                         .isEqualTo("c");
             }
         }
+    }
+
+    private static java.sql.ResultSetMetaData meta(int precision, int scale) throws SQLException {
+        java.sql.ResultSetMetaData metaData = mock(java.sql.ResultSetMetaData.class);
+        when(metaData.getPrecision(1)).thenReturn(precision);
+        when(metaData.getScale(1)).thenReturn(scale);
+        return metaData;
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "DATETIME, 19, 0",
+        "DATETIME, 23, 3",
+        "DATETIME, 26, 6",
+        "TIME, 10, 0",
+        "TIME, 14, 3",
+        "TIME, 17, 6"
+    })
+    @DisplayName("MySQL derives the fraction digits from getPrecision")
+    void mysqlDigitsFromPrecision(ValueType type, int precision, int expected) throws SQLException {
+        assertThat(MYSQL.fractionDigits(meta(precision, 0), 1, type)).isEqualTo(expected);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({"0", "3", "6"})
+    @DisplayName("MariaDB and PostgreSQL read the fraction digits from getScale")
+    void scaleDigits(int scale) throws SQLException {
+        assertThat(MARIADB.fractionDigits(meta(26, scale), 1, ValueType.DATETIME))
+                .isEqualTo(scale);
+        assertThat(POSTGRES.fractionDigits(meta(0, scale), 1, ValueType.TIME_TZ))
+                .isEqualTo(scale);
+    }
+
+    @Test
+    @DisplayName("the digits are null for non temporal types, a null metadata and a metadata that throws")
+    void digitsAreNullWhenUnknown() throws SQLException {
+        assertThat(POSTGRES.fractionDigits(meta(0, 3), 1, ValueType.INTEGER)).isNull();
+        assertThat(MYSQL.fractionDigits(null, 1, ValueType.DATETIME)).isNull();
+        java.sql.ResultSetMetaData broken = mock(java.sql.ResultSetMetaData.class);
+        when(broken.getScale(1)).thenThrow(new SQLException("boom"));
+        when(broken.getPrecision(1)).thenThrow(new SQLException("boom"));
+        assertThat(POSTGRES.fractionDigits(broken, 1, ValueType.DATETIME)).isNull();
+        assertThat(MYSQL.fractionDigits(broken, 1, ValueType.DATETIME)).isNull();
+        assertThat(MARIADB.fractionDigits(broken, 1, ValueType.TIME)).isNull();
+    }
+
+    @Test
+    @DisplayName("only PostgreSQL moves a timetz value to UTC for the comparison and nothing else changes")
+    void comparisonValue() {
+        var tokyo = java.time.OffsetTime.of(10, 30, 0, 0, ZoneOffset.ofHours(9));
+        var bound = new cherry.mastersmith.businessdata.domain.BoundValue(ValueType.TIME_TZ, tokyo);
+        var text = new cherry.mastersmith.businessdata.domain.BoundValue(ValueType.STRING, "x");
+
+        assertThat(POSTGRES.comparisonValue(bound).value())
+                .isEqualTo(java.time.OffsetTime.of(1, 30, 0, 0, ZoneOffset.UTC));
+        assertThat(POSTGRES.comparisonValue(text)).isSameAs(text);
+        assertThat(MYSQL.comparisonValue(bound)).isSameAs(bound);
+        assertThat(MARIADB.comparisonValue(bound)).isSameAs(bound);
+        assertThat(POSTGRES.comparisonTarget("c", ValueType.TIME_TZ)).isEqualTo("(c AT TIME ZONE 'UTC')");
+    }
+
+    @Test
+    @DisplayName("sentinels are only recognized by PostgreSQL")
+    void sentinels() {
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalDateTime.MAX)).isTrue();
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalDateTime.MIN)).isTrue();
+        assertThat(POSTGRES.isUnreadableSentinel(OffsetDateTime.MAX)).isTrue();
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalDate.MAX)).isTrue();
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalTime.MAX)).isTrue();
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalTime.of(23, 59, 59, 999_999_000)))
+                .isFalse();
+        assertThat(POSTGRES.isUnreadableSentinel(java.time.LocalDateTime.of(2026, 12, 31, 23, 59, 59)))
+                .isFalse();
+        assertThat(POSTGRES.isUnreadableSentinel("x")).isFalse();
+        assertThat(MYSQL.isUnreadableSentinel(java.time.LocalDateTime.MAX)).isFalse();
     }
 }

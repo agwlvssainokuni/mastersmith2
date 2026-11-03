@@ -56,7 +56,7 @@ public final class MysqlSchemaQueries implements SchemaQueries {
      */
     static final String COLUMNS_SQL = """
             SELECT TABLE_NAME, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE,
-                   CHARACTER_MAXIMUM_LENGTH, NUMERIC_PRECISION, NUMERIC_SCALE,
+                   CHARACTER_MAXIMUM_LENGTH, COALESCE(NUMERIC_PRECISION, DATETIME_PRECISION), NUMERIC_SCALE,
                    CASE WHEN IS_NULLABLE = 'YES' THEN 1 ELSE 0 END,
                    COLUMN_DEFAULT, COLUMN_COMMENT, COLUMN_TYPE
               FROM information_schema.COLUMNS

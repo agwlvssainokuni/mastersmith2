@@ -240,7 +240,12 @@ class ColumnValueCodecTest {
                 .contains(expected);
         assertThat(codec.read(access(ValueType.TIME_TZ, "timetz"), "10:30:00+09:00"))
                 .map(BoundValue::value)
-                .contains(OffsetTime.of(1, 30, 0, 0, ZoneOffset.UTC));
+                .as("時差つきの時刻は時差のまま保持する（BR3.13）")
+                .contains(OffsetTime.of(10, 30, 0, 0, ZoneOffset.ofHours(9)));
+        assertThat(codec.read(access(ValueType.TIME_TZ, "timetz"), "10:30:00"))
+                .map(BoundValue::value)
+                .as("時差の無い文字は UTC とみなす")
+                .contains(OffsetTime.of(10, 30, 0, 0, ZoneOffset.UTC));
         assertThat(codec.read(zoned, "2026-02-30T00:00:00")).isEmpty();
         assertThat(codec.read(access(ValueType.DATE, "date"), "2026-1-1")).isEmpty();
         assertThat(codec.read(access(ValueType.TIME, "time"), "25:00")).isEmpty();
@@ -306,7 +311,8 @@ class ColumnValueCodecTest {
             assertThat(codec.readCell(resultSet, 3, ValueType.DATETIME, Integer.MAX_VALUE, mysql))
                     .isEqualTo(new CellValue.Text("2026-01-01T00:00:00.12", false));
             assertThat(codec.readCell(resultSet, 4, ValueType.TIME_TZ, Integer.MAX_VALUE, postgres))
-                    .isEqualTo(new CellValue.Text("00:00:00+00:00", false));
+                    .as("時差は DB の値のまま付ける")
+                    .isEqualTo(new CellValue.Text("09:00:00+09:00", false));
             assertThat(codec.readCell(resultSet, 5, ValueType.TIME, Integer.MAX_VALUE, postgres))
                     .isEqualTo(new CellValue.Text("07:05:00", false));
             assertThat(codec.readCell(resultSet, 6, ValueType.BOOLEAN, Integer.MAX_VALUE, postgres))
@@ -363,6 +369,7 @@ class ColumnValueCodecTest {
         ResultSet resultSet = mock(ResultSet.class);
         when(resultSet.getObject(anyInt(), eq(LocalDate.class)))
                 .thenThrow(new java.time.DateTimeException("0000-00-00"));
+        when(resultSet.getString(1)).thenReturn("0000-00-00");
         when(resultSet.getBigDecimal(anyInt())).thenThrow(new NumberFormatException("NaN"));
 
         CellValue date = codec.readCell(
@@ -370,7 +377,7 @@ class ColumnValueCodecTest {
         CellValue decimal = codec.readCell(
                 resultSet, 2, ValueType.DECIMAL, Integer.MAX_VALUE, RowDialect.of(DatabaseProduct.MYSQL));
 
-        assertThat(date).isEqualTo(new CellValue.Unreadable("java.time.DateTimeException"));
+        assertThat(date).as("日時・時刻の読めない値は、そのセルだけ DB の文字のまま").isEqualTo(new CellValue.Raw("0000-00-00"));
         assertThat(decimal).isEqualTo(new CellValue.Unreadable("java.lang.NumberFormatException"));
         assertThat(date.toString()).doesNotContain("0000");
         assertThat(codec.read(access(ValueType.DECIMAL, "numeric"), "9".repeat(1000)))
@@ -383,28 +390,29 @@ class ColumnValueCodecTest {
         when(text.getString(3)).thenReturn("2026-03-08 02:30:00.123456");
         RowDialect mariadb = RowDialect.of(DatabaseProduct.MARIADB);
         assertThat(codec.readCell(text, 1, ValueType.DATE, Integer.MAX_VALUE, mariadb))
-                .as("ゼロ日付は NULL にせず読めない値")
-                .isInstanceOf(CellValue.Unreadable.class);
+                .as("ゼロ日付は NULL にせず、そのセルだけ DB の文字のまま")
+                .isEqualTo(new CellValue.Raw("0000-00-00"));
         assertThat(codec.readCell(text, 2, ValueType.TIME, Integer.MAX_VALUE, mariadb))
-                .as("24 時間を超える時刻は余りにせず読めない値")
-                .isInstanceOf(CellValue.Unreadable.class);
+                .as("24 時間を超える時刻は余りにせず、そのセルだけ DB の文字のまま")
+                .isEqualTo(new CellValue.Raw("838:59:59"));
         assertThat(codec.readCell(text, 3, ValueType.DATETIME, Integer.MAX_VALUE, mariadb))
                 .isEqualTo(new CellValue.Text("2026-03-08T02:30:00.123456", false));
     }
 
     @Test
-    @DisplayName("fractional digits come from the type name, then the DSL precision, then the database default")
+    @DisplayName("fractional digits come from the type name, then the DSL precision, and are not checked otherwise")
     void fractionDigits() {
         assertThat(ColumnValueCodec.kind(
                                 Optional.of(DatabaseProduct.POSTGRESQL),
                                 column("t").dbType("timestamptz").build())
                         .fractionDigits())
-                .isEqualTo(6);
+                .as("桁の明示が無ければ確かめない")
+                .isNull();
         assertThat(ColumnValueCodec.kind(
                                 Optional.of(DatabaseProduct.MYSQL),
                                 column("t").dbType("datetime").build())
                         .fractionDigits())
-                .isZero();
+                .isNull();
         assertThat(ColumnValueCodec.kind(
                                 Optional.of(DatabaseProduct.MYSQL),
                                 column("t").dbType("datetime(3)").build())
@@ -418,8 +426,8 @@ class ColumnValueCodecTest {
         assertThat(ColumnValueCodec.kind(
                                 Optional.empty(), column("t").dbType("time").build())
                         .fractionDigits())
-                .as("DB の種類が分からないときは狭める向き")
-                .isZero();
+                .as("DB の種類が分からなくても、桁の明示が無ければ確かめない")
+                .isNull();
         assertThat(ColumnValueCodec.kind(
                                 Optional.of(DatabaseProduct.POSTGRESQL),
                                 column("d").dbType("date").build())
@@ -463,5 +471,114 @@ class ColumnValueCodecTest {
         verify(statement).setBigDecimal(1, new BigDecimal("9223372036854775807"));
         verify(statement).setObject(2, OffsetTime.of(1, 0, 0, 0, ZoneOffset.UTC));
         verify(statement).setNull(3, Types.TIMESTAMP_WITH_TIMEZONE);
+    }
+
+    @Test
+    @DisplayName(
+            "PostgreSQL sentinels (infinity, 24:00:00, extreme offsets) are re-read as the text sent by the database")
+    void postgresSentinelsAreRaw() throws SQLException {
+        RowDialect postgres = RowDialect.of(DatabaseProduct.POSTGRESQL);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.getObject(1, LocalDateTime.class)).thenReturn(LocalDateTime.MAX);
+        when(rs.getString(1)).thenReturn("infinity");
+        when(rs.getObject(2, LocalDate.class)).thenReturn(LocalDate.MIN);
+        when(rs.getString(2)).thenReturn("-infinity");
+        when(rs.getObject(3, LocalTime.class)).thenReturn(LocalTime.MAX);
+        when(rs.getString(3)).thenReturn("24:00:00");
+        when(rs.getObject(4, OffsetDateTime.class)).thenReturn(OffsetDateTime.MAX);
+        when(rs.getString(4)).thenReturn("infinity");
+        when(rs.getObject(5, OffsetTime.class)).thenReturn(OffsetTime.MAX);
+        when(rs.getString(5)).thenReturn("24:00:00+00");
+        when(rs.getObject(6, LocalDateTime.class)).thenReturn(LocalDateTime.of(2026, 12, 31, 23, 59, 59, 999_999_000));
+
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME, 100, postgres, 6))
+                .isEqualTo(new CellValue.Raw("infinity"));
+        assertThat(codec.readCell(rs, 2, ValueType.DATE, 100, postgres, null))
+                .isEqualTo(new CellValue.Raw("-infinity"));
+        assertThat(codec.readCell(rs, 3, ValueType.TIME, 100, postgres, 6)).isEqualTo(new CellValue.Raw("24:00:00"));
+        assertThat(codec.readCell(rs, 4, ValueType.DATETIME_TZ, 100, postgres, 6))
+                .isEqualTo(new CellValue.Raw("infinity"));
+        assertThat(codec.readCell(rs, 5, ValueType.TIME_TZ, 100, postgres, 6))
+                .isEqualTo(new CellValue.Raw("24:00:00+00"));
+        assertThat(codec.readCell(rs, 6, ValueType.DATETIME, 100, postgres, 6))
+                .as("番兵に近い正しい値は読める")
+                .isEqualTo(new CellValue.Text("2026-12-31T23:59:59.999999", false));
+    }
+
+    @Test
+    @DisplayName("the column digits fix the fraction of every temporal type and no digits leave it free")
+    void digitsFixTheFraction() throws SQLException {
+        RowDialect postgres = RowDialect.of(DatabaseProduct.POSTGRESQL);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.getObject(1, LocalDateTime.class)).thenReturn(LocalDateTime.of(2026, 1, 2, 3, 4, 5, 120_000_000));
+        when(rs.getObject(2, OffsetDateTime.class))
+                .thenReturn(OffsetDateTime.of(2026, 1, 2, 12, 4, 5, 0, ZoneOffset.ofHours(9)));
+
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME, 100, postgres, 0))
+                .isEqualTo(new CellValue.Text("2026-01-02T03:04:05", false));
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME, 100, postgres, 3))
+                .isEqualTo(new CellValue.Text("2026-01-02T03:04:05.120", false));
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME, 100, postgres, 6))
+                .isEqualTo(new CellValue.Text("2026-01-02T03:04:05.120000", false));
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME, 100, postgres, null))
+                .isEqualTo(new CellValue.Text("2026-01-02T03:04:05.12", false));
+        assertThat(codec.readCell(rs, 2, ValueType.DATETIME_TZ, 100, postgres, 3))
+                .as("時点は UTC の +00:00 で返す")
+                .isEqualTo(new CellValue.Text("2026-01-02T03:04:05.000+00:00", false));
+    }
+
+    @Test
+    @DisplayName("MySQL family unreadable temporal text becomes Raw while a boolean or number stays unreadable")
+    void mysqlRawAndUnreadable() throws SQLException {
+        RowDialect mysql = RowDialect.of(DatabaseProduct.MYSQL);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.getString(1)).thenReturn("0000-00-00 00:00:00");
+        when(rs.getString(2)).thenReturn("-01:00:00");
+        when(rs.getString(3)).thenReturn(null);
+        when(rs.getBigDecimal(4)).thenThrow(new NumberFormatException("x"));
+
+        assertThat(codec.readCell(rs, 1, ValueType.DATETIME_TZ, 100, mysql, 0))
+                .isEqualTo(new CellValue.Raw("0000-00-00 00:00:00"));
+        assertThat(codec.readCell(rs, 2, ValueType.TIME, 100, mysql, 0)).isEqualTo(new CellValue.Raw("-01:00:00"));
+        assertThat(codec.readCell(rs, 3, ValueType.DATETIME, 100, mysql, 0))
+                .as("NULL")
+                .isEqualTo(new CellValue.Text(null, false));
+        assertThat(codec.readCell(rs, 4, ValueType.DECIMAL, 100, mysql, null)).isInstanceOf(CellValue.Unreadable.class);
+    }
+
+    @Test
+    @DisplayName(
+            "timestamp with a length and a time zone is read as a point in time, timetz keeps its offset when formatted")
+    void zonedTypeNamesAndFormat() {
+        assertThat(ColumnValueCodec.valueType(
+                        DatabaseProduct.POSTGRESQL,
+                        column("t").dbType("timestamp(3) with time zone").build()))
+                .isEqualTo(ValueType.DATETIME_TZ);
+        assertThat(ColumnValueCodec.valueType(
+                        DatabaseProduct.POSTGRESQL,
+                        column("t").dbType("time(3) with time zone").build()))
+                .isEqualTo(ValueType.TIME_TZ);
+        assertThat(ColumnValueCodec.valueType(
+                        DatabaseProduct.POSTGRESQL,
+                        column("t").dbType("timestamp(3) without time zone").build()))
+                .isEqualTo(ValueType.DATETIME);
+        assertThat(ColumnValueCodec.format(
+                        new BoundValue(ValueType.TIME_TZ, OffsetTime.of(10, 30, 0, 0, ZoneOffset.ofHours(9)))))
+                .isEqualTo("10:30:00+09:00");
+    }
+
+    @Test
+    @DisplayName("a column with an explicit precision is checked for the digits of the fraction")
+    void explicitPrecisionIsChecked() {
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.POSTGRESQL),
+                                column("t").dbType("timestamptz(3)").build())
+                        .fractionDigits())
+                .isEqualTo(3);
+        assertThat(ColumnValueCodec.kind(
+                                Optional.of(DatabaseProduct.MYSQL),
+                                column("t").dbType("time", 0).build())
+                        .fractionDigits())
+                .isZero();
     }
 }

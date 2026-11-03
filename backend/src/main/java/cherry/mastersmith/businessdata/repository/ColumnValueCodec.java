@@ -38,13 +38,11 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalAccessor;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -227,7 +225,8 @@ public final class ColumnValueCodec implements ColumnValueReader {
         } else if (column.dbType().precision() != null) {
             digits = column.dbType().precision();
         } else {
-            digits = product.map(p -> p == DatabaseProduct.POSTGRESQL ? 6 : 0).orElse(0);
+            // 桁の明示が無い列は端数の桁を確かめない（製品の既定の桁へ戻さない。D-P8、BR3.9）。
+            return null;
         }
         return Math.min(Math.max(digits, 0), 9);
     }
@@ -252,7 +251,7 @@ public final class ColumnValueCodec implements ColumnValueReader {
             case DATETIME -> DATE_TIME.format((LocalDateTime) raw);
             case TIME -> TIME.format((LocalTime) raw);
             case DATETIME_TZ -> DATE_TIME_UTC.format(((OffsetDateTime) raw).withOffsetSameInstant(ZoneOffset.UTC));
-            case TIME_TZ -> TIME_UTC.format(((OffsetTime) raw).withOffsetSameInstant(ZoneOffset.UTC));
+            case TIME_TZ -> TIME_UTC.format((OffsetTime) raw);
             case BINARY -> throw new IllegalArgumentException("BINARY の値は文字にしません");
         };
     }
@@ -444,10 +443,10 @@ public final class ColumnValueCodec implements ColumnValueReader {
 
     private static OffsetTime parseTimeTz(String text) {
         boolean hasOffset = text.endsWith("Z") || text.endsWith("z") || text.matches(".*[+-][0-9]{2}:[0-9]{2}$");
-        OffsetTime value = hasOffset
+        // 時差つきの文字は時差のまま保持し、時差の無い文字は UTC とみなす（BR3.13）。
+        return hasOffset
                 ? OffsetTime.parse(text.replace('z', 'Z'))
                 : LocalTime.parse(text).atOffset(ZoneOffset.UTC);
-        return value.withOffsetSameInstant(ZoneOffset.UTC);
     }
 
     /**
@@ -501,10 +500,12 @@ public final class ColumnValueCodec implements ColumnValueReader {
      * @param type 受け渡しの型（BINARY は呼ぶ前に外している）
      * @param limit 文字数の上限（切らないなら {@link Integer#MAX_VALUE}）
      * @param dialect 方言
+     * @param digits 日時・時刻の秒の端数の桁（列の桁。null なら固定しない）
      * @return 文字にした値
      * @throws SQLException 読み取りの失敗（時間切れ・接続の失敗を含む）
      */
-    public CellValue readCell(ResultSet resultSet, int index, ValueType type, int limit, RowDialect dialect)
+    public CellValue readCell(
+            ResultSet resultSet, int index, ValueType type, int limit, RowDialect dialect, Integer digits)
             throws SQLException {
         try {
             return switch (type) {
@@ -524,34 +525,82 @@ public final class ColumnValueCodec implements ColumnValueReader {
                     boolean value = resultSet.getBoolean(index);
                     yield new CellValue.Text(resultSet.wasNull() ? null : Boolean.toString(value), false);
                 }
-                case DATE ->
-                    text(
-                            dialect.readsTemporalAsText()
-                                    ? parseText(resultSet.getString(index), LocalDate::parse)
-                                    : resultSet.getObject(index, LocalDate.class),
-                            DateTimeFormatter.ISO_LOCAL_DATE);
-                case DATETIME ->
-                    text(
-                            dialect.readsTemporalAsText()
-                                    ? parseText(resultSet.getString(index), ColumnValueCodec::parseLocalDateTime)
-                                    : resultSet.getObject(index, LocalDateTime.class),
-                            DATE_TIME);
-                case TIME ->
-                    text(
-                            dialect.readsTemporalAsText()
-                                    ? parseText(resultSet.getString(index), LocalTime::parse)
-                                    : resultSet.getObject(index, LocalTime.class),
-                            TIME);
-                case DATETIME_TZ -> text(dialect.readDateTimeTz(resultSet, index), DATE_TIME_UTC);
+                case DATE -> {
+                    if (dialect.readsTemporalAsText()) {
+                        yield TemporalCells.readDateText(resultSet.getString(index));
+                    }
+                    LocalDate value = resultSet.getObject(index, LocalDate.class);
+                    yield value == null
+                            ? new CellValue.Text(null, false)
+                            : dialect.isUnreadableSentinel(value)
+                                    ? TemporalCells.raw(resultSet.getString(index))
+                                    : new CellValue.Text(TemporalCells.formatDate(value), false);
+                }
+                case DATETIME -> {
+                    if (dialect.readsTemporalAsText()) {
+                        yield TemporalCells.readDateTimeText(resultSet.getString(index), digits);
+                    }
+                    LocalDateTime value = resultSet.getObject(index, LocalDateTime.class);
+                    yield value == null
+                            ? new CellValue.Text(null, false)
+                            : dialect.isUnreadableSentinel(value)
+                                    ? TemporalCells.raw(resultSet.getString(index))
+                                    : new CellValue.Text(TemporalCells.formatDateTime(value, digits), false);
+                }
+                case TIME -> {
+                    if (dialect.readsTemporalAsText()) {
+                        yield TemporalCells.readTimeText(resultSet.getString(index), digits);
+                    }
+                    LocalTime value = resultSet.getObject(index, LocalTime.class);
+                    yield value == null
+                            ? new CellValue.Text(null, false)
+                            : dialect.isUnreadableSentinel(value)
+                                    ? TemporalCells.raw(resultSet.getString(index))
+                                    : new CellValue.Text(TemporalCells.formatTime(value, digits), false);
+                }
+                case DATETIME_TZ -> {
+                    if (dialect.readsTemporalAsText()) {
+                        yield TemporalCells.readDateTimeTzText(resultSet.getString(index), digits);
+                    }
+                    OffsetDateTime value = dialect.readDateTimeTz(resultSet, index);
+                    yield new CellValue.Text(
+                            value == null ? null : TemporalCells.formatDateTimeTz(value, digits), false);
+                }
                 case TIME_TZ -> {
+                    // 時差は DB の値のまま付ける（UTC に直さない。BR3.6）。
                     OffsetTime value = resultSet.getObject(index, OffsetTime.class);
-                    yield text(value == null ? null : value.withOffsetSameInstant(ZoneOffset.UTC), TIME_UTC);
+                    yield value == null
+                            ? new CellValue.Text(null, false)
+                            : dialect.isUnreadableSentinel(value)
+                                    ? TemporalCells.raw(resultSet.getString(index))
+                                    : new CellValue.Text(TemporalCells.formatTimeTz(value, digits), false);
                 }
                 case BINARY -> throw new IllegalArgumentException("BINARY の値は読みません");
             };
         } catch (RuntimeException e) {
+            if (TemporalCells.isTemporal(type)) {
+                // 日時・時刻の型として読めない値は、そのセルだけ DB が送った文字のまま返す（BR3.10）。
+                return TemporalCells.raw(resultSet.getString(index));
+            }
             return new CellValue.Unreadable(e.getClass().getName());
         }
+    }
+
+    /**
+     * 結果の値を読み、文字にする。桁を固定しない呼び出し（{@link #readCell(ResultSet, int, ValueType, int, RowDialect, Integer)} の
+     * {@code digits} が null）。
+     *
+     * @param resultSet 結果
+     * @param index 位置
+     * @param type 受け渡しの型
+     * @param limit 文字数の上限
+     * @param dialect 方言
+     * @return 文字にした値
+     * @throws SQLException 読み取りの失敗
+     */
+    public CellValue readCell(ResultSet resultSet, int index, ValueType type, int limit, RowDialect dialect)
+            throws SQLException {
+        return readCell(resultSet, index, type, limit, dialect, null);
     }
 
     /**
@@ -569,10 +618,6 @@ public final class ColumnValueCodec implements ColumnValueReader {
         return new CellValue.Text(Boolean.toString(value == 1L), false);
     }
 
-    private static <T> T parseText(String text, Function<String, T> parser) {
-        return text == null ? null : parser.apply(text);
-    }
-
     /**
      * MySQL・MariaDB が文字で送る日時（{@code 2026-03-08 02:30:00.123456}）を読む。区切りの空白と ISO の {@code T} の両方を受け付ける。
      * ゼロの日時・範囲の外の値は {@code DateTimeParseException}。
@@ -581,11 +626,7 @@ public final class ColumnValueCodec implements ColumnValueReader {
      * @return 日時
      */
     static LocalDateTime parseLocalDateTime(String text) {
-        return LocalDateTime.parse(text.replace(' ', 'T'));
-    }
-
-    private static CellValue text(TemporalAccessor value, DateTimeFormatter formatter) {
-        return new CellValue.Text(value == null ? null : formatter.format(value), false);
+        return TemporalCells.parseLocalDateTime(text);
     }
 
     /**

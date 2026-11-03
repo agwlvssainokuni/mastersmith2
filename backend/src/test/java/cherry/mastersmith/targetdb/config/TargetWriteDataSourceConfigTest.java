@@ -75,7 +75,9 @@ class TargetWriteDataSourceConfigTest {
         assertThat(config.getValidationTimeout()).isEqualTo(3_000L);
         assertThat(config.getIdleTimeout()).as("読み取りの idle-timeout を共用").isEqualTo(60_000L);
         assertThat(config.getInitializationFailTimeout()).as("起動時に接続しない").isEqualTo(-1L);
-        assertThat(config.getConnectionInitSql()).as("PostgreSQL は初期化の文を持たない").isNull();
+        assertThat(config.getConnectionInitSql())
+                .as("PostgreSQL も接続を作るときに UTC にする")
+                .isEqualTo("SET TIME ZONE 'UTC'");
         assertThat(TargetWriteDataSourceConfig.hikariConfig(usable("mysql", null, 2))
                         .getMaximumPoolSize())
                 .isEqualTo(2);

@@ -22,6 +22,7 @@ import cherry.mastersmith.dsl.domain.SearchOperator;
 import cherry.mastersmith.dsl.domain.SortDirection;
 import cherry.mastersmith.dsl.domain.ValidationOrigin;
 import cherry.mastersmith.dsl.domain.ValidationType;
+import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import cherry.mastersmith.targetdb.domain.TargetColumn;
 import cherry.mastersmith.targetdb.domain.TargetDbType;
 import cherry.mastersmith.targetdb.domain.TargetForeignKey;
@@ -133,7 +134,8 @@ public class DslTreeBuilder {
                     column, primaryKeyColumns.contains(column.name()), singleColumnKeys.get(column.name()));
             Integer listOrder = plan.listed() ? order++ : null;
             columns.put(
-                    column.name(), column(column, plan, listOrder, column.name().equals(sortColumn)));
+                    column.name(),
+                    column(column, plan, listOrder, column.name().equals(sortColumn), schema.databaseProduct()));
         }
         result.put("columns", columns);
         return result;
@@ -164,10 +166,10 @@ public class DslTreeBuilder {
     }
 
     private static Map<String, Object> column(
-            TargetColumn column, ColumnPlan plan, Integer listOrder, boolean sortColumn) {
+            TargetColumn column, ColumnPlan plan, Integer listOrder, boolean sortColumn, DatabaseProduct product) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("label", label(column.name(), column.comment()));
-        result.put("dbType", dbType(column));
+        result.put("dbType", dbType(column, product));
         result.put("formPart", plan.formPart().dslName());
         Map<String, Object> search = new LinkedHashMap<>();
         search.put("enabled", plan.searchOperator() != null);
@@ -206,15 +208,34 @@ public class DslTreeBuilder {
      * （{@code COLUMN_TYPE} に {@code unsigned} を含む）は、名前を {@code int unsigned} のように書く（Intent
      * 261025-deps-perf-carryover の FR3.1。書き込みの値の範囲を符号なしの範囲で判定できるようにする）。
      */
-    private static Map<String, Object> dbType(TargetColumn column) {
+    private static Map<String, Object> dbType(TargetColumn column, DatabaseProduct product) {
         TargetDbType type = column.dbType();
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("name", dbTypeName(type));
         result.put("length", dslLength(type));
-        result.put("precision", type.precision());
+        result.put("precision", precision(type, product));
         result.put("scale", type.scale());
         result.put("nullable", column.nullable());
         return result;
+    }
+
+    /**
+     * DSL の {@code dbType.precision} に書く値（BR3.8）。日時・時刻の分類（{@code DATETIME}・{@code TIME}）の列は、秒の端数の桁が
+     * その製品の既定（PostgreSQL 6、MySQL・MariaDB 0）と違うときだけ書く。日付・間隔など日時・時刻でない分類の列には、桁を書かない
+     * （DB が日付の桁を返しても書かない）。数値の型などは今までどおり DB が返した精度。
+     */
+    private static Integer precision(TargetDbType type, DatabaseProduct product) {
+        TypeCategory category = TypeCategoryMapping.categorize(type);
+        if (category == TypeCategory.DATETIME || category == TypeCategory.TIME) {
+            Integer digits = type.precision();
+            int defaultDigits = product == DatabaseProduct.POSTGRESQL ? 6 : 0;
+            return digits == null || digits == defaultDigits ? null : digits;
+        }
+        if (category == TypeCategory.DATE
+                || type.typeName().toLowerCase(Locale.ROOT).startsWith("interval")) {
+            return null;
+        }
+        return type.precision();
     }
 
     /** DB から導けるバリデーション（BR4.1）。必須（NOT NULL で既定値が無い）、文字列の長さの上限。 */

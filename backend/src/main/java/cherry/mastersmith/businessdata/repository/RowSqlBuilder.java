@@ -109,7 +109,7 @@ final class RowSqlBuilder {
             switch (condition.mode()) {
                 case EQUALS -> {
                     terms.add(target + " = ?");
-                    values.add(condition.value());
+                    values.add(dialect.comparisonValue(condition.value()));
                 }
                 case CONTAINS -> {
                     terms.add(target + " LIKE ? ESCAPE '" + ContainsPattern.ESCAPE + "'");
@@ -119,18 +119,18 @@ final class RowSqlBuilder {
                 case RANGE -> {
                     if (condition.from() != null) {
                         terms.add(target + " >= ?");
-                        values.add(condition.from());
+                        values.add(dialect.comparisonValue(condition.from()));
                     }
                     if (condition.to() != null) {
                         terms.add(target + " <= ?");
-                        values.add(condition.to());
+                        values.add(dialect.comparisonValue(condition.to()));
                     }
                 }
                 case CHOICE -> {
                     StringJoiner placeholders = new StringJoiner(", ", target + " IN (", ")");
                     for (BoundValue value : condition.values()) {
                         placeholders.add("?");
-                        values.add(value);
+                        values.add(dialect.comparisonValue(value));
                     }
                     terms.add(placeholders.toString());
                 }
@@ -310,7 +310,7 @@ final class RowSqlBuilder {
         for (Map.Entry<String, BoundValue> entry : key.values().entrySet()) {
             terms.add(dialect.comparisonTarget(
                             column(entry.getKey()), entry.getValue().valueType()) + " = ?");
-            values.add(entry.getValue());
+            values.add(dialect.comparisonValue(entry.getValue()));
         }
         String sql = "SELECT "
                 + String.join(", ", selected.stream().map(Selected::expression).toList()) + " FROM " + table + " WHERE "

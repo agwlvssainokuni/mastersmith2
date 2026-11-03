@@ -59,7 +59,7 @@ public final class PostgresSchemaQueries implements SchemaQueries {
      */
     static final String COLUMNS_SQL = """
             SELECT col.table_name, col.column_name, col.ordinal_position, col.udt_name,
-                   col.character_maximum_length, col.numeric_precision, col.numeric_scale,
+                   col.character_maximum_length, COALESCE(col.numeric_precision, col.datetime_precision), col.numeric_scale,
                    CASE WHEN col.is_nullable = 'YES' THEN 1 ELSE 0 END,
                    col.column_default,
                    pg_catalog.col_description(c.oid, CAST(col.ordinal_position AS integer)),

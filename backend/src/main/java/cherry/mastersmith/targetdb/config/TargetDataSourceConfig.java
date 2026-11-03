@@ -67,6 +67,31 @@ public class TargetDataSourceConfig {
     public static final String WRITE_CONNECTION_INIT_SQL =
             "SET time_zone = '+00:00', sql_mode = CONCAT_WS(',', NULLIF(@@sql_mode, ''), 'STRICT_ALL_TABLES')";
 
+    /** PostgreSQL の読み取り・書き込みのプールで、接続を作るときに1回だけ流す初期化の文（定数。セッションのタイムゾーンを UTC にする）。 */
+    public static final String POSTGRES_CONNECTION_INIT_SQL = "SET TIME ZONE 'UTC'";
+
+    /** 接続の用途（初期化の文を引く鍵）。 */
+    enum ConnectionPurpose {
+        READ,
+        WRITE
+    }
+
+    /**
+     * 種類 × 用途から、接続を作るときに1回だけ流す初期化の文を引く（1か所の対応。BR3.1・BR3.2。文は定数で、利用者の入力・設定の値を
+     * 含まない）。
+     *
+     * @param product DB の種類
+     * @param purpose 用途
+     * @return 初期化の文
+     */
+    static String connectionInitSql(DatabaseProduct product, ConnectionPurpose purpose) {
+        return switch (product) {
+            case POSTGRESQL -> POSTGRES_CONNECTION_INIT_SQL;
+            case MYSQL, MARIADB ->
+                purpose == ConnectionPurpose.READ ? READ_CONNECTION_INIT_SQL : WRITE_CONNECTION_INIT_SQL;
+        };
+    }
+
     private static final Logger LOGGER = LoggerFactory.getLogger(TargetDataSourceConfig.class);
 
     /**
@@ -146,10 +171,8 @@ public class TargetDataSourceConfig {
         config.setValidationTimeout(properties.connectTimeout().toMillis());
         // 起動時に接続しない（プールは初めて使うときに始まる。NFR7.2）。
         config.setInitializationFailTimeout(-1);
-        if (usable.product() != DatabaseProduct.POSTGRESQL) {
-            // 接続を作るときに1回だけ、セッションのタイムゾーンを UTC にする（D5: A。貸すたびには流さない）。
-            config.setConnectionInitSql(READ_CONNECTION_INIT_SQL);
-        }
+        // 接続を作るときに1回だけ、セッションのタイムゾーンを UTC にする（D5: A。貸すたびには流さない。PostgreSQL も同じ）。
+        config.setConnectionInitSql(connectionInitSql(usable.product(), ConnectionPurpose.READ));
         driverProperties(usable.product(), properties).forEach(config::addDataSourceProperty);
         return config;
     }

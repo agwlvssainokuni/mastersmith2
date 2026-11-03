@@ -15,14 +15,20 @@
  */
 package cherry.mastersmith.businessdata.repository;
 
+import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.dsl.domain.SortDirection;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
+import java.time.OffsetTime;
 import java.time.ZoneOffset;
 import java.util.Set;
 
@@ -64,6 +70,40 @@ public final class PostgresRowDialect implements RowDialect {
     }
 
     @Override
+    public BoundValue comparisonValue(BoundValue value) {
+        // 比較の左辺は timetz を UTC に直すため、右辺も UTC に直す（D-P3）。ほかの型は恒等。
+        if (value.valueType() == ValueType.TIME_TZ && value.value() instanceof OffsetTime time) {
+            return new BoundValue(ValueType.TIME_TZ, time.withOffsetSameInstant(ZoneOffset.UTC));
+        }
+        return value;
+    }
+
+    @Override
+    public Integer fractionDigits(ResultSetMetaData metaData, int index, ValueType type) {
+        if (metaData == null || !TemporalCells.isTemporal(type)) {
+            return null;
+        }
+        try {
+            int scale = metaData.getScale(index);
+            return scale < 0 ? null : TemporalCells.clampDigits(scale);
+        } catch (SQLException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean isUnreadableSentinel(Object value) {
+        return switch (value) {
+            case LocalDateTime v -> v.equals(LocalDateTime.MAX) || v.equals(LocalDateTime.MIN);
+            case OffsetDateTime v -> v.equals(OffsetDateTime.MAX) || v.equals(OffsetDateTime.MIN);
+            case LocalDate v -> v.equals(LocalDate.MAX) || v.equals(LocalDate.MIN);
+            case LocalTime v -> v.getNano() == 999_999_999;
+            case OffsetTime v -> v.getNano() == 999_999_999;
+            default -> false;
+        };
+    }
+
+    @Override
     public String castToText(String columnRef) {
         return "CAST(" + columnRef + " AS TEXT)";
     }
@@ -81,6 +121,10 @@ public final class PostgresRowDialect implements RowDialect {
     @Override
     public OffsetDateTime readDateTimeTz(ResultSet resultSet, int index) throws SQLException {
         OffsetDateTime value = resultSet.getObject(index, OffsetDateTime.class);
+        if (value != null && isUnreadableSentinel(value)) {
+            // UTC に直す前に確かめる（直すと範囲外になりうる）。呼び出しが DB の文字で読み直す（D-P5）。
+            throw new IllegalStateException("読めない日時の値です");
+        }
         return value == null ? null : value.withOffsetSameInstant(ZoneOffset.UTC);
     }
 

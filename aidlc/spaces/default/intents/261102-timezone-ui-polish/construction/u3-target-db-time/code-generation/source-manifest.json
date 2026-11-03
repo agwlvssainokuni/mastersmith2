@@ -1,0 +1,100 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-target-db-time",
+  "version": 1,
+  "writes": [
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/domain/BoundValue.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/CellValue.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/MysqlFamilyRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/PostgresRowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDialect.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlExecutor.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/RowWriteSqlBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/businessdata/repository/TemporalCells.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilder.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/config/TargetWriteDataSourceConfig.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/MysqlSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/main/java/cherry/mastersmith/targetdb/repository/PostgresSchemaQueries.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/CellValueTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/ColumnValueCodecTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowDialectTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowSqlExecutorTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/RowWriteSqlBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/TemporalCellCostTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/TemporalCellPropertyTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/repository/TemporalCellsTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/testsupport/BusinessDataReadTables.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataReadIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/businessdata/web/AbstractBusinessDataWriteIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/dslmanage/generate/DslTreeBuilderTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfigTest.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbInitFailureIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetDbTimeZoneIT.java"
+    },
+    {
+      "path": "backend/src/test/java/cherry/mastersmith/targetdb/config/TargetWriteDataSourceConfigTest.java"
+    }
+  ]
+}

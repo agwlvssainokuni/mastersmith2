@@ -15,12 +15,14 @@
  */
 package cherry.mastersmith.businessdata.repository;
 
+import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ColumnAccess;
 import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.dsl.domain.SortDirection;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Locale;
@@ -171,6 +173,34 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
     String comparisonTarget(String columnRef, ValueType valueType);
 
     /**
+     * 比べる値（検索・主キー・参照・一意の確かめ）を、比較の左辺（{@link #comparisonTarget}）に合わせて直す（D-P3）。PostgreSQL は
+     * {@code timetz} を UTC に直す。MySQL・MariaDB と、ほかの型は恒等。挿入・更新の {@code SET} の値には通さない。
+     *
+     * @param value 値
+     * @return 比較に使う値
+     */
+    BoundValue comparisonValue(BoundValue value);
+
+    /**
+     * 結果のセルの秒の端数の桁を、結果の列情報から取り出す（BR3.3、SD2.1）。日時・時刻の型でないとき、取れないときは null
+     * （例外を外へ出さない）。
+     *
+     * @param metaData 結果の列情報（null を許す）
+     * @param index 位置（1 始まり）
+     * @param type 受け渡しの型
+     * @return 桁（取れなければ null）
+     */
+    Integer fractionDigits(ResultSetMetaData metaData, int index, ValueType type);
+
+    /**
+     * 型付きで読んだ日時・時刻の値が、読めない値を表す番兵（無限大・24 時など）かを返す（D-P5）。
+     *
+     * @param value 型付きで読んだ値
+     * @return 番兵なら true
+     */
+    boolean isUnreadableSentinel(Object value);
+
+    /**
      * カラムの値を文字にする式（OTHER の読み取り）を返す。
      *
      * @param columnRef 引用したカラムの参照
@@ -249,7 +279,20 @@ public sealed interface RowDialect permits PostgresRowDialect, MysqlFamilyRowDia
             String head = name.substring(0, paren).strip();
             boolean unsigned = head.matches("tinyint|smallint|mediumint|int|integer|bigint")
                     && name.substring(paren).matches("(?s).*\\bunsigned\\b.*");
-            return unsigned ? head + " unsigned" : head;
+            if (unsigned) {
+                return head + " unsigned";
+            }
+            // 桁つきの時差つきの型（timestamp(3) with time zone）は、時差の有無を型の名前の一部として残す（BR3.7）。
+            if (head.equals("timestamp") || head.equals("time")) {
+                String rest = name.substring(paren);
+                if (rest.matches("(?s).*\\bwithout\\s+time\\s+zone\\b.*")) {
+                    return head + " without time zone";
+                }
+                if (rest.matches("(?s).*\\bwith\\s+time\\s+zone\\b.*")) {
+                    return head + " with time zone";
+                }
+            }
+            return head;
         }
         return name.strip();
     }

@@ -365,6 +365,74 @@ class RowSqlExecutorTest {
         });
     }
 
+    private static TableAccessView createdView() {
+        DslTable created = table(
+                "events",
+                false,
+                List.of("code"),
+                column("code").dbType("int").list(true, 1).build(),
+                column("created").dbType("datetime(3)").list(true, 2).build());
+        return BusinessDataDslFixture.view(
+                created,
+                MainPermission.READ,
+                Map.of("code", kind(ValueType.INTEGER), "created", kind(ValueType.DATETIME)));
+    }
+
+    @Test
+    @DisplayName("an unreadable datetime cell is returned as the database text and the row is not failed")
+    void unreadableDateTimeCellKeepsTheRow() throws SQLException {
+        RowKey key = new RowKey(Map.of("code", new BoundValue(ValueType.INTEGER, 7L)));
+        when(firstResult.next()).thenReturn(true, false);
+        when(firstResult.getLong(anyInt())).thenReturn(7L);
+        when(firstResult.getString(anyInt())).thenReturn("0000-00-00 00:00:00");
+
+        RowDetailResult result = executor.detail(session(DatabaseProduct.MYSQL), createdView(), key);
+
+        assertThat(result)
+                .isInstanceOfSatisfying(
+                        RowDetailResult.Found.class,
+                        found -> assertThat(found.row().values().values())
+                                .containsEntry("created", "0000-00-00 00:00:00"));
+    }
+
+    @Test
+    @DisplayName("the result metadata is read once per result and gives the digits of the fraction")
+    void metadataIsReadOncePerResult() throws SQLException {
+        java.sql.ResultSetMetaData metaData = mock(java.sql.ResultSetMetaData.class);
+        when(metaData.getPrecision(anyInt())).thenReturn(23);
+        when(firstResult.getMetaData()).thenReturn(metaData);
+        RowKey key = new RowKey(Map.of("code", new BoundValue(ValueType.INTEGER, 7L)));
+        when(firstResult.next()).thenReturn(true, false);
+        when(firstResult.getLong(anyInt())).thenReturn(7L);
+        when(firstResult.getString(anyInt())).thenReturn("2026-03-08 02:30:00.1");
+
+        RowDetailResult result = executor.detail(session(DatabaseProduct.MYSQL), createdView(), key);
+
+        assertThat(result)
+                .isInstanceOfSatisfying(
+                        RowDetailResult.Found.class,
+                        found -> assertThat(found.row().values().values())
+                                .containsEntry("created", "2026-03-08T02:30:00.100"));
+        verify(firstResult, times(1)).getMetaData();
+    }
+
+    @Test
+    @DisplayName("a result without metadata still reads and leaves the digits free")
+    void nullMetadataLeavesDigitsFree() throws SQLException {
+        RowKey key = new RowKey(Map.of("code", new BoundValue(ValueType.INTEGER, 7L)));
+        when(firstResult.next()).thenReturn(true, false);
+        when(firstResult.getLong(anyInt())).thenReturn(7L);
+        when(firstResult.getString(anyInt())).thenReturn("2026-03-08 02:30:00.1");
+
+        RowDetailResult result = executor.detail(session(DatabaseProduct.MYSQL), createdView(), key);
+
+        assertThat(result)
+                .isInstanceOfSatisfying(
+                        RowDetailResult.Found.class,
+                        found -> assertThat(found.row().values().values())
+                                .containsEntry("created", "2026-03-08T02:30:00.1"));
+    }
+
     @Test
     @DisplayName("MySQL family: a boolean read from tinyint 5 fails the detail as READ_CONVERSION, 0 and 1 are read")
     void booleanTinyintOtherThanZeroAndOne() throws SQLException {

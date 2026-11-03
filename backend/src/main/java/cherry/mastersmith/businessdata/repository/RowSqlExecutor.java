@@ -35,6 +35,7 @@ import cherry.mastersmith.targetdb.domain.TargetReadSession;
 import cherry.mastersmith.targetdb.domain.TargetWriteSession;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -106,8 +107,9 @@ public class RowSqlExecutor {
                     stage = RowQueryStage.EXECUTE;
                     try (ResultSet resultSet = statement.executeQuery()) {
                         stage = RowQueryStage.READ;
+                        Integer[] digits = digitsOf(resultSet, rows.selected(), dialect);
                         while (resultSet.next()) {
-                            RowRead read = readRow(resultSet, rows.selected(), dialect);
+                            RowRead read = readRow(resultSet, rows.selected(), dialect, digits);
                             if (read instanceof RowRead.Unreadable unreadable) {
                                 return new RowSearchResult.Failed(unreadable.failure());
                             }
@@ -144,8 +146,9 @@ public class RowSqlExecutor {
                 stage = RowQueryStage.EXECUTE;
                 try (ResultSet resultSet = statement.executeQuery()) {
                     stage = RowQueryStage.READ;
+                    Integer[] digits = digitsOf(resultSet, rows.selected(), dialect);
                     while (resultSet.next()) {
-                        RowRead read = readRow(resultSet, rows.selected(), dialect);
+                        RowRead read = readRow(resultSet, rows.selected(), dialect, digits);
                         if (read instanceof RowRead.Unreadable unreadable) {
                             return new RowSearchResult.Failed(unreadable.failure());
                         }
@@ -195,7 +198,8 @@ public class RowSqlExecutor {
                     if (!resultSet.next()) {
                         return new RowDetailResult.NotFound();
                     }
-                    RowRead read = readRow(resultSet, query.selected(), dialect);
+                    RowRead read = readRow(
+                            resultSet, query.selected(), dialect, digitsOf(resultSet, query.selected(), dialect));
                     if (read instanceof RowRead.Unreadable unreadable) {
                         return new RowDetailResult.Failed(unreadable.failure());
                     }
@@ -438,7 +442,8 @@ public class RowSqlExecutor {
     }
 
     /** 1行を読む（主キーは切らずに key へ、ほかは上限で切って values へ）。 */
-    private RowRead readRow(ResultSet resultSet, List<RowSqlBuilder.Selected> selected, RowDialect dialect)
+    private RowRead readRow(
+            ResultSet resultSet, List<RowSqlBuilder.Selected> selected, RowDialect dialect, Integer[] digits)
             throws SQLException {
         Map<String, String> key = new LinkedHashMap<>();
         Map<String, String> values = new LinkedHashMap<>();
@@ -449,7 +454,13 @@ public class RowSqlExecutor {
             if (column.column() == null) {
                 continue;
             }
-            CellValue cell = codec.readCell(resultSet, i + 1, column.column().valueType(), column.limit(), dialect);
+            CellValue cell = codec.readCell(
+                    resultSet,
+                    i + 1,
+                    column.column().valueType(),
+                    column.limit(),
+                    dialect,
+                    digits == null ? null : digits[i]);
             if (cell instanceof CellValue.Unreadable unreadable) {
                 return new RowRead.Unreadable(new RowQueryFailure(
                         RowQueryFailureReason.READ_CONVERSION,
@@ -458,19 +469,51 @@ public class RowSqlExecutor {
                         null,
                         unreadable.exceptionClass()));
             }
-            CellValue.Text text = (CellValue.Text) cell;
+            // 日時・時刻の読めない値（Raw）は、そのセルだけ DB が送った文字のまま Text と同じに入れる（BR3.10。短い文字なので切らない）。
+            String cellText = cell instanceof CellValue.Raw raw ? raw.text() : ((CellValue.Text) cell).text();
+            boolean cut = cell instanceof CellValue.Text text && text.truncated();
             if (column.key()) {
                 hasKey = true;
-                key.put(column.column().column(), text.text());
+                key.put(column.column().column(), cellText);
             } else {
-                values.put(column.column().column(), text.text());
-                if (text.truncated()) {
+                values.put(column.column().column(), cellText);
+                if (cut) {
                     truncated.add(column.column().column());
                 }
             }
         }
         return new RowRead.Read(
                 new RowRecord(hasKey ? new RowValues(key, Set.of()) : null, new RowValues(values, truncated)));
+    }
+
+    /**
+     * 選んだカラムの日時・時刻の秒の端数の桁を、結果の列情報から取る（結果の1つにつき1回。日時・時刻の型が無ければ取らない）。列情報が
+     * 無い・桁が得られないときは、その位置は null（桁を固定せずに出す。D-P4）。
+     */
+    private static Integer[] digitsOf(ResultSet resultSet, List<RowSqlBuilder.Selected> selected, RowDialect dialect)
+            throws SQLException {
+        boolean any = false;
+        for (RowSqlBuilder.Selected column : selected) {
+            if (column.column() != null
+                    && TemporalCells.isTemporal(column.column().valueType())) {
+                any = true;
+                break;
+            }
+        }
+        if (!any) {
+            return null;
+        }
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        Integer[] digits = new Integer[selected.size()];
+        for (int i = 0; i < selected.size(); i++) {
+            RowSqlBuilder.Selected column = selected.get(i);
+            if (column.column() != null
+                    && TemporalCells.isTemporal(column.column().valueType())) {
+                digits[i] =
+                        dialect.fractionDigits(metaData, i + 1, column.column().valueType());
+            }
+        }
+        return digits;
     }
 
     /** 1行の読み取りの結果。 */

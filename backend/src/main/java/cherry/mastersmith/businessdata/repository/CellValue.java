@@ -34,6 +34,20 @@ public sealed interface CellValue {
     }
 
     /**
+     * 日時・時刻の型として読めなかったが、DB が送った文字を取り出せた（ゼロの日時・無限大など。そのセルだけ DB の文字のまま返す。BR3.10）。
+     *
+     * @param text DB が送った文字
+     */
+    record Raw(String text) implements CellValue {
+
+        /** 値を出さない。 */
+        @Override
+        public String toString() {
+            return "Raw[value=***]";
+        }
+    }
+
+    /**
      * DSL の型で読めなかった（ゼロ日付・範囲の外の値など。D1: A の 409 {@code BUSINESS_TARGET_DB_MISMATCH}）。
      *
      * @param exceptionClass 例外のクラスの名前（メッセージは持たない）

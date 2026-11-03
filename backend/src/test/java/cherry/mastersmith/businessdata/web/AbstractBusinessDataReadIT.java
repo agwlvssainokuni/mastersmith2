@@ -27,6 +27,7 @@ import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.ODD_BRANCH;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.OTHER_KEY;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.PARTIAL;
+import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.TIMES;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.UUID_1;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.WEIRD;
 import static cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables.ZONED;
@@ -36,7 +37,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import cherry.mastersmith.businessdata.service.BusinessDataReadService;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataReadTables;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataTestApp;
-import cherry.mastersmith.businessdata.testsupport.RandomFieldMask;
 import cherry.mastersmith.common.testsupport.HttpTestClient;
 import cherry.mastersmith.common.testsupport.JsonLogRecords;
 import cherry.mastersmith.common.testsupport.TestDatabase;
@@ -332,7 +332,7 @@ abstract class AbstractBusinessDataReadIT {
                 .containsEntry("flag", "true")
                 .containsEntry("day", "2026-01-15")
                 .containsEntry("at", "2026-03-08T02:30:00.123456")
-                .containsEntry("at_tz", "2026-03-08T01:30:00+00:00")
+                .containsEntry("at_tz", "2026-03-08T01:30:00.000000+00:00")
                 .containsEntry("kind", postgres() ? UUID_1 : "A")
                 .containsEntry(WEIRD, "w1")
                 .containsEntry(MIXED, "M1")
@@ -411,19 +411,62 @@ abstract class AbstractBusinessDataReadIT {
         for (String value : List.of("2026-03-08T01:30:00", "2026-03-08T01:30:00Z", "2026-03-08T10:30:00+09:00")) {
             Map<String, Object> page = search(ITEM, eq("at_tz", value));
             assertThat(ids(page)).as(value).containsExactly("1");
-            assertThat(values(items(page).getFirst())).containsEntry("at_tz", "2026-03-08T01:30:00+00:00");
+            assertThat(values(items(page).getFirst())).containsEntry("at_tz", "2026-03-08T01:30:00.000000+00:00");
         }
     }
 
     @Test
-    @DisplayName("PostgreSQL timetz values are compared and returned in UTC")
+    @DisplayName("PostgreSQL timetz values are compared in UTC and returned with their own offset")
     void timeWithTimeZone() {
         assumeTrue(postgres(), "timetz は PostgreSQL だけ");
 
         Map<String, Object> page = search(ZONED, eq("tt", "01:30:00Z"));
 
         assertThat(ids(page)).containsExactly("1", "2");
-        assertThat(items(page)).allSatisfy(row -> assertThat(values(row)).containsEntry("tt", "01:30:00+00:00"));
+        // 時差は DB の値のまま付ける（UTC に直さない）。比較は UTC にそろえるため、時差の違う行も同じ時点として一致する。
+        assertThat(values(items(page).get(0))).containsEntry("tt", "10:30:00.000000+09:00");
+        assertThat(values(items(page).get(1))).containsEntry("tt", "01:30:00.000000+00:00");
+    }
+
+    @Test
+    @DisplayName("date-time types keep the digits of the column and only an unreadable cell is the database text")
+    void temporalDigitsAndUnreadableCells() {
+        Map<String, Object> good = values(get(TIMES, Map.of("id", "1")));
+        Map<String, Object> bad = values(get(TIMES, Map.of("id", "2")));
+        Map<String, Object> list = search(TIMES, List.of(), null, 1, 20);
+
+        assertThat(ids(list)).as("読めない値があっても一覧は失敗しない").containsExactly("1", "2");
+        assertThat(good)
+                .containsEntry("ts0", "2026-12-31T23:59:59")
+                .containsEntry("ts3", "2026-12-31T23:59:59.120")
+                .containsEntry("ts6", "2024-02-29T00:00:00.000100")
+                .containsEntry("tz3", "2026-12-31T15:00:00.500+00:00")
+                .containsEntry("d", "2026-12-31")
+                .containsEntry("tm3", "23:59:59.100");
+        assertThat(bad).containsEntry("ts6", "2026-12-31T23:59:59.999999");
+        if (postgres()) {
+            assertThat(good)
+                    .containsEntry("tz6", "2025-12-31T15:00:00.000000+00:00")
+                    .containsEntry("tt3", "10:30:00.250+09:00")
+                    .containsEntry("tt6", "10:30:00.000000+05:45");
+            assertThat(bad)
+                    .containsEntry("ts0", "infinity")
+                    .containsEntry("ts3", "-infinity")
+                    .containsEntry("tz3", "infinity")
+                    .containsEntry("tz6", "-infinity")
+                    .containsEntry("d", "infinity")
+                    .containsEntry("tm3", "24:00:00")
+                    .containsEntry("tt3", "24:00:00+00")
+                    .containsEntry("tt6", "23:59:59.999999+00:00");
+        } else {
+            assertThat(good).containsEntry("tz6", "2026-01-01T00:00:00.000000+00:00");
+            assertThat((String) bad.get("ts0")).startsWith("0000-00-00");
+            assertThat((String) bad.get("ts3")).startsWith("0000-00-00");
+            assertThat((String) bad.get("tz3")).startsWith("0000-00-00");
+            assertThat((String) bad.get("tz6")).startsWith("0000-00-00");
+            assertThat(bad).containsEntry("d", "0000-00-00");
+            assertThat((String) bad.get("tm3")).startsWith("838:59:59");
+        }
     }
 
     // ── 並べ替えとページ ──
@@ -518,26 +561,25 @@ abstract class AbstractBusinessDataReadIT {
     }
 
     @Test
-    @DisplayName("MySQL and MariaDB zero dates and out-of-range times are 409 MISMATCH logged as READ_CONVERSION")
+    @DisplayName(
+            "MySQL and MariaDB zero dates and out-of-range times are returned as the database text for that cell only")
     void unreadableStoredValues(CapturedOutput output) {
         assumeTrue(!postgres(), "ゼロ日付と 838 時間は MySQL・MariaDB だけ");
 
-        HttpResponse<String> list = searchResponse(LEGACY, List.of(), null, 1, 20);
-        HttpResponse<String> zeroDate = getResponse(LEGACY, Map.of("id", "1"));
-        HttpResponse<String> longTime = getResponse(LEGACY, Map.of("id", "2"));
+        Map<String, Object> list = search(LEGACY, List.of(), null, 1, 20);
+        Map<String, Object> zeroDate = values(get(LEGACY, Map.of("id", "1")));
+        Map<String, Object> longTime = values(get(LEGACY, Map.of("id", "2")));
 
-        assertProblem(list, 409, "BUSINESS_TARGET_DB_MISMATCH");
-        assertProblem(zeroDate, 409, "BUSINESS_TARGET_DB_MISMATCH");
-        assertProblem(longTime, 409, "BUSINESS_TARGET_DB_MISMATCH");
-        // 乱数のトレースID と type の URL の番号に 838 が偶然に含まれうるため、伏せてから確かめる（U3 の B6、N-32）。
-        assertThat(RandomFieldMask.mask(list.body() + zeroDate.body() + longTime.body()))
-                .doesNotContain("0000-00-00")
-                .doesNotContain("838");
+        // 読めないセルだけ DB の文字のまま（BR3.10）。同じ行のほかのセルは普通に読める。行も一覧も失敗しない。
+        assertThat(ids(list)).containsExactly("1", "2");
+        assertThat(zeroDate).containsEntry("d", "0000-00-00").containsEntry("tm", "10:00:00");
+        assertThat(longTime).containsEntry("d", "2026-01-01").containsEntry("tm", "838:59:59");
+        // 読めない値で READ_CONVERSION の警告は出ない（行が失敗しない）。
         List<Map<String, Object>> warns = JsonLogRecords.parse(output.getAll()).stream()
                 .filter(r -> BusinessDataReadService.class.getName().equals(r.get("logger")))
                 .filter(r -> "READ_CONVERSION".equals(r.get("reason")))
                 .toList();
-        assertThat(warns).hasSizeGreaterThanOrEqualTo(3);
+        assertThat(warns).isEmpty();
     }
 
     @Test

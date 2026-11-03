@@ -101,7 +101,7 @@ final class RowWriteSqlBuilder {
                     .append(dialect.comparisonTarget(
                             column(value.column()), value.value().valueType()))
                     .append(" = ?");
-            bound.add(value.value());
+            bound.add(dialect.comparisonValue(value.value()));
             if (self != null) {
                 term.append(" AND NOT (").append(keyCondition(self, bound)).append(')');
             }
@@ -132,7 +132,7 @@ final class RowWriteSqlBuilder {
                 values.stream()
                         .filter(v -> v.column().equals(name) && v.value().value() != null)
                         .findFirst()
-                        .ifPresent(v -> keyValues.add(v.value()));
+                        .ifPresent(v -> keyValues.add(dialect.comparisonValue(v.value())));
             }
             if (keyValues.size() != key.columns().size()) {
                 continue;
@@ -233,7 +233,7 @@ final class RowWriteSqlBuilder {
         for (Map.Entry<String, BoundValue> entry : key.values().entrySet()) {
             terms.add(dialect.comparisonTarget(
                             column(entry.getKey()), entry.getValue().valueType()) + " = ?");
-            bound.add(entry.getValue());
+            bound.add(dialect.comparisonValue(entry.getValue()));
         }
         return terms.toString();
     }

@@ -128,6 +128,24 @@ class RowWriteSqlBuilderTest {
     }
 
     @Test
+    @DisplayName("a timetz key is compared in UTC on PostgreSQL while a value to set keeps its offset")
+    void timetzComparisonOnly() {
+        java.time.OffsetTime tokyo = java.time.OffsetTime.of(10, 30, 0, 0, java.time.ZoneOffset.ofHours(9));
+        RowKey timeKey = new RowKey(Map.of("id", new BoundValue(ValueType.TIME_TZ, tokyo)));
+
+        RowWriteSqlBuilder.Statement delete = postgres().delete(timeKey);
+        RowWriteSqlBuilder.Statement insert =
+                postgres().insert(List.of(new TypedValue("code", new BoundValue(ValueType.TIME_TZ, tokyo))));
+        RowWriteSqlBuilder.Statement mysqlDelete =
+                new RowWriteSqlBuilder(RowDialect.of(DatabaseProduct.MYSQL), view(ITEM)).delete(timeKey);
+
+        assertThat(delete.values().get(0).value())
+                .isEqualTo(java.time.OffsetTime.of(1, 30, 0, 0, java.time.ZoneOffset.UTC));
+        assertThat(insert.values().get(0).value()).isEqualTo(tokyo);
+        assertThat(mysqlDelete.values().get(0).value()).isEqualTo(tokyo);
+    }
+
+    @Test
     @DisplayName("the delete points at the row by the key")
     void delete() {
         RowWriteSqlBuilder.Statement delete = postgres().delete(KEY);

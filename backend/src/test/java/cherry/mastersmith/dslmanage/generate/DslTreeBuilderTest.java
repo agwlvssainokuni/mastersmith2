@@ -525,4 +525,56 @@ class DslTreeBuilderTest {
         assertThat(DslTreeBuilder.truncate(null)).isNull();
         assertThat(DslTreeBuilder.truncate("短い")).isEqualTo("短い");
     }
+
+    private static Integer generatedPrecision(DatabaseProduct product, String typeName, Integer precision) {
+        TargetSchema schema = new TargetSchema(
+                product,
+                "sales",
+                List.of(table(
+                        "t",
+                        null,
+                        List.of("id"),
+                        List.of(),
+                        notNull("id", INT),
+                        nullable("c", new TargetDbType(typeName, null, precision, null)))));
+        return model(schema)
+                .schema()
+                .tables()
+                .get("t")
+                .columns()
+                .get("c")
+                .dbType()
+                .precision();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0} {1}({2}) -> {3}")
+    @org.junit.jupiter.params.provider.CsvSource(
+            nullValues = "null",
+            value = {
+                "POSTGRESQL, timestamp, 6, null",
+                "POSTGRESQL, timestamp, 3, 3",
+                "POSTGRESQL, timestamp, 0, 0",
+                "POSTGRESQL, timestamptz, 6, null",
+                "POSTGRESQL, time, 3, 3",
+                "POSTGRESQL, timetz, 6, null",
+                "MYSQL, datetime, 0, null",
+                "MYSQL, datetime, 3, 3",
+                "MYSQL, timestamp, 6, 6",
+                "MARIADB, time, 0, null",
+                "MARIADB, time, 6, 6",
+                "MYSQL, datetime, null, null",
+                "POSTGRESQL, date, 0, null",
+                "POSTGRESQL, interval, 6, null"
+            })
+    @DisplayName("the fraction digits of date-time columns are written only when they differ from the product default")
+    void dateTimePrecision(DatabaseProduct product, String typeName, Integer precision, Integer expected) {
+        assertThat(generatedPrecision(product, typeName, precision)).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("numeric precision is written as before")
+    void numericPrecisionIsKept() {
+        assertThat(generatedPrecision(DatabaseProduct.POSTGRESQL, "numeric", 10))
+                .isEqualTo(10);
+    }
 }

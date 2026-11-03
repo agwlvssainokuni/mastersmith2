@@ -340,6 +340,30 @@ abstract class AbstractBusinessDataWriteIT {
     }
 
     @Test
+    @DisplayName("date-time values keep six digits, offsets with minutes are moved to UTC and unreadable forms are 400")
+    void temporalWrites() {
+        ok(update(ITEM, values("id", "1"), values("at", "2026-12-31T23:59:59.123456")), 200);
+        assertThat(text(ITEM, "at", "id = 1")).isEqualTo("2026-12-31 23:59:59.123456");
+
+        // 読んだ文字をそのまま送り返しても、保存した値は変わらない。
+        ok(update(ITEM, values("id", "1"), values("at", "2026-12-31T23:59:59.123456")), 200);
+        assertThat(text(ITEM, "at", "id = 1")).isEqualTo("2026-12-31 23:59:59.123456");
+
+        // 分の端数の時差は UTC にそろえて保存する（10:00+05:45 は 04:15 UTC）。時差の無い文字は UTC とみなす。
+        ok(update(ITEM, values("id", "1"), values("at_tz", "2026-03-08T10:00:00+05:45")), 200);
+        String instant = postgres() ? "TIMESTAMPTZ '2026-03-08 04:15:00+00'" : "'2026-03-08 04:15:00'";
+        assertThat(tables.count(ITEM, "id = 1 AND at_tz = " + instant)).isEqualTo(1L);
+        ok(update(ITEM, values("id", "2"), values("at_tz", "2026-03-08T04:15:00")), 200);
+        assertThat(tables.count(ITEM, "id = 2 AND at_tz = " + instant)).isEqualTo(1L);
+
+        // 読めない形は 400 で、保存した値は変わらない。
+        for (String bad : List.of("0000-00-00 00:00:00", "2026-12-31T24:00:00", "infinity", "'; DROP TABLE x; --")) {
+            problem(update(ITEM, values("id", "1"), values("at", bad)), 400, "VALIDATION_FAILED");
+        }
+        assertThat(text(ITEM, "at", "id = 1")).isEqualTo("2026-12-31 23:59:59.123456");
+    }
+
+    @Test
     @DisplayName("an empty string and null are stored as an empty string and NULL")
     void emptyAndNull() {
         ok(update(ITEM, values("id", "2"), values("note", "")), 200);

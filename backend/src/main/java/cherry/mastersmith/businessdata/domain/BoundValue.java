@@ -22,7 +22,8 @@ import java.util.Objects;
  *
  * <p>値の Java の型は受け渡しの型ごとに決まる: STRING・OTHER は {@code String}、INTEGER は {@code Long}、BIG_INTEGER・DECIMAL は
  * {@code BigDecimal}、BOOLEAN は {@code Boolean}、DATE は {@code LocalDate}、DATETIME は {@code LocalDateTime}、TIME は
- * {@code LocalTime}、DATETIME_TZ は UTC の {@code OffsetDateTime}、TIME_TZ は UTC の {@code OffsetTime}。値を読むのは
+ * {@code LocalTime}、DATETIME_TZ は UTC の {@code OffsetDateTime}、TIME_TZ は要求の時差を保つ {@code OffsetTime}
+ * （比較に使うときだけ方言が UTC に直す）。値を読むのは
  * {@code ColumnValueCodec} の1か所だけ。
  *
  * <p>文字列にするときは値を伏せる（BR10.1）。

@@ -109,10 +109,9 @@ public class TargetWriteDataSourceConfig {
         config.setValidationTimeout(properties.connectTimeout().toMillis());
         // 起動時に接続しない（プールは初めて使うときに始まる）。
         config.setInitializationFailTimeout(-1);
-        if (product != DatabaseProduct.POSTGRESQL) {
-            // 接続を作るときに1回だけ、タイムゾーンと sql_mode を付ける（Q3: A・Q6: A。貸すたびには流さない）。
-            config.setConnectionInitSql(TargetDataSourceConfig.WRITE_CONNECTION_INIT_SQL);
-        }
+        // 接続を作るときに1回だけ、タイムゾーン（MySQL・MariaDB は sql_mode も）を付ける（Q3: A・Q6: A。貸すたびには流さない）。
+        config.setConnectionInitSql(
+                TargetDataSourceConfig.connectionInitSql(product, TargetDataSourceConfig.ConnectionPurpose.WRITE));
         driverProperties(product, properties.connectTimeout(), usable.queryTimeout())
                 .forEach(config::addDataSourceProperty);
         return config;

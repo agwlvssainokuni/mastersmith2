@@ -15,11 +15,13 @@
  */
 package cherry.mastersmith.businessdata.repository;
 
+import cherry.mastersmith.businessdata.domain.BoundValue;
 import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.dsl.domain.SortDirection;
 import cherry.mastersmith.targetdb.domain.DatabaseProduct;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -73,6 +75,38 @@ public final class MysqlFamilyRowDialect implements RowDialect {
     @Override
     public String comparisonTarget(String columnRef, ValueType valueType) {
         return columnRef;
+    }
+
+    @Override
+    public BoundValue comparisonValue(BoundValue value) {
+        return value;
+    }
+
+    @Override
+    public Integer fractionDigits(ResultSetMetaData metaData, int index, ValueType type) {
+        if (metaData == null || !TemporalCells.isTemporal(type)) {
+            return null;
+        }
+        try {
+            if (product == DatabaseProduct.MARIADB) {
+                int scale = metaData.getScale(index);
+                return scale < 0 ? null : TemporalCells.clampDigits(scale);
+            }
+            // MySQL は桁を getPrecision に載せる（日時 19+桁+1、時刻 10+桁+1。桁 0 は小数点なしで 19・10。SD2.1）。
+            int precision = metaData.getPrecision(index);
+            int base = type == ValueType.TIME || type == ValueType.TIME_TZ ? 10 : 19;
+            if (precision < base) {
+                return null;
+            }
+            return TemporalCells.clampDigits(precision == base ? 0 : precision - base - 1);
+        } catch (SQLException | RuntimeException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean isUnreadableSentinel(Object value) {
+        return false;
     }
 
     @Override

@@ -27,6 +27,8 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.time.Duration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.mock.env.MockEnvironment;
 
@@ -176,8 +178,7 @@ class TargetDataSourceConfigTest {
     }
 
     @Test
-    @DisplayName(
-            "the read pool of MySQL and MariaDB sets the session time zone once per connection, PostgreSQL does not")
+    @DisplayName("the read pool of every product sets the session time zone to UTC once per connection")
     void readConnectionInitSql() {
         assertThat(TargetDataSourceConfig.hikariConfig(usable("mysql", "3306")).getConnectionInitSql())
                 .isEqualTo("SET time_zone = '+00:00'")
@@ -187,10 +188,29 @@ class TargetDataSourceConfigTest {
                 .isEqualTo(TargetDataSourceConfig.READ_CONNECTION_INIT_SQL);
         assertThat(TargetDataSourceConfig.hikariConfig(usable("postgresql", "5432"))
                         .getConnectionInitSql())
-                .isNull();
+                .isEqualTo("SET TIME ZONE 'UTC'")
+                .isEqualTo(TargetDataSourceConfig.POSTGRES_CONNECTION_INIT_SQL);
         assertThat(TargetDataSourceConfig.READ_CONNECTION_INIT_SQL)
                 .as("読み取りのプールには sql_mode を付けない（D5: A）")
                 .doesNotContain("sql_mode");
+    }
+
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource(
+            delimiter = '|',
+            quoteCharacter = '"',
+            value = {
+                "POSTGRESQL | READ | SET TIME ZONE 'UTC'",
+                "POSTGRESQL | WRITE | SET TIME ZONE 'UTC'",
+                "MYSQL | READ | SET time_zone = '+00:00'",
+                "MARIADB | READ | SET time_zone = '+00:00'",
+                "MYSQL | WRITE | SET time_zone = '+00:00', sql_mode = CONCAT_WS(',', NULLIF(@@sql_mode, ''), 'STRICT_ALL_TABLES')",
+                "MARIADB | WRITE | SET time_zone = '+00:00', sql_mode = CONCAT_WS(',', NULLIF(@@sql_mode, ''), 'STRICT_ALL_TABLES')"
+            })
+    @DisplayName("the init statement is looked up from one table by product and purpose and is a constant")
+    void connectionInitSqlTable(
+            DatabaseProduct product, TargetDataSourceConfig.ConnectionPurpose purpose, String expected) {
+        assertThat(TargetDataSourceConfig.connectionInitSql(product, purpose)).isEqualTo(expected);
     }
 
     @Test

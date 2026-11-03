@@ -71,6 +71,9 @@ public final class BusinessDataReadTables {
     /** PostgreSQL の {@code timetz} の表。 */
     public static final String ZONED = "zoned";
 
+    /** 日時・時刻の型 × 桁 0・3・6 と、読めない値（製品ごと）の表（Intent 261102-timezone-ui-polish の U3）。 */
+    public static final String TIMES = "times";
+
     /** 名前に引用符・{@code ;}・{@code --}・バッククォート・改行を含むカラム。 */
     public static final String WEIRD = "q'u\"o;t--`e\nx";
 
@@ -189,10 +192,28 @@ public final class BusinessDataReadTables {
         sql.add("CREATE TABLE " + t(PARTIAL) + " (id INTEGER NOT NULL PRIMARY KEY, v VARCHAR(20) NULL)");
         sql.add("INSERT INTO " + t(PARTIAL) + " (id, v) VALUES (1, 'p')");
         if (postgres()) {
+            sql.add("CREATE TABLE " + t(TIMES) + " (id INTEGER NOT NULL PRIMARY KEY, ts0 TIMESTAMP(0) NULL,"
+                    + " ts3 TIMESTAMP(3) NULL, ts6 TIMESTAMP(6) NULL, tz3 TIMESTAMPTZ(3) NULL,"
+                    + " tz6 TIMESTAMPTZ(6) NULL, d DATE NULL, tm3 TIME(3) NULL, tt3 TIMETZ(3) NULL,"
+                    + " tt6 TIMETZ(6) NULL)");
+            sql.add("INSERT INTO " + t(TIMES) + " VALUES (1, '2026-12-31 23:59:59', '2026-12-31 23:59:59.120',"
+                    + " '2024-02-29 00:00:00.000100', '2026-12-31 15:00:00.500+00', '2026-01-01 00:00:00+09',"
+                    + " '2026-12-31', '23:59:59.100', '10:30:00.250+09', '10:30:00+05:45')");
+            sql.add("INSERT INTO " + t(TIMES) + " VALUES (2, 'infinity', '-infinity', '2026-12-31 23:59:59.999999',"
+                    + " 'infinity', '-infinity', 'infinity', '24:00:00', '24:00:00+00', '23:59:59.999999+00')");
             sql.add("CREATE TABLE " + t(ZONED) + " (id INTEGER NOT NULL PRIMARY KEY, tt TIMETZ NULL)");
             sql.add("INSERT INTO " + t(ZONED) + " (id, tt) VALUES (1, '10:30:00+09'), (2, '01:30:00+00'),"
                     + " (3, '01:30:00-05')");
         } else {
+            sql.add("CREATE TABLE " + t(TIMES) + " (id INTEGER NOT NULL PRIMARY KEY, ts0 DATETIME(0) NULL,"
+                    + " ts3 DATETIME(3) NULL, ts6 DATETIME(6) NULL, tz3 TIMESTAMP(3) NULL,"
+                    + " tz6 TIMESTAMP(6) NULL, d DATE NULL, tm3 TIME(3) NULL)");
+            sql.add("INSERT INTO " + t(TIMES) + " VALUES (1, '2026-12-31 23:59:59', '2026-12-31 23:59:59.120',"
+                    + " '2024-02-29 00:00:00.000100', '2026-12-31 15:00:00.500', '2026-01-01 00:00:00',"
+                    + " '2026-12-31', '23:59:59.100')");
+            sql.add("INSERT INTO " + t(TIMES) + " VALUES (2, '0000-00-00 00:00:00', '0000-00-00 00:00:00.000',"
+                    + " '2026-12-31 23:59:59.999999', '0000-00-00 00:00:00.000', '0000-00-00 00:00:00.000000',"
+                    + " '0000-00-00', '838:59:59.000')");
             sql.add("CREATE TABLE " + t(LEGACY) + " (id INTEGER NOT NULL PRIMARY KEY, d DATE NULL, tm TIME NULL)");
             sql.add("INSERT INTO " + t(LEGACY) + " (id, d, tm) VALUES (1, '0000-00-00', '10:00:00')");
             sql.add("INSERT INTO " + t(LEGACY) + " (id, d, tm) VALUES (2, '2026-01-01', '838:59:59')");
@@ -359,6 +380,36 @@ public final class BusinessDataReadTables {
                         false,
                         List.of("id"),
                         column("id").dbType(pg ? "int4" : "int").build()));
+        List<DslColumn> timeColumns = new java.util.ArrayList<>();
+        timeColumns.add(column("id").dbType(pg ? "int4" : "int").list(true, 1).build());
+        String[][] timeTypes = pg
+                ? new String[][] {
+                    {"ts0", "timestamp(0)"},
+                    {"ts3", "timestamp(3)"},
+                    {"ts6", "timestamp(6)"},
+                    {"tz3", "timestamptz(3)"},
+                    {"tz6", "timestamptz(6)"},
+                    {"d", "date"},
+                    {"tm3", "time(3)"},
+                    {"tt3", "timetz(3)"},
+                    {"tt6", "timetz(6)"}
+                }
+                : new String[][] {
+                    {"ts0", "datetime(0)"},
+                    {"ts3", "datetime(3)"},
+                    {"ts6", "datetime(6)"},
+                    {"tz3", "timestamp(3)"},
+                    {"tz6", "timestamp(6)"},
+                    {"d", "date"},
+                    {"tm3", "time(3)"}
+                };
+        for (int i = 0; i < timeTypes.length; i++) {
+            timeColumns.add(column(timeTypes[i][0])
+                    .dbType(timeTypes[i][1])
+                    .list(true, i + 2)
+                    .build());
+        }
+        tables.put(TIMES, table(TIMES, false, List.of("id"), timeColumns.toArray(DslColumn[]::new)));
         if (pg) {
             tables.put(
                     ZONED,
