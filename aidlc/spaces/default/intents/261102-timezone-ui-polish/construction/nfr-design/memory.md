@@ -8,6 +8,8 @@
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
+- 2026-11-03T13:50:00Z [unit u5-menu-icons-home] — 機能設計 D5（DSL にテーブルが見つからないとき種類は `null`）は、メニューの木と種類の操作が同じモデルから作られるため、サービスの経路では起こらない防御の決まりと分かった。NFR 要件のレビュー R-01 の「`null` に届く状況を作れるテスト」は、`MenuFilterTest`（`null` を返す操作）と `NavigationDslSwapIT`（木と種類がずれない）に置いた。機能設計は書き換えず、logical-components.md の6節に記録した。
+- 2026-11-03T13:50:00Z [unit u5-menu-icons-home] — NFR 要件の数字（追加分 22・18 バイト）は実際の 20・19・17 バイトと違うため、performance-design.md の 1.3 を正とした。承認済みの NFR 要件は書き換えず、差を記録した。
 - 2026-11-03T00:00:00Z — 承認済みの tech-stack-decisions.md の「時差は longOffset」との差（時差は壁時計の差から求める。Q1: A）と、表示の年が範囲外のときの unreadable（BR1.5 の拡張。Q2: A）、Firefox・Safari の未確認（Q3: A）を、logical-components.md の「承認済みの記録との差」D1〜D3 に記録した（承認済みの文書は書き換えていない）。
 
 ## Tradeoffs
@@ -16,4 +18,5 @@
 
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
+- 2026-11-03T13:50:00Z [unit u5-menu-icons-home] — 追跡の道具が、NFR 要件の文書が前の Intent の番号として引いた NFR2.3・NFR2.5 を上流の ID に数えた（N/A にして理由を書いた）。次の単位以降、前の Intent の番号を引くときは「前の Intent の」と書いても道具には区別されないため、文書の中では引かないほうがよい。
 - 2026-11-03T00:00:00Z — Firefox・Safari での Intl の値は未確認（Unverified）。持ち主の段は Deployment Execution のスモークテスト。

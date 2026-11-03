@@ -11,6 +11,9 @@
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
+- 2026-11-03T13:45:00Z [unit u5-menu-icons-home] — 質問は作らなかった（機能設計と前の Intent の目標で、性能・セキュリティ・技術の選択がすべて決まっているため）。メニューの API の目標は前の Intent の p95 1 秒を変えず、画面の描画は時間でなく「訪問する項目の数 ≦ 項目の数」で決定的に確かめる形にした。
+- 2026-11-03T13:45:00Z [unit u5-menu-icons-home] — 機能設計のレビュー役の指摘（D24: 未ログインは見つからないでなくログイン画面へ）は、機能設計を書き換えず、セキュリティの要件の「上流との差」に実際の動きに合わせて記録した。
+- 2026-11-03T13:45:00Z [unit u5-menu-icons-home] — 本文を書く前の `unit start` を、またこの単位の機能設計で忘れ、NFR Requirements でも本文の後になった（上の U1 の記録と同じ失敗）。次の段からは、本文の前に開始を記録する。
 - 2026-11-03T00:00:00Z — 変換にライブラリを足さず `Intl` だけにした（Q1: A）。依存・ライセンス・脆弱性検査の対象が増えない代わりに、ブラウザごとの IANA の版の違いを自分たちで確かめる必要が残る（NFR Design の捨ての試し）。
 
 ## Open questions

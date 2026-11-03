@@ -1,0 +1,21 @@
+{
+  "stage": "nfr-requirements",
+  "unit": "u5-menu-icons-home",
+  "upstream_ids": ["NFR1.1","NFR1.2","NFR1.3","NFR2.1","NFR2.2","NFR3.1","NFR3.2","NFR3.3","NFR4.1","NFR4.2","NFR5.1","NFR5.2","NFR5.3","NFR6.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "delivered by u6-app-icon-assets (SVG safety; U5 only uses the AppIcon component)" },
+    { "id": "NFR1.2", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR1.3", "status": "OK", "target": "NFR1.3.1, NFR1.3.2, NFR1.3.3, NFR1.3.4, NFR1.3.5" },
+    { "id": "NFR2.1", "status": "OK", "target": "NFR2.1.1, NFR2.1.2 (menu response only; no date-time conversion in this unit)" },
+    { "id": "NFR2.2", "status": "OK", "target": "NFR2.2.1, NFR2.2.2, NFR2.2.3" },
+    { "id": "NFR3.1", "status": "OK", "target": "NFR3.1.1, NFR3.1.2" },
+    { "id": "NFR3.2", "status": "OK", "target": "NFR3.2.1" },
+    { "id": "NFR3.3", "status": "N/A", "target": "delivered by u2-display-time-zone" },
+    { "id": "NFR4.1", "status": "N/A", "target": "no table or column added in this unit (delivered by u2-display-time-zone)" },
+    { "id": "NFR4.2", "status": "OK", "target": "NFR4.2.1" },
+    { "id": "NFR5.1", "status": "N/A", "target": "no date-time handling in this unit (delivered by u3-target-db-time and u4-business-data-time)" },
+    { "id": "NFR5.2", "status": "N/A", "target": "no date-time handling in this unit (delivered by units that handle date-time)" },
+    { "id": "NFR5.3", "status": "OK", "target": "NFR5.3.1" },
+    { "id": "NFR6.1", "status": "OK", "target": "NFR6.1.1" }
+  ]
+}

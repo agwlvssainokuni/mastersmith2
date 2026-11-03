@@ -1,0 +1,15 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u5-menu-icons-home",
+  "upstream_ids": ["NFR2.1","NFR2.2","NFR1.3","NFR3.1","NFR3.2","NFR4.2","NFR5.3","NFR6.1"],
+  "coverage": [
+    { "id": "NFR1.3", "status": "OK", "target": "cicd-pipeline.md section 2 (stage 5 unit tests and stage 6 integration tests: NavigationApiIT, NavigationDslSwapIT, NavigationSecretLeakIT, admin 403 tests unchanged) and section 3.3 S5-S6; monitoring-design.md Logs (toString unchanged)" },
+    { "id": "NFR2.1", "status": "OK", "target": "monitoring-design.md Metrics (navigation p95 <= 1 s unchanged, 5xx 0) and cicd-pipeline.md section 4 H1 (k6 navMenu run unchanged, owner build-and-test); infrastructure-specification.md Infrastructure Services (no new query, no cache)" },
+    { "id": "NFR2.2", "status": "OK", "target": "infrastructure-specification.md Deployment (no new resource, no new API, fixed-size inline logo) and cicd-pipeline.md section 2 stage 5 (HomePage no-new-request test) and section 3.3 S1" },
+    { "id": "NFR3.1", "status": "OK", "target": "cicd-pipeline.md section 1 (E2E 160 extended, run before integration) and section 4 H3 (axe zero violations recorded); section 3.3 S4 (narrow width)" },
+    { "id": "NFR3.2", "status": "OK", "target": "cicd-pipeline.md section 2 stage 5 (vitest-axe per component, decorative icons) and section 3.3 S1-S4" },
+    { "id": "NFR4.2", "status": "OK", "target": "infrastructure-specification.md Deployment (additive response, no DB or settings change, rollback by image only) and cicd-pipeline.md section 3.2 (rollback)" },
+    { "id": "NFR5.3", "status": "OK", "target": "cicd-pipeline.md section 1 (E2E row: no new flow, rewrites of 030, 090, 130, 160 not counted, run before integration) and section 4 H2" },
+    { "id": "NFR6.1", "status": "N/A", "target": "screen text (ja/en) needs no infrastructure; it is verified by messages.test.ts and HomePage tests in cicd-pipeline.md section 2 stage 5" }
+  ]
+}
