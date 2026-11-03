@@ -17,7 +17,7 @@
 // フロントエンドのソースファイルと perf/ の Node のスクリプトの先頭に Apache License 2.0 のヘッダーがあるかを確かめる。
 // ヘッダーのひな形はリポジトリのルートの config/license-header.txt（Spotless と共通）。
 // - frontend/ の TS・TSX・JS・MJS・CJS・CSS: `/* ... */` の形（`/** ... */` は認めない）
-// - frontend/ の HTML: `<!-- ... -->` の形
+// - frontend/ の HTML・SVG: `<!-- ... -->` の形（SVG は XML 宣言を先頭に置かない）
 // - perf/ の MJS・JS: `/* ... */` の形（.sh・.md・.env などは対象にしない）
 // ヘッダーが無い・形が違うファイルを、リポジトリのルートからの相対のパスで示して、終了コード 1 で失敗させる。
 import { readFileSync, readdirSync, statSync } from 'node:fs'
@@ -29,9 +29,15 @@ const repoRoot = path.resolve(frontendRoot, '..')
 const perfRoot = path.join(repoRoot, 'perf')
 const templatePath = path.join(repoRoot, 'config', 'license-header.txt')
 
-const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', 'playwright-report', 'test-results'])
+export const SKIP_DIRS = new Set([
+  'node_modules',
+  'dist',
+  'coverage',
+  'playwright-report',
+  'test-results',
+])
 const BLOCK_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs', '.css'])
-const HTML_EXTENSIONS = new Set(['.html'])
+const HTML_EXTENSIONS = new Set(['.html', '.svg'])
 const PERF_EXTENSIONS = new Set(['.mjs', '.js'])
 
 /**
@@ -73,7 +79,7 @@ export function checkContent(fileName, content, expected) {
  * @param {(ext: string) => boolean} accepts 対象にする拡張子か
  * @returns {string[]} ファイルの絶対パス
  */
-function collectFiles(dir, accepts) {
+export function collectFiles(dir, accepts) {
   const result = []
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name) || name.startsWith('.')) {

@@ -400,6 +400,38 @@ tasks.register("verifyDslSchemaInWar") {
     }
 }
 
+// frontend/public/ の素材（アイコン・favicon）が WAR の static/ に同じ内容で入っていることを確かめる（Intent 261102-timezone-ui-polish の U6）。
+// 素材が WAR に入らないと、/favicon.ico は 404 でなく index.html（HTML）を 200 で返し、サーバーは気づかない。
+// 素材の名前は書かず、public/ の下のすべてのファイル（再帰）を比べる。public/ が空でも失敗する。
+val faviconSourceDir: Directory = rootProject.layout.projectDirectory.dir("frontend/public")
+
+tasks.register("verifyFaviconInWar") {
+    description = "実行可能 WAR の static/ に、frontend/public/ の素材がすべて同じ内容で入っていることを確かめる。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(tasks.bootWar)
+    val war = tasks.bootWar.flatMap { it.archiveFile }
+    inputs.file(war)
+    inputs.dir(faviconSourceDir)
+    doLast {
+        val root = faviconSourceDir.asFile
+        val sources = root.walkTopDown().filter { it.isFile }.toList()
+        if (sources.isEmpty()) {
+            throw GradleException("${root.path} が空です。素材（アイコン・favicon）を置いてください。")
+        }
+        ZipFile(war.get().asFile).use { zip ->
+            for (source in sources) {
+                val relative = source.relativeTo(root).invariantSeparatorsPath
+                val entryName = "WEB-INF/classes/static/$relative"
+                val entry = zip.getEntry(entryName) ?: throw GradleException("WAR に $entryName がありません。")
+                val actual = zip.getInputStream(entry).use { it.readBytes() }
+                if (!actual.contentEquals(source.readBytes())) {
+                    throw GradleException("WAR の $entryName が ${source.path} と違います。")
+                }
+            }
+        }
+    }
+}
+
 // ---- 依存関係の固定の更新 ----
 
 tasks.register("resolveAndLockAll") {

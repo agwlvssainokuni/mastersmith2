@@ -16,6 +16,8 @@
     "lint": "oxlint . && eslint .",
     "lint:css": "stylelint --allow-empty-input \"src/**/*.css\"",
     "license:check": "node scripts/check-license-header.mjs",
+    "svg:check": "node scripts/check-svg-safety.mjs",
+    "dist:check": "node scripts/check-dist-assets.mjs",
     "bundle:size": "node scripts/check-bundle-size.mjs",
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run",
     "test:coverage": "NODE_OPTIONS=--no-experimental-webstorage vitest run --coverage",

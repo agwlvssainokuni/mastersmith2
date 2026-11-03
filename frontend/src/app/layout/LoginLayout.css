@@ -32,6 +32,13 @@
   justify-content: flex-end;
 }
 
+/* 飾りのアイコン。色は周りの文字（アプリ名）と同じ。独自の色は足さない。 */
+.login-layout-app-icon {
+  margin: 0;
+  color: var(--color-text-muted);
+  line-height: 0;
+}
+
 .login-layout-app-name {
   margin: 0;
   color: var(--color-text-muted);

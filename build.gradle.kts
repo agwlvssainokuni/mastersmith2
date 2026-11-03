@@ -185,6 +185,8 @@ val frontendLint = npmScript("frontendLint", "画面のリンタ（oxlint・ESLi
 val frontendLintCss = npmScript("frontendLintCss", "画面の CSS のリンタ（Stylelint）を実行する。", "lint:css")
 val frontendLicenseCheck =
     npmScript("frontendLicenseCheck", "画面のファイルのライセンスヘッダーを確かめる。", "license:check")
+val frontendSvgCheck =
+    npmScript("frontendSvgCheck", "画面の SVG の中身を確かめる（許可リスト）。", "svg:check")
 val frontendTypecheck =
     npmScript("frontendTypecheck", "画面の型を検査する（tsc --noEmit）。", "typecheck") { dependsOn(vendorBuild) }
 val frontendBuild =
@@ -192,6 +194,8 @@ val frontendBuild =
         group = "build"
         dependsOn(vendorBuild)
         inputs.dir(frontendDir.dir("src"))
+        // public/ の素材（アイコン・favicon）は dist のルートへ複写される。素材だけを変えても作り直す（Intent 261102-timezone-ui-polish の U6）。
+        inputs.dir(frontendDir.dir("public"))
         // make-you-chic-ui の成果物（file: の依存で画面に同梱される）。固定先を変えると作り直す
         // （Intent 260925-user-management の B4 で、固定先の更新の後も UP-TO-DATE になる抜けを直した）。
         inputs.dir(vendorDir.dir("packages/make-you-chic-ui/dist"))
@@ -203,6 +207,12 @@ val frontendBuild =
         )
         outputs.dir(frontendDir.dir("dist"))
     }
+val frontendDistCheck =
+    npmScript(
+        "frontendDistCheck",
+        "dist の素材が public/ と同じで、index.html の favicon の指定が正しいことを確かめる。",
+        "dist:check",
+    ) { dependsOn(frontendBuild) }
 val frontendTest = npmScript("frontendTest", "画面のテスト（Vitest）を実行する。", "test") { dependsOn(vendorBuild) }
 val frontendCoverage =
     npmScript("frontendCoverage", "画面のカバレッジを測り、下限（行 80%・分岐 70%）を検証する。", "test:coverage") {
@@ -436,19 +446,21 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyLicense",
-            "3 ライセンスヘッダー（画面と perf/ の .mjs・.js は check-license-header.mjs。Java と Gradle の Kotlin DSL と" +
-                "バックエンドのメールのテンプレート（Mustache のコメントの形）は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）",
-            listOf(frontendLicenseCheck),
+            "3 ライセンスヘッダー（画面と perf/ の .mjs・.js と画面の .svg は check-license-header.mjs。Java と Gradle の Kotlin DSL と" +
+                "バックエンドのメールのテンプレート（Mustache のコメントの形）は、同じ Spotless の検査が 1 の段でヘッダーも確かめる）と、" +
+                "画面の SVG の中身（許可リスト。check-svg-safety.mjs）",
+            listOf(frontendLicenseCheck, frontendSvgCheck),
         ),
         Triple(
             "verifyBuild",
-            "4 ビルド（Java のコンパイル、tsc --noEmit（画面と perf の伏せ字の道具）、Vite のビルド）",
+            "4 ビルド（Java のコンパイル、tsc --noEmit（画面と perf の伏せ字の道具）、Vite のビルドと、dist の素材（アイコン・favicon）の確認）",
             listOf(
                 backendProject.tasks.named("compileJava"),
                 backendProject.tasks.named("compileTestJava"),
                 frontendTypecheck,
                 perfToolTypecheck,
                 frontendBuild,
+                frontendDistCheck,
             ),
         ),
         Triple("verifyUnitTest", "5 単体テスト（JUnit・Vitest）", listOf(backendProject.tasks.named("test"), frontendTest)),
@@ -470,8 +482,14 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyArtifact",
-            "9 成果物と量の確認（dist を同梱した実行可能 WAR、WAR の中の DSL の JSON Schema と正本の一致、初回の読み込みの量）",
-            listOf(backendProject.tasks.named("bootWar"), backendProject.tasks.named("verifyDslSchemaInWar"), frontendBundleSize),
+            "9 成果物と量の確認（dist を同梱した実行可能 WAR、WAR の中の DSL の JSON Schema と正本の一致、WAR の中の素材（アイコン・favicon）と" +
+                "frontend/public/ の一致、初回の読み込みの量）",
+            listOf(
+                backendProject.tasks.named("bootWar"),
+                backendProject.tasks.named("verifyDslSchemaInWar"),
+                backendProject.tasks.named("verifyFaviconInWar"),
+                frontendBundleSize,
+            ),
         ),
     )
 

@@ -27,6 +27,16 @@ describe('LoginLayout', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('ログイン')
   })
 
+  it('puts a decorative icon right before the application name and hides it from assistive technology', () => {
+    renderWithProviders(<LoginLayout />)
+    const icon = screen.getByTestId('login-layout-app-icon')
+    const name = screen.getByTestId('login-layout-app-name')
+    expect(icon.nextElementSibling).toBe(name)
+    expect(icon.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(name).toHaveTextContent('MasterSmith')
+  })
+
   it('shows the English heading for an English browser', () => {
     renderWithProviders(<LoginLayout />, { languages: ['en-US'] })
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Sign in')

@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 // ログイン画面のレイアウト（BR7.7）。アプリ名と表示言語に応じた見出しを持ち、入力欄とボタンは U2 が子として置く。
+// アプリ名の直前に、飾りのアイコン（読み上げに出さない。U6）を置く。
 // 右上の置き場（topRight）には、AuthUi がログインの画面の言語の切り替えを置く（U4 の W7）。
 import type { ReactNode } from 'react'
+import { AppIcon } from '../../shared/app-icon/AppIcon'
 import { useMessages } from '../i18n/I18nProvider'
 import './LoginLayout.css'
 
@@ -40,6 +42,9 @@ export function LoginLayout({ children, topRight }: LoginLayoutProps) {
           {topRight}
         </div>
       )}
+      <div className="login-layout-app-icon" data-testid="login-layout-app-icon">
+        <AppIcon size={48} />
+      </div>
       <p className="login-layout-app-name" data-testid="login-layout-app-name">
         {t('app.name')}
       </p>

@@ -112,6 +112,7 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 | `docs/roles-and-permissions.md` | ロールと権限 | 管理の画面の「権限が無い」の扱い・グループの管理の API・ロールと権限の API・割り当てと作業ロール・権限の受け渡し・業務のメニューの API・ロール・グループ・権限の受け渡しの画面・骨組みの画面・API のアクセス制御 |
 | `docs/operations.md` | 運用と監視 | 外部エクスポートの確かめ方・手元の監視（Grafana）・警報と対応の手順・例外のログ（フィルターの中の想定外の例外）・監査ログ・監査ログの確かめ方 |
 | `docs/appearance.md` | 画面の見た目 | インスタンスの見た目の設定・画面の表示の設定・ブランドカラーのコントラスト |
+| `docs/app-icon.md` | アプリのアイコンと favicon | 素材の一覧・`favicon.ico` の作り方・SVG を変えたらバイナリを作り直す・守りの検査 |
 | `docs/extension-points.md` | 機能が使う差し込み口 | 機能が使う差し込み口（サーバーと画面の型と口の一覧） |
 | `perf/README.md` | 負荷の試験 | 使い捨ての環境での k6 の場面・今の基準の一覧 |
 

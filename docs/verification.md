@@ -15,13 +15,13 @@
 | 0 | 準備（`verifyPrepare`） | 道具の確認、make-you-chic-ui の `npm ci`・ビルドと、2つのサブモジュール（make-you-chic-ui・java-mustache-processor）の追跡されるファイルが変わっていないことの確認、画面の `npm ci` |
 | 1 | フォーマット（`verifyFormat`） | Spotless（palantir-java-format、ライセンスヘッダーを含む。バックエンドのメールのテンプレートの Mustache のコメント `{{! ... }}` の形のライセンスヘッダーも確かめる）、Prettier |
 | 2 | リンタ（`verifyLint`） | oxlint、ESLint、Stylelint |
-| 3 | ライセンスヘッダー（`verifyLicense`） | 画面のファイルのヘッダー（Java・Gradle の Kotlin DSL・メールのテンプレートは 1 の段の Spotless が確かめる） |
-| 4 | ビルド（`verifyBuild`） | Java のコンパイル、`tsc --noEmit`、Vite のビルド |
+| 3 | ライセンスヘッダー（`verifyLicense`） | 画面のファイル（`.svg` を含む）のヘッダー（Java・Gradle の Kotlin DSL・メールのテンプレートは 1 の段の Spotless が確かめる）と、画面の SVG の中身の許可リスト検査（`npm run svg:check`。詳しくは `docs/app-icon.md`） |
+| 4 | ビルド（`verifyBuild`） | Java のコンパイル、`tsc --noEmit`、Vite のビルドと、`dist` の素材（アイコン・favicon）が `frontend/public/` と同じで `index.html` の favicon の指定が正しいことの確認（`npm run dist:check`） |
 | 5 | 単体テスト（`verifyUnitTest`） | JUnit（`*Test`）、Vitest |
 | 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト、対象DB（MySQL・MariaDB・PostgreSQL）のコンテナを使うテスト、JVM の中で起動するテスト用の SMTP の受け手（SubEtha SMTP）でメールを実際に受けるテスト（`*IT`） |
 | 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗。バックエンドは全体の合計に加えて、新しく作るパッケージ（`cherry.mastersmith.targetdb` 以後）ごとにも同じ下限を当てる（既存のパッケージは全体の合計で判定する。`backend/build.gradle.kts` の `packagesJudgedByTotal`） |
 | 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High と、SQL インジェクション系（パターン名が `SQL_` で始まる）・予測できる乱数（`PREDICTABLE_RANDOM`）・メールのヘッダーへの差し込み（`SMTP_HEADER_INJECTION`）の指摘は priority によらず失敗。誤検知は `backend/config/spotbugs-exclude.xml` に理由を書いて外す）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
-| 9 | 成果物と量の確認（`verifyArtifact`） | 画面を同梱した実行可能 WAR（`backend/build/libs/mastersmith.war`）、初回の読み込みの JavaScript の量（500KB を超えたら警告だけ） |
+| 9 | 成果物と量の確認（`verifyArtifact`） | 画面を同梱した実行可能 WAR（`backend/build/libs/mastersmith.war`）、WAR の中の DSL の JSON Schema と正本の一致、WAR の中の素材（アイコン・favicon）と `frontend/public/` の一致（`verifyFaviconInWar`）、初回の読み込みの JavaScript の量（500KB を超えたら警告だけ） |
 
 メールのテストはコンテナを使いません。テスト用の SMTP の受け手を JVM の中で起動し、TLS の証明書はテストの実行のたびに JDK の `keytool` で一時のディレクトリに作ります（リポジトリに置かない）。そのため、コンテナの実行環境が無くても飛ばされません（飛ばされうるのは対象DB のテストだけです）。
 
