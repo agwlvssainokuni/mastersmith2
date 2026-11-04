@@ -20,14 +20,26 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import type { ColumnDefinition, ReferenceField } from '../businessDataTypes'
 import { lookupField, referenceField, XSS_SAMPLES } from '../testing/referenceSamples'
+import { JA_TEXTS } from '../testing/valueTexts'
+import type { CellTimeZone } from '../valueFormat'
 import {
   chooseFieldKind,
+  formatReferenceText,
   isBlockedRequired,
   isReadonlyReference,
   lockedReferenceColumns,
   optionText,
   readonlyReason,
+  type OptionTextFormat,
 } from './referenceField'
+
+/** 日時でない型の書式（ラベル・値を文字のまま出す） */
+const STRING_FORMAT: OptionTextFormat = {
+  labelValueType: 'STRING',
+  valueType: 'STRING',
+  texts: JA_TEXTS,
+  timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
+}
 
 function column(overrides: Partial<ColumnDefinition> = {}): ColumnDefinition {
   return {
@@ -138,13 +150,78 @@ describe('chooseFieldKind (D5)', () => {
 
 describe('optionText (D6)', () => {
   it('shows the label and the value, or the value only for a null label', () => {
-    expect(optionText({ value: 'C001', label: '東京 本店' })).toBe('東京 本店 (C001)')
-    expect(optionText({ value: 'C002', label: null })).toBe('C002')
-    expect(optionText({ value: '', label: '空の値' })).toBe('空の値 ()')
+    expect(optionText({ value: 'C001', label: '東京 本店' }, STRING_FORMAT)).toBe(
+      '東京 本店 (C001)',
+    )
+    expect(optionText({ value: 'C002', label: null }, STRING_FORMAT)).toBe('C002')
+    expect(optionText({ value: '', label: '空の値' }, STRING_FORMAT)).toBe('空の値 ()')
   })
 
   it.each(XSS_SAMPLES)('keeps %s as plain text', (label) => {
-    expect(optionText({ value: 'X', label })).toBe(`${label} (X)`)
+    expect(optionText({ value: 'X', label }, STRING_FORMAT)).toBe(`${label} (X)`)
+  })
+})
+
+// ラベルの列の型と参照元のカラムの型の書式（Intent 261102-timezone-ui-polish の U4、計画 Step 11、D30〜D33）
+describe('optionText and formatReferenceText for date time types', () => {
+  const tokyo: CellTimeZone = { status: 'ready', timeZone: 'Asia/Tokyo' }
+
+  it('formats a label of an instant type and keeps the label text without a type (D31, D32)', () => {
+    const option = { value: 'E1', label: '2026-11-01T15:00:00.123456+00:00' }
+    expect(
+      optionText(option, { ...STRING_FORMAT, labelValueType: 'DATETIME_TZ', timeZone: tokyo }),
+    ).toBe('2026-11-02 00:00:00.123456 +09:00 (E1)')
+    expect(optionText(option, { ...STRING_FORMAT, labelValueType: null, timeZone: tokyo })).toBe(
+      '2026-11-01T15:00:00.123456+00:00 (E1)',
+    )
+    expect(
+      optionText(option, { ...STRING_FORMAT, labelValueType: 'STRING', timeZone: tokyo }),
+    ).toBe('2026-11-01T15:00:00.123456+00:00 (E1)')
+  })
+
+  it('formats a value with the type of the source column and shows unreadable values as they are', () => {
+    const format = { ...STRING_FORMAT, valueType: 'DATETIME_TZ' as const, timeZone: tokyo }
+    expect(optionText({ value: '2026-11-01T15:00:00+00:00', label: null }, format)).toBe(
+      '2026-11-02 00:00:00 +09:00',
+    )
+    expect(optionText({ value: '2026-11-01T15:00:00+00:00', label: '朝の便' }, format)).toBe(
+      '朝の便 (2026-11-02 00:00:00 +09:00)',
+    )
+    expect(optionText({ value: '0000-00-00 00:00:00', label: null }, format)).toBe(
+      '0000-00-00 00:00:00',
+    )
+    expect(
+      formatReferenceText('2026-11-01T15:00:00', 'DATETIME', { texts: JA_TEXTS, timeZone: tokyo }),
+    ).toBe('2026-11-01 15:00:00')
+  })
+
+  it('shows the short text for an instant while the display time zone fails', () => {
+    expect(
+      formatReferenceText('2026-11-01T15:00:00+00:00', 'DATETIME_TZ', {
+        texts: JA_TEXTS,
+        timeZone: { status: 'error' },
+      }),
+    ).toBe('時刻を表示できません')
+  })
+
+  it('does not format values of types other than date and time', () => {
+    for (const valueType of ['BOOLEAN', 'DECIMAL', 'STRING', 'INTEGER'] as const) {
+      expect(formatReferenceText('true', valueType, { texts: JA_TEXTS, timeZone: tokyo })).toBe(
+        'true',
+      )
+      expect(formatReferenceText('12345', valueType, { texts: JA_TEXTS, timeZone: tokyo })).toBe(
+        '12345',
+      )
+    }
+  })
+
+  it.each(XSS_SAMPLES)('keeps %s as plain text in a label of an instant type', (label) => {
+    expect(
+      optionText(
+        { value: 'X', label },
+        { ...STRING_FORMAT, labelValueType: 'DATETIME_TZ', timeZone: tokyo },
+      ),
+    ).toBe(`${label} (X)`)
   })
 })
 
@@ -204,7 +281,7 @@ describe('referenceField properties', () => {
         fc.string(),
         (head, mark, value) => {
           const label = `${head}${mark}`
-          expect(optionText({ value, label })).toBe(`${label} (${value})`)
+          expect(optionText({ value, label }, STRING_FORMAT)).toBe(`${label} (${value})`)
         },
       ),
     )

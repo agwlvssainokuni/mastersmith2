@@ -61,6 +61,7 @@ import {
   type SearchField,
   type SortKey,
   type TableDefinition,
+  type ValueType,
 } from './businessDataTypes'
 
 /** ページの番号の上限（U1 の PageRequest.MAX_PAGE） */
@@ -276,6 +277,11 @@ function parsePickerInfo(value: unknown): PickerInfo | undefined {
   return { searchFields, listColumns }
 }
 
+/** ラベルの列の型を読む（知らない値・型の違う値は null。D31） */
+function parseLabelValueType(value: unknown): ValueType | null {
+  return oneOf(VALUE_TYPES, value) ? value : null
+}
+
 /**
  * カラムの参照の項目を写す。形が違えば undefined（通信の失敗）。
  * - `options`・`picker` は null のとき本文に無い（NON_NULL）。欠けは空の並び・null と読み、REFERENCE・AVAILABLE の
@@ -308,13 +314,22 @@ export function parseReference(value: unknown): ReferenceField | undefined {
   }
   if (!knownKind) {
     // 知らない種類は参照の入力として扱わず、権限不足と同じ入力不可にする（D3）。
-    return { kind: 'REFERENCE', status: 'NO_PERMISSION', options: [], picker: null }
+    return {
+      kind: 'REFERENCE',
+      status: 'NO_PERMISSION',
+      options: [],
+      picker: null,
+      labelValueType: null,
+    }
   }
   return {
     kind: value.kind as ReferenceField['kind'],
     status: knownStatus ? (value.status as ReferenceStatus) : 'NO_PERMISSION',
     options: options ?? [],
     picker,
+    // ラベルの列の型（Intent 261102-timezone-ui-polish の U4、D30・D31）。AVAILABLE のときだけ読む。無い・null・知らない値は
+    // null として読み、応答を拒否しない
+    labelValueType: available ? parseLabelValueType(value.labelValueType) : null,
   }
 }
 

@@ -78,13 +78,17 @@ class ReferenceTypesTest {
                                 List.of(new LookupSearchItem("secret_search", SearchOperator.EQUALS)),
                                 List.of(new LookupListItem("secret_list", 1))))
                 .orElseThrow();
-        ReferenceField field = ReferenceField.choices(List.of(option, new ReferenceOption(SECRET, null)));
+        ReferenceField field =
+                ReferenceField.choices(List.of(option, new ReferenceOption(SECRET, null)), ValueType.DATETIME_TZ);
 
         assertThat(option.toString()).doesNotContain(SECRET).contains("***");
         assertThat(new ReferenceOption(SECRET, null).toString())
                 .contains("label=null")
                 .doesNotContain(SECRET);
-        assertThat(field.toString()).doesNotContain(SECRET).contains("options=2");
+        assertThat(field.toString())
+                .doesNotContain(SECRET)
+                .contains("options=2")
+                .contains("labelValueType=DATETIME_TZ");
         assertThat(target.toString())
                 .isEqualTo("ReferenceTarget[kind=LOOKUP, table=dept]")
                 .doesNotContain("secret");
@@ -102,22 +106,61 @@ class ReferenceTypesTest {
         assertThat(ReferenceField.noPermission(OptionSourceKind.LOOKUP).picker())
                 .isNull();
         assertThat(ReferenceField.tooMany().options()).isEmpty();
-        assertThat(ReferenceField.lookup(picker).status()).isEqualTo(ReferenceStatus.AVAILABLE);
-        assertThat(ReferenceField.choices(List.of()).status()).as("空の参照先").isEqualTo(ReferenceStatus.AVAILABLE);
+        assertThat(ReferenceField.lookup(picker, ValueType.STRING).status()).isEqualTo(ReferenceStatus.AVAILABLE);
+        assertThat(ReferenceField.choices(List.of(), ValueType.STRING).status())
+                .as("空の参照先")
+                .isEqualTo(ReferenceStatus.AVAILABLE);
         assertThatThrownBy(() -> new ReferenceField(
                         OptionSourceKind.REFERENCE,
                         ReferenceStatus.NO_PERMISSION,
                         List.of(new ReferenceOption("1", "一")),
+                        null,
                         null))
                 .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() ->
-                        new ReferenceField(OptionSourceKind.LOOKUP, ReferenceStatus.NO_PERMISSION, List.of(), picker))
-                .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new ReferenceField(OptionSourceKind.LOOKUP, ReferenceStatus.TOO_MANY, List.of(), null))
+        assertThatThrownBy(() -> new ReferenceField(
+                        OptionSourceKind.LOOKUP, ReferenceStatus.NO_PERMISSION, List.of(), picker, null))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() ->
-                        new ReferenceField(OptionSourceKind.REFERENCE, ReferenceStatus.AVAILABLE, List.of(), picker))
+                        new ReferenceField(OptionSourceKind.LOOKUP, ReferenceStatus.TOO_MANY, List.of(), null, null))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ReferenceField(
+                        OptionSourceKind.REFERENCE, ReferenceStatus.AVAILABLE, List.of(), picker, null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("only an AVAILABLE field carries the label value type")
+    void labelValueTypeOnlyWhenAvailable() {
+        PickerInfo picker = new PickerInfo(
+                List.of(new PickerSearchField("n", new DisplayName("名", "Name"), SearchMode.EQUALS, ValueType.STRING)),
+                List.of(new PickerListColumn("n", new DisplayName("名", "Name"), ValueType.STRING)));
+
+        assertThat(ReferenceField.choices(List.of(), ValueType.DATETIME_TZ).labelValueType())
+                .isEqualTo(ValueType.DATETIME_TZ);
+        assertThat(ReferenceField.lookup(picker, ValueType.DATE).labelValueType())
+                .isEqualTo(ValueType.DATE);
+        assertThat(ReferenceField.choices(List.of(), null).labelValueType())
+                .as("型が決まらない AVAILABLE は null を許す")
+                .isNull();
+        assertThat(ReferenceField.noPermission(OptionSourceKind.REFERENCE).labelValueType())
+                .isNull();
+        assertThat(ReferenceField.noPermission(OptionSourceKind.LOOKUP).labelValueType())
+                .isNull();
+        assertThat(ReferenceField.tooMany().labelValueType()).isNull();
+        assertThatThrownBy(() -> new ReferenceField(
+                        OptionSourceKind.REFERENCE,
+                        ReferenceStatus.NO_PERMISSION,
+                        List.of(),
+                        null,
+                        ValueType.DATETIME_TZ))
+                .as("NO_PERMISSION は参照先のカラムの型を明かさない")
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new ReferenceField(
+                        OptionSourceKind.REFERENCE, ReferenceStatus.TOO_MANY, List.of(), null, ValueType.STRING))
+                .as("TOO_MANY は型を持たない")
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(ReferenceField.noPermission(OptionSourceKind.LOOKUP).toString())
+                .contains("labelValueType=null");
     }
 
     @Test
@@ -129,8 +172,10 @@ class ReferenceTypesTest {
         List<ReferenceOption> twoHundredOne = new java.util.ArrayList<>(twoHundred);
         twoHundredOne.add(new ReferenceOption("200", "ラベル200"));
 
-        assertThat(ReferenceField.choices(twoHundred).options()).hasSize(200);
-        assertThatThrownBy(() -> ReferenceField.choices(twoHundredOne)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(ReferenceField.choices(twoHundred, ValueType.STRING).options())
+                .hasSize(200);
+        assertThatThrownBy(() -> ReferenceField.choices(twoHundredOne, ValueType.STRING))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

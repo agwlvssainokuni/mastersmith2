@@ -22,7 +22,8 @@ import { describe, expect, it } from 'vitest'
 import { countCodePoints } from '../../shared/validation/codePoints'
 import { parseColumnDefinition } from './businessDataParse'
 import type { ColumnDefinition } from './businessDataTypes'
-import { diffForm, initialInputs } from './formDiff'
+import { compareInstants } from '../../shared/format/timeZone'
+import { diffForm, initialInputs, resolveFormDateTime, toInputValue } from './formDiff'
 import { compareDecimalText, effectiveMaxLength, validateValue } from './formValidation'
 import { wireColumn } from './testing/businessDataSamples'
 
@@ -126,6 +127,97 @@ describe('formValidation properties', () => {
         (a, b) => {
           const result = compareDecimalText(a.toString(), b.toString())
           expect(Math.sign(result ?? Number.NaN)).toBe(a < b ? -1 : a > b ? 1 : 0)
+        },
+      ),
+    )
+  })
+})
+
+// ---- 日時の欄（Intent 261102-timezone-ui-polish の U4、計画 Step 9、D43） ----
+
+const ZONES = ['Asia/Tokyo', 'America/New_York', 'Europe/London', 'Asia/Kathmandu', 'UTC']
+
+/** 1990〜2099 年の UTC の時点（端数 0・3・6 桁）。秋の切り替わりの 01 時台（America/New_York）を含める */
+const instantValue = fc
+  .tuple(
+    fc.oneof(
+      fc.date({
+        min: new Date('1990-01-01T00:00:00Z'),
+        max: new Date('2099-12-31T00:00:00Z'),
+        noInvalidDate: true,
+      }),
+      fc
+        .integer({ min: 0, max: 7199 })
+        .map((seconds) => new Date(Date.UTC(2026, 10, 1, 5, 0, seconds))),
+    ),
+    fc.constantFrom('', '.123', '.123456'),
+  )
+  .map(([date, fraction]) => `${date.toISOString().slice(0, 19)}${fraction}+00:00`)
+
+describe('formDiff date time properties', () => {
+  const at = column('at', { valueType: 'DATETIME_TZ', formPart: 'datetime' })
+  const local = column('local', { valueType: 'DATETIME', formPart: 'datetime' })
+  const name = column('name')
+
+  it('never sends an untouched date time field whatever the time zone', () => {
+    fc.assert(
+      fc.property(
+        instantValue,
+        fc.constantFrom(...ZONES),
+        fc.string(),
+        fc.constantFrom<'earlier' | 'later' | null>('earlier', 'later', null),
+        (value, timeZone, text, choice) => {
+          const fields = [at, local, name]
+          const values = { at: value, local: value.slice(0, -'+00:00'.length), name: 'a' }
+          const initial = initialInputs(fields, 'update', values, [], timeZone)
+          const body = diffForm(
+            fields,
+            'update',
+            initial,
+            { ...initial, name: text },
+            [],
+            undefined,
+            {
+              timeZone,
+              overlapChoices: { at: choice, local: choice },
+            },
+          )
+          expect(Object.hasOwn(body, 'at')).toBe(false)
+          expect(Object.hasOwn(body, 'local')).toBe(false)
+        },
+      ),
+    )
+  })
+
+  it('returns to the original instant when the first value of an instant is resolved, except for overlaps', () => {
+    fc.assert(
+      fc.property(instantValue, fc.constantFrom(...ZONES), (value, timeZone) => {
+        const text = toInputValue(at, value, timeZone)
+        const resolved = resolveFormDateTime(at, text, { timeZone, overlapChoices: {} })
+        // 2回ある時刻は送らない（変えていない欄として保たれる）ため、性質の対象から外す
+        fc.pre(resolved?.kind !== 'overlap-pending')
+        expect(resolved?.kind).toBe('ok')
+        if (resolved?.kind === 'ok') {
+          expect(resolved.wire).toBe(value)
+          expect(compareInstants(resolved.wire, value)).toEqual({ kind: 'ok', order: 0 })
+        }
+      }),
+    )
+  })
+
+  it('keeps the first value and the sent value of a date time without a zone in every time zone', () => {
+    fc.assert(
+      fc.property(
+        instantValue.map((value) => value.slice(0, -'+00:00'.length)),
+        fc.constantFrom(...ZONES),
+        (value, timeZone) => {
+          const text = toInputValue(local, value, timeZone)
+          expect(text).toBe(toInputValue(local, value, 'UTC'))
+          const body = diffForm([local], 'create', {}, { local: text }, [], undefined, {
+            timeZone,
+            overlapChoices: {},
+          })
+          expect(body).toEqual({ local: value })
         },
       ),
     )

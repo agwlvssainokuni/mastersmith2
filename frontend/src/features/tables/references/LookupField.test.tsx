@@ -40,6 +40,8 @@ function renderField(overrides: Partial<LookupFieldProps> = {}) {
     disabled: false,
     onChange: vi.fn(),
     search: vi.fn(() => Promise.resolve({ rows: [pickerRow(0)], page: 1, hasNext: false })),
+    timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
+    now: '2026-07-01T00:00:00Z',
     ...overrides,
   }
   const view = renderReference(<LookupField {...props} />)

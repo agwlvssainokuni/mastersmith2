@@ -21,6 +21,7 @@
 import type { ReactNode } from 'react'
 import type { ColumnDefinition, ReferenceSource } from '../businessDataTypes'
 import type { FormMode } from '../formDiff'
+import type { CellTimeZone } from '../valueFormat'
 import { LookupField } from './LookupField'
 import { ReadonlyReferenceField } from './ReadonlyReferenceField'
 import { ReferenceSelectField } from './ReferenceSelectField'
@@ -54,6 +55,13 @@ export interface ReferenceColumnFieldProps {
   renderLocked: () => ReactNode
   /** 検索の関数（テストで差し替える） */
   search?: SearchReference
+  /**
+   * 表示のタイムゾーンの状態（参照のラベルと値の日時の書式に使う。作成・更新の画面がフォームを開いたときに固定した値。
+   * Intent 261102-timezone-ui-polish の U4、D12・D32）
+   */
+  timeZone: CellTimeZone
+  /** 今の時刻（ISO 8601。ピッカーの日時の条件の案内に使う） */
+  now: string
 }
 
 /** カラムごとの部品の選び分け */
@@ -75,6 +83,8 @@ export function ReferenceColumnField({
   renderPlain,
   renderLocked,
   search,
+  timeZone,
+  now,
 }: ReferenceColumnFieldProps) {
   const kind = chooseFieldKind(column, mode, truncated)
   if (kind.kind === 'hidden') {
@@ -97,6 +107,8 @@ export function ReferenceColumnField({
           reason={kind.reason}
           blockedRequired={isBlockedRequired(column, mode, truncated)}
           error={error}
+          valueType={column.valueType}
+          timeZone={timeZone}
         />
       )
       break
@@ -113,6 +125,7 @@ export function ReferenceColumnField({
           disabled={disabled}
           onChange={(next) => onChange(next)}
           onBlur={onBlur}
+          timeZone={timeZone}
         />
       )
       break
@@ -135,9 +148,13 @@ export function ReferenceColumnField({
             label={lookupLabel}
             labelLoading={lookupLabelLoading}
             clearable={!isRequiredColumn(column)}
+            labelValueType={column.reference?.labelValueType ?? null}
+            valueType={column.valueType}
             error={error}
             disabled={disabled}
             onChange={(next, label) => onChange(next, label)}
+            timeZone={timeZone}
+            now={now}
             {...(search === undefined ? {} : { search })}
           />
         )

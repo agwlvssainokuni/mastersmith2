@@ -22,17 +22,25 @@
 //   載せない。D34）。0 件では Table を描かず、2ページ目以降は「前のページへ」だけ（D26）。
 // - 状態の文: 初期・空の条件・検索中・0 件は role="status"、失敗・権限は role="alert"、件数の変化は aria-live="polite"。
 // - 行の値（ラベル・セル）は文字として描く（HTML にしない・href にしない）。
+// - 行のラベルはラベルの列の型、結果の列は列の valueType で、日時を表示のタイムゾーンの書式にする（Intent
+//   261102-timezone-ui-polish の U4、計画 Step 11、D32）。選んだ行は、返された値とラベルの文字のまま渡す（D33）。
+// - 日時の一致の条件（計画 Step 13、D34・D26・D27）は DateTimeField（文字の欄と案内）。夏時間で2回ある時刻は、欄を離れたときか
+//   「検索」の押下で2択を出し、選ぶまで検索させない。押下で未選択なら2択の最初の選択肢へフォーカスを移す。
 import { Button, FormField, Modal, Select, Table, TextInput } from 'make-you-chic-ui'
 import type { TableColumn, TableLabels } from 'make-you-chic-ui'
-import { useMemo, useRef, type RefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDisplayLanguage } from '../../../app/i18n/I18nProvider'
 import { NullValue } from '../../../shared/null-value/NullValue'
 import { ScrollRegion } from '../../../shared/scroll-region/ScrollRegion'
 import { PICKER_PAGE_SIZE } from '../businessDataParse'
-import type { PickerInfo, ReferenceRow, ReferenceSource } from '../businessDataTypes'
+import type { PickerInfo, ReferenceRow, ReferenceSource, ValueType } from '../businessDataTypes'
+import { DateTimeField } from '../DateTimeField'
 import { localizedName, useValueTexts } from '../tablesText'
-import { pickerPaging, searchInputFor } from './pickerSearch'
+import type { FieldTimeZone } from '../useTablesTimeZone'
+import type { CellTimeZone } from '../valueFormat'
+import { pickerPaging, searchInputFor, type PickerInputError } from './pickerSearch'
+import { formatReferenceText } from './referenceField'
 import { useLookupSearch, type SearchReference } from './useLookupSearch'
 import './reference.css'
 
@@ -46,11 +54,31 @@ export interface LookupPickerDialogProps {
   onClose: () => void
   /** 検索の関数（テストで差し替える） */
   search?: SearchReference
+  /** ラベルの列の型（型が分からなければ null。D31・D32） */
+  labelValueType?: ValueType | null
+  /** 参照元のカラムの型（値の書式に使う） */
+  valueType?: ValueType
+  /** 表示のタイムゾーンの状態（作成・更新の画面がフォームを開いたときに固定した値） */
+  timeZone: CellTimeZone
+  /** 今の時刻（ISO 8601。条件の案内の今の時差に使う。画面を開いたときに1回だけ取った値） */
+  now: string
 }
 
 interface PickerTableRow {
   index: number
   row: ReferenceRow
+}
+
+/** 条件の誤りの文の鍵（日時の誤りは業務データの項目の誤りと同じ文） */
+function pickerErrorKey(error: PickerInputError): string {
+  switch (error) {
+    case 'too-long':
+      return 'tables.picker.tooLong'
+    case 'invalid-value':
+      return 'tables.picker.invalidValue'
+    default:
+      return `tables.error.${error}`
+  }
 }
 
 /** 参照ピッカーのダイアログ */
@@ -62,13 +90,32 @@ export function LookupPickerDialog({
   onSelect,
   onClose,
   search,
+  labelValueType = null,
+  valueType = 'STRING',
+  timeZone,
+  now,
 }: LookupPickerDialogProps) {
   const { t } = useTranslation()
   const language = useDisplayLanguage()
   const texts = useValueTexts()
-  const lookup = useLookupSearch(source, picker, search)
-  const { state, inputs, errors, setInput, submit, goToPage, retry } = lookup
+  const timeZoneName = timeZone.status === 'ready' ? timeZone.timeZone : null
+  const fieldTimeZone: FieldTimeZone = timeZone
+  const lookup = useLookupSearch(source, picker, search, timeZoneName)
+  const { state, inputs, errors, overlaps, overlapChoices, goToPage, retry } = lookup
+  const { setInput, setOverlapChoice, checkOverlap, submit } = lookup
   const firstRef = useRef<HTMLElement | null>(null)
+  const formRef = useRef<HTMLFormElement | null>(null)
+  /** 未選択の2択へフォーカスを移す先（条件の番号。2択を描いた後に移す） */
+  const [overlapFocus, setOverlapFocus] = useState<{ index: number } | null>(null)
+  useEffect(() => {
+    if (overlapFocus !== null) {
+      formRef.current
+        ?.querySelector<HTMLInputElement>(
+          `[data-testid="tables-picker-field-c${overlapFocus.index}-overlap"] input`,
+        )
+        ?.focus()
+    }
+  }, [overlapFocus])
   const resultsName = t('tables.picker.results', { field: name })
 
   const columns = useMemo<TableColumn<PickerTableRow>[]>(
@@ -80,7 +127,12 @@ export function LookupPickerDialog({
           <Button
             variant="secondary"
             size="sm"
-            aria-label={t('tables.picker.selectRow', { label: item.row.label ?? item.row.value })}
+            aria-label={t('tables.picker.selectRow', {
+              label:
+                item.row.label === null
+                  ? formatReferenceText(item.row.value, valueType, { texts, timeZone })
+                  : formatReferenceText(item.row.label, labelValueType, { texts, timeZone }),
+            })}
             onClick={() => onSelect(item.row)}
             data-testid={`tables-picker-select-r${item.index}`}
           >
@@ -96,12 +148,14 @@ export function LookupPickerDialog({
           return cell === null || cell === undefined ? (
             <NullValue text={texts.null} spokenText={t('tables.value.nullSpoken')} />
           ) : (
-            <span className="tables-picker-cell">{cell}</span>
+            <span className="tables-picker-cell">
+              {formatReferenceText(cell, column.valueType, { texts, timeZone })}
+            </span>
           )
         },
       })),
     ],
-    [picker, language, texts, t, onSelect],
+    [picker, language, texts, t, onSelect, labelValueType, valueType, timeZone],
   )
 
   const searching = state.kind === 'searching'
@@ -205,11 +259,22 @@ export function LookupPickerDialog({
     >
       <div className="tables-picker" data-testid="tables-picker">
         <form
+          ref={formRef}
           className="tables-picker-form"
           noValidate
           onSubmit={(event) => {
             event.preventDefault()
-            submit()
+            const found = submit()
+            const first = picker.searchFields.findIndex(
+              (field) => found !== null && Object.hasOwn(found, field.column),
+            )
+            if (
+              found !== null &&
+              first >= 0 &&
+              found[picker.searchFields[first].column] === 'DATE_TIME_OVERLAP'
+            ) {
+              setOverlapFocus({ index: first })
+            }
           }}
           data-testid="tables-picker-form"
         >
@@ -225,19 +290,44 @@ export function LookupPickerDialog({
                     }
                   : undefined
               const value = Object.hasOwn(inputs, field.column) ? inputs[field.column] : ''
+              const fieldLabel = t(`tables.picker.operator.${field.operator}`, { name: fieldName })
+              const errorMessage =
+                error === undefined
+                  ? undefined
+                  : t(pickerErrorKey(error), { zone: timeZoneName ?? '' })
+              if (spec.kind === 'text' && spec.dateTime !== undefined) {
+                const overlapPending = error === 'DATE_TIME_OVERLAP'
+                return (
+                  <DateTimeField
+                    key={field.column}
+                    kind={spec.dateTime}
+                    purpose="equals"
+                    label={fieldLabel}
+                    name={`tables-picker-c${index}`}
+                    value={value}
+                    onChange={(next) => setInput(field.column, next)}
+                    onBlur={() => checkOverlap(field.column)}
+                    timeZone={fieldTimeZone}
+                    now={now}
+                    error={overlapPending ? undefined : errorMessage}
+                    overlap={Object.hasOwn(overlaps, field.column) ? overlaps[field.column] : null}
+                    overlapChoice={
+                      Object.hasOwn(overlapChoices, field.column)
+                        ? overlapChoices[field.column]
+                        : null
+                    }
+                    onOverlapChoice={(choice) => setOverlapChoice(field.column, choice)}
+                    overlapError={overlapPending ? errorMessage : undefined}
+                    inputRef={keep}
+                    testId={`tables-picker-field-c${index}`}
+                  />
+                )
+              }
               return (
                 <div key={field.column} data-testid={`tables-picker-field-c${index}`}>
                   <FormField
-                    label={t(`tables.picker.operator.${field.operator}`, { name: fieldName })}
-                    error={
-                      error === undefined
-                        ? undefined
-                        : t(
-                            error === 'too-long'
-                              ? 'tables.picker.tooLong'
-                              : 'tables.picker.invalidValue',
-                          )
-                    }
+                    label={fieldLabel}
+                    error={errorMessage}
                     helperText={
                       spec.kind === 'text' && spec.hintKeys.length > 0
                         ? spec.hintKeys.map((key) => t(key)).join(' ')

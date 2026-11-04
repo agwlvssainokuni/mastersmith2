@@ -24,7 +24,10 @@ import {
   pickerPaging,
   searchInputFor,
   validatePickerInputs,
+  type PickerTime,
 } from './pickerSearch'
+
+const TOKYO_TIME: PickerTime = { timeZone: 'Asia/Tokyo', overlapChoices: {} }
 
 function field(
   column: string,
@@ -53,11 +56,9 @@ describe('searchInputFor (D22)', () => {
     ],
     ['BOOLEAN', { kind: 'boolean' }],
     ['DATE', { kind: 'text', type: 'date', hintKeys: ['tables.form.dateHint'] }],
-    ['DATETIME', { kind: 'text', type: 'datetime-local', step: 1, hintKeys: [] }],
-    [
-      'DATETIME_TZ',
-      { kind: 'text', type: 'datetime-local', step: 1, hintKeys: ['tables.form.utc'] },
-    ],
+    // 日時は文字の入力（Intent 261102-timezone-ui-polish の U4、D34。「UTC で入れる」の案内を出さない）
+    ['DATETIME', { kind: 'text', type: 'text', hintKeys: [], dateTime: 'local' }],
+    ['DATETIME_TZ', { kind: 'text', type: 'text', hintKeys: [], dateTime: 'instant' }],
     ['TIME', { kind: 'text', type: 'text', hintKeys: [] }],
     ['TIME_TZ', { kind: 'text', type: 'text', hintKeys: [] }],
     ['BINARY', { kind: 'text', type: 'text', hintKeys: [] }],
@@ -79,9 +80,11 @@ describe('validatePickerInputs (D23)', () => {
   const fields = [field('code', 'EQUALS', 'INTEGER'), field('name', 'CONTAINS')]
 
   it('does not send when every condition is empty and treats spaces as a value', () => {
-    expect(validatePickerInputs(fields, {})).toEqual({ kind: 'empty' })
-    expect(validatePickerInputs(fields, { code: '', name: '' })).toEqual({ kind: 'empty' })
-    expect(validatePickerInputs(fields, { name: ' ' })).toEqual({
+    expect(validatePickerInputs(fields, {}, TOKYO_TIME)).toEqual({ kind: 'empty' })
+    expect(validatePickerInputs(fields, { code: '', name: '' }, TOKYO_TIME)).toEqual({
+      kind: 'empty',
+    })
+    expect(validatePickerInputs(fields, { name: ' ' }, TOKYO_TIME)).toEqual({
       kind: 'ok',
       conditions: [{ column: 'name', value: ' ' }],
     })
@@ -89,19 +92,19 @@ describe('validatePickerInputs (D23)', () => {
 
   it('accepts 1,000 code points and rejects 1,001, counting a surrogate pair as one', () => {
     const pair = '𠮷'
-    expect(validatePickerInputs(fields, { name: pair.repeat(1000) }).kind).toBe('ok')
-    expect(validatePickerInputs(fields, { name: pair.repeat(1001) })).toEqual({
+    expect(validatePickerInputs(fields, { name: pair.repeat(1000) }, TOKYO_TIME).kind).toBe('ok')
+    expect(validatePickerInputs(fields, { name: pair.repeat(1001) }, TOKYO_TIME)).toEqual({
       kind: 'errors',
       errors: { name: 'too-long' },
     })
   })
 
   it('rejects an EQUALS value that cannot be read as its type but not a CONTAINS value', () => {
-    expect(validatePickerInputs(fields, { code: '12a', name: '12a' })).toEqual({
+    expect(validatePickerInputs(fields, { code: '12a', name: '12a' }, TOKYO_TIME)).toEqual({
       kind: 'errors',
       errors: { code: 'invalid-value' },
     })
-    expect(validatePickerInputs(fields, { code: '-12' })).toEqual({
+    expect(validatePickerInputs(fields, { code: '-12' }, TOKYO_TIME)).toEqual({
       kind: 'ok',
       conditions: [{ column: 'code', value: '-12' }],
     })
@@ -111,6 +114,73 @@ describe('validatePickerInputs (D23)', () => {
     expect(buildPickerConditions(fields, { name: '%_\\' })).toEqual([
       { column: 'name', value: '%_\\' },
     ])
+  })
+})
+
+// 日時の一致の条件（Intent 261102-timezone-ui-polish の U4、計画 Step 11、D23・D26・D27・D34）
+describe('validatePickerInputs for date time conditions', () => {
+  const at = field('at', 'EQUALS', 'DATETIME_TZ')
+  const local = field('local', 'EQUALS', 'DATETIME')
+  const atContains = field('atText', 'CONTAINS', 'DATETIME_TZ')
+  const newYork: PickerTime = { timeZone: 'America/New_York', overlapChoices: {} }
+
+  it('sends the instant of the wall clock time of the display time zone', () => {
+    expect(
+      validatePickerInputs(
+        [at, local],
+        { at: '2026-11-02 00:00:00.123', local: '2026-11-02 00:00:00' },
+        TOKYO_TIME,
+      ),
+    ).toEqual({
+      kind: 'ok',
+      conditions: [
+        { column: 'at', value: '2026-11-01T15:00:00.123+00:00' },
+        { column: 'local', value: '2026-11-02T00:00:00' },
+      ],
+    })
+  })
+
+  it('rejects an unreadable value, a skipped time and an unchosen overlapping time', () => {
+    expect(
+      validatePickerInputs(
+        [at, local],
+        { at: '2026-11-02T00:00', local: '2026-11-02 9:00:00' },
+        TOKYO_TIME,
+      ),
+    ).toEqual({
+      kind: 'errors',
+      errors: { at: 'DATE_TIME_FORMAT', local: 'DATE_TIME_FORMAT' },
+    })
+    expect(validatePickerInputs([at], { at: '2026-03-08 02:30:00' }, newYork)).toEqual({
+      kind: 'errors',
+      errors: { at: 'DATE_TIME_GAP' },
+    })
+    expect(validatePickerInputs([at], { at: '2026-11-01 01:30:00' }, newYork)).toEqual({
+      kind: 'errors',
+      errors: { at: 'DATE_TIME_OVERLAP' },
+      overlaps: { at: { earlier: '-04:00', later: '-05:00' } },
+    })
+    expect(
+      validatePickerInputs(
+        [at],
+        { at: '2026-11-01 01:30:00' },
+        { ...newYork, overlapChoices: { at: 'earlier' } },
+      ),
+    ).toEqual({ kind: 'ok', conditions: [{ column: 'at', value: '2026-11-01T05:30:00+00:00' }] })
+  })
+
+  it('cannot convert without a display time zone and does not convert CONTAINS', () => {
+    expect(
+      validatePickerInputs(
+        [at],
+        { at: '2026-11-02 00:00:00' },
+        { timeZone: null, overlapChoices: {} },
+      ),
+    ).toEqual({ kind: 'errors', errors: { at: 'TIME_ZONE_UNAVAILABLE' } })
+    expect(validatePickerInputs([atContains], { atText: '2026-11' }, TOKYO_TIME)).toEqual({
+      kind: 'ok',
+      conditions: [{ column: 'atText', value: '2026-11' }],
+    })
   })
 })
 

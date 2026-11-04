@@ -26,7 +26,7 @@ U4 は独立した配備の対象ではなく、新しいサーバー・表・�
 | リンタ | oxlint・ESLint・Stylelint | `react/no-danger`、`no-console`、`export default` の禁止、機能どうしの import の制限（`features/tables` は `app/display-settings`・`shared/` だけを使う） |
 | ライセンスヘッダー | 既存の検査 | 足す Java・TypeScript・CSS・E2E の先頭に Apache License 2.0 のヘッダー。`businessDataSchema.sql` は今のまま |
 | ビルド | Java のコンパイル・SpotBugs（FindSecBugs）・TypeScript の型検査・Vite のビルド | `labelValueType` の型が通る。SQL を足さないため `SQL_` の指摘は当たらない。SpotBugs の除外・ArchUnit の境界テスト（`BusinessDataBoundaryArchitectureTest` など）は緩めない |
-| 単体テスト | JUnit（サーバー）、Vitest・fast-check・vitest-axe（画面） | `ReferencePolicyTest`（`labelValueType` の状態ごとの有無と値）、応答の JSON の形、画面の純粋な関数（初めの値・送る値・検索の条件・`formatCell`）と性質ベースのテスト、部品のテスト（`DateTimeField`・`TimeZoneNotice`・フォーム・一覧・詳細・検索・ピッカー）と `vitest-axe`。今の `formDiff`・`searchConditions`・`pickerSearch`・`valueFormat` のテストの書き換え（件数を記録する） |
+| 単体テスト | JUnit（サーバー）、Vitest・fast-check・vitest-axe（画面） | `ReferencePolicyTest`（`labelValueType` の状態ごとの有無と値）、応答の JSON の形、画面の純粋な関数（初めの値・送る値・検索の条件・`formatCell`）と性質ベースのテスト、部品のテスト（`DateTimeField`・`TimeZoneNotice`・フォーム・一覧・詳細・検索・ピッカー）と `vitest-axe`。今の `formDiff`・`searchConditions`・`pickerSearch`・`valueFormat` のテストの書き換え（件数を記録する）。日時のテストはタイムゾーンを引数で固定し、Node の `TZ` を変えても同じ結果になることを1件確かめる（手元は `Asia/Tokyo`、CI の機械は UTC のため。NFR5.2.1） |
 | 結合テスト | Spring を起動する `XxxIT` | `ReferenceConnectionUsageIT`（`labelValueType` が付く定義で接続の数が同じ。足すか今の場面で確かめるかはコード生成の計画で1つに決める）、`ReferenceSecretLeakIT`・`BusinessDataSecretLeakIT`・他テーブル参照の認可のテスト（変更なし）、U3 の3種類の対象DB の結合テスト（変更なし） |
 | カバレッジ | JaCoCo・`@vitest/coverage-v8` | 全体の下限（行 80%・分岐 70%）。サーバーは `businessdata.domain`・`businessdata.web`（パッケージごとの下限の対象）を満たす。除外を増やさない。`src/features/tables/` の値は Build and Test で記録する |
 | 安全の検査 | Gitleaks・OSV-Scanner | 新しい依存が無く、lockfile を変えない |
@@ -42,7 +42,7 @@ U4 は独立した配備の対象ではなく、新しいサーバー・表・�
 
 ### 3.1 配備の手順（Dockerfile は WAR を写すだけ）
 
-1. 配備の前に、`./gradlew verify` が通った状態の WAR を使う。WAR の SHA-256 を記録し、WAR の中に新しい画面とサーバーのクラスが入っていること（`static/assets/` があり、`ReferenceFieldResponse` のクラスの日時が新しい、など）を確かめる。
+1. 配備の前に、配備するコミットで `./gradlew verify` が作った WAR を使う。そのコミットのハッシュと WAR の SHA-256 を並べて記録し、WAR の中身に `labelValueType` の文字列が入っていること（`ReferenceFieldResponse` のクラスと `static/assets/` の JS の両方）を確かめる（Dockerfile は手元の WAR を写すだけで、日時では古い WAR を見分けられないため）。
 2. `docker compose up -d --build app` の後、`docker inspect` でコンテナのイメージ ID が `mastersmith:local` の ID と一致することを確かめ、食い違うときは `--force-recreate --no-deps` で作り直す。
 3. ヘルスチェックが通るまで配備完了とみなさない。
 4. 内部DB・設定の変更が無いため、入れ替えの前の内部DB の複写は要らない。
@@ -54,6 +54,12 @@ U4 は独立した配備の対象ではなく、新しいサーバー・表・�
 ### 3.3 スモークテスト（配備の後。手順は Deployment Pipeline、実行は Deployment Execution）
 
 ログインなどパスワードが要る操作は依頼者が行い、AI は画面の結果の報告と監査・ログで裏付ける（`project.md`）。業務データの書き込みは、見本の対象DB の架空の行か、確かめ用に作った行だけで行う。
+
+前提（スモークテストの前に確かめる）:
+- 使う表は、見本の対象DB（`docker/targetdb/postgres/01-sample-schema.sql`）で時点を表す型の列を持つ唯一の表 `sales.customers`（`created_at TIMESTAMP WITH TIME ZONE`）。
+- 配備したアプリで適用中の DSL に `sales.customers` が載り、`created_at` が一覧・詳細に出て、作成・更新の欄と検索（範囲）の対象になっていること。DSL の画面か適用中の DSL の取り出しで、値を出さずに設定だけを確かめる。載っていなければ S1〜S5 は成り立たないため、Deployment Execution で、`sales.customers` を含む DSL を使い捨ての確かめとして適用してよいかを依頼者に諮る（勝手に適用しない）。
+- 書き込みのアカウント（`03-writer-account.sh`）が見本の対象DB にあり、アプリの `.env` に書き込みの接続の設定があること（項目の有無だけを見る。値は見ない）。依頼者の利用者が `sales.customers` の作成・更新の権限を持つこと。
+- 後始末: S3・S4 で作った行は、名前に確かめ用の目印（例: `U4 確かめ`）を付けて作り、スモークテストの終わりに画面の削除で消す。消したことと件数を記録する。前からある見本の行は変えない。
 
 | 項目 | 確かめ | 期待 |
 |---|---|---|
@@ -72,12 +78,24 @@ U4 は独立した配備の対象ではなく、新しいサーバー・表・�
 | # | 渡すこと | 持ち主の段 |
 |---|---|---|
 | H1 | k6 の既存の業務データの場面（`bizDefinition`・一覧・詳細・参照の場面）を台本を変えずに流し、今の目標を満たすこと（NFR2.1.2）。測れなければ `Unverified` | Build and Test（Performance Validation の段が無いため） |
-| H2 | E2E の全件（200 を含む）の通過と、185 の axe の違反 0 件を件数で記録する。表 `e2e_event` を足した後も 180・185・190・195 が通ること | Build and Test |
+| H2 | E2E の全件（200 を含む）の通過と、185 の axe の違反 0 件を件数で記録する。表 `e2e_event` の追加が既存の流れに影響しないことは、既存の DSL（`businessDataDsl.ts`）が表を明示に列挙していることで足りる（180・185・190・195 は 200 より前に流れ、200 が置き換える DSL の影響も受けない）。`e2e_event` の SQL は準備の SQL（単一のトランザクション）に入り、誤ると全 E2E が止まるため、全体を流す前に準備だけ（または 180 を単独）で通ることを確かめる（コード生成の段で、見本の PostgreSQL の使い捨てのスキーマで `BEGIN … ROLLBACK` により構文を確かめ済み） | Build and Test |
 | H3 | 書き換えた単体テスト（`formDiff`・`searchConditions`・`pickerSearch`・`valueFormat` など）の前と後の件数 | Build and Test |
 | H4 | `verify` と CI の時間、`src/features/tables/` のカバレッジの値を記録する | Build and Test |
 | H5 | 2択を別の `FormField` に置く組み方が axe を通ること（NFR Design のレビューの指摘。通らなければ legend なしの形へ切り替える案） | Code Generation の最初 |
 | H6 | 配備の前に WAR の SHA-256 と中身を確かめる（3.1） | Deployment Execution |
 | H7 | スモークテスト S1〜S7（3.3）と、監査の件数の確かめ | Deployment Execution |
+
+## 5. 承認の場の決定
+
+U4 の確かめの場（2026-11-04）で、依頼者が Request Changes を選び、レビュー（`reviews/review-01.md`）の指摘をまとめて直した。
+
+| 指摘 | 直したところ |
+|---|---|
+| R-01（Major）スモークテストの前提 | 3.3 に、使う表 `sales.customers`、適用中の DSL に載っているかの確かめと載っていないときの扱い、書き込みのアカウント、作った行の後始末を書いた |
+| R-02 WAR の確かめ方 | 3.1 の手順1を、コミットのハッシュと SHA-256 の対応づけと、`labelValueType` の文字列の有無の確かめにした |
+| R-03 200 の DSL | `infrastructure-specification.md` の Shared Infrastructure と 4 節の H2 に、200 が適用中の DSL を置き換えることと、200 より後の流れの決まり、表の追加の影響の読み方を書いた |
+| R-04 NFR5.2 | 2 節の単体テストの行に `TZ` に依らない確かめを足し、`traceability.json` の NFR5.2 をそこに向けた |
+| R-05 準備の SQL | 4 節の H2 に、全体を流す前に準備だけで通ることを確かめる手順を足した |
 
 ## Sources
 

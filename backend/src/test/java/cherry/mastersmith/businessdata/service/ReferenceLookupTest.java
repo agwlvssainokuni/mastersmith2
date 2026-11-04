@@ -41,6 +41,7 @@ import cherry.mastersmith.businessdata.domain.RowQueryStage;
 import cherry.mastersmith.businessdata.domain.RowRecord;
 import cherry.mastersmith.businessdata.domain.RowValues;
 import cherry.mastersmith.businessdata.domain.TableQuery;
+import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.businessdata.repository.RowSearchResult;
 import cherry.mastersmith.businessdata.testsupport.BusinessDataDslFixture;
 import cherry.mastersmith.businessdata.testsupport.FakeBusinessDataPorts;
@@ -178,8 +179,39 @@ class ReferenceLookupTest {
             column("amount").dbType("numeric").build(),
             column("name").build());
 
+    /** ラベルのカラムが時差つきの日時の参照先（Intent 261102-timezone-ui-polish の U4、D30）。 */
+    private static final DslTable SLOT = table(
+            "slot",
+            false,
+            List.of("id"),
+            column("id").dbType("int4").build(),
+            column("name").build(),
+            column("starts_at").dbType("timestamptz").build());
+
+    /** SLOT を REFERENCE と LOOKUP で参照する参照元（labelValueType の確かめ）。 */
+    private static final DslTable EVENTS = table(
+            "events",
+            false,
+            List.of("id"),
+            column("id").dbType("int4").build(),
+            column("slot_ref")
+                    .form(FormPart.SELECT)
+                    .options(reference("slot", "id", "starts_at"))
+                    .build(),
+            column("slot_pick")
+                    .form(FormPart.LOOKUP)
+                    .options(new OptionSource(
+                            OptionSourceKind.LOOKUP,
+                            List.of(),
+                            "slot",
+                            "id",
+                            "starts_at",
+                            List.of(new LookupSearchItem("name", SearchOperator.CONTAINS)),
+                            List.of(new LookupListItem("starts_at", 1), new LookupListItem("name", 2))))
+                    .build());
+
     private static final DslModel DSL =
-            BusinessDataDslFixture.model("sample", ORDERS, DEPT, TEAM, SHOP, HIDDEN, PICKS, PRICES);
+            BusinessDataDslFixture.model("sample", ORDERS, DEPT, TEAM, SHOP, HIDDEN, PICKS, PRICES, SLOT, EVENTS);
 
     private FakeBusinessDataPorts ports;
 
@@ -283,6 +315,54 @@ class ReferenceLookupTest {
         assertThat(ports.calls.stream().filter(c -> c.startsWith("snapshotFor")).count())
                 .as("写しは1回だけ")
                 .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("an AVAILABLE reference and lookup carry the label column value type, and others carry none")
+    void labelValueTypeByStatus() {
+        ports.executor.referenceResults.add(count("code", 200));
+        ports.executor.referenceResults.add(count("id", 201));
+        ports.executor.referenceResults.add(rows("id", "name", "S1"));
+
+        Map<String, ReferenceField> fields = ((ReferenceLookup.DefinitionReferences.Read)
+                        lookup.definitionReferences(source(), DefinitionPurpose.CREATE))
+                .fields();
+
+        assertThat(fields.get("dept_code").labelValueType())
+                .as("REFERENCE の AVAILABLE（ラベルは文字）")
+                .isEqualTo(ValueType.STRING);
+        assertThat(fields.get("dept_pick").labelValueType())
+                .as("LOOKUP の AVAILABLE（ラベルは一覧の最初の列の name）")
+                .isEqualTo(ValueType.STRING);
+        assertThat(fields.get("team_id").status()).isEqualTo(ReferenceStatus.TOO_MANY);
+        assertThat(fields.get("team_id").labelValueType()).as("TOO_MANY").isNull();
+        assertThat(fields.get("hidden_ref").labelValueType())
+                .as("NO_PERMISSION")
+                .isNull();
+        assertThat(fields.get("ro_ref").labelValueType())
+                .as("入力できない NO_PERMISSION")
+                .isNull();
+    }
+
+    @Test
+    @DisplayName("a time label column gives DATETIME_TZ to both kinds without an extra statement or borrow")
+    void timeLabelValueType() {
+        ports.executor.referenceResults.add(rows("id", "starts_at", "1"));
+
+        Map<String, ReferenceField> fields = ((ReferenceLookup.DefinitionReferences.Read) lookup.definitionReferences(
+                        (TableAccessResolution.Resolved) resolver.resolve(1L, new TableQuery("sample", "events", null)),
+                        DefinitionPurpose.UPDATE))
+                .fields();
+
+        assertThat(fields.get("slot_ref").status()).isEqualTo(ReferenceStatus.AVAILABLE);
+        assertThat(fields.get("slot_ref").labelValueType()).isEqualTo(ValueType.DATETIME_TZ);
+        assertThat(fields.get("slot_pick").status()).isEqualTo(ReferenceStatus.AVAILABLE);
+        assertThat(fields.get("slot_pick").labelValueType()).isEqualTo(ValueType.DATETIME_TZ);
+        assertThat(withReads()).as("借りるのは REFERENCE の1回だけ").isEqualTo(1);
+        assertThat(ports.executor.references).as("文は REFERENCE の選択肢の1つだけ").hasSize(1);
+        assertThat(fields.get("slot_ref").toString())
+                .contains("labelValueType=DATETIME_TZ")
+                .doesNotContain("ラベル1");
     }
 
     @Test

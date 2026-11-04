@@ -29,10 +29,17 @@ import type { SearchRowsRequest } from './businessDataApi'
 import { parseRowPage } from './businessDataParse'
 import { clearBusinessDataStore, readTableEntry } from './businessDataStore'
 import type { RowPage, TableDefinition } from './businessDataTypes'
-import { SAMPLE_REF, wirePage, wireRow } from './testing/businessDataSamples'
+import * as timeZoneModule from '../../shared/format/timeZone'
+import { SAMPLE_REF, wirePage, wireRow, wireSearchField } from './testing/businessDataSamples'
 import { sampleDefinition } from './testing/sampleDefinition'
 import { tableFrame } from './testing/tableProviders'
-import { useRowSearch, type RowSearchState } from './useRowSearch'
+import { useRowSearch, type RowSearchState, type RowSearchTime } from './useRowSearch'
+
+// 変換（parseLocalDateTime）の呼び出しの回数を数える。中身は本物のまま（NFR2.1.5）
+vi.mock('../../shared/format/timeZone', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../shared/format/timeZone')>()
+  return { ...actual, parseLocalDateTime: vi.fn(actual.parseLocalDateTime) }
+})
 
 beforeEach(() => clearBusinessDataStore())
 afterEach(() => {
@@ -62,11 +69,12 @@ function problem(status: number, code: string, body: Record<string, unknown> = {
 function render(
   search: (request: SearchRowsRequest) => Promise<RowPage>,
   definition: TableDefinition = sampleDefinition(),
+  time?: RowSearchTime,
 ) {
   const latest: { state: RowSearchState | null } = { state: null }
   const onStale = vi.fn()
   function Probe() {
-    const state = useRowSearch(SAMPLE_REF, definition, onStale, search)
+    const state = useRowSearch(SAMPLE_REF, definition, onStale, search, time)
     useEffect(() => {
       latest.state = state
     })
@@ -190,5 +198,55 @@ describe('useRowSearch', () => {
     const second = render(search)
     await waitFor(() => expect(second.latest.state?.status).toBe('ready'))
     expect(second.latest.state?.listState?.size).toBe(50)
+  })
+
+  // Intent 261102-timezone-ui-polish の U4（計画 Step 13、D23・D28、NFR2.1.5）
+  it('converts an instant condition once and not again on paging, sorting or resizing', async () => {
+    const definition = sampleDefinition({
+      searchFields: [wireSearchField('at', { operator: 'EQUALS', valueType: 'DATETIME_TZ' })],
+    })
+    const search = vi.fn((request: SearchRowsRequest) =>
+      Promise.resolve(page(['A01'], { page: request.page })),
+    )
+    const { latest } = render(search, definition, { timeZone: 'Asia/Tokyo', waiting: false })
+    await waitFor(() => expect(latest.state?.status).toBe('ready'))
+    const state = latest.state?.listState
+    if (!state) throw new Error('no list state')
+    act(() =>
+      latest.state?.setListState({
+        ...state,
+        search: { at: { value: '2026-11-02 00:00:00', from: '', to: '', values: [] } },
+      }),
+    )
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(2))
+    expect(search.mock.calls[1][0].conditions).toEqual([
+      { column: 'at', value: '2026-11-01T15:00:00+00:00' },
+    ])
+    const converted = vi.mocked(timeZoneModule.parseLocalDateTime).mock.calls.length
+    const searched = latest.state?.listState
+    if (!searched) throw new Error('no list state')
+    act(() => latest.state?.setListState({ ...searched, page: 2 }))
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(3))
+    act(() =>
+      latest.state?.setListState({
+        ...searched,
+        page: 2,
+        sort: { column: 'code', direction: 'DESC' },
+        size: 50,
+      }),
+    )
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(4))
+    expect(search.mock.calls[3][0].conditions).toEqual(search.mock.calls[1][0].conditions)
+    expect(vi.mocked(timeZoneModule.parseLocalDateTime).mock.calls.length).toBe(converted)
+  })
+
+  it('does not send a search while waiting for the display time zone', async () => {
+    const search = vi.fn((request: SearchRowsRequest) =>
+      Promise.resolve(page(['A01'], { page: request.page })),
+    )
+    const { latest } = render(search, sampleDefinition(), { timeZone: null, waiting: true })
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 30)))
+    expect(search).not.toHaveBeenCalled()
+    expect(latest.state?.status).toBe('idle')
   })
 })

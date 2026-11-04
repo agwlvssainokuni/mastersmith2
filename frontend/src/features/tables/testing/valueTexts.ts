@@ -26,4 +26,5 @@ export const JA_TEXTS: ValueTexts = {
   no: 'いいえ',
   on: 'オン',
   off: 'オフ',
+  timeZoneUnavailable: '時刻を表示できません',
 }

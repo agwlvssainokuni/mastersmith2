@@ -17,6 +17,7 @@ package cherry.mastersmith.businessdata.web;
 
 import cherry.mastersmith.businessdata.domain.ReferenceField;
 import cherry.mastersmith.businessdata.domain.ReferenceStatus;
+import cherry.mastersmith.businessdata.domain.ValueType;
 import cherry.mastersmith.dsl.domain.OptionSourceKind;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.List;
@@ -26,16 +27,21 @@ import java.util.List;
  * REFERENCE で AVAILABLE のときだけ、ピッカーの情報は LOOKUP で AVAILABLE のときだけ持ち、ほかは載せない（BR3.6）。文字列にする
  * ときは選択肢の数だけを出す（BR10.1）。
  *
+ * <p>{@code labelValueType} は AVAILABLE のときだけ載せる（Intent 261102-timezone-ui-polish の U4、functional-spec.md D30・
+ * security-design.md 2.1）。足すだけの項目で、ほかの項目の名前・型・値は変えない（NFR4.2.1）。
+ *
  * @param kind 種類（{@code REFERENCE} か {@code LOOKUP}）
  * @param status 状態
  * @param options 選択肢（REFERENCE で AVAILABLE のときだけ）
  * @param picker ピッカーの情報（LOOKUP で AVAILABLE のときだけ）
+ * @param labelValueType ラベルの列の受け渡しの型（AVAILABLE で型が決まったときだけ）
  */
 public record ReferenceFieldResponse(
         OptionSourceKind kind,
         ReferenceStatus status,
         @JsonInclude(JsonInclude.Include.NON_NULL) List<ReferenceOptionResponse> options,
-        @JsonInclude(JsonInclude.Include.NON_NULL) PickerInfoResponse picker) {
+        @JsonInclude(JsonInclude.Include.NON_NULL) PickerInfoResponse picker,
+        @JsonInclude(JsonInclude.Include.NON_NULL) ValueType labelValueType) {
 
     /**
      * 参照の項目から作る。
@@ -53,13 +59,15 @@ public record ReferenceFieldResponse(
                                 .map(ReferenceOptionResponse::from)
                                 .toList()
                         : null,
-                field.picker() == null ? null : PickerInfoResponse.from(field.picker()));
+                field.picker() == null ? null : PickerInfoResponse.from(field.picker()),
+                field.status() == ReferenceStatus.AVAILABLE ? field.labelValueType() : null);
     }
 
-    /** 種類・状態・選択肢の数だけを出す（値とラベルを出さない。BR10.1）。 */
+    /** 種類・状態・選択肢の数・ラベルの列の型の名前だけを出す（値とラベルを出さない。BR10.1・D30）。 */
     @Override
     public String toString() {
         return "ReferenceFieldResponse[kind=" + kind + ", status=" + status + ", options="
-                + (options == null ? "none" : options.size()) + ", picker=" + (picker != null) + "]";
+                + (options == null ? "none" : options.size()) + ", picker=" + (picker != null) + ", labelValueType="
+                + labelValueType + "]";
     }
 }

@@ -279,6 +279,7 @@ describe('parseReference (Intent 261029-reference-lookup-cleanup U3, D3, X-1)', 
       status: 'AVAILABLE',
       options: SAMPLE_OPTIONS,
       picker: null,
+      labelValueType: 'STRING',
     })
   })
 
@@ -288,6 +289,7 @@ describe('parseReference (Intent 261029-reference-lookup-cleanup U3, D3, X-1)', 
       status: 'AVAILABLE',
       options: [],
       picker: SAMPLE_PICKER,
+      labelValueType: 'STRING',
     })
   })
 
@@ -302,6 +304,7 @@ describe('parseReference (Intent 261029-reference-lookup-cleanup U3, D3, X-1)', 
       status,
       options: [],
       picker: null,
+      labelValueType: null,
     })
   })
 
@@ -318,9 +321,29 @@ describe('parseReference (Intent 261029-reference-lookup-cleanup U3, D3, X-1)', 
         status: 'NO_PERMISSION',
         options: [],
         picker: null,
+        labelValueType: null,
       })
     },
   )
+
+  // ラベルの列の型（Intent 261102-timezone-ui-polish の U4、計画 Step 6、D30・D31）
+  it.each([
+    ['missing from the body', undefined, null],
+    ['null', null, null],
+    ['DATETIME_TZ', 'DATETIME_TZ', 'DATETIME_TZ'],
+    ['STRING', 'STRING', 'STRING'],
+    ['an unknown value', 'TIMESTAMP_WITH_ZONE', null],
+  ] as const)('reads labelValueType that is %s without rejecting the body', (_, wire, expected) => {
+    expect(parseReference(wireReference({ labelValueType: wire }))?.labelValueType).toBe(expected)
+    expect(parseReference(wireLookup({ labelValueType: wire }))?.labelValueType).toBe(expected)
+  })
+
+  it('does not keep labelValueType for a blocked field even if the body has one', () => {
+    expect(
+      parseReference({ ...wireBlocked('REFERENCE', 'TOO_MANY'), labelValueType: 'DATETIME_TZ' })
+        ?.labelValueType,
+    ).toBeNull()
+  })
 
   it.each([
     ['REFERENCE AVAILABLE without options', wireReference({ options: undefined })],

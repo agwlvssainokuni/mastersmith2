@@ -261,6 +261,75 @@ class ReferenceConnectionUsageIT {
                 }));
     }
 
+    static Stream<Arguments> labelTypedOnBoth() {
+        // 参照元, 対象DB を借りた回数, 参照先の文の数（上の cases() の同じ参照元・用途と同じ値）
+        return Stream.of(Arguments.of("src1", 1, 1), Arguments.of("srclookup", 0, 0))
+                .flatMap(arguments -> Stream.of(DatabaseProduct.POSTGRESQL, DatabaseProduct.MYSQL)
+                        .map(product -> {
+                            Object[] values = arguments.get();
+                            return Arguments.of(values[0], values[1], values[2], product);
+                        }));
+    }
+
+    /**
+     * 定義の応答の参照の項目に {@code labelValueType} が付いても、接続と文の数が今と同じであることを確かめる（Intent
+     * 261102-timezone-ui-polish の U4、D30・NFR2.1.1、NFR 設計のレビューの R-04 を計画で1件足す形に決めたもの）。
+     */
+    @ParameterizedTest(name = "{0} on {3}: borrows {1}, statements {2}")
+    @MethodSource("labelTypedOnBoth")
+    @DisplayName("a definition whose reference carries labelValueType keeps the same connections and statements")
+    void labelValueTypeKeepsTheConnections(String source, int targetBorrows, int statements, DatabaseProduct product) {
+        Env env = product == DatabaseProduct.POSTGRESQL ? postgres : mysql;
+        CountingDataSource internal = counter(env.app(), "dataSource");
+        CountingDataSource target = counter(env.app(), "targetDataSource");
+        internal.pairWith(target);
+        definition(env, source, "CREATE");
+        internal.reset();
+        target.reset();
+
+        HttpResponse<String> response;
+        List<String> reached = null;
+        if (product == DatabaseProduct.MYSQL) {
+            try (StatementLog log = new StatementLog(env.sample().database())) {
+                String mark = log.mark();
+                response = definition(env, source, "CREATE");
+                reached = log.queriesSince(mark, env.sample().reader());
+            }
+        } else {
+            response = definition(env, source, "CREATE");
+        }
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        List<Map<String, Object>> references = Stream.concat(
+                        ((List<Map<String, Object>>)
+                                        HttpTestClient.json(response).get("listColumns"))
+                                .stream(),
+                        ((List<Map<String, Object>>)
+                                        HttpTestClient.json(response).get("detailColumns"))
+                                .stream())
+                .map(c -> (Map<String, Object>) c.get("reference"))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        assertThat(references)
+                .as("参照の項目は AVAILABLE で、ラベルの列（l）の型が付く")
+                .isNotEmpty()
+                .allSatisfy(r -> {
+                    assertThat(r).containsEntry("status", "AVAILABLE");
+                    assertThat(r).containsEntry("labelValueType", "STRING");
+                });
+        assertThat(internal.peak()).as("内部DB の同時の最大").isEqualTo(1);
+        assertThat(target.borrows()).as("対象DB の貸し出し").isEqualTo(targetBorrows);
+        assertThat(target.peerInUseAtBorrow()).as("対象DB を借りるときに内部DB を借りていない").isZero();
+        assertThat(internal.peerInUseAtBorrow()).as("対象DB を借りている間に内部DB を借りない").isZero();
+        assertThat(internal.inUse()).isZero();
+        assertThat(target.inUse()).isZero();
+        if (reached != null) {
+            assertThat(reached.stream().filter(q -> q.startsWith("SELECT")).toList())
+                    .as("参照先の文の数 " + reached)
+                    .hasSize(statements);
+        }
+    }
+
     @Test
     @DisplayName("the list and the detail keep their statement counts (T-C2)")
     void listAndDetailStatementsUnchanged() {

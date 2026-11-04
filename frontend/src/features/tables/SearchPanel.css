@@ -71,6 +71,13 @@
   gap: var(--space-3);
 }
 
+/* 日時の範囲の両端の案内（Intent 261102-timezone-ui-polish の U4、D24） */
+.tables-search-hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 .tables-search-error {
   margin: var(--space-1) 0 0;
   font-size: var(--font-size-sm);

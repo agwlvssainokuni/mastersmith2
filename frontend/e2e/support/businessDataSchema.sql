@@ -69,3 +69,12 @@ CREATE TABLE :"schema".e2e_order (
 
 INSERT INTO :"schema".e2e_order (order_no, customer_code, product_code)
 VALUES ('ORD-001', 'CUST-001', 'PROD-001');
+
+-- 業務データの日時の代表の流れ（200。Intent 261102-timezone-ui-polish の U4、NFR5.3.1、security-design.md 2.8）が使う表。
+-- 時点を表す型（timestamptz）の秒の端数 6 桁のカラムを持つ。見本の行は置かない（行は流れ 200 が自分で作る分だけ）。
+-- 権限は準備の「スキーマのすべての表への GRANT」で読み取りと書き込みの一時のロールに付き、片付けはスキーマごと消える。
+CREATE TABLE :"schema".e2e_event (
+    id VARCHAR(20) NOT NULL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL,
+    occurred_at TIMESTAMPTZ(6)
+);

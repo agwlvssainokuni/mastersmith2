@@ -20,10 +20,15 @@
 // - 説明文は helperText: 作成の必須（blockedRequired）なら D13 の理由ごとの文、そうでなければ D12 の理由ごとの文。
 //   開いた直後は helperText（role="alert"・aria-invalid を付けない。NFR 設計の Q1: A）。保存を押した後の誤りだけを
 //   FormField の error（role="alert"）に渡す。
+// - 値の日時は、参照元のカラムの型で表示のタイムゾーンの書式にする（Intent 261102-timezone-ui-polish の U4、計画 Step 11、
+//   D32）。表示だけで、送る値には使わない（入力不可の項目は送らない）。
 import { FormField, TextInput } from 'make-you-chic-ui'
 import { useTranslation } from 'react-i18next'
+import type { ValueType } from '../businessDataTypes'
 import { requiredBlockedMessageKey } from '../problemMessage'
-import type { ReadonlyReason } from './referenceField'
+import { useValueTexts } from '../tablesText'
+import type { CellTimeZone } from '../valueFormat'
+import { formatReferenceText, type ReadonlyReason } from './referenceField'
 
 export interface ReadonlyReferenceFieldProps {
   index: number
@@ -36,6 +41,10 @@ export interface ReadonlyReferenceFieldProps {
   blockedRequired: boolean
   /** 保存を押した後・保存の後の誤り */
   error: string | undefined
+  /** 参照元のカラムの型（値の書式に使う。D32） */
+  valueType?: ValueType
+  /** 表示のタイムゾーンの状態（作成・更新の画面がフォームを開いたときに固定した値） */
+  timeZone: CellTimeZone
 }
 
 /** 入力不可の参照の項目 */
@@ -46,15 +55,18 @@ export function ReadonlyReferenceField({
   reason,
   blockedRequired,
   error,
+  valueType = 'STRING',
+  timeZone,
 }: ReadonlyReferenceFieldProps) {
   const { t } = useTranslation()
+  const texts = useValueTexts()
   const helperText = blockedRequired
     ? t(requiredBlockedMessageKey(reason))
     : t(reason === 'too-many' ? 'tables.reference.tooMany' : 'tables.reference.noPermission')
   return (
     <FormField label={name} error={error} helperText={helperText}>
       <TextInput
-        value={value}
+        value={value === '' ? '' : formatReferenceText(value, valueType, { texts, timeZone })}
         readOnly
         aria-readonly="true"
         autoComplete="off"

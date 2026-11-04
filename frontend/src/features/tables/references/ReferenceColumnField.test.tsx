@@ -62,6 +62,8 @@ function renderColumn(overrides: Partial<ReferenceColumnFieldProps> = {}) {
     onBlur: vi.fn(),
     renderPlain: () => <p>既存の入力</p>,
     renderLocked: () => <p>既存の読み取り</p>,
+    timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
+    now: '2026-07-01T00:00:00Z',
     ...overrides,
   }
   return renderReference(<ReferenceColumnField {...props} />)

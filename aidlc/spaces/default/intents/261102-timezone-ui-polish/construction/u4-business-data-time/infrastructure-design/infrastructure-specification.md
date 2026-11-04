@@ -33,7 +33,7 @@ U4 は、業務データの画面の時刻の表示・入力・検索を直し�
 
 | Shared Resource | Owner Unit | Consumer Units | Access Boundary |
 |---|---|---|---|
-| E2E の実行のスキーマ（見本の PostgreSQL） | 既存（前の Intent の業務データの E2E） | U4（表 `e2e_event` と流れ 200）・既存の 180・185・190・195 | 表の追加だけ。既存の表 `e2e_item` と行・共有の DSL（`businessDataDsl.ts`）は変えない。200 は専用の DSL を適用するため、200 より後に流れるファイルは適用中の DSL に頼らない（今の決まり） |
+| E2E の実行のスキーマ（見本の PostgreSQL） | 既存（前の Intent の業務データの E2E） | U4（表 `e2e_event` と流れ 200）・既存の 180・185・190・195 | 表の追加だけ。既存の表 `e2e_item` と行・共有の DSL（`businessDataDsl.ts`）は変えない。200 はアプリで適用中の DSL を専用のもの（版の印 `E2ET_`）に置き換える。200 は最後に流れる前提で、200 より後の番号の流れは足さない（足すなら先頭で自分の DSL を適用する） |
 
 ## Sources
 

@@ -21,6 +21,8 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { parseColumnDefinition } from './businessDataParse'
 import type { ColumnDefinition } from './businessDataTypes'
+import { diffForm, resolveFormDateTimes, type FormTime } from './formDiff'
+import { dateTimeErrorReason } from './resolveDateTimeInput'
 import {
   compareDecimalText,
   effectiveMaxLength,
@@ -113,6 +115,53 @@ describe('formValidation', () => {
     expect(validateForm(columns, 'update', { name: 'a'.repeat(10_001) })).toEqual({
       name: 'TOO_LONG',
     })
+  })
+
+  // 日時の欄（Intent 261102-timezone-ui-polish の U4、計画 Step 9、D18〜D22）
+  it('reports date time fields that cannot be resolved before any server rule', () => {
+    const at = column('at', { valueType: 'DATETIME_TZ', formPart: 'datetime', required: true })
+    const local = column('local', { valueType: 'DATETIME', formPart: 'datetime' })
+    const columns = [at, local]
+    const time: FormTime = { timeZone: 'America/New_York', overlapChoices: {} }
+    const cases: [string, string, string][] = [
+      ['2026-11-02T09:30', '2026-11-02 09:30:00', 'DATE_TIME_FORMAT'],
+      ['2026-03-08 02:30:00', '2026-11-02 09:30:00', 'DATE_TIME_GAP'],
+      ['2026-11-01 01:30:00', '2026-11-02 09:30:00', 'DATE_TIME_OVERLAP'],
+    ]
+    for (const [atText, localText, reason] of cases) {
+      const current = { at: atText, local: localText }
+      const values = diffForm(columns, 'create', {}, current, [], undefined, time)
+      const dateTimes = resolveFormDateTimes(columns, 'create', {}, current, [], undefined, time)
+      // 送らなかった必須の欄も REQUIRED ではなく日時の理由にする
+      expect(validateForm(columns, 'create', values, [], undefined, dateTimes)).toEqual({
+        at: reason,
+      })
+    }
+    const unavailable = resolveFormDateTimes(
+      columns,
+      'create',
+      {},
+      { at: '2026-11-02 09:30:00', local: '2026/11/02' },
+      [],
+      undefined,
+      { timeZone: null, overlapChoices: {} },
+    )
+    expect(validateForm(columns, 'create', {}, [], undefined, unavailable)).toEqual({
+      at: 'TIME_ZONE_UNAVAILABLE',
+      local: 'DATE_TIME_FORMAT',
+    })
+  })
+
+  it('accepts a resolved date time and keeps the old result without the date time argument', () => {
+    const at = column('at', { valueType: 'DATETIME_TZ', formPart: 'datetime', required: true })
+    const time: FormTime = { timeZone: 'America/New_York', overlapChoices: { at: 'earlier' } }
+    const current = { at: '2026-11-01 01:30:00.123456' }
+    const values = diffForm([at], 'create', {}, current, [], undefined, time)
+    expect(values).toEqual({ at: '2026-11-01T05:30:00.123456+00:00' })
+    const dateTimes = resolveFormDateTimes([at], 'create', {}, current, [], undefined, time)
+    expect(validateForm([at], 'create', values, [], undefined, dateTimes)).toEqual({})
+    expect(validateForm([at], 'create', values)).toEqual({})
+    expect(dateTimeErrorReason({ kind: 'ok', wire: 'x', overlap: null })).toBeUndefined()
   })
 
   it('compares decimal texts', () => {

@@ -65,6 +65,7 @@ function renderField(overrides: Partial<ReferenceSelectFieldProps> = {}) {
     disabled: false,
     onChange: vi.fn(),
     onBlur: vi.fn(),
+    timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
     ...overrides,
   }
   const view = renderReference(<ReferenceSelectField {...props} />)
@@ -81,6 +82,32 @@ describe('ReferenceSelectField', () => {
     expect(texts).toEqual(['（選ばない）', '東京 本店 (C001)', 'C002', '大阪 支店 (C003)'])
     await userEvent.setup().selectOptions(select, 'C003')
     expect(props.onChange).toHaveBeenCalledWith('C003')
+  })
+
+  // Intent 261102-timezone-ui-polish の U4、計画 Step 11、D32・D33
+  it('shows date time labels and values in the display time zone and sends the original text', async () => {
+    const instants: readonly ReferenceOption[] = [
+      { value: '2026-11-01T15:00:00+00:00', label: '2026-11-01T15:00:00.5+00:00' },
+      { value: '2026-11-02T15:00:00+00:00', label: null },
+    ]
+    const { props } = renderField({
+      column: column(instants, {
+        valueType: 'DATETIME_TZ',
+        reference: referenceField({ options: instants, labelValueType: 'DATETIME_TZ' }),
+      }),
+      timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
+    })
+    const select = await screen.findByRole('combobox', { name: '顧客' })
+    const texts = within(select)
+      .getAllByRole('option')
+      .map((option) => option.textContent)
+    expect(texts).toEqual([
+      '（選ばない）',
+      '2026-11-02 00:00:00.5 +09:00 (2026-11-02 00:00:00 +09:00)',
+      '2026-11-03 00:00:00 +09:00',
+    ])
+    await userEvent.setup().selectOptions(select, '2026-11-02T15:00:00+00:00')
+    expect(props.onChange).toHaveBeenCalledWith('2026-11-02T15:00:00+00:00')
   })
 
   it('adds the saved value alone at the top when it is not in the options (D8)', async () => {

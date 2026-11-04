@@ -46,7 +46,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 /** 他テーブル参照の判定と組み立ての関数の単体テスト（BR2.5・BR3.1・BR3.2・BR3.5・BR4.2・BR4.4・BR7.6・BR11.4）。 */
 class ReferencePolicyTest {
 
-    /** 参照先のテーブル（id は主キーの整数、secret は password、blob はバイナリ、amount は小数）。 */
+    /** 参照先のテーブル（id は主キーの整数、secret は password、blob はバイナリ、amount は小数、occurred は時差つきの日時）。 */
     private static final DslTable DEPT = table(
             "dept",
             false,
@@ -56,12 +56,14 @@ class ReferencePolicyTest {
             column("code").build(),
             column("secret").form(FormPart.PASSWORD).build(),
             column("blob").build(),
-            column("amount").build());
+            column("amount").build(),
+            column("occurred").build());
 
     private static final Map<String, ColumnKind> KINDS = Map.of(
             "id", kind(ValueType.INTEGER),
             "blob", kind(ValueType.BINARY),
-            "amount", kind(ValueType.DECIMAL));
+            "amount", kind(ValueType.DECIMAL),
+            "occurred", kind(ValueType.DATETIME_TZ));
 
     private static TableAccessView view(MainPermission table, Map<String, MainPermission> overrides) {
         Map<String, MainPermission> columnMain = new HashMap<>();
@@ -227,6 +229,53 @@ class ReferencePolicyTest {
                 List.of(new LookupListItem("code", 1)));
         assertThat(explicit.labelColumn()).isEqualTo("amount");
         assertThat(reference("id", "name").labelColumn()).isEqualTo("name");
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "occurred, DATETIME_TZ",
+        "name, STRING",
+        "amount, DECIMAL",
+        "id, INTEGER",
+        "blob, BINARY"
+    })
+    @DisplayName("the label value type of a reference is the value type of its label column in the target view")
+    void labelValueTypeOfReference(String labelColumn, ValueType expected) {
+        assertThat(ReferencePolicy.labelValueTypeOf(
+                        reference("id", labelColumn), readable().orElseThrow()))
+                .isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("the label value type of a lookup follows its label column, explicit or the first list column")
+    void labelValueTypeOfLookup() {
+        TableAccessView view = readable().orElseThrow();
+        ReferenceTarget explicit = lookup(
+                "occurred",
+                List.of(new LookupSearchItem("name", SearchOperator.EQUALS)),
+                List.of(new LookupListItem("code", 1)));
+
+        assertThat(ReferencePolicy.labelValueTypeOf(standardLookup(), view)).isEqualTo(ValueType.STRING);
+        assertThat(ReferencePolicy.labelValueTypeOf(explicit, view)).isEqualTo(ValueType.DATETIME_TZ);
+    }
+
+    @Test
+    @DisplayName("the label value type is null when the label column is missing from the view or from the DSL")
+    void labelValueTypeOfMissingColumn() {
+        assertThat(ReferencePolicy.labelValueTypeOf(
+                        reference("id", "occurred"),
+                        view(MainPermission.READ, Map.of("occurred", MainPermission.NONE))))
+                .as("ラベルのカラムが NONE（判定の材料に無い）")
+                .isNull();
+        assertThat(ReferencePolicy.labelValueTypeOf(
+                        reference("id", "missing"), readable().orElseThrow()))
+                .as("ラベルのカラムが DSL に無い")
+                .isNull();
+        assertThatThrownBy(
+                        () -> ReferencePolicy.labelValueTypeOf(null, readable().orElseThrow()))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> ReferencePolicy.labelValueTypeOf(reference("id", "name"), null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     @Test

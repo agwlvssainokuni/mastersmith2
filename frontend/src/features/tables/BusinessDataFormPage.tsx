@@ -37,6 +37,13 @@
 //   選ぶ。入力不可の参照の項目は送る本文・変更の有無・画面の検証から外し（D15）、作成の必須の入力不可の項目は保存の前の
 //   検証で D13 の文の誤りにして送らない。項目の誤りの文は referenceErrorKey で選ぶ（D31・D32）。LOOKUP のラベルは
 //   useReferenceLabels と画面の状態に持つ（D18・D19）。定義の読み直しの後は、入力不可に変わった項目の入力を捨てる（D35）。
+// - 日時（Intent 261102-timezone-ui-polish の U4、計画 Step 13、D10〜D22・D35、NFR 設計の Q1: A、W2）:
+//   定義の詳細のカラム（参照のラベル・ピッカーを含む）に時点を表す型があるときは、表示のタイムゾーンが ready になってから
+//   フォームを開き、そのときのタイムゾーンをフォームに固定する（開いている間に変わっても、入れた文字の意味を変えない。D12）。
+//   読み込みの失敗の間はフォームを開かず、読み込み中の表示の位置に「再読み込み」の帯を出し、再読み込みが成功したら開く（Q1: A）。
+//   日時の文字の欄（dateTimeInputKind）は DateTimeField。確かめは欄を離れたとき・保存の押下・2択の選択のときだけで、
+//   夏時間で2回ある時刻は、作成の欄と更新で変えた欄に2択を出す（D21・D22）。文字を書き換えると2択の選択を解く。
+//   案内の今の時差は、画面を開いたときに1回だけ取った今の時刻（now。テストで差し替える）で決める。
 import {
   Alert,
   Button,
@@ -53,12 +60,14 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { DisplayTimeZoneErrorBar } from '../../app/display-settings/DisplayTimeZoneErrorBar'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import { TABLE_PATHS, toTablePath } from '../../app/navigation/tablePlaceholderPath'
 import { useWorkRole } from '../../app/work-role/WorkRoleProvider'
 import { NullValue } from '../../shared/null-value/NullValue'
 import { LeaveConfirmDialog } from '../../shared/unsaved-guard/LeaveConfirmDialog'
 import { useUnsavedGuard } from '../../shared/unsaved-guard/useUnsavedGuard'
+import type { OverlapChoice } from '../../shared/format/timeZone'
 import { getDefinition } from './businessDataApi'
 import { putRowKey } from './businessDataStore'
 import type {
@@ -70,14 +79,19 @@ import type {
   TableDefinition,
 } from './businessDataTypes'
 import { BusinessDataProblemView } from './BusinessDataProblemView'
+import { DateTimeField } from './DateTimeField'
 import {
+  dateTimeInputKind,
   diffForm,
   hasFormChanges,
   initialInputs,
   isBooleanInput,
   isEditable,
+  resolveFormDateTime,
+  resolveFormDateTimes,
   type FormInputs,
   type FormMode,
+  type FormTime,
 } from './formDiff'
 import { effectiveMaxLength, isRequiredInput, validateForm, validateValue } from './formValidation'
 import {
@@ -95,6 +109,11 @@ import {
   lockedReferenceColumns,
 } from './references/referenceField'
 import { useReferenceLabels, type LabelItem } from './references/useReferenceLabels'
+import {
+  dateTimeErrorReason,
+  type DateTimeResolution,
+  type OverlapOffsets,
+} from './resolveDateTimeInput'
 import { rowLabelParts, rowLabelText } from './rowLabel'
 import { useForbiddenFollowUp, useTableRefFromSearch, useWorkRoleKey } from './tableHookSupport'
 import { localizedName, useValueTexts } from './tablesText'
@@ -102,7 +121,8 @@ import { useRowDetail } from './useRowDetail'
 import { useRowWrite, type RowWriteApi } from './useRowWrite'
 import { useScreenPresence } from './useScreenPresence'
 import { useTableDefinition } from './useTableDefinition'
-import { formatCell } from './valueFormat'
+import { columnsNeedTimeZone, useTablesTimeZone, type FieldTimeZone } from './useTablesTimeZone'
+import { formatCell, type CellTimeZone } from './valueFormat'
 import './tablesCommon.css'
 import './BusinessDataFormPage.css'
 
@@ -125,7 +145,40 @@ interface FormState {
   current: FormInputs
   /** 入力を変えるたびに 1 進む（未保存の確かめの版の数） */
   version: number
+  /** フォームを開いたときに固定した表示のタイムゾーン（時点を表す型が無いフォームは null。D12） */
+  timeZone: string | null
+  /** 日時の欄ごとの夏時間の2択の選択（D21） */
+  overlapChoices: Readonly<Record<string, OverlapChoice | null>>
+  /** 日時の欄ごとの最後の確かめの結果（欄を離れたとき・保存の押下・2択の選択。2択の出し入れに使う） */
+  checks: Readonly<Record<string, DateTimeResolution>>
 }
+
+/** 2択を出すときの2つの時差（2回ある時刻の確かめの結果のときだけ） */
+function overlapOf(check: DateTimeResolution | undefined): OverlapOffsets | null {
+  if (check === undefined) {
+    return null
+  }
+  if (check.kind === 'overlap-pending') {
+    return check.overlap
+  }
+  return check.kind === 'ok' ? check.overlap : null
+}
+
+/** 組から1つの鍵を除く（無ければ同じ物を返す） */
+function withoutKey<T>(
+  record: Readonly<Record<string, T>>,
+  key: string,
+): Readonly<Record<string, T>> {
+  if (!Object.hasOwn(record, key)) {
+    return record
+  }
+  const rest = { ...record }
+  delete rest[key]
+  return rest
+}
+
+/** 今の時刻を返す（既定。テストで差し替える） */
+const systemNow = (): Date => new Date()
 
 /** カラムごとの誤り（サーバーの誤りは DSL の文を持つことがある） */
 type FieldErrors = Readonly<Record<string, BusinessFieldError>>
@@ -156,10 +209,16 @@ export interface BusinessDataFormPageProps {
   mode?: FormMode
   /** 書き込みの API（テストで差し替える） */
   api?: RowWriteApi
+  /** 今の時刻を返す関数（日時の案内の今の時差に使う。開いたときに1回だけ呼ぶ。テストで差し替える） */
+  now?: () => Date
 }
 
 /** S3 行の作成・S4 行の更新 */
-export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataFormPageProps) {
+export function BusinessDataFormPage({
+  mode: forcedMode,
+  api,
+  now = systemNow,
+}: BusinessDataFormPageProps) {
   const { t } = useTranslation()
   const language = useDisplayLanguage()
   const texts = useValueTexts()
@@ -206,6 +265,9 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   const detailPath = ref === null ? '/' : toTablePath('row', ref, itemId)
   const row = mode === 'update' && detail.status === 'ready' ? detail.row : null
   const truncated = row?.truncatedColumns ?? NO_COLUMNS_NAMES
+  const needsTimeZone = definition !== null && columnsNeedTimeZone(definition.detailColumns)
+  const time = useTablesTimeZone(needsTimeZone)
+  const [nowText] = useState(() => now().toISOString())
 
   // 作業ロールの読み込みが済んだときの ID を覚え、変わったら一覧へ移る（D2: A）。
   if (settled && startRoleId === undefined) {
@@ -220,14 +282,39 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   }, [workRoleChanged, missing, listPath, navigate])
 
   // 入力の起点を作る（定義と、更新では今の値を読んだ後）。定義が変わったら、今も入力できるカラムの入力だけを残す（F6）。
-  const ready = definition !== null && (mode === 'create' || row !== null)
+  // 時点を表す型があるフォームは、表示のタイムゾーンが ready になってから開き、そのタイムゾーンを固定する（D12・Q1: A）。
+  const timeZoneReady = !needsTimeZone || time.timeZone !== null
+  const ready = definition !== null && (mode === 'create' || row !== null) && timeZoneReady
   if (ready && definition !== null) {
     const key = definitionKeyOf(definition)
     if (form === null) {
-      const initial = initialInputs(definition.detailColumns, mode, row?.values ?? {}, truncated)
-      setForm({ definitionKey: key, initial, current: initial, version: 0 })
+      const fixed = needsTimeZone ? time.timeZone : null
+      const initial = initialInputs(
+        definition.detailColumns,
+        mode,
+        row?.values ?? {},
+        truncated,
+        fixed,
+      )
+      setForm({
+        definitionKey: key,
+        initial,
+        current: initial,
+        version: 0,
+        timeZone: fixed,
+        overlapChoices: {},
+        checks: {},
+      })
     } else if (form.definitionKey !== key) {
-      const initial = initialInputs(definition.detailColumns, mode, row?.values ?? {}, truncated)
+      // 開いたときに固定したタイムゾーンを使い続ける（固定が無いフォームに時点の型が増えたときだけ今の値で固定する）
+      const fixed = form.timeZone ?? (needsTimeZone ? time.timeZone : null)
+      const initial = initialInputs(
+        definition.detailColumns,
+        mode,
+        row?.values ?? {},
+        truncated,
+        fixed,
+      )
       const current: Record<string, string> = { ...initial }
       // 入力不可の参照の項目に変わったカラムの入力も捨てる（D35）
       const nowLocked = lockedReferenceColumns(definition.detailColumns, mode, truncated)
@@ -239,7 +326,15 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
           discarded = true
         }
       }
-      setForm({ definitionKey: key, initial, current, version: form.version + 1 })
+      setForm({
+        definitionKey: key,
+        initial,
+        current,
+        version: form.version + 1,
+        timeZone: fixed,
+        overlapChoices: form.overlapChoices,
+        checks: {},
+      })
       setNotice(
         discarded ? { keys: ['tables.form.definitionChangedDiscard'], backToList: false } : null,
       )
@@ -247,6 +342,22 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   }
 
   const columns = definition?.detailColumns ?? NO_COLUMNS
+  // フォームの日時の受け渡し（開いたときに固定した表示のタイムゾーンと2択の選択。D12・D21）
+  const fixedTimeZone = form?.timeZone ?? null
+  const overlapChoices = form?.overlapChoices
+  const formTime = useMemo<FormTime>(
+    () => ({ timeZone: fixedTimeZone, overlapChoices: overlapChoices ?? {} }),
+    [fixedTimeZone, overlapChoices],
+  )
+  // 書式と日時の欄に渡す表示のタイムゾーン（固定した値。時点の型が無いフォームは今の値）
+  const cellTimeZone = useMemo<CellTimeZone>(
+    () => (fixedTimeZone === null ? time.cell : { status: 'ready', timeZone: fixedTimeZone }),
+    [fixedTimeZone, time.cell],
+  )
+  const fieldTimeZone = useMemo<FieldTimeZone>(
+    () => (fixedTimeZone === null ? time.field : { status: 'ready', timeZone: fixedTimeZone }),
+    [fixedTimeZone, time.field],
+  )
   // 入力不可の参照の項目（送る本文・変更の有無・画面の検証から外す。D15）
   const locked = useMemo(
     () => lockedReferenceColumns(columns, mode, truncated),
@@ -279,7 +390,9 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   const referenceLabels = useReferenceLabels(labelItems, labelKey)
   const discard = useCallback(() => {
     setForm((previous) =>
-      previous === null ? previous : { ...previous, current: previous.initial },
+      previous === null
+        ? previous
+        : { ...previous, current: previous.initial, overlapChoices: {}, checks: {} },
     )
   }, [])
   const guard = useUnsavedGuard(dirty, discard, { version: form?.version ?? 0 })
@@ -317,6 +430,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   }, [summaryFocus])
 
   const setInput = useCallback((column: string, value: string) => {
+    // 文字を書き換えたら、その欄の2択の選択と確かめの結果を解く（D21）
     setForm((previous) =>
       previous === null
         ? previous
@@ -324,8 +438,33 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
             ...previous,
             current: { ...previous.current, [column]: value },
             version: previous.version + 1,
+            overlapChoices: withoutKey(previous.overlapChoices, column),
+            checks: withoutKey(previous.checks, column),
           },
     )
+  }, [])
+
+  /** 夏時間の2択を選ぶ（その欄を選んだ側で確かめ直し、誤りを消す。D21） */
+  const chooseOverlap = useCallback((column: ColumnDefinition, choice: OverlapChoice) => {
+    setForm((previous) => {
+      if (previous === null) {
+        return previous
+      }
+      const choices = { ...previous.overlapChoices, [column.column]: choice }
+      const text = Object.hasOwn(previous.current, column.column)
+        ? previous.current[column.column]
+        : ''
+      const check = resolveFormDateTime(column, text, {
+        timeZone: previous.timeZone,
+        overlapChoices: choices,
+      })
+      return {
+        ...previous,
+        overlapChoices: choices,
+        checks: check === null ? previous.checks : { ...previous.checks, [column.column]: check },
+      }
+    })
+    setFieldErrors((previous) => withoutKey(previous, column.column))
   }, [])
 
   /** 入力から離れたときに、そのカラムだけを確かめる（D21） */
@@ -334,7 +473,36 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       if (form === null) {
         return
       }
-      const values = diffForm(columns, mode, form.initial, form.current, truncated, locked)
+      const text = Object.hasOwn(form.current, column.column) ? form.current[column.column] : ''
+      const unchanged =
+        mode === 'update' &&
+        Object.hasOwn(form.initial, column.column) &&
+        form.initial[column.column] === text
+      if (dateTimeInputKind(column) !== null && text !== '' && !unchanged) {
+        // 日時の欄は、この欄だけを1回変換して確かめる（D18〜D21。更新で変えていない欄は確かめない。D22）
+        const check = resolveFormDateTime(column, text, formTime)
+        if (check !== null) {
+          setForm((previous) =>
+            previous === null
+              ? previous
+              : { ...previous, checks: { ...previous.checks, [column.column]: check } },
+          )
+          const reason =
+            check.kind === 'ok'
+              ? validateValue(column, check.wire)
+              : check.kind === 'overlap-pending'
+                ? undefined
+                : dateTimeErrorReason(check)
+          setFieldErrors((previous) =>
+            reason === undefined
+              ? withoutKey(previous, column.column)
+              : { ...previous, [column.column]: { field: column.column, reason } },
+          )
+          return
+        }
+      }
+      // 離れた欄だけを写す（ほかの日時の欄を変換しない。保存の押下で離れたときも変換を増やさない。NFR2.1.4）
+      const values = diffForm([column], mode, form.initial, form.current, truncated, locked)
       let reason: string | undefined
       if (Object.hasOwn(values, column.column)) {
         reason = validateValue(column, values[column.column])
@@ -352,7 +520,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
         return next
       })
     },
-    [form, columns, mode, truncated, locked],
+    [form, mode, truncated, locked, formTime],
   )
 
   /** 保存されていない結果を画面に出す */
@@ -478,12 +646,39 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     if (form === null || definition === null) {
       return
     }
-    const values = diffForm(columns, mode, form.initial, form.current, truncated, locked)
-    if (Object.keys(values).length === 0) {
+    // 日時の欄は送る対象（作成は空でない欄、更新は変えた欄）だけを確かめ、2択の出し入れにも使う（D18〜D22）
+    const dateTimes = resolveFormDateTimes(
+      columns,
+      mode,
+      form.initial,
+      form.current,
+      truncated,
+      locked,
+      formTime,
+    )
+    if (Object.keys(dateTimes).length > 0) {
+      setForm((previous) =>
+        previous === null
+          ? previous
+          : { ...previous, checks: { ...previous.checks, ...dateTimes } },
+      )
+    }
+    // 確かめた欄の結果を使い回し、保存の押下での変換を欄ごとに1回にする（performance-design.md 2.2、NFR2.1.4）
+    const values = diffForm(
+      columns,
+      mode,
+      form.initial,
+      form.current,
+      truncated,
+      locked,
+      formTime,
+      dateTimes,
+    )
+    if (Object.keys(values).length === 0 && Object.keys(dateTimes).length === 0) {
       return
     }
     const errors: Record<string, string> = {
-      ...validateForm(columns, mode, values, truncated, locked),
+      ...validateForm(columns, mode, values, truncated, locked, dateTimes),
     }
     // 作成の必須の入力不可の参照の項目は、送らずに D13 の文の誤りにする（送信の前に示す）
     for (const column of columns) {
@@ -507,7 +702,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
     }
     setNotice(null)
     send(values)
-  }, [form, definition, columns, mode, truncated, locked, unknown, send])
+  }, [form, definition, columns, mode, truncated, locked, unknown, send, formTime])
 
   const sendAgain = useCallback(() => {
     setMaybeOpen(false)
@@ -515,8 +710,8 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
       return
     }
     setNotice(null)
-    send(diffForm(columns, mode, form.initial, form.current, truncated, locked))
-  }, [form, columns, mode, truncated, locked, send])
+    send(diffForm(columns, mode, form.initial, form.current, truncated, locked, formTime))
+  }, [form, columns, mode, truncated, locked, send, formTime])
 
   const stay = useCallback(() => {
     if (guard.blocked) {
@@ -547,9 +742,9 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
           : referenceErrorKey(column, error.reason, mode, truncated)
       return error.reason === 'PATTERN_MISMATCH' && error.message !== undefined
         ? localizedName(error.message, language, t(key))
-        : t(key)
+        : t(key, { zone: fixedTimeZone ?? '' })
     },
-    [language, t, mode, truncated],
+    [language, t, mode, truncated, fixedTimeZone],
   )
 
   let body: React.JSX.Element
@@ -593,6 +788,9 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
         </div>
       </div>
     )
+  } else if (form === null && needsTimeZone && time.state.status === 'error') {
+    // 表示のタイムゾーンを読み込めない間は、時点の欄を持つフォームを開かない（Q1: A。再読み込みが成功したら開く）
+    body = <DisplayTimeZoneErrorBar />
   } else if (definition === null || form === null) {
     body = (
       <h1 className="tables-heading" data-testid="tables-heading">
@@ -602,7 +800,9 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
   } else {
     const tableName = localizedName(definition.displayName, language, definition.table)
     const label =
-      row === null ? '' : rowLabelText(rowLabelParts(definition, row.values, texts), texts)
+      row === null
+        ? ''
+        : rowLabelText(rowLabelParts(definition, row.values, texts, cellTimeZone), texts)
     const changed = hasFormChanges(columns, mode, form.initial, form.current, truncated, locked)
     const errorEntries = Object.entries(fieldErrors)
     body = (
@@ -642,17 +842,18 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
                 const target = columns[index]
                 const name =
                   target === undefined ? '' : localizedName(target.displayName, language, column)
+                // 2択が未選択の誤りは、2択の最初の選択肢へ移す（NFR 設計の Q2 の 1）
+                const selector =
+                  error.reason === 'DATE_TIME_OVERLAP'
+                    ? `[data-testid="tables-form-datetime-c${index}-overlap"] input`
+                    : `[data-testid="tables-form-field-c${index}"] input, [data-testid="tables-form-field-c${index}"] textarea, [data-testid="tables-form-field-c${index}"] select`
                 return (
                   <li key={column}>
                     <button
                       type="button"
                       className="tables-text-button"
                       onClick={() =>
-                        fieldsRef.current
-                          ?.querySelector<HTMLElement>(
-                            `[data-testid="tables-form-field-c${index}"] input, [data-testid="tables-form-field-c${index}"] textarea, [data-testid="tables-form-field-c${index}"] select`,
-                          )
-                          ?.focus()
+                        fieldsRef.current?.querySelector<HTMLElement>(selector)?.focus()
                       }
                     >
                       {`${name}: ${errorText(error, target)}`}
@@ -695,7 +896,7 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
                 row !== null && Object.hasOwn(row.values, column.column)
                   ? row.values[column.column]
                   : undefined
-              const formatted = formatCell(column, value, texts)
+              const formatted = formatCell(column, value, texts, cellTimeZone)
               return (
                 <div
                   key={column.column}
@@ -751,19 +952,55 @@ export function BusinessDataFormPage({ mode: forcedMode, api }: BusinessDataForm
                 }}
                 onBlur={() => validateOnBlur(column)}
                 renderLocked={renderLocked}
-                renderPlain={() => (
-                  <FieldInput
-                    column={column}
-                    index={index}
-                    name={name}
-                    mode={mode}
-                    value={value}
-                    error={errorMessage}
-                    disabled={write.saving}
-                    onChange={(next) => setInput(column.column, next)}
-                    onBlur={() => validateOnBlur(column)}
-                  />
-                )}
+                timeZone={cellTimeZone}
+                now={nowText}
+                renderPlain={() => {
+                  const dateTime = dateTimeInputKind(column)
+                  if (dateTime === null) {
+                    return (
+                      <FieldInput
+                        column={column}
+                        index={index}
+                        name={name}
+                        mode={mode}
+                        value={value}
+                        error={errorMessage}
+                        disabled={write.saving}
+                        onChange={(next) => setInput(column.column, next)}
+                        onBlur={() => validateOnBlur(column)}
+                      />
+                    )
+                  }
+                  const required = column.required === true
+                  const overlapPending = error?.reason === 'DATE_TIME_OVERLAP'
+                  const check = Object.hasOwn(form.checks, column.column)
+                    ? form.checks[column.column]
+                    : undefined
+                  const choice = Object.hasOwn(form.overlapChoices, column.column)
+                    ? form.overlapChoices[column.column]
+                    : null
+                  return (
+                    <DateTimeField
+                      kind={dateTime}
+                      purpose="form"
+                      label={required ? `${name} ${t('tables.form.required')}` : name}
+                      name={`tables-form-c${index}`}
+                      value={value}
+                      onChange={(next) => setInput(column.column, next)}
+                      onBlur={() => validateOnBlur(column)}
+                      timeZone={fieldTimeZone}
+                      now={nowText}
+                      error={overlapPending ? undefined : errorMessage}
+                      overlap={overlapOf(check)}
+                      overlapChoice={choice}
+                      onOverlapChoice={(next) => chooseOverlap(column, next)}
+                      overlapError={overlapPending ? errorMessage : undefined}
+                      required={required}
+                      disabled={write.saving}
+                      testId={`tables-form-datetime-c${index}`}
+                    />
+                  )
+                }}
               />
             )
           })}
@@ -891,9 +1128,6 @@ function FieldInput({
   if (column.formPart === 'date') {
     hints.push(t('tables.form.dateHint'))
   }
-  if (column.valueType === 'DATETIME_TZ') {
-    hints.push(t('tables.form.utc'))
-  }
   if (wide) {
     hints.push(t('tables.form.numberHint'))
   }
@@ -948,8 +1182,6 @@ function FieldInput({
       type = 'password'
     } else if (column.formPart === 'date') {
       type = 'date'
-    } else if (column.formPart === 'datetime') {
-      type = 'datetime-local'
     } else if (column.formPart === 'number' && !wide) {
       type = 'number'
     }
@@ -957,7 +1189,6 @@ function FieldInput({
       <TextInput
         {...common}
         type={type}
-        step={type === 'datetime-local' ? 1 : undefined}
         inputMode={wide ? 'decimal' : undefined}
         value={value}
         onChange={onChange}

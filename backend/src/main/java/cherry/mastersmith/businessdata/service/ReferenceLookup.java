@@ -184,7 +184,12 @@ public class ReferenceLookup {
                 continue;
             }
             if (t.kind() == OptionSourceKind.LOOKUP) {
-                fields.put(column.column(), ReferenceField.lookup(ReferencePolicy.pickerOf(t, targetView.get())));
+                // ラベルの列の型はピッカーの列の型と同じ材料から決め、問い合わせを足さない（D30・NFR2.1.1）。
+                fields.put(
+                        column.column(),
+                        ReferenceField.lookup(
+                                ReferencePolicy.pickerOf(t, targetView.get()),
+                                ReferencePolicy.labelValueTypeOf(t, targetView.get())));
                 continue;
             }
             // 順を保つため仮の項目を置き、読み終えたら差し替える。
@@ -272,8 +277,10 @@ public class ReferenceLookup {
             }
             options.add(new ReferenceOption(text, row.values().values().get(labelColumn)));
         }
-        return ReferenceField.choices(ReferencePolicy.distinctByValue(
-                options, option -> codec.read(value, option.value()).orElse(null)));
+        return ReferenceField.choices(
+                ReferencePolicy.distinctByValue(
+                        options, option -> codec.read(value, option.value()).orElse(null)),
+                ReferencePolicy.labelValueTypeOf(target.target(), target.view()));
     }
 
     /**

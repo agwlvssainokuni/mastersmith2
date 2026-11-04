@@ -26,6 +26,7 @@ import { rowLabelParts, rowLabelText, rowLinkText } from './rowLabel'
 import { wireColumn } from './testing/businessDataSamples'
 import { sampleDefinition } from './testing/sampleDefinition'
 import { JA_TEXTS } from './testing/valueTexts'
+import type { CellTimeZone } from './valueFormat'
 
 const columnKind = fc.constantFrom(
   { valueType: 'STRING', listFormat: null, masked: false },
@@ -43,6 +44,16 @@ const cellValue = fc.oneof(
   fc.string(),
   fc.stringMatching(/^-?[0-9]{1,30}(\.[0-9]{1,5})?$/),
   fc.constantFrom('true', 'false'),
+  // 時点の文字（Intent 261102-timezone-ui-polish の U4、計画 Step 7）
+  fc.constantFrom('2026-11-01T15:00:00+00:00', '2026-11-01T05:30:00.123456+00:00'),
+)
+
+/** 表示のタイムゾーンの状態（読み込みの失敗を含む） */
+const cellTimeZone = fc.constantFrom<CellTimeZone>(
+  { status: 'ready', timeZone: 'Asia/Tokyo' },
+  { status: 'ready', timeZone: 'America/New_York' },
+  { status: 'ready', timeZone: 'Asia/Kathmandu' },
+  { status: 'error' },
 )
 
 describe('rowLabel properties', () => {
@@ -51,7 +62,8 @@ describe('rowLabel properties', () => {
       fc.property(
         fc.array(fc.tuple(columnKind, cellValue), { minLength: 1, maxLength: 4 }),
         fc.string({ minLength: 1 }),
-        (columns, tableName) => {
+        cellTimeZone,
+        (columns, tableName, timeZone) => {
           const names = columns.map((_, index) => `c${index}`)
           const definition = sampleDefinition({
             rowLabelColumns: names,
@@ -60,7 +72,7 @@ describe('rowLabel properties', () => {
           const values = Object.fromEntries(
             columns.map(([, value], index) => [names[index], value]),
           )
-          const parts = rowLabelParts(definition, values, JA_TEXTS)
+          const parts = rowLabelParts(definition, values, JA_TEXTS, timeZone)
           const label = rowLabelText(parts, JA_TEXTS)
           const link = rowLinkText(parts, JA_TEXTS)
           expect(link.trim()).not.toBe('')

@@ -123,6 +123,21 @@ public final class ReferencePolicy {
     }
 
     /**
+     * ラベルの列の受け渡しの型を決める（Intent 261102-timezone-ui-polish の U4、functional-spec.md D30）。参照先のテーブルの判定の
+     * 材料（DSL から作ったカラムの一覧。ピッカーの列の型と同じ材料）のラベルのカラムの {@code valueType} を写すだけで、対象DB・内部DB
+     * を読まない。
+     *
+     * @param target 参照先
+     * @param view 参照先のテーブルの判定の材料（{@link #accessOf} が AVAILABLE のもの）
+     * @return ラベルのカラムの型（判定の材料にラベルのカラムが無ければ null）
+     */
+    public static ValueType labelValueTypeOf(ReferenceTarget target, TableAccessView view) {
+        Objects.requireNonNull(target, "target は必須です");
+        Objects.requireNonNull(view, "view は必須です");
+        return view.column(target.labelColumn()).map(ColumnAccess::valueType).orElse(null);
+    }
+
+    /**
      * 固定の並びを作る（BR4.2・BR5.8・BR11.4）。ラベルの昇順 → 値の昇順 → 参照先の主キーの昇順（NULL を最後にするのは SQL の
      * 方言の側）。ラベルのカラムが値のカラムと同じなら重ねない。ラベルのカラムがバイナリか password のときは並びに使わない（値を
      * 読まないカラムで並べない）。利用者の並べ替えと既存の既定の並びからは作らない。

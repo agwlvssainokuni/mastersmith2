@@ -25,13 +25,24 @@
 //   （作成の必須の入力不可の項目の誤り D13 は画面が別に足す）。渡さなければ今と同じ結果。
 // - 必須の判定（isRequiredInput）は、参照の項目（reference がある項目）に限り isRequiredColumn（NULL を許さないか required が真）
 //   で見る。参照でない項目は今どおり required だけを見る（Intent 261029-reference-lookup-cleanup の直しの Bolt B7、U3 R-01）。
+// - 日時の欄（Intent 261102-timezone-ui-polish の U4、計画 Step 9、D18〜D22）は、resolveFormDateTimes の判定の結果を任意の
+//   最後の引数 dateTimes で受け、ok でない欄を画面だけの理由（DATE_TIME_FORMAT・DATE_TIME_GAP・DATE_TIME_OVERLAP・
+//   TIME_ZONE_UNAVAILABLE）の誤りにする。書式・範囲・夏時間の判定は resolveDateTimeInput（U1 の parseLocalDateTime）だけで行い、
+//   ここで別の規則を作らない。ok の欄は送る値（時点）を今の決まりで確かめる。
 import { countCodePoints } from '../../shared/validation/codePoints'
 import { MAX_WRITE_VALUE_LENGTH } from './businessDataLimits'
 import type { CellValue, ColumnDefinition, RowValues } from './businessDataTypes'
 import { NO_LOCKED, isBooleanInput, isEditable, type FormMode } from './formDiff'
 import { isRequiredColumn } from './references/referenceField'
+import {
+  dateTimeErrorReason,
+  type DateTimeErrorReason,
+  type DateTimeResolution,
+} from './resolveDateTimeInput'
 
-/** 画面の検証の誤りの理由（サーバーの BusinessDataFieldErrorReason の一部） */
+export type { DateTimeErrorReason }
+
+/** 画面の検証の誤りの理由（サーバーの BusinessDataFieldErrorReason の一部と、日時の欄の画面だけの理由） */
 export type FormErrorReason =
   | 'REQUIRED'
   | 'NOT_NULL'
@@ -41,6 +52,7 @@ export type FormErrorReason =
   | 'NOT_A_CHOICE'
   | 'TOO_MANY_DIGITS'
   | 'OUT_OF_RANGE'
+  | DateTimeErrorReason
 
 /** カラムごとの誤り（カラムの名前と理由） */
 export type FormErrors = Readonly<Record<string, FormErrorReason>>
@@ -226,6 +238,7 @@ export function validateValue(
  * @param values 送る値（diffForm の結果）
  * @param truncatedColumns 先頭だけを受けたカラム
  * @param lockedColumns 入力不可の参照の項目（X-5）
+ * @param dateTimes 日時の欄の判定の結果（resolveFormDateTimes の結果。D18〜D22）
  */
 export function validateForm(
   columns: readonly ColumnDefinition[],
@@ -233,13 +246,19 @@ export function validateForm(
   values: RowValues,
   truncatedColumns: readonly string[] = [],
   lockedColumns: ReadonlySet<string> = NO_LOCKED,
+  dateTimes: Readonly<Record<string, DateTimeResolution>> = {},
 ): FormErrors {
   const entries: [string, FormErrorReason][] = []
   for (const column of columns) {
     if (!isEditable(column, mode, truncatedColumns) || lockedColumns.has(column.column)) {
       continue
     }
-    if (Object.hasOwn(values, column.column)) {
+    const dateTime = Object.hasOwn(dateTimes, column.column)
+      ? dateTimeErrorReason(dateTimes[column.column])
+      : undefined
+    if (dateTime !== undefined) {
+      entries.push([column.column, dateTime])
+    } else if (Object.hasOwn(values, column.column)) {
       const reason = validateValue(column, values[column.column])
       if (reason !== undefined) {
         entries.push([column.column, reason])

@@ -30,6 +30,8 @@ import type {
   ReferenceRowPage,
   ReferenceSource,
 } from '../businessDataTypes'
+import type { OverlapChoice } from '../../../shared/format/timeZone'
+import { dateTimeKindOf, resolveDateTimeInput, type OverlapOffsets } from '../resolveDateTimeInput'
 import { validatePickerInputs, type PickerInputError, type PickerInputs } from './pickerSearch'
 
 /** ピッカーの状態（frontend-components.md の 4.4） */
@@ -54,9 +56,18 @@ export interface LookupSearch {
   state: PickerState
   inputs: PickerInputs
   errors: Readonly<Record<string, PickerInputError>>
+  /** 一致の時点の条件で、夏時間で2回ある時刻の2択の2つの時差（条件ごと。出さない条件は項目なし） */
+  overlaps: Readonly<Record<string, OverlapOffsets>>
+  /** 条件ごとの2択の選択（未選択は項目なし） */
+  overlapChoices: Readonly<Record<string, OverlapChoice>>
+  /** 条件の文字を変える（その条件の2択の選択と2択を解く。D21） */
   setInput: (column: string, value: string) => void
-  /** 「検索」（1ページ目から） */
-  submit: () => void
+  /** 2択を選ぶ（その条件の誤りを消す） */
+  setOverlapChoice: (column: string, choice: OverlapChoice) => void
+  /** 条件の欄を離れたとき、2回ある時刻なら2択を出す */
+  checkOverlap: (column: string) => void
+  /** 「検索」（1ページ目から）。画面の確かめの誤り（無ければ空、検索中で捨てたときは null）を返す */
+  submit: () => Readonly<Record<string, PickerInputError>> | null
   /** ページ送り・「前のページへ」（同じ条件で読む） */
   goToPage: (page: number) => void
   /** 「再度検索」（最後に送った条件とページで読む） */
@@ -69,15 +80,19 @@ export interface LookupSearch {
  * @param source 参照元のスキーマ・テーブル・カラム
  * @param picker ピッカーの情報
  * @param search 検索の関数（テストで差し替える）
+ * @param timeZone 表示のタイムゾーンの名前（時点を表す型の一致の条件に使う。読み込めないときは null で、その条件は誤り）
  */
 export function useLookupSearch(
   source: ReferenceSource,
   picker: PickerInfo,
   search: SearchReference = searchReferenceRows,
+  timeZone: string | null = null,
 ): LookupSearch {
   const [state, setState] = useState<PickerState>({ kind: 'initial' })
   const [inputs, setInputs] = useState<PickerInputs>({})
   const [errors, setErrors] = useState<Readonly<Record<string, PickerInputError>>>({})
+  const [overlaps, setOverlaps] = useState<Readonly<Record<string, OverlapOffsets>>>({})
+  const [overlapChoices, setOverlapChoices] = useState<Readonly<Record<string, OverlapChoice>>>({})
   const generation = useRef(0)
   const searching = useRef(false)
   const last = useRef<{ conditions: readonly ReferenceCondition[]; page: number } | null>(null)
@@ -151,25 +166,67 @@ export function useLookupSearch(
 
   const setInput = useCallback((column: string, value: string) => {
     setInputs((previous) => ({ ...previous, [column]: value }))
+    setOverlaps((previous) => withoutKey(previous, column))
+    setOverlapChoices((previous) => withoutKey(previous, column))
   }, [])
 
-  const submit = useCallback(() => {
+  const setOverlapChoice = useCallback((column: string, choice: OverlapChoice) => {
+    setOverlapChoices((previous) => ({ ...previous, [column]: choice }))
+    setErrors((previous) => withoutKey(previous, column))
+  }, [])
+
+  const checkOverlap = useCallback(
+    (column: string) => {
+      const field = picker.searchFields.find((item) => item.column === column)
+      const text = Object.hasOwn(inputs, column) ? inputs[column] : ''
+      if (
+        field === undefined ||
+        field.operator !== 'EQUALS' ||
+        dateTimeKindOf(field.valueType) !== 'instant' ||
+        text === '' ||
+        timeZone === null
+      ) {
+        return
+      }
+      const resolved = resolveDateTimeInput({
+        text,
+        kind: 'instant',
+        timeZone,
+        purpose: 'equals',
+        overlapChoice: Object.hasOwn(overlapChoices, column) ? overlapChoices[column] : null,
+      })
+      const offsets =
+        resolved.kind === 'overlap-pending' || resolved.kind === 'ok' ? resolved.overlap : null
+      setOverlaps((previous) =>
+        offsets === null ? withoutKey(previous, column) : { ...previous, [column]: offsets },
+      )
+    },
+    [picker, inputs, timeZone, overlapChoices],
+  )
+
+  const submit = useCallback((): Readonly<Record<string, PickerInputError>> | null => {
     if (searching.current) {
-      return
+      return null
     }
-    const checked = validatePickerInputs(picker.searchFields, inputs)
+    // 日時の一致の条件は、表示のタイムゾーンで時点に直す（Intent 261102-timezone-ui-polish の U4、D34）
+    const checked = validatePickerInputs(picker.searchFields, inputs, { timeZone, overlapChoices })
     if (checked.kind === 'empty') {
       setErrors({})
       setState({ kind: 'empty-condition' })
-      return
+      return {}
     }
     if (checked.kind === 'errors') {
       setErrors(checked.errors)
-      return
+      if (checked.overlaps !== undefined) {
+        const found = checked.overlaps
+        setOverlaps((previous) => ({ ...previous, ...found }))
+      }
+      return checked.errors
     }
     setErrors({})
     run(checked.conditions, 1, state.kind === 'empty-condition' ? { kind: 'initial' } : state)
-  }, [picker, inputs, run, state])
+    return {}
+  }, [picker, inputs, run, state, timeZone, overlapChoices])
 
   const goToPage = useCallback(
     (page: number) => {
@@ -188,5 +245,30 @@ export function useLookupSearch(
     run(last.current.conditions, last.current.page, state)
   }, [run, state])
 
-  return { state, inputs, errors, setInput, submit, goToPage, retry }
+  return {
+    state,
+    inputs,
+    errors,
+    overlaps,
+    overlapChoices,
+    setInput,
+    setOverlapChoice,
+    checkOverlap,
+    submit,
+    goToPage,
+    retry,
+  }
+}
+
+/** 組から1つの鍵を除く（無ければ同じ物を返す） */
+function withoutKey<T>(
+  record: Readonly<Record<string, T>>,
+  key: string,
+): Readonly<Record<string, T>> {
+  if (!Object.hasOwn(record, key)) {
+    return record
+  }
+  const rest = { ...record }
+  delete rest[key]
+  return rest
 }

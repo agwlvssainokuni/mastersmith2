@@ -19,8 +19,18 @@
 // - 用途で入力できないカラム（editableOnCreate・editableOnUpdate が偽、更新で省略した値）を reference.status より先に見る
 //   （U1 の R-05 の引き継ぎ。U1 はそのカラムに参照先の権限によらず NO_PERMISSION を返す）。
 // - ラベル・値は文字のまま返す（HTML にしない。D34）。
-import type { ColumnDefinition, ReferenceOption, ReferenceStatus } from '../businessDataTypes'
+// - 選択肢の文・欄の文・ピッカーの行のラベルと結果の列の日時は、ラベルを labelValueType、値を参照元のカラムの型、結果の列を
+//   列の valueType で、表示のタイムゾーンの書式（formatCell の日時の書式。D1〜D5）にする（Intent 261102-timezone-ui-polish の
+//   U4、計画 Step 11、D32）。日時でない型・型が分からない（null）ときは文字のまま。送る値は書式にした文字ではなく、
+//   サーバーが返した値の文字のまま（D33。この関数は表示の文字だけを作る）。
+import type {
+  ColumnDefinition,
+  ReferenceOption,
+  ReferenceStatus,
+  ValueType,
+} from '../businessDataTypes'
 import { isEditable, type FormMode } from '../formDiff'
+import { formatCell, type CellTimeZone, type ValueTexts } from '../valueFormat'
 
 /** 入力不可の参照の項目の理由 */
 export type ReadonlyReason = 'permission' | 'too-many'
@@ -124,11 +134,61 @@ export function lockedReferenceColumns(
   )
 }
 
+/** 日時の書式にする受け渡しの型（D32。ほかの型は文字のまま） */
+const TEMPORAL_TYPES: ReadonlySet<ValueType> = new Set<ValueType>([
+  'DATETIME_TZ',
+  'DATETIME',
+  'DATE',
+  'TIME',
+  'TIME_TZ',
+])
+
+/** 参照の表示の文字の書式に使うもの（画面の言語の決まった文と表示のタイムゾーンの状態） */
+export interface ReferenceTextFormat {
+  readonly texts: ValueTexts
+  readonly timeZone: CellTimeZone
+}
+
+/** 選択肢・欄の文の書式（ラベルの列の型と参照元のカラムの型） */
+export interface OptionTextFormat extends ReferenceTextFormat {
+  /** ラベルの列の型（型が分からないときは null。D31） */
+  readonly labelValueType: ValueType | null
+  /** 参照元のカラムの型（値の書式に使う） */
+  readonly valueType: ValueType
+}
+
 /**
- * 選択肢・欄の文（「ラベル (値)」、ラベルが null なら値だけ。D6・D16）。
+ * 参照の表示の文字1つを、型が日時なら表示のタイムゾーンの書式にする（D32）。日時でない型・null の型は文字のまま。
  *
- * @param option 値とラベル
+ * @param text 値・ラベル・結果の列の文字
+ * @param valueType その文字の受け渡しの型（分からなければ null）
+ * @param format 決まった文と表示のタイムゾーン
  */
-export function optionText(option: ReferenceOption): string {
-  return option.label === null ? option.value : `${option.label} (${option.value})`
+export function formatReferenceText(
+  text: string,
+  valueType: ValueType | null,
+  format: ReferenceTextFormat,
+): string {
+  if (valueType === null || !TEMPORAL_TYPES.has(valueType)) {
+    return text
+  }
+  return formatCell(
+    { valueType, listFormat: null, masked: false },
+    text,
+    format.texts,
+    format.timeZone,
+  ).text
+}
+
+/**
+ * 選択肢・欄の文（「ラベル (値)」、ラベルが null なら値だけ。D6・D16）。ラベルと値の日時は表示のタイムゾーンの書式（D32）。
+ *
+ * @param option 値とラベル（サーバーが返した文字）
+ * @param format ラベルの列の型・参照元のカラムの型・決まった文・表示のタイムゾーン
+ */
+export function optionText(option: ReferenceOption, format: OptionTextFormat): string {
+  const value = formatReferenceText(option.value, format.valueType, format)
+  return option.label === null
+    ? value
+    : `${formatReferenceText(option.label, format.labelValueType, format)} (${value})`
 }

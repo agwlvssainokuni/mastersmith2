@@ -26,7 +26,9 @@
 import { Button, FormField, TextInput } from 'make-you-chic-ui'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { PickerInfo, ReferenceRow, ReferenceSource } from '../businessDataTypes'
+import type { PickerInfo, ReferenceRow, ReferenceSource, ValueType } from '../businessDataTypes'
+import { useValueTexts } from '../tablesText'
+import type { CellTimeZone } from '../valueFormat'
 import { LookupPickerDialog, type LookupPickerDialogProps } from './LookupPickerDialog'
 import { optionText } from './referenceField'
 import type { SearchReference } from './useLookupSearch'
@@ -50,6 +52,14 @@ export interface LookupFieldProps {
   onChange: (value: string, label: string | null) => void
   /** 検索の関数（テストで差し替える） */
   search?: SearchReference
+  /** ラベルの列の型（型が分からなければ null。Intent 261102-timezone-ui-polish の U4、D31・D32） */
+  labelValueType?: ValueType | null
+  /** 参照元のカラムの型（値の書式に使う。D32） */
+  valueType?: ValueType
+  /** 表示のタイムゾーンの状態（作成・更新の画面がフォームを開いたときに固定した値。ピッカーにも渡す） */
+  timeZone: CellTimeZone
+  /** 今の時刻（ISO 8601。ピッカーの日時の条件の案内に使う。画面を開いたときに1回だけ取った値） */
+  now: string
 }
 
 /** LOOKUP の項目 */
@@ -66,18 +76,29 @@ export function LookupField({
   disabled,
   onChange,
   search,
+  labelValueType = null,
+  valueType = 'STRING',
+  timeZone,
+  now,
 }: LookupFieldProps) {
   const { t } = useTranslation()
+  const texts = useValueTexts()
   const [open, setOpen] = useState(false)
   const openRef = useRef<HTMLButtonElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const required = !clearable
   const fieldLabel = required ? `${name} ${t('tables.form.required')}` : name
-  const text = value === '' ? '' : optionText({ value, label })
+  // 欄の文は表示の書式。送る値（value）は返された文字のまま（D33）
+  const text =
+    value === '' ? '' : optionText({ value, label }, { labelValueType, valueType, texts, timeZone })
   const dialogProps: LookupPickerDialogProps = {
     name,
     picker,
     source,
+    labelValueType,
+    valueType,
+    timeZone,
+    now,
     finalFocusRef: openRef,
     onSelect: (row: ReferenceRow) => {
       setOpen(false)

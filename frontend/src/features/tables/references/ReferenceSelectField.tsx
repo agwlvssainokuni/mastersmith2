@@ -26,7 +26,9 @@ import { FormField, RadioGroup, Select } from 'make-you-chic-ui'
 import { useTranslation } from 'react-i18next'
 import type { ColumnDefinition } from '../businessDataTypes'
 import type { FormMode } from '../formDiff'
-import { isRequiredColumn, optionText } from './referenceField'
+import { useValueTexts } from '../tablesText'
+import type { CellTimeZone } from '../valueFormat'
+import { formatReferenceText, isRequiredColumn, optionText } from './referenceField'
 
 export interface ReferenceSelectFieldProps {
   /** formPart が select か radio、reference が REFERENCE・AVAILABLE のカラム */
@@ -43,6 +45,11 @@ export interface ReferenceSelectFieldProps {
   disabled: boolean
   onChange: (value: string) => void
   onBlur: () => void
+  /**
+   * 表示のタイムゾーンの状態（選択肢の文の日時の書式に使う。Intent 261102-timezone-ui-polish の U4、D32。
+   * 作成・更新の画面がフォームを開いたときに固定した値）
+   */
+  timeZone: CellTimeZone
 }
 
 /** REFERENCE の選択 */
@@ -57,18 +64,33 @@ export function ReferenceSelectField({
   disabled,
   onChange,
   onBlur,
+  timeZone,
 }: ReferenceSelectFieldProps) {
   const { t } = useTranslation()
+  const texts = useValueTexts()
   const required = isRequiredColumn(column)
   const label = required ? `${name} ${t('tables.form.required')}` : name
   const options = column.reference?.options ?? []
-  const choices = options.map((option) => ({ value: option.value, label: optionText(option) }))
+  const format = {
+    labelValueType: column.reference?.labelValueType ?? null,
+    valueType: column.valueType,
+    texts,
+    timeZone,
+  }
+  // 選択肢の value は返された文字のまま送る。label だけを表示の書式にする（D32・D33）
+  const choices = options.map((option) => ({
+    value: option.value,
+    label: optionText(option, format),
+  }))
   if (
     mode === 'update' &&
     initialValue !== '' &&
     !options.some((option) => option.value === initialValue)
   ) {
-    choices.unshift({ value: initialValue, label: initialValue })
+    choices.unshift({
+      value: initialValue,
+      label: formatReferenceText(initialValue, column.valueType, format),
+    })
   }
   const hints: string[] = []
   if (options.length === 0) {

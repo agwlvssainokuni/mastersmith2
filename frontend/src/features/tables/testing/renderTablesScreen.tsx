@@ -19,8 +19,10 @@
 // - API は fetch を差し替えて ApiClient を通す。答えは道と本文で決める関数で返し、呼ばれた道と本文を記録する。
 // - 「戻る」のボタンで、ブラウザの戻る操作（navigate(-1)）をまねる。
 import { ToastProvider } from 'make-you-chic-ui'
+import type { ReactElement } from 'react'
 import { Route, Routes, useNavigate } from 'react-router'
 import { vi } from 'vitest'
+import type { DisplayTimeZoneState } from '../../../app/display-settings/DisplayTimeZoneProvider'
 import type { WorkRoleState } from '../../../app/work-role/workRoleApi'
 import { WorkRoleSwitcher } from '../../../app/work-role/WorkRoleSwitcher'
 import { fakeProvider, renderWithProviders } from '../../../app/testing/renderWithProviders'
@@ -55,7 +57,16 @@ function BackButton() {
 export function renderTablesScreen(
   route: string,
   responder: Responder,
-  options: { roles?: WorkRoleState[]; languages?: string[] } = {},
+  options: {
+    roles?: WorkRoleState[]
+    languages?: string[]
+    /** 表示のタイムゾーン（既定は固定の Asia/Tokyo。Intent 261102-timezone-ui-polish の U4） */
+    displayTimeZone?: { timeZone?: string; state?: DisplayTimeZoneState }
+    /** 一覧の画面に渡す今の時刻（検索の案内の今の時差） */
+    now?: () => Date
+    /** 画面の道の切り替えを包む（表示のタイムゾーンを途中で差し替えるテストの提供元など） */
+    wrap?: (routes: ReactElement) => ReactElement
+  } = {},
 ) {
   const calls: RecordedCall[] = []
   const fetchMock = vi.fn((path: string, init?: RequestInit) => {
@@ -69,6 +80,13 @@ export function renderTablesScreen(
   })
   vi.stubGlobal('fetch', fetchMock)
   const frame = tableFrame(options.roles ?? [ONE_ROLE])
+  const routes = (
+    <Routes>
+      <Route path="/tables" element={<BusinessDataListPage now={options.now} />} />
+      <Route path="/tables/row" element={<BusinessDataDetailPage />} />
+      <Route path="*" element={<p>other</p>} />
+    </Routes>
+  )
   const view = renderWithProviders(
     <ToastProvider>
       <frame.Frame>
@@ -76,13 +94,7 @@ export function renderTablesScreen(
           <WorkRoleSwitcher />
           <BackButton />
         </header>
-        <main>
-          <Routes>
-            <Route path="/tables" element={<BusinessDataListPage />} />
-            <Route path="/tables/row" element={<BusinessDataDetailPage />} />
-            <Route path="*" element={<p>other</p>} />
-          </Routes>
-        </main>
+        <main>{(options.wrap ?? ((routes: ReactElement) => routes))(routes)}</main>
       </frame.Frame>
     </ToastProvider>,
     {
@@ -90,6 +102,7 @@ export function renderTablesScreen(
       registrations: [registration],
       provider: fakeProvider({ loggedIn: true, admin: false }),
       languages: options.languages,
+      displayTimeZone: options.displayTimeZone,
     },
   )
   return { view, calls, frame, fetchMock }

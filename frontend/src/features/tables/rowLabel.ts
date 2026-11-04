@@ -21,8 +21,9 @@
 //   そのため、行のリンクの見える文字（最初の部分）は、行のラベル（部分を半角の空白でつないだもの）に必ず含まれる
 //   （WCAG 2.5.3。axe-core 4.14 の label-content-name-mismatch）。DOM の文字は切らず、省略は CSS だけで行う（D17）。
 // - rowLabelColumns が空のとき（DETAIL が許されない）、または最初のカラムが一覧の列に無いときは、行のリンクを出さない。
+// - 時点を表す型の部分は、表示のタイムゾーンの状態を引数で受けて formatCell に渡す（Intent 261102-timezone-ui-polish の U4、D6）。
 import type { ColumnDefinition, RowValues, TableDefinition } from './businessDataTypes'
-import { formatCell, type ValueTexts } from './valueFormat'
+import { formatCell, type CellTimeZone, type ValueTexts } from './valueFormat'
 
 /** 読み上げの名前と同じ形にまとめる（空白の並びを1つに、前後を切る） */
 export function normalizeLabelPart(text: string): string {
@@ -42,11 +43,13 @@ function findColumn(definition: TableDefinition, column: string): ColumnDefiniti
  * @param definition テーブルの定義
  * @param values 行の値
  * @param texts 決まった文
+ * @param timeZone 表示のタイムゾーンの状態（時点を表す型の部分の書式に使う）
  */
 export function rowLabelParts(
   definition: TableDefinition,
   values: RowValues,
   texts: ValueTexts,
+  timeZone: CellTimeZone,
 ): readonly string[] {
   return definition.rowLabelColumns.map((column) => {
     const format = findColumn(definition, column) ?? {
@@ -55,7 +58,7 @@ export function rowLabelParts(
       masked: false,
     }
     const value = Object.hasOwn(values, column) ? values[column] : undefined
-    const part = normalizeLabelPart(formatCell(format, value, texts).text)
+    const part = normalizeLabelPart(formatCell(format, value, texts, timeZone).text)
     return part === '' ? texts.empty : part
   })
 }

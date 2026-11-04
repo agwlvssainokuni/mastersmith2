@@ -28,14 +28,21 @@
 // - 作成・更新・削除（B6）: 許す操作に CREATE があれば「作成」（行の無いテーブルの表示にも添える）。行の操作の「更新」は印を
 //   作って更新の画面へ、「削除」は S5 の確かめを開き、削除できたら一覧の状態を保ったまま読み直して Toast で知らせる。
 //   書き込みの 403 は S6 の 403 の表示にする（D3）。
+// - 表示のタイムゾーン（Intent 261102-timezone-ui-polish の U4、計画 Step 13、D6・D9〜D11・D28、W1）: 一覧の列か検索の項目に
+//   時点を表す型があるときだけ、読み込み中は今の読み込み中の表示のまま待つ（要求も送らない）。ready なら見出しの下に案内の
+//   1行（一覧の列に時点があるときだけ）を出し、セルと行のラベルを表示のタイムゾーンで書式にする。読み込みの失敗では上に
+//   「再読み込み」の帯を出し、時点のセルは短い文にする。表示のタイムゾーンが変わると読み込み直さずに時刻が切り替わる。
+//   検索の案内の今の時差は、画面を開いたときに1回だけ取った今の時刻（now。テストで差し替える）で決める。
 import { Alert, Button, useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router'
+import { DisplayTimeZoneErrorBar } from '../../app/display-settings/DisplayTimeZoneErrorBar'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import { toTablePath } from '../../app/navigation/tablePlaceholderPath'
 import { PageSizeSelect } from '../../shared/page-size/PageSizeSelect'
 import { ScrollRegion } from '../../shared/scroll-region/ScrollRegion'
+import { searchRows } from './businessDataApi'
 import { putRowKey, saveListState } from './businessDataStore'
 import {
   PAGE_SIZES,
@@ -54,14 +61,28 @@ import { SearchPanel } from './SearchPanel'
 import { countActiveConditions } from './searchConditions'
 import { useForbiddenFollowUp, useTableRefFromSearch, useWorkRoleKey } from './tableHookSupport'
 import { localizedName, useValueTexts } from './tablesText'
+import { TimeZoneNotice } from './TimeZoneNotice'
 import { useRowDeleteFlow } from './useRowDeleteFlow'
 import { useRowSearch } from './useRowSearch'
 import { useTableDefinition } from './useTableDefinition'
+import {
+  columnsNeedTimeZone,
+  searchFieldsNeedTimeZone,
+  useTablesTimeZone,
+} from './useTablesTimeZone'
 import './tablesCommon.css'
 import './BusinessDataListPage.css'
 
+/** 今の時刻を返す（既定。テストで差し替える） */
+const systemNow = (): Date => new Date()
+
+export interface BusinessDataListPageProps {
+  /** 今の時刻を返す関数（検索の案内の今の時差に使う。開いたときに1回だけ呼ぶ。テストで差し替える） */
+  now?: () => Date
+}
+
 /** S1 業務データの一覧 */
-export function BusinessDataListPage() {
+export function BusinessDataListPage({ now = systemNow }: BusinessDataListPageProps = {}) {
   const { t } = useTranslation()
   const language = useDisplayLanguage()
   const texts = useValueTexts()
@@ -76,7 +97,16 @@ export function BusinessDataListPage() {
     setDefinitionChanged(true)
     reloadDefinition()
   }, [reloadDefinition])
-  const rows = useRowSearch(ref, definition, onDefinitionStale)
+  const needsTimeZone =
+    definition !== null &&
+    (columnsNeedTimeZone(definition.listColumns) ||
+      searchFieldsNeedTimeZone(definition.searchFields))
+  const time = useTablesTimeZone(needsTimeZone)
+  const [nowText] = useState(() => now().toISOString())
+  const rows = useRowSearch(ref, definition, onDefinitionStale, searchRows, {
+    timeZone: time.timeZone,
+    waiting: time.waiting,
+  })
   const { listState, setListState } = rows
   const sectionRef = useRef<HTMLElement | null>(null)
   const toast = useToast()
@@ -189,7 +219,7 @@ export function BusinessDataListPage() {
   } else if (rows.status === 'problem' && rows.failure !== null) {
     announcement = t(readProblemMessageKey(rows.failure.kind))
     body = <BusinessDataProblemView kind={rows.failure.kind} onRetry={rows.retry} />
-  } else if (definition === null || listState === null) {
+  } else if (definition === null || listState === null || time.waiting) {
     busy = true
     body = (
       <h1 className="tables-heading" data-testid="tables-heading">
@@ -265,6 +295,7 @@ export function BusinessDataListPage() {
             language={language}
             tableName={tableName}
             texts={texts}
+            timeZone={time.cell}
             detailHref={detailHref}
             onSortChange={(sort: SortKey | null) => change({ sort, page: 1 })}
             onPageChange={(next: number) => change({ page: next })}
@@ -282,6 +313,10 @@ export function BusinessDataListPage() {
           </h1>
           {createButton}
         </div>
+        {time.state.status === 'ready' &&
+          definition.listColumns.some((column) => column.valueType === 'DATETIME_TZ') && (
+            <TimeZoneNotice timeZone={time.state.timeZone} source={time.state.source} />
+          )}
         <RestrictionNotice
           reason={definition.restrictionReason}
           writeConfigured={definition.writeConfigured}
@@ -292,7 +327,7 @@ export function BusinessDataListPage() {
         )}
         {definition.searchFields.length > 0 && (
           <SearchPanel
-            key={JSON.stringify(listState.search)}
+            key={`${JSON.stringify(listState.search)}|${time.state.status}|${time.timeZone ?? ''}`}
             fields={definition.searchFields}
             columns={[...definition.listColumns, ...definition.detailColumns]}
             values={listState.search}
@@ -300,6 +335,8 @@ export function BusinessDataListPage() {
             expanded={listState.searchExpanded}
             language={language}
             texts={texts}
+            timeZone={time.field}
+            now={nowText}
             onSearch={(values: SearchInputs) => change({ search: values, page: 1 })}
             onClear={() => change({ search: {}, page: 1 })}
             onToggle={() => change({ searchExpanded: !listState.searchExpanded })}
@@ -324,6 +361,7 @@ export function BusinessDataListPage() {
 
   return (
     <section ref={sectionRef} className="tables-page" data-testid="tables-page" aria-busy={busy}>
+      {needsTimeZone && <DisplayTimeZoneErrorBar />}
       {body}
       <p className="tables-visually-hidden" aria-live="polite" data-testid="tables-live">
         {busy ? '' : announcement}

@@ -22,7 +22,7 @@
 // - before で、履歴で最初の道の前に置く道を渡せる（戻る操作の確かめ。最初の道が今の位置になる）。
 import { render } from '@testing-library/react'
 import { ModalStackProvider, ThemeProvider, ToastProvider } from 'make-you-chic-ui'
-import type { ReactNode } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { createMemoryRouter, Outlet, RouterProvider, useLocation } from 'react-router'
 import { vi } from 'vitest'
 import { AdminForbiddenProvider } from '../../../app/admin-forbidden/AdminForbiddenProvider'
@@ -32,6 +32,11 @@ import {
   useDisplaySettings,
 } from '../../../app/display-settings/DisplaySettingsProvider'
 import { resetDisplaySettings } from '../../../app/display-settings/displaySettingsStore'
+import type {
+  DisplayTimeZoneActions,
+  DisplayTimeZoneState,
+} from '../../../app/display-settings/DisplayTimeZoneProvider'
+import { DisplayTimeZoneTestProvider } from '../../../app/display-settings/testing/DisplayTimeZoneTestProvider'
 import { I18nProvider } from '../../../app/i18n/I18nProvider'
 import { LoginStateGate } from '../../../app/login-state/LoginStateGate'
 import { FeatureRegistryProvider } from '../../../app/registry/FeatureRegistryContext'
@@ -89,6 +94,19 @@ export function renderTablesDataRouter(
     state?: unknown
     /** 履歴で route の前に置く道（ブラウザの戻る操作の確かめ） */
     before?: string[]
+    /**
+     * 表示のタイムゾーン（既定は固定の Asia/Tokyo。Intent 261102-timezone-ui-polish の U4）。state で loading・error を、
+     * actions で再読み込みの差し替えを渡す
+     */
+    displayTimeZone?: {
+      timeZone?: string
+      state?: DisplayTimeZoneState
+      actions?: Partial<DisplayTimeZoneActions>
+    }
+    /** 作成・更新の画面に渡す今の時刻（日時の案内の今の時差） */
+    now?: () => Date
+    /** 表示のタイムゾーンの提供元を差し替える（途中で状態を変えるテスト。渡すと displayTimeZone は使わない） */
+    timeZoneProvider?: (children: ReactNode) => ReactElement
   } = {},
 ) {
   const calls: RecordedRequest[] = []
@@ -106,6 +124,13 @@ export function renderTablesDataRouter(
   stubBrowserLanguages(options.languages ?? ['ja-JP'])
   resetDisplaySettings()
   const frame = tableFrame(options.roles ?? [ONE_ROLE])
+  const zoned =
+    options.timeZoneProvider ??
+    ((children: ReactNode) => (
+      <DisplayTimeZoneTestProvider {...(options.displayTimeZone ?? {})}>
+        {children}
+      </DisplayTimeZoneTestProvider>
+    ))
   const shell = (
     <ThemeProvider>
       <LoginStateGate provider={fakeProvider({ loggedIn: true, admin: false })}>
@@ -115,15 +140,17 @@ export function renderTablesDataRouter(
               <AdminForbiddenProvider>
                 <ToastProvider>
                   <ModalStackProvider>
-                    <frame.Frame>
-                      <header>
-                        <WorkRoleSwitcher />
-                      </header>
-                      <main>
-                        <Outlet />
-                      </main>
-                      <LocationProbe />
-                    </frame.Frame>
+                    {zoned(
+                      <frame.Frame>
+                        <header>
+                          <WorkRoleSwitcher />
+                        </header>
+                        <main>
+                          <Outlet />
+                        </main>
+                        <LocationProbe />
+                      </frame.Frame>,
+                    )}
                   </ModalStackProvider>
                 </ToastProvider>
               </AdminForbiddenProvider>
@@ -138,10 +165,10 @@ export function renderTablesDataRouter(
       {
         element: shell,
         children: [
-          { path: '/tables', element: <BusinessDataListPage /> },
+          { path: '/tables', element: <BusinessDataListPage now={options.now} /> },
           { path: '/tables/row', element: <BusinessDataDetailPage /> },
-          { path: '/tables/new', element: <BusinessDataFormPage /> },
-          { path: '/tables/edit', element: <BusinessDataFormPage /> },
+          { path: '/tables/new', element: <BusinessDataFormPage now={options.now} /> },
+          { path: '/tables/edit', element: <BusinessDataFormPage now={options.now} /> },
           { path: '*', element: <p>other</p> },
         ],
       },

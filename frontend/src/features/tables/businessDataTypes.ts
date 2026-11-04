@@ -181,6 +181,11 @@ export interface ReferenceField {
   options: readonly ReferenceOption[]
   /** LOOKUP・AVAILABLE のときだけ値がある（ほかは null。X-1） */
   picker: PickerInfo | null
+  /**
+   * ラベルの列の受け渡しの型（Intent 261102-timezone-ui-polish の U4、D30・D31）。AVAILABLE のときだけ届く。
+   * 項目が無い・null・知らない値は null（型が分からない。ラベルを文字のまま出す）。
+   */
+  labelValueType: ValueType | null
 }
 
 /** 定義を読む用途（一覧・詳細は付けない。D1） */
@@ -326,6 +331,11 @@ export interface SearchInput {
   from: string
   to: string
   values: readonly string[]
+  /**
+   * 時点を表す型の一致（EQUALS）の条件で、夏時間で2回ある時刻の2択の選択（Intent 261102-timezone-ui-polish の U4、D27）。
+   * 未選択は null か項目なし。範囲（RANGE）では使わない（始まりは先・終わりは後に自動で決める）。
+   */
+  overlapChoice?: 'earlier' | 'later' | null
 }
 
 /** 検索の項目ごとの入力（カラムの名前ごと） */

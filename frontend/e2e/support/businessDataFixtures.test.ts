@@ -28,6 +28,14 @@ import {
   leafDefinition,
   LONG_VALUE_LENGTH,
   longDetail,
+  TIME_INSTANTS,
+  TIME_LOCALS,
+  TIME_TABLE,
+  timeDefinition,
+  timeDetail,
+  timeNavigation,
+  timePage,
+  UNREADABLE_INSTANT,
   WIDE_SCHEMA,
   WIDE_TABLE,
   wideDefinition,
@@ -94,5 +102,61 @@ describe('businessDataFixtures', () => {
   it('builds a navigation that points to the wide table', () => {
     const navigation = parseNavigation(wire(wideNavigation()))
     expect(navigation?.items[0]?.table).toEqual({ schemaName: WIDE_SCHEMA, tableName: WIDE_TABLE })
+  })
+})
+
+// Intent 261102-timezone-ui-polish の U4（計画 Step 14）: 185 の時刻の状態の見本
+describe('businessDataFixtures time table', () => {
+  const REF = { schemaName: WIDE_SCHEMA, tableName: TIME_TABLE }
+
+  it('passes the definition parser and keeps the date time parts when made writable', () => {
+    const definition = timeDefinition(11)
+    expect(parseTableDefinition(wire(definition), REF)).toEqual(definition)
+    const writable = writableDefinition(definition)
+    expect(parseTableDefinition(wire(writable), REF)).toEqual(writable)
+    expect(writable.detailColumns.map((column) => [column.valueType, column.formPart])).toEqual([
+      ['STRING', 'text'],
+      ['STRING', 'text'],
+      ['DATETIME_TZ', 'datetime'],
+      ['DATETIME', 'datetime'],
+    ])
+    expect(writable.searchFields.map((field) => [field.operator, field.valueType])).toEqual([
+      ['EQUALS', 'STRING'],
+      ['RANGE', 'DATETIME_TZ'],
+    ])
+  })
+
+  it('keeps the wide writable definition as before (text parts)', () => {
+    const writable = writableDefinition(wideDefinition(8, 11))
+    expect(writable.detailColumns.every((column) => column.formPart === 'text')).toBe(true)
+  })
+
+  it('makes pages and details in the real shape: UTC instants with 0, 3 or 6 digits, T and unreadable values', () => {
+    const definition = timeDefinition(11)
+    const page = timePage(definition, 1, 20, 25)
+    expect(page.items).toHaveLength(20)
+    expect(parseRowPage(wire(page))).toEqual(page)
+    expect(parseRowDetail(wire(timeDetail(definition, 3)))).toEqual(timeDetail(definition, 3))
+    for (const instant of TIME_INSTANTS) {
+      expect(instant).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3}|\.\d{6})?\+00:00$/)
+    }
+    expect(TIME_INSTANTS.map((instant) => /\.(\d+)/.exec(instant)?.[1]?.length ?? 0)).toEqual([
+      6, 0, 3,
+    ])
+    for (const local of TIME_LOCALS) {
+      expect(local).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/)
+    }
+    const instants = page.items.map((item) => item.values.at)
+    expect(instants).toContain(UNREADABLE_INSTANT)
+    expect(page.items.map((item) => item.values.closes)).toContain(null)
+    for (const item of page.items) {
+      expect(item.key?.code).toContain(BUSINESS_VALUE_MARK)
+      expect(item.values.name).toContain(BUSINESS_VALUE_MARK)
+    }
+  })
+
+  it('builds a navigation that points to the time table', () => {
+    const navigation = parseNavigation(wire(timeNavigation()))
+    expect(navigation?.items[0]?.table).toEqual(REF)
   })
 })

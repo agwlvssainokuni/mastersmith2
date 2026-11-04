@@ -24,6 +24,10 @@
 //   基盤の設計のレビュー R-07）。
 // - 規則・要素は外さない（project.md の Forbidden）。記録には選択子を出さず、組と状態の名前と件数・時間だけを残す。
 // - test.step の題・注記・添付に、行の値・主キー・氏名・メールアドレス・パスワード・トークンを入れない。
+// - 時刻の状態（Intent 261102-timezone-ui-polish の U4、計画 Step 14、security-design.md 2.6）は、組ごとの別のテストで
+//   たどる（既存のテストの状態と時間の上限は変えない）。表示のタイムゾーンは GET /api/me/preferences の答えを型を付けた見本
+//   （support/preferencesFixtures.ts）に差し替えて決め、読み込みの失敗は 503 で作る。表の見本は businessDataFixtures.ts の
+//   時刻の表（本物の応答と同じ形。形の一致は流れ 200 で確かめる）。
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test'
 import { loginAsAdmin } from './support/adminLogin'
 import { missingRequiredRules, runAxe } from './support/axe'
@@ -35,6 +39,11 @@ import {
 import {
   fixturePage,
   longDetail,
+  TIME_TABLE,
+  timeDefinition,
+  timeDetail,
+  timeNavigation,
+  timePage,
   WIDE_SCHEMA,
   WIDE_TABLE,
   wideDefinition,
@@ -47,6 +56,7 @@ import {
   routeBusinessDataApi,
   tableResponder,
   type BusinessDataApiRoute,
+  type BusinessDataResponder,
 } from './support/businessDataApiRoute'
 import {
   armBusinessDataMeasure,
@@ -70,7 +80,9 @@ import {
   routeFrameApi,
   type FrameApiRoute,
 } from './support/frameApiRoute'
+import type { NavigationResponse } from '../src/app/navigation/navigationApi'
 import { routeLoginPreferences } from './support/loginPreferences'
+import { preferencesSample } from './support/preferencesFixtures'
 import {
   describeContainment,
   describeOverflow,
@@ -122,23 +134,96 @@ function defaultResponder() {
   )
 }
 
+/** プリファレンスの読み取りの道（表示のタイムゾーンの提供元が読む） */
+const PREFERENCES_API_PATH = '/api/me/preferences'
+
+/** 表示のタイムゾーンの答え（保存済みの名前・未設定の null・読み込みの失敗の 'error'） */
+type DisplayTimeZoneReply = string | null | 'error'
+
+/** GET /api/me/preferences の差し替えの口（時刻の状態） */
+interface DisplayTimeZoneRoute {
+  /** 次の読み取りの答えを替える（提供元はログインと読み込み直しのときに読む） */
+  set(reply: DisplayTimeZoneReply): void
+  /** 失敗で返した件数 */
+  readonly failedReplies: number
+}
+
+/**
+ * GET /api/me/preferences だけを型を付けた見本の答えに差し替える（PUT は差し替えない。080 と同じ形）。組のテーマと文字の
+ * 大きさは見本にも入れる（ログインの応答の書き換えと同じ値）。失敗は 503 の Problem Details（値を持たない）。
+ */
+async function routeDisplayTimeZone(
+  page: Page,
+  combo: DisplayCombo,
+  initial: DisplayTimeZoneReply,
+): Promise<DisplayTimeZoneRoute> {
+  const state = { reply: initial, failedReplies: 0 }
+  await page.route(
+    (url) => url.pathname === PREFERENCES_API_PATH,
+    (route) => {
+      if (route.request().method() !== 'GET') {
+        return route.fallback()
+      }
+      if (state.reply === 'error') {
+        state.failedReplies += 1
+        return route.fulfill({
+          status: 503,
+          contentType: 'application/problem+json',
+          body: JSON.stringify({ status: 503, code: 'SERVICE_UNAVAILABLE' }),
+        })
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(preferencesSample(combo.theme, combo.fontSize, state.reply)),
+      })
+    },
+  )
+  return {
+    set(reply) {
+      state.reply = reply
+    },
+    get failedReplies() {
+      return state.failedReplies
+    },
+  }
+}
+
+/** 見本の口と表示のタイムゾーンの差し替えの選び方（省略すると広い表の既定のまま。時刻の状態だけが渡す） */
+interface StartOptions {
+  navigation?: NavigationResponse
+  responder?: BusinessDataResponder
+  /** 渡したときだけ GET /api/me/preferences を差し替える */
+  displayTimeZone?: DisplayTimeZoneReply
+}
+
 /** 骨組みと業務データの見本の口を張り、管理者でログインする */
 async function startBusinessData(
   page: Page,
   combo: DisplayCombo,
+  options: StartOptions = {},
 ): Promise<{
   watch: PageWatch
   frame: FrameApiRoute
   business: BusinessDataApiRoute
   excludedTexts: string[]
+  preferences: DisplayTimeZoneRoute | null
 }> {
   const { baseURL } = test.info().project.use
   const watch = await watchPage(page)
   const excludedTexts = watchExcludedConsole(page)
   const frame = await routeFrameApi(page, baseURL ?? '')
   frame.setWorkRole(jsonReply(200, workRoleWire(THREE_ROLES, SALES)))
-  frame.setNavigation(jsonReply(200, wideNavigation()))
-  const business = await routeBusinessDataApi(page, baseURL ?? '', defaultResponder())
+  frame.setNavigation(jsonReply(200, options.navigation ?? wideNavigation()))
+  const business = await routeBusinessDataApi(
+    page,
+    baseURL ?? '',
+    options.responder ?? defaultResponder(),
+  )
+  const preferences =
+    options.displayTimeZone === undefined
+      ? null
+      : await routeDisplayTimeZone(page, combo, options.displayTimeZone)
   await prepareCombo(page, combo)
   // ログインの利用者は 130 と同じ形で2語の氏名にする（初期管理者の氏名は変えない。NFR 設計のレビュー R-09）。
   await routeLoginPreferences(page, {
@@ -148,7 +233,7 @@ async function startBusinessData(
   })
   await loginAsAdmin(page)
   await expectComboApplied(page, combo)
-  return { watch, frame, business, excludedTexts }
+  return { watch, frame, business, excludedTexts, preferences }
 }
 
 /** 130 と同じ2語の氏名（secretValues の SECRET_FIXED_VALUES に同じ値がある） */
@@ -170,7 +255,12 @@ function watchExcludedConsole(page: Page): string[] {
     } catch {
       return
     }
-    if (isFrameApiPath(pathname) || isBusinessDataApiPath(pathname)) {
+    // プリファレンスの読み取りは、時刻の状態で差し替えた 503 だけが失敗する（ほかのテストは差し替えず失敗しない）
+    if (
+      isFrameApiPath(pathname) ||
+      isBusinessDataApiPath(pathname) ||
+      pathname === PREFERENCES_API_PATH
+    ) {
       excludedTexts.push(`console: ${message.text()}`)
     }
   })
@@ -234,7 +324,8 @@ async function finish(
   started: Awaited<ReturnType<typeof startBusinessData>>,
   label: string,
 ): Promise<void> {
-  const { watch, frame, business, excludedTexts } = started
+  const { watch, frame, business, excludedTexts, preferences } = started
+  const preferencesFailed = preferences?.failedReplies ?? 0
   await page.waitForLoadState('networkidle')
   const remaining = withoutExcluded(watch.problems, excludedTexts)
   test.info().annotations.push({
@@ -244,6 +335,7 @@ async function finish(
       businessSeen: business.seen,
       businessFailed: business.failedReplies,
       frameFailed: frame.failedReplies,
+      preferencesFailed,
       excludedConsole: excludedTexts.length,
       remainingProblems: remaining.length,
       cspViolations: watch.cspViolations.length,
@@ -252,7 +344,7 @@ async function finish(
   expectBusinessDataRouteClean(business, label)
   expect(frame.blocked, `${label}: 見本の無い骨組みの書き込み`).toEqual([])
   expect(excludedTexts.length, `${label}: 除いた表示の件数`).toBeLessThanOrEqual(
-    frame.failedReplies + business.failedReplies,
+    frame.failedReplies + business.failedReplies + preferencesFailed,
   )
   expect(watch.cspViolations, `${label}: CSP の違反`).toEqual([])
   expect(remaining, `${label}: 画面の問題`).toEqual([])
@@ -376,6 +468,167 @@ async function walkStates(
   })
 }
 
+// --- 時刻の状態（Intent 261102-timezone-ui-polish の U4、計画 Step 14、security-design.md 2.6） ---
+
+/** 時刻の表（書き込みのできる形。時点・時差を持たない日時の欄は datetime の部品）。全体は 25 行 */
+const TIME = writableDefinition(timeDefinition(SALES.roleId))
+const TIME_TOTAL = 25
+
+/** 時刻の表の道（item はメニューの位置の道） */
+const TIME_QUERY = new URLSearchParams({
+  schema: WIDE_SCHEMA,
+  table: TIME_TABLE,
+  item: '0',
+}).toString()
+const TIME_LIST_PATH = `/tables?${TIME_QUERY}`
+const TIME_NEW_PATH = `/tables/new?${TIME_QUERY}`
+
+/** 時刻の表の答え（作成・更新は送らない。状態を見るだけ） */
+function timeResponder(): BusinessDataResponder {
+  return tableResponder(
+    TIME,
+    (number, size) => timePage(TIME, number, size, TIME_TOTAL),
+    () => timeDetail(TIME, 1),
+  )
+}
+
+/** 表示のタイムゾーン（+05:45 の端数の時差。夏時間は無い） */
+const KATHMANDU = 'Asia/Kathmandu'
+/** 表示のタイムゾーン（夏時間のある地域） */
+const NEW_YORK = 'America/New_York'
+/** 今のブラウザが解釈できない保存済みの名前（案内の「解釈できない」の文を出す） */
+const UNRESOLVABLE_ZONE = 'Etc/E2E_Unresolvable'
+
+/** 時刻の表の一覧を開き、件数が出るまで待つ（表示のタイムゾーンを読み直すため読み込み直す） */
+async function openTimeList(page: Page): Promise<void> {
+  await page.goto(TIME_LIST_PATH)
+  await expect(page.getByTestId('tables-count')).toContainText(String(TIME_TOTAL))
+  await expect(page.getByTestId('tables-page')).toHaveAttribute('aria-busy', 'false')
+}
+
+/**
+ * 時刻の状態を順にたどり、状態ごとに axe を流す（一覧・詳細の案内の3つの文、端数 6 桁・+05:45 の値・長い名前・読めない値、
+ * 作成・更新の読めない値・存在しない時刻・2択の未選択・選択済み、検索の時刻の条件の誤り、読み込みの失敗の帯）。
+ */
+async function walkTimeStates(
+  page: Page,
+  started: Awaited<ReturnType<typeof startBusinessData>>,
+  label: string,
+): Promise<void> {
+  const { preferences } = started
+  if (preferences === null) {
+    throw new Error('時刻の状態は表示のタイムゾーンの差し替えが要る')
+  }
+  const check = (state: string) => inspect(page, label, state)
+  const dateTime = () => page.getByTestId('tables-form-datetime-c2')
+  const dateTimeInput = () => dateTime().getByRole('textbox')
+
+  await test.step('time list with +05:45, 6 digit fractions, long names and unreadable values', async () => {
+    await openTimeList(page)
+    await expect(page.getByTestId('tables-time-zone-notice')).toContainText(KATHMANDU)
+    await check('time-list-saved')
+  })
+
+  await test.step('time detail', async () => {
+    await page.getByTestId('tables-row-link-r0').click()
+    await expect(page.getByTestId('tables-detail-heading')).toBeFocused()
+    await expect(page.getByTestId('tables-time-zone-notice')).toBeVisible()
+    await check('time-detail')
+  })
+
+  await test.step('time search condition with an error', async () => {
+    await openTimeList(page)
+    const toggle = page.getByTestId('tables-search-toggle')
+    if ((await toggle.getAttribute('aria-expanded')) !== 'true') {
+      await toggle.click()
+    }
+    const range = page.getByTestId('tables-search-field-f1')
+    await range.getByRole('textbox').first().fill('2026-13-01 00:00:00')
+    await page.getByRole('button', { name: '検索', exact: true }).click()
+    await expect(range.getByRole('alert')).toBeVisible()
+    await check('time-search-error')
+    await page.getByRole('button', { name: '条件をクリア' }).click()
+  })
+
+  await test.step('time list with the browser time zone notice', async () => {
+    preferences.set(null)
+    await openTimeList(page)
+    await expect(page.getByTestId('tables-time-zone-notice')).toContainText('Asia/Tokyo')
+    await check('time-list-browser')
+  })
+
+  await test.step('time list with an unresolvable saved time zone notice', async () => {
+    preferences.set(UNRESOLVABLE_ZONE)
+    await openTimeList(page)
+    await expect(page.getByTestId('tables-time-zone-notice')).toBeVisible()
+    await check('time-list-unresolvable')
+  })
+
+  await test.step('time create form with a format error', async () => {
+    preferences.set(NEW_YORK)
+    await page.goto(TIME_NEW_PATH)
+    await expect(page.getByTestId('tables-form-heading')).toBeFocused()
+    await dateTimeInput().fill('2026-11-01 25:00:00')
+    await dateTimeInput().press('Tab')
+    await expect(dateTimeInput()).toHaveAttribute('aria-invalid', 'true')
+    await check('time-form-invalid')
+  })
+
+  await test.step('time create form with a skipped time error', async () => {
+    await dateTimeInput().fill('2026-03-08 02:30:00')
+    await dateTimeInput().press('Tab')
+    await expect(dateTimeInput()).toHaveAccessibleDescription(
+      `${NEW_YORK} では、この時刻はありません（夏時間の切り替えで飛ばされる時刻です）`,
+    )
+    await check('time-form-gap')
+  })
+
+  await test.step('time create form with an overlapping time not chosen yet', async () => {
+    await dateTimeInput().fill('2026-11-01 01:30:00')
+    await dateTimeInput().press('Tab')
+    await expect(dateTime().getByRole('radio')).toHaveCount(2)
+    await page.getByTestId('tables-form-save').click()
+    await expect(page.getByTestId('tables-form-summary')).toBeFocused()
+    await expect(page.getByTestId('tables-form-summary')).toContainText(
+      'どちらの時刻かを選んでください',
+    )
+    await check('time-form-overlap-pending')
+  })
+
+  await test.step('time create form with the overlapping time chosen', async () => {
+    const later = dateTime().getByRole('radio', { name: '後（-05:00）' })
+    await later.check()
+    await expect(later).toBeChecked()
+    await check('time-form-overlap-chosen')
+    await page.getByTestId('tables-form-cancel').click()
+    await page.getByTestId('tables-leave-go').click()
+    await expect(page.getByTestId('tables-count')).toContainText(String(TIME_TOTAL))
+  })
+
+  await test.step('time update form with an unreadable stored value kept as text', async () => {
+    await page.getByTestId('tables-row-actions-r0').getByRole('button').click()
+    await page.getByRole('menuitem', { name: '更新' }).click()
+    await expect(page.getByTestId('tables-form-heading')).toBeFocused()
+    await check('time-update')
+  })
+
+  await test.step('time zone failure on the list', async () => {
+    preferences.set('error')
+    await page.goto(TIME_LIST_PATH)
+    await expect(page.getByTestId('display-time-zone-error')).toBeVisible()
+    await expect(page.getByTestId('tables-page')).toHaveAttribute('aria-busy', 'false')
+    await check('time-zone-error-list')
+  })
+
+  await test.step('time zone failure on the create form', async () => {
+    await page.goto(TIME_NEW_PATH)
+    await expect(page.getByTestId('display-time-zone-reload')).toBeVisible()
+    await expect(page.getByTestId('tables-form-save')).toHaveCount(0)
+    await check('time-zone-error-form')
+    preferences.set(NEW_YORK)
+  })
+}
+
 /** 既定の組（light・md・blue・既定の幅） */
 function defaultCombo(): DisplayCombo {
   const combo = DISPLAY_COMBOS.find(
@@ -424,6 +677,21 @@ test.describe('185 business data accessibility on the built WAR', () => {
       const started = await startBusinessData(page, combo)
       await walkStates(page, started, combo.name)
       await finish(page, started, combo.name)
+    })
+  }
+
+  // 時刻の状態（Intent 261102-timezone-ui-polish の U4）。20 組（375px の組を含む）のすべてで、既存の組のテストとは別に流す。
+  for (const combo of DISPLAY_COMBOS) {
+    test(`business data time ${combo.name}`, async ({ page }) => {
+      // 12 の状態ごとに axe を流し、状態ごとに画面を読み込み直すため、既定の 30 秒を超える（既存の組のテストと同じ上限）。
+      test.setTimeout(180_000)
+      const started = await startBusinessData(page, combo, {
+        navigation: timeNavigation(),
+        responder: timeResponder(),
+        displayTimeZone: KATHMANDU,
+      })
+      await walkTimeStates(page, started, `${combo.name} time`)
+      await finish(page, started, `${combo.name} time`)
     })
   }
 

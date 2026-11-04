@@ -102,13 +102,21 @@ export function referenceField(overrides: Partial<ReferenceField> = {}): Referen
     status: 'AVAILABLE',
     options: SAMPLE_OPTIONS,
     picker: null,
+    labelValueType: 'STRING',
     ...overrides,
   }
 }
 
 /** 写した後の参照の項目（LOOKUP・AVAILABLE） */
 export function lookupField(overrides: Partial<ReferenceField> = {}): ReferenceField {
-  return { kind: 'LOOKUP', status: 'AVAILABLE', options: [], picker: SAMPLE_PICKER, ...overrides }
+  return {
+    kind: 'LOOKUP',
+    status: 'AVAILABLE',
+    options: [],
+    picker: SAMPLE_PICKER,
+    labelValueType: 'STRING',
+    ...overrides,
+  }
 }
 
 /** ピッカーの1行（写した後） */
@@ -123,12 +131,16 @@ export function pickerRow(index: number, overrides: Partial<ReferenceRow> = {}):
 
 // ---- 本物の応答と同じ JSON ----
 
-/** 定義のカラムの reference（REFERENCE・AVAILABLE）。options は届く */
+/**
+ * 定義のカラムの reference（REFERENCE・AVAILABLE）。options とラベルの列の型 labelValueType は届く（labelValueType は
+ * Intent 261102-timezone-ui-polish の U4 で AVAILABLE のときだけ届く）
+ */
 export function wireReference(overrides: WireObject = {}): WireObject {
   return {
     kind: 'REFERENCE',
     status: 'AVAILABLE',
     options: SAMPLE_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+    labelValueType: 'STRING',
     ...overrides,
   }
 }
@@ -141,12 +153,18 @@ export function wirePicker(): WireObject {
   }
 }
 
-/** 定義のカラムの reference（LOOKUP・AVAILABLE）。options は本文に無い */
+/** 定義のカラムの reference（LOOKUP・AVAILABLE）。options は本文に無い。labelValueType は届く */
 export function wireLookup(overrides: WireObject = {}): WireObject {
-  return { kind: 'LOOKUP', status: 'AVAILABLE', picker: wirePicker(), ...overrides }
+  return {
+    kind: 'LOOKUP',
+    status: 'AVAILABLE',
+    picker: wirePicker(),
+    labelValueType: 'STRING',
+    ...overrides,
+  }
 }
 
-/** 入力不可の reference（options・picker は本文に無い） */
+/** 入力不可の reference（options・picker・labelValueType は本文に無い） */
 export function wireBlocked(
   kind: 'REFERENCE' | 'LOOKUP',
   status: 'NO_PERMISSION' | 'TOO_MANY',

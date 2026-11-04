@@ -68,6 +68,26 @@ describe('referenceFixtures', () => {
     expect(Object.keys(product?.reference ?? {})).not.toContain('options')
   })
 
+  // Intent 261102-timezone-ui-polish の U4: 本物の応答は AVAILABLE のときだけラベルの列の型を持つ（NON_NULL）
+  it('carries the label value type only for available references, like the real body', () => {
+    const typeOf = (variant: CustomerVariant, column: string) => {
+      const body = wire(orderDefinition('e2e_biz_x', 3, variant)) as {
+        detailColumns: { column: string; reference: Record<string, unknown> | null }[]
+      }
+      return body.detailColumns.find((item) => item.column === column)?.reference
+    }
+    expect(typeOf('available', 'customer_code')?.labelValueType).toBe('STRING')
+    expect(typeOf('radio-200', 'customer_code')?.labelValueType).toBe('STRING')
+    expect(typeOf('available', 'product_code')?.labelValueType).toBe('STRING')
+    expect(Object.keys(typeOf('too-many', 'customer_code') ?? {})).not.toContain('labelValueType')
+    expect(Object.keys(typeOf('no-permission', 'customer_code') ?? {})).not.toContain(
+      'labelValueType',
+    )
+    const parsed = parseTableDefinition(wire(orderDefinition('e2e_biz_x', 3, 'available')), REF)
+    const customer = parsed?.detailColumns.find((column) => column.column === 'customer_code')
+    expect(customer?.reference?.labelValueType).toBe('STRING')
+  })
+
   it('makes pages that pass the search parser and values with the mark', () => {
     const rows = Array.from({ length: 20 }, (_, index) => productRow(index + 1))
     expect(parseReferenceRowPage(wire(productPage(rows, 1, true)))?.rows).toHaveLength(20)

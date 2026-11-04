@@ -37,7 +37,7 @@ import {
   XSS_SAMPLES,
   pickerRow,
 } from '../testing/referenceSamples'
-import { LookupPickerDialog } from './LookupPickerDialog'
+import { LookupPickerDialog, type LookupPickerDialogProps } from './LookupPickerDialog'
 
 afterEach(() => resetDisplayTestState())
 
@@ -67,15 +67,24 @@ function problem(status: number, code: string, fieldErrors: unknown[] = []) {
   return { kind: 'response', status, code, problem: { status, code, fieldErrors } }
 }
 
+/** 表示のタイムゾーン（固定の Asia/Tokyo）と今の時刻（Intent 261102-timezone-ui-polish の U4） */
+const TOKYO_CELL = { status: 'ready', timeZone: 'Asia/Tokyo' } as const
+const TEST_NOW = '2026-07-01T00:00:00Z'
+
 /** 「選ぶ…」のボタンとダイアログを描く（閉じたらダイアログを外す） */
 function Harness({
   picker,
   search,
   onSelect,
+  extra = {},
 }: {
   picker: PickerInfo
   search: ReturnType<typeof fakeSearch>['search']
   onSelect: (row: ReferenceRow) => void
+  /** 日時の書式の受け渡し（Intent 261102-timezone-ui-polish の U4） */
+  extra?: Partial<
+    Pick<LookupPickerDialogProps, 'labelValueType' | 'valueType' | 'timeZone' | 'now'>
+  >
 }) {
   const [open, setOpen] = useState(true)
   const opener = useRef<HTMLButtonElement | null>(null)
@@ -96,17 +105,26 @@ function Harness({
           }}
           onClose={() => setOpen(false)}
           search={search}
+          timeZone={TOKYO_CELL}
+          now={TEST_NOW}
+          {...extra}
         />
       )}
     </>
   )
 }
 
-function renderDialog(picker: PickerInfo = SAMPLE_PICKER, languages?: string[]) {
+function renderDialog(
+  picker: PickerInfo = SAMPLE_PICKER,
+  languages?: string[],
+  extra: Partial<
+    Pick<LookupPickerDialogProps, 'labelValueType' | 'valueType' | 'timeZone' | 'now'>
+  > = {},
+) {
   const fake = fakeSearch()
   const onSelect = vi.fn()
   const view = renderReference(
-    <Harness picker={picker} search={fake.search} onSelect={onSelect} />,
+    <Harness picker={picker} search={fake.search} onSelect={onSelect} extra={extra} />,
     languages === undefined ? {} : { languages },
   )
   return { ...fake, onSelect, view, user: userEvent.setup() }
@@ -347,6 +365,113 @@ describe('LookupPickerDialog', () => {
     expect(document.title).not.toMatch(/P0|商品 1/)
     await user.click(within(table).getByRole('button', { name: '商品 1を選ぶ' }))
     expect(onSelect).toHaveBeenCalledWith(pickerRow(0))
+  })
+
+  // Intent 261102-timezone-ui-polish の U4、計画 Step 11、D32〜D34
+  it('shows date time cells and labels in the display time zone and selects the original row', async () => {
+    const picker: PickerInfo = {
+      searchFields: [
+        {
+          column: 'at',
+          displayName: { ja: '日時', en: 'Time' },
+          operator: 'EQUALS',
+          valueType: 'DATETIME_TZ',
+        },
+      ],
+      listColumns: [
+        { column: 'at', displayName: { ja: '日時', en: 'Time' }, valueType: 'DATETIME_TZ' },
+        { column: 'name', displayName: { ja: '品名', en: 'Name' }, valueType: 'STRING' },
+      ],
+    }
+    const { user, calls, onSelect } = renderDialog(picker, undefined, {
+      labelValueType: 'DATETIME_TZ',
+      valueType: 'STRING',
+      timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
+    })
+    await user.type(
+      await screen.findByRole('textbox', { name: '日時（一致）' }),
+      '2026-11-02 00:00:00',
+    )
+    await user.click(screen.getByTestId('tables-picker-search'))
+    // 送る条件は、表示のタイムゾーンの壁時計を直した時点（UTC の時差つき）
+    expect(calls[0].conditions).toEqual([{ column: 'at', value: '2026-11-01T15:00:00+00:00' }])
+    const row: ReferenceRow = {
+      value: 'E1',
+      label: '2026-11-01T15:00:00.123+00:00',
+      cells: ['2026-11-01T15:00:00.123+00:00', '<script>x</script>'],
+    }
+    await act(async () => calls[0].answer.resolve({ rows: [row], page: 1, hasNext: false }))
+    const table = await screen.findByRole('table')
+    expect(within(table).getByText('2026-11-02 00:00:00.123 +09:00')).toBeInTheDocument()
+    expect(within(table).getByText('<script>x</script>')).toBeInTheDocument()
+    await user.click(
+      within(table).getByRole('button', { name: '2026-11-02 00:00:00.123 +09:00を選ぶ' }),
+    )
+    expect(onSelect).toHaveBeenCalledWith(row)
+  })
+
+  // Intent 261102-timezone-ui-polish の U4、計画 Step 13、D26・D27・D34
+  it('uses a date time field and asks which time an overlapping exact match means', async () => {
+    const picker: PickerInfo = {
+      searchFields: [
+        {
+          column: 'at',
+          displayName: { ja: '日時', en: 'Time' },
+          operator: 'EQUALS',
+          valueType: 'DATETIME_TZ',
+        },
+      ],
+      listColumns: [
+        { column: 'at', displayName: { ja: '日時', en: 'Time' }, valueType: 'DATETIME_TZ' },
+      ],
+    }
+    const { user, calls, view } = renderDialog(picker, undefined, {
+      timeZone: { status: 'ready', timeZone: 'America/New_York' },
+      now: '2026-12-01T00:00:00Z',
+    })
+    const input = await screen.findByRole('textbox', { name: '日時（一致）' })
+    expect(input).toHaveAttribute('type', 'text')
+    expect(input).toHaveAccessibleDescription(
+      'America/New_York (-05:00) で入力。例: 2026-11-02 09:30:15。秒の端数を持つ値は、端数まで入れてください（例: .123）',
+    )
+    await user.type(input, '2026-11-01 01:30:00{Enter}')
+    const earlier = await screen.findByRole('radio', { name: '先（-04:00）' })
+    await waitFor(() => expect(earlier).toHaveFocus())
+    expect(screen.getByText('どちらの時刻かを選んでください')).toBeInTheDocument()
+    expect(calls).toHaveLength(0)
+    expect(await axe(view.container)).toHaveNoViolations()
+    await user.click(earlier)
+    await user.click(screen.getByTestId('tables-picker-search'))
+    expect(calls[0].conditions).toEqual([{ column: 'at', value: '2026-11-01T05:30:00+00:00' }])
+  })
+
+  it('shows a skipped time error with the zone name in the picker', async () => {
+    const picker: PickerInfo = {
+      searchFields: [
+        {
+          column: 'at',
+          displayName: { ja: '日時', en: 'Time' },
+          operator: 'EQUALS',
+          valueType: 'DATETIME_TZ',
+        },
+      ],
+      listColumns: [
+        { column: 'at', displayName: { ja: '日時', en: 'Time' }, valueType: 'DATETIME_TZ' },
+      ],
+    }
+    const { user, calls } = renderDialog(picker, undefined, {
+      timeZone: { status: 'ready', timeZone: 'America/New_York' },
+    })
+    const input = await screen.findByRole('textbox', { name: '日時（一致）' })
+    await user.type(input, '2026-03-08 02:30:00')
+    await user.click(screen.getByTestId('tables-picker-search'))
+    expect(
+      await screen.findByText(
+        'America/New_York では、この時刻はありません（夏時間の切り替えで飛ばされる時刻です）',
+      ),
+    ).toBeInTheDocument()
+    expect(input).toHaveAttribute('aria-invalid', 'true')
+    expect(calls).toHaveLength(0)
   })
 
   it('starts empty again when reopened', async () => {

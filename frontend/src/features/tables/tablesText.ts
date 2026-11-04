@@ -36,6 +36,8 @@ export function useValueTexts(): ValueTexts {
       no: t('tables.value.no'),
       on: t('tables.value.on'),
       off: t('tables.value.off'),
+      // 時点のセルの短い文は U2 の DisplayTime と同じ文（Intent 261102-timezone-ui-polish の U4、D11）
+      timeZoneUnavailable: t('displayTime.error'),
     }),
     [t],
   )

@@ -192,12 +192,24 @@ export function wideDefinition(columns: number, workRoleId: number | null): Tabl
 /**
  * 書き込みのできる定義にする（Intent 261016-business-data-views の U3 の B6。185 の作成・更新・削除の状態と formShown100）。
  * 許す操作をすべてにし、書き込みの設定ありにする。主キー（code）は作成だけで入力し必須、ほかのカラムは作成と更新で入力する。
+ * 部品はカラムの formPart を保ち、無ければ text にする（時刻の表の datetime を保つ。Intent 261102-timezone-ui-polish の U4）。
  */
 export function writableDefinition(definition: TableDefinition): TableDefinition {
   const editable = (column: ColumnDefinition): ColumnDefinition =>
     column.column === 'code'
-      ? { ...column, editableOnCreate: true, formPart: 'text', required: true, nullable: false }
-      : { ...column, editableOnCreate: true, editableOnUpdate: true, formPart: 'text' }
+      ? {
+          ...column,
+          editableOnCreate: true,
+          formPart: column.formPart ?? 'text',
+          required: true,
+          nullable: false,
+        }
+      : {
+          ...column,
+          editableOnCreate: true,
+          editableOnUpdate: true,
+          formPart: column.formPart ?? 'text',
+        }
   return {
     ...definition,
     operations: ['LIST', 'DETAIL', 'CREATE', 'UPDATE', 'DELETE'],
@@ -277,15 +289,18 @@ export function longDetail(definition: TableDefinition, number: number): RowDeta
   }
 }
 
-/** 広い表だけを末端に持つ業務のメニュー */
-export function wideNavigation(): NavigationResponse {
+/** 1つの表だけを末端に持つ業務のメニュー */
+function singleTableNavigation(
+  label: { ja: string; en: string },
+  table: string,
+): NavigationResponse {
   return {
     items: [
       {
         id: '0',
-        label: { ...WIDE_LABEL },
+        label: { ...label },
         icon: 'list',
-        table: { schemaName: WIDE_SCHEMA, tableName: WIDE_TABLE },
+        table: { schemaName: WIDE_SCHEMA, tableName: table },
         navigable: true,
         items: [],
         tableKind: 'TABLE',
@@ -293,4 +308,134 @@ export function wideNavigation(): NavigationResponse {
     ],
     emptyReason: null,
   }
+}
+
+/** 広い表だけを末端に持つ業務のメニュー */
+export function wideNavigation(): NavigationResponse {
+  return singleTableNavigation(WIDE_LABEL, WIDE_TABLE)
+}
+
+// --- 時刻の表（Intent 261102-timezone-ui-polish の U4、計画 Step 14、security-design.md 2.6 の 185 の時刻の状態） ---
+// - 本物の応答と同じ形にする: 時点を表す型（DATETIME_TZ）は UTC の時差 +00:00 つきの ISO 8601 で、秒の端数は列の桁のまま
+//   （0・3・6 桁）。時差を持たない日時（DATETIME）は区切りの T のまま。読めない値は元の文字のまま届く（K-99）。
+// - 時刻の値は架空の固定の値で、行を見分ける値ではないため目印を含めない（目印を入れると時刻として読めなくなる）。主キーと
+//   文字の値は今の見本と同じく目印を含める。
+// - 本物の応答と項目の名前・型が一致することは、流れ 200 の中で shapeCompare で毎回確かめる（project.md の学び）。
+
+/** 時刻の表の見本のテーブル */
+export const TIME_TABLE = 'TIME_EVENT'
+
+/** 時刻の表の表示名（長い名前） */
+export const TIME_LABEL = {
+  ja: `時刻の表の長い表示名${'か'.repeat(20)}`,
+  en: `Time table with a long display name ${'t'.repeat(10)}`,
+} as const
+
+/** 時刻の表の時点の値（UTC の +00:00。端数 6 桁・0 桁・3 桁。+05:45 で日付が変わる値と、2回ある時刻を含む） */
+export const TIME_INSTANTS = [
+  '2026-10-31T18:15:00.123456+00:00',
+  '2026-11-01T06:30:00+00:00',
+  '2026-02-28T23:59:59.999+00:00',
+] as const
+
+/** 時刻の表の時差を持たない日時の値 */
+export const TIME_LOCALS = ['2026-11-01T09:00:00.5', '2026-03-08T02:30:00'] as const
+
+/** 読めない時点の値（範囲の外の値が元の文字のまま届く形） */
+export const UNREADABLE_INSTANT = '0000-00-00 00:00:00'
+
+/** 時刻の表の定義（主キー・名前・長い表示名の時点・時差を持たない日時。検索は主キーの一致と時点の範囲） */
+export function timeDefinition(workRoleId: number | null): TableDefinition {
+  const definition = definitionOf(
+    WIDE_SCHEMA,
+    TIME_TABLE,
+    { ...TIME_LABEL },
+    [
+      fixtureColumn('code', { ja: '出来事の番号', en: 'Event code' }, { width: 200 }),
+      fixtureColumn('name', { ja: '名前', en: 'Name' }),
+      fixtureColumn(
+        'at',
+        { ja: `発生の時刻の長い表示名${'き'.repeat(20)}`, en: 'Occurred at' },
+        { valueType: 'DATETIME_TZ', formPart: 'datetime', precision: 6 },
+      ),
+      fixtureColumn(
+        'closes',
+        { ja: '締めの日時', en: 'Closes at' },
+        { valueType: 'DATETIME', formPart: 'datetime' },
+      ),
+    ],
+    workRoleId,
+  )
+  return {
+    ...definition,
+    searchFields: [
+      searchField('code', '出来事の番号', 'Event code'),
+      searchField('at', '発生の時刻', 'Occurred at', {
+        operator: 'RANGE',
+        valueType: 'DATETIME_TZ',
+      }),
+    ],
+  }
+}
+
+/** 時刻の表の1行の値（5 行ごとに時点を読めない値、7 行ごとに時差を持たない日時を NULL にする） */
+function timeRowValues(number: number): Record<string, string | null> {
+  return {
+    code: fixtureKey(number),
+    name: `${BUSINESS_VALUE_MARK} 出来事 ${number}`,
+    at:
+      number % 5 === 0
+        ? UNREADABLE_INSTANT
+        : (TIME_INSTANTS[(number - 1) % TIME_INSTANTS.length] ?? null),
+    closes: number % 7 === 0 ? null : (TIME_LOCALS[(number - 1) % TIME_LOCALS.length] ?? null),
+  }
+}
+
+/**
+ * 時刻の表の一覧の見本（page ページ目の size 件。全体は total 件）。
+ *
+ * @param definition 時刻の表の定義
+ * @param page ページの番号
+ * @param size 1ページの件数
+ * @param total 全体の件数
+ */
+export function timePage(
+  definition: TableDefinition,
+  page: number,
+  size: 20 | 50 | 100,
+  total: number,
+): RowPage {
+  const start = (page - 1) * size
+  const count = Math.max(0, Math.min(size, total - start))
+  return {
+    definitionId: definition.definitionId,
+    definitionChanged: false,
+    items: Array.from({ length: count }, (_, index) => {
+      const number = start + index + 1
+      return {
+        key: { code: fixtureKey(number) },
+        values: timeRowValues(number),
+        truncatedColumns: [],
+      }
+    }),
+    page,
+    size,
+    total,
+  }
+}
+
+/** 時刻の表の詳細の見本 */
+export function timeDetail(definition: TableDefinition, number: number): RowDetail {
+  return {
+    definitionId: definition.definitionId,
+    definitionChanged: false,
+    key: { code: fixtureKey(number) },
+    values: timeRowValues(number),
+    truncatedColumns: [],
+  }
+}
+
+/** 時刻の表だけを末端に持つ業務のメニュー */
+export function timeNavigation(): NavigationResponse {
+  return singleTableNavigation(TIME_LABEL, TIME_TABLE)
 }

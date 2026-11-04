@@ -90,7 +90,6 @@ const ja: Record<string, string> = {
   'tables.form.backToDetail': '詳細へ戻る',
   'tables.form.required': '*必須',
   'tables.form.maxLength': '{{count}} 文字まで',
-  'tables.form.utc': 'UTC で入れる',
   'tables.form.dateHint': '形: YYYY-MM-DD',
   'tables.form.numberHint': '例: 1234.56',
   'tables.form.passwordHint': '入れたときだけ変わります',
@@ -187,6 +186,38 @@ const ja: Record<string, string> = {
   'tables.error.NOT_EDITABLE_NOT_NULL':
     'このテーブルの作成には、入力できない項目の値が要ります。管理者に確かめてください。',
   'tables.error.NO_CHANGE': '変えた項目がありません。',
+
+  // 日時の欄の画面だけの誤り（Intent 261102-timezone-ui-polish の U4、frontend-components.md の 5節、D11・D19〜D21）。
+  // {{zone}} はタイムゾーンの名前で、文字として差し込む。TIME_ZONE_UNAVAILABLE は U2 の displayTime.error と同じ文。
+  'tables.error.DATE_TIME_FORMAT': '日時を YYYY-MM-DD HH:mm:ss の形で入れてください',
+  'tables.error.DATE_TIME_GAP':
+    '{{zone}} では、この時刻はありません（夏時間の切り替えで飛ばされる時刻です）',
+  'tables.error.DATE_TIME_OVERLAP': 'どちらの時刻かを選んでください',
+  'tables.error.TIME_ZONE_UNAVAILABLE': '時刻を表示できません',
+
+  // 表示のタイムゾーンの案内の1行と日時の欄（Intent 261102-timezone-ui-polish の U4、frontend-components.md の 5節、D9・D15・D21・D24）
+  'tables.timeZone.notice.saved': '表示のタイムゾーン: {{zone}}',
+  'tables.timeZone.notice.browser': '表示のタイムゾーン: ブラウザのタイムゾーン（{{zone}}）',
+  'tables.timeZone.notice.savedUnresolvable':
+    '保存したタイムゾーンを使えないため、ブラウザのタイムゾーン（{{zone}}）で表示しています',
+  'tables.timeZone.notice.linkBefore': '（',
+  'tables.timeZone.notice.linkAfter': '）',
+  'tables.timeZone.notice.link': 'プリファレンスで変更',
+  'tables.dateTime.hint.instant':
+    '{{zone}} ({{offset}}) で入力。例: 2026-11-02 09:30:15（秒の端数は .123 のように付けられます）',
+  'tables.dateTime.hint.local': '例: 2026-11-02 09:30:15（秒の端数は .123 のように付けられます）',
+  'tables.dateTime.hint.instantRange':
+    '{{zone}} ({{offset}}) で入力。始まりも終わりも含みます。端数を含めるときは 23:59:59.999999 のように入れます',
+  'tables.dateTime.hint.localRange':
+    '始まりも終わりも含みます。端数を含めるときは 23:59:59.999999 のように入れます',
+  'tables.dateTime.hint.instantEquals':
+    '{{zone}} ({{offset}}) で入力。例: 2026-11-02 09:30:15。秒の端数を持つ値は、端数まで入れてください（例: .123）',
+  'tables.dateTime.hint.localEquals':
+    '例: 2026-11-02 09:30:15。秒の端数を持つ値は、端数まで入れてください（例: .123）',
+  'tables.dateTime.loading': '読み込み中',
+  'tables.dateTime.overlapLegend': '{{zone}} では、この時刻は2回あります。どちらですか',
+  'tables.dateTime.earlier': '先（{{offset}}）',
+  'tables.dateTime.later': '後（{{offset}}）',
 
   // 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 5節、D36）
   'tables.reference.noPermission': '参照先を読む権限がないため変更できません',
@@ -300,7 +331,6 @@ const en: Record<string, string> = {
   'tables.form.backToDetail': 'Back to the details',
   'tables.form.required': '*Required',
   'tables.form.maxLength': 'Up to {{count}} characters',
-  'tables.form.utc': 'Enter in UTC',
   'tables.form.dateHint': 'Format: YYYY-MM-DD',
   'tables.form.numberHint': 'Example: 1234.56',
   'tables.form.passwordHint': 'Changes only when you enter a value',
@@ -397,6 +427,38 @@ const en: Record<string, string> = {
   'tables.error.NOT_EDITABLE_NOT_NULL':
     'Creating a row in this table requires values for fields you cannot enter. Contact your administrator.',
   'tables.error.NO_CHANGE': 'No fields were changed.',
+
+  // 日時の欄の画面だけの誤り（Intent 261102-timezone-ui-polish の U4）
+  'tables.error.DATE_TIME_FORMAT': 'Enter the date and time as YYYY-MM-DD HH:mm:ss',
+  'tables.error.DATE_TIME_GAP':
+    'This time does not exist in {{zone}} (it is skipped by a daylight saving time change)',
+  'tables.error.DATE_TIME_OVERLAP': 'Choose which time you mean',
+  'tables.error.TIME_ZONE_UNAVAILABLE': 'Time unavailable',
+
+  // 表示のタイムゾーンの案内の1行と日時の欄（Intent 261102-timezone-ui-polish の U4）
+  'tables.timeZone.notice.saved': 'Display time zone: {{zone}}',
+  'tables.timeZone.notice.browser': 'Display time zone: browser time zone ({{zone}})',
+  'tables.timeZone.notice.savedUnresolvable':
+    'The saved time zone is not available, so times are shown in the browser time zone ({{zone}})',
+  'tables.timeZone.notice.linkBefore': ' (',
+  'tables.timeZone.notice.linkAfter': ')',
+  'tables.timeZone.notice.link': 'Change in Preferences',
+  'tables.dateTime.hint.instant':
+    'Enter in {{zone}} ({{offset}}). Example: 2026-11-02 09:30:15 (you can add fractional seconds such as .123)',
+  'tables.dateTime.hint.local':
+    'Example: 2026-11-02 09:30:15 (you can add fractional seconds such as .123)',
+  'tables.dateTime.hint.instantRange':
+    'Enter in {{zone}} ({{offset}}). Both ends are included. To include fractional seconds, enter a value such as 23:59:59.999999',
+  'tables.dateTime.hint.localRange':
+    'Both ends are included. To include fractional seconds, enter a value such as 23:59:59.999999',
+  'tables.dateTime.hint.instantEquals':
+    'Enter in {{zone}} ({{offset}}). Example: 2026-11-02 09:30:15. For a value with fractional seconds, enter the fraction too (such as .123)',
+  'tables.dateTime.hint.localEquals':
+    'Example: 2026-11-02 09:30:15. For a value with fractional seconds, enter the fraction too (such as .123)',
+  'tables.dateTime.loading': 'Loading',
+  'tables.dateTime.overlapLegend': 'This time occurs twice in {{zone}}. Which one?',
+  'tables.dateTime.earlier': 'Earlier ({{offset}})',
+  'tables.dateTime.later': 'Later ({{offset}})',
 
   // 他テーブル参照（Intent 261029-reference-lookup-cleanup の U3、frontend-components.md の 5節、D36）
   'tables.reference.noPermission':

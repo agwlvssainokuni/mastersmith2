@@ -23,6 +23,7 @@
 import type { BusinessProblem, ColumnDefinition, TableDefinition } from './businessDataTypes'
 import type { FormMode } from './formDiff'
 import { chooseFieldKind } from './references/referenceField'
+import type { DateTimeErrorReason } from './resolveDateTimeInput'
 
 /** 読み取りの失敗の種類（S6 の表示と一覧の上の文） */
 export type ReadProblemKind =
@@ -118,9 +119,22 @@ export const FIELD_ERROR_REASONS = [
   'NO_CHANGE',
 ] as const
 
+/**
+ * 文を用意している日時の欄の画面だけの理由（Intent 261102-timezone-ui-polish の U4、D11・D19〜D21。サーバーには無い）。
+ * DATE_TIME_GAP の文はタイムゾーンの名前（zone）を差し込む。
+ */
+export const DATE_TIME_ERROR_REASONS = [
+  'DATE_TIME_FORMAT',
+  'DATE_TIME_GAP',
+  'DATE_TIME_OVERLAP',
+  'TIME_ZONE_UNAVAILABLE',
+] as const satisfies readonly DateTimeErrorReason[]
+
 /** fieldErrors の reason の文言の鍵（知らない reason は INVALID_VALUE の文） */
 export function fieldErrorMessageKey(reason: string): string {
-  const known = (FIELD_ERROR_REASONS as readonly string[]).includes(reason)
+  const known =
+    (FIELD_ERROR_REASONS as readonly string[]).includes(reason) ||
+    (DATE_TIME_ERROR_REASONS as readonly string[]).includes(reason)
   return `tables.error.${known ? reason : 'INVALID_VALUE'}`
 }
 

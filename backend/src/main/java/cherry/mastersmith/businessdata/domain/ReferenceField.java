@@ -26,18 +26,27 @@ import java.util.Objects;
  * <p>状態が {@link ReferenceStatus#AVAILABLE} でないときは選択肢もピッカーの情報も持たない（BR3.6）。REFERENCE の AVAILABLE は
  * 選択肢（0〜200）を、LOOKUP の AVAILABLE はピッカーの情報を持つ。文字列にするときは選択肢の数だけを出す（BR10.1）。
  *
+ * <p>ラベルの列の受け渡しの型（{@code labelValueType}）は、AVAILABLE のときだけ持つ（Intent 261102-timezone-ui-polish の U4、
+ * functional-spec.md D30・security-design.md 2.1）。型の名前だけで、値・ラベルを足さない。参照先の権限を欠く利用者に参照先のカラム
+ * の型を明かさないため、AVAILABLE でない項目は持たない。
+ *
  * @param kind 種類（{@code REFERENCE} か {@code LOOKUP}）
  * @param status 状態
  * @param options 選択肢（REFERENCE で AVAILABLE のときだけ。ほかは空）
  * @param picker ピッカーの情報（LOOKUP で AVAILABLE のときだけ。ほかは null）
+ * @param labelValueType ラベルの列の受け渡しの型（AVAILABLE のときだけ。ほかと、型が決まらないときは null）
  */
 public record ReferenceField(
-        OptionSourceKind kind, ReferenceStatus status, List<ReferenceOption> options, PickerInfo picker) {
+        OptionSourceKind kind,
+        ReferenceStatus status,
+        List<ReferenceOption> options,
+        PickerInfo picker,
+        ValueType labelValueType) {
 
     /** 選択肢の数の上限（BR4.3）。 */
     public static final int MAX_OPTIONS = 200;
 
-    /** 種類・状態と、持つものの組が食い違わないことを確かめる（BR3.6・BR4.3）。 */
+    /** 種類・状態と、持つものの組が食い違わないことを確かめる（BR3.6・BR4.3・D30）。 */
     public ReferenceField {
         Objects.requireNonNull(kind, "kind は必須です");
         Objects.requireNonNull(status, "status は必須です");
@@ -59,52 +68,61 @@ public record ReferenceField(
         if (kind == OptionSourceKind.LOOKUP && status == ReferenceStatus.TOO_MANY) {
             throw new IllegalArgumentException("LOOKUP に TOO_MANY はありません");
         }
+        if (status != ReferenceStatus.AVAILABLE && labelValueType != null) {
+            throw new IllegalArgumentException("ラベルの列の型は AVAILABLE のときだけ持ちます");
+        }
     }
 
     /**
-     * 読めない（または用途で入力できない）項目を作る。
+     * 読めない（または用途で入力できない）項目を作る（ラベルの列の型を持たない）。
      *
      * @param kind 種類
      * @return 項目
      */
     public static ReferenceField noPermission(OptionSourceKind kind) {
-        return new ReferenceField(kind, ReferenceStatus.NO_PERMISSION, List.of(), null);
+        return new ReferenceField(kind, ReferenceStatus.NO_PERMISSION, List.of(), null, null);
     }
 
     /**
-     * 候補が多すぎる REFERENCE の項目を作る。
+     * 候補が多すぎる REFERENCE の項目を作る（ラベルの列の型を持たない）。
      *
      * @return 項目
      */
     public static ReferenceField tooMany() {
-        return new ReferenceField(OptionSourceKind.REFERENCE, ReferenceStatus.TOO_MANY, List.of(), null);
+        return new ReferenceField(OptionSourceKind.REFERENCE, ReferenceStatus.TOO_MANY, List.of(), null, null);
     }
 
     /**
      * 選択肢を持つ REFERENCE の項目を作る。
      *
      * @param options 選択肢（同じ値を落とした後。0〜200）
+     * @param labelValueType ラベルの列の受け渡しの型（{@link ReferencePolicy#labelValueTypeOf} で決めたもの。決まらなければ null）
      * @return 項目
      */
-    public static ReferenceField choices(List<ReferenceOption> options) {
-        return new ReferenceField(OptionSourceKind.REFERENCE, ReferenceStatus.AVAILABLE, options, null);
+    public static ReferenceField choices(List<ReferenceOption> options, ValueType labelValueType) {
+        return new ReferenceField(OptionSourceKind.REFERENCE, ReferenceStatus.AVAILABLE, options, null, labelValueType);
     }
 
     /**
      * ピッカーの情報を持つ LOOKUP の項目を作る。
      *
      * @param picker ピッカーの情報
+     * @param labelValueType ラベルの列の受け渡しの型（{@link ReferencePolicy#labelValueTypeOf} で決めたもの。決まらなければ null）
      * @return 項目
      */
-    public static ReferenceField lookup(PickerInfo picker) {
+    public static ReferenceField lookup(PickerInfo picker, ValueType labelValueType) {
         return new ReferenceField(
-                OptionSourceKind.LOOKUP, ReferenceStatus.AVAILABLE, List.of(), Objects.requireNonNull(picker));
+                OptionSourceKind.LOOKUP,
+                ReferenceStatus.AVAILABLE,
+                List.of(),
+                Objects.requireNonNull(picker),
+                labelValueType);
     }
 
-    /** 種類・状態・選択肢の数だけを出す（値とラベルを出さない。BR10.1）。 */
+    /** 種類・状態・選択肢の数・ラベルの列の型の名前だけを出す（値とラベルを出さない。BR10.1・D30）。 */
     @Override
     public String toString() {
         return "ReferenceField[kind=" + kind + ", status=" + status + ", options=" + options.size() + ", picker="
-                + (picker != null) + "]";
+                + (picker != null) + ", labelValueType=" + labelValueType + "]";
     }
 }

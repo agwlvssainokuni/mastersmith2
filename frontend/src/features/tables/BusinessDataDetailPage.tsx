@@ -26,10 +26,14 @@
 // - 更新・削除の入口（B6）: 許す操作に UPDATE があれば「更新」（同じ印で更新の画面へ）、DELETE があれば「削除」（S5 の確かめ）。
 //   削除できたら一覧へ置き換えて戻り（一覧の状態は保つ）、Toast で知らせる。書き込みの 403 は S6 の 403 の表示（D3）。
 // - 開けないときは S6 の表示にする。
+// - 表示のタイムゾーン（Intent 261102-timezone-ui-polish の U4、計画 Step 13、D6・D9〜D11、W1）: 詳細のカラムに時点を表す型が
+//   あるときだけ、読み込み中は今の読み込み中の表示のまま待つ。ready なら見出しの下に案内の1行を出し、値と見出しの行の
+//   ラベルを表示のタイムゾーンで書式にする。読み込みの失敗では上に「再読み込み」の帯を出し、時点の値は短い文にする。
 import { Button, useToast } from 'make-you-chic-ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { DisplayTimeZoneErrorBar } from '../../app/display-settings/DisplayTimeZoneErrorBar'
 import { useDisplayLanguage } from '../../app/i18n/I18nProvider'
 import { toTablePath } from '../../app/navigation/tablePlaceholderPath'
 import { NullValue } from '../../shared/null-value/NullValue'
@@ -39,9 +43,11 @@ import { readProblemMessageKey } from './problemMessage'
 import { rowLabelParts, rowLabelText } from './rowLabel'
 import { useForbiddenFollowUp, useTableRefFromSearch } from './tableHookSupport'
 import { localizedName, useValueTexts } from './tablesText'
+import { TimeZoneNotice } from './TimeZoneNotice'
 import { useRowDeleteFlow } from './useRowDeleteFlow'
 import { useRowDetail } from './useRowDetail'
 import { useTableDefinition } from './useTableDefinition'
+import { columnsNeedTimeZone, useTablesTimeZone } from './useTablesTimeZone'
 import { formatCell } from './valueFormat'
 import './tablesCommon.css'
 import './BusinessDataDetailPage.css'
@@ -66,6 +72,8 @@ export function BusinessDataDetailPage() {
   const { definition, reload: reloadDefinition } = definitionState
   const onDefinitionStale = useCallback(() => reloadDefinition(), [reloadDefinition])
   const detail = useRowDetail(ref, token, definition, onDefinitionStale)
+  const needsTimeZone = definition !== null && columnsNeedTimeZone(definition.detailColumns)
+  const time = useTablesTimeZone(needsTimeZone)
   const headingRef = useRef<HTMLHeadingElement | null>(null)
   const listPath = ref === null ? '/' : toTablePath('list', ref, itemId)
   const toast = useToast()
@@ -93,11 +101,13 @@ export function BusinessDataDetailPage() {
   }, [missing, listPath, navigate])
 
   const row = detail.status === 'ready' ? detail.row : null
+  // 見出しを描いた後（表示のタイムゾーンを待つ間は描かない）に、見出しへフォーカスを移す
+  const shown = row !== null && !time.waiting
   useEffect(() => {
-    if (row !== null) {
+    if (shown) {
       headingRef.current?.focus()
     }
-  }, [row])
+  }, [shown, row])
 
   let body: React.JSX.Element
   let announcement = ''
@@ -129,12 +139,12 @@ export function BusinessDataDetailPage() {
         listPath={listPath}
       />
     )
-  } else if (definition === null || row === null) {
+  } else if (definition === null || row === null || time.waiting) {
     busy = true
     body = <p className="tables-text">{t('tables.loading')}</p>
   } else {
     const tableName = localizedName(definition.displayName, language, definition.table)
-    const label = rowLabelText(rowLabelParts(definition, row.values, texts), texts)
+    const label = rowLabelText(rowLabelParts(definition, row.values, texts, time.cell), texts)
     body = (
       <>
         <Link className="tables-link" to={listPath} data-testid="tables-back-to-list">
@@ -148,6 +158,10 @@ export function BusinessDataDetailPage() {
         >
           {t('tables.detail.heading', { table: tableName, label })}
         </h1>
+        {time.state.status === 'ready' &&
+          definition.detailColumns.some((column) => column.valueType === 'DATETIME_TZ') && (
+            <TimeZoneNotice timeZone={time.state.timeZone} source={time.state.source} />
+          )}
         {(definition.operations.includes('UPDATE') || definition.operations.includes('DELETE')) && (
           <div className="tables-actions" data-testid="tables-detail-actions">
             {definition.operations.includes('UPDATE') && ref !== null && (
@@ -177,7 +191,7 @@ export function BusinessDataDetailPage() {
             const value = Object.hasOwn(row.values, column.column)
               ? row.values[column.column]
               : undefined
-            const formatted = formatCell(column, value, texts)
+            const formatted = formatCell(column, value, texts, time.cell)
             const truncated = row.truncatedColumns.includes(column.column)
             return (
               <div
@@ -213,6 +227,7 @@ export function BusinessDataDetailPage() {
 
   return (
     <section className="tables-page" data-testid="tables-page" aria-busy={busy}>
+      {needsTimeZone && <DisplayTimeZoneErrorBar />}
       {body}
       <p className="tables-visually-hidden" aria-live="polite" data-testid="tables-live">
         {busy ? '' : announcement}

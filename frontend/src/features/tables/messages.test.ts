@@ -17,7 +17,13 @@
 // 業務データの画面の文言のテスト（Intent 261016-business-data-views の U3、frontend-components.md の 5節、U3-NFR6.3）。
 import { describe, expect, it } from 'vitest'
 import { tablesMessages } from './messages'
-import { FIELD_ERROR_REASONS, readProblemMessageKey, type ReadProblemKind } from './problemMessage'
+import {
+  DATE_TIME_ERROR_REASONS,
+  FIELD_ERROR_REASONS,
+  fieldErrorMessageKey,
+  readProblemMessageKey,
+  type ReadProblemKind,
+} from './problemMessage'
 
 const KINDS: ReadProblemKind[] = [
   'forbidden',
@@ -55,5 +61,16 @@ describe('tablesMessages', () => {
     expect(tablesMessages.ja['tables.forbidden']).toBe(
       'このテーブルを見る権限がありません。作業ロールを確かめてください。',
     )
+  })
+
+  it('has the date and time error texts and no longer has the UTC hint', () => {
+    for (const reason of DATE_TIME_ERROR_REASONS) {
+      expect(fieldErrorMessageKey(reason)).toBe(`tables.error.${reason}`)
+      expect(tablesMessages.ja).toHaveProperty([`tables.error.${reason}`])
+      expect(tablesMessages.en).toHaveProperty([`tables.error.${reason}`])
+    }
+    expect(tablesMessages.ja['tables.error.DATE_TIME_GAP']).toContain('{{zone}}')
+    expect(tablesMessages.ja).not.toHaveProperty(['tables.form.utc'])
+    expect(tablesMessages.en).not.toHaveProperty(['tables.form.utc'])
   })
 })

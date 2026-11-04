@@ -25,6 +25,7 @@ describe('listState', () => {
   it('starts with the default search, the server order, page 1 and 20 rows', () => {
     const state = defaultListState(
       sampleDefinition({ searchFields: [wireSearchField('code', { defaultValue: 'A' })] }),
+      'Asia/Tokyo',
     )
     expect(state).toEqual({
       search: { code: { ...EMPTY_SEARCH_INPUT, value: 'A' } },
@@ -35,10 +36,28 @@ describe('listState', () => {
     })
   })
 
+  it('puts an instant default into the display time zone only when the zone is known (D28)', () => {
+    const definition = sampleDefinition({
+      searchFields: [
+        wireSearchField('at', {
+          operator: 'RANGE',
+          valueType: 'DATETIME_TZ',
+          defaultValue: '2026-11-01T15:00:00Z',
+        }),
+      ],
+    })
+    expect(defaultListState(definition, 'Asia/Tokyo').search.at.from).toBe('2026-11-02 00:00:00')
+    expect(defaultListState(definition, 'America/New_York').search.at.from).toBe(
+      '2026-11-01 10:00:00',
+    )
+    expect(defaultListState(definition, null).search.at.from).toBe('')
+  })
+
   it('starts with the search closed only when every field is collapsed', () => {
     expect(
       defaultListState(
         sampleDefinition({ searchFields: [wireSearchField('code', { collapsed: true })] }),
+        'Asia/Tokyo',
       ).searchExpanded,
     ).toBe(false)
     expect(
@@ -49,9 +68,12 @@ describe('listState', () => {
             wireSearchField('name', { collapsed: false }),
           ],
         }),
+        'Asia/Tokyo',
       ).searchExpanded,
     ).toBe(true)
-    expect(defaultListState(sampleDefinition({ searchFields: [] })).searchExpanded).toBe(true)
+    expect(
+      defaultListState(sampleDefinition({ searchFields: [] }), 'Asia/Tokyo').searchExpanded,
+    ).toBe(true)
   })
 
   it('drops removed search inputs and an unusable sort and goes back to page 1', () => {
@@ -81,7 +103,7 @@ describe('listState', () => {
   it('returns the same state when nothing has to change', () => {
     const definition = sampleDefinition()
     const state = {
-      ...defaultListState(definition),
+      ...defaultListState(definition, 'Asia/Tokyo'),
       page: 3,
       sort: { column: 'code', direction: 'DESC' as const },
     }

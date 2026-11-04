@@ -40,6 +40,7 @@ function renderField(overrides: Partial<ReadonlyReferenceFieldProps> = {}) {
     reason: 'permission',
     blockedRequired: false,
     error: undefined,
+    timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
     ...overrides,
   }
   return renderReference(<ReadonlyReferenceField {...props} />)

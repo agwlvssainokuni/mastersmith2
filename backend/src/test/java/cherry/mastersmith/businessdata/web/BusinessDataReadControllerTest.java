@@ -355,7 +355,8 @@ class BusinessDataReadControllerTest {
     void referencesInTheResponse() {
         cherry.mastersmith.businessdata.domain.ReferenceField choices =
                 cherry.mastersmith.businessdata.domain.ReferenceField.choices(
-                        List.of(new cherry.mastersmith.businessdata.domain.ReferenceOption("1", null)));
+                        List.of(new cherry.mastersmith.businessdata.domain.ReferenceOption("1", null)),
+                        ValueType.DATETIME_TZ);
         cherry.mastersmith.businessdata.domain.ReferenceField lookup =
                 cherry.mastersmith.businessdata.domain.ReferenceField.lookup(
                         new cherry.mastersmith.businessdata.domain.PickerInfo(
@@ -367,7 +368,8 @@ class BusinessDataReadControllerTest {
                                 List.of(new cherry.mastersmith.businessdata.domain.PickerListColumn(
                                         "n",
                                         new cherry.mastersmith.dsl.domain.DisplayName("名", "Name"),
-                                        ValueType.STRING))));
+                                        ValueType.STRING))),
+                        ValueType.STRING);
         when(service.definition(eq(42L), any(), eq(DefinitionPurpose.CREATE)))
                 .thenReturn(new DefinitionResult.Found(
                         VIEW, false, DefinitionPurpose.CREATE, Map.of("code", choices, "name", lookup)));
@@ -396,6 +398,43 @@ class BusinessDataReadControllerTest {
         assertThat(name.formPart()).as("作成・更新では lookup のまま（D2）").isEqualTo("lookup");
         assertThat(response.detailColumns().get(2).reference()).isNull();
         assertThat(code.reference().toString()).contains("options=1").doesNotContain("value=1");
+        assertThat(code.reference().labelValueType()).isEqualTo(ValueType.DATETIME_TZ);
+        assertThat(name.reference().labelValueType()).isEqualTo(ValueType.STRING);
+    }
+
+    @Test
+    @DisplayName("the JSON carries labelValueType only for an AVAILABLE reference and keeps the other keys as before")
+    void labelValueTypeInTheJson() {
+        tools.jackson.databind.json.JsonMapper mapper =
+                tools.jackson.databind.json.JsonMapper.builder().build();
+        cherry.mastersmith.businessdata.domain.ReferenceOption secret =
+                new cherry.mastersmith.businessdata.domain.ReferenceOption(
+                        "2026-11-01T15:00:00Z", "<script>秘</script>");
+
+        String available = mapper.writeValueAsString(ReferenceFieldResponse.from(
+                cherry.mastersmith.businessdata.domain.ReferenceField.choices(List.of(secret), ValueType.DATETIME_TZ)));
+        String untyped = mapper.writeValueAsString(ReferenceFieldResponse.from(
+                cherry.mastersmith.businessdata.domain.ReferenceField.choices(List.of(), null)));
+        String noPermission = mapper.writeValueAsString(
+                ReferenceFieldResponse.from(cherry.mastersmith.businessdata.domain.ReferenceField.noPermission(
+                        cherry.mastersmith.dsl.domain.OptionSourceKind.LOOKUP)));
+        String tooMany = mapper.writeValueAsString(
+                ReferenceFieldResponse.from(cherry.mastersmith.businessdata.domain.ReferenceField.tooMany()));
+
+        assertThat(available)
+                .contains("\"labelValueType\":\"DATETIME_TZ\"")
+                .contains("\"kind\":\"REFERENCE\"")
+                .contains("\"status\":\"AVAILABLE\"")
+                .contains("\"options\":[");
+        assertThat(untyped).doesNotContain("labelValueType").contains("\"options\":[]");
+        assertThat(noPermission).isEqualTo("{\"kind\":\"LOOKUP\",\"status\":\"NO_PERMISSION\"}");
+        assertThat(tooMany).isEqualTo("{\"kind\":\"REFERENCE\",\"status\":\"TOO_MANY\"}");
+        assertThat(ReferenceFieldResponse.from(cherry.mastersmith.businessdata.domain.ReferenceField.choices(
+                                List.of(secret), ValueType.DATETIME_TZ))
+                        .toString())
+                .contains("labelValueType=DATETIME_TZ")
+                .doesNotContain("2026-11-01")
+                .doesNotContain("script");
     }
 
     @Test

@@ -18,7 +18,7 @@
 
 | 要件 | 確かめ | 置き場 |
 |---|---|---|
-| NFR2.1.1 | 既存の `BusinessDataConnectionUsageIT`・`ReferenceConnectionUsageIT`・`ReferenceWriteConnectionUsageIT` が変更なしで通る。`labelValueType` が付く参照の項目を持つ定義の要求で、接続の数が今と同じ（`ReferenceConnectionUsageIT` に1件足すか、今の場面で付くことを確かめる） | Code Generation |
+| NFR2.1.1 | 既存の `BusinessDataConnectionUsageIT`・`ReferenceConnectionUsageIT`・`ReferenceWriteConnectionUsageIT` が変更なしで通る。`labelValueType` が付く参照の項目を持つ定義の要求で、接続の数が今と同じ（`ReferenceConnectionUsageIT` に、`labelValueType` が付く参照の項目を持つ定義の要求の場面を1件足して確かめる。確かめの場の決定） | Code Generation |
 | NFR2.1.2 | 既存の k6 の業務データの場面（`bizDefinition`・一覧・詳細・参照の選択肢・ピッカー）を、使い捨ての環境で新しい版で流し、今の目標（p95・`checks` の率 1）を満たす | **Deferred（Build and Test）** |
 
 ## 2. 画面: 変換の回数を抑える（NFR2.1.3〜NFR2.1.5）

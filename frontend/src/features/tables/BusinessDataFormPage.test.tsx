@@ -18,11 +18,15 @@
 // U3-NFR4.21・7.9・7.11）。data router で描き、API は fetch を差し替えて ApiClient を通す。
 import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useMemo, useState, type ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { axe } from 'vitest-axe'
+import type { DisplayTimeZoneState } from '../../app/display-settings/DisplayTimeZoneProvider'
+import { DisplayTimeZoneTestProvider } from '../../app/display-settings/testing/DisplayTimeZoneTestProvider'
 import { ACCOUNTING, SALES } from '../../app/testing/frameTestSupport'
 import type { WorkRoleState } from '../../app/work-role/workRoleApi'
 import { resetDisplayTestState } from '../../app/testing/renderWithProviders'
+import * as timeZoneModule from '../../shared/format/timeZone'
 import { BUSINESS_DATA_PATHS } from './businessDataApi'
 import { clearBusinessDataStore, putRowKey } from './businessDataStore'
 import {
@@ -45,6 +49,12 @@ import {
   wireRowsPage,
   pickerRow,
 } from './testing/referenceSamples'
+
+// 変換（parseLocalDateTime）の呼び出しの回数を数える。中身は本物のまま（NFR2.1.4、performance-design.md 2.2）
+vi.mock('../../shared/format/timeZone', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../shared/format/timeZone')>()
+  return { ...actual, parseLocalDateTime: vi.fn(actual.parseLocalDateTime) }
+})
 
 const QUERY = '?schema=shop&table=item&item=0.1'
 const NEW_ROUTE = `/tables/new${QUERY}`
@@ -951,5 +961,264 @@ describe('BusinessDataFormPage NOT NULL references without the REQUIRED rule', (
     await waitFor(() => expect(summary).toHaveFocus())
     expect(summary).toHaveTextContent('商品: 入力してください。')
     expect(writes(calls)).toHaveLength(0)
+  })
+})
+
+// Intent 261102-timezone-ui-polish の U4（計画 Step 13、D12〜D22・D35、NFR 設計の Q1: A、W2）: 日時の欄
+describe('BusinessDataFormPage date and time fields', () => {
+  const TIME_COLUMNS = [
+    wireColumn('code', {
+      displayName: { ja: '受注番号', en: 'Order' },
+      editableOnCreate: true,
+      formPart: 'text',
+      required: true,
+      nullable: false,
+    }),
+    wireColumn('name', {
+      displayName: { ja: '名前', en: 'Name' },
+      editableOnCreate: true,
+      editableOnUpdate: true,
+      formPart: 'text',
+    }),
+    wireColumn('at', {
+      displayName: { ja: '受注の時刻', en: 'Ordered at' },
+      valueType: 'DATETIME_TZ',
+      editableOnCreate: true,
+      editableOnUpdate: true,
+      formPart: 'datetime',
+    }),
+    wireColumn('closes', {
+      displayName: { ja: '締めの日時', en: 'Closes at' },
+      valueType: 'DATETIME',
+      editableOnCreate: true,
+      editableOnUpdate: true,
+      formPart: 'text',
+    }),
+  ]
+  /** New York で2回ある時刻（先の -04:00）の時点。端数 6 桁 */
+  const STORED_AT = '2026-11-01T05:30:00.123456+00:00'
+  const WINTER = () => new Date('2026-12-01T00:00:00Z')
+  const READY_TOKYO = { status: 'ready', timeZone: 'Asia/Tokyo', source: 'saved' } as const
+
+  function timeResponder(write: WriteAnswer): DataRouterResponder {
+    return (request) => {
+      if (request.path === BUSINESS_DATA_PATHS.definition) {
+        return { status: 200, body: wireDefinition({ ...WRITABLE, detailColumns: TIME_COLUMNS }) }
+      }
+      if (request.path === BUSINESS_DATA_PATHS.get) {
+        return {
+          status: 200,
+          body: wireDetail('T1', {
+            key: { code: 'T1' },
+            values: { code: 'T1', name: '受注', at: STORED_AT, closes: '2026-11-01T09:00:00.5' },
+          }),
+        }
+      }
+      if (request.path === BUSINESS_DATA_PATHS.rows) {
+        return write(request)
+      }
+      return { status: 404, body: {} }
+    }
+  }
+
+  function renderTimeEdit(
+    write: WriteAnswer,
+    options: Parameters<typeof renderTablesDataRouter>[2],
+  ) {
+    const rowToken = putRowKey({ code: 'T1' }, SALES.roleId)
+    return renderTablesDataRouter(EDIT_ROUTE, timeResponder(write), {
+      state: { rowToken },
+      ...options,
+    })
+  }
+
+  it('creates with an instant in UTC and a local date time with T, using text inputs and hints', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTablesDataRouter(NEW_ROUTE, timeResponder(created({ code: 'N1' })))
+    const at = await screen.findByRole('textbox', { name: '受注の時刻' })
+    expect(at).toHaveAttribute('type', 'text')
+    expect(document.querySelector('input[type="datetime-local"]')).toBeNull()
+    expect(at).toHaveAccessibleDescription(
+      'Asia/Tokyo (+09:00) で入力。例: 2026-11-02 09:30:15（秒の端数は .123 のように付けられます）',
+    )
+    expect(screen.queryByText('UTC で入れる')).toBeNull()
+    await user.type(screen.getByRole('textbox', { name: '受注番号 *必須' }), 'N1')
+    await user.type(at, '2026-11-02 00:00:00.5')
+    await user.type(screen.getByRole('textbox', { name: '締めの日時' }), '2026-11-02 09:00:00')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({
+      code: 'N1',
+      at: '2026-11-01T15:00:00.5+00:00',
+      closes: '2026-11-02T09:00:00',
+    })
+  })
+
+  it('converts each changed date time field once when save is pressed (NFR2.1.4)', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTimeEdit(written, { now: WINTER })
+    const at = await screen.findByRole('textbox', { name: '受注の時刻' })
+    const closes = screen.getByRole('textbox', { name: '締めの日時' })
+    await user.clear(at)
+    await user.type(at, '2026-11-02 00:00:00')
+    await user.clear(closes)
+    await user.type(closes, '2026-11-02 09:00:00')
+    const name = screen.getByRole('textbox', { name: '名前' })
+    await user.click(name)
+    const parse = vi.mocked(timeZoneModule.parseLocalDateTime)
+    parse.mockClear()
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    // 変えた日時の欄は 2 つ（時点・時差を持たない日時）。確かめの結果を送る値に使い回すため 2 回
+    expect(parse).toHaveBeenCalledTimes(2)
+    expect(writes(calls)[0]?.body.values).toEqual({
+      at: '2026-11-01T15:00:00+00:00',
+      closes: '2026-11-02T09:00:00',
+    })
+  })
+
+  it('does not open the form while the zone is loading', async () => {
+    renderTablesDataRouter(NEW_ROUTE, timeResponder(created()), {
+      displayTimeZone: { state: { status: 'loading' } },
+    })
+    expect(await screen.findByRole('heading', { name: '読み込んでいます' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('does not open the form while the zone failed and opens it after a successful reload (Q1: A)', async () => {
+    const user = userEvent.setup()
+    function Recovering({ children }: { children: ReactNode }) {
+      const [state, setState] = useState<DisplayTimeZoneState>({ status: 'error' })
+      const actions = useMemo(() => ({ reload: () => setState(READY_TOKYO) }), [])
+      return (
+        <DisplayTimeZoneTestProvider state={state} actions={actions}>
+          {children}
+        </DisplayTimeZoneTestProvider>
+      )
+    }
+    const { view } = renderTablesDataRouter(NEW_ROUTE, timeResponder(created()), {
+      timeZoneProvider: (children) => <Recovering>{children}</Recovering>,
+    })
+    const reload = await screen.findByRole('button', { name: 'もう一度読み込む' })
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(screen.queryByTestId('tables-form-save')).toBeNull()
+    expect(await axe(view.container)).toHaveNoViolations()
+    await user.click(reload)
+    expect(await screen.findByRole('textbox', { name: '受注の時刻' })).toHaveAccessibleDescription(
+      /^Asia\/Tokyo \(\+09:00\) で入力/,
+    )
+    expect(screen.queryByTestId('display-time-zone-error')).toBeNull()
+  })
+
+  it('keeps the zone fixed while the form is open even if the display time zone changes (D12)', async () => {
+    const user = userEvent.setup()
+    function Switching({ children }: { children: ReactNode }) {
+      const [zone, setZone] = useState('Asia/Tokyo')
+      return (
+        <DisplayTimeZoneTestProvider timeZone={zone}>
+          <button type="button" onClick={() => setZone('America/New_York')}>
+            切り替える
+          </button>
+          {children}
+        </DisplayTimeZoneTestProvider>
+      )
+    }
+    const { calls } = renderTimeEdit(written, {
+      timeZoneProvider: (children) => <Switching>{children}</Switching>,
+      now: WINTER,
+    })
+    const at = await screen.findByRole('textbox', { name: '受注の時刻' })
+    expect(at).toHaveValue('2026-11-01 14:30:00.123456')
+    await user.click(screen.getByRole('button', { name: '切り替える' }))
+    expect(at).toHaveValue('2026-11-01 14:30:00.123456')
+    expect(at).toHaveAccessibleDescription(/^Asia\/Tokyo \(\+09:00\) で入力/)
+    await user.clear(at)
+    await user.type(at, '2026-11-02 00:00:00')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ at: '2026-11-01T15:00:00+00:00' })
+  })
+
+  it('does not send unchanged date times, nor ask about an unchanged overlapping time (D22・D35)', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTimeEdit(written, {
+      displayTimeZone: { timeZone: 'America/New_York' },
+      now: WINTER,
+    })
+    const at = await screen.findByRole('textbox', { name: '受注の時刻' })
+    expect(at).toHaveValue('2026-11-01 01:30:00.123456')
+    expect(screen.getByRole('textbox', { name: '締めの日時' })).toHaveValue('2026-11-01 09:00:00.5')
+    await user.click(at)
+    await user.tab()
+    expect(screen.queryByRole('radio')).toBeNull()
+    const name = screen.getByRole('textbox', { name: '名前' })
+    await user.clear(name)
+    await user.type(name, '直した名前')
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ name: '直した名前' })
+  })
+
+  it('shows a skipped time error when leaving the field and does not save it', async () => {
+    const user = userEvent.setup()
+    const { calls } = renderTablesDataRouter(NEW_ROUTE, timeResponder(created()), {
+      displayTimeZone: { timeZone: 'America/New_York' },
+      now: WINTER,
+    })
+    await user.type(await screen.findByRole('textbox', { name: '受注番号 *必須' }), 'N2')
+    const at = screen.getByRole('textbox', { name: '受注の時刻' })
+    await user.type(at, '2026-03-08 02:30:00')
+    await user.tab()
+    const gap =
+      'America/New_York では、この時刻はありません（夏時間の切り替えで飛ばされる時刻です）'
+    await waitFor(() => expect(at).toHaveAttribute('aria-invalid', 'true'))
+    expect(at).toHaveAccessibleDescription(gap)
+    await user.click(screen.getByTestId('tables-form-save'))
+    expect(await screen.findByTestId('tables-form-summary')).toHaveTextContent(`受注の時刻: ${gap}`)
+    expect(writes(calls)).toHaveLength(0)
+  })
+
+  it('asks which time an overlapping time means, blocks the save until chosen and sends the choice', async () => {
+    const user = userEvent.setup()
+    const { calls, view } = renderTablesDataRouter(NEW_ROUTE, timeResponder(created()), {
+      displayTimeZone: { timeZone: 'America/New_York' },
+      now: WINTER,
+    })
+    await user.type(await screen.findByRole('textbox', { name: '受注番号 *必須' }), 'N3')
+    const at = screen.getByRole('textbox', { name: '受注の時刻' })
+    await user.type(at, '2026-11-01 01:30:00')
+    await user.tab()
+    const earlier = await screen.findByRole('radio', { name: '先（-04:00）' })
+    expect(at).not.toHaveAttribute('aria-invalid')
+    await user.click(screen.getByTestId('tables-form-save'))
+    const summary = await screen.findByTestId('tables-form-summary')
+    expect(summary).toHaveTextContent('受注の時刻: どちらの時刻かを選んでください')
+    expect(writes(calls)).toHaveLength(0)
+    expect(await axe(view.container)).toHaveNoViolations()
+    await user.click(within(summary).getByRole('button', { name: /受注の時刻/ }))
+    expect(earlier).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    await waitFor(() => expect(screen.getByRole('radio', { name: '後（-05:00）' })).toBeChecked())
+    await user.click(screen.getByTestId('tables-form-save'))
+    await waitFor(() => expect(writes(calls)).toHaveLength(1))
+    expect(writes(calls)[0]?.body.values).toEqual({ code: 'N3', at: '2026-11-01T06:30:00+00:00' })
+  })
+
+  it('clears the overlap choice when the text is changed again (D21)', async () => {
+    const user = userEvent.setup()
+    renderTablesDataRouter(NEW_ROUTE, timeResponder(created()), {
+      displayTimeZone: { timeZone: 'America/New_York' },
+      now: WINTER,
+    })
+    const at = await screen.findByRole('textbox', { name: '受注の時刻' })
+    await user.type(at, '2026-11-01 01:30:00')
+    await user.tab()
+    await user.click(await screen.findByRole('radio', { name: '後（-05:00）' }))
+    await user.type(at, '1')
+    expect(screen.queryByRole('radio')).toBeNull()
+    await user.clear(at)
+    await user.type(at, '2026-11-01 01:30:00')
+    await user.tab()
+    expect(await screen.findByRole('radio', { name: '後（-05:00）' })).not.toBeChecked()
   })
 })

@@ -67,6 +67,7 @@ function renderTable(overrides: Partial<BusinessDataTableProps> = {}) {
     language: 'ja',
     tableName: '商品',
     texts: JA_TEXTS,
+    timeZone: { status: 'ready', timeZone: 'Asia/Tokyo' },
     detailHref: '/tables/row?schema=shop&table=item',
     onSortChange: vi.fn(),
     onPageChange: vi.fn(),

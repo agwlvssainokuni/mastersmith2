@@ -29,17 +29,23 @@ import type {
   ReferenceRow,
   ReferenceStatus,
   TableDefinition,
+  ValueType,
 } from '../../src/features/tables/businessDataTypes'
 import { fixtureColumn, tableDefinitionFor } from './businessDataFixtures'
 import { REFERENCE_TABLES } from './businessDataDsl'
 import { BUSINESS_VALUE_MARK } from './secretValues'
 
-/** 本物の応答の参照の項目（null の options・picker は本文に無い） */
+/**
+ * 本物の応答の参照の項目（null の options・picker・labelValueType は本文に無い）。labelValueType（ラベルの列の型）は
+ * status が AVAILABLE のときだけ本文にある（Intent 261102-timezone-ui-polish の U4、security-design.md 2.1。195 の shapeCompare で
+ * 本物の応答と比べるため、見本も同じ形にする）。
+ */
 export interface ReferenceFieldWire {
   kind: ReferenceKind
   status: ReferenceStatus
   options?: ReferenceOption[]
   picker?: { searchFields: PickerSearchField[]; listColumns: PickerListColumn[] }
+  labelValueType?: ValueType
 }
 
 /** 本物の応答のカラム */
@@ -117,9 +123,19 @@ function customerReference(variant: CustomerVariant): ReferenceFieldWire {
     case 'too-many':
       return { kind: 'REFERENCE', status: 'TOO_MANY' }
     case 'radio-200':
-      return { kind: 'REFERENCE', status: 'AVAILABLE', options: manyCustomerOptions() }
+      return {
+        kind: 'REFERENCE',
+        status: 'AVAILABLE',
+        options: manyCustomerOptions(),
+        labelValueType: 'STRING',
+      }
     default:
-      return { kind: 'REFERENCE', status: 'AVAILABLE', options: CUSTOMER_OPTIONS }
+      return {
+        kind: 'REFERENCE',
+        status: 'AVAILABLE',
+        options: CUSTOMER_OPTIONS,
+        labelValueType: 'STRING',
+      }
   }
 }
 
@@ -163,7 +179,12 @@ export function orderColumns(variant: CustomerVariant = 'available'): ColumnWire
         formPart: 'lookup',
       },
     ),
-    reference: { kind: 'LOOKUP', status: 'AVAILABLE', picker: PRODUCT_PICKER },
+    reference: {
+      kind: 'LOOKUP',
+      status: 'AVAILABLE',
+      picker: PRODUCT_PICKER,
+      labelValueType: 'STRING',
+    },
   }
   return [orderNo, customer, product]
 }

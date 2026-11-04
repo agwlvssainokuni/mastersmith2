@@ -23,14 +23,17 @@ import { DEFAULT_PAGE_SIZE } from './listPaging'
 import { defaultSearchInputs } from './searchConditions'
 
 /**
- * 一覧の既定の状態。
+ * 一覧の既定の状態。時点を表す型の検索の既定の値は、表示のタイムゾーンの壁時計の文字にする（D28。Intent
+ * 261102-timezone-ui-polish の U4）。表示のタイムゾーンがまだ無ければ、その項目は空にする（記憶に置く前の既定の状態は
+ * 描くたびに作り直すため、ready になった後の描画で入る）。
  *
  * @param definition テーブルの定義
+ * @param timeZone 表示のタイムゾーン（まだ無い・読み込めないときは null）
  */
-export function defaultListState(definition: TableDefinition): ListState {
+export function defaultListState(definition: TableDefinition, timeZone: string | null): ListState {
   const fields = definition.searchFields
   return {
-    search: defaultSearchInputs(fields),
+    search: defaultSearchInputs(fields, timeZone),
     sort: null,
     page: 1,
     size: DEFAULT_PAGE_SIZE,

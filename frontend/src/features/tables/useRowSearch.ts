@@ -24,11 +24,24 @@
 //   ほかの 400 の fieldErrors は検索の項目に結ぶ（F2 の 4）。
 // - 403 の後は業務のメニューと作業ロールを読み直し、業務データの API は送り直さない（F8・U3-NFR8.7）。
 // - 決まった間隔の読み直し・自動の再送はしない。
-import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
+// - 日時の条件（Intent 261102-timezone-ui-polish の U4、計画 Step 13、D23〜D28、performance-design.md 2.3）: 時点を表す型の
+//   条件は表示のタイムゾーンで時点に直して送る。直すのは検索の入力か表示のタイムゾーンが変わったときだけで（入力の文字を鍵に
+//   覚える）、ページ送り・並べ替え・件数の変更・再描画では作り直さない。直せない条件（古い形の T 区切りの値・読み込めない
+//   表示のタイムゾーンなど）は送らず、検索の領域がその項目に誤りを出す（黙って捨てない・自動で直さない。依頼者の決定）。
+//   表示のタイムゾーンを待つ画面（waiting）の間は要求を送らない。
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import type { TableRef } from '../../app/navigation/tablePlaceholderPath'
 import { searchRows, type SearchRowsRequest } from './businessDataApi'
 import { readTableEntry, saveListState } from './businessDataStore'
-import type { BusinessFieldError, ListState, RowPage, TableDefinition } from './businessDataTypes'
+import type {
+  BusinessFieldError,
+  ListState,
+  RowPage,
+  SearchCondition,
+  SearchField,
+  SearchInputs,
+  TableDefinition,
+} from './businessDataTypes'
 import { defaultListState, sanitizeListState } from './listState'
 import { needsDefinitionReload } from './problemMessage'
 import { buildConditions } from './searchConditions'
@@ -41,6 +54,36 @@ import {
 
 /** 一覧を読む関数（テストで差し替える） */
 export type SearchRowsFn = (request: SearchRowsRequest) => Promise<RowPage>
+
+/** 一覧の表示のタイムゾーン（name は ready の名前、ほかは null。waiting は画面が待っている間） */
+export interface RowSearchTime {
+  readonly timeZone: string | null
+  readonly waiting: boolean
+}
+
+/** 表示のタイムゾーンが無いとき（既定の引数。時点を表す型の条件は送らない） */
+export const NO_ROW_SEARCH_TIME: RowSearchTime = { timeZone: null, waiting: false }
+
+/**
+ * 送る条件を、検索の項目・検索の入力の文字（JSON）・表示のタイムゾーンが変わったときだけ作り直す（NFR2.1.5）。
+ *
+ * @param fields 今の定義の検索の項目（定義を読む前は null）
+ * @param searchKey 検索の入力の JSON（一覧の状態が無ければ null）
+ * @param timeZone 表示のタイムゾーン
+ */
+function useSearchConditions(
+  fields: readonly SearchField[] | null,
+  searchKey: string | null,
+  timeZone: string | null,
+): readonly SearchCondition[] {
+  return useMemo(
+    () =>
+      fields === null || searchKey === null
+        ? []
+        : buildConditions(fields, JSON.parse(searchKey) as SearchInputs, timeZone),
+    [fields, searchKey, timeZone],
+  )
+}
 
 /** 一覧の状態 */
 export type RowSearchStatus = 'idle' | 'loading' | 'ready' | 'problem'
@@ -83,13 +126,16 @@ interface Result {
  * @param definition テーブルの定義（読み終えるまで null。null の間は要求を送らない）
  * @param onDefinitionStale 定義が変わったと分かったとき（F6）
  * @param search 一覧を読む関数（テストで差し替える）
+ * @param time 表示のタイムゾーン（時点を表す型の条件と既定の値に使う）と、画面が待っているか
  */
 export function useRowSearch(
   ref: TableRef | null,
   definition: TableDefinition | null,
   onDefinitionStale: () => void,
   search: SearchRowsFn = searchRows,
+  time: RowSearchTime = NO_ROW_SEARCH_TIME,
 ): RowSearchState {
+  const { timeZone, waiting } = time
   const { settled, roleId } = useWorkRoleKey()
   const followUp = useForbiddenFollowUp()
   const [result, setResult] = useState<Result | null>(null)
@@ -108,11 +154,11 @@ export function useRowSearch(
   const listState =
     definition === null
       ? null
-      : sanitizeListState(stored ?? defaultListState(definition), definition)
-  const conditions =
-    definition === null || listState === null
-      ? []
-      : buildConditions(definition.searchFields, listState.search)
+      : sanitizeListState(stored ?? defaultListState(definition, timeZone), definition)
+  // 送る条件は、検索の入力の文字と表示のタイムゾーンが変わったときだけ作り直す（記憶から読んだ状態は描くたびに別の物に
+  // なるため、入力の文字を鍵にする）。ページ送り・並べ替え・件数の変更では変換しない（NFR2.1.5）。
+  const searchKey = listState === null ? null : JSON.stringify(listState.search)
+  const conditions = useSearchConditions(definition?.searchFields ?? null, searchKey, timeZone)
   const key = JSON.stringify([
     scope,
     definition?.definitionId ?? null,
@@ -122,7 +168,7 @@ export function useRowSearch(
     listState?.size ?? null,
     attempt,
   ])
-  const ready = settled && definition !== null && ref !== null && listState !== null
+  const ready = settled && !waiting && definition !== null && ref !== null && listState !== null
 
   /** 前の表を残すときのページ（同じテーブル・作業ロールの答えだけ） */
   function keptPage(prev: Result | null): RowPage | null {

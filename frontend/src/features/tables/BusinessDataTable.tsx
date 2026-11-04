@@ -43,7 +43,7 @@ import { MAX_PAGE } from './businessDataParse'
 import { RowActionsMenu, rowActionItems } from './RowActionsMenu'
 import { rowLabelParts, rowLabelText, rowLinkColumn, rowLinkText } from './rowLabel'
 import { localizedName } from './tablesText'
-import { formatCell, type ValueTexts } from './valueFormat'
+import { formatCell, type CellTimeZone, type ValueTexts } from './valueFormat'
 import './tablesCommon.css'
 import './BusinessDataTable.css'
 
@@ -67,6 +67,11 @@ export interface BusinessDataTableProps {
   /** テーブルの表示名 */
   tableName: string
   texts: ValueTexts
+  /**
+   * 表示のタイムゾーンの状態（時点を表す型のセルと行のラベルの書式に使う。Intent 261102-timezone-ui-polish の U4、D6・D11）。
+   * 変わると描き直し、読み込み直さずに時刻が切り替わる。
+   */
+  timeZone: CellTimeZone
   /** 行の詳細の道（行のリンクの href） */
   detailHref: string
   onSortChange: (sort: SortKey | null) => void
@@ -92,6 +97,7 @@ export const BusinessDataTable = memo(function BusinessDataTable({
   language,
   tableName,
   texts,
+  timeZone,
   detailHref,
   onSortChange,
   onPageChange,
@@ -103,7 +109,7 @@ export const BusinessDataTable = memo(function BusinessDataTable({
   const rows = useMemo<TableRow[]>(
     () =>
       page.items.map((item, index) => {
-        const parts = rowLabelParts(definition, item.values, texts)
+        const parts = rowLabelParts(definition, item.values, texts, timeZone)
         return {
           index,
           item,
@@ -111,7 +117,7 @@ export const BusinessDataTable = memo(function BusinessDataTable({
           linkText: rowLinkText(parts, texts),
         }
       }),
-    [page, definition, texts],
+    [page, definition, texts, timeZone],
   )
 
   const columns = useMemo<TableColumn<TableRow>[]>(() => {
@@ -146,7 +152,7 @@ export const BusinessDataTable = memo(function BusinessDataTable({
         const value = Object.hasOwn(row.item.values, column.column)
           ? row.item.values[column.column]
           : undefined
-        const formatted = formatCell(column, value, texts)
+        const formatted = formatCell(column, value, texts, timeZone)
         const truncated = row.item.truncatedColumns.includes(column.column)
         let content
         if (formatted.kind === 'null') {
@@ -200,7 +206,18 @@ export const BusinessDataTable = memo(function BusinessDataTable({
       })
     }
     return listed
-  }, [definition, language, t, texts, tableName, detailHref, busy, onOpenRow, onRowAction])
+  }, [
+    definition,
+    language,
+    t,
+    texts,
+    timeZone,
+    tableName,
+    detailHref,
+    busy,
+    onOpenRow,
+    onRowAction,
+  ])
 
   const labels: TableLabels = useMemo(
     () => ({

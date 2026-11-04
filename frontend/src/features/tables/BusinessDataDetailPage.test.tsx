@@ -98,9 +98,52 @@ describe('BusinessDataDetailPage', () => {
     expect(list.tagName).toBe('DL')
     expect(within(list).getByText('<script>alert(1)</script>')).toBeInTheDocument()
     expect(document.querySelector('script')).toBeNull()
-    expect(within(list).getByText('2026-10-18 00:30:00+00:00')).toBeInTheDocument()
+    // 時点は表示のタイムゾーン（テストの固定の Asia/Tokyo）の formatInstant の書式（Intent 261102-timezone-ui-polish の U4、D1）
+    expect(within(list).getByText('2026-10-18 09:30:00 +09:00')).toBeInTheDocument()
     expect(within(list).getByText('••••••')).toBeInTheDocument()
     expect(within(list).getByText('伏せた値')).toBeInTheDocument()
+  })
+
+  it('shows the time zone notice under the heading and the instant in the display time zone', async () => {
+    renderTablesScreen(ROUTE, responder(found), {
+      displayTimeZone: {
+        state: { status: 'ready', timeZone: 'America/New_York', source: 'browser' },
+      },
+    })
+    await openRow()
+    await screen.findByRole('heading', { level: 1, name: '商品: A01' })
+    expect(screen.getByTestId('tables-time-zone-notice')).toHaveTextContent(
+      '表示のタイムゾーン: ブラウザのタイムゾーン（America/New_York）（プリファレンスで変更）',
+    )
+    expect(
+      within(screen.getByTestId('tables-detail')).getByText('2026-10-17 20:30:00 -04:00'),
+    ).toBeInTheDocument()
+    expect(screen.queryByTestId('display-time-zone-error')).not.toBeInTheDocument()
+  })
+
+  it('waits while the display time zone is loading and does not show the row', async () => {
+    renderTablesScreen(ROUTE, responder(found), {
+      displayTimeZone: { state: { status: 'loading' } },
+    })
+    await openRow()
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/tables/row'))
+    expect(screen.getByText('読み込んでいます')).toBeInTheDocument()
+    expect(screen.queryByTestId('tables-detail')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('tables-time-zone-notice')).not.toBeInTheDocument()
+  })
+
+  it('shows the reload bar and a short text for the instant when the zone failed to load', async () => {
+    renderTablesScreen(ROUTE, responder(found), {
+      displayTimeZone: { state: { status: 'error' } },
+    })
+    await openRow()
+    await screen.findByRole('heading', { level: 1, name: '商品: A01' })
+    expect(screen.getByTestId('display-time-zone-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('tables-time-zone-notice')).not.toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('tables-detail-c4')).getByText('時刻を表示できません'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/2026-10-18/)).not.toBeInTheDocument()
   })
 
   it('shows the whole received long value as text with the truncated note', async () => {
@@ -199,6 +242,17 @@ describe('BusinessDataDetailPage', () => {
   it('has no accessibility violations', async () => {
     const { view } = renderTablesScreen(ROUTE, responder(found))
     await openRow()
+    await screen.findByRole('heading', { level: 1, name: '商品: A01' })
+    expect(screen.getByTestId('tables-time-zone-notice')).toBeInTheDocument()
+    expect(await axe(view.container)).toHaveNoViolations()
+  })
+
+  it('has no accessibility violations with the reload bar of a failed zone load', async () => {
+    const { view } = renderTablesScreen(ROUTE, responder(found), {
+      displayTimeZone: { state: { status: 'error' } },
+    })
+    await openRow()
+    await screen.findByTestId('display-time-zone-error')
     await screen.findByRole('heading', { level: 1, name: '商品: A01' })
     expect(await axe(view.container)).toHaveNoViolations()
   })
