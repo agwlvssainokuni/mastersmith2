@@ -1,0 +1,193 @@
+{
+  "metrics": {
+    "http_req_waiting": {
+      "min": 7.391839,
+      "med": 95.4697355,
+      "p(90)": 125.98589190000001,
+      "p(95)": 135.16781479999997,
+      "p(99)": 155.84913858000002,
+      "max": 1272.263698,
+      "count": 18972,
+      "avg": 93.93071036627701
+    },
+    "http_req_duration": {
+      "med": 96.62986649999999,
+      "p(90)": 127.1613311,
+      "p(95)": 136.25778484999998,
+      "p(99)": 157.38885209,
+      "max": 1280.340407,
+      "count": 18972,
+      "avg": 94.94398456051013,
+      "min": 7.508929
+    },
+    "iteration_duration": {
+      "max": 230.171751,
+      "count": 18959,
+      "avg": 94.95303965673351,
+      "min": 27.645336,
+      "med": 96.781445,
+      "p(90)": 127.312721,
+      "p(95)": 136.30510809999998,
+      "p(99)": 156.45179201999997
+    },
+    "checks{scenario:navMenuBaseline}": {
+      "passes": 18959,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "http_reqs": {
+      "count": 18972,
+      "rate": 102.61518822500149
+    },
+    "http_req_duration{expected_response:true}": {
+      "count": 18972,
+      "avg": 94.94398456051013,
+      "min": 7.508929,
+      "med": 96.62986649999999,
+      "p(90)": 127.1613311,
+      "p(95)": 136.25778484999998,
+      "p(99)": 157.38885209,
+      "max": 1280.340407
+    },
+    "http_req_blocked": {
+      "min": 0.00075,
+      "med": 0.001584,
+      "p(90)": 0.002459,
+      "p(95)": 0.002958,
+      "p(99)": 0.1109881099999995,
+      "max": 3.954829,
+      "count": 18972,
+      "avg": 0.003900731762597337
+    },
+    "http_req_sending": {
+      "min": 0.002625,
+      "med": 0.00475,
+      "p(90)": 0.009834,
+      "p(95)": 0.012126,
+      "p(99)": 0.019138179999999994,
+      "max": 7.484053,
+      "count": 18972,
+      "avg": 0.006611115591397771
+    },
+    "checks": {
+      "passes": 18959,
+      "fails": 0,
+      "value": 1
+    },
+    "data_sent": {
+      "count": 13770920,
+      "rate": 74483.74171576205
+    },
+    "http_req_tls_handshaking": {
+      "count": 18972,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 18972,
+      "value": 0
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    },
+    "iterations": {
+      "count": 18959,
+      "rate": 102.54487421240793
+    },
+    "http_req_connecting": {
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0.07539638999999954,
+      "max": 0.758581,
+      "count": 18972,
+      "avg": 0.0013392126291376766,
+      "min": 0,
+      "med": 0
+    },
+    "http_req_receiving": {
+      "p(99)": 8.1115272,
+      "max": 22.838632,
+      "count": 18972,
+      "avg": 1.006663078642206,
+      "min": 0.012709,
+      "med": 0.090004,
+      "p(90)": 3.1122526,
+      "p(95)": 5.22403965
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "http_req_duration{scenario:navMenuBaseline}": {
+      "p(99)": 156.18381362,
+      "max": 229.894404,
+      "count": 18959,
+      "avg": 94.75604711857167,
+      "min": 27.494202,
+      "med": 96.599381,
+      "p(90)": 127.0581214,
+      "p(95)": 136.09055089999998,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "data_received": {
+      "count": 171725028,
+      "rate": 928821.213955495
+    },
+    "iteration_duration{scenario:navMenuBaseline}": {
+      "count": 18959,
+      "avg": 94.95303965673351,
+      "min": 27.645336,
+      "med": 96.781445,
+      "p(90)": 127.312721,
+      "p(95)": 136.30510809999998,
+      "p(99)": 156.45179201999997,
+      "max": 230.171751,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    }
+  },
+  "setup_data": {
+    "navTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    }
+  },
+  "root_group": {
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "navMenuBaseline 200": {
+        "passes": 18959,
+        "fails": 0,
+        "name": "navMenuBaseline 200",
+        "path": "::navMenuBaseline 200",
+        "id": "6a8dba1bd55c10c3ca37e721f7bd0aaa"
+      }
+    },
+    "name": ""
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "metrics": {
+    "iterations": {
+      "rate": 9.85903498085604,
+      "count": 1809
+    },
+    "http_req_tls_handshaking": {
+      "p(99)": 0,
+      "max": 0,
+      "count": 1821,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_sending": {
+      "max": 6.26899,
+      "count": 1821,
+      "avg": 0.049825938495332275,
+      "min": 0.005791,
+      "med": 0.019541,
+      "p(90)": 0.028667,
+      "p(95)": 0.034584,
+      "p(99)": 0.5777779999999999
+    },
+    "http_req_waiting": {
+      "p(90)": 1151.872315,
+      "p(95)": 1175.708283,
+      "p(99)": 1226.5654302,
+      "max": 1294.868108,
+      "count": 1821,
+      "avg": 985.154479830861,
+      "min": 1.408758,
+      "med": 1002.719631
+    },
+    "iteration_duration": {
+      "count": 1809,
+      "avg": 996.6000926849099,
+      "min": 425.837863,
+      "med": 1009.866086,
+      "p(90)": 1158.3380288,
+      "p(95)": 1183.0971856,
+      "p(99)": 1233.05470604,
+      "max": 1300.919846
+    },
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 0.031666399999999914,
+      "max": 2.524888,
+      "count": 1821,
+      "avg": 0.00404495826468973,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0
+    },
+    "http_reqs": {
+      "rate": 9.92443488122656,
+      "count": 1821
+    },
+    "http_req_receiving": {
+      "med": 1.339882,
+      "p(90)": 3.007141,
+      "p(95)": 3.810644,
+      "p(99)": 6.1124573999999985,
+      "max": 15.87546,
+      "count": 1821,
+      "avg": 1.6677333157605716,
+      "min": 0.034875
+    },
+    "checks": {
+      "passes": 1809,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_blocked": {
+      "p(90)": 0.005167,
+      "p(95)": 0.00675,
+      "p(99)": 0.0940333999999996,
+      "max": 2.582139,
+      "count": 1821,
+      "avg": 0.010951875892366807,
+      "min": 0.001334,
+      "med": 0.003917
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 1821,
+      "value": 0
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "http_req_duration": {
+      "min": 1.718843,
+      "med": 1004.615129,
+      "p(90)": 1153.236153,
+      "p(95)": 1177.182087,
+      "p(99)": 1227.8760559999998,
+      "max": 1296.674367,
+      "count": 1821,
+      "avg": 986.8720390851178
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(90)": 1153.236153,
+      "p(95)": 1177.182087,
+      "p(99)": 1227.8760559999998,
+      "max": 1296.674367,
+      "count": 1821,
+      "avg": 986.8720390851178,
+      "min": 1.718843,
+      "med": 1004.615129
+    },
+    "checks{scenario:bizSearchLast}": {
+      "passes": 1809,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "iteration_duration{scenario:bizSearchLast}": {
+      "avg": 996.6000926849099,
+      "min": 425.837863,
+      "med": 1009.866086,
+      "p(90)": 1158.3380288,
+      "p(95)": 1183.0971856,
+      "p(99)": 1233.05470604,
+      "max": 1300.919846,
+      "count": 1809,
+      "thresholds": {
+        "p(95)<2000": false
+      }
+    },
+    "http_req_duration{name:bizSearchLast}": {
+      "count": 1809,
+      "avg": 991.7815516815917,
+      "min": 421.760383,
+      "med": 1005.123834,
+      "p(90)": 1153.5015856,
+      "p(95)": 1177.2588077999999,
+      "p(99)": 1227.8968447999998,
+      "max": 1296.674367,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    },
+    "data_sent": {
+      "count": 888546,
+      "rate": 4842.568322885411
+    },
+    "data_received": {
+      "count": 596534767,
+      "rate": 3251109.5274459957
+    }
+  },
+  "setup_data": {
+    "bizLastCount": 100,
+    "bizLastPage": 1000,
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    },
+    "bizTotal": 100000
+  },
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bizSearchLast 200": {
+        "name": "bizSearchLast 200",
+        "path": "::bizSearchLast 200",
+        "id": "fa11354543b5da3d95ccde8419a82914",
+        "passes": 1809,
+        "fails": 0
+      }
+    }
+  }
+}

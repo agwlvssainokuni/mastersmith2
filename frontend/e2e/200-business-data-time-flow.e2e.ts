@@ -25,7 +25,7 @@
 // - ブラウザのタイムゾーンは playwright.config.ts の timezoneId（Asia/Tokyo）のまま、利用者のプリファレンスの表示のタイムゾーンを
 //   America/New_York にする（ブラウザと表示のタイムゾーンが違う状態を通す。security-design.md 2.7）。
 // - 流れ: プリファレンスで America/New_York → 作成の画面で存在しない時刻（2026-03-08 02:30:00）の誤りが出て保存されない →
-//   重なる時刻（2026-11-01 01:30:00）を2択の「後（-05:00）」で保存 → 一覧と詳細で 2026-11-01 01:30:00 -05:00 →
+//   重なる時刻（2026-11-01 01:30:00）を2択の「後（-05:00）」で保存 → 一覧と詳細で 2026-11-01 01:30:00.000000 -05:00（6 桁の列） →
 //   更新で名前だけ直して保存し、日時が変わらない（一覧の表示と、更新の要求の本文に日時の欄の鍵が無いことで確かめる）。
 // - 時刻の表の見本（businessDataFixtures.ts の timeDefinition・timePage・timeDetail。185 の時刻の状態に使う）の形を、本物の応答と
 //   shapeCompare で比べる（project.md の学び。行の値の組は、値が文字か null の組であることだけを確かめて比べから外す）。
@@ -71,8 +71,11 @@ const SKIPPED_TIME = '2026-03-08 02:30:00'
 /** 夏時間の終わりで2回ある時刻 */
 const OVERLAPPING_TIME = '2026-11-01 01:30:00'
 
-/** 2択の「後」を選んで保存した時点の、表示のタイムゾーンでの書式 */
-const SAVED_TIME_TEXT = '2026-11-01 01:30:00 -05:00'
+/**
+ * 2択の「後」を選んで保存した時点の、表示のタイムゾーンでの書式。列は timestamptz(6) で、サーバーは
+ * DB の定義の桁（6 桁）に固定して返し、画面は丸めずに出す（機能設計の D1）ため、端数の 6 桁が付く。
+ */
+const SAVED_TIME_TEXT = '2026-11-01 01:30:00.000000 -05:00'
 
 /** 存在しない時刻の誤りの文（features/tables/messages.ts の tables.error.DATE_TIME_GAP） */
 const GAP_MESSAGE = `${ZONE} では、この時刻はありません（夏時間の切り替えで飛ばされる時刻です）`
@@ -152,6 +155,19 @@ function sentColumnNames(request: Request): string[] {
 /** 要素にフォーカスを移して Enter で押す（キーボードの操作） */
 async function pressEnter(page: Page, testId: string): Promise<void> {
   await page.getByTestId(testId).focus()
+  await page.keyboard.press('Enter')
+}
+
+/**
+ * 一覧の見出しの「作成」を Enter で押す。表が空のときは、空の表の案内の中にも同じ data-testid の
+ * 「作成」が出るため、案内の外の1つ（見出しの横のボタン）に絞る（Build and Test の繰り戻し 1）。
+ */
+async function pressCreate(page: Page): Promise<void> {
+  const create = page.locator(
+    '[data-testid="tables-create"]:not([data-testid="tables-empty-table"] *)',
+  )
+  await expect(create).toHaveCount(1)
+  await create.focus()
   await page.keyboard.press('Enter')
 }
 
@@ -291,7 +307,7 @@ test.describe('200 business data time flow', () => {
     const occurredAt = page.getByRole('textbox', { name: EVENT_COLUMN_LABELS.occurredAt })
 
     await test.step('6. a skipped time shows the error and is not saved', async () => {
-      await pressEnter(page, 'tables-create')
+      await pressCreate(page)
       await expect(page.getByTestId('tables-form-heading')).toHaveText(`${labels.table}を作成`)
       await page.getByRole('textbox', { name: `${EVENT_COLUMN_LABELS.id} *必須` }).fill(eventId)
       await page.getByRole('textbox', { name: `${EVENT_COLUMN_LABELS.name} *必須` }).fill(eventName)
@@ -390,8 +406,9 @@ test.describe('200 business data time flow', () => {
       await pressEnter(page, 'tables-detail-update')
       const name = page.getByRole('textbox', { name: `${EVENT_COLUMN_LABELS.name} *必須` })
       await expect(name).toHaveValue(eventName)
-      // 2回ある時刻のままの欄は、表示のタイムゾーンの壁時計の文字で出て、2択を出さない（D22）
-      await expect(occurredAt).toHaveValue(OVERLAPPING_TIME)
+      // 2回ある時刻のままの欄は、表示のタイムゾーンの壁時計の文字で出て、2択を出さない（D22）。
+      // 初めの値は列の桁（6 桁）の端数を落とさない（D16）
+      await expect(occurredAt).toHaveValue(`${OVERLAPPING_TIME}.000000`)
       await name.fill(editedName)
       await occurredAt.focus()
       await occurredAt.press('Tab')

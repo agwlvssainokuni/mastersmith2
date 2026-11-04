@@ -48,6 +48,12 @@
   - ⑤（R-06）保存済みの名前が解釈できないとき、選択は「ブラウザに合わせる」に見え、同じ項目を選んでも change が起きず null に直せない（別の名前を選んで戻す必要がある）。
   - ⑥（R-07）選択肢はブラウザの Intl の一覧、サーバーの門は JDK の ZoneId の集合で、別々の出どころ。一致を保証する確かめは無い（V8 の `Asia/Calcutta` は JDK にもあるため現状は通る）。
 
+## Build and Test からの繰り戻し 1（2026-11-04）
+
+- きっかけ: Build and Test の `verify` の画面のカバレッジの段で、`frontend/src/eslintTimeZoneRule.test.ts` の最初のテストが 5138 ms で既定の上限 5 秒を超えた（`construction/build-and-test/test-results.md` の Loop-Back Log）。
+- 直し（Step R1）: `beforeAll` で ESLint に一度空の文を通し、設定とプラグインの初回の読み込みを済ませる。その `beforeAll` だけに上限 60 秒を付けた。各テストの上限（既定の 5 秒）は変えていない。本体のコードと ESLint の設定は変えていない。
+- 確かめ（Step R2。時間の上限 10 分）: 直す前に、(a) このファイルと `src/features` を `--coverage` 付きで同時に流す、を2回（169 ファイル・1764 件、どちらも通過）、(b) `verify` と同じ `npm run test:coverage` を1回（273 ファイル・2962 件、通過）試したが、落ち方は起こせなかった（`verify` の中では、バックエンドのタスクと同じ機械で動く負荷が重なっていた見込み）。(a) の試みでは閾値の判定だけを命令行で 0 にして外した（設定の閾値は変えていない）。直した後は、最初のテスト（`rejects resolvedOptions().timeZone in another file`）が 6 ms で通り、ファイルの 24 件が通過した。初回の読み込みの時間がテストの時間から準備に移ったことはこの数値で確かめた。負荷の下の通過は、Build and Test の `verify` で確かめる。
+
 ## Sources
 
 - `aidlc/spaces/default/intents/261102-timezone-ui-polish/construction/u2-display-time-zone/code-generation/code-generation-plan.md`

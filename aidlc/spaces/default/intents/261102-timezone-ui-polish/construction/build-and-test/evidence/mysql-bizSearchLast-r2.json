@@ -1,0 +1,196 @@
+{
+  "metrics": {
+    "iteration_duration{scenario:bizSearchLast}": {
+      "max": 507.910287,
+      "count": 6026,
+      "avg": 298.851121992035,
+      "min": 101.944571,
+      "med": 302.105868,
+      "p(90)": 362.996025,
+      "p(95)": 380.49008349999997,
+      "p(99)": 413.80427325,
+      "thresholds": {
+        "p(95)<2000": false
+      }
+    },
+    "data_received": {
+      "count": 1986167925,
+      "rate": 10844978.778528275
+    },
+    "http_req_blocked": {
+      "count": 6038,
+      "avg": 0.00976134332560443,
+      "min": 0.001125,
+      "med": 0.003249,
+      "p(90)": 0.004333,
+      "p(95)": 0.005875,
+      "p(99)": 0.1292196199999999,
+      "max": 5.711498
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 6038,
+      "value": 0
+    },
+    "data_sent": {
+      "count": 2952353,
+      "rate": 16120.593444647582
+    },
+    "http_req_duration{expected_response:true}": {
+      "max": 505.383048,
+      "count": 6038,
+      "avg": 294.8165441666121,
+      "min": 1.487542,
+      "med": 298.1751135,
+      "p(90)": 359.1446917,
+      "p(95)": 376.89636219999994,
+      "p(99)": 410.39408267
+    },
+    "iterations": {
+      "rate": 32.90348278049621,
+      "count": 6026
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "http_reqs": {
+      "count": 6038,
+      "rate": 32.96900581291671
+    },
+    "http_req_waiting": {
+      "med": 296.0035705,
+      "p(90)": 357.0663498,
+      "p(95)": 374.13572285,
+      "p(99)": 407.52926403,
+      "max": 503.008639,
+      "count": 6038,
+      "avg": 292.5162920286513,
+      "min": 1.172425
+    },
+    "iteration_duration": {
+      "p(95)": 380.49008349999997,
+      "p(99)": 413.80427325,
+      "max": 507.910287,
+      "count": 6026,
+      "avg": 298.851121992035,
+      "min": 101.944571,
+      "med": 302.105868,
+      "p(90)": 362.996025
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 10
+    },
+    "checks": {
+      "passes": 6026,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_duration{name:bizSearchLast}": {
+      "count": 6026,
+      "avg": 294.9069209512121,
+      "min": 90.120463,
+      "med": 298.180336,
+      "p(90)": 359.2753045,
+      "p(95)": 376.96315899999996,
+      "p(99)": 410.43710374999995,
+      "max": 505.383048,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_receiving": {
+      "med": 1.55336,
+      "p(90)": 4.3337704,
+      "p(95)": 5.5950038499999994,
+      "p(99)": 9.578037859999997,
+      "max": 24.009595,
+      "count": 6038,
+      "avg": 2.2575895127525567,
+      "min": 0.041207
+    },
+    "checks{scenario:bizSearchLast}": {
+      "passes": 6026,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "http_req_sending": {
+      "p(99)": 0.7239596599999977,
+      "max": 7.706218,
+      "count": 6038,
+      "avg": 0.042662625207022055,
+      "min": 0.004,
+      "med": 0.015083,
+      "p(90)": 0.023166,
+      "p(95)": 0.02983929999999999
+    },
+    "http_req_duration": {
+      "min": 1.487542,
+      "med": 298.1751135,
+      "p(90)": 359.1446917,
+      "p(95)": 376.89636219999994,
+      "p(99)": 410.39408267,
+      "max": 505.383048,
+      "count": 6038,
+      "avg": 294.8165441666121
+    },
+    "http_req_connecting": {
+      "p(99)": 0.09022820999999999,
+      "max": 3.954578,
+      "count": 6038,
+      "avg": 0.004800288671745612,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0
+    },
+    "http_req_tls_handshaking": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 6038
+    }
+  },
+  "setup_data": {
+    "bizTotal": 100000,
+    "bizLastCount": 100,
+    "bizLastPage": 1000,
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    }
+  },
+  "root_group": {
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bizSearchLast 200": {
+        "name": "bizSearchLast 200",
+        "path": "::bizSearchLast 200",
+        "id": "fa11354543b5da3d95ccde8419a82914",
+        "passes": 6026,
+        "fails": 0
+      }
+    },
+    "name": ""
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "metrics": {
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 0.10808077999999982,
+      "max": 6.66802,
+      "count": 11143,
+      "avg": 0.006378792874450328,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0
+    },
+    "http_req_tls_handshaking": {
+      "max": 0,
+      "count": 11143,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0
+    },
+    "http_req_sending": {
+      "count": 11143,
+      "avg": 0.053542555774926,
+      "min": 0.004958,
+      "med": 0.016708,
+      "p(90)": 0.028166,
+      "p(95)": 0.053412799999999976,
+      "p(99)": 1.03005014,
+      "max": 25.275954
+    },
+    "iteration_duration": {
+      "max": 386.630584,
+      "count": 11131,
+      "avg": 161.7457680614492,
+      "min": 55.195424,
+      "med": 163.766628,
+      "p(90)": 213.694869,
+      "p(95)": 228.618121,
+      "p(99)": 255.40634879999996
+    },
+    "http_req_duration{name:bizSearchLastSorted}": {
+      "p(90)": 207.329846,
+      "p(95)": 222.89323449999998,
+      "p(99)": 247.72874009999995,
+      "max": 375.822551,
+      "count": 11131,
+      "avg": 156.12876441317053,
+      "min": 52.791624,
+      "med": 158.237038,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_failed": {
+      "passes": 0,
+      "fails": 11143,
+      "value": 0
+    },
+    "http_reqs": {
+      "count": 11143,
+      "rate": 60.88851204703851
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    },
+    "http_req_blocked": {
+      "avg": 0.01627250219868956,
+      "min": 0.00125,
+      "med": 0.003416,
+      "p(90)": 0.004833,
+      "p(95)": 0.007083,
+      "p(99)": 0.18653293999999962,
+      "max": 8.069733,
+      "count": 11143
+    },
+    "iterations": {
+      "count": 11131,
+      "rate": 60.82294064395456
+    },
+    "http_req_duration": {
+      "med": 158.281997,
+      "p(90)": 207.54394,
+      "p(95)": 223.0850259,
+      "p(99)": 249.55620695999997,
+      "max": 375.822551,
+      "count": 11143,
+      "avg": 156.22156363376124,
+      "min": 1.42238
+    },
+    "data_sent": {
+      "count": 5818029,
+      "rate": 31791.36039275953
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(99)": 249.55620695999997,
+      "max": 375.822551,
+      "count": 11143,
+      "avg": 156.22156363376124,
+      "min": 1.42238,
+      "med": 158.281997,
+      "p(90)": 207.54394,
+      "p(95)": 223.0850259
+    },
+    "data_received": {
+      "count": 3895661783,
+      "rate": 21287000.754319575
+    },
+    "http_req_waiting": {
+      "avg": 153.66891495306413,
+      "min": 1.149462,
+      "med": 155.713484,
+      "p(90)": 205.037156,
+      "p(95)": 219.83971849999992,
+      "p(99)": 247.39783841999997,
+      "max": 371.861746,
+      "count": 11143
+    },
+    "checks": {
+      "passes": 11131,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_receiving": {
+      "max": 21.979527,
+      "count": 11143,
+      "avg": 2.499106124921472,
+      "min": 0.033292,
+      "med": 2.140049,
+      "p(90)": 4.510022,
+      "p(95)": 5.8381932999999995,
+      "p(99)": 9.719786
+    },
+    "vus": {
+      "value": 2,
+      "min": 0,
+      "max": 10
+    },
+    "checks{scenario:bizSearchLastSorted}": {
+      "passes": 11131,
+      "fails": 0,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "iteration_duration{scenario:bizSearchLastSorted}": {
+      "count": 11131,
+      "avg": 161.7457680614492,
+      "min": 55.195424,
+      "med": 163.766628,
+      "p(90)": 213.694869,
+      "p(95)": 228.618121,
+      "p(99)": 255.40634879999996,
+      "max": 386.630584,
+      "thresholds": {
+        "p(95)<2000": false
+      }
+    }
+  },
+  "setup_data": {
+    "bizLastPage": 1000,
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    },
+    "bizTotal": 100000,
+    "bizLastCount": 100
+  },
+  "root_group": {
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bizSearchLastSorted 200": {
+        "name": "bizSearchLastSorted 200",
+        "path": "::bizSearchLastSorted 200",
+        "id": "9a35078dbe110b2766a84dbfebf41207",
+        "passes": 11131,
+        "fails": 0
+      }
+    },
+    "name": "",
+    "path": ""
+  }
+}

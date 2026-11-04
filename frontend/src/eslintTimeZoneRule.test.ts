@@ -27,9 +27,13 @@ const FRONTEND_DIR = resolve(import.meta.dirname, '..')
 
 let eslint: ESLint
 
-beforeAll(() => {
+beforeAll(async () => {
   eslint = new ESLint({ cwd: FRONTEND_DIR })
-})
+  // 設定とプラグインの初回の読み込みは最初の lintText で起こる。各テストの時間の上限（既定の 5 秒）に
+  // その時間を入れないよう、ここで一度空の文を通して済ませる（カバレッジの計測と並行の負荷の下で、
+  // 最初のテストが 5 秒を超えたため。Build and Test の繰り戻し 1）。
+  await eslint.lintText('', { filePath: join(FRONTEND_DIR, 'src/features/x/Warmup.ts') })
+}, 60_000)
 
 /** 見本の文を道 filePath のファイルとして ESLint にかけ、構文の禁止（no-restricted-syntax）の誤りを返す */
 async function syntaxErrors(code: string, filePath = 'src/features/x/Sample.ts') {

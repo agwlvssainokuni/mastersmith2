@@ -1,0 +1,193 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "refDefinition200 200": {
+        "path": "::refDefinition200 200",
+        "id": "3caa374e76228137fa9bda1510ae49e2",
+        "passes": 368181,
+        "fails": 0,
+        "name": "refDefinition200 200"
+      }
+    }
+  },
+  "metrics": {
+    "http_req_duration": {
+      "count": 368221,
+      "avg": 4.592157040486574,
+      "min": 1.255407,
+      "med": 4.18384,
+      "p(90)": 7.077474,
+      "p(95)": 8.290008,
+      "p(99)": 11.602729199999997,
+      "max": 340.08074
+    },
+    "http_req_blocked": {
+      "max": 6.217413,
+      "count": 368221,
+      "avg": 0.004858425008351679,
+      "min": 0.000584,
+      "med": 0.001166,
+      "p(90)": 0.00175,
+      "p(95)": 0.002083,
+      "p(99)": 0.10557379999999986
+    },
+    "http_req_tls_handshaking": {
+      "max": 0,
+      "count": 368221,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0
+    },
+    "data_received": {
+      "count": 6481578196,
+      "rate": 35325765.29936201
+    },
+    "iterations": {
+      "count": 368181,
+      "rate": 2006.6525775637506
+    },
+    "http_req_receiving": {
+      "avg": 0.21057613446815504,
+      "min": 0.011291,
+      "med": 0.039666,
+      "p(90)": 0.617454,
+      "p(95)": 1.132699,
+      "p(99)": 2.403581799999998,
+      "max": 31.369193,
+      "count": 368221
+    },
+    "iteration_duration{scenario:refDefinition200}": {
+      "count": 368181,
+      "avg": 4.883826094339455,
+      "min": 1.419781,
+      "med": 4.470882,
+      "p(90)": 7.448852,
+      "p(95)": 8.69576,
+      "p(99)": 12.077941199999998,
+      "max": 64.928533,
+      "thresholds": {
+        "p(95)<1000": false
+      }
+    },
+    "vus": {
+      "min": 0,
+      "max": 10,
+      "value": 10
+    },
+    "data_sent": {
+      "count": 169893966,
+      "rate": 925952.628697375
+    },
+    "checks{scenario:refDefinition200}": {
+      "fails": 0,
+      "passes": 368181,
+      "thresholds": {
+        "rate==1": false
+      },
+      "value": 1
+    },
+    "http_req_duration{name:refDefinition200}": {
+      "count": 368181,
+      "avg": 4.583230516482402,
+      "min": 1.255407,
+      "med": 4.183839,
+      "p(90)": 7.076723,
+      "p(95)": 8.289045,
+      "p(99)": 11.599842,
+      "max": 64.363622,
+      "thresholds": {
+        "max>=0": false
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "max": 340.08074,
+      "count": 368216,
+      "avg": 4.592092224354745,
+      "min": 1.255407,
+      "med": 4.183838,
+      "p(90)": 7.077276500000001,
+      "p(95)": 8.289860999999997,
+      "p(99)": 11.6020291
+    },
+    "iteration_duration": {
+      "max": 64.928533,
+      "count": 368181,
+      "avg": 4.883826094339455,
+      "min": 1.419781,
+      "med": 4.470882,
+      "p(90)": 7.448852,
+      "p(95)": 8.69576,
+      "p(99)": 12.077941199999998
+    },
+    "http_req_sending": {
+      "avg": 0.010170662257175068,
+      "min": 0.002458,
+      "med": 0.004042,
+      "p(90)": 0.008209,
+      "p(95)": 0.011416,
+      "p(99)": 0.090583,
+      "max": 7.543514,
+      "count": 368221
+    },
+    "http_req_waiting": {
+      "p(90)": 6.78532,
+      "p(95)": 7.9543,
+      "p(99)": 11.1893936,
+      "max": 339.897951,
+      "count": 368221,
+      "avg": 4.371410243761219,
+      "min": 1.205908,
+      "med": 3.966721
+    },
+    "http_req_connecting": {
+      "count": 368221,
+      "avg": 0.0024209521455864818,
+      "min": 0,
+      "med": 0,
+      "p(90)": 0,
+      "p(95)": 0,
+      "p(99)": 0.04267439999999809,
+      "max": 6.136289
+    },
+    "http_req_failed": {
+      "passes": 5,
+      "fails": 368216,
+      "value": 0.000013578801860839007
+    },
+    "http_reqs": {
+      "count": 368221,
+      "rate": 2006.8705847479957
+    },
+    "checks": {
+      "passes": 368181,
+      "fails": 0,
+      "value": 1
+    },
+    "vus_max": {
+      "value": 10,
+      "min": 10,
+      "max": 10
+    }
+  },
+  "setup_data": {
+    "bizTokens": {
+      "1": "[REDACTED-SETUP]",
+      "2": "[REDACTED-SETUP]",
+      "3": "[REDACTED-SETUP]",
+      "4": "[REDACTED-SETUP]",
+      "5": "[REDACTED-SETUP]",
+      "6": "[REDACTED-SETUP]",
+      "7": "[REDACTED-SETUP]",
+      "8": "[REDACTED-SETUP]",
+      "9": "[REDACTED-SETUP]",
+      "10": "[REDACTED-SETUP]"
+    }
+  }
+}
