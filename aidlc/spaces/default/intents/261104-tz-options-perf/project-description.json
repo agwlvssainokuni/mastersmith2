@@ -1,0 +1,1 @@
+"CI の frontendCoverage で U2 の性能のテスト TimeZoneOptionsPerformance.test.ts（タイムゾーンの選択肢の組み立て 100 ms 以内、NFR2.1.6）が中央値 106 ms で落ちた（f2f2eb9b の CI、AMD EPYC 7763、カバレッジの計測つき。2回目の失敗）。目標の 100 ms と測り方は変えず、buildTimeZoneOptions の組み立てを速くして（時差だけを求める軽い形など）、CI と同じカバレッジありの条件で余裕を持って通るようにする。"
