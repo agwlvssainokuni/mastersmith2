@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`.gitmodules` と `git submodule status` を読み直し、サブモジュールの固定先を今の値に直した（K-105）。あわせて、今回の範囲の機能（`businessdata`・`navigation`）の依存の注記を足した。機能の間の依存の表そのものは前回までのまま（今回は `import` の検索をしていない）。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「画面の依存」に日時の変換（`shared/format`）を読む側の一覧を足した。ほかの節は前回以前の記録による（今回は読み直していない）。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`.gitmodules` と `git submodule status` を読み直し、サブモジュールの固定先を今の値に直した（K-105）。あわせて、今回の範囲の機能（`businessdata`・`navigation`）の依存の注記を足した。機能の間の依存の表そのものは前回までのまま（今回は `import` の検索をしていない）。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`.gitmodules`・`git submodule status`・`.github/dependabot.yml` の全文を読み、サブモジュールの固定先（K-86）・Dependabot の `ignore` の現状（K-87）・コンテナの版の固定先（K-83）を更新した。機能の間の依存の表は前々回（2026-10-25）の `import` の検索のまま（今回は再確認していない）。
 >
@@ -37,6 +39,7 @@
 
 - 機能（`frontend/src/features/<featureId>/`、12 機能）どうしの import は ESLint の `no-restricted-imports` で止める。`src/shared/` から `src/app/`・`src/features/` を読むことも止める（前回の記録）。
 - 画面は make-you-chic-ui を npm の `file:../vendor/make-you-chic-ui/packages/make-you-chic-ui` で使う。
+- 日時の変換（2026-11-06、import の grep）: `features/preferences`（`buildTimeZoneOptions.ts`・`TimeZoneSelect.tsx`）・`features/tables`（`valueFormat.ts`・`formDiff.ts`・`DateTimeField.tsx`・`searchConditions.ts`・`resolveDateTimeInput.ts`・`BusinessDataFormPage.tsx`・`references/useLookupSearch.ts`）・`features/useradmin/lockedUntilInZone.ts`・`app/display-settings`（`browserTimeZone.ts`・`decideDisplayTimeZone.ts`・`DisplayTime.tsx`）が `shared/format/`（`timeZone` の公開の入口 `index.ts`、または `formatInstantToMinutes.ts`・`dateTimeInput.ts`）を読む。`shared/format/timeZone` は `Intl` だけに依り、画面の部品・通信・他の機能を読まない（ESLint の `timeZoneConversionRules`）。テストは入口を通さず `timeZoneGate.ts` を直接読む（`clearFormatterCache`）。
 
 ## ビルドの依存
 
@@ -105,6 +108,7 @@
 
 ## Sources
 
+- 2026-11-06: `frontend/src` の `shared/format` の import の grep、`frontend/eslint.config.js` の `timeZoneConversionRules`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `.gitmodules`・`git submodule status`・`git log`（サブモジュールの2行）・`gradle/libs.versions.toml` の grep、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `.gitmodules`・`git submodule status`・`settings.gradle.kts`・`.github/dependabot.yml`（全文）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - `import` の検索（前回: `businessdata`・`audit`）、境界テストの `@DisplayName`、`git submodule status`（前回）、`.github/dependabot.yml`（今回）。

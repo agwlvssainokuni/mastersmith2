@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、時差の設定の置き場（K-95）と make-you-chic-ui の固定先（K-105）だけを足した。版の表は前回（2026-11-01）のまま（今回は読み直していない）。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、テストの表の Vitest・`@vitest/coverage-v8` の版を lockfile で確かめ（どちらも 5.0.5、変わらず）、「画面の日時と Intl」の節を足した。ほかの表は前回のまま（今回は読み直していない）。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、時差の設定の置き場（K-95）と make-you-chic-ui の固定先（K-105）だけを足した。版の表は前回（2026-11-01）のまま（今回は読み直していない）。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update`（bugfix・Minimal）の Focused scan で更新した。今回は版の定義と固定先（`gradle/`・`libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`perf/versions.env`・`.github/`・`README.md`）を読み直し、表の版を今の値にそろえ、所見 K-81・K-82・K-84・K-85・K-93 を足した（本文はこの文書）。版がどこに何か所書かれているかの一覧は、この文書の「版の固定先（K-81〜K-85）」の節だけに書く（ほかの文書はここを参照する）。前回（2026-10-29、`261029-reference-lookup-cleanup`）からの差は、画面の部品の版（React 19.3.1・react-router 8.5.1・i18next 26.5.11・react-i18next 17.1.9・oxlint 1.90.0）と make-you-chic-ui の固定先（`cab4207`）。
 
@@ -137,7 +139,20 @@
 
 - アプリが保存する時刻（内部DB）は時差に依存しない時点（UTC）として扱う決まり（`project.md` の Corrections）。業務データの時差つきの値も UTC にそろえて受け渡す。画面で地方時に直す仕組みは業務データには無い（K-96）。
 
+## 画面の日時と Intl（2026-11-06）
+
+| 項目 | 値 | 出どころ |
+|---|---|---|
+| 時差の名前の一覧 | `Intl.supportedValuesOf('timeZone')`（Node・ブラウザ同梱の ICU が答える。取り出せなければ空で UTC だけ） | `features/preferences/buildTimeZoneOptions.ts` 35〜41 行 |
+| 整形器 | `Intl.DateTimeFormat`、ロケール `en-US-u-ca-gregory-nu-latn`、`hourCycle: 'h23'`、`era`・`year`・`month`・`day`・`hour`・`minute`・`second`（名前ごとに1つ、キャッシュの上限 128） | `shared/format/timeZone/timeZoneGate.ts` 24・27・63〜73 行 |
+| 時差の求め方 | `formatToParts` の数字を UTC とみなした秒と元の時点の差（`timeZoneName: 'longOffset'` は使わない。前の Intent の NFR Design の Q1: A） | `shared/format/timeZone/wallClock.ts` の頭の説明と 119〜148 行 |
+| テストの実行環境 | Node `>=26 <27`（`engines`）、CI は Node 26・`ubuntu-latest`。`test`・`test:coverage` は `NODE_OPTIONS=--no-experimental-webstorage vitest run`（後者に `--coverage`） | `frontend/package.json` 7〜8・22〜23 行、`.github/workflows/ci.yml` |
+| カバレッジ | `@vitest/coverage-v8` 5.0.5（V8 の計測）、`thresholds` 行 80・分岐 70 | `frontend/vitest.config.ts` 66〜77 行、`package-lock.json` 1993 行 |
+
+- 名前の数は ICU の版で変わる（今回は数えていない）。CI の失敗の記録の CPU は AMD EPYC 7763（依頼の記述）。
+
 ## Sources
 
+- 2026-11-06: `frontend/package.json`・`frontend/package-lock.json`（vitest・coverage-v8 の行）・`frontend/vitest.config.ts`・`frontend/src/shared/format/timeZone/{timeZoneGate,wallClock}.ts`・`.github/workflows/ci.yml`（`verify` の job の頭）、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `Dockerfile`・`compose.yaml`・`backend/build.gradle.kts` の時差の grep、`TargetDataSourceConfig.java`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`backend/gradle.lockfile`・`backend/build.gradle.kts`・`build.gradle.kts`・`frontend/package.json`・`frontend/package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`docker/hikari-pool.sh`・`perf/versions.env`・`.github/workflows/ci.yml`・`.github/dependabot.yml`・`README.md`（2026-11-01、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。`TargetDbImages.java`・`.pre-commit-config.yaml`・`frontend/playwright.config.ts` は版の行の grep だけ。

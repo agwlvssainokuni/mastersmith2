@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、今回の範囲（日時の型・接続の時差・サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭）の技術的負債と、それを確かめているテストの置き場（ファイル名の grep）を足した。所見の本文は `architecture.md`（K-94〜K-99）と `code-structure.md`（K-100・K-102〜K-104）。テストの件数とカバレッジの実測の値は取っていない。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、表示のタイムゾーンの選択肢の性能のテストの測り方とカバレッジの設定（K-108）、直し方の候補と制約（K-109）、`frontend/vitest.config.ts` の今の形（K-110 の K-90 の訂正）を足した。所見の本文はこの文書（K-108・K-109）と `architecture.md`（K-106・K-107）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、今回の範囲（日時の型・接続の時差・サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭）の技術的負債と、それを確かめているテストの置き場（ファイル名の grep）を足した。所見の本文は `architecture.md`（K-94〜K-99）と `code-structure.md`（K-100・K-102〜K-104）。テストの件数とカバレッジの実測の値は取っていない。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。今回は `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`・`README.md`・`perf/README.md` の構成・perf の伏せ字の道具・`businessdata` の一部を読み、所見 K-88〜K-91 を足した（本文はこの文書）。テストの件数とカバレッジの実測の値は取っていない（`./gradlew` を流していない）。
 >
@@ -19,6 +21,7 @@
 - 今回（2026-10-29）も `packagesJudgedByTotal`（`backend/build.gradle.kts` 213〜221 行）は 7 パッケージで `team.md` と一致することを確かめた。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無く、この Intent で手を入れても一覧は増減しない見込み（`common.web` などに手を入れる場合は `team.md` の外す義務が発生する）。
 - 全体の下限（行 80%・分岐 70%）とパッケージごとの下限の規則は `backend/build.gradle.kts` 233〜253 行付近（`rule` が2つ。2つ目は `element = PACKAGE`・`excludes = packagesJudgedByTotal`）。
 - 画面は `frontend/vitest.config.ts` の `thresholds`（前回の記録による。今回は読んでいない）（`lines: 80`・`branches: 70`、65〜68 行）。
+- 2026-11-06 に読み直した `frontend/vitest.config.ts`（80 行）: `coverage` は `provider: 'v8'`・`allowExternal: true`・`include` は `src/**/*.{ts,tsx}` と `../perf/redact-k6-evidence.mjs`・`exclude` は `src/main.tsx`・`src/**/*.d.ts`・`src/**/*.test.{ts,tsx}`・`reporter` は `text`・`html`・`json-summary`・`thresholds` は `lines: 80`・`branches: 70`（66〜77 行）。`projects` は `eslint-config`（ESLint の設定を読む2本を先に1つだけで流す、`groupOrder: 0`）と `unit`（`groupOrder: 1`）。並列の制限（`pool`・`maxWorkers`・`fileParallelism`）は無い。K-90 の「`coverage.include` は `src/` だけ」は前の Intent の T1 で直っている（K-110）。
 
 ## リンタと静的解析
 
@@ -75,7 +78,30 @@
 - 確かめた事実: `BusinessDataWriteService.warnReference`（908〜931 行）は `stage`・`sqlState`・`vendorCode`・`exceptionClass` が null のときそのキーを出さない。呼び出しは4か所（325・343・365・377 行）で、借りられない2つは `Stage.BORROW` を渡す。365 行（`StepAttempt.Unexpected`）は `unexpected.stage()` を渡し、これが null の経路では「保存の前に対象DB の参照先を読めませんでした」の WARN が `stage` 無しで出る。値（行・名前・メッセージ）は出ない。
 - 未検証: `StepAttempt.Unexpected` の `stage` が null になる経路（`atStage` で包まれていない想定外の失敗か）は読んでいない。直す形（`stage` を必ず持たせる・`UNKNOWN` を出す）は設計で決める。
 
+**K-108 表示のタイムゾーンの選択肢の性能のテストの測り方（2026-11-06）（`frontend-feature-preferences`・`build-and-verify`）**
+
+- 確かめた事実:
+  - `frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts`（53 行、NFR2.1.6）: 名前の一覧を1回読み、5 回くり返す。各回で `clearFormatterCache()` を呼び、`[...base]` で新しい配列（`WeakMap` のキャッシュに当たらない）にして、`performance.now()` で `buildTimeZoneOptions(names, null, NOW, 'browser')` の1回だけを挟む。並べ替えた 5 回の3番目（中央値）が 100 ms 以下で合格。100 ms は延ばさない（頭の説明）。`console.info` に個数・5 回の値・中央値・Node の版・CPU を出す。
+  - 最初の回は ICU の時差のデータの読み込みも含む冷たい回、2〜5 回目は整形器のキャッシュだけが冷たい回（ICU の内部の状態は残る見込み。未検証）。中央値は 2〜5 回目の値に寄る。
+  - 同じテストは `frontendTest`（`npm run test`、計測なし）と `frontendCoverage`（`npm run test:coverage`、V8 の計測つき）の両方で流れる（`build.gradle.kts` 216〜220 行）。どちらも `unit` の project の中で、ほかの jsdom のテストのファイルと同時に流れる。性能のテストだけを計測・並列から外す設定は無い。
+  - 依頼の記述: f2f2eb9b の CI（AMD EPYC 7763、計測つき）で中央値 106 ms、2回目の失敗。`team.md` の「同じテストが二度目に落ちたら、原因を直すまで次へ進まない」に当たる。
+- 見立て（未検証）: V8 のカバレッジの計測は JS の関数・分岐の実行に手間を足し、ICU の中の整形器の生成にはかからないと考えられる。CI の機械でほかのテストとの競り合いがどれだけ効くかは分からない。手元の値は今回は測っていない。
+
+**K-109 直し方の候補と制約（2026-11-06）（`frontend-feature-preferences`・`frontend-shared-format`）**
+
+- 候補（どれも未検証。Code Generation の前に、計測つき・ほかのテストと同時の条件で捨ての試しで測る）:
+  - (a) 時差だけを求める軽い関数を `shared/format/timeZone` に足す: 時点の秒を名前の外で1回だけ求め、`wallAt` を1回だけ呼んで `wallToSeconds(wall) - epoch` で時差の秒を出し（`formatToParts` 2 回 → 1 回）、時差の文字を直接作る（表示の文字の組み立てと `offsetOf` の正規表現を省く）。名前の検査も1回にする。JS の仕事は大きく減るが、整形器の生成（1件 1 回）は減らない。
+  - (b) 時差の計算に要る項目だけの整形器（または `timeZoneName: 'longOffset'`）で生成を軽くする。生成の時間が項目の数でどれだけ変わるかは未検証。`longOffset` は前の Intent の NFR Design の Q1: A（使わない）との差になるため、使うなら依頼者に確かめる。
+  - (c) 組み立て用の整形器を共有のキャッシュに入れない（K-107 の追い出しを無くす。測りの値への効き目は小さい見込み）。
+- 制約:
+  - 目標 100 ms と測り方（5 回の中央値・各回でキャッシュを空にする・新しい配列）は変えない（依頼）。`clearFormatterCache()` で消えない別のキャッシュに時差を持つと 2〜5 回目が温かい回になり、測りの意図が変わる。採るなら依頼者の決定が要る（`team.md` の物差しの決まり）。
+  - ラベルの形（`名前 (±HH:mm)`、秒の端数がある時差は `±HH:mm:ss`）・並び（コード点の順）・UTC の追加・解釈できない名前の除外・保存済みの名前の扱いは変えない（`buildTimeZoneOptions.test.ts`・`TimeZoneSelect.test.tsx` が確かめる）。
+  - `buildTimeZoneOptions.test.ts` 111〜122 行は `vi.spyOn(timeZone, 'formatInstant')` で呼び出しを数え、1 回目が 0 より多いことを確かめる。`formatInstant` を呼ばない形にするなら、数える相手を変える必要がある。
+  - 新しい関数は `shared/format/timeZone` に置き、公開するなら `index.ts` から名前付きで出す（ESLint の S2 の文言「時刻の整形は src/shared/format/timeZone を使ってください」と `timeZoneConversionRules`）。`team.md` の「不具合を直すときは再現するテストを同じコミットに含める」が当たる。
+
 ## 技術的負債
+
+- 表示のタイムゾーンの選択肢の組み立てが、1件ごとに表示の文字全体を作ってから時差を切り出し、`formatToParts` を2回呼ぶ（K-106、本文は `architecture.md`）。整形器のキャッシュの上限 128 が名前の数より小さい（K-107）。CI の計測つきで性能のテストが2回落ちた（K-108）。直し方の候補と制約は K-109。
 
 - 一覧の `COUNT(*)` が上限なしで、MySQL・MariaDB の部分一致・深い OFFSET が重い（K-62、本文は `architecture.md`）。読み取りのプールは小さい（K-63）。件数の型が「多数」を持てない（K-64、本文は `api-documentation.md`）。
 - 固定している部品の見直しは Spring Boot 4.1.2 で済み、Tomcat・Jackson の上書きは外れた。appender と networknt の固定が残る（K-66）。
@@ -151,6 +177,7 @@
 
 ## Sources
 
+- 2026-11-06: `frontend/vitest.config.ts`・`frontend/src/features/preferences/{TimeZoneOptionsPerformance,buildTimeZoneOptions}.test.ts`・`frontend/src/shared/format/timeZone/{conversionPerformance,timeZoneGate}.test.ts`・`build.gradle.kts`（216〜220 行）・`frontend/eslint.config.js`・`frontend/eslint-rules/timeZoneSelectors.js`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（テストはファイル名の grep だけ）。
 - 2026-11-01: 開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`（Technical Debt Signals の TD-1〜TD-14）。`README.md`・`perf/README.md` の見出しの一覧と grep の件数、`build.gradle.kts`・`.github/workflows/ci.yml`・`BusinessDataWriteService.java` の該当行。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`、2026-10-28 と前回）の Test Coverage・Code Quality Indicators・Technical Debt Signals・K-67〜K-73。

@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で更新した。業務データの日時の型の対応と接続の時差を読み、「日時の値の流れ」の節（K-94〜K-99）と Interaction Diagrams 5（日時の値の読み出しと保存）・6（サイドバーの区画とアイコンの決まり方。K-100・K-101）を足した。ほかの図と散文は前回以前の記録による。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で更新した。画面の表示のタイムゾーンの選択肢の組み立て（`features/preferences/buildTimeZoneOptions.ts`）と日時の変換の共有の関数（`shared/format/timeZone/`）を読み、「表示のタイムゾーンの選択肢の組み立て」の節（K-106・K-107）と Interaction Diagrams 7 を足した。K-96 の「利用者ごとの時差の設定は無い」は古い（K-110）。ほかの図と散文は前回以前の記録による。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で更新した。業務データの日時の型の対応と接続の時差を読み、「日時の値の流れ」の節（K-94〜K-99）と Interaction Diagrams 5（日時の値の読み出しと保存）・6（サイドバーの区画とアイコンの決まり方。K-100・K-101）を足した。ほかの図と散文は前回以前の記録による。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で更新した。アーキテクチャそのものは今回読み直していない。`businessdata` の一覧の並べ替えの文（`RowSqlBuilder.page`・`orderBy`）と参照先の並び（`RowDialect.sortExpression`）を読み、所見 K-92（P1）を Improvement Opportunities に足した。図と散文は前回（2026-10-29）以前の記録による。
 >
@@ -107,6 +109,7 @@ N6（日時のタイムゾーンの変換）の前提になる今の形。持ち
 - ほかの画面（DSL の管理・招待・利用者の管理）: `shared/format/formatDateTime.ts` が UTC の日時を端末（または渡した）時差に直し、略号を添える（日本語は `2026-09-24 10:15 JST`）。業務データの画面とは別の系統。
 - 一覧の書式 `ListFormat` の `DATE`・`DATETIME`・`TIME` は DSL の値・定義の応答にあるが、画面は使わない（`valueFormat.ts` は真偽値と `NUMBER_GROUPED` だけを見る）。`dsl/domain/ListFormat.java` の頭は「書式の中身は画面の Intent で決める」のまま。
 - 利用者ごとの時差の設定は無い（表示の設定は言語・テーマ・文字の大きさ。`app/display-settings` は流し読み）。
+- **訂正（K-110、2026-11-06）**: 上の行と `shared/format/formatDateTime.ts` の記述は 2026-11-03 の時点のもの。その後の同 Intent の U1・U2・U4 で、日時の変換は `shared/format/timeZone/`（`formatInstant`・`parseLocalDateTime` ほか）に寄り、`formatDateTime.ts` は消え、利用者ごとの表示のタイムゾーン（`preferences` の選択と `app/display-settings` の提供元）が入った。下の「表示のタイムゾーンの選択肢の組み立て」の節を参照。業務データの画面が今どう見せているか（`valueFormat.ts` など）は今回は読み直していない。
 
 ### K-97 値の往復で守るもの
 
@@ -124,6 +127,40 @@ N6（日時のタイムゾーンの変換）の前提になる今の形。持ち
 
 - MySQL の `time` は 24 時間を超える値・負の値を持てるが、文字で受けて `LocalTime.parse` で読むため `CellValue.Unreadable` になる（`readCell`）。
 - MySQL の `year`・PostgreSQL の `interval` は `OTHER`（文字にして読むだけ。書けない）。MySQL・MariaDB の `timestamp` のゼロの日時は読めずに例外になる（`readDateTimeTz` の注記）。
+
+## 表示のタイムゾーンの選択肢の組み立て（K-106・K-107、2026-11-06）
+
+持ち主の文書はここで、ほかの文書からはこの節を指す。パスは `frontend/src/` の下を省く。
+
+### 作りの今の形（確かめた事実）
+
+- 呼び出し: `features/preferences/TimeZoneSelect.tsx`（53〜57 行）が、部品を付けたときに `useState` で名前の一覧（既定は `readSupportedTimeZoneNames()` = `Intl.supportedValuesOf('timeZone')`、取り出せなければ空）と時刻（`now()`）を1回だけ決め、`useMemo` で `buildTimeZoneOptions(names, value, at, browserLabel)` を呼ぶ。`value`・`browserLabel` が変わると呼び直す。
+- `features/preferences/buildTimeZoneOptions.ts`:
+  - `entriesFor`（57〜74 行）: 名前の配列の参照ごとに `WeakMap` に結果を持つ。無ければ、時点の文字 `now.toISOString()` を1回作り、`new Set(names)` に `UTC` を足し、コード点の順に並べ、1件ごとに `offsetLabel` を呼ぶ。
+  - `offsetLabel`（49〜55 行）: `canInterpretTimeZone(name)` で解釈できない名前を除き、`formatInstant(instant, name)` の ok の文字（`YYYY-MM-DD HH:mm:ss ±HH:mm`）から `offsetOf`（44〜47 行、末尾の時差の正規表現）で時差を切り出し、`名前 (±HH:mm)` を作る。
+  - `buildTimeZoneOptions`（88〜101 行）: 先頭に「ブラウザに合わせる」（値は空）。保存済みの名前が一覧に無く解釈できるときだけ、`offsetLabel` をもう1回呼んで2番目に足す。
+- `shared/format/timeZone/`（U1 の日時の変換。公開の入口 `index.ts`）:
+  - `timeZoneGate.ts`: 名前の検査（型・長さ 64・使える文字の正規表現・固定のオフセットの正規表現）と、名前をキーにした `Intl.DateTimeFormat` のキャッシュ（`MAX_FORMATTER_CACHE_SIZE = 128`、超えたら全体を捨てる。24・78〜81 行）。整形器はロケール `en-US-u-ca-gregory-nu-latn`・`timeZone`・`hourCycle: 'h23'`・`era`・`year`・`month`・`day`・`hour`・`minute`・`second` の 7 項目で作る（63〜73 行）。
+  - `formatInstant.ts`（48〜76 行）: `getFormatter` → `parseInstantText`（時点の文字の正規表現と日数の計算）→ `wallAt` → `offsetSecondsAt` → 年の範囲 → 表示の文字の組み立て（`formatOffset`）。
+  - `wallClock.ts`: `wallAt`（119〜142 行）が `getFormatter` と `formatToParts` で壁時計を読み、`offsetSecondsAt`（145〜148 行）は `wallAt` をもう1回呼んで「壁時計を UTC とみなした秒 − 時点の秒」で時差を出す（`timeZoneName: 'longOffset'` は使わない。前の Intent の NFR Design の Q1: A、ファイルの頭の説明）。
+
+**K-106 1件の名前ごとの仕事**
+
+| 仕事 | 1件あたりの回数 | 出どころ |
+|---|---|---|
+| `Intl.DateTimeFormat` の生成（7 項目） | 1（測りでは毎回キャッシュが空のため） | `canInterpretTimeZone` → `getFormatter` |
+| `getFormatter`（名前の正規表現 2 つ） | 4 | `canInterpretTimeZone`・`formatInstant`・`wallAt` ×2 |
+| `formatToParts` | 2（同じ時点） | `wallAt` と `offsetSecondsAt` 経由の `wallAt` |
+| 時点の文字の読み取り（正規表現と日数の計算） | 1（名前によらず同じ文字） | `parseInstantText` |
+| 表示の文字の組み立てと時差の切り出し | 1 | `formatInstant` の組み立てと `offsetOf` |
+
+- 名前の数は Node の ICU が答える数百（約 400〜430 の見込み。今回は数えていない。未検証）。
+- 見立て（未検証）: 時間の大半は名前ごとの整形器の生成で、`formatToParts` 2 回と JS の処理が続く。CI の中央値 106 ms を名前の数で割ると約 0.25 ms／件。内訳は測っていない。
+
+**K-107 整形器のキャッシュの上限が名前の数より小さい**
+
+- 1回の組み立てで数百の整形器を入れるため、キャッシュは 128 件ごとに全体で捨てられる（同じ名前を入れた直後に使うため、1件の中では当たる）。組み立ての後は最後の 128 件以下しか残らず、表示のタイムゾーン（`app/display-settings/decideDisplayTimeZone.ts`・`browserTimeZone.ts` の `canInterpretTimeZone`、ほかの画面の `formatInstant`）の整形器が追い出されうる。結果は変わらず、作り直しが増えるだけ。
+- 測りは各回で `clearFormatterCache()` を呼ぶため、上限を変えても測りの値は変わらない。
 
 ## Interaction Diagrams
 
@@ -285,6 +322,39 @@ flowchart TD
 
 文字の代わりの説明: 業務のメニューは、DSL の `menus` の `icon`（任意）をサーバーの `NavIconPolicy` が `allowed-icons.txt` と照らし、無い・一致しない名前を `list` にして応答に入れる。応答にテーブルかビューかの印は無い。画面の `buildNavSections` は、ホームの区画（`home` のアイコン）、業務の区画（応答の木）、管理の区画（機能の登録の `sidebarItems` の `section: ADMIN`）を作り、アイコンは `allowedIcons.ts` の 18 種と照らして無ければ `list` にする。管理の登録はどれも `icon` を置かないため、管理の項目はすべて `list` になる。make-you-chic-ui の Sidebar は `IconName` だけを描く。
 
+### 7. 表示のタイムゾーンの選択肢の組み立て（K-106・K-107、2026-11-06）
+
+```mermaid
+sequenceDiagram
+  participant TS as TimeZoneSelect
+  participant B as buildTimeZoneOptions
+  participant G as timeZoneGate
+  participant F as formatInstant
+  participant W as wallClock
+  participant I as Intl
+  TS->>I: supportedValuesOf timeZone (once on mount)
+  I-->>TS: several hundred names
+  TS->>B: buildTimeZoneOptions(names, value, now, label)
+  B->>B: WeakMap miss, toISOString once, add UTC, sort
+  loop each name
+    B->>G: canInterpretTimeZone(name)
+    G->>I: new DateTimeFormat with 7 fields
+    G->>G: cache set, clear all at 128
+    B->>F: formatInstant(instant, name)
+    F->>G: getFormatter (hit)
+    F->>F: parseInstantText (same text every time)
+    F->>W: wallAt
+    W->>I: formatToParts
+    F->>W: offsetSecondsAt
+    W->>I: formatToParts again for same instant
+    F-->>B: full text with offset
+    B->>B: regex cuts offset, label name (offset)
+  end
+  B-->>TS: browser choice plus labeled options
+```
+
+文字の代わりの説明: 選択の部品は付いたときに1回、ブラウザ（Node のテストでは Node の ICU）が知る名前の一覧と時刻を決め、組み立ての関数を呼ぶ。組み立ては配列ごとのキャッシュに無ければ、時点の文字を1回作り、UTC を足して並べ、1件ごとに次を行う: 名前の門で検査して整形器を作りキャッシュに入れる（128 件で全体を捨てる）、`formatInstant` でもう一度門を通り、同じ時点の文字を読み直し、壁時計を `formatToParts` で読み、時差を求めるために同じ時点の壁時計をもう1回 `formatToParts` で読み、表示の文字を組む。組み立ては返った文字の末尾から時差を正規表現で切り出し、`名前 (±HH:mm)` にする。最後に「ブラウザに合わせる」を先頭に置いて返す。
+
 ## Key Design Decisions
 
 - 対象DB は読み取り専用の別のプールと、書き込み専用の別のプールに分ける。どちらも既定の候補にしない（Flyway・JPA が誤って使わない）。
@@ -303,8 +373,11 @@ flowchart TD
 - **N6 の作りの論点（K-94〜K-98、2026-11-03）**: 変換を画面だけで行うか（`formatCell`・入力の部品・検索の入力）、サーバーで行うか（`ColumnValueCodec`）、時差の基準を端末の時差にするか利用者・インスタンスの設定にするか、PostgreSQL のセッションの時差を MySQL・MariaDB とそろえるか、時差の無い型を対象にするか、`ListFormat` の日時の書式を今回決めるか。画面の二系統（`formatDateTime` と `formatCell`）を寄せるかも論点。
 - **画面の仕上げ（K-100〜K-104、2026-11-03）**: アイコンを足すには make-you-chic-ui の上流への依頼と固定先の更新が要り、写しの2か所（`allowedIcons.ts`・`allowed-icons.txt`）を直す。テーブルとビューでアイコンを変えるなら、応答に印を足す（`MenuFilter` で `DslTable.view` を引ける）か、DSL の `icon` に任せるかを決める。
 
+- **選択肢の組み立ての速さ（K-106・K-107・K-109、2026-11-06）**: 時差だけを求める軽い関数を `shared/format/timeZone` に足し（`formatToParts` を 1 回、名前の検査を 1 回、時点の秒を名前の外で1回だけ求める）、表示の文字の組み立てと切り出しを省く案と、時差の計算に要る項目だけの整形器（または `longOffset`）で生成を軽くする案がある。生成の回数（1件 1 回）は前者では減らない。どれだけ効くかは未検証で、カバレッジの計測つきで捨ての試しで測る。細部と制約は `code-quality-assessment.md` の K-109。
+
 ## Sources
 
+- 2026-11-06: `frontend/src/features/preferences/{buildTimeZoneOptions,TimeZoneSelect}.ts(x)`・`frontend/src/shared/format/timeZone/{timeZoneGate,formatInstant,wallClock,instantText,index}.ts`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `ColumnValueCodec.java`・`RowDialect.java`・`MysqlFamilyRowDialect.java`・`PostgresRowDialect.java`・`TargetDataSourceConfig.java`・`navigation/`（`MenuFilter`・`NavIconPolicy`・`NavigationService`・`NavNodeResponse`）・`frontend/src/features/tables/{valueFormat,formDiff}.ts`・`frontend/src/app/navigation/buildNavSections.ts`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `RowSqlBuilder.java`（140〜180・330〜348 行）・`RowDialect.java`（110〜160 行）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の K-74・K-75。前回: K-62・K-63 の事実と見立て）と、アーキテクトの確かめ直し（`reverse-engineering-timestamp.md`）。

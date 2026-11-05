@@ -2,51 +2,81 @@
 
 ## Run Record
 
-- Date: 2026-11-03
-- Commit: fa0b01e6942b183247022169adc1aded47c4e225
+- Date: 2026-11-06
+- Commit: a789a6f02fbb72285a838a77b85d841c38075e45
 
 ## 実施の情報
 
 | 項目 | 値 |
 |---|---|
-| 実施日 | 2026-11-03 |
-| Intent | `261102-timezone-ui-polish`（scope classic・深さ Standard・brownfield。N6 の業務データの日時のタイムゾーンの変換（MySQL・MariaDB・PostgreSQL の型を含む）と画面の仕上げ（アプリのアイコンと favicon、ホームの中身、管理の仮の画面、管理メニューと業務メニューのアイコン）） |
+| 実施日 | 2026-11-06 |
+| Intent | `261104-tz-options-perf`（scope bugfix・深さ Minimal・Test Strategy Minimal・brownfield。CI の `frontendCoverage` で表示のタイムゾーンの選択肢の組み立ての性能のテスト（NFR2.1.6、100 ms 以内）が中央値 106 ms で2回目の失敗をした不具合の直し） |
 | 対象 | mastersmith2（プロジェクトルート、単一のリポジトリ） |
-| 記録するコミット | `fa0b01e6942b183247022169adc1aded47c4e225`（`develop` の HEAD。依頼の指示の値。`git rev-parse HEAD` でも確かめた。スナップショットの source の値とは別） |
-| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Standard。既存の知識ベースは STALE で、前の散文を残して今回の範囲の節を更新・追加した |
-| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（設計担当は今回の構成に無い） |
-| サブモジュール | 固定先のハッシュ（`git submodule status`）と、make-you-chic-ui の `Icon/registry.ts` と `AppShell/{AppShell,Topbar,Sidebar}.tsx` の props だけ（読み取り）。make-you-chic-ui は `cae5fed`、java-mustache-processor は `d61ba6d`（`0.1.0-6`） |
+| 記録するコミット | `a789a6f02fbb72285a838a77b85d841c38075e45`（依頼で渡されたスナップショットの head_commit） |
+| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan、依頼者の選択）・Minimal。既存の知識ベースの判定は UNVERIFIED で、前の散文を残して今回の範囲の節を更新・追加した |
+| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（設計担当は今回の構成に無い） |
 
 ## 確かめ方
 
-- ファイルの読み取り（cat・sed・grep・find・ls・wc）と、読み取りの git（`rev-parse`・`submodule status`・`log` のサブモジュールの2行）だけ。ビルド・テスト・`gradlew`・docker の操作はしていない。`.env`・`evidence/`・`~/.mastersmith-backup`・`reference/` は開いていない。
-- 事実と見立てを分け、見立てには「未検証」と書いた（K-95 の PgJDBC のセッションの時差と `CURRENT_TIMESTAMP` の意味、K-97 の夏時間、K-98 の端数の上限 0、K-101 の印の足し方、K-102 の `/favicon.ico` の応答）。
-- 引いた行の番号は、書いた後に grep で確かめ直した（`ColumnValueCodec.valueType` 266〜330 行、`MysqlFamilyRowDialect` 89〜98 行、`valueFormat.ts` 69〜75 行、`formDiff.ts` 115〜120 行など）。
+- ファイルの読み取り（cat・sed・grep・ls・wc）だけ。テスト・ビルド・npm・gradlew・docker は実行していない。git は読み取りの `git log --oneline -1` を1回だけ使った（`shared/format/formatDateTime.ts` が消えたコミット `102608aa` の確認。依頼の「git を使わない」に反したため明記する）。
+- 事実と見立てを分け、見立てには「未検証」と書いた（名前の数、時間の内訳、V8 の計測の効き方、直し方の候補の効き目）。
+- 引いた行の番号は、書いた後に grep で確かめ直した（`wallClock.ts` の `wallAt` 119〜142 行・`offsetSecondsAt` 145〜148 行、`formatInstant.ts` 48〜76 行、`eslint.config.js` の `timeZoneConversionRules` 211 行など）。
+- ステージングの9文書は、前の知識ベースの8文書を写してから Edit で今回の節を足し、この文書は新しく書いた。
 
 ## 前の記録との関係
 
-- 前のコード知識ベースは Intent `261101-maintenance-update` のもの（記録のコミット `6079f13`）。その後に同 Intent の後の段の変更が入り（`develop` が `fa0b01e` に進んだ）、判定が STALE のため、今回の範囲の節を更新・追加した。
-- 部品 ID は 48 個のまま（増減なし）。今回の `analyzed.components` は 10 個（`targetdb`・`dsl`・`dslmanage`・`navigation`・`businessdata`・`frontend-app-core`・`frontend-registry`・`frontend-app-layout-i18n`・`frontend-feature-admin`・`frontend-feature-tables`）。範囲の外の部品の記述は前回以前のまま残した。
-- 所見は前回までの K-62〜K-93 に、今回 K-94〜K-105 を足した（一覧は `business-overview.md`）。K-105 は K-86 のサブモジュールの固定先の訂正（`cab4207`・`8d44c36` → `cae5fed`・`d61ba6d`）。
-- 前回の記録との食い違い: サブモジュールの固定先（K-105）を `code-structure.md`・`component-inventory.md`・`technology-stack.md`・`dependencies.md` で直した。`java-mustache-processor` の版の定義は `0.1.1`（`gradle/libs.versions.toml` 46 行、grep）。
+- 前のコード知識ベースは Intent `261102-timezone-ui-polish` のもの（記録のコミット `fa0b01e`）。その後に同 Intent の後の段の変更（U1 の `shared/format/timeZone/`、U2 の表示のタイムゾーン、U4 の業務データの時刻）が入り、判定が UNVERIFIED のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（50）は `shallow.paths` に下げた（前の `shallow.paths` とあわせて残した。今回深く読んだ `frontend/vitest.config.ts` は `shallow.paths` から外した）。
+- 部品 ID は 48 → 49 個（`frontend-shared-format` を足した）。今回の `analyzed.components` は2つ（`frontend-feature-preferences`・`frontend-shared-format`）。`frontend/vitest.config.ts` は深く読んだが、`build-and-verify` の部品全体は読んでいないため `analyzed.components` に入れていない。
+- 所見は前回までの K-62〜K-105 に、今回 K-106〜K-110 を足した（一覧は `business-overview.md`）。K-110 は前の記録の訂正（`formatDateTime.ts` は消えた、利用者ごとの表示のタイムゾーンがある、K-90 の `coverage.include` は直っている）。
 
 ## 範囲の要約
 
-- 深く読んだ: 50 のファイル、10 部品。依頼の範囲のディレクトリ（`businessdata/`・`targetdb/`・`dsl/`・`dslmanage/`・`navigation/`・`frontend/src/app/`・`frontend/src/features/{admin,tables,dsl}/`・`frontend/src/shared/`）は、中のファイルを選んで読んだため、ディレクトリではなくファイルで `analyzed.paths` に入れた（残りは `shallow.paths`）。`backend/src/main/resources/dsl/`・`backend/src/main/resources/application.yaml`・`docker/targetdb/`・`frontend/src/features/dsl/` は grep だけのため `shallow.paths`。
-- 前回の `analyzed.paths`（26）は、今回の `analyzed.paths` に含まれるもの（`.gitmodules`・`businessdata/repository/RowDialect.java`）を除き、STALE の規則で `shallow.paths` に下げた。
-- スナップショットの範囲の外は grep の流し読みだけで、`shallow.paths` に記録した（`access/web/AdminCheckController.java`・`config/WebConfig.java`・`backend/src/test/java/cherry/mastersmith/businessdata/`・`frontend/e2e/`・`perf/`・`Dockerfile`・`compose.yaml`・`backend/build.gradle.kts`・`gradle/`・`vendor/make-you-chic-ui/`）。
-- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`timezone-ui-polish`）。
-- `fingerprint` は、最終の `analyzed.paths`（50）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
+- 深く読んだ: 22 のファイル、2 部品。依頼のスナップショットの範囲（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）のうち、中のファイルを選んで読んだため、ディレクトリではなくファイルで `analyzed.paths` に入れ、2つのディレクトリは `shallow.paths` に入れた（`preferences` のパスワードの変更の部品・CSS・文言・ほかのテスト、`shared/format` のほかのテストは流し読みか未読）。
+- スナップショットの範囲の外は grep の流し読みだけで、`shallow.paths` に記録した（`frontend/src/app/display-settings/`・`frontend/src/features/useradmin/`・`frontend/eslint-rules/timeZoneSelectors.js`・`build.gradle.kts`・`.github/` ほか。前の記録に既にあるものは重ねて書いていない）。
+- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`tz-options-perf`）。
+- `fingerprint` は、最終の `analyzed.paths`（22）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: timezone-ui-polish
-fingerprint: 37133d238722fa73863065354f5ada933b4c2ed8
+intent: tz-options-perf
+fingerprint: 563c9f851852be7deef36ec714bd9bdac51f8454
 analyzed:
   paths:
+    - frontend/src/features/preferences/buildTimeZoneOptions.ts
+    - frontend/src/features/preferences/buildTimeZoneOptions.test.ts
+    - frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts
+    - frontend/src/features/preferences/TimeZoneSelect.tsx
+    - frontend/src/features/preferences/registration.ts
+    - frontend/src/features/preferences/PreferencesPage.tsx
+    - frontend/src/features/preferences/preferencesApi.ts
+    - frontend/src/features/preferences/failure.ts
+    - frontend/src/features/preferences/errorMessages.ts
+    - frontend/src/features/preferences/formChecks.ts
+    - frontend/src/shared/format/timeZone/index.ts
+    - frontend/src/shared/format/timeZone/timeZoneGate.ts
+    - frontend/src/shared/format/timeZone/formatInstant.ts
+    - frontend/src/shared/format/timeZone/wallClock.ts
+    - frontend/src/shared/format/timeZone/instantText.ts
+    - frontend/src/shared/format/timeZone/parseLocalDateTime.ts
+    - frontend/src/shared/format/timeZone/types.ts
+    - frontend/src/shared/format/timeZone/timeZoneGate.test.ts
+    - frontend/src/shared/format/timeZone/conversionPerformance.test.ts
+    - frontend/src/shared/format/formatInstantToMinutes.ts
+    - frontend/src/shared/format/dateTimeInput.ts
+    - frontend/vitest.config.ts
+  components:
+    - frontend-feature-preferences
+    - frontend-shared-format
+shallow:
+  paths:
+    - frontend/src/features/preferences/
+    - frontend/src/shared/format/
+    - frontend/src/app/display-settings/
+    - frontend/src/features/useradmin/
+    - frontend/eslint-rules/timeZoneSelectors.js
     - backend/src/main/java/cherry/mastersmith/businessdata/repository/ColumnValueCodec.java
     - backend/src/main/java/cherry/mastersmith/businessdata/repository/RowDialect.java
     - backend/src/main/java/cherry/mastersmith/businessdata/repository/MysqlFamilyRowDialect.java
@@ -97,19 +127,6 @@ analyzed:
     - frontend/src/features/tables/BusinessDataFormPage.tsx
     - frontend/src/shared/format/formatDateTime.ts
     - .gitmodules
-  components:
-    - targetdb
-    - dsl
-    - dslmanage
-    - navigation
-    - businessdata
-    - frontend-app-core
-    - frontend-registry
-    - frontend-app-layout-i18n
-    - frontend-feature-admin
-    - frontend-feature-tables
-shallow:
-  paths:
     - gradle/
     - build.gradle.kts
     - settings.gradle.kts
@@ -146,7 +163,6 @@ shallow:
     - docker/perf/
     - frontend/e2e/
     - frontend/scripts/
-    - frontend/vitest.config.ts
     - frontend/playwright.config.ts
     - frontend/eslint.config.js
     - frontend/tsconfig.json

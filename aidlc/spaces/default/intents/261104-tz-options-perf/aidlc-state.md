@@ -41,11 +41,8 @@
 ## Runtime State
 - **Revision Count**: 0
 
-- **Parked**: 2026-11-05T15:26:08Z
 
-- **Parked At Stage**: reverse-engineering
 
-- **Parked By**: person
 
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -107,7 +104,7 @@
 - **Current Stage**: reverse-engineering
 - **Next Stage**: requirements-analysis
 - **Status**: Running
-- **Last Updated**: 2026-11-05T15:26:08Z
+- **Last Updated**: 2026-11-05T15:43:03Z
 
 ## Session Resume Point
 - **Last Completed Stage**: state-init

@@ -2,7 +2,8 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 48 個（前回と同じ。今回は増減なし。新しい部品は足していない）。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 49 個（2026-11-06 に `frontend-shared-format` を足した。それまでは 48 個）。
+- 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、`frontend-feature-preferences` の記述を書き直し、`frontend-shared-format`（`frontend/src/shared/format/`。前の Intent の U1 で入った日時の変換を含む）を新しく足した。今回の `analyzed.components` はこの2つ。`frontend/vitest.config.ts` も深く読んだが、`build-and-verify` の部品全体は読んでいないため `analyzed.components` に入れていない（`build-and-verify` に一行足した）。`frontend-app-core` の `formatDateTime.ts` の記述は古い（K-110。訂正の注を足した）。ほかの部品の記述は前回以前のまま。
 - 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`targetdb`・`dsl`・`dslmanage`・`navigation`・`businessdata`・`frontend-app-core`・`frontend-registry`・`frontend-app-layout-i18n`・`frontend-feature-admin`・`frontend-feature-tables` の記述に今回の読み（K-94〜K-104）を足し、`make-you-chic-ui`・`java-mustache-processor` の固定先を直した（K-105）。今回の `analyzed.components` はこの 10 個。ID は 48 個のまま（増減なし）。前回まで深く読んだ `build-and-verify`・`container-runtime`・`perf-and-monitoring`・`role` は、今回は確かめていない（記述は前回以前のまま、流し読みの扱い）。
 - 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、`build-and-verify`・`container-runtime`・`perf-and-monitoring`・`businessdata` の記述に今回の読み（K-81〜K-93）を足し、`frontend-e2e`・`make-you-chic-ui` の数と固定先を直した。今回の `analyzed.components` はこの4つ。ID は 48 個のまま。
 - 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
@@ -143,6 +144,7 @@
 - 場所: `main.tsx`・`app/`（骨組み）・`shared/` の一部・`frontend/index.html` ／ 責務: 画面の起動、共通の画面（ホーム・見つからない・起動の失敗）、管理の API の 403 の画面への切り替え、共通の日時の書式（`shared/format/formatDateTime.ts`）。
 - 今回（2026-11-03）の読み（K-96・K-102・K-103）: `app/pages/HomePage.tsx`（見出しと1文と、業務のメニューが空・失敗のときの案内だけ）、`shared/format/formatDateTime.ts`（UTC の日時を端末か渡した時差に直し略号を添える。DSL・招待・利用者の管理が使い、業務データは使わない）、`frontend/index.html`（`title` だけで favicon の `<link>` が無い）。
 - 状態: at-risk（K-96・K-102・K-103。今回の Intent で手を入れる見込み） ／ 読みの深さ: 深い（一部）
+- 訂正（K-110、2026-11-06）: `shared/format/formatDateTime.ts` は今は無い（前の Intent の U2 で消えた）。`shared/format/` は新しい部品 `frontend-shared-format` に分けて書く。上の 2026-11-03 の行は当時の記録として残す。
 
 ### frontend-registry
 
@@ -163,6 +165,13 @@
 ### frontend-api-client
 
 - 場所: `shared/api-client/`・`shared/paging` ／ 責務: 同じオリジンの `/api/**` の呼び出し、トークンの付与、Problem Details の読み取り。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+
+### frontend-shared-format
+
+- 場所: `shared/format/`（`timeZone/` の本体 7 ファイル `index.ts`・`timeZoneGate.ts`・`formatInstant.ts`・`wallClock.ts`・`instantText.ts`・`parseLocalDateTime.ts`・`types.ts` と、`formatInstantToMinutes.ts`・`dateTimeInput.ts`） ／ 責務: 時差を明示に渡す日時の変換（時点 → 表示の文字、ローカル時刻 → 時点（夏時間の gap・overlap）、時点の文字の読み書きと比べ、名前の検査と `Intl.DateTimeFormat` のキャッシュ）と、その上の薄い関数。例外を投げず `kind` の union で返す純粋な関数だけの置き場（ESLint の `timeZoneConversionRules`）。前の Intent `261102-timezone-ui-polish` の U1 で入った。
+- 依存: `Intl`（ECMA-402）だけ。使う側は `features/preferences`・`features/tables`・`features/useradmin`・`app/display-settings`（grep）。
+- 今回（2026-11-06）の読み（K-106・K-107）: 整形器は名前ごとに 7 項目で作り、キャッシュの上限は 128（超えたら全体を捨てる）。`formatInstant` は1回の呼び出しで `getFormatter` 3 回・`formatToParts` 2 回（`wallAt` と `offsetSecondsAt` が同じ時点の壁時計を求め直す）。性能のテスト `conversionPerformance.test.ts` は整形器を温めた後の `formatInstant` 1 万回を測る（生成は測らない）。
+- 状態: at-risk（K-106・K-107。今回の Intent で時差だけを求める関数を足す見込み） ／ 読みの深さ: 深い（本体はすべて。テストは `timeZoneGate.test.ts`・`conversionPerformance.test.ts` だけ深く、ほかは流し読み）
 
 ### frontend-feature-auth
 
@@ -217,7 +226,10 @@
 
 ### frontend-feature-preferences
 
-- 場所: `features/preferences/` ／ 責務: 自分の設定とパスワードの変更の画面。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `features/preferences/` ／ 責務: 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更の画面（`/me/preferences`・`/me/password`、ユーザーメニューから、遅延読み込み）。API は `GET`・`PUT /api/me/preferences`・`POST /api/me/password`。表示のタイムゾーンの選択（`TimeZoneSelect.tsx`）と選択肢の組み立て（`buildTimeZoneOptions.ts`）を持つ。
+- 依存: `app/display-settings`（表示の設定と表示のタイムゾーンの提供元）・`app/i18n`・`shared/api-client`・`shared/validation`・`shared/format/timeZone`（`canInterpretTimeZone`・`formatInstant`）・make-you-chic-ui。
+- 今回（2026-11-06）の読み（K-106・K-108・K-109）: 選択肢の組み立ては数百の名前の1件ごとに整形器の生成 1 回・`formatToParts` 2 回などを行い、性能のテスト `TimeZoneOptionsPerformance.test.ts`（NFR2.1.6、5 回の中央値 100 ms 以内）が CI の計測つきで2回落ちた。`buildTimeZoneOptions.test.ts` 111〜122 行は `formatInstant` の呼び出しを数える。
+- 状態: degraded（K-106・K-108。CI の `frontendCoverage` で性能のテストが2回落ちた） ／ 読みの深さ: 深い（`buildTimeZoneOptions.ts`・`TimeZoneSelect.tsx`・性能のテストと組み立てのテストは全体。ほかの本体は全体か頭の説明と時差の関わる行）
 
 ### frontend-e2e
 
@@ -240,6 +252,7 @@
 - 今回読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は現在 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
 - 今回（2026-11-01）読んだもの（K-81・K-84・K-85・K-87・K-90）: `settings.gradle.kts`・`build.gradle.kts`（全文。`checkToolchain` の Node 24 の強制、verify の 10 段、perf の道具の Prettier と oxlint、E2E の見本の PG の準備と片付け）・`backend/build.gradle.kts`（全文）・`gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`（9.8.2）・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`.npmrc`・`vite.config.ts`・`vitest.setup.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（どちらも全文）。版と固定先の一覧は `technology-stack.md`。
 - 状態: at-risk（K-81: Node 26 への引き上げで `engines`・`checkToolchain`・CI・README を同時にそろえる必要。K-90） ／ 読みの深さ: 深い（一部）
+- 2026-11-06 に深く読んだのは `frontend/vitest.config.ts` だけ（K-108・K-110。部品全体は確かめていないため、今回の `analyzed.components` には入れていない）。`build.gradle.kts` の `frontendTest`・`frontendCoverage`（216〜220 行）と `ci.yml` の `verify` の job の頭は流し読み。K-81 の Node 26 はもう `engines`（`>=26 <27`）と `ci.yml`（`node-version: "26"`）に入っている（流し読み）。
 
 ### container-runtime
 

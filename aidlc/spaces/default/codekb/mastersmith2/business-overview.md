@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-03、Intent `261102-timezone-ui-polish`（classic・Standard）の Reverse Engineering（Focused scan、記録のコミット `fa0b01e`）で更新した。今回は業務データの日時の型の対応と接続の時差（`businessdata`・`targetdb`・`dsl`・`dslmanage` の一部）、業務のメニューとアイコン（`navigation`、画面の骨組みの `app/registry`・`app/navigation`）、ホーム・管理の仮の画面（`features/admin`）・ページの頭（`index.html`）だけを読み、所見 K-94〜K-105 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した。
+> 2026-11-06、Intent `261104-tz-options-perf`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `a789a6f`）で更新した。今回は表示のタイムゾーンの選択肢の組み立て（`frontend/src/features/preferences/`）・日時の変換の共有の関数（`frontend/src/shared/format/`）・`frontend/vitest.config.ts` だけを読み、所見 K-106〜K-110 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した（前の Intent `261102-timezone-ui-polish` の後の段で、利用者ごとの表示のタイムゾーンが入った。K-110）。
+>
+> 前回の記録: 2026-11-03、Intent `261102-timezone-ui-polish`（classic・Standard）の Reverse Engineering（Focused scan、記録のコミット `fa0b01e`）で更新した。今回は業務データの日時の型の対応と接続の時差（`businessdata`・`targetdb`・`dsl`・`dslmanage` の一部）、業務のメニューとアイコン（`navigation`、画面の骨組みの `app/registry`・`app/navigation`）、ホーム・管理の仮の画面（`features/admin`）・ページの頭（`index.html`）だけを読み、所見 K-94〜K-105 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した。
 >
 > 前回の記録: 2026-11-01、Intent `261101-maintenance-update`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `6079f13`）で更新した。今回は版の定義と固定先・検査の道具・README と perf/README の構成・`businessdata` の一部（P1・T3）だけを読み、所見 K-81〜K-93 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
 >
@@ -15,6 +17,7 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 - 対象DB のスキーマの読み取りと、既定の DSL の生成・投入・プレビュー・適用・履歴。
 - 適用中の DSL のメニューを、作業ロールの権限で枝を落としてサイドバーに出す。
 - 業務データ（対象DB の行）の定義・一覧（検索・並べ替え・ページ送り）・詳細・作成・更新・削除（`businessdata`。前の Intent `261016-business-data-views` で入った）。
+- 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更（`features/preferences`）。表示のタイムゾーンは「ブラウザに合わせる」か、ブラウザが知る IANA の名前から選ぶ（2026-11-06 に確かめた。K-110）。
 - 管理の操作・認証・DSL・ロール・業務データの書き込みなどの出来事を、内部DB（組み込みの H2）の監査の表に追記する。
 
 ## 利用者と役割
@@ -25,11 +28,23 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 
-## 所見の一覧（K-62〜K-105）
+## 所見の一覧（K-62〜K-110）
 
-番号は K-61 から続く（K-62〜K-93 は前回まで、K-94〜K-105 が今回 2026-11-03）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-105 は前回まで、K-106〜K-110 が今回 2026-11-06）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261102-timezone-ui-polish）の主題
+### 今回（Intent 261104-tz-options-perf）の主題
+
+CI の `frontendCoverage` で、表示のタイムゾーンの選択肢の組み立ての性能のテスト（`TimeZoneOptionsPerformance.test.ts`、NFR2.1.6、100 ms 以内）が中央値 106 ms で2回目の失敗をした不具合の直し。目標と測り方は変えず、`buildTimeZoneOptions` を速くする。今回は組み立てが1件の名前ごとに何をしているか、整形器のキャッシュ、測り方とカバレッジの設定を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-106 | 選択肢の組み立ては、数百の名前の1件ごとに `Intl.DateTimeFormat` の生成 1 回（7 項目）・`formatToParts` 2 回（同じ時点で壁時計を求め直す）・`getFormatter` 4 回・同じ時点の文字の読み直し 1 回を行い、表示の文字全体を組んでから時差だけを正規表現で切り出す | `frontend-feature-preferences`・`frontend-shared-format` | `architecture.md`（表示のタイムゾーンの選択肢の組み立て・Interaction Diagrams 7） |
+| K-107 | 整形器のキャッシュの上限 128 が名前の数より小さく、組み立ての中で全体の捨て直しが起き、組み立ての後に表示のタイムゾーンの整形器が追い出されうる（結果は変わらない） | `frontend-shared-format` | `architecture.md`（表示のタイムゾーンの選択肢の組み立て） |
+| K-108 | 測り方: 5 回の中央値、各回で整形器のキャッシュを空にし新しい配列で組み立てる。`frontendTest` と `frontendCoverage` の両方で、ほかのテストのファイルと同時に流れる。性能のテストを計測や並列から外す設定は無い | `frontend-feature-preferences`・`build-and-verify` | `code-quality-assessment.md`（K-108） |
+| K-109 | 直し方の候補と制約: 時差だけを求める軽い関数（`formatToParts` 1 回・検査 1 回）、項目の少ない整形器（`longOffset` は前の Intent の NFR Design Q1: A との差）。`clearFormatterCache()` で消えない別のキャッシュは測り方を変える。`buildTimeZoneOptions.test.ts` の `formatInstant` の呼び出しを数えるテストが影響を受ける。新しい関数は `shared/format/timeZone` に置く（ESLint の決まり） | `frontend-feature-preferences`・`frontend-shared-format` | `code-quality-assessment.md`（K-109） |
+| K-110 | 前の記録の訂正: `shared/format/formatDateTime.ts` は消え（U2）、利用者ごとの表示のタイムゾーンの設定がある（K-96 の「設定は無い」は古い）。K-90 の `coverage.include` は今は perf の伏せ字の道具を含む | `frontend-app-core`・`frontend-feature-preferences`・`build-and-verify` | `component-inventory.md`・`code-quality-assessment.md` |
+
+### 前の Intent（261102-timezone-ui-polish）の主題（今回は再確認していない。K-96 の一部は K-110 で訂正）
 
 N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・PostgreSQL の3種類の型を含む）と画面の仕上げ（アプリのアイコンと favicon、ホームの中身、管理の仮の画面、管理メニューと業務メニューのアイコン）。今回は、日時の値が対象DB から画面まで・画面から対象DB までどう流れるかと、サイドバー・ホーム・管理の仮の画面・ページの頭の今の形を読んだ。「未検証」の項目は要件定義・設計の段で確かめる。
 
@@ -110,6 +125,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-06）: `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-03）: `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-01）: `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（前回まで）: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261027-perf-targets-review/inception/reverse-engineering/developer-scan.md`（今回）、`aidlc/spaces/default/intents/261025-deps-perf-carryover/inception/reverse-engineering/developer-scan.md`（前回）

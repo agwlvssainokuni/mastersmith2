@@ -1,6 +1,8 @@
 # コードの構成（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、「画面の骨組みの仕上げ」の節（サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭。K-100・K-102〜K-104）と、日時の型の置き場の節を足した。ほかの節は前回以前の記録による。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「表示のタイムゾーンと日時の変換の置き場」の節を足した（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）。ほかの節は前回以前の記録による。下の「日時の型の置き場」の `shared/format/formatDateTime.ts` は今は無い（K-110）。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、「画面の骨組みの仕上げ」の節（サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭。K-100・K-102〜K-104）と、日時の型の置き場の節を足した。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、リポジトリの最上位の表（サブモジュールの固定先・E2E の本数・`perf/` と `docker/` の中身・版の定義のファイル）を今の値に直した。パッケージのファイル数は前回までの数のまま（今回は数え直していない。`businessdata` は 2026-11-01 に 149 ファイル）。
 >
@@ -82,6 +84,25 @@
 - 画面: 見せ方 `features/tables/valueFormat.ts`、入力の初めの値と送る形 `features/tables/formDiff.ts`、入力の部品 `features/tables/BusinessDataFormPage.tsx`（880〜965 行）、検索 `features/tables/SearchPanel.tsx`・`searchConditions.ts`、入力の確かめ `features/tables/formValidation.ts`、文言 `features/tables/messages.ts`（`tables.form.utc`）。別の系統の書式 `shared/format/formatDateTime.ts`（DSL・招待・利用者の管理が使う）。
 - テスト（ファイル名の grep だけ）: サーバーは `businessdata/repository/{ColumnValueCodecTest,RowDialectTest}`・`businessdata/domain/ValueTypesTest`・`businessdata/web/{AbstractBusinessDataReadIT,AbstractBusinessDataWriteIT}`・`businessdata/testsupport/{BusinessDataReadTables,BusinessDataWriteTables}`・`targetdb/config/{TargetDataSourceConfigTest,TargetWriteDataSourceConfigTest}`・`dslmanage/generate/TypeCategoryMappingTest`。画面は `features/tables/{valueFormat,formDiff,formValidation,searchConditions,rowLabel.property,BusinessDataDetailPage}.test.*`。
 
+## 表示のタイムゾーンと日時の変換の置き場（K-106〜K-110、2026-11-06）
+
+本文は `architecture.md` の「表示のタイムゾーンの選択肢の組み立て」と `code-quality-assessment.md` の K-108・K-109。ファイルの位置と分類だけをここに置く（パスは `frontend/` の下）。
+
+| 場所 | 分類 | 中身 |
+|---|---|---|
+| `src/shared/format/timeZone/index.ts` | 公開の入口 | `formatInstant`・`compareInstants`・`preserveInstant`・`parseLocalDateTime`・`canInterpretTimeZone` と結果の型だけを名前付きで出す |
+| `src/shared/format/timeZone/timeZoneGate.ts`（98 行） | Utility | 名前の検査と `Intl.DateTimeFormat` のキャッシュ（上限 128）。`getFormatter`・`clearFormatterCache`・`formatterCacheSize` は入口から出さない（テストは直接読む） |
+| `src/shared/format/timeZone/wallClock.ts`（173 行） | Utility | 壁時計と時差の秒（`wallAt`・`offsetSecondsAt`）、壁時計 → 候補の時点（`instantCandidates`）、先発グレゴリオ暦の日数の計算 |
+| `src/shared/format/timeZone/formatInstant.ts`（76 行）・`instantText.ts`（131 行）・`parseLocalDateTime.ts`（107 行）・`types.ts`（43 行） | Utility・Model | 時点 → 表示の文字、時点の文字の読み書きと比べ、ローカル時刻 → 時点、結果の union の型 |
+| `src/shared/format/formatInstantToMinutes.ts`・`dateTimeInput.ts` | Utility | `formatInstant`・`parseLocalDateTime` の上の薄い関数（分までの表示、業務データの日時の入力） |
+| `src/features/preferences/buildTimeZoneOptions.ts`（101 行） | Utility（純粋な関数） | 表示のタイムゾーンの選択肢の組み立てと名前の一覧の取り出し |
+| `src/features/preferences/TimeZoneSelect.tsx`（85 行） | 画面の部品 | 選択（make-you-chic-ui の `FormField`・`Select`・`Alert`）。`PreferencesForm.tsx` が置く |
+| `src/features/preferences/` のほか | 画面・フック・API・純粋な関数 | `registration.ts`（`/me/preferences`・`/me/password`、遅延読み込み）・`PreferencesPage.tsx`・`PreferencesForm.tsx`・`usePreferencesForm.ts`・`preferencesApi.ts`・`errorMessages.ts`・`formChecks.ts`・`failure.ts`・`messages.ts`・パスワードの変更の部品・`testing/`（描画の補助と見本） |
+| テスト | Test | `src/features/preferences/{buildTimeZoneOptions,TimeZoneOptionsPerformance,TimeZoneSelect}.test.*` ほか、`src/shared/format/timeZone/*.test.ts`（`conversionPerformance`・`conversionProperties`・`conversionBoundary`・`timeZoneGate` ほか） |
+| `vitest.config.ts`（80 行） | Configuration | projects 2 つ（`eslint-config`・`unit`）、V8 のカバレッジ、`thresholds` 80・70 |
+
+- 時差の ESLint の決まり: `eslint-rules/timeZoneSelectors.js`（S1〜S4。`Intl.DateTimeFormat` は `timeZone` を明示し、時刻の整形は `src/shared/format/timeZone` を使う）と、`eslint.config.js` の `timeZoneConversionRules`（211 行から。`src/shared/format/timeZone/**/*.ts` は純粋な関数だけの置き場）。
+
 ## 画面の骨組みの仕上げ（K-100・K-102〜K-104、2026-11-03）
 
 ### K-100 サイドバーのアイコン
@@ -111,6 +132,7 @@
 
 ## Sources
 
+- 2026-11-06: 開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`wc`・grep）。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（ファイルの読み取りと grep）。
 - 2026-11-01: `ls`・`wc`・`git submodule status`（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。
 - `find`・`ls`・`git ls-files` の数（アーキテクト、2026-10-25）と開発担当の Packages Found。

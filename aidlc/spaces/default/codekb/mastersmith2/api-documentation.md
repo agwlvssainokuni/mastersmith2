@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、業務のメニューの口（`GET /api/me/navigation`、K-101）と、業務データの日時の値の形（K-94・K-97）の節を足した。口の数は数え直していない。
+> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan では HTTP の口を読み直していない（今回の不具合は画面の中の関数で、口を変えない見込み）。「内部の口」に画面の日時の変換の公開の入口と選択肢の組み立ての関数を足した。
+>
+> 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、業務のメニューの口（`GET /api/me/navigation`、K-101）と、業務データの日時の値の形（K-94・K-97）の節を足した。口の数は数え直していない。
 >
 > 前回の記録: 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan では API を読み直していない（今回の Intent は依存の版・文書・小さな直しで、API を変えない見込み）。以下は前回（2026-10-29）以前の記録のまま。
 >
@@ -73,6 +75,8 @@
 - 権限の解決: `role/service/EffectivePermissionResolver`（`effectiveWorkRole`・`snapshotFor`・`resolve`）。`businessdata` は `TableAccessResolver` を通してこれを使う（前回の記録）。
 - 適用中の DSL: `dsl/service/ActiveDslModelProvider`。
 - 対象DB の貸し出し: `targetdb/service/TargetReadAccess.withRead(ReadPurpose, …)`・`TargetWriteAccess`。
+- 画面の日時の変換（2026-11-06）: `frontend/src/shared/format/timeZone/index.ts` が `formatInstant(instant, timeZone, fractionDigits?)`・`parseLocalDateTime(text, timeZone, overlapChoice?)`・`compareInstants`・`preserveInstant`・`canInterpretTimeZone` と結果の型（`FormatResult` ほか。例外を投げず `kind` で返す）を出す。整形器のキャッシュ・壁時計（`getFormatter`・`wallAt`・`offsetSecondsAt`）は出さない。
+- 表示のタイムゾーンの選択肢（2026-11-06）: `frontend/src/features/preferences/buildTimeZoneOptions.ts` の `buildTimeZoneOptions(names, saved, now, browserLabel): readonly TimeZoneOption[]`（`{ value, label }`、先頭は値が空の「ブラウザに合わせる」、ラベルは `名前 (±HH:mm)`）と `readSupportedTimeZoneNames()`。呼ぶのは `TimeZoneSelect.tsx` だけ。保存・読み込みの HTTP の口は `GET`・`PUT /api/me/preferences` の `displayTimeZone`（null は「ブラウザに合わせる」、64 文字まで。`preferencesApi.ts`）。
 
 ## API を足すときの決まり
 
@@ -80,6 +84,7 @@
 
 ## Sources
 
+- 2026-11-06: `frontend/src/shared/format/timeZone/index.ts`・`frontend/src/features/preferences/{buildTimeZoneOptions,preferencesApi}.ts`（開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-03: `navigation/web/{NavigationController,NavNodeResponse,NavTableRefResponse}.java`・`navigation/domain/{MenuFilter,NavIconPolicy}.java`・`navigation/service/NavigationService.java`・`businessdata/web/ColumnDefinitionResponse.java`・`businessdata/repository/ColumnValueCodec.java`（開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-01: 読み直しなし（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md` の APIs Discovered）。
 - 開発担当の調査（今回: `aidlc/spaces/default/intents/261029-reference-lookup-cleanup/inception/reverse-engineering/developer-scan.md` の APIs Discovered）と `OptionResponse.java`（アーキテクト、2026-10-29）。
