@@ -80,7 +80,7 @@
 - docker compose up -d --build app は、新しくビルドされたイメージの ID が変わっても、構成が同じだとコンテナを作り直さず旧イメージのまま起動し直すことがある。入れ替えの後に docker inspect でコンテナのイメージ ID と mastersmith:local の ID が一致するかを確かめ、食い違うときは --force-recreate --no-deps を付けて作り直す（perf-targets-review の Deployment Execution）。 (learned 2026-10-29) <!-- cid:261027-perf-targets-review:deployment-execution:f7fb35bc881e9f5dfe7aab6cb8ee90c129b00a0d71a9eaa37ecbd93e686948e3 -->
 
 <!-- 元: project.md の ## Deployment -->
-- 内部DB の確かめ（監査の行の種類ごとの件数・利用者の状態など）は、アプリを1回止めて内部DB を複写し（配備の前後のバックアップを兼ねる）、リポジトリの外の小さな Java の道具（H2 の JDBC、`ACCESS_MODE_DATA=r`）で値を表示せずに数える。列の名前を誤ると H2 の誤りの表示に値が出うるため、問い合わせの前に列の名前を確かめる。 (merged 2026-11-04)
+- 内部DB の確かめ（監査の行の種類ごとの件数・利用者の状態など）は、アプリを1回止めて内部DB を複写し（配備の前後のバックアップを兼ねる。配備の後の複写をいつ取るかは `project.md` の Deployment の 2026-11-07 の決まりに従う）、リポジトリの外の小さな Java の道具（H2 の JDBC、`ACCESS_MODE_DATA=r`）で値を表示せずに数える。列の名前を誤ると H2 の誤りの表示に値が出うるため、問い合わせの前に列の名前を確かめる。 (merged 2026-11-04)
 
 <!-- 元: project.md の ## Deployment -->
 - 内部DB の複写と .env の複写はリポジトリの外（`~/.mastersmith-backup/` など、置き場は権限 700、ファイルは 600）に置き、中身を開かない。手順で「終わりに消す」とした複写は、その段の終わりに消したかを確かめる。 (merged 2026-11-04)

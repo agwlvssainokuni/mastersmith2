@@ -29,7 +29,7 @@
 ## Testing Posture
 
 - テストの件数やカバレッジを報告するときは、`./gradlew verify` がテストのタスクを UP-TO-DATE で飛ばすことがあるため、`:backend:cleanTest :backend:cleanIntegrationTest` を付けて実行し直し、実測の数字だけを報告する。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:build-and-test:0cb06418ec91709472835a5f5f3278309672385a651295cb7d541197c7521196 -->
-- 実際のブラウザのアクセシビリティの検査（axe）は、誤りを出した状態と、現実に近いデータ（2語の氏名など）で、ブランドカラーとテーマのすべての組について行う。user-management の U7 の 080 で初めて、make-you-chic-ui の Avatar（頭文字が2文字のとき）と dark の FormField の誤りの文字のコントラスト不足が出た（050〜070 は誤りの状態を見ず、氏名が1語だったため出なかった）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:bf749cf9922de8af8d667e42afabe703fc4bc49c92098bc0d879bd50e2f3dbc1 -->
+- 実際のブラウザのアクセシビリティの検査（axe）は、誤りを出した状態と、現実に近いデータ（2語の氏名など）で、ブランドカラーとテーマのすべての組について行う。user-management の U7 の 080 で初めて、make-you-chic-ui の Avatar（頭文字が2文字のとき）と dark の FormField の誤りの文字のコントラスト不足が出た（050〜070 は誤りの状態を見ず、氏名が1語だったため出なかった）。すべての組で行うのは、その Intent で変えた画面だけとし、変えていない画面は E2E の既存の検査に任せる（2026-11-07 依頼者の決定で緩めた）。 (learned 2026-09-28) <!-- cid:260925-user-management:code-generation:bf749cf9922de8af8d667e42afabe703fc4bc49c92098bc0d879bd50e2f3dbc1 -->
 - Delivery Planning でのカバレッジの実測は、./gradlew verify 全体ではなく :backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport で行い、jacocoTestReport.xml から手を入れる見込みのパッケージの値を読む（user-admin で約 5 分）。 (learned 2026-10-01) <!-- cid:260930-user-admin:delivery-planning:e35925faac38449777eadec784bc2546fb19d593b9a634f5af273fef22f9b364 -->
 - 画面のはみ出しの確かめ（E2E・axe）では、画面全体の横のスクロールだけでなく、開いたメニュー・ポップアップなど画面に固定で置く部品が画面の中に収まることも確かめる。表の右端に置く make-you-chic-ui の Dropdown は placement に bottom-end を指定する（user-admin の配備の後のスモークテストで、行の「操作」のメニューが右へはみ出していたのを E2E 120 が拾えなかった）。 (learned 2026-10-03) <!-- cid:260930-user-admin:deployment-execution:b5e3f019a0c5b8d77ffeefffb93397257a20b3d09a272885ed5d89cf991b043c -->
 - 木の画面の単体テスト・E2E・スモークテストでは、本物と同じ形の応答（子の有無の印を含む）を使い、すべての段の開閉を押して確かめる（role-menu の配備の後のスモークテストで、「自分の権限を見る」の木でテーブルの開閉を押すと自分自身を子に持って固まる不具合が見つかった。単体の見本のテーブルは子が無い形で本物と違い、E2E は選ぶだけで開閉を押していなかった）。 (learned 2026-10-14) <!-- cid:261004-role-menu:deployment-execution:617c2725a739e866d25a157a07f607a7d8eccb7ce66d3be91fa609e2f0aba46e -->
@@ -45,7 +45,7 @@
 - コード生成の段の承認の場は、最後のコードのコミットの後、記録だけのコミット（aidlc/ の下だけ）を積む前に開く。user-admin で R2・R3・R4 と承認の場の記録のコミットが先頭に続き、aidlc/ の外のコードの作業が見えないとして承認の場が断られた（REQUIRED_SOURCE_WORK_MISSING）。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:82a48423a89edaac5d5346295acd928c13c5ebc6b48abe2741f6c6f687196578 -->
 - squash の統合の前に、監査ログを含む aidlc/ の未コミットの変更をコミットしておく。user-admin の U3 の小さな直しの統合で git restore --source=HEAD -- aidlc/ を使い、未コミットの監査ログの追記（承認の場の断りと問いと答えの記録）を消して戻せなかった。 (learned 2026-10-03) <!-- cid:260930-user-admin:code-generation:6134b387e5869328fae2d8bafc2131cf7bf2251f06efa3069d5c9bc4c620406e -->
 - コード生成のコミットは計画の手順ごとではなく、import の向きを確かめて場所・機能ごとに区切り、最初のコミットの時点で型の検査（コンパイル）が通ることを確かめる（role-menu の B1・B3・B8・B9 で計画の手順ごとの区切りがビルドの通らない区切りになり、場所ごとに変えた）。コミットの提案は確かめたい点の問いとは別に、積む前に必ず尋ねる（B5 で確かめたい点の答えの後に承認なしで C1 を積んだ）。 (learned 2026-10-13) <!-- cid:261004-role-menu:build-and-test:1a3edd202ea8b42358822afbf8772db989401c8b6f89d39b7877d0ac0500d441 -->
-- 段の成果物の初稿ができた時と、段を承認した時は、コミットの可否を尋ねずに、その段の成果物と記録をコミットする（依頼者の指示）。それ以外の時のコミットは、これまでどおり提案して承認を得る。 (learned 2026-10-29) <!-- cid:261029-reference-lookup-cleanup:functional-design:03f6ea181d8da001a0e79d9eb79d6ade0d3faf856cbd5b89724b71612116b30f -->
+- 段の成果物の初稿ができた時と、段を承認した時は、コミットの可否を尋ねずに、その段の成果物と記録をコミットする（依頼者の指示）。`aidlc/` の下だけを変える記録のコミット（監査ログ・段の記録の追記・承認の場の記録など）も、尋ねずに積む（2026-11-07 依頼者の決定で緩めた）。それ以外のコミット（コード・設定・文書・テストを含むもの）は、これまでどおり提案して承認を得る。 (learned 2026-10-29) <!-- cid:261029-reference-lookup-cleanup:functional-design:03f6ea181d8da001a0e79d9eb79d6ade0d3faf856cbd5b89724b71612116b30f -->
 - コード生成の段を始める前に、E2E の報告（`frontend/playwright-report`・`frontend/test-results`）など git の対象外の生成物を消しておく。段の途中で消すと単位の一覧に載せられず戻せもしないため、承認の場が止まる。止まったときは、依頼者の明示の承認を得て、承認の場を開く操作1回だけに `AIDLC_SKIP_SOURCE_FRESHNESS=1` を付け、理由を承認の場の記録に残す。 (merged 2026-11-04)
 
 ## Deployment
@@ -62,6 +62,10 @@
 - スモークテストの手順を書く前に、(1) 確かめる項目が画面で変えられるものか設定で変えるものかをソースと README で確かめ、(2) 「切り替える」「選ぶ」などの操作が成り立つ前提（候補が2つ以上ある、自動で選ばれない）を手順と監査の期待の件数に入れ、(3) 監査に残るか（AuditEventType）をソースで確かめる。依頼者が画面を触ったときは、監査に残る操作（管理の操作・ログインの失敗・保存を押した回数など）をその場で聞いて期待の件数を合わせ、「済んだ」の答えの後も配備の後の複写で行の数と監査を数えてから判定する。 (merged 2026-11-04)
 - CI の結果を記録するとき（Build and Test、main への取り込みの前）は、最後の結論だけでなく試行ごとの結果（`gh run view --json attempt,jobs`）を確かめ、再実行で通ったものは1回目の失敗とそのテストも書く。前の取り込みの後のすべてのコミットが対象で、記録だけのコミットの CI も含める（ソースを変えなくても、新しく公表された脆弱性で落ちる）。 (merged 2026-11-04)
 - Dockerfile は手元の WAR を写すだけで、イメージを作り直しても WAR は作り直さない。配備の手順を書く前にこのことを確かめ、配備の前に WAR の SHA-256 と中身（直しの値など）を確かめる。 (merged 2026-11-04)
+
+- 配備では、内部DB の複写は配備の前の1回（バックアップ）を基本とする。配備の後の複写と、その複写での件数の数え（監査の種類ごとの件数など）は、内部DB の移行があるとき、またはスモークテストで監査に残る操作を行ったときだけ行う。戻しの練習は、移行があるときだけ行う（2026-11-07 依頼者の決定で緩めた）。
+- 配備に響かない Intent（テスト・検査の道具・文書・記録だけを変え、WAR とイメージの中身が変わらない Intent）は、範囲を決めるときに配備の段（Deployment Pipeline・Deployment Execution）を飛ばしてよい。そのときは、配備の段で確かめる予定だったこと（戻しの練習・ブラウザの確かめ・スモークテストの項目など）を、その Intent の最後の段の成果物に「次の配備へ引き継ぐこと」として一覧にする。次に配備する Intent の Deployment Pipeline は、配備されていない前の Intent の一覧をすべて読んで手順に入れる（2026-11-07 依頼者の決定。Intent 261102 の配備の段の確かめが別の Intent の配備で初めて見つかったことを受けた）。
+- スモークテストでは、AI が未認証の要求・アプリのログ・内部DB と対象DB の件数で確かめられる項目を先に行い、依頼者には画面の見た目の確かめと、パスワードが要る操作（ログインなど）だけを頼む（2026-11-07 依頼者の決定で緩めた）。パスワードを AI が扱わない決まりは変えない。
 
 ## Code Style
 
