@@ -18,6 +18,7 @@
 
 export { formatInstant } from './formatInstant'
 export { compareInstants, preserveInstant } from './instantText'
+export { timeZoneOffsetText } from './offsetLabel'
 export { parseLocalDateTime } from './parseLocalDateTime'
 export { canInterpretTimeZone } from './timeZoneGate'
 export type { CompareResult, FormatResult, OverlapChoice, ParseResult } from './types'

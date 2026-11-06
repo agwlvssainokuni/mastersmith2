@@ -27,8 +27,8 @@ function pad(value: number, length: number): string {
   return String(value).padStart(length, '0')
 }
 
-/** 時差の秒を ±HH:mm（秒が 0 でないときだけ ±HH:mm:ss）にする */
-function formatOffset(offsetSeconds: number): string {
+/** 時差の秒を ±HH:mm（秒が 0 でないときだけ ±HH:mm:ss）にする。選択肢の時差のラベル（offsetLabel.ts）も同じ形を使う */
+export function formatOffset(offsetSeconds: number): string {
   const sign = offsetSeconds < 0 ? '-' : '+'
   const abs = Math.abs(offsetSeconds)
   const hours = Math.floor(abs / 3600)

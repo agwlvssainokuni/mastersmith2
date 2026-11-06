@@ -19,8 +19,11 @@
 //   ブラウザが解釈できない名前を除き、時差（±HH:mm）を求める。結果は WeakMap で配列の参照に結び付ける。
 // - 先頭は「ブラウザに合わせる」（値は空の文字列）。保存済みの名前が一覧に無く解釈できるときは、その次に足す。
 // - ラベルは `名前 (±HH:mm)`。時差は画面を開いた時点の時刻（now）で 1 回だけ求める。名前は React の文字のノードとしてだけ描く。
+// - 時差は共有の timeZoneOffsetText で求める（Intent 261104-tz-options-perf）。時点の秒は組み立てごとに 1 回だけ求めて渡す。
+//   Temporal がある環境では整形器を作らず、無い環境では名前ごとに整形器の生成 1 回・formatToParts 1 回で求める。どちらの道も、
+//   表示のタイムゾーンの共有の整形器のキャッシュを使わず、入れもしない（解釈できない名前は時差が求まらないため除く）。
 
-import { canInterpretTimeZone, formatInstant } from '../../shared/format/timeZone'
+import { timeZoneOffsetText } from '../../shared/format/timeZone'
 
 /** 選択肢 1 つ（value が空の文字列は「ブラウザに合わせる」） */
 export interface TimeZoneOption {
@@ -40,18 +43,15 @@ export function readSupportedTimeZoneNames(): readonly string[] {
   }
 }
 
-/** formatInstant の ok の文字から時差（±HH:mm[:ss]）を取り出す。 */
-function offsetOf(text: string): string {
-  const match = /([+-]\d{2}:\d{2}(?::\d{2})?)$/.exec(text)
-  return match === null ? '' : (match[1] ?? '')
+/** 画面を開いた時点の秒（UTC の 1970-01-01T00:00:00 からの秒。端数は切り捨て） */
+function epochSecondsOf(now: Date): number {
+  return Math.floor(now.getTime() / 1000)
 }
 
-function offsetLabel(name: string, instant: string): string | null {
-  if (!canInterpretTimeZone(name)) {
-    return null
-  }
-  const result = formatInstant(instant, name)
-  return result.kind === 'ok' ? `${name} (${offsetOf(result.text)})` : null
+/** `名前 (±HH:mm)` のラベル。解釈できない名前（時差が求まらない）は null */
+function offsetLabel(name: string, epochSeconds: number): string | null {
+  const offset = timeZoneOffsetText(name, epochSeconds)
+  return offset === null ? null : `${name} (${offset})`
 }
 
 function entriesFor(names: readonly string[], now: Date): readonly TimeZoneOption[] {
@@ -59,17 +59,21 @@ function entriesFor(names: readonly string[], now: Date): readonly TimeZoneOptio
   if (cached !== undefined) {
     return cached.entries
   }
-  const instant = now.toISOString()
+  const epochSeconds = epochSecondsOf(now)
   const unique = new Set<string>(names)
   unique.add('UTC')
   const entries: TimeZoneOption[] = []
   for (const name of [...unique].sort(compareCodePoints)) {
-    const label = offsetLabel(name, instant)
+    const label = offsetLabel(name, epochSeconds)
     if (label !== null) {
       entries.push({ value: name, label })
     }
   }
-  cache.set(names, { at: now.getTime(), entries })
+  // 時刻が読めない（Invalid Date で秒が有限でない）ときは、どの名前も時差が求まらず空になる。その空の結果を配列に結び付けて
+  // 残すと、同じ配列で正しい時刻を渡しても空のままになるため、保存しない（レビューの R-02）
+  if (Number.isFinite(epochSeconds)) {
+    cache.set(names, { at: now.getTime(), entries })
+  }
   return entries
 }
 
@@ -96,6 +100,6 @@ export function buildTimeZoneOptions(
   if (saved === null || saved === '' || entries.some((entry) => entry.value === saved)) {
     return [head, ...entries]
   }
-  const extra = offsetLabel(saved, now.toISOString())
+  const extra = offsetLabel(saved, epochSecondsOf(now))
   return extra === null ? [head, ...entries] : [head, { value: saved, label: extra }, ...entries]
 }

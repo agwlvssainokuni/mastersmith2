@@ -1,0 +1,20 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR2.1", "FR2.2", "FR3.1", "FR3.2", "NFR1.1", "NFR1.2", "NFR1.3", "NFR2.1", "NFR2.2", "NFR3.1", "NFR3.2"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "frontend/src/shared/format/timeZone/offsetLabel.test.ts" },
+    { "id": "FR1.2", "status": "OK", "target": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts" },
+    { "id": "FR1.3", "status": "OK", "target": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts" },
+    { "id": "FR2.1", "status": "OK", "target": "frontend/src/shared/format/timeZone/offsetLabel.ts" },
+    { "id": "FR2.2", "status": "OK", "target": "frontend/src/shared/format/timeZone/offsetLabel.test.ts" },
+    { "id": "FR3.1", "status": "OK", "target": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts" },
+    { "id": "FR3.2", "status": "OK", "target": "frontend/src/shared/format/timeZone/offsetLabel.test.ts" },
+    { "id": "NFR1.1", "status": "OK", "target": "frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts" },
+    { "id": "NFR1.2", "status": "OK", "target": "frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts" },
+    { "id": "NFR1.3", "status": "Deferred", "target": "Build and Test: push の後の CI（frontendCoverage）の結果を記録する" },
+    { "id": "NFR2.1", "status": "OK", "target": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts" },
+    { "id": "NFR2.2", "status": "OK", "target": "frontend/src/features/preferences/buildTimeZoneOptions.test.ts" },
+    { "id": "NFR3.1", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "NFR3.2", "status": "OK", "target": "frontend/src/shared/format/timeZone/offsetLabel.ts" }
+  ]
+}

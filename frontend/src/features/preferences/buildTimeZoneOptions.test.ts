@@ -16,7 +16,11 @@
 import fc from 'fast-check'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as timeZone from '../../shared/format/timeZone'
-import { clearFormatterCache } from '../../shared/format/timeZone/timeZoneGate'
+import {
+  clearFormatterCache,
+  formatterCacheSize,
+  getFormatter,
+} from '../../shared/format/timeZone/timeZoneGate'
 import { buildTimeZoneOptions, readSupportedTimeZoneNames } from './buildTimeZoneOptions'
 
 const JANUARY = new Date('2026-01-15T00:00:00Z')
@@ -110,16 +114,70 @@ describe('buildTimeZoneOptions', () => {
 
   it('builds the offsets once per array and does not format again for the same array', () => {
     const names = Array.from(new Set(['Asia/Tokyo', 'Asia/Kolkata', 'America/New_York']))
-    const spy = vi.spyOn(timeZone, 'formatInstant')
+    const spy = vi.spyOn(timeZone, 'timeZoneOffsetText')
     buildTimeZoneOptions(names, null, JANUARY, BROWSER)
     const first = spy.mock.calls.length
 
     buildTimeZoneOptions(names, 'Asia/Kolkata', JULY, BROWSER)
     buildTimeZoneOptions(names, null, JULY, BROWSER)
 
-    expect(first).toBeGreaterThan(0)
+    // 1 回目は名前（UTC を足した 4 つ）ごとに 1 回。同じ配列の 2 回目以降は求め直さない
+    expect(first).toBe(names.length + 1)
     expect(spy.mock.calls.length).toBe(first)
     spy.mockRestore()
+  })
+
+  it('gives only the browser choice for an invalid date and does not keep that empty result for the array', () => {
+    const names = ['Asia/Tokyo', 'America/New_York']
+    const spy = vi.spyOn(timeZone, 'timeZoneOffsetText')
+    try {
+      const invalid = buildTimeZoneOptions(names, 'Europe/Paris', new Date(Number.NaN), BROWSER)
+
+      expect(invalid).toEqual([{ value: '', label: BROWSER }])
+      const afterInvalid = spy.mock.calls.length
+
+      const valid = buildTimeZoneOptions(names, null, JANUARY, BROWSER)
+
+      // 同じ配列でも、正しい時刻を渡すと作り直す（名前 2 つと UTC で 3 回求める）
+      expect(spy.mock.calls.length).toBe(afterInvalid + names.length + 1)
+      expect(valid.map((o) => o.value)).toEqual(['', 'America/New_York', 'Asia/Tokyo', 'UTC'])
+      expect(labelOf(valid, 'Asia/Tokyo')).toBe('Asia/Tokyo (+09:00)')
+
+      buildTimeZoneOptions(names, null, JULY, BROWSER)
+
+      // 正しい時刻で作った結果は配列に結び付けて残し、求め直さない
+      expect(spy.mock.calls.length).toBe(afterInvalid + names.length + 1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+
+  it('creates no formatter and calls formatToParts zero times for all the names (temporal path, regression)', () => {
+    const names = [...readSupportedTimeZoneNames()]
+    const created = vi.spyOn(Intl, 'DateTimeFormat')
+    const parts = vi.spyOn(Intl.DateTimeFormat.prototype, 'formatToParts')
+    try {
+      const options = buildTimeZoneOptions(names, null, JULY, BROWSER)
+
+      expect(options.length).toBeGreaterThan(100)
+      expect({
+        created: created.mock.calls.length,
+        formatToParts: parts.mock.calls.length,
+      }).toEqual({ created: 0, formatToParts: 0 })
+    } finally {
+      created.mockRestore()
+      parts.mockRestore()
+    }
+  })
+
+  it('leaves the shared formatter cache of the display time zone untouched', () => {
+    const tokyo = getFormatter('Asia/Tokyo')
+    const before = formatterCacheSize()
+
+    buildTimeZoneOptions([...readSupportedTimeZoneNames()], 'Asia/Tokyo', JULY, BROWSER)
+
+    expect(formatterCacheSize()).toBe(before)
+    expect(getFormatter('Asia/Tokyo')).toBe(tokyo)
   })
 
   it('reads the names the browser supports, including at least UTC-capable zones', () => {

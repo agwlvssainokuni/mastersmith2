@@ -118,9 +118,14 @@ function partNumber(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatP
  */
 export function wallAt(timeZone: string, epochSeconds: number): WallTime | null {
   const formatter = getFormatter(timeZone)
-  if (formatter === null) {
-    return null
-  }
+  return formatter === null ? null : wallWith(formatter, epochSeconds)
+}
+
+/**
+ * 時点（UTC の秒）を、渡した整形器（getFormatter と同じ項目のもの）で壁時計に直す。formatToParts は 1 回だけ呼ぶ。
+ * Intl が整形できない・数字が読めないときは null。年の範囲は確かめない。
+ */
+export function wallWith(formatter: Intl.DateTimeFormat, epochSeconds: number): WallTime | null {
   let parts: Intl.DateTimeFormatPart[]
   try {
     parts = formatter.formatToParts(new Date(epochSeconds * 1000))

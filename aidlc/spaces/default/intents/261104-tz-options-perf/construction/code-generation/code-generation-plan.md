@@ -2,9 +2,9 @@
 
 ## Summary
 
-- Builds: 表示のタイムゾーンの選択肢の組み立てを、名前ごとに整形器の生成 1 回・`formatToParts` 1 回で時差だけを求める形に直し、共有の整形器のキャッシュを使わないようにする
+- Builds: 表示のタイムゾーンの選択肢の組み立てを、Temporal があれば Temporal で時差だけを求め（整形器を作らない）、無ければ名前ごとに整形器の生成 1 回・`formatToParts` 1 回で求める形に直し、共有の整形器のキャッシュを使わないようにする
 - Touches: `frontend/src/shared/format/timeZone/`（時差のラベルを求める関数を足す）・`frontend/src/features/preferences/buildTimeZoneOptions.ts` とそのテスト
-- Tests: 単体テスト 約 8 件を足す・直す（時差の値の一致・回数の上限・共有のキャッシュ・既存の「配列ごとに1回」の直し）と、既存の性能のテストの前後の実測
+- Tests: 単体テスト 約 10 件を足す・直す（2 つの道それぞれの時差の値の一致・回数の上限・共有のキャッシュ・既存の「配列ごとに1回」の直し）と、既存の性能のテストの前後の実測
 
 ## 前提と入力
 
@@ -16,17 +16,30 @@
   - `frontend/src/shared/format/timeZone/timeZoneGate.test.ts`・`conversionPerformance.test.ts` ほか `timeZone/` のテスト → 既存の関数を変えないため、変えない。
 - 同じ値を持つファイル: 無し（定数・版・イメージは変えない）。
 
+## 計画の直し（2026-11-06、Step 3 の後）
+
+- Step 3 の捨ての試しで、`formatToParts` を1回にして項目を減らしても今の約 0.81 倍（見込み約 25.5 ms）にしかならず、NFR1.2 の線（T0 31.5 ms の半分、15.75 ms 以下）に届かないと分かった。時間の大半は名前ごとの `new Intl.DateTimeFormat` の生成だった（`code-summary.md`）。
+- 依頼者の決定（Code Generation の問い、B）: Temporal で時差を求め、Temporal が無い環境だけ Intl の形に戻る。試しでは名前全部で約 0.3 ms。
+- 対象のブラウザ: Temporal は Chrome・Edge 144（2026-01）と Firefox 139（2025-05）で使えるが、Safari の正式版はまだ対応していない（2026-03 時点の資料。Step 3b で MDN の対応表を確かめ直して記録する）。そのため Safari では Intl の道で動く。Node 26（テスト・CI）は Temporal を持つ。
+- 上流の記録との差（承認済みの文書は書き換えず、ここと `code-summary.md` に記録する）:
+  - 前の Intent（261102-timezone-ui-polish）の U1 の NFR Design の Q1: A「時差は `formatToParts` の壁時計の数字と元の時点の差から求める（求める道を1つにする）」に対し、選択肢の組み立てに限って Temporal の道を足す。時刻の表示（`formatInstant`）・入力（`parseLocalDateTime`）の求め方は変えない。Intl の道は Q1: A と同じ求め方のまま残す。
+  - Requirements Analysis の FR2.2 の上限（「1件あたり生成と `formatToParts` の回数」）は、道ごとに次の値とする: Temporal の道は `Intl.DateTimeFormat` の生成 0 回・`formatToParts` 0 回、Intl の道は生成 1 回・`formatToParts` 1 回。
+  - 制約「`longOffset` を使わない」「新しい依存を足さない」は保つ（Temporal は実行環境の標準の機能で、依存は足さない）。
+
 ## 作りの方針
 
-- `frontend/src/shared/format/timeZone/` に、時差のラベル（`±HH:mm`）を求める関数を足す（ファイル名は `offsetLabel.ts` を予定）。
+- `frontend/src/shared/format/timeZone/` に、時差のラベル（`±HH:mm`、秒の端数があれば `±HH:mm:ss`。今のラベルと同じ形）を求める関数を足す（ファイル名は `offsetLabel.ts` を予定）。
   - 時点の秒は、呼び出し側で1回だけ求めて渡す（名前ごとに時点の文字を読み直さない）。
-  - 名前ごとに、時差の計算に要る項目だけを持つ整形器を1つ作り（`timeZone` を明示。`longOffset` は使わない。制約と Q3: A）、`formatToParts` を1回だけ呼んで壁時計の数字を読み、「壁時計を UTC とみなした秒 − 元の時点の秒」で時差の秒を出す（前の Intent の U1 の Q1: A と同じ求め方）。表示の文字全体は組まない。
+  - **Temporal の道**: `globalThis.Temporal` があるときは、時点から `Temporal.Instant` を1回作り、名前ごとに `toZonedDateTimeISO(name)` の `offsetNanoseconds` から時差の秒を出す。整形器は作らない。型は `tsconfig.json` を変えずに、このファイルの中に必要な分だけの最小の型を置き、`globalThis` から有無を確かめて読む（`lib` に `ESNext.Temporal` を足さない）。
+  - **Intl の道**（Temporal が無いとき。Safari など）: 名前ごとに時差の計算に要る項目だけを持つ整形器を1つ作り（`timeZone` を明示。`longOffset` は使わない。制約と Q3: A）、`formatToParts` を1回だけ呼んで壁時計の数字を読み、「壁時計を UTC とみなした秒 − 元の時点の秒」で時差の秒を出す（前の Intent の U1 の Q1: A と同じ求め方）。表示の文字全体は組まない。
+  - どちらの道でも結果は同じにする。名前の形の検査を先に1回行い、Temporal の道で例外（解釈できない名前）になった名前は「無し」とする。Step 3b で、全部の名前と複数の時点で 2 つの道と今の形の結果が一致すること、名前の受け入れ（解釈できない名前の判定）も一致することを確かめる。一致しない名前があれば、作りに進まず依頼者に諮る。
+  - テストで道を選べるように、道を選ぶ口（Temporal を渡すか無しにするかを引数で受ける内部の関数）を置く。
   - 名前の形の検査（長さ・文字の正規表現）は1回だけ行う。解釈できない名前（整形器の生成が例外）は「無し」を返し、選択肢から除く（今の `canInterpretTimeZone` と同じ結果）。
   - この関数は `timeZoneGate.ts` の共有の整形器のキャッシュ（`getFormatter`）を使わず、入れもしない（FR3.1、Q4: A）。
   - 名前の形の検査は `timeZoneGate.ts` の既存の検査を使い回す（キャッシュに触れない形で出す。今の `getFormatter` の動きは変えない）。
   - `index.ts` から名前付きで出す。ESLint の時差の規則（`timeZoneConversionRules`）は緩めない。
 - R-05 への答え（組み立て中の保持先と無効化）: 組み立て用の整形器は、組み立ての1回の呼び出しの中だけで使い、どこにも持たない（名前ごとに作って使い捨てる。1回の組み立ての中で同じ名前は重複の除去の後に1回しか現れないため、持つ意味が無い）。「同じ配列の2回目以降は求め直さない」は、今の `buildTimeZoneOptions.ts` の `WeakMap`（配列 → 時差のラベルの一覧）をそのまま使う。無効化の条件も今と同じ（配列が別のものになれば作り直す。画面は `TimeZoneSelect` が開いたときに1回だけ配列と時刻を決める）。このキャッシュは `clearFormatterCache()` で消えないが、測りは各回で新しい配列を使うため当たらず、測り方は変わらない（NFR1.1）。
-- 回数の上限（FR2.2・NFR2.1）: 1件の名前あたり `Intl.DateTimeFormat` の生成 1 回・`formatToParts` 1 回とする。今の作り（生成 1・`formatToParts` 2）では `formatToParts` の上限で必ず落ちる。Step 3 の捨ての試しで作りを変える必要が出たときは、この値と計画を直して、計画の承認をやり直す。
+- 回数の上限（FR2.2・NFR2.1）: Temporal の道は1件の名前あたり `Intl.DateTimeFormat` の生成 0 回・`formatToParts` 0 回、Intl の道は生成 1 回・`formatToParts` 1 回とする。今の作り（生成 1・`formatToParts` 2）では、どちらの道の上限でも必ず落ちる。
 - 選択肢の中身（FR1）: ラベルの形・並び・UTC の追加・解釈できない名前の除外・保存済みの名前の扱いは変えない。保存済みの名前が一覧に無いときの1件も同じ関数で求める。
 
 ## 手順
@@ -34,17 +47,19 @@
 - [ ] Step 1: 準備 — `develop` から `fix/tz-options-perf` を作って移る。前の Intent の E2E の報告 `frontend/test-results/`（git の対象外）を消す（`project.md` の Change Control）。colima が動いていることを確かめる。
 - [ ] Step 2: テストの実行の確かめと直す前の値（T0）の実測 — `unit-test-instructions.md` の単位のコマンドが今のコードで通ることを確かめる。直す前のコードで、カバレッジの計測つきの画面のテスト全体（`npm run test:coverage`。`frontendCoverage` と同じ条件）を `caffeinate -dims` で包んで3回流し、性能のテストの出力（`[time-zone-options] names=… runs(ms)=… median=…`）を3回とも記録する。T0 は3回の中央値の中央値とする。流す前に `pmset -g assertions` で眠らない状態を確かめる。
 - [ ] Step 3: 捨ての試し — リポジトリの外（`~/.mastersmith-scratch/tz-options-perf/`、権限 700）の Node 26 の小さなスクリプトで、全部の名前について (i) 今の形（7 項目の整形器・`formatToParts` 2 回・表示の文字を組んで切り出す）、(ii) 7 項目の整形器・`formatToParts` 1 回・時差だけ、(iii) 項目を減らした整形器・`formatToParts` 1 回・時差だけ、を5回ずつ測り、(ii)・(iii) の時差の秒が (i) と全部の名前で一致することも確かめる。結果（版・名前の数・値）を `code-summary.md` に写す。(iii) でも今の (i) の半分に届かない見込みのときは、作りに進まず依頼者に諮る（NFR1.2 の材料を並べる）。
-- [ ] Step 4: 業務処理の層（共有の関数）の実装 — `frontend/src/shared/format/timeZone/offsetLabel.ts`（ライセンスヘッダー・日本語の説明つき）を作り、`index.ts` から出す。名前の形の検査を `timeZoneGate.ts` からキャッシュに触れない形で使えるようにする（既存の関数の動きは変えない）。
-- [ ] Step 5: 業務処理の層のテスト — `frontend/src/shared/format/timeZone/offsetLabel.test.ts` を足して流す:
-  - 時差の値: UTC・`Asia/Tokyo`・分の端数（`Asia/Kathmandu` +05:45・`Australia/Adelaide`・`America/St_Johns`）・夏時間の切り替えの前後（`America/New_York`）で、今の `formatInstant` から切り出した時差と一致する（FR1.1）。
+- [ ] Step 3b: Temporal の道の捨ての試し — Step 3 と同じ置き場で、全部の名前 × Step 3 と同じ 31 の時点で、Temporal の道の時差のラベルが (i) 今の形と全部一致すること、解釈できない名前・形の悪い名前（長すぎる名前・使えない文字・大文字小文字の違い・別名）の受け入れが今の `canInterpretTimeZone` と一致すること、5 回の時間を確かめる。対象のブラウザの Temporal の対応を MDN の対応表で確かめる。結果を `code-summary.md` に写す。一致しないものがあれば、作りに進まず依頼者に諮る。
+- [ ] Step 4: 業務処理の層（共有の関数）の実装 — `frontend/src/shared/format/timeZone/offsetLabel.ts`（ライセンスヘッダー・日本語の説明つき）を作り、`index.ts` から出す。Temporal の道と Intl の道を持ち、道を選ぶ内部の口をテスト用に置く。名前の形の検査を `timeZoneGate.ts` からキャッシュに触れない形で使えるようにする（既存の関数の動きは変えない）。
+- [ ] Step 5: 業務処理の層のテスト — `frontend/src/shared/format/timeZone/offsetLabel.test.ts` を足して流す。時差の値・解釈できない名前・性質ベースのテストは、Temporal の道と Intl の道の両方で流す（Intl の道は Temporal を無しにして呼ぶ）:
+  - 時差の値: UTC・`Asia/Tokyo`・分の端数（`Asia/Kathmandu` +05:45・`Australia/Adelaide`・`America/St_Johns`）・夏時間の切り替えの前後（`America/New_York`）・秒の端数の時差（1900 年の `Asia/Tokyo` など）で、今の `formatInstant` から切り出した時差と一致する（FR1.1）。
   - 解釈できない名前・形の悪い名前は「無し」を返す（FR1.2）。
   - 性質ベースのテスト（fast-check、種を記録）: `Intl.supportedValuesOf('timeZone')` から選んだ名前と任意の時点で、`formatInstant` から切り出した時差と一致する（FR1.1）。
-  - 回数: `Intl.DateTimeFormat` の生成と `formatToParts` の呼び出しを数え、1件あたりそれぞれ 1 回以下（FR2.2・NFR2.1）。
-  - 共有のキャッシュ: 呼ぶ前後で `formatterCacheSize()` が同じで、先に入れた名前の `getFormatter(name)` が同じものを返す（FR3.1）。
+  - 回数: `Intl.DateTimeFormat` の生成と `formatToParts` の呼び出しを数え、Temporal の道は 0 回、Intl の道は1件あたりそれぞれ 1 回以下（FR2.2・NFR2.1）。
+  - 道の選び方: Temporal がある環境では Temporal の道を使う（テストの Node 26 で、生成が 0 回であることで確かめる）。
+  - 共有のキャッシュ: 呼ぶ前後で `formatterCacheSize()` が同じで、先に入れた名前の `getFormatter(name)` が同じものを返す（FR3.1。両方の道）。
 - [ ] Step 6: 画面の部品の層（組み立て）の実装 — `frontend/src/features/preferences/buildTimeZoneOptions.ts` の `entriesFor`・`offsetLabel` を、時点の秒を1回求めて新しい関数を呼ぶ形に直す（`canInterpretTimeZone`・`formatInstant`・`offsetOf` の正規表現を使わない）。`WeakMap` と返す選択肢の形はそのまま。説明文を直す。
 - [ ] Step 7: 画面の部品の層のテスト — `buildTimeZoneOptions.test.ts` を直して流す:
   - `'builds the offsets once per array …'` の数える相手を新しい関数（または `Intl.DateTimeFormat` の生成）に変え、1回目は名前の数だけ、同じ配列の2回目は増えないことを確かめる（意図は保つ）。
-  - 回数の退行のテストを足す: 整形器のキャッシュを空にして全部の名前で組み立て、`Intl.DateTimeFormat` の生成と `formatToParts` の呼び出しが「名前の数 × 1」以下（NFR2.1）。直す前の作り（Step 2 の時点のコード）で落ちることを、Step 6 の前に一時的に流して確かめ、出力を記録する（NFR2.2）。
+  - 回数の退行のテストを足す: 整形器のキャッシュを空にして全部の名前で組み立て、`Intl.DateTimeFormat` の生成と `formatToParts` の呼び出しが、テストの環境（Temporal がある Node 26）で 0 回（NFR2.1。Temporal の道の上限）。直す前の作り（Step 2 の時点のコード）で落ちることを、Step 6 の前に一時的に流して確かめ、出力を記録する（NFR2.2）。Intl の道の上限（「名前の数 × 1」以下）は Step 5 のテストで確かめる。
   - 共有のキャッシュのテストを足す: 表示のタイムゾーンの整形器を先に入れてから組み立て、件数と `getFormatter(name)` の同一性が変わらない（FR3.1・FR3.2）。
   - そのほかの既存のテスト（ラベル・並び・UTC・除外・保存済み・性質）は変えずに通す（FR1）。
   - `TimeZoneSelect.test.tsx`・`TimeZoneOptionsPerformance.test.ts` も流す。
@@ -52,8 +67,16 @@
 - [ ] Step 9: 統合の前の検査 — README の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` を渡し、`caffeinate -dims` で包んだ `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` を1回流す（NFR3.1）。テストの件数・フロントエンドのカバレッジ（全体と `src/shared/format/timeZone/`・`src/features/preferences/`）・時間を記録する。`pmset -g log` で Sleep・DarkWake が無かったことを確かめる。
 - [ ] Step 10: コミット — import の向きを確かめ、場所ごとに区切ってコミットを提案し、依頼者の承認を得てから積む（案: 1. 共有の関数とテスト、2. 組み立ての直しとテスト。最初のコミットの時点で型の検査が通ること）。メッセージは日本語。
 - [ ] Step 11: 記録 — `code-summary.md`（作った・直したファイル、決めたこと、捨ての試しと前後の実測、実行していないテストとその理由、計画との差）と `traceability.json` を書く。`develop` への squash の統合は、承認の場の後に依頼者の承認を得て行う。push は依頼者が行い、CI の結果（NFR1.3）は Build and Test で記録する。
+- [x] Step 12: 承認の場の Request Changes（2026-11-07、レビューの R-01〜R-03）の直し — 範囲を絞ったコマンドで流して通し、Step 9 の `./gradlew verify` は流し直さない（変えるのはテストと組み立ての小さな分岐だけのため。全体は Build and Test で流す）:
+  - R-01: Safari など Temporal が無い環境の Intl の道は、組み立ての時間がほぼ速くならない（試しで今の形の約 0.86 倍）ことを、依頼者の決定 B の範囲として `code-summary.md` に明記する。`buildTimeZoneOptions` に道を選ぶ口が無いため、Temporal を無しにした組み立て全体の回数のテストは、`offsetLabel.test.ts` に「全部の名前で Intl の道を呼んだとき、生成と `formatToParts` が名前の数 × 1 以下」のテストとして足す（組み立てが名前ごとに `timeZoneOffsetText` を1回だけ呼ぶことは `buildTimeZoneOptions.test.ts` の既存のテストが確かめる）。
+  - R-02: `now` が `Invalid Date` のとき、空の結果を `WeakMap` に保存しないようにし、そのときの動き（選択肢が先頭の「ブラウザに合わせる」だけになり、同じ配列で正しい時刻を渡すと作り直される）を `buildTimeZoneOptions.test.ts` のテストに書く。
+  - R-03: 全部の名前 × 数時点（夏時間の切り替えの前後を含む）で、Temporal の道と Intl の道の時差のラベルが一致するテストを `offsetLabel.test.ts` に足す。
+  - R-04: この段では直さない。Build and Test で、同じ条件（verify の中・範囲を絞った実行）で直す前と後の `conversionPerformance` の値を並べて確かめる。
+  - 直した後に、場所ごとにコミットを提案し、依頼者の承認を得てから積む。`code-summary.md` と `traceability.json` を直す。
 
 ## 実行しないもの（この段では）
+
+- Safari（Temporal が無いブラウザ）での実際の動き: この PC の Playwright は Chromium だけのため、Intl の道は単体テスト（Temporal を無しにして呼ぶ）で確かめる。前の Intent の Q3: A と同じく、Firefox・Safari での値は試せていない。
 
 - E2E（`./gradlew e2eTest`）: `team.md` の決まりで、Intent の最後の Build and Test で流す。
 - CI: push の後に流れるため、Build and Test で結果を記録する（NFR1.3）。
@@ -67,7 +90,7 @@
 | FR2.2・NFR2.1・NFR2.2 | Step 5・Step 7（回数のテストと直す前に落ちることの記録） |
 | FR3.1・FR3.2 | Step 4・Step 5・Step 7 |
 | NFR1.1 | 測り方のテストを変えない（Step 7 で流すだけ） |
-| NFR1.2 | Step 2・Step 3・Step 8 |
+| NFR1.2 | Step 2・Step 3・Step 3b・Step 8 |
 | NFR1.3 | Build and Test（push の後の CI） |
 | NFR3.1・NFR3.2 | Step 4（ESLint の規則を緩めない）・Step 9 |
 

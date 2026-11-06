@@ -38,6 +38,7 @@ Step 2 で今のコードで通ることを確かめるときは、まだ無い 
 
 - 時刻は実時刻に頼らず、固定の時点（`2026-07-15T00:00:00Z` など）と夏時間の切り替えの前後の時点を渡す。
 - 回数のテストは `vi.spyOn(Intl, 'DateTimeFormat')` と `Intl.DateTimeFormat.prototype.formatToParts` の spy で数え、テストの終わりに `mockRestore` で戻す。整形器のキャッシュは `clearFormatterCache()` で空にしてから数える。
+- Temporal の道と Intl の道は、`offsetLabel.ts` の道を選ぶ内部の口に Temporal を渡すか無しにするかで切り替えて、両方を流す。`globalThis.Temporal` を消したり差し替えたりしない（同時に流れるほかのテストのファイルに響かないようにするため）。テストの環境（Node 26）は Temporal を持つ。
 - 共有のキャッシュの状態は、既存の `timeZoneGate` の `formatterCacheSize()`・`getFormatter()` を直接読む（新しい口は足さない）。
 
 ## テストのデータ
