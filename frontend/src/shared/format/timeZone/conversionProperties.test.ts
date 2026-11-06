@@ -157,12 +157,23 @@ describe('conversion properties', () => {
         const backward = compareInstants(right, left)
         expect(compareInstants(left, left)).toEqual({ kind: 'ok', order: 0 })
         if (forward.kind === 'ok' && backward.kind === 'ok') {
-          expect(Math.sign(forward.order)).toBe(-Math.sign(backward.order))
+          // 向きを入れ替えた比べは符号が逆になる。同じ時点どうしは両方 0 で、-Math.sign(0) の -0 と +0 を
+          // toBe（Object.is）が別の値とみなすため、符号の和が 0 になることで確かめる（CI の seed 1574882541 で落ちた）。
+          expect(Math.sign(forward.order) + Math.sign(backward.order)).toBe(0)
         } else {
           expect.unreachable('well formed instants must be comparable')
         }
       }),
-      { numRuns: 200 },
+      {
+        numRuns: 200,
+        // CI で落ちた反例（同じ時点を 2 つ）を毎回はじめに流す
+        examples: [
+          [
+            { seconds: 253402127978, fraction: '', zone: 'UTC' },
+            { seconds: 253402127978, fraction: '', zone: 'UTC' },
+          ],
+        ],
+      },
     )
   })
 })
