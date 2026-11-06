@@ -4281,3 +4281,404 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-06T20:03:22Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-06T20:05:56Z
+**Event**: HUMAN_TURN
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A","A","A"]
+**Message Id**: 425ae614
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md","entries":{"調べて分かったこと（判断の前提）":"e56db6771cc6fe5d","決まっていること（質問にしない）":"9028f4dadf1a42f7","Q1":"04bd65d27d580e28","Q2":"2a9fb88cad22c6f3","Q3":"f04c07e8424a07bb","Q4":"31a574b6d07b17ce","Sources":"a3cc009d7e9305e5"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:05:57Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: Q1. 配備する範囲はどうしますか？\n前の Intent 261102（時刻の画面・表示のタイムゾーン・内部DB の移行 V14）は、配備の段を初めから飛ばす範囲で、まだ配備も main への取り込みもしていません（49 コミット）。今回の直しは 261102 の上にあるため、分けて配備できません。\n推奨は A です。261102 が配備の段に回した確かめもここで引き受けられ、未配備の変更がこれ以上積み重なりません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:05:57Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: Q2. 内部DB の複写と、V14 の後の戻しの練習はどうしますか？\nV14 は列を足すだけで、戻すときはイメージだけを戻します。ただし、前の版のアプリ全体を V14 の後の内部DB で起動する確かめは、まだ誰もしていません。\n推奨は A です。実物のイメージと内部DB の写しで、戻せることを一度確かめられます。練習は使い捨てのコンテナで行い、動いているアプリには触れません。
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:05:57Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: Q3. スモークテストで使うブラウザはどうしますか？\nChrome は速い道（Temporal）を通り、Safari は Intl の道を通ります。Firefox は版によって違います。この PC には 3 つとも入っています。\n推奨は A です。この Intent の Intl の道と、261102 が回した Firefox・Safari の確かめを一度に済ませられます。保存は監査に残らないため、監査の件数の期待は変わりません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:05:57Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: Q4. 古いイメージの片付けはどうしますか？\n候補は mastersmith:pre-maintenance-update（新しい戻し先より古い）と mastersmith:perf-tz-bt（261102 の k6 だけに使った）です。\n推奨は A です。どちらも新しい戻し先より古いか、試験だけに使ったイメージです。消す前に、一覧で承認を得ます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-06T20:06:05Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-06T20:06:10Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A, Q2: A, Q3: A, Q4: A
+**Message Id**: 425ae614
+**Person Reply**: A\nA\nA\nA
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-06T20:07:48Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-06T20:08:55Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-06T20:30:06Z
+**Event**: HUMAN_TURN
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A"]
+**Message Id**: b4dc4abf
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md","entries":{"調べて分かったこと（判断の前提）":"e56db6771cc6fe5d","決まっていること（質問にしない）":"9028f4dadf1a42f7","Q1":"04bd65d27d580e28","Q2":"2a9fb88cad22c6f3","Q3":"f04c07e8424a07bb","Q4":"31a574b6d07b17ce","追加の質問の前に分かったこと":"c86ba8fb54597f80","F1. スモークテストの範囲":"e7b3317b414f4888","F2. 監視の区画（U4・U5 の S7）":"c7276644f6652b11","Sources":"a3cc009d7e9305e5"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:30:07Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: F1. スモークテストの範囲はどうしますか？\n261102 の各単位（U2〜U6）の設計に、配備の後の確かめがありました。その中には、監査に残る操作があります。U3 は既定の DSL の生成と破棄、U4 は sales.customers の作成・更新・削除です。作るのは目印つきの行だけで、終わりに消します。\n推奨は A です。どれも、配備した版で初めて見られる確かめです。対象は、実物の V14・見本の PG・実際のブラウザです。書き込みは確かめ用の行だけで、DSL は適用しません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-06T20:30:07Z
+**Event**: QUESTION_REPLIED
+**Session**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question**: F2. U4・U5 の S7（手元の監視のダッシュボードで 5xx を見る）はどうしますか？\n監視の設定は変わっていません。また、記録には colima の VM のメモリの余裕が約 100 MiB とあります。\n推奨は A です。同じ時間の範囲のアプリのログを数えれば、同じことが分かります。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-06T20:30:10Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-06T20:30:14Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: F1: A, F2: A
+**Message Id**: b4dc4abf
+**Person Reply**: A\nA
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-06T20:32:08Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md
+**Context**: operation > deployment-pipeline > deployment-strategy.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-06T20:32:54Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md
+**Context**: operation > deployment-pipeline > rollback-runbook.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-06T20:33:00Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:01Z
+**Event**: SENSOR_FIRED
+**Fire id**: d69933d7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:01Z
+**Event**: SENSOR_PASSED
+**Fire id**: d69933d7
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_FIRED
+**Fire id**: dd897e5f
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_PASSED
+**Fire id**: dd897e5f
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_FIRED
+**Fire id**: 773cf275
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_PASSED
+**Fire id**: 773cf275
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_FIRED
+**Fire id**: 15e337ac
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_PASSED
+**Fire id**: 15e337ac
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_FIRED
+**Fire id**: 8ed08309
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_PASSED
+**Fire id**: 8ed08309
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:02Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4cb903b8
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4cb903b8
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_FIRED
+**Fire id**: bec213f3
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: bec213f3
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 68
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_FIRED
+**Fire id**: c4e2488a
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: c4e2488a
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_FIRED
+**Fire id**: a3b648a9
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: a3b648a9
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 67
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_FIRED
+**Fire id**: 717f222b
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: SENSOR_PASSED
+**Fire id**: 717f222b
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 67
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-06T20:33:03Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-pipeline
+**Next Stage**: deployment-execution
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md=passed; required-sections@aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-strategy.md=passed; required-sections@aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/rollback-runbook.md=passed; required-sections@aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/deployment-pipeline-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/261104-tz-options-perf/operation/deployment-pipeline/cd-config.md=passed
+**Open Decisions**: 0
+**Question Id**: 9a99e191
+**Question Type**: gate
+**Question Chat**: 07795785-0874-4a44-9aa2-daaa2eb195a1
+**Question Shows**: sha256:ba5df4e4b043b18c460dce793412e8eac4332983ec8b293626238934ff7a367d
+
+---
