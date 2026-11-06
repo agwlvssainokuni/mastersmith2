@@ -146,7 +146,7 @@
     "slug": "tz-options-perf",
     "dirName": "261104-tz-options-perf",
     "scope": "bugfix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "f639a8a4"
   }
 ]
