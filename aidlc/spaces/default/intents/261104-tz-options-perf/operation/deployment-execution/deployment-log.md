@@ -28,8 +28,10 @@
 | 10 | 21:36:57〜21:37:07 | 配備の後の複写 | `mastersmith-data-202611070636-after-tz-options-perf.tgz`（43,379 バイト、権限 600）。起動し直しの後も healthy・イメージ ID 一致。2.2 の数え |
 | 11 | 21:38:31〜21:38:40 | 戻しの練習 | 通過（`health-check-report.md` 3節）。使い捨てのコンテナ・ボリューム・環境変数のファイルを消した |
 | 12 | — | 配備の記録のコミット | この記録の初稿でコミットする |
-| 13 | — | 古いイメージの片付け | 依頼者の承認の後に行う（3節に追記する） |
-| 14〜16 | — | `main` への取り込み・追記・プッシュ | 依頼者の承認の後に行う（3節に追記する） |
+| 13 | 21:4x | 古いイメージの片付け | 2つを消した（3.1） |
+| 14 | 23:1x | `main` への取り込み | CI の試行の確かめ（3.2）と不安定なテストの直し（3.3）の後、`main` を `b2990415` へ fast-forward（3.4） |
+| 15 | — | 取り込みの結果の追記 | この追記（`main` の後の `develop` だけのコミット） |
+| 16 | — | プッシュ | 依頼者が `develop` と `main` をプッシュする |
 
 - アプリが止まったのは、順 5〜7 の約 48 秒（20:55:04〜20:55:52）と、順 10 の約 10 秒（21:36:57〜21:37:07）。見込み（約 2〜3 分と約 10 秒）の内。
 
@@ -60,7 +62,44 @@ T0 の後の監査の内訳と、期待との照らしは `smoke-test-results.md
 
 ## 3. 片付けと `main` への取り込み
 
-（順 13・14 の後に追記する）
+### 3.1 古いイメージの片付け（順 13、Deployment Execution の Q4: A）
+
+| 名前 | ID | 理由 | 使うコンテナ |
+|---|---|---|---|
+| `mastersmith:pre-maintenance-update` | `d8a467b60f6f` | 新しい戻し先より古い（261101 の前の版） | 0 件 |
+| `mastersmith:perf-tz-bt` | `3a3fd38094b8` | 261102 の Build and Test の k6 だけに使った | 0 件 |
+
+- `docker system df` のイメージ: 片付けの前 14 個・8.43GB（回収できる 3.476GB）→ 後 12 個・7.562GB（回収できる 2.609GB）。
+- 残したもの: `mastersmith:local`（`4ee5fb45593e`）と戻し先 `mastersmith:pre-tz-options-perf`（`ffd2b8380460`）。
+
+### 3.2 CI の試行の確かめ（順 14）
+
+前の取り込み（`f388fb8d`）の後の `develop` の CI の run（Dependabot の run を除く）を、試行ごと（`gh api …/runs/<id>/attempts/<n>/jobs` と job のログ）に確かめた。下の表の run 以外は、すべて1回目で success。
+
+| コミット | run | 試行 | 結果 | 失敗した所と原因 |
+|---|---|---|---|---|
+| `9e9a000c` | 41571944729 | 1・2・3 | failure | `:frontendTypecheck`。make-you-chic-ui の固定先を上げて増えたアイコンの名前が `allowedIcons.ts` に無かった。次の `9237ffaa` で直った（261102 の記録には無かった） |
+| `ecb688d4` | 41679218431 | 1 | failure | `TimeZoneOptionsPerformance.test.ts`（中央値 108.3 ms）。性能のテストの1回目の失敗。この Intent で直した |
+| `ecb688d4` | 41679218431 | 2 | failure | `conversionProperties.test.ts`（`+0` と `-0` の比べ）。テストの不具合で、3.3 で直した（どの記録にも無かった） |
+| `ecb688d4` | 41679218431 | 3 | success | — |
+| `f2f2eb9b` | 41823570241 | 1 | failure | `TimeZoneOptionsPerformance.test.ts`（中央値 106.4 ms）。この Intent の元の失敗 |
+| `5304587c` | 42299951824 | 1 | success | 検査の job 38分52秒 |
+| `b2990415` | 42306484514 | 1 | success | 検査の job 31分10秒。選択肢の組み立ての中央値 0.8 ms・1.5 ms（カバレッジつき） |
+
+- OSV-Scanner の警告は、どの run でも同じ 6 件（CVSS 7 未満。止める基準の外）。
+
+### 3.3 不安定なテストの直し（Deployment Execution の Q3: A）
+
+- 原因: `conversionProperties.test.ts` の「orders instants consistently」が、同じ時点どうしの比べで `-Math.sign(0)` の `-0` と `+0` を `toBe`（`Object.is`）で比べて落ちていた。本体の `compareInstants` は正しい。
+- 二段の確かめ（`team.md`）: CI の seed `1574882541`・path `4:38:38:76:76` を一時的に渡して、直す前のテストが手元で同じ反例で落ちることを確かめた。直した後は同じ seed で通った。反例を `examples` で毎回流す形にし、直す前の比べ方では3回とも落ち、直した後は3回とも 6 件すべて通ることを確かめた。同じ書き方はほかのテストに無かった。
+- 関門: `./gradlew :backend:cleanTest :backend:cleanIntegrationTest verify` が BUILD SUCCESSFUL in 29m 15s（21:46:33〜22:15:48、画面 274 ファイル・3063 件、眠り 0）。
+- 統合: ブランチ `fix/tz-options-perf-props` から `develop` へ squash で `b2990415`。ブランチは消した。直したのはテストと記録だけで、配備した WAR（`d9e35417` から作ったもの）とアプリのコードは変わらないため、配備はやり直していない。
+
+### 3.4 `main` への取り込み（順 14、依頼者の承認）
+
+- `main` が `develop` の祖先であることを確かめ、`main` を `f388fb8d` から `b2990415` へ fast-forward した（作業ツリーに監査ログの追記があったため、ブランチを切り替えず `git fetch . develop:main` で行った。fast-forward にならないときは拒まれる形）。タグは付けていない。
+- リリースに入ったのは、Intent 261102-timezone-ui-polish とこの Intent の変更。配備した版のアプリのコードは `985b7e6c`（`main` の先頭 `b2990415` と同じアプリのコード）。
+- `origin` への `develop` と `main` のプッシュは依頼者が行う（順 16）。
 
 ## 4. 計画との差・気づき
 
