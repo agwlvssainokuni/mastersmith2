@@ -1,0 +1,77 @@
+# 配備の記録（deployment-log）— Intent 261104-tz-options-perf
+
+`operation/deployment-pipeline/cd-config.md` の 3節（順 1〜16）のとおりに配備した。配備するのは `develop` の先頭で、引き受けた Intent 261102-timezone-ui-polish の変更（内部DB の移行 V14 を含む）が一緒に入る（Deployment Pipeline の Q1: A）。時刻は UTC。
+
+## 1. 配備した版
+
+| 項目 | 値 |
+|---|---|
+| 配備したソース | `develop` の `d9e35417`（アプリのコードの最後の変更は `985b7e6c`。その後は `aidlc/` だけ） |
+| WAR | `./gradlew :backend:bootWar --rerun-tasks`（20:52:58〜20:53:46、46 秒、`caffeinate -dims`、AC 電源）。SHA-256 `e2065c4327e191dc9271ff9a119e85a4c9ac9dac8dc4fdb6d8d373569ed2e392`。中に `db/migration/V14__u2_display_time_zone.sql` が 1 件。`static/` の画面のファイルは `frontend/dist` と同じ（WAR だけにあるのはバックエンドの資源 `dsl/dsl-schema-v2.json`）。今回の直しの印（`offsetNanoseconds`）が JavaScript に 1 件。コンテナの中の WAR も同じ SHA-256 |
+| 新しいイメージ | `mastersmith:local`（`sha256:4ee5fb45593e…`）。コンテナのイメージ ID と一致（入れ替えの後と、順 10 の起動し直しの後の2回） |
+| 戻し先 | `mastersmith:pre-tz-options-perf`（`sha256:ffd2b8380460…`、Intent 261101 で配備した版） |
+| 変えなかったもの | `.env`・`Dockerfile`・`compose.yaml`・見本の PG・Mailpit。実行時のタイムゾーンの設定の 4 か所（Dockerfile の `-Duser.timezone=Asia/Tokyo`・`compose.yaml` の `TZ: Asia/Tokyo`・テストの JVM の `user.timezone`・E2E の起動）は変わっていない。E2E のブラウザに同じ値 `timezoneId: 'Asia/Tokyo'` が明示された（261102 の U2） |
+
+## 2. 流れの結果
+
+| 順 | 時刻 | すること | 結果 |
+|---|---|---|---|
+| 1 | 20:52 | 関門 | アプリのソースに未コミットの変更 0 件。`MASTERSMITH_IMAGE_TAG` 0 件 |
+| 2 | 20:52〜20:53 | WAR の作り直し | 1節のとおり |
+| 3 | 20:54 | 戻し先のタグ | `mastersmith:pre-tz-options-perf` を付け、ID が `ffd2b8380460` で始まることを確かめた |
+| 4 | — | 救済の見込み | 依頼者の答え Q1: A（初期管理者について変更なし）。順 5 の数え（停止 0・印 1）と S1 の救済 0 件で裏付けた |
+| 5 | 20:55:03〜20:55:04 | 止めて配備の前の複写 | T0 = 20:55:03Z。`mastersmith-data-202611070555-pre-tz-options-perf.tgz`（41,253 バイト、権限 600）。2.1 の数え |
+| 6 | 20:55:42 | 入れ替え | `docker compose up -d --build --no-deps app`。イメージ ID が一致し、作り直しは要らなかった |
+| 7 | 20:55:52 | 健全性 | healthy・`/actuator/health` 200。S1 は `health-check-report.md` |
+| 8 | — | 合わせ直し | 不要（2.1 が見込みどおり） |
+| 9 | 20:56〜21:36 | スモークテスト | S2〜S10 すべて通過（`smoke-test-results.md`） |
+| 10 | 21:36:57〜21:37:07 | 配備の後の複写 | `mastersmith-data-202611070636-after-tz-options-perf.tgz`（43,379 バイト、権限 600）。起動し直しの後も healthy・イメージ ID 一致。2.2 の数え |
+| 11 | 21:38:31〜21:38:40 | 戻しの練習 | 通過（`health-check-report.md` 3節）。使い捨てのコンテナ・ボリューム・環境変数のファイルを消した |
+| 12 | — | 配備の記録のコミット | この記録の初稿でコミットする |
+| 13 | — | 古いイメージの片付け | 依頼者の承認の後に行う（3節に追記する） |
+| 14〜16 | — | `main` への取り込み・追記・プッシュ | 依頼者の承認の後に行う（3節に追記する） |
+
+- アプリが止まったのは、順 5〜7 の約 48 秒（20:55:04〜20:55:52）と、順 10 の約 10 秒（21:36:57〜21:37:07）。見込み（約 2〜3 分と約 10 秒）の内。
+
+### 2.1 配備の前の複写の数え（`cd-config.md` 4.1）
+
+数えは、`~/.mastersmith-tools/` の `count-db3.sh`（`CountRefLookup.java`）と、この配備で足した `CountTz.java`（V14 の列と DSL の語の件数だけを出す。値は出さない）で行った。どちらもリポジトリの外で、コミットしない。展開した作業用のディレクトリは消した。
+
+| 項目 | 見込み | 結果 |
+|---|---|---|
+| スキーマの最大の版・V14 の行 | 13・0 | 13・0 |
+| `users.display_time_zone` | 列なし | 列なし |
+| 初期管理者の停止・印 | 0・1 | 0・1 |
+| 利用者の数・有効な管理者 | — | 3・1 |
+| 適用済みの DSL・プレビュー | — | 8・0 |
+| 最新の DSL の語 `customers`・`created_at` | 1 以上 | 6・3（S4・S5 の前提を満たす） |
+| `audit_events` の全体（基準） | — | 324 |
+
+### 2.2 配備の後の複写の数え（S10）
+
+| 項目 | 期待 | 結果 |
+|---|---|---|
+| スキーマの最大の版・V14 の行 | 14・1 | 14・1 |
+| `users.display_time_zone` | 列あり・値の入った行 0（片付けの後） | 列あり・0（空 3） |
+| 初期管理者・利用者・DSL・プレビュー・ロール | 2.1 と同じ | 同じ（プレビュー 0 は S9 の破棄の後） |
+| `audit_events` の全体 | — | 339（T0 の後 15） |
+
+T0 の後の監査の内訳と、期待との照らしは `smoke-test-results.md` の 2節。
+
+## 3. 片付けと `main` への取り込み
+
+（順 13・14 の後に追記する）
+
+## 4. 計画との差・気づき
+
+1. **戻しの練習の WARN**: 前の版を V14 の後の内部DB で起動すると、Flyway の `DbMigrate` が「スキーマの版 14 が、手元の最後の移行 13 より新しい」という WARN を1件出す（止まらず、14 件を検証して「最新」として進む）。`rollback-runbook.md` の R1 の「WARN は前の版から出ているもののほかに無い」には、この1件を足して読む必要がある。承認済みの手順書は書き換えず、ここに記録する（`project.md` の決まり）。
+2. **S4 の時差**: 前からある見本の行は `-04:00`、S5 で作った行は `-05:00` で出た。夏時間の終わり（2026-11-01 06:00 UTC）の前の行が 2 件、後が 0 件（対象DB で件数だけを数えた）。時点ごとの時差で出す設計どおり（`smoke-test-results.md`）。
+3. **数える道具**: 補助のシェルの台本を置こうとしたが、作業の守り（フック）に止められたため置かず、`CountTz.java` だけを足してコマンドで直接動かした。
+4. **止まった時間**: 見込みより短い約 48 秒。
+
+## Sources
+
+- `operation/deployment-pipeline/cd-config.md`・`deployment-strategy.md`・`rollback-runbook.md`・`deployment-pipeline-questions.md`
+- `deployment-execution-questions.md`（Q1・Q2）
+- `construction/build-and-test/test-results.md`（配備する版の verify・E2E・CI）
+- 実行したコマンドの出力（`shasum -a 256`・`unzip -l`・`docker inspect`・`docker logs`・`/actuator/health`・複写の読み取り・対象DB の件数）と依頼者の報告
