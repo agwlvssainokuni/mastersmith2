@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、表示のタイムゾーンの選択肢の性能のテストの測り方とカバレッジの設定（K-108）、直し方の候補と制約（K-109）、`frontend/vitest.config.ts` の今の形（K-110 の K-90 の訂正）を足した。所見の本文はこの文書（K-108・K-109）と `architecture.md`（K-106・K-107）。ほかの節は前回以前の記録による。
+> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、1コマンドの検査の中の画面のテストの回数（K-112）、カバレッジの判定と結合テストの関わり（K-114）、CI の呼び方（K-115）、書き換える決まりと文書の箇所（K-117）を足し、「テスト」「CI と依存」の節を今の値に直した（Node 26・OSV-Scanner 2.7.0。K-118）。所見の本文はこの文書（K-112・K-114・K-115・K-117）と `architecture.md`（K-111・K-113・K-116）。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、表示のタイムゾーンの選択肢の性能のテストの測り方とカバレッジの設定（K-108）、直し方の候補と制約（K-109）、`frontend/vitest.config.ts` の今の形（K-110 の K-90 の訂正）を足した。所見の本文はこの文書（K-108・K-109）と `architecture.md`（K-106・K-107）。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、今回の範囲（日時の型・接続の時差・サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭）の技術的負債と、それを確かめているテストの置き場（ファイル名の grep）を足した。所見の本文は `architecture.md`（K-94〜K-99）と `code-structure.md`（K-100・K-102〜K-104）。テストの件数とカバレッジの実測の値は取っていない。
 >
@@ -11,26 +13,70 @@
 ## テスト
 
 - 置き場: `backend/src/test/java/cherry/mastersmith/`（機能ごと、単体 `XxxTest`・結合 `XxxIT`、機能ごとの `testsupport/`）、`frontend/src/**/*.test.ts(x)`（対象と同じ場所）、`frontend/e2e/`（`*.e2e.ts` 22 本（010〜195、2026-11-01 に数えた）、`./gradlew e2eTest`、`verify` と CI の外）。
+- 数（2026-11-08、`find`）: `*Test.java` 312・`*IT.java` 278。単体は `:backend:test`（`includeTestsMatching("*Test")`）、結合は `:backend:integrationTest`（`includeTestsMatching("*IT")`）で、同じ `src/test/java` から名前で分ける（`backend/build.gradle.kts` 135〜156 行）。結合テストの前提と並列の設定は `architecture.md` の K-113。
 - 道具: JUnit 5・Spring Boot Test・Testcontainers（MySQL・MariaDB・PostgreSQL）・jqwik・ArchUnit／Vitest・Testing Library・user-event・vitest-axe・fast-check／Playwright と axe-core。
 - 境界の構造の検査（ArchUnit）は 19 ファイル（`find` で数えた）: `ArchitectureTest`・`ApiAccessArchitectureTest` と、`access`・`appearance`・`audit`・`auth`・`businessdata`・`dsl`・`dslmanage`（2つ）・`group`・`invitation`・`mail`・`navigation`・`role`・`targetdb`（`TargetDbBoundaryArchitectureTest` と `ExtensionOrderArchitectureTest`）・`user`・`useradmin`。`businessdata` の境界テストの `@DisplayName` から読める規則: 読み取り側はトランザクションと `JdbcTemplate` を使わない、`RowSqlExecutor` だけが JDBC の接続から文を作る、`businessdata.repository` は `targetdb.service` に依存しない、`businessdata` に依存してよいのは `audit` の `domain` だけ。
 - `businessdata` のテストは `domain`・`repository`（`RowSqlExecutorTest`・`RowDialectTest`・`RowSqlFailureClassifierTest` など）・`service`・`testsupport`（`CountingDataSource` など）に分かれる（ファイル名の一覧のみ。中身は読んでいない）。
 
 ## カバレッジ
 
-- バックエンドは JaCoCo。全体とパッケージごとに行 80%・分岐 70%。全体の合計で判定する既存のパッケージ `packagesJudgedByTotal` は 7 つ（`backend/build.gradle.kts` 213 行〜の `packagesJudgedByTotal`: `access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`。`team.md` の記録と一致する）。`businessdata`・`targetdb` はこの一覧に無く、パッケージごとの下限が当たる。
+- バックエンドは JaCoCo。全体とパッケージごとに行 80%・分岐 70%。全体の合計で判定する既存のパッケージ `packagesJudgedByTotal` は 7 つ（`backend/build.gradle.kts` 213 行〜の `packagesJudgedByTotal`: `access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`。`team.md` の記録と一致する。2026-11-08 にも同じ 7 つを確かめた）。`businessdata`・`targetdb` はこの一覧に無く、パッケージごとの下限が当たる。
 - 今回（2026-10-29）も `packagesJudgedByTotal`（`backend/build.gradle.kts` 213〜221 行）は 7 パッケージで `team.md` と一致することを確かめた。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無く、この Intent で手を入れても一覧は増減しない見込み（`common.web` などに手を入れる場合は `team.md` の外す義務が発生する）。
 - 全体の下限（行 80%・分岐 70%）とパッケージごとの下限の規則は `backend/build.gradle.kts` 233〜253 行付近（`rule` が2つ。2つ目は `element = PACKAGE`・`excludes = packagesJudgedByTotal`）。
 - 画面は `frontend/vitest.config.ts` の `thresholds`（前回の記録による。今回は読んでいない）（`lines: 80`・`branches: 70`、65〜68 行）。
-- 2026-11-06 に読み直した `frontend/vitest.config.ts`（80 行）: `coverage` は `provider: 'v8'`・`allowExternal: true`・`include` は `src/**/*.{ts,tsx}` と `../perf/redact-k6-evidence.mjs`・`exclude` は `src/main.tsx`・`src/**/*.d.ts`・`src/**/*.test.{ts,tsx}`・`reporter` は `text`・`html`・`json-summary`・`thresholds` は `lines: 80`・`branches: 70`（66〜77 行）。`projects` は `eslint-config`（ESLint の設定を読む2本を先に1つだけで流す、`groupOrder: 0`）と `unit`（`groupOrder: 1`）。並列の制限（`pool`・`maxWorkers`・`fileParallelism`）は無い。K-90 の「`coverage.include` は `src/` だけ」は前の Intent の T1 で直っている（K-110）。
+- 2026-11-06 に読み直した `frontend/vitest.config.ts`（80 行）: `coverage` は `provider: 'v8'`・`allowExternal: true`・`include` は `src/**/*.{ts,tsx}` と `../perf/redact-k6-evidence.mjs`・`exclude` は `src/main.tsx`・`src/**/*.d.ts`・`src/**/*.test.{ts,tsx}`・`reporter` は `text`・`html`・`json-summary`・`thresholds` は `lines: 80`・`branches: 70`（66〜77 行）。`projects` は `eslint-config`（ESLint の設定を読む2本を先に1つだけで流す、`groupOrder: 0`）と `unit`（`groupOrder: 1`）。並列の制限（`pool`・`maxWorkers`・`fileParallelism`）は無い。K-90 の「`coverage.include` は `src/` だけ」は前の Intent の T1 で直っている（K-110）。2026-11-08 に読み直し、変わっていない（80 行）。
+
+**K-112 画面のテスト（Vitest）が `verify` の中で2回流れる（2026-11-08）（`build-and-verify`・`frontend-feature-preferences`・`frontend-shared-format`）**
+
+- 確かめた事実:
+  - `build.gradle.kts` の `npmScript`（173〜181 行）が npm のスクリプトを呼ぶ Gradle のタスクを作る。`frontendTest`（216 行）は `npm run test`、`frontendCoverage`（217〜220 行）は `npm run test:coverage`。どちらも `frontendInstall` と `vendorBuild` に依る。
+  - `frontend/package.json`（22〜23 行）: `test` は `NODE_OPTIONS=--no-experimental-webstorage vitest run`、`test:coverage` は同じに `--coverage` を足したもの。対象のテストは同じ（`vitest.config.ts` の projects 2 つ。`include` に差は無い）。
+  - `verify` の段では `frontendTest` が 5 の段（`verifyUnitTest`）、`frontendCoverage` が 7 の段（`verifyCoverage`）にある（`build.gradle.kts` 466・469〜476 行）。画面の全件のテストが計測なしと計測つきで2回流れる。
+  - 時間を測って目標を超えたら失敗にするテスト2つ（`frontend/src/shared/format/timeZone/conversionPerformance.test.ts`・`frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts`）も2回判定される（`docs/verification.md` 28 行が「カバレッジなし（5 の段）とカバレッジつき（7 の段の `frontendCoverage`）の2回流れ、どちらでも判定します」と書く。流し読み）。
+  - npm のタスクは入力・出力を宣言しないため（`frontendBuild` などを除く）、Gradle の UP-TO-DATE で飛ばされず毎回流れる。
+- 見立て（未検証）: 1回にするなら `frontendCoverage` だけを残す形が自然で、性能のテストは計測つきの1回だけで判定されることになる（前の Intent で CI の失敗が出たのも計測つきの回。K-108）。どの段に置くかは K-116 の順の決まりと合わせて決める。時間がどれだけ減るかは測っていない。
+
+**K-114 バックエンドのカバレッジの判定は結合テストの実行記録に依る（2026-11-08）（`build-and-verify`）**
+
+- 確かめた事実:
+  - `coverageExecutionData`（`backend/build.gradle.kts` 175〜177 行）は `build/jacoco` の `test.exec` と `integrationTest.exec` を `fileTree` の `include` で拾う。jacoco のプラグインはすべての `Test` のタスクに計測を付けるため、`integrationTest` も `integrationTest.exec` を書く。
+  - `jacocoTestReport`（187〜196 行）と `jacocoTestCoverageVerification`（223〜257 行）は、テストのタスクに `dependsOn` せず `mustRunAfter(tasks.test, integrationTest …)` だけを持つ。`verify` の中では 7 の段の要素として呼ばれ、5・6 の段の後に流れる。
+  - 判定の規則は全体と `element = "PACKAGE"`（`excludes = packagesJudgedByTotal`）の2つで、どちらも行 0.80・分岐 0.70。
+  - `team.md` の Testing Posture は、`packagesJudgedByTotal` のパッケージに手を入れる Bolt で、`:backend:cleanTest :backend:cleanIntegrationTest` を付けた `./gradlew verify` でカバレッジを実測して記録する決まりを持つ。`project.md` の Testing Posture は、Delivery Planning の実測を `:backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` で行う決まりを持つ。
+- 見立て（未検証）: `integrationTest` を流さずに判定すると、`fileTree` が無いファイルを黙って外すため報告は作れるが、IT でしか通らない層（`web` など）のパッケージは下限を下回り、`jacocoTestCoverageVerification` が落ちる見込み。`build/jacoco/integrationTest.exec` が前の回のまま残っていると、古い実行記録が混ざって判定・参考値がずれる（どちらも流して確かめていない）。
+
+**K-115 CI は `./gradlew verify` を引数なしで1本流す（2026-11-08）（`build-and-verify`）**
+
+- 確かめた事実（`.github/workflows/ci.yml` の全文）:
+  - きっかけは `develop` への push・`v*` のタグ・手動（`workflow_dispatch`）。`concurrency` は ref ごとで取り消さない。
+  - ジョブ `verify`（`ubuntu-latest`・`timeout-minutes: 60`）: サブモジュールごと全履歴を取得（`fetch-depth: 0`）→ JDK 25（Temurin）→ Node 26（npm のキャッシュは2つの lockfile）→ `gradle/actions/setup-gradle` v6.4.1 → Gitleaks 8.30.1 と OSV-Scanner 2.7.0 を版と SHA-256 で確かめて入れる → `./gradlew verify`（83〜84 行、`-P` の引数なし）→ WAR を 30 日保存。
+  - ジョブ `release`（タグのとき）は検査を通った WAR を GitHub のリリースに添付する。
+  - GitHub Actions は環境変数 `CI=true` を設定するため、対象DB の IT は Docker が無ければ失敗する（`ContainerRuntimeCheck`。`architecture.md` の K-113）。
+- 今回の Intent への意味: CI を今までどおり `verify` の1本にするなら、`ci.yml` は変えずに済む見込み。`-PitForks` のような手元だけの口は、`-P` を渡さない CI では既定（並べない）になる形にする。`team.md` の「`verify` の時間と CI の時間を測って記録する（CI の上限の7割の約 42 分）」は、CI が `verify` のままなら物差しが変わらない。
+
+**K-117 書き換える決まりの文と、手順を直す文書の箇所（2026-11-08）（`build-and-verify`）**
+
+- 決まり（`aidlc/spaces/default/memory/`。どれも今の文は「統合の前に全件の `verify`」を前提にしている）:
+  - `project.md` の Mandated: 「ALWAYS 統合前に、フォーマット・リンタ・ビルド・全テスト・秘密情報の検出・依存関係の脆弱性検査（重大度 High 以上）が通っていることを確認する」。
+  - `project.md` の Way of Working: 「ローカルの1コマンドの検査は Gradle の1つのタスク（./gradlew verify）を入口にし…CI も同じタスクを呼ぶ」。
+  - `project.md` の Testing Posture: `cleanTest`・`cleanIntegrationTest` を付けて実測する行、Delivery Planning の実測の行、colima の `DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` の行。
+  - `team.md` の Way of Working: 「プルリクエストは使わない。統合の前に、CI と同じ検査（…全テスト・カバレッジ下限…）をローカルで1コマンドで実行し、すべて通ってから統合する」、「E2E は…統合は `./gradlew verify` で行う」、「Dependabot …1コマンドの検査（`./gradlew verify`）を通してから」、「統合前の1コマンドの検査は、コンテナの実行環境（colima）が動いていることを前提にする…飛ばした状態では統合しない」。
+  - `team.md` の Testing Posture: 「対象DB（MySQL・MariaDB・PostgreSQL）の結合テストは、3種類すべてを `./gradlew verify` の中で毎回実行する（CI も同じ）」、`packagesJudgedByTotal` の行（`./gradlew verify` で実測）、「テストを足した Bolt の後と Build and Test で、`./gradlew verify` の時間と CI の時間を測って記録する」。
+- 手順の文書（読み取りの grep）:
+  - `README.md`: 15・16 行（Gitleaks・OSV-Scanner の使う場面）・18 行（Docker）・22 行（道具が無いと失敗）・24 行（colima が前提、対象DB の IT を毎回）・44 行（0 の段のサブモジュールの確かめ）・60・65 行（配備の WAR は `verify` を通して作る）。
+  - `docs/verification.md`（範囲の外、流し読み）: 5〜33 行の「1コマンドの検査」の節（段の表 13〜24 行、28 行の「2回流れ」、33 行の段ごとの実行と報告の置き場）。
+- 見立て: 決まりの文の書き換えは `team.md` の「Edit at the gate」の扱い（AI-DLC の決まりの書き方）に従い、どこまで書き換えるかは要件定義で決める。
 
 ## リンタと静的解析
 
 - Java: Spotless（palantir-java-format・ライセンスヘッダー）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`。`SQL_`・`PREDICTABLE_RANDOM`・`SMTP_HEADER_INJECTION` は priority にかかわらず止める、`team.md`）。
 - 画面: Prettier・oxlint・ESLint（`frontend/eslint.config.js`）・Stylelint。
+- ライセンスヘッダー（2026-11-08 に読んだ）: ひな形は `config/license-header.txt` の1つで、ルートの `build.gradle.kts` が `/* ... */` の形（Java・Gradle の Kotlin DSL）と Mustache のコメントの形（メールのテンプレート）を作り、`frontend/scripts/check-license-header.mjs` が `frontend/` の TS・TSX・JS・MJS・CJS・CSS（`/* ... */`、`/** ... */` は認めない）と HTML・SVG（`<!-- ... -->`）、`perf/` の MJS・JS を確かめる。
+- 毎回流れる検査（2026-11-08）: `gitleaksScan`（履歴全体、`build.gradle.kts` 287〜293 行）と `perfEvidenceScan`（`aidlc/` の記録の JWT の形、295〜302 行）は入力・出力を宣言せず毎回流れる。`osvScan`（327〜417 行）は lockfile と `config/npm-build-tools.txt` を入力にするため、変わらなければ UP-TO-DATE（`docs/verification.md` 49 行は `--rerun` で流し直す手順を書く）。
 
 ## CI と依存
 
-- `.github/workflows/ci.yml`（2026-11-01 に全文を読んだ）: `develop` への push と `v*` のタグと手動で動く。ジョブ `verify`（`ubuntu-latest`・`timeout-minutes: 60`）はサブモジュールごと全履歴を取得し、JDK 25・Node 24・Gradle を用意し、Gitleaks 8.30.1 と OSV-Scanner 2.6.0 を版と SHA-256 で確かめて入れ、`./gradlew verify` を流し、WAR を 30 日保存する。ジョブ `release`（タグのとき）は WAR を GitHub のリリースに添付する。actions はコミットの SHA で固定（版は `technology-stack.md`）。
+- `.github/workflows/ci.yml`（2026-11-08 に全文を読んだ。本文は K-115）: `develop` への push と `v*` のタグと手動で動く。ジョブ `verify`（`ubuntu-latest`・`timeout-minutes: 60`）はサブモジュールごと全履歴を取得し、JDK 25・Node 26・Gradle を用意し、Gitleaks 8.30.1 と OSV-Scanner 2.7.0 を版と SHA-256 で確かめて入れ、`./gradlew verify` を流し、WAR を 30 日保存する。ジョブ `release`（タグのとき）は WAR を GitHub のリリースに添付する。actions はコミットの SHA で固定（版は `technology-stack.md`）。2026-11-01 の記録（Node 24・OSV-Scanner 2.6.0）は古い（K-118）。
 - `.github/dependabot.yml`: 見送り（`ignore`）は gradle の2件（appender・networknt）・npm の `typescript` の大きな版・docker の `eclipse-temurin` の大きな版（K-66・K-72、本文は `dependencies.md`）。Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java`・`perf/README.md` の grafana/k6 など）は手でそろえる運用で、`dependabot.yml` のコメントに列挙している。
 
 ## 静的解析の除外と境界テストの形（K-80、2026-10-29）
@@ -42,6 +88,7 @@
 ## ドキュメント
 
 - Javadoc・コメントは日本語で、要件・設計の ID（BR・NFR・契約の番号）と Intent の名前を細かく引く。`frontend/src/features/README.md` に機能の作り方の決まり、`perf/README.md` に負荷の試験の手順（1,753 行、2026-11-01）。
+- 2026-11-08: `README.md` は 164 行に縮み、前提の道具・取得と準備・開発時の起動・コンテナでの起動と確認・文書の目次・ライセンスだけを持つ。検査とテストの手順は `docs/verification.md`、配備・内部DB・設定・メール・対象DB・DSL・利用者・ロール・運用・見た目・アイコン・差し込み口は `docs/` の主題ごとの文書へ分かれた（目次 102〜119 行）。下の K-88 の記述は 2026-11-01 の時点のもの（K-118）。
 
 **K-88 README.md に経緯が溜まっている（2026-11-01）（`build-and-verify`・`container-runtime`）**
 
@@ -72,6 +119,7 @@
   - `frontend/vitest.config.ts` の `coverage.include` は `src/**/*.{ts,tsx}` だけ（61 行）のため、道具の `.mjs` はカバレッジの計測と `thresholds`（80・70）の判定に入らない（T1。前の Intent の Build and Test の実測は行 94.2%・分岐 90.61%）。
   - `build.gradle.kts` は道具に Prettier（`perfToolFormatCheck`）と oxlint（`perfToolLint`）だけを当て、ESLint と `tsc` は当てない（T2）。ライセンスヘッダーは `check-license-header.mjs` が `perf/` の `.mjs`・`.js` も見る。`verify` の 8 の段の `perfEvidenceScan` は `aidlc/` の記録を毎回調べる。
 - 見立て（未検証）: `coverage.include` に道具を足すと、全体の合計の `thresholds` に道具の値が混ざる。ESLint の設定（`frontend/eslint.config.js`）と `tsconfig.json` は `frontend/` の中を前提にしていると見られ、`perf/` に当てる形は設計で決める（どちらのファイルも今回は読んでいない）。
+- 2026-11-08 の追記: T1・T2 は直っている（`vitest.config.ts` の `coverage.include` に道具がある。`build.gradle.kts` に `perfToolEslint`（258〜269 行）と `perfToolTypecheck`（272〜283 行）があり、`verify` の 2 の段と 4 の段に入っている）。
 
 **K-91 書き込みの参照の段の `stage` の無い WARN（T3、2026-11-01）（`businessdata`）**
 
@@ -101,13 +149,15 @@
 
 ## 技術的負債
 
+- **今回の範囲（2026-11-08）**: 1コマンドの検査で画面のテストが2回流れる（K-112）。結合テストは1つの JVM で 278 クラスを順に流し、並べる口も絞る口も無い（K-113、本文は `architecture.md`）。カバレッジの判定が結合テストの実行記録に依り、結合テストを除いた軽い入口では判定できない（K-114）。決まりの文が「統合の前に全件の `verify`」を前提にしている（K-117）。時間の内訳は測っていない。
+
 - 表示のタイムゾーンの選択肢の組み立てが、1件ごとに表示の文字全体を作ってから時差を切り出し、`formatToParts` を2回呼ぶ（K-106、本文は `architecture.md`）。整形器のキャッシュの上限 128 が名前の数より小さい（K-107）。CI の計測つきで性能のテストが2回落ちた（K-108）。直し方の候補と制約は K-109。
 
 - 一覧の `COUNT(*)` が上限なしで、MySQL・MariaDB の部分一致・深い OFFSET が重い（K-62、本文は `architecture.md`）。読み取りのプールは小さい（K-63）。件数の型が「多数」を持てない（K-64、本文は `api-documentation.md`）。
 - 固定している部品の見直しは Spring Boot 4.1.2 で済み、Tomcat・Jackson の上書きは外れた。appender と networknt の固定が残る（K-66）。
-- 負荷の試験の台本・手順書が大きい（K-73。2026-11-01 の構成は K-89）。README.md の経緯（K-88）。
-- 版の固定先が分散している（K-81〜K-84、`technology-stack.md`）。Node 26 への引き上げは `engines`・`checkToolchain`・CI・README を同時にそろえる必要がある。
-- perf の伏せ字の道具の検査の抜け（K-90）と、`stage` の無い WARN（K-91）。
+- 負荷の試験の台本・手順書が大きい（K-73。2026-11-01 の構成は K-89）。README.md の経緯（K-88。2026-11-08 には README は 164 行に縮んでいる。K-118）。
+- 版の固定先が分散している（K-81〜K-84、`technology-stack.md`）。Node 26 への引き上げは `engines`・`checkToolchain`・CI・README を同時にそろえる必要がある（2026-11-08 にはそろっている。K-118）。
+- perf の伏せ字の道具の検査の抜け（K-90。2026-11-08 には直っている）と、`stage` の無い WARN（K-91）。
 - **今回の範囲（2026-11-03）**:
   - 業務データの時差つきの日時を UTC のまま見せ、UTC で入れさせている。ほかの画面は `shared/format/formatDateTime` で端末の時差に直しており、日時の見せ方が二系統（K-96）。`ListFormat` の日時の書式は値だけあって画面が使わない。
   - 対象DB の接続の時差が MySQL・MariaDB（`+00:00`）と PostgreSQL（設定なし、JVM の既定に従う見込み）で違う（K-95）。
@@ -177,6 +227,7 @@
 
 ## Sources
 
+- 2026-11-08: `build.gradle.kts`（全文）・`backend/build.gradle.kts`（全文）・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/check-license-header.mjs`・`config/`・`.github/workflows/ci.yml`・`README.md`、流し読みの `docs/verification.md`・`backend/src/test/java/`（`*Test`・`*IT` の数）、`aidlc/spaces/default/memory/{team,project}.md`（決まりの文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/vitest.config.ts`・`frontend/src/features/preferences/{TimeZoneOptionsPerformance,buildTimeZoneOptions}.test.ts`・`frontend/src/shared/format/timeZone/{conversionPerformance,timeZoneGate}.test.ts`・`build.gradle.kts`（216〜220 行）・`frontend/eslint.config.js`・`frontend/eslint-rules/timeZoneSelectors.js`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（テストはファイル名の grep だけ）。
 - 2026-11-01: 開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`（Technical Debt Signals の TD-1〜TD-14）。`README.md`・`perf/README.md` の見出しの一覧と grep の件数、`build.gradle.kts`・`.github/workflows/ci.yml`・`BusinessDataWriteService.java` の該当行。

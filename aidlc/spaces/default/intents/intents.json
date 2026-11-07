@@ -148,5 +148,13 @@
     "scope": "bugfix",
     "status": "complete",
     "request": "f639a8a4"
+  },
+  {
+    "uuid": "01a1b80f-fbd4-771e-b6e1-bef36fd1b96e",
+    "slug": "verify-quick-local",
+    "dirName": "261107-verify-quick-local",
+    "scope": "bugfix",
+    "status": "in-flight",
+    "request": "3fd90d3d"
   }
 ]

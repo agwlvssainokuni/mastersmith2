@@ -1,6 +1,8 @@
 # コードの構成（mastersmith2）
 
-> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「表示のタイムゾーンと日時の変換の置き場」の節を足した（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）。ほかの節は前回以前の記録による。下の「日時の型の置き場」の `shared/format/formatDateTime.ts` は今は無い（K-110）。
+> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「検査とビルドの設定の置き場」の節を足し、リポジトリの最上位の表の `frontend/`（`scripts/` の 6 ファイル）・`config/`・`.github/`・`README.md`（164 行）・`docs/` の行を今の値に直した。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「表示のタイムゾーンと日時の変換の置き場」の節を足した（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）。ほかの節は前回以前の記録による。下の「日時の型の置き場」の `shared/format/formatDateTime.ts` は今は無い（K-110）。
 >
 > 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、「画面の骨組みの仕上げ」の節（サイドバーのアイコン・ホーム・管理の仮の画面・ページの頭。K-100・K-102〜K-104）と、日時の型の置き場の節を足した。ほかの節は前回以前の記録による。
 >
@@ -12,15 +14,16 @@
 
 | 場所 | 中身 |
 |---|---|
-| `backend/` | Java のアプリ（Gradle、実行可能 WAR）。Java のパッケージ配下に 16 パッケージ（下表）。`git ls-files backend/src/main` は 867、`backend/src/test` は 669（リソースを含む） |
-| `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）（前回までの数）・`e2e/`（`*.e2e.ts` は 22 本、010〜195、2026-11-01）・`scripts/`（`check-license-header.mjs`・`check-bundle-size.mjs`）。設定は `package.json`・`.npmrc`（`engine-strict`・`ignore-scripts`）・`vite.config.ts`・`vitest.config.ts`・`vitest.setup.ts`・`playwright.config.ts`・`eslint.config.js`・`tsconfig.json` |
+| `backend/` | Java のアプリ（Gradle、実行可能 WAR）。Java のパッケージ配下に 16 パッケージ（下表）。`git ls-files backend/src/main` は 867、`backend/src/test` は 669（リソースを含む）。テストのクラスは `*Test.java` 312・`*IT.java` 278（2026-11-08 の `find`） |
+| `frontend/` | React + TypeScript の SPA。`src/app/`（92）・`src/shared/`（51）・`src/features/`（417）（前回までの数）・`e2e/`（`*.e2e.ts` は 22 本、010〜195、2026-11-01）・`scripts/`（6 ファイル。2026-11-08 の一覧は下の「検査とビルドの設定の置き場」）。設定は `package.json`・`.npmrc`（`engine-strict`・`ignore-scripts`）・`vite.config.ts`・`vitest.config.ts`・`vitest.setup.ts`・`playwright.config.ts`・`eslint.config.js`・`tsconfig.json` |
 | `vendor/make-you-chic-ui/` | デザインシステム（Git サブモジュール、固定先 `cae5fed`、2026-11-03 の `git submodule status`。K-105） |
 | `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03。K-105） |
 | `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB の初期化。種類ごとに表・読み取り・書き込みのアカウント）・`e2e/`（E2E の見本の PG の番号を開ける上乗せ）・`jmx/` と `hikari-pool.sh`（接続のプールの詰め直しの道具）・`check-container-limits.sh`（約 3,900 行） |
 | `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2,848 行（2026-11-01）、伏せ字の道具 `perf/redact-k6-evidence.mjs`（907 行、K-90）、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1,753 行、2026-11-01。K-89）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
-| `config/` | 検査の設定（`npm-build-tools.txt`・`license-header.txt` など） |
-| `.github/` | CI（`workflows/ci.yml`）と Dependabot（`dependabot.yml`） |
-| 最上位のファイル | `settings.gradle.kts`・`settings-gradle.lockfile`・`build.gradle.kts`・`gradle/libs.versions.toml`・`gradle/wrapper/`（Gradle 9.8.2）・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitmodules`・`.gitleaks.toml`・`.pre-commit-config.yaml`・`.editorconfig`・`.gitattributes`・`.dockerignore`・`README.md`（1,678 行） |
+| `config/` | 検査の設定の2ファイル: `license-header.txt`（ライセンスヘッダーのひな形。Spotless と画面の検査の共通）・`npm-build-tools.txt`（OSV-Scanner で devDependencies でも High 以上で止める道具の一覧）（2026-11-08） |
+| `.github/` | CI（`workflows/ci.yml` の1つ。2026-11-08）と Dependabot（`dependabot.yml`） |
+| `docs/` | 主題ごとの手順の文書（`verification.md`・`deployment.md`・`internal-db.md`・`configuration.md`・`mail.md`・`target-db.md`・`dsl.md`・`users.md`・`roles-and-permissions.md`・`operations.md`・`appearance.md`・`app-icon.md`・`extension-points.md`。README の目次による、2026-11-08） |
+| 最上位のファイル | `settings.gradle.kts`・`settings-gradle.lockfile`・`build.gradle.kts`（860 行）・`gradle/libs.versions.toml`・`gradle/wrapper/`（Gradle 9.8.2）・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitmodules`・`.gitleaks.toml`・`.pre-commit-config.yaml`・`.editorconfig`・`.gitattributes`・`.dockerignore`・`README.md`（164 行、2026-11-08。前の記録の 1,678 行から縮み、手順は `docs/` へ）。`gradle.properties` は無い |
 | `aidlc/` | AI-DLC の記録（コードではない） |
 
 ## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
@@ -76,6 +79,27 @@
 - `features/<featureId>/`: `admin`・`auth`・`dsl`・`groupadmin`・`invitation`・`mypermissions`・`preferences`・`registration`・`roleadmin`・`roletransfer`・`tables`・`useradmin` の 12 個と `README.md`。業務データの画面は `tables`（一覧 `BusinessDataListPage`・詳細・作成/更新の `BusinessDataFormPage`・表 `BusinessDataTable`・検索 `SearchPanel`・ページの計算 `listPaging.ts`・API の呼び出し `businessDataApi.ts`）。
 - テストは対象と同じ場所に `*.test.ts(x)`。E2E は `frontend/e2e/NNN-*.e2e.ts`（010〜195、22 本。2026-11-01）と `support/`。
 
+## 検査とビルドの設定の置き場（K-111〜K-117、2026-11-08）
+
+本文は `architecture.md` の「検査の入口 `verify` の流れ」と `code-quality-assessment.md` の K-112・K-114・K-115・K-117。ファイルの位置と分類だけをここに置く。
+
+| 場所 | 分類 | 中身 |
+|---|---|---|
+| `settings.gradle.kts`（37 行） | Configuration | ルートの名前 `mastersmith`、依存の取得元を Maven Central だけに固定（`FAIL_ON_PROJECT_REPOS`）、`include("backend")`、`includeBuild("vendor/java-mustache-processor")` |
+| `build.gradle.kts`（860 行） | Configuration | ライセンスヘッダーのひな形の組み立て（27〜49 行）、Spotless の Kotlin DSL（54〜61 行）、外部の道具と画面の npm のタスク（63〜224 行、`npmScript` は 173〜181 行）、perf の伏せ字の道具の検査（226〜283 行）、安全の検査（285〜417 行、Gitleaks・`perfEvidenceScan`・OSV-Scanner の判定）、`verify` の段の表と順（419〜513 行）、E2E の見本の PostgreSQL と `e2eTest`（515〜860 行、`-Pe2e.files` は 812〜818 行） |
+| `backend/build.gradle.kts`（446 行） | Configuration | プラグイン・toolchain・lockfile（24〜43 行）、依存（45〜96 行）、テストの共通の設定と `test`・`integrationTest`（103〜160 行）、JaCoCo と `packagesJudgedByTotal`（162〜257 行）、Spotless（259〜279 行）、SpotBugs と `spotbugsGate`（281〜352 行）、`bootWar` と WAR の中身の確かめ（354〜433 行）、`resolveAndLockAll`（435〜446 行） |
+| `frontend/package.json` | Configuration | npm のスクリプト（`build`・`typecheck`・`format:check`・`lint`・`lint:css`・`license:check`・`svg:check`・`dist:check`・`bundle:size`・`test`・`test:coverage`・`e2e`）と依存。`engines` は `node >=26 <27` |
+| `frontend/vitest.config.ts`（80 行） | Configuration | projects 2 つ（`eslint-config`・`unit`）、V8 のカバレッジ、`thresholds` 80・70 |
+| `frontend/scripts/check-license-header.mjs` | Utility（検査の道具） | `frontend/` と `perf/` のライセンスヘッダー。`collectFiles`・`SKIP_DIRS` を `check-svg-safety.mjs` と共有 |
+| `frontend/scripts/check-svg-safety.mjs` | Utility（検査の道具） | 自作の SVG の中身の許可リスト（要素・属性・値の文法。最初の違反で止める） |
+| `frontend/scripts/check-dist-assets.mjs`・`icon-binary.mjs` | Utility（検査の道具） | `public/` と `dist` の素材の一致、`index.html` の favicon の `<link>`、PNG・ICO の形の確かめ |
+| `frontend/scripts/check-bundle-size.mjs` | Utility（検査の道具） | 初回の読み込みの JS の gzip の合計（500KB を超えたら警告だけ） |
+| `frontend/scripts/make-ico.mjs` | Utility（手で流す道具） | PNG から `.ico` を作る。ビルドに組み込まない |
+| `config/license-header.txt`・`config/npm-build-tools.txt` | Configuration | ヘッダーのひな形、OSV-Scanner の「成果物を作る道具」の一覧 |
+| `.github/workflows/ci.yml` | Configuration（CI） | ジョブ `verify`（`./gradlew verify` を1本）とジョブ `release` |
+| `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/` | Test（流し読み） | `ContainerRuntimeCheck`（Docker が無いときの判定）・`TargetDbTestDatabase`（クラスごとのコンテナとスキーマ）・`TargetDbImages`（イメージの版とダイジェスト） |
+| `backend/src/test/resources/junit-platform.properties` | Configuration（流し読み） | jqwik の記録の置き場だけ（JUnit の並列の設定は無い） |
+
 ## 日時の型の置き場（K-94〜K-99、2026-11-03）
 
 本文は `architecture.md` の「日時の値の流れ」。ファイルの位置だけをここに置く。
@@ -118,6 +142,7 @@
 - サーバーの `config/WebConfig.java`（流し読み）は、見つからない画面の URL に `index.html` を返す。`/favicon.ico` への要求には HTML が返る見込み（未検証）。
 - アプリの名前の文字 `app.name`（`MasterSmith`）はログインの画面（`app/layout/LoginLayout.tsx`）と登録の完了の画面だけが出す。アプリシェル（`ShellLayout.tsx` → make-you-chic-ui の `AppShell`）にはロゴ・アプリ名の口が無く、トップバーの `topbarStart`・`topbarEnd` の差し込み口だけ（今は `topbarEnd` に作業ロールの切り替え）。
 - SVG を置くときのライセンスヘッダーの検査の扱いは確かめていない。
+- 2026-11-08 の追記（`frontend/scripts/` と `build.gradle.kts` の読み取り）: 今は `frontend/public/` の素材と `dist` の一致・favicon の `<link>` を `check-dist-assets.mjs` が、SVG のヘッダーを `check-license-header.mjs`（`.svg` を対象に含む）が、SVG の中身を `check-svg-safety.mjs` が確かめ、WAR の中の素材の一致を `:backend:verifyFaviconInWar` が確かめる。上の 2026-11-03 の記述は当時のもの。
 
 ### K-103 ホームの画面
 
@@ -132,6 +157,7 @@
 
 ## Sources
 
+- 2026-11-08: 開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`find` の数・grep）。
 - 2026-11-06: 開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`wc`・grep）。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（ファイルの読み取りと grep）。
 - 2026-11-01: `ls`・`wc`・`git submodule status`（開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。

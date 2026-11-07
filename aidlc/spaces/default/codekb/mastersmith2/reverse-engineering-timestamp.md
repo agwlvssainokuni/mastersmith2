@@ -2,49 +2,72 @@
 
 ## Run Record
 
-- Date: 2026-11-06
-- Commit: a789a6f02fbb72285a838a77b85d841c38075e45
+- Date: 2026-11-08
+- Commit: 16f46f1268c07d141ade76d620d1858819384967
 
 ## 実施の情報
 
 | 項目 | 値 |
 |---|---|
-| 実施日 | 2026-11-06 |
-| Intent | `261104-tz-options-perf`（scope bugfix・深さ Minimal・Test Strategy Minimal・brownfield。CI の `frontendCoverage` で表示のタイムゾーンの選択肢の組み立ての性能のテスト（NFR2.1.6、100 ms 以内）が中央値 106 ms で2回目の失敗をした不具合の直し） |
+| 実施日 | 2026-11-08 |
+| Intent | `261107-verify-quick-local`（scope bugfix・深さ Minimal・Test Strategy Minimal・brownfield。手元の `./gradlew verify` の時間を縮める案 3: 統合の前は `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せ、JaCoCo は参考値）、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し、`-PitForks` で手元だけ結合テストを並べる。画面のテストを1回にする。CI は `verify` を1本のまま。関わる決まりを書き換える） |
 | 対象 | mastersmith2（プロジェクトルート、単一のリポジトリ） |
-| 記録するコミット | `a789a6f02fbb72285a838a77b85d841c38075e45`（依頼で渡されたスナップショットの head_commit） |
-| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan、依頼者の選択）・Minimal。既存の知識ベースの判定は UNVERIFIED で、前の散文を残して今回の範囲の節を更新・追加した |
-| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（設計担当は今回の構成に無い） |
+| 記録するコミット | `16f46f1268c07d141ade76d620d1858819384967`（`git rev-parse HEAD` と同じ。依頼で渡された値） |
+| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Minimal。既存の知識ベースの判定は STALE（前の Intent `261104-tz-options-perf` で深く読んだ範囲がその後に変わった）で、前の散文を残して今回の範囲の節を更新・追加した |
+| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（設計担当は今回の構成に無い） |
 
 ## 確かめ方
 
-- ファイルの読み取り（cat・sed・grep・ls・wc）だけ。テスト・ビルド・npm・gradlew・docker は実行していない。git は読み取りの `git log --oneline -1` を1回だけ使った（`shared/format/formatDateTime.ts` が消えたコミット `102608aa` の確認。依頼の「git を使わない」に反したため明記する）。
-- 事実と見立てを分け、見立てには「未検証」と書いた（名前の数、時間の内訳、V8 の計測の効き方、直し方の候補の効き目）。
-- 引いた行の番号は、書いた後に grep で確かめ直した（`wallClock.ts` の `wallAt` 119〜142 行・`offsetSecondsAt` 145〜148 行、`formatInstant.ts` 48〜76 行、`eslint.config.js` の `timeZoneConversionRules` 211 行など）。
-- ステージングの9文書は、前の知識ベースの8文書を写してから Edit で今回の節を足し、この文書は新しく書いた。
+- ファイルの読み取り（Read と `ls`・`grep`・`find`・`wc`）だけ。テスト・ビルド・`npm`・`./gradlew`・`docker` は実行していない。git も使っていない（記録のコミットは依頼の値）。時間の実測は無い。
+- 事実と見立てを分け、見立てには「未検証」と書いた（`verifyQuick` の段の組み方・IT を除いたカバレッジ・並べたときのコンテナと番号の取り合い・時間の内訳）。
+- 行の数は `wc -l` で確かめ直した（`build.gradle.kts` 860・`backend/build.gradle.kts` 446・`settings.gradle.kts` 37・`frontend/vitest.config.ts` 80・`README.md` 164）。
+- ステージングの9文書は、前の知識ベースの9文書を読んで今回の節を足した形で書き直した（範囲の外の節は前の文のまま）。この文書は新しく書いた。
 
 ## 前の記録との関係
 
-- 前のコード知識ベースは Intent `261102-timezone-ui-polish` のもの（記録のコミット `fa0b01e`）。その後に同 Intent の後の段の変更（U1 の `shared/format/timeZone/`、U2 の表示のタイムゾーン、U4 の業務データの時刻）が入り、判定が UNVERIFIED のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（50）は `shallow.paths` に下げた（前の `shallow.paths` とあわせて残した。今回深く読んだ `frontend/vitest.config.ts` は `shallow.paths` から外した）。
-- 部品 ID は 48 → 49 個（`frontend-shared-format` を足した）。今回の `analyzed.components` は2つ（`frontend-feature-preferences`・`frontend-shared-format`）。`frontend/vitest.config.ts` は深く読んだが、`build-and-verify` の部品全体は読んでいないため `analyzed.components` に入れていない。
-- 所見は前回までの K-62〜K-105 に、今回 K-106〜K-110 を足した（一覧は `business-overview.md`）。K-110 は前の記録の訂正（`formatDateTime.ts` は消えた、利用者ごとの表示のタイムゾーンがある、K-90 の `coverage.include` は直っている）。
+- 前のコード知識ベースは Intent `261104-tz-options-perf` のもの（記録のコミット `a789a6f`）。判定が STALE のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（22）は `shallow.paths` に下げた（前の `shallow.paths` とあわせて残した）。前の `analyzed.paths` の `frontend/vitest.config.ts` と、前の `shallow.paths` の `build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`config/`・`README.md` は今回深く読んだため、`shallow.paths` から外して `analyzed.paths` に入れた。
+- 部品 ID は 49 個のまま（増減なし）。今回の `analyzed.components` は1つ（`build-and-verify`）。`backend-test-support` は結合テストの数と前提を流し読みしただけのため入れていない。
+- 所見は前回までの K-62〜K-110 に、今回 K-111〜K-118 を足した（一覧は `business-overview.md`）。K-118 は前の記録の訂正（Node 26・OSV-Scanner 2.7.0・`setup-gradle` v6.4.1・README 164 行・`frontend/scripts/` 6 ファイル）。
 
 ## 範囲の要約
 
-- 深く読んだ: 22 のファイル、2 部品。依頼のスナップショットの範囲（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）のうち、中のファイルを選んで読んだため、ディレクトリではなくファイルで `analyzed.paths` に入れ、2つのディレクトリは `shallow.paths` に入れた（`preferences` のパスワードの変更の部品・CSS・文言・ほかのテスト、`shared/format` のほかのテストは流し読みか未読）。
-- スナップショットの範囲の外は grep の流し読みだけで、`shallow.paths` に記録した（`frontend/src/app/display-settings/`・`frontend/src/features/useradmin/`・`frontend/eslint-rules/timeZoneSelectors.js`・`build.gradle.kts`・`.github/` ほか。前の記録に既にあるものは重ねて書いていない）。
-- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`tz-options-perf`）。
-- `fingerprint` は、最終の `analyzed.paths`（22）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
+- 深く読んだ: 12 の道（ファイル 10 とディレクトリ 2）、1 部品。依頼のスナップショットの範囲（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts`・`.github/workflows`・`config`・`README.md`）のうち、`frontend/scripts` は全文を読んだ4ファイルだけを `analyzed.paths` に入れ、頭だけ読んだ `check-svg-safety.mjs`・`icon-binary.mjs` は `shallow.paths` に入れた。`.github/workflows/`（`ci.yml` の1つ）と `config/`（2ファイル）は中をすべて読んだためディレクトリで入れた。
+- スナップショットの範囲の外は流し読みだけで、`shallow.paths` に記録した（`docs/verification.md`・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/{ContainerRuntimeCheck,TargetDbTestDatabase}.java`・`backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java`・`backend/src/test/resources/junit-platform.properties`。`backend/src/test/java/cherry/mastersmith/` は前の記録に既にある）。
+- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`verify-quick-local`）。
+- `fingerprint` は、最終の `analyzed.paths`（12）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --mint --paths` に渡した出力をそのまま貼った。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: tz-options-perf
-fingerprint: 563c9f851852be7deef36ec714bd9bdac51f8454
+intent: verify-quick-local
+fingerprint: f11d198a15c52de3b0998f469a45b8c76d94e725
 analyzed:
   paths:
+    - build.gradle.kts
+    - settings.gradle.kts
+    - backend/build.gradle.kts
+    - frontend/package.json
+    - frontend/vitest.config.ts
+    - frontend/scripts/check-license-header.mjs
+    - frontend/scripts/check-bundle-size.mjs
+    - frontend/scripts/check-dist-assets.mjs
+    - frontend/scripts/make-ico.mjs
+    - .github/workflows/
+    - config/
+    - README.md
+  components:
+    - build-and-verify
+shallow:
+  paths:
+    - frontend/scripts/check-svg-safety.mjs
+    - frontend/scripts/icon-binary.mjs
+    - docs/verification.md
+    - backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java
+    - backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java
+    - backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java
+    - backend/src/test/resources/junit-platform.properties
     - frontend/src/features/preferences/buildTimeZoneOptions.ts
     - frontend/src/features/preferences/buildTimeZoneOptions.test.ts
     - frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts
@@ -66,12 +89,6 @@ analyzed:
     - frontend/src/shared/format/timeZone/conversionPerformance.test.ts
     - frontend/src/shared/format/formatInstantToMinutes.ts
     - frontend/src/shared/format/dateTimeInput.ts
-    - frontend/vitest.config.ts
-  components:
-    - frontend-feature-preferences
-    - frontend-shared-format
-shallow:
-  paths:
     - frontend/src/features/preferences/
     - frontend/src/shared/format/
     - frontend/src/app/display-settings/
@@ -128,12 +145,8 @@ shallow:
     - frontend/src/shared/format/formatDateTime.ts
     - .gitmodules
     - gradle/
-    - build.gradle.kts
-    - settings.gradle.kts
-    - backend/build.gradle.kts
     - backend/gradle.lockfile
     - backend/config/spotbugs-exclude.xml
-    - frontend/package.json
     - frontend/package-lock.json
     - frontend/.npmrc
     - frontend/vitest.setup.ts
@@ -144,11 +157,9 @@ shallow:
     - docker/e2e/compose.targetdb-port.yaml
     - docker/hikari-pool.sh
     - .github/
-    - config/
     - perf/README.md
     - perf/versions.env
     - perf/redact-k6-evidence.mjs
-    - README.md
     - backend/src/main/java/cherry/mastersmith/businessdata/service/BusinessDataWriteService.java
     - backend/src/main/java/cherry/mastersmith/businessdata/repository/RowSqlBuilder.java
     - backend/src/main/java/cherry/mastersmith/businessdata/

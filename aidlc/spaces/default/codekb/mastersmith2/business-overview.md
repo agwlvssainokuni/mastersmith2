@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-06、Intent `261104-tz-options-perf`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `a789a6f`）で更新した。今回は表示のタイムゾーンの選択肢の組み立て（`frontend/src/features/preferences/`）・日時の変換の共有の関数（`frontend/src/shared/format/`）・`frontend/vitest.config.ts` だけを読み、所見 K-106〜K-110 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した（前の Intent `261102-timezone-ui-polish` の後の段で、利用者ごとの表示のタイムゾーンが入った。K-110）。
+> 2026-11-08、Intent `261107-verify-quick-local`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `16f46f1`）で更新した。今回は1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`.github/workflows/`・`config/`・`README.md`）だけを読み、所見 K-111〜K-118 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
+>
+> 前回の記録: 2026-11-06、Intent `261104-tz-options-perf`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `a789a6f`）で更新した。今回は表示のタイムゾーンの選択肢の組み立て（`frontend/src/features/preferences/`）・日時の変換の共有の関数（`frontend/src/shared/format/`）・`frontend/vitest.config.ts` だけを読み、所見 K-106〜K-110 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した（前の Intent `261102-timezone-ui-polish` の後の段で、利用者ごとの表示のタイムゾーンが入った。K-110）。
 >
 > 前回の記録: 2026-11-03、Intent `261102-timezone-ui-polish`（classic・Standard）の Reverse Engineering（Focused scan、記録のコミット `fa0b01e`）で更新した。今回は業務データの日時の型の対応と接続の時差（`businessdata`・`targetdb`・`dsl`・`dslmanage` の一部）、業務のメニューとアイコン（`navigation`、画面の骨組みの `app/registry`・`app/navigation`）、ホーム・管理の仮の画面（`features/admin`）・ページの頭（`index.html`）だけを読み、所見 K-94〜K-105 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した。
 >
@@ -20,6 +22,8 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 - 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更（`features/preferences`）。表示のタイムゾーンは「ブラウザに合わせる」か、ブラウザが知る IANA の名前から選ぶ（2026-11-06 に確かめた。K-110）。
 - 管理の操作・認証・DSL・ロール・業務データの書き込みなどの出来事を、内部DB（組み込みの H2）の監査の表に追記する。
 
+開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。
+
 ## 利用者と役割
 
 | 人 | すること |
@@ -27,12 +31,28 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | 管理者（`admin_flag` が真で停止していない利用者） | 利用者・招待・DSL・ロール・グループの管理（`/api/admin/**`） |
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
+| 開発者（依頼者と AI） | 統合の前に `./gradlew verify` を流す（コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
 
-## 所見の一覧（K-62〜K-110）
+## 所見の一覧（K-62〜K-118）
 
-番号は K-61 から続く（K-62〜K-105 は前回まで、K-106〜K-110 が今回 2026-11-06）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-110 は前回まで、K-111〜K-118 が今回 2026-11-08）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261104-tz-options-perf）の主題
+### 今回（Intent 261107-verify-quick-local）の主題
+
+手元の `./gradlew verify` の時間を縮める（案 3）。Bolt の統合の前は軽い入口 `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せるようにし、JaCoCo は参考値として表示する）にし、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し、`-PitForks` で手元だけ結合テストを並べて流せるようにする。画面のテスト（Vitest）を1回にする。CI は今までどおり `verify` を1本で流す。関わる決まり（`project.md` の Mandated、`team.md` の Way of Working・Testing Posture）を書き換える。今回は `verify` が何をどの順で流すか、結合テストの分け方と並列の設定、カバレッジの判定、CI、README を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-111 | `verify` は 10 の段（準備・フォーマット・リンタ・ライセンスヘッダー・ビルド・単体テスト・結合テスト・カバレッジ・安全の検査・成果物）。段の順は `dependsOn` でなく、各タスクに「前の段のすべてのタスクの後」の `mustRunAfter` を付けて決める | `build-and-verify` | `architecture.md`（検査の入口 `verify` の流れ・Interaction Diagrams 8） |
+| K-112 | 画面のテスト（Vitest）が 5 の段の `frontendTest` と 7 の段の `frontendCoverage`（計測つき）で2回流れ、性能のテスト2つも2回判定される | `build-and-verify`・`frontend-feature-preferences`・`frontend-shared-format` | `code-quality-assessment.md`（K-112） |
+| K-113 | 結合テスト `integrationTest` は `*IT` 278 クラスを1つの JVM で順に流す。並列の設定（`maxParallelForks`・`gradle.properties`・JUnit の並列）も、IT を絞る `-P` の口も無い。対象DB の IT 39 クラスはクラスごとにコンテナを起動し、Docker が無いと CI では失敗・手元では飛ばす | `build-and-verify`・`backend-test-support` | `architecture.md`（検査の入口 `verify` の流れ） |
+| K-114 | バックエンドのカバレッジの判定は `test.exec` と `integrationTest.exec` を合わせて行い、報告と判定のタスクはテストに `dependsOn` しない（`mustRunAfter` だけ）。IT を除くと判定は落ちる見込み（未検証） | `build-and-verify` | `code-quality-assessment.md`（K-114） |
+| K-115 | CI（`ci.yml`）は `./gradlew verify` を引数なしで1本流す（`timeout-minutes: 60`、GitHub は `CI=true`） | `build-and-verify` | `code-quality-assessment.md`（K-115） |
+| K-116 | `verifyQuick`・`-PitTests`・`-PitForks` を足すときの論点（段の表と順の決まりの重なり、古い実行記録、同時のコンテナ・ヒープ・番号の取り合い）。どれも未検証 | `build-and-verify`・`backend-test-support` | `architecture.md`（Improvement Opportunities） |
+| K-117 | 書き換える決まりの文と、手順を直す文書の箇所（`project.md`・`team.md`・README・`docs/verification.md`） | `build-and-verify` | `code-quality-assessment.md`（K-117） |
+| K-118 | 前の記録の訂正: Node は 26（K-81 は解消）、OSV-Scanner 2.7.0、`setup-gradle` v6.4.1、README は 164 行（K-88 の 1,678 行から縮み、手順は `docs/`）、`frontend/scripts/` は 6 ファイル | `build-and-verify`・`container-runtime` | `technology-stack.md`（K-118） |
+
+### 前の Intent（261104-tz-options-perf）の主題（今回は再確認していない）
 
 CI の `frontendCoverage` で、表示のタイムゾーンの選択肢の組み立ての性能のテスト（`TimeZoneOptionsPerformance.test.ts`、NFR2.1.6、100 ms 以内）が中央値 106 ms で2回目の失敗をした不具合の直し。目標と測り方は変えず、`buildTimeZoneOptions` を速くする。今回は組み立てが1件の名前ごとに何をしているか、整形器のキャッシュ、測り方とカバレッジの設定を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
 
@@ -63,7 +83,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 | K-104 | 管理の仮の画面（`/admin`）は確認の API を呼んで「今後の管理機能はこの画面に加わります」を出すだけ。管理の区画の先頭の項目「管理」（区画の見出しと同じ名前）。E2E 030・090・130 と単体テストの多くが頼る。`GET /api/admin/check` は k6 と E2E 130 も使う | `frontend-feature-admin`・`access` | `code-structure.md`（画面の骨組みの仕上げ） |
 | K-105 | サブモジュールの固定先が知識ベースの記録より進んでいる: make-you-chic-ui `cae5fed`、java-mustache-processor `d61ba6d`（`0.1.0-6`）。K-86 の値は古い | `make-you-chic-ui`・`java-mustache-processor` | `dependencies.md` |
 
-### 前の Intent（261101-maintenance-update）の所見（今回は再確認していない。K-86 の固定先は K-105 で訂正）
+### 前の Intent（261101-maintenance-update）の所見（今回は再確認していない。K-86 の固定先は K-105 で訂正。K-81・K-88 は K-118 で訂正）
 
 メンテナンスの Intent。依存の最新化（Java 25 系の最新、Node 24 → 26、サブモジュール2つ、GitHub Actions、コンテナのイメージ、検査の道具、Gradle の Wrapper、Spring Boot と連動する固定の見直し、`dependabot.yml` の `ignore` の見直し）、古いコンテナのイメージの片付け、前の Intent の小さな直し（P1・T1〜T3・A2・A3）、README.md と perf/README.md の最新化。今回はコードの振る舞いではなく、版がどこに何か所書かれているかと文書の構成を主に読んだ。「未検証」の項目は要件定義・設計の段で確かめる。
 
@@ -125,6 +145,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-08）: `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-06）: `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-03）: `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-01）: `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。

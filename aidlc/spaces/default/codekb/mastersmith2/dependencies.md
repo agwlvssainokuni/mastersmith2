@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「画面の依存」に日時の変換（`shared/format`）を読む側の一覧を足した。ほかの節は前回以前の記録による（今回は読み直していない）。
+> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「ビルドの依存」に Gradle のタスクの間の依存（`dependsOn` と順の決まり）を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+>
+> 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「画面の依存」に日時の変換（`shared/format`）を読む側の一覧を足した。ほかの節は前回以前の記録による（今回は読み直していない）。
 >
 > 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`.gitmodules` と `git submodule status` を読み直し、サブモジュールの固定先を今の値に直した（K-105）。あわせて、今回の範囲の機能（`businessdata`・`navigation`）の依存の注記を足した。機能の間の依存の表そのものは前回までのまま（今回は `import` の検索をしていない）。
 >
@@ -47,6 +49,36 @@
 - 依存の取得元は Maven Central だけに固定（`team.md`）。lockfile は `backend/gradle.lockfile`・`settings-gradle.lockfile`・`frontend/package-lock.json`・`vendor/make-you-chic-ui/package-lock.json`。
 - 依存の脆弱性の関門は `./gradlew verify` の中の OSV-Scanner（`vendor/make-you-chic-ui` の lockfile を含む）。更新の知らせは Dependabot。
 
+### Gradle のタスクの間の依存（2026-11-08、`build.gradle.kts`・`backend/build.gradle.kts`）
+
+`dependsOn`（流すもの）と、`mustRunAfter`・`shouldRunAfter`（順だけ）を分けて書く。`verify` の段の順は `architecture.md` の K-111。
+
+| タスク | `dependsOn` | 順だけの決まり |
+|---|---|---|
+| `verify` | 段のタスク 10 個 | — |
+| 段のタスク（`verifyPrepare` 〜 `verifyArtifact`） | その段のタスクの一覧 | 前の段のタスクの後（`mustRunAfter`）。段の中の各タスクにも、前の段のすべてのタスクの後（496〜507 行） |
+| `checkToolchain` | — | — |
+| `vendorInstall` → `vendorBuild` → `vendorUnchanged` | 前のものに順に依る（`vendorInstall` は `checkToolchain`） | — |
+| `mustacheVendorUnchanged` | `checkToolchain` | — |
+| `frontendInstall` | `checkToolchain` | `vendorBuild` の後 |
+| npm のタスク（`frontendFormatCheck`・`frontendLint`・`frontendLintCss`・`frontendLicenseCheck`・`frontendSvgCheck`・`frontendTest` ほか） | `frontendInstall`（`frontendTypecheck`・`frontendBuild`・`frontendTest`・`frontendCoverage` は `vendorBuild` も） | — |
+| `frontendDistCheck`・`frontendBundleSize` | `frontendBuild` | — |
+| perf の道具の検査（`perfToolFormatCheck`・`perfToolLint`・`perfToolEslint`・`perfToolTypecheck`） | `frontendInstall` | — |
+| `perfEvidenceScan` | `checkToolchain` | — |
+| `gitleaksScan`・`osvScan` | — | — |
+| `:backend:test` | （Gradle の標準: テストのクラスのコンパイル） | — |
+| `:backend:integrationTest` | （Gradle の標準: テストのクラスのコンパイル） | `test` の後（`shouldRunAfter`） |
+| `:backend:check` | `integrationTest`（標準の `test` も） | — |
+| `:backend:jacocoTestReport` | （テストには依らない） | `test`・`integrationTest` の後 |
+| `:backend:jacocoTestCoverageVerification` | （テストには依らない） | `test`・`integrationTest`・`jacocoTestReport` の後 |
+| `:backend:spotbugsGate` | `spotbugsMain`（`spotbugsTest` は無効） | — |
+| `:backend:bootWar` | `:frontendBuild` | — |
+| `:backend:verifyDslSchemaInWar`・`:backend:verifyFaviconInWar` | `bootWar` | — |
+| `e2eTest` | `:backend:bootWar`（後に必ず `e2eTargetDbCleanup`） | — |
+
+- ルートは `evaluationDependsOn(":backend")`（52 行）で `backend` を先に評価し、`backend` のタスクを段の表に入れる。
+- カバレッジの報告と判定はテストに `dependsOn` しないため、単独で呼ぶと前の回の実行記録（`build/jacoco/*.exec`）を読む（K-114）。
+
 ## サブモジュールと見送りの依存
 
 | 依存 | 今の固定 | メモ |
@@ -60,6 +92,7 @@
 - 確かめた事実: `.gitmodules` の取得元は K-86 と同じ。`git submodule status` は make-you-chic-ui が `cae5fed`（`remotes/origin/HEAD`）、java-mustache-processor が `d61ba6d`（`0.1.0-6-gd61ba6d`）。どちらも Intent `261101-maintenance-update` のコミット `28dd694`（「サブモジュールの固定先を上げる（make-you-chic-ui cab4207→cae5fed、java-mustache-processor 8d44c36→d61ba6d（0.1.1））」、`git log` の読み取り）で上がった。知識ベースの K-86 の値（`cab4207`・`8d44c36`）はその前の値。
 - 今回の Intent への意味: make-you-chic-ui の `Icon` の名前は `cae5fed` でも 18 種（`registry.ts` を読み取りで確かめた）。テーブル・ビューのアイコンや、ロゴ・アプリ名の差し込み口が要るなら、`team.md` の手順で上流へ依頼し、固定先の更新の専用のコミットで取り込む（K-100・K-102）。
 - 未検証: `cae5fed` の lockfile の `hasInstallScript` の数、README の固定先の記述が `cae5fed` に直っているか（README は今回の範囲の外）。
+- 2026-11-08 の追記: README 40 行は make-you-chic-ui を `d112795`、java-mustache-processor を `d61ba6d`（タグ `0.1.1`）と書く。make-you-chic-ui の固定先が `cae5fed` からさらに上がった見込みだが、`git submodule status` は今回見ていない（未確認）。
 
 **K-86 サブモジュールの固定先（2026-11-01）（`make-you-chic-ui`・`java-mustache-processor`）**
 
@@ -108,6 +141,7 @@
 
 ## Sources
 
+- 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`（タスクの依存）、`README.md` 40 行、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/src` の `shared/format` の import の grep、`frontend/eslint.config.js` の `timeZoneConversionRules`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `.gitmodules`・`git submodule status`・`git log`（サブモジュールの2行）・`gradle/libs.versions.toml` の grep、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `.gitmodules`・`git submodule status`・`settings.gradle.kts`・`.github/dependabot.yml`（全文）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。

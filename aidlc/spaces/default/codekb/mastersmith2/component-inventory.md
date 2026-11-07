@@ -2,13 +2,14 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 49 個（2026-11-06 に `frontend-shared-format` を足した。それまでは 48 個）。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 49 個（2026-11-06 に `frontend-shared-format` を足した。それまでは 48 個。2026-11-08 は増減なし）。
+- 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、`build-and-verify` の記述に今回の読み（K-111〜K-118）を足した。今回の `analyzed.components` はこの1つ。`backend-test-support` は結合テストの数と Testcontainers の前提（`ContainerRuntimeCheck`・`TargetDbTestDatabase`）を流し読みしただけのため、`analyzed.components` に入れていない（一行足した）。ほかの部品の記述は前回以前のまま。
 - 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、`frontend-feature-preferences` の記述を書き直し、`frontend-shared-format`（`frontend/src/shared/format/`。前の Intent の U1 で入った日時の変換を含む）を新しく足した。今回の `analyzed.components` はこの2つ。`frontend/vitest.config.ts` も深く読んだが、`build-and-verify` の部品全体は読んでいないため `analyzed.components` に入れていない（`build-and-verify` に一行足した）。`frontend-app-core` の `formatDateTime.ts` の記述は古い（K-110。訂正の注を足した）。ほかの部品の記述は前回以前のまま。
 - 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、`targetdb`・`dsl`・`dslmanage`・`navigation`・`businessdata`・`frontend-app-core`・`frontend-registry`・`frontend-app-layout-i18n`・`frontend-feature-admin`・`frontend-feature-tables` の記述に今回の読み（K-94〜K-104）を足し、`make-you-chic-ui`・`java-mustache-processor` の固定先を直した（K-105）。今回の `analyzed.components` はこの 10 個。ID は 48 個のまま（増減なし）。前回まで深く読んだ `build-and-verify`・`container-runtime`・`perf-and-monitoring`・`role` は、今回は確かめていない（記述は前回以前のまま、流し読みの扱い）。
 - 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、`build-and-verify`・`container-runtime`・`perf-and-monitoring`・`businessdata` の記述に今回の読み（K-81〜K-93）を足し、`frontend-e2e`・`make-you-chic-ui` の数と固定先を直した。今回の `analyzed.components` はこの4つ。ID は 48 個のまま。
 - 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
-- 読みの深さ: 「深い（一部）」は 2026-11-03 に深く読んだファイルを持つ部品で、`analyzed.components` の 10 個（上の行）。それより前の記録で「深い（一部）」と書いた部品のうち今回の 10 個に無いものは、今回は確かめていない。以下は前回（2026-10-29）の書き方: `analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。
+- 読みの深さ: 「深い（一部）」は 2026-11-03 に深く読んだファイルを持つ部品で、`analyzed.components` の 10 個（上の行）。それより前の記録で「深い（一部）」と書いた部品のうち今回の 10 個に無いものは、今回は確かめていない。以下は前回（2026-10-29）の書き方: `analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。2026-11-08 に深く読んだのは `build-and-verify` だけ（下の部品の行）。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -136,6 +137,7 @@
 ### backend-test-support
 
 - 場所: `backend/src/test/java/cherry/mastersmith/` ／ 責務: 機能ごとの `testsupport`、アプリ全体を起動する結合テスト、層と境界の検査（19 ファイル）、API の分類の網羅。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-08 の流し読み（K-113）: `*Test.java` 312・`*IT.java` 278。内部DB を H2 のファイルで持つ IT が 172（`common/testsupport/TestDatabase.register`）、対象DB のコンテナを使う IT が 39（`targetdb/testsupport/TargetDbTestDatabase` がクラスごとにコンテナを起動、`ContainerRuntimeCheck` が Docker の無いときに CI では失敗・手元では中断）。`junit-platform.properties` は jqwik の記録の置き場だけで、JUnit の並列は無い。`-PitForks` で並べるときの論点（同時のコンテナ・番号の取り合い）は `architecture.md` の K-116。
 
 ## 画面（`frontend/src/`）
 
@@ -247,18 +249,21 @@
 
 ### build-and-verify
 
-- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
-- 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。
+- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
+- 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。K-111〜K-117 の持ち主（本文は `architecture.md` と `code-quality-assessment.md`）。
 - 今回読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は現在 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
 - 今回（2026-11-01）読んだもの（K-81・K-84・K-85・K-87・K-90）: `settings.gradle.kts`・`build.gradle.kts`（全文。`checkToolchain` の Node 24 の強制、verify の 10 段、perf の道具の Prettier と oxlint、E2E の見本の PG の準備と片付け）・`backend/build.gradle.kts`（全文）・`gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`（9.8.2）・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`.npmrc`・`vite.config.ts`・`vitest.setup.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（どちらも全文）。版と固定先の一覧は `technology-stack.md`。
 - 状態: at-risk（K-81: Node 26 への引き上げで `engines`・`checkToolchain`・CI・README を同時にそろえる必要。K-90） ／ 読みの深さ: 深い（一部）
 - 2026-11-06 に深く読んだのは `frontend/vitest.config.ts` だけ（K-108・K-110。部品全体は確かめていないため、今回の `analyzed.components` には入れていない）。`build.gradle.kts` の `frontendTest`・`frontendCoverage`（216〜220 行）と `ci.yml` の `verify` の job の頭は流し読み。K-81 の Node 26 はもう `engines`（`>=26 <27`）と `ci.yml`（`node-version: "26"`）に入っている（流し読み）。
+- 今回（2026-11-08）読んだもの（K-111〜K-118）: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`.github/workflows/ci.yml`・`config/` の2ファイル・`README.md`（どれも全文）、`frontend/scripts/` の `check-license-header.mjs`・`check-bundle-size.mjs`・`check-dist-assets.mjs`・`make-ico.mjs`（全文。`check-svg-safety.mjs`・`icon-binary.mjs` は頭だけ）。`verify` は 10 の段を `mustRunAfter` でつなぎ（K-111）、画面のテストは2回流れ（K-112）、結合テストは1つの JVM で並べる口も絞る口も無く（K-113）、カバレッジの判定は結合テストの実行記録に依り（K-114）、CI は `verify` を1本流す（K-115）。Node 26 は `engines`・`checkToolchain`（`v26.`）・CI・README でそろっている（K-81 は解消。K-118）。`gradle/libs.versions.toml`・`gradle.lockfile`・`dependabot.yml` は今回読んでいない。
+- 状態（2026-11-08）: at-risk（K-112〜K-114・K-116。今回の Intent で `verifyQuick`・`-PitTests`・`-PitForks` を足し、画面のテストを1回にする見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### container-runtime
 
 - 場所: `Dockerfile`・`compose.yaml`・`.env.example`・`README.md` ／ 責務: WAR をコピーするだけのイメージ、`app` と profile で起動する監視・メールの受け手・見本の対象DB。読み取りのプールの環境変数は `.env.example` 66〜67 行（値は表示していない。`.env` は開いていない）。
 - 今回読んだもの（K-78）: `compose.yaml` の `image:` 行だけ（otel-lgtm は `grafana/otel-lgtm:0.38.0@sha256:75cdf892…`（83 行）、Mailpit は `axllent/mailpit:v1.32.0@sha256:0790692b…`（121 行）。ほか otel-collector 0.163.2・postgres 18.6・mysql 26.10.0・mariadb 13.0.2）と、`README.md` の Mailpit・E2E に関わる記述の検索。動いているコンテナは `docker ps` / `docker images` の一覧での事実で、ダイジェストの一致は未検証。
 - 今回（2026-11-01）読んだもの（K-82・K-83・K-88・K-93）: `Dockerfile`（全文）、`compose.yaml` の `image:`・profile・`mem_limit` の行、`README.md` の見出しの一覧と「前提の道具」「取得と準備」、版の固定の行の grep。手元のイメージの一覧は見ていない（K-93）。
+- 2026-11-08 の追記: `README.md` は 164 行に縮み（K-88 の経緯の溜まりは README からは消えた。K-118）、配備の手順の本文は `docs/deployment.md` ほかへ移った。`Dockerfile`・`compose.yaml` は今回読んでいない。
 - 状態: at-risk（K-88: README の最新化。K-93） ／ 読みの深さ: 深い（一部）
 
 ### perf-and-monitoring

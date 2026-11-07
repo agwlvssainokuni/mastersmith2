@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で更新した。画面の表示のタイムゾーンの選択肢の組み立て（`features/preferences/buildTimeZoneOptions.ts`）と日時の変換の共有の関数（`shared/format/timeZone/`）を読み、「表示のタイムゾーンの選択肢の組み立て」の節（K-106・K-107）と Interaction Diagrams 7 を足した。K-96 の「利用者ごとの時差の設定は無い」は古い（K-110）。ほかの図と散文は前回以前の記録による。
+> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で更新した。アプリの作りは読み直していない。1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/vitest.config.ts`・`.github/workflows/ci.yml`）を読み、「検査の入口 `verify` の流れ」の節（K-111・K-113）、Interaction Diagrams 8、Improvement Opportunities の K-116 を足した。ほかの図と散文は前回以前の記録による。
+>
+> 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で更新した。画面の表示のタイムゾーンの選択肢の組み立て（`features/preferences/buildTimeZoneOptions.ts`）と日時の変換の共有の関数（`shared/format/timeZone/`）を読み、「表示のタイムゾーンの選択肢の組み立て」の節（K-106・K-107）と Interaction Diagrams 7 を足した。K-96 の「利用者ごとの時差の設定は無い」は古い（K-110）。ほかの図と散文は前回以前の記録による。
 >
 > 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で更新した。業務データの日時の型の対応と接続の時差を読み、「日時の値の流れ」の節（K-94〜K-99）と Interaction Diagrams 5（日時の値の読み出しと保存）・6（サイドバーの区画とアイコンの決まり方。K-100・K-101）を足した。ほかの図と散文は前回以前の記録による。
 >
@@ -14,6 +16,7 @@
 - 内部DB は組み込みの H2（利用者・認証・招待・DSL・ロール・グループ・監査）。スキーマは Flyway の V1〜V13。
 - 対象DB（MySQL・MariaDB・PostgreSQL のどれか1つ）は設定（環境変数）だけから接続する。読み取り専用のプールと、設定が揃ったときだけ作る書き込み専用のプールの2つ。
 - 配備先は開発者の PC 上のコンテナだけ（`Dockerfile`・`compose.yaml`）。
+- ビルドと検査は Gradle の1つの入口 `./gradlew verify`（ルートの `build.gradle.kts`）にまとめ、画面の npm と外部の道具（Gitleaks・OSV-Scanner）も Gradle から呼ぶ。CI も同じタスクを呼ぶ（K-111・K-115）。
 
 ## Architectural Style
 
@@ -73,6 +76,41 @@ flowchart LR
 - 要求ごとに: 画面 → アクセストークン → `auth` が署名と期限を確かめ主体を作る → 安全の決まり（`/api/**` の既定はログインだけ）→ controller → service → repository。
 - 業務データの要求: `BusinessDataReadController` / `BusinessDataWriteController`（`@ApiAccess(AUTHENTICATED)`）→ `BusinessDataReadService` / `BusinessDataWriteService` が `TableAccessResolver` で権限の写しを作り → `targetdb` の `TargetReadAccess.withRead(目的, …)` で読み取りの接続を借り → `RowSqlExecutor` が SQL を組み立てて実行する。権限の判定は API ごとにサーバー側で行う。
 - 監査は各機能の出来事を `audit` が確定の後に別のトランザクションで内部DB に追記する。
+
+## 検査の入口 `verify` の流れ（K-111・K-113、2026-11-08）
+
+持ち主の文書はここで、ほかの文書からはこの節を指す。カバレッジ・CI・書き換える決まりは `code-quality-assessment.md` の K-112・K-114・K-115・K-117。
+
+### K-111 段の構成と順（確かめた事実）
+
+- 入口は `build.gradle.kts` の `verify`（509〜513 行）。`dependsOn(stageTasks)` だけを持ち、段のタスク 10 個に任せる。
+- 段の表 `verifyStages`（425〜494 行）は `Triple(段の名前, 説明, 含めるタスク)` の `List`。
+
+| 順 | 段 | 含めるタスク |
+|---|---|---|
+| 0 | `verifyPrepare` | `checkToolchain`（Node 26・npm・git）・`vendorInstall`・`vendorBuild`・`vendorUnchanged`・`mustacheVendorUnchanged`・`frontendInstall` |
+| 1 | `verifyFormat` | ルートと `:backend` の `spotlessCheck`・`frontendFormatCheck`・`perfToolFormatCheck` |
+| 2 | `verifyLint` | `frontendLint`（oxlint・ESLint）・`frontendLintCss`・`perfToolLint`・`perfToolEslint` |
+| 3 | `verifyLicense` | `frontendLicenseCheck`・`frontendSvgCheck` |
+| 4 | `verifyBuild` | `:backend:compileJava`・`:backend:compileTestJava`・`frontendTypecheck`・`perfToolTypecheck`・`frontendBuild`・`frontendDistCheck` |
+| 5 | `verifyUnitTest` | `:backend:test`（`*Test`）・`frontendTest`（`npm run test`） |
+| 6 | `verifyIntegrationTest` | `:backend:integrationTest`（`*IT`） |
+| 7 | `verifyCoverage` | `:backend:jacocoTestReport`・`:backend:jacocoTestCoverageVerification`・`frontendCoverage`（`npm run test:coverage`） |
+| 8 | `verifySecurity` | `:backend:spotbugsGate`・`osvScan`・`gitleaksScan`・`perfEvidenceScan` |
+| 9 | `verifyArtifact` | `:backend:bootWar`・`:backend:verifyDslSchemaInWar`・`:backend:verifyFaviconInWar`・`frontendBundleSize` |
+
+- 順の決め方（496〜507 行）: 段ごとに「それより前の段のすべてのタスク」を集め、その段の各タスクに `mustRunAfter` を `configure` で付ける。段のタスクどうしにも、前の段の後の `mustRunAfter` を付ける。順の決まりはタスクそのものに付くため、`verify` の外で同じタスクを流しても、両方がグラフに入れば同じ決まりが効く。
+- `mustRunAfter` は順だけを決め、流すかどうかは決めない。`--continue` を付けなければ、1つ失敗すると後ろの段は流れない（`docs/verification.md` 11 行も同じ説明）。
+- 段ごとに単独でも流せる（例 `./gradlew verifyFormat`）。並列の設定（`gradle.properties` の `org.gradle.parallel` など）は無い。
+
+### K-113 結合テストの分け方と前提（確かめた事実）
+
+- `backend/build.gradle.kts`: 単体 `test` は `includeTestsMatching("*Test")`（ヒープ 1536m、135〜145 行）、結合 `integrationTest` は同じ `src/test/java` の出力から `includeTestsMatching("*IT")`（147〜156 行、`shouldRunAfter(tasks.test)`）。全 `Test` の共通の設定はヒープ 1g・`h2.compactThreads=1`・`user.timezone=Asia/Tokyo`・`java.net.preferIPv4Stack=true` など（107〜133 行）。
+- 並列の指定（`maxParallelForks`・`forkEvery`）は無く、Gradle の既定の1つの JVM で流れる。JUnit の並列も無い（`junit-platform.properties` は jqwik の1行だけ。流し読み）。
+- IT を絞る口は無い。`-P` で絞る前例は E2E の `-Pe2e.files`（`build.gradle.kts` 812〜818 行）だけ。
+- 数（`find`、流し読み）: `*Test.java` 312・`*IT.java` 278。内部DB を H2 のファイル（`TestDatabase.register`、`jdbc:h2:file:<dir>/mastersmith`）で持つクラス 172、対象DB のコンテナを使うクラス 39。
+- 対象DB の IT は `TargetDbTestDatabase` がテストのクラスごとに版を固定したイメージのコンテナを1つ起動し、名前の重ならないスキーマと読み取りのアカウントを作ってクラスの終わりに消す。`ContainerRuntimeCheck`（`BeforeAllCallback`）が、Docker に届かず `CI=true` なら失敗、手元なら WARN と中断（飛ばした扱い）にする。テストの出力は `SKIPPED` も出す（`testLogging` の `events("failed", "skipped")`）。
+- 待ち受けの番号は `ServerSocket(0)` で空きを取る。`TargetDbStartupIT` 91 行・`MailTestApplication` 97 行は番号を取ってすぐ閉じ、後で使う形（流し読み）。
 
 ## 日時の値の流れ（K-94〜K-99、2026-11-03）
 
@@ -355,6 +393,30 @@ sequenceDiagram
 
 文字の代わりの説明: 選択の部品は付いたときに1回、ブラウザ（Node のテストでは Node の ICU）が知る名前の一覧と時刻を決め、組み立ての関数を呼ぶ。組み立ては配列ごとのキャッシュに無ければ、時点の文字を1回作り、UTC を足して並べ、1件ごとに次を行う: 名前の門で検査して整形器を作りキャッシュに入れる（128 件で全体を捨てる）、`formatInstant` でもう一度門を通り、同じ時点の文字を読み直し、壁時計を `formatToParts` で読み、時差を求めるために同じ時点の壁時計をもう1回 `formatToParts` で読み、表示の文字を組む。組み立ては返った文字の末尾から時差を正規表現で切り出し、`名前 (±HH:mm)` にする。最後に「ブラウザに合わせる」を先頭に置いて返す。
 
+### 8. 1コマンドの検査 `./gradlew verify` の流れ（K-111〜K-115、2026-11-08）
+
+```mermaid
+flowchart TD
+  DEV["developer runs ./gradlew verify"] --> P0["0 verifyPrepare: toolchain, vendor npm ci and build, submodules unchanged, frontend npm ci"]
+  CI["GitHub Actions ci.yml job verify, CI=true"] --> P0
+  P0 --> P1["1 verifyFormat: Spotless, Prettier"]
+  P1 --> P2["2 verifyLint: oxlint, ESLint, Stylelint"]
+  P2 --> P3["3 verifyLicense: license header, SVG allowlist"]
+  P3 --> P4["4 verifyBuild: compileJava, compileTestJava, tsc, vite build, dist check"]
+  P4 --> P5["5 verifyUnitTest: backend test *Test, frontendTest Vitest run 1"]
+  P5 --> P6["6 verifyIntegrationTest: backend integrationTest *IT, one JVM, 39 classes start DB containers"]
+  P6 --> P7["7 verifyCoverage: jacocoTestReport, jacocoTestCoverageVerification, frontendCoverage Vitest run 2"]
+  P7 --> P8["8 verifySecurity: spotbugsGate, osvScan, gitleaksScan, perfEvidenceScan"]
+  P8 --> P9["9 verifyArtifact: bootWar, schema and favicon in WAR, bundle size"]
+  EXEC1[("test.exec")] --> P7
+  EXEC2[("integrationTest.exec")] --> P7
+  P5 -.-> EXEC1
+  P6 -.-> EXEC2
+  DOCKER[("container runtime colima or Docker")] --> P6
+```
+
+文字の代わりの説明: 開発者の手元でも CI でも、入口は引数なしの `./gradlew verify` の1本である。段は 0 の準備から 9 の成果物まで、前の段のすべてのタスクの後に次の段のタスクが流れる順の決まり（`mustRunAfter`）でつながり、1つ失敗すると後ろは流れない。5 の段でバックエンドの単体テストと画面のテスト（Vitest の1回目）が流れ、6 の段で結合テストが1つの JVM で流れる。結合テストのうち対象DB のものはコンテナの実行環境に頼り、テストのクラスごとにコンテナを起動する。7 の段は、5 と 6 の段が書いた実行記録（`test.exec`・`integrationTest.exec`）を合わせてバックエンドのカバレッジを判定し、画面のテストをカバレッジの計測つきでもう1回流して下限を判定する。8 の段は静的解析・依存の脆弱性・秘密情報・記録の JWT の形を調べ、9 の段で WAR を作って中身を確かめる。
+
 ## Key Design Decisions
 
 - 対象DB は読み取り専用の別のプールと、書き込み専用の別のプールに分ける。どちらも既定の候補にしない（Flyway・JPA が誤って使わない）。
@@ -362,6 +424,7 @@ sequenceDiagram
 - 業務データの SQL を組み立てて実行する部品は `RowSqlExecutor` に閉じる（`BusinessDataBoundaryArchitectureTest` が、`businessdata` で JDBC の接続から文を作ってよい場所をこの部品だけに絞る）。DB の種類ごとの差は `RowDialect`（`MysqlFamilyRowDialect`・`PostgresRowDialect`）に閉じる。
 - 行の主キーの値を道（URL）にも問い合わせにも載せず、本文で運ぶ（前回の決定）。
 - 他テーブル参照（REFERENCE・LOOKUP）の業務データでの扱いは暫定で、`formPart: lookup` を `text` に置き換え、選択肢は FIXED だけ返す（前回の決定。K-74）。
+- 統合の前の関門は Gradle の1つのタスク `verify` で、手元と CI が同じタスクを呼ぶ（`project.md` の Way of Working）。段の順はタスクに付けた `mustRunAfter` で決め、段ごとに単独でも流せる（K-111）。
 
 ## Improvement Opportunities
 
@@ -375,8 +438,16 @@ sequenceDiagram
 
 - **選択肢の組み立ての速さ（K-106・K-107・K-109、2026-11-06）**: 時差だけを求める軽い関数を `shared/format/timeZone` に足し（`formatToParts` を 1 回、名前の検査を 1 回、時点の秒を名前の外で1回だけ求める）、表示の文字の組み立てと切り出しを省く案と、時差の計算に要る項目だけの整形器（または `longOffset`）で生成を軽くする案がある。生成の回数（1件 1 回）は前者では減らない。どれだけ効くかは未検証で、カバレッジの計測つきで捨ての試しで測る。細部と制約は `code-quality-assessment.md` の K-109。
 
+- **K-116 `verifyQuick`・`-PitTests`・`-PitForks` を足すときの論点（2026-11-08、どれも未検証の見立て）（`build-and-verify`・`backend-test-support`）**:
+  - 段の表と順の決まり: 順の決まり（`mustRunAfter`）はタスクそのものに付くため、`verifyQuick` 用に段の表を別に作り、同じタスクを `verify` と違う順に置くと、両方の決まりが同じタスクに重なって循環しうる（Gradle は循環を誤りにする見込み）。段の表を1つにして「含めるかどうか」だけを入口ごとに切り替えるか、両方で同じ順にそろえる形が安全と見る。画面のテストを1回にする（K-112）なら、`verify` の側でも同じ位置に置く。
+  - カバレッジの参考値: `integrationTest` を流さないと `integrationTest.exec` が無いか前の回のまま残る。`fileTree` は無いファイルを黙って外すため `jacocoTestReport` は作れるが、IT でしか通らないパッケージ（`web` の層など）は下限を下回る見込みで、`jacocoTestCoverageVerification` は `verifyQuick` から外す形になる。`build/jacoco/integrationTest.exec` が前の回のまま残ると、参考値に古い実行記録が混ざる（消すか、参考値の表示に注記する）。`-PitTests` で絞った IT を流すときも、参考値は絞った分だけの値になる。
+  - `-PitTests`: `integrationTest` の `filter` に `-P` の値（クラス名の形）を足す形が素直。`-Pe2e.files` と同じく `providers.gradleProperty` で読む形が既にある。`*IT` に当たらない値で何も流れないとき（Gradle の「テストが見つからない」）の扱いを決める。
+  - `-PitForks`: `maxParallelForks` を `-P` の値で決め、無ければ 1（CI は引数なしのため今までどおり）。並べると、(a) 対象DB の IT はクラスごとにコンテナを起動するため同時のコンテナが増え、colima の VM（README 23 行: CPU 4・メモリ 6GiB）に響く、(b) テストの JVM のヒープ 1g が並べた数だけ要る、(c) `ServerSocket(0)` で番号を取って閉じてから使う形（`TargetDbStartupIT`・`MailTestApplication`）は別の JVM と番号を取り合いうる、(d) 内部DB の H2 はクラスごとの一時の場所のファイルで重ならない見込み、(e) 前の Intent の一時的な失敗（`java.net.preferIPv4Stack` で直した番号の重なり）は同時の数が増えると出やすくなりうる。流して確かめる必要がある。
+  - Docker が無いときの扱い（`ContainerRuntimeCheck`）は `verifyQuick` でも同じ（手元は飛ばして WARN、`CI=true` なら失敗）。`team.md` の「飛ばした状態では統合しない」の決まりを `verifyQuick` にどう当てるかは要件で決める。
+
 ## Sources
 
+- 2026-11-08: `build.gradle.kts`（全文）・`backend/build.gradle.kts`（全文）・`settings.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`.github/workflows/ci.yml`・`README.md`、流し読みの `docs/verification.md`・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/{ContainerRuntimeCheck,TargetDbTestDatabase}.java`・`backend/src/test/resources/junit-platform.properties`、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/src/features/preferences/{buildTimeZoneOptions,TimeZoneSelect}.ts(x)`・`frontend/src/shared/format/timeZone/{timeZoneGate,formatInstant,wallClock,instantText,index}.ts`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `ColumnValueCodec.java`・`RowDialect.java`・`MysqlFamilyRowDialect.java`・`PostgresRowDialect.java`・`TargetDataSourceConfig.java`・`navigation/`（`MenuFilter`・`NavIconPolicy`・`NavigationService`・`NavNodeResponse`）・`frontend/src/features/tables/{valueFormat,formDiff}.ts`・`frontend/src/app/navigation/buildNavSections.ts`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-01: `RowSqlBuilder.java`（140〜180・330〜348 行）・`RowDialect.java`（110〜160 行）、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`。

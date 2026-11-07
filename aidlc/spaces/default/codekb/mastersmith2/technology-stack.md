@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、テストの表の Vitest・`@vitest/coverage-v8` の版を lockfile で確かめ（どちらも 5.0.5、変わらず）、「画面の日時と Intl」の節を足した。ほかの表は前回のまま（今回は読み直していない）。
+> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、今回読んだファイル（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`）にある版だけを直した: Node.js は 26（K-81 は解消）、OSV-Scanner は 2.7.0、`gradle/actions/setup-gradle` は v6.4.1。訂正の一覧は「K-118 前の記録の訂正」の節。`gradle/libs.versions.toml`・lockfile・`Dockerfile`・`compose.yaml` は読んでいないため、ほかの表の値は前回のまま。
+>
+> 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、テストの表の Vitest・`@vitest/coverage-v8` の版を lockfile で確かめ（どちらも 5.0.5、変わらず）、「画面の日時と Intl」の節を足した。ほかの表は前回のまま（今回は読み直していない）。
 >
 > 前回の記録: 2026-11-03（記録のコミット `fa0b01e`）の Intent `261102-timezone-ui-polish` の Focused scan で、時差の設定の置き場（K-95）と make-you-chic-ui の固定先（K-105）だけを足した。版の表は前回（2026-11-01）のまま（今回は読み直していない）。
 >
@@ -13,7 +15,7 @@
 | Java | 25 | `libs.versions.toml` の `java`（Gradle の toolchain）、`ci.yml` の `java-version: "25"` |
 | 実行のイメージ | `eclipse-temurin:25.0.4.1_1-jre-noble`（index のダイジェストで固定） | `Dockerfile` 17 行 |
 | JVM の設定 | `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1` と `MASTERSMITH_JAVA_OPTIONS` | `Dockerfile` 52 行 |
-| Node.js | 24（`engines` は `>=24 <25`、`.npmrc` の `engine-strict=true`） | `frontend/package.json` 8 行、`build.gradle.kts` の `checkToolchain`、`ci.yml` |
+| Node.js | 26（`engines` は `>=26 <27`、`.npmrc` の `engine-strict=true`）。2026-11-08 に確かめた | `frontend/package.json` 7〜9 行、`build.gradle.kts` の `checkToolchain`（95 行の `startsWith("v26.")`）、`ci.yml` 60 行（`node-version: "26"`）、README 14 行 |
 | Gradle | 9.8.2（Wrapper） | `gradle/wrapper/gradle-wrapper.properties` |
 | TypeScript | 6.0.3（`^6.0.3`） | `frontend/package.json`・lockfile |
 
@@ -48,7 +50,7 @@
 |---|---|---|
 | React・react-dom | ^19.3.1／19.3.1 | 画面 |
 | react-router | ^8.5.1／8.5.1 | 振り分け |
-| i18next・react-i18next | ^26.5.11／26.5.11・^17.1.9／17.1.9 | 日英の文言（前の Intent の Dependabot #81・#82 は取り込み済み） |
+| i18next・react-i18next | ^26.5.11／26.5.11・^17.1.9／17.1.9 | 日英の文言（前の Intent の Dependabot #81・#82 は取り込み済み）。2026-11-08 の `package.json` は `^26.6.0`・`^17.1.10`（lockfile は読んでいない） |
 | Vite・@vitejs/plugin-react | ^8.3.5／8.3.5（rolldown 1.2.16）・^6.1.2 | ビルドと開発のサーバー |
 | make-you-chic-ui | サブモジュール `cae5fed`（npm の `file:`。2026-11-03。K-105） | デザインシステム（K-86・K-105、`dependencies.md`） |
 | @fontsource/noto-sans-jp・noto-serif-jp | ^5.3.1 | 書体 |
@@ -71,36 +73,36 @@
 
 | 道具 | 版 | 用途 |
 |---|---|---|
-| Gradle（Kotlin DSL） | 9.8.2（Wrapper） | `./gradlew verify` の入口 |
+| Gradle（Kotlin DSL） | 9.8.2（Wrapper） | `./gradlew verify` の入口。`gradle.properties` は無く、並列の設定（`org.gradle.parallel`）も結合テストの `maxParallelForks` も無い（2026-11-08） |
 | Spotless・palantir-java-format | 8.10.4・2.98.0 | Java の書式とライセンスヘッダー |
 | SpotBugs（プラグイン・道具）・FindSecBugs | 6.5.13・4.10.4・1.14.0 | 静的解析 |
 | JaCoCo | 0.8.15 | カバレッジ（全体とパッケージごと） |
-| Prettier・oxlint・ESLint・Stylelint | 3.9.10・1.90.0・10.13.0・17.16.0 | 画面の書式とリンタ（`eslint-plugin-react-hooks` 7.1.1・`@typescript-eslint/parser` 8.72.1・`stylelint-config-standard` 40.0.0） |
-| Gitleaks・OSV-Scanner | 8.30.1・2.6.0（CI は版と SHA-256 で固定） | 秘密情報の検出・依存の脆弱性検査（`build.gradle.kts` から呼ぶ） |
-| GitHub Actions | checkout v7.0.1・setup-java v6.1.0・setup-node v7.1.0・gradle/actions/setup-gradle v6.4.0・upload-artifact v7.0.2・download-artifact v8.0.2（いずれもコミットの SHA で固定） | `develop` への push と `v*` のタグで `./gradlew verify` |
+| Prettier・oxlint・ESLint・Stylelint | 3.9.10・1.90.0・10.13.0・17.16.0 | 画面の書式とリンタ（`eslint-plugin-react-hooks` 7.1.1・`@typescript-eslint/parser` 8.72.1・`stylelint-config-standard` 40.0.0）。2026-11-08 の `package.json` の範囲は ESLint `^10.14.0`（lockfile は読んでいない） |
+| Gitleaks・OSV-Scanner | 8.30.1・2.7.0（CI は版と SHA-256 で固定。2026-11-08） | 秘密情報の検出・依存の脆弱性検査（`build.gradle.kts` から呼ぶ） |
+| GitHub Actions | checkout v7.0.1・setup-java v6.1.0・setup-node v7.1.0・gradle/actions/setup-gradle v6.4.1・upload-artifact v7.0.2・download-artifact v8.0.2（いずれもコミットの SHA で固定。2026-11-08） | `develop` への push と `v*` のタグで `./gradlew verify` |
 | pre-commit | 手元の道具（README は 4.x）。Gitleaks のフックは `rev: v8.30.1` | コミットの前の検査 |
 
 ## 版の固定先（K-81〜K-85、2026-11-01）
 
-上げるときに同じ値をそろえる必要のある場所の一覧。行の番号は記録のコミット `6079f13` のもの。
+上げるときに同じ値をそろえる必要のある場所の一覧。行の番号は記録のコミット `6079f13` のもの（Node と OSV-Scanner の行は 2026-11-08 の `16f46f1` で直した）。
 
 | 対象 | 今の版 | 書かれている場所 | Dependabot |
 |---|---|---|---|
-| Node.js（K-81） | 24 | `frontend/package.json` 8 行（`engines` `>=24 <25`）・`build.gradle.kts` 72・73 行（入れ方の文言）・90 行（説明）・95 行（`startsWith("v24.")` で拒む）・`.github/workflows/ci.yml` 57 行（名前）・60 行（`node-version: "24"`）・`README.md` 12 行（表）・20 行（説明） | 知らせない（版の定義の1か所が無い。`.nvmrc` なども無い） |
-| Node 24 に依る起動の旗（K-81） | `NODE_OPTIONS=--no-experimental-webstorage` | `frontend/package.json` の `test`・`test:coverage` | — |
-| Java（K-82） | 25 | `gradle/libs.versions.toml` の `java`・`ci.yml` の `java-version` と名前（51 行）・README 3・11 行（表に SDKMAN の `25.0.4-tem`） | docker の `eclipse-temurin` の大きな版だけ見送り |
-| JRE のイメージ（K-82） | `eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23…` | `Dockerfile` 17 行・`perf/versions.env` 25 行（`PERF_JRE_IMAGE`）・README 407・417・525・994・1391 行ほか | `Dockerfile` だけを見る |
-| JDK のイメージ（K-82） | `eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc…` | `docker/hikari-pool.sh` 50 行（`JDK_IMAGE`）・README 531・565 行・`perf/README.md` 130 行 | 見ない（jre の知らせで手でそろえる） |
+| Node.js（K-81） | 26（2026-11-08） | `frontend/package.json` 7〜9 行（`engines` `>=26 <27`）・`build.gradle.kts` 72・73 行（入れ方の文言）・90 行（説明）・95 行（`startsWith("v26.")` で拒む）・`.github/workflows/ci.yml` 57 行（名前）・60 行（`node-version: "26"`）・`README.md` 14 行（表） | 知らせない（版の定義の1か所が無い。`.nvmrc` なども無い） |
+| Node に依る起動の旗（K-81） | `NODE_OPTIONS=--no-experimental-webstorage` | `frontend/package.json` の `test`・`test:coverage`（22〜23 行。Node 26 でも残っている） | — |
+| Java（K-82） | 25 | `gradle/libs.versions.toml` の `java`・`ci.yml` の `java-version` と名前（51 行）・README 3・13 行（表に SDKMAN の `25.0.5.0+8-tem`。2026-11-08） | docker の `eclipse-temurin` の大きな版だけ見送り |
+| JRE のイメージ（K-82） | `eclipse-temurin:25.0.4.1_1-jre-noble@sha256:d9a39a23…` | `Dockerfile` 17 行・`perf/versions.env` 25 行（`PERF_JRE_IMAGE`）・README 407・417・525・994・1391 行ほか（2026-11-01 の README。今の README は 164 行で、版の行は `docs/` に移った見込み。未確認） | `Dockerfile` だけを見る |
+| JDK のイメージ（K-82） | `eclipse-temurin:25.0.4.1_1-jdk-noble@sha256:589ff4cc…` | `docker/hikari-pool.sh` 50 行（`JDK_IMAGE`）・README 531・565 行（2026-11-01）・`perf/README.md` 130 行 | 見ない（jre の知らせで手でそろえる） |
 | 対象DB のイメージ（K-83） | postgres 18.6・mysql 26.10.0・mariadb 13.0.2 | `compose.yaml` 147・168・188 行・`docker/perf/compose.yaml` 69・96・122 行・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`（`*_VERSION`・`*_DIGEST`） | `compose.yaml` だけを見る |
-| Mailpit（K-83） | `axllent/mailpit:v1.32.0@sha256:0790692b…` | `compose.yaml` 121 行・`docker/perf/compose.yaml` 150 行・README 733 行 | `compose.yaml` だけを見る |
+| Mailpit（K-83） | `axllent/mailpit:v1.32.0@sha256:0790692b…` | `compose.yaml` 121 行・`docker/perf/compose.yaml` 150 行・README 733 行（2026-11-01） | `compose.yaml` だけを見る |
 | otel-lgtm（K-83） | `grafana/otel-lgtm:0.38.0@sha256:75cdf892…` | `compose.yaml` 83 行・`perf/README.md` 486 行 | `compose.yaml` だけを見る |
 | otel-collector（K-83） | `otel/opentelemetry-collector:0.163.2@sha256:63e5e8ec…` | `compose.yaml` 73 行 | 見る（`-386` のタグは `ignore`） |
 | k6（K-83） | `grafana/k6:2.3.0@sha256:9c2dee7f…` | `perf/versions.env` 24 行だけ | 見ない |
-| Gitleaks（K-84） | 8.30.1 | `ci.yml` の `GITLEAKS_VERSION` と `GITLEAKS_SHA256`・`.pre-commit-config.yaml` の `rev: v8.30.1`・README 13 行 | 見ない |
-| OSV-Scanner（K-84） | 2.6.0 | `ci.yml` の `OSV_SCANNER_VERSION` と `OSV_SCANNER_SHA256`・README 14 行 | 見ない |
+| Gitleaks（K-84） | 8.30.1 | `ci.yml` の `GITLEAKS_VERSION`（33 行）と `GITLEAKS_SHA256`・`.pre-commit-config.yaml` の `rev: v8.30.1`・README 15 行（2026-11-08） | 見ない |
+| OSV-Scanner（K-84） | 2.7.0（2026-11-08） | `ci.yml` の `OSV_SCANNER_VERSION`（35 行）と `OSV_SCANNER_SHA256`（36 行）・README 16 行 | 見ない |
 | GitHub Actions（K-84） | 上の表 | `ci.yml`（コミットの SHA と版のコメント） | 見る |
 | Gradle Wrapper（K-84） | 9.8.2 | `gradle/wrapper/gradle-wrapper.properties`（と `gradle-wrapper.jar`） | gradle の項が見るかは未確認 |
-| Playwright のブラウザ（K-84） | `@playwright/test` 1.64.1 と同じ版 | `frontend/package.json`・README 17 行（`npx playwright install chromium`） | npm の項が見る |
+| Playwright のブラウザ（K-84） | `@playwright/test` 1.64.1 と同じ版 | `frontend/package.json`・README 19 行（`npx playwright install chromium`。2026-11-08） | npm の項が見る |
 | H2 の `-Dh2.compactThreads=1`（K-85） | — | `Dockerfile` 52 行・`backend/build.gradle.kts` 117 行・`frontend/playwright.config.ts` 137 行 | — |
 
 - 固定先の一覧の正本は `.github/dependabot.yml` のコメント（71〜88 行）。今の値どうしは食い違っていない（2026-11-01 に grep で確かめた）。
@@ -118,12 +120,24 @@
 
 - 見立て（未検証）: Spring Boot を上げて管理の OpenTelemetry・Jackson の版が変われば、上の2つの固定は外せる。新しい Spring Boot の BOM の版は Maven Central で確かめる必要がある（今回は外を見ていない）。
 
+## K-118 前の記録の訂正（2026-11-08）（`build-and-verify`・`container-runtime`）
+
+- 確かめた事実（今回読んだファイルによる）:
+  - Node.js は 26 にそろっている: `frontend/package.json` の `engines` は `>=26 <27`、`build.gradle.kts` の `checkToolchain` は `v26.` で始まらないと失敗（94〜97 行）、入れ方の文言は `node@26`（72〜73 行）、`ci.yml` は `node-version: "26"`、README 14 行の表も 26。K-81 の「Node 26 を拒む」は解消した。
+  - OSV-Scanner は 2.7.0（`ci.yml` 35〜36 行、README 16 行）。前の記録の 2.6.0 は古い。
+  - `gradle/actions/setup-gradle` は v6.4.1（`ci.yml` 67 行）。前の記録の v6.4.0 は古い。
+  - README は 164 行（前の記録の 1,678 行）。前提の道具・取得と準備・開発時の起動・コンテナでの起動と確認・文書の目次・ライセンスだけを持ち、手順の本文は `docs/` の主題ごとの文書へ移った（目次 102〜119 行）。K-88 の行の番号（README の 407・525 行など）は今の README には当たらない。
+  - `frontend/scripts/` は 6 ファイル（前の記録は2つ）。`config/` は2ファイル（`license-header.txt`・`npm-build-tools.txt`）。
+  - perf の伏せ字の道具の ESLint（`perfToolEslint`）と型の検査（`perfToolTypecheck`）が `verify` の 2・4 の段に入っている（K-90 の T2 は直っている）。
+- 未検証: `docs/` へ移った版の行（JRE・JDK・Mailpit など）の今の場所は読んでいない。版の固定先の表の README の行の番号は 2026-11-01 のまま。
+
 ## 手元の運用
 
 - コンテナの版の固定先は上の「版の固定先」の表（K-78 の後継の K-83）。前回（2026-10-29）の時点では、動いている Mailpit・止まっている lgtm のタグは `compose.yaml` と一致して見えた（ダイジェストの一致は未検証）。
 - **K-93 古いコンテナのイメージの片付け**: 依頼の「古いコンテナのイメージの削除」の対象は、今回は docker の操作をしない決まりのため一覧していない。前の Intent の記録（`aidlc/spaces/default/intents/261029-reference-lookup-cleanup/operation/feedback-optimization/feedback-loop.md` の「片付け」）では、名前の無いボリューム（回収できる 12.56GB の多く）・固定先から外れた古い版のイメージ（約 2.8GB）・PC のディスク 88% が残る候補。戻し先のタグ（`pre-…`）を消すかは依頼者の判断。後の段で `docker images`・`docker volume ls` の読み取りの一覧で確かめる。
 - 負荷の試験の使い捨ての環境（`docker/perf/compose.yaml`）の対象DB は postgres 18.6・mysql 26.10.0・mariadb 13.0.2・Mailpit v1.32.0（いずれもダイジェストで固定）。上限はアプリ CPU 4・メモリ 2g、対象DB は環境変数で替えられる（既定 512m・768m・512m）。
 - 監視は `grafana/otel-lgtm` と OpenTelemetry Collector を compose の profile で起動し、警報とダッシュボードは `docker/monitoring/` のファイルで持つ。メールの受け手（Mailpit）と見本の対象DB も compose の profile。E2E の見本の PostgreSQL は上乗せ `docker/e2e/compose.targetdb-port.yaml` で `127.0.0.1:15432` に開ける。
+- 手元の検査の前提（2026-11-08、README 23・24 行）: colima の VM は CPU 4・メモリ 6GiB を勧める。`./gradlew verify` は対象DB の結合テストのためにコンテナの実行環境が動いていることを前提にする。colima の PC では `DOCKER_HOST` と `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡す（`project.md` の Testing Posture。README の本文は `docs/target-db.md` に移った見込み。未確認）。
 
 ## 時差の設定の置き場（K-95、2026-11-03）
 
@@ -153,6 +167,7 @@
 
 ## Sources
 
+- 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/package.json`・`frontend/package-lock.json`（vitest・coverage-v8 の行）・`frontend/vitest.config.ts`・`frontend/src/shared/format/timeZone/{timeZoneGate,wallClock}.ts`・`.github/workflows/ci.yml`（`verify` の job の頭）、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `Dockerfile`・`compose.yaml`・`backend/build.gradle.kts` の時差の grep、`TargetDataSourceConfig.java`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。
 - `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`backend/gradle.lockfile`・`backend/build.gradle.kts`・`build.gradle.kts`・`frontend/package.json`・`frontend/package-lock.json`・`Dockerfile`・`compose.yaml`・`docker/perf/compose.yaml`・`docker/hikari-pool.sh`・`perf/versions.env`・`.github/workflows/ci.yml`・`.github/dependabot.yml`・`README.md`（2026-11-01、開発担当の調査 `aidlc/spaces/default/intents/261101-maintenance-update/inception/reverse-engineering/developer-scan.md`）。`TargetDbImages.java`・`.pre-commit-config.yaml`・`frontend/playwright.config.ts` は版の行の grep だけ。
