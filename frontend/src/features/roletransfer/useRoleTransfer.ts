@@ -320,6 +320,3 @@ export function useRoleTransfer({ api, reportForbidden }: UseRoleTransferOptions
     dismissNotice,
   }
 }
-
-/** S7 の状態と操作の型 */
-export type RoleTransferState = ReturnType<typeof useRoleTransfer>

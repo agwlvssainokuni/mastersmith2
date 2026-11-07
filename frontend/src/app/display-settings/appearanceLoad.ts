@@ -59,7 +59,7 @@ export function startAppearanceLoad(): Promise<AppearanceResult> {
   return appearanceLoad
 }
 
-/** 答え済みの約束を作る（テストと、起動の誤りの画面などで使う）。 */
+/** 答え済みの約束を作る（テストで使う）。 */
 export function resolvedAppearance(
   result: AppearanceResult = NO_APPEARANCE,
 ): Promise<AppearanceResult> {

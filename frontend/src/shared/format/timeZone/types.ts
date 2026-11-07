@@ -38,6 +38,3 @@ export type ParseResult =
 export type CompareResult =
   | { readonly kind: 'ok'; readonly order: number }
   | { readonly kind: 'unreadable'; readonly side: 'a' | 'b' | 'both' }
-
-/** 結果の kind の値の一覧 */
-export type ResultKind = (FormatResult | ParseResult | CompareResult)['kind']

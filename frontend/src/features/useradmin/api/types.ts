@@ -64,9 +64,6 @@ export interface ProfileRequest {
   language: UserLanguage
 }
 
-/** ロールの出どころの種類（Intent 261004-role-menu の U6 の D27。応答の type の値） */
-export type RoleSourceType = 'DIRECT' | 'GROUP'
-
 /** ロールの出どころ（応答の type を kind に写す。roleadmin の型は import しない） */
 export type UserRoleSource = { kind: 'DIRECT' } | { kind: 'GROUP'; groupId: number; name: string }
 

@@ -46,11 +46,6 @@ export function targetKey(target: PermissionTarget): string {
   return JSON.stringify(names)
 }
 
-/** 保存の範囲の鍵（木の節の id と同じ形）。 */
-export function scopeKey(scope: PermissionScope): string {
-  return targetKey({ schemaName: scope.schemaName, tableName: scope.tableName, columnName: null })
-}
-
 /** 2つの明示の値が同じか。 */
 export function sameExplicit(a: Explicit, b: Explicit): boolean {
   return a.main === b.main && a.create === b.create && a.delete === b.delete

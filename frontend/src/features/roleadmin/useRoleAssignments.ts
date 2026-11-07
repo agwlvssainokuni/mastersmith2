@@ -359,6 +359,3 @@ export function useRoleAssignments({
     dismissNotice,
   }
 }
-
-/** S5 の状態と操作の型 */
-export type RoleAssignmentsState = ReturnType<typeof useRoleAssignments>

@@ -34,9 +34,6 @@ export const TRANSFER_ERROR_REASONS = [
   'COLUMN_AUX_NOT_ALLOWED',
 ] as const
 
-/** 理由の値 */
-export type TransferErrorReason = (typeof TRANSFER_ERROR_REASONS)[number]
-
 /** 知らない理由の文言の鍵 */
 export const UNKNOWN_REASON_KEY = 'roletransfer.reason.unknown'
 

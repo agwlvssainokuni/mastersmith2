@@ -18,15 +18,10 @@
 // 共通の shared/paging（20 件に固定）は使い回さず、1ページの件数 20・50・100 を受ける。ページの番号は 1 から U1 の上限
 // （1,000,000）まで。
 import { MAX_PAGE } from './businessDataParse'
-import { PAGE_SIZES, type PageSize } from './businessDataTypes'
+import type { PageSize } from './businessDataTypes'
 
 /** 既定の1ページの件数 */
 export const DEFAULT_PAGE_SIZE: PageSize = 20
-
-/** 1ページの件数として受けられる値か */
-export function isPageSize(value: unknown): value is PageSize {
-  return (PAGE_SIZES as readonly unknown[]).includes(value)
-}
 
 /** 全体のページの数（少なくとも 1。上限を超えない） */
 export function totalPages(total: number, size: PageSize): number {

@@ -452,6 +452,3 @@ export function useGroupList({ api, t, reportForbidden }: UseGroupListOptions) {
     consumeFocus,
   }
 }
-
-/** S6 の状態と操作の型 */
-export type GroupListState = ReturnType<typeof useGroupList>

@@ -549,6 +549,3 @@ export function treeNodeOf(node: PermissionNode, t: RoleAdminText): SharedTreeNo
       : [{ id: 'orphan', text: t('roleadmin.orphan'), tone: 'warning' }],
   }
 }
-
-/** S4 の状態と操作の型 */
-export type RolePermissionsState = ReturnType<typeof useRolePermissions>

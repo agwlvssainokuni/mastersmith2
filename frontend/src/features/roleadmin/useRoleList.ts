@@ -447,6 +447,3 @@ export function useRoleList({ api, t, reportForbidden }: UseRoleListOptions) {
     consumeFocus,
   }
 }
-
-/** S3 の状態と操作の型 */
-export type RoleListState = ReturnType<typeof useRoleList>

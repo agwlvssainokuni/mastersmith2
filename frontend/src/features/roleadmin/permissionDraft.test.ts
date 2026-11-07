@@ -26,7 +26,6 @@ import {
   EMPTY_DRAFT,
   inScope,
   retainDraft,
-  scopeKey,
   targetKey,
   toEntries,
   type PermissionDraft,
@@ -107,9 +106,6 @@ describe('permissionDraft', () => {
     expect(targetKey(schema('SALES'))).toBe('["SALES"]')
     expect(targetKey(table('SALES', 'ORDER_LINE'))).toBe('["SALES","ORDER_LINE"]')
     expect(targetKey(column('SALES', 'ORDER_LINE', 'NO'))).toBe('["SALES","ORDER_LINE","NO"]')
-    expect(scopeKey({ schemaName: 'SALES', tableName: 'ORDER_LINE' })).toBe(
-      '["SALES","ORDER_LINE"]',
-    )
   })
 
   it('records a change and removes it when the value returns to the server value', () => {

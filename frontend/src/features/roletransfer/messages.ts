@@ -86,7 +86,6 @@ const ja: Record<string, string> = {
   'roletransfer.action.close': '閉じる',
   'roletransfer.action.dismiss': '知らせを閉じる',
   'roletransfer.action.processing': '処理中',
-  'roletransfer.slow': '時間がかかっています。そのままお待ちください。',
   'roletransfer.slow.check':
     '時間がかかっています。上限に近い大きさのファイルでは、確かめに最大 15 秒かかります。そのままお待ちください。',
   'roletransfer.slow.apply':
@@ -182,7 +181,6 @@ const en: Record<string, string> = {
   'roletransfer.action.close': 'Close',
   'roletransfer.action.dismiss': 'Dismiss',
   'roletransfer.action.processing': 'Processing',
-  'roletransfer.slow': 'This is taking a while. Please wait.',
   'roletransfer.slow.check':
     'This is taking a while. A file near the size limit can take up to 15 seconds to check. Please wait.',
   'roletransfer.slow.apply':

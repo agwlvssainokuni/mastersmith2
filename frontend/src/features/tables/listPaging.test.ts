@@ -22,16 +22,13 @@ import {
   clampPage,
   displayRange,
   isPageOverflow,
-  isPageSize,
   previousPageFor,
   totalPages,
 } from './listPaging'
 
 describe('listPaging', () => {
-  it('accepts only 20, 50 and 100 rows per page with 20 as the default', () => {
+  it('uses 20 rows per page as the default', () => {
     expect(DEFAULT_PAGE_SIZE).toBe(20)
-    expect([20, 50, 100].every(isPageSize)).toBe(true)
-    expect([0, 10, 30, '20', null].some(isPageSize)).toBe(false)
   })
 
   it('counts pages for each page size and keeps at least one page', () => {
