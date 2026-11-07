@@ -10,7 +10,7 @@
 |---|---|---|
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（`docs/deployment.md` の「コンテナの資源の上限」の「既知の制約」） |
-| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、ヒープが尽きたら JVM を止める、タイムゾーン Asia/Tokyo、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
+| `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、ヒープが尽きたら JVM を止める、タイムゾーン Asia/Tokyo（対象DB の日時の受け渡しと画面の時刻はこの値に依らない。`docs/target-db.md` の「日時・時刻の値」）、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
 | `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
 | `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
 | `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |

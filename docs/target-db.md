@@ -22,7 +22,7 @@
 
 | 道 | すること |
 |---|---|
-| `POST /api/tables/definition` | テーブルの定義（一覧・詳細に出すカラム、検索の項目、並べ替えられるカラム、許す操作）。本文の任意の `purpose`（`VIEW`・`CREATE`・`UPDATE`。無ければ `VIEW`）が `VIEW` なら対象DB には接続しません。`purpose` が `CREATE`・`UPDATE` で参照の項目（他テーブル参照の `REFERENCE`）があるときだけ、読み取りの接続を1本借りて参照先の選択肢を読みます（各カラムの `reference` に状態・選択肢・ピッカーの情報を載せます） |
+| `POST /api/tables/definition` | テーブルの定義（一覧・詳細に出すカラム、検索の項目、並べ替えられるカラム、許す操作）。本文の任意の `purpose`（`VIEW`・`CREATE`・`UPDATE`。無ければ `VIEW`）が `VIEW` なら対象DB には接続しません。`purpose` が `CREATE`・`UPDATE` で参照の項目（他テーブル参照の `REFERENCE`）があるときだけ、読み取りの接続を1本借りて参照先の選択肢を読みます（各カラムの `reference` に状態・選択肢・ピッカーの情報を載せ、状態が `AVAILABLE` のときだけ、参照先のラベルのカラムの受け渡しの型 `labelValueType`（`STRING`・`DATETIME_TZ` など。画面がラベルの日時を書式にするのに使う。DSL から決め、問い合わせは増えない）も載せます） |
 | `POST /api/tables/rows/search` | 一覧（条件・並べ替え・ページ。1ページは 20・50・100 件、全体の件数を含む）。文字の値は一覧では 100 字で切り、切ったカラムを示します |
 | `POST /api/tables/rows/get` | 主キーで1行の詳細（文字の値は 10,000 字で切ります） |
 | `POST /api/tables/reference/rows` | 他テーブル参照の参照先の検索とラベルの1件読み。本文は参照元の `schema`・`table`・`column` と、`conditions`＋`page`（LOOKUP のピッカーの検索。1ページ 20 件、件数を数えず `hasNext` を返す）か `value`（ラベルの1件読み。REFERENCE・LOOKUP の両方）のどちらか一方。参照先の名前は受け取らず DSL から引きます。読み取りの接続を1本借り、文を1つだけ流します。本文の形の誤り（両方・どちらも無い、値が 1,000 文字を超える、`page` が 1〜1,000,000 の外など）は 400、名前・権限・DSL・ラベルの行が無いときの拒否はすべて同じ 403（`ACCESS_DENIED`）、完全一致の条件の値を型として読めないときは 400（`fieldErrors` に `INVALID_VALUE`）。本文の上限は 64 KB |
@@ -33,6 +33,27 @@
 - 失敗は Problem Details の `code` で返します。DSL が適用されていない・テーブルが DSL に無い・行が無いときは 404（`BUSINESS_DSL_NOT_APPLIED`・`BUSINESS_TABLE_NOT_FOUND`・`BUSINESS_ROW_NOT_FOUND`）、権限が無いときは 403（`ACCESS_DENIED`）、主キーの無いテーブル・ビューなど行を1件に決められないテーブルの詳細は 409（`BUSINESS_ROW_OPERATION_NOT_ALLOWED`）、主キーで2行以上が当たったときは 409（`BUSINESS_ROW_NOT_UNIQUE`）、DSL と対象DB が合わないときは 409（`BUSINESS_TARGET_DB_MISMATCH`）、入力の誤りは 400（`VALIDATION_FAILED`）、対象DB に届かない・借りる待ち（3 秒。MySQL で接続の確かめが走るときは 6 秒）を超えた・時間切れのときは 503（`BUSINESS_TARGET_DB_UNAVAILABLE`・`BUSINESS_TARGET_DB_TIMEOUT`）です。行の値・接続先・ドライバーの例外の文言は、応答にもログにも出しません（ログは SQLState・業者のエラーの番号・例外のクラスの名前だけ）。
 
 - **部分一致の検索は索引が効かない（運用の注意）**: 文字のカラムの部分一致は `LIKE '%…%'`（前にも後ろにも `%`）で、MySQL・MariaDB・PostgreSQL のどの DB でも通常の索引を使えず、表の全部を読みます。一覧は件数（`COUNT`）とページの2つの問い合わせで返すため、**1回の検索で表の全部を2回読みます**。行が多い表（数十万行以上）では、読み取りのプールの接続を長く借り（上限 10・借りる待ち 3 秒）、同時の検索が重なると 503（`BUSINESS_TARGET_DB_UNAVAILABLE`）や対象DB のメモリ（MySQL・MariaDB のバッファープール）の使い切りにつながりえます。DSL では、行が多い表の文字のカラムは `search.enabled` を `false` にする（検索の項目から外す）か、`search.operator` を `EQUALS`（完全一致）にしてください。同じ注意を DSL の JSON Schema の `description`（`searchOperator`・`search`）にも書いています。画面は変えません（検索の項目の出し分けは DSL の `search` の設定に従います）。負荷の試験の数字（`bizSearchContains`）は `perf/README.md` の「業務データの場面」にあります。
+
+### 日時・時刻の値
+
+業務データの API（読み取り・書き込み・検索・参照）は、日時・時刻の値を次の形の文字で受け渡します。型は DSL の `dbType.name` と DB の種類から決めます（桁つきの `timestamp(3) with time zone`・`time(3) with time zone` も時差つきの型として扱います）。
+
+| 型（受け渡しの型） | 当たる型 | 応答の形 | 要求の値 |
+|---|---|---|---|
+| 時点（`DATETIME_TZ`） | MySQL・MariaDB の `timestamp`、PostgreSQL の `timestamptz` | UTC にそろえた `YYYY-MM-DDTHH:mm:ss[.端数]+00:00` | 時差つき（`Z`・`z`・`±hh:mm`）は UTC の時点に直す。時差の無い値は UTC とみなす |
+| 時差を持たない日時（`DATETIME`） | MySQL・MariaDB の `datetime`、PostgreSQL の `timestamp` | `YYYY-MM-DDTHH:mm:ss[.端数]`（DB の値のまま） | 時差なしの同じ形 |
+| 日付（`DATE`） | `date` | `YYYY-MM-DD` | 同じ形 |
+| 時刻（`TIME`） | `time` | `HH:mm:ss[.端数]` | 同じ形 |
+| 時差つきの時刻（`TIME_TZ`） | PostgreSQL の `timetz` | `HH:mm:ss[.端数]±hh:mm`（DB に入っている時差のまま。UTC にそろえない） | 時差つきは時差ごと保存する。時差の無い値は UTC の時差を付ける |
+
+- **接続のタイムゾーン**: 対象DB の接続は、読み取りと書き込みのどちらのプールも、接続を作るときに1回だけセッションのタイムゾーンを UTC にします（MySQL・MariaDB は `SET time_zone = '+00:00'`、PostgreSQL は `SET TIME ZONE 'UTC'`。`backend/src/main/java/cherry/mastersmith/targetdb/config/TargetDataSourceConfig.java` の `connectionInitSql`）。JVM の既定のタイムゾーン（`-Duser.timezone`）には頼らず、3種類の対象DB で同じ時点は同じ UTC の文字になります（`TargetDbTimeZoneIT` が JVM の既定のタイムゾーンを変えても値が変わらないことを確かめます）。初期化の文が失敗した接続は借りられず、ほかの借りる失敗と同じ扱いです（業務データの API では 503 `BUSINESS_TARGET_DB_UNAVAILABLE`。ログに接続先・ユーザー名・パスワードは出ません）。
+- **秒の端数**: 応答の端数は、結果の列情報（DB の定義の桁）の桁ちょうどで出します（末尾の 0 を落とさない。例: `timestamptz(6)` は `.000000`。桁 0 の列は端数を付けない）。結果の列情報が桁を返さないときは、DB が送った桁のままです。
+- **書き込みの端数の桁**: DSL に桁を明示した列（型の名前の `(n)` か `dbType.precision`）は、値の端数がその桁を超えると 400 `VALIDATION_FAILED`（`fieldErrors` の `reason` は `TOO_MANY_DIGITS`）で断ります（丸めない・切らない）。桁を明示していない列は確かめず、DB に任せます。
+- **読めない値**: 型として読めない値（MySQL・MariaDB のゼロの日時 `0000-00-00 …`、`time` の 24 時間を超える値・負の値、PostgreSQL の `infinity` など）は、そのセルだけ DB が送った文字のまま返し、ほかの行・セルは普通に読みます（一覧全体を失敗させません）。読めない値の形を書き込み・検索・主キーの値として送ると、日時として読めない値として 400 `VALIDATION_FAILED` になり、保存しません。そのため、主キーの値が読めない行は、一覧には出ても詳細・更新・削除はできません。
+- **範囲の外の値**: DB が日時の範囲の外として保存を拒んだとき（MySQL の `timestamp` の 2038 年の上限など）は、ほかの保存の拒否と同じ 409 `BUSINESS_SAVE_REJECTED` です。サーバーは上限の値を決め打ちして先に断りません（MariaDB は版によって `timestamp` の上限が違うため）。
+- **夏時間**: 夏時間で存在しない時刻・2回ある時刻の判定は画面の側だけで行います。サーバーは時差つき（または UTC とみなした）の時点として受けます。
+- **往復**: 読んだ値の文字をそのまま更新・検索・主キー・参照の値に送り返しても、対象DB の値と行の特定は変わりません（端数の桁も保つ）。
+- **漏えい**: 日時の値（読めない値・桁を超えた値を含む）は、ほかの行の値と同じく、ログ・監査・トレースの属性・エラー応答に出しません（誤りは項目の名前と種類だけ）。
 
 ### 業務データの書き込みの API
 

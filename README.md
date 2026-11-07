@@ -37,7 +37,7 @@ pre-commit install
 
 サブモジュールは2つです。`vendor/make-you-chic-ui`（画面のデザインシステム。npm の `file:` の依存）と、`vendor/java-mustache-processor`（メールのテンプレートを描く自前の Mustache のエンジン。Gradle の composite build で組む。`settings.gradle.kts` の `includeBuild`）です。サブモジュールを取得していないと、Gradle の構成の段階で `vendor/java-mustache-processor` のビルドが見つからず失敗します（`git clone --recurse-submodules`、または取得済みなら `git submodule update --init`）。
 
-固定先は、make-you-chic-ui が `cae5fed`、java-mustache-processor が `d61ba6d`（タグ `0.1.1`）です（`git submodule status` で確かめられます）。固定先の移り変わりは git の履歴と `aidlc/` の記録にあります。画面はトップバーの文言を日本語と英語で渡し（`topbar.*` の鍵）、作業ロールの一覧の幅は Dropdown の既定に任せています。
+固定先は、make-you-chic-ui が `d112795`、java-mustache-processor が `d61ba6d`（タグ `0.1.1`）です（`git submodule status` で確かめられます）。固定先の移り変わりは git の履歴と `aidlc/` の記録にあります。画面はトップバーの文言を日本語と英語で渡し（`topbar.*` の鍵）、作業ロールの一覧の幅は Dropdown の既定に任せています。
 
 ホームとアイコン（Intent 261102-timezone-ui-polish の U5）: ホームは、作業ロールの 1 行と、業務の入口のカード（業務のメニューの最上位の項目）・管理の入口のカード（管理者だけ。サイドバーの管理の区画と同じ項目）を並べます。管理の仮の画面（`/admin`）は廃止しました（サーバーの確認 API `GET /api/admin/check` は残します）。業務の項目のアイコンは、メニューの定義の `icon`（許す一覧にあり、`list` でないもの）を先に使い、無ければメニューの応答の `tableKind` でテーブルは `table`・ビューは `view`、まとまりは `folder`、種類が分からない移れる項目は `list` にします（サイドバーとホームのカードで同じ規則）。許すアイコンの名前の一覧は 2 か所（サーバーの `backend/src/main/resources/navigation/allowed-icons.txt` と、画面の `frontend/src/app/registry/allowedIcons.ts`）にあり、make-you-chic-ui の `Icon` の登録の名前とそろえます。固定先を上げてアイコンが増減したときは、2 か所を同じ名前に直します（一致は `allowedNavIcons.test.ts`、画面の欠けは型の検査 `ALL_ICONS_COVERED` で気づけます）。
 
@@ -108,10 +108,10 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 | `docs/internal-db.md` | 内部DB のバックアップと詰め直し | 内部DBのバックアップと戻し方・内部DBの複写を数える・内部DBのファイルの詰め直し（アプリを止めずに） |
 | `docs/configuration.md` | 構成と設定 | 環境変数（`.env`・`.env.targetdb` の項目と既定値の一覧） |
 | `docs/mail.md` | メール | メール・暗号化の方式の書き方・運用で設定しない値・手元でメールを見る（Mailpit） |
-| `docs/target-db.md` | 対象DB と見本の DB | 対象DB（利用者の業務データの DB）・業務データの読み取りの API・業務データの書き込みの API・対象DB の結合テストとコンテナの実行環境・手元で試す対象DB（compose の profile）・既にある見本の DB に書き込みのアカウントを足す |
+| `docs/target-db.md` | 対象DB と見本の DB | 対象DB（利用者の業務データの DB）・業務データの読み取りの API・日時・時刻の値・業務データの書き込みの API・対象DB の結合テストとコンテナの実行環境・手元で試す対象DB（compose の profile）・既にある見本の DB に書き込みのアカウントを足す |
 | `docs/dsl.md` | DSL | DSL の書式（JSON Schema）と読み込みの上限・既定の DSL の生成の決まり・DSL の管理の API・DSL の操作の監査・DSL の操作の指標とログ・DSL の管理画面 |
 | `docs/users.md` | 利用者 | 利用者の管理の API・利用者のプリファレンスとパスワードの変更・招待と登録の完了・招待の管理の画面・登録の完了の画面・プリファレンスとパスワードの変更の画面 |
-| `docs/roles-and-permissions.md` | ロールと権限 | 管理の画面の「権限が無い」の扱い・グループの管理の API・ロールと権限の API・割り当てと作業ロール・権限の受け渡し・業務のメニューの API・ロール・グループ・権限の受け渡しの画面・骨組みの画面・API のアクセス制御 |
+| `docs/roles-and-permissions.md` | ロールと権限 | 管理の画面の「権限が無い」の扱い・グループの管理の API・ロールと権限の API・割り当てと作業ロール・権限の受け渡し・業務のメニューの API・ロール・グループ・権限の受け渡しの画面・骨組みの画面・業務データの画面の日時・API のアクセス制御 |
 | `docs/operations.md` | 運用と監視 | 外部エクスポートの確かめ方・手元の監視（Grafana）・警報と対応の手順・例外のログ（フィルターの中の想定外の例外）・監査ログ・監査ログの確かめ方 |
 | `docs/appearance.md` | 画面の見た目 | インスタンスの見た目の設定・画面の表示の設定・ブランドカラーのコントラスト |
 | `docs/app-icon.md` | アプリのアイコンと favicon | 素材の一覧・`favicon.ico` の作り方・SVG を変えたらバイナリを作り直す・守りの検査 |
