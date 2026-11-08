@@ -162,7 +162,7 @@
     "slug": "ci-size-coverage",
     "dirName": "261108-ci-size-coverage",
     "scope": "express",
-    "status": "in-flight",
+    "status": "complete",
     "request": "63c9b4cd"
   }
 ]
