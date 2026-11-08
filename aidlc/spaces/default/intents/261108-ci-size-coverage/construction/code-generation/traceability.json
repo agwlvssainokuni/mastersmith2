@@ -1,0 +1,33 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR1.5", "FR1.6", "FR1.7", "FR1.8", "FR1.9", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR2.5", "FR3.1", "FR4.1", "FR4.2", "FR4.3", "FR4.4", "FR4.5", "FR4.6", "FR5.1", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.2", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.3", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.4", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.5", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.6", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.7", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.8", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR1.9", "status": "OK", "target": "scripts/program-size.mjs" },
+    { "id": "FR2.1", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR2.2", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR2.3", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR2.4", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR2.5", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR3.1", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR4.1", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR4.2", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR4.3", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR4.4", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR4.5", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "FR4.6", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR5.1", "status": "OK", "target": "docs/verification.md" },
+    { "id": "NFR1", "status": "Deferred", "target": "Build and Test の CI の1回の実行で、足した3つの手順による verify の job の延び（目安 2 分以内）と、job の時間が約 42 分の線の内かを測る" },
+    { "id": "NFR2", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "NFR3", "status": "OK", "target": "scripts/ci-summary.mjs" },
+    { "id": "NFR4", "status": "Deferred", "target": "報告に cloc の版を載せる形は scripts/program-size.mjs で済み。手元と CI で同じコミットの規模の表が一致するかは、Build and Test の CI の1回の実行の要約と手元の値を比べて確かめる（CI の cloc の版が手元の 2.10 と違えばずれうる）" },
+    { "id": "NFR5", "status": "OK", "target": "scripts/program-size.mjs" }
+  ]
+}

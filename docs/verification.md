@@ -130,6 +130,51 @@ JaCoCo の参考値（単体テストの記録 test.exec だけ。下限の判�
 - 画面を作る道具（Vite など）を足したり入れ替えたりしたときは、`config/npm-build-tools.txt` も見直してください。
 - 手元の `./gradlew verify` では、lockfile が変わらないと OSV-Scanner（`osvScan`）が前回の結果のまま飛ばされます（UP-TO-DATE）。新しく公表された脆弱性を手元で確かめるときは、`./gradlew osvScan --rerun` で流し直してください。CI はまっさらな環境で動くため、毎回確かめます。
 
+## 規模・テストの件数・カバレッジの報告（CI の要約）
+
+CI（`.github/workflows/ci.yml` の `verify` の job）は、`./gradlew verify` の後に、プログラムの規模・バックエンドのテストの件数・カバレッジを実行の要約（GitHub の Actions の実行の画面の Summary）に書きます。手元でも同じ台本で数えられます。
+
+### 手元で規模を数える
+
+前提は git と cloc です（手元は `brew install cloc`。CI は `apt-get install cloc`）。台本は Node の組み込みだけで動き、npm の依存はありません。リポジトリのルートで流します。
+
+```bash
+node scripts/program-size.mjs > build/program-size.md                   # 今の作業ツリーを数える
+node scripts/program-size.mjs --base <commit> > build/program-size.md   # 大分類と中分類の表に、そのコミットとの差の列を足す
+```
+
+- 数えるのは git が管理するファイルだけです（未コミットの変更は、管理しているファイルの今の中身として数えます。管理していないファイルと `.env` などの git の対象外のファイルは数えません）。外すもの（`aidlc/`・`vendor/`・AI の道具の設定・lockfile など）と分類の決まりは、`scripts/program-size.mjs` の冒頭にあります。
+- `--base <commit>` は、そのコミットの中身を `git worktree` で `build/program-size-base` に取り出して同じ決まりで数え、「コードの差」「ファイルの差」（符号つき）の列を足します。取り出した作業ツリーは終わったら消します。比べる元を取り出せないときは差の列を「—」にし、理由を1行出します。
+- cloc の版が違うと値がずれることがあります。報告の「道具」の行に cloc の版が出ます（同じコミット・同じ版なら、手元と CI の値は一致します）。
+- git や cloc が無いときは、理由を標準エラーに出して終了コード 1 で終わります。
+- CI の要約と同じものを手元で見るときは `node scripts/ci-summary.mjs --base <commit> > build/ci-summary.md` を流します（`$GITHUB_STEP_SUMMARY` が無ければ標準出力に書きます）。
+
+### CI の要約の読み方
+
+要約は「規模 → テストの件数 → カバレッジ」の順に並びます。台本は `scripts/ci-summary.mjs` です。
+
+| 欄 | 出どころ |
+|---|---|
+| プログラムの規模 | `scripts/program-size.mjs`（cloc）。中分類と言語より後の表は畳んであります |
+| テストの件数（バックエンド） | `backend/build/test-results/test/` と `integrationTest/` の `TEST-*.xml`（通った・失敗・飛ばした）。画面（Vitest）の件数は載せません |
+| カバレッジ（バックエンド） | `backend/build/reports/jacoco/test/jacocoTestReport.xml`（全体と、畳んだパッケージごとの表）。下限と `packagesJudgedByTotal` は `backend/build.gradle.kts` から読みます |
+| カバレッジ（画面） | `frontend/coverage/coverage-summary.json`（全体と、畳んだ領域ごとの表。領域はファイルごとの値の和） |
+
+- 割合は小数 2 桁で切り捨てます（`coverage-summary.json` と同じ）。パッケージごとの表の「下限との差」はポイントで、印は「満たす」「下限まで 5 ポイント未満」「下限を下回る」「全体で判定（packagesJudgedByTotal）」のどれかです。`packagesJudgedByTotal` のパッケージは全体の合計で判定するため、下限を下回っていても `verify` は失敗しません。
+- **「—」**: 値が出せないことを表します。規模の差の列では、比べる元が無いとき（手動の実行・タグのプッシュ・ブランチの最初のプッシュ（0 が並ぶ値）・履歴に無いコミット）で、理由が「前の回との差は出せない: …」の1行に出ます。比べる元は、`develop` へのプッシュのときだけ、プッシュの前の先頭（`github.event.before`）です。分岐の無いパッケージの分岐も「—」です。
+- **「報告なし（./gradlew verify が途中で落ちた見込み）」**: その欄の報告のファイルが無いことを表します。`./gradlew verify` がテストやカバレッジの報告を作る前に落ちた回に出ます。あわせて、その手順に警告（`::warning::`）が出ます。cloc が入らなかったときは、規模の欄に「作れなかった（cloc が見つからない…）」と出ます。
+- 要約を書く手順は `./gradlew verify` が落ちた回にも流し（`if: always()`）、どの欄が作れなくても CI を失敗にしません（`continue-on-error: true`、台本の終了コードも 0）。CI の合否は今までどおり `./gradlew verify` で決まります。
+- 要約と成果物に載せるのは、分類・パッケージ・領域の名前と、行数・件数・割合だけです（リポジトリは公開のため）。
+
+### カバレッジの HTML の報告（成果物）
+
+CI の実行ごとに、JaCoCo の HTML の報告（`backend/build/reports/jacoco/test/html/`）と画面のカバレッジの報告（`frontend/coverage/`）を、1つの成果物 `coverage-html-<コミットのハッシュ>` として **14 日** 保存します。実行の画面の Summary の下の「Artifacts」から zip で取れます（`gh run download <run-id> -n coverage-html-<コミットのハッシュ>` でも取れます）。zip の中の `backend/build/reports/jacoco/test/html/index.html` と `frontend/coverage/index.html` を開きます。報告が無い回（`verify` が早く落ちた回）は、成果物が作られないか、ある分だけになります（失敗にはしません）。
+
+### 道具の採用の理由と、台本の扱い
+
+- cloc は GPL-2.0 の道具です。CI と手元で規模を数えるために動かすだけで、WAR やイメージには入れず、ソースにも組み込みません（`team.md` の Code Style の新しい依存の決まりに沿った採用の理由）。CI では版を固定せず、`ubuntu-latest` の apt の版を入れます。報告に版が出ます。
+- ルートの `scripts/` の台本（`program-size.mjs`・`ci-summary.mjs` を含む）は、CI の報告の道具であり本体の機能ではないため、単体テスト・ライセンスヘッダー・書式・リンタの検査の対象の外です（Intent 261108-ci-size-coverage での依頼者の決定）。変えたときは、手元で流して出力を確かめてください。
+
 ## リリースの前の確かめ
 
 `develop` から `main` へ取り込む前（リリースの前）に、`./gradlew verify` と E2E のほかに、次の2つを手で確かめます。結果は、その回の Deployment Execution の記録に書きます。

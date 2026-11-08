@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # 統合の後の再確認。ローカルの統合の前の関門と同じ ./gradlew verify を実行し、WAR を成果物として保存する。
+# あわせて、規模・テストの件数・カバレッジを実行の要約（Summary）に書き、カバレッジの HTML の報告を保存する（docs/verification.md）。
 # CI は秘密情報を使わない。使う Actions はコミットのハッシュで固定する（コメントは版の名前）。
 name: CI
 
@@ -90,6 +91,33 @@ jobs:
           path: backend/build/libs/mastersmith.war
           retention-days: 30
           if-no-files-found: error
+
+      # ここから下の3つは報告だけの手順。./gradlew verify が落ちた回にも流し（if: always()）、成否で CI を失敗にしない。
+      - name: 規模を数える道具（cloc）を入れる
+        if: always()
+        continue-on-error: true
+        run: sudo apt-get update && sudo apt-get install -y cloc
+
+      - name: 規模・テストの件数・カバレッジを実行の要約に書く
+        if: always()
+        continue-on-error: true
+        env:
+          # develop へのプッシュのときだけ、プッシュの前の先頭と比べる。手動の実行とタグのプッシュは空を渡す
+          # （要約の規模の差の列が「—」になり、理由が1行出る）。
+          SIZE_BASE: ${{ github.event_name == 'push' && github.ref_type == 'branch' && github.event.before || '' }}
+        run: node scripts/ci-summary.mjs --base "$SIZE_BASE"
+
+      - name: カバレッジの HTML の報告を成果物として保存する（名前にコミットのハッシュを入れる）
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-html-${{ github.sha }}
+          path: |
+            backend/build/reports/jacoco/test/html/
+            frontend/coverage/
+          retention-days: 14
+          if-no-files-found: ignore
 
   release:
     name: リリースに WAR を添付する
