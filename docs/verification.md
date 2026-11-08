@@ -92,6 +92,14 @@ git diff --name-only develop... -- backend/src/main | grep -E 'cherry/mastersmit
 - `-PitForks=<N>` を付けると、結合テストを N 個の JVM に分けて並べて流します。付けないときは今までどおり1つの JVM で流します。1 以上の整数でない値は、理由を示して失敗します。
 - 全件の `./gradlew verify -PitForks=<N>` と、`-PitTests` を付けた `verifyQuick` に効きます。CI は付けずに流します（変えません）。
 - 各 JVM の JaCoCo の記録は同じ `backend/build/jacoco/integrationTest.exec` に追記されます。並べるとテストの JVM のヒープ（1 つあたり 1g）と対象DB のコンテナが N 倍になりうるため、N は手元の資源に合わせて選んでください。並べて落ちるテストが出たときは、`team.md` の「不安定なテストと CI の失敗」の決まりに従います。
+- 推奨は **N=3** です。2026-11-08 に、8 CPU・16GiB の PC（colima は 4 CPU・6GiB）で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest` を N ごとに1回ずつ流して測りました（Intent 261107-verify-quick-local）。どの N でも 1,716 件が通り（失敗 0 件、飛ばし 10 件）、N=3 が最も速くなりました。N=4 で遅くなったのは、colima の CPU（4）をテストの JVM と対象DB のコンテナで取り合ったためと見ています（確かめてはいません）。各 N を1回ずつ測っただけなので、揺れを含みます。PC や colima の資源が違うときは、測り直して選んでください。
+
+  | N | 結合テストの時間 | N=1 に比べた速さ | colima の VM のメモリの最大 |
+  |---|---|---|---|
+  | 1（付けない） | 23分05秒 | 1.00 倍 | 1,617 MiB |
+  | 2 | 15分26秒 | 1.50 倍 | 1,595 MiB |
+  | 3 | 9分43秒 | 2.38 倍 | 2,389 MiB |
+  | 4 | 13分53秒 | 1.66 倍 | 1,681 MiB |
 
 #### JaCoCo の参考値の読み方（`verifyQuick`）
 
