@@ -4,133 +4,133 @@
     "slug": "auth-audit-base",
     "dirName": "260922-auth-audit-base",
     "scope": "auth-audit-foundation",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0cc8a-c91a-7c8f-b1b9-dcde97263818",
     "slug": "audit-pool-exhaustion",
     "dirName": "260923-audit-pool-exhaustion",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0ccee-1c13-70f6-bcfd-f35f021b474a",
     "slug": "colima-spec-up",
     "dirName": "260923-colima-spec-up",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0cd70-33a2-7d77-8b92-d27d073d81ab",
     "slug": "dsl-schema-loader",
     "dirName": "260923-dsl-schema-loader",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0d590-e338-7f01-b233-af670a8b2dd9",
     "slug": "followup-fixes",
     "dirName": "260924-followup-fixes",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0d675-2f7d-7666-89ce-fac9f207febe",
     "slug": "storage-memory-fixes",
     "dirName": "260925-storage-memory-fixes",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0d843-ba84-791e-8d19-eaa08aa0960a",
     "slug": "user-management",
     "dirName": "260925-user-management",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0e910-c3c3-7e7b-8510-781eb9f63a9a",
     "slug": "quality-followup",
     "dirName": "260928-quality-followup",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0ed6f-b91d-779c-90e0-a8114602f00c",
     "slug": "log-deps-cleanup",
     "dirName": "260929-log-deps-cleanup",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a0f1d6-07a3-728d-a252-fdd8da3aae48",
     "slug": "user-admin",
     "dirName": "260930-user-admin",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a10257-10c6-77f5-ab3f-0180524a0177",
     "slug": "user-admin-followup",
     "dirName": "261003-user-admin-followup",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a10462-ecb7-7206-8fea-5b5a9844c869",
     "slug": "safety-carryover",
     "dirName": "261004-safety-carryover",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a10543-2e93-7f96-b660-c3a34455e26f",
     "slug": "role-menu",
     "dirName": "261004-role-menu",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a13da2-138b-72ea-a46d-d14ba321470c",
     "slug": "deps-ui-carryover",
     "dirName": "261015-deps-ui-carryover",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a14425-5dd0-7285-b96e-112f79f0a4f3",
     "slug": "business-data-views",
     "dirName": "261016-business-data-views",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a172ad-45f4-7d02-acae-64fb8392a9d6",
     "slug": "deps-perf-carryover",
     "dirName": "261025-deps-perf-carryover",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a17fb9-1801-75e0-8d58-5ab91c750a26",
     "slug": "perf-targets-review",
     "dirName": "261027-perf-targets-review",
     "scope": "bugfix",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a187ba-f2a1-7f01-8bca-bb0801ee3112",
     "slug": "reference-lookup-cleanup",
     "dirName": "261029-reference-lookup-cleanup",
     "scope": "classic",
-    "status": "complete"
+    "status": "archived"
   },
   {
     "uuid": "01a19748-4649-7d4a-94a0-2c44c14ff40e",
     "slug": "maintenance-update",
     "dirName": "261101-maintenance-update",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "b865c771"
   },
   {
@@ -138,7 +138,7 @@
     "slug": "timezone-ui-polish",
     "dirName": "261102-timezone-ui-polish",
     "scope": "classic",
-    "status": "complete",
+    "status": "archived",
     "request": "d53dcec4"
   },
   {
@@ -146,7 +146,7 @@
     "slug": "tz-options-perf",
     "dirName": "261104-tz-options-perf",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "f639a8a4"
   },
   {
@@ -154,7 +154,15 @@
     "slug": "verify-quick-local",
     "dirName": "261107-verify-quick-local",
     "scope": "bugfix",
-    "status": "complete",
+    "status": "archived",
     "request": "3fd90d3d"
+  },
+  {
+    "uuid": "01a1bb2e-5ec0-78a8-b1e2-79f1d52a591b",
+    "slug": "ci-size-coverage",
+    "dirName": "261108-ci-size-coverage",
+    "scope": "express",
+    "status": "in-flight",
+    "request": "63c9b4cd"
   }
 ]

@@ -51851,3 +51851,11 @@
 **Tokens By Agent**: main=3.3k/1.2M/815.4M/8.5M; aidlc-developer-agent=3.4k/1.8M/788.5M/21.1M; aidlc-architect-agent=1.3k/931.4k/216.8M/13.8M; aidlc-pipeline-deploy-agent=266/174.2k/44M/2.6M; aidlc-quality-agent=584/255.6k/99.9M/6M; aidlc-devsecops-agent=8/6.1k/895k/282.4k; aidlc-product-lead-agent=84/48k/11.5M/2M; aidlc-design-agent=8/5.4k/908.4k/314.9k; aidlc-product-agent=28/50k/4.7M/387.9k; aidlc-architecture-reviewer-agent=744/321.7k/105.3M/18.2M; aidlc-aws-platform-agent=338/197.9k/52.9M/3.7M; aidlc-operations-agent=408/216.4k/81.1M/1.5M
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-08T12:53:23Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: feedback-optimization
+**Reason**: 依頼者の指示で、完了した Intent を一覧から外す
+
+---

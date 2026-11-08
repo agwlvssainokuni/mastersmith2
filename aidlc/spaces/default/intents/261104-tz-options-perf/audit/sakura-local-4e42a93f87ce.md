@@ -5607,3 +5607,11 @@
 **Question Text SHA-256**: 58197813faeda7aabac0b9126abdf09d99c8efdd9da2db71d9d96e09a7d6bfc8
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-08T12:53:23Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: deployment-execution
+**Reason**: 依頼者の指示で、完了した Intent を一覧から外す
+
+---

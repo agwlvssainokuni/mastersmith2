@@ -5177,3 +5177,11 @@
 **Tokens By Agent**: main=720/243.5k/137M/2.9M; aidlc-developer-agent=1.2k/584.8k/254.7M/9.3M; aidlc-product-lead-agent=8/3.4k/929.7k/319.7k; aidlc-architecture-reviewer-agent=12/3.6k/1.5M/313.3k; aidlc-quality-agent=322/89.1k/56.3M/6.4M
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-08T12:53:23Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: deployment-execution
+**Reason**: 依頼者の指示で、完了した Intent を一覧から外す
+
+---

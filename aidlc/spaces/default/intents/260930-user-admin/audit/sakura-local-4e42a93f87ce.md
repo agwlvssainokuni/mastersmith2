@@ -57993,3 +57993,11 @@
 **Reason**: other
 
 ---
+
+## Workflow Archived
+**Timestamp**: 2026-11-08T12:53:21Z
+**Event**: WORKFLOW_ARCHIVED
+**Stage**: feedback-optimization
+**Reason**: 依頼者の指示で、完了した Intent を一覧から外す
+
+---
