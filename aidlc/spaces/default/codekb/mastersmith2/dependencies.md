@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「ビルドの依存」に Gradle のタスクの間の依存（`dependsOn` と順の決まり）を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、「Gradle のタスクの間の依存」に `verifyQuick`・`jacocoQuickReport`・`-PitTests` のときの `integrationTest` を足し、CI の手順の間の依存を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+>
+> 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「ビルドの依存」に Gradle のタスクの間の依存（`dependsOn` と順の決まり）を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
 > 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「画面の依存」に日時の変換（`shared/format`）を読む側の一覧を足した。ほかの節は前回以前の記録による（今回は読み直していない）。
 >
@@ -79,6 +81,22 @@
 - ルートは `evaluationDependsOn(":backend")`（52 行）で `backend` を先に評価し、`backend` のタスクを段の表に入れる。
 - カバレッジの報告と判定はテストに `dependsOn` しないため、単独で呼ぶと前の回の実行記録（`build/jacoco/*.exec`）を読む（K-114）。
 
+### 2026-11-08 の2回目に足したもの（記録のコミット `9fd4f7f`。上の表の行の番号は 1回目のもの）
+
+| タスク | `dependsOn` | 順だけの決まり |
+|---|---|---|
+| `verifyQuick` | `verifyStages` の各タスクから、`frontendTest`・`jacocoTestCoverageVerification`・（`-PitTests` が無ければ）`integrationTest` を除き、`jacocoTestReport` を `:backend:jacocoQuickReport` に替えたもの（`build.gradle.kts` 523〜555 行。段のタスクには依らない） | 段の表で各タスクに付けた `mustRunAfter` がそのまま効く |
+| `:backend:jacocoQuickReport` | （テストには依らない） | `test` の後（`backend/build.gradle.kts` 253 行）。0〜6 の段のタスクの後で、8〜9 の段のタスクはこれの後（`build.gradle.kts` 543〜546 行） |
+| `:backend:integrationTest`（`-PitTests` のとき） | 標準どおり | `test` の後（`shouldRunAfter`）。`verifyQuick` に入ると 6 の段の位置 |
+
+- `verify` と `-PitTests` を一緒に指定すると、タスクのグラフができた時点で失敗にする（`build.gradle.kts` 559〜566 行）。
+
+### CI の手順の間の依存（2026-11-08 の2回目、`.github/workflows/ci.yml`）
+
+- ジョブ `verify` の手順は上から順に流れ、`if:` が無いため、前の手順が失敗すると後ろは流れない（GitHub Actions の既定。本文は `architecture.md` の K-119）。`./gradlew verify`（6 の手順）は 2〜5 の手順が入れた JDK・Node・Gradle・Gitleaks・OSV-Scanner に依る。WAR の保存（7 の手順）は 6 の手順が作る `backend/build/libs/mastersmith.war` に依る。
+- ジョブ `release` は `needs: verify` で、タグのときだけ流れ、ジョブ `verify` が保存した WAR に依る。
+- 規模とカバレッジの要約の手順を足すと、カバレッジの報告（6 の手順が作る）と、規模の比べに使う履歴（1 の手順の `fetch-depth: 0`）に依る形になる見込み（未検証。`architecture.md` の K-123・K-124）。
+
 ## サブモジュールと見送りの依存
 
 | 依存 | 今の固定 | メモ |
@@ -141,6 +159,7 @@
 
 ## Sources
 
+- 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`（タスクの依存）、`README.md` 40 行、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/src` の `shared/format` の import の grep、`frontend/eslint.config.js` の `timeZoneConversionRules`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `.gitmodules`・`git submodule status`・`git log`（サブモジュールの2行）・`gradle/libs.versions.toml` の grep、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。

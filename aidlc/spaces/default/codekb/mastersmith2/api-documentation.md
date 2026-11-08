@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan では HTTP の口を読み直していない（今回の主題は1コマンドの検査の入口で、アプリの口を変えない見込み）。開発者が使う「ビルドと検査の口」（Gradle のタスクと `-P` の値、npm のスクリプト）の節を足した。
+> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された `verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport`・回帰の台本と、CI の口を足した（K-119・K-122）。
+>
+> 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan では HTTP の口を読み直していない（今回の主題は1コマンドの検査の入口で、アプリの口を変えない見込み）。開発者が使う「ビルドと検査の口」（Gradle のタスクと `-P` の値、npm のスクリプト）の節を足した。
 >
 > 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan では HTTP の口を読み直していない（今回の不具合は画面の中の関数で、口を変えない見込み）。「内部の口」に画面の日時の変換の公開の入口と選択肢の組み立ての関数を足した。
 >
@@ -95,7 +97,18 @@
 | E2E | `./gradlew e2eTest`（`-Pe2e.files=e2e/180-….e2e.ts,…`） | `verify` と CI の外。`-P` で値を受ける前例はこれだけ（`providers.gradleProperty("e2e.files")`） | `build.gradle.kts` 811〜860 行 |
 | 画面のテスト | `npm run test`・`npm run test:coverage`（`frontend/` で） | 同じテストを計測なし・計測つきで流す。Gradle からは `frontendTest`・`frontendCoverage` | `frontend/package.json` 22〜23 行 |
 
-- `verifyQuick`・`-PitTests`・`-PitForks` は今は無い（今回の Intent で足す見込み。論点は `architecture.md` の K-116）。
+- 上の行は 2026-11-08 の1回目（`16f46f1`）の記録で、行の番号はその時点のもの。その時点では `verifyQuick`・`-PitTests`・`-PitForks` は無かった（論点は `architecture.md` の K-116）。今は実装済み（K-122、下の表）。
+
+2026-11-08 の2回目（記録のコミット `9fd4f7f`）に確かめた口:
+
+| 口 | 呼び方 | 中身 | 持ち主 |
+|---|---|---|---|
+| 統合の前の速い入口 | `./gradlew verifyQuick` | `verify` の段の表から `frontendTest`・`jacocoTestCoverageVerification`・（`-PitTests` が無ければ）`integrationTest` を外し、`jacocoTestReport` を `jacocoQuickReport` に替えた並び。使い分けは `team.md` | `build.gradle.kts` 515〜555 行 |
+| 結合テストを絞る | `-PitTests=<形>[,<形>...]`（`verifyQuick`・`:backend:integrationTest` に付ける） | 当たる `*IT` だけを流す。空の値・当たるもの無しは失敗。`verify` に付けると失敗（559〜566 行） | `backend/build.gradle.kts` 153〜164・173〜200 行 |
+| 結合テストを並べる | `-PitForks=<N>` | `maxParallelForks` を N にする。1 以上の整数でなければ失敗。CI は付けない | `backend/build.gradle.kts` 166〜171・196〜198 行 |
+| カバレッジの参考値 | `./gradlew :backend:jacocoQuickReport` | `test.exec` だけの報告を `backend/build/reports/jacoco/quick/` に作り、全体の行・分岐を1行表示（判定しない） | `backend/build.gradle.kts` 250〜296 行 |
+| 入口の回帰の確かめ | `node scripts/verify-graph-check.mjs`（リポジトリのルートで） | `verify`・`verifyQuick` のタスクの一覧と順、`-P` の誤りの扱いの 8 項目を `--dry-run` だけで確かめる。手で流す | `scripts/verify-graph-check.mjs` |
+| CI | `develop` への push・`v*` のタグ・手動 | ジョブ `verify` が `./gradlew verify` を引数なしで流し、WAR を保存する。実行の要約（`$GITHUB_STEP_SUMMARY`）には書かない | `.github/workflows/ci.yml`（`architecture.md` の K-119） |
 
 ## API を足すときの決まり
 
@@ -103,6 +116,7 @@
 
 ## Sources
 
+- 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`.github/workflows/ci.yml`・`docs/verification.md`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`、流し読みの `docs/verification.md`（開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-06: `frontend/src/shared/format/timeZone/index.ts`・`frontend/src/features/preferences/{buildTimeZoneOptions,preferencesApi}.ts`（開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-03: `navigation/web/{NavigationController,NavNodeResponse,NavTableRefResponse}.java`・`navigation/domain/{MenuFilter,NavIconPolicy}.java`・`navigation/service/NavigationService.java`・`businessdata/web/ColumnDefinitionResponse.java`・`businessdata/repository/ColumnValueCodec.java`（開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`）。

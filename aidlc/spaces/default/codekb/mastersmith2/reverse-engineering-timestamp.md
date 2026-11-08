@@ -3,67 +3,68 @@
 ## Run Record
 
 - Date: 2026-11-08
-- Commit: 16f46f1268c07d141ade76d620d1858819384967
+- Commit: 9fd4f7f14618f27da3ac87a59ef89e8b062684b4
 
 ## 実施の情報
 
 | 項目 | 値 |
 |---|---|
-| 実施日 | 2026-11-08 |
-| Intent | `261107-verify-quick-local`（scope bugfix・深さ Minimal・Test Strategy Minimal・brownfield。手元の `./gradlew verify` の時間を縮める案 3: 統合の前は `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せ、JaCoCo は参考値）、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し、`-PitForks` で手元だけ結合テストを並べる。画面のテストを1回にする。CI は `verify` を1本のまま。関わる決まりを書き換える） |
+| 実施日 | 2026-11-08（この日の2回目の Reverse Engineering） |
+| Intent | `261108-ci-size-coverage`（scope express・深さ Minimal。GitHub Actions の CI の実行の要約（`$GITHUB_STEP_SUMMARY`）に、cloc で数えるプログラムの規模（前の回のプッシュのコミットとの差を含む。予定の台本は `scripts/program-size.mjs`）と、バックエンドの JaCoCo の XML・画面の Vitest の `coverage-summary.json` から読むカバレッジを載せる） |
 | 対象 | mastersmith2（プロジェクトルート、単一のリポジトリ） |
-| 記録するコミット | `16f46f1268c07d141ade76d620d1858819384967`（`git rev-parse HEAD` と同じ。依頼で渡された値） |
-| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Minimal。既存の知識ベースの判定は STALE（前の Intent `261104-tz-options-perf` で深く読んだ範囲がその後に変わった）で、前の散文を残して今回の範囲の節を更新・追加した |
-| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（設計担当は今回の構成に無い） |
+| 記録するコミット | `9fd4f7f14618f27da3ac87a59ef89e8b062684b4`（`git rev-parse HEAD` と一致。依頼で渡されたスナップショットの値） |
+| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Minimal。既存の知識ベースの判定は STALE（前の Intent `261107-verify-quick-local` の記録のコミット `16f46f1` の後に、`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` が変わり、`scripts/` が足された）。前の散文を残して今回の範囲の節を足した |
+| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（協力者は無効で、設計担当は呼ばれていない） |
 
 ## 確かめ方
 
-- ファイルの読み取り（Read と `ls`・`grep`・`find`・`wc`）だけ。テスト・ビルド・`npm`・`./gradlew`・`docker` は実行していない。git も使っていない（記録のコミットは依頼の値）。時間の実測は無い。
-- 事実と見立てを分け、見立てには「未検証」と書いた（`verifyQuick` の段の組み方・IT を除いたカバレッジ・並べたときのコンテナと番号の取り合い・時間の内訳）。
-- 行の数は `wc -l` で確かめ直した（`build.gradle.kts` 860・`backend/build.gradle.kts` 446・`settings.gradle.kts` 37・`frontend/vitest.config.ts` 80・`README.md` 164）。
-- ステージングの9文書は、前の知識ベースの9文書を読んで今回の節を足した形で書き直した（範囲の外の節は前の文のまま）。この文書は新しく書いた。
+- ファイルの読み取り（`cat`・`sed`・`grep`・`ls`・`wc`）と、`git rev-parse`・`git log`・`git ls-files` だけ。テスト・ビルド・`npm`・`./gradlew`・`docker`・cloc は流していない。報告の置き場（`backend/build/`・`frontend/coverage/`）は git の対象外のため開いていない（ファイルの名前は道具の既定の見込みとして書いた）。
+- 事実と見立てを分け、見立てには「未検証」「見立て」と書いた（前の回のプッシュのコミットの取り方、cloc の入れ方とライセンスと数える範囲、要約の手順の失敗のときの扱い、報告のファイル名）。
+- 行の数は `wc -l` で確かめた（`build.gradle.kts` 913・`backend/build.gradle.kts` 546・`.github/workflows/ci.yml` 115・`scripts/verify-graph-check.mjs` 238・`scripts/verify-graph-baseline.txt` 63・`frontend/vitest.config.ts` 80・`frontend/package.json` 62・`docs/verification.md` 353）。
+- ステージングの9文書は、前の知識ベースの8文書を写して今回の節を足した形（範囲の外の節は前の文のまま）。この文書は新しく書いた。
 
 ## 前の記録との関係
 
-- 前のコード知識ベースは Intent `261104-tz-options-perf` のもの（記録のコミット `a789a6f`）。判定が STALE のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（22）は `shallow.paths` に下げた（前の `shallow.paths` とあわせて残した）。前の `analyzed.paths` の `frontend/vitest.config.ts` と、前の `shallow.paths` の `build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`config/`・`README.md` は今回深く読んだため、`shallow.paths` から外して `analyzed.paths` に入れた。
-- 部品 ID は 49 個のまま（増減なし）。今回の `analyzed.components` は1つ（`build-and-verify`）。`backend-test-support` は結合テストの数と前提を流し読みしただけのため入れていない。
-- 所見は前回までの K-62〜K-110 に、今回 K-111〜K-118 を足した（一覧は `business-overview.md`）。K-118 は前の記録の訂正（Node 26・OSV-Scanner 2.7.0・`setup-gradle` v6.4.1・README 164 行・`frontend/scripts/` 6 ファイル）。
+- 前のコード知識ベースは Intent `261107-verify-quick-local` のもの（記録のコミット `16f46f1`）。判定が STALE のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（12）のうち今回読み直さなかったもの（`settings.gradle.kts`・`config/`・`README.md`）を `shallow.paths` に下げた。前の `analyzed.paths` のほかの9つ（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/` の4ファイル・`.github/workflows/`）は今回も深く読んだため、`analyzed.paths` に入れた。前の `shallow.paths` は残し、今回深く読んだ `docs/verification.md` だけを外した。
+- 部品 ID は 49 個のまま（増減なし。ルートの `scripts/` は `build-and-verify` に含めた）。今回の `analyzed.components` は1つ（`build-and-verify`）。
+- 所見は前回までの K-62〜K-118 に、今回 K-119〜K-126 を足した（一覧は `business-overview.md`）。K-122 は前の記録の訂正（`verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport` は実装済み）。K-126 は行の数と版の確かめ直し。
 
 ## 範囲の要約
 
-- 深く読んだ: 12 の道（ファイル 10 とディレクトリ 2）、1 部品。依頼のスナップショットの範囲（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts`・`.github/workflows`・`config`・`README.md`）のうち、`frontend/scripts` は全文を読んだ4ファイルだけを `analyzed.paths` に入れ、頭だけ読んだ `check-svg-safety.mjs`・`icon-binary.mjs` は `shallow.paths` に入れた。`.github/workflows/`（`ci.yml` の1つ）と `config/`（2ファイル）は中をすべて読んだためディレクトリで入れた。
-- スナップショットの範囲の外は流し読みだけで、`shallow.paths` に記録した（`docs/verification.md`・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/{ContainerRuntimeCheck,TargetDbTestDatabase}.java`・`backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java`・`backend/src/test/resources/junit-platform.properties`。`backend/src/test/java/cherry/mastersmith/` は前の記録に既にある）。
-- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`verify-quick-local`）。
-- `fingerprint` は、最終の `analyzed.paths`（12）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --mint --paths` に渡した出力をそのまま貼った。
+- 深く読んだ: 11 の道（ファイル 9 とディレクトリ 2）、1 部品。依頼のスナップショットの範囲（`.github/workflows/`・`scripts/`・`frontend/scripts/`・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md`）のうち、`frontend/scripts/` は全文を読んだ4ファイルだけを `analyzed.paths` に入れ、頭だけ読んだ `check-svg-safety.mjs`・`icon-binary.mjs` は `shallow.paths` に入れた。`.github/workflows/`（`ci.yml` の1つ）と `scripts/`（2ファイル）は中をすべて読んだためディレクトリで入れた。
+- スナップショットの範囲の外で深く読んだものは無い。`frontend/src/*.test.ts` はファイル名の一覧だけで、前の `shallow.paths` の `frontend/src/` に含まれる。
+- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`ci-size-coverage`）。
+- `fingerprint` は、最終の `analyzed.paths`（11）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: verify-quick-local
-fingerprint: f11d198a15c52de3b0998f469a45b8c76d94e725
+intent: ci-size-coverage
+fingerprint: 4cd80dfaf042a6decba8f88c408f0c46c726578e
 analyzed:
   paths:
-    - build.gradle.kts
-    - settings.gradle.kts
-    - backend/build.gradle.kts
-    - frontend/package.json
-    - frontend/vitest.config.ts
+    - .github/workflows/
+    - scripts/
     - frontend/scripts/check-license-header.mjs
     - frontend/scripts/check-bundle-size.mjs
     - frontend/scripts/check-dist-assets.mjs
     - frontend/scripts/make-ico.mjs
-    - .github/workflows/
-    - config/
-    - README.md
+    - frontend/vitest.config.ts
+    - frontend/package.json
+    - backend/build.gradle.kts
+    - build.gradle.kts
+    - docs/verification.md
   components:
     - build-and-verify
 shallow:
   paths:
+    - settings.gradle.kts
+    - config/
+    - README.md
     - frontend/scripts/check-svg-safety.mjs
     - frontend/scripts/icon-binary.mjs
-    - docs/verification.md
     - backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java
     - backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbTestDatabase.java
     - backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java

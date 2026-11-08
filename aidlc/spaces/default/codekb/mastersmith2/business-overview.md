@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-08、Intent `261107-verify-quick-local`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `16f46f1`）で更新した。今回は1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`.github/workflows/`・`config/`・`README.md`）だけを読み、所見 K-111〜K-118 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
+> 2026-11-08（2回目）、Intent `261108-ci-size-coverage`（express・Minimal）の Reverse Engineering（Focused scan、記録のコミット `9fd4f7f`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`・`frontend/scripts/` の4ファイル・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md` だけを読み、所見 K-119〜K-126 を足した。アプリの機能は読み直していない。前回までの散文と所見の一覧は残した。
+>
+> 前回の記録: 2026-11-08、Intent `261107-verify-quick-local`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `16f46f1`）で更新した。今回は1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`.github/workflows/`・`config/`・`README.md`）だけを読み、所見 K-111〜K-118 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
 >
 > 前回の記録: 2026-11-06、Intent `261104-tz-options-perf`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `a789a6f`）で更新した。今回は表示のタイムゾーンの選択肢の組み立て（`frontend/src/features/preferences/`）・日時の変換の共有の関数（`frontend/src/shared/format/`）・`frontend/vitest.config.ts` だけを読み、所見 K-106〜K-110 を足した。アプリの機能は前回から変わっていない。前回までの散文と所見の一覧は残した（前の Intent `261102-timezone-ui-polish` の後の段で、利用者ごとの表示のタイムゾーンが入った。K-110）。
 >
@@ -22,7 +24,7 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 - 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更（`features/preferences`）。表示のタイムゾーンは「ブラウザに合わせる」か、ブラウザが知る IANA の名前から選ぶ（2026-11-06 に確かめた。K-110）。
 - 管理の操作・認証・DSL・ロール・業務データの書き込みなどの出来事を、内部DB（組み込みの H2）の監査の表に追記する。
 
-開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。
+開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` も今はある（K-122）。CI の実行の要約（`$GITHUB_STEP_SUMMARY`）には今は何も書かない（K-119）。
 
 ## 利用者と役割
 
@@ -31,13 +33,28 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | 管理者（`admin_flag` が真で停止していない利用者） | 利用者・招待・DSL・ロール・グループの管理（`/api/admin/**`） |
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
-| 開発者（依頼者と AI） | 統合の前に `./gradlew verify` を流す（コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
+| 開発者（依頼者と AI） | 統合の前に `./gradlew verifyQuick` か全件の `./gradlew verify` を流す（使い分けは `team.md`。コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
 
-## 所見の一覧（K-62〜K-118）
+## 所見の一覧（K-62〜K-126）
 
-番号は K-61 から続く（K-62〜K-110 は前回まで、K-111〜K-118 が今回 2026-11-08）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-110 は前々回まで、K-111〜K-118 が前回 2026-11-08 の1回目、K-119〜K-126 が今回 2026-11-08 の2回目）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261107-verify-quick-local）の主題
+### 今回（Intent 261108-ci-size-coverage）の主題
+
+GitHub Actions の CI（`.github/workflows/ci.yml`）の実行の要約（`$GITHUB_STEP_SUMMARY`）に、プログラムの規模とカバレッジを載せる。規模は cloc で数える Node の台本（予定は `scripts/program-size.mjs`）で、前の回のプッシュのコミットとの差も出す。カバレッジはバックエンドの JaCoCo の XML と画面の Vitest の `coverage-summary.json` から読む。今回は CI の手順の並び、道具の入れ方、カバレッジの報告の置き場と形、ルートの `scripts/` の台本の形と検査の対象、`docs/verification.md` の構成を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-119 | CI のジョブ `verify` は 7 手順（取得 `fetch-depth: 0`・JDK 25・Node 26・Gradle・Gitleaks と OSV-Scanner（版と SHA-256 で固定）・`./gradlew verify`・WAR の保存）。要約への書き込みは無い。`verify` が落ちると後ろの手順は流れない | `build-and-verify` | `architecture.md`（検査の入口の今の形と CI・Interaction Diagrams 9） |
+| K-120 | カバレッジの報告: バックエンドは `jacocoTestReport` の XML・HTML（`backend/build/reports/jacoco/test/`）、`verifyQuick` は `reports/jacoco/quick/`。画面は Vitest の `text`・`html`・`json-summary`（`frontend/coverage/`）。全体の値を XML の根の直下の `counter` から読む前例が `jacocoQuickReport` にある | `build-and-verify` | `code-quality-assessment.md`（K-120） |
+| K-121 | ルートの `scripts/` は `verify-graph-check.mjs` と比べの元の2ファイル。`.mjs`・`/* */` のヘッダー・`node:` の組み込みだけの形だが、ライセンスヘッダー・書式・リンタ・型・テスト・カバレッジのどれの対象でもなく、`verify` と CI にも入っていない | `build-and-verify` | `code-quality-assessment.md`（K-121） |
+| K-122 | 前の記録の訂正: `verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport` は実装済み（前の記録の K-113 の「並べる口も絞る口も無い」、K-116 の見立て、`api-documentation.md` の「今は無い」は古い） | `build-and-verify` | `architecture.md`（検査の入口の今の形と CI） |
+| K-123 | 「前の回のプッシュのコミット」の取り方の論点（きっかけ3種・`concurrency`・全履歴の取得）。どれも未検証 | `build-and-verify` | `architecture.md`（Improvement Opportunities） |
+| K-124 | cloc と要約の手順を足すときの論点（入れ方・ライセンス・数える範囲・失敗のときの扱い・置き場とテスト・公開のリポジトリ）。どれも未検証 | `build-and-verify` | `architecture.md`（Improvement Opportunities） |
+| K-125 | `docs/verification.md` の構成（見出し3つ、CI の記述は 11・39・93 行、報告の置き場は 33 行、台本は 69〜71 行） | `build-and-verify` | `code-quality-assessment.md`（ドキュメント） |
+| K-126 | 行の数と版の確かめ直し: `build.gradle.kts` 913 行・`backend/build.gradle.kts` 546 行（前の記録の 860・446 から増えた）、CI の版は K-118 と同じ、cloc はどこにも無い | `build-and-verify` | `technology-stack.md`（K-126） |
+
+### 前の Intent（261107-verify-quick-local）の主題（今回は検査の入口の範囲を読み直し、K-113・K-116 の一部を K-122 で訂正）
 
 手元の `./gradlew verify` の時間を縮める（案 3）。Bolt の統合の前は軽い入口 `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せるようにし、JaCoCo は参考値として表示する）にし、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し、`-PitForks` で手元だけ結合テストを並べて流せるようにする。画面のテスト（Vitest）を1回にする。CI は今までどおり `verify` を1本で流す。関わる決まり（`project.md` の Mandated、`team.md` の Way of Working・Testing Posture）を書き換える。今回は `verify` が何をどの順で流すか、結合テストの分け方と並列の設定、カバレッジの判定、CI、README を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
 
@@ -145,6 +162,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-08 の2回目）: `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08）: `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-06）: `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-03）: `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。

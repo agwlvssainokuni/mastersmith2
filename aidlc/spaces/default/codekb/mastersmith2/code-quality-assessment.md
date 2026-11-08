@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、1コマンドの検査の中の画面のテストの回数（K-112）、カバレッジの判定と結合テストの関わり（K-114）、CI の呼び方（K-115）、書き換える決まりと文書の箇所（K-117）を足し、「テスト」「CI と依存」の節を今の値に直した（Node 26・OSV-Scanner 2.7.0。K-118）。所見の本文はこの文書（K-112・K-114・K-115・K-117）と `architecture.md`（K-111・K-113・K-116）。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、カバレッジの報告の置き場と形（K-120）、ルートの `scripts/` の台本の形と検査の対象（K-121）、`docs/verification.md` の構成（K-125）を足し、「CI と依存」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、1コマンドの検査の中の画面のテストの回数（K-112）、カバレッジの判定と結合テストの関わり（K-114）、CI の呼び方（K-115）、書き換える決まりと文書の箇所（K-117）を足し、「テスト」「CI と依存」の節を今の値に直した（Node 26・OSV-Scanner 2.7.0。K-118）。所見の本文はこの文書（K-112・K-114・K-115・K-117）と `architecture.md`（K-111・K-113・K-116）。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、表示のタイムゾーンの選択肢の性能のテストの測り方とカバレッジの設定（K-108）、直し方の候補と制約（K-109）、`frontend/vitest.config.ts` の今の形（K-110 の K-90 の訂正）を足した。所見の本文はこの文書（K-108・K-109）と `architecture.md`（K-106・K-107）。ほかの節は前回以前の記録による。
 >
@@ -67,6 +69,25 @@
   - `docs/verification.md`（範囲の外、流し読み）: 5〜33 行の「1コマンドの検査」の節（段の表 13〜24 行、28 行の「2回流れ」、33 行の段ごとの実行と報告の置き場）。
 - 見立て: 決まりの文の書き換えは `team.md` の「Edit at the gate」の扱い（AI-DLC の決まりの書き方）に従い、どこまで書き換えるかは要件定義で決める。
 
+**K-120 カバレッジの報告の置き場と形（2026-11-08 の2回目）（`build-and-verify`）**
+
+- 確かめた事実:
+  - バックエンドの `jacocoTestReport`（`backend/build.gradle.kts` 231〜240 行）は `test.exec` と `integrationTest.exec` を合わせ、`xml.required = true`・`html.required = true` で報告を作る。置き場を指定していないため Gradle の既定の場所（`backend/build/reports/jacoco/test/`。`docs/verification.md` 112 行と `backend/build.gradle.kts` 245 行のコメントも同じ）に出る。XML のファイル名は Gradle の既定（`jacocoTestReport.xml`）の見込みで、ファイルは開いていない（git の対象外）。
+  - `jacocoQuickReport`（250〜296 行）は `test.exec` だけで `backend/build/reports/jacoco/quick/jacocoQuickReport.xml` と `html/` を作る。XML を `DocumentBuilderFactory` で、外部の DTD・外部の実体を読まない設定（271〜273 行）で読み、根（`report`）の直下の `counter` の `type`・`covered`・`missed` から全体の割合を求めて表示する（275〜294 行。パッケージ・クラスの `counter` は数えない）。全体の値を読む前例になる。
+  - 判定（`jacocoTestCoverageVerification`、323〜357 行）は全体とパッケージごと（`packagesJudgedByTotal` の 7 つを除く）に行 0.80・分岐 0.70。報告とは別のタスクで、報告の XML を読まない。
+  - 画面の `frontend/vitest.config.ts`（66〜77 行）: `reporter` は `text`（端末に表）・`html`・`json-summary`、`reportsDirectory` は `coverage`（`frontend/coverage/`）、`thresholds` は `lines: 80`・`branches: 70`。`include` は `src/**/*.{ts,tsx}` と `../perf/redact-k6-evidence.mjs`（`allowExternal: true`）。`json-summary` のファイル名は道具の既定（`coverage-summary.json`）の見込みで、ファイルは開いていない。
+  - `verify` では、どちらの報告も 7 の段（`verifyCoverage`）で作られる。`verifyQuick` では `jacocoTestReport` を流さないため `backend/build/reports/jacoco/test/` は作り直されず、画面の報告は作られる。CI は `verify` だけを流す（K-119）。
+- 見立て（未検証）: 要約にバックエンドの値を載せるなら、`jacocoTestReport` の XML の根の直下の `counter`（`LINE`・`BRANCH`）を読む形が `jacocoQuickReport` と同じ読み方になる。画面は `json-summary` の全体（`total`）の `lines`・`branches` を読む形になる見込み。下限の判定（パッケージごと）は別のタスクで、要約の値と判定の結果は同じものではない。
+
+**K-121 ルートの `scripts/` の台本の形と、検査の対象の外であること（2026-11-08 の2回目）（`build-and-verify`）**
+
+- 確かめた事実:
+  - `scripts/` は `verify-graph-check.mjs`（238 行）と `verify-graph-baseline.txt`（63 行）の2ファイル（`git ls-files scripts/`）。前の Intent `261107-verify-quick-local` のコミット `f067e2c0` で足された。
+  - 台本の形: 先頭に Apache License 2.0 の `/* ... */` のヘッダー（1〜15 行）、`//` の日本語の説明と流し方（16〜26 行）、ES modules の `import`（`node:child_process`・`node:fs`・`node:path`・`node:url` だけ。npm の依存は使わない）、リポジトリのルートを `import.meta.url` から求める（32 行）、結果を PASS・FAIL で出して終了コードで知らせる（236〜238 行）。`frontend/scripts/` の台本（`check-license-header.mjs` ほか）も同じ形で、関数を `export` して `frontend/src/` のテストから読み、`main()` は直接流したときだけ呼ぶ（`check-license-header.mjs` 125〜127 行）。`scripts/verify-graph-check.mjs` は関数を `export` せず、読み込むとすぐ流れる形。
+  - 検査の対象: ライセンスヘッダーの検査（`frontend/scripts/check-license-header.mjs` 105〜108 行）は `frontend/` と `perf/` だけを集める。Prettier・oxlint・ESLint・Stylelint は `frontend/` の中で流れる（`frontend/package.json` 15〜17 行）。`frontend/` の外のファイルは、perf の伏せ字の道具の1ファイルだけを別のタスク（`build.gradle.kts` 226〜283 行）で書式・リンタ・型の検査にかける。画面のカバレッジの `include` は `src/` と perf の伏せ字の道具だけ（`frontend/vitest.config.ts` 69 行）。そのため `scripts/` の台本は、ライセンスヘッダー・書式・リンタ・型・テスト・カバレッジのどれの対象でもない。
+  - `docs/verification.md` 70 行: 「この台本は…`verify` にも CI にも入っていません（ライセンスヘッダーの検査の対象に `scripts/` を足して検査に載せるかは、後の Intent で決める）」。
+- 今回の Intent への意味（見立て）: 予定の `scripts/program-size.mjs` は CI で毎回流す台本で、手で流す `verify-graph-check.mjs` と性質が違う。`scripts/` に置くなら、ライセンスヘッダーの検査の対象に `scripts/` を足すか（`docs/verification.md` 70 行の持ち越しの決定）、書式・リンタを perf の道具と同じ形のタスクで当てるか、テストをどこに置くか（`frontend/src/` の直下の前例。`coverage.include` に足すのは計測を広げる向き）を要件で決める。`frontend/scripts/` に置けば、ライセンスヘッダー・書式・リンタの対象に入る（カバレッジの `include` には入らない）。
+
 ## リンタと静的解析
 
 - Java: Spotless（palantir-java-format・ライセンスヘッダー）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`。`SQL_`・`PREDICTABLE_RANDOM`・`SMTP_HEADER_INJECTION` は priority にかかわらず止める、`team.md`）。
@@ -78,6 +99,8 @@
 
 - `.github/workflows/ci.yml`（2026-11-08 に全文を読んだ。本文は K-115）: `develop` への push と `v*` のタグと手動で動く。ジョブ `verify`（`ubuntu-latest`・`timeout-minutes: 60`）はサブモジュールごと全履歴を取得し、JDK 25・Node 26・Gradle を用意し、Gitleaks 8.30.1 と OSV-Scanner 2.7.0 を版と SHA-256 で確かめて入れ、`./gradlew verify` を流し、WAR を 30 日保存する。ジョブ `release`（タグのとき）は WAR を GitHub のリリースに添付する。actions はコミットの SHA で固定（版は `technology-stack.md`）。2026-11-01 の記録（Node 24・OSV-Scanner 2.6.0）は古い（K-118）。
 - `.github/dependabot.yml`: 見送り（`ignore`）は gradle の2件（appender・networknt）・npm の `typescript` の大きな版・docker の `eclipse-temurin` の大きな版（K-66・K-72、本文は `dependencies.md`）。Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java`・`perf/README.md` の grafana/k6 など）は手でそろえる運用で、`dependabot.yml` のコメントに列挙している。
+
+- 2026-11-08 の2回目: `ci.yml` は 1回目と同じ（変わっていない。最後に変えたコミットは `a29f6dbf`（2026-11-02））。手順の並び・道具の入れ方・要約の無いこと・`verify` が落ちたときに後ろが流れないことは `architecture.md` の K-119。
 
 ## 静的解析の除外と境界テストの形（K-80、2026-10-29）
 
@@ -147,7 +170,11 @@
   - `buildTimeZoneOptions.test.ts` 111〜122 行は `vi.spyOn(timeZone, 'formatInstant')` で呼び出しを数え、1 回目が 0 より多いことを確かめる。`formatInstant` を呼ばない形にするなら、数える相手を変える必要がある。
   - 新しい関数は `shared/format/timeZone` に置き、公開するなら `index.ts` から名前付きで出す（ESLint の S2 の文言「時刻の整形は src/shared/format/timeZone を使ってください」と `timeZoneConversionRules`）。`team.md` の「不具合を直すときは再現するテストを同じコミットに含める」が当たる。
 
+- **K-125 `docs/verification.md` の構成（2026-11-08 の2回目、353 行の全文）（`build-and-verify`）**: 見出しは「1コマンドの検査（統合の前の関門）」（5 行〜。段の表 13〜24 行、画面のテストが2回流れることと性能のテスト 28〜31 行、段ごとの実行と報告の置き場 33 行、`verify` と `verifyQuick` の使い分け 35〜115 行（`packagesJudgedByTotal` の確かめ・`-PitTests`・`-PitForks`（N=1〜4 の実測）・JaCoCo の参考値）、OSV-Scanner の判定 117〜131 行）、「リリースの前の確かめ」（133〜153 行）、「ビルドした WAR での画面の確認（E2E）」（155〜353 行）の3つ。CI に触れるのは 11 行（「CI も同じタスクを呼びます」）・39 行（「CI は引数なしのこれを流します」）・93 行（`-PitForks` は CI に付けない）・131 行（CI は毎回 OSV を確かめる）・157 行（E2E は CI に入れない）。CI の手順や要約を説明する節は無い。報告の置き場は 33 行（`backend/build/reports/`・`frontend/coverage/`・`build/reports/osv-scanner/osv.json`）と 112 行（`reports/jacoco/quick/` と `reports/jacoco/test/`）。回帰の台本は 69〜71 行。要約の手順を足すなら、33 行の報告の置き場の近くか、新しい節に書く形が考えられる（見立て）。
+
 ## 技術的負債
+
+- **今回の範囲（2026-11-08 の2回目）**: ルートの `scripts/` の台本がどの検査とテストの対象でもない（K-121）。CI はカバレッジの報告を作るが、読む手順も残す手順も無く、実行の要約に何も書かない（K-119・K-120）。前の知識ベースの `verifyQuick` が「無い」とする記述は古い（K-122）。
 
 - **今回の範囲（2026-11-08）**: 1コマンドの検査で画面のテストが2回流れる（K-112）。結合テストは1つの JVM で 278 クラスを順に流し、並べる口も絞る口も無い（K-113、本文は `architecture.md`）。カバレッジの判定が結合テストの実行記録に依り、結合テストを除いた軽い入口では判定できない（K-114）。決まりの文が「統合の前に全件の `verify`」を前提にしている（K-117）。時間の内訳は測っていない。
 
@@ -227,6 +254,7 @@
 
 ## Sources
 
+- 2026-11-08 の2回目: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/{check-license-header,check-bundle-size,check-dist-assets,make-ico}.mjs`・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md`（どれも全文）、`frontend/src/*.test.ts` のファイル名、`git log`・`git ls-files`（`scripts/`）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`（全文）・`backend/build.gradle.kts`（全文）・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/check-license-header.mjs`・`config/`・`.github/workflows/ci.yml`・`README.md`、流し読みの `docs/verification.md`・`backend/src/test/java/`（`*Test`・`*IT` の数）、`aidlc/spaces/default/memory/{team,project}.md`（決まりの文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/vitest.config.ts`・`frontend/src/features/preferences/{TimeZoneOptionsPerformance,buildTimeZoneOptions}.test.ts`・`frontend/src/shared/format/timeZone/{conversionPerformance,timeZoneGate}.test.ts`・`build.gradle.kts`（216〜220 行）・`frontend/eslint.config.js`・`frontend/eslint-rules/timeZoneSelectors.js`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（テストはファイル名の grep だけ）。

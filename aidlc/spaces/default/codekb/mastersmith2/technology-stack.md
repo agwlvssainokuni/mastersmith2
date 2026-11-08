@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、今回読んだファイル（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`）にある版だけを直した: Node.js は 26（K-81 は解消）、OSV-Scanner は 2.7.0、`gradle/actions/setup-gradle` は v6.4.1。訂正の一覧は「K-118 前の記録の訂正」の節。`gradle/libs.versions.toml`・lockfile・`Dockerfile`・`compose.yaml` は読んでいないため、ほかの表の値は前回のまま。
+> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、今回読んだファイル（`.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`）の版を確かめ直した（変わらず）。「K-126 確かめ直し」の節を足した。cloc はリポジトリのどこにも無い。ほかの表の値は前回のまま。
+>
+> 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、今回読んだファイル（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`）にある版だけを直した: Node.js は 26（K-81 は解消）、OSV-Scanner は 2.7.0、`gradle/actions/setup-gradle` は v6.4.1。訂正の一覧は「K-118 前の記録の訂正」の節。`gradle/libs.versions.toml`・lockfile・`Dockerfile`・`compose.yaml` は読んでいないため、ほかの表の値は前回のまま。
 >
 > 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、テストの表の Vitest・`@vitest/coverage-v8` の版を lockfile で確かめ（どちらも 5.0.5、変わらず）、「画面の日時と Intl」の節を足した。ほかの表は前回のまま（今回は読み直していない）。
 >
@@ -131,6 +133,16 @@
   - perf の伏せ字の道具の ESLint（`perfToolEslint`）と型の検査（`perfToolTypecheck`）が `verify` の 2・4 の段に入っている（K-90 の T2 は直っている）。
 - 未検証: `docs/` へ移った版の行（JRE・JDK・Mailpit など）の今の場所は読んでいない。版の固定先の表の README の行の番号は 2026-11-01 のまま。
 
+## K-126 確かめ直し（2026-11-08 の2回目）（`build-and-verify`）
+
+- 確かめた事実（今回読んだファイルによる）:
+  - CI の版は K-118 と同じ: Gitleaks 8.30.1・OSV-Scanner 2.7.0（`ci.yml` 33〜36 行、SHA-256 つき）、checkout v7.0.1・setup-java v6.1.0・setup-node v7.1.0・setup-gradle v6.4.1・upload-artifact v7.0.2・download-artifact v8.0.2（どれもコミットの SHA で固定）、JDK 25（temurin）・Node 26。
+  - `frontend/package.json` の範囲: `vitest` `^5.0.5`・`@vitest/coverage-v8` `^5.0.5`・`eslint` `^10.14.0`・`prettier` `^3.9.10`・`oxlint` `^1.90.0`・`typescript` `^6.0.3`・`@types/node` `^26.6.6`。`engines` は `node >=26 <27`。lockfile は読んでいない。
+  - 行の数: `build.gradle.kts` 913 行・`backend/build.gradle.kts` 546 行（1回目の記録は 860・446。`verifyQuick` と `-P` の口と `jacocoQuickReport` が足された。K-122）。
+  - cloc は `ci.yml`・`build.gradle.kts`・`frontend/package.json`・`docs/verification.md` のどこにも無い（`grep`）。
+  - 外部の道具の入れ方の型: CI はワークフローの `env` に版と SHA-256 を置き、`curl -sSfL` → `sha256sum -c -` → `$HOME/.local/bin` → `$GITHUB_PATH`（`ci.yml` 69〜81 行）。手元は PC に入っている実行ファイルを呼び、無ければ入れ方（`brew install …`）を示して失敗する（`build.gradle.kts` 69〜86 行の `toolGuides`・`requireTool`）。
+- 未検証: cloc の版・ライセンス・`ubuntu-latest` に入っているか（`architecture.md` の K-124）。
+
 ## 手元の運用
 
 - コンテナの版の固定先は上の「版の固定先」の表（K-78 の後継の K-83）。前回（2026-10-29）の時点では、動いている Mailpit・止まっている lgtm のタグは `compose.yaml` と一致して見えた（ダイジェストの一致は未検証）。
@@ -167,6 +179,7 @@
 
 ## Sources
 
+- 2026-11-08 の2回目: `.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`（どれも全文）、`grep`（cloc）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/package.json`・`frontend/package-lock.json`（vitest・coverage-v8 の行）・`frontend/vitest.config.ts`・`frontend/src/shared/format/timeZone/{timeZoneGate,wallClock}.ts`・`.github/workflows/ci.yml`（`verify` の job の頭）、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-03: `Dockerfile`・`compose.yaml`・`backend/build.gradle.kts` の時差の grep、`TargetDataSourceConfig.java`、開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`。

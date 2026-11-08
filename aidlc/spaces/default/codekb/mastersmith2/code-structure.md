@@ -1,6 +1,8 @@
 # コードの構成（mastersmith2）
 
-> 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「検査とビルドの設定の置き場」の節を足し、リポジトリの最上位の表の `frontend/`（`scripts/` の 6 ファイル）・`config/`・`.github/`・`README.md`（164 行）・`docs/` の行を今の値に直した。ほかの節は前回以前の記録による。
+> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、リポジトリの最上位の表に `scripts/` の行を足し、`build.gradle.kts` の行の数を直し、「検査とビルドの設定の置き場」の節に今の行の範囲（K-121・K-126）を足した。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「検査とビルドの設定の置き場」の節を足し、リポジトリの最上位の表の `frontend/`（`scripts/` の 6 ファイル）・`config/`・`.github/`・`README.md`（164 行）・`docs/` の行を今の値に直した。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-06（記録のコミット `a789a6f`）の Intent `261104-tz-options-perf` の Focused scan で、「表示のタイムゾーンと日時の変換の置き場」の節を足した（`frontend/src/features/preferences/`・`frontend/src/shared/format/`・`frontend/vitest.config.ts`）。ほかの節は前回以前の記録による。下の「日時の型の置き場」の `shared/format/formatDateTime.ts` は今は無い（K-110）。
 >
@@ -20,10 +22,11 @@
 | `vendor/java-mustache-processor/` | Mustache のエンジン（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03。K-105） |
 | `docker/` | `monitoring/`・`otel-collector/`・`perf/`（使い捨ての試験の環境）・`targetdb/`（見本の対象DB の初期化。種類ごとに表・読み取り・書き込みのアカウント）・`e2e/`（E2E の見本の PG の番号を開ける上乗せ）・`jmx/` と `hikari-pool.sh`（接続のプールの詰め直しの道具）・`check-container-limits.sh`（約 3,900 行） |
 | `perf/` | k6 の負荷の試験（`perf/k6/scenarios.js` 2,848 行（2026-11-01）、伏せ字の道具 `perf/redact-k6-evidence.mjs`（907 行、K-90）、種 `perf/biz/make-biz-seed.sh`、DSL `perf/make-biz-dsl.mjs`・`make-*-dsl.mjs`）、`perf/dsl-mixed-memory.sh`（`memory.peak` の内訳の記録）、`perf/versions.env`（k6・JRE の版）、`perf/lib/`（接続先の組み立て）、`perf/ui/`、手順（`perf/README.md` 1,753 行、2026-11-01。K-89）。k6 の呼び出し（`--summary-export`）は README の約 15 か所と `perf/dsl-mixed-memory.sh`（K-77） |
+| `scripts/` | 手で流す Node の台本の置き場（2026-11-08 の2回目）: `verify-graph-check.mjs`（`verify`・`verifyQuick` のタスクの一覧と順と `-P` の誤りの扱いを `--dry-run` で確かめる回帰の台本、238 行）と比べの元 `verify-graph-baseline.txt`（63 行）。前の Intent `261107-verify-quick-local` で足された。検査とテストの対象の外（K-121） |
 | `config/` | 検査の設定の2ファイル: `license-header.txt`（ライセンスヘッダーのひな形。Spotless と画面の検査の共通）・`npm-build-tools.txt`（OSV-Scanner で devDependencies でも High 以上で止める道具の一覧）（2026-11-08） |
 | `.github/` | CI（`workflows/ci.yml` の1つ。2026-11-08）と Dependabot（`dependabot.yml`） |
 | `docs/` | 主題ごとの手順の文書（`verification.md`・`deployment.md`・`internal-db.md`・`configuration.md`・`mail.md`・`target-db.md`・`dsl.md`・`users.md`・`roles-and-permissions.md`・`operations.md`・`appearance.md`・`app-icon.md`・`extension-points.md`。README の目次による、2026-11-08） |
-| 最上位のファイル | `settings.gradle.kts`・`settings-gradle.lockfile`・`build.gradle.kts`（860 行）・`gradle/libs.versions.toml`・`gradle/wrapper/`（Gradle 9.8.2）・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitmodules`・`.gitleaks.toml`・`.pre-commit-config.yaml`・`.editorconfig`・`.gitattributes`・`.dockerignore`・`README.md`（164 行、2026-11-08。前の記録の 1,678 行から縮み、手順は `docs/` へ）。`gradle.properties` は無い |
+| 最上位のファイル | `settings.gradle.kts`・`settings-gradle.lockfile`・`build.gradle.kts`（913 行、2026-11-08 の2回目。1回目は 860 行）・`gradle/libs.versions.toml`・`gradle/wrapper/`（Gradle 9.8.2）・`Dockerfile`・`compose.yaml`・`.env.example`・`.env.targetdb.example`・`.gitmodules`・`.gitleaks.toml`・`.pre-commit-config.yaml`・`.editorconfig`・`.gitattributes`・`.dockerignore`・`README.md`（164 行、2026-11-08。前の記録の 1,678 行から縮み、手順は `docs/` へ）。`gradle.properties` は無い |
 | `aidlc/` | AI-DLC の記録（コードではない） |
 
 ## バックエンドのパッケージ（`backend/src/main/java/cherry/mastersmith/`）
@@ -100,6 +103,18 @@
 | `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/` | Test（流し読み） | `ContainerRuntimeCheck`（Docker が無いときの判定）・`TargetDbTestDatabase`（クラスごとのコンテナとスキーマ）・`TargetDbImages`（イメージの版とダイジェスト） |
 | `backend/src/test/resources/junit-platform.properties` | Configuration（流し読み） | jqwik の記録の置き場だけ（JUnit の並列の設定は無い） |
 
+### 2026-11-08 の2回目の行の範囲（記録のコミット `9fd4f7f`。K-121・K-126）
+
+上の表の行の番号は 1回目（`16f46f1`）のもの。前の Intent で `verifyQuick` などが足され、次のように動いた。本文は `architecture.md` の K-122。
+
+| 場所 | 分類 | 今の行の範囲 |
+|---|---|---|
+| `build.gradle.kts`（913 行） | Configuration | ライセンスヘッダーのひな形（27〜49 行）、外部の道具と画面の npm のタスク（63〜224 行、`requireTool` と入れ方の案内 `toolGuides` は 69〜86 行、`npmScript` は 172〜181 行、`frontendCoverage` は 217〜220 行）、perf の伏せ字の道具の検査（226〜283 行）、安全の検査（285〜417 行）、`verify` の段の表と順（419〜513 行）、`verifyQuick` と `-PitTests` の禁止（515〜566 行）、E2E の見本の PostgreSQL と `e2eTest`（568〜913 行、`-Pe2e.files` は 864〜871 行） |
+| `backend/build.gradle.kts`（546 行） | Configuration | テストの共通の設定と `test`（103〜145 行）、`-PitTests`・`-PitForks` と `integrationTest`（147〜204 行）、JaCoCo の `jacocoTestReport`（206〜240 行）、`jacocoQuickReport`（242〜296 行）、`packagesJudgedByTotal`（298〜321 行）、`jacocoTestCoverageVerification`（323〜357 行）、Spotless（359〜379 行）、SpotBugs と `spotbugsGate`（381〜452 行）、`bootWar` と WAR の中身の確かめ（454〜533 行）、`resolveAndLockAll`（535〜546 行） |
+| `scripts/verify-graph-check.mjs` | Utility（手で流す回帰の台本） | `./gradlew` を子のプロセスで `--dry-run` だけで流し、8 項目を PASS・FAIL で出して、1つでも違えば終了コード 1。`node:child_process`・`node:fs`・`node:path`・`node:url` だけを使い、リポジトリのルートは `import.meta.url` から求める（32〜34 行） |
+| `scripts/verify-graph-baseline.txt` | Configuration（比べの元） | `./gradlew verify --dry-run` のタスクのパス 63 行（出力の順のまま） |
+| `frontend/scripts/` | Utility（検査の道具） | 6 ファイルのまま（上の表のとおり）。テストは `frontend/src/` の直下（`licenseHeaderCheck.test.ts`・`distAssetsCheck.test.ts`・`iconBinary.test.ts`・`svgCheckScope.test.ts`・`appIconAssets.test.ts`。ファイル名だけを確かめた） |
+
 ## 日時の型の置き場（K-94〜K-99、2026-11-03）
 
 本文は `architecture.md` の「日時の値の流れ」。ファイルの位置だけをここに置く。
@@ -157,6 +172,7 @@
 
 ## Sources
 
+- 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/`（どれも全文、`wc -l`）、`git ls-files scripts/`、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: 開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`find` の数・grep）。
 - 2026-11-06: 開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`wc`・grep）。
 - 2026-11-03: 開発担当の調査 `aidlc/spaces/default/intents/261102-timezone-ui-polish/inception/reverse-engineering/developer-scan.md`（ファイルの読み取りと grep）。
