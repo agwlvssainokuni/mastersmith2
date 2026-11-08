@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で更新した。アプリの作りは読み直していない。CI（`.github/workflows/ci.yml`）と検査の入口（`build.gradle.kts`・`backend/build.gradle.kts`）を読み直し、「検査の入口の今の形と CI」の節（K-119・K-122）、Interaction Diagrams 9、Improvement Opportunities の K-123・K-124 を足した。前の節「検査の入口 `verify` の流れ」は 2026-11-08 の1回目（`16f46f1`）の記録で、K-113 の並べる口・絞る口の記述は古い（K-122）。ほかの図と散文は前回以前の記録による。
+> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で更新した。アプリの作りは読み直していない。CI（`.github/workflows/ci.yml` 143 行）・ルートの `scripts/`・検査の入口・`docs/verification.md` を読み直し、「CI の今の形とリリース（2026-11-09）」の節（K-127・K-136）、Interaction Diagrams 10、Improvement Opportunities の K-129 を足した。前の節「検査の入口の今の形と CI」の K-119（7 手順・要約なし）は古い（K-127）。Interaction Diagrams 9 の「予定の手順」は実装された（K-127）。ほかの図と散文は前回以前の記録による。
+>
+> 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で更新した。アプリの作りは読み直していない。CI（`.github/workflows/ci.yml`）と検査の入口（`build.gradle.kts`・`backend/build.gradle.kts`）を読み直し、「検査の入口の今の形と CI」の節（K-119・K-122）、Interaction Diagrams 9、Improvement Opportunities の K-123・K-124 を足した。前の節「検査の入口 `verify` の流れ」は 2026-11-08 の1回目（`16f46f1`）の記録で、K-113 の並べる口・絞る口の記述は古い（K-122）。ほかの図と散文は前回以前の記録による。
 >
 > 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で更新した。アプリの作りは読み直していない。1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/vitest.config.ts`・`.github/workflows/ci.yml`）を読み、「検査の入口 `verify` の流れ」の節（K-111・K-113）、Interaction Diagrams 8、Improvement Opportunities の K-116 を足した。ほかの図と散文は前回以前の記録による。
 >
@@ -18,7 +20,7 @@
 - 内部DB は組み込みの H2（利用者・認証・招待・DSL・ロール・グループ・監査）。スキーマは Flyway の V1〜V13。
 - 対象DB（MySQL・MariaDB・PostgreSQL のどれか1つ）は設定（環境変数）だけから接続する。読み取り専用のプールと、設定が揃ったときだけ作る書き込み専用のプールの2つ。
 - 配備先は開発者の PC 上のコンテナだけ（`Dockerfile`・`compose.yaml`）。
-- ビルドと検査は Gradle の1つの入口 `./gradlew verify`（ルートの `build.gradle.kts`）にまとめ、画面の npm と外部の道具（Gitleaks・OSV-Scanner）も Gradle から呼ぶ。CI も同じタスクを呼ぶ（K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` は同じ段の表から一部のタスクを外したもの（K-122）。CI は `verify` の後に WAR を保存するだけで、実行の要約には何も書かない（K-119）。
+- ビルドと検査は Gradle の1つの入口 `./gradlew verify`（ルートの `build.gradle.kts`）にまとめ、画面の npm と外部の道具（Gitleaks・OSV-Scanner）も Gradle から呼ぶ。CI も同じタスクを呼ぶ（K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` は同じ段の表から一部のタスクを外したもの（K-122）。CI は `verify` の後に WAR を保存するだけで、実行の要約には何も書かない（K-119。2026-11-09 には古い: 今は `verify` の後に規模・テストの件数・カバレッジを要約に書き、カバレッジの HTML を保存する。報告だけの手順で、成否で CI を落とさない。K-127）。
 
 ## Architectural Style
 
@@ -147,6 +149,35 @@ flowchart LR
 - どの手順にも `if:` が無い。GitHub Actions の既定では前の手順が失敗すると後ろの手順は流れないため、`verify` が落ちると WAR は保存されない（既定の振る舞いは道具の仕様で、この CI で流して確かめてはいない）。
 - ジョブ `release`（94〜115 行）はタグのときだけ `verify` の後に流れ、保存した WAR を取って GitHub のリリースに添付する（`contents: write`）。
 - `$GITHUB_STEP_SUMMARY` への書き込み・cloc・カバレッジの報告の保存は、どれも無い（`grep` で 0 件）。カバレッジの報告は CI の機械の上の `backend/build/reports/`・`frontend/coverage/` に作られるが、成果物として残さない。
+
+## CI の今の形とリリース（K-127・K-136、2026-11-09）
+
+持ち主の文書はここ。上の K-119 の表は 2026-11-08 の2回目の 7 手順の記録で、今は下の 10 手順。版を固定していない所は `technology-stack.md` の K-128、ルートの `scripts/` の検査の対象は `code-quality-assessment.md` の K-130。行の番号は記録のコミット `4fe8e79` のもの。
+
+### K-127 CI の今の形（確かめた事実。`.github/workflows/ci.yml` 143 行の全文）
+
+- きっかけ（20〜24 行）・`permissions: contents: read`（26〜27 行）・`concurrency`（29〜31 行、ref ごとで取り消さない）・外部の道具の版と SHA-256 の `env`（33〜37 行）は K-119 と同じ。
+- ジョブ `verify`（40〜120 行、`ubuntu-latest`・`timeout-minutes: 60`）の手順:
+
+| 順 | 手順の名前（要約） | 中身 | 失敗のとき |
+|---|---|---|---|
+| 1〜5 | 取得・JDK 25・Node 26・Gradle・Gitleaks と OSV-Scanner | K-119 と同じ（45〜82 行） | 後ろは流れない |
+| 6 | 1コマンドの検査を実行する | `./gradlew verify`（84〜85 行、引数なし。`-PitForks` も付けない） | 後ろは 8〜10 だけ流れる |
+| 7 | WAR を成果物として保存する | `mastersmith-${{ github.sha }}`、30 日、`if-no-files-found: error`（87〜93 行） | — |
+| 8 | 規模を数える道具（cloc）を入れる | `sudo apt-get update && sudo apt-get install -y cloc`（96〜99 行。版を固定しない） | `if: always()`・`continue-on-error: true` |
+| 9 | 規模・テストの件数・カバレッジを実行の要約に書く | `node scripts/ci-summary.mjs --base "$SIZE_BASE"`（101〜108 行）。`SIZE_BASE` は `develop` へのブランチの push のときだけ `github.event.before`、ほかは空 | 同上。台本も終了コード 0 |
+| 10 | カバレッジの HTML の報告を保存する | `coverage-html-${{ github.sha }}`、`backend/build/reports/jacoco/test/html/` と `frontend/coverage/`、14 日、`if-no-files-found: ignore`（110〜120 行） | 同上 |
+
+- 95 行のコメント: 8〜10 は報告だけの手順で、`./gradlew verify` が落ちた回にも流し、成否で CI を失敗にしない。CI の合否は今までどおり 6 の手順で決まる（`docs/verification.md` 166 行も同じ）。
+- 9 の手順の台本 `scripts/ci-summary.mjs` は、規模（`scripts/program-size.mjs` の関数。`--base` があれば比べる元を `git worktree add --detach` で `build/program-size-base` に取り出して cloc をもう1回流す）→ バックエンドのテストの件数（`backend/build/test-results/{test,integrationTest}/TEST-*.xml`）→ カバレッジ（`jacocoTestReport.xml` を正規表現で読み、下限と `packagesJudgedByTotal` は `backend/build.gradle.kts` から読む。画面は `coverage-summary.json`）の順に `$GITHUB_STEP_SUMMARY` へ追記する。欄が作れなければ理由と `::warning::` を出す。
+- ジョブ `release`（122〜143 行）は K-119 と同じ（タグのときだけ、`needs: verify`、`contents: write`）。
+
+### K-136 リリース（`develop` から `main`）の今の形（確かめた事実）
+
+- 手順の置き場: README にリリースの手順は無い（24 行に「リリースの前などで流す」とあるだけ）。リリースの前の確かめは `docs/verification.md` 178〜198 行（全件の `./gradlew verify`・E2E に加えて、`./gradlew osvScan --rerun` の「失敗の条件に当たるもの 0 件」と、`frontend/dist` と WAR に axe-core が入っていないことの `grep`。結果は Deployment Execution の記録に書く）。fast-forward で取り込むこと・依頼者の承認・push は依頼者が行うこと・`v*` のタグを付けないことは `team.md` の Way of Working と Deployment にある。
+- CI のきっかけに `main` は無い（`ci.yml` 20〜24 行）。`main` へ push しても CI は流れず、`develop` の同じコミットの CI の結果が取り込むものの確かめになる（`project.md` の Deployment の「試行ごとに確かめる」決まり）。
+- 2026-11-09 の時点で `main`（先頭 `b2990415`）は `develop` の祖先で、fast-forward で取り込める。`main..develop` は 23 コミット。
+- `scripts/program-size.mjs` の `collectMeta`（356 行〜）は報告に `origin/main` の先頭を載せる（CI の取得は `fetch-depth: 0` のため `origin/main` がある見込み）。
 
 ## 日時の値の流れ（K-94〜K-99、2026-11-03）
 
@@ -473,7 +504,33 @@ flowchart TD
   S1 -.-> NEW
 ```
 
-文字の代わりの説明: CI は `develop` への push・`v*` のタグ・手動のどれかで動き、ジョブ `verify` が 1 から 7 の手順を順に流す。1 の手順は全履歴を取るため、前のコミットとの比べに要る履歴は手元にある。6 の `./gradlew verify` がカバレッジの報告（バックエンドの JaCoCo の XML と、画面の Vitest の `json-summary`）を CI の機械の上に作るが、今はそれを読む手順も残す手順も無い。点線の「予定の手順」は今回の Intent で足す見込みの位置の候補で、報告を読むため 6 の後に置く形になる。どの手順にも `if:` が無いため、6 が落ちると 7 と予定の手順は流れない（失敗のときも要約を書くかは K-124）。タグのときだけ、7 の後にジョブ `release` が流れる。
+文字の代わりの説明: CI は `develop` への push・`v*` のタグ・手動のどれかで動き、ジョブ `verify` が 1 から 7 の手順を順に流す。1 の手順は全履歴を取るため、前のコミットとの比べに要る履歴は手元にある。6 の `./gradlew verify` がカバレッジの報告（バックエンドの JaCoCo の XML と、画面の Vitest の `json-summary`）を CI の機械の上に作るが、今はそれを読む手順も残す手順も無い。点線の「予定の手順」は今回の Intent で足す見込みの位置の候補で、報告を読むため 6 の後に置く形になる。どの手順にも `if:` が無いため、6 が落ちると 7 と予定の手順は流れない（失敗のときも要約を書くかは K-124）。タグのときだけ、7 の後にジョブ `release` が流れる。（2026-11-09 の注: 点線の「予定の手順」は前の Intent で 8〜10 の手順として実装された。今の形は図 10。）
+
+### 10. CI の今の流れと、報告の手順（K-127・K-128・K-129、2026-11-09）
+
+```mermaid
+flowchart TD
+  PUSH["push to develop, push tag v*, or workflow_dispatch"] --> RUNNER["runner image: ubuntu-latest, not pinned"]
+  RUNNER --> S1["1 checkout with submodules, fetch-depth 0"]
+  S1 --> S2["2 setup JDK 25, major version only"]
+  S2 --> S3["3 setup Node 26, major version only"]
+  S3 --> S4["4 setup Gradle"]
+  S4 --> S5["5 install Gitleaks and OSV-Scanner, version and SHA-256 pinned"]
+  S5 --> S6["6 ./gradlew verify, integration tests in one JVM"]
+  S6 --> S7["7 upload WAR artifact"]
+  S6 -.->|"always, even on failure"| S8["8 apt-get install cloc, version not pinned"]
+  S7 --> S8
+  S8 --> S9["9 node scripts/ci-summary.mjs, size, test counts, coverage to step summary"]
+  S9 --> S10["10 upload coverage HTML artifact"]
+  S6 -.-> JX[("backend/build: JUnit XML and jacocoTestReport.xml")]
+  S6 -.-> FX[("frontend/coverage/coverage-summary.json")]
+  JX -.-> S9
+  FX -.-> S9
+  GK[("backend/build.gradle.kts: floors and packagesJudgedByTotal")] -.-> S9
+  S7 --> REL["job release, tags only"]
+```
+
+文字の代わりの説明: CI は `develop` への push・`v*` のタグ・手動で動き、ジョブ `verify` は版を固定していない `ubuntu-latest` の機械で 1 から 10 の手順を順に流す。JDK と Node は大きな版だけを指定し、Gitleaks と OSV-Scanner は版と SHA-256 で固定する。6 の `./gradlew verify` は結合テストを1つの JVM で流し、テストの結果の XML とカバレッジの報告を作る。7 で WAR を保存する。8〜10 は報告だけの手順で、6 が落ちても流れ、成否で CI を落とさない: 8 で apt の cloc を入れ（版は機械のイメージ次第）、9 の台本が報告のファイルと `backend/build.gradle.kts` の下限と `packagesJudgedByTotal` を読んで実行の要約を書き、10 でカバレッジの HTML を保存する。タグのときだけ、ジョブ `release` が保存した WAR をリリースに添付する。`main` への push では CI は動かない。
 
 ## Key Design Decisions
 
@@ -519,8 +576,15 @@ flowchart TD
   - 置き場とテスト: 台本をルートの `scripts/` に置くと、今はどの検査の対象でもない（K-121）。`frontend/scripts/` に置けばライセンスヘッダー・書式・リンタの対象に入り、`frontend/src/` の直下にテストを置く前例がある。express の Minimal では要件ごとの単体テストが要る（`org.md` の Testing Posture）。
   - 公開のリポジトリ: 要約は公開の実行の画面に出る。載せるのは数とディレクトリ・言語の名前だけで、秘密や個人に関する値は入らない見込み。
 
+- K-123・K-124 の論点は、前の Intent `261108-ci-size-coverage` で実装された（比べる元は `github.event.before`、cloc は apt で版を固定しない、ルートの `scripts/` に置いて検査の対象の外、報告の手順は `if: always()`・`continue-on-error: true`。K-127・K-130）。
+
+- **K-129 CI の時間の内訳と分け方の論点（2026-11-09）（`build-and-verify`・`backend-test-support`）**:
+  - 確かめた事実: CI はジョブ `verify` の1本で、手順は直列（K-127）。`./gradlew verify` は `-PitForks` を付けずに流すため、結合テストは1つの JVM（`backend/build.gradle.kts` 196〜198 行は `-PitForks` があるときだけ `maxParallelForks` を変える）。手元の実測の記録（`docs/verification.md` 96〜102 行、2026-11-08、8 CPU・16GiB の PC、colima 4 CPU・6GiB、各 N を1回）は、結合テストが N=1 で 23分05秒、N=2 で 15分26秒、N=3 で 9分43秒、N=4 で 13分53秒（どの N でも 1,716 件が通り、飛ばし 10 件）。画面のテストは `verify` の中で2回流れる（K-112）。9 の手順の `program-size.mjs --base` は比べる元を取り出して cloc をもう1回流す（`program-size.mjs` 250〜286 行）。CI の手順ごとの時間はリポジトリの中に無い。
+  - 見立て（未検証）: 一番大きいのは結合テストの1つの JVM と見る。分け方の候補は、(a) CI でも `-PitForks=<N>` を渡す（CI の機械の CPU・メモリと、対象DB のコンテナ・番号の取り合いを流して確かめる。JaCoCo の記録は同じ `integrationTest.exec` に追記されるため判定は変わらない見込み）、(b) 画面のテストを `verify` でも1回にする（K-112。`verifyQuick` は既に1回）、(c) ジョブを分ける（結合テストを別のジョブにする）。(c) はカバレッジの判定（`test.exec` と `integrationTest.exec` を合わせる）と 9 の手順の台本（同じ機械の `backend/build/` を読む）を、成果物の受け渡しで作り直す必要があり、手元の `verify` と CI が同じ1本のタスクという決まり（`project.md` の Way of Working）にも触れる。内訳は `gh run view --json jobs` の手順ごとの時刻で測れる見込み（`team.md` の「CI の時間は検査の job の始めから終わりで測る」の前例は `project.md` の Deployment）。
+
 ## Sources
 
+- 2026-11-09: `.github/workflows/ci.yml`（全文）・`scripts/`（4 ファイルの全文）・`build.gradle.kts`（1〜566 行）・`backend/build.gradle.kts`（100〜357 行）・`docs/verification.md`（1〜200 行）・`README.md`（流し読み）、`git merge-base`・`git log`（`main` と `develop`）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`scripts/verify-graph-baseline.txt`・`frontend/vitest.config.ts`・`docs/verification.md`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`（全文）・`backend/build.gradle.kts`（全文）・`settings.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`.github/workflows/ci.yml`・`README.md`、流し読みの `docs/verification.md`・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/{ContainerRuntimeCheck,TargetDbTestDatabase}.java`・`backend/src/test/resources/junit-platform.properties`、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/src/features/preferences/{buildTimeZoneOptions,TimeZoneSelect}.ts(x)`・`frontend/src/shared/format/timeZone/{timeZoneGate,formatInstant,wallClock,instantText,index}.ts`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。

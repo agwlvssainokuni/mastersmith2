@@ -164,5 +164,13 @@
     "scope": "express",
     "status": "complete",
     "request": "63c9b4cd"
+  },
+  {
+    "uuid": "01a1bbb6-1c65-7672-90ac-e48f0f775acd",
+    "slug": "ci-checks-release",
+    "dirName": "261108-ci-checks-release",
+    "scope": "bugfix",
+    "status": "in-flight",
+    "request": "35015cbb"
   }
 ]

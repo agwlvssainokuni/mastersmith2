@@ -2,64 +2,89 @@
 
 ## Run Record
 
-- Date: 2026-11-08
-- Commit: 9fd4f7f14618f27da3ac87a59ef89e8b062684b4
+- Date: 2026-11-09
+- Commit: 4fe8e79065d8aa840ad25882509b5f061da0a663
 
 ## 実施の情報
 
 | 項目 | 値 |
 |---|---|
-| 実施日 | 2026-11-08（この日の2回目の Reverse Engineering） |
-| Intent | `261108-ci-size-coverage`（scope express・深さ Minimal。GitHub Actions の CI の実行の要約（`$GITHUB_STEP_SUMMARY`）に、cloc で数えるプログラムの規模（前の回のプッシュのコミットとの差を含む。予定の台本は `scripts/program-size.mjs`）と、バックエンドの JaCoCo の XML・画面の Vitest の `coverage-summary.json` から読むカバレッジを載せる） |
+| 実施日 | 2026-11-09 |
+| Intent | `261108-ci-checks-release`（scope bugfix・深さ Minimal。6 つの Bolt: ルートの `scripts/` を検査の対象に足すことと R-07 のコマンドの直し、`ubuntu-latest` の Ubuntu 26 への移りを受けた CI の道具の版の確かめ、CI の時間の内訳と分け方、`packagesJudgedByTotal` の 7 パッケージにテストを足して一覧から外す範囲、自動化 A1〜A3 の台本、`develop` から `main` への fast-forward のリリース） |
 | 対象 | mastersmith2（プロジェクトルート、単一のリポジトリ） |
-| 記録するコミット | `9fd4f7f14618f27da3ac87a59ef89e8b062684b4`（`git rev-parse HEAD` と一致。依頼で渡されたスナップショットの値） |
-| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Minimal。既存の知識ベースの判定は STALE（前の Intent `261107-verify-quick-local` の記録のコミット `16f46f1` の後に、`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` が変わり、`scripts/` が足された）。前の散文を残して今回の範囲の節を足した |
-| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（協力者は無効で、設計担当は呼ばれていない） |
+| 記録するコミット | `4fe8e79065d8aa840ad25882509b5f061da0a663`（`git rev-parse HEAD` と一致。依頼で渡されたスナップショットの値） |
+| 走査の広さ・深さ | 範囲を絞ったスキャン（Focused scan）・Minimal。既存の知識ベースの判定は STALE（前の Intent `261108-ci-size-coverage` の記録のコミット `9fd4f7f` の後に、`.github/workflows/ci.yml` と `scripts/` が変わった）。前の散文を残して今回の範囲の節を足した |
+| 手順 | 開発担当が1人でコードスキャン（`aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`）と9文書の更新を行った（協力者は無効で、設計担当は呼ばれていない） |
 
 ## 確かめ方
 
-- ファイルの読み取り（`cat`・`sed`・`grep`・`ls`・`wc`）と、`git rev-parse`・`git log`・`git ls-files` だけ。テスト・ビルド・`npm`・`./gradlew`・`docker`・cloc は流していない。報告の置き場（`backend/build/`・`frontend/coverage/`）は git の対象外のため開いていない（ファイルの名前は道具の既定の見込みとして書いた）。
-- 事実と見立てを分け、見立てには「未検証」「見立て」と書いた（前の回のプッシュのコミットの取り方、cloc の入れ方とライセンスと数える範囲、要約の手順の失敗のときの扱い、報告のファイル名）。
-- 行の数は `wc -l` で確かめた（`build.gradle.kts` 913・`backend/build.gradle.kts` 546・`.github/workflows/ci.yml` 115・`scripts/verify-graph-check.mjs` 238・`scripts/verify-graph-baseline.txt` 63・`frontend/vitest.config.ts` 80・`frontend/package.json` 62・`docs/verification.md` 353）。
+- ファイルの読み取り（`cat`・`sed`・`grep`・`ls`・`wc`・`find`）と、`git rev-parse`・`git log`・`git merge-base`・`git status` だけ。テスト・ビルド・`npm`・`./gradlew`・`docker`・cloc・`gh` は流していない。CI の時間とカバレッジの値は測っていない（要件の段で測る）。
+- 事実と見立てを分け、見立てには「見立て（未検証）」と書いた（`ubuntu-latest` の移りの影響、CI の時間の内訳と分け方、`scripts/` の検査の足し方、`audit.repository` が JaCoCo に数えられないこと、7 パッケージの薄い所の効き方、一覧を空にしたときの書き方）。
+- 行の数は `wc -l` で確かめた（`.github/workflows/ci.yml` 143・`scripts/ci-summary.mjs` 445・`scripts/program-size.mjs` 533・`scripts/verify-graph-check.mjs` 238・`scripts/verify-graph-baseline.txt` 63・`frontend/scripts/check-license-header.mjs` 127・`build.gradle.kts` 913・`backend/build.gradle.kts` 546・`docs/verification.md` 398・`README.md` 165）。
+- 深く読んだファイルのうち、`build.gradle.kts` は 1〜566 行を全文で読み、567〜913 行（E2E）は前の記録の範囲を `grep` で確かめただけ。`backend/build.gradle.kts` は 100〜357 行（テスト・JaCoCo・`packagesJudgedByTotal`）を全文で読み、ほかは `grep`。`docs/verification.md` は 1〜200 行を全文で読み、200〜398 行（E2E の節）は頭と見出しだけ。ファイルを単位にした `analyzed.paths` には入れたが、読みの範囲はこのとおり。
 - ステージングの9文書は、前の知識ベースの8文書を写して今回の節を足した形（範囲の外の節は前の文のまま）。この文書は新しく書いた。
 
 ## 前の記録との関係
 
-- 前のコード知識ベースは Intent `261107-verify-quick-local` のもの（記録のコミット `16f46f1`）。判定が STALE のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにし、前の `analyzed.paths`（12）のうち今回読み直さなかったもの（`settings.gradle.kts`・`config/`・`README.md`）を `shallow.paths` に下げた。前の `analyzed.paths` のほかの9つ（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/` の4ファイル・`.github/workflows/`）は今回も深く読んだため、`analyzed.paths` に入れた。前の `shallow.paths` は残し、今回深く読んだ `docs/verification.md` だけを外した。
-- 部品 ID は 49 個のまま（増減なし。ルートの `scripts/` は `build-and-verify` に含めた）。今回の `analyzed.components` は1つ（`build-and-verify`）。
-- 所見は前回までの K-62〜K-118 に、今回 K-119〜K-126 を足した（一覧は `business-overview.md`）。K-122 は前の記録の訂正（`verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport` は実装済み）。K-126 は行の数と版の確かめ直し。
+- 前のコード知識ベースは Intent `261108-ci-size-coverage` のもの（記録のコミット `9fd4f7f`）。判定が STALE のため、今回の `analyzed.paths` と `analyzed.components` は今回の走査の分だけにした。
+- 前の `analyzed.paths`（11）のうち、今回も深く読んだ `.github/workflows/`・`scripts/`・`frontend/scripts/check-license-header.mjs`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` は `analyzed.paths` に入れた。今回深く読まなかった `frontend/scripts/check-bundle-size.mjs`・`frontend/scripts/check-dist-assets.mjs`・`frontend/scripts/make-ico.mjs`・`frontend/vitest.config.ts`・`frontend/package.json` は `shallow.paths` に下げた。前の `shallow.paths` はすべて残し、今回流し読みした `frontend/tsconfig.perf-tool.json` と `common/error/web/`（本体とテスト）を足した。
+- 部品 ID は 49 個のまま（増減なし）。今回の `analyzed.components` は 7 つ（`build-and-verify`・`access`・`audit`・`common-error`・`common-health`・`common-i18n`・`common-web`）。`common-health` 以外は部品の一部（7 パッケージに当たるパッケージと、`build-and-verify` は上のファイル）だけを深く読んだ（`component-inventory.md` の各部品の行）。
+- 所見は前回までの K-62〜K-126 に、今回 K-127〜K-137 を足した（一覧は `business-overview.md`）。K-127 は前の記録の K-119（CI は 7 手順で要約を書かない）の更新、K-130 は K-121（`scripts/` は2ファイル）の更新。
 
 ## 範囲の要約
 
-- 深く読んだ: 11 の道（ファイル 9 とディレクトリ 2）、1 部品。依頼のスナップショットの範囲（`.github/workflows/`・`scripts/`・`frontend/scripts/`・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md`）のうち、`frontend/scripts/` は全文を読んだ4ファイルだけを `analyzed.paths` に入れ、頭だけ読んだ `check-svg-safety.mjs`・`icon-binary.mjs` は `shallow.paths` に入れた。`.github/workflows/`（`ci.yml` の1つ）と `scripts/`（2ファイル）は中をすべて読んだためディレクトリで入れた。
-- スナップショットの範囲の外で深く読んだものは無い。`frontend/src/*.test.ts` はファイル名の一覧だけで、前の `shallow.paths` の `frontend/src/` に含まれる。
-- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`ci-size-coverage`）。
-- `fingerprint` は、最終の `analyzed.paths`（11）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
+- 深く読んだ: 20 の道（ファイル 4 とディレクトリ 16）、7 部品。依頼のスナップショットの範囲（`.github/workflows/`・`scripts/`・`frontend/scripts/`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md`・`README.md`・7 パッケージの本体とテストの 14 ディレクトリ）のうち、`frontend/scripts/` は全文を読んだ `check-license-header.mjs` だけを `analyzed.paths` に入れ、`README.md` は流し読みのため `shallow.paths` に残した。
+- スナップショットの範囲の外で深く読んだものは無い（`frontend/eslint.config.js`・`frontend/tsconfig.perf-tool.json`・`.pre-commit-config.yaml`・`.github/dependabot.yml`・`frontend/package.json`・`frontend/vitest.config.ts` は `grep` だけ）。
+- 深く読んだ範囲がリポジトリの全体ではないため、`kind` は `partial` で、`./` は `analyzed.paths` に入れていない。`intent` は `intents.json` の `slug`（`ci-checks-release`）。
+- `fingerprint` は、最終の `analyzed.paths`（20）をカンマ区切りで `aidlc engine workspace codekb-scope-diff --repo mastersmith2 --mint --paths` に渡した出力をそのまま貼った。
 
 ## Scope of Analysis
 
 ```yaml
 scope_version: 1
 kind: partial
-intent: ci-size-coverage
-fingerprint: 4cd80dfaf042a6decba8f88c408f0c46c726578e
+intent: ci-checks-release
+fingerprint: 60443eb819adfa32fb3f2663ace2beefea5b368c
 analyzed:
   paths:
     - .github/workflows/
     - scripts/
     - frontend/scripts/check-license-header.mjs
+    - build.gradle.kts
+    - backend/build.gradle.kts
+    - docs/verification.md
+    - backend/src/main/java/cherry/mastersmith/access/service/
+    - backend/src/test/java/cherry/mastersmith/access/service/
+    - backend/src/main/java/cherry/mastersmith/audit/repository/
+    - backend/src/test/java/cherry/mastersmith/audit/repository/
+    - backend/src/main/java/cherry/mastersmith/common/error/domain/
+    - backend/src/test/java/cherry/mastersmith/common/error/domain/
+    - backend/src/main/java/cherry/mastersmith/common/error/service/
+    - backend/src/test/java/cherry/mastersmith/common/error/service/
+    - backend/src/main/java/cherry/mastersmith/common/health/
+    - backend/src/test/java/cherry/mastersmith/common/health/
+    - backend/src/main/java/cherry/mastersmith/common/i18n/domain/
+    - backend/src/test/java/cherry/mastersmith/common/i18n/domain/
+    - backend/src/main/java/cherry/mastersmith/common/web/
+    - backend/src/test/java/cherry/mastersmith/common/web/
+  components:
+    - build-and-verify
+    - access
+    - audit
+    - common-error
+    - common-health
+    - common-i18n
+    - common-web
+shallow:
+  paths:
     - frontend/scripts/check-bundle-size.mjs
     - frontend/scripts/check-dist-assets.mjs
     - frontend/scripts/make-ico.mjs
     - frontend/vitest.config.ts
     - frontend/package.json
-    - backend/build.gradle.kts
-    - build.gradle.kts
-    - docs/verification.md
-  components:
-    - build-and-verify
-shallow:
-  paths:
+    - frontend/tsconfig.perf-tool.json
+    - backend/src/main/java/cherry/mastersmith/common/error/web/
+    - backend/src/test/java/cherry/mastersmith/common/error/web/
     - settings.gradle.kts
     - config/
     - README.md

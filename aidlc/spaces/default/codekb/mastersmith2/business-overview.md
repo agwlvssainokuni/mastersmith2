@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-08（2回目）、Intent `261108-ci-size-coverage`（express・Minimal）の Reverse Engineering（Focused scan、記録のコミット `9fd4f7f`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`・`frontend/scripts/` の4ファイル・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md` だけを読み、所見 K-119〜K-126 を足した。アプリの機能は読み直していない。前回までの散文と所見の一覧は残した。
+> 2026-11-09、Intent `261108-ci-checks-release`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `4fe8e79`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`（4 ファイル）・`frontend/scripts/check-license-header.mjs`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` と、`packagesJudgedByTotal` の 7 パッケージ（`access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`）の本体とテストを読み、所見 K-127〜K-137 を足した。アプリの機能（HTTP の口）は読み直していない。前回までの散文と所見の一覧は残した。
+>
+> 前回の記録: 2026-11-08（2回目）、Intent `261108-ci-size-coverage`（express・Minimal）の Reverse Engineering（Focused scan、記録のコミット `9fd4f7f`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`・`frontend/scripts/` の4ファイル・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md` だけを読み、所見 K-119〜K-126 を足した。アプリの機能は読み直していない。前回までの散文と所見の一覧は残した。
 >
 > 前回の記録: 2026-11-08、Intent `261107-verify-quick-local`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `16f46f1`）で更新した。今回は1コマンドの検査 `./gradlew verify` の作り（`build.gradle.kts`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`.github/workflows/`・`config/`・`README.md`）だけを読み、所見 K-111〜K-118 を足した。アプリの機能は前回から変わっていない（今回は機能を読み直していない）。前回までの散文と所見の一覧は残した。
 >
@@ -24,7 +26,7 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 - 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更（`features/preferences`）。表示のタイムゾーンは「ブラウザに合わせる」か、ブラウザが知る IANA の名前から選ぶ（2026-11-06 に確かめた。K-110）。
 - 管理の操作・認証・DSL・ロール・業務データの書き込みなどの出来事を、内部DB（組み込みの H2）の監査の表に追記する。
 
-開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` も今はある（K-122）。CI の実行の要約（`$GITHUB_STEP_SUMMARY`）には今は何も書かない（K-119）。
+開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` も今はある（K-122）。CI の実行の要約（`$GITHUB_STEP_SUMMARY`）には今は何も書かない（K-119。2026-11-09 の時点では古い: 前の Intent で規模・テストの件数・カバレッジを要約に書く手順が足され、CI は 10 手順になった。K-127）。
 
 ## 利用者と役割
 
@@ -35,11 +37,29 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 | 開発者（依頼者と AI） | 統合の前に `./gradlew verifyQuick` か全件の `./gradlew verify` を流す（使い分けは `team.md`。コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
 
-## 所見の一覧（K-62〜K-126）
+## 所見の一覧（K-62〜K-137）
 
-番号は K-61 から続く（K-62〜K-110 は前々回まで、K-111〜K-118 が前回 2026-11-08 の1回目、K-119〜K-126 が今回 2026-11-08 の2回目）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-118 は前々回まで、K-119〜K-126 が前回 2026-11-08 の2回目、K-127〜K-137 が今回 2026-11-09）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261108-ci-size-coverage）の主題
+### 今回（Intent 261108-ci-checks-release）の主題
+
+CI と検査の手直しとリリース。6 つの Bolt: (1) ルートの `scripts/` をライセンスヘッダー・書式・リンタの対象に足し、`docs/verification.md` の `packagesJudgedByTotal` の確かめのコマンド（R-07）を `backend/build.gradle.kts` から一覧を読む形に直す、(2) CI の `ubuntu-latest` が Ubuntu 26 に移ったことを受けて道具の版と動きを確かめ、固定するかを決める、(3) CI の job の時間（35〜39 分）の内訳を測り、分け方を決める、(4) `packagesJudgedByTotal` の 7 パッケージにテストを足して一覧から外す範囲を決める、(5) 自動化 A1〜A3 を台本にする、(6) `develop` から `main` へ fast-forward でリリースする。今回は CI・台本・検査の対象・R-07 のコマンド・7 パッケージの本体とテスト・リリースに関わる文書を読んだ。CI の時間とカバレッジは測っていない（要件の段で測る）。「未検証」の項目は要件定義・Code Generation の前に確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-127 | CI のジョブ `verify` は 10 手順になった（cloc を apt で入れる・`scripts/ci-summary.mjs` で要約を書く・カバレッジの HTML を保存する、の3つが `if: always()`・`continue-on-error: true` で足された）。前の記録の K-119 の 7 手順は古い | `build-and-verify` | `architecture.md`（CI の今の形 2026-11-09・Interaction Diagrams 10） |
+| K-128 | `ubuntu-latest` に頼る所（2 つのジョブの `runs-on`、機械のイメージの Docker と道具、apt の cloc）と、版を固定している所（Actions の SHA・Gitleaks と OSV-Scanner の SHA-256・Wrapper・lockfile・Node の大きな版の強制）。JDK と Node は大きな版だけ | `build-and-verify` | `technology-stack.md`（K-128） |
+| K-129 | CI の時間の手がかり: 手順は直列、結合テストは1つの JVM（手元の実測で N=1 は 23分05秒、N=3 は 9分43秒）、画面のテストは2回、`program-size.mjs --base` は cloc を2回。手順ごとの時間はリポジトリに無い | `build-and-verify`・`backend-test-support` | `architecture.md`（Improvement Opportunities） |
+| K-130 | ルートの `scripts/` は 4 ファイル（`ci-summary.mjs`・`program-size.mjs`・`verify-graph-check.mjs`・比べの元）で、ライセンスヘッダー・書式・リンタ・型・テストのどれの対象でもない。`docs/verification.md` 176 行に前の Intent の依頼者の「対象の外」の決定がある | `build-and-verify` | `code-quality-assessment.md`（K-130） |
+| K-131 | R-07: `docs/verification.md` 78 行の確かめのコマンドは 7 パッケージを手書きの正規表現で持つ。一覧を読む前例は `ci-summary.mjs` の `parseGradleFloors` | `build-and-verify` | `code-quality-assessment.md`（K-131） |
+| K-132 | 7 パッケージの本体とテストの対応と、ソースから読める薄い所 | `access`・`audit`・`common-error`・`common-health`・`common-i18n`・`common-web` | `code-quality-assessment.md`（K-132） |
+| K-133 | `ProblemTypeRegistry` に辿れない分岐が2つある（`code` が重ならずに `slug` だけ重なることは起きない） | `common-error` | `code-quality-assessment.md`（K-133） |
+| K-134 | `audit.repository` は Spring Data のインターフェースだけで、実行できるコードが無い | `audit` | `component-inventory.md` の `audit` |
+| K-135 | 一覧を空にすると Kotlin の書き方が変わり、`ci-summary.mjs` の正規表現（`listOf\(`）が当たらなくなる | `build-and-verify` | `code-quality-assessment.md`（K-135） |
+| K-136 | リリース: README に手順は無く、リリースの前の確かめは `docs/verification.md` 178〜198 行。CI は `main` の push で流れない。2026-11-09 の時点で fast-forward で取り込める（23 コミット） | `build-and-verify` | `architecture.md`（リリースの今の形） |
+| K-137 | 自動化 A1〜A3 に当たる台本はリポジトリの中に無い。A2 は `project.md` の決まり、A3 は `docs/internal-db.md` の節（読んでいない）が関わる | `build-and-verify`・`container-runtime` | `code-quality-assessment.md`（K-137） |
+
+### 前の Intent（261108-ci-size-coverage）の主題（今回は CI と `scripts/` を読み直し、K-119・K-121 を K-127・K-130 で更新）
 
 GitHub Actions の CI（`.github/workflows/ci.yml`）の実行の要約（`$GITHUB_STEP_SUMMARY`）に、プログラムの規模とカバレッジを載せる。規模は cloc で数える Node の台本（予定は `scripts/program-size.mjs`）で、前の回のプッシュのコミットとの差も出す。カバレッジはバックエンドの JaCoCo の XML と画面の Vitest の `coverage-summary.json` から読む。今回は CI の手順の並び、道具の入れ方、カバレッジの報告の置き場と形、ルートの `scripts/` の台本の形と検査の対象、`docs/verification.md` の構成を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
 
@@ -162,6 +182,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-09）: `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08 の2回目）: `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08）: `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-06）: `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。

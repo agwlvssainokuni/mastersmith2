@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、カバレッジの報告の置き場と形（K-120）、ルートの `scripts/` の台本の形と検査の対象（K-121）、`docs/verification.md` の構成（K-125）を足し、「CI と依存」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、ルートの `scripts/` の今の形と検査の対象（K-130）、R-07 の確かめのコマンド（K-131）、`packagesJudgedByTotal` の 7 パッケージの本体とテストの対応と薄い所（K-132）、`ProblemTypeRegistry` の辿れない分岐（K-133）、一覧を空にするときの書き方（K-135）、自動化 A1〜A3 に関わるもの（K-137）を足し、「CI と依存」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数・カバレッジの値・時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、カバレッジの報告の置き場と形（K-120）、ルートの `scripts/` の台本の形と検査の対象（K-121）、`docs/verification.md` の構成（K-125）を足し、「CI と依存」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、1コマンドの検査の中の画面のテストの回数（K-112）、カバレッジの判定と結合テストの関わり（K-114）、CI の呼び方（K-115）、書き換える決まりと文書の箇所（K-117）を足し、「テスト」「CI と依存」の節を今の値に直した（Node 26・OSV-Scanner 2.7.0。K-118）。所見の本文はこの文書（K-112・K-114・K-115・K-117）と `architecture.md`（K-111・K-113・K-116）。テストの件数とカバレッジの実測の値、時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
 >
@@ -88,6 +90,58 @@
   - `docs/verification.md` 70 行: 「この台本は…`verify` にも CI にも入っていません（ライセンスヘッダーの検査の対象に `scripts/` を足して検査に載せるかは、後の Intent で決める）」。
 - 今回の Intent への意味（見立て）: 予定の `scripts/program-size.mjs` は CI で毎回流す台本で、手で流す `verify-graph-check.mjs` と性質が違う。`scripts/` に置くなら、ライセンスヘッダーの検査の対象に `scripts/` を足すか（`docs/verification.md` 70 行の持ち越しの決定）、書式・リンタを perf の道具と同じ形のタスクで当てるか、テストをどこに置くか（`frontend/src/` の直下の前例。`coverage.include` に足すのは計測を広げる向き）を要件で決める。`frontend/scripts/` に置けば、ライセンスヘッダー・書式・リンタの対象に入る（カバレッジの `include` には入らない）。
 
+**K-130 ルートの `scripts/` は 4 ファイルになり、まだ検査の対象の外（2026-11-09）（`build-and-verify`）**
+
+- 確かめた事実:
+  - `scripts/` は `ci-summary.mjs`（445 行）・`program-size.mjs`（533 行）・`verify-graph-check.mjs`（238 行）・`verify-graph-baseline.txt`（63 行）。上の K-121 は2ファイルの時点の記録。
+  - 3つの `.mjs` はどれも先頭に `/* ... */` の Apache License 2.0 のヘッダー（1〜15 行）を持ち、`node:` の組み込みだけを使う（npm の依存なし）。`program-size.mjs` は直接流したときだけ `main()` を呼ぶ（518〜533 行）。`ci-summary.mjs` は読み込むと `main()` が流れる（439〜445 行）。`verify-graph-check.mjs` は読み込むと `./gradlew` を流す。テストはどれにも無い。
+  - 検査の対象は K-121 のまま: ライセンスヘッダーは `frontend/` と `perf/` だけ（`check-license-header.mjs` 105〜108 行）、書式とリンタは `frontend/` の中と perf の伏せ字の道具の1ファイル（`build.gradle.kts` 229 行）、pre-commit の Prettier は `^frontend/` だけ（`.pre-commit-config.yaml`）。
+  - `docs/verification.md` 70 行は「ライセンスヘッダーの検査の対象に `scripts/` を足して検査に載せるかは、後の Intent で決める」、176 行は「ルートの `scripts/` の台本（`program-size.mjs`・`ci-summary.mjs` を含む）は、CI の報告の道具であり本体の機能ではないため、単体テスト・ライセンスヘッダー・書式・リンタの検査の対象の外です（Intent 261108-ci-size-coverage での依頼者の決定）」。今回の Intent はこの決定を見直す。
+- 見立て（未検証）: 足し方の候補は、(a) `check-license-header.mjs` の集める置き場に `scripts/` を足す（`perf/` と同じ `.mjs`・`.js` の扱い。テスト `frontend/src/licenseHeaderCheck.test.ts` が対象の置き場を確かめているかは読んでいない）、(b) 書式・リンタは perf の伏せ字の道具と同じ形の Gradle のタスク（`frontend/node_modules/.bin/` の道具に `frontend/` の設定を渡す）か、`frontend/eslint.config.js` に `scripts/**` の Node の決まりを足す形（perf の道具の決まり `perfToolRule`、301〜303 行が前例）、(c) 型の検査は `frontend/tsconfig.perf-tool.json` と同じ形。`verify-graph-check.mjs` は `./gradlew` を流す台本のため、検査に入れるのがライセンスヘッダー・書式・リンタだけか、`verify` の中で流すことまで含むかを分けて決める（`verify` の中で `./gradlew --dry-run` を流すと入れ子の Gradle になる）。単体テストを付けるなら、`ci-summary.mjs` の読み込み時の `main()` を直接流したときだけにする変更が要る。今の3ファイルが Prettier・oxlint・ESLint を通るかは流していない。
+
+**K-131 R-07: `packagesJudgedByTotal` の確かめのコマンドは一覧を手で書いている（2026-11-09）（`build-and-verify`）**
+
+- 確かめた事実:
+  - `docs/verification.md` 78 行: `git diff --name-only develop... -- backend/src/main | grep -E 'cherry/mastersmith/(access/service|audit/repository|common/error/domain|common/error/service|common/health|common/i18n/domain|common/web)/[^/]+$'`。81 行: 「この一覧は `backend/build.gradle.kts` の `packagesJudgedByTotal` と同じ 7 パッケージです（2026-11-08 の時点）。一覧から外れたパッケージがあれば、このコマンドからも外します」。
+  - `[^/]+$` はパッケージの直下のファイルだけに当てる（下位パッケージは当てない）。
+  - 一覧をファイルから読む前例: `scripts/ci-summary.mjs` の `parseGradleFloors`（162〜182 行）。読み手の一覧は `dependencies.md` の「台本と一覧の読み手の依存」。
+- 見立て（未検証）: 直し方の候補は、(a) コマンドの中で `backend/build.gradle.kts` から名前を取り出し（`sed`・`grep`）、`.` を `/` に替えて正規表現を組み立てる（bash と zsh の両方で動く形。`project.md` の zsh の決まり）、(b) `scripts/` に小さな台本を置き、`ci-summary.mjs` と同じ読み方で確かめる（K-130 の検査の対象の決定が効く）。一覧が空のとき（K-135）に「当たらない」と正しく出ることも確かめる。
+
+**K-132 `packagesJudgedByTotal` の 7 パッケージの本体とテストの対応（2026-11-09）（`access`・`audit`・`common-error`・`common-health`・`common-i18n`・`common-web`）**
+
+- 確かめた事実（本体の行の数は `wc -l`、ヘッダーと Javadoc を含む。置き場の一覧は `code-structure.md`）:
+
+| パッケージ | 本体 | テスト | ソースから読める薄い所（見立て。カバレッジは測っていない） |
+|---|---|---|---|
+| `access.service` | `AccessDeniedEventPublisher`（60）・`AccessProblemTypeCatalog`（32） | `AccessDeniedEventPublisherTest`（5 件）・`AccessProblemTypeCatalogTest`（2 件） | 本体の `try`・`catch` は単体テストで両方を通る見込み。薄い所は読み取れない |
+| `audit.repository` | `AuditEventRepository`（57、インターフェースだけ） | `AuditEventRepositoryIT`（4 件） | 実行できるコードが無い（K-134、`component-inventory.md` の `audit`） |
+| `common.error.domain` | `BusinessException`（104）・`CommonProblemTypes`（121）・`LocalizedText`（48）・`ProblemType`（78）・`ProblemTypeCatalog`（33、インターフェース） | `ProblemTypeTest`（6 件と jqwik の性質1つ）。`CommonProblemTypes.all()` は `ProblemTypeRegistryTest` でも通る | `LocalizedText` の `en == null`（英語は空白 `" "` だけを確かめる）、`BusinessException` の `properties` が `null` のときと3引数の口に値を渡すとき |
+| `common.error.service` | `CommonProblemTypeCatalog`（32）・`ProblemTypeRegistry`（104） | `ProblemTypeRegistryTest`（7 件）・`ProblemTypeDuplicateStartupIT`（3 件） | 辿れない分岐（K-133） |
+| `common.health` | `TimeBoundedDbHealthIndicator`（142）・`HealthProperties`（28、計測の外） | `TimeBoundedDbHealthIndicatorTest`（6 件）・`HealthEndpointIT`（5 件） | `executor.submit` が断られたとき（`submit-failed` の WARN、94 行の `catch`）、`InterruptedException` の枝、`destroy()` を確かめるテストが見当たらない。`backend/build.gradle.kts` のコメントは U1 の実測で行 79.2% とする |
+| `common.i18n.domain` | `AcceptLanguageResolver`（89）・`DisplayLanguage`（39） | `AcceptLanguageResolverTest`（4 件と jqwik の性質2つ） | 50 件を超える見出し（`MAX_ENTRIES`、32・47〜48 行）、`Q=` の大文字、`q=` 以外の引数、`*` を名指しで確かめる件は見当たらない（性質のテストが通す可能性はある） |
+| `common.web` | `CacheControlFilter`（96）・`RequestBodyLimitRoute`（58）・`RequestSizeLimitFilter`（247）・`RequestSizeRejection`（44）・`RequestSizeRejectionListener`（36、インターフェース）・`MastersmithWebProperties`（33、計測の外） | `CacheControlFilterTest`（5 件）・`RequestSizeLimitFilterTest`（6 件）・`RequestSizeLimitRoutesTest`（5 件。受け取り側の例外を含む） | `BufferedBodyRequest` の `ServletInputStream` の `isFinished`・`isReady`・`setReadListener`・`read()`、`getReader` で文字コードを指定したとき、`Content-Length` も `Transfer-Encoding` も無いとき、`RequestSizeRejection` の `null` の検査を名指しで確かめる件は見当たらない |
+
+- `access`・`audit` には機能の境界テスト（`AccessBoundaryArchitectureTest`・`AuditBoundaryArchitectureTest`）がある。`common` には無い（`*BoundaryArchitectureTest.java` 16 ファイル）。`team.md` の「手を入れる Bolt で、その機能の境界テストが無ければ足す」が共通部品の `common` に当たるかは決まりの読み方による（見立て）。今回の見込み（`src/main` を変えない）なら当たらない。
+- 今の値は、`project.md` の Testing Posture の Delivery Planning の実測の形（`:backend:cleanTest :backend:cleanIntegrationTest :backend:test :backend:integrationTest :backend:jacocoTestReport` の後に `jacocoTestReport.xml` から読む）で測る。
+
+**K-133 `ProblemTypeRegistry` の辿れない分岐（2026-11-09）（`common-error`）**
+
+- 確かめた事実:
+  - `ProblemType` の `code` は `^[A-Z][A-Z0-9_]*$` に限られ、`slug` は `code` を小文字にして `_` を `-` に替えたもの（`toSlug`）。この変換は1対1で、`code` が重ならずに `slug` だけが重なることは起きない。
+  - `ProblemTypeRegistry` のコンストラクターの `if (!duplicateCodes.isEmpty() || !duplicateSlugs.isEmpty())` の右側が真になるのは左側が偽のときだけで、そのとき `slug` の重なりも無い。中の `if (!duplicateSlugs.isEmpty())` が偽になるのは `code` だけが重なるときで、これも起きない。
+  - `ProblemTypeRegistryTest` 85〜93 行の「slug の重なり」の件は同じ `code`（`A_B`）を2つ渡しており、両方が重なる場合を確かめている。
+- 見立て（未検証）: テストを足しても届かない分岐が少なくとも2つ残る。パッケージの分岐の下限 70% に届くかは分岐の総数による。届かないときに `src/main` を直すと、`team.md` の「`packagesJudgedByTotal` のパッケージに手を入れる Bolt」（全件の `verify`、一覧から外す）に当たる。
+
+**K-135 一覧を空にするときの書き方と、一覧を読む台本（2026-11-09）（`build-and-verify`）**
+
+- 確かめた事実: `packagesJudgedByTotal` は `listOf(…)` で書かれ、`excludes = packagesJudgedByTotal` に渡る（`backend/build.gradle.kts` 313〜357 行）。`scripts/ci-summary.mjs` の `parseGradleFloors` は `listOf\(` に当たらなければ例外を投げ、要約は下限の列を「—」にして警告を出す（204〜210 行。CI は落ちない）。`team.md` は「一度外したパッケージは一覧に戻さず、一覧を増やす変更はしない」とする。
+- 見立て（未検証）: 7 つすべてを外すと、Kotlin では型を書いた `listOf<String>()`・`emptyList<String>()` にするか、一覧と2つ目の `rule` の `excludes` の行を消す形になる。どの形でも `ci-summary.mjs` の正規表現は当たらない（`listOf<String>(` は `listOf\(` に当たらない）。一部だけ外すなら今の書き方のまま読める。一覧を残すか消すかと、`ci-summary.mjs` と R-07（K-131）の合わせ方を要件で決める。
+
+**K-137 自動化 A1〜A3 に関わるリポジトリの中のもの（2026-11-09）（`build-and-verify`・`container-runtime`）**
+
+- 確かめた事実: A1〜A3 の今の道具はリポジトリの外（ホームの下）にあり、読んでいない（依頼による）。A1（振り返りの段の読み取りの確かめ）に当たる台本はリポジトリの中に無い（`scripts/` の4ファイルのどれでもない）。A2（`main` への取り込みの前の CI の試行ごとの確かめ）は `project.md` の Deployment の「`gh run view --json attempt,jobs` で試行ごとに確かめる」決まりで、台本は無い。A3（内部DB の複写を数える）は README の目次（109 行）が `docs/internal-db.md` に「内部DBの複写を数える」の節があるとする（`docs/internal-db.md` は読んでいない）。
+- 見立て: 台本をリポジトリに置くなら、ルートの `scripts/` が置き場の候補で、K-130 の検査の対象の決定がそのまま効く。A3 はチームの知識（`aidlc/spaces/default/knowledge/aidlc-shared/ops-notes.md`）の「リポジトリの外の小さな Java の道具（H2 の JDBC、`ACCESS_MODE_DATA=r`）で値を表示せずに数える」決まりがあり、Node の台本にするか Java の道具のままかで、ライセンスヘッダーと検査の対象の扱いが変わる。A2 の台本は公開のリポジトリに置くことになるため、`gh` の出力のどの値を出すかを決める。
+
 ## リンタと静的解析
 
 - Java: Spotless（palantir-java-format・ライセンスヘッダー）、SpotBugs＋FindSecBugs（`backend/config/spotbugs-exclude.xml`。`SQL_`・`PREDICTABLE_RANDOM`・`SMTP_HEADER_INJECTION` は priority にかかわらず止める、`team.md`）。
@@ -102,6 +156,8 @@
 
 - 2026-11-08 の2回目: `ci.yml` は 1回目と同じ（変わっていない。最後に変えたコミットは `a29f6dbf`（2026-11-02））。手順の並び・道具の入れ方・要約の無いこと・`verify` が落ちたときに後ろが流れないことは `architecture.md` の K-119。
 
+- 2026-11-09: `ci.yml` は前の Intent のコミット `71a8b436` で 143 行・10 手順になった（報告だけの手順3つ。`architecture.md` の K-127）。版を固定していない所は `technology-stack.md` の K-128、時間の論点は `architecture.md` の K-129。
+
 ## 静的解析の除外と境界テストの形（K-80、2026-10-29）
 
 - SpotBugs の `SQL_` の除外（`backend/config/spotbugs-exclude.xml`）は `RowSqlExecutor` の `search`・`detail`・`precheckUnique`・`insert`・`update` ほかのメソッド単位で個別に書かれている（開発担当の読み）。`team.md` の決まりで、除外の追加・拡大はコード生成の計画に明記して依頼者の承認が要る。
@@ -112,6 +168,7 @@
 
 - Javadoc・コメントは日本語で、要件・設計の ID（BR・NFR・契約の番号）と Intent の名前を細かく引く。`frontend/src/features/README.md` に機能の作り方の決まり、`perf/README.md` に負荷の試験の手順（1,753 行、2026-11-01）。
 - 2026-11-08: `README.md` は 164 行に縮み、前提の道具・取得と準備・開発時の起動・コンテナでの起動と確認・文書の目次・ライセンスだけを持つ。検査とテストの手順は `docs/verification.md`、配備・内部DB・設定・メール・対象DB・DSL・利用者・ロール・運用・見た目・アイコン・差し込み口は `docs/` の主題ごとの文書へ分かれた（目次 102〜119 行）。下の K-88 の記述は 2026-11-01 の時点のもの（K-118）。
+- 2026-11-09: `docs/verification.md` は 398 行（下の K-125 の 353 行から、前の Intent で「規模・テストの件数・カバレッジの報告（CI の要約）」の節 133〜176 行が足された。節の位置は `code-structure.md` の「CI と台本の置き場」）。README（165 行）はリリースの手順を持たず、リリースの前の確かめは `docs/verification.md` 178〜198 行（`architecture.md` の K-136）。
 
 **K-88 README.md に経緯が溜まっている（2026-11-01）（`build-and-verify`・`container-runtime`）**
 
@@ -173,6 +230,8 @@
 - **K-125 `docs/verification.md` の構成（2026-11-08 の2回目、353 行の全文）（`build-and-verify`）**: 見出しは「1コマンドの検査（統合の前の関門）」（5 行〜。段の表 13〜24 行、画面のテストが2回流れることと性能のテスト 28〜31 行、段ごとの実行と報告の置き場 33 行、`verify` と `verifyQuick` の使い分け 35〜115 行（`packagesJudgedByTotal` の確かめ・`-PitTests`・`-PitForks`（N=1〜4 の実測）・JaCoCo の参考値）、OSV-Scanner の判定 117〜131 行）、「リリースの前の確かめ」（133〜153 行）、「ビルドした WAR での画面の確認（E2E）」（155〜353 行）の3つ。CI に触れるのは 11 行（「CI も同じタスクを呼びます」）・39 行（「CI は引数なしのこれを流します」）・93 行（`-PitForks` は CI に付けない）・131 行（CI は毎回 OSV を確かめる）・157 行（E2E は CI に入れない）。CI の手順や要約を説明する節は無い。報告の置き場は 33 行（`backend/build/reports/`・`frontend/coverage/`・`build/reports/osv-scanner/osv.json`）と 112 行（`reports/jacoco/quick/` と `reports/jacoco/test/`）。回帰の台本は 69〜71 行。要約の手順を足すなら、33 行の報告の置き場の近くか、新しい節に書く形が考えられる（見立て）。
 
 ## 技術的負債
+
+- **今回の範囲（2026-11-09）**: ルートの `scripts/` が 4 ファイルに増えたが、どの検査とテストの対象でもない（K-130）。R-07 の確かめのコマンドが一覧を手で写している（K-131）。CI の機械のイメージ・cloc・JDK と Node の小さな版を固定していない（K-128）。CI の結合テストは1つの JVM で流れる（K-129）。`ProblemTypeRegistry` に辿れない分岐がある（K-133）。一覧を空にすると要約の台本が一覧を読めない（K-135）。
 
 - **今回の範囲（2026-11-08 の2回目）**: ルートの `scripts/` の台本がどの検査とテストの対象でもない（K-121）。CI はカバレッジの報告を作るが、読む手順も残す手順も無く、実行の要約に何も書かない（K-119・K-120）。前の知識ベースの `verifyQuick` が「無い」とする記述は古い（K-122）。
 
@@ -254,6 +313,7 @@
 
 ## Sources
 
+- 2026-11-09: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/check-license-header.mjs`（どれも全文）・`build.gradle.kts`（1〜566 行）・`backend/build.gradle.kts`（100〜357 行）・`docs/verification.md`（1〜200 行）・7 パッケージの本体とテスト（全文）、`frontend/eslint.config.js`・`frontend/tsconfig.perf-tool.json`・`.pre-commit-config.yaml`・`README.md` の `grep`、`find`（テストの数と境界テストの一覧）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/{check-license-header,check-bundle-size,check-dist-assets,make-ico}.mjs`・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md`（どれも全文）、`frontend/src/*.test.ts` のファイル名、`git log`・`git ls-files`（`scripts/`）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`（全文）・`backend/build.gradle.kts`（全文）・`frontend/package.json`・`frontend/vitest.config.ts`・`frontend/scripts/check-license-header.mjs`・`config/`・`.github/workflows/ci.yml`・`README.md`、流し読みの `docs/verification.md`・`backend/src/test/java/`（`*Test`・`*IT` の数）、`aidlc/spaces/default/memory/{team,project}.md`（決まりの文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/vitest.config.ts`・`frontend/src/features/preferences/{TimeZoneOptionsPerformance,buildTimeZoneOptions}.test.ts`・`frontend/src/shared/format/timeZone/{conversionPerformance,timeZoneGate}.test.ts`・`build.gradle.kts`（216〜220 行）・`frontend/eslint.config.js`・`frontend/eslint-rules/timeZoneSelectors.js`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。

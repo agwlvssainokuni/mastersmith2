@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、今回読んだファイル（`.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`）の版を確かめ直した（変わらず）。「K-126 確かめ直し」の節を足した。cloc はリポジトリのどこにも無い。ほかの表の値は前回のまま。
+> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、CI（`.github/workflows/ci.yml`）の版を確かめ直し（Actions・Gitleaks・OSV-Scanner・JDK・Node は K-126 と同じ）、cloc が CI に入ったことと、`ubuntu-latest` に頼る所・版を固定していない所の一覧（K-128）を足した。ほかの表の値は前回のまま。
+>
+> 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、今回読んだファイル（`.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`）の版を確かめ直した（変わらず）。「K-126 確かめ直し」の節を足した。cloc はリポジトリのどこにも無い。ほかの表の値は前回のまま。
 >
 > 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、今回読んだファイル（`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`）にある版だけを直した: Node.js は 26（K-81 は解消）、OSV-Scanner は 2.7.0、`gradle/actions/setup-gradle` は v6.4.1。訂正の一覧は「K-118 前の記録の訂正」の節。`gradle/libs.versions.toml`・lockfile・`Dockerfile`・`compose.yaml` は読んでいないため、ほかの表の値は前回のまま。
 >
@@ -143,6 +145,27 @@
   - 外部の道具の入れ方の型: CI はワークフローの `env` に版と SHA-256 を置き、`curl -sSfL` → `sha256sum -c -` → `$HOME/.local/bin` → `$GITHUB_PATH`（`ci.yml` 69〜81 行）。手元は PC に入っている実行ファイルを呼び、無ければ入れ方（`brew install …`）を示して失敗する（`build.gradle.kts` 69〜86 行の `toolGuides`・`requireTool`）。
 - 未検証: cloc の版・ライセンス・`ubuntu-latest` に入っているか（`architecture.md` の K-124）。
 
+## K-128 `ubuntu-latest` に頼る所と、版を固定していない所（2026-11-09）（`build-and-verify`）
+
+持ち主の文書はここ。CI の手順の並びは `architecture.md` の K-127。
+
+- 確かめた事実（`.github/workflows/ci.yml` 143 行・`build.gradle.kts`・`docs/verification.md`）:
+
+| もの | 置き場 | 固定のしかた |
+|---|---|---|
+| 走らせる機械のイメージ | `runs-on: ubuntu-latest`（ジョブ `verify` 42 行・ジョブ `release` 126 行） | 固定しない（GitHub が `ubuntu-latest` の指す版を移す） |
+| Docker（Testcontainers の対象DB のコンテナ） | 機械のイメージに入っているもの | 固定しない |
+| `curl`・`sha256sum`・`tar`・`sudo`・`apt-get`・`gh` | 機械のイメージに入っているもの | 固定しない |
+| cloc | 8 の手順の `sudo apt-get update && sudo apt-get install -y cloc`（96〜99 行） | 固定しない（apt の版。`docs/verification.md` 175 行も「版を固定せず、`ubuntu-latest` の apt の版」。報告に版が出る） |
+| JDK | `actions/setup-java`、`distribution: temurin`・`java-version: "25"`（52〜56 行） | 大きな版だけ |
+| Node.js | `actions/setup-node`、`node-version: "26"`（58〜65 行） | 大きな版だけ。`checkToolchain` が `v26.` で始まらないと失敗（`build.gradle.kts` 88〜99 行） |
+| GitHub Actions | `uses:` の各行 | コミットの SHA（コメントは版の名前）。Dependabot の `github-actions` が週ごとに見る |
+| Gitleaks 8.30.1・OSV-Scanner 2.7.0 | ワークフローの `env`（33〜37 行）と 5 の手順（70〜82 行） | 版と SHA-256（`sha256sum -c -`）。取得の URL は `linux_x64`・`linux_amd64` の決め打ち |
+| Gradle | Wrapper（9.8.2） | Wrapper の版 |
+| npm の依存 | lockfile と `npm ci` | lockfile |
+
+- 見立て（未検証）: `ubuntu-latest` の Ubuntu の版が移ったとき（依頼の「apt の取得元が resolute」）に動きが変わりうるのは、cloc の版（規模の値がずれる）・Docker の版（Testcontainers）・事前に入っている道具。固定する候補は、版つきの `runs-on` のラベル（`ubuntu-24.04` などで、どの版のラベルが使えるかは GitHub の今の提供による）と、cloc の版の固定（apt の版の指定、または Gitleaks と同じく版と SHA-256 で取得）。`runs-on` のラベルは Dependabot の対象の外の見込み（確かめていない）。どれも流して確かめる必要がある。
+
 ## 手元の運用
 
 - コンテナの版の固定先は上の「版の固定先」の表（K-78 の後継の K-83）。前回（2026-10-29）の時点では、動いている Mailpit・止まっている lgtm のタグは `compose.yaml` と一致して見えた（ダイジェストの一致は未検証）。
@@ -179,6 +202,7 @@
 
 ## Sources
 
+- 2026-11-09: `.github/workflows/ci.yml`（全文）・`build.gradle.kts`（88〜99 行）・`docs/verification.md`（175 行）・`.github/dependabot.yml`（`package-ecosystem` の行）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`（どれも全文）、`grep`（cloc）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`・`README.md`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/package.json`・`frontend/package-lock.json`（vitest・coverage-v8 の行）・`frontend/vitest.config.ts`・`frontend/src/shared/format/timeZone/{timeZoneGate,wallClock}.ts`・`.github/workflows/ci.yml`（`verify` の job の頭）、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。

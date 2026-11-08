@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、「Gradle のタスクの間の依存」に `verifyQuick`・`jacocoQuickReport`・`-PitTests` のときの `integrationTest` を足し、CI の手順の間の依存を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、「CI の手順の間の依存（2026-11-09）」と「台本と一覧の読み手の依存（2026-11-09）」を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+>
+> 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、「Gradle のタスクの間の依存」に `verifyQuick`・`jacocoQuickReport`・`-PitTests` のときの `integrationTest` を足し、CI の手順の間の依存を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
 > 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、「ビルドの依存」に Gradle のタスクの間の依存（`dependsOn` と順の決まり）を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
@@ -97,6 +99,23 @@
 - ジョブ `release` は `needs: verify` で、タグのときだけ流れ、ジョブ `verify` が保存した WAR に依る。
 - 規模とカバレッジの要約の手順を足すと、カバレッジの報告（6 の手順が作る）と、規模の比べに使う履歴（1 の手順の `fetch-depth: 0`）に依る形になる見込み（未検証。`architecture.md` の K-123・K-124）。
 
+### CI の手順の間の依存（2026-11-09、`.github/workflows/ci.yml` 143 行。K-127）
+
+- 上の節の「`if:` が無い」は 2026-11-08 の2回目の記録。今は 8〜10 の手順が `if: always()`・`continue-on-error: true` を持ち、6 の手順が落ちても流れる（7 は流れない）。手順の並びは `architecture.md` の K-127。
+- 8（cloc）は機械のイメージの apt に依る（K-128）。9（`node scripts/ci-summary.mjs`）は、3 の手順の Node、8 の cloc、1 の手順の全履歴（`--base` の `github.event.before` を `git worktree` で取り出す）、6 の手順が作る `backend/build/test-results/{test,integrationTest}/`・`backend/build/reports/jacoco/test/jacocoTestReport.xml`・`frontend/coverage/coverage-summary.json`、リポジトリの `backend/build.gradle.kts`・`frontend/vitest.config.ts` に依る。10 は 6 の手順の HTML の報告に依る（無ければ何もしない）。
+- 9 の手順の中の依存: `scripts/ci-summary.mjs` は `scripts/program-size.mjs` の `collectMeta`・`countBase`・`countSize`・`fixed`・`int`・`renderReport` を `import` する（38 行）。
+
+### 台本と一覧の読み手の依存（2026-11-09。K-131・K-135）
+
+`backend/build.gradle.kts` の `packagesJudgedByTotal`（313〜321 行）を読む・写すもの:
+
+| 読み手 | 読み方 | 一覧を変えたとき |
+|---|---|---|
+| `jacocoTestCoverageVerification`（同じファイル 340〜345 行） | `excludes = packagesJudgedByTotal` | 外したパッケージにパッケージごとの下限が当たる |
+| `scripts/ci-summary.mjs` の `parseGradleFloors`（162〜182 行） | 正規表現 `val\s+packagesJudgedByTotal\s*=\s*listOf\(([\s\S]*?)\)` | 書き方を `listOf(` 以外にすると読めず、要約の下限の列が「—」になる（CI は落ちない） |
+| `docs/verification.md` 78 行の確かめのコマンド（R-07） | 手で写した正規表現 | 手で合わせる（81 行） |
+| `team.md` の Testing Posture | 手で写した名前の一覧 | 決まりの文の書き換え（`team.md` の書き方に従う） |
+
 ## サブモジュールと見送りの依存
 
 | 依存 | 今の固定 | メモ |
@@ -159,6 +178,7 @@
 
 ## Sources
 
+- 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文）・`backend/build.gradle.kts`（300〜357 行）・`docs/verification.md`（73〜81 行）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`（タスクの依存）、`README.md` 40 行、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-06: `frontend/src` の `shared/format` の import の grep、`frontend/eslint.config.js` の `timeZoneConversionRules`、開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`。

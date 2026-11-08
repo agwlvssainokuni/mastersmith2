@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された `verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport`・回帰の台本と、CI の口を足した（K-119・K-122）。
+> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された CI の要約の台本と規模を数える台本の呼び方を足し、CI の行を今の形に直した（K-127）。
+>
+> 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された `verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport`・回帰の台本と、CI の口を足した（K-119・K-122）。
 >
 > 前回の記録: 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan では HTTP の口を読み直していない（今回の主題は1コマンドの検査の入口で、アプリの口を変えない見込み）。開発者が使う「ビルドと検査の口」（Gradle のタスクと `-P` の値、npm のスクリプト）の節を足した。
 >
@@ -110,12 +112,23 @@
 | 入口の回帰の確かめ | `node scripts/verify-graph-check.mjs`（リポジトリのルートで） | `verify`・`verifyQuick` のタスクの一覧と順、`-P` の誤りの扱いの 8 項目を `--dry-run` だけで確かめる。手で流す | `scripts/verify-graph-check.mjs` |
 | CI | `develop` への push・`v*` のタグ・手動 | ジョブ `verify` が `./gradlew verify` を引数なしで流し、WAR を保存する。実行の要約（`$GITHUB_STEP_SUMMARY`）には書かない | `.github/workflows/ci.yml`（`architecture.md` の K-119） |
 
+- 上の CI の行は 2026-11-08 の2回目の記録で、今は古い（下の表）。
+
+2026-11-09（記録のコミット `4fe8e79`）に確かめた口:
+
+| 口 | 呼び方 | 中身 | 持ち主 |
+|---|---|---|---|
+| CI | `develop` への push・`v*` のタグ・手動（`main` の push では動かない） | ジョブ `verify` が `./gradlew verify` を引数なしで流し、WAR を保存し、報告だけの手順で cloc を入れて要約を書き、カバレッジの HTML を 14 日保存する（10 手順） | `.github/workflows/ci.yml`（`architecture.md` の K-127） |
+| CI の要約 | `node scripts/ci-summary.mjs [--base <commit>] [--backend-reports <dir>] [--frontend-coverage <dir>]`（リポジトリのルートで） | 規模 → バックエンドのテストの件数 → カバレッジを `$GITHUB_STEP_SUMMARY`（無ければ標準出力）に書く。欄が作れなくても終了コード 0 | `scripts/ci-summary.mjs` |
+| 規模を数える | `node scripts/program-size.mjs [--base <commit>] [<数える場所>]` | git が管理するファイルを分類して cloc で数え、Markdown を標準出力に出す。git・cloc が無ければ終了コード 1 | `scripts/program-size.mjs` |
+
 ## API を足すときの決まり
 
 新しい口には同じ変更で `@ApiAccess` を付ける。`ADMIN` は `/api/admin` の下だけ。テストの `ApiAccessArchitectureTest` と `ApiAccessConsistencyIT` が分類の網羅を確かめる。`team.md` の「役割・権限の機能」「業務データの機能」の必須のテスト（API ごとの 401・403・200 など）が当たる（前回の記録。今回は読み直していない）。
 
 ## Sources
 
+- 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`.github/workflows/ci.yml`・`docs/verification.md`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`、流し読みの `docs/verification.md`（開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-06: `frontend/src/shared/format/timeZone/index.ts`・`frontend/src/features/preferences/{buildTimeZoneOptions,preferencesApi}.ts`（開発担当の調査 `aidlc/spaces/default/intents/261104-tz-options-perf/inception/reverse-engineering/developer-scan.md`）。
