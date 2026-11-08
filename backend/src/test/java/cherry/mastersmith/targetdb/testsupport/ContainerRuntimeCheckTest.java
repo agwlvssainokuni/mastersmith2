@@ -42,6 +42,18 @@ class ContainerRuntimeCheckTest {
     }
 
     @Test
+    @DisplayName("CI or the narrowed integration test property requires a container runtime, otherwise it is optional")
+    void requiresContainerRuntime() {
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime("true", null)).isTrue();
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime(null, "true")).isTrue();
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime("TRUE", "false"))
+                .isTrue();
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime(null, "True")).isTrue();
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime(null, null)).isFalse();
+        assertThat(ContainerRuntimeCheck.requiresContainerRuntime("false", "")).isFalse();
+    }
+
+    @Test
     @DisplayName("without a container runtime during development the tests are aborted with one warning")
     void abortsWithWarningLocally() {
         try (LogEvents events = LogEvents.capture(ContainerRuntimeCheck.class)) {

@@ -1,6 +1,6 @@
 # 検査とテスト
 
-統合の前の1コマンドの検査（`./gradlew verify`）、リリースの前の確かめ、ビルドした WAR での画面の確認（E2E）の手順と決まりをまとめた文書です。
+統合の前の1コマンドの検査（全件の `./gradlew verify` と、統合の前の速い入口 `./gradlew verifyQuick`）、リリースの前の確かめ、ビルドした WAR での画面の確認（E2E）の手順と決まりをまとめた文書です。
 
 ## 1コマンドの検査（統合の前の関門）
 
@@ -31,6 +31,80 @@
 - `frontend/src/features/preferences/TimeZoneOptionsPerformance.test.ts`: 表示のタイムゾーンの選択肢（ブラウザが答えるすべての名前と時差）の組み立てを、毎回新しい名前の配列で5回測り、中央値で 100 ミリ秒以内。Node は `Temporal` を持つため、テストでは `Temporal` の道を測ります（`Temporal` を持たないブラウザの `Intl` の道の結果が同じことは `offsetLabel.test.ts` が確かめます）。
 
 各段だけを実行することもできます（例: `./gradlew verifyFormat`）。報告は `backend/build/reports/`（テスト・JaCoCo・SpotBugs）、`frontend/coverage/`、`build/reports/osv-scanner/osv.json` に出ます。
+
+### 全件の `verify` と統合の前の `verifyQuick` の使い分け
+
+入口は2つあります。どちらを流すかは `aidlc/spaces/default/memory/team.md` の Way of Working の決まりによります。
+
+- **全件の `./gradlew verify`**: 上の表のすべて。CI は引数なしのこれを流します。手元では次の場面で必ず流します。
+  - Intent の最後の Build and Test（`:backend:cleanTest :backend:cleanIntegrationTest` を付けて流し、テストの件数とカバレッジの実測を記録する）
+  - リリースの前（`develop` から `main` への取り込みの前）
+  - `backend/build.gradle.kts` の `packagesJudgedByTotal` のパッケージに手を入れる Bolt の統合の前
+  - Dependabot の知らせ（依存の版と lockfile の更新）の取り込みの前
+- **`./gradlew verifyQuick`**: 上の場面以外の Bolt の統合の前に流します。`verify` と同じ段の表と順から、3つのタスクを外し、JaCoCo の報告を単体テストだけの参考値に置き換えたものです。外した結合テストとバックエンドのカバレッジの下限は、次の全件の `verify` と CI（統合の後の再確認）で確かめます。
+
+```bash
+./gradlew verifyQuick                              # 結合テストを流さない
+./gradlew verifyQuick -PitTests=AuditTraceIdIT     # 当たる結合テストだけを 6 の段で流す
+```
+
+| 段 | タスク | `verify` | `verifyQuick` |
+|---|---|---|---|
+| 0 準備 | `checkToolchain`・`vendorInstall`・`vendorBuild`・`vendorUnchanged`・`mustacheVendorUnchanged`・`frontendInstall` | ○ | ○ |
+| 1 フォーマット | `spotlessCheck`（ルート・`:backend`）・`frontendFormatCheck`・`perfToolFormatCheck` | ○ | ○ |
+| 2 リンタ | `frontendLint`・`frontendLintCss`・`perfToolLint`・`perfToolEslint` | ○ | ○ |
+| 3 ライセンス | `frontendLicenseCheck`・`frontendSvgCheck` | ○ | ○ |
+| 4 ビルド | `compileJava`・`compileTestJava`・`frontendTypecheck`・`perfToolTypecheck`・`frontendBuild`・`frontendDistCheck` | ○ | ○ |
+| 5 単体テスト | `:backend:test`（`*Test`） | ○ | ○ |
+| 5 単体テスト | `frontendTest`（計測なし） | ○ | 外す |
+| 6 結合テスト | `:backend:integrationTest`（`*IT`） | ○ 全件（`-PitForks=N` で手元だけ並べられる） | 外す。`-PitTests=…` を付けたときだけ当たる IT を流す |
+| 7 カバレッジ | `jacocoTestReport` | ○（単体＋結合の記録） | `jacocoQuickReport` に置き換える（単体テストだけの参考値。下の「参考値の読み方」） |
+| 7 カバレッジ | `jacocoTestCoverageVerification` | ○ | 外す |
+| 7 カバレッジ | `frontendCoverage`（計測つき・下限の判定） | ○ | ○ |
+| 8 セキュリティ | `spotbugsGate`・`osvScan`・`gitleaksScan`・`perfEvidenceScan` | ○ | ○ |
+| 9 成果物 | `bootWar`・`verifyDslSchemaInWar`・`verifyFaviconInWar`・`frontendBundleSize` | ○ | ○ |
+
+- `verifyQuick` の画面のテストは、計測つきの `frontendCoverage` の1回だけです。画面のカバレッジの下限（行 80%・分岐 70%）は `verifyQuick` でも判定し、下回れば失敗します。
+- 1つのタスクが失敗したら後ろの段を流さないのは `verify` と同じです。どちらの入口でも、WAR（`backend/build/libs/mastersmith.war`）は 9 の段で作られます。
+- タスクの一覧と順は `./gradlew verifyQuick --dry-run` で確かめられます。`node scripts/verify-graph-check.mjs` は、`verify` の一覧が変わっていないこと、`verifyQuick` の一覧と順、下の `-P` の誤りの扱いを `--dry-run` だけで確かめます（テストは流しません）。
+- この台本は、検査の入口（`build.gradle.kts`・`backend/build.gradle.kts` の段やタスク）を変えたときに手で流す回帰の確かめです。`verify` にも CI にも入っていません（ライセンスヘッダーの検査の対象に `scripts/` を足して検査に載せるかは、後の Intent で決める）。
+- 比べの元 `scripts/verify-graph-baseline.txt` は、今の `verify` のタスクの一覧（`--dry-run` の出力のタスクのパスの行だけ、出力の順のまま）です。`verify` の段やタスクを意図して変える Intent では、変えた後に `./gradlew verify --dry-run` を流して比べの元を取り直し、取り直したことと前後の差を、その Intent の記録に書きます。取り直さないと台本の項目 1 が誤って落ちます。
+
+#### 全件の `verify` の場面に当たるかを確かめる（`packagesJudgedByTotal`）
+
+`packagesJudgedByTotal` のパッケージに手を入れる Bolt（`src/main` の変更。説明文だけの直しを含む）は、統合の前に全件の `verify` を流します。当たるかは、統合の前に次で確かめます（何も出なければ当たらない）。結果（当たったパッケージ、または当たらないこと）は Bolt の統合の記録に書きます。
+
+```bash
+git diff --name-only develop... -- backend/src/main | grep -E 'cherry/mastersmith/(access/service|audit/repository|common/error/domain|common/error/service|common/health|common/i18n/domain|common/web)/[^/]+$'
+```
+
+この一覧は `backend/build.gradle.kts` の `packagesJudgedByTotal` と同じ 7 パッケージです（2026-11-08 の時点）。一覧から外れたパッケージがあれば、このコマンドからも外します。
+
+#### 結合テストを絞る（`-PitTests`）
+
+- `-PitTests=<形>` は、テストのクラス名の形（Gradle のテストの絞り込みと同じワイルドカード）です。カンマで区切って複数を指定できます（例: `-PitTests=AuditTraceIdIT,*LoginIT`）。対象は結合テスト（`*IT` のクラス）だけです。
+- 当たる結合テストが1つも無いとき（打ち間違いなど）は失敗します。空・空白・カンマだけの値も、理由を示して失敗します。
+- `verify` には付けられません（付けると理由を示して失敗します。`verify` は結合テストを全件流す入口のため）。結合テストだけを流すときは `./gradlew :backend:integrationTest -PitTests=<形>` も使えます。
+- 対象DB のコンテナを使うテストを流すときは、`verify` と同じくコンテナの実行環境（colima）を動かし、`DOCKER_HOST`・`TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡します（`docs/target-db.md`）。`-PitTests` を付けたときは、コンテナの実行環境が無いと、対象DB のテストを飛ばさずに失敗します（CI と同じ扱い。Gradle が結合テストの JVM にシステムプロパティ `mastersmith.requireContainerRuntime=true` を渡し、`ContainerRuntimeCheck` が失敗にする）。`verifyQuick` はバックエンドのカバレッジの下限を判定しないため、飛ばしを失敗で知らせるためです。失敗したら、colima を起動して流し直してから統合します。`-PitTests` を付けない全件の `verify` の手元の扱い（警告を出して飛ばし、パッケージごとのカバレッジの下限で失敗する）は変わりません。
+
+#### 結合テストを並べる（`-PitForks`）
+
+- `-PitForks=<N>` を付けると、結合テストを N 個の JVM に分けて並べて流します。付けないときは今までどおり1つの JVM で流します。1 以上の整数でない値は、理由を示して失敗します。
+- 全件の `./gradlew verify -PitForks=<N>` と、`-PitTests` を付けた `verifyQuick` に効きます。CI は付けずに流します（変えません）。
+- 各 JVM の JaCoCo の記録は同じ `backend/build/jacoco/integrationTest.exec` に追記されます。並べるとテストの JVM のヒープ（1 つあたり 1g）と対象DB のコンテナが N 倍になりうるため、N は手元の資源に合わせて選んでください。並べて落ちるテストが出たときは、`team.md` の「不安定なテストと CI の失敗」の決まりに従います。
+
+#### JaCoCo の参考値の読み方（`verifyQuick`）
+
+`verifyQuick` の 7 の段の `:backend:jacocoQuickReport` は、単体テストの実行記録（`backend/build/jacoco/test.exec`）だけから報告を作り、次の1行を表示します。
+
+```text
+JaCoCo の参考値（単体テストの記録 test.exec だけ。下限の判定はしない）: 行 NN.N%（覆った数 / 全体）、分岐 NN.N%（覆った数 / 全体）。報告: …/backend/build/reports/jacoco/quick。下限（行 80%・分岐 70%）の判定は、全件の ./gradlew verify と CI で行う。
+```
+
+- 報告は `backend/build/reports/jacoco/quick/`（`jacocoQuickReport.xml` と `html/`）に出ます。`verify` の報告（`backend/build/reports/jacoco/test/`）は上書きしません。
+- `-PitTests` で流した結合テストの記録も、前の回の `verify` が残した `integrationTest.exec` も読みません。読んだ記録は、HTML の報告の「Sessions」の一覧（XML の `sessioninfo`）で確かめられます。
+- 結合テストでしか通らない層（`web` など）は低く出ます。この値は判定にも、カバレッジの報告にも使いません（下限を下回っても失敗しません）。カバレッジの実測の値は、全件の `verify` の報告から読みます。
+- 報告は毎回作り直します（UP-TO-DATE で飛ばしません）。`./gradlew :backend:jacocoQuickReport` だけを流して、手元の `test.exec` の参考値を見ることもできます。
 
 ### 依存関係の脆弱性の判定（OSV-Scanner）
 

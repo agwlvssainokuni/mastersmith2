@@ -12,16 +12,17 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 |---|---|---|---|
 | JDK | 25（Temurin） | `brew install --cask temurin@25`、または SDKMAN の `sdk install java 25.0.5.0+8-tem` | ビルド・テスト |
 | Node.js・npm | 26 | `brew install node@26`、または `nvm install 26` | 画面のビルド・テスト |
-| Gitleaks | 8.30.1 | `brew install gitleaks` | 秘密情報の検出（`./gradlew verify`） |
-| OSV-Scanner | 2.7.0 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`） |
+| Gitleaks | 8.30.1 | `brew install gitleaks` | 秘密情報の検出（`./gradlew verify`・`verifyQuick`） |
+| OSV-Scanner | 2.7.0 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`・`verifyQuick`） |
 | Python と pre-commit | pre-commit 4.x | `brew install pre-commit` | コミットの前の検査 |
-| Docker（Docker Desktop または colima） | Compose v2 | `brew install colima docker docker-compose` | コンテナで動かすとき、対象DB の結合テスト（`./gradlew verify`） |
+| Docker（Docker Desktop または colima） | Compose v2 | `brew install colima docker docker-compose` | コンテナで動かすとき、対象DB の結合テスト（全件の `./gradlew verify`、`-PitTests` を付けた `./gradlew verifyQuick`） |
 | Playwright の Chromium | `@playwright/test` と同じ版 | `cd frontend && npx playwright install chromium` | ビルドした WAR での画面の確認（`./gradlew e2eTest`） |
 
 - Gradle は Wrapper（`./gradlew`）を使うため、別に入れる必要はありません。
-- `./gradlew verify` は、Node.js の版が 26 でない、または Gitleaks・OSV-Scanner が見つからないときは、入れ方を示して失敗します（検査を黙って飛ばしません）。
+- `./gradlew verify`・`./gradlew verifyQuick` は、Node.js の版が 26 でない、または Gitleaks・OSV-Scanner が見つからないときは、入れ方を示して失敗します（検査を黙って飛ばしません）。
 - コンテナの CPU の上限は既定で 4 です。colima を使う場合は、VM を CPU 4・メモリ 6GiB にしてください（`colima start --cpu 4 --memory 6`。確かめ方と、`.env` での上限の合わせ方は `docs/deployment.md` の「コンテナの資源の上限」）。VM の CPU を増やせないときは、`.env` の `MASTERSMITH_CONTAINER_CPUS` で上限を下げて起動できます（ログインの照合の時間の目標は 4 が前提です）。
-- `./gradlew verify` はコンテナの実行環境（colima）が動いていることを前提にします。対象DB（MySQL・MariaDB・PostgreSQL）の結合テストを、版を固定したイメージのコンテナ（Testcontainers）で毎回実行するためです。内部DB を使うテストは組み込みの H2 で動きます。設定と、届かないときの扱いは `docs/target-db.md` の「対象DB（利用者の業務データの DB）」を参照してください。
+- 検査の入口は2つです。全件の `./gradlew verify`（CI と同じ。Build and Test・リリースの前などで流す）と、統合の前の速い入口 `./gradlew verifyQuick`（結合テストとバックエンドのカバレッジの下限の判定などを外したもの）です。中身と使い分けは `docs/verification.md` の「全件の `verify` と統合の前の `verifyQuick` の使い分け」を参照してください。
+- 全件の `./gradlew verify` はコンテナの実行環境（colima）が動いていることを前提にします。対象DB（MySQL・MariaDB・PostgreSQL）の結合テストを、版を固定したイメージのコンテナ（Testcontainers）で毎回実行するためです。`./gradlew verifyQuick` は結合テストを流さず、`-PitTests=<形>` で絞ったときだけ当たるものを流すので、対象DB のテストに当たるときは同じく colima を動かします。内部DB を使うテストは組み込みの H2 で動きます。設定と、届かないときの扱いは `docs/target-db.md` の「対象DB（利用者の業務データの DB）」を参照してください。
 
 ## 取得と準備
 
@@ -41,7 +42,7 @@ pre-commit install
 
 ホームとアイコン（Intent 261102-timezone-ui-polish の U5）: ホームは、作業ロールの 1 行と、業務の入口のカード（業務のメニューの最上位の項目）・管理の入口のカード（管理者だけ。サイドバーの管理の区画と同じ項目）を並べます。管理の仮の画面（`/admin`）は廃止しました（サーバーの確認 API `GET /api/admin/check` は残します）。業務の項目のアイコンは、メニューの定義の `icon`（許す一覧にあり、`list` でないもの）を先に使い、無ければメニューの応答の `tableKind` でテーブルは `table`・ビューは `view`、まとまりは `folder`、種類が分からない移れる項目は `list` にします（サイドバーとホームのカードで同じ規則）。許すアイコンの名前の一覧は 2 か所（サーバーの `backend/src/main/resources/navigation/allowed-icons.txt` と、画面の `frontend/src/app/registry/allowedIcons.ts`）にあり、make-you-chic-ui の `Icon` の登録の名前とそろえます。固定先を上げてアイコンが増減したときは、2 か所を同じ名前に直します（一致は `allowedNavIcons.test.ts`、画面の欠けは型の検査 `ALL_ICONS_COVERED` で気づけます）。
 
-どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify` の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
+どちらのサブモジュールも、中身はこのリポジトリから変更しません（変更はそれぞれのリポジトリ側で行う）。`./gradlew verify`（`verifyQuick` も同じ）の 0 の段で、どちらも追跡されるファイルが変わっていないことを確かめます。サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新の前後のコミットのハッシュを記録します。
 
 ## 開発時の起動
 
@@ -103,7 +104,7 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 
 | 文書 | 中身 | 主な節 |
 |---|---|---|
-| `docs/verification.md` | 検査とテスト | 1コマンドの検査（統合の前の関門）・依存関係の脆弱性の判定（OSV-Scanner）・リリースの前の確かめ・ビルドした WAR での画面の確認（E2E）・E2E の見本の PostgreSQL・結果と報告 |
+| `docs/verification.md` | 検査とテスト | 1コマンドの検査（統合の前の関門）・全件の `verify` と `verifyQuick` の使い分け（`-PitTests`・`-PitForks`・JaCoCo の参考値）・依存関係の脆弱性の判定（OSV-Scanner）・リリースの前の確かめ・ビルドした WAR での画面の確認（E2E）・E2E の見本の PostgreSQL・結果と報告 |
 | `docs/deployment.md` | 配備と戻し | 使える管理者がいなくなったとき（初期管理者の救済）・戻し方・コンテナの資源の上限（colima の VM・メモリ・JVM）・設定の効き方の確かめ・プロキシを置く配備・スキーマの変更（Flyway） |
 | `docs/internal-db.md` | 内部DB のバックアップと詰め直し | 内部DBのバックアップと戻し方・内部DBの複写を数える・内部DBのファイルの詰め直し（アプリを止めずに） |
 | `docs/configuration.md` | 構成と設定 | 環境変数（`.env`・`.env.targetdb` の項目と既定値の一覧） |

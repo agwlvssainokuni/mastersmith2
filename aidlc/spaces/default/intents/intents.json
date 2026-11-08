@@ -154,7 +154,7 @@
     "slug": "verify-quick-local",
     "dirName": "261107-verify-quick-local",
     "scope": "bugfix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "3fd90d3d"
   }
 ]

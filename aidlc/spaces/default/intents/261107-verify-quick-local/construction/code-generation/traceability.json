@@ -1,0 +1,32 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": ["FR1.1", "FR1.2", "FR1.3", "FR1.4", "FR2.1", "FR2.2", "FR2.3", "FR2.4", "FR3.1", "FR3.2", "FR3.3", "FR4.1", "FR4.2", "FR4.3", "FR5.1", "FR5.2", "FR5.3", "FR5.4", "FR5.5", "FR6.1", "FR6.2", "NFR1", "NFR2", "NFR3", "NFR4", "NFR5"],
+  "coverage": [
+    { "id": "FR1.1", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "FR1.2", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "FR1.3", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "FR1.4", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "FR2.1", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR2.2", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR2.3", "status": "OK", "target": "build.gradle.kts" },
+    { "id": "FR2.4", "status": "OK", "target": "backend/src/test/java/cherry/mastersmith/targetdb/testsupport/ContainerRuntimeCheck.java" },
+    { "id": "FR3.1", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR3.2", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR3.3", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR4.1", "status": "OK", "target": "scripts/verify-graph-check.mjs" },
+    { "id": "FR4.2", "status": "OK", "target": "backend/build.gradle.kts" },
+    { "id": "FR4.3", "status": "OK", "target": ".github/workflows/ci.yml" },
+    { "id": "FR5.1", "status": "OK", "target": "aidlc/spaces/default/memory/project.md" },
+    { "id": "FR5.2", "status": "OK", "target": "aidlc/spaces/default/memory/team.md" },
+    { "id": "FR5.3", "status": "OK", "target": "aidlc/spaces/default/memory/team.md" },
+    { "id": "FR5.4", "status": "OK", "target": "aidlc/spaces/default/memory/project.md" },
+    { "id": "FR5.5", "status": "OK", "target": "aidlc/spaces/default/intents/261107-verify-quick-local/construction/code-generation/code-summary.md" },
+    { "id": "FR6.1", "status": "OK", "target": "docs/verification.md" },
+    { "id": "FR6.2", "status": "OK", "target": "README.md" },
+    { "id": "NFR1", "status": "Deferred", "target": "Build and Test で verify・verifyQuick・-PitForks の verify の時間を測る（依頼者の決定で全件の verify を Build and Test にまとめた）" },
+    { "id": "NFR2", "status": "Deferred", "target": "Build and Test の全件の verify で、合格の条件が変わらないことを実行で確かめる（この段の根拠は --dry-run のタスクの一覧の不変だけ。コードのレビューの R-02）" },
+    { "id": "NFR3", "status": "Deferred", "target": "Build and Test で全件の verify と -PitForks の verify を流し、並べた値を直列と比べる（R-02）" },
+    { "id": "NFR4", "status": "OK", "target": "scripts/verify-graph-check.mjs" },
+    { "id": "NFR5", "status": "OK", "target": "build.gradle.kts" }
+  ]
+}

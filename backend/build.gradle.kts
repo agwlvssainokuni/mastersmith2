@@ -144,13 +144,57 @@ tasks.test {
     }
 }
 
+// ---- 結合テストの絞り込みと並べ（Intent 261107-verify-quick-local の FR2・FR4.2） ----
+// -PitTests=<形>[,<形>...]: 結合テストを、当たるクラスだけに絞る（Gradle のテストの絞り込みと同じワイルドカード）。統合の前の入口
+// verifyQuick に付けたときだけ、結合テストが 6 の段の位置に入る（ルートの build.gradle.kts）。verify に付けると失敗にする（ルート）。
+// -PitForks=<N>: 結合テストを N 個の JVM に分けて並べて流す。付けないときは今までどおり1つの JVM で流す。
+// どちらも付けないときの integrationTest の設定は、この Intent の前と同じ。
+
+/** -PitTests の値をカンマで分けた形の一覧。付けていなければ null。空・空白・カンマだけの値は、何も流れないまま通らないよう失敗にする。 */
+val itTestPatterns: List<String>? =
+    providers.gradleProperty("itTests").orNull?.let { raw ->
+        val patterns = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        if (patterns.isEmpty()) {
+            throw GradleException(
+                "-PitTests に結合テストのクラスの形がありません（値: '$raw'）。" +
+                    "例: -PitTests=AuditTraceIdIT、複数はカンマで区切る（-PitTests=AuditTraceIdIT,*LoginIT）。",
+            )
+        }
+        patterns
+    }
+
+/** -PitForks の値（結合テストを並べる JVM の数）。付けていなければ null。1 以上の整数でなければ失敗にする。 */
+val itForks: Int? =
+    providers.gradleProperty("itForks").orNull?.let { raw ->
+        raw.trim().toIntOrNull()?.takeIf { it >= 1 }
+            ?: throw GradleException("-PitForks は 1 以上の整数で指定してください（値: '$raw'）。例: -PitForks=2")
+    }
+
 val integrationTest = tasks.register<Test>("integrationTest") {
-    description = "結合テスト（*IT、Spring と組み込みの H2 を起動する）を実行する。"
+    description =
+        "結合テスト（*IT、Spring と組み込みの H2 を起動する）を実行する。-PitTests=<形> で当たるクラスだけに絞り、" +
+            "-PitForks=<N> で N 個の JVM に分けて並べる。"
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     filter {
-        includeTestsMatching("*IT")
+        if (itTestPatterns == null) {
+            includeTestsMatching("*IT")
+        } else {
+            itTestPatterns.forEach { includeTestsMatching(it) }
+            // 当たるテストが1つも無ければ失敗にする（Gradle の既定と同じ値を明示する。打ち間違いで何も流れないまま通らないように）。
+            isFailOnNoMatchingTests = true
+        }
+    }
+    if (itTestPatterns != null) {
+        // 絞り込みの形が単体テスト（*Test）に当たっても流さないよう、読むクラスのファイルを結合テスト（入れ子のクラスを含む）に限る。
+        include("**/*IT.class", "**/*IT$*.class")
+        // 絞った結合テストでは、コンテナの実行環境が無いときに対象DB のテストを飛ばさず失敗にする（CI と同じ扱い。ContainerRuntimeCheck）。
+        // verifyQuick はバックエンドのカバレッジの下限を判定せず、飛ばしても失敗にならないため（コードのレビューの R-01）。
+        systemProperty("mastersmith.requireContainerRuntime", "true")
+    }
+    if (itForks != null) {
+        maxParallelForks = itForks
     }
     shouldRunAfter(tasks.test)
 }
@@ -192,6 +236,62 @@ tasks.jacocoTestReport {
     reports {
         xml.required = true
         html.required = true
+    }
+}
+
+// ---- 統合の前の入口 verifyQuick のカバレッジの参考値（Intent 261107-verify-quick-local の FR3） ----
+// 単体テストの実行記録（test.exec）だけから報告を作り、全体の行・分岐の割合を参考値として表示する。下限の判定はしない。
+// -PitTests で流した結合テストの記録も、前の回の verify が残した integrationTest.exec も読まない。報告は verify の報告
+// （reports/jacoco/test/）を上書きしないよう、別の置き場（reports/jacoco/quick/）に作る。test への依存は付けず、順だけを決める
+// （verify の jacocoTestReport と同じ）。test.exec が無ければ、JaCoCo の既定どおり飛ばされる。
+
+val quickReportDir = layout.buildDirectory.dir("reports/jacoco/quick")
+
+tasks.register<JacocoReport>("jacocoQuickReport") {
+    description = "単体テストの実行記録（test.exec）だけからカバレッジの報告を作り、参考値を表示する（下限の判定はしない。verifyQuick 用）。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    mustRunAfter(tasks.test)
+    executionData.setFrom(layout.buildDirectory.file("jacoco/test.exec"))
+    classDirectories.setFrom(coverageClassDirectories)
+    sourceDirectories.setFrom(sourceSets.main.get().allJava.srcDirs)
+    reports {
+        xml.required = true
+        xml.outputLocation = quickReportDir.map { it.file("jacocoQuickReport.xml") }
+        html.required = true
+        html.outputLocation = quickReportDir.map { it.dir("html") }
+    }
+    // 参考値の表示は報告を作った後の処理で行うため、UP-TO-DATE・キャッシュで飛ばさず、毎回作り直して表示する（数秒）。
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
+    val xmlReport = reports.xml.outputLocation
+    doLast {
+        val xml = xmlReport.get().asFile
+        val factory = javax.xml.parsers.DocumentBuilderFactory.newInstance()
+        // JaCoCo の XML は DOCTYPE で report.dtd を指すが、読みに行かない（外部の参照を読まない）。
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false)
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false)
+        val root = factory.newDocumentBuilder().parse(xml).documentElement
+        // 全体の値は、根（report）の直下の counter にある（パッケージ・クラスの counter は数えない）。
+        val totals = mutableMapOf<String, Pair<Long, Long>>()
+        val children = root.childNodes
+        for (i in 0 until children.length) {
+            val node = children.item(i)
+            if (node is org.w3c.dom.Element && node.tagName == "counter") {
+                totals[node.getAttribute("type")] =
+                    node.getAttribute("covered").toLong() to node.getAttribute("missed").toLong()
+            }
+        }
+        fun ratio(type: String): String {
+            val (covered, missed) = totals[type] ?: return "$type の数がありません"
+            val total = covered + missed
+            if (total == 0L) return "0 / 0"
+            return "%.1f%%（%d / %d）".format(covered * 100.0 / total, covered, total)
+        }
+        logger.lifecycle(
+            "JaCoCo の参考値（単体テストの記録 test.exec だけ。下限の判定はしない）: 行 ${ratio("LINE")}、分岐 ${ratio("BRANCH")}。" +
+                "報告: ${quickReportDir.get().asFile.path}。下限（行 80%・分岐 70%）の判定は、全件の ./gradlew verify と CI で行う。",
+        )
     }
 }
 

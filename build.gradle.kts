@@ -512,6 +512,59 @@ tasks.register("verify") {
     dependsOn(stageTasks)
 }
 
+// ---- 統合の前の入口（verifyQuick。Intent 261107-verify-quick-local の FR1〜FR3） ----
+// verify の段の表（verifyStages）から次を外した並びに dependsOn する（段のタスクには dependsOn しない。段のタスクは外したタスクも含むため）:
+// 画面のテストの計測なしの回（frontendTest。計測つきの frontendCoverage は残す）、結合テスト（-PitTests を付けたときだけ残す）、
+// バックエンドのカバレッジの下限の判定（jacocoTestCoverageVerification）。jacocoTestReport の位置には、単体テストの記録だけを読む
+// jacocoQuickReport を置く（verify の報告の置き場を上書きしないよう、別のタスクにする）。
+// 順は、各タスクに上の段の表で付けた mustRunAfter がそのまま効く（verify と同じ順。順の決まりを足し直さない）。
+// verifyStages・段のタスク・verify の定義は変えない。
+
+/** -PitTests を付けたか（値の検証は backend/build.gradle.kts で行う）。 */
+val itTestsGiven: Boolean = providers.gradleProperty("itTests").isPresent
+
+val backendJacocoQuickReport = backendProject.tasks.named("jacocoQuickReport")
+
+/** verifyQuick で外すタスクの名前（ルートと backend で名前は重ならない）。 */
+val quickExcludedTaskNames: Set<String> =
+    setOf("frontendTest", "jacocoTestCoverageVerification") + (if (itTestsGiven) emptySet() else setOf("integrationTest"))
+
+val quickMembers: List<TaskProvider<*>> =
+    verifyStages.flatMap { (_, _, members) ->
+        members.flatMap { member ->
+            when (member.name) {
+                "jacocoTestReport" -> listOf(backendJacocoQuickReport)
+                in quickExcludedTaskNames -> emptyList()
+                else -> listOf(member)
+            }
+        }
+    }
+
+// jacocoQuickReport を 7 の段の位置に置く: 0〜6 の段のタスクの後、8・9 の段のタスクの前。
+// jacocoQuickReport は verify のグラフに入らないため、この順は verify には効かない。
+backendJacocoQuickReport.configure { mustRunAfter(verifyStages.take(7).flatMap { it.third }) }
+verifyStages.drop(8).flatMap { it.third }.forEach { member -> member.configure { mustRunAfter(backendJacocoQuickReport) } }
+
+tasks.register("verifyQuick") {
+    description =
+        "Bolt の統合の前の入口。verify から画面のテストの計測なしの回・結合テスト・バックエンドのカバレッジの下限の判定を外し、" +
+            "バックエンドのカバレッジは単体テストだけの参考値を表示する（判定しない）。-PitTests=<形> で当たる結合テストだけを流す。" +
+            "全件（結合テストとカバレッジの判定）は verify と CI で確かめる。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(quickMembers)
+}
+
+// verify は全件を流す入口のため、-PitTests で結合テストを絞ったまま verify が通ることが無いよう、付けたら失敗にする。
+// :backend:integrationTest -PitTests=… を単独で流すことは許す。
+gradle.taskGraph.whenReady {
+    if (itTestsGiven && hasTask(":verify")) {
+        throw GradleException(
+            "-PitTests は verify には付けられません。verify は結合テストを全件流す入口です。" +
+                "結合テストを絞って流すときは ./gradlew verifyQuick -PitTests=<形> を使ってください。",
+        )
+    }
+}
+
 /** 手元でメールを見る受け手（Mailpit）の API の URL。E2E の前提の確かめに使う（Intent 260925-user-management の U1）。 */
 // 同じ場所を E2E の側の定数 MAILPIT_API_URL（frontend/e2e/support/mailpit.ts）も持つ。変えるときは両方をそろえる（U6）。
 val mailpitInfoUrl = "http://127.0.0.1:8025/api/v1/info"
