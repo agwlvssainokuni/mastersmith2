@@ -123,6 +123,10 @@ services:
     ports:
       - "127.0.0.1:8025:8025"
       - "127.0.0.1:1025:1025"
+    # 送ってきた相手の名前の逆引きをしない。つなぐネットワークによってはコンテナの中の逆引きが遅く（約 7.7 秒）、SMTP の挨拶が
+    # アプリのメールの待ちの上限（3 秒）を超えて、招待メールが TIMEOUT になるため（Intent 261108-ci-checks-release の Build and Test）。
+    environment:
+      MP_SMTP_DISABLE_RDNS: "true"
     # アプリ（既定 2g）・手元の監視（1536m）と同時に colima の VM（6GiB）で動かすための上限。
     mem_limit: 256m
     restart: "no"
