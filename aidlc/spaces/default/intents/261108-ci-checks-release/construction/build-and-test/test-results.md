@@ -95,3 +95,12 @@ Ubuntu 26 の上の道具（FR3.2。N=3 の実行のログから）:
 - A1 `scripts/ops-readonly-check.mjs`: colima を動かし、Mailpit と見本の PostgreSQL を動かした状態で流した。2つとも版とダイジェストが `compose.yaml` と一致し（食い違い 0 件、終了コード 0）、`.env` の値・ホームのパスは出なかった（「password」に当たったのは環境変数の名前だけ）。
 - A2 `scripts/ci-attempts.mjs`: `git fetch` の後に既定の範囲（`origin/main..origin/develop` = `b2990415..4fe8e790`、23 コミット）で流した。CI の実行のある 7 コミットはどれも試行 1 で success、実行の無いコミット 16 件、再実行で通った実行 0 件、先頭は通っている（終了コード 0）。取り込みの直前に、統合と記録のコミットを積んだ後の `develop` でもう一度流す（FR6.2）。
 - A3 `scripts/count-db-copy.mjs`: Code Generation で依頼者の許しを得て流し、前の道具と件数が一致した（`code-summary.md` 2節）。
+
+## 5. 統合の後の CI の失敗と直し（段の承認の後、2026-11-09〜10 に追記）
+
+- 統合（7コミット、`5b115bfc`）を依頼者がプッシュした `develop` の CI（実行 42633708198、試行 1、job 21分29秒、`-PitForks=3` の既定）が failure。A2 の台本も先頭が通っていないとして終了コード 1 を返した（取り込みの関門として働いた）。
+- 落ちたのは `UserRowLockRepositoryIT > admin rows and the target row are locked one by one in ascending user id order` の1件だけ（162 行、`admin1` の行がまだ排他されていなかった）。この Intent で変えていない、前からある結合テスト。
+- 見立て: 1つの `SELECT … FOR UPDATE` は H2 で ID の順に1行ずつ排他を取る。テストの待ち合わせ（`H2SessionWaits.awaitExecuting`）は文が実行中になった時点で戻るため、`admin1` を取る前に確かめる隙がある。結合テストを3つの JVM に並べて CPU が混み合い、表に出やすくなったと見ている（確かめていない見立て）。手元の N=3・CI の N=2・N=3 の手動の実行では通っていた。
+- 依頼者の決定（A）で、`team.md` の「不安定なテストと CI の失敗」に従い、20 分を上限に再現を試みた: 8 本の `yes` で CPU に負荷をかけて `./gradlew :backend:cleanIntegrationTest :backend:integrationTest -PitTests=UserRowLockRepositoryIT` を 12 回流し、0 回の失敗（00:14〜00:24）。競り合いを確実に起こす手立ては見つからなかった（決まりの「起こせないとき」に当たるため、見立てと試みの範囲をここに記録する）。
+- 直し（テストだけ、依頼者の承認を得た）: `H2SessionWaits` に、文がほかのセッションの排他を待って止まる（`INFORMATION_SCHEMA.SESSIONS` の `BLOCKER_ID` が入る）まで待つ `awaitBlocked` を足し、このテストだけを替えた（`awaitExecuting` とほかのテストは変えない）。止まった時点では、それより小さい ID の行の排他は取り終えているため、確かめがタイミングに左右されない。順の誤りは今までどおり検出できる。
+- 直した後の確かめ: 同じ負荷で 8 回流して 0 回の失敗。`./gradlew verifyQuick -PitTests=UserRowLockRepositoryIT` が通った（4分14秒）。短いブランチ `fix/261108-ci-checks-release` から `develop` へ squash で戻した（`92792df1`）。全件の確かめは、プッシュの後の CI と A2 で行う。
