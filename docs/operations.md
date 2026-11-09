@@ -156,3 +156,24 @@ SELECT failure_reason, source_ip, COUNT(*) AS failures
 - **ボリュームを消す操作（`docker compose down -v` など）を、バックアップの前に行わないでください。** 監査ログも一緒に消えます。
 - 版を替える前は、`docs/internal-db.md` の「内部DBのバックアップと戻し方」の手順でボリュームを複写します。この手順で監査ログも一緒に守られます。
 - OS の権限を持つ者によるファイルの直接の書き換えは、アプリでは検知できません（受け入れている危険です）。
+
+## 手元の環境の読み取りの確かめ（`scripts/ops-readonly-check.mjs`）
+
+振り返りの段（Feedback & Optimization）や配備の前後に毎回手で行っていた読み取りだけの確かめを、台本 `scripts/ops-readonly-check.mjs` にまとめています（Intent 261108-ci-checks-release）。コンテナの起動・停止・作り直しはせず、何も変えません。colima の PC では、`docs/target-db.md` の `DOCKER_HOST` をシェルに渡してから流します。
+
+```bash
+node scripts/ops-readonly-check.mjs
+node scripts/ops-readonly-check.mjs --compose compose.yaml --env .env --env-example .env.example --war backend/build/libs/mastersmith.war
+```
+
+出すもの:
+
+1. 動いているコンテナごとのイメージの版とダイジェスト（`docker inspect` の `RepoDigests`）と、`compose.yaml` の `image:` の比べ。版やダイジェストが違うものは「食い違い」と示します（`team.md` の Deployment の「コンテナを入れ替えた後は `RepoDigests` を確かめる」の決まり）。版が変数で決まるサービス（`app` の `mastersmith:${MASTERSMITH_IMAGE_TAG:-local}`）は名前だけを比べます（`.env` の値は読まないため）。動いていない `compose.yaml` のサービスも並べます。
+2. `.env` と `.env.example` の環境変数の名前の数と、片方にだけある名前（名前だけで、値は読まない）。
+3. WAR（`backend/build/libs/mastersmith.war`）の SHA-256 と大きさ・更新の時刻。
+4. `.env` の更新の時刻。
+5. `docker system df` の要約。
+
+- Docker に繋がらないとき（colima が止まっている・`DOCKER_HOST` が無い）は、出力の最初に「1 の比べは確かめていない」と書き、1 と 5 に「確かめていない」と書きます（ほかの項目は出します）。通ったように見えないよう、終了コードは 2 です。
+- 終了コード: 0（食い違いなし）、1（1 の比べで食い違いがある）、2（Docker に繋がらない・`compose.yaml` が無いなどで 1 の比べを確かめていない）、3（引数の誤り）。
+- `.env` は行ごとに最初の `=` の左側（名前）だけを切り出して使います。`docker inspect` は決まった項目（名前・イメージ・サービスのラベル・状態）だけを取り出し、環境変数の値を含む項目を読みません。`DOCKER_HOST` の値と、道具の標準エラー（ホームの下のパスを含みうる）は出しません。
