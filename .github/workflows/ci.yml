@@ -15,6 +15,8 @@
 # 統合の後の再確認。ローカルの統合の前の関門と同じ ./gradlew verify を実行し、WAR を成果物として保存する。
 # あわせて、規模・テストの件数・カバレッジを実行の要約（Summary）に書き、カバレッジの HTML の報告を保存する（docs/verification.md）。
 # CI は秘密情報を使わない。使う Actions はコミットのハッシュで固定する（コメントは版の名前）。
+# 結合テストは -PitForks で N 個の JVM に分けて並べて流す（Intent 261108-ci-checks-release の FR4）。N は手動の実行の入力 it_forks、
+# 無ければ IT_FORKS_DEFAULT。値が 1 以上の整数かは Gradle の側（backend/build.gradle.kts の itForks）が確かめて落とす。
 name: CI
 
 on:
@@ -22,6 +24,12 @@ on:
     branches: [develop]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      it_forks:
+        description: 結合テストを並べる JVM の数（-PitForks。1〜8）。空なら既定の値（IT_FORKS_DEFAULT）
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -31,6 +39,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
+  # 結合テストを並べる JVM の既定の数（手元の推奨と同じ 3。CI の上で 2 と 3 を比べて決める。docs/verification.md）
+  IT_FORKS_DEFAULT: "3"
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
   OSV_SCANNER_VERSION: 2.7.0
@@ -82,7 +92,16 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: 1コマンドの検査を実行する
-        run: ./gradlew verify
+        env:
+          # 入力の値はシェルの文に直接埋め込まず、環境変数で渡す（push とタグのときは入力が無く、既定の値になる）
+          IT_FORKS: ${{ inputs.it_forks || env.IT_FORKS_DEFAULT }}
+        # 並べる数は 1〜8 に限る（実行環境の資源を使い切らないため。Intent 261108-ci-checks-release のレビュー R-05）
+        run: |
+          case "$IT_FORKS" in
+            [1-8]) ;;
+            *) echo "::error::it_forks は 1〜8 の整数で指定してください"; exit 1 ;;
+          esac
+          ./gradlew verify -PitForks="$IT_FORKS"
 
       - name: WAR を成果物として保存する（名前にコミットのハッシュを入れる）
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
