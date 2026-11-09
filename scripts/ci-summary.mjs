@@ -31,7 +31,8 @@
 //   ファイルの絶対パスなど）は載せない。
 // - JaCoCo の XML は正規表現で読む（XML の部品を使わないため、DOCTYPE が指す外部の DTD・実体を読まない）。
 // - 割合は coverage-summary.json と同じく、小数 2 桁で切り捨てる（下限の近くで切り上げて「満たす」に見せないため）。
-// - バックエンドの下限（行・分岐）と packagesJudgedByTotal は backend/build.gradle.kts から読む。
+// - バックエンドの下限（行・分岐）は backend/build.gradle.kts から読む。パッケージごとの下限はすべてのパッケージに当たる
+//   （外すパッケージの一覧 packagesJudgedByTotal は Intent 261108-ci-checks-release で消した）。
 import { appendFileSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -81,7 +82,9 @@ export function readJUnitDir(dir) {
     const xml = readFileSync(path.join(dir, f), 'utf8')
     const m = /<testsuite\b([^>]*)>/.exec(xml)
     if (!m) throw new Error(`JUnit の XML に testsuite が無い（${f}）`)
-    const attrs = Object.fromEntries([...m[1].matchAll(/(\w+)="([^"]*)"/g)].map((a) => [a[1], a[2]]))
+    const attrs = Object.fromEntries(
+      [...m[1].matchAll(/(\w+)="([^"]*)"/g)].map((a) => [a[1], a[2]]),
+    )
     sum.suites += 1
     for (const k of ['tests', 'failures', 'errors', 'skipped']) {
       const n = Number.parseInt(attrs[k] ?? '0', 10)
@@ -119,9 +122,17 @@ function renderTests(backendDir) {
     for (const k of Object.keys(total)) total[k] += s[k]
     rows.push(testRow(label, s))
   }
-  out.push('| 種類 | テスト | 通った | 失敗 | 飛ばした | クラス |', '|---|---:|---:|---:|---:|---:|', ...rows)
+  out.push(
+    '| 種類 | テスト | 通った | 失敗 | 飛ばした | クラス |',
+    '|---|---:|---:|---:|---:|---:|',
+    ...rows,
+  )
   if (any) out.push(testRow('**合計**', total))
-  out.push('', '- 出どころ: `backend/build/test-results/{test,integrationTest}/TEST-*.xml`。失敗は failures と errors の和。画面（Vitest）の件数は載せない。', '')
+  out.push(
+    '',
+    '- 出どころ: `backend/build/test-results/{test,integrationTest}/TEST-*.xml`。失敗は failures と errors の和。画面（Vitest）の件数は載せない。',
+    '',
+  )
   return out.join('\n')
 }
 
@@ -136,7 +147,9 @@ function testRow(label, s) {
 /** 要素の中の counter を { 種類: { missed, covered } } にする。 */
 function counters(text) {
   const out = {}
-  for (const m of text.matchAll(/<counter\s+type="(\w+)"\s+missed="(\d+)"\s+covered="(\d+)"\s*\/>/g)) {
+  for (const m of text.matchAll(
+    /<counter\s+type="(\w+)"\s+missed="(\d+)"\s+covered="(\d+)"\s*\/>/g,
+  )) {
     out[m[1]] = { missed: Number(m[2]), covered: Number(m[3]) }
   }
   return out
@@ -158,7 +171,7 @@ export function parseJacoco(xml) {
   return { total, packages }
 }
 
-/** backend/build.gradle.kts から、全体とパッケージごとの下限（百分率）と packagesJudgedByTotal を読む。 */
+/** backend/build.gradle.kts から、全体とパッケージごとの下限（百分率）を読む。 */
 export function parseGradleFloors(text) {
   const start = text.indexOf('tasks.jacocoTestCoverageVerification')
   if (start < 0) throw new Error('jacocoTestCoverageVerification の設定が見つからない')
@@ -166,19 +179,20 @@ export function parseGradleFloors(text) {
   const split = block.indexOf('element = "PACKAGE"')
   const limits = (part) => {
     const out = {}
-    for (const m of part.matchAll(/counter\s*=\s*"(LINE|BRANCH)"[\s\S]*?minimum\s*=\s*"([\d.]+)"/g)) {
+    for (const m of part.matchAll(
+      /counter\s*=\s*"(LINE|BRANCH)"[\s\S]*?minimum\s*=\s*"([\d.]+)"/g,
+    )) {
       if (!(m[1] in out)) out[m[1]] = Math.round(Number(m[2]) * 10000) / 100
     }
     return out
   }
   const total = limits(split < 0 ? block : block.slice(0, split))
   const pkg = split < 0 ? {} : limits(block.slice(split))
-  if (total.LINE === undefined || total.BRANCH === undefined) throw new Error('全体の下限（LINE・BRANCH）が読めない')
-  if (pkg.LINE === undefined || pkg.BRANCH === undefined) throw new Error('パッケージごとの下限（LINE・BRANCH）が読めない')
-  const list = /val\s+packagesJudgedByTotal\s*=\s*listOf\(([\s\S]*?)\)/.exec(text)
-  if (!list) throw new Error('packagesJudgedByTotal が読めない')
-  const judgedByTotal = new Set([...list[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]))
-  return { total, pkg, judgedByTotal }
+  if (total.LINE === undefined || total.BRANCH === undefined)
+    throw new Error('全体の下限（LINE・BRANCH）が読めない')
+  if (pkg.LINE === undefined || pkg.BRANCH === undefined)
+    throw new Error('パッケージごとの下限（LINE・BRANCH）が読めない')
+  return { total, pkg }
 }
 
 function shortPackage(name) {
@@ -203,7 +217,9 @@ function renderBackendCoverage(backendDir) {
   }
   let floors = null
   try {
-    floors = parseGradleFloors(readFileSync(path.join(repoRoot, 'backend', 'build.gradle.kts'), 'utf8'))
+    floors = parseGradleFloors(
+      readFileSync(path.join(repoRoot, 'backend', 'build.gradle.kts'), 'utf8'),
+    )
   } catch (e) {
     warn(`カバレッジの下限を backend/build.gradle.kts から読めない: ${e.message}`)
     out.push(`- 下限を読めないため、下限との差は「—」にする（${e.message}）。`, '')
@@ -221,7 +237,7 @@ function renderBackendCoverage(backendDir) {
     '',
   )
 
-  // パッケージごと（名前の順）。packagesJudgedByTotal のパッケージは全体の合計で判定するため、印を付けて判定に数えない。
+  // パッケージごと（名前の順）。パッケージごとの下限はすべてのパッケージに当たる。
   const rows = []
   let below = 0
   let near = 0
@@ -230,25 +246,21 @@ function renderBackendCoverage(backendDir) {
     const b = p.counters.BRANCH ?? null
     const lp = pct(l.covered, l.missed + l.covered)
     const bp = b ? pct(b.covered, b.missed + b.covered) : null
-    const judged = floors?.judgedByTotal.has(p.name) ?? false
     let mark = '—'
     if (floors) {
-      if (judged) {
-        mark = '全体で判定（packagesJudgedByTotal）'
+      const gaps = [
+        lp === null ? null : lp - floors.pkg.LINE,
+        bp === null ? null : bp - floors.pkg.BRANCH,
+      ].filter((g) => g !== null)
+      const min = gaps.length ? Math.min(...gaps) : null
+      if (min !== null && min < 0) {
+        mark = '下限を下回る'
+        below += 1
+      } else if (min !== null && min < 5) {
+        mark = '下限まで 5 ポイント未満'
+        near += 1
       } else {
-        const gaps = [lp === null ? null : lp - floors.pkg.LINE, bp === null ? null : bp - floors.pkg.BRANCH].filter(
-          (g) => g !== null,
-        )
-        const min = gaps.length ? Math.min(...gaps) : null
-        if (min !== null && min < 0) {
-          mark = '下限を下回る'
-          below += 1
-        } else if (min !== null && min < 5) {
-          mark = '下限まで 5 ポイント未満'
-          near += 1
-        } else {
-          mark = '満たす'
-        }
+        mark = '満たす'
       }
     }
     rows.push(
@@ -257,7 +269,7 @@ function renderBackendCoverage(backendDir) {
   }
   if (floors) {
     out.push(
-      `- パッケージ ${int(report.packages.length)} 個（うち packagesJudgedByTotal ${int(floors.judgedByTotal.size)} 個）。` +
+      `- パッケージ ${int(report.packages.length)} 個。` +
         `パッケージごとの下限（行 ${fixed(floors.pkg.LINE, 0)}%・分岐 ${fixed(floors.pkg.BRANCH, 0)}%）を下回るもの ${below} 個、下限まで 5 ポイント未満のもの ${near} 個。`,
       '',
     )
@@ -329,7 +341,10 @@ function renderFrontendCoverage(coverageDir) {
     return out.join('\n')
   }
   const floors = readFrontendFloors()
-  out.push('| 項目 | 割合 | 通った / 全体 | 下限 | 下限との差（ポイント） |', '|---|---:|---:|---:|---:|')
+  out.push(
+    '| 項目 | 割合 | 通った / 全体 | 下限 | 下限との差（ポイント） |',
+    '|---|---:|---:|---:|---:|',
+  )
   for (const [k, label] of METRICS) {
     const t = summary.total[k] ?? { total: 0, covered: 0, pct: null }
     const p = typeof t.pct === 'number' && t.total > 0 ? t.pct : null
@@ -399,7 +414,11 @@ function parseArgs(argv) {
     backendReports: path.join(repoRoot, 'backend', 'build'),
     frontendCoverage: path.join(repoRoot, 'frontend', 'coverage'),
   }
-  const names = { '--base': 'base', '--backend-reports': 'backendReports', '--frontend-coverage': 'frontendCoverage' }
+  const names = {
+    '--base': 'base',
+    '--backend-reports': 'backendReports',
+    '--frontend-coverage': 'frontendCoverage',
+  }
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     const eq = a.indexOf('=')
@@ -429,7 +448,11 @@ function main() {
   sections.push('## カバレッジ', '')
   sections.push(renderBackendCoverage(opts.backendReports))
   sections.push(renderFrontendCoverage(opts.frontendCoverage))
-  if (warnings.length) sections.push(`> 作れなかった欄が ${warnings.length} 個ある（各欄の理由と、この手順の警告を見る）。`, '')
+  if (warnings.length)
+    sections.push(
+      `> 作れなかった欄が ${warnings.length} 個ある（各欄の理由と、この手順の警告を見る）。`,
+      '',
+    )
   const text = sections.join('\n')
   const target = process.env.GITHUB_STEP_SUMMARY
   if (target) appendFileSync(target, text)

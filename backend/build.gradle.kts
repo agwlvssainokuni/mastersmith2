@@ -295,33 +295,15 @@ tasks.register<JacocoReport>("jacocoQuickReport") {
     }
 }
 
-/**
- * パッケージごとの下限を当てない既存のパッケージ（全体の合計で判定する）。U1（Intent 260923-dsl-schema-loader の最初の Bolt）で
- * 既存のパッケージを実測したところ、単独で下限を下回るもの（audit.service の行 77.2%、common.health の行 79.2%、
- * auth.repository の分岐 50.0%）があったため、team.md の Testing Posture に従い、パッケージごとの下限は新しく作るパッケージ
- * だけに当てる。この一覧は増やさない（新しく作るパッケージは、一覧に無いので自動で下限の対象になる）。
- *
- * 手を入れた Bolt で、そのパッケージの下限を満たして一覧から外し、パッケージごとの下限の対象に戻す（一度外したものは戻さない）。
- * Intent 260925-user-management の B2（U2）で audit.domain・audit.service・auth.service・auth.web・user.domain・
- * user.repository・user.service を外した。
- * Intent 260925-user-management の U8 で common.security・config・access.web を外した（差し込み口の order の説明文の書き直し）。
- * Intent 260930-user-admin の B1（U1）で auth.domain・auth.repository・access.domain を外した（利用停止の区分・伏せ字・まとめての
- * 無効化）。
- * Intent 260930-user-admin の B4（U3）で common.error.web・common.observability を外した（行の排他の失敗の連なりを、追跡と想定外の
- * 誤りのログでクラスの名前だけにする中央の手当て）。
+/*
+ * パッケージごとの下限の経緯: U1（Intent 260923-dsl-schema-loader の最初の Bolt）で既存のパッケージに単独で下限を下回るものが
+ * あったため、一時は既存のパッケージを一覧（packagesJudgedByTotal）で外し、全体の合計だけで判定していた。手を入れた Bolt ごとに
+ * 下限を満たして一覧から外し（Intent 260925-user-management・260930-user-admin）、残った 7 パッケージ（access.service・
+ * audit.repository・common.error.domain・common.error.service・common.health・common.i18n.domain・common.web）は
+ * Intent 261108-ci-checks-release で common.health にテストを足して一覧ごと消した。今はすべてのパッケージに同じ下限を当てる。
  */
-val packagesJudgedByTotal = listOf(
-    "cherry.mastersmith.access.service",
-    "cherry.mastersmith.audit.repository",
-    "cherry.mastersmith.common.error.domain",
-    "cherry.mastersmith.common.error.service",
-    "cherry.mastersmith.common.health",
-    "cherry.mastersmith.common.i18n.domain",
-    "cherry.mastersmith.common.web",
-)
-
 tasks.jacocoTestCoverageVerification {
-    description = "カバレッジの下限（行 80%・分岐 70%）を、全体の合計と、新しく作るパッケージごとに検証する。"
+    description = "カバレッジの下限（行 80%・分岐 70%）を、全体の合計と、すべてのパッケージごとに検証する。"
     mustRunAfter(tasks.test, integrationTest, tasks.jacocoTestReport)
     executionData.setFrom(coverageExecutionData)
     classDirectories.setFrom(coverageClassDirectories)
@@ -338,10 +320,9 @@ tasks.jacocoTestCoverageVerification {
                 minimum = "0.70".toBigDecimal()
             }
         }
-        // パッケージごとの下限（team.md の Testing Posture）。既存のパッケージは上の一覧で外し、全体の合計で判定する。
+        // パッケージごとの下限（team.md の Testing Posture）。すべてのパッケージに当てる（外すパッケージは無い）。
         rule {
             element = "PACKAGE"
-            excludes = packagesJudgedByTotal
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"

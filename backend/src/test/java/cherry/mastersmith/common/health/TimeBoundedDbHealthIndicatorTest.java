@@ -18,6 +18,7 @@ package cherry.mastersmith.common.health;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,7 +30,11 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -186,5 +191,71 @@ class TimeBoundedDbHealthIndicatorTest {
 
         assertThat(indicator.health().getStatus()).isEqualTo(Status.UP);
         verify(dataSource, times(2)).getConnection();
+    }
+
+    @Test
+    @DisplayName("a stopped executor that rejects the probe reports DOWN and lets the next probe be attempted")
+    void downWhenExecutorRejectsProbe() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        SubmitCountingExecutor executor = new SubmitCountingExecutor();
+        executor.shutdown();
+        indicator = new TimeBoundedDbHealthIndicator(dataSource, new HealthProperties(SHORT_TIMEOUT), executor);
+
+        Health first = indicator.health();
+        Health second = indicator.health();
+
+        assertThat(first.getStatus()).isEqualTo(Status.DOWN);
+        assertThat(first.getDetails()).isEmpty();
+        assertThat(second.getStatus()).isEqualTo(Status.DOWN);
+        // 1回目で受け付けられなかった後も次の確認を許す印が戻っていれば、2回目も実行の枠へ渡そうとする
+        // （戻っていなければ「前の確認が終わっていない」として、実行の枠へ渡さずに DOWN を返す）。
+        assertThat(executor.submits()).isEqualTo(2);
+        verify(dataSource, never()).getConnection();
+    }
+
+    @Test
+    @DisplayName("an interrupt while waiting for the probe reports DOWN and keeps the interrupt flag")
+    void downWhenWaitingIsInterrupted() throws SQLException {
+        DataSource dataSource = mock(DataSource.class);
+        when(dataSource.getConnection()).thenAnswer(invocation -> {
+            awaitReleaseUninterruptibly();
+            return healthyConnection();
+        });
+        TimeBoundedDbHealthIndicator target = create(dataSource, Duration.ofSeconds(30));
+
+        // 確認は release まで終わらないため、割り込みの印を立てて呼ぶと、結果の待ちは制限時間を待たずに割り込まれる
+        Health health;
+        boolean interruptKept;
+        Thread.currentThread().interrupt();
+        try {
+            health = target.health();
+        } finally {
+            // 印を消して確かめる（後のテストに印を残さない）
+            interruptKept = Thread.interrupted();
+        }
+
+        assertThat(health.getStatus()).isEqualTo(Status.DOWN);
+        assertThat(health.getDetails()).isEmpty();
+        assertThat(interruptKept).isTrue();
+    }
+
+    /** 確認を実行の枠へ渡した回数を数える実行の枠（スレッド1本）。止めた後は渡された確認を受け付けない。 */
+    private static final class SubmitCountingExecutor extends ThreadPoolExecutor {
+
+        private final AtomicInteger submits = new AtomicInteger();
+
+        SubmitCountingExecutor() {
+            super(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>());
+        }
+
+        @Override
+        public Future<?> submit(Runnable task) {
+            submits.incrementAndGet();
+            return super.submit(task);
+        }
+
+        int submits() {
+            return submits.get();
+        }
     }
 }
