@@ -333,6 +333,17 @@ const perfToolRule = {
   },
 }
 
+/**
+ * ルートの scripts/ の Node の台本（CI の要約・規模の数え・確かめの台本など）に当てる決まり（Intent 261108-ci-checks-release の
+ * FR1.2）。perf の伏せ字の道具と同じく frontend/ の外にあるため、リポジトリの根から `--config frontend/eslint.config.js scripts` を
+ * 付けて呼ぶ（frontend/package.json の lint:scripts）。決まりの中身は perf の道具と同じ（Node の大域の名前・no-undef・no-unused-vars・
+ * 文字列をコードとして実行する書き方の禁止・export default の禁止）。
+ */
+const rootScriptsRule = {
+  ...perfToolRule,
+  files: ['scripts/**/*.{js,mjs}'],
+}
+
 export default [
   { ignores: ['dist', 'node_modules', 'coverage', 'playwright-report', 'test-results'] },
   {
@@ -385,4 +396,5 @@ export default [
   timeZoneConversionRules,
   businessDataConsoleRule,
   perfToolRule,
+  rootScriptsRule,
 ]

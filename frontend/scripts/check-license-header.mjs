@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 //
-// フロントエンドのソースファイルと perf/ の Node のスクリプトの先頭に Apache License 2.0 のヘッダーがあるかを確かめる。
+// フロントエンドのソースファイルと perf/・ルートの scripts/ の Node のスクリプトの先頭に Apache License 2.0 のヘッダーがあるかを確かめる。
 // ヘッダーのひな形はリポジトリのルートの config/license-header.txt（Spotless と共通）。
 // - frontend/ の TS・TSX・JS・MJS・CJS・CSS: `/* ... */` の形（`/** ... */` は認めない）
 // - frontend/ の HTML・SVG: `<!-- ... -->` の形（SVG は XML 宣言を先頭に置かない）
 // - perf/ の MJS・JS: `/* ... */` の形（.sh・.md・.env などは対象にしない）
+// - ルートの scripts/ の MJS・JS: perf/ と同じ `/* ... */` の形（.txt などは対象にしない。Intent 261108-ci-checks-release の FR1.1）
 // ヘッダーが無い・形が違うファイルを、リポジトリのルートからの相対のパスで示して、終了コード 1 で失敗させる。
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import path from 'node:path'
@@ -27,6 +28,7 @@ import { fileURLToPath } from 'node:url'
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repoRoot = path.resolve(frontendRoot, '..')
 const perfRoot = path.join(repoRoot, 'perf')
+const rootScriptsRoot = path.join(repoRoot, 'scripts')
 const templatePath = path.join(repoRoot, 'config', 'license-header.txt')
 
 export const SKIP_DIRS = new Set([
@@ -105,6 +107,8 @@ function main() {
   const files = [
     ...collectFiles(frontendRoot, (ext) => BLOCK_EXTENSIONS.has(ext) || HTML_EXTENSIONS.has(ext)),
     ...collectFiles(perfRoot, (ext) => PERF_EXTENSIONS.has(ext)),
+    // ルートの scripts/ の Node の台本は perf/ と同じ拡張子と形で確かめる
+    ...collectFiles(rootScriptsRoot, (ext) => PERF_EXTENSIONS.has(ext)),
   ]
   for (const file of files) {
     const reason = checkContent(file, readFileSync(file, 'utf8'), expected)

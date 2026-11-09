@@ -34,3 +34,8 @@ repos:
         language: system
         files: ^frontend/
         exclude: ^frontend/package-lock\.json$
+      - id: prettier-check-scripts
+        name: Prettier のフォーマットの確認（ルートの scripts/ の台本。設定は frontend/ のものを使う）
+        entry: bash -c 'cd frontend && npx --no-install prettier --check --config .prettierrc.json "${@/#/../}"' --
+        language: system
+        files: ^scripts/.*\.(js|mjs)$

@@ -71,7 +71,10 @@ import { pathToFileURL } from 'node:url'
 const EXCLUDE =
   /(package-lock\.json|\.lockfile)$|^(aidlc|vendor|\.claude|\.idea|\.codex|\.kiro|\.cursor|\.agents|\.aidlc)\/|^\.github\/skills\//
 const LAYERS = ['web', 'service', 'domain', 'repository']
-const E2E_RELATED = new Set(['frontend/playwright.config.ts', 'frontend/playwright-secret-check-reporter.ts'])
+const E2E_RELATED = new Set([
+  'frontend/playwright.config.ts',
+  'frontend/playwright-secret-check-reporter.ts',
+])
 const LICENSE_HEADER_LINES = 13
 const ZERO_SHA = /^0+$/
 /** 比べる元に受け付ける値（コミットのハッシュ・ブランチの名前・HEAD~1 など）。 */
@@ -128,7 +131,7 @@ export function classify(f) {
   if (f.startsWith('backend/src/test/')) {
     const name = f.slice(f.lastIndexOf('/') + 1)
     let kind
-    if (/IT\.java$/.test(name)) kind = '結合テスト（*IT）'
+    if (name.endsWith('IT.java')) kind = '結合テスト（*IT）'
     else if (f.includes('/testsupport/')) kind = 'テストの手伝い（testsupport）'
     else if (name.endsWith('.java')) kind = '単体テスト（*Test など）'
     else kind = 'テストの資源'
@@ -167,9 +170,13 @@ export function classify(f) {
 /** cloc の版を返す。無ければ投げる。 */
 export function clocVersion() {
   try {
-    return execFileSync('cloc', ['--version'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
+    return execFileSync('cloc', ['--version'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim()
   } catch (e) {
-    if (e.code === 'ENOENT') throw new Error('cloc が見つからない（手元は brew install cloc、CI は apt-get install cloc）')
+    if (e.code === 'ENOENT')
+      throw new Error('cloc が見つからない（手元は brew install cloc、CI は apt-get install cloc）')
     throw new Error('cloc --version が失敗した')
   }
 }
@@ -249,9 +256,13 @@ export function countSize(root) {
  */
 export function countBase(root, ref) {
   const value = (ref ?? '').trim()
-  if (!value) return { ref: value, reason: '比べる元が渡されていない（手動の実行・タグのプッシュなど）' }
+  if (!value)
+    return { ref: value, reason: '比べる元が渡されていない（手動の実行・タグのプッシュなど）' }
   if (ZERO_SHA.test(value)) {
-    return { ref: value, reason: '比べる元が 0 の並び（ブランチの最初のプッシュなど）で、前の回が無い' }
+    return {
+      ref: value,
+      reason: '比べる元が 0 の並び（ブランチの最初のプッシュなど）で、前の回が無い',
+    }
   }
   // 報告に載せるのはコミットの名前に使う文字だけ（引数の値をそのまま Markdown に入れない）。
   if (!SAFE_REF.test(value) || value.startsWith('-')) {
@@ -265,7 +276,8 @@ export function countBase(root, ref) {
     return { ref: value, reason: e.message }
   }
   const commit = gitOrNull(repoRoot, ['rev-parse', '--verify', '--quiet', `${value}^{commit}`])
-  if (!commit) return { ref: value, reason: `比べる元のコミット ${value} を取り出せない（履歴に無い）` }
+  if (!commit)
+    return { ref: value, reason: `比べる元のコミット ${value} を取り出せない（履歴に無い）` }
   const dir = path.join(repoRoot, BASE_WORKTREE)
   removeWorktree(repoRoot, dir)
   try {
@@ -323,6 +335,9 @@ function signed(n) {
  */
 export function fixed(x, d) {
   if (!Number.isFinite(x)) return '—'
+  // toFixed の桁は ES2018 から 0〜100 まで使える。oxlint の number-arg-out-of-range は上限を 20 とみる古い決まりで、
+  // ここは誤検知のため、この1行だけ外す（桁を減らすと、ちょうど半分かの判定が正しくなくなる）。
+  // oxlint-disable-next-line oxc/number-arg-out-of-range
   const exact = Math.abs(x).toFixed(100)
   const dot = exact.indexOf('.')
   const rest = exact.slice(dot + 1 + d)
@@ -394,7 +409,12 @@ export function renderReport(size, meta, { base = null, headingOffset = 0, fold 
     items.sort((a, b) => b[1][1] - a[1][1])
     const cols = ['ファイル', 'コード', 'コメント', '空行']
     if (diffColumns) cols.push('コードの差', 'ファイルの差')
-    const out = [`${h(3)} ${title}`, '', `| 分類 | ${cols.join(' | ')} |`, `|---|${'---:|'.repeat(cols.length)}`]
+    const out = [
+      `${h(3)} ${title}`,
+      '',
+      `| 分類 | ${cols.join(' | ')} |`,
+      `|---|${'---:|'.repeat(cols.length)}`,
+    ]
     for (const [k, v, key] of items) {
       const cells = [int(v[0]), int(v[1]), int(v[2]), int(v[3])]
       if (diffColumns) {
@@ -424,9 +444,12 @@ export function renderReport(size, meta, { base = null, headingOffset = 0, fold 
   const featSet = new Set()
   for (const k of agg.keys()) {
     const parts = k.split(SEP)
-    if ((parts[0] === 'Java製品の機能' || parts[0] === 'Javaテストの機能') && parts[1] !== '-') featSet.add(parts[1])
+    if ((parts[0] === 'Java製品の機能' || parts[0] === 'Javaテストの機能') && parts[1] !== '-')
+      featSet.add(parts[1])
   }
-  const feats = [...featSet].sort().sort((a, b) => code('Java製品の機能', b) - code('Java製品の機能', a))
+  const feats = [...featSet]
+    .sort()
+    .sort((a, b) => code('Java製品の機能', b) - code('Java製品の機能', a))
   const cross = [
     `${h(3)} サーバーの機能ごとの製品とテスト（コードの行）`,
     '',
@@ -436,7 +459,9 @@ export function renderReport(size, meta, { base = null, headingOffset = 0, fold 
   for (const f of feats) {
     const p = code('Java製品の機能', f)
     const t = code('Javaテストの機能', f)
-    cross.push(p ? `| ${f} | ${int(p)} | ${int(t)} | ${fixed(t / p, 1)} |` : `| ${f} | 0 | ${int(t)} | — |`)
+    cross.push(
+      p ? `| ${f} | ${int(p)} | ${int(t)} | ${fixed(t / p, 1)} |` : `| ${f} | 0 | ${int(t)} | — |`,
+    )
   }
 
   const nowText = formatNow(meta.now)
@@ -449,14 +474,18 @@ export function renderReport(size, meta, { base = null, headingOffset = 0, fold 
   print(`| ブランチと先頭 | \`${meta.branch}\` の \`${meta.head}\`（${meta.headDate}） |`)
   print(`| \`main\` の先頭 | ${meta.mainHead ? `\`${meta.mainHead}\`` : '—'} |`)
   if (withDiff) {
-    print(`| 比べる元 | ${base.size ? `\`${base.short}\`（${base.date}）` : `—（${base.reason}）`} |`)
+    print(
+      `| 比べる元 | ${base.size ? `\`${base.short}\`（${base.date}）` : `—（${base.reason}）`} |`,
+    )
   }
   print(
     `| 数えたファイル | git が管理するファイル ${int(size.fileCount)} 件（外したもの・分類の決まりは \`scripts/program-size.mjs\` の冒頭） |`,
   )
   print(`| 道具 | cloc ${size.clocVersion}、\`scripts/program-size.mjs\` |\n`)
   print(`${h(2)} 要点\n`)
-  print(`- 製品のコード ${int(prod)} 行、テストのコード ${int(test)} 行。テスト ÷ 製品 = ${fixed(test / prod, 2)}。`)
+  print(
+    `- 製品のコード ${int(prod)} 行、テストのコード ${int(test)} 行。テスト ÷ 製品 = ${fixed(test / prod, 2)}。`,
+  )
   print(`- サーバー: 製品 ${int(javaP)}・テスト ${int(javaT)}（${fixed(javaT / javaP, 1)} 倍）。`)
   print(`- 画面: 製品 ${int(feP)}・単体テスト ${int(feT)}（${fixed(feT / feP, 1)} 倍）。`)
   print(
