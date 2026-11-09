@@ -1,0 +1,170 @@
+{
+  "stage": "code-generation",
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR3.1",
+    "FR3.2",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR5.4",
+    "FR5.5",
+    "FR6.1",
+    "FR6.2",
+    "FR6.3",
+    "NFR1",
+    "NFR2",
+    "NFR3",
+    "NFR4"
+  ],
+  "coverage": [
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "frontend/scripts/check-license-header.mjs"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "frontend/package.json",
+      "note": "frontend/package.json（format:check・lint:scripts）・frontend/eslint.config.js（rootScriptsRule）・.pre-commit-config.yaml（prettier-check-scripts）"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "scripts/verify-graph-check.mjs",
+      "note": "scripts/verify-graph-check.mjs を verify に入れていない（docs/verification.md）"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "docs/verification.md",
+      "note": "docs/verification.md（道具の採用の理由と、台本の扱い）"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "backend/src/test/java/cherry/mastersmith/common/health/TimeBoundedDbHealthIndicatorTest.java",
+      "note": "backend/src/test/java/cherry/mastersmith/common/health/TimeBoundedDbHealthIndicatorTest.java（部分: テストは済み。パッケージの下限の判定は Build and Test の全件の verify）"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "backend/build.gradle.kts"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "scripts/ci-summary.mjs",
+      "note": "scripts/ci-summary.mjs・docs/verification.md"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "aidlc/spaces/default/memory/team.md",
+      "note": "aidlc/spaces/default/memory/team.md（19・54・155 行）・aidlc/spaces/default/memory/project.md（131 行）"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml",
+      "note": ".github/workflows/ci.yml（runs-on: ubuntu-latest のまま）"
+    },
+    {
+      "id": "FR3.2",
+      "status": "Deferred",
+      "target": "build-and-test: Ubuntu 26 の上の CI の道具の版を CI の実行で記録する"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": ".github/workflows/ci.yml",
+      "note": ".github/workflows/ci.yml（./gradlew verify -PitForks）"
+    },
+    {
+      "id": "FR4.2",
+      "status": "Deferred",
+      "target": "build-and-test: 入力 it_forks で N=2・N=3 を流して比べ、既定の N を決める（入力の口は .github/workflows/ci.yml で済み）"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "aidlc/spaces/default/memory/team.md",
+      "note": "aidlc/spaces/default/memory/team.md（21 行）・docs/verification.md（結合テストを並べる）"
+    },
+    {
+      "id": "FR5.1",
+      "status": "Deferred",
+      "target": "build-and-test: scripts/ops-readonly-check.mjs は作り、コンテナが無い道で確かめた。動いているコンテナでの確かめ（食い違いの表示を含む）は Build and Test・配備の段"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "scripts/ci-attempts.mjs",
+      "note": "scripts/ci-attempts.mjs（b2990415 の後のコミットで流し、gh run view の照合と一致）"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "scripts/count-db-copy.mjs",
+      "note": "scripts/count-db-copy.mjs（Step 13）。前の道具との件数の照合は code-summary.md 2節（依頼者の許しを得て流し、全項目が一致）"
+    },
+    {
+      "id": "FR5.4",
+      "status": "OK",
+      "target": "docs/verification.md",
+      "note": "docs/verification.md（A2）・docs/internal-db.md（A3）・docs/operations.md（A1）"
+    },
+    {
+      "id": "FR5.5",
+      "status": "Deferred",
+      "target": "build-and-test: A2 と A3（件数の照合）は済み。A1 の動いているコンテナでの確かめが残る"
+    },
+    {
+      "id": "FR6.1",
+      "status": "Deferred",
+      "target": "build-and-test"
+    },
+    {
+      "id": "FR6.2",
+      "status": "Deferred",
+      "target": "build-and-test・deployment-execution（取り込みの直前に scripts/ci-attempts.mjs を流し直す）"
+    },
+    {
+      "id": "FR6.3",
+      "status": "Deferred",
+      "target": "deployment-pipeline・deployment-execution"
+    },
+    {
+      "id": "NFR1",
+      "status": "Deferred",
+      "target": "build-and-test: CI の job の時間を前の 35分47秒 と並べる"
+    },
+    {
+      "id": "NFR2",
+      "status": "Deferred",
+      "target": "build-and-test: 全件の verify と CI で、全パッケージの下限と並べた結合テストの件数・失敗・カバレッジの一致を確かめる"
+    },
+    {
+      "id": "NFR3",
+      "status": "OK",
+      "target": "scripts/ops-readonly-check.mjs",
+      "note": "scripts/ops-readonly-check.mjs・scripts/ci-attempts.mjs・scripts/count-db-copy.mjs（A1・A2・A3 とも出力の検索で確かめた。A3 は依頼者の許しを得て流し、出力に @ を含む行は無かった）"
+    },
+    {
+      "id": "NFR4",
+      "status": "Deferred",
+      "target": "build-and-test"
+    }
+  ]
+}
