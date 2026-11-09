@@ -19,7 +19,7 @@
 | 4 | ビルド（`verifyBuild`） | Java のコンパイル、`tsc --noEmit`、Vite のビルドと、`dist` の素材（アイコン・favicon）が `frontend/public/` と同じで `index.html` の favicon の指定が正しいことの確認（`npm run dist:check`） |
 | 5 | 単体テスト（`verifyUnitTest`） | JUnit（`*Test`）、Vitest |
 | 6 | 結合テスト（`verifyIntegrationTest`） | Spring と組み込みの H2 を起動するテスト、対象DB（MySQL・MariaDB・PostgreSQL）のコンテナを使うテスト、JVM の中で起動するテスト用の SMTP の受け手（SubEtha SMTP）でメールを実際に受けるテスト（`*IT`） |
-| 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗。バックエンドは全体の合計に加えて、新しく作るパッケージ（`cherry.mastersmith.targetdb` 以後）ごとにも同じ下限を当てる（既存のパッケージは全体の合計で判定する。`backend/build.gradle.kts` の `packagesJudgedByTotal`） |
+| 7 | カバレッジの下限（`verifyCoverage`） | JaCoCo・`@vitest/coverage-v8`。行 80%・分岐 70% を下回ったら失敗。バックエンドは全体の合計に加えて、すべてのパッケージごとにも同じ下限を当てる（外すパッケージは無い。前の一覧 `packagesJudgedByTotal` は Intent 261108-ci-checks-release で消した） |
 | 8 | 安全の検査（`verifySecurity`） | SpotBugs＋FindSecBugs（重大度 High と、SQL インジェクション系（パターン名が `SQL_` で始まる）・予測できる乱数（`PREDICTABLE_RANDOM`）・メールのヘッダーへの差し込み（`SMTP_HEADER_INJECTION`）の指摘は priority によらず失敗。誤検知は `backend/config/spotbugs-exclude.xml` に理由を書いて外す）、OSV-Scanner（下の判定）、Gitleaks（リポジトリの履歴全体） |
 | 9 | 成果物と量の確認（`verifyArtifact`） | 画面を同梱した実行可能 WAR（`backend/build/libs/mastersmith.war`）、WAR の中の DSL の JSON Schema と正本の一致、WAR の中の素材（アイコン・favicon）と `frontend/public/` の一致（`verifyFaviconInWar`）、初回の読み込みの JavaScript の量（500KB を超えたら警告だけ） |
 
@@ -39,7 +39,6 @@
 - **全件の `./gradlew verify`**: 上の表のすべて。CI は引数なしのこれを流します。手元では次の場面で必ず流します。
   - Intent の最後の Build and Test（`:backend:cleanTest :backend:cleanIntegrationTest` を付けて流し、テストの件数とカバレッジの実測を記録する）
   - リリースの前（`develop` から `main` への取り込みの前）
-  - `backend/build.gradle.kts` の `packagesJudgedByTotal` のパッケージに手を入れる Bolt の統合の前
   - Dependabot の知らせ（依存の版と lockfile の更新）の取り込みの前
 - **`./gradlew verifyQuick`**: 上の場面以外の Bolt の統合の前に流します。`verify` と同じ段の表と順から、3つのタスクを外し、JaCoCo の報告を単体テストだけの参考値に置き換えたものです。外した結合テストとバックエンドのカバレッジの下限は、次の全件の `verify` と CI（統合の後の再確認）で確かめます。
 
@@ -57,7 +56,7 @@
 | 4 ビルド | `compileJava`・`compileTestJava`・`frontendTypecheck`・`perfToolTypecheck`・`frontendBuild`・`frontendDistCheck` | ○ | ○ |
 | 5 単体テスト | `:backend:test`（`*Test`） | ○ | ○ |
 | 5 単体テスト | `frontendTest`（計測なし） | ○ | 外す |
-| 6 結合テスト | `:backend:integrationTest`（`*IT`） | ○ 全件（`-PitForks=N` で手元だけ並べられる） | 外す。`-PitTests=…` を付けたときだけ当たる IT を流す |
+| 6 結合テスト | `:backend:integrationTest`（`*IT`） | ○ 全件（`-PitForks=N` で並べられる。CI も並べる） | 外す。`-PitTests=…` を付けたときだけ当たる IT を流す |
 | 7 カバレッジ | `jacocoTestReport` | ○（単体＋結合の記録） | `jacocoQuickReport` に置き換える（単体テストだけの参考値。下の「参考値の読み方」） |
 | 7 カバレッジ | `jacocoTestCoverageVerification` | ○ | 外す |
 | 7 カバレッジ | `frontendCoverage`（計測つき・下限の判定） | ○ | ○ |
@@ -67,18 +66,8 @@
 - `verifyQuick` の画面のテストは、計測つきの `frontendCoverage` の1回だけです。画面のカバレッジの下限（行 80%・分岐 70%）は `verifyQuick` でも判定し、下回れば失敗します。
 - 1つのタスクが失敗したら後ろの段を流さないのは `verify` と同じです。どちらの入口でも、WAR（`backend/build/libs/mastersmith.war`）は 9 の段で作られます。
 - タスクの一覧と順は `./gradlew verifyQuick --dry-run` で確かめられます。`node scripts/verify-graph-check.mjs` は、`verify` の一覧が変わっていないこと、`verifyQuick` の一覧と順、下の `-P` の誤りの扱いを `--dry-run` だけで確かめます（テストは流しません）。
-- この台本は、検査の入口（`build.gradle.kts`・`backend/build.gradle.kts` の段やタスク）を変えたときに手で流す回帰の確かめです。`verify` にも CI にも入っていません（ライセンスヘッダーの検査の対象に `scripts/` を足して検査に載せるかは、後の Intent で決める）。
+- この台本は、検査の入口（`build.gradle.kts`・`backend/build.gradle.kts` の段やタスク）を変えたときに手で流す回帰の確かめです。`verify` にも CI にも入っていません（台本そのものは、ほかの `scripts/` の台本と同じくライセンスヘッダー・書式・リンタの検査の対象です。下の「道具の採用の理由と、台本の扱い」）。
 - 比べの元 `scripts/verify-graph-baseline.txt` は、今の `verify` のタスクの一覧（`--dry-run` の出力のタスクのパスの行だけ、出力の順のまま）です。`verify` の段やタスクを意図して変える Intent では、変えた後に `./gradlew verify --dry-run` を流して比べの元を取り直し、取り直したことと前後の差を、その Intent の記録に書きます。取り直さないと台本の項目 1 が誤って落ちます。
-
-#### 全件の `verify` の場面に当たるかを確かめる（`packagesJudgedByTotal`）
-
-`packagesJudgedByTotal` のパッケージに手を入れる Bolt（`src/main` の変更。説明文だけの直しを含む）は、統合の前に全件の `verify` を流します。当たるかは、統合の前に次で確かめます（何も出なければ当たらない）。結果（当たったパッケージ、または当たらないこと）は Bolt の統合の記録に書きます。
-
-```bash
-git diff --name-only develop... -- backend/src/main | grep -E 'cherry/mastersmith/(access/service|audit/repository|common/error/domain|common/error/service|common/health|common/i18n/domain|common/web)/[^/]+$'
-```
-
-この一覧は `backend/build.gradle.kts` の `packagesJudgedByTotal` と同じ 7 パッケージです（2026-11-08 の時点）。一覧から外れたパッケージがあれば、このコマンドからも外します。
 
 #### 結合テストを絞る（`-PitTests`）
 
@@ -90,7 +79,9 @@ git diff --name-only develop... -- backend/src/main | grep -E 'cherry/mastersmit
 #### 結合テストを並べる（`-PitForks`）
 
 - `-PitForks=<N>` を付けると、結合テストを N 個の JVM に分けて並べて流します。付けないときは今までどおり1つの JVM で流します。1 以上の整数でない値は、理由を示して失敗します。
-- 全件の `./gradlew verify -PitForks=<N>` と、`-PitTests` を付けた `verifyQuick` に効きます。CI は付けずに流します（変えません）。
+- 全件の `./gradlew verify -PitForks=<N>` と、`-PitTests` を付けた `verifyQuick` に効きます。
+- CI（`.github/workflows/ci.yml` の `verify` の job）でも使います（Intent 261108-ci-checks-release）。CI は `./gradlew verify -PitForks="$IT_FORKS"` を流し、N は手動の実行（`workflow_dispatch`）の入力 `it_forks` があればその値、無ければ ci.yml の `env` の `IT_FORKS_DEFAULT`（既定 3。Build and Test で CI の上の 2 と 3 を比べて決める）です。手動で N を変えて流すときは `gh workflow run ci.yml --ref <ブランチ> -f it_forks=<N>` です。値は 1〜8 の整数に限り、外れたら CI の手順が止まります（実行環境の資源を使い切らないため）。
+- CI の上で 2 と 3 を比べるまでは、既定は手元の推奨の 3 のままです。並べた CI で失敗・不安定なテストが続いたときは、`IT_FORKS_DEFAULT` を `"1"` に戻すコミットで1つの JVM に戻し、原因を確かめます（`team.md` の「不安定なテストと CI の失敗」）。
 - 各 JVM の JaCoCo の記録は同じ `backend/build/jacoco/integrationTest.exec` に追記されます。並べるとテストの JVM のヒープ（1 つあたり 1g）と対象DB のコンテナが N 倍になりうるため、N は手元の資源に合わせて選んでください。並べて落ちるテストが出たときは、`team.md` の「不安定なテストと CI の失敗」の決まりに従います。
 - 推奨は **N=3** です。2026-11-08 に、8 CPU・16GiB の PC（colima は 4 CPU・6GiB）で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest` を N ごとに1回ずつ流して測りました（Intent 261107-verify-quick-local）。どの N でも 1,716 件が通り（失敗 0 件、飛ばし 10 件）、N=3 が最も速くなりました。N=4 で遅くなったのは、colima の CPU（4）をテストの JVM と対象DB のコンテナで取り合ったためと見ています（確かめてはいません）。各 N を1回ずつ測っただけなので、揺れを含みます。PC や colima の資源が違うときは、測り直して選んでください。
 
@@ -157,10 +148,10 @@ node scripts/program-size.mjs --base <commit> > build/program-size.md   # 大分
 |---|---|
 | プログラムの規模 | `scripts/program-size.mjs`（cloc）。中分類と言語より後の表は畳んであります |
 | テストの件数（バックエンド） | `backend/build/test-results/test/` と `integrationTest/` の `TEST-*.xml`（通った・失敗・飛ばした）。画面（Vitest）の件数は載せません |
-| カバレッジ（バックエンド） | `backend/build/reports/jacoco/test/jacocoTestReport.xml`（全体と、畳んだパッケージごとの表）。下限と `packagesJudgedByTotal` は `backend/build.gradle.kts` から読みます |
+| カバレッジ（バックエンド） | `backend/build/reports/jacoco/test/jacocoTestReport.xml`（全体と、畳んだパッケージごとの表）。下限は `backend/build.gradle.kts` から読みます |
 | カバレッジ（画面） | `frontend/coverage/coverage-summary.json`（全体と、畳んだ領域ごとの表。領域はファイルごとの値の和） |
 
-- 割合は小数 2 桁で切り捨てます（`coverage-summary.json` と同じ）。パッケージごとの表の「下限との差」はポイントで、印は「満たす」「下限まで 5 ポイント未満」「下限を下回る」「全体で判定（packagesJudgedByTotal）」のどれかです。`packagesJudgedByTotal` のパッケージは全体の合計で判定するため、下限を下回っていても `verify` は失敗しません。
+- 割合は小数 2 桁で切り捨てます（`coverage-summary.json` と同じ）。パッケージごとの表の「下限との差」はポイントで、印は「満たす」「下限まで 5 ポイント未満」「下限を下回る」のどれかです。パッケージごとの下限はすべてのパッケージに当たるため、「下限を下回る」のパッケージがあれば `verify` は失敗します。
 - **「—」**: 値が出せないことを表します。規模の差の列では、比べる元が無いとき（手動の実行・タグのプッシュ・ブランチの最初のプッシュ（0 が並ぶ値）・履歴に無いコミット）で、理由が「前の回との差は出せない: …」の1行に出ます。比べる元は、`develop` へのプッシュのときだけ、プッシュの前の先頭（`github.event.before`）です。分岐の無いパッケージの分岐も「—」です。
 - **「報告なし（./gradlew verify が途中で落ちた見込み）」**: その欄の報告のファイルが無いことを表します。`./gradlew verify` がテストやカバレッジの報告を作る前に落ちた回に出ます。あわせて、その手順に警告（`::warning::`）が出ます。cloc が入らなかったときは、規模の欄に「作れなかった（cloc が見つからない…）」と出ます。
 - 要約を書く手順は `./gradlew verify` が落ちた回にも流し（`if: always()`）、どの欄が作れなくても CI を失敗にしません（`continue-on-error: true`、台本の終了コードも 0）。CI の合否は今までどおり `./gradlew verify` で決まります。
@@ -173,11 +164,12 @@ CI の実行ごとに、JaCoCo の HTML の報告（`backend/build/reports/jacoc
 ### 道具の採用の理由と、台本の扱い
 
 - cloc は GPL-2.0 の道具です。CI と手元で規模を数えるために動かすだけで、WAR やイメージには入れず、ソースにも組み込みません（`team.md` の Code Style の新しい依存の決まりに沿った採用の理由）。CI では版を固定せず、`ubuntu-latest` の apt の版を入れます。報告に版が出ます。
-- ルートの `scripts/` の台本（`program-size.mjs`・`ci-summary.mjs` を含む）は、CI の報告の道具であり本体の機能ではないため、単体テスト・ライセンスヘッダー・書式・リンタの検査の対象の外です（Intent 261108-ci-size-coverage での依頼者の決定）。変えたときは、手元で流して出力を確かめてください。
+- ルートの `scripts/` の台本（`program-size.mjs`・`ci-summary.mjs`・`verify-graph-check.mjs`・`ci-attempts.mjs`・`ops-readonly-check.mjs`・`count-db-copy.mjs`）は、ライセンスヘッダー・書式（Prettier）・リンタ（oxlint・ESLint）の検査の対象です（Intent 261108-ci-checks-release での依頼者の決定。前の Intent 261108-ci-size-coverage では対象の外としていた）。道具と設定は `frontend/` のものを使い回し（`frontend/package.json` の `format:check`・`lint:scripts`、`frontend/scripts/check-license-header.mjs`）、`./gradlew verify` の 1〜3 の段と、コミットの直前の Prettier の確認（`.pre-commit-config.yaml`）で確かめます。
+- 本体の機能ではないため、単体テストは置きません（Intent 261108-ci-size-coverage での依頼者の読み方を引き継ぐ）。変えたときは、手元で流して出力を確かめてください。
 
 ## リリースの前の確かめ
 
-`develop` から `main` へ取り込む前（リリースの前）に、`./gradlew verify` と E2E のほかに、次の2つを手で確かめます。結果は、その回の Deployment Execution の記録に書きます。
+`develop` から `main` へ取り込む前（リリースの前）に、`./gradlew verify` と E2E のほかに、次の3つを確かめます。結果は、その回の Deployment Execution の記録に書きます。
 
 **1. 新しく公表された脆弱性（`osvScan --rerun`）**: ソースを変えなくても、取り込みの前に新しい公表で失敗することがあります。`verify` の中の `osvScan` は lockfile が変わらないと飛ばされる（UP-TO-DATE）ため、流し直します。
 
@@ -196,6 +188,22 @@ unzip -l backend/build/libs/mastersmith.war | grep -i axe   # 期待の出力: �
 
 - 1行目が何かのファイル名を出したら、axe-core が画面の成果物に入っている。入れた依存（`dependencies` に axe-core や vitest-axe を足していないか）と、本体のソースが axe-core を読み込んでいないか（`frontend/src` のテストのファイル以外）を調べる。
 - 画面を作り直していない（`frontend/dist` が古い）ときは、`./gradlew verify`（または `:frontend:` の画面のビルド）の後に流す。
+
+**3. 前の取り込みの後のすべてのコミットの CI（試行ごと）**: 最後の結論だけでなく試行ごとの結果を確かめ、再実行で通ったものは1回目の失敗も記録します（`project.md` の Deployment の決まり）。台本 `scripts/ci-attempts.mjs` が、git と gh を読むだけで（CI を動かさず）表にします。前提は `gh` にログインしていることと、`git fetch` で `origin/main`・`origin/develop` が新しいことです。
+
+```bash
+git fetch origin
+node scripts/ci-attempts.mjs                          # 既定の範囲 origin/main..origin/develop
+node scripts/ci-attempts.mjs --from <commit> --to <commit>   # 範囲を変える（--from は含まない）
+node scripts/ci-attempts.mjs --no-logs                # 失敗した試行のログを読まない（落ちたテストの名前は出ない）
+```
+
+- 出すもの: コミットごとの CI の実行の有無と、実行ごとの試行の結論（例「1: failure → 2: success」）。失敗した試行ごとに、落ちた job と手順の名前と、ログから拾った落ちたタスク・テストの名前（`> Task … FAILED`、JUnit の `… > … FAILED`、Vitest の ` FAIL ` の行。1 試行 20 行まで）。最後にまとめ（実行の無いコミット・再実行で通った実行・通っていない実行のあるコミットの数、先頭のコミットの結論）。
+- まとめてプッシュした途中のコミットには CI の実行がありません（「実行なし」と出る）。CI は先頭のコミットで走るため、途中のコミットは先頭の実行で確かめたことになります。
+- 出力の最初に範囲の両端の SHA を出します。手元の `origin/*` が古いと範囲がずれるため、流す前に `git fetch origin` します。
+- 終了コード: 0 は先頭のコミットの CI が通っている（push の実行のうち最も新しいものの最後の試行が success。手動の実行（`it_forks` の比べなど）は表に出すだけで判定に使わない）、1 は通っていない（push の実行が無いを含む）、2 は走っている最中（終わるのを待って流し直す）、3 は道具の誤り（gh が無い・範囲のコミットが見つからないなど）。前のコミットの失敗は、先頭が通っていれば終了コードを変えず、表とまとめに出します。
+- 取り込みの直前（Build and Test の後に記録のコミットを積んだ後も）に流し直し、取り込む `develop` の先頭までが通っていることを確かめます。
+- 失敗した試行のログは、GitHub の保存の期限（既定 90 日）を過ぎると読めません（「ログ: 読めない」と出る）。
 
 ## ビルドした WAR での画面の確認（E2E）
 

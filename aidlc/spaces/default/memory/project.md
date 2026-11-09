@@ -128,7 +128,7 @@
 <!-- Format: ALWAYS [behavior] (affirmed [date]) -->
 <!-- Example: ALWAYS use Result<T,E> for fallible operations in service layer (affirmed 2026-05-17) -->
 
-- ALWAYS 統合前に、フォーマット・リンタ・ビルド・テスト（結合テストとバックエンドのカバレッジの下限の判定を除く）・秘密情報の検出・依存関係の脆弱性検査（重大度 High 以上）が通っていることを `./gradlew verifyQuick` で確認し、全テスト（結合テストを含む）とバックエンドのカバレッジの下限の判定は、全件の `./gradlew verify` を流す場面（Build and Test・リリースの前・`packagesJudgedByTotal` のパッケージに手を入れる Bolt・Dependabot の知らせの取り込み。`team.md` の Way of Working）と CI で確認する (affirmed 2026-09-22)（2026-11-08 Intent 261107-verify-quick-local で書き換え）
+- ALWAYS 統合前に、フォーマット・リンタ・ビルド・テスト（結合テストとバックエンドのカバレッジの下限の判定を除く）・秘密情報の検出・依存関係の脆弱性検査（重大度 High 以上）が通っていることを `./gradlew verifyQuick` で確認し、全テスト（結合テストを含む）とバックエンドのカバレッジの下限の判定は、全件の `./gradlew verify` を流す場面（Build and Test・リリースの前・Dependabot の知らせの取り込み。`team.md` の Way of Working）と CI で確認する (affirmed 2026-09-22)（2026-11-08 Intent 261107-verify-quick-local で書き換え）（2026-11-09 Intent 261108-ci-checks-release で書き換え。`packagesJudgedByTotal` の場面を外した）
 - ALWAYS 認証・認可・監査ログに関わる変更には、失敗の場合（拒否・ロック・無効なトークンなど）のテストを含める (affirmed 2026-09-22)
 - ALWAYS 不具合を修正するときは、その不具合を再現するテストを同じコミットに含める (affirmed 2026-09-22)
 - ALWAYS サブモジュールの固定先の更新は、承認を得た専用のコミットで行い、更新前後のコミットハッシュを記録する (affirmed 2026-09-22)
