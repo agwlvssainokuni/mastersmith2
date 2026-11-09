@@ -155,7 +155,9 @@ class UserRowLockRepositoryIT {
         try (RowLockHolder holder = RowLockHolder.hold(TestDatabase.url(tempDir), HOLD_USER, admin2)) {
             assertThat(holder.lockedRows()).isEqualTo(1);
             locking = executor.submit(() -> lockAdminRows(target));
-            H2SessionWaits.awaitExecuting(
+            // 文が admin2 の排他を待って止まるまで待つ（実行中になっただけでは、まだ admin1 を取っていないことがある。
+            // 結合テストを並べた CI で落ちたため、Intent 261108-ci-checks-release で awaitExecuting から替えた）。
+            H2SessionWaits.awaitBlocked(
                     TestDatabase.url(tempDir), "%from users%for update%", Duration.ofSeconds(2), locking::isDone);
 
             // admin2 で待っている間、それより小さい ID の行は排他され、大きい ID の行はまだ排他されていない。

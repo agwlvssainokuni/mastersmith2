@@ -44,6 +44,9 @@ public final class H2SessionWaits {
     private static final String EXECUTING =
             "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SESSIONS" + " WHERE LOWER(EXECUTING_STATEMENT) LIKE LOWER(?)";
 
+    private static final String BLOCKED = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.SESSIONS"
+            + " WHERE LOWER(EXECUTING_STATEMENT) LIKE LOWER(?) AND BLOCKER_ID IS NOT NULL";
+
     private H2SessionWaits() {}
 
     /**
@@ -79,6 +82,43 @@ public final class H2SessionWaits {
             }
         }
         throw new AssertionError("上限の時間 " + timeout + " のうちに文が実行中にならなかった（絞り込み: " + statementPattern + "）");
+    }
+
+    /**
+     * 絞り込みに合う文が、ほかのセッションの排他を待って止まるまで（{@code BLOCKER_ID} が入るまで）、上限の時間つきで待つ。
+     *
+     * <p>{@link #awaitExecuting} は文が実行中になった時点で戻るため、1つの文が行を順に排他していく途中（まだ前の行を取って
+     * いない間）にも戻りうる。こちらは、その文が排他を持たれた行に着いて待ちに入った後に戻るため、それより前の行の排他は
+     * 取り終えている（Intent 261108-ci-checks-release で、結合テストを並べた CI で {@code UserRowLockRepositoryIT} が
+     * 落ちたのを受けて足した）。
+     *
+     * @param url 接続の URL（{@code TestDatabase.url(dir)} の値）
+     * @param statementPattern 実行中の文の絞り込み（{@code LIKE} の型。大文字・小文字をそろえて比べる）
+     * @param timeout 上限の時間
+     * @param waiterDone 待っている側が終わったかの判定（例: {@code future::isDone}）
+     * @throws SQLException セッションの一覧を読めなかったとき
+     */
+    public static void awaitBlocked(String url, String statementPattern, Duration timeout, BooleanSupplier waiterDone)
+            throws SQLException {
+        Objects.requireNonNull(url, "url");
+        Objects.requireNonNull(statementPattern, "statementPattern");
+        Objects.requireNonNull(timeout, "timeout");
+        Objects.requireNonNull(waiterDone, "waiterDone");
+        long deadline = System.nanoTime() + timeout.toNanos();
+        try (Connection observer = DriverManager.getConnection(url, USER, PASSWORD);
+                PreparedStatement blocked = observer.prepareStatement(BLOCKED)) {
+            blocked.setString(1, statementPattern);
+            while (System.nanoTime() < deadline) {
+                if (waiterDone.getAsBoolean()) {
+                    throw new AssertionError("待っている側が待ちに入らずに終わった（絞り込み: " + statementPattern + "）");
+                }
+                if (countExecuting(blocked) > 0) {
+                    return;
+                }
+                Thread.onSpinWait();
+            }
+        }
+        throw new AssertionError("上限の時間 " + timeout + " のうちに文が排他を待って止まらなかった（絞り込み: " + statementPattern + "）");
     }
 
     private static int countExecuting(PreparedStatement executing) throws SQLException {
