@@ -5802,3 +5802,239 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-10T14:45:52Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-10T14:45:56Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q1, Q2
+**Options**: Q1: A 行っていない / B 行った / C 覚えていない; Q2: A 順 6〜8 を進める / B まだ進めない
+**Question Id**: e0821a33
+**Question Type**: stage-question
+**Question Chat**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question Shows**: sha256:c27a9ab679674f2902f131376a7d44e8302d5fdd1d9adf03d40f5ae0f0b4329b
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-10T14:53:45Z
+**Event**: HUMAN_TURN
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A (Recommended)"]
+**Message Id**: 2998b5e7
+**Open Questions**: 8134b9af, e0821a33
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md","entries":{"配備の前の確かめの結果（順 1〜4）":"3b52aa39fed632fd","Q1":"669572871e6b4e1f","Q2":"a8988ac683d8366c","Sources":"8e39035c725fbb9c"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-10T14:53:45Z
+**Event**: QUESTION_REPLIED
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question**: [リリースの担当] Q1. 前の配備（2026-11-07）の後に、初期管理者のパスワードを画面で変えた・利用を止めた・管理者の印を外した、のどれかを行いましたか？（行っていると起動のときに救済が働き、監査に残ります。複写の数えで裏付けます）
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-10T14:53:45Z
+**Event**: QUESTION_REPLIED
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question**: [リリースの担当] Q2. 内部DB を複写して台本 A3 で数え（.env を読む 1 回目）、アプリのコンテナを新しく作って起動し、健全性を確かめます（順 6〜8）。進めてよいですか？ 推奨は A です。配備の前の確かめがすべて通り、戻し先のタグも付けたからです。
+**Reply**: A (Recommended)
+**Options**: ["A (Recommended)","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-10T14:53:48Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q1: A; Q2: A
+**Person Reply**: A\nA (Recommended)
+**Message Id**: 2998b5e7
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T14:53:52Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T14:53:54Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T14:55:28Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-10T14:55:32Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q3 スモークテストの S3 の結果
+**Options**: A すべて通った / B 通らない画面があった
+**Question Id**: 752abfe5
+**Question Type**: stage-question
+**Question Chat**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question Shows**: sha256:cb477af124be16c90b5945719a119daa856c6903846ef80f5f55b78898e88d7c
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-10T14:55:41Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a3bbf512a48f35949
+**Message**: A すべて通った。ログイン1回、ログアウトなし
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-10T14:59:42Z
+**Event**: HUMAN_TURN
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Origin**: person
+**Source**: typed
+**Message Id**: 02efdb15
+**Open Questions**: 8134b9af, e0821a33, 752abfe5
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md","entries":{"配備の前の確かめの結果（順 1〜4）":"3b52aa39fed632fd","Q1":"669572871e6b4e1f","Q2":"a8988ac683d8366c","Q3":"b3981c7dabd60801","Sources":"8e39035c725fbb9c"}}
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-10T14:59:46Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q3: A（login 1, logout 1）
+**Person Reply**: A, login 1, logout 1
+**Message Id**: 02efdb15
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T14:59:49Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T15:00:38Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-10T15:00:39Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q4 古いイメージ pre-tz-options-perf の片付け
+**Options**: A 消す / B 消さない
+**Question Id**: 674e08f1
+**Question Type**: stage-question
+**Question Chat**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question Shows**: sha256:cad93e0faeef4652ed46fe5ca33a6876d1ac533f9cab46dd9511eea1ca33779d
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-10T15:00:48Z
+**Event**: HUMAN_TURN
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Origin**: person
+**Source**: picker
+**Picked**: ["A (Recommended)"]
+**Message Id**: d95c0c6c
+**Open Questions**: 8134b9af, e0821a33, 752abfe5, 674e08f1
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md","entries":{"配備の前の確かめの結果（順 1〜4）":"3b52aa39fed632fd","Q1":"669572871e6b4e1f","Q2":"a8988ac683d8366c","Q3":"b3981c7dabd60801","Q4":"fdc3008be86d61b1","Sources":"8e39035c725fbb9c"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-10T15:00:49Z
+**Event**: QUESTION_REPLIED
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question**: [リリースの担当] Q4. 古いイメージ mastersmith:pre-tz-options-perf（ffd2b8380460、261101 の版、使うコンテナ 0 件）を docker rmi で消してよいですか？ 推奨は A です。戻し先（4ee5fb45593e）は残り、さらに前の版は main の履歴から作り直せるからです。
+**Reply**: A (Recommended)
+**Options**: ["A (Recommended)","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-10T15:00:54Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q4: A
+**Person Reply**: A (Recommended)
+**Message Id**: d95c0c6c
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-10T15:00:57Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-10T15:01:32Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/deployment-log.md
+**Context**: operation > deployment-execution > deployment-log.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-10T15:01:45Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/health-check-report.md
+**Context**: operation > deployment-execution > health-check-report.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-10T15:01:57Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-execution/smoke-test-results.md
+**Context**: operation > deployment-execution > smoke-test-results.md
+
+---
