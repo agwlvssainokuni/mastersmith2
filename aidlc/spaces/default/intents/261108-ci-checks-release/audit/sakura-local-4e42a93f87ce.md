@@ -5516,3 +5516,289 @@
 **Context**: operation > deployment-pipeline > rollback-runbook.md
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:18Z
+**Event**: SENSOR_FIRED
+**Fire id**: b9d9ff9e
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:18Z
+**Event**: SENSOR_PASSED
+**Fire id**: b9d9ff9e
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 78
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:18Z
+**Event**: SENSOR_FIRED
+**Fire id**: baf64a15
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: baf64a15
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 72
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 97f44c51
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: 97f44c51
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 73
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4b118557
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4b118557
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: dec6934a
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_PASSED
+**Fire id**: dec6934a
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:19Z
+**Event**: SENSOR_FIRED
+**Fire id**: c9fd5eaf
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: c9fd5eaf
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 70
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1f8fb2ad
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-strategy.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1f8fb2ad
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-strategy.md
+**Duration ms**: 72
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0e90aeb3
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/rollback-runbook.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0e90aeb3
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/rollback-runbook.md
+**Duration ms**: 69
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: a36ae82f
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: a36ae82f
+**Sensor ID**: required-sections
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Duration ms**: 72
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_FIRED
+**Fire id**: 1c0292a6
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: SENSOR_PASSED
+**Fire id**: 1c0292a6
+**Sensor ID**: upstream-coverage
+**Stage slug**: deployment-pipeline
+**Output path**: aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md
+**Duration ms**: 72
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-10T14:41:20Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: deployment-pipeline
+**Next Stage**: deployment-execution
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md=passed; required-sections@aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-strategy.md=passed; required-sections@aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/rollback-runbook.md=passed; required-sections@aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md=passed; upstream-coverage@aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/cd-config.md=passed
+**Open Decisions**: 0
+**Question Id**: 390a5feb
+**Question Type**: gate
+**Question Chat**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question Shows**: sha256:1ccf1826ccd95e6826e183fb96e16669cb07f315a0e3bd6e18ff2daf3dbab091
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-10T14:43:45Z
+**Event**: HUMAN_TURN
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: a2a0e788
+**Open Questions**: 8134b9af, 4cccc995, 390a5feb
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261108-ci-checks-release/operation/deployment-pipeline/deployment-pipeline-questions.md","entries":{"調べて分かったこと（判断の前提）":"d6765f50c9b12bf1","決まっていること（質問にしない）":"60c45e78b23a8ea6","Q1":"e587c4472cde1fb9","Q2":"e4cda7ca06826c8f","Q3":"9e411fe9d8409de7","Sources":"cfaf5bcc73374003"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-10T14:43:46Z
+**Event**: QUESTION_REPLIED
+**Session**: b1c9d8c4-4e57-453c-95e6-462f67eac3a7
+**Question**: Deployment Pipeline ができました。どう進めますか？
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-10T14:43:49Z
+**Event**: GATE_APPROVED
+**Stage**: deployment-pipeline
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: a2a0e788
+**Brief Digest**: none
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-10T14:43:49Z
+**Event**: STAGE_COMPLETED
+**Stage**: deployment-pipeline
+**Validation Basis**: {"graphContract":"sha256:df6962deab365ec2f79f186c672b0f382b3fff1ebf396ae0771425695c8f11eb","inputs":[{"artifact":"ci-config","contentHash":"sha256:ee23a206462cdd49993b598ac81b22166d2a9d70afd7f550fded874beeeb682d","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:01279b415e9334fae3a62be48d0bde6adee92bb1c343aa909f112ab53a308e79"},{"artifact":"cicd-pipeline","contentHash":"sha256:e15eb0622d8315fae21a663314ad957430dfba96103212d04ecc3a1183e31a89","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:09a919e8f38728533383b86e18d75eb1ee5c5186c0c4d3222cd57c72c3d2ffe9"},{"artifact":"infrastructure-specification","contentHash":"sha256:7500f1e61147ffd8ce3eec431b3e3d99a546962c882b91f85432b628fe1fb9ae","instanceCount":1,"presentCount":0,"producer":"infrastructure-design","required":true,"structureHash":"sha256:ed286d4e0abcb11023846dcebb8f61f8f086204f7a064fcdc83c6fa4a1d41205"},{"artifact":"quality-gates","contentHash":"sha256:889d4ca192995d7bd2cb90469325e489f2988d350112c5447203f176636c0d31","instanceCount":1,"presentCount":0,"producer":"ci-pipeline","required":true,"structureHash":"sha256:1f895ef0ab9a8acdff390236b39eff91d42124cffcadee6f9be8d83cf9a434c9"}],"outputs":[{"artifact":"cd-config","contentHash":"sha256:a149461164de6fb80cd7502455e705f73ff30abc4e0fff9a7a24218423a1fcf1","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:d382c5df8621bf779ab765327d2e850cd57ae26133daa9a32b5044508f0875c6"},{"artifact":"deployment-pipeline-questions","contentHash":"sha256:208f6d0a26e641f50f8b798712ca5b174fd1605ae943e5672e06239eade17352","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:618f46fa5d1f58d6a3c5841fac3e3d4b1abfd785ee742650f9c41b22bc1003a6"},{"artifact":"deployment-strategy","contentHash":"sha256:739c95003e371ead6c2e8c7ca00cfba8717d5dc49d29d57f03e6efaeb4b80ed5","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:e583eefd52b505fb1dbafb67614e2b537ce7782d53ef93b4f41898b25d33d594"},{"artifact":"rollback-runbook","contentHash":"sha256:faccc52039ba1f5d5006db6720e4344042b0ef1b9d49485e4700ca8b35607472","instanceCount":1,"presentCount":1,"producer":"deployment-pipeline","required":true,"structureHash":"sha256:bdee53d437abb90cf43638d7137c80bfd819961674219114adaf780dc536762f"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Deployment Pipeline approved by gate
+**Tokens In**: 178
+**Tokens Out**: 58570
+**Cache Read**: 39403342
+**Cache Write**: 451643
+**Cost USD**: 12.67
+**By Model**: opus-5-5=12.67
+**By Agent**: main=12.67
+**Tokens By Model**: opus-5-5=178/58.6k/39.4M/451.6k
+**Tokens By Agent**: main=178/58.6k/39.4M/451.6k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-10T14:43:49Z
+**Event**: STAGE_STARTED
+**Stage**: deployment-execution
+**Agent**: aidlc-pipeline-deploy-agent
+**Answer Mode**: guide (reused from requirements-analysis)
+
+---
