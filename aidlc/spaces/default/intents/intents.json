@@ -170,7 +170,7 @@
     "slug": "ci-checks-release",
     "dirName": "261108-ci-checks-release",
     "scope": "bugfix",
-    "status": "in-flight",
+    "status": "complete",
     "request": "35015cbb"
   }
 ]
