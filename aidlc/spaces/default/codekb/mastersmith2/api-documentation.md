@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された CI の要約の台本と規模を数える台本の呼び方を足し、CI の行を今の形に直した（K-127）。
+> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan でも HTTP の口は読み直していない（`common/health/` の本体だけ読んだ）。「ビルドと検査の口」の節に、CI の `-PitForks`・`resolveAndLockAll`・ヘルスチェックの確かめの口の表を足した。
+>
+> 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された CI の要約の台本と規模を数える台本の呼び方を足し、CI の行を今の形に直した（K-127）。
 >
 > 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された `verifyQuick`・`-PitTests`・`-PitForks`・`jacocoQuickReport`・回帰の台本と、CI の口を足した（K-119・K-122）。
 >
@@ -122,12 +124,23 @@
 | CI の要約 | `node scripts/ci-summary.mjs [--base <commit>] [--backend-reports <dir>] [--frontend-coverage <dir>]`（リポジトリのルートで） | 規模 → バックエンドのテストの件数 → カバレッジを `$GITHUB_STEP_SUMMARY`（無ければ標準出力）に書く。欄が作れなくても終了コード 0 | `scripts/ci-summary.mjs` |
 | 規模を数える | `node scripts/program-size.mjs [--base <commit>] [<数える場所>]` | git が管理するファイルを分類して cloc で数え、Markdown を標準出力に出す。git・cloc が無ければ終了コード 1 | `scripts/program-size.mjs` |
 
+2026-11-11（記録のコミット `7f36d8a`）に確かめた口（上の表の CI の行の「引数なしで流す」・`-PitForks` の行の「CI は付けない」は古い）:
+
+| 口 | 呼び方 | 中身 | 持ち主 |
+|---|---|---|---|
+| CI | `develop` への push・`v*` のタグ・手動（`workflow_dispatch`、入力 `it_forks`） | ジョブ `verify` が `./gradlew verify -PitForks="$IT_FORKS"` を流す。`IT_FORKS` は入力 `it_forks`、無ければ `IT_FORKS_DEFAULT`（3）。1〜8 の外は手順が止まる。ほかの手順は 2026-11-09 と同じ | `.github/workflows/ci.yml` 43・98〜104 行（`architecture.md` の K-140） |
+| CI を N を変えて流す | `gh workflow run ci.yml --ref <ブランチ> -f it_forks=<N>` | 手動の実行で並べる JVM の数を替える | `docs/verification.md` 83 行 |
+| 結合テストを並べる | `-PitForks=<N>` | `maxParallelForks` を N にする。1 以上の整数でなければ失敗（上限は Gradle の側に無い） | `backend/build.gradle.kts` 166〜171・196〜198 行 |
+| 依存の固定の更新 | `./gradlew :backend:resolveAndLockAll --write-locks` | すべての構成を解決して `backend/gradle.lockfile` を書き直す（`--write-locks` が無いと失敗） | `backend/build.gradle.kts` 516〜527 行 |
+| ヘルスチェック | `GET /actuator/health`（ログインなし） | 内部DB の確かめは `TimeBoundedDbHealthIndicator`（`mastersmith.health.db-timeout`、既定 2s）。応答は状態だけ。前の確かめが終わっていなければ待たずに DOWN（503） | `common/health/`（`component-inventory.md` の `common-health`） |
+
 ## API を足すときの決まり
 
 新しい口には同じ変更で `@ApiAccess` を付ける。`ADMIN` は `/api/admin` の下だけ。テストの `ApiAccessArchitectureTest` と `ApiAccessConsistencyIT` が分類の網羅を確かめる。`team.md` の「役割・権限の機能」「業務データの機能」の必須のテスト（API ごとの 401・403・200 など）が当たる（前回の記録。今回は読み直していない）。
 
 ## Sources
 
+- 2026-11-11: `.github/workflows/ci.yml`・`backend/build.gradle.kts`・`backend/src/main/java/cherry/mastersmith/common/health/`（どれも全文）、`docs/verification.md` 79〜95 行、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`.github/workflows/ci.yml`・`docs/verification.md`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`.github/workflows/ci.yml`、流し読みの `docs/verification.md`（開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`）。

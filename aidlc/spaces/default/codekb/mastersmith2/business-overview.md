@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-09、Intent `261108-ci-checks-release`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `4fe8e79`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`（4 ファイル）・`frontend/scripts/check-license-header.mjs`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` と、`packagesJudgedByTotal` の 7 パッケージ（`access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`）の本体とテストを読み、所見 K-127〜K-137 を足した。アプリの機能（HTTP の口）は読み直していない。前回までの散文と所見の一覧は残した。
+> 2026-11-11、Intent `261110-deps-forks-review`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `7f36d8a`）で更新した。今回は版の定義と固定先（`gradle/`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`・`config/`）・`docs/verification.md` の `-PitForks` の節・`common/health/` の本体を読み、所見 K-138〜K-143 を足した。アプリの業務の作りは読み直していない（下の「何をするアプリか」「利用者と役割」は前回以前の記録による）。
+>
+> 前回の記録: 2026-11-09、Intent `261108-ci-checks-release`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `4fe8e79`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`（4 ファイル）・`frontend/scripts/check-license-header.mjs`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` と、`packagesJudgedByTotal` の 7 パッケージ（`access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`）の本体とテストを読み、所見 K-127〜K-137 を足した。アプリの機能（HTTP の口）は読み直していない。前回までの散文と所見の一覧は残した。
 >
 > 前回の記録: 2026-11-08（2回目）、Intent `261108-ci-size-coverage`（express・Minimal）の Reverse Engineering（Focused scan、記録のコミット `9fd4f7f`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`・`frontend/scripts/` の4ファイル・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md` だけを読み、所見 K-119〜K-126 を足した。アプリの機能は読み直していない。前回までの散文と所見の一覧は残した。
 >
@@ -37,11 +39,24 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 | 開発者（依頼者と AI） | 統合の前に `./gradlew verifyQuick` か全件の `./gradlew verify` を流す（使い分けは `team.md`。コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
 
-## 所見の一覧（K-62〜K-137）
+## 所見の一覧（K-62〜K-143）
 
-番号は K-61 から続く（K-62〜K-118 は前々回まで、K-119〜K-126 が前回 2026-11-08 の2回目、K-127〜K-137 が今回 2026-11-09）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-126 は前々回まで、K-127〜K-137 が前回 2026-11-09、K-138〜K-143 が今回 2026-11-11）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261108-ci-checks-release）の主題
+### 今回（Intent 261110-deps-forks-review）の主題
+
+依存の定期の見直し（Spring Boot・Jackson の上書き・opentelemetry-logback-appender の固定・H2 と `-Dh2.compactThreads=1`・コンテナのイメージのダイジェスト）、知識ベースの古い記述（`packagesJudgedByTotal` を今の仕組みとして書く箇所。前の Intent のコード生成のレビュー R-06）の更新、結合テストの並べ方 `-PitForks` の値（2 と 3）の再評価。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-138 | 依存の見直しの起点: Spring Boot 4.1.2。**Jackson の BOM の上書きは今のビルドに無い**（コミット `98ef3e51` で外れた。Jackson 3.1.7 は BOM の値）。固定は opentelemetry-logback-appender 2.28.1-alpha（OpenTelemetry 1.62.0）と networknt 3.0.6 の2つ。イメージの版とダイジェストはすべての固定先で同じ | `build-and-verify`・`container-runtime` | `technology-stack.md`（K-138・版の固定先） |
+| K-139 | `-Dh2.compactThreads=1` は `Dockerfile`・`backend/build.gradle.kts`（テストの JVM）・`frontend/playwright.config.ts`（E2E の起動）の3か所と、確かめの `H2CompactThreadsTest`。E2E の WAR の JVM に `-Duser.timezone` は見当たらない（未検証） | `build-and-verify`・`container-runtime`・`frontend-e2e` | `technology-stack.md`（K-139） |
+| K-140 | `-PitForks`: `maxParallelForks` を N にするだけ（1 以上の整数、上限なし）。CI は既定 3・入力 `it_forks` 1〜8。手元の実測は N=3 が最速。CI の上の 2 と 3 の比べの結果は記録に無い | `build-and-verify`・`backend-test-support` | `architecture.md`（K-140） |
+| K-141 | lockfile の SLF4J の2つの版（2.0.17 は SpotBugs の道具の構成だけ） | `build-and-verify` | `technology-stack.md`（K-141） |
+| K-142 | `packagesJudgedByTotal` は消え、すべてのパッケージにパッケージごとの下限（行 80%・分岐 70%）が当たる。要約の台本も一覧を読まない。知識ベースの古い行は直すか、撤去の前の記録と注した（K-131・K-135 は解消） | `build-and-verify` | `code-quality-assessment.md`（K-142）・`dependencies.md` |
+| K-143 | 古くなっている記述: `project.md` の Tech Stack の Jackson の上書きの行と「Spring Boot 4.1.1」、`dependabot.yml` の gradle の説明の「4.1.1」 | `build-and-verify` | `code-quality-assessment.md`（K-143） |
+
+### 前の Intent（261108-ci-checks-release）の主題（今回は K-131・K-132・K-135 を K-142 で更新）
 
 CI と検査の手直しとリリース。6 つの Bolt: (1) ルートの `scripts/` をライセンスヘッダー・書式・リンタの対象に足し、`docs/verification.md` の `packagesJudgedByTotal` の確かめのコマンド（R-07）を `backend/build.gradle.kts` から一覧を読む形に直す、(2) CI の `ubuntu-latest` が Ubuntu 26 に移ったことを受けて道具の版と動きを確かめ、固定するかを決める、(3) CI の job の時間（35〜39 分）の内訳を測り、分け方を決める、(4) `packagesJudgedByTotal` の 7 パッケージにテストを足して一覧から外す範囲を決める、(5) 自動化 A1〜A3 を台本にする、(6) `develop` から `main` へ fast-forward でリリースする。今回は CI・台本・検査の対象・R-07 のコマンド・7 パッケージの本体とテスト・リリースに関わる文書を読んだ。CI の時間とカバレッジは測っていない（要件の段で測る）。「未検証」の項目は要件定義・Code Generation の前に確かめる。
 
@@ -76,7 +91,7 @@ GitHub Actions の CI（`.github/workflows/ci.yml`）の実行の要約（`$GITH
 
 ### 前の Intent（261107-verify-quick-local）の主題（今回は検査の入口の範囲を読み直し、K-113・K-116 の一部を K-122 で訂正）
 
-手元の `./gradlew verify` の時間を縮める（案 3）。Bolt の統合の前は軽い入口 `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せるようにし、JaCoCo は参考値として表示する）にし、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し、`-PitForks` で手元だけ結合テストを並べて流せるようにする。画面のテスト（Vitest）を1回にする。CI は今までどおり `verify` を1本で流す。関わる決まり（`project.md` の Mandated、`team.md` の Way of Working・Testing Posture）を書き換える。今回は `verify` が何をどの順で流すか、結合テストの分け方と並列の設定、カバレッジの判定、CI、README を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
+手元の `./gradlew verify` の時間を縮める（案 3）。Bolt の統合の前は軽い入口 `verifyQuick`（結合テストとサーバーのカバレッジの判定を除き、`-PitTests` で絞った IT を流せるようにし、JaCoCo は参考値として表示する）にし、全件の `verify` は Build and Test・リリースの前と `packagesJudgedByTotal` のパッケージに手を入れる Bolt で流し（当時の決まり。一覧は Intent 261108-ci-checks-release で消え、この場面も決まりから外れた。K-142）、`-PitForks` で手元だけ結合テストを並べて流せるようにする。画面のテスト（Vitest）を1回にする。CI は今までどおり `verify` を1本で流す。関わる決まり（`project.md` の Mandated、`team.md` の Way of Working・Testing Posture）を書き換える。今回は `verify` が何をどの順で流すか、結合テストの分け方と並列の設定、カバレッジの判定、CI、README を読んだ。「未検証」の項目は要件定義・Code Generation の前に確かめる。
 
 | 番号 | 要点 | 主な部品 | 本文の場所 |
 |---|---|---|---|
@@ -182,6 +197,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-11）: `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`（読んだファイルの一覧はその Scan Coverage）。
 - 開発担当の調査（2026-11-09）: `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08 の2回目）: `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08）: `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。

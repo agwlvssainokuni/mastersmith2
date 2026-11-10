@@ -1,0 +1,1 @@
+"依存の定期更新（Spring Boot・Jackson の上書き・opentelemetry-logback-appender の固定・H2 と -Dh2.compactThreads=1・コンテナのイメージのダイジェストなどの見直し）と、知識ベース（codekb）の古い記述（packagesJudgedByTotal を現役の仕組みとして書いている箇所。Intent 261108-ci-checks-release のレビュー R-06）の Reverse Engineering での更新、結合テストの並べ方 -PitForks の値の再評価（2 と 3 でそれぞれ複数回実行し、どちらが良いかを決める）"

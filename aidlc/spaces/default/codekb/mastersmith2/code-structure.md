@@ -1,6 +1,8 @@
 # コードの構成（mastersmith2）
 
-> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、リポジトリの最上位の表の `scripts/`・`.github/` の行を今の値に直し、「CI と台本の置き場（2026-11-09）」の節と「`packagesJudgedByTotal` の 7 パッケージの置き場（2026-11-09）」の節を足した。ほかの節は前回以前の記録による。
+> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、「版と依存の定義の置き場（2026-11-11）」の節を足し、`packagesJudgedByTotal` を今の仕組みとして書いていた行（`backend/build.gradle.kts` の行の範囲・`ci-summary.mjs`・`docs/verification.md`・7 パッケージの節の見出し）を、一覧が消えた今の形に直した（K-142）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、リポジトリの最上位の表の `scripts/`・`.github/` の行を今の値に直し、「CI と台本の置き場（2026-11-09）」の節と「`packagesJudgedByTotal` の 7 パッケージの置き場（2026-11-09）」の節を足した。ほかの節は前回以前の記録による。
 >
 > 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、リポジトリの最上位の表に `scripts/` の行を足し、`build.gradle.kts` の行の数を直し、「検査とビルドの設定の置き場」の節に今の行の範囲（K-121・K-126）を足した。ほかの節は前回以前の記録による。
 >
@@ -112,7 +114,7 @@
 | 場所 | 分類 | 今の行の範囲 |
 |---|---|---|
 | `build.gradle.kts`（913 行） | Configuration | ライセンスヘッダーのひな形（27〜49 行）、外部の道具と画面の npm のタスク（63〜224 行、`requireTool` と入れ方の案内 `toolGuides` は 69〜86 行、`npmScript` は 172〜181 行、`frontendCoverage` は 217〜220 行）、perf の伏せ字の道具の検査（226〜283 行）、安全の検査（285〜417 行）、`verify` の段の表と順（419〜513 行）、`verifyQuick` と `-PitTests` の禁止（515〜566 行）、E2E の見本の PostgreSQL と `e2eTest`（568〜913 行、`-Pe2e.files` は 864〜871 行） |
-| `backend/build.gradle.kts`（546 行） | Configuration | テストの共通の設定と `test`（103〜145 行）、`-PitTests`・`-PitForks` と `integrationTest`（147〜204 行）、JaCoCo の `jacocoTestReport`（206〜240 行）、`jacocoQuickReport`（242〜296 行）、`packagesJudgedByTotal`（298〜321 行）、`jacocoTestCoverageVerification`（323〜357 行）、Spotless（359〜379 行）、SpotBugs と `spotbugsGate`（381〜452 行）、`bootWar` と WAR の中身の確かめ（454〜533 行）、`resolveAndLockAll`（535〜546 行） |
+| `backend/build.gradle.kts`（546 行） | Configuration | テストの共通の設定と `test`（103〜145 行）、`-PitTests`・`-PitForks` と `integrationTest`（147〜204 行）、JaCoCo の `jacocoTestReport`（206〜240 行）、`jacocoQuickReport`（242〜296 行）、`packagesJudgedByTotal`（298〜321 行）、`jacocoTestCoverageVerification`（323〜357 行）、Spotless（359〜379 行）、SpotBugs と `spotbugsGate`（381〜452 行）、`bootWar` と WAR の中身の確かめ（454〜533 行）、`resolveAndLockAll`（535〜546 行）。2026-11-11 の今は 527 行で、一覧 `packagesJudgedByTotal` は消え（298〜304 行は経緯のコメントだけ）、`jacocoTestCoverageVerification` は 305〜338 行、Spotless は 340〜360 行、SpotBugs は 362 行〜、`resolveAndLockAll` は 516〜527 行（K-142） |
 | `scripts/verify-graph-check.mjs` | Utility（手で流す回帰の台本） | `./gradlew` を子のプロセスで `--dry-run` だけで流し、8 項目を PASS・FAIL で出して、1つでも違えば終了コード 1。`node:child_process`・`node:fs`・`node:path`・`node:url` だけを使い、リポジトリのルートは `import.meta.url` から求める（32〜34 行） |
 | `scripts/verify-graph-baseline.txt` | Configuration（比べの元） | `./gradlew verify --dry-run` のタスクのパス 63 行（出力の順のまま） |
 | `frontend/scripts/` | Utility（検査の道具） | 6 ファイルのまま（上の表のとおり）。テストは `frontend/src/` の直下（`licenseHeaderCheck.test.ts`・`distAssetsCheck.test.ts`・`iconBinary.test.ts`・`svgCheckScope.test.ts`・`appIconAssets.test.ts`。ファイル名だけを確かめた） |
@@ -124,13 +126,15 @@
 | 場所 | 分類 | 中身 |
 |---|---|---|
 | `.github/workflows/ci.yml`（143 行） | Configuration（CI） | ジョブ `verify`（40〜120 行、10 手順）とジョブ `release`（122〜143 行） |
-| `scripts/ci-summary.mjs`（445 行） | Utility（CI の報告の台本） | JUnit の XML の数え（74〜132 行）、JaCoCo の XML の読み（136〜159 行、正規表現で読み外部の DTD を読まない）、`backend/build.gradle.kts` から下限と `packagesJudgedByTotal` を読む `parseGradleFloors`（162〜182 行）、画面の `coverage-summary.json`（282〜378 行）、引数と入口（396〜445 行。読み込むと `main()` が流れる） |
+| `scripts/ci-summary.mjs`（445 行） | Utility（CI の報告の台本） | JUnit の XML の数え（74〜132 行）、JaCoCo の XML の読み（136〜159 行、正規表現で読み外部の DTD を読まない）、`backend/build.gradle.kts` から下限を読む `parseGradleFloors`（2026-11-09 の 162〜182 行は一覧 `packagesJudgedByTotal` も読んだ。2026-11-11 の今は 468 行のファイルの 174〜196 行で、`jacocoTestCoverageVerification` の全体とパッケージごとの下限だけを読む。K-142）、画面の `coverage-summary.json`（282〜378 行）、引数と入口（396〜445 行。読み込むと `main()` が流れる） |
 | `scripts/program-size.mjs`（533 行） | Utility（規模を数える台本） | 外すものと分類の決まり（冒頭のコメントと `EXCLUDE`・`classify`、71〜165 行）、cloc の呼び出し（167〜244 行）、比べる元を `git worktree` で取り出す `countBase`（250〜298 行）、表の組み立て `renderReport`（373〜488 行）、直接流したときだけ `main()`（518〜533 行） |
 | `scripts/verify-graph-check.mjs`（238 行）・`scripts/verify-graph-baseline.txt`（63 行） | Utility（手で流す回帰の台本）・比べの元 | 2026-11-08 の2回目の記録と同じ |
 | `frontend/scripts/check-license-header.mjs`（127 行） | Utility（検査の道具） | 集める置き場は `frontend/` と `perf/`（105〜108 行）。拡張子は 39〜41 行。`collectFiles`・`checkContent`・`buildExpectedHeaders` を `export` し、直接流したときだけ `main()`（125〜127 行） |
-| `docs/verification.md`（398 行） | 文書 | 段の表（13〜24 行）、使い分け（35〜72 行）、`packagesJudgedByTotal` の確かめ（73〜81 行。R-07 は 78 行）、`-PitTests`・`-PitForks`（83〜102 行）、JaCoCo の参考値（104〜115 行）、OSV-Scanner（117〜131 行）、CI の要約（133〜176 行）、リリースの前の確かめ（178〜198 行）、E2E（200〜398 行） |
+| `docs/verification.md`（398 行。2026-11-11 の今は 406 行で、`packagesJudgedByTotal` の確かめの節は無く、7 の段の行（22 行）に「外すパッケージは無い」とある。`-PitForks` の節は 79〜95 行。K-140・K-142） | 文書 | 段の表（13〜24 行）、使い分け（35〜72 行）、`packagesJudgedByTotal` の確かめ（73〜81 行。R-07 は 78 行。2026-11-09 の時点）、`-PitTests`・`-PitForks`（83〜102 行）、JaCoCo の参考値（104〜115 行）、OSV-Scanner（117〜131 行）、CI の要約（133〜176 行）、リリースの前の確かめ（178〜198 行）、E2E（200〜398 行） |
 
-## `packagesJudgedByTotal` の 7 パッケージの置き場（2026-11-09。K-132〜K-134）
+## 前の一覧 `packagesJudgedByTotal` にあった 7 パッケージの置き場（2026-11-09。K-132〜K-134）
+
+2026-11-11 の注: 一覧は Intent `261108-ci-checks-release` で消え、この 7 パッケージにも、ほかのすべてのパッケージと同じパッケージごとの下限（行 80%・分岐 70%）が当たる（K-142）。下の表は置き場の記録として残す。今回（2026-11-11）は `common/health/` の本体だけを読み直した（2026-11-09 の後に足されたのは `TimeBoundedDbHealthIndicatorTest` の 71 行だけで、ほかの 13 ディレクトリは `git diff --stat` で変化なし）。
 
 本体は `backend/src/main/java/cherry/mastersmith/` の下、テストは `backend/src/test/java/cherry/mastersmith/` の同じパッケージ。テストとの対応と薄い所は `code-quality-assessment.md` の K-132。
 
@@ -144,7 +148,25 @@
 | `common/i18n/domain/` | `AcceptLanguageResolver`（Utility）・`DisplayLanguage`（Model） | `AcceptLanguageResolverTest` |
 | `common/web/` | `CacheControlFilter`・`RequestSizeLimitFilter`（Middleware）・`RequestBodyLimitRoute`・`RequestSizeRejection`（Model）・`RequestSizeRejectionListener`（インターフェース）・`MastersmithWebProperties`（Configuration） | `CacheControlFilterTest`・`RequestSizeLimitFilterTest`・`RequestSizeLimitRoutesTest` |
 
-- `common/error/web/` は `packagesJudgedByTotal` の外（Intent 260930-user-admin の B4 で外れた）。今回はファイル名の一覧だけを見た。
+- `common/error/web/` は 2026-11-09 の時点で既に一覧の外（Intent 260930-user-admin の B4 で外れた）。ファイル名の一覧だけを見た。
+
+## 版と依存の定義の置き場（2026-11-11。K-138〜K-140）
+
+版の値そのものと固定先の一覧は `technology-stack.md`。ここはファイルの役割だけ。
+
+| 場所 | 分類 | 中身 |
+|---|---|---|
+| `gradle/libs.versions.toml`（94 行） | Configuration（版の一覧） | `[versions]`（Java・Spring Boot・プラグインと道具・BOM の外の部品。固定の理由と外す時期はコメント）、`[libraries]`（BOM の管理の部品は版を書かない）、`[plugins]` |
+| `gradle/wrapper/gradle-wrapper.properties` | Configuration | Gradle 9.8.2 の配布の URL |
+| `settings.gradle.kts` | Configuration | 取得元を Maven Central だけ（`FAIL_ON_PROJECT_REPOS`）、`include("backend")`、`includeBuild("vendor/java-mustache-processor")` |
+| `settings-gradle.lockfile` | Configuration（lockfile） | `empty=incomingCatalogForLibs0` の1行だけ |
+| `backend/build.gradle.kts`（527 行） | Configuration | BOM と依存（45〜96 行）、テストの共通の JVM の設定（107〜133 行、`h2.compactThreads`・`user.timezone`）、`-PitTests`・`-PitForks` と `integrationTest`（147〜204 行）、カバレッジ（206〜338 行）、Spotless・SpotBugs・WAR・`resolveAndLockAll`（340〜527 行） |
+| `backend/gradle.lockfile`（260 行） | Configuration（lockfile） | 構成ごとの解決済みの版。更新は `./gradlew :backend:resolveAndLockAll --write-locks` |
+| `frontend/package.json` | Configuration | `engines`（Node 26）、npm の台本（`lint:scripts`・`format:check` はルートの `scripts/` も対象）、依存の範囲 |
+| `Dockerfile`（52 行） | Configuration（実行のイメージ） | JRE のイメージ（ダイジェストつき）、専用の利用者、WAR の写し、`ENTRYPOINT` の JVM の引数 |
+| `compose.yaml`（216 行） | Configuration（手元の実行） | `app` と、profile で起動する otel-collector・lgtm・Mailpit・対象DB の3種類（どれもダイジェストつき） |
+| `.github/dependabot.yml` | Configuration | 5 つのエコシステム、`ignore` と理由、Dependabot が見ない固定先の一覧（コメント） |
+| `.github/workflows/ci.yml`（162 行） | Configuration（CI） | `IT_FORKS_DEFAULT`・`it_forks`・道具の版と SHA-256、ジョブ `verify` と `release` |
 
 ## 日時の型の置き場（K-94〜K-99、2026-11-03）
 
@@ -203,6 +225,7 @@
 
 ## Sources
 
+- 2026-11-11: `gradle/`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`（どれも全文）、`wc -l`、`git diff --stat 4fe8e790 HEAD`、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/check-license-header.mjs`・`docs/verification.md`・7 パッケージの本体とテスト（`ls`・`wc -l`・全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/`（どれも全文、`wc -l`）、`git ls-files scripts/`、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: 開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`（ファイルの読み取り・`ls`・`find` の数・grep）。

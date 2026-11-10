@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、「CI の手順の間の依存（2026-11-09）」と「台本と一覧の読み手の依存（2026-11-09）」を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
+> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、`.github/dependabot.yml` の全文を読み直して Dependabot の `ignore` の表（K-87）を今の値に直し、`git submodule status` でサブモジュールの固定先を直し、「台本と一覧の読み手の依存」を `packagesJudgedByTotal` の撤去の後の形に書き直した（K-142）。機能の間の依存の表は読み直していない（前回以前の記録による）。
+>
+> 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、「CI の手順の間の依存（2026-11-09）」と「台本と一覧の読み手の依存（2026-11-09）」を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
 > 前回の記録: 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、「Gradle のタスクの間の依存」に `verifyQuick`・`jacocoQuickReport`・`-PitTests` のときの `integrationTest` を足し、CI の手順の間の依存を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
@@ -105,23 +107,25 @@
 - 8（cloc）は機械のイメージの apt に依る（K-128）。9（`node scripts/ci-summary.mjs`）は、3 の手順の Node、8 の cloc、1 の手順の全履歴（`--base` の `github.event.before` を `git worktree` で取り出す）、6 の手順が作る `backend/build/test-results/{test,integrationTest}/`・`backend/build/reports/jacoco/test/jacocoTestReport.xml`・`frontend/coverage/coverage-summary.json`、リポジトリの `backend/build.gradle.kts`・`frontend/vitest.config.ts` に依る。10 は 6 の手順の HTML の報告に依る（無ければ何もしない）。
 - 9 の手順の中の依存: `scripts/ci-summary.mjs` は `scripts/program-size.mjs` の `collectMeta`・`countBase`・`countSize`・`fixed`・`int`・`renderReport` を `import` する（38 行）。
 
-### 台本と一覧の読み手の依存（2026-11-09。K-131・K-135）
+### 台本と下限の読み手の依存（2026-11-11 に書き直し。K-142。前の K-131・K-135 は撤去の前の記録）
 
-`backend/build.gradle.kts` の `packagesJudgedByTotal`（313〜321 行）を読む・写すもの:
+全体の合計で判定していたパッケージの一覧 `packagesJudgedByTotal` は、Intent `261108-ci-checks-release` で消えた（`common.health` にテストを足して下限を満たし、一覧と `excludes` を消した）。今は `backend/build.gradle.kts` の `jacocoTestCoverageVerification`（305〜338 行）が、全体の合計とすべてのパッケージごとに、行 80%・分岐 70% の下限を当てる（外すパッケージは無い）。この下限を読む・写すもの:
 
-| 読み手 | 読み方 | 一覧を変えたとき |
+| 読み手 | 読み方 | 下限を変えたとき |
 |---|---|---|
-| `jacocoTestCoverageVerification`（同じファイル 340〜345 行） | `excludes = packagesJudgedByTotal` | 外したパッケージにパッケージごとの下限が当たる |
-| `scripts/ci-summary.mjs` の `parseGradleFloors`（162〜182 行） | 正規表現 `val\s+packagesJudgedByTotal\s*=\s*listOf\(([\s\S]*?)\)` | 書き方を `listOf(` 以外にすると読めず、要約の下限の列が「—」になる（CI は落ちない） |
-| `docs/verification.md` 78 行の確かめのコマンド（R-07） | 手で写した正規表現 | 手で合わせる（81 行） |
-| `team.md` の Testing Posture | 手で写した名前の一覧 | 決まりの文の書き換え（`team.md` の書き方に従う） |
+| `jacocoTestCoverageVerification` の2つの `rule`（全体と `element = "PACKAGE"`） | `minimum = "0.80"`・`"0.70"` を直に持つ | — |
+| `scripts/ci-summary.mjs` の `parseGradleFloors`（174〜196 行） | `tasks.jacocoTestCoverageVerification` の塊を、`element = "PACKAGE"` の前（全体）と後（パッケージごと）に分けて `counter`・`minimum` を読む。読めなければ例外（要約の下限の列が「—」になり、CI は落ちない） | 書き方を変えると読めなくなりうる |
+| `docs/verification.md` 22 行（7 の段の説明） | 手で写した文 | 手で合わせる |
+| `team.md` の Testing Posture | 手で写した文（「外すパッケージは無い」） | 決まりの文の書き換え（`team.md` の書き方に従う） |
+
+- 一覧の名前は、`backend/build.gradle.kts` 298〜304 行のコメント・`scripts/ci-summary.mjs` 35 行のコメント・`docs/verification.md` 22 行に、経緯としてだけ残る（ソースの `grep`。仕組みとしては使っていない）。
 
 ## サブモジュールと見送りの依存
 
 | 依存 | 今の固定 | メモ |
 |---|---|---|
-| `vendor/make-you-chic-ui` | `cae5fed185541b975dc56fb034dae3212d4c2247`（2026-11-03 の `git submodule status`。コミット `28dd694` で `cab4207` から上げた。K-105） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は `cab4207` の時点で 1 件（3112 行付近。どのパッケージかは未確認。`cae5fed` では数え直していない）。アイコンは `Icon` の 18 種だけ（K-100、`code-structure.md`）。固定先を上げるときは `team.md` の手順で増減を確かめる |
-| `vendor/java-mustache-processor` | `d61ba6dac8b4a1617ba72ee469ee0189683e42b4`（`0.1.0-6-gd61ba6d`。2026-11-03 の `git submodule status`。コミット `28dd694` で `8d44c36` から上げた。K-105） | Gradle の composite build（`settings.gradle.kts` の `includeBuild`）。版は `libs.versions.toml` 46 行の `cherry-mustache = "0.1.1"`（2026-11-03 に grep）と固定先の両方。上げるときは両方と、推移依存が lockfile と OSV-Scanner の対象に載ることを確かめ直す（`team.md`） |
+| `vendor/make-you-chic-ui` | `d112795feafe100a556915b654222df61e6034ab`（2026-11-11 の `git submodule status`、`remotes/origin/HEAD`。2026-11-03 の記録 `cae5fed` から進んでいる） | `vendor/make-you-chic-ui/package-lock.json` の `"hasInstallScript": true` は `cab4207` の時点で 1 件（3112 行付近。どのパッケージかは未確認。`cae5fed` では数え直していない）。アイコンは `Icon` の 18 種だけ（K-100、`code-structure.md`）。固定先を上げるときは `team.md` の手順で増減を確かめる |
+| `vendor/java-mustache-processor` | `d61ba6dac8b4a1617ba72ee469ee0189683e42b4`（`0.1.0-6-gd61ba6d`。2026-11-11 の `git submodule status` でも同じ。コミット `28dd694` で `8d44c36` から上げた。K-105） | Gradle の composite build（`settings.gradle.kts` の `includeBuild`）。版は `libs.versions.toml` の `cherry-mustache = "0.1.1"`（2026-11-11 に全文で確かめた）と固定先の両方。上げるときは両方と、推移依存が lockfile と OSV-Scanner の対象に載ることを確かめ直す（`team.md`） |
 | `axe-core`（npm、dev） | `^4.14.0` | 以前の `>= 4.14.0` の見送りは外れている（`dependabot.yml` 65 行のコメント） |
 
 **K-105 サブモジュールの固定先の訂正（2026-11-03）（`make-you-chic-ui`・`java-mustache-processor`）**
@@ -137,15 +141,17 @@
 - README の食い違い: `README.md` 37 行は「make-you-chic-ui の固定先は `ecb07e9`」と経緯の連なり（`edb1f94` → … → `ecb07e9`、10 段）を書くが、実際の固定先は `cab4207`。前の Intent の後に上げた記録が README に入っていない。
 - 未検証: `vendor/` の中は今回読んでいない。A2（make-you-chic-ui の lockfile の `braces` 3.0.3。前の Intent の時点で上流 `cab4207` も 3.0.3）と A3（依頼（5）: 1ページの件数の選択と横のスクロールの領域。自前の `ScrollRegion`・`PageSizeSelect` を使い続けている）は、上流のソースを読み取りの `git fetch`・`git show` で確かめてから固定先を上げる（`team.md`）。`hasInstallScript` の増減も同じ時に確かめる。frontend の lockfile にも `braces` 3.0.3 がある（`fsevents` だけが `hasInstallScript`）。
 
-**K-87 Dependabot の `ignore` の現状（2026-11-01 に全文を再読。K-66・K-72 の後継）**
+**K-87 Dependabot の `ignore` の現状（2026-11-01 に全文を再読し、2026-11-11 にもう一度全文を読んで直した。K-66・K-72 の後継）**
 
 | エコシステム | `ignore` | 理由（コメント） | 外す時期（コメント） |
 |---|---|---|---|
-| gradle | `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0`（すべて） | 管理の OpenTelemetry 1.62.0 と食い違う | 管理の OpenTelemetry が 1.63 以上 |
-| gradle | `com.networknt:json-schema-validator`（すべて） | 3.0.7 以降は Jackson を 3.2 系に引き上げる | 管理の Jackson が 3.2 系以上 |
-| npm | `typescript` の大きな版 | `@typescript-eslint/*` の peer が `<6.1.0` | `@typescript-eslint/*` が TypeScript 7 を受け付けたとき |
-| docker | `eclipse-temurin` の大きな版 | JDK をビルド・CI とそろえる | JDK をそろえて上げるとき |
-| docker-compose | `otel/opentelemetry-collector` の `0.163.2-386` | linux/386 だけのイメージ | タグの付け方が変わったとき。collector を上げると新しい `-386` の提案が来うる |
+| gradle | `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0`（すべて） | 管理の OpenTelemetry 1.62.0 と食い違う。外部エクスポートが既定で無効の `./gradlew verify` では確かめられない。4.1.2 でも 1.62.0 のため残した（Intent 261025・261101 の見直し） | 管理の OpenTelemetry が 1.63 以上（外部エクスポートを有効にして確かめる） |
+| gradle | `com.networknt:json-schema-validator`（すべて） | 3.0.7 以降は Jackson を 3.2 系に引き上げる。最新 3.0.8 は Jackson 3.2.1 を求める（2026-11-01 のコメント） | Spring Boot を上げて管理の Jackson が 3.2 系以上 |
+| npm | `typescript` の大きな版 | `@typescript-eslint/*` の peer が `>=4.8.4 <6.1.0`。2026-11-01 に TypeScript 7.0.2 を試して解決できず | `@typescript-eslint/*` が TypeScript 7 を受け付けたとき |
+| docker | `eclipse-temurin` の大きな版 | JDK をビルド・CI とそろえる（`./gradlew verify` はイメージを作らない） | JDK をそろえて上げるとき |
+| docker-compose | `otel/opentelemetry-collector` の `0.164.0-386`（2026-11-11） | linux/386 だけのイメージ | タグの付け方が変わったとき、または通常のタグが更新の候補に戻ったとき。collector を上げると新しい `-386` の提案が来うる |
+
+- 2026-11-11 の気づき（K-141 の続き、動きには効かない）: gradle の `ignore` の説明の最初の段落は「Spring Boot 4.1.1 の OpenTelemetry 1.62」と古い版の名前のままで、続く段落が 4.1.2 で見直した経緯を書く。
 
 - gradle の項は `exclude-paths: vendor/**`。github-actions の項に `ignore` は無い。Jackson の `ignore` は無い（上書きも無い。`technology-stack.md` の K-85）。
 - `axe-core` は `ignore` に入れず、更新は版と lockfile だけでも E2E の全件と vitest-axe を流す例外の手順（`dependabot.yml` 60〜65 行のコメント）。
@@ -178,6 +184,7 @@
 
 ## Sources
 
+- 2026-11-11: `.github/dependabot.yml`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`settings.gradle.kts`（どれも全文）、`scripts/ci-summary.mjs`（35 行と 174〜196 行）、`docs/verification.md` 22 行、`git submodule status`、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文）・`backend/build.gradle.kts`（300〜357 行）・`docs/verification.md`（73〜81 行）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08: `build.gradle.kts`・`backend/build.gradle.kts`・`settings.gradle.kts`（タスクの依存）、`README.md` 40 行、開発担当の調査 `aidlc/spaces/default/intents/261107-verify-quick-local/inception/reverse-engineering/developer-scan.md`。

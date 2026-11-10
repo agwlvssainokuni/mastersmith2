@@ -3,6 +3,7 @@
 ## 読み方
 
 - 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 49 個（2026-11-06 に `frontend-shared-format` を足した。それまでは 48 個。2026-11-08 は増減なし）。
+- 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、`build-and-verify`（版の定義・Dependabot・`-PitForks`。K-138〜K-143）・`container-runtime`（`Dockerfile`・`compose.yaml` のイメージと JVM の引数。K-138・K-139）・`common-health`（本体の読み直し）の記述に今回の読みを足し、`packagesJudgedByTotal` に「残る」と書いていた部品の行を今の形（一覧は消え、すべてのパッケージにパッケージごとの下限が当たる。K-142）に直した。今回の `analyzed.components` はこの3つ。ID は 49 個のまま（増減なし）。2026-11-09 に深く読んだ `access`・`audit`・`common-error`・`common-i18n`・`common-web` は、今回は `git diff --stat` で変化が無いことだけを確かめた（流し読みの扱い）。ほかの部品の記述は前回以前のまま。
 - 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、`build-and-verify`（CI・ルートの `scripts/`・R-07。K-127〜K-131・K-135〜K-137）と、`packagesJudgedByTotal` の 7 パッケージを持つ `access`・`audit`・`common-error`・`common-health`・`common-i18n`・`common-web`（K-132〜K-134）の記述に今回の読みを足した。今回の `analyzed.components` はこの 7 つ。`common-health` 以外は部品の一部（7 パッケージに当たるパッケージ）だけを深く読んだ（各部品の行に書いた）。ID は 49 個のまま（増減なし）。ほかの部品の記述は前回以前のまま。
 - 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、`build-and-verify` の記述に今回の読み（K-119〜K-126）を足し、場所にルートの `scripts/` を足した。今回の `analyzed.components` はこの1つ。ID は 49 個のまま（増減なし。`scripts/` は検査の道具のため `build-and-verify` に含めた）。ほかの部品の記述は前回以前のまま。
 - 2026-11-08（記録のコミット `16f46f1`）の Intent `261107-verify-quick-local` の Focused scan で、`build-and-verify` の記述に今回の読み（K-111〜K-118）を足した。今回の `analyzed.components` はこの1つ。`backend-test-support` は結合テストの数と Testcontainers の前提（`ContainerRuntimeCheck`・`TargetDbTestDatabase`）を流し読みしただけのため、`analyzed.components` に入れていない（一行足した）。ほかの部品の記述は前回以前のまま。
@@ -26,7 +27,7 @@
 
 ### common-error
 
-- 場所: `common/error/{domain,service,web}` ／ 責務: `ProblemType`（code・状態コード）、`BusinessException`、`@RestControllerAdvice` の Problem Details。`common.error.domain`・`common.error.service` は `packagesJudgedByTotal` に残る（`team.md`）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `common/error/{domain,service,web}` ／ 責務: `ProblemType`（code・状態コード）、`BusinessException`、`@RestControllerAdvice` の Problem Details。`common.error.domain`・`common.error.service` にも、ほかと同じパッケージごとの下限が当たる（前の一覧 `packagesJudgedByTotal` は Intent 261108-ci-checks-release で消えた。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-09 に深く読んだもの: `common/error/domain/`（5 ファイル）と `common/error/service/`（2 ファイル）とそのテスト。`common/error/web/` はファイル名の一覧だけ。`ProblemTypeRegistry` に辿れない分岐が2つある（K-133、本文は `code-quality-assessment.md`）。薄い所は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み。分岐の下限に届かないと `src/main` の変更になりうる） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### common-persistence
@@ -39,17 +40,18 @@
 
 ### common-web
 
-- 場所: `common/web/`・`common/paging/` ／ 責務: 本文の大きさの上限、一覧のページ送りの共通の計算。`common.web` は `packagesJudgedByTotal` に残る。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `common/web/`・`common/paging/` ／ 責務: 本文の大きさの上限、一覧のページ送りの共通の計算。`common.web` にも、ほかと同じパッケージごとの下限が当たる（一覧は消えた。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-09 に深く読んだもの: `common/web/`（6 ファイル: `CacheControlFilter`・`RequestSizeLimitFilter`（内側の `BufferedBodyRequest`）・`RequestBodyLimitRoute`・`RequestSizeRejection`・`RequestSizeRejectionListener`・`MastersmithWebProperties`）とそのテスト3つ。`common/paging/` は読んでいない。薄い所（`BufferedBodyRequest` の `ServletInputStream` の口など）は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### common-health
 
-- 場所: `common/health/` ／ 責務: ヘルスチェック。`packagesJudgedByTotal` に残る。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `common/health/` ／ 責務: ヘルスチェック。ほかと同じパッケージごとの下限が当たる（Intent 261108-ci-checks-release でテストを足して下限を満たし、一覧ごと消した。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-11 に深く読んだもの: 本体 `common/health/` の2ファイルの全文。`TimeBoundedDbHealthIndicator` は `HealthIndicator`・`DisposableBean`。専用のデーモンのスレッド1本（`health-db-check`）で接続を借りて `SELECT 1` を流し（問い合わせの時間の上限は秒に切り上げ、最小 1 秒）、呼び出し側は `mastersmith.health.db-timeout`（`HealthProperties`、既定 2s）だけ待つ。前の確かめが終わっていなければ `AtomicBoolean` で新しく始めず DOWN。時間切れ・失敗・`submit` の断り・割り込みはどれも詳細なしの DOWN で、WARN のログはキーと値（`reason`・`errorType`・`timeoutMillis`）だけ。テストは名前と `@DisplayName` の一覧だけ（`TimeBoundedDbHealthIndicatorTest` 8 件・`HealthEndpointIT` 5 件。前の Intent で `submit` の断りと割り込みのテストが足された）。 ／ 状態（2026-11-11）: healthy ／ 読みの深さ: 深い（一部。本体だけ。今回の `analyzed.components`）
 - 2026-11-09 に深く読んだもの: `common/health/` の全部（`TimeBoundedDbHealthIndicator`: 内部DB の `SELECT 1` を1本のスレッドで流し、時間の上限（`mastersmith.health.db-timeout`、既定 2s）で切り、前の確かめが走っている間は新しく始めず DOWN を返す。`HealthProperties` は計測の外）とそのテスト2つ。`backend/build.gradle.kts` のコメントは、U1 の実測で行 79.2% だったとする。薄い所（`submit` が断られたとき・割り込み・`destroy()`）は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み） ／ 読みの深さ: 深い（今回の `analyzed.components`）
 
 ### common-i18n
 
-- 場所: `common/i18n/` ／ 責務: 表示言語の解決（日英）。`common.i18n.domain` は `packagesJudgedByTotal` に残る。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `common/i18n/` ／ 責務: 表示言語の解決（日英）。`common.i18n.domain` にも、ほかと同じパッケージごとの下限が当たる（一覧は消えた。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-09 に深く読んだもの: `common/i18n/domain/`（`AcceptLanguageResolver`: `Accept-Language` を最大 50 件まで読み、品質値の順で `ja`・`en` を選び、既定は日本語。`DisplayLanguage`）とそのテスト。`common/i18n/` の直下はこの `domain/` だけ。薄い所は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### common-observability
@@ -243,23 +245,23 @@
 
 ### frontend-e2e
 
-- 場所: `frontend/e2e/`（`*.e2e.ts` 22 本、010〜195、と `support/`。2026-11-01 に数えた） ／ 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。業務データは 180（流れ）と 185（アクセシビリティ）、参照ピッカーは 190（流れ）と 195（アクセシビリティ）。axe は `support/axe.ts` が `axe-core/axe.min.js` を読み、WCAG 2.0・2.1 の A・AA の規則で検査する。起動の引数に `-Dh2.compactThreads=1`（`playwright.config.ts` 137 行、K-85）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `frontend/e2e/`（`*.e2e.ts` 22 本、010〜195、と `support/`。2026-11-01 に数えた） ／ 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。業務データは 180（流れ）と 185（アクセシビリティ）、参照ピッカーは 190（流れ）と 195（アクセシビリティ）。axe は `support/axe.ts` が `axe-core/axe.min.js` を読み、WCAG 2.0・2.1 の A・AA の規則で検査する。起動の引数に `-Dh2.compactThreads=1`（`playwright.config.ts` 137 行、K-85。2026-11-11 の `grep` では 140 行、K-139）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ### make-you-chic-ui
 
-- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `cae5fed185541b975dc56fb034dae3212d4c2247`。2026-11-03 の `git submodule status`。2026-11-01 の記録 `cab4207` から進んでいる。K-105）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `cab4207` の時点で `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。2026-11-03 は `packages/make-you-chic-ui/src/components/Icon/registry.ts`（18 種）と `AppShell/{AppShell,Topbar,Sidebar}.tsx` の props だけを読み取りで見た（`SidebarNavItem.icon` は `IconName`、AppShell の差し込み口は `topbarStart`・`topbarEnd`、ロゴの口は無い。K-100・K-102）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `vendor/make-you-chic-ui/`（Git サブモジュール、固定先 `d112795feafe100a556915b654222df61e6034ab`。2026-11-11 の `git submodule status`。2026-11-03 の記録 `cae5fed` から進んでいる）。画面からは npm の `file:` の依存。中身はこのリポジトリから変えない（`project.md` の Forbidden）。 ／ 責務: デザインシステム。今回は固定先のコミットの確認だけ。lockfile の `"hasInstallScript"` は `cab4207` の時点で `package-lock.json` に 1 件（3112 行付近、どのパッケージかは未確認）。2026-11-03 は `packages/make-you-chic-ui/src/components/Icon/registry.ts`（18 種）と `AppShell/{AppShell,Topbar,Sidebar}.tsx` の props だけを読み取りで見た（`SidebarNavItem.icon` は `IconName`、AppShell の差し込み口は `topbarStart`・`topbarEnd`、ロゴの口は無い。K-100・K-102）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ### java-mustache-processor
 
-- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03。2026-11-01 の記録 `8d44c36` から進んでいる。K-105。Gradle の composite build） ／ 責務: メールのテンプレートの Mustache のエンジン。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 場所: `vendor/java-mustache-processor/`（Git サブモジュール、固定先 `d61ba6d`、`0.1.0-6`。2026-11-03（2026-11-11 も同じ）。2026-11-01 の記録 `8d44c36` から進んでいる。K-105。Gradle の composite build） ／ 責務: メールのテンプレートの Mustache のエンジン。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 
 ## ビルド・実行環境
 
 ### build-and-verify
 
-- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
+- 場所: `settings.gradle.kts`・`build.gradle.kts`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`frontend/vitest.config.ts`・`frontend/scripts/`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（今回 2026-10-29 に深く読んだのは `backend/build.gradle.kts` の `packagesJudgedByTotal`（当時。今は消えた。K-142）・`frontend/package.json`・`.github/dependabot.yml` の全文・`.github/workflows/ci.yml` の段の名前。`gradle/libs.versions.toml`・`config/` は存在の確認だけ）
 - 責務: 1コマンドの検査 `./gradlew verify`、WAR の組み立て、依存の取得元の固定と composite build、lockfile、カバレッジの下限、Gitleaks・OSV-Scanner、Dependabot。K-66・K-72 の持ち主（版の一覧は `technology-stack.md`、Dependabot の現状は `dependencies.md`）。K-111〜K-117 の持ち主（本文は `architecture.md` と `code-quality-assessment.md`）。
-- 今回読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は現在 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
+- 今回（2026-10-29。一覧は 2026-11-09 の後に消えた。K-142）読んだもの: `backend/build.gradle.kts`（213〜221 行の `packagesJudgedByTotal` は当時 7 パッケージで `team.md` と一致。`businessdata`・`dsl`・`role`・`targetdb` は一覧に無くパッケージごとの下限が当たる）、`frontend/package.json`（i18next `^26.5.5`、react-i18next `^17.1.2`。lockfile は 26.5.10 と 17.1.8）、`.github/dependabot.yml`（K-79）、`ci.yml` の段の名前。`vitest.config.ts`・`gradle.lockfile` の版は今回読んでいない（前回の記録による）。
 - 今回（2026-11-01）読んだもの（K-81・K-84・K-85・K-87・K-90）: `settings.gradle.kts`・`build.gradle.kts`（全文。`checkToolchain` の Node 24 の強制、verify の 10 段、perf の道具の Prettier と oxlint、E2E の見本の PG の準備と片付け）・`backend/build.gradle.kts`（全文）・`gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`（9.8.2）・`backend/gradle.lockfile`・`frontend/package.json`・`package-lock.json`・`.npmrc`・`vite.config.ts`・`vitest.setup.ts`・`config/`・`.github/workflows/ci.yml`・`.github/dependabot.yml`（どちらも全文）。版と固定先の一覧は `technology-stack.md`。
 - 状態: at-risk（K-81: Node 26 への引き上げで `engines`・`checkToolchain`・CI・README を同時にそろえる必要。K-90） ／ 読みの深さ: 深い（一部）
 - 2026-11-06 に深く読んだのは `frontend/vitest.config.ts` だけ（K-108・K-110。部品全体は確かめていないため、今回の `analyzed.components` には入れていない）。`build.gradle.kts` の `frontendTest`・`frontendCoverage`（216〜220 行）と `ci.yml` の `verify` の job の頭は流し読み。K-81 の Node 26 はもう `engines`（`>=26 <27`）と `ci.yml`（`node-version: "26"`）に入っている（流し読み）。
@@ -270,6 +272,8 @@
 - 状態（2026-11-08 の2回目）: at-risk（K-121・K-124。CI に規模とカバレッジの要約の手順と台本を足す見込みで、台本の置き場と検査の対象、cloc の入れ方とライセンスが決まっていない） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 - 今回（2026-11-09、記録のコミット `4fe8e79`）読んだもの（K-127〜K-131・K-135〜K-137）: `.github/workflows/ci.yml`（143 行の全文）・`scripts/` の 4 ファイル（全文）・`frontend/scripts/check-license-header.mjs`（全文）・`build.gradle.kts`（1〜566 行）・`backend/build.gradle.kts`（100〜357 行）・`docs/verification.md`（1〜200 行。E2E の節は見出しだけ）。前の Intent で CI に報告だけの手順3つ（cloc・要約・カバレッジの HTML）と `scripts/ci-summary.mjs`・`scripts/program-size.mjs` が足された（K-127。前の状態の行の「足す見込み」は済んだ）。`ubuntu-latest`・apt の cloc・JDK と Node の大きな版だけの指定は版を固定していない（K-128）。ルートの `scripts/` は今も検査の対象の外（K-130）。R-07 のコマンドは一覧を手で書いている（K-131）。一覧を空にすると要約の台本が一覧を読めなくなる（K-135）。`settings.gradle.kts`・`config/`・`gradle/libs.versions.toml`・`dependabot.yml`（`package-ecosystem` の行だけ）・`frontend/package.json`（`scripts` だけ）・`frontend/vitest.config.ts`（`include` だけ）は今回深く読んでいない。
 - 状態（2026-11-09）: at-risk（K-128〜K-131・K-135。今回の Intent で `scripts/` の検査・R-07・CI の版の固定と時間・一覧の縮小を扱う） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+- 今回（2026-11-11、記録のコミット `7f36d8a`）読んだもの（K-138〜K-143）: `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`（527 行）・`frontend/package.json`・`.github/dependabot.yml`・`.github/workflows/ci.yml`（162 行）・`config/`（どれも全文）、`docs/verification.md`（1〜60 行・79〜95 行）。`backend/gradle.lockfile`・`frontend/package-lock.json` は主な部品の行の `grep`、`build.gradle.kts`・`scripts/` は頭と `grep` だけ。前の Intent の結果: 一覧 `packagesJudgedByTotal` は消え、すべてのパッケージにパッケージごとの下限が当たる（K-142。前の状態の行の「一覧の縮小」は済んだ）。CI は `-PitForks`（既定 3、入力 `it_forks` 1〜8）で結合テストを並べる（K-140）。Jackson の上書きは無く、版の固定は appender と networknt の2つ（K-138）。`-Dh2.compactThreads=1` は3か所（K-139）。決まりと設定のコメントに古い版の名前が残る（K-143）。
+- 状態（2026-11-11）: at-risk（K-138〜K-140・K-143。今回の Intent で依存の版・固定・Dependabot の `ignore`・`-PitForks` の既定の値を見直す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### container-runtime
 
@@ -278,6 +282,8 @@
 - 今回（2026-11-01）読んだもの（K-82・K-83・K-88・K-93）: `Dockerfile`（全文）、`compose.yaml` の `image:`・profile・`mem_limit` の行、`README.md` の見出しの一覧と「前提の道具」「取得と準備」、版の固定の行の grep。手元のイメージの一覧は見ていない（K-93）。
 - 2026-11-08 の追記: `README.md` は 164 行に縮み（K-88 の経緯の溜まりは README からは消えた。K-118）、配備の手順の本文は `docs/deployment.md` ほかへ移った。`Dockerfile`・`compose.yaml` は今回読んでいない。
 - 状態: at-risk（K-88: README の最新化。K-93） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-11）読んだもの（K-138・K-139）: `Dockerfile`（52 行の全文。JRE `eclipse-temurin:25.0.5_8-jre-noble` を index のダイジェストで固定、専用の利用者 10001、`ENTRYPOINT` は `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1` と `MASTERSMITH_JAVA_OPTIONS`）・`compose.yaml`（216 行の全文。`app` は CPU 4・メモリ 2g（環境変数で替えられる）・`restart: "no"`・`/dev/tcp` のヘルスチェック、profile の otel-collector 0.164.0・lgtm 0.39.0・Mailpit v1.33.0（`MP_SMTP_DISABLE_RDNS: "true"`）・対象DB の3種類はどれもダイジェストで固定）。イメージの版とダイジェストは、Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java`・`perf/`・`docs/`）と食い違わない（`grep`。版の表は `technology-stack.md`）。
+- 状態（2026-11-11）: at-risk（K-138・K-139。今回の Intent でイメージの版とダイジェストを見直す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### perf-and-monitoring
 
