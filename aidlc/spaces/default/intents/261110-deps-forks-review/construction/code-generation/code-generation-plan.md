@@ -74,11 +74,11 @@
 ### ③ 決まりの文書の直し（ブランチ `docs/261110-rules`、squash で統合）
 
 - [x] **Step 14**（FR3.1・FR3.3）: `aidlc/spaces/default/memory/project.md` の Tech Stack の「Jackson の上書きは 3.1.7 とする（…）」の行と、opentelemetry-logback-appender の行の「Spring Boot 4.1.1」を、今の形（上書きは無く Jackson は Spring Boot の BOM の版。Step 3 の版）に書き換え、行の末尾に「（<書き換えのコミットの日付> Intent 261110-deps-forks-review で書き換え）」を付ける。Step 5 で固定を外した・残した結果も同じ節に反映する。前の文と後の文を `generation-notes.md` に並べる。書き換える文面は、コミットの前に依頼者に見せて承認を得る。
-- [ ] **Step 15**（NFR3）: 文書だけの変更のため、`verifyQuick` を流して通ったら `develop` へ squash で統合する。
+- [x] **Step 15**（NFR3）: 文書だけの変更のため、`verifyQuick` を流して通ったら `develop` へ squash で統合する。
 
 ### 記録
 
-- [ ] **Step 16**（FR5.2・FR4）: `code-summary.md`（版の前後の表（JRE のイメージのタグ・Spring Boot・H2 を含み、Build and Test の負荷の試験の分岐に使う）・見送ったもの・固定の結果・FR2.5 の結果・計画との差・Build and Test に引き継ぐこと）と `traceability.json`（FR・NFR ごとの状態と手順）を書く。
+- [x] **Step 16**（FR5.2・FR4）: `code-summary.md`（版の前後の表（JRE のイメージのタグ・Spring Boot・H2 を含み、Build and Test の負荷の試験の分岐に使う）・見送ったもの・固定の結果・FR2.5 の結果・計画との差・Build and Test に引き継ぐこと）と `traceability.json`（FR・NFR ごとの状態と手順）を書く。
 
 ## Testing Contract
 
