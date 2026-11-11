@@ -3676,3 +3676,68 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-11-11T13:53:43Z
+**Event**: DECISION_RECORDED
+**Stage**: build-and-test
+**Decision**: B1: R-01 のコメントの直しを fix ブランチで行うか・B2: 負荷の試験（FR5.1）を流すか・B3: otel-lgtm 0.40.0 と collector 0.165.0 の起動の確かめをこの段で行うか
+**Options**: B1: 直す・直さない,B2: A 省く・B 流す,B3: A この段で行う・B 次に監視を使う場面に回す
+**Question Id**: cd4750be
+**Question Type**: stage-question
+**Question Chat**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question Shows**: sha256:07d740d4fb92b38d10c95c8664b795b653621bde8841741b51c3924e7657afaf
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-11T13:58:43Z
+**Event**: HUMAN_TURN
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Origin**: person
+**Source**: picker
+**Picked**: ["直す","A","A"]
+**Message Id**: 3e81c7f8
+**Open Questions**: cd4750be
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-11T13:58:44Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: [開発] B1. コード生成のレビューの R-01（`gradle/libs.versions.toml` の networknt のコメントの前半に「3.0.6 に固定」「Jackson 3.1.7」が残り、値 3.0.9・Jackson 3.1.8 と食い違う。`dependabot.yml` の説明も同じ）を、fix/261110-comments で直してから全件の verify を流しますか。（推奨は直す: コメントだけの直しで、この段の全件の verify に含められ、後で読む人が迷いません。直したコミットは積む前に差をお見せします。）
+**Reply**: 直す
+**Options**: ["直す","直さない"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-11T13:58:44Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: [品質] B2. 負荷の試験（k6、判定の場面を3種類の対象DB で1回ずつ、約 1 時間）を流しますか。要件 FR5 の条件の Spring Boot・H2・JRE はどれも変わらず、変わったのは Jackson のパッチ（3.1.7→3.1.8）と画面の依存です。（推奨は A: FR5.2 のとおり省きます。Jackson のパッチは速さに響く変更の説明が無く、全件の verify と E2E で動きは確かめてあり、条件の外である根拠（要件 FR5.1・FR5.2 の行）を記録に書きます。）
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-11T13:58:44Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: [運用] B3. 上げた otel-lgtm 0.40.0 と otel-collector 0.165.0 はまだ起動していません（collector は設定の validate だけ）。起動の確かめをどうしますか。（推奨は A: compose の profile で一時的に起動し、健全と Grafana の応答を確かめて止めるだけで数分で済み、壊れていたときに配備の前に気づけます。）
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-11T13:58:50Z
+**Event**: QUESTION_ANSWERED
+**Stage**: build-and-test
+**Details**: B1: 直す; B2: A; B3: A
+**Person Reply**: 直す\nA\nA
+**Message Id**: 3e81c7f8
+
+---
