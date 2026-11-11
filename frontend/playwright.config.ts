@@ -138,6 +138,9 @@ export default defineConfig({
       // 内部DB（H2 2.4.240）の閉じるときの詰め直しのスレッドを 1 本に固定する（本番の Dockerfile と同じ。並べると H2 の中の
       // 競合で詰め直しが中断されることがある）。H2 を上げるときは、この指定が要るかを見直す。
       '-Dh2.compactThreads=1',
+      // 実行時の時差を Dockerfile・compose の TZ・テストの JVM と同じ値にそろえる（team.md の Deployment の「4か所」。
+      // Intent 261110-deps-forks-review の FR2.5、依頼者の決定 G2: A）。PC の既定の時差に結果を預けない。
+      '-Duser.timezone=Asia/Tokyo',
       '-jar',
       JSON.stringify(warPath),
       `--server.port=${port}`,

@@ -173,8 +173,10 @@ export function DateTimeField({
   testId,
 }: DateTimeFieldProps) {
   const { t } = useTranslation()
+  // i18next 27 の TFunction は引数の型が広く、この部品の Translate に直接は渡せないため、鍵と差し込みの値だけを渡す形に包む。
+  const translate: Translate = (key, options) => (options === undefined ? t(key) : t(key, options))
   const usable = isDateTimeUsable(kind, timeZone)
-  const hint = showHint ? dateTimeHint(t, kind, purpose, timeZone, now) : undefined
+  const hint = showHint ? dateTimeHint(translate, kind, purpose, timeZone, now) : undefined
   const zone = timeZone.status === 'ready' ? timeZone.timeZone : ''
   const legend = t('tables.dateTime.overlapLegend', { zone })
   const linked =

@@ -188,6 +188,9 @@ export function SearchPanel({
   onToggle,
 }: SearchPanelProps) {
   const { t } = useTranslation()
+  // i18next 27 の TFunction は引数の型が広く、errorText・dateTimeHint の引数に直接は渡せないため、鍵と差し込みの値だけを渡す形に包む。
+  const translate = (key: string, options?: Record<string, string>): string =>
+    options === undefined ? t(key) : t(key, options)
   const baseId = useId()
   const panelId = `${baseId}-panel`
   const zoneName = timeZone.status === 'ready' ? timeZone.timeZone : null
@@ -339,7 +342,7 @@ export function SearchPanel({
             const label = t('tables.search.fieldLabel', { name, op })
             const input = inputOf(draft, field.column)
             const fieldError = errorOf(field.column)
-            const error = errorText(t, language, fieldError, zoneName ?? '')
+            const error = errorText(translate, language, fieldError, zoneName ?? '')
             const errorId = `${baseId}-f${index}-error`
             const hintId = `${baseId}-f${index}-hint`
             const attributes = inputAttributes(field.valueType)
@@ -391,7 +394,7 @@ export function SearchPanel({
                     />
                   </div>
                   <p id={hintId} className="tables-search-hint">
-                    {dateTimeHint(t, dateTime, 'range-from', timeZone, now)}
+                    {dateTimeHint(translate, dateTime, 'range-from', timeZone, now)}
                   </p>
                   {error !== undefined && (
                     <p id={errorId} className="tables-search-error" role="alert">

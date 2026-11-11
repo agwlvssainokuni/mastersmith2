@@ -50,19 +50,19 @@
 
 ### ① 実行環境と依存（ブランチ `feature/261110-deps`、squash で統合）
 
-- [ ] **Step 1**（FR2.1・FR5.2）: 前の版を記録する。今の Spring Boot・JRE のイメージのタグ・H2・OpenTelemetry・Jackson の版を `generation-notes.md` に書く。Maven Central で Spring Boot の最新の安定版と、その BOM（`spring-boot-dependencies`）が管理する OpenTelemetry・Jackson・H2 の版、networknt の最新の版が求める Jackson の版、opentelemetry-logback-appender の最新の版が求める OpenTelemetry の版を確かめて書く。
-- [ ] **Step 2**（Testing Contract の runner_step、NFR3）: 変える前の `develop` で、下の「単位のテストの手順書」の絞ったコマンド（固定に関わる4つのテスト）が通ることを確かめ、時間を書く。
-- [ ] **Step 3**（FR1.3）: Spring Boot を最新の安定版にする（`gradle/libs.versions.toml`）。Jackson は上書きしない。
-- [ ] **Step 4**（FR1.4・FR1.5・FR1.8）: backend の Gradle の依存（SpotBugs と FindSecBugs・palantir-java-format・JaCoCo・Testcontainers・jqwik・ArchUnit ほか）と Gradle の wrapper（`./gradlew wrapper --gradle-version <最新>` を2回流して jar も更新）を最新にし、`backend/gradle.lockfile`・`settings-gradle.lockfile` を `--write-locks` で更新する。新しく増えた依存のライセンスを確かめる。
-- [ ] **Step 5**（FR2.2・FR2.3・FR2.4）: 連動する固定を Step 1 の結果で分ける。
+- [x] **Step 1**（FR2.1・FR5.2）: 前の版を記録する。今の Spring Boot・JRE のイメージのタグ・H2・OpenTelemetry・Jackson の版を `generation-notes.md` に書く。Maven Central で Spring Boot の最新の安定版と、その BOM（`spring-boot-dependencies`）が管理する OpenTelemetry・Jackson・H2 の版、networknt の最新の版が求める Jackson の版、opentelemetry-logback-appender の最新の版が求める OpenTelemetry の版を確かめて書く。
+- [x] **Step 2**（Testing Contract の runner_step、NFR3）: 変える前の `develop` で、下の「単位のテストの手順書」の絞ったコマンド（固定に関わる4つのテスト）が通ることを確かめ、時間を書く。
+- [x] **Step 3**（FR1.3）: Spring Boot を最新の安定版にする（`gradle/libs.versions.toml`）。Jackson は上書きしない。
+- [x] **Step 4**（FR1.4・FR1.5・FR1.8）: backend の Gradle の依存（SpotBugs と FindSecBugs・palantir-java-format・JaCoCo・Testcontainers・jqwik・ArchUnit ほか）と Gradle の wrapper（`./gradlew wrapper --gradle-version <最新>` を2回流して jar も更新）を最新にし、`backend/gradle.lockfile`・`settings-gradle.lockfile` を `--write-locks` で更新する。新しく増えた依存のライセンスを確かめる。
+- [x] **Step 5**（FR2.2・FR2.3・FR2.4）: 連動する固定を Step 1 の結果で分ける。
   - (a) appender: 管理の OpenTelemetry が 1.63 以上になったときだけ、最新の版に上げて試す。合格の条件は、全件の `verify`（`OtlpLogExportIT`・`ExternalExportIT` を含む）と E2E に加えて、外部エクスポートを有効にした手元の起動（compose の lgtm を起動し、アプリを `MASTERSMITH_OTEL_*` などの外部エクスポートの設定を有効にして起動し、起動が失敗しないことと lgtm の Loki にアプリのログが届くことを確かめる。設定の名前は `docs/operations.md` で確かめる）。
   - (b) networknt: 管理の Jackson が 3.2 系以上になったときだけ、最新の版に上げて全件の `verify`（DSL の読み込みのテスト）で試す。
   - (c) `-Dh2.compactThreads=1`: H2 の版が 2.4.240 から上がったときだけ、5か所（上の表）から外して `H2CompactionByPoolSuspensionIT` を含む全件の `verify` と E2E で試す。
   - 前提が変わらないものは外さず、`libs.versions.toml` のコメントの版の記述だけを今の値に直す。外せたものは `dependabot.yml` の `ignore` の行も外し、外せなかったものは理由を `project.md` の学びの言い方で記録する。
-- [ ] **Step 6**（FR1.4・FR1.4a・FR1.5・FR1.7・FR1.8）: frontend の npm の依存を、大きな版を含めて最新にする（`npm outdated` で一覧し、`npm install`（`ignore-scripts=true` のまま）で更新、`package-lock.json` を更新）。大きな版ごとに型の検査・リンタ・画面のテストを流し、崩れたら直す。上の判定基準に当たるものは見送って `ignore` に書く。`@playwright/test` を上げたらブラウザも同じ版にする。axe-core が上がったら、vitest-axe と E2E の axe の両方を流し、新しい規則の違反は規則を外さずにすべて直す（部品が原因なら基準2）。axe-core の版が lockfile で1つにそろっているかを確かめる。
-- [ ] **Step 7**（FR1.4）: `dependabot.yml` の `ignore` を1行ずつ見直す（appender・networknt は Step 5、`typescript` の大きな版は Step 6 の結果で外すか残す、`eclipse-temurin` の大きな版は残す、collector の `0.164.0-386` は ② で）。
-- [ ] **Step 8**（FR2.5）: E2E の WAR の JVM の時差を確かめる。`frontend/playwright.config.ts` の `webServer.command`・`webServer.env` と、テストの JVM・Dockerfile・compose の値を並べ、`team.md` の「4か所を同じ値にそろえる」に合うかを記録する。合わないときは、直し方の案（`-Duser.timezone=Asia/Tokyo` を `webServer.command` に足す など）を添えて生成を止め、依頼者に諮る（決まりの読み方に関わるため）。
-- [ ] **Step 9**（NFR1〜NFR3・NFR5）: 全件の `verify`（clean 付き、`-PitForks=3`）と E2E を流し、カバレッジ（backend の全体とパッケージごと、frontend の全体）と `verify` の時間を記録する。通ったら `develop` へ squash で統合する。
+- [x] **Step 6**（FR1.4・FR1.4a・FR1.5・FR1.7・FR1.8）: frontend の npm の依存を、大きな版を含めて最新にする（`npm outdated` で一覧し、`npm install`（`ignore-scripts=true` のまま）で更新、`package-lock.json` を更新）。大きな版ごとに型の検査・リンタ・画面のテストを流し、崩れたら直す。上の判定基準に当たるものは見送って `ignore` に書く。`@playwright/test` を上げたらブラウザも同じ版にする。axe-core が上がったら、vitest-axe と E2E の axe の両方を流し、新しい規則の違反は規則を外さずにすべて直す（部品が原因なら基準2）。axe-core の版が lockfile で1つにそろっているかを確かめる。
+- [x] **Step 7**（FR1.4）: `dependabot.yml` の `ignore` を1行ずつ見直す（appender・networknt は Step 5、`typescript` の大きな版は Step 6 の結果で外すか残す、`eclipse-temurin` の大きな版は残す、collector の `0.164.0-386` は ② で）。
+- [x] **Step 8**（FR2.5）: E2E の WAR の JVM の時差を確かめる。`frontend/playwright.config.ts` の `webServer.command`・`webServer.env` と、テストの JVM・Dockerfile・compose の値を並べ、`team.md` の「4か所を同じ値にそろえる」に合うかを記録する。合わないときは、直し方の案（`-Duser.timezone=Asia/Tokyo` を `webServer.command` に足す など）を添えて生成を止め、依頼者に諮る（決まりの読み方に関わるため）。
+- [x] **Step 9**（NFR1〜NFR3・NFR5）: 全件の `verify`（clean 付き、`-PitForks=3`）と E2E を流し、カバレッジ（backend の全体とパッケージごと、frontend の全体）と `verify` の時間を記録する。通ったら `develop` へ squash で統合する。
 
 ### ② CI・コンテナのイメージ・道具（ブランチ `feature/261110-ci-images`、squash で統合）
 
