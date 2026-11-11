@@ -3092,3 +3092,49 @@
 **Context**: construction > code-generation > code-generation-plan.md
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-11-11T13:36:31Z
+**Event**: DECISION_RECORDED
+**Stage**: code-generation
+**Decision**: G8: project.md の Tech Stack の2行の書き換えの文面を承認し、docs/261110-rules でコミット・verifyQuick・squash の統合まで進めてよいか
+**Options**: 承認,直す
+**Question Id**: 5706331e
+**Question Type**: stage-question
+**Question Chat**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question Shows**: sha256:4e33556fbd78c68b1a4687cf2ae64513ca2b4f3eb30c8bff366bfb319ed7db4e
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-11T13:41:46Z
+**Event**: HUMAN_TURN
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Origin**: person
+**Source**: picker
+**Picked**: ["承認"]
+**Message Id**: ee8f0bd5
+**Open Questions**: 6caeee44, 02bd2d47, 649e3342, aac989e9, 5706331e
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261110-deps-forks-review/construction/code-generation/code-generation-questions.md","entries":{"Plan Approval":"2c77e63cdbc28ba8"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-11T13:41:46Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: [開発] G8. project.md の Tech Stack の2行を上の文面で書き換え、docs/261110-rules でコミット・verifyQuick・develop への squash の統合まで進めてよいですか。（推奨は承認: 今のビルドとこの Intent の決定に合う文面です。）
+**Reply**: 承認
+**Options**: ["承認","直す"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-11T13:41:50Z
+**Event**: QUESTION_ANSWERED
+**Stage**: code-generation
+**Details**: G8: 承認
+**Person Reply**: 承認
+**Message Id**: ee8f0bd5
+
+---
