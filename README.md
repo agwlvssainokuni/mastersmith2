@@ -13,7 +13,7 @@ MasterSmith（マスタ管理アプリ）のリポジトリです。バックエ
 | JDK | 25（Temurin） | `brew install --cask temurin@25`、または SDKMAN の `sdk install java 25.0.5.0+8-tem` | ビルド・テスト |
 | Node.js・npm | 26 | `brew install node@26`、または `nvm install 26` | 画面のビルド・テスト |
 | Gitleaks | 8.30.1 | `brew install gitleaks` | 秘密情報の検出（`./gradlew verify`・`verifyQuick`） |
-| OSV-Scanner | 2.7.0 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`・`verifyQuick`） |
+| OSV-Scanner | 2.7.1 | `brew install osv-scanner` | 依存関係の脆弱性の検査（`./gradlew verify`・`verifyQuick`） |
 | Python と pre-commit | pre-commit 4.x | `brew install pre-commit` | コミットの前の検査 |
 | Docker（Docker Desktop または colima） | Compose v2 | `brew install colima docker docker-compose` | コンテナで動かすとき、対象DB の結合テスト（全件の `./gradlew verify`、`-PitTests` を付けた `./gradlew verifyQuick`） |
 | Playwright の Chromium | `@playwright/test` と同じ版 | `cd frontend && npx playwright install chromium` | ビルドした WAR での画面の確認（`./gradlew e2eTest`） |

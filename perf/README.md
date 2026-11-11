@@ -485,7 +485,7 @@ docker run -d --name mastersmith-perf-lgtm --network mastersmith-perf_default --
   -p 127.0.0.1:13000:3000 --memory 1536m \
   -e GF_AUTH_ANONYMOUS_ENABLED=true -e GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer -e GF_AUTH_DISABLE_LOGIN_FORM=true \
   -v "$PWD/docker/monitoring/provisioning/alerting/mastersmith.yaml:/otel-lgtm/grafana/conf/provisioning/alerting/mastersmith.yaml:ro" \
-  grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
+  grafana/otel-lgtm:0.40.0@sha256:72e05804790e6e0d8c0b70a6d5ff1f721ef7b203463374631e99aa3429bd0cf6
 until curl -sf http://127.0.0.1:13000/api/health > /dev/null; do sleep 5; done
 perfu up -d --wait --force-recreate app   # 上限 4 と外部エクスポートで起動し直す
 curl -s http://127.0.0.1:18080/actuator/metrics/hikaricp.connections.max   # VALUE が 4 であること

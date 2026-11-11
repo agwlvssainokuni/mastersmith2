@@ -70,7 +70,7 @@ services:
         max-file: "3"
 
   otel-collector:
-    image: otel/opentelemetry-collector:0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750
+    image: otel/opentelemetry-collector:0.165.0@sha256:34b24b740c3c88d3467740e8642a397c13898ef76d7295c5425164c482ed1b73
     profiles: [observability]
     command: ["--config=/etc/otelcol/config.yaml"]
     volumes:
@@ -80,7 +80,7 @@ services:
   # 起動の前に .env で外部エクスポートを有効にし、送り先を http://lgtm:4318 にする（docs/operations.md の「手元の監視」）。
   # 受け手・指標（Prometheus）・ログ（Loki）・トレース（Tempo）・画面（Grafana）を1つにした、手元の確認向けのコンテナ。
   lgtm:
-    image: grafana/otel-lgtm:0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe
+    image: grafana/otel-lgtm:0.40.0@sha256:72e05804790e6e0d8c0b70a6d5ff1f721ef7b203463374631e99aa3429bd0cf6
     profiles: [monitoring]
     ports:
       # Grafana の画面だけを開発者の PC の localhost に結び付ける。OTLP の受け口は PC に開かない。
@@ -118,7 +118,7 @@ services:
   # （./gradlew e2eTest）から送るため（基盤の設計の Q1 A）。認証の無い画面をほかの端末から見せない。
   # ボリュームは置かない（コンテナを消すと受けたメールも消える。個人に関する値を残さない）。版はダイジェストで固定する。
   mailpit:
-    image: axllent/mailpit:v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231
+    image: axllent/mailpit:v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce
     profiles: [mail]
     ports:
       - "127.0.0.1:8025:8025"
@@ -148,7 +148,7 @@ services:
   # docker image inspect で本来の Entrypoint と Cmd を確かめて合わせる。
   # 見本のスキーマと読み取りだけのアカウントは、初めて起動したときに docker/targetdb/<種類>/ の SQL と台本で作る。
   targetdb-postgres:
-    image: postgres:18.6@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81
+    image: postgres:18.6@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
     profiles: [targetdb-postgres]
     env_file:
       - path: .env.targetdb
@@ -169,7 +169,7 @@ services:
     restart: "no"
 
   targetdb-mysql:
-    image: mysql:26.10.0@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b
+    image: mysql:26.10.0@sha256:3819b2b23835c4a73c8b022fafc33c8095c0f81c929a8b7a84613d2fba6c52f5
     profiles: [targetdb-mysql]
     env_file:
       - path: .env.targetdb

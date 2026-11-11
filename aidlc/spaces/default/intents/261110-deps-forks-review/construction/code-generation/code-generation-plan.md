@@ -66,10 +66,10 @@
 
 ### ② CI・コンテナのイメージ・道具（ブランチ `feature/261110-ci-images`、squash で統合）
 
-- [ ] **Step 10**（FR1.5）: `.github/workflows/` の Actions を最新の版の SHA にし、版をコメントに書く。Gitleaks と OSV-Scanner を最新にし、`ci.yml` の版と SHA-256（配布元の checksums で確かめる）・`.pre-commit-config.yaml` の `rev`・README をそろえる。
-- [ ] **Step 11**（FR1.1・FR1.6）: コンテナのイメージを最新にする。始める前と終わった後に、`Dockerfile`・`compose.yaml`・`docker/`・`perf/`・`TargetDbImages.java`・`docs/` のイメージの参照（`FROM`・`image:`・`*_IMAGE=`・`@sha256:`）を `grep` で一覧にし、上の表に無い参照が無いこと・古い版が残っていないことを確かめる。JRE・JDK（Java 25 の最新のパッチ）、対象DB（postgres・mysql・mariadb）、Mailpit、otel-lgtm、otel-collector、k6。どれも版のタグと複数アーキテクチャの index のダイジェストで固定し、上の表の場所すべてをそろえる。対象DB は `verify`（3種類の結合テスト）で通らない版なら、通る中で最新の版にする。collector の `-386` のタグの `ignore` を今のタグに合わせる。
-- [ ] **Step 12**（FR3.2）: `.github/dependabot.yml` の gradle の説明の「4.1.1」を Step 3 の Spring Boot の版に直す。
-- [ ] **Step 13**（NFR3）: 全件の `verify`（clean 付き）と E2E（見本の PG を新しいイメージで作り直す。サービス名を指定して `docker compose` を使い、ほかのサービスを作り直さない）を流す。入れ替えたコンテナ（Mailpit・lgtm・見本の PG）は `docker inspect` で版とダイジェストが `compose.yaml` と一致することを確かめる。通ったら `develop` へ squash で統合する。
+- [x] **Step 10**（FR1.5）: `.github/workflows/` の Actions を最新の版の SHA にし、版をコメントに書く。Gitleaks と OSV-Scanner を最新にし、`ci.yml` の版と SHA-256（配布元の checksums で確かめる）・`.pre-commit-config.yaml` の `rev`・README をそろえる。
+- [x] **Step 11**（FR1.1・FR1.6）: コンテナのイメージを最新にする。始める前と終わった後に、`Dockerfile`・`compose.yaml`・`docker/`・`perf/`・`TargetDbImages.java`・`docs/` のイメージの参照（`FROM`・`image:`・`*_IMAGE=`・`@sha256:`）を `grep` で一覧にし、上の表に無い参照が無いこと・古い版が残っていないことを確かめる。JRE・JDK（Java 25 の最新のパッチ）、対象DB（postgres・mysql・mariadb）、Mailpit、otel-lgtm、otel-collector、k6。どれも版のタグと複数アーキテクチャの index のダイジェストで固定し、上の表の場所すべてをそろえる。対象DB は `verify`（3種類の結合テスト）で通らない版なら、通る中で最新の版にする。collector の `-386` のタグの `ignore` を今のタグに合わせる。
+- [x] **Step 12**（FR3.2）: `.github/dependabot.yml` の gradle の説明の「4.1.1」を Step 3 の Spring Boot の版に直す。
+- [x] **Step 13**（NFR3）: 全件の `verify`（clean 付き）と E2E（見本の PG を新しいイメージで作り直す。サービス名を指定して `docker compose` を使い、ほかのサービスを作り直さない）を流す。入れ替えたコンテナ（Mailpit・lgtm・見本の PG）は `docker inspect` で版とダイジェストが `compose.yaml` と一致することを確かめる。通ったら `develop` へ squash で統合する。
 
 ### ③ 決まりの文書の直し（ブランチ `docs/261110-rules`、squash で統合）
 

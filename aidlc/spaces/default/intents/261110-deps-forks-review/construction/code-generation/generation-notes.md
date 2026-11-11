@@ -192,3 +192,104 @@ i18next 27 の直し（基準 1 の範囲の中: アプリの本体 2 ファイ�
 - カバレッジ（`jacocoTestReport.xml`）: backend の全体は行 97.75%・分岐 91.52%。パッケージごとの最も低い値は `config` の分岐 76.7%・`targetdb.service` の分岐 77.1%（どれも下限の内）。frontend の全体は行 95.49%・分岐 91.03%。
 - E2E の全件: Mailpit と見本の PG（上乗せでポートを開けて作り直し）を起動して `caffeinate -dims ./gradlew e2eTest` が 298 件通過（16.2 分、BUILD SUCCESSFUL in 16m 15s）。報告の秘密の値の確かめは見つかった件数 0。見本の PG の片付けは残り 0。流し終えた後に上乗せ無しで作り直してポートを閉じ、Mailpit と見本の PG を止めた（流す前と同じ止まった状態。配備したアプリは流す前から止まっている）。
 - 眠り: `pmset -g log` で 20:53〜21:26 の間に Sleep・DarkWake は無い。
+
+## 依頼者の決定 G5・G6 と Step 13: ② の全件の確かめ（指揮役が記録）
+
+- G5: 承認。コミットは `8c16c259`（CI の道具）・`80f1025a`（コンテナのイメージ）・`b9e37bcc`（Dependabot の設定）。
+- G6: A。手元の OSV-Scanner は Homebrew の 2.7.0 のまま。CI の 2.7.1 の結果は、統合の後の CI（Build and Test の比べ）で確かめる。
+- 全件の `verify`（`b9e37bcc` の上、clean 付き、`-PitForks=3`）: BUILD SUCCESSFUL（22:01:36〜22:16:39、15分3秒）。単体 2,939 件（飛ばし 0・失敗 0）、結合 1,716 件（飛ばし 10・失敗 0）。
+- E2E の全件: Mailpit（v1.33.1）と見本の PG（18.6 の新しいダイジェスト）を新しいイメージで作り直して流し、298 件通過（16.0 分）。報告の秘密の値の確かめは見つかった件数 0、見本の PG の片付けは残り 0。流し終えた後に上乗せ無しで作り直してポートを閉じ、Mailpit と見本の PG を止めた。
+- 入れ替えたコンテナの `docker inspect`: `mastersmith-mailpit-1` は `axllent/mailpit:v1.33.1@sha256:aef2aacc…`（`RepoDigests` も同じ）、`mastersmith-targetdb-postgres-1` は `postgres:18.6@sha256:e3d24f69…`（`RepoDigests` も同じ）で、どちらも `compose.yaml` の記述と一致した。
+- 眠り: `pmset -g log` で 21:50〜22:33 の間に Sleep・DarkWake は無い。
+- otel-lgtm 0.40.0 と collector 0.165.0 は起動していない（collector は設定の `validate` だけ）。手元の監視を起動する次の場面で確かめる（Build and Test に引き継ぐ）。
+
+## ② の作業のブランチ
+
+`feature/261110-ci-images`（`develop` の `888a4cc1` から作成）。版は 2026-11-11 に配布元（GitHub の Releases とタグ・Docker Hub）で確かめた。
+
+## Step 10: GitHub Actions・Gitleaks・OSV-Scanner（FR1.5）
+
+版は各リポジトリの GitHub の Releases（`releases/latest` とリリースの一覧。プレリリースを除く）で、SHA はタグが指すコミット（`git/ref/tags/<タグ>`。注釈付きのタグは中のコミット）で確かめた。
+
+| 対象 | 前 | 後 | 備考 |
+|---|---|---|---|
+| `actions/checkout` | v7.0.1（`3d3c42e5…`） | 変えず | 最新 |
+| `actions/setup-java` | v6.1.0（`b843ebf9…`） | **v6.2.0（`77dd5b2ce225ea11469928ac317850245a74ae78`）** | 2026-11-04 公開。変更は Liberica・Corretto の版の解決、Undici の更新、Maven のミラーの設定など。使っている `distribution: temurin`・`java-version: "25"` の入力は変わらない |
+| `actions/setup-node` | v7.1.0（`949feb24…`） | 変えず | 最新 |
+| `gradle/actions/setup-gradle` | v6.4.1（`8da46b53…`） | 変えず | 最新（タグは注釈付きで、中のコミットが `8da46b53…` と一致） |
+| `actions/upload-artifact` | v7.0.2（`cf430e03…`） | 変えず | 最新 |
+| `actions/download-artifact` | v8.0.2（`9000827c…`） | 変えず | 最新 |
+| Gitleaks | 8.30.1 | 変えず | リリースの一覧の最新が 8.30.1（2026-03-21） |
+| OSV-Scanner | 2.7.0（`160c6253…218b`） | **2.7.1（`fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8`）** | 2026-11-09 公開。SHA-256 は配布元の `osv-scanner_SHA256SUMS` の `osv-scanner_linux_amd64` の値・GitHub の資産の digest・取得した実物の `shasum -a 256` の3つが一致 |
+
+変えたファイル:
+
+- `.github/workflows/ci.yml`: `actions/setup-java` の SHA と版のコメント、`OSV_SCANNER_VERSION`・`OSV_SCANNER_SHA256`。
+- `README.md`: 前提の道具の表の OSV-Scanner を 2.7.1 に。
+- `.pre-commit-config.yaml`: Gitleaks の `rev: v8.30.1` は最新のため変えない。
+
+確かめたこと・残ること:
+
+- OSV-Scanner 2.7.1 の変更点に、npm の lockfile の読み方の直し（`resolved` の無いパッケージも調べる。`file:`・`link:` の依存は飛ばす）がある。CI の結果が 2.7.0 と変わりうるため、② の全件の `verify`（Step 13）と統合の後の CI の OSV-Scanner の結果を見る。
+- 手元の OSV-Scanner は Homebrew で入れた 2.7.0 のまま（2026-11-11 時点で Homebrew の stable が 2.7.0 で、`brew upgrade` では 2.7.1 にならない）。手元の `verify` の OSV-Scanner は 2.7.0、CI は 2.7.1 で流れる。
+- 古い値（`v6.1.0`・`b843ebf9`・`OSV_SCANNER_VERSION: 2.7.0`）が `vendor/`・`aidlc/` の外に残っていないことを `git grep` で確かめた。
+
+## Step 11: コンテナのイメージ（FR1.1・FR1.6）
+
+### 始めの一覧（`git grep`。`vendor/`・`aidlc/`・`.claude/`・lockfile を除く）
+
+| 場所 | 参照 |
+|---|---|
+| `Dockerfile` 17 行 | `eclipse-temurin:25.0.5_8-jre-noble@sha256:a98128a5…` |
+| `compose.yaml` 73・83・121・151・172・192 行 | collector `0.164.0@sha256:28b6d41a…`・otel-lgtm `0.39.0@sha256:4c8056c9…`・mailpit `v1.33.0@sha256:9b3a463b…`・postgres `18.6@sha256:3a426452…`・mysql `26.10.0@sha256:7b16ec7c…`・mariadb `13.0.2@sha256:f4054da2…` |
+| `docker/perf/compose.yaml` 69・96・122・150 行 | postgres・mysql・mariadb・mailpit（`compose.yaml` と同じ値） |
+| `docker/hikari-pool.sh` 50 行 | `JDK_IMAGE=eclipse-temurin:25.0.5_8-jdk-noble@sha256:95e350ad…` |
+| `perf/versions.env` 24・25 行 | `K6_IMAGE=grafana/k6:2.3.0@sha256:2dd4756e…`・`PERF_JRE_IMAGE`（jre と同じ値） |
+| `perf/README.md` 131・488 行 | jdk（`hikari-pool.sh` と同じ値）・otel-lgtm（`compose.yaml` と同じ値） |
+| `docs/internal-db.md` 12・22・155・161・195 行、`docs/dsl.md` 118 行、`docs/operations.md` 135 行 | jre・jdk（上と同じ値） |
+| `docs/mail.md` 48 行 | mailpit（`compose.yaml` と同じ値） |
+| `backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java` | `MYSQL_VERSION`・`MYSQL_DIGEST`・`MARIADB_*`・`POSTGRES_*`（`compose.yaml` と同じ値） |
+| `.github/dependabot.yml` | 説明のコメントの版（84・101〜103 行）と collector の `ignore` の `0.164.0-386`（132 行） |
+
+計画の表に無い参照は無かった（`docs/target-db.md` 79 行は版の文字だけで、ダイジェストは持たない。版は変わらないため直さない）。
+
+### 版とダイジェスト
+
+最新の版は Docker Hub のタグの一覧（プレリリース・rc・nightly・edge を除く）と各リポジトリの GitHub の Releases で確かめ、ダイジェストは `docker buildx imagetools inspect <タグ>` の先頭の `Digest`（複数アーキテクチャの index。linux/amd64 と linux/arm64 を含むことを `Platform` で確かめた）を使った。
+
+| イメージ | 前 | 後 | 備考 |
+|---|---|---|---|
+| JRE `eclipse-temurin:*-jre-noble` | `25.0.5_8-jre-noble@sha256:a98128a57de944a72bd31fbc79b898edd5a5864d3652071d5bbd2160ab7d7dce` | **変わらない**（同じタグ・同じダイジェスト） | 25 系の最新は 25.0.5_8（`25.0.6` のタグは無い）。`25-jre-noble` も同じダイジェスト |
+| JDK `eclipse-temurin:*-jdk-noble` | `25.0.5_8-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a` | 変わらない | 同上 |
+| postgres | `18.6@sha256:3a4264520e121176619f54ff867d12774bc81e95e7b84db58d63bccdb6144b81` | `18.6@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42` | 版は同じで、同じタグの組み直し（2026-11-06）。19 は `19rc1` までで対象外 |
+| mysql | `26.10.0@sha256:7b16ec7caa94ca7e92f4c5ec287de69d2e8738db056ceb629022951a6f6d910b` | `26.10.0@sha256:3819b2b23835c4a73c8b022fafc33c8095c0f81c929a8b7a84613d2fba6c52f5` | 版は同じで、同じタグの組み直し（2026-11-03）。26 系の最新は 26.10.0 |
+| mariadb | `13.0.2@sha256:f4054da2…` | 変わらない | 13 系の最新は 13.0.2 |
+| `axllent/mailpit` | `v1.33.0@sha256:9b3a463be15354c0f0eba91697d80e3e0d8a5623ef0e627cacc836bc17fd5231` | **`v1.33.1@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce`** | 2026-11-07。直しだけ（宛先の読み方・読めないメールを黙って捨てずに拒むなど）。使っている `MP_SMTP_DISABLE_RDNS` と `--max` の既定は変わらない |
+| `grafana/otel-lgtm` | `0.39.0@sha256:4c8056c9c05fcb3c8fd93800e85334bfd79b4d0271b47a54a121a64af41fe1fe` | **`0.40.0@sha256:72e05804790e6e0d8c0b70a6d5ff1f721ef7b203463374631e99aa3429bd0cf6`** | 2026-11-06。中の Prometheus 3.16.0・Pyroscope 2.4.3 など。設定の口の変更の記載は無い |
+| `otel/opentelemetry-collector` | `0.164.0@sha256:28b6d41ac51bff6b41ba5e8fe503569ffb9d6a1ea90f7a78419e86f34e44f750` | **`0.165.0@sha256:34b24b740c3c88d3467740e8642a397c13898ef76d7295c5425164c482ed1b73`** | core の破壊的な変更は `pkg/confighttp` の古い項目の削除だけで、`docker/otel-collector/config.yaml` は使っていない。新しいイメージの一時のコンテナで `validate --config=…` が終了コード 0 |
+| `grafana/k6` | `2.3.0@sha256:2dd4756e…` | 変わらない | GitHub の Releases の最新が v2.3.0、index のダイジェストも同じ |
+
+collector の `-386` のタグ: `0.165.0-386` は単一のイメージ（manifest。index ではない）で、`architecture: 386`・`os: linux` を確かめた。`.github/dependabot.yml` の `ignore` を `0.165.0-386` に合わせ、説明のコメントに経過を足した。
+
+変えたファイル: `compose.yaml`（collector・otel-lgtm・mailpit・postgres・mysql）、`docker/perf/compose.yaml`（postgres・mysql・mailpit）、`perf/README.md`（otel-lgtm）、`docs/mail.md`（mailpit）、`TargetDbImages.java`（`MYSQL_DIGEST`・`POSTGRES_DIGEST`）、`.github/dependabot.yml`（経過のコメントと collector の `ignore`）。JRE・JDK・mariadb・k6 の場所（`Dockerfile`・`docker/hikari-pool.sh`・`perf/versions.env`・`docs/internal-db.md`・`docs/dsl.md`・`docs/operations.md`）と README の SDKMAN の版（`25.0.5.0+8-tem`）は変えていない。
+
+### 終わりの一覧
+
+始めの一覧と同じ `git grep` で、各場所が上の「後」の値になったことを確かめた（`compose.yaml` と `docker/perf/compose.yaml` と `TargetDbImages.java` の対象DB、`compose.yaml` と `docker/perf/compose.yaml` と `docs/mail.md` の Mailpit、`compose.yaml` と `perf/README.md` の otel-lgtm がそれぞれ同じ値）。古いダイジェスト（`3a426452`・`7b16ec7c`・`9b3a463b`・`4c8056c9`・`28b6d41a`）と古いタグ（`v1.33.0`・`otel-lgtm:0.39`・`collector:0.164`）は、`.github/dependabot.yml` の前の Intent の経過を書いたコメント（102・131 行）のほかに残っていない。
+
+### FR5 の分岐（Build and Test の負荷の試験）への影響
+
+JRE のイメージのタグは `eclipse-temurin:25.0.5_8-jre-noble` のまま（ダイジェストも同じ）。② では JRE・Spring Boot・H2 のどれも変わらない（① で Jackson が 3.1.7 → 3.1.8 に変わったことは上の記録のとおり）。
+
+## Step 12: `dependabot.yml` の Spring Boot の版の記述（FR3.2）
+
+- gradle の `ignore` の説明の「Spring Boot 4.1.1 の OpenTelemetry 1.62」を「Spring Boot 4.1.2 の OpenTelemetry 1.62」に直した（Step 3 で Spring Boot は 4.1.2 のまま）。
+- `vendor/`・`aidlc/` の外のほかの「4.1.1」は、`LoggingLevelResetTestExecutionListener.java` の「Spring Boot 4.1.1 まで」の経過の記述（今も正しい）と AC の番号だけで、直す対象は無い。
+
+## Step 10〜12 の後のテスト（ダイジェストを変えた対象DB の結合テストを絞って）
+
+- コマンド: `DOCKER_HOST="unix://${HOME}/.colima/default/docker.sock" TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock caffeinate -dims ./gradlew verifyQuick -PitTests='*Postgres*IT,*Mysql*IT,TargetDbSampleInitScriptIT' -PitForks=3`
+- 対象: ダイジェストを変えた postgres・mysql の結合テストの全クラス（業務データの読み書き・深いページの並べ替え・参照の読み書き・DSL の生成・スキーマの問い合わせ・スキーマの読み込み）と、3種類の見本の初期化の台本を確かめる `TargetDbSampleInitScriptIT`。mariadb はイメージを変えていないため絞りの外。
+- 結果: BUILD SUCCESSFUL（21:41〜21:49、7分44秒）。結合テストは 17 クラス・253 件、失敗 0・誤り 0、飛ばし 7。飛ばしの 7 件は、DB の種類で決まる前提（`timetz は PostgreSQL だけ`・`NUL を拒むのは PostgreSQL`・MySQL と MariaDB だけの型の扱いなど）で飛ぶもので、コンテナの実行環境が無いことによる飛ばしではない（`TestAbortedException` の理由で確かめた）。`verifyQuick` の残りの段（フォーマット・リンタ・ライセンス・ビルド・単体テスト・画面のテストと画面のカバレッジの下限・SpotBugs・OSV-Scanner（手元は 2.7.0）・Gitleaks）もすべて通った。
+- 眠り: 流す前の `pmset -g assertions` は `PreventUserIdleSystemSleep 1`。流した後の `pmset -g log` で 21:41〜21:49 の間に Sleep・DarkWake は無い。
+- collector 0.165.0 は、新しいイメージの一時のコンテナで `validate --config=/etc/otelcol/config.yaml` が終了コード 0。Mailpit・otel-lgtm と見本の PG の起動の確かめ（`docker inspect`）は Step 13 で指揮役が行う。
