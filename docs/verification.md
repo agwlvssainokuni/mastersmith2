@@ -80,8 +80,15 @@
 
 - `-PitForks=<N>` を付けると、結合テストを N 個の JVM に分けて並べて流します。付けないときは今までどおり1つの JVM で流します。1 以上の整数でない値は、理由を示して失敗します。
 - 全件の `./gradlew verify -PitForks=<N>` と、`-PitTests` を付けた `verifyQuick` に効きます。
-- CI（`.github/workflows/ci.yml` の `verify` の job）でも使います（Intent 261108-ci-checks-release）。CI は `./gradlew verify -PitForks="$IT_FORKS"` を流し、N は手動の実行（`workflow_dispatch`）の入力 `it_forks` があればその値、無ければ ci.yml の `env` の `IT_FORKS_DEFAULT`（既定 3。Build and Test で CI の上の 2 と 3 を比べて決める）です。手動で N を変えて流すときは `gh workflow run ci.yml --ref <ブランチ> -f it_forks=<N>` です。値は 1〜8 の整数に限り、外れたら CI の手順が止まります（実行環境の資源を使い切らないため）。
-- CI の上で 2 と 3 を比べるまでは、既定は手元の推奨の 3 のままです。並べた CI で失敗・不安定なテストが続いたときは、`IT_FORKS_DEFAULT` を `"1"` に戻すコミットで1つの JVM に戻し、原因を確かめます（`team.md` の「不安定なテストと CI の失敗」）。
+- CI（`.github/workflows/ci.yml` の `verify` の job）でも使います（Intent 261108-ci-checks-release）。CI は `./gradlew verify -PitForks="$IT_FORKS"` を流し、N は手動の実行（`workflow_dispatch`）の入力 `it_forks` があればその値、無ければ ci.yml の `env` の `IT_FORKS_DEFAULT`（既定 3。下の「CI の上の比べ」で決めた）です。手動で N を変えて流すときは `gh workflow run ci.yml --ref <ブランチ> -f it_forks=<N>` です。値は 1〜8 の整数に限り、外れたら CI の手順が止まります（実行環境の資源を使い切らないため）。
+- CI の上の比べ: 2026-11-11 に、同じコミット（`e566faa4`）で CI の手動の実行を `it_forks` 2・3 の交互に3回ずつ流し、検査の job（`./gradlew verify`）の始めから終わりまでの時間を測りました（Intent 261110-deps-forks-review）。6回とも1回目の試行で通り、失敗・不安定なテストは出ませんでした。中央値は N=3 が約 7 分短く、既定を 3 に決めました（差が 1 分未満なら 2 を選ぶ決まりでした）。GitHub のホストの実行環境の揺れを含みます。
+
+  | N | 1回目 | 2回目 | 3回目 | 中央値 |
+  |---|---|---|---|---|
+  | 2 | 23分28秒 | 28分40秒 | 28分52秒 | **28分40秒** |
+  | 3 | 27分07秒 | 21分32秒 | 21分12秒 | **21分32秒** |
+
+- 並べた CI で失敗・不安定なテストが続いたときは、`IT_FORKS_DEFAULT` を `"1"` に戻すコミットで1つの JVM に戻し、原因を確かめます（`team.md` の「不安定なテストと CI の失敗」）。
 - 各 JVM の JaCoCo の記録は同じ `backend/build/jacoco/integrationTest.exec` に追記されます。並べるとテストの JVM のヒープ（1 つあたり 1g）と対象DB のコンテナが N 倍になりうるため、N は手元の資源に合わせて選んでください。並べて落ちるテストが出たときは、`team.md` の「不安定なテストと CI の失敗」の決まりに従います。
 - 推奨は **N=3** です。2026-11-08 に、8 CPU・16GiB の PC（colima は 4 CPU・6GiB）で `./gradlew :backend:cleanIntegrationTest :backend:integrationTest` を N ごとに1回ずつ流して測りました（Intent 261107-verify-quick-local）。どの N でも 1,716 件が通り（失敗 0 件、飛ばし 10 件）、N=3 が最も速くなりました。N=4 で遅くなったのは、colima の CPU（4）をテストの JVM と対象DB のコンテナで取り合ったためと見ています（確かめてはいません）。各 N を1回ずつ測っただけなので、揺れを含みます。PC や colima の資源が違うときは、測り直して選んでください。
 
