@@ -73,7 +73,7 @@
 
 ### ③ 決まりの文書の直し（ブランチ `docs/261110-rules`、squash で統合）
 
-- [ ] **Step 14**（FR3.1・FR3.3）: `aidlc/spaces/default/memory/project.md` の Tech Stack の「Jackson の上書きは 3.1.7 とする（…）」の行と、opentelemetry-logback-appender の行の「Spring Boot 4.1.1」を、今の形（上書きは無く Jackson は Spring Boot の BOM の版。Step 3 の版）に書き換え、行の末尾に「（<書き換えのコミットの日付> Intent 261110-deps-forks-review で書き換え）」を付ける。Step 5 で固定を外した・残した結果も同じ節に反映する。前の文と後の文を `generation-notes.md` に並べる。書き換える文面は、コミットの前に依頼者に見せて承認を得る。
+- [x] **Step 14**（FR3.1・FR3.3）: `aidlc/spaces/default/memory/project.md` の Tech Stack の「Jackson の上書きは 3.1.7 とする（…）」の行と、opentelemetry-logback-appender の行の「Spring Boot 4.1.1」を、今の形（上書きは無く Jackson は Spring Boot の BOM の版。Step 3 の版）に書き換え、行の末尾に「（<書き換えのコミットの日付> Intent 261110-deps-forks-review で書き換え）」を付ける。Step 5 で固定を外した・残した結果も同じ節に反映する。前の文と後の文を `generation-notes.md` に並べる。書き換える文面は、コミットの前に依頼者に見せて承認を得る。
 - [ ] **Step 15**（NFR3）: 文書だけの変更のため、`verifyQuick` を流して通ったら `develop` へ squash で統合する。
 
 ### 記録

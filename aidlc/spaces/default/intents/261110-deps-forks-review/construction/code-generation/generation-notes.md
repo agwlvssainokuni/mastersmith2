@@ -202,6 +202,18 @@ i18next 27 の直し（基準 1 の範囲の中: アプリの本体 2 ファイ�
 - 入れ替えたコンテナの `docker inspect`: `mastersmith-mailpit-1` は `axllent/mailpit:v1.33.1@sha256:aef2aacc…`（`RepoDigests` も同じ）、`mastersmith-targetdb-postgres-1` は `postgres:18.6@sha256:e3d24f69…`（`RepoDigests` も同じ）で、どちらも `compose.yaml` の記述と一致した。
 - 眠り: `pmset -g log` で 21:50〜22:33 の間に Sleep・DarkWake は無い。
 - otel-lgtm 0.40.0 と collector 0.165.0 は起動していない（collector は設定の `validate` だけ）。手元の監視を起動する次の場面で確かめる（Build and Test に引き継ぐ）。
+- G7: 承認。② を `develop` へ squash で統合した（`ed0c8675`）。
+
+## Step 14: `project.md` の Tech Stack の書き換え（FR3.1・FR3.3、依頼者の決定 G8: 承認）
+
+ブランチ `docs/261110-rules`。`(learned …)` と `<!-- cid:… -->` は残した。
+
+| 行 | 前 | 後 |
+|---|---|---|
+| opentelemetry-logback-appender | …固定する（Spring Boot 4.1.1 が持つ OpenTelemetry 1.62 と、より新しい版が食い違い、外部エクスポートの有効時に失敗するため）。Spring Boot を上げるときは、この部品の版も合わせて見直す。 | …固定する（Spring Boot 4.1.2 が持つ OpenTelemetry 1.62.0 と、より新しい版が食い違い、外部エクスポートの有効時に失敗するため。外す時期は、Spring Boot の管理の OpenTelemetry が 1.63 以上になったときで、外部エクスポートを有効にして確かめる）。Spring Boot を上げるときは、この部品の版も合わせて見直す。（2026-11-11 Intent 261110-deps-forks-review で書き換え） |
+| Jackson | Jackson の上書きは 3.1.7 とする（user-admin の B1 の前に、High の脆弱性 4 件を解くため 3.1.6 から上げた。Spring Boot の管理の系列 3.1 のまま、Jackson の BOM を platform で読む形は同じ）。Spring Boot を上げるときは、この上書きの要否を見直す。 | Jackson は個別に上書きせず、Spring Boot の BOM の版を使う（BOM を platform で読む上書きは、Spring Boot を 4.1.2 に上げたコミット `98ef3e51` で外した）。ただし networknt json-schema-validator が推移依存で Jackson を引き上げることがあり、2026-11-11 に networknt を 3.0.9 に上げて Jackson は 3.1.8（3.1 系）になった（依頼者の決定）。3.2 系を求める networknt の版には上げない。Spring Boot を上げるときは、管理の Jackson の版と networknt が求める版を見直す。（2026-11-11 Intent 261110-deps-forks-review で書き換え） |
+
+Step 5 の固定の結果（appender と `-Dh2.compactThreads=1` は残す、networknt は 3.0.9）は上の2行に反映した。`-Dh2.compactThreads=1` の行は H2 が 2.4.240 のままのため書き換えない。
 
 ## ② の作業のブランチ
 
