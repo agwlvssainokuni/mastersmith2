@@ -37,11 +37,11 @@ jqwik = "1.10.2"
 archunit = "1.5.1"
 # DSL の YAML の読み込み（U2）。Spring Boot の推移依存と同じ版を、直接の依存として明示する。
 snakeyaml = "2.7"
-# DSL の JSON Schema の検証（U2）。3.0.7 は Jackson を 3.2 系に引き上げるため、Spring Boot の Jackson（3.1 系）で動く 3.0.6 に
-# 固定する。Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、見直した結果この固定を残す。
-# 2026-11-01 に見直した結果も同じ（最新の 3.0.8 は Jackson 3.2.1 を求める）。
-# 2026-11-11 に見直し、最新の 3.0.9 に上げた（3.0.9 は Jackson 3.1.8 を求め、3.1 系のまま管理の 3.1.7 から 3.1.8 に引き上げる。
-# 依頼者の決定 G1: B。Intent 261110-deps-forks-review）。3.2 系を求める版には上げないため、版の固定は続ける。
+# DSL の JSON Schema の検証（U2）。版を固定する: Jackson を 3.2 系に引き上げる版（3.0.7・3.0.8 は Jackson 3.2.1 を求める）を
+# 避け、アプリの Jackson を Spring Boot の 3.1 系に留めるため。今は 3.0.9 で、推移依存で Jackson を Spring Boot の管理の
+# 3.1.7 から 3.1.8（3.1 系）に引き上げる（Jackson の版は Spring Boot の BOM より networknt が先に決める）。
+# 経緯: 3.0.6 に固定（Intent 260928-quality-followup）、2026-11-01 も 3.0.6 のまま、2026-11-11 に 3.0.9 に上げた
+# （依頼者の決定 G1: B。Intent 261110-deps-forks-review）。
 # 外す時期: Spring Boot の管理の Jackson が 3.2 系以上になったとき。
 networknt-json-schema-validator = "3.0.9"
 # メールのテンプレートの描画（Intent 260925-user-management の U1）。自前の Mustache のエンジン java-mustache-processor の版。

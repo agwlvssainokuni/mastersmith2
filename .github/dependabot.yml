@@ -39,12 +39,11 @@ updates:
     # 求める。Intent 261110-deps-forks-review）。
     # 外す時期: Spring Boot の管理の OpenTelemetry が 1.63 以上になったとき（外部エクスポートを有効にして確かめる）。
     #
-    # networknt-json-schema-validator は版を固定している（2026-11-11 から 3.0.9）。3.0.7 以降はアプリ全体の Jackson を 3.2 系に引き上げ、Spring Boot の
-    # 管理の 3.1 系から外れるため（project.md の学び、Intent 260928-quality-followup の G4: A）。すべての更新を知らせない。
-    # Spring Boot 4.1.2 でも管理の Jackson は 3.1.7（3.1 系）のため、固定を残した。2026-11-01 にも見直し、同じ理由で残した
-    # （最新の 3.0.8 は Jackson 3.2.1 を求める。Intent 261101-maintenance-update）。
-    # 2026-11-11 に見直し、最新の 3.0.9 に上げた（Jackson 3.1.8 を求め、3.1 系のまま管理の 3.1.7 から引き上げる。依頼者の決定
-    # G1: B。Intent 261110-deps-forks-review）。3.2 系を求める版を避けるため、すべての更新を知らせない形は続ける。
+    # networknt-json-schema-validator は版を固定している（今は 3.0.9）。アプリの Jackson の版は Spring Boot の BOM より networknt の
+    # 推移依存が先に決め、3.0.9 は Jackson を管理の 3.1.7 から 3.1.8（3.1 系）に引き上げる。Jackson を 3.2 系に引き上げる版
+    # （3.0.7・3.0.8 は 3.2.1 を求める）を避けるため、すべての更新を知らせない（project.md の学び、Intent 260928-quality-followup の G4: A）。
+    # 経緯: 3.0.6 に固定し、2026-11-01 も 3.0.6 のまま（Intent 261101-maintenance-update）、2026-11-11 に 3.0.9 に上げた
+    # （依頼者の決定 G1: B。Intent 261110-deps-forks-review）。
     # 外す時期: Spring Boot を上げて、Spring Boot の管理の Jackson が 3.2 系以上になったとき。
     #
     ignore:
