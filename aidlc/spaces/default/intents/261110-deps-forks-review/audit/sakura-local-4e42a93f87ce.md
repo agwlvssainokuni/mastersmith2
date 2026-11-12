@@ -4785,3 +4785,88 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-12T17:08:52Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-execution/deployment-execution-questions.md
+**Context**: operation > deployment-execution > deployment-execution-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-12T17:08:59Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-execution
+**Decision**: Q1 main への取り込み・Q2 初期管理者について前の配備の後に変えたこと・Q3 順 6〜8 の承認
+**Options**: Q1: A・B,Q2: A・B・C,Q3: A・B
+**Question Id**: ddb2dc09
+**Question Type**: stage-question
+**Question Chat**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question Shows**: sha256:441101a76f6de9b0c614aa28513a4f1737a22cc823bd9e6e63d10b335cb1ef23
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-12T20:30:16Z
+**Event**: HUMAN_TURN
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A","A"]
+**Message Id**: 03a22f61
+**Open Questions**: ddb2dc09
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-execution/deployment-execution-questions.md","entries":{"配備の前の確かめの結果（順 1〜4）":"bffeb88e663f051c","Q1":"f7ae2731e2cba190","Q2":"08b8d3c154bb622e","Q3":"23a71cb92a2e25dd","Sources":"41b624f1217cd3e0"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T20:30:16Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q1. 先頭の 82825a67 の CI が通ったら、develop を main へ fast-forward してよいですか？（main のプッシュはあなたが行います） 推奨は A です。取り込みの前の確かめは済んでいて、先頭との差は記録だけです。CI が通らなければ取り込まずに止めます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T20:30:16Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q2. 前の配備（2026-11-10）の後に、初期管理者のパスワードを画面で変えた・利用を止めた・管理者の印を外した、のどれかを行いましたか？ 行っていると、起動のときに救済の仕組みが働きます。
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T20:30:16Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q3. main の取り込みの後、内部DB の複写と数え、アプリのコンテナの作り直しと起動、健全性の確かめ（順 6〜8）を進めてよいですか？ 推奨は A です。配備の前の確かめはすべて通り、戻し先のタグも付けてあります。アプリは今止まっているので、止まるものはありません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-12T20:30:17Z
+**Event**: HOST_TURN
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-12T20:30:33Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-execution
+**Details**: Q1: A; Q2: A; Q3: A
+**Message Id**: 03a22f61
+**Person Reply**: A\nA\nA
+
+---
