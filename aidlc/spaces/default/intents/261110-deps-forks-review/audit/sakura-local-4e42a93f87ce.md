@@ -4372,3 +4372,132 @@
 **Answer Mode**: guide (reused from requirements-analysis)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-12T16:12:04Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-12T16:12:10Z
+**Event**: DECISION_RECORDED
+**Stage**: deployment-pipeline
+**Decision**: Q1 main への取り込みの時機・Q2 スモークテストの範囲・Q3 台本 A3 が .env を読むこと
+**Options**: Q1: A・B,Q2: A・B,Q3: A・B・C
+**Question Id**: 2831f1aa
+**Question Type**: stage-question
+**Question Chat**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question Shows**: sha256:afbaf1c31c81dc22a7ec0837e0be0cae0380d36dc4334d18021016ba53dde826
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-12T16:12:55Z
+**Event**: HUMAN_TURN
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A","A"]
+**Message Id**: 88b5db6d
+**Open Questions**: 2831f1aa
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-pipeline-questions.md","entries":{"調べて分かったこと（判断の前提）":"fccc374fd8b10eb0","決まっていること（質問にしない）":"4101c5ca0ccb13e3","Q1":"b5257f416c571d61","Q2":"95d191483ad1bb25","Q3":"aa1c5a7594e4a9ee","Sources":"eb687fae4c5f3071"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T16:12:55Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q1. main への取り込みをいつ行いますか？ 推奨は A です。前の配備と同じ形で、配備した版が main の先頭になります。取り込みの前の確かめは、先頭の CI の結論を除いて済んでいます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T16:12:55Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q2. スモークテストの範囲はどうしますか？ 推奨は A です。i18next 27 で文言の出方が変わっていないかを日本語と英語の両方で見られ、包み直した日時の文言も実際の画面で確かめられます。監査に残るのはログインとログアウトだけです。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-12T16:12:55Z
+**Event**: QUESTION_REPLIED
+**Session**: ffb34f4c-9492-43cc-a5ae-8b993abb83d7
+**Question**: Q3. 台本 A3（内部DB の複写の数え）が .env から初期管理者のメールアドレスを読むことを許しますか？ 値そのものは出力しません。推奨は A です。2回分をまとめて許しておけば、配備の途中で止まらずに済みます。
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-12T16:13:00Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-12T16:13:02Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-12T16:13:04Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-pipeline-questions.md
+**Context**: operation > deployment-pipeline > deployment-pipeline-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-12T16:13:07Z
+**Event**: QUESTION_ANSWERED
+**Stage**: deployment-pipeline
+**Details**: Q1: A; Q2: A; Q3: A
+**Message Id**: 88b5db6d
+**Person Reply**: A\nA\nA
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-12T16:14:27Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/cd-config.md
+**Context**: operation > deployment-pipeline > cd-config.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-12T16:15:05Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/deployment-strategy.md
+**Context**: operation > deployment-pipeline > deployment-strategy.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-12T16:15:29Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261110-deps-forks-review/operation/deployment-pipeline/rollback-runbook.md
+**Context**: operation > deployment-pipeline > rollback-runbook.md
+
+---
