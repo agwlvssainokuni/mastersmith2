@@ -46,6 +46,45 @@ X. Other (please specify)
 
 [Answer]: A
 
+## Q4. [リリースの担当] スモークテストの S3（ログインと、見るだけの画面）の結果
+
+`main` を `82825a67` へ進め（先頭の CI は試行 1 で success、検査の job 26分46秒）、順 6〜8 と S1・S2 は通りました（アプリは 20:31:13 UTC に healthy）。`deployment-strategy.md` の S3 を Chrome でお願いします。ログインすると監査に `LOGIN_SUCCEEDED` が1件残ります（ログアウトすると `LOGGED_OUT` も1件）。見るだけで、保存・作成・削除・投入・生成はしません。
+
+1. 開いているタブがあれば読み込み直し、`http://127.0.0.1:8080/` で初期管理者でログインする。
+2. (a) ホーム、(b) DSL の状態の画面、(c) 業務データの一覧（例: `customers`）。検索の欄を開き、日時の列のヒントが出ること、日時の欄に `2026-11-01 25:00` のような形の合わない値を入れて検索を押すと誤りの文言が出ること、(d) 役割の一覧、(e) 利用者の管理の一覧、を見る。
+3. 表示の設定で言語を英語に切り替え、(a)〜(e) を同じように見る。終わったら日本語に戻す（ブラウザに保存されるだけで監査に残らない）。
+4. どの画面も開けて崩れず、文言の鍵がそのまま（`tables.search.…` のような形で）出ていないこと。
+
+A. すべて通った（ログインの回数・ログアウトの有無・予定に無い操作があれば書く）
+B. 通らない画面があった（どの画面で、どう見えたかを書く）
+X. Other (please specify)
+
+[Answer]: A（依頼者の答え「A, login 1, logout 1」。ログイン 1 回・ログアウト 1 回、予定に無い操作なし）
+
+## Q5. [リリースの担当] 古いイメージの片付け（順 13、FR6.2）
+
+配備は完了しました（S1〜S5 すべて通過）。要件 FR6.2 のとおり、消す一覧の承認をお願いします。どれも使うコンテナは 0 件です（`docker ps -a --filter ancestor=<ID>`）。
+
+| 名前 | ID | 大きさ | 理由 |
+|---|---|---|---|
+| `mastersmith:pre-ci-checks-release` | `4ee5fb45593e` | 655 MB | Intent 261104 で配備した版。新しい戻し先 `mastersmith:pre-deps-forks-review`（`0d4b6e8866a9`）より古い |
+| `grafana/otel-lgtm`（0.39.0） | `4c8056c9c05f` | 3.58 GB | 固定先は 0.40.0 |
+| `otel/opentelemetry-collector`（0.164.0） | `28b6d41ac51b` | 212 MB | 固定先は 0.165.0 |
+| `axllent/mailpit`（v1.33.0） | `9b3a463be153` | 51 MB | 固定先は v1.33.1 |
+| `postgres`（18.6 の前のダイジェスト） | `3a4264520e12` | 666 MB | 固定先は新しいダイジェスト |
+| `mysql`（26.10.0 の前のダイジェスト） | `7b16ec7caa94` | 1.10 GB | 固定先は新しいダイジェスト |
+
+- 片付けの前の `docker system df` のイメージ: 18 個・13.38GB（回収できる 8.214GB）。
+- 残すもの: `mastersmith:local`（`e4eb8ce7de01`、今回の配備）と戻し先 `mastersmith:pre-deps-forks-review`、固定先のイメージ（`cd-config.md` の 7節）。ほかのイメージには触れない。
+
+**推奨: A。** 理由: 戻し先は1つ前の版で足り、さらに前は `main` の履歴から作り直せます。外部のイメージは固定先から外れ、どのコンテナも使っていません。
+
+A. この6つを `docker rmi` で消す
+B. 消さない
+X. Other (please specify)
+
+[Answer]: A
+
 ## Sources
 
 - 流れ: `operation/deployment-pipeline/cd-config.md`（3節・4節）、`deployment-strategy.md`、`rollback-runbook.md`
