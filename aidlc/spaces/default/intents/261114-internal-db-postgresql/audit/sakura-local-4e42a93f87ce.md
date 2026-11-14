@@ -1932,3 +1932,162 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T13:24:58Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/requirements-analysis/requirements-analysis-questions.md
+**Context**: inception > requirements-analysis > requirements-analysis-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T13:25:03Z
+**Event**: DECISION_RECORDED
+**Stage**: requirements-analysis
+**Decision**: Q1-Q4
+**Options**: Q1: A. 既定は H2 のまま,Q1: B. 既定を PostgreSQL に,Q2: A. 移し替えは範囲の外,Q2: B. 一度だけ移す道具を作る,Q2: C. 手で移す手順を書く,Q3: A. インスタンスは1つの前提のまま,Q3: B. 複数のインスタンスに対応,Q4: A. 内部DB 用に別のコンテナ,Q4: B. 対象DB と同じコンテナの別のデータベース
+**Question Id**: e95cfac9
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:a8de065ace23a62a4e22ac219c40e9d2545debf2335d67140289257bd0251f30
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T13:43:36Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A","A","A"]
+**Message Id**: 9e5da686
+**Open Questions**: e95cfac9
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/requirements-analysis/requirements-analysis-questions.md","entries":{"決まっていること（質問にしない）":"1a617715a7dd77d6","Q1":"3e6ad2cb3769c445","Q2":"9944d08a51c64b67","Q3":"6786b631fb7437bd","Q4":"1085117df326ab7a","Q5":"7229bd8732770122","Q6":"0011ad13327a0ed1"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:43:37Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [プロダクト] Q1. 何も設定しないときの内部DB をどうしますか。推奨は A です。今の利用者と手元の配備（H2）を変えずに済み、PostgreSQL は使いたいときだけ選べます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:43:37Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [プロダクト] Q2. H2 の内部DB の中身を PostgreSQL へ移す道具は今ありません。推奨は A です。今は移す必要のある本番のデータが無く、移し替えは決めることが多いため、必要になったときに別の Intent で行うのが確実です。
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:43:37Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [プロダクト] Q3. 今のアプリはインスタンスが1つの前提で作られている所があります。推奨は A です。複数のインスタンスには同時の操作・ジョブの重なりなど別の論点が多く、今回の「PostgreSQL で動くこと」と切り分けた方が確かめやすいためです。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:43:37Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [運用] Q4. 手元の compose で、内部DB の PostgreSQL をどう置きますか（見本の対象DB の PostgreSQL がすでにあります）。推奨は A です。内部DB と対象DB を別扱いにする前提に合い、データ・資格情報・権限が混ざらず、片方を作り直しても他方に響きません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T13:43:40Z
+**Event**: QUESTION_ANSWERED
+**Stage**: requirements-analysis
+**Details**: Q1: A; Q2: A; Q3: A; Q4: A
+**Person Reply**: A\nA\nA\nA
+**Message Id**: 9e5da686
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T13:43:47Z
+**Event**: DECISION_RECORDED
+**Stage**: requirements-analysis
+**Decision**: Q5-Q6
+**Options**: Q5: A. 確かめた版（18 系）だけ,Q5: B. 古い版も約束して確かめる,Q6: A. 目標は H2 のまま PostgreSQL は基準の値を記録,Q6: B. PostgreSQL にも同じ目標で合否
+**Question Id**: 69d8dd5b
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:76f04a0ac929974dd2eafca0301e18956fc46088a6821fc9827e0ed62dd144f7
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T13:44:28Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A"]
+**Message Id**: 89bd7852
+**Open Questions**: e95cfac9, 69d8dd5b
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/requirements-analysis/requirements-analysis-questions.md","entries":{"決まっていること（質問にしない）":"1a617715a7dd77d6","Q1":"3e6ad2cb3769c445","Q2":"9944d08a51c64b67","Q3":"6786b631fb7437bd","Q4":"1085117df326ab7a","Q5":"7229bd8732770122","Q6":"0011ad13327a0ed1"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:44:29Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [運用] Q5. 確かめに使う PostgreSQL は対象DB と同じ postgres:18.6 に固定します。それ以外の版で動くことをどこまで約束しますか。推奨は A です。確かめていない版で動くと書くと、その約束を守れているか分からなくなるためです。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:44:29Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q6. PostgreSQL のときの性能の目標。今の目標は H2 で測ってきており、この Intent では Performance Validation の段を行いません。推奨は A です。PostgreSQL の結合テストを普段流さない決定と合わせ、目標を緩めずに済みます。測るかどうかと測り方は NFR 要件の段で決めます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T13:44:32Z
+**Event**: QUESTION_ANSWERED
+**Stage**: requirements-analysis
+**Details**: Q5: A; Q6: A
+**Person Reply**: A\nA
+**Message Id**: 89bd7852
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T13:48:25Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/requirements-analysis/requirements.md
+**Context**: inception > requirements-analysis > requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T13:48:36Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/requirements-analysis/traceability.json
+**Context**: inception > requirements-analysis > traceability.json
+
+---
