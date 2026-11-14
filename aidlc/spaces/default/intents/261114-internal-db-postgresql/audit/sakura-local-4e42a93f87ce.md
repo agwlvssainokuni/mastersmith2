@@ -1449,3 +1449,189 @@
 **Message Id**: eca2ba35
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T12:53:32Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: リリース担当に統合を頼む前に、許可の形を auto から manual に切り替えてもらう
+**Options**: 切り替えた,auto のまま試す
+**Question Id**: 31356437
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:c55382d55dcc07a277645e1f25a51bdeccca725451161c5dfb1c8c791a4f2713
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T12:53:40Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: af49713ce6dc8733a
+**Message**: manual modeにしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T12:54:50Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: 7d058a83
+**Open Questions**: b98567cb, 60855fa6, 319f5e2b, 31356437
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md","entries":{"決まっていること（質問にしない）":"010b43f0964ab5c0","Q1":"9a2683e8c7b341ec","Q2":"67037ba5b5493d4b","Q3":"c13d0cd257e7ffb4","Q4":"e302450acbdbef2d","Q5":"656e6644a638483a","Q6":"63ef41f05c70032b","Q7":"3291ad76af3af1b6"}}
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T12:54:53Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: 切り替えた
+**Person Reply**: manual modeにしました
+**Message Id**: 7d058a83
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-14T12:55:16Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-pipeline-deploy-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T12:55:20Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a1d767c30ab08fc49
+**Message**: auto modeにしました
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:55:50Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Context**: inception > practices-discovery > team-practices.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:55:57Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Context**: inception > practices-discovery > team-practices.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:05Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Context**: inception > practices-discovery > team-practices.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:08Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Context**: inception > practices-discovery > team-practices.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T12:56:12Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md
+**Context**: inception > practices-discovery > discovered-rules.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:18Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Context**: inception > practices-discovery > evidence.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:20Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Context**: inception > practices-discovery > evidence.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:42Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Context**: inception > practices-discovery > evidence.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:56:47Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Context**: inception > practices-discovery > evidence.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T12:56:47Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md
+**Context**: inception > practices-discovery > practices-discovery-timestamp.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T12:57:01Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-pipeline-deploy-agent
+**Agent ID**: ad4b753c6f785dde0
+**Message**: ## Subagent Summary\n\n4つの成果物を Q1〜Q7 の答えと、指揮役が伝えた読み方に合わせて直しました。テスト・ビルド・段の流れの操作は行っていません。`aidlc/spaces/default/memory/` の下と質問のファイルも直していません。\n\n**直したファイル**\n- `aidlc/spaces/default/intents/261114-internal-db-
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-14T12:57:01Z
+**Event**: HOST_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Practices Discovered
+**Timestamp**: 2026-11-14T12:57:11Z
+**Event**: PRACTICES_DISCOVERED
+**Sources Scanned**: team.md, project.md, codekb/mastersmith2 (code-structure, technology-stack, dependencies, code-quality-assessment, architecture, business-overview), study-internal-db-postgresql.md, git history, .github/workflows, compose.yaml, Dockerfile, backend/build.gradle.kts, docs/verification.md
+**Drafts**: team-practices.md, discovered-rules.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T12:57:22Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/memory.md
+**Context**: inception > practices-discovery > memory.md
+
+---

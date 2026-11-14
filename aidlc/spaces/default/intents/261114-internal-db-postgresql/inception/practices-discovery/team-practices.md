@@ -1,6 +1,6 @@
 # Team Practices
 
-> Intent `261114-internal-db-postgresql` の Practices Discovery のリードの下書き（Step 2）。今の `aidlc/spaces/default/memory/team.md` の5つの節を、確定した今の基準としてそのまま引き継いだ。この下書きで足したのは、Way of Working の `**Integration branch**` の行と、Testing Posture の `**Methodology evidence**` の行の2つだけで、ほかの文は変えていない。内部DB を PostgreSQL でも動かすことで今の決まりが決めていない点・合わなくなりうる点は、面談（Step 4）で依頼者に確かめ、答えに合わせて統合の回（Step 5）で直す（候補は `evidence.md` の「面談で確かめたい点」）。
+> Intent `261114-internal-db-postgresql` の Practices Discovery のリードの統合（Step 5）。今の `aidlc/spaces/default/memory/team.md` の5つの節を、確定した今の基準として引き継ぎ、Way of Working の `**Integration branch**` の行と Testing Posture の `**Methodology evidence**` の行を足した。そのうえで、面談（`practices-discovery-questions.md` の Q1〜Q7）の答えに当たる行だけを書き換え・足した（Way of Working のコンテナの実行環境が無いときの行、Testing Posture の内部DB のテストの行、Deployment の2行）。書き換え・足した行には「（2026-11-14 Intent 261114-internal-db-postgresql で …）」を付けた。ほかの文は変えていない。
 
 ## Way of Working
 
@@ -20,7 +20,7 @@
 - 画面からの一連の操作のテスト（E2E、`./gradlew e2eTest`）は、ブランチごとの統合の前には流さず（統合の前は上の1コマンドの検査（`./gradlew verifyQuick` または全件の `./gradlew verify`）で行う）、Intent の最後（Build and Test）とリリースの前に全体を1回流す（2026-11-04 に依頼者の決定で、変えたパスでブランチごとに決める前の決まりを廃止）。（2026-11-08 Intent 261107-verify-quick-local で書き換え）
 - Dependabot が作る更新のプルリクエスト（向き先は GitHub の既定のブランチの `develop`）は、依存の更新の知らせとして扱い、GitHub の画面でマージしない。手元で版と lockfile をまとめて更新し、全件の1コマンドの検査（`./gradlew verify`。`verifyQuick` では代えない）を通してから `develop` に統合し、プルリクエストは閉じる。重大度 High 以上の知らせは、次の Bolt に入る前に取り込む。（2026-11-08 Intent 261107-verify-quick-local で書き換え）
 - 依存関係の脆弱性の関門は、1コマンドの検査の中の OSV-Scanner とする（GitHub の Dependabot alerts は使っていない）。OSV-Scanner は `./gradlew verify` と CI を流したときにだけ働き、新しい脆弱性が公表された時点では知らせない。そのため、Dependabot の知らせを見送る依存（`.github/dependabot.yml` の `ignore`）の脆弱性には、次の `./gradlew verify` と CI の OSV-Scanner で気づく。更新を見送る依存を `ignore` に足すときは、見送る理由と外す時期を同じファイルのコメントに書く。
-- 統合前の1コマンドの検査（全件の `verify` と、`-PitTests` を付けた `verifyQuick`）は、コンテナの実行環境（colima）が動いていることを前提にする。コンテナの実行環境が無いときは、警告を出してコンテナで動かす対象DB のテストだけを飛ばす（黙って飛ばさない）。ただし、飛ばした状態では統合しない（`-PitTests` を付けた `verifyQuick` では、バックエンドのカバレッジの下限を判定しないため、飛ばさずに失敗にする。CI と同じ扱い）。警告が出たらコンテナの実行環境を起動して検査をやり直し、対象DB のテストも通ってから統合する。飛ばしてよいのは開発中の途中の実行だけとし、CI では必ず実行する。（2026-11-08 Intent 261107-verify-quick-local で書き換え）
+- 統合前の1コマンドの検査（全件の `verify` と、`-PitTests` を付けた `verifyQuick`）と、明示の指定を付けて流す内部DB の PostgreSQL の結合テスト（Testing Posture）は、コンテナの実行環境（colima）が動いていることを前提にする。コンテナの実行環境が無いときは、警告を出してコンテナで動かすテスト（対象DB のテストと、明示して流した内部DB の PostgreSQL のテスト）だけを飛ばす（黙って飛ばさない）。ただし、飛ばした状態では統合しない（`-PitTests` を付けた `verifyQuick` では、バックエンドのカバレッジの下限を判定しないため、飛ばさずに失敗にする。CI と同じ扱い）。警告が出たらコンテナの実行環境を起動して検査をやり直し、コンテナで動かすテストも通ってから統合する。飛ばしてよいのは開発中の途中の実行だけとし、CI では必ず実行する（内部DB の PostgreSQL のテストは、明示の指定を付けて CI で流したときに飛ばさない）。（2026-11-08 Intent 261107-verify-quick-local で書き換え）（2026-11-14 Intent 261114-internal-db-postgresql で書き換え。内部DB の PostgreSQL の結合テストも、対象DB のテストと同じ扱いにした）
 - CI は統合後の再確認として動かす。CI が失敗したら、次の Bolt に進む前に、Testing Posture の「不安定なテストと CI の失敗」の決まりに従って扱う（原因を直すか、決まりの範囲で再実行して進めるか、依頼者の決定で持ち越すか）。
 - `origin` への `git push` は依頼者自身が行う。AI はプッシュしない。
 - GitHub のリポジトリは公開（public）である。公開されて困る情報（秘密情報・個人情報）をコミットしない前提で運用する。
@@ -74,7 +74,7 @@
 - 性能・資源の目標の測り方（物差し）を変えるのは、要件定義で依頼者が明示に決めたときだけとし、変える理由を記録する。変えた後も、少なくとも1回は前の物差しの値を並べて記録する。
 - 負荷の試験の使い捨ての環境の対象DB の行は、perf の台本（`perf/` の下）で決めた種から作る（行の数は NFR 要件の段で決める）。k6 の場面の setup は、前の場面が残した状態に頼らない。
 
-- 内部DB（組み込みの H2）を使うテストは、コンテナではなく本番と同じ組み込みの H2 で行う。Testcontainers は、コンテナで動かす対象DB（後続 Intent D・E で扱う業務DB）のテストに使う。Walking Skeleton の「DB を使うテスト1件以上（本番と同じ種類の DB をコンテナで起動する）」も、内部DBについてはこの読み方とする。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:nfr-requirements:bb1f2f3e98692eeea477da5f229ae3fff34cb064a2feea6ef405a3b7c61b99b7 -->
+- 内部DB を使うテストは組み込みの H2 を基本とし、コンテナではなく本番と同じ組み込みの H2 で行う。H2 での結合テストの全件は今のまま残す。内部DB を PostgreSQL で動かす経路に固有の振る舞いを確かめる結合テストは、H2 の全件とは別のバリエーションとして作り、版を固定したイメージのコンテナで起動した実際の PostgreSQL で行う（固い制約は `project.md` の Mandated）。このテストは明示の指定（Gradle の指定。名前は設計で決める）を付けたときだけ流し、通常の `./gradlew verify`・`./gradlew verifyQuick`・CI（`develop` へのプッシュ）では流さない。流す場面は決めず、必要と判断したときに明示して流す（CI で流すときも明示の指定を付けた実行に限る。形は設計で決める）。Testcontainers は、コンテナで動かす対象DB（後続 Intent D・E で扱う業務DB）のテストと、内部DB の PostgreSQL の結合テストに使う。Walking Skeleton の「DB を使うテスト1件以上（本番と同じ種類の DB をコンテナで起動する）」も、内部DBについてはこの読み方とする。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:nfr-requirements:bb1f2f3e98692eeea477da5f229ae3fff34cb064a2feea6ef405a3b7c61b99b7 -->（2026-11-14 Intent 261114-internal-db-postgresql で書き換え。H2 を基本とし、PostgreSQL に固有の結合テストを明示したときだけ流す形にした）
 
 - 画面を廃止する・移すことで既存の E2E を書き換える・消すときは、本数に数えない。ただし、その画面で確かめていた検査（例: 管理の仮の画面の E2E 030・090・130 の 403 の表示・アクセシビリティ・管理の権限の確認の API）は、別の画面か別のテストへ移して残し、移す前と後の件数を Build and Test で記録する。
 
@@ -92,6 +92,8 @@
 - 権限などのデータの形を変えるときは、広げてから縮める二段にする。新しい形（表・列）を足し、前の版のアプリが使う列は消さずに残して、消すのは後の Intent とする（例: Intent 261004-role-menu で役割の表を足しても `users.admin_flag` は残す。列の扱いは設計で決める）。行を移す移行には、移行の後も前の版が使う列が一貫して読めることを確かめる結合テストを書き、前の版へ戻したときの権限のずれ（戻した版での権限が、戻す直前の割り当てと一致するか）を戻しの確かめに入れる。
 - 広げてから縮める二段の「縮める」側（例: `users.admin_flag` を消す）を行う Intent では、列を消す移行は1つ前の版のアプリへ戻せなくなるため、(1) 縮める前の版がその列を読まないことを先に配備して確かめ、(2) 列を消す移行を別の配備に分け、(3) 戻しは配備の前の内部DB の複写を戻す形とし、失うもの（その後のデータと監査の行）を手順に書く。内部DB の複写はリポジトリの外に置き、コミットしない。
 - コンテナのイメージは版のタグと複数アーキテクチャの index のダイジェストで固定し、上げるときは Dependabot が見ない固定先も同じ版とダイジェストに揃える。固定先の一覧は `.github/dependabot.yml` に書く。
+- 内部DB の PostgreSQL のコンテナのイメージは、対象DB の PostgreSQL と同じ版とダイジェストを使い、上げるときは一緒に上げる。内部DB 用の固定先（テストの定数・compose）を、`.github/dependabot.yml` の固定先の一覧に足す。（2026-11-14 Intent 261114-internal-db-postgresql で追加）
+- 手元の配備は、これまでどおり内部DB を H2 で行う。内部DB の PostgreSQL は compose の profile などで選べる形にし、Deployment Execution で使い捨ての PostgreSQL の内部DB を相手に、起動確認（ヘルスチェック）とスモークテストを確かめる。PostgreSQL の内部DB のバックアップと戻し（`pg_dump` など）の手順を文書に足し、Deployment Execution で1回練習する。既定の内部DB を H2 から変えるかは要件の段で決める。（2026-11-14 Intent 261114-internal-db-postgresql で追加）
 - 構造化ログの外部エクスポートは既定で無効とし、配備の設定で環境ごとに有効化を切り替える。
 
 - フロントエンドの依存関係の脆弱性は、実行時に使うもの（dependencies、推移依存を含む）は重大度 High 以上で統合を止める。開発時にだけ使うもの（devDependencies）は警告にとどめる。ただし、悪意のあるパッケージ（OSV の MAL- で始まるもの）と、成果物を作る道具（Vite・Rollup・esbuild・TypeScript など）の High 以上は止める。対象の道具の一覧は config/npm-build-tools.txt に置く。 (learned 2026-09-23) <!-- cid:260922-auth-audit-base:code-generation:28ae755ce1652f5d951107b80eaa36eae9ddbf6708f8f0f5b2fcbd0a6f540185 -->
