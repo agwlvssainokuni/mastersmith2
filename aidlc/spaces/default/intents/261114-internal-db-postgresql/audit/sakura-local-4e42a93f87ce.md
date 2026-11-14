@@ -3154,3 +3154,413 @@
 **Context**: inception > domain-design > memory.md
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T15:36:48Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3c69e429
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T15:36:48Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3c69e429
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T15:36:48Z
+**Event**: SENSOR_FIRED
+**Fire id**: 301ba4c7
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: 301ba4c7
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: b5f7421a
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: b5f7421a
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+**Duration ms**: 81
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7906a0cb
+**Sensor ID**: upstream-coverage
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7906a0cb
+**Sensor ID**: upstream-coverage
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: dc2c34e8
+**Sensor ID**: traceability
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: dc2c34e8
+**Sensor ID**: traceability
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+**Duration ms**: 91
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-14T15:36:49Z
+**Event**: REVIEW_REQUESTED
+**Stage**: domain-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:06715fe56f049ccc20f9e17e3365b6d74de4dce2c53d1fd25ee2270189181364
+**Request Id**: review:d6d572051acdfe9391a78235fde51e4a
+**Review File**: .aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.d6d572051acdfe9391a78235fde51e4a.review.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T15:36:53Z
+**Event**: DECISION_RECORDED
+**Stage**: domain-design
+**Decision**: レビュー役を起動する前に、許可の形を auto から manual に切り替えてもらう
+**Options**: 切り替えた,auto のまま試す
+**Question Id**: 9f0d64f3
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:4896200f5c768a64e495995100c881c94036a62b63bf939daa226e7540db1766
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T15:37:01Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: aaf25d7a77bdba878
+**Message**: manual modeにしました
+
+---
+
+## Session Compacted
+**Timestamp**: 2026-11-14T16:30:54Z
+**Event**: SESSION_COMPACTED
+**Current Stage**: domain-design
+**State Validity**: valid
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T16:31:36Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a2355ca2da64686ac
+**Message**: <analysis>\nThe session is an AI-DLC workflow resumed with `/aidlc --resume` for Intent `261114-internal-db-postgresql` (scope classic, Standard depth, brownfield). The conversation language is Japanes
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T19:59:26Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: 18c82ba1
+**Open Questions**: 479e3dfd, 255e46f3, 9f0d64f3
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/domain-design-questions.md","entries":{"決まっていること（質問にしない）":"589c2c998401f61e","Q1":"5486d9e81f1e4d78","Q2":"7d604be14826251b","Q3":"d76565a326b8c655","Q4":"45562aefe4d911fb"}}
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T19:59:30Z
+**Event**: QUESTION_ANSWERED
+**Stage**: domain-design
+**Details**: 切り替えた
+**Message Id**: 18c82ba1
+**Person Reply**: manual modeにしました
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-14T19:59:46Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T19:59:50Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: af5cda842a88dadf3
+**Message**: auto modeにしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T19:59:53Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: c28e030f
+**Open Questions**: 479e3dfd, 255e46f3, 9f0d64f3
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/domain-design-questions.md","entries":{"決まっていること（質問にしない）":"589c2c998401f61e","Q1":"5486d9e81f1e4d78","Q2":"7d604be14826251b","Q3":"d76565a326b8c655","Q4":"45562aefe4d911fb"}}
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T19:59:57Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: af264c9bd8d639cf5
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T20:00:26Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.d6d572051acdfe9391a78235fde51e4a.review.md
+**Context**: .aidlc-engine > reviews > domain-design > stage > 77fabfff7a556cc4 > 1.d6d572051acdfe9391a78235fde51e4a.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-14T20:00:33Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: a8e55cb23e78a00a1
+**Message**: **Reviewer:** aidlc-architecture-reviewer-agent\n\n判定は **READY** です。指摘は 5 件で、High が 0 件、Medium が 2 件、Low が 3 件です。\n\n部品の depends_on と dependents は対称で、循環はありません。ADR-001〜006 はどれも Context・Decision・Consequence
+**Review File Digest**: .aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.d6d572051acdfe9391a78235fde51e4a.review.md=53541a6904cf76eafb4927819a2451fbd723145b625a8d2254a5b4b757e6f819
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-14T20:00:36Z
+**Event**: HOST_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Error Logged
+**Timestamp**: 2026-11-14T20:00:39Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage domain-design --reviewer aidlc-architecture-reviewer-agent --iteration 1 --verdict READY --project-dir <project-dir>
+**Error**: Refusing REVIEW_COMPLETED for "domain-design": the reviewer appendix must contain exactly one canonical verdict line matching --verdict.
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T20:01:00Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.d6d572051acdfe9391a78235fde51e4a.review.md
+**Context**: .aidlc-engine > reviews > domain-design > stage > 77fabfff7a556cc4 > 1.d6d572051acdfe9391a78235fde51e4a.review.md
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-14T20:01:01Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: domain-design
+**Checkpoint**: review-receipt
+**Changed**: aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.d6d572051acdfe9391a78235fde51e4a.review.md
+**Recorded**: 53541a6904cf76eafb4927819a2451fbd723145b625a8d2254a5b4b757e6f819
+**Current**: 74a3e61ea5e5e19289c00962744f5a4f1deef7069f006712cf7c16059de80620
+**Details**: The review file for Domain Design was edited after the reviewer finished.
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-14T20:01:02Z
+**Event**: REVIEW_COMPLETED
+**Stage**: domain-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Verdict**: READY
+**Review Edited After Reviewer**: yes
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:06715fe56f049ccc20f9e17e3365b6d74de4dce2c53d1fd25ee2270189181364
+**Artifact Fingerprint**: sha256:06715fe56f049ccc20f9e17e3365b6d74de4dce2c53d1fd25ee2270189181364
+**Request Id**: review:d6d572051acdfe9391a78235fde51e4a
+**Review Record**: .aidlc-engine/reviews/domain-design/stage/77fabfff7a556cc4/1.json
+**Review Record Digest**: sha256:5fadbebcfb87c902dee67bfc2cd7df6ceff282c2ffd238dab070d1490f9ba0d2
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T20:01:22Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4277bcab
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T20:01:22Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4277bcab
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+**Duration ms**: 134
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0384a541
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0384a541
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md
+**Duration ms**: 87
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: 06e36666
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: 06e36666
+**Sensor ID**: required-sections
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+**Duration ms**: 87
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: 3ea17c7a
+**Sensor ID**: upstream-coverage
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: 3ea17c7a
+**Sensor ID**: upstream-coverage
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_FIRED
+**Fire id**: 37b5155f
+**Sensor ID**: traceability
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: SENSOR_PASSED
+**Fire id**: 37b5155f
+**Sensor ID**: traceability
+**Stage slug**: domain-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+**Duration ms**: 90
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-14T20:01:23Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: domain-design
+**Next Stage**: units-generation
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json=passed; upstream-coverage@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md=passed; traceability@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json=passed
+**Open Decisions**: 0
+**Question Id**: 46ed51d2
+**Question Type**: gate
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:c03533ef79c886aec908cfbe914556b17837497b434793263f3dad9cf003d4e9
+
+---
