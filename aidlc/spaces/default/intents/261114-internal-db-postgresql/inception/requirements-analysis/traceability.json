@@ -34,6 +34,7 @@
     { "id": "FR5.2", "kind": "functional", "of": "FR5" },
     { "id": "FR5.3", "kind": "functional", "of": "FR5" },
     { "id": "FR5.4", "kind": "functional", "of": "FR5" },
+    { "id": "FR5.5", "kind": "functional", "of": "FR5" },
     { "id": "NFR1", "kind": "non-functional" },
     { "id": "NFR2", "kind": "non-functional" },
     { "id": "NFR3", "kind": "non-functional" },
