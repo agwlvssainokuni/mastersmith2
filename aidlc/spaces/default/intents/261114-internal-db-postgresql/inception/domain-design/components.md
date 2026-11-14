@@ -4,7 +4,7 @@
 
 - 新しく作る部品: `InternalDbPlatform`（内部DB の種類の判断と種類ごとの設定）、`InternalDbPostgresTestSuite`（PostgreSQL の結合テスト）
 - 手を入れる既存の部品: `InternalDbMigration`（移行。PostgreSQL 用の一式を足す）、`UserPersistence`・`RolePersistence`・`DslManagePersistence`（H2 にしか通らない SQL の書き直し、大きなバイナリの写し方）、`LocalContainerRuntime`（手元の compose）
-- 変えない既存の部品（参照のために載せる）: `PersistenceFailureClassification`（違反と排他の区分。Q3 の決定で区分の部品は変えない）、`AuthPersistence`・`InvitationPersistence`（今のネイティブの SQL は PostgreSQL でも通る見込み。機能設計で確かめる）
+- 変えない既存の部品（参照のために載せる）: `PersistenceFailureClassification`（違反と排他の区分。Q3 の決定で区分の部品は変えない）、`AuthPersistence`・`InvitationPersistence`（今のネイティブの SQL は PostgreSQL でも通る見込み。機能設計の捨ての試しで確かめ、外れたら「手を入れる既存の部品」に移す）
 
 ```yaml
 components:
@@ -15,8 +15,13 @@ components:
       jdbc:postgresql: は PostgreSQL、それ以外は対応していない種類として起動を止める。止めるときのログには
       設定の名前と対応する種類だけを出し、URL・利用者・パスワードは出さない（FR1.3・NFR2）。
       種類に応じて、移行の置き場（H2 は今の置き場、PostgreSQL は PostgreSQL 用の置き場）を Flyway に渡す（ADR-002）。
-      PostgreSQL のときは、接続ごとの待ちの上限（lock_timeout）を接続に設定し、H2 と同じ待ちの上限の振る舞いにする
-      （FR3.3）。起動時の移行がその上限で切れない形は NFR 設計で決める（NFR4）。H2 のときの設定は今と変えない（FR1.1）。
+      PostgreSQL のときは、接続ごとの待ちの上限（lock_timeout）を 2 秒として接続に設定し、H2 と同じ待ちの上限の
+      振る舞いにする（FR3.3）。待ちの上限は2つの経路で決まる: (a) 書き込みの待ち・確定前の同じ一意の鍵への追加の待ちは、
+      この接続ごとの 2 秒で切れる（2 秒台）。(b) 行の排他の読み取り（RoleStore・GroupStore・UserRowLockRepository・
+      LoginAttemptStateRepository・InvitationLockQueriesImpl の jakarta.persistence.lock.timeout のヒント 3000ms）は、
+      Hibernate が問い合わせの間だけ lock_timeout をヒントの値で上書きして 3 秒台で切れ、終わると接続の 2 秒へ戻る
+      （下調べの3節で PostgreSQL 18.6 で確かめた）。この部品はヒントを変えず、(a) の接続の設定だけを持つ。
+      起動時の移行がその上限で切れない形は NFR 設計で決める（NFR4）。H2 のときの設定は今と変えない（FR1.1）。
       業務処理の層と repository の層は種類で分岐しない（ADR-003）。種類の判断はこの部品の1か所に閉じる。
     responsibilities:
       - 接続先から内部DB の種類を判断する（H2・PostgreSQL・対応しない種類）
@@ -70,7 +75,10 @@ components:
       自分の設定の保存（今の H2 にしか通らない FINAL TABLE (UPDATE ...)）を、H2 と PostgreSQL の両方に通る書き方
       （更新と読み直しを同じトランザクションで分けるなど）に書き直す。結果（返す値・更新の有無の判定）は今と同じにする
       （FR3.5、ADR-003）。利用者の検索（大文字と小文字を区別しない部分一致、エスケープ付き）は両方で同じ結果にする（FR3.8）。
-      メールアドレスの一意の判定の大文字と小文字の扱いは H2 と同じにする（FR3.2）。
+      メールアドレスの一意の判定の大文字と小文字の扱いは H2 と同じにする（FR3.2）。今は DB の照合ではなくアプリの側で
+      そろえている（EmailAddress.normalize で前後の空白を除いて小文字にしてから保存・検索する。内部DB の URL に
+      IGNORECASE は無く、一意の制約 uk_users_email は H2 でも大文字と小文字を区別する）。PostgreSQL でも同じ列の型
+      （大文字と小文字を区別する文字列）で作れば同じ結果になる見込みで、機能設計の捨ての試しで確かめる（ADR-006）。
     responsibilities:
       - 利用者の行と自分の設定の保存・読み出し
       - 利用者の検索
@@ -94,7 +102,8 @@ components:
       作業ロールの保存（今の H2 にしか通らない MERGE INTO ... KEY）を、両方に通る標準の MERGE INTO ... USING などに
       書き直す（FR3.5、ADR-003）。ロールの削除で参照が残っているときは、PostgreSQL でも H2 と同じ応答になる
       （移行の外部キーを NO ACTION にするため、区分の部品は変えない。FR3.2、ADR-004）。名前の重なりの待ちは
-      InternalDbPlatform の接続ごとの待ちの上限で H2 と同じに切れる（FR3.3）。
+      InternalDbPlatform の接続ごとの待ちの上限で H2 と同じに切れる（FR3.3）。名前の一意の判定は、アプリの側で作る
+      nameKey（列 name_key、一意の制約 uk_roles_name_key）で行っており、DB の照合に頼らない（FR3.2）。
     responsibilities:
       - ロール・権限の設定・割り当て・作業ロールの保存と読み出し
     depends_on:
@@ -161,6 +170,41 @@ components:
     external_dependencies: []
     entities: []
 
+  - name: AuthPersistence
+    summary: ログインの状態とリフレッシュトークンの読み書き（変えない見込みの部品。機能設計で確かめる）
+    behaviour: >
+      LoginAttemptStateRepository（標準の MERGE INTO ... USING と行の排他のヒント）と RefreshTokenRepository の
+      ネイティブの SQL は、PostgreSQL でも通る書き方の見込みで、変えない前提とする（FR3.1）。時刻の列の保存と読み出し
+      （ロックの解除の時刻・トークンの有効期限）が両方で同じ時点になること（FR3.7）も含め、機能設計の捨ての試しで
+      確かめる。見込みが外れたときは、ADR-003 と同じ形（両方に通る書き方への書き直し、DB の種類で分岐しない）で直し、
+      この部品を「手を入れる既存の部品」に移す。
+    responsibilities:
+      - ログインの状態とリフレッシュトークンの保存・読み出し（今のまま）
+    depends_on: []
+    dependents: []
+    external_dependencies:
+      - name: 内部DB（H2 または PostgreSQL）
+        kind: database
+        purpose: login_attempt_states・refresh_tokens 表
+    entities: []
+
+  - name: InvitationPersistence
+    summary: 招待の読み書き（変えない見込みの部品。機能設計で確かめる）
+    behaviour: >
+      InvitationRepository と InvitationLockQueriesImpl のネイティブの SQL（削除の副問い合わせの FETCH FIRST、行の排他の
+      ヒント）は、PostgreSQL でも通る書き方の見込みで、変えない前提とする（FR3.1）。有効期限の時刻（FR3.7）と、V8 の
+      生成列の一意（uk_invitations_pending_email。PostgreSQL 用の移行での形は InternalDbMigration が持つ）を含め、
+      機能設計の捨ての試しで確かめる。見込みが外れたときの手当ては AuthPersistence と同じ。
+    responsibilities:
+      - 招待の保存・読み出し（今のまま）
+    depends_on: []
+    dependents: []
+    external_dependencies:
+      - name: 内部DB（H2 または PostgreSQL）
+        kind: database
+        purpose: invitations 表
+    entities: []
+
   - name: InternalDbPostgresTestSuite
     summary: 内部DB を PostgreSQL で動かす経路の結合テスト（明示の指定でだけ流す）
     behaviour: >
@@ -170,6 +214,10 @@ components:
       代表の API の流れ1本ずつを確かめる。Gradle の明示の指定を付けたときだけ流し、通常の verify・verifyQuick・CI の
       プッシュでは流さない。コンテナの実行環境が無いときは警告を出して飛ばす（明示して CI で流したときは飛ばさない）。
       テストの部品は H2 に頼る書き方（INFORMATION_SCHEMA.SESSIONS・Java のトリガーなど）を使わない。
+      待ちの上限（FR3.3）は、接続ごとの 2 秒で切れる書き込みの待ちと、ヒントで 3 秒台に上書きされる行の排他の読み取りの
+      両方の経路を測り、行の排他の後に同じ接続の待ちの上限が 2 秒に戻ることも確かめる。失敗の後のトランザクション（FR3.4）は、
+      違反・待ちの失敗の後に同じ要求の続きと次の要求が正しく進むことを、この部品のテストで確かめる。
+      既存の H2 の結合テストとテストの部品は変えず、全件を残す（FR5.4、ADR-005）。
     responsibilities:
       - PostgreSQL の内部DB での振る舞いの確かめ
       - 明示の指定とコンテナの有無による流す・飛ばすの判断
@@ -210,10 +258,12 @@ graph LR
   RolePersistence -->|違反と排他の見分け| PersistenceFailureClassification
   InternalDbPostgresTestSuite -->|PostgreSQL で起動| InternalDbPlatform
   DslManagePersistence
+  AuthPersistence
+  InvitationPersistence
   LocalContainerRuntime
 ```
 
-<!-- Text fallback: InternalDbPlatform は InternalDbMigration を使い、種類に応じた移行の一式を流す。UserPersistence と RolePersistence は PersistenceFailureClassification で違反と排他の失敗を見分ける。InternalDbPostgresTestSuite は InternalDbPlatform を通して PostgreSQL を内部DB としてアプリを起動する。DslManagePersistence と LocalContainerRuntime はほかの部品を呼ばない。 -->
+<!-- Text fallback: InternalDbPlatform は InternalDbMigration を使い、種類に応じた移行の一式を流す。UserPersistence と RolePersistence は PersistenceFailureClassification で違反と排他の失敗を見分ける。InternalDbPostgresTestSuite は InternalDbPlatform を通して PostgreSQL を内部DB としてアプリを起動する。DslManagePersistence・AuthPersistence・InvitationPersistence・LocalContainerRuntime はこの一覧のほかの部品を呼ばない。 -->
 
 ## Component Summary
 
@@ -225,6 +275,8 @@ graph LR
 | RolePersistence（既存・変更） | ロール・割り当て・作業ロール | PersistenceFailureClassification | なし | Role・WorkRoleSelection |
 | DslManagePersistence（既存・変更） | DSL のプレビューと適用の履歴 | なし | なし | DslPreview・DslAppliedRevision |
 | PersistenceFailureClassification（既存・変えない） | 違反と排他の失敗の区分 | なし | UserPersistence・RolePersistence | なし |
+| AuthPersistence（既存・変えない見込み） | ログインの状態とリフレッシュトークン | なし | なし | なし（この一覧では扱わない） |
+| InvitationPersistence（既存・変えない見込み） | 招待 | なし | なし | なし（この一覧では扱わない） |
 | InternalDbPostgresTestSuite（新） | PostgreSQL の結合テスト | InternalDbPlatform | なし | なし |
 | LocalContainerRuntime（既存・拡張） | 手元の compose の内部DB 用の PostgreSQL | なし | なし | なし |
 
@@ -248,7 +300,7 @@ graph LR
 | InternalDbPlatform | H2（組み込み、ファイル） | database | 既定の内部DB |
 | InternalDbPlatform | PostgreSQL 18 系 | database | 選べる内部DB |
 | InternalDbPlatform・InternalDbMigration | Flyway | other | 起動時の移行と検証 |
-| UserPersistence・RolePersistence・DslManagePersistence | 内部DB（H2 または PostgreSQL） | database | 各表 |
+| UserPersistence・RolePersistence・DslManagePersistence・AuthPersistence・InvitationPersistence | 内部DB（H2 または PostgreSQL） | database | 各表 |
 | InternalDbPostgresTestSuite | Testcontainers と PostgreSQL のコンテナ | database | テストの内部DB |
 | LocalContainerRuntime | PostgreSQL 18 系のコンテナのイメージ | database | 手元で選べる内部DB |
 
@@ -259,6 +311,7 @@ graph LR
 | InternalDbPlatform | 種類の判断を1か所に閉じる（関心の分離）。ここ以外は種類で分岐しないので、PostgreSQL のときだけ通るコードがこの部品と移行に集まり、普段の verify でのカバレッジの下限（NFR6）を単体テストで守りやすい。起動時に1回だけ動き、変わる理由（対応する種類が増える。後の Intent の MySQL・MariaDB）が業務の部品と違う |
 | InternalDbMigration | 表の形の持ち主。種類ごとの一式を持つのは移行の書き方の差（型・制約）を SQL に閉じるため（ADR-002）。業務の部品とは変わる理由が違う（表の形が変わるとき） |
 | UserPersistence・RolePersistence・DslManagePersistence | 今の持ち主のまま。書き直すのは H2 にしか通らない SQL と写し方だけで、持ち主を変える理由が無い |
+| AuthPersistence・InvitationPersistence | 変えない見込み。FR3.1・FR3.7 の担当を見込みのままにせず、確かめる先と外れたときの手当てを明らかにするために載せる |
 | PersistenceFailureClassification | 変えない。移行の外部キーを NO ACTION にすることで、PostgreSQL の差をこの部品に持ち込まない（ADR-004） |
 | InternalDbPostgresTestSuite | 流す時（明示の指定だけ）と前提（コンテナ）が H2 の結合テストと違う。H2 に頼るテストの部品と混ぜない（ADR-005） |
 | LocalContainerRuntime | 手元の配備の部品。内部DB と対象DB を別扱いにする前提に合わせ、別のサービスにする |
