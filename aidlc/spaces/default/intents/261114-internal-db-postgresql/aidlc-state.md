@@ -76,7 +76,7 @@
 - [x] requirements-analysis — EXECUTE
 - [S] user-stories — EXECUTE
 - [S] refined-mockups — EXECUTE
-- [R] domain-design — EXECUTE
+- [?] domain-design — EXECUTE
 - [ ] units-generation — EXECUTE
 - [ ] contract-design — EXECUTE
 - [ ] delivery-planning — EXECUTE
@@ -104,7 +104,7 @@
 - **Current Stage**: domain-design
 - **Next Stage**: units-generation
 - **Status**: Running
-- **Last Updated**: 2026-11-14T20:02:11Z
+- **Last Updated**: 2026-11-14T20:13:19Z
 
 ## Session Resume Point
 - **Last Completed Stage**: requirements-analysis
