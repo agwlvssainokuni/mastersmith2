@@ -1,6 +1,8 @@
 # 業務の概要（mastersmith2）
 
-> 2026-11-11、Intent `261110-deps-forks-review`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `7f36d8a`）で更新した。今回は版の定義と固定先（`gradle/`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`・`config/`）・`docs/verification.md` の `-PitForks` の節・`common/health/` の本体を読み、所見 K-138〜K-143 を足した。アプリの業務の作りは読み直していない（下の「何をするアプリか」「利用者と役割」は前回以前の記録による）。
+> 2026-11-14、Intent `261114-internal-db-postgresql`（内部DB を PostgreSQL でも動かせるようにする）の Reverse Engineering（Focused scan、記録のコミット `cb3b513a`）で更新した。今回は内部DB に関わる所（`application.yaml` の内部DB・JPA・Flyway・ログの節、移行 V1〜V14、内部DB のネイティブの SQL を持つ repository・store、違反と排他の区分の部品、ヘルスチェック、テストの土台、`backend/build.gradle.kts`・`Dockerfile`・`compose.yaml`・`.github/`・`.env.example`・`docs/internal-db.md`・`perf/` の H2 の道具）を読み、所見 K-144〜K-154 を足した。アプリの業務の作り（HTTP の口・画面）は読み直していない（下の「何をするアプリか」「利用者と役割」は前回以前の記録による）。
+>
+> 前回の記録: 2026-11-11、Intent `261110-deps-forks-review`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `7f36d8a`）で更新した。今回は版の定義と固定先（`gradle/`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`・`config/`）・`docs/verification.md` の `-PitForks` の節・`common/health/` の本体を読み、所見 K-138〜K-143 を足した。アプリの業務の作りは読み直していない（下の「何をするアプリか」「利用者と役割」は前回以前の記録による）。
 >
 > 前回の記録: 2026-11-09、Intent `261108-ci-checks-release`（bugfix・Minimal）の Reverse Engineering（Focused scan、記録のコミット `4fe8e79`）で更新した。今回は CI（`.github/workflows/`）・ルートの `scripts/`（4 ファイル）・`frontend/scripts/check-license-header.mjs`・`build.gradle.kts`・`backend/build.gradle.kts`・`docs/verification.md` と、`packagesJudgedByTotal` の 7 パッケージ（`access.service`・`audit.repository`・`common.error.domain`・`common.error.service`・`common.health`・`common.i18n.domain`・`common.web`）の本体とテストを読み、所見 K-127〜K-137 を足した。アプリの機能（HTTP の口）は読み直していない。前回までの散文と所見の一覧は残した。
 >
@@ -28,6 +30,8 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 - 自分の設定（氏名・言語・テーマ・文字の大きさ・表示のタイムゾーン）とパスワードの変更（`features/preferences`）。表示のタイムゾーンは「ブラウザに合わせる」か、ブラウザが知る IANA の名前から選ぶ（2026-11-06 に確かめた。K-110）。
 - 管理の操作・認証・DSL・ロール・業務データの書き込みなどの出来事を、内部DB（組み込みの H2）の監査の表に追記する。
 
+アプリ自身のデータ（利用者・認証の状態・招待・DSL のプレビューと適用の履歴・ロールと権限の設定・グループ・監査）は、すべて内部DB に置く。内部DB は今は組み込みの H2 2.4.240 だけで動く作りで、ファイルに保存し、アプリのインスタンスは1つの前提（2026-11-14 に確かめた。K-146〜K-148）。表は移行 V1〜V14 で作る（K-144）。業務の DB（対象DB）の行は内部DB に写さない。
+
 開発の進め方の上では、統合の前の関門として1コマンドの検査 `./gradlew verify`（フォーマットから成果物の確認まで 10 の段）を手元で流し、CI（GitHub Actions）も同じタスクを1本で流す（2026-11-08 に確かめた。K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` も今はある（K-122）。CI の実行の要約（`$GITHUB_STEP_SUMMARY`）には今は何も書かない（K-119。2026-11-09 の時点では古い: 前の Intent で規模・テストの件数・カバレッジを要約に書く手順が足され、CI は 10 手順になった。K-127）。
 
 ## 利用者と役割
@@ -38,12 +42,31 @@ mastersmith2 は、別に動く業務の DB（対象DB: MySQL・MariaDB・Postgr
 | ログインした利用者 | 自分の設定、作業ロールの切り替え、メニューをたどる、権限に応じて業務データを一覧・詳細・作成・更新・削除する（`/api/me/**`・`/api/tables/**`） |
 | 招待を受けた人（ログインなし） | 招待のリンクの確かめと登録の完了（`/api/registration/**`） |
 | 開発者（依頼者と AI） | 統合の前に `./gradlew verifyQuick` か全件の `./gradlew verify` を流す（使い分けは `team.md`。コンテナの実行環境 colima が前提）。`origin` への push は依頼者だけ（`team.md`） |
+| 運用する人（今は依頼者。配備先は開発者の PC 上のコンテナ） | 内部DB のバックアップと戻し（ボリュームの `tar`）・ファイルの詰め直し（`docker/hikari-pool.sh`）・監査の複写の読み取り（H2 の道具）を `docs/internal-db.md`・`docs/operations.md` の手順で行う（2026-11-14 に確かめた。K-152） |
 
-## 所見の一覧（K-62〜K-143）
+## 所見の一覧（K-62〜K-154）
 
-番号は K-61 から続く（K-62〜K-126 は前々回まで、K-127〜K-137 が前回 2026-11-09、K-138〜K-143 が今回 2026-11-11）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
+番号は K-61 から続く（K-62〜K-137 は前々回まで、K-138〜K-143 が前回 2026-11-11、K-144〜K-154 が今回 2026-11-14）。本文は持ち主の文書に1回だけ書き、ここには一覧だけを置く。前回までの K-1〜K-61 の本文はこの知識ベースに無い（前の Intent の記録と git の履歴に残る）。
 
-### 今回（Intent 261110-deps-forks-review）の主題
+### 今回（Intent 261114-internal-db-postgresql）の主題
+
+内部DB（今は組み込みの H2）を PostgreSQL でも動かせるようにする。今回は、内部DB への接続の設定と対象DB との分け方、移行、内部DB のネイティブの SQL、違反と排他の失敗の区分、待ちの上限、エンティティの写し方、テストの土台、H2 だけの運用の道具と文書、部品の版を読み、知識の置き場の下調べの記録（`aidlc/spaces/default/knowledge/aidlc-shared/study-internal-db-postgresql.md`）と今のコードを照らした。テスト・ビルドは流していない。「見立て（未検証）」の項目は要件定義・設計の段で確かめる。
+
+| 番号 | 要点 | 主な部品 | 本文の場所 |
+|---|---|---|---|
+| K-144 | 移行は V1〜V14 の 14 本で、置き場は1つ（DB の種類ごとの書き分けなし）。H2 に頼る型と機能: `BINARY(32)`（V3・V8）・`BINARY LARGE OBJECT`（V5）・`STORED` の無い生成列に一意の制約（V8）・`ON DELETE RESTRICT` の外部キー 7 つ（V10〜V12） | `internal-db-migration` | `code-structure.md`（K-144） |
+| K-145 | 内部DB のネイティブの SQL は 8 か所。H2 に固有は 3 か所: `UserRepository.savePreferences` の `FINAL TABLE (UPDATE ...)`（**下調べに無い**）、`RoleStore` と `DslPreviewRepository` の `MERGE INTO ... KEY` | `user`・`role`・`dslmanage`・`auth`・`invitation` | `api-documentation.md`（K-145） |
+| K-146 | 接続の設定: 内部DB は `spring.datasource.*` の環境変数で差し替えられ、対象DB の2つのプールとは `defaultCandidate = false` で分かれる。方言の指定・`connection-init-sql` は無い。`org.postgresql: OFF` は内部DB のドライバーにも効く | `config`・`targetdb`・`container-runtime` | `architecture.md`（K-146） |
+| K-147 | 待ちの上限: 行の排他はヒント 3,000 ms。一意の鍵・主キー・一括の無効化の待ちは H2 の既定（約 2 秒）に預け、接続ごとの上限の設定はどこにも無い | `role`・`group`・`useradmin`・`auth`・`user`・`invitation` | `architecture.md`（K-147） |
+| K-148 | 違反と排他の区分: 外部キーは SQLState 23503・23506 だけで、PostgreSQL の `ON DELETE RESTRICT` の 23001 は UNEXPECTED になる見込み。排他の失敗の番号と SQLState は H2 の値（型で当たる見込み）。メールアドレス・招待中の判定は制約の名前で照らす | `common-persistence`・`role`・`group`・`user`・`invitation`・`common-error` | `architecture.md`（K-148・Interaction Diagrams 12） |
+| K-149 | エンティティの写し方: DSL の本文は `@Lob byte[]`、トークンのハッシュは `SqlTypes.BINARY` の 32 バイト、主キーは IDENTITY、`UUID`・`Instant`。見立て（未検証）: PostgreSQL の方言で `@Lob byte[]` は `oid` として照らされ、`bytea` の移行と `ddl-auto: validate` で食い違いうる（**下調べに無い**）。利用者の検索は `ilike ... escape '\'` | `dslmanage`・`auth`・`invitation`・`user` | `code-structure.md`（K-149） |
+| K-150 | 部品: Flyway は `flyway-core` 12.4.0 だけで、PostgreSQL の部品（`flyway-database-postgresql`）が lockfile に無い（**下調べに無い**）。PostgreSQL の JDBC ドライバー 42.7.14 は既に実行時の依存にある | `build-and-verify` | `dependencies.md`（K-150）・`technology-stack.md` |
+| K-151 | テストが H2 に強く頼る: `*IT` 278 本のうち 275 本が組み込みの H2 を起動。待ち合わせ（`INFORMATION_SCHEMA.SESSIONS`）・Java のトリガー・`MERGE ... KEY`・`DATEADD`・`RANDOM_UUID()`・既定の URL の文字の確かめ（`DatabasePersistenceIT`）・H2 の詰め直しのテスト | `backend-test-support` | `code-quality-assessment.md`（K-151） |
+| K-152 | H2 だけの運用の道具と文書: `DEFRAG_ALWAYS=TRUE`・`docker/hikari-pool.sh`・`perf/h2-shell.sh`・`perf/lib/perf-db-url.sh`・`scripts/count-db-copy.mjs`・ボリュームの `tar` の戻し・`-Dh2.compactThreads=1` の3か所・`docs/internal-db.md` ほかの文書 | `container-runtime`・`perf-and-monitoring`・`build-and-verify` | `code-quality-assessment.md`（K-152） |
+| K-153 | 下調べの記録（調べた時点 `8eec0ba4`）との照合: 調べた後に関わるファイルの変更は無く、記述はコードと合う。下調べに無いのは `FINAL TABLE`（K-145）・`@Lob byte[]`（K-149）・Flyway の部品（K-150）・V8 の生成列の `STORED`（K-144）の4点 | 全体 | `code-quality-assessment.md`（K-153） |
+| K-154 | 作りの論点: 移行の置き場の分け方・H2 に固有の SQL の書き分け・接続ごとの待ちの上限・テストを PostgreSQL でも流す範囲と CI の時間・内部DB 用のイメージの固定先・データの移し替え・単一のインスタンスの前提 | `config`・`internal-db-migration`・`build-and-verify`・`container-runtime`・`backend-test-support`・`perf-and-monitoring` | `architecture.md`（Improvement Opportunities の K-154） |
+
+### 前の Intent（261110-deps-forks-review）の主題（今回は `-Dh2.compactThreads=1` の3か所（K-139）を K-152 で読み直した）
 
 依存の定期の見直し（Spring Boot・Jackson の上書き・opentelemetry-logback-appender の固定・H2 と `-Dh2.compactThreads=1`・コンテナのイメージのダイジェスト）、知識ベースの古い記述（`packagesJudgedByTotal` を今の仕組みとして書く箇所。前の Intent のコード生成のレビュー R-06）の更新、結合テストの並べ方 `-PitForks` の値（2 と 3）の再評価。
 
@@ -197,6 +220,7 @@ N6（業務データの日時のタイムゾーンの変換。MySQL・MariaDB・
 
 ## Sources
 
+- 開発担当の調査（2026-11-14）: `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`（読んだファイルの一覧はその Scan Coverage）。読む前に知識の置き場 `aidlc/spaces/default/knowledge/aidlc-shared/` の 10 ファイル（`study-internal-db-postgresql.md` を最初に）を読んだ。
 - 開発担当の調査（2026-11-11）: `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`（読んだファイルの一覧はその Scan Coverage）。
 - 開発担当の調査（2026-11-09）: `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 開発担当の調査（2026-11-08 の2回目）: `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。

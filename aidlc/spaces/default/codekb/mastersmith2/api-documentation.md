@@ -1,6 +1,8 @@
 # API（mastersmith2）
 
-> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan でも HTTP の口は読み直していない（`common/health/` の本体だけ読んだ）。「ビルドと検査の口」の節に、CI の `-PitForks`・`resolveAndLockAll`・ヘルスチェックの確かめの口の表を足した。
+> 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql` の Focused scan でも HTTP の口は読み直していない（今回の主題は内部DB で、HTTP の口の形を変えない見込み）。「内部DB のアクセスの口（K-145、2026-11-14）」の節を足し、内部DB の種類で応答が変わりうる所（違反と排他の失敗の区分）を書いた。
+>
+> 前回の記録: 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan でも HTTP の口は読み直していない（`common/health/` の本体だけ読んだ）。「ビルドと検査の口」の節に、CI の `-PitForks`・`resolveAndLockAll`・ヘルスチェックの確かめの口の表を足した。
 >
 > 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan でも HTTP の口は読み直していない。「ビルドと検査の口」の節に、前の Intent で足された CI の要約の台本と規模を数える台本の呼び方を足し、CI の行を今の形に直した（K-127）。
 >
@@ -28,6 +30,7 @@
 | `/api/tables`（業務データ） | AUTHENTICATED | 6 | `businessdata/web/BusinessDataReadController`・`BusinessDataWriteController` |
 
 - 前回の合計 65 口に業務データの 6 口を足した 71 口（業務データ以外の数は前回の表の合計で、今回数え直していない）。
+- 2026-11-14 の注: 業務データの 6 口以外の口（`/api/auth`・`/api/registration`・`/api/me/**`・`/api/admin/**`）は、どれも内部DB を読み書きする（業務データの口も、権限の解決と監査で内部DB を使う）。内部DB の種類で応答が変わりうる所は、下の「内部DB のアクセスの口」の違反と排他の失敗の区分だけ（見立て）。
 
 ### 今回深く読んだ口: 業務データ（`/api/tables`）
 
@@ -86,6 +89,32 @@
 - 画面の日時の変換（2026-11-06）: `frontend/src/shared/format/timeZone/index.ts` が `formatInstant(instant, timeZone, fractionDigits?)`・`parseLocalDateTime(text, timeZone, overlapChoice?)`・`compareInstants`・`preserveInstant`・`canInterpretTimeZone` と結果の型（`FormatResult` ほか。例外を投げず `kind` で返す）を出す。整形器のキャッシュ・壁時計（`getFormatter`・`wallAt`・`offsetSecondsAt`）は出さない。
 - 表示のタイムゾーンの選択肢（2026-11-06）: `frontend/src/features/preferences/buildTimeZoneOptions.ts` の `buildTimeZoneOptions(names, saved, now, browserLabel): readonly TimeZoneOption[]`（`{ value, label }`、先頭は値が空の「ブラウザに合わせる」、ラベルは `名前 (±HH:mm)`）と `readSupportedTimeZoneNames()`。呼ぶのは `TimeZoneSelect.tsx` だけ。保存・読み込みの HTTP の口は `GET`・`PUT /api/me/preferences` の `displayTimeZone`（null は「ブラウザに合わせる」、64 文字まで。`preferencesApi.ts`）。
 
+## 内部DB のアクセスの口（K-145、2026-11-14）
+
+内部DB への口は、エンティティ 14 の JPA（JPQL と Spring Data の導出の問い合わせ）、ネイティブの SQL 8 か所、`JdbcTemplate` のバッチ1か所。すべて自動設定の内部DB のプール（`mastersmith-db`）を使う（`architecture.md` の K-146）。行の番号は記録のコミット `cb3b513a` のもの。
+
+### ネイティブの SQL と JDBC の文（確かめた事実と見立て）
+
+| 場所 | SQL（要点） | H2 に固有か（確かめた事実）／PostgreSQL での見込み |
+|---|---|---|
+| `user/repository/UserRepository.java` 79〜85 行 `savePreferences` | `SELECT ... FROM FINAL TABLE (UPDATE users SET ... CASE WHEN :change = TRUE THEN CAST(:zone AS VARCHAR(64)) ... WHERE user_id = :userId)` | **H2 に固有**（説明文に「H2 の `FINAL TABLE (UPDATE ...)`」）。PostgreSQL には `FINAL TABLE` が無い。見立て（未検証）: `UPDATE ... RETURNING` への書き換えが要る。**下調べの記録の一覧に無い** |
+| `role/store/RoleStore.java` 103〜105 行 `MERGE_SELECTION` | `MERGE INTO work_role_selections (...) KEY (user_id) VALUES (...)` | **H2 に固有**（下調べの記録と同じ）。見立て（未検証）: `INSERT ... ON CONFLICT (user_id) DO UPDATE` |
+| `dslmanage/repository/DslPreviewRepository.java` 38〜42 行 `PLACE_SQL` | `MERGE INTO dsl_previews (...) KEY (preview_slot) VALUES (1, CAST(?1 AS UUID), ?2, ...)` | **H2 に固有**（下調べの記録と同じ） |
+| `auth/repository/LoginAttemptStateRepository.java` 165 行 `createIfAbsent` | `MERGE INTO login_attempt_states t USING (VALUES (CAST(?1 AS BIGINT))) s(id) ON ... WHEN NOT MATCHED THEN INSERT ...` | 標準の書き方。見立て（未検証）: PostgreSQL 15 以上で通る。同時の追加で一意の違反になりうるが、呼び出し元の `LoginService.createRow`（156〜162 行）がトランザクションの外で `DataIntegrityViolationException` を受けて進む（確かめた事実） |
+| `dslmanage/repository/DslAppliedRevisionRepository.java` 36〜41 行 `COPY_SQL` | `INSERT ... SELECT CAST(?1 AS UUID), p.yaml_bytes, ..., CAST(?4 AS TIMESTAMP WITH TIME ZONE) FROM dsl_previews p WHERE p.preview_id = CAST(?2 AS UUID)` | 見立て（未検証）: PostgreSQL でも通る型の書き方（下調べの記録は「H2 専用の SQL」の項に挙げているが、`CAST(... AS UUID)`・`TIMESTAMP WITH TIME ZONE` は PostgreSQL にもある） |
+| `auth/repository/RefreshTokenRepository.java` 72〜77 行 `deleteExpiredBefore` | `DELETE ... WHERE token_id IN (SELECT ... ORDER BY token_id FETCH FIRST :limit ROWS ONLY)` | 見立て（未検証）: PostgreSQL でも通る（`FETCH FIRST` に束縛の引数を使える） |
+| `invitation/repository/InvitationRepository.java` 152〜157 行・168〜173 行 | 同じ形の `DELETE ... FETCH FIRST :limit ROWS ONLY` ×2 | 同上 |
+| `role/store/RoleStore.java` の JDBC のバッチ（権限の YAML の適用） | `DELETE FROM permission_settings WHERE role_id = ?`・`INSERT INTO permission_settings (...) VALUES (?, ...)`・`UPDATE roles SET updated_at = ? ...` | 標準。値は `statement.setObject(i + 1, row[i])`（`OffsetDateTime`・`Boolean`・`null` を含む）。文の上限は明示の秒（`jakarta.persistence.query.timeout` は JDBC の部品に効かないため）。見立て（未検証）: PostgreSQL のドライバーでも `null` と `OffsetDateTime` を受ける |
+
+- ほかは JPQL・Spring Data の導出の問い合わせ。JPQL で DB の差が出うるのは `UserRepository` の利用者の検索の `ilike ... escape '\'`（`code-structure.md` の K-149）。
+- 行の排他の口（`PESSIMISTIC_WRITE` とヒント 3,000 ms、`SKIP LOCKED`）と待ちの上限は `architecture.md` の K-147。
+
+### 内部DB の種類で応答が変わりうる所（見立てを含む）
+
+- 違反と排他の失敗は、各機能の区分の部品が結果の型か例外に変え、HTTP の応答（409・503 などの `code`）になる。区分は SQLState・H2 の誤りの番号・制約の名前に頼る（`architecture.md` の K-148）。
+- 見立て（未検証）: PostgreSQL では、ロール・グループの削除が呼び出し元の確かめをすり抜けたときの外部キーの違反（23001）が想定外の例外になり、本来の衝突の応答ではなく想定外の応答（500）になりうる。排他の失敗（55P03・40P01）は例外の型で当たる見込みで、応答は変わらない見込み。メールアドレスの重なり・招待中の判定は、制約・索引の名前を同じにすれば同じ応答になる見込み。
+- 違反のときに例外の文を応答に載せない決まり（`project.md` の Forbidden）は、`GlobalExceptionHandler` と各区分の部品が守る（文を出さずクラスの名前・SQLState・既知の名前だけ）。
+
 ## ビルドと検査の口（開発者が呼ぶ。2026-11-08）
 
 段の中身と順は `architecture.md` の「検査の入口 `verify` の流れ」。ここには呼び方だけを置く。
@@ -134,12 +163,22 @@
 | 依存の固定の更新 | `./gradlew :backend:resolveAndLockAll --write-locks` | すべての構成を解決して `backend/gradle.lockfile` を書き直す（`--write-locks` が無いと失敗） | `backend/build.gradle.kts` 516〜527 行 |
 | ヘルスチェック | `GET /actuator/health`（ログインなし） | 内部DB の確かめは `TimeBoundedDbHealthIndicator`（`mastersmith.health.db-timeout`、既定 2s）。応答は状態だけ。前の確かめが終わっていなければ待たずに DOWN（503） | `common/health/`（`component-inventory.md` の `common-health`） |
 
+2026-11-14（記録のコミット `cb3b513a`）に確かめた内部DB の運用の口（どれも H2 だけを前提にする。`code-quality-assessment.md` の K-152）:
+
+| 口 | 呼び方 | 中身 | 持ち主 |
+|---|---|---|---|
+| 内部DB の接続先 | 環境変数 `MASTERSMITH_DB_URL`・`MASTERSMITH_DB_USERNAME`・`MASTERSMITH_DB_PASSWORD`・`MASTERSMITH_DB_MAXIMUM_POOL_SIZE`（`.env`） | 既定は `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`・`sa`・空・30 | `application.yaml` 190〜212 行・`.env.example` 31〜39 行 |
+| H2 のファイルの詰め直し | `docker/hikari-pool.sh status`・`compact`・`resume` | HikariCP の JMX の一時停止を使って H2 のファイルを詰め直す（手順は `docs/internal-db.md`） | `docker/hikari-pool.sh`・`docker/jmx/HikariPoolControl.java` |
+| 内部DB のバックアップと戻し | アプリを止めてボリューム `mastersmith_mastersmith-data` を `tar` で `~/.mastersmith-backup/` に複写・展開 | ファイルの複写だけ（`docs/internal-db.md`・`docs/deployment.md` 33〜44 行・`docs/operations.md` 130〜157 行） | 文書 |
+| 負荷の試験の内部DB の操作 | `perf/h2-shell.sh`（`--read-only` もある） | H2 の jar で `org.h2.tools.Shell` を動かし、使い捨ての環境の内部DB に SQL を流す。`PERF_DB_URL` は `jdbc:h2:file:/app/data/mastersmith` で始まる形だけを受ける（`perf/lib/perf-db-url.sh`） | `perf/` |
+
 ## API を足すときの決まり
 
 新しい口には同じ変更で `@ApiAccess` を付ける。`ADMIN` は `/api/admin` の下だけ。テストの `ApiAccessArchitectureTest` と `ApiAccessConsistencyIT` が分類の網羅を確かめる。`team.md` の「役割・権限の機能」「業務データの機能」の必須のテスト（API ごとの 401・403・200 など）が当たる（前回の記録。今回は読み直していない）。
 
 ## Sources
 
+- 2026-11-14: 内部DB の repository と store（`user/repository/UserRepository.java`・`role/store/RoleStore.java`・`dslmanage/repository/`・`auth/repository/{LoginAttemptStateRepository,RefreshTokenRepository}.java`・`invitation/repository/InvitationRepository.java` の問い合わせの部分）・`application.yaml`・`.env.example`・`docs/internal-db.md`（前半と詰め直しの節）・`perf/h2-shell.sh`・`perf/lib/perf-db-url.sh`、開発担当の調査 `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-11: `.github/workflows/ci.yml`・`backend/build.gradle.kts`・`backend/src/main/java/cherry/mastersmith/common/health/`（どれも全文）、`docs/verification.md` 79〜95 行、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`）。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`.github/workflows/ci.yml`・`docs/verification.md`（どれも全文。開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`）。

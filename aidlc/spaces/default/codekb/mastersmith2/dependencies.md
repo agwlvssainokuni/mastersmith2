@@ -1,6 +1,8 @@
 # 依存関係（mastersmith2）
 
-> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、`.github/dependabot.yml` の全文を読み直して Dependabot の `ignore` の表（K-87）を今の値に直し、`git submodule status` でサブモジュールの固定先を直し、「台本と一覧の読み手の依存」を `packagesJudgedByTotal` の撤去の後の形に書き直した（K-142）。機能の間の依存の表は読み直していない（前回以前の記録による）。
+> 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql` の Focused scan で、「内部DB への依存（K-150、2026-11-14）」の節を足した（内部DB の部品・機能から内部DB の共有の部品への依存・対象DB との分け方・足すときの手続き）。機能の間の依存の表は読み直していない（前回以前の記録による）。
+>
+> 前回の記録: 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、`.github/dependabot.yml` の全文を読み直して Dependabot の `ignore` の表（K-87）を今の値に直し、`git submodule status` でサブモジュールの固定先を直し、「台本と一覧の読み手の依存」を `packagesJudgedByTotal` の撤去の後の形に書き直した（K-142）。機能の間の依存の表は読み直していない（前回以前の記録による）。
 >
 > 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、「CI の手順の間の依存（2026-11-09）」と「台本と一覧の読み手の依存（2026-11-09）」を足した。機能の間の依存の表とサブモジュール・Dependabot の節は読み直していない（前回以前の記録による）。
 >
@@ -42,6 +44,32 @@
 - 逆向きの知らせは Spring の出来事（監査は `audit` が各機能の `domain` の出来事の型を import して受ける）。
 
 - 今回の範囲（2026-11-03）: `businessdata` の日時の型の対応は `businessdata.repository`（`ColumnValueCodec`・`RowDialect`）の中に閉じ、`targetdb.domain.DatabaseProduct` と `dsl.domain`（`DslColumn`・`FormPart`）だけを読む。接続の時差は `targetdb.config` の初期化の文。`navigation` は `dsl.domain`（`DslMenuItem`・`TableRef`）と `role` の `PermissionSnapshot` を読み、アイコンの照合（`NavIconPolicy`）は自分の中に持つ。ビューの印を応答に足すなら `dsl.domain.DslModel.findTable` を読む形で、新しい依存は要らない見込み（未検証）。
+
+## 内部DB への依存（K-150、2026-11-14）
+
+### 機能から内部DB の共有の部品への依存（確かめた事実。`import` の `grep` と開発担当の調査）
+
+| 共有の部品 | 使う機能 | 何に使うか |
+|---|---|---|
+| `common.persistence`（`RowLockFailures`・`RowLockAttempt`・`RowLockUnavailableException`） | `auth`・`user`・`invitation`・`role`・`group`・`useradmin`、共通の `common.error.web`（`GlobalExceptionHandler`）・`common.observability`（`LockFailureSafeTraceInterceptor`） | 行の排他の失敗の判定とログ、排他の結果の型（`import` の `grep` で 2026-11-14 に確かめた） |
+| `common.error.web`（`UniqueViolations`・`GlobalExceptionHandler`） | 全体（例外を応答に変える1か所） | 想定外の違反のログの伏せ方 |
+| `common.health`（`TimeBoundedDbHealthIndicator`） | Actuator のヘルスチェック | 内部DB の `SELECT 1` |
+| 自動設定の内部DB のプール（`DataSource`・`EntityManager`・`JdbcTemplate`） | `auth`・`user`・`invitation`・`useradmin`・`audit`・`dslmanage`・`role`・`group`・`common.health` | JPA・ネイティブの SQL・JDBC のバッチ |
+
+- 違反の区分の部品（`RoleStoreClassifier`・`StoreFailureClassifier`）はそれぞれ `role.store`・`group.store` の中にあり、`common.persistence.RowLockFailures` を呼ぶ。制約の名前の照らし（`uk_users_email`・`uk_invitations_pending_email`）は `user.service`・`invitation.service` の中にある（`architecture.md` の K-148）。
+- 対象DB との分け方: `targetdb` の2つのプール（`targetDataSource`・`targetWriteDataSource`）は `defaultCandidate = false` で、型で注入される内部DB の `DataSource` と重ならない。`businessdata` は内部DB を直接読まず、権限の解決（`role`）と監査（`audit` の出来事）を通して使う（`architecture.md` の K-146）。
+
+### 部品の依存（確かめた事実と見立て）
+
+- 確かめた事実: 内部DB に効く部品は `spring-boot-starter-data-jpa`（Hibernate 7.4.13.Final・HikariCP 7.0.2）・`spring-boot-starter-flyway`（`flyway-core` 12.4.0）・`runtimeOnly` の `h2` 2.4.240。PostgreSQL の JDBC ドライバー 42.7.14 は対象DB のために既に `runtimeOnly` にある（`backend/build.gradle.kts` 45〜93 行、`backend/gradle.lockfile` 116・161 行。版の表は `technology-stack.md` の K-150）。
+- 確かめた事実: `flyway-database-postgresql` は lockfile に無い。
+- 見立て（未検証）: 内部DB を PostgreSQL にするには Flyway の PostgreSQL の部品が要る。新しい依存のため、`team.md` の Code Style の手続き（採用の前にライセンスを確かめ、Apache License 2.0 と違えば ADR に理由を残す）、lockfile の更新（`./gradlew :backend:resolveAndLockAll --write-locks`）、OSV-Scanner の対象に載ることの確かめ、推移依存で既存の部品の版を引き上げないかの依存の木の確かめ（`project.md` の Corrections）が当たる。
+- 見立て（未検証）: 内部DB 用に PostgreSQL のコンテナのイメージを足すなら、版とダイジェストの固定先（`compose.yaml`・`docker/perf/compose.yaml`・`TargetDbImages.java` などの一覧）と `.github/dependabot.yml` の説明文の一覧に足す（`team.md` の Deployment）。今はどこにも無い。
+
+### テストの依存（確かめた事実）
+
+- 内部DB の結合テストは `common.testsupport.TestDatabase`（H2 のファイルの URL）か、それを使う各機能の `testsupport`（`BusinessDataTestApp`・`InvitationApps`・`InvitationTestProperties` など）に依る。待ち合わせの部品は H2 の `INFORMATION_SCHEMA.SESSIONS` に依る（`auth`・`invitation`・`useradmin` の `testsupport`）。詳しくは `code-quality-assessment.md` の K-151。
+- Testcontainers は対象DB の結合テストだけが使う（`targetdb.testsupport` の `TargetDbTestDatabase`・`PostgresTestDatabase`・`ContainerRuntimeCheck`・`TargetDbImages`）。
 
 ## 画面の依存
 
@@ -106,6 +134,7 @@
 - 上の節の「`if:` が無い」は 2026-11-08 の2回目の記録。今は 8〜10 の手順が `if: always()`・`continue-on-error: true` を持ち、6 の手順が落ちても流れる（7 は流れない）。手順の並びは `architecture.md` の K-127。
 - 8（cloc）は機械のイメージの apt に依る（K-128）。9（`node scripts/ci-summary.mjs`）は、3 の手順の Node、8 の cloc、1 の手順の全履歴（`--base` の `github.event.before` を `git worktree` で取り出す）、6 の手順が作る `backend/build/test-results/{test,integrationTest}/`・`backend/build/reports/jacoco/test/jacocoTestReport.xml`・`frontend/coverage/coverage-summary.json`、リポジトリの `backend/build.gradle.kts`・`frontend/vitest.config.ts` に依る。10 は 6 の手順の HTML の報告に依る（無ければ何もしない）。
 - 9 の手順の中の依存: `scripts/ci-summary.mjs` は `scripts/program-size.mjs` の `collectMeta`・`countBase`・`countSize`・`fixed`・`int`・`renderReport` を `import` する（38 行）。
+- 2026-11-14 の確かめ: CI のジョブにデータベースのサービスの定義は無く、6 の手順の結合テストは、内部DB を組み込みの H2 のファイルで、対象DB を Testcontainers のコンテナ（機械のイメージの Docker）で持つ。
 
 ### 台本と下限の読み手の依存（2026-11-11 に書き直し。K-142。前の K-131・K-135 は撤去の前の記録）
 
@@ -155,6 +184,7 @@
 
 - gradle の項は `exclude-paths: vendor/**`。github-actions の項に `ignore` は無い。Jackson の `ignore` は無い（上書きも無い。`technology-stack.md` の K-85）。
 - `axe-core` は `ignore` に入れず、更新は版と lockfile だけでも E2E の全件と vitest-axe を流す例外の手順（`dependabot.yml` 60〜65 行のコメント）。
+- 2026-11-14 の確かめ: `docker-compose` の項は `compose.yaml` を見て、見本の対象DB の `postgres:18.6` の知らせを出す。Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java` など）は説明文に並ぶ。内部DB 用の PostgreSQL のイメージは今は無い（K-150）。
 
 **K-66・K-72 Dependabot の現状（`.github/dependabot.yml`、2026-10-28 に再読。2026-11-01 は上の K-87 を正とする）**
 
@@ -184,6 +214,7 @@
 
 ## Sources
 
+- 2026-11-14: `backend/build.gradle.kts`（1〜240 行）・`backend/gradle.lockfile`（DB の部品の行の `grep`）・`.github/dependabot.yml`・`.github/workflows/ci.yml`（全文）・`common/persistence/`・`role/store/RoleStoreClassifier.java`・`group/store/StoreFailureClassifier.java`、`import` の `grep`（`common.persistence` を使う機能）、開発担当の調査 `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-11: `.github/dependabot.yml`・`backend/build.gradle.kts`・`gradle/libs.versions.toml`・`settings.gradle.kts`（どれも全文）、`scripts/ci-summary.mjs`（35 行と 174〜196 行）、`docs/verification.md` 22 行、`git submodule status`、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/ci-summary.mjs`・`scripts/program-size.mjs`（どれも全文）・`backend/build.gradle.kts`（300〜357 行）・`docs/verification.md`（73〜81 行）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `build.gradle.kts`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。

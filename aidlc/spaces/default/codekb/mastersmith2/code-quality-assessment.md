@@ -1,6 +1,8 @@
 # コードの品質（mastersmith2）
 
-> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、カバレッジの今の形（K-142。一覧 `packagesJudgedByTotal` は消え、すべてのパッケージにパッケージごとの下限が当たる）を「カバレッジ」の頭に足し、前の記録の一覧を今の仕組みとして書く行には撤去の前の記録と注した。古くなっている記述の一覧（K-143）を「CI と依存」に、今回の範囲を「技術的負債」に足した。
+> 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql` の Focused scan で、テストが内部DB の H2 に頼る形（K-151）、H2 だけの運用の道具と文書（K-152）、下調べの記録と今のコードの照合（K-153）を足し、「テスト」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数・カバレッジの値・時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
+>
+> 前回の記録: 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、カバレッジの今の形（K-142。一覧 `packagesJudgedByTotal` は消え、すべてのパッケージにパッケージごとの下限が当たる）を「カバレッジ」の頭に足し、前の記録の一覧を今の仕組みとして書く行には撤去の前の記録と注した。古くなっている記述の一覧（K-143）を「CI と依存」に、今回の範囲を「技術的負債」に足した。
 >
 > 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、ルートの `scripts/` の今の形と検査の対象（K-130）、R-07 の確かめのコマンド（K-131）、`packagesJudgedByTotal` の 7 パッケージの本体とテストの対応と薄い所（K-132）、`ProblemTypeRegistry` の辿れない分岐（K-133）、一覧を空にするときの書き方（K-135）、自動化 A1〜A3 に関わるもの（K-137）を足し、「CI と依存」「技術的負債」「ドキュメント」の節に今回の読みを足した。テストの件数・カバレッジの値・時間は取っていない（`./gradlew` を流していない）。ほかの節は前回以前の記録による。
 >
@@ -19,10 +21,26 @@
 ## テスト
 
 - 置き場: `backend/src/test/java/cherry/mastersmith/`（機能ごと、単体 `XxxTest`・結合 `XxxIT`、機能ごとの `testsupport/`）、`frontend/src/**/*.test.ts(x)`（対象と同じ場所）、`frontend/e2e/`（`*.e2e.ts` 22 本（010〜195、2026-11-01 に数えた）、`./gradlew e2eTest`、`verify` と CI の外）。
-- 数（2026-11-08、`find`）: `*Test.java` 312・`*IT.java` 278。単体は `:backend:test`（`includeTestsMatching("*Test")`）、結合は `:backend:integrationTest`（`includeTestsMatching("*IT")`）で、同じ `src/test/java` から名前で分ける（`backend/build.gradle.kts` 135〜156 行）。結合テストの前提と並列の設定は `architecture.md` の K-113。
+- 数（2026-11-08、`find`）: `*Test.java` 312・`*IT.java` 278。単体は `:backend:test`（`includeTestsMatching("*Test")`）、結合は `:backend:integrationTest`（`includeTestsMatching("*IT")`）で、同じ `src/test/java` から名前で分ける（`backend/build.gradle.kts` 135〜156 行）。結合テストの前提と並列の設定は `architecture.md` の K-113。2026-11-14 の数えも同じ（312・278）。
 - 道具: JUnit 5・Spring Boot Test・Testcontainers（MySQL・MariaDB・PostgreSQL）・jqwik・ArchUnit／Vitest・Testing Library・user-event・vitest-axe・fast-check／Playwright と axe-core。
 - 境界の構造の検査（ArchUnit）は 19 ファイル（`find` で数えた）: `ArchitectureTest`・`ApiAccessArchitectureTest` と、`access`・`appearance`・`audit`・`auth`・`businessdata`・`dsl`・`dslmanage`（2つ）・`group`・`invitation`・`mail`・`navigation`・`role`・`targetdb`（`TargetDbBoundaryArchitectureTest` と `ExtensionOrderArchitectureTest`）・`user`・`useradmin`。`businessdata` の境界テストの `@DisplayName` から読める規則: 読み取り側はトランザクションと `JdbcTemplate` を使わない、`RowSqlExecutor` だけが JDBC の接続から文を作る、`businessdata.repository` は `targetdb.service` に依存しない、`businessdata` に依存してよいのは `audit` の `domain` だけ。
 - `businessdata` のテストは `domain`・`repository`（`RowSqlExecutorTest`・`RowDialectTest`・`RowSqlFailureClassifierTest` など）・`service`・`testsupport`（`CountingDataSource` など）に分かれる（ファイル名の一覧のみ。中身は読んでいない）。
+
+**K-151 テストが内部DB の H2 に強く頼る（2026-11-14）（`backend-test-support`）**
+
+- 確かめた事実（`grep` と数え。中身を読んだのは `TestDatabase`・`TargetDbImages` だけ）:
+  - `*IT` 278 本のうち 275 本が組み込みの H2 の内部DB を起動する（`TestDatabase.register`・`TestDatabase.url`・`spring.datasource.url`、またはそれを使う `BusinessDataTestApp`・`InvitationApps`・`InvitationTestProperties`・抽象の親クラス経由）。起動しないのは `mail/transport/` の3本だけ。機能ごとの `*IT` の数は role 48・businessdata 47・user 25・auth 21・invitation 21・group 18・audit 16・targetdb 14・useradmin 13・dslmanage 12・common 11・navigation 9・access 6・config 6・mail 6・appearance 2・dsl 2。`@TempDir` を使う `*IT` は 249 本（テストのクラスごとに一時ディレクトリの H2 のファイルを作る形）。
+  - `common/testsupport/TestDatabase.java` は `jdbc:h2:file:<dir>/mastersmith` を返し、`spring.datasource.url` だけを差し替える（利用者・パスワードは既定の `sa`・空のまま。`DEFRAG_ALWAYS` は付けない）。
+  - `INFORMATION_SCHEMA` を読むテストは 12 ファイル。うち `INFORMATION_SCHEMA.SESSIONS`（実行中の文で待ち合わせる）を使うのは `auth/testsupport/H2SessionWaits.java`・`TestLoginAttemptBarrier.java`・`invitation/testsupport/TestInvitationBarrier.java`・`useradmin/testsupport/TestUserAdminBarrier.java`・`auth/repository/LoginAttemptStateRepositoryIT.java`・`user/repository/UserRowLockRepositoryIT.java`。表・列・制約の名前を大文字で読むスキーマの確かめ（`audit/domain/AuditMigrationCompatibilityIT.java`・`AuditSchemaIT`・`role/RoleSchemaIT.java`・`UserSchemaIT` など）。
+  - H2 の `MERGE INTO ... KEY` を使う準備の部品: `role/testsupport/RoleFixtures.java` 204 行・`useradmin/testsupport/UserAdminFixtures.java` 138 行。
+  - H2 の Java のソースのトリガー（`CREATE TRIGGER ... AS $$ org.h2.api.Trigger ... $$`）: `role/testsupport/FailingSettingTrigger.java`。
+  - H2 の関数: `DATEADD(...)`（`invitation/testsupport/InvitedPersonIdsIT.java`・`invitation/web/InvitationAdminApiIT.java`・`invitation/service/InvitationSendResultIT.java`）、`RANDOM_UUID()` と `X'00'`（`dslmanage/repository/DslManageRepositoryIT.java` 149 行）。
+  - 接続先の URL を直接作る: `audit/domain/AuditMigrationCompatibilityIT.java` 83 行（`jdbc:h2:file:`）ほか、移行の互換を確かめる `*MigrationCompatibilityIT`（audit・role・user の `DisplayTimeZoneMigrationCompatibilityIT`）。
+  - 既定の接続先の文字列を確かめる: `common/db/DatabasePersistenceIT.java` 70 行（`jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` と一致すること）と 74 行（`spring.h2.console.enabled` が false）。
+  - H2 の詰め直しだけを確かめる: `config/H2CompactionByPoolSuspensionIT.java`・`config/H2DefragOnCloseTest.java`・`config/H2CompactThreadsTest.java`・`config/HikariJmxSettingsTest.java`。
+  - `team.md` の Testing Posture は「内部DB（組み込みの H2）を使うテストは、コンテナではなく本番と同じ組み込みの H2 で行う」と決めている。
+- 見立て（未検証）: `group/store/StoreFailureClassifierTest.java`・`role/store/RoleStoreClassificationTest.java`・`user/repository/UserRowLockRepositoryTest.java`・`invitation/lock/InvitationLockQueriesImplTest.java`・`auth/repository/LoginAttemptStateRepositoryTest.java` は H2 の名前・誤りの番号を含む（`grep` で当たっただけで、中身は読んでいない）。区分の部品に PostgreSQL の SQLState を足すなら、これらの単体テストの期待も足す形になる見込み。
+- 見立て（未検証）: 内部DB の結合テストを PostgreSQL でも流すなら、待ち合わせの部品（`INFORMATION_SCHEMA.SESSIONS`）・トリガー・準備の SQL・関数・大文字の名前の読み方は書き分けが要り、流す範囲（275 本のどれを流すか）で `verify` と CI の時間が大きく変わる（CI の上限 60 分・`team.md` の線は約 42 分。測っていない）。PostgreSQL ではテストのクラスごとの一時ファイルの代わりに、データベースかスキーマを分ける形が要る見込み（`team.md` の対象DB の「名前の重ならないスキーマを作って消す」決まりと同じ考え方）。
 
 ## カバレッジ
 
@@ -30,6 +48,7 @@
 
 - 確かめた事実: バックエンドは JaCoCo。`backend/build.gradle.kts` の `jacocoTestCoverageVerification`（305〜338 行）は `rule` が2つで、1つ目が全体の合計、2つ目が `element = "PACKAGE"`。どちらも `LINE` の `COVEREDRATIO` 0.80・`BRANCH` の `COVEREDRATIO` 0.70。**2つ目に `excludes` は無く、すべてのパッケージに当たる（外すパッケージは無い）**。全体の合計で判定していた一覧 `packagesJudgedByTotal` は、Intent `261108-ci-checks-release` で `common.health` にテストを足して下限を満たし、一覧と除外の仕組みごと消えた（コミット `67f6f5f2`。298〜304 行のコメントに経緯だけが残る）。計測から外すのは `MastersmithApplication*`・`*Properties.class`・`*Properties$*.class`（213〜217 行）だけ。`scripts/ci-summary.mjs` の `parseGradleFloors`（174〜196 行）は2つの `rule` の下限だけを読み、一覧を読まない。`docs/verification.md` 22 行も「外すパッケージは無い」。
 - この節の下の、`packagesJudgedByTotal` を今の仕組みとして書く行（2026-10-29〜2026-11-09 の記録、K-114・K-120・K-131・K-132・K-135 を含む）は、撤去の前の状態の記録として残す。行の番号もその時点のもの。
+- 2026-11-14 の補足: 内部DB の部品（`common.persistence`・`role.store`・`group.store`・各機能の `repository`）もパッケージごとの下限の対象。PostgreSQL のための分岐（区分の部品の SQLState、DB の種類ごとの SQL）を足すと、その分岐を通すテストが無ければパッケージの分岐の下限に響きうる（見立て。測っていない）。
 
 以下は前回以前の記録:
 
@@ -150,6 +169,7 @@
 
 - 確かめた事実: A1〜A3 の今の道具はリポジトリの外（ホームの下）にあり、読んでいない（依頼による）。A1（振り返りの段の読み取りの確かめ）に当たる台本はリポジトリの中に無い（`scripts/` の4ファイルのどれでもない）。A2（`main` への取り込みの前の CI の試行ごとの確かめ）は `project.md` の Deployment の「`gh run view --json attempt,jobs` で試行ごとに確かめる」決まりで、台本は無い。A3（内部DB の複写を数える）は README の目次（109 行）が `docs/internal-db.md` に「内部DBの複写を数える」の節があるとする（`docs/internal-db.md` は読んでいない）。
 - 見立て: 台本をリポジトリに置くなら、ルートの `scripts/` が置き場の候補で、K-130 の検査の対象の決定がそのまま効く。A3 はチームの知識（`aidlc/spaces/default/knowledge/aidlc-shared/ops-notes.md`）の「リポジトリの外の小さな Java の道具（H2 の JDBC、`ACCESS_MODE_DATA=r`）で値を表示せずに数える」決まりがあり、Node の台本にするか Java の道具のままかで、ライセンスヘッダーと検査の対象の扱いが変わる。A2 の台本は公開のリポジトリに置くことになるため、`gh` の出力のどの値を出すかを決める。
+- 2026-11-14 の追記（K-152）: A3 に当たる `scripts/count-db-copy.mjs`（Gradle のキャッシュの H2 の jar で `ACCESS_MODE_DATA=r` で開く）が今はある（存在と `docs/internal-db.md` の記述だけを確かめた）。`docs/internal-db.md` の「複写を数える」の節は今回読んだ。
 
 ## リンタと静的解析
 
@@ -157,6 +177,7 @@
 - 画面: Prettier・oxlint・ESLint（`frontend/eslint.config.js`）・Stylelint。
 - ライセンスヘッダー（2026-11-08 に読んだ）: ひな形は `config/license-header.txt` の1つで、ルートの `build.gradle.kts` が `/* ... */` の形（Java・Gradle の Kotlin DSL）と Mustache のコメントの形（メールのテンプレート）を作り、`frontend/scripts/check-license-header.mjs` が `frontend/` の TS・TSX・JS・MJS・CJS・CSS（`/* ... */`、`/** ... */` は認めない）と HTML・SVG（`<!-- ... -->`）、`perf/` の MJS・JS を確かめる。
 - 毎回流れる検査（2026-11-08）: `gitleaksScan`（履歴全体、`build.gradle.kts` 287〜293 行）と `perfEvidenceScan`（`aidlc/` の記録の JWT の形、295〜302 行）は入力・出力を宣言せず毎回流れる。`osvScan`（327〜417 行）は lockfile と `config/npm-build-tools.txt` を入力にするため、変わらなければ UP-TO-DATE（`docs/verification.md` 49 行は `--rerun` で流し直す手順を書く）。
+- 2026-11-14: SQL の移行のファイル（`db/migration/*.sql`）の書式やライセンスヘッダーを確かめる検査は無い（開発担当の調査。Spotless の対象は Java と Gradle の Kotlin DSL）。内部DB のネイティブの SQL は定数の文字列と束縛の引数で組まれ、SpotBugs の `SQL_` の除外は `businessdata` の `RowSqlExecutor` の分だけ（見立て。内部DB の repository・store の除外は今回読んでいない）。
 
 ## CI と依存
 
@@ -169,6 +190,8 @@
 
 - 2026-11-11: `ci.yml` は 162 行。6 の手順が `./gradlew verify -PitForks="$IT_FORKS"` になり、既定は `IT_FORKS_DEFAULT: "3"`、手動の入力 `it_forks` は 1〜8（コミット `0f35e017`。本文は `architecture.md` の K-140）。`dependabot.yml` の `ignore` は `dependencies.md` の K-87（2026-11-11 に直した）、版の固定は `technology-stack.md` の K-138。
 
+- 2026-11-14: `ci.yml` は 2026-11-11 と同じ形（ジョブ `verify` に DB のサービスの定義は無く、内部DB は H2 のファイル、対象DB は Testcontainers）。内部DB の結合テストを PostgreSQL でも流すなら、Testcontainers で起動するか CI のサービスにするかと、`timeout-minutes: 60`・`team.md` の約 42 分の線の中に収まるかが論点（`architecture.md` の K-154）。
+
 **K-143 依存の見直しで古くなっている記述（2026-11-11）（`build-and-verify`）**
 
 - 確かめた事実:
@@ -176,6 +199,7 @@
   - `.github/dependabot.yml` の gradle の `ignore` の説明の最初の段落も「Spring Boot 4.1.1 の OpenTelemetry 1.62」（続く段落は 4.1.2 の見直しの経緯）。
   - 知識ベースの `packagesJudgedByTotal` を今の仕組みとして書いていた行は、この回の候補で今の形に直すか、撤去の前の記録と注した（K-142）。
 - 未検証: メモリーのファイル（`project.md`）の書き換えは、学びの手順か依頼者の判断による。この段では直していない。
+- 2026-11-14 の確かめ: `project.md` の Tech Stack の Jackson と appender の行は、Intent `261110-deps-forks-review` の後に書き換えられている（今の文は「Spring Boot 4.1.2」「BOM を platform で読む上書きは…`98ef3e51` で外した」）。K-143 の `project.md` の分は解消の見込み（`dependabot.yml` の説明の段落は今回読み直していない）。
 
 ## 静的解析の除外と境界テストの形（K-80、2026-10-29）
 
@@ -188,6 +212,7 @@
 - Javadoc・コメントは日本語で、要件・設計の ID（BR・NFR・契約の番号）と Intent の名前を細かく引く。`frontend/src/features/README.md` に機能の作り方の決まり、`perf/README.md` に負荷の試験の手順（1,753 行、2026-11-01）。
 - 2026-11-08: `README.md` は 164 行に縮み、前提の道具・取得と準備・開発時の起動・コンテナでの起動と確認・文書の目次・ライセンスだけを持つ。検査とテストの手順は `docs/verification.md`、配備・内部DB・設定・メール・対象DB・DSL・利用者・ロール・運用・見た目・アイコン・差し込み口は `docs/` の主題ごとの文書へ分かれた（目次 102〜119 行）。下の K-88 の記述は 2026-11-01 の時点のもの（K-118）。
 - 2026-11-09: `docs/verification.md` は 398 行（下の K-125 の 353 行から、前の Intent で「規模・テストの件数・カバレッジの報告（CI の要約）」の節 133〜176 行が足された。節の位置は `code-structure.md` の「CI と台本の置き場」）。README（165 行）はリリースの手順を持たず、リリースの前の確かめは `docs/verification.md` 178〜198 行（`architecture.md` の K-136）。
+- 2026-11-14: 内部DB の運用の文書（`docs/internal-db.md`・`docs/configuration.md`・`docs/deployment.md`・`docs/operations.md`・`docs/verification.md`）は、どれも内部DB を H2 のファイルとして書いている（K-152）。コードの説明文（Javadoc）は H2 の振る舞い（誤りの番号・待ちの既定・排他の順・例外の文）を根拠に多く書いている（例: `RoleStore` の待ちの上限、`UserRowLockRepository` の排他の順、`RoleStoreClassifier` の SQLState、`UserRepository.savePreferences` の `FINAL TABLE`）。PostgreSQL でも動かすなら、説明文の根拠も DB の種類ごとに書き分ける必要がある（見立て）。
 
 **K-88 README.md に経緯が溜まっている（2026-11-01）（`build-and-verify`・`container-runtime`）**
 
@@ -248,7 +273,38 @@
 
 - **K-125 `docs/verification.md` の構成（2026-11-08 の2回目、353 行の全文）（`build-and-verify`）**: 見出しは「1コマンドの検査（統合の前の関門）」（5 行〜。段の表 13〜24 行、画面のテストが2回流れることと性能のテスト 28〜31 行、段ごとの実行と報告の置き場 33 行、`verify` と `verifyQuick` の使い分け 35〜115 行（`packagesJudgedByTotal` の確かめ・`-PitTests`・`-PitForks`（N=1〜4 の実測）・JaCoCo の参考値）、OSV-Scanner の判定 117〜131 行）、「リリースの前の確かめ」（133〜153 行）、「ビルドした WAR での画面の確認（E2E）」（155〜353 行）の3つ。CI に触れるのは 11 行（「CI も同じタスクを呼びます」）・39 行（「CI は引数なしのこれを流します」）・93 行（`-PitForks` は CI に付けない）・131 行（CI は毎回 OSV を確かめる）・157 行（E2E は CI に入れない）。CI の手順や要約を説明する節は無い。報告の置き場は 33 行（`backend/build/reports/`・`frontend/coverage/`・`build/reports/osv-scanner/osv.json`）と 112 行（`reports/jacoco/quick/` と `reports/jacoco/test/`）。回帰の台本は 69〜71 行。要約の手順を足すなら、33 行の報告の置き場の近くか、新しい節に書く形が考えられる（見立て）。
 
+**K-152 H2 だけの運用の道具と文書（2026-11-14）（`container-runtime`・`perf-and-monitoring`・`build-and-verify`）**
+
+- 確かめた事実:
+  - 詰め直し: 既定の接続先の `;DEFRAG_ALWAYS=TRUE`（`application.yaml` 191 行）と、HikariCP の JMX の一時停止を使う道具 `docker/hikari-pool.sh`（`status`・`compact`・`resume`）と `docker/jmx/HikariPoolControl.java`。`application.yaml` の `register-mbeans`・`allow-pool-suspension` はこの道具のため（202〜212 行のコメント）。手順は `docs/internal-db.md` の「内部DBのファイルの詰め直し」。
+  - `-Dh2.compactThreads=1`: `Dockerfile` の ENTRYPOINT・テストの JVM（`backend/build.gradle.kts` 117 行）・E2E の WAR の起動（`frontend/playwright.config.ts` 140 行）の3か所（`project.md` の Tech Stack と `team.md` の Deployment が「そろえる」と決めている。K-139）。
+  - バックアップと戻し: アプリを止めてボリューム `mastersmith_mastersmith-data` を `tar` で `~/.mastersmith-backup/` に複写し、戻すときは展開する（`docs/internal-db.md` の「内部DBのバックアップと戻し方」。`docs/deployment.md` 33〜44 行・`docs/operations.md` 130〜157 行が参照する）。`.gitignore` に `mastersmith-data-*.tgz`・`data/`・`backend/data/`。
+  - 複写を数える: `scripts/count-db-copy.mjs`（Gradle のキャッシュの H2 の jar で `ACCESS_MODE_DATA=r` で開く。存在と `docs/internal-db.md` の記述だけを確かめた）と、`docs/internal-db.md` の `CountRows`（`INFORMATION_SCHEMA.COLUMNS` で列を確かめる）。`docs/operations.md` 130〜140 行の監査の読み方も H2 の道具で複写を開く（`grep`）。
+  - 負荷の試験: `perf/h2-shell.sh`（H2 の jar で `org.h2.tools.Shell` を動かし、使い捨ての環境の内部DB に SQL を流す。試験用の利用者の追加に使う。`perf/README.md` 88〜97 行・290 行）、`perf/lib/perf-db-url.sh`（`PERF_DB_URL` は `jdbc:h2:file:/app/data/mastersmith` で始まる形だけを受け付ける）、`perf/dsl-mixed-memory.sh`（`h2-shell.sh --read-only`）、`docker/perf/compose.yaml`（ボリューム `perf-data:/app/data`）。
+  - 文書: `docs/configuration.md` 14〜18 行の `MASTERSMITH_DB_*` の説明、`docs/internal-db.md` の全体、`docs/verification.md` 21 行（結合テストは「Spring と組み込みの H2 を起動する」）。E2E は `--spring.datasource.url=jdbc:h2:file:<一時ディレクトリ>/mastersmith` で WAR を起動する（`frontend/playwright.config.ts` 147 行）。
+- 見立て（未検証）: PostgreSQL を選べる形にしても H2 を既定に残すなら、上の道具と文書は H2 のまま要り、PostgreSQL の分（`pg_dump` などでのバックアップと戻し・件数の数え方・負荷の試験の利用者の追加・詰め直しの代わり（`VACUUM` など））を別に足すことになる。`team.md` の「配備の前の内部DB の複写」「移行があるときの戻しの練習」の手順も DB の種類で分かれる。どこまで用意するかは要件の論点。
+
+**K-153 下調べの記録と今のコードの照合（2026-11-14）（全体）**
+
+- 確かめた事実: 知識の置き場の下調べの記録 `aidlc/spaces/default/knowledge/aidlc-shared/study-internal-db-postgresql.md` は、調べた時点のコード `8eec0ba4` による。今（`cb3b513a`）までに `backend/`・`Dockerfile`・`compose.yaml`・`docker/`・`.github/`・`docs/`・`perf/`・`.env.example`・`frontend/playwright.config.ts` の変更は無い（`git diff --stat 8eec0ba4 cb3b513a` が空。移行の最後の変更は `102608aa`）。
+
+| 下調べの記述 | 今のコードとの照合 |
+|---|---|
+| 2節: メールアドレス・招待中の判定は制約の名前を大文字にして照らす。`UniqueViolations` は型と 23505 | 合う（`UserAccountService` 522〜530 行・`InvitationService` 220〜228 行・`UniqueViolations`） |
+| 2節: `ON DELETE RESTRICT` の親の削除は 23001 で UNEXPECTED | コードの区分の一覧（23503・23506）と合う。補足: アプリに利用者の行を消す経路は無く、23001 に当たりうるのはロール・グループの削除だけ |
+| 3節: `RowLockFailures` の番号と SQLState は H2 の値だけだが型で当たる。`org.hibernate.QueryTimeoutException` は見ていない | 合う（`RowLockFailures` 44〜80 行） |
+| 4節: 失敗の後に同じトランザクションで SQL を続ける経路は無い | 確かめた4つの経路（`UserAdminService`・`UserAccountService.createUser`・`InvitationService`・`LoginService.createRow`）は合う。ほか（`RoleStore`・`GroupStore` の呼び出し元のサービス・監査・ヘルスチェック）は確かめていない |
+| 5.1: 接続ごとの `lock_timeout` が要る。`UserAdminService.revokeAllRefreshTokens` の説明に「H2 の既定、約 2 秒」 | 合う（311〜313 行）。同じ前提は `RoleStore`（52〜53 行）・`GroupStore`（41 行）の説明文にもある |
+| 5.2: H2 の移行は V1〜V14 の 14 本 | 合う |
+| 5.2: `BINARY LARGE OBJECT`・`BINARY(32)` → `bytea`、V8 の生成列 → 条件つきの一意の索引 | 合う（V3・V5・V8）。補足: 本文の列の型を変えるときは、エンティティの `@Lob` の写し方（`code-structure.md` の K-149）も一緒に決める必要がある |
+| 5.2: `MERGE ... KEY` の2か所（`RoleStore`・`DslPreviewRepository`）、`MERGE INTO ... USING` の1か所、`DslAppliedRevisionRepository` の `CAST` | 合う。**下調べに無い H2 に固有の SQL が1つある**: `UserRepository.savePreferences` の `FINAL TABLE (UPDATE ...)`（79〜85 行。自分の設定の保存。`api-documentation.md` の K-145） |
+| 5.2: H2 だけの運用（`DEFRAG_ALWAYS=TRUE`・`docker/hikari-pool.sh`・ファイルの複写・`-Dh2.compactThreads=1`） | 合う。補足: ほかに `perf/h2-shell.sh`・`perf/lib/perf-db-url.sh`・`scripts/count-db-copy.mjs`・`docs/operations.md` の監査の読み方も H2 に頼る（K-152） |
+| 5.2: テストと検査の決まり（`team.md`）と CI の時間 | 合う。補足: テストの側にも H2 に固有の書き方が多い（K-151） |
+| （下調べに無い） | Flyway の PostgreSQL の部品が lockfile に無い（確かめた事実。`dependencies.md` の K-150）。`@Lob byte[]` の写し方（見立て。K-149）。V8 の生成列の `STORED`（見立て。K-144） |
+
 ## 技術的負債
+
+- **今回の範囲（2026-11-14）**: 内部DB が組み込みの H2 に強く頼る。移行の型と機能（K-144）、本体の H2 に固有の SQL 3 か所（K-145。うち `FINAL TABLE` は下調べに無い）、待ちの上限を H2 の既定に預け接続ごとの設定が無いこと（K-147）、違反と排他の区分が H2 の SQLState と誤りの番号の一覧に頼ること（K-148）、`@Lob byte[]` の写し方（K-149、見立て）、Flyway の PostgreSQL の部品が無いこと（K-150）、テストの 275 本と待ち合わせ・トリガー・準備の SQL の H2 への依存（K-151）、H2 だけの運用の道具と文書（K-152）。内部DB の repository・store の層に、DB の種類ごとの書き分けの仕組み（対象DB の `RowDialect`・`SchemaQueries` のような形）は無い。作りの論点は `architecture.md` の K-154。
 
 - **今回の範囲（2026-11-11）**: 版の固定が2つ（opentelemetry-logback-appender 2.28.1-alpha・networknt 3.0.6）残り、どちらも外す時期が Spring Boot の管理の版（OpenTelemetry 1.63 以上・Jackson 3.2 系以上）に依る（`technology-stack.md` の K-85・K-138）。H2 の `-Dh2.compactThreads=1` が3か所にあり、H2 を上げるときに要否を見直す（K-139）。`-PitForks` の CI の既定 3 は手元の実測からの値で、CI の上の 2 と 3 の比べは記録に無い（`architecture.md` の K-140）。決まりと設定のコメントに古い版の名前が残る（K-143）。前回までの K-131・K-135（一覧の確かめのコマンド・一覧を空にする書き方）は一覧の撤去で解消した（K-142）。
 
@@ -312,6 +368,7 @@
   - `perf/dsl-mixed-memory.sh` は `memory.stat` の `anon`・`file`・`inactive_file`・`active_file`・`kernel` を1秒ごとに記録し、`anon_max_ratio` を並べるが、合否は peak/max だけ。
   - 直近の測定の事実（`project.md`）: `dslMixed` の `memory.peak` は 94.4%・取り直し 93.1%（Not Met）。peak の時の内訳は `anon` 68.3%・回収できるページキャッシュ 23.7%。物差しを `anon` に替えると Met になるが、測り方を後から緩めることになるため選ばなかった。対象DB の `anon` の最大は MariaDB 85.01%・MySQL 90.3%（OOMKilled false）。
 - 今回の Intent への意味: p95・`memory.peak`・`anon` の緩和は 2026-10-28 に依頼者が決めている（メモリの記録）。値と対象は要件定義で明示して記録し、前の物差しの値を並べる。変更の置き場は README の上記の記述箇所と `perf/dsl-mixed-memory.sh`、場面の記述（`scenarios.js`）。
+- 2026-11-14 の補足: `dslMixed` の `memory.peak` には H2 のファイルのページキャッシュが含まれる（上の「H2 の `RETENTION_TIME=0` の試し」）。内部DB を PostgreSQL の別のコンテナにすると、アプリのコンテナのメモリの内訳が変わる見込み（未検証）。
 
 **K-71 `docker/perf/compose.yaml` の資源の上限の既定と、`perf/README.md` の業務データの試験の値の差（`perf-and-monitoring`）**
 
@@ -334,6 +391,7 @@
 
 ## Sources
 
+- 2026-11-14: `backend/src/test/java/cherry/mastersmith/common/testsupport/TestDatabase.java`・`targetdb/testsupport/TargetDbImages.java`（全文）、テストの H2 に固有の書き方と `*IT` の数の `grep`、`docs/internal-db.md`（前半と詰め直しの節）・`perf/h2-shell.sh`・`perf/lib/perf-db-url.sh`（全文）、`docs/{operations,configuration,deployment,verification}.md`・`perf/README.md`・`docker/` の H2 の `grep`、`git diff --stat 8eec0ba4 cb3b513a`、`aidlc/spaces/default/knowledge/aidlc-shared/study-internal-db-postgresql.md`（照合のため）、`aidlc/spaces/default/memory/project.md` の Tech Stack（K-143 の照合のため）、開発担当の調査 `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-11: `backend/build.gradle.kts`・`.github/workflows/ci.yml`・`.github/dependabot.yml`・`gradle/libs.versions.toml`（どれも全文）、`scripts/ci-summary.mjs`（35 行と 174〜196 行）、`docs/verification.md`（22 行・79〜95 行）、`git log`（`67f6f5f2`・`0f35e017`・`98ef3e51`）、`aidlc/spaces/default/memory/project.md` の Tech Stack（照合のため）、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/check-license-header.mjs`（どれも全文）・`build.gradle.kts`（1〜566 行）・`backend/build.gradle.kts`（100〜357 行）・`docs/verification.md`（1〜200 行）・7 パッケージの本体とテスト（全文）、`frontend/eslint.config.js`・`frontend/tsconfig.perf-tool.json`・`.pre-commit-config.yaml`・`README.md` の `grep`、`find`（テストの数と境界テストの一覧）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`scripts/`・`frontend/scripts/{check-license-header,check-bundle-size,check-dist-assets,make-ico}.mjs`・`frontend/vitest.config.ts`・`frontend/package.json`・`backend/build.gradle.kts`・`build.gradle.kts`・`docs/verification.md`（どれも全文）、`frontend/src/*.test.ts` のファイル名、`git log`・`git ls-files`（`scripts/`）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。

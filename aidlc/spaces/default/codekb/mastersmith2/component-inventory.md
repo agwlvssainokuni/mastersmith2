@@ -2,7 +2,8 @@
 
 ## 読み方
 
-- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 49 個（2026-11-06 に `frontend-shared-format` を足した。それまでは 48 個。2026-11-08 は増減なし）。
+- 見出しの名前（`###` の直後）は、`reverse-engineering-timestamp.md` の Scope of Analysis の `analyzed.components` と文字どおりに照合される。ID は 50 個（2026-11-14 に `internal-db-migration` を足した。2026-11-06 に `frontend-shared-format` を足して 49 個、それまでは 48 個。2026-11-08・2026-11-11 は増減なし）。
+- 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql` の Focused scan で、内部DB に関わる部品の記述に今回の読み（K-144〜K-154）を足した: `config`（`application.yaml` の内部DB の節）・`internal-db-migration`（新しい ID。移行 V1〜V14）・`common-persistence`・`common-error`（`UniqueViolations` だけ）・`common-health`（`TimeBoundedDbHealthIndicator` だけ）・`auth`・`user`・`invitation`（repository の一部）・`dslmanage`（`repository/`）・`role`・`group`（`store/` の区分の部品）・`backend-test-support`（`TestDatabase`・`TargetDbImages`）・`build-and-verify`（`backend/build.gradle.kts`・`.github/`）・`container-runtime`（`Dockerfile`・`compose.yaml`・`.env.example`・`docs/internal-db.md`）・`perf-and-monitoring`（`perf/h2-shell.sh`・`perf/lib/perf-db-url.sh`）。今回の `analyzed.components` はこの 15 個で、どれも部品の一部を深く読んだ（各部品の行に書いた）。`useradmin`・`audit`・`targetdb` は該当のメソッド・クラスの説明・`grep` だけの流し読みのため入れていない（一行足した）。ほかの部品の記述は前回以前のまま。
 - 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で、`build-and-verify`（版の定義・Dependabot・`-PitForks`。K-138〜K-143）・`container-runtime`（`Dockerfile`・`compose.yaml` のイメージと JVM の引数。K-138・K-139）・`common-health`（本体の読み直し）の記述に今回の読みを足し、`packagesJudgedByTotal` に「残る」と書いていた部品の行を今の形（一覧は消え、すべてのパッケージにパッケージごとの下限が当たる。K-142）に直した。今回の `analyzed.components` はこの3つ。ID は 49 個のまま（増減なし）。2026-11-09 に深く読んだ `access`・`audit`・`common-error`・`common-i18n`・`common-web` は、今回は `git diff --stat` で変化が無いことだけを確かめた（流し読みの扱い）。ほかの部品の記述は前回以前のまま。
 - 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、`build-and-verify`（CI・ルートの `scripts/`・R-07。K-127〜K-131・K-135〜K-137）と、`packagesJudgedByTotal` の 7 パッケージを持つ `access`・`audit`・`common-error`・`common-health`・`common-i18n`・`common-web`（K-132〜K-134）の記述に今回の読みを足した。今回の `analyzed.components` はこの 7 つ。`common-health` 以外は部品の一部（7 パッケージに当たるパッケージ）だけを深く読んだ（各部品の行に書いた）。ID は 49 個のまま（増減なし）。ほかの部品の記述は前回以前のまま。
 - 2026-11-08 の2回目（記録のコミット `9fd4f7f`）の Intent `261108-ci-size-coverage` の Focused scan で、`build-and-verify` の記述に今回の読み（K-119〜K-126）を足し、場所にルートの `scripts/` を足した。今回の `analyzed.components` はこの1つ。ID は 49 個のまま（増減なし。`scripts/` は検査の道具のため `build-and-verify` に含めた）。ほかの部品の記述は前回以前のまま。
@@ -12,7 +13,7 @@
 - 2026-11-01（記録のコミット `6079f13`）の Intent `261101-maintenance-update` の Focused scan で、`build-and-verify`・`container-runtime`・`perf-and-monitoring`・`businessdata` の記述に今回の読み（K-81〜K-93）を足し、`frontend-e2e`・`make-you-chic-ui` の数と固定先を直した。今回の `analyzed.components` はこの4つ。ID は 48 個のまま。
 - 2026-10-29（記録のコミット `15a25aa`）の Intent `261029-reference-lookup-cleanup` の Focused scan で、今回の範囲の部品（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）の記述を更新した。ほかの部品の記述は前回（2026-10-28、`261027-perf-targets-review`）以前のまま。前回までの K-1〜K-61 の本文はここに残していない。
 - 状態: healthy（問題なし）・at-risk（今回の Intent で手を入れる見込みか、懸念あり）・degraded（不具合あり）。
-- 読みの深さ: 「深い（一部）」は 2026-11-03 に深く読んだファイルを持つ部品で、`analyzed.components` の 10 個（上の行）。それより前の記録で「深い（一部）」と書いた部品のうち今回の 10 個に無いものは、今回は確かめていない。以下は前回（2026-10-29）の書き方: `analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。2026-11-08 に深く読んだのは `build-and-verify` だけ（下の部品の行）。
+- 読みの深さ: 「深い（一部）」は 2026-11-03 に深く読んだファイルを持つ部品で、`analyzed.components` の 10 個（上の行）。それより前の記録で「深い（一部）」と書いた部品のうち今回の 10 個に無いものは、今回は確かめていない。以下は前回（2026-10-29）の書き方: `analyzed.components` の 8 個（`businessdata`・`dsl`・`targetdb`・`role`・`frontend-feature-tables`・`perf-and-monitoring`・`container-runtime`・`build-and-verify`）。「流し読み」は名前・一覧・grep・前回以前の記録による（今回は確かめていない）。前回は深く読んだ `build-and-verify` の `libs.versions.toml`・`gradle.lockfile`・`.github/dependabot.yml` の読み直しは、今回は `dependabot.yml` と `backend/build.gradle.kts`・`frontend/package.json` に絞った。2026-11-08 に深く読んだのは `build-and-verify` だけ（下の部品の行）。2026-11-14 の「深い（一部。今回の `analyzed.components`）」は上の 15 個。
 - パスは `backend/src/main/java/cherry/mastersmith/` の下のものはそれを省く。依存の向きは `dependencies.md`。
 
 ## バックエンド（`backend/src/main/java/cherry/mastersmith/`）
@@ -24,15 +25,25 @@
 ### config
 
 - 場所: `config/`（6 ファイル）と `application.yaml`・`logback-spring.xml` ／ 責務: Spring Security の連鎖、SPA の配信、観測、アプリの設定値。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `backend/src/main/resources/application.yaml` の内部DB・JPA・Flyway・ログの節（190〜226 行・375〜405 行）。内部DB の接続は `spring.datasource.*`（`MASTERSMITH_DB_*` の環境変数、既定は H2 のファイル）、プール `mastersmith-db`（上限 30・借りる待ち 5 秒・`register-mbeans`・`allow-pool-suspension`）、`ddl-auto: validate`・問い合わせの上限 10 秒、Flyway の置き場は1つ、方言の指定・`connection-init-sql` は無い、ログの抑え（`org.hibernate.orm.jdbc.error`・`org.postgresql` ほか）。本文は `architecture.md` の K-146。`config/` の Java のクラスは読んでいない。 ／ 状態（2026-11-14）: at-risk（今回の Intent で内部DB の接続・Flyway・待ちの上限の設定を変える見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+
+### internal-db-migration
+
+- 場所: `backend/src/main/resources/db/migration/`（V1〜V14 の 14 本） ／ 責務: 内部DB の表・制約・索引を前進のみの移行で作る（Flyway、`classpath:db/migration`、`validate-on-migrate: true`）。DB の種類ごとの書き分けは無い。
+- 2026-11-14 に新しく足した ID。それまでの記録では `config` の場所の一部（リソースの一覧）として書いていた。
+- 2026-11-14 に深く読んだもの: 14 本の全文。H2 に頼る型と機能は `BINARY(32)`（V3・V8）・`BINARY LARGE OBJECT`（V5）・`STORED` の無い生成列に一意の制約（V8）・`ON DELETE RESTRICT` の外部キー 7 つ（V10〜V12）。本文は `code-structure.md` の K-144。
+- 依存: なし（Flyway が起動のときに流す。表を使うのは `auth`・`user`・`invitation`・`audit`・`dslmanage`・`role`・`group`） ／ 状態（2026-11-14）: at-risk（K-144。今回の Intent で PostgreSQL 用の書き方と置き場の分け方を決める見込み） ／ 読みの深さ: 深い（今回の `analyzed.components`）
 
 ### common-error
 
 - 場所: `common/error/{domain,service,web}` ／ 責務: `ProblemType`（code・状態コード）、`BusinessException`、`@RestControllerAdvice` の Problem Details。`common.error.domain`・`common.error.service` にも、ほかと同じパッケージごとの下限が当たる（前の一覧 `packagesJudgedByTotal` は Intent 261108-ci-checks-release で消えた。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-09 に深く読んだもの: `common/error/domain/`（5 ファイル）と `common/error/service/`（2 ファイル）とそのテスト。`common/error/web/` はファイル名の一覧だけ。`ProblemTypeRegistry` に辿れない分岐が2つある（K-133、本文は `code-quality-assessment.md`）。薄い所は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み。分岐の下限に届かないと `src/main` の変更になりうる） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+- 2026-11-14 に深く読んだもの: `common/error/web/UniqueViolations.java`（`DataIntegrityViolationException`・Hibernate の `ConstraintViolationException` の型か SQLState 23505 で当てる）と、`GlobalExceptionHandler` のログの分岐（220〜245 行。当たれば例外の文を出さずクラスの名前だけを ERROR に出す）。本文は `architecture.md` の K-148。見立て（未検証）: PostgreSQL の違反も型で当たる。 ／ 状態（2026-11-14）: healthy ／ 読みの深さ: 深い（一部。`UniqueViolations` だけ。今回の `analyzed.components`）
 
 ### common-persistence
 
 - 場所: `common/persistence/` ／ 責務: 行の排他の結果の型と排他の失敗の見分け。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: 3 つのクラスの全文（`RowLockFailures`・`RowLockAttempt`・`RowLockUnavailableException`。ほかは `package-info.java`）。`RowLockFailures.isLockFailure` は例外の型（`LockTimeoutException`・`PessimisticLockException`・`jakarta.persistence.QueryTimeoutException`）か、H2 の誤りの番号（50200・40001）か SQLState（`HYT00`・`40001`）で判定する。PostgreSQL の 55P03・40P01 は一覧に無い。`org.hibernate.QueryTimeoutException` は見ていない。使うのは `auth`・`user`・`invitation`・`role`・`group`・`useradmin` と、共通の `common.error.web`・`common.observability`（`LockFailureSafeTraceInterceptor`）（`import` の `grep`）。本文は `architecture.md` の K-148。 ／ 状態（2026-11-14）: at-risk（K-148。今回の Intent で PostgreSQL の値を足すか型だけに頼るかを決める見込み） ／ 読みの深さ: 深い（今回の `analyzed.components`）
 
 ### common-security
 
@@ -46,6 +57,7 @@
 ### common-health
 
 - 場所: `common/health/` ／ 責務: ヘルスチェック。ほかと同じパッケージごとの下限が当たる（Intent 261108-ci-checks-release でテストを足して下限を満たし、一覧ごと消した。K-142）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `TimeBoundedDbHealthIndicator.java`。内部DB の自動設定のプールから接続を借りて `SELECT 1` を流す（2026-11-11 の行と同じ形のまま）。`SELECT 1` は H2 と PostgreSQL のどちらでも通る見込み（未検証）。 ／ 状態（2026-11-14）: healthy ／ 読みの深さ: 深い（一部。本体の1ファイルだけ。今回の `analyzed.components`）
 - 2026-11-11 に深く読んだもの: 本体 `common/health/` の2ファイルの全文。`TimeBoundedDbHealthIndicator` は `HealthIndicator`・`DisposableBean`。専用のデーモンのスレッド1本（`health-db-check`）で接続を借りて `SELECT 1` を流し（問い合わせの時間の上限は秒に切り上げ、最小 1 秒）、呼び出し側は `mastersmith.health.db-timeout`（`HealthProperties`、既定 2s）だけ待つ。前の確かめが終わっていなければ `AtomicBoolean` で新しく始めず DOWN。時間切れ・失敗・`submit` の断り・割り込みはどれも詳細なしの DOWN で、WARN のログはキーと値（`reason`・`errorType`・`timeoutMillis`）だけ。テストは名前と `@DisplayName` の一覧だけ（`TimeBoundedDbHealthIndicatorTest` 8 件・`HealthEndpointIT` 5 件。前の Intent で `submit` の断りと割り込みのテストが足された）。 ／ 状態（2026-11-11）: healthy ／ 読みの深さ: 深い（一部。本体だけ。今回の `analyzed.components`）
 - 2026-11-09 に深く読んだもの: `common/health/` の全部（`TimeBoundedDbHealthIndicator`: 内部DB の `SELECT 1` を1本のスレッドで流し、時間の上限（`mastersmith.health.db-timeout`、既定 2s）で切り、前の確かめが走っている間は新しく始めず DOWN を返す。`HealthProperties` は計測の外）とそのテスト2つ。`backend/build.gradle.kts` のコメントは、U1 の実測で行 79.2% だったとする。薄い所（`submit` が断られたとき・割り込み・`destroy()`）は K-132。 ／ 状態（2026-11-09）: at-risk（今回の Intent でテストを足して一覧から外す見込み） ／ 読みの深さ: 深い（今回の `analyzed.components`）
 
@@ -61,6 +73,7 @@
 ### auth
 
 - 場所: `auth/{domain,repository,service,web}`（58 ファイル） ／ 責務: ログイン・ロック・トークン・要求ごとの認証と主体の組み立て。 ／ 依存: `common`・`user` ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `auth/repository/LoginAttemptStateRepository.java`（ロックの状態の行の排他（ヒント 3,000 ms）、ダミーの行の `SKIP LOCKED`（ヒント `-2`）、ネイティブの `MERGE INTO ... USING`（165 行）で行を作る）と `RefreshTokenRepository.java` の問い合わせの部分（一括の無効化、ネイティブの `DELETE ... FETCH FIRST`（72〜77 行））。`auth/service/LoginService.java` は `createRow`（156〜162 行。トランザクションの外で一意の違反を受けて進む）だけを読んだ（流し読み）。本文は `api-documentation.md` の K-145 と `architecture.md` の K-147。 ／ 状態（2026-11-14）: at-risk（K-145・K-147。`MERGE ... USING` は PostgreSQL 15 以上で通る見込み、未検証） ／ 読みの深さ: 深い（一部。repository の2ファイル。今回の `analyzed.components`）
 
 ### access
 
@@ -71,18 +84,22 @@
 
 - 場所: `audit/{domain,repository,service}`（15 ファイル） ／ 責務: 各機能の出来事を受け、確定の後に `audit_events` に追記する。 ／ 依存: `access`・`auth`・`businessdata`・`dslmanage`・`group`・`invitation`・`role`・`user`・`useradmin`（出来事の型。`import` の検索で確かめた） ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-09 に深く読んだもの: `audit/repository/` とそのテスト `AuditEventRepositoryIT`（4 件）。**K-134**: `AuditEventRepository` は Spring Data の `Repository<AuditEvent, Long>` を継ぐインターフェースで、`save`・`findById`・`findAllByOrderByOccurredAtAsc` を宣言するだけ（追記と読み取りだけ。`default` のメソッドは無い）。ほかは `package-info.java` だけで、実行できるコードが無い。見立て（未検証）: JaCoCo はこのパッケージを数えない（報告に出ないか数が 0）見込みで、一覧から外してもパッケージごとの下限で落ちない。`jacocoTestReport.xml` で確かめる。`audit/domain/`・`audit/service/` は読んでいない。境界テスト `AuditBoundaryArchitectureTest` がある。 ／ 状態（2026-11-09）: at-risk（今回の Intent で一覧から外す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+- 2026-11-14 の流し読み: 監査の追記は確定の後に `REQUIRES_NEW` の別のトランザクションで行う（`grep`）。失敗の後の扱いと、PostgreSQL での振る舞いは確かめていない（今回の `analyzed.components` に入れていない）。
 
 ### user
 
 - 場所: `user/{domain,repository,service,web}`（70 ファイル） ／ 責務: 利用者（`admin_flag`・停止の列）、パスワード、自分の設定、初期管理者の作成と救済。 ／ 依存: `common` ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `user/repository/UserRepository.java`（自分の設定の保存 `savePreferences` の H2 に固有の `SELECT ... FROM FINAL TABLE (UPDATE ...)`（79〜85 行。**下調べの記録に無い**）、利用者の検索の `ilike :pattern escape '\'`（178〜196 行））と `UserRowLockRepository.java`（管理者の行と対象を `order by u.userId` で `PESSIMISTIC_WRITE`、説明文は H2 の排他の順を根拠にする（78〜83 行））。`user/service/UserAccountService.java` は `isEmailUniqueViolation`（522〜530 行。制約の名前 `uk_users_email` で照らす）と `createUser` の違反の受け方だけを読んだ（流し読み）。本文は `api-documentation.md` の K-145、`architecture.md` の K-147・K-148。 ／ 状態（2026-11-14）: at-risk（K-145。`FINAL TABLE` は PostgreSQL で通らない） ／ 読みの深さ: 深い（一部。repository の2ファイル。今回の `analyzed.components`）
 
 ### invitation
 
 - 場所: `invitation/{domain,lock,repository,service,web}`（65 ファイル） ／ 責務: 招待・送り直し・取り消し、リンクの確かめと登録の完了。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `invitation/repository/InvitationRepository.java` のネイティブの問い合わせの部分（`DELETE ... FETCH FIRST :limit ROWS ONLY` ×2、152〜157 行・168〜173 行）。`invitation/lock/InvitationLockQueriesImpl`（`EntityManager` を直接使う行の排他、ヒント 3,000 ms）は `grep` だけ。`invitation/service/InvitationService.java` は `isPendingEmailViolation`（220〜228 行。制約の名前 `uk_invitations_pending_email` で照らす）と `issueWithOneRetry` の違反の受け方だけを読んだ（流し読み）。V8 の生成列を置き換えるときは、同じ名前の索引か制約にしないと招待中の判定が当たらなくなる（`code-structure.md` の K-144）。 ／ 状態（2026-11-14）: at-risk（K-144・K-148） ／ 読みの深さ: 深い（一部。repository の問い合わせの部分。今回の `analyzed.components`）
 
 ### useradmin
 
 - 場所: `useradmin/{domain,service,web}`（27 ファイル） ／ 責務: 利用者の管理の API（一覧・変更・管理者の印・停止・失敗回数の取り消し）。 ／ 依存: `access`・`auth`・`common`・`user` ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 の流し読み: `useradmin/service/UserAdminService.java` の排他の失敗を受ける所（Busy で巻き戻しの印を付け、DB に触れずに返す）と、リフレッシュトークンの一括の無効化の待ちを「H2 の既定、約 2 秒」に頼る説明文（311〜313 行）だけを読んだ。該当のメソッドだけのため、今回の `analyzed.components` に入れていない。本文は `architecture.md` の K-147・K-148。
 
 ### mail
 
@@ -99,6 +116,7 @@
 - 今回読んだもの: `config/TargetDataSourceConfig.java`・`config/TargetDbProperties.java`・`domain/ReadPurpose.java`（読み取りのプールの既定 10、書き込みのプールの既定 5 を `TargetDbProperties` で確かめた）、`service/JdbcTargetReadAccess.java` の接続の返し方（`evictConnection`）。ほかはクラスの一覧による。
 - 今回（2026-10-29）の読み: `ReadPurpose`・`TargetDbProperties.QueryTimeout`・読み取りの口の署名だけ（署名レベル）。参照先の選択肢の読み取りに専用の `ReadPurpose` が要るかは未決（K-75）。`targetdb` に手を入れると `TargetDbBoundaryArchitectureTest` の許可に触れうる。
 - 今回（2026-11-03）の読み（K-95・K-98）: `config/TargetDataSourceConfig.java` の全文。MySQL・MariaDB の読み取りのプールは接続を作るときに `SET time_zone = '+00:00'`（61・150〜152 行）、書き込みのプールは `SET time_zone = '+00:00', sql_mode = …STRICT_ALL_TABLES`（68 行。`TargetWriteDataSourceConfig.java` 113〜114 行は grep）。PostgreSQL には初期化の文を付けない（セッションの時差は JVM の既定に従う見込み、未検証）。`repository/MysqlSchemaQueries` は `DATETIME_PRECISION` を読まない（grep）。
+- 2026-11-14 の流し読み（K-146）: `TargetDataSourceConfig`・`TargetWriteDataSourceConfig` のクラスの説明で、2つのプールが `defaultCandidate = false` で、内部DB の Flyway・JPA・`JdbcTemplate`・ヘルスチェックに入らないことを確かめた。対象DB は今回の Intent で変えない前提のため、今回の `analyzed.components` に入れていない。
 - 依存: なし（ほかの機能を import しない） ／ 状態: at-risk（K-63・K-95） ／ 読みの深さ: 深い（一部）
 
 ### dsl
@@ -113,17 +131,20 @@
 
 - 場所: `dslmanage/{domain,generate,repository,service,web}`（54 ファイル） ／ 責務: 既定の DSL の生成・投入・プレビュー・適用・履歴。対象DB のスキーマを `targetdb` で読む。
 - 今回（2026-11-03）の読み（K-98・K-100）: `generate/TypeCategoryMapping.java`・`TypeCategory.java`。型の名前（MySQL・MariaDB は `DATA_TYPE`、PostgreSQL は `udt_name`）を分類し、日時（`datetime`・`timestamp`・`timestamptz`）は `formPart: datetime`・`list.format: DATETIME`・検索 RANGE、時刻（`time`・`timetz`）は `formPart: text`・`list.format: TIME`・検索 EQUALS、日付は `formPart: date`・`list.format: DATE`・検索 RANGE を初期値にする。日時の精度は DSL に写さない。`generate/DslTreeBuilder` はメニューに `icon` を書かない（86〜95 行、grep）。
-- 状態: healthy ／ 読みの深さ: 深い（一部）
+- 2026-11-14 に深く読んだもの: `dslmanage/repository/`（`DslPreviewRepository`: H2 に固有の `MERGE INTO dsl_previews ... KEY (preview_slot)`（38〜42 行）、`DslAppliedRevisionRepository`: `INSERT ... SELECT` と `CAST(? AS UUID)`・`CAST(? AS TIMESTAMP WITH TIME ZONE)`（36〜41 行）、古い履歴の削除 `deleteOlderThanNewest`）。本文は `api-documentation.md` の K-145。DSL の本文の列は `@Lob byte[]`（エンティティ `DslPreviewRecord`・`DslAppliedRevisionRecord`）で、PostgreSQL での写し方は `code-structure.md` の K-149。 ／ 状態（2026-11-14）: at-risk（K-145・K-149）
+- 状態: healthy ／ 読みの深さ: 深い（一部。2026-11-14 は `repository/`。今回の `analyzed.components`）
 
 ### role
 
 - 場所: `role/{domain,repository,service,store,transfer,web}`（143 ファイル） ／ 責務: ロールと権限の設定、割り当て、作業ロール、実効の権限の解決（`EffectivePermissionResolver`）、権限の YAML の入れ出し。 ／ 依存: `common`・`dsl`・`group`・`user`。依存されてよいのは `audit`・`navigation`・`businessdata`（`RoleBoundaryArchitectureTest`）
 - 今回読んだもの: `domain/PermissionSnapshot` の公開の口（`main(schemaName, tableName, columnName)` は 132 行、`create` ほか）。参照先のテーブル・カラムごとに実効の権限を引ける（K-75）。`role` に手を入れると `RoleBoundaryArchitectureTest` の許可の一覧に触れうる（緩める場合は計画に明記して依頼者の承認）。
-- 状態: healthy ／ 読みの深さ: 深い（一部）
+- 2026-11-14 に深く読んだもの: `role/store/RoleStore.java`（排他 `lockRole`（ヒント 3,000 ms）、書き込みと flush、ロールの削除の順（設定 → 作業ロールの保存 → ロール）、作業ロールの保存の H2 に固有の `MERGE INTO work_role_selections ... KEY (user_id)`（103〜105 行）、権限の YAML の適用の `JdbcTemplate` のバッチ（同じ接続、文の上限を明示）、一意の鍵の書き込みの待ちを「H2 の既定（約 2 秒）」に頼る説明（52〜53 行））と `RoleStoreClassifier.java`（SQLState 23505・23503・23506 と既知の制約の名前で区分し、当たらなければ SQLState と既知の名前だけを持つ例外に包み直す）。`role/service/RoleTransferSlot.java` 30 行の「単一のインスタンスの前提（組み込みの H2）」は `grep`。本文は `architecture.md` の K-147・K-148・Interaction Diagrams 12、`api-documentation.md` の K-145。 ／ 状態（2026-11-14）: at-risk（K-145・K-147・K-148）
+- 状態: healthy ／ 読みの深さ: 深い（一部。2026-11-14 は `store/` の2ファイル。今回の `analyzed.components`）
 
 ### group
 
 - 場所: `group/{domain,repository,service,store,web}`（55 ファイル） ／ 責務: グループの管理。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 に深く読んだもの: `group/store/StoreFailureClassifier.java`（`RoleStoreClassifier` と同じ形で、SQLState 23505・23503・23506 と既知の名前で区分し、当たらなければ `GroupStoreUnexpectedException`）。`GroupStore.java` は待ちの上限の説明（41 行、H2 の既定に頼る）とグループの削除（149 行）の `grep` だけ。本文は `architecture.md` の K-147・K-148。 ／ 状態（2026-11-14）: at-risk（K-148。PostgreSQL の 23001 が UNEXPECTED になる見込み） ／ 読みの深さ: 深い（一部。区分の部品の1ファイル。今回の `analyzed.components`）
 
 ### navigation
 
@@ -148,6 +169,7 @@
 
 - 場所: `backend/src/test/java/cherry/mastersmith/` ／ 責務: 機能ごとの `testsupport`、アプリ全体を起動する結合テスト、層と境界の検査（19 ファイル）、API の分類の網羅。 ／ 状態: healthy ／ 読みの深さ: 流し読み
 - 2026-11-08 の流し読み（K-113）: `*Test.java` 312・`*IT.java` 278。内部DB を H2 のファイルで持つ IT が 172（`common/testsupport/TestDatabase.register`）、対象DB のコンテナを使う IT が 39（`targetdb/testsupport/TargetDbTestDatabase` がクラスごとにコンテナを起動、`ContainerRuntimeCheck` が Docker の無いときに CI では失敗・手元では中断）。`junit-platform.properties` は jqwik の記録の置き場だけで、JUnit の並列は無い。`-PitForks` で並べるときの論点（同時のコンテナ・番号の取り合い）は `architecture.md` の K-116。
+- 2026-11-14 に深く読んだもの: `common/testsupport/TestDatabase.java`（`jdbc:h2:file:<dir>/mastersmith` を返し、`spring.datasource.url` だけを差し替える。利用者・パスワードは既定の `sa`・空のまま、`DEFRAG_ALWAYS` は付けない）と `targetdb/testsupport/TargetDbImages.java`（対象DB のイメージの版とダイジェストの1か所。PostgreSQL は `18.6`・`sha256:e3d24f69…`）。数え直し（`grep`）: `*IT` 278 本のうち 275 本が組み込みの H2 の内部DB を起動する（`TestDatabase` を直に使うものに加え、`BusinessDataTestApp`・`InvitationApps`・`InvitationTestProperties`・抽象の親クラス経由。2026-11-08 の 172 は `TestDatabase.register` を直に呼ぶクラスの数）。起動しないのは `mail/transport/` の3本だけ。`@TempDir` を使う `*IT` は 249 本。H2 に固有の書き方を持つテストの一覧は `code-quality-assessment.md` の K-151。`PostgresTestDatabase`・`ContainerRuntimeCheck` は要所の `grep` だけ。 ／ 状態（2026-11-14）: at-risk（K-151。`team.md` の「内部DB を使うテストは組み込みの H2 で行う」の決まりと、PostgreSQL でも流す範囲を今回の Intent で決める見込み） ／ 読みの深さ: 深い（一部。土台の2ファイル。今回の `analyzed.components`）
 
 ## 画面（`frontend/src/`）
 
@@ -246,6 +268,7 @@
 ### frontend-e2e
 
 - 場所: `frontend/e2e/`（`*.e2e.ts` 22 本、010〜195、と `support/`。2026-11-01 に数えた） ／ 責務: Playwright の E2E（`./gradlew e2eTest`）。`verify` と CI の外。業務データは 180（流れ）と 185（アクセシビリティ）、参照ピッカーは 190（流れ）と 195（アクセシビリティ）。axe は `support/axe.ts` が `axe-core/axe.min.js` を読み、WCAG 2.0・2.1 の A・AA の規則で検査する。起動の引数に `-Dh2.compactThreads=1`（`playwright.config.ts` 137 行、K-85。2026-11-11 の `grep` では 140 行、K-139）。 ／ 状態: healthy ／ 読みの深さ: 流し読み
+- 2026-11-14 の流し読み（`grep`）: E2E は1つの WAR を `--spring.datasource.url=jdbc:h2:file:<一時ディレクトリ>/mastersmith` で起動する（`playwright.config.ts` 147 行）。内部DB を PostgreSQL にした形で E2E を流す口は無い（K-152）。
 
 ### make-you-chic-ui
 
@@ -274,6 +297,7 @@
 - 状態（2026-11-09）: at-risk（K-128〜K-131・K-135。今回の Intent で `scripts/` の検査・R-07・CI の版の固定と時間・一覧の縮小を扱う） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 - 今回（2026-11-11、記録のコミット `7f36d8a`）読んだもの（K-138〜K-143）: `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`（527 行）・`frontend/package.json`・`.github/dependabot.yml`・`.github/workflows/ci.yml`（162 行）・`config/`（どれも全文）、`docs/verification.md`（1〜60 行・79〜95 行）。`backend/gradle.lockfile`・`frontend/package-lock.json` は主な部品の行の `grep`、`build.gradle.kts`・`scripts/` は頭と `grep` だけ。前の Intent の結果: 一覧 `packagesJudgedByTotal` は消え、すべてのパッケージにパッケージごとの下限が当たる（K-142。前の状態の行の「一覧の縮小」は済んだ）。CI は `-PitForks`（既定 3、入力 `it_forks` 1〜8）で結合テストを並べる（K-140）。Jackson の上書きは無く、版の固定は appender と networknt の2つ（K-138）。`-Dh2.compactThreads=1` は3か所（K-139）。決まりと設定のコメントに古い版の名前が残る（K-143）。
 - 状態（2026-11-11）: at-risk（K-138〜K-140・K-143。今回の Intent で依存の版・固定・Dependabot の `ignore`・`-PitForks` の既定の値を見直す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+- 今回（2026-11-14、記録のコミット `cb3b513a`）読んだもの（K-150・K-152・K-154）: `backend/build.gradle.kts`（1〜240 行。依存・テストのタスク・`-PitTests`・`-PitForks`・JaCoCo）・`.github/workflows/ci.yml`・`.github/dependabot.yml`（どれも全文）。`backend/gradle.lockfile` は H2・PostgreSQL・Hibernate・Flyway・HikariCP・Testcontainers の行の `grep`、`gradle/libs.versions.toml` は DB の部品の名前の `grep` だけ（今回のスナップショットの範囲の外）。内部DB に関わる事実: 依存は `spring-boot-starter-data-jpa`・`spring-boot-starter-flyway`・`runtimeOnly` の `h2` と対象DB の3つの JDBC ドライバー（PostgreSQL 42.7.14 を含む）。Flyway は `flyway-core` 12.4.0 だけで PostgreSQL の部品が無い（K-150）。テストの JVM の `h2.compactThreads=1`・`user.timezone=Asia/Tokyo`、`integrationTest` の説明は「Spring と組み込みの H2 を起動する」。CI に DB のサービスの定義は無く、対象DB は Testcontainers が起動する。`dependabot.yml` の `docker-compose` の項と、Dependabot が見ない固定先の説明文の一覧（内部DB 用のイメージを足すときに足す所）。 ／ 状態（2026-11-14）: at-risk（K-150・K-154。今回の Intent で Flyway の部品・内部DB のテストの流し方・CI の時間を扱う見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### container-runtime
 
@@ -284,6 +308,7 @@
 - 状態: at-risk（K-88: README の最新化。K-93） ／ 読みの深さ: 深い（一部）
 - 今回（2026-11-11）読んだもの（K-138・K-139）: `Dockerfile`（52 行の全文。JRE `eclipse-temurin:25.0.5_8-jre-noble` を index のダイジェストで固定、専用の利用者 10001、`ENTRYPOINT` は `-XX:MaxRAMPercentage=50.0 -XX:+ExitOnOutOfMemoryError -Duser.timezone=Asia/Tokyo -Dh2.compactThreads=1` と `MASTERSMITH_JAVA_OPTIONS`）・`compose.yaml`（216 行の全文。`app` は CPU 4・メモリ 2g（環境変数で替えられる）・`restart: "no"`・`/dev/tcp` のヘルスチェック、profile の otel-collector 0.164.0・lgtm 0.39.0・Mailpit v1.33.0（`MP_SMTP_DISABLE_RDNS: "true"`）・対象DB の3種類はどれもダイジェストで固定）。イメージの版とダイジェストは、Dependabot が見ない固定先（`docker/perf/compose.yaml`・`TargetDbImages.java`・`perf/`・`docs/`）と食い違わない（`grep`。版の表は `technology-stack.md`）。
 - 状態（2026-11-11）: at-risk（K-138・K-139。今回の Intent でイメージの版とダイジェストを見直す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
+- 今回（2026-11-14）読んだもの（K-146・K-152・K-154）: `Dockerfile`（`/app/data` を作り利用者 10001・権限 700、`ENTRYPOINT` の `-Dh2.compactThreads=1`）・`compose.yaml`（`app` は `.env` を読み、ボリューム `mastersmith-data:/app/data`。`targetdb-*` のサービスとボリューム。見本の対象DB の `postgres:18.6@sha256:e3d24f69…` は 151 行。内部DB 用の PostgreSQL のサービスは無い）・`.env.example`（31〜39 行の「内部DB（H2）」の節: `MASTERSMITH_DB_URL`・`MASTERSMITH_DB_USERNAME`（コメントのまま）・`MASTERSMITH_DB_PASSWORD`・`MASTERSMITH_DB_MAXIMUM_POOL_SIZE`）・`docs/internal-db.md`（「バックアップと戻し方」「複写を数える」の前半と「詰め直し」の節。約 90 行／196 行）。`docs/operations.md`・`docs/configuration.md`・`docs/deployment.md`・`docs/verification.md` は内部DB・H2 の `grep` だけ。`.env` は開いていない。運用の手順はどれも内部DB を H2 のファイルとして書いている（K-152）。 ／ 状態（2026-11-14）: at-risk（K-152・K-154。今回の Intent で内部DB 用のコンテナ・`.env` の見本・手順書を足す見込み） ／ 読みの深さ: 深い（一部。今回の `analyzed.components`）
 
 ### perf-and-monitoring
 
@@ -292,3 +317,4 @@
 - 今回（2026-10-29）読んだもの（K-77）: `perf/README.md` の見出しの構成と「性能・資源の目標の見直し」の節（1322 行以降が今の線）、`perf/k6/scenarios.js` の閾値と `setup()`（`handleSummary` は未使用）、`perf/versions.env`、`docker/perf/compose.yaml` の `image:` 行。k6 の呼び出し（`--summary-export`）は README に約 15 か所と `perf/dsl-mixed-memory.sh` 312 行。前回までに読んだ `thresholdsFor` などは今回は再読していない（前回の記録による）。
 - 今回（2026-11-01）読んだもの（K-83・K-89・K-90）: `perf/README.md` の見出しの一覧と「## 履歴」の節（1563〜1753 行）、`perf/versions.env`、`perf/redact-k6-evidence.mjs` の先頭（口と定数）、`docker/perf/compose.yaml`・`docker/e2e/compose.targetdb-port.yaml`・`docker/hikari-pool.sh` の版の行。`perf/k6/scenarios.js`（2,848 行）と `docker/` の残りは一覧と grep だけ。
 - 状態: at-risk（K-69〜K-71・K-73・K-77・K-89・K-90） ／ 読みの深さ: 深い（一部）
+- 今回（2026-11-14）読んだもの（K-152）: `perf/h2-shell.sh`（H2 の jar で `org.h2.tools.Shell` を動かし、使い捨ての環境の内部DB に SQL を流す。試験用の利用者の追加に使う）・`perf/lib/perf-db-url.sh`（`PERF_DB_URL` は `jdbc:h2:file:/app/data/mastersmith` で始まる形だけを受け付ける）の全文。`perf/README.md`（88〜97 行・290 行）・`perf/dsl-mixed-memory.sh`（`h2-shell.sh --read-only`）・`perf/dsl-timing.sh`・`docker/perf/compose.yaml`（ボリューム `perf-data:/app/data`、見本の対象DB の `postgres:18.6` は 69 行）・`docker/hikari-pool.sh` は H2 の `grep` だけ。負荷の試験の道具は内部DB を H2 のファイルとして扱う。 ／ 状態（2026-11-14）: at-risk（K-152。内部DB を PostgreSQL にした形で負荷の試験を流すなら道具の書き分けが要る見込み） ／ 読みの深さ: 深い（一部。2ファイル。今回の `analyzed.components`）

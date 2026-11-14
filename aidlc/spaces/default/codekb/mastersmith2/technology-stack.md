@@ -1,6 +1,8 @@
 # 技術の構成（mastersmith2）
 
-> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review`（依存の定期の見直し・`-PitForks` の値の再評価）の Focused scan で、版の定義と固定先（`gradle/`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`、lockfile と `docker/`・`docs/`・`perf/` の版の行の `grep`）を読み直し、表の版を今の値にそろえた（前の表から変わった値: 実行のイメージ 25.0.5_8、palantir-java-format 2.103.0、SpotBugs 4.10.5、JaCoCo 0.8.16、cherry-mustache 0.1.1、Mailpit v1.33.0・otel-lgtm 0.39.0・otel-collector 0.164.0、make-you-chic-ui `d112795`、i18next `^26.6.0`・react-i18next `^17.1.10`）。所見 K-138〜K-141 を足した。版がどこに何か所書かれているかの一覧は、引き続きこの文書の「版の固定先」の節だけに書く。
+> 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql` の Focused scan で、内部DB に関わる部品（H2・Flyway・Hibernate・HikariCP・PostgreSQL の JDBC ドライバー・Testcontainers）の版を `backend/gradle.lockfile` の `grep` で確かめ直し（変わらず）、「K-150 内部DB の部品（2026-11-14）」の節を足した。版の固定先の表の対象DB の postgres のダイジェストの頭は古かった（今は `sha256:e3d24f69…`。表に注を足した）。ほかの表は前回のまま。注意: 前の記録のコミット `7f36d8a` の後に、前の Intent `261110-deps-forks-review` の変更（`gradle/libs.versions.toml`・`gradle/wrapper/`・`backend/gradle.lockfile`・`frontend/package.json`・`frontend/package-lock.json`・`compose.yaml`・`docker/perf/compose.yaml`・`.github/` ほか。`git diff --stat`）が入っており、内部DB の外の部品の版・イメージの版とダイジェストの表は古い値を含みうる（今回は確かめていない）。
+>
+> 前回の記録: 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review`（依存の定期の見直し・`-PitForks` の値の再評価）の Focused scan で、版の定義と固定先（`gradle/`・`settings.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/`、lockfile と `docker/`・`docs/`・`perf/` の版の行の `grep`）を読み直し、表の版を今の値にそろえた（前の表から変わった値: 実行のイメージ 25.0.5_8、palantir-java-format 2.103.0、SpotBugs 4.10.5、JaCoCo 0.8.16、cherry-mustache 0.1.1、Mailpit v1.33.0・otel-lgtm 0.39.0・otel-collector 0.164.0、make-you-chic-ui `d112795`、i18next `^26.6.0`・react-i18next `^17.1.10`）。所見 K-138〜K-141 を足した。版がどこに何か所書かれているかの一覧は、引き続きこの文書の「版の固定先」の節だけに書く。
 >
 > 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で、CI（`.github/workflows/ci.yml`）の版を確かめ直し（Actions・Gitleaks・OSV-Scanner・JDK・Node は K-126 と同じ）、cloc が CI に入ったことと、`ubuntu-latest` に頼る所・版を固定していない所の一覧（K-128）を足した。ほかの表の値は前回のまま。
 >
@@ -27,18 +29,18 @@
 
 ## バックエンド
 
-版は `backend/gradle.lockfile` の解決済みの値（2026-11-01 に読み、2026-11-11 に主な行を `grep` で確かめ直した。変わらず）。
+版は `backend/gradle.lockfile` の解決済みの値（2026-11-01 に読み、2026-11-11 に主な行を `grep` で確かめ直した。変わらず。2026-11-14 に内部DB に関わる行（H2・Flyway・Hibernate・HikariCP・JDBC ドライバー・Testcontainers）を `grep` で確かめ直した。変わらず）。
 
 | 部品 | 版 | 用途 |
 |---|---|---|
 | Spring Boot | 4.1.2 | アプリの土台（Spring Framework 7.0.10・Spring Security 7.1.2） |
 | Tomcat（組み込み） | 11.0.27（Spring Boot の管理の版） | Servlet の入れ物 |
 | Jackson | 3.1.7（Spring Boot の管理の版。上書きは無い。K-85・K-138） | JSON |
-| Hibernate | 7.4.13.Final | JPA |
-| H2 | 2.4.240 | 内部DB（組み込み） |
-| Flyway | 12.4.0 | 内部DB の移行 |
+| Hibernate | 7.4.13.Final | JPA（方言は設定に無く、接続から決まる。K-146） |
+| H2 | 2.4.240 | 内部DB（組み込み、ファイルに保存） |
+| Flyway | 12.4.0（`flyway-core` だけ。PostgreSQL の部品 `flyway-database-postgresql` は無い。K-150） | 内部DB の移行 |
 | HikariCP | 7.0.2 | 接続のプール（内部DB と対象DB の読み取り・書き込み） |
-| mysql-connector-j・mariadb-java-client・postgresql | 9.7.0・3.5.10・42.7.14 | 対象DB の JDBC ドライバー |
+| mysql-connector-j・mariadb-java-client・postgresql | 9.7.0・3.5.10・42.7.14 | 対象DB の JDBC ドライバー（`runtimeOnly`。PostgreSQL のドライバーは内部DB を PostgreSQL にするときもそのまま使える見込み。K-150） |
 | SnakeYAML | 2.7（`libs.versions.toml` で明示） | DSL の YAML |
 | networknt json-schema-validator | 3.0.6（固定） | DSL の JSON Schema の検証 |
 | cherry-mustache（java-mustache-processor） | 版の名前 0.1.1（`libs.versions.toml` の `cherry-mustache`）、実体はサブモジュールの固定先 `d61ba6d`（composite build。lockfile に載らない） | メールのテンプレート |
@@ -66,7 +68,7 @@
 | 部品 | 版 | 用途 |
 |---|---|---|
 | JUnit Jupiter・AssertJ・Mockito | 6.0.3・3.27.7・5.23.0（Spring Boot の管理） | Java の単体と結合 |
-| Testcontainers | 2.0.5 | 対象DB の3種類をコンテナで |
+| Testcontainers | 2.0.5（`testcontainers-junit-jupiter`・`-mysql`・`-mariadb`・`-postgresql`） | 対象DB の3種類をコンテナで（内部DB のテストには使っていない。2026-11-14） |
 | jqwik・ArchUnit | 1.10.2・1.5.1 | 性質ベースのテスト・層と境界の検査 |
 | subethasmtp | 7.2.2 | テストの中の SMTP の受け手 |
 | Vitest・`@vitest/coverage-v8`・jsdom | 5.0.5・5.0.5・30.1.3 | 画面の単体テストとカバレッジ（thresholds） |
@@ -99,7 +101,7 @@
 | Java（K-82） | 25 | `gradle/libs.versions.toml` の `java`・`ci.yml` の `java-version` と名前（51 行）・README 3・13 行（表に SDKMAN の `25.0.5.0+8-tem`。2026-11-08） | docker の `eclipse-temurin` の大きな版だけ見送り |
 | JRE のイメージ（K-82） | `eclipse-temurin:25.0.5_8-jre-noble@sha256:a98128a5…`（2026-11-11） | `Dockerfile` 17 行・`perf/versions.env` 25 行（`PERF_JRE_IMAGE`）・`docs/internal-db.md` 12・22・155 行・`docs/dsl.md` 118 行・`docs/operations.md` 135 行 | `Dockerfile` だけを見る |
 | JDK のイメージ（K-82） | `eclipse-temurin:25.0.5_8-jdk-noble@sha256:95e350ad…`（2026-11-11） | `docker/hikari-pool.sh` 50 行（`JDK_IMAGE`）・`docs/internal-db.md` 161・195 行・`perf/README.md` 131 行 | 見ない（jre の知らせで手でそろえる） |
-| 対象DB のイメージ（K-83） | postgres 18.6（`sha256:3a426452…`）・mysql 26.10.0（`sha256:7b16ec7c…`）・mariadb 13.0.2（`sha256:f4054da2…`） | `compose.yaml` 151・172・192 行・`docker/perf/compose.yaml` 69・96・122 行・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`（`*_VERSION`・`*_DIGEST`、35〜55 行） | `compose.yaml` だけを見る |
+| 対象DB のイメージ（K-83） | postgres 18.6（`sha256:3a426452…`）・mysql 26.10.0（`sha256:7b16ec7c…`）・mariadb 13.0.2（`sha256:f4054da2…`）。2026-11-14 の訂正: postgres のダイジェストは今は `sha256:e3d24f69…`（3か所とも同じ。下の K-150） | `compose.yaml` 151・172・192 行・`docker/perf/compose.yaml` 69・96・122 行・`backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java`（`*_VERSION`・`*_DIGEST`、35〜55 行） | `compose.yaml` だけを見る |
 | Mailpit（K-83） | `axllent/mailpit:v1.33.0@sha256:9b3a463b…`（2026-11-11） | `compose.yaml` 121 行・`docker/perf/compose.yaml` 150 行・`docs/mail.md` | `compose.yaml` だけを見る |
 | otel-lgtm（K-83） | `grafana/otel-lgtm:0.39.0@sha256:4c8056c9…`（2026-11-11） | `compose.yaml` 83 行・`perf/README.md` | `compose.yaml` だけを見る |
 | otel-collector（K-83） | `otel/opentelemetry-collector:0.164.0@sha256:28b6d41a…`（2026-11-11） | `compose.yaml` 73 行 | 見る（`0.164.0-386` のタグは `ignore`） |
@@ -110,6 +112,7 @@
 | Gradle Wrapper（K-84） | 9.8.2 | `gradle/wrapper/gradle-wrapper.properties`（と `gradle-wrapper.jar`） | gradle の項が見るかは未確認 |
 | Playwright のブラウザ（K-84） | `@playwright/test` 1.64.1 と同じ版 | `frontend/package.json`・README 19 行（`npx playwright install chromium`。2026-11-08） | npm の項が見る |
 | H2 の `-Dh2.compactThreads=1`（K-85・K-139） | — | `Dockerfile` 52 行・`backend/build.gradle.kts` 117 行・`frontend/playwright.config.ts` 140 行（2026-11-11）。値の確かめは `backend/src/test/java/cherry/mastersmith/config/H2CompactThreadsTest.java`、説明は `docs/internal-db.md` 175 行 | — |
+| 内部DB 用の PostgreSQL のイメージ（2026-11-14） | 無い | どこにも無い（K-150・`architecture.md` の K-154）。足すときはこの表と `.github/dependabot.yml` の説明文の一覧に足す（`team.md` の Deployment） | — |
 
 - 固定先の一覧の正本は `.github/dependabot.yml` のコメント（docker の項の前の段落）。今の値どうしは食い違っていない（2026-11-11 に `grep` で、イメージごとに版とダイジェストの頭 12 文字がすべての固定先で同じことを確かめた）。
 - `compose.yaml`・`docker/perf/compose.yaml` のアプリのイメージは `mastersmith:${MASTERSMITH_IMAGE_TAG:-local}`（手元で作る）。
@@ -149,6 +152,18 @@
 ## K-141 lockfile の小さな気づき（2026-11-11）（`build-and-verify`）
 
 - 確かめた事実: `backend/gradle.lockfile` に `org.slf4j:slf4j-api` が2つ載る。2.0.17 は `spotbugsSlf4j`（SpotBugs の道具の構成）だけ、2.0.20 はアプリとテストの構成。アプリの実行には効かない。
+
+## K-150 内部DB の部品（2026-11-14）（`build-and-verify`・`config`）
+
+依存の向きと足すときの手続きは `dependencies.md` の K-150。ここは版と置き場だけ。
+
+- 確かめた事実（`backend/build.gradle.kts` 45〜93 行・`backend/gradle.lockfile` の `grep`）:
+  - `implementation`: `spring-boot-starter-data-jpa`・`spring-boot-starter-flyway`（`spring-boot-flyway`・`spring-boot-hibernate` も 4.1.2）。
+  - `runtimeOnly`: `h2`（2.4.240、内部DB）と `mysql-connector-j`・`mariadb-java-client`・`postgresql`（コメントは「対象DB（U1）の JDBC ドライバー」）。PostgreSQL の JDBC ドライバー `org.postgresql:postgresql:42.7.14` は既に実行時の依存にある（lockfile 161 行）。
+  - Flyway は `org.flywaydb:flyway-core:12.4.0` だけ（lockfile 116 行）。`flyway-database-postgresql` は無い。
+  - Hibernate ORM 7.4.13.Final・HikariCP 7.0.2・Testcontainers 2.0.5（`testImplementation` の `testcontainers-junit-jupiter`・`-mysql`・`-mariadb`・`-postgresql`）。
+  - コンテナのイメージ: `postgres:18.6@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42` が見本の対象DB の `compose.yaml` 151 行・`docker/perf/compose.yaml` 69 行・`TargetDbImages.POSTGRES_DIGEST`（51〜54 行）の3か所で同じ（2026-11-14 の `grep`。上の固定先の表の 2026-11-01 の頭 `3a426452…` は古い）。内部DB 用の PostgreSQL のイメージの固定先はどこにも無い。
+- 見立て（未検証）: Flyway 10 以降は PostgreSQL の扱いが別の部品（`flyway-database-postgresql`）に分かれており、無いと PostgreSQL の内部DB で起動の移行が「この DB を扱えない」として止まる見込み。部品の版は Spring Boot 4.1.2 の BOM が管理する見込み（確かめていない。Maven Central を見ていない）。
 
 ## K-118 前の記録の訂正（2026-11-08）（`build-and-verify`・`container-runtime`）
 
@@ -199,6 +214,7 @@
 - 負荷の試験の使い捨ての環境（`docker/perf/compose.yaml`）の対象DB は postgres 18.6・mysql 26.10.0・mariadb 13.0.2・Mailpit v1.33.0（いずれもダイジェストで固定。2026-11-11）。手元の `compose.yaml` の Mailpit は `MP_SMTP_DISABLE_RDNS: "true"`（送り手の逆引きを止める。コミット `c7a737fb`）。上限はアプリ CPU 4・メモリ 2g、対象DB は環境変数で替えられる（既定 512m・768m・512m）。
 - 監視は `grafana/otel-lgtm` と OpenTelemetry Collector を compose の profile で起動し、警報とダッシュボードは `docker/monitoring/` のファイルで持つ。メールの受け手（Mailpit）と見本の対象DB も compose の profile。E2E の見本の PostgreSQL は上乗せ `docker/e2e/compose.targetdb-port.yaml` で `127.0.0.1:15432` に開ける。
 - 手元の検査の前提（2026-11-08、README 23・24 行）: colima の VM は CPU 4・メモリ 6GiB を勧める。`./gradlew verify` は対象DB の結合テストのためにコンテナの実行環境が動いていることを前提にする。colima の PC では `DOCKER_HOST` と `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE` をシェルに渡す（`project.md` の Testing Posture。README の本文は `docs/target-db.md` に移った見込み。未確認）。
+- 内部DB（2026-11-14）: 手元の内部DB は H2 のファイルで、コンテナではボリューム `mastersmith-data` の `/app/data`、負荷の試験の使い捨ての環境ではボリューム `perf-data` の `/app/data`。バックアップと戻しはボリュームの `tar`、詰め直しは `docker/hikari-pool.sh`（`docs/internal-db.md`。`code-quality-assessment.md` の K-152）。
 
 ## 時差の設定の置き場（K-95、2026-11-03）
 
@@ -213,6 +229,7 @@
 | `frontend/src/shared/format/formatDateTime.ts` | 端末の時差（引数で渡せる） | DSL・招待・利用者の管理の画面の日時 |
 
 - アプリが保存する時刻（内部DB）は時差に依存しない時点（UTC）として扱う決まり（`project.md` の Corrections）。業務データの時差つきの値も UTC にそろえて受け渡す。画面で地方時に直す仕組みは業務データには無い（K-96）。
+- 2026-11-14 の補足: 内部DB の日時の列は `TIMESTAMP WITH TIME ZONE`、エンティティは `Instant`（`code-structure.md` の K-149）。見立て（未検証）: 内部DB を PostgreSQL にしたとき、PgJDBC のセッションの時差は JVM の `Asia/Tokyo` に従う見込みだが、`timestamptz` と `Instant` の受け渡しでは時点は変わらない見込み。
 
 ## 画面の日時と Intl（2026-11-06）
 
@@ -228,6 +245,7 @@
 
 ## Sources
 
+- 2026-11-14: `backend/build.gradle.kts`（1〜240 行）・`backend/gradle.lockfile`（H2・PostgreSQL・Hibernate・Flyway・HikariCP・Testcontainers の行の `grep`）・`compose.yaml`・`Dockerfile`・`TargetDbImages.java`・`docker/perf/compose.yaml`（postgres の行の `grep`）、開発担当の調査 `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-11: `gradle/libs.versions.toml`・`gradle/wrapper/gradle-wrapper.properties`・`settings.gradle.kts`・`settings-gradle.lockfile`・`backend/build.gradle.kts`・`frontend/package.json`・`Dockerfile`・`compose.yaml`・`.github/dependabot.yml`・`.github/workflows/ci.yml`（どれも全文）、`backend/gradle.lockfile`・`frontend/package-lock.json`（主な部品の行の `grep`）、イメージの版とダイジェストの行の `grep`（`docker/`・`docs/`・`perf/`・`TargetDbImages.java`）、`frontend/playwright.config.ts` 132〜175 行、`git submodule status`・`git log -S jackson-bom`、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`（全文）・`build.gradle.kts`（88〜99 行）・`docs/verification.md`（175 行）・`.github/dependabot.yml`（`package-ecosystem` の行）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`frontend/package.json`・`frontend/vitest.config.ts`（どれも全文）、`grep`（cloc）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。

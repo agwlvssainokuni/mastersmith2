@@ -1,6 +1,8 @@
 # アーキテクチャ（mastersmith2）
 
-> 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で更新した。アプリの作りは読み直していない（`common/health` の本体だけ読んだ）。CI（`.github/workflows/ci.yml` 162 行）・`backend/build.gradle.kts`・`docs/verification.md` の `-PitForks` の節を読み直し、「結合テストの並べ（`-PitForks`）の今の形（K-140）」の節を足し、K-127 の表と図 10 の、結合テストを1つの JVM で流すこと・要約の台本が `packagesJudgedByTotal` を読むことの記述を今の形に直した（K-142）。
+> 2026-11-14（記録のコミット `cb3b513a`）の Intent `261114-internal-db-postgresql`（内部DB を PostgreSQL でも動かせるようにする）の Focused scan で更新した。内部DB に関わる所（接続の設定・移行・内部DB のネイティブの SQL・違反と排他の区分・待ちの上限・テストの土台・H2 だけの運用）を読み、「内部DB の作り（K-146〜K-148、2026-11-14）」の節、Interaction Diagrams 11・12、Improvement Opportunities の K-154 を足した。System Overview の「Flyway の V1〜V13」は古い（今は V1〜V14。K-144）。ほかの図と散文は前回以前の記録による。
+>
+> 前回の記録: 2026-11-11（記録のコミット `7f36d8a`）の Intent `261110-deps-forks-review` の Focused scan で更新した。アプリの作りは読み直していない（`common/health` の本体だけ読んだ）。CI（`.github/workflows/ci.yml` 162 行）・`backend/build.gradle.kts`・`docs/verification.md` の `-PitForks` の節を読み直し、「結合テストの並べ（`-PitForks`）の今の形（K-140）」の節を足し、K-127 の表と図 10 の、結合テストを1つの JVM で流すこと・要約の台本が `packagesJudgedByTotal` を読むことの記述を今の形に直した（K-142）。
 >
 > 前回の記録: 2026-11-09（記録のコミット `4fe8e79`）の Intent `261108-ci-checks-release` の Focused scan で更新した。アプリの作りは読み直していない。CI（`.github/workflows/ci.yml` 143 行）・ルートの `scripts/`・検査の入口・`docs/verification.md` を読み直し、「CI の今の形とリリース（2026-11-09）」の節（K-127・K-136）、Interaction Diagrams 10、Improvement Opportunities の K-129 を足した。前の節「検査の入口の今の形と CI」の K-119（7 手順・要約なし）は古い（K-127）。Interaction Diagrams 9 の「予定の手順」は実装された（K-127）。ほかの図と散文は前回以前の記録による。
 >
@@ -20,6 +22,7 @@
 
 - 1つの実行可能 WAR（Spring Boot 4.1.2、Java 25）が、画面（React の SPA、`frontend/dist` を同梱）と API（`/api/**`）を同じオリジンで配る。CORS は置かない。
 - 内部DB は組み込みの H2（利用者・認証・招待・DSL・ロール・グループ・監査）。スキーマは Flyway の V1〜V13。
+  - 2026-11-14 の訂正（K-144）: 移行は今は V1〜V14 の 14 本（V14 は `users.display_time_zone`）。内部DB の H2 は 2.4.240 で、ファイルに保存する（既定の接続先 `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE`、コンテナでは `/app/data` のボリューム）。接続先は環境変数 `MASTERSMITH_DB_URL` ほかで差し替えられるが、PostgreSQL で動く作りにはなっていない（下の「内部DB の作り」）。
 - 対象DB（MySQL・MariaDB・PostgreSQL のどれか1つ）は設定（環境変数）だけから接続する。読み取り専用のプールと、設定が揃ったときだけ作る書き込み専用のプールの2つ。
 - 配備先は開発者の PC 上のコンテナだけ（`Dockerfile`・`compose.yaml`）。
 - ビルドと検査は Gradle の1つの入口 `./gradlew verify`（ルートの `build.gradle.kts`）にまとめ、画面の npm と外部の道具（Gitleaks・OSV-Scanner）も Gradle から呼ぶ。CI も同じタスクを呼ぶ（K-111・K-115）。Bolt の統合の前の速い入口 `./gradlew verifyQuick` は同じ段の表から一部のタスクを外したもの（K-122）。CI は `verify` の後に WAR を保存するだけで、実行の要約には何も書かない（K-119。2026-11-09 には古い: 今は `verify` の後に規模・テストの件数・カバレッジを要約に書き、カバレッジの HTML を保存する。報告だけの手順で、成否で CI を落とさない。K-127）。
@@ -77,11 +80,47 @@ flowchart LR
 
 文字の代わりの説明: 画面の機能（業務データの `frontend-feature-tables` を含む）は `frontend-api-client` を通して同じオリジンの API を呼ぶ。入口は Spring Security の連鎖（`config` と `common-security`）。`businessdata` は `role`（権限の解決の口）・`dsl`（適用中のモデル）・`targetdb`（接続の貸し出し）を使い、対象DB の行を読み書きする。`targetdb` だけが対象DB へつなぎ、読み取りのプール（既定の上限 10）と書き込みのプールを分ける。`navigation` は `role` と `dsl` でメニューを作る。内部DB の H2 には `user`・`role`・`dslmanage`・`audit` などが書く。点線は Spring の出来事で、`businessdata`・`role` などの出来事を `audit` が受けて監査の行にする。依存の向きの細部は `dependencies.md`。図の矢印のうち今回深く確かめたのは `businessdata`→`targetdb`・`role`・`dsl` と `targetdb` の2つのプール、それ以外は前回の記録による。
 
+2026-11-14 の補足（K-146）: 図の「internal DB H2」へつなぐのは Spring Boot の自動設定の1つのプール（`mastersmith-db`）だけで、`CORE`（`auth`・`user`・`invitation`・`group` を含む）・`ROLE`・`DSLM`・`AUD` と `useradmin`・ヘルスチェック（`common-health`）が同じプールを使う。対象DB の2つのプールは既定の候補にしない（`defaultCandidate = false`）ため、内部DB の Flyway・JPA・`JdbcTemplate` には入らない。
+
 ## Data Flow
 
 - 要求ごとに: 画面 → アクセストークン → `auth` が署名と期限を確かめ主体を作る → 安全の決まり（`/api/**` の既定はログインだけ）→ controller → service → repository。
 - 業務データの要求: `BusinessDataReadController` / `BusinessDataWriteController`（`@ApiAccess(AUTHENTICATED)`）→ `BusinessDataReadService` / `BusinessDataWriteService` が `TableAccessResolver` で権限の写しを作り → `targetdb` の `TargetReadAccess.withRead(目的, …)` で読み取りの接続を借り → `RowSqlExecutor` が SQL を組み立てて実行する。権限の判定は API ごとにサーバー側で行う。
 - 監査は各機能の出来事を `audit` が確定の後に別のトランザクションで内部DB に追記する。
+
+## 内部DB の作り（K-146〜K-148、2026-11-14）
+
+持ち主の文書はここで、ほかの文書からはこの節を指す。移行の中身は `code-structure.md` の K-144、エンティティの写し方は同じく K-149、ネイティブの SQL は `api-documentation.md` の K-145、部品の版と足りない部品は `technology-stack.md`・`dependencies.md` の K-150、テストと運用の道具は `code-quality-assessment.md` の K-151・K-152、下調べの記録との照合は同じく K-153。行の番号は記録のコミット `cb3b513a` のもの。
+
+### K-146 接続の設定と対象DB との分け方（確かめた事実）
+
+- `backend/src/main/resources/application.yaml` 190〜212 行: `spring.datasource.url` は `${MASTERSMITH_DB_URL:jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE}`、利用者は `${MASTERSMITH_DB_USERNAME:sa}`、パスワードは `${MASTERSMITH_DB_PASSWORD:}`。`driver-class-name` は置かず、URL から決まる。
+- HikariCP: `pool-name: mastersmith-db`・`maximum-pool-size: ${MASTERSMITH_DB_MAXIMUM_POOL_SIZE:30}`・`connection-timeout: 5000`・`register-mbeans: true`・`allow-pool-suspension: true`。後の2つは H2 の詰め直しの道具（`docker/hikari-pool.sh`）のため（202〜212 行のコメント）。`connection-init-sql` は無い。
+- JPA（213〜221 行）: `open-in-view: false`・`hibernate.ddl-auto: validate`・`jakarta.persistence.query.timeout: 10000`。`hibernate.dialect` は置かず、Hibernate が接続から方言を決める。
+- Flyway（222〜226 行）: `enabled: true`・`locations: classpath:db/migration`・`validate-on-migrate: true`。DB の種類ごとの置き場（`{vendor}`）は使っていない。`spring.h2.console.enabled: false`。
+- ログ（375〜405 行）: `org.hibernate.orm.jdbc.error: OFF`（H2 の違反の文に重なった値が入るため）・`org.springframework.jdbc.core.StatementCreatorUtils: OFF`・`org.postgresql: OFF`（対象DB のドライバーの理由で置いた）。`org.postgresql: OFF` は、内部DB を PostgreSQL にしたときの内部DB のドライバーにも同じく効く。
+- 対象DB との分け方: `targetdb/config/TargetDataSourceConfig.java` の `targetDataSource` と `TargetWriteDataSourceConfig.java` の `targetWriteDataSource` は `defaultCandidate = false`。型で注入される `DataSource`・Flyway・JPA・`JdbcTemplate`・ヘルスチェックは、自動設定の内部DB の接続だけを使う（クラスの説明）。設定の接頭辞も別（内部DB は `spring.datasource.*`、対象DB は `mastersmith.target-db.*`）。
+- 実行環境: `compose.yaml` の `app` は `.env` を読み、ボリューム `mastersmith-data:/app/data` を持つ。内部DB 用の PostgreSQL のサービスは無い。`.env.example` 31〜39 行の「内部DB（H2）」の節に `MASTERSMITH_DB_URL`・`MASTERSMITH_DB_USERNAME`（コメントのまま）・`MASTERSMITH_DB_PASSWORD`・`MASTERSMITH_DB_MAXIMUM_POOL_SIZE`。JVM の `-Dh2.compactThreads=1` は3か所（`Dockerfile` の ENTRYPOINT・テストの JVM・E2E の WAR の起動。K-139）。
+- 見立て（未検証）: 接続そのものは環境変数で PostgreSQL の URL に替えられる形だが、移行（K-144）・ネイティブの SQL（K-145）・Flyway の部品（K-150）のため、今のまま替えると起動の移行かその後の問い合わせで止まる見込み。
+
+### K-147 待ちの上限（確かめた事実）
+
+- 行の排他は問い合わせのヒント `jakarta.persistence.lock.timeout` = 3,000 ms（`LoginAttemptStateRepository`・`UserRowLockRepository`・`InvitationLockQueriesImpl`・`RoleStore`・`GroupStore` の `LOCK_TIMEOUT_MILLIS`）。
+- 一意の鍵・主キーの書き込みの待ちと、リフレッシュトークンの一括の無効化の待ちは「H2 の既定（約 2 秒）」に頼ると、コードの説明文に書かれている（`role/store/RoleStore.java` 52〜53 行・`group/store/GroupStore.java` 41 行・`useradmin/service/UserAdminService.java` 311〜313 行）。`project.md` の Tech Stack にも「捨ての試しで書き込みの待ちにはヒントが効かず約 2,000 ms で切れ、`SET LOCK_TIMEOUT` はプールの接続に残る」の記録がある。
+- 接続ごとの待ちの上限（PostgreSQL の `lock_timeout` など）を決める設定は、今のコードと設定のどこにも無い（`connection-init-sql` も URL の `options` も無い）。
+- `SKIP LOCKED`: `LoginAttemptStateRepository.lockDummyForUpdate` がヒント `-2`（`LockOptions.SKIP_LOCKED`）で使う。
+- 排他の順: `UserRowLockRepository.lockAdminRowsAndTarget`（78〜83 行）は `select u.userId ... order by u.userId` を `PESSIMISTIC_WRITE` で読み、説明文は「H2 は主キーの走査の順に1行ずつ排他するため行き詰まらない」とする。
+- 見立て（未検証）: PostgreSQL の既定の待ちは上限なし（`lock_timeout = 0`）のため、ヒントの効かない書き込みの待ちは、文の上限（`jakarta.persistence.query.timeout` 10 秒）か接続の設定で切るまで続く見込み。`lockAdminRowsAndTarget` の順は PostgreSQL でも保たれる見込みだが、行き詰まりにならないことは流して確かめる必要がある。
+
+### K-148 違反と排他の失敗の区分（確かめた事実）
+
+- `common/persistence/RowLockFailures.isLockFailure`（44〜80 行）: 例外の連なりに `jakarta.persistence.LockTimeoutException`・`PessimisticLockException`・`jakarta.persistence.QueryTimeoutException` があるか、`SQLException` の誤りの番号が 50200・40001、または SQLState が `HYT00`・`40001` なら真。番号と SQLState は H2 の値だけで、PostgreSQL の 55P03（待ち切れ）・40P01（行き詰まり）は一覧に無い（型で当たる見込み）。`org.hibernate.QueryTimeoutException`（57014）は見ていない。
+- `role/store/RoleStoreClassifier`・`group/store/StoreFailureClassifier`: まず `isLockFailure`、次に SQLState 23505 なら一意、`FOREIGN_KEY_VIOLATIONS`（23503・23506。説明文は「H2 は親の削除を 23503、親の無い追加を 23506 にする」）なら外部キーとし、Hibernate の制約の名前と `SQLException` の文を大文字にして既知の名前（`UK_ROLES_NAME_KEY`・`FK_*` など）と照らす。どれにも当たらなければ UNEXPECTED で、SQLState と既知の名前だけを持つ例外（`RoleStoreUnexpectedException`・`GroupStoreUnexpectedException`）に包み直して投げる。PostgreSQL の `ON DELETE RESTRICT` の違反の SQLState 23001 は一覧に無い。
+- 制約の名前で判定する所: `user/service/UserAccountService.isEmailUniqueViolation`（522〜530 行）・`invitation/service/InvitationService.isPendingEmailViolation`（220〜228 行）は、連なりの最初の Hibernate の `ConstraintViolationException` の制約の名前を大文字にして `uk_users_email`・`uk_invitations_pending_email` の定数と照らす。
+- 想定外の例外のログ: `common/error/web/UniqueViolations.isUniqueViolation` は `DataIntegrityViolationException`・Hibernate の `ConstraintViolationException` の型か SQLState 23505 で当て、`GlobalExceptionHandler` 227〜235 行が、当たれば例外の文を出さずクラスの名前だけを ERROR に出す。
+- 失敗の後のトランザクション: `UserAdminService`（Busy で巻き戻しの印を付け、DB に触れずに返す）・`UserAccountService.createUser`（違反を受けて `setRollbackOnly` して返す）・`InvitationService.issueWithOneRetry`（`TransactionTemplate` の外で違反を受け、読み取り専用の別のトランザクションで勝った側を読む）・`LoginService.createRow`（156〜162 行。トランザクションの外で `DataIntegrityViolationException` を受けて進む）は、失敗の後に同じトランザクションで SQL を続けない。`RoleStore`・`GroupStore` の呼び出し元のサービス・監査・ヘルスチェックは今回確かめていない。
+- アプリが親の行を消す経路は、ロールの削除（`RoleStore.deleteRole`。設定 → 作業ロールの保存 → ロールの順に消して flush。割り当てが残るときは呼び出し元が先に断り、外部キーは最後の守り）・設定の行の削除・グループの削除（`GroupStore.java` 149 行）。利用者の行を消す経路は `src/main` に無い。
+- 見立て（未検証）: PostgreSQL では、ロール・グループの削除が呼び出し元の確かめをすり抜けたとき、`ON DELETE RESTRICT` の違反（23001）が UNEXPECTED になり、Referenced（409）ではなく想定外（500）になる見込み。PostgreSQL の 23001・23503・23514 も Hibernate が `ConstraintViolationException` にするため `UniqueViolations` の型の判定には当たり、ログに値は出ない見込み。違反の文（`Key (email)=(...)` の形）に値が入るため、`org.hibernate.orm.jdbc.error: OFF` は PostgreSQL でもそのまま要る見込み。
 
 ## 検査の入口 `verify` の流れ（K-111・K-113、2026-11-08）
 
@@ -191,6 +230,7 @@ flowchart LR
 - CI: `ci.yml` の `env` の `IT_FORKS_DEFAULT: "3"`（43 行。コメントは「手元の推奨と同じ 3。CI の上で 2 と 3 を比べて決める」）。`workflow_dispatch` の入力 `it_forks`（文字、既定は空）。6 の手順は `IT_FORKS: ${{ inputs.it_forks || env.IT_FORKS_DEFAULT }}` を環境変数で渡し（文に直に埋め込まない）、シェルの `case` で `[1-8]` 以外を `::error::` で止め、`./gradlew verify -PitForks="$IT_FORKS"`（104 行）。push とタグのときは入力が無く、既定の値になる。ジョブの上限は `timeout-minutes: 60`、機械は `ubuntu-latest`。
 - 手順書: `docs/verification.md` 79〜95 行。手元の推奨は N=3。2026-11-08 に 8 CPU・16GiB の PC（colima は 4 CPU・6GiB）で N ごとに1回測った表（N=1 23分05秒・N=2 15分26秒・N=3 9分43秒・N=4 13分53秒、どれも 1,716 件が通り飛ばし 10 件、colima の VM のメモリの最大は N=3 が 2,389 MiB で最大）。「CI の上で 2 と 3 を比べるまでは既定 3」「並べた CI で失敗・不安定なテストが続いたら `IT_FORKS_DEFAULT` を `"1"` に戻すコミットで戻す」。手動で流すときは `gh workflow run ci.yml --ref <ブランチ> -f it_forks=<N>`。
 - 経緯: CI に `-PitForks` を足したのはコミット `0f35e017`（Intent 261108-ci-checks-release の Bolt 3）。
+- 2026-11-14 の確かめ: `backend/build.gradle.kts` と `ci.yml` を読み直し、上の口と CI の既定（`IT_FORKS_DEFAULT: "3"`、入力 `it_forks` は 1〜8）が変わっていないことを確かめた。結合テストの説明文は今も「Spring と組み込みの H2 を起動する」。
 
 ### 見立て（未検証）
 
@@ -550,6 +590,59 @@ flowchart TD
 
 文字の代わりの説明: CI は `develop` への push・`v*` のタグ・手動で動き、ジョブ `verify` は版を固定していない `ubuntu-latest` の機械で 1 から 10 の手順を順に流す。JDK と Node は大きな版だけを指定し、Gitleaks と OSV-Scanner は版と SHA-256 で固定する。6 の `./gradlew verify` は結合テストを N 個の JVM に分けて並べて流し（N は手動の実行の入力 `it_forks`、無ければ既定の 3。2026-11-11 の今の形、K-140）、テストの結果の XML とカバレッジの報告を作る。7 で WAR を保存する。8〜10 は報告だけの手順で、6 が落ちても流れ、成否で CI を落とさない: 8 で apt の cloc を入れ（版は機械のイメージ次第）、9 の台本が報告のファイルと `backend/build.gradle.kts` の全体とパッケージごとの下限を読んで実行の要約を書き（一覧 `packagesJudgedByTotal` は消えて読まない。K-142）、10 でカバレッジの HTML を保存する。タグのときだけ、ジョブ `release` が保存した WAR をリリースに添付する。`main` への push では CI は動かない。
 
+### 11. 起動のときの内部DB の接続と移行（K-144・K-146、2026-11-14）
+
+```mermaid
+flowchart TD
+  ENV["env MASTERSMITH_DB_URL, MASTERSMITH_DB_USERNAME, MASTERSMITH_DB_PASSWORD, MASTERSMITH_DB_MAXIMUM_POOL_SIZE"] --> DS["spring.datasource: default jdbc h2 file ./data/mastersmith with DEFRAG_ALWAYS"]
+  DS --> HK["HikariCP pool mastersmith-db: max 30, connection-timeout 5s, MBeans, pool suspension"]
+  HK --> FW["Flyway: classpath db/migration, V1 to V14, one location for every DB kind"]
+  FW --> JPA["Hibernate: dialect from connection, ddl-auto validate"]
+  JPA --> REPO["repositories and stores: auth, user, invitation, role, group, dslmanage, audit, useradmin"]
+  HK --> NAT["native SQL: MERGE KEY, FINAL TABLE UPDATE, MERGE USING, DELETE FETCH FIRST"]
+  NAT --> REPO
+  HK --> HC["TimeBoundedDbHealthIndicator: SELECT 1"]
+  TCFG["targetdb: targetDataSource and targetWriteDataSource, defaultCandidate false"] -.->|not used by Flyway, JPA, JdbcTemplate, health| REPO
+  VOL[("container volume mastersmith-data at /app/data")] --> DS
+```
+
+<!-- Text fallback: 起動すると、内部DB の接続先は環境変数（MASTERSMITH_DB_URL・MASTERSMITH_DB_USERNAME・MASTERSMITH_DB_PASSWORD・MASTERSMITH_DB_MAXIMUM_POOL_SIZE）から決まり、無ければ既定の H2 のファイル（./data/mastersmith、DEFRAG_ALWAYS=TRUE。コンテナではボリューム mastersmith-data の /app/data）になる。接続は HikariCP のプール mastersmith-db（上限 30・借りる待ち 5 秒・JMX の MBean と一時停止の口つき）から借りる。Flyway が1つの置き場 classpath:db/migration の V1〜V14 を流し（DB の種類ごとの書き分けは無い）、Hibernate が接続から方言を決めてスキーマを validate で照らす。その後、auth・user・invitation・role・group・dslmanage・audit・useradmin の repository と store が JPA と、H2 に固有のものを含むネイティブの SQL で同じプールを使う。ヘルスチェックも同じプールで SELECT 1 を流す。対象DB の2つのプールは既定の候補にしないため、Flyway・JPA・JdbcTemplate・ヘルスチェックには入らない。 -->
+
+文字の代わりの説明: 起動すると、内部DB の接続先は環境変数から決まり、無ければ既定の H2 のファイルになる（コンテナではボリュームの `/app/data`）。接続は HikariCP のプール `mastersmith-db` から借りる。Flyway が1つの置き場 `classpath:db/migration` の V1〜V14 を流し、Hibernate が接続から方言を決めてスキーマを `validate` で照らす。その後、各機能の repository と store が JPA と、H2 に固有のものを含むネイティブの SQL（K-145）で同じプールを使う。ヘルスチェックも同じプールで `SELECT 1` を流す。対象DB の2つのプールは既定の候補にしないため、ここには入らない。PostgreSQL の URL に替えたときに止まりうる所は、Flyway の部品（K-150）・移行の型（K-144）・`validate` の型の照らし（K-149）・ネイティブの SQL（K-145）の順に出る見込み（未検証）。
+
+### 12. ロールの削除で外部キーの違反が起きたときの区分（K-147・K-148、2026-11-14）
+
+```mermaid
+sequenceDiagram
+  participant SV as role service
+  participant ST as RoleStore
+  participant DB as internal DB
+  participant CL as RoleStoreClassifier
+  participant RF as RowLockFailures
+  SV->>ST: lockRole(roleId)
+  ST->>DB: SELECT FOR UPDATE with lock timeout hint 3000 ms
+  DB-->>ST: locked role
+  SV->>SV: refuse when assignments remain
+  SV->>ST: deleteRole(role)
+  ST->>DB: DELETE settings, DELETE work role selections, remove role, flush
+  DB-->>ST: violation of ON DELETE RESTRICT foreign key
+  ST->>CL: toOutcome(exception)
+  CL->>RF: isLockFailure(exception)
+  RF-->>CL: false (types, codes 50200 40001, SQLState HYT00 40001)
+  CL->>CL: SQLState 23505 unique, 23503 or 23506 foreign key, then known names
+  alt H2 reports 23503 with a known FK name
+    CL-->>ST: Referenced
+    ST-->>SV: Referenced, answered as conflict
+  else PostgreSQL reports 23001 (not in the list)
+    CL-->>ST: UNEXPECTED
+    ST-->>SV: throws RoleStoreUnexpectedException
+  end
+```
+
+<!-- Text fallback: ロールのサービスは、まず RoleStore.lockRole で行を排他する（問い合わせのヒントで待ちの上限 3,000 ms）。割り当てが残るときはサービスが先に断る。残っていなければ RoleStore.deleteRole が設定 → 作業ロールの保存 → ロールの順に消して flush する。確かめをすり抜けて割り当ての表の ON DELETE RESTRICT の外部キーに当たると、DB が違反を返す。RoleStoreClassifier は、まず RowLockFailures で排他の失敗か（型・誤りの番号 50200 と 40001・SQLState HYT00 と 40001）を見て、違えば SQLState 23505 なら一意、23503・23506 なら外部キーとして既知の制約の名前と照らす。H2 は親の削除を 23503 にするため Referenced になり、呼び出し元は衝突として答える。PostgreSQL は ON DELETE RESTRICT の違反を 23001 にするが一覧に無いため UNEXPECTED になり、RoleStoreUnexpectedException が投げられる見込み（未検証）。 -->
+
+文字の代わりの説明: ロールの削除は、行を排他し（ヒントで 3,000 ms）、割り当てが残るときはサービスが先に断り、残っていなければ設定 → 作業ロールの保存 → ロールの順に消して flush する。外部キーは最後の守りで、違反が出ると `RoleStoreClassifier` が排他の失敗か・一意か・外部キーかを SQLState と制約の名前で区分する。H2 は親の削除を 23503 にするため Referenced になる。PostgreSQL の `ON DELETE RESTRICT` の違反は 23001 で一覧に無く、UNEXPECTED になる見込み（未検証）。グループの削除（`GroupStore` と `StoreFailureClassifier`）も同じ一覧（23503・23506）を使う。
+
 ## Key Design Decisions
 
 - 対象DB は読み取り専用の別のプールと、書き込み専用の別のプールに分ける。どちらも既定の候補にしない（Flyway・JPA が誤って使わない）。
@@ -558,6 +651,7 @@ flowchart TD
 - 行の主キーの値を道（URL）にも問い合わせにも載せず、本文で運ぶ（前回の決定）。
 - 他テーブル参照（REFERENCE・LOOKUP）の業務データでの扱いは暫定で、`formPart: lookup` を `text` に置き換え、選択肢は FIXED だけ返す（前回の決定。K-74）。
 - 統合の前の関門は Gradle の1つのタスク `verify` で、手元と CI が同じタスクを呼ぶ（`project.md` の Way of Working）。段の順はタスクに付けた `mustRunAfter` で決め、段ごとに単独でも流せる（K-111）。`verifyQuick` は同じ段の表から外すタスクを選ぶ形で、順の決まりを足し直さない（K-122）。
+- 内部DB は組み込みの H2 を1つのアプリのインスタンスで使う前提で作られている（2026-11-14 に確かめた。K-146〜K-148）: 待ちの上限の一部を H2 の既定に預け、違反と排他の区分は H2 の SQLState と誤りの番号を一覧に持ち、移行は1つの置き場、ネイティブの SQL の一部は H2 の構文（K-145）。`role/service/RoleTransferSlot.java` 30 行の説明も「単一のインスタンスの前提（組み込みの H2）のため、入口はアプリの中の1つで足りる」とする。内部DB の書き分けの仕組み（対象DB 側の `RowDialect`・`SchemaQueries` のような形）は内部DB の repository・store の層には無い。
 
 ## Improvement Opportunities
 
@@ -600,8 +694,13 @@ flowchart TD
   - 確かめた事実: CI はジョブ `verify` の1本で、手順は直列（K-127）。`./gradlew verify` は `-PitForks` を付けずに流すため、結合テストは1つの JVM（`backend/build.gradle.kts` 196〜198 行は `-PitForks` があるときだけ `maxParallelForks` を変える）。手元の実測の記録（`docs/verification.md` 96〜102 行、2026-11-08、8 CPU・16GiB の PC、colima 4 CPU・6GiB、各 N を1回）は、結合テストが N=1 で 23分05秒、N=2 で 15分26秒、N=3 で 9分43秒、N=4 で 13分53秒（どの N でも 1,716 件が通り、飛ばし 10 件）。画面のテストは `verify` の中で2回流れる（K-112）。9 の手順の `program-size.mjs --base` は比べる元を取り出して cloc をもう1回流す（`program-size.mjs` 250〜286 行）。CI の手順ごとの時間はリポジトリの中に無い。
   - 見立て（未検証）: 一番大きいのは結合テストの1つの JVM と見る。分け方の候補は、(a) CI でも `-PitForks=<N>` を渡す（CI の機械の CPU・メモリと、対象DB のコンテナ・番号の取り合いを流して確かめる。JaCoCo の記録は同じ `integrationTest.exec` に追記されるため判定は変わらない見込み）、(b) 画面のテストを `verify` でも1回にする（K-112。`verifyQuick` は既に1回）、(c) ジョブを分ける（結合テストを別のジョブにする）。(c) はカバレッジの判定（`test.exec` と `integrationTest.exec` を合わせる）と 9 の手順の台本（同じ機械の `backend/build/` を読む）を、成果物の受け渡しで作り直す必要があり、手元の `verify` と CI が同じ1本のタスクという決まり（`project.md` の Way of Working）にも触れる。内訳は `gh run view --json jobs` の手順ごとの時刻で測れる見込み（`team.md` の「CI の時間は検査の job の始めから終わりで測る」の前例は `project.md` の Deployment）。
 
+- **K-154 内部DB を PostgreSQL でも動かすときの作りの論点（2026-11-14、事実と見立てを分けた）（`config`・`internal-db-migration`・`build-and-verify`・`container-runtime`・`backend-test-support`・`perf-and-monitoring`）**:
+  - 確かめた事実: 接続の切り替えそのものは環境変数で済む形（K-146）。H2 に頼る所は、移行（K-144）・本体のネイティブの SQL 3 か所（K-145）・待ちの上限（K-147）・区分の部品の SQLState（K-148）・テスト（K-151）・運用の道具と文書（K-152）に分かれる。内部DB 用の PostgreSQL のコンテナのイメージは `compose.yaml`・`docker/`・`TargetDbImages.java` のどこにも無い（見本の対象DB の `postgres:18.6@sha256:e3d24f69…` は `compose.yaml` 151 行・`docker/perf/compose.yaml` 69 行・`TargetDbImages.POSTGRES_DIGEST`）。`.github/dependabot.yml` の `docker-compose` の項は `compose.yaml` を見て、Dependabot が見ない固定先を説明文に並べる（`team.md` の Deployment により、イメージを足すときはこの一覧に足す）。CI の上限は `timeout-minutes: 60`、`team.md` の線は約 42 分。
+  - 見立て（未検証）: (a) 移行の置き場を DB の種類で分ける（Flyway の `locations` を `{vendor}` などで切り替える）形が、適用済みの H2 の移行を書き換えない決まり（`validate-on-migrate: true`）と両立しやすい。(b) H2 に固有の SQL 3 か所は、標準の書き方（`INSERT ... ON CONFLICT`・`UPDATE ... RETURNING` など）に寄せるか、DB の種類ごとに書き分けるかを設計で決める。H2 2.4 が標準の書き方をどこまで受けるかは捨ての試しで確かめる。(c) 待ちの上限は、PostgreSQL では接続ごとの `lock_timeout` などを決めないと、ヒントの効かない待ちが文の上限 10 秒まで続きうる。(d) 結合テストを PostgreSQL でも流すなら、内部DB の結合テスト 275 本のうちどれを流すかで `verify` と CI の時間が大きく変わる（測っていない）。(e) 内部DB 用に見本の対象DB と同じイメージを使うか、別のサービスにするか、版とダイジェストの固定先の一覧をどう足すかを決める。(f) H2 から PostgreSQL へのデータの移し替えは今のコードに道具が無く、範囲に入れるかは要件の論点。(g) アプリのインスタンスが1つなら `RoleTransferSlot` などの単一のインスタンスの前提は変わらない。複数にするなら別の論点。
+
 ## Sources
 
+- 2026-11-14: `backend/src/main/resources/application.yaml`（内部DB・JPA・Flyway・ログの節）・`backend/src/main/resources/db/migration/`（V1〜V14 の全文）・`backend/src/main/java/cherry/mastersmith/common/persistence/`・`common/health/TimeBoundedDbHealthIndicator.java`・`common/error/web/UniqueViolations.java`・`role/store/RoleStore.java`・`role/store/RoleStoreClassifier.java`・`group/store/StoreFailureClassifier.java`・`auth/repository/LoginAttemptStateRepository.java`・`user/repository/{UserRepository,UserRowLockRepository}.java`・`backend/build.gradle.kts`・`.github/workflows/ci.yml`・`.github/dependabot.yml`・`compose.yaml`・`Dockerfile`・`.env.example`、開発担当の調査 `aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-11: `.github/workflows/ci.yml`（162 行の全文）・`backend/build.gradle.kts`（全文）・`docs/verification.md`（1〜60 行・79〜95 行）・`build.gradle.kts`（`itTests` と `verifyQuick` の行の `grep`）・`scripts/ci-summary.mjs`（174〜196 行）・`git log`（`ci.yml` ほか）、開発担当の調査 `aidlc/spaces/default/intents/261110-deps-forks-review/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-09: `.github/workflows/ci.yml`（全文）・`scripts/`（4 ファイルの全文）・`build.gradle.kts`（1〜566 行）・`backend/build.gradle.kts`（100〜357 行）・`docs/verification.md`（1〜200 行）・`README.md`（流し読み）、`git merge-base`・`git log`（`main` と `develop`）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-checks-release/inception/reverse-engineering/developer-scan.md`。
 - 2026-11-08 の2回目: `.github/workflows/ci.yml`・`build.gradle.kts`・`backend/build.gradle.kts`・`scripts/verify-graph-check.mjs`・`scripts/verify-graph-baseline.txt`・`frontend/vitest.config.ts`・`docs/verification.md`（どれも全文）、開発担当の調査 `aidlc/spaces/default/intents/261108-ci-size-coverage/inception/reverse-engineering/developer-scan.md`。
