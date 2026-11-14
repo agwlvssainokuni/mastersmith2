@@ -1,0 +1,1 @@
+"内部DB（今は組み込みの H2）を PostgreSQL でも動かせるようにする。内部DB と対象DB（DSL の対象の業務DB）は別扱いのまま変えない。今回は PostgreSQL だけを対象とし、MySQL・MariaDB は後の Intent とする。下調べの結果は aidlc/spaces/default/knowledge/aidlc-shared/study-internal-db-postgresql.md にある（接続ごとの lock_timeout 2 秒、外部キーの ON DELETE RESTRICT の扱い、移行の DB ごとの書き分け、H2 専用の MERGE の書き換え、H2 だけの運用の置き換え、テストと CI の時間など）。"
