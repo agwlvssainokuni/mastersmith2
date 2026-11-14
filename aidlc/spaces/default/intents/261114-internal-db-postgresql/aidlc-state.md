@@ -9,7 +9,7 @@
 - **Start Date**: 2026-11-14T11:05:53Z
 - **Question Id**: 75356b2e
 - **State Version**: 8
-- **Active Agent**: aidlc-design-agent
+- **Active Agent**: aidlc-architect-agent
 - **Worktree Path**:
 - **Bolt Refs**:
 - **Practices Affirmed Timestamp**: 2026-11-14T13:22:55Z
@@ -36,7 +36,7 @@
 ## Execution Plan Summary
 - **Total Stages**: 22
 - **Completed**: 6
-- **In Progress**: refined-mockups
+- **In Progress**: domain-design
 
 ## Runtime State
 - **Revision Count**: 1
@@ -75,8 +75,8 @@
 - [x] practices-discovery — EXECUTE
 - [x] requirements-analysis — EXECUTE
 - [S] user-stories — EXECUTE
-- [-] refined-mockups — EXECUTE
-- [ ] domain-design — EXECUTE
+- [S] refined-mockups — EXECUTE
+- [-] domain-design — EXECUTE
 - [ ] units-generation — EXECUTE
 - [ ] contract-design — EXECUTE
 - [ ] delivery-planning — EXECUTE
@@ -101,12 +101,12 @@
 
 ## Current Status
 - **Lifecycle Phase**: INCEPTION
-- **Current Stage**: refined-mockups
-- **Next Stage**: domain-design
+- **Current Stage**: domain-design
+- **Next Stage**: units-generation
 - **Status**: Running
-- **Last Updated**: 2026-11-14T14:43:27Z
+- **Last Updated**: 2026-11-14T14:44:21Z
 
 ## Session Resume Point
 - **Last Completed Stage**: requirements-analysis
-- **Next Action**: Execute Refined Mockups
+- **Next Action**: Execute Domain Design
 - **Pending Artifacts**: none

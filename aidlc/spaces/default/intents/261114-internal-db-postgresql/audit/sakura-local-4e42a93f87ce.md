@@ -3015,3 +3015,21 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Stage Skip
+**Timestamp**: 2026-11-14T14:44:21Z
+**Event**: STAGE_SKIPPED
+**Stage**: refined-mockups
+**Reason**: この Intent は画面を変えない（要件定義の FR3.1 で画面と API の応答を H2 と同じに保つ。新しい画面・部品・アイコンは無く、make-you-chic-ui への依頼も要らない）ため、段の条件（ユーザーに見える画面があるとき）に当たらない
+**Skip Kind**: conditional-runtime
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-14T14:44:21Z
+**Event**: STAGE_STARTED
+**Stage**: domain-design
+**Agent**: aidlc-architect-agent
+**Answer Mode**: guide (reused from practices-discovery)
+
+---
