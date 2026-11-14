@@ -4296,3 +4296,133 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T20:19:34Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md
+**Context**: inception > units-generation > units-generation-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T20:19:39Z
+**Event**: DECISION_RECORDED
+**Stage**: units-generation
+**Decision**: Units Generation の Q1（単位の粒度とまとめ方）と Q2（PostgreSQL の結合テストの土台の置き場）
+**Options**: Q1: A・B・C・X,Q2: A・B・X
+**Question Id**: 461ea603
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:37208c6bee9da34b2793ef60a14e521a71caf0bc25477fe795da22d9b9181ee0
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T21:24:43Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. 4単位 (Recommended)","A. u1 に置く (Recommended)"]
+**Message Id**: a1199850
+**Open Questions**: 479e3dfd, 461ea603
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md","entries":{"決まっていること（質問にしない）":"bb4dbc1dad13f879","Q1":"3056746441d8611b","Q2":"8f13bb631758418a"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T21:24:43Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q1. 単位の粒度とまとめ方をどうしますか。推奨は A（4単位）です。H2 で確かめる SQL の書き直し、明示して流す PostgreSQL の結合テスト、compose と文書は、確かめ方がそれぞれ違います。単位をそこで分けると、各単位の合格の条件がはっきりするためです。
+**Reply**: A. 4単位 (Recommended)
+**Options**: ["A. 4単位 (Recommended)","B. 3単位","C. 5単位"]
+**Recommended**: ["A. 4単位"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T21:24:43Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q2. PostgreSQL の結合テストの土台（明示の指定とコンテナの起動）を、どの単位に置きますか。推奨は A です。PostgreSQL 用の移行は普段の verify では流れません。u1 の中で、実際の PostgreSQL への移行と起動まで確かめないと、u1 の合格を判定できないためです。
+**Reply**: A. u1 に置く (Recommended)
+**Options**: ["A. u1 に置く (Recommended)","B. すべて u3 に置く"]
+**Recommended**: ["A. u1 に置く"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T21:24:53Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md
+**Context**: inception > units-generation > units-generation-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T21:24:54Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md
+**Context**: inception > units-generation > units-generation-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T21:24:55Z
+**Event**: QUESTION_ANSWERED
+**Stage**: units-generation
+**Details**: Q1: A（4単位）・Q2: A（土台は u1）
+**Message Id**: a1199850
+**Person Reply**: A. 4単位 (Recommended)\nA. u1 に置く (Recommended)
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T21:25:49Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+**Context**: inception > units-generation > unit-of-work.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T21:26:05Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md
+**Context**: inception > units-generation > unit-of-work-dependency.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T21:26:26Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md
+**Context**: inception > units-generation > unit-of-work-story-map.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T21:26:37Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+**Context**: inception > units-generation > traceability.json
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T21:26:50Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/memory.md
+**Context**: inception > units-generation > memory.md
+
+---
