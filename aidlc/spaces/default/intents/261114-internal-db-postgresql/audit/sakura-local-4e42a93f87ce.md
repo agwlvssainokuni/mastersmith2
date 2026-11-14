@@ -3033,3 +3033,124 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T14:45:52Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/domain-design-questions.md
+**Context**: inception > domain-design > domain-design-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T14:45:55Z
+**Event**: DECISION_RECORDED
+**Stage**: domain-design
+**Decision**: Q1-Q4
+**Options**: Q1: A. PostgreSQL の移行を別の置き場に一式,Q1: B. 共通と種類ごとの差に分ける,Q2: A. 両方に通る書き方に書き直す,Q2: B. 種類ごとに書き分ける,Q3: A. 外部キーを NO ACTION で作る,Q3: B. 区分の部品に 23001 を足す,Q4: A. PostgreSQL 用の結合テストを新しく作る,Q4: B. 既存の結合テストを切り替えて流す
+**Question Id**: 255e46f3
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:daa0b21452f5a91c1949d4241b9ced0a385241a546f63dfd1d59ef80d796cbf5
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T15:33:12Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A","A","A","A"]
+**Message Id**: 974b0715
+**Open Questions**: 479e3dfd, 255e46f3
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/domain-design-questions.md","entries":{"決まっていること（質問にしない）":"589c2c998401f61e","Q1":"5486d9e81f1e4d78","Q2":"7d604be14826251b","Q3":"d76565a326b8c655","Q4":"45562aefe4d911fb"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T15:33:13Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [設計] Q1. PostgreSQL の移行（表を作る SQL）の置き場。H2 の適用済みの移行は書き換えられません。推奨は A です。H2 の移行に一切触れずに済み、PostgreSQL の移行を素直に書けます。両方に足す手間は要件の FR2.3 で受け入れ済みです。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T15:33:13Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [設計] Q2. H2 にしか通らない SQL（4 か所：FINAL TABLE・MERGE ... KEY ×2・CAST を含む INSERT ... SELECT）の直し方。推奨は A です。種類による分岐が要らず、普段の verify の H2 の結合テストでそのまま確かめられ、カバレッジの下限も守りやすくなります。両方で同じ結果になることは設計の段で捨ての試しで確かめます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T15:33:13Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [設計] Q3. 参照のある行を消したときの違反。PostgreSQL の ON DELETE RESTRICT だと SQLState 23001 になり、今の区分の部品では「想定外」になります。推奨は A です。区分の部品（role・group）を変えずに H2 と同じ応答になります。１つの文の中では RESTRICT と NO ACTION の結果は同じで、今のアプリは遅らせた確かめを使っていません。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T15:33:13Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q4. PostgreSQL の結合テストの作り方。推奨は A です。既存の H2 のテストを向けると、H2 にしか通らないテストの部品（INFORMATION_SCHEMA.SESSIONS・Java のトリガー・準備の MERGE ... KEY など）を多く書き直すことになるためです。絞った新しいテストなら、明示して流すときの時間も短く保てます。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T15:33:18Z
+**Event**: QUESTION_ANSWERED
+**Stage**: domain-design
+**Details**: Q1: A; Q2: A; Q3: A; Q4: A
+**Person Reply**: A\nA\nA\nA
+**Message Id**: 974b0715
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T15:34:59Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/components.md
+**Context**: inception > domain-design > components.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T15:36:17Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/decisions.md
+**Context**: inception > domain-design > decisions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T15:36:36Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/traceability.json
+**Context**: inception > domain-design > traceability.json
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-14T15:36:46Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/domain-design/memory.md
+**Context**: inception > domain-design > memory.md
+
+---
