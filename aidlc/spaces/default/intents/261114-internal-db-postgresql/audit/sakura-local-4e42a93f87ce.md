@@ -1214,3 +1214,238 @@
 **Context**: inception > practices-discovery > practices-discovery-questions.md
 
 ---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T12:25:46Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: How would you like to answer the questions?
+**Options**: Guide me,I'll edit the file,Chat
+**Question Kind**: answer-mode
+**Question Id**: b98567cb
+**Question Type**: answer-mode
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:fd95e15a16b17a77c2b57ae05e5a2ff76fdf529b4c8ac919a1d70c4669418e4b
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T12:26:11Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["Guide me"]
+**Message Id**: 417a9585
+**Open Questions**: b98567cb
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md","entries":{"決まっていること（質問にしない）":"010b43f0964ab5c0","Q1":"9a2683e8c7b341ec","Q2":"67037ba5b5493d4b","Q3":"c13d0cd257e7ffb4","Q4":"e302450acbdbef2d","Q5":"656e6644a638483a","Q6":"63ef41f05c70032b"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:26:12Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: 6つの質問を aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md に作りました。どのように答えますか？
+**Reply**: Guide me
+**Options**: ["Guide me","I'll edit the file","Chat"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T12:26:15Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Guide me
+**Person Reply**: manual modeにしました\nauto modeにしました\nGuide me
+**Message Id**: 417a9585
+**Message Ids**: 9e32ea81,83646794,417a9585
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T12:26:17Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Q1-Q4
+**Options**: Q1: A. H2 の全件は残し PostgreSQL に固有の結合テストを別に置く,Q1: B. 全件を両方で流す,Q1: C. PostgreSQL の分は手動のタスク,Q2: A. 対象DB と同じ扱いで飛ばす,Q2: B. 飛ばさず失敗にする,Q3: A. 対象DB と同じ版とダイジェスト,Q3: B. 内部DB は別の版で固定,Q4: A. 配備は H2 のまま PostgreSQL は profile で選べ配備の段で確かめる,Q4: B. 配備を PostgreSQL に切り替える,Q4: C. 両方を常に配備する
+**Question Id**: 60855fa6
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:b4237d5d719ee6f92c0f58407dc2cb3cb727e4f4bbc2027d67cdc443beb88358
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T12:32:22Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["基本はH2なのでH2の全件は残す。PostgreSQLに固有の結合テストはバリエーションとして別途作成。PostgreSQLの結合テストは明示されたときに実行、通常は実行しない。","A","A","A"]
+**Message Id**: 8fd83bad
+**Open Questions**: b98567cb, 60855fa6
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md","entries":{"決まっていること（質問にしない）":"010b43f0964ab5c0","Q1":"9a2683e8c7b341ec","Q2":"67037ba5b5493d4b","Q3":"c13d0cd257e7ffb4","Q4":"e302450acbdbef2d","Q5":"656e6644a638483a","Q6":"63ef41f05c70032b"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:32:22Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q1. 内部DB を PostgreSQL で動かす結合テストの範囲と流す場面。今は結合テスト 278 本のうち 275 本が H2 を起動し、CI は中央値で約 21 分半（上限の目安は約 42 分）です。推奨は A です。H2 との差は移行・違反の判定・排他・ネイティブの SQL・時刻など一部に集まるため、そこを確かめるテストを足せば時間を大きく増やさずに守れます。
+**Reply**: 基本はH2なのでH2の全件は残す。PostgreSQLに固有の結合テストはバリエーションとして別途作成。PostgreSQLの結合テストは明示されたときに実行、通常は実行しない。
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:32:22Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q2. colima が無いときに飛ばしてよい範囲。今は「コンテナで動かす対象DB のテストだけ」です。推奨は A です。今の守りをそのまま広げられ、手元と CI で同じ判断になります。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:32:22Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [リリース] Q3. 内部DB の PostgreSQL のイメージの版とダイジェスト。対象DB は postgres:18.6 をダイジェストで3か所に固定しています。推奨は A です。上げる知らせと揃える先が1つの版にまとまり、上げ忘れが起きにくくなります。
+**Reply**: A
+**Options**: ["A","B"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:32:22Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [リリース] Q4. 手元の配備で使う内部DB と、配備の段での確かめ方。既定の内部DB を変えるかは要件の段で決めます。推奨は A です。今の配備とデータを動かさずに、PostgreSQL で動くことを配備の段でも確かめられます。
+**Reply**: A
+**Options**: ["A","B","C"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T12:32:28Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q1: 基本はH2なのでH2の全件は残す。PostgreSQLに固有の結合テストはバリエーションとして別途作成。PostgreSQLの結合テストは明示されたときに実行、通常は実行しない。; Q2: A; Q3: A; Q4: A
+**Person Reply**: 基本はH2なのでH2の全件は残す。PostgreSQLに固有の結合テストはバリエーションとして別途作成。PostgreSQLの結合テストは明示されたときに実行、通常は実行しない。\nA\nA\nA
+**Message Id**: 8fd83bad
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:32:33Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:32:35Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:32:37Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:32:39Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-14T12:32:50Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md
+**Context**: inception > practices-discovery > practices-discovery-questions.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-14T12:32:53Z
+**Event**: DECISION_RECORDED
+**Stage**: practices-discovery
+**Decision**: Q5-Q7
+**Options**: Q5: A. Build and Test で E2E を H2 と PostgreSQL で1回ずつ,Q5: B. E2E は H2 だけ,Q5: C. リリースの前も両方,Q6: A. ALWAYS 実際の PostgreSQL で結合テスト,Q6: B. NEVER 内部DB の接続情報をログ・応答に含めない,Q6: C. どちらも足さない,Q7: A. 明示の指定で流し 決めた場面では必ず流す,Q7: B. 明示の指定で流し 場面は決めない,Q7: C. A に加えて CI の定期でも流す
+**Question Id**: 319f5e2b
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:642662c63ce169e4878f60ef61a64cf9ab77d3b1ba83df217f9dd96abae95529
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T12:53:10Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["B","A, B","B"]
+**Message Id**: eca2ba35
+**Open Questions**: b98567cb, 60855fa6, 319f5e2b
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md","entries":{"決まっていること（質問にしない）":"010b43f0964ab5c0","Q1":"9a2683e8c7b341ec","Q2":"67037ba5b5493d4b","Q3":"c13d0cd257e7ffb4","Q4":"e302450acbdbef2d","Q5":"656e6644a638483a","Q6":"63ef41f05c70032b","Q7":"3291ad76af3af1b6"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:53:10Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q5. Intent の最後の E2E を PostgreSQL の内部DB でも流すか。E2E は今 H2 で動いています。推奨は A です。画面から通して PostgreSQL で動くことを確かめられるのは E2E だけです。
+**Reply**: B
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:53:10Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [セキュリティ] Q6. 内部DB についての固い制約を足すか（複数選べます）。対象DB には同じ守りがありますが、内部DB にはありません。推奨は A と B の両方です。対象DB に置いた守りを内部DB にもそろえられます。
+**Reply**: A, B
+**Options**: ["A","B","C"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T12:53:10Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: [品質] Q7. PostgreSQL の結合テストを「明示されたとき」に流す、の中身（Q1 の答えの確かめ）。流す場面を決めておかないと、いつまでも流れないおそれがあります。推奨は A です。普段の verify と CI の時間は増えず、内部DB に手を入れたときと区切りの場面では必ず確かめられます。
+**Reply**: B
+**Options**: ["A","B","C"]
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-14T12:53:13Z
+**Event**: QUESTION_ANSWERED
+**Stage**: practices-discovery
+**Details**: Q5: B; Q6: A, B; Q7: B
+**Person Reply**: B\nA, B\nB
+**Message Id**: eca2ba35
+
+---

@@ -17,7 +17,7 @@ B. 275 本すべてを H2 と PostgreSQL の両方で流す（確かめる範囲
 C. PostgreSQL の分を `verify` と CI の外の手動のタスクにする（速いが、壊れても気づくのが遅れる）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: X. 基本はH2なのでH2の全件は残す。PostgreSQLに固有の結合テストはバリエーションとして別途作成。PostgreSQLの結合テストは明示されたときに実行、通常は実行しない。
 
 ## Q2. [品質] コンテナの実行環境（colima）が無いときに飛ばしてよい範囲
 
@@ -29,7 +29,7 @@ A. 内部DB の PostgreSQL のテストも対象DB と同じ扱いにする（�
 B. 内部DB の分は飛ばさずに失敗にする（固いが、colima を起動していない途中の実行がすべて止まる）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Q3. [リリース] 内部DB の PostgreSQL のコンテナのイメージの版とダイジェスト
 
@@ -41,7 +41,7 @@ A. 対象DB の PostgreSQL と同じ版とダイジェストを使い、上げ�
 B. 内部DB は別の版（長く支援される版など）で別に固定する（上げ方を分けられるが、固定先と知らせが倍になる）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Q4. [リリース] 手元の配備で使う内部DB と、配備の段での確かめ方
 
@@ -54,7 +54,7 @@ B. 今回から手元の配備を PostgreSQL に切り替える（H2 からの�
 C. H2 と PostgreSQL の両方を常に配備する（資源と手順が倍）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: A
 
 ## Q5. [品質] Intent の最後の E2E を PostgreSQL の内部DB でも流すか
 
@@ -67,7 +67,7 @@ B. E2E は H2 だけで流す（PostgreSQL での画面の通しは確かめな�
 C. Build and Test に加えて、リリースの前の E2E も毎回両方で流す（リリースの手間が増える）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: B
 
 ## Q6. [セキュリティ] 内部DB についての固い制約を足すか（select all that apply）
 
@@ -80,4 +80,17 @@ B. NEVER 内部DB の接続情報（パスワード・資格情報を含む JDBC
 C. どちらも足さない（進め方の文（Q1）にとどめる）
 X. Other (please specify)
 
-[Answer]:
+[Answer]: A, B
+
+## Q7. [品質] PostgreSQL の結合テストを「明示されたとき」に流す、の中身（Q1 の答えの確かめ）
+
+Q1 で「PostgreSQL の結合テストは明示されたときに実行し、通常は実行しない」と答えていただきました。一方、Q2 の A は「CI では必ず流す」を含み、今の決まりでは対象DB の結合テストは全件の `verify` と CI で毎回流しています。明示の仕方と、必ず明示して流す場面を決めておかないと、いつまでも流れないおそれがあります。
+
+推奨: A。普段の `verify` と CI の時間は増えず、内部DB に手を入れたときと区切りの場面では必ず確かめられるためです。
+
+A. Gradle の明示の指定（例: `-PinternalDb=postgresql`。名前は設計で決める）を付けたときだけ流す。CI は手動の実行の入力で選べるようにし、`develop` へのプッシュでは流さない。次の場面では必ず明示して流す: 内部DB の SQL・移行・接続に手を入れる Bolt の統合の前、Build and Test、リリースの前（`develop` から `main` への取り込みの前）。Q2 の「CI では必ず流す」は、明示したときの CI の実行に読み替える
+B. A と同じ明示の指定で流すが、場面は決めず、必要と思ったときに流す
+C. A に加えて、CI で定期（週1回など）にも流す
+X. Other (please specify)
+
+[Answer]: B
