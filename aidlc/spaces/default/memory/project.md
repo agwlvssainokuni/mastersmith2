@@ -119,6 +119,8 @@
 - NEVER 認証の値（JWT・リフレッシュトークン・Authorization ヘッダー）を、伏せずに負荷の試験（perf）の記録へ置かない (affirmed 2026-10-29)
 - NEVER 自作の SVG（アプリのアイコン・favicon）に、スクリプト・イベントの属性（onload など）・外部の参照（外部の URL の href・読み込み）を入れない (affirmed 2026-11-02)
 
+- NEVER 内部DB の接続情報（パスワード・資格情報を含む JDBC の URL）をログ・監査ログ・エラー応答に含めず、環境変数（.env）以外から受け取らない (affirmed 2026-11-14)
+
 ## Mandated
 
 - ユーザー提供の参考資料は `reference/` に置き、Git管理対象外（.gitignore）とする。成果物やコードコメントに `reference/` 配下のファイルパスを書かない。内容は読み込んで理解し、必要な結論・要点を直接ドキュメントへ書き込む。 (learned 2026-09-22) <!-- cid:260922-auth-audit-base:intent-capture:602ae1e8f7161f7425d243033ebadc4ff4bfc9635bf7648a8fcd72e58e52d24d -->
@@ -144,6 +146,8 @@
 - ALWAYS 主キーの無いテーブルとビューの行の更新・削除は、画面で操作を隠すことに頼らず、サーバー側で拒否する (affirmed 2026-10-18)
 - ALWAYS カラムの主権限が NONE（読めない）のカラムは、業務データの API の応答に含めない（画面で隠すことを代わりにしない） (affirmed 2026-10-18)
 - ALWAYS 対象DB へ書き込む場合は、書き込みの接続と資格情報を読み取りと分けて環境変数（`.env`）だけから受け取り、書き込みのアカウントには DSL の対象のスキーマの行の操作（`SELECT`・`INSERT`・`UPDATE`・`DELETE`）だけを与え、DDL の権限を与えない (affirmed 2026-10-18)
+
+- ALWAYS 内部DB を PostgreSQL で動かす経路の結合テストは、版を固定したイメージのコンテナで起動した実際の PostgreSQL で行い、H2 で代用しない (affirmed 2026-11-14)
 
 ## Corrections
 

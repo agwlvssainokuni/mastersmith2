@@ -1635,3 +1635,300 @@
 **Context**: inception > practices-discovery > memory.md
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 7ee4c0e3
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 7ee4c0e3
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Duration ms**: 76
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 06e444ba
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 06e444ba
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: b8ed6941
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: b8ed6941
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 19ddf63e
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 19ddf63e
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_FIRED
+**Fire id**: 16696cc3
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:27Z
+**Event**: SENSOR_PASSED
+**Fire id**: 16696cc3
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: a82ffd6e
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: a82ffd6e
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Duration ms**: 108
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 2b8fb0d2
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 2b8fb0d2
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 737c55aa
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 737c55aa
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_FIRED
+**Fire id**: 0e672443
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:28Z
+**Event**: SENSOR_PASSED
+**Fire id**: 0e672443
+**Sensor ID**: required-sections
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-14T12:57:29Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6edfed68
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-14T12:57:29Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6edfed68
+**Sensor ID**: upstream-coverage
+**Stage slug**: practices-discovery
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md
+**Duration ms**: 75
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-14T12:57:29Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: practices-discovery
+**Next Stage**: requirements-analysis
+**Brief Digest**: none
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/discovered-rules.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/evidence.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-timestamp.md=passed; upstream-coverage@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/team-practices.md=passed
+**Open Decisions**: 0
+**Question Id**: 5d4715ae
+**Question Type**: gate
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:32d63e50911cfd2c4904a1e5172d1eecb6335fef6832f56e57567d17df788099
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-14T13:22:51Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["Approve"]
+**Message Id**: 35d5d18c
+**Open Questions**: b98567cb, 60855fa6, 319f5e2b, 31356437, 5d4715ae
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/practices-discovery/practices-discovery-questions.md","entries":{"決まっていること（質問にしない）":"010b43f0964ab5c0","Q1":"9a2683e8c7b341ec","Q2":"67037ba5b5493d4b","Q3":"c13d0cd257e7ffb4","Q4":"e302450acbdbef2d","Q5":"656e6644a638483a","Q6":"63ef41f05c70032b","Q7":"3291ad76af3af1b6"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-14T13:22:51Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Practices Discovery が終わりました。どう進めますか？
+**Reply**: Approve
+**Options**: ["Approve","Request Changes"]
+
+---
+
+## Practices Affirmed
+**Timestamp**: 2026-11-14T13:22:55Z
+**Event**: PRACTICES_AFFIRMED
+**Affirming User**: agwlvssainokuni
+**Sections Written**: Way of Working, Walking Skeleton, Testing Posture, Deployment, Code Style
+**Mandated Rules Appended**: 1
+**Forbidden Rules Appended**: 1
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-14T13:22:58Z
+**Event**: GATE_APPROVED
+**Stage**: practices-discovery
+**User Input**: Approve
+**Person Reply**: Approve
+**Message Id**: 35d5d18c
+**Brief Digest**: none
+**Git Name**: agwlvssainokuni
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-14T13:22:58Z
+**Event**: STAGE_COMPLETED
+**Stage**: practices-discovery
+**Validation Basis**: {"graphContract":"sha256:886af627a0fea6d271a662e4a54b4c5993ecee715d6144d46d4a58c2bc3d19bb","inputs":[{"artifact":"architecture","contentHash":"sha256:294e349384bcfa9d9e0c813904223c087b2c08c9ce67c45a50dc8eda4517cbcf","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:0d9400075695a0e04aef9ddeddb79c954852a0f750d017142ab981b8f916372a"},{"artifact":"business-overview","contentHash":"sha256:685d4229fb199fafae7e83b23f19d1970d2d23fd585c8cead773a8c9a56a68a6","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:015edc378898d16f8aa28afe3cd586c331008fed7d0063dd68a041b80ccae663"},{"artifact":"code-quality-assessment","contentHash":"sha256:54026ff38bb42ad12dd647095493464ef276189f1ebe596cd8fe273dd2a9a481","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:a491589c711c78fbd81e2bf7ab440ffb0b3a87a3eb12c02d7f47d091ddc16e8d"},{"artifact":"code-structure","contentHash":"sha256:dbf817820d6c7dc22380c5249c06261a7839d35c16aa709b3db506f05202c372","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:c3f18b3a8565e0ae439774a8c5861cd866636d77091d764f4edd531758e1fb17"},{"artifact":"dependencies","contentHash":"sha256:e1e368e562441925dcedf56ee2c81986b1817a66c0bcfd0131b984e03a296324","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:3209299928007f9f9f6a9e0602414d49f184fe0487ed158c9d9ec0a41612d407"},{"artifact":"technology-stack","contentHash":"sha256:fd918e080e78ed863cf96657edee7a7e41fb83500b4a654736de44ee63ac6875","instanceCount":1,"presentCount":1,"producer":"reverse-engineering","required":false,"structureHash":"sha256:ead7e4790a54c4614ee1e1a7e6e448734c5322ae227732ce4dca2c7d14e278ae"}],"outputs":[{"artifact":"discovered-rules","contentHash":"sha256:45c6a136dd04d62da630a4ad13034c13215d283a3099aa829470667b6f6d148e","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:accce755c37c4981e45ff038d9d009fdd7d11b5afa983ffb681fb881a9619af1"},{"artifact":"evidence","contentHash":"sha256:185fe27532952448bb19ced7cdaba0b0920d417b24649d72d60c8fdbc0c975b8","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:68081227cab8f1673afd1d487abc5c8a1b60ddb9b7e702b82e27b053ce83d86b"},{"artifact":"practices-discovery-timestamp","contentHash":"sha256:81b9a8259342af1c8469a7ecc3bbab8839fcb20c60a73fbd7944265b72674241","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:cd6d53a12805a8e5604defb5e9aab7377212c17ecc43820130023b59b20898ca"},{"artifact":"team-practices","contentHash":"sha256:33c68aa33dda730d6286a4eb79c31105a24e9a9e6b2884ed6b9de011ef788ff5","instanceCount":1,"presentCount":1,"producer":"practices-discovery","required":true,"structureHash":"sha256:679a0504c0c7d9747b09acfd8535d96f23cec1b8e5e9696ddc6631d990d635dc"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Practices Discovery approved by gate
+**Tokens In**: 140
+**Tokens Out**: 75767
+**Cache Read**: 16645084
+**Cache Write**: 698214
+**Cost USD**: 8.50
+**By Model**: opus-5-5=8.50
+**By Agent**: main=3.06; aidlc-pipeline-deploy-agent=5.44
+**Tokens By Model**: opus-5-5=140/75.8k/16.6M/698.2k
+**Tokens By Agent**: main=70/27.4k/10.4M/53.1k; aidlc-pipeline-deploy-agent=70/48.4k/6.2M/645.1k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-14T13:22:58Z
+**Event**: STAGE_STARTED
+**Stage**: requirements-analysis
+**Agent**: aidlc-product-agent
+**Answer Mode**: guide (reused from practices-discovery)
+
+---
