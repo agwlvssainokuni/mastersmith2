@@ -146,7 +146,7 @@ stage-protocol.md. Include A-D options with X (Other) as final option. Leave
 all [Answer]: tags blank. Follow-up questions continue the same `Q<n>`
 numbering so their source ids remain stable.
 
-Then follow the unified question flow from stage-protocol.md section 3: offer Guide Me / Edit File / Chat modes.
+Then follow the unified question flow from stage-protocol.md section 3.
 
 ### Step 3: Collect and Analyze Answers
 

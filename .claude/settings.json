@@ -82,7 +82,7 @@
         ]
       },
       {
-        "matcher": "Read|NotebookRead|Edit|MultiEdit|Write|NotebookEdit|LS|Glob|Grep|Bash|Task|Agent",
+        "matcher": "Read|NotebookRead|Edit|MultiEdit|Write|NotebookEdit|LS|Glob|Grep|Bash|Task|Agent|AskUserQuestion",
         "hooks": [
           {
             "type": "command",
@@ -228,6 +228,18 @@
           {
             "type": "command",
             "command": "aidlc engine hook validate-state",
+            "timeout": 1800
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "aidlc engine hook deliver-stage-rules",
             "timeout": 1800
           }
         ]

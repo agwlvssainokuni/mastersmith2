@@ -97,8 +97,8 @@ preserving any `--request` id rather than rebuilding the request.
   names a distinct feature/bug/unit unrelated to the active intent's subject
   (`aidlc engine intent list --json` gives its `slug` and
   `status`).
-- **On genuine new-work, OFFER, never auto-create.** Surface an
-  `AskUserQuestion` showing the active intent and the proposed new one, **including
+- **On genuine new-work, OFFER, never auto-create.** Present a
+  structured question showing the active intent and the proposed new one, **including
   the scope you'd give the new intent**. Default that scope to this runner's baked
   `security-patch` (the new work is likely the same flavour that made the user reach for
   this command), but if the new work clearly fits a DIFFERENT scope, propose that
@@ -115,7 +115,6 @@ preserving any `--request` id rather than rebuilding the request.
   The engine returns a `print` directive naming the `intent-create` command
   (with the `--label '<2-3 word kebab essence>'` placeholder). Act on it exactly
   as the loop's `print` handling describes: create the intent, then re-run
-  `next` and carry on into the new work's first stage in this chat. Say the
-  narration's line about starting it in a clean chat once: it is an option for
-  the person, never a stop.
+  `next` and carry on into the new work's first stage in this chat. The line
+  about starting it in a clean chat is an option for the person, never a stop.
 - **On DECLINE**, proceed with the active intent, the normal loop above.
