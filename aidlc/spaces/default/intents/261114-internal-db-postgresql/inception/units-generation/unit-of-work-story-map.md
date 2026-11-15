@@ -1,6 +1,6 @@
 # 要件と単位の対応（Intent 261114-internal-db-postgresql）
 
-User Stories を飛ばしたため、要件定義の FR（枝番）ごとに、実装する単位を対応づける。1行に複数の単位を書くときは `;` でつなぐ。行に名前のある単位は、その機能設計でその FR の合否の条件をすべてたどる。
+User Stories を飛ばしたため、要件定義の FR（枝番）ごとに、実装する単位を対応づける。1行に複数の単位を書くときは `;` でつなぐ。単位が1つだけの行は、その単位の機能設計でその FR の合否の条件をすべてたどる。複数の単位が分けて持つ行は、各単位が「単位が受け持つ部分」の列に書いた部分だけをたどり、合わせて合否の条件のすべてを覆う。`traceability.json` の `target` はその行の主の単位（PostgreSQL での確かめを持つ単位、U2 の書き直しの行は U2）を1つだけ書き、ほかの単位の受け持ちは同じ行の `note` に書く（Units Generation のレビュー R-02）。
 
 ## 対応表
 
@@ -20,7 +20,7 @@ User Stories を飛ばしたため、要件定義の FR（枝番）ごとに、�
 | FR3.3 | U1; U3 | u1-internal-db-platform; u3-postgres-behaviour-tests | U1: 接続ごとの `lock_timeout` の設定。U3: 2つの経路と行き詰まりの確かめ |
 | FR3.4 | U3 | u3-postgres-behaviour-tests | 失敗の後のトランザクションと失敗の監査 |
 | FR3.5 | U2; U3 | u2-portable-sql; u3-postgres-behaviour-tests | U2: 書き直しと H2 での確かめ。U3: PostgreSQL での確かめ |
-| FR3.6 | U2; U3 | u2-portable-sql; u3-postgres-behaviour-tests | U2: 写し方。U3: 10MB と 32 バイトの PostgreSQL での往復 |
+| FR3.6 | U1; U2; U3 | u1-internal-db-platform; u2-portable-sql; u3-postgres-behaviour-tests | U1: 列の型と写し方の組の決定と移行（R-03）。U2: 写し方の実装。U3: 10MB と 32 バイトの PostgreSQL での往復 |
 | FR3.7 | U1; U3 | u1-internal-db-platform; u3-postgres-behaviour-tests | U1: 時刻の列の型。U3: 時刻の往復と時刻で決まる判定 |
 | FR3.8 | U2; U3 | u2-portable-sql; u3-postgres-behaviour-tests | U2: 両方で同じ結果になる書き方。U3: PostgreSQL での確かめ |
 | FR3.9 | U1 | u1-internal-db-platform | PostgreSQL でのヘルスチェックの UP と DOWN |
@@ -39,7 +39,7 @@ User Stories を飛ばしたため、要件定義の FR（枝番）ごとに、�
 ## 単位にまたがる行
 
 - FR3.2・FR3.3・FR3.7・FR5.1: U1 が仕組み（移行・設定・土台）を持ち、U3 が PostgreSQL での振る舞いを確かめる。
-- FR3.5・FR3.6・FR3.8・FR5.4: U2 が書き直しと H2 での確かめを持ち、U3 が PostgreSQL での確かめを持つ。
+- FR3.5・FR3.6・FR3.8・FR5.4: U2 が書き直しと H2 での確かめを持ち、U3 が PostgreSQL での確かめを持つ。FR3.6 は、列の型と写し方の組を U1 の機能設計が決める（R-03）ため U1 も持つ。
 - NFR（要件定義の3章）は単位に行を立てず、各単位の NFR 要件の段で受け持つ枝番を決める。PostgreSQL のときだけ通るコードのカバレッジ（NFR6）は主に U1、検査の時間（NFR5）は U1 の明示の指定の作り、依存（NFR8）は U1、構造（NFR9）は U1・U2 が受け持つ。
 
 ## 単位の中の作る順（目安）
@@ -52,7 +52,7 @@ User Stories を飛ばしたため、要件定義の FR（枝番）ごとに、�
 ## 網羅の確かめ
 
 - FR1.1〜FR5.5 の 29 件すべてに単位がある（漏れなし）。
-- 4つの単位すべてに行がある（U1: 18 行、U2: 4 行、U3: 10 行、U4: 5 行）。
+- 4つの単位すべてに行がある（U1: 19 行、U2: 4 行、U3: 10 行、U4: 5 行）。
 
 ## Sources
 

@@ -39,7 +39,7 @@
 - **In Progress**: units-generation
 
 ## Runtime State
-- **Revision Count**: 2
+- **Revision Count**: 3
 - **Construction Checkpoints**: enabled
 - **Construction Iteration**: unit-major
 - **Construction Execution**: serial
@@ -77,7 +77,7 @@
 - [S] user-stories — EXECUTE
 - [S] refined-mockups — EXECUTE
 - [x] domain-design — EXECUTE
-- [-] units-generation — EXECUTE
+- [R] units-generation — EXECUTE
 - [ ] contract-design — EXECUTE
 - [ ] delivery-planning — EXECUTE
 
@@ -104,7 +104,7 @@
 - **Current Stage**: units-generation
 - **Next Stage**: contract-design
 - **Status**: Running
-- **Last Updated**: 2026-11-14T20:18:36Z
+- **Last Updated**: 2026-11-15T01:14:42Z
 
 ## Session Resume Point
 - **Last Completed Stage**: domain-design

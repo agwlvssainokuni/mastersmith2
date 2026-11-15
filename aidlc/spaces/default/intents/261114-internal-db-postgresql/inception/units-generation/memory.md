@@ -14,6 +14,8 @@
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 - 2026-11-15T00:00:00Z — U2 の大きなバイナリの写し方と U1 の移行の列の型はつなぎ目になるが、U2 は H2 だけで確かめられるため依存の辺を置かなかった。一致は U1 の ddl-auto: validate と U3 の 10MB の往復で拾い、Contract Design でつなぎ目として書く。
 
+- 2026-11-15T00:00:00Z — レビューの R-03・R-04 で、大きなバイナリの列の型と写し方の組の持ち主を U1、AuthPersistence・InvitationPersistence の見込みが外れたときの直しの持ち主を U2 に決めた。U3 をテストだけに保ち、依存の図を変えずに済む形を選んだ（代わりに U1 の機能設計を U2 の機能設計より前に置く設計の順の制約が増える）。
+
 ## Open questions
 <!-- example: 2026-05-29T10:14:32Z — confirm the retention window with compliance before the next stage hardens the schema -->
-- 2026-11-15T00:00:00Z — AuthPersistence・InvitationPersistence の見込みが外れて本体の直しが要るとき、U2 と U3 のどちらで直すかは機能設計で決める（依存の図の見直しが要りうる）。
+- 2026-11-15T00:00:00Z — （解決: レビューの R-04 で U2 が持つと決めた）AuthPersistence・InvitationPersistence の見込みが外れて本体の直しが要るとき、U2 と U3 のどちらで直すか。

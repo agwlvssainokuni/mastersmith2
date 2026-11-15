@@ -1,35 +1,189 @@
 {
   "stage": "units-generation",
-  "upstream_ids": ["FR1.1","FR1.2","FR1.3","FR1.4","FR2.1","FR2.2","FR2.3","FR2.4","FR2.5","FR3.1","FR3.2","FR3.3","FR3.4","FR3.5","FR3.6","FR3.7","FR3.8","FR3.9","FR3.10","FR4.1","FR4.2","FR4.3","FR4.4","FR4.5","FR5.1","FR5.2","FR5.3","FR5.4","FR5.5"],
+  "upstream_ids": [
+    "FR1.1",
+    "FR1.2",
+    "FR1.3",
+    "FR1.4",
+    "FR2.1",
+    "FR2.2",
+    "FR2.3",
+    "FR2.4",
+    "FR2.5",
+    "FR3.1",
+    "FR3.2",
+    "FR3.3",
+    "FR3.4",
+    "FR3.5",
+    "FR3.6",
+    "FR3.7",
+    "FR3.8",
+    "FR3.9",
+    "FR3.10",
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR4.5",
+    "FR5.1",
+    "FR5.2",
+    "FR5.3",
+    "FR5.4",
+    "FR5.5"
+  ],
   "coverage": [
-    { "id": "FR1.1", "status": "OK", "target": "U1" },
-    { "id": "FR1.2", "status": "OK", "target": "U1" },
-    { "id": "FR1.3", "status": "OK", "target": "U1" },
-    { "id": "FR1.4", "status": "OK", "target": "U1" },
-    { "id": "FR2.1", "status": "OK", "target": "U1" },
-    { "id": "FR2.2", "status": "OK", "target": "U1" },
-    { "id": "FR2.3", "status": "OK", "target": "U1" },
-    { "id": "FR2.4", "status": "OK", "target": "U1" },
-    { "id": "FR2.5", "status": "OK", "target": "U1" },
-    { "id": "FR3.1", "status": "OK", "target": "U3" },
-    { "id": "FR3.2", "status": "OK", "target": "U3" },
-    { "id": "FR3.3", "status": "OK", "target": "U3" },
-    { "id": "FR3.4", "status": "OK", "target": "U3" },
-    { "id": "FR3.5", "status": "OK", "target": "U2" },
-    { "id": "FR3.6", "status": "OK", "target": "U2" },
-    { "id": "FR3.7", "status": "OK", "target": "U3" },
-    { "id": "FR3.8", "status": "OK", "target": "U2" },
-    { "id": "FR3.9", "status": "OK", "target": "U1" },
-    { "id": "FR3.10", "status": "OK", "target": "U1" },
-    { "id": "FR4.1", "status": "OK", "target": "U4" },
-    { "id": "FR4.2", "status": "OK", "target": "U4" },
-    { "id": "FR4.3", "status": "OK", "target": "U4" },
-    { "id": "FR4.4", "status": "OK", "target": "U4" },
-    { "id": "FR4.5", "status": "OK", "target": "U4" },
-    { "id": "FR5.1", "status": "OK", "target": "U3" },
-    { "id": "FR5.2", "status": "OK", "target": "U1" },
-    { "id": "FR5.3", "status": "OK", "target": "U1" },
-    { "id": "FR5.4", "status": "OK", "target": "U2" },
-    { "id": "FR5.5", "status": "OK", "target": "U1" }
+    {
+      "id": "FR1.1",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR1.2",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR1.3",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR1.4",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR2.1",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR2.2",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR2.3",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR2.4",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR2.5",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR3.1",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "FR3.2",
+      "status": "OK",
+      "target": "U3",
+      "note": "分けて持つ行（主: U3）。U1: 制約の名前と NO ACTION の外部キー（移行）。U3: 違反の区分と大文字と小文字の扱いの PostgreSQL での確かめ"
+    },
+    {
+      "id": "FR3.3",
+      "status": "OK",
+      "target": "U3",
+      "note": "分けて持つ行（主: U3）。U1: 接続ごとの lock_timeout の設定。U3: 2つの待ちの経路・SKIP LOCKED・行き詰まりの確かめ"
+    },
+    {
+      "id": "FR3.4",
+      "status": "OK",
+      "target": "U3"
+    },
+    {
+      "id": "FR3.5",
+      "status": "OK",
+      "target": "U2",
+      "note": "分けて持つ行（主: U2）。U2: 書き直しと H2 での確かめ。U3: PostgreSQL での確かめ"
+    },
+    {
+      "id": "FR3.6",
+      "status": "OK",
+      "target": "U2",
+      "note": "分けて持つ行（主: U2）。U1: 列の型と写し方の組の決定と移行（R-03）。U2: 写し方の実装。U3: 10MB と 32 バイトの PostgreSQL での往復。"
+    },
+    {
+      "id": "FR3.7",
+      "status": "OK",
+      "target": "U3",
+      "note": "分けて持つ行（主: U3）。U1: 時刻の列の型（移行）。U3: 時刻の往復と時刻で決まる判定"
+    },
+    {
+      "id": "FR3.8",
+      "status": "OK",
+      "target": "U2",
+      "note": "分けて持つ行（主: U2）。U2: 両方で同じ結果になる書き方。U3: PostgreSQL での確かめ"
+    },
+    {
+      "id": "FR3.9",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR3.10",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR4.1",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "FR4.2",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "FR4.3",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "FR4.4",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "FR4.5",
+      "status": "OK",
+      "target": "U4"
+    },
+    {
+      "id": "FR5.1",
+      "status": "OK",
+      "target": "U3",
+      "note": "分けて持つ行（主: U3）。U1: 移行・初期管理者・ヘルスチェックの結合テスト。U3: 振る舞いの結合テスト"
+    },
+    {
+      "id": "FR5.2",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR5.3",
+      "status": "OK",
+      "target": "U1"
+    },
+    {
+      "id": "FR5.4",
+      "status": "OK",
+      "target": "U2",
+      "note": "分けて持つ行（主: U2）。U2: 書き直した後も H2 の結合テストの全件が通る。U3: H2 の結合テストとテストの部品を変えない"
+    },
+    {
+      "id": "FR5.5",
+      "status": "OK",
+      "target": "U1"
+    }
   ]
 }

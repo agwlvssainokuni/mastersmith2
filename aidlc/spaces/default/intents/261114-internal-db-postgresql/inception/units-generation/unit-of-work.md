@@ -11,7 +11,7 @@ Domain Design の部品（`inception/domain-design/components.md`）を、依頼
 | U3 | u3-postgres-behaviour-tests | （種類なし） | テストだけ（WAR に入らない） | M | InternalDbPostgresTestSuite の振る舞いの確かめ（AuthPersistence・InvitationPersistence・PersistenceFailureClassification の確かめを含む） |
 | U4 | u4-local-runtime-docs | packaging | リポジトリの設定と文書（WAR に入らない） | S | LocalContainerRuntime・文書 |
 
-U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`library` のどれにも当たらないため種類を付けない（設計の段の成果物は全部の組になる。当たらない成果物は、その段で当たらない理由を書いて済ませる）。
+U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`library` のどれにも当たらないため種類を付けない（設計の段の成果物は全部の組になる。当たらない成果物は、その段で当たらない理由を書いて済ませる）。種類は任意の項目で、無いときは設計の成果物の全部の組として扱われることを、単位の依存を読む道具のコード（`.claude/tools/aidlc-unit-dag.ts` の `UNIT_KINDS` の説明と、`kind` の行を任意で読む処理）で確かめた（Units Generation のレビュー R-01）。
 
 ## U1: u1-internal-db-platform
 
@@ -29,7 +29,8 @@ U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`l
 - **実装の注意**:
   - Spring Boot の自動設定（DataSource・Flyway）との順序は機能設計で決める（ADR-001 の続く判断）。
   - 起動時の移行と `lock_timeout` の関係は NFR 設計で決める（NFR4）。
-  - V8 の生成列の一意、`@Lob byte[]` と `bytea`（K-149）は、PostgreSQL 用の移行の型に関わるため、機能設計の前に捨ての試しで確かめる（ADR-006）。`bytea` のエンティティの写し方そのものは U2 が持つが、列の型は U1 の移行が持つ。両方が食い違わないことは U1 の `ddl-auto: validate` の確かめで拾う。
+  - V8 の生成列の一意、`@Lob byte[]` と `bytea`（K-149）は、PostgreSQL 用の移行の型に関わるため、機能設計の前に捨ての試しで確かめる（ADR-006）。
+  - 大きなバイナリ（DSL の本文とハッシュ）の **列の型とエンティティの写し方の組は U1 の機能設計が決める**（Units Generation のレビュー R-03）。U1 の機能設計の前の捨ての試しで、PostgreSQL の列の型と、H2 と PostgreSQL の両方で `ddl-auto: validate` が通る写し方の組を確かめ、決めた組を U1 の機能設計に書く。U2 はその組を前提に写し方を実装する（写し方のコードは U2、列の型は U1 の移行が持つ）。組の一致は U1 の `ddl-auto: validate` と U3 の 10MB の往復で確かめる。
   - 既存の `config` の部品に手を入れるため、その機能の境界テストが無ければ足す（`team.md` の Code Style）。
 
 ## U2: u2-portable-sql
@@ -39,7 +40,8 @@ U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`l
   - `UserRepository.savePreferences` の `FINAL TABLE (UPDATE ...)` を、更新と読み直しを同じトランザクションで分ける形などに書き直す（FR3.5）。
   - `RoleStore` と `DslPreviewRepository` の `MERGE INTO ... KEY` を、標準の `MERGE INTO ... USING` などに書き直す（FR3.5）。
   - `DslAppliedRevisionRepository` の `CAST(? AS ...)` を含む `INSERT ... SELECT` を書き直す（FR3.5）。
-  - DSL の本文（最大 10MB）とハッシュの写し方を、H2 と PostgreSQL の両方で `ddl-auto: validate` が通る形にする（FR3.6）。写し方の具体は機能設計で、捨ての試しで確かめてから決める。
+  - DSL の本文（最大 10MB）とハッシュの写し方を、H2 と PostgreSQL の両方で `ddl-auto: validate` が通る形にする（FR3.6）。列の型と写し方の組は U1 の機能設計が決め（R-03）、U2 はその組のとおりに写し方を実装する。
+  - AuthPersistence・InvitationPersistence の今のネイティブの SQL（`LoginAttemptStateRepository` の `MERGE INTO ... USING (VALUES ...)`、`RefreshTokenRepository`・`InvitationRepository` の `FETCH FIRST :limit ROWS ONLY` の副問い合わせ付きの削除）が PostgreSQL で通らないと分かったときの直しは、U2 が持つ（Units Generation のレビュー R-04）。見込みは U2 の機能設計の前の捨ての試しで確かめ、外れたものは U2 の範囲に足して ADR-003 と同じ形（DB の種類で分岐しない書き方）で直す。U3 は本体のソースを変えない前提のまま、依存の図（U3 は U2 に頼る）も変わらない。
   - 利用者の検索（大文字と小文字を区別しない部分一致、エスケープ付き）が両方で同じ結果になる書き方であることを確かめ、要れば直す（FR3.8）。
   - 書き直した SQL を、普段の `verify` の H2 の結合テストの全件で確かめる（結果を変えない。FR5.4）。足りない場合は H2 の結合テストを足す（減らさない）。
 - **境界**: DB の種類で分岐しない（ADR-003）。種類の判断と移行は U1。PostgreSQL での確かめは U3。
@@ -47,7 +49,7 @@ U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`l
   - 同時の実行での `MERGE` の振る舞い（一意の違反の出方）は、H2 と PostgreSQL で違うおそれがあり、機能設計の前に捨ての試しで確かめる（ADR-003・ADR-006）。
   - user・role・dslmanage の本体のソースに手を入れるため、それぞれの機能の境界テストが無ければ足す。
   - `TraceAspect` の対象の層で、個人に関する値を文字列にしない今の形を崩さない（`project.md` の Code Style）。
-  - 単位の中身は H2 だけで確かめられるため、U1 の作業を含まない状態でも通る。
+  - 単位の中身は H2 だけで確かめられるため、U1 の作業（コード）を含まない状態でも通る。ただし大きなバイナリの写し方は U1 の機能設計で決めた組に従うため、U2 の機能設計は U1 の機能設計の後に行う（R-03）。
 
 ## U3: u3-postgres-behaviour-tests
 
@@ -58,9 +60,9 @@ U3 はテストだけの単位で、`service`・`spec`・`ui`・`packaging`・`l
   - 待ちの上限: 書き込みの待ち（接続の 2 秒）と行の排他の読み取り（ヒントの 3 秒台）の両方の経路、行の排他の後に接続の上限が 2 秒へ戻ること、行き詰まりの区分（FR3.3）。ログインの状態の SKIP LOCKED の経路も、PostgreSQL で期待どおり動くことを確かめる（Domain Design のレビューの持ち越し）。
   - 失敗の後のトランザクション（書きかけを残さない、失敗の監査は別のトランザクション）（FR3.4）。
   - 書き直した SQL（U2）の PostgreSQL での結果（FR3.5）、10MB ちょうどの DSL の本文と 32 バイトのハッシュ（FR3.6）、時刻の往復と時刻で決まる判定（FR3.7）、検索のエスケープ（FR3.8）。
-  - AuthPersistence・InvitationPersistence の今のネイティブの SQL が PostgreSQL でも通ること（見込みが外れたら、ADR-003 と同じ形で直す。直しの持ち主は機能設計で決める）。
+  - AuthPersistence・InvitationPersistence の今のネイティブの SQL が PostgreSQL でも通ること（見込みは U2 の機能設計の前の捨ての試しで先に確かめ、外れたものの直しは U2 が持つ。R-04）。
   - H2 の結合テストとテストの部品は変えない（FR5.4）。テストの部品は H2 に頼る書き方を使わない。
-- **境界**: 本体のソース（`src/main`）は変えない前提。見込みが外れて本体の直しが要るときは、機能設計で U2 か U3 のどちらで直すかを決め、依存の図を見直す。
+- **境界**: 本体のソース（`src/main`）は変えない。U3 の結合テストで初めて本体の直しが要ると分かったときは、直しを U2 の小さな直しとして U2 に戻して行い、U3 はそれを待つ（依存の図は変えない）。
 - **実装の注意**:
   - テストの手伝いは `src/test/java` の `<機能>/testsupport` に置く（`team.md` の Code Style）。
   - テストの説明文は英語、テストデータのメールアドレスは予約のドメインだけ（`team.md` の Testing Posture）。
