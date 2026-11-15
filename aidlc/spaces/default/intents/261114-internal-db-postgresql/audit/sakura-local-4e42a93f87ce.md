@@ -5471,3 +5471,122 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-15T02:35:33Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md
+**Context**: inception > contract-design > contract-design-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-15T02:39:57Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. 専用タスク (Recommended)","A. 1つを使い回す (Recommended)","A. TargetDbImages を使う (Recommended)"]
+**Message Id**: ff2e4fbc
+**Open Questions**: 479e3dfd
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md","entries":{"決まっていること（質問にしない）":"f45bde3e1844db80","Q1":"e7f426932e36c92b","Q2":"f3d550a702df7160","Q3":"305f7aea400e112e"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-15T02:39:58Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q1: PostgreSQL の結合テストを流す入口をどの形にしますか（U1 が作り、U3 が使う）？
+**Reply**: A. 専用タスク (Recommended)
+**Options**: ["A. 専用タスク (Recommended)","B. 今のタスクを切替","C. 今のタスクに追加"]
+**Recommended**: ["A. 専用タスク"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-15T02:39:58Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q2: PostgreSQL の結合テストの土台をどの形にしますか（U1 が作り、U3 が使う）？
+**Reply**: A. 1つを使い回す (Recommended)
+**Options**: ["A. 1つを使い回す (Recommended)","B. クラスごとにコンテナ","C. クラスごとにDBを作る"]
+**Recommended**: ["A. 1つを使い回す"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-15T02:39:58Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q3: 内部DB の PostgreSQL のイメージの固定先（テストの側）をどう持ちますか？
+**Reply**: A. TargetDbImages を使う (Recommended)
+**Options**: ["A. TargetDbImages を使う (Recommended)","B. 別の定数で突き合わせ"]
+**Recommended**: ["A. TargetDbImages を使う"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-15T02:40:03Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md
+**Context**: inception > contract-design > contract-design-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-15T02:40:05Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md
+**Context**: inception > contract-design > contract-design-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-15T02:40:07Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md
+**Context**: inception > contract-design > contract-design-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-15T02:40:09Z
+**Event**: QUESTION_ANSWERED
+**Stage**: contract-design
+**Details**: Q1: A 専用タスク internalDbPostgresTest とタグ internal-db-postgres・Q2: A コンテナ1つを使い回し、空の内部DB が要るテストだけ自分用のデータベース・Q3: A TargetDbImages.postgres() をそのまま使う
+**Message Id**: ff2e4fbc
+**Person Reply**: A. 専用タスク (Recommended)\nA. 1つを使い回す (Recommended)\nA. TargetDbImages を使う (Recommended)
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-15T02:41:25Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Context**: inception > contract-design > contract-summary.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-15T02:41:36Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/memory.md
+**Context**: inception > contract-design > memory.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-15T02:41:39Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/memory.md
+**Context**: inception > contract-design > memory.md
+
+---
