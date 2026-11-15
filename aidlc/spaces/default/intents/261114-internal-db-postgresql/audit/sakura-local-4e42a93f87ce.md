@@ -5268,3 +5268,206 @@
 **Review Record Digest**: sha256:9404338b33953063d7ffb51a8f00997b839879174256df13f6bad141b66aed6a
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:12Z
+**Event**: SENSOR_FIRED
+**Fire id**: 60de691a
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:12Z
+**Event**: SENSOR_PASSED
+**Fire id**: 60de691a
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+**Duration ms**: 84
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6acc0bc2
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6acc0bc2
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4c05a555
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4c05a555
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md
+**Duration ms**: 79
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_FIRED
+**Fire id**: 6e0cb0fe
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_PASSED
+**Fire id**: 6e0cb0fe
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5bbad93a
+**Sensor ID**: upstream-coverage
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:13Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5bbad93a
+**Sensor ID**: upstream-coverage
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:53:14Z
+**Event**: SENSOR_FIRED
+**Fire id**: ae9a9a65
+**Sensor ID**: traceability
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:53:14Z
+**Event**: SENSOR_PASSED
+**Fire id**: ae9a9a65
+**Sensor ID**: traceability
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+**Duration ms**: 84
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-15T01:53:14Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: units-generation
+**Details**: Re-entering gate after revision
+**Next Stage**: contract-design
+**Brief Digest**: sha256:6bb0297087ae1a6e6477b46dead52a8da7897db86eb77bd45d51587a04844320
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md=passed; required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json=passed; upstream-coverage@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md=passed; traceability@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json=passed
+**Open Decisions**: 0
+**Question Id**: bc98f2c3
+**Question Type**: gate
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:ce8ab4679ea5bae81e81cf82bc60375e733baaa0943b7307ce7ba77a1e781395
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-15T01:53:34Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a10f349b0c373342e
+**Message**: Approve
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-15T02:33:57Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: bf448d62
+**Open Questions**: 479e3dfd, 461ea603, 6e3ba543, 066e3926, bc98f2c3
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md","entries":{"決まっていること（質問にしない）":"bb4dbc1dad13f879","Q1":"3056746441d8611b","Q2":"8f13bb631758418a"}}
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-15T02:34:05Z
+**Event**: GATE_APPROVED
+**Stage**: units-generation
+**User Input**: Approve
+**Person Reply**: auto modeにしました\nApprove
+**Message Id**: bf448d62
+**Message Ids**: 3e54423e,bf448d62
+**Brief Digest**: sha256:52ff814728fa77cf974a63869d2f50e648bb94840d50dcf65fa629739db63a5c
+**Git Name**: agwlvssainokuni
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-15T02:34:05Z
+**Event**: STAGE_COMPLETED
+**Stage**: units-generation
+**Validation Basis**: {"graphContract":"sha256:baf39a0a351356930786ca985bbb7c5893e8db3e93715525a8e909b629765ee7","inputs":[{"artifact":"components","contentHash":"sha256:bd73f6c476dedb9ad87bbfe54bc26d34409ec3d8cd8f8f694a153c10a3ba55bc","instanceCount":1,"presentCount":1,"producer":"domain-design","required":true,"structureHash":"sha256:c2c04de8680f0f8db639829582510806a6280236cb2a930c790fd0cbef6726eb"},{"artifact":"decisions","contentHash":"sha256:5233233faa6b373936590e37936dcb12c0567e81cdee7638b6adcc43611817ee","instanceCount":1,"presentCount":1,"producer":"domain-design","required":false,"structureHash":"sha256:d0f32ca8c23e69a50800a7a10184e2f5bc8b64d5f40f78bd64b5852c7d45e72f"},{"artifact":"requirements","contentHash":"sha256:5a355e8bd1cbc8c9d63bb866522330e85e260fea410bcea0fbcb4b419be336f2","instanceCount":1,"presentCount":1,"producer":"requirements-analysis","required":true,"structureHash":"sha256:f04472cadb7560262b73bdba10f8724b0c884f27f60804e377130b4c4c9b446b"}],"outputs":[{"artifact":"traceability","contentHash":"sha256:fd61ce7d4ac86e9444aa1a43733a4b7dfac0cd5a6a5e033cd8265f4de548466d","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:15ccd0b29fb4745507bae859e479dd4e36140eb9155a3b9463b56415fbf7fd65"},{"artifact":"unit-of-work-dependency","contentHash":"sha256:227688a1f1a044ce2b03a6d129497ff9624bc2e69da01a9286b69096d41fcc7e","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:4a71df254462d637df5366e0178279edc4f10a768e9202aa361dd1d46596a07e"},{"artifact":"unit-of-work-story-map","contentHash":"sha256:8e9665e5f53f5c9f8286664c838f8e1f69981a29615e829b2267fec827d42b6c","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:f67be6632623c449a87a251377c762f9ff526901a62461df0e78d6c34471d212"},{"artifact":"unit-of-work","contentHash":"sha256:69edc3f4e08d27240d9ec67a0620e2c3027809812f64efc5b2ddc6be52a9ae08","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:026a8d4dc5712ae07b64c4c92ca8646faf2f09264331dd5d528397c22202436f"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Units Generation approved by gate
+**Tokens In**: 132
+**Tokens Out**: 49946
+**Cache Read**: 9544761
+**Cache Write**: 603909
+**Cost USD**: 6.28
+**By Model**: opus-5-5=5.53; sonnet-5-5=0.75
+**By Agent**: main=5.53; aidlc-architecture-reviewer-agent=0.75
+**Tokens By Model**: opus-5-5=114/41.1k/8.8M/368.2k; sonnet-5-5=18/8.8k/746.3k/235.7k
+**Tokens By Agent**: main=114/41.1k/8.8M/368.2k; aidlc-architecture-reviewer-agent=18/8.8k/746.3k/235.7k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-15T02:34:05Z
+**Event**: STAGE_STARTED
+**Stage**: contract-design
+**Agent**: aidlc-architect-agent
+**Answer Mode**: guide (reused from practices-discovery)
+
+---
