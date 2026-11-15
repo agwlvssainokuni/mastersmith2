@@ -5005,3 +5005,266 @@
 **Context**: inception > units-generation > memory.md
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:51Z
+**Event**: SENSOR_FIRED
+**Fire id**: bc8fc318
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:51Z
+**Event**: SENSOR_PASSED
+**Fire id**: bc8fc318
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+**Duration ms**: 87
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:51Z
+**Event**: SENSOR_FIRED
+**Fire id**: 786a9d10
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: 786a9d10
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-dependency.md
+**Duration ms**: 76
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: 187e733d
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: 187e733d
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work-story-map.md
+**Duration ms**: 90
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: e9031fd2
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: e9031fd2
+**Sensor ID**: required-sections
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+**Duration ms**: 77
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: a8a2a999
+**Sensor ID**: upstream-coverage
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: a8a2a999
+**Sensor ID**: upstream-coverage
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/unit-of-work.md
+**Duration ms**: 80
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_FIRED
+**Fire id**: a38b7182
+**Sensor ID**: traceability
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: SENSOR_PASSED
+**Fire id**: a38b7182
+**Sensor ID**: traceability
+**Stage slug**: units-generation
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/traceability.json
+**Duration ms**: 80
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-15T01:16:52Z
+**Event**: REVIEW_REQUESTED
+**Stage**: units-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:256855836e4813d178acdfa2edd7adb3937a41224732336f51b093bfb3f15e5a
+**Request Id**: review:4033a93213689a32eaf7e9fbf3e03d3a
+**Review File**: .aidlc-engine/reviews/units-generation/stage/b3cb093700dadde4/1.4033a93213689a32eaf7e9fbf3e03d3a.review.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-15T01:16:57Z
+**Event**: DECISION_RECORDED
+**Stage**: units-generation
+**Decision**: 再レビューのため、許可の形を auto から manual に切り替えてもらう
+**Options**: 切り替えた,auto のまま試す
+**Question Id**: 066e3926
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:e9b497d82cfc8db99883b4bee24b4181d8a9a5dfe3ae48e37fd3d5d0d0bd9c8e
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-15T01:17:09Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a543582bb750a3696
+**Message**: manual modeにしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-15T01:52:09Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: d5c210bb
+**Open Questions**: 479e3dfd, 461ea603, 6e3ba543, 066e3926
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md","entries":{"決まっていること（質問にしない）":"bb4dbc1dad13f879","Q1":"3056746441d8611b","Q2":"8f13bb631758418a"}}
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-15T01:52:16Z
+**Event**: QUESTION_ANSWERED
+**Stage**: units-generation
+**Details**: 切り替えた
+**Message Id**: d5c210bb
+**Person Reply**: manual modeにしました
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-15T01:52:33Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-15T01:52:38Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: af19378abfb0a2945
+**Message**: auto modeにしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-15T01:52:46Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: 3e54423e
+**Open Questions**: 479e3dfd, 461ea603, 6e3ba543, 066e3926
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/units-generation/units-generation-questions.md","entries":{"決まっていること（質問にしない）":"bb4dbc1dad13f879","Q1":"3056746441d8611b","Q2":"8f13bb631758418a"}}
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-15T01:52:50Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/units-generation/stage/b3cb093700dadde4/1.4033a93213689a32eaf7e9fbf3e03d3a.review.md
+**Context**: .aidlc-engine > reviews > units-generation > stage > b3cb093700dadde4 > 1.4033a93213689a32eaf7e9fbf3e03d3a.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-15T01:52:53Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: abb67a8841c588263
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-15T01:52:55Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: afff76eaf818986f0
+**Message**: **Reviewer:** aidlc-architecture-reviewer-agent\n\n**Verdict:** READY（指摘 R-01〜R-04 はすべて Resolved。新しい指摘は 0 件）\n\nレビューは次のファイルに書きました。\n`<project-dir>/aidlc/spaces/default/int
+**Review File Digest**: .aidlc-engine/reviews/units-generation/stage/b3cb093700dadde4/1.4033a93213689a32eaf7e9fbf3e03d3a.review.md=feae8262d5dd71beb544a3d085924f99065829c4fdf4b6bf860c7806a6ee514d
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-15T01:52:57Z
+**Event**: HOST_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-15T01:53:03Z
+**Event**: REVIEW_COMPLETED
+**Stage**: units-generation
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Verdict**: READY
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:256855836e4813d178acdfa2edd7adb3937a41224732336f51b093bfb3f15e5a
+**Artifact Fingerprint**: sha256:256855836e4813d178acdfa2edd7adb3937a41224732336f51b093bfb3f15e5a
+**Request Id**: review:4033a93213689a32eaf7e9fbf3e03d3a
+**Review Record**: .aidlc-engine/reviews/units-generation/stage/b3cb093700dadde4/1.json
+**Review Record Digest**: sha256:9404338b33953063d7ffb51a8f00997b839879174256df13f6bad141b66aed6a
+
+---
