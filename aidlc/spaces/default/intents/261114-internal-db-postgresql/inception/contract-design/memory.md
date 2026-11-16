@@ -10,6 +10,8 @@
 - 2026-11-15T00:00:00Z — ADR-005 は結合テストの明示の指定の名前を機能設計・NFR 設計に回していたが、U3 が U1 の土台を使う約束（C4）として、タスクの名前・タグ・注釈の名前をこの段で決めた（依頼者の答え Q1: A・Q2: A）。置き場のパッケージの名前は U1 の機能設計に残した。
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->
 
+- 2026-11-15T00:00:00Z — team.md の「内部DB 用の固定先（テストの定数・compose）を一覧に足す」に対し、依頼者の決定（Q3: A）でテストの定数を TargetDbImages と共有し、一覧に足すのは compose のサービスだけにした。揃っていることは単体テストの突き合わせで確かめる（レビュー R-05）。
+
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->
 

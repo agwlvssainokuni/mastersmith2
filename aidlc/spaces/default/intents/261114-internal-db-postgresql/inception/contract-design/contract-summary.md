@@ -8,7 +8,7 @@
 |---|---|---|---|---|
 | C1 | U1 u1-internal-db-platform | U3・U4 | 起動時の設定（環境変数） | U1 |
 | C2 | U1 u1-internal-db-platform | U2・U3 | 共有の表の形（Flyway の移行の一式） | U1 |
-| C3 | U1 u1-internal-db-platform | U2 | 共有の表の形（大きなバイナリの列の型とエンティティの写し方の組） | U1（機能設計で決める） |
+| C3 | U1 u1-internal-db-platform | U2・U3 | 共有の表の形（バイナリの列の型とエンティティの写し方の組） | U1（機能設計で決める） |
 | C4 | U1 u1-internal-db-platform | U3 | テストの土台（Gradle のタスク・JUnit のタグ・共通の注釈・コンテナ） | U1 |
 | C5 | U2 u2-portable-sql | U3 | Java の口（repository のメソッドの形を変えない） | U2 |
 | C6 | U1 u1-internal-db-platform（テスト）・U4 u4-local-runtime-docs（compose） | U1・U3・U4 | 共有の定数（イメージの版とダイジェスト） | U1（テスト）・U4（compose） |
@@ -65,25 +65,39 @@ consumers_rely_on:
   u3-postgres-behaviour-tests: constraint names used to classify violations (FR3.2)
 ```
 
-## C3: 大きなバイナリの列の型と写し方の組（U1 → U2）
+## C3: バイナリの列の型と写し方の組（U1 → U2・U3）
 
-組の持ち主は U1 の機能設計（Units Generation のレビュー R-03）。U1 の機能設計の前の捨ての試しで決め、U2 はその組のとおりに写し方を実装する。この段では型そのものは決めない（未決の点を参照）。
+組の持ち主は U1 の機能設計（Units Generation のレビュー R-03）。U1 の機能設計の前の捨ての試しで決め、U2 はその組のとおりに写し方を実装し、U3 は 10MB の本文と 32 バイトのハッシュの往復で組を確かめる。この段では型そのものは決めない（未決の点を参照）。
+
+対象は、大きなバイナリ（DSL の本文、H2 では `BINARY LARGE OBJECT`）の2列と、固定長の短いバイナリ（トークンのハッシュ、H2 では `BINARY(32)`）の2列の2組とする。PostgreSQL には `BINARY(n)` の型が無いため、後者も PostgreSQL の側の型を決める必要がある。
 
 ```yaml
-shared-schema: large-binary-mapping
+shared-schema: binary-column-mapping
 owner: u1-internal-db-platform
 decided_in: u1 functional design (after a throwaway check)
-columns:
-  - dsl_previews.yaml_bytes               # DSL の本文（最大 10MB、FR3.6）
-  - dsl_applied_revisions.yaml_bytes
-pair:
-  postgresql_column_type: TBD-by-u1
-  h2_column_type: unchanged
-  entity_mapping: TBD-by-u1                # @Lob byte[] のままか、型の指定を変えるか
+groups:
+  large_binary:
+    columns:
+      - dsl_previews.yaml_bytes             # DSL の本文（最大 10MB、FR3.6。V5）
+      - dsl_applied_revisions.yaml_bytes    # V5
+    h2_column_type: BINARY LARGE OBJECT (unchanged)
+    postgresql_column_type: TBD-by-u1
+    entity_mapping: TBD-by-u1               # @Lob byte[] のままか、型の指定を変えるか
+  fixed_short_binary:
+    columns:
+      - refresh_tokens.token_hash           # V3
+      - invitations.token_hash              # V8
+    h2_column_type: BINARY(32) (unchanged)
+    postgresql_column_type: TBD-by-u1
+    entity_mapping: TBD-by-u1
 must_hold:
   - ddl-auto: validate passes on H2 and PostgreSQL
   - 10MB exactly and the 32-byte hash round-trip unchanged (checked by u3)
-order: u1 functional design comes before u2 functional design
+  - one mapping per column for both kinds; no branching on the database kind (ADR-003)
+if_no_single_mapping:                       # H2 の列の型のまま両方で通る写し方が見つからないとき
+  - u1 brings it to the requester before closing its functional design (options: an added migration on both sets, or another mapping)
+  - u2 scope may change accordingly (recorded in u2 functional design)
+order: u1 functional design comes before u2 and u3 functional design
 ```
 
 ## C4: PostgreSQL の結合テストの土台（U1 → U3）
@@ -97,6 +111,7 @@ gradle:
   task: ":backend:internalDbPostgresTest"   # 明示して流すときだけ（FR5.2）
   selects: "*IT classes tagged internal-db-postgres"
   integrationTest: excludes tag internal-db-postgres  # 普段の verify・verifyQuick では流れない
+  itTests_matches_only_tagged: fail with a message pointing to ":backend:internalDbPostgresTest"  # -PitTests の形がタグ付きのクラスだけに当たったとき（黙って 0 件で通さない）
   not_in: [verify, verifyQuick, ci-push]
 ci:
   trigger: workflow_dispatch
@@ -156,9 +171,14 @@ dependabot_pin_list:
   add: compose internal-db PostgreSQL service      # .github/dependabot.yml の固定先の一覧
   unchanged: TargetDbImages (already listed)
 upgrade_rule: raise the target-DB and internal-DB pins together (team.md の Deployment)
+kept_in_step:
+  - TargetDbImages.postgres()
+  - compose internal-db PostgreSQL service (compose.yaml)
+  - docs/internal-db.md (the image version written in the document)
+check: u1 adds a unit test in the normal verify that compares the compose service image with TargetDbImages.postgres(); Build and Test also records the match, including docs/internal-db.md
 ```
 
-`team.md` の「内部DB 用の固定先（テストの定数・compose）を固定先の一覧に足す」は、テストの定数を共有するため、足すものが compose のサービスだけになる（決まりとの食い違いではなく、足すテストの定数が無い）。
+`team.md` の「内部DB 用の固定先（テストの定数・compose）を固定先の一覧に足す」は、テストの定数を共有するため、足すものが compose のサービスだけになる。足すテストの定数が無いだけで固定先は揃うが、文面とは形が違うため、依頼者の決定（Q3: A）として `memory.md` の Deviations にも記録した。
 
 ## C7: 外部の API（本体 → 画面と API の利用者）
 
@@ -181,16 +201,18 @@ paths: {}
 - 約束ごとの持ち主は上の表の Owner 列の単位とする。持ち主の単位の設計の段で、依頼者の承認を得て変える。
 - 1つの WAR と同じリポジトリの中の約束のため、版の番号は付けない。約束を変えるコミットで、使う側の単位の作業（テスト・文書）も同じ統合の中で合わせる。
 - 足すだけの変更（移行の新しい版を両方に足す、注釈に任意の属性を足すなど）は、使う側を壊さない限り持ち主の単位だけで行ってよい。名前の変更・消す変更は、使う側の単位を名指しして設計の段で諮る。
-- C2 の版と名前の突き合わせは単体テストで機械で確かめ、C3 の組は `ddl-auto: validate` と U3 の 10MB の往復で確かめる。
+- C2 の版と名前の突き合わせは単体テストで機械で確かめ、C3 の組は `ddl-auto: validate` と U3 の 10MB とハッシュの往復で確かめ、C6 の固定先は単体テストで compose と `TargetDbImages` を突き合わせる。
 
 ## 未決の点
 
-| Contract | Question | Blocks |
-|---|---|---|
-| C3 | PostgreSQL の列の型とエンティティの写し方の組（捨ての試しで決める） | U2 の機能設計（U1 の機能設計の後に置く） |
-| C2 | PostgreSQL 用の移行の置き場の名前と、Flyway の置き場の切り替えの仕方（Spring Boot の自動設定との順序、ADR-001） | U1 の機能設計 |
-| C4 | 共通の注釈・コンテナの部品を置くパッケージの名前 | U1 の機能設計・U3 の機能設計 |
-| C5 | AuthPersistence・InvitationPersistence の SQL が PostgreSQL で通るか（捨ての試し） | U2 の機能設計（外れたら U2 の範囲に足す） |
+設計の順は、U1 の機能設計を先に置き、U2・U3 の機能設計はその後とする（Delivery Planning に渡す）。
+
+| Contract | Owner | Question | Blocks |
+|---|---|---|---|
+| C3 | U1 | PostgreSQL の列の型とエンティティの写し方の組（大きなバイナリと 32 バイトのハッシュの2組。捨ての試しで決める）。単一の写し方が無ければ依頼者に諮る | U2 の機能設計・U3 の機能設計（どちらも U1 の機能設計の後に置く） |
+| C2 | U1 | PostgreSQL 用の移行の置き場の名前と、Flyway の置き場の切り替えの仕方（Spring Boot の自動設定との順序、ADR-001） | U1 の機能設計 |
+| C4 | U1 | 共通の注釈・コンテナの部品を置くパッケージの名前 | U3 の機能設計（U1 の機能設計で決めた後に置く） |
+| C5 | U2 | AuthPersistence・InvitationPersistence の SQL が PostgreSQL で通るか（U2 の機能設計の前の捨ての試し） | U2 の機能設計（外れたら U2 の範囲に足す）・U3 の機能設計（結果を確かめる対象に入れる） |
 
 ## Sources
 
