@@ -5938,3 +5938,171 @@
 **Context**: inception > contract-design > memory.md
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-16T22:43:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: c6db5e4d
+**Sensor ID**: required-sections
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-16T22:43:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: c6db5e4d
+**Sensor ID**: required-sections
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Duration ms**: 110
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-16T22:43:49Z
+**Event**: SENSOR_FIRED
+**Fire id**: d7a33451
+**Sensor ID**: upstream-coverage
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-16T22:43:49Z
+**Event**: SENSOR_PASSED
+**Fire id**: d7a33451
+**Sensor ID**: upstream-coverage
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Duration ms**: 92
+
+---
+
+## Error Logged
+**Timestamp**: 2026-11-16T22:43:49Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage contract-design --reviewer aidlc-architecture-reviewer-agent --iteration 2 --project-dir <project-dir>
+**Error**: Cannot start review iteration 2 for "contract-design" because the next iteration is 1. Retry with --iteration 1.
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-16T22:43:52Z
+**Event**: REVIEW_REQUESTED
+**Stage**: contract-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:4ae616881ad9d69cb01d34c7ace11b5d25cc2da48b72b9e8b5442ea3f31d4ffd
+**Request Id**: review:75c836f13e5e58c8454318439927fbca
+**Review File**: .aidlc-engine/reviews/contract-design/stage/30ba4aba68b34274/1.75c836f13e5e58c8454318439927fbca.review.md
+
+---
+
+## Decision Recorded
+**Timestamp**: 2026-11-16T22:43:56Z
+**Event**: DECISION_RECORDED
+**Stage**: contract-design
+**Decision**: レビュー役を起動するため、許可の形を auto から manual に切り替えてもらう
+**Options**: 切り替えた,auto のまま試す
+**Question Id**: 9bf4d70a
+**Question Type**: stage-question
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:8122161f8626a2f0cd713e3149d64e12bdc37fa8e1f117ea9d29b1d604e3100a
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T22:44:04Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a13b5a9ba6869da95
+**Message**: manual modeにしました
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-16T22:47:17Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: 311bb03c
+**Open Questions**: 479e3dfd, 6253a70a, 9bf4d70a
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md","entries":{"決まっていること（質問にしない）":"f45bde3e1844db80","Q1":"e7f426932e36c92b","Q2":"f3d550a702df7160","Q3":"305f7aea400e112e"}}
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-16T22:47:21Z
+**Event**: QUESTION_ANSWERED
+**Stage**: contract-design
+**Details**: 切り替えた
+**Message Id**: 311bb03c
+**Person Reply**: manual modeにしました
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-16T22:47:34Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T22:47:37Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a6659c7fddef77b0e
+**Message**: auto modeにしました
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-16T22:47:54Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/contract-design/stage/30ba4aba68b34274/1.75c836f13e5e58c8454318439927fbca.review.md
+**Context**: .aidlc-engine > reviews > contract-design > stage > 30ba4aba68b34274 > 1.75c836f13e5e58c8454318439927fbca.review.md
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T22:48:00Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: afe60555b12b50296
+**Message**: **Reviewer:** aidlc-architecture-reviewer-agent\n\n**判定: READY**（Critical・Major なし）\n\n前の回の指摘 R-01〜R-05 は、5件とも Resolved（Minor）です。\n\n- **R-01 Resolved:** C3 が2組になりました。V3・V5・V8 の定義と列が一致します。単一の写し方が無いときの扱いも入りま
+**Review File Digest**: .aidlc-engine/reviews/contract-design/stage/30ba4aba68b34274/1.75c836f13e5e58c8454318439927fbca.review.md=c3985c1eb4f7021626708e1bd84e9a080d188a416a96d1294c6b24f8684dd6ce
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-16T22:48:00Z
+**Event**: HOST_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: host
+**Reason**: claude task notification
+**Source**: template
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-16T22:48:03Z
+**Event**: REVIEW_COMPLETED
+**Stage**: contract-design
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Iteration**: 1
+**Verdict**: READY
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:4ae616881ad9d69cb01d34c7ace11b5d25cc2da48b72b9e8b5442ea3f31d4ffd
+**Artifact Fingerprint**: sha256:4ae616881ad9d69cb01d34c7ace11b5d25cc2da48b72b9e8b5442ea3f31d4ffd
+**Request Id**: review:75c836f13e5e58c8454318439927fbca
+**Review Record**: .aidlc-engine/reviews/contract-design/stage/30ba4aba68b34274/1.json
+**Review Record Digest**: sha256:276edc0d40d27e5adddc174dae1aaa9538d85d927850e21cd80b8e2978bf11df
+
+---
