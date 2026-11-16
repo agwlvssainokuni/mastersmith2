@@ -6106,3 +6106,217 @@
 **Review Record Digest**: sha256:276edc0d40d27e5adddc174dae1aaa9538d85d927850e21cd80b8e2978bf11df
 
 ---
+
+## Sensor Fired
+**Timestamp**: 2026-11-16T22:48:10Z
+**Event**: SENSOR_FIRED
+**Fire id**: 45aebfbe
+**Sensor ID**: required-sections
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-16T22:48:10Z
+**Event**: SENSOR_PASSED
+**Fire id**: 45aebfbe
+**Sensor ID**: required-sections
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Duration ms**: 80
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-16T22:48:10Z
+**Event**: SENSOR_FIRED
+**Fire id**: 4c0acf43
+**Sensor ID**: upstream-coverage
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-16T22:48:10Z
+**Event**: SENSOR_PASSED
+**Fire id**: 4c0acf43
+**Sensor ID**: upstream-coverage
+**Stage slug**: contract-design
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Duration ms**: 77
+
+---
+
+## Stage Awaiting Approval
+**Timestamp**: 2026-11-16T22:48:10Z
+**Event**: STAGE_AWAITING_APPROVAL
+**Stage**: contract-design
+**Details**: Re-entering gate after revision
+**Next Stage**: delivery-planning
+**Brief Digest**: sha256:181e000169a250f52d1007abf486815f78e84df184f896c96960c1cb9cf21a0b
+**Sensor State**: required-sections@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md=passed; upstream-coverage@aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md=passed
+**Open Decisions**: 0
+**Question Id**: 7c7a1b2b
+**Question Type**: gate
+**Question Chat**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question Shows**: sha256:96efc34346e02e357c2364ec8dbaf0e71a25e8c1358e12c01349277f7acc1a92
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-16T22:48:19Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: unknown
+**Agent ID**: a1d1d0463cbeedeb4
+**Message**: Approve で R-06 を直して
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-16T22:49:42Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: e8e2c4f8
+**Open Questions**: 479e3dfd, 6253a70a, 9bf4d70a, 7c7a1b2b
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md","entries":{"決まっていること（質問にしない）":"f45bde3e1844db80","Q1":"e7f426932e36c92b","Q2":"f3d550a702df7160","Q3":"305f7aea400e112e"}}
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-16T22:49:49Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: review-freeze
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: contract-design
+**Tool**: Edit
+**Details**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-16T22:49:49Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: typed
+**Message Id**: 2c70bd3c
+**Open Questions**: 479e3dfd, 6253a70a, 9bf4d70a, 7c7a1b2b
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-design-questions.md","entries":{"決まっていること（質問にしない）":"f45bde3e1844db80","Q1":"e7f426932e36c92b","Q2":"f3d550a702df7160","Q3":"305f7aea400e112e"}}
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-16T22:49:49Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: review-freeze
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: contract-design
+**Tool**: Edit
+**Details**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-16T22:49:50Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Context**: inception > contract-design > contract-summary.md
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-16T22:49:51Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: review-freeze
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: contract-design
+**Tool**: Edit
+**Details**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Guard Stood Aside
+**Timestamp**: 2026-11-16T22:49:51Z
+**Event**: GUARD_STOOD_ASIDE
+**Guard**: review-freeze
+**Authority**: grant
+**Grant**: turn-marker
+**Actor**: main
+**Stage**: contract-design
+**Tool**: Edit
+**Details**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-16T22:49:51Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Context**: inception > contract-design > contract-summary.md
+
+---
+
+## Change Accepted
+**Timestamp**: 2026-11-16T22:49:54Z
+**Event**: CHANGE_ACCEPTED
+**Stage**: contract-design
+**Checkpoint**: review-receipt
+**Changed**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md
+**Recorded**: sha256:4ae616881ad9d69cb01d34c7ace11b5d25cc2da48b72b9e8b5442ea3f31d4ffd
+**Current**: sha256:7f786412de14da4e5913bb62b1b625f0de7ffcf3e49f6c4701b37b4abc81e0fa
+**Details**: aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md changed after the Contract Design review; carrying on.
+
+---
+
+## Gate Approved
+**Timestamp**: 2026-11-16T22:49:54Z
+**Event**: GATE_APPROVED
+**Stage**: contract-design
+**User Input**: Approve で R-06 を直して
+**Person Reply**: Approve で R-06 を直して\nauto modeにしました
+**Message Id**: 2c70bd3c
+**Message Ids**: e8e2c4f8,2c70bd3c
+**Review Finding Dispositions**: {"version":1,"dispositions":[{"artifact":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/contract-design/contract-summary.md","id":"R-06","fingerprint":"sha256:353a9a8a5843ba2426a979706c17505d832f94618c425887baabd59c4d0c162d","status":"Changed after review","decided_at_severity":"Minor","reviewed_record":{"path":".aidlc-engine/reviews/contract-design/stage/30ba4aba68b34274/1.json","digest":"sha256:276edc0d40d27e5adddc174dae1aaa9538d85d927850e21cd80b8e2978bf11df"}}]}
+**Brief Digest**: sha256:0fba592a6ad33ab6aec1f251901b39c28e385262295f9d7ff018b0ec071ec830
+**Git Name**: agwlvssainokuni
+
+---
+
+## Stage Completion
+**Timestamp**: 2026-11-16T22:49:54Z
+**Event**: STAGE_COMPLETED
+**Stage**: contract-design
+**Validation Basis**: {"graphContract":"sha256:ad5599bf4da38de3dec2bfb4bf705de33d27113e18b6a160549a97c4b694fea3","inputs":[{"artifact":"components","contentHash":"sha256:bd73f6c476dedb9ad87bbfe54bc26d34409ec3d8cd8f8f694a153c10a3ba55bc","instanceCount":1,"presentCount":1,"producer":"domain-design","required":false,"structureHash":"sha256:c2c04de8680f0f8db639829582510806a6280236cb2a930c790fd0cbef6726eb"},{"artifact":"requirements","contentHash":"sha256:5a355e8bd1cbc8c9d63bb866522330e85e260fea410bcea0fbcb4b419be336f2","instanceCount":1,"presentCount":1,"producer":"requirements-analysis","required":false,"structureHash":"sha256:f04472cadb7560262b73bdba10f8724b0c884f27f60804e377130b4c4c9b446b"},{"artifact":"unit-of-work-dependency","contentHash":"sha256:227688a1f1a044ce2b03a6d129497ff9624bc2e69da01a9286b69096d41fcc7e","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:4a71df254462d637df5366e0178279edc4f10a768e9202aa361dd1d46596a07e"},{"artifact":"unit-of-work","contentHash":"sha256:69edc3f4e08d27240d9ec67a0620e2c3027809812f64efc5b2ddc6be52a9ae08","instanceCount":1,"presentCount":1,"producer":"units-generation","required":true,"structureHash":"sha256:026a8d4dc5712ae07b64c4c92ca8646faf2f09264331dd5d528397c22202436f"}],"outputs":[{"artifact":"contract-summary","contentHash":"sha256:4bafdd577206c28fc767cbe4cb96dfd9020335f9445fc1b3b026cf214d314021","instanceCount":1,"presentCount":1,"producer":"contract-design","required":true,"structureHash":"sha256:7acebfecc2da2e2b3112cd06c70a2de93aefafb9410b3d4a49e59b4b5b22adc8"}],"projectType":"brownfield","schema":3}
+**Details**: Stage Contract Design approved by gate
+**Tokens In**: 122
+**Tokens Out**: 44852
+**Cache Read**: 8470088
+**Cache Write**: 420313
+**Cost USD**: 4.29
+**By Model**: opus-5-5=3.40; sonnet-5-5=0.89
+**By Agent**: main=3.40; aidlc-architecture-reviewer-agent=0.89
+**Tokens By Model**: opus-5-5=98/32.6k/7.3M/160.8k; sonnet-5-5=24/12.3k/1.2M/259.5k
+**Tokens By Agent**: main=98/32.6k/7.3M/160.8k; aidlc-architecture-reviewer-agent=24/12.3k/1.2M/259.5k
+
+---
+
+## Stage Start
+**Timestamp**: 2026-11-16T22:49:55Z
+**Event**: STAGE_STARTED
+**Stage**: delivery-planning
+**Agent**: aidlc-delivery-agent
+**Answer Mode**: guide (reused from practices-discovery)
+
+---

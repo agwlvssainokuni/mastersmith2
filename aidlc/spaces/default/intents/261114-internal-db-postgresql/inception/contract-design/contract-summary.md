@@ -175,8 +175,10 @@ kept_in_step:
   - TargetDbImages.postgres()
   - compose internal-db PostgreSQL service (compose.yaml)
   - docs/internal-db.md (the image version written in the document)
-check: u1 adds a unit test in the normal verify that compares the compose service image with TargetDbImages.postgres(); Build and Test also records the match, including docs/internal-db.md
+check: u4 adds a unit test in the normal verify that compares the compose service image with TargetDbImages.postgres() (u4 comes after u1 and adds the compose service in the same change); Build and Test also records the match, including docs/internal-db.md
 ```
+
+突き合わせの単体テストは、compose のサービスを足す U4 が持つ（承認の場の決定、レビュー R-06）。U1 を先に統合しても、相手のサービスが無いまま落ちる・何も確かめないテストにならない。unit-of-work.md の U4 の責務には書かれていないため、U4 の機能設計で責務に入れる。
 
 `team.md` の「内部DB 用の固定先（テストの定数・compose）を固定先の一覧に足す」は、テストの定数を共有するため、足すものが compose のサービスだけになる。足すテストの定数が無いだけで固定先は揃うが、文面とは形が違うため、依頼者の決定（Q3: A）として `memory.md` の Deviations にも記録した。
 
@@ -201,7 +203,11 @@ paths: {}
 - 約束ごとの持ち主は上の表の Owner 列の単位とする。持ち主の単位の設計の段で、依頼者の承認を得て変える。
 - 1つの WAR と同じリポジトリの中の約束のため、版の番号は付けない。約束を変えるコミットで、使う側の単位の作業（テスト・文書）も同じ統合の中で合わせる。
 - 足すだけの変更（移行の新しい版を両方に足す、注釈に任意の属性を足すなど）は、使う側を壊さない限り持ち主の単位だけで行ってよい。名前の変更・消す変更は、使う側の単位を名指しして設計の段で諮る。
-- C2 の版と名前の突き合わせは単体テストで機械で確かめ、C3 の組は `ddl-auto: validate` と U3 の 10MB とハッシュの往復で確かめ、C6 の固定先は単体テストで compose と `TargetDbImages` を突き合わせる。
+- C2 の版と名前の突き合わせは単体テストで機械で確かめ、C3 の組は `ddl-auto: validate` と U3 の 10MB とハッシュの往復で確かめ、C6 の固定先は U4 の単体テストで compose と `TargetDbImages` を突き合わせる。
+
+## 承認の場の決定
+
+- 2026-11-17: 依頼者は Approve し、レビュー R-06 を直すよう求めた。C6 の突き合わせの単体テストの持ち主を U1 から U4 に移した（U4 の機能設計で責務に入れる）。
 
 ## 未決の点
 
