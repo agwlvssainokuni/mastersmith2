@@ -44,6 +44,12 @@
 - **Construction Iteration**: unit-major
 - **Construction Execution**: serial
 
+- **Parked**: 2026-11-17T08:28:43Z
+
+- **Parked At Stage**: functional-design
+
+- **Parked By**: person
+
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
 
@@ -104,7 +110,7 @@
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-11-17T08:28:38Z
+- **Last Updated**: 2026-11-17T08:28:43Z
 
 ## Session Resume Point
 - **Last Completed Stage**: delivery-planning

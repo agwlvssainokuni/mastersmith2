@@ -6910,3 +6910,12 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Workflow Parked
+**Timestamp**: 2026-11-17T08:28:43Z
+**Event**: WORKFLOW_PARKED
+**Stage**: functional-design
+**Person Reply**: Approve
+**Message Id**: e89b42e2
+
+---
