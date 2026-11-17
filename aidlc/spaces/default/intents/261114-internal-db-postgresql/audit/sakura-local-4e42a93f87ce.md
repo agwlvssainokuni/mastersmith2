@@ -6320,3 +6320,220 @@
 **Answer Mode**: guide (reused from practices-discovery)
 
 ---
+
+## Artifact Created
+**Timestamp**: 2026-11-16T22:51:14Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-17T08:25:15Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. 危険を先に (Recommended)","A. 1単位1 Bolt (Recommended)","A. まとめて先に (Recommended)","A. 単位ごと (Recommended)"]
+**Message Id**: 6bbc023b
+**Open Questions**: 479e3dfd
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md","entries":{"決まっていること（質問にしない）":"a4fb5f5b54075113","Q1":"2e96e82bd79a2302","Q2":"6b8ead76780be7f1","Q3":"443e1e499fa5921c","Q4":"3e55ece1446b5043","Q5":"ae954a4c02df4a3e"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T08:25:15Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q1 何を先に作るか。U1（土台）は設計の順の制約で最初に置きます。推奨は A です。本体の直しにつながりうる U3（PostgreSQL での振る舞いの確かめ）を早く確かめれば、直しが U2 に戻っても U4 の文書を書き直さずに済みます。
+**Reply**: A. 危険を先に (Recommended)
+**Options**: ["A. 危険を先に (Recommended)","B. 手元で早く触る","C. 本体を先にまとめる"]
+**Recommended**: ["A. 危険を先に"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T08:25:15Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q2 Bolt（1つ以上の単位を設計から統合まで通して作る1回の作り込み）の大きさ。推奨は A です。単位ごとに確かめ方が違い、1単位1 Bolt なら戻しとレビューが単位で閉じます。大きい U1 はコード生成の計画の中で手順を分けます。
+**Reply**: A. 1単位1 Bolt (Recommended)
+**Options**: ["A. 1単位1 Bolt (Recommended)","B. U1 を2つに分ける","C. U2 と U3 をまとめる"]
+**Recommended**: ["A. 1単位1 Bolt"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T08:25:15Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q3 リポジトリの外の捨ての試し2組を、いつ行うか。1組目は U1 用（バイナリの列の型と写し方・V8 の生成列）、2組目は U2 用（Auth・Invitation の SQL・MERGE の同時の実行）。推奨は A です。同じ PostgreSQL 18 のコンテナで1回で済みます。U2 の範囲が変わるかも、U1 の機能設計の時点で分かります。
+**Reply**: A. まとめて先に (Recommended)
+**Options**: ["A. まとめて先に (Recommended)","B. 分けて直前に"]
+**Recommended**: ["A. まとめて先に"]
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T08:25:15Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q4 Construction の進め方。推奨は A です。単位ごとなら U1 の機能設計が先という順が自然に守られます。U2・U3 の設計で、できたテストの土台の実際の形を確かめながら書けます。
+**Reply**: A. 単位ごと (Recommended)
+**Options**: ["A. 単位ごと (Recommended)","B. 段ごと"]
+**Recommended**: ["A. 単位ごと"]
+
+---
+
+## Human Turn
+**Timestamp**: 2026-11-17T08:25:42Z
+**Event**: HUMAN_TURN
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Origin**: person
+**Source**: picker
+**Picked**: ["A. Bolt の条件に入れる (Recommended)"]
+**Message Id**: 7f3c4d7e
+**Open Questions**: 479e3dfd
+**Questions Digest**: {"file":"aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md","entries":{"決まっていること（質問にしない）":"a4fb5f5b54075113","Q1":"2e96e82bd79a2302","Q2":"6b8ead76780be7f1","Q3":"443e1e499fa5921c","Q4":"3e55ece1446b5043","Q5":"ae954a4c02df4a3e"}}
+
+---
+
+## Question Replied
+**Timestamp**: 2026-11-17T08:25:43Z
+**Event**: QUESTION_REPLIED
+**Session**: 67c39f83-3aee-4a31-8751-e5d1507212fb
+**Question**: Q5 PostgreSQL の結合テストを、各 Bolt の終わりの条件でどう流すか。単位ごとの確認の場で使う今のコマンド（`./gradlew verify`）は、PostgreSQL の結合テストを流しません。推奨は A です。team.md はこのテストを「必要と判断したときに明示して流す」としています。コマンドに入れると、PostgreSQL に触れない U4 でも毎回流れ、長いテストを重ねることになります。
+**Reply**: A. Bolt の条件に入れる (Recommended)
+**Options**: ["A. Bolt の条件に入れる (Recommended)","B. 確認の場のコマンドに足す"]
+**Recommended**: ["A. Bolt の条件に入れる"]
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:25:47Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:25:49Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:25:51Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:25:53Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:25:55Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/delivery-planning-questions.md
+**Context**: inception > delivery-planning > delivery-planning-questions.md
+
+---
+
+## Question Answered
+**Timestamp**: 2026-11-17T08:25:58Z
+**Event**: QUESTION_ANSWERED
+**Stage**: delivery-planning
+**Details**: Q1: A, Q2: A, Q3: A, Q4: A, Q5: A
+**Message Id**: 7f3c4d7e
+**Person Reply**: A. Bolt の条件に入れる (Recommended)
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T08:26:50Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/bolt-plan.md
+**Context**: inception > delivery-planning > bolt-plan.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T08:26:58Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/team-allocation.md
+**Context**: inception > delivery-planning > team-allocation.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T08:27:13Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/risk-and-sequencing-rationale.md
+**Context**: inception > delivery-planning > risk-and-sequencing-rationale.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T08:27:20Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/external-dependency-map.md
+**Context**: inception > delivery-planning > external-dependency-map.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-17T08:27:27Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/verification/phase-check-inception.md
+**Context**: verification > phase-check-inception.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:27:35Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/bolt-plan.md
+**Context**: inception > delivery-planning > bolt-plan.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:27:41Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/memory.md
+**Context**: inception > delivery-planning > memory.md
+
+---
+
+## Artifact Updated
+**Timestamp**: 2026-11-17T08:27:44Z
+**Event**: ARTIFACT_UPDATED
+**Tool**: Edit
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/inception/delivery-planning/memory.md
+**Context**: inception > delivery-planning > memory.md
+
+---
