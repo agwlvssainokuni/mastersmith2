@@ -101,3 +101,24 @@
 - 既定の分離レベルは REPEATABLE READ。
 - DDL: `permission_settings` の主キー（`VARCHAR(256)` ×3）は両方とも作れない（エラー 1071。上限 3,072 バイト）。MySQL は表の名前 `groups` を引用符で囲まないと作れない（予約語）。
 - 照合順序: 既定は大文字と小文字を区別せず、MySQL 8 の既定（`utf8mb4_0900_ai_ci`）はアクセントも区別しない。メールアドレスや名前の鍵の一意の判定が H2 と変わるので、明示が要る（試しでは確かめていない）。
+
+## 7. 追記（2026-11-17）: Intent 261114-internal-db-postgresql の U1 の機能設計の前の捨ての試し（PostgreSQL のみ）
+
+Delivery Planning の Q3: A（2組をまとめて U1 の機能設計の前に行う）に沿って、リポジトリの外の使い捨てで確かめた。条件: PostgreSQL 18.6（`TargetDbImages` と同じダイジェスト）・Hibernate ORM 7.4.13.Final・H2 2.4.240・Flyway 12.4.0（`flyway-database-postgresql` 12.4.0）・2026-11-13 のビルドの `mastersmith.war`。試しのコードは残していない。結果の根拠と設計への反映は、`aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u1-internal-db-platform/functional-design/functional-spec.md` の2節（E1〜E15）。
+
+- **5.2 の見込みのうち確かめたもの**:
+  - `@Lob byte[]` は PostgreSQL の `bytea` に対して `ddl-auto: validate` で失敗する（`oid` を期待）。`@JdbcTypeCode(SqlTypes.LONG32VARBINARY)`（`@Lob` なし）は、H2 の `BINARY LARGE OBJECT` と PostgreSQL の `bytea` の両方で validate が通り、10MB ちょうどの往復も一致した。`@Column(length=10485760)` だけの `byte[]` と `@JdbcTypeCode(VARBINARY)`＋長さも両方で通った。`@JdbcTypeCode(LONGVARBINARY)`（H2 で失敗）と何も付けない `byte[]`（H2 で失敗）は使えない。
+  - トークンのハッシュ（`@JdbcTypeCode(SqlTypes.BINARY)`・長さ 32）は、エンティティを変えずに H2 の `BINARY(32)` と PostgreSQL の `bytea` の両方で通り、32 バイトの往復も一致した。
+  - H2 の移行 V1〜V14 をそのまま PostgreSQL に流すと、通らないのは V3（`BINARY(32)`）・V5（`BINARY LARGE OBJECT`）・V8（`BINARY(32)`・STORED の無い生成列）の3本だけ。そのほかの11本はそのまま通る。
+  - V8 の招待中のメールアドレスの一意は、PostgreSQL では `GENERATED ALWAYS AS (...) STORED` の生成列＋同じ名前の一意の制約で、H2 と同じ列・同じ制約の名前のまま作れる（重なると 23505 で制約の名前が取れる）。条件つきの一意の索引でも一意は守れるが、列が無くなり表の形が変わる。
+  - 書き換え後の PostgreSQL 用の一式で、名前付きの制約 24 件と `ix_*` の索引の名前が H2 と同じ集まりになった。名前の無い主キー 9 件は DB が別名を付ける（H2 `CONSTRAINT_xx`・PostgreSQL `<表>_pkey`）。
+  - 書き換え後の表に今のアプリを向け、`@Lob` の2列だけ `oid` にして起動すると、そのほかのすべてのエンティティの validate が通った。
+  - `MERGE INTO ... USING (VALUES ...)`（ログインの状態の行を作る所）・`FETCH FIRST` つきの削除（`RefreshTokenRepository`・`InvitationRepository`）・`INSERT ... SELECT` の `CAST(? AS ...)`（`DslAppliedRevisionRepository`）は、PostgreSQL でそのまま通った。`UPDATE ... RETURNING`（`FINAL TABLE` の代わり）と標準の `MERGE ... USING`（`MERGE ... KEY` の代わり）も通った。標準の `MERGE` は、同時に同じ鍵を入れると、後の側が先の側の確定まで待ってから 23505 で失敗する（H2 側の振る舞いは未確認）。
+- **5.3 の見込みのうち確かめたもの**: 接続ごとに `lock_timeout` を 2 秒にしたまま、空の PostgreSQL に V1〜V14 が 365 ms で全件通った。外の接続が移行の表を握っているときの影響は確かめていない。
+- **新しく分かったこと**:
+  - 今のアプリを PostgreSQL の接続先で起動して失敗させると、Spring のログの例外の文に、接続できないとき接続先のホストとポートと SQLState `08001`、パスワードが違うとき利用者名と SQLState `28P01` が出る（パスワードと資格情報つきの URL は出ない）。WARN（context 初期化の取り消し）と ERROR（Application run failed）の両方に出る。
+  - 接続先の環境変数が空文字のとき、今のアプリは `jdbc:h2:mem:<UUID>`（メモリだけ）で静かに起動する。
+  - Flyway の置き場は再帰して探す。`db/migration` の下に PostgreSQL の一式を置くと混ざる。兄弟の `db/migration-postgresql` は jar の中でも手元のフォルダでも混ざらない。
+  - IDENTITY の表に値を指定して行を入れても、PostgreSQL の採番は進まない（今の内部DB の移行にそういう行は無い）。
+  - Flyway の PostgreSQL 用の部品 `org.flywaydb:flyway-database-postgresql`（Apache License 2.0、依存は `flyway-core` だけ）は、Spring Boot 4.1.2 の BOM が版を管理している。
+- **まだ確かめていないこと**: `FINAL TABLE`・`MERGE ... KEY` の書き直しの H2 側の結果、同時の標準の `MERGE` の H2 での振る舞い（U2 の機能設計の前に確かめる）、行の排他のヒントの上書きと戻りの結合テストでの確かめ（U3）。
