@@ -1,0 +1,17 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-internal-db-platform",
+  "version": 1,
+  "writes": [
+    { "path": "backend/src/main/java/cherry/mastersmith/internaldb/" },
+    { "path": "backend/src/main/resources/db/migration-postgresql/" },
+    { "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslPreviewRecord.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslAppliedRevisionRecord.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/internaldb/" },
+    { "path": "gradle/libs.versions.toml" },
+    { "path": "backend/gradle.lockfile" },
+    { "path": "backend/build.gradle.kts" },
+    { "path": "build.gradle.kts" },
+    { "path": ".github/workflows/ci.yml" }
+  ]
+}
