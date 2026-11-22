@@ -30,6 +30,11 @@ on:
         required: false
         default: ""
         type: string
+      internal_db_postgres:
+        description: 内部DB の PostgreSQL の結合テスト（:backend:internalDbPostgresTest）も流す
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -111,6 +116,12 @@ jobs:
           path: backend/build/libs/mastersmith.war
           retention-days: 30
           if-no-files-found: error
+
+      # 内部DB の PostgreSQL の結合テスト（Intent 261114-internal-db-postgresql）。手動の実行で入力 internal_db_postgres を
+      # true にしたときだけ流す（push とタグでは流さない）。コンテナで起動した実際の PostgreSQL を使い、CI では飛ばさずに失敗にする。
+      - name: 内部DB の PostgreSQL の結合テストを実行する（手動の入力があるときだけ）
+        if: inputs.internal_db_postgres == true
+        run: ./gradlew :backend:internalDbPostgresTest
 
       # ここから下の3つは報告だけの手順。./gradlew verify が落ちた回にも流し（if: always()）、成否で CI を失敗にしない。
       - name: 規模を数える道具（cloc）を入れる
