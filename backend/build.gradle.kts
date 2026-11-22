@@ -72,6 +72,8 @@ dependencies {
     implementation(libs.spring.boot.starter.mail)
     implementation(libs.cherry.mustache.core)
     runtimeOnly(libs.h2)
+    // 内部DB を PostgreSQL で動かすときの Flyway の PostgreSQL 対応（内部DB の移行用）。
+    runtimeOnly(libs.flyway.database.postgresql)
     // 対象DB（U1）の JDBC ドライバー。読み取り専用の接続で、スキーマのメタデータを読むだけに使う。
     runtimeOnly(libs.mysql.connector.j)
     runtimeOnly(libs.mariadb.java.client)
@@ -170,6 +172,9 @@ val itForks: Int? =
             ?: throw GradleException("-PitForks は 1 以上の整数で指定してください（値: '$raw'）。例: -PitForks=2")
     }
 
+/** 内部DB の PostgreSQL の結合テストの JUnit のタグ（InternalDbPostgresIT と同じ値）。 */
+val internalDbPostgresTag = "internal-db-postgres"
+
 val integrationTest = tasks.register<Test>("integrationTest") {
     description =
         "結合テスト（*IT、Spring と組み込みの H2 を起動する）を実行する。-PitTests=<形> で当たるクラスだけに絞り、" +
@@ -182,8 +187,9 @@ val integrationTest = tasks.register<Test>("integrationTest") {
             includeTestsMatching("*IT")
         } else {
             itTestPatterns.forEach { includeTestsMatching(it) }
-            // 当たるテストが1つも無ければ失敗にする（Gradle の既定と同じ値を明示する。打ち間違いで何も流れないまま通らないように）。
-            isFailOnNoMatchingTests = true
+            // 当たるテストが1つも無ければ失敗にする（打ち間違いで何も流れないまま通らないように）。Gradle の既定の失敗は切り、
+            // 下の doLast の確かめ（案内の文つき）で失敗にする。
+            isFailOnNoMatchingTests = false
         }
     }
     if (itTestPatterns != null) {
@@ -196,11 +202,78 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     if (itForks != null) {
         maxParallelForks = itForks
     }
+    // 内部DB の PostgreSQL の結合テスト（JUnit のタグ internal-db-postgres）は、専用のタスク internalDbPostgresTest だけで流す
+    // （Intent 261114-internal-db-postgresql の BR6.2。除外の指定はここ 1 か所）。
+    useJUnitPlatform {
+        excludeTags(internalDbPostgresTag)
+    }
     shouldRunAfter(tasks.test)
+    if (itTestPatterns != null) {
+        // -PitTests の形がタグ付きのクラスだけに当たると、除外された結果は 0 件になる。黙って通らず、案内の文で失敗にする
+        // （BR6.3）。飛ばした分も数えるため、実行の終わりの集計（testCount）で見る。
+        var executedCount = -1L
+        afterSuite(
+            KotlinClosure2<TestDescriptor, TestResult, Unit>({ descriptor, result ->
+                if (descriptor.parent == null) {
+                    executedCount = result.testCount
+                }
+            }),
+        )
+        doLast {
+            if (executedCount == 0L) {
+                throw GradleException(
+                    "-PitTests='${itTestPatterns.joinToString(",")}' に当たる結合テストが 1 つも流れませんでした（打ち間違いか、タグ " +
+                        "$internalDbPostgresTag のクラスだけに当たっています）。タグ $internalDbPostgresTag のクラス（内部DB の PostgreSQL の" +
+                        "結合テスト）は :backend:internalDbPostgresTest で流してください。",
+                )
+            }
+        }
+    }
 }
 
 tasks.check {
     dependsOn(integrationTest)
+}
+
+// 内部DB の PostgreSQL の結合テスト（Intent 261114-internal-db-postgresql の BR6.1〜BR6.3）。明示して流したときだけ流す
+// （verify・verifyQuick・check の依存に入れない。CI は手動の入力 internal_db_postgres を付けたときだけ流す）。コンテナで起動した
+// 実際の PostgreSQL が要るため、コンテナの実行環境が無いときは、手元では警告を出して飛ばし、CI（環境変数 CI=true）では失敗にする
+// （InternalDbPostgresRuntimeCheck）。JaCoCo の記録は取らない。
+val internalDbPostgresTest = tasks.register<Test>("internalDbPostgresTest") {
+    description =
+        "内部DB の PostgreSQL の結合テスト（タグ $internalDbPostgresTag。コンテナの実行環境が要る）を流す。" +
+            "verify・verifyQuick・CI の通常の実行には入らない。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags(internalDbPostgresTag)
+    }
+    filter {
+        includeTestsMatching("*IT")
+    }
+    extensions.configure<JacocoTaskExtension> {
+        isEnabled = false
+    }
+    shouldRunAfter(tasks.test, integrationTest)
+    // 1 件も流れなければ（飛ばした分は数える）、何も確かめないまま通らないよう失敗にする。
+    filter.isFailOnNoMatchingTests = false
+    var executedCount = -1L
+    afterSuite(
+        KotlinClosure2<TestDescriptor, TestResult, Unit>({ descriptor, result ->
+            if (descriptor.parent == null) {
+                executedCount = result.testCount
+            }
+        }),
+    )
+    doLast {
+        if (executedCount == 0L) {
+            throw GradleException(
+                "タグ $internalDbPostgresTag の結合テストが 1 つも流れませんでした。内部DB の PostgreSQL の結合テストの" +
+                    "クラスに @InternalDbPostgresIT が付いているかを確かめてください。",
+            )
+        }
+    }
 }
 
 // ---- カバレッジ（JaCoCo） ----
@@ -476,6 +549,36 @@ tasks.register("verifyDslSchemaInWar") {
                 if (!actual.contentEquals(expected)) {
                     throw GradleException("WAR の $entryName が正本（${dslSchemaSource.asFile.path}）と違います。")
                 }
+            }
+        }
+    }
+}
+
+// 内部DB の PostgreSQL 用の移行（db/migration-postgresql）が、H2 用（db/migration）と同じ名前で同数、WAR に入っていることを確かめる
+// （Intent 261114-internal-db-postgresql の機能設計のレビュー R-07）。入っていないと、PostgreSQL で動かした WAR が移行を見つけられない。
+tasks.register("verifyPostgresMigrationsInWar") {
+    description = "実行可能 WAR の中に、内部DB の PostgreSQL 用の移行が H2 用と同じ名前で同数入っていることを確かめる。"
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(tasks.bootWar)
+    val war = tasks.bootWar.flatMap { it.archiveFile }
+    inputs.file(war)
+    doLast {
+        ZipFile(war.get().asFile).use { zip ->
+            fun names(prefix: String): Set<String> = zip.entries().asSequence()
+                .map { it.name }
+                .filter { it.startsWith(prefix) && it.endsWith(".sql") }
+                .map { it.removePrefix(prefix) }
+                .toSet()
+
+            val h2 = names("WEB-INF/classes/db/migration/")
+            val postgres = names("WEB-INF/classes/db/migration-postgresql/")
+            if (h2.isEmpty()) {
+                throw GradleException("WAR の WEB-INF/classes/db/migration/ に H2 用の移行がありません。")
+            }
+            if (postgres != h2) {
+                throw GradleException(
+                    "WAR の PostgreSQL 用の移行が H2 用と違います。H2 のみ: ${h2 - postgres}、PostgreSQL のみ: ${postgres - h2}",
+                )
             }
         }
     }

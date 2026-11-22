@@ -482,11 +482,13 @@ val verifyStages: List<Triple<String, String, List<TaskProvider<*>>>> =
         ),
         Triple(
             "verifyArtifact",
-            "9 成果物と量の確認（dist を同梱した実行可能 WAR、WAR の中の DSL の JSON Schema と正本の一致、WAR の中の素材（アイコン・favicon）と" +
+            "9 成果物と量の確認（dist を同梱した実行可能 WAR、WAR の中の DSL の JSON Schema と正本の一致、WAR の中の内部DB の" +
+                "PostgreSQL 用の移行と H2 用の名前・数の一致、WAR の中の素材（アイコン・favicon）と" +
                 "frontend/public/ の一致、初回の読み込みの量）",
             listOf(
                 backendProject.tasks.named("bootWar"),
                 backendProject.tasks.named("verifyDslSchemaInWar"),
+                backendProject.tasks.named("verifyPostgresMigrationsInWar"),
                 backendProject.tasks.named("verifyFaviconInWar"),
                 frontendBundleSize,
             ),

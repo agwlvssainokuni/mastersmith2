@@ -20,10 +20,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * 適用の履歴の1件（表 {@code dsl_applied_revisions}。{@code entities.md} の DslAppliedRevision）。
@@ -43,7 +44,8 @@ public class DslAppliedRevisionRecord {
     @Column(name = "revision_id", nullable = false, updatable = false)
     private UUID revisionId;
 
-    @Lob
+    // 大きなバイナリの列。H2 は BINARY LARGE OBJECT、PostgreSQL は BYTEA の列を、同じ写し方で読み書きする（@Lob は PostgreSQL で OID になる）。
+    @JdbcTypeCode(SqlTypes.LONG32VARBINARY)
     @Column(name = "yaml_bytes", nullable = false, updatable = false)
     private byte[] yamlBytes;
 

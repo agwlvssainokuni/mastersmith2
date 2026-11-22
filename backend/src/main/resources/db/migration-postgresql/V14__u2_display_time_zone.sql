@@ -1,0 +1,22 @@
+-- Copyright 2026 agwlvssainokuni
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+-- Intent 261102-timezone-ui-polish の U2（利用者ごとの表示のタイムゾーン）。前進のみ・後方互換（team.md の Deployment）。
+-- 適用済みの V1〜V13 は書き換えない。既存の行は変えず、利用者の表に列を 1 つだけ足す（広げてから縮める二段の「広げる」側だけ）。
+-- 1つ前の版のアプリは足した列を読み書きしないため、そのまま起動できる。
+--
+-- users に足す列:
+--   display_time_zone: 利用者が選んだ表示のタイムゾーンの名前（IANA の名前）。空（NULL）は「ブラウザに合わせる」。
+--     既定値・参照の制約・CHECK・索引を置かない（名前の検証はアプリが 1 か所で行う。BR2.1・BR2.10）。
+ALTER TABLE users ADD COLUMN display_time_zone VARCHAR(64);

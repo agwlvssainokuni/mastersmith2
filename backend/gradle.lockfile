@@ -114,6 +114,7 @@ org.dom4j:dom4j:2.2.0=spotbugs
 org.eclipse.angus:angus-activation:2.0.3=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 org.eclipse.angus:angus-mail:2.0.5=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 org.flywaydb:flyway-core:12.4.0=compileClasspath,productionRuntimeClasspath,runtimeClasspath,testCompileClasspath,testRuntimeClasspath
+org.flywaydb:flyway-database-postgresql:12.4.0=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 org.glassfish.jaxb:jaxb-core:4.0.9=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 org.glassfish.jaxb:jaxb-runtime:4.0.9=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath
 org.glassfish.jaxb:txw2:4.0.9=productionRuntimeClasspath,runtimeClasspath,testRuntimeClasspath

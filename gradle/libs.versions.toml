@@ -58,6 +58,8 @@ spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-
 spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
 spring-boot-starter-data-jpa = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+# 内部DB を PostgreSQL で動かすときの Flyway の PostgreSQL 対応（Intent 261114-internal-db-postgresql の U1）。版は Spring Boot の BOM に任せる（flyway-core と同じ版）。
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
 spring-boot-starter-aspectj = { module = "org.springframework.boot:spring-boot-starter-aspectj" }
 spring-boot-starter-opentelemetry = { module = "org.springframework.boot:spring-boot-starter-opentelemetry" }
