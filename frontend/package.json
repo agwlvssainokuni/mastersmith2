@@ -54,7 +54,7 @@
     "oxlint": "^1.93.0",
     "prettier": "^3.9.10",
     "stylelint": "^18.0.0",
-    "stylelint-config-standard": "^41.0.0",
+    "stylelint-config-standard": "^41.1.0",
     "typescript": "^6.0.3",
     "vite": "^8.3.7",
     "vitest": "^5.1.0",
