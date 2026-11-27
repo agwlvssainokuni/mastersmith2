@@ -73,6 +73,24 @@ class RowLockFailuresTest {
     }
 
     @Test
+    @DisplayName("the PostgreSQL lock_not_available SQLState 55P03 is a lock failure, directly and deep in the chain")
+    void postgresqlLockNotAvailableIsLockFailure() {
+        SQLException direct = new SQLException(ROW_VALUE, "55P03", 0);
+        PersistenceException wrapped = new PersistenceException("outer", new RuntimeException("middle", direct));
+
+        assertThat(RowLockFailures.isLockFailure(direct)).isTrue();
+        assertThat(RowLockFailures.isLockFailure(wrapped)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"55000", "55P02", "55P04", "23505"})
+    @DisplayName("SQLStates similar to 55P03 are not lock failures")
+    void similarSqlStatesAreNotLockFailures(String sqlState) {
+        assertThat(RowLockFailures.isLockFailure(new SQLException(ROW_VALUE, sqlState, 0)))
+                .isFalse();
+    }
+
+    @Test
     @DisplayName("a lock failure translated by Spring into CannotAcquireLockException is still a lock failure")
     void springTranslatedExceptionsAreLockFailures() {
         SQLException sql = new SQLException(ROW_VALUE, "HYT00", 50200);

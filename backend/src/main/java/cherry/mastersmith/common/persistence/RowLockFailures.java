@@ -33,7 +33,8 @@ import org.slf4j.Logger;
  *   <li>例外の原因の連なりに、JPA の {@link LockTimeoutException}・{@link PessimisticLockException}・{@link QueryTimeoutException}
  *       がある
  *   <li>原因の連なりに {@link SQLException} があり、誤りの番号が 50200（上限切れ）か 40001（行き詰まり）、または SQLState が
- *       {@code HYT00}・{@code 40001}
+ *       {@code HYT00}・{@code 40001}・{@code 55P03}（PostgreSQL の {@code lock_not_available}。
+ *       {@code lock_timeout} の上限切れ）
  * </ol>
  *
  * <p>型の写し方が Hibernate の版で変わっても受けられるよう、型と誤りの番号の両方で見分ける。Spring の例外の変換（例
@@ -44,8 +45,8 @@ public final class RowLockFailures {
     /** 排他の失敗とみなす誤りの番号（H2 の上限切れ 50200、行き詰まり 40001）。 */
     static final Set<Integer> ERROR_CODES = Set.of(50200, 40001);
 
-    /** 排他の失敗とみなす SQLState（上限切れ HYT00、行き詰まり 40001）。 */
-    static final Set<String> SQL_STATES = Set.of("HYT00", "40001");
+    /** 排他の失敗とみなす SQLState（上限切れ HYT00、行き詰まり 40001、PostgreSQL の lock_not_available 55P03）。 */
+    static final Set<String> SQL_STATES = Set.of("HYT00", "40001", "55P03");
 
     /** 排他を取れなかったときの WARN の決まった文。 */
     static final String WARN_MESSAGE = "行の排他を取れませんでした";
