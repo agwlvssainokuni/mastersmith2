@@ -60,4 +60,23 @@
       <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
     </Or>
   </Match>
+  <!--
+    内部DB の「あれば更新・無ければ挿入」の手順の SQL_ の指摘（Intent 261114-internal-db-postgresql の U2、u2-portable-sql）。
+    KeyedUpsertExecutor の run・execute が流す文は、列挙 KeyedUpsert の定数の文字列（作業ロールの保存・プレビューを置くの
+    UPDATE・INSERT の文。利用者の入力・識別子の組み立てを含まない）だけで、値はすべて位置の引数（?）でバインドする。呼び出し口
+    （upsert）が受けるのは列挙の値で、文字列を外から渡せない。文を流せる場所は BusinessDataBoundaryArchitectureTest の許可の
+    一覧（依頼者が承認済み）で、このクラスと UserRepositoryImpl に絞っている。そのため、この 2 つのメソッドの、この 2 つのパターン
+    だけを外す（クラス全体や SQL_ の全体では外さない）。
+  -->
+  <Match>
+    <Class name="cherry.mastersmith.common.persistence.KeyedUpsertExecutor" />
+    <Or>
+      <Method name="run" />
+      <Method name="execute" />
+    </Or>
+    <Or>
+      <Bug pattern="SQL_INJECTION_JDBC" />
+      <Bug pattern="SQL_PREPARED_STATEMENT_GENERATED_FROM_NONCONSTANT_STRING" />
+    </Or>
+  </Match>
 </FindBugsFilter>

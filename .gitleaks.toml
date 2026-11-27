@@ -39,3 +39,13 @@ condition = "AND"
 regexTarget = "match"
 regexes = ['''^[a-z0-9-]+ > [0-9a-f]{16}\s*$''']
 paths = ['''^aidlc/spaces/[^/]+/intents/[^/]+/audit/[^/]+\.md$''']
+
+# 誤検出の除外: 内部DB の起動の失敗の記録のテスト（StartupFailureReporterTest）が、例外の文に入れて「出力に出てはならない」
+# ことを確かめるための作り物の接続先（`secret-host.example.com`・予約のドメイン）。実在する接続情報ではない（generic-api-key に当たった）。
+# 対象を「そのテストのファイル」かつ「検出された値が作り物の接続先の一部 `6543/secretdb` と完全に一致する」の両方に当たるものだけに絞る。
+[[allowlists]]
+description = "起動の失敗の記録のテストの作り物の接続先（秘密情報ではない）"
+condition = "AND"
+regexTarget = "secret"
+regexes = ['''^6543/secretdb$''']
+paths = ['''^backend/src/test/java/cherry/mastersmith/internaldb/platform/StartupFailureReporterTest\.java$''']
