@@ -16,7 +16,6 @@
 package cherry.mastersmith.user.repository;
 
 import cherry.mastersmith.user.domain.PasswordHash;
-import cherry.mastersmith.user.domain.Preferences;
 import cherry.mastersmith.user.domain.ProfileUpdate;
 import cherry.mastersmith.user.domain.RedactedText;
 import cherry.mastersmith.user.domain.User;
@@ -35,7 +34,7 @@ import org.springframework.data.repository.query.Param;
  * 問い合わせで行う（同時に起きても相手の列を古い値で上書きしないため。BR3.4、{@code reliability-design.md} 2節・3節）。問い合わせは
  * 名前つきの引数で組み立て、文字列の連結を使わない（NFR9.3）。更新の後は持続化の文脈を消し、同じトランザクションで古い値を読まない。
  */
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, UserRepositoryCustom {
 
     /**
      * メールアドレスで利用者を探す。
@@ -57,39 +56,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Query("select count(u) > 0 from User u where u.email = :#{#email.value()}")
     boolean existsByRedactedEmail(@Param("email") RedactedText email);
 
-    /**
-     * 本人の氏名と表示の設定の4列を書き換え、同じ文で表示のタイムゾーンを書き換えるか変えないかを決め、保存した後の2列を返す
-     * （BR3.3・BR3.4、Intent 261102-timezone-ui-polish の U2 の BR2.3・BR2.6・BR2.7、H2 の {@code FINAL TABLE (UPDATE ...)}）。
-     *
-     * <p>更新と結果の取り出しが 1 つの文で、5 項目が 1 つの文で確定する（内部DB の文の数は変えない。NFR2.1.2）。表示のタイムゾーンは
-     * {@code change} が真のときだけ {@code zone}（null なら空）に置き、偽のときは列を書き換えず今の値を返す。値は名前つきの束縛だけで
-     * 渡し、文字列を連結しない。氏名は4つの組（文字列化で氏名を伏せる型）で受け、SpEL の中でだけ取り出す。メソッドの呼び出しの追跡が
-     * 引数を文字列にするため、表示のタイムゾーンの名前は個人に関する値ではないがそのまま渡してよい。
-     *
-     * <p>{@code @Modifying} を付けない（結果を返す文のため）。持続化の文脈は書き換えないため、同じトランザクションで先に読み込んだ
-     * エンティティは古い値のままになる（呼び出し側はこの文の後に {@link #findById} で読み直さない）。
-     *
-     * @param userId 本人の利用者 ID
-     * @param preferences 決まりに合う4つの組
-     * @param change 表示のタイムゾーンを書き換えるか（項目が無いときは偽）
-     * @param zone 書き換えるときの名前（空にするときは null）
-     * @return 保存した後の2列（本人がいなければ空）
-     */
-    @Query(
-            value = "SELECT user_id AS \"userId\", display_time_zone AS \"displayTimeZone\" FROM FINAL TABLE ("
-                    + "UPDATE users SET display_name = :#{#preferences.displayName()},"
-                    + " language = :#{#preferences.language().value()}, theme = :#{#preferences.theme().value()},"
-                    + " font_size = :#{#preferences.fontSize().value()},"
-                    + " display_time_zone = CASE WHEN :change = TRUE THEN CAST(:zone AS VARCHAR(64))"
-                    + " ELSE display_time_zone END WHERE user_id = :userId)",
-            nativeQuery = true)
-    Optional<SavedPreferences> savePreferences(
-            @Param("userId") long userId,
-            @Param("preferences") Preferences preferences,
-            @Param("change") boolean change,
-            @Param("zone") String zone);
-
-    /** {@link #savePreferences} が返す保存した後の2列。 */
+    /** {@link UserRepositoryCustom#savePreferences} が返す保存した後の2列。 */
     interface SavedPreferences {
 
         /**
