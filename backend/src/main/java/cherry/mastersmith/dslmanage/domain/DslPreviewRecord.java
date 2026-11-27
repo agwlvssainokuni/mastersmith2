@@ -29,7 +29,7 @@ import org.hibernate.type.SqlTypes;
 /**
  * 今のプレビュー（表 {@code dsl_previews}、最大1行。{@code entities.md} の DslPreview）。
  *
- * <p>行を置くのは1文の MERGE（{@code DslPreviewRepository#place}）、消すのは previewId を指定した削除で、このエンティティは読み取り
+ * <p>行を置くのは「あれば更新・無ければ挿入」の手順（{@code DslPreviewRepository#place}）、消すのは previewId を指定した削除で、このエンティティは読み取り
  * だけに使う。本文は受け取ったバイト列のまま持つ（{@code entities.md} の {@code yamlText}（text）との差。NFR 設計 Q3: A）。
  * API の応答として直接返さない。文字列化では本文を出さない。
  */

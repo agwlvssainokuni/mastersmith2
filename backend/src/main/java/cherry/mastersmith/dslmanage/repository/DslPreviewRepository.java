@@ -15,12 +15,16 @@
  */
 package cherry.mastersmith.dslmanage.repository;
 
+import cherry.mastersmith.common.persistence.KeyedUpsert;
+import cherry.mastersmith.common.persistence.KeyedUpsertExecutor;
 import cherry.mastersmith.dslmanage.domain.DslContent;
 import cherry.mastersmith.dslmanage.domain.DslPreviewRecord;
 import cherry.mastersmith.dslmanage.domain.DslPreviewRef;
 import cherry.mastersmith.dslmanage.domain.DslSource;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,19 +33,15 @@ import org.springframework.stereotype.Repository;
 /**
  * プレビューの表（{@code dsl_previews}、最大1行）の DB アクセス。呼び出し側（業務処理）のトランザクションの中で使う。
  *
- * <p>置くのは固定の鍵の1行への1文の MERGE で、2人がほぼ同時に置いたときは後に確定した方が残る（BR1.4、NFR8.3）。今の状態の読み取りは
+ * <p>置くのは固定の鍵の1行への「あれば更新・無ければ挿入」（{@link KeyedUpsertExecutor}）で、2人がほぼ同時に置いたときは後に確定した方が残る（BR1.4、NFR8.3）。今の状態の読み取りは
  * 本文の列を取らない（NFR 設計の performance-design.md 3節）。
  */
 @Repository
 public class DslPreviewRepository {
 
-    private static final String PLACE_SQL = "MERGE INTO dsl_previews"
-            + " (preview_slot, preview_id, yaml_bytes, dsl_hash, source, placed_by_user_id, placed_at)"
-            + " KEY (preview_slot)"
-            + " VALUES (" + DslPreviewRecord.SLOT + ", CAST(?1 AS UUID), ?2, ?3, ?4, CAST(?5 AS BIGINT),"
-            + " CAST(?6 AS TIMESTAMP WITH TIME ZONE))";
-
     private final EntityManager entityManager;
+
+    private final KeyedUpsertExecutor upsertExecutor;
 
     /**
      * DB アクセスを作る。
@@ -50,10 +50,11 @@ public class DslPreviewRepository {
      */
     public DslPreviewRepository(EntityManager entityManager) {
         this.entityManager = entityManager;
+        this.upsertExecutor = new KeyedUpsertExecutor(entityManager);
     }
 
     /**
-     * プレビューを置く（行が無ければ入れ、あれば置き換える。1文の MERGE）。
+     * プレビューを置く（行が無ければ入れ、あれば置き換える。共通の「あれば更新・無ければ挿入」の手順）。
      *
      * @param previewId 新しいプレビューの識別
      * @param yamlBytes 本文のバイト列
@@ -65,15 +66,17 @@ public class DslPreviewRepository {
      */
     public int place(
             UUID previewId, byte[] yamlBytes, String dslHash, DslSource source, long placedByUserId, Instant placedAt) {
-        return entityManager
-                .createNativeQuery(PLACE_SQL)
-                .setParameter(1, previewId)
-                .setParameter(2, yamlBytes)
-                .setParameter(3, dslHash)
-                .setParameter(4, source.name())
-                .setParameter(5, placedByUserId)
-                .setParameter(6, placedAt)
-                .executeUpdate();
+        // 本文のバイト列は複製せずにそのまま束縛する。どの経路で書いたかは呼び出し元に要らないため読み捨てる。
+        Object[] arguments = {
+            previewId,
+            yamlBytes,
+            dslHash,
+            source.name(),
+            placedByUserId,
+            OffsetDateTime.ofInstant(placedAt, ZoneOffset.UTC)
+        };
+        upsertExecutor.upsert(KeyedUpsert.DSL_PREVIEWS, arguments, arguments);
+        return 1;
     }
 
     /**

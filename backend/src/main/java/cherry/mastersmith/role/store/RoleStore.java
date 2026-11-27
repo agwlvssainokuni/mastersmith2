@@ -15,6 +15,8 @@
  */
 package cherry.mastersmith.role.store;
 
+import cherry.mastersmith.common.persistence.KeyedUpsert;
+import cherry.mastersmith.common.persistence.KeyedUpsertExecutor;
 import cherry.mastersmith.role.domain.GroupRoleAssignment;
 import cherry.mastersmith.role.domain.PermissionSetting;
 import cherry.mastersmith.role.domain.PermissionSettingId;
@@ -95,15 +97,6 @@ public class RoleStore {
     private static final String DELETE_GROUP_ASSIGNMENT =
             "delete from GroupRoleAssignment a where a.roleId = :roleId and a.groupId = :groupId";
 
-    /**
-     * 作業ロールの保存の書き込み（H2 の {@code MERGE INTO … KEY}。行が無ければ足し、あれば書き換える）。同じ利用者の未確定の行に対しては、
-     * 待った後の上限切れ（SQLState {@code HYT00}・誤りの番号 50200）になることを B5 の Step 28 で確かめた（{@code WorkRoleSelectionMergeIT}、
-     * 計画の D-19）。
-     */
-    private static final String MERGE_SELECTION =
-            "MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id)"
-                    + " VALUES (:userId, :roleId, :updatedAt)";
-
     /** 権限の YAML の適用の設定の行の書き込みの 1 バッチの件数（{@code performance-design.md} 2.3）。 */
     public static final int TRANSFER_BATCH_SIZE = 1000;
 
@@ -122,6 +115,8 @@ public class RoleStore {
 
     private final JdbcTemplate transferJdbc;
 
+    private final KeyedUpsertExecutor upsertExecutor;
+
     /**
      * 作る。
      *
@@ -130,6 +125,7 @@ public class RoleStore {
      */
     public RoleStore(EntityManager entityManager, JdbcTemplate jdbcTemplate) {
         this.entityManager = entityManager;
+        this.upsertExecutor = new KeyedUpsertExecutor(entityManager);
         this.transferJdbc = new JdbcTemplate(Objects.requireNonNull(jdbcTemplate.getDataSource(), "dataSource"));
         this.transferJdbc.setQueryTimeout(TRANSFER_QUERY_TIMEOUT_SECONDS);
     }
@@ -397,12 +393,12 @@ public class RoleStore {
     public RoleStoreOutcome<Void> saveWorkRoleSelection(long userId, long roleId, Instant now) {
         Objects.requireNonNull(now, "now");
         try {
-            entityManager
-                    .createNativeQuery(MERGE_SELECTION)
-                    .setParameter("userId", userId)
-                    .setParameter("roleId", roleId)
-                    .setParameter("updatedAt", OffsetDateTime.ofInstant(now, ZoneOffset.UTC))
-                    .executeUpdate();
+            OffsetDateTime updatedAt = OffsetDateTime.ofInstant(now, ZoneOffset.UTC);
+            // どの経路で書いたか（更新・挿入・重なりの後の更新）は呼び出し元に要らないため読み捨てる。
+            upsertExecutor.upsert(
+                    KeyedUpsert.WORK_ROLE_SELECTIONS,
+                    new Object[] {roleId, updatedAt, userId},
+                    new Object[] {userId, roleId, updatedAt});
             return new RoleStoreOutcome.Done<>(null);
         } catch (PersistenceException e) {
             return RoleStoreClassifier.toOutcome(e, WORK_ROLE_SELECTION_KEY, LOGGER);

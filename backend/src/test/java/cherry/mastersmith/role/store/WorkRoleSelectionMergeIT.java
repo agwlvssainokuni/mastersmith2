@@ -17,47 +17,51 @@ package cherry.mastersmith.role.store;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cherry.mastersmith.common.persistence.RowLockFailures;
+import cherry.mastersmith.common.testsupport.CommittableWrite;
+import cherry.mastersmith.common.testsupport.H2BlockedSessions;
 import cherry.mastersmith.common.testsupport.TestDatabase;
 import cherry.mastersmith.group.testsupport.GroupFixtures;
-import cherry.mastersmith.group.testsupport.UncommittedWrite;
+import cherry.mastersmith.role.testsupport.RoleFixtures;
 import cherry.mastersmith.user.repository.UserRepository;
 import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestReporter;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * 作業ロールの保存の {@code MERGE INTO … KEY(user_id)} の確かめ（NFR 設計の読み直しの R-15、計画の Step 28・D-19、
- * {@code reliability-design.md} 4.2 の #9）。
+ * 作業ロールの保存（「あれば更新・無ければ挿入」の共通の手順。Intent 261114-internal-db-postgresql の U2）の同時の実行の確かめ。
  *
- * <p>同じ利用者の保存の行を別の接続が未確定のまま持っている間に {@code MERGE} を流し、待って上限切れになるか・一意の違反（23505）に
- * なるか・ほかの誤りになるかを、SQLState と誤りの番号で確かめる。B5 の Step 28 の結果は、未確定の挿入・書き換えのどちらに対しても
- * 待った後の上限切れ（SQLState {@code HYT00}・誤りの番号 50200）で、store の区分は {@code Busy("WORK_ROLE_SELECTION_KEY")} になる。
- * そのため store の保存は {@code MERGE} のままにした（計画の D-19。{@code generation-notes.md} に記録）。このテストは H2 を上げたときに
- * この前提が崩れないかの見張りを兼ねる。合否は経過の時間ではなく、誤りの種類と行の値で決める。
+ * <p>前の版は H2 の {@code MERGE ... KEY} の待ちの振る舞いの見張りだったが、保存は H2 と PostgreSQL の両方に通る「更新 → 挿入 →
+ * 重なりなら更新やり直し」の手順に替わったため、新しい手順の期待を確かめる。別の接続を待ち合わせ（{@code INFORMATION_SCHEMA.SESSIONS}
+ * の待ちの印）で確実に作り、実時刻の {@code sleep} は合否に使わない。上限切れの確かめだけ、H2 の待ちの上限（約 4 秒）を超えて持つ。
  */
 @SpringBootTest
 class WorkRoleSelectionMergeIT {
 
-    private static final String MERGE =
-            "MERGE INTO work_role_selections (user_id, role_id, updated_at) KEY (user_id) VALUES (?, ?, ?)";
-
     private static final OffsetDateTime AT =
             OffsetDateTime.ofInstant(Instant.parse("2026-10-09T01:00:00Z"), ZoneOffset.UTC);
+
+    private static final Instant NOW = Instant.parse("2026-10-09T02:00:00Z");
+
+    /** 待ち合わせの上限（待ちに入るのを待つ。実アプリの待ちの上限（約 4 秒）より十分長い）。 */
+    private static final Duration AWAIT = Duration.ofSeconds(30);
 
     @TempDir
     static Path tempDir;
@@ -68,104 +72,148 @@ class WorkRoleSelectionMergeIT {
     }
 
     @Autowired
+    RoleStore store;
+
+    @Autowired
     UserRepository users;
 
     @Autowired
     JdbcTemplate jdbc;
 
-    private GroupFixtures fixtures;
+    @Autowired
+    TransactionTemplate tx;
+
+    private GroupFixtures groups;
+
+    private RoleFixtures roles;
+
+    private ExecutorService executor;
 
     @BeforeEach
     void setUp() {
-        fixtures = new GroupFixtures(users, jdbc);
+        groups = new GroupFixtures(users, jdbc);
+        roles = new RoleFixtures(jdbc);
+        executor = Executors.newSingleThreadExecutor();
     }
 
-    /** 別の接続で MERGE を流し、失敗したらその例外を返す（成功したら null）。 */
-    private SQLException mergeInAnotherConnection(long userId, long roleId) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(TestDatabase.url(tempDir), "sa", "")) {
-            connection.setAutoCommit(false);
-            try (PreparedStatement statement = connection.prepareStatement(MERGE)) {
-                statement.setLong(1, userId);
-                statement.setLong(2, roleId);
-                statement.setObject(3, AT);
-                statement.executeUpdate();
-                connection.commit();
-                return null;
-            } catch (SQLException e) {
-                connection.rollback();
-                return e;
+    @AfterEach
+    void tearDown() {
+        executor.shutdownNow();
+    }
+
+    private RoleStoreOutcome<Void> saveInTransaction(long userId, long roleId) {
+        return tx.execute(status -> {
+            RoleStoreOutcome<Void> outcome = store.saveWorkRoleSelection(userId, roleId, NOW);
+            if (!outcome.isDone()) {
+                status.setRollbackOnly();
             }
-        }
+            return outcome;
+        });
     }
 
-    private static String describe(SQLException failure) {
-        return "sqlState=" + failure.getSQLState() + ", errorCode=" + failure.getErrorCode() + ", lockFailure="
-                + RowLockFailures.isLockFailure(failure);
+    private long selectedRole(long userId) {
+        return jdbc.queryForObject("SELECT role_id FROM work_role_selections WHERE user_id = ?", Long.class, userId);
+    }
+
+    private int selectionRows(long userId) {
+        return jdbc.queryForObject(
+                "SELECT COUNT(*) FROM work_role_selections WHERE user_id = ?", Integer.class, userId);
     }
 
     @Test
-    @DisplayName("MERGE while another transaction holds an uncommitted insert of the same user waits and fails")
-    void mergeAgainstUncommittedInsert() throws Exception {
-        long userId = fixtures.user("作業ロール 確かめ一郎");
+    @DisplayName("a save racing an uncommitted insert of the same user converges to the later writer's role")
+    void laterWriterWinsAfterTheEarlierInsertCommits() throws Exception {
+        long userId = groups.user("作業ロール 確かめ一郎");
+        long earlierRole = roles.role(RoleFixtures.uniqueName("先の側"));
+        long laterRole = roles.role(RoleFixtures.uniqueName("後の側"));
 
-        SQLException failure;
-        try (UncommittedWrite held = UncommittedWrite.hold(
+        RoleStoreOutcome<Void> outcome;
+        try (CommittableWrite earlier = CommittableWrite.hold(
                 TestDatabase.url(tempDir),
                 "INSERT INTO work_role_selections (user_id, role_id, updated_at) VALUES (?, ?, ?)",
                 userId,
-                1L,
+                earlierRole,
                 AT)) {
-            failure = mergeInAnotherConnection(userId, 2L);
+            Future<RoleStoreOutcome<Void>> later = executor.submit(() -> saveInTransaction(userId, laterRole));
+            H2BlockedSessions.awaitBlocked(TestDatabase.url(tempDir), AWAIT);
+            earlier.commit();
+            outcome = later.get(AWAIT.toSeconds(), TimeUnit.SECONDS);
         }
 
-        assertThat((Object) failure).as("未確定の挿入に対する MERGE は失敗する").isNotNull();
-        assertThat(RowLockFailures.isLockFailure(failure))
-                .as("待ちの上限切れ（HYT00・50200）で、一意の違反やほかの誤りではない: " + describe(failure))
-                .isTrue();
-        assertThat(failure.getErrorCode()).as(describe(failure)).isEqualTo(50200);
-        assertThat(jdbc.queryForObject(
-                        "SELECT COUNT(*) FROM work_role_selections WHERE user_id = ?", Integer.class, userId))
-                .isZero();
+        assertThat(outcome).isEqualTo(new RoleStoreOutcome.Done<>(null));
+        assertThat(selectionRows(userId)).isOne();
+        assertThat(selectedRole(userId)).as("後の側の値が残る").isEqualTo(laterRole);
     }
 
     @Test
-    @DisplayName("MERGE while another transaction holds an uncommitted update of the same user waits and fails")
-    void mergeAgainstUncommittedUpdate() throws Exception {
-        long userId = fixtures.user("作業ロール 確かめ二郎");
-        jdbc.update("INSERT INTO work_role_selections (user_id, role_id, updated_at) VALUES (?, ?, ?)", userId, 1L, AT);
+    @DisplayName("a save against an existing row waits for the other transaction's update and then wins")
+    void existingRowSerializesAndTheLaterValueRemains() throws Exception {
+        long userId = groups.user("作業ロール 確かめ二郎");
+        long initialRole = roles.role(RoleFixtures.uniqueName("初めの値"));
+        long earlierRole = roles.role(RoleFixtures.uniqueName("先の側の更新"));
+        long laterRole = roles.role(RoleFixtures.uniqueName("後の側の更新"));
+        jdbc.update(
+                "INSERT INTO work_role_selections (user_id, role_id, updated_at) VALUES (?, ?, ?)",
+                userId,
+                initialRole,
+                AT);
 
-        SQLException failure;
-        try (UncommittedWrite held = UncommittedWrite.hold(
+        RoleStoreOutcome<Void> outcome;
+        try (CommittableWrite earlier = CommittableWrite.hold(
                 TestDatabase.url(tempDir),
                 "UPDATE work_role_selections SET role_id = ? WHERE user_id = ?",
-                3L,
+                earlierRole,
                 userId)) {
-            failure = mergeInAnotherConnection(userId, 2L);
+            Future<RoleStoreOutcome<Void>> later = executor.submit(() -> saveInTransaction(userId, laterRole));
+            H2BlockedSessions.awaitBlocked(TestDatabase.url(tempDir), AWAIT);
+            earlier.commit();
+            outcome = later.get(AWAIT.toSeconds(), TimeUnit.SECONDS);
         }
 
-        assertThat((Object) failure).as("未確定の書き換えに対する MERGE は失敗する").isNotNull();
-        assertThat(RowLockFailures.isLockFailure(failure))
-                .as("待ちの上限切れ（HYT00・50200）で、一意の違反やほかの誤りではない: " + describe(failure))
-                .isTrue();
-        assertThat(failure.getErrorCode()).as(describe(failure)).isEqualTo(50200);
-        assertThat(jdbc.queryForObject(
-                        "SELECT role_id FROM work_role_selections WHERE user_id = ?", Long.class, userId))
-                .isEqualTo(1L);
+        assertThat(outcome).isEqualTo(new RoleStoreOutcome.Done<>(null));
+        assertThat(selectionRows(userId)).isOne();
+        assertThat(selectedRole(userId)).as("後の側の値が残る").isEqualTo(laterRole);
     }
 
     @Test
-    @DisplayName("MERGE after the other transaction committed updates the row without a failure")
-    void mergeAfterCommitUpdates() throws Exception {
-        long userId = fixtures.user("作業ロール 確かめ三郎");
+    @DisplayName("a save held past the lock wait limit is Busy and the same transaction can keep writing")
+    void waitTimeoutIsBusyAndTheTransactionStaysUsable(TestReporter reporter) throws Exception {
+        long userId = groups.user("作業ロール 確かめ三郎");
+        long otherUser = groups.user("作業ロール 確かめ四郎");
+        long heldRole = roles.role(RoleFixtures.uniqueName("持たれた値"));
+        long otherRole = roles.role(RoleFixtures.uniqueName("続きの値"));
 
-        assertThat((Object) mergeInAnotherConnection(userId, 1L))
-                .as("初めての保存は挿入")
-                .isNull();
-        assertThat((Object) mergeInAnotherConnection(userId, 2L))
-                .as("確定の後の保存は書き換え")
-                .isNull();
+        long[] elapsedNanos = new long[1];
+        RoleStoreOutcome<Void> busy;
+        RoleStoreOutcome<Void> next;
+        try (CommittableWrite earlier = CommittableWrite.hold(
+                TestDatabase.url(tempDir),
+                "INSERT INTO work_role_selections (user_id, role_id, updated_at) VALUES (?, ?, ?)",
+                userId,
+                heldRole,
+                AT)) {
+            Object[] results = tx.execute(status -> {
+                long start = System.nanoTime();
+                RoleStoreOutcome<Void> first = store.saveWorkRoleSelection(userId, heldRole, NOW);
+                elapsedNanos[0] = System.nanoTime() - start;
+                // 待ちの上限切れの後も、同じ接続（トランザクション）で次の文が通る（セーブポイントまで戻っている）。
+                RoleStoreOutcome<Void> second = store.saveWorkRoleSelection(otherUser, otherRole, NOW);
+                assertThat(selectionRows(otherUser)).isOne();
+                status.setRollbackOnly();
+                return new Object[] {first, second};
+            });
+            busy = castOutcome(results[0]);
+            next = castOutcome(results[1]);
+        }
 
-        assertThat(jdbc.queryForList("SELECT role_id FROM work_role_selections WHERE user_id = ?", Long.class, userId))
-                .containsExactly(2L);
+        reporter.publishEntry("lockWaitMillis", Long.toString(TimeUnit.NANOSECONDS.toMillis(elapsedNanos[0])));
+        assertThat(busy).isEqualTo(new RoleStoreOutcome.Busy<>(RoleStore.WORK_ROLE_SELECTION_KEY));
+        assertThat(next).isEqualTo(new RoleStoreOutcome.Done<>(null));
+        assertThat(selectionRows(userId)).isZero();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static RoleStoreOutcome<Void> castOutcome(Object value) {
+        return (RoleStoreOutcome<Void>) value;
     }
 }
