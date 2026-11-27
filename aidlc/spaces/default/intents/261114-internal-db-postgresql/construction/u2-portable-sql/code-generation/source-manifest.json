@@ -1,0 +1,32 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-portable-sql",
+  "version": 1,
+  "writes": [
+    { "path": "backend/src/main/java/cherry/mastersmith/common/persistence/KeyedUpsert.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/common/persistence/KeyedUpsertExecutor.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/common/persistence/KeyedUpsertLostException.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/common/persistence/UpsertOutcome.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/common/persistence/RowLockFailures.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepositoryCustom.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepositoryImpl.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/user/repository/UserRepository.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/role/store/RoleStore.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/dslmanage/repository/DslPreviewRepository.java" },
+    { "path": "backend/src/main/java/cherry/mastersmith/dslmanage/domain/DslPreviewRecord.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/persistence/KeyedUpsertExecutorTest.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/persistence/CommonPersistenceBoundaryArchitectureTest.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/persistence/RowLockFailuresTest.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/StatementCounter.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/StatementCounterTest.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/H2BlockedSessions.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/common/testsupport/CommittableWrite.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/user/repository/SavePreferencesStatementCountIT.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionStatementCountIT.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionFailureClassificationTest.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/role/store/WorkRoleSelectionMergeIT.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslPreviewStatementCountIT.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/dslmanage/repository/DslPreviewPlaceConcurrencyIT.java" },
+    { "path": "backend/src/test/java/cherry/mastersmith/businessdata/BusinessDataBoundaryArchitectureTest.java" }
+  ]
+}
