@@ -1,0 +1,22 @@
+{
+  "stage": "functional-design",
+  "unit": "u3-postgres-behaviour-tests",
+  "upstream_ids": ["FR3.1","FR3.2","FR3.3","FR3.4","FR3.5","FR3.6","FR3.7","FR3.8","FR5.1","FR5.4"],
+  "coverage": [
+    { "id": "FR3.1", "status": "OK", "target": "BR1.1, BR1.2" },
+    { "id": "FR3.2", "status": "OK", "target": "BR2.1, BR2.2" },
+    { "id": "FR3.3", "status": "OK", "target": "BR3.1, BR3.2, BR3.3, BR3.4, BR5.3" },
+    { "id": "FR3.4", "status": "OK", "target": "BR4.1" },
+    { "id": "FR3.5", "status": "OK", "target": "BR5.1, BR5.2, BR5.3" },
+    { "id": "FR3.6", "status": "OK", "target": "BR6.1, BR6.2" },
+    { "id": "FR3.7", "status": "OK", "target": "BR7.1, BR7.2" },
+    { "id": "FR3.8", "status": "OK", "target": "BR8.1" },
+    { "id": "FR5.1", "status": "OK", "target": "BR1.1, BR9.1" },
+    { "id": "FR5.4", "status": "OK", "target": "BR9.2, BR9.3" }
+  ],
+  "reverse": [
+    { "id": "BR9.4", "status": "N/A", "target": "Units Generation の U3 の境界（本体は変えず U2 に戻す）で、FR の ID を持たない" },
+    { "id": "BR9.5", "status": "N/A", "target": "project.md の Forbidden（値を出さない）で、FR の ID を持たない" },
+    { "id": "BR9.6", "status": "N/A", "target": "Units Generation の U3 の実装の注意（時間の記録）で、FR の ID を持たない" }
+  ]
+}
