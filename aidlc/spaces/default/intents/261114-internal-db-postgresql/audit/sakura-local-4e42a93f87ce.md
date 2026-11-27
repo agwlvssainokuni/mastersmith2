@@ -12460,3 +12460,427 @@
 **Run floor**: WORKFLOW_STARTED:2026-11-14T11:05:59Z#1
 
 ---
+
+## Human Turn
+**Timestamp**: 2026-11-27T23:52:11Z
+**Event**: HUMAN_TURN
+**Session**: a32714cb-9b3a-496d-aeb0-d98ef3a13c6b
+**Origin**: person
+**Source**: typed
+**Message Id**: a18808b2
+**Open Questions**: 7e1721f2, 2a43dd96, 16b62a90, 98aa0f56, 506b059a
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:52:43Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/performance-requirements.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > performance-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:52:53Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/security-requirements.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > security-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:52:57Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/scalability-requirements.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > scalability-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:53:07Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/reliability-requirements.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > reliability-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:53:12Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/observability-requirements.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > observability-requirements.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:53:24Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/tech-stack-decisions.md
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > tech-stack-decisions.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:53:33Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/traceability.json
+**Context**: construction > u3-postgres-behaviour-tests > nfr-requirements > traceability.json
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:42Z
+**Event**: SENSOR_FIRED
+**Fire id**: fd3e3a3a
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/performance-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:42Z
+**Event**: SENSOR_PASSED
+**Fire id**: fd3e3a3a
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/performance-requirements.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:42Z
+**Event**: SENSOR_FIRED
+**Fire id**: 5304a017
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/security-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: 5304a017
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/security-requirements.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_FIRED
+**Fire id**: f1505f08
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/scalability-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: f1505f08
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/scalability-requirements.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_FIRED
+**Fire id**: 749b6814
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/reliability-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: 749b6814
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/reliability-requirements.md
+**Duration ms**: 74
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_FIRED
+**Fire id**: cabab35a
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/observability-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: cabab35a
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/observability-requirements.md
+**Duration ms**: 76
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_FIRED
+**Fire id**: 01c9b0d8
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/tech-stack-decisions.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_PASSED
+**Fire id**: 01c9b0d8
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/tech-stack-decisions.md
+**Duration ms**: 78
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:43Z
+**Event**: SENSOR_FIRED
+**Fire id**: f8e24fed
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: SENSOR_PASSED
+**Fire id**: f8e24fed
+**Sensor ID**: required-sections
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/traceability.json
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: SENSOR_FIRED
+**Fire id**: 01e2eab0
+**Sensor ID**: upstream-coverage
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/performance-requirements.md
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: SENSOR_PASSED
+**Fire id**: 01e2eab0
+**Sensor ID**: upstream-coverage
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/performance-requirements.md
+**Duration ms**: 75
+
+---
+
+## Sensor Fired
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: SENSOR_FIRED
+**Fire id**: dd19f5ef
+**Sensor ID**: traceability
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/traceability.json
+
+---
+
+## Sensor Passed
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: SENSOR_PASSED
+**Fire id**: dd19f5ef
+**Sensor ID**: traceability
+**Stage slug**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Output path**: aidlc/spaces/default/intents/261114-internal-db-postgresql/construction/u3-postgres-behaviour-tests/nfr-requirements/traceability.json
+**Duration ms**: 83
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-27T23:53:44Z
+**Event**: REVIEW_REQUESTED
+**Stage**: nfr-requirements
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u3-postgres-behaviour-tests
+**Iteration**: 1
+**Artifact Fingerprint**: sha256:eb62578d2885fc1709611813de89b48cce0fdb48d93ea157c0cfd25483b1032e
+**Request Id**: review:0f37bbdde4d6e7cdb87eab1a736f8432
+**Review File**: .aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:53:48Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviewer-dispatch.json
+**Context**: .aidlc-engine > reviewer-dispatch.json
+
+---
+
+## Subagent Dispatched
+**Timestamp**: 2026-11-27T23:53:56Z
+**Event**: SUBAGENT_DISPATCHED
+**Agent Type**: aidlc-architecture-reviewer-agent
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:54:59Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+**Context**: .aidlc-engine > reviews > nfr-requirements > units > u3-postgres-behaviour-tests > 7cbb284411bc5518 > 1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-27T23:55:09Z
+**Event**: HOST_TURN
+**Session**: a32714cb-9b3a-496d-aeb0-d98ef3a13c6b
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T23:55:10Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: afc5a41f119a791ec
+**Review File Digest**: .aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md=ca6ca66c805e4b7cb6a387a3e993d96ec25fdf65ad537366c6cbf65a993f8d6c
+
+---
+
+## Error Logged
+**Timestamp**: 2026-11-27T23:55:14Z
+**Event**: ERROR_LOGGED
+**Tool**: aidlc-log
+**Command**: aidlc-log engine log review --stage nfr-requirements --reviewer aidlc-architecture-reviewer-agent --unit u3-postgres-behaviour-tests --iteration 1 --verdict READY --project-dir <project-dir>
+**Error**: Refusing REVIEW_COMPLETED for "nfr-requirements": the findings report could not be read: the findings report could not be read: the New findings table header is | ID | Severity | Location | Finding | Required action | Status |; it must be | Severity | Location | Finding | Required action | (an extra ID column is allowed). Write the whole review again with the required Prior findings and New findings tables. Write the whole review again with the required Prior findings and New findings tables. Rerun this review request with --retry-pending and dispatch the reviewer once more.
+
+---
+
+## Review Requested
+**Timestamp**: 2026-11-27T23:55:21Z
+**Event**: REVIEW_REQUESTED
+**Stage**: nfr-requirements
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u3-postgres-behaviour-tests
+**Iteration**: 1
+**Retry**: pending-request
+**Artifact Fingerprint**: sha256:eb62578d2885fc1709611813de89b48cce0fdb48d93ea157c0cfd25483b1032e
+**Request Id**: review:0f37bbdde4d6e7cdb87eab1a736f8432
+**Review File**: .aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+
+---
+
+## Artifact Created
+**Timestamp**: 2026-11-27T23:55:35Z
+**Event**: ARTIFACT_CREATED
+**Tool**: Write
+**File**: <project-dir>/aidlc/spaces/default/intents/261114-internal-db-postgresql/.aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+**Context**: .aidlc-engine > reviews > nfr-requirements > units > u3-postgres-behaviour-tests > 7cbb284411bc5518 > 1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md
+
+---
+
+## Host Turn
+**Timestamp**: 2026-11-27T23:55:38Z
+**Event**: HOST_TURN
+**Session**: a32714cb-9b3a-496d-aeb0-d98ef3a13c6b
+**Origin**: host
+**Reason**: claude agent message
+**Source**: template
+
+---
+
+## Subagent Completed
+**Timestamp**: 2026-11-27T23:55:38Z
+**Event**: SUBAGENT_COMPLETED
+**Agent Type**: aidlc-architecture-reviewer-agent
+**Agent ID**: afc5a41f119a791ec
+**Review File Digest**: .aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.0f37bbdde4d6e7cdb87eab1a736f8432.review.md=34d6607bb6120597af2ec7b7346cf45716960b3a553536912a39e41def62e60f
+
+---
+
+## Review Completed
+**Timestamp**: 2026-11-27T23:55:43Z
+**Event**: REVIEW_COMPLETED
+**Stage**: nfr-requirements
+**Reviewer**: aidlc-architecture-reviewer-agent
+**Unit**: u3-postgres-behaviour-tests
+**Iteration**: 1
+**Verdict**: READY
+**Review Verdict Dictated**: no
+**Request Fingerprint**: sha256:eb62578d2885fc1709611813de89b48cce0fdb48d93ea157c0cfd25483b1032e
+**Artifact Fingerprint**: sha256:eb62578d2885fc1709611813de89b48cce0fdb48d93ea157c0cfd25483b1032e
+**Request Id**: review:0f37bbdde4d6e7cdb87eab1a736f8432
+**Review Record**: .aidlc-engine/reviews/nfr-requirements/units/u3-postgres-behaviour-tests/7cbb284411bc5518/1.json
+**Review Record Digest**: sha256:5bec2000808e3656ef94f5837f1ea5c4a50d61eaa52fb390e861f560e5015ead
+
+---
+
+## Unit Started
+**Timestamp**: 2026-11-27T23:55:54Z
+**Event**: UNIT_STARTED
+**Stage**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Run floor**: WORKFLOW_STARTED:2026-11-14T11:05:59Z#1
+
+---
+
+## Unit Completed
+**Timestamp**: 2026-11-27T23:55:57Z
+**Event**: UNIT_COMPLETED
+**Stage**: nfr-requirements
+**Unit**: u3-postgres-behaviour-tests
+**Run floor**: WORKFLOW_STARTED:2026-11-14T11:05:59Z#1
+
+---
