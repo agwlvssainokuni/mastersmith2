@@ -72,7 +72,11 @@ class BusinessDataBoundaryArchitectureTest {
             "cherry.mastersmith.targetdb.repository.MysqlSchemaQueries",
             "cherry.mastersmith.targetdb.repository.PostgresSchemaQueries",
             "cherry.mastersmith.targetdb.repository.SchemaRows",
-            "cherry.mastersmith.common.health.TimeBoundedDbHealthIndicator");
+            "cherry.mastersmith.common.health.TimeBoundedDbHealthIndicator",
+            // 内部DB の「あれば更新・無ければ挿入」の手順（H2 と PostgreSQL の両方に通す書き込み。u2-portable-sql）
+            "cherry.mastersmith.common.persistence.KeyedUpsertExecutor",
+            // 利用者の設定の保存（JDBC の生成キーで 1 文のまま返す。u2-portable-sql）
+            "cherry.mastersmith.user.repository.UserRepositoryImpl");
 
     /** 一覧の外のクラスが JDBC の文を作る・実行することを禁じる規則。 */
     private static ArchRule noStatementsOutsideTheAllowedOwners() {
