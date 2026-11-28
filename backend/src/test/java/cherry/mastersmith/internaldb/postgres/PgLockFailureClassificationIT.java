@@ -49,8 +49,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 /**
  * 待ちの上限切れ（SQLState {@code 55P03}）の分類（BR5.3）。(1) 実際の PostgreSQL が投げる生の {@code SQLException}（{@code KeyedUpsertExecutor} が
  * JDBC で受ける形）と、それを JPA の例外で包んだ形の両方が {@code RowLockFailures} に当たる。(2) アプリの経路では、作業ロールの保存は
- * {@code Busy}、プレビューを置くは排他の失敗として分類できる例外になる。(3) 付随の観測（合否に入れない）: {@code KeyedUpsertExecutor} の中で行き詰まり
- * （{@code 40P01}）が起きたときの結果を {@code INTERNAL_DB_PG_OBSERVE} の行に出す。
+ * {@code Busy}、プレビューを置くは排他の失敗として分類できる例外になる。(3) {@code KeyedUpsertExecutor} の中で行き詰まり
+ * （{@code 40P01}）が起きて、アプリの側が犠牲になったとき、作業ロールの保存が想定外でなく排他の失敗（{@code Busy}）に分類される。
  */
 @InternalDbPostgresIT
 class PgLockFailureClassificationIT {
@@ -196,15 +196,15 @@ class PgLockFailureClassificationIT {
 
     @Test
     @DisplayName(
-            "observation only: a deadlock detected inside the keyed upsert ends the application transaction and the result is recorded")
-    void observeDeadlockInsideTheKeyedUpsert() throws Exception {
+            "a deadlock detected inside the keyed upsert is classified as a lock failure (Busy), not as an unexpected failure")
+    void deadlockInsideTheKeyedUpsertIsBusy() throws Exception {
         long[] roles = new long[2];
         PortableFixture.Account member = memberWithSelection(roles);
         long other = fixture.createRole(PortableFixture.uniqueName("cls"));
         RoleStore store = app.context().getBean(RoleStore.class);
         JdbcTemplate jdbc = app.context().getBean(JdbcTemplate.class);
         // 犠牲になる側は、先に待ち始めた側の deadlock_timeout（1 秒）が輪の閉じた後に最初に切れる側で、観測のたびに入れ替わりうる。アプリが犠牲になるまで
-        // （最大 5 回）やり直し、各回の結果を出す。
+        // （最大 5 回）やり直す（保持側が犠牲になった回は、アプリ側の保存が成功する）。
         String appResult = "";
         for (int attempt = 1; attempt <= 5; attempt++) {
             Connection holder = probe.openHolder();
@@ -233,10 +233,12 @@ class PgLockFailureClassificationIT {
             System.out.println("INTERNAL_DB_PG_OBSERVE keyedUpsertDeadlock attempt=" + attempt + " app{" + appResult
                     + "} holderSqlState=" + holderState);
             probe.awaitNoWaiters();
-            if (appResult.startsWith("thrown")) {
+            if (!appResult.equals("outcome=Done")) {
                 break;
             }
         }
-        assertThat(appResult).isNotBlank();
+        assertThat(appResult)
+                .as("the application side must be the deadlock victim within 5 attempts, and is a lock failure")
+                .isEqualTo("outcome=Busy");
     }
 }

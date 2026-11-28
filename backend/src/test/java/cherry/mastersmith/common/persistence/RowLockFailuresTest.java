@@ -82,9 +82,19 @@ class RowLockFailuresTest {
         assertThat(RowLockFailures.isLockFailure(wrapped)).isTrue();
     }
 
+    @Test
+    @DisplayName("the PostgreSQL deadlock_detected SQLState 40P01 is a lock failure, directly and deep in the chain")
+    void postgresqlDeadlockDetectedIsLockFailure() {
+        SQLException direct = new SQLException(ROW_VALUE, "40P01", 0);
+        PersistenceException wrapped = new PersistenceException("outer", new RuntimeException("middle", direct));
+
+        assertThat(RowLockFailures.isLockFailure(direct)).isTrue();
+        assertThat(RowLockFailures.isLockFailure(wrapped)).isTrue();
+    }
+
     @ParameterizedTest
-    @ValueSource(strings = {"55000", "55P02", "55P04", "23505"})
-    @DisplayName("SQLStates similar to 55P03 are not lock failures")
+    @ValueSource(strings = {"40000", "40002", "40003", "40P00", "40P02", "55000", "55P02", "55P04", "23505"})
+    @DisplayName("SQLStates similar to 55P03 and 40P01 are not lock failures")
     void similarSqlStatesAreNotLockFailures(String sqlState) {
         assertThat(RowLockFailures.isLockFailure(new SQLException(ROW_VALUE, sqlState, 0)))
                 .isFalse();
