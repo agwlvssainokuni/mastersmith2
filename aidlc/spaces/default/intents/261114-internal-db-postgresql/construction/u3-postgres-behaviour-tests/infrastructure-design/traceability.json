@@ -1,0 +1,33 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u3-postgres-behaviour-tests",
+  "upstream_ids": ["NFR1.1","NFR1.2","NFR5.1","NFR5.4","NFR5.2","NFR5.3","NFR2.1","NFR2.6","NFR3.1","NFR8.1","NFR2.2","NFR9.1","NFR2.3","NFR2.4","NFR2.5","NFR7.1","NFR7.2","NFR4.1","NFR4.6","NFR4.2","NFR4.4","NFR4.5","NFR4.3","NFR9.3","NFR6.2","NFR9.2"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "実行環境の変更が無く、性能の閾値の確かめもテストに入れない" },
+    { "id": "NFR1.2", "status": "N/A", "target": "待ちの時間の測りはテストのコードで、インフラの変更が無い" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md 段と関門の対応・時間の扱い（普段の検査に加わるのは構造のテスト 1 件）" },
+    { "id": "NFR5.4", "status": "OK", "target": "monitoring-design.md Metrics & Alerting（標準出力の 1 行の形）" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline.md 時間の扱い（手動の実行の時間を別に記録）" },
+    { "id": "NFR5.3", "status": "OK", "target": "cicd-pipeline.md 時間の扱い・infrastructure-specification.md 共有のコンテナ（共有のアプリの起動の時間の記録）" },
+    { "id": "NFR2.1", "status": "OK", "target": "infrastructure-specification.md Deployment（新しい秘密情報・環境変数を足さない、資格情報は起動の引数だけ）" },
+    { "id": "NFR2.6", "status": "OK", "target": "monitoring-design.md Health & Failure（失敗の見え方）" },
+    { "id": "NFR3.1", "status": "OK", "target": "infrastructure-specification.md Infrastructure Services（版は U1 の InternalDbPostgresContainer だけ）" },
+    { "id": "NFR8.1", "status": "OK", "target": "cicd-pipeline.md 秘密情報と固定先（依存・イメージ・Action を足さない）" },
+    { "id": "NFR2.2", "status": "OK", "target": "monitoring-design.md Logs & Tracing（行の値・違反の文を出さない）" },
+    { "id": "NFR9.1", "status": "N/A", "target": "テストの依存の構造の決まりで、インフラの変更が無い" },
+    { "id": "NFR2.3", "status": "OK", "target": "infrastructure-specification.md Deployment（資格情報は実行ごとの乱数）" },
+    { "id": "NFR2.4", "status": "OK", "target": "infrastructure-specification.md Shared Infrastructure（専用データベース・管理者の資格情報は create の中だけ）" },
+    { "id": "NFR2.5", "status": "N/A", "target": "DSL の本文の扱いで、インフラの変更が無い" },
+    { "id": "NFR7.1", "status": "OK", "target": "infrastructure-specification.md 資源の大きさ（アプリのインスタンスは 1 つ）" },
+    { "id": "NFR7.2", "status": "OK", "target": "infrastructure-specification.md 資源の大きさ・Shared Infrastructure（コンテナは JVM ごとに 1 つ、並列にしない）" },
+    { "id": "NFR4.1", "status": "N/A", "target": "待ちの確かめの設計で、インフラの設定を持たない" },
+    { "id": "NFR4.6", "status": "OK", "target": "cicd-pipeline.md 段と関門の対応（コンテナの実行環境が無いときは CI で失敗）" },
+    { "id": "NFR4.2", "status": "N/A", "target": "待ち合わせの設計で、インフラの設定を持たない" },
+    { "id": "NFR4.4", "status": "N/A", "target": "テストのクラスの分け方で、インフラの設定を持たない" },
+    { "id": "NFR4.5", "status": "N/A", "target": "テストの独立性の設計で、インフラの設定を持たない" },
+    { "id": "NFR4.3", "status": "N/A", "target": "後始末の設計で、インフラの設定を持たない" },
+    { "id": "NFR9.3", "status": "N/A", "target": "H2 のテストを変えない決まりで、インフラの変更が無い" },
+    { "id": "NFR6.2", "status": "OK", "target": "cicd-pipeline.md 段と関門の対応（普段の検査に入る U3 のテストは構造のテスト 1 件でコンテナを使わない）" },
+    { "id": "NFR9.2", "status": "N/A", "target": "既存の境界テストを緩めない決まりで、インフラの変更が無い" }
+  ]
+}
