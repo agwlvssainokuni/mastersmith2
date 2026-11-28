@@ -17,6 +17,8 @@
 #   外部エクスポートの確認: .env で MASTERSMITH_OBSERVABILITY_EXPORT_ENABLED=true と
 #     MASTERSMITH_OBSERVABILITY_EXPORT_ENDPOINT=http://otel-collector:4318 を設定し、
 #     docker compose --profile observability up -d --build
+#   内部DB を PostgreSQL にする（既定は組み込みの H2）: .env に設定してから
+#     docker compose --profile internal-db-postgres up -d --build （設定・戻し方は docs/internal-db.md）
 # 秘密情報は Git 管理外の .env から渡す（見本は .env.example）。手元で試す対象DB の値だけは .env.targetdb（見本は .env.targetdb.example）。
 name: mastersmith
 
@@ -61,6 +63,12 @@ services:
     # JVM の設定（ヒープの割合など）は .env の MASTERSMITH_JAVA_OPTIONS で変える（Dockerfile の ENTRYPOINT）。
     cpus: ${MASTERSMITH_CONTAINER_CPUS:-4}
     mem_limit: ${MASTERSMITH_CONTAINER_MEMORY:-2g}
+    # 内部DB を PostgreSQL にする（profile internal-db-postgres）ときは、健全になるまでアプリの起動を待つ。
+    # profile を選ばないとき（既定の H2）は、このサービスが無いため依存が外れ、起動は変わらない（required: false）。
+    depends_on:
+      internal-db-postgres:
+        condition: service_healthy
+        required: false
     # 異常で止まったときは再起動しない（開発者が原因を見る）。
     restart: "no"
     logging:
@@ -168,6 +176,42 @@ services:
     mem_limit: 512m
     restart: "no"
 
+  # アプリの内部DB に使う PostgreSQL（Intent 261114-internal-db-postgresql の U4）。既定の内部DB は組み込みの H2 のままで、
+  # 使いたいときだけ profile internal-db-postgres で起動する（手順・戻し方・バックアップは docs/internal-db.md）。
+  #   起動: docker compose --profile internal-db-postgres up -d ／ 止める: docker compose stop internal-db-postgres
+  #   消す: docker compose rm -f internal-db-postgres ／ データを消す: docker volume rm mastersmith_mastersmith-internal-db-postgres
+  # ポートは PC に開けない。アプリのコンテナから compose の中の名前（internal-db-postgres:5432）で接続する。
+  # 版は見本の対象DB（targetdb-postgres）と結合テストのイメージ（TargetDbImages）と同じ値にし、上げるときは一緒に上げる。
+  # 利用者・パスワード・データベース名は .env の MASTERSMITH_INTERNAL_DB_POSTGRES_USER・_PASSWORD・_DATABASE から渡す
+  # （見本は .env.example。値はここに書かない）。パスワードが空なら PostgreSQL が起動を拒む（docker compose logs で理由が出る）。
+  # この3つの値が効くのはデータを作る最初の起動だけで、作った後に .env を変えても効かない（変えるときはボリュームを作り直す。中のデータは消える）。
+  # アプリが使う接続先・利用者・パスワード（.env の MASTERSMITH_DB_URL・MASTERSMITH_DB_USERNAME・MASTERSMITH_DB_PASSWORD）は、同じ値にそろえる。
+  # healthcheck の -h 127.0.0.1 は、公式イメージの初回の初期化の間（unix ソケットだけで待つ一時のサーバー）を健全と誤って判定しないため。
+  internal-db-postgres:
+    image: postgres:18.6@sha256:e3d24f6906d0760bf4da0dae872415391ededefad23fd471c47dc53b0ddf3c42
+    profiles: [internal-db-postgres]
+    environment:
+      POSTGRES_USER: ${MASTERSMITH_INTERNAL_DB_POSTGRES_USER:-}
+      POSTGRES_PASSWORD: ${MASTERSMITH_INTERNAL_DB_POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${MASTERSMITH_INTERNAL_DB_POSTGRES_DATABASE:-}
+    volumes:
+      - mastersmith-internal-db-postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -h 127.0.0.1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    # アプリ（既定 2g）・手元の監視（1536m）・見本の対象DB（512m）と同時に colima の VM（6GiB）で動かすと上限に近づく。
+    # 使うときは、使わない対象DB・手元の監視・負荷の試験を止める（docs/operations.md）。
+    mem_limit: 512m
+    restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
   targetdb-mysql:
     image: mysql:26.10.0@sha256:3819b2b23835c4a73c8b022fafc33c8095c0f81c929a8b7a84613d2fba6c52f5
     profiles: [targetdb-mysql]
@@ -211,6 +255,7 @@ services:
 volumes:
   mastersmith-data:
   mastersmith-monitoring:
+  mastersmith-internal-db-postgres:
   mastersmith-targetdb-postgres:
   mastersmith-targetdb-mysql:
   mastersmith-targetdb-mariadb:

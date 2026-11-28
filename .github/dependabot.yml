@@ -83,6 +83,8 @@ updates:
   #   - Dockerfile の eclipse-temurin:25.0.5_8-jre-noble（この docker の項が見る）
   #   - compose.yaml の otel/opentelemetry-collector・grafana/otel-lgtm（下の docker-compose の項が見る）
   #   - 対象DB（mysql・mariadb・postgres）と Mailpit（前の Intent から固定している。下の docker-compose の項が見る）
+  #   - 内部DB 用の postgres（compose.yaml の internal-db-postgres。Intent 261114-internal-db-postgresql の U4。下の docker-compose の項が見る）。
+  #     見本の対象DB の postgres（targetdb-postgres）と TargetDbImages.postgres() と同じ版・ダイジェストで、上げるときは一緒に上げる
   # Dependabot が見ない固定先: docker/perf/compose.yaml、backend/src/test/java/cherry/mastersmith/targetdb/testsupport/TargetDbImages.java、
   # perf/versions.env（grafana/k6 の K6_IMAGE と eclipse-temurin の jre の PERF_JRE_IMAGE。perf/README.md・perf/h2-shell.sh・
   # perf/dsl-mixed-memory.sh はここを読む。Intent 261025-deps-perf-carryover の FR3.6 で1か所にまとめた）、
@@ -117,6 +119,7 @@ updates:
         update-types: ["version-update:semver-major"]
   # compose.yaml のイメージ（手元でメールを見る受け手 Mailpit、手元の監視、見本の対象DB など。Intent 260925-user-management の U1）。
   # 見本の対象DB のイメージを上げるときは、結合テストのイメージの定数（TargetDbImages）と一緒に上げる。
+  # 内部DB 用の postgres（internal-db-postgres）も、targetdb-postgres・TargetDbImages.postgres() と同じ版・ダイジェストで一緒に上げる。
   # どのイメージもダイジェストで固定している。上げるときは上の docker の項の「ダイジェストでのイメージの固定」の決まりに従い、
   # Dependabot が見ない固定先（docker/perf/compose.yaml・TargetDbImages・perf/README.md・docs/ の文書）も手で揃える。
   - package-ecosystem: docker-compose
