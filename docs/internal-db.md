@@ -83,7 +83,9 @@ mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
 (umask 077 && docker compose --profile internal-db-postgres exec -T internal-db-postgres \
   sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > ~/.mastersmith-backup/mastersmith-pg-$(date +%Y%m%d%H%M).dump)
 ls -l ~/.mastersmith-backup/     # ファイルができたこと（中身は開かない）
-docker compose start app         # 配備の途中なら起動せず、次の手順で新しい版を起動する
+# 次の 1 行は、止めたアプリをそのまま再開するときだけ実行する。配備の途中（新しい版へ入れ替える）なら実行せず、
+# 次の手順で新しい版を起動する（止めたままの古い版を起動してしまうため）。
+docker compose start app
 ```
 
 戻すときは、アプリを止め、複写を流し込みます。
