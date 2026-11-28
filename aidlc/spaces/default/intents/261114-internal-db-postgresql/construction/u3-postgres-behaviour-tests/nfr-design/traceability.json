@@ -1,0 +1,25 @@
+{
+  "stage": "nfr-design",
+  "unit": "u3-postgres-behaviour-tests",
+  "upstream_ids": ["NFR1.1","NFR1.2","NFR5.1","NFR5.2","NFR5.3","NFR2.1","NFR2.2","NFR2.3","NFR2.4","NFR2.5","NFR7.1","NFR7.2","NFR4.1","NFR4.2","NFR4.3","NFR4.4","NFR4.5","NFR4.6"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "DD-8: 性能の閾値の確かめを入れない" },
+    { "id": "NFR1.2", "status": "OK", "target": "DD-1: 待ちの時間は呼び出しの開始から測り幅は広げない（WaitWindow）" },
+    { "id": "NFR5.1", "status": "OK", "target": "DD-9: タグで除外、普段の検査に加わるのは構造のテスト 1 件で 1 秒未満を記録" },
+    { "id": "NFR5.2", "status": "OK", "target": "DD-10・DD-11: 全体と待ち 1 件ごとの時間を記録、合計の見込みを計画で数える" },
+    { "id": "NFR5.3", "status": "OK", "target": "DD-5・DD-10: 共有のアプリを JVM で 1 回起動し起動の時間を記録" },
+    { "id": "NFR2.1", "status": "OK", "target": "DD-12: 接続の情報を出さない、PgSecretLeakIT" },
+    { "id": "NFR2.2", "status": "OK", "target": "DD-13: 件数・状態コード・code だけを出し、違反の文を出さない" },
+    { "id": "NFR2.3", "status": "OK", "target": "DD-14: TestDatabase.randomSecret を許す側に決め、予約のドメインだけ" },
+    { "id": "NFR2.4", "status": "OK", "target": "DD-15: 専用データベースの中だけで起こし、管理者の資格情報を create の中に限る" },
+    { "id": "NFR2.5", "status": "OK", "target": "DD-16: 10MB の本文・ハッシュを出力に出さない" },
+    { "id": "NFR7.1", "status": "OK", "target": "DD-19: アプリのインスタンスは 1 つ" },
+    { "id": "NFR7.2", "status": "OK", "target": "DD-20: 並列実行を使わない" },
+    { "id": "NFR4.1", "status": "OK", "target": "DD-1・DD-2: 4 経路の待ちの確かめと、観測を合図に輪を閉じる行き詰まり" },
+    { "id": "NFR4.2", "status": "OK", "target": "DD-4: 待ち合わせは pg_stat_activity の観測、上限 10 秒" },
+    { "id": "NFR4.3", "status": "OK", "target": "DD-4: ROLLBACK して閉じ、待ちが残らない確認" },
+    { "id": "NFR4.4", "status": "OK", "target": "DD-3・DD-5: 時刻のテストは専用のクラス、待ちの設定はクラスごとのアプリ" },
+    { "id": "NFR4.5", "status": "OK", "target": "DD-6: 1 クラスを単独で流して通る確かめ" },
+    { "id": "NFR4.6", "status": "OK", "target": "DD-7: @InternalDbPostgresIT で U1 の実行環境の確かめを受ける" }
+  ]
+}
