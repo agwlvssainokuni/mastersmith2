@@ -127,7 +127,7 @@ docker compose --profile monitoring stop lgtm   # 見終わったら止め、.en
 
 ### 監査ログの確かめ方
 
-アプリを止めてボリュームを複写し、**複写したファイル**を読み取りで開きます（H2 のコンソールは使いません）。
+アプリを止めてボリュームを複写し、**複写したファイル**を読み取りで開きます（H2 のコンソールは使いません）。次の複写の手順（ボリュームの `tar`）と読み方は、内部DB が H2 のときだけです。内部DB を PostgreSQL にしているときは、`docs/internal-db.md` の「PostgreSQL の内部DB のバックアップと戻し」で `pg_dump` の複写を取り、「戻した後の確かめ」の形で `psql` の件数を読み取りで数えます（audit_events の種類・結果ごとの件数など。個人に関する値は出しません）。
 
 ```bash
 docker compose stop app
@@ -154,7 +154,8 @@ SELECT failure_reason, source_ip, COUNT(*) AS failures
 ### 消してはいけない操作
 
 - **ボリュームを消す操作（`docker compose down -v` など）を、バックアップの前に行わないでください。** 監査ログも一緒に消えます。
-- 版を替える前は、`docs/internal-db.md` の「内部DBのバックアップと戻し方」の手順でボリュームを複写します。この手順で監査ログも一緒に守られます。
+- 版を替える前は、`docs/internal-db.md` の「内部DBのバックアップと戻し方」（H2）または「PostgreSQL の内部DB のバックアップと戻し」（PostgreSQL）の手順で複写を取ります。この手順で監査ログも一緒に守られます。内部DB を PostgreSQL にしているときのボリューム `mastersmith_mastersmith-internal-db-postgres` も、バックアップの前に消さないでください。
+- 内部DB 用の PostgreSQL（compose の profile `internal-db-postgres`、メモリの上限 512m）を使うときは、colima の VM（6GiB）の中で、アプリ（既定 2g）・手元の監視（1536m）・見本の対象DB（512m）と同時に動かすと上限に近づきます。使うときは、使わない対象DB・手元の監視・負荷の試験を止めます。
 - OS の権限を持つ者によるファイルの直接の書き換えは、アプリでは検知できません（受け入れている危険です）。
 
 ## 手元の環境の読み取りの確かめ（`scripts/ops-readonly-check.mjs`）

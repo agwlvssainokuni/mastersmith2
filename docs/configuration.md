@@ -11,9 +11,12 @@
 | `MASTERSMITH_CONTAINER_CPUS` | `4` | アプリのコンテナの CPU の上限（`docker compose` だけが使う）。Docker の VM の CPU が 4 に満たない PC では下げる。照合の時間の目標は 4 が前提 |
 | `MASTERSMITH_CONTAINER_MEMORY` | `2g` | アプリのコンテナのメモリの上限（`docker compose` だけが使う。`1g`・`1536m` の形）。colima の VM が CPU 4・メモリ 6GiB に満たない PC では下げる。1g では高い負荷で止まりうる（`docs/deployment.md` の「コンテナの資源の上限」の「既知の制約」） |
 | `MASTERSMITH_JAVA_OPTIONS` | なし | JVM に足す引数（空白で区切る。例: `-XX:MaxRAMPercentage=40.0 -XX:MaxMetaspaceSize=256m`）。既定の引数（最大ヒープはメモリの上限の 50%、ヒープが尽きたら JVM を止める、タイムゾーン Asia/Tokyo（対象DB の日時の受け渡しと画面の時刻はこの値に依らない。`docs/target-db.md` の「日時・時刻の値」）、H2 の詰め直しのスレッド 1 本）の後ろに置くため、同じ指定は上書きになる。空白を含む値は扱わない。イメージの作り直しは要らず、コンテナの作り直し（`docker compose up -d`）で効く |
-| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
-| `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者 |
-| `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報） |
+| `MASTERSMITH_DB_URL` | `jdbc:h2:file:./data/mastersmith;DEFRAG_ALWAYS=TRUE` | 内部DBの接続先（コンテナでは `/app/data/mastersmith`）。接続先から内部DB の種類を判断する。PostgreSQL にするときは `jdbc:postgresql://internal-db-postgres:5432/<データベース名>`（`;DEFRAG_ALWAYS=TRUE` は付けない。手順は `docs/internal-db.md` の「内部DB を PostgreSQL にする」）。以降の `;DEFRAG_ALWAYS=TRUE` の説明は H2 のときだけ。`;DEFRAG_ALWAYS=TRUE` は、アプリの停止時（DB を閉じるとき）にファイルを詰め直す指定。付けないと、DSL の履歴の古い行を消しても H2 のファイルが縮まず、投入と適用を重ねるたびに大きくなる（起動し直しても縮まない）。上書きするときも `;DEFRAG_ALWAYS=TRUE` を付ける（アプリを止めずに詰め直す `docker/hikari-pool.sh compact` にも要る） |
+| `MASTERSMITH_DB_USERNAME` | `sa` | 内部DBの利用者。PostgreSQL のときは、下の `MASTERSMITH_INTERNAL_DB_POSTGRES_USER` と同じ値 |
+| `MASTERSMITH_DB_PASSWORD` | 空 | 内部DBのパスワード（秘密情報）。PostgreSQL のときは、下の `MASTERSMITH_INTERNAL_DB_POSTGRES_PASSWORD` と同じ値。H2 に戻すときは、H2 を作ったときの値（既定は空）に戻す |
+| `MASTERSMITH_INTERNAL_DB_POSTGRES_USER` | 空 | 内部DB 用の PostgreSQL のコンテナ（compose の profile `internal-db-postgres`）に渡す利用者の名前（`docker compose` だけが使う。アプリは読まない）。データを作る最初の起動のときだけ効く |
+| `MASTERSMITH_INTERNAL_DB_POSTGRES_PASSWORD` | 空 | 同じコンテナに渡すパスワード（秘密情報。`docker compose` だけが使う）。空だと PostgreSQL が起動を拒む。データを作る最初の起動のときだけ効く |
+| `MASTERSMITH_INTERNAL_DB_POSTGRES_DATABASE` | 空 | 同じコンテナに渡すデータベースの名前（`docker compose` だけが使う）。データを作る最初の起動のときだけ効く。この3つの `MASTERSMITH_INTERNAL_DB_POSTGRES_*` は、見本の対象DB の `.env.targetdb` の値とは別 |
 | `MASTERSMITH_DB_MAXIMUM_POOL_SIZE` | `30` | 内部DBの接続プールの接続の数の上限。同時の要求がこの数に達すると監査の記録が欠けうる（`docs/operations.md` の「監査ログ」の「既知の制約」を参照） |
 | `MASTERSMITH_HEALTH_DB_TIMEOUT` | `2s` | ヘルスチェックの内部DBの確認の制限時間 |
 | `MASTERSMITH_WEB_BASE_URL` | なし | ベースURL（例 `http://localhost:8080`）。3つに使う: 招待のリンクの元（無い・形が正しくないと招待と送り直しだけが 503）、ログイン・更新・ログアウトの Origin の確かめ（入れると Origin がこの値に固定される）、エラー応答の `type` の URL（無ければ要求から組み立てる）。http か https の絶対 URL で、問い合わせ・`#`・利用者情報を含めない |

@@ -2,7 +2,7 @@
 
 MasterSmith（マスタ管理アプリ）のリポジトリです。バックエンドは Java 25・Spring Boot 4（`backend/`）、画面は React＋TypeScript とデザインシステム make-you-chic-ui（`frontend/`、`vendor/make-you-chic-ui`）で作り、画面を同梱した実行可能 WAR を1つのコンテナで動かします。
 
-アプリは、内部DB（組み込みの H2）に置く利用者・認証・アクセス制御・監査ログ・DSL・ロールと権限・業務のメニューと、利用者の業務データの DB（対象DB）の読み書きを持ちます。ヘルスチェック、1行1件の JSON のログ、分散トレースと外部エクスポート（既定は無効）、共通のエラー応答、画面の骨組み（AppShell とログイン用レイアウト）もこの中にあります。
+アプリは、内部DB（既定は組み込みの H2。PostgreSQL も選べます。下の「内部DB を PostgreSQL にする」）に置く利用者・認証・アクセス制御・監査ログ・DSL・ロールと権限・業務のメニューと、利用者の業務データの DB（対象DB）の読み書きを持ちます。ヘルスチェック、1行1件の JSON のログ、分散トレースと外部エクスポート（既定は無効）、共通のエラー応答、画面の骨組み（AppShell とログイン用レイアウト）もこの中にあります。
 
 詳しい手順と説明は `docs/` の主題ごとの文書にあります（下の「文書の目次」）。
 
@@ -100,13 +100,27 @@ docker compose --profile targetdb-postgres ps              # app が healthy、t
 - ログは `docker compose logs -f app`（1行1件の JSON）で見ます。1つの要求のログは `traceId` で絞り込めます。メッセージ（`message`）の中の改行は「 ⏎ 」（前後に空白を置いた U+23CE）に置き換えて出すため、Hibernate の起動の案内（ロガー `org.hibernate.orm.connections.pooling`）のような複数行のメッセージも1件が1行に収まります。スタックトレース（`exception`）の改行はそのままです。
 - 止めるときは `docker compose --profile targetdb-postgres down`（アプリと見本の対象DB を一緒に止めます。内部DB と見本の対象DB のデータはボリュームに残ります）。
 
+## 内部DB を PostgreSQL にする（任意）
+
+内部DB の既定は組み込みの H2 で、何も設定しなければ今までどおり動きます。PostgreSQL 18 系を使いたいときだけ、compose の profile `internal-db-postgres` で内部DB 用の PostgreSQL（見本の対象DB とは別のコンテナ・別のボリューム）を起動し、アプリの接続先を向けます。
+
+```bash
+# .env に6つの設定を入れてから（値は各自で決めてコミットしない。見本は .env.example、手順は docs/internal-db.md）
+docker compose --profile internal-db-postgres up -d --build
+docker compose --profile internal-db-postgres ps    # internal-db-postgres・app が healthy になれば起動の完了
+```
+
+- 設定・H2 に戻す手順・バックアップと戻し（`pg_dump`・`pg_restore`）・困ったときは `docs/internal-db.md` の「内部DB を PostgreSQL にする」と「PostgreSQL の内部DB のバックアップと戻し」。H2 だけの運用（ファイルの詰め直しなど）は PostgreSQL に当たりません。
+- 既知の制約（詳細は同じ節）: 起動のログ（Flyway の INFO）に資格情報を含まない接続先の URL が出ます。アプリはデータベースの所有者の 1 アカウントで接続します（手元の単一インスタンスの前提）。利用者の検索の Unicode の端（`İ`・語末のシグマ・`ǅ`）の 3 つだけ H2 と結果が違います。MySQL・MariaDB は内部DB として対応しません。
+- 内部DB の PostgreSQL の結合テストは、普段の `./gradlew verify`・`./gradlew verifyQuick`・CI では流れず、明示して流します（`docs/verification.md` の「内部DB の PostgreSQL の結合テスト」）。
+
 ## 文書の目次
 
 | 文書 | 中身 | 主な節 |
 |---|---|---|
 | `docs/verification.md` | 検査とテスト | 1コマンドの検査（統合の前の関門）・全件の `verify` と `verifyQuick` の使い分け（`-PitTests`・`-PitForks`・JaCoCo の参考値）・依存関係の脆弱性の判定（OSV-Scanner）・リリースの前の確かめ・ビルドした WAR での画面の確認（E2E）・E2E の見本の PostgreSQL・結果と報告 |
 | `docs/deployment.md` | 配備と戻し | 使える管理者がいなくなったとき（初期管理者の救済）・戻し方・コンテナの資源の上限（colima の VM・メモリ・JVM）・設定の効き方の確かめ・プロキシを置く配備・スキーマの変更（Flyway） |
-| `docs/internal-db.md` | 内部DB のバックアップと詰め直し | 内部DBのバックアップと戻し方・内部DBの複写を数える・内部DBのファイルの詰め直し（アプリを止めずに） |
+| `docs/internal-db.md` | 内部DB（H2 と PostgreSQL）のバックアップと詰め直し | 内部DB を PostgreSQL にする・PostgreSQL の内部DB のバックアップと戻し・H2 のときだけの運用・内部DBのバックアップと戻し方（H2）・内部DBの複写を数える（H2）・内部DBのファイルの詰め直し（アプリを止めずに。H2） |
 | `docs/configuration.md` | 構成と設定 | 環境変数（`.env`・`.env.targetdb` の項目と既定値の一覧） |
 | `docs/mail.md` | メール | メール・暗号化の方式の書き方・運用で設定しない値・手元でメールを見る（Mailpit） |
 | `docs/target-db.md` | 対象DB と見本の DB | 対象DB（利用者の業務データの DB）・業務データの読み取りの API・日時・時刻の値・業務データの書き込みの API・対象DB の結合テストとコンテナの実行環境・手元で試す対象DB（compose の profile）・既にある見本の DB に書き込みのアカウントを足す |

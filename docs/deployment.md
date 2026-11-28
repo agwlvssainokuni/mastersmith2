@@ -41,7 +41,9 @@ MASTERSMITH_IMAGE_TAG=pre-dsl docker compose ps app                 # healthy �
 - 戻し用のタグのイメージが無いとき（消してしまったとき）は、直前の版のコミット（前回の配備で控えたハッシュ）を `git worktree add ../mastersmith-rollback <ハッシュ>` で取り出し、`(cd ../mastersmith-rollback && git submodule update --init && ./gradlew :backend:bootWar)` で WAR を作り、その WAR で `docker build -t mastersmith:<戻し用のタグ> .` を行ってから、上の手順で起動します。終わったら `git worktree remove ../mastersmith-rollback` で消します。
 - 見本の対象DB（`targetdb-postgres`）は戻しの対象外です。動かしたままでよく、古い版が `MASTERSMITH_TARGET_DB_*` を読まないときは使われません。
 
-スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたとき、移行（Flyway）が途中で失敗したときだけ、配備の前に取ったバックアップを展開してデータも戻します（`docs/internal-db.md` の「内部DBのバックアップと戻し方」。バックアップの後の記録は失われます）。
+スキーマの変更は前進のみ・後方互換のため、1つ前の版のアプリが今のスキーマで動きます。スキーマは戻しません。データが壊れたとき、移行（Flyway）が途中で失敗したときだけ、配備の前に取ったバックアップを展開してデータも戻します（H2 は `docs/internal-db.md` の「内部DBのバックアップと戻し方」、PostgreSQL は同じ文書の「PostgreSQL の内部DB のバックアップと戻し」。バックアップの後の記録は失われます）。
+
+内部DB の種類（H2 か PostgreSQL か）は、`.env` の `MASTERSMITH_DB_URL` で決まります（既定は H2。PostgreSQL にする手順と H2 に戻す手順は `docs/internal-db.md` の「内部DB を PostgreSQL にする」）。内部DB を PostgreSQL にしているときは、上の戻しの `docker compose` のコマンドに `--profile internal-db-postgres` を付け（付けないと PostgreSQL のコンテナを待たずにアプリが起動し、接続できません）、イメージだけを戻します（PostgreSQL のコンテナは動かしたままにします）。上の「止めるときに H2 のファイルが詰め直される」「ファイルの詰め直し」は H2 のときだけで、PostgreSQL には当たりません。内部DB の種類を替える（H2 に戻す）ときは、`.env` の接続先を替えて作り直し、データは行き来しません。
 
 V9（利用停止の列 `users.suspended`、下の「スキーマの変更（Flyway）」）を当てた後に1つ前の版へ戻すときは、**戻している間は利用停止が効かなくなる**（1つ前の版は停止の列を読まないため、停止中の利用者もログイン・トークンの更新・アクセストークンの認証の3つの入口で受け付けられる）ことに気を付けます。戻す前に停止中の利用者がいるかを確かめ、いたときの扱い（戻さない・戻した後に止め直す など）を決めてから戻します。
 

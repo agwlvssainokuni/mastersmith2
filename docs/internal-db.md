@@ -1,10 +1,127 @@
-# 内部DB のバックアップと詰め直し
+# 内部DB（H2 と PostgreSQL）のバックアップと詰め直し
 
-内部DB（組み込みの H2）のバックアップと戻し方、複写を読み取りだけで数える道具、アプリを止めずにファイルを詰め直す手順をまとめた文書です。
+内部DB は既定で組み込みの H2 です。compose の profile で、内部DB 用の PostgreSQL に切り替えることもできます。この文書は、PostgreSQL にする手順・既知の制約・バックアップと戻し（PostgreSQL）と、H2 のバックアップと戻し方、複写を読み取りだけで数える道具、アプリを止めずにファイルを詰め直す手順（H2 だけ）をまとめた文書です。
+
+どちらの内部DB でも、アプリは接続先（`MASTERSMITH_DB_URL`）から種類を判断します（`jdbc:postgresql:` なら PostgreSQL、それ以外は H2）。表は、PostgreSQL では PostgreSQL 用の移行（Flyway の V1〜V14）で作ります。
+
+## 内部DB を PostgreSQL にする
+
+既定の配備は H2 のままで、何もしなければ PostgreSQL は起動しません。使いたいときだけ、compose の profile `internal-db-postgres` で内部DB 用の PostgreSQL のコンテナ（サービス `internal-db-postgres`）を起動し、アプリの接続先をそちらに向けます。見本の対象DB（`targetdb-postgres`）とは別のサービス・別のボリューム・別の資格情報です。
+
+- **対応する版**: PostgreSQL 18 系だけです。イメージの版とダイジェストは `compose.yaml` の `internal-db-postgres` を見てください（見本の対象DB の PostgreSQL と、結合テストのイメージ（`TargetDbImages`）と同じ値で、上げるときは3つを一緒に上げます。`.github/dependabot.yml` のコメントも参照）。MySQL・MariaDB は内部DB として対応しません（対象DB としては使えます）。
+- **ポート**: PC に開けません。アプリのコンテナから `internal-db-postgres:5432` で接続します。
+- **メモリ**: 上限 512m です。アプリ（既定 2g）・手元の監視・見本の対象DB と同時に動かすと colima の VM（6GiB）の近くになるため、使うときは使わない対象DB・手元の監視・負荷の試験を止めます（`docs/operations.md`）。
+
+### 手順
+
+1. `.env` に、次の6つを設定します。値は各自で決め、ファイルにも文書にも書き残さず、コミットしません（見本は `.env.example` の「内部DB を PostgreSQL にする」）。パスワードは乱数で作ることを勧めます（例: `openssl rand -hex 24`。英数字だけになり、`$` の展開などに左右されません）。
+
+   | 変数 | 値 | 渡す先 |
+   |---|---|---|
+   | `MASTERSMITH_INTERNAL_DB_POSTGRES_USER` | 利用者の名前 | PostgreSQL のコンテナ |
+   | `MASTERSMITH_INTERNAL_DB_POSTGRES_PASSWORD` | パスワード（秘密情報） | PostgreSQL のコンテナ |
+   | `MASTERSMITH_INTERNAL_DB_POSTGRES_DATABASE` | データベースの名前 | PostgreSQL のコンテナ |
+   | `MASTERSMITH_DB_URL` | `jdbc:postgresql://internal-db-postgres:5432/<データベース名>` | アプリ |
+   | `MASTERSMITH_DB_USERNAME` | 上の利用者の名前と同じ | アプリ |
+   | `MASTERSMITH_DB_PASSWORD` | 上のパスワードと同じ | アプリ |
+
+   3つとも値を入れてください。パスワードが空だと PostgreSQL が起動を拒みます。利用者・データベース名が空だと `postgres` になり、アプリの設定とずれます。`MASTERSMITH_DB_URL` に `;DEFRAG_ALWAYS=TRUE` は付けません（H2 だけの指定です）。
+2. 起動します。PostgreSQL が健全（`pg_isready`）になってからアプリが起動します。
+
+   ```bash
+   docker compose --profile internal-db-postgres up -d --build
+   docker compose --profile internal-db-postgres ps    # internal-db-postgres・app が healthy になれば起動の完了
+   ```
+
+   見本の対象DB も使うときは、`--profile targetdb-postgres` も付けます（`docker compose --profile internal-db-postgres --profile targetdb-postgres up -d --build`）。以降の `docker compose` のコマンドにも同じ `--profile` を付けます。
+3. 空の内部DB に、アプリが最初の起動で表を作ります。初期管理者は、`.env` の初期管理者の設定（`README.md` の「コンテナでの起動と確認」）で H2 のときと同じように作られます。
+
+### H2 に戻す
+
+1. アプリを止めます（`docker compose stop app`）。
+2. `.env` の `MASTERSMITH_DB_URL`・`MASTERSMITH_DB_USERNAME` の行を消し（またはコメントにし）、`MASTERSMITH_DB_PASSWORD` を、H2 を作ったときの値（既定は空）に戻します。H2 を空でないパスワードで作っていた場合は、その値に戻します。
+3. `--profile internal-db-postgres` を付けずにアプリを作り直します（`docker compose up -d --build`）。
+
+H2 のデータは別のボリューム（`mastersmith-data`）に残っていて、PostgreSQL のデータとは行き来しません（PostgreSQL にしていた間の利用者・監査・DSL は H2 には現れません）。PostgreSQL のコンテナとデータは、止めただけでは残ります（消し方は次の節）。
+
+### PostgreSQL のコンテナとデータを止める・消す
+
+```bash
+docker compose --profile internal-db-postgres stop internal-db-postgres      # 止める（データは残る）
+docker compose --profile internal-db-postgres rm -sf internal-db-postgres    # コンテナを消す（データは残る）
+docker volume rm mastersmith_mastersmith-internal-db-postgres                # データを消す（元に戻せない。先にバックアップを取る）
+```
+
+PostgreSQL は、データを作る最初の起動のときだけ、`.env` の利用者・パスワード・データベース名を使います。作った後に `.env` の値を変えても効きません（アプリの接続先と食い違うと、アプリの接続が認証で失敗します）。値を変えるときは、アプリと PostgreSQL のコンテナを消し、ボリュームを消して作り直します（中のデータは消えるため、必要なら先にバックアップを取り、作り直した後に戻します）。
+
+### 既知の制約
+
+- **起動のログに接続先の URL が出る**: アプリの起動のとき、Flyway の INFO に、資格情報を含まない接続先の URL（ホスト・番号・データベース名）が出ます。利用者の名前とパスワードは出ません。
+- **アプリの利用者がデータベースの所有者の 1 アカウント**: アプリは、PostgreSQL のコンテナの `MASTERSMITH_INTERNAL_DB_POSTGRES_USER`（所有者でスーパーユーザー）と同じ 1 つのアカウントで接続します。管理用と接続用に分けていません。手元の単一インスタンスで、利用者の入力が直接届かない内部DB のための前提です。権限を分けた形は、配備先が決まるまで決めません。
+- **利用者の検索の Unicode の端の差**: 利用者の検索（大文字・小文字を区別しない部分一致）は、日常の入力（日本語・全角と半角・カナ・記号・`%`・`_`・`\`）では H2 と PostgreSQL で同じ結果です。次の 3 つの端だけが違います。
+  - `İstanbul`（点付きの大文字の I）は、検索語 `i` に PostgreSQL では当たり、H2 では当たりません。
+  - 語末のシグマ `ς` と `σ` は、H2 では同じ文字として扱い、PostgreSQL では別の文字です。
+  - `ǅ` は、検索語 `ǆ` に PostgreSQL では当たります。
+- **内部DB として使えるのは H2 と PostgreSQL だけ**: MySQL・MariaDB は内部DB として対応しません。
+- **H2 のときだけの運用は PostgreSQL に当たりません**（下の「H2 のときだけの運用」）。
+
+### 困ったとき
+
+- **PostgreSQL のコンテナが起動しない・すぐ止まる**: `docker compose --profile internal-db-postgres logs internal-db-postgres` で理由を見ます。パスワードが空のときは、パスワードが未設定である旨が出ます（`.env` の `MASTERSMITH_INTERNAL_DB_POSTGRES_PASSWORD` を入れる）。アプリは PostgreSQL が健全になるまで起動しません。
+- **値を変えたのに効かない**: 上のとおり、値が効くのはデータを作る最初の起動だけです。ボリュームを作り直します。PostgreSQL のコンテナの健全の判定（`pg_isready`）は、利用者・パスワードを確かめません。接続の失敗は、アプリのログと `docker compose logs internal-db-postgres` に出ます。
+- **アプリが接続できない**: `.env` の `MASTERSMITH_DB_URL` のホスト名が `internal-db-postgres` で、利用者・パスワード・データベース名がコンテナ側の3つと同じかを確かめます。
+
+## PostgreSQL の内部DB のバックアップと戻し
+
+PostgreSQL のコンテナの中の `pg_dump`・`pg_restore`・`psql` を、`docker compose exec -T … sh -c '…'` で呼びます。`sh -c` の単一引用符で、利用者とデータベースの名前をコンテナの中の環境変数（`POSTGRES_USER`・`POSTGRES_DB`）から展開させ、手元のシェルでは展開させません。パスワードはコマンドにも手元の環境にも書きません（コンテナの中の接続は、パスワードを要さない同じコンテナ内の接続です）。`-T` は TTY を付けない指定で、`-Fc` の出力が壊れないために付けます。
+
+複写は、リポジトリの外のホームの下（`~/.mastersmith-backup/`、権限 700）に置き、コミットしません。複写には利用者・監査などの個人に関する値が入ります。置き場を `mktemp -d` の一時ディレクトリにしません（colima の VM から見えません）。
+
+```bash
+docker compose stop app
+mkdir -p ~/.mastersmith-backup && chmod 700 ~/.mastersmith-backup
+(umask 077 && docker compose --profile internal-db-postgres exec -T internal-db-postgres \
+  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > ~/.mastersmith-backup/mastersmith-pg-$(date +%Y%m%d%H%M).dump)
+ls -l ~/.mastersmith-backup/     # ファイルができたこと（中身は開かない）
+docker compose start app         # 配備の途中なら起動せず、次の手順で新しい版を起動する
+```
+
+戻すときは、アプリを止め、複写を流し込みます。
+
+```bash
+docker compose stop app
+docker compose --profile internal-db-postgres exec -T internal-db-postgres \
+  sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists' < ~/.mastersmith-backup/<複写のファイル>
+docker compose start app
+```
+
+- **失うもの**: 戻すと、複写を取った後の記録（利用者・ロール・DSL・監査の行など）は失われます。
+- **残るもの**: `--clean --if-exists` が消して作り直すのは、複写にある物だけです。複写を取った後に足された表（アプリの版を上げたときの移行の表など）は残ります。複写を取った時点とまったく同じ状態にしたいときは、PostgreSQL のコンテナとボリュームを消して作り直し（上の「PostgreSQL のコンテナとデータを止める・消す」）、空の PostgreSQL に `--clean --if-exists` を付けずに `pg_restore` します（アプリは止めたままにします）。
+- **戻した後の確かめ**: 次の件数を、複写を取る前（または取った直後）の値と並べて、一致を確かめます。個人に関する値は出しません。
+
+  ```bash
+  docker compose --profile internal-db-postgres exec -T internal-db-postgres sh -c \
+    'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -c "select count(*) from users" -c "select count(*) from roles" -c "select event_type, result, count(*) from audit_events group by 1, 2 order by 1, 2"'
+  ```
+
+  H2 の `scripts/count-db-copy.mjs`（下の「内部DBの複写を数える」）は H2 の複写だけを数え、PostgreSQL には使えません。
+- **配備の戻し**: 配備の前に複写を取っておき、データが壊れたとき・移行が途中で失敗したときだけ、上の戻しを行います（`docs/deployment.md` の「戻し方」。スキーマは前進のみで戻しません）。
+
+## H2 のときだけの運用
+
+次の 5 つは、内部DB が組み込みの H2 のときだけの運用です。PostgreSQL の内部DB には当たりません（PostgreSQL は上の節の手順で、バックアップは `pg_dump`、ファイルの詰め直しは要りません）。
+
+| H2 だけの運用 | この文書の節 |
+|---|---|
+| 停止時にファイルを詰め直す `;DEFRAG_ALWAYS=TRUE`（接続先の指定） | 下の「内部DBのファイルの詰め直し（アプリを止めずに）」 |
+| アプリを止めずに詰め直す `docker/hikari-pool.sh`（`status`・`compact`・`resume`） | 下の「内部DBのファイルの詰め直し（アプリを止めずに）」 |
+| 使い捨ての環境の H2 を読む `perf/h2-shell.sh` | 下の「内部DBのファイルの詰め直し（アプリを止めずに）」の最後の項と `perf/README.md` |
+| ボリュームのファイルの複写・`tar` での戻し（バックアップと戻し） | 下の「内部DBのバックアップと戻し方」 |
+| 詰め直しのスレッドを 1 本にする JVM の引数 `-Dh2.compactThreads=1` | 下の「内部DBのファイルの詰め直し（アプリを止めずに）」 |
 
 ## 内部DBのバックアップと戻し方
 
-アプリを止めてから、ボリュームのファイルをリポジトリの外（ホームの下の `~/.mastersmith-backup/`、権限 700）に複写します。置き場を `mktemp -d` の一時ディレクトリにしません（colima の VM から見えず、複写が空振りします）。
+**H2 のときだけ**の手順です（PostgreSQL は上の「PostgreSQL の内部DB のバックアップと戻し」）。アプリを止めてから、ボリュームのファイルをリポジトリの外（ホームの下の `~/.mastersmith-backup/`、権限 700）に複写します。置き場を `mktemp -d` の一時ディレクトリにしません（colima の VM から見えず、複写が空振りします）。
 
 ```bash
 docker compose stop app
@@ -27,6 +144,8 @@ docker compose start app         # 止めたコンテナをそのまま起動す
 コンテナの外で動かしている場合は、アプリを止めて `./data/`（`bootRun` なら `backend/data/`）を複写します。
 
 ## 内部DBの複写を数える（読み取りだけ・個人に関する値を出さない）
+
+**H2 のときだけ**の手順です（PostgreSQL の件数の数え方は、上の「PostgreSQL の内部DB のバックアップと戻し」の「戻した後の確かめ」）。
 
 ### 台本で決まった組を数える（`scripts/count-db-copy.mjs`）
 
@@ -170,6 +289,8 @@ count count users no_such_column x             # 存在しない列でも、誤�
 
 ## 内部DBのファイルの詰め直し（アプリを止めずに）
 
+**H2 のときだけ**の運用です（`;DEFRAG_ALWAYS=TRUE`・`docker/hikari-pool.sh`・`perf/h2-shell.sh`・`-Dh2.compactThreads=1` のすべて。PostgreSQL の内部DB では使いません）。
+
 DSL の投入と適用を重ねると、アプリが動いている間は内部DB（組み込みの H2）のファイルが伸び続けます（`docs/dsl.md` の「DSL の管理の API」の節の既知の制約）。H2 は接続が1本でも開いている間は詰め直さないため、運用の道具 `docker/hikari-pool.sh` で、HikariCP の接続プールの標準の JMX の操作（補充が済むのを待つ → 一時停止 → 接続の破棄 → 0 本を待つ → 再開）を呼びます。最後の接続が閉じたときに、接続先の `;DEFRAG_ALWAYS=TRUE` に従って H2 がファイルを詰め直します。アプリのプロセスは止めません。
 
 詰め直しのスレッドは 1 本に固定しています（イメージの既定の JVM の引数 `-Dh2.compactThreads=1`。テストの JVM と E2E の WAR の起動も同じ）。H2 2.4.240 は閉じるときの全体の詰め直しを CPU の数 / 4 本のスレッドで並べて行いますが、2本以上では H2 の中の競合に当たり、詰め直しが中断されてファイルが縮まないことがあるためです（CPU 8 の PC の結合テスト `H2CompactionByPoolSuspensionIT` で確かめた）。CPU の数によらず同じ動きになり、今の配備（CPU 4）では元から 1 本のため速さは変わりません。`MASTERSMITH_JAVA_OPTIONS` で上書きしないでください。H2 を上げるときは、この指定が要るかを見直します。
@@ -190,7 +311,7 @@ DSL の投入と適用を重ねると、アプリが動いている間は内部D
 - **再開し忘れ・道具が途中で終わったとき**: 一時停止のままだと、内部DB を使う要求がすべて待ち続け、処理のスレッドがたまります。`./docker/hikari-pool.sh resume` で再開し、だめなら `docker compose --profile targetdb-postgres restart app` で起動し直します（止めるときにも H2 が閉じて詰め直されます）。`compact` が強制終了されてロックが残ったときは、`resume` の後に表示されたロックのディレクトリを消します。JMX の操作を手で打たず、この道具を使ってください。
 - **詰め直しに失敗したとき**: 再開の後に内部DB を開けないと、要求が 500 になり、コンテナが unhealthy になります。`docker compose --profile targetdb-postgres restart app` で起動し直し、それでも開けないときは「内部DBのバックアップと戻し方」で直前のバックアップを展開します（バックアップの後の記録は失われます）。大きな詰め直しの前には、アプリを止めてよい時にバックアップを取ることを勧めます（バックアップはアプリを止めます）。
 - **ディスクの空き**: 詰め直しは、残す分の大きさの新しいファイルを書きます。空き（`colima ssh -- df -h /`）が残す分（最大約 210MB）より十分にあることを確かめます。
-- **接続先の指定**: `MASTERSMITH_DB_URL` で接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けます。付けないと、`compact` は接続を閉じて再開するだけで縮まず、道具が「大きさが減っていません」と出します。
+- **接続先の指定**: `MASTERSMITH_DB_URL` で H2 の接続先を上書きするときも `;DEFRAG_ALWAYS=TRUE` を付けます。付けないと、`compact` は接続を閉じて再開するだけで縮まず、道具が「大きさが減っていません」と出します。
 - **記録**: 詰め直しの操作は、監査ログにもアプリのログにも残りません（HikariCP の標準の機能だけで行うため）。前と後の大きさと時間は、道具の出力で見ます。
 - **しくみと公開の範囲**: 設定は `application.yaml` の `spring.datasource.hikari.register-mbeans`・`allow-pool-suspension`（どちらも true）です。道具は、JDK のイメージ（`eclipse-temurin:25.0.5_8-jdk-noble@sha256:95e350ad1eb738f943e141640f7e3d797e483359a3b33c3864255bfd1ad71f8a`）の一時のコンテナをアプリのコンテナと PID・ネットワークの名前空間を共有して同じ利用者の番号（10001）で動かし、アプリの JVM に attach して、JVM の中だけの JMX の接続（コンテナの中のループバックだけで待ち受ける）で操作します。JMX を PC やネットワークに公開しません（遠隔の接続の設定は有効にしません）。操作できるのは、この PC で Docker を使える人だけです。
-- **使い捨ての環境で試す**: `--container mastersmith-perf-app-1` を付けます。`perf/dsl-timing.sh --storage --compact` は、投入と適用を重ねた後にこの道具を流し、前と後の大きさと時間を記録します（`perf/README.md`）。
+- **使い捨ての環境で試す**: `--container mastersmith-perf-app-1` を付けます。`perf/dsl-timing.sh --storage --compact` は、投入と適用を重ねた後にこの道具を流し、前と後の大きさと時間を記録します（`perf/README.md`）。使い捨ての環境の H2 を読む道具 `perf/h2-shell.sh`（`perf/README.md`）も、H2 のときだけの道具です。

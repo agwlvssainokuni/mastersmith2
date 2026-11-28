@@ -99,6 +99,23 @@
   | 3 | 9分43秒 | 2.38 倍 | 2,389 MiB |
   | 4 | 13分53秒 | 1.66 倍 | 1,681 MiB |
 
+#### 内部DB の PostgreSQL の結合テスト（明示して流す）
+
+内部DB を PostgreSQL で動かす経路に固有の振る舞い（PostgreSQL 用の移行・接続の設定・大文字小文字を区別しない検索・排他の待ちなど）を確かめる結合テストです。版を固定したイメージのコンテナで起動した実際の PostgreSQL に対して流します（H2 や模擬では代えません）。H2 の結合テストの全件は今までどおり残り、これはその別のバリエーションです。
+
+```bash
+export DOCKER_HOST="unix://$HOME/.colima/default/docker.sock"           # colima の PC。書き方は docs/target-db.md
+export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
+./gradlew :backend:internalDbPostgresTest
+```
+
+- **普段は流れません**: `./gradlew verify`・`./gradlew verifyQuick`（`-PitTests` を付けたときも）・CI の通常の実行（`develop` へのプッシュ）には入りません。必要と判断したときに、上のコマンドで明示して流します。
+- **CI で流すとき**: 手動の実行（`workflow_dispatch`）の入力 **`internal_db_postgres`** を true にします（例: `gh workflow run ci.yml --ref <ブランチ> -f internal_db_postgres=true`。入力名は `internal_db_postgres` で、`internal_db_postgresql` ではありません）。CI では、コンテナの実行環境が無いときに飛ばさず失敗にします。
+- **コンテナの実行環境**: 手元は colima などが動いていることが前提です。無いときは、警告を出してこのテストを飛ばします（黙って飛ばしません）。飛ばした状態を「通った」とは扱いません。
+- **件数と時間の目安**: 全件で 31 クラス・76 件、約 1 分半です（排他の待ちの確かめを含む）。
+- **使うイメージ**: `compose.yaml` の `internal-db-postgres`・`targetdb-postgres` と同じ版・ダイジェスト（`TargetDbImages.postgres()`）です。上げるときは3つを一緒に上げます。
+- 手元の compose で起動する内部DB 用の PostgreSQL の使い方は `docs/internal-db.md` の「内部DB を PostgreSQL にする」です。
+
 #### JaCoCo の参考値の読み方（`verifyQuick`）
 
 `verifyQuick` の 7 の段の `:backend:jacocoQuickReport` は、単体テストの実行記録（`backend/build/jacoco/test.exec`）だけから報告を作り、次の1行を表示します。
