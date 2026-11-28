@@ -1,0 +1,13 @@
+{
+  "stage": "nfr-design",
+  "unit": "u4-local-runtime-docs",
+  "upstream_ids": ["NFR2.1","NFR2.2","NFR2.3","NFR2.4","NFR2.5","NFR2.6"],
+  "coverage": [
+    { "id": "NFR2.1", "status": "OK", "target": "security-design.md DD-2・DD-3（資格情報は .env だけ、.env.example は値を空のまま）" },
+    { "id": "NFR2.2", "status": "OK", "target": "security-design.md DD-1（ports を置かない）" },
+    { "id": "NFR2.3", "status": "OK", "target": "security-design.md DD-1・DD-2（別のサービス・ボリューム・資格情報の変数）" },
+    { "id": "NFR2.4", "status": "OK", "target": "security-design.md DD-5・DD-6・DD-7（文書に資格情報を書かない・接続先の URL の既知の制約・H2 だけの運用の明記）" },
+    { "id": "NFR2.5", "status": "OK", "target": "security-design.md DD-6（複写はリポジトリの外・権限 700・コミットしない）" },
+    { "id": "NFR2.6", "status": "OK", "target": "security-design.md DD-1・DD-8（mem_limit 512m と docker stats の確かめ）" }
+  ]
+}
