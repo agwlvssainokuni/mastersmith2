@@ -1,0 +1,30 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-local-runtime-docs",
+  "upstream_ids": [
+    "FR4.1",
+    "FR4.2",
+    "FR4.3",
+    "FR4.4",
+    "FR4.5",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6"
+  ],
+  "coverage": [
+    { "id": "FR4.1", "status": "OK", "target": "compose.yaml" },
+    { "id": "FR4.2", "status": "OK", "target": ".github/dependabot.yml" },
+    { "id": "FR4.3", "status": "OK", "target": "compose.yaml" },
+    { "id": "FR4.4", "status": "OK", "target": "docs/internal-db.md" },
+    { "id": "FR4.5", "status": "OK", "target": "README.md" },
+    { "id": "NFR2.1", "status": "OK", "target": ".env.example" },
+    { "id": "NFR2.2", "status": "OK", "target": "compose.yaml" },
+    { "id": "NFR2.3", "status": "OK", "target": "compose.yaml" },
+    { "id": "NFR2.4", "status": "OK", "target": "docs/internal-db.md" },
+    { "id": "NFR2.5", "status": "OK", "target": "docs/internal-db.md" },
+    { "id": "NFR2.6", "status": "OK", "target": "compose.yaml" }
+  ]
+}

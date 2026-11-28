@@ -1,0 +1,17 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-local-runtime-docs",
+  "version": 1,
+  "writes": [
+    { "path": ".env.example" },
+    { "path": ".github/dependabot.yml" },
+    { "path": "README.md" },
+    { "path": "compose.yaml" },
+    { "path": "docs/configuration.md" },
+    { "path": "docs/deployment.md" },
+    { "path": "docs/dsl.md" },
+    { "path": "docs/internal-db.md" },
+    { "path": "docs/operations.md" },
+    { "path": "docs/verification.md" }
+  ]
+}
