@@ -1,0 +1,22 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u4-local-runtime-docs",
+  "upstream_ids": ["NFR1.1","NFR2.1","NFR2.6","NFR3.1","NFR4.1","NFR4.2","NFR5.1","NFR6.1","NFR7.1","NFR8.1","NFR9.1","NFR2.2","NFR2.3","NFR2.4","NFR2.5"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "infrastructure-specification.md アプリの依存（profile なしで起動が変わらない）・monitoring-design.md Metrics & Alerting（起動の時間の基準）" },
+    { "id": "NFR2.1", "status": "OK", "target": "infrastructure-specification.md 環境変数・秘密情報（資格情報は .env だけ、値を書かない）" },
+    { "id": "NFR2.6", "status": "OK", "target": "infrastructure-specification.md 資源の大きさ（mem_limit 512m）・monitoring-design.md（docker stats の確かめ）" },
+    { "id": "NFR3.1", "status": "OK", "target": "infrastructure-specification.md サービス（対象DB と同じ版とダイジェスト）" },
+    { "id": "NFR4.1", "status": "OK", "target": "infrastructure-specification.md 起動確認・アプリの依存（CMD-SHELL の pg_isready と depends_on の service_healthy）" },
+    { "id": "NFR4.2", "status": "OK", "target": "cicd-pipeline.md 運用の手順（バックアップ・戻し・件数の数え。Deployment Execution で 1 回練習）" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline.md 時間の扱い（テスト・依存を足さない）" },
+    { "id": "NFR6.1", "status": "N/A", "target": "アプリのコードを変えず、カバレッジの計測の対象が動かない（インフラの設定を持たない）" },
+    { "id": "NFR7.1", "status": "OK", "target": "infrastructure-specification.md サービス（1 つだけ置く。replicas を使わない）" },
+    { "id": "NFR8.1", "status": "OK", "target": "cicd-pipeline.md 変更の中身（dependabot.yml の固定先の一覧のコメントに足す）・秘密情報と固定先" },
+    { "id": "NFR9.1", "status": "N/A", "target": "アプリの本体のソース・境界テストを変えない決まりで、インフラの変更が無い" },
+    { "id": "NFR2.2", "status": "OK", "target": "infrastructure-specification.md サービス（ports を置かない）" },
+    { "id": "NFR2.3", "status": "OK", "target": "infrastructure-specification.md サービス・ボリューム・環境変数（別のサービス・ボリューム・変数）" },
+    { "id": "NFR2.4", "status": "OK", "target": "cicd-pipeline.md 運用の手順・monitoring-design.md Logs & Tracing（資格情報を引数に書かない・接続先の URL の既知の制約）" },
+    { "id": "NFR2.5", "status": "OK", "target": "cicd-pipeline.md 運用の手順（複写はリポジトリの外・権限 700・コミットしない）" }
+  ]
+}
